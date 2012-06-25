@@ -1,0 +1,119 @@
+######################################################################
+# GeneMarkS version 4.7
+# file with default parameters for genetic code 1
+######################################################################
+
+####### --clean_join
+# min size of contig to be included in analisys
+--MIN_CONTIG_SIZE    1000
+
+# min size of sequence overall
+--MIN_SEQ_SIZE       50000
+
+# max 'N...N' substring length
+--MAX_N_SUBSTRING  50
+
+# insert this gap filler when join contigs
+--GAP_FILLER NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN
+
+####### --gc
+# print GC as integer
+--GC_PRECISION       0
+
+# no label in front of GC
+--GC_LABEL           ""
+
+####### --mkmod
+--PHMM  2.8
+--NAME  GeneMarkS_default_gcode_1
+--ORDM  2
+--ATG_  1
+--GTG_  0
+--TTG_  0
+--CTG_  0
+--TAA_  1
+--TAG_  1
+--TGA_  1
+--MINC  300
+--MAXC  15000
+--MAXN  50000
+--NDEC  100
+--CDEC  800
+--CDCD  0.0
+--CD1P  1
+--CD2P  1
+--COD1  ""
+--COD2  ""
+--NONC  ""
+
+####### genome
+# minimum length of gene in training (nt)
+--MIN_COD   450
+
+# minimum length of intergenic region in training
+--MIN_NON   0
+
+# exclude partial genes from training
+--EXCLUDE_PARTIAL  1
+
+# precision on start probabilities output
+--START_PRECISION   3
+
+# pseudocounts for starts
+--START_PSEUDOCOUNTS 2
+
+# in development
+--SEPARATE_COD  0.0
+--RANDOM_NONCOD 0.0
+
+####### mkchain
+# shift from start inside
+--MKCHAIN_L_MARGING      3
+
+# shift from stop inside
+--MKCHAIN_R_MARGING      3
+
+# pseudocounts in P estimation for mkchains (equal counts to any)
+--MKCHAIN_PSEUDOCOUNTS   1
+
+# precision on mkchain probabilities output
+--MKCHAIN_PRECISION      6
+
+####### --compare
+#
+--COMPARE_PRECISION   4
+
+#
+--COMPARE_START   1
+
+#
+--COMPARE_END   0
+
+####### --pre_start
+#
+--PRE_START_WIDTH   6
+
+#
+--PRE_START_RELATIVE_POS   0
+
+#
+--PRE_START_INTERGENIC  1
+
+#
+--PRE_START_LINES  10000
+
+####### --gibbs
+#
+--GIBBS_PRECISION_MAT  3
+
+#
+--GIBBS_PRECISION_DUR  3
+
+#
+--GIBBS_PSEUDOCOUNTS_MAT   1
+
+#
+--GIBBS_PSEUDOCOUNTS_DUR   1
+
+####### end of parameters
+

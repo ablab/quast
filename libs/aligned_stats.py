@@ -1,0 +1,106 @@
+############################################################################
+# Copyright (c) 2011-2012 Saint-Petersburg Academic University
+# All Rights Reserved
+# See file LICENSE for details.
+############################################################################
+
+import os
+import itertools
+import sys
+import fastaparser
+from qutils import id_to_str
+
+def get_lengths_from_coordfile(nucmer_filename):    
+    '''
+    Returns list of aligned blocks' lengths    
+    '''
+    max_overlap = 0.1 # 10 %
+
+    coordfile = open(nucmer_filename, 'r')
+    for line in coordfile:
+        if line.startswith('='):
+            break
+    
+    # EXAMPLE:
+    #    [S1]     [E1]  |     [S2]     [E2]  |  [LEN 1]  [LEN 2]  |  [% IDY]  | [TAGS]
+    #=====================================================================================
+    #  338980   339138  |     2298     2134  |      159      165  |    79.76  | gi|48994873|gb|U00096.2|	NODE_0_length_6088
+    #  374145   374355  |     2306     2097  |      211      210  |    85.45  | gi|48994873|gb|U00096.2|	NODE_0_length_6088
+    # 2302590  2302861  |        1      272  |      272      272  |  98.5294  | gi|48994873|gb|U00096.2|	NODE_681_length_272_
+    # 2302816  2303087  |        1      272  |      272      272  |  98.5294  | gi|48994873|gb|U00096.2|	NODE_681_length_272_
+    # 2302703  2302974  |        1      272  |      272      272  |  98.1618  | gi|48994873|gb|U00096.2|	NODE_681_length_272_
+    # 2302477  2302748  |        1      272  |      272      272  |  96.6912  | gi|48994873|gb|U00096.2|	NODE_681_length_272_
+
+    aligned_lengths = []
+    
+    for line in coordfile: 
+        splitted = line.split('|')
+        len2 = int(splitted[2].split()[1])
+        aligned_lengths.append(len2)
+    coordfile.close()      
+
+    return aligned_lengths
+
+######## MAIN ############
+def do(reference, filenames, nucmer_dir, output_dir, all_pdf):
+
+    if not os.path.isdir(output_dir):
+        os.mkdir(output_dir)
+
+    ########################################################################
+
+    nucmer_prefix = os.path.join(os.path.abspath(sys.path[0]), nucmer_dir + '/nucmer_')
+
+    ########################################################################
+    report_dict = {'header' : []}
+    for filename in filenames:
+        report_dict[os.path.basename(filename)] = []
+    
+    ########################################################################
+    print 'Running NA-NGA tool...'
+
+    reference_length = fastaparser.get_lengths_from_fastafile(reference)[0]
+    lengths = []
+    assembly_lengths = []
+    print 'Processing .coords files...'
+    for id, filename in enumerate(filenames):
+        print ' ', id_to_str(id), os.path.basename(filename)
+        nucmer_filename = nucmer_prefix + os.path.basename(filename) + '.coords.filtered'
+        assembly_lengths.append(sum(fastaparser.get_lengths_from_fastafile(filename)))
+        if not os.path.isfile(nucmer_filename):
+            print '  ERROR: nucmer coord file (' + nucmer_filename + ') not found, skipping...'
+            lengths.append([0])
+        else:
+            lengths.append(get_lengths_from_coordfile(nucmer_filename))
+    ########################################################################
+    
+    print 'Calculating NA50 and NGA50...'
+    report_dict['header'].append('NA50')
+    report_dict['header'].append('NGA50')
+    report_dict['header'].append('NA75')
+    report_dict['header'].append('NGA75')
+    import N50
+    for id, (filename, lens, assembly_len) in enumerate(itertools.izip(filenames, lengths, assembly_lengths)):
+        na50 = N50.NG50(lens, assembly_len)
+        nga50 = N50.NG50(lens, reference_length)
+        na75 = N50.NG50(lens, assembly_len, 75)
+        nga75 = N50.NG50(lens, reference_length, 75)        
+        print ' ', id_to_str(id), os.path.basename(filename), \
+            ', NA50 =', na50, \
+            ', NGA50 =', nga50
+        report_dict[os.path.basename(filename)].append(na50)
+        report_dict[os.path.basename(filename)].append(nga50)
+        report_dict[os.path.basename(filename)].append(na75)
+        report_dict[os.path.basename(filename)].append(nga75)
+        
+    ########################################################################
+
+    # Drawing cumulative plot (aligned contigs)...
+    import plotter
+    plotter.cumulative_plot(filenames, lengths, output_dir + '/cumulative_plot', 'Cumulative length (aligned contigs)', all_pdf)
+
+    # Drawing NAx and NGAx plots...
+    plotter.Nx_plot(filenames, lengths, output_dir + '/NAx_plot', 'NAx', assembly_lengths, all_pdf)
+    plotter.Nx_plot(filenames, lengths, output_dir + '/NGAx_plot', 'NGAx', [reference_length for i in range(len(filenames))], all_pdf)     
+
+    return report_dict

@@ -26,7 +26,9 @@ colors = ['#E41A1C', '#377EB8', '#4DAF4A', '#984EA3', '#FF7F00', '#A65628', '#F7
 font = {'family' : 'sans-serif',
     'style'  : 'normal',
     'weight' : 'medium',
-    'size'   : 7}
+    'size'   : 12}
+
+linewdith = 3.0
 
 # legend params
 n_columns = 4
@@ -59,9 +61,9 @@ def cumulative_plot(filenames, lengths, plot_filename, title, all_pdf=None):
             vals_length.append(y)
         # add to plot
         if color_id < len(colors):
-            matplotlib.pyplot.plot(vals_percent, vals_length, color=colors[color_id % len(colors)])
+            matplotlib.pyplot.plot(vals_percent, vals_length, color=colors[color_id % len(colors)], lw=linewdith)
         else:
-            matplotlib.pyplot.plot(vals_percent, vals_length, color=colors[color_id % len(colors)], ls='dashed')
+            matplotlib.pyplot.plot(vals_percent, vals_length, color=colors[color_id % len(colors)], lw=linewdith, ls='dashed')
         color_id += 1
             
     matplotlib.pyplot.xlabel('Contig index')
@@ -111,14 +113,14 @@ def Nx_plot(filenames, lengths, plot_filename, title='Nx', reference_lengths=[],
 
     for id, (filename, lens) in enumerate(itertools.izip(filenames, lengths)):    
         lens.sort(reverse = True)
-         # calculate values for the plot
+        # calculate values for the plot
         vals_Nx = [0.0]
-        vals_l = [0]
-        lcur = 0
+        vals_l = [lens[0]]
+        lcur = 0        
         # if Nx-plot then we just use sum of contigs lengths, else use reference_length
         lsum = sum(lens)
         if reference_lengths:
-            lsum = reference_lengths[id]
+            lsum = reference_lengths[id]        
         for l in lens:
             lcur += l
             x = lcur * 100.0 / lsum
@@ -128,9 +130,9 @@ def Nx_plot(filenames, lengths, plot_filename, title='Nx', reference_lengths=[],
             vals_l.append(l)
         # add to plot
         if color_id < len(colors):
-            matplotlib.pyplot.plot(vals_Nx, vals_l, color=colors[color_id % len(colors)])
+            matplotlib.pyplot.plot(vals_Nx, vals_l, color=colors[color_id % len(colors)], lw=linewdith)
         else:
-            matplotlib.pyplot.plot(vals_Nx, vals_l, color=colors[color_id % len(colors)], ls='dashed')
+            matplotlib.pyplot.plot(vals_Nx, vals_l, color=colors[color_id % len(colors)], lw=linewdith, ls='dashed')
         color_id += 1
 
     matplotlib.pyplot.xlabel('x')
@@ -198,9 +200,9 @@ def genes_operons_plot(filenames, files_contigs, genes, plot_filename, title, al
             x_vals.append(contig_no)
             y_vals.append(total_full)                                
         if color_id < len(colors):
-            matplotlib.pyplot.plot(x_vals, y_vals, color=colors[color_id % len(colors)])
+            matplotlib.pyplot.plot(x_vals, y_vals, color=colors[color_id % len(colors)], lw=linewdith)
         else:
-            matplotlib.pyplot.plot(x_vals, y_vals, color=colors[color_id % len(colors)], ls='dashed')
+            matplotlib.pyplot.plot(x_vals, y_vals, color=colors[color_id % len(colors)], lw=linewdith, ls='dashed')
         color_id += 1
         
     matplotlib.pyplot.xlabel('Contig index')

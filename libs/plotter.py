@@ -10,7 +10,7 @@ import fastaparser
 from qutils import id_to_str
 
 # Supported plot formats: .emf, .eps, .pdf, .png, .ps, .raw, .rgba, .svg, .svgz
-#plots_format = '.png' 
+#plots_format = '.svg' 
 plots_format = '.pdf' 
 
 matplotlib_error = False
@@ -26,9 +26,10 @@ colors = ['#E41A1C', '#377EB8', '#4DAF4A', '#984EA3', '#FF7F00', '#A65628', '#F7
 font = {'family' : 'sans-serif',
     'style'  : 'normal',
     'weight' : 'medium',
-    'size'   : 12}
+    'size'   : 10}
 
 linewdith = 3.0
+axes_fontsize = 'large'
 
 # legend params
 n_columns = 4
@@ -66,8 +67,8 @@ def cumulative_plot(filenames, lengths, plot_filename, title, all_pdf=None):
             matplotlib.pyplot.plot(vals_percent, vals_length, color=colors[color_id % len(colors)], lw=linewdith, ls='dashed')
         color_id += 1
             
-    matplotlib.pyplot.xlabel('Contig index')
-    matplotlib.pyplot.ylabel('Cumulative length (Mbp)')
+    matplotlib.pyplot.xlabel('Contig index', fontsize=axes_fontsize)
+    matplotlib.pyplot.ylabel('Cumulative length (Mbp)', fontsize=axes_fontsize)
     matplotlib.pyplot.title(title)
     matplotlib.pyplot.grid(with_grid)
     ax = matplotlib.pyplot.gca()
@@ -135,8 +136,8 @@ def Nx_plot(filenames, lengths, plot_filename, title='Nx', reference_lengths=[],
             matplotlib.pyplot.plot(vals_Nx, vals_l, color=colors[color_id % len(colors)], lw=linewdith, ls='dashed')
         color_id += 1
 
-    matplotlib.pyplot.xlabel('x')
-    matplotlib.pyplot.ylabel('Contig length (Kbp)')
+    matplotlib.pyplot.xlabel('x', fontsize=axes_fontsize)
+    matplotlib.pyplot.ylabel('Contig length (Kbp)', fontsize=axes_fontsize)
     matplotlib.pyplot.title(title)
     matplotlib.pyplot.grid(with_grid)
     ax = matplotlib.pyplot.gca()
@@ -205,8 +206,8 @@ def genes_operons_plot(filenames, files_contigs, genes, plot_filename, title, al
             matplotlib.pyplot.plot(x_vals, y_vals, color=colors[color_id % len(colors)], lw=linewdith, ls='dashed')
         color_id += 1
         
-    matplotlib.pyplot.xlabel('Contig index')
-    matplotlib.pyplot.ylabel('Cumulative no. ' + title)
+    matplotlib.pyplot.xlabel('Contig index', fontsize=axes_fontsize)
+    matplotlib.pyplot.ylabel('Cumulative no. ' + title, fontsize=axes_fontsize)
     matplotlib.pyplot.title(title.capitalize())
     matplotlib.pyplot.grid(False)
     ax = matplotlib.pyplot.gca()
@@ -275,7 +276,7 @@ def histogram(filenames, values, plot_filename, title='', all_pdf=None, yaxis_ti
 
 
     #matplotlib.pyplot.xticks(positions + width, map(os.path.basename, filenames))
-    matplotlib.pyplot.ylabel(yaxis_title)
+    matplotlib.pyplot.ylabel(yaxis_title, fontsize=axes_fontsize)
     matplotlib.pyplot.title(title)
     
     ax = matplotlib.pyplot.gca()

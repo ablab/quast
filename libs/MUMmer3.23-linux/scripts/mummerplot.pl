@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!__PERL_PATH
 
 ################################################################################
 #   Programmer: Adam M Phillippy, The Institute for Genomic Research
@@ -16,13 +16,13 @@
 # 
 ################################################################################
 
-use lib "/home/alex/biolab/mm_rep/algorithmic-biology/assembler/src/tools/quality/libs/MUMmer3.23/scripts";
+use lib "__SCRIPT_DIR";
 use Foundation;
 use strict;
 use IO::Socket;
 
-my $BIN_DIR = ".";
-my $SCRIPT_DIR = "/home/alex/biolab/mm_rep/algorithmic-biology/assembler/src/tools/quality/libs/MUMmer3.23/scripts";
+my $BIN_DIR = "__BIN_DIR";
+my $SCRIPT_DIR = "__SCRIPT_DIR";
 
 
 #================================================================= Globals ====#

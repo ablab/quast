@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!__PERL_PATH -w
 
 #-------------------------------------------------------------------------------
 #   Programmer: Adam M Phillippy, University of Maryland
@@ -9,13 +9,13 @@
 #
 #-------------------------------------------------------------------------------
 
-use lib "/home/alex/biolab/mm_rep/algorithmic-biology/assembler/src/tools/quality/libs/MUMmer3.23/scripts";
+use lib "__SCRIPT_DIR";
 use Foundation;
 use File::Spec::Functions;
 use strict;
 
-my $BIN_DIR = ".";
-my $SCRIPT_DIR = "/home/alex/biolab/mm_rep/algorithmic-biology/assembler/src/tools/quality/libs/MUMmer3.23/scripts";
+my $BIN_DIR = "__BIN_DIR";
+my $SCRIPT_DIR = "__SCRIPT_DIR";
 
 my $VERSION_INFO = q~
 DNAdiff version 1.3

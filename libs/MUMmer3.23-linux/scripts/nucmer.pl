@@ -1,51 +1,47 @@
-#!/usr/bin/perl
+#!__PERL_PATH
 
 #-------------------------------------------------------------------------------
 #   Programmer: Adam M Phillippy, The Institute for Genomic Research
-#         File: promer
+#         File: nucmer
 #         Date: 04 / 09 / 03
 #
 #        Usage:
-#    promer  [options]  <Reference>  <Query>
+#    nucmer  [options]  <Reference>  <Query>
 #
-#                Try 'promer -h' for more information.
+#                Try 'nucmer -h' for more information.
 #
 #      Purpose: To create alignments between two multi-FASTA inputs by using
 #              the MUMmer matching and clustering algorithms.
 #
 #-------------------------------------------------------------------------------
 
-use lib "/home/alex/biolab/mm_rep/algorithmic-biology/assembler/src/tools/quality/libs/MUMmer3.23/scripts";
+use lib "__SCRIPT_DIR";
 use Foundation;
 use File::Spec::Functions;
 use strict;
 
-my $AUX_BIN_DIR = "./aux_bin";
-my $BIN_DIR = ".";
-my $SCRIPT_DIR = "/home/alex/biolab/mm_rep/algorithmic-biology/assembler/src/tools/quality/libs/MUMmer3.23/scripts";
-
+my $AUX_BIN_DIR = "__AUX_BIN_DIR";
+my $BIN_DIR = "__BIN_DIR";
+my $SCRIPT_DIR = "__SCRIPT_DIR";
 
 
 my $VERSION_INFO = q~
-PROmer (PROtein MUMmer) version 3.07
+NUCmer (NUCleotide MUMmer) version 3.1
     ~;
 
 
-
 my $HELP_INFO = q~
-  USAGE: promer  [options]  <Reference>  <Query>
+  USAGE: nucmer  [options]  <Reference>  <Query>
 
   DESCRIPTION:
-    promer generates amino acid alignments between two mutli-FASTA DNA input
+    nucmer generates nucleotide alignments between two mutli-FASTA input
     files. The out.delta output file lists the distance between insertions
     and deletions that produce maximal scoring alignments between each
-    sequence. The show-* utilities know how to read this format. The DNA
-    input is translated into all 6 reading frames in order to generate the
-    output, but the output coordinates reference the original DNA input.
+    sequence. The show-* utilities know how to read this format.
 
   MANDATORY:
-    Reference       Set the input reference multi-FASTA DNA file
-    Query           Set the input query multi-FASTA DNA file
+    Reference       Set the input reference multi-FASTA filename
+    Query           Set the input query multi-FASTA filename
 
   OPTIONS:
     --mum           Use anchor matches that are unique in both the reference
@@ -56,41 +52,45 @@ my $HELP_INFO = q~
     --maxmatch      Use all anchor matches regardless of their uniqueness
 
     -b|breaklen     Set the distance an alignment extension will attempt to
-                    extend poor scoring regions before giving up, measured in
-                    amino acids (default 60)
-    -c|mincluster   Sets the minimum length of a cluster of matches, measured in
-                    amino acids (default 20)
+                    extend poor scoring regions before giving up (default 200)
+    --[no]banded    Enforce absolute banding of dynamic programming matrix
+                    based on diagdiff parameter EXPERIMENTAL (default no)
+    -c|mincluster   Sets the minimum length of a cluster of matches (default 65)
     --[no]delta     Toggle the creation of the delta file (default --delta)
     --depend        Print the dependency information and exit
-    -d|diagfactor   Set the clustering diagonal difference separation factor
-                    (default .11)
+    -D|diagdiff     Set the maximum diagonal difference between two adjacent
+                    anchors in a cluster (default 5)
+    -d|diagfactor   Set the maximum diagonal difference between two adjacent
+                    anchors in a cluster as a differential fraction of the gap
+                    length (default 0.12)
     --[no]extend    Toggle the cluster extension step (default --extend)
+    -f
+    --forward       Use only the forward strand of the Query sequences
     -g|maxgap       Set the maximum gap between two adjacent matches in a
-                    cluster, measured in amino acids (default 30)
+                    cluster (default 90)
     -h
-    --help          Display help information and exit.
-    -l|minmatch     Set the minimum length of a single match, measured in amino
-                    acids (default 6)
-    -m|masklen      Set the maximum bookend masking lenth, measured in amino
-                    acids (default 8)
+    --help          Display help information and exit
+    -l|minmatch     Set the minimum length of a single match (default 20)
     -o
-    --coords        Automatically generate the original PROmer1.1 ".coords"
-                    output file using the "show-coords" program
+    --coords        Automatically generate the original NUCmer1.1 coords
+                    output file using the 'show-coords' program
     --[no]optimize  Toggle alignment score optimization, i.e. if an alignment
                     extension reaches the end of a sequence, it will backtrack
                     to optimize the alignment score instead of terminating the
                     alignment at the end of the sequence (default --optimize)
-
     -p|prefix       Set the prefix of the output files (default "out")
+    -r
+    --reverse       Use only the reverse complement of the Query sequences
+    --[no]simplify  Simplify alignments by removing shadowed clusters. Turn
+                    this option off if aligning a sequence to itself to look
+                    for repeats (default --simplify)
     -V
     --version       Display the version information and exit
-    -x|matrix       Set the alignment matrix number to 1 [BLOSUM 45], 2 [BLOSUM
-                    62] or 3 [BLOSUM 80] (default 2)
     ~;
 
 
 my $USAGE_INFO = q~
-  USAGE: promer  [options]  <Reference>  <Query>
+  USAGE: nucmer  [options]  <Reference>  <Query>
     ~;
 
 
@@ -99,24 +99,24 @@ my @DEPEND_INFO =
      "$BIN_DIR/mummer",
      "$BIN_DIR/mgaps",
      "$BIN_DIR/show-coords",
-     "$AUX_BIN_DIR/postpro",
-     "$AUX_BIN_DIR/prepro",
+     "$AUX_BIN_DIR/postnuc",
+     "$AUX_BIN_DIR/prenuc",
      "$SCRIPT_DIR/Foundation.pm"
      );
 
 
 my %DEFAULT_PARAMETERS =
     (
-     "OUTPUT_PREFIX"     =>   "out",      # prefix for all output files
+     "OUTPUT_PREFIX"     =>   "out",        # prefix for all output files
      "MATCH_ALGORITHM"   =>   "-mumreference", # match finding algo switch
-     "MIN_MATCH"         =>   "6",        # minimum match size (aminos)
-     "MAX_GAP"           =>   "30",       # maximum gap between matches (aminos)
-     "MIN_CLUSTER"       =>   "20",       # minimum cluster size (aminos)
-     "DIAG_FACTOR"       =>   ".11",      # diagonal difference fraction
-     "BREAK_LEN"         =>   "60",       # extension break length
-     "BLOSUM_NUMBER"     =>   "2",        # options are 1,2,3 (BLOSUM 45,62,80)
-     "MASKING_LENGTH"    =>   "8",        # set bookend masking length
-     "POST_SWITCHES"     =>   ""          # switches for the post processing
+     "MATCH_DIRECTION"   =>   "-b",         # match direction switch
+     "MIN_MATCH"         =>   "20",         # minimum match size
+     "MAX_GAP"           =>   "90",         # maximum gap between matches
+     "MIN_CLUSTER"       =>   "65",         # minimum cluster size
+     "DIAG_DIFF"         =>   "5",          # diagonal difference absolute
+     "DIAG_FACTOR"       =>   ".12",        # diagonal difference fraction
+     "BREAK_LEN"         =>   "200",        # extension break length
+     "POST_SWITCHES"     =>   ""            # switches for the post processing
      );
 
 
@@ -131,21 +131,25 @@ sub main ( )
     #-- The command line options for the various programs
     my $pfx = $DEFAULT_PARAMETERS { "OUTPUT_PREFIX" };
     my $algo = $DEFAULT_PARAMETERS { "MATCH_ALGORITHM" };
+    my $mdir = $DEFAULT_PARAMETERS { "MATCH_DIRECTION" };
     my $size = $DEFAULT_PARAMETERS { "MIN_MATCH" };
     my $gap = $DEFAULT_PARAMETERS { "MAX_GAP" };
     my $clus = $DEFAULT_PARAMETERS { "MIN_CLUSTER" };
-    my $diff = $DEFAULT_PARAMETERS { "DIAG_FACTOR" };
+    my $ddiff = $DEFAULT_PARAMETERS { "DIAG_DIFF" };
+    my $dfrac = $DEFAULT_PARAMETERS { "DIAG_FACTOR" };
     my $blen = $DEFAULT_PARAMETERS { "BREAK_LEN" };
-    my $blsm = $DEFAULT_PARAMETERS { "BLOSUM_NUMBER" };
-    my $mask = $DEFAULT_PARAMETERS { "MASKING_LENGTH" };
     my $psw = $DEFAULT_PARAMETERS { "POST_SWITCHES" };
 
+    my $fwd;              # if true, use forward strand
+    my $rev;              # if true, use reverse strand
     my $maxmatch;         # matching algorithm switches
     my $mumreference;
     my $mum;
+    my $banded = 0;       # if true, enforce absolute dp banding
     my $extend = 1;       # if true, extend clusters
     my $delta = 1;        # if true, create the delta file
     my $optimize = 1;     # if true, optimize alignment scores
+    my $simplify = 1;     # if true, simplify shadowed alignments
 
     my $generate_coords;
 
@@ -170,18 +174,22 @@ sub main ( )
          "mumreference" => \$mumreference,
          "mum" => \$mum,
 	 "b|breaklen=i" => \$blen,
+         "banded!" => \$banded,
 	 "c|mincluster=i" => \$clus,
 	 "delta!" => \$delta,
-	 "d|diagfactor=f" => \$diff,
+         "D|diagdiff=i" => \$ddiff,
+	 "d|diagfactor=f" => \$dfrac,
 	 "extend!" => \$extend,
+	 "f|forward"   => \$fwd,
 	 "g|maxgap=i" => \$gap,
 	 "l|minmatch=i" => \$size,
-	 "m|masklen=i" => \$mask,
 	 "o|coords"   => \$generate_coords,
 	 "optimize!" => \$optimize,
 	 "p|prefix=s" => \$pfx,
-	 "x|matrix=i" => \$blsm
+	 "r|reverse"   => \$rev,
+	 "simplify!" => \$simplify
 	 );
+
 
     #-- Check if the parsing was successful
     if ( $err[0] == 0  ||  $#ARGV != 1 ) {
@@ -192,8 +200,15 @@ sub main ( )
 
     $ref_file = File::Spec->rel2abs ($ARGV[0]);
     $qry_file = File::Spec->rel2abs ($ARGV[1]);
-    
+
     #-- Set up the program parameters
+    if ( $fwd  &&  $rev ) {
+	$mdir = "-b";
+    } elsif ( $fwd ) {
+	$mdir = "";
+    } elsif ( $rev ) {
+	$mdir = "-r";
+    }
     if ( ! $extend ) {
 	$psw .= "-e ";
     }
@@ -202,6 +217,9 @@ sub main ( )
     }
     if ( ! $optimize ) {
 	$psw .= "-t ";
+    }
+    if ( ! $simplify ) {
+	$psw .= "-s ";
     }
 
     undef (@err);
@@ -228,8 +246,8 @@ sub main ( )
     #-- Set up the program path names
     my $algo_path = "$BIN_DIR/mummer";
     my $mgaps_path = "$BIN_DIR/mgaps";
-    my $prepro_path = "$AUX_BIN_DIR/prepro";
-    my $postpro_path = "$AUX_BIN_DIR/postpro";
+    my $prenuc_path = "$AUX_BIN_DIR/prenuc";
+    my $postnuc_path = "$AUX_BIN_DIR/postnuc";
     my $showcoords_path = "$BIN_DIR/show-coords";
 		     
     #-- Check that the files needed are all there and readable/writable
@@ -243,12 +261,12 @@ sub main ( )
 	    push (@err, $mgaps_path);
 	}
 	
-	if ( !$tigr->isExecutableFile ($prepro_path) ) {
-	    push (@err, $prepro_path);
+	if ( !$tigr->isExecutableFile ($prenuc_path) ) {
+	    push (@err, $prenuc_path);
 	}
 	
-	if ( !$tigr->isExecutableFile ($postpro_path) ) {
-	    push (@err, $postpro_path);
+	if ( !$tigr->isExecutableFile ($postnuc_path) ) {
+	    push (@err, $postnuc_path);
 	}
 	
 	if ( !$tigr->isReadableFile ($ref_file) ) {
@@ -259,15 +277,9 @@ sub main ( )
 	    push (@err, $qry_file);
 	}
 	
-	if ( !$tigr->isCreatableFile ("$pfx.aaref") ) {
-	    if ( !$tigr->isWritableFile ("$pfx.aaref") ) {
-		push (@err, "$pfx.aaref");
-	    }
-	}
-
-	if ( !$tigr->isCreatableFile ("$pfx.aaqry") ) {
-	    if ( !$tigr->isWritableFile ("$pfx.aaqry") ) {
-		push (@err, "$pfx.aaqry");
+	if ( !$tigr->isCreatableFile ("$pfx.ntref") ) {
+	    if ( !$tigr->isWritableFile ("$pfx.ntref") ) {
+		push (@err, "$pfx.ntref");
 	    }
 	}
 	
@@ -282,7 +294,7 @@ sub main ( )
 		push (@err, "$pfx.delta");
 	    }
 	}
-
+    
 	if ( $generate_coords ) {
 	    if ( !$tigr->isExecutableFile ($showcoords_path) ) {
 		push (@err, $showcoords_path);
@@ -293,7 +305,7 @@ sub main ( )
 		}
 	    }
 	}
-    
+
 	#-- If 1 or more files could not be processed, terminate script
 	if ( $#err >= 0 ) {
 	    $tigr->logError
@@ -308,29 +320,22 @@ sub main ( )
     }
     
 
-    #-- Run prepro -r and -q and assert return value is zero
+    #-- Run prenuc and assert return value is zero
     print (STDERR "1: PREPARING DATA\n");
     $err[0] = $tigr->runCommand
-	("$prepro_path -m $mask -r $ref_file > $pfx.aaref");
+	("$prenuc_path $ref_file > $pfx.ntref");
 
     if ( $err[0] != 0 ) {
 	$tigr->bail
-	    ("ERROR: prepro -r returned non-zero\n");
-    }
-
-    $err[0] = $tigr->runCommand
-	("$prepro_path -m $mask -q $qry_file > $pfx.aaqry");
-
-    if ( $err[0] != 0 ) {
-	$tigr->bail ("ERROR: prepro -q returned non-zero\n");
+	    ("ERROR: prenuc returned non-zero\n");
     }
 
 
     #-- Run mummer | mgaps and assert return value is zero
     print (STDERR "2,3: RUNNING mummer AND CREATING CLUSTERS\n");
-    open(ALGO_PIPE, "$algo_path $algo -l $size $pfx.aaref $pfx.aaqry |")
+    open(ALGO_PIPE, "$algo_path $algo $mdir -l $size -n $pfx.ntref $qry_file |")
 	or $tigr->bail ("ERROR: could not open $algo_path output pipe $!");
-    open(CLUS_PIPE, "| $mgaps_path -l $clus -s $gap -f $diff > $pfx.mgaps")
+    open(CLUS_PIPE, "| $mgaps_path -l $clus -s $gap -d $ddiff -f $dfrac > $pfx.mgaps")
 	or $tigr->bail ("ERROR: could not open $mgaps_path input pipe $!");
     while ( <ALGO_PIPE> ) {
 	print CLUS_PIPE
@@ -344,17 +349,24 @@ sub main ( )
     }
 
 
-    #-- Run postpro and assert return value is zero
+    #-- Run postnuc and assert return value is zero
     print (STDERR "4: FINISHING DATA\n");
-    $err[0] = $tigr->runCommand
-	("$postpro_path $psw -x $blsm -b $blen ".
-	 "$ref_file $qry_file $pfx < $pfx.mgaps");
+    if ( $banded )
+      {
+        $err[0] = $tigr->runCommand
+          ("$postnuc_path $psw -b $blen -B $ddiff $ref_file $qry_file $pfx < $pfx.mgaps");
+      }
+    else
+      {
+        $err[0] = $tigr->runCommand
+          ("$postnuc_path $psw -b $blen $ref_file $qry_file $pfx < $pfx.mgaps");
+      }
 
     if ( $err[0] != 0 ) {
-	$tigr->bail ("ERROR: postpro returned non-zero\n");
+	$tigr->bail ("ERROR: postnuc returned non-zero\n");
     }
 
-    #-- If the -o flag was set, run show-coords using PROmer1.1 settings
+    #-- If the -o flag was set, run show-coords using NUCmer1.1 settings
     if ( $generate_coords ) {
 	print (STDERR "5: GENERATING COORDS FILE\n");
 	$err[0] = $tigr->runCommand
@@ -364,15 +376,15 @@ sub main ( )
 	    $tigr->bail ("ERROR: show-coords returned non-zero\n");
 	}
     }
- 
+
     #-- Remove the temporary output
-    $err[0] = unlink ("$pfx.aaref", "$pfx.aaqry", "$pfx.mgaps");
- 
-    if ( $err[0] != 3 ) {
- 	$tigr->logError ("WARNING: there was a problem deleting".
+    $err[0] = unlink ("$pfx.ntref", "$pfx.mgaps");
+
+    if ( $err[0] != 2 ) {
+	$tigr->logError ("WARNING: there was a problem deleting".
 			 " the temporary output files", 1);
     }
- 
+
     #-- Return success
     return (0);
 }

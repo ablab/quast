@@ -1,4 +1,4 @@
-#! -f
+#!__CSH_PATH -f
 #
 # Find exact tandem repeats in specified file involving an
 # exact duplicate of at least the specified length
@@ -6,8 +6,8 @@
 set filename = $1
 set matchlen = $2
 
-set bindir = .
-set scriptdir = /home/alex/biolab/mm_rep/algorithmic-biology/assembler/src/tools/quality/libs/MUMmer3.23/scripts
+set bindir = __BIN_DIR
+set scriptdir = __SCRIPT_DIR
 
 if  ($filename == '' || $matchlen == '')  then
     echo "USAGE:  $0 <file> <min-match-len>"

@@ -1,9 +1,9 @@
-#!/usr/bin/perl
+#!__PERL_PATH
 
-use lib "/home/alex/biolab/mm_rep/algorithmic-biology/assembler/src/tools/quality/libs/MUMmer3.23/scripts";
+use lib "__SCRIPT_DIR";
 use Foundation;
 
-my $SCRIPT_DIR = "/home/alex/biolab/mm_rep/algorithmic-biology/assembler/src/tools/quality/libs/MUMmer3.23/scripts";
+my $SCRIPT_DIR = "__SCRIPT_DIR";
 
 
 my $VERSION_INFO = q~

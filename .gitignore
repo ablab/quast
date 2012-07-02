@@ -1,0 +1,9 @@
+results_*
+latest
+show-snps.err
+libs/MUMmer3.23-osx/*
+libs/*.pyc
+.idea/*
+libs/.DS_Store
+.DS_Store
+quality.pyc

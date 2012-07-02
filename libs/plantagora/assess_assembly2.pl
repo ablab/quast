@@ -256,6 +256,7 @@ my $total_redundant = 0;
 my $misassembled_partially_unaligned = 0;
 
 $region_misassemblies = 0;
+$region_local_misassemblies = 0;
 %misassembled_contigs = ();
 
 open (UNALIGNED_IDS, ">$header.unaligned");
@@ -768,6 +769,7 @@ foreach $ref (keys %regions){
 
 	print "\tCovered Bases: $region_covered\n";
 	print "\tAmbiguous Bases: $region_ambig\n";
+	print "\tLocal Misassemblies: $region_local_misassemblies\n";
 	print "\tMisassemblies: $region_misassemblies\n";
 	print "\t\tMisassembled Contigs: ", scalar(keys %misassembled_contigs), "\n";
 	$misassembled_bases = 0;
@@ -882,6 +884,7 @@ sub process_misassembled_contig  # input: OUTPUT_FILE, $i_start, $i_finish, $con
             if ($verbose) {print "\t\tOverlap between these two alignments (local misassembly): [${$sorted}[$i][11]] ${$sorted}[$i][1] to ${$sorted}[$i+1][0]\n";}
             push (@{$ref_aligns{${$sorted}[$i][11]}}, [${$sorted}[$i][0], ${$sorted}[$i][1], $contig, ${$sorted}[$i][3], ${$sorted}[$i][4]]);
 
+            $region_local_misassemblies++;
             #MY:
             ${$prev}[1] = ${$sorted}[$i+1][1];            # [E1]
             ${$prev}[3] = 0;                              # [S2]
@@ -893,6 +896,7 @@ sub process_misassembled_contig  # input: OUTPUT_FILE, $i_start, $i_finish, $con
             if ($verbose) {print "\t\tGap in alignment between these two alignments (local misassembly): [${$sorted}[$i][11]] ${$sorted}[$i][0]\n";}
             push (@{$ref_aligns{${$sorted}[$i][11]}}, [${$sorted}[$i][0], ${$sorted}[$i][1], $contig, ${$sorted}[$i][3], ${$sorted}[$i][4]]);
 
+            $region_local_misassemblies++;
             #MY:
             ${$prev}[1] = ${$sorted}[$i+1][1];            # [E1]
             ${$prev}[3] = 0;                              # [S2]

@@ -2,6 +2,7 @@
 mkdir release
 mkdir release/quast
 cp -r libs            release/quast
+cp -r test_data       release/quast
 cp quast.py           release/quast
 cp manual.html        release/quast
 sed "s/RELEASE_MODE=False/RELEASE_MODE=True/" quast.py > release/quast/quast.py

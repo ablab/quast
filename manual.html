@@ -13,11 +13,43 @@
 <p>QUAST stands for QUality ASsesment Tool. QUAST is intended to evaluate genome assemblies by computing various metrics (e.g., N50, number of ORFs, etc.). 
 QUAST was tested on single-chromosomal reference genomes and may not work well on the multi-chromosomal ones. 
 <br>
-This manual will help you to run the tool and understand its output. QUAST is distributed within SPAdes release. 
-See <a href="http://spades.bioinf.spbau.ru/release2.1.0/manual.html">SPAdes manual</a> for download and installation details.
+This manual will help you to run the tool and understand its output. We release QUAST as a tarball file. You can find the latest tarball
+at <a href="http://quast.bioinf.spbau.ru/">http://quast.bioinf.spbau.ru/</a>. The latest version of this manual can be found <a href="http://quast.bioinf.spbau.ru/manual.html">here</a>.
 <br>
 QUAST uses <a href="http://www.plantagora.org/">Plantagora</a> and <a href="http://mummer.sourceforge.net/">MUMmer</a>.
 </p>
+
+<h2>0. Installation</h2>
+
+<p>
+QUAST can be run on Linux and MAC OS.
+<br>
+It requires:
+<ul>
+    <li>Python v.2.4 or higher</li>
+    <li>Perl v. 5.6.0 or higher</li>
+</ul>
+
+You should also install <a href="http://matplotlib.sourceforge.net/">matplotlib</a> python library for drawing various plots.
+<br>
+On Ubuntu it can be done by typing:
+<pre  class="code">
+<code>
+    sudo apt-get install python-matplotlib
+</code>
+</pre>
+</p>
+
+<p>To download <a href="http://quast.bioinf.spbau.ru/quast.tar.gz">tarball</a> with the latest source code and extract it:
+</p>
+
+<pre  class="code">
+<code>
+    wget http://quast.bioinf.spbau.ru/quast.tar.gz
+    tar -xzf quast.tar.gz
+    cd quast
+</code>
+</pre>
 
 <a name="sec1"></a>
 <h2>1. Running QUAST</h2>
@@ -39,8 +71,8 @@ are supported) or in plain TXT format with 4 tab-separated columns:
 The coordinates are 1-based and if <i>start postion</i> less than <i>end postion</i> than that gene or operon is on the positive strand, 
 otherwise it is on the negative strand.
 <br><br>
-You can find example of reference file, genes and operons annotations (both in TXT and GFF ver.2 formats) in your SPAdes installation directory in the subdirectory <code>test_dataset</code>. 
-These files are correspond to the toy dataset distributed with SPAdes (first 1000 bp of E. coli).
+You can find example of reference file, genes and operons annotations (both in TXT and GFF ver.2 formats) in your QUAST installation directory in the subdirectory <code>test_data</code>. 
+These files are correspond to the first 1000 bp of E. coli. Input reads and sample assemblies for this data set are also there.
 </p>
 
 <a name="sec1.2"></a>
@@ -244,7 +276,7 @@ This plot could be created only if the reference and genes annotations file are 
 
 <p>
     We will be thankful if you help us make QUAST better by sending your comments, bug reports, and suggestions
-    to <a href="mailto:spades.support@bioinf.spbau.ru">quast.support@bioinf.spbau.ru</a>.
+    to <a href="mailto:quast.support@bioinf.spbau.ru">quast.support@bioinf.spbau.ru</a>.
 </p>
 
 <p>

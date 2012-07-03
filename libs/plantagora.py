@@ -39,7 +39,7 @@ def do(reference, filenames, cyclic, rc, output_dir, lib_dir):
             stdout=open(os.path.join(mummer_path, 'make.log'), 'w'), stderr=open(os.path.join(mummer_path, 'make.err'), 'w')) 
     
     print 'Running plantagora tool (assess_assemply.pl)...'
-    metrics = ['Average %IDY', 'Misassemblies', 'Misassembled Contigs', 'Misassembled Contig Bases', 'Misassembled and Unaligned', 'SNPs', 'Unaligned Contigs', 'Unaligned Contig Bases', 'Ambiguous Contigs']
+    metrics = ['Average %IDY', 'Local Misassemblies', 'Misassemblies', 'Misassembled Contigs', 'Misassembled Contig Bases', 'Misassembled and Unaligned', 'SNPs', 'Unaligned Contigs', 'Unaligned Contig Bases', 'Ambiguous Contigs']
     report_dict['header'] += metrics
 
     for id, filename in enumerate(filenames):

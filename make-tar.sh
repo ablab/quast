@@ -2,7 +2,7 @@
 mkdir release/quast
 cp -r libs            release/quast
 cp release/quality.py release/quast
-cp release/README     release/quast
+#cp release/README     release/quast    # README is for developers and it is outdated -- users should use only manual
 cp quast.py           release/quast
 cp manual.html        release/quast
 

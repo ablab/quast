@@ -16,23 +16,13 @@
 # 
 ################################################################################
 
-BEGIN
-{
-    use FindBin;
-    my $BASE = "$FindBin::Bin";
-    unshift @INC, "$BASE/scripts";
-}
-
-#use lib "./scripts";
+use lib "/home/alex/biolab/master_rep/quast/libs/MUMmer3.23-linux/scripts";
 use Foundation;
 use strict;
 use IO::Socket;
 
-use FindBin;
-my $BASE = "$FindBin::Bin";
-
-my $BIN_DIR = "$BASE";
-my $SCRIPT_DIR = "$BASE/scripts";
+my $BIN_DIR = "/home/alex/biolab/master_rep/quast/libs/MUMmer3.23-linux";
+my $SCRIPT_DIR = "/home/alex/biolab/master_rep/quast/libs/MUMmer3.23-linux/scripts";
 
 
 #================================================================= Globals ====#

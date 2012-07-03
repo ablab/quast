@@ -1,11 +1,15 @@
+DEPRECATED. See manual instead.
+
+
+
 == PREREQ ==
 
 Python v.2.4 or higher
-Java
+Perl v. 5.6.0 or higher
 
-Other requirements:
+Other requirements (optional, but functionality will be increased):
 
-	sudo apt-get install python-matplotlib python-numpy bioperl mummer r-recommended pdftk
+	sudo apt-get install python-matplotlib python-numpy
 
 For run Mauve:
 The mauve software requires access to a graphical user interface. If running the software remotely on a server, one can use the ssh -X servername option to connect the local display to the remote server. 

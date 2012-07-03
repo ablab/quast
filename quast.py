@@ -30,17 +30,19 @@ def usage():
     print >>sys.stderr, ""
 
     if RELEASE_MODE:
-        print >>sys.stderr, "-o <dirname>                 directory to store all result files [default: results_<datetime>]"
-        print >>sys.stderr, "-R <filename>                file with a reference genome"
-        print >>sys.stderr, "-G <filename>                file with genes for a given species"
-        print >>sys.stderr, "-O <filename>                file with operons for a given species"
-        print >>sys.stderr, "--min-contig <N>             lower threshold for contig length [default: %s]" % (qconfig.min_contig)
+        print >>sys.stderr, "Options:"
+        print >>sys.stderr, "-o           <dirname>       directory to store all result files [default: results_<datetime>]"
+        print >>sys.stderr, "-R           <filename>      file with a reference genome"
+        print >>sys.stderr, "-G/--genes   <filename>      file with genes for a given species"
+        print >>sys.stderr, "-O/--operons <filename>      file with operons for a given species"
+        print >>sys.stderr, "--min-contig <int>           lower threshold for contig length [default: %s]" % (qconfig.min_contig)
         print >>sys.stderr, ""
-        print >>sys.stderr, "--contig-thresholds <N,...>  comma-separated list of contig length thresholds [default is %s]" % (qconfig.contig_thresholds)
-        print >>sys.stderr, "--orf <N,...>                comma-separated list of threshold lengths of ORFs to search for [default is %s]" % (qconfig.orf_lengths)
-        print >>sys.stderr, '--not-circular               this flag should be set if the genome is not circular (e.g., eukaryote)'
+        print >>sys.stderr, "Advanced options:"
+        print >>sys.stderr, "--contig-thresholds <int,int,...>   comma-separated list of contig length thresholds [default is %s]" % (qconfig.contig_thresholds)
+        print >>sys.stderr, "--orf               <int,int,...>   comma-separated list of threshold lengths of ORFs to search for [default is %s]" % (qconfig.orf_lengths)
+        print >>sys.stderr, '--not-circular                      this flag should be set if the genome is not circular (e.g., eukaryote)'
         print >>sys.stderr, ""
-        print >>sys.stderr, "-h (--help)                  print this usage message"
+        print >>sys.stderr, "-h/--help           print this usage message"
     else:
         print >>sys.stderr, 'Options with arguments'
         print >>sys.stderr, "-o  --output-dir           directory to store all result files [default: results_<datetime>]"

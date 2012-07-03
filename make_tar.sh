@@ -18,4 +18,4 @@ tar -pczf quast.tar.gz quast
 cd ..
 mv release/quast.tar.gz .
 rm -rf release
-echo "Quast archive created: quast.tar.gz"
+echo "QUAST archive created: quast.tar.gz"

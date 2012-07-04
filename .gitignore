@@ -3,9 +3,7 @@ latest
 quality.pyc
 show-snps.err
 libs/MUMmer3.23-linux/*
-libs/MUMmer3.23-linux/scripts-
 libs/MUMmer3.23-osx/*
-libs/MUMmer3.23-osx/scripts-
 libs/*.pyc
 libs/.DS_Store
 .idea/*

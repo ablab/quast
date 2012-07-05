@@ -9,7 +9,7 @@ import re
 
 def get_genes_from_file(filename, keyword):
     if not filename or not os.path.exists(filename):
-        print '  Warning! ' + keyword + '\'s file not specified or doesn\'t exist!' 
+        print '  Warning! ' + keyword + '\'s file not specified or doesn\'t exist!'
         return []
 
     ext = os.path.splitext(filename)[1]
@@ -35,7 +35,7 @@ def get_genes_from_file(filename, keyword):
                 sections = line.split()
                 if len(sections) != 4:
                     continue
-                #if sections[0] != reference_name:
+                    #if sections[0] != reference_name:
                 #    continue
                 s = int(sections[2])
                 e = int(sections[3])
@@ -67,7 +67,7 @@ def get_genes_from_file(filename, keyword):
 
     elif ext.startswith('.gff'):
         # parsing GFF
-        
+
         # EXAMPLE:
         #    ##gff-version   3
         #    ##sequence-region   ctg123 1 1497228       

@@ -8,7 +8,7 @@ import os
 import shutil
 import sys
 import fastaparser
-import gffparser
+import genes_parser
 import subprocess
 import collections
 import itertools
@@ -50,7 +50,7 @@ def do(reference, filenames, output_dir, nucmer_dir, genes_filename, operons_fil
     res_file.write('min gene/operon overlap: ' + str(min_overlap) + '\n\n')
 
     # reading genes
-    genes = gffparser.get_genes_from_file(genes_filename, 'gene')
+    genes = genes_parser.get_genes_from_file(genes_filename, 'gene')
     if len(genes) == 0:
         print '  Warning: no genes loaded.'
     else:   
@@ -59,7 +59,7 @@ def do(reference, filenames, output_dir, nucmer_dir, genes_filename, operons_fil
         genes = [[x, y, 0] for x, y in genes]   # the third parameter is: 0 - gene isn't found, 1 - gene is found, 2 - part of gene is found
 
     # reading operons
-    operons = gffparser.get_genes_from_file(operons_filename, 'operon')
+    operons = genes_parser.get_genes_from_file(operons_filename, 'operon')
     if len(operons) == 0:
         print '  Warning: no operons loaded.'
     else:   

@@ -57,13 +57,11 @@ def get_genes_from_file(filename, keyword):
             for line in genes_file:
                 line = line.rstrip()
                 if line.startswith("Annotation"):
-                    print line
-                    m = re.match(r'Annotation: (?P<id>\S+) \((?P<start>\d+)\.\.(?P<end>\d+), \S+\)', line)
-                    s = m.group('start')
-                    e = m.group('end')
-                    genes.append([min(s, e), max(s, e)])
-
-
+                    m = re.match(r'Annotation: (?P<id>\S+) \((?P<start>\d+)\.\.(?P<end>\d+)\)', line)
+                    if not m:
+                        m = re.match(r'Annotation: (?P<id>\S+) \((?P<end>\d+)\.\.(?P<start>\d+), complement\)', line)
+                    if m:
+                        genes.append([m.group('start'), m.group('end')])
 
     elif ext.startswith('.gff'):
         # parsing GFF

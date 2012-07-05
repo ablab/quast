@@ -26,4 +26,4 @@ tar -pczf $ARCHIVE_NAME quast
 cd ..
 mv release/$ARCHIVE_NAME .
 rm -rf release
-echo "QUAST archive created: $ARCHIVE_NAME"
+echo "Archive created: $ARCHIVE_NAME"

@@ -8,3 +8,6 @@ libs/*.pyc
 libs/.DS_Store
 .idea/*
 .DS_Store
+
+gene_result.txt
+test_regex.py

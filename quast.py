@@ -137,6 +137,13 @@ def main(args, lib_dir=os.path.join(os.path.abspath(sys.path[0]), 'libs')):
     ### CONFIG & CHECKS
     ########################################################################
 
+    if os.path.isdir(output_dir):  # in case of starting two instances of QUAST in the same second
+        i = 2
+        base_dir_name = output_dir
+        while os.path.isdir(output_dir):
+            output_dir = base_dir_name + '__' + str(i)
+            i += 1
+
     if not os.path.isdir(output_dir):
         os.makedirs(output_dir)
 

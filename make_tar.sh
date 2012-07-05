@@ -1,10 +1,17 @@
 #!/bin/bash
+
+VERSION=`cat VERSION`
+NOW=$(date +"%d.%m.%Y_%H:%M")
+ARCHIVE_NAME=quast-$VERSION.tar.gz
+
 mkdir release
 mkdir release/quast
 cp -r libs            release/quast
 cp -r test_data       release/quast
 cp quast.py           release/quast
 cp manual.html        release/quast
+cp VERSION            release/quast
+echo Build $NOW    >> release/quast/VERSION
 sed "s/RELEASE_MODE=False/RELEASE_MODE=True/" quast.py > release/quast/quast.py
 
 make -C release/quast/libs/MUMmer3.23-osx/   clean >/dev/null 2>/dev/null
@@ -15,8 +22,8 @@ rm -rf	release/quast/libs/mauve
 rm -rf	release/quast/libs/genemark_suite_linux_64
 
 cd release
-tar -pczf quast.tar.gz quast
+tar -pczf $ARCHIVE_NAME quast
 cd ..
-mv release/quast.tar.gz .
+mv release/$ARCHIVE_NAME .
 rm -rf release
-echo "QUAST archive created: quast.tar.gz"
+echo "QUAST archive created: $ARCHIVE_NAME"

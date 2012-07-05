@@ -110,7 +110,7 @@ def parse_ncbi(file):
             if not start or not end:
                 raise ParseException('NCBI format parsing error: provide start and end for gene ' + gene.number + '. ' + gene.name + '.')
 
-            genes.append([start, end])
+            genes.append([start, end, seqname, id])
 
         else:
             raise ParseException("NCBI format parsing error")
@@ -131,9 +131,10 @@ def parse_txt(file):
         if m:
             id = m.group('id')
             seqname = m.group('seqname')
+            number = m.group('number')
             start = m.group('start')
             end = m.group('end')
-            genes.append([min(start, end), max(start, end)])
+            genes.append([min(start, end), max(start, end), seqname, number])
 
     return genes
 
@@ -169,7 +170,7 @@ def parse_dff(file, feature):
                 id = number
             number += 1
 
-            genes.append([start, end])
+            genes.append([start, end, seqname, id])
 
     return genes
 

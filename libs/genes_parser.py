@@ -8,10 +8,10 @@ import os
 import re
 
 
-#txt_pattern = re.compile(r'gi\|(?P<id>\d+)\|\w+\|(?P<seqname>\S+)\|\s+(?P<number>\d+)\s+(?P<start>\d+)\s+(?P<end>\d+)', re.I)   # not necessary starts with "gi"
-txt_pattern = re.compile(r'(?P<seqname>\S+)\s+(?P<id>\d+)\s+(?P<start>\d+)\s+(?P<end>\d+)', re.I)
-ncbi_start_pattern = re.compile(r'(?P<number>\d+)\.\s*(?P<name>\S+)\s*$', re.I)
+txt_pattern_gi = re.compile(r'gi\|(?P<id>\d+)\|\w+\|(?P<seqname>\S+)\|\s+(?P<number>\d+)\s+(?P<start>\d+)\s+(?P<end>\d+)', re.I)
+txt_pattern = re.compile(r'(?P<seqname>\S+)\s+(?P<number>\d+)\s+(?P<start>\d+)\s+(?P<end>\d+)', re.I)
 gff_pattern = re.compile(r'(?P<seqname>\S+)\s+\S+\s+(?P<feature>\S+)\s+(?P<start>\d+)\s+(?P<end>\d+)\s+\S+\s+(?P<strand>[\+\-]?)\s+\S+\s+(?P<attributes>\S+)', re.I)
+ncbi_start_pattern = re.compile(r'(?P<number>\d+)\.\s*(?P<name>\S+)\s*$', re.I)
 
 def get_genes_from_file(filename, feature):
     if not filename or not os.path.exists(filename):
@@ -27,7 +27,7 @@ def get_genes_from_file(filename, feature):
 
     genes_file.seek(0)
 
-    if txt_pattern.match(line):
+    if txt_pattern_gi.match(line) or txt_pattern.match(line):
         genes = parse_txt(genes_file)
 
     elif gff_pattern.match(line):
@@ -49,9 +49,9 @@ def get_genes_from_file(filename, feature):
     return genes
 
 
-# parsing NCBI format
+# Parsing NCBI format
 
-# EXAMPLE:
+# Example:
 #   1. Phep_1459
 #   heparinase II/III family protein[Pedobacter heparinus DSM 2366]
 #   Other Aliases: Phep_1459
@@ -73,7 +73,7 @@ def parse_ncbi(file):
 
         m = ncbi_start_pattern.match(line.rstrip())
         if m:
-            gene = Gene(number=int(m.group('number')), name=m.group('name'))
+            gene = Gene(number = int(m.group('number')), name = m.group('name'))
 
             another_gene_info_lines = []
 
@@ -112,18 +112,20 @@ def parse_ncbi(file):
     return genes
 
 
-# parsing txt format
+# Parsing txt format
 
-# EXAMPLE:
-#   gi|48994873|gb|U00096.2|	1	4263805	4264884
-#   gi|48994873|gb|U00096.2|	2	795085	795774
+# Example:
+#   U00096.2    1	4263805	4264884
+#   U00096.2	2	795085	795774
 def parse_txt(file):
     genes = []
 
     for line in file:
-        m = txt_pattern.match(line)
+        m = txt_pattern_gi.match(line)
+        if not m:
+            m = txt_pattern.match(line)
         if m:
-            gene = Gene(id=m.group('id'), seqname=m.group('seqname'))
+            gene = Gene(number = int(m.group('number')), seqname = m.group('seqname'))
             s = int(m.group('start'))
             e = int(m.group('end'))
             gene.start = min(s, e)
@@ -133,9 +135,9 @@ def parse_txt(file):
     return genes
 
 
-# parsing GFF
+# Parsing GFF
 
-# EXAMPLE:
+# Example:
 #   ##gff-version   3
 #   ##seqname-region   ctg123 1 1497228
 #   ctg123 . gene            1000  9000  .  +  .  ID=gene00001;Name=EDEN
@@ -153,11 +155,12 @@ def parse_gff(file, feature):
             attributes = m.group('attributes').split(';')
             for attr in attributes:
                 key, val = attr.split('=')
-                if key == 'ID':
+                if key.lower() == 'id':
                     gene.id = val
+                if key.lower() == 'name':
+                    gene.name = val
 
-            if gene.id is None:
-                gene.id = number
+            gene.number = number
             number += 1
 
             genes.append(gene)
@@ -181,3 +184,4 @@ class Gene():
         self.end = end
         self.number = number
         self.name = name
+

@@ -10,7 +10,7 @@ import re
 
 
 
-txt_pattern = re.compile(r'gi\|(?P<id>\d+)\|\w+\|(?P<seqname>\S+)\|?\s+(?P<number>\d+)\s+(?P<start>\d+)\s+(?P<end>\d+)', re.I)
+txt_pattern = re.compile(r'gi\|(?P<id>\d+)\|\w+\|(?P<seqname>\S+)\|\s+(?P<number>\d+)\s+(?P<start>\d+)\s+(?P<end>\d+)', re.I)
 ncbi_start_pattern = re.compile(r'(?P<number>\d+)\.\s*(?P<name>\S+)\s*$', re.I)
 dff_pattern = re.compile(r'(?P<seqname>\S+)\s+\S+\s+(?P<feature>\S+)\s+(?P<start>\d+)\s+(?P<end>\d+)\s+\S+\s+(?P<strand>[\+\-]?)\s+\S+\s+(?P<attributes>\S+)', re.I)
 
@@ -20,7 +20,7 @@ def get_genes_from_file(filename, feature):
         return []
 
     genes_file = open(filename, 'r')
-    genes = []
+    genes = None
 
     line = genes_file.readline().rstrip()
     while line == '' or line.startswith('##'):
@@ -74,12 +74,7 @@ def parse_ncbi(file):
 
         m = ncbi_start_pattern.match(line.rstrip())
         if m:
-            number = m.group('number')
-            name = m.group('name')
-            seqname = None
-            start = None
-            end = None
-            id = None
+            gene = Gene(number=int(m.group('number')), name=m.group('name'))
 
             another_gene_info_lines = []
 
@@ -93,24 +88,24 @@ def parse_ncbi(file):
                 if info_line.startswith('Annotation:'):
                     m = re.match(annotation_pattern, info_line)
                     if m:
-                        seqname = m.group('seqname')
-                        start = m.group('start')
-                        end = m.group('end')
+                        gene.seqname = m.group('seqname')
+                        gene.start = int(m.group('start'))
+                        gene.end = int(m.group('end'))
                     else:
                         raise ParseException('NCBI format parsing error: wrong annotation for gene ' + gene.number + '. ' + gene.name + '.')
 
                 if info_line.startswith('ID:'):
                     m = re.match(id_pattern, info_line)
                     if m:
-                        id = m.group('id')
+                        gene.id = m.group('id')
                     else:
                         raise ParseException('NCBI format parsing error: wrong ID for gene ' + gene.number + '. ' + gene.name + '.')
 
 
-            if not start or not end:
+            if not (gene.start is not None and gene.end is not None):
                 raise ParseException('NCBI format parsing error: provide start and end for gene ' + gene.number + '. ' + gene.name + '.')
 
-            genes.append([start, end, seqname, id])
+            genes.append(gene)
 
         else:
             raise ParseException("NCBI format parsing error")
@@ -129,12 +124,12 @@ def parse_txt(file):
     for line in file:
         m = txt_pattern.match(line)
         if m:
-            id = m.group('id')
-            seqname = m.group('seqname')
-            number = m.group('number')
-            start = m.group('start')
-            end = m.group('end')
-            genes.append([min(start, end), max(start, end), seqname, number])
+            gene = Gene(id=m.group('number'), seqname=m.group('seqname'))
+            s = int(m.group('start'))
+            e = int(m.group('end'))
+            gene.start = min(s, e)
+            gene.end = max(s, e)
+            genes.append(gene)
 
     return genes
 
@@ -154,23 +149,19 @@ def parse_dff(file, feature):
     for line in file:
         m = dff_pattern.match(line)
         if m and m.group('feature') == feature:
-            seqname = m.group('seqname')
-            start = m.group('start')
-            end = m.group('end')
-            attributes = m.group('attributes')
-            id = None
+            gene = Gene(seqname = m.group('seqname'), start = int(m.group('start')), end = int(m.group('end')))
 
-            attrs = attributes.split(';')
-            for attr in attrs:
-                attrpair = attr.split('=')
-                if attrpair[0] == 'ID':
-                    id = attrpair[1]
+            attributes = m.group('attributes').split(';')
+            for attr in attributes:
+                key, val = attr.split('=')
+                if key == 'ID':
+                    gene.id = val
 
-            if id is None:
-                id = number
+            if gene.id is None:
+                gene.id = number
             number += 1
 
-            genes.append([start, end, seqname, id])
+            genes.append(gene)
 
     return genes
 
@@ -182,3 +173,12 @@ class ParseException(Exception):
         self.value = value
     def __str__(self):
         return repr(self.value)
+
+class Gene():
+    def __init__(self, id=None, seqname=None, start=None, end=None, number=None, name=None):
+        self.id = id
+        self.seqname = seqname
+        self.start = start
+        self.end = end
+        self.number = number
+        self.name = name

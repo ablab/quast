@@ -166,7 +166,7 @@ def Nx_plot(filenames, lengths, plot_filename, title='Nx', reference_lengths=[],
 
 
 # common routine for genes and operons cumulative plots
-def genes_operons_plot(filenames, files_contigs, genes, plot_filename, title, all_pdf=None):
+def genes_operons_plot(filenames, files_contigs, genes, found, plot_filename, title, all_pdf=None):
     if matplotlib_error:
         return
 
@@ -180,8 +180,8 @@ def genes_operons_plot(filenames, files_contigs, genes, plot_filename, title, al
     for filename in filenames:    
         # calculate values for the plot
         contigs = files_contigs[filename]    # [ [contig_blocks] ] 
-        for gene in genes:
-            gene[2] = 0  # mark all genes as 'not found'
+        for i, gene in enumerate(genes):
+            found[i] = 0  # mark all genes as 'not found'
 
         x_vals = [0]
         y_vals = [0]
@@ -189,13 +189,13 @@ def genes_operons_plot(filenames, files_contigs, genes, plot_filename, title, al
         total_full = 0        
         for aligned_blocks in contigs:
             contig_no += 1    
-            for gene in genes:
-                if gene[2] == 0:
+            for i, gene in enumerate(genes):
+                if found[i] == 0:
                     for block in aligned_blocks:
-                        if gene[1] <= block[0] or block[1] <= gene[0]:   # [0] - start, [1] - end
+                        if gene.end <= block[0] or block[1] <= gene.start:   # [0] - start, [1] - end
                             continue
-                        elif (block[0] <= gene[0] and gene[1] <= block[1]):                            
-                            gene[2] = 1
+                        elif block[0] <= gene.start and gene.end <= block[1]:
+                            found[i] = 1
                             total_full += 1
                             break
             x_vals.append(contig_no)

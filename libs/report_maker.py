@@ -8,20 +8,29 @@ import os
 import sys
 import subprocess
 import glob
-   
+import json
+
+
+def save_json(report_dict):
+    pass
+
+
 ### main function ###
-def do(report_dict, total_report_horizontal, total_report_vertical, min_contig=0, output_dir=None):
+def do(report_dict, report_horizontal_name, report_vertical_name, min_contig=0, output_dir=None):
 
     # suffixes for files with transposed and normal report tables    
-    table_ext = '.txt'
-    tab_ext   = '.tsv'
+    txt_ext = '.txt'
+    tsv_ext = '.tsv'
+    jsn_ext = '.json'
 
     print 'Summarizing...'
     print '  Creating total report...'
-    total_report = total_report_horizontal + table_ext
-    total_report_tab = total_report_horizontal + tab_ext
-    tr_file = open(total_report, 'w')
-    tab_file = open(total_report_tab, 'w')
+    report_txt_filename = report_horizontal_name + txt_ext
+    report_tsv_filename = report_horizontal_name + tsv_ext
+    report_jsn_filename = report_horizontal_name + jsn_ext
+    txt_file = open(report_txt_filename, 'w')
+    tsv_file = open(report_tsv_filename, 'w')
+    jsn_file = open(report_jsn_filename, 'w')
 
     # calculate columns widthes
     col_widthes = [0 for i in range(len(report_dict['header']))]
@@ -32,15 +41,15 @@ def do(report_dict, total_report_horizontal, total_report_vertical, min_contig=0
 
     # to avoid confusions:
     if min_contig:
-        tr_file.write('Only contigs of length >= ' + str(min_contig) + ' were taken into account\n\n');
+        txt_file.write('Only contigs of length >= ' + str(min_contig) + ' were taken into account\n\n');
     # header
     for id, value in enumerate(report_dict['header']):
-        tr_file.write( ' ' + str(value).center(col_widthes[id]) + ' |')
+        txt_file.write(' ' + str(value).center(col_widthes[id]) + ' |')
         if id:
-            tab_file.write('\t')
-        tab_file.write(value)
-    tr_file.write('\n')
-    tab_file.write('\n')
+            tsv_file.write('\t')
+        tsv_file.write(value)
+    txt_file.write('\n')
+    tsv_file.write('\n')
 
     # metrics values
     for contig_name in sorted(report_dict.keys()):    
@@ -48,23 +57,25 @@ def do(report_dict, total_report_horizontal, total_report_vertical, min_contig=0
             continue
         for id, value in enumerate(report_dict[contig_name]):
             if id:
-                tr_file.write( ' ' + str(value).rjust(col_widthes[id]) + ' |')
-                tab_file.write('\t')
+                txt_file.write( ' ' + str(value).rjust(col_widthes[id]) + ' |')
+                tsv_file.write('\t')
             else:
-                tr_file.write( ' ' + str(value).ljust(col_widthes[id]) + ' |')
-            tab_file.write(str(value))
-        tr_file.write('\n')
-        tab_file.write('\n')
+                txt_file.write( ' ' + str(value).ljust(col_widthes[id]) + ' |')
+            tsv_file.write(str(value))
+        txt_file.write('\n')
+        tsv_file.write('\n')
 
-    tr_file.close()
-    tab_file.close()
-    print '    Saved to', total_report, 'and', total_report_tab
+    txt_file.close()
+    tsv_file.close()
+    print '    Saved to', report_txt_filename, 'and', report_tsv_filename
+
+
 
     print '  Transposed version of total report...'   
-    total_report = total_report_vertical + table_ext
-    total_report_tab = total_report_vertical + tab_ext
-    tr_file = open(total_report, 'w')
-    tab_file = open(total_report_tab, 'w') 
+    report_txt_filename = report_vertical_name + txt_ext
+    report_tsv_filename = report_vertical_name + tsv_ext
+    txt_file = open(report_txt_filename, 'w')
+    tsv_file = open(report_tsv_filename, 'w')
 
     # calculate columns widthes
     col_widthes = [0 for i in range(len(report_dict.keys()))] 
@@ -78,25 +89,26 @@ def do(report_dict, total_report_horizontal, total_report_vertical, min_contig=0
 
     # to avoid confusions:
     if min_contig:
-        tr_file.write('Only contigs of length >= ' + str(min_contig) + ' were taken into account\n\n');
+        txt_file.write('Only contigs of length >= ' + str(min_contig) + ' were taken into account\n\n');
 
     # filling
     for i in range(len(report_dict['header'])):
         value = report_dict['header'][i]
-        tr_file.write( ' ' + str(value).ljust(col_widthes[header_id]) + ' ')
-        tab_file.write(str(value) + '\t')
+        txt_file.write( ' ' + str(value).ljust(col_widthes[header_id]) + ' ')
+        tsv_file.write(str(value) + '\t')
         for id, contig_name in enumerate(sorted(report_dict.iterkeys())):
             if contig_name == 'header':
                 continue
             value = report_dict[contig_name][i]
-            tr_file.write( ' ' + str(value).ljust(col_widthes[id]) + ' ')
-            tab_file.write(str(value) + '\t')
-        tr_file.write('\n')
-        tab_file.write('\n')
+            txt_file.write( ' ' + str(value).ljust(col_widthes[id]) + ' ')
+            tsv_file.write(str(value) + '\t')
+        txt_file.write('\n')
+        tsv_file.write('\n')
             
-    tr_file.close()
-    tab_file.close()
-    print '    Saved to', total_report, 'and', total_report_tab
+    txt_file.close()
+    tsv_file.close()
+    print '    Saved to', report_txt_filename, 'and', report_tsv_filename
+
 
     '''
     if all_pdf != None:

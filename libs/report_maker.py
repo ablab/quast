@@ -109,9 +109,10 @@ def do(report_dict, report_horizontal_name, report_vertical_name, min_contig=0, 
     print '  Saving to JSON...'
     jsn_filename = report_vertical_name + '.json'
     jsn_file = open(jsn_filename, 'w')
-    json.dump(report_dict, jsn_file)
-    print '    Saved to', jsn_filename
 
+    results = [row for key, row in report_dict.items() if key != 'header']
+    json.dump({'header' : report_dict['header'], 'results' : results }, jsn_file)
+    print '    Saved to', jsn_filename
 
     '''
     if all_pdf != None:

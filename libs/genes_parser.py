@@ -10,9 +10,10 @@ import re
 
 
 
-txt_pattern = re.compile(r'gi\|(?P<id>\d+)\|\w+\|(?P<seqname>\S+)\|\s+(?P<number>\d+)\s+(?P<start>\d+)\s+(?P<end>\d+)', re.I)
-ncbi_start_pattern = re.compile(r'(?P<number>\d+)\.\s*(?P<name>\S+)\s*$', re.I)
+txt_pattern_gi = re.compile(r'gi\|(?P<id>\d+)\|\w+\|(?P<seqname>\S+)\|\s+(?P<number>\d+)\s+(?P<start>\d+)\s+(?P<end>\d+)', re.I)
+txt_pattern = re.compile(r'(?P<seqname>\S+)\s+(?P<number>\d+)\s+(?P<start>\d+)\s+(?P<end>\d+)', re.I)
 gff_pattern = re.compile(r'(?P<seqname>\S+)\s+\S+\s+(?P<feature>\S+)\s+(?P<start>\d+)\s+(?P<end>\d+)\s+\S+\s+(?P<strand>[\+\-]?)\s+\S+\s+(?P<attributes>\S+)', re.I)
+ncbi_start_pattern = re.compile(r'(?P<number>\d+)\.\s*(?P<name>\S+)\s*$', re.I)
 
 def get_genes_from_file(filename, feature):
     if not filename or not os.path.exists(filename):
@@ -28,7 +29,7 @@ def get_genes_from_file(filename, feature):
 
     genes_file.seek(0)
 
-    if txt_pattern.match(line):
+    if txt_pattern_gi.match(line) or txt_pattern.match(line):
         genes = parse_txt(genes_file)
 
     elif gff_pattern.match(line):
@@ -74,7 +75,7 @@ def parse_ncbi(file):
 
         m = ncbi_start_pattern.match(line.rstrip())
         if m:
-            gene = Gene(number=int(m.group('number')), name=m.group('name'))
+            gene = Gene(number = int(m.group('number')), name = m.group('name'))
 
             another_gene_info_lines = []
 
@@ -116,15 +117,17 @@ def parse_ncbi(file):
 # parsing txt format
 
 # EXAMPLE:
-#   gi|48994873|gb|U00096.2|	1	4263805	4264884
-#   gi|48994873|gb|U00096.2|	2	795085	795774
+#   U00096.2	1	4263805	4264884
+#   U00096.2	2	795085	795774
 def parse_txt(file):
     genes = []
 
     for line in file:
-        m = txt_pattern.match(line)
+        m = txt_pattern_gi.match(line)
+        if not m:
+            m = txt_pattern.match(line)
         if m:
-            gene = Gene(id=m.group('number'), seqname=m.group('seqname'))
+            gene = Gene(number = int(m.group('number')), seqname = m.group('seqname'))
             s = int(m.group('start'))
             e = int(m.group('end'))
             gene.start = min(s, e)
@@ -154,11 +157,12 @@ def parse_gff(file, feature):
             attributes = m.group('attributes').split(';')
             for attr in attributes:
                 key, val = attr.split('=')
-                if key == 'ID':
+                if key.lower() == 'id':
                     gene.id = val
+                if key.lower() == 'name':
+                    gene.name = val
 
-            if gene.id is None:
-                gene.id = number
+            gene.number = number
             number += 1
 
             genes.append(gene)

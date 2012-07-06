@@ -18,19 +18,16 @@ def save_json(report_dict):
 ### main function ###
 def do(report_dict, report_horizontal_name, report_vertical_name, min_contig=0, output_dir=None):
 
-    # suffixes for files with transposed and normal report tables    
+    # suffixes for files with transposed and normal report tables
     txt_ext = '.txt'
     tsv_ext = '.tsv'
-    jsn_ext = '.json'
 
     print 'Summarizing...'
     print '  Creating total report...'
     report_txt_filename = report_horizontal_name + txt_ext
     report_tsv_filename = report_horizontal_name + tsv_ext
-    report_jsn_filename = report_horizontal_name + jsn_ext
     txt_file = open(report_txt_filename, 'w')
     tsv_file = open(report_tsv_filename, 'w')
-    jsn_file = open(report_jsn_filename, 'w')
 
     # calculate columns widthes
     col_widthes = [0 for i in range(len(report_dict['header']))]
@@ -70,7 +67,6 @@ def do(report_dict, report_horizontal_name, report_vertical_name, min_contig=0, 
     print '    Saved to', report_txt_filename, 'and', report_tsv_filename
 
 
-
     print '  Transposed version of total report...'   
     report_txt_filename = report_vertical_name + txt_ext
     report_tsv_filename = report_vertical_name + tsv_ext
@@ -108,6 +104,13 @@ def do(report_dict, report_horizontal_name, report_vertical_name, min_contig=0, 
     txt_file.close()
     tsv_file.close()
     print '    Saved to', report_txt_filename, 'and', report_tsv_filename
+
+
+    print '  Saving to JSON...'
+    jsn_filename = report_vertical_name + '.json'
+    jsn_file = open(jsn_filename, 'w')
+    json.dump(report_dict, jsn_file)
+    print '    Saved to', jsn_filename
 
 
     '''

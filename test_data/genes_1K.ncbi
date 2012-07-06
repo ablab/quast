@@ -1,0 +1,13 @@
+1. thrL
+thr operon leader peptide[Escherichia coli str. K-12 substr. MG1655]
+Other Aliases: b0001, ECK0001, JW4367
+Genomic context: Chromosome
+Annotation: NC_000913.2 (190..255)
+ID: 944742
+
+2. thrA
+fused aspartokinase I and homoserine dehydrogenase I[Escherichia coli str. K-12 substr. MG1655]
+Other Aliases: b0002, ECK0002, Hs, JW0001, thrA1, thrA2, thrD
+Genomic context: Chromosome
+Annotation: NC_000913.2 (337..2799)
+ID: 945803

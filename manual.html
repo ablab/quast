@@ -61,7 +61,7 @@ On Ubuntu it can be done by typing:
 <br><br>
     You can specify files with genes and operons annotations. This files should be either in GFF format 
 (<a href="http://www.sanger.ac.uk/resources/software/gff/spec.html">version 2</a> and <a href="http://www.sequenceontology.org/gff3.shtml">version 3</a> 
-are supported) or in plain TXT format with 4 tab-separated columns: 
+are supported), in <a href="http://www.ncbi.nlm.nih.gov/gene">NCBI genes text format</a> (you should select "Summary (text)" format in Display Settings) or in plain TXT format with 4 tab-separated columns: 
 <ul>
     <li>the chromosome name (it should match the exact string in the reference file), </li>
     <li>gene or operon id, </li>
@@ -71,7 +71,7 @@ are supported) or in plain TXT format with 4 tab-separated columns:
 The coordinates are 1-based and if <i>start postion</i> less than <i>end postion</i> than that gene or operon is on the positive strand, 
 otherwise it is on the negative strand.
 <br><br>
-You can find an example of a reference file, genes and operons annotations (both in TXT and GFF ver.2 formats) in your QUAST installation directory in <code>test_data</code> subdirectory.
+You can find examples of a reference file, genes and operons annotations (in TXT, NCBI and GFF ver.2 formats) in your QUAST installation directory in <code>test_data</code> subdirectory.
 These files correspond to the first 1000 bp of E. coli. Input reads and sample assemblies for this data set are also there.
 </p>
 

@@ -12,7 +12,7 @@ import re
 
 txt_pattern = re.compile(r'gi\|(?P<id>\d+)\|\w+\|(?P<seqname>\S+)\|\s+(?P<number>\d+)\s+(?P<start>\d+)\s+(?P<end>\d+)', re.I)
 ncbi_start_pattern = re.compile(r'(?P<number>\d+)\.\s*(?P<name>\S+)\s*$', re.I)
-dff_pattern = re.compile(r'(?P<seqname>\S+)\s+\S+\s+(?P<feature>\S+)\s+(?P<start>\d+)\s+(?P<end>\d+)\s+\S+\s+(?P<strand>[\+\-]?)\s+\S+\s+(?P<attributes>\S+)', re.I)
+gff_pattern = re.compile(r'(?P<seqname>\S+)\s+\S+\s+(?P<feature>\S+)\s+(?P<start>\d+)\s+(?P<end>\d+)\s+\S+\s+(?P<strand>[\+\-]?)\s+\S+\s+(?P<attributes>\S+)', re.I)
 
 def get_genes_from_file(filename, feature):
     if not filename or not os.path.exists(filename):
@@ -31,8 +31,8 @@ def get_genes_from_file(filename, feature):
     if txt_pattern.match(line):
         genes = parse_txt(genes_file)
 
-    elif dff_pattern.match(line):
-        genes = parse_dff(genes_file, feature)
+    elif gff_pattern.match(line):
+        genes = parse_gff(genes_file, feature)
 
     elif ncbi_start_pattern.match(line):
         try:
@@ -141,13 +141,13 @@ def parse_txt(file):
 #   ##seqname-region   ctg123 1 1497228
 #   ctg123 . gene            1000  9000  .  +  .  ID=gene00001;Name=EDEN
 #   ctg123 . TF_binding_site 1000  1012  .  +  .  ID=tfbs00001;Parent=gene00001
-def parse_dff(file, feature):
+def parse_gff(file, feature):
     genes = []
 
     number = 0
 
     for line in file:
-        m = dff_pattern.match(line)
+        m = gff_pattern.match(line)
         if m and m.group('feature') == feature:
             gene = Gene(seqname = m.group('seqname'), start = int(m.group('start')), end = int(m.group('end')))
 

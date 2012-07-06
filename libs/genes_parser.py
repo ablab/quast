@@ -4,13 +4,12 @@
 # See file LICENSE for details.
 ############################################################################
 
-
 import os
 import re
 
 
-
-txt_pattern = re.compile(r'gi\|(?P<id>\d+)\|\w+\|(?P<seqname>\S+)\|\s+(?P<number>\d+)\s+(?P<start>\d+)\s+(?P<end>\d+)', re.I)
+#txt_pattern = re.compile(r'gi\|(?P<id>\d+)\|\w+\|(?P<seqname>\S+)\|\s+(?P<number>\d+)\s+(?P<start>\d+)\s+(?P<end>\d+)', re.I)   # not necessary starts with "gi"
+txt_pattern = re.compile(r'(?P<seqname>\S+)\s+(?P<id>\d+)\s+(?P<start>\d+)\s+(?P<end>\d+)', re.I)
 ncbi_start_pattern = re.compile(r'(?P<number>\d+)\.\s*(?P<name>\S+)\s*$', re.I)
 gff_pattern = re.compile(r'(?P<seqname>\S+)\s+\S+\s+(?P<feature>\S+)\s+(?P<start>\d+)\s+(?P<end>\d+)\s+\S+\s+(?P<strand>[\+\-]?)\s+\S+\s+(?P<attributes>\S+)', re.I)
 
@@ -43,7 +42,7 @@ def get_genes_from_file(filename, feature):
             genes = []
 
     else:
-        print '  Warning! Incorrect format of ' + format + '\'s file! Specify file in txt, GFF or NCBI format!'
+        print '  Warning! Incorrect format of ' + feature + '\'s file! Specify file in plaint TXT, GFF or NCBI format!'
         print '    ' + filename + ' skipped'
 
     genes_file.close()
@@ -124,7 +123,7 @@ def parse_txt(file):
     for line in file:
         m = txt_pattern.match(line)
         if m:
-            gene = Gene(id=m.group('number'), seqname=m.group('seqname'))
+            gene = Gene(id=m.group('id'), seqname=m.group('seqname'))
             s = int(m.group('start'))
             e = int(m.group('end'))
             gene.start = min(s, e)

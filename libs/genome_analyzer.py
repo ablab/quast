@@ -56,7 +56,7 @@ def do(reference, filenames, output_dir, nucmer_dir, genes_filename, operons_fil
     else:   
         print '  Loaded ' + str(len(genes)) + ' genes'
         res_file.write('genes: ' + str(len(genes)) + '\n')   
-        genes = [[x, y, 0] for x, y in genes]   # the third parameter is: 0 - gene isn't found, 1 - gene is found, 2 - part of gene is found
+        genes = [[start, end, seq, id, 0] for start, end, seq, id in genes] # the third parameter is: 0 - gene isn't found, 1 - gene is found, 2 - part of gene is found
 
     # reading operons
     operons = genes_parser.get_genes_from_file(operons_filename, 'operon')
@@ -64,8 +64,8 @@ def do(reference, filenames, output_dir, nucmer_dir, genes_filename, operons_fil
         print '  Warning: no operons loaded.'
     else:   
         print '  Loaded ' + str(len(operons)) + ' operons'
-        res_file.write('operons: ' + str(len(operons)) + '\n')   
-        operons = [[x, y, 0] for x, y in operons]  # the third parameter is: 0 - gene isn't found, 1 - gene is found, 2 - part of gene is found
+        res_file.write('operons: ' + str(len(operons)) + '\n')
+        operons = [[start, end, seq, id, 0] for start, end, seq, id in operons] # the third parameter is: 0 - gene isn't found, 1 - gene is found, 2 - part of gene is found
 
     # header
     res_file.write('\n\n')
@@ -191,19 +191,19 @@ def do(reference, filenames, output_dir, nucmer_dir, genes_filename, operons_fil
         founded_genes_filename = os.path.join(output_dir, os.path.basename(filename) + '_genes.txt')
         founded_genes_file = open(founded_genes_filename, 'w')
         for id, gene in enumerate(genes):
-            gene[2] = 0
+            gene[4] = 0
             for block in aligned_blocks:
                 if gene[1] <= block[0] or block[1] <= gene[0]:   # [0] - start, [1] - end
                     continue
                 elif (block[0] <= gene[0] and gene[1] <= block[1]):
-                    if gene[2] == 2: # already found as partial gene
+                    if gene[4] == 2: # already found as partial gene
                         total_partial -= 1
-                    gene[2] = 1
+                    gene[4] = 1
                     total_full += 1
                     founded_genes_file.write(str(id + 1) + "\t" + str(gene[0]) + "\t" + str(gene[1]) + "\n")
                     break
-                elif gene[2] == 0 and min(gene[1], block[1]) - max(gene[0], block[0]) >= min_overlap:
-                    gene[2] = 2
+                elif gene[4] == 0 and min(gene[1], block[1]) - max(gene[0], block[0]) >= min_overlap:
+                    gene[4] = 2
                     total_partial += 1        
         
         res_file.write(' %-10s| %-10s|' % (str(total_full), str(total_partial)))
@@ -220,19 +220,19 @@ def do(reference, filenames, output_dir, nucmer_dir, genes_filename, operons_fil
         founded_operons_filename = os.path.join(output_dir, os.path.basename(filename) + '_operons.txt')
         founded_operons_file = open(founded_operons_filename, 'w')        
         for id, operon in enumerate(operons):  
-            operon[2] = 0              
+            operon[4] = 0
             for block in aligned_blocks:
                 if operon[1] <= block[0] or block[1] <= operon[0]:   # [0] - start, [1] - end
                     continue
-                elif (block[0] <= operon[0] and operon[1] <= block[1]):
-                    if operon[2] == 2: # already found as partial gene
+                elif block[0] <= operon[0] and operon[1] <= block[1]:
+                    if operon[4] == 2: # already found as partial gene
                         total_partial -= 1
-                    operon[2] = 1
+                    operon[4] = 1
                     total_full += 1
                     founded_operons_file.write(str(id + 1) + "\t" + str(operon[0]) + "\t" + str(operon[1]) + "\n")
                     break
-                elif operon[2] == 0 and min(operon[1], block[1]) - max(operon[0], block[0]) >= min_overlap:
-                    operon[2] = 2
+                elif operon[4] == 0 and min(operon[1], block[1]) - max(operon[0], block[0]) >= min_overlap:
+                    operon[4] = 2
                     total_partial += 1        
         
         res_file.write(' %-10s| %-10s|' % (str(total_full), str(total_partial)))

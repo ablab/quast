@@ -6,11 +6,12 @@
 
 import datetime
 import json
+import os
 
 dir = ''
 
 total_report_filename = '/report.json'
-lengths_filename      = '/lengths.json'
+contigs_filename      = '/contigs.json'
 
 def save_total_report(report_dict):
     json_file = open(dir + total_report_filename, 'w')
@@ -27,12 +28,11 @@ def save_total_report(report_dict):
     #                          'hour' : t.hour, 'minute' : t.minute, 'second' : t.second },
     #               'header' : report_dict['header'], 'results' : results }, jsn_file)
 
-
-def save_lengths(filenames, lists_of_lengths):
-    json_file = open(dir + lengths_filename, 'w')
+def save_contigs(filenames, lists_of_lengths):
+    json_file = open(dir + contigs_filename, 'w')
 
     lists_of_lengths = [sorted(list, reverse=True) for list in lists_of_lengths]
 
-    json.dump({'filenames' : filenames, 'lists_of_lengths' : lists_of_lengths}, json_file)
+    json.dump({'filenames' : [os.path.basename(fn) for fn in filenames], 'lists_of_lengths' : lists_of_lengths}, json_file)
 
     json_file.close()

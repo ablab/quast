@@ -4,22 +4,22 @@ from django.shortcuts import render_to_response
 from django.utils.encoding import smart_str
 
 report_fn  = '../quast_results_archive_json/latest/report.json'
-lengths_fn = '../quast_results_archive_json/latest/lengths.json'
+contigs_fn = '../quast_results_archive_json/latest/contigs.json'
 
-def latest_report(request):
+def latestreport(request):
     try:
         report = open(report_fn).read()
     except IOError:
         raise Http404
 
     try:
-        lengths = open(lengths_fn).read()
+        contigs = open(contigs_fn).read()
     except IOError:
         raise Http404
 
     return render_to_response('latest-report.html', {
         'report'  : report,
-        'lengths' : lengths
+        'contigs' : contigs
     })
 
 #static_path = 'quality_app/static/'

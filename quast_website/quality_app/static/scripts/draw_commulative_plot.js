@@ -6,20 +6,32 @@
  * To change this template use File | Settings | File Templates.
  */
 
-function draw_commulative_plot() {
-    var code = JSON.parse($('#lengths-json').html());
-    var lengths = code.lists_of_lengths[0];
-    var size = lengths.length;
+function draw_commulative_plot(filenames, lists_of_lengths, placeholder) {
 
-    var data = new Array(size);
-    var y = 0;
-    for (var i = 0; i < size; i++) {
-        y += lengths[i];
-        data[i] = [i+1, y];
+    var plotsN = lists_of_lengths.length;
+    var datas = new Array(plotsN);
+
+    var maxContigNumber = 0;
+
+    for (var i = 0; i < plotsN; i++) {
+        lengths = lists_of_lengths[i];
+        var size = lengths.length;
+
+        datas[i] = { data: new Array(size), label: filenames[i] };
+
+        var y = 0;
+        for (var j = 0; j < size; j++) {
+            y += lengths[j];
+            datas[i].data[j] = [j+1, y];
+        }
+
+        if (size > maxContigNumber) {
+            maxContigNumber = size;
+        }
     }
 
-    $.plot($('#commulative-plot-placeholder'),
-        [ { data: data, } ],
+    $.plot(placeholder,
+        datas,
         {
             shadowSize: 0,
             grid: {
@@ -27,6 +39,8 @@ function draw_commulative_plot() {
                 color: 'CCC',
             },
             yaxis: {
+                labelWidth: 80,
+                reserveSpace: true,
                 tickFormatter: function (val, axis) {
                     if (val > 1000000) {
                         return (val / 1000000).toFixed(1) + " Mbp";
@@ -39,7 +53,7 @@ function draw_commulative_plot() {
             },
             xaxis: {
                 tickFormatter: function (val, axis) {
-                    if (typeof axis.tickSize == 'number' && val > data[size-1][0] - axis.tickSize) {
+                    if (typeof axis.tickSize == 'number' && val > maxContigNumber - axis.tickSize) {
                         return "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" + val + "'th&nbsp;contig";
                     }
                     return val;

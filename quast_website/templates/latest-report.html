@@ -1,20 +1,28 @@
 {% extends "base.html" %}
 
-{% block title %}<span id='title'></span>{% endblock %}
+{% block title %}Latest report{% endblock %}
 
 {% block latestreport-menu-li-class %}current{% endblock %}
 
 {% block extra_head %}
     <script type="text/javascript">
         $(document).ready(function() {
+
             build_total_report();
-            draw_commulative_plot();
+
+            var contigs = JSON.parse($('#contigs-json').html());
+
+            draw_commulative_plot(contigs.filenames, contigs.lists_of_lengths,
+                    $('#commulative-plot-placeholder'));
+
+            draw_nx_plot(contigs.filenames, contigs.lists_of_lengths, 'Nx', null,
+                    $('#nx-plot-placeholder'));
         });
     </script>
 
     <style>
         #header {
-
+            margin-bottom: 20px;
         }
         #report * {
             font-size: 1em;
@@ -38,9 +46,8 @@
         .plots {
             float: left;
             margin-left: 100px;
-            margin-top: 6px;
         }
-        #commulative-plot-placeholder {
+        .plots > div {
             width: 500px;
             height: 400px;
         }
@@ -49,14 +56,26 @@
 
 {% block content %}
     <div id='header'>
-        <h1>Latest report</h1>
+        <h1 style='margin-bottom: 5px;'>Latest report</h1>
     </div>
 
     <div id='report'>
     </div>
 
     <div class='plots'>
+        <p style='
+            margin: 0 0 20px 83px;
+            font-weight: bold;'>
+            Commulative plot
+        </p>
         <div id='commulative-plot-placeholder'>
+        </div>
+        <p style='
+            margin: 50px 0 20px 83px;
+            font-weight: bold;'>
+            Nx plot
+        </p>
+        <div id='nx-plot-placeholder'>
         </div>
     </div>
 
@@ -64,8 +83,8 @@
         <div id='report-json'>
             {{ report }}
         </div>
-        <div id='lengths-json'>
-            {{ lengths }}
+        <div id='contigs-json'>
+            {{ contigs }}
         </div>
     </div>
 {% endblock %}

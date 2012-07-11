@@ -48,14 +48,14 @@ def cumulative_plot(filenames, lists_of_lengths, plot_filename, title, all_pdf=N
     matplotlib.pyplot.rc('font', **font)
     color_id = 0
 
-    for filename, lengths_list in itertools.izip(filenames, lists_of_lengths):
-        lengths_list.sort(reverse = True)
+    for filename, lenghts in itertools.izip(filenames, lists_of_lengths):
+        lenghts.sort(reverse = True)
         # calculate values for the plot
         vals_percent = []
         vals_length = []
         lcur = 0
         lind = 0
-        for l in lengths_list:
+        for l in lenghts:
             lcur += l
             lind += 1
             x = lind
@@ -103,7 +103,7 @@ def cumulative_plot(filenames, lists_of_lengths, plot_filename, title, all_pdf=N
     
 
 # common routine for Nx-plot and NGx-plot (and probably for others Nyx-plots in the future)    
-def Nx_plot(filenames, lengths, plot_filename, title='Nx', reference_lengths=[], all_pdf=None):
+def Nx_plot(filenames, lists_of_lengths, plot_filename, title='Nx', reference_lengths=[], all_pdf=None):
     if matplotlib_error:
         return
 
@@ -115,17 +115,17 @@ def Nx_plot(filenames, lengths, plot_filename, title='Nx', reference_lengths=[],
     color_id = 0
     x = 0
 
-    for id, (filename, lens) in enumerate(itertools.izip(filenames, lengths)):    
-        lens.sort(reverse = True)
+    for id, (filename, lengths) in enumerate(itertools.izip(filenames, lists_of_lengths)):
+        lengths.sort(reverse = True)
         # calculate values for the plot
         vals_Nx = [0.0]
-        vals_l = [lens[0]]
+        vals_l = [lengths[0]]
         lcur = 0        
         # if Nx-plot then we just use sum of contigs lengths, else use reference_length
-        lsum = sum(lens)
+        lsum = sum(lengths)
         if reference_lengths:
             lsum = reference_lengths[id]        
-        for l in lens:
+        for l in lengths:
             lcur += l
             x = lcur * 100.0 / lsum
             vals_Nx.append(vals_Nx[-1] + 1e-10) # eps

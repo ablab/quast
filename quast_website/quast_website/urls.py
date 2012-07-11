@@ -18,7 +18,7 @@ urlpatterns = patterns('',
     # url(r'^admin/', include(admin.site.urls)),
 
     url(r'^$',                              'quality_app.views.index'),
-    url(r'^latestreport/',                  'quality_app.views.latest_report'),
+    url(r'^latestreport/',                  'quality_app.views.latestreport'),
     url(r'^manual.html$',                   'quality_app.views.manual'),
 )
 

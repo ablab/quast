@@ -9,9 +9,9 @@
 function build_total_report() {
     var report = JSON.parse($('#report-json').html());
 
-    $('#header').append('<p class="date">' + report.date + '<br>Contigs file: ' + report.results[0][0] + '</p>');
+    $('#header').append('<span class="date">' + report.date + '. Contigs file: ' + report.results[0][0] + '</span>');
 
-    $('#title').append('Report of <p class="date">' + report.date + '<br>Contigs file: ' + report.results[0][0] + '</p>');
+    document.title = 'Report of ' + report.date;
 
     var table = '';
     table += '<table class=".report-table">';

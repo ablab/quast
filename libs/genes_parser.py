@@ -4,10 +4,8 @@
 # See file LICENSE for details.
 ############################################################################
 
-
 import os
 import re
-
 
 
 txt_pattern_gi = re.compile(r'gi\|(?P<id>\d+)\|\w+\|(?P<seqname>\S+)\|\s+(?P<number>\d+)\s+(?P<start>\d+)\s+(?P<end>\d+)', re.I)
@@ -44,16 +42,16 @@ def get_genes_from_file(filename, feature):
             genes = []
 
     else:
-        print '  Warning! Incorrect format of ' + format + '\'s file! Specify file in txt, GFF or NCBI format!'
+        print '  Warning! Incorrect format of ' + feature + '\'s file! Specify file in plaint TXT, GFF or NCBI format!'
         print '    ' + filename + ' skipped'
 
     genes_file.close()
     return genes
 
 
-# parsing NCBI format
+# Parsing NCBI format
 
-# EXAMPLE:
+# Example:
 #   1. Phep_1459
 #   heparinase II/III family protein[Pedobacter heparinus DSM 2366]
 #   Other Aliases: Phep_1459
@@ -114,10 +112,10 @@ def parse_ncbi(file):
     return genes
 
 
-# parsing txt format
+# Parsing txt format
 
-# EXAMPLE:
-#   U00096.2	1	4263805	4264884
+# Example:
+#   U00096.2    1	4263805	4264884
 #   U00096.2	2	795085	795774
 def parse_txt(file):
     genes = []
@@ -137,9 +135,9 @@ def parse_txt(file):
     return genes
 
 
-# parsing GFF
+# Parsing GFF
 
-# EXAMPLE:
+# Example:
 #   ##gff-version   3
 #   ##seqname-region   ctg123 1 1497228
 #   ctg123 . gene            1000  9000  .  +  .  ID=gene00001;Name=EDEN
@@ -186,3 +184,4 @@ class Gene():
         self.end = end
         self.number = number
         self.name = name
+

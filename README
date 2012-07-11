@@ -30,6 +30,7 @@ options:
     --acyclic, -a        the reference genome is acyclic
     --rc                 count reverse-complementary contigs as local misassemblies (not an Extensive ones)
     --min-contig=x       compute only contigs that are equal or larger (>=) than x. Default value is 0.
+    --save-json          indicates if needed to save the output in JSON format (for a website) needed
 
 NOTE: REFERENCE_FILE should precede CONTIGS_FILES, other parameters can be placed in any order.
 

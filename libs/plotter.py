@@ -37,7 +37,7 @@ with_grid = True
 with_title = True
 axes_fontsize = 'large' # axes labels and ticks values
 
-def cumulative_plot(filenames, lengths, plot_filename, title, all_pdf=None):
+def cumulative_plot(filenames, lists_of_lengths, plot_filename, title, all_pdf=None):
     if matplotlib_error:
         return
 
@@ -48,14 +48,14 @@ def cumulative_plot(filenames, lengths, plot_filename, title, all_pdf=None):
     matplotlib.pyplot.rc('font', **font)
     color_id = 0
 
-    for filename, lens in itertools.izip(filenames, lengths):
-        lens.sort(reverse = True)
+    for filename, lengths_list in itertools.izip(filenames, lists_of_lengths):
+        lengths_list.sort(reverse = True)
         # calculate values for the plot
         vals_percent = []
         vals_length = []
         lcur = 0
         lind = 0
-        for l in lens:
+        for l in lengths_list:
             lcur += l
             lind += 1
             x = lind
@@ -265,8 +265,8 @@ def histogram(filenames, values, plot_filename, title='', all_pdf=None, yaxis_ti
 
     #bars' params
     width = 0.3
-    interval = width / 3;
-    start_pos = interval / 2;
+    interval = width / 3
+    start_pos = interval / 2
 
     #import numpy
     #positions = numpy.arange(len(filenames))

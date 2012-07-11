@@ -77,7 +77,7 @@ def main(args, lib_dir=os.path.join(os.path.abspath(sys.path[0]), 'libs')):
     ######################    
 
     try:
-        options, contigs = getopt.gnu_getopt(args, qconfig.short_options,  qconfig.long_options)
+        options, contigs = getopt.gnu_getopt(args, qconfig.short_options, qconfig.long_options)
     except getopt.GetoptError, err:
         print >>sys.stderr, err
         print >>sys.stderr
@@ -119,6 +119,8 @@ def main(args, lib_dir=os.path.join(os.path.abspath(sys.path[0]), 'libs')):
             qconfig.with_genemark = True
         elif opt in ('-x', "--extra-report"):
             qconfig.extra_report = True
+        elif opt in ('--save-json'):
+            qconfig.save_json = True
         elif opt in ('-h', "--help"):
             usage()
             sys.exit(0)
@@ -153,6 +155,23 @@ def main(args, lib_dir=os.path.join(os.path.abspath(sys.path[0]), 'libs')):
             os.remove(latest_symlink)
         os.symlink(output_dir, latest_symlink)
 
+    # json output dir
+    if qconfig.save_json:
+        if os.path.isdir(qconfig.json_dir):  # in case of starting two instances of QUAST in the same second
+            i = 2
+            base_dir_name = qconfig.json_dir
+            while os.path.isdir(qconfig.json_dir):
+                qconfig.json_dir = base_dir_name + '__' + str(i)
+                i += 1
+
+        if not os.path.isdir(qconfig.json_dir):
+            os.makedirs(qconfig.json_dir)
+
+        latest_symlink = 'latest_json'
+        if os.path.islink(latest_symlink):
+            os.remove(latest_symlink)
+        os.symlink(qconfig.json_dir, latest_symlink)
+
     # Where log will be saved
     logfile = output_dir + '/quast.log'
 
@@ -173,6 +192,7 @@ def main(args, lib_dir=os.path.join(os.path.abspath(sys.path[0]), 'libs')):
 
     # Where Single Cell paper-like table will be saved
     extra_report_filename = output_dir + '/extra_report.txt'
+
 
     ########################################################################
 
@@ -289,7 +309,7 @@ def main(args, lib_dir=os.path.join(os.path.abspath(sys.path[0]), 'libs')):
             all_pdf = None
 
         ########################################################################	
-        ### BASIC STATS (and plots)
+        ### Stats and plots
         ########################################################################	
         import basic_stats
         cur_results_dict = basic_stats.do(qconfig.reference, contigs, output_dir + '/basic_stats', all_pdf)

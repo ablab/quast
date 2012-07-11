@@ -4,14 +4,11 @@
 # See file LICENSE for details.
 ############################################################################
 
-import json
-
-
-def save_json(report_dict):
-    pass
-
+import json_saver
+import qconfig
 
 ### main function ###
+
 def do(report_dict, report_horizontal_name, report_vertical_name, min_contig=0, output_dir=None):
 
     # suffixes for files with transposed and normal report tables
@@ -81,7 +78,7 @@ def do(report_dict, report_horizontal_name, report_vertical_name, min_contig=0, 
 
     # to avoid confusions:
     if min_contig:
-        txt_file.write('Only contigs of length >= ' + str(min_contig) + ' were taken into account\n\n');
+        txt_file.write('Only contigs of length >= ' + str(min_contig) + ' were taken into account\n\n')
 
     # filling
     for i in range(len(report_dict['header'])):
@@ -101,14 +98,10 @@ def do(report_dict, report_horizontal_name, report_vertical_name, min_contig=0, 
     tsv_file.close()
     print '    Saved to', report_txt_filename, 'and', report_tsv_filename
 
+    # saving to JSON
+    if qconfig.save_json:
+        json_saver.save_total_report(report_dict)
 
-    print '  Saving to JSON...'
-    jsn_filename = report_vertical_name + '.json'
-    jsn_file = open(jsn_filename, 'w')
-
-    results = [row for key, row in report_dict.items() if key != 'header']
-    json.dump({'header' : report_dict['header'], 'results' : results }, jsn_file)
-    print '    Saved to', jsn_filename
 
     '''
     if all_pdf != None:

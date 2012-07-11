@@ -1,9 +1,10 @@
+import os
 from django.http import Http404, HttpResponse
 from django.shortcuts import render_to_response
 from django.utils.encoding import smart_str
 
-report_fn  = '../quast/latest_json/report.json'
-lengths_fn = '../quast/latest_json/lengths.json'
+report_fn  = '../quast_results_archive_json/latest/report.json'
+lengths_fn = '../quast_results_archive_json/latest/lengths.json'
 
 def latest_report(request):
     try:
@@ -21,7 +22,6 @@ def latest_report(request):
         'lengths' : lengths
     })
 
-
 #static_path = 'quality_app/static/'
 #
 #def get_static_file(request, path):
@@ -30,23 +30,26 @@ def latest_report(request):
 #    except IOError:
 #        return ''
 #    else:
-#        return contents
-
+#        return HttpResponse(contents)
 
 def manual(request):
-    path = '../quast/manual.html'
+    try:
+        contents = open('../manual.html')
+    except IOError:
+        raise Http404
+    else:
+        return HttpResponse(contents)
 
-    response = HttpResponse(mimetype='application/force-download')
-    response['Content-Disposition'] = 'attachment; filename=%s' % 'manual.html'
-    response['X-Sendfile'] = path
+#def tar_archive(request, version):
+#    path = '/Users/vladsaveliev/Dropbox/bio/quast/quast_website/quast' + version + '.tar.gz'
+#
+#    if os.path.isfile(path):
+#        response = HttpResponse(mimetype='application/x-gzip')
+#        response['Content-Disposition'] = 'attachment; filename=quast' + version +'.tar.gz'
+#        response['X-Sendfile'] = path
+#        return response
+#    else:
+#        raise Http404
 
-    return response
-
-def tar_archive(request):
-    path = '../quast/quast.tar.gz'
-
-    response = HttpResponse(mimetype='application/force-download')
-    response['Content-Disposition'] = 'attachment; filename=%s' % 'quast.tar.gz'
-    response['X-Sendfile'] = path
-
-    return response
+def index(request):
+    return render_to_response('index.html')

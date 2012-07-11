@@ -11,6 +11,8 @@ function build_total_report() {
 
     $('#header').append('<p class="date">' + report.date + '<br>Contigs file: ' + report.results[0][0] + '</p>');
 
+    $('#title').append('Report of <p class="date">' + report.date + '<br>Contigs file: ' + report.results[0][0] + '</p>');
+
     var table = '';
     table += '<table class=".report-table">';
 

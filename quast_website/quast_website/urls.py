@@ -17,9 +17,9 @@ urlpatterns = patterns('',
     # Uncomment the next line to enable the admin:
     # url(r'^admin/', include(admin.site.urls)),
 
-    url(r'^latest-report/', 'quality_app.views.latest_report'),
-    url(r'^manual.html$', 'quality_app.views.manual'),
-    url(r'^quast.tar.gz$', 'quality_app.views.tar_archive'),
+    url(r'^$',                              'quality_app.views.index'),
+    url(r'^latestreport/',                  'quality_app.views.latest_report'),
+    url(r'^manual.html$',                   'quality_app.views.manual'),
 )
 
 urlpatterns += staticfiles_urlpatterns()

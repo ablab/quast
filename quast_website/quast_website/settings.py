@@ -114,7 +114,7 @@ ROOT_URLCONF = 'quast_website.urls'
 # Python dotted path to the WSGI application used by Djasngo's runserver.
 WSGI_APPLICATION = 'quast_website.wsgi.application'
 
-TEMPLATE_DIRS = ('/Users/vladsaveliev/Dropbox/bio/quast_website/templates',)
+TEMPLATE_DIRS = ('/Users/vladsaveliev/Dropbox/bio/quast/quast_website/templates',)
 
 INSTALLED_APPS = (
     'django.contrib.auth',

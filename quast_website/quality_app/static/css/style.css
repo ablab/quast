@@ -1,11 +1,42 @@
-
 body {
+    margin: 0;
     font-family: Verdana, Arial, sans-serif;
     font-size: 12px;
 }
-
+.header {
+    background-color: #333;
+    color: white;
+}
 .content {
     margin-left: 100px;
+    margin-bottom: 20px;
+    padding-top: 20px;
+    clear: both;
+}
+
+ul.menu {
+    margin: 0 0 0 100px;
+    padding: 1.5em 2em 3em 0;
+    list-style-type: none;
+}
+ul.menu a {
+    float: left;
+    padding-right: 2em;
+    color: white;
+    font-size: 1.2em;
+}
+ul.menu a:hover {
+    color: red;
+}
+ul.menu li.current a {
+    pointer-events: none;
+    cursor: default;
+    text-decoration: none;
+    color: #AAA;
+}
+
+.clear_float {
+    clear: both;
 }
 
 /*Report */

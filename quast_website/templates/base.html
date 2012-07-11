@@ -3,7 +3,7 @@
 
 <html lang="en">
 <head>
-    <title>Quast</title>
+    <title>{% block title %}{% endblock %}</title>
 
     <link rel="stylesheet" href="/static/css/style.css" type="text/css" media="all"/>
 
@@ -18,7 +18,12 @@
 </head>
 
 <body>
-    <div class="header">
+    <div class='header'>
+        <ul class='menu'>
+            <li class='{% block index        %}{% endblock %}'><a href='/'>            About Quast  </a></li>
+            <li class='{% block latestreport %}{% endblock %}'><a href='/latestreport'>Latest report</a></li>
+        </ul>
+        <span class='clear_float'></span>
     </div>
 
     <div class="content">

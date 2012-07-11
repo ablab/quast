@@ -21,6 +21,7 @@ sys.path.append(os.path.join(os.path.abspath(sys.path[0]), 'libs'))
 
 import qconfig
 import support
+import json_saver
 
 RELEASE_MODE=False
 
@@ -57,10 +58,11 @@ def usage():
         print >>sys.stderr, 'Options without arguments'
         print >>sys.stderr, '-m  --mauve                use Mauve'
         print >>sys.stderr, '-g  --gage                 use Gage only'
-        print >>sys.stderr, '-n  --not-circular         the genome is not circular (e.g., eukaryote)'
-        print >>sys.stderr, "-d  --disable-rc           a reverse complementary contig should NOT be counted as misassembly"
+        print >>sys.stderr, '-n  --not-circular         genome is not circular (e.g., eukaryote)'
+        print >>sys.stderr, "-d  --disable-rc           reverse complementary contig should NOT be counted as misassembly"
         print >>sys.stderr, "-k  --genemark             use GeneMark"
-        print >>sys.stderr, "-x  --extra-report         generate extra report (extra_report.txt)"
+        print >>sys.stderr, "-x  --extra-report         generate an extra report (extra_report.txt)"
+        print >>sys.stderr, "--to-archive               save an output to an archive directory in the JSON format (for a website)"
         print >>sys.stderr, ""
         print >>sys.stderr, "-h  --help                 print this usage message"
 
@@ -119,8 +121,8 @@ def main(args, lib_dir=os.path.join(os.path.abspath(sys.path[0]), 'libs')):
             qconfig.with_genemark = True
         elif opt in ('-x', "--extra-report"):
             qconfig.extra_report = True
-        elif opt in ('--save-json'):
-            qconfig.save_json = True
+        elif opt in ('--to-archive'):
+            qconfig.to_archive = True
         elif opt in ('-h', "--help"):
             usage()
             sys.exit(0)
@@ -156,21 +158,32 @@ def main(args, lib_dir=os.path.join(os.path.abspath(sys.path[0]), 'libs')):
         os.symlink(output_dir, latest_symlink)
 
     # json output dir
-    if qconfig.save_json:
-        if os.path.isdir(qconfig.json_dir):  # in case of starting two instances of QUAST in the same second
+    if qconfig.to_archive:
+
+        if not os.path.isdir(qconfig.archive_dir):
+            os.makedirs(qconfig.archive_dir)
+
+        os.chdir(qconfig.archive_dir)
+
+        json_dir = qconfig.json_results_dir
+        if os.path.isdir(json_dir):  # in case of starting two instances of QUAST in the same second
             i = 2
-            base_dir_name = qconfig.json_dir
-            while os.path.isdir(qconfig.json_dir):
-                qconfig.json_dir = base_dir_name + '__' + str(i)
+            base_dir_name = json_dir
+            while os.path.isdir(json_dir):
+                json_dir = base_dir_name + '__' + str(i)
                 i += 1
 
-        if not os.path.isdir(qconfig.json_dir):
-            os.makedirs(qconfig.json_dir)
+        if not os.path.isdir(json_dir):
+            os.makedirs(json_dir)
 
-        latest_symlink = 'latest_json'
+        latest_symlink = 'latest'
         if os.path.islink(latest_symlink):
             os.remove(latest_symlink)
-        os.symlink(qconfig.json_dir, latest_symlink)
+        os.symlink(json_dir, latest_symlink)
+
+        json_saver.dir = qconfig.archive_dir + '/' + json_dir
+
+        os.chdir('..')
 
     # Where log will be saved
     logfile = output_dir + '/quast.log'

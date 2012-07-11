@@ -1,6 +1,7 @@
 results_*
 latest
-latest_json
+quast_results_archive_json/*
+results_json/*
 quality.pyc
 show-snps.err
 libs/MUMmer3.23-linux/*
@@ -10,5 +11,4 @@ libs/.DS_Store
 .idea/*
 .DS_Store
 
-gene_result.txt
-test_regex.py
+quast_website/.idea/*

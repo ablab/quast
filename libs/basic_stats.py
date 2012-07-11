@@ -34,7 +34,7 @@ def do(reference, filenames, output_dir, all_pdf):
         lists_of_lengths.append(fastaparser.get_lengths_from_fastafile(filename))
 
     # saving to JSON
-    if qconfig.save_json:
+    if qconfig.to_archive:
         json_saver.save_lengths(filenames, lists_of_lengths)
 
     ########################################################################

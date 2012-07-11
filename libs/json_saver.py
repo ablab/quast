@@ -6,13 +6,14 @@
 
 import datetime
 import json
-import qconfig
 
-total_report_filename = qconfig.json_dir + '/report.json'
-lengths_filename      = qconfig.json_dir + '/lengths.json'
+dir = ''
+
+total_report_filename = '/report.json'
+lengths_filename      = '/lengths.json'
 
 def save_total_report(report_dict):
-    json_file = open(total_report_filename, 'w')
+    json_file = open(dir + total_report_filename, 'w')
 
     results = [row for key, row in report_dict.items() if key != 'header']
     t = datetime.datetime.now()
@@ -28,7 +29,7 @@ def save_total_report(report_dict):
 
 
 def save_lengths(filenames, lists_of_lengths):
-    json_file = open(lengths_filename, 'w')
+    json_file = open(dir + lengths_filename, 'w')
 
     lists_of_lengths = [sorted(list, reverse=True) for list in lists_of_lengths]
 

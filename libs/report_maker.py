@@ -99,7 +99,7 @@ def do(report_dict, report_horizontal_name, report_vertical_name, min_contig=0, 
     print '    Saved to', report_txt_filename, 'and', report_tsv_filename
 
     # saving to JSON
-    if qconfig.save_json:
+    if qconfig.to_archive:
         json_saver.save_total_report(report_dict)
 
 

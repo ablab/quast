@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block extra_head %}
+    <script type="text/javascript">
+        $(document).ready(function() {
+            build_total_report();
+            draw_commulative_plot();
+        });
+
+    </script>
+
+    <style>
+        #report * {
+            font-size: 1em;
+        }
+
+        #report {
+            float: left;
+        }
+
+        #report table {
+            margin-left: -2px;
+        }
+
+        #report td {
+            padding: 0;
+            margin:  0;
+        }
+
+        #report td:first-child {
+            width: 17em;
+        }
+
+        .json-code {
+            display: none;
+        }
+
+        .plots {
+            float: left;
+            margin-left: 100px;
+            margin-top: 6px;
+        }
+
+        #commulative-plot-placeholder {
+            width: 500px;
+            height: 400px;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <div id='header'>
+    </div>
+
+    <div id='report'>
+    </div>
+
+    <div class='plots'>
+        <div id='commulative-plot-placeholder'>
+        </div>
+    </div>
+
+    <div class='json-code'>
+        <div id='report-json'>
+            {{ report }}
+        </div>
+        <div id='lengths-json'>
+            {{ lengths }}
+        </div>
+    </div>
+{% endblock %}

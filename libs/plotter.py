@@ -28,12 +28,14 @@ font = {'family' : 'sans-serif',
     'weight' : 'medium',
     'size'   : 10}
 
+# plots params
 linewdith = 3.0
-axes_fontsize = 'large'
 
 # legend params
 n_columns = 4
 with_grid = True
+with_title = True
+axes_fontsize = 'large' # axes labels and ticks values
 
 def cumulative_plot(filenames, lengths, plot_filename, title, all_pdf=None):
     if matplotlib_error:
@@ -69,7 +71,8 @@ def cumulative_plot(filenames, lengths, plot_filename, title, all_pdf=None):
             
     matplotlib.pyplot.xlabel('Contig index', fontsize=axes_fontsize)
     matplotlib.pyplot.ylabel('Cumulative length (Mbp)', fontsize=axes_fontsize)
-    matplotlib.pyplot.title(title)
+    if with_title:
+        matplotlib.pyplot.title(title)
     matplotlib.pyplot.grid(with_grid)
     ax = matplotlib.pyplot.gca()
     # Shink current axis's height by 20% on the bottom
@@ -138,7 +141,8 @@ def Nx_plot(filenames, lengths, plot_filename, title='Nx', reference_lengths=[],
 
     matplotlib.pyplot.xlabel('x', fontsize=axes_fontsize)
     matplotlib.pyplot.ylabel('Contig length (Kbp)', fontsize=axes_fontsize)
-    matplotlib.pyplot.title(title)
+    if with_title:
+        matplotlib.pyplot.title(title)
     matplotlib.pyplot.grid(with_grid)
     ax = matplotlib.pyplot.gca()
     # Shink current axis's height by 20% on the bottom
@@ -277,7 +281,8 @@ def histogram(filenames, values, plot_filename, title='', all_pdf=None, yaxis_ti
 
     #matplotlib.pyplot.xticks(positions + width, map(os.path.basename, filenames))
     matplotlib.pyplot.ylabel(yaxis_title, fontsize=axes_fontsize)
-    matplotlib.pyplot.title(title)
+    if with_title:
+        matplotlib.pyplot.title(title)
     
     ax = matplotlib.pyplot.gca()
     # Shink current axis's height by 20% on the bottom

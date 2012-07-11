@@ -1,5 +1,6 @@
 results_*
 latest
+latest_json
 quality.pyc
 show-snps.err
 libs/MUMmer3.23-linux/*

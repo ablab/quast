@@ -6,23 +6,32 @@
  * To change this template use File | Settings | File Templates.
  */
 
-function draw_commulative_plot(filenames, lists_of_lengths, placeholder) {
+function drawCommulativePlot(filenames, lists_of_lengths, plotPlaceholder, legendPlaceholder) {
 
     var plotsN = lists_of_lengths.length;
-    var plots_data = new Array(plotsN);
+    var plotsData = new Array(plotsN);
 
     var maxContigNumber = 0;
 
     for (var i = 0; i < plotsN; i++) {
-        lengths = lists_of_lengths[i];
+        var lengths = lists_of_lengths[i];
         var size = lengths.length;
 
-        plots_data[i] = { data: new Array(size), label: filenames[i] };
+        plotsData[i] = {
+            data: new Array(size),
+            label: filenames[i],
+            points: {
+                show: true,
+                radius: 0.3,
+                fillColor: false,
+                fill: 1,
+            }
+        };
 
         var y = 0;
         for (var j = 0; j < size; j++) {
             y += lengths[j];
-            plots_data[i].data[j] = [j+1, y];
+            plotsData[i].data[j] = [j+1, y];
         }
 
         if (size > maxContigNumber) {
@@ -30,17 +39,26 @@ function draw_commulative_plot(filenames, lists_of_lengths, placeholder) {
         }
     }
 
-    $.plot(placeholder, plots_data, {
+    $.plot(plotPlaceholder, plotsData, {
             shadowSize: 0,
+            colors: ["#FF5900", "#008FFF", "#168A16", "#7C00FF", "#FF0080"],
+            legend: {
+                container: legendPlaceholder,
+                position: 'se',
+                labelBoxBorderColor: '#FFF',
+            },
             grid: {
                 borderWidth: 1,
                 color: 'CCC',
             },
             yaxis: {
+                min: 0,
                 labelWidth: 80,
                 reserveSpace: true,
                 tickFormatter: function (val, axis) {
-                    if (val > 1000000) {
+                    if (val == 0) {
+                        return 0;
+                    } else if (val > 1000000) {
                         return (val / 1000000).toFixed(1) + " Mbp";
                     } else if (val > 1000) {
                         return (val / 1000).toFixed(0) + " Kbp";
@@ -50,13 +68,14 @@ function draw_commulative_plot(filenames, lists_of_lengths, placeholder) {
                 },
             },
             xaxis: {
+                min: 0,
                 tickFormatter: function (val, axis) {
                     if (typeof axis.tickSize == 'number' && val > maxContigNumber - axis.tickSize) {
                         return "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" + val + "'th&nbsp;contig";
                     }
                     return val;
                 }
-            }
+            },
         }
     );
 }

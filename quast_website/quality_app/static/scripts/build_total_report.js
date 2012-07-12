@@ -6,7 +6,7 @@
  * To change this template use File | Settings | File Templates.
  */
 
-function build_total_report() {
+function buildTotalReport() {
     var report = JSON.parse($('#report-json').html());
 
     $('#header').append('<span class="date">' + report.date + '. Contigs file: ' + report.results[0][0] + '</span>');
@@ -20,7 +20,11 @@ function build_total_report() {
 
         table += '\t<tr><td>' + report.header[i] + '</td>';
 
-        table = table + '<td>' + report.results[0][i] + '</td>';
+        val = report.results[0][i];
+        if (typeof val == 'number') {
+            val = toPrettyString(val);
+        }
+        table = table + '<td>' + val + '</td>';
 
         table += '</tr>\n';
     }

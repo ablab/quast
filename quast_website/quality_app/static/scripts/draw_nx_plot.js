@@ -6,70 +6,95 @@
  * To change this template use File | Settings | File Templates.
  */
 
-function draw_nx_plot(filenames, lists_of_lengths, title, ref_lengths, placeholder) {
+function drawNxPlot(filenames, listsOfLengths, title, refLengths, plotPlaceholder, legendPlaceholder) {
 
-    var plotsN = lists_of_lengths.length;
-    var plots_data = new Array(plotsN);
+    var plotsN = listsOfLengths.length;
+    var plotsData = new Array(plotsN);
 
-    var maxX = 0;
+    var maxY = 0;
 
     for (var i = 0; i < plotsN; i++) {
-        lengths = lists_of_lengths[i];
+        var lengths = listsOfLengths[i];
 
         var size = lengths.length;
 
-        var sum_len = 0;
+        var sumLen = 0;
         for (var j = 0; j < lengths.length; j++) {
-            sum_len += lengths[j];
+            sumLen += lengths[j];
         }
-        if (ref_lengths) {
-            sum_len = ref_lengths[i];
+        if (refLengths) {
+            sumLen = refLengths[i];
         }
 
-        plots_data[i] = { data: new Array(), label: filenames[i] };
-        plots_data[i].data.push([0.0, lengths[0]]);
-        var current_len = 0;
+        plotsData[i] = {
+            data: new Array(),
+            label: filenames[i],
+            points: {
+                show: true,
+                radius: 0.3,
+                fillColor: false,
+                fill: 1,
+            }
+        };
+        //plotsData[i].data.push([0.0, lengths[0]]);
+        var currentLen = 0;
         var x = 0.0;
 
         for (var k = 0; k < size; k++) {
-            current_len += lengths[k];
-            plots_data[i].data.push([x + 1e-10, lengths[k]]);
-            x = current_len * 100.0 / sum_len;
-            plots_data[i].data.push([x, lengths[k]]);
+            currentLen += lengths[k];
+            //plotsData[i].data.push([x, lengths[k]]);
+            x = currentLen * 100.0 / sumLen;
+            plotsData[i].data.push([x, lengths[k]]);
         }
 
-        if (size > maxX) {
-            maxX = size;
+        if (plotsData[i].data[0][1] > maxY) {
+            maxY = plotsData[i].data[0][1];
         }
     }
 
-    $.plot(placeholder, plots_data, {
+    $.plot(plotPlaceholder, plotsData, {
             shadowSize: 0,
+            colors: ["#FF5900", "#008FFF", "#168A16", "#7C00FF", "#FF0080"],
+            legend: {
+                container: legendPlaceholder,
+                position: 'ne',
+                labelBoxBorderColor: '#FFF',
+            },
             grid: {
                 borderWidth: 1,
                 color: 'CCC',
+
             },
             yaxis: {
+                min: 0,
                 labelWidth: 80,
                 reserveSpace: true,
                 tickFormatter: function (val, axis) {
-                    if (val > 1000000) {
-                        return (val / 1000000).toFixed(1) + " Mbp";
+                    if (val == 0) {
+                        return 0;
+                    } else if (val > 1000000) {
+                        return (val / 1000000).toFixed(1) + ' Mbp';
                     } else if (val > 1000) {
-                        return (val / 1000).toFixed(0) + " Kbp";
+                        if (val + axis.tickSize >= 1000000 || val >= maxY) {
+                            return (val / 1000).toFixed(0) + ' Kbp';
+                        } else {
+                            return (val / 1000).toFixed(0);
+                        }
                     } else {
-                        return val.toFixed(0) + " bp";
+                        return val.toFixed(0) + ' bp';
                     }
                 },
             },
             xaxis: {
-//                tickFormatter: function (val, axis) {
-//                    if (typeof axis.tickSize == 'number' && val > maxX - axis.tickSize) {
-//                        return "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" + val + "'th&nbsp;contig";
-//                    }
-//                    return val;
-//                }
-            }
+                min: 0,
+                tickFormatter: function (val, axis) {
+                    if (val == 100) {
+                        return '&nbsp;100%'
+                    } else {
+                        return val;
+                    }
+                }
+            },
         }
     );
 }

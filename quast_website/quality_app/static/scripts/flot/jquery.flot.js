@@ -1493,7 +1493,7 @@
                     axes.xmax = axes.xaxis.max;
                     axes.ymin = axes.yaxis.min;
                     axes.ymax = axes.yaxis.max;
-                    
+
                     markings = markings(axes);
                 }
 
@@ -1530,7 +1530,7 @@
                     xrange.to = xrange.axis.p2c(xrange.to);
                     yrange.from = yrange.axis.p2c(yrange.from);
                     yrange.to = yrange.axis.p2c(yrange.to);
-                    
+
                     if (xrange.from == xrange.to || yrange.from == yrange.to) {
                         // draw line
                         ctx.beginPath();
@@ -1728,6 +1728,11 @@
                     if (x1 == null || x2 == null)
                         continue;
 
+//                    // added by Vlad Saveliev
+//                    if (x2 - x1 < 0.0000001) {
+//                        continue;
+//                    }
+
                     // clip with ymin
                     if (y1 <= y2 && y1 < axisy.min) {
                         if (y2 < axisy.min)
@@ -1790,6 +1795,7 @@
                     
                     prevx = x2;
                     prevy = y2;
+
                     ctx.lineTo(axisx.p2c(x2) + xoffset, axisy.p2c(y2) + yoffset);
                 }
                 ctx.stroke();

@@ -8,15 +8,15 @@
     <script type="text/javascript">
         $(document).ready(function() {
 
-            build_total_report();
+            buildTotalReport();
 
             var contigs = JSON.parse($('#contigs-json').html());
 
-            draw_commulative_plot(contigs.filenames, contigs.lists_of_lengths,
-                    $('#commulative-plot-placeholder'));
+            drawCommulativePlot(contigs.filenames, contigs.lists_of_lengths,
+                    $('#commulative-plot-placeholder'), null);
 
-            draw_nx_plot(contigs.filenames, contigs.lists_of_lengths, 'Nx', null,
-                    $('#nx-plot-placeholder'));
+            drawNxPlot(contigs.filenames, contigs.lists_of_lengths, 'Nx', null,
+                    $('#nx-plot-placeholder'), null);
         });
     </script>
 

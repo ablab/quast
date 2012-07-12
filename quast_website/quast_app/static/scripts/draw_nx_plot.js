@@ -29,12 +29,6 @@ function drawNxPlot(filenames, listsOfLengths, title, refLengths, plotPlaceholde
         plotsData[i] = {
             data: new Array(),
             label: filenames[i],
-            points: {
-                show: true,
-                radius: 0.3,
-                fillColor: false,
-                fill: 1,
-            }
         };
         //plotsData[i].data.push([0.0, lengths[0]]);
         var currentLen = 0;
@@ -52,6 +46,15 @@ function drawNxPlot(filenames, listsOfLengths, title, refLengths, plotPlaceholde
         }
     }
 
+    for (var i = 0; i < plotsN; i++) {
+        plotsData[i].points = {
+            show: true,
+                radius: 1,
+                fill: 1,
+                fillColor: false,
+        }
+    }
+
     $.plot(plotPlaceholder, plotsData, {
             shadowSize: 0,
             colors: ["#FF5900", "#008FFF", "#168A16", "#7C00FF", "#FF0080"],
@@ -63,7 +66,6 @@ function drawNxPlot(filenames, listsOfLengths, title, refLengths, plotPlaceholde
             grid: {
                 borderWidth: 1,
                 color: 'CCC',
-
             },
             yaxis: {
                 min: 0,

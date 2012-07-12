@@ -20,12 +20,6 @@ function drawCommulativePlot(filenames, lists_of_lengths, plotPlaceholder, legen
         plotsData[i] = {
             data: new Array(size),
             label: filenames[i],
-            points: {
-                show: true,
-                radius: 0.3,
-                fillColor: false,
-                fill: 1,
-            }
         };
 
         var y = 0;
@@ -36,6 +30,15 @@ function drawCommulativePlot(filenames, lists_of_lengths, plotPlaceholder, legen
 
         if (size > maxContigNumber) {
             maxContigNumber = size;
+        }
+    }
+
+    for (var i = 0; i < plotsN; i++) {
+        plotsData[i].points = {
+            show: true,
+            radius: 1,
+            fill: 1,
+            fillColor: false,
         }
     }
 

@@ -92,7 +92,7 @@
                         radius: 3,
                         lineWidth: 2, // in pixels
                         fill: true,
-                        fillColor: "#ffffff",
+                        fillColor: '#ffffff',
                         symbol: "circle" // or callback
                     },
                     lines: {
@@ -1996,7 +1996,7 @@
                         ctx.fillStyle = fillStyle;
                         ctx.fill();
                     }
-                    ctx.stroke();
+                    //ctx.stroke();
                 }
             }
             
@@ -2168,7 +2168,7 @@
 
             if (filloptions.fillColor)
                 return getColorOrGradient(filloptions.fillColor, bottom, top, seriesColor);
-            
+
             var c = $.color.parse(seriesColor);
             c.a = typeof fill == "number" ? fill : 0.4;
             c.normalize();
@@ -2487,7 +2487,7 @@
             
             octx.beginPath();
             if (series.points.symbol == "circle")
-                octx.arc(x, y, radius, 0, 2 * Math.PI, false);
+                octx.arc(x, y, radius, 0, 2 * Math.PI, true);
             else
                 series.points.symbol(octx, x, y, radius, false);
             octx.closePath();

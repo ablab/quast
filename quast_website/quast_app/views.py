@@ -22,7 +22,7 @@ def latestreport(request):
         'contigs' : contigs
     })
 
-#static_path = 'quality_app/static/'
+#static_path = 'quast_app/static/'
 #
 #def get_static_file(request, path):
 #    try:

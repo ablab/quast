@@ -9,7 +9,7 @@
 function draw_nx_plot(filenames, lists_of_lengths, title, ref_lengths, placeholder) {
 
     var plotsN = lists_of_lengths.length;
-    var datas = new Array(plotsN);
+    var plots_data = new Array(plotsN);
 
     var maxX = 0;
 
@@ -26,16 +26,16 @@ function draw_nx_plot(filenames, lists_of_lengths, title, ref_lengths, placehold
             sum_len = ref_lengths[i];
         }
 
-        datas[i] =  { data: new Array(), label: filenames[i] };
-        datas[i].data.push([0.0, lengths[0]]);
+        plots_data[i] = { data: new Array(), label: filenames[i] };
+        plots_data[i].data.push([0.0, lengths[0]]);
         var current_len = 0;
         var x = 0.0;
 
         for (var k = 0; k < size; k++) {
             current_len += lengths[k];
-            datas[i].data.push([x + 1e-10, lengths[k]]);
+            plots_data[i].data.push([x + 1e-10, lengths[k]]);
             x = current_len * 100.0 / sum_len;
-            datas[i].data.push([x, lengths[k]]);
+            plots_data[i].data.push([x, lengths[k]]);
         }
 
         if (size > maxX) {
@@ -43,9 +43,7 @@ function draw_nx_plot(filenames, lists_of_lengths, title, ref_lengths, placehold
         }
     }
 
-    $.plot(placeholder,
-        datas,
-        {
+    $.plot(placeholder, plots_data, {
             shadowSize: 0,
             grid: {
                 borderWidth: 1,

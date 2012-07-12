@@ -9,7 +9,7 @@
 function draw_commulative_plot(filenames, lists_of_lengths, placeholder) {
 
     var plotsN = lists_of_lengths.length;
-    var datas = new Array(plotsN);
+    var plots_data = new Array(plotsN);
 
     var maxContigNumber = 0;
 
@@ -17,12 +17,12 @@ function draw_commulative_plot(filenames, lists_of_lengths, placeholder) {
         lengths = lists_of_lengths[i];
         var size = lengths.length;
 
-        datas[i] = { data: new Array(size), label: filenames[i] };
+        plots_data[i] = { data: new Array(size), label: filenames[i] };
 
         var y = 0;
         for (var j = 0; j < size; j++) {
             y += lengths[j];
-            datas[i].data[j] = [j+1, y];
+            plots_data[i].data[j] = [j+1, y];
         }
 
         if (size > maxContigNumber) {
@@ -30,9 +30,7 @@ function draw_commulative_plot(filenames, lists_of_lengths, placeholder) {
         }
     }
 
-    $.plot(placeholder,
-        datas,
-        {
+    $.plot(placeholder, plots_data, {
             shadowSize: 0,
             grid: {
                 borderWidth: 1,

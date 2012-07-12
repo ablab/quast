@@ -3,8 +3,11 @@ from django.http import Http404, HttpResponse
 from django.shortcuts import render_to_response
 from django.utils.encoding import smart_str
 
-report_fn  = '../quast_results_archive_json/latest/report.json'
-contigs_fn = '../quast_results_archive_json/latest/contigs.json'
+report_fn  =            '../quast_results_archive_json/latest/report.json'
+contigs_fn =            '../quast_results_archive_json/latest/contigs_lengths.json'
+aligned_contigs_fn =    '../quast_results_archive_json/latest/aligned_contigs_lengths.json'
+assemblies_lengths_fn = '../quast_results_archive_json/latest/assemblies_lengths.json'
+reference_length_fn =   '../quast_results_archive_json/latest/ref_length.json'
 
 def latestreport(request):
     try:
@@ -13,13 +16,31 @@ def latestreport(request):
         raise Http404
 
     try:
-        contigs = open(contigs_fn).read()
+        contigs_lengths = open(contigs_fn).read()
+    except IOError:
+        raise Http404
+
+    try:
+        aligned_contifs_lengths = open(aligned_contigs_fn).read()
+    except IOError:
+        raise Http404
+
+    try:
+        assemblies_lengths = open(assemblies_lengths_fn).read()
+    except IOError:
+        raise Http404
+
+    try:
+        reference_length = open(reference_length_fn).read()
     except IOError:
         raise Http404
 
     return render_to_response('latest-report.html', {
         'report'  : report,
-        'contigs' : contigs
+        'contigsLenghts' : contigs_lengths,
+        'alignedContigsLengths' : aligned_contifs_lengths,
+        'assembliesLengths' : assemblies_lengths,
+        'referenceLength' : reference_length,
     })
 
 #static_path = 'quast_app/static/'

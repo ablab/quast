@@ -11,7 +11,7 @@ import itertools
 
 def get_lengths_from_fastafile(filename):
     """
-        Gets filename of FASTA-file
+        Takes filename of FASTA-file
         Returns list of lengths of sequences in FASTA-file
     """
     lengths = []
@@ -29,7 +29,7 @@ def get_lengths_from_fastafile(filename):
 
 def split_fasta(filename, outputdir):
     """
-        Gets filename of FASTA-file and directory to output
+        Takes filename of FASTA-file and directory to output
         Creates separate FASTA-files for each sequence in FASTA-file
         Returns nothing
         Oops, similar to: pyfasta split --header "%(seqid).fasta" original.fasta

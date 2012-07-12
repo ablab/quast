@@ -6,7 +6,7 @@
  * To change this template use File | Settings | File Templates.
  */
 
-function drawNxPlot(filenames, listsOfLengths, title, refLengths, plotPlaceholder, legendPlaceholder) {
+function drawNxPlot(filenames, listsOfLengths, title, refLength, plotPlaceholder, legendPlaceholder) {
 
     var plotsN = listsOfLengths.length;
     var plotsData = new Array(plotsN);
@@ -22,8 +22,8 @@ function drawNxPlot(filenames, listsOfLengths, title, refLengths, plotPlaceholde
         for (var j = 0; j < lengths.length; j++) {
             sumLen += lengths[j];
         }
-        if (refLengths) {
-            sumLen = refLengths[i];
+        if (refLength) {
+            sumLen = refLength;
         }
 
         plotsData[i] = {
@@ -89,6 +89,7 @@ function drawNxPlot(filenames, listsOfLengths, title, refLengths, plotPlaceholde
             },
             xaxis: {
                 min: 0,
+                max: 100,
                 tickFormatter: function (val, axis) {
                     if (val == 100) {
                         return '&nbsp;100%'

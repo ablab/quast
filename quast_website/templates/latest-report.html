@@ -10,13 +10,26 @@
 
             buildTotalReport();
 
-            var contigs = JSON.parse($('#contigs-json').html());
+            var contigsLengths = JSON.parse($('#contigs-lengths-json').html());
 
-            drawCommulativePlot(contigs.filenames, contigs.lists_of_lengths,
+            drawCommulativePlot(contigsLengths.filenames, contigsLengths.lists_of_lengths,
                     $('#commulative-plot-placeholder'), null);
 
-            drawNxPlot(contigs.filenames, contigs.lists_of_lengths, 'Nx', null,
+            drawNxPlot(contigsLengths.filenames, contigsLengths.lists_of_lengths, 'Nx', null,
                     $('#nx-plot-placeholder'), null);
+
+            var alignedContigsLengths = JSON.parse($('#aligned-contigs-lengths-json').html());
+
+            drawNxPlot(alignedContigsLengths.filenames, alignedContigsLengths.lists_of_lengths,
+                    'NAx', null, $('#nax-plot-placeholder'), null);
+
+            var referenceLength = JSON.parse($('#reference-length-json').html());
+
+            drawNxPlot(contigsLengths.filenames, contigsLengths.lists_of_lengths, 'NGx',
+                    referenceLength, $('#ngx-plot-placeholder'), null);
+
+            drawNxPlot(alignedContigsLengths.filenames, alignedContigsLengths.lists_of_lengths,
+                    'NGAx', referenceLength, $('#ngax-plot-placeholder'), null);
         });
     </script>
 
@@ -77,14 +90,44 @@
         </p>
         <div id='nx-plot-placeholder'>
         </div>
+        <p style='
+            margin: 50px 0 20px 83px;
+            font-weight: bold;'>
+            NAx plot
+        </p>
+        <div id='nax-plot-placeholder'>
+        </div>
+        <p style='
+            margin: 50px 0 20px 83px;
+            font-weight: bold;'>
+            NGx plot
+        </p>
+        <div id='ngx-plot-placeholder'>
+        </div>
+        <p style='
+            margin: 50px 0 20px 83px;
+            font-weight: bold;'>
+            NGAx plot
+        </p>
+        <div id='ngax-plot-placeholder'>
+        </div>
     </div>
 
     <div class='json-code'>
         <div id='report-json'>
             {{ report }}
         </div>
-        <div id='contigs-json'>
-            {{ contigs }}
+        <div id="contigs-lengths-json">
+            {{ contigsLenghts }}
+        </div>
+        <div id='aligned-contigs-lengths-json'>
+            {{ alignedContigsLengths }}
+        </div>
+        <div id='assemblies-lengths-json'>
+            {{ assembliesLengths }}
+        </div>
+        <div id='reference-length-json'>
+            {{ referenceLength }}
         </div>
     </div>
 {% endblock %}

@@ -8,6 +8,7 @@ import os
 import itertools
 import sys
 import fastaparser
+import json_saver
 from qutils import id_to_str
 
 def get_lengths_from_coordfile(nucmer_filename):    
@@ -60,7 +61,7 @@ def do(reference, filenames, nucmer_dir, output_dir, all_pdf):
     print 'Running NA-NGA tool...'
 
     reference_length = fastaparser.get_lengths_from_fastafile(reference)[0]
-    lengths = []
+    lists_of_lengths = []
     assembly_lengths = []
     print 'Processing .coords files...'
     for id, filename in enumerate(filenames):
@@ -69,9 +70,9 @@ def do(reference, filenames, nucmer_dir, output_dir, all_pdf):
         assembly_lengths.append(sum(fastaparser.get_lengths_from_fastafile(filename)))
         if not os.path.isfile(nucmer_filename):
             print '  ERROR: nucmer coord file (' + nucmer_filename + ') not found, skipping...'
-            lengths.append([0])
+            lists_of_lengths.append([0])
         else:
-            lengths.append(get_lengths_from_coordfile(nucmer_filename))
+            lists_of_lengths.append(get_lengths_from_coordfile(nucmer_filename))
     ########################################################################
     
     print 'Calculating NA50 and NGA50...'
@@ -80,7 +81,7 @@ def do(reference, filenames, nucmer_dir, output_dir, all_pdf):
     report_dict['header'].append('NA75')
     report_dict['header'].append('NGA75')
     import N50
-    for id, (filename, lens, assembly_len) in enumerate(itertools.izip(filenames, lengths, assembly_lengths)):
+    for id, (filename, lens, assembly_len) in enumerate(itertools.izip(filenames, lists_of_lengths, assembly_lengths)):
         na50 = N50.NG50(lens, assembly_len)
         nga50 = N50.NG50(lens, reference_length)
         na75 = N50.NG50(lens, assembly_len, 75)
@@ -95,12 +96,15 @@ def do(reference, filenames, nucmer_dir, output_dir, all_pdf):
         
     ########################################################################
 
+    json_saver.save_aligned_contigs_lengths(filenames, lists_of_lengths)
+    json_saver.save_assembly_lengths(filenames, assembly_lengths)
+
     # Drawing cumulative plot (aligned contigs)...
     import plotter
-    plotter.cumulative_plot(filenames, lengths, output_dir + '/cumulative_plot', 'Cumulative length (aligned contigs)', all_pdf)
+    plotter.cumulative_plot(filenames, lists_of_lengths, output_dir + '/cumulative_plot', 'Cumulative length (aligned contigs)', all_pdf)
 
     # Drawing NAx and NGAx plots...
-    plotter.Nx_plot(filenames, lengths, output_dir + '/NAx_plot', 'NAx', assembly_lengths, all_pdf)
-    plotter.Nx_plot(filenames, lengths, output_dir + '/NGAx_plot', 'NGAx', [reference_length for i in range(len(filenames))], all_pdf)     
+    plotter.Nx_plot(filenames, lists_of_lengths, output_dir + '/NAx_plot', 'NAx', assembly_lengths, all_pdf)
+    plotter.Nx_plot(filenames, lists_of_lengths, output_dir + '/NGAx_plot', 'NGAx', [reference_length for i in range(len(filenames))], all_pdf)
 
     return report_dict

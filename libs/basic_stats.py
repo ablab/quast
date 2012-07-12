@@ -25,6 +25,7 @@ def do(reference, filenames, output_dir, all_pdf):
 
     if reference:
         reference_length = fastaparser.get_lengths_from_fastafile(reference)[0]
+        json_saver.save_reference_length(reference_length)
         print 'Reference genome:'
         print ' ', reference, ', reference length =', int(reference_length)
     print 'Contigs files: '
@@ -35,7 +36,7 @@ def do(reference, filenames, output_dir, all_pdf):
 
     # saving to JSON
     if qconfig.to_archive:
-        json_saver.save_contigs(filenames, lists_of_lengths)
+        json_saver.save_contigs_lengths(filenames, lists_of_lengths)
 
     ########################################################################
 

@@ -4,9 +4,6 @@
 # See file LICENSE for details.
 ############################################################################
 
-import json_saver
-import qconfig
-
 ### main function ###
 
 def do(report_dict, report_horizontal_name, report_vertical_name, min_contig=0, output_dir=None):
@@ -97,10 +94,6 @@ def do(report_dict, report_horizontal_name, report_vertical_name, min_contig=0, 
     txt_file.close()
     tsv_file.close()
     print '    Saved to', report_txt_filename, 'and', report_tsv_filename
-
-    # saving to JSON
-    if qconfig.to_archive:
-        json_saver.save_total_report(report_dict)
 
 
     '''

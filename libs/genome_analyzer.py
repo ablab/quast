@@ -14,7 +14,7 @@ import collections
 import itertools
 from qutils import id_to_str
 
-def do(reference, filenames, output_dir, nucmer_dir, genes_filename, operons_filename, all_pdf):
+def do(reference, filenames, output_dir, nucmer_dir, genes_filename, operons_filename, all_pdf, json_output_dir):
 
     # some important constants
     nucmer_prefix = os.path.join(os.path.abspath(sys.path[0]), nucmer_dir + '/nucmer_')

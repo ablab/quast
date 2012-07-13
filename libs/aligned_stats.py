@@ -43,7 +43,7 @@ def get_lengths_from_coordfile(nucmer_filename):
     return aligned_lengths
 
 ######## MAIN ############
-def do(reference, filenames, nucmer_dir, output_dir, all_pdf):
+def do(reference, filenames, nucmer_dir, output_dir, all_pdf, json_output_dir):
 
     if not os.path.isdir(output_dir):
         os.mkdir(output_dir)
@@ -96,8 +96,9 @@ def do(reference, filenames, nucmer_dir, output_dir, all_pdf):
         
     ########################################################################
 
-    json_saver.save_aligned_contigs_lengths(filenames, lists_of_lengths)
-    json_saver.save_assembly_lengths(filenames, assembly_lengths)
+    if json_output_dir:
+        json_saver.save_aligned_contigs_lengths(json_output_dir, filenames, lists_of_lengths)
+        json_saver.save_assembly_lengths(json_output_dir, filenames, assembly_lengths)
 
     # Drawing cumulative plot (aligned contigs)...
     import plotter

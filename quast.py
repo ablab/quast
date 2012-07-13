@@ -157,9 +157,11 @@ def main(args, lib_dir=os.path.join(os.path.abspath(sys.path[0]), 'libs')):
             os.remove(latest_symlink)
         os.symlink(output_dir, latest_symlink)
 
-    # json output dir
-    if qconfig.to_archive:
+    # Json
 
+    json_output_dir = None
+
+    if qconfig.to_archive:
         if not os.path.isdir(qconfig.archive_dir):
             os.makedirs(qconfig.archive_dir)
 
@@ -181,7 +183,10 @@ def main(args, lib_dir=os.path.join(os.path.abspath(sys.path[0]), 'libs')):
             os.remove(latest_symlink)
         os.symlink(json_dir, latest_symlink)
 
-        json_saver.dir = qconfig.archive_dir + '/' + json_dir
+        if qconfig.archive_dir[-1] == '/':
+            json_output_dir = qconfig.archive_dir + json_dir
+        else:
+            json_output_dir = qconfig.archive_dir + '/' + json_dir
 
         os.chdir('..')
 
@@ -325,7 +330,7 @@ def main(args, lib_dir=os.path.join(os.path.abspath(sys.path[0]), 'libs')):
         ### Stats and plots
         ########################################################################	
         import basic_stats
-        cur_results_dict = basic_stats.do(qconfig.reference, contigs, output_dir + '/basic_stats', all_pdf)
+        cur_results_dict = basic_stats.do(qconfig.reference, contigs, output_dir + '/basic_stats', all_pdf, json_output_dir)
         report_dict = extend_report_dict(report_dict, cur_results_dict)
 
         if qconfig.reference:
@@ -346,14 +351,14 @@ def main(args, lib_dir=os.path.join(os.path.abspath(sys.path[0]), 'libs')):
             ### NA and NGA ("aligned N and NG")
             ########################################################################
             import aligned_stats
-            cur_results_dict = aligned_stats.do(qconfig.reference, contigs, output_dir + '/plantagora', output_dir + '/aligned_stats', all_pdf)
+            cur_results_dict = aligned_stats.do(qconfig.reference, contigs, output_dir + '/plantagora', output_dir + '/aligned_stats', all_pdf, json_output_dir)
             report_dict = extend_report_dict(report_dict, cur_results_dict)
 
             ########################################################################
             ### GENOME_ANALYZER
             ########################################################################
             import genome_analyzer
-            cur_results_dict = genome_analyzer.do(qconfig.reference, contigs, output_dir + '/genome_analyzer', output_dir + '/plantagora', qconfig.genes, qconfig.operons, all_pdf)
+            cur_results_dict = genome_analyzer.do(qconfig.reference, contigs, output_dir + '/genome_analyzer', output_dir + '/plantagora', qconfig.genes, qconfig.operons, all_pdf, json_output_dir)
             report_dict = extend_report_dict(report_dict, cur_results_dict)
 
             ########################################################################
@@ -391,10 +396,13 @@ def main(args, lib_dir=os.path.join(os.path.abspath(sys.path[0]), 'libs')):
             print '  All pdf files are merged to', all_pdf_filename
             all_pdf.close()
 
+        if json_output_dir:
+            json_saver.save_total_report(json_output_dir, report_dict)
+
         ## and Single Cell paper table
         if qconfig.reference and qconfig.extra_report:
             import extra_report_maker
-            extra_report_maker.do(total_report, output_dir + '/genome_analyzer/genome_info.txt', extra_report_filename, qconfig.min_contig)
+            extra_report_maker.do(total_report, output_dir + '/genome_analyzer/genome_info.txt', extra_report_filename, qconfig.min_contig, json_output_dir)
 
             ########################################################################
 

@@ -8,10 +8,9 @@ import os
 import itertools
 import fastaparser
 import json_saver
-import qconfig
 from qutils import id_to_str
 
-def do(reference, filenames, output_dir, all_pdf):
+def do(reference, filenames, output_dir, all_pdf, json_output_dir):
     
     if not os.path.isdir(output_dir):
         os.mkdir(output_dir)
@@ -25,7 +24,11 @@ def do(reference, filenames, output_dir, all_pdf):
 
     if reference:
         reference_length = fastaparser.get_lengths_from_fastafile(reference)[0]
-        json_saver.save_reference_length(reference_length)
+
+        # saving reference to JSON
+        if json_output_dir:
+            json_saver.save_reference_length(json_output_dir, reference_length)
+
         print 'Reference genome:'
         print ' ', reference, ', reference length =', int(reference_length)
     print 'Contigs files: '
@@ -34,9 +37,9 @@ def do(reference, filenames, output_dir, all_pdf):
         print ' ', id_to_str(id), os.path.basename(filename)
         lists_of_lengths.append(fastaparser.get_lengths_from_fastafile(filename))
 
-    # saving to JSON
-    if qconfig.to_archive:
-        json_saver.save_contigs_lengths(filenames, lists_of_lengths)
+    # saving lengths to JSON
+    if json_output_dir:
+        json_saver.save_contigs_lengths(json_output_dir, filenames, lists_of_lengths)
 
     ########################################################################
 

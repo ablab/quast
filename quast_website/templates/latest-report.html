@@ -8,7 +8,11 @@
     <script type="text/javascript">
         $(document).ready(function() {
 
-            buildTotalReport();
+            var report = JSON.parse($('#report-json').html());
+
+            document.title = 'Report of ' + report.date;
+
+            buildTotalReport(report);
 
             var contigsLengths = JSON.parse($('#contigs-lengths-json').html());
 
@@ -23,7 +27,7 @@
             drawNxPlot(alignedContigsLengths.filenames, alignedContigsLengths.lists_of_lengths,
                     'NAx', null, $('#nax-plot-placeholder'), null);
 
-            var referenceLength = JSON.parse($('#reference-length-json').html());
+            var referenceLength = JSON.parse($('#reference-length-json').html()).reflen;
 
             drawNxPlot(contigsLengths.filenames, contigsLengths.lists_of_lengths, 'NGx',
                     referenceLength, $('#ngx-plot-placeholder'), null);
@@ -35,7 +39,7 @@
 
     <style>
         #header {
-            margin-bottom: 20px;
+            margin-bottom: 30px;
         }
         #report * {
             font-size: 1em;
@@ -47,24 +51,25 @@
             margin-left: -2px;
         }
         #report td {
-            padding: 0;
+            padding: 0 2em 0 0;
             margin:  0;
         }
-        #report td:first-child {
-            width: 17em;
+        #report tr:first-child {
+            font-weight: bold;
         }
         .json-code {
             display: none;
         }
         .plots {
             float: left;
-            margin-left: 100px;
+            margin-left: 1em;
         }
         .plot {
             margin-bottom: 40px;
         }
         .plot > p {
             margin-left: 85px;
+            margin-top: 2px;
             font-weight: bold;
         }
         .plot > div {

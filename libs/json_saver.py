@@ -23,11 +23,15 @@ def save(filename, what):
 
 def save_total_report(output_dir, report_dict):
     results = [row for key, row in report_dict.items() if key != 'header']
+    results.sort(key = lambda row: row[0])
+    results = [row[1:] for row in results]
+    header = report_dict['header'][1:]
+
     t = datetime.datetime.now()
 
     save(output_dir + total_report_fn, {
             'date' : t.strftime('%A, %d %B %Y, %H:%M:%S'),
-            'header' : report_dict['header'],
+            'header' : header,
             'results' : results
     })
 

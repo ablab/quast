@@ -26,5 +26,5 @@ cyclic = True
 rc = True
 extra_report = False
 
-long_options = "output-dir= genes= operons= reference= contig-thresholds= min-contig= orf= genemark-thresholds= mauve gage not-circular disable-rc genemark extra-report to-archive help".split()
-short_options = "o:G:O:R:t:M:f:e:mgndkxh"
+long_options = "output-dir= genes= operons= reference= contig-thresholds= min-contig= orf= genemark-thresholds= mauve gage not-circular disable-rc genemark extra-report save-archive help".split()
+short_options = "o:G:O:R:t:M:f:e:amgndkxh"

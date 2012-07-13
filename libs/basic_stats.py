@@ -27,7 +27,7 @@ def do(reference, filenames, output_dir, all_pdf, json_output_dir):
 
         # saving reference to JSON
         if json_output_dir:
-            json_saver.save_reference_length(json_output_dir, reference_length)
+            json_saver.save_reference_length(json_output_dir, { 'reflen': reference_length })
 
         print 'Reference genome:'
         print ' ', reference, ', reference length =', int(reference_length)

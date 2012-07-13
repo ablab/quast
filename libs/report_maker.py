@@ -28,7 +28,7 @@ def do(report_dict, report_horizontal_name, report_vertical_name, min_contig=0, 
 
     # to avoid confusions:
     if min_contig:
-        txt_file.write('Only contigs of length >= ' + str(min_contig) + ' were taken into account\n\n');
+        txt_file.write('Only contigs of length >= ' + str(min_contig) + ' were taken into account\n\n')
     # header
     for id, value in enumerate(report_dict['header']):
         txt_file.write(' ' + str(value).center(col_widthes[id]) + ' |')

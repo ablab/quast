@@ -62,7 +62,7 @@ def usage():
         print >>sys.stderr, "-d  --disable-rc           reverse complementary contig should NOT be counted as misassembly"
         print >>sys.stderr, "-k  --genemark             use GeneMark"
         print >>sys.stderr, "-x  --extra-report         generate an extra report (extra_report.txt)"
-        print >>sys.stderr, "--to-archive               save an output to an archive directory in the JSON format (for a website)"
+        print >>sys.stderr, "-a  --save-archive         save an output to an archive directory in the JSON format (for a website)"
         print >>sys.stderr, ""
         print >>sys.stderr, "-h  --help                 print this usage message"
 
@@ -121,8 +121,8 @@ def main(args, lib_dir=os.path.join(os.path.abspath(sys.path[0]), 'libs')):
             qconfig.with_genemark = True
         elif opt in ('-x', "--extra-report"):
             qconfig.extra_report = True
-        elif opt in ('--to-archive'):
-            qconfig.to_archive = True
+        elif opt in ('-a', '--save-archive'):
+            qconfig.save_archive = True
         elif opt in ('-h', "--help"):
             usage()
             sys.exit(0)
@@ -161,7 +161,7 @@ def main(args, lib_dir=os.path.join(os.path.abspath(sys.path[0]), 'libs')):
 
     json_output_dir = None
 
-    if qconfig.to_archive:
+    if qconfig.save_archive:
         if not os.path.isdir(qconfig.archive_dir):
             os.makedirs(qconfig.archive_dir)
 
@@ -231,7 +231,7 @@ def main(args, lib_dir=os.path.join(os.path.abspath(sys.path[0]), 'libs')):
     ########################################################################
 
     # dict with the main metrics (for total report)
-    report_dict = {'header' : ['Assembly']}
+    report_dict = {'header' : ['id', 'Assembly']}
     for threshold in qconfig.contig_thresholds:
         report_dict['header'].append('# contigs >= ' + str(threshold))
     for threshold in qconfig.contig_thresholds:
@@ -268,7 +268,7 @@ def main(args, lib_dir=os.path.join(os.path.abspath(sys.path[0]), 'libs')):
                 outfilename = os.path.join(corrected_dir, os.path.basename(basename + '__' + str(i)))
 
         ## filling column "Assembly" with names of assemblies
-        report_dict[os.path.basename(outfilename)] = [os.path.basename(outfilename)]
+        report_dict[os.path.basename(outfilename)] = [id, os.path.basename(outfilename)]
         ## filling columns "Number of contigs >=110 bp", ">200 bp", ">500 bp"
         lengths = fastaparser.get_lengths_from_fastafile(filename)
         for threshold in qconfig.contig_thresholds:
@@ -390,14 +390,14 @@ def main(args, lib_dir=os.path.join(os.path.abspath(sys.path[0]), 'libs')):
         ########################################################################
         ### TOTAL REPORT
         ########################################################################
+        if json_output_dir:
+            json_saver.save_total_report(json_output_dir, report_dict)
+
         import report_maker
         report_maker.do(report_dict, total_report, total_report_tr, qconfig.min_contig, output_dir)
         if all_pdf:
             print '  All pdf files are merged to', all_pdf_filename
             all_pdf.close()
-
-        if json_output_dir:
-            json_saver.save_total_report(json_output_dir, report_dict)
 
         ## and Single Cell paper table
         if qconfig.reference and qconfig.extra_report:

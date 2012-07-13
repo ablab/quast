@@ -52,12 +52,13 @@ function drawCommulativePlot(filenames, lists_of_lengths, plotPlaceholder, legen
             },
             grid: {
                 borderWidth: 1,
-                color: 'CCC',
             },
             yaxis: {
                 min: 0,
                 labelWidth: 80,
                 reserveSpace: true,
+                lineWidth: 0.5,
+                color: '#000',
                 tickFormatter: function (val, axis) {
                     if (val == 0) {
                         return 0;
@@ -72,12 +73,14 @@ function drawCommulativePlot(filenames, lists_of_lengths, plotPlaceholder, legen
             },
             xaxis: {
                 min: 0,
+                lineWidth: 0.5,
+                color: '#000',
                 tickFormatter: function (val, axis) {
                     if (typeof axis.tickSize == 'number' && val > maxContigNumber - axis.tickSize) {
                         return "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" + val + "'th&nbsp;contig";
                     }
                     return val;
-                }
+                },
             },
         }
     );

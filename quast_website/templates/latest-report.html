@@ -60,8 +60,15 @@
             float: left;
             margin-left: 100px;
         }
-        .plots > div {
-            width: 500px;
+        .plot {
+            margin-bottom: 40px;
+        }
+        .plot > p {
+            margin-left: 85px;
+            font-weight: bold;
+        }
+        .plot > div {
+            width: 580px;
             height: 400px;
         }
     </style>
@@ -76,40 +83,29 @@
     </div>
 
     <div class='plots'>
-        <p style='
-            margin: 0 0 20px 83px;
-            font-weight: bold;'>
-            Commulative plot
-        </p>
-        <div id='commulative-plot-placeholder'>
+        <div class='plot'>
+            <p>Commulative length</p>
+            <div id='commulative-plot-placeholder'></div>
         </div>
-        <p style='
-            margin: 50px 0 20px 83px;
-            font-weight: bold;'>
-            Nx plot
-        </p>
-        <div id='nx-plot-placeholder'>
+
+        <div class='plot'>
+            <p>Nx</p>
+            <div id='nx-plot-placeholder'></div>
         </div>
-        <p style='
-            margin: 50px 0 20px 83px;
-            font-weight: bold;'>
-            NAx plot
-        </p>
-        <div id='nax-plot-placeholder'>
+
+        <div class='plot'>
+            <p>NAx</p>
+            <div id='nax-plot-placeholder'></div>
         </div>
-        <p style='
-            margin: 50px 0 20px 83px;
-            font-weight: bold;'>
-            NGx plot
-        </p>
-        <div id='ngx-plot-placeholder'>
+
+        <div class='plot'>
+            <p>NGx</p>
+            <div id='ngx-plot-placeholder'></div>
         </div>
-        <p style='
-            margin: 50px 0 20px 83px;
-            font-weight: bold;'>
-            NGAx plot
-        </p>
-        <div id='ngax-plot-placeholder'>
+
+        <div class='plot'>
+            <p>NGAx</p>
+            <div id='ngax-plot-placeholder'></div>
         </div>
     </div>
 

@@ -1416,11 +1416,13 @@
             var grid = options.grid;
 
             // draw background, if any
-            if (grid.show && grid.backgroundColor)
+            if (grid.show && grid.backgroundColor) {
                 drawBackground();
+            }
             
-            if (grid.show && !grid.aboveData)
+            if (grid.show && !grid.aboveData) {
                 drawGrid();
+            }
 
             for (var i = 0; i < series.length; ++i) {
                 executeHooks(hooks.drawSeries, [ctx, series[i]]);
@@ -1429,8 +1431,9 @@
 
             executeHooks(hooks.draw, [ctx]);
             
-            if (grid.show && grid.aboveData)
+            if (grid.show && grid.aboveData) {
                 drawGrid();
+            }
         }
 
         function extractRange(ranges, coord) {
@@ -1557,10 +1560,10 @@
                 var axis = axes[j], box = axis.box,
                     t = axis.tickLength, x, y, xoff, yoff;
                 if (!axis.show || axis.ticks.length == 0)
-                    continue
+                    continue;
                 
                 ctx.strokeStyle = axis.options.tickColor || $.color.parse(axis.options.color).scale('a', 0.22).toString();
-                ctx.lineWidth = 1;
+                ctx.lineWidth = axis.options.lineWidth; // 0.3; // changed by Vlad Saveliev
 
                 // find the edges
                 if (axis.direction == "x") {
@@ -1586,7 +1589,7 @@
                         xoff = plotWidth;
                     else
                         yoff = plotHeight;
-                    
+
                     if (ctx.lineWidth == 1) {
                         x = Math.floor(x) + 0.5;
                         y = Math.floor(y) + 0.5;

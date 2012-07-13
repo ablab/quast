@@ -6,7 +6,8 @@
  * To change this template use File | Settings | File Templates.
  */
 
-function drawNxPlot(filenames, listsOfLengths, title, refLength, plotPlaceholder, legendPlaceholder) {
+function drawNxPlot(filenames, listsOfLengths, title,
+                    refLength, plotPlaceholder, legendPlaceholder) {
 
     var plotsN = listsOfLengths.length;
     var plotsData = new Array(plotsN);
@@ -65,12 +66,13 @@ function drawNxPlot(filenames, listsOfLengths, title, refLength, plotPlaceholder
             },
             grid: {
                 borderWidth: 1,
-                color: 'CCC',
             },
             yaxis: {
                 min: 0,
                 labelWidth: 80,
                 reserveSpace: true,
+                lineWidth: 0.5,
+                color: '#000',
                 tickFormatter: function (val, axis) {
                     if (val == 0) {
                         return 0;
@@ -90,6 +92,8 @@ function drawNxPlot(filenames, listsOfLengths, title, refLength, plotPlaceholder
             xaxis: {
                 min: 0,
                 max: 100,
+                lineWidth: 0.5,
+                color: '#000',
                 tickFormatter: function (val, axis) {
                     if (val == 100) {
                         return '&nbsp;100%'

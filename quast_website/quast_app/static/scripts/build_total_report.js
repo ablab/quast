@@ -24,6 +24,10 @@ function buildTotalReport() {
         if (typeof val == 'number') {
             val = toPrettyString(val);
         }
+        if (val == null && report.header[i].substr(0,2) == 'NG') {
+            val = '-';
+        }
+
         table = table + '<td>' + val + '</td>';
 
         table += '</tr>\n';

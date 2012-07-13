@@ -74,3 +74,7 @@ def manual(request):
 
 def index(request):
     return render_to_response('index.html')
+
+
+def assess(request):
+    return render_to_response('assess.html')

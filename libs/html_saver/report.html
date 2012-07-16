@@ -3,8 +3,6 @@
 
 <html lang="en">
 <head>
-    <title></title>
-
     <script type="text/javascript" src="js/jquery-1.7.2.min.js"></script>
     <script type="text/javascript" src="js/flot/jquery.flot.js"></script>
     <!-[if lte IE 8]><script type="text/javascript" src="js/flot/excanvas.min.js"></script><![endif]->
@@ -16,21 +14,49 @@
 
     <script type="text/javascript">
         $(document).ready(function() {
-            var report = JSON.parse($('#report-json').html());
-            document.title = 'Report of ' + report.date;
-            $('.header').html('Report of ' + report.date);
-            buildTotalReport(report);
+            try {
+                var report = JSON.parse($('#report-json').html());
+            } catch (e) {
+                report = false;
+            }
+            if (report) {
+                document.title = 'Report of ' + report.date;
+                $('#header').html('Quast report of ' + report.date);
+                buildTotalReport(report);
+            }
 
-            var contigsLengths = JSON.parse($('#contigs-lengths-json').html());
-            drawCommulativePlot(contigsLengths.filenames, contigsLengths.lists_of_lengths, $('#commulative-plot-placeholder'), null);
-            drawNxPlot(contigsLengths.filenames, contigsLengths.lists_of_lengths, 'Nx', null, $('#nx-plot-placeholder'), null);
+            try {
+                var contigsLengths = JSON.parse($('#contigs-lengths-json').html());
+            } catch (e) {
+                contigsLengths = false;
+            }
+            if (contigsLengths) {
+                drawCommulativePlot(contigsLengths.filenames, contigsLengths.lists_of_lengths, $('#commulative-plot-div'), null);
+                drawNxPlot(contigsLengths.filenames, contigsLengths.lists_of_lengths, 'Nx', null, $('#nx-plot-div'), null);
+            }
 
-            var alignedContigsLengths = JSON.parse($('#aligned-contigs-lengths-json').html());
-            drawNxPlot(alignedContigsLengths.filenames, alignedContigsLengths.lists_of_lengths, 'NAx', null, $('#nax-plot-placeholder'), null);
+            try {
+                var alignedContigsLengths = JSON.parse($('#aligned-contigs-lengths-json').html());
+            } catch (e) {
+                alignedContigsLengths = false;
+            }
 
-            var referenceLength = JSON.parse($('#reference-length-json').html()).reflen;
-            drawNxPlot(contigsLengths.filenames, contigsLengths.lists_of_lengths, 'NGx', referenceLength, $('#ngx-plot-placeholder'), null);
-            drawNxPlot(alignedContigsLengths.filenames, alignedContigsLengths.lists_of_lengths, 'NGAx', referenceLength, $('#ngax-plot-placeholder'), null);
+            if (alignedContigsLengths) {
+                drawNxPlot(alignedContigsLengths.filenames, alignedContigsLengths.lists_of_lengths, 'NAx', null, $('#nax-plot-div'), null);
+            }
+
+            try {
+                var referenceLength = JSON.parse($('#reference-length-json').html()).reflen;
+            } catch (e) {
+                referenceLength = false;
+            }
+
+            if (contigsLengths && referenceLength) {
+                drawNxPlot(contigsLengths.filenames, contigsLengths.lists_of_lengths, 'NGx',referenceLength, $('#ngx-plot-div'), null);
+            }
+            if (alignedContigsLengths && referenceLength) {
+                drawNxPlot(alignedContigsLengths.filenames, alignedContigsLengths.lists_of_lengths, 'NGAx', referenceLength, $('#ngax-plot-div'), null);
+            }
         });
     </script>
 
@@ -39,12 +65,16 @@
             margin: 0;
             padding-bottom: 30px;
             font-family: Verdana, Arial, sans-serif;
-            font-size: 11px;
+            font-size: 12px;
         }
         .all {
-            margin-left: 100px;
+            margin-left: 0;
             padding-top: 20px;
             clear: both;
+        }
+        h1#header {
+            font-size: 18px;
+            margin-left: 137px;
         }
 
         #subheader {
@@ -55,13 +85,14 @@
             font-size: 1em;
         }
         #report {
-            float: left;
+            margin-top: 25px;
+            margin-left: 135px;
+            margin-bottom: 60px;
         }
         #report table {
-            margin-left: -2px;
         }
         #report td {
-            padding: 0 2em 0 0;
+            padding: 0 1em 0 0;
             margin:  0;
         }
         #report tr:first-child {
@@ -71,14 +102,13 @@
             display: none;
         }
         .plots {
-            float: left;
             margin-left: 1em;
         }
         .plot {
             margin-bottom: 40px;
         }
         .plot > p {
-            margin-left: 85px;
+            margin-left: 125px;
             margin-top: 2px;
             font-weight: bold;
         }
@@ -97,29 +127,15 @@
     </div>
 
     <div class='plots'>
-        <div class='plot'>
-            <p>Commulative length</p>
-            <div id='commulative-plot-placeholder'></div>
+        <div id='commulative-plot-div'>
         </div>
-
-        <div class='plot'>
-            <p>Nx</p>
-            <div id='nx-plot-placeholder'></div>
+        <div id='nx-plot-div'>
         </div>
-
-        <div class='plot'>
-            <p>NAx</p>
-            <div id='nax-plot-placeholder'></div>
+        <div id='ngx-plot-div'>
         </div>
-
-        <div class='plot'>
-            <p>NGx</p>
-            <div id='ngx-plot-placeholder'></div>
+        <div id='nax-plot-div'>
         </div>
-
-        <div class='plot'>
-            <p>NGAx</p>
-            <div id='ngax-plot-placeholder'></div>
+        <div id='ngax-plot-div'>
         </div>
     </div>
 

@@ -25,7 +25,7 @@ def init(results_dir):
 
     # reading script files
     jquery                  = open('libs/html_saver/js/jquery-1.7.2.min.js').read()
-    flot                    = open('libs/html_saver/js/flot/jquery.flot.min.js').read()
+    flot                    = open('libs/html_saver/js/flot/jquery.flot.js').read()
     excanvas                = open('libs/html_saver/js/flot/excanvas.min.js').read()
     build_total_report      = open('libs/html_saver/js/build_total_report.js').read()
     draw_commulative_plot   = open('libs/html_saver/js/draw_commulative_plot.js').read()

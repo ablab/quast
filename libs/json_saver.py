@@ -19,6 +19,7 @@ def save(filename, what):
     json_file = open(filename, 'w')
     json.dump(what, json_file)
     json_file.close()
+    return filename
 
 
 def save_total_report(output_dir, report_dict):
@@ -29,7 +30,7 @@ def save_total_report(output_dir, report_dict):
 
     t = datetime.datetime.now()
 
-    save(output_dir + total_report_fn, {
+    return save(output_dir + total_report_fn, {
             'date' : t.strftime('%A, %d %B %Y, %H:%M:%S'),
             'header' : header,
             'results' : results
@@ -40,30 +41,31 @@ def save_total_report(output_dir, report_dict):
     #               'header' : report_dict['header'], 'results' : results }, jsn_file)
 
 
+
 def save_contigs_lengths(output_dir, filenames, lists_of_lengths):
     lists_of_lengths = [sorted(list, reverse=True) for list in lists_of_lengths]
 
-    save(output_dir + contigs_fn, {
+    return save(output_dir + contigs_fn, {
         'filenames' : [os.path.basename(fn) for fn in filenames],
         'lists_of_lengths' : lists_of_lengths
     })
 
 
 def save_reference_length(output_dir, reference_length):
-    save(output_dir + ref_length_fn, reference_length)
+    return save(output_dir + ref_length_fn, { 'reflen' : reference_length })
 
 
 def save_aligned_contigs_lengths(output_dir, filenames, lists_of_lengths):
     lists_of_lengths = [sorted(list, reverse=True) for list in lists_of_lengths]
 
-    save(output_dir + aligned_contigs_fn, {
+    return save(output_dir + aligned_contigs_fn, {
         'filenames' : [os.path.basename(fn) for fn in filenames],
         'lists_of_lengths' : lists_of_lengths
     })
 
 
 def save_assembly_lengths(output_dir, filenames, assemblies_lengths):
-    save(output_dir + assemblies_lengths_fn, {
+    return save(output_dir + assemblies_lengths_fn, {
         'filenames' : [os.path.basename(fn) for fn in filenames],
         'assemblies_lengths' : assemblies_lengths
     })

@@ -9,8 +9,9 @@ import itertools
 import fastaparser
 import json_saver
 from qutils import id_to_str
+from html_saver import html_saver
 
-def do(reference, filenames, output_dir, all_pdf, json_output_dir):
+def do(reference, filenames, output_dir, all_pdf, draw_plots, json_output_dir, results_dir):
     
     if not os.path.isdir(output_dir):
         os.mkdir(output_dir)
@@ -27,7 +28,10 @@ def do(reference, filenames, output_dir, all_pdf, json_output_dir):
 
         # saving reference to JSON
         if json_output_dir:
-            json_saver.save_reference_length(json_output_dir, { 'reflen': reference_length })
+            json_saver.save_reference_length(json_output_dir, reference_length)
+
+        # saving to html
+        html_saver.save_reference_length(results_dir, reference_length)
 
         print 'Reference genome:'
         print ' ', reference, ', reference length =', int(reference_length)
@@ -40,6 +44,9 @@ def do(reference, filenames, output_dir, all_pdf, json_output_dir):
     # saving lengths to JSON
     if json_output_dir:
         json_saver.save_contigs_lengths(json_output_dir, filenames, lists_of_lengths)
+
+    # saving to html
+    html_saver.save_contigs_lengths(results_dir, filenames, lists_of_lengths)
 
     ########################################################################
 
@@ -79,18 +86,19 @@ def do(reference, filenames, output_dir, all_pdf, json_output_dir):
         report_dict[os.path.basename(filename)].append(total_length)
         if reference:
             report_dict[os.path.basename(filename)].append(int(reference_length))
-        
-    ########################################################################    
 
-    # Drawing cumulative plot...
-    import plotter
-    plotter.cumulative_plot(filenames, lists_of_lengths, output_dir + '/cumulative_plot', 'Cumulative length', all_pdf)
+    if draw_plots:
+        ########################################################################
+
+        # Drawing cumulative plot...
+        import plotter
+        plotter.cumulative_plot(filenames, lists_of_lengths, output_dir + '/cumulative_plot', 'Cumulative length', all_pdf)
     
-    ########################################################################
+        ########################################################################
 
-    # Drawing Nx and NGx plots...
-    plotter.Nx_plot(filenames, lists_of_lengths, output_dir + '/Nx_plot', 'Nx', [], all_pdf)
-    if reference:
-        plotter.Nx_plot(filenames, lists_of_lengths, output_dir + '/NGx_plot', 'NGx', [reference_length for i in range(len(filenames))], all_pdf)
+        # Drawing Nx and NGx plots...
+        plotter.Nx_plot(filenames, lists_of_lengths, output_dir + '/Nx_plot', 'Nx', [], all_pdf)
+        if reference:
+            plotter.Nx_plot(filenames, lists_of_lengths, output_dir + '/NGx_plot', 'NGx', [reference_length for i in range(len(filenames))], all_pdf)
 
     return report_dict

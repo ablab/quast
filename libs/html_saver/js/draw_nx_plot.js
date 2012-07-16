@@ -1,10 +1,3 @@
-/**
- * Created with PyCharm.
- * User: vladsaveliev
- * Date: 11.07.12
- * Time: 19:59
- * To change this template use File | Settings | File Templates.
- */
 
 function drawNxPlot(filenames, listsOfLengths, title,
                     refLength, plotPlaceholder, legendPlaceholder) {

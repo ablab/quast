@@ -12,7 +12,7 @@ import fastaparser
 import platform
 from qutils import id_to_str
 
-def do(reference, filenames, cyclic, rc, output_dir, lib_dir):
+def do(reference, filenames, cyclic, rc, output_dir, lib_dir, draw_plots):
     if not os.path.isdir(output_dir):
         os.mkdir(output_dir)
 
@@ -75,19 +75,21 @@ def do(reference, filenames, cyclic, rc, output_dir, lib_dir):
         print 'done.'
 
 
-        # draw reference coverage plot
-        print '    Drawing reference coverage plot...',
-        plotfilename = output_dir + '/mummerplot_' + os.path.basename(filename)
-        plot_logfilename_out = output_dir + '/mummerplot_' + os.path.basename(filename) + '.stdout'
-        plot_logfilename_err = output_dir + '/mummerplot_' + os.path.basename(filename) + '.stderr'
-        plot_logfile_out = open(plot_logfilename_out, 'w')
-        plot_logfile_err = open(plot_logfilename_err, 'w')	
-        subprocess.call(
-            ['mummerplot', '--coverage', '--postscript', '--prefix', plotfilename, nucmerfilename + '.delta'],
-            stdout=plot_logfile_out, stderr=plot_logfile_err, env=myenv)
-        plot_logfile_out.close()
-        plot_logfile_err.close()
-        print 'saved to', plotfilename + '.ps'
+        if draw_plots:
+            # draw reference coverage plot
+            print '    Drawing reference coverage plot...',
+            plotfilename = output_dir + '/mummerplot_' + os.path.basename(filename)
+            plot_logfilename_out = output_dir + '/mummerplot_' + os.path.basename(filename) + '.stdout'
+            plot_logfilename_err = output_dir + '/mummerplot_' + os.path.basename(filename) + '.stderr'
+            plot_logfile_out = open(plot_logfilename_out, 'w')
+            plot_logfile_err = open(plot_logfilename_err, 'w')
+            subprocess.call(
+                ['mummerplot', '--coverage', '--postscript', '--prefix', plotfilename, nucmerfilename + '.delta'],
+                stdout=plot_logfile_out, stderr=plot_logfile_err, env=myenv)
+            plot_logfile_out.close()
+            plot_logfile_err.close()
+            print 'saved to', plotfilename + '.ps'
+
         # compute nucmer average % IDY
         if os.path.isfile(nucmerfilename + '.coords'):
             file = open(nucmerfilename + '.coords')
@@ -114,9 +116,10 @@ def do(reference, filenames, cyclic, rc, output_dir, lib_dir):
         for ext in ['.delta', '.mgaps', '.ntref', '.gp']:
             if os.path.isfile(nucmerfilename + ext):
                 os.remove(nucmerfilename + ext)
-        for ext in ['.gp', '.rplot', '.fplot']:
-            if os.path.isfile(plotfilename + ext):
-                os.remove(plotfilename + ext)
+        if draw_plots:
+            for ext in ['.gp', '.rplot', '.fplot']:
+                if os.path.isfile(plotfilename + ext):
+                    os.remove(plotfilename + ext)
         if os.path.isfile('nucmer.error'):
             os.remove('nucmer.error')
         if os.path.isfile(filename + '.clean'):

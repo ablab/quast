@@ -1,10 +1,3 @@
-/**
- * Created with PyCharm.
- * User: vladsaveliev
- * Date: 10.07.12
- * Time: 13:11
- * To change this template use File | Settings | File Templates.
- */
 
 function buildTotalReport(report) {
     var table = '';

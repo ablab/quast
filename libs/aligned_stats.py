@@ -8,7 +8,6 @@ import os
 import itertools
 import sys
 import fastaparser
-import json_saver
 from qutils import id_to_str
 
 def get_lengths_from_coordfile(nucmer_filename):    
@@ -43,7 +42,7 @@ def get_lengths_from_coordfile(nucmer_filename):
     return aligned_lengths
 
 ######## MAIN ############
-def do(reference, filenames, nucmer_dir, output_dir, all_pdf, json_output_dir):
+def do(reference, filenames, nucmer_dir, output_dir, all_pdf, draw_plots, json_output_dir, results_dir):
 
     if not os.path.isdir(output_dir):
         os.mkdir(output_dir)
@@ -96,16 +95,24 @@ def do(reference, filenames, nucmer_dir, output_dir, all_pdf, json_output_dir):
         
     ########################################################################
 
+    # saving to JSON
     if json_output_dir:
+        import json_saver
         json_saver.save_aligned_contigs_lengths(json_output_dir, filenames, lists_of_lengths)
         json_saver.save_assembly_lengths(json_output_dir, filenames, assembly_lengths)
 
-    # Drawing cumulative plot (aligned contigs)...
-    import plotter
-    plotter.cumulative_plot(filenames, lists_of_lengths, output_dir + '/cumulative_plot', 'Cumulative length (aligned contigs)', all_pdf)
+    # saving to html
+    from libs.html_saver import html_saver
+    html_saver.save_aligned_contigs_lengths(results_dir, filenames, lists_of_lengths)
+    html_saver.save_assembly_lengths(results_dir, filenames, assembly_lengths)
 
-    # Drawing NAx and NGAx plots...
-    plotter.Nx_plot(filenames, lists_of_lengths, output_dir + '/NAx_plot', 'NAx', assembly_lengths, all_pdf)
-    plotter.Nx_plot(filenames, lists_of_lengths, output_dir + '/NGAx_plot', 'NGAx', [reference_length for i in range(len(filenames))], all_pdf)
+    if draw_plots:
+        # Drawing cumulative plot (aligned contigs)...
+        import plotter
+        plotter.cumulative_plot(filenames, lists_of_lengths, output_dir + '/cumulative_plot', 'Cumulative length (aligned contigs)', all_pdf)
+
+        # Drawing NAx and NGAx plots...
+        plotter.Nx_plot(filenames, lists_of_lengths, output_dir + '/NAx_plot', 'NAx', assembly_lengths, all_pdf)
+        plotter.Nx_plot(filenames, lists_of_lengths, output_dir + '/NGAx_plot', 'NGAx', [reference_length for i in range(len(filenames))], all_pdf)
 
     return report_dict

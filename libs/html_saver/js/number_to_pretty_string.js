@@ -1,10 +1,4 @@
-/**
- * Created with PyCharm.
- * User: vladsaveliev
- * Date: 12.07.12
- * Time: 12:18
- * To change this template use File | Settings | File Templates.
- */
+
 
 function toPrettyString(num) {
     if (num < 10000) {

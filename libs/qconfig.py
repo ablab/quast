@@ -15,6 +15,7 @@ output_dir = "results_" + datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
 archive_dir = 'quast_results_archive_json'
 json_results_dir = 'results_json_' + datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
 to_archive = False
+draw_plots = True
 make_latest_symlink = True
 reference = ''
 genes = ''
@@ -26,5 +27,6 @@ cyclic = True
 rc = True
 extra_report = False
 
-long_options = "output-dir= genes= operons= reference= contig-thresholds= min-contig= orf= genemark-thresholds= mauve gage not-circular disable-rc genemark extra-report save-archive help".split()
-short_options = "o:G:O:R:t:M:f:e:amgndkxh"
+long_options = "output-dir= genes= operons= reference= contig-thresholds= min-contig= orf= genemark-thresholds= mauve gage not-circular disable-rc genemark extra-report save-archive plain-report-no-plots help".split()
+short_options = "o:G:O:R:t:M:f:e:apmgndkxh"
+

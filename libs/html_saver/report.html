@@ -5,18 +5,34 @@
 <head>
     <title></title>
 
-    <link rel="stylesheet" href="/static/css/style.css" type="text/css" media="all"/>
+    <script type="text/javascript" src="js/jquery-1.7.2.min.js"></script>
+    <script type="text/javascript" src="js/flot/jquery.flot.js"></script>
+    <!-[if lte IE 8]><script type="text/javascript" src="js/flot/excanvas.min.js"></script><![endif]->
 
-    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.3.2/jquery.min.js"></script>
-    <script type="text/javascript" src="/static/scripts/flot/jquery.flot.js"></script>
-    <!–[if lte IE 8]><script type="text/javascript" src="/static/scripts/flot/excanvas.min.js"></script><![endif]–>
+    <script type="text/javascript" src="js/build_total_report.js"></script>
+    <script type="text/javascript" src="js/draw_commulative_plot.js"></script>
+    <script type="text/javascript" src="js/draw_nx_plot.js"></script>
+    <script type="text/javascript" src="js/number_to_pretty_string.js"></script>
 
-    <script type="text/javascript" src="/static/scripts/build_total_report.js"></script>
-    <script type="text/javascript" src="/static/scripts/draw_commulative_plot.js"></script>
-    <script type="text/javascript" src="/static/scripts/draw_nx_plot.js"></script>
-    <script type="text/javascript" src="/static/scripts/number_to_pretty_string.js"></script>
+    <script type="text/javascript">
+        $(document).ready(function() {
+            var report = JSON.parse($('#report-json').html());
+            document.title = 'Report of ' + report.date;
+            $('.header').html('Report of ' + report.date);
+            buildTotalReport(report);
 
-    {% block extra_head %}{% endblock %}
+            var contigsLengths = JSON.parse($('#contigs-lengths-json').html());
+            drawCommulativePlot(contigsLengths.filenames, contigsLengths.lists_of_lengths, $('#commulative-plot-placeholder'), null);
+            drawNxPlot(contigsLengths.filenames, contigsLengths.lists_of_lengths, 'Nx', null, $('#nx-plot-placeholder'), null);
+
+            var alignedContigsLengths = JSON.parse($('#aligned-contigs-lengths-json').html());
+            drawNxPlot(alignedContigsLengths.filenames, alignedContigsLengths.lists_of_lengths, 'NAx', null, $('#nax-plot-placeholder'), null);
+
+            var referenceLength = JSON.parse($('#reference-length-json').html()).reflen;
+            drawNxPlot(contigsLengths.filenames, contigsLengths.lists_of_lengths, 'NGx', referenceLength, $('#ngx-plot-placeholder'), null);
+            drawNxPlot(alignedContigsLengths.filenames, alignedContigsLengths.lists_of_lengths, 'NGAx', referenceLength, $('#ngax-plot-placeholder'), null);
+        });
+    </script>
 
     <style type="text/css">
         body {
@@ -25,58 +41,106 @@
             font-family: Verdana, Arial, sans-serif;
             font-size: 11px;
         }
-        .top {
-            background-color: #333;
-            color: white;
-        }
         .all {
             margin-left: 100px;
             padding-top: 20px;
             clear: both;
         }
 
-        ul.menu {
-            margin: 0 0 0 100px;
-            padding: 1.5em 2em 3em 0;
-            list-style-type: none;
+        #subheader {
+            margin-top: -13px;
+            margin-bottom: 20px;
         }
-        ul.menu a {
+        #report * {
+            font-size: 1em;
+        }
+        #report {
             float: left;
-            padding-right: 2em;
-            color: white;
-            font-size: 1.2em;
         }
-        ul.menu a:hover {
-            color: red;
+        #report table {
+            margin-left: -2px;
         }
-        ul.menu li.current a {
-            pointer-events: none;
-            cursor: default;
-            text-decoration: none;
-            color: #AAA;
+        #report td {
+            padding: 0 2em 0 0;
+            margin:  0;
         }
-
-        .clear_float {
-            clear: both;
+        #report tr:first-child {
+            font-weight: bold;
+        }
+        .json-code {
+            display: none;
+        }
+        .plots {
+            float: left;
+            margin-left: 1em;
+        }
+        .plot {
+            margin-bottom: 40px;
+        }
+        .plot > p {
+            margin-left: 85px;
+            margin-top: 2px;
+            font-weight: bold;
+        }
+        .plot > div {
+            width: 580px;
+            height: 400px;
         }
     </style>
 </head>
 
 <body>
-<div class='top'>
-    <ul class='menu'>
-        <li class='{% block        index-menu-li-class %}{% endblock %}'><a href='/'>            About Quast            </a></li>
-        <li class='{% block latestreport-menu-li-class %}{% endblock %}'><a href='/latestreport'>Latest report          </a></li>
-        <li class='{% block       assess-menu-li-class %}{% endblock %}'><a href='/assess'>      Assess assembly quality</a></li>
-    </ul>
-    <span class='clear_float'></span>
-</div>
-
 <div class="all">
-    <h1>{% block header %}{% endblock %}</h1>
-    <div>{% block content %}{% endblock %}<div>
+    <h1 id='header'></h1>
+
+    <div id='report'>
     </div>
 
-        <div style='clear: both;'></div>
+    <div class='plots'>
+        <div class='plot'>
+            <p>Commulative length</p>
+            <div id='commulative-plot-placeholder'></div>
+        </div>
+
+        <div class='plot'>
+            <p>Nx</p>
+            <div id='nx-plot-placeholder'></div>
+        </div>
+
+        <div class='plot'>
+            <p>NAx</p>
+            <div id='nax-plot-placeholder'></div>
+        </div>
+
+        <div class='plot'>
+            <p>NGx</p>
+            <div id='ngx-plot-placeholder'></div>
+        </div>
+
+        <div class='plot'>
+            <p>NGAx</p>
+            <div id='ngax-plot-placeholder'></div>
+        </div>
+    </div>
+
+    <div class='json-code'>
+        <div id='report-json'>
+            {{ report }}
+        </div>
+        <div id="contigs-lengths-json">
+            {{ contigsLenghts }}
+        </div>
+        <div id='aligned-contigs-lengths-json'>
+            {{ alignedContigsLengths }}
+        </div>
+        <div id='assemblies-lengths-json'>
+            {{ assembliesLengths }}
+        </div>
+        <div id='reference-length-json'>
+            {{ referenceLength }}
+        </div>
+    </div>
+
+</div>
 </body>
 </html>

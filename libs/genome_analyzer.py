@@ -14,7 +14,7 @@ import collections
 import itertools
 from qutils import id_to_str
 
-def do(reference, filenames, output_dir, nucmer_dir, genes_filename, operons_filename, all_pdf, json_output_dir):
+def do(reference, filenames, output_dir, nucmer_dir, genes_filename, operons_filename, all_pdf, draw_plots, json_output_dir, results_dir):
 
     # some important constants
     nucmer_prefix = os.path.join(os.path.abspath(sys.path[0]), nucmer_dir + '/nucmer_')
@@ -79,7 +79,6 @@ def do(reference, filenames, output_dir, nucmer_dir, genes_filename, operons_fil
     report_dict['header'].append('Mapped genome (%)')
     report_dict['header'].append('Genes')
     report_dict['header'].append('Operons')
-
 
     # for cumulative plots:
     files_contigs = {}   #  "filename" : [ [contig_blocks] ]   
@@ -250,16 +249,17 @@ def do(reference, filenames, output_dir, nucmer_dir, genes_filename, operons_fil
 
     res_file.close()
 
-    # cumulative plots:
-    import plotter
-    if genes:
-        plotter.genes_operons_plot(filenames, files_contigs, genes, genes_found, output_dir + '/genes_cumulative_plot', 'genes', all_pdf)
-        plotter.histogram(filenames, full_genes, output_dir + '/complete_genes_histogram', 'Number of complete genes', all_pdf, 'Number of complete genes')
-    if operons:
-        plotter.genes_operons_plot(filenames, files_contigs, operons, operons_found, output_dir + '/operons_cumulative_plot', 'operons', all_pdf)
-        plotter.histogram(filenames, full_operons, output_dir + '/complete_operons_histogram', 'Number of complete operons', all_pdf, 'Number of complete operons')
+    if draw_plots:
+        # cumulative plots:
+        import plotter
+        if genes:
+            plotter.genes_operons_plot(filenames, files_contigs, genes, genes_found, output_dir + '/genes_cumulative_plot', 'genes', all_pdf)
+            plotter.histogram(filenames, full_genes, output_dir + '/complete_genes_histogram', 'Number of complete genes', all_pdf, 'Number of complete genes')
+        if operons:
+            plotter.genes_operons_plot(filenames, files_contigs, operons, operons_found, output_dir + '/operons_cumulative_plot', 'operons', all_pdf)
+            plotter.histogram(filenames, full_operons, output_dir + '/complete_operons_histogram', 'Number of complete operons', all_pdf, 'Number of complete operons')
 
-    plotter.histogram(filenames, genome_mapped, output_dir + '/genome_mapped_histogram', 'Genome mapped, %', all_pdf, top_value=100)
+        plotter.histogram(filenames, genome_mapped, output_dir + '/genome_mapped_histogram', 'Genome mapped, %', all_pdf, top_value=100)
 
     print '  Done'
 

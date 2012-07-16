@@ -46,25 +46,26 @@ def usage():
         print >>sys.stderr, "-h/--help           print this usage message"
     else:
         print >>sys.stderr, 'Options with arguments'
-        print >>sys.stderr, "-o  --output-dir           directory to store all result files [default: results_<datetime>]"
-        print >>sys.stderr, "-R  --reference            file with a reference genome"
-        print >>sys.stderr, "-G  --genes                file with genes for a given species"
-        print >>sys.stderr, "-O  --operons              file with operons for a given species"
-        print >>sys.stderr, "-M  --min-contig           lower threshold for contig length [default: %s]" % (qconfig.min_contig)
-        print >>sys.stderr, "-t  --contig-thresholds    comma-separated list of contig length thresholds [default is %s]" % (qconfig.contig_thresholds)
-        print >>sys.stderr, "-f  --orf                  comma-separated list of threshold lengths of ORFs to search for [default is %s]" % (qconfig.orf_lengths)
-        print >>sys.stderr, "-e  --genemark-thresholds  comma-separated list of threshold lengths of genes to search with GeneMark (default is %s)" % (qconfig.genes_lengths)
+        print >>sys.stderr, "-o  --output-dir             directory to store all result files [default: results_<datetime>]"
+        print >>sys.stderr, "-R  --reference              file with a reference genome"
+        print >>sys.stderr, "-G  --genes                  file with genes for a given species"
+        print >>sys.stderr, "-O  --operons                file with operons for a given species"
+        print >>sys.stderr, "-M  --min-contig             lower threshold for contig length [default: %s]" % (qconfig.min_contig)
+        print >>sys.stderr, "-t  --contig-thresholds      comma-separated list of contig length thresholds [default is %s]" % (qconfig.contig_thresholds)
+        print >>sys.stderr, "-f  --orf                    comma-separated list of threshold lengths of ORFs to search for [default is %s]" % (qconfig.orf_lengths)
+        print >>sys.stderr, "-e  --genemark-thresholds    comma-separated list of threshold lengths of genes to search with GeneMark (default is %s)" % (qconfig.genes_lengths)
         print >>sys.stderr, ""
         print >>sys.stderr, 'Options without arguments'
-        print >>sys.stderr, '-m  --mauve                use Mauve'
-        print >>sys.stderr, '-g  --gage                 use Gage only'
-        print >>sys.stderr, '-n  --not-circular         genome is not circular (e.g., eukaryote)'
-        print >>sys.stderr, "-d  --disable-rc           reverse complementary contig should NOT be counted as misassembly"
-        print >>sys.stderr, "-k  --genemark             use GeneMark"
-        print >>sys.stderr, "-x  --extra-report         generate an extra report (extra_report.txt)"
-        print >>sys.stderr, "-a  --save-archive         save an output to an archive directory in the JSON format (for a website)"
+        print >>sys.stderr, '-m  --mauve                  use Mauve'
+        print >>sys.stderr, '-g  --gage                   use Gage only'
+        print >>sys.stderr, '-n  --not-circular           genome is not circular (e.g., eukaryote)'
+        print >>sys.stderr, "-d  --disable-rc             reverse complementary contig should NOT be counted as misassembly"
+        print >>sys.stderr, "-k  --genemark               use GeneMark"
+        print >>sys.stderr, "-x  --extra-report           generate an extra report (extra_report.txt)"
+        print >>sys.stderr, "-a  --save-archive           save an output to an archive directory in the JSON format (for a website)"
+        print >>sys.stderr, "-p  --plain-report-no-plots  plain text report only, don't draw plots (to make quast faster)"
         print >>sys.stderr, ""
-        print >>sys.stderr, "-h  --help                 print this usage message"
+        print >>sys.stderr, "-h  --help                   print this usage message"
 
 def check_file(f, message=''):
     if not os.path.isfile(f):
@@ -123,6 +124,8 @@ def main(args, lib_dir=os.path.join(os.path.abspath(sys.path[0]), 'libs')):
             qconfig.extra_report = True
         elif opt in ('-a', '--save-archive'):
             qconfig.save_archive = True
+        elif opt in ('-p', '--plain-report-no-plots'):
+            qconfig.draw_plots = False
         elif opt in ('-h', "--help"):
             usage()
             sys.exit(0)
@@ -319,18 +322,19 @@ def main(args, lib_dir=os.path.join(os.path.abspath(sys.path[0]), 'libs')):
         import gage
         gage.do(qconfig.reference, contigs, output_dir + '/gage', gage_report, gage_report_tab, qconfig.min_contig, lib_dir)
     else:
-        import plotter
-        try:
-            from matplotlib.backends.backend_pdf import PdfPages
-            all_pdf = PdfPages(all_pdf_filename)
-        except:
-            all_pdf = None
+        if qconfig.draw_plots:
+            import plotter
+            try:
+                from matplotlib.backends.backend_pdf import PdfPages
+                all_pdf = PdfPages(all_pdf_filename)
+            except:
+                all_pdf = None
 
         ########################################################################	
         ### Stats and plots
         ########################################################################	
         import basic_stats
-        cur_results_dict = basic_stats.do(qconfig.reference, contigs, output_dir + '/basic_stats', all_pdf, json_output_dir)
+        cur_results_dict = basic_stats.do(qconfig.reference, contigs, output_dir + '/basic_stats', all_pdf, qconfig.draw_plots, json_output_dir, output_dir)
         report_dict = extend_report_dict(report_dict, cur_results_dict)
 
         if qconfig.reference:
@@ -338,7 +342,7 @@ def main(args, lib_dir=os.path.join(os.path.abspath(sys.path[0]), 'libs')):
             ### PLANTAGORA 
             ########################################################################
             import plantagora
-            cur_results_dict = plantagora.do(qconfig.reference, contigs, qconfig.cyclic, qconfig.rc, output_dir + '/plantagora', lib_dir)
+            cur_results_dict = plantagora.do(qconfig.reference, contigs, qconfig.cyclic, qconfig.rc, output_dir + '/plantagora', lib_dir, qconfig.draw_plots)
             report_dict = extend_report_dict(report_dict, cur_results_dict)
 
             ########################################################################
@@ -351,14 +355,14 @@ def main(args, lib_dir=os.path.join(os.path.abspath(sys.path[0]), 'libs')):
             ### NA and NGA ("aligned N and NG")
             ########################################################################
             import aligned_stats
-            cur_results_dict = aligned_stats.do(qconfig.reference, contigs, output_dir + '/plantagora', output_dir + '/aligned_stats', all_pdf, json_output_dir)
+            cur_results_dict = aligned_stats.do(qconfig.reference, contigs, output_dir + '/plantagora', output_dir + '/aligned_stats', all_pdf, qconfig.draw_plots, json_output_dir, output_dir)
             report_dict = extend_report_dict(report_dict, cur_results_dict)
 
             ########################################################################
             ### GENOME_ANALYZER
             ########################################################################
             import genome_analyzer
-            cur_results_dict = genome_analyzer.do(qconfig.reference, contigs, output_dir + '/genome_analyzer', output_dir + '/plantagora', qconfig.genes, qconfig.operons, all_pdf, json_output_dir)
+            cur_results_dict = genome_analyzer.do(qconfig.reference, contigs, output_dir + '/genome_analyzer', output_dir + '/plantagora', qconfig.genes, qconfig.operons, all_pdf, qconfig.draw_plots, json_output_dir, output_dir)
             report_dict = extend_report_dict(report_dict, cur_results_dict)
 
             ########################################################################
@@ -393,9 +397,12 @@ def main(args, lib_dir=os.path.join(os.path.abspath(sys.path[0]), 'libs')):
         if json_output_dir:
             json_saver.save_total_report(json_output_dir, report_dict)
 
+        from libs.html_saver import html_saver
+        html_saver.save_total_report(output_dir, report_dict)
+
         import report_maker
         report_maker.do(report_dict, total_report, total_report_tr, qconfig.min_contig, output_dir)
-        if all_pdf:
+        if qconfig.draw_plots and all_pdf:
             print '  All pdf files are merged to', all_pdf_filename
             all_pdf.close()
 

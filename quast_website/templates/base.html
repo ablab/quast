@@ -25,11 +25,11 @@
             font-family: Verdana, Arial, sans-serif;
             font-size: 11px;
         }
-        .header {
+        .top {
             background-color: #333;
             color: white;
         }
-        .content {
+        .all {
             margin-left: 100px;
             padding-top: 20px;
             clear: both;
@@ -63,16 +63,18 @@
 </head>
 
 <body>
-    <div class='header'>
+    <div class='top'>
         <ul class='menu'>
-            <li class='{% block        index-menu-li-class %}{% endblock %}'><a href='/'>            About Quast  </a></li>
-            <li class='{% block latestreport-menu-li-class %}{% endblock %}'><a href='/latestreport'>Latest report</a></li>
+            <li class='{% block        index-menu-li-class %}{% endblock %}'><a href='/'>            About Quast            </a></li>
+            <li class='{% block latestreport-menu-li-class %}{% endblock %}'><a href='/latestreport'>Latest report          </a></li>
+            <li class='{% block       assess-menu-li-class %}{% endblock %}'><a href='/assess'>      Assess assembly quality</a></li>
         </ul>
         <span class='clear_float'></span>
     </div>
 
-    <div class="content">
-        {% block content %}{% endblock %}
+    <div class="all">
+        <h1>{% block header %}{% endblock %}</h1>
+        <div>{% block content %}{% endblock %}<div>
     </div>
 
     <div style='clear: both;'></div>

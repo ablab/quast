@@ -1,5 +1,24 @@
-{% extends base %}
+{% extends "base.html" %}
+
+{% block title %}Quality Assessment{% endblock %}
+
+{% block assess-menu-li-class %}current{% endblock %}
+
+{% block header %}Assess assembly quality{% endblock %}
 
 {% block content %}
-<p>Please, load your contigs.</p>
+    <form action="/load/" method="post">
+        <p>Contigs</p>
+        <p>Reference</p>
+        <p>Genes</p>
+        <p>Operons</p>
+        <p>Reference</p>
+
+        {% csrf_token %}
+        {% for choice in poll.choice_set.all %}
+            <input type="radio" name="choice" id="choice{{ forloop.counter }}" value="{{ choice.id }}" />
+            <label for="choice{{ forloop.counter }}">   {{ choice.choice }}</label><br />
+        {% endfor %}
+        <input type="submit" value="Load" />
+    </form>
 {% endblock %}

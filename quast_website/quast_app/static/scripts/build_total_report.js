@@ -7,8 +7,6 @@
  */
 
 function buildTotalReport(report) {
-    $('#header').append('<span class="date">' + report.date + '</span>');
-
     var table = '';
     table += '<table class=".report-table">';
 

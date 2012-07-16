@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block extra_head %}
+    <script type="text/javascript">
+        $(document).ready(function() {
+
+            var report = JSON.parse($('#report-json').html());
+
+            document.title = 'Report of ' + report.date;
+
+            $('#subheader').append('<span class="date">' + report.date + '</span>');
+
+            buildTotalReport(report);
+
+            var contigsLengths = JSON.parse($('#contigs-lengths-json').html());
+
+            drawCommulativePlot(contigsLengths.filenames, contigsLengths.lists_of_lengths,
+                    $('#commulative-plot-placeholder'), null);
+
+            drawNxPlot(contigsLengths.filenames, contigsLengths.lists_of_lengths, 'Nx', null,
+                    $('#nx-plot-placeholder'), null);
+
+            var alignedContigsLengths = JSON.parse($('#aligned-contigs-lengths-json').html());
+
+            drawNxPlot(alignedContigsLengths.filenames, alignedContigsLengths.lists_of_lengths,
+                    'NAx', null, $('#nax-plot-placeholder'), null);
+
+            var referenceLength = JSON.parse($('#reference-length-json').html()).reflen;
+
+            drawNxPlot(contigsLengths.filenames, contigsLengths.lists_of_lengths, 'NGx',
+                    referenceLength, $('#ngx-plot-placeholder'), null);
+
+            drawNxPlot(alignedContigsLengths.filenames, alignedContigsLengths.lists_of_lengths,
+                    'NGAx', referenceLength, $('#ngax-plot-placeholder'), null);
+        });
+    </script>
+
+    <style>
+        #subheader {
+            margin-top: -13px;
+            margin-bottom: 20px;
+        }
+        #report * {
+            font-size: 1em;
+        }
+        #report {
+            float: left;
+        }
+        #report table {
+            margin-left: -2px;
+        }
+        #report td {
+            padding: 0 2em 0 0;
+            margin:  0;
+        }
+        #report tr:first-child {
+            font-weight: bold;
+        }
+        .json-code {
+            display: none;
+        }
+        .plots {
+            float: left;
+            margin-left: 1em;
+        }
+        .plot {
+            margin-bottom: 40px;
+        }
+        .plot > p {
+            margin-left: 85px;
+            margin-top: 2px;
+            font-weight: bold;
+        }
+        .plot > div {
+            width: 580px;
+            height: 400px;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <div id='subheader'>
+    </div>
+
+    <div id='report'>
+    </div>
+
+    <div class='plots'>
+        <div class='plot'>
+            <p>Commulative length</p>
+            <div id='commulative-plot-placeholder'></div>
+        </div>
+
+        <div class='plot'>
+            <p>Nx</p>
+            <div id='nx-plot-placeholder'></div>
+        </div>
+
+        <div class='plot'>
+            <p>NAx</p>
+            <div id='nax-plot-placeholder'></div>
+        </div>
+
+        <div class='plot'>
+            <p>NGx</p>
+            <div id='ngx-plot-placeholder'></div>
+        </div>
+
+        <div class='plot'>
+            <p>NGAx</p>
+            <div id='ngax-plot-placeholder'></div>
+        </div>
+    </div>
+
+    <div class='json-code'>
+        <div id='report-json'>
+            {{ report }}
+        </div>
+        <div id="contigs-lengths-json">
+            {{ contigsLenghts }}
+        </div>
+        <div id='aligned-contigs-lengths-json'>
+            {{ alignedContigsLengths }}
+        </div>
+        <div id='assemblies-lengths-json'>
+            {{ assembliesLengths }}
+        </div>
+        <div id='reference-length-json'>
+            {{ referenceLength }}
+        </div>
+    </div>
+{% endblock %}

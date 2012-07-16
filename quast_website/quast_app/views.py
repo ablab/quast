@@ -1,47 +1,56 @@
 import os
+import subprocess
 from django.http import Http404, HttpResponse
 from django.shortcuts import render_to_response
 from django.utils.encoding import smart_str
+from django import forms
 
-report_fn  =            '../quast_results_archive_json/latest/report.json'
-contigs_fn =            '../quast_results_archive_json/latest/contigs_lengths.json'
-aligned_contigs_fn =    '../quast_results_archive_json/latest/aligned_contigs_lengths.json'
-assemblies_lengths_fn = '../quast_results_archive_json/latest/assemblies_lengths.json'
-reference_length_fn =   '../quast_results_archive_json/latest/ref_length.json'
+defalt_dir = '../quast_results_archive_json/latest/'
 
-def latestreport(request):
+report_fn  =            'report.json'
+contigs_fn =            'contigs_lengths.json'
+aligned_contigs_fn =    'aligned_contigs_lengths.json'
+assemblies_lengths_fn = 'assemblies_lengths.json'
+reference_length_fn =   'ref_length.json'
+
+
+def response_with_report(template, dir):
     try:
-        report = open(report_fn).read()
+        report = open(dir + report_fn).read()
     except IOError:
         raise Http404
 
     try:
-        contigs_lengths = open(contigs_fn).read()
+        contigs_lengths = open(dir + contigs_fn).read()
     except IOError:
         raise Http404
 
     try:
-        aligned_contifs_lengths = open(aligned_contigs_fn).read()
+        assemblies_lengths = open(dir + assemblies_lengths_fn).read()
     except IOError:
         raise Http404
 
     try:
-        assemblies_lengths = open(assemblies_lengths_fn).read()
+        aligned_contigs_lengths = open(dir + aligned_contigs_fn).read()
     except IOError:
-        raise Http404
+        pass
 
     try:
-        reference_length = open(reference_length_fn).read()
+        reference_length = open(dir + reference_length_fn).read()
     except IOError:
-        raise Http404
+        pass
 
-    return render_to_response('latest-report.html', {
-        'report'  : report,
+    return render_to_response(template, {
+        'report' : report,
         'contigsLenghts' : contigs_lengths,
-        'alignedContigsLengths' : aligned_contifs_lengths,
+        'alignedContigsLengths' : aligned_contigs_lengths,
         'assembliesLengths' : assemblies_lengths,
         'referenceLength' : reference_length,
     })
+
+
+def latestreport(request):
+    return response_with_report('latest-report.html', defalt_dir)
 
 #static_path = 'quast_app/static/'
 #
@@ -76,5 +85,50 @@ def index(request):
     return render_to_response('index.html')
 
 
+
+def assess_with_quast(files):
+    contigs = [files['contigs1']]
+    reference = files['reference']
+    genes = files['genes']
+    operons = files['operons']
+    if contigs:
+        if reference and operons and genes:
+            subprocess.call('../quast.py --save-archive -R test/reference.fa.gz -G test/genes.txt '
+                + '-O test/operons.txt test/allpaths_full_ecoli.fasta test/SPAdes_full_ecoli.fasta')
+            response_with_report('assess-report.html', defalt_dir)
+
+
+class UploadForm(forms.Form):
+    contigs1    = forms.FileField()
+    reference   = forms.FileField()
+    genes       = forms.FileField()
+    operons     = forms.FileField()
+
+
 def assess(request):
-    return render_to_response('assess.html')
+    if request.method == 'POST':
+        form = UploadForm(request.POST, request.FILES)
+        if form.is_valid():
+            results_dir = assess_with_quast(request.FILES)
+            return response_with_report('assess-report.html', results_dir)
+        else:
+            raise Http404
+
+    else:
+        form = UploadForm()
+    return render_to_response('assess.html', {'form' : form})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

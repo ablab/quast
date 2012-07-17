@@ -14,21 +14,26 @@
 
     <script type="text/javascript">
         $(document).ready(function() {
+            var report = null;
+            var contigsLengths = null;
+            var alignedContigsLengths = null;
+            var referenceLength = null;
+
             try {
-                var report = JSON.parse($('#report-json').html());
+                report = JSON.parse($('#report-json').html());
             } catch (e) {
-                template = false;
+                report = null;
             }
-            if (template) {
-                document.title = 'Report of ' + template.date;
-                $('#header').html('Quast report of ' + template.date);
-                buildTotalReport(template);
+            if (report) {
+                document.title = 'Report of ' + report.date;
+                $('#header').html('Quast report of ' + report.date);
+                buildTotalReport(report);
             }
 
             try {
-                var contigsLengths = JSON.parse($('#contigs-lengths-json').html());
+                contigsLengths = JSON.parse($('#contigs-lengths-json').html());
             } catch (e) {
-                contigsLengths = false;
+                contigsLengths = null;
             }
             if (contigsLengths) {
                 drawCommulativePlot(contigsLengths.filenames, contigsLengths.lists_of_lengths, $('#commulative-plot-div'), null);
@@ -36,9 +41,9 @@
             }
 
             try {
-                var alignedContigsLengths = JSON.parse($('#aligned-contigs-lengths-json').html());
+                alignedContigsLengths = JSON.parse($('#aligned-contigs-lengths-json').html());
             } catch (e) {
-                alignedContigsLengths = false;
+                alignedContigsLengths = null;
             }
 
             if (alignedContigsLengths) {
@@ -46,9 +51,9 @@
             }
 
             try {
-                var referenceLength = JSON.parse($('#reference-length-json').html()).reflen;
+                referenceLength = JSON.parse($('#reference-length-json').html()).reflen;
             } catch (e) {
-                referenceLength = false;
+                referenceLength = null;
             }
 
             if (contigsLengths && referenceLength) {

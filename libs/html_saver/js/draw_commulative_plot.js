@@ -6,7 +6,7 @@ function drawCommulativePlot(filenames, lists_of_lengths, div, legendPlaceholder
         "<div class='plot'>" +
             "<p>Commulative length</p>" +
             "<div style='width: 580px; height: 400px;' id='commulative-plot-placeholder'></div>" +
-        "</div>'"
+        "</div>"
     );
 
     var plotsN = lists_of_lengths.length;

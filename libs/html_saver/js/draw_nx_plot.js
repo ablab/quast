@@ -6,7 +6,7 @@ function drawNxPlot(filenames, listsOfLengths, title,
         "<div class='plot'>" +
             "<p>" + title + "</p>" +
             "<div style='width: 580px; height: 400px;' id='" + title + "-plot-placeholder'></div>" +
-        "</div>'"
+        "</div>"
     );
 
     var plotsN = listsOfLengths.length;

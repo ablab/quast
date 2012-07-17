@@ -17,12 +17,12 @@
             try {
                 var report = JSON.parse($('#report-json').html());
             } catch (e) {
-                report = false;
+                template = false;
             }
-            if (report) {
-                document.title = 'Report of ' + report.date;
-                $('#header').html('Quast report of ' + report.date);
-                buildTotalReport(report);
+            if (template) {
+                document.title = 'Report of ' + template.date;
+                $('#header').html('Quast report of ' + template.date);
+                buildTotalReport(template);
             }
 
             try {

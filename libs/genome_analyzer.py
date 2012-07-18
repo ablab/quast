@@ -12,6 +12,8 @@ import genes_parser
 import subprocess
 import collections
 import itertools
+from libs import json_saver
+from libs.html_saver import html_saver
 from qutils import id_to_str
 
 def do(reference, filenames, output_dir, nucmer_dir, genes_filename, operons_filename, all_pdf, draw_plots, json_output_dir, results_dir):
@@ -248,6 +250,25 @@ def do(reference, filenames, output_dir, nucmer_dir, genes_filename, operons_fil
         res_file.write('\n')
 
     res_file.close()
+
+
+    # saving json
+    if json_output_dir:
+        if genes or operons:
+            json_saver.save_contigs(json_output_dir, filenames, files_contigs)
+        if genes:
+            json_saver.save_genes(json_output_dir, genes, genes_found)
+        if operons:
+            json_saver.save_operons(json_output_dir, operons, operons_found)
+
+    # saving html
+    if genes or operons:
+        html_saver.save_contigs(results_dir, filenames, files_contigs)
+    if genes:
+        html_saver.save_genes(results_dir, genes, genes_found)
+    if operons:
+        html_saver.save_operons(results_dir, operons, operons_found)
+
 
     if draw_plots:
         # cumulative plots:

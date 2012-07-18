@@ -47,7 +47,7 @@ function drawNxPlot(filenames, listsOfLengths, title,
         }
     }
 
-    for (var i = 0; i < plotsN; i++) {
+    for (i = 0; i < plotsN; i++) {
         plotsData[i].points = {
             show: true,
                 radius: 1,
@@ -79,7 +79,7 @@ function drawNxPlot(filenames, listsOfLengths, title,
                     } else if (val > 1000000) {
                         return (val / 1000000).toFixed(1) + ' Mbp';
                     } else if (val > 1000) {
-                        if (val + axis.tickSize >= 1000000 || val >= maxY) {
+                        if (val + axis.tickSize >= 1000000 || val > maxY + 1) {
                             return (val / 1000).toFixed(0) + ' Kbp';
                         } else {
                             return (val / 1000).toFixed(0);

@@ -28,11 +28,13 @@ def init(results_dir):
                            'build_total_report.js',
                            'draw_commulative_plot.js',
                            'draw_nx_plot.js',
-                           'number_to_pretty_string.js',]:
+                           'number_to_pretty_string.js',
+                           'draw_genes_plot.js',
+                           'build_report.js']:
 
             with open('libs/html_saver/js/' + scriptpath) as f:
                 html = html.replace(
-                    '<script type="text/javascript" src="js/' + scriptpath + '"></script>',
+                    '<script type="text/javascript" src="/static/scripts/' + scriptpath + '"></script>',
                     '<script type="text/javascript">\n' + f.read() + '\n\t</script>\n')
 
         with open(results_dir + '/' + report_fn, 'w') as html_file:
@@ -66,23 +68,31 @@ def save_total_report(results_dir, report_dict):
     json_fn = json_saver.save_total_report(results_dir, report_dict)
     append(results_dir, json_fn, 'report')
 
-
 def save_contigs_lengths(results_dir, filenames, lists_of_lengths):
     json_fn = json_saver.save_contigs_lengths(results_dir, filenames, lists_of_lengths)
     append(results_dir, json_fn, 'contigsLenghts')
-
 
 def save_reference_length(results_dir, reference_length):
     json_fn = json_saver.save_reference_length(results_dir, reference_length)
     append(results_dir, json_fn, 'referenceLength')
 
-
 def save_aligned_contigs_lengths(results_dir, filenames, lists_of_lengths):
     json_fn = json_saver.save_aligned_contigs_lengths(results_dir, filenames, lists_of_lengths)
     append(results_dir, json_fn, 'alignedContigsLengths')
 
-
 def save_assembly_lengths(results_dir, filenames, assemblies_lengths):
     json_fn = json_saver.save_assembly_lengths(results_dir, filenames, assemblies_lengths)
     append(results_dir, json_fn, 'assembliesLengths')
+
+def save_contigs(results_dir, filenames, contigs):
+    json_fn = json_saver.save_contigs(results_dir, filenames, contigs)
+    append(results_dir, json_fn, 'contigs')
+
+def save_genes(results_dir, genes, found):
+    json_fn = json_saver.save_genes(results_dir, genes, found)
+    append(results_dir, json_fn, 'genes')
+
+def save_operons(results_dir, operons, found):
+    json_fn = json_saver.save_operons(results_dir, operons, found)
+    append(results_dir, json_fn, 'operons')
 

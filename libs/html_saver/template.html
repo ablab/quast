@@ -3,66 +3,19 @@
 
 <html lang="en">
 <head>
-    <script type="text/javascript" src="js/jquery-1.7.2.min.js"></script>
-    <script type="text/javascript" src="js/flot/jquery.flot.js"></script>
-    <!-[if lte IE 8]><script type="text/javascript" src="js/flot/excanvas.min.js"></script><![endif]->
+    <script type="text/javascript" src="/static/scripts/jquery-1.7.2.min.js"></script>
+    <script type="text/javascript" src="/static/scripts/flot/jquery.flot.js"></script>
+    <!-[if lte IE 8]><script type="text/javascript" src="/static/scripts/flot/excanvas.min.js"></script><![endif]->
 
-    <script type="text/javascript" src="js/build_total_report.js"></script>
-    <script type="text/javascript" src="js/draw_commulative_plot.js"></script>
-    <script type="text/javascript" src="js/draw_nx_plot.js"></script>
-    <script type="text/javascript" src="js/number_to_pretty_string.js"></script>
+    <script type="text/javascript" src="/static/scripts/build_total_report.js"></script>
+    <script type="text/javascript" src="/static/scripts/draw_commulative_plot.js"></script>
+    <script type="text/javascript" src="/static/scripts/draw_nx_plot.js"></script>
+    <script type="text/javascript" src="/static/scripts/number_to_pretty_string.js"></script>
+    <script type="text/javascript" src="/static/scripts/draw_genes_plot.js"></script>
+    <script type="text/javascript" src="/static/scripts/build_report.js"></script>
 
     <script type="text/javascript">
-        $(document).ready(function() {
-            var report = null;
-            var contigsLengths = null;
-            var alignedContigsLengths = null;
-            var referenceLength = null;
-
-            try {
-                report = JSON.parse($('#report-json').html());
-            } catch (e) {
-                report = null;
-            }
-            if (report) {
-                document.title = 'Report of ' + report.date;
-                $('#header').html('Quast report of ' + report.date);
-                buildTotalReport(report);
-            }
-
-            try {
-                contigsLengths = JSON.parse($('#contigs-lengths-json').html());
-            } catch (e) {
-                contigsLengths = null;
-            }
-            if (contigsLengths) {
-                drawCommulativePlot(contigsLengths.filenames, contigsLengths.lists_of_lengths, $('#commulative-plot-div'), null);
-                drawNxPlot(contigsLengths.filenames, contigsLengths.lists_of_lengths, 'Nx', null, $('#nx-plot-div'), null);
-            }
-
-            try {
-                alignedContigsLengths = JSON.parse($('#aligned-contigs-lengths-json').html());
-            } catch (e) {
-                alignedContigsLengths = null;
-            }
-
-            if (alignedContigsLengths) {
-                drawNxPlot(alignedContigsLengths.filenames, alignedContigsLengths.lists_of_lengths, 'NAx', null, $('#nax-plot-div'), null);
-            }
-
-            try {
-                referenceLength = JSON.parse($('#reference-length-json').html()).reflen;
-            } catch (e) {
-                referenceLength = null;
-            }
-
-            if (contigsLengths && referenceLength) {
-                drawNxPlot(contigsLengths.filenames, contigsLengths.lists_of_lengths, 'NGx',referenceLength, $('#ngx-plot-div'), null);
-            }
-            if (alignedContigsLengths && referenceLength) {
-                drawNxPlot(alignedContigsLengths.filenames, alignedContigsLengths.lists_of_lengths, 'NGAx', referenceLength, $('#ngax-plot-div'), null);
-            }
-        });
+        $(document).ready(buildReport);
     </script>
 
     <style type="text/css">
@@ -142,6 +95,10 @@
         </div>
         <div id='ngax-plot-div'>
         </div>
+        <div id='genes-plot-div'>
+        </div>
+        <div id='operons-plot-div'>
+        </div>
     </div>
 
     <div class='json-code'>
@@ -159,6 +116,15 @@
         </div>
         <div id='reference-length-json'>
             {{ referenceLength }}
+        </div>
+        <div id='contigs-json'>
+            {{ contigs }}
+        </div>
+        <div id='genes-json'>
+            {{ genes }}
+        </div>
+        <div id='operons-json'>
+            {{ operons }}
         </div>
     </div>
 

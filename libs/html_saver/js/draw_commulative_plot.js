@@ -12,7 +12,7 @@ function drawCommulativePlot(filenames, lists_of_lengths, div, legendPlaceholder
     var plotsN = lists_of_lengths.length;
     var plotsData = new Array(plotsN);
 
-    var maxContigNumber = 0;
+    var maxX = 0;
 
     for (var i = 0; i < plotsN; i++) {
         var lengths = lists_of_lengths[i];
@@ -29,12 +29,12 @@ function drawCommulativePlot(filenames, lists_of_lengths, div, legendPlaceholder
             plotsData[i].data[j] = [j+1, y];
         }
 
-        if (size > maxContigNumber) {
-            maxContigNumber = size;
+        if (size > maxX) {
+            maxX = size;
         }
     }
 
-    for (var i = 0; i < plotsN; i++) {
+    for (i = 0; i < plotsN; i++) {
         plotsData[i].points = {
             show: true,
             radius: 1,
@@ -77,8 +77,8 @@ function drawCommulativePlot(filenames, lists_of_lengths, div, legendPlaceholder
                 lineWidth: 0.5,
                 color: '#000',
                 tickFormatter: function (val, axis) {
-                    if (typeof axis.tickSize == 'number' && val > maxContigNumber - axis.tickSize) {
-                        return "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" + val + "'th&nbsp;contig";
+                    if (typeof axis.tickSize == 'number' && val > maxX - axis.tickSize) {
+                        return "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" + val + "'th&nbsp;contig";
                     }
                     return val;
                 },

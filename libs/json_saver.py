@@ -7,12 +7,16 @@
 import datetime
 import json
 import os
+from libs.genes_parser import Gene
 
 total_report_fn       = '/report.json'
-contigs_fn            = '/contigs_lengths.json'
+contigs_lengths_fn    = '/contigs_lengths.json'
 ref_length_fn         = '/ref_length.json'
 aligned_contigs_fn    = '/aligned_contigs_lengths.json'
 assemblies_lengths_fn = '/assemblies_lengths.json'
+contigs_fn            = '/contigs.json'
+genes_fn              = '/genes.json'
+operons_fn            = '/operons.json'
 
 
 def save(filename, what):
@@ -41,12 +45,11 @@ def save_total_report(output_dir, report_dict):
     #               'header' : report_dict['header'], 'results' : results }, jsn_file)
 
 
-
 def save_contigs_lengths(output_dir, filenames, lists_of_lengths):
     lists_of_lengths = [sorted(list, reverse=True) for list in lists_of_lengths]
 
-    return save(output_dir + contigs_fn, {
-        'filenames' : [os.path.basename(fn) for fn in filenames],
+    return save(output_dir + contigs_lengths_fn, {
+        'filenames' : map(os.path.basename, filenames),
         'lists_of_lengths' : lists_of_lengths
     })
 
@@ -59,14 +62,36 @@ def save_aligned_contigs_lengths(output_dir, filenames, lists_of_lengths):
     lists_of_lengths = [sorted(list, reverse=True) for list in lists_of_lengths]
 
     return save(output_dir + aligned_contigs_fn, {
-        'filenames' : [os.path.basename(fn) for fn in filenames],
+        'filenames' : map(os.path.basename, filenames),
         'lists_of_lengths' : lists_of_lengths
     })
 
 
 def save_assembly_lengths(output_dir, filenames, assemblies_lengths):
     return save(output_dir + assemblies_lengths_fn, {
-        'filenames' : [os.path.basename(fn) for fn in filenames],
+        'filenames' : map(os.path.basename, filenames),
         'assemblies_lengths' : assemblies_lengths
     })
 
+
+def save_contigs(output_dir, filenames, contigs):
+    return save(output_dir + contigs_fn, {
+        'filenames' : map(os.path.basename, filenames),
+        'contigs' : { os.path.basename(fn) : blocks for fn, blocks in contigs.items() },
+    })
+
+
+def save_genes(output_dir, genes, found):
+    genes = [[g.start,g.end] for g in genes]
+    return save(output_dir + genes_fn, {
+        'genes' : genes,
+        'found' : found,
+    })
+
+
+def save_operons(output_dir, operons, found):
+    operons = [[g.start, g.end] for g in operons]
+    return save(output_dir + operons_fn, {
+        'operons' : operons,
+        'found' : found,
+    })

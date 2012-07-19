@@ -30,12 +30,23 @@ def init(results_dir):
                            'draw_nx_plot.js',
                            'number_to_pretty_string.js',
                            'draw_genes_plot.js',
-                           'build_report.js']:
+                           'build_report.js',]:
 
             with open('libs/html_saver/js/' + scriptpath) as f:
                 html = html.replace(
                     '<script type="text/javascript" src="/static/scripts/' + scriptpath + '"></script>',
                     '<script type="text/javascript">\n' + f.read() + '\n\t</script>\n')
+
+        html = html.replace('<link rel="stylesheet" href="/static/bootstrap/css/bootstrap.css"/>',
+            '<style rel="stylesheet">\n' + open('libs/html_saver/css/bootstrap.min.css').read() + '\n</style>\n\n')
+
+        html = html.replace('<script type="text/javascript" src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>',
+            '<script type="text/javascript" >\n' + open('libs/html_saver/js/iehtml5.js').read() + '\n</script>')
+
+        html = html.replace('<script type="text/javascript" src="/static/bootstrap/js/bootstrap-tooltip-vlad.js"></script>',
+            '<script type="text/javascript" >\n' + open('libs/html_saver/js/bootstrap-tooltip-vlad.js').read() + '\n</script>')
+
+        html = html.replace('{{ glossary }}', open('libs/html_saver/glossary.json').read())
 
         with open(results_dir + '/' + report_fn, 'w') as html_file:
             html_file.write(html)

@@ -14,6 +14,12 @@
     <script type="text/javascript" src="/static/scripts/draw_genes_plot.js"></script>
     <script type="text/javascript" src="/static/scripts/build_report.js"></script>
 
+    <link rel="stylesheet" href="/static/bootstrap/css/bootstrap.css"/>
+    <!-- Le HTML5 shim, for IE6-8 support of HTML5 elements -->
+    <!--[if lt IE 9]>
+        <script type="text/javascript" src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
     <script type="text/javascript">
         $(document).ready(buildReport);
     </script>
@@ -22,15 +28,18 @@
         body {
             margin: 0;
             padding-bottom: 30px;
+
             font-family: Verdana, Arial, sans-serif;
-            font-size: 12px;
+            font-size: 13px;
+            color: black;
+            line-height: 1.3em;
         }
-        .all {
+        .content {
             margin-left: 0;
-            padding-top: 20px;
+            padding-top: 50px;
             clear: both;
         }
-        h1#header {
+        #header {
             font-size: 18px;
             margin-left: 137px;
         }
@@ -39,22 +48,15 @@
             margin-top: -13px;
             margin-bottom: 20px;
         }
-        #report * {
-            font-size: 1em;
-        }
+
         #report {
             margin-top: 25px;
-            margin-left: 135px;
+            margin-left: 137px;
             margin-bottom: 60px;
-        }
-        #report table {
         }
         #report td {
             padding: 0 1em 0 0;
             margin:  0;
-        }
-        #report tr:first-child {
-            font-weight: bold;
         }
         .json-code {
             display: none;
@@ -65,39 +67,74 @@
         .plot {
             margin-bottom: 40px;
         }
-        .plot > p {
-            margin-left: 125px;
-            margin-top: 2px;
+        .plot-header {
+            margin-left: 124px;
             font-weight: bold;
+            height: 1.5em;
+            display: block;
         }
         .plot > div {
             width: 580px;
             height: 400px;
         }
+
+        a {
+            text-decoration: underline;
+        }
+        .tooltip-link {
+            color: black;
+            text-decoration: none;
+            border-bottom: 1px dashed black;
+        }
+        .tooltip-link:hover {
+            color: black;
+            text-decoration: none;
+        }
+        .dotted-link {
+            text-decoration: none;
+            border-bottom: 1px dashed #0088cc;
+        }
+        .dotted-link:hover {
+            text-decoration: none;
+            border-bottom-color: #005580;
+        }
+        .tooltip {
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+        .tooltip.in {
+            opacity: 1;
+        }
+        .tooltip-inner {
+            text-align: left;
+        }
     </style>
 </head>
 
 <body>
-<div class="all">
-    <h1 id='header'></h1>
+    <div class="content">
+        <div id='header'>
+            <span>Quast report <span id='subheader'></span></span>
+        </div>
 
-    <div id='report'>
-    </div>
+        <div id='report'>
+        </div>
 
-    <div class='plots'>
-        <div id='commulative-plot-div'>
-        </div>
-        <div id='nx-plot-div'>
-        </div>
-        <div id='ngx-plot-div'>
-        </div>
-        <div id='nax-plot-div'>
-        </div>
-        <div id='ngax-plot-div'>
-        </div>
-        <div id='genes-plot-div'>
-        </div>
-        <div id='operons-plot-div'>
+        <div class='plots'>
+            <div id='commulative-plot-div'>
+            </div>
+            <div id='nx-plot-div'>
+            </div>
+            <div id='ngx-plot-div'>
+            </div>
+            <div id='nax-plot-div'>
+            </div>
+            <div id='ngax-plot-div'>
+            </div>
+            <div id='genes-plot-div'>
+            </div>
+            <div id='operons-plot-div'>
+            </div>
         </div>
     </div>
 
@@ -128,6 +165,21 @@
         </div>
     </div>
 
-</div>
+    <div class='json-code'>
+        <div id='glossary-json'>
+            {{ glossary }}
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        $(document).ready(function () {
+            $("[rel=tooltip]").tooltip({
+                animation: false,
+            });
+        });
+    </script>
+
+    <script type="text/javascript" src="/static/bootstrap/js/bootstrap-tooltip-vlad.js"></script>
+
 </body>
 </html>

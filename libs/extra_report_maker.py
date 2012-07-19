@@ -42,7 +42,7 @@ def do(total_report, genome_info, output_filename, min_contig):
 
     ##
     metrics_new_headers = ['Assembly', '# contigs', 'genome N50 (bp)', 'genome NA50 (bp)', 'Largest (bp)', \
-        'Total (bp)', 'Mapped genome (%)', 'Misassemblies', 'Misassembled Contigs', 'Misassembled Contig Bases', '_aux Miscalled', '_aux Genes']
+        'Total (bp)', 'Mapped genome (%)', 'Misassemblies', 'Misassembled contigs', 'Misassembled contig bases', '_aux miscalled', '_aux genes']
     metrics_old_headers = ['Assembly', 'Number of contigs', 'NG50', 'NGA50', 'Largest contig', \
         'Total length', 'Mapped genome (%)', 'Misassemblies', 'Misassembled Contigs', 'Misassembled Contig Bases', 'Number of MisCalled', 'Genes']
 
@@ -86,7 +86,7 @@ def do(total_report, genome_info, output_filename, min_contig):
             if not metric.startswith('_aux'):
                 report_dict[cur_assembly].append(fields[metrics_positions[id]].strip())
             else:
-                if metric == '_aux Miscalled':                    
+                if metric == '_aux Miscalled':
                     if fields[metrics_positions[id]].strip() == '':
                         report_dict[cur_assembly].append('nd')
                     else:                        

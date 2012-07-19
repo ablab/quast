@@ -8,6 +8,8 @@ function buildReport() {
     var genes = null;
     var operons = null;
 
+    var glossary = JSON.parse($('#glossary-json').html());
+
     try {
         report = JSON.parse($('#report-json').html());
     } catch (e) {
@@ -17,7 +19,7 @@ function buildReport() {
     if (report) {
         document.title += ('of ' + report.date);
         $('#subheader').append('of ' + report.date);
-        buildTotalReport(report);
+        buildTotalReport(report, glossary);
     }
 
     report = null;
@@ -29,8 +31,8 @@ function buildReport() {
     }
 
     if (contigsLengths) {
-        drawCommulativePlot(contigsLengths.filenames, contigsLengths.lists_of_lengths, $('#commulative-plot-div'), null);
-        drawNxPlot(contigsLengths.filenames, contigsLengths.lists_of_lengths, 'Nx', null, $('#nx-plot-div'), null);
+        drawCommulativePlot(contigsLengths.filenames, contigsLengths.lists_of_lengths, $('#commulative-plot-div'), null,  glossary);
+        drawNxPlot(contigsLengths.filenames, contigsLengths.lists_of_lengths, 'Nx', null, $('#nx-plot-div'), null,  glossary);
     }
 
     try {
@@ -40,7 +42,7 @@ function buildReport() {
     }
 
     if (alignedContigsLengths) {
-        drawNxPlot(alignedContigsLengths.filenames, alignedContigsLengths.lists_of_lengths, 'NAx', null, $('#nax-plot-div'), null);
+        drawNxPlot(alignedContigsLengths.filenames, alignedContigsLengths.lists_of_lengths, 'NAx', null, $('#nax-plot-div'), null,  glossary);
     }
 
     try {
@@ -50,10 +52,10 @@ function buildReport() {
     }
 
     if (contigsLengths && referenceLength) {
-        drawNxPlot(contigsLengths.filenames, contigsLengths.lists_of_lengths, 'NGx',referenceLength, $('#ngx-plot-div'), null);
+        drawNxPlot(contigsLengths.filenames, contigsLengths.lists_of_lengths, 'NGx',referenceLength, $('#ngx-plot-div'), null,  glossary);
     }
     if (alignedContigsLengths && referenceLength) {
-        drawNxPlot(alignedContigsLengths.filenames, alignedContigsLengths.lists_of_lengths, 'NGAx', referenceLength, $('#ngax-plot-div'), null);
+        drawNxPlot(alignedContigsLengths.filenames, alignedContigsLengths.lists_of_lengths, 'NGAx', referenceLength, $('#ngax-plot-div'), null,  glossary);
     }
 
     contigsLengths = null;
@@ -80,10 +82,10 @@ function buildReport() {
 
     if (contigs) {
         if (genes) {
-            drawGenesPlot(contigs.filenames, contigs.contigs, genes.genes, genes.found, 'gene', $('#genes-plot-div'), null);
+            drawGenesPlot(contigs.filenames, contigs.contigs, genes.genes, genes.found, 'gene', $('#genes-plot-div'), null,  glossary);
         }
         if (operons) {
-            drawGenesPlot(contigs.filenames, contigs.contigs, operons.operons, operons.found, 'operon', $('#operons-plot-div'), null);
+            drawGenesPlot(contigs.filenames, contigs.contigs, operons.operons, operons.found, 'operon', $('#operons-plot-div'), null,  glossary);
         }
     }
 

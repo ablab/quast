@@ -1,9 +1,9 @@
 
-function drawGenesPlot(filenames, filesContigs, genes, found, kind, div, legendPlaceholder) {
+function drawGenesPlot(filenames, filesContigs, genes, found, kind, div, legendPlaceholder,  glossary) {
 
     div.html(
         "<div class='plot'>" +
-            "<p>" + kind[0].toUpperCase() + kind.slice(1) + "s covered</p>" +
+            "<span class='plot-header'>" + kind[0].toUpperCase() + kind.slice(1) + "s covered</span>" +
             "<div style='width: 580px; height: 400px;' id='" + kind + "s-plot-placeholder'></div>" +
         "</div>"
     );

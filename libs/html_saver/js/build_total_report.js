@@ -1,26 +1,42 @@
 
-function buildTotalReport(report) {
+function buildTotalReport(report, glossary) {
     var table = '';
-    table += '<table class=".report-table">';
+    table += '<table class="report-table">';
 
     for (var i = 0; i < report.header.length; i++) {
+        var keyCell;
+
         if (i == 0) {
-            table += '\t<tr><td>Total report</td>';
+            keyCell = '<b>Total report</b>';
         } else {
-            table += '\t<tr><td>' + report.header[i] + '</td>';
+            var key = report.header[i];
+            if (glossary.hasOwnProperty(key)) {
+                keyCell = '<a class="tooltip-link" href="#" rel="tooltip" title="' +
+                    key + ' ' + glossary[key] + '">' + key + '</a>';
+            } else {
+                keyCell = key;
+            }
         }
+
+        table += '<tr><td><span style="">' + keyCell + '</span></td>';
 
         for (var j = 0; j < report.results.length; j++) {
-            val = report.results[j][i];
-            if (typeof val == 'number') {
-                val = toPrettyString(val);
-            }
-            if (val == null && report.header[i].substr(0,2) == 'NG') {
-                val = '-';
-            }
-            table = table + '<td style="text-align: right">' + val + '</td>';
-        }
+            var value = report.results[j][i];
+            var valueCell = value;
 
+            if (i == 0) {
+                valueCell = '<b>' + value + '</b>';
+            } else {
+                if (typeof value == 'number') {
+                    valueCell = '<span style="font-stretch: ultra-condensed">' + toPrettyString(value) + '</span>';
+                }
+                if (value == null && report.header[i].substr(0,2) == 'NG') {
+                    valueCell = '-';
+                }
+            }
+
+            table += '<td><span style="">' + valueCell + '</span></td>'
+        }
         table += '</tr>\n';
     }
     table += '</table>';

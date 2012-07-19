@@ -1,10 +1,9 @@
 
-
-function drawCommulativePlot(filenames, lists_of_lengths, div, legendPlaceholder) {
+function drawCommulativePlot(filenames, lists_of_lengths, div, legendPlaceholder, glossary) {
 
     div.html(
         "<div class='plot'>" +
-            "<p>Commulative length</p>" +
+            "<span class='plot-header'>Commulative length</span>" +
             "<div style='width: 580px; height: 400px;' id='commulative-plot-placeholder'></div>" +
         "</div>"
     );

@@ -28,12 +28,12 @@ def do(reference, contigs, output_dir, total_report, total_report_tab, min_conti
 
     print 'Running GAGE tool...'
     metrics = ['Total units', 'Min', 'Max', 'N50', 'Genome Size', 'Assembly Size', 'Chaff bases', 'Missing Reference Bases', 'Missing Assembly Bases', 'Missing Assembly Contigs',
-        'Duplicated Reference Bases', 'Compressed Reference Bases', 'Bad Trim', 'Avg Idy', 'SNPs', 'Indels < 5bp', 'Indels >= 5', 'Inversions', 'Relocation', 'Translocation', 
+        'Duplicated Reference Bases', 'Compressed Reference Bases', 'Bad Trim', 'Avg Idy', 'SNPs', 'Indels < 5bp', 'Indels >= 5', 'Inversions', 'Relocation', 'Translocation',
         'Total units', 'BasesInFasta', 'Min', 'Max', 'N50']
-    metrics_headers = ['Contigs #', 'Min contig', 'Max contig', 'N50', 'Genome Size', 'Assembly Size', 'Chaff bases', 'Missing Reference Bases', 'Missing Assembly Bases', 
-        'Missing Assembly Contigs', 'Duplicated Reference Bases', 'Compressed Reference Bases', 'Bad Trim', 'Avg Idy', 
+    metrics_headers = ['Contigs #', 'Min contig', 'Max contig', 'N50', 'Genome size', 'Assembly size', 'Chaff bases', 'Missing reference bases', 'Missing assembly bases',
+        'Missing assembly contigs', 'Duplicated reference bases', 'Compressed reference bases', 'Bad trim', 'Avg idy',
         'SNPs', 'Indels < 5bp', 'Indels >= 5', 'Inversions', 'Relocation', 'Translocation', 
-        'Corrected contig #', 'Corrected Assembly Size', 'Min correct contig', 'Max correct contig', 'Corrected N50']
+        'Corrected contig #', 'Corrected assembly size', 'Min correct contig', 'Max correct contig', 'Corrected N50']
 
     for metric in metrics_headers:
         report_dict['header'].append(metric)    

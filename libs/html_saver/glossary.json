@@ -1,0 +1,33 @@
+{
+    "N50"                           : "<span>is the contig length such that using longer or equal length contigs produces half (50%) the bases of the assembly. Usually there is no value that produces exactly 50%, so the more technical definition is the minimal length x such that using contigs of length at least x accounts for at least 50% of the total assembly length.</span>",
+    "NG50"                          : "<span>is the contig length such that using longer or equal length contigs produces half (50%) the bases of the reference genome. This metric could be computed only if the reference is given.</span>",
+    "N75"                           : "<span>is the contig length such that using longer or equal length contigs produces 75% the bases of the assembly. Usually there is no value that produces exactly 75%, so the more technical definition is the minimal length x such that using contigs of length at least x accounts for at least 75% of the total assembly length.</span>",
+    "NG75"                          : "<span>is the contig length such that using longer or equal length contigs produces 75% the bases of the reference genome. This metric could be computed only if the reference is given.</span>",
+
+    "NA50"                          : "<span>is N50 with usage the lengths of aligned blocks instead of contigs lengths. I.e. if a contig has a misassembly with respect to the reference, the contig is breaken into smaller pieces.</span>",
+    "NGA50"                         : "<span>is NG50 with usage the lengths of aligned blocks instead of contigs lengths. I.e. if a contig has a misassembly with respect to the reference, the contig is breaken into smaller pieces.</span>",
+    "NA75"                          : "<span>is N75 with usage the lengths of aligned blocks instead of contigs lengths. I.e. if a contig has a misassembly with respect to the reference, the contig is breaken into smaller pieces.</span>",
+    "NGA75"                         : "<span>is NG75 with usage the lengths of aligned blocks instead of contigs lengths. I.e. if a contig has a misassembly with respect to the reference, the contig is breaken into smaller pieces.</span>",
+
+    "Average %IDY"                  : "<span>the average of alignment identity percent (i.e. alignment accuracy) among all contigs.</span>",
+    "Misassemblies"                 : "<span>gives the number of positions at the assembled contigs where the left flanking sequence aligns over 1kb away from the right flanking sequence on the reference or they overlap on more than 1 kb or flanking sequences align on different strands. This metric could be computed only if the reference is given.</span>",
+    "Misassembled contigs"          : "<span>is the number of contigs that contain misassembly events.</span>",
+    "Misassembled contig bases"     : "<span>is the number of total bases contained in all contigs that have one or more misassemblies.</span>",
+    "Misassembled and unaligned"    : "<span>is the number of contigs which contain misassembly events but which have alignment to the reference of length less than 10% of contigs length (almost unaligned contigs).</span>",
+    "Unaligned contigs"             : "<span>is the number of contigs that have no alignment to the reference sequence. The value “X + Y part” means: X totally unaligned contigs plus Y partially unaligned contigs.</span>",
+    "Unaligned contig bases"        : "<span>is the total number of unaligned bases in totally and partially unaligned contigs (only bases from unaligned parts).</span>",
+    "Ambiguous contigs"             : "<span>is the number of contigs which have reference alignments of equal quality in multiple locations on the reference. The value “X (Y)” means X ambiguous contigs with Y bases in them.</span>",
+    "Mapped genome (%)"             : "<span>is the ratio of total number of aligned bp in the assembly to the genome size. Short contigs (less than 500 bp) that map to multiple places may be counted many times in this quantity. A base in the genome is counted as aligned one if there is at least one contig with at least one alignment with this base.</span>",
+    "Genes"                         : "<span>is the number of genes in the assembly (full and partial), based on the positions the contigs map to in the reference genome with an annotated list of genes. The value “X + Y part” means X full genes and Y partial ones (at least 100 bases are aligned).</span>",
+    "Operons"                       : "<span>is the number of operons in the assembly (full and partial), based on the positions the contigs map to in the reference genome with an annotated list of operons. The value “X + Y part” means X full operons and Y partial ones (at least 100 bases are aligned).</span>",
+    "#ORFs ≥ x bp"                  : "<span>is the total number of open reading frames of length ≥ x bp founded in the assembly (the length of one codon is 3 bp). This metric will be computed if genes annotations file is not given.</span>",
+    "# ORFs >= x bp"                : "<span>is the total number of open reading frames of length ≥ x bp founded in the assembly (the length of one codon is 3 bp). This metric will be computed if genes annotations file is not given.</span>",
+
+    "Cumulative length"             : "<span>plot shows the growth rate of assemblies lengthes. The y-axis is the size of assembly and x-axis is the number of contigs in the assembly (from the largest one to the smallest one).</span>",
+    "Nx"                            : "<span>plot shows the changes of Nx metric value with the percentage of an assembly length</span>  <span>Nx is the minimal length <b>y</b> such that using contigs of length at least <b>y</b> accounts for at least x% of the total assembly length.</span>",
+    "NGx"                           : "<span>plot shows the changes of NGx metric value with the percentage of a reference length</span> <span>NGx is the contig length such that using longer or equal length contigs produces x% the bases of the reference genome. This metric could be computed only if the reference is given.</span>",
+    "NAx"                           : "<span>plot shows the changes of NAx metric value with the percentage of an assembly length</span> <span>NAx is Nx with usage the lengths of aligned blocks instead of contigs lengths.</span>",
+    "NGAx"                          : "<span>plot shows the changes of NGAx metric value with the percentage of a reference length</span><span>NGAx is NGx with usage the lengths of aligned blocks instead of contigs lengths.</span>",
+
+    "SNPs"                          : "<span>is number of single-nucleotide polymorphisms</span>"
+}

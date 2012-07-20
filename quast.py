@@ -62,7 +62,8 @@ def usage():
         print >>sys.stderr, "-d  --disable-rc             reverse complementary contig should NOT be counted as misassembly"
         print >>sys.stderr, "-k  --genemark               use GeneMark"
         print >>sys.stderr, "-x  --extra-report           generate an extra report (extra_report.txt)"
-        print >>sys.stderr, "-a  --save-archive           save an output to an archive directory in the JSON format (for a website)"
+        print >>sys.stderr, "-j  --save-json              save the output also in the JSON format"
+        print >>sys.stderr, "-J  --save-json-to <path>    save the JSON-output to a particular path"
         print >>sys.stderr, "-p  --plain-report-no-plots  plain text report only, don't draw plots (to make quast faster)"
         print >>sys.stderr, ""
         print >>sys.stderr, "-h  --help                   print this usage message"
@@ -91,6 +92,8 @@ def main(args, lib_dir=os.path.join(os.path.abspath(sys.path[0]), 'libs')):
         usage()
         sys.exit(1)
 
+    json_output_dir = None
+
     for opt, arg in options:
         # Yes, this is doubling the code. Python's getopt is non well-thought!!
         if opt in ('-o', "--output-dir"):
@@ -110,6 +113,11 @@ def main(args, lib_dir=os.path.join(os.path.abspath(sys.path[0]), 'libs')):
             qconfig.orf_lengths = arg
         elif opt in ('-e', "--genemark-thresholds"):
             qconfig.genes_lengths = arg
+        elif opt in ('-j', '--save-json'):
+            qconfig.save_json = True
+        elif opt in ('-J', '--save-json-to'):
+            qconfig.save_json = True
+            json_output_dir = arg
         elif opt in ('-m', "--mauve"):
             qconfig.with_mauve = True
         elif opt in ('-g', "--gage"):
@@ -122,8 +130,6 @@ def main(args, lib_dir=os.path.join(os.path.abspath(sys.path[0]), 'libs')):
             qconfig.with_genemark = True
         elif opt in ('-x', "--extra-report"):
             qconfig.extra_report = True
-        elif opt in ('-a', '--save-archive'):
-            qconfig.save_archive = True
         elif opt in ('-p', '--plain-report-no-plots'):
             qconfig.draw_plots = False
         elif opt in ('-h', "--help"):
@@ -160,38 +166,15 @@ def main(args, lib_dir=os.path.join(os.path.abspath(sys.path[0]), 'libs')):
             os.remove(latest_symlink)
         os.symlink(output_dir, latest_symlink)
 
-    # Json
-
-    json_output_dir = None
-
-    if qconfig.save_archive:
-        if not os.path.isdir(qconfig.archive_dir):
-            os.makedirs(qconfig.archive_dir)
-
-        os.chdir(qconfig.archive_dir)
-
-        json_dir = qconfig.json_results_dir
-        if os.path.isdir(json_dir):  # in case of starting two instances of QUAST in the same second
-            i = 2
-            base_dir_name = json_dir
-            while os.path.isdir(json_dir):
-                json_dir = base_dir_name + '__' + str(i)
-                i += 1
-
-        if not os.path.isdir(json_dir):
-            os.makedirs(json_dir)
-
-        latest_symlink = 'latest'
-        if os.path.islink(latest_symlink):
-            os.remove(latest_symlink)
-        os.symlink(json_dir, latest_symlink)
-
-        if qconfig.archive_dir[-1] == '/':
-            json_output_dir = qconfig.archive_dir + json_dir
+    # Json directory
+    if qconfig.save_json:
+        if json_output_dir:
+            if not os.path.isdir(json_output_dir):
+                os.makedirs(json_output_dir)
         else:
-            json_output_dir = qconfig.archive_dir + '/' + json_dir
-
-        os.chdir('..')
+            json_output_dir = os.path.join(output_dir, qconfig.default_json_dir_name)
+            if not os.path.isdir(json_output_dir):
+                os.makedirs(json_output_dir)
 
     # Where log will be saved
     logfile = output_dir + '/quast.log'

@@ -23,14 +23,16 @@ In case VNC is installed and configured (i.e. password is set) the script will u
     python quality.py REFERENCE_FILE CONTIG_FILES [options] [GENES_FILE(should contain "gene" in name)] [OPERONS_FILE(should contain "operon" in name)]
 
 options:
-    --gage               run GAGE module instead of other modules (result table will be in results/gage.txt)
-    --mauve, -m          excludes computation of mauve metrics. Use of this option can significally decrease running time.
-    --normal, -n         generate comparision table (like in the Single Cell paper) for EColi normal lane data
-    --sc [DEFAULT]       generate comparision table (like in the Single Cell paper) for EColi lane 1 (Single Cell) data
-    --acyclic, -a        the reference genome is acyclic
-    --rc                 count reverse-complementary contigs as local misassemblies (not an Extensive ones)
-    --min-contig=x       compute only contigs that are equal or larger (>=) than x. Default value is 0.
-    --save-archive, a    save an output to an archive directory in the JSON format (for a website)
+    --gage                        run GAGE module instead of other modules (result table will be in results/gage.txt)
+    --mauve, -m                   excludes computation of mauve metrics. Use of this option can significally decrease running time.
+    --normal, -n                  generate comparision table (like in the Single Cell paper) for EColi normal lane data
+    --sc [DEFAULT]                generate comparision table (like in the Single Cell paper) for EColi lane 1 (Single Cell) data
+    --acyclic, -a                 the reference genome is acyclic
+    --rc                          count reverse-complementary contigs as local misassemblies (not an Extensive ones)
+    --min-contig=x                compute only contigs that are equal or larger (>=) than x. Default value is 0.
+    --save-json, j                save the output also in the JSON format
+    --save-json-to=path, -J=path  save the JSON-output to a particular path
+
 
 NOTE: REFERENCE_FILE should precede CONTIGS_FILES, other parameters can be placed in any order.
 

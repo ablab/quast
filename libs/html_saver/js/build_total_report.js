@@ -7,7 +7,7 @@ function buildTotalReport(report, glossary) {
         var keyCell;
 
         if (i == 0) {
-            keyCell = '<b>Total report</b>';
+            keyCell = '<span class="report-table-header">Total report</span>';
         } else {
             var key = report.header[i];
             if (glossary.hasOwnProperty(key)) {
@@ -25,10 +25,10 @@ function buildTotalReport(report, glossary) {
             var valueCell = value;
 
             if (i == 0) {
-                valueCell = '<b>' + value + '</b>';
+                valueCell = '<span class="report-table-header">' + value + '</span>';
             } else {
                 if (typeof value == 'number') {
-                    valueCell = '<span style="font-stretch: ultra-condensed">' + toPrettyString(value) + '</span>';
+                    valueCell = toPrettyString(value);
                 }
                 if (value == null && report.header[i].substr(0,2) == 'NG') {
                     valueCell = '-';

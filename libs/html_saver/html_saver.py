@@ -23,7 +23,7 @@ def init(results_dir):
         html = template_file.read()
 
         for scriptpath in ['jquery-1.7.2.min.js',
-                           'flot/jquery.flot.js',
+                           'flot/jquery.flot.min.js',
                            'flot/excanvas.min.js',
                            'build_total_report.js',
                            'draw_commulative_plot.js',
@@ -41,10 +41,10 @@ def init(results_dir):
             '<style rel="stylesheet">\n' + open('libs/html_saver/css/bootstrap.min.css').read() + '\n</style>\n\n')
 
         html = html.replace('<script type="text/javascript" src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>',
-            '<script type="text/javascript" >\n' + open('libs/html_saver/js/iehtml5.js').read() + '\n</script>')
+            '<script type="text/javascript" >\n' + open('libs/html_saver/js/ie_html5.js').read() + '\n</script>')
 
-        html = html.replace('<script type="text/javascript" src="/static/bootstrap/js/bootstrap-tooltip-vlad.js"></script>',
-            '<script type="text/javascript" >\n' + open('libs/html_saver/js/bootstrap-tooltip-vlad.js').read() + '\n</script>')
+        html = html.replace('<script type="text/javascript" src="/static/bootstrap/js/bootstrap-tooltip-5px-lower.js"></script>',
+            '<script type="text/javascript" >\n' + open('libs/html_saver/js/bootstrap-tooltip-5pxlower-min.js').read() + '\n</script>')
 
         html = html.replace('{{ glossary }}', open('libs/html_saver/glossary.json').read())
 

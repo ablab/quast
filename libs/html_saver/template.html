@@ -4,7 +4,7 @@
 <html lang="en">
 <head>
     <script type="text/javascript" src="/static/scripts/jquery-1.7.2.min.js"></script>
-    <script type="text/javascript" src="/static/scripts/flot/jquery.flot.js"></script>
+    <script type="text/javascript" src="/static/scripts/flot/jquery.flot.min.js"></script>
     <!-[if lte IE 8]><script type="text/javascript" src="/static/scripts/flot/excanvas.min.js"></script><![endif]->
 
     <script type="text/javascript" src="/static/scripts/build_total_report.js"></script>
@@ -39,6 +39,11 @@
             padding-top: 50px;
             clear: both;
         }
+
+        a {
+            text-decoration: underline;
+        }
+
         #header {
             font-size: 18px;
             margin-left: 137px;
@@ -58,9 +63,14 @@
             padding: 0 1em 0 0;
             margin:  0;
         }
+        .report-table-header {
+            font-weight: bold;
+        }
+
         .json-code {
             display: none;
         }
+
         .plots {
             margin-left: 1em;
         }
@@ -78,9 +88,6 @@
             height: 400px;
         }
 
-        a {
-            text-decoration: underline;
-        }
         .tooltip-link {
             color: black;
             text-decoration: none;
@@ -179,7 +186,7 @@
         });
     </script>
 
-    <script type="text/javascript" src="/static/bootstrap/js/bootstrap-tooltip-vlad.js"></script>
+    <script type="text/javascript" src="/static/bootstrap/js/bootstrap-tooltip-5px-lower.js"></script>
 
 </body>
 </html>

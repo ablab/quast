@@ -4,11 +4,15 @@ quast_results_archive_json/*
 results_json/*
 quality.pyc
 show-snps.err
+libs/gage/*.class
 libs/MUMmer3.23-linux/*
 libs/MUMmer3.23-osx/*
 libs/*.pyc
+libs/html_server/*.pyc
 libs/.DS_Store
 .idea/*
 .DS_Store
 
 quast_website/.idea/*
+quast-1.0.0.tar.gz
+

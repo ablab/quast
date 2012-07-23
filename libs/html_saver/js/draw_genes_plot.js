@@ -62,13 +62,21 @@ function drawGenesPlot(filenames, filesContigs, genes, found, kind, div, legendP
     }
 
     for (i = 0; i < plotsN; i++) {
-        plotsData[i].points = {
+        plotsData[i].lines = {
             show: true,
-            radius: 1,
-            fill: 1,
-            fillColor: false,
+            lineWidth: 1,
         }
     }
+
+//    for (i = 0; i < plotsN; i++) {
+//        plotsData[i].points = {
+//            show: true,
+//            radius: 1,
+//            fill: 1,
+//            fillColor: false,
+//        }
+//    }
+
 
 
     $.plot($('#' + kind + 's-plot-placeholder'), plotsData, {

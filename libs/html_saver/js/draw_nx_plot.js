@@ -37,13 +37,13 @@ function drawNxPlot(filenames, listsOfLengths, title,
             data: new Array(),
             label: filenames[i],
         };
-        //plotsData[i].data.push([0.0, lengths[0]]);
+        plotsData[i].data.push([0.0, lengths[0]]);
         var currentLen = 0;
         var x = 0.0;
 
         for (var k = 0; k < size; k++) {
             currentLen += lengths[k];
-            //plotsData[i].data.push([x, lengths[k]]);
+            plotsData[i].data.push([x, lengths[k]]);
             x = currentLen * 100.0 / sumLen;
             plotsData[i].data.push([x, lengths[k]]);
         }
@@ -54,13 +54,20 @@ function drawNxPlot(filenames, listsOfLengths, title,
     }
 
     for (i = 0; i < plotsN; i++) {
-        plotsData[i].points = {
+        plotsData[i].lines = {
             show: true,
-                radius: 1,
-                fill: 1,
-                fillColor: false,
+            lineWidth: 1,
         }
     }
+
+//    for (i = 0; i < plotsN; i++) {
+//        plotsData[i].points = {
+//            show: true,
+//            radius: 1,
+//            fill: 1,
+//            fillColor: false,
+//        }
+//    }
 
     $.plot($('#' + title + '-plot-placeholder'), plotsData, {
             shadowSize: 0,

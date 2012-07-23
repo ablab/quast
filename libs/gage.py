@@ -54,7 +54,7 @@ def do(reference, contigs, output_dir, total_report, total_report_tab, min_conti
 
         logfile_out.close()
         logfile_err.close()
-        print 'done.'
+        print '  Done.'
 
         ## find metrics for total report:
         logfile_out = open(logfilename_out, 'r')

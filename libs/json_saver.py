@@ -35,7 +35,7 @@ def save_total_report(output_dir, report_dict):
     t = datetime.datetime.now()
 
     return save(output_dir + total_report_fn, {
-            'date' : t.strftime('%A, %d %B %Y, %H:%M:%S'),
+            'date' : t.strftime('%d %B %Y, %A, %H:%M:%S'),
             'header' : header,
             'results' : results
     })

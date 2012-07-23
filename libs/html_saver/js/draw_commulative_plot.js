@@ -34,13 +34,21 @@ function drawCommulativePlot(filenames, lists_of_lengths, div, legendPlaceholder
     }
 
     for (i = 0; i < plotsN; i++) {
-        plotsData[i].points = {
+        plotsData[i].lines = {
             show: true,
-            radius: 1,
-            fill: 1,
-            fillColor: false,
+            lineWidth: 1,
         }
     }
+
+//    for (i = 0; i < plotsN; i++) {
+//        plotsData[i].points = {
+//            show: true,
+//            radius: 1,
+//            fill: 1,
+//            fillColor: false,
+//        }
+//    }
+
 
     $.plot($('#commulative-plot-placeholder'), plotsData, {
             shadowSize: 0,

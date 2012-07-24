@@ -29,7 +29,7 @@ font = {'family' : 'sans-serif',
     'size'   : 10}
 
 # plots params
-linewdith = 3.0
+linewidth = 3.0
 
 # legend params
 n_columns = 4
@@ -64,9 +64,9 @@ def cumulative_plot(filenames, lists_of_lengths, plot_filename, title, all_pdf=N
             vals_length.append(y)
         # add to plot
         if color_id < len(colors):
-            matplotlib.pyplot.plot(vals_percent, vals_length, color=colors[color_id % len(colors)], lw=linewdith)
+            matplotlib.pyplot.plot(vals_percent, vals_length, color=colors[color_id % len(colors)], lw=linewidth)
         else:
-            matplotlib.pyplot.plot(vals_percent, vals_length, color=colors[color_id % len(colors)], lw=linewdith, ls='dashed')
+            matplotlib.pyplot.plot(vals_percent, vals_length, color=colors[color_id % len(colors)], lw=linewidth, ls='dashed')
         color_id += 1
             
     matplotlib.pyplot.xlabel('Contig index', fontsize=axes_fontsize)
@@ -134,13 +134,82 @@ def Nx_plot(filenames, lists_of_lengths, plot_filename, title='Nx', reference_le
             vals_l.append(l)
         # add to plot
         if color_id < len(colors):
-            matplotlib.pyplot.plot(vals_Nx, vals_l, color=colors[color_id % len(colors)], lw=linewdith)
+            matplotlib.pyplot.plot(vals_Nx, vals_l, color=colors[color_id % len(colors)], lw=linewidth)
         else:
-            matplotlib.pyplot.plot(vals_Nx, vals_l, color=colors[color_id % len(colors)], lw=linewdith, ls='dashed')
+            matplotlib.pyplot.plot(vals_Nx, vals_l, color=colors[color_id % len(colors)], lw=linewidth, ls='dashed')
         color_id += 1
 
     matplotlib.pyplot.xlabel('x', fontsize=axes_fontsize)
     matplotlib.pyplot.ylabel('Contig length (Kbp)', fontsize=axes_fontsize)
+    if with_title:
+        matplotlib.pyplot.title(title)
+    matplotlib.pyplot.grid(with_grid)
+    ax = matplotlib.pyplot.gca()
+    # Shink current axis's height by 20% on the bottom
+    box = ax.get_position()
+    ax.set_position([box.x0, box.y0 + box.height * 0.2, box.width, box.height * 0.8])
+    # Put a legend below current axis
+    try: # for matplotlib <= 2009-12-09
+        ax.legend(map(os.path.basename, filenames), loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True, shadow=True, ncol=n_columns)
+    except ZeroDivisionError:
+        pass    
+    
+    mkfunc = lambda x, pos: '%d' % (x * 1e-3) 
+    mkformatter = matplotlib.ticker.FuncFormatter(mkfunc)
+    ax.yaxis.set_major_formatter(mkformatter)
+    matplotlib.pyplot.xlim([0,100])
+    #ax.invert_xaxis() 
+    #matplotlib.pyplot.ylim(matplotlib.pyplot.ylim()[::-1])
+
+    plot_filename += plots_format
+    matplotlib.pyplot.savefig(plot_filename)
+    print 'saved to', plot_filename
+
+    if plots_format == '.pdf' and all_pdf:
+        matplotlib.pyplot.savefig(all_pdf, format='pdf')
+
+
+# routine for GC-plot    
+def GC_content_plot(filenames, lists_of_GC_info, plot_filename, all_pdf=None):
+    bin_size = 1.0
+    title = 'GC content'
+
+    if matplotlib_error:
+        return
+
+    print '  Drawing ' + title + ' plot...',
+    import matplotlib.pyplot
+    import matplotlib.ticker
+    matplotlib.pyplot.figure() 
+    matplotlib.pyplot.rc('font', **font)
+    color_id = 0
+    x = 0
+
+    for id, (filename, GC_info) in enumerate(itertools.izip(filenames, lists_of_GC_info)): 
+        # GC_info = [(contig_length, GC_percent)]
+        # sorted_GC_info = sorted(GC_info, key=lambda GC_info_contig: GC_info_contig[1])
+        # calculate values for the plot
+        cur_bin = 0.0
+        vals_GC = [cur_bin]
+        vals_bp = [sum(contig_length for (contig_length, GC_percent) in GC_info if GC_percent == cur_bin)]        
+
+        while cur_bin < 100.0 - bin_size:
+            cur_bin += bin_size
+            vals_GC.append(cur_bin)
+            vals_bp.append(sum(contig_length for (contig_length, GC_percent) in GC_info if GC_percent > (cur_bin - bin_size) and GC_percent <= cur_bin))
+        
+        vals_GC.append(100.0)
+        vals_bp.append(sum(contig_length for (contig_length, GC_percent) in GC_info if GC_percent > cur_bin and GC_percent <= 100.0))           
+
+        # add to plot
+        if color_id < len(colors):
+            matplotlib.pyplot.plot(vals_GC, vals_bp, color=colors[color_id % len(colors)], lw=linewidth)
+        else:
+            matplotlib.pyplot.plot(vals_GC, vals_bp, color=colors[color_id % len(colors)], lw=linewidth, ls='dashed')
+        color_id += 1
+
+    matplotlib.pyplot.xlabel('GC %', fontsize=axes_fontsize)
+    matplotlib.pyplot.ylabel('Bases in contigs (Kbp)', fontsize=axes_fontsize)
     if with_title:
         matplotlib.pyplot.title(title)
     matplotlib.pyplot.grid(with_grid)
@@ -205,9 +274,9 @@ def genes_operons_plot(filenames, files_contigs, genes, found, plot_filename, ti
             x_vals.append(contig_no)
             y_vals.append(total_full)                                
         if color_id < len(colors):
-            matplotlib.pyplot.plot(x_vals, y_vals, color=colors[color_id % len(colors)], lw=linewdith)
+            matplotlib.pyplot.plot(x_vals, y_vals, color=colors[color_id % len(colors)], lw=linewidth)
         else:
-            matplotlib.pyplot.plot(x_vals, y_vals, color=colors[color_id % len(colors)], lw=linewdith, ls='dashed')
+            matplotlib.pyplot.plot(x_vals, y_vals, color=colors[color_id % len(colors)], lw=linewidth, ls='dashed')
         color_id += 1
         
     matplotlib.pyplot.xlabel('Contig index', fontsize=axes_fontsize)

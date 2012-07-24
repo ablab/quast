@@ -11,6 +11,25 @@ import json_saver
 from qutils import id_to_str
 from html_saver import html_saver
 
+
+def GC_content(filename):  
+    """
+       Returns percent of GC for assembly and list of tuples (contig_length, GC_percent)
+    """
+    fasta_entries = fastaparser.read_fasta(filename) # in tuples: (name, seq)    
+    total_GC_amount = 0
+    total_contig_length = 0
+    GC_info = []
+    for (name, seq) in fasta_entries:
+        contig_length = len(seq)
+        total_contig_length += contig_length
+        seq = seq.upper()
+        GC_amount = seq.count("G") + seq.count("C")
+        total_GC_amount += GC_amount
+        GC_info.append((contig_length, GC_amount * 100.0 / contig_length))
+    return total_GC_amount * 100.0 / total_contig_length, GC_info
+
+
 def do(reference, filenames, output_dir, all_pdf, draw_plots, json_output_dir, results_dir):
     
     if not os.path.isdir(output_dir):
@@ -63,6 +82,7 @@ def do(reference, filenames, output_dir, all_pdf, draw_plots, json_output_dir, r
     if reference:
         report_dict['header'].append('Reference length')
     
+    lists_of_GC_info = []
     import N50
     for id, (filename, lengths_list) in enumerate(itertools.izip(filenames, lists_of_lengths)):
         n50 = N50.N50(lengths_list)
@@ -72,9 +92,13 @@ def do(reference, filenames, output_dir, all_pdf, draw_plots, json_output_dir, r
         if reference:
             ng75 = N50.NG50(lengths_list, reference_length, 75)
         total_length = sum(lengths_list)
+        total_GC, GC_info = GC_content(filename)
+        lists_of_GC_info.append(GC_info)
         print ' ', id_to_str(id), os.path.basename(filename), \
             ', N50 =', n50, \
-            ', Total length =', total_length
+            ', Total length =', total_length, \
+            ', GC % = ', total_GC
+        
         report_dict[os.path.basename(filename)].append(n50)
         if reference:
             report_dict[os.path.basename(filename)].append(ng50)
@@ -93,6 +117,12 @@ def do(reference, filenames, output_dir, all_pdf, draw_plots, json_output_dir, r
         # Drawing cumulative plot...
         import plotter
         plotter.cumulative_plot(filenames, lists_of_lengths, output_dir + '/cumulative_plot', 'Cumulative length', all_pdf)
+    
+        ########################################################################
+
+        # Drawing GC content plot...
+        import plotter
+        plotter.GC_content_plot(filenames, lists_of_GC_info, output_dir + '/GC_content_plot', all_pdf)
     
         ########################################################################
 

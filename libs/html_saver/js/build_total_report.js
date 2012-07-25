@@ -7,7 +7,7 @@ function buildTotalReport(report, glossary) {
         var keyCell;
 
         if (i == 0) {
-            keyCell = '<span class="report-table-header">Total report</span>';
+            keyCell = '<span class="report-table-header"></span>';
         } else {
             var key = report.header[i];
             if (glossary.hasOwnProperty(key)) {

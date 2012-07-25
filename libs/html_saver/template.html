@@ -8,7 +8,7 @@
     <!-[if lte IE 8]><script type="text/javascript" src="/static/scripts/flot/excanvas.min.js"></script><![endif]->
 
     <script type="text/javascript" src="/static/scripts/build_total_report.js"></script>
-    <script type="text/javascript" src="/static/scripts/draw_commulative_plot.js"></script>
+    <script type="text/javascript" src="/static/scripts/draw_comulative_plot.js"></script>
     <script type="text/javascript" src="/static/scripts/draw_nx_plot.js"></script>
     <script type="text/javascript" src="/static/scripts/number_to_pretty_string.js"></script>
     <script type="text/javascript" src="/static/scripts/draw_genes_plot.js"></script>
@@ -28,9 +28,8 @@
         body {
             margin: 0;
             padding-bottom: 30px;
-
-            font-family: Verdana, Arial, sans-serif;
-            font-size: 13px;
+            font-family: Lucida Grande, Verdana, Arial, sans-serif;
+            font-size: 12px;
             color: black;
             line-height: 1.3em;
         }
@@ -86,10 +85,6 @@
             height: 1.5em;
             display: block;
         }
-        .plot > div {
-            width: 580px;
-            height: 400px;
-        }
 
         .tooltip-link {
             color: black;
@@ -131,7 +126,7 @@
         </div>
 
         <div class='plots'>
-            <div id='commulative-plot-div'>
+            <div id='comulative-plot-div'>
             </div>
             <div id='nx-plot-div'>
             </div>

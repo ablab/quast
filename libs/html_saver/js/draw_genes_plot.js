@@ -4,7 +4,7 @@ function drawGenesPlot(filenames, filesContigs, genes, found, kind, div, legendP
     div.html(
         "<div class='plot'>" +
             "<span class='plot-header'>" + kind[0].toUpperCase() + kind.slice(1) + "s covered</span>" +
-            "<div style='width: 580px; height: 400px;' id='" + kind + "s-plot-placeholder'></div>" +
+            "<div style='width: 800px; height: 600px;' id='" + kind + "s-plot-placeholder'></div>" +
         "</div>"
     );
 

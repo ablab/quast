@@ -26,7 +26,7 @@ def init(results_dir):
                            'flot/jquery.flot.min.js',
                            'flot/excanvas.min.js',
                            'build_total_report.js',
-                           'draw_commulative_plot.js',
+                           'draw_comulative_plot.js',
                            'draw_nx_plot.js',
                            'number_to_pretty_string.js',
                            'draw_genes_plot.js',

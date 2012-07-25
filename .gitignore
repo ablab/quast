@@ -8,10 +8,11 @@ libs/gage/*.class
 libs/MUMmer3.23-linux/*
 libs/MUMmer3.23-osx/*
 libs/*.pyc
-libs/html_server/*.pyc
+libs/html_saver/*.pyc
 libs/.DS_Store
 .idea/*
 .DS_Store
+*pyc
 
 quast_website/.idea/*
 quast-1.0.0.tar.gz

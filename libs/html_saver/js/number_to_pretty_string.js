@@ -4,6 +4,6 @@ function toPrettyString(num) {
         return num.toString();
     } else {
         return num.toString().replace(/(\d)(?=(\d\d\d)+(?!\d))/g,
-            '<span style="word-spacing:-2px;">$1 </span>');
+            '<span style="word-spacing:-1px;">$1 </span>');
     }
 }

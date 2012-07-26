@@ -325,30 +325,37 @@ def main(args, lib_dir=os.path.join(os.path.abspath(sys.path[0]), 'libs')):
 
         if qconfig.reference:
             ########################################################################
-            ### PLANTAGORA 
+            ### PLANTAKOLYA
             ########################################################################
-            import plantagora
-            cur_results_dict = plantagora.do(qconfig.reference, contigs, qconfig.cyclic, qconfig.rc, output_dir + '/plantagora', lib_dir, qconfig.draw_plots)
+            import plantakolya
+            cur_results_dict = plantakolya.do(qconfig.reference, contigs, qconfig.cyclic, qconfig.rc, output_dir + '/plantakolya', lib_dir, qconfig.draw_plots)
             report_dict = extend_report_dict(report_dict, cur_results_dict)
+
+            ########################################################################
+            ### PLANTAGORA
+            ########################################################################
+#            import plantagora
+#            cur_results_dict = plantagora.do(qconfig.reference, contigs, qconfig.cyclic, qconfig.rc, output_dir + '/plantagora', lib_dir, qconfig.draw_plots)
+#            report_dict = extend_report_dict(report_dict, cur_results_dict)
 
             ########################################################################
             ### SympAlign segments
             ########################################################################
             import sympalign
-            sympalign.do(2, output_dir + '/plantagora/sympalign.segments', [output_dir + '/plantagora'])
+            sympalign.do(2, output_dir + '/plantakolya/sympalign.segments', [output_dir + '/plantakolya'])
 
             ########################################################################
             ### NA and NGA ("aligned N and NG")
             ########################################################################
             import aligned_stats
-            cur_results_dict = aligned_stats.do(qconfig.reference, contigs, output_dir + '/plantagora', output_dir + '/aligned_stats', all_pdf, qconfig.draw_plots, json_output_dir, output_dir)
+            cur_results_dict = aligned_stats.do(qconfig.reference, contigs, output_dir + '/plantakolya', output_dir + '/aligned_stats', all_pdf, qconfig.draw_plots, json_output_dir, output_dir)
             report_dict = extend_report_dict(report_dict, cur_results_dict)
 
             ########################################################################
             ### GENOME_ANALYZER
             ########################################################################
             import genome_analyzer
-            cur_results_dict = genome_analyzer.do(qconfig.reference, contigs, output_dir + '/genome_analyzer', output_dir + '/plantagora', qconfig.genes, qconfig.operons, all_pdf, qconfig.draw_plots, json_output_dir, output_dir)
+            cur_results_dict = genome_analyzer.do(qconfig.reference, contigs, output_dir + '/genome_analyzer', output_dir + '/plantakolya', qconfig.genes, qconfig.operons, all_pdf, qconfig.draw_plots, json_output_dir, output_dir)
             report_dict = extend_report_dict(report_dict, cur_results_dict)
 
             ########################################################################
@@ -356,7 +363,7 @@ def main(args, lib_dir=os.path.join(os.path.abspath(sys.path[0]), 'libs')):
             ########################################################################
             if qconfig.with_mauve:
                 import mauve
-                cur_results_dict = mauve.do(qconfig.reference, contigs, output_dir + '/plantagora', output_dir + '/mauve', lib_dir)
+                cur_results_dict = mauve.do(qconfig.reference, contigs, output_dir + '/plantakolya', output_dir + '/mauve', lib_dir)
                 report_dict = extend_report_dict(report_dict, cur_results_dict)
 
 

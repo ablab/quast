@@ -1,15 +1,11 @@
-#!/usr/bin/python
-
 ############################################################################
 # Copyright (c) 2011-2012 Saint-Petersburg Academic University
 # All Rights Reserved
 # See file LICENSE for details.
 ############################################################################
 
-import fnmatch
-import sys
 import os
-
+import fnmatch
 
 def do_mode_one(ouf, all, inf_filenames, ref_id):
     print >>ouf, "    [S1]     [E1]  |     [S2]     [E2]  |  [LEN 1]  [LEN 2]  |  [% IDY]  | [TAGS]"
@@ -58,7 +54,7 @@ def do_mode_two(ouf, list_events, inf_filenames, SEG):
     for s in output:
         print >>ouf, '%8d\t%8d\t%8d\t%s' % (s[0], s[1], s[1] - s[0], s[2])
 
-def do(mode, out_filename, input_files_or_dirs): #, ouf_filename, inf_filenames):
+def do(mode, out_filename, input_files_or_dirs):
     print 'Running SympAlign...'
     ouf = open(out_filename, 'w')
     inf_filenames = []
@@ -159,12 +155,3 @@ def do(mode, out_filename, input_files_or_dirs): #, ouf_filename, inf_filenames)
                 os.remove(filename)
     ouf.close()
     print '  Done.'
-
-# if __name__ == '__main__':
-#     if len(sys.argv) < 4:
-#         print 'Usage:', sys.argv[0], 'MODE OUTPUT_FILE INPUT_FILES_OR_DIR+'
-#         exit(1)
-#     mode = int(sys.argv[1])
-#     output_filename = sys.argv[2]
-#     input_files_or_dirs = sys.argv[3:]
-#     do(mode, output_filename, input_files_or_dirs)

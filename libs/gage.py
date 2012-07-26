@@ -11,7 +11,11 @@ import re
 import subprocess
 from qutils import id_to_str
 
-def do(reference, contigs, output_dir, total_report, total_report_tab, min_contig, lib_dir):
+def do(reference, contigs, output_dir, total_report_basename, min_contig, lib_dir):
+
+    # suffixes for files with report tables in plain text and tab separated formats
+    txt_ext = '.txt'
+    tsv_ext = '.tsv'
     
     if not os.path.isdir(output_dir):
         os.mkdir(output_dir)
@@ -75,8 +79,10 @@ def do(reference, contigs, output_dir, total_report, total_report_tab, min_conti
     ########################################################################
 
     print '  Creating total report...'    
-    tr_file = open(total_report , 'w')
-    tab_file = open(total_report_tab , 'w')
+    total_report = total_report_basename + txt_ext
+    total_report_tab = total_report_basename + tsv_ext
+    tr_file = open(total_report, 'w')
+    tab_file = open(total_report_tab, 'w')
 
     # calculate columns widthes
     col_widthes = [0 for i in range(len(report_dict['header']))]

@@ -1,5 +1,6 @@
 import re
 from libs import json_saver
+from libs import qconfig
 
 __author__ = 'vladsaveliev'
 
@@ -13,7 +14,7 @@ import datetime
 import json
 import os
 
-report_fn = 'report.html'
+report_fn = qconfig.report_basename + '.html'
 template_path = 'libs/html_saver/template.html'
 scripts_inserted = False
 
@@ -48,12 +49,12 @@ def init(results_dir):
 
         html = html.replace('{{ glossary }}', open('libs/html_saver/glossary.json').read())
 
-        with open(results_dir + '/' + report_fn, 'w') as html_file:
+        with open(os.path.join(results_dir, report_fn), 'w') as html_file:
             html_file.write(html)
 
 
 def append(results_dir, json_fn, keyword):
-    html_file_path = results_dir + '/' + report_fn
+    html_file_path = os.path.join(results_dir, report_fn)
 
     if not os.path.isfile(html_file_path):
         init(results_dir)
@@ -76,8 +77,10 @@ def append(results_dir, json_fn, keyword):
 
 
 def save_total_report(results_dir, report_dict):
+    print '  HTML version of total report...'
     json_fn = json_saver.save_total_report(results_dir, report_dict)
     append(results_dir, json_fn, 'report')
+    print '    Saved to', os.path.abspath(os.path.join(results_dir, report_fn))
 
 def save_contigs_lengths(results_dir, filenames, lists_of_lengths):
     json_fn = json_saver.save_contigs_lengths(results_dir, filenames, lists_of_lengths)

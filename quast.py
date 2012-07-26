@@ -156,6 +156,7 @@ def main(args, lib_dir=os.path.join(os.path.abspath(sys.path[0]), 'libs')):
         while os.path.isdir(output_dir):
             output_dir = base_dir_name + '__' + str(i)
             i += 1
+        print "\nWarning! Output directory already exists! Results will be saved in " + output_dir + "\n"
 
     if not os.path.isdir(output_dir):
         os.makedirs(output_dir)
@@ -177,26 +178,24 @@ def main(args, lib_dir=os.path.join(os.path.abspath(sys.path[0]), 'libs')):
                 os.makedirs(json_output_dir)
 
     # Where log will be saved
-    logfile = output_dir + '/quast.log'
+    logfile = os.path.join(output_dir, qconfig.logfile)
 
     # Where corrected contigs will be saved
-    corrected_dir = output_dir + '/corrected_input'
+    corrected_dir = os.path.join(output_dir, qconfig.corrected_dir)
 
     # Where total report will be saved
-    total_report = output_dir + '/transposed_report'
-    total_report_tr = output_dir + '/report'
+    total_report = os.path.join(output_dir, "transposed_" + qconfig.report_basename)
+    total_report_tr = os.path.join(output_dir, qconfig.report_basename)
 
     # Where gage report will be saved (option --gage)
-    gage_report = output_dir + '/gage.txt'
-    gage_report_tab = output_dir + '/gage.tsv'
+    gage_report = os.path.join(output_dir, qconfig.gage_report_basename)
 
     # Where all pdfs will be saved
-    all_pdf_filename = output_dir + '/plots.pdf'
+    all_pdf_filename = os.path.join(output_dir, qconfig.plots_filename)
     all_pdf = None
 
     # Where Single Cell paper-like table will be saved
-    extra_report_filename = output_dir + '/extra_report.txt'
-
+    extra_report_filename = os.path.join(output_dir, qconfig.extra_report_filename)
 
     ########################################################################
 
@@ -217,7 +216,7 @@ def main(args, lib_dir=os.path.join(os.path.abspath(sys.path[0]), 'libs')):
     ########################################################################
 
     # dict with the main metrics (for total report)
-    report_dict = {'header' : ['id', 'Assembly']}
+    report_dict = {'header': ['id', 'Assembly']}
     for threshold in qconfig.contig_thresholds:
         report_dict['header'].append('# contigs >= ' + str(threshold))
     for threshold in qconfig.contig_thresholds:
@@ -272,7 +271,7 @@ def main(args, lib_dir=os.path.join(os.path.abspath(sys.path[0]), 'libs')):
                 to_remove = False
                 corr_name = '>' + re.sub(r'\W', '', re.sub(r'\s', '_', entry[0]))
                 # mauve and gage can't work with alternatives
-                dic = {'M' : 'A', 'K' : 'G', 'R' : 'A', 'Y' : 'C', 'W' : 'A', 'S' : 'C', 'V' : 'A', 'B' : 'C', 'H' : 'A', 'D' : 'A'}
+                dic = {'M': 'A', 'K': 'G', 'R': 'A', 'Y': 'C', 'W': 'A', 'S': 'C', 'V': 'A', 'B': 'C', 'H': 'A', 'D': 'A'}
                 pat = "(%s)" % "|".join( map(re.escape, dic.keys()) )
                 corr_seq = re.sub(pat, lambda m:dic[m.group()], entry[1])
                 modified_fasta_entries.append((corr_name, corr_seq))
@@ -301,9 +300,13 @@ def main(args, lib_dir=os.path.join(os.path.abspath(sys.path[0]), 'libs')):
     if qconfig.with_gage:
         ########################################################################
         ### GAGE
-        ########################################################################
+        ########################################################################        
+        if not qconfig.reference:   
+            print "\nError! GAGE can't be run without reference!\n"
+            sys.exit(1)
+
         import gage
-        gage.do(qconfig.reference, contigs, output_dir + '/gage', gage_report, gage_report_tab, qconfig.min_contig, lib_dir)
+        gage.do(qconfig.reference, contigs, output_dir + '/gage', gage_report, qconfig.min_contig, lib_dir)
     else:
         if qconfig.draw_plots:
             import plotter
@@ -380,11 +383,10 @@ def main(args, lib_dir=os.path.join(os.path.abspath(sys.path[0]), 'libs')):
         if json_output_dir:
             json_saver.save_total_report(json_output_dir, report_dict)
 
-        from libs.html_saver import html_saver
-        html_saver.save_total_report(output_dir, report_dict)
-
         import report_maker
         report_maker.do(report_dict, total_report, total_report_tr, qconfig.min_contig, output_dir)
+        from libs.html_saver import html_saver
+        html_saver.save_total_report(output_dir, report_dict)
         if qconfig.draw_plots and all_pdf:
             print '  All pdf files are merged to', all_pdf_filename
             all_pdf.close()

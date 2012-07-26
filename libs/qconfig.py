@@ -13,7 +13,14 @@ orf_lengths = "200"
 
 output_dir = "results_" + datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
 save_json = False
-default_json_dir_name = 'json'
+default_json_dir_name = "json"
+
+logfile = "quast.log"
+corrected_dir = "corrected_input"
+report_basename = "report"
+gage_report_basename = "gage"
+extra_report_filename = "extra_report.txt"
+plots_filename = "plots.pdf"
 
 draw_plots = True
 make_latest_symlink = True

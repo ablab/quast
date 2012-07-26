@@ -11,8 +11,8 @@ import os
 import re
 import shutil
 import sys
-from libs import qconfig
 import quast
+from libs import qconfig
 
 
 def main(args):
@@ -25,6 +25,7 @@ def main(args):
 
     if len(different_arguments) != 1:
         print >>sys.stderr, 'Works with only one project directory.'
+
 
     project_path = os.path.abspath(different_arguments[0])
     if not os.path.isdir(project_path):
@@ -41,7 +42,7 @@ def main(args):
         i = 2
         base_dir_name = tmp_dir_name
         while os.path.isdir(tmp_dir_name):
-            tmp_dir_name = base_dir_name + '__' + str(i)
+            tmp_dir_name = base_dir_name + '_' + str(i)
             i += 1
     tmp_dir_path = os.path.abspath(tmp_dir_name)
     if not os.path.isdir(tmp_dir_path):
@@ -49,7 +50,10 @@ def main(args):
 
 
     contigs_filepaths = []
-
+    # In spades_<suffix> directories finding files <project_name>.fasta
+    # and copying them to the temporary directory as <suffix>.fasta.
+    #
+    # Paths to found files are stored in the array contigs_filepaths[]
     for dirname in os.listdir(project_path):
         dirpath = os.path.join(project_path, dirname)
         if os.path.isdir(dirpath):
@@ -65,6 +69,7 @@ def main(args):
     if len(contigs_filepaths) == 0:
         print >>sys.stderr, 'No ' + project_name + '.fasta files in spades_* subdirectories'
     else:
+        # Constructing a new command line arguments array to run quast.py with.
         new_args = []
 
         for opt, arg in options:
@@ -77,6 +82,7 @@ def main(args):
 
     if os.path.isdir(tmp_dir_name):
         shutil.rmtree(tmp_dir_name)
+
 
 if __name__ == '__main__':
     main(sys.argv[1:])

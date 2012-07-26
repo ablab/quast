@@ -42,26 +42,26 @@ pod2usage(2) if $help;
 use Cwd 'abs_path';
 use File::Basename;
 
-if ( !-e "$header.coords") {
-	die "Nucmer failed. Exiting.";
-}
-
-#Check that nucmer completed successfully
-print "\tChecking nucmer file...\n";
-if (`tail -n 1 ${header}.coords | awk '{print NF}'` < 13) {die "Nucmer ended early.\n"}
-print "\t...nucmer complete.\n";
-
-#Running show-snps
-print "Determing snps in alignments...\n";
-if ( !-e "$header.snps" ) {
-	print "\tRunning show-snps...\n";
-	system "(show-snps -T $header.delta > $header.snps) >& show-snps.err";
-	$err = `cat show-snps.err`;
-	if ($err =~ m/ERROR/) { die "Show-snps failed.  Exiting."; }
-} else {
-	print "\t$header.snps exists already, skipping.\n";
-}
-print "\t...show-snps complete.\n";
+#if ( !-e "$header.coords") {
+#	die "Nucmer failed. Exiting.";
+#}
+#
+##Check that nucmer completed successfully
+#print "\tChecking nucmer file...\n";
+#if (`tail -n 1 ${header}.coords | awk '{print NF}'` < 13) {die "Nucmer ended early.\n"}
+#print "\t...nucmer complete.\n";
+#
+##Running show-snps
+#print "Determing snps in alignments...\n";
+#if ( !-e "$header.snps" ) {
+#	print "\tRunning show-snps...\n";
+#	system "(show-snps -T $header.delta > $header.snps) >& show-snps.err";
+#	$err = `cat show-snps.err`;
+#	if ($err =~ m/ERROR/) { die "Show-snps failed.  Exiting."; }
+#} else {
+#	print "\t$header.snps exists already, skipping.\n";
+#}
+#print "\t...show-snps complete.\n";
 
 #Loading the alignment files
 print "Parsing coords...\n";
@@ -164,6 +164,8 @@ if ($seq) { ## be aware, it's copy-pasta from above! but it's perl, so the code 
 	print "\tLoaded [$name]\n";
 	$seq = ""; # clear out old sequence
 }
+
+# HERE STOPPED
 
 #Loading the SNP calls
 print "Loading SNPs...\n";
@@ -916,48 +918,4 @@ sub process_misassembled_contig  # input: OUTPUT_FILE, $i_start, $i_finish, $con
 	push (@{$ref_aligns{${$sorted}[$i][11]}}, [${$sorted}[$i][0], ${$sorted}[$i][1], $contig, ${$sorted}[$i][3], ${$sorted}[$i][4]]); 
 }
 
-__END__
-
-
-=head1 NAME
-
-sample - Using GetOpt::Long and Pod::Usage
-
-=head1 SYNOPSIS
-
-assess_assembly.pl [options] [reference_fasta] [assembly_fasta] [header]
-
-Options:
-
-	--reference	STRING	full path to fasta file of the reference sequence
-	--assembly 	STRING	fulll path to the fasta file of the assembly
-	--header	STRING	header for naming nucmer files
-	
-	--gff		STRING  full path to gff file containing regions of interest
-	--region	STRING	the type of regions you would like to analyze
-	--cds		STRING	search term to desigante the CDS type
-	
-	--sm_gap_size	INTEGER	maximum gap in alignment to be considered a local misassembly
-	--num_unaligned	INTEGER	maximum number of unaligned bases allowed on the ends of contigs
-
-	--verbose
-       	--help            
-
-=head1 OPTIONS
-
-=over 8
-
-=item B<-help>
-Print a brief help message and exits.
-
-=item B<-man>
-Prints the manual page and exits.
-
-=back
-
-=head1 DESCRIPTION
-    B<This program> will read the given input file(s) and do something
-    useful with the contents thereof.
-
-=cut
 

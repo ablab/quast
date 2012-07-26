@@ -60,8 +60,8 @@ def do(reference, filenames, cyclic, rc, output_dir, lib_dir, draw_plots):
             rc_option = '--rc'
 
         coords_filename = nucmerfilename + '.coords'
-        snps_filename = nucmerfilename + '.snps'
         delta_filename = nucmerfilename + '.delta'
+        snps_filename = nucmerfilename + '.snps'
         coords_btab_filename = nucmerfilename + '.coords.btab'
 
         if os.path.isfile(coords_filename):
@@ -69,18 +69,54 @@ def do(reference, filenames, cyclic, rc, output_dir, lib_dir, draw_plots):
         if os.path.isfile(snps_filename):
             os.remove(snps_filename)
 
-        print "NUCmer..."
+        # TODO: clean contigs?
+
+        print 'NUCmer...',
         subprocess.call(['nucmer', '--maxmatch', '-p', nucmerfilename, reference, filename],
             stdout=open(logfilename_out, 'a'), stderr=open(logfilename_err, 'a'), env=myenv)
         subprocess.call(['show-coords', '-B', delta_filename],
-            stdout=open(coords_btab_filename, 'w'), stderr=open(logfilename_err, 'w'), env=myenv)
+            stdout=open(coords_btab_filename, 'w'), stderr=open(logfilename_err, 'a'), env=myenv)
 
         import sympalign
         sympalign.do(1, coords_filename, [coords_btab_filename])
 
-        subprocess.call(
-            ['perl', assess_assembly_path2, reference, filename, nucmerfilename, '--verbose', cyclic_option, rc_option],
-            stdout=open(logfilename_out, 'a'), stderr=open(logfilename_err, 'a'), env=myenv)
+        if not os.path.isfile(coords_filename):
+            print 'failed'
+        else:
+            # TODO: check: Nucmer ended early?
+            subprocess.call(['show-snps', '-T', delta_filename], stdout=open(snps_filename, 'w'), stderr=open(logfilename_err, 'a'), env=myenv)
+            # TODO: check: Show-snps failed?
+
+            # Parsing coords
+            aligns = {}
+            coords_file = open(coords_filename)
+            coords_file.readline()
+            coords_file.readline()
+            for line in coords_file:
+                line = line.split()
+                contig = line[12]
+                aligns.setdefault(contig, []).append(line)
+            print aligns
+
+            # Loading Assembly
+
+            assembly = {}
+            assembly_ns = {}
+            for name, seq in fastaparser.read_fasta(filename):
+                seq = seq.upper()
+                assembly[name] = seq
+                if 'N' in seq:
+                    assembly_ns[name] = [pos for pos in xrange(len(seq)) if seq[pos] == 'N']
+
+            references = {}
+            for name, seq in fastaparser.read_fasta(reference):
+                references[name] = seq
+
+            exit()
+
+            subprocess.call(
+                ['perl', assess_assembly_path2, reference, filename, nucmerfilename, '--verbose', cyclic_option, rc_option],
+                stdout=open(logfilename_out, 'a'), stderr=open(logfilename_err, 'a'), env=myenv)
 
         print 'done.'
 

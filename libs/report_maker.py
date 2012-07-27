@@ -7,6 +7,7 @@
 ### main function ###
 
 def do(report_dict, report_horizontal_name, report_vertical_name, min_contig=0, output_dir=None):
+    report_dict = dict([(k, v[1:]) for k, v in report_dict.iteritems()])
 
     # suffixes for files with transposed and normal report tables
     txt_ext = '.txt'

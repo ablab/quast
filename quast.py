@@ -383,17 +383,19 @@ def main(args, lib_dir=os.path.join(os.path.abspath(sys.path[0]), 'libs')):
         if json_output_dir:
             json_saver.save_total_report(json_output_dir, report_dict)
 
-        import report_maker
-        report_maker.do(report_dict, total_report, total_report_tr, qconfig.min_contig, output_dir)
         from libs.html_saver import html_saver
         html_saver.save_total_report(output_dir, report_dict)
+
+        from libs import report_maker
+        report_maker.do(report_dict, total_report, total_report_tr, qconfig.min_contig, output_dir)
+
         if qconfig.draw_plots and all_pdf:
             print '  All pdf files are merged to', all_pdf_filename
             all_pdf.close()
 
         ## and Single Cell paper table
         if qconfig.reference and qconfig.extra_report:
-            import extra_report_maker
+            from libs import extra_report_maker
             extra_report_maker.do(total_report, output_dir + '/genome_analyzer/genome_info.txt', extra_report_filename, qconfig.min_contig, json_output_dir)
 
             ########################################################################

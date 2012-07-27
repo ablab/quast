@@ -16,6 +16,11 @@ from libs import json_saver
 from libs.html_saver import html_saver
 from qutils import id_to_str
 
+s_Mapped_genome = 'Mapped genome (%)'
+s_Genes = 'Genes'
+s_Operons = 'Operons'
+
+
 def do(reference, filenames, output_dir, nucmer_dir, genes_filename, operons_filename, all_pdf, draw_plots, json_output_dir, results_dir):
 
     # some important constants
@@ -78,15 +83,15 @@ def do(reference, filenames, output_dir, nucmer_dir, genes_filename, operons_fil
     res_file.write('======================================================================================================\n')
 
 
-    report_dict['header'].append('Mapped genome (%)')
-    report_dict['header'].append('Genes')
-    report_dict['header'].append('Operons')
+    report_dict['header'].append(s_Mapped_genome)
+    report_dict['header'].append(s_Genes)
+    report_dict['header'].append(s_Operons)
 
     # for cumulative plots:
     files_contigs = {}   #  "filename" : [ [contig_blocks] ]   
 
     # for histograms
-    full_genes   = []
+    full_genes = []
     full_operons = []
     genome_mapped = []
 
@@ -101,7 +106,8 @@ def do(reference, filenames, output_dir, nucmer_dir, genes_filename, operons_fil
         nucmer_filename = nucmer_prefix + os.path.basename(filename) + '.coords'
         if not os.path.isfile(nucmer_filename):
             print '  ERROR: nucmer coord file (' + nucmer_filename + ') not found, skipping...'
-            report_dict[os.path.basename(filename)] += ['N/A'] * 3
+            report_dict['header'] = [r for r in report_dict['header'] if r not in [s_Genes, s_Operons, s_Mapped_genome]]
+            #report_dict[os.path.basename(filename)] += [NOT_AVAILABLE] * 3
             continue
 
         coordfile = open(nucmer_filename, 'r')
@@ -215,7 +221,8 @@ def do(reference, filenames, output_dir, nucmer_dir, genes_filename, operons_fil
             report_dict[os.path.basename(filename)].append('%s + %s part' % (str(total_full), str(total_partial)))
             full_genes.append(total_full)
         else:
-            report_dict[os.path.basename(filename)].append("N/A")
+            report_dict['header'] = [r for r in report_dict['header'] if r not in [s_Genes]]
+            #report_dict[os.path.basename(filename)].append(NOT_AVAILABLE)
 
         # finding operons
         total_full = 0
@@ -244,7 +251,8 @@ def do(reference, filenames, output_dir, nucmer_dir, genes_filename, operons_fil
             report_dict[os.path.basename(filename)].append('%s + %s part' % (str(total_full), str(total_partial)))
             full_operons.append(total_full)
         else:
-            report_dict[os.path.basename(filename)].append("N/A")
+            report_dict['header'] = [r for r in report_dict['header'] if r not in [s_Operons]]
+            #report_dict[os.path.basename(filename)].append(NOT_AVAILABLE)
 
         # finishing output for current contigs file
         res_file.write('\n')
@@ -252,7 +260,20 @@ def do(reference, filenames, output_dir, nucmer_dir, genes_filename, operons_fil
     res_file.close()
 
 
-    # saving json
+#    for row_id in range(len(report_dict['header'])):
+#        to_remove_this_row = True
+#
+#        for col_id, filename in enumerate(filenames):
+#            if report_dict[filename] != NOT_AVAILABLE:
+#                to_remove_this_row = False
+#
+#        if to_remove_this_row:
+#            report_dict['header'].pop(row_id)
+#            for col_id, filename in enumerate(filenames):
+#                report_dict[filename].pop(row_id)
+
+
+        # saving json
     if json_output_dir:
         if genes or operons:
             json_saver.save_contigs(json_output_dir, filenames, files_contigs)

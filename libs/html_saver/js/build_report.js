@@ -31,7 +31,7 @@ function buildReport() {
     }
 
     if (contigsLengths) {
-        drawComulativePlot(contigsLengths.filenames, contigsLengths.lists_of_lengths, $('#comulative-plot-div'), null,  glossary);
+        drawCumulativePlot(contigsLengths.filenames, contigsLengths.lists_of_lengths, $('#cumulative-plot-div'), null,  glossary);
         drawNxPlot(contigsLengths.filenames, contigsLengths.lists_of_lengths, 'Nx', null, $('#nx-plot-div'), null,  glossary);
     }
 

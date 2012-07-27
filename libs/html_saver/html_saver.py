@@ -32,7 +32,7 @@ def init(adp_results):
                            'flot/jquery.flot.min.js',
                            'flot/excanvas.min.js',
                            'build_total_report.js',
-                           'draw_comulative_plot.js',
+                           'draw_cumulative_plot.js',
                            'draw_nx_plot.js',
                            'number_to_pretty_string.js',
                            'draw_genes_plot.js',

@@ -14,7 +14,7 @@ def do(report_dict, report_horizontal_name, report_vertical_name, min_contig=0, 
     tsv_ext = '.tsv'
 
     print 'Summarizing...'
-    print '  Creating total report...'    
+    print '  Creating total report...'
     report_txt_filename = report_vertical_name + txt_ext
     report_tsv_filename = report_vertical_name + tsv_ext
     txt_file = open(report_txt_filename, 'w')
@@ -37,13 +37,13 @@ def do(report_dict, report_horizontal_name, report_vertical_name, min_contig=0, 
     # filling
     for i in range(len(report_dict['header'])):
         value = report_dict['header'][i]
-        txt_file.write( ' ' + str(value).ljust(col_widthes[header_id]) + ' ')
+        txt_file.write(' ' + str(value).ljust(col_widthes[header_id]) + ' ')
         tsv_file.write(str(value) + '\t')
         for id, contig_name in enumerate(sorted(report_dict.iterkeys())):
             if contig_name == 'header':
                 continue
             value = report_dict[contig_name][i]
-            txt_file.write( ' ' + str(value).ljust(col_widthes[id]) + ' ')
+            txt_file.write(' ' + str(value).ljust(col_widthes[id]) + ' ')
             tsv_file.write(str(value) + '\t')
         txt_file.write('\n')
         tsv_file.write('\n')
@@ -83,10 +83,10 @@ def do(report_dict, report_horizontal_name, report_vertical_name, min_contig=0, 
             continue
         for id, value in enumerate(report_dict[contig_name]):
             if id:
-                txt_file.write( ' ' + str(value).rjust(col_widthes[id]) + ' |')
+                txt_file.write(' ' + str(value).rjust(col_widthes[id]) + ' |')
                 tsv_file.write('\t')
             else:
-                txt_file.write( ' ' + str(value).ljust(col_widthes[id]) + ' |')
+                txt_file.write(' ' + str(value).ljust(col_widthes[id]) + ' |')
             tsv_file.write(str(value))
         txt_file.write('\n')
         tsv_file.write('\n')
@@ -95,21 +95,19 @@ def do(report_dict, report_horizontal_name, report_vertical_name, min_contig=0, 
     tsv_file.close()
     print '    Saved to', report_txt_filename, 'and', report_tsv_filename
 
-    '''
-    if all_pdf != None:
-        print '  Merging all pdfs...'
-        pdfs = ''
-        if glob.glob(output_dir + '/basic_stats/*.pdf'):
-            pdfs += output_dir + '/basic_stats/*.pdf '
-        if glob.glob(output_dir + '/aligned_stats/*.pdf'):
-            pdfs += output_dir + '/aligned_stats/*.pdf '
-        if glob.glob(output_dir + '/mauve/*.pdf'):
-            pdfs += output_dir + '/mauve/*.pdf '
-        if pdfs != '':
-            subprocess.call(['pdftk ' + pdfs  + ' cat output ' + all_pdf], shell=True)
-            print '    Saved to ' + all_pdf
-        else:
-            print '  There are no pdf files!'    
-        
-    print '  Done.'
-    '''
+#    if all_pdf != None:
+#        print '  Merging all pdfs...'
+#        pdfs = ''
+#        if glob.glob(output_dir + '/basic_stats/*.pdf'):
+#            pdfs += output_dir + '/basic_stats/*.pdf '
+#        if glob.glob(output_dir + '/aligned_stats/*.pdf'):
+#            pdfs += output_dir + '/aligned_stats/*.pdf '
+#        if glob.glob(output_dir + '/mauve/*.pdf'):
+#            pdfs += output_dir + '/mauve/*.pdf '
+#        if pdfs != '':
+#            subprocess.call(['pdftk ' + pdfs  + ' cat output ' + all_pdf], shell=True)
+#            print '    Saved to ' + all_pdf
+#        else:
+#            print '  There are no pdf files!'
+#
+#    print '  Done.'

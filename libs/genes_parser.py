@@ -13,6 +13,7 @@ txt_pattern = re.compile(r'(?P<seqname>\S+)\s+(?P<number>\d+)\s+(?P<start>\d+)\s
 gff_pattern = re.compile(r'(?P<seqname>\S+)\s+\S+\s+(?P<feature>\S+)\s+(?P<start>\d+)\s+(?P<end>\d+)\s+\S+\s+(?P<strand>[\+\-]?)\s+\S+\s+(?P<attributes>\S+)', re.I)
 ncbi_start_pattern = re.compile(r'(?P<number>\d+)\.\s*(?P<name>\S+)\s*$', re.I)
 
+
 def get_genes_from_file(filename, feature):
     if not filename or not os.path.exists(filename):
         print '  Warning! ' + feature + '\'s file not specified or doesn\'t exist!'

@@ -10,17 +10,19 @@ import sys
 import fastaparser
 from qutils import id_to_str
 
-def get_lengths_from_coordfile(nucmer_filename):    
-    '''
-    Returns list of aligned blocks' lengths    
-    '''
+__location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
+
+def get_lengths_from_coordfile(nucmer_filename):
+    """
+    Returns list of aligned blocks' lengths
+    """
     max_overlap = 0.1 # 10 %
 
     coordfile = open(nucmer_filename, 'r')
     for line in coordfile:
         if line.startswith('='):
             break
-    
+
     # EXAMPLE:
     #    [S1]     [E1]  |     [S2]     [E2]  |  [LEN 1]  [LEN 2]  |  [% IDY]  | [TAGS]
     #=====================================================================================
@@ -32,12 +34,12 @@ def get_lengths_from_coordfile(nucmer_filename):
     # 2302477  2302748  |        1      272  |      272      272  |  96.6912  | gi|48994873|gb|U00096.2|	NODE_681_length_272_
 
     aligned_lengths = []
-    
-    for line in coordfile: 
+
+    for line in coordfile:
         splitted = line.split('|')
         len2 = int(splitted[2].split()[1])
         aligned_lengths.append(len2)
-    coordfile.close()      
+    coordfile.close()
 
     return aligned_lengths
 
@@ -49,13 +51,13 @@ def do(reference, filenames, nucmer_dir, output_dir, all_pdf, draw_plots, json_o
 
     ########################################################################
 
-    nucmer_prefix = os.path.join(os.path.abspath(sys.path[0]), nucmer_dir + '/nucmer_')
+    nucmer_prefix = os.path.join(__location__, nucmer_dir + '/nucmer_')
 
     ########################################################################
     report_dict = {'header' : []}
     for filename in filenames:
         report_dict[os.path.basename(filename)] = []
-    
+
     ########################################################################
     print 'Running NA-NGA tool...'
 
@@ -73,18 +75,19 @@ def do(reference, filenames, nucmer_dir, output_dir, all_pdf, draw_plots, json_o
         else:
             lists_of_lengths.append(get_lengths_from_coordfile(nucmer_filename))
     ########################################################################
-    
+
     print 'Calculating NA50 and NGA50...'
     report_dict['header'].append('NA50')
     report_dict['header'].append('NGA50')
     report_dict['header'].append('NA75')
     report_dict['header'].append('NGA75')
+
     import N50
     for id, (filename, lens, assembly_len) in enumerate(itertools.izip(filenames, lists_of_lengths, assembly_lengths)):
         na50 = N50.NG50(lens, assembly_len)
         nga50 = N50.NG50(lens, reference_length)
         na75 = N50.NG50(lens, assembly_len, 75)
-        nga75 = N50.NG50(lens, reference_length, 75)        
+        nga75 = N50.NG50(lens, reference_length, 75)
         print ' ', id_to_str(id), os.path.basename(filename), \
             ', NA50 =', na50, \
             ', NGA50 =', nga50
@@ -92,7 +95,7 @@ def do(reference, filenames, nucmer_dir, output_dir, all_pdf, draw_plots, json_o
         report_dict[os.path.basename(filename)].append(nga50)
         report_dict[os.path.basename(filename)].append(na75)
         report_dict[os.path.basename(filename)].append(nga75)
-        
+
     ########################################################################
 
     # saving to JSON

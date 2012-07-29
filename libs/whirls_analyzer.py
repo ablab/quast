@@ -8,13 +8,6 @@
 
 
 import sys
-import os
-import shutil
-import re
-import getopt
-import datetime
-import subprocess
-import glob
 
 import fastaparser
 

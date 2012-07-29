@@ -5,7 +5,6 @@
 ############################################################################
 
 import os
-import sys
 import subprocess
 import re
 import fastaparser
@@ -35,11 +34,12 @@ def do(reference, filenames, cyclic, rc, output_dir, lib_dir, draw_plots):
     if not os.path.exists(os.path.join(mummer_path, 'nucmer')):
         print ("Making MUMmer...")
         subprocess.call(
-            ['make', '-C', mummer_path], 
-            stdout=open(os.path.join(mummer_path, 'make.log'), 'w'), stderr=open(os.path.join(mummer_path, 'make.err'), 'w')) 
-    
+            ['make', '-C', mummer_path],
+            stdout=open(os.path.join(mummer_path, 'make.log'), 'w'), stderr=open(os.path.join(mummer_path, 'make.err'), 'w'))
+
     print 'Running plantagora tool (assess_assemply.pl)...'
-    metrics = ['Average %IDY', 'Local misassemblies', 'Misassemblies', 'Misassembled contigs', 'Misassembled contig bases', 'Misassembled and unaligned', 'SNPs', 'Unaligned contigs', 'Unaligned contig bases', 'Ambiguous contigs']
+    metrics = ['Average %IDY', 'Local misassemblies', 'Misassemblies', 'Misassembled contigs', 'Misassembled contig bases',
+               'Misassembled and unaligned', 'SNPs', 'Unaligned contigs', 'Unaligned contig bases', 'Ambiguous contigs']
     report_dict['header'] += metrics
 
     for id, filename in enumerate(filenames):
@@ -63,7 +63,7 @@ def do(reference, filenames, cyclic, rc, output_dir, lib_dir, draw_plots):
         subprocess.call(
             ['perl', assess_assembly_path1, reference, filename, nucmerfilename, '--verbose', cyclic_option, rc_option],
             stdout=open(logfilename_out, 'w'), stderr=open(logfilename_err, 'w'), env=myenv)
-        
+
         import sympalign
         sympalign.do(1, nucmerfilename + '.coords', [nucmerfilename + '.coords.btab'])
 
@@ -126,7 +126,7 @@ def do(reference, filenames, cyclic, rc, output_dir, lib_dir, draw_plots):
             os.remove(filename + '.clean')
 
         ## find metrics for total report:
-        
+
         logfile_out = open(logfilename_out, 'r')
         cur_metric_id = 1
         for line in logfile_out:
@@ -139,7 +139,7 @@ def do(reference, filenames, cyclic, rc, output_dir, lib_dir, draw_plots):
         report_dict[os.path.basename(filename)] += ['N/A'] * (len(report_dict['header']) - len(report_dict[os.path.basename(filename)]))
 
         ## outputting misassembled contigs in separate file
-        
+
         logfile_out = open(logfilename_out, 'r')
         mis_contigs_ids = []
         # skipping prologue
@@ -157,10 +157,10 @@ def do(reference, filenames, cyclic, rc, output_dir, lib_dir, draw_plots):
             if line.startswith("Analyzing coverage..."):
                 break
         logfile_out.close()
-    
+
         # outputting misassembled contigs
         input_contigs = fastaparser.read_fasta(filename)
-        mis_contigs = open(output_dir + '/' + os.path.basename(filename) + '.mis_contigs', "w")    
+        mis_contigs = open(output_dir + '/' + os.path.basename(filename) + '.mis_contigs', "w")
 
         for (name, seq) in input_contigs:
             corr_name = re.sub(r'\W', '', re.sub(r'\s', '_', name))
@@ -169,7 +169,7 @@ def do(reference, filenames, cyclic, rc, output_dir, lib_dir, draw_plots):
                 for i in xrange(0, len(seq), 60):
                     mis_contigs.write(seq[i:i+60] + '\n')
         mis_contigs.close()
-        
+
     print '  Done'
 
     return report_dict

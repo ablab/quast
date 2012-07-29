@@ -6,76 +6,74 @@
 # See file LICENSE for details.
 ############################################################################
 
-
 import sys
 import os
 import shutil
 import re
 import getopt
-import datetime
 import subprocess
-import glob
 
-sys.path.append(os.path.join(os.path.abspath(sys.path[0]), 'libs'))
+__location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
+
+#sys.path.append(os.path.join(os.path.abspath(sys.path[0]), 'libs'))
 #sys.path.append(os.path.join(os.path.abspath(sys.path[0]), '../spades_pipeline'))
 
-import qconfig
-import support
-import json_saver
+from libs import qconfig
+from libs import json_saver
 
 RELEASE_MODE=False
 
 def usage():
-    print >>sys.stderr, 'A tool for estimating assembly quality with various metrics and tools.'
-    print >>sys.stderr, 'Usage:', sys.argv[0], '[options] contig files'
-    print >>sys.stderr, ""
+    print >> sys.stderr, 'A tool for estimating assembly quality with various metrics and tools.'
+    print >> sys.stderr, 'Usage:', sys.argv[0], '[options] contig files'
+    print >> sys.stderr, ""
 
     if RELEASE_MODE:
-        print >>sys.stderr, "Options:"
-        print >>sys.stderr, "-o           <dirname>       directory to store all result files [default: results_<datetime>]"
-        print >>sys.stderr, "-R           <filename>      file with a reference genome"
-        print >>sys.stderr, "-G/--genes   <filename>      file with genes for a given species"
-        print >>sys.stderr, "-O/--operons <filename>      file with operons for a given species"
-        print >>sys.stderr, "--min-contig <int>           lower threshold for contig length [default: %s]" % (qconfig.min_contig)
-        print >>sys.stderr, ""
-        print >>sys.stderr, "Advanced options:"
-        print >>sys.stderr, "--contig-thresholds <int,int,...>   comma-separated list of contig length thresholds [default is %s]" % (qconfig.contig_thresholds)
-        print >>sys.stderr, "--orf               <int,int,...>   comma-separated list of threshold lengths of ORFs to search for [default is %s]" % (qconfig.orf_lengths)
-        print >>sys.stderr, '--not-circular                      this flag should be set if the genome is not circular (e.g., eukaryote)'
-        print >>sys.stderr, ""
-        print >>sys.stderr, "-h/--help           print this usage message"
+        print >> sys.stderr, "Options:"
+        print >> sys.stderr, "-o           <dirname>       directory to store all result files [default: results_<datetime>]"
+        print >> sys.stderr, "-R           <filename>      file with a reference genome"
+        print >> sys.stderr, "-G/--genes   <filename>      file with genes for a given species"
+        print >> sys.stderr, "-O/--operons <filename>      file with operons for a given species"
+        print >> sys.stderr, "--min-contig <int>           lower threshold for contig length [default: %s]" % qconfig.min_contig
+        print >> sys.stderr, ""
+        print >> sys.stderr, "Advanced options:"
+        print >> sys.stderr, "--contig-thresholds <int,int,...>   comma-separated list of contig length thresholds [default is %s]" % qconfig.contig_thresholds
+        print >> sys.stderr, "--orf               <int,int,...>   comma-separated list of threshold lengths of ORFs to search for [default is %s]" % qconfig.orf_lengths
+        print >> sys.stderr, '--not-circular                      this flag should be set if the genome is not circular (e.g., eukaryote)'
+        print >> sys.stderr, ""
+        print >> sys.stderr, "-h/--help           print this usage message"
     else:
-        print >>sys.stderr, 'Options with arguments'
-        print >>sys.stderr, "-o  --output-dir             directory to store all result files [default: results_<datetime>]"
-        print >>sys.stderr, "-R  --reference              file with a reference genome"
-        print >>sys.stderr, "-G  --genes                  file with genes for a given species"
-        print >>sys.stderr, "-O  --operons                file with operons for a given species"
-        print >>sys.stderr, "-M  --min-contig             lower threshold for contig length [default: %s]" % (qconfig.min_contig)
-        print >>sys.stderr, "-t  --contig-thresholds      comma-separated list of contig length thresholds [default is %s]" % (qconfig.contig_thresholds)
-        print >>sys.stderr, "-f  --orf                    comma-separated list of threshold lengths of ORFs to search for [default is %s]" % (qconfig.orf_lengths)
-        print >>sys.stderr, "-e  --genemark-thresholds    comma-separated list of threshold lengths of genes to search with GeneMark (default is %s)" % (qconfig.genes_lengths)
-        print >>sys.stderr, ""
-        print >>sys.stderr, 'Options without arguments'
-        print >>sys.stderr, '-m  --mauve                  use Mauve'
-        print >>sys.stderr, '-g  --gage                   use Gage only'
-        print >>sys.stderr, '-n  --not-circular           genome is not circular (e.g., eukaryote)'
-        print >>sys.stderr, "-d  --disable-rc             reverse complementary contig should NOT be counted as misassembly"
-        print >>sys.stderr, "-k  --genemark               use GeneMark"
-        print >>sys.stderr, "-x  --extra-report           generate an extra report (extra_report.txt)"
-        print >>sys.stderr, "-j  --save-json              save the output also in the JSON format"
-        print >>sys.stderr, "-J  --save-json-to <path>    save the JSON-output to a particular path"
-        print >>sys.stderr, "-p  --plain-report-no-plots  plain text report only, don't draw plots (to make quast faster)"
-        print >>sys.stderr, ""
-        print >>sys.stderr, "-h  --help                   print this usage message"
+        print >> sys.stderr, 'Options with arguments'
+        print >> sys.stderr, "-o  --output-dir             directory to store all result files [default: results_<datetime>]"
+        print >> sys.stderr, "-R  --reference              file with a reference genome"
+        print >> sys.stderr, "-G  --genes                  file with genes for a given species"
+        print >> sys.stderr, "-O  --operons                file with operons for a given species"
+        print >> sys.stderr, "-M  --min-contig             lower threshold for contig length [default: %s]" % qconfig.min_contig
+        print >> sys.stderr, "-t  --contig-thresholds      comma-separated list of contig length thresholds [default is %s]" % qconfig.contig_thresholds
+        print >> sys.stderr, "-f  --orf                    comma-separated list of threshold lengths of ORFs to search for [default is %s]" % qconfig.orf_lengths
+        print >> sys.stderr, "-e  --genemark-thresholds    comma-separated list of threshold lengths of genes to search with GeneMark (default is %s)" % qconfig.genes_lengths
+        print >> sys.stderr, ""
+        print >> sys.stderr, 'Options without arguments'
+        print >> sys.stderr, '-m  --mauve                  use Mauve'
+        print >> sys.stderr, '-g  --gage                   use Gage only'
+        print >> sys.stderr, '-n  --not-circular           genome is not circular (e.g., eukaryote)'
+        print >> sys.stderr, "-d  --disable-rc             reverse complementary contig should NOT be counted as misassembly"
+        print >> sys.stderr, "-k  --genemark               use GeneMark"
+        print >> sys.stderr, "-x  --extra-report           generate an extra report (extra_report.txt)"
+        print >> sys.stderr, "-j  --save-json              save the output also in the JSON format"
+        print >> sys.stderr, "-J  --save-json-to <path>    save the JSON-output to a particular path"
+        print >> sys.stderr, "-p  --plain-report-no-plots  plain text report only, don't draw plots (to make quast faster)"
+        print >> sys.stderr, ""
+        print >> sys.stderr, "-h  --help                   print this usage message"
 
 def check_file(f, message=''):
     if not os.path.isfile(f):
-        print >>sys.stderr, "Error. File not found (%s): %s" % (message, f)
+        print >> sys.stderr, "Error. File not found (%s): %s" % (message, f)
         sys.exit(2)
     return f
 
-def main(args, lib_dir=os.path.join(os.path.abspath(sys.path[0]), 'libs')):
 
+def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.path.abspath(sys.path[0]), 'libs')):
     ######################
     ### ARGS
     ######################    
@@ -83,8 +81,8 @@ def main(args, lib_dir=os.path.join(os.path.abspath(sys.path[0]), 'libs')):
     try:
         options, contigs = getopt.gnu_getopt(args, qconfig.short_options, qconfig.long_options)
     except getopt.GetoptError, err:
-        print >>sys.stderr, err
-        print >>sys.stderr
+        print >> sys.stderr, err
+        print >> sys.stderr
         usage()
         sys.exit(1)
 
@@ -207,7 +205,7 @@ def main(args, lib_dir=os.path.join(os.path.abspath(sys.path[0]), 'libs')):
     ########################################################################
 
     # duplicating output to log file
-    import support
+    from libs import support
     if os.path.isfile(logfile):
         os.remove(logfile)
 
@@ -226,7 +224,7 @@ def main(args, lib_dir=os.path.join(os.path.abspath(sys.path[0]), 'libs')):
     if os.path.isdir(corrected_dir):
         shutil.rmtree(corrected_dir)
     os.mkdir(corrected_dir)
-    import fastaparser
+    from libs import fastaparser
 
     # if reference in .gz format we should unzip it
     if qconfig.reference:
@@ -279,7 +277,7 @@ def main(args, lib_dir=os.path.join(os.path.abspath(sys.path[0]), 'libs')):
         fastaparser.write_fasta_to_file(outfilename, modified_fasta_entries)
 
         print '  ' + filename + ' ==> ' + os.path.basename(outfilename)
-        contigs[id] = os.path.join(os.path.abspath(sys.path[0]), outfilename)
+        contigs[id] = os.path.join(__location__, outfilename)
         if to_remove:
             contigs_to_remove.append(contigs[id])
     print '  Done.'
@@ -301,15 +299,14 @@ def main(args, lib_dir=os.path.join(os.path.abspath(sys.path[0]), 'libs')):
         ########################################################################
         ### GAGE
         ########################################################################        
-        if not qconfig.reference:   
+        if not qconfig.reference:
             print "\nError! GAGE can't be run without reference!\n"
             sys.exit(1)
 
-        import gage
+        from libs import gage
         gage.do(qconfig.reference, contigs, output_dir + '/gage', gage_report, qconfig.min_contig, lib_dir)
     else:
         if qconfig.draw_plots:
-            import plotter
             try:
                 from matplotlib.backends.backend_pdf import PdfPages
                 all_pdf = PdfPages(all_pdf_filename)
@@ -319,7 +316,7 @@ def main(args, lib_dir=os.path.join(os.path.abspath(sys.path[0]), 'libs')):
         ########################################################################	
         ### Stats and plots
         ########################################################################	
-        import basic_stats
+        from libs import basic_stats
         cur_results_dict = basic_stats.do(qconfig.reference, contigs, output_dir + '/basic_stats', all_pdf, qconfig.draw_plots, json_output_dir, output_dir)
         report_dict = extend_report_dict(report_dict, cur_results_dict)
 
@@ -327,27 +324,27 @@ def main(args, lib_dir=os.path.join(os.path.abspath(sys.path[0]), 'libs')):
             ########################################################################
             ### PLANTAGORA 
             ########################################################################
-            import plantagora
+            from libs import plantagora
             cur_results_dict = plantagora.do(qconfig.reference, contigs, qconfig.cyclic, qconfig.rc, output_dir + '/plantagora', lib_dir, qconfig.draw_plots)
             report_dict = extend_report_dict(report_dict, cur_results_dict)
 
             ########################################################################
             ### SympAlign segments
             ########################################################################
-            import sympalign
+            from libs import sympalign
             sympalign.do(2, output_dir + '/plantagora/sympalign.segments', [output_dir + '/plantagora'])
 
             ########################################################################
             ### NA and NGA ("aligned N and NG")
             ########################################################################
-            import aligned_stats
+            from libs import aligned_stats
             cur_results_dict = aligned_stats.do(qconfig.reference, contigs, output_dir + '/plantagora', output_dir + '/aligned_stats', all_pdf, qconfig.draw_plots, json_output_dir, output_dir)
             report_dict = extend_report_dict(report_dict, cur_results_dict)
 
             ########################################################################
             ### GENOME_ANALYZER
             ########################################################################
-            import genome_analyzer
+            from libs import genome_analyzer
             cur_results_dict = genome_analyzer.do(qconfig.reference, contigs, output_dir + '/genome_analyzer', output_dir + '/plantagora', qconfig.genes, qconfig.operons, all_pdf, qconfig.draw_plots, json_output_dir, output_dir)
             report_dict = extend_report_dict(report_dict, cur_results_dict)
 
@@ -355,7 +352,7 @@ def main(args, lib_dir=os.path.join(os.path.abspath(sys.path[0]), 'libs')):
             ### MAUVE
             ########################################################################
             if qconfig.with_mauve:
-                import mauve
+                from libs import mauve
                 cur_results_dict = mauve.do(qconfig.reference, contigs, output_dir + '/plantagora', output_dir + '/mauve', lib_dir)
                 report_dict = extend_report_dict(report_dict, cur_results_dict)
 
@@ -364,7 +361,7 @@ def main(args, lib_dir=os.path.join(os.path.abspath(sys.path[0]), 'libs')):
             ########################################################################
             ### ORFs
             ########################################################################
-            import orfs
+            from libs import orfs
             for orf_length in qconfig.orf_lengths:
                 cur_results_dict = orfs.do(contigs, orf_length)
                 report_dict = extend_report_dict(report_dict, cur_results_dict)
@@ -373,7 +370,7 @@ def main(args, lib_dir=os.path.join(os.path.abspath(sys.path[0]), 'libs')):
                 ########################################################################
                 ### GeneMark
                 ########################################################################    
-                import genemark
+                from libs import genemark
                 cur_results_dict = genemark.do(contigs, qconfig.genes_lengths, output_dir + '/genemark', lib_dir)
                 report_dict = extend_report_dict(report_dict, cur_results_dict)
 

@@ -7,7 +7,6 @@
 import datetime
 import json
 import os
-from libs.genes_parser import Gene
 
 total_report_fn       = '/report.json'
 contigs_lengths_fn    = '/contigs_lengths.json'

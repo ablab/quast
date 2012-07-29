@@ -7,13 +7,12 @@
 ############################################################################
 
 import fnmatch
-import sys
 import os
 
 
 def do_mode_one(ouf, all, inf_filenames, ref_id):
-    print >>ouf, "    [S1]     [E1]  |     [S2]     [E2]  |  [LEN 1]  [LEN 2]  |  [% IDY]  | [TAGS]"
-    print >>ouf, "====================================================================================="
+    print >> ouf, "    [S1]     [E1]  |     [S2]     [E2]  |  [LEN 1]  [LEN 2]  |  [% IDY]  | [TAGS]"
+    print >> ouf, "====================================================================================="
     for contig in sorted(all, key=lambda contig: -contig[1]):
         contig_id, contig_len, contig_i = contig
         for a in all[contig]:
@@ -24,7 +23,7 @@ def do_mode_one(ouf, all, inf_filenames, ref_id):
                 label = ref_id + '\t' + str(contig_i) + '_' + contig_id
             else:
                 label = ref_id + '\t' + contig_id
-            print >>ouf, '%8d %8d  | %8d %8d  | %8d %8d  | %8.4f  | %s' % (sr, er, sc, ec, lc, lr, p, label)
+            print >> ouf, '%8d %8d  | %8d %8d  | %8d %8d  | %8.4f  | %s' % (sr, er, sc, ec, lc, lr, p, label)
 
 
 def do_mode_two(ouf, list_events, inf_filenames, SEG):
@@ -34,7 +33,7 @@ def do_mode_two(ouf, list_events, inf_filenames, SEG):
         if x not in events:
             events[x] = []
         events[x].append(e[1:])
-    print >>ouf, inf_filenames
+    print >> ouf, inf_filenames
     op = [0] * len(inf_filenames)
     x_ = 0
     output = []
@@ -56,7 +55,8 @@ def do_mode_two(ouf, list_events, inf_filenames, SEG):
         x_ = x
     print ' ', len(output), 'segments.'
     for s in output:
-        print >>ouf, '%8d\t%8d\t%8d\t%s' % (s[0], s[1], s[1] - s[0], s[2])
+        print >> ouf, '%8d\t%8d\t%8d\t%s' % (s[0], s[1], s[1] - s[0], s[2])
+
 
 def do(mode, out_filename, input_files_or_dirs): #, ouf_filename, inf_filenames):
     print 'Running SympAlign...'
@@ -132,7 +132,8 @@ def do(mode, out_filename, input_files_or_dirs): #, ouf_filename, inf_filenames)
                         sc2, ec2, sr2, er2, p2 = b[0:5]
                         lc2 = abs(sc2 - ec2) + 1
                         # lr2 = abs(sr2 - er2) + 1
-                        if min(sc2, ec2) <= min(sc, ec) and max(sc, ec) <= max(sc2, ec2) and ((lc <= 0.5 * lc2) or (p < p2 * 0.9999)):
+                        if min(sc2, ec2) <= min(sc, ec) and max(sc, ec) <= max(sc2, ec2) and (
+                        (lc <= 0.5 * lc2) or (p < p2 * 0.9999)):
                             discard = True
                             break
                     if discard:

@@ -5,16 +5,15 @@
 ############################################################################
 
 import os
-import shutil
 import sys
 import fastaparser
 import genes_parser
-import subprocess
-import collections
-import itertools
 from libs import json_saver
 from libs.html_saver import html_saver
 from qutils import id_to_str
+
+__location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
+
 
 s_Mapped_genome = 'Mapped genome (%)'
 s_Genes = 'Genes'
@@ -24,7 +23,7 @@ s_Operons = 'Operons'
 def do(reference, filenames, output_dir, nucmer_dir, genes_filename, operons_filename, all_pdf, draw_plots, json_output_dir, results_dir):
 
     # some important constants
-    nucmer_prefix = os.path.join(os.path.abspath(sys.path[0]), nucmer_dir + '/nucmer_')
+    nucmer_prefix = os.path.join(__location__, nucmer_dir + '/nucmer_')
     #threshold = 10.0 # in %
     min_gap_size = 50 # for calculating number or gaps in genome coverage
     min_overlap = 100 # for genes and operons finding

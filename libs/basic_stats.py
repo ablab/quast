@@ -42,6 +42,7 @@ def do(reference, filenames, output_dir, all_pdf, draw_plots, json_output_dir, r
     
     ########################################################################
 
+    reference_length = None
     if reference:
         reference_length = fastaparser.get_lengths_from_fastafile(reference)[0]
 
@@ -54,6 +55,7 @@ def do(reference, filenames, output_dir, all_pdf, draw_plots, json_output_dir, r
 
         print 'Reference genome:'
         print ' ', reference, ', reference length =', int(reference_length)
+
     print 'Contigs files: '
     lists_of_lengths = []
     for id, filename in enumerate(filenames):
@@ -86,9 +88,11 @@ def do(reference, filenames, output_dir, all_pdf, draw_plots, json_output_dir, r
     import N50
     for id, (filename, lengths_list) in enumerate(itertools.izip(filenames, lists_of_lengths)):
         n50 = N50.N50(lengths_list)
+        ng50 = None
         if reference:
             ng50 = N50.NG50(lengths_list, reference_length)
         n75 = N50.N50(lengths_list, 75)
+        ng75 = None
         if reference:
             ng75 = N50.NG50(lengths_list, reference_length, 75)
         total_length = sum(lengths_list)

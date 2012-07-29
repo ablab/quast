@@ -6,27 +6,26 @@
 
 import os
 import itertools
-import fastaparser
-from qutils import id_to_str
 
 # Supported plot formats: .emf, .eps, .pdf, .png, .ps, .raw, .rgba, .svg, .svgz
 #plots_format = '.svg' 
-plots_format = '.pdf' 
+plots_format = '.pdf'
 
 matplotlib_error = False
 try:
     import matplotlib
+
     matplotlib.use('Agg') # non-GUI backend
 except:
-    print 'Warning! Can\'t draw plots - please install python-matplotlib' 
+    print 'Warning! Can\'t draw plots - please install python-matplotlib'
     matplotlib_error = True
 
-colors = ['#E41A1C', '#377EB8', '#4DAF4A', '#984EA3', '#FF7F00', '#A65628', '#F781BF', '#FFFF33']    
+colors = ['#E41A1C', '#377EB8', '#4DAF4A', '#984EA3', '#FF7F00', '#A65628', '#F781BF', '#FFFF33']
 
-font = {'family' : 'sans-serif',
-    'style'  : 'normal',
-    'weight' : 'medium',
-    'size'   : 10}
+font = {'family': 'sans-serif',
+        'style': 'normal',
+        'weight': 'medium',
+        'size': 10}
 
 # plots params
 linewidth = 3.0
@@ -44,12 +43,13 @@ def cumulative_plot(filenames, lists_of_lengths, plot_filename, title, all_pdf=N
     print '  Drawing cumulative plot...',
     import matplotlib.pyplot
     import matplotlib.ticker
+
     matplotlib.pyplot.figure()
     matplotlib.pyplot.rc('font', **font)
     color_id = 0
 
     for filename, lenghts in itertools.izip(filenames, lists_of_lengths):
-        lenghts.sort(reverse = True)
+        lenghts.sort(reverse=True)
         # calculate values for the plot
         vals_percent = []
         vals_length = []
@@ -62,13 +62,14 @@ def cumulative_plot(filenames, lists_of_lengths, plot_filename, title, all_pdf=N
             vals_percent.append(x)
             y = lcur
             vals_length.append(y)
-        # add to plot
+            # add to plot
         if color_id < len(colors):
             matplotlib.pyplot.plot(vals_percent, vals_length, color=colors[color_id % len(colors)], lw=linewidth)
         else:
-            matplotlib.pyplot.plot(vals_percent, vals_length, color=colors[color_id % len(colors)], lw=linewidth, ls='dashed')
+            matplotlib.pyplot.plot(vals_percent, vals_length, color=colors[color_id % len(colors)], lw=linewidth,
+                ls='dashed')
         color_id += 1
-            
+
     matplotlib.pyplot.xlabel('Contig index', fontsize=axes_fontsize)
     matplotlib.pyplot.ylabel('Cumulative length (Mbp)', fontsize=axes_fontsize)
     if with_title:
@@ -80,15 +81,16 @@ def cumulative_plot(filenames, lists_of_lengths, plot_filename, title, all_pdf=N
     ax.set_position([box.x0, box.y0 + box.height * 0.2, box.width, box.height * 0.8])
     # Put a legend below current axis
     try: # for matplotlib <= 2009-12-09
-        ax.legend(map(os.path.basename, filenames), loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True, shadow=False, ncol=n_columns)
+        ax.legend(map(os.path.basename, filenames), loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True,
+            shadow=False, ncol=n_columns)
     except ZeroDivisionError:
         pass
-    
-    mkfunc = lambda x, pos: '%d' % (x * 1e-6)     
+
+    mkfunc = lambda x, pos: '%d' % (x * 1e-6)
     mkformatter = matplotlib.ticker.FuncFormatter(mkfunc)
     myLocator = matplotlib.ticker.LinearLocator(6)
     mxLocator = matplotlib.ticker.LinearLocator(6)
-    
+
     ax.yaxis.set_major_formatter(mkformatter)
     ax.yaxis.set_major_locator(myLocator)
     ax.xaxis.set_major_locator(mxLocator)
@@ -97,12 +99,14 @@ def cumulative_plot(filenames, lists_of_lengths, plot_filename, title, all_pdf=N
     plot_filename += plots_format
     matplotlib.pyplot.savefig(plot_filename)
     print 'saved to', plot_filename
-    
-    if plots_format == '.pdf' and all_pdf:
-        matplotlib.pyplot.savefig(all_pdf, format='pdf') 
-    
 
-# common routine for Nx-plot and NGx-plot (and probably for others Nyx-plots in the future)    
+    if plots_format == '.pdf' and all_pdf:
+        matplotlib.pyplot.savefig(all_pdf, format='pdf')
+
+
+    # common routine for Nx-plot and NGx-plot (and probably for others Nyx-plots in the future)
+
+
 def Nx_plot(filenames, lists_of_lengths, plot_filename, title='Nx', reference_lengths=[], all_pdf=None):
     if matplotlib_error:
         return
@@ -110,21 +114,22 @@ def Nx_plot(filenames, lists_of_lengths, plot_filename, title='Nx', reference_le
     print '  Drawing ' + title + ' plot...',
     import matplotlib.pyplot
     import matplotlib.ticker
-    matplotlib.pyplot.figure() 
+
+    matplotlib.pyplot.figure()
     matplotlib.pyplot.rc('font', **font)
     color_id = 0
     x = 0
 
     for id, (filename, lengths) in enumerate(itertools.izip(filenames, lists_of_lengths)):
-        lengths.sort(reverse = True)
+        lengths.sort(reverse=True)
         # calculate values for the plot
         vals_Nx = [0.0]
         vals_l = [lengths[0]]
-        lcur = 0        
+        lcur = 0
         # if Nx-plot then we just use sum of contigs lengths, else use reference_length
         lsum = sum(lengths)
         if reference_lengths:
-            lsum = reference_lengths[id]        
+            lsum = reference_lengths[id]
         for l in lengths:
             lcur += l
             x = lcur * 100.0 / lsum
@@ -132,7 +137,7 @@ def Nx_plot(filenames, lists_of_lengths, plot_filename, title='Nx', reference_le
             vals_l.append(l)
             vals_Nx.append(x)
             vals_l.append(l)
-        # add to plot
+            # add to plot
         if color_id < len(colors):
             matplotlib.pyplot.plot(vals_Nx, vals_l, color=colors[color_id % len(colors)], lw=linewidth)
         else:
@@ -150,14 +155,15 @@ def Nx_plot(filenames, lists_of_lengths, plot_filename, title='Nx', reference_le
     ax.set_position([box.x0, box.y0 + box.height * 0.2, box.width, box.height * 0.8])
     # Put a legend below current axis
     try: # for matplotlib <= 2009-12-09
-        ax.legend(map(os.path.basename, filenames), loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True, shadow=True, ncol=n_columns)
+        ax.legend(map(os.path.basename, filenames), loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True,
+            shadow=True, ncol=n_columns)
     except ZeroDivisionError:
-        pass    
-    
-    mkfunc = lambda x, pos: '%d' % (x * 1e-3) 
+        pass
+
+    mkfunc = lambda x, pos: '%d' % (x * 1e-3)
     mkformatter = matplotlib.ticker.FuncFormatter(mkfunc)
     ax.yaxis.set_major_formatter(mkformatter)
-    matplotlib.pyplot.xlim([0,100])
+    matplotlib.pyplot.xlim([0, 100])
     #ax.invert_xaxis() 
     #matplotlib.pyplot.ylim(matplotlib.pyplot.ylim()[::-1])
 
@@ -180,26 +186,29 @@ def GC_content_plot(filenames, lists_of_GC_info, plot_filename, all_pdf=None):
     print '  Drawing ' + title + ' plot...',
     import matplotlib.pyplot
     import matplotlib.ticker
-    matplotlib.pyplot.figure() 
+
+    matplotlib.pyplot.figure()
     matplotlib.pyplot.rc('font', **font)
     color_id = 0
     x = 0
 
-    for id, (filename, GC_info) in enumerate(itertools.izip(filenames, lists_of_GC_info)): 
-        # GC_info = [(contig_length, GC_percent)]
+    for id, (filename, GC_info) in enumerate(itertools.izip(filenames, lists_of_GC_info)):
+    # GC_info = [(contig_length, GC_percent)]
         # sorted_GC_info = sorted(GC_info, key=lambda GC_info_contig: GC_info_contig[1])
         # calculate values for the plot
         cur_bin = 0.0
         vals_GC = [cur_bin]
-        vals_bp = [sum(contig_length for (contig_length, GC_percent) in GC_info if GC_percent == cur_bin)]        
+        vals_bp = [sum(contig_length for (contig_length, GC_percent) in GC_info if GC_percent == cur_bin)]
 
         while cur_bin < 100.0 - bin_size:
             cur_bin += bin_size
             vals_GC.append(cur_bin)
-            vals_bp.append(sum(contig_length for (contig_length, GC_percent) in GC_info if GC_percent > (cur_bin - bin_size) and GC_percent <= cur_bin))
-        
+            vals_bp.append(sum(contig_length for (contig_length, GC_percent) in GC_info if GC_percent > (
+            cur_bin - bin_size) and GC_percent <= cur_bin))
+
         vals_GC.append(100.0)
-        vals_bp.append(sum(contig_length for (contig_length, GC_percent) in GC_info if GC_percent > cur_bin and GC_percent <= 100.0))           
+        vals_bp.append(sum(
+            contig_length for (contig_length, GC_percent) in GC_info if GC_percent > cur_bin and GC_percent <= 100.0))
 
         # add to plot
         if color_id < len(colors):
@@ -219,14 +228,15 @@ def GC_content_plot(filenames, lists_of_GC_info, plot_filename, all_pdf=None):
     ax.set_position([box.x0, box.y0 + box.height * 0.2, box.width, box.height * 0.8])
     # Put a legend below current axis
     try: # for matplotlib <= 2009-12-09
-        ax.legend(map(os.path.basename, filenames), loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True, shadow=True, ncol=n_columns)
+        ax.legend(map(os.path.basename, filenames), loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True,
+            shadow=True, ncol=n_columns)
     except ZeroDivisionError:
-        pass    
-    
-    mkfunc = lambda x, pos: '%d' % (x * 1e-3) 
+        pass
+
+    mkfunc = lambda x, pos: '%d' % (x * 1e-3)
     mkformatter = matplotlib.ticker.FuncFormatter(mkfunc)
     ax.yaxis.set_major_formatter(mkformatter)
-    matplotlib.pyplot.xlim([0,100])
+    matplotlib.pyplot.xlim([0, 100])
     #ax.invert_xaxis() 
     #matplotlib.pyplot.ylim(matplotlib.pyplot.ylim()[::-1])
 
@@ -243,15 +253,16 @@ def genes_operons_plot(filenames, files_contigs, genes, found, plot_filename, ti
     if matplotlib_error:
         return
 
-    print '  Drawing ' + title + ' cumulative plot...',    
+    print '  Drawing ' + title + ' cumulative plot...',
     import matplotlib.pyplot
-    import matplotlib.ticker    
-    matplotlib.pyplot.figure() 
-    matplotlib.pyplot.rc('font', **font)   
+    import matplotlib.ticker
+
+    matplotlib.pyplot.figure()
+    matplotlib.pyplot.rc('font', **font)
     color_id = 0
-    
-    for filename in filenames:    
-        # calculate values for the plot
+
+    for filename in filenames:
+    # calculate values for the plot
         contigs = files_contigs[filename]    # [ [contig_blocks] ] 
         for i, gene in enumerate(genes):
             found[i] = 0  # mark all genes as 'not found'
@@ -259,9 +270,9 @@ def genes_operons_plot(filenames, files_contigs, genes, found, plot_filename, ti
         x_vals = [0]
         y_vals = [0]
         contig_no = 0
-        total_full = 0        
+        total_full = 0
         for aligned_blocks in contigs:
-            contig_no += 1    
+            contig_no += 1
             for i, gene in enumerate(genes):
                 if found[i] == 0:
                     for block in aligned_blocks:
@@ -272,13 +283,13 @@ def genes_operons_plot(filenames, files_contigs, genes, found, plot_filename, ti
                             total_full += 1
                             break
             x_vals.append(contig_no)
-            y_vals.append(total_full)                                
+            y_vals.append(total_full)
         if color_id < len(colors):
             matplotlib.pyplot.plot(x_vals, y_vals, color=colors[color_id % len(colors)], lw=linewidth)
         else:
             matplotlib.pyplot.plot(x_vals, y_vals, color=colors[color_id % len(colors)], lw=linewidth, ls='dashed')
         color_id += 1
-        
+
     matplotlib.pyplot.xlabel('Contig index', fontsize=axes_fontsize)
     matplotlib.pyplot.ylabel('Cumulative no. ' + title, fontsize=axes_fontsize)
     matplotlib.pyplot.title(title.capitalize())
@@ -288,7 +299,8 @@ def genes_operons_plot(filenames, files_contigs, genes, found, plot_filename, ti
     box = ax.get_position()
     ax.set_position([box.x0 + box.width * 0.2, box.y0 + box.height * 0.1, box.width * 0.8, box.height * 0.9])
     # Put a legend below current axis
-    ax.legend(map(os.path.basename, filenames), loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True, shadow=False, ncol=4)
+    ax.legend(map(os.path.basename, filenames), loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True,
+        shadow=False, ncol=4)
 
     #myLocator = matplotlib.ticker.LinearLocator(4)
     #mxLocator = matplotlib.ticker.LinearLocator(4)   
@@ -303,11 +315,13 @@ def genes_operons_plot(filenames, files_contigs, genes, found, plot_filename, ti
         matplotlib.pyplot.savefig(all_pdf, format='pdf')
 
 # common routine for Histograms    
-def histogram(filenames, values, plot_filename, title='', all_pdf=None, yaxis_title='', bottom_value=None, top_value=None):    
+def histogram(filenames, values, plot_filename, title='', all_pdf=None, yaxis_title='', bottom_value=None,
+              top_value=None):
     if matplotlib_error:
         return
-    
+
     import math
+
     min_value = sorted(values)[0]
     max_value = sorted(values, reverse=True)[0]
     exponent = None
@@ -317,17 +331,18 @@ def histogram(filenames, values, plot_filename, title='', all_pdf=None, yaxis_ti
         else:
             exponent = 1
     else:
-        exponent  = math.pow(10, math.floor(math.log(max_value - min_value, 10)))
+        exponent = math.pow(10, math.floor(math.log(max_value - min_value, 10)))
 
     if not bottom_value:
         bottom_value = (math.floor(min_value / exponent) - 1) * exponent
     if not top_value:
-        top_value    = (math.ceil(max_value / exponent) + 1) * exponent
+        top_value = (math.ceil(max_value / exponent) + 1) * exponent
 
     print '  Drawing ' + title + ' histogram...',
     import matplotlib.pyplot
     import matplotlib.ticker
-    matplotlib.pyplot.figure() 
+
+    matplotlib.pyplot.figure()
     matplotlib.pyplot.rc('font', **font)
     color_id = 0
     x = 0
@@ -340,19 +355,20 @@ def histogram(filenames, values, plot_filename, title='', all_pdf=None, yaxis_ti
     #import numpy
     #positions = numpy.arange(len(filenames))
 
-    for id, (filename, val) in enumerate(itertools.izip(filenames, values)):    
+    for id, (filename, val) in enumerate(itertools.izip(filenames, values)):
         cur_ls = 'solid'
         if id >= len(colors):
             cur_ls = 'dashed'
 
-        matplotlib.pyplot.bar(start_pos + (width + interval) * id, val, width, color=colors[id % len(colors)], ls=cur_ls)
+        matplotlib.pyplot.bar(start_pos + (width + interval) * id, val, width, color=colors[id % len(colors)],
+            ls=cur_ls)
 
 
     #matplotlib.pyplot.xticks(positions + width, map(os.path.basename, filenames))
     matplotlib.pyplot.ylabel(yaxis_title, fontsize=axes_fontsize)
     if with_title:
         matplotlib.pyplot.title(title)
-    
+
     ax = matplotlib.pyplot.gca()
     # Shink current axis's height by 20% on the bottom
     box = ax.get_position()
@@ -360,11 +376,12 @@ def histogram(filenames, values, plot_filename, title='', all_pdf=None, yaxis_ti
     ax.yaxis.grid(with_grid)
     # Put a legend below current axis
     try: # for matplotlib <= 2009-12-09
-        ax.legend(map(os.path.basename, filenames), loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True, shadow=True, ncol=n_columns)
+        ax.legend(map(os.path.basename, filenames), loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True,
+            shadow=True, ncol=n_columns)
     except ZeroDivisionError:
-        pass    
+        pass
 
-    ax.axes.get_xaxis().set_visible(False)   
+    ax.axes.get_xaxis().set_visible(False)
     matplotlib.pyplot.xlim([0, start_pos * 2 + width * len(filenames) + interval * (len(filenames) - 1)])
     matplotlib.pyplot.ylim([bottom_value, top_value])
 

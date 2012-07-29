@@ -5,13 +5,11 @@
 ############################################################################
 
 import os
-import sys
 import itertools
 import fastaparser
 from qutils import id_to_str
 
 def do(filenames, orf_length):
-
 	print 'Running ORF tool (for length %d)...' % (orf_length)
 
 	########################################################################
@@ -36,6 +34,7 @@ def do(filenames, orf_length):
 		if Starts[i] == 'M':
 			starts.add((Base1[i], Base2[i], Base3[i]))
 
+
 	def find_ORFs(genome, start, min):
 		gene = False # no gene
 		l = 0 # length of ORF
@@ -55,8 +54,10 @@ def do(filenames, orf_length):
 				orf_seq += a + b + c
 		return orfs
 
+
 	def reverse_complement(s):
 		return s.upper().translate('*****************************************************************TVGHEFCDIJMLKNOPQYSAUBWXRZ[\]^_`tvghefcdijmlknopqysaubwxrz*************************************************************************************************************************************')[::-1]
+
 
 	report_dict['header'].append('# ORFs >= %dbp' % (orf_length * 3))
 	for id, fasta_filename in enumerate(filenames):

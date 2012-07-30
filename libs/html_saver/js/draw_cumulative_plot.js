@@ -1,5 +1,5 @@
 
-function drawCumulativePlot(filenames, lists_of_lengths, div, legendPlaceholder, glossary) {
+function drawCumulativePlot(filenames, lists_of_lengths, reference_length, div, legendPlaceholder, glossary) {
 
     div.html(
         "<div class='plot'>" +
@@ -40,6 +40,8 @@ function drawCumulativePlot(filenames, lists_of_lengths, div, legendPlaceholder,
         }
     }
 
+//    In order to draw dots instead of lines
+//
 //    for (i = 0; i < plotsN; i++) {
 //        plotsData[i].points = {
 //            show: true,
@@ -49,10 +51,25 @@ function drawCumulativePlot(filenames, lists_of_lengths, div, legendPlaceholder,
 //        }
 //    }
 
+    var colors = ["#FF5900", "#008FFF", "#168A16", "#7C00FF", "#FF0080"];
+
+    if (reference_length) {
+        plotsData = [({
+            data: [[0, reference_length], [maxX, reference_length]],
+            label: 'Reference',
+            lines: {
+                show: true,
+                lineWidth: 1,
+            }
+        })].concat(plotsData);
+
+        colors = ["#000000"].concat(colors);
+    }
+
 
     $.plot($('#cumulative-plot-placeholder'), plotsData, {
             shadowSize: 0,
-            colors: ["#FF5900", "#008FFF", "#168A16", "#7C00FF", "#FF0080"],
+            colors: colors,
             legend: {
                 container: legendPlaceholder,
                 position: 'se',

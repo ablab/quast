@@ -11,6 +11,12 @@ function buildReport() {
     var glossary = JSON.parse($('#glossary-json').html());
 
     try {
+        referenceLength = JSON.parse($('#reference-length-json').html()).reflen;
+    } catch (e) {
+        referenceLength = null;
+    }
+
+    try {
         report = JSON.parse($('#report-json').html());
     } catch (e) {
         report = null;
@@ -31,7 +37,7 @@ function buildReport() {
     }
 
     if (contigsLengths) {
-        drawCumulativePlot(contigsLengths.filenames, contigsLengths.lists_of_lengths, $('#cumulative-plot-div'), null,  glossary);
+        drawCumulativePlot(contigsLengths.filenames, contigsLengths.lists_of_lengths, referenceLength, $('#cumulative-plot-div'), null,  glossary);
         drawNxPlot(contigsLengths.filenames, contigsLengths.lists_of_lengths, 'Nx', null, $('#nx-plot-div'), null,  glossary);
     }
 
@@ -43,12 +49,6 @@ function buildReport() {
 
     if (alignedContigsLengths) {
         drawNxPlot(alignedContigsLengths.filenames, alignedContigsLengths.lists_of_lengths, 'NAx', null, $('#nax-plot-div'), null,  glossary);
-    }
-
-    try {
-        referenceLength = JSON.parse($('#reference-length-json').html()).reflen;
-    } catch (e) {
-        referenceLength = null;
     }
 
     if (contigsLengths && referenceLength) {

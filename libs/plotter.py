@@ -6,6 +6,7 @@
 
 import os
 import itertools
+from libs import fastaparser
 
 # Supported plot formats: .emf, .eps, .pdf, .png, .ps, .raw, .rgba, .svg, .svgz
 #plots_format = '.svg'
@@ -28,7 +29,7 @@ font = {'family': 'sans-serif',
         'size': 10}
 
 # plots params
-linewidth = 3.0
+linewidth = 2.0
 
 # legend params
 n_columns = 4
@@ -36,7 +37,7 @@ with_grid = True
 with_title = True
 axes_fontsize = 'large' # axes labels and ticks values
 
-def cumulative_plot(filenames, lists_of_lengths, plot_filename, title, all_pdf=None):
+def cumulative_plot(reference, filenames, lists_of_lengths, plot_filename, title, all_pdf=None):
     if matplotlib_error:
         return
 
@@ -47,11 +48,12 @@ def cumulative_plot(filenames, lists_of_lengths, plot_filename, title, all_pdf=N
     matplotlib.pyplot.figure()
     matplotlib.pyplot.rc('font', **font)
     color_id = 0
+    maxlength = 0
 
     for filename, lenghts in itertools.izip(filenames, lists_of_lengths):
         lenghts.sort(reverse=True)
         # calculate values for the plot
-        vals_percent = []
+        vals_contig_index = []
         vals_length = []
         lcur = 0
         lind = 0
@@ -59,16 +61,23 @@ def cumulative_plot(filenames, lists_of_lengths, plot_filename, title, all_pdf=N
             lcur += l
             lind += 1
             x = lind
-            vals_percent.append(x)
+            vals_contig_index.append(x)
             y = lcur
             vals_length.append(y)
             # add to plot
+        if len(vals_length) > 0:
+            maxlength = max(vals_contig_index[-1], maxlength)
         if color_id < len(colors):
-            matplotlib.pyplot.plot(vals_percent, vals_length, color=colors[color_id % len(colors)], lw=linewidth)
+            matplotlib.pyplot.plot(vals_contig_index, vals_length, color=colors[color_id % len(colors)], lw=linewidth)
         else:
-            matplotlib.pyplot.plot(vals_percent, vals_length, color=colors[color_id % len(colors)], lw=linewidth,
+            matplotlib.pyplot.plot(vals_contig_index, vals_length, color=colors[color_id % len(colors)], lw=linewidth,
                 ls='dashed')
         color_id += 1
+
+    if reference:
+        reference_length = sum(fastaparser.get_lengths_from_fastafile(reference))
+        matplotlib.pyplot.plot([0, maxlength], [reference_length, reference_length], '#000000', lw=linewidth, ls='dashed')
+
 
     matplotlib.pyplot.xlabel('Contig index', fontsize=axes_fontsize)
     matplotlib.pyplot.ylabel('Cumulative length (Mbp)', fontsize=axes_fontsize)
@@ -81,7 +90,7 @@ def cumulative_plot(filenames, lists_of_lengths, plot_filename, title, all_pdf=N
     ax.set_position([box.x0, box.y0 + box.height * 0.2, box.width, box.height * 0.8])
     # Put a legend below current axis
     try: # for matplotlib <= 2009-12-09
-        ax.legend(map(os.path.basename, filenames), loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True,
+        ax.legend(map(os.path.basename, filenames) + ['Reference'], loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True,
             shadow=False, ncol=n_columns)
     except ZeroDivisionError:
         pass

@@ -125,7 +125,7 @@ def do(reference, filenames, output_dir, all_pdf, draw_plots, json_output_dir, r
 
         # Drawing cumulative plot...
         import plotter
-        plotter.cumulative_plot(filenames, lists_of_lengths, output_dir + '/cumulative_plot', 'Cumulative length', all_pdf)
+        plotter.cumulative_plot(reference, filenames, lists_of_lengths, output_dir + '/cumulative_plot', 'Cumulative length', all_pdf)
     
         ########################################################################
 

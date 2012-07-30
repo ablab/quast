@@ -112,7 +112,7 @@ def do(reference, filenames, nucmer_dir, output_dir, all_pdf, draw_plots, json_o
     if draw_plots:
         # Drawing cumulative plot (aligned contigs)...
         import plotter
-        plotter.cumulative_plot(filenames, lists_of_lengths, output_dir + '/cumulative_plot', 'Cumulative length (aligned contigs)', all_pdf)
+        plotter.cumulative_plot(reference, filenames, lists_of_lengths, output_dir + '/cumulative_plot', 'Cumulative length (aligned contigs)', all_pdf)
 
         # Drawing NAx and NGAx plots...
         plotter.Nx_plot(filenames, lists_of_lengths, output_dir + '/NAx_plot', 'NAx', assembly_lengths, all_pdf)

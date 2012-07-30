@@ -8,13 +8,13 @@ import os
 import itertools
 
 # Supported plot formats: .emf, .eps, .pdf, .png, .ps, .raw, .rgba, .svg, .svgz
-#plots_format = '.svg' 
+#plots_format = '.svg'
+
 plots_format = '.pdf'
 
 matplotlib_error = False
 try:
     import matplotlib
-
     matplotlib.use('Agg') # non-GUI backend
 except:
     print 'Warning! Can\'t draw plots - please install python-matplotlib'

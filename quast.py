@@ -307,6 +307,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
         gage.do(qconfig.reference, contigs, output_dir + '/gage', gage_report, qconfig.min_contig, lib_dir)
     else:
         if qconfig.draw_plots:
+            from libs import plotter
             try:
                 from matplotlib.backends.backend_pdf import PdfPages
                 all_pdf = PdfPages(all_pdf_filename)

@@ -130,7 +130,6 @@ def do(reference, filenames, output_dir, all_pdf, draw_plots, json_output_dir, r
         ########################################################################
 
         # Drawing GC content plot...
-        import plotter
         plotter.GC_content_plot(filenames, lists_of_GC_info, output_dir + '/GC_content_plot', all_pdf)
     
         ########################################################################

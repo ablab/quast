@@ -6,6 +6,7 @@
 import os
 import re
 import platform
+import string
 import subprocess
 import fastaparser
 from qutils import id_to_str
@@ -87,7 +88,8 @@ def do(reference, filenames, cyclic, rc, output_dir, lib_dir, draw_plots):
             subprocess.call(['show-snps', '-T', delta_filename], stdout=open(snps_filename, 'w'), stderr=open(logfilename_err, 'a'), env=myenv)
             # TODO: check: Show-snps failed?
 
-            # Parsing coords
+            # Loading the alignment files
+            print 'Parsing coords...'
             aligns = {}
             coords_file = open(coords_filename)
             coords_file.readline()
@@ -96,10 +98,9 @@ def do(reference, filenames, cyclic, rc, output_dir, lib_dir, draw_plots):
                 line = line.split()
                 contig = line[12]
                 aligns.setdefault(contig, []).append(line)
-            print aligns
 
-            # Loading Assembly
-
+            # Loading the assembly contigs
+            print 'Loading Assembly...'
             assembly = {}
             assembly_ns = {}
             for name, seq in fastaparser.read_fasta(filename):
@@ -108,9 +109,45 @@ def do(reference, filenames, cyclic, rc, output_dir, lib_dir, draw_plots):
                 if 'N' in seq:
                     assembly_ns[name] = [pos for pos in xrange(len(seq)) if seq[pos] == 'N']
 
+            # Loading the reference sequences
+            print 'Loading Reference...'
             references = {}
             for name, seq in fastaparser.read_fasta(reference):
                 references[name] = seq
+                print '\tLoaded [%s]' % name
+
+            # Loading the SNP calls
+            print 'Loading SNPs...'
+            snps = {}
+            snps_locs = {}
+            for line in open(snps_filename):
+                if line[0] not in string.digits:
+                    continue
+                line = line.split()
+                ref = line[10]
+                ctg = line[11]
+                # TODO: check: Malformed line in SNP file
+                if line[1] == '.':
+                    snps.setdefault(ref, {}).setdefault(ctg, {})[line[0]] == 'I'
+                elif line[2] == '.':
+                    snps.setdefault(ref, {}).setdefault(ctg, {})[line[0]] == 'D'
+                else:
+                    snps.setdefault(ref, {}).setdefault(ctg, {})[line[0]] == 'S'
+                snps_locs.setdefault(ref, {}).setdefault(ctg, {})[line[0]] = line[3]
+
+            # Loading the regions (if any)
+            regions = {}
+            total_reg_len = 0
+            total_regions = 0
+            print 'Loading Regions...'
+            # TODO: gff
+            print '\tNo regions given, using whole reference.';
+            for name, seq in references.iteritems():
+                regions.setdefault(name, []).append([1, len(seq)])
+                total_regions += 1
+                total_reg_len += len(seq)
+            print '\tTotal Regions: %d' % total_regions
+            print '\tTotal Region Length: %d' % total_reg_len
 
             exit()
 

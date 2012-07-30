@@ -165,7 +165,7 @@ if ($seq) { ## be aware, it's copy-pasta from above! but it's perl, so the code 
 	$seq = ""; # clear out old sequence
 }
 
-# HERE STOPPED
+
 
 #Loading the SNP calls
 print "Loading SNPs...\n";
@@ -245,6 +245,7 @@ if ( $gff_file ){
 print "\tTotal Regions: $total_regions\n";
 print "\tTotal Region Length: $total_reg_len\n";
 
+# HERE STOPPED
 
 my $aligned = 0;
 my $unaligned = 0;

@@ -10,13 +10,13 @@ import fnmatch
 import os
 
 
-def do_mode_one(ouf, all, inf_filenames, ref_id):
+def do_mode_one(ouf, all, inf_filenames):
     print >> ouf, "    [S1]     [E1]  |     [S2]     [E2]  |  [LEN 1]  [LEN 2]  |  [% IDY]  | [TAGS]"
     print >> ouf, "====================================================================================="
     for contig in sorted(all, key=lambda contig: -contig[1]):
         contig_id, contig_len, contig_i = contig
         for a in all[contig]:
-            sc, ec, sr, er, p = a[0:5]
+            sc, ec, sr, er, p, ref_id = a[0:6]
             lc = abs(sc - ec) + 1
             lr = abs(sr - er) + 1
             if len(inf_filenames) > 1:
@@ -103,10 +103,7 @@ def do(mode, out_filename, input_files_or_dirs): #, ouf_filename, inf_filenames)
             if lc != int(arr[12]):
                 print '  Error: lc != int(arr[12])', lc, int(arr[12])
                 return
-            if (ref_id is not None) and (arr[5] != ref_id):
-                print '  Error: multiple values of arr[5]', ref_id, arr[5]
-                return
-            align = (sc, ec, sr, er, p)
+            align = (sc, ec, sr, er, p, ref_id)
             contig = (contig_id, contig_len, i)
             if contig not in aligns:
                 aligns[contig] = []
@@ -118,7 +115,7 @@ def do(mode, out_filename, input_files_or_dirs): #, ouf_filename, inf_filenames)
             superb = False
             output = []
             for a in sorted(aligns[contig], key=lambda align: (-abs(align[0] - align[1]), -align[4])):
-                sc, ec, sr, er, p = a[0:5]
+                sc, ec, sr, er, p, ref_id = a[0:6]
                 lc = abs(sc - ec) + 1
                 # lr = abs(sr - er) + 1
                 if lc >= 0.99 * contig_len:
@@ -152,7 +149,7 @@ def do(mode, out_filename, input_files_or_dirs): #, ouf_filename, inf_filenames)
     print '  Cleaned', counter[0], 'down to', counter[1]
 
     if mode == 1:
-        do_mode_one(ouf, all, inf_filenames, ref_id)
+        do_mode_one(ouf, all, inf_filenames)
     if mode == 2:
         do_mode_two(ouf, list_events, inf_filenames, 60)
         for filename in inf_filenames: # removing all *.btabs

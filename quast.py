@@ -331,8 +331,9 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
             ########################################################################
             ### SympAlign segments
             ########################################################################
-            from libs import sympalign
-            sympalign.do(2, output_dir + '/plantagora/sympalign.segments', [output_dir + '/plantagora'])
+            #Alex: I think we don't need it here (already started in plantagora)
+            #from libs import sympalign
+            #sympalign.do(2, output_dir + '/plantagora/sympalign.segments', [output_dir + '/plantagora'])
 
             ########################################################################
             ### NA and NGA ("aligned N and NG")
@@ -380,11 +381,11 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
         if json_output_dir:
             json_saver.save_total_report(json_output_dir, report_dict)
 
-        from libs.html_saver import html_saver
-        html_saver.save_total_report(output_dir, report_dict)
-
         from libs import report_maker
         report_maker.do(report_dict, total_report, total_report_tr, qconfig.min_contig, output_dir)
+
+        from libs.html_saver import html_saver
+        html_saver.save_total_report(output_dir, report_dict)
 
         if qconfig.draw_plots and all_pdf:
             print '  All pdf files are merged to', all_pdf_filename

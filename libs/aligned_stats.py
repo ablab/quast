@@ -61,7 +61,7 @@ def do(reference, filenames, nucmer_dir, output_dir, all_pdf, draw_plots, json_o
     ########################################################################
     print 'Running NA-NGA tool...'
 
-    reference_length = fastaparser.get_lengths_from_fastafile(reference)[0]
+    reference_length = sum(fastaparser.get_lengths_from_fastafile(reference))
     lists_of_lengths = []
     assembly_lengths = []
     print 'Processing .coords files...'

@@ -5,6 +5,7 @@ assess_assembly.pl script was kindly provided by Plantagora team and modified by
 Barthelson R, McFarlin AJ, Rounsley SD, Young S (2011) Plantagora: Modeling Whole Genome Sequencing and Assembly of Plant Genomes. PLoS ONE 6(12): e28436. doi:10.1371/journal.pone.0028436
 
 == REQUIRES ==
+(for running separately from QUAST)
 
 sudo apt-get install bioperl mummer
 

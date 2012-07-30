@@ -44,7 +44,8 @@ def do(reference, filenames, output_dir, all_pdf, draw_plots, json_output_dir, r
 
     reference_length = None
     if reference:
-        reference_length = fastaparser.get_lengths_from_fastafile(reference)[0]
+        reference_length = sum(fastaparser.get_lengths_from_fastafile(reference))
+        reference_GC, reference_GC_info = GC_content(reference)
 
         # saving reference to JSON
         if json_output_dir:
@@ -54,7 +55,7 @@ def do(reference, filenames, output_dir, all_pdf, draw_plots, json_output_dir, r
         html_saver.save_reference_length(results_dir, reference_length)
 
         print 'Reference genome:'
-        print ' ', reference, ', reference length =', int(reference_length)
+        print ' ', reference, ', Reference length =', int(reference_length), ', Reference GC % =', '%.2f' % reference_GC
 
     print 'Contigs files: '
     lists_of_lengths = []
@@ -81,8 +82,10 @@ def do(reference, filenames, output_dir, all_pdf, draw_plots, json_output_dir, r
     report_dict['header'].append('Number of contigs')
     report_dict['header'].append('Largest contig')
     report_dict['header'].append('Total length')
+    report_dict['header'].append('GC %')
     if reference:
         report_dict['header'].append('Reference length')
+        report_dict['header'].append('Reference GC %')
     
     lists_of_GC_info = []
     import N50
@@ -101,7 +104,7 @@ def do(reference, filenames, output_dir, all_pdf, draw_plots, json_output_dir, r
         print ' ', id_to_str(id), os.path.basename(filename), \
             ', N50 =', n50, \
             ', Total length =', total_length, \
-            ', GC % = ', total_GC
+            ', GC % = ', '%.2f' % total_GC
         
         report_dict[os.path.basename(filename)].append(n50)
         if reference:
@@ -112,8 +115,10 @@ def do(reference, filenames, output_dir, all_pdf, draw_plots, json_output_dir, r
         report_dict[os.path.basename(filename)].append(len(lengths_list))
         report_dict[os.path.basename(filename)].append(max(lengths_list))
         report_dict[os.path.basename(filename)].append(total_length)
+        report_dict[os.path.basename(filename)].append('%.2f' % total_GC)
         if reference:
             report_dict[os.path.basename(filename)].append(int(reference_length))
+            report_dict[os.path.basename(filename)].append('%.2f' %  reference_GC)
 
     if draw_plots:
         ########################################################################

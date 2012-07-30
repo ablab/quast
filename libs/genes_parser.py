@@ -16,7 +16,8 @@ ncbi_start_pattern = re.compile(r'(?P<number>\d+)\.\s*(?P<name>\S+)\s*$', re.I)
 
 def get_genes_from_file(filename, feature):
     if not filename or not os.path.exists(filename):
-        print '  Warning! ' + feature + '\'s file not specified or doesn\'t exist!'
+        # it is already checked in quast,py, so we need no more notification
+        #print '  Warning! ' + feature + '\'s file not specified or doesn\'t exist!'
         return []
 
     genes_file = open(filename, 'r')

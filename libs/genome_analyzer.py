@@ -20,6 +20,28 @@ s_Genes = 'Genes'
 s_Operons = 'Operons'
 
 
+def chromosomes_names_dict(features, chr_names):
+    """
+    returns dictionary to translate chromosome name in list of features (genes or operons) to
+    chromosome name in reference file.
+    They can differ between each other, e.g. U22222 in the list and gi|48994873|gb|U22222| in the reference
+    """
+    no_chr = False
+    chr_name_dict = {}
+    for feature in features:
+        for chr_name in chr_names:
+            if feature.seqname in chr_name:
+                chr_name_dict[feature.seqname] = chr_name
+                break
+        if feature.seqname not in chr_name_dict:
+            no_chr = True
+            chr_name_dict[feature.seqname] = None
+
+    if no_chr:
+        print '  Warning: Some of chromosome names in genes or operons differ from the names in the reference.'
+    return chr_name_dict
+
+
 def do(reference, filenames, output_dir, nucmer_dir, genes_filename, operons_filename, all_pdf, draw_plots, json_output_dir, results_dir):
 
     # some important constants
@@ -38,49 +60,63 @@ def do(reference, filenames, output_dir, nucmer_dir, genes_filename, operons_fil
     for filename in filenames:
         report_dict[os.path.basename(filename)] = []
 
+    reference_fasta = fastaparser.read_fasta(reference)
+    reference_chromosomes = {}
+    genome_size = 0
+    for tuple in reference_fasta:
+        chr_name = (tuple[0].split()[0])[1:]
+        chr_len = len(tuple[1])
+        genome_size += chr_len
+        reference_chromosomes[chr_name] = chr_len
+
     # reading genome size
-    genome_size = fastaparser.get_lengths_from_fastafile(reference)[0]
+    #genome_size = fastaparser.get_lengths_from_fastafile(reference)[0]
     # reading reference name
     # >gi|48994873|gb|U00096.2| Escherichia coli str. K-12 substr. MG1655, complete genome
-    ref_file = open(reference, 'r')
-    reference_name = ref_file.readline().split()[0][1:]
-    ref_file.close()
+    #ref_file = open(reference, 'r')
+    #reference_name = ref_file.readline().split()[0][1:]
+    #ref_file.close()
 
     # RESULTS file
     result_filename = output_dir + '/genome_info.txt'
     res_file = open(result_filename, 'w')
-    res_file.write('reference: ' + reference_name + '\n')
-    res_file.write('genome size: ' + str(genome_size) + '\n\n')
-
+    res_file.write('reference chromosomes:\n')
+    for chr_name, chr_len in reference_chromosomes.iteritems():
+        res_file.write('\t' + chr_name + ' (' + str(chr_len) + ' bp)\n')
+    res_file.write('\n')
+    res_file.write('total genome size: ' + str(genome_size) + '\n\n')
     res_file.write('min gap size: ' + str(min_gap_size) + '\n')
     res_file.write('min gene/operon overlap: ' + str(min_overlap) + '\n\n')
 
     # reading genes
     genes = genes_parser.get_genes_from_file(genes_filename, 'gene')
     genes_found = []
+    genes_chr_names_dict = {}
     if len(genes) == 0:
         print '  Warning: no genes loaded.'
     else:
         print '  Loaded ' + str(len(genes)) + ' genes'
         res_file.write('genes: ' + str(len(genes)) + '\n')
         genes_found = [0 for gene in genes] # 0 - gene isn't found, 1 - gene is found, 2 - part of gene is found
+        genes_chr_names_dict = chromosomes_names_dict(genes, reference_chromosomes.keys())
 
     # reading operons
     operons = genes_parser.get_genes_from_file(operons_filename, 'operon')
     operons_found = []
+    operons_chr_names_dict = {}
     if len(operons) == 0:
         print '  Warning: no operons loaded.'
     else:
         print '  Loaded ' + str(len(operons)) + ' operons'
         res_file.write('operons: ' + str(len(operons)) + '\n')
         operons_found = [0 for operon in operons] # 0 - gene isn't found, 1 - gene is found, 2 - part of gene is found
+        operons_chr_names_dict = chromosomes_names_dict(operons, reference_chromosomes.keys())
 
     # header
     res_file.write('\n\n')
     res_file.write('  %-20s  | %-20s| %-12s| %-10s| %-10s| %-10s| %-10s\n' % ('contigs file', 'mapped genome (%)', 'gaps', 'genes', 'partial', 'operons', 'partial'))
     res_file.write('  %-20s  | %-20s| %-12s| %-10s| %-10s| %-10s| %-10s\n' % ('', '', 'number', '', 'genes', '', 'operons'))
     res_file.write('======================================================================================================\n')
-
 
     report_dict['header'].append(s_Mapped_genome)
     report_dict['header'].append(s_Genes)
@@ -120,7 +156,10 @@ def do(reference, filenames, output_dir, nucmer_dir, genes_filename, operons_fil
         #  338980   339138  |     2298     2134  |      159      165  |    79.76  | gi|48994873|gb|U00096.2|	NODE_0_length_6088
         #  374145   374355  |     2306     2097  |      211      210  |    85.45  | gi|48994873|gb|U00096.2|	NODE_0_length_6088
 
-        genome = [0 for i in range(genome_size + 1)]
+        genome_mapping = {}
+        for chr_name, chr_len in reference_chromosomes.iteritems():
+            genome_mapping[chr_name] = [0] * (chr_len + 1)
+        #genome = [0 for i in range(genome_size + 1)]
         aligned_blocks = []
 
         # '''
@@ -156,14 +195,16 @@ def do(reference, filenames, output_dir, nucmer_dir, genes_filename, operons_fil
         for line in coordfile:
             s1 = int(line.split('|')[0].split()[0])
             e1 = int(line.split('|')[0].split()[1])
-            contig_name = line.split('|')[-1].strip()
+            contig_name = line.split()[-1].strip()
+            chr_name = line.split()[11].strip()
             if contig_name in contig_blocks:
                 contig_blocks[contig_name].append((s1, e1))
             else:
                 contig_blocks[contig_name] = [(s1, e1)]
-            aligned_blocks.append([s1, e1])
+            aligned_blocks.append(Aligned_block(seqname=chr_name, start=s1, end=e1))
             for i in range(s1, e1 + 1):
-                genome[i] = 1
+                genome_mapping[chr_name][i] = 1
+                #genome[i] = 1
         coordfile.close()
 
         # for cumulative plots:
@@ -178,15 +219,16 @@ def do(reference, filenames, output_dir, nucmer_dir, genes_filename, operons_fil
         # counting genome coverage and gaps number
         covered_bp = 0
         gaps_count = 0
-        cur_gap_size = 0
-        for i in range(1, genome_size + 1):
-            if genome[i] == 1:
-                covered_bp += 1
-                cur_gap_size = 0
-            else:
-                cur_gap_size += 1
-                if cur_gap_size == min_gap_size:
-                    gaps_count += 1
+        for chr_name, chr_len in reference_chromosomes.iteritems():
+            cur_gap_size = 0
+            for i in range(1, chr_len + 1):
+                if genome_mapping[chr_name][i] == 1:
+                    covered_bp += 1
+                    cur_gap_size = 0
+                else:
+                    cur_gap_size += 1
+                    if cur_gap_size == min_gap_size:
+                        gaps_count += 1
 
         genome_coverage = float(covered_bp) * 100 / float(genome_size)
         res_file.write('  %-20s  | %-20s| %-12s|' % (os.path.basename(filename), genome_coverage, str(gaps_count)))
@@ -201,16 +243,18 @@ def do(reference, filenames, output_dir, nucmer_dir, genes_filename, operons_fil
         for i, gene in enumerate(genes):
             genes_found[i] = 0
             for block in aligned_blocks:
-                if gene.end <= block[0] or block[1] <= gene.start:   # [0] - start, [1] - end
+                if genes_chr_names_dict[gene.seqname] != block.seqname:
                     continue
-                elif block[0] <= gene.start and gene.end <= block[1]:
+                if gene.end <= block.start or block.end <= gene.start:
+                    continue
+                elif block.start <= gene.start and gene.end <= block.end:
                     if genes_found[i] == 2: # already found as partial gene
                         total_partial -= 1
                     genes_found[i] = 1
                     total_full += 1
                     found_genes_file.write(str(id + 1) + "\t" + str(gene.start) + "\t" + str(gene.end) + "\n")
                     break
-                elif genes_found[i] == 0 and min(gene.end, block[1]) - max(gene.start, block[0]) >= min_overlap:
+                elif genes_found[i] == 0 and min(gene.end, block.end) - max(gene.start, block.start) >= min_overlap:
                     genes_found[i] = 2
                     total_partial += 1
 
@@ -231,16 +275,18 @@ def do(reference, filenames, output_dir, nucmer_dir, genes_filename, operons_fil
         for i, operon in enumerate(operons):
             operons_found[i] = 0
             for block in aligned_blocks:
-                if operon.end <= block[0] or block[1] <= operon.start:   # [0] - start, [1] - end
+                if operons_chr_names_dict[operon.seqname] != block.seqname:
                     continue
-                elif block[0] <= operon.start and operon.end <= block[1]:
+                if operon.end <= block.start or block.end <= operon.start:
+                    continue
+                elif block.start <= operon.start and operon.end <= block.end:
                     if operons_found[i] == 2: # already found as partial gene
                         total_partial -= 1
                     operons_found[i] = 1
                     total_full += 1
                     found_operons_file.write(str(id + 1) + "\t" + str(operon.start) + "\t" + str(operon.end) + "\n")
                     break
-                elif operons_found[i] == 0 and min(operon.end, block[1]) - max(operon.start, block[0]) >= min_overlap:
+                elif operons_found[i] == 0 and min(operon.end, block.end) - max(operon.start, block.start) >= min_overlap:
                     operons_found[i] = 2
                     total_partial += 1
 
@@ -272,7 +318,7 @@ def do(reference, filenames, output_dir, nucmer_dir, genes_filename, operons_fil
 #                report_dict[filename].pop(row_id)
 
 
-        # saving json
+    # saving json
     if json_output_dir:
         if genes or operons:
             json_saver.save_contigs(json_output_dir, filenames, files_contigs)
@@ -305,3 +351,10 @@ def do(reference, filenames, output_dir, nucmer_dir, genes_filename, operons_fil
     print '  Done'
 
     return report_dict
+
+
+class Aligned_block():
+    def __init__(self, seqname=None, start=None, end=None):
+        self.seqname = seqname
+        self.start = start
+        self.end = end

@@ -64,6 +64,7 @@ def do(reference, filenames, cyclic, rc, output_dir, lib_dir, draw_plots):
         delta_filename = nucmerfilename + '.delta'
         snps_filename = nucmerfilename + '.snps'
         coords_btab_filename = nucmerfilename + '.coords.btab'
+        unaligned_filename = nucmerfilename + '.unaligned'
 
         if os.path.isfile(coords_filename):
             os.remove(coords_filename)
@@ -149,7 +150,52 @@ def do(reference, filenames, cyclic, rc, output_dir, lib_dir, draw_plots):
             print '\tTotal Regions: %d' % total_regions
             print '\tTotal Region Length: %d' % total_reg_len
 
+            aligned = 0
+            unaligned = 0
+            partially_unaligned = 0
+            total_unaligned = 0
+            ambiguous = 0
+            total_ambiguous = 0
+            uncovered_regions = 0
+            uncovered_region_bases = 0
+            total_redundant = 0
+            misassembled_partially_unaligned = 0
+
+            region_misassemblies = 0
+            region_local_misassemblies = 0
+            misassembled_contigs = []
+
+            peral = 0.99
+            cyclic = cyclic_option
+            rcinem = rc_option # reverse complementarity is not an extensive misassemble
+            
+            print 'Analyzing contigs...'
+
+            unaligned_id = open(unaligned_filename, 'w')
+            for contig, seq in assembly.iteritems():
+                #Recording contig stats
+                ctg_len = len(seq)
+                # TODO: if ( exists $assembly_ns{$contig} ) { $ns = scalar( keys %{$assembly_ns{$contig}});} else { $ns = 0;}
+                print '\tCONTIG: %s (%dbp)' % (contig, ctg_len)
+                #Check if this contig aligned to the reference
+                if contig in aligns:
+                    #Pull all aligns for this contig
+                    num_aligns = len(aligns[contig])
+
+                    #Sort aligns by length and identity
+                    sorted_aligns = sorted(aligns[contig], cmp=lambda a, b: (a[7]*a[9] < b[7]*b[9]) or (a[7] < b[7]))
+                    top_len = sorted_aligns[0][7]
+                    top_id = sorted_aligns[0][9]
+                    print sorted_aligns
+                    top_aligns = []
+                    print 'Top Length: %s  Top ID: %s' % (top_len, top_id)
+
+                    #Check that top hit captures most of the contig (>99% or within 10 bases)
+
+
             exit()
+
+            print 'Analyzing coverage...'
 
             subprocess.call(
                 ['perl', assess_assembly_path2, reference, filename, nucmerfilename, '--verbose', cyclic_option, rc_option],

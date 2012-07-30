@@ -66,7 +66,7 @@ def read_fasta(filename):
 
     for line in fastafile:
         if line[0] == '>':
-            res_name.append(line.strip())
+            res_name.append(line.strip()[1:])
             if not first:
                 res_seq.append(seq)
             else:

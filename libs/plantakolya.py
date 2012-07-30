@@ -56,9 +56,14 @@ def do(reference, filenames, cyclic, rc, output_dir, lib_dir, draw_plots):
         cyclic_option = ''
         if cyclic :
             cyclic_option = '--cyclic'
-        rc_option = ''
+        rc_option = '' # reverse complementarity is not an extensive misassemble
         if rc :
             rc_option = '--rc'
+
+        peral = 0.99
+        rcinem = rc
+        maxun = 10
+        smgap = 1000
 
         coords_filename = nucmerfilename + '.coords'
         delta_filename = nucmerfilename + '.delta'
@@ -165,10 +170,6 @@ def do(reference, filenames, cyclic, rc, output_dir, lib_dir, draw_plots):
             region_local_misassemblies = 0
             misassembled_contigs = []
 
-            peral = 0.99
-            cyclic = cyclic_option
-            rcinem = rc_option # reverse complementarity is not an extensive misassemble
-            
             print 'Analyzing contigs...'
 
             unaligned_id = open(unaligned_filename, 'w')
@@ -191,11 +192,242 @@ def do(reference, filenames, cyclic, rc, output_dir, lib_dir, draw_plots):
                     print 'Top Length: %s  Top ID: %s' % (top_len, top_id)
 
                     #Check that top hit captures most of the contig (>99% or within 10 bases)
+                    if top_len > ctg_len * peral or ctg_len - top_len < maxun:
+                        #Reset top aligns: aligns that share the same value of longest and higest identity
+                        pass
+#                        $top_aligns[0] = shift(@sorted);
+#
+#                        #Continue grabbing alignments while length and identity are identical
+#                        while ( @sorted && $top_len == $sorted[0][7] && $top_id == $sorted[0][9]){
+#                            push (@top_aligns, shift(@sorted) );
+#                        }
+#
+#                        #Mark other alignments as ambiguous
+#                        while (@sorted) {
+#                        @ambig = @{pop(@sorted)};
+#                        if ($verbose) { print "\t\tMarking as ambiguous: @ambig\n";}
+#                        for ($i = $ambig[0]; $i <= $ambig[1]; $i++){
+#                        if (defined $ref && ! exists $ref_features{$ref}[$i]) {$ref_features{$ref}[$i] = "A";}
+#                        }
+#                        }
+#
+#                        if (@top_aligns < 2){
+#                        #There is only one top align, life is good
+#                        if ($verbose) {
+#                        print "\t\tOne align captures most of this contig: @{$top_aligns[0]}\n";
+#                        #MY: output in coords.filtered
+#                        print COORDS_FILT "@{$top_aligns[0]}\n";
+#                        }
+#                        push (@{$ref_aligns{$top_aligns[0][11]}}, [$top_aligns[0][0], $top_aligns[0][1], $contig, $top_aligns[0][3], $top_aligns[0][4]]);
+#                        } else {
+#                        #There is more than one top align
+#                        if ($verbose) {print "\t\tThis contig has ", scalar(@top_aligns)," significant alignments. [ambiguous]\n";}
+#                        #MY: output in coords.filtered (for genes - all alignments, and for NA - only one!)
+#                        print COORDS_FILT "@{$top_aligns[0]}\n";
+#
+#                        #Record these alignments as ambiguous on the reference
+#                        foreach $align (@top_aligns){
+#                        @alignment = @{$align};
+#                        $ref = $alignment[11];
+#                        if ($verbose) {print "\t\t\tAmbiguous Alignment: @alignment\n";}
+#                        for ($i=$alignment[0]; $i <= $alignment[1]; $i++){
+#                        if (! exists $ref_features{$ref}[$i]) {$ref_features{$ref}[$i] = "A";}
+#                        }
+#                        }
+#
+#                        #Increment count of ambiguous contigs and bases
+#                        $ambiguous++;
+#                        $total_ambiguous += $ctg_len;
+#                        }
+#
+#                    } else {
+#
+#                    #Sort  all aligns by position on contig, then length
+#                    @sorted = sort {@a = @{$a};
+#                    @b = @{$b};
+#                    if ($a[3] < $a[4]) {$start_a = $a[3];} else {$start_a = $a[4];}
+#                    if ($b[3] < $b[4]) {$start_b = $b[3];} else {$start_b = $b[4];}
+#                    $start_a <=> $start_b || $b[7] <=> $a[7] || $b[9] <=> $a[9]} @sorted;
+#
+#                    #Push first alignment on to real aligns
+#                    @real_aligns = ();
+#                    push (@real_aligns, [@{$sorted[0]}]);
+#                    if ($sorted[0][3] > $sorted[0][4]) { $last_end = $sorted[0][3]; } else { $last_end = $sorted[0][4]; }
+#
+#                    #Walk through alignments, if not fully contained within previous, record as real
+#                    for ($i = 1; $i < $num_aligns; $i++) {
+#                    #If this alignment extends past last alignment's endpoint, add to real, else skip
+#                    if ($sorted[$i][3] > $last_end || $sorted[$i][4] > $last_end) {
+#                        unshift (@real_aligns, [@{$sorted[$i]}]);
+#                    if ($sorted[$i][3] > $sorted[$i][4]) { $last_end = $sorted[$i][3]; } else { $last_end = $sorted[$i][4]; }
+#                    } else {
+#                    if ($verbose) {print "\t\tSkipping [$sorted[$i][0]][$sorted[$i][1]] redundant alignment ",$i," @{$sorted[$i]}\n";}
+#                    for ($j = $sorted[$i][0]; $j <= $sorted[$i][1]; $j++){
+#                    if (defined $ref && ! exists $ref_features{$ref}[$j]) {$ref_features{$ref}[$j] = "A";}
+#                    }
+#                    }
+#                    }
+#
+#                    $num_aligns = scalar(@real_aligns);
+#
+#                    if ($num_aligns < 2){
+#                    #There is only one alignment of this contig to the reference
+#                    #MY: output in coords.filtered
+#                    print COORDS_FILT "@{$real_aligns[0]}\n";
+#
+#                    #Is the contig aligned in the reverse compliment?
+#                    $rc = $sorted[0][3] > $sorted[0][4];
+#
+#                    #Record beginning and end of alignment in contig
+#                    if ($rc) {
+#                    $end = $sorted[0][3];
+#                    $begin = $sorted[0][4];
+#                    } else {
+#                    $end = $sorted[0][4];
+#                    $begin = $sorted[0][3];
+#                    }
+#
+#
+#                    if ($begin-1 || $ctg_len-$end) {
+#                    #Increment tally of partially unaligned contigs
+#                    $partially_unaligned++;
+#                    #Increment tally of partially unaligned bases
+#                    $total_unaligned += $begin-1;
+#                    $total_unaligned += $ctg_len-$end;
+#                    if ($verbose) {print "\t\tThis contig is partially unaligned. ($top_len out of $ctg_len)\n";}
+#                    if ($verbose) {print "\t\tUnaligned bases: 1 to $begin (", $begin-1, ")\n";}
+#                    if ($verbose) {print "\t\tUnaligned bases: $end to $ctg_len (", $ctg_len-$end, ")\n";}
+#                    }
+#
+#                    push (@{$ref_aligns{$sorted[0][11]}}, [$sorted[0][0], $sorted[0][1], $contig, $sorted[0][3], $sorted[0][4]]);
+#
+#                    } else {
+#                    #There is more than one alignment of this contig to the reference
+#                    if ($verbose) {print "\t\tThis contig is misassembled. $num_aligns total aligns.\n";}
+#
+#                    #Reset real alignments and sum of real alignments
+#                    $sum = 0;
+#
+#                    #Sort real alignments by position on the reference
+#                    @sorted = sort {@a = @{$a}; @b = @{$b}; $a[11] cmp $b[11] || $a[0] <=> $b[0]} @real_aligns;
+#
+#                    # Counting misassembled contigs which are partially unaligned
+#                    my $all_aligns_len = 0;
+#                    for ($i = 0; $i < @sorted; $i++) { $all_aligns_len += $sorted[$i][7]; }
+#
+#                    if ( $all_aligns_len/$ctg_len < $umt ) {
+#                    if ($verbose) {print "\t\t\tWarning! Contig length is $ctg_len and total length of all aligns is $all_aligns_len\n";}
+#                    $misassembled_partially_unaligned += 1;
+#                    }
+#
+#                    $sorted_num = @sorted-1;
+#                    $chimeric_found = 0;
+#                    #MY: computing cyclic references
+#                    if ($cyclic) {
+#                    if ($sorted[0][0]-1 + $total_reg_len-$sorted[$sorted_num][1] <= $ns+$smgap) {  # chimerical misassembly
+#                    $chimeric_found = 1;
+#
+#                    # find chimerical alignment between "first" blocks and "last" blocks
+#                    $chimeric_index = 0;
+#                    for ($i = 0; $i < $sorted_num; $i++){
+#                    $gap = $sorted[$i+1][0]-$sorted[$i][1];
+#                    if ($gap > $ns+$smgap) {
+#                    $chimeric_index = $i+1;
+#                    last;
+#                    }
+#                    }
+#
+#                    #MY: for merging local misassemlbies
+#                    @prev = @{$sorted[$chimeric_index]};
+#
+#                    # process "last half" of blocks
+#                    &process_misassembled_contig(*COORDS_FILT, $chimeric_index, $sorted_num, $contig, \@prev, \@sorted, 1);
+#                    if ($verbose) {print "\t\t\tChimerical misassembly between these two alignments: [$sorted[$sorted_num][11]] @ $sorted[$sorted_num][1] and $sorted[0][0]\n";}
+#
+#                    $prev[1] = $sorted[0][1];                  # [E1]
+#                    $prev[3] = 0;                              # [S2]
+#                    $prev[4] = 0;                              # [E2]
+#                    $prev[6] += $sorted[0][1]-$sorted[0][0]+1; # [LEN1]
+#                    $prev[7] += $sorted[0][7];                 # [LEN2]
+#
+#                    # process "first half" of blocks
+#                    &process_misassembled_contig(*COORDS_FILT, 0, ($chimeric_index-1), $contig, \@prev, \@sorted, 0);
+#                    }
+#                    }
+#
+#                    if (!$chimeric_found) {
+#                    #MY: for merging local misassemlbies
+#                    @prev = @{$sorted[0]};
+#                    &process_misassembled_contig(*COORDS_FILT, 0, $sorted_num, $contig, \@prev, \@sorted, 0);
+#                    }
+#                    }
+#                    }
+#                    } else {
+#                    #No aligns to this contig
+#                    if ($verbose) {print "\t\tThis contig is unaligned. ($ctg_len bp)\n";}
+#                    print UNALIGNED_IDS "$contig\n";
+#
+#                    #Increment unaligned contig count and bases
+#                    $unaligned++;
+#                    $total_unaligned += $ctg_len;
+#                    if ($verbose) {print "\t\tUnaligned bases: $ctg_len  total: $total_unaligned\n";}
+#                    }
+#                    }
+#                    close (COORDS_FILT);
+#                    close (UNALIGNED_IDS);
 
+            # TODO: 'Analyzing coverage...'
 
-            exit()
+            print '\tCovered Bases: %d' % region_covered
+            print '\tAmbiguous Bases: %d' % region_ambig
+            print '\tLocal Misassemblies: %d' % region_local_misassemblies
+            print '\tMisassemblies: %d' % region_misassemblies
+            print '\t\tMisassembled Contigs: %d' % len(misassembled_contigs)
+            misassembled_bases = sum(len(v) for v in misassembled_contigs.itervalues())
+            print '\t\tMisassembled Contig Bases: %d' % misassembled_bases
 
-            print 'Analyzing coverage...'
+            print '\t\tMisassembled and Unaligned: %d' % misassembled_partially_unaligned
+            print '\tSNPs: %d' % region_snp
+            print '\tInsertions: %d' % region_insertion
+            print '\tDeletions: %d' % region_deletion
+            internal = 0
+            external = 0
+            sum_gap = 0
+            for gap in gaps:
+                if gap[1] == gap[2]:
+                    internal += 1
+                else:
+                    external += 1
+                sum_gap += gap[0]
+            avg_gaps = sum_gaps * 1.0 / external if external else 0.0
+            print '\tPositive Gaps: %d' % len(gaps)
+            print '\t\tInternal Gaps: %d' % internal
+            print '\t\tExternal Gaps: %d' % external
+            print '\t\tExternal Gap Total: %d' % sum_gap
+            print '\t\tExternal Gap Average: %.0f' % avg_gaps
+            internal = 0
+            external = 0
+            sum_gap = 0
+            for gap in neg_gaps:
+                if gap[1] == gap[2]:
+                    internal += 1
+                else:
+                    external += 1
+                sum_gap += gap[0]
+            avg_gaps = sum_gaps * 1.0 / external if external else 0.0
+            print '\tNegative Gaps: %d' % len(neg_gaps)
+            print '\t\tInternal Overlaps: %d' % internal
+            print '\t\tExternal Overlaps: %d' % external
+            print '\t\tExternal Overlaps Total: %d' % sum_gap
+            print '\t\tExternal Overlaps Average: %.0f' % avg_gaps
+
+            print '\tRedundant Contigs: %d (%d)' % (len(redundant), total_redundant)
+            print
+
+            print 'Uncovered Regions: %d (%d)' % (uncovered_regions, uncovered_region_bases)
+            print 'Unaligned Contigs: %d (%d)' % (unaligned, partially_unaligned)
+            print 'Unaligned Contig Bases: %d' % total_unaligned
+            print 'Ambiguous Contigs: %d (%d)' % (ambiguous, total_ambiguous)
 
             subprocess.call(
                 ['perl', assess_assembly_path2, reference, filename, nucmerfilename, '--verbose', cyclic_option, rc_option],

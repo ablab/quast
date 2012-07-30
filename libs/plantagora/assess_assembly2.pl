@@ -245,7 +245,6 @@ if ( $gff_file ){
 print "\tTotal Regions: $total_regions\n";
 print "\tTotal Region Length: $total_reg_len\n";
 
-# HERE STOPPED
 
 my $aligned = 0;
 my $unaligned = 0;
@@ -285,9 +284,12 @@ foreach $contig (keys %assembly){
 		@top_aligns = ();
 		if ($verbose){print "Top Length: $top_len  Top ID: $top_id\n";}		
 
+
 		#Check that top hit captures most of the contig (>99% or within 10 bases)
 		if ( $top_len/$ctg_len > $peral || $ctg_len-$top_len < $maxun ) {
 			
+            # HERE STOPPED
+
 			#Reset top aligns: aligns that share the same value of longest and higest identity
 			$top_aligns[0] = shift(@sorted);
 	

@@ -3,6 +3,18 @@
 # All Rights Reserved
 # See file LICENSE for details.
 ############################################################################
+#
+# Some comments in this script was kindly provided by Plantagora team and
+# modified by QUAST team. It is not licensed under GPL as other parts of QUAST,
+# but it can be distributed and used in QUAST pipeline with current remarks and
+# citation. For more details about assess_assembly.pl please refer to
+# http://www.plantagora.org website and to the following paper:
+#
+# Barthelson R, McFarlin AJ, Rounsley SD, Young S (2011) Plantagora: Modeling
+# Whole Genome Sequencing and Assembly of Plant Genomes. PLoS ONE 6(12):
+# e28436. doi:10.1371/journal.pone.0028436
+############################################################################
+
 import os
 import platform
 import string

@@ -61,11 +61,7 @@ def process_misassembled_contig(plantafile, output_file, i_start, i_finish, cont
             prev[3] = 0 # [S2]
             prev[4] = 0 # [E2]
             prev[6] = prev[1] - prev[0] # [LEN1]
-            if gap < 0:
-                prev[7] = prev[7] + sorted_aligns[i+1][7] + gap # [LEN2]
-            else:
-                prev[7] = prev[7] + sorted_aligns[i+1][7] # [LEN2]
-
+            prev[7] = prev[7] + sorted_aligns[i+1][7] + (gap if gap < 0 else 0) # [LEN2]
 
         #MY: output in coords.filtered
         if not is_1st_chimeric_half:

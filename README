@@ -11,6 +11,10 @@ Other requirements (optional, but functionality will be increased):
 
 	sudo apt-get install python-matplotlib python-numpy
 
+	or
+
+	sudo easy_install matplotlib numpy
+
 For run Mauve:
 The mauve software requires access to a graphical user interface. If running the software remotely on a server, one can use the ssh -X servername option to connect the local display to the remote server. 
 In the event that X forwarding is not possible we recommend using VNC:

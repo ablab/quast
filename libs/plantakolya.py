@@ -43,15 +43,15 @@ def process_misassembled_contig(plantafile, output_file, i_start, i_finish, cont
             # Kolya: removed something about ref_features
 
             region_misassemblies += 1
-            misassembled_contigs[contig] = assembly[contig]
+            misassembled_contigs[contig] = len(assembly[contig])
 
         else:
             if gap < 0:
                 #There is overlap between the two alignments, a local misassembly
-                print >>plantafile, '\t\t\tOverlap between these two alignments (local misassembly): [%s] @ %d and %d\n' % (sorted_aligns[i][11], sorted_aligns[i][1], sorted_aligns[i+1][0])
+                print >>plantafile, '\t\tOverlap between these two alignments (local misassembly): [%s] %d to %d\n' % (sorted_aligns[i][11], sorted_aligns[i][1], sorted_aligns[i+1][0])
             else:
                 #There is a small gap between the two alignments, a local misassembly
-                print >>plantafile, '\t\t\tGap in alignment between these two alignments (local misassembly): [%s] %d\n' % (sorted_aligns[i][11], sorted_aligns[i][0])
+                print >>plantafile, '\t\tGap in alignment between these two alignments (local misassembly): [%s] %d\n' % (sorted_aligns[i][11], sorted_aligns[i][0])
 
             region_local_misassemblies += 1
 
@@ -448,7 +448,7 @@ def do(reference, filenames, cyclic, rc, output_dir, lib_dir, draw_plots):
             print >>plantafile, '\tLocal Misassemblies: %d' % region_local_misassemblies
             print >>plantafile, '\tMisassemblies: %d' % region_misassemblies
             print >>plantafile, '\t\tMisassembled Contigs: %d' % len(misassembled_contigs)
-            misassembled_bases = sum(len(v) for v in misassembled_contigs.itervalues())
+            misassembled_bases = sum(misassembled_contigs.itervalues())
             print >>plantafile, '\t\tMisassembled Contig Bases: %d' % misassembled_bases
 
             print >>plantafile, '\t\tMisassembled and Unaligned: %d' % misassembled_partially_unaligned
@@ -498,6 +498,7 @@ def do(reference, filenames, cyclic, rc, output_dir, lib_dir, draw_plots):
 #                ['perl', assess_assembly_path2, reference, filename, nucmerfilename, '--verbose', cyclic_option, rc_option],
 #                stdout=open(logfilename_out, 'a'), stderr=open(logfilename_err, 'a'), env=myenv)
 
+        plantafile.close()
         print 'done.'
 
         if draw_plots:

@@ -14,11 +14,14 @@ from qutils import id_to_str
 def tabline(line):
     return '\t'.join(str(x) for x in line)
 
+def spaceline(line):
+    return ' '.join(str(x) for x in line)
+
 def process_misassembled_contig(plantafile, output_file, i_start, i_finish, contig, prev, sorted_aligns, is_1st_chimeric_half, ns, smgap, rcinem, ref_aligns, assembly, misassembled_contigs):
     region_misassemblies = 0
     region_local_misassemblies = 0
     for i in xrange(i_start, i_finish):
-        print >>plantafile, '\t\t\tReal Alignment %d: %s' % (i+1, sorted_aligns[i])
+        print >>plantafile, '\t\t\tReal Alignment %d: %s' % (i+1, spaceline(sorted_aligns[i]))
         #Calculate the distance on the reference between the end of the first alignment and the start of the second
         gap = sorted_aligns[i+1][0] - sorted_aligns[i][1]
 
@@ -48,7 +51,7 @@ def process_misassembled_contig(plantafile, output_file, i_start, i_finish, cont
                 print >>plantafile, '\t\t\tOverlap between these two alignments (local misassembly): [%s] @ %d and %d\n' % (sorted_aligns[i][11], sorted_aligns[i][1], sorted_aligns[i+1][0])
             else:
                 #There is a small gap between the two alignments, a local misassembly
-                print >>plantafile, '\t\t\tGap in alignment  between these two alignments (local misassembly): [%s] @ %d and %d\n' % (sorted_aligns[i][11], sorted_aligns[i][1], sorted_aligns[i+1][0])
+                print >>plantafile, '\t\t\tGap in alignment between these two alignments (local misassembly): [%s] %d\n' % (sorted_aligns[i][11], sorted_aligns[i][0])
 
             region_local_misassemblies += 1
 
@@ -69,7 +72,7 @@ def process_misassembled_contig(plantafile, output_file, i_start, i_finish, cont
 
         #Record the very last alignment
         i = i_finish
-        print >>plantafile, '\t\t\tReal Alignment %d: %s' % (i+1, sorted_aligns[i])
+        print >>plantafile, '\t\t\tReal Alignment %d: %s' % (i+1, spaceline(sorted_aligns[i]))
         key = sorted_aligns[i][11]
         value = [sorted_aligns[i][0], sorted_aligns[i][1], contig, sorted_aligns[i][3], sorted_aligns[i][4]]
         ref_aligns.setdefault(key, []).append(value)
@@ -144,7 +147,13 @@ def do(reference, filenames, cyclic, rc, output_dir, lib_dir, draw_plots):
         if os.path.isfile(snps_filename):
             os.remove(snps_filename)
 
+        plantafile = open(logfilename_out, 'a')
+
+        print >>plantafile, 'Cleaning up contig headers...'
         # TODO: clean contigs?
+
+        print >>plantafile, 'Aligning contigs to reference...'
+        print >>plantafile, '\tRunning nucmer...'
 
         print 'NUCmer... ',
         subprocess.call(['nucmer', '--maxmatch', '-p', nucmerfilename, reference, filename],
@@ -160,8 +169,6 @@ def do(reference, filenames, cyclic, rc, output_dir, lib_dir, draw_plots):
         if not os.path.isfile(coords_filename):
             print 'failed'
         else:
-            plantafile = open(logfilename_out, 'a')
-
             # TODO: check: Nucmer ended early?
             subprocess.call(['show-snps', '-T', delta_filename], stdout=open(snps_filename, 'w'), stderr=open(logfilename_err, 'a'), env=myenv)
             # TODO: check: Show-snps failed?
@@ -199,6 +206,7 @@ def do(reference, filenames, cyclic, rc, output_dir, lib_dir, draw_plots):
             references = {}
             ref_aligns = {}
             for name, seq in fastaparser.read_fasta(reference):
+                name = name.split()[0] # no spaces in reference header
                 references[name] = seq
                 print >>plantafile, '\tLoaded [%s]' % name
 
@@ -227,7 +235,7 @@ def do(reference, filenames, cyclic, rc, output_dir, lib_dir, draw_plots):
             total_regions = 0
             print >>plantafile, 'Loading Regions...'
             # TODO: gff
-            print >>plantafile, '\tNo regions given, using whole reference.';
+            print >>plantafile, '\tNo regions given, using whole reference.'
             for name, seq in references.iteritems():
                 regions.setdefault(name, []).append([1, len(seq)])
                 total_regions += 1
@@ -288,14 +296,14 @@ def do(reference, filenames, cyclic, rc, output_dir, lib_dir, draw_plots):
                         #Mark other alignments as ambiguous
                         while sorted_aligns:
                             ambig = sorted_aligns.pop()
-                            print >>plantafile, '\t\tMarking as ambiguous: %s' % ambig
+                            print >>plantafile, '\t\tMarking as ambiguous: %s' % spaceline(ambig)
                             # Kolya: removed redundant code about $ref
 
                         if len(top_aligns) < 2:
                             #There is only one top align, life is good
-                            print >>plantafile, '\t\tOne align captures most of this contig: %s' % top_aligns[0]
+                            print >>plantafile, '\t\tOne align captures most of this contig: %s' % spaceline(top_aligns[0])
                             #MY: output in coords.filtered
-                            print >>coords_filtered_file, tabline(top_aligns[0])
+                            print >>coords_filtered_file, spaceline(top_aligns[0])
                             key = top_aligns[0][11]
                             value = [top_aligns[0][0], top_aligns[0][1], contig, top_aligns[0][3], top_aligns[0][4]]
                             ref_aligns.setdefault(key, []).append(value)
@@ -303,10 +311,10 @@ def do(reference, filenames, cyclic, rc, output_dir, lib_dir, draw_plots):
                             #There is more than one top align
                             print >>plantafile, '\t\tThis contig has %d significant alignments. [ambiguous]' % len(top_aligns)
                             #MY: output in coords.filtered (for genes - all alignments, and for NA - only one!)
-                            print >>coords_filtered_file, tabline(top_aligns[0])
+                            print >>coords_filtered_file, spaceline(top_aligns[0])
                             #Record these alignments as ambiguous on the reference
                             for align in top_aligns:
-                                print >>plantafile, '\t\t\tAmbiguous Alignment: %s' % align
+                                print >>plantafile, '\t\t\tAmbiguous Alignment: %s' % spaceline(align)
                                 # Kolya: removed redundant code about $ref
                             #Increment count of ambiguous contigs and bases
                             ambiguous += 1
@@ -327,7 +335,7 @@ def do(reference, filenames, cyclic, rc, output_dir, lib_dir, draw_plots):
                                 real_aligns = [sorted_aligns[i]] + real_aligns
                                 last_end = max(sorted_aligns[0][3], sorted_aligns[0][4])
                             else:
-                                print >>plantafile, '\t\tSkipping [%d][%d] redundant alignment %d %s' % (sorted_aligns[i][0], sorted_aligns[i][1], i, sorted_aligns[i])
+                                print >>plantafile, '\t\tSkipping [%d][%d] redundant alignment %d %s' % (sorted_aligns[i][0], sorted_aligns[i][1], i, spaceline(sorted_aligns[i]))
                                 # Kolya: removed redundant code about $ref
 
                         num_aligns = len(real_aligns)

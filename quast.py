@@ -334,9 +334,9 @@ def main(args, lib_dir=os.path.join(os.path.abspath(sys.path[0]), 'libs')):
             ########################################################################
             ### PLANTAGORA
             ########################################################################
-#            import plantagora
-#            cur_results_dict = plantagora.do(qconfig.reference, contigs, qconfig.cyclic, qconfig.rc, output_dir + '/plantagora', lib_dir, qconfig.draw_plots)
-#            report_dict = extend_report_dict(report_dict, cur_results_dict)
+            import plantagora
+            cur_results_dict = plantagora.do(qconfig.reference, contigs, qconfig.cyclic, qconfig.rc, output_dir + '/plantagora', lib_dir, qconfig.draw_plots)
+            report_dict = extend_report_dict(report_dict, cur_results_dict)
 
             ########################################################################
             ### SympAlign segments

@@ -45,7 +45,7 @@ def chromosomes_names_dict(features, chr_names):
 def do(reference, filenames, output_dir, nucmer_dir, genes_filename, operons_filename, all_pdf, draw_plots, json_output_dir, results_dir):
 
     # some important constants
-    nucmer_prefix = os.path.join(__location__, nucmer_dir + '/nucmer_')
+    nucmer_prefix = os.path.join(os.path.join(__location__, ".."), nucmer_dir + '/nucmer_')
     #threshold = 10.0 # in %
     min_gap_size = 50 # for calculating number or gaps in genome coverage
     min_overlap = 100 # for genes and operons finding

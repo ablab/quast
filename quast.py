@@ -96,7 +96,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
     for opt, arg in options:
         # Yes, this is doubling the code. Python's getopt is non well-thought!!
         if opt in ('-o', "--output-dir"):
-            output_dirpath = arg
+            output_dirpath = os.path.abspath(arg)
             qconfig.make_latest_symlink = False
         elif opt in ('-G', "--genes"):
             qconfig.genes = check_file(arg, 'genes')

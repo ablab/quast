@@ -51,7 +51,7 @@ def do(reference, filenames, nucmer_dir, output_dir, all_pdf, draw_plots, json_o
 
     ########################################################################
 
-    nucmer_prefix = os.path.join(__location__, nucmer_dir + '/nucmer_')
+    nucmer_prefix = os.path.join(os.path.join(__location__, ".."), nucmer_dir + '/nucmer_')
 
     ########################################################################
     report_dict = {'header' : []}

@@ -187,13 +187,6 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
     # Where corrected contigs will be saved
     corrected_dir = os.path.join(output_dirpath, qconfig.corrected_dir)
 
-    # Where total report will be saved
-    total_report = os.path.join(output_dirpath, "transposed_" + qconfig.report_basename)
-    total_report_tr = os.path.join(output_dirpath, qconfig.report_basename)
-
-    # Where gage report will be saved (option --gage)
-    gage_report = os.path.join(output_dirpath, qconfig.gage_report_basename)
-
     # Where all pdfs will be saved
     all_pdf_filename = os.path.join(output_dirpath, qconfig.plots_filename)
     all_pdf = None
@@ -271,7 +264,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
         modified_fasta_entries = []
         to_remove = True
         for entry in fasta_entries:
-            if (len(entry[1]) >= qconfig.min_contig) or (qconfig.with_gage):
+            if (len(entry[1]) >= qconfig.min_contig) or qconfig.with_gage:
                 to_remove = False
                 corr_name = '>' + re.sub(r'\W', '', re.sub(r'\s', '_', entry[0]))
                 # mauve and gage can't work with alternatives
@@ -310,7 +303,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
             sys.exit(1)
 
         from libs import gage
-        gage.do(qconfig.reference, contigs, output_dirpath + '/gage', gage_report, qconfig.min_contig, lib_dir)
+        gage.do(qconfig.reference, contigs, output_dirpath, qconfig.gage_report_basename, qconfig.min_contig, lib_dir)
     else:
         if qconfig.draw_plots:
             from libs import plotter  # Do not remove this line! It would lead to a warning in matplotlib.
@@ -389,7 +382,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
             json_saver.save_total_report(json_outputpath, report_dict)
 
         from libs import report_maker
-        report_maker.do(report_dict, total_report, total_report_tr, qconfig.min_contig, output_dirpath)
+        report_maker.do(report_dict, qconfig.report_basename, output_dirpath, qconfig.min_contig)
 
         from libs.html_saver import html_saver
         html_saver.save_total_report(output_dirpath, report_dict)
@@ -401,7 +394,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
         ## and Single Cell paper table
         if qconfig.reference and qconfig.extra_report:
             from libs import extra_report_maker
-            extra_report_maker.do(total_report, output_dirpath + '/genome_analyzer/genome_info.txt', extra_report_filename, qconfig.min_contig, json_outputpath)
+            extra_report_maker.do(os.path.join(output_dirpath, qconfig.report_basename), output_dirpath + '/genome_analyzer/genome_info.txt', extra_report_filename, qconfig.min_contig, json_outputpath)
 
             ########################################################################
 

@@ -6,15 +6,15 @@
 
 import os
 import subprocess
+from libs import report_maker
 from qutils import id_to_str
 
-def do(reference, contigs, output_dir, total_report_basename, min_contig, lib_dir):
-    # suffixes for files with report tables in plain text and tab separated formats
-    txt_ext = '.txt'
-    tsv_ext = '.tsv'
+def do(reference, contigs, output_dirpath, total_report_basename, min_contig, lib_dir):
+    gage_results_path = os.path.join(output_dirpath, 'gage')
 
-    if not os.path.isdir(output_dir):
-        os.mkdir(output_dir)
+    # suffixes for files with report tables in plain text and tab separated formats
+    if not os.path.isdir(gage_results_path):
+        os.mkdir(gage_results_path)
 
     ########################################################################
     gage_tool_path = os.path.join(lib_dir, 'gage/getCorrectnessStats.sh')
@@ -42,12 +42,12 @@ def do(reference, contigs, output_dir, total_report_basename, min_contig, lib_di
     for metric in metrics_headers:
         report_dict['header'].append(metric)
 
-    tmp_dir = output_dir + '/tmp/'
+    tmp_dir = gage_results_path + '/tmp/'
     for id, filename in enumerate(contigs):
         print ' ', id_to_str(id), os.path.basename(filename), '...'
         # run gage tool
-        logfilename_out = output_dir + '/gage_' + os.path.basename(filename) + '.stdout'
-        logfilename_err = output_dir + '/gage_' + os.path.basename(filename) + '.stderr'
+        logfilename_out = gage_results_path + '/gage_' + os.path.basename(filename) + '.stdout'
+        logfilename_err = gage_results_path + '/gage_' + os.path.basename(filename) + '.stderr'
         print '    Logging to files', logfilename_out, 'and', os.path.basename(logfilename_err), '...',
         logfile_out = open(logfilename_out, 'w')
         logfile_err = open(logfilename_err, 'w')
@@ -76,49 +76,49 @@ def do(reference, contigs, output_dir, total_report_basename, min_contig, lib_di
 
     print '  Done'
 
-    ########################################################################
+    report_maker.do(report_dict, total_report_basename, output_dirpath, min_contig)
+  ##########################################################################
+  # print '  Creating total report...'
+  # total_report = total_report_basename + txt_ext
+  # total_report_tab = total_report_basename + tsv_ext
+  # tr_file = open(total_report, 'w')
+  # tab_file = open(total_report_tab, 'w')
+  #
+  # # calculate columns widthes
+  # col_widthes = [0 for i in range(len(report_dict['header']))]
+  # for row in report_dict.keys():
+  #     for id, value in enumerate(report_dict[row]):
+  #         if len(str(value)) > col_widthes[id]:
+  #             col_widthes[id] = len(str(value))
+  #
+  #             # to avoid confusions:
+  # tr_file.write('Only contigs of length >= ' + str(min_contig) + ' were taken into account\n\n')
+  # # header
+  # for id, value in enumerate(report_dict['header']):
+  #     tr_file.write(' ' + str(value).center(col_widthes[id]) + ' |')
+  #     if id:
+  #         tab_file.write('\t')
+  #     tab_file.write(value)
+  # tr_file.write('\n')
+  # tab_file.write('\n')
+  #
+  # # metrics values
+  # for contig_name in sorted(report_dict.keys()):
+  #     if contig_name == 'header':
+  #         continue
+  #     for id, value in enumerate(report_dict[contig_name]):
+  #         if id:
+  #             tr_file.write(' ' + str(value).rjust(col_widthes[id]) + ' |')
+  #             tab_file.write('\t')
+  #         else:
+  #             tr_file.write(' ' + str(value).ljust(col_widthes[id]) + ' |')
+  #         tab_file.write(str(value))
+  #     tr_file.write('\n')
+  #     tab_file.write('\n')
+  #
+  # tr_file.close()
+  # tab_file.close()
+  # print '    Saved to', total_report, 'and', total_report_tab
+  ##########################################################################
 
-    print '  Creating total report...'
-    total_report = total_report_basename + txt_ext
-    total_report_tab = total_report_basename + tsv_ext
-    tr_file = open(total_report, 'w')
-    tab_file = open(total_report_tab, 'w')
-
-    # calculate columns widthes
-    col_widthes = [0 for i in range(len(report_dict['header']))]
-    for row in report_dict.keys():
-        for id, value in enumerate(report_dict[row]):
-            if len(str(value)) > col_widthes[id]:
-                col_widthes[id] = len(str(value))
-
-                # to avoid confusions:
-    tr_file.write('Only contigs of length >= ' + str(min_contig) + ' were taken into account\n\n')
-    # header
-    for id, value in enumerate(report_dict['header']):
-        tr_file.write(' ' + str(value).center(col_widthes[id]) + ' |')
-        if id:
-            tab_file.write('\t')
-        tab_file.write(value)
-    tr_file.write('\n')
-    tab_file.write('\n')
-
-    # metrics values
-    for contig_name in sorted(report_dict.keys()):
-        if contig_name == 'header':
-            continue
-        for id, value in enumerate(report_dict[contig_name]):
-            if id:
-                tr_file.write(' ' + str(value).rjust(col_widthes[id]) + ' |')
-                tab_file.write('\t')
-            else:
-                tr_file.write(' ' + str(value).ljust(col_widthes[id]) + ' |')
-            tab_file.write(str(value))
-        tr_file.write('\n')
-        tab_file.write('\n')
-
-    tr_file.close()
-    tab_file.close()
-    print '    Saved to', total_report, 'and', total_report_tab
-
-    ########################################################################
     print '  Done.'

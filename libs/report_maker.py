@@ -5,18 +5,23 @@
 ############################################################################
 
 ### main function ###
+import os
 
-def do(report_dict, report_horizontal_name, report_vertical_name, min_contig=0, output_dir=None):
+def do(report_dict, report_basename, output_dirpath, min_contig=0):
     report_dict = dict([(k, v[1:]) for k, v in report_dict.iteritems()])
 
     # suffixes for files with transposed and normal report tables
     txt_ext = '.txt'
     tsv_ext = '.tsv'
 
+    # Where total report will be saved
+    report_horizontal_path = os.path.join(output_dirpath, 'transposed_' + report_basename)
+    report_vertical_path = os.path.join(output_dirpath, report_basename)
+
     print 'Summarizing...'
     print '  Creating total report...'
-    report_txt_filename = report_vertical_name + txt_ext
-    report_tsv_filename = report_vertical_name + tsv_ext
+    report_txt_filename = report_vertical_path + txt_ext
+    report_tsv_filename = report_vertical_path + tsv_ext
     txt_file = open(report_txt_filename, 'w')
     tsv_file = open(report_tsv_filename, 'w')
 
@@ -53,8 +58,8 @@ def do(report_dict, report_horizontal_name, report_vertical_name, min_contig=0, 
     print '    Saved to', report_txt_filename, 'and', report_tsv_filename
 
     print '  Transposed version of total report...'
-    report_txt_filename = report_horizontal_name + txt_ext
-    report_tsv_filename = report_horizontal_name + tsv_ext
+    report_txt_filename = report_horizontal_path + txt_ext
+    report_tsv_filename = report_horizontal_path + tsv_ext
     txt_file = open(report_txt_filename, 'w')
     tsv_file = open(report_tsv_filename, 'w')
 

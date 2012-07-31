@@ -5,6 +5,7 @@
 ############################################################################
 
 import os
+import gzip
 import itertools
 # There exists pyfasta package -- http://pypi.python.org/pypi/pyfasta/
 # Use it !
@@ -52,41 +53,35 @@ def read_fasta(filename):
     """
         Returns list of FASTA entries (in tuples: name, seq)
     """
-    res_name = []
-    res_seq = []
     first = True
     seq = ''
-    fastafile = file
+    name = ''
     file_ext = os.path.splitext(filename)[1]
-    if file_ext == ".gz":
-        import gzip
-        fastafile = gzip.open(filename)
-    else:
-        fastafile = open(filename)
+    fastafile = gzip.open(filename) if file_ext == ".gz" else open(filename)
 
     for line in fastafile:
         if line[0] == '>':
-            res_name.append(line.strip()[1:])
+            name = line.strip()[1:]
             if not first:
-                res_seq.append(seq)
-            else:
-                first = False
+                yield name, seq
+            first = False
             seq = ''
         else:
             seq += line.strip()
-    res_seq.append(seq)
-    return zip(res_name, res_seq)
+    if not first:
+        yield name, seq
+
 
 def write_fasta(fasta):
     for name, seq in fasta:
-        print name
+        print '>%s' % name
         for i in xrange(0,len(seq),60):
             print seq[i:i+60]
 
 def write_fasta_to_file(filename, fasta):
     outfile = open(filename, 'w')
     for name, seq in fasta:
-        outfile.write(name + '\n')
+        outfile.write('>%s\n' % name)
         for i in xrange(0,len(seq),60):
             outfile.write(seq[i:i+60] + '\n')
     outfile.close()

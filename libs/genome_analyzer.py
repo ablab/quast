@@ -164,8 +164,7 @@ def do(reference, filenames, output_dir, nucmer_dir, genes_filename, operons_fil
         # for cumulative plots:
         contig_tuples = fastaparser.read_fasta(filename)  # list of FASTA entries (in tuples: name, seq)
         contig_tuples = sorted(contig_tuples, key=lambda contig: len(contig[1]), reverse = True)
-        for contig in contig_tuples:
-            contig_name = contig[0][1:]
+        for contig_name, seq in contig_tuples:
             if contig_name not in contig_blocks:
                 contig_blocks[contig_name] = []
             files_contigs[filename].append( contig_blocks[contig_name] )

@@ -20,7 +20,7 @@ def GC_content(filename):
     total_GC_amount = 0
     total_contig_length = 0
     GC_info = []
-    for (name, seq) in fasta_entries:
+    for name, seq in fasta_entries:
         contig_length = len(seq)
         total_contig_length += contig_length
         seq = seq.upper()

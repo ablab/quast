@@ -11,14 +11,10 @@ import subprocess
 import fastaparser
 from qutils import id_to_str
 
-def tabline(line):
-    return spaceline(line)
-    #return '\t'.join(str(x) for x in line)
-
 def spaceline(line):
     return ' '.join(str(x) for x in line)
 
-def process_misassembled_contig(plantafile, output_file, i_start, i_finish, contig, prev, sorted_aligns, is_1st_chimeric_half, ns, smgap, rc, assembly, misassembled_contigs):
+def process_misassembled_contig(plantafile, output_file, i_start, i_finish, contig, prev, sorted_aligns, is_1st_chimeric_half, ns, smgap, rc, assembly, misassembled_contigs, extensive_misassembled_contigs):
     region_misassemblies = 0
     region_local_misassemblies = 0
     for i in xrange(i_start, i_finish):
@@ -33,10 +29,11 @@ def process_misassembled_contig(plantafile, output_file, i_start, i_finish, cont
         if sorted_aligns[i][11] != sorted_aligns[i+1][11] or gap > ns + smgap or (not rc and strand1 != strand2): # different chromosomes or large gap or different strands
             #Contig spans chromosomes or there is a gap larger than 1kb
             #MY: output in coords.filtered
-            print >>output_file, tabline(prev)
+            print >>output_file, spaceline(prev)
             prev = list(sorted_aligns[i+1])
             print >>plantafile, '\t\t\tExtensive misassembly between these two alignments: [%s] @ %d and %d' % (sorted_aligns[i][11], sorted_aligns[i][1], sorted_aligns[i+1][0])
 
+            extensive_misassembled_contigs.add(sorted_aligns[i][11])
             # Kolya: removed something about ref_features
 
             region_misassemblies += 1
@@ -61,7 +58,7 @@ def process_misassembled_contig(plantafile, output_file, i_start, i_finish, cont
 
         #MY: output in coords.filtered
         if not is_1st_chimeric_half:
-            print >>output_file, tabline(prev)
+            print >>output_file, spaceline(prev)
 
         #Record the very last alignment
         i = i_finish
@@ -98,7 +95,7 @@ def do(reference, filenames, cyclic, rc, output_dir, lib_dir, draw_plots):
             stdout=open(os.path.join(mummer_path, 'make.log'), 'w'), stderr=open(os.path.join(mummer_path, 'make.err'), 'w'))
 
     print 'Running plantakolya tool...'
-    metrics = ['Average %IDY', 'Local misassemblies', 'Misassemblies', 'Misassembled contigs', 'Misassembled contig bases', 'Misassembled and unaligned', 'SNPs', 'Unaligned contigs', 'Unaligned contig bases', 'Ambiguous contigs']
+    metrics = ['Average %IDY', 'Local misassemblies', 'Misassemblies', 'Misassembled contigs', 'Misassembled contig bases', 'Misassembled and unaligned', 'Unaligned contigs', 'Unaligned contig bases', 'Ambiguous contigs']
     report_dict['header'] += metrics
 
     for id, filename in enumerate(filenames):
@@ -164,6 +161,8 @@ def do(reference, filenames, cyclic, rc, output_dir, lib_dir, draw_plots):
             coords_filtered_file = open(coords_filtered_filename, 'w')
             coords_filtered_file.write(coords_file.readline())
             coords_filtered_file.write(coords_file.readline())
+            sum_idy = 0.0
+            num_idy = 0
             for line in coords_file:
                 assert line[0] != '='
                 #Clear leading spaces from nucmer output
@@ -173,7 +172,10 @@ def do(reference, filenames, cyclic, rc, output_dir, lib_dir, draw_plots):
                 for i in [0, 1, 3, 4, 6, 7]:
                     line[i] = int(line[i])
                 line[9] = float(line[9])
+                sum_idy += line[9]
+                num_idy += 1
                 aligns.setdefault(contig, []).append(line)
+            avg_idy = sum_idy / num_idy if num_idy else 0
 
             # Loading the assembly contigs
             print >>plantafile, 'Loading Assembly...'
@@ -240,6 +242,7 @@ def do(reference, filenames, cyclic, rc, output_dir, lib_dir, draw_plots):
             region_misassemblies = 0
             region_local_misassemblies = 0
             misassembled_contigs = {}
+            extensive_misassembled_contigs = set()
 
             print >>plantafile, 'Analyzing contigs...'
 
@@ -281,17 +284,14 @@ def do(reference, filenames, cyclic, rc, output_dir, lib_dir, draw_plots):
                             print >>plantafile, '\t\tMarking as ambiguous: %s' % spaceline(ambig)
                             # Kolya: removed redundant code about $ref
 
-                        if len(top_aligns) < 2:
-                            assert len(top_aligns) == 1
+                        print >>coords_filtered_file, spaceline(top_aligns[0])
+
+                        if len(top_aligns) == 1:
                             #There is only one top align, life is good
                             print >>plantafile, '\t\tOne align captures most of this contig: %s' % spaceline(top_aligns[0])
-                            #MY: output in coords.filtered
-                            print >>coords_filtered_file, spaceline(top_aligns[0])
                         else:
                             #There is more than one top align
                             print >>plantafile, '\t\tThis contig has %d significant alignments. [ambiguous]' % len(top_aligns)
-                            #MY: output in coords.filtered (for genes - all alignments, and for NA - only one!)
-                            print >>coords_filtered_file, spaceline(top_aligns[0])
                             #Record these alignments as ambiguous on the reference
                             for align in top_aligns:
                                 print >>plantafile, '\t\t\tAmbiguous Alignment: %s' % spaceline(align)
@@ -318,11 +318,10 @@ def do(reference, filenames, cyclic, rc, output_dir, lib_dir, draw_plots):
                                 print >>plantafile, '\t\tSkipping [%d][%d] redundant alignment %d %s' % (sorted_aligns[i][0], sorted_aligns[i][1], i, spaceline(sorted_aligns[i]))
                                 # Kolya: removed redundant code about $ref
 
-                        if len(real_aligns) < 2:
-                            assert len(real_aligns) == 1
+                        if len(real_aligns) == 1:
                             #There is only one alignment of this contig to the reference
                             #MY: output in coords.filtered
-                            print >>coords_filtered_file, tabline(real_aligns[0])
+                            print >>coords_filtered_file, spaceline(real_aligns[0])
 
                             #Is the contig aligned in the reverse compliment?
                             #Record beginning and end of alignment in contig
@@ -370,7 +369,7 @@ def do(reference, filenames, cyclic, rc, output_dir, lib_dir, draw_plots):
                                     prev = list(sorted_aligns[chimeric_index])
 
                                     # process "last half" of blocks
-                                    prev, x, y = process_misassembled_contig(plantafile, coords_filtered_file, chimeric_index, sorted_num, contig, prev, sorted_aligns, True, ns, smgap, rc, assembly, misassembled_contigs)
+                                    prev, x, y = process_misassembled_contig(plantafile, coords_filtered_file, chimeric_index, sorted_num, contig, prev, sorted_aligns, True, ns, smgap, rc, assembly, misassembled_contigs, extensive_misassembled_contigs)
                                     region_misassemblies += x
                                     region_local_misassemblies += y
                                     print >>plantafile, '\t\t\tChimerical misassembly between these two alignments: [%s] @ %d and %d' % (sorted_aligns[sorted_num][11], sorted_aligns[sorted_num][1], sorted_aligns[0][0])
@@ -382,7 +381,7 @@ def do(reference, filenames, cyclic, rc, output_dir, lib_dir, draw_plots):
                                     prev[7] += sorted_aligns[0][7] # [LEN2]
 
                                     # process "first half" of blocks
-                                    prev, x, y = process_misassembled_contig(plantafile, coords_filtered_file, 0, chimeric_index - 1, contig, prev, sorted_aligns, False, ns, smgap, rc, assembly, misassembled_contigs)
+                                    prev, x, y = process_misassembled_contig(plantafile, coords_filtered_file, 0, chimeric_index - 1, contig, prev, sorted_aligns, False, ns, smgap, rc, assembly, misassembled_contigs, extensive_misassembled_contigs)
                                     region_misassemblies += x
                                     region_local_misassemblies += y
 
@@ -390,7 +389,7 @@ def do(reference, filenames, cyclic, rc, output_dir, lib_dir, draw_plots):
                                 print >>plantafile, "here", sorted_aligns
                                 #MY: for merging local misassemlbies
                                 prev = list(sorted_aligns[0])
-                                prev, x, y = process_misassembled_contig(plantafile, coords_filtered_file, 0, sorted_num, contig, prev, sorted_aligns, False, ns, smgap, rc, assembly, misassembled_contigs)
+                                prev, x, y = process_misassembled_contig(plantafile, coords_filtered_file, 0, sorted_num, contig, prev, sorted_aligns, False, ns, smgap, rc, assembly, misassembled_contigs, extensive_misassembled_contigs)
                                 region_misassemblies += x
                                 region_local_misassemblies += y
                                 print >>plantafile, "there", sorted_aligns
@@ -410,71 +409,26 @@ def do(reference, filenames, cyclic, rc, output_dir, lib_dir, draw_plots):
 
             # TODO: 'Analyzing coverage...'
 
-            region_covered = 100500
-            region_ambig = 100500
-            region_snp = 100500
-            region_insertion = 100500
-            region_deletion = 100500
-            gaps = []
-            neg_gaps = []
-            redundant = []
-            snip_left = 100500
-            snip_right = 100500
-
-            print >>plantafile, '\tCovered Bases: %d' % region_covered
-            print >>plantafile, '\tAmbiguous Bases: %d' % region_ambig
             print >>plantafile, '\tLocal Misassemblies: %d' % region_local_misassemblies
             print >>plantafile, '\tMisassemblies: %d' % region_misassemblies
             print >>plantafile, '\t\tMisassembled Contigs: %d' % len(misassembled_contigs)
             misassembled_bases = sum(misassembled_contigs.itervalues())
             print >>plantafile, '\t\tMisassembled Contig Bases: %d' % misassembled_bases
-
             print >>plantafile, '\t\tMisassembled and Unaligned: %d' % misassembled_partially_unaligned
-            print >>plantafile, '\tSNPs: %d' % region_snp
-            print >>plantafile, '\tInsertions: %d' % region_insertion
-            print >>plantafile, '\tDeletions: %d' % region_deletion
-            internal = 0
-            external = 0
-            sum_gaps = 0
-            for gap in gaps:
-                if gap[1] == gap[2]:
-                    internal += 1
-                else:
-                    external += 1
-                sum_gaps += gap[0]
-            avg_gaps = sum_gaps * 1.0 / external if external else 0.0
-            print >>plantafile, '\tPositive Gaps: %d' % len(gaps)
-            print >>plantafile, '\t\tInternal Gaps: %d' % internal
-            print >>plantafile, '\t\tExternal Gaps: %d' % external
-            print >>plantafile, '\t\tExternal Gap Total: %d' % sum_gaps
-            print >>plantafile, '\t\tExternal Gap Average: %.0f' % avg_gaps
-            internal = 0
-            external = 0
-            sum_gaps = 0
-            for gap in neg_gaps:
-                if gap[1] == gap[2]:
-                    internal += 1
-                else:
-                    external += 1
-                sum_gaps += gap[0]
-            avg_gaps = sum_gaps * 1.0 / external if external else 0.0
-            print >>plantafile, '\tNegative Gaps: %d' % len(neg_gaps)
-            print >>plantafile, '\t\tInternal Overlaps: %d' % internal
-            print >>plantafile, '\t\tExternal Overlaps: %d' % external
-            print >>plantafile, '\t\tExternal Overlaps Total: %d' % sum_gaps
-            print >>plantafile, '\t\tExternal Overlaps Average: %.0f' % avg_gaps
-
-            print >>plantafile, '\tRedundant Contigs: %d (%d)' % (len(redundant), total_redundant)
-            print >>plantafile
-
             print >>plantafile, 'Uncovered Regions: %d (%d)' % (uncovered_regions, uncovered_region_bases)
             print >>plantafile, 'Unaligned Contigs: %d (%d)' % (unaligned, partially_unaligned)
             print >>plantafile, 'Unaligned Contig Bases: %d' % total_unaligned
             print >>plantafile, 'Ambiguous Contigs: %d (%d)' % (ambiguous, total_ambiguous)
 
-#            subprocess.call(
-#                ['perl', assess_assembly_path2, reference, filename, nucmerfilename, '--verbose', cyclic_option, rc_option],
-#                stdout=open(logfilename_out, 'a'), stderr=open(logfilename_err, 'a'), env=myenv)
+            report_dict[os.path.basename(filename)].append('%.2f' % avg_idy)
+            report_dict[os.path.basename(filename)].append(region_local_misassemblies)
+            report_dict[os.path.basename(filename)].append(region_misassemblies)
+            report_dict[os.path.basename(filename)].append(len(misassembled_contigs))
+            report_dict[os.path.basename(filename)].append(misassembled_bases)
+            report_dict[os.path.basename(filename)].append(misassembled_partially_unaligned)
+            report_dict[os.path.basename(filename)].append('%d (%d)' % (unaligned, partially_unaligned))
+            report_dict[os.path.basename(filename)].append(total_unaligned)
+            report_dict[os.path.basename(filename)].append('%d (%d)' % (ambiguous, total_ambiguous))
 
         plantafile.close()
         print 'done.'
@@ -497,30 +451,6 @@ def do(reference, filenames, cyclic, rc, output_dir, lib_dir, draw_plots):
                 if os.path.isfile(plotfilename + ext):
                     os.remove(plotfilename + ext)
 
-        # compute nucmer average % IDY
-
-        if os.path.isfile(nucmerfilename + '.coords'):
-            file = open(nucmerfilename + '.coords')
-            sum_idy = 0.0
-            num = 0
-            for line in file:
-                arr = line.split('|')
-                if len(arr) > 4:
-                    x = arr[3].strip()
-                    if x[0] != '[': # not [% IDY]
-                        sum_idy += float(x)
-                        num += 1
-            if num:
-                avg = sum_idy / num
-            else:
-                avg = 0
-            avg = '%3.2f'% avg
-            file.close()
-        else:
-            print '  ERROR: nucmer coord file (' + nucmerfilename + ') not found, skipping...'
-            avg = 'N/A'
-        print '    Average %IDY = ', avg
-        report_dict[os.path.basename(filename)].append(avg)
         # delete temporary files
         for ext in ['.delta', '.mgaps', '.ntref', '.gp']:
             if os.path.isfile(nucmerfilename + ext):
@@ -532,48 +462,11 @@ def do(reference, filenames, cyclic, rc, output_dir, lib_dir, draw_plots):
 
         ## find metrics for total report:
 
-        logfile_out = open(logfilename_out, 'r')
-        cur_metric_id = 1
-        for line in logfile_out:
-            if metrics[cur_metric_id].lower() in line.lower():
-                report_dict[os.path.basename(filename)].append( line.split(':')[1].strip() )
-                cur_metric_id += 1
-                if cur_metric_id == len(metrics):
-                    break
-        logfile_out.close()
         report_dict[os.path.basename(filename)] += ['N/A'] * (len(report_dict['header']) - len(report_dict[os.path.basename(filename)]))
 
         ## outputting misassembled contigs in separate file
-
-        logfile_out = open(logfilename_out, 'r')
-        mis_contigs_ids = []
-        # skipping prologue
-        for line in logfile_out:
-            if line.startswith("Analyzing contigs..."):
-                break
-            # main part of plantakolya output
-        cur_contig_id = ""
-        for line in logfile_out:
-            if line.startswith("	CONTIG:"):
-                cur_contig_id = line.split("	CONTIG:")[1].strip()
-            if (line.find("Extensive misassembly") != -1) and (cur_contig_id != ""):
-                mis_contigs_ids.append(cur_contig_id.split()[0])
-                cur_contig_id = ""
-            if line.startswith("Analyzing coverage..."):
-                break
-        logfile_out.close()
-
-        # outputting misassembled contigs
-        input_contigs = fastaparser.read_fasta(filename)
-        mis_contigs = open(output_dir + '/' + os.path.basename(filename) + '.mis_contigs', "w")
-
-        for (name, seq) in input_contigs:
-            corr_name = re.sub(r'\W', '', re.sub(r'\s', '_', name))
-            if mis_contigs_ids.count(corr_name) != 0:
-                mis_contigs.write(name + '\n')
-                for i in xrange(0, len(seq), 60):
-                    mis_contigs.write(seq[i:i+60] + '\n')
-        mis_contigs.close()
+        fasta = [(name, seq) for name, seq in fastaparser.read_fasta(filename) if name in extensive_misassembled_contigs]
+        fastaparser.write_fasta_to_file(output_dir + '/' + os.path.basename(filename) + '.mis_contigs', fasta)
 
     print '  Done'
 

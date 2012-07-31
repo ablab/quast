@@ -165,7 +165,7 @@ def do(reference, filenames, cyclic, rc, output_dir, lib_dir, draw_plots):
         for (name, seq) in input_contigs:
             corr_name = re.sub(r'\W', '', re.sub(r'\s', '_', name))
             if mis_contigs_ids.count(corr_name) != 0:
-                mis_contigs.write(name + '\n')
+                mis_contigs.write('>' + name + '\n')
                 for i in xrange(0, len(seq), 60):
                     mis_contigs.write(seq[i:i+60] + '\n')
         mis_contigs.close()

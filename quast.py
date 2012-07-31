@@ -266,14 +266,14 @@ def main(args, lib_dir=os.path.join(os.path.abspath(sys.path[0]), 'libs')):
         fasta_entries = fastaparser.read_fasta(filename) # in tuples: (name, seq)
         modified_fasta_entries = []
         to_remove = True
-        for entry in fasta_entries:
-            if (len(entry[1]) >= qconfig.min_contig) or (qconfig.with_gage):
+        for name, seq in fasta_entries:
+            if (len(seq) >= qconfig.min_contig) or (qconfig.with_gage):
                 to_remove = False
-                corr_name = '>' + re.sub(r'\W', '', re.sub(r'\s', '_', entry[0]))
+                corr_name = re.sub(r'\W', '', re.sub(r'\s', '_', name))
                 # mauve and gage can't work with alternatives
                 dic = {'M': 'A', 'K': 'G', 'R': 'A', 'Y': 'C', 'W': 'A', 'S': 'C', 'V': 'A', 'B': 'C', 'H': 'A', 'D': 'A'}
                 pat = "(%s)" % "|".join( map(re.escape, dic.keys()) )
-                corr_seq = re.sub(pat, lambda m:dic[m.group()], entry[1])
+                corr_seq = re.sub(pat, lambda m:dic[m.group()], seq)
                 modified_fasta_entries.append((corr_name, corr_seq))
 
         fastaparser.write_fasta_to_file(outfilename, modified_fasta_entries)

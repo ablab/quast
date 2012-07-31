@@ -6,8 +6,6 @@
 
 import os
 import itertools
-import fastaparser
-from qutils import id_to_str
 
 # Supported plot formats: .emf, .eps, .pdf, .png, .ps, .raw, .rgba, .svg, .svgz
 #plots_format = '.svg' 

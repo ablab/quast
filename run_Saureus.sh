@@ -7,7 +7,7 @@ genes="$( cd "$( dirname "$0" )" && cd ../../../data/input/S.aureus/genes && pwd
 # running quality if genes exists
 if [ -e "$genes/bacteria_genes.txt" ]
 then
-    python $cur_dir/quality.py -R $genes/USA300_FPR3757.fasta -G $genes/bacteria_genes.txt "$@"
+    python $cur_dir/quast.py -R $genes/USA300_FPR3757.fasta -G $genes/bacteria_genes.txt "$@"
 else
-    python $cur_dir/quality.py "$@"
+    python $cur_dir/quast.py "$@"
 fi

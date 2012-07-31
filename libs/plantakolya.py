@@ -17,7 +17,6 @@
 
 import os
 import platform
-import string
 import subprocess
 import fastaparser
 from qutils import id_to_str
@@ -103,14 +102,11 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
     umt = 0.1 # threshold for misassembled contigs with aligned less than $umt * 100% (Unaligned Missassembled Threshold)
     coords_filename = nucmerfilename + '.coords'
     delta_filename = nucmerfilename + '.delta'
-    snps_filename = nucmerfilename + '.snps'
     coords_btab_filename = nucmerfilename + '.coords.btab'
     coords_filtered_filename = nucmerfilename + '.coords.filtered'
     unaligned_filename = nucmerfilename + '.unaligned'
     if os.path.isfile(coords_filename):
         os.remove(coords_filename)
-    if os.path.isfile(snps_filename):
-        os.remove(snps_filename)
     plantafile = open(logfilename_out, 'a')
     print >> plantafile, 'Cleaning up contig headers...'
     # TODO: clean contigs?
@@ -129,13 +125,6 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
         return
     if len(open(coords_filename).readlines()[-1].split()) < 13:
         print >> logfile_err, 'Nucmer ended early'
-        return
-
-    subprocess.call(['show-snps', '-T', delta_filename], stdout=open(snps_filename, 'w'), stderr=logfile_err,
-        env=myenv)
-
-    if os.path.isfile('show-snps.err') and 'ERROR' in open('show-snps.err').read():
-        print >> logfile_err, 'Show-snps failed.  Exiting.'
         return
 
     # Loading the alignment files
@@ -178,25 +167,6 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
         name = name.split()[0] # no spaces in reference header
         references[name] = seq
         print >> plantafile, '\tLoaded [%s]' % name
-
-    # Loading the SNP calls
-    print >> plantafile, 'Loading SNPs...'
-    snps = {}
-    snps_locs = {}
-    for line in open(snps_filename):
-        if line[0] not in string.digits:
-            continue
-        line = line.split()
-        ref = line[10]
-        ctg = line[11]
-        # TODO: check: Malformed line in SNP file
-        if line[1] == '.':
-            snps.setdefault(ref, {}).setdefault(ctg, {})[line[0]] = 'I'
-        elif line[2] == '.':
-            snps.setdefault(ref, {}).setdefault(ctg, {})[line[0]] = 'D'
-        else:
-            snps.setdefault(ref, {}).setdefault(ctg, {})[line[0]] = 'S'
-        snps_locs.setdefault(ref, {}).setdefault(ctg, {})[line[0]] = line[3]
 
     # Loading the regions (if any)
     regions = {}

@@ -32,21 +32,21 @@ def do(total_report, genome_info, output_filename, min_contig, json_output_dir):
     operons = ''
     genome_info_file = open(genome_info, 'r')
     for line in genome_info_file:
-        if line.startswith('genome size'):
+        if line.startswith('total genome size'):
             genome_size = line.split(':')[1].strip()
         elif line.startswith('genes'):
             genes = line.split(':')[1].strip()
         elif line.startswith('operons'):
-            operons = line.split(':')[1].strip()
+            operons = line.split(':')[1].strip()    
     genome_info_file.close()
 
     ##
     metrics_new_headers = ['Assembly', '# contigs', 'genome N50 (bp)', 'genome NA50 (bp)', 'Largest (bp)',
                            'Total (bp)', 'Mapped genome (%)', 'Misassemblies', 'Misassembled contigs',
-                           'Misassembled contig bases', '_aux miscalled', '_aux genes']
+                           'Misassembled contig bases', '_aux Miscalled', '_aux Genes']
     metrics_old_headers = ['Assembly', 'Number of contigs', 'NG50', 'NGA50', 'Largest contig',
-                           'Total length', 'Mapped genome (%)', 'Misassemblies', 'Misassembled Contigs',
-                           'Misassembled Contig Bases', 'Number of MisCalled', 'Genes']
+                           'Total length', 'Mapped genome (%)', 'Misassemblies', 'Misassembled contigs',
+                           'Misassembled contig bases', 'Number of MisCalled', 'Genes']
 
     # parsing header
     total_report_file = open(total_report, 'r')
@@ -61,7 +61,7 @@ def do(total_report, genome_info, output_filename, min_contig, json_output_dir):
 
     for id, title in enumerate(header.split('|')):
         for id2, title2 in enumerate(metrics_old_headers):
-            if title2 in title:
+            if title2 == title.strip():
                 metrics_positions[id2] = id
                 break
 

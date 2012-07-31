@@ -61,10 +61,10 @@ def read_fasta(filename):
 
     for line in fastafile:
         if line[0] == '>':
-            name = line.strip()[1:]
             if not first:
                 yield name, seq
             first = False
+            name = line.strip()[1:]
             seq = ''
         else:
             seq += line.strip()

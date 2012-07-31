@@ -11,6 +11,7 @@ cp -r test_data       release/quast
 cp quast.py           release/quast
 cp manual.html        release/quast
 cp VERSION            release/quast
+cp LICENSE            release/quast
 echo Build $NOW    >> release/quast/VERSION
 sed "s/RELEASE_MODE=False/RELEASE_MODE=True/" quast.py > release/quast/quast.py
 

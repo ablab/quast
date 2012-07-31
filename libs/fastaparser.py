@@ -68,9 +68,8 @@ def read_fasta(filename):
             seq = ''
         else:
             seq += line.strip()
-    if not first:
+    if name or seq:
         yield name, seq
-
 
 def write_fasta(fasta):
     for name, seq in fasta:

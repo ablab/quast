@@ -62,10 +62,8 @@ def do(filenames, orf_length):
 	for id, fasta_filename in enumerate(filenames):
 		print ' ', id_to_str(id), os.path.basename(fasta_filename), '...'
 
-		fasta = fastaparser.read_fasta(fasta_filename)
-		cnt = 0
 		orfs = set()
-		for name, seq in fasta:
+		for name, seq in fastaparser.read_fasta(fasta_filename):
 			seq = seq.upper()
 			orfs.update(find_ORFs(seq, 0, orf_length))
 			orfs.update(find_ORFs(seq, 1, orf_length))

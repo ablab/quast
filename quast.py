@@ -263,10 +263,9 @@ def main(args, lib_dir=os.path.join(os.path.abspath(sys.path[0]), 'libs')):
             cur_lengths = [l for l in lengths if l >= threshold]
             report_dict[os.path.basename(outfilename)].append(sum(cur_lengths))
 
-        fasta_entries = fastaparser.read_fasta(filename) # in tuples: (name, seq)
         modified_fasta_entries = []
         to_remove = True
-        for name, seq in fasta_entries:
+        for name, seq in fastaparser.read_fasta(filename): # in tuples: (name, seq)
             if (len(seq) >= qconfig.min_contig) or (qconfig.with_gage):
                 to_remove = False
                 corr_name = re.sub(r'\W', '', re.sub(r'\s', '_', name))

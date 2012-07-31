@@ -21,7 +21,7 @@ __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file
 from libs import qconfig
 from libs import json_saver
 
-RELEASE_MODE=False
+RELEASE_MODE=True
 
 def usage():
     print >> sys.stderr, 'A tool for estimating assembly quality with various metrics and tools.'

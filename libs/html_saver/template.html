@@ -59,7 +59,7 @@
 
         #report {
             margin-left: 125px;
-            min-width: 675px;
+            min-width: 726px;
         }
         #report td {
             padding: 0 1em 0 0;
@@ -79,19 +79,23 @@
             .plots {
                 margin-left: 1em;
             }*/
-        .blocks > div#cumulative-plot-div {
-            margin-bottom: 5.5em;
-        }
         .blocks > div {
             float: left;
             margin-bottom: 5.5em;
             margin-top: 0px;
+        }
+        .blocks > div#cumulative-plot-div {
+            margin-bottom: 5.5em;
+            padding-right: 0;
         }
         .blocks > div#report {
             margin-bottom: 1em;
         }
         .blocks > div:last-child {
             margin-bottom: 40px;
+        }
+        .plot-wrapper {
+            padding-right: 50px;
         }
 
         .plot-header {
@@ -140,24 +144,25 @@
         <div class='blocks'>
             <div id='report'>
             </div>
-            <div class='plot' id='cumulative-plot-div'>
+            <div class='plot-wrapper' id='cumulative-plot-div'>
             </div>
-            <div class='plot' id='nx-plot-div'>
+            <div class='plot-wrapper' id='nx-plot-div'>
             </div>
-            <div class='plot' id='ngx-plot-div'>
+            <div class='plot-wrapper' id='ngx-plot-div'>
             </div>
-            <div class='plot' id='nax-plot-div'>
+            <div class='plot-wrapper' id='nax-plot-div'>
             </div>
-            <div class='plot' id='ngax-plot-div'>
+            <div class='plot-wrapper' id='ngax-plot-div'>
             </div>
-            <div class='plot' id='genes-plot-div'>
+            <div class='plot-wrapper' id='genes-plot-div'>
             </div>
-            <div class='plot' id='operons-plot-div'>
+            <div class='plot-wrapper' id='operons-plot-div'>
             </div>
         </div>
     </div>
 
-    <div class='json-code'>
+
+<div class='json-code'>
         <div id='report-json'>
             {{ report }}
         </div>

@@ -4,14 +4,19 @@ function drawCumulativePlot(filenames, lists_of_lengths, reference_length, div, 
     div.html(
         "<div class='plot'>" +
             "<span class='plot-header'>Cumulative length</span>" +
-            "<div style='width: 800px; height: 600px;' id='cumulative-plot-placeholder'></div>" +
-        "</div>"
+            "<div style='width: 850px; height: 600px;' id='cumulative-plot-placeholder'></div>" +
+            "</div>"
     );
 
     var plotsN = lists_of_lengths.length;
     var plotsData = new Array(plotsN);
 
     var maxX = 0;
+    var maxY = 0;
+
+    if (reference_length) {
+        maxY = reference_length;
+    }
 
     for (var i = 0; i < plotsN; i++) {
         var lengths = lists_of_lengths[i];
@@ -26,6 +31,9 @@ function drawCumulativePlot(filenames, lists_of_lengths, reference_length, div, 
         for (var j = 0; j < size; j++) {
             y += lengths[j];
             plotsData[i].data[j] = [j+1, y];
+            if (y > maxY) {
+                maxY = y;
+            }
         }
 
         if (size > maxX) {
@@ -38,6 +46,28 @@ function drawCumulativePlot(filenames, lists_of_lengths, reference_length, div, 
             show: true,
             lineWidth: 1,
         }
+    }
+
+    if (maxY <= 100000000000) {
+        maxYTick = Math.ceil((maxY+1)/10000000000)*10000000000;
+    } if (maxY <= 10000000000) {
+        maxYTick = Math.ceil((maxY+1)/1000000000)*1000000000;
+    } if (maxY <= 1000000000) {
+        maxYTick = Math.ceil((maxY+1)/100000000)*100000000;
+    } if (maxY <= 100000000) {
+        maxYTick = Math.ceil((maxY+1)/10000000)*10000000;
+    } if (maxY <= 10000000) {
+        maxYTick = Math.ceil((maxY+1)/1000000)*1000000;
+    } if (maxY <= 1000000) {
+        maxYTick = Math.ceil((maxY+1)/100000)*100000;
+    } if (maxY <= 100000) {
+        maxYTick = Math.ceil((maxY+1)/10000)*10000;
+    } if (maxY <= 10000) {
+        maxYTick = Math.ceil((maxY+1)/1000)*1000;
+    } if (maxY <= 1000) {
+        maxYTick = Math.ceil((maxY+1)/100)*100.
+    } if (maxY <= 100) {
+        maxYTick = Math.ceil((maxY+1)/10)*10.
     }
 
 //    In order to draw dots instead of lines
@@ -56,18 +86,71 @@ function drawCumulativePlot(filenames, lists_of_lengths, reference_length, div, 
     if (reference_length) {
         plotsData = [({
             data: [[0, reference_length], [maxX, reference_length]],
-            label: 'Reference',
-            lines: {
+            label: 'Reference, ' + toPrettyStringWithDimencion(reference_length, 'bp'),
+            dashes: {
                 show: true,
                 lineWidth: 1,
-            }
+            },
+            yaxis: 2,
+        })].concat(plotsData);
+
+        plotsData = [({
+            data: [[0, reference_length], [maxX, reference_length]],
+            dashes: {
+                show: true,
+                lineWidth: 1,
+            },
         })].concat(plotsData);
 
         colors = ["#000000"].concat(colors);
+        colors = ["#000000"].concat(colors);
     }
 
+    var yaxis = {
+        min: 0,
+        max: maxYTick,
+        labelWidth: 120,
+        reserveSpace: true,
+        lineWidth: 0.5,
+        color: '#000',
+        tickFormatter: function (val, axis) {
+            if (val == 0) {
+                return 0;
 
-    $.plot($('#cumulative-plot-placeholder'), plotsData, {
+            } else if (val >= 1000000) {
+                if (val > maxY + 1 || val + axis.tickSize >= 1000000000) {
+                    return (val / 1000000).toFixed(1) + ' Mbp';
+                } else {
+                    return (val / 1000000).toFixed(1);
+                }
+
+            } else if (val >= 1000) {
+                return (val / 1000).toFixed(0) + " Kbp";
+
+            } else {
+                return val.toFixed(0) + " bp";
+            }
+        },
+    };
+
+    var yaxes = [yaxis];
+
+    if (reference_length) {
+        yaxes.push({
+            ticks: [reference_length],
+            min: 0,
+            max: maxYTick,
+            position: 'rigth',
+            labelWidth: 50,
+            reserveSpace: true,
+            tickFormatter: function (val, axis) {
+                return '<div style="">' + toPrettyStringWithDimencion(reference_length, 'bp') +
+                    '\n<div style="margin-left: -0.2em;">(reference)</div></div>';
+            }
+        });
+    }
+
+    var plot = $.plot($('#cumulative-plot-placeholder'), plotsData, {
             shadowSize: 0,
             colors: colors,
             legend: {
@@ -78,24 +161,7 @@ function drawCumulativePlot(filenames, lists_of_lengths, reference_length, div, 
             grid: {
                 borderWidth: 1,
             },
-            yaxis: {
-                min: 0,
-                labelWidth: 120,
-                reserveSpace: true,
-                lineWidth: 0.5,
-                color: '#000',
-                tickFormatter: function (val, axis) {
-                    if (val == 0) {
-                        return 0;
-                    } else if (val > 1000000) {
-                        return (val / 1000000).toFixed(1) + " Mbp";
-                    } else if (val > 1000) {
-                        return (val / 1000).toFixed(0) + " Kbp";
-                    } else {
-                        return val.toFixed(0) + " bp";
-                    }
-                },
-            },
+            yaxes: yaxes,
             xaxis: {
                 min: 0,
                 lineWidth: 0.5,
@@ -109,5 +175,9 @@ function drawCumulativePlot(filenames, lists_of_lengths, reference_length, div, 
             },
         }
     );
-}
 
+    // var o = plot.pointOffset({ x: 0, y: 0});
+    // $('#cumulative-plot-placeholder').append(
+    //     '<div style="position:absolute;left:' + (o.left + 400) + 'px;top:' + (o.top - 400) + 'px;color:#666;font-size:smaller">Actual measurements</div>'
+    // );
+}

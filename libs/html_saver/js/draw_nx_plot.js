@@ -69,7 +69,7 @@ function drawNxPlot(filenames, listsOfLengths, title,
 //        }
 //    }
 
-    $.plot($('#' + title + '-plot-placeholder'), plotsData, {
+    var plot = $.plot($('#' + title + '-plot-placeholder'), plotsData, {
             shadowSize: 0,
             colors: ["#FF5900", "#008FFF", "#168A16", "#7C00FF", "#FF0080"],
             legend: {
@@ -89,8 +89,10 @@ function drawNxPlot(filenames, listsOfLengths, title,
                 tickFormatter: function (val, axis) {
                     if (val == 0) {
                         return 0;
+
                     } else if (val > 1000000) {
                         return (val / 1000000).toFixed(1) + ' Mbp';
+
                     } else if (val > 1000) {
                         if (val + axis.tickSize >= 1000000 || val > maxY + 1) {
                             return (val / 1000).toFixed(0) + ' Kbp';

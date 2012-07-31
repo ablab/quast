@@ -5,6 +5,7 @@
 <head>
     <script type="text/javascript" src="/static/scripts/jquery-1.7.2.min.js"></script>
     <script type="text/javascript" src="/static/scripts/flot/jquery.flot.min.js"></script>
+    <script type="text/javascript" src="/static/scripts/flot/jquery.flot.dashes.js"></script>
     <!-[if lte IE 8]><script type="text/javascript" src="/static/scripts/flot/excanvas.min.js"></script><![endif]->
 
     <script type="text/javascript" src="/static/scripts/build_total_report.js"></script>
@@ -44,23 +45,25 @@
         }
 
         #header {
-            font-size: 18px;
-            margin-left: 137px;
+            display: block;
+            width: 100%;
+            margin-bottom: 2em;
+            font-size: 1.5em;
+            margin-left: 125px;
         }
 
-        #subheader {
+        #subheader { /* not used in Quast html report */
             margin-top: -13px;
             margin-bottom: 20px;
         }
 
         #report {
-            margin-top: 25px;
-            margin-left: 137px;
-            margin-bottom: 60px;
+            margin-left: 125px;
+            min-width: 675px;
         }
         #report td {
             padding: 0 1em 0 0;
-            margin:  0;
+            margin: 0;
         }
         #report td {
             white-space: nowrap
@@ -72,15 +75,27 @@
         .json-code {
             display: none;
         }
-
-        .plots {
-            margin-left: 1em;
+            /*
+            .plots {
+                margin-left: 1em;
+            }*/
+        .blocks > div#cumulative-plot-div {
+            margin-bottom: 5.5em;
         }
-        .plot {
+        .blocks > div {
+            float: left;
+            margin-bottom: 5.5em;
+            margin-top: 0px;
+        }
+        .blocks > div#report {
+            margin-bottom: 1em;
+        }
+        .blocks > div:last-child {
             margin-bottom: 40px;
         }
+
         .plot-header {
-            margin-left: 124px;
+            margin-left: 125px;
             font-weight: bold;
             height: 1.5em;
             display: block;
@@ -122,23 +137,22 @@
             <span>Quast report <span id='subheader'></span></span>
         </div>
 
-        <div id='report'>
-        </div>
-
-        <div class='plots'>
-            <div id='cumulative-plot-div'>
+        <div class='blocks'>
+            <div id='report'>
             </div>
-            <div id='nx-plot-div'>
+            <div class='plot' id='cumulative-plot-div'>
             </div>
-            <div id='ngx-plot-div'>
+            <div class='plot' id='nx-plot-div'>
             </div>
-            <div id='nax-plot-div'>
+            <div class='plot' id='ngx-plot-div'>
             </div>
-            <div id='ngax-plot-div'>
+            <div class='plot' id='nax-plot-div'>
             </div>
-            <div id='genes-plot-div'>
+            <div class='plot' id='ngax-plot-div'>
             </div>
-            <div id='operons-plot-div'>
+            <div class='plot' id='genes-plot-div'>
+            </div>
+            <div class='plot' id='operons-plot-div'>
             </div>
         </div>
     </div>

@@ -27,6 +27,7 @@ def init(adp_results):
         for fp_script in ['jquery-1.7.2.min.js',
                           'flot/jquery.flot.min.js',
                           'flot/excanvas.min.js',
+                          'flot/jquery.flot.dashes.js',
                           'build_total_report.js',
                           'draw_cumulative_plot.js',
                           'draw_nx_plot.js',

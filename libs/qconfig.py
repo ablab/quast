@@ -11,9 +11,10 @@ min_contig = 0
 genes_lengths = "0,300,600,900,1200,1500,1800,2100,2400,2700,3000"
 orf_lengths = "200"
 
-output_dir = "results_" + datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
+default_results_root_dirname = "quast_results"
+output_dirname = "results_" + datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
 save_json = False
-default_json_dir_name = "json"
+default_json_dirname = "json"
 
 logfile = "quast.log"
 corrected_dir = "corrected_input"

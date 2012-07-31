@@ -90,12 +90,13 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
         usage()
         sys.exit(1)
 
-    json_output_dir = None
+    json_outputpath = None
+    output_dirpath = os.path.join(os.path.abspath(qconfig.default_results_root_dirname), qconfig.output_dirname)
 
     for opt, arg in options:
         # Yes, this is doubling the code. Python's getopt is non well-thought!!
         if opt in ('-o', "--output-dir"):
-            qconfig.output_dir = arg
+            output_dirpath = arg
             qconfig.make_latest_symlink = False
         elif opt in ('-G', "--genes"):
             qconfig.genes = check_file(arg, 'genes')
@@ -115,7 +116,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
             qconfig.save_json = True
         elif opt in ('-J', '--save-json-to'):
             qconfig.save_json = True
-            json_output_dir = arg
+            json_outputpath = arg
         elif opt in ('-m', "--mauve"):
             qconfig.with_mauve = True
         elif opt in ('-g', "--gage"):
@@ -141,59 +142,64 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
 
     qconfig.contig_thresholds = map(int, qconfig.contig_thresholds.split(","))
     qconfig.orf_lengths = map(int, qconfig.orf_lengths.split(","))
-    qconfig.output_dir = os.path.abspath(qconfig.output_dir)
-    output_dir = qconfig.output_dir
 
     ########################################################################
     ### CONFIG & CHECKS
     ########################################################################
 
-    if os.path.isdir(output_dir):  # in case of starting two instances of QUAST in the same second
+    if os.path.isdir(output_dirpath):  # in case of starting two instances of QUAST in the same second
         i = 2
-        base_dir_name = output_dir
-        while os.path.isdir(output_dir):
-            output_dir = base_dir_name + '__' + str(i)
+        base_dirpath = output_dirpath
+        while os.path.isdir(output_dirpath):
+            output_dirpath = base_dirpath + '__' + str(i)
             i += 1
-        print "\nWarning! Output directory already exists! Results will be saved in " + output_dir + "\n"
+        print "\nWarning! Output directory already exists! Results will be saved in " + output_dirpath + "\n"
 
-    if not os.path.isdir(output_dir):
-        os.makedirs(output_dir)
+    if not os.path.isdir(output_dirpath):
+        os.makedirs(output_dirpath)
 
     if qconfig.make_latest_symlink:
+        prev_dirpath = os.getcwd()
+        os.chdir(qconfig.default_results_root_dirname)
+
         latest_symlink = 'latest'
         if os.path.islink(latest_symlink):
             os.remove(latest_symlink)
-        os.symlink(output_dir, latest_symlink)
+        os.symlink(output_dirpath, latest_symlink)
+
+        os.chdir(prev_dirpath)
+
 
     # Json directory
     if qconfig.save_json:
-        if json_output_dir:
-            if not os.path.isdir(json_output_dir):
-                os.makedirs(json_output_dir)
+        if json_outputpath:
+            if not os.path.isdir(json_outputpath):
+                os.makedirs(json_outputpath)
         else:
-            json_output_dir = os.path.join(output_dir, qconfig.default_json_dir_name)
-            if not os.path.isdir(json_output_dir):
-                os.makedirs(json_output_dir)
+            json_outputpath = os.path.join(output_dirpath, qconfig.default_json_dirname)
+            if not os.path.isdir(json_outputpath):
+                os.makedirs(json_outputpath)
+
 
     # Where log will be saved
-    logfile = os.path.join(output_dir, qconfig.logfile)
+    logfile = os.path.join(output_dirpath, qconfig.logfile)
 
     # Where corrected contigs will be saved
-    corrected_dir = os.path.join(output_dir, qconfig.corrected_dir)
+    corrected_dir = os.path.join(output_dirpath, qconfig.corrected_dir)
 
     # Where total report will be saved
-    total_report = os.path.join(output_dir, "transposed_" + qconfig.report_basename)
-    total_report_tr = os.path.join(output_dir, qconfig.report_basename)
+    total_report = os.path.join(output_dirpath, "transposed_" + qconfig.report_basename)
+    total_report_tr = os.path.join(output_dirpath, qconfig.report_basename)
 
     # Where gage report will be saved (option --gage)
-    gage_report = os.path.join(output_dir, qconfig.gage_report_basename)
+    gage_report = os.path.join(output_dirpath, qconfig.gage_report_basename)
 
     # Where all pdfs will be saved
-    all_pdf_filename = os.path.join(output_dir, qconfig.plots_filename)
+    all_pdf_filename = os.path.join(output_dirpath, qconfig.plots_filename)
     all_pdf = None
 
     # Where Single Cell paper-like table will be saved
-    extra_report_filename = os.path.join(output_dir, qconfig.extra_report_filename)
+    extra_report_filename = os.path.join(output_dirpath, qconfig.extra_report_filename)
 
     ########################################################################
 
@@ -304,7 +310,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
             sys.exit(1)
 
         from libs import gage
-        gage.do(qconfig.reference, contigs, output_dir + '/gage', gage_report, qconfig.min_contig, lib_dir)
+        gage.do(qconfig.reference, contigs, output_dirpath + '/gage', gage_report, qconfig.min_contig, lib_dir)
     else:
         if qconfig.draw_plots:
             from libs import plotter  # Do not remove this line! It would lead to a warning in matplotlib.
@@ -318,7 +324,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
         ### Stats and plots
         ########################################################################	
         from libs import basic_stats
-        cur_results_dict = basic_stats.do(qconfig.reference, contigs, output_dir + '/basic_stats', all_pdf, qconfig.draw_plots, json_output_dir, output_dir)
+        cur_results_dict = basic_stats.do(qconfig.reference, contigs, output_dirpath + '/basic_stats', all_pdf, qconfig.draw_plots, json_outputpath, output_dirpath)
         report_dict = extend_report_dict(report_dict, cur_results_dict)
 
         if qconfig.reference:
@@ -326,7 +332,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
             ### PLANTAGORA 
             ########################################################################
             from libs import plantagora
-            cur_results_dict = plantagora.do(qconfig.reference, contigs, qconfig.cyclic, qconfig.rc, output_dir + '/plantagora', lib_dir, qconfig.draw_plots)
+            cur_results_dict = plantagora.do(qconfig.reference, contigs, qconfig.cyclic, qconfig.rc, output_dirpath + '/plantagora', lib_dir, qconfig.draw_plots)
             report_dict = extend_report_dict(report_dict, cur_results_dict)
 
             ########################################################################
@@ -340,14 +346,14 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
             ### NA and NGA ("aligned N and NG")
             ########################################################################
             from libs import aligned_stats
-            cur_results_dict = aligned_stats.do(qconfig.reference, contigs, output_dir + '/plantagora', output_dir + '/aligned_stats', all_pdf, qconfig.draw_plots, json_output_dir, output_dir)
+            cur_results_dict = aligned_stats.do(qconfig.reference, contigs, output_dirpath + '/plantagora', output_dirpath + '/aligned_stats', all_pdf, qconfig.draw_plots, json_outputpath, output_dirpath)
             report_dict = extend_report_dict(report_dict, cur_results_dict)
 
             ########################################################################
             ### GENOME_ANALYZER
             ########################################################################
             from libs import genome_analyzer
-            cur_results_dict = genome_analyzer.do(qconfig.reference, contigs, output_dir + '/genome_analyzer', output_dir + '/plantagora', qconfig.genes, qconfig.operons, all_pdf, qconfig.draw_plots, json_output_dir, output_dir)
+            cur_results_dict = genome_analyzer.do(qconfig.reference, contigs, output_dirpath + '/genome_analyzer', output_dirpath + '/plantagora', qconfig.genes, qconfig.operons, all_pdf, qconfig.draw_plots, json_outputpath, output_dirpath)
             report_dict = extend_report_dict(report_dict, cur_results_dict)
 
             ########################################################################
@@ -355,7 +361,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
             ########################################################################
             if qconfig.with_mauve:
                 from libs import mauve
-                cur_results_dict = mauve.do(qconfig.reference, contigs, output_dir + '/plantagora', output_dir + '/mauve', lib_dir)
+                cur_results_dict = mauve.do(qconfig.reference, contigs, output_dirpath + '/plantagora', output_dirpath + '/mauve', lib_dir)
                 report_dict = extend_report_dict(report_dict, cur_results_dict)
 
 
@@ -373,20 +379,20 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
                 ### GeneMark
                 ########################################################################    
                 from libs import genemark
-                cur_results_dict = genemark.do(contigs, qconfig.genes_lengths, output_dir + '/genemark', lib_dir)
+                cur_results_dict = genemark.do(contigs, qconfig.genes_lengths, output_dirpath + '/genemark', lib_dir)
                 report_dict = extend_report_dict(report_dict, cur_results_dict)
 
         ########################################################################
         ### TOTAL REPORT
         ########################################################################
-        if json_output_dir:
-            json_saver.save_total_report(json_output_dir, report_dict)
+        if json_outputpath:
+            json_saver.save_total_report(json_outputpath, report_dict)
 
         from libs import report_maker
-        report_maker.do(report_dict, total_report, total_report_tr, qconfig.min_contig, output_dir)
+        report_maker.do(report_dict, total_report, total_report_tr, qconfig.min_contig, output_dirpath)
 
         from libs.html_saver import html_saver
-        html_saver.save_total_report(output_dir, report_dict)
+        html_saver.save_total_report(output_dirpath, report_dict)
 
         if qconfig.draw_plots and all_pdf:
             print '  All pdf files are merged to', all_pdf_filename
@@ -395,7 +401,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
         ## and Single Cell paper table
         if qconfig.reference and qconfig.extra_report:
             from libs import extra_report_maker
-            extra_report_maker.do(total_report, output_dir + '/genome_analyzer/genome_info.txt', extra_report_filename, qconfig.min_contig, json_output_dir)
+            extra_report_maker.do(total_report, output_dirpath + '/genome_analyzer/genome_info.txt', extra_report_filename, qconfig.min_contig, json_outputpath)
 
             ########################################################################
 

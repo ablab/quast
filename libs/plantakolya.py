@@ -12,12 +12,13 @@ import fastaparser
 from qutils import id_to_str
 
 def tabline(line):
-    return '\t'.join(str(x) for x in line)
+    return spaceline(line)
+    #return '\t'.join(str(x) for x in line)
 
 def spaceline(line):
     return ' '.join(str(x) for x in line)
 
-def process_misassembled_contig(plantafile, output_file, i_start, i_finish, contig, prev, sorted_aligns, is_1st_chimeric_half, ns, smgap, rcinem, ref_aligns, assembly, misassembled_contigs):
+def process_misassembled_contig(plantafile, output_file, i_start, i_finish, contig, prev, sorted_aligns, is_1st_chimeric_half, ns, smgap, rc, ref_aligns, assembly, misassembled_contigs):
     region_misassemblies = 0
     region_local_misassemblies = 0
     for i in xrange(i_start, i_finish):
@@ -33,12 +34,12 @@ def process_misassembled_contig(plantafile, output_file, i_start, i_finish, cont
         value = [sorted_aligns[i][0], sorted_aligns[i][1], contig, sorted_aligns[i][3], sorted_aligns[i][4]]
         ref_aligns.setdefault(key, []).append(value)
 
-        if sorted_aligns[i][11] != sorted_aligns[i+1][11] or gap > ns + smgap or (rcinem == 0 and strand1 != strand2): # different chromosomes or large gap or different strands
+        if sorted_aligns[i][11] != sorted_aligns[i+1][11] or gap > ns + smgap or (not rc and strand1 != strand2): # different chromosomes or large gap or different strands
             #Contig spans chromosomes or there is a gap larger than 1kb
             #MY: output in coords.filtered
             print >>output_file, tabline(prev)
             prev = sorted_aligns[i+1]
-            print >>plantafile, '\t\t\tExtensive misassembly between these two alignments: [%s] @ %d and %d\n' % (sorted_aligns[i][11], sorted_aligns[i][1], sorted_aligns[i+1][0])
+            print >>plantafile, '\t\t\tExtensive misassembly between these two alignments: [%s] @ %d and %d' % (sorted_aligns[i][11], sorted_aligns[i][1], sorted_aligns[i+1][0])
 
             # Kolya: removed something about ref_features
 
@@ -48,10 +49,10 @@ def process_misassembled_contig(plantafile, output_file, i_start, i_finish, cont
         else:
             if gap < 0:
                 #There is overlap between the two alignments, a local misassembly
-                print >>plantafile, '\t\tOverlap between these two alignments (local misassembly): [%s] %d to %d\n' % (sorted_aligns[i][11], sorted_aligns[i][1], sorted_aligns[i+1][0])
+                print >>plantafile, '\t\tOverlap between these two alignments (local misassembly): [%s] %d to %d' % (sorted_aligns[i][11], sorted_aligns[i][1], sorted_aligns[i+1][0])
             else:
                 #There is a small gap between the two alignments, a local misassembly
-                print >>plantafile, '\t\tGap in alignment between these two alignments (local misassembly): [%s] %d\n' % (sorted_aligns[i][11], sorted_aligns[i][0])
+                print >>plantafile, '\t\tGap in alignment between these two alignments (local misassembly): [%s] %d' % (sorted_aligns[i][11], sorted_aligns[i][0])
 
             region_local_misassemblies += 1
 
@@ -86,7 +87,7 @@ def do(reference, filenames, cyclic, rc, output_dir, lib_dir, draw_plots):
 
     ########################################################################
     #assess_assembly_path1 = os.path.join(lib_dir, 'plantagora/assess_assembly1.pl')
-    assess_assembly_path2 = os.path.join(lib_dir, 'plantagora/assess_assembly2.pl')
+    #assess_assembly_path2 = os.path.join(lib_dir, 'plantagora/assess_assembly2.pl')
     if platform.system() == 'Darwin':
         mummer_path = os.path.join(lib_dir, 'MUMmer3.23-osx')
     else:
@@ -122,15 +123,9 @@ def do(reference, filenames, cyclic, rc, output_dir, lib_dir, draw_plots):
         logfilename_err = output_dir + '/plantakolya_' + os.path.basename(filename) + '.stderr'
         print '    Logging to files', logfilename_out, 'and', os.path.basename(logfilename_err), '...',
 
-        cyclic_option = ''
-        if cyclic :
-            cyclic_option = '--cyclic'
-        rc_option = '' # reverse complementarity is not an extensive misassemble
-        if rc :
-            rc_option = '--rc'
+        # reverse complementarity is not an extensive misassemble
 
         peral = 0.99
-        rcinem = rc
         maxun = 10
         smgap = 1000
         umt = 0.1 # threshold for misassembled contigs with aligned less than $umt * 100% (Unaligned Missassembled Threshold)
@@ -320,12 +315,11 @@ def do(reference, filenames, cyclic, rc, output_dir, lib_dir, draw_plots):
                             ambiguous += 1
                             total_ambiguous += ctg_len
                     else:
-                        #Sort all aligns by position on contig, then length
+                        #Sort all aligns by position on contig, then length # TODO: check if bug in plantagora
                         sorted_aligns = sorted(sorted_aligns, cmp=lambda a, b: (min(a[3], a[4]), b[7], b[9]) < (min(b[3], b[4]), a[7], a[9]))
 
                         #Push first alignment on to real aligns
-                        real_aligns = []
-                        real_aligns.append(sorted_aligns[0])
+                        real_aligns = [sorted_aligns[0]]
                         last_end = max(sorted_aligns[0][3], sorted_aligns[0][4])
 
                         #Walk through alignments, if not fully contained within previous, record as real
@@ -333,7 +327,7 @@ def do(reference, filenames, cyclic, rc, output_dir, lib_dir, draw_plots):
                             #If this alignment extends past last alignment's endpoint, add to real, else skip
                             if sorted_aligns[i][3] > last_end or sorted_aligns[i][4] > last_end:
                                 real_aligns = [sorted_aligns[i]] + real_aligns
-                                last_end = max(sorted_aligns[0][3], sorted_aligns[0][4])
+                                last_end = max(sorted_aligns[i][3], sorted_aligns[i][4])
                             else:
                                 print >>plantafile, '\t\tSkipping [%d][%d] redundant alignment %d %s' % (sorted_aligns[i][0], sorted_aligns[i][1], i, spaceline(sorted_aligns[i]))
                                 # Kolya: removed redundant code about $ref
@@ -366,7 +360,6 @@ def do(reference, filenames, cyclic, rc, output_dir, lib_dir, draw_plots):
                             #There is more than one alignment of this contig to the reference
                             print >>plantafile, '\t\tThis contig is misassembled. %d total aligns.' % num_aligns
                             #Reset real alignments and sum of real alignments
-                            sum_real = 0
                             #Sort real alignments by position on the reference
                             sorted_aligns = sorted(real_aligns, cmp=lambda a, b: (a[11], a[0]) < (b[11], b[0]))
                             # Counting misassembled contigs which are partially unaligned
@@ -394,7 +387,7 @@ def do(reference, filenames, cyclic, rc, output_dir, lib_dir, draw_plots):
                                     prev = sorted_aligns[chimeric_index]
 
                                     # process "last half" of blocks
-                                    x, y = process_misassembled_contig(plantafile, coords_filtered_file, chimeric_index, sorted_num, contig, prev, sorted_aligns, True, ns, smgap, rcinem, ref_aligns, assembly, misassembled_contigs)
+                                    x, y = process_misassembled_contig(plantafile, coords_filtered_file, chimeric_index, sorted_num, contig, prev, sorted_aligns, True, ns, smgap, rc, ref_aligns, assembly, misassembled_contigs)
                                     region_misassemblies += x
                                     region_local_misassemblies += y
                                     print >>plantafile, '\t\t\tChimerical misassembly between these two alignments: [%s] @ %d and %d' % (sorted_aligns[sorted_num][11], sorted_aligns[sorted_num][1], sorted_aligns[0][0])
@@ -406,14 +399,14 @@ def do(reference, filenames, cyclic, rc, output_dir, lib_dir, draw_plots):
                                     prev[7] += sorted_aligns[0][7] # [LEN2]
 
                                     # process "first half" of blocks
-                                    x, y = process_misassembled_contig(plantafile, coords_filtered_file, 0, chimeric_index - 1, contig, prev, sorted_aligns, False, ns, smgap, rcinem, ref_aligns, assembly, misassembled_contigs)
+                                    x, y = process_misassembled_contig(plantafile, coords_filtered_file, 0, chimeric_index - 1, contig, prev, sorted_aligns, False, ns, smgap, rc, ref_aligns, assembly, misassembled_contigs)
                                     region_misassemblies += x
                                     region_local_misassemblies += y
 
                             if not chimeric_found:
                                 #MY: for merging local misassemlbies
                                 prev = sorted_aligns[0]
-                                x, y = process_misassembled_contig(plantafile, coords_filtered_file, 0, sorted_num, contig, prev, sorted_aligns, False, ns, smgap, rcinem, ref_aligns, assembly, misassembled_contigs)
+                                x, y = process_misassembled_contig(plantafile, coords_filtered_file, 0, sorted_num, contig, prev, sorted_aligns, False, ns, smgap, rc, ref_aligns, assembly, misassembled_contigs)
                                 region_misassemblies += x
                                 region_local_misassemblies += y
 
@@ -515,8 +508,12 @@ def do(reference, filenames, cyclic, rc, output_dir, lib_dir, draw_plots):
             plot_logfile_out.close()
             plot_logfile_err.close()
             print 'saved to', plotfilename + '.ps'
+            for ext in ['.gp', '.rplot', '.fplot']: # remove redundant files
+                if os.path.isfile(plotfilename + ext):
+                    os.remove(plotfilename + ext)
 
         # compute nucmer average % IDY
+
         if os.path.isfile(nucmerfilename + '.coords'):
             file = open(nucmerfilename + '.coords')
             sum_idy = 0.0
@@ -532,20 +529,17 @@ def do(reference, filenames, cyclic, rc, output_dir, lib_dir, draw_plots):
                 avg = sum_idy / num
             else:
                 avg = 0
+            avg = '%3.2f'% avg
             file.close()
         else:
             print '  ERROR: nucmer coord file (' + nucmerfilename + ') not found, skipping...'
             avg = 'N/A'
         print '    Average %IDY = ', avg
-        report_dict[os.path.basename(filename)].append('%3.2f' % avg)
+        report_dict[os.path.basename(filename)].append(avg)
         # delete temporary files
         for ext in ['.delta', '.mgaps', '.ntref', '.gp']:
             if os.path.isfile(nucmerfilename + ext):
                 os.remove(nucmerfilename + ext)
-        if draw_plots:
-            for ext in ['.gp', '.rplot', '.fplot']:
-                if os.path.isfile(plotfilename + ext):
-                    os.remove(plotfilename + ext)
         if os.path.isfile('nucmer.error'):
             os.remove('nucmer.error')
         if os.path.isfile(filename + '.clean'):

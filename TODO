@@ -1,0 +1,7 @@
+rm:
+1. "test" folder
+2. make_tar.sh
+3. clean.sh
+
+fix:
+1. manual.html

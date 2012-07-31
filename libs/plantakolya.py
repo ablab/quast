@@ -4,7 +4,6 @@
 # See file LICENSE for details.
 ############################################################################
 import os
-import re
 import platform
 import string
 import subprocess
@@ -430,6 +429,11 @@ def do(reference, filenames, cyclic, rc, output_dir, lib_dir, draw_plots):
             report_dict[os.path.basename(filename)].append(total_unaligned)
             report_dict[os.path.basename(filename)].append('%d (%d)' % (ambiguous, total_ambiguous))
 
+
+            ## outputting misassembled contigs in separate file
+            fasta = [(name, seq) for name, seq in fastaparser.read_fasta(filename) if name in extensive_misassembled_contigs]
+            fastaparser.write_fasta_to_file(output_dir + '/' + os.path.basename(filename) + '.mis_contigs', fasta)
+
         plantafile.close()
         print 'done.'
 
@@ -463,10 +467,6 @@ def do(reference, filenames, cyclic, rc, output_dir, lib_dir, draw_plots):
         ## find metrics for total report:
 
         report_dict[os.path.basename(filename)] += ['N/A'] * (len(report_dict['header']) - len(report_dict[os.path.basename(filename)]))
-
-        ## outputting misassembled contigs in separate file
-        fasta = [(name, seq) for name, seq in fastaparser.read_fasta(filename) if name in extensive_misassembled_contigs]
-        fastaparser.write_fasta_to_file(output_dir + '/' + os.path.basename(filename) + '.mis_contigs', fasta)
 
     print '  Done'
 

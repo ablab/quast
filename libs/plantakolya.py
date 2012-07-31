@@ -18,7 +18,7 @@ def tabline(line):
 def spaceline(line):
     return ' '.join(str(x) for x in line)
 
-def process_misassembled_contig(plantafile, output_file, i_start, i_finish, contig, prev, sorted_aligns, is_1st_chimeric_half, ns, smgap, rc, ref_aligns, assembly, misassembled_contigs):
+def process_misassembled_contig(plantafile, output_file, i_start, i_finish, contig, prev, sorted_aligns, is_1st_chimeric_half, ns, smgap, rc, assembly, misassembled_contigs):
     region_misassemblies = 0
     region_local_misassemblies = 0
     for i in xrange(i_start, i_finish):
@@ -29,10 +29,6 @@ def process_misassembled_contig(plantafile, output_file, i_start, i_finish, cont
         #Check strands
         strand1 = (sorted_aligns[i][3] > sorted_aligns[i][4])
         strand2 = (sorted_aligns[i+1][3] > sorted_aligns[i+1][4])
-
-        key = sorted_aligns[i][11]
-        value = [sorted_aligns[i][0], sorted_aligns[i][1], contig, sorted_aligns[i][3], sorted_aligns[i][4]]
-        ref_aligns.setdefault(key, []).append(value)
 
         if sorted_aligns[i][11] != sorted_aligns[i+1][11] or gap > ns + smgap or (not rc and strand1 != strand2): # different chromosomes or large gap or different strands
             #Contig spans chromosomes or there is a gap larger than 1kb
@@ -70,9 +66,6 @@ def process_misassembled_contig(plantafile, output_file, i_start, i_finish, cont
         #Record the very last alignment
         i = i_finish
         print >>plantafile, '\t\t\tReal Alignment %d: %s' % (i+1, spaceline(sorted_aligns[i]))
-        key = sorted_aligns[i][11]
-        value = [sorted_aligns[i][0], sorted_aligns[i][1], contig, sorted_aligns[i][3], sorted_aligns[i][4]]
-        ref_aligns.setdefault(key, []).append(value)
 
     return list(prev), region_misassemblies, region_local_misassemblies
 
@@ -195,7 +188,6 @@ def do(reference, filenames, cyclic, rc, output_dir, lib_dir, draw_plots):
             # Loading the reference sequences
             print >>plantafile, 'Loading Reference...'
             references = {}
-            ref_aligns = {}
             for name, seq in fastaparser.read_fasta(reference):
                 name = name.split()[0] # no spaces in reference header
                 references[name] = seq
@@ -295,9 +287,6 @@ def do(reference, filenames, cyclic, rc, output_dir, lib_dir, draw_plots):
                             print >>plantafile, '\t\tOne align captures most of this contig: %s' % spaceline(top_aligns[0])
                             #MY: output in coords.filtered
                             print >>coords_filtered_file, spaceline(top_aligns[0])
-                            key = top_aligns[0][11]
-                            value = [top_aligns[0][0], top_aligns[0][1], contig, top_aligns[0][3], top_aligns[0][4]]
-                            ref_aligns.setdefault(key, []).append(value)
                         else:
                             #There is more than one top align
                             print >>plantafile, '\t\tThis contig has %d significant alignments. [ambiguous]' % len(top_aligns)
@@ -350,9 +339,6 @@ def do(reference, filenames, cyclic, rc, output_dir, lib_dir, draw_plots):
                                 print >>plantafile, '\t\tThis contig is partially unaligned. (%d out of %d)' % (top_len, ctg_len)
                                 print >>plantafile, '\t\tUnaligned bases: 1 to %d (%d)' % (begin, begin - 1)
                                 print >>plantafile, '\t\tUnaligned bases: %d to %d (%d)' % (end, ctg_len, ctg_len - end)
-                            key = sorted_aligns[0][11]
-                            value = [sorted_aligns[0][0], sorted_aligns[0][1], contig, sorted_aligns[0][3], sorted_aligns[0][4]]
-                            ref_aligns.setdefault(key, []).append(value)
                         else:
                             #There is more than one alignment of this contig to the reference
                             print >>plantafile, '\t\tThis contig is misassembled. %d total aligns.' % num_aligns
@@ -384,7 +370,7 @@ def do(reference, filenames, cyclic, rc, output_dir, lib_dir, draw_plots):
                                     prev = list(sorted_aligns[chimeric_index])
 
                                     # process "last half" of blocks
-                                    prev, x, y = process_misassembled_contig(plantafile, coords_filtered_file, chimeric_index, sorted_num, contig, prev, sorted_aligns, True, ns, smgap, rc, ref_aligns, assembly, misassembled_contigs)
+                                    prev, x, y = process_misassembled_contig(plantafile, coords_filtered_file, chimeric_index, sorted_num, contig, prev, sorted_aligns, True, ns, smgap, rc, assembly, misassembled_contigs)
                                     region_misassemblies += x
                                     region_local_misassemblies += y
                                     print >>plantafile, '\t\t\tChimerical misassembly between these two alignments: [%s] @ %d and %d' % (sorted_aligns[sorted_num][11], sorted_aligns[sorted_num][1], sorted_aligns[0][0])
@@ -396,7 +382,7 @@ def do(reference, filenames, cyclic, rc, output_dir, lib_dir, draw_plots):
                                     prev[7] += sorted_aligns[0][7] # [LEN2]
 
                                     # process "first half" of blocks
-                                    prev, x, y = process_misassembled_contig(plantafile, coords_filtered_file, 0, chimeric_index - 1, contig, prev, sorted_aligns, False, ns, smgap, rc, ref_aligns, assembly, misassembled_contigs)
+                                    prev, x, y = process_misassembled_contig(plantafile, coords_filtered_file, 0, chimeric_index - 1, contig, prev, sorted_aligns, False, ns, smgap, rc, assembly, misassembled_contigs)
                                     region_misassemblies += x
                                     region_local_misassemblies += y
 
@@ -404,7 +390,7 @@ def do(reference, filenames, cyclic, rc, output_dir, lib_dir, draw_plots):
                                 print >>plantafile, "here", sorted_aligns
                                 #MY: for merging local misassemlbies
                                 prev = list(sorted_aligns[0])
-                                prev, x, y = process_misassembled_contig(plantafile, coords_filtered_file, 0, sorted_num, contig, prev, sorted_aligns, False, ns, smgap, rc, ref_aligns, assembly, misassembled_contigs)
+                                prev, x, y = process_misassembled_contig(plantafile, coords_filtered_file, 0, sorted_num, contig, prev, sorted_aligns, False, ns, smgap, rc, assembly, misassembled_contigs)
                                 region_misassemblies += x
                                 region_local_misassemblies += y
                                 print >>plantafile, "there", sorted_aligns

@@ -11,6 +11,72 @@ import subprocess
 import fastaparser
 from qutils import id_to_str
 
+def tabline(line):
+    return '\t'.join(str(x) for x in line)
+
+def process_misassembled_contig(plantafile, output_file, i_start, i_finish, contig, prev, sorted_aligns, is_1st_chimeric_half, ns, smgap, rcinem, ref_aligns, assembly, misassembled_contigs):
+    region_misassemblies = 0
+    region_local_misassemblies = 0
+    for i in xrange(i_start, i_finish):
+        print >>plantafile, '\t\t\tReal Alignment %d: %s' % (i+1, sorted_aligns[i])
+        #Calculate the distance on the reference between the end of the first alignment and the start of the second
+        gap = sorted_aligns[i+1][0] - sorted_aligns[i][1]
+
+        #Check strands
+        strand1 = (sorted_aligns[i][3] > sorted_aligns[i][4])
+        strand2 = (sorted_aligns[i+1][3] > sorted_aligns[i+1][4])
+
+        key = sorted_aligns[i][11]
+        value = [sorted_aligns[i][0], sorted_aligns[i][1], contig, sorted_aligns[i][3], sorted_aligns[i][4]]
+        ref_aligns.setdefault(key, []).append(value)
+
+        if sorted_aligns[i][11] != sorted_aligns[i+1][11] or gap > ns + smgap or (rcinem == 0 and strand1 != strand2): # different chromosomes or large gap or different strands
+            #Contig spans chromosomes or there is a gap larger than 1kb
+            #MY: output in coords.filtered
+            print >>output_file, tabline(prev)
+            prev = sorted_aligns[i+1]
+            print >>plantafile, '\t\t\tExtensive misassembly between these two alignments: [%s] @ %d and %d\n' % (sorted_aligns[i][11], sorted_aligns[i][1], sorted_aligns[i+1][0])
+
+            # Kolya: removed something about ref_features
+
+            region_misassemblies += 1
+            misassembled_contigs[contig] = assembly[contig]
+
+        else:
+            if gap < 0:
+                #There is overlap between the two alignments, a local misassembly
+                print >>plantafile, '\t\t\tOverlap between these two alignments (local misassembly): [%s] @ %d and %d\n' % (sorted_aligns[i][11], sorted_aligns[i][1], sorted_aligns[i+1][0])
+            else:
+                #There is a small gap between the two alignments, a local misassembly
+                print >>plantafile, '\t\t\tGap in alignment  between these two alignments (local misassembly): [%s] @ %d and %d\n' % (sorted_aligns[i][11], sorted_aligns[i][1], sorted_aligns[i+1][0])
+
+            region_local_misassemblies += 1
+
+            #MY:
+            prev[1] = sorted_aligns[i+1][1] # [E1]
+            prev[3] = 0 # [S2]
+            prev[4] = 0 # [E2]
+            prev[6] = prev[1] - prev[0] # [LEN1]
+            if gap < 0:
+                prev[7] = prev[7] + sorted_aligns[i+1][7] + gap # [LEN2]
+            else:
+                prev[7] = prev[7] + sorted_aligns[i+1][7] # [LEN2]
+
+
+        #MY: output in coords.filtered
+        if not is_1st_chimeric_half:
+            print >>output_file, tabline(prev)
+
+        #Record the very last alignment
+        i = i_finish
+        print >>plantafile, '\t\t\tReal Alignment %d: %s' % (i+1, sorted_aligns[i])
+        key = sorted_aligns[i][11]
+        value = [sorted_aligns[i][0], sorted_aligns[i][1], contig, sorted_aligns[i][3], sorted_aligns[i][4]]
+        ref_aligns.setdefault(key, []).append(value)
+
+    return region_misassemblies, region_local_misassemblies
+
+
 def do(reference, filenames, cyclic, rc, output_dir, lib_dir, draw_plots):
     if not os.path.isdir(output_dir):
         os.mkdir(output_dir)
@@ -64,11 +130,13 @@ def do(reference, filenames, cyclic, rc, output_dir, lib_dir, draw_plots):
         rcinem = rc
         maxun = 10
         smgap = 1000
+        umt = 0.1 # threshold for misassembled contigs with aligned less than $umt * 100% (Unaligned Missassembled Threshold)
 
         coords_filename = nucmerfilename + '.coords'
         delta_filename = nucmerfilename + '.delta'
         snps_filename = nucmerfilename + '.snps'
         coords_btab_filename = nucmerfilename + '.coords.btab'
+        coords_filtered_filename = nucmerfilename + '.coords.filtered'
         unaligned_filename = nucmerfilename + '.unaligned'
 
         if os.path.isfile(coords_filename):
@@ -78,7 +146,7 @@ def do(reference, filenames, cyclic, rc, output_dir, lib_dir, draw_plots):
 
         # TODO: clean contigs?
 
-        print 'NUCmer...',
+        print 'NUCmer... ',
         subprocess.call(['nucmer', '--maxmatch', '-p', nucmerfilename, reference, filename],
             stdout=open(logfilename_out, 'a'), stderr=open(logfilename_err, 'a'), env=myenv)
         subprocess.call(['show-coords', '-B', delta_filename],
@@ -87,26 +155,37 @@ def do(reference, filenames, cyclic, rc, output_dir, lib_dir, draw_plots):
         import sympalign
         sympalign.do(1, coords_filename, [coords_btab_filename])
 
+        print '  Plantakolya... ',
+
         if not os.path.isfile(coords_filename):
             print 'failed'
         else:
+            plantafile = open(logfilename_out, 'a')
+
             # TODO: check: Nucmer ended early?
             subprocess.call(['show-snps', '-T', delta_filename], stdout=open(snps_filename, 'w'), stderr=open(logfilename_err, 'a'), env=myenv)
             # TODO: check: Show-snps failed?
 
             # Loading the alignment files
-            print 'Parsing coords...'
+            print >>plantafile, 'Parsing coords...'
             aligns = {}
             coords_file = open(coords_filename)
-            coords_file.readline()
-            coords_file.readline()
+            coords_filtered_file = open(coords_filtered_filename, 'w')
+            coords_filtered_file.write(coords_file.readline())
+            coords_filtered_file.write(coords_file.readline())
             for line in coords_file:
+                assert line[0] != '='
+                #Clear leading spaces from nucmer output
+                #Store nucmer lines in an array
                 line = line.split()
                 contig = line[12]
+                for i in [0, 1, 3, 4, 6, 7]:
+                    line[i] = int(line[i])
+                line[9] = float(line[9])
                 aligns.setdefault(contig, []).append(line)
 
             # Loading the assembly contigs
-            print 'Loading Assembly...'
+            print >>plantafile, 'Loading Assembly...'
             assembly = {}
             assembly_ns = {}
             for name, seq in fastaparser.read_fasta(filename):
@@ -116,14 +195,15 @@ def do(reference, filenames, cyclic, rc, output_dir, lib_dir, draw_plots):
                     assembly_ns[name] = [pos for pos in xrange(len(seq)) if seq[pos] == 'N']
 
             # Loading the reference sequences
-            print 'Loading Reference...'
+            print >>plantafile, 'Loading Reference...'
             references = {}
+            ref_aligns = {}
             for name, seq in fastaparser.read_fasta(reference):
                 references[name] = seq
-                print '\tLoaded [%s]' % name
+                print >>plantafile, '\tLoaded [%s]' % name
 
             # Loading the SNP calls
-            print 'Loading SNPs...'
+            print >>plantafile, 'Loading SNPs...'
             snps = {}
             snps_locs = {}
             for line in open(snps_filename):
@@ -134,26 +214,26 @@ def do(reference, filenames, cyclic, rc, output_dir, lib_dir, draw_plots):
                 ctg = line[11]
                 # TODO: check: Malformed line in SNP file
                 if line[1] == '.':
-                    snps.setdefault(ref, {}).setdefault(ctg, {})[line[0]] == 'I'
+                    snps.setdefault(ref, {}).setdefault(ctg, {})[line[0]] = 'I'
                 elif line[2] == '.':
-                    snps.setdefault(ref, {}).setdefault(ctg, {})[line[0]] == 'D'
+                    snps.setdefault(ref, {}).setdefault(ctg, {})[line[0]] = 'D'
                 else:
-                    snps.setdefault(ref, {}).setdefault(ctg, {})[line[0]] == 'S'
+                    snps.setdefault(ref, {}).setdefault(ctg, {})[line[0]] = 'S'
                 snps_locs.setdefault(ref, {}).setdefault(ctg, {})[line[0]] = line[3]
 
             # Loading the regions (if any)
             regions = {}
             total_reg_len = 0
             total_regions = 0
-            print 'Loading Regions...'
+            print >>plantafile, 'Loading Regions...'
             # TODO: gff
-            print '\tNo regions given, using whole reference.';
+            print >>plantafile, '\tNo regions given, using whole reference.';
             for name, seq in references.iteritems():
                 regions.setdefault(name, []).append([1, len(seq)])
                 total_regions += 1
                 total_reg_len += len(seq)
-            print '\tTotal Regions: %d' % total_regions
-            print '\tTotal Region Length: %d' % total_reg_len
+            print >>plantafile, '\tTotal Regions: %d' % total_regions
+            print >>plantafile, '\tTotal Region Length: %d' % total_reg_len
 
             aligned = 0
             unaligned = 0
@@ -168,270 +248,247 @@ def do(reference, filenames, cyclic, rc, output_dir, lib_dir, draw_plots):
 
             region_misassemblies = 0
             region_local_misassemblies = 0
-            misassembled_contigs = []
+            misassembled_contigs = {}
 
-            print 'Analyzing contigs...'
+            print >>plantafile, 'Analyzing contigs...'
 
-            unaligned_id = open(unaligned_filename, 'w')
+            unaligned_file = open(unaligned_filename, 'w')
             for contig, seq in assembly.iteritems():
                 #Recording contig stats
                 ctg_len = len(seq)
-                # TODO: if ( exists $assembly_ns{$contig} ) { $ns = scalar( keys %{$assembly_ns{$contig}});} else { $ns = 0;}
-                print '\tCONTIG: %s (%dbp)' % (contig, ctg_len)
+                if contig in assembly_ns:
+                    ns = len(assembly_ns[contig])
+                else:
+                    ns = 0
+                print >>plantafile, '\tCONTIG: %s (%dbp)' % (contig, ctg_len)
                 #Check if this contig aligned to the reference
                 if contig in aligns:
                     #Pull all aligns for this contig
                     num_aligns = len(aligns[contig])
 
                     #Sort aligns by length and identity
-                    sorted_aligns = sorted(aligns[contig], cmp=lambda a, b: (a[7]*a[9] < b[7]*b[9]) or (a[7] < b[7]))
+                    sorted_aligns = sorted(aligns[contig], cmp=lambda a, b: (b[7]*b[9], b[7]) < (a[7]*a[9], a[7]))
                     top_len = sorted_aligns[0][7]
                     top_id = sorted_aligns[0][9]
-                    print sorted_aligns
                     top_aligns = []
-                    print 'Top Length: %s  Top ID: %s' % (top_len, top_id)
+                    print >>plantafile, 'Top Length: %s  Top ID: %s' % (top_len, top_id)
 
                     #Check that top hit captures most of the contig (>99% or within 10 bases)
                     if top_len > ctg_len * peral or ctg_len - top_len < maxun:
                         #Reset top aligns: aligns that share the same value of longest and higest identity
                         pass
-#                        $top_aligns[0] = shift(@sorted);
-#
-#                        #Continue grabbing alignments while length and identity are identical
-#                        while ( @sorted && $top_len == $sorted[0][7] && $top_id == $sorted[0][9]){
-#                            push (@top_aligns, shift(@sorted) );
-#                        }
-#
-#                        #Mark other alignments as ambiguous
-#                        while (@sorted) {
-#                        @ambig = @{pop(@sorted)};
-#                        if ($verbose) { print "\t\tMarking as ambiguous: @ambig\n";}
-#                        for ($i = $ambig[0]; $i <= $ambig[1]; $i++){
-#                        if (defined $ref && ! exists $ref_features{$ref}[$i]) {$ref_features{$ref}[$i] = "A";}
-#                        }
-#                        }
-#
-#                        if (@top_aligns < 2){
-#                        #There is only one top align, life is good
-#                        if ($verbose) {
-#                        print "\t\tOne align captures most of this contig: @{$top_aligns[0]}\n";
-#                        #MY: output in coords.filtered
-#                        print COORDS_FILT "@{$top_aligns[0]}\n";
-#                        }
-#                        push (@{$ref_aligns{$top_aligns[0][11]}}, [$top_aligns[0][0], $top_aligns[0][1], $contig, $top_aligns[0][3], $top_aligns[0][4]]);
-#                        } else {
-#                        #There is more than one top align
-#                        if ($verbose) {print "\t\tThis contig has ", scalar(@top_aligns)," significant alignments. [ambiguous]\n";}
-#                        #MY: output in coords.filtered (for genes - all alignments, and for NA - only one!)
-#                        print COORDS_FILT "@{$top_aligns[0]}\n";
-#
-#                        #Record these alignments as ambiguous on the reference
-#                        foreach $align (@top_aligns){
-#                        @alignment = @{$align};
-#                        $ref = $alignment[11];
-#                        if ($verbose) {print "\t\t\tAmbiguous Alignment: @alignment\n";}
-#                        for ($i=$alignment[0]; $i <= $alignment[1]; $i++){
-#                        if (! exists $ref_features{$ref}[$i]) {$ref_features{$ref}[$i] = "A";}
-#                        }
-#                        }
-#
-#                        #Increment count of ambiguous contigs and bases
-#                        $ambiguous++;
-#                        $total_ambiguous += $ctg_len;
-#                        }
-#
-#                    } else {
-#
-#                    #Sort  all aligns by position on contig, then length
-#                    @sorted = sort {@a = @{$a};
-#                    @b = @{$b};
-#                    if ($a[3] < $a[4]) {$start_a = $a[3];} else {$start_a = $a[4];}
-#                    if ($b[3] < $b[4]) {$start_b = $b[3];} else {$start_b = $b[4];}
-#                    $start_a <=> $start_b || $b[7] <=> $a[7] || $b[9] <=> $a[9]} @sorted;
-#
-#                    #Push first alignment on to real aligns
-#                    @real_aligns = ();
-#                    push (@real_aligns, [@{$sorted[0]}]);
-#                    if ($sorted[0][3] > $sorted[0][4]) { $last_end = $sorted[0][3]; } else { $last_end = $sorted[0][4]; }
-#
-#                    #Walk through alignments, if not fully contained within previous, record as real
-#                    for ($i = 1; $i < $num_aligns; $i++) {
-#                    #If this alignment extends past last alignment's endpoint, add to real, else skip
-#                    if ($sorted[$i][3] > $last_end || $sorted[$i][4] > $last_end) {
-#                        unshift (@real_aligns, [@{$sorted[$i]}]);
-#                    if ($sorted[$i][3] > $sorted[$i][4]) { $last_end = $sorted[$i][3]; } else { $last_end = $sorted[$i][4]; }
-#                    } else {
-#                    if ($verbose) {print "\t\tSkipping [$sorted[$i][0]][$sorted[$i][1]] redundant alignment ",$i," @{$sorted[$i]}\n";}
-#                    for ($j = $sorted[$i][0]; $j <= $sorted[$i][1]; $j++){
-#                    if (defined $ref && ! exists $ref_features{$ref}[$j]) {$ref_features{$ref}[$j] = "A";}
-#                    }
-#                    }
-#                    }
-#
-#                    $num_aligns = scalar(@real_aligns);
-#
-#                    if ($num_aligns < 2){
-#                    #There is only one alignment of this contig to the reference
-#                    #MY: output in coords.filtered
-#                    print COORDS_FILT "@{$real_aligns[0]}\n";
-#
-#                    #Is the contig aligned in the reverse compliment?
-#                    $rc = $sorted[0][3] > $sorted[0][4];
-#
-#                    #Record beginning and end of alignment in contig
-#                    if ($rc) {
-#                    $end = $sorted[0][3];
-#                    $begin = $sorted[0][4];
-#                    } else {
-#                    $end = $sorted[0][4];
-#                    $begin = $sorted[0][3];
-#                    }
-#
-#
-#                    if ($begin-1 || $ctg_len-$end) {
-#                    #Increment tally of partially unaligned contigs
-#                    $partially_unaligned++;
-#                    #Increment tally of partially unaligned bases
-#                    $total_unaligned += $begin-1;
-#                    $total_unaligned += $ctg_len-$end;
-#                    if ($verbose) {print "\t\tThis contig is partially unaligned. ($top_len out of $ctg_len)\n";}
-#                    if ($verbose) {print "\t\tUnaligned bases: 1 to $begin (", $begin-1, ")\n";}
-#                    if ($verbose) {print "\t\tUnaligned bases: $end to $ctg_len (", $ctg_len-$end, ")\n";}
-#                    }
-#
-#                    push (@{$ref_aligns{$sorted[0][11]}}, [$sorted[0][0], $sorted[0][1], $contig, $sorted[0][3], $sorted[0][4]]);
-#
-#                    } else {
-#                    #There is more than one alignment of this contig to the reference
-#                    if ($verbose) {print "\t\tThis contig is misassembled. $num_aligns total aligns.\n";}
-#
-#                    #Reset real alignments and sum of real alignments
-#                    $sum = 0;
-#
-#                    #Sort real alignments by position on the reference
-#                    @sorted = sort {@a = @{$a}; @b = @{$b}; $a[11] cmp $b[11] || $a[0] <=> $b[0]} @real_aligns;
-#
-#                    # Counting misassembled contigs which are partially unaligned
-#                    my $all_aligns_len = 0;
-#                    for ($i = 0; $i < @sorted; $i++) { $all_aligns_len += $sorted[$i][7]; }
-#
-#                    if ( $all_aligns_len/$ctg_len < $umt ) {
-#                    if ($verbose) {print "\t\t\tWarning! Contig length is $ctg_len and total length of all aligns is $all_aligns_len\n";}
-#                    $misassembled_partially_unaligned += 1;
-#                    }
-#
-#                    $sorted_num = @sorted-1;
-#                    $chimeric_found = 0;
-#                    #MY: computing cyclic references
-#                    if ($cyclic) {
-#                    if ($sorted[0][0]-1 + $total_reg_len-$sorted[$sorted_num][1] <= $ns+$smgap) {  # chimerical misassembly
-#                    $chimeric_found = 1;
-#
-#                    # find chimerical alignment between "first" blocks and "last" blocks
-#                    $chimeric_index = 0;
-#                    for ($i = 0; $i < $sorted_num; $i++){
-#                    $gap = $sorted[$i+1][0]-$sorted[$i][1];
-#                    if ($gap > $ns+$smgap) {
-#                    $chimeric_index = $i+1;
-#                    last;
-#                    }
-#                    }
-#
-#                    #MY: for merging local misassemlbies
-#                    @prev = @{$sorted[$chimeric_index]};
-#
-#                    # process "last half" of blocks
-#                    &process_misassembled_contig(*COORDS_FILT, $chimeric_index, $sorted_num, $contig, \@prev, \@sorted, 1);
-#                    if ($verbose) {print "\t\t\tChimerical misassembly between these two alignments: [$sorted[$sorted_num][11]] @ $sorted[$sorted_num][1] and $sorted[0][0]\n";}
-#
-#                    $prev[1] = $sorted[0][1];                  # [E1]
-#                    $prev[3] = 0;                              # [S2]
-#                    $prev[4] = 0;                              # [E2]
-#                    $prev[6] += $sorted[0][1]-$sorted[0][0]+1; # [LEN1]
-#                    $prev[7] += $sorted[0][7];                 # [LEN2]
-#
-#                    # process "first half" of blocks
-#                    &process_misassembled_contig(*COORDS_FILT, 0, ($chimeric_index-1), $contig, \@prev, \@sorted, 0);
-#                    }
-#                    }
-#
-#                    if (!$chimeric_found) {
-#                    #MY: for merging local misassemlbies
-#                    @prev = @{$sorted[0]};
-#                    &process_misassembled_contig(*COORDS_FILT, 0, $sorted_num, $contig, \@prev, \@sorted, 0);
-#                    }
-#                    }
-#                    }
-#                    } else {
-#                    #No aligns to this contig
-#                    if ($verbose) {print "\t\tThis contig is unaligned. ($ctg_len bp)\n";}
-#                    print UNALIGNED_IDS "$contig\n";
-#
-#                    #Increment unaligned contig count and bases
-#                    $unaligned++;
-#                    $total_unaligned += $ctg_len;
-#                    if ($verbose) {print "\t\tUnaligned bases: $ctg_len  total: $total_unaligned\n";}
-#                    }
-#                    }
-#                    close (COORDS_FILT);
-#                    close (UNALIGNED_IDS);
+                        top_aligns.append(sorted_aligns[0])
+                        sorted_aligns = sorted_aligns[1:]
+
+                        #Continue grabbing alignments while length and identity are identical
+                        while sorted_aligns and top_len == sorted_aligns[0][7] and top_id == sorted_aligns[0][9]:
+                            top_aligns.append(sorted_aligns[0])
+                            sorted_aligns = sorted_aligns[1:]
+
+                        #Mark other alignments as ambiguous
+                        while sorted_aligns:
+                            ambig = sorted_aligns.pop()
+                            print >>plantafile, '\t\tMarking as ambiguous: %s' % ambig
+                            # Kolya: removed redundant code about $ref
+
+                        if len(top_aligns) < 2:
+                            #There is only one top align, life is good
+                            print >>plantafile, '\t\tOne align captures most of this contig: %s' % top_aligns[0]
+                            #MY: output in coords.filtered
+                            print >>coords_filtered_file, tabline(top_aligns[0])
+                            key = top_aligns[0][11]
+                            value = [top_aligns[0][0], top_aligns[0][1], contig, top_aligns[0][3], top_aligns[0][4]]
+                            ref_aligns.setdefault(key, []).append(value)
+                        else:
+                            #There is more than one top align
+                            print >>plantafile, '\t\tThis contig has %d significant alignments. [ambiguous]' % len(top_aligns)
+                            #MY: output in coords.filtered (for genes - all alignments, and for NA - only one!)
+                            print >>coords_filtered_file, tabline(top_aligns[0])
+                            #Record these alignments as ambiguous on the reference
+                            for align in top_aligns:
+                                print >>plantafile, '\t\t\tAmbiguous Alignment: %s' % align
+                                # Kolya: removed redundant code about $ref
+                            #Increment count of ambiguous contigs and bases
+                            ambiguous += 1
+                            total_ambiguous += ctg_len
+                    else:
+                        #Sort all aligns by position on contig, then length
+                        sorted_aligns = sorted(sorted_aligns, cmp=lambda a, b: (min(a[3], a[4]), b[7], b[9]) < (min(b[3], b[4]), a[7], a[9]))
+
+                        #Push first alignment on to real aligns
+                        real_aligns = []
+                        real_aligns.append(sorted_aligns[0])
+                        last_end = max(sorted_aligns[0][3], sorted_aligns[0][4])
+
+                        #Walk through alignments, if not fully contained within previous, record as real
+                        for i in xrange(1, num_aligns):
+                            #If this alignment extends past last alignment's endpoint, add to real, else skip
+                            if sorted_aligns[i][3] > last_end or sorted_aligns[i][4] > last_end:
+                                real_aligns = [sorted_aligns[i]] + real_aligns
+                                last_end = max(sorted_aligns[0][3], sorted_aligns[0][4])
+                            else:
+                                print >>plantafile, '\t\tSkipping [%d][%d] redundant alignment %d %s' % (sorted_aligns[i][0], sorted_aligns[i][1], i, sorted_aligns[i])
+                                # Kolya: removed redundant code about $ref
+
+                        num_aligns = len(real_aligns)
+                        if num_aligns < 2:
+                            #There is only one alignment of this contig to the reference
+                            #MY: output in coords.filtered
+                            print >>coords_filtered_file, tabline(real_aligns[0])
+
+                            #Is the contig aligned in the reverse compliment?
+                            #Record beginning and end of alignment in contig
+                            if sorted_aligns[0][3] > sorted_aligns[0][4]:
+                                end, begin = sorted_aligns[0][3], sorted_aligns[0][4]
+                            else:
+                                end, begin = sorted_aligns[0][4], sorted_aligns[0][3]
+                            if (begin - 1) or (ctg_len - end):
+                                #Increment tally of partially unaligned contigs
+                                partially_unaligned += 1
+                                #Increment tally of partially unaligned bases
+                                total_unaligned += begin - 1
+                                total_unaligned += ctg_len - end
+                                print >>plantafile, '\t\tThis contig is partially unaligned. (%d out of %d)' % (top_len, ctg_len)
+                                print >>plantafile, '\t\tUnaligned bases: 1 to %d (%d)' % (begin, begin - 1)
+                                print >>plantafile, '\t\tUnaligned bases: %d to %d (%d)' % (end, ctg_len, ctg_len - end)
+                            key = sorted_aligns[0][11]
+                            value = [sorted_aligns[0][0], sorted_aligns[0][1], contig, sorted_aligns[0][3], sorted_aligns[0][4]]
+                            ref_aligns.setdefault(key, []).append(value)
+                        else:
+                            #There is more than one alignment of this contig to the reference
+                            print >>plantafile, '\t\tThis contig is misassembled. %d total aligns.' % num_aligns
+                            #Reset real alignments and sum of real alignments
+                            sum_real = 0
+                            #Sort real alignments by position on the reference
+                            sorted_aligns = sorted(real_aligns, cmp=lambda a, b: (a[11], a[0]) < (b[11], b[0]))
+                            # Counting misassembled contigs which are partially unaligned
+                            all_aligns_len = sum(x[7] for x in sorted_aligns)
+                            if all_aligns_len < umt * ctg_len:
+                                print >>plantafile, '\t\t\tWarning! Contig length is %d and total length of all aligns is %d' % (ctg_len, all_aligns_len)
+                                misassembled_partially_unaligned += 1
+                            sorted_num = len(sorted_aligns) - 1
+                            chimeric_found = False
+
+                            #MY: computing cyclic references
+                            if cyclic:
+                                if sorted_aligns[0][0] - 1 + total_reg_len - sorted_aligns[sorted_num][1] <= ns + smgap:  # chimerical misassembly
+                                    chimeric_found = True
+
+                                    # find chimerical alignment between "first" blocks and "last" blocks
+                                    chimeric_index = 0
+                                    for i in xrange(sorted_num):
+                                        gap = sorted_aligns[i+1][0] - sorted_aligns[i][1]
+                                        if gap > ns + smgap:
+                                            chimeric_index = i + 1
+                                            break
+
+                                    #MY: for merging local misassemlbies
+                                    prev = sorted_aligns[chimeric_index]
+
+                                    # process "last half" of blocks
+                                    x, y = process_misassembled_contig(plantafile, coords_filtered_file, chimeric_index, sorted_num, contig, prev, sorted_aligns, True, ns, smgap, rcinem, ref_aligns, assembly, misassembled_contigs)
+                                    region_misassemblies += x
+                                    region_local_misassemblies += y
+                                    print >>plantafile, '\t\t\tChimerical misassembly between these two alignments: [%s] @ %d and %d' % (sorted_aligns[sorted_num][11], sorted_aligns[sorted_num][1], sorted_aligns[0][0])
+
+                                    prev[1] = sorted_aligns[0][1] # [E1]
+                                    prev[3] = 0 # [S2]
+                                    prev[4] = 0 # [E2]
+                                    prev[6] += sorted_aligns[0][1] - sorted_aligns[0][0] + 1 # [LEN1]
+                                    prev[7] += sorted_aligns[0][7] # [LEN2]
+
+                                    # process "first half" of blocks
+                                    x, y = process_misassembled_contig(plantafile, coords_filtered_file, 0, chimeric_index - 1, contig, prev, sorted_aligns, False, ns, smgap, rcinem, ref_aligns, assembly, misassembled_contigs)
+                                    region_misassemblies += x
+                                    region_local_misassemblies += y
+
+                            if not chimeric_found:
+                                #MY: for merging local misassemlbies
+                                prev = sorted_aligns[0]
+                                x, y = process_misassembled_contig(plantafile, coords_filtered_file, 0, sorted_num, contig, prev, sorted_aligns, False, ns, smgap, rcinem, ref_aligns, assembly, misassembled_contigs)
+                                region_misassemblies += x
+                                region_local_misassemblies += y
+
+                else:
+                    #No aligns to this contig
+                    print >>plantafile, '\t\tThis contig is unaligned. (%d bp)' % ctg_len
+                    print >>unaligned_file, contig
+
+                    #Increment unaligned contig count and bases
+                    unaligned += 1
+                    total_unaligned += ctg_len
+                    print >>plantafile, '\t\tUnaligned bases: %d  total: %d' % (ctg_len, total_unaligned)
+
+            coords_filtered_file.close()
+            unaligned_file.close()
 
             # TODO: 'Analyzing coverage...'
 
-            print '\tCovered Bases: %d' % region_covered
-            print '\tAmbiguous Bases: %d' % region_ambig
-            print '\tLocal Misassemblies: %d' % region_local_misassemblies
-            print '\tMisassemblies: %d' % region_misassemblies
-            print '\t\tMisassembled Contigs: %d' % len(misassembled_contigs)
-            misassembled_bases = sum(len(v) for v in misassembled_contigs.itervalues())
-            print '\t\tMisassembled Contig Bases: %d' % misassembled_bases
+            region_covered = 100500
+            region_ambig = 100500
+            region_snp = 100500
+            region_insertion = 100500
+            region_deletion = 100500
+            gaps = []
+            neg_gaps = []
+            redundant = []
+            snip_left = 100500
+            snip_right = 100500
 
-            print '\t\tMisassembled and Unaligned: %d' % misassembled_partially_unaligned
-            print '\tSNPs: %d' % region_snp
-            print '\tInsertions: %d' % region_insertion
-            print '\tDeletions: %d' % region_deletion
+            print >>plantafile, '\tCovered Bases: %d' % region_covered
+            print >>plantafile, '\tAmbiguous Bases: %d' % region_ambig
+            print >>plantafile, '\tLocal Misassemblies: %d' % region_local_misassemblies
+            print >>plantafile, '\tMisassemblies: %d' % region_misassemblies
+            print >>plantafile, '\t\tMisassembled Contigs: %d' % len(misassembled_contigs)
+            misassembled_bases = sum(len(v) for v in misassembled_contigs.itervalues())
+            print >>plantafile, '\t\tMisassembled Contig Bases: %d' % misassembled_bases
+
+            print >>plantafile, '\t\tMisassembled and Unaligned: %d' % misassembled_partially_unaligned
+            print >>plantafile, '\tSNPs: %d' % region_snp
+            print >>plantafile, '\tInsertions: %d' % region_insertion
+            print >>plantafile, '\tDeletions: %d' % region_deletion
             internal = 0
             external = 0
-            sum_gap = 0
+            sum_gaps = 0
             for gap in gaps:
                 if gap[1] == gap[2]:
                     internal += 1
                 else:
                     external += 1
-                sum_gap += gap[0]
+                sum_gaps += gap[0]
             avg_gaps = sum_gaps * 1.0 / external if external else 0.0
-            print '\tPositive Gaps: %d' % len(gaps)
-            print '\t\tInternal Gaps: %d' % internal
-            print '\t\tExternal Gaps: %d' % external
-            print '\t\tExternal Gap Total: %d' % sum_gap
-            print '\t\tExternal Gap Average: %.0f' % avg_gaps
+            print >>plantafile, '\tPositive Gaps: %d' % len(gaps)
+            print >>plantafile, '\t\tInternal Gaps: %d' % internal
+            print >>plantafile, '\t\tExternal Gaps: %d' % external
+            print >>plantafile, '\t\tExternal Gap Total: %d' % sum_gaps
+            print >>plantafile, '\t\tExternal Gap Average: %.0f' % avg_gaps
             internal = 0
             external = 0
-            sum_gap = 0
+            sum_gaps = 0
             for gap in neg_gaps:
                 if gap[1] == gap[2]:
                     internal += 1
                 else:
                     external += 1
-                sum_gap += gap[0]
+                sum_gaps += gap[0]
             avg_gaps = sum_gaps * 1.0 / external if external else 0.0
-            print '\tNegative Gaps: %d' % len(neg_gaps)
-            print '\t\tInternal Overlaps: %d' % internal
-            print '\t\tExternal Overlaps: %d' % external
-            print '\t\tExternal Overlaps Total: %d' % sum_gap
-            print '\t\tExternal Overlaps Average: %.0f' % avg_gaps
+            print >>plantafile, '\tNegative Gaps: %d' % len(neg_gaps)
+            print >>plantafile, '\t\tInternal Overlaps: %d' % internal
+            print >>plantafile, '\t\tExternal Overlaps: %d' % external
+            print >>plantafile, '\t\tExternal Overlaps Total: %d' % sum_gaps
+            print >>plantafile, '\t\tExternal Overlaps Average: %.0f' % avg_gaps
 
-            print '\tRedundant Contigs: %d (%d)' % (len(redundant), total_redundant)
-            print
+            print >>plantafile, '\tRedundant Contigs: %d (%d)' % (len(redundant), total_redundant)
+            print >>plantafile
 
-            print 'Uncovered Regions: %d (%d)' % (uncovered_regions, uncovered_region_bases)
-            print 'Unaligned Contigs: %d (%d)' % (unaligned, partially_unaligned)
-            print 'Unaligned Contig Bases: %d' % total_unaligned
-            print 'Ambiguous Contigs: %d (%d)' % (ambiguous, total_ambiguous)
+            print >>plantafile, 'Uncovered Regions: %d (%d)' % (uncovered_regions, uncovered_region_bases)
+            print >>plantafile, 'Unaligned Contigs: %d (%d)' % (unaligned, partially_unaligned)
+            print >>plantafile, 'Unaligned Contig Bases: %d' % total_unaligned
+            print >>plantafile, 'Ambiguous Contigs: %d (%d)' % (ambiguous, total_ambiguous)
 
-            subprocess.call(
-                ['perl', assess_assembly_path2, reference, filename, nucmerfilename, '--verbose', cyclic_option, rc_option],
-                stdout=open(logfilename_out, 'a'), stderr=open(logfilename_err, 'a'), env=myenv)
+#            subprocess.call(
+#                ['perl', assess_assembly_path2, reference, filename, nucmerfilename, '--verbose', cyclic_option, rc_option],
+#                stdout=open(logfilename_out, 'a'), stderr=open(logfilename_err, 'a'), env=myenv)
 
         print 'done.'
 
@@ -453,17 +510,17 @@ def do(reference, filenames, cyclic, rc, output_dir, lib_dir, draw_plots):
         # compute nucmer average % IDY
         if os.path.isfile(nucmerfilename + '.coords'):
             file = open(nucmerfilename + '.coords')
-            sum = 0.0
+            sum_idy = 0.0
             num = 0
             for line in file:
                 arr = line.split('|')
                 if len(arr) > 4:
                     x = arr[3].strip()
                     if x[0] != '[': # not [% IDY]
-                        sum += float(x)
+                        sum_idy += float(x)
                         num += 1
             if num:
-                avg = sum / num
+                avg = sum_idy / num
             else:
                 avg = 0
             file.close()

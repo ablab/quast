@@ -140,8 +140,12 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
     for c in contigs:
         check_file(c, 'contigs')
 
+    # orfs are in codons:
+    def bp2codon(len_in_bp):
+        return int(len_in_bp) / 3
+
     qconfig.contig_thresholds = map(int, qconfig.contig_thresholds.split(","))
-    qconfig.orf_lengths = map(int, qconfig.orf_lengths.split(","))
+    qconfig.orf_lengths = map(bp2codon, qconfig.orf_lengths.split(","))
 
     ########################################################################
     ### CONFIG & CHECKS

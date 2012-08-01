@@ -140,8 +140,8 @@ These files correspond to the first 1000 bp of E. coli. Input reads and sample a
 <p>
     <code>--orf &lt;int,int,...&gt;</code>
 </p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;A comma-separated list of threshold lengths (in codons) of ORFs to search for. Used in <b><i># ORFs &ge; x</i></b> metrics 
-(see <a href="#sec2">section 2</a>). The default value is 200 codons (i.e. 600 bp).</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;A comma-separated list of threshold lengths of ORFs to search for. Used in <b><i># ORFs &ge; x</i></b> metrics 
+(see <a href="#sec2">section 2</a>). The default value is 600 (i.e. 200 codons).</p>
 
 <p>
     <code>--not-circular</code>
@@ -245,8 +245,8 @@ This metric could be computed only if the reference and genes annotations file a
 <p><b><i>Operons</i></b>&nbsp;&nbsp;is defined similarly to the previous metric but you need 
 operons annotations file for computing this metric. </p>
 
-<p><b><i># ORFs >= x bp</i></b>&nbsp;&nbsp;is the total number of open reading frames of length <code>&ge; x bp</code> founded in the assembly 
-(the length of one codon is 3 bp). This metric will be computed if genes annotations file is not given.</p>
+<p><b><i># ORFs >= x bp</i></b>&nbsp;&nbsp;is the total number of open reading frames of length <code>&ge; x bp</code> founded in the assembly. 
+This metric will be computed if genes annotations file is not given.</p>
 
 <a name="sec2.2"></a>
 <h3>2.1 Plots descriptions</h3>

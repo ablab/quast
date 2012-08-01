@@ -9,7 +9,7 @@ import datetime
 contig_thresholds = "201,1001"
 min_contig = 0
 genes_lengths = "0,300,600,900,1200,1500,1800,2100,2400,2700,3000"
-orf_lengths = "200"
+orf_lengths = "600"
 
 default_results_root_dirname = "quast_results"
 output_dirname = "results_" + datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')

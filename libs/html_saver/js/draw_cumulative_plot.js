@@ -1,4 +1,5 @@
 
+
 function drawCumulativePlot(filenames, lists_of_lengths, reference_length, div, legendPlaceholder, glossary) {
 
     div.html(
@@ -48,6 +49,7 @@ function drawCumulativePlot(filenames, lists_of_lengths, reference_length, div, 
         }
     }
 
+    var maxYTick = maxY;
     if (maxY <= 100000000000) {
         maxYTick = Math.ceil((maxY+1)/10000000000)*10000000000;
     } if (maxY <= 10000000000) {
@@ -113,24 +115,8 @@ function drawCumulativePlot(filenames, lists_of_lengths, reference_length, div, 
         reserveSpace: true,
         lineWidth: 0.5,
         color: '#000',
-        tickFormatter: function (val, axis) {
-            if (val == 0) {
-                return 0;
-
-            } else if (val >= 1000000) {
-                if (val > maxY + 1 || val + axis.tickSize >= 1000000000) {
-                    return (val / 1000000).toFixed(1) + ' Mbp';
-                } else {
-                    return (val / 1000000).toFixed(1);
-                }
-
-            } else if (val >= 1000) {
-                return (val / 1000).toFixed(0) + " Kbp";
-
-            } else {
-                return val.toFixed(0) + " bp";
-            }
-        },
+        tickFormatter: getPpTickFormatter(maxY),
+        minTickSize: 1,
     };
 
     var yaxes = [yaxis];
@@ -145,8 +131,9 @@ function drawCumulativePlot(filenames, lists_of_lengths, reference_length, div, 
             reserveSpace: true,
             tickFormatter: function (val, axis) {
                 return '<div style="">' + toPrettyStringWithDimencion(reference_length, 'bp') +
-                    '\n<div style="margin-left: -0.2em;">(reference)</div></div>';
-            }
+                    ' <span style="margin-left: -0.2em;">(reference)</span></div>';
+            },
+            minTickSize: 1,
         });
     }
 
@@ -166,12 +153,8 @@ function drawCumulativePlot(filenames, lists_of_lengths, reference_length, div, 
                 min: 0,
                 lineWidth: 0.5,
                 color: '#000',
-                tickFormatter: function (val, axis) {
-                    if (typeof axis.tickSize == 'number' && val > maxX - axis.tickSize) {
-                        return "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" + val + "'th&nbsp;contig";
-                    }
-                    return val;
-                },
+                tickFormatter: getContigNumberTickFormatter(maxX),
+                minTickSize: 1,
             },
         }
     );

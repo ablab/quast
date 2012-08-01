@@ -31,7 +31,7 @@ def init(adp_results):
                           'build_total_report.js',
                           'draw_cumulative_plot.js',
                           'draw_nx_plot.js',
-                          'number_to_pretty_string.js',
+                          'utils.js',
                           'draw_genes_plot.js',
                           'build_report.js', ]:
             with open(get_real_path('js/' + fp_script)) as f:

@@ -78,7 +78,6 @@ function drawGenesPlot(filenames, filesContigs, genes, found, kind, div, legendP
 //    }
 
 
-
     $.plot($('#' + kind + 's-plot-placeholder'), plotsData, {
             shadowSize: 0,
             colors: ["#FF5900", "#008FFF", "#168A16", "#7C00FF", "#FF0080"],
@@ -103,17 +102,14 @@ function drawGenesPlot(filenames, filesContigs, genes, found, kind, div, legendP
                         return val;
                     }
                 },
+                minTickSize: 1,
             },
             xaxis: {
                 min: 0,
                 lineWidth: 0.5,
                 color: '#000',
-                tickFormatter: function (val, axis) {
-                    if (typeof axis.tickSize == 'number' && val > maxX - axis.tickSize) {
-                        return "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" + val + "'th&nbsp;contig";
-                    }
-                    return val;
-                },
+                tickFormatter: getContigNumberTickFormatter(maxX),
+                minTickSize: 1,
             },
         }
     );

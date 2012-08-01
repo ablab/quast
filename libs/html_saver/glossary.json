@@ -29,5 +29,7 @@
     "NAx"                           : "<span>plot shows the changes of NAx metric value with the percentage of an assembly length</span> <span>NAx is Nx with usage the lengths of aligned blocks instead of contigs lengths.</span>",
     "NGAx"                          : "<span>plot shows the changes of NGAx metric value with the percentage of a reference length</span><span>NGAx is NGx with usage the lengths of aligned blocks instead of contigs lengths.</span>",
 
-    "SNPs"                          : "<span>is number of single-nucleotide polymorphisms</span>"
+    "SNPs"                          : "<span>is number of single-nucleotide polymorphisms</span>",
+
+    "GC content"                    : "<span>plot shows the distribution of GC percentage among the contigs, i.e., the total number of bp in contigs with such GC content. Typically, the distribution is similar to the Gaussian one. However, in case of contaminants with different GC content the distribution can have more than one bulge.</span>"
 }

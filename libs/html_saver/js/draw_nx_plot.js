@@ -89,7 +89,7 @@ function drawNxPlot(filenames, listsOfLengths, title,
                 reserveSpace: true,
                 lineWidth: 0.5,
                 color: '#000',
-                tickFormatter: getPpTickFormatter(maxY),
+                tickFormatter: getBpTickFormatter(maxY),
                 minTickSize: 1,
             },
             xaxis: {

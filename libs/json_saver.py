@@ -14,6 +14,7 @@ ref_length_fn         = '/ref_length.json'
 aligned_contigs_fn    = '/aligned_contigs_lengths.json'
 assemblies_lengths_fn = '/assemblies_lengths.json'
 contigs_fn            = '/contigs.json'
+gc_fn                 = '/gc.json'
 genes_fn              = '/genes.json'
 operons_fn            = '/operons.json'
 
@@ -94,3 +95,28 @@ def save_operons(output_dir, operons, found):
         'operons' : operons,
         'found' : found,
     })
+
+
+def save_GC_info(output_dir, filenames, lists_of_GC_info):
+    return save(output_dir + gc_fn, {
+        'filenames' : map(os.path.basename, filenames),
+        'lists_of_gc_info' : lists_of_GC_info,
+    })
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

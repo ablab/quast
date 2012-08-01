@@ -24,14 +24,16 @@ function drawCumulativePlot(filenames, lists_of_lengths, reference_length, div, 
         var size = lengths.length;
 
         plotsData[i] = {
-            data: new Array(size),
+            data: new Array(size+1),
             label: filenames[i],
         };
+
+        plotsData[i].data.push([0, 0]);
 
         var y = 0;
         for (var j = 0; j < size; j++) {
             y += lengths[j];
-            plotsData[i].data[j] = [j+1, y];
+            plotsData[i].data[j+1] = [j+1, y];
             if (y > maxY) {
                 maxY = y;
             }

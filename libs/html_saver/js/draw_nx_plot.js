@@ -52,8 +52,8 @@ function drawNxPlot(filenames, listsOfLengths, title,
             maxY = plotsData[i].data[0][1];
         }
 
-        var len = plotsData[i].data.length;
-        plotsData[i].data.push([plotsData[i].data[len-1], 0]);
+        var lastPt = plotsData[i].data[plotsData[i].data.length-1];
+        plotsData[i].data.push([lastPt[0], 0]);
     }
 
     for (i = 0; i < plotsN; i++) {

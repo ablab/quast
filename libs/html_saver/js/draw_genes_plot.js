@@ -97,7 +97,11 @@ function drawGenesPlot(filenames, filesContigs, genes, found, kind, div, legendP
                 color: '#000',
                 tickFormatter: function (val, axis) {
                     if (val > maxY + 1) {
-                        return val + ' ' + kind + 's';
+                        var res = val + ' ' + kind;
+                        if (val > 1) {
+                            res += 's'
+                        }
+                        return res;
                     } else {
                         return val;
                     }

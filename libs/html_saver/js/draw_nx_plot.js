@@ -51,6 +51,9 @@ function drawNxPlot(filenames, listsOfLengths, title,
         if (plotsData[i].data[0][1] > maxY) {
             maxY = plotsData[i].data[0][1];
         }
+
+        var len = plotsData[i].data.length;
+        plotsData[i].data.push([plotsData[i].data[len-1], 0]);
     }
 
     for (i = 0; i < plotsN; i++) {

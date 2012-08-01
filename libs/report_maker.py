@@ -8,8 +8,6 @@
 import os
 
 def do(report_dict, report_basename, output_dirpath, min_contig=0):
-    report_dict = dict([(k, v[1:]) for k, v in report_dict.iteritems()])
-
     # suffixes for files with transposed and normal report tables
     txt_ext = '.txt'
     tsv_ext = '.tsv'

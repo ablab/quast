@@ -10,6 +10,59 @@ import fnmatch
 import os
 
 
+# see bug http://ablab.myjetbrains.com/youtrack/issue/QUAST-74 for more details
+def additional_cleaning(all):
+    counter = 0
+    cleaned = {}
+    for contig in all.iterkeys():
+        #print contig
+        if len(all[contig]) == 1:
+            cleaned[contig] = all[contig]
+        else:
+            # align: 0:start_contig, 1:end_contig, 2:start_reference, 3:end_reference, 4:IDY%, 5:reference_id
+            sorted_aligns = sorted(all[contig], key=lambda align: min(align[0], align[1]))
+            ids_to_discard = []
+            for id1, align1 in enumerate(sorted_aligns[:-1]):
+                if id1 in ids_to_discard:
+                    continue
+
+                for i, align2 in enumerate(sorted_aligns[id1 + 1:]):
+                    id2 = i + id1 + 1
+                    if id2 in ids_to_discard:
+                        continue
+
+                    # if start of align2 > end of align1 than there is no more intersected aligns with align1
+                    if min(align2[0], align2[1]) > max(align1[0], align1[1]):
+                        break
+
+                    # if all second alignment is inside first alignment then discard it
+                    if max(align2[0], align2[1]) < max(align1[0], align1[1]):
+                        ids_to_discard.append(id2)
+                        continue
+
+                    # align with worse IDY% is under suspicion
+                    if align1[4] < align2[4]:
+                        len_diff =  min(align2[0], align2[1]) - min(align1[0], align1[1])
+                        quality_loss = 100.0 * float(len_diff) / float(abs(align2[0] - align2[1]) + 1)
+                        if quality_loss < abs(align1[4] - align2[4]):
+                            #print "discard id1: ", id1, ", quality loss", quality_loss, "lendiff", len_diff, "div", float(abs(align2[0] - align2[1]) + 1)
+                            ids_to_discard.append(id1)
+                    elif align2[4] < align1[4]:
+                        len_diff =  max(align2[0], align2[1]) - max(align1[0], align1[1])
+                        quality_loss = 100.0 * float(len_diff) / float(abs(align1[0] - align1[1]) + 1)
+                        if quality_loss < abs(align1[4] - align2[4]):
+                            #print "discard id2: ", id2, ", quality loss", quality_loss, "lendiff", len_diff, "div", float(abs(align1[0] - align1[1]) + 1)
+                            ids_to_discard.append(id2)
+
+            cleaned[contig] = []
+            for id, align in enumerate(sorted_aligns):
+                if id not in ids_to_discard:
+                    cleaned[contig].append(align)
+            counter += len(ids_to_discard)
+        #print cleaned[contig]
+    return cleaned, counter
+
+
 def do_mode_one(ouf, all, inf_filenames):
     print >> ouf, "    [S1]     [E1]  |     [S2]     [E2]  |  [LEN 1]  [LEN 2]  |  [% IDY]  | [TAGS]"
     print >> ouf, "====================================================================================="
@@ -147,6 +200,8 @@ def do(mode, out_filename, input_files_or_dirs): #, ouf_filename, inf_filenames)
                 list_events += [ev1, ev2]
             del output
     print '  Cleaned', counter[0], 'down to', counter[1]
+    all, add_counter = additional_cleaning(all)
+    print '  Additionally cleaned', counter[1], 'down to', add_counter
 
     if mode == 1:
         do_mode_one(ouf, all, inf_filenames)

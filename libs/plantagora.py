@@ -130,7 +130,7 @@ def do(reference, filenames, cyclic, rc, output_dir, lib_dir, draw_plots):
         logfile_out = open(logfilename_out, 'r')
         cur_metric_id = 0
         for line in logfile_out:
-            if metrics[cur_metric_id].lower() in line.lower():
+            if line.lower().strip().startswith(metrics[cur_metric_id].lower()):
                 report_dict[os.path.basename(filename)].append( line.split(':')[1].strip() )
                 cur_metric_id += 1
                 if cur_metric_id == len(metrics):

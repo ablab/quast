@@ -428,14 +428,14 @@ foreach $contig (keys %assembly){
                             }
                         }
 
-                        #MY: for merging local misassemlbies                    
+                        #MY: for merging local misassemblies
                         @prev = @{$sorted[$chimeric_index]}; 
 
                         # process "last half" of blocks                        
                         &process_misassembled_contig(*COORDS_FILT, $chimeric_index, $sorted_num, $contig, \@prev, \@sorted, 1);
                         if ($verbose) {print "\t\t\tChimerical misassembly between these two alignments: [$sorted[$sorted_num][11]] @ $sorted[$sorted_num][1] and $sorted[0][0]\n";}
                          
-                        $prev[1] = $sorted[0][1];                  # [E1]                                                                           
+                        $prev[1] = $sorted[0][1];                  # [E1]
                         $prev[3] = 0;                              # [S2]
                         $prev[4] = 0;                              # [E2]
                         $prev[6] += $sorted[0][1]-$sorted[0][0]+1; # [LEN1]
@@ -447,7 +447,7 @@ foreach $contig (keys %assembly){
                 } 
                 
                 if (!$chimeric_found) {
-                    #MY: for merging local misassemlbies                    
+                    #MY: for merging local misassemblies
                     @prev = @{$sorted[0]};                               
                     &process_misassembled_contig(*COORDS_FILT, 0, $sorted_num, $contig, \@prev, \@sorted, 0);				        
                 }           
@@ -833,8 +833,8 @@ print "\n";
 print "Uncovered Regions: $uncovered_regions ($uncovered_region_bases)\n";
 print "Unaligned Contigs: $unaligned + $partially_unaligned part\n";
 print "Unaligned Contig Bases: $total_unaligned\n";
-print "Ambiguous Contigs: $ambiguous ($total_ambiguous)\n";
-
+print "Ambiguous Contigs: $ambiguous\n";
+print "Ambiguous Contig Bases: $total_ambiguous\n";
 
 sub process_misassembled_contig  # input: OUTPUT_FILE, $i_start, $i_finish, $contig, \@prev, @sorted, $is_1st_chimeric_half
 {          

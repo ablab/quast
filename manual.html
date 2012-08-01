@@ -135,7 +135,7 @@ These files correspond to the first 1000 bp of E. coli. Input reads and sample a
     <code>--contig-thresholds &lt;int,int,...&gt;</code>
 </p>
 <p>&nbsp;&nbsp;&nbsp;&nbsp;A comma-separated list of contig length thresholds. Used in <b><i># contigs &ge; x</i></b> and 
-<b><i>total length (&ge; x)</i></b> metrics (see <a href="#sec2">section 2</a>). The default value is 110,201,501,1001.</p>
+<b><i>total length (&ge; x)</i></b> metrics (see <a href="#sec2">section 2</a>). The default value is 201,1001.</p>
 
 <p>
     <code>--orf &lt;int,int,...&gt;</code>
@@ -210,27 +210,22 @@ divided by the total length of the assembly.</p>
 <p><b><i>Reference GC %</i></b>&nbsp;&nbsp;is the total number of G and C nucleotides in the reference, 
 divided by the total length of the reference.</p>
 
-<p><b><i>Average %IDY</i></b>&nbsp;&nbsp;is the average of alignment identity percent (i.e. alignment accuracy) among all contigs.</p>
-
 <p><b><i>Misassemblies</i></b>&nbsp;&nbsp;gives the number of positions at the assembled contigs where the left flanking sequence
 aligns over 1kb away from the right flanking sequence on the reference or they overlap on more than 1 kb or flanking sequences align 
 on different strands. This metric could be computed only if the reference is given.</p>
 
-<p><b><i>Misassembled Contigs</i></b>&nbsp;&nbsp;is the number of contigs that contain misassembly events.</p>
+<p><b><i>Misassembled contigs</i></b>&nbsp;&nbsp;is the number of contigs that contain misassembly events.</p>
 
-<p><b><i>Misassembled Contig Bases</i></b>&nbsp;&nbsp;is the number of total bases contained in all contigs that have one or 
+<p><b><i>Misassembled contig bases</i></b>&nbsp;&nbsp;is the number of total bases contained in all contigs that have one or 
 more misassemblies.</p>
 
-<p><b><i>Misassembled and Unaligned</i></b>&nbsp;&nbsp;is the number of contigs which contain misassembly
-events but which have alignment to the reference of length less than 10% of contigs length (almost unaligned contigs). </p>
-
-<p><b><i>Unaligned Contigs</i></b>&nbsp;&nbsp;is the number of contigs that have no alignment to the
+<p><b><i>Unaligned contigs</i></b>&nbsp;&nbsp;is the number of contigs that have no alignment to the
 reference sequence. The value "X + Y part" means: X totally unaligned contigs plus Y partially unaligned contigs. </p>
 
-<p><b><i>Unaligned Contig Bases</i></b>&nbsp;&nbsp;is the total number of unaligned bases in totally and 
+<p><b><i>Unaligned contig bases</i></b>&nbsp;&nbsp;is the total number of unaligned bases in totally and 
 partially unaligned contigs (only bases from unaligned parts). </p>
 
-<p><b><i>Ambiguous Contigs</i></b>&nbsp;&nbsp;is the number of contigs which have reference alignments
+<p><b><i>Ambiguous contigs</i></b>&nbsp;&nbsp;is the number of contigs which have reference alignments
 of equal quality in multiple locations on the reference. The value "X (Y)" means X ambiguous contigs with Y bases in them. </p>
 
 <p><b><i>NA50, NGA50, NA75, NGA75 (A stands for "aligned")</i></b>&nbsp;&nbsp;like the same

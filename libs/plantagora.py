@@ -38,8 +38,8 @@ def do(reference, filenames, cyclic, rc, output_dir, lib_dir, draw_plots):
             stdout=open(os.path.join(mummer_path, 'make.log'), 'w'), stderr=open(os.path.join(mummer_path, 'make.err'), 'w'))
 
     print 'Running plantagora tool (assess_assemply.pl)...'
-    metrics = ['Average %IDY', 'Local misassemblies', 'Misassemblies', 'Misassembled contigs', 'Misassembled contig bases',
-               'Misassembled and unaligned', 'SNPs', 'Unaligned contigs', 'Unaligned contig bases', 'Ambiguous contigs']
+    metrics = ['Misassemblies', 'Misassembled contigs', 'Misassembled contig bases',
+               'Unaligned contigs', 'Unaligned contig bases', 'Ambiguous contigs', 'Ambiguous contig bases']
     report_dict['header'] += metrics
 
     for id, filename in enumerate(filenames):
@@ -111,7 +111,7 @@ def do(reference, filenames, cyclic, rc, output_dir, lib_dir, draw_plots):
             print '  ERROR: nucmer coord file (' + nucmerfilename + ') not found, skipping...'
             avg = 'N/A'
         print '    Average %IDY = ', avg
-        report_dict[os.path.basename(filename)].append('%3.2f' % avg)
+        # report_dict[os.path.basename(filename)].append('%3.2f' % avg)
         # delete temporary files
         for ext in ['.delta', '.mgaps', '.ntref', '.gp']:
             if os.path.isfile(nucmerfilename + ext):
@@ -128,7 +128,7 @@ def do(reference, filenames, cyclic, rc, output_dir, lib_dir, draw_plots):
         ## find metrics for total report:
 
         logfile_out = open(logfilename_out, 'r')
-        cur_metric_id = 1
+        cur_metric_id = 0
         for line in logfile_out:
             if metrics[cur_metric_id].lower() in line.lower():
                 report_dict[os.path.basename(filename)].append( line.split(':')[1].strip() )

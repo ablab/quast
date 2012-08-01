@@ -66,13 +66,13 @@ def process_misassembled_contig(plantafile, output_file, i_start, i_finish, cont
             prev[6] = prev[1] - prev[0] # [LEN1]
             prev[7] = prev[7] + sorted_aligns[i+1][7] + (gap if gap < 0 else 0) # [LEN2]
 
-        #MY: output in coords.filtered
-        if not is_1st_chimeric_half:
-            print >>output_file, spaceline(prev)
+    #MY: output in coords.filtered
+    if not is_1st_chimeric_half:
+        print >>output_file, spaceline(prev)
 
-        #Record the very last alignment
-        i = i_finish
-        print >>plantafile, '\t\t\tReal Alignment %d: %s' % (i+1, spaceline(sorted_aligns[i]))
+    #Record the very last alignment
+    i = i_finish
+    print >>plantafile, '\t\t\tReal Alignment %d: %s' % (i+1, spaceline(sorted_aligns[i]))
 
     return list(prev), region_misassemblies, region_local_misassemblies
 

@@ -10,7 +10,7 @@ import fastaparser
 from qutils import id_to_str
 
 def do(filenames, orf_length):
-	print 'Running ORF tool (for length %d)...' % (orf_length)
+	print 'Running ORF tool (for length %d codons = %d bp)...' % (orf_length, orf_length * 3)
 
 	########################################################################
 	report_dict = {'header' : []}
@@ -59,7 +59,7 @@ def do(filenames, orf_length):
 		return s.upper().translate('*****************************************************************TVGHEFCDIJMLKNOPQYSAUBWXRZ[\]^_`tvghefcdijmlknopqysaubwxrz*************************************************************************************************************************************')[::-1]
 
 
-	report_dict['header'].append('# ORFs >= %dbp' % (orf_length * 3))
+	report_dict['header'].append('# ORFs >= %d' % (orf_length * 3))
 	for id, fasta_filename in enumerate(filenames):
 		print ' ', id_to_str(id), os.path.basename(fasta_filename), '...'
 

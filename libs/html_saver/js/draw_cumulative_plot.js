@@ -28,7 +28,7 @@ function drawCumulativePlot(filenames, lists_of_lengths, reference_length, div, 
             label: filenames[i],
         };
 
-        plotsData[i].data.push([0, 0]);
+        plotsData[i].data[0] = [0, 0];
 
         var y = 0;
         for (var j = 0; j < size; j++) {
@@ -117,7 +117,7 @@ function drawCumulativePlot(filenames, lists_of_lengths, reference_length, div, 
         reserveSpace: true,
         lineWidth: 0.5,
         color: '#000',
-        tickFormatter: getPpTickFormatter(maxY),
+        tickFormatter: getBpTickFormatter(maxY),
         minTickSize: 1,
     };
 

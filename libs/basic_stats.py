@@ -119,6 +119,11 @@ def do(reference, filenames, output_dir, all_pdf, draw_plots, json_output_dir, r
             report_dict[os.path.basename(filename)].append(int(reference_length))
             report_dict[os.path.basename(filename)].append('%.2f' %  reference_GC)
 
+    if json_output_dir:
+        json_saver.save_GC_info(json_output_dir, filenames, lists_of_GC_info)
+
+    html_saver.save_GC_info(results_dir, filenames, lists_of_GC_info)
+
     if draw_plots:
         ########################################################################
 

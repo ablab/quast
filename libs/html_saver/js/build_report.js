@@ -7,6 +7,7 @@ function buildReport() {
     var contigs = null;
     var genes = null;
     var operons = null;
+    var gcInfos = null;
 
     var glossary = JSON.parse($('#glossary-json').html());
 
@@ -92,4 +93,16 @@ function buildReport() {
     contigs = null;
     genes = null;
     operons = null;
+
+    try {
+        gcInfos = JSON.parse($('#gc-json').html());
+    } catch (e) {
+        gcInfos = null;
+    }
+
+    if (gcInfos) {
+        drawGCPlot(gcInfos.filenames, gcInfos.lists_of_gc_info, $('#gc-plot-div'), null, glossary);
+    }
+
+    gcInfos = null;
 }

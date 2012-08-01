@@ -31,6 +31,7 @@ def init(adp_results):
                           'build_total_report.js',
                           'draw_cumulative_plot.js',
                           'draw_nx_plot.js',
+                          'draw_gc_plot.js',
                           'utils.js',
                           'draw_genes_plot.js',
                           'build_report.js', ]:
@@ -110,6 +111,11 @@ def save_assembly_lengths(adp_results, filenames, assemblies_lengths):
 def save_contigs(adp_results, filenames, contigs):
     afp_json = json_saver.save_contigs(adp_results, filenames, contigs)
     append(adp_results, afp_json, 'contigs')
+
+
+def save_GC_info(adp_results, filenames, lists_of_GC_info):
+    afp_json = json_saver.save_GC_info(adp_results, filenames, lists_of_GC_info)
+    append(adp_results, afp_json, 'gcInfos')
 
 
 def save_genes(adp_results, genes, found):

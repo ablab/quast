@@ -207,17 +207,18 @@ def GC_content_plot(filenames, lists_of_GC_info, plot_filename, all_pdf=None):
         # calculate values for the plot
         cur_bin = 0.0
         vals_GC = [cur_bin]
-        vals_bp = [sum(contig_length for (contig_length, GC_percent) in GC_info if GC_percent == cur_bin)]
+        vals_bp = [sum(contig_length for (contig_length, GC_percent) in GC_info
+            if GC_percent == cur_bin)]
 
         while cur_bin < 100.0 - bin_size:
             cur_bin += bin_size
             vals_GC.append(cur_bin)
-            vals_bp.append(sum(contig_length for (contig_length, GC_percent) in GC_info if GC_percent > (
-            cur_bin - bin_size) and GC_percent <= cur_bin))
+            vals_bp.append(sum(contig_length for (contig_length, GC_percent) in GC_info
+                if (cur_bin - bin_size) < GC_percent <= cur_bin))
 
         vals_GC.append(100.0)
-        vals_bp.append(sum(
-            contig_length for (contig_length, GC_percent) in GC_info if GC_percent > cur_bin and GC_percent <= 100.0))
+        vals_bp.append(sum(contig_length for (contig_length, GC_percent) in GC_info
+            if cur_bin < GC_percent <= 100.0))
 
         # add to plot
         if color_id < len(colors):

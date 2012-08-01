@@ -29,7 +29,7 @@ function myToFixed(num) {
     }
 }
 
-function getPpTickFormatter(maxY) {
+function getBpTickFormatter(maxY) {
     return function(val, axis) {
         var res;
 

@@ -11,6 +11,10 @@ Other requirements (optional, but functionality will be increased):
 
 	sudo apt-get install python-matplotlib python-numpy
 
+	or
+
+	sudo easy_install matplotlib numpy
+
 For run Mauve:
 The mauve software requires access to a graphical user interface. If running the software remotely on a server, one can use the ssh -X servername option to connect the local display to the remote server. 
 In the event that X forwarding is not possible we recommend using VNC:
@@ -177,12 +181,12 @@ Additional:
 2. Contigs' quality (alignment characteristics)
 
 General info:
-    ./results/plantagora/plantagora_FILENAME.stdout  - total characteristics are in the end of file
+    ./results/plantakolya/plantakolya_FILENAME.stdout  - total characteristics are in the end of file
 
 Additional:
     ./results/quality.log  - average IDY (identity) percent
-    ./results/plantagora/mummerplot_FILENAME.ps  - plot of contigs' alignment
-    ./results/plantagora/nucmer_FILENAME.coords  - coordinates of contigs and IDY values
+    ./results/plantakolya/mummerplot_FILENAME.ps  - plot of contigs' alignment
+    ./results/plantakolya/nucmer_FILENAME.coords  - coordinates of contigs and IDY values
 
 3. Per bp characteristics
 

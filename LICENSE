@@ -30,7 +30,7 @@ Contact:
 
 Some third-party tools are incorporated in QUAST:
 
-1. assess_assembly.pl script was kindly provided by Plantagora team 
+1. Parts of assess_assembly.pl script was kindly provided by Plantagora team
 and modified by QUAST team. It is not licensed under GPL as other parts 
 of QUAST, but it can be distributed and used in QUAST pipeline with current
 remarks and citation. 

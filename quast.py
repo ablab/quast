@@ -18,7 +18,7 @@ __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file
 #sys.path.append(os.path.join(os.path.abspath(sys.path[0]), 'libs'))
 #sys.path.append(os.path.join(os.path.abspath(sys.path[0]), '../spades_pipeline'))
 
-from libs import qconfig
+from libs import qconfig, fastaparser
 from libs import json_saver
 
 RELEASE_MODE=False
@@ -151,7 +151,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
         i = 2
         base_dirpath = output_dirpath
         while os.path.isdir(output_dirpath):
-            output_dirpath = base_dirpath + '__' + str(i)
+            output_dirpath = str(base_dirpath) + '__' + str(i)
             i += 1
         print "\nWarning! Output directory already exists! Results will be saved in " + output_dirpath + "\n"
 
@@ -260,17 +260,16 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
             cur_lengths = [l for l in lengths if l >= threshold]
             report_dict[os.path.basename(outfilename)].append(sum(cur_lengths))
 
-        fasta_entries = fastaparser.read_fasta(filename) # in tuples: (name, seq)
         modified_fasta_entries = []
         to_remove = True
-        for entry in fasta_entries:
-            if (len(entry[1]) >= qconfig.min_contig) or qconfig.with_gage:
+        for name, seq in fastaparser.read_fasta(filename): # in tuples: (name, seq)
+            if (len(seq) >= qconfig.min_contig) or (qconfig.with_gage):
                 to_remove = False
-                corr_name = '>' + re.sub(r'\W', '', re.sub(r'\s', '_', entry[0]))
+                corr_name = re.sub(r'\W', '', re.sub(r'\s', '_', name))
                 # mauve and gage can't work with alternatives
                 dic = {'M': 'A', 'K': 'G', 'R': 'A', 'Y': 'C', 'W': 'A', 'S': 'C', 'V': 'A', 'B': 'C', 'H': 'A', 'D': 'A'}
                 pat = "(%s)" % "|".join( map(re.escape, dic.keys()) )
-                corr_seq = re.sub(pat, lambda m:dic[m.group()], entry[1])
+                corr_seq = re.sub(pat, lambda m:dic[m.group()], seq)
                 modified_fasta_entries.append((corr_name, corr_seq))
 
         fastaparser.write_fasta_to_file(outfilename, modified_fasta_entries)
@@ -322,31 +321,32 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
 
         if qconfig.reference:
             ########################################################################
-            ### PLANTAGORA 
+            ### PLANTAKOLYA
             ########################################################################
-            from libs import plantagora
-            cur_results_dict = plantagora.do(qconfig.reference, contigs, qconfig.cyclic, qconfig.rc, output_dirpath + '/plantagora', lib_dir, qconfig.draw_plots)
+            from libs import plantakolya
+            cur_results_dict = plantakolya.do(qconfig.reference, contigs, qconfig.cyclic, qconfig.rc, output_dirpath + '/plantakolya', lib_dir, qconfig.draw_plots)
             report_dict = extend_report_dict(report_dict, cur_results_dict)
 
             ########################################################################
             ### SympAlign segments
             ########################################################################
-            #Alex: I think we don't need it here (already started in plantagora)
-            #from libs import sympalign
-            #sympalign.do(2, output_dir + '/plantagora/sympalign.segments', [output_dir + '/plantagora'])
+            #Alex: I think we don't need it here (already started in plantakolya)
+            #Kolya: AFAIK it needs to be run one more time (see first argument - it's mode 2 here and mode 1 in plantakolya module)
+            from libs import sympalign
+            sympalign.do(2, output_dirpath + '/plantakolya/sympalign.segments', [output_dirpath + '/plantakolya'])
 
             ########################################################################
             ### NA and NGA ("aligned N and NG")
             ########################################################################
             from libs import aligned_stats
-            cur_results_dict = aligned_stats.do(qconfig.reference, contigs, output_dirpath + '/plantagora', output_dirpath + '/aligned_stats', all_pdf, qconfig.draw_plots, json_outputpath, output_dirpath)
+            cur_results_dict = aligned_stats.do(qconfig.reference, contigs, output_dirpath + '/plantakolya', output_dirpath + '/aligned_stats', all_pdf, qconfig.draw_plots, json_outputpath, output_dirpath)
             report_dict = extend_report_dict(report_dict, cur_results_dict)
 
             ########################################################################
             ### GENOME_ANALYZER
             ########################################################################
             from libs import genome_analyzer
-            cur_results_dict = genome_analyzer.do(qconfig.reference, contigs, output_dirpath + '/genome_analyzer', output_dirpath + '/plantagora', qconfig.genes, qconfig.operons, all_pdf, qconfig.draw_plots, json_outputpath, output_dirpath)
+            cur_results_dict = genome_analyzer.do(qconfig.reference, contigs, output_dirpath + '/genome_analyzer', output_dirpath + '/plantakolya', qconfig.genes, qconfig.operons, all_pdf, qconfig.draw_plots, json_outputpath, output_dirpath)
             report_dict = extend_report_dict(report_dict, cur_results_dict)
 
             ########################################################################
@@ -354,7 +354,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
             ########################################################################
             if qconfig.with_mauve:
                 from libs import mauve
-                cur_results_dict = mauve.do(qconfig.reference, contigs, output_dirpath + '/plantagora', output_dirpath + '/mauve', lib_dir)
+                cur_results_dict = mauve.do(qconfig.reference, contigs, output_dirpath + '/plantakolya', output_dirpath + '/mauve', lib_dir)
                 report_dict = extend_report_dict(report_dict, cur_results_dict)
 
 

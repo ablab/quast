@@ -5,7 +5,6 @@
 ############################################################################
 
 import os
-import sys
 import fastaparser
 import genes_parser
 from libs import json_saver
@@ -60,12 +59,11 @@ def do(reference, filenames, output_dir, nucmer_dir, genes_filename, operons_fil
     for filename in filenames:
         report_dict[os.path.basename(filename)] = []
 
-    reference_fasta = fastaparser.read_fasta(reference)
     reference_chromosomes = {}
     genome_size = 0
-    for tuple in reference_fasta:
-        chr_name = (tuple[0].split()[0])[1:]
-        chr_len = len(tuple[1])
+    for name, seq in fastaparser.read_fasta(reference):
+        chr_name = name.split()[0]
+        chr_len = len(seq)
         genome_size += chr_len
         reference_chromosomes[chr_name] = chr_len
 
@@ -161,6 +159,7 @@ def do(reference, filenames, output_dir, nucmer_dir, genes_filename, operons_fil
             genome_mapping[chr_name] = [0] * (chr_len + 1)
         #genome = [0 for i in range(genome_size + 1)]
         aligned_blocks = []
+        print genome_mapping
 
         # '''
         # nodes_len_coeff = collections.defaultdict(lambda:0.0)
@@ -210,8 +209,7 @@ def do(reference, filenames, output_dir, nucmer_dir, genes_filename, operons_fil
         # for cumulative plots:
         contig_tuples = fastaparser.read_fasta(filename)  # list of FASTA entries (in tuples: name, seq)
         contig_tuples = sorted(contig_tuples, key=lambda contig: len(contig[1]), reverse = True)
-        for contig in contig_tuples:
-            contig_name = contig[0][1:]
+        for contig_name, seq in contig_tuples:
             if contig_name not in contig_blocks:
                 contig_blocks[contig_name] = []
             files_contigs[filename].append( contig_blocks[contig_name] )

@@ -4,8 +4,8 @@ function toPrettyString(num) {
         return num.toString();
     } else {
         return '<span style="word-spacing: -1px;">' +
-                    num.toString().replace(/(\d)(?=(\d\d\d)+(?!\d))/g,'$1&nbsp;') +
-               '</span>';
+            num.toString().replace(/(\d)(?=(\d\d\d)+(?!\d))/g,'$1&nbsp;') +
+            '</span>';
     }
 }
 
@@ -15,9 +15,9 @@ function toPrettyStringWithDimencion(num, dimension) {
         return '<span style="word-spacing:-1px;">' + num.toString() + '&nbsp;' + dimension + '</span>';
     } else {
         return '<span style="word-spacing: -1px;">' +
-                    num.toString().replace(/(\d)(?=(\d\d\d)+(?!\d))/g, '$1&nbsp;')
-                    + '&nbsp;' + dimension +
-               '</span>';
+            num.toString().replace(/(\d)(?=(\d\d\d)+(?!\d))/g, '$1&nbsp;')
+            + '&nbsp;' + dimension +
+            '</span>';
     }
 }
 
@@ -82,3 +82,24 @@ function getContigNumberTickFormatter(maxX) {
         return val;
     }
 }
+
+function addTooltipIfDefenitionExists(glossary, string, dictKey) {
+    if (!dictKey) {
+        dictKey = string;
+    }
+    if (glossary.hasOwnProperty(dictKey)) {
+        return '<a class="tooltip-link" href="#" rel="tooltip" title="' +
+            dictKey + ' ' + glossary[dictKey] + '">' + string + '</a>';
+    } else {
+        return string;
+    }
+}
+
+
+
+
+
+
+
+
+

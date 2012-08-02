@@ -9,13 +9,7 @@ function buildTotalReport(report, glossary) {
         if (i == 0) {
             keyCell = '<span class="report-table-header"></span>';
         } else {
-            var key = report.header[i];
-            if (glossary.hasOwnProperty(key)) {
-                keyCell = '<a class="tooltip-link" href="#" rel="tooltip" title="' +
-                    key + ' ' + glossary[key] + '">' + key + '</a>';
-            } else {
-                keyCell = key;
-            }
+            keyCell = addTooltipIfDefenitionExists(glossary, report.header[i]);
         }
 
         table += '<tr><td><span style="">' + keyCell + '</span></td>';

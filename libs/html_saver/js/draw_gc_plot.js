@@ -19,22 +19,15 @@ function filterAndSumGCinfo(GC_info, condition) {
 
 
 function drawGCPlot(filenames, listsOfGCInfo, div, legendPlaceholder, glossary) {
-    var bin_size = 1.0;
     var title = 'GC content';
-
-    var titleHtml = title;
-    if (glossary.hasOwnProperty(title)) {
-        titleHtml = "<a class='tooltip-link' href='#' rel='tooltip' title='" + title + " "
-            + glossary[title] + "'>" + title + "</a>";
-    }
-
     div.html(
         "<div class='plot'>" +
-            "<span class='plot-header'>" + titleHtml + "</span>" +
-            "<div style='width: 800px; height: 600px;' id='" + "gc-plot-placeholder'></div>" +
+            "<span class='plot-header'>" + addTooltipIfDefenitionExists(glossary, title) + "</span>" +
+            "<div style='width: 800px; height: 600px;' id='gc-plot-placeholder'></div>" +
             "</div>"
     );
 
+    var bin_size = 1.0;
     var plotsN = filenames.length;
     var plotsData = new Array(plotsN);
 

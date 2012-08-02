@@ -77,15 +77,15 @@ def parse_ncbi(file):
         if m:
             gene = Gene(number = int(m.group('number')), name = m.group('name'))
 
-            another_gene_info_lines = []
+            the_rest_lines = []
 
             line = file.readline()
             while line != '' and not ncbi_start_pattern.match(line.rstrip()):
-                another_gene_info_lines.append(line.rstrip())
+                the_rest_lines.append(line.rstrip())
                 line = file.readline()
 
 
-            for info_line in another_gene_info_lines:
+            for info_line in the_rest_lines:
                 if info_line.startswith('Annotation:'):
                     m = re.match(annotation_pattern, info_line)
                     if m:

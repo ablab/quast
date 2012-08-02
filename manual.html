@@ -1,6 +1,6 @@
 <html>
 <head>
-    <title>QUAST 1.0.0 manual</title>
+    <title>QUAST 1.0 manual</title>
     <style type="text/css">
         body {
             margin-top: 30px;
@@ -13,7 +13,7 @@
     </style>
 </head>
 <body>
-<h1>QUAST 1.0.0 manual</h1>
+<h1>QUAST 1.0 manual</h1>
 
 <p>QUAST stands for QUality ASsesment Tool. QUAST evaluates genome assemblies by computing various metrics (e.g., N50, number of ORFs, etc.). 
 <br>
@@ -27,17 +27,17 @@ and <a href="http://gage.cbcb.umd.edu/index.html">GAGE</a>. All their sources ar
 them separately.
 <br>
 <br>
-QUAST version 1.0.0 released under GPL v2 (see <a href="LICENSE">LICENSE</a> for details) on 2 August 2012.
+QUAST version 1.0 released under GPL v2 (see <a href="LICENSE">LICENSE</a> for details) on 2 August 2012.
 </p>
 
-<h2>0. Installation</h2>
+<h2>1. Installation</h2>
 
 <p>
 QUAST can be run on Linux and Mac OS.
 <br>
 It requires:
 <ul>
-    <li>Python v.2.7</li>
+    <li>Python v.2 (2.6 or higher)</li>
     <li>Perl v. 5.6.0 or higher</li>
 </ul>
 
@@ -47,6 +47,18 @@ It can be done on Ubuntu by typing:
 <pre class="code">
 <code>
     sudo apt-get install python-matplotlib
+</code>
+</pre>
+Or with Python <a href="http://www.pip-installer.org/">pip-installer</a>:
+<pre class="code">
+<code>
+    pip install matplotlib
+</code>
+</pre>
+Or with <a href="http://peak.telecommunity.com/DevCenter/EasyInstall">Easy Install</a> python module:
+<pre class="code">
+<code>
+    easy_install matplotlib
 </code>
 </pre>
 </p>
@@ -61,22 +73,21 @@ It can be done on Ubuntu by typing:
 </pre>
 </p>
 
-<!--p>To download a <a href="http://quast.bioinf.spbau.ru/quast-1.0.0.tar.gz">tarball</a> with the latest source code and extract it:
+<p>To download <a href="https://downloads.sourceforge.net/project/quast/quast-1.0.tar.gz">the latest source code tarball</a> and extract it:
 </p>
-
 <pre  class="code">
 <code>
-    wget http://quast.bioinf.spbau.ru/quast-1.0.0.tar.gz
-    tar -xzf quast-1.0.0.tar.gz
-    cd quast
+    wget https://downloads.sourceforge.net/project/quast/quast-1.0.tar.gz
+    tar -xzf quast-1.0.tar.gz
+    cd quast-1.0
 </code>
-</pre-->
+</pre>
 
 <a name="sec1"></a>
-<h2>1. Running QUAST</h2>
+<h2>2. Running QUAST</h2>
 
 <a name="sec1.1"></a>
-<h3>1.1 Input data</h3>
+<h3>2.1 Input data</h3>
 <p>
     QUAST can work with assemblies and references in FASTA format. Files may be compressed with gzip.
 <br><br>
@@ -96,7 +107,7 @@ These files correspond to the first 10 Kbp of E. coli. Input reads and sample as
 </p>
 
 <a name="sec1.2"></a>
-<h3>1.2 GAGE mode</h3>
+<h3>2.2 GAGE mode</h3>
 <p>
     <a href="http://gage.cbcb.umd.edu/index.html">GAGE</a> is one of the well-known assessment tools. However, it has issues that limit its use. For example,
 you can specify only one assembly per run, thereby it is difficult to compare a lot of assemblies simultaneously. In addition, GAGE has fixed threshold on the minimum contig length (200 bp).
@@ -108,7 +119,7 @@ Note: GAGE can work only with a reference genome.
 </p>
 
 <a name="sec1.3"></a>
-<h3>1.3 Command line options</h3>
+<h3>2.3 Command line options</h3>
 
 <p>
     QUAST runs from a command line as follows:
@@ -116,7 +127,7 @@ Note: GAGE can work only with a reference genome.
 
 <pre class="code">
 <code>
-    quast.py [options] &lt;contig_file(s)&gt;
+    python quast.py [options] &lt;contig_file(s)&gt;
 </code>
 </pre>
 
@@ -135,36 +146,36 @@ Note: GAGE can work only with a reference genome.
 <p>
     <code>-G &lt;filename&gt;</code> (or <code>--genes &lt;filename&gt;</code>)
 </p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;Annotated genes file. See details about the file format in <a href="#sec1.1">section 1.1</a></p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;Annotated genes file. See details about the file format in <a href="#sec1.1">section 2.1</a></p>
 
 <p>
     <code>-O &lt;filename&gt;</code> (or <code>--operons &lt;filename&gt;</code>)
 </p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;Annotated operons file. See details about the file format in <a href="#sec1.1">section 1.1</a></p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;Annotated operons file. See details about the file format in <a href="#sec1.1">section 2.1</a></p>
 
 <p>
     <code>--min-contig &lt;int&gt;</code>
 </p>
 <p>&nbsp;&nbsp;&nbsp;&nbsp;Sets a lower threshold for a contig length. Only contigs of length greater than the threshold will be taken into account
-(except for some metrics, see <a href="#sec2">section 2</a>). The default value is 0.</p>
+(except for some metrics, see <a href="#sec2">section 3</a>). The default value is 0.</p>
 
 <p>
     <code>--gage</code>
 </p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;This flag starts QUAST in "GAGE mode" (see <a href="#sec1.2">section 1.2</a>). 
+<p>&nbsp;&nbsp;&nbsp;&nbsp;This flag starts QUAST in "GAGE mode" (see <a href="#sec1.2">section 2.2</a>). 
 Note: in this case, you <i>must</i> also set <b>-R</b> option and you <i>can</i> set <b>--min-contig</b> option.</p>
 
 <p>
     <code>--contig-thresholds &lt;int,int,...&gt;</code>
 </p>
 <p>&nbsp;&nbsp;&nbsp;&nbsp;Comma-separated list of contig length thresholds. Used in <b><i># contigs &ge; x</i></b> and
-<b><i>total length (&ge; x)</i></b> metrics (see <a href="#sec2">section 2</a>). The default value is 110,201,501,1001.</p>
+<b><i>total length (&ge; x)</i></b> metrics (see <a href="#sec2">section 3</a>). The default value is 110,201,501,1001.</p>
 
 <p>
     <code>--orf &lt;int,int,...&gt;</code>
 </p>
 <p>&nbsp;&nbsp;&nbsp;&nbsp;Comma-separated list of threshold lengths of ORFs to search for. Used in <b><i># ORFs &ge; x</i></b> metrics
-(see <a href="#sec2">section 2</a>). The default value is 600 (i.e. 200 codons).</p>
+(see <a href="#sec2">section 3</a>). The default value is 600 (i.e. 200 codons).</p>
 
 <p>
     <code>--not-circular</code>
@@ -175,7 +186,7 @@ Note: in this case, you <i>must</i> also set <b>-R</b> option and you <i>can</i>
 <p>&nbsp;&nbsp;&nbsp;&nbsp;Print help.</p>
 
 <a name="sec2"></a>
-<h2>2. Understanding output</h2>
+<h2>3. Understanding output</h2>
 
 <p>This section describes metrics QUAST computes.
 <br>
@@ -190,25 +201,25 @@ There is also a <b>tab-separated version</b> of this file: <code>&lt;QUAST_outpu
 Note:
 <ul>
     <li>plots in PDF format will be created only if you have <a href="http://matplotlib.sourceforge.net/">matplotlib</a> python library installed,</li>
-    <li>metrics based on a reference genome are computed only if the reference is given (see  <a href="#sec1.3">section 1.3</a>), </li>
-    <li>metrics based on genes and operons are computed only if proper annotations are given (see <a href="#sec1.3">section 1.3</a>), </li>
+    <li>metrics based on a reference genome are computed only if the reference is given (see  <a href="#sec1.3">section 2.3</a>), </li>
+    <li>metrics based on genes and operons are computed only if proper annotations are given (see <a href="#sec1.3">section 2.3</a>), </li>
     <li>if an output directory is not specified manually, it is going to be created automatically with a symbolik link <code>latest</code> leading to that directory.</li>
 </ul>
 </p>
 
 <a name="sec2.1"></a>
-<h3>2.1 Metrics descriptions</h3>
+<h3>3.1 Metrics descriptions</h3>
 
 <p><b><i># contigs &ge; x</i></b>&nbsp;&nbsp;is total number of contigs of length <code>&ge; x</code>.
-This metric doesn't depend on <code>--min-contig</code> command line parameter (see <a href="#sec1.3">section 1.3</a>).</p>
+This metric doesn't depend on <code>--min-contig</code> command line parameter (see <a href="#sec1.3">section 2.3</a>).</p>
 
 <p><b><i>Total length (&ge; x)</i></b>&nbsp;&nbsp;is the total number of bases in contigs of length <code>&ge; x</code>.
-This metric doesn't depend on <code>--min-contig</code> command line parameter (see <a href="#sec1.3">section 1.3</a>).</p>
+This metric doesn't depend on <code>--min-contig</code> command line parameter (see <a href="#sec1.3">section 2.3</a>).</p>
 
 <br>
 <i>
 All remaining metrics are computed on the contigs of length <code>&ge; x</code> where <code>x</code> is specified in command line option
-<code>--min-contig</code> (see <a href="#sec1.3">section 1.3</a>, default is 0).
+<code>--min-contig</code> (see <a href="#sec1.3">section 2.3</a>, default is 0).
 </i>
 <br>
 
@@ -271,7 +282,7 @@ alignment with this base. Repeates that map to multiple places may be counted ma
 <p><b><i>Genes</i></b>&nbsp;&nbsp;is the number of genes in the assembly (complete and partial), based
 on an annotated list of genes positions in the reference genome. The value "X + Y part"
 means X complete genes and Y partial ones (at least 100 bases are aligned but not the whole gene).
-This metric could be computed only if the reference and genes annotations file are given (see <a href="#sec1.3">section 1.3</a>).</p>
+This metric could be computed only if the reference and genes annotations file are given (see <a href="#sec1.3">section 2.3</a>).</p>
 
 <p><b><i>Operons</i></b>&nbsp;&nbsp;is defined similarly to the previous metric but you need
 operons annotations file for computing this metric. </p>
@@ -280,7 +291,7 @@ operons annotations file for computing this metric. </p>
 This metric will be computed if annotated genes file is not given.</p>
 
 <a name="sec2.2"></a>
-<h3>2.1 Plots descriptions</h3>
+<h3>3.2 Plots descriptions</h3>
 
 <p><b><i>Cumulative length</i></b></p>
 
@@ -323,7 +334,7 @@ This plot could be created only if the reference and genes annotations file are 
 
 
 <a name="sec3"></a><p>
-<h2>3. Feedback and bug reports</h2>
+<h2>4. Feedback and bug reports</h2>
 
 <p>
     We will be thankful if you help us make QUAST better by sending your comments, bug reports, and suggestions
@@ -333,7 +344,8 @@ This plot could be created only if the reference and genes annotations file are 
 <p>
     We kindly ask you to attach log <code>&lt;QUAST_output_dir&gt;/quast.log</code> or even archive of <code>&lt;QUAST_output_dir&gt;</code> if you have troubles running QUAST.
 <br>
-    Note that if you didn't specify <code>&lt;QUAST_output_dir&gt;</code> manually it was created with <code>results_&lt;date_time&gt;</code> name and symbolik link <code>latest</code> to that directory was created.
+    Note that if you didn't specify <code>&lt;QUAST_output_dir&gt;</code> manually it was automatically set to <code>quast_results/results_&lt;date_time&gt;</code> and symbolik link 
+<code>quast_results/latest</code> to that directory was created.
 </p>
 
 </body>

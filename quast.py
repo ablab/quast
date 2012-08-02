@@ -24,39 +24,39 @@ from libs import json_saver
 RELEASE_MODE=True
 
 def usage():
-    print >> sys.stderr, 'A tool for estimating assembly quality with various metrics and tools.'
+    print >> sys.stderr, 'QUAST: a quality assessment tool.'
     print >> sys.stderr, 'Usage:', sys.argv[0], '[options] contig files'
     print >> sys.stderr, ""
 
     if RELEASE_MODE:
         print >> sys.stderr, "Options:"
-        print >> sys.stderr, "-o           <dirname>       directory to store all result files [default: results_<datetime>]"
-        print >> sys.stderr, "-R           <filename>      file with a reference genome"
-        print >> sys.stderr, "-G/--genes   <filename>      file with genes for a given species"
-        print >> sys.stderr, "-O/--operons <filename>      file with operons for a given species"
+        print >> sys.stderr, "-o           <dirname>       directory to store all result files [default: quast_results/results_<datetime>]"
+        print >> sys.stderr, "-R           <filename>      reference genome file"
+        print >> sys.stderr, "-G/--genes   <filename>      annotated genes file"
+        print >> sys.stderr, "-O/--operons <filename>      annotated operons file"
         print >> sys.stderr, "--min-contig <int>           lower threshold for contig length [default: %s]" % qconfig.min_contig
         print >> sys.stderr, ""
         print >> sys.stderr, "Advanced options:"
         print >> sys.stderr, "--contig-thresholds <int,int,...>   comma-separated list of contig length thresholds [default is %s]" % qconfig.contig_thresholds
         print >> sys.stderr, "--orf               <int,int,...>   comma-separated list of threshold lengths of ORFs to search for [default is %s]" % qconfig.orf_lengths
-        print >> sys.stderr, '--not-circular                      this flag should be set if the genome is not circular (e.g., eukaryote)'
+        print >> sys.stderr, '--not-circular                      this flag should be set if the genome is not circular (e.g., it is an eukaryote)'
         print >> sys.stderr, ""
         print >> sys.stderr, "-h/--help           print this usage message"
     else:
         print >> sys.stderr, 'Options with arguments'
-        print >> sys.stderr, "-o  --output-dir             directory to store all result files [default: results_<datetime>]"
-        print >> sys.stderr, "-R  --reference              file with a reference genome"
-        print >> sys.stderr, "-G  --genes                  file with genes for a given species"
-        print >> sys.stderr, "-O  --operons                file with operons for a given species"
+        print >> sys.stderr, "-o  --output-dir             directory to store all result files [default: quast_results/results_<datetime>]"
+        print >> sys.stderr, "-R           <filename>      reference genome file"
+        print >> sys.stderr, "-G/--genes   <filename>      annotated genes file"
+        print >> sys.stderr, "-O/--operons <filename>      annotated operons file"
         print >> sys.stderr, "-M  --min-contig             lower threshold for contig length [default: %s]" % qconfig.min_contig
         print >> sys.stderr, "-t  --contig-thresholds      comma-separated list of contig length thresholds [default is %s]" % qconfig.contig_thresholds
         print >> sys.stderr, "-f  --orf                    comma-separated list of threshold lengths of ORFs to search for [default is %s]" % qconfig.orf_lengths
-        print >> sys.stderr, "-e  --genemark-thresholds    comma-separated list of threshold lengths of genes to search with GeneMark (default is %s)" % qconfig.genes_lengths
+        print >> sys.stderr, "-e  --genemark-thresholds    comma-separated list of threshold lengths of genes to search with GeneMark [default is %s]" % qconfig.genes_lengths
         print >> sys.stderr, ""
         print >> sys.stderr, 'Options without arguments'
         print >> sys.stderr, '-m  --mauve                  use Mauve'
         print >> sys.stderr, '-g  --gage                   use Gage only'
-        print >> sys.stderr, '-n  --not-circular           genome is not circular (e.g., eukaryote)'
+        print >> sys.stderr, '-n  --not-circular           genome is not circular (e.g., it is an eukaryote)'
         print >> sys.stderr, "-d  --disable-rc             reverse complementary contig should NOT be counted as misassembly"
         print >> sys.stderr, "-k  --genemark               use GeneMark"
         print >> sys.stderr, "-x  --extra-report           generate an extra report (extra_report.txt)"

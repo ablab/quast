@@ -17,10 +17,14 @@
 
 <p>QUAST stands for QUality ASsesment Tool. QUAST evaluates genome assemblies by computing various metrics (e.g., N50, number of ORFs, etc.). 
 <br>
-This manual will help you to run the tool and understand its output. We release QUAST as a tarball archive. You can find the latest tarball
-at <a href="http://quast.bioinf.spbau.ru/">http://quast.bioinf.spbau.ru/</a>. The latest version of this manual can be found <a href="http://quast.bioinf.spbau.ru/manual.html">here</a>.
+This manual will help you to run the tool and understand its output. 
 <br>
-QUAST uses <a href="http://www.plantagora.org/">Plantagora</a> and <a href="http://mummer.sourceforge.net/">MUMmer</a>.
+You can find all project news and the latest versions of source code and manual
+at <a href="http://sourceforge.net/p/quast/">http://sourceforge.net/p/quast/</a>.
+<br>
+QUAST uses <a href="http://www.plantagora.org/">Plantagora</a>, <a href="http://mummer.sourceforge.net/">MUMmer</a>. 
+All their sources are embedded in QUAST and you needn't to install
+them separately.
 <br>
 <br>
 QUAST version 1.0.0 released under GPL v2 (see <a href="LICENSE">LICENSE</a> for details) on 2 August 2012.
@@ -33,7 +37,7 @@ QUAST can be run on Linux and Mac OS.
 <br>
 It requires:
 <ul>
-    <li>Python v.2.4 or higher</li>
+    <li>Python v.2.7</li>
     <li>Perl v. 5.6.0 or higher</li>
 </ul>
 
@@ -57,7 +61,7 @@ It can be done on Ubuntu by typing:
 </pre>
 </p>
 
-<p>To download a <a href="http://quast.bioinf.spbau.ru/quast-1.0.0.tar.gz">tarball</a> with the latest source code and extract it:
+<!--p>To download a <a href="http://quast.bioinf.spbau.ru/quast-1.0.0.tar.gz">tarball</a> with the latest source code and extract it:
 </p>
 
 <pre  class="code">
@@ -66,7 +70,7 @@ It can be done on Ubuntu by typing:
     tar -xzf quast-1.0.0.tar.gz
     cd quast
 </code>
-</pre>
+</pre-->
 
 <a name="sec1"></a>
 <h2>1. Running QUAST</h2>
@@ -76,18 +80,19 @@ It can be done on Ubuntu by typing:
 <p>
     QUAST can work with assemblies and references in FASTA format. Files may be compressed with gzip.
 <br><br>
-    You can specify files with genes and operons annotations. We support <a href="http://www.sanger.ac.uk/resources/software/gff/spec.html">the 2nd </a> and <a href="http://www.sequenceontology.org/gff3.shtml">the 3rd version</a>
-of the GFF format, the format used by <a href="http://www.ncbi.nlm.nih.gov/gene">NCBI to store genes</a> (set "Summary (text)" in the display settings), and a plain TXT format with 4 tab-separated columns:
+    You can specify files with annotated genes and operons. We support <a href="http://www.sanger.ac.uk/resources/software/gff/spec.html">the 2nd </a> and <a href="http://www.sequenceontology.org/gff3.shtml">the 3rd version</a>
+of the GFF format, the format used by <a href="http://www.ncbi.nlm.nih.gov/gene">NCBI to store genes</a> ("Summary (text)" format), and a plain TXT format with 4 tab-separated columns:
 <ul>
-    <li>a chromosome name (it has to match a name in a reference file), </li>
-    <li>a gene or an operon id, </li>
-    <li>a start position,</li>
-    <li>an end postion.</li>
+    <li>chromosome name (it has to match a name in the reference file), </li>
+    <li>gene or operon id, </li>
+    <li>start position,</li>
+    <li>end postion.</li>
 </ul>
-Coordinates are 1-based. If a <i>start postion</i> less than a corresponding <i>end postion</i>, such gene or operon is on a positive strand, otherwise it is on a negative strand.
+Coordinates are 1-based, i.e. the first nucleotide in the reference has position 1, not 0. 
+If a <i>start postion</i> less than a corresponding <i>end postion</i>, such gene or operon is on a positive strand, otherwise it is on a negative strand.
 <br><br>
-You can find examples of a reference file and genes and operons annotations of all formats in your QUAST installation directory, <code>test_data</code> subdirectory.
-These files correspond to the first 1000 bp of E. coli. Input reads and sample assemblies for this data set are also there.
+You can find examples of a reference file and annotated genes and operons in all supported formats in your QUAST installation directory, <code>test_data</code> subdirectory.
+These files correspond to the first 10 Kbp of E. coli. Input reads and sample assemblies for this data set are also there.
 </p>
 
 <a name="sec1.2"></a>
@@ -103,27 +108,27 @@ These files correspond to the first 1000 bp of E. coli. Input reads and sample a
 </code>
 </pre>
 
-    <p>Here are available options:</p>
+    <p>QUAST options:</p>
 
 <p>
     <code>-o &lt;output_dir&gt; </code></p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;Specify an output directory. The default value is <code>results_&lt;date_time&gt;</code>.
+<p>&nbsp;&nbsp;&nbsp;&nbsp;Specify an output directory. The default value is <code>quast_results/results_&lt;date_time&gt;</code>.
 </p>
 
 <p>
     <code>-R &lt;filename&gt;</code>
 </p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;A file with a reference genome. Most metrics can't be evaluated without a reference.</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;Reference genome file. Most metrics can't be evaluated without a reference.</p>
 
 <p>
     <code>-G &lt;filename&gt;</code> (or <code>--genes &lt;filename&gt;</code>)
 </p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;A file with genes annotations for a given species. See details about the file format in <a href="#sec1.1">section 1.1</a></p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;Annotated genes file. See details about the file format in <a href="#sec1.1">section 1.1</a></p>
 
 <p>
     <code>-O &lt;filename&gt;</code> (or <code>--operons &lt;filename&gt;</code>)
 </p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;A file with operons annotations for a given species. See details about the file format in <a href="#sec1.1">section 1.1</a></p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;Annotated operons file. See details about the file format in <a href="#sec1.1">section 1.1</a></p>
 
 <p>
     <code>--min-contig &lt;int&gt;</code>
@@ -134,14 +139,15 @@ These files correspond to the first 1000 bp of E. coli. Input reads and sample a
 <p>
     <code>--contig-thresholds &lt;int,int,...&gt;</code>
 </p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;A comma-separated list of contig length thresholds. Used in <b><i># contigs &ge; x</i></b> and 
+
+<p>&nbsp;&nbsp;&nbsp;&nbsp;Comma-separated list of contig length thresholds. Used in <b><i># contigs &ge; x</i></b> and 
 <b><i>total length (&ge; x)</i></b> metrics (see <a href="#sec2">section 2</a>). The default value is 201,1001.</p>
 
 <p>
     <code>--orf &lt;int,int,...&gt;</code>
 </p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;A comma-separated list of threshold lengths (in codons) of ORFs to search for. Used in <b><i># ORFs &ge; x</i></b> metrics
-(see <a href="#sec2">section 2</a>). The default value is 200 codons (i.e. 600 bp).</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;Comma-separated list of threshold lengths of ORFs to search for. Used in <b><i># ORFs &ge; x</i></b> metrics
+(see <a href="#sec2">section 2</a>). The default value is 600 (i.e. 200 codons).</p>
 
 <p>
     <code>--not-circular</code>
@@ -156,17 +162,20 @@ These files correspond to the first 1000 bp of E. coli. Input reads and sample a
 
 <p>This section describes metrics QUAST computes.
 <br>
-Values of main metrics are presented in <code>&lt;QUAST_output_dir&gt;/report.txt</code>. <br>
-There is also a tab-separated version of this file: <code>&lt;QUAST_output_dir&gt;/report.tsv</code> (suitable for Google-docs).
 <br>
-Plots are presented in <code>&lt;QUAST_output_dir&gt;/plots.pdf</code>.
+Values of main metrics in <b>TXT format</b> are presented in <code>&lt;QUAST_output_dir&gt;/report.txt</code>. <br>
+There is also a <b>tab-separated version</b> of this file: <code>&lt;QUAST_output_dir&gt;/report.tsv</code> (suitable for Google-docs).
+<br>
+<b>Plots in PDF format</b> are presented in <code>&lt;QUAST_output_dir&gt;/plots.pdf</code>.
+<br>
+<b>HTML version</b> of the report with all plots inside it is in <code>&lt;QUAST_output_dir&gt;/report.html</code>.
 <br><br>
 Note:
 <ul>
-    <li>plots will be created only if you have <a href="http://matplotlib.sourceforge.net/">matplotlib</a> python library installed,</li>
+    <li>plots in PDF format will be created only if you have <a href="http://matplotlib.sourceforge.net/">matplotlib</a> python library installed,</li>
     <li>metrics based on a reference genome are computed only if the reference is given (see  <a href="#sec1.2">section 1.2</a>), </li>
     <li>metrics based on genes and operons are computed only if proper annotations are given (see <a href="#sec1.2">section 1.2</a>), </li>
-    <li>if an output directory is not specified manually, it is going to be created automatically with a symbolik link <code>latest</code> leading to the directory.</li>
+    <li>if an output directory is not specified manually, it is going to be created automatically with a symbolik link <code>latest</code> leading to that directory.</li>
 </ul>
 </p>
 
@@ -226,7 +235,9 @@ reference sequence. The value "X + Y part" means: X totally unaligned contigs pl
 partially unaligned contigs (only bases from unaligned parts). </p>
 
 <p><b><i>Ambiguous contigs</i></b>&nbsp;&nbsp;is the number of contigs which have reference alignments
-of equal quality in multiple locations on the reference. The value "X (Y)" means X ambiguous contigs with Y bases in them. </p>
+of equal quality in multiple locations on the reference. </p>
+
+<p><b><i>Ambiguous contig bases</i></b>&nbsp;&nbsp;is the number of total bases contained in all ambiguous contigs. </p>
 
 <p><b><i>NA50, NGA50, NA75, NGA75 (A stands for "aligned")</i></b>&nbsp;&nbsp;like the same
 metrics without A but in this case we count lengths of aligned blocks instead of contigs lengths.
@@ -245,8 +256,8 @@ This metric could be computed only if the reference and genes annotations file a
 <p><b><i>Operons</i></b>&nbsp;&nbsp;is defined similarly to the previous metric but you need
 operons annotations file for computing this metric. </p>
 
-<p><b><i># ORFs >= x bp</i></b>&nbsp;&nbsp;is the total number of open reading frames of length <code>&ge; x bp</code> founded in the assembly
-(the length of one codon is 3 bp). This metric will be computed if genes annotations file is not given.</p>
+<p><b><i># ORFs >= x</i></b>&nbsp;&nbsp;is the total number of open reading frames of length <code>&ge; x bp</code> founded in the assembly. 
+This metric will be computed if annotated genes file is not given.</p>
 
 <a name="sec2.2"></a>
 <h3>2.1 Plots descriptions</h3>

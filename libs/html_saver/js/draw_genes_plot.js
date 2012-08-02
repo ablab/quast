@@ -25,7 +25,7 @@ function drawGenesPlot(filenames, filesContigs, genes, found, kind, div, legendP
             data: [[0, 0]],
             label: filenames[fi],
         };
-
+        
         var contigNo = 0;
         var totalFull = 0;
 

@@ -1,11 +1,10 @@
 
 function drawGenesPlot(filenames, filesContigs, genes, found, kind, div, legendPlaceholder,  glossary) {
-
     div.html(
         "<div class='plot'>" +
             "<span class='plot-header'>" + kind[0].toUpperCase() + kind.slice(1) + "s covered</span>" +
             "<div style='width: 800px; height: 600px;' id='" + kind + "s-plot-placeholder'></div>" +
-        "</div>"
+            "</div>"
     );
 
     var plotsN = filenames.length;
@@ -25,7 +24,7 @@ function drawGenesPlot(filenames, filesContigs, genes, found, kind, div, legendP
             data: [[0, 0]],
             label: filenames[fi],
         };
-        
+
         var contigNo = 0;
         var totalFull = 0;
 

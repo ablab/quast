@@ -25,7 +25,7 @@ RELEASE_MODE=True
 
 def usage():
     print >> sys.stderr, 'QUAST: a quality assessment tool.'
-    print >> sys.stderr, 'Usage:', sys.argv[0], '[options] contig files'
+    print >> sys.stderr, 'Usage: python', sys.argv[0], '[options] contig files'
     print >> sys.stderr, ""
 
     if RELEASE_MODE:

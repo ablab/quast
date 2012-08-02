@@ -77,7 +77,7 @@ def save_assembly_lengths(output_dir, filenames, assemblies_lengths):
 def save_contigs(output_dir, filenames, contigs):
     return save(output_dir + contigs_fn, {
         'filenames' : map(os.path.basename, filenames),
-        'contigs' : { os.path.basename(fn) : blocks for fn, blocks in contigs.items() },
+        'contigs' : dict((os.path.basename(fn), blocks) for (fn, blocks) in contigs.items()),
     })
 
 

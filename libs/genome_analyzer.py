@@ -159,7 +159,7 @@ def do(reference, filenames, output_dir, nucmer_dir, genes_filename, operons_fil
             genome_mapping[chr_name] = [0] * (chr_len + 1)
         #genome = [0 for i in range(genome_size + 1)]
         aligned_blocks = []
-        print genome_mapping
+        #print genome_mapping
 
         # '''
         # nodes_len_coeff = collections.defaultdict(lambda:0.0)

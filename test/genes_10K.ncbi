@@ -1,0 +1,80 @@
+279. thrA
+fused aspartokinase I and homoserine dehydrogenase I[Escherichia coli str. K-12 substr. MG1655]
+Other Aliases: b0002, ECK0002, Hs, JW0001, thrA1, thrA2, thrD
+Genomic context: Chromosome
+Annotation: NC_000913.2 (337..2799)
+ID: 945803
+
+
+934. thrB
+homoserine kinase[Escherichia coli str. K-12 substr. MG1655]
+Other Aliases: b0003, ECK0003, JW0002
+Genomic context: Chromosome
+Annotation: NC_000913.2 (2801..3733)
+ID: 947498
+
+
+1144. mog
+molybdochelatase incorporating molybdenum into molybdopterin[Escherichia coli str. K-12 substr. MG1655]
+Other Aliases: b0009, ECK0009, JW0008, bisD, chlG, mogA, yaaG
+Genomic context: Chromosome
+Annotation: NC_000913.2 (9306..9893)
+ID: 944760
+
+
+1184. thrC
+threonine synthase[Escherichia coli str. K-12 substr. MG1655]
+Other Aliases: b0004, ECK0004, JW0003
+Genomic context: Chromosome
+Annotation: NC_000913.2 (3734..5020)
+ID: 945198
+
+
+1756. thrL
+thr operon leader peptide[Escherichia coli str. K-12 substr. MG1655]
+Other Aliases: b0001, ECK0001, JW4367
+Genomic context: Chromosome
+Annotation: NC_000913.2 (190..255)
+ID: 944742
+
+
+1910. talB
+transaldolase B[Escherichia coli str. K-12 substr. MG1655]
+Other Aliases: b0008, ECK0008, JW0007, yaaK
+Genomic context: Chromosome
+Annotation: NC_000913.2 (8238..9191)
+ID: 944748
+
+
+2935. yaaH
+inner membrane protein, Grp1_Fun34_YaaH family[Escherichia coli str. K-12 substr. MG1655]
+Other Aliases: b0010, ECK0010, JW0009
+Genomic context: Chromosome
+Annotation: NC_000913.2 (9928..10494, complement)
+ID: 944792
+
+
+2969. yaaA
+Peroxide resistance protein, lowers intracellular iron[Escherichia coli str. K-12 substr. MG1655]
+Other Aliases: b0006, ECK0006, JW0005
+Genomic context: Chromosome
+Annotation: NC_000913.2 (5683..6459, complement)
+ID: 944749
+
+
+4038. yaaJ
+predicted transporter[Escherichia coli str. K-12 substr. MG1655]
+Other Aliases: b0007, ECK0007, JW0006
+Genomic context: Chromosome
+Annotation: NC_000913.2 (6529..7959, complement)
+ID: 944745
+
+
+4313. yaaX
+predicted protein[Escherichia coli str. K-12 substr. MG1655]
+Other Aliases: b0005, ECK0005, JW0004
+Genomic context: Chromosome
+Annotation: NC_000913.2 (5234..5530)
+ID: 944747
+
+

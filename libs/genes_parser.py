@@ -38,7 +38,7 @@ def get_genes_from_file(filename, feature):
     elif ncbi_start_pattern.match(line):
         try:
             genes = parse_ncbi(genes_file)
-        except ParseException as e:
+        except ParseException, e:
             print '  ', e
             print '    ' + filename + ' skipped'
             genes = []

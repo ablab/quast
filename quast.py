@@ -37,6 +37,7 @@ def usage():
         print >> sys.stderr, "--min-contig <int>           lower threshold for contig length [default: %s]" % qconfig.min_contig
         print >> sys.stderr, ""
         print >> sys.stderr, "Advanced options:"
+        print >> sys.stderr, "--gage                              this flag starts QUAST in \"GAGE mode\""
         print >> sys.stderr, "--contig-thresholds <int,int,...>   comma-separated list of contig length thresholds [default is %s]" % qconfig.contig_thresholds
         print >> sys.stderr, "--orf               <int,int,...>   comma-separated list of threshold lengths of ORFs to search for [default is %s]" % qconfig.orf_lengths
         print >> sys.stderr, '--not-circular                      this flag should be set if the genome is not circular (e.g., it is an eukaryote)'

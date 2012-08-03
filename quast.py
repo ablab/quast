@@ -387,7 +387,8 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
             json_saver.save_total_report(json_outputpath, report_dict)
 
         from libs import report_maker
-        report_maker.do(dict([(k, v[1:]) for k, v in report_dict.iteritems()]), qconfig.report_basename, output_dirpath, qconfig.min_contig)
+        report_maker.do(dict([(k, v[1:]) for k, v in report_dict.iteritems()]), qconfig.report_basename,
+            qconfig.transposed_report_basename, output_dirpath, qconfig.min_contig)
 
         from libs.html_saver import html_saver
         html_saver.save_total_report(output_dirpath, report_dict)
@@ -396,12 +397,13 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
             print '  All pdf files are merged to', all_pdf_filename
             all_pdf.close()
 
-        ## and Single Cell paper table
+        ## and extra report
         if qconfig.reference and qconfig.extra_report:
             from libs import extra_report_maker
-            extra_report_maker.do(os.path.join(output_dirpath, qconfig.report_basename), output_dirpath + '/genome_analyzer/genome_info.txt', extra_report_filename, qconfig.min_contig, json_outputpath)
+            extra_report_maker.do(os.path.join(output_dirpath, qconfig.transposed_report_basename),
+                output_dirpath + '/genome_analyzer/genome_info.txt', extra_report_filename, qconfig.min_contig, json_outputpath)
 
-            ########################################################################
+        ########################################################################
 
     print 'Done.'
 

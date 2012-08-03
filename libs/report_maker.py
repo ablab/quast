@@ -7,13 +7,13 @@
 ### main function ###
 import os
 
-def do(report_dict, report_basename, output_dirpath, min_contig=0):
+def do(report_dict, report_basename, transposed_report_basename, output_dirpath, min_contig=0):
     # suffixes for files with transposed and normal report tables
     txt_ext = '.txt'
     tsv_ext = '.tsv'
 
     # Where total report will be saved
-    report_horizontal_path = os.path.join(output_dirpath, 'transposed_' + report_basename)
+    report_horizontal_path = os.path.join(output_dirpath, transposed_report_basename)
     report_vertical_path = os.path.join(output_dirpath, report_basename)
 
     print 'Summarizing...'

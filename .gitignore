@@ -4,9 +4,9 @@ quast_results_archive_json/*
 results_json/*
 quality.pyc
 show-snps.err
+libs/MUMmer3.23-linux/*.o
+libs/MUMmer3.23-osx/*.o
 libs/gage/*.class
-libs/MUMmer3.23-linux/*
-libs/MUMmer3.23-osx/*
 libs/*.pyc
 libs/html_saver/*.pyc
 libs/.DS_Store

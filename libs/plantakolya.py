@@ -291,8 +291,8 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
                         total_unaligned += ctg_len - end
                         print >> plantafile, '\t\tThis contig is partially unaligned. (%d out of %d)' % (
                         top_len, ctg_len)
-                        print >> plantafile, '\t\tUnaligned bases: 1 to %d (%d)' % (begin, begin - 1)
-                        print >> plantafile, '\t\tUnaligned bases: %d to %d (%d)' % (end, ctg_len, ctg_len - end)
+                        print >> plantafile, '\t\tUnaligned bases: 1 to %d (%d)' % (begin, begin)
+                        print >> plantafile, '\t\tUnaligned bases: %d to %d (%d)' % (end, ctg_len, ctg_len - end + 1)
                 else:
                     #There is more than one alignment of this contig to the reference
                     print >> plantafile, '\t\tThis contig is misassembled. %d total aligns.' % num_aligns

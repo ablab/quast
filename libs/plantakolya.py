@@ -43,7 +43,7 @@ def process_misassembled_contig(plantafile, output_file, i_start, i_finish, cont
             prev = list(sorted_aligns[i+1])
             print >>plantafile, '\t\t\tExtensive misassembly between these two alignments: [%s] @ %d and %d' % (sorted_aligns[i][11], sorted_aligns[i][1], sorted_aligns[i+1][0])
 
-            extensive_misassembled_contigs.add(sorted_aligns[i][11])
+            extensive_misassembled_contigs.add(sorted_aligns[i][12])
             # Kolya: removed something about ref_features
 
             region_misassemblies += 1
@@ -395,6 +395,7 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
     report_dict[os.path.basename(filename)].append('%d (%d)' % (ambiguous, total_ambiguous))
 
     ## outputting misassembled contigs to separate file
+    print extensive_misassembled_contigs
     fasta = [(name, seq) for name, seq in fastaparser.read_fasta(filename) if
                          name in extensive_misassembled_contigs]
     fastaparser.write_fasta_to_file(output_dir + '/' + os.path.basename(filename) + '.mis_contigs', fasta)

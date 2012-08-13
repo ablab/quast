@@ -21,6 +21,10 @@ import subprocess
 import fastaparser
 from qutils import id_to_str
 
+class Mapping(object):
+    def  __init__(self, line):
+        pass
+
 def spaceline(line):
     return ' '.join(str(x) for x in line)
 
@@ -77,6 +81,7 @@ def process_misassembled_contig(plantafile, output_file, i_start, i_finish, cont
     return list(prev), region_misassemblies, region_local_misassemblies
 
 def clear_files(filename, nucmerfilename):
+    return
     # delete temporary files
     for ext in ['.delta', '.mgaps', '.ntref', '.gp']:
         if os.path.isfile(nucmerfilename + ext):
@@ -140,6 +145,7 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
         assert line[0] != '='
         #Clear leading spaces from nucmer output
         #Store nucmer lines in an array
+        #mapping = Mapping(line)
         line = line.split()
         contig = line[12]
         for i in [0, 1, 3, 4, 6, 7]:
@@ -395,7 +401,6 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
     report_dict[os.path.basename(filename)].append('%d (%d)' % (ambiguous, total_ambiguous))
 
     ## outputting misassembled contigs to separate file
-    print extensive_misassembled_contigs
     fasta = [(name, seq) for name, seq in fastaparser.read_fasta(filename) if
                          name in extensive_misassembled_contigs]
     fastaparser.write_fasta_to_file(output_dir + '/' + os.path.basename(filename) + '.mis_contigs', fasta)

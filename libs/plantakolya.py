@@ -23,31 +23,41 @@ from qutils import id_to_str
 
 class Mapping(object):
     def  __init__(self, line):
-        pass
+        # line from coords file,e.g.
+        # 4324128  4496883  |   112426   285180  |   172755   172756  |  99.9900  | gi|48994873|gb|U00096.2|	NODE_333_length_285180_cov_221082
+        line = line.split()
+        assert line[2] == line[5] == line[8] == line[10] == '|', line
+        self.contig = line[12]
+        self.ref = line[11]
+        self.s1, self.e1, self.s2, self.e2, self.len1, self.len2 = [int(line[i]) for i in [0, 1, 3, 4, 6, 7]]
+        self.idy = float(line[9])
 
-def spaceline(line):
-    return ' '.join(str(x) for x in line)
+    def __str__(self):
+        return ' '.join(str(x) for x in [self.s1, self.e1, '|', self.s2, self.e2, '|', self.len1, self.len2, '|', self.idy, '|', self.ref, self.contig])
+
+    def clone(self):
+        return Mapping(str(self))
 
 def process_misassembled_contig(plantafile, output_file, i_start, i_finish, contig, prev, sorted_aligns, is_1st_chimeric_half, ns, smgap, rc, assembly, misassembled_contigs, extensive_misassembled_contigs):
     region_misassemblies = 0
     region_local_misassemblies = 0
     for i in xrange(i_start, i_finish):
-        print >>plantafile, '\t\t\tReal Alignment %d: %s' % (i+1, spaceline(sorted_aligns[i]))
+        print >>plantafile, '\t\t\tReal Alignment %d: %s' % (i+1, str(sorted_aligns[i]))
         #Calculate the distance on the reference between the end of the first alignment and the start of the second
-        gap = sorted_aligns[i+1][0] - sorted_aligns[i][1]
+        gap = sorted_aligns[i+1].s1 - sorted_aligns[i].e1
 
         #Check strands
-        strand1 = (sorted_aligns[i][3] > sorted_aligns[i][4])
-        strand2 = (sorted_aligns[i+1][3] > sorted_aligns[i+1][4])
+        strand1 = (sorted_aligns[i].s2 > sorted_aligns[i].e2)
+        strand2 = (sorted_aligns[i+1].s2 > sorted_aligns[i+1].e2)
 
-        if sorted_aligns[i][11] != sorted_aligns[i+1][11] or gap > ns + smgap or (not rc and strand1 != strand2): # different chromosomes or large gap or different strands
+        if sorted_aligns[i].ref != sorted_aligns[i+1].ref or gap > ns + smgap or (not rc and strand1 != strand2): # different chromosomes or large gap or different strands
             #Contig spans chromosomes or there is a gap larger than 1kb
             #MY: output in coords.filtered
-            print >>output_file, spaceline(prev)
-            prev = list(sorted_aligns[i+1])
-            print >>plantafile, '\t\t\tExtensive misassembly between these two alignments: [%s] @ %d and %d' % (sorted_aligns[i][11], sorted_aligns[i][1], sorted_aligns[i+1][0])
+            print >>output_file, str(prev)
+            prev = sorted_aligns[i+1].clone()
+            print >>plantafile, '\t\t\tExtensive misassembly between these two alignments: [%s] @ %d and %d' % (sorted_aligns[i].ref, sorted_aligns[i].e1, sorted_aligns[i+1].s1)
 
-            extensive_misassembled_contigs.add(sorted_aligns[i][12])
+            extensive_misassembled_contigs.add(sorted_aligns[i].contig)
             # Kolya: removed something about ref_features
 
             region_misassemblies += 1
@@ -56,32 +66,31 @@ def process_misassembled_contig(plantafile, output_file, i_start, i_finish, cont
         else:
             if gap < 0:
                 #There is overlap between the two alignments, a local misassembly
-                print >>plantafile, '\t\tOverlap between these two alignments (local misassembly): [%s] %d to %d' % (sorted_aligns[i][11], sorted_aligns[i][1], sorted_aligns[i+1][0])
+                print >>plantafile, '\t\tOverlap between these two alignments (local misassembly): [%s] %d to %d' % (sorted_aligns[i].ref, sorted_aligns[i].e1, sorted_aligns[i+1].s1)
             else:
                 #There is a small gap between the two alignments, a local misassembly
-                print >>plantafile, '\t\tGap in alignment between these two alignments (local misassembly): [%s] %d' % (sorted_aligns[i][11], sorted_aligns[i][0])
+                print >>plantafile, '\t\tGap in alignment between these two alignments (local misassembly): [%s] %d' % (sorted_aligns[i].ref, sorted_aligns[i].s1)
 
             region_local_misassemblies += 1
 
             #MY:
-            prev[1] = sorted_aligns[i+1][1] # [E1]
-            prev[3] = 0 # [S2]
-            prev[4] = 0 # [E2]
-            prev[6] = prev[1] - prev[0] # [LEN1]
-            prev[7] = prev[7] + sorted_aligns[i+1][7] + (gap if gap < 0 else 0) # [LEN2]
+            prev.e1 = sorted_aligns[i+1].e1 # [E1]
+            prev.s2 = 0 # [S2]
+            prev.e2 = 0 # [E2]
+            prev.len1 = prev.e1 - prev.s1 # [LEN1]
+            prev.len2 = prev.len2 + sorted_aligns[i+1].len2 + (gap if gap < 0 else 0) # [LEN2]
 
     #MY: output in coords.filtered
     if not is_1st_chimeric_half:
-        print >>output_file, spaceline(prev)
+        print >>output_file, str(prev)
 
     #Record the very last alignment
     i = i_finish
-    print >>plantafile, '\t\t\tReal Alignment %d: %s' % (i+1, spaceline(sorted_aligns[i]))
+    print >>plantafile, '\t\t\tReal Alignment %d: %s' % (i+1, str(sorted_aligns[i]))
 
-    return list(prev), region_misassemblies, region_local_misassemblies
+    return prev.clone(), region_misassemblies, region_local_misassemblies
 
 def clear_files(filename, nucmerfilename):
-    return
     # delete temporary files
     for ext in ['.delta', '.mgaps', '.ntref', '.gp']:
         if os.path.isfile(nucmerfilename + ext):
@@ -145,15 +154,10 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
         assert line[0] != '='
         #Clear leading spaces from nucmer output
         #Store nucmer lines in an array
-        #mapping = Mapping(line)
-        line = line.split()
-        contig = line[12]
-        for i in [0, 1, 3, 4, 6, 7]:
-            line[i] = int(line[i])
-        line[9] = float(line[9])
-        sum_idy += line[9]
+        mapping = Mapping(line)
+        sum_idy += mapping.idy
         num_idy += 1
-        aligns.setdefault(contig, []).append(line)
+        aligns.setdefault(mapping.contig, []).append(mapping)
     avg_idy = sum_idy / num_idy if num_idy else 0
 
     # Loading the assembly contigs
@@ -219,9 +223,9 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
             num_aligns = len(aligns[contig])
 
             #Sort aligns by length and identity
-            sorted_aligns = sorted(aligns[contig], key=lambda x: (x[7] * x[9], x[7]), reverse=True)
-            top_len = sorted_aligns[0][7]
-            top_id = sorted_aligns[0][9]
+            sorted_aligns = sorted(aligns[contig], key=lambda x: (x.len2 * x.idy, x.len2), reverse=True)
+            top_len = sorted_aligns[0].len2
+            top_id = sorted_aligns[0].idy
             top_aligns = []
             print >> plantafile, 'Top Length: %s  Top ID: %s' % (top_len, top_id)
 
@@ -232,63 +236,63 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
                 sorted_aligns = sorted_aligns[1:]
 
                 #Continue grabbing alignments while length and identity are identical
-                while sorted_aligns and top_len == sorted_aligns[0][7] and top_id == sorted_aligns[0][9]:
+                while sorted_aligns and top_len == sorted_aligns[0].len2 and top_id == sorted_aligns[0].idy:
                     top_aligns.append(sorted_aligns[0])
                     sorted_aligns = sorted_aligns[1:]
 
                 #Mark other alignments as ambiguous
                 while sorted_aligns:
                     ambig = sorted_aligns.pop()
-                    print >> plantafile, '\t\tMarking as ambiguous: %s' % spaceline(ambig)
+                    print >> plantafile, '\t\tMarking as ambiguous: %s' % str(ambig)
                     # Kolya: removed redundant code about $ref
 
-                print >> coords_filtered_file, spaceline(top_aligns[0])
+                print >> coords_filtered_file, str(top_aligns[0])
 
                 if len(top_aligns) == 1:
                     #There is only one top align, life is good
-                    print >> plantafile, '\t\tOne align captures most of this contig: %s' % spaceline(top_aligns[0])
+                    print >> plantafile, '\t\tOne align captures most of this contig: %s' % str(top_aligns[0])
                 else:
                     #There is more than one top align
                     print >> plantafile, '\t\tThis contig has %d significant alignments. [ambiguous]' % len(
                         top_aligns)
                     #Record these alignments as ambiguous on the reference
                     for align in top_aligns:
-                        print >> plantafile, '\t\t\tAmbiguous Alignment: %s' % spaceline(align)
+                        print >> plantafile, '\t\t\tAmbiguous Alignment: %s' % str(align)
                         # Kolya: removed redundant code about $ref
                     #Increment count of ambiguous contigs and bases
                     ambiguous += 1
                     total_ambiguous += ctg_len
             else:
                 #Sort all aligns by position on contig, then length # TODO: check if bug in plantagora
-                sorted_aligns = sorted(sorted_aligns, key=lambda x: (x[7], x[9]), reverse=True)
-                sorted_aligns = sorted(sorted_aligns, key=lambda x: min(x[3], x[4]))
+                sorted_aligns = sorted(sorted_aligns, key=lambda x: (x.len2, x.idy), reverse=True)
+                sorted_aligns = sorted(sorted_aligns, key=lambda x: min(x.s2, x.e2))
 
                 #Push first alignment on to real aligns
                 real_aligns = [sorted_aligns[0]]
-                last_end = max(sorted_aligns[0][3], sorted_aligns[0][4])
+                last_end = max(sorted_aligns[0].s2, sorted_aligns[0].e2)
 
                 #Walk through alignments, if not fully contained within previous, record as real
                 for i in xrange(1, num_aligns):
                     #If this alignment extends past last alignment's endpoint, add to real, else skip
-                    if sorted_aligns[i][3] > last_end or sorted_aligns[i][4] > last_end:
+                    if sorted_aligns[i].s2 > last_end or sorted_aligns[i].e2 > last_end:
                         real_aligns = [sorted_aligns[i]] + real_aligns
-                        last_end = max(sorted_aligns[i][3], sorted_aligns[i][4])
+                        last_end = max(sorted_aligns[i].s2, sorted_aligns[i].e2)
                     else:
                         print >> plantafile, '\t\tSkipping [%d][%d] redundant alignment %d %s' % (
-                        sorted_aligns[i][0], sorted_aligns[i][1], i, spaceline(sorted_aligns[i]))
+                        sorted_aligns[i].s1, sorted_aligns[i].e1, i, str(sorted_aligns[i]))
                         # Kolya: removed redundant code about $ref
 
                 if len(real_aligns) == 1:
                     #There is only one alignment of this contig to the reference
                     #MY: output in coords.filtered
-                    print >> coords_filtered_file, spaceline(real_aligns[0])
+                    print >> coords_filtered_file, str(real_aligns[0])
 
                     #Is the contig aligned in the reverse compliment?
                     #Record beginning and end of alignment in contig
-                    if sorted_aligns[0][3] > sorted_aligns[0][4]:
-                        end, begin = sorted_aligns[0][3], sorted_aligns[0][4]
+                    if sorted_aligns[0].s2 > sorted_aligns[0].e2:
+                        end, begin = sorted_aligns[0].s2, sorted_aligns[0].e2
                     else:
-                        end, begin = sorted_aligns[0][4], sorted_aligns[0][3]
+                        end, begin = sorted_aligns[0].e2, sorted_aligns[0].s2
                     if (begin - 1) or (ctg_len - end):
                         #Increment tally of partially unaligned contigs
                         partially_unaligned += 1
@@ -304,9 +308,9 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
                     print >> plantafile, '\t\tThis contig is misassembled. %d total aligns.' % num_aligns
                     #Reset real alignments and sum of real alignments
                     #Sort real alignments by position on the reference
-                    sorted_aligns = sorted(real_aligns, key=lambda x: (x[11], x[0]))
+                    sorted_aligns = sorted(real_aligns, key=lambda x: (x.ref, x.s1))
                     # Counting misassembled contigs which are partially unaligned
-                    all_aligns_len = sum(x[7] for x in sorted_aligns)
+                    all_aligns_len = sum(x.len2 for x in sorted_aligns)
                     if all_aligns_len < umt * ctg_len:
                         print >> plantafile, '\t\t\tWarning! Contig length is %d and total length of all aligns is %d' % (
                         ctg_len, all_aligns_len)
@@ -316,20 +320,19 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
 
                     #MY: computing cyclic references
                     if cyclic:
-                        if sorted_aligns[0][0] - 1 + total_reg_len - sorted_aligns[sorted_num][
-                                                                     1] <= ns + smgap:  # chimerical misassembly
+                        if sorted_aligns[0].s1 - 1 + total_reg_len - sorted_aligns[sorted_num].e1 <= ns + smgap:  # chimerical misassembly
                             chimeric_found = True
 
                             # find chimerical alignment between "first" blocks and "last" blocks
                             chimeric_index = 0
                             for i in xrange(sorted_num):
-                                gap = sorted_aligns[i + 1][0] - sorted_aligns[i][1]
+                                gap = sorted_aligns[i + 1].s1 - sorted_aligns[i].e1
                                 if gap > ns + smgap:
                                     chimeric_index = i + 1
                                     break
 
                             #MY: for merging local misassemlbies
-                            prev = list(sorted_aligns[chimeric_index])
+                            prev = sorted_aligns[chimeric_index].clone()
 
                             # process "last half" of blocks
                             prev, x, y = process_misassembled_contig(plantafile, coords_filtered_file,
@@ -338,13 +341,13 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
                             region_misassemblies += x
                             region_local_misassemblies += y
                             print >> plantafile, '\t\t\tChimerical misassembly between these two alignments: [%s] @ %d and %d' % (
-                            sorted_aligns[sorted_num][11], sorted_aligns[sorted_num][1], sorted_aligns[0][0])
+                            sorted_aligns[sorted_num].ref, sorted_aligns[sorted_num].e1, sorted_aligns[0].s1)
 
-                            prev[1] = sorted_aligns[0][1] # [E1]
-                            prev[3] = 0 # [S2]
-                            prev[4] = 0 # [E2]
-                            prev[6] += sorted_aligns[0][1] - sorted_aligns[0][0] + 1 # [LEN1]
-                            prev[7] += sorted_aligns[0][7] # [LEN2]
+                            prev.e1 = sorted_aligns[0].e1 # [E1]
+                            prev.s2 = 0 # [S2]
+                            prev.e2 = 0 # [E2]
+                            prev.len1 += sorted_aligns[0].e1 - sorted_aligns[0].s1 + 1 # [LEN1]
+                            prev.len2 += sorted_aligns[0].len2 # [LEN2]
 
                             # process "first half" of blocks
                             prev, x, y = process_misassembled_contig(plantafile, coords_filtered_file, 0,
@@ -356,7 +359,7 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
                     if not chimeric_found:
                         print >> plantafile, "here", sorted_aligns
                         #MY: for merging local misassemlbies
-                        prev = list(sorted_aligns[0])
+                        prev = sorted_aligns[0].clone()
                         prev, x, y = process_misassembled_contig(plantafile, coords_filtered_file, 0, sorted_num,
                             contig, prev, sorted_aligns, False, ns, smgap, rc, assembly, misassembled_contigs,
                             extensive_misassembled_contigs)

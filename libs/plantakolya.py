@@ -263,7 +263,7 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
                     ambiguous += 1
                     total_ambiguous += ctg_len
             else:
-                #Sort all aligns by position on contig, then length # TODO: check if bug in plantagora
+                #Sort all aligns by position on contig, then length
                 sorted_aligns = sorted(sorted_aligns, key=lambda x: (x.len2, x.idy), reverse=True)
                 sorted_aligns = sorted(sorted_aligns, key=lambda x: min(x.s2, x.e2))
 

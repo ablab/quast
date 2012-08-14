@@ -78,6 +78,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
     ######################
     ### ARGS
     ######################    
+    reload(qconfig)
 
     try:
         options, contigs = getopt.gnu_getopt(args, qconfig.short_options, qconfig.long_options)
@@ -409,6 +410,8 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
     shutil.rmtree(corrected_dir)
 
     tee.free() # free sys.stdout and sys.stderr from logfile
+
+    return 0
 
 if __name__ == '__main__':
     main(sys.argv[1:])

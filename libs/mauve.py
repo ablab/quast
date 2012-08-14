@@ -26,7 +26,7 @@ def prepare_display():
 
 ### remove unaligned contigs from assembly
 def remove_unaligned(filename, nucmer_dir, tmpFolder):
-    nucmer_prefix = os.path.join(__location__, nucmer_dir + '/nucmer_')
+    nucmer_prefix = os.path.join(os.path.join(__location__, ".."), nucmer_dir + '/nucmer_')
     unaligned_suffix = '.unaligned'
     unaligned_filename = nucmer_prefix + os.path.basename(filename) + unaligned_suffix
     if not os.path.isfile(unaligned_filename):
@@ -73,9 +73,9 @@ def remove_unaligned(filename, nucmer_dir, tmpFolder):
 def do(reference, filenames, nucmer_dir, output_dir, lib_dir):
     print 'Running mauve...'
 
-    output_dir = os.path.join(__location__, output_dir)
-    reference = os.path.join(__location__, reference)
-    log_dir = os.path.join(__location__, output_dir + '/logs/')
+    output_dir = os.path.join(os.path.join(__location__, ".."), output_dir)
+    reference = os.path.join(os.path.join(__location__, ".."), reference)
+    log_dir = os.path.join(os.path.join(__location__, ".."), output_dir + '/logs/')
     common_log_file = log_dir + '/common_log.txt'
 
     print '  Logging to ' + log_dir
@@ -91,7 +91,7 @@ def do(reference, filenames, nucmer_dir, output_dir, lib_dir):
         report_dict[os.path.basename(filename)] = []
 
         #creating tmp folder
-    tmpFolder = os.path.join(__location__, output_dir, 'scores')
+    tmpFolder = os.path.join(os.path.join(__location__, ".."), output_dir, 'scores')
     if os.path.isdir(tmpFolder):
         shutil.rmtree(tmpFolder)
     os.mkdir(tmpFolder)

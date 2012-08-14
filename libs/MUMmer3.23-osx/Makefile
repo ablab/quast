@@ -114,6 +114,7 @@ install: all
 
 
 kurtz:
+	mkdir -p $(AUX_BIN_DIR)
 	cd $(KURTZ_SRC_DIR); $(MAKE) mummer
 
 

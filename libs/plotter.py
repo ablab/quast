@@ -108,9 +108,14 @@ def cumulative_plot(reference, filenames, lists_of_lengths, plot_filename, title
     # Shink current axis's height by 20% on the bottom
     box = ax.get_position()
     ax.set_position([box.x0, box.y0 + box.height * 0.2, box.width, box.height * 0.8])
+
+    legend_list = map(os.path.basename, filenames)
+    if reference:
+        legend_list += ['Reference']
+
     # Put a legend below current axis
     try: # for matplotlib <= 2009-12-09
-        ax.legend(map(os.path.basename, filenames) + ['Reference'], loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True,
+        ax.legend(legend_list, loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True,
             shadow=False, ncol=n_columns)
     except ZeroDivisionError:
         pass

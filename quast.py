@@ -287,7 +287,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
     print '  Done.'
     ########################################################################
     if contigs_to_remove:
-        print "\nWarning! These files will not processed because they don't have contigs >= " + str(qconfig.min_contig) + " bp!\n"
+        print "\nWarning! These files will not be processed because they don't have contigs >= " + str(qconfig.min_contig) + " bp:\n"
         for contig_to_remove in contigs_to_remove:
             print "  ", contig_to_remove
             contigs.remove(contig_to_remove)

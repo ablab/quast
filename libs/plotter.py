@@ -9,9 +9,8 @@ import itertools
 from libs import fastaparser
 
 # Supported plot formats: .emf, .eps, .pdf, .png, .ps, .raw, .rgba, .svg, .svgz
-#plots_format = '.svg'
+plots_format = '.svg'
 
-plots_format = '.pdf'
 
 matplotlib_error = False
 try:
@@ -260,6 +259,11 @@ def GC_content_plot(filenames, lists_of_GC_info, plot_filename, all_pdf=None):
 
         max_y = max(max_y, max(vals_bp))
 
+        # for log scale
+        for id, bp in enumerate(vals_bp):
+            if bp == 0:
+                vals_bp[id] = 0.1
+
         # add to plot
         if color_id < len(colors):
             matplotlib.pyplot.plot(vals_GC, vals_bp, color=colors[color_id % len(colors)], lw=linewidth)
@@ -282,18 +286,21 @@ def GC_content_plot(filenames, lists_of_GC_info, plot_filename, all_pdf=None):
         pass
 
     ylabel = 'Bases in contigs '
-    ylabel, mkfunc = y_formatter(ylabel, max_y)
-    matplotlib.pyplot.xlabel('GC %', fontsize=axes_fontsize)
+    #ylabel, mkfunc = y_formatter(ylabel, max_y)
+    ylabel += '(bp)'
+    matplotlib.pyplot.xlabel('GC (%)', fontsize=axes_fontsize)
     matplotlib.pyplot.ylabel(ylabel, fontsize=axes_fontsize)
 
-    mkformatter = matplotlib.ticker.FuncFormatter(mkfunc)
-    ax.yaxis.set_major_formatter(mkformatter)
+    #mkformatter = matplotlib.ticker.FuncFormatter(mkfunc)
+    #ax.yaxis.set_major_formatter(mkformatter)
     matplotlib.pyplot.xlim([0, 100])
 
     xLocator, yLocator = get_locators()
     ax.yaxis.set_major_locator(yLocator)
     ax.xaxis.set_major_locator(xLocator)
-    #ax.invert_xaxis() 
+
+    ax.set_yscale('symlog', linthreshy=0.5)
+    #ax.invert_xaxis()
     #matplotlib.pyplot.ylim(matplotlib.pyplot.ylim()[::-1])
 
     plot_filename += plots_format

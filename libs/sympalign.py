@@ -31,7 +31,7 @@ def additional_cleaning(all):
                     if id2 in ids_to_discard:
                         continue
 
-                    # if start of align2 > end of align1 than there is no more intersected aligns with align1
+                    # if start of align2 > end of align1 than there is no more overlapped aligns with align1
                     if min(align2[0], align2[1]) > max(align1[0], align1[1]):
                         break
 
@@ -40,15 +40,20 @@ def additional_cleaning(all):
                         ids_to_discard.append(id2)
                         continue
 
+                    # if overlap is less than half of shortest of align1 and align2 we shouldn't discard anything
+                    overlap_size =  max(align1[0], align1[1]) - min(align2[0], align2[1]) + 1
+                    threshold = 0.5
+                    if float(overlap_size) < threshold * min(abs(align2[0] - align2[1]), abs(align1[0] - align1[1])):
+                        continue
+
                     # align with worse IDY% is under suspicion
+                    len_diff =  min(align2[0], align2[1]) - min(align1[0], align1[1])
                     if align1[4] < align2[4]:
-                        len_diff =  min(align2[0], align2[1]) - min(align1[0], align1[1])
                         quality_loss = 100.0 * float(len_diff) / float(abs(align2[0] - align2[1]) + 1)
                         if quality_loss < abs(align1[4] - align2[4]):
                             #print "discard id1: ", id1, ", quality loss", quality_loss, "lendiff", len_diff, "div", float(abs(align2[0] - align2[1]) + 1)
                             ids_to_discard.append(id1)
                     elif align2[4] < align1[4]:
-                        len_diff =  max(align2[0], align2[1]) - max(align1[0], align1[1])
                         quality_loss = 100.0 * float(len_diff) / float(abs(align1[0] - align1[1]) + 1)
                         if quality_loss < abs(align1[4] - align2[4]):
                             #print "discard id2: ", id2, ", quality loss", quality_loss, "lendiff", len_diff, "div", float(abs(align1[0] - align1[1]) + 1)

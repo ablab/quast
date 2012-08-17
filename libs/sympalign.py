@@ -203,6 +203,8 @@ def do(mode, out_filename, input_files_or_dirs):
                 list_events += [ev1, ev2]
             del output
     print '  Cleaned', counter[0], 'down to', counter[1]
+    all, add_counter = additional_cleaning(all)
+    print '  Additionally cleaned', counter[1], 'down to', add_counter
 
     if mode == 1:
         do_mode_one(ouf, all, inf_filenames)

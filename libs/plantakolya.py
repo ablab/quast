@@ -92,7 +92,8 @@ def process_misassembled_contig(plantafile, output_file, i_start, i_finish, cont
 
 def clear_files(filename, nucmerfilename):
     # delete temporary files
-    for ext in ['.delta', '.mgaps', '.ntref', '.gp']:
+    #for ext in ['.delta', '.mgaps', '.ntref', '.gp']:
+    for ext in ['.mgaps', '.ntref', '.gp']:
         if os.path.isfile(nucmerfilename + ext):
             os.remove(nucmerfilename + ext)
     if os.path.isfile('nucmer.error'):
@@ -119,6 +120,7 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
     coords_btab_filename = nucmerfilename + '.coords.btab'
     coords_filtered_filename = nucmerfilename + '.coords.filtered'
     unaligned_filename = nucmerfilename + '.unaligned'
+    nucmer_report_filename = nucmerfilename + '.report'
     if os.path.isfile(coords_filename):
         os.remove(coords_filename)
     plantafile = open(logfilename_out, 'a')
@@ -127,13 +129,16 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
     print >> plantafile, 'Aligning contigs to reference...'
     print >> plantafile, '\tRunning nucmer...'
     print 'NUCmer... ',
-    subprocess.call(['nucmer', '--maxmatch', '-p', nucmerfilename, reference, filename],
+    subprocess.call(['nucmer', '--maxmatch', '-p', nucmerfilename, '-l', '30', '-banded', reference, filename],
         stdout=open(logfilename_out, 'a'), stderr=logfile_err, env=myenv)
     subprocess.call(['show-coords', '-B', delta_filename],
         stdout=open(coords_btab_filename, 'w'), stderr=logfile_err, env=myenv)
-    import sympalign
+    subprocess.call(['dnadiff', '-d', delta_filename, '-p', nucmerfilename],
+        stdout=open(logfilename_out, 'a'), stderr=logfile_err, env=myenv)
 
+    import sympalign
     sympalign.do(1, coords_filename, [coords_btab_filename])
+
     if not os.path.isfile(coords_filename):
         print 'failed'
         return
@@ -192,6 +197,7 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
     print >> plantafile, '\tTotal Regions: %d' % total_regions
     print >> plantafile, '\tTotal Region Length: %d' % total_reg_len
 
+    SNPs = 0;
     unaligned = 0
     partially_unaligned = 0
     total_unaligned = 0
@@ -382,6 +388,11 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
 
     # TODO: 'Analyzing coverage...'
 
+    for line in open(nucmer_report_filename):
+        if line.startswith('TotalSNPs'):
+            SNPs = int(line.split()[2])
+            break
+
     print >> plantafile, '\tLocal Misassemblies: %d' % region_local_misassemblies
     print >> plantafile, '\tMisassemblies: %d' % region_misassemblies
     print >> plantafile, '\t\tMisassembled Contigs: %d' % len(misassembled_contigs)
@@ -392,6 +403,7 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
     print >> plantafile, 'Unaligned Contigs: %d (%d)' % (unaligned, partially_unaligned)
     print >> plantafile, 'Unaligned Contig Bases: %d' % total_unaligned
     print >> plantafile, 'Ambiguous Contigs: %d (%d)' % (ambiguous, total_ambiguous)
+    print >> plantafile, '\tSNPs: %d' % SNPs
 
     report_dict[os.path.basename(filename)].append('%.2f' % avg_idy)
     report_dict[os.path.basename(filename)].append(region_local_misassemblies)
@@ -402,6 +414,7 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
     report_dict[os.path.basename(filename)].append('%d (%d)' % (unaligned, partially_unaligned))
     report_dict[os.path.basename(filename)].append(total_unaligned)
     report_dict[os.path.basename(filename)].append('%d (%d)' % (ambiguous, total_ambiguous))
+    report_dict[os.path.basename(filename)].append(SNPs)
 
     ## outputting misassembled contigs to separate file
     fasta = [(name, seq) for name, seq in fastaparser.read_fasta(filename) if
@@ -467,7 +480,7 @@ def do(reference, filenames, cyclic, rc, output_dir, lib_dir, draw_plots):
             stdout=open(os.path.join(mummer_path, 'make.log'), 'w'), stderr=open(os.path.join(mummer_path, 'make.err'), 'w'))
 
     print 'Running plantakolya tool...'
-    metrics = ['Average %IDY', 'Local misassemblies', 'Misassemblies', 'Misassembled contigs', 'Misassembled contig bases', 'Misassembled and unaligned', 'Unaligned contigs', 'Unaligned contig bases', 'Ambiguous contigs']
+    metrics = ['Average %IDY', 'Local misassemblies', 'Misassemblies', 'Misassembled contigs', 'Misassembled contig bases', 'Misassembled and unaligned', 'Unaligned contigs', 'Unaligned contig bases', 'Ambiguous contigs', 'SNPs']
     report_dict['header'] += metrics
 
     for id, filename in enumerate(filenames):

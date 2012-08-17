@@ -92,8 +92,7 @@ def process_misassembled_contig(plantafile, output_file, i_start, i_finish, cont
 
 def clear_files(filename, nucmerfilename):
     # delete temporary files
-    #for ext in ['.delta', '.mgaps', '.ntref', '.gp']:
-    for ext in ['.mgaps', '.ntref', '.gp']:
+    for ext in ['.delta', '.1delta', '.mdelta', '.unqry', '.qdiff', '.rdiff', '.1coords', '.mcoords', '.mgaps', '.ntref', '.gp']:
         if os.path.isfile(nucmerfilename + ext):
             os.remove(nucmerfilename + ext)
     if os.path.isfile('nucmer.error'):

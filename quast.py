@@ -55,11 +55,10 @@ def usage():
         print >> sys.stderr, "-e  --genemark-thresholds    comma-separated list of threshold lengths of genes to search with GeneMark [default is %s]" % qconfig.genes_lengths
         print >> sys.stderr, ""
         print >> sys.stderr, 'Options without arguments'
-        print >> sys.stderr, '-g  --gage                   use Gage only'
+        print >> sys.stderr, '-g  --gage                   use Gage (results are in gage_report.txt)'
         print >> sys.stderr, '-n  --not-circular           genome is not circular (e.g., it is an eukaryote)'
         print >> sys.stderr, "-d  --disable-rc             reverse complementary contig should NOT be counted as misassembly"
         print >> sys.stderr, "-k  --genemark               use GeneMark"
-        print >> sys.stderr, "-x  --extra-report           generate an extra report (extra_report.txt)"
         print >> sys.stderr, "-j  --save-json              save the output also in the JSON format"
         print >> sys.stderr, "-J  --save-json-to <path>    save the JSON-output to a particular path"
         print >> sys.stderr, "-p  --plain-report-no-plots  plain text report only, don't draw plots (to make quast faster)"
@@ -125,9 +124,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
         elif opt in ('-d', "--disable-rc"):
             qconfig.rc = True
         elif opt in ('-k', "--genemark"):
-            qconfig.with_genemark = True
-        elif opt in ('-x', "--extra-report"):
-            qconfig.extra_report = True
+            qconfig.with_genemark = True        
         elif opt in ('-p', '--plain-report-no-plots'):
             qconfig.draw_plots = False
         elif opt in ('-h', "--help"):
@@ -194,9 +191,6 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
     # Where all pdfs will be saved
     all_pdf_filename = os.path.join(output_dirpath, qconfig.plots_filename)
     all_pdf = None
-
-    # Where Single Cell paper-like table will be saved
-    extra_report_filename = os.path.join(output_dirpath, qconfig.extra_report_filename)
 
     ########################################################################
 
@@ -353,11 +347,6 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
     if qconfig.draw_plots and all_pdf:
         print '  All pdf files are merged to', all_pdf_filename
         all_pdf.close()
-
-    ## and extra report
-    if qconfig.reference and qconfig.extra_report:
-        pass
-        # TODO something?
 
     ########################################################################
 

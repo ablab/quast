@@ -588,8 +588,9 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
     report.add_field(reporting.Fields.MISUNALIGNED, misassembled_partially_unaligned)
     report.add_field(reporting.Fields.UNALIGNED, '%d (%d)' % (unaligned, partially_unaligned))
     report.add_field(reporting.Fields.UNALIGNEDBASES, total_unaligned)
-    report.add_field(reporting.Fields.AMBIGOUS, '%d (%d)' % (ambiguous, total_ambiguous))
+    report.add_field(reporting.Fields.AMBIGUOUS, '%d (%d)' % (ambiguous, total_ambiguous))
     report.add_field(reporting.Fields.SNPS, SNPs)
+    report.add_field(reporting.Fields.SUBSERROR, "%.2f" % (float(SNPs) * 100000.0 / float(total_reg_len)))
 
     ## outputting misassembled contigs to separate file
     fasta = [(name, seq) for name, seq in fastaparser.read_fasta(filename) if

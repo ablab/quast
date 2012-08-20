@@ -1,3 +1,9 @@
+############################################################################
+# Copyright (c) 2011-2012 Saint-Petersburg Academic University
+# All Rights Reserved
+# See file LICENSE for details.
+############################################################################
+
 import os
 from libs import qconfig
 
@@ -39,8 +45,9 @@ class Fields:
     MISUNALIGNED = 'Misassembled and unaligned'
     UNALIGNED = 'Unaligned contigs'
     UNALIGNEDBASES = 'Unaligned contig bases'
-    AMBIGOUS = 'Ambiguous contigs'
+    AMBIGUOUS = 'Ambiguous contigs'
     SNPS = 'SNPs'
+    SUBSERROR = 'Subs. error (per 100 Kbp)'  #TODO to be discussed: EITHER /genome_size OT /assembly_size OR /aligned_size! See plantakolya
     NA50 = 'NA50'
     NGA50 = 'NGA50'
     NA75 = 'NA75'
@@ -54,11 +61,46 @@ class Fields:
 
     # order as printed in report:
     order = [NAME, CONTIGS, TOTALLENS, N50, NG50, N75, NG75, NUMCONTIGS, LARGCONTIG, TOTALLEN, GC, REFLEN, REFGC,
-             AVGIDY, MISLOCAL, MISASSEMBL, MISCONTIGS, MISCONTIGSBASES, MISUNALIGNED, UNALIGNED, UNALIGNEDBASES, AMBIGOUS, SNPS,
+             AVGIDY, MISLOCAL, MISASSEMBL, MISCONTIGS, MISCONTIGSBASES, MISUNALIGNED, 
+             UNALIGNED, UNALIGNEDBASES, AMBIGUOUS, SNPS, SUBSERROR,
              NA50, NGA50, NA75, NGA75,
              MAPPEDGENOME, GENES, OPERONS,
              ORFS,
              GENEMARKUNIQUE, GENEMARK]
+
+    # GAGE fields
+    GAGE_NUMCONTIGS = 'Contigs #'
+    GAGE_MINCONTIG = 'Min contig'
+    GAGE_MAXCONTIG = 'Max contig'
+    GAGE_N50 = 'N50'
+    GAGE_GENOMESIZE = 'Genome size'
+    GAGE_ASSEMBLY_SIZE = 'Assembly size'
+    GAGE_CHAFFBASES = 'Chaff bases'
+    GAGE_MISSINGREFBASES = 'Missing reference bases'
+    GAGE_MISSINGASMBLYBASES = 'Missing assembly bases'
+    GAGE_MISSINGASMBLYCONTIGS = 'Missing assembly contigs'
+    GAGE_DUPREFBASES = 'Duplicated reference bases'
+    GAGE_COMPRESSEDREFBASES = 'Compressed reference bases'
+    GAGE_BADTRIM = 'Bad trim'
+    GAGE_AVGIDY = 'Avg idy'
+    GAGE_SNPS = 'SNPs'
+    GAGE_SHORTINDELS = 'Indels < 5bp'
+    GAGE_LONGINDELS = 'Indels >= 5'
+    GAGE_INVERSIONS = 'Inversions'
+    GAGE_RELOCATION = 'Relocation'
+    GAGE_TRANSLOCATION = 'Translocation'
+    GAGE_NUMCORCONTIGS = 'Corrected contig #'
+    GAGE_CORASMBLYSIZE = 'Corrected assembly size'
+    GAGE_MINCORCONTIG = 'Min correct contig'
+    GAGE_MAXCORCOTING = 'Max correct contig'
+    GAGE_CORN50 = 'Corrected N50'
+
+    # GAGE order
+    gage_order = [NAME, GAGE_NUMCONTIGS, GAGE_MINCONTIG, GAGE_MAXCONTIG, GAGE_N50, GAGE_GENOMESIZE, GAGE_ASSEMBLY_SIZE,
+                  GAGE_CHAFFBASES, GAGE_MISSINGREFBASES, GAGE_MISSINGASMBLYBASES, GAGE_MISSINGASMBLYCONTIGS, GAGE_DUPREFBASES,
+                  GAGE_COMPRESSEDREFBASES, GAGE_BADTRIM, GAGE_AVGIDY, GAGE_SNPS, GAGE_SHORTINDELS, GAGE_LONGINDELS, GAGE_INVERSIONS,
+                  GAGE_RELOCATION, GAGE_TRANSLOCATION, GAGE_NUMCORCONTIGS, GAGE_CORASMBLYSIZE, GAGE_MINCORCONTIG, GAGE_MAXCORCOTING,
+                  GAGE_CORN50]
 
 
 # Report for one filename, dict: field -> value
@@ -84,9 +126,10 @@ def get(name):
     name = os.path.basename(name)
     return reports.setdefault(name, Report(name))
 
-def table():
+def table(gage_mode=False):
+    order = Fields.gage_order if gage_mode else Fields.order
     ans = []
-    for field in Fields.order:
+    for field in order:
         if isinstance(field, tuple): # TODO: rewrite it nicer
             for i, x in enumerate(field[1]):
                 ls = []
@@ -125,22 +168,24 @@ def save_tsv(filename, table):
         print >>file, '\t'.join(line)
     file.close()
 
-def save(output_dirpath, min_contig):
+def save(output_dirpath, min_contig, gage_mode=False):
     # Where total report will be saved
-    print 'Summarizing...'
-    tab = table()
+    if not gage_mode:
+        print 'Summarizing...'
+    tab = table(gage_mode)
 
+    gage_prefix = "gage_" if gage_mode else "" 
     print '  Creating total report...'
-    report_txt_filename = os.path.join(output_dirpath, "report") + '.txt'
-    report_tsv_filename = os.path.join(output_dirpath, "report") + '.tsv'
+    report_txt_filename = os.path.join(output_dirpath, gage_prefix + "report") + '.txt'
+    report_tsv_filename = os.path.join(output_dirpath, gage_prefix + "report") + '.tsv'
     save_txt(report_txt_filename, tab, min_contig)
     save_tsv(report_tsv_filename, tab)
     print '    Saved to', report_txt_filename, 'and', report_tsv_filename
 
     print '  Transposed version of total report...'
     tab = [[tab[i][j] for i in xrange(len(tab))] for j in xrange(len(tab[0]))]
-    report_txt_filename = os.path.join(output_dirpath, "transposed_report") + '.txt'
-    report_tsv_filename = os.path.join(output_dirpath, "transposed_report") + '.tsv'
+    report_txt_filename = os.path.join(output_dirpath, gage_prefix + "transposed_report") + '.txt'
+    report_tsv_filename = os.path.join(output_dirpath, gage_prefix + "transposed_report") + '.tsv'
     save_txt(report_txt_filename, tab, min_contig)
     save_tsv(report_tsv_filename, tab)
     print '    Saved to', report_txt_filename, 'and', report_tsv_filename

@@ -6,10 +6,9 @@
 
 import os
 import subprocess
-from libs import report_maker
+from libs import reporting
 from qutils import id_to_str
 
-# TODO: rewrite with new reporting
 
 def do(reference, contigs, output_dirpath, total_report_basename, min_contig, lib_dir):
     gage_results_path = os.path.join(output_dirpath, 'gage')
@@ -23,29 +22,25 @@ def do(reference, contigs, output_dirpath, total_report_basename, min_contig, li
 
     ########################################################################
 
-    # dict with the main metrics (for total report)
-    report_dict = {'header': ['Assembly']}
-    for contig in contigs:
-        report_dict[os.path.basename(contig)] = [os.path.basename(contig)]
-
     print 'Running GAGE tool...'
     metrics = ['Total units', 'Min', 'Max', 'N50', 'Genome Size', 'Assembly Size', 'Chaff bases',
                'Missing Reference Bases', 'Missing Assembly Bases', 'Missing Assembly Contigs',
                'Duplicated Reference Bases', 'Compressed Reference Bases', 'Bad Trim', 'Avg Idy', 'SNPs', 'Indels < 5bp',
                'Indels >= 5', 'Inversions', 'Relocation', 'Translocation',
                'Total units', 'BasesInFasta', 'Min', 'Max', 'N50']
-    metrics_headers = ['Contigs #', 'Min contig', 'Max contig', 'N50', 'Genome size', 'Assembly size', 'Chaff bases',
-                       'Missing reference bases', 'Missing assembly bases',
-                       'Missing assembly contigs', 'Duplicated reference bases', 'Compressed reference bases',
-                       'Bad trim', 'Avg idy', 'SNPs', 'Indels < 5bp', 'Indels >= 5', 'Inversions', 'Relocation', 'Translocation',
-                       'Corrected contig #', 'Corrected assembly size', 'Min correct contig', 'Max correct contig',
-                       'Corrected N50']
-
-    for metric in metrics_headers:
-        report_dict['header'].append(metric)
+    metrics_in_reporting = [reporting.Fields.GAGE_NUMCONTIGS, reporting.Fields.GAGE_MINCONTIG, reporting.Fields.GAGE_MAXCONTIG, 
+                            reporting.Fields.GAGE_N50, reporting.Fields.GAGE_GENOMESIZE, reporting.Fields.GAGE_ASSEMBLY_SIZE,
+                            reporting.Fields.GAGE_CHAFFBASES, reporting.Fields.GAGE_MISSINGREFBASES, reporting.Fields.GAGE_MISSINGASMBLYBASES, 
+                            reporting.Fields.GAGE_MISSINGASMBLYCONTIGS, reporting.Fields.GAGE_DUPREFBASES, 
+                            reporting.Fields.GAGE_COMPRESSEDREFBASES, reporting.Fields.GAGE_BADTRIM, reporting.Fields.GAGE_AVGIDY, 
+                            reporting.Fields.GAGE_SNPS, reporting.Fields.GAGE_SHORTINDELS, reporting.Fields.GAGE_LONGINDELS, 
+                            reporting.Fields.GAGE_INVERSIONS, reporting.Fields.GAGE_RELOCATION, reporting.Fields.GAGE_TRANSLOCATION, 
+                            reporting.Fields.GAGE_NUMCORCONTIGS, reporting.Fields.GAGE_CORASMBLYSIZE, reporting.Fields.GAGE_MINCORCONTIG, 
+                            reporting.Fields.GAGE_MAXCORCOTING, reporting.Fields.GAGE_CORN50]
 
     tmp_dir = gage_results_path + '/tmp/'
     for id, filename in enumerate(contigs):
+        report = reporting.get(filename)
         print ' ', id_to_str(id), os.path.basename(filename), '...'
         # run gage tool
         logfilename_out = gage_results_path + '/gage_' + os.path.basename(filename) + '.stdout'
@@ -68,9 +63,9 @@ def do(reference, contigs, output_dirpath, total_report_basename, min_contig, li
         for line in logfile_out:
             if metrics[cur_metric_id] in line:
                 if (metrics[cur_metric_id].startswith('N50')):
-                    report_dict[os.path.basename(filename)].append(line.split(metrics[cur_metric_id] + ':')[1].strip())
+                    report.add_field(metrics_in_reporting[cur_metric_id], line.split(metrics[cur_metric_id] + ':')[1].strip())                    
                 else:
-                    report_dict[os.path.basename(filename)].append(line.split(':')[1].strip())
+                    report.add_field(metrics_in_reporting[cur_metric_id], line.split(':')[1].strip())
                 cur_metric_id += 1
                 if cur_metric_id == len(metrics):
                     break
@@ -78,49 +73,6 @@ def do(reference, contigs, output_dirpath, total_report_basename, min_contig, li
 
     print '  Done'
 
-    report_maker.do(report_dict, total_report_basename, output_dirpath, min_contig)
-  ##########################################################################
-  # print '  Creating total report...'
-  # total_report = total_report_basename + txt_ext
-  # total_report_tab = total_report_basename + tsv_ext
-  # tr_file = open(total_report, 'w')
-  # tab_file = open(total_report_tab, 'w')
-  #
-  # # calculate columns widthes
-  # col_widthes = [0 for i in range(len(report_dict['header']))]
-  # for row in report_dict.keys():
-  #     for id, value in enumerate(report_dict[row]):
-  #         if len(str(value)) > col_widthes[id]:
-  #             col_widthes[id] = len(str(value))
-  #
-  #             # to avoid confusions:
-  # tr_file.write('Only contigs of length >= ' + str(min_contig) + ' were taken into account\n\n')
-  # # header
-  # for id, value in enumerate(report_dict['header']):
-  #     tr_file.write(' ' + str(value).center(col_widthes[id]) + ' |')
-  #     if id:
-  #         tab_file.write('\t')
-  #     tab_file.write(value)
-  # tr_file.write('\n')
-  # tab_file.write('\n')
-  #
-  # # metrics values
-  # for contig_name in sorted(report_dict.keys()):
-  #     if contig_name == 'header':
-  #         continue
-  #     for id, value in enumerate(report_dict[contig_name]):
-  #         if id:
-  #             tr_file.write(' ' + str(value).rjust(col_widthes[id]) + ' |')
-  #             tab_file.write('\t')
-  #         else:
-  #             tr_file.write(' ' + str(value).ljust(col_widthes[id]) + ' |')
-  #         tab_file.write(str(value))
-  #     tr_file.write('\n')
-  #     tab_file.write('\n')
-  #
-  # tr_file.close()
-  # tab_file.close()
-  # print '    Saved to', total_report, 'and', total_report_tab
-  ##########################################################################
+    reporting.save(output_dirpath, min_contig, True)
 
     print '  Done.'

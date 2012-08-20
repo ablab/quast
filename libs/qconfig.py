@@ -18,8 +18,6 @@ default_json_dirname = "json"
 
 logfile = "quast.log"
 corrected_dir = "corrected_input"
-gage_report_basename = "report"
-extra_report_filename = "extra_report.txt"
 plots_filename = "plots.pdf"
 
 draw_plots = True
@@ -31,8 +29,7 @@ with_gage = False
 with_genemark = False
 cyclic = True
 rc = True
-extra_report = False
 
-long_options = "output-dir= save-json-to= genes= operons= reference= contig-thresholds= min-contig= orf= genemark-thresholds= save-json mauve gage not-circular disable-rc genemark extra-report plain-report-no-plots help".split()
-short_options = "o:G:O:R:t:M:f:e:J:jpmgndkxh"
+long_options = "output-dir= save-json-to= genes= operons= reference= contig-thresholds= min-contig= orf= genemark-thresholds= save-json gage not-circular disable-rc genemark plain-report-no-plots help".split()
+short_options = "o:G:O:R:t:M:f:e:J:jpgndkh"
 

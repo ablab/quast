@@ -108,9 +108,6 @@ def sympalign(out_filename, in_filename):
         p = float(arr[10])
         lc = abs(sc - ec) + 1
         # lr = abs(sr - er) + 1
-        if arr[10] != arr[11]:
-            print '  Error: arr[10] != arr[11]', arr[10], arr[11]
-            return
         if lc != int(arr[12]):
             print '  Error: lc != int(arr[12])', lc, int(arr[12])
             return

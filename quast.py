@@ -334,14 +334,6 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
             report_dict = extend_report_dict(report_dict, cur_results_dict)
 
             ########################################################################
-            ### SympAlign segments
-            ########################################################################
-            #Alex: I think we don't need it here (already started in plantakolya)
-            #Kolya: AFAIK it needs to be run one more time (see first argument - it's mode 2 here and mode 1 in plantakolya module)
-            from libs import sympalign
-            sympalign.do(2, output_dirpath + '/plantakolya/sympalign.segments', [output_dirpath + '/plantakolya'])
-
-            ########################################################################
             ### NA and NGA ("aligned N and NG")
             ########################################################################
             from libs import aligned_stats

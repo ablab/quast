@@ -1,0 +1,13 @@
+Files in this directory...
+
+differences.README - differences between MUMmer2 and MUMmer3
+nucmer.README - documentation for the NUCmer alignment utility
+run-mummer1.README - documentation for the run-mummer1 script
+run-mummer3.README - documentation for the run-mummer3 script
+
+Please refer to the HTML documentation included in
+this distribution or at:
+
+   http://mummer.sourceforge.net
+   http://mummer.sourceforge.net/manual
+   http://mummer.sourceforge.net/examples

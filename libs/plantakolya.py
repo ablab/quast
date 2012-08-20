@@ -19,6 +19,7 @@ import os
 import platform
 import subprocess
 import fastaparser
+from libs import reporting
 from qutils import id_to_str
 
 # see bug http://ablab.myjetbrains.com/youtrack/issue/QUAST-74 for more details
@@ -174,21 +175,43 @@ def sympalign(out_filename, in_filename):
 
 
 class Mapping(object):
-    def  __init__(self, line):
+    def  __init__(self, s1, e1, s2, e2, len1, len2, idy, ref, contig):
+        self.s1, self.e1, self.s2, self.e2, self.len1, self.len2, self.idy, self.ref, self.contig = s1, e1, s2, e2, len1, len2, idy, ref, contig
+
+    @classmethod
+    def from_line(self, line):
         # line from coords file,e.g.
         # 4324128  4496883  |   112426   285180  |   172755   172756  |  99.9900  | gi|48994873|gb|U00096.2|	NODE_333_length_285180_cov_221082
         line = line.split()
         assert line[2] == line[5] == line[8] == line[10] == '|', line
-        self.contig = line[12]
-        self.ref = line[11]
-        self.s1, self.e1, self.s2, self.e2, self.len1, self.len2 = [int(line[i]) for i in [0, 1, 3, 4, 6, 7]]
-        self.idy = float(line[9])
+        contig = line[12]
+        ref = line[11]
+        s1, e1, s2, e2, len1, len2 = [int(line[i]) for i in [0, 1, 3, 4, 6, 7]]
+        idy = float(line[9])
+        return Mapping(s1, e1, s2, e2, len1, len2, idy, ref, contig)
 
     def __str__(self):
         return ' '.join(str(x) for x in [self.s1, self.e1, '|', self.s2, self.e2, '|', self.len1, self.len2, '|', self.idy, '|', self.ref, self.contig])
 
     def clone(self):
-        return Mapping(str(self))
+        return Mapping.from_line(str(self))
+
+
+class Mappings(object):
+
+    def __init__(self):
+        self.aligns = {} # contig -> [mapping]
+        self.cnt = 0
+
+    def add(self, mapping):
+        self.aligns.setdefault(mapping.contig, []).append(mapping)
+
+    @classmethod
+    def from_coords(cls, filename):
+        file = open(filename, 'w')
+
+        file.close()
+
 
 def process_misassembled_contig(plantafile, output_file, i_start, i_finish, contig, prev, sorted_aligns, is_1st_chimeric_half, ns, smgap, rc, assembly, misassembled_contigs, extensive_misassembled_contigs):
     region_misassemblies = 0
@@ -252,7 +275,7 @@ def clear_files(filename, nucmerfilename):
     if os.path.isfile(filename + '.clean'):
         os.remove(filename + '.clean')
 
-def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir, rc, reference, report_dict):
+def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir, rc, reference):
     # remove old nucmer coords file
     if os.path.isfile(nucmerfilename + '.coords'):
         os.remove(nucmerfilename + '.coords')
@@ -309,7 +332,7 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
         assert line[0] != '='
         #Clear leading spaces from nucmer output
         #Store nucmer lines in an array
-        mapping = Mapping(line)
+        mapping = Mapping.from_line(line)
         sum_idy += mapping.idy
         num_idy += 1
         aligns.setdefault(mapping.contig, []).append(mapping)
@@ -555,16 +578,17 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
     print >> plantafile, 'Ambiguous Contigs: %d (%d)' % (ambiguous, total_ambiguous)
     print >> plantafile, '\tSNPs: %d' % SNPs
 
-    report_dict[os.path.basename(filename)].append('%.2f' % avg_idy)
-    report_dict[os.path.basename(filename)].append(region_local_misassemblies)
-    report_dict[os.path.basename(filename)].append(region_misassemblies)
-    report_dict[os.path.basename(filename)].append(len(misassembled_contigs))
-    report_dict[os.path.basename(filename)].append(misassembled_bases)
-    report_dict[os.path.basename(filename)].append(misassembled_partially_unaligned)
-    report_dict[os.path.basename(filename)].append('%d (%d)' % (unaligned, partially_unaligned))
-    report_dict[os.path.basename(filename)].append(total_unaligned)
-    report_dict[os.path.basename(filename)].append('%d (%d)' % (ambiguous, total_ambiguous))
-    report_dict[os.path.basename(filename)].append(SNPs)
+    report = reporting.get(filename)
+    report.add_field(reporting.Fields.AVGIDY, '%.3f' % avg_idy)
+    report.add_field(reporting.Fields.MISLOCAL, region_local_misassemblies)
+    report.add_field(reporting.Fields.MISASSEMBL, region_misassemblies)
+    report.add_field(reporting.Fields.MISCONTIGS, len(misassembled_contigs))
+    report.add_field(reporting.Fields.MISCONTIGSBASES, misassembled_bases)
+    report.add_field(reporting.Fields.MISUNALIGNED, misassembled_partially_unaligned)
+    report.add_field(reporting.Fields.UNALIGNED, '%d (%d)' % (unaligned, partially_unaligned))
+    report.add_field(reporting.Fields.UNALIGNEDBASES, total_unaligned)
+    report.add_field(reporting.Fields.AMBIGOUS, '%d (%d)' % (ambiguous, total_ambiguous))
+    report.add_field(reporting.Fields.SNPS, SNPs)
 
     ## outputting misassembled contigs to separate file
     fasta = [(name, seq) for name, seq in fastaparser.read_fasta(filename) if
@@ -594,14 +618,11 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
                 os.remove(plotfilename + ext)
 
 
-def plantakolya_process(cyclic, draw_plots, filename, id, myenv, output_dir, rc, reference, report_dict):
+def plantakolya_process(cyclic, draw_plots, filename, id, myenv, output_dir, rc, reference):
     print ' ', id_to_str(id), os.path.basename(filename), '...'
     nucmerfilename = output_dir + '/nucmer_' + os.path.basename(filename)
-    plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir, rc, reference, report_dict)
+    plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir, rc, reference)
     clear_files(filename, nucmerfilename)
-    ## find metrics for total report:
-    report_dict[os.path.basename(filename)] += ['N/A'] * (
-    len(report_dict['header']) - len(report_dict[os.path.basename(filename)]))
 
 
 def do(reference, filenames, cyclic, rc, output_dir, lib_dir, draw_plots):
@@ -630,11 +651,11 @@ def do(reference, filenames, cyclic, rc, output_dir, lib_dir, draw_plots):
             stdout=open(os.path.join(mummer_path, 'make.log'), 'w'), stderr=open(os.path.join(mummer_path, 'make.err'), 'w'))
 
     print 'Running plantakolya tool...'
-    metrics = ['Average %IDY', 'Local misassemblies', 'Misassemblies', 'Misassembled contigs', 'Misassembled contig bases', 'Misassembled and unaligned', 'Unaligned contigs', 'Unaligned contig bases', 'Ambiguous contigs', 'SNPs']
-    report_dict['header'] += metrics
+#    metrics = ['Average %IDY', 'Local misassemblies', 'Misassemblies', 'Misassembled contigs', 'Misassembled contig bases', 'Misassembled and unaligned', 'Unaligned contigs', 'Unaligned contig bases', 'Ambiguous contigs', 'SNPs']
+#    report_dict['header'] += metrics
 
     for id, filename in enumerate(filenames):
-        plantakolya_process(cyclic, draw_plots, filename, id, myenv, output_dir, rc, reference, report_dict) # TODO: use joblib
+        plantakolya_process(cyclic, draw_plots, filename, id, myenv, output_dir, rc, reference) # TODO: use joblib
 
     print '  Done'
 

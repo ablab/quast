@@ -7,10 +7,10 @@
 import os
 import shutil
 import subprocess
+from libs import reporting
 from qutils import id_to_str
 
 def do(filenames, genes_lengths, output_dir, lib_dir):
-    ls = [int(x) for x in genes_lengths.split(',')]
 
     print 'Running GeneMark tool...'
 
@@ -26,16 +26,9 @@ def do(filenames, genes_lengths, output_dir, lib_dir):
     if not os.path.isfile(os.path.expanduser('~/.gm_key')):
         shutil.copyfile(gm_key_path, os.path.expanduser('~/.gm_key')) # GeneMark needs this key to work
 
-    report_dict = {'header': []}
-    for filename in filenames:
-        report_dict[os.path.basename(filename)] = []
-    #report_dict['header'].append('GeneMark (# genes)')
-    report_dict['header'].append('GeneMark (# unique genes >= 0bp)')
-    for l in ls:
-        report_dict['header'].append('GeneMark (# genes >= %dbp)' % l)
-
     for id, filename in enumerate(filenames):
-        cnt = [0] * len(ls)
+        report = reporting.get(filename)
+        cnt = [0] * len(genes_lengths)
         print ' ', id_to_str(id), os.path.basename(filename),
 
         #Step 1: Find G+C composition of sequence, for example:
@@ -48,7 +41,6 @@ def do(filenames, genes_lengths, output_dir, lib_dir):
             subprocess.call([probuild_path, '--gc', '--seq', filename], stdout=gc_content, stderr=gc_content)
         except EnvironmentError as ee:
             print "\nEnvironment Error occurs: ", ee
-            report_dict[os.path.basename(filename)].append('nd')
             continue
 
         gc_content.close()
@@ -77,7 +69,6 @@ def do(filenames, genes_lengths, output_dir, lib_dir):
                 stdout=genemark_errors, stderr=genemark_errors)
         except EnvironmentError as ee:
             print "\nEnvironment Error occurs: ", ee
-            report_dict[os.path.basename(filename)].append('nd')
             continue
         genemark_errors.close()
 
@@ -92,8 +83,8 @@ def do(filenames, genes_lengths, output_dir, lib_dir):
                 max_gene_id += 1
                 a = line.split('|')
                 curlen = int(a[2][:-3]) # 933_nt
-                for i in xrange(len(ls)):
-                    if curlen >= ls[i]:
+                for i in xrange(len(genes_lengths)):
+                    if curlen >= genes_lengths[i]:
                         cnt[i] += 1
                 continue
             if ingene:
@@ -105,10 +96,7 @@ def do(filenames, genes_lengths, output_dir, lib_dir):
 
         print ', Genes =', len(genes), 'unique,', max_gene_id, 'total'
         print '    GeneMark output', genemark_out_filename
-        report_dict[os.path.basename(filename)].append(len(genes))
-        for c in cnt:
-            report_dict[os.path.basename(filename)].append(c)
+        report.add_field(reporting.Fields.GENEMARKUNIQUE, len(genes))
+        report.add_field(reporting.Fields.GENEMARK, cnt)
 
     print '  Done'
-
-    return report_dict

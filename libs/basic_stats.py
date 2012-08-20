@@ -10,7 +10,7 @@ import fastaparser
 import json_saver
 from qutils import id_to_str
 from html_saver import html_saver
-
+import reporting
 
 def GC_content(filename):  
     """
@@ -33,13 +33,6 @@ def do(reference, filenames, output_dir, all_pdf, draw_plots, json_output_dir, r
     
     if not os.path.isdir(output_dir):
         os.mkdir(output_dir)
-
-    ########################################################################
-    report_dict = {'header' : []}
-    for filename in filenames:
-        report_dict[os.path.basename(filename)] = []
-    
-    ########################################################################
 
     reference_length = None
     if reference:
@@ -72,23 +65,11 @@ def do(reference, filenames, output_dir, all_pdf, draw_plots, json_output_dir, r
     ########################################################################
 
     print 'Calculating N50...'
-    report_dict['header'].append('N50')
-    if reference:
-        report_dict['header'].append('NG50')
-    report_dict['header'].append('N75')
-    if reference:
-        report_dict['header'].append('NG75')
-    report_dict['header'].append('Number of contigs')
-    report_dict['header'].append('Largest contig')
-    report_dict['header'].append('Total length')
-    report_dict['header'].append('GC %')
-    if reference:
-        report_dict['header'].append('Reference length')
-        report_dict['header'].append('Reference GC %')
-    
+
     lists_of_GC_info = []
     import N50
     for id, (filename, lengths_list) in enumerate(itertools.izip(filenames, lists_of_lengths)):
+        report = reporting.get(filename)
         n50 = N50.N50(lengths_list)
         ng50 = None
         if reference:
@@ -104,20 +85,20 @@ def do(reference, filenames, output_dir, all_pdf, draw_plots, json_output_dir, r
             ', N50 =', n50, \
             ', Total length =', total_length, \
             ', GC % = ', '%.2f' % total_GC
-        
-        report_dict[os.path.basename(filename)].append(n50)
+
+        report.add_field(reporting.Fields.N50, n50)
         if reference:
-            report_dict[os.path.basename(filename)].append(ng50)
-        report_dict[os.path.basename(filename)].append(n75)
+            report.add_field(reporting.Fields.NG50, ng50)
+        report.add_field(reporting.Fields.N75, n75)
         if reference:
-            report_dict[os.path.basename(filename)].append(ng75)
-        report_dict[os.path.basename(filename)].append(len(lengths_list))
-        report_dict[os.path.basename(filename)].append(max(lengths_list))
-        report_dict[os.path.basename(filename)].append(total_length)
-        report_dict[os.path.basename(filename)].append('%.2f' % total_GC)
+            report.add_field(reporting.Fields.NG75, ng75)
+        report.add_field(reporting.Fields.NUMCONTIGS, len(lengths_list))
+        report.add_field(reporting.Fields.LARGCONTIG, max(lengths_list))
+        report.add_field(reporting.Fields.TOTALLEN, total_length)
+        report.add_field(reporting.Fields.GC, ('%.2f' % total_GC))
         if reference:
-            report_dict[os.path.basename(filename)].append(int(reference_length))
-            report_dict[os.path.basename(filename)].append('%.2f' %  reference_GC)
+            report.add_field(reporting.Fields.REFLEN, int(reference_length))
+            report.add_field(reporting.Fields.REFGC, '%.2f' %  reference_GC)
 
     if json_output_dir:
         json_saver.save_GC_info(json_output_dir, filenames, lists_of_GC_info)
@@ -142,5 +123,3 @@ def do(reference, filenames, output_dir, all_pdf, draw_plots, json_output_dir, r
         plotter.Nx_plot(filenames, lists_of_lengths, output_dir + '/Nx_plot', 'Nx', [], all_pdf)
         if reference:
             plotter.Nx_plot(filenames, lists_of_lengths, output_dir + '/NGx_plot', 'NGx', [reference_length for i in range(len(filenames))], all_pdf)
-
-    return report_dict

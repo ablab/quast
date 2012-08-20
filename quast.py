@@ -18,7 +18,7 @@ __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file
 #sys.path.append(os.path.join(os.path.abspath(sys.path[0]), 'libs'))
 #sys.path.append(os.path.join(os.path.abspath(sys.path[0]), '../spades_pipeline'))
 
-from libs import qconfig, fastaparser
+from libs import qconfig
 from libs import json_saver
 
 RELEASE_MODE=False
@@ -55,7 +55,6 @@ def usage():
         print >> sys.stderr, "-e  --genemark-thresholds    comma-separated list of threshold lengths of genes to search with GeneMark [default is %s]" % qconfig.genes_lengths
         print >> sys.stderr, ""
         print >> sys.stderr, 'Options without arguments'
-        print >> sys.stderr, '-m  --mauve                  use Mauve'
         print >> sys.stderr, '-g  --gage                   use Gage only'
         print >> sys.stderr, '-n  --not-circular           genome is not circular (e.g., it is an eukaryote)'
         print >> sys.stderr, "-d  --disable-rc             reverse complementary contig should NOT be counted as misassembly"
@@ -119,8 +118,6 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
         elif opt in ('-J', '--save-json-to'):
             qconfig.save_json = True
             json_outputpath = arg
-        elif opt in ('-m', "--mauve"):
-            qconfig.with_mauve = True
         elif opt in ('-g', "--gage"):
             qconfig.with_gage = True
         elif opt in ('-n', "--not-circular"):
@@ -147,6 +144,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
         return int(len_in_bp) / 3
 
     qconfig.contig_thresholds = map(int, qconfig.contig_thresholds.split(","))
+    qconfig.genes_lengths =  map(int, qconfig.genes_lengths.split(","))
     qconfig.orf_lengths = map(bp2codon, qconfig.orf_lengths.split(","))
 
     ########################################################################
@@ -218,12 +216,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
 
     ########################################################################
 
-    # dict with the main metrics (for total report)
-    report_dict = {'header': ['id', 'Assembly']}
-    for threshold in qconfig.contig_thresholds:
-        report_dict['header'].append('# contigs >= ' + str(threshold))
-    for threshold in qconfig.contig_thresholds:
-        report_dict['header'].append('Total length (>= ' + str(threshold) + ')')
+    from libs import reporting
 
     print 'Correcting contig files...'
     if os.path.isdir(corrected_dir):
@@ -246,6 +239,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
     ## removing from contigs' names special characters because:
     ## 1) Mauve fails on some strings with "...", "+", "-", etc
     ## 2) nummer fails on names like "contig 1_bla_bla", "contig 2_bla_bla" (it interprets as a contig's name only the first word of caption and gets ambiguous contigs names)
+    newcontigs = []
     for id, filename in enumerate(contigs):
         outfilename = os.path.splitext( os.path.join(corrected_dir, os.path.basename(filename).replace(' ','_')) )[0]
         if os.path.isfile(outfilename):  # in case of files with the same names
@@ -255,45 +249,33 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
                 i += 1
                 outfilename = os.path.join(corrected_dir, os.path.basename(basename + '__' + str(i)))
 
-        ## filling column "Assembly" with names of assemblies
-        report_dict[os.path.basename(outfilename)] = [id, os.path.basename(outfilename)]
-        ## filling columns "Number of contigs >=110 bp", ">200 bp", ">500 bp"
         lengths = fastaparser.get_lengths_from_fastafile(filename)
-        for threshold in qconfig.contig_thresholds:
-            cur_lengths = [l for l in lengths if l >= threshold]
-            report_dict[os.path.basename(outfilename)].append(len(cur_lengths))
-        for threshold in qconfig.contig_thresholds:
-            cur_lengths = [l for l in lengths if l >= threshold]
-            report_dict[os.path.basename(outfilename)].append(sum(cur_lengths))
+        if not sum(1 for l in lengths if l >= qconfig.min_contig):
+            print "  %s will not be processed because it don't have contigs >= %d bp." % (os.path.basename(filename), qconfig.min_contig)
+            continue
+
+        ## filling column "Assembly" with names of assemblies
+        report = reporting.get(outfilename)
+        ## filling columns "Number of contigs >=110 bp", ">=200 bp", ">=500 bp"
+        report.add_field(reporting.Fields.CONTIGS,   [sum(1 for l in lengths if l >= threshold) for threshold in qconfig.contig_thresholds])
+        report.add_field(reporting.Fields.TOTALLENS, [sum(l for l in lengths if l >= threshold) for threshold in qconfig.contig_thresholds])
 
         modified_fasta_entries = []
-        to_remove = True
         for name, seq in fastaparser.read_fasta(filename): # in tuples: (name, seq)
-            if (len(seq) >= qconfig.min_contig) or (qconfig.with_gage):
-                to_remove = False
+            if len(seq) >= qconfig.min_contig:
                 corr_name = re.sub(r'\W', '', re.sub(r'\s', '_', name))
                 # mauve and gage can't work with alternatives
                 dic = {'M': 'A', 'K': 'G', 'R': 'A', 'Y': 'C', 'W': 'A', 'S': 'C', 'V': 'A', 'B': 'C', 'H': 'A', 'D': 'A'}
                 pat = "(%s)" % "|".join( map(re.escape, dic.keys()) )
                 corr_seq = re.sub(pat, lambda m:dic[m.group()], seq)
                 modified_fasta_entries.append((corr_name, corr_seq))
-
         fastaparser.write_fasta_to_file(outfilename, modified_fasta_entries)
 
-        print '  ' + filename + ' ==> ' + os.path.basename(outfilename)
-        contigs[id] = os.path.join(__location__, outfilename)
-        if to_remove:
-            contigs_to_remove.append(contigs[id])
+        print '  %s ==> %s' % (filename, os.path.basename(outfilename))
+        newcontigs.append(os.path.join(__location__, outfilename))
+
     print '  Done.'
-    ########################################################################
-    if contigs_to_remove:
-        print "\nWarning! These files will not be processed because they don't have contigs >= " + str(qconfig.min_contig) + " bp:\n"
-        for contig_to_remove in contigs_to_remove:
-            print "  ", contig_to_remove
-            contigs.remove(contig_to_remove)
-            del report_dict[os.path.basename(contig_to_remove)]
-        print ""
-        ########################################################################
+    contigs = newcontigs
 
     if not contigs:
         usage()
@@ -305,98 +287,79 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
         ########################################################################        
         if not qconfig.reference:
             print "\nError! GAGE can't be run without reference!\n"
-            sys.exit(1)
+        else:
+            from libs import gage
+            gage.do(qconfig.reference, contigs, output_dirpath, qconfig.gage_report_basename, qconfig.min_contig, lib_dir) # TODO: new reporting
 
-        from libs import gage
-        gage.do(qconfig.reference, contigs, output_dirpath, qconfig.gage_report_basename, qconfig.min_contig, lib_dir)
-    else:
-        if qconfig.draw_plots:
-            from libs import plotter  # Do not remove this line! It would lead to a warning in matplotlib.
-            try:
-                from matplotlib.backends.backend_pdf import PdfPages
-                all_pdf = PdfPages(all_pdf_filename)
-            except:
-                all_pdf = None
+    if qconfig.draw_plots:
+        from libs import plotter  # Do not remove this line! It would lead to a warning in matplotlib.
+        try:
+            from matplotlib.backends.backend_pdf import PdfPages
+            all_pdf = PdfPages(all_pdf_filename)
+        except:
+            all_pdf = None
 
-        ########################################################################	
-        ### Stats and plots
-        ########################################################################	
-        from libs import basic_stats
-        cur_results_dict = basic_stats.do(qconfig.reference, contigs, output_dirpath + '/basic_stats', all_pdf, qconfig.draw_plots, json_outputpath, output_dirpath)
-        report_dict = extend_report_dict(report_dict, cur_results_dict)
+    ########################################################################
+    ### Stats and plots
+    ########################################################################
+    from libs import basic_stats
+    basic_stats.do(qconfig.reference, contigs, output_dirpath + '/basic_stats', all_pdf, qconfig.draw_plots, json_outputpath, output_dirpath)
 
-        if qconfig.reference:
-            ########################################################################
-            ### PLANTAKOLYA
-            ########################################################################
-            from libs import plantakolya
-            cur_results_dict = plantakolya.do(qconfig.reference, contigs, qconfig.cyclic, qconfig.rc, output_dirpath + '/plantakolya', lib_dir, qconfig.draw_plots)
-            report_dict = extend_report_dict(report_dict, cur_results_dict)
-
-            ########################################################################
-            ### NA and NGA ("aligned N and NG")
-            ########################################################################
-            from libs import aligned_stats
-            cur_results_dict = aligned_stats.do(qconfig.reference, contigs, output_dirpath + '/plantakolya', output_dirpath + '/aligned_stats', all_pdf, qconfig.draw_plots, json_outputpath, output_dirpath)
-            report_dict = extend_report_dict(report_dict, cur_results_dict)
-
-            ########################################################################
-            ### GENOME_ANALYZER
-            ########################################################################
-            from libs import genome_analyzer
-            cur_results_dict = genome_analyzer.do(qconfig.reference, contigs, output_dirpath + '/genome_analyzer', output_dirpath + '/plantakolya', qconfig.genes, qconfig.operons, all_pdf, qconfig.draw_plots, json_outputpath, output_dirpath)
-            report_dict = extend_report_dict(report_dict, cur_results_dict)
-
-            ########################################################################
-            ### MAUVE
-            ########################################################################
-            if qconfig.with_mauve:
-                from libs import mauve
-                cur_results_dict = mauve.do(qconfig.reference, contigs, output_dirpath + '/plantakolya', output_dirpath + '/mauve', lib_dir)
-                report_dict = extend_report_dict(report_dict, cur_results_dict)
-
-
-        if not qconfig.genes:
-            ########################################################################
-            ### ORFs
-            ########################################################################
-            from libs import orfs
-            for orf_length in qconfig.orf_lengths:
-                cur_results_dict = orfs.do(contigs, orf_length)
-                report_dict = extend_report_dict(report_dict, cur_results_dict)
-
-            if qconfig.with_genemark:
-                ########################################################################
-                ### GeneMark
-                ########################################################################    
-                from libs import genemark
-                cur_results_dict = genemark.do(contigs, qconfig.genes_lengths, output_dirpath + '/genemark', lib_dir)
-                report_dict = extend_report_dict(report_dict, cur_results_dict)
+    if qconfig.reference:
+        ########################################################################
+        ### PLANTAKOLYA
+        ########################################################################
+        from libs import plantakolya
+        plantakolya.do(qconfig.reference, contigs, qconfig.cyclic, qconfig.rc, output_dirpath + '/plantakolya', lib_dir, qconfig.draw_plots)
 
         ########################################################################
-        ### TOTAL REPORT
+        ### NA and NGA ("aligned N and NG")
         ########################################################################
-        if json_outputpath:
-            json_saver.save_total_report(json_outputpath, report_dict)
-
-        from libs import report_maker
-        report_maker.do(dict([(k, v[1:]) for k, v in report_dict.iteritems()]), qconfig.report_basename,
-            qconfig.transposed_report_basename, output_dirpath, qconfig.min_contig)
-
-        from libs.html_saver import html_saver
-        html_saver.save_total_report(output_dirpath, report_dict)
-
-        if qconfig.draw_plots and all_pdf:
-            print '  All pdf files are merged to', all_pdf_filename
-            all_pdf.close()
-
-        ## and extra report
-        if qconfig.reference and qconfig.extra_report:
-            from libs import extra_report_maker
-            extra_report_maker.do(os.path.join(output_dirpath, qconfig.transposed_report_basename),
-                output_dirpath + '/genome_analyzer/genome_info.txt', extra_report_filename, qconfig.min_contig, json_outputpath)
+        from libs import aligned_stats
+        aligned_stats.do(qconfig.reference, contigs, output_dirpath + '/plantakolya', output_dirpath + '/aligned_stats', all_pdf, qconfig.draw_plots, json_outputpath, output_dirpath)
 
         ########################################################################
+        ### GENOME_ANALYZER
+        ########################################################################
+        from libs import genome_analyzer
+        genome_analyzer.do(qconfig.reference, contigs, output_dirpath + '/genome_analyzer', output_dirpath + '/plantakolya', qconfig.genes, qconfig.operons, all_pdf, qconfig.draw_plots, json_outputpath, output_dirpath)
+
+    if not qconfig.genes:
+        ########################################################################
+        ### ORFs
+        ########################################################################
+        from libs import orfs
+        for orf_length in qconfig.orf_lengths:
+            orfs.do(contigs, orf_length)
+
+        if qconfig.with_genemark:
+            ########################################################################
+            ### GeneMark
+            ########################################################################
+            from libs import genemark
+            genemark.do(contigs, qconfig.genes_lengths, output_dirpath + '/genemark', lib_dir)
+
+    ########################################################################
+    ### TOTAL REPORT
+    ########################################################################
+    reporting.save(output_dirpath, qconfig.min_contig)
+
+    if json_outputpath:
+        json_saver.save_total_report(json_outputpath)
+
+    from libs.html_saver import html_saver
+    html_saver.save_total_report(output_dirpath)
+
+    if qconfig.draw_plots and all_pdf:
+        print '  All pdf files are merged to', all_pdf_filename
+        all_pdf.close()
+
+    ## and extra report
+    if qconfig.reference and qconfig.extra_report:
+        pass
+        # TODO something?
+
+    ########################################################################
 
     print 'Done.'
 

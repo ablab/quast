@@ -7,7 +7,7 @@
 import os
 import fastaparser
 import genes_parser
-from libs import json_saver
+from libs import json_saver, reporting
 from libs.html_saver import html_saver
 from qutils import id_to_str
 
@@ -54,11 +54,6 @@ def do(reference, filenames, output_dir, nucmer_dir, genes_filename, operons_fil
     if not os.path.isdir(output_dir):
         os.mkdir(output_dir)
 
-    ########################################################################
-    report_dict = {'header' : []}
-    for filename in filenames:
-        report_dict[os.path.basename(filename)] = []
-
     reference_chromosomes = {}
     genome_size = 0
     for name, seq in fastaparser.read_fasta(reference):
@@ -95,10 +90,11 @@ def do(reference, filenames, output_dir, nucmer_dir, genes_filename, operons_fil
     else:
         print '  Loaded ' + str(len(genes)) + ' genes'
         res_file.write('genes: ' + str(len(genes)) + '\n')
-        genes_found = [0 for gene in genes] # 0 - gene isn't found, 1 - gene is found, 2 - part of gene is found
+        genes_found = [0 for _ in genes] # 0 - gene isn't found, 1 - gene is found, 2 - part of gene is found
         genes_chr_names_dict = chromosomes_names_dict(genes, reference_chromosomes.keys())
 
     # reading operons
+    # TODO: clear copy-pasting!
     operons = genes_parser.get_genes_from_file(operons_filename, 'operon')
     operons_found = []
     operons_chr_names_dict = {}
@@ -107,7 +103,7 @@ def do(reference, filenames, output_dir, nucmer_dir, genes_filename, operons_fil
     else:
         print '  Loaded ' + str(len(operons)) + ' operons'
         res_file.write('operons: ' + str(len(operons)) + '\n')
-        operons_found = [0 for operon in operons] # 0 - gene isn't found, 1 - gene is found, 2 - part of gene is found
+        operons_found = [0 for _ in operons] # 0 - gene isn't found, 1 - gene is found, 2 - part of gene is found
         operons_chr_names_dict = chromosomes_names_dict(operons, reference_chromosomes.keys())
 
     # header
@@ -115,10 +111,6 @@ def do(reference, filenames, output_dir, nucmer_dir, genes_filename, operons_fil
     res_file.write('  %-20s  | %-20s| %-12s| %-10s| %-10s| %-10s| %-10s\n' % ('contigs file', 'mapped genome (%)', 'gaps', 'genes', 'partial', 'operons', 'partial'))
     res_file.write('  %-20s  | %-20s| %-12s| %-10s| %-10s| %-10s| %-10s\n' % ('', '', 'number', '', 'genes', '', 'operons'))
     res_file.write('======================================================================================================\n')
-
-    report_dict['header'].append(s_Mapped_genome)
-    report_dict['header'].append(s_Genes)
-    report_dict['header'].append(s_Operons)
 
     # for cumulative plots:
     files_contigs = {}   #  "filename" : [ [contig_blocks] ]   
@@ -139,8 +131,6 @@ def do(reference, filenames, output_dir, nucmer_dir, genes_filename, operons_fil
         nucmer_filename = nucmer_prefix + os.path.basename(filename) + '.coords'
         if not os.path.isfile(nucmer_filename):
             print '  ERROR: nucmer coord file (' + nucmer_filename + ') not found, skipping...'
-            report_dict['header'] = [r for r in report_dict['header'] if r not in [s_Genes, s_Operons, s_Mapped_genome]]
-            #report_dict[os.path.basename(filename)] += [NOT_AVAILABLE] * 3
             continue
 
         coordfile = open(nucmer_filename, 'r')
@@ -230,91 +220,46 @@ def do(reference, filenames, output_dir, nucmer_dir, genes_filename, operons_fil
 
         genome_coverage = float(covered_bp) * 100 / float(genome_size)
         res_file.write('  %-20s  | %-20s| %-12s|' % (os.path.basename(filename), genome_coverage, str(gaps_count)))
-        report_dict[os.path.basename(filename)].append('%.3f' % genome_coverage)
+
+        report = reporting.get(filename)
+        report.add_field(reporting.Fields.MAPPEDGENOME, '%.3f' % genome_coverage)
+
         genome_mapped.append(genome_coverage)
 
-        # finding genes
-        total_full = 0
-        total_partial = 0
-        found_genes_filename = os.path.join(output_dir, os.path.basename(filename) + '_genes.txt')
-        found_genes_file = open(found_genes_filename, 'w')
-        for i, gene in enumerate(genes):
-            genes_found[i] = 0
-            for block in aligned_blocks:
-                if genes_chr_names_dict[gene.seqname] != block.seqname:
-                    continue
-                if gene.end <= block.start or block.end <= gene.start:
-                    continue
-                elif block.start <= gene.start and gene.end <= block.end:
-                    if genes_found[i] == 2: # already found as partial gene
-                        total_partial -= 1
-                    genes_found[i] = 1
-                    total_full += 1
-                    found_genes_file.write(str(id + 1) + "\t" + str(gene.start) + "\t" + str(gene.end) + "\n")
-                    break
-                elif genes_found[i] == 0 and min(gene.end, block.end) - max(gene.start, block.start) >= min_overlap:
-                    genes_found[i] = 2
-                    total_partial += 1
+        # finding genes and operons
+        for regionlist, field, suffix, full_list, found_list in [(genes, reporting.Fields.GENES, '_genes.txt', full_genes, genes_found), (operons, reporting.Fields.OPERONS, '_operons.txt', full_operons, operons_found)]:
+            total_full = 0
+            total_partial = 0
+            found_filename = os.path.join(output_dir, os.path.basename(filename) + suffix)
+            found_file = open(found_filename, 'w')
+            for i, region in enumerate(regionlist):
+                found_list[i] = 0
+                for block in aligned_blocks:
+                    if genes_chr_names_dict[region.seqname] != block.seqname:
+                        continue
+                    if region.end <= block.start or block.end <= region.start:
+                        continue
+                    elif block.start <= region.start and region.end <= block.end:
+                        if found_list[i] == 2: # already found as partial gene
+                            total_partial -= 1
+                        found_list[i] = 1
+                        total_full += 1
+                        print >>found_file, '%d\t%d\t%d' % (id + 1, region.start, region.end)
+                        break
+                    elif found_list[i] == 0 and min(region.end, block.end) - max(region.start, block.start) >= min_overlap:
+                        found_list[i] = 2
+                        total_partial += 1
 
-        res_file.write(' %-10s| %-10s|' % (str(total_full), str(total_partial)))
-        found_genes_file.close()
-        if genes:
-            report_dict[os.path.basename(filename)].append('%s + %s part' % (str(total_full), str(total_partial)))
-            full_genes.append(total_full)
-        else:
-            report_dict['header'] = [r for r in report_dict['header'] if r not in [s_Genes]]
-            #report_dict[os.path.basename(filename)].append(NOT_AVAILABLE)
-
-        # finding operons
-        total_full = 0
-        total_partial = 0
-        found_operons_filename = os.path.join(output_dir, os.path.basename(filename) + '_operons.txt')
-        found_operons_file = open(found_operons_filename, 'w')
-        for i, operon in enumerate(operons):
-            operons_found[i] = 0
-            for block in aligned_blocks:
-                if operons_chr_names_dict[operon.seqname] != block.seqname:
-                    continue
-                if operon.end <= block.start or block.end <= operon.start:
-                    continue
-                elif block.start <= operon.start and operon.end <= block.end:
-                    if operons_found[i] == 2: # already found as partial gene
-                        total_partial -= 1
-                    operons_found[i] = 1
-                    total_full += 1
-                    found_operons_file.write(str(id + 1) + "\t" + str(operon.start) + "\t" + str(operon.end) + "\n")
-                    break
-                elif operons_found[i] == 0 and min(operon.end, block.end) - max(operon.start, block.start) >= min_overlap:
-                    operons_found[i] = 2
-                    total_partial += 1
-
-        res_file.write(' %-10s| %-10s|' % (str(total_full), str(total_partial)))
-        found_operons_file.close()
-        if operons:
-            report_dict[os.path.basename(filename)].append('%s + %s part' % (str(total_full), str(total_partial)))
-            full_operons.append(total_full)
-        else:
-            report_dict['header'] = [r for r in report_dict['header'] if r not in [s_Operons]]
-            #report_dict[os.path.basename(filename)].append(NOT_AVAILABLE)
+            res_file.write(' %-10s| %-10s|' % (str(total_full), str(total_partial)))
+            found_file.close()
+            if genes:
+                report.add_field(field, '%s + %s part' % (str(total_full), str(total_partial)))
+                full_list.append(total_full)
 
         # finishing output for current contigs file
         res_file.write('\n')
 
     res_file.close()
-
-
-#    for row_id in range(len(report_dict['header'])):
-#        to_remove_this_row = True
-#
-#        for col_id, filename in enumerate(filenames):
-#            if report_dict[filename] != NOT_AVAILABLE:
-#                to_remove_this_row = False
-#
-#        if to_remove_this_row:
-#            report_dict['header'].pop(row_id)
-#            for col_id, filename in enumerate(filenames):
-#                report_dict[filename].pop(row_id)
-
 
     # saving json
     if json_output_dir:
@@ -347,9 +292,6 @@ def do(reference, filenames, output_dir, nucmer_dir, genes_filename, operons_fil
         plotter.histogram(filenames, genome_mapped, output_dir + '/genome_mapped_histogram', 'Genome mapped, %', all_pdf, top_value=100)
 
     print '  Done'
-
-    return report_dict
-
 
 class Aligned_block():
     def __init__(self, seqname=None, start=None, end=None):

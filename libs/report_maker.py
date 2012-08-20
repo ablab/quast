@@ -7,6 +7,8 @@
 ### main function ###
 import os
 
+# TODO: remove this module
+
 def do(report_dict, report_basename, transposed_report_basename, output_dirpath, min_contig=0):
     # suffixes for files with transposed and normal report tables
     txt_ext = '.txt'

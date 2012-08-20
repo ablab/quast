@@ -1,6 +1,5 @@
 import re
 from libs import json_saver
-from libs import qconfig
 
 ############################################################################
 # Copyright (c) 2011-2012 Saint-Petersburg Academic University
@@ -15,7 +14,7 @@ __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file
 def get_real_path(rel_path_in_html_saver):
     return os.path.join(__location__, rel_path_in_html_saver)
 
-fn_report = qconfig.report_basename + '.html'
+fn_report = 'report.html'
 afp_template = get_real_path('template.html')
 scripts_inserted = False
 
@@ -81,9 +80,9 @@ def append(adp_results, afp_json, keyword):
         f_html.write(html_text)
 
 
-def save_total_report(adp_results, report_dict):
+def save_total_report(adp_results):
     print '  HTML version of total report...'
-    afp_json = json_saver.save_total_report(adp_results, report_dict)
+    afp_json = json_saver.save_total_report(adp_results)
     append(adp_results, afp_json, 'report')
     print '    Saved to', os.path.join(adp_results, fn_report)
 

@@ -26,11 +26,13 @@ def save(filename, what):
     return filename
 
 
-def save_total_report(output_dir, report_dict):
-    results = [row for key, row in report_dict.items() if key != 'header']
-    results.sort(key = lambda row: row[0])
-    results = [row[1:] for row in results]
-    header = report_dict['header'][1:]
+def save_total_report(output_dir):
+    import reporting
+    table = reporting.table()
+
+    # TODO: check correctness, not sure that header and result are correct:
+    header = table[0]
+    results = table[1:]
 
     t = datetime.datetime.now()
 
@@ -39,11 +41,6 @@ def save_total_report(output_dir, report_dict):
             'header' : header,
             'results' : results
     })
-
-    #    json.dump({'date' : { 'year' : t.year, 'month' : t.month, 'day' : t.day, 'weekday' : t.weekday(),
-    #                          'hour' : t.hour, 'minute' : t.minute, 'second' : t.second },
-    #               'header' : report_dict['header'], 'results' : results }, jsn_file)
-
 
 def save_contigs_lengths(output_dir, filenames, lists_of_lengths):
     lists_of_lengths = [sorted(list, reverse=True) for list in lists_of_lengths]

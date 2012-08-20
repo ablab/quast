@@ -9,6 +9,8 @@ import subprocess
 from libs import report_maker
 from qutils import id_to_str
 
+# TODO: rewrite with new reporting
+
 def do(reference, contigs, output_dirpath, total_report_basename, min_contig, lib_dir):
     gage_results_path = os.path.join(output_dirpath, 'gage')
 

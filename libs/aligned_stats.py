@@ -6,13 +6,13 @@
 
 import os
 import itertools
-import sys
 import fastaparser
+from libs import reporting
 from qutils import id_to_str
 
 __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
 
-def get_lengths_from_coordfile(nucmer_filename):
+def get_lengths_from_coordfile(nucmer_filename): # TODO: re-use Mappings from plantakolya
     """
     Returns list of aligned blocks' lengths
     """
@@ -77,10 +77,6 @@ def do(reference, filenames, nucmer_dir, output_dir, all_pdf, draw_plots, json_o
     ########################################################################
 
     print 'Calculating NA50 and NGA50...'
-    report_dict['header'].append('NA50')
-    report_dict['header'].append('NGA50')
-    report_dict['header'].append('NA75')
-    report_dict['header'].append('NGA75')
 
     import N50
     for id, (filename, lens, assembly_len) in enumerate(itertools.izip(filenames, lists_of_lengths, assembly_lengths)):
@@ -91,10 +87,11 @@ def do(reference, filenames, nucmer_dir, output_dir, all_pdf, draw_plots, json_o
         print ' ', id_to_str(id), os.path.basename(filename), \
             ', NA50 =', na50, \
             ', NGA50 =', nga50
-        report_dict[os.path.basename(filename)].append(na50)
-        report_dict[os.path.basename(filename)].append(nga50)
-        report_dict[os.path.basename(filename)].append(na75)
-        report_dict[os.path.basename(filename)].append(nga75)
+        report = reporting.get(filename)
+        report.add_field(reporting.Fields.NA50, na50)
+        report.add_field(reporting.Fields.NGA50, nga50)
+        report.add_field(reporting.Fields.NA75, na75)
+        report.add_field(reporting.Fields.NGA75, nga75)
 
     ########################################################################
 

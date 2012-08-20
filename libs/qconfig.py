@@ -18,8 +18,6 @@ default_json_dirname = "json"
 
 logfile = "quast.log"
 corrected_dir = "corrected_input"
-report_basename = "report"
-transposed_report_basename = "transposed_" + report_basename
 gage_report_basename = "report"
 extra_report_filename = "extra_report.txt"
 plots_filename = "plots.pdf"
@@ -29,7 +27,6 @@ make_latest_symlink = True
 reference = ''
 genes = ''
 operons = ''
-with_mauve = False
 with_gage = False
 with_genemark = False
 cyclic = True

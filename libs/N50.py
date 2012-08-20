@@ -29,7 +29,6 @@ def NG50(numlist, reference_length, percentage = 50.0):
     if s <= limit:
       return l
 
-
 def N50(numlist, percentage = 50.0):
   """
   Abstract: Returns the N50 value of the passed list of numbers.

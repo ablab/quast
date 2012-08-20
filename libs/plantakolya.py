@@ -220,6 +220,8 @@ def process_misassembled_contig(plantafile, output_file, i_start, i_finish, cont
         print >>plantafile, '\t\t\tReal Alignment %d: %s' % (i+1, str(sorted_aligns[i]))
         #Calculate the distance on the reference between the end of the first alignment and the start of the second
         gap = sorted_aligns[i+1].s1 - sorted_aligns[i].e1
+        # the same for contig
+        gap_in_contig = sorted_aligns[i+1].s2 - sorted_aligns[i].e2
 
         #Check strands
         strand1 = (sorted_aligns[i].s2 > sorted_aligns[i].e2)
@@ -253,7 +255,7 @@ def process_misassembled_contig(plantafile, output_file, i_start, i_finish, cont
             prev.s2 = 0 # [S2]
             prev.e2 = 0 # [E2]
             prev.len1 = prev.e1 - prev.s1 # [LEN1]
-            prev.len2 = prev.len2 + sorted_aligns[i+1].len2 + (gap if gap < 0 else 0) # [LEN2]
+            prev.len2 = prev.len2 + sorted_aligns[i+1].len2 + (gap_in_contig if gap_in_contig < 0 else 0) # [LEN2]
 
     #MY: output in coords.filtered
     if not is_1st_chimeric_half:
@@ -480,6 +482,7 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
                         total_unaligned += ctg_len - end
                         print >> plantafile, '\t\tThis contig is partially unaligned. (%d out of %d)' % (
                         top_len, ctg_len)
+                        print >> plantafile, '\t\tAlignment: %s' % str(sorted_aligns[0])
                         print >> plantafile, '\t\tUnaligned bases: 1 to %d (%d)' % (begin, begin)
                         print >> plantafile, '\t\tUnaligned bases: %d to %d (%d)' % (end, ctg_len, ctg_len - end + 1)
                 else:
@@ -535,8 +538,7 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
                             region_misassemblies += x
                             region_local_misassemblies += y
 
-                    if not chimeric_found:
-                        print >> plantafile, "here", sorted_aligns
+                    if not chimeric_found:                        
                         #MY: for merging local misassemlbies
                         prev = sorted_aligns[0].clone()
                         prev, x, y = process_misassembled_contig(plantafile, coords_filtered_file, 0, sorted_num,
@@ -544,7 +546,6 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
                             extensive_misassembled_contigs)
                         region_misassemblies += x
                         region_local_misassemblies += y
-                        print >> plantafile, "there", sorted_aligns
 
         else:
             #No aligns to this contig

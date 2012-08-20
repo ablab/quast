@@ -29,6 +29,7 @@ def save(filename, what):
 def save_total_report(output_dir):
     import reporting
     table = reporting.table()
+    table = [[table[i][j] for i in xrange(len(table))] for j in xrange(len(table[0]))]
 
     # TODO: check correctness, not sure that header and result are correct:
     header = table[0]

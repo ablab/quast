@@ -258,9 +258,8 @@ def do(reference, filenames, output_dir, nucmer_dir, genes_filename, operons_fil
 
             res_file.write(' %-10s| %-10s|' % (str(total_full), str(total_partial)))
             found_file.close()
-            if regionlist:
-                report.add_field(field, '%s + %s part' % (str(total_full), str(total_partial)))
-                full_list.append(total_full)
+            report.add_field(field, '%s + %s part' % (str(total_full), str(total_partial)))
+            full_list.append(total_full)
 
         # finishing output for current contigs file
         res_file.write('\n')

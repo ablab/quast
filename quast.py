@@ -183,13 +183,6 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
 
     ########################################################################
 
-    def extend_report_dict(report_dict, new_data_dict):
-        for contig, value_list in new_data_dict.iteritems():
-            report_dict[contig].extend(value_list)
-        return report_dict
-
-    ########################################################################
-
     # duplicating output to log file
     from libs import support
     if os.path.isfile(logfile):
@@ -220,8 +213,8 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
     # we should remove input files with no contigs (e.g. if ll contigs are less than "min_contig" value)
     contigs_to_remove = []
     ## removing from contigs' names special characters because:
-    ## 1) Mauve fails on some strings with "...", "+", "-", etc
-    ## 2) nummer fails on names like "contig 1_bla_bla", "contig 2_bla_bla" (it interprets as a contig's name only the first word of caption and gets ambiguous contigs names)
+    ## 1) Some embedded tools can fail on some strings with "...", "+", "-", etc
+    ## 2) Nucmer fails on names like "contig 1_bla_bla", "contig 2_bla_bla" (it interprets as a contig's name only the first word of caption and gets ambiguous contigs names)
     newcontigs = []
     for id, filename in enumerate(contigs):
         outfilename = os.path.splitext( os.path.join(corrected_dir, os.path.basename(filename).replace(' ','_')) )[0]
@@ -272,7 +265,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
             print >> sys.stderr, "\nERROR! GAGE can't be run without reference!\n"
         else:
             from libs import gage
-            gage.do(qconfig.reference, contigs, output_dirpath, qconfig.gage_report_basename, qconfig.min_contig, lib_dir) # TODO: new reporting
+            gage.do(qconfig.reference, contigs, output_dirpath, qconfig.min_contig, lib_dir)
 
     if qconfig.draw_plots:
         from libs import plotter  # Do not remove this line! It would lead to a warning in matplotlib.
@@ -313,6 +306,12 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
         ########################################################################
         from libs import genemark
         genemark.do(contigs, qconfig.genes_lengths, output_dirpath + '/genemark', lib_dir)
+    else:
+        # TODO: make it nicer (not output predicted genes if annotations are provided
+        for id, filename in enumerate(contigs):
+            report = reporting.get(filename)
+            report.add_field(reporting.Fields.GENEMARKUNIQUE, "")
+            report.add_field(reporting.Fields.GENEMARK, [""] * len(qconfig.genes_lengths))
 
     ########################################################################
     ### TOTAL REPORT

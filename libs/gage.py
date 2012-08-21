@@ -10,7 +10,7 @@ from libs import reporting
 from qutils import id_to_str
 
 
-def do(reference, contigs, output_dirpath, total_report_basename, min_contig, lib_dir):
+def do(reference, contigs, output_dirpath, min_contig, lib_dir):
     gage_results_path = os.path.join(output_dirpath, 'gage')
 
     # suffixes for files with report tables in plain text and tab separated formats

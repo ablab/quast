@@ -21,6 +21,7 @@ from libs import qconfig
 ####################################################################################
 
 reports = {} # basefilename -> Report
+keys_order = [] # for printing in appropriate order
 
 # Available fields for report, values (strings) should be unique!
 class Fields:
@@ -60,10 +61,18 @@ class Fields:
     GENEMARK = ('# predicted genes (>= %d bp)', tuple(qconfig.genes_lengths))
 
     # order as printed in report:
-    order = [NAME, CONTIGS, TOTALLENS, N50, NG50, N75, NG75, NUMCONTIGS, LARGCONTIG, TOTALLEN, GC, REFLEN, REFGC,
+    order = [NAME, CONTIGS, TOTALLENS, NUMCONTIGS, LARGCONTIG, TOTALLEN, REFLEN, N50, NG50, N75, NG75,             
              AVGIDY, MISLOCAL, MISASSEMBL, MISCONTIGS, MISCONTIGSBASES, MISUNALIGNED, 
-             UNALIGNED, UNALIGNEDBASES, AMBIGUOUS, AMBIGUOUSBASES, SNPS, SUBSERROR,
-             NA50, NGA50, NA75, NGA75, MAPPEDGENOME, GENES, OPERONS, GENEMARKUNIQUE, GENEMARK]
+             UNALIGNED, UNALIGNEDBASES, AMBIGUOUS, AMBIGUOUSBASES, 
+             MAPPEDGENOME, GC, REFGC, SNPS, SUBSERROR, GENES, OPERONS, GENEMARKUNIQUE, GENEMARK, 
+             NA50, NGA50, NA75, NGA75]
+    
+    # temp: for QUAST paper
+    #order = [NAME, NUMCONTIGS, LARGCONTIG, TOTALLEN, REFLEN, N50, NG50, N75, NG75,             
+    #         MISASSEMBL, MISCONTIGS, MISCONTIGSBASES,
+    #         UNALIGNED, UNALIGNEDBASES, AMBIGUOUS, AMBIGUOUSBASES, 
+    #         MAPPEDGENOME, GC, REFGC, SNPS, SUBSERROR, GENES, OPERONS, GENEMARKUNIQUE, GENEMARK, 
+    #         NA50, NGA50, NA75, NGA75]
 
     # GAGE fields
     GAGE_NUMCONTIGS = 'Contigs #'
@@ -121,6 +130,8 @@ class Report(object):
 
 def get(name):
     name = os.path.basename(name)
+    if name not in keys_order:
+        keys_order.append(name)
     return reports.setdefault(name, Report(name))
 
 def reporting_filter(value):
@@ -135,14 +146,16 @@ def table(gage_mode=False):
         if isinstance(field, tuple): # TODO: rewrite it nicer
             for i, x in enumerate(field[1]):
                 ls = []
-                for report in reports.itervalues():
+                for name in keys_order:
+                    report = get(name)
                     value = report.get_field(field)
                     ls.append(value[i] if i < len(value) else None)
                 if filter(reporting_filter, ls): # have at least one element
                     ans.append([field[0] % x] + [str(y) for y in ls])
         else:
             ls = []
-            for report in reports.itervalues():
+            for name in keys_order:
+                report = get(name)
                 value = report.get_field(field)
                 ls.append(value)
             if filter(reporting_filter, ls): # have at least one element

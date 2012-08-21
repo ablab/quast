@@ -305,8 +305,10 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
     print >> plantafile, 'Aligning contigs to reference...'
     print >> plantafile, '\tRunning nucmer...'
     print 'NUCmer... ',
-    subprocess.call(['nucmer', '--maxmatch', '-p', nucmerfilename, '-l', '30', '-banded', reference, filename],
-        stdout=open(logfilename_out, 'a'), stderr=logfile_err, env=myenv)
+    #subprocess.call(['nucmer', '--maxmatch', '-p', nucmerfilename, '-l', '30', '-banded', reference, filename],
+    #    stdout=open(logfilename_out, 'a'), stderr=logfile_err, env=myenv)
+    subprocess.call(['nucmer', '--maxmatch', '-p', nucmerfilename, reference, filename],
+         stdout=open(logfilename_out, 'a'), stderr=logfile_err, env=myenv)
     subprocess.call(['show-coords', '-B', delta_filename],
         stdout=open(coords_btab_filename, 'w'), stderr=logfile_err, env=myenv)
     subprocess.call(['dnadiff', '-d', delta_filename, '-p', nucmerfilename],

@@ -269,7 +269,7 @@ def process_misassembled_contig(plantafile, output_file, i_start, i_finish, cont
 
 def clear_files(filename, nucmerfilename):
     # delete temporary files
-    for ext in ['.delta', '.1delta', '.mdelta', '.unqry', '.qdiff', '.rdiff', '.1coords', '.mcoords', '.mgaps', '.ntref', '.gp']:
+    for ext in ['.delta', '.1delta', '.mdelta', '.unqry', '.qdiff', '.rdiff', '.1coords', '.mcoords', '.mgaps', '.ntref', '.gp', '.coords.btab']:
         if os.path.isfile(nucmerfilename + ext):
             os.remove(nucmerfilename + ext)
     if os.path.isfile('nucmer.error'):
@@ -562,7 +562,14 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
 
     # TODO: 'Analyzing coverage...'
 
+    # calulating SNPs and Subs. error (per 100 Kbp)
     for line in open(nucmer_report_filename):
+        #                           [REF]                [QRY]
+        # AlignedBases         4501335(97.02%)      4513272(90.71%)    
+        if line.startswith('AlignedBases'):
+            total_aligned_bases = int(line.split()[2].split('(')[0])    
+
+        # TotalSNPs                  516                  516
         if line.startswith('TotalSNPs'):
             SNPs = int(line.split()[2])
             break
@@ -586,11 +593,12 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
     report.add_field(reporting.Fields.MISCONTIGS, len(misassembled_contigs))
     report.add_field(reporting.Fields.MISCONTIGSBASES, misassembled_bases)
     report.add_field(reporting.Fields.MISUNALIGNED, misassembled_partially_unaligned)
-    report.add_field(reporting.Fields.UNALIGNED, '%d (%d)' % (unaligned, partially_unaligned))
+    report.add_field(reporting.Fields.UNALIGNED, '%d + %d part' % (unaligned, partially_unaligned))
     report.add_field(reporting.Fields.UNALIGNEDBASES, total_unaligned)
-    report.add_field(reporting.Fields.AMBIGUOUS, '%d (%d)' % (ambiguous, total_ambiguous))
+    report.add_field(reporting.Fields.AMBIGUOUS, ambiguous)
+    report.add_field(reporting.Fields.AMBIGUOUSBASES, total_ambiguous)
     report.add_field(reporting.Fields.SNPS, SNPs)
-    report.add_field(reporting.Fields.SUBSERROR, "%.2f" % (float(SNPs) * 100000.0 / float(total_reg_len)))
+    report.add_field(reporting.Fields.SUBSERROR, "%.2f" % (float(SNPs) * 100000.0 / float(total_aligned_bases)))
 
     ## outputting misassembled contigs to separate file
     fasta = [(name, seq) for name, seq in fastaparser.read_fasta(filename) if

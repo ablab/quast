@@ -227,7 +227,13 @@ def do(reference, filenames, output_dir, nucmer_dir, genes_filename, operons_fil
         genome_mapped.append(genome_coverage)
 
         # finding genes and operons
-        for regionlist, field, suffix, full_list, found_list in [(genes, reporting.Fields.GENES, '_genes.txt', full_genes, genes_found), (operons, reporting.Fields.OPERONS, '_operons.txt', full_operons, operons_found)]:
+        for regionlist, chr_names_dict, field, suffix, full_list, found_list in [
+                (genes, genes_chr_names_dict, reporting.Fields.GENES, '_genes.txt', full_genes, genes_found), 
+                (operons, operons_chr_names_dict, reporting.Fields.OPERONS, '_operons.txt', full_operons, operons_found)]:
+
+            if not regionlist:
+                continue    
+
             total_full = 0
             total_partial = 0
             found_filename = os.path.join(output_dir, os.path.basename(filename) + suffix)
@@ -235,7 +241,7 @@ def do(reference, filenames, output_dir, nucmer_dir, genes_filename, operons_fil
             for i, region in enumerate(regionlist):
                 found_list[i] = 0
                 for block in aligned_blocks:
-                    if genes_chr_names_dict[region.seqname] != block.seqname:
+                    if chr_names_dict[region.seqname] != block.seqname:
                         continue
                     if region.end <= block.start or block.end <= region.start:
                         continue
@@ -252,7 +258,7 @@ def do(reference, filenames, output_dir, nucmer_dir, genes_filename, operons_fil
 
             res_file.write(' %-10s| %-10s|' % (str(total_full), str(total_partial)))
             found_file.close()
-            if genes:
+            if regionlist:
                 report.add_field(field, '%s + %s part' % (str(total_full), str(total_partial)))
                 full_list.append(total_full)
 
@@ -277,7 +283,6 @@ def do(reference, filenames, output_dir, nucmer_dir, genes_filename, operons_fil
         html_saver.save_genes(results_dir, genes, genes_found)
     if operons:
         html_saver.save_operons(results_dir, operons, operons_found)
-
 
     if draw_plots:
         # cumulative plots:

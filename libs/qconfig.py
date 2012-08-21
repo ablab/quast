@@ -8,8 +8,8 @@ import datetime
 
 contig_thresholds = "110,201,501,1001"
 min_contig = 0
-genes_lengths = "0,300,600,900,1200,1500,1800,2100,2400,2700,3000"
-orf_lengths = "600"
+#genes_lengths = "0,300,600,900,1200,1500,1800,2100,2400,2700,3000"
+genes_lengths = "0,300,1500,3000"
 
 default_results_root_dirname = "quast_results"
 output_dirname = "results_" + datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
@@ -26,10 +26,9 @@ reference = ''
 genes = ''
 operons = ''
 with_gage = False
-with_genemark = False
 cyclic = True
 rc = True
 
-long_options = "output-dir= save-json-to= genes= operons= reference= contig-thresholds= min-contig= orf= genemark-thresholds= save-json gage not-circular disable-rc genemark plain-report-no-plots help".split()
-short_options = "o:G:O:R:t:M:f:e:J:jpgndkh"
+long_options = "output-dir= save-json-to= genes= operons= reference= contig-thresholds= min-contig= genemark-thresholds= save-json gage not-circular disable-rc plain-report-no-plots help".split()
+short_options = "o:G:O:R:t:M:e:J:jpgndh"
 

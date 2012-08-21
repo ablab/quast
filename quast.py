@@ -38,8 +38,8 @@ def usage():
         print >> sys.stderr, ""
         print >> sys.stderr, "Advanced options:"
         print >> sys.stderr, "--gage                              this flag starts QUAST in \"GAGE mode\""
-        print >> sys.stderr, "--contig-thresholds <int,int,...>   comma-separated list of contig length thresholds [default is %s]" % qconfig.contig_thresholds
-        print >> sys.stderr, "--orf               <int,int,...>   comma-separated list of threshold lengths of ORFs to search for [default is %s]" % qconfig.orf_lengths
+        print >> sys.stderr, "--contig-thresholds   <int,int,..>  comma-separated list of contig length thresholds [default is %s]" % qconfig.contig_thresholds
+        print >> sys.stderr, "--genemark-thresholds <int,int,..>  comma-separated list of threshold lengths of genes to search with GeneMark [default is %s]" % qconfig.genes_lengths
         print >> sys.stderr, '--not-circular                      this flag should be set if the genome is not circular (e.g., it is an eukaryote)'
         print >> sys.stderr, ""
         print >> sys.stderr, "-h/--help           print this usage message"
@@ -51,14 +51,12 @@ def usage():
         print >> sys.stderr, "-O/--operons <filename>      annotated operons file"
         print >> sys.stderr, "-M  --min-contig             lower threshold for contig length [default: %s]" % qconfig.min_contig
         print >> sys.stderr, "-t  --contig-thresholds      comma-separated list of contig length thresholds [default is %s]" % qconfig.contig_thresholds
-        print >> sys.stderr, "-f  --orf                    comma-separated list of threshold lengths of ORFs to search for [default is %s]" % qconfig.orf_lengths
         print >> sys.stderr, "-e  --genemark-thresholds    comma-separated list of threshold lengths of genes to search with GeneMark [default is %s]" % qconfig.genes_lengths
         print >> sys.stderr, ""
         print >> sys.stderr, 'Options without arguments'
         print >> sys.stderr, '-g  --gage                   use Gage (results are in gage_report.txt)'
         print >> sys.stderr, '-n  --not-circular           genome is not circular (e.g., it is an eukaryote)'
         print >> sys.stderr, "-d  --disable-rc             reverse complementary contig should NOT be counted as misassembly"
-        print >> sys.stderr, "-k  --genemark               use GeneMark"
         print >> sys.stderr, "-j  --save-json              save the output also in the JSON format"
         print >> sys.stderr, "-J  --save-json-to <path>    save the JSON-output to a particular path"
         print >> sys.stderr, "-p  --plain-report-no-plots  plain text report only, don't draw plots (to make quast faster)"
@@ -67,7 +65,7 @@ def usage():
 
 def check_file(f, message=''):
     if not os.path.isfile(f):
-        print >> sys.stderr, "Error. File not found (%s): %s" % (message, f)
+        print >> sys.stderr, "\nERROR! File not found (%s): %s\n" % (message, f)
         sys.exit(2)
     return f
 
@@ -108,8 +106,6 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
             qconfig.contig_thresholds = arg
         elif opt in ('-M', "--min-contig"):
             qconfig.min_contig = int(arg)
-        elif opt in ('-f', "--orf"):
-            qconfig.orf_lengths = arg
         elif opt in ('-e', "--genemark-thresholds"):
             qconfig.genes_lengths = arg
         elif opt in ('-j', '--save-json'):
@@ -123,8 +119,6 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
             qconfig.cyclic = False
         elif opt in ('-d', "--disable-rc"):
             qconfig.rc = True
-        elif opt in ('-k', "--genemark"):
-            qconfig.with_genemark = True        
         elif opt in ('-p', '--plain-report-no-plots'):
             qconfig.draw_plots = False
         elif opt in ('-h', "--help"):
@@ -136,13 +130,8 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
     for c in contigs:
         check_file(c, 'contigs')
 
-    # orfs are in codons:
-    def bp2codon(len_in_bp):
-        return int(len_in_bp) / 3
-
     qconfig.contig_thresholds = map(int, qconfig.contig_thresholds.split(","))
     qconfig.genes_lengths =  map(int, qconfig.genes_lengths.split(","))
-    qconfig.orf_lengths = map(bp2codon, qconfig.orf_lengths.split(","))
 
     ########################################################################
     ### CONFIG & CHECKS
@@ -154,7 +143,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
         while os.path.isdir(output_dirpath):
             output_dirpath = str(base_dirpath) + '__' + str(i)
             i += 1
-        print "\nWarning! Output directory already exists! Results will be saved in " + output_dirpath + "\n"
+        print "\nWARNING! Output directory already exists! Results will be saved in " + output_dirpath + "\n"
 
     if not os.path.isdir(output_dirpath):
         os.makedirs(output_dirpath)
@@ -245,7 +234,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
 
         lengths = fastaparser.get_lengths_from_fastafile(filename)
         if not sum(1 for l in lengths if l >= qconfig.min_contig):
-            print "  %s will not be processed because it don't have contigs >= %d bp." % (os.path.basename(filename), qconfig.min_contig)
+            print "\n  WARNING! %s will not be processed because it doesn't have contigs >= %d bp.\n" % (os.path.basename(filename), qconfig.min_contig)
             continue
 
         ## filling column "Assembly" with names of assemblies
@@ -280,7 +269,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
         ### GAGE
         ########################################################################        
         if not qconfig.reference:
-            print "\nError! GAGE can't be run without reference!\n"
+            print >> sys.stderr, "\nERROR! GAGE can't be run without reference!\n"
         else:
             from libs import gage
             gage.do(qconfig.reference, contigs, output_dirpath, qconfig.gage_report_basename, qconfig.min_contig, lib_dir) # TODO: new reporting
@@ -320,18 +309,10 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
 
     if not qconfig.genes:
         ########################################################################
-        ### ORFs
+        ### GeneMark
         ########################################################################
-        from libs import orfs
-        for orf_length in qconfig.orf_lengths:
-            orfs.do(contigs, orf_length)
-
-        if qconfig.with_genemark:
-            ########################################################################
-            ### GeneMark
-            ########################################################################
-            from libs import genemark
-            genemark.do(contigs, qconfig.genes_lengths, output_dirpath + '/genemark', lib_dir)
+        from libs import genemark
+        genemark.do(contigs, qconfig.genes_lengths, output_dirpath + '/genemark', lib_dir)
 
     ########################################################################
     ### TOTAL REPORT

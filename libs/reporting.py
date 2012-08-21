@@ -25,48 +25,45 @@ reports = {} # basefilename -> Report
 # Available fields for report, values (strings) should be unique!
 class Fields:
     NAME = 'Assembly'
-    CONTIGS = ('# contigs >= %d', tuple(qconfig.contig_thresholds))
-    TOTALLENS = ('Total length (>= %d)', tuple(qconfig.contig_thresholds))
+    CONTIGS = ('# contigs (>= %d bp)', tuple(qconfig.contig_thresholds))
+    TOTALLENS = ('Total length (>= %d bp)', tuple(qconfig.contig_thresholds))
     N50 = 'N50'
     NG50 = 'NG50'
     N75 = 'N75'
     NG75 = 'NG75'
-    NUMCONTIGS = 'Number of contigs'
+    NUMCONTIGS = '# contigs'
     LARGCONTIG = 'Largest contig'
     TOTALLEN = 'Total length'
-    GC = 'GC %'
+    GC = 'GC (%)'
     REFLEN = 'Reference length'
-    REFGC = 'Reference GC %'
+    REFGC = 'Reference GC (%)'
     AVGIDY = 'Average %IDY'
-    MISLOCAL = 'Local misassemblies'
-    MISASSEMBL = 'Misassemblies'
-    MISCONTIGS = 'Misassembled contigs'
-    MISCONTIGSBASES = 'Misassembled contig bases'
-    MISUNALIGNED = 'Misassembled and unaligned'
-    UNALIGNED = 'Unaligned contigs'
-    UNALIGNEDBASES = 'Unaligned contig bases'
-    AMBIGUOUS = 'Ambiguous contigs'
-    SNPS = 'SNPs'
-    SUBSERROR = 'Subs. error (per 100 Kbp)'  #TODO to be discussed: EITHER /genome_size OT /assembly_size OR /aligned_size! See plantakolya
+    MISLOCAL = '# local misassemblies'
+    MISASSEMBL = '# misassemblies'
+    MISCONTIGS = '# misassembled contigs'
+    MISCONTIGSBASES = 'Misassembled contigs length'
+    MISUNALIGNED = '# misassembled and unaligned'
+    UNALIGNED = '# unaligned contigs'
+    UNALIGNEDBASES = 'Unaligned contigs length'
+    AMBIGUOUS = '# ambiguous contigs'
+    AMBIGUOUSBASES = 'Ambiguous contigs length'
+    SNPS = '# SNPs'
+    SUBSERROR = 'Subs. error (per 100 Kbp)'
     NA50 = 'NA50'
     NGA50 = 'NGA50'
     NA75 = 'NA75'
     NGA75 = 'NGA75'
-    MAPPEDGENOME = 'Mapped genome (%)'
-    GENES = 'Genes'
-    OPERONS = 'Operons'
-    ORFS = ('# ORFs >= %d aa', tuple(qconfig.orf_lengths))
-    GENEMARKUNIQUE = 'GeneMark (# unique genes)'
-    GENEMARK = ('GeneMark (# genes >= %d bp)', tuple(qconfig.genes_lengths))
+    MAPPEDGENOME = 'Genome fraction (%)'
+    GENES = '# genes'
+    OPERONS = '# operons'
+    GENEMARKUNIQUE = '# predicted genes (unique)'
+    GENEMARK = ('# predicted genes (>= %d bp)', tuple(qconfig.genes_lengths))
 
     # order as printed in report:
     order = [NAME, CONTIGS, TOTALLENS, N50, NG50, N75, NG75, NUMCONTIGS, LARGCONTIG, TOTALLEN, GC, REFLEN, REFGC,
              AVGIDY, MISLOCAL, MISASSEMBL, MISCONTIGS, MISCONTIGSBASES, MISUNALIGNED, 
-             UNALIGNED, UNALIGNEDBASES, AMBIGUOUS, SNPS, SUBSERROR,
-             NA50, NGA50, NA75, NGA75,
-             MAPPEDGENOME, GENES, OPERONS,
-             ORFS,
-             GENEMARKUNIQUE, GENEMARK]
+             UNALIGNED, UNALIGNEDBASES, AMBIGUOUS, AMBIGUOUSBASES, SNPS, SUBSERROR,
+             NA50, NGA50, NA75, NGA75, MAPPEDGENOME, GENES, OPERONS, GENEMARKUNIQUE, GENEMARK]
 
     # GAGE fields
     GAGE_NUMCONTIGS = 'Contigs #'
@@ -126,6 +123,11 @@ def get(name):
     name = os.path.basename(name)
     return reports.setdefault(name, Report(name))
 
+def reporting_filter(value):
+    if value == "":
+        return False
+    return True
+
 def table(gage_mode=False):
     order = Fields.gage_order if gage_mode else Fields.order
     ans = []
@@ -136,14 +138,14 @@ def table(gage_mode=False):
                 for report in reports.itervalues():
                     value = report.get_field(field)
                     ls.append(value[i] if i < len(value) else None)
-                if filter(None, ls): # have at least one element
+                if filter(reporting_filter, ls): # have at least one element
                     ans.append([field[0] % x] + [str(y) for y in ls])
         else:
             ls = []
             for report in reports.itervalues():
                 value = report.get_field(field)
                 ls.append(value)
-            if filter(None, ls): # have at least one element
+            if filter(reporting_filter, ls): # have at least one element
                 ans.append([field] + [str(y) for y in ls])
     return ans
 

@@ -10,7 +10,7 @@ from libs import fastaparser
 
 # Supported plot formats: .emf, .eps, .pdf, .png, .ps, .raw, .rgba, .svg, .svgz
 #plots_format = '.svg'
-plots_format = '.pdf'
+plots_format = '.png'
 
 
 matplotlib_error = False
@@ -356,7 +356,8 @@ def genes_operons_plot(filenames, files_contigs, genes, found, plot_filename, ti
 
     matplotlib.pyplot.xlabel('Contig index', fontsize=axes_fontsize)
     matplotlib.pyplot.ylabel('Cumulative no. ' + title, fontsize=axes_fontsize)
-    matplotlib.pyplot.title(title.capitalize())
+    if with_title:
+        matplotlib.pyplot.title('Cumulative number of ' + title)
     matplotlib.pyplot.grid(False)
     ax = matplotlib.pyplot.gca()
     # Shink current axis's height by 20% on the bottom

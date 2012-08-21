@@ -311,7 +311,7 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
          stdout=open(logfilename_out, 'a'), stderr=logfile_err, env=myenv)
     subprocess.call(['show-coords', '-B', delta_filename],
         stdout=open(coords_btab_filename, 'w'), stderr=logfile_err, env=myenv)
-    subprocess.call(['dnadiff', '-d', delta_filename, '-p', nucmerfilename],
+    subprocess.call(['my_dnadiff', '-d', delta_filename, '-p', nucmerfilename],
         stdout=open(logfilename_out, 'a'), stderr=logfile_err, env=myenv)
 
     sympalign(coords_filename, coords_btab_filename)

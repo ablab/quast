@@ -293,7 +293,7 @@ def do(reference, filenames, output_dir, nucmer_dir, genes_filename, operons_fil
             plotter.genes_operons_plot(filenames, files_contigs, operons, operons_found, output_dir + '/operons_cumulative_plot', 'operons', all_pdf)
             plotter.histogram(filenames, full_operons, output_dir + '/complete_operons_histogram', 'Number of complete operons', all_pdf, 'Number of complete operons')
 
-        plotter.histogram(filenames, genome_mapped, output_dir + '/genome_mapped_histogram', 'Genome fraction, %', all_pdf, top_value=100)
+        plotter.histogram(filenames, genome_mapped, output_dir + '/genome_fraction_histogram', 'Genome fraction, %', all_pdf, top_value=100)
 
     print '  Done'
 

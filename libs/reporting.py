@@ -48,7 +48,7 @@ class Fields:
     UNALIGNEDBASES = 'Unaligned contigs length'
     AMBIGUOUS = '# ambiguous contigs'
     AMBIGUOUSBASES = 'Ambiguous contigs length'
-    SNPS = '# SNPs'
+    SNPS = '# mismatches'
     SUBSERROR = 'Subs. error (per 100 Kbp)'
     NA50 = 'NA50'
     NGA50 = 'NGA50'

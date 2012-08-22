@@ -49,7 +49,7 @@ def usage():
         print >> sys.stderr, "-R           <filename>      reference genome file"
         print >> sys.stderr, "-G/--genes   <filename>      annotated genes file"
         print >> sys.stderr, "-O/--operons <filename>      annotated operons file"
-        print >> sys.stderr, "-M  --min-contig             lower threshold for contig length [default: %s]" % qconfig.min_contig
+        print >> sys.stderr, "-M  --min-contig             lower threshold for contig length [default is %s]" % qconfig.min_contig
         print >> sys.stderr, "-t  --contig-thresholds      comma-separated list of contig length thresholds [default is %s]" % qconfig.contig_thresholds
         print >> sys.stderr, "-e  --genemark-thresholds    comma-separated list of threshold lengths of genes to search with GeneMark [default is %s]" % qconfig.genes_lengths
         print >> sys.stderr, ""

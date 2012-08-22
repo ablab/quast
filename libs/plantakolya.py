@@ -170,7 +170,7 @@ def sympalign(out_filename, in_filename):
             lc = abs(sc - ec) + 1
             lr = abs(sr - er) + 1
             label = ref_id + '\t' + contig_id
-            print >> ouf, '%8d %8d  | %8d %8d  | %8d %8d  | %8.4f  | %s' % (sr, er, sc, ec, lc, lr, p, label)
+            print >> ouf, '%8d %8d  | %8d %8d  | %8d %8d  | %8.4f  | %s' % (sr, er, sc, ec, lr, lc, p, label)
     ouf.close()
     print '  Done.'
 
@@ -221,8 +221,16 @@ def process_misassembled_contig(plantafile, output_file, i_start, i_finish, cont
         print >>plantafile, '\t\t\tReal Alignment %d: %s' % (i+1, str(sorted_aligns[i]))
         #Calculate the distance on the reference between the end of the first alignment and the start of the second
         gap = sorted_aligns[i+1].s1 - sorted_aligns[i].e1
-        # the same for contig
-        gap_in_contig = sorted_aligns[i+1].s2 - sorted_aligns[i].e2
+        # overlap between positions of alignments in contig
+        overlap_in_contig = 0
+        cur_s = min(sorted_aligns[i].e2, sorted_aligns[i].s2)        
+        cur_e = max(sorted_aligns[i].e2, sorted_aligns[i].s2)
+        next_s = min(sorted_aligns[i+1].e2, sorted_aligns[i+1].s2)        
+        next_e = max(sorted_aligns[i+1].e2, sorted_aligns[i+1].s2)
+        if cur_s < next_s: # current alignment is earlier in contig
+            overlap_in_contig = cur_e - next_s + 1
+        else:              # next alignment is earlier in contig  
+            overlap_in_contig = next_e - cur_s + 1
 
         #Check strands
         strand1 = (sorted_aligns[i].s2 > sorted_aligns[i].e2)
@@ -256,7 +264,7 @@ def process_misassembled_contig(plantafile, output_file, i_start, i_finish, cont
             prev.s2 = 0 # [S2]
             prev.e2 = 0 # [E2]
             prev.len1 = prev.e1 - prev.s1 # [LEN1]
-            prev.len2 = prev.len2 + sorted_aligns[i+1].len2 + (gap_in_contig if gap_in_contig < 0 else 0) # [LEN2]
+            prev.len2 = prev.len2 + sorted_aligns[i+1].len2 - (overlap_in_contig if overlap_in_contig > 0 else 0) # [LEN2]
 
     #MY: output in coords.filtered
     if not is_1st_chimeric_half:

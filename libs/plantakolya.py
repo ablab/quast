@@ -655,12 +655,11 @@ def do(reference, filenames, cyclic, rc, output_dir, lib_dir, draw_plots):
     # for running our MUMmer
     myenv = os.environ.copy()
     myenv['PATH'] = mummer_path + ':' + myenv['PATH']
-    # making if needed
-    if not os.path.exists(os.path.join(mummer_path, 'nucmer')):
-        print ("Making MUMmer...")
-        subprocess.call(
-            ['make', '-C', mummer_path],
-            stdout=open(os.path.join(mummer_path, 'make.log'), 'w'), stderr=open(os.path.join(mummer_path, 'make.err'), 'w'))
+    # making
+    print ("Making MUMmer... (it may take several minutes on first run)")
+    subprocess.call(
+        ['make', '-C', mummer_path],
+        stdout=open(os.path.join(mummer_path, 'make.log'), 'w'), stderr=open(os.path.join(mummer_path, 'make.err'), 'w'))
 
     print 'Running plantakolya tool...'
 #    metrics = ['Average %IDY', 'Local misassemblies', 'Misassemblies', 'Misassembled contigs', 'Misassembled contig bases', 'Misassembled and unaligned', 'Unaligned contigs', 'Unaligned contig bases', 'Ambiguous contigs', 'SNPs']

@@ -19,6 +19,7 @@ import os
 import platform
 import subprocess
 import fastaparser
+import shutil
 from libs import reporting
 from qutils import id_to_str
 
@@ -90,7 +91,7 @@ def sympalign(out_filename, in_filename):
     for line in open(in_filename, 'r'):
         arr = line.split('\t')
         #    Output format will consist of 21 tab-delimited columns. These are as
-        #    follows: [0] query sequence ID [1] date of alignment [2] alignment type [3] reference file
+        #    follows: [0] query sequence ID [1] date of alignment [2] length of the query [3] alignment type
         #    [4] reference file [5] reference sequence ID [6] start of alignment in the query [7] end of alignment
         #    in the query [8] start of alignment in the reference [9] end of
         #    alignment in the reference [10] percent identity [11] percent
@@ -293,6 +294,7 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
     umt = 0.1 # threshold for misassembled contigs with aligned less than $umt * 100% (Unaligned Missassembled Threshold)
     coords_filename = nucmerfilename + '.coords'
     delta_filename = nucmerfilename + '.delta'
+    filtered_delta_filename = nucmerfilename + '.fdelta'
     coords_btab_filename = nucmerfilename + '.coords.btab'
     coords_filtered_filename = nucmerfilename + '.coords.filtered'
     unaligned_filename = nucmerfilename + '.unaligned'
@@ -305,10 +307,17 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
     print >> plantafile, 'Aligning contigs to reference...'
     print >> plantafile, '\tRunning nucmer...'
     print 'NUCmer... ',
+    # GAGE params of Nucmer
     #subprocess.call(['nucmer', '--maxmatch', '-p', nucmerfilename, '-l', '30', '-banded', reference, filename],
     #    stdout=open(logfilename_out, 'a'), stderr=logfile_err, env=myenv)
     subprocess.call(['nucmer', '--maxmatch', '-p', nucmerfilename, reference, filename],
          stdout=open(logfilename_out, 'a'), stderr=logfile_err, env=myenv)
+
+    # Filtering by IDY% = 95 (as GAGE did)
+    subprocess.call(['delta-filter', '-i', '95', delta_filename],
+        stdout=open(filtered_delta_filename, 'w'), stderr=logfile_err, env=myenv)
+    shutil.move(filtered_delta_filename, delta_filename)
+
     subprocess.call(['show-coords', '-B', delta_filename],
         stdout=open(coords_btab_filename, 'w'), stderr=logfile_err, env=myenv)
     subprocess.call(['my_dnadiff', '-d', delta_filename, '-p', nucmerfilename],

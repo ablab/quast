@@ -171,7 +171,7 @@ def save_txt(filename, table, min_contig = None):
     # output it
     file = open(filename, 'a')
     if min_contig:
-        print >>file, 'Only contigs of length >= %d were taken into account' % min_contig
+        print >>file, 'Only contigs of length >= %d are used' % min_contig
         print >>file
     for line in table:
         print >>file, '  '.join('%-*s' % (c, l) for c, l in zip(colwidth, line))

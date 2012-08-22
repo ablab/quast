@@ -7,7 +7,7 @@
 import datetime
 
 contig_thresholds = "110,201,501,1001"
-min_contig = 0
+min_contig = 200
 #genes_lengths = "0,300,600,900,1200,1500,1800,2100,2400,2700,3000"
 genes_lengths = "0,300,1500,3000"
 

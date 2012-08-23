@@ -328,7 +328,7 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
 
     subprocess.call(['show-coords', '-B', delta_filename],
         stdout=open(coords_btab_filename, 'w'), stderr=logfile_err, env=myenv)
-    subprocess.call(['my_dnadiff', '-d', delta_filename, '-p', nucmerfilename],
+    subprocess.call(['dnadiff', '-d', delta_filename, '-p', nucmerfilename],
         stdout=open(logfilename_out, 'a'), stderr=logfile_err, env=myenv)
 
     sympalign(coords_filename, coords_btab_filename)
@@ -679,8 +679,6 @@ def do(reference, filenames, cyclic, rc, output_dir, lib_dir, draw_plots):
         stdout=open(os.path.join(mummer_path, 'make.log'), 'w'), stderr=open(os.path.join(mummer_path, 'make.err'), 'w'))
 
     print 'Running plantakolya tool...'
-#    metrics = ['Average %IDY', 'Local misassemblies', 'Misassemblies', 'Misassembled contigs', 'Misassembled contig bases', 'Misassembled and unaligned', 'Unaligned contigs', 'Unaligned contig bases', 'Ambiguous contigs', 'SNPs']
-#    report_dict['header'] += metrics
 
     for id, filename in enumerate(filenames):
         plantakolya_process(cyclic, draw_plots, filename, id, myenv, output_dir, rc, reference) # TODO: use joblib

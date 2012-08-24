@@ -49,7 +49,7 @@ class Fields:
     AMBIGUOUS = '# ambiguous contigs'
     AMBIGUOUSBASES = 'Ambiguous contigs length'
     SNPS = '# mismatches'
-    SUBSERROR = 'Subs. error (per 100 Kbp)'
+    SUBSERROR = '# mismatches per 100 Kbp'
     NA50 = 'NA50'
     NGA50 = 'NGA50'
     NA75 = 'NA75'

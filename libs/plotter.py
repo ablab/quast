@@ -116,7 +116,7 @@ def cumulative_plot(reference, filenames, lists_of_lengths, plot_filename, title
     # Put a legend below current axis
     try: # for matplotlib <= 2009-12-09
         ax.legend(legend_list, loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True,
-            shadow=False, ncol=n_columns)
+            shadow=True, ncol=n_columns)
     except ZeroDivisionError:
         pass
 
@@ -365,7 +365,7 @@ def genes_operons_plot(filenames, files_contigs, genes, found, plot_filename, ti
     ax.set_position([box.x0 + box.width * 0.2, box.y0 + box.height * 0.1, box.width * 0.8, box.height * 0.9])
     # Put a legend below current axis
     ax.legend(map(os.path.basename, filenames), loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True,
-        shadow=False, ncol=4)
+        shadow=True, ncol=4)
 
     xLocator, yLocator = get_locators()
     ax.yaxis.set_major_locator(yLocator)

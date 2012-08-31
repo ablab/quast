@@ -183,6 +183,30 @@ def save_tsv(filename, table):
         print >>file, '\t'.join(line)
     file.close()
 
+def save_tex(filename, table):
+    file = open(filename, 'a')
+    # Header
+    print >>file, '\\begin{table}[ht]'
+    print >>file, '\\begin{center}'
+    print >>file, '\\begin{tabular}{|l*{' + str(len(table[0]) - 1) + '}{|r}|}'
+    print >>file, '\\hline'
+    # Body
+    for line in table:
+        row = ' & '.join(line)
+        # escape characters
+        for esc_char in "\\ % $ # _ { } ~ ^".split():
+            row = row.replace(esc_char, '\\' + esc_char)
+        # more pretty '>='
+        row = row.replace('>=', '$\\geq$')
+        row += ' \\\\ \\hline'
+        print >>file, row
+    # Footer
+    print >>file, '\\end{tabular}'
+    print >>file, '\\end{center}'
+    print >>file, '\\end{table}'
+    file.close()
+
+
 def save(output_dirpath, min_contig, gage_mode=False):
     # Where total report will be saved
     if not gage_mode:
@@ -193,14 +217,20 @@ def save(output_dirpath, min_contig, gage_mode=False):
     print '  Creating total report...'
     report_txt_filename = os.path.join(output_dirpath, gage_prefix + "report") + '.txt'
     report_tsv_filename = os.path.join(output_dirpath, gage_prefix + "report") + '.tsv'
+    report_tex_filename = os.path.join(output_dirpath, gage_prefix + "report") + '.tex'
     save_txt(report_txt_filename, tab, min_contig)
     save_tsv(report_tsv_filename, tab)
-    print '    Saved to', report_txt_filename, 'and', report_tsv_filename
+    save_tex(report_tex_filename, tab)
+    print '    Saved to', report_txt_filename, ',', os.path.basename(report_tsv_filename), \
+          'and', os.path.basename(report_tex_filename)
 
     print '  Transposed version of total report...'
     tab = [[tab[i][j] for i in xrange(len(tab))] for j in xrange(len(tab[0]))]
     report_txt_filename = os.path.join(output_dirpath, gage_prefix + "transposed_report") + '.txt'
     report_tsv_filename = os.path.join(output_dirpath, gage_prefix + "transposed_report") + '.tsv'
+    report_tex_filename = os.path.join(output_dirpath, gage_prefix + "transposed_report") + '.tex'
     save_txt(report_txt_filename, tab, min_contig)
     save_tsv(report_tsv_filename, tab)
-    print '    Saved to', report_txt_filename, 'and', report_tsv_filename
+    save_tex(report_tex_filename, tab)
+    print '    Saved to', report_txt_filename, ',', os.path.basename(report_tsv_filename),\
+          'and', os.path.basename(report_tex_filename)

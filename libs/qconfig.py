@@ -6,7 +6,7 @@
 
 import datetime
 
-contig_thresholds = "110,201,501,1001"
+contig_thresholds = "500,1000"
 min_contig = 200
 #genes_lengths = "0,300,600,900,1200,1500,1800,2100,2400,2700,3000"
 genes_lengths = "0,300,1500,3000"
@@ -27,7 +27,7 @@ genes = ''
 operons = ''
 with_gage = False
 cyclic = True
-rc = True
+rc = False
 
 long_options = "output-dir= save-json-to= genes= operons= reference= contig-thresholds= min-contig= genemark-thresholds= save-json gage not-circular disable-rc plain-report-no-plots help".split()
 short_options = "o:G:O:R:t:M:e:J:jpgndh"

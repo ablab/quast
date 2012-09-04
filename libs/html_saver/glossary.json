@@ -15,7 +15,7 @@
     "Misassembled contigs length"   : "<span>is the number of total bases contained in all contigs that have one or more misassemblies.</span>",
     "Misassembled and unaligned"    : "<span>is the number of contigs which contain misassembly events but which have alignment to the reference of length less than 10% of contigs length (almost unaligned contigs).</span>",
     "# unaligned contigs"           : "<span>is the number of contigs that have no alignment to the reference sequence. The value 'X + Y part' means: X totally unaligned contigs plus Y partially unaligned contigs.</span>",
-    "Unaligned contig bases"        : "<span>is the total number of unaligned bases in totally and partially unaligned contigs (only bases from unaligned parts).</span>",
+    "Unaligned contigs length"      : "<span>is the total number of unaligned bases in totally and partially unaligned contigs (only bases from unaligned parts).</span>",
     "# ambiguous contigs"           : "<span>is the number of contigs which have reference alignments of equal quality in multiple locations on the reference.</span>",
     "Ambiguous contigs length"      : "<span>is the number of total bases contained in all ambiguous contigs.</span>",
     "Genome fraction (%)"           : "<span>is the total number of aligned bases in the reference, divided by the genome size. A base in the reference genome is counted as aligned if there is at least one contig with at least one alignment to this base. Contigs from repeat regions may map to multiple places, and thus may be counted multiple times in this quantity.</span>",

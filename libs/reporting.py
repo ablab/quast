@@ -22,7 +22,7 @@ from libs import qconfig
 
 reports = {} # basefilename -> Report
 keys_order = [] # for printing in appropriate order
-min_contig = None # for printing reports
+min_contig = None # for printing info about min contig in TXT reports
 
 # Available fields for report, values (strings) should be unique!
 class Fields:
@@ -195,6 +195,7 @@ def save_tex(filename, table):
     # Header
     print >>file, '\\begin{table}[ht]'
     print >>file, '\\begin{center}'
+    print >>file, '\\caption{(Contigs of length $\geq$ ' + str(min_contig) + ' are used)}'
     print >>file, '\\begin{tabular}{|l*{' + str(len(table[0]) - 1) + '}{|r}|}'
     print >>file, '\\hline'
     # Body

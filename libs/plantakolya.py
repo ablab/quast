@@ -20,8 +20,14 @@ import platform
 import subprocess
 import fastaparser
 import shutil
-from libs import reporting
+from libs import reporting, qconfig
 from qutils import id_to_str
+
+class Misassembly:
+    LOCAL=0
+    RELOCATION=1
+    TRANSLOCATION=2
+    INVERSION=3
 
 # see bug http://ablab.myjetbrains.com/youtrack/issue/QUAST-74 for more details
 def additional_cleaning(all):
@@ -101,8 +107,8 @@ def sympalign(out_filename, in_filename):
         #    reference sequence [19] 0 for compatibility [20] and 0 for
         #    compatibility.
         #
-        # NODE_31_length_14785	Aug 23 2011	14785	NUCMER	/home/dvorkin/algorithmic-biology/assembler/src/tools/quality/../../../data/input/E.Coli.K12.MG1655/MG1655-K12.fasta	gi|49175990|ref|NC_000913.2|	14785	14203	3364194	3364776	100.000000	100.000000	583	0	0	NULL	0	Minus	4639675	0	0
-        # NODE_31_length_14785	Aug 23 2011	14785	NUCMER	/home/dvorkin/algorithmic-biology/assembler/src/tools/quality/../../../data/input/E.Coli.K12.MG1655/MG1655-K12.fasta	gi|49175990|ref|NC_000913.2|	14785	1	3650675	3665459	99.945892	99.945892	14785	0	0	NULL	0	Minus	4639675	0	0
+        # NODE_31_length_14785	Aug 23 2011	14785	NUCMER	/home/data/input/E.Coli.K12.MG1655/MG1655-K12.fasta	gi|49175990|ref|NC_000913.2|	14785	14203	3364194	3364776	100.000000	100.000000	583	0	0	NULL	0	Minus	4639675	0	0
+        # NODE_31_length_14785	Aug 23 2011	14785	NUCMER	/home/data/input/E.Coli.K12.MG1655/MG1655-K12.fasta	gi|49175990|ref|NC_000913.2|	14785	1	3650675	3665459	99.945892	99.945892	14785	0	0	NULL	0	Minus	4639675	0	0
         contig_id = arr[0]
         contig_len = int(arr[2])
         ref_id = arr[5]
@@ -214,9 +220,8 @@ class Mappings(object):
         file.close()
 
 
-def process_misassembled_contig(plantafile, output_file, i_start, i_finish, contig, prev, sorted_aligns, is_1st_chimeric_half, ns, smgap, rc, assembly, misassembled_contigs, extensive_misassembled_contigs):
-    region_misassemblies = 0
-    region_local_misassemblies = 0
+def process_misassembled_contig(plantafile, output_file, i_start, i_finish, contig, prev, sorted_aligns, is_1st_chimeric_half, ns, smgap, assembly, misassembled_contigs, extensive_misassembled_contigs):
+    region_misassemblies = []
     for i in xrange(i_start, i_finish):
         print >>plantafile, '\t\t\tReal Alignment %d: %s' % (i+1, str(sorted_aligns[i]))
         #Calculate the distance on the reference between the end of the first alignment and the start of the second
@@ -236,18 +241,28 @@ def process_misassembled_contig(plantafile, output_file, i_start, i_finish, cont
         strand1 = (sorted_aligns[i].s2 > sorted_aligns[i].e2)
         strand2 = (sorted_aligns[i+1].s2 > sorted_aligns[i+1].e2)
 
-        if sorted_aligns[i].ref != sorted_aligns[i+1].ref or gap > ns + smgap or (not rc and strand1 != strand2): # different chromosomes or large gap or different strands
+        if sorted_aligns[i].ref != sorted_aligns[i+1].ref or gap > ns + smgap or (strand1 != strand2): # different chromosomes or large gap or different strands
             #Contig spans chromosomes or there is a gap larger than 1kb
             #MY: output in coords.filtered
             print >>output_file, str(prev)
             prev = sorted_aligns[i+1].clone()
-            print >>plantafile, '\t\t\tExtensive misassembly between these two alignments: [%s] @ %d and %d' % (sorted_aligns[i].ref, sorted_aligns[i].e1, sorted_aligns[i+1].s1)
+            print >>plantafile, '\t\t\tExtensive misassembly (',
 
             extensive_misassembled_contigs.add(sorted_aligns[i].contig)
             # Kolya: removed something about ref_features
 
-            region_misassemblies += 1
+            if sorted_aligns[i].ref != sorted_aligns[i+1].ref:
+                region_misassemblies += [Misassembly.TRANSLOCATION]
+                print >>plantafile, 'translocation',
+            elif gap > ns + smgap:
+                region_misassemblies += [Misassembly.RELOCATION]
+                print >>plantafile, 'relocation',
+            elif strand1 != strand2:
+                region_misassemblies += [Misassembly.INVERSION]
+                print >>plantafile, 'inversion',
             misassembled_contigs[contig] = len(assembly[contig])
+
+            print >>plantafile, ') between these two alignments: [%s] @ %d and %d' % (sorted_aligns[i].ref, sorted_aligns[i].e1, sorted_aligns[i+1].s1)
 
         else:
             if gap < 0:
@@ -257,7 +272,7 @@ def process_misassembled_contig(plantafile, output_file, i_start, i_finish, cont
                 #There is a small gap between the two alignments, a local misassembly
                 print >>plantafile, '\t\tGap in alignment between these two alignments (local misassembly): [%s] %d' % (sorted_aligns[i].ref, sorted_aligns[i].s1)
 
-            region_local_misassemblies += 1
+            region_misassemblies += [Misassembly.LOCAL]
 
             #MY:
             prev.e1 = sorted_aligns[i+1].e1 # [E1]
@@ -274,9 +289,11 @@ def process_misassembled_contig(plantafile, output_file, i_start, i_finish, cont
     i = i_finish
     print >>plantafile, '\t\t\tReal Alignment %d: %s' % (i+1, str(sorted_aligns[i]))
 
-    return prev.clone(), region_misassemblies, region_local_misassemblies
+    return prev.clone(), region_misassemblies
 
 def clear_files(filename, nucmerfilename):
+    if qconfig.debug:
+        return
     # delete temporary files
     for ext in ['.delta', '.1delta', '.mdelta', '.unqry', '.qdiff', '.rdiff', '.1coords', '.mcoords', '.mgaps', '.ntref', '.gp', '.coords.btab']:
         if os.path.isfile(nucmerfilename + ext):
@@ -286,7 +303,7 @@ def clear_files(filename, nucmerfilename):
     if os.path.isfile(filename + '.clean'):
         os.remove(filename + '.clean')
 
-def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir, rc, reference):
+def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir, reference):
     # remove old nucmer coords file
     if os.path.isfile(nucmerfilename + '.coords'):
         os.remove(nucmerfilename + '.coords')
@@ -401,8 +418,7 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
     uncovered_region_bases = 0
     misassembled_partially_unaligned = 0
 
-    region_misassemblies = 0
-    region_local_misassemblies = 0
+    region_misassemblies = []
     misassembled_contigs = {}
     extensive_misassembled_contigs = set()
 
@@ -521,10 +537,10 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
 
                     #MY: computing cyclic references
                     if cyclic:
-                        if sorted_aligns[0].s1 - 1 + total_reg_len - sorted_aligns[sorted_num].e1 <= ns + smgap:  # chimerical misassembly
+                        if sorted_aligns[0].s1 - 1 + total_reg_len - sorted_aligns[sorted_num].e1 <= ns + smgap:  # fake misassembly aka chimeric one
                             chimeric_found = True
 
-                            # find chimerical alignment between "first" blocks and "last" blocks
+                            # find fake alignment between "first" blocks and "last" blocks
                             chimeric_index = 0
                             for i in xrange(sorted_num):
                                 gap = sorted_aligns[i + 1].s1 - sorted_aligns[i].e1
@@ -532,16 +548,15 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
                                     chimeric_index = i + 1
                                     break
 
-                            #MY: for merging local misassemlbies
+                            #MY: for merging local misassemblies
                             prev = sorted_aligns[chimeric_index].clone()
 
                             # process "last half" of blocks
-                            prev, x, y = process_misassembled_contig(plantafile, coords_filtered_file,
-                                chimeric_index, sorted_num, contig, prev, sorted_aligns, True, ns, smgap, rc,
+                            prev, x = process_misassembled_contig(plantafile, coords_filtered_file,
+                                chimeric_index, sorted_num, contig, prev, sorted_aligns, True, ns, smgap,
                                 assembly, misassembled_contigs, extensive_misassembled_contigs)
                             region_misassemblies += x
-                            region_local_misassemblies += y
-                            print >> plantafile, '\t\t\tChimerical misassembly between these two alignments: [%s] @ %d and %d' % (
+                            print >> plantafile, '\t\t\tFake misassembly (caused by circular genome) between these two alignments: [%s] @ %d and %d' % (
                             sorted_aligns[sorted_num].ref, sorted_aligns[sorted_num].e1, sorted_aligns[0].s1)
 
                             prev.e1 = sorted_aligns[0].e1 # [E1]
@@ -551,20 +566,18 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
                             prev.len2 += sorted_aligns[0].len2 # [LEN2]
 
                             # process "first half" of blocks
-                            prev, x, y = process_misassembled_contig(plantafile, coords_filtered_file, 0,
-                                chimeric_index - 1, contig, prev, sorted_aligns, False, ns, smgap, rc, assembly,
+                            prev, x = process_misassembled_contig(plantafile, coords_filtered_file, 0,
+                                chimeric_index - 1, contig, prev, sorted_aligns, False, ns, smgap, assembly,
                                 misassembled_contigs, extensive_misassembled_contigs)
                             region_misassemblies += x
-                            region_local_misassemblies += y
 
                     if not chimeric_found:                        
-                        #MY: for merging local misassemlbies
+                        #MY: for merging local misassemblies
                         prev = sorted_aligns[0].clone()
-                        prev, x, y = process_misassembled_contig(plantafile, coords_filtered_file, 0, sorted_num,
-                            contig, prev, sorted_aligns, False, ns, smgap, rc, assembly, misassembled_contigs,
+                        prev, x = process_misassembled_contig(plantafile, coords_filtered_file, 0, sorted_num,
+                            contig, prev, sorted_aligns, False, ns, smgap, assembly, misassembled_contigs,
                             extensive_misassembled_contigs)
                         region_misassemblies += x
-                        region_local_misassemblies += y
 
         else:
             #No aligns to this contig
@@ -586,15 +599,20 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
         #                           [REF]                [QRY]
         # AlignedBases         4501335(97.02%)      4513272(90.71%)    
         if line.startswith('AlignedBases'):
-            total_aligned_bases = int(line.split()[2].split('(')[0])    
-
+            total_aligned_bases = int(line.split()[2].split('(')[0])
         # TotalSNPs                  516                  516
         if line.startswith('TotalSNPs'):
             SNPs = int(line.split()[2])
+        # TotalIndels                 9                    9
+        if line.startswith('TotalIndels'):
+            indels = int(line.split()[2])
             break
 
-    print >> plantafile, '\tLocal Misassemblies: %d' % region_local_misassemblies
-    print >> plantafile, '\tMisassemblies: %d' % region_misassemblies
+    print >> plantafile, '\tLocal Misassemblies: %d' % region_misassemblies.count(Misassembly.LOCAL)
+    print >> plantafile, '\tMisassemblies: %d' % (len(region_misassemblies) - region_misassemblies.count(Misassembly.LOCAL))
+    print >> plantafile, '\t\t\tRelocations: %d' % region_misassemblies.count(Misassembly.RELOCATION)
+    print >> plantafile, '\t\t\tTranslocations: %d' % region_misassemblies.count(Misassembly.TRANSLOCATION)
+    print >> plantafile, '\t\t\tInversions: %d' % region_misassemblies.count(Misassembly.INVERSION)
     print >> plantafile, '\t\tMisassembled Contigs: %d' % len(misassembled_contigs)
     misassembled_bases = sum(misassembled_contigs.itervalues())
     print >> plantafile, '\t\tMisassembled Contig Bases: %d' % misassembled_bases
@@ -607,8 +625,8 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
 
     report = reporting.get(filename)
     report.add_field(reporting.Fields.AVGIDY, '%.3f' % avg_idy)
-    report.add_field(reporting.Fields.MISLOCAL, region_local_misassemblies)
-    report.add_field(reporting.Fields.MISASSEMBL, region_misassemblies)
+    report.add_field(reporting.Fields.MISLOCAL, region_misassemblies.count(Misassembly.LOCAL))
+    report.add_field(reporting.Fields.MISASSEMBL, len(region_misassemblies) - region_misassemblies.count(Misassembly.LOCAL))
     report.add_field(reporting.Fields.MISCONTIGS, len(misassembled_contigs))
     report.add_field(reporting.Fields.MISCONTIGSBASES, misassembled_bases)
     report.add_field(reporting.Fields.MISUNALIGNED, misassembled_partially_unaligned)
@@ -618,6 +636,17 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
     report.add_field(reporting.Fields.AMBIGUOUSBASES, total_ambiguous)
     report.add_field(reporting.Fields.SNPS, SNPs)
     report.add_field(reporting.Fields.SUBSERROR, "%.2f" % (float(SNPs) * 100000.0 / float(total_aligned_bases)))
+
+    # for misassemblies report:
+    report.add_field(reporting.Fields.MIS_ALL_EXTENSIVE, len(region_misassemblies) - region_misassemblies.count(Misassembly.LOCAL))
+    report.add_field(reporting.Fields.MIS_RELOCATION, region_misassemblies.count(Misassembly.RELOCATION))
+    report.add_field(reporting.Fields.MIS_TRANSLOCATION, region_misassemblies.count(Misassembly.TRANSLOCATION))
+    report.add_field(reporting.Fields.MIS_INVERTION, region_misassemblies.count(Misassembly.INVERSION))
+    report.add_field(reporting.Fields.MIS_EXTENSIVE_CONTIGS, len(misassembled_contigs))
+    report.add_field(reporting.Fields.MIS_EXTENSIVE_BASES, misassembled_bases)
+    report.add_field(reporting.Fields.MIS_LOCAL, region_misassemblies.count(Misassembly.LOCAL))
+    report.add_field(reporting.Fields.INDELS, indels)
+    report.add_field(reporting.Fields.MISMATCHES, SNPs)
 
     ## outputting misassembled contigs to separate file
     fasta = [(name, seq) for name, seq in fastaparser.read_fasta(filename) if
@@ -647,14 +676,14 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
                 os.remove(plotfilename + ext)
 
 
-def plantakolya_process(cyclic, draw_plots, filename, id, myenv, output_dir, rc, reference):
+def plantakolya_process(cyclic, draw_plots, filename, id, myenv, output_dir, reference):
     print ' ', id_to_str(id), os.path.basename(filename), '...'
     nucmerfilename = output_dir + '/nucmer_' + os.path.basename(filename)
-    plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir, rc, reference)
+    plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir, reference)
     clear_files(filename, nucmerfilename)
 
 
-def do(reference, filenames, cyclic, rc, output_dir, lib_dir, draw_plots):
+def do(reference, filenames, cyclic, output_dir, lib_dir, draw_plots):
     if not os.path.isdir(output_dir):
         os.mkdir(output_dir)
 
@@ -681,8 +710,9 @@ def do(reference, filenames, cyclic, rc, output_dir, lib_dir, draw_plots):
     print 'Running plantakolya tool...'
 
     for id, filename in enumerate(filenames):
-        plantakolya_process(cyclic, draw_plots, filename, id, myenv, output_dir, rc, reference) # TODO: use joblib
+        plantakolya_process(cyclic, draw_plots, filename, id, myenv, output_dir, reference) # TODO: use joblib
 
+    reporting.save_misassemblies(output_dir)
     print '  Done'
 
     return report_dict

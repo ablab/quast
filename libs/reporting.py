@@ -22,6 +22,7 @@ from libs import qconfig
 
 reports = {} # basefilename -> Report
 keys_order = [] # for printing in appropriate order
+min_contig = None # for printing reports
 
 # Available fields for report, values (strings) should be unique!
 class Fields:
@@ -62,17 +63,24 @@ class Fields:
 
     # order as printed in report:
     order = [NAME, CONTIGS, TOTALLENS, NUMCONTIGS, LARGCONTIG, TOTALLEN, REFLEN, N50, NG50, N75, NG75,             
-             AVGIDY, MISLOCAL, MISASSEMBL, MISCONTIGS, MISCONTIGSBASES, MISUNALIGNED, 
+             AVGIDY, MISASSEMBL, MISCONTIGS, MISCONTIGSBASES,
              UNALIGNED, UNALIGNEDBASES, AMBIGUOUS, AMBIGUOUSBASES, 
-             MAPPEDGENOME, GC, REFGC, SNPS, SUBSERROR, GENES, OPERONS, GENEMARKUNIQUE, GENEMARK, 
+             MAPPEDGENOME, GC, REFGC, SUBSERROR, GENES, OPERONS, GENEMARKUNIQUE, GENEMARK,
              NA50, NGA50, NA75, NGA75]
-    
-    # temp: for QUAST paper
-    #order = [NAME, NUMCONTIGS, LARGCONTIG, TOTALLEN, REFLEN, N50, NG50, N75, NG75,             
-    #         MISASSEMBL, MISCONTIGS, MISCONTIGSBASES,
-    #         UNALIGNED, UNALIGNEDBASES, AMBIGUOUS, AMBIGUOUSBASES, 
-    #         MAPPEDGENOME, GC, REFGC, SNPS, SUBSERROR, GENES, OPERONS, GENEMARKUNIQUE, GENEMARK, 
-    #         NA50, NGA50, NA75, NGA75]
+
+    MIS_ALL_EXTENSIVE = '# extensive misassemblies'
+    MIS_RELOCATION = '    # relocations'
+    MIS_TRANSLOCATION = '    # translocations'
+    MIS_INVERTION = '    # inversions'
+    MIS_EXTENSIVE_CONTIGS = '# ext. misassembled contigs'
+    MIS_EXTENSIVE_BASES = 'Ext. misassembled contigs length'
+    MIS_LOCAL = '# local misassemblies'
+    INDELS = '# indels'
+    MISMATCHES = '# mismatches'
+
+    # for detailed misassemblies report
+    misassemblies_order = [NAME, MIS_ALL_EXTENSIVE, MIS_RELOCATION, MIS_TRANSLOCATION, MIS_INVERTION,
+                           MIS_EXTENSIVE_CONTIGS, MIS_EXTENSIVE_BASES, MIS_LOCAL, INDELS, MISMATCHES]
 
     # GAGE fields
     GAGE_NUMCONTIGS = 'Contigs #'
@@ -139,8 +147,7 @@ def reporting_filter(value):
         return False
     return True
 
-def table(gage_mode=False):
-    order = Fields.gage_order if gage_mode else Fields.order
+def table(order=Fields.order):
     ans = []
     for field in order:
         if isinstance(field, tuple): # TODO: rewrite it nicer
@@ -162,7 +169,7 @@ def table(gage_mode=False):
                 ans.append([field] + [str(y) for y in ls])
     return ans
 
-def save_txt(filename, table, min_contig = None):
+def save_txt(filename, table):
     # determine width of columns for nice spaces
     colwidth = [0] * len(table[0])
     for line in table:
@@ -171,7 +178,7 @@ def save_txt(filename, table, min_contig = None):
     # output it
     file = open(filename, 'a')
     if min_contig:
-        print >>file, 'Only contigs of length >= %d are used' % min_contig
+        print >>file, 'Contigs of length >= %d are used' % min_contig
         print >>file
     for line in table:
         print >>file, '  '.join('%-*s' % (c, l) for c, l in zip(colwidth, line))
@@ -207,30 +214,40 @@ def save_tex(filename, table):
     file.close()
 
 
-def save(output_dirpath, min_contig, gage_mode=False):
+def save(output_dirpath, report_name, transposed_report_name, order):
     # Where total report will be saved
-    if not gage_mode:
-        print 'Summarizing...'
-    tab = table(gage_mode)
+    tab = table(order)
 
-    gage_prefix = "gage_" if gage_mode else "" 
     print '  Creating total report...'
-    report_txt_filename = os.path.join(output_dirpath, gage_prefix + "report") + '.txt'
-    report_tsv_filename = os.path.join(output_dirpath, gage_prefix + "report") + '.tsv'
-    report_tex_filename = os.path.join(output_dirpath, gage_prefix + "report") + '.tex'
-    save_txt(report_txt_filename, tab, min_contig)
+    report_txt_filename = os.path.join(output_dirpath, report_name) + '.txt'
+    report_tsv_filename = os.path.join(output_dirpath, report_name) + '.tsv'
+    report_tex_filename = os.path.join(output_dirpath, report_name) + '.tex'
+    save_txt(report_txt_filename, tab)
     save_tsv(report_tsv_filename, tab)
     save_tex(report_tex_filename, tab)
     print '    Saved to', report_txt_filename, ',', os.path.basename(report_tsv_filename), \
           'and', os.path.basename(report_tex_filename)
 
-    print '  Transposed version of total report...'
-    tab = [[tab[i][j] for i in xrange(len(tab))] for j in xrange(len(tab[0]))]
-    report_txt_filename = os.path.join(output_dirpath, gage_prefix + "transposed_report") + '.txt'
-    report_tsv_filename = os.path.join(output_dirpath, gage_prefix + "transposed_report") + '.tsv'
-    report_tex_filename = os.path.join(output_dirpath, gage_prefix + "transposed_report") + '.tex'
-    save_txt(report_txt_filename, tab, min_contig)
-    save_tsv(report_tsv_filename, tab)
-    save_tex(report_tex_filename, tab)
-    print '    Saved to', report_txt_filename, ',', os.path.basename(report_tsv_filename),\
-          'and', os.path.basename(report_tex_filename)
+    if transposed_report_name:
+        print '  Transposed version of total report...'
+        tab = [[tab[i][j] for i in xrange(len(tab))] for j in xrange(len(tab[0]))]
+        report_txt_filename = os.path.join(output_dirpath, transposed_report_name) + '.txt'
+        report_tsv_filename = os.path.join(output_dirpath, transposed_report_name) + '.tsv'
+        report_tex_filename = os.path.join(output_dirpath, transposed_report_name) + '.tex'
+        save_txt(report_txt_filename, tab)
+        save_tsv(report_tsv_filename, tab)
+        save_tex(report_tex_filename, tab)
+        print '    Saved to', report_txt_filename, ',', os.path.basename(report_tsv_filename),\
+              'and', os.path.basename(report_tex_filename)
+
+def save_gage(output_dirpath):
+    save(output_dirpath, "gage_report", "gage_transposed_report", Fields.gage_order)
+
+
+def save_total(output_dirpath):
+    print 'Summarizing...'
+    save(output_dirpath, "report", "transposed_report", Fields.order)
+
+
+def save_misassemblies(output_dirpath):
+    save(output_dirpath, "misassemblies", "", Fields.misassemblies_order)

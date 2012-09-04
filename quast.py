@@ -56,11 +56,11 @@ def usage():
         print >> sys.stderr, 'Options without arguments'
         print >> sys.stderr, '-g  --gage                   use Gage (results are in gage_report.txt)'
         print >> sys.stderr, '-n  --not-circular           genome is not circular (e.g., it is an eukaryote)'
-        print >> sys.stderr, "-d  --disable-rc             reverse complementary contig should NOT be counted as misassembly"
         print >> sys.stderr, "-j  --save-json              save the output also in the JSON format"
         print >> sys.stderr, "-J  --save-json-to <path>    save the JSON-output to a particular path"
         print >> sys.stderr, "-p  --plain-report-no-plots  plain text report only, don't draw plots (to make quast faster)"
         print >> sys.stderr, ""
+        print >> sys.stderr, "-d  --debug                  run in debug mode"
         print >> sys.stderr, "-h  --help                   print this usage message"
 
 def check_file(f, message=''):
@@ -117,10 +117,10 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
             qconfig.with_gage = True
         elif opt in ('-n', "--not-circular"):
             qconfig.cyclic = False
-        elif opt in ('-d', "--disable-rc"):
-            qconfig.rc = True
         elif opt in ('-p', '--plain-report-no-plots'):
             qconfig.draw_plots = False
+        elif opt in ('-d', "--debug"):
+            qconfig.debug = True
         elif opt in ('-h', "--help"):
             usage()
             sys.exit(0)
@@ -193,6 +193,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
     ########################################################################
 
     from libs import reporting
+    reporting.min_contig = qconfig.min_contig
 
     print 'Correcting contig files...'
     if os.path.isdir(corrected_dir):
@@ -286,7 +287,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
         ### PLANTAKOLYA
         ########################################################################
         from libs import plantakolya
-        plantakolya.do(qconfig.reference, contigs, qconfig.cyclic, qconfig.rc, output_dirpath + '/plantakolya', lib_dir, qconfig.draw_plots)
+        plantakolya.do(qconfig.reference, contigs, qconfig.cyclic, output_dirpath + '/plantakolya', lib_dir, qconfig.draw_plots)
 
         ########################################################################
         ### NA and NGA ("aligned N and NG")
@@ -316,7 +317,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
     ########################################################################
     ### TOTAL REPORT
     ########################################################################
-    reporting.save(output_dirpath, qconfig.min_contig)
+    reporting.save_total(output_dirpath)
 
     if json_outputpath:
         json_saver.save_total_report(json_outputpath)
@@ -333,7 +334,8 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
     print 'Done.'
 
     ## removing correcting input contig files
-    shutil.rmtree(corrected_dir)
+    if not qconfig.debug:
+        shutil.rmtree(corrected_dir)
 
     tee.free() # free sys.stdout and sys.stderr from logfile
 

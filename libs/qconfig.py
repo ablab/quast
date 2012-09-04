@@ -20,6 +20,7 @@ logfile = "quast.log"
 corrected_dir = "corrected_input"
 plots_filename = "plots.pdf"
 
+debug = False
 draw_plots = True
 make_latest_symlink = True
 reference = ''
@@ -27,8 +28,7 @@ genes = ''
 operons = ''
 with_gage = False
 cyclic = True
-rc = True
 
-long_options = "output-dir= save-json-to= genes= operons= reference= contig-thresholds= min-contig= genemark-thresholds= save-json gage not-circular disable-rc plain-report-no-plots help".split()
-short_options = "o:G:O:R:t:M:e:J:jpgndh"
+long_options = "output-dir= save-json-to= genes= operons= reference= contig-thresholds= min-contig= genemark-thresholds= save-json gage not-circular plain-report-no-plots help debug".split()
+short_options = "o:G:O:R:t:M:e:J:jpgnhd"
 

@@ -73,6 +73,6 @@ def do(reference, contigs, output_dirpath, min_contig, lib_dir):
 
     print '  Done'
 
-    reporting.save(output_dirpath, min_contig, True)
+    reporting.save_gage(output_dirpath)
 
     print '  Done.'

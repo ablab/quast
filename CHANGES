@@ -1,0 +1,10 @@
+-- Version history --
+
+1.1 - Added mismatches counting. Fix bug in misassemblies counting 
+      (some of inversions were omitted). Log scale in GC content plot. 
+      ORFs removed and GeneMark added instead (for gene finding). 
+      Nucmer aligner setting changed (from IDY% = 80 to 95, 
+      i.e. now all alignments are more robust).
+
+1.0 - Initial open source release!
+

@@ -80,9 +80,9 @@ def append(adp_results, afp_json, keyword):
         f_html.write(html_text)
 
 
-def save_total_report(adp_results):
+def save_total_report(adp_results, min_contig):
     print '  HTML version of total report...'
-    afp_json = json_saver.save_total_report(adp_results)
+    afp_json = json_saver.save_total_report(adp_results, min_contig)
     append(adp_results, afp_json, 'report')
     print '    Saved to', os.path.join(adp_results, fn_report)
 

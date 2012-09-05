@@ -193,6 +193,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
     ########################################################################
 
     from libs import reporting
+    reload(reporting)
 
     print 'Correcting contig files...'
     if os.path.isdir(corrected_dir):

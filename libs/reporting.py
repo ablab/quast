@@ -68,13 +68,6 @@ class Fields:
              MAPPEDGENOME, GC, REFGC, SUBSERROR, GENES, OPERONS, GENEMARKUNIQUE, GENEMARK,
              NA50, NGA50, NA75, NGA75]
     
-    # temp: for QUAST paper
-    #order = [NAME, NUMCONTIGS, LARGCONTIG, TOTALLEN, REFLEN, N50, NG50, N75, NG75,             
-    #         MISASSEMBL, MISCONTIGS, MISCONTIGSBASES,
-    #         UNALIGNED, UNALIGNEDBASES, AMBIGUOUS, AMBIGUOUSBASES, 
-    #         MAPPEDGENOME, GC, REFGC, SNPS, SUBSERROR, GENES, OPERONS, GENEMARKUNIQUE, GENEMARK, 
-    #         NA50, NGA50, NA75, NGA75]
-
     # GAGE fields
     GAGE_NUMCONTIGS = 'Contigs #'
     GAGE_MINCONTIG = 'Min contig'
@@ -172,7 +165,7 @@ def save_txt(filename, table, min_contig = None):
     # output it
     file = open(filename, 'a')
     if min_contig:
-        print >>file, 'Only contigs of length >= %d were taken into account' % min_contig
+        print >>file, 'Contigs of length >= %d are used' % min_contig
         print >>file
     for line in table:
         print >>file, '  '.join('%-*s' % (c, l) for c, l in zip(colwidth, line))

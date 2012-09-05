@@ -26,7 +26,7 @@ def save(filename, what):
     return filename
 
 
-def save_total_report(output_dir):
+def save_total_report(output_dir, min_contig):
     import reporting
     table = reporting.table()
     table = [[table[i][j] for i in xrange(len(table))] for j in xrange(len(table[0]))]
@@ -40,7 +40,8 @@ def save_total_report(output_dir):
     return save(output_dir + total_report_fn, {
             'date' : t.strftime('%d %B %Y, %A, %H:%M:%S'),
             'header' : header,
-            'results' : results
+            'results' : results,
+            'min_contig' : min_contig
     })
 
 def save_contigs_lengths(output_dir, filenames, lists_of_lengths):

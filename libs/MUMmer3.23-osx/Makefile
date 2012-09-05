@@ -109,7 +109,7 @@ dist:
 	rm -rf $(DISTDIR)
 
 
-install: all
+install: all	
 
 
 kurtz:

@@ -25,21 +25,22 @@ Authors:
     Glenn Tesler    
 
 Contact:
+    quast.support@bioinf.spbau.ru
+    http://quast.bioinf.spbau.ru
     http://sourceforge.net/p/quast/
 
 
 Some third-party tools are incorporated in QUAST:
 
-1. Parts of assess_assembly.pl script was kindly provided by Plantagora team
-and modified by QUAST team. It is not licensed under GPL as other parts 
-of QUAST, but it can be distributed and used in QUAST pipeline with current
-remarks and citation. 
-For more details about assess_assembly.pl please refer to 
-http://www.plantagora.org website and to the following paper:
+1. GeneMarkS gene finding software was kindly provided by GeneMarkS team
+(at Georgia Institute of Technology). Please, see License files in 
+libs/genemark_suite_linux_64 subdirectory for details.  
+For more details about GeneMarkS please refer to 
+http://exon.gatech.edu/genemarks.cgi website and to the following paper:
 
-Barthelson R, McFarlin AJ, Rounsley SD, Young S (2011) Plantagora: Modeling 
-Whole Genome Sequencing and Assembly of Plant Genomes. PLoS ONE 6(12): e28436. 
-doi:10.1371/journal.pone.0028436
+Besemer, J., Lomsadze, A., and Borodovsky, M. (2001). GeneMarkS: a self-training
+method for prediction of gene starts in microbial genomes. Implications for finding
+sequence motifs in regulatory regions. Nucleic Acids Res, 29(12), 2607–2618.
 
 2. GAGE scripts was provided by GAGE team and also modified by QUAST team. 
 They can be distributed and used in QUAST pipeline with current remarks and 

@@ -13,15 +13,15 @@ cp quast.py           release/$QUAST_FOLDER
 cp manual.html        release/$QUAST_FOLDER
 cp VERSION            release/$QUAST_FOLDER
 cp LICENSE            release/$QUAST_FOLDER
+cp CHANGES            release/$QUAST_FOLDER
 echo Build $NOW    >> release/$QUAST_FOLDER/VERSION
 sed "s/RELEASE_MODE=False/RELEASE_MODE=True/" quast.py > release/$QUAST_FOLDER/quast.py
 
 make -C release/quast/libs/MUMmer3.23-osx/   clean >/dev/null 2>/dev/null
 make -C release/quast/libs/MUMmer3.23-linux/ clean >/dev/null 2>/dev/null
 rm -f   release/quast/libs/*.pyc
-rm -rf  release/quast/results_*
+rm -rf  release/quast/quast_results
 rm -rf	release/quast/libs/mauve
-rm -rf	release/quast/libs/genemark_suite_linux_64
 
 cd release
 tar -pczf $ARCHIVE_NAME $QUAST_FOLDER

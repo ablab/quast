@@ -93,7 +93,6 @@ clean:
 	cd $(KURTZ_SRC_DIR); $(MAKE) clean
 	cd $(TIGR_SRC_DIR); $(MAKE) clean
 	cd $(SCRIPT_DIR); $(MAKE) clean
-	cd $(DOC_DIR); $(MAKE) clean
 
 
 dist: DISTDIR = MUMmer$(VERSION)

@@ -320,7 +320,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
     reporting.save_total(output_dirpath)
 
     if json_outputpath:
-        json_saver.save_total_report(json_outputpath, min_contig)
+        json_saver.save_total_report(json_outputpath, qconfig.min_contig)
 
     from libs.html_saver import html_saver
     html_saver.save_total_report(output_dirpath, qconfig.min_contig)

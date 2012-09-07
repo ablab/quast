@@ -41,10 +41,10 @@ def chromosomes_names_dict(features, chr_names):
     return chr_name_dict
 
 
-def do(reference, filenames, output_dir, nucmer_dir, genes_filename, operons_filename, all_pdf, draw_plots, json_output_dir, results_dir):
+def do(reference, filenames, nucmer_dir, output_dir, genes_filename, operons_filename, all_pdf, draw_plots, json_output_dir, results_dir):
 
     # some important constants
-    nucmer_prefix = os.path.join(os.path.join(__location__, ".."), nucmer_dir + '/nucmer_')
+    nucmer_prefix = os.path.join(os.path.join(__location__, ".."), nucmer_dir, 'nucmer_output')
     #threshold = 10.0 # in %
     min_gap_size = 50 # for calculating number or gaps in genome coverage
     min_overlap = 100 # for genes and operons finding
@@ -78,8 +78,8 @@ def do(reference, filenames, output_dir, nucmer_dir, genes_filename, operons_fil
         res_file.write('\t' + chr_name + ' (' + str(chr_len) + ' bp)\n')
     res_file.write('\n')
     res_file.write('total genome size: ' + str(genome_size) + '\n\n')
-    res_file.write('min gap size: ' + str(min_gap_size) + '\n')
-    res_file.write('min gene/operon overlap: ' + str(min_overlap) + '\n\n')
+    res_file.write('gap min size: ' + str(min_gap_size) + '\n')
+    res_file.write('partial gene/operon min size: ' + str(min_overlap) + '\n\n')
 
     # reading genes
     genes = genes_parser.get_genes_from_file(genes_filename, 'gene')
@@ -87,9 +87,10 @@ def do(reference, filenames, output_dir, nucmer_dir, genes_filename, operons_fil
     genes_chr_names_dict = {}
     if len(genes) == 0:
         print '  Warning: no genes loaded.'
+        res_file.write('genes loaded: ' + 'None' + '\n')
     else:
         print '  Loaded ' + str(len(genes)) + ' genes'
-        res_file.write('genes: ' + str(len(genes)) + '\n')
+        res_file.write('genes loaded: ' + str(len(genes)) + '\n')
         genes_found = [0 for _ in genes] # 0 - gene isn't found, 1 - gene is found, 2 - part of gene is found
         genes_chr_names_dict = chromosomes_names_dict(genes, reference_chromosomes.keys())
 
@@ -100,17 +101,18 @@ def do(reference, filenames, output_dir, nucmer_dir, genes_filename, operons_fil
     operons_chr_names_dict = {}
     if len(operons) == 0:
         print '  Warning: no operons loaded.'
+        res_file.write('operons loaded: ' + 'None' + '\n')
     else:
         print '  Loaded ' + str(len(operons)) + ' operons'
-        res_file.write('operons: ' + str(len(operons)) + '\n')
+        res_file.write('operons loaded: ' + str(len(operons)) + '\n')
         operons_found = [0 for _ in operons] # 0 - gene isn't found, 1 - gene is found, 2 - part of gene is found
         operons_chr_names_dict = chromosomes_names_dict(operons, reference_chromosomes.keys())
 
     # header
     res_file.write('\n\n')
-    res_file.write('  %-20s  | %-20s| %-12s| %-10s| %-10s| %-10s| %-10s\n' % ('contigs file', 'mapped genome (%)', 'gaps', 'genes', 'partial', 'operons', 'partial'))
-    res_file.write('  %-20s  | %-20s| %-12s| %-10s| %-10s| %-10s| %-10s\n' % ('', '', 'number', '', 'genes', '', 'operons'))
-    res_file.write('======================================================================================================\n')
+    res_file.write('  %-20s  | %-20s| %-12s| %-10s| %-10s| %-10s| %-10s|\n' % ('assembly', 'genome fraction (%)', 'gaps', 'genes', 'partial', 'operons', 'partial'))
+    res_file.write('  %-20s  | %-20s| %-12s| %-10s| %-10s| %-10s| %-10s|\n' % ('', '', 'number', '', 'genes', '', 'operons'))
+    res_file.write('============================================================================================================\n')
 
     # for cumulative plots:
     files_contigs = {}   #  "filename" : [ [contig_blocks] ]   
@@ -128,7 +130,7 @@ def do(reference, filenames, output_dir, nucmer_dir, genes_filename, operons_fil
         contig_blocks = {'':[]}
         files_contigs[filename] = []
 
-        nucmer_filename = nucmer_prefix + os.path.basename(filename) + '.coords'
+        nucmer_filename = os.path.join(nucmer_prefix, os.path.basename(filename) + '.coords')
         if not os.path.isfile(nucmer_filename):
             print '  ERROR: nucmer coord file (' + nucmer_filename + ') not found, skipping...'
             continue
@@ -232,6 +234,7 @@ def do(reference, filenames, output_dir, nucmer_dir, genes_filename, operons_fil
                 (operons, operons_chr_names_dict, reporting.Fields.OPERONS, '_operons.txt', full_operons, operons_found)]:
 
             if not regionlist:
+                res_file.write(' %-10s| %-10s|' % ('None', 'None'))
                 continue    
 
             total_full = 0

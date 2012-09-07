@@ -49,7 +49,9 @@ class Fields:
     UNALIGNEDBASES = 'Unaligned contigs length'
     AMBIGUOUS = '# ambiguous contigs'
     AMBIGUOUSBASES = 'Ambiguous contigs length'
-    SNPS = '# mismatches'
+    MISMATCHES = '# mismatches'
+    INDELS = '# indels'
+    INDELSERROR = '# indels per 100 Kbp'
     SUBSERROR = '# mismatches per 100 Kbp'
     NA50 = 'NA50'
     NGA50 = 'NGA50'
@@ -65,7 +67,7 @@ class Fields:
     order = [NAME, CONTIGS, TOTALLENS, NUMCONTIGS, LARGCONTIG, TOTALLEN, REFLEN, N50, NG50, N75, NG75,             
              AVGIDY, MISASSEMBL, MISCONTIGS, MISCONTIGSBASES,
              UNALIGNED, UNALIGNEDBASES, AMBIGUOUS, AMBIGUOUSBASES, 
-             MAPPEDGENOME, GC, REFGC, SUBSERROR, GENES, OPERONS, GENEMARKUNIQUE, GENEMARK,
+             MAPPEDGENOME, GC, REFGC, INDELSERROR, SUBSERROR, GENES, OPERONS, GENEMARKUNIQUE, GENEMARK,
              NA50, NGA50, NA75, NGA75]
 
     MIS_ALL_EXTENSIVE = '# extensive misassemblies'
@@ -75,8 +77,6 @@ class Fields:
     MIS_EXTENSIVE_CONTIGS = '# ext. misassembled contigs'
     MIS_EXTENSIVE_BASES = 'Ext. misassembled contigs length'
     MIS_LOCAL = '# local misassemblies'
-    INDELS = '# indels'
-    MISMATCHES = '# mismatches'
 
     # for detailed misassemblies report
     misassemblies_order = [NAME, MIS_ALL_EXTENSIVE, MIS_RELOCATION, MIS_TRANSLOCATION, MIS_INVERTION,
@@ -251,4 +251,4 @@ def save_total(output_dirpath):
 
 
 def save_misassemblies(output_dirpath):
-    save(output_dirpath, "misassemblies", "", Fields.misassemblies_order)
+    save(output_dirpath, "misassemblies_report", "", Fields.misassemblies_order)

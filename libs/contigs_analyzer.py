@@ -308,8 +308,8 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
     if os.path.isfile(nucmerfilename + '.coords'):
         os.remove(nucmerfilename + '.coords')
         # run plantakolya tool
-    logfilename_out = output_dir + '/plantakolya_' + os.path.basename(filename) + '.stdout'
-    logfilename_err = output_dir + '/plantakolya_' + os.path.basename(filename) + '.stderr'
+    logfilename_out = output_dir + '/contigs_report_' + os.path.basename(filename) + '.stdout'
+    logfilename_err = output_dir + '/contigs_report_' + os.path.basename(filename) + '.stderr'
     logfile_err = open(logfilename_err, 'a')
     print '    Logging to files', logfilename_out, 'and', os.path.basename(logfilename_err), '...',
     # reverse complementarity is not an extensive misassemble
@@ -634,8 +634,10 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
     report.add_field(reporting.Fields.UNALIGNEDBASES, total_unaligned)
     report.add_field(reporting.Fields.AMBIGUOUS, ambiguous)
     report.add_field(reporting.Fields.AMBIGUOUSBASES, total_ambiguous)
-    report.add_field(reporting.Fields.SNPS, SNPs)
+    report.add_field(reporting.Fields.MISMATCHES, SNPs)
+    report.add_field(reporting.Fields.INDELS, indels)
     report.add_field(reporting.Fields.SUBSERROR, "%.2f" % (float(SNPs) * 100000.0 / float(total_aligned_bases)))
+    report.add_field(reporting.Fields.INDELSERROR, "%.2f" % (float(indels) * 100000.0 / float(total_aligned_bases)))
 
     # for misassemblies report:
     report.add_field(reporting.Fields.MIS_ALL_EXTENSIVE, len(region_misassemblies) - region_misassemblies.count(Misassembly.LOCAL))
@@ -645,8 +647,6 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
     report.add_field(reporting.Fields.MIS_EXTENSIVE_CONTIGS, len(misassembled_contigs))
     report.add_field(reporting.Fields.MIS_EXTENSIVE_BASES, misassembled_bases)
     report.add_field(reporting.Fields.MIS_LOCAL, region_misassemblies.count(Misassembly.LOCAL))
-    report.add_field(reporting.Fields.INDELS, indels)
-    report.add_field(reporting.Fields.MISMATCHES, SNPs)
 
     ## outputting misassembled contigs to separate file
     fasta = [(name, seq) for name, seq in fastaparser.read_fasta(filename) if
@@ -657,28 +657,32 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
     logfile_err.close()
     print 'done.'
 
-    if draw_plots and os.path.isfile(delta_filename):
-        # draw reference coverage plot
-        print '    Drawing reference coverage plot...',
-        plotfilename = output_dir + '/mummerplot_' + os.path.basename(filename)
-        plot_logfilename_out = output_dir + '/mummerplot_' + os.path.basename(filename) + '.stdout'
-        plot_logfilename_err = output_dir + '/mummerplot_' + os.path.basename(filename) + '.stderr'
-        plot_logfile_out = open(plot_logfilename_out, 'w')
-        plot_logfile_err = open(plot_logfilename_err, 'w')
-        subprocess.call(
-            ['mummerplot', '--coverage', '--postscript', '--prefix', plotfilename, delta_filename],
-            stdout=plot_logfile_out, stderr=plot_logfile_err, env=myenv)
-        plot_logfile_out.close()
-        plot_logfile_err.close()
-        print 'saved to', plotfilename + '.ps'
-        for ext in ['.gp', '.rplot', '.fplot']: # remove redundant files
-            if os.path.isfile(plotfilename + ext):
-                os.remove(plotfilename + ext)
+###  I think we don't need this
+#    if draw_plots and os.path.isfile(delta_filename):
+#        # draw reference coverage plot
+#        print '    Drawing reference coverage plot...',
+#        plotfilename = output_dir + '/mummerplot_' + os.path.basename(filename)
+#        plot_logfilename_out = output_dir + '/mummerplot_' + os.path.basename(filename) + '.stdout'
+#        plot_logfilename_err = output_dir + '/mummerplot_' + os.path.basename(filename) + '.stderr'
+#        plot_logfile_out = open(plot_logfilename_out, 'w')
+#        plot_logfile_err = open(plot_logfilename_err, 'w')
+#        subprocess.call(
+#            ['mummerplot', '--coverage', '--postscript', '--prefix', plotfilename, delta_filename],
+#            stdout=plot_logfile_out, stderr=plot_logfile_err, env=myenv)
+#        plot_logfile_out.close()
+#        plot_logfile_err.close()
+#        print 'saved to', plotfilename + '.ps'
+#        for ext in ['.gp', '.rplot', '.fplot']: # remove redundant files
+#            if os.path.isfile(plotfilename + ext):
+#                os.remove(plotfilename + ext)
 
 
 def plantakolya_process(cyclic, draw_plots, filename, id, myenv, output_dir, reference):
     print ' ', id_to_str(id), os.path.basename(filename), '...'
-    nucmerfilename = output_dir + '/nucmer_' + os.path.basename(filename)
+    nucmer_output_dir = os.path.join(output_dir, 'nucmer_output')
+    if not os.path.isdir(nucmer_output_dir):
+        os.mkdir(nucmer_output_dir)
+    nucmerfilename = os.path.join(nucmer_output_dir, os.path.basename(filename))
     plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir, reference)
     clear_files(filename, nucmerfilename)
 
@@ -702,12 +706,12 @@ def do(reference, filenames, cyclic, output_dir, lib_dir, draw_plots):
     myenv = os.environ.copy()
     myenv['PATH'] = mummer_path + ':' + myenv['PATH']
     # making
-    print ("Making MUMmer... (it may take several minutes on first run)")
+    print ("Making MUMmer... (it may take several minutes on the first run)")
     subprocess.call(
         ['make', '-C', mummer_path],
         stdout=open(os.path.join(mummer_path, 'make.log'), 'w'), stderr=open(os.path.join(mummer_path, 'make.err'), 'w'))
 
-    print 'Running plantakolya tool...'
+    print 'Running contigs analyzer...'
 
     for id, filename in enumerate(filenames):
         plantakolya_process(cyclic, draw_plots, filename, id, myenv, output_dir, reference) # TODO: use joblib

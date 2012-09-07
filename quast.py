@@ -281,33 +281,36 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
     ### Stats and plots
     ########################################################################
     from libs import basic_stats
-    basic_stats.do(qconfig.reference, contigs, output_dirpath + '/basic_stats', all_pdf, qconfig.draw_plots, json_outputpath, output_dirpath)
+    basic_stats.do(qconfig.reference, contigs, output_dirpath + '/basic_stats', all_pdf, qconfig.draw_plots,
+        json_outputpath, output_dirpath)
 
     if qconfig.reference:
         ########################################################################
-        ### PLANTAKOLYA
+        ### former PLANTAKOLYA, PLANTAGORA
         ########################################################################
-        from libs import plantakolya
-        plantakolya.do(qconfig.reference, contigs, qconfig.cyclic, output_dirpath + '/plantakolya', lib_dir, qconfig.draw_plots)
+        from libs import contigs_analyzer
+        contigs_analyzer.do(qconfig.reference, contigs, qconfig.cyclic, output_dirpath + '/contigs_reports', lib_dir, qconfig.draw_plots)
 
         ########################################################################
         ### NA and NGA ("aligned N and NG")
         ########################################################################
         from libs import aligned_stats
-        aligned_stats.do(qconfig.reference, contigs, output_dirpath + '/plantakolya', output_dirpath + '/aligned_stats', all_pdf, qconfig.draw_plots, json_outputpath, output_dirpath)
+        aligned_stats.do(qconfig.reference, contigs, output_dirpath + '/contigs_reports',
+            output_dirpath + '/aligned_stats', all_pdf, qconfig.draw_plots, json_outputpath, output_dirpath)
 
         ########################################################################
         ### GENOME_ANALYZER
         ########################################################################
         from libs import genome_analyzer
-        genome_analyzer.do(qconfig.reference, contigs, output_dirpath + '/genome_analyzer', output_dirpath + '/plantakolya', qconfig.genes, qconfig.operons, all_pdf, qconfig.draw_plots, json_outputpath, output_dirpath)
+        genome_analyzer.do(qconfig.reference, contigs, output_dirpath + '/contigs_reports',
+            output_dirpath + '/genome_stats', qconfig.genes, qconfig.operons, all_pdf, qconfig.draw_plots, json_outputpath, output_dirpath)
 
     if not qconfig.genes:
         ########################################################################
         ### GeneMark
         ########################################################################
         from libs import genemark
-        genemark.do(contigs, qconfig.genes_lengths, output_dirpath + '/genemark', lib_dir)
+        genemark.do(contigs, qconfig.genes_lengths, output_dirpath + '/predicted_genes', lib_dir)
     else:
         # TODO: make it nicer (not output predicted genes if annotations are provided
         for id, filename in enumerate(contigs):

@@ -51,7 +51,7 @@ def do(reference, filenames, nucmer_dir, output_dir, all_pdf, draw_plots, json_o
 
     ########################################################################
 
-    nucmer_prefix = os.path.join(os.path.join(__location__, ".."), nucmer_dir + '/nucmer_')
+    nucmer_prefix = os.path.join(os.path.join(__location__, ".."), nucmer_dir, 'nucmer_output')
 
     ########################################################################
     report_dict = {'header' : []}
@@ -67,7 +67,7 @@ def do(reference, filenames, nucmer_dir, output_dir, all_pdf, draw_plots, json_o
     print 'Processing .coords files...'
     for id, filename in enumerate(filenames):
         print ' ', id_to_str(id), os.path.basename(filename)
-        nucmer_filename = nucmer_prefix + os.path.basename(filename) + '.coords.filtered'
+        nucmer_filename = os.path.join(nucmer_prefix, os.path.basename(filename) + '.coords.filtered')
         assembly_lengths.append(sum(fastaparser.get_lengths_from_fastafile(filename)))
         if not os.path.isfile(nucmer_filename):
             print '  ERROR: nucmer coord file (' + nucmer_filename + ') not found, skipping...'

@@ -112,6 +112,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
             qconfig.save_json = True
         elif opt in ('-J', '--save-json-to'):
             qconfig.save_json = True
+            qconfig.make_latest_symlink = False
             json_outputpath = arg
         elif opt in ('-g', "--gage"):
             qconfig.with_gage = True

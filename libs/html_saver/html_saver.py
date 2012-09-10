@@ -27,29 +27,29 @@ def init(adp_results):
                           'flot/jquery.flot.min.js',
                           'flot/excanvas.min.js',
                           'flot/jquery.flot.dashes.js',
-                          'build_total_report.js',
-                          'draw_cumulative_plot.js',
-                          'draw_nx_plot.js',
-                          'draw_gc_plot.js',
-                          'utils.js',
-                          'draw_genes_plot.js',
-                          'build_report.js', ]:
-            with open(get_real_path('js/' + fp_script)) as f:
+                          'report-scripts/build_total_report.js',
+                          'report-scripts/draw_cumulative_plot.js',
+                          'report-scripts/draw_nx_plot.js',
+                          'report-scripts/draw_gc_plot.js',
+                          'report-scripts/utils.js',
+                          'report-scripts/draw_genes_plot.js',
+                          'report-scripts/build_report.js', ]:
+            with open(get_real_path(fp_script)) as f:
                 html = html.replace(
-                    '<script type="text/javascript" src="/static/scripts/' + fp_script + '"></script>',
+                    '<script type="text/javascript" src="' + fp_script + '"></script>',
                     '<script type="text/javascript">\n' + f.read() + '\n\t</script>\n')
 
-        html = html.replace('<link rel="stylesheet" href="/static/bootstrap/css/bootstrap.css"/>',
-            '<style rel="stylesheet">\n' + open(get_real_path('css/bootstrap.min.css')).read() + '\n</style>\n\n')
+        html = html.replace('<link rel="stylesheet" href="/bootstrap/bootstrap.min.css"/>',
+            '<style rel="stylesheet">\n' + open(get_real_path('bootstrap/bootstrap.min.css')).read() + '\n</style>\n\n')
 
         html = html.replace(
-            '<script type="text/javascript" src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>',
-            '<script type="text/javascript" >\n' + open(get_real_path('js/ie_html5.js')).read() + '\n</script>')
+            '<script type="text/javascript" src="/ie_html5.js"></script>',
+            '<script type="text/javascript" >\n' + open(get_real_path('ie_html5.js')).read() + '\n</script>')
 
         html = html.replace(
-            '<script type="text/javascript" src="/static/bootstrap/js/bootstrap-tooltip-5px-lower.js"></script>',
+            '<script type="text/javascript" src="/bootstrap/bootstrap-tooltip-5px-lower.js"></script>',
             '<script type="text/javascript" >\n' + open(
-                get_real_path('js/bootstrap-tooltip-5pxlower-min.js')).read() + '\n</script>')
+                get_real_path('bootstrap/bootstrap-tooltip-5pxlower-min.js')).read() + '\n</script>')
 
         html = html.replace('{{ glossary }}', open(get_real_path('glossary.json')).read())
 

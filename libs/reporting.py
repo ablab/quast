@@ -67,20 +67,20 @@ class Fields:
     order = [NAME, CONTIGS, TOTALLENS, NUMCONTIGS, LARGCONTIG, TOTALLEN, REFLEN, N50, NG50, N75, NG75,             
              AVGIDY, MISASSEMBL, MISCONTIGS, MISCONTIGSBASES,
              UNALIGNED, UNALIGNEDBASES, AMBIGUOUS, AMBIGUOUSBASES, 
-             MAPPEDGENOME, GC, REFGC, INDELSERROR, SUBSERROR, GENES, OPERONS, GENEMARKUNIQUE, GENEMARK,
+             MAPPEDGENOME, GC, REFGC, SUBSERROR, INDELSERROR, GENES, OPERONS, GENEMARKUNIQUE, GENEMARK,
              NA50, NGA50, NA75, NGA75]
 
-    MIS_ALL_EXTENSIVE = '# extensive misassemblies'
+    MIS_ALL_EXTENSIVE = '# misassemblies'
     MIS_RELOCATION = '    # relocations'
     MIS_TRANSLOCATION = '    # translocations'
     MIS_INVERTION = '    # inversions'
-    MIS_EXTENSIVE_CONTIGS = '# ext. misassembled contigs'
-    MIS_EXTENSIVE_BASES = 'Ext. misassembled contigs length'
+    MIS_EXTENSIVE_CONTIGS = '# misassembled contigs'
+    MIS_EXTENSIVE_BASES = 'Misassembled contigs length'
     MIS_LOCAL = '# local misassemblies'
 
     # for detailed misassemblies report
     misassemblies_order = [NAME, MIS_ALL_EXTENSIVE, MIS_RELOCATION, MIS_TRANSLOCATION, MIS_INVERTION,
-                           MIS_EXTENSIVE_CONTIGS, MIS_EXTENSIVE_BASES, MIS_LOCAL, INDELS, MISMATCHES]
+                           MIS_EXTENSIVE_CONTIGS, MIS_EXTENSIVE_BASES, MIS_LOCAL, MISMATCHES, INDELS]
 
     # GAGE fields
     GAGE_NUMCONTIGS = 'Contigs #'

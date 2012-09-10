@@ -286,9 +286,8 @@ def GC_content_plot(filenames, lists_of_GC_info, plot_filename, all_pdf=None):
     except ZeroDivisionError:
         pass
 
-    ylabel = 'Bases in contigs '
+    ylabel = '# sliding windows'
     #ylabel, mkfunc = y_formatter(ylabel, max_y)
-    ylabel += '(bp)'
     matplotlib.pyplot.xlabel('GC (%)', fontsize=axes_fontsize)
     matplotlib.pyplot.ylabel(ylabel, fontsize=axes_fontsize)
 

@@ -7,7 +7,7 @@
 import os
 import itertools
 import fastaparser
-from libs import reporting
+from libs import reporting, qconfig
 from qutils import id_to_str
 
 __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
@@ -102,9 +102,10 @@ def do(reference, filenames, nucmer_dir, output_dir, all_pdf, draw_plots, json_o
         json_saver.save_assembly_lengths(json_output_dir, filenames, assembly_lengths)
 
     # saving to html
-    from libs.html_saver import html_saver
-    html_saver.save_aligned_contigs_lengths(results_dir, filenames, lists_of_lengths)
-    html_saver.save_assembly_lengths(results_dir, filenames, assembly_lengths)
+    if qconfig.html_report:
+        from libs.html_saver import html_saver
+        html_saver.save_aligned_contigs_lengths(results_dir, filenames, lists_of_lengths)
+        html_saver.save_assembly_lengths(results_dir, filenames, assembly_lengths)
 
     if draw_plots:
         # Drawing cumulative plot (aligned contigs)...

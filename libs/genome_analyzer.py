@@ -7,8 +7,7 @@
 import os
 import fastaparser
 import genes_parser
-from libs import json_saver, reporting
-from libs.html_saver import html_saver
+from libs import json_saver, reporting, qconfig
 from qutils import id_to_str
 
 __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
@@ -278,13 +277,14 @@ def do(reference, filenames, nucmer_dir, output_dir, genes_filename, operons_fil
         if operons:
             json_saver.save_operons(json_output_dir, operons, operons_found)
 
-    # saving html
-    if genes or operons:
-        html_saver.save_contigs(results_dir, filenames, files_contigs)
-    if genes:
-        html_saver.save_genes(results_dir, genes, genes_found)
-    if operons:
-        html_saver.save_operons(results_dir, operons, operons_found)
+    if qconfig.html_report:
+        from libs.html_saver import html_saver
+        if genes or operons:
+            html_saver.save_contigs(results_dir, filenames, files_contigs)
+        if genes:
+            html_saver.save_genes(results_dir, genes, genes_found)
+        if operons:
+            html_saver.save_operons(results_dir, operons, operons_found)
 
     if draw_plots:
         # cumulative plots:

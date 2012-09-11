@@ -8,8 +8,8 @@ import os
 import itertools
 import fastaparser
 import json_saver
+from libs import qconfig
 from qutils import id_to_str
-from html_saver import html_saver
 import reporting
 
 def GC_content(filename):  
@@ -46,8 +46,9 @@ def do(reference, filenames, output_dir, all_pdf, draw_plots, json_output_dir, r
         if json_output_dir:
             json_saver.save_reference_length(json_output_dir, reference_length)
 
-        # saving to html
-        html_saver.save_reference_length(results_dir, reference_length)
+        if qconfig.html_report:
+            from libs.html_saver import html_saver
+            html_saver.save_reference_length(results_dir, reference_length)
 
         print 'Reference genome:'
         print ' ', reference, ', Reference length =', int(reference_length), ', Reference GC % =', '%.2f' % reference_GC
@@ -62,8 +63,9 @@ def do(reference, filenames, output_dir, all_pdf, draw_plots, json_output_dir, r
     if json_output_dir:
         json_saver.save_contigs_lengths(json_output_dir, filenames, lists_of_lengths)
 
-    # saving to html
-    html_saver.save_contigs_lengths(results_dir, filenames, lists_of_lengths)
+    if qconfig.html_report:
+        from libs.html_saver import html_saver
+        html_saver.save_contigs_lengths(results_dir, filenames, lists_of_lengths)
 
     ########################################################################
 
@@ -106,7 +108,10 @@ def do(reference, filenames, output_dir, all_pdf, draw_plots, json_output_dir, r
     if json_output_dir:
         json_saver.save_GC_info(json_output_dir, filenames, lists_of_GC_info)
 
-    html_saver.save_GC_info(results_dir, filenames, lists_of_GC_info)
+
+    if qconfig.html_report:
+        from libs.html_saver import html_saver
+        html_saver.save_GC_info(results_dir, filenames, lists_of_GC_info)
 
     if draw_plots:
         ########################################################################

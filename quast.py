@@ -327,8 +327,9 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
     if json_outputpath:
         json_saver.save_total_report(json_outputpath, qconfig.min_contig)
 
-    from libs.html_saver import html_saver
-    html_saver.save_total_report(output_dirpath, qconfig.min_contig)
+    if qconfig.html_report:
+        from libs.html_saver import html_saver
+        html_saver.save_total_report(output_dirpath, qconfig.min_contig)
 
     if qconfig.draw_plots and all_pdf:
         print '  All pdf files are merged to', all_pdf_filename

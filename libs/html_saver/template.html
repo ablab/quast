@@ -53,10 +53,6 @@
             margin-left: 125px;
         }
 
-        #mincontig {
-            font-size: 0.8em;
-        }
-
         #subheader { /* not used in Quast html report */
             margin-top: -13px;
             margin-bottom: 20px;
@@ -137,15 +133,22 @@
         .tooltip-inner {
             text-align: left;
         }
+        .smallcapitals {
+            font-size: .875em;
+            letter-spacing: .15em;
+            margin-right: -.15em;
+        }
     </style>
 </head>
 
 <body>
     <div class="content">
         <div id='header'>
-            <span>QUAST report <span id='subheader'></span></span>
-            <br><br>
+            <span class='smallcapitals'>QUAST</span> report<br><br>
+            <span style='font-size: 0.7em;'>
+            <span id='subheader'>Loading...</span>
             <span id='mincontig'></span>
+        	</span>
         </div>
 
         <noscript>

@@ -85,7 +85,7 @@ function drawCumulativePlot(filenames, lists_of_lengths, reference_length, div, 
 //        }
 //    }
 
-    var colors = ["#FF5900", "#008FFF", "#168A16", "#7C00FF", "#FF0080"];
+    var colors = ["#FF5900", "#008FFF", "#168A16", "#7C00FF", "#00B7FF", "#FF0080", "#7AE01B", "#782400", "#E01B6A"];
 
     if (reference_length) {
         plotsData = [({

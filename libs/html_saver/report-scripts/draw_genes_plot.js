@@ -76,10 +76,11 @@ function drawGenesPlot(filenames, filesContigs, genes, found, kind, div, legendP
 //        }
 //    }
 
+    var colors = ["#FF5900", "#008FFF", "#168A16", "#7C00FF", "#00B7FF", "#FF0080", "#7AE01B", "#782400", "#E01B6A"];
 
     $.plot($('#' + kind + 's-plot-placeholder'), plotsData, {
             shadowSize: 0,
-            colors: ["#FF5900", "#008FFF", "#168A16", "#7C00FF", "#FF0080"],
+            colors: colors,
             legend: {
                 container: legendPlaceholder,
                 position: 'se',

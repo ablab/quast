@@ -72,9 +72,11 @@ function drawNxPlot(filenames, listsOfLengths, title,
 //        }
 //    }
 
+    var colors = ["#FF5900", "#008FFF", "#168A16", "#7C00FF", "#00B7FF", "#FF0080", "#7AE01B", "#782400", "#E01B6A"];
+
     var plot = $.plot($('#' + title + '-plot-placeholder'), plotsData, {
             shadowSize: 0,
-            colors: ["#FF5900", "#008FFF", "#168A16", "#7C00FF", "#FF0080"],
+            colors: colors,
             legend: {
                 container: legendPlaceholder,
                 position: 'ne',

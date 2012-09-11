@@ -24,9 +24,9 @@ function buildReport() {
     }
 
     if (report) {
-        document.title += ('of ' + report.date);
-        $('#subheader').append('of ' + report.date);
-        $('#mincontig').append('Contigs of length ≥ ' + report.min_contig + ' bp are used');
+        document.title += (report.date);
+        $('#subheader').html(report.date + '.');
+        $('#mincontig').append('Contigs of length ≥ ' + report.min_contig + ' bp are used.');
         buildTotalReport(report, glossary);
     }
 

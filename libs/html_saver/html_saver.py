@@ -1,3 +1,4 @@
+from __future__ import with_statement
 import re
 from libs import json_saver
 
@@ -81,48 +82,57 @@ def append(adp_results, afp_json, keyword):
 
 
 def save_total_report(adp_results, min_contig):
-    print '  HTML version of total report...'
     afp_json = json_saver.save_total_report(adp_results, min_contig)
-    append(adp_results, afp_json, 'report')
-    print '    Saved to', os.path.join(adp_results, fn_report)
+    if afp_json:
+        print '  HTML version of total report...'
+        append(adp_results, afp_json, 'report')
+        print '    Saved to', os.path.join(adp_results, fn_report)
 
 
 def save_contigs_lengths(adp_results, filenames, lists_of_lengths):
     afp_json = json_saver.save_contigs_lengths(adp_results, filenames, lists_of_lengths)
-    append(adp_results, afp_json, 'contigsLenghts')
+    if afp_json:
+        append(adp_results, afp_json, 'contigsLenghts')
 
 
 def save_reference_length(adp_results, reference_length):
     afp_json = json_saver.save_reference_length(adp_results, reference_length)
-    append(adp_results, afp_json, 'referenceLength')
+    if afp_json:
+        append(adp_results, afp_json, 'referenceLength')
 
 
 def save_aligned_contigs_lengths(adp_results, filenames, lists_of_lengths):
     afp_json = json_saver.save_aligned_contigs_lengths(adp_results, filenames, lists_of_lengths)
-    append(adp_results, afp_json, 'alignedContigsLengths')
+    if afp_json:
+        append(adp_results, afp_json, 'alignedContigsLengths')
 
 
 def save_assembly_lengths(adp_results, filenames, assemblies_lengths):
     afp_json = json_saver.save_assembly_lengths(adp_results, filenames, assemblies_lengths)
-    append(adp_results, afp_json, 'assembliesLengths')
+    if afp_json:
+        append(adp_results, afp_json, 'assembliesLengths')
 
 
 def save_contigs(adp_results, filenames, contigs):
     afp_json = json_saver.save_contigs(adp_results, filenames, contigs)
-    append(adp_results, afp_json, 'contigs')
+    if afp_json:
+        append(adp_results, afp_json, 'contigs')
 
 
 def save_GC_info(adp_results, filenames, lists_of_GC_info):
     afp_json = json_saver.save_GC_info(adp_results, filenames, lists_of_GC_info)
-    append(adp_results, afp_json, 'gcInfos')
+    if afp_json:
+        append(adp_results, afp_json, 'gcInfos')
 
 
 def save_genes(adp_results, genes, found):
     afp_json = json_saver.save_genes(adp_results, genes, found)
-    append(adp_results, afp_json, 'genes')
+    if afp_json:
+        append(adp_results, afp_json, 'genes')
 
 
 def save_operons(adp_results, operons, found):
     afp_json = json_saver.save_operons(adp_results, operons, found)
-    append(adp_results, afp_json, 'operons')
+    if afp_json:
+        append(adp_results, afp_json, 'operons')
 

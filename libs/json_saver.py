@@ -5,8 +5,17 @@
 ############################################################################
 
 import datetime
-import json
 import os
+
+simplejson_error = False
+try:
+    import json
+except:
+    try:
+        import simplejson as json
+    except:
+        print 'Warning! Can\'t build html report - please install python-simplejson'
+        simplejson_error = True
 
 total_report_fn       = '/report.json'
 contigs_lengths_fn    = '/contigs_lengths.json'
@@ -20,6 +29,9 @@ operons_fn            = '/operons.json'
 
 
 def save(filename, what):
+    if simplejson_error:
+        return None
+
     json_file = open(filename, 'w')
     json.dump(what, json_file)
     json_file.close()

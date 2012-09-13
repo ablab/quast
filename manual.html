@@ -1,6 +1,6 @@
 <html>
 <head>
-    <title>QUAST 1.1 manual</title>
+    <title>QUAST 1.0 manual</title>
     <style type="text/css">
         body {
             margin-top: 30px;
@@ -13,21 +13,21 @@
     </style>
 </head>
 <body>
-<h1>QUAST 1.1 manual</h1>
+<h1>QUAST 1.0 manual</h1>
 
 <p>QUAST stands for QUality ASsesment Tool. QUAST evaluates genome assemblies by computing various metrics (e.g., N50, number of ORFs, etc.). 
 <br>
 This manual will help you to run the tool and understand its output. 
 <br>
 You can find all project news and the latest versions of source code and manual
-at <a href="http://quast.bioinf.spbau.ru/">http://quast.bioinf.spbau.ru/</a>.
+at <a href="http://sourceforge.net/p/quast/">http://sourceforge.net/p/quast/</a>.
 <br>
-QUAST uses <a href="http://exon.gatech.edu/genemarks.cgi">GeneMarkS</a>, <a href="http://mummer.sourceforge.net/">MUMmer</a> 
+QUAST uses <a href="http://www.plantagora.org/">Plantagora</a>, <a href="http://mummer.sourceforge.net/">MUMmer</a> 
 and <a href="http://gage.cbcb.umd.edu/index.html">GAGE</a>. All their sources are embedded in QUAST and you needn't to install
 them separately.
 <br>
 <br>
-QUAST version 1.1 released under GPL v2 (see <a href="LICENSE">LICENSE</a> for details) on 5 September 2012.
+QUAST version 1.0 released under GPL v2 (see <a href="LICENSE">LICENSE</a> for details) on 2 August 2012.
 </p>
 
 <h2>1. Installation</h2>
@@ -49,7 +49,7 @@ It can be done on Ubuntu by typing:
     sudo apt-get install python-matplotlib
 </code>
 </pre>
-Or with Python <a href="http://www.pip-installer.org/">pip-installer</a>:
+Or with Python <a href="http://www.pip-installer.org/">pip</a> installer:
 <pre class="code">
 <code>
     pip install matplotlib
@@ -63,23 +63,33 @@ Or with <a href="http://peak.telecommunity.com/DevCenter/EasyInstall">Easy Insta
 </pre>
 </p>
 
-If you want to see MUMmer's alignment plots you should install <a href="http://www.gnuplot.info/">Gnuplot</a>.
-<br>
-It can be done on Ubuntu by typing:
+If you use Python 2.5 or older, you also need to install <a href="http://pypi.python.org/pypi/simplejson/">simplejson</a>:
 <pre class="code">
 <code>
-    sudo apt-get install gnuplot
+    apt-get install python-simplejson
+</code>
+</pre>
+or
+<pre class="code">
+<code>
+    pip install simplejson
+</code>
+</pre>
+or
+<pre class="code">
+<code>
+    easy_install simplejson
 </code>
 </pre>
 </p>
 
-<p>To download <a href="http://quast.bioinf.spbau.ru/static/quast-1.1.tar.gz">the latest source code tarball</a> and extract it:
+<p>To download <a href="https://downloads.sourceforge.net/project/quast/quast-1.0.tar.gz">the latest source code tarball</a> and extract it:
 </p>
 <pre  class="code">
 <code>
-    wget http://quast.bioinf.spbau.ru/static/quast-1.1.tar.gz
-    tar -xzf quast-1.1.tar.gz
-    cd quast-1.1
+    wget https://downloads.sourceforge.net/project/quast/quast-1.0.tar.gz
+    tar -xzf quast-1.0.tar.gz
+    cd quast-1.0
 </code>
 </pre>
 
@@ -157,7 +167,7 @@ Note: GAGE can work only with a reference genome.
     <code>--min-contig &lt;int&gt;</code>
 </p>
 <p>&nbsp;&nbsp;&nbsp;&nbsp;Sets a lower threshold for a contig length. Only contigs of length greater than the threshold will be taken into account
-(except for some metrics, see <a href="#sec2">section 3</a>). The default value is 200.</p>
+(except for some metrics, see <a href="#sec2">section 3</a>). The default value is 0.</p>
 
 <p>
     <code>--gage</code>
@@ -172,9 +182,10 @@ Note: in this case, you <i>must</i> also set <b>-R</b> option and you <i>can</i>
 <b><i>total length (&ge; x)</i></b> metrics (see <a href="#sec2">section 3</a>). The default value is 110,201,501,1001.</p>
 
 <p>
-    <code>--genemark-thresholds &lt;int,int,...&gt;</code>
+    <code>--orf &lt;int,int,...&gt;</code>
 </p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;Comma-separated list of threshold lengths of genes to search with GeneMark. The default value is 0,300,1500,3000.</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;Comma-separated list of threshold lengths of ORFs to search for. Used in <b><i># ORFs &ge; x</i></b> metrics
+(see <a href="#sec2">section 3</a>). The default value is 600 (i.e. 200 codons).</p>
 
 <p>
     <code>--not-circular</code>
@@ -248,42 +259,46 @@ divided by the total length of the reference.</p>
 
 <p><b><i>Average %IDY</i></b>&nbsp;&nbsp;is the average of alignment identity percent (i.e. alignment accuracy) among all contigs.</p>
 
-<p><b><i># misassemblies</i></b>&nbsp;&nbsp;gives the number of positions at the assembled contigs where the left flanking sequence
+<p><b><i>Misassemblies</i></b>&nbsp;&nbsp;gives the number of positions at the assembled contigs where the left flanking sequence
 aligns over 1kb away from the right flanking sequence on the reference or they overlap on more than 1 kb or flanking sequences align
 on different strands. This metric could be computed only if the reference is given.</p>
 
-<p><b><i># misassembled contigs</i></b>&nbsp;&nbsp;is the number of contigs that contain misassembly events.</p>
+<p><b><i>Misassembled contigs</i></b>&nbsp;&nbsp;is the number of contigs that contain misassembly events.</p>
 
-<p><b><i>Misassembled contigs length</i></b>&nbsp;&nbsp;is the number of total bases contained in all contigs that have one or
+<p><b><i>Misassembled contig bases</i></b>&nbsp;&nbsp;is the number of total bases contained in all contigs that have one or
 more misassemblies.</p>
 
-<p><b><i># unaligned contigs</i></b>&nbsp;&nbsp;is the number of contigs that have no alignment to the
+<p><b><i>Misassembled and unaligned</i></b>&nbsp;&nbsp;is the number of contigs which contain misassembly
+events but which have alignment to the reference of length less than 10% of contigs length (almost unaligned contigs). </p>
+
+<p><b><i>Unaligned contigs</i></b>&nbsp;&nbsp;is the number of contigs that have no alignment to the
 reference sequence. The value "X + Y part" means: X totally unaligned contigs plus Y partially unaligned contigs. </p>
 
-<p><b><i>Unaligned contigs length</i></b>&nbsp;&nbsp;is the total number of unaligned bases in totally and
+<p><b><i>Unaligned contig bases</i></b>&nbsp;&nbsp;is the total number of unaligned bases in totally and
 partially unaligned contigs (only bases from unaligned parts). </p>
 
-<p><b><i># ambiguous contigs</i></b>&nbsp;&nbsp;is the number of contigs which have reference alignments
-of equal quality in multiple locations on the reference. </p>
-
-<p><b><i>Ambiguous contigs length</i></b>&nbsp;&nbsp;is the number of total bases contained in all ambiguous contigs. </p>
+<p><b><i>Ambiguous contigs</i></b>&nbsp;&nbsp;is the number of contigs which have reference alignments
+of equal quality in multiple locations on the reference. The value "X (Y)" means X ambiguous contigs with Y bases in them. </p>
 
 <p><b><i>NA50, NGA50, NA75, NGA75 (A stands for "aligned")</i></b>&nbsp;&nbsp;like the same
 metrics without A but in this case we count lengths of aligned blocks instead of contigs lengths.
 I.e. if a contig has a misassembly with respect to the reference, we break the contig into smaller pieces.
 Also, if a contig has bases that don't align to the reference, they are not counted in NAx, NGAx. </p>
 
-<p><b><i>Genome fraction (%)</i></b>&nbsp;&nbsp;is the total number of aligned bases in the reference, divided by
+<p><b><i>Mapped genome (%)</i></b>&nbsp;&nbsp;is the total number of aligned bases in the reference, divided by
 the genome size. A base in the genome is counted as aligned if there is at least one contig with at least one
 alignment with this base. Repeates that map to multiple places may be counted many times in this quantity. </p>
 
-<p><b><i># genes</i></b>&nbsp;&nbsp;is the number of genes in the assembly (complete and partial), based
+<p><b><i>Genes</i></b>&nbsp;&nbsp;is the number of genes in the assembly (complete and partial), based
 on an annotated list of genes positions in the reference genome. The value "X + Y part"
 means X complete genes and Y partial ones (at least 100 bases are aligned but not the whole gene).
 This metric could be computed only if the reference and genes annotations file are given (see <a href="#sec1.3">section 2.3</a>).</p>
 
-<p><b><i># operons</i></b>&nbsp;&nbsp;is defined similarly to the previous metric but you need
+<p><b><i>Operons</i></b>&nbsp;&nbsp;is defined similarly to the previous metric but you need
 operons annotations file for computing this metric. </p>
+
+<p><b><i># ORFs >= x</i></b>&nbsp;&nbsp;is the total number of open reading frames of length <code>&ge; x bp</code> founded in the assembly. 
+This metric will be computed if annotated genes file is not given.</p>
 
 <a name="sec2.2"></a>
 <h3>3.2 Plots descriptions</h3>

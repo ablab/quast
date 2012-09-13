@@ -40,15 +40,15 @@ def init(adp_results):
                     '<script type="text/javascript" src="' + fp_script + '"></script>',
                     '<script type="text/javascript">\n' + f.read() + '\n\t</script>\n')
 
-        html = html.replace('<link rel="stylesheet" href="/bootstrap/bootstrap.min.css"/>',
+        html = html.replace('<link rel="stylesheet" href="bootstrap/bootstrap.min.css"/>',
             '<style rel="stylesheet">\n' + open(get_real_path('bootstrap/bootstrap.min.css')).read() + '\n</style>\n\n')
 
         html = html.replace(
-            '<script type="text/javascript" src="/ie_html5.js"></script>',
+            '<script type="text/javascript" src="ie_html5.js"></script>',
             '<script type="text/javascript" >\n' + open(get_real_path('ie_html5.js')).read() + '\n</script>')
 
         html = html.replace(
-            '<script type="text/javascript" src="/bootstrap/bootstrap-tooltip-5px-lower.js"></script>',
+            '<script type="text/javascript" src="bootstrap/bootstrap-tooltip-5px-lower.js"></script>',
             '<script type="text/javascript" >\n' + open(
                 get_real_path('bootstrap/bootstrap-tooltip-5pxlower-min.js')).read() + '\n</script>')
 

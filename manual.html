@@ -15,12 +15,12 @@
 <body>
 <h1>QUAST 1.1 manual</h1>
 
-<p>QUAST stands for QUality ASsesment Tool. QUAST evaluates genome assemblies by computing various metrics (e.g., N50, number of ORFs, etc.).
+<p>QUAST stands for QUality ASsesment Tool. QUAST evaluates genome assemblies by computing various metrics (e.g., N50, etc.).
     <br>
     This manual will help you to run the tool and understand its output.
     <br>
     You can find all project news and the latest versions of source code and manual
-    at <a href="http://quast.bioinf.spbau.ru/">http://quast.bioinf.spbau.ru/</a>.
+    at <a href="http://sourceforge.net/projects/quast/">http://sourceforge.net/projects/quast/</a>.
     <br>
     QUAST uses <a href="http://exon.gatech.edu/genemarks.cgi">GeneMarkS</a>, <a href="http://mummer.sourceforge.net/">MUMmer</a>
     and <a href="http://gage.cbcb.umd.edu/index.html">GAGE</a>. All their sources are embedded in QUAST and you needn't to install
@@ -62,7 +62,7 @@ Or with <a href="http://peak.telecommunity.com/DevCenter/EasyInstall">Easy Insta
 </code>
 </pre>
 
-If you use Python 2.5, you also need to install <a href="http://pypi.python.org/pypi/simplejson/">simplejson</a> (it is included in Python distribution:
+If you use Python 2.5, you also need to install <a href="http://pypi.python.org/pypi/simplejson/">simplejson</a> (it is included in Python distribution starting from version 2.6):
 <pre class="code">
 <code>
     apt-get install python-simplejson
@@ -203,29 +203,41 @@ These files correspond to the first 10 Kbp of E. coli. Input reads and sample as
 <p>&nbsp;&nbsp;&nbsp;&nbsp;Print help.</p>
 
 <a name="sec2"></a>
-<h2>3. Understanding output</h2>
+<h2>3. QUAST output</h2>
+<p>If an output path was not specified manually, QUAST puts its output into <code>quast_results/result_&lt;DATE&gt;/</code> directory and creates a <code>latest</code> symlink to this folder inside <code>quast_results/</code>.
+<br>
+<br>
+Output directory contents:
+    <table style="margin-left: 36px;">
+        <tr>
+            <td style="padding-right: 20px;">report.txt</td>
+            <td>an assessment summary in simple text format.</td>
+        </tr>
+        <tr>
+            <td style="padding-right: 20px;">report.tsv</td>
+            <td>a tab-separated version of the summary, suitable for Google Docs and Excel.</td>
+        </tr>
+        <tr>
+            <td style="padding-right: 20px;">plots.pdf</td>
+            <td>plots (file is created if the matplotlib python library is installed).</td>
+        </tr>
+        <tr>
+            <td style="padding-right: 20px;">report.html</td>
+            <td>a HTML version of the report with all plots inside it.</td>
+        </tr>
+    </table>
 
-<p>This section describes metrics QUAST computes.
-    <br>
-    <br>
-    Values of main metrics in <b>TXT format</b> are presented in <code>&lt;QUAST_output_dir&gt;/report.txt</code>. <br>
-    There is also a <b>tab-separated version</b> of this file: <code>&lt;QUAST_output_dir&gt;/report.tsv</code> (suitable for Google-docs).
-    <br>
-    <b>Plots in PDF format</b> are presented in <code>&lt;QUAST_output_dir&gt;/plots.pdf</code>.
-    <br>
-    <b>HTML version</b> of the report with all plots inside it is in <code>&lt;QUAST_output_dir&gt;/report.html</code>.
-    <br><br>
-    Note:
-<ul>
-    <li>plots in PDF format will be created only if you have <a href="http://matplotlib.sourceforge.net/">matplotlib</a> python library installed,</li>
+<br>
+
+Note:
+<ul style="margin-top: -12px;">
     <li>metrics based on a reference genome are computed only if the reference is given (see  <a href="#sec1.3">section 2.3</a>), </li>
     <li>metrics based on genes and operons are computed only if proper annotations are given (see <a href="#sec1.3">section 2.3</a>), </li>
-    <li>if an output directory is not specified manually, it is going to be created automatically with a symbolik link <code>latest</code> leading to that directory.</li>
 </ul>
 </p>
 
 <a name="sec2.1"></a>
-<h3>3.1 Metrics descriptions</h3>
+<h3>3.1 Metrics description</h3>
 
 <p><b><i># contigs &ge; x</i></b>&nbsp;&nbsp;is total number of contigs of length <code>&ge; x</code>.
     This metric doesn't depend on <code>--min-contig</code> command line parameter (see <a href="#sec1.3">section 2.3</a>).</p>
@@ -323,7 +335,7 @@ These files correspond to the first 10 Kbp of E. coli. Input reads and sample as
 
 <p>&nbsp;&nbsp;&nbsp;&nbsp;This plot shows a distribution of percent of GC among contigs. The x value shows the percent of GC (from 0 to 100)
     and the y value show the total number of bp in contigs with such GC content. Typically, the distribution is similar to the Gaussian
-    distribution. However, in case of contaminants with different GC content the distribution can have more than one bulge.
+    distribution. However, in case of contaminants with different GC content the distribution can have more than one curve.
 
 <p><b><i>Cumulative length (aligned contigs)</i></b></p>
 

@@ -243,6 +243,14 @@ Note:
 </i>
 <br>
 
+<p><b><i># contigs</i></b>&nbsp;&nbsp;is the total number of contigs in the assembly.</p>
+
+<p><b><i>Largest contig</i></b>&nbsp;&nbsp;is the length of the longest contig in the assembly.</p>
+
+<p><b><i>Total length</i></b>&nbsp;&nbsp;is the total number of bases in the assembly.</p>
+
+<p><b><i>Reference length</i></b>&nbsp;&nbsp;is the total number of bases in the reference.</p>
+
 <p><b><i>N50</i></b>&nbsp;&nbsp;is the contig length such that using longer or equal length contigs produces half (50%) the bases of
     the assembly. Usually there is no value that produces exactly 50%, so the more technical definition is
     the minimal length x such that using contigs of length at least x accounts for at least 50% of the total
@@ -252,22 +260,6 @@ Note:
     the reference genome. This metric could be computed only if the reference is given.</p>
 
 <p><b><i>N75 and NG75</i></b>&nbsp;&nbsp;are defined similarly with 75% instead of 50%.</p>
-
-<p><b><i>Number of contigs</i></b>&nbsp;&nbsp;is the total number of contigs in the assembly.</p>
-
-<p><b><i>Largest contig</i></b>&nbsp;&nbsp;is the length of the longest contig in the assembly.</p>
-
-<p><b><i>Total length</i></b>&nbsp;&nbsp;is the total number of bases in the assembly.</p>
-
-<p><b><i>GC %</i></b>&nbsp;&nbsp;is the total number of G and C nucleotides in the assembly,
-    divided by the total length of the assembly.</p>
-
-<p><b><i>Reference length</i></b>&nbsp;&nbsp;is the total number of bases in the reference.</p>
-
-<p><b><i>Reference GC %</i></b>&nbsp;&nbsp;is the total number of G and C nucleotides in the reference,
-    divided by the total length of the reference.</p>
-
-<p><b><i>Average %IDY</i></b>&nbsp;&nbsp;is the average of alignment identity percent (i.e. alignment accuracy) among all contigs.</p>
 
 <p><b><i># misassemblies</i></b>&nbsp;&nbsp;gives the number of positions at the assembled contigs where the left flanking sequence
     aligns over 1kb away from the right flanking sequence on the reference or they overlap on more than 1 kb or flanking sequences align
@@ -289,14 +281,19 @@ Note:
 
 <p><b><i>Ambiguous contigs length</i></b>&nbsp;&nbsp;is the number of total bases contained in all ambiguous contigs. </p>
 
-<p><b><i>NA50, NGA50, NA75, NGA75 (A stands for "aligned")</i></b>&nbsp;&nbsp;like the same
-    metrics without A but in this case we count lengths of aligned blocks instead of contigs lengths.
-    I.e. if a contig has a misassembly with respect to the reference, we break the contig into smaller pieces.
-    Also, if a contig has bases that don't align to the reference, they are not counted in NAx, NGAx. </p>
-
 <p><b><i>Genome fraction (%)</i></b>&nbsp;&nbsp;is the total number of aligned bases in the reference, divided by
     the genome size. A base in the genome is counted as aligned if there is at least one contig with at least one
     alignment with this base. Repeates that map to multiple places may be counted many times in this quantity. </p>
+
+<p><b><i>GC %</i></b>&nbsp;&nbsp;is the total number of G and C nucleotides in the assembly,
+    divided by the total length of the assembly.</p>
+
+<p><b><i>Reference GC %</i></b>&nbsp;&nbsp;is the total number of G and C nucleotides in the reference,
+    divided by the total length of the reference.</p>
+
+<p><b><i># mismatches per 100 Kbp</i></b>&nbsp;&nbsp;is an average number of mismatches per 100000 aligned bases. This does not
+distinguish between Single Nucleotide Polymorphisms (SNPs), which are true differences in the assembled genome vs. the reference genome,
+and Single Nucleotide Errors (SNEs), which are due to errors in reads or errors in the assembly algorithm.</p>
 
 <p><b><i># genes</i></b>&nbsp;&nbsp;is the number of genes in the assembly (complete and partial), based
     on an annotated list of genes positions in the reference genome. The value "X + Y part"
@@ -305,6 +302,15 @@ Note:
 
 <p><b><i># operons</i></b>&nbsp;&nbsp;is defined similarly to the previous metric but you need
     operons annotations file for computing this metric. </p>
+
+<p><b><i># predicted genes</i></b>&nbsp;&nbsp;is the number of genes in the assembly
+    predicted by QUAST’s gene-finding module, which is based on GeneMarkS. 
+    This metric is computed is an annotated list of genes is not provided.</p>
+
+<p><b><i>NA50, NGA50, NA75, NGA75 (A stands for "aligned")</i></b>&nbsp;&nbsp;like the same
+    metrics without A but in this case we count lengths of aligned blocks instead of contigs lengths.
+    I.e. if a contig has a misassembly with respect to the reference, we break the contig into smaller pieces.
+    Also, if a contig has bases that don't align to the reference, they are not counted in NAx, NGAx. </p>
 
 <a name="sec2.2"></a>
 <h3>3.2 Plots descriptions</h3>

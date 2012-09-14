@@ -27,7 +27,7 @@
     them separately.
     <br>
     <br>
-    QUAST version 1.1 released under GPL v2 (see <a href="LICENSE">LICENSE</a> for details) on 5 September 2012.
+    QUAST version 1.1 released under GPL v2 (see <a href="LICENSE">LICENSE</a> for details) on 14 September 2012.
 </p>
 
 <h2>1. Installation</h2>
@@ -37,7 +37,7 @@
     <br>
     It requires:
 <ul>
-    <li>Python v.2 (2.6 or higher)</li>
+    <li>Python v.2 (2.5 or higher)</li>
     <li>Perl v. 5.6.0 or higher</li>
 </ul>
 
@@ -62,7 +62,7 @@ Or with <a href="http://peak.telecommunity.com/DevCenter/EasyInstall">Easy Insta
 </code>
 </pre>
 
-If you use Python 2.5 or older, you also need to install <a href="http://pypi.python.org/pypi/simplejson/">simplejson</a>:
+If you use Python 2.5, you also need to install <a href="http://pypi.python.org/pypi/simplejson/">simplejson</a> (it is included in Python distribution:
 <pre class="code">
 <code>
     apt-get install python-simplejson
@@ -91,11 +91,11 @@ It can be done on Ubuntu by typing:
 </code>
 </pre>
 
-<p>To download <a href="http://quast.bioinf.spbau.ru/static/quast-1.1.tar.gz">the latest source code tarball</a> and extract it:
+<p>To download <a href="https://downloads.sourceforge.net/project/quast/quast-1.1.tar.gz">the latest source code tarball</a> and extract it:
 </p>
 <pre  class="code">
 <code>
-    wget http://quast.bioinf.spbau.ru/static/quast-1.1.tar.gz
+    wget https://downloads.sourceforge.net/project/quast/quast-1.1.tar.gz
     tar -xzf quast-1.1.tar.gz
     cd quast-1.1
 </code>
@@ -236,7 +236,7 @@ These files correspond to the first 10 Kbp of E. coli. Input reads and sample as
 <br>
 <i>
     All remaining metrics are computed on the contigs of length <code>&ge; x</code> where <code>x</code> is specified in command line option
-    <code>--min-contig</code> (see <a href="#sec1.3">section 2.3</a>, default is 0).
+    <code>--min-contig</code> (see <a href="#sec1.3">section 2.3</a>, default is 200).
 </i>
 <br>
 

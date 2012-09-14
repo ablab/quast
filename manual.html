@@ -15,7 +15,7 @@
 <body>
 <h1>QUAST 1.1 manual</h1>
 
-<p>QUAST stands for QUality ASsesment Tool. QUAST evaluates genome assemblies by computing various metrics (e.g., N50, etc.).
+<p>QUAST stands for QUality ASsesment Tool. QUAST evaluates genome assemblies by computing various metrics.
     <br>
     This manual will help you to run the tool and understand its output.
     <br>
@@ -37,7 +37,7 @@
     <br>
     It requires:
 <ul>
-    <li>Python v.2 (2.5 or higher)</li>
+    <li>Python v. 2 (2.5 or higher)</li>
     <li>Perl v. 5.6.0 or higher</li>
 </ul>
 
@@ -82,16 +82,7 @@ or
 </pre>
 
 
-If you want to see MUMmer's alignment plots you should install <a href="http://www.gnuplot.info/">Gnuplot</a>.
-<br>
-It can be done on Ubuntu by typing:
-<pre class="code">
-<code>
-    sudo apt-get install gnuplot
-</code>
-</pre>
-
-<p>To download <a href="https://downloads.sourceforge.net/project/quast/quast-1.1.tar.gz">the latest source code tarball</a> and extract it:
+<p>To download <a href="https://downloads.sourceforge.net/project/quast/quast-1.1.tar.gz">the source code tarball</a> and extract it:
 </p>
 <pre  class="code">
 <code>
@@ -128,10 +119,10 @@ These files correspond to the first 10 Kbp of E. coli. Input reads and sample as
 <h3>2.2 GAGE mode</h3>
 <p>
     <a href="http://gage.cbcb.umd.edu/index.html">GAGE</a> is one of the well-known assessment tools. However, it has issues that limit its use. For example,
-    you can specify only one assembly per run, thereby it is difficult to compare a lot of assemblies simultaneously. In addition, GAGE has fixed threshold on the minimum contig length (200 bp).
-    All these issues are solved by QUAST in "GAGE mode". In this mode you can specify unlimited number of assemblies and a threshold on the minimum contig as well. QUAST runs GAGE on all your
-    assemblies with specified contig threshold and presents GAGE metrics (see <a href="http://gage.cbcb.umd.edu/index.html">GAGE site</a> and
-    <a href="http://genome.cshlp.org/content/early/2012/01/12/gr.131383.111">GAGE paper</a> for metrics descriptions) in QUAST-style reports.
+    you can specify only one assembly per run, thereby it is difficult to compare a lot of assemblies simultaneously. In addition, GAGE has fixed the minimum contig length threshold (200 bp).
+    All these issues are solved by QUAST in a GAGE mode. In this mode you can specify an unlimited number of assemblies and a minimum contig threshold as well. QUAST runs GAGE on all your
+    assemblies with a specified contig threshold and creates files with values of the GAGE metrics (see <a href="http://gage.cbcb.umd.edu/index.html">GAGE site</a> and
+    <a href="http://genome.cshlp.org/content/early/2012/01/12/gr.131383.111">GAGE paper</a> for descriptions) in addition to a standard QUAST report.
     <br><br>
     Note: GAGE can work only with a reference genome.
 </p>
@@ -187,7 +178,7 @@ These files correspond to the first 10 Kbp of E. coli. Input reads and sample as
     <code>--contig-thresholds &lt;int,int,...&gt;</code>
 </p>
 <p>&nbsp;&nbsp;&nbsp;&nbsp;Comma-separated list of contig length thresholds. Used in <b><i># contigs &ge; x</i></b> and
-    <b><i>total length (&ge; x)</i></b> metrics (see <a href="#sec2">section 3</a>). The default value is 110,201,501,1001.</p>
+    <b><i>total length (&ge; x)</i></b> metrics (see <a href="#sec2">section 3</a>). The default value is 500,1000.</p>
 
 <p>
     <code>--genemark-thresholds &lt;int,int,...&gt;</code>
@@ -211,7 +202,7 @@ Output directory contents:
     <table style="margin-left: 36px;">
         <tr>
             <td style="padding-right: 20px;">report.txt</td>
-            <td>an assessment summary in simple text format.</td>
+            <td>an assessment summary in a simple text format.</td>
         </tr>
         <tr>
             <td style="padding-right: 20px;">report.tsv</td>
@@ -223,7 +214,7 @@ Output directory contents:
         </tr>
         <tr>
             <td style="padding-right: 20px;">report.html</td>
-            <td>a HTML version of the report with all plots inside it.</td>
+            <td>an HTML version of the report with all plots inside it.</td>
         </tr>
     </table>
 

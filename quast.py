@@ -37,9 +37,9 @@ def usage():
         print >> sys.stderr, "--min-contig <int>           lower threshold for contig length [default: %s]" % qconfig.min_contig
         print >> sys.stderr, ""
         print >> sys.stderr, "Advanced options:"
-        print >> sys.stderr, "--gage                              this flag starts QUAST in \"GAGE mode\""
-        print >> sys.stderr, "--contig-thresholds   <int,int,..>  comma-separated list of contig length thresholds [default is %s]" % qconfig.contig_thresholds
-        print >> sys.stderr, "--genemark-thresholds <int,int,..>  comma-separated list of threshold lengths of genes to search with GeneMark [default is %s]" % qconfig.genes_lengths
+        print >> sys.stderr, "--gage                              evaluates GAGE metric"
+        print >> sys.stderr, "--contig-thresholds   <int,int,..>  comma-separated list of contig length thresholds [default: %s]" % qconfig.contig_thresholds
+        print >> sys.stderr, "--genemark-thresholds <int,int,..>  comma-separated list of threshold lengths of genes to search with GeneMark [default: %s]" % qconfig.genes_lengths
         print >> sys.stderr, '--not-circular                      this flag should be set if the genome is not circular (e.g., it is an eukaryote)'
         print >> sys.stderr, ""
         print >> sys.stderr, "-h/--help           print this usage message"
@@ -49,9 +49,9 @@ def usage():
         print >> sys.stderr, "-R           <filename>      reference genome file"
         print >> sys.stderr, "-G/--genes   <filename>      annotated genes file"
         print >> sys.stderr, "-O/--operons <filename>      annotated operons file"
-        print >> sys.stderr, "-M  --min-contig             lower threshold for contig length [default is %s]" % qconfig.min_contig
-        print >> sys.stderr, "-t  --contig-thresholds      comma-separated list of contig length thresholds [default is %s]" % qconfig.contig_thresholds
-        print >> sys.stderr, "-e  --genemark-thresholds    comma-separated list of threshold lengths of genes to search with GeneMark [default is %s]" % qconfig.genes_lengths
+        print >> sys.stderr, "-M  --min-contig             lower threshold for contig length [default: %s]" % qconfig.min_contig
+        print >> sys.stderr, "-t  --contig-thresholds      comma-separated list of contig length thresholds [default: %s]" % qconfig.contig_thresholds
+        print >> sys.stderr, "-e  --genemark-thresholds    comma-separated list of threshold lengths of genes to search with GeneMark [default: %s]" % qconfig.genes_lengths
         print >> sys.stderr, ""
         print >> sys.stderr, 'Options without arguments'
         print >> sys.stderr, '-g  --gage                   use Gage (results are in gage_report.txt)'

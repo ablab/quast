@@ -71,6 +71,20 @@ def check_file(f, message=''):
 
 
 def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.path.abspath(sys.path[0]), 'libs')):
+    if lib_dir == os.path.join(__location__, 'libs'):
+        if ' ' in __location__:
+            print >> sys.stderr, 'Error: we does not support spaces in paths. '
+            print >> sys.stderr, 'You are trying to run it from', __location__
+            print >> sys.stderr, 'Please, put QUAST in a different folder, then run it again.'
+            return 1
+    else:
+        if ' ' in lib_dir:
+            print >> sys.stderr, 'Error: we does not support spaces in paths. '
+            print >> sys.stderr, 'You are trying to use libs from', lib_dir
+            print >> sys.stderr, 'Please, put libs in a different folder, then run it again.'
+            return 1
+
+
     ######################
     ### ARGS
     ######################    

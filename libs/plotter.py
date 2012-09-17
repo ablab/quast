@@ -48,7 +48,7 @@ def y_formatter(ylabel, max_y):
         ylabel += '(bp)'
     elif max_y <= 3 * 1e+6:
         mkfunc = lambda x, pos: '%d' % (x * 1e-3)
-        ylabel += '(Kbp)'
+        ylabel += '(kbp)'
     else:
         mkfunc = lambda x, pos: '%d' % (x * 1e-6)
         ylabel += '(Mbp)'
@@ -141,9 +141,7 @@ def cumulative_plot(reference, filenames, lists_of_lengths, plot_filename, title
         matplotlib.pyplot.savefig(all_pdf, format='pdf')
 
 
-    # common routine for Nx-plot and NGx-plot (and probably for others Nyx-plots in the future)
-
-
+# common routine for Nx-plot and NGx-plot (and probably for others Nyx-plots in the future)
 def Nx_plot(filenames, lists_of_lengths, plot_filename, title='Nx', reference_lengths=[], all_pdf=None):
     if matplotlib_error:
         return
@@ -286,7 +284,7 @@ def GC_content_plot(filenames, lists_of_GC_info, plot_filename, all_pdf=None):
     except ZeroDivisionError:
         pass
 
-    ylabel = '# sliding windows'
+    ylabel = '# windows'
     #ylabel, mkfunc = y_formatter(ylabel, max_y)
     matplotlib.pyplot.xlabel('GC (%)', fontsize=axes_fontsize)
     matplotlib.pyplot.ylabel(ylabel, fontsize=axes_fontsize)
@@ -357,11 +355,11 @@ def genes_operons_plot(filenames, files_contigs, genes, found, plot_filename, ti
     matplotlib.pyplot.ylabel('Cumulative no. ' + title, fontsize=axes_fontsize)
     if with_title:
         matplotlib.pyplot.title('Cumulative number of ' + title)
-    matplotlib.pyplot.grid(False)
+    matplotlib.pyplot.grid(with_grid)
     ax = matplotlib.pyplot.gca()
     # Shink current axis's height by 20% on the bottom
     box = ax.get_position()
-    ax.set_position([box.x0 + box.width * 0.2, box.y0 + box.height * 0.1, box.width * 0.8, box.height * 0.9])
+    ax.set_position([box.x0, box.y0 + box.height * 0.2, box.width, box.height * 0.8])
     # Put a legend below current axis
     ax.legend(map(os.path.basename, filenames), loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True,
         shadow=True, ncol=4)

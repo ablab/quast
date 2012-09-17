@@ -48,7 +48,7 @@ function getBpTickFormatter(maxY) {
             res = myToFixed(res);
 
             if (val > maxY + 1 || val + axis.tickSize >= 1000000) {
-                res = res + ' Kbp';
+                res = res + ' kbp';
             }
         } else if (val >= 1) {
             res = myToFixed(val);

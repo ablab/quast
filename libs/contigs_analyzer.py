@@ -606,7 +606,7 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
 
     # TODO: 'Analyzing coverage...'
 
-    # calulating SNPs and Subs. error (per 100 Kbp)
+    # calulating SNPs and Subs. error (per 100 kbp)
     for line in open(nucmer_report_filename):
         #                           [REF]                [QRY]
         # AlignedBases         4501335(97.02%)      4513272(90.71%)    

@@ -44,7 +44,7 @@ def get_genes_from_file(filename, feature):
             genes = []
 
     else:
-        print '  Warning! Incorrect format of ' + feature + '\'s file! Specify file in plaint TXT, GFF or NCBI format!'
+        print '  Warning! Incorrect format of ' + feature + '\'s file! GFF, NCBI and the plain TXT format accepted. See manual.'
         print '    ' + filename + ' skipped'
 
     genes_file.close()
@@ -93,20 +93,19 @@ def parse_ncbi(file):
                         gene.start = int(m.group('start'))
                         gene.end = int(m.group('end'))
                     else:
-                        raise ParseException('NCBI format parsing error: wrong annotation for gene ' + gene.number + '. ' + gene.name + '.')
+                        raise ParseException('NCBI format parsing error: wrong annotation for gene ' + repr(gene.number) + '. ' + gene.name + '.')
 
                 if info_line.startswith('ID:'):
                     m = re.match(id_pattern, info_line)
                     if m:
                         gene.id = m.group('id')
                     else:
-                        raise ParseException('NCBI format parsing error: wrong ID for gene ' + gene.number + '. ' + gene.name + '.')
+                        raise ParseException('NCBI format parsing error: wrong ID for gene ' + repr(gene.number) + '. ' + gene.name + '.')
 
 
-            if not (gene.start is not None and gene.end is not None):
-                raise ParseException('NCBI format parsing error: provide start and end for gene ' + gene.number + '. ' + gene.name + '.')
-
-            genes.append(gene)
+            if gene.start is not None and gene.end is not None:
+                genes.append(gene)
+#                raise ParseException('NCBI format parsing error: provide start and end for gene ' + gene.number + '. ' + gene.name + '.')
 
         else:
             raise ParseException("NCBI format parsing error")

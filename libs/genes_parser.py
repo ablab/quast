@@ -97,7 +97,6 @@ def parse_ncbi(file):
                     m = re.match(annotation_pattern, info_line)
                     if m:
                         gene.seqname = m.group('seqname')
-                        print 'gene.seqname =', gene.seqname
                         gene.start = int(m.group('start'))
                         gene.end = int(m.group('end'))
 
@@ -106,18 +105,15 @@ def parse_ncbi(file):
                             gene.seqname = gene.seqname[len(to_trim):]
                             gene.seqname.lstrip(' ,')
 
-                        print 'to_trim:', to_trim
-                        print 'then gene.seqname =', gene.seqname
-
                     else:
-                        print >> sys.stderr, 'Warning: wrong NCBI annotation for gene ' + repr(gene.number) + '. ' + gene.name + '. Skipping this gene.'
+                        print >> sys.stderr, 'Warning: wrong NCBI annotation for gene ' + str(gene.number) + '. ' + gene.name + '. Skipping this gene.'
 
                 if info_line.startswith('ID:'):
                     m = re.match(id_pattern, info_line)
                     if m:
                         gene.id = m.group('id')
                     else:
-                        print >> sys.stderr, 'Warning: can\'t parse gene\'s ID in NCBI format. Gene is ' + repr(gene.number) + '. ' + gene.name + '. Skipping it.'
+                        print >> sys.stderr, 'Warning: can\'t parse gene\'s ID in NCBI format. Gene is ' + str(gene.number) + '. ' + gene.name + '. Skipping it.'
 
 
             if gene.start is not None and gene.end is not None:
@@ -171,11 +167,12 @@ def parse_gff(file, feature):
 
             attributes = m.group('attributes').split(';')
             for attr in attributes:
-                key, val = attr.split('=')
-                if key.lower() == 'id':
-                    gene.id = val
-                if key.lower() == 'name':
-                    gene.name = val
+                if attr and attr != '' and '=' in attr:
+                    key, val = attr.split('=')
+                    if key.lower() == 'id':
+                        gene.id = val
+                    if key.lower() == 'name':
+                        gene.name = val
 
             gene.number = number
             number += 1

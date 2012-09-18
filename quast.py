@@ -63,11 +63,44 @@ def usage():
         print >> sys.stderr, "-d  --debug                  run in debug mode"
         print >> sys.stderr, "-h  --help                   print this usage message"
 
-def check_file(f, message=''):
-    if not os.path.isfile(f):
-        print >> sys.stderr, "\nERROR! File not found (%s): %s\n" % (message, f)
+def check_file_existance(fpath, message=''):
+    if not os.path.isfile(fpath):
+        print >> sys.stderr, "\nERROR! File not found (%s): %s\n" % (message, fpath)
         sys.exit(2)
-    return f
+    return fpath
+
+
+def rename_file_for_nucmer(fpath):
+    dirpath = os.path.dirname(fpath)
+    fname = os.path.basename(fpath)
+
+    corr_fname = re.sub(r'[)($&}{]', '', re.sub(r'\s', '_', fname))
+    if corr_fname != fname:
+        if os.path.isfile(os.path.join(dirpath, corr_fname)):
+            i = 1
+            base_corr_fname = corr_fname
+            while os.path.isfile(os.path.join(dirpath, corr_fname)):
+                str_i = ''
+                if i > 1:
+                    str_i = str(i)
+
+                corr_fname = 'copy_' +  str_i + '_' + str(base_corr_fname)
+                i += 1
+
+        print 'Renaming the file "' + fname + '" to "' + corr_fname + '", because QUAST does not support non-alphabetic symbols or non-digits in names of files with contigs or references. QUAST will rename it back.'
+        os.rename(fpath, os.path.join(dirpath, corr_fname))
+
+    return os.path.join(dirpath, corr_fname)
+
+
+def check_dir_name(fpath):
+    dirname = os.path.dirname(fpath)
+
+    if ' ' in dirname:
+        print 'Error: QUAST can\'t use data with spaces in path. Please, replace' + fpath + '.'
+        return False
+    else:
+        return True
 
 
 def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.path.abspath(sys.path[0]), 'libs')):
@@ -91,59 +124,91 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
     reload(qconfig)
 
     try:
-        options, contigs = getopt.gnu_getopt(args, qconfig.short_options, qconfig.long_options)
+        options, contigs_fpaths = getopt.gnu_getopt(args, qconfig.short_options, qconfig.long_options)
     except getopt.GetoptError, err:
         print >> sys.stderr, err
         print >> sys.stderr
         usage()
         sys.exit(1)
 
-    if not contigs:
+    if not contigs_fpaths:
         usage()
         sys.exit(1)
 
     json_outputpath = None
     output_dirpath = os.path.join(os.path.abspath(qconfig.default_results_root_dirname), qconfig.output_dirname)
 
+    old_reference_fpath = ''
+    new_reference_fpath = ''
+
     for opt, arg in options:
-        # Yes, this is doubling the code. Python's getopt is non well-thought!!
+        # Yes, this is a code duplicating. Python's getopt is non well-thought!!
         if opt in ('-o', "--output-dir"):
             output_dirpath = os.path.abspath(arg)
             qconfig.make_latest_symlink = False
+
         elif opt in ('-G', "--genes"):
-            qconfig.genes = check_file(arg, 'genes')
+            qconfig.genes = check_file_existance(arg, 'genes')
+
         elif opt in ('-O', "--operons"):
-            qconfig.operons = check_file(arg, 'operons')
+            qconfig.operons = check_file_existance(arg, 'operons')
+
         elif opt in ('-R', "--reference"):
-            qconfig.reference = check_file(arg, 'reference')
+            qconfig.reference = check_file_existance(arg, 'reference')
+
+            old_reference_fpath = qconfig.reference
+            qconfig.reference = rename_file_for_nucmer(qconfig.reference)
+            # For renaming back: contigs_fpaths are to be changed further.
+            new_reference_fpath = qconfig.reference
+
         elif opt in ('-t', "--contig-thresholds"):
             qconfig.contig_thresholds = arg
+
         elif opt in ('-M', "--min-contig"):
             qconfig.min_contig = int(arg)
+
         elif opt in ('-e', "--genemark-thresholds"):
             qconfig.genes_lengths = arg
+
         elif opt in ('-j', '--save-json'):
             qconfig.save_json = True
+
         elif opt in ('-J', '--save-json-to'):
             qconfig.save_json = True
             qconfig.make_latest_symlink = False
             json_outputpath = arg
+
         elif opt in ('-g', "--gage"):
             qconfig.with_gage = True
+
         elif opt in ('-n', "--not-circular"):
             qconfig.cyclic = False
+
         elif opt in ('-p', '--plain-report-no-plots'):
             qconfig.draw_plots = False
+
         elif opt in ('-d', "--debug"):
             qconfig.debug = True
+
         elif opt in ('-h', "--help"):
             usage()
             sys.exit(0)
+
         else:
             raise ValueError
 
-    for c in contigs:
-        check_file(c, 'contigs')
+    for c_fpath in contigs_fpaths:
+        check_file_existance(c_fpath, 'contigs')
+
+    # Renaming contigs files for Nucmer
+    old_contigs_fpaths = contigs_fpaths[:]
+    contigs_fpaths = []
+    for old_c_fpath in old_contigs_fpaths:
+        contigs_fpaths.append(rename_file_for_nucmer(old_c_fpath))
+
+    # For renaming back: contigs_fpaths are to be changed further.
+    new_contigs_fpaths = contigs_fpaths[:]
+
 
     qconfig.contig_thresholds = map(int, qconfig.contig_thresholds.split(","))
     qconfig.genes_lengths =  map(int, qconfig.genes_lengths.split(","))
@@ -233,7 +298,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
     ## 1) Some embedded tools can fail on some strings with "...", "+", "-", etc
     ## 2) Nucmer fails on names like "contig 1_bla_bla", "contig 2_bla_bla" (it interprets as a contig's name only the first word of caption and gets ambiguous contigs names)
     newcontigs = []
-    for id, filename in enumerate(contigs):
+    for id, filename in enumerate(contigs_fpaths):
         outfilename = os.path.splitext( os.path.join(corrected_dir, os.path.basename(filename).replace(' ','_')) )[0]
         if os.path.isfile(outfilename):  # in case of files with the same names
             i = 1
@@ -268,9 +333,9 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
         newcontigs.append(os.path.join(__location__, outfilename))
 
     print '  Done.'
-    contigs = newcontigs
+    contigs_fpaths = newcontigs
 
-    if not contigs:
+    if not contigs_fpaths:
         usage()
         sys.exit(1)
 
@@ -282,7 +347,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
             print >> sys.stderr, "\nERROR! GAGE can't be run without reference!\n"
         else:
             from libs import gage
-            gage.do(qconfig.reference, contigs, output_dirpath, qconfig.min_contig, lib_dir)
+            gage.do(qconfig.reference, contigs_fpaths, output_dirpath, qconfig.min_contig, lib_dir)
 
     if qconfig.draw_plots:
         from libs import plotter  # Do not remove this line! It would lead to a warning in matplotlib.
@@ -296,7 +361,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
     ### Stats and plots
     ########################################################################
     from libs import basic_stats
-    basic_stats.do(qconfig.reference, contigs, output_dirpath + '/basic_stats', all_pdf, qconfig.draw_plots,
+    basic_stats.do(qconfig.reference, contigs_fpaths, output_dirpath + '/basic_stats', all_pdf, qconfig.draw_plots,
         json_outputpath, output_dirpath)
 
     if qconfig.reference:
@@ -304,20 +369,20 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
         ### former PLANTAKOLYA, PLANTAGORA
         ########################################################################
         from libs import contigs_analyzer
-        contigs_analyzer.do(qconfig.reference, contigs, qconfig.cyclic, output_dirpath + '/contigs_reports', lib_dir, qconfig.draw_plots)
+        contigs_analyzer.do(qconfig.reference, contigs_fpaths, qconfig.cyclic, output_dirpath + '/contigs_reports', lib_dir, qconfig.draw_plots)
 
         ########################################################################
         ### NA and NGA ("aligned N and NG")
         ########################################################################
         from libs import aligned_stats
-        aligned_stats.do(qconfig.reference, contigs, output_dirpath + '/contigs_reports',
+        aligned_stats.do(qconfig.reference, contigs_fpaths, output_dirpath + '/contigs_reports',
             output_dirpath + '/aligned_stats', all_pdf, qconfig.draw_plots, json_outputpath, output_dirpath)
 
         ########################################################################
         ### GENOME_ANALYZER
         ########################################################################
         from libs import genome_analyzer
-        genome_analyzer.do(qconfig.reference, contigs, output_dirpath + '/contigs_reports',
+        genome_analyzer.do(qconfig.reference, contigs_fpaths, output_dirpath + '/contigs_reports',
             output_dirpath + '/genome_stats', qconfig.genes, qconfig.operons, all_pdf, qconfig.draw_plots, json_outputpath, output_dirpath)
 
     if not qconfig.genes:
@@ -325,10 +390,10 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
         ### GeneMark
         ########################################################################
         from libs import genemark
-        genemark.do(contigs, qconfig.genes_lengths, output_dirpath + '/predicted_genes', lib_dir)
+        genemark.do(contigs_fpaths, qconfig.genes_lengths, output_dirpath + '/predicted_genes', lib_dir)
     else:
         # TODO: make it nicer (not output predicted genes if annotations are provided
-        for id, filename in enumerate(contigs):
+        for id, filename in enumerate(contigs_fpaths):
             report = reporting.get(filename)
             report.add_field(reporting.Fields.GENEMARKUNIQUE, "")
             report.add_field(reporting.Fields.GENEMARK, [""] * len(qconfig.genes_lengths))
@@ -350,6 +415,16 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
         all_pdf.close()
 
     ########################################################################
+
+    for old_c_fpath, new_c_fpath in zip(old_contigs_fpaths, new_contigs_fpaths):
+        if old_c_fpath != new_c_fpath:
+            os.rename(new_c_fpath, old_c_fpath)
+            print 'Renaming the file "' + os.path.basename(new_c_fpath) + '" back to "' + os.path.basename(old_c_fpath) + '"'
+
+    if new_reference_fpath != '' and old_reference_fpath != '' and old_reference_fpath != new_reference_fpath:
+        os.rename(new_reference_fpath, old_reference_fpath)
+        print 'Renaming the reference file "' + os.path.basename(new_reference_fpath) + '" back to "' + os.path.basename(old_reference_fpath) + '"'
+
 
     print 'Done.'
 

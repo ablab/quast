@@ -22,7 +22,7 @@ def get_genes_from_file(filename, feature):
         return []
 
     genes_file = open(filename, 'r')
-    genes = None
+    genes = []
 
     line = genes_file.readline().rstrip()
     while line == '' or line.startswith('##'):
@@ -76,52 +76,51 @@ def parse_ncbi(file):
             line = file.readline()
 
         m = ncbi_start_pattern.match(line.rstrip())
-        if m:
-            gene = Gene(number = int(m.group('number')), name = m.group('name'))
+        while not m:
+            m = ncbi_start_pattern.match(line.rstrip())
 
-            the_rest_lines = []
+        gene = Gene(number = int(m.group('number')), name = m.group('name'))
 
+        the_rest_lines = []
+
+        line = file.readline()
+        while line != '' and not ncbi_start_pattern.match(line.rstrip()):
+            the_rest_lines.append(line.rstrip())
             line = file.readline()
-            while line != '' and not ncbi_start_pattern.match(line.rstrip()):
-                the_rest_lines.append(line.rstrip())
-                line = file.readline()
 
 
-            for info_line in the_rest_lines:
-                if info_line.startswith('Chromosome:'):
-                    m = re.match(chromosome_pattern, info_line)
-                    if m:
-                        gene.chromosome = m.group('chromosome')
+        for info_line in the_rest_lines:
+            if info_line.startswith('Chromosome:'):
+                m = re.match(chromosome_pattern, info_line)
+                if m:
+                    gene.chromosome = m.group('chromosome')
 
-                if info_line.startswith('Annotation:'):
-                    m = re.match(annotation_pattern, info_line)
-                    if m:
-                        gene.seqname = m.group('seqname')
-                        gene.start = int(m.group('start'))
-                        gene.end = int(m.group('end'))
+            if info_line.startswith('Annotation:'):
+                m = re.match(annotation_pattern, info_line)
+                if m:
+                    gene.seqname = m.group('seqname')
+                    gene.start = int(m.group('start'))
+                    gene.end = int(m.group('end'))
 
-                        to_trim = 'Chromosome' + ' ' + str(gene.chromosome)
-                        if gene.chromosome and gene.seqname.startswith(to_trim):
-                            gene.seqname = gene.seqname[len(to_trim):]
-                            gene.seqname.lstrip(' ,')
+                    to_trim = 'Chromosome' + ' ' + str(gene.chromosome)
+                    if gene.chromosome and gene.seqname.startswith(to_trim):
+                        gene.seqname = gene.seqname[len(to_trim):]
+                        gene.seqname.lstrip(' ,')
 
-                    else:
-                        print >> sys.stderr, 'Warning: wrong NCBI annotation for gene ' + str(gene.number) + '. ' + gene.name + '. Skipping this gene.'
+                else:
+                    print >> sys.stderr, 'Warning: wrong NCBI annotation for gene ' + str(gene.number) + '. ' + gene.name + '. Skipping this gene.'
 
-                if info_line.startswith('ID:'):
-                    m = re.match(id_pattern, info_line)
-                    if m:
-                        gene.id = m.group('id')
-                    else:
-                        print >> sys.stderr, 'Warning: can\'t parse gene\'s ID in NCBI format. Gene is ' + str(gene.number) + '. ' + gene.name + '. Skipping it.'
+            if info_line.startswith('ID:'):
+                m = re.match(id_pattern, info_line)
+                if m:
+                    gene.id = m.group('id')
+                else:
+                    print >> sys.stderr, 'Warning: can\'t parse gene\'s ID in NCBI format. Gene is ' + str(gene.number) + '. ' + gene.name + '. Skipping it.'
 
 
-            if gene.start is not None and gene.end is not None:
-                genes.append(gene)
-#                raise ParseException('NCBI format parsing error: provide start and end for gene ' + gene.number + '. ' + gene.name + '.')
-        else:
-            raise ParseException("NCBI format parsing error")
-
+        if gene.start is not None and gene.end is not None:
+            genes.append(gene)
+        #                raise ParseException('NCBI format parsing error: provide start and end for gene ' + gene.number + '. ' + gene.name + '.')
     return genes
 
 

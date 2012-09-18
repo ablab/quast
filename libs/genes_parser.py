@@ -6,6 +6,7 @@
 
 import os
 import re
+import sys
 
 
 txt_pattern_gi = re.compile(r'gi\|(?P<id>\d+)\|\w+\|(?P<seqname>\S+)\|\s+(?P<number>\d+)\s+(?P<start>\d+)\s+(?P<end>\d+)', re.I)
@@ -61,7 +62,8 @@ def get_genes_from_file(filename, feature):
 #   Annotation: NC_013061.1 (1733715..1735595, complement)
 #   ID: 8252560
 def parse_ncbi(file):
-    annotation_pattern = re.compile(r'Annotation: (?P<seqname>\S+) \((?P<start>\d+)\.\.(?P<end>\d+)(, complement)?\)', re.I)
+    annotation_pattern = re.compile(r'Annotation: (?P<seqname>.+) \((?P<start>\d+)\.\.(?P<end>\d+)(, complement)?\)', re.I)
+    chromosome_pattern = re.compile(r'Chromosome: (?P<chromosome>\S+);', re.I)
     id_pattern = re.compile(r'ID: (?P<id>\d+)', re.I)
 
     genes = []
@@ -86,27 +88,41 @@ def parse_ncbi(file):
 
 
             for info_line in the_rest_lines:
+                if info_line.startswith('Chromosome:'):
+                    m = re.match(chromosome_pattern, info_line)
+                    if m:
+                        gene.chromosome = m.group('chromosome')
+
                 if info_line.startswith('Annotation:'):
                     m = re.match(annotation_pattern, info_line)
                     if m:
                         gene.seqname = m.group('seqname')
+                        print 'gene.seqname =', gene.seqname
                         gene.start = int(m.group('start'))
                         gene.end = int(m.group('end'))
+
+                        to_trim = 'Chromosome' + ' ' + str(gene.chromosome)
+                        if gene.chromosome and gene.seqname.startswith(to_trim):
+                            gene.seqname = gene.seqname[len(to_trim):]
+                            gene.seqname.lstrip(' ,')
+
+                        print 'to_trim:', to_trim
+                        print 'then gene.seqname =', gene.seqname
+
                     else:
-                        raise ParseException('NCBI format parsing error: wrong annotation for gene ' + repr(gene.number) + '. ' + gene.name + '.')
+                        print >> sys.stderr, 'Warning: wrong NCBI annotation for gene ' + repr(gene.number) + '. ' + gene.name + '. Skipping this gene.'
 
                 if info_line.startswith('ID:'):
                     m = re.match(id_pattern, info_line)
                     if m:
                         gene.id = m.group('id')
                     else:
-                        raise ParseException('NCBI format parsing error: wrong ID for gene ' + repr(gene.number) + '. ' + gene.name + '.')
+                        print >> sys.stderr, 'Warning: can\'t parse gene\'s ID in NCBI format. Gene is ' + repr(gene.number) + '. ' + gene.name + '. Skipping it.'
 
 
             if gene.start is not None and gene.end is not None:
                 genes.append(gene)
 #                raise ParseException('NCBI format parsing error: provide start and end for gene ' + gene.number + '. ' + gene.name + '.')
-
         else:
             raise ParseException("NCBI format parsing error")
 
@@ -178,11 +194,12 @@ class ParseException(Exception):
         return repr(self.value)
 
 class Gene():
-    def __init__(self, id=None, seqname=None, start=None, end=None, number=None, name=None):
+    def __init__(self, id=None, seqname=None, start=None, end=None, number=None, name=None, chromosome=None):
         self.id = id
         self.seqname = seqname
         self.start = start
         self.end = end
         self.number = number
         self.name = name
+        self.chromosome = chromosome
 

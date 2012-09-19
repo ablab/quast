@@ -67,7 +67,7 @@ def do(filenames, genes_lengths, output_dir, lib_dir):
         try:
             subprocess.call([gmhmmp_path, '-d', '-p', '0', '-m', heu_filename, '-o', genemark_out_filename, filename],
                 stdout=genemark_errors, stderr=genemark_errors)
-        except EnvironmentError as ee:
+        except EnvironmentError, ee:
             print "\nEnvironment Error occurs: ", ee
             continue
         genemark_errors.close()

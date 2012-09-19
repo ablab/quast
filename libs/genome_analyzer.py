@@ -291,10 +291,10 @@ def do(reference, filenames, nucmer_dir, output_dir, genes_filename, operons_fil
         import plotter
         if genes:
             plotter.genes_operons_plot(filenames, files_contigs, genes, genes_found, output_dir + '/genes_cumulative_plot', 'genes', all_pdf)
-            plotter.histogram(filenames, full_genes, output_dir + '/complete_genes_histogram', 'Number of complete genes', all_pdf, 'Number of complete genes')
+            plotter.histogram(filenames, full_genes, output_dir + '/complete_genes_histogram', '# complete genes', all_pdf)
         if operons:
             plotter.genes_operons_plot(filenames, files_contigs, operons, operons_found, output_dir + '/operons_cumulative_plot', 'operons', all_pdf)
-            plotter.histogram(filenames, full_operons, output_dir + '/complete_operons_histogram', 'Number of complete operons', all_pdf, 'Number of complete operons')
+            plotter.histogram(filenames, full_operons, output_dir + '/complete_operons_histogram', '# complete operons', all_pdf)
 
         plotter.histogram(filenames, genome_mapped, output_dir + '/genome_fraction_histogram', 'Genome fraction, %', all_pdf, top_value=100)
 

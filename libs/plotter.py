@@ -352,9 +352,9 @@ def genes_operons_plot(filenames, files_contigs, genes, found, plot_filename, ti
         color_id += 1
 
     matplotlib.pyplot.xlabel('Contig index', fontsize=axes_fontsize)
-    matplotlib.pyplot.ylabel('Cumulative no. ' + title, fontsize=axes_fontsize)
+    matplotlib.pyplot.ylabel('Cumulative # complete ' + title, fontsize=axes_fontsize)
     if with_title:
-        matplotlib.pyplot.title('Cumulative number of ' + title)
+        matplotlib.pyplot.title('Cumulative # complete ' + title)
     matplotlib.pyplot.grid(with_grid)
     ax = matplotlib.pyplot.gca()
     # Shink current axis's height by 20% on the bottom

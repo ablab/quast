@@ -70,11 +70,13 @@ def check_file_existance(fpath, message=''):
     return fpath
 
 
-def rename_file_for_nucmer(fpath):
+def corrected_fname_for_nucmer(fpath):
     dirpath = os.path.dirname(fpath)
     fname = os.path.basename(fpath)
 
-    corr_fname = re.sub(r'[)($&}{]', '', re.sub(r'\s', '_', fname))
+    corr_fname = fname
+    corr_fname = re.sub('[^\w\._-]', '_', corr_fname).strip().lower()
+
     if corr_fname != fname:
         if os.path.isfile(os.path.join(dirpath, corr_fname)):
             i = 1
@@ -86,9 +88,6 @@ def rename_file_for_nucmer(fpath):
 
                 corr_fname = 'copy_' +  str_i + '_' + str(base_corr_fname)
                 i += 1
-
-        print 'Renaming the file "' + fname + '" to "' + corr_fname + '", because QUAST does not support non-alphabetic symbols or non-digits in names of files with contigs or references. QUAST will rename it back.'
-        os.rename(fpath, os.path.join(dirpath, corr_fname))
 
     return os.path.join(dirpath, corr_fname)
 
@@ -120,7 +119,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
 
     ######################
     ### ARGS
-    ######################    
+    ######################
     reload(qconfig)
 
     try:
@@ -138,9 +137,6 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
     json_outputpath = None
     output_dirpath = os.path.join(os.path.abspath(qconfig.default_results_root_dirname), qconfig.output_dirname)
 
-    old_reference_fpath = ''
-    new_reference_fpath = ''
-
     for opt, arg in options:
         # Yes, this is a code duplicating. Python's getopt is non well-thought!!
         if opt in ('-o', "--output-dir"):
@@ -155,11 +151,6 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
 
         elif opt in ('-R', "--reference"):
             qconfig.reference = check_file_existance(arg, 'reference')
-
-            old_reference_fpath = qconfig.reference
-            qconfig.reference = rename_file_for_nucmer(qconfig.reference)
-            # For renaming back: contigs_fpaths are to be changed further.
-            new_reference_fpath = qconfig.reference
 
         elif opt in ('-t', "--contig-thresholds"):
             qconfig.contig_thresholds = arg
@@ -200,14 +191,13 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
     for c_fpath in contigs_fpaths:
         check_file_existance(c_fpath, 'contigs')
 
-    # Renaming contigs files for Nucmer
-    old_contigs_fpaths = contigs_fpaths[:]
-    contigs_fpaths = []
-    for old_c_fpath in old_contigs_fpaths:
-        contigs_fpaths.append(rename_file_for_nucmer(old_c_fpath))
+#    old_contigs_fpaths = contigs_fpaths[:]
+#    contigs_fpaths = []
+#    for old_c_fpath in old_contigs_fpaths:
+#        contigs_fpaths.append(rename_file_for_nucmer(old_c_fpath))
 
-    # For renaming back: contigs_fpaths are to be changed further.
-    new_contigs_fpaths = contigs_fpaths[:]
+#    # For renaming back: contigs_fpaths are to be changed further.
+#    new_contigs_fpaths = contigs_fpaths[:]
 
 
     qconfig.contig_thresholds = map(int, qconfig.contig_thresholds.split(","))
@@ -255,7 +245,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
     logfile = os.path.join(output_dirpath, qconfig.logfile)
 
     # Where corrected contigs will be saved
-    corrected_dir = os.path.join(output_dirpath, qconfig.corrected_dir)
+    corrected_dirpath = os.path.join(output_dirpath, qconfig.corrected_dirname)
 
     # Where all pdfs will be saved
     all_pdf_filename = os.path.join(output_dirpath, qconfig.plots_filename)
@@ -263,7 +253,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
 
     ########################################################################
 
-    # duplicating output to log file
+    # duplicating output to a log file
     from libs import support
     if os.path.isfile(logfile):
         os.remove(logfile)
@@ -277,16 +267,18 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
     reporting.min_contig = qconfig.min_contig
 
     print 'Correcting contig files...'
-    if os.path.isdir(corrected_dir):
-        shutil.rmtree(corrected_dir)
-    os.mkdir(corrected_dir)
-    from libs import fastaparser
+    if os.path.isdir(corrected_dirpath):
+        shutil.rmtree(corrected_dirpath)
+    os.mkdir(corrected_dirpath)
 
+    from libs import fastaparser
     # if reference in .gz format we should unzip it
     if qconfig.reference:
         ref_basename, ref_extension = os.path.splitext(qconfig.reference)
         if ref_extension == ".gz":
-            unziped_reference_name = os.path.join(corrected_dir, os.path.basename(ref_basename))
+            unziped_reference_name = os.path.join(corrected_dirpath, os.path.basename(ref_basename))
+            # Renaming, because QUAST does not support non-alphabetic symbols or non-digits in names of files with contigs or references.
+            unziped_reference_name = corrected_fname_for_nucmer(unziped_reference_name)
             unziped_reference = open(unziped_reference_name, 'w')
             subprocess.call(['gunzip', qconfig.reference, '-c'], stdout=unziped_reference)
             unziped_reference.close()
@@ -299,13 +291,14 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
     ## 2) Nucmer fails on names like "contig 1_bla_bla", "contig 2_bla_bla" (it interprets as a contig's name only the first word of caption and gets ambiguous contigs names)
     newcontigs = []
     for id, filename in enumerate(contigs_fpaths):
-        outfilename = os.path.splitext( os.path.join(corrected_dir, os.path.basename(filename).replace(' ','_')) )[0]
-        if os.path.isfile(outfilename):  # in case of files with the same names
+        corr_fname = corrected_fname_for_nucmer(os.path.basename(filename))
+        corr_fpath = os.path.splitext(os.path.join(corrected_dirpath, corr_fname))[0]
+        if os.path.isfile(corr_fpath):  # in case of files with the same names
             i = 1
-            basename = os.path.splitext(filename)[0]
-            while os.path.isfile(outfilename):
+            basename = os.path.splitext(corr_fname)[0]
+            while os.path.isfile(corr_fpath):
                 i += 1
-                outfilename = os.path.join(corrected_dir, os.path.basename(basename + '__' + str(i)))
+                corr_fpath = os.path.join(corrected_dirpath, os.path.basename(basename + '__' + str(i)))
 
         lengths = fastaparser.get_lengths_from_fastafile(filename)
         if not sum(1 for l in lengths if l >= qconfig.min_contig):
@@ -313,7 +306,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
             continue
 
         ## filling column "Assembly" with names of assemblies
-        report = reporting.get(outfilename)
+        report = reporting.get(corr_fpath)
         ## filling columns "Number of contigs >=110 bp", ">=200 bp", ">=500 bp"
         report.add_field(reporting.Fields.CONTIGS,   [sum(1 for l in lengths if l >= threshold) for threshold in qconfig.contig_thresholds])
         report.add_field(reporting.Fields.TOTALLENS, [sum(l for l in lengths if l >= threshold) for threshold in qconfig.contig_thresholds])
@@ -327,10 +320,10 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
                 pat = "(%s)" % "|".join( map(re.escape, dic.keys()) )
                 corr_seq = re.sub(pat, lambda m:dic[m.group()], seq)
                 modified_fasta_entries.append((corr_name, corr_seq))
-        fastaparser.write_fasta_to_file(outfilename, modified_fasta_entries)
+        fastaparser.write_fasta_to_file(corr_fpath, modified_fasta_entries)
 
-        print '  %s ==> %s' % (filename, os.path.basename(outfilename))
-        newcontigs.append(os.path.join(__location__, outfilename))
+        print '  %s ==> %s' % (filename, os.path.basename(corr_fpath))
+        newcontigs.append(os.path.join(__location__, corr_fpath))
 
     print '  Done.'
     contigs_fpaths = newcontigs
@@ -342,7 +335,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
     if qconfig.with_gage:
         ########################################################################
         ### GAGE
-        ########################################################################        
+        ########################################################################
         if not qconfig.reference:
             print >> sys.stderr, "\nERROR! GAGE can't be run without reference!\n"
         else:
@@ -416,21 +409,21 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
 
     ########################################################################
 
-    for old_c_fpath, new_c_fpath in zip(old_contigs_fpaths, new_contigs_fpaths):
-        if old_c_fpath != new_c_fpath:
-            os.rename(new_c_fpath, old_c_fpath)
-            print 'Renaming the file "' + os.path.basename(new_c_fpath) + '" back to "' + os.path.basename(old_c_fpath) + '"'
-
-    if new_reference_fpath != '' and old_reference_fpath != '' and old_reference_fpath != new_reference_fpath:
-        os.rename(new_reference_fpath, old_reference_fpath)
-        print 'Renaming the reference file "' + os.path.basename(new_reference_fpath) + '" back to "' + os.path.basename(old_reference_fpath) + '"'
+#    for old_c_fpath, new_c_fpath in zip(old_contigs_fpaths, new_contigs_fpaths):
+#        if old_c_fpath != new_c_fpath:
+#            os.rename(new_c_fpath, old_c_fpath)
+#            print 'Renaming the file "' + os.path.basename(new_c_fpath) + '" back to "' + os.path.basename(old_c_fpath) + '"'
+#
+#    if new_reference_fpath != '' and old_reference_fpath != '' and old_reference_fpath != new_reference_fpath:
+#        os.rename(new_reference_fpath, old_reference_fpath)
+#        print 'Renaming the reference file "' + os.path.basename(new_reference_fpath) + '" back to "' + os.path.basename(old_reference_fpath) + '"'
 
 
     print 'Done.'
 
     ## removing correcting input contig files
     if not qconfig.debug:
-        shutil.rmtree(corrected_dir)
+        shutil.rmtree(corrected_dirpath)
 
     tee.free() # free sys.stdout and sys.stderr from logfile
 

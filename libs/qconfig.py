@@ -19,7 +19,7 @@ save_json = False
 default_json_dirname = "json"
 
 logfile = "quast.log"
-corrected_dir = "corrected_input"
+corrected_dirname = "corrected_input"
 plots_filename = "plots.pdf"
 
 debug = False

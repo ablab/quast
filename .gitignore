@@ -16,3 +16,5 @@ libs/.DS_Store
 
 quast_website/.idea/*
 quast-1.0.0.tar.gz
+
+test_spaces/*

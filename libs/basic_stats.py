@@ -42,10 +42,11 @@ def do(reference, filenames, output_dir, all_pdf, draw_plots, json_output_dir, r
         reference_length = sum(fastaparser.get_lengths_from_fastafile(reference))
         reference_GC, reference_GC_info = GC_content(reference)
 
-        # saving reference to JSON
+        # Saving the reference in JSON
         if json_output_dir:
             json_saver.save_reference_length(json_output_dir, reference_length)
 
+        # Saving for an HTML report
         if qconfig.html_report:
             from libs.html_saver import html_saver
             html_saver.save_reference_length(results_dir, reference_length)

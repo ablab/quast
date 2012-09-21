@@ -91,8 +91,6 @@ or
     cd quast-1.1
 </code>
 </pre>
-Important: running QUAST form a path that contains spaces will cause an error.
-Be careful if you are running it, for instance, from a 'Mail Downloads' directory.
 
 <a name="sec1"></a>
 <h2>2. Running QUAST</h2>
@@ -114,7 +112,7 @@ Coordinates are 1-based, i.e. the first nucleotide in the reference has position
 If a <i>start postion</i> less than a corresponding <i>end postion</i>, such gene or operon is on a positive strand, otherwise it is on a negative strand.
 <br><br>
 You can find examples of a reference file and annotated genes and operons in all supported formats in your QUAST installation directory, <code>test_data</code> subdirectory.
-These files correspond to the first 10 kbp of E. coli. Input reads and sample assemblies for this data set are also there.
+These files correspond to the first 10 Kbp of E. coli. Input reads and sample assemblies for this data set are also there.
 </p>
 
 <a name="sec1.2"></a>
@@ -198,27 +196,27 @@ These files correspond to the first 10 kbp of E. coli. Input reads and sample as
 <a name="sec2"></a>
 <h2>3. QUAST output</h2>
 <p>If an output path was not specified manually, QUAST puts its output into <code>quast_results/result_&lt;DATE&gt;/</code> directory and creates a <code>latest</code> symlink to this folder inside <code>quast_results/</code>.
-    <br>
-    <br>
-    Output directory contents:
-<table style="margin-left: 36px;">
-    <tr>
-        <td style="padding-right: 20px;">report.txt</td>
-        <td>an assessment summary in a simple text format.</td>
-    </tr>
-    <tr>
-        <td style="padding-right: 20px;">report.tsv</td>
-        <td>a tab-separated version of the summary, suitable for Google Docs and Excel.</td>
-    </tr>
-    <tr>
-        <td style="padding-right: 20px;">plots.pdf</td>
-        <td>plots (file is created if the matplotlib python library is installed).</td>
-    </tr>
-    <tr>
-        <td style="padding-right: 20px;">report.html</td>
-        <td>an HTML version of the report with all plots inside it.</td>
-    </tr>
-</table>
+<br>
+<br>
+Output directory contents:
+    <table style="margin-left: 36px;">
+        <tr>
+            <td style="padding-right: 20px;">report.txt</td>
+            <td>an assessment summary in a simple text format.</td>
+        </tr>
+        <tr>
+            <td style="padding-right: 20px;">report.tsv</td>
+            <td>a tab-separated version of the summary, suitable for Google Docs and Excel.</td>
+        </tr>
+        <tr>
+            <td style="padding-right: 20px;">plots.pdf</td>
+            <td>plots (file is created if the matplotlib python library is installed).</td>
+        </tr>
+        <tr>
+            <td style="padding-right: 20px;">report.html</td>
+            <td>an HTML version of the report with all plots inside it.</td>
+        </tr>
+    </table>
 
 <br>
 
@@ -245,6 +243,14 @@ Note:
 </i>
 <br>
 
+<p><b><i># contigs</i></b>&nbsp;&nbsp;is the total number of contigs in the assembly.</p>
+
+<p><b><i>Largest contig</i></b>&nbsp;&nbsp;is the length of the longest contig in the assembly.</p>
+
+<p><b><i>Total length</i></b>&nbsp;&nbsp;is the total number of bases in the assembly.</p>
+
+<p><b><i>Reference length</i></b>&nbsp;&nbsp;is the total number of bases in the reference.</p>
+
 <p><b><i>N50</i></b>&nbsp;&nbsp;is the contig length such that using longer or equal length contigs produces half (50%) the bases of
     the assembly. Usually there is no value that produces exactly 50%, so the more technical definition is
     the minimal length x such that using contigs of length at least x accounts for at least 50% of the total
@@ -254,22 +260,6 @@ Note:
     the reference genome. This metric could be computed only if the reference is given.</p>
 
 <p><b><i>N75 and NG75</i></b>&nbsp;&nbsp;are defined similarly with 75% instead of 50%.</p>
-
-<p><b><i>Number of contigs</i></b>&nbsp;&nbsp;is the total number of contigs in the assembly.</p>
-
-<p><b><i>Largest contig</i></b>&nbsp;&nbsp;is the length of the longest contig in the assembly.</p>
-
-<p><b><i>Total length</i></b>&nbsp;&nbsp;is the total number of bases in the assembly.</p>
-
-<p><b><i>GC %</i></b>&nbsp;&nbsp;is the total number of G and C nucleotides in the assembly,
-    divided by the total length of the assembly.</p>
-
-<p><b><i>Reference length</i></b>&nbsp;&nbsp;is the total number of bases in the reference.</p>
-
-<p><b><i>Reference GC %</i></b>&nbsp;&nbsp;is the total number of G and C nucleotides in the reference,
-    divided by the total length of the reference.</p>
-
-<p><b><i>Average %IDY</i></b>&nbsp;&nbsp;is the average of alignment identity percent (i.e. alignment accuracy) among all contigs.</p>
 
 <p><b><i># misassemblies</i></b>&nbsp;&nbsp;gives the number of positions at the assembled contigs where the left flanking sequence
     aligns over 1kb away from the right flanking sequence on the reference or they overlap on more than 1 kb or flanking sequences align
@@ -291,14 +281,19 @@ Note:
 
 <p><b><i>Ambiguous contigs length</i></b>&nbsp;&nbsp;is the number of total bases contained in all ambiguous contigs. </p>
 
-<p><b><i>NA50, NGA50, NA75, NGA75 (A stands for "aligned")</i></b>&nbsp;&nbsp;like the same
-    metrics without A but in this case we count lengths of aligned blocks instead of contigs lengths.
-    I.e. if a contig has a misassembly with respect to the reference, we break the contig into smaller pieces.
-    Also, if a contig has bases that don't align to the reference, they are not counted in NAx, NGAx. </p>
-
 <p><b><i>Genome fraction (%)</i></b>&nbsp;&nbsp;is the total number of aligned bases in the reference, divided by
     the genome size. A base in the genome is counted as aligned if there is at least one contig with at least one
     alignment with this base. Repeates that map to multiple places may be counted many times in this quantity. </p>
+
+<p><b><i>GC %</i></b>&nbsp;&nbsp;is the total number of G and C nucleotides in the assembly,
+    divided by the total length of the assembly.</p>
+
+<p><b><i>Reference GC %</i></b>&nbsp;&nbsp;is the total number of G and C nucleotides in the reference,
+    divided by the total length of the reference.</p>
+
+<p><b><i># mismatches per 100 Kbp</i></b>&nbsp;&nbsp;is an average number of mismatches per 100000 aligned bases. This does not
+distinguish between Single Nucleotide Polymorphisms (SNPs), which are true differences in the assembled genome vs. the reference genome,
+and Single Nucleotide Errors (SNEs), which are due to errors in reads or errors in the assembly algorithm.</p>
 
 <p><b><i># genes</i></b>&nbsp;&nbsp;is the number of genes in the assembly (complete and partial), based
     on an annotated list of genes positions in the reference genome. The value "X + Y part"
@@ -307,6 +302,15 @@ Note:
 
 <p><b><i># operons</i></b>&nbsp;&nbsp;is defined similarly to the previous metric but you need
     operons annotations file for computing this metric. </p>
+
+<p><b><i># predicted genes</i></b>&nbsp;&nbsp;is the number of genes in the assembly
+    predicted by QUAST’s gene-finding module, which is based on GeneMarkS. 
+    This metric is computed is an annotated list of genes is not provided.</p>
+
+<p><b><i>NA50, NGA50, NA75, NGA75 (A stands for "aligned")</i></b>&nbsp;&nbsp;like the same
+    metrics without A but in this case we count lengths of aligned blocks instead of contigs lengths.
+    I.e. if a contig has a misassembly with respect to the reference, we break the contig into smaller pieces.
+    Also, if a contig has bases that don't align to the reference, they are not counted in NAx, NGAx. </p>
 
 <a name="sec2.2"></a>
 <h3>3.2 Plots descriptions</h3>

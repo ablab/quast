@@ -13,7 +13,7 @@ fi
 
 contigs_1K_1=$data_dir/SPAdes_contigs_1.fasta 
 
-contigs_1K_2 -o $results_dir=$data_dir/SPAdes_contigs_2.fasta
+contigs_1K_2=$data_dir/SPAdes_contigs_2.fasta
 
 reference_1K=$data_dir/reference_1K.fa.gz
 

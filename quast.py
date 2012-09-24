@@ -75,7 +75,7 @@ def corrected_fname_for_nucmer(fpath):
     fname = os.path.basename(fpath)
 
     corr_fname = fname
-    corr_fname = re.sub('[^\w\._-]', '_', corr_fname).strip().lower()
+    corr_fname = re.sub('[^\w\._-]', '_', corr_fname).strip()
 
     if corr_fname != fname:
         if os.path.isfile(os.path.join(dirpath, corr_fname)):

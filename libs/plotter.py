@@ -221,7 +221,7 @@ def Nx_plot(filenames, lists_of_lengths, plot_filename, title='Nx', reference_le
 
 
 # routine for GC-plot    
-def GC_content_plot(filenames, lists_of_GC_info, plot_filename, all_pdf=None):
+def GC_content_plot(reference, filenames, lists_of_GC_info, plot_filename, all_pdf=None):
     bin_size = 1.0
     title = 'GC content'
 
@@ -237,7 +237,10 @@ def GC_content_plot(filenames, lists_of_GC_info, plot_filename, all_pdf=None):
     color_id = 0
     max_y = 0
 
-    for id, (filename, GC_info) in enumerate(itertools.izip(filenames, lists_of_GC_info)):
+    allfilenames = filenames
+    if reference:
+        allfilenames = filenames + [reference]
+    for id, (filename, GC_info) in enumerate(itertools.izip(allfilenames, lists_of_GC_info)):
         # GC_info = [(contig_length, GC_percent)]
         # sorted_GC_info = sorted(GC_info, key=lambda GC_info_contig: GC_info_contig[1])
         # calculate values for the plot
@@ -259,16 +262,23 @@ def GC_content_plot(filenames, lists_of_GC_info, plot_filename, all_pdf=None):
         max_y = max(max_y, max(vals_bp))
 
         # for log scale
-        for id, bp in enumerate(vals_bp):
+        for id2, bp in enumerate(vals_bp):
             if bp == 0:
-                vals_bp[id] = 0.1
+                vals_bp[id2] = 0.1
 
         # add to plot
-        if color_id < len(colors):
-            matplotlib.pyplot.plot(vals_GC, vals_bp, color=colors[color_id % len(colors)], lw=linewidth)
+        if reference and (id == len(allfilenames) - 1):
+            color = '#000000'
+            ls = 'dashed'
+        elif color_id < len(colors):
+            color=colors[color_id % len(colors)]
+            ls = 'solid'
         else:
-            matplotlib.pyplot.plot(vals_GC, vals_bp, color=colors[color_id % len(colors)], lw=linewidth, ls='dashed')
+            color=colors[color_id % len(colors)]
+            ls = 'dashed'
+        matplotlib.pyplot.plot(vals_GC, vals_bp, color=color, lw=linewidth, ls=ls)
         color_id += 1
+
 
     if with_title:
         matplotlib.pyplot.title(title)
@@ -278,8 +288,11 @@ def GC_content_plot(filenames, lists_of_GC_info, plot_filename, all_pdf=None):
     box = ax.get_position()
     ax.set_position([box.x0, box.y0 + box.height * 0.2, box.width, box.height * 0.8])
     # Put a legend below current axis
+    legend_list = map(os.path.basename, allfilenames)
+    if reference:
+        legend_list[-1] = 'Reference'
     try: # for matplotlib <= 2009-12-09
-        ax.legend(map(os.path.basename, filenames), loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True,
+        ax.legend(legend_list, loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True,
             shadow=True, ncol=n_columns)
     except ZeroDivisionError:
         pass
@@ -297,7 +310,7 @@ def GC_content_plot(filenames, lists_of_GC_info, plot_filename, all_pdf=None):
     ax.yaxis.set_major_locator(yLocator)
     ax.xaxis.set_major_locator(xLocator)
 
-    ax.set_yscale('symlog', linthreshy=0.5)
+    #ax.set_yscale('symlog', linthreshy=0.5)
     #ax.invert_xaxis()
     #matplotlib.pyplot.ylim(matplotlib.pyplot.ylim()[::-1])
 

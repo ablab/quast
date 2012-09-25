@@ -20,15 +20,29 @@ def GC_content(filename):
     total_contig_length = 0
     GC_info = []
     for name, seq_full in fastaparser.read_fasta(filename): # in tuples: (name, seq)
+        seq_full = seq_full.upper()
         total_GC_amount += seq_full.count("G") + seq_full.count("C")
         total_contig_length += len(seq_full)
         n = 100 # blocks of length 100
+        # non-overlapping windows
         for seq in [seq_full[i:i+n] for i in range(0, (len(seq_full) / n) * n, n)]:
             # contig_length = len(seq)
             seq = seq.upper()
             GC_amount = seq.count("G") + seq.count("C")
             #GC_info.append((contig_length, GC_amount * 100.0 / contig_length))
             GC_info.append((1, GC_amount * 100.0 / n))
+
+#        # sliding windows
+#        seq = seq_full[0:n]
+#        GC_amount = seq.count("G") + seq.count("C")
+#        GC_info.append((1, GC_amount * 100.0 / n))
+#        for i in range(len(seq_full) - n):
+#            GC_amount = GC_amount - seq_full[i].count("G") - seq_full[i].count("C")
+#            GC_amount = GC_amount + seq_full[i + n].count("G") + seq_full[i + n].count("C")
+#            if GC_amount == 100:
+#                print "YOU!", seq_full[i+1:i+1+n]
+#            GC_info.append((1, GC_amount * 100.0 / n))
+
     return total_GC_amount * 100.0 / total_contig_length, GC_info
 
 
@@ -123,8 +137,12 @@ def do(reference, filenames, output_dir, all_pdf, draw_plots, json_output_dir, r
     
         ########################################################################
 
+        lists_of_GC_info_with_ref = lists_of_GC_info
+        if reference:
+            total_GC, GC_info = GC_content(reference)
+            lists_of_GC_info_with_ref.append(GC_info)
         # Drawing GC content plot...
-        plotter.GC_content_plot(filenames, lists_of_GC_info, output_dir + '/GC_content_plot', all_pdf)
+        plotter.GC_content_plot(reference, filenames, lists_of_GC_info_with_ref, output_dir + '/GC_content_plot', all_pdf)
     
         ########################################################################
 

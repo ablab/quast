@@ -51,8 +51,10 @@ class Fields:
     AMBIGUOUSBASES = 'Ambiguous contigs length'
     MISMATCHES = '# mismatches'
     INDELS = '# indels'
-    INDELSERROR = '# indels per 100 kbp'
     SUBSERROR = '# mismatches per 100 kbp'
+    INDELSERROR = '# indels per 100 kbp'
+    UNCALLED = '# N'
+    UNCALLED_PERCENT = 'N bases (%)'
     NA50 = 'NA50'
     NGA50 = 'NGA50'
     NA75 = 'NA75'
@@ -67,7 +69,7 @@ class Fields:
     order = [NAME, CONTIGS, TOTALLENS, NUMCONTIGS, LARGCONTIG, TOTALLEN, REFLEN, N50, NG50, N75, NG75,             
              AVGIDY, MISASSEMBL, MISCONTIGS, MISCONTIGSBASES,
              UNALIGNED, UNALIGNEDBASES, AMBIGUOUS, AMBIGUOUSBASES, 
-             MAPPEDGENOME, GC, REFGC, SUBSERROR, INDELSERROR, GENES, OPERONS, GENEMARKUNIQUE, GENEMARK,
+             MAPPEDGENOME, GC, REFGC, UNCALLED_PERCENT, SUBSERROR, INDELSERROR, GENES, OPERONS, GENEMARKUNIQUE, GENEMARK,
              NA50, NGA50, NA75, NGA75]
 
     MIS_ALL_EXTENSIVE = '# misassemblies'
@@ -80,7 +82,7 @@ class Fields:
 
     # for detailed misassemblies report
     misassemblies_order = [NAME, MIS_ALL_EXTENSIVE, MIS_RELOCATION, MIS_TRANSLOCATION, MIS_INVERTION,
-                           MIS_EXTENSIVE_CONTIGS, MIS_EXTENSIVE_BASES, MIS_LOCAL, MISMATCHES, INDELS]
+                           MIS_EXTENSIVE_CONTIGS, MIS_EXTENSIVE_BASES, MIS_LOCAL, UNCALLED, MISMATCHES, INDELS]
 
     # GAGE fields
     GAGE_NUMCONTIGS = 'Contigs #'

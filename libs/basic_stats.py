@@ -70,9 +70,18 @@ def do(reference, filenames, output_dir, all_pdf, draw_plots, json_output_dir, r
 
     print 'Contigs files: '
     lists_of_lengths = []
+    numbers_of_Ns = []
     for id, filename in enumerate(filenames):
         print ' ', id_to_str(id), os.path.basename(filename)
-        lists_of_lengths.append(fastaparser.get_lengths_from_fastafile(filename))
+        #lists_of_lengths.append(fastaparser.get_lengths_from_fastafile(filename))
+        list_of_length = []
+        number_of_Ns = 0
+        for (name, seq) in fastaparser.read_fasta(filename):
+            seq = seq.upper()
+            list_of_length.append(len(seq))
+            number_of_Ns += seq.count('N')
+        lists_of_lengths.append(list_of_length)
+        numbers_of_Ns.append(number_of_Ns)
 
     # saving lengths to JSON
     if json_output_dir:
@@ -88,7 +97,7 @@ def do(reference, filenames, output_dir, all_pdf, draw_plots, json_output_dir, r
 
     lists_of_GC_info = []
     import N50
-    for id, (filename, lengths_list) in enumerate(itertools.izip(filenames, lists_of_lengths)):
+    for id, (filename, lengths_list, number_of_Ns) in enumerate(itertools.izip(filenames, lists_of_lengths, numbers_of_Ns)):
         report = reporting.get(filename)
         n50 = N50.N50(lengths_list)
         ng50 = None
@@ -104,7 +113,8 @@ def do(reference, filenames, output_dir, all_pdf, draw_plots, json_output_dir, r
         print ' ', id_to_str(id), os.path.basename(filename), \
             ', N50 =', n50, \
             ', Total length =', total_length, \
-            ', GC % = ', '%.2f' % total_GC
+            ', GC % = ', '%.2f' % total_GC, \
+            ', N % = ', '%.5f' % (float(number_of_Ns) / float(total_length))
 
         report.add_field(reporting.Fields.N50, n50)
         if reference:
@@ -116,6 +126,8 @@ def do(reference, filenames, output_dir, all_pdf, draw_plots, json_output_dir, r
         report.add_field(reporting.Fields.LARGCONTIG, max(lengths_list))
         report.add_field(reporting.Fields.TOTALLEN, total_length)
         report.add_field(reporting.Fields.GC, ('%.2f' % total_GC))
+        report.add_field(reporting.Fields.UNCALLED, number_of_Ns)
+        report.add_field(reporting.Fields.UNCALLED_PERCENT, ('%.5f' % (float(number_of_Ns) / float(total_length))))
         if reference:
             report.add_field(reporting.Fields.REFLEN, int(reference_length))
             report.add_field(reporting.Fields.REFGC, '%.2f' %  reference_GC)

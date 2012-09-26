@@ -207,17 +207,13 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
     ### CONFIG & CHECKS
     ########################################################################
 
-    # in case of starting two instances of QUAST in the same second
-    if os.path.isdir(output_dirpath):
-        # if user starts QUAST with -o <existing dir> then qconfig.make_latest_symlink will be False
-        if qconfig.make_latest_symlink:
-            i = 2
-            base_dirpath = output_dirpath
-            while os.path.isdir(output_dirpath):
-                output_dirpath = str(base_dirpath) + '__' + str(i)
-                i += 1
-        else:
-            print "\nWARNING! Output directory already exists! Existing Nucmer aligns will be used!\n"
+    if os.path.isdir(output_dirpath):  # in case of starting two instances of QUAST in the same second
+        i = 2
+        base_dirpath = output_dirpath
+        while os.path.isdir(output_dirpath):
+            output_dirpath = str(base_dirpath) + '__' + str(i)
+            i += 1
+        print "\nWARNING! Output directory already exists! Results will be saved in " + output_dirpath + "\n"
 
     if not os.path.isdir(output_dirpath):
         os.makedirs(output_dirpath)
@@ -293,9 +289,9 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
     ## removing from contigs' names special characters because:
     ## 1) Some embedded tools can fail on some strings with "...", "+", "-", etc
     ## 2) Nucmer fails on names like "contig 1_bla_bla", "contig 2_bla_bla" (it interprets as a contig's name only the first word of caption and gets ambiguous contigs names)
-    newcontigs = []
-    for id, filename in enumerate(contigs_fpaths):
-        corr_fname = corrected_fname_for_nucmer(os.path.basename(filename))
+    new_contigs_fpaths = []
+    for id, contigs_fpath in enumerate(contigs_fpaths):
+        corr_fname = corrected_fname_for_nucmer(os.path.basename(contigs_fpath))
         corr_fpath = os.path.splitext(os.path.join(corrected_dirpath, corr_fname))[0]
         if os.path.isfile(corr_fpath):  # in case of files with the same names
             i = 1
@@ -304,9 +300,9 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
                 i += 1
                 corr_fpath = os.path.join(corrected_dirpath, os.path.basename(basename + '__' + str(i)))
 
-        lengths = fastaparser.get_lengths_from_fastafile(filename)
+        lengths = fastaparser.get_lengths_from_fastafile(contigs_fpath)
         if not sum(1 for l in lengths if l >= qconfig.min_contig):
-            print "\n  WARNING! %s will not be processed because it doesn't have contigs >= %d bp.\n" % (os.path.basename(filename), qconfig.min_contig)
+            print "\n  WARNING! %s will not be processed because it doesn't have contigs >= %d bp.\n" % (os.path.basename(contigs_fpath), qconfig.min_contig)
             continue
 
         ## filling column "Assembly" with names of assemblies
@@ -316,7 +312,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
         report.add_field(reporting.Fields.TOTALLENS, [sum(l for l in lengths if l >= threshold) for threshold in qconfig.contig_thresholds])
 
         modified_fasta_entries = []
-        for name, seq in fastaparser.read_fasta(filename): # in tuples: (name, seq)
+        for name, seq in fastaparser.read_fasta(contigs_fpath): # in tuples: (name, seq)
             if len(seq) >= qconfig.min_contig:
                 corr_name = re.sub(r'\W', '', re.sub(r'\s', '_', name))
                 # mauve and gage can't work with alternatives
@@ -326,11 +322,11 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
                 modified_fasta_entries.append((corr_name, corr_seq))
         fastaparser.write_fasta_to_file(corr_fpath, modified_fasta_entries)
 
-        print '  %s ==> %s' % (filename, os.path.basename(corr_fpath))
-        newcontigs.append(os.path.join(__location__, corr_fpath))
+        print '  %s ==> %s' % (contigs_fpath, os.path.basename(corr_fpath))
+        new_contigs_fpaths.append(os.path.join(__location__, corr_fpath))
 
     print '  Done.'
-    contigs_fpaths = newcontigs
+    contigs_fpaths = new_contigs_fpaths
 
     if not contigs_fpaths:
         usage()
@@ -361,14 +357,22 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
     basic_stats.do(qconfig.reference, contigs_fpaths, output_dirpath + '/basic_stats', all_pdf, qconfig.draw_plots,
         json_outputpath, output_dirpath)
 
+    nucmer_statuses = []
+
     if qconfig.reference:
         ########################################################################
         ### former PLANTAKOLYA, PLANTAGORA
         ########################################################################
         from libs import contigs_analyzer
-        contigs_analyzer.do(qconfig.reference, contigs_fpaths, qconfig.cyclic, output_dirpath + '/contigs_reports', lib_dir, qconfig.draw_plots)
+        nucmer_statuses = contigs_analyzer.do(qconfig.reference, contigs_fpaths, qconfig.cyclic, output_dirpath + '/contigs_reports', lib_dir, qconfig.draw_plots)
+        for contigs_fpath, nucmer_status in nucmer_statuses:
+            if nucmer_status == 'FAILED':
+                reporting.delete(contigs_fpath)
+                contigs_fpaths.remove(contigs_fpath)
 
-        ########################################################################
+
+        ##################################################
+        # ######################
         ### NA and NGA ("aligned N and NG")
         ########################################################################
         from libs import aligned_stats
@@ -389,9 +393,9 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
         from libs import genemark
         genemark.do(contigs_fpaths, qconfig.genes_lengths, output_dirpath + '/predicted_genes', lib_dir)
     else:
-        # TODO: make it nicer (not output predicted genes if annotations are provided)
-        for id, filename in enumerate(contigs_fpaths):
-            report = reporting.get(filename)
+        # TODO: make it nicer (not output predicted genes if annotations are provided
+        for id, contigs_fpath in enumerate(contigs_fpaths):
+            report = reporting.get(contigs_fpath)
             report.add_field(reporting.Fields.GENEMARKUNIQUE, "")
             report.add_field(reporting.Fields.GENEMARK, [""] * len(qconfig.genes_lengths))
 
@@ -422,6 +426,9 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
 #        os.rename(new_reference_fpath, old_reference_fpath)
 #        print 'Renaming the reference file "' + os.path.basename(new_reference_fpath) + '" back to "' + os.path.basename(old_reference_fpath) + '"'
 
+    for contigs_fpath, nucmer_status in nucmer_statuses:
+        if nucmer_status == 'FAILED':
+            print 'Warning!', contigs_fpath, 'skipped. Nucmer failed processing this contigs.'
 
     print 'Done.'
 

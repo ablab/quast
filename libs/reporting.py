@@ -158,11 +158,18 @@ class Report(object):
         assert field in Fields.__dict__.itervalues(), 'Unknown field: %s' % field
         return self.d.get(field, '')
 
-def get(name):
-    name = os.path.basename(name)
-    if name not in keys_order:
-        keys_order.append(name)
-    return reports.setdefault(name, Report(name))
+def get(filename):
+    filename = os.path.basename(filename)
+    if filename not in keys_order:
+        keys_order.append(filename)
+    return reports.setdefault(filename, Report(filename))
+
+def delete(filename):
+    filename = os.path.basename(filename)
+    if filename in keys_order:
+        keys_order.remove(filename)
+    if filename in reports.keys():
+        reports.pop(filename)
 
 def reporting_filter(value):
     if value == "":

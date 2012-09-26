@@ -206,7 +206,6 @@ class Mapping(object):
 
 
 class Mappings(object):
-
     def __init__(self):
         self.aligns = {} # contig -> [mapping]
         self.cnt = 0
@@ -326,6 +325,9 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
     plantafile = open(logfilename_out, 'a')
 
     print >> plantafile, 'Aligning contigs to reference...'
+
+    # Checking if there are existing previous nucmer alignments.
+    # If they exist, using them to save time.
     if (os.path.isfile(nucmer_successful_check_filename) and os.path.isfile(coords_filename)
         and os.path.isfile(nucmer_report_filename)):
 
@@ -353,12 +355,13 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
 
         sympalign(coords_filename, coords_btab_filename)
 
-        if not os.path.isfile(coords_filename):
+        if not os.path.isfile(coords_filename) or\
+           not os.path.isfile(nucmer_report_filename):
             print 'failed'
-            return
+            return 'FAILED'
         if len(open(coords_filename).readlines()[-1].split()) < 13:
             print >> logfile_err, 'Nucmer ended early'
-            return
+            return 'FAILED'
         nucmer_successful_check_file = open(nucmer_successful_check_filename, 'w')
         nucmer_successful_check_file.write("Successfully finished " + datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S'))
         nucmer_successful_check_file.close()
@@ -694,6 +697,7 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
     plantafile.close()
     logfile_err.close()
     print 'done.'
+    return 'OK'
 
 ###  I think we don't need this
 #    if draw_plots and os.path.isfile(delta_filename):
@@ -721,8 +725,9 @@ def plantakolya_process(cyclic, draw_plots, filename, id, myenv, output_dir, ref
     if not os.path.isdir(nucmer_output_dir):
         os.mkdir(nucmer_output_dir)
     nucmerfilename = os.path.join(nucmer_output_dir, os.path.basename(filename))
-    plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir, reference)
+    nucmer_status = plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir, reference)
     clear_files(filename, nucmerfilename)
+    return nucmer_status
 
 
 def do(reference, filenames, cyclic, output_dir, lib_dir, draw_plots):
@@ -736,9 +741,9 @@ def do(reference, filenames, cyclic, output_dir, lib_dir, draw_plots):
         mummer_path  = os.path.join(lib_dir, 'MUMmer3.23-linux')
 
     ########################################################################
-    report_dict = {'header' : []}
-    for filename in filenames:
-        report_dict[os.path.basename(filename)] = []
+#    report_dict = {'header' : []}
+#    for filename in filenames:
+#        report_dict[os.path.basename(filename)] = []
 
     # for running our MUMmer
     myenv = os.environ.copy()
@@ -751,11 +756,14 @@ def do(reference, filenames, cyclic, output_dir, lib_dir, draw_plots):
 
     print 'Running contigs analyzer...'
 
+    nucmer_statuses = []
     for id, filename in enumerate(filenames):
-        plantakolya_process(cyclic, draw_plots, filename, id, myenv, output_dir, reference) # TODO: use joblib
+        #TODO: use joblib
+        nucmer_status = plantakolya_process(cyclic, draw_plots, filename, id, myenv, output_dir, reference)
+        nucmer_statuses.append((filename, nucmer_status))
 
     reporting.save_misassemblies(output_dir)
     reporting.save_unaligned(output_dir)
     print '  Done'
 
-    return report_dict
+    return nucmer_statuses #, report_dict

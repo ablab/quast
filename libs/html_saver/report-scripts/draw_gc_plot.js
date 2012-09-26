@@ -140,19 +140,19 @@ function setNormalScale() {
 var normal_scale_span =
     "<span>" +
         'Normal scale' +
-    "</span>";
+        "</span>";
 var normal_scale_a =
     "<a class='dotted-link' onClick='setNormalScale()'>" +
         'Normal scale' +
-    "</a>";
+        "</a>";
 var log_scale_span =
     "<span>" +
         'Logarithmic scale' +
-    "</span>";
+        "</span>";
 var log_scale_a =
     "<a class='dotted-link' onClick='setLogScale()'>" +
         'Logarithmic scale' +
-    "</a>";
+        "</a>";
 
 
 function drawGCPlot(filenames, listsOfGCInfo, div, legendPh, glossary) {
@@ -161,18 +161,18 @@ function drawGCPlot(filenames, listsOfGCInfo, div, legendPh, glossary) {
     div.html(
         "<div class='plot'>" +
             "<div style='width: 800px;'>" +
-                "<div class='plot-header' style='float: left'>" + addTooltipIfDefenitionExists(glossary, title) + "</div>" +
-                "<div id='change-scale' style='float: right; margin-right: 3px; visibility: hidden;'>" +
-                    "<span id='normal_scale_label'>" +
-                        normal_scale_span +
-                    "</span>&nbsp;/&nbsp;<span id='log_scale_label'>" +
-                        log_scale_a +
-                    "</span>" +
-                "</div>" +
-                "<div style='clear: both'>" +
+            "<div class='plot-header' style='float: left'>" + addTooltipIfDefenitionExists(glossary, title) + "</div>" +
+            "<div id='change-scale' style='float: right; margin-right: 3px; visibility: hidden;'>" +
+            "<span id='normal_scale_label'>" +
+            normal_scale_span +
+            "</span>&nbsp;/&nbsp;<span id='log_scale_label'>" +
+            log_scale_a +
+            "</span>" +
+            "</div>" +
+            "<div style='clear: both'>" +
             "</div>" +
             "<div style='width: 800px; height: 600px;' id='gc-plot-placeholder'></div>" +
-        "</div>"
+            "</div>"
     );
 
     var bin_size = 1.0;

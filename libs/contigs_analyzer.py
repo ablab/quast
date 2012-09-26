@@ -18,6 +18,7 @@
 import os
 import platform
 import subprocess
+import datetime
 import fastaparser
 import shutil
 from libs import reporting, qconfig
@@ -304,10 +305,7 @@ def clear_files(filename, nucmerfilename):
         os.remove(filename + '.clean')
 
 def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir, reference):
-    # remove old nucmer coords file
-    if os.path.isfile(nucmerfilename + '.coords'):
-        os.remove(nucmerfilename + '.coords')
-        # run plantakolya tool
+    # run plantakolya tool
     logfilename_out = output_dir + '/contigs_report_' + os.path.basename(filename) + '.stdout'
     logfilename_err = output_dir + '/contigs_report_' + os.path.basename(filename) + '.stderr'
     logfile_err = open(logfilename_err, 'a')
@@ -317,6 +315,7 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
     maxun = 10
     smgap = 1000
     umt = 0.1 # threshold for misassembled contigs with aligned less than $umt * 100% (Unaligned Missassembled Threshold)
+    nucmer_successful_check_filename = nucmerfilename + '.sf'
     coords_filename = nucmerfilename + '.coords'
     delta_filename = nucmerfilename + '.delta'
     filtered_delta_filename = nucmerfilename + '.fdelta'
@@ -324,38 +323,45 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
     coords_filtered_filename = nucmerfilename + '.coords.filtered'
     unaligned_filename = nucmerfilename + '.unaligned'
     nucmer_report_filename = nucmerfilename + '.report'
-    if os.path.isfile(coords_filename):
-        os.remove(coords_filename)
     plantafile = open(logfilename_out, 'a')
-    print >> plantafile, 'Cleaning up contig headers...'
-    # TODO: clean contigs?
+
     print >> plantafile, 'Aligning contigs to reference...'
-    print >> plantafile, '\tRunning nucmer...'
-    print 'NUCmer... ',
-    # GAGE params of Nucmer
-    #subprocess.call(['nucmer', '--maxmatch', '-p', nucmerfilename, '-l', '30', '-banded', reference, filename],
-    #    stdout=open(logfilename_out, 'a'), stderr=logfile_err, env=myenv)
-    subprocess.call(['nucmer', '--maxmatch', '-p', nucmerfilename, reference, filename],
-         stdout=open(logfilename_out, 'a'), stderr=logfile_err, env=myenv)
+    if (os.path.isfile(nucmer_successful_check_filename) and os.path.isfile(coords_filename)
+        and os.path.isfile(nucmer_report_filename)):
 
-    # Filtering by IDY% = 95 (as GAGE did)
-    subprocess.call(['delta-filter', '-i', '95', delta_filename],
-        stdout=open(filtered_delta_filename, 'w'), stderr=logfile_err, env=myenv)
-    shutil.move(filtered_delta_filename, delta_filename)
+        print >> plantafile, '\tUsing existing Nucmer alignments...'
+        print 'Using existing Nucmer alignments... ',
+    else:
 
-    subprocess.call(['show-coords', '-B', delta_filename],
-        stdout=open(coords_btab_filename, 'w'), stderr=logfile_err, env=myenv)
-    subprocess.call(['dnadiff', '-d', delta_filename, '-p', nucmerfilename],
-        stdout=open(logfilename_out, 'a'), stderr=logfile_err, env=myenv)
+        print >> plantafile, '\tRunning Nucmer...'
+        print 'Running Nucmer... ',
+        # GAGE params of Nucmer
+        #subprocess.call(['nucmer', '--maxmatch', '-p', nucmerfilename, '-l', '30', '-banded', reference, filename],
+        #    stdout=open(logfilename_out, 'a'), stderr=logfile_err, env=myenv)
+        subprocess.call(['nucmer', '--maxmatch', '-p', nucmerfilename, reference, filename],
+             stdout=open(logfilename_out, 'a'), stderr=logfile_err, env=myenv)
 
-    sympalign(coords_filename, coords_btab_filename)
+        # Filtering by IDY% = 95 (as GAGE did)
+        subprocess.call(['delta-filter', '-i', '95', delta_filename],
+            stdout=open(filtered_delta_filename, 'w'), stderr=logfile_err, env=myenv)
+        shutil.move(filtered_delta_filename, delta_filename)
 
-    if not os.path.isfile(coords_filename):
-        print 'failed'
-        return
-    if len(open(coords_filename).readlines()[-1].split()) < 13:
-        print >> logfile_err, 'Nucmer ended early'
-        return
+        subprocess.call(['show-coords', '-B', delta_filename],
+            stdout=open(coords_btab_filename, 'w'), stderr=logfile_err, env=myenv)
+        subprocess.call(['dnadiff', '-d', delta_filename, '-p', nucmerfilename],
+            stdout=open(logfilename_out, 'a'), stderr=logfile_err, env=myenv)
+
+        sympalign(coords_filename, coords_btab_filename)
+
+        if not os.path.isfile(coords_filename):
+            print 'failed'
+            return
+        if len(open(coords_filename).readlines()[-1].split()) < 13:
+            print >> logfile_err, 'Nucmer ended early'
+            return
+        nucmer_successful_check_file = open(nucmer_successful_check_filename, 'w')
+        nucmer_successful_check_file.write("Successfully finished " + datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S'))
+        nucmer_successful_check_file.close()
 
     # Loading the alignment files
     print >> plantafile, 'Parsing coords...'

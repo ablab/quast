@@ -66,6 +66,7 @@ class Fields:
     LA75 = 'LA75'
     LGA75 = 'LGA75'
     MAPPEDGENOME = 'Genome fraction (%)'
+    DUPLICATION_RATIO = 'Duplication ratio'
     GENES = '# genes'
     OPERONS = '# operons'
     GENEMARKUNIQUE = '# predicted genes (unique)'

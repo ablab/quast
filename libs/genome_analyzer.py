@@ -109,9 +109,11 @@ def do(reference, filenames, nucmer_dir, output_dir, genes_filename, operons_fil
 
     # header
     res_file.write('\n\n')
-    res_file.write('  %-20s  | %-20s| %-12s| %-10s| %-10s| %-10s| %-10s|\n' % ('assembly', 'genome fraction (%)', 'gaps', 'genes', 'partial', 'operons', 'partial'))
-    res_file.write('  %-20s  | %-20s| %-12s| %-10s| %-10s| %-10s| %-10s|\n' % ('', '', 'number', '', 'genes', '', 'operons'))
-    res_file.write('============================================================================================================\n')
+    res_file.write('  %-20s  | %-20s| %-18s| %-12s| %-10s| %-10s| %-10s| %-10s|\n'
+        % ('assembly', 'genome fraction (%)', 'duplication ratio', 'gaps', 'genes', 'partial', 'operons', 'partial'))
+    res_file.write('  %-20s  | %-20s| %-18s| %-12s| %-10s| %-10s| %-10s| %-10s|\n'
+        % ('', '', '', 'number', '', 'genes', '', 'operons'))
+    res_file.write('================================================================================================================================\n')
 
     # for cumulative plots:
     files_contigs = {}   #  "filename" : [ [contig_blocks] ]   
@@ -219,12 +221,17 @@ def do(reference, filenames, nucmer_dir, output_dir, genes_filename, operons_fil
                     if cur_gap_size == min_gap_size:
                         gaps_count += 1
 
-        genome_coverage = float(covered_bp) * 100 / float(genome_size)
-        res_file.write('  %-20s  | %-20s| %-12s|' % (os.path.basename(filename), genome_coverage, str(gaps_count)))
-
         report = reporting.get(filename)
-        report.add_field(reporting.Fields.MAPPEDGENOME, '%.3f' % genome_coverage)
 
+        genome_coverage = float(covered_bp) * 100 / float(genome_size)
+        # calculating duplication ratio
+        duplication_ratio = (report.get_field(reporting.Fields.TOTALLEN) - report.get_field(reporting.Fields.UNALIGNEDBASES)) /\
+            ((genome_coverage / 100.0) * float(genome_size))
+
+        res_file.write('  %-20s  | %-20s| %-18s| %-12s|'
+            % (os.path.basename(filename), genome_coverage, duplication_ratio, str(gaps_count)))
+        report.add_field(reporting.Fields.MAPPEDGENOME, '%.3f' % genome_coverage)
+        report.add_field(reporting.Fields.DUPLICATION_RATIO, '%.3f' % duplication_ratio)
         genome_mapped.append(genome_coverage)
 
         # finding genes and operons

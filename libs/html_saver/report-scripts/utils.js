@@ -9,7 +9,6 @@ function toPrettyString(num) {
     }
 }
 
-
 function toPrettyStringWithDimencion(num, dimension) {
     if (num < 10000) {
         return '<span style="word-spacing:-1px;">' + num.toString() + '&nbsp;' + dimension + '</span>';
@@ -27,6 +26,32 @@ function myToFixed(num) {
     } else {
         return num.toFixed(0);
     }
+}
+
+function getMaxDecimalTick(maxY) {
+    var maxYTick = maxY;
+    if (maxY <= 100000000000) {
+        maxYTick = Math.ceil((maxY+1)/10000000000)*10000000000;
+    } if (maxY <= 10000000000) {
+        maxYTick = Math.ceil((maxY+1)/1000000000)*1000000000;
+    } if (maxY <= 1000000000) {
+        maxYTick = Math.ceil((maxY+1)/100000000)*100000000;
+    } if (maxY <= 100000000) {
+        maxYTick = Math.ceil((maxY+1)/10000000)*10000000;
+    } if (maxY <= 10000000) {
+        maxYTick = Math.ceil((maxY+1)/1000000)*1000000;
+    } if (maxY <= 1000000) {
+        maxYTick = Math.ceil((maxY+1)/100000)*100000;
+    } if (maxY <= 100000) {
+        maxYTick = Math.ceil((maxY+1)/10000)*10000;
+    } if (maxY <= 10000) {
+        maxYTick = Math.ceil((maxY+1)/1000)*1000;
+    } if (maxY <= 1000) {
+        maxYTick = Math.ceil((maxY+1)/100)*100.
+    } if (maxY <= 100) {
+        maxYTick = Math.ceil((maxY+1)/10)*10.
+    }
+    return maxYTick;
 }
 
 function getBpTickFormatter(maxY) {
@@ -48,7 +73,39 @@ function getBpTickFormatter(maxY) {
             res = myToFixed(res);
 
             if (val > maxY + 1 || val + axis.tickSize >= 1000000) {
-                res = res + ' kbp';
+                res = res + ' Kbp';
+            }
+        } else if (val >= 1) {
+            res = myToFixed(val);
+
+            if (val > maxY + 1 || val + axis.tickSize >= 1000) {
+                res = res + ' bp';
+            }
+        }
+        return '<span style="word-spacing: -1px;">' + res + '</span>';
+    }
+}
+
+function getBpLogTickFormatter(maxY) {
+    return function(val, axis) {
+        var res;
+
+        if (val == 0) {
+            res = 0;
+
+        } else if (val >= 1000000) {
+            res = val / 1000000;
+            res = myToFixed(res);
+
+            if (val > maxY + 1 || val + axis.tickSize >= 1000000000) {
+                res = res + ' Mbp';
+            }
+        } else if (val >= 1000) {
+            res = val / 1000;
+            res = myToFixed(res);
+
+            if (val > maxY + 1 || val + axis.tickSize >= 1000000) {
+                res = res + ' Kbp';
             }
         } else if (val >= 1) {
             res = myToFixed(val);

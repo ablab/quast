@@ -411,12 +411,14 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
     SNPs = 0
     unaligned = 0
     partially_unaligned = 0
-    total_unaligned = 0
+    fully_unaligned_bases = 0
+    partially_unaligned_bases = 0
     ambiguous = 0
     total_ambiguous = 0
     uncovered_regions = 0
     uncovered_region_bases = 0
     partially_unaligned_with_misassembly = 0
+    partially_unaligned_with_significant_parts = 0
 
     region_misassemblies = []
     misassembled_contigs = {}
@@ -513,13 +515,18 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
                         #Increment tally of partially unaligned contigs
                         partially_unaligned += 1
                         #Increment tally of partially unaligned bases
-                        total_unaligned += begin - 1
-                        total_unaligned += ctg_len - end
+                        unaligned_bases = (begin - 1) + (ctg_len - end)
+                        partially_unaligned_bases += unaligned_bases
                         print >> plantafile, '\t\tThis contig is partially unaligned. (%d out of %d)' % (
                         top_len, ctg_len)
                         print >> plantafile, '\t\tAlignment: %s' % str(sorted_aligns[0])
                         print >> plantafile, '\t\tUnaligned bases: 1 to %d (%d)' % (begin, begin)
                         print >> plantafile, '\t\tUnaligned bases: %d to %d (%d)' % (end, ctg_len, ctg_len - end + 1)
+                        # check if both parts (aligned and unaligned) have significant length
+                        if (unaligned_bases >= qconfig.min_contig) and (ctg_len - unaligned_bases >= qconfig.min_contig):
+                            partially_unaligned_with_significant_parts += 1
+                            print >> plantafile, '\t\tThis contig has both significant aligned and unaligned parts ' \
+                                                 '(of length >= min-contig)!'
                 else:
                     #There is more than one alignment of this contig to the reference
                     print >> plantafile, '\t\tThis contig is misassembled. %d total aligns.' % num_aligns
@@ -540,8 +547,13 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
                         #Increment tally of partially unaligned contigs
                         partially_unaligned += 1
                         #Increment tally of partially unaligned bases
-                        total_unaligned += ctg_len - all_aligns_len
+                        partially_unaligned_bases += ctg_len - all_aligns_len
                         print >> plantafile, '\t\tUnaligned bases: %d' % (ctg_len - all_aligns_len)
+                        # check if both parts (aligned and unaligned) have significant length
+                        if (all_aligns_len >= qconfig.min_contig) and (ctg_len - all_aligns_len >= qconfig.min_contig):
+                            partially_unaligned_with_significant_parts += 1
+                            print >> plantafile, '\t\tThis contig has both significant aligned and unaligned parts '\
+                                                 '(of length >= min-contig)!'
                         continue
 
                     sorted_num = len(sorted_aligns) - 1
@@ -598,8 +610,8 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
 
             #Increment unaligned contig count and bases
             unaligned += 1
-            total_unaligned += ctg_len
-            print >> plantafile, '\t\tUnaligned bases: %d  total: %d' % (ctg_len, total_unaligned)
+            fully_unaligned_bases += ctg_len
+            print >> plantafile, '\t\tUnaligned bases: %d  total: %d' % (ctg_len, fully_unaligned_bases)
 
     coords_filtered_file.close()
     unaligned_file.close()
@@ -631,7 +643,7 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
     print >> plantafile, 'Uncovered Regions: %d (%d)' % (uncovered_regions, uncovered_region_bases)
     print >> plantafile, 'Unaligned Contigs: %d + %d part' % (unaligned, partially_unaligned)
     print >> plantafile, 'Partially Unaligned Contigs with Misassemblies: %d' % partially_unaligned_with_misassembly
-    print >> plantafile, 'Unaligned Contig Bases: %d' % total_unaligned
+    print >> plantafile, 'Unaligned Contig Bases: %d' % (fully_unaligned_bases + partially_unaligned_bases)
     print >> plantafile, 'Ambiguous Contigs: %d' % ambiguous
     print >> plantafile, 'Ambiguous Contig Bases: %d' % total_ambiguous
     print >> plantafile, 'Mismatches: %d' % SNPs
@@ -643,9 +655,7 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
     report.add_field(reporting.Fields.MISASSEMBL, len(region_misassemblies) - region_misassemblies.count(Misassembly.LOCAL))
     report.add_field(reporting.Fields.MISCONTIGS, len(misassembled_contigs))
     report.add_field(reporting.Fields.MISCONTIGSBASES, misassembled_bases)
-    report.add_field(reporting.Fields.MISUNALIGNED, partially_unaligned_with_misassembly)
-    report.add_field(reporting.Fields.UNALIGNED, '%d + %d part' % (unaligned, partially_unaligned))
-    report.add_field(reporting.Fields.UNALIGNEDBASES, total_unaligned)
+    report.add_field(reporting.Fields.UNALIGNEDBASES, (fully_unaligned_bases + partially_unaligned_bases))
     report.add_field(reporting.Fields.AMBIGUOUS, ambiguous)
     report.add_field(reporting.Fields.AMBIGUOUSBASES, total_ambiguous)
     report.add_field(reporting.Fields.MISMATCHES, SNPs)
@@ -661,6 +671,14 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
     report.add_field(reporting.Fields.MIS_EXTENSIVE_CONTIGS, len(misassembled_contigs))
     report.add_field(reporting.Fields.MIS_EXTENSIVE_BASES, misassembled_bases)
     report.add_field(reporting.Fields.MIS_LOCAL, region_misassemblies.count(Misassembly.LOCAL))
+
+    # for unaligned report:
+    report.add_field(reporting.Fields.UNALIGNED_FULL_CNTGS, unaligned)
+    report.add_field(reporting.Fields.UNALIGNED_FULL_LENGTH, fully_unaligned_bases)
+    report.add_field(reporting.Fields.UNALIGNED_PART_CNTGS, partially_unaligned)
+    report.add_field(reporting.Fields.UNALIGNED_PART_WITH_MISASSEMBLY, partially_unaligned_with_misassembly)
+    report.add_field(reporting.Fields.UNALIGNED_PART_SIGNIFICANT_PARTS, partially_unaligned_with_significant_parts)
+    report.add_field(reporting.Fields.UNALIGNED_PART_LENGTH, partially_unaligned_bases)
 
     ## outputting misassembled contigs to separate file
     fasta = [(name, seq) for name, seq in fastaparser.read_fasta(filename) if
@@ -731,6 +749,7 @@ def do(reference, filenames, cyclic, output_dir, lib_dir, draw_plots):
         plantakolya_process(cyclic, draw_plots, filename, id, myenv, output_dir, reference) # TODO: use joblib
 
     reporting.save_misassemblies(output_dir)
+    reporting.save_unaligned(output_dir)
     print '  Done'
 
     return report_dict

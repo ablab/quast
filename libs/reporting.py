@@ -48,7 +48,6 @@ class Fields:
     MISASSEMBL = '# misassemblies'
     MISCONTIGS = '# misassembled contigs'
     MISCONTIGSBASES = 'Misassembled contigs length'
-    MISUNALIGNED = '# misassembled and unaligned'
     UNALIGNED = '# unaligned contigs'
     UNALIGNEDBASES = 'Unaligned contigs length'
     AMBIGUOUS = '# ambiguous contigs'
@@ -92,7 +91,18 @@ class Fields:
 
     # for detailed misassemblies report
     misassemblies_order = [NAME, MIS_ALL_EXTENSIVE, MIS_RELOCATION, MIS_TRANSLOCATION, MIS_INVERTION,
-                           MIS_EXTENSIVE_CONTIGS, MIS_EXTENSIVE_BASES, MIS_LOCAL, UNCALLED, MISMATCHES, INDELS]
+                           MIS_EXTENSIVE_CONTIGS, MIS_EXTENSIVE_BASES, MIS_LOCAL, MISMATCHES, INDELS]
+
+    UNALIGNED_FULL_CNTGS = '# fully unaligned contigs'
+    UNALIGNED_FULL_LENGTH = 'Fully unaligned length'
+    UNALIGNED_PART_CNTGS = '# partially unaligned contigs'
+    UNALIGNED_PART_WITH_MISASSEMBLY = '    # with misassembly'
+    UNALIGNED_PART_SIGNIFICANT_PARTS = '    # both parts are significant'
+    UNALIGNED_PART_LENGTH = 'Partially unaligned length'
+
+    # for detailed unaligned report
+    unaligned_order = [NAME, UNALIGNED_FULL_CNTGS, UNALIGNED_FULL_LENGTH, UNALIGNED_PART_CNTGS,
+                       UNALIGNED_PART_WITH_MISASSEMBLY, UNALIGNED_PART_SIGNIFICANT_PARTS, UNALIGNED_PART_LENGTH, UNCALLED]
 
     # GAGE fields
     GAGE_NUMCONTIGS = 'Contigs #'
@@ -264,3 +274,6 @@ def save_total(output_dirpath):
 
 def save_misassemblies(output_dirpath):
     save(output_dirpath, "misassemblies_report", "", Fields.misassemblies_order)
+
+def save_unaligned(output_dirpath):
+    save(output_dirpath, "unaligned_report", "", Fields.unaligned_order)

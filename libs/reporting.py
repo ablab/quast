@@ -54,7 +54,7 @@ class Fields:
     SUBSERROR = '# mismatches per 100 kbp'
     INDELSERROR = '# indels per 100 kbp'
     UNCALLED = '# N'
-    UNCALLED_PERCENT = 'N bases (%)'
+    UNCALLED_PERCENT = "N's (%)"
     NA50 = 'NA50'
     NGA50 = 'NGA50'
     NA75 = 'NA75'

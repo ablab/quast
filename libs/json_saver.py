@@ -41,7 +41,20 @@ def save(filename, what):
 def save_total_report(output_dir, min_contig):
     import reporting
     table = reporting.table()
-    table = [[table[i][j] for i in xrange(len(table))] for j in xrange(len(table[0]))]
+
+    def try_convert_back_to_number(str):
+        try:
+            val = int(str)
+        except ValueError:
+            try:
+                val = float(str)
+            except ValueError:
+                val = str
+
+        return val
+
+
+    table = [[try_convert_back_to_number(table[i][j]) for i in xrange(len(table))] for j in xrange(len(table[0]))]
 
     # TODO: check correctness, not sure that header and result are correct:
     header = table[0]

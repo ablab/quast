@@ -179,7 +179,7 @@ def sympalign(out_filename, in_filename):
             label = ref_id + '\t' + contig_id
             print >> ouf, '%8d %8d  | %8d %8d  | %8d %8d  | %8.4f  | %s' % (sr, er, sc, ec, lr, lc, p, label)
     ouf.close()
-    print '  Done.'
+    print '  Done sympaligning.'
 
 
 class Mapping(object):
@@ -357,10 +357,10 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
 
         if not os.path.isfile(coords_filename) or\
            not os.path.isfile(nucmer_report_filename):
-            print 'failed'
+            print >> logfile_err, 'Nucmer failed.'
             return 'FAILED'
         if len(open(coords_filename).readlines()[-1].split()) < 13:
-            print >> logfile_err, 'Nucmer ended early'
+            print >> logfile_err, 'Nucmer ended early.'
             return 'FAILED'
         nucmer_successful_check_file = open(nucmer_successful_check_filename, 'w')
         nucmer_successful_check_file.write("Successfully finished " + datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S'))
@@ -696,7 +696,7 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
 
     plantafile.close()
     logfile_err.close()
-    print 'done.'
+    print '  Done plantakoling.'
     return 'OK'
 
 ###  I think we don't need this
@@ -756,14 +756,20 @@ def do(reference, filenames, cyclic, output_dir, lib_dir, draw_plots):
 
     print 'Running contigs analyzer...'
 
-    nucmer_statuses = []
+    nucmer_statuses = {}
     for id, filename in enumerate(filenames):
         #TODO: use joblib
         nucmer_status = plantakolya_process(cyclic, draw_plots, filename, id, myenv, output_dir, reference)
-        nucmer_statuses.append((filename, nucmer_status))
+        nucmer_statuses[filename] = nucmer_status
 
-    reporting.save_misassemblies(output_dir)
-    reporting.save_unaligned(output_dir)
-    print '  Done'
-
+    if 'OK' in nucmer_statuses.values():
+        reporting.save_misassemblies(output_dir)
+        reporting.save_unaligned(output_dir)
+        if 'FAILED' in nucmer_statuses.values():
+            print '  Done for', str(nucmer_statuses.values().count('OK')), 'of', str(len(nucmer_statuses)) + \
+                     '. Nucmer failed on the other contigs files. They will be skipped in the report.'
+        else:
+            print '  Done.'
+    else:
+        print '  Nucmer failed.'
     return nucmer_statuses #, report_dict

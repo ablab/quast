@@ -84,14 +84,24 @@ def do(reference, filenames, nucmer_dir, output_dir, all_pdf, draw_plots, json_o
         nga50 = N50.NG50(lens, reference_length)
         na75 = N50.NG50(lens, assembly_len, 75)
         nga75 = N50.NG50(lens, reference_length, 75)
+        la50 = N50.LG50(lens, assembly_len)
+        lga50 = N50.LG50(lens, reference_length)
+        la75 = N50.LG50(lens, assembly_len, 75)
+        lga75 = N50.LG50(lens, reference_length, 75)
         print ' ', id_to_str(id), os.path.basename(filename), \
             ', NA50 =', na50, \
-            ', NGA50 =', nga50
+            ', NGA50 =', nga50, \
+            ', LA50 =', la50,\
+            ', LGA50 =', lga50
         report = reporting.get(filename)
         report.add_field(reporting.Fields.NA50, na50)
         report.add_field(reporting.Fields.NGA50, nga50)
         report.add_field(reporting.Fields.NA75, na75)
         report.add_field(reporting.Fields.NGA75, nga75)
+        report.add_field(reporting.Fields.LA50, la50)
+        report.add_field(reporting.Fields.LGA50, lga50)
+        report.add_field(reporting.Fields.LA75, la75)
+        report.add_field(reporting.Fields.LGA75, lga75)
 
     ########################################################################
 

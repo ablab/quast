@@ -33,6 +33,10 @@ class Fields:
     NG50 = 'NG50'
     N75 = 'N75'
     NG75 = 'NG75'
+    L50 = 'L50'
+    LG50 = 'LG50'
+    L75 = 'L75'
+    LG75 = 'LG75'
     NUMCONTIGS = '# contigs'
     LARGCONTIG = 'Largest contig'
     TOTALLEN = 'Total length'
@@ -51,14 +55,16 @@ class Fields:
     AMBIGUOUSBASES = 'Ambiguous contigs length'
     MISMATCHES = '# mismatches'
     INDELS = '# indels'
-    SUBSERROR = '# mismatches per 100 kbp'
     INDELSERROR = '# indels per 100 kbp'
-    UNCALLED = '# N'
-    UNCALLED_PERCENT = "N's (%)"
+    SUBSERROR = '# mismatches per 100 kbp'
     NA50 = 'NA50'
     NGA50 = 'NGA50'
     NA75 = 'NA75'
     NGA75 = 'NGA75'
+    LA50 = 'LA50'
+    LGA50 = 'LGA50'
+    LA75 = 'LA75'
+    LGA75 = 'LGA75'
     MAPPEDGENOME = 'Genome fraction (%)'
     GENES = '# genes'
     OPERONS = '# operons'
@@ -66,11 +72,12 @@ class Fields:
     GENEMARK = ('# predicted genes (>= %d bp)', tuple(qconfig.genes_lengths))
 
     # order as printed in report:
-    order = [NAME, CONTIGS, TOTALLENS, NUMCONTIGS, LARGCONTIG, TOTALLEN, REFLEN, N50, NG50, N75, NG75,             
+    order = [NAME, CONTIGS, TOTALLENS, NUMCONTIGS, LARGCONTIG, TOTALLEN, REFLEN,
+             N50, NG50, N75, NG75, L50, LG50, L75, LG75,
              AVGIDY, MISASSEMBL, MISCONTIGS, MISCONTIGSBASES,
              UNALIGNED, UNALIGNEDBASES, AMBIGUOUS, AMBIGUOUSBASES, 
-             MAPPEDGENOME, GC, REFGC, UNCALLED_PERCENT, SUBSERROR, INDELSERROR, GENES, OPERONS, GENEMARKUNIQUE, GENEMARK,
-             NA50, NGA50, NA75, NGA75]
+             MAPPEDGENOME, GC, REFGC, SUBSERROR, INDELSERROR, GENES, OPERONS, GENEMARKUNIQUE, GENEMARK,
+             NA50, NGA50, NA75, NGA75, LA50, LGA50, LA75, LGA75]
 
     MIS_ALL_EXTENSIVE = '# misassemblies'
     MIS_RELOCATION = '    # relocations'
@@ -82,7 +89,7 @@ class Fields:
 
     # for detailed misassemblies report
     misassemblies_order = [NAME, MIS_ALL_EXTENSIVE, MIS_RELOCATION, MIS_TRANSLOCATION, MIS_INVERTION,
-                           MIS_EXTENSIVE_CONTIGS, MIS_EXTENSIVE_BASES, MIS_LOCAL, UNCALLED, MISMATCHES, INDELS]
+                           MIS_EXTENSIVE_CONTIGS, MIS_EXTENSIVE_BASES, MIS_LOCAL, MISMATCHES, INDELS]
 
     # GAGE fields
     GAGE_NUMCONTIGS = 'Contigs #'

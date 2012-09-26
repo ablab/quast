@@ -261,6 +261,9 @@ Note:
 
 <p><b><i>N75 and NG75</i></b>&nbsp;&nbsp;are defined similarly with 75% instead of 50%.</p>
 
+<p><b><i>L50, L75, LG50, LG75</i></b>&nbsp;&nbsp;are evaluated as the numbers of contigs longer than corresponding N-metrics.<br>
+    In other word, N50, for instance, is the minimal number of contigs that cover at least 50% of total lenght.</p>
+
 <p><b><i># misassemblies</i></b>&nbsp;&nbsp;gives the number of positions at the assembled contigs where the left flanking sequence
     aligns over 1kb away from the right flanking sequence on the reference or they overlap on more than 1 kb or flanking sequences align
     on different strands. This metric could be computed only if the reference is given.</p>
@@ -307,10 +310,11 @@ and Single Nucleotide Errors (SNEs), which are due to errors in reads or errors 
     predicted by QUAST’s gene-finding module, which is based on GeneMarkS. 
     This metric is computed is an annotated list of genes is not provided.</p>
 
-<p><b><i>NA50, NGA50, NA75, NGA75 (A stands for "aligned")</i></b>&nbsp;&nbsp;like the same
-    metrics without A but in this case we count lengths of aligned blocks instead of contigs lengths.
+<p><b><i>NA50, NGA50, NA75, NGA75, LA50, LA75, LGA50, LGA75 (A stands for "aligned")</i></b>&nbsp;&nbsp;like the same
+    metrics without 'A', but in this case we count lengths (in the case of N-metrics) or number (for L-metrics)
+    of aligned blocks instead of contigs lengths.
     I.e. if a contig has a misassembly with respect to the reference, we break the contig into smaller pieces.
-    Also, if a contig has bases that don't align to the reference, they are not counted in NAx, NGAx. </p>
+    Also, if a contig has bases that don't align to the reference, they are not counted in NAx, NGAx, LAx and LGAx. </p>
 
 <a name="sec2.2"></a>
 <h3>3.2 Plots descriptions</h3>

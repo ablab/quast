@@ -1,5 +1,12 @@
 -- Version history --
 
+1.2 - Added indels and N's counting. Added more detailed statistics on misassemblies
+      (classification in inversions, relocations, translocations, local misassemblies).
+      Added more detailed statistics on partially unaligned contigs. Text reports now 
+      available in LaTeX format also. Support for python 2.5 added. Fixed bug in reading
+      genes annotations in GFF and NCBI formats. QUAST now can be rerun on existing
+      Nucmer alignments files.
+
 1.1 - Added mismatches counting. Fixed a bug in misassemblies counting
       (some inversions were omitted). GC content plot became logarithmically scaled.
       ORFs are not counted, GeneMark added instead (for gene finding).

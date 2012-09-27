@@ -1,6 +1,6 @@
 <html>
 <head>
-    <title>QUAST 1.1 manual</title>
+    <title>QUAST 1.2 manual</title>
     <style type="text/css">
         body {
             margin-top: 30px;
@@ -13,7 +13,7 @@
     </style>
 </head>
 <body>
-<h1>QUAST 1.1 manual</h1>
+<h1>QUAST 1.2 manual</h1>
 
 <p>QUAST stands for QUality ASsesment Tool. QUAST evaluates genome assemblies by computing various metrics.
     <br>
@@ -27,7 +27,7 @@
     them separately.
     <br>
     <br>
-    QUAST version 1.1 released under GPL v2 (see <a href="LICENSE">LICENSE</a> for details) on 14 September 2012.
+    QUAST version 1.2 released under GPL v2 (see <a href="LICENSE">LICENSE</a> for details) on 28 September 2012.
 </p>
 
 <h2>1. Installation</h2>
@@ -82,13 +82,13 @@ or
 </pre>
 
 
-<p>To download <a href="https://downloads.sourceforge.net/project/quast/quast-1.1.tar.gz">the source code tarball</a> and extract it:
+<p>To download <a href="https://downloads.sourceforge.net/project/quast/quast-1.2.tar.gz">the source code tarball</a> and extract it:
 </p>
 <pre  class="code">
 <code>
-    wget https://downloads.sourceforge.net/project/quast/quast-1.1.tar.gz
-    tar -xzf quast-1.1.tar.gz
-    cd quast-1.1
+    wget https://downloads.sourceforge.net/project/quast/quast-1.2.tar.gz
+    tar -xzf quast-1.2.tar.gz
+    cd quast-1.2
 </code>
 </pre>
 
@@ -144,7 +144,8 @@ These files correspond to the first 10 Kbp of E. coli. Input reads and sample as
 
 <p>
     <code>-o &lt;output_dir&gt; </code></p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;Specify an output directory. The default value is <code>quast_results/results_&lt;date_time&gt;</code>.
+<p>&nbsp;&nbsp;&nbsp;&nbsp;Specify an output directory. The default value is <code>quast_results/results_&lt;date_time&gt;. Note, that if you run QUAST on existing 
+directory it tries to use existing Nucmer alignments.</code>.
 </p>
 
 <p>
@@ -209,6 +210,10 @@ Output directory contents:
             <td>a tab-separated version of the summary, suitable for Google Docs and Excel.</td>
         </tr>
         <tr>
+            <td style="padding-right: 20px;">report.tex</td>
+            <td>a LaTeX version of the summary.</td>
+        </tr>
+        <tr>
             <td style="padding-right: 20px;">plots.pdf</td>
             <td>plots (file is created if the matplotlib python library is installed).</td>
         </tr>
@@ -262,7 +267,7 @@ Note:
 <p><b><i>N75 and NG75</i></b>&nbsp;&nbsp;are defined similarly with 75% instead of 50%.</p>
 
 <p><b><i>L50, L75, LG50, LG75</i></b>&nbsp;&nbsp;are evaluated as the numbers of contigs longer or equal to corresponding N-metrics.<br>
-    In other word, N50, for instance, is the minimal number of contigs that cover at least 50% of total lenght.</p>
+    In other words, L50, for example, is the minimal number of contigs that cover at least 50% of total lenght.</p>
 
 <p><b><i># misassemblies</i></b>&nbsp;&nbsp;gives the number of positions at the assembled contigs where the left flanking sequence
     aligns over 1kb away from the right flanking sequence on the reference or they overlap on more than 1 kb or flanking sequences align
@@ -288,15 +293,20 @@ Note:
     the genome size. A base in the genome is counted as aligned if there is at least one contig with at least one
     alignment with this base. Repeates that map to multiple places may be counted many times in this quantity. </p>
 
-<p><b><i>GC %</i></b>&nbsp;&nbsp;is the total number of G and C nucleotides in the assembly,
+<p><b><i>GC (%)</i></b>&nbsp;&nbsp;is the total number of G and C nucleotides in the assembly,
     divided by the total length of the assembly.</p>
 
-<p><b><i>Reference GC %</i></b>&nbsp;&nbsp;is the total number of G and C nucleotides in the reference,
+<p><b><i>Reference GC (%)</i></b>&nbsp;&nbsp;is the total number of G and C nucleotides in the reference,
     divided by the total length of the reference.</p>
+
+<p><b><i>N's (%)</i></b>&nbsp;&nbsp;is the total number of uncalled bases (N's) in the assembly, divided 
+    by the total length of the assembly.</p>
 
 <p><b><i># mismatches per 100 Kbp</i></b>&nbsp;&nbsp;is an average number of mismatches per 100000 aligned bases. This does not
 distinguish between Single Nucleotide Polymorphisms (SNPs), which are true differences in the assembled genome vs. the reference genome,
 and Single Nucleotide Errors (SNEs), which are due to errors in reads or errors in the assembly algorithm.</p>
+
+<p><b><i># indels per 100 Kbp</i></b>&nbsp;&nbsp;is an average number of single nucleotide indels per 100000 aligned bases.</p>
 
 <p><b><i># genes</i></b>&nbsp;&nbsp;is the number of genes in the assembly (complete and partial), based
     on an annotated list of genes positions in the reference genome. The value "X + Y part"

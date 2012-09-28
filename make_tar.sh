@@ -17,11 +17,14 @@ cp CHANGES            release/$QUAST_FOLDER
 echo Build $NOW    >> release/$QUAST_FOLDER/VERSION
 sed "s/RELEASE_MODE=False/RELEASE_MODE=True/" quast.py > release/$QUAST_FOLDER/quast.py
 
-make -C release/quast/libs/MUMmer3.23-osx/   clean >/dev/null 2>/dev/null
-make -C release/quast/libs/MUMmer3.23-linux/ clean >/dev/null 2>/dev/null
-rm -f   release/quast/libs/*.pyc
-rm -rf  release/quast/quast_results
-rm -rf	release/quast/libs/mauve
+make -C release/$QUAST_FOLDER/libs/MUMmer3.23-osx/   clean >/dev/null 2>/dev/null
+make -C release/$QUAST_FOLDER/libs/MUMmer3.23-linux/ clean >/dev/null 2>/dev/null
+rm -f   release/$QUAST_FOLDER/libs/gage/*.class
+rm -f   release/$QUAST_FOLDER/libs/*.pyc
+rm -f   release/$QUAST_FOLDER/libs/html_saver/*.pyc
+rm -rf  release/$QUAST_FOLDER/quast_results
+rm -rf	release/$QUAST_FOLDER/libs/mauve
+rm -f   release/$QUAST_FOLDER/libs/.gitignore
 
 cd release
 tar -pczf $ARCHIVE_NAME $QUAST_FOLDER

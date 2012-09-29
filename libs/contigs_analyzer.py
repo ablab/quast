@@ -656,8 +656,30 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
         if ref not in ref_aligns:
             print >> plantafile, 'ERROR: Reference [$ref] does not have any alignments!  Check that this is the same file used for alignment.'
             print >> plantafile, 'ERROR: Alignment Reference Headers: %s' % ref_aligns.keys()
+            continue
 
-            #Sort all alignments in this reference by start location
+        #Sort all alignments in this reference by start location
+        sorted_aligns = sorted(ref_aligns[ref], key=lambda x: x.s1)
+        total_aligns = len(sorted_aligns)
+        print >> plantafile, '\tReference %s: %d total alignments. %d total regions.' % (ref, total_aligns, len(regions[ref]))
+
+        #Walk through each region on this reference sequence
+        for region in regions[ref]:
+            end = 0
+            reg_length = region[1] - region[0]
+            print >> plantafile, '\t\tRegion: %d to %d (%d bp)\n' % (region[0], region[1], reg_length)
+
+            #Skipping alignments not in the next region
+            while sorted_aligns and sorted_aligns[0].e1 < region[0]:
+                skipped = sorted_aligns[0]
+                sorted_aligns = sorted_aligns[1:] # Kolya: slooow, but should never happens without gff :)
+                print >> plantafile, '\t\t\tThis align occurs before our region of interest, skipping: %s' % skipped
+
+            if not sorted_aligns:
+                print >> plantafile, '\t\t\tThere are no more aligns.  Skipping this region.'
+                continue
+
+            #If region starts in a contig, ignore portion of contig prior to region start
 
             # TODO: continue...
 

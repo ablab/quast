@@ -358,7 +358,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
     basic_stats.do(qconfig.reference, contigs_fpaths, output_dirpath + '/basic_stats', all_pdf, qconfig.draw_plots,
         json_outputpath, output_dirpath)
 
-    nucmer_statuses = []
+    nucmer_statuses = {}
 
     if qconfig.reference:
         ########################################################################

@@ -220,7 +220,7 @@ class Mappings(object):
         file.close()
 
 
-def process_misassembled_contig(plantafile, output_file, i_start, i_finish, contig, prev, sorted_aligns, is_1st_chimeric_half, ns, smgap, assembly, misassembled_contigs, extensive_misassembled_contigs):
+def process_misassembled_contig(plantafile, output_file, i_start, i_finish, contig, prev, sorted_aligns, is_1st_chimeric_half, ns, smgap, assembly, misassembled_contigs, extensive_misassembled_contigs, ref_aligns, ref_features):
     region_misassemblies = []
     for i in xrange(i_start, i_finish):
         print >>plantafile, '\t\t\tReal Alignment %d: %s' % (i+1, str(sorted_aligns[i]))
@@ -241,6 +241,8 @@ def process_misassembled_contig(plantafile, output_file, i_start, i_finish, cont
         strand1 = (sorted_aligns[i].s2 > sorted_aligns[i].e2)
         strand2 = (sorted_aligns[i+1].s2 > sorted_aligns[i+1].e2)
 
+        ref_aligns.setdefault(sorted_aligns[i].ref, []).append(sorted_aligns[i])
+
         if sorted_aligns[i].ref != sorted_aligns[i+1].ref or gap > ns + smgap or (strand1 != strand2): # different chromosomes or large gap or different strands
             #Contig spans chromosomes or there is a gap larger than 1kb
             #MY: output in coords.filtered
@@ -249,7 +251,8 @@ def process_misassembled_contig(plantafile, output_file, i_start, i_finish, cont
             print >>plantafile, '\t\t\tExtensive misassembly (',
 
             extensive_misassembled_contigs.add(sorted_aligns[i].contig)
-            # Kolya: removed something about ref_features
+            ref_features.setdefault(sorted_aligns[i].ref, {})[sorted_aligns[i].e1] = 'M'
+            ref_features.setdefault(sorted_aligns[i+1].ref, {})[sorted_aligns[i+1].e1] = 'M'
 
             if sorted_aligns[i].ref != sorted_aligns[i+1].ref:
                 region_misassemblies += [Misassembly.TRANSLOCATION]
@@ -288,6 +291,7 @@ def process_misassembled_contig(plantafile, output_file, i_start, i_finish, cont
     #Record the very last alignment
     i = i_finish
     print >>plantafile, '\t\t\tReal Alignment %d: %s' % (i+1, str(sorted_aligns[i]))
+    ref_aligns.setdefault(sorted_aligns[i].ref, []).append(sorted_aligns[i])
 
     return prev.clone(), region_misassemblies
 
@@ -398,6 +402,8 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
     # Loading the reference sequences
     print >> plantafile, 'Loading Reference...' # TODO: move up
     references = {}
+    ref_aligns = {}
+    ref_features = {}
     for name, seq in fastaparser.read_fasta(reference):
         name = name.split()[0] # no spaces in reference header
         references[name] = seq
@@ -471,13 +477,14 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
                 while sorted_aligns:
                     ambig = sorted_aligns.pop()
                     print >> plantafile, '\t\tMarking as ambiguous: %s' % str(ambig)
-                    # Kolya: removed redundant code about $ref
+                    # Kolya: removed redundant code about $ref (for gff AFAIU)
 
                 print >> coords_filtered_file, str(top_aligns[0])
 
                 if len(top_aligns) == 1:
                     #There is only one top align, life is good
                     print >> plantafile, '\t\tOne align captures most of this contig: %s' % str(top_aligns[0])
+                    ref_aligns.setdefault(top_aligns[0].ref, []).append(top_aligns[0])
                 else:
                     #There is more than one top align
                     print >> plantafile, '\t\tThis contig has %d significant alignments. [ambiguous]' % len(
@@ -485,8 +492,12 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
                     #Record these alignments as ambiguous on the reference
                     for align in top_aligns:
                         print >> plantafile, '\t\t\tAmbiguous Alignment: %s' % str(align)
-                        # Kolya: removed redundant code about $ref
-                    #Increment count of ambiguous contigs and bases
+                        ref = align.ref
+                        for i in xrange(align.s1, align.e1+1):
+                            if (ref not in ref_features) or (i not in ref_features[ref]):
+                                ref_features.setdefault(ref, {})[i] = 'A'
+
+                #Increment count of ambiguous contigs and bases
                     ambiguous += 1
                     total_ambiguous += ctg_len
             else:
@@ -507,7 +518,7 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
                     else:
                         print >> plantafile, '\t\tSkipping [%d][%d] redundant alignment %d %s' % (
                         sorted_aligns[i].s1, sorted_aligns[i].e1, i, str(sorted_aligns[i]))
-                        # Kolya: removed redundant code about $ref
+                        # Kolya: removed redundant code about $ref (for gff AFAIU)
 
                 if len(real_aligns) == 1:
                     #There is only one alignment of this contig to the reference
@@ -536,6 +547,7 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
                             partially_unaligned_with_significant_parts += 1
                             print >> plantafile, '\t\tThis contig has both significant aligned and unaligned parts ' \
                                                  '(of length >= min-contig)!'
+                    ref_aligns.setdefault(sorted_aligns[0].ref, []).append(sorted_aligns[0])
                 else:
                     #There is more than one alignment of this contig to the reference
                     print >> plantafile, '\t\tThis contig is misassembled. %d total aligns.' % num_aligns
@@ -587,7 +599,7 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
                             # process "last half" of blocks
                             prev, x = process_misassembled_contig(plantafile, coords_filtered_file,
                                 chimeric_index, sorted_num, contig, prev, sorted_aligns, True, ns, smgap,
-                                assembly, misassembled_contigs, extensive_misassembled_contigs)
+                                assembly, misassembled_contigs, extensive_misassembled_contigs, ref_aligns, ref_features)
                             region_misassemblies += x
                             print >> plantafile, '\t\t\tFake misassembly (caused by circular genome) between these two alignments: [%s] @ %d and %d' % (
                             sorted_aligns[sorted_num].ref, sorted_aligns[sorted_num].e1, sorted_aligns[0].s1)
@@ -601,7 +613,7 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
                             # process "first half" of blocks
                             prev, x = process_misassembled_contig(plantafile, coords_filtered_file, 0,
                                 chimeric_index - 1, contig, prev, sorted_aligns, False, ns, smgap, assembly,
-                                misassembled_contigs, extensive_misassembled_contigs)
+                                misassembled_contigs, extensive_misassembled_contigs, ref_aligns, ref_features)
                             region_misassemblies += x
 
                     if not chimeric_found:                        
@@ -609,7 +621,7 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
                         prev = sorted_aligns[0].clone()
                         prev, x = process_misassembled_contig(plantafile, coords_filtered_file, 0, sorted_num,
                             contig, prev, sorted_aligns, False, ns, smgap, assembly, misassembled_contigs,
-                            extensive_misassembled_contigs)
+                            extensive_misassembled_contigs, ref_aligns, ref_features)
                         region_misassemblies += x
 
         else:
@@ -625,9 +637,33 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
     coords_filtered_file.close()
     unaligned_file.close()
 
-    # TODO: 'Analyzing coverage...'
+    print >> plantafile, 'Analyzing coverage...'
+
+    region_covered = 0
+    region_ambig = 0
+    region_snp = 0
+    region_insertion = 0
+    region_deletion = 0
+    gaps = []
+    neg_gaps = []
+    redundant = []
+    snip_left = 0
+    snip_right = 0
+
+    #Go through each header in reference file
+    for ref, value in regions.iteritems():
+        #Check to make sure this reference ID contains aligns.
+        if ref not in ref_aligns:
+            print >> plantafile, 'ERROR: Reference [$ref] does not have any alignments!  Check that this is the same file used for alignment.'
+            print >> plantafile, 'ERROR: Alignment Reference Headers: %s' % ref_aligns.keys()
+
+            #Sort all alignments in this reference by start location
+
+            # TODO: continue...
 
     # calulating SNPs and Subs. error (per 100 kbp)
+    indels = 0
+    total_aligned_bases = 0
     for line in open(nucmer_report_filename):
         #                           [REF]                [QRY]
         # AlignedBases         4501335(97.02%)      4513272(90.71%)    

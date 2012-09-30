@@ -325,6 +325,7 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
     coords_btab_filename = nucmerfilename + '.coords.btab'
     coords_filtered_filename = nucmerfilename + '.coords.filtered'
     unaligned_filename = nucmerfilename + '.unaligned'
+    snps_filename = nucmerfilename + '.snps'
     nucmer_report_filename = nucmerfilename + '.report'
     plantafile = open(logfilename_out, 'a')
 
@@ -408,6 +409,23 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
         name = name.split()[0] # no spaces in reference header
         references[name] = seq
         print >> plantafile, '\tLoaded [%s]' % name
+
+    #Loading the SNP calls
+    print 'Loading SNPs...'
+    snps = {}
+    snp_locs = {}
+    for line in open(snps_filename):
+        #print "$line";
+        line = line.split()
+        if not line[0].isdigit():
+            continue
+        ref = line[10]
+        ctg = line[11]
+
+        # if (! exists $line[11]) { die "Malformed line in SNP file.  Please check that show-snps has completed succesfully.\n$line\n[$line[9]][$line[10]][$line[11]]\n"; }
+
+        snps.setdefault(ref, {}).setdefault(ctg, {})[line[0]] = 'I' if line[1] == '.' else ('D' if line[2] == '.' else 'S')
+        snp_locs.setdefault(ref, {}).setdefault(ctg, {})[line[0]] = line[3]
 
     # Loading the regions (if any)
     regions = {}
@@ -680,6 +698,13 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
                 continue
 
             #If region starts in a contig, ignore portion of contig prior to region start
+            if sorted_aligns and region and sorted_aligns[0].s1 < region[0]:
+                print '\t\t\tSTART within alignment : %s' % sorted_aligns[0]
+                #Track number of bases ignored at the start of the alignment
+                snip_left = region[0] - sorted_aligns[0].s1
+                #Modify to account for any insertions or deletions that are present
+                for z in xrange(sorted_aligns[0].s1, region[0] + 1):
+                    pass
 
             # TODO: continue...
 

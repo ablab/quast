@@ -39,7 +39,7 @@ def do(filenames, genes_lengths, output_dir, lib_dir):
         gc_content = open(gc_content_filename, 'w')
         try:
             subprocess.call([probuild_path, '--gc', '--seq', filename], stdout=gc_content, stderr=gc_content)
-        except EnvironmentError as ee:
+        except EnvironmentError, ee:
             print "\nEnvironment Error occurs: ", ee
             continue
 

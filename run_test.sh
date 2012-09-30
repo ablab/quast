@@ -30,7 +30,7 @@ if [ $? -eq 1 ]; then exit 1; fi; echo; echo;  python quast.py $contigs_1K_1 $co
 if [ $? -eq 1 ]; then exit 1; fi; echo; echo;  python quast.py $contigs_1K_1 $contigs_1K_2 -o $results_dir/c1k1_c1k2_R_G_O 	     -R $reference_1K -G $genes_1K      -O $operons_1K
 if [ $? -eq 1 ]; then exit 1; fi; echo; echo;  python quast.py $contigs_1K_1 $contigs_1K_2 -o $results_dir/c1k1_c1k2_R_Gnbci_O   -R $reference_1K -G $genes_ncbi_1K -O $operons_1K
 if [ $? -eq 1 ]; then exit 1; fi; echo; echo;  python quast.py $contigs_1K_1 $contigs_1K_2 -o $results_dir/c1k1_c1k2_R_Ggff_O 	 -R $reference_1K -G $genes_gff_1K  -O $operons_1K
-if [ $? -eq 1 ]; then exit 1; fi; echo; echo;  python quast.py $contigs_1K_1 $contigs_1K_2 -o $results_dir/c1k1_c1k2_R_G_O_min-contig 			 --min-contig 1500 				-R $reference_1K -G $genes_ncbi_1K -O $operons_1K
+if [ $? -eq 1 ]; then exit 1; fi; echo; echo;  python quast.py $contigs_1K_1 $contigs_1K_2 -o $results_dir/c1k1_c1k2_R_G_O_min-contig 			 --min-contig 200 				-R $reference_1K -G $genes_ncbi_1K -O $operons_1K
 if [ $? -eq 1 ]; then exit 1; fi; echo; echo;  python quast.py $contigs_1K_1 $contigs_1K_2 -o $results_dir/c1k1_c1k2_R_G_O_gage 				 --gage 						-R $reference_1K -G $genes_ncbi_1K -O $operons_1K
 if [ $? -eq 1 ]; then exit 1; fi; echo; echo;  python quast.py $contigs_1K_1 $contigs_1K_2 -o $results_dir/c1k1_c1k2_R_G_O_contig-thresholds 	 --contig-thresholds 200,500 	-R $reference_1K -G $genes_ncbi_1K -O $operons_1K
 if [ $? -eq 1 ]; then exit 1; fi; echo; echo;  python quast.py $contigs_1K_1 $contigs_1K_2 -o $results_dir/c1k1_c1k2_R_G_O_genemark-thresholds   --genemark-thresholds 0,300 	-R $reference_1K

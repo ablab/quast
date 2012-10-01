@@ -312,7 +312,7 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
     logfilename_out = output_dir + '/contigs_report_' + os.path.basename(filename) + '.stdout'
     logfilename_err = output_dir + '/contigs_report_' + os.path.basename(filename) + '.stderr'
     logfile_err = open(logfilename_err, 'a')
-    print '    Logging to files', logfilename_out, 'and', os.path.basename(logfilename_err), '...',
+    print >>plantafile, '    Logging to files', logfilename_out, 'and', os.path.basename(logfilename_err), '...',
     # reverse complementarity is not an extensive misassemble
     peral = 0.99
     maxun = 10
@@ -411,7 +411,7 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
         print >> plantafile, '\tLoaded [%s]' % name
 
     #Loading the SNP calls
-    print 'Loading SNPs...'
+    print >>plantafile, 'Loading SNPs...'
     snps = {}
     snp_locs = {}
     for line in open(snps_filename):
@@ -700,7 +700,7 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
 
             #If region starts in a contig, ignore portion of contig prior to region start
             if sorted_aligns and region and sorted_aligns[0].s1 < region[0]:
-                print '\t\t\tSTART within alignment : %s' % sorted_aligns[0]
+                print >>plantafile, '\t\t\tSTART within alignment : %s' % sorted_aligns[0]
                 #Track number of bases ignored at the start of the alignment
                 snip_left = region[0] - sorted_aligns[0].s1
                 #Modify to account for any insertions or deletions that are present
@@ -755,7 +755,7 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
                 end = False
                 #Check to see if previous gap was negative
                 if negative:
-                    print '\t\t\tPrevious gap was negative, modifying coordinates to ignore overlap'
+                    print >>plantafile, '\t\t\tPrevious gap was negative, modifying coordinates to ignore overlap'
                     #Ignoring OL part of next contig, no SNPs or N's will be recorded
                     snip_left = current.e1 + 1 - sorted_aligns[0].s1
                     #Account for any indels that may be present

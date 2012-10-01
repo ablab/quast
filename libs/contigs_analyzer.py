@@ -312,7 +312,7 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
     logfilename_out = output_dir + '/contigs_report_' + os.path.basename(filename) + '.stdout'
     logfilename_err = output_dir + '/contigs_report_' + os.path.basename(filename) + '.stderr'
     logfile_err = open(logfilename_err, 'a')
-    print >>plantafile, '    Logging to files', logfilename_out, 'and', os.path.basename(logfilename_err), '...',
+    print '    Logging to files', logfilename_out, 'and', os.path.basename(logfilename_err), '...',
     # reverse complementarity is not an extensive misassemble
     peral = 0.99
     maxun = 10

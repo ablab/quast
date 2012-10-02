@@ -9,7 +9,7 @@
 
 1.1 - Added mismatches counting. Fixed bug in misassemblies counting
       (some inversions were omitted). GC content plot is logarithmically scaled.
-      ORFs are not counted, GeneMark added instead (for gene finding).
+      ORFs are not counted, GeneMark added instead (for gene finding, only on Linux).
       Nucmer aligner setting changed (from IDY% = 80 to 95, 
       i.e. now all alignments are more robust).
 

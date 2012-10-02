@@ -179,7 +179,7 @@ def sympalign(out_filename, in_filename):
             label = ref_id + '\t' + contig_id
             print >> ouf, '%8d %8d  | %8d %8d  | %8d %8d  | %8.4f  | %s' % (sr, er, sc, ec, lr, lc, p, label)
     ouf.close()
-    print '  Done sympaligning.'
+    print '  Sympaligning is finished.'
 
 
 class Mapping(object):
@@ -999,6 +999,7 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
     report.add_field(reporting.Fields.MISASSEMBL, len(region_misassemblies) - region_misassemblies.count(Misassembly.LOCAL))
     report.add_field(reporting.Fields.MISCONTIGS, len(misassembled_contigs))
     report.add_field(reporting.Fields.MISCONTIGSBASES, misassembled_bases)
+    report.add_field(reporting.Fields.UNALIGNED, '%d + %d part' % (unaligned, partially_unaligned))
     report.add_field(reporting.Fields.UNALIGNEDBASES, (fully_unaligned_bases + partially_unaligned_bases))
     report.add_field(reporting.Fields.AMBIGUOUS, ambiguous)
     report.add_field(reporting.Fields.AMBIGUOUSBASES, total_ambiguous)
@@ -1031,7 +1032,7 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
 
     plantafile.close()
     logfile_err.close()
-    print '  Done plantakoling.'
+    print '  Analysis is finished.'
     return 'OK'
 
 ###  I think we don't need this

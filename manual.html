@@ -10,6 +10,9 @@
         .code {
             background-color: #EEE;
         }
+        table td {
+            vertical-align: top;
+        }
     </style>
 </head>
 <body>
@@ -27,7 +30,7 @@
     them separately.
     <br>
     <br>
-    QUAST version 1.2 released under GPL v2 (see <a href="LICENSE">LICENSE</a> for details) on 28 September 2012.
+    QUAST version 1.2 released under GPL v2 (see <a href="LICENSE">LICENSE</a> for details) on 2 October 2012.
 </p>
 
 <h2>1. Installation</h2>
@@ -197,39 +200,44 @@ These files correspond to the first 10 kbp of E. coli. Input reads and sample as
 <a name="sec2"></a>
 <h2>3. QUAST output</h2>
 <p>If an output path was not specified manually, QUAST puts its output into <code>quast_results/result_&lt;DATE&gt;/</code> directory and creates a <code>latest</code> symlink to this folder inside <code>quast_results/</code>.
-<br>
-<br>
-Output directory contents:
-    <table style="margin-left: 36px;">
-        <tr>
-            <td style="padding-right: 20px;">report.txt</td>
-            <td>an assessment summary in a simple text format.</td>
-        </tr>
-        <tr>
-            <td style="padding-right: 20px;">report.tsv</td>
-            <td>a tab-separated version of the summary, suitable for Google Docs and Excel.</td>
-        </tr>
-        <tr>
-            <td style="padding-right: 20px;">report.tex</td>
-            <td>a LaTeX version of the summary.</td>
-        </tr>
-        <tr>
-            <td style="padding-right: 20px;">plots.pdf</td>
-            <td>plots (file is created if the matplotlib python library is installed).</td>
-        </tr>
-        <tr>
-            <td style="padding-right: 20px;">report.html</td>
-            <td>an HTML version of the report with all plots inside it.</td>
-        </tr>
-        <tr>
-            <td style="padding-right: 20px;">contigs_reports/misassemblies_report</td>
-            <td>a detailed report on misassemblies. See <a href="#sec3.1.2">section 3.1.2</a> for details.</td>
-        </tr>
-        <tr>
-            <td style="padding-right: 20px;">contigs_reports/unaligned_report</td>
-            <td>a detailed report on unaligned and partially unaligned contigs. See <a href="#sec3.1.3">section 3.1.3</a> for details.</td>
-        </tr>
-    </table>
+
+    <br>
+    <br>
+    Output directory contents:
+<table style="margin-left: 20px;">
+    <tr>
+        <td style="padding-right: 20px;">report.txt</td>
+        <td>an assessment summary in a simple text format.</td>
+    </tr>
+    <tr>
+        <td style="padding-right: 20px;">report.tsv</td>
+        <td>a tab-separated version of the summary, suitable for Google Docs and Excel.</td>
+    </tr>
+    <tr>
+        <td style="padding-right: 20px;">report.tex</td>
+        <td>a LaTeX version of the summary.</td>
+    </tr>
+    <tr>
+        <td style="padding-right: 20px;">plots.pdf</td>
+        <td>plots (file is created if the matplotlib python library is installed).</td>
+    </tr>
+    <tr>
+        <td style="padding-right: 20px;">report.html</td>
+        <td>an HTML version of the report with all plots inside it.</td>
+    </tr>
+    <tr>
+        <td style="padding-right: 20px;">contigs_reports/</td>
+        <td></td>
+    </tr>
+    <tr>
+        <td style="padding-right: 20px; padding-left: 20px;">misassemblies_report/</td>
+        <td>a detailed report on misassemblies. See <a href="#sec3.1.2">section 3.1.2</a> for details.</td>
+    </tr>
+    <tr>
+        <td style="padding-right: 20px; padding-left: 20px;">unaligned_report/</td>
+        <td>a detailed report on unaligned and partially unaligned contigs. See <a href="#sec3.1.3">section 3.1.3</a> for details.</td>
+    </tr>
+</table>
 
 <br>
 
@@ -313,7 +321,7 @@ Note:
 <p><b><i>Reference GC (%)</i></b>&nbsp;&nbsp;is the total number of G and C nucleotides in the reference,
     divided by the total length of the reference.</p>
 
-<p><b><i>N's (%)</i></b>&nbsp;&nbsp;is the total number of uncalled bases (N's) in the assembly, divided 
+<p><b><i>N's (%)</i></b>&nbsp;&nbsp;is the total number of uncalled bases (N's) in the assembly, divided
     by the total length of the assembly.</p>
 
 <p><b><i># mismatches per 100 kbp</i></b>&nbsp;&nbsp;is an average number of mismatches per 100000 aligned bases. This does not
@@ -331,7 +339,7 @@ and Single Nucleotide Errors (SNEs), which are due to errors in reads or errors 
     operons annotations file for computing this metric. </p>
 
 <p><b><i># predicted genes</i></b>&nbsp;&nbsp;is the number of genes in the assembly
-    predicted by QUAST’s gene-finding module, which is based on GeneMarkS. 
+    predicted by QUAST’s gene-finding module, which is based on GeneMarkS.
     This metric is computed is an annotated list of genes is not provided.</p>
 
 <p><b><i>NA50, NGA50, NA75, NGA75, LA50, LA75, LGA50, LGA75 (A stands for "aligned")</i></b>&nbsp;&nbsp;like the same
@@ -343,7 +351,7 @@ and Single Nucleotide Errors (SNEs), which are due to errors in reads or errors 
 <a name="sec3.1.2"></a>
 <h4>3.1.2 Misassemblies report</h4>
 
-<p><b><i># misassemblies</i></b>&nbsp;&nbsp;is the same as <i># misassemblies</i> from <a href="#sec3.1.1">section 3.1.1</a>. 
+<p><b><i># misassemblies</i></b>&nbsp;&nbsp;is the same as <i># misassemblies</i> from <a href="#sec3.1.1">section 3.1.1</a>.
     However, this report contains also a classification of all misassemblies into three groups <i>relocations</i>, <i>translocations</i>, 
     and <i>inversions</i> (see below).</p>
 
@@ -370,7 +378,7 @@ opposite strands of the same chromosome. </p>
 <p><b><i># mismatches</i></b>&nbsp;&nbsp;is the number of mismatches in all aligned bases.</p>
 
 <p><b><i># indels</i></b>&nbsp;&nbsp;is the number of single nucleotide indels in all aligned bases.</p>
-        
+
 <a name="sec3.1.3"></a>
 <h4>3.1.3 Unaligned report</h4>
 
@@ -378,18 +386,18 @@ opposite strands of the same chromosome. </p>
 
 <p><b><i>Fully unaligned length</i></b>&nbsp;&nbsp;is the total number of bases in all unaligned contigs.</p>
 
-<p><b><i># partially unaligned contigs</i></b>&nbsp;&nbsp;is the number of contigs that are not fully unaligned ones but have fragments 
+<p><b><i># partially unaligned contigs</i></b>&nbsp;&nbsp;is the number of contigs that are not fully unaligned ones but have fragments
     with no alignment to the reference sequence.</p>
 
 <p><b><i># with misassembly</i></b>&nbsp;&nbsp;is the number of partially unaligned contigs which have a misassembly in their aligned fragment.
     Note that such misassemblies are not counted in <i># misassemblies</i> and other <i>misassemblies</i> statistics.</p>
 
-<p><b><i># both parts are significant</i></b>&nbsp;&nbsp;is the number of partially unaligned contigs which have both aligned and unaligned fragments 
+<p><b><i># both parts are significant</i></b>&nbsp;&nbsp;is the number of partially unaligned contigs which have both aligned and unaligned fragments
     of size &ge; <i>min-contig</i> (see <a href="#sec1.3">section 2.3</a>).
 
 <p><b><i>Partially unaligned length</i></b>&nbsp;&nbsp;is the total number of unaligned bases in all partially unaligned contigs.</p>
 
-<p><b><i># N</i></b>&nbsp;&nbsp;is the total number of uncalled bases (N's) in the assembly.</p>      
+<p><b><i># N</i></b>&nbsp;&nbsp;is the total number of uncalled bases (N's) in the assembly.</p>
 
 <a name="sec2.2"></a>
 <h3>3.2 Plots descriptions</h3>

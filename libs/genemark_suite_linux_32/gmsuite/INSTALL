@@ -1,0 +1,11 @@
+#================================================
+# Copyright Georgia Institute of Technology, Atlanta, Georgia, USA
+# Distributed by GeneProbe Inc., Atlanta, Georgia, USA
+#================================================
+Installation instructions for GeneMark Suite
+
+Please, copy key "gm_key" into users home directory as:
+cp gm_key ~/.gm_key
+
+#================================================
+

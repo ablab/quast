@@ -1,0 +1,71 @@
+===============================================
+
+Program "gmhmmp_heuristic.pl" runs GeneMark.hmm with Heuristic models on
+single or multiple sequences in FASTA format.
+
+Version 1.1
+
+Usage: gmhmmp_heuristic.pl [options] -s <sequence file name>
+Optional parameters:
+
+  -outfile   <string> output file name
+             default: <sequence file name>.lst
+  -a         write predicted protein sequence
+  -n         write nucleotide sequence of predicted genes
+  -i         <number> initial probability of non-coding state
+  -gcode     <number> genetic code
+             default: 11; supported: 11, 4 and 1
+  -test      installation test
+  -verbose   progress information on
+
+Output format:
+
+The output, protein coding region predictions for each sequence from the
+multiple FASTA sequences (the input) is provided in the following format:
+
+A.  Header line marks the beginning of the prediction for a given single
+sequence
+It starts with "# " and continues with the FASTA definition line for that
+sequence
+
+For example:
+# >N_A0000001
+
+B.  List of predictions made by GeneMark.hmm with Heuristic models
+
+For example:
+
+GeneMark.hmm PROKARYOTIC (Version 2.6p)
+Sequence file name: seq,      RBS: N
+Model file name: /home/alexl/b/heuristic_mod/heu_11_70.mod
+Model organism: Heuristic_model_for_genetic_code_11_and_GC_70
+Thu Mar  6 15:49:38 2008
+
+Predicted genes
+   Gene    Strand    LeftEnd    RightEnd       Gene     Class
+    #                                         Length
+    1        +          36        1040         1005        1
+    2        +        1037        2002          966        1
+    3        +        2070        3179         1110        1
+    4        +        3172        4287         1116        1
+    5        -        4342        4704          363        1
+
+C. End of the prediction list is marked by string "#==="
+
+Error reporting:
+
+If sequence is too short (shorter than 40 nt) or unexpected sequence format
+is found, the error message will be printed in file in place of predicted
+genes.
+
+For example:
+
+# >test1
+record ignored: short sequence
+#===
+
+Note that the gene class column will not be informative for this application
+(it will always be Class 1).
+
+===============================================
+

@@ -21,7 +21,12 @@ def do(filenames, genes_lengths, output_dir, lib_dir):
         if not os.path.isdir(output_dir):
             os.mkdir(output_dir)
 
-        genemark_path  = os.path.join(lib_dir, 'genemark_suite_linux_64/gmsuite')
+        import struct
+        if struct.calcsize("P") * 8 == 64:
+            genemark_path  = os.path.join(lib_dir, 'genemark_suite_linux_64/gmsuite')
+        else:
+            genemark_path  = os.path.join(lib_dir, 'genemark_suite_linux_32/gmsuite')
+
         gm_key_path = os.path.join(genemark_path, 'gm_key')
         probuild_path = os.path.join(genemark_path, 'probuild')
         gmhmmp_path = os.path.join(genemark_path, 'gmhmmp')

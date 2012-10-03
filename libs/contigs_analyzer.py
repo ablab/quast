@@ -832,12 +832,12 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
                         #The next alignment is redundant to the current alignmentt
                         while next.e1 <= current.e1 and sorted_aligns:
                             total_redundant += next.e1 - next.s1
-                        print >>plantafile, '\t\t\t\tThe next contig is redundant. Skipping.'
-                        redundant.append(current.contig)
-                        next = sorted_aligns[0]
-                        if next.e1 <= current.e1:
-                            sorted_aligns = sorted_aligns[1:]
-                        counter += 1
+                            print >>plantafile, '\t\t\t\tThe next contig is redundant. Skipping.'
+                            redundant.append(current.contig)
+                            next = sorted_aligns[0]
+                            if next.e1 <= current.e1:
+                                sorted_aligns = sorted_aligns[1:]
+                            counter += 1
                     else:
                         #This alignment overlaps with the next alignment, negative gap
                         #If contig extends past the region, clip

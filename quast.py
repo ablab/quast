@@ -207,13 +207,17 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
     ### CONFIG & CHECKS
     ########################################################################
 
-    if os.path.isdir(output_dirpath):  # in case of starting two instances of QUAST in the same second
-        i = 2
-        base_dirpath = output_dirpath
-        while os.path.isdir(output_dirpath):
-            output_dirpath = str(base_dirpath) + '__' + str(i)
-            i += 1
-        print "\nWARNING! Output directory already exists! Results will be saved in " + output_dirpath + "\n"
+    # in case of starting two instances of QUAST in the same second
+    if os.path.isdir(output_dirpath):
+        # if user starts QUAST with -o <existing dir> then qconfig.make_latest_symlink will be False
+        if qconfig.make_latest_symlink:
+            i = 2
+            base_dirpath = output_dirpath
+            while os.path.isdir(output_dirpath):
+                output_dirpath = str(base_dirpath) + '__' + str(i)
+                i += 1
+        else:
+            print "\nWARNING! Output directory already exists! Existing Nucmer aligns will be used!\n"
 
     if not os.path.isdir(output_dirpath):
         os.makedirs(output_dirpath)

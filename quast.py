@@ -138,6 +138,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
     output_dirpath = os.path.join(os.path.abspath(qconfig.default_results_root_dirname), qconfig.output_dirname)
 
     for opt, arg in options:
+        print "OPT IS", opt
         # Yes, this is a code duplicating. Python's getopt is non well-thought!!
         if opt in ('-o', "--output-dir"):
             output_dirpath = os.path.abspath(arg)
@@ -147,6 +148,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
             qconfig.genes = check_file_existence(arg, 'genes')
 
         elif opt in ('-O', "--operons"):
+            print "I'm here!"
             qconfig.operons = check_file_existence(arg, 'operons')
 
         elif opt in ('-R', "--reference"):

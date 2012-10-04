@@ -4,6 +4,7 @@
 
 import sys
 import os
+import re
 
 sys.path.append(os.path.join(os.path.abspath(sys.path[0]), '../libs'))
 
@@ -21,14 +22,18 @@ if os.path.isfile(sys.argv[2]):
 else:
     list_of_ids = [sys.argv[2]]
 
-dict_of_all_contigs = dict(fastaparser.read_fasta(sys.argv[1]))
+origin_fasta = fastaparser.read_fasta(sys.argv[1])
+dict_of_all_contigs = dict()
 selected_contigs = []
+for (name, seq) in origin_fasta:
+    corr_name = re.sub(r'\W', '', re.sub(r'\s', '_', name))
+    dict_of_all_contigs[corr_name] = seq
 
 for name in list_of_ids:
     if name in dict_of_all_contigs:
         selected_contigs.append((name, dict_of_all_contigs[name]))
     else:
-        print >> sys.stderr, "Contig", name, "not found!"
+        print >> sys.stderr, "Contig", name, "(cor name:", corr_name, ") not found!"
 
 for (name, seq) in selected_contigs:
     print '>' + name

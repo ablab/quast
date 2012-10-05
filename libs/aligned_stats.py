@@ -70,7 +70,7 @@ def do(reference, filenames, nucmer_dir, output_dir, all_pdf, draw_plots, json_o
         nucmer_filename = os.path.join(nucmer_prefix, os.path.basename(filename) + '.coords.filtered')
         assembly_lengths.append(sum(fastaparser.get_lengths_from_fastafile(filename)))
         if not os.path.isfile(nucmer_filename):
-            print '  ERROR: nucmer coord file (' + nucmer_filename + ') not found, skipping...'
+            print '  Error: nucmer .coords.filtered file (' + nucmer_filename + ') not found, skipping...'
             lists_of_lengths.append([0])
         else:
             lists_of_lengths.append(get_lengths_from_coordfile(nucmer_filename))

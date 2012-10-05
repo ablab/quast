@@ -134,7 +134,7 @@ def do(reference, filenames, nucmer_dir, output_dir, genes_filename, operons_fil
 
         nucmer_filename = os.path.join(nucmer_prefix, os.path.basename(filename) + '.coords')
         if not os.path.isfile(nucmer_filename):
-            print '  ERROR: nucmer coord file (' + nucmer_filename + ') not found, skipping...'
+            print '  Error: nucmer .coords file (' + nucmer_filename + ') not found, skipping...'
             continue
 
         coordfile = open(nucmer_filename, 'r')

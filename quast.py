@@ -217,7 +217,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
                 output_dirpath = str(base_dirpath) + '__' + str(i)
                 i += 1
         else:
-            print "\nWARNING! Output directory already exists! Existing Nucmer aligns will be used!\n"
+            print "\nWarning! Output directory already exists! Existing Nucmer aligns will be used!\n"
 
     if not os.path.isdir(output_dirpath):
         os.makedirs(output_dirpath)
@@ -306,7 +306,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
 
         lengths = fastaparser.get_lengths_from_fastafile(contigs_fpath)
         if not sum(1 for l in lengths if l >= qconfig.min_contig):
-            print "\n  WARNING! %s will not be processed because it doesn't have contigs >= %d bp.\n" % (os.path.basename(contigs_fpath), qconfig.min_contig)
+            print "\n  Warning! %s will not be processed because it doesn't have contigs >= %d bp.\n" % (os.path.basename(contigs_fpath), qconfig.min_contig)
             continue
 
         ## filling column "Assembly" with names of assemblies
@@ -342,7 +342,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
         ### GAGE
         ########################################################################
         if not qconfig.reference:
-            print >> sys.stderr, "\nERROR! GAGE can't be run without reference!\n"
+            print >> sys.stderr, "\nError! GAGE can't be run without reference!\n"
         else:
             from libs import gage
             gage.do(qconfig.reference, contigs_fpaths, output_dirpath, qconfig.min_contig, lib_dir)
@@ -371,9 +371,13 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
         from libs import contigs_analyzer
         nucmer_statuses = contigs_analyzer.do(qconfig.reference, contigs_fpaths, qconfig.cyclic, output_dirpath + '/contigs_reports', lib_dir, qconfig.draw_plots)
         for contigs_fpath, nucmer_status in nucmer_statuses.items():
-            if nucmer_status == 'FAILED':
+            if nucmer_status == contigs_analyzer.NucmerStatus.FAILED:
                 reporting.delete(contigs_fpath)
                 contigs_fpaths.remove(contigs_fpath)
+#            if nucmer_status == contigs_analyzer.NucmerStatus.NOT_ALIGNED:
+#                qconfig.reference = None
+
+    aligned_contigs_fpaths = filter(lambda c_fpath: nucmer_statuses[c_fpath] == contigs_analyzer.NucmerStatus.OK, contigs_fpaths)
 
     # Before continue evaluating, check if nucmer didn't skip all of the contigs files.
     if len(contigs_fpaths) != 0:
@@ -383,28 +387,37 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
             ### NA and NGA ("aligned N and NG")
             ########################################################################
             from libs import aligned_stats
-            aligned_stats.do(qconfig.reference, contigs_fpaths, output_dirpath + '/contigs_reports',
+            aligned_stats.do(qconfig.reference, aligned_contigs_fpaths, output_dirpath + '/contigs_reports',
                 output_dirpath + '/aligned_stats', all_pdf, qconfig.draw_plots, json_outputpath, output_dirpath)
 
             ########################################################################
             ### GENOME_ANALYZER
             ########################################################################
             from libs import genome_analyzer
-            genome_analyzer.do(qconfig.reference, contigs_fpaths, output_dirpath + '/contigs_reports',
+            genome_analyzer.do(qconfig.reference, aligned_contigs_fpaths, output_dirpath + '/contigs_reports',
                 output_dirpath + '/genome_stats', qconfig.genes, qconfig.operons, all_pdf, qconfig.draw_plots, json_outputpath, output_dirpath)
 
-        if not qconfig.genes:
-            ########################################################################
-            ### GeneMark
-            ########################################################################
-            from libs import genemark
-            genemark.do(contigs_fpaths, qconfig.genes_lengths, output_dirpath + '/predicted_genes', lib_dir)
-        else:
+        def add_empty_predicted_genes_fields():
             # TODO: make it nicer (not output predicted genes if annotations are provided
             for id, contigs_fpath in enumerate(contigs_fpaths):
                 report = reporting.get(contigs_fpath)
                 report.add_field(reporting.Fields.GENEMARKUNIQUE, "")
                 report.add_field(reporting.Fields.GENEMARK, [""] * len(qconfig.genes_lengths))
+
+        if not qconfig.genes:
+            ########################################################################
+            ### GeneMark
+            ########################################################################
+            import platform
+            if platform.system() == 'Darwin':
+                print >> sys.stderr, 'Warning! GeneMark tool for gene prediction doesn\'t work on Mac OS X.'
+                add_empty_predicted_genes_fields()
+            else:
+                from libs import genemark
+                genemark.do(contigs_fpaths, qconfig.genes_lengths, output_dirpath + '/predicted_genes', lib_dir)
+
+        else:
+            add_empty_predicted_genes_fields()
 
         ########################################################################
         ### TOTAL REPORT
@@ -422,9 +435,12 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
             print '  All pdf files are merged to', all_pdf_filename
             all_pdf.close()
 
+        from libs import contigs_analyzer
         for contigs_fpath, nucmer_status in nucmer_statuses.items():
-            if nucmer_status == 'FAILED':
-                print 'Warning!', contigs_fpath, 'skipped. Nucmer failed processing this contigs.'
+            if nucmer_status == contigs_analyzer.NucmerStatus.FAILED:
+                print 'Warning!', '\'' + os.path.basename(contigs_fpath) + '\'', 'skipped. Nucmer failed processing this contigs.'
+            if nucmer_status == contigs_analyzer.NucmerStatus.NOT_ALIGNED:
+                print 'Warning! Contigs in', '\'' + os.path.basename(contigs_fpath) + '\'', 'are not aligned on the reference. Most of the metrics are impossible to evaluate and going to be skipped.'
 
         print 'Done.'
         cleanup(corrected_dirpath, tee)
@@ -432,7 +448,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
 
     else:
         print 'Error! Nucmer failed processing the file%s with contigs. ' \
-              'Check out if the correct format is used.%s' \
+              'Check out if the contigs and the reference used are correct.%s' \
                 % ('s' if len(old_contigs_fpaths) > 1 else '',
                    ' The problem concern all the files provided.' if len(old_contigs_fpaths) > 1 else '')
         cleanup(corrected_dirpath, tee)

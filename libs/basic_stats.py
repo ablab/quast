@@ -7,7 +7,7 @@
 import os
 import itertools
 import fastaparser
-import json_saver
+from libs.html_saver import json_saver
 from libs import qconfig
 from qutils import id_to_str
 import reporting

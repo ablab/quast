@@ -9,10 +9,8 @@ function drawNxPlot(filenames, listsOfLengths, title,
     }
 
     div.html(
-        "<div class='plot'>" +
-            "<span class='plot-header'>" + titleHtml + "</span>" +
-            "<div style='width: 800px; height: 600px;' id='" + title + "-plot-placeholder'></div>" +
-        "</div>"
+        "<span class='plot-header'>" + titleHtml + "</span>" +
+        "<div class='plot-placeholder' id='" + title + "-plot-placeholder'></div>"
     );
 
     var plotsN = listsOfLengths.length;

@@ -27,9 +27,15 @@ min_contig = None # for printing info about min contig in TXT reports
 # Available fields for report, values (strings) should be unique!
 class Fields:
     NAME = 'Assembly'
-    # Basic
+    # Basic stats
     CONTIGS = ('# contigs (>= %d bp)', tuple(qconfig.contig_thresholds))
     TOTALLENS = ('Total length (>= %d bp)', tuple(qconfig.contig_thresholds))
+    NUMCONTIGS = '# contigs'
+    LARGCONTIG = 'Largest contig'
+    TOTALLEN = 'Total length'
+    GC = 'GC (%)'
+    REFLEN = 'Reference length'
+    REFGC = 'Reference GC (%)'
     N50 = 'N50'
     NG50 = 'NG50'
     N75 = 'N75'
@@ -38,34 +44,37 @@ class Fields:
     LG50 = 'LG50'
     L75 = 'L75'
     LG75 = 'LG75'
-    NUMCONTIGS = '# contigs'
-    LARGCONTIG = 'Largest contig'
-    TOTALLEN = 'Total length'
-    GC = 'GC (%)'
-    REFLEN = 'Reference length'
-    REFGC = 'Reference GC (%)'
-    AVGIDY = 'Average %IDY'
 
-    # Misassemblies
-    MISLOCAL = '# local misassemblies'
+    # Structural variations
     MISASSEMBL = '# misassemblies'
     MISCONTIGS = '# misassembled contigs'
     MISCONTIGSBASES = 'Misassembled contigs length'
-    UNALIGNED = '# unaligned contigs'
-    UNALIGNEDBASES = 'Unaligned contigs length'
-    AMBIGUOUS = '# ambiguous contigs'
-    AMBIGUOUSBASES = 'Ambiguous contigs length'
+    #+
+    MIS_RELOCATION = '    # relocations'
+    MIS_TRANSLOCATION = '    # translocations'
+    MIS_INVERTION = '    # inversions'
+    #-
+    MIS_LOCAL = '# local misassemblies'
     MISMATCHES = '# mismatches'
     INDELS = '# indels'
+    AMBIGUOUS = '# ambiguous contigs'
+    AMBIGUOUSBASES = 'Ambiguous contigs length'
     SUBSERROR = '# mismatches per 100 kbp'
     INDELSERROR = '# indels per 100 kbp'
-
-    AVGIDY = ''
-
+    UNALIGNED = '# unaligned contigs'
+    UNALIGNEDBASES = 'Unaligned contigs length'
+    #+
+    UNALIGNED_FULL_CNTGS = '# fully unaligned contigs'
+    UNALIGNED_FULL_LENGTH = 'Fully unaligned length'
+    UNALIGNED_PART_CNTGS = '# partially unaligned contigs'
+    UNALIGNED_PART_WITH_MISASSEMBLY = '    # with misassembly'
+    UNALIGNED_PART_SIGNIFICANT_PARTS = '    # both parts are significant'
+    UNALIGNED_PART_LENGTH = 'Partially unaligned length'
+    #-
     UNCALLED = '# N'
     UNCALLED_PERCENT = "N's (%)"
 
-    # Unaligned
+    # Aligned
     NA50 = 'NA50'
     NGA50 = 'NGA50'
     NA75 = 'NA75'
@@ -74,6 +83,8 @@ class Fields:
     LGA50 = 'LGA50'
     LA75 = 'LA75'
     LGA75 = 'LGA75'
+
+    # Genes and operons
     MAPPEDGENOME = 'Genome fraction (%)'
     DUPLICATION_RATIO = 'Duplication ratio'
     GENES = '# genes'
@@ -89,24 +100,10 @@ class Fields:
              UNCALLED_PERCENT, SUBSERROR, INDELSERROR, GENES, OPERONS, GENEMARKUNIQUE, GENEMARK,
              NA50, LA50, NGA50, LGA50, NA75, LA75, NGA75, LGA75]
 
-    MIS_ALL_EXTENSIVE = '# misassemblies'
-    MIS_RELOCATION = '    # relocations'
-    MIS_TRANSLOCATION = '    # translocations'
-    MIS_INVERTION = '    # inversions'
-    MIS_EXTENSIVE_CONTIGS = '# misassembled contigs'
-    MIS_EXTENSIVE_BASES = 'Misassembled contigs length'
-    MIS_LOCAL = '# local misassemblies'
 
     # for detailed misassemblies report
     misassemblies_order = [NAME, MIS_ALL_EXTENSIVE, MIS_RELOCATION, MIS_TRANSLOCATION, MIS_INVERTION,
                            MIS_EXTENSIVE_CONTIGS, MIS_EXTENSIVE_BASES, MIS_LOCAL, MISMATCHES, INDELS]
-
-    UNALIGNED_FULL_CNTGS = '# fully unaligned contigs'
-    UNALIGNED_FULL_LENGTH = 'Fully unaligned length'
-    UNALIGNED_PART_CNTGS = '# partially unaligned contigs'
-    UNALIGNED_PART_WITH_MISASSEMBLY = '    # with misassembly'
-    UNALIGNED_PART_SIGNIFICANT_PARTS = '    # both parts are significant'
-    UNALIGNED_PART_LENGTH = 'Partially unaligned length'
 
     # for detailed unaligned report
     unaligned_order = [NAME, UNALIGNED_FULL_CNTGS, UNALIGNED_FULL_LENGTH, UNALIGNED_PART_CNTGS,
@@ -147,7 +144,7 @@ class Fields:
                   GAGE_CORN50]
 
     grouped_order = [
-        ('Basic stats', [CONTIGS, TOTALLENS, NUMCONTIGS, LARGCONTIG, TOTALLEN, REFLEN,
+        ('Basic stats', [CONTIGS, TOTALLENS, NUMCONTIGS, LARGCONTIG, TOTALLEN, REFLEN, GC,
                          N50, NG50, N75, NG75, L50, LG50, L75, LG75,]),
         ('Structural variations', [MISASSEMBL, MISCONTIGS, MISCONTIGSBASES,
                                    UNALIGNED, UNALIGNEDBASES, AMBIGUOUS, AMBIGUOUSBASES]),

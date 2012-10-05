@@ -159,20 +159,19 @@ function drawGCPlot(filenames, listsOfGCInfo, div, legendPh, glossary) {
     var title = 'GC content';
     legendPlaceholder = legendPh;
     div.html(
-        "<div class='plot'>" +
-            "<div style='width: 800px;'>" +
-            "<div class='plot-header' style='float: left'>" + addTooltipIfDefenitionExists(glossary, title) + "</div>" +
-            "<div id='change-scale' style='float: right; margin-right: 3px; visibility: hidden;'>" +
-            "<span id='normal_scale_label'>" +
-            normal_scale_span +
-            "</span>&nbsp;/&nbsp;<span id='log_scale_label'>" +
-            log_scale_a +
-            "</span>" +
-            "</div>" +
-            "<div style='clear: both'>" +
-            "</div>" +
-            "<div style='width: 800px; height: 600px;' id='gc-plot-placeholder'></div>" +
-            "</div>"
+        "<div style='width: 675px;'>" +
+        "<div class='plot-header' style='float: left'>" + addTooltipIfDefenitionExists(glossary, title) + "</div>" +
+        "<div id='change-scale' style='float: right; margin-right: 3px; visibility: hidden;'>" +
+        "<span id='normal_scale_label'>" +
+        normal_scale_span +
+        "</span>&nbsp;/&nbsp;<span id='log_scale_label'>" +
+        log_scale_a +
+        "</span>" +
+        "</div>" +
+        "<div style='clear: both'>" +
+        "</div>" +
+        "<div class='plot-placeholder' id='gc-plot-placeholder'></div>" +
+        "</div>"
     );
 
     var bin_size = 1.0;

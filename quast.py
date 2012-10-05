@@ -19,7 +19,7 @@ __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file
 #sys.path.append(os.path.join(os.path.abspath(sys.path[0]), '../spades_pipeline'))
 
 from libs import qconfig
-from libs import json_saver
+from libs.html_saver import json_saver
 
 RELEASE_MODE=False
 

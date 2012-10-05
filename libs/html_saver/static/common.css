@@ -1,0 +1,97 @@
+/* Main things */
+body {
+    margin: 0;
+    font-family: Lucida Grande, Verdana, Arial, sans-serif;
+    font-size: 12px;
+    color: black;
+    line-height: 1.3em;
+}
+a {
+    text-decoration: none;
+    color: #0c4f72;
+    border-bottom: 1px solid #487b95;
+    border-color: #487b95; /* #487b95 */
+    border-color: rgba(12, 79, 114, 0.2); /* #0c4f72; */ /* #a0d2eb; */ /*rgba(0, 88, cc, 0.3);*/
+}
+a:visited {
+    text-decoration: none;
+    color: #8C66B2;
+    border-bottom: 1px solid #8c66b2;
+    border-color: #8c66b2;
+    border-color: rgba(102, 51, 153, 0.2);
+}
+a:hover {
+    text-decoration: none;
+    color: #b33; /* #0088cc; */
+    border-bottom: 1px solid #ffcccc;
+    border-color: #ffcccc;
+    border-color: rgba(255, 0, 0, 0.2); /* #55b2e0; */ /*#005580;*/
+}
+
+.dotted-link {
+    cursor: pointer;
+    text-decoration: none;
+    color: #0c4f72;
+    border-bottom: 1px dashed #487b95;
+    border-color: #487b95; /* #487b95 */
+    border-color: rgba(12, 79, 114, 0.2);
+}
+.dotted-link:hover {
+    text-decoration: none;
+    color: #b33; /* #0088cc; */
+    border-bottom: 1px dashed #ffcccc;
+    border-color: #ffcccc;
+    border-color: rgba(255, 0, 0, 0.2);
+}
+
+.json-code {
+    display: none;
+}
+.smallcapitals {
+    font-size: .875em;
+    letter-spacing: .15em;
+    margin-right: -.15em;
+}
+.highlight {
+    background-color:#FFF9B5;
+    padding: 0px 3px;
+    margin-left: -3px;
+}
+ul.mdash {
+    margin: -1em 0 0 0;
+    padding: 0 0 0 2em;
+}
+ul.mdash li {
+    margin-bottom: 0.7em;
+    list-style-type: none;
+    text-indent: -1.3em;
+    behavior: expression(!this.before ? this.before = this.innerHTML = '&mdash;&nbsp;' + this.innerHTML : '');
+}
+ul.mdash li:before {
+    content: '\2014\a0';
+}
+/************/
+
+/* Tooltips */
+.tooltip {
+    font-size: 0.9em;
+    margin-bottom: 5px;
+}
+.tooltip.in {
+    opacity: 1;
+}
+.tooltip-inner {
+    text-align: left;
+}
+.tooltip-link,
+.tooltip-link:visited {
+    text-decoration: none;
+    color: #000;
+    border-bottom: 1px dashed #bbb;
+}
+.tooltip-link:hover {
+    text-decoration: none;
+    color: #b33;
+    border-bottom: 1px dashed #b33;
+}
+/************/

@@ -3,10 +3,8 @@
 function drawCumulativePlot(filenames, lists_of_lengths, reference_length, div, legendPlaceholder, glossary) {
     var title = 'Cumulative length';
     div.html(
-        "<div class='plot'>" +
-            "<span class='plot-header'>" + addTooltipIfDefenitionExists(glossary, title) + "</span>" +
-            "<div style='width: 850px; height: 600px;' id='cumulative-plot-placeholder'></div>" +
-            "</div>"
+        "<span class='plot-header'>" + addTooltipIfDefenitionExists(glossary, title) + "</span>" +
+        "<div class='plot-placeholder' id='cumulative-plot-placeholder'></div>"
     );
 
     var plotsN = lists_of_lengths.length;

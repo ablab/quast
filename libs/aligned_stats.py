@@ -107,7 +107,7 @@ def do(reference, filenames, nucmer_dir, output_dir, all_pdf, draw_plots, json_o
 
     # saving to JSON
     if json_output_dir:
-        import json_saver
+        from libs.html_saver import json_saver
         json_saver.save_aligned_contigs_lengths(json_output_dir, filenames, lists_of_lengths)
         json_saver.save_assembly_lengths(json_output_dir, filenames, assembly_lengths)
 

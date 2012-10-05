@@ -1,0 +1,94 @@
+
+.blocks > div {
+    float: left;
+    margin-bottom: 5.5em;
+    margin-top: 0px;
+}
+
+.plot-wrapper {
+    padding-right: 80px;
+}
+.plot-wrapper#cumulative-plot-div {
+    margin-bottom: 5.5em;
+    padding-right: 0;
+}
+.plot-wrapper:last-child {
+    margin-bottom: 40px;
+}
+
+.plot-header {
+    margin-left: 0px;
+    font-weight: bold;
+    height: 1.5em;
+    display: block;
+}
+.plot-placeholder {
+    width: 800px;
+    height: 600px;
+    margin-left: -125px;
+}
+.plot-placeholder#cumulative-plot-placeholder {
+    width: 850px;
+}
+
+#report .report-table-header {
+    font-weight: bold;
+}
+#report tr:first-child td {
+    border-bottom: 1px solid #bbb;
+}
+#report {
+    font-size: 1em;
+    margin-left: 0px;
+    min-width: 726px;
+    margin-bottom: 1em;
+}
+#report td {
+    padding: 2px 1em 0 0;
+    margin: 0;
+}
+#report td:last-child {
+    padding-right: 0;
+}
+#report td {
+    white-space: nowrap
+}
+#report .subheader-tr td {
+    height: 20px;
+    vertical-align: bottom;
+    border-bottom: 1px solid #bbb;
+}
+
+
+/*
+.plots {
+    margin-left: 1em;
+}*/
+/*.blocks > div {*/
+    /*float: left;*/
+    /*margin-bottom: 5.5em;*/
+    /*margin-top: 0px;*/
+/*}*/
+/*.blocks > div#cumulative-plot-div {*/
+    /*margin-bottom: 5.5em;*/
+    /*padding-right: 0;*/
+/*}*/
+/*.blocks > div#report {*/
+    /*margin-bottom: 1em;*/
+/*}*/
+/*.blocks > div:last-child {*/
+    /*margin-bottom: 40px;*/
+/*}*/
+
+
+/*.plot-wrapper {*/
+    /*padding-right: 50px;*/
+/*}*/
+
+/*.plot-header {*/
+    /*margin-left: 125px;*/
+    /*font-weight: bold;*/
+    /*height: 1.5em;*/
+    /*display: block;*/
+/*}*/
+

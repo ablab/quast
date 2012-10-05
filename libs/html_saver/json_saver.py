@@ -39,7 +39,7 @@ def save(filename, what):
 
 
 def save_total_report(output_dir, min_contig):
-    import reporting
+    from libs import reporting
     table = reporting.table()
 
     def try_convert_back_to_number(str):

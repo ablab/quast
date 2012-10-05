@@ -1,25 +1,23 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
-                      "http://www.w3.org/TR/html4/loose.dtd">
-
+<!DOCTYPE html>
 <html lang="en">
 <head>
-    <script type="text/javascript" src="jquery-1.7.2.min.js"></script>
-    <script type="text/javascript" src="flot/jquery.flot.min.js"></script>
-    <script type="text/javascript" src="flot/jquery.flot.dashes.js"></script>
-    <!-[if lte IE 8]><script type="text/javascript" src="flot/excanvas.min.js"></script><![endif]->
+    <script type="text/javascript" src="/static/jquery-1.7.2.min.js"></script>
+    <script type="text/javascript" src="/static/flot/jquery.flot.js"></script>
+    <script type="text/javascript" src="/static/flot/jquery.flot.dashes.js"></script>
+    <!–[if lte IE 8]><script type="text/javascript" src="/static/flot/excanvas.min.js"></script><![endif]–>
 
-    <script type="text/javascript" src="report-scripts/utils.js"></script>
-    <script type="text/javascript" src="report-scripts/build_total_report.js"></script>
-    <script type="text/javascript" src="report-scripts/draw_cumulative_plot.js"></script>
-    <script type="text/javascript" src="report-scripts/draw_nx_plot.js"></script>
-    <script type="text/javascript" src="report-scripts/draw_gc_plot.js"></script>
-    <script type="text/javascript" src="report-scripts/draw_genes_plot.js"></script>
-    <script type="text/javascript" src="report-scripts/build_report.js"></script>
+    <script type="text/javascript" src="/static/scripts/utils.js"></script>
+    <script type="text/javascript" src="/static/scripts/build_total_report.js"></script>
+    <script type="text/javascript" src="/static/scripts/draw_cumulative_plot.js"></script>
+    <script type="text/javascript" src="/static/scripts/draw_nx_plot.js"></script>
+    <script type="text/javascript" src="/static/scripts/draw_gc_plot.js"></script>
+    <script type="text/javascript" src="/static/scripts/draw_genes_plot.js"></script>
+    <script type="text/javascript" src="/static/scripts/build_report.js"></script>
 
-    <link rel="stylesheet" href="bootstrap/bootstrap.min.css"/>
+    <link rel="stylesheet" href="/static/bootstrap/bootstrap.min.css"/>
     <!-- Le HTML5 shim, for IE6-8 support of HTML5 elements -->
     <!--[if lt IE 9]>
-        <script type="text/javascript" src="ie_html5.js"></script>
+        <script type="text/javascript" src="/static/ie_html5.js"></script>
     <![endif]-->
 
     <script type="text/javascript">
@@ -28,125 +26,27 @@
 
     <style type="text/css">
         body {
-            margin: 0;
             padding-bottom: 30px;
-            font-family: Lucida Grande, Verdana, Arial, sans-serif;
-            font-size: 12px;
-            color: black;
-            line-height: 1.3em;
         }
         .content {
-            margin-left: 0;
+            margin-left: 120px;
             padding-top: 50px;
             clear: both;
         }
-
-        a {
-            text-decoration: underline;
-        }
-
         #header {
             display: block;
             width: 100%;
             margin-bottom: 2em;
             font-size: 1.5em;
-            margin-left: 125px;
         }
-
         #subheader { /* not used in Quast html report */
             margin-top: -13px;
             margin-bottom: 20px;
         }
-
-        #report {
-            margin-left: 125px;
-            min-width: 726px;
-        }
-        #report td {
-            padding: 0 1em 0 0;
-            margin: 0;
-        }
-        #report td {
-            white-space: nowrap
-        }
-        .report-table-header {
-            font-weight: bold;
-        }
-
-        .json-code {
-            display: none;
-        }
-        /*
-        .plots {
-            margin-left: 1em;
-        }*/
-        .blocks > div {
-            float: left;
-            margin-bottom: 5.5em;
-            margin-top: 0px;
-        }
-        .blocks > div#cumulative-plot-div {
-            margin-bottom: 5.5em;
-            padding-right: 0;
-        }
-        .blocks > div#report {
-            margin-bottom: 1em;
-        }
-        .blocks > div:last-child {
-            margin-bottom: 40px;
-        }
-        .plot-wrapper {
-            padding-right: 50px;
-        }
-
-        .plot-header {
-            margin-left: 125px;
-            font-weight: bold;
-            height: 1.5em;
-            display: block;
-        }
-
-        .tooltip {
-            font-size: 0.9em;
-            margin-bottom: 5px;
-        }
-        .tooltip.in {
-            opacity: 1;
-        }
-        .tooltip-inner {
-            text-align: left;
-        }
-        .tooltip-link {
-            color: black;
-            text-decoration: none;
-            border-bottom: 1px dashed black;
-        }
-        .tooltip-link:hover {
-            color: black;
-            text-decoration: none;
-        }
-
-        .dotted-link {
-            cursor: pointer;
-            text-decoration: none;
-            color: #0c4f72;
-            border-bottom: 1px dashed #487b95;
-            border-color: #487b95; /* #487b95 */
-            border-color: rgba(12, 79, 114, 0.2);
-        }
-        .dotted-link:hover {
-            text-decoration: none;
-            color: #b33; /* #0088cc; */
-            border-bottom: 1px dashed #ffcccc;
-            border-color: #ffcccc;
-            border-color: rgba(255, 0, 0, 0.2);
-        }
-        .smallcapitals {
-            font-size: .875em;
-            letter-spacing: .15em;
-            margin-right: -.15em;
-        }
     </style>
+
+    <link rel="stylesheet" type="text/css" href="/static/common.css" />
+    <link rel="stylesheet" type="text/css" href="/static/report.css" />
 </head>
 
 <body>
@@ -160,8 +60,9 @@
         </div>
 
         <noscript>
-            <div style="margin-left: 125px;">
-                Unfortunately, <span style="font-weight: bold">JavaScript</span> in your browser <span style="font-weight: bold">is disabled</span> or is not supported.</br>
+            <div style="margin-left: 0px;">
+                Unfortunately, <span style="font-weight: bold">JavaScript</span> in your
+                browser <span style="font-weight: bold">is disabled</span> or is not supported.</br>
                 We need JavaScript to build report and plots.
             </div>
         </noscript>
@@ -189,7 +90,7 @@
     </div>
 
 
-<div class='json-code'>
+    <div class='json-code'>
         <div id='report-json'>
             {{ report }}
         </div>
@@ -233,7 +134,6 @@
         });
     </script>
 
-    <script type="text/javascript" src="bootstrap/bootstrap-tooltip-5px-lower.js"></script>
-
+    <script type="text/javascript" src="/static/bootstrap/bootstrap-tooltip-5px-lower.min.js"></script>
 </body>
 </html>

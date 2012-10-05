@@ -1,6 +1,7 @@
 from __future__ import with_statement
+import shutil
 import re
-from libs import json_saver
+from libs.html_saver import json_saver
 
 ############################################################################
 # Copyright (c) 2011-2012 Saint-Petersburg Academic University
@@ -12,62 +13,88 @@ import os
 
 __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
 
-def get_real_path(rel_path_in_html_saver):
-    return os.path.join(__location__, rel_path_in_html_saver)
+def get_real_path(relpath_in_html_saver):
+    return os.path.join(__location__, relpath_in_html_saver)
 
-fn_report = 'report.html'
-afp_template = get_real_path('template.html')
+report_fname = 'report.html'
+template_fpath = get_real_path('template.html')
+static_dirname = 'static'
+static_dirpath = get_real_path(static_dirname)
+support_dirname = 'report_html_files'
 scripts_inserted = False
+support_files = [
+    'static/jquery-1.7.2.min.js'
+    'static/flot/jquery.flot.min.js'
+    'static/flot/excanvas.min.js'
+    'static/flot/jquery.flot.dashes.js'
+    'static/scripts/build_total_report.js'
+    'static/scripts/draw_cumulative_plot.js'
+    'static/scripts/draw_nx_plot.js'
+    'static/scripts/draw_gc_plot.js'
+    'static/scripts/utils.js'
+    'static/scripts/draw_genes_plot.js'
+    'static/scripts/build_report.js'
+    'static/ie_html5.js'
+    'static/jquery-1.7.2.min.js'
+    'static/bootstrap-tooltip-5px-lower.min.js'
+    'static/report.css'
+    'static/common.css'
+]
 
-
-def init(adp_results):
-    with open(afp_template) as f_template:
-        html = f_template.read()
-
-        for fp_script in ['jquery-1.7.2.min.js',
-                          'flot/jquery.flot.min.js',
-                          'flot/excanvas.min.js',
-                          'flot/jquery.flot.dashes.js',
-                          'report-scripts/build_total_report.js',
-                          'report-scripts/draw_cumulative_plot.js',
-                          'report-scripts/draw_nx_plot.js',
-                          'report-scripts/draw_gc_plot.js',
-                          'report-scripts/utils.js',
-                          'report-scripts/draw_genes_plot.js',
-                          'report-scripts/build_report.js', ]:
-            with open(get_real_path(fp_script)) as f:
-                html = html.replace(
-                    '<script type="text/javascript" src="' + fp_script + '"></script>',
-                    '<script type="text/javascript">\n' + f.read() + '\n\t</script>\n')
-
-        html = html.replace('<link rel="stylesheet" href="bootstrap/bootstrap.min.css"/>',
-            '<style rel="stylesheet">\n' + open(get_real_path('bootstrap/bootstrap.min.css')).read() + '\n</style>\n\n')
-
-        html = html.replace(
-            '<script type="text/javascript" src="ie_html5.js"></script>',
-            '<script type="text/javascript" >\n' + open(get_real_path('ie_html5.js')).read() + '\n</script>')
-
-        html = html.replace(
-            '<script type="text/javascript" src="bootstrap/bootstrap-tooltip-5px-lower.js"></script>',
-            '<script type="text/javascript" >\n' + open(
-                get_real_path('bootstrap/bootstrap-tooltip-5pxlower-min.js')).read() + '\n</script>')
-
+def init(results_dirpath):
+#    shutil.copy(template_fpath,     os.path.join(results_dirpath, report_fname))
+    support_dirpath = os.path.join(results_dirpath, support_dirname)
+    shutil.copytree(static_dirpath, support_dirpath)
+    with open(template_fpath) as template_file:
+        html = template_file.read()
+        html = html.replace("/" + static_dirname, support_dirname)
         html = html.replace('{{ glossary }}', open(get_real_path('glossary.json')).read())
 
-        with open(os.path.join(adp_results, fn_report), 'w') as f_html:
+        with open(os.path.join(results_dirpath, report_fname), 'w') as f_html:
             f_html.write(html)
 
 
-def append(adp_results, afp_json, keyword):
-    afp_html = os.path.join(adp_results, fn_report)
+#def init_old(results_dirpath):
+#    with open(template_fpath) as template_file:
+#        html = template_file.read()
+#
+#        for fp_script in support_files:
+#            with open(get_real_path(fp_script)) as f:
+#                html = html.replace(
+#                    '<script type="text/javascript" src="' + fp_script + '"></script>',
+#                    '<script type="text/javascript">\n' + f.read() + '\n\t</script>\n')
+#
+#        html = html.replace('<link rel="stylesheet" type="text/css" href="static/report.css" />',
+#                            '<style rel="stylesheet">\n' + open(get_real_path('static/report.css')).read() + '\n</style>\n\n')
+#
+#        html = html.replace('<link rel="stylesheet" href="static/bootstrap/bootstrap.min.css"/>',
+#                            '<style rel="stylesheet">\n' + open(get_real_path('static/bootstrap/bootstrap.min.css')).read() + '\n</style>\n\n')
+#
+#        html = html.replace(
+#            '<script type="text/javascript" src="static/ie_html5.js"></script>',
+#            '<script type="text/javascript" >\n' + open(get_real_path('static/ie_html5.js')).read() + '\n</script>')
+#
+#        html = html.replace(
+#            '<script type="text/javascript" src="static/bootstrap/bootstrap-tooltip-5px-lower-min.js"></script>',
+#            '<script type="text/javascript" >\n' + open(
+#                get_real_path('static/bootstrap/bootstrap-tooltip-5px-lower-min.js')).read() + '\n</script>')
+#
+#        html = html.replace('{{ glossary }}', open(get_real_path('glossary.json')).read())
+#
+#        with open(os.path.join(results_dirpath, report_fname), 'w') as f_html:
+#            f_html.write(html)
+
+
+def append(results_dirpath, json_fpath, keyword):
+    afp_html = os.path.join(results_dirpath, report_fname)
 
     if not os.path.isfile(afp_html):
-        init(adp_results)
+        init(results_dirpath)
 
     # reading JSON file
-    with open(afp_json) as f_json:
+    with open(json_fpath) as f_json:
         json_text = f_json.read()
-    os.remove(afp_json)
+    os.remove(json_fpath)
 
     # reading html template file
     with open(afp_html) as f_html:
@@ -81,58 +108,58 @@ def append(adp_results, afp_json, keyword):
         f_html.write(html_text)
 
 
-def save_total_report(adp_results, min_contig):
-    afp_json = json_saver.save_total_report(adp_results, min_contig)
-    if afp_json:
+def save_total_report(results_dirpath, min_contig):
+    json_fpath = json_saver.save_total_report(results_dirpath, min_contig)
+    if json_fpath:
         print '  HTML version of total report...'
-        append(adp_results, afp_json, 'report')
-        print '    Saved to', os.path.join(adp_results, fn_report)
+        append(results_dirpath, json_fpath, 'report')
+        print '    Saved to', os.path.join(results_dirpath, report_fname)
 
 
-def save_contigs_lengths(adp_results, filenames, lists_of_lengths):
-    afp_json = json_saver.save_contigs_lengths(adp_results, filenames, lists_of_lengths)
-    if afp_json:
-        append(adp_results, afp_json, 'contigsLenghts')
+def save_contigs_lengths(results_dirpath, filenames, lists_of_lengths):
+    json_fpath = json_saver.save_contigs_lengths(results_dirpath, filenames, lists_of_lengths)
+    if json_fpath:
+        append(results_dirpath, json_fpath, 'contigsLenghts')
 
 
-def save_reference_length(adp_results, reference_length):
-    afp_json = json_saver.save_reference_length(adp_results, reference_length)
-    if afp_json:
-        append(adp_results, afp_json, 'referenceLength')
+def save_reference_length(results_dirpath, reference_length):
+    json_fpath = json_saver.save_reference_length(results_dirpath, reference_length)
+    if json_fpath:
+        append(results_dirpath, json_fpath, 'referenceLength')
 
 
-def save_aligned_contigs_lengths(adp_results, filenames, lists_of_lengths):
-    afp_json = json_saver.save_aligned_contigs_lengths(adp_results, filenames, lists_of_lengths)
-    if afp_json:
-        append(adp_results, afp_json, 'alignedContigsLengths')
+def save_aligned_contigs_lengths(results_dirpath, filenames, lists_of_lengths):
+    json_fpath = json_saver.save_aligned_contigs_lengths(results_dirpath, filenames, lists_of_lengths)
+    if json_fpath:
+        append(results_dirpath, json_fpath, 'alignedContigsLengths')
 
 
-def save_assembly_lengths(adp_results, filenames, assemblies_lengths):
-    afp_json = json_saver.save_assembly_lengths(adp_results, filenames, assemblies_lengths)
-    if afp_json:
-        append(adp_results, afp_json, 'assembliesLengths')
+def save_assembly_lengths(results_dirpath, filenames, assemblies_lengths):
+    json_fpath = json_saver.save_assembly_lengths(results_dirpath, filenames, assemblies_lengths)
+    if json_fpath:
+        append(results_dirpath, json_fpath, 'assembliesLengths')
 
 
-def save_contigs(adp_results, filenames, contigs):
-    afp_json = json_saver.save_contigs(adp_results, filenames, contigs)
-    if afp_json:
-        append(adp_results, afp_json, 'contigs')
+def save_contigs(results_dirpath, filenames, contigs):
+    json_fpath = json_saver.save_contigs(results_dirpath, filenames, contigs)
+    if json_fpath:
+        append(results_dirpath, json_fpath, 'contigs')
 
 
-def save_GC_info(adp_results, filenames, lists_of_GC_info):
-    afp_json = json_saver.save_GC_info(adp_results, filenames, lists_of_GC_info)
-    if afp_json:
-        append(adp_results, afp_json, 'gcInfos')
+def save_GC_info(results_dirpath, filenames, lists_of_GC_info):
+    json_fpath = json_saver.save_GC_info(results_dirpath, filenames, lists_of_GC_info)
+    if json_fpath:
+        append(results_dirpath, json_fpath, 'gcInfos')
 
 
-def save_genes(adp_results, genes, found):
-    afp_json = json_saver.save_genes(adp_results, genes, found)
-    if afp_json:
-        append(adp_results, afp_json, 'genes')
+def save_genes(results_dirpath, genes, found):
+    json_fpath = json_saver.save_genes(results_dirpath, genes, found)
+    if json_fpath:
+        append(results_dirpath, json_fpath, 'genes')
 
 
-def save_operons(adp_results, operons, found):
-    afp_json = json_saver.save_operons(adp_results, operons, found)
-    if afp_json:
-        append(adp_results, afp_json, 'operons')
+def save_operons(results_dirpath, operons, found):
+    json_fpath = json_saver.save_operons(results_dirpath, operons, found)
+    if json_fpath:
+        append(results_dirpath, json_fpath, 'operons')
 

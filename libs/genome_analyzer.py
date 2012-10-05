@@ -7,7 +7,8 @@
 import os
 import fastaparser
 import genes_parser
-from libs import json_saver, reporting, qconfig
+from libs import reporting, qconfig
+from libs.html_saver import json_saver
 from qutils import id_to_str
 
 __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))

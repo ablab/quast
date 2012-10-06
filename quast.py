@@ -377,11 +377,12 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
 #            if nucmer_status == contigs_analyzer.NucmerStatus.NOT_ALIGNED:
 #                qconfig.reference = None
 
-    aligned_contigs_fpaths = filter(lambda c_fpath: nucmer_statuses[c_fpath] == contigs_analyzer.NucmerStatus.OK, contigs_fpaths)
 
     # Before continue evaluating, check if nucmer didn't skip all of the contigs files.
     if len(contigs_fpaths) != 0:
         if qconfig.reference:
+            aligned_contigs_fpaths = filter(lambda c_fpath: nucmer_statuses[c_fpath] == contigs_analyzer.NucmerStatus.OK, contigs_fpaths)
+
             ##################################################
             # ######################
             ### NA and NGA ("aligned N and NG")

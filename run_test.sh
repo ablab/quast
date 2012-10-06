@@ -19,6 +19,8 @@ operons_1K=$data_dir/operons_1K.txt
 
 set -x
 if [ ! -d "testenv" ]; then
+    easy_install pip
+    pip install virtualenv
     virtualenv --python=python2.5 testenv
 fi
 

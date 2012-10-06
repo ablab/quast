@@ -18,6 +18,8 @@ genes_ncbi_1K=$data_dir/genes_1K.ncbi
 operons_1K=$data_dir/operons_1K.txt
 
 set -x
+which python
+python --version
                                                python quast.py $contigs_1K_1 $contigs_1K_2 -o $results_dir/c1k1_c1k2
 if [ $? -eq 1 ]; then exit 1; fi; echo; echo;  python quast.py $contigs_1K_1 $contigs_1K_2 -o $results_dir/c1k1_c1k2_R 		     -R $reference_1K
 if [ $? -eq 1 ]; then exit 1; fi; echo; echo;  python quast.py $contigs_1K_1 $contigs_1K_2 -o $results_dir/c1k1_c1k2_G 		     -G $genes_1K

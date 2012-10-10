@@ -1084,7 +1084,7 @@ def do(reference, filenames, cyclic, output_dir, lib_dir, draw_plots):
     if platform.system() == 'Darwin':
         mummer_path = os.path.join(lib_dir, 'MUMmer3.23-osx')
     else:
-        mummer_path  = os.path.join(lib_dir, 'MUMmer3.23-linux')
+        mummer_path = os.path.join(lib_dir, 'MUMmer3.23-linux')
 
     ########################################################################
 #    report_dict = {'header' : []}

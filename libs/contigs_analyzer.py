@@ -788,7 +788,8 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
                 #Pull top alignment
                 current = sorted_aligns[0]
                 sorted_aligns = sorted_aligns[1:]
-                print >>plantafile, '\t\t\tAlign %d: %s' % (counter, current)
+                #print >>plantafile, '\t\t\tAlign %d: %s' % (counter, current)  #(self, s1, e1, s2, e2, len1, len2, idy, ref, contig):
+                print >>plantafile, '\t\t\tAlign %d: %s' % (counter, '%d %d %s %d %d' % (current.s1, current.e1, current.contig, current.s2, current.e2))
 
                 #Check if:
                 # A) We have no more aligns to this reference

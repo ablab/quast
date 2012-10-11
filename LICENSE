@@ -58,6 +58,15 @@ Arthur L. Delcher, Michael Roberts, Guillaume Marçais, Mihai Pop and
 James A. Yorke (2011) GAGE: A critical evaluation of genome assemblies and 
 assembly algorithms. Genome Res. 22(3): doi:10.1101/gr.131383.111
 
+3. QUAST module contigs_analyzer.py is based on assess_assembly.pl script 
+which was kindly provided by Plantagora team.
+For more details about assess_assembly.pl please refer to 
+http://www.plantagora.org website and to the following paper:
+
+Barthelson R, McFarlin AJ, Rounsley SD, Young S (2011) Plantagora: Modeling 
+Whole Genome Sequencing and Assembly of Plant Genomes. PLoS ONE 6(12): e28436. 
+doi:10.1371/journal.pone.0028436
+
 -------------------------------------------------------------------------------
 
 		    GNU GENERAL PUBLIC LICENSE

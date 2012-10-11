@@ -828,7 +828,8 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
                 else:
                     #Grab next alignment
                     next = sorted_aligns[0]
-                    print >>plantafile, '\t\t\t\tNext Alignment: %s' % next
+                    #print >>plantafile, '\t\t\t\tNext Alignment: %s' % next
+                    print >>plantafile, '\t\t\t\tNext Alignment: %d %d %s %d %d' % (next.s1, next.e1, next.contig, next.s2, next.e2)
 
                     if next.s1 >= current.e1:
                         #There is a gap beetween this and the next alignment

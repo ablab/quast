@@ -415,7 +415,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
                 add_empty_predicted_genes_fields()
             else:
                 from libs import genemark
-                genemark.do(contigs_fpaths, qconfig.genes_lengths, output_dirpath + '/predicted_genes', lib_dir)
+                genemark.run(contigs_fpaths, qconfig.genes_lengths, output_dirpath + '/predicted_genes', lib_dir)
 
         else:
             add_empty_predicted_genes_fields()

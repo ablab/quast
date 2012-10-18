@@ -95,12 +95,13 @@ def add_genes_to_fasta(genes, fasta_header):
         gene_id = '>gene_%d|GeneMark.hmm|%d_nt|%s|%d|%d|%s'%for_print
         ID += 1
         fasta_header.write(gene_id + '\n')
-        indices = xrange(1, length, 60)
+        indices = range(0, length, 60) + [length]
         if strand == '-':
             seq = reverse_complement(str_seq)
-            fasta_seq = '\n'.join(seq[l:r] for l, r in zip(indices, indices))
+            fasta_seq = '\n'.join([seq[l:r] for l, r in zip(indices[:-1], indices[1:])])
         else:
-            fasta_seq = '\n'.join(str_seq[l:r] for l, r in zip(indices, indices))
+            fasta_seq = '\n'.join([str_seq[l:r] for l, r in zip(indices[:-1], indices[1:])])
+        print fasta_seq
         fasta_header.write(fasta_seq + '\n\n')
     return
 

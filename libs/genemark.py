@@ -3,6 +3,7 @@
 # All Rights Reserved
 # See file LICENSE for details.
 ############################################################################
+from __future__ import with_statement
 from collections import namedtuple
 
 import os
@@ -11,7 +12,6 @@ import shutil
 from string import maketrans
 import subprocess
 import tempfile
-import collections
 import operator
 
 from libs import reporting

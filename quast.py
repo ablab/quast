@@ -19,6 +19,7 @@ __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file
 #sys.path.append(os.path.join(os.path.abspath(sys.path[0]), '../spades_pipeline'))
 
 from libs import qconfig
+from libs import fastaparser
 from libs.html_saver import json_saver
 
 RELEASE_MODE=False
@@ -90,6 +91,24 @@ def corrected_fname_for_nucmer(fpath):
                 i += 1
 
     return os.path.join(dirpath, corr_fname)
+
+
+def correct_fasta(original_fpath, corrected_fpath, is_reference=False):
+    modified_fasta_entries = []
+    for name, seq in fastaparser.read_fasta(original_fpath): # in tuples: (name, seq)
+        if (len(seq) >= qconfig.min_contig) or is_reference:
+            corr_name = re.sub(r'\W', '', re.sub(r'\s', '_', name))
+            # seq to uppercase, because we later looking only uppercase letters
+            corr_seq = seq.upper()
+            # removing \r (Nucmer fails on such sequences)
+            corr_seq = corr_seq.strip('\r')
+            # correcting alternatives (gage can't work with alternatives)
+            #dic = {'M': 'A', 'K': 'G', 'R': 'A', 'Y': 'C', 'W': 'A', 'S': 'C', 'V': 'A', 'B': 'C', 'H': 'A', 'D': 'A'}
+            dic = {'M': 'N', 'K': 'N', 'R': 'N', 'Y': 'N', 'W': 'N', 'S': 'N', 'V': 'N', 'B': 'N', 'H': 'N', 'D': 'N'}
+            pat = "(%s)" % "|".join( map(re.escape, dic.keys()) )
+            corr_seq = re.sub(pat, lambda m:dic[m.group()], corr_seq)
+            modified_fasta_entries.append((corr_name, corr_seq))
+    fastaparser.write_fasta_to_file(corrected_fpath, modified_fasta_entries)
 
 
 def check_dir_name(fpath):
@@ -275,18 +294,20 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
         shutil.rmtree(corrected_dirpath)
     os.mkdir(corrected_dirpath)
 
-    from libs import fastaparser
     # if reference in .gz format we should unzip it
     if qconfig.reference:
         ref_basename, ref_extension = os.path.splitext(qconfig.reference)
+        corrected_and_unziped_reference_name = os.path.join(corrected_dirpath, os.path.basename(ref_basename))
+        corrected_and_unziped_reference_name = corrected_fname_for_nucmer(corrected_and_unziped_reference_name)
+        # unzipping (if needed)
         if ref_extension == ".gz":
-            unziped_reference_name = os.path.join(corrected_dirpath, os.path.basename(ref_basename))
-            # Renaming, because QUAST does not support non-alphabetic symbols or non-digits in names of files with contigs or references.
-            unziped_reference_name = corrected_fname_for_nucmer(unziped_reference_name)
-            unziped_reference = open(unziped_reference_name, 'w')
+            unziped_reference = open(corrected_and_unziped_reference_name, 'w')
             subprocess.call(['gunzip', qconfig.reference, '-c'], stdout=unziped_reference)
             unziped_reference.close()
-            qconfig.reference = unziped_reference_name
+            qconfig.reference = corrected_and_unziped_reference_name
+        # correcting
+        correct_fasta(qconfig.reference, corrected_and_unziped_reference_name, True)
+        qconfig.reference = corrected_and_unziped_reference_name
 
     # we should remove input files with no contigs (e.g. if ll contigs are less than "min_contig" value)
     contigs_to_remove = []
@@ -315,17 +336,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
         report.add_field(reporting.Fields.CONTIGS,   [sum(1 for l in lengths if l >= threshold) for threshold in qconfig.contig_thresholds])
         report.add_field(reporting.Fields.TOTALLENS, [sum(l for l in lengths if l >= threshold) for threshold in qconfig.contig_thresholds])
 
-        modified_fasta_entries = []
-        for name, seq in fastaparser.read_fasta(contigs_fpath): # in tuples: (name, seq)
-            if len(seq) >= qconfig.min_contig:
-                corr_name = re.sub(r'\W', '', re.sub(r'\s', '_', name))
-                # mauve and gage can't work with alternatives
-                dic = {'M': 'A', 'K': 'G', 'R': 'A', 'Y': 'C', 'W': 'A', 'S': 'C', 'V': 'A', 'B': 'C', 'H': 'A', 'D': 'A'}
-                pat = "(%s)" % "|".join( map(re.escape, dic.keys()) )
-                corr_seq = re.sub(pat, lambda m:dic[m.group()], seq)
-                modified_fasta_entries.append((corr_name, corr_seq))
-        fastaparser.write_fasta_to_file(corr_fpath, modified_fasta_entries)
-
+        correct_fasta(contigs_fpath, corr_fpath)
         print '  %s ==> %s' % (contigs_fpath, os.path.basename(corr_fpath))
         new_contigs_fpaths.append(os.path.join(__location__, corr_fpath))
 

@@ -405,7 +405,6 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
     assembly = {}
     assembly_ns = {}
     for name, seq in fastaparser.read_fasta(filename):
-        seq = seq.upper()
         assembly[name] = seq
         if 'N' in seq:
             assembly_ns[name] = [pos for pos in xrange(len(seq)) if seq[pos] == 'N']

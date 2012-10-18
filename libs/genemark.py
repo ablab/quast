@@ -100,7 +100,7 @@ def add_genes_to_fasta(genes, fasta_header):
             seq = reverse_complement(str_seq)
             fasta_seq = '\n'.join(seq[l:r] for l, r in zip(indices, indices))
         else:
-            fasta_seq = '\n'.join(gene.seq[l:r] for l, r in zip(indices, indices))
+            fasta_seq = '\n'.join(str_seq[l:r] for l, r in zip(indices, indices))
         fasta_header.write(fasta_seq + '\n\n')
     return
 

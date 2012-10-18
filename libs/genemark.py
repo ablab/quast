@@ -4,7 +4,7 @@
 # See file LICENSE for details.
 ############################################################################
 from __future__ import with_statement
-from collections import namedtuple
+#from collections import namedtuple
 
 import os
 import re
@@ -50,7 +50,7 @@ def install_genemark():
 def reverse_complement(seq):
     return seq[::-1].translate(maketrans('ACGT', 'TGCA'))
 
-Gene = namedtuple('Gene', ['contig_id', 'strand', 'left_index', 'right_index', 'seq'])
+#Gene = namedtuple('Gene', ['contig_id', 'strand', 'left_index', 'right_index', 'seq'])
 def parse_gmhmm_out(file):
     genes = []
     reading_gene = False
@@ -69,17 +69,19 @@ def parse_gmhmm_out(file):
                     str_seq = ''.join(seq)
                     left_index = int(left_index)
                     right_index = int(right_index)
-                    genes.append(Gene(contig_id, strand, left_index, right_index, str_seq))
+                    #genes.append(Gene(contig_id, strand, left_index, right_index, str_seq))
+                    genes.append((contig_id, strand, left_index, right_index, str_seq))
                 seq.append(line.strip())
     return genes
 
 def add_genes_to_gff(genes, gff_header):
     ID = 1
     for gene in genes:
-        length = gene.left_index - gene.right_index
-        for_print = ID, length, gene.strand, gene.left_index, gene.right_index, gene.contig_id
+        contig_id, strand, left_index, right_index, str_seq = gene
+        length = right_index - left_index
+        for_print = ID, length, strand, left_index, right_index, contig_id
         gene_id = '>gene_%d|GeneMark.hmm|%d_nt|%s|%d|%d|%s'%for_print
-        gff = gene_id, gene.left_index, gene.right_index, gene.strand, ID
+        gff = gene_id, left_index, right_index, strand, ID
         gff_header.write('%s       .      gene    %d %d .     %s       .       ID=%d\n'%gff)
         ID += 1
     return
@@ -87,14 +89,15 @@ def add_genes_to_gff(genes, gff_header):
 def add_genes_to_fasta(genes, fasta_header):
     ID = 1
     for gene in genes:
-        length = gene.right_index - gene.left_index
-        for_print = ID, length, gene.strand, gene.left_index, gene.right_index, gene.contig_id
+        contig_id, strand, left_index, right_index, str_seq = gene
+        length = right_index - left_index
+        for_print = ID, length, strand, left_index, right_index, contig_id
         gene_id = '>gene_%d|GeneMark.hmm|%d_nt|%s|%d|%d|%s'%for_print
         ID += 1
         fasta_header.write(gene_id + '\n')
         indices = xrange(1, length, 60)
-        if gene.strand == '-':
-            seq = reverse_complement(gene.seq)
+        if strand == '-':
+            seq = reverse_complement(str_seq)
             fasta_seq = '\n'.join(seq[l:r] for l, r in zip(indices, indices))
         else:
             fasta_seq = '\n'.join(gene.seq[l:r] for l, r in zip(indices, indices))
@@ -135,7 +138,7 @@ def genemarkhmm_p_everyGC(in_file_path, out_file_name, gene_lengths):
                         '##Sequence file name: %s'%in_file_path)
         add_genes_to_fasta(genes, fasta_out)
 
-    cnt = [sum([gene.right_index - gene.left_index > x for gene in genes])for x in gene_lengths]
+    cnt = [sum([gene[3] - gene[2] > x for gene in genes])for x in gene_lengths]
     unique_count = len(set(map(operator.attrgetter('seq'), genes)))
     total_count = len(genes)
 

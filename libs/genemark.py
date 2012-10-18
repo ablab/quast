@@ -139,7 +139,7 @@ def genemarkhmm_p_everyGC(in_file_path, out_file_name, gene_lengths):
         add_genes_to_fasta(genes, fasta_out)
 
     cnt = [sum([gene[3] - gene[2] > x for gene in genes])for x in gene_lengths]
-    unique_count = len(set(map(operator.attrgetter('seq'), genes)))
+    unique_count = len(set([gene[4] for gene in genes]))
     total_count = len(genes)
 
     return out_gff_path, out_fasta_path, unique_count, total_count, cnt

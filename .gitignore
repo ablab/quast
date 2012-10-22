@@ -20,3 +20,5 @@ quast-1.0.0.tar.gz
 run_test_data/results/*
 
 libs/html_saver/reports-scripts-old
+
+libs/test_parallel.py

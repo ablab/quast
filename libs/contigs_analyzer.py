@@ -1066,15 +1066,15 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
 #                os.remove(plotfilename + ext)
 
 
-def plantakolya_process(cyclic, draw_plots, filename, id, myenv, output_dir, reference):
+def plantakolya_process(cyclic, draw_plots, filename, id, myenv, output_dir, reference, nucmer_statuses):
     print ' ', id_to_str(id), os.path.basename(filename), '...'
     nucmer_output_dir = os.path.join(output_dir, 'nucmer_output')
     if not os.path.isdir(nucmer_output_dir):
         os.mkdir(nucmer_output_dir)
     nucmer_fname = os.path.join(nucmer_output_dir, os.path.basename(filename))
     nucmer_is_ok = plantakolya(cyclic, draw_plots, filename, nucmer_fname, myenv, output_dir, reference)
+    nucmer_statuses[filename] = nucmer_is_ok
     clear_files(filename, nucmer_fname)
-    return nucmer_is_ok
 
 
 def do(reference, filenames, cyclic, output_dir, lib_dir, draw_plots):
@@ -1104,10 +1104,24 @@ def do(reference, filenames, cyclic, output_dir, lib_dir, draw_plots):
     print 'Running contigs analyzer...'
 
     nucmer_statuses = {}
-    for id, filename in enumerate(filenames):
-        #TODO: use joblib
-        nucmer_status = plantakolya_process(cyclic, draw_plots, filename, id, myenv, output_dir, reference)
-        nucmer_statuses[filename] = nucmer_status
+
+    #TODO: use joblib
+    from joblib import Parallel, delayed
+
+    Parallel(n_jobs=len(filenames))(delayed(plantakolya_process)(
+                                            cyclic,
+                                            draw_plots,
+                                            fname,
+                                            id,
+                                            myenv,
+                                            output_dir,
+                                            reference,
+                                            nucmer_statuses)
+                                    for id, fname in enumerate(filenames))
+
+#    for id, filename in enumerate(filenames):
+#        plantakolya_process(cyclic, draw_plots, filename, id, myenv, output_dir, reference, nucmer_statuses)
+#        nucmer_statuses[filename] = nucmer_status
 
     if NucmerStatus.OK in nucmer_statuses.values():
         reporting.save_misassemblies(output_dir)

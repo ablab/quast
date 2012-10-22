@@ -420,13 +420,12 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
             ########################################################################
             ### GeneMark
             ########################################################################
-            import platform
-            if platform.system() == 'Darwin':
-                print >> sys.stderr, 'Warning! GeneMark tool for gene prediction doesn\'t work on Mac OS X.'
-                add_empty_predicted_genes_fields()
-            else:
-                from libs import genemark
-                genemark.do(contigs_fpaths, qconfig.genes_lengths, output_dirpath + '/predicted_genes', lib_dir)
+
+#                print >> sys.stderr, 'Warning! GeneMark tool for gene prediction doesn\'t work on Mac OS X.'
+#                add_empty_predicted_genes_fields()
+#            else:
+            from libs import genemark
+            genemark.do(contigs_fpaths, qconfig.genes_lengths, output_dirpath + '/predicted_genes', lib_dir)
 
         else:
             add_empty_predicted_genes_fields()

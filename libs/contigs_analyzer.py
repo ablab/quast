@@ -1119,7 +1119,7 @@ def do(reference, filenames, cyclic, output_dir, lib_dir, draw_plots):
 
 #    print
 #    print statuses
-#    nucmer_statuses = dict(zip(filenames, statuses))
+    nucmer_statuses = dict(zip(filenames, statuses))
 #    print nucmer_statuses
 #    print
 

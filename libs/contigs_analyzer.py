@@ -1105,27 +1105,29 @@ def do(reference, filenames, cyclic, output_dir, lib_dir, draw_plots):
     print 'Running contigs analyzer...'
 
     #TODO: use joblib
-    from joblib import Parallel, delayed
+#    from joblib import Parallel, delayed
 
-    statuses = Parallel(n_jobs=len(filenames))(delayed(plantakolya_process)(
-                                                       cyclic,
-                                                       draw_plots,
-                                                       fname,
-                                                       id,
-                                                       myenv,
-                                                       output_dir,
-                                                       reference)
-                                               for id, fname in enumerate(filenames))
+#    statuses = Parallel(n_jobs=len(filenames))(delayed(plantakolya_process)(
+#                                                       cyclic,
+#                                                       draw_plots,
+#                                                       fname,
+#                                                       id,
+#                                                       myenv,
+#                                                       output_dir,
+#                                                       reference)
+#                                               for id, fname in enumerate(filenames))
 
 #    print
 #    print statuses
-    nucmer_statuses = dict(zip(filenames, statuses))
+#    nucmer_statuses = dict(zip(filenames, statuses))
 #    print nucmer_statuses
 #    print
 
-#    for id, filename in enumerate(filenames):
-#        plantakolya_process(cyclic, draw_plots, filename, id, myenv, output_dir, reference, nucmer_statuses)
-#        nucmer_statuses[filename] = nucmer_status
+    nucmer_statuses = {}
+
+    for id, filename in enumerate(filenames):
+        nucmer_status = plantakolya_process(cyclic, draw_plots, filename, id, myenv, output_dir, reference)
+        nucmer_statuses[filename] = nucmer_status
 
     if NucmerStatus.OK in nucmer_statuses.values():
         reporting.save_misassemblies(output_dir)

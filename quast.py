@@ -12,8 +12,11 @@ import shutil
 import re
 import getopt
 import subprocess
+from site import addsitedir
 
 __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
+
+addsitedir(os.path.join(__location__, 'env/site-packages'))
 
 #sys.path.append(os.path.join(os.path.abspath(sys.path[0]), 'libs'))
 #sys.path.append(os.path.join(os.path.abspath(sys.path[0]), '../spades_pipeline'))
@@ -220,7 +223,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
 
 
     qconfig.contig_thresholds = map(int, qconfig.contig_thresholds.split(","))
-    qconfig.genes_lengths =  map(int, qconfig.genes_lengths.split(","))
+    qconfig.genes_lengths = map(int, qconfig.genes_lengths.split(","))
 
     ########################################################################
     ### CONFIG & CHECKS

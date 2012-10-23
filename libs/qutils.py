@@ -4,5 +4,10 @@
 # See file LICENSE for details.
 ############################################################################
 
+assemblies_number = 0
+
 def id_to_str(id):
-    return ('%d' + ('  ' if id >= 10 else ' ')) % (id + 1)
+    if assemblies_number == 1:
+        return ''
+    else:
+        return ('%d ' + ('' if id >= 10 else ' ')) % (id + 1)

@@ -89,7 +89,7 @@ def additional_cleaning(all):
 
 
 def sympalign(id, out_filename, in_filename):
-    print '  ' + id_to_str(id) + ' Running SympAlign...'
+    print '  ' + id_to_str(id) + 'Running SympAlign...'
     assert in_filename[-5:] == '.btab', in_filename
     counter = [0, 0]
     all = {}
@@ -163,9 +163,9 @@ def sympalign(id, out_filename, in_filename):
             ev2 = (yr, -1, contig, a)
             list_events += [ev1, ev2]
 
-    print '  ' + id_to_str(id) + '   Cleaned ' + str(counter[0]) + ' down to ' + str(counter[1])
+    print '  ' + id_to_str(id) + '  Cleaned ' + str(counter[0]) + ' down to ' + str(counter[1])
     all, add_counter = additional_cleaning(all)
-    print '  ' + id_to_str(id) + '   Additionally cleaned ' + str(counter[1]) + ' down to ' + str(add_counter)
+    print '  ' + id_to_str(id) + '  Additionally cleaned ' + str(counter[1]) + ' down to ' + str(add_counter)
 
     ouf = open(out_filename, 'w')
     print >> ouf, "    [S1]     [E1]  |     [S2]     [E2]  |  [LEN 1]  [LEN 2]  |  [% IDY]  | [TAGS]"
@@ -179,7 +179,7 @@ def sympalign(id, out_filename, in_filename):
             label = ref_id + '\t' + contig_id
             print >> ouf, '%8d %8d  | %8d %8d  | %8d %8d  | %8.4f  | %s' % (sr, er, sc, ec, lr, lc, p, label)
     ouf.close()
-    print '  ' + id_to_str(id) + '   Sympaligning is finished.'
+    print '  ' + id_to_str(id) + '  Sympaligning is finished.'
 
 
 class Mapping(object):
@@ -317,7 +317,7 @@ def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_
     logfilename_out = output_dir + '/contigs_report_' + os.path.basename(filename) + '.stdout'
     logfilename_err = output_dir + '/contigs_report_' + os.path.basename(filename) + '.stderr'
     logfile_err = open(logfilename_err, 'a')
-    print '  ' + id_to_str(id) + ' Logging to files ' + logfilename_out + ' and ' + os.path.basename(logfilename_err) + '...'
+    print '  ' + id_to_str(id) + 'Logging to files ' + logfilename_out + ' and ' + os.path.basename(logfilename_err) + '...'
     # reverse complementarity is not an extensive misassemble
     peral = 0.99
     maxun = 10
@@ -342,11 +342,11 @@ def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_
         and os.path.isfile(nucmer_report_filename)):
 
         print >> plantafile, '\tUsing existing Nucmer alignments...'
-        print '  ' + id_to_str(id) + ' Using existing Nucmer alignments... '
+        print '  ' + id_to_str(id) + 'Using existing Nucmer alignments... '
 
     else:
         print >> plantafile, '\tRunning Nucmer...'
-        print '  ' + id_to_str(id) + ' Running Nucmer... '
+        print '  ' + id_to_str(id) + 'Running Nucmer... '
         # GAGE params of Nucmer
         #subprocess.call(['nucmer', '--maxmatch', '-p', nucmerfilename, '-l', '30', '-banded', reference, filename],
         #    stdout=open(logfilename_out, 'a'), stderr=logfile_err, env=myenv)
@@ -366,16 +366,16 @@ def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_
         sympalign(id, coords_filename, coords_btab_filename)
 
         if not os.path.isfile(coords_filename):
-            print >> logfile_err, id_to_str(id), 'Nucmer failed for', filename + ':', coords_filename, 'doesn\'t exist.'
-            print '  ' + id_to_str(id) + ' Nucmer failed for ' + '\'' + os.path.basename(filename) + '\'.'
+            print >> logfile_err, id_to_str(id) + 'Nucmer failed for', filename + ':', coords_filename, 'doesn\'t exist.'
+            print '  ' + id_to_str(id) + 'Nucmer failed for ' + '\'' + os.path.basename(filename) + '\'.'
             return NucmerStatus.FAILED, {}
         if not os.path.isfile(nucmer_report_filename):
-            print >> logfile_err, id_to_str(id), 'Nucmer failed for', filename + ':', nucmer_report_filename, 'doesn\'t exist.'
-            print '  ' + id_to_str(id) + ' Nucmer failed for ' + '\'' + os.path.basename(filename) + '\'.'
+            print >> logfile_err, id_to_str(id) + 'Nucmer failed for', filename + ':', nucmer_report_filename, 'doesn\'t exist.'
+            print '  ' + id_to_str(id) + 'Nucmer failed for ' + '\'' + os.path.basename(filename) + '\'.'
             return NucmerStatus.FAILED, {}
         if len(open(coords_filename).readlines()[-1].split()) < 13:
-            print >> logfile_err, id_to_str(id), 'Nucmer: nothing aligned for', filename
-            print '  ' + id_to_str(id) + ' Nucmer: nothing aligned for ' + '\'' + os.path.basename(filename) + '\'.'
+            print >> logfile_err, id_to_str(id) + 'Nucmer: nothing aligned for', filename
+            print '  ' + id_to_str(id) + 'Nucmer: nothing aligned for ' + '\'' + os.path.basename(filename) + '\'.'
             return NucmerStatus.NOT_ALIGNED, {}
         nucmer_successful_check_file = open(nucmer_successful_check_filename, 'w')
         nucmer_successful_check_file.write("Successfully finished " + datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S'))
@@ -1020,7 +1020,7 @@ def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_
 
     plantafile.close()
     logfile_err.close()
-    print '  ' + id_to_str(id) + ' Analysis is finished.'
+    print '  ' + id_to_str(id) + 'Analysis is finished.'
     return NucmerStatus.OK, result
 
 ###  I think we don't need this
@@ -1045,7 +1045,7 @@ def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_
 
 
 def plantakolya_process(cyclic, draw_plots, nucmer_output_dir, filename, id, myenv, output_dir, reference):
-    print '  ' + id_to_str(id) + ' ' + os.path.basename(filename) + '...'
+    print '  ' + id_to_str(id) + os.path.basename(filename) + '...'
     nucmer_fname = os.path.join(nucmer_output_dir, os.path.basename(filename))
     nucmer_is_ok, result = plantakolya(cyclic, draw_plots, id, filename, nucmer_fname, myenv, output_dir, reference)
     clear_files(filename, nucmer_fname)

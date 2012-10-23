@@ -66,7 +66,7 @@ def do(reference, filenames, nucmer_dir, output_dir, all_pdf, draw_plots, json_o
     assembly_lengths = []
     print 'Processing .coords files...'
     for id, filename in enumerate(filenames):
-        print ' ', id_to_str(id), os.path.basename(filename)
+        print ' ', id_to_str(id) + os.path.basename(filename)
         nucmer_filename = os.path.join(nucmer_prefix, os.path.basename(filename) + '.coords.filtered')
         assembly_lengths.append(sum(fastaparser.get_lengths_from_fastafile(filename)))
         if not os.path.isfile(nucmer_filename):
@@ -88,7 +88,7 @@ def do(reference, filenames, nucmer_dir, output_dir, all_pdf, draw_plots, json_o
         lga50 = N50.LG50(lens, reference_length)
         la75 = N50.LG50(lens, assembly_len, 75)
         lga75 = N50.LG50(lens, reference_length, 75)
-        print ' ', id_to_str(id), os.path.basename(filename) + \
+        print ' ', id_to_str(id) + os.path.basename(filename) + \
             ', NA50 = ' + str(na50) + \
             ', NGA50 = ' + str(nga50) + \
             ', LA50 = ' + str(la50) +\

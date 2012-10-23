@@ -41,7 +41,7 @@ def do(reference, contigs, output_dirpath, min_contig, lib_dir):
     tmp_dir = gage_results_path + '/tmp/'
     for id, filename in enumerate(contigs):
         report = reporting.get(filename)
-        print ' ', id_to_str(id), os.path.basename(filename), '...'
+        print ' ', id_to_str(id) + os.path.basename(filename), '...'
         # run gage tool
         logfilename_out = gage_results_path + '/gage_' + os.path.basename(filename) + '.stdout'
         logfilename_err = gage_results_path + '/gage_' + os.path.basename(filename) + '.stderr'

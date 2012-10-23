@@ -38,7 +38,7 @@ def do(filenames, genes_lengths, output_dir, lib_dir):
     for id, filename in enumerate(filenames):
         report = reporting.get(filename)
         cnt = [0] * len(genes_lengths)
-        print ' ', id_to_str(id), os.path.basename(filename),
+        print ' ', id_to_str(id) + os.path.basename(filename) + ',',
 
         #Step 1: Find G+C composition of sequence, for example:
         #prompt> probuild --gc --seq  sequence
@@ -56,7 +56,7 @@ def do(filenames, genes_lengths, output_dir, lib_dir):
 
         gc_content = open(gc_content_filename)
         gc = int(round(float(gc_content.read().split()[2]))) # GC% = 45.2
-        print 'GC =', gc,
+        print 'GC = ' + str(gc) + ',',
         gc_content.close()
 
         #Step 2: Select a heuristic model generated for a sequence with given (or close) G+C content
@@ -103,8 +103,8 @@ def do(filenames, genes_lengths, output_dir, lib_dir):
                     continue
                 geneseq += line.strip()
 
-        print ', Genes =', len(genes), 'unique,', max_gene_id, 'total'
-        print '    GeneMark output', genemark_out_filename
+        print 'Genes = ' + str(len(genes)) + ' unique, ' + str(max_gene_id) + ' total'
+        print '     GeneMark output', genemark_out_filename
         report.add_field(reporting.Fields.GENEMARKUNIQUE, len(genes))
         report.add_field(reporting.Fields.GENEMARK, cnt)
 

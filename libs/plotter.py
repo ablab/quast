@@ -18,7 +18,7 @@ try:
     import matplotlib
     matplotlib.use('Agg') # non-GUI backend
 except:
-    print 'Warning! Can\'t draw plots - please install python-matplotlib'
+    print 'Warning! Can\'t draw plots: please install python-matplotlib'
     matplotlib_error = True
 
 colors = ['#E41A1C', '#377EB8', '#4DAF4A', '#984EA3', '#FF7F00', '#A65628', '#F781BF', '#FFFF33']

@@ -67,7 +67,7 @@ def usage():
         print >> sys.stderr, "-d  --debug                  run in debug mode"
         print >> sys.stderr, "-h  --help                   print this usage message"
 
-def check_file_existence(fpath, message=''):
+def assert_file_exists(fpath, message=''):
     if not os.path.isfile(fpath):
         print >> sys.stderr, "\nERROR! File not found (%s): %s\n" % (message, fpath)
         sys.exit(2)
@@ -156,6 +156,9 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
         usage()
         sys.exit(1)
 
+    from libs import qutils
+    qutils.assemblies_number = len(contigs_fpaths)
+
     json_outputpath = None
     output_dirpath = os.path.join(os.path.abspath(qconfig.default_results_root_dirname), qconfig.output_dirname)
 
@@ -166,13 +169,13 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
             qconfig.make_latest_symlink = False
 
         elif opt in ('-G', "--genes"):
-            qconfig.genes = check_file_existence(arg, 'genes')
+            qconfig.genes = assert_file_exists(arg, 'genes')
 
         elif opt in ('-O', "--operons"):
-            qconfig.operons = check_file_existence(arg, 'operons')
+            qconfig.operons = assert_file_exists(arg, 'operons')
 
         elif opt in ('-R', "--reference"):
-            qconfig.reference = check_file_existence(arg, 'reference')
+            qconfig.reference = assert_file_exists(arg, 'reference')
 
         elif opt in ('-t', "--contig-thresholds"):
             qconfig.contig_thresholds = arg
@@ -211,7 +214,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
             raise ValueError
 
     for c_fpath in contigs_fpaths:
-        check_file_existence(c_fpath, 'contigs')
+        assert_file_exists(c_fpath, 'contigs')
 
 #    old_contigs_fpaths = contigs_fpaths[:]
 #    contigs_fpaths = []

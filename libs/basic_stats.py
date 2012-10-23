@@ -68,7 +68,7 @@ def do(reference, filenames, output_dir, all_pdf, draw_plots, json_output_dir, r
     lists_of_lengths = []
     numbers_of_Ns = []
     for id, filename in enumerate(filenames):
-        print ' ', id_to_str(id), os.path.basename(filename)
+        print ' ', id_to_str(id) + os.path.basename(filename)
         #lists_of_lengths.append(fastaparser.get_lengths_from_fastafile(filename))
         list_of_length = []
         number_of_Ns = 0
@@ -105,7 +105,7 @@ def do(reference, filenames, output_dir, all_pdf, draw_plots, json_output_dir, r
         total_length = sum(lengths_list)
         total_GC, GC_info = GC_content(filename)
         lists_of_GC_info.append(GC_info)
-        print ' ', id_to_str(id), os.path.basename(filename) + \
+        print ' ', id_to_str(id) + os.path.basename(filename) + \
             ', N50 = ' + str(n50) + \
             ', L50 = ' + str(l50) + \
             ', Total length = ' + str(total_length) + \

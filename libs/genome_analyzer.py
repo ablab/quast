@@ -126,7 +126,7 @@ def do(reference, filenames, nucmer_dir, output_dir, genes_filename, operons_fil
 
     # process all contig files  
     for id, filename in enumerate(filenames):
-        print ' ', id_to_str(id), os.path.basename(filename) + '...'
+        print ' ', id_to_str(id) + os.path.basename(filename) + '...'
 
         # for cumulative plots
         contig_blocks = {'':[]}

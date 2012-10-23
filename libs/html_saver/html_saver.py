@@ -113,7 +113,7 @@ def save_total_report(results_dirpath, min_contig):
     if json_fpath:
 #        print '  HTML version of total report...'
         append(results_dirpath, json_fpath, 'report')
-        print '  HTML version to', os.path.join(results_dirpath, report_fname)
+        print '  HTML version to', os.path.join(results_dirpath, report_fname) + '.'
 
 
 def save_contigs_lengths(results_dirpath, filenames, lists_of_lengths):

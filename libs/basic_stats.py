@@ -105,12 +105,12 @@ def do(reference, filenames, output_dir, all_pdf, draw_plots, json_output_dir, r
         total_length = sum(lengths_list)
         total_GC, GC_info = GC_content(filename)
         lists_of_GC_info.append(GC_info)
-        print ' ', id_to_str(id), os.path.basename(filename), \
-            ', N50 =', n50,\
-            ', L50 =', l50,\
-            ', Total length =', total_length, \
-            ', GC % = ', '%.2f' % total_GC,\
-            ', N\'s % = ', '%.5f' % (float(100 * number_of_Ns) / float(total_length))\
+        print ' ', id_to_str(id), os.path.basename(filename) + \
+            ', N50 = ' + str(n50) + \
+            ', L50 = ' + str(l50) + \
+            ', Total length = ' + str(total_length) + \
+            ', GC % = ' + ' %.2f' % total_GC + \
+            ', N\'s % = ' + ' %.5f' % (float(100 * number_of_Ns) / float(total_length))\
 
         report.add_field(reporting.Fields.N50, n50)
         report.add_field(reporting.Fields.L50, l50)

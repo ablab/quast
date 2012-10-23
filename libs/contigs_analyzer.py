@@ -179,7 +179,7 @@ def sympalign(id, out_filename, in_filename):
             label = ref_id + '\t' + contig_id
             print >> ouf, '%8d %8d  | %8d %8d  | %8d %8d  | %8.4f  | %s' % (sr, er, sc, ec, lr, lc, p, label)
     ouf.close()
-    print '  ' + id_to_str(id) + ' Sympaligning is finished.'
+    print '  ' + id_to_str(id) + '   Sympaligning is finished.'
 
 
 class Mapping(object):

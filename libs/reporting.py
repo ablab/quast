@@ -301,18 +301,18 @@ def save(output_dirpath, report_name, transposed_report_name, order):
     # Where total report will be saved
     tab = table(order)
 
-    print '  Creating total report...'
+#    print '  Creating total report...'
     report_txt_filename = os.path.join(output_dirpath, report_name) + '.txt'
     report_tsv_filename = os.path.join(output_dirpath, report_name) + '.tsv'
     report_tex_filename = os.path.join(output_dirpath, report_name) + '.tex'
     save_txt(report_txt_filename, tab)
     save_tsv(report_tsv_filename, tab)
     save_tex(report_tex_filename, tab)
-    print '    Saved to', report_txt_filename, ',', os.path.basename(report_tsv_filename),\
-    'and', os.path.basename(report_tex_filename)
+    print '  Report saved to ' + report_txt_filename + ', ' + os.path.basename(report_tsv_filename) + \
+    ' and ' + os.path.basename(report_tex_filename) + '.'
 
     if transposed_report_name:
-        print '  Transposed version of total report...'
+#        print '   version of total report...'
         tab = [[tab[i][j] for i in xrange(len(tab))] for j in xrange(len(tab[0]))]
         report_txt_filename = os.path.join(output_dirpath, transposed_report_name) + '.txt'
         report_tsv_filename = os.path.join(output_dirpath, transposed_report_name) + '.tsv'
@@ -320,8 +320,8 @@ def save(output_dirpath, report_name, transposed_report_name, order):
         save_txt(report_txt_filename, tab)
         save_tsv(report_tsv_filename, tab)
         save_tex(report_tex_filename, tab)
-        print '    Saved to', report_txt_filename, ',', os.path.basename(report_tsv_filename),\
-        'and', os.path.basename(report_tex_filename)
+        print '  Transposed version to ' + report_txt_filename + ', ' + os.path.basename(report_tsv_filename) + \
+        ' and ' + os.path.basename(report_tex_filename) + '.'
 
 def save_gage(output_dirpath):
     save(output_dirpath, "gage_report", "gage_transposed_report", Fields.gage_order)

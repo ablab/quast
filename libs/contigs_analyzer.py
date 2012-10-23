@@ -118,7 +118,7 @@ def sympalign(id, out_filename, in_filename):
         lc = abs(sc - ec) + 1
         # lr = abs(sr - er) + 1
         if lc != int(arr[12]):
-            print '    Error: lc != int(arr[12])', lc, int(arr[12])
+            print '    Error: lc != int(arr[12]) ' + str(lc) + ' ' + str(int(arr[12]))
             return
         align = (sc, ec, sr, er, p, ref_id)
         contig = (contig_id, contig_len)
@@ -163,9 +163,9 @@ def sympalign(id, out_filename, in_filename):
             ev2 = (yr, -1, contig, a)
             list_events += [ev1, ev2]
 
-    print '  ' + id_to_str(id) + '   Cleaned', counter[0], 'down to', counter[1]
+    print '  ' + id_to_str(id) + '   Cleaned ' + str(counter[0]) + ' down to ' + str(counter[1])
     all, add_counter = additional_cleaning(all)
-    print '  ' + id_to_str(id) + '   Additionally cleaned', counter[1], 'down to', add_counter
+    print '  ' + id_to_str(id) + '   Additionally cleaned ' + str(counter[1]) + ' down to ' + str(add_counter)
 
     ouf = open(out_filename, 'w')
     print >> ouf, "    [S1]     [E1]  |     [S2]     [E2]  |  [LEN 1]  [LEN 2]  |  [% IDY]  | [TAGS]"
@@ -223,7 +223,7 @@ class Mappings(object):
 def process_misassembled_contig(plantafile, output_file, i_start, i_finish, contig, prev, sorted_aligns, is_1st_chimeric_half, ns, smgap, assembly, misassembled_contigs, extensive_misassembled_contigs, ref_aligns, ref_features):
     region_misassemblies = []
     for i in xrange(i_start, i_finish):
-        print >>plantafile, '\t\t\tReal Alignment %d: %s' % (i+1, str(sorted_aligns[i]))
+        print >> plantafile, '\t\t\tReal Alignment %d: %s' % (i+1, str(sorted_aligns[i]))
         #Calculate the distance on the reference between the end of the first alignment and the start of the second
         gap = sorted_aligns[i+1].s1 - sorted_aligns[i].e1
         # overlap between positions of alignments in contig
@@ -246,9 +246,9 @@ def process_misassembled_contig(plantafile, output_file, i_start, i_finish, cont
         if sorted_aligns[i].ref != sorted_aligns[i+1].ref or gap > ns + smgap or (strand1 != strand2): # different chromosomes or large gap or different strands
             #Contig spans chromosomes or there is a gap larger than 1kb
             #MY: output in coords.filtered
-            print >>output_file, str(prev)
+            print >> output_file, str(prev)
             prev = sorted_aligns[i+1].clone()
-            print >>plantafile, '\t\t\tExtensive misassembly (',
+            print >> plantafile, '\t\t\tExtensive misassembly (',
 
             extensive_misassembled_contigs.add(sorted_aligns[i].contig)
             ref_features.setdefault(sorted_aligns[i].ref, {})[sorted_aligns[i].e1] = 'M'
@@ -256,24 +256,24 @@ def process_misassembled_contig(plantafile, output_file, i_start, i_finish, cont
 
             if sorted_aligns[i].ref != sorted_aligns[i+1].ref:
                 region_misassemblies += [Misassembly.TRANSLOCATION]
-                print >>plantafile, 'translocation',
+                print >> plantafile, 'translocation',
             elif gap > ns + smgap:
                 region_misassemblies += [Misassembly.RELOCATION]
-                print >>plantafile, 'relocation',
+                print >> plantafile, 'relocation',
             elif strand1 != strand2:
                 region_misassemblies += [Misassembly.INVERSION]
-                print >>plantafile, 'inversion',
+                print >> plantafile, 'inversion',
             misassembled_contigs[contig] = len(assembly[contig])
 
-            print >>plantafile, ') between these two alignments: [%s] @ %d and %d' % (sorted_aligns[i].ref, sorted_aligns[i].e1, sorted_aligns[i+1].s1)
+            print >> plantafile, ') between these two alignments: [%s] @ %d and %d' % (sorted_aligns[i].ref, sorted_aligns[i].e1, sorted_aligns[i+1].s1)
 
         else:
             if gap < 0:
                 #There is overlap between the two alignments, a local misassembly
-                print >>plantafile, '\t\tOverlap between these two alignments (local misassembly): [%s] %d to %d' % (sorted_aligns[i].ref, sorted_aligns[i].e1, sorted_aligns[i+1].s1)
+                print >> plantafile, '\t\tOverlap between these two alignments (local misassembly): [%s] %d to %d' % (sorted_aligns[i].ref, sorted_aligns[i].e1, sorted_aligns[i+1].s1)
             else:
                 #There is a small gap between the two alignments, a local misassembly
-                print >>plantafile, '\t\tGap in alignment between these two alignments (local misassembly): [%s] %d' % (sorted_aligns[i].ref, sorted_aligns[i].s1)
+                print >> plantafile, '\t\tGap in alignment between these two alignments (local misassembly): [%s] %d' % (sorted_aligns[i].ref, sorted_aligns[i].s1)
 
             region_misassemblies += [Misassembly.LOCAL]
 
@@ -286,11 +286,11 @@ def process_misassembled_contig(plantafile, output_file, i_start, i_finish, cont
 
     #MY: output in coords.filtered
     if not is_1st_chimeric_half:
-        print >>output_file, str(prev)
+        print >> output_file, str(prev)
 
     #Record the very last alignment
     i = i_finish
-    print >>plantafile, '\t\t\tReal Alignment %d: %s' % (i+1, str(sorted_aligns[i]))
+    print >> plantafile, '\t\t\tReal Alignment %d: %s' % (i+1, str(sorted_aligns[i]))
     ref_aligns.setdefault(sorted_aligns[i].ref, []).append(sorted_aligns[i])
 
     return prev.clone(), region_misassemblies
@@ -317,7 +317,7 @@ def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_
     logfilename_out = output_dir + '/contigs_report_' + os.path.basename(filename) + '.stdout'
     logfilename_err = output_dir + '/contigs_report_' + os.path.basename(filename) + '.stderr'
     logfile_err = open(logfilename_err, 'a')
-    print ' ', id_to_str(id), 'Logging to files', logfilename_out, 'and', os.path.basename(logfilename_err) + '...'
+    print '  ' + id_to_str(id) + ' Logging to files ' + logfilename_out + ' and ' + os.path.basename(logfilename_err) + '...'
     # reverse complementarity is not an extensive misassemble
     peral = 0.99
     maxun = 10
@@ -342,11 +342,11 @@ def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_
         and os.path.isfile(nucmer_report_filename)):
 
         print >> plantafile, '\tUsing existing Nucmer alignments...'
-        print ' ', id_to_str(id), 'Using existing Nucmer alignments... '
+        print '  ' + id_to_str(id) + ' Using existing Nucmer alignments... '
 
     else:
         print >> plantafile, '\tRunning Nucmer...'
-        print ' ', id_to_str(id), 'Running Nucmer... '
+        print '  ' + id_to_str(id) + ' Running Nucmer... '
         # GAGE params of Nucmer
         #subprocess.call(['nucmer', '--maxmatch', '-p', nucmerfilename, '-l', '30', '-banded', reference, filename],
         #    stdout=open(logfilename_out, 'a'), stderr=logfile_err, env=myenv)
@@ -367,15 +367,15 @@ def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_
 
         if not os.path.isfile(coords_filename):
             print >> logfile_err, id_to_str(id), 'Nucmer failed for', filename + ':', coords_filename, 'doesn\'t exist.'
-            print ' ', id_to_str(id), 'Nucmer failed for ' + '\'' + os.path.basename(filename) + '\'.'
+            print '  ' + id_to_str(id) + ' Nucmer failed for ' + '\'' + os.path.basename(filename) + '\'.'
             return NucmerStatus.FAILED, {}
         if not os.path.isfile(nucmer_report_filename):
             print >> logfile_err, id_to_str(id), 'Nucmer failed for', filename + ':', nucmer_report_filename, 'doesn\'t exist.'
-            print ' ', id_to_str(id), 'Nucmer failed for ' + '\'' + os.path.basename(filename) + '\'.'
+            print '  ' + id_to_str(id) + ' Nucmer failed for ' + '\'' + os.path.basename(filename) + '\'.'
             return NucmerStatus.FAILED, {}
         if len(open(coords_filename).readlines()[-1].split()) < 13:
             print >> logfile_err, id_to_str(id), 'Nucmer: nothing aligned for', filename
-            print ' ', id_to_str(id), 'Nucmer: nothing aligned for ' + '\'' + os.path.basename(filename) + '\'.'
+            print '  ' + id_to_str(id) + ' Nucmer: nothing aligned for ' + '\'' + os.path.basename(filename) + '\'.'
             return NucmerStatus.NOT_ALIGNED, {}
         nucmer_successful_check_file = open(nucmer_successful_check_filename, 'w')
         nucmer_successful_check_file.write("Successfully finished " + datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S'))
@@ -709,7 +709,7 @@ def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_
 
             #If region starts in a contig, ignore portion of contig prior to region start
             if sorted_aligns and region and sorted_aligns[0].s1 < region[0]:
-                print >>plantafile, '\t\t\tSTART within alignment : %s' % sorted_aligns[0]
+                print >> plantafile, '\t\t\tSTART within alignment : %s' % sorted_aligns[0]
                 #Track number of bases ignored at the start of the alignment
                 snip_left = region[0] - sorted_aligns[0].s1
                 #Modify to account for any insertions or deletions that are present
@@ -764,7 +764,7 @@ def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_
                 end = False
                 #Check to see if previous gap was negative
                 if negative:
-                    print >>plantafile, '\t\t\tPrevious gap was negative, modifying coordinates to ignore overlap'
+                    print >> plantafile, '\t\t\tPrevious gap was negative, modifying coordinates to ignore overlap'
                     #Ignoring OL part of next contig, no SNPs or N's will be recorded
                     snip_left = current.e1 + 1 - sorted_aligns[0].s1
                     #Account for any indels that may be present
@@ -799,7 +799,7 @@ def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_
                     #Check if last alignment ends before the regions does (gap at end of the region)
                     if current.e1 >= region[1]:
                         #print "Ends inside current alignment.\n";
-                        print >>plantafile, '\t\t\tEND in current alignment.  Modifying %d to %d.' % (current.e1, region[1])
+                        print >> plantafile, '\t\t\tEND in current alignment.  Modifying %d to %d.' % (current.e1, region[1])
                         #Pushing the rest of the alignment back on the stack
                         sorted_aligns = [current] + sorted_aligns
                         #Flag to end loop through alignment
@@ -811,7 +811,7 @@ def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_
                     else:
                         #Region ends in a gap
                         size = region[1] - current.e1
-                        print >>plantafile, '\t\t\tEND in gap: %d to %d (%d bp)' % (current.e1, region[1], size)
+                        print >> plantafile, '\t\t\tEND in gap: %d to %d (%d bp)' % (current.e1, region[1], size)
 
                         #Record gap
                         if not sorted_aligns:
@@ -828,13 +828,13 @@ def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_
                     #Grab next alignment
                     next = sorted_aligns[0]
                     #print >>plantafile, '\t\t\t\tNext Alignment: %s' % next
-                    print >>plantafile, '\t\t\t\tNext Alignment: %d %d %s %d %d' % (next.s1, next.e1, next.contig, next.s2, next.e2)
+                    print >> plantafile, '\t\t\t\tNext Alignment: %d %d %s %d %d' % (next.s1, next.e1, next.contig, next.s2, next.e2)
 
                     if next.s1 >= current.e1:
                         #There is a gap beetween this and the next alignment
                         size = next.s1 - current.e1 - 1
                         gaps.append([size, current.contig, next.contig])
-                        print >>plantafile, '\t\t\t\tGap between this and next alignment: %d to %d (%d bp)' % (current.e1, next.s1, size)
+                        print >> plantafile, '\t\t\t\tGap between this and next alignment: %d to %d (%d bp)' % (current.e1, next.s1, size)
                         #Record ambiguous bases in current gap
                         for i in xrange(current.e1, next.s1):
                             if (ref in ref_features) and (i in ref_features[ref]) and (ref_features[ref][i] == 'A'):
@@ -843,7 +843,7 @@ def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_
                         #The next alignment is redundant to the current alignmentt
                         while next.e1 <= current.e1 and sorted_aligns:
                             total_redundant += next.e1 - next.s1
-                            print >>plantafile, '\t\t\t\tThe next contig is redundant. Skipping.'
+                            print >> plantafile, '\t\t\t\tThe next contig is redundant. Skipping.'
                             redundant.append(current.contig)
                             next = sorted_aligns[0]
                             if next.e1 <= current.e1:
@@ -864,7 +864,7 @@ def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_
 
                 #Initiate location of SNP on assembly to be first or last base of contig alignment
                 contig_estimate = current.s2
-                print >>plantafile, '\t\t\t\tContig start coord: %d' % contig_estimate
+                print >> plantafile, '\t\t\t\tContig start coord: %d' % contig_estimate
 
                 #Assess each reference base of the current alignment
                 for i in xrange(current.s1, current.e1 + 1):
@@ -879,20 +879,20 @@ def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_
 
                     #If there is a SNP, and no alternative alignments over this base, record SNPs
                     if (ref in snps) and (current.contig in snps[ref]) and (i in snps[ref][current.contig]):
-                        print >>plantafile, '\t\t\t\tSNP: %s, %s, %d, %s, %d, %d' % (ref, current.contig, i, snps[ref][current.contig][i], contig_estimate, snp_locs[ref][current.contig][i])
+                        print >> plantafile, '\t\t\t\tSNP: %s, %s, %d, %s, %d, %d' % (ref, current.contig, i, snps[ref][current.contig][i], contig_estimate, snp_locs[ref][current.contig][i])
 
                         #Capture SNP base
                         snp = snps[ref][current.contig][i]
 
                         #Check that there are not multiple alignments at this location
                         if (ref in ref_features) and (i in ref_features[ref]):
-                            print >>plantafile, '\t\t\t\t\tERROR: SNP at a postion where there are multiple alignments (%s).  Skipping.\n' % ref_features[ref][i]
+                            print >> plantafile, '\t\t\t\t\tERROR: SNP at a postion where there are multiple alignments (%s).  Skipping.\n' % ref_features[ref][i]
                             if current.s2 < current.e2: contig_estimate += 1
                             else: contig_estimate -= 1
                             continue
                         #Check that the position of the SNP in the contig is close to the position of this SNP
                         elif abs(contig_estimate - snp_locs[ref][current.contig][i]) > 50:
-                            print >>plantafile, '\t\t\t\t\tERROR: SNP position in contig was off by %dbp! (%d vs %d)' % (abs(contig_estimate - snp_locs[ref][current.contig][i]), contig_estimate, snp_locs[ref][current.contig][i])
+                            print >> plantafile, '\t\t\t\t\tERROR: SNP position in contig was off by %dbp! (%d vs %d)' % (abs(contig_estimate - snp_locs[ref][current.contig][i]), contig_estimate, snp_locs[ref][current.contig][i])
                             if current.s2 < current.e2: contig_estimate += 1
                             else: contig_estimate -= 1
                             continue
@@ -1020,7 +1020,7 @@ def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_
 
     plantafile.close()
     logfile_err.close()
-    print ' ', id_to_str(id), 'Analysis is finished.'
+    print '  ' + id_to_str(id) + ' Analysis is finished.'
     return NucmerStatus.OK, result
 
 ###  I think we don't need this
@@ -1045,7 +1045,7 @@ def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_
 
 
 def plantakolya_process(cyclic, draw_plots, nucmer_output_dir, filename, id, myenv, output_dir, reference):
-    print ' ', id_to_str(id), os.path.basename(filename) + '...'
+    print '  ' + id_to_str(id) + ' ' + os.path.basename(filename) + '...'
     nucmer_fname = os.path.join(nucmer_output_dir, os.path.basename(filename))
     nucmer_is_ok, result = plantakolya(cyclic, draw_plots, id, filename, nucmer_fname, myenv, output_dir, reference)
     clear_files(filename, nucmer_fname)

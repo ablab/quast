@@ -44,7 +44,7 @@ AR   := $(filter /%,$(shell /bin/sh -c 'type ar'))
 
 CXXFLAGS = -O3
 CFLAGS = -O3
-LDFLAGS = 
+LDFLAGS =
 
 FLATS = ACKNOWLEDGEMENTS COPYRIGHT INSTALL LICENSE Makefile README ChangeLog
 

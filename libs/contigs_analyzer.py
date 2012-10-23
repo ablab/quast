@@ -88,8 +88,8 @@ def additional_cleaning(all):
     return cleaned, counter
 
 
-def sympalign(out_filename, in_filename):
-    print '    Running SympAlign...'
+def sympalign(id, out_filename, in_filename):
+    print '  ' + id_to_str(id) + ' Running SympAlign...'
     assert in_filename[-5:] == '.btab', in_filename
     counter = [0, 0]
     all = {}
@@ -163,9 +163,9 @@ def sympalign(out_filename, in_filename):
             ev2 = (yr, -1, contig, a)
             list_events += [ev1, ev2]
 
-    print '    Cleaned', counter[0], 'down to', counter[1]
+    print '  ' + id_to_str(id) + '   Cleaned', counter[0], 'down to', counter[1]
     all, add_counter = additional_cleaning(all)
-    print '    Additionally cleaned', counter[1], 'down to', add_counter
+    print '  ' + id_to_str(id) + '   Additionally cleaned', counter[1], 'down to', add_counter
 
     ouf = open(out_filename, 'w')
     print >> ouf, "    [S1]     [E1]  |     [S2]     [E2]  |  [LEN 1]  [LEN 2]  |  [% IDY]  | [TAGS]"
@@ -179,7 +179,7 @@ def sympalign(out_filename, in_filename):
             label = ref_id + '\t' + contig_id
             print >> ouf, '%8d %8d  | %8d %8d  | %8d %8d  | %8.4f  | %s' % (sr, er, sc, ec, lr, lc, p, label)
     ouf.close()
-    print '    Sympaligning is finished.'
+    print '  ' + id_to_str(id) + ' Sympaligning is finished.'
 
 
 class Mapping(object):
@@ -312,12 +312,12 @@ class NucmerStatus:
     OK=1
     NOT_ALIGNED=2
 
-def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir, reference):
+def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_dir, reference):
     # run plantakolya tool
     logfilename_out = output_dir + '/contigs_report_' + os.path.basename(filename) + '.stdout'
     logfilename_err = output_dir + '/contigs_report_' + os.path.basename(filename) + '.stderr'
     logfile_err = open(logfilename_err, 'a')
-    print '    Logging to files', logfilename_out, 'and', os.path.basename(logfilename_err) + '...'
+    print ' ', id_to_str(id), 'Logging to files', logfilename_out, 'and', os.path.basename(logfilename_err) + '...'
     # reverse complementarity is not an extensive misassemble
     peral = 0.99
     maxun = 10
@@ -342,11 +342,11 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
         and os.path.isfile(nucmer_report_filename)):
 
         print >> plantafile, '\tUsing existing Nucmer alignments...'
-        print '    Using existing Nucmer alignments... '
+        print ' ', id_to_str(id), 'Using existing Nucmer alignments... '
 
     else:
         print >> plantafile, '\tRunning Nucmer...'
-        print '    Running Nucmer... '
+        print ' ', id_to_str(id), 'Running Nucmer... '
         # GAGE params of Nucmer
         #subprocess.call(['nucmer', '--maxmatch', '-p', nucmerfilename, '-l', '30', '-banded', reference, filename],
         #    stdout=open(logfilename_out, 'a'), stderr=logfile_err, env=myenv)
@@ -363,20 +363,20 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
         subprocess.call(['dnadiff', '-d', delta_filename, '-p', nucmerfilename],
             stdout=open(logfilename_out, 'a'), stderr=logfile_err, env=myenv)
 
-        sympalign(coords_filename, coords_btab_filename)
+        sympalign(id, coords_filename, coords_btab_filename)
 
         if not os.path.isfile(coords_filename):
-            print >> logfile_err, 'Nucmer failed for', filename + ':', coords_filename, 'doesn\'t exist.'
-            print '      Nucmer failed for ' + '\'' + os.path.basename(filename) + '\'.'
-            return NucmerStatus.FAILED
+            print >> logfile_err, id_to_str(id), 'Nucmer failed for', filename + ':', coords_filename, 'doesn\'t exist.'
+            print ' ', id_to_str(id), 'Nucmer failed for ' + '\'' + os.path.basename(filename) + '\'.'
+            return NucmerStatus.FAILED, {}
         if not os.path.isfile(nucmer_report_filename):
-            print >> logfile_err, 'Nucmer failed for', filename + ':', nucmer_report_filename, 'doesn\'t exist.'
-            print '      Nucmer failed for ' + '\'' + os.path.basename(filename) + '\'.'
-            return NucmerStatus.FAILED
+            print >> logfile_err, id_to_str(id), 'Nucmer failed for', filename + ':', nucmer_report_filename, 'doesn\'t exist.'
+            print ' ', id_to_str(id), 'Nucmer failed for ' + '\'' + os.path.basename(filename) + '\'.'
+            return NucmerStatus.FAILED, {}
         if len(open(coords_filename).readlines()[-1].split()) < 13:
-            print >> logfile_err, 'Nucmer: nothing aligned for', filename
-            print '    Nucmer: nothing aligned for ' + '\'' + os.path.basename(filename) + '\'.'
-            return NucmerStatus.NOT_ALIGNED
+            print >> logfile_err, id_to_str(id), 'Nucmer: nothing aligned for', filename
+            print ' ', id_to_str(id), 'Nucmer: nothing aligned for ' + '\'' + os.path.basename(filename) + '\'.'
+            return NucmerStatus.NOT_ALIGNED, {}
         nucmer_successful_check_file = open(nucmer_successful_check_filename, 'w')
         nucmer_successful_check_file.write("Successfully finished " + datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S'))
         nucmer_successful_check_file.close()
@@ -420,7 +420,7 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
         print >> plantafile, '\tLoaded [%s]' % name
 
     #Loading the SNP calls
-    print >>plantafile, 'Loading SNPs...'
+    print >> plantafile, 'Loading SNPs...'
     snps = {}
     snp_locs = {}
     for line in open(snps_filename):
@@ -1004,37 +1004,14 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
 
     print >> plantafile, '\tRedundant Contigs: %d (%d)' % (len(redundant), total_redundant)
 
-    report = reporting.get(filename)
-    report.add_field(reporting.Fields.AVGIDY, '%.3f' % avg_idy)
-    report.add_field(reporting.Fields.MISLOCAL, region_misassemblies.count(Misassembly.LOCAL))
-    report.add_field(reporting.Fields.MISASSEMBL, len(region_misassemblies) - region_misassemblies.count(Misassembly.LOCAL))
-    report.add_field(reporting.Fields.MISCONTIGS, len(misassembled_contigs))
-    report.add_field(reporting.Fields.MISCONTIGSBASES, misassembled_bases)
-    report.add_field(reporting.Fields.UNALIGNED, '%d + %d part' % (unaligned, partially_unaligned))
-    report.add_field(reporting.Fields.UNALIGNEDBASES, (fully_unaligned_bases + partially_unaligned_bases))
-    report.add_field(reporting.Fields.AMBIGUOUS, ambiguous)
-    report.add_field(reporting.Fields.AMBIGUOUSBASES, total_ambiguous)
-    report.add_field(reporting.Fields.MISMATCHES, SNPs)
-    report.add_field(reporting.Fields.INDELS, indels)
-    report.add_field(reporting.Fields.SUBSERROR, "%.2f" % (float(SNPs) * 100000.0 / float(total_aligned_bases)))
-    report.add_field(reporting.Fields.INDELSERROR, "%.2f" % (float(indels) * 100000.0 / float(total_aligned_bases)))
-
-    # for misassemblies report:
-    report.add_field(reporting.Fields.MIS_ALL_EXTENSIVE, len(region_misassemblies) - region_misassemblies.count(Misassembly.LOCAL))
-    report.add_field(reporting.Fields.MIS_RELOCATION, region_misassemblies.count(Misassembly.RELOCATION))
-    report.add_field(reporting.Fields.MIS_TRANSLOCATION, region_misassemblies.count(Misassembly.TRANSLOCATION))
-    report.add_field(reporting.Fields.MIS_INVERTION, region_misassemblies.count(Misassembly.INVERSION))
-    report.add_field(reporting.Fields.MIS_EXTENSIVE_CONTIGS, len(misassembled_contigs))
-    report.add_field(reporting.Fields.MIS_EXTENSIVE_BASES, misassembled_bases)
-    report.add_field(reporting.Fields.MIS_LOCAL, region_misassemblies.count(Misassembly.LOCAL))
-
-    # for unaligned report:
-    report.add_field(reporting.Fields.UNALIGNED_FULL_CNTGS, unaligned)
-    report.add_field(reporting.Fields.UNALIGNED_FULL_LENGTH, fully_unaligned_bases)
-    report.add_field(reporting.Fields.UNALIGNED_PART_CNTGS, partially_unaligned)
-    report.add_field(reporting.Fields.UNALIGNED_PART_WITH_MISASSEMBLY, partially_unaligned_with_misassembly)
-    report.add_field(reporting.Fields.UNALIGNED_PART_SIGNIFICANT_PARTS, partially_unaligned_with_significant_parts)
-    report.add_field(reporting.Fields.UNALIGNED_PART_LENGTH, partially_unaligned_bases)
+    result = {'avg_idy': avg_idy, 'region_misassemblies': region_misassemblies,
+              'misassembled_contigs': misassembled_contigs, 'misassembled_bases': misassembled_bases,
+              'unaligned': unaligned, 'partially_unaligned': partially_unaligned,
+              'partially_unaligned_bases': partially_unaligned_bases, 'fully_unaligned_bases': fully_unaligned_bases,
+              'ambiguous': ambiguous, 'total_ambiguous': total_ambiguous, 'SNPs': SNPs, 'indels': indels,
+              'total_aligned_bases': total_aligned_bases,
+              'partially_unaligned_with_misassembly': partially_unaligned_with_misassembly,
+              'partially_unaligned_with_significant_parts': partially_unaligned_with_significant_parts}
 
     ## outputting misassembled contigs to separate file
     fasta = [(name, seq) for name, seq in fastaparser.read_fasta(filename) if
@@ -1043,8 +1020,8 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
 
     plantafile.close()
     logfile_err.close()
-    print '    Analysis is finished.'
-    return NucmerStatus.OK
+    print ' ', id_to_str(id), 'Analysis is finished.'
+    return NucmerStatus.OK, result
 
 ###  I think we don't need this
 #    if draw_plots and os.path.isfile(delta_filename):
@@ -1066,16 +1043,14 @@ def plantakolya(cyclic, draw_plots, filename, nucmerfilename, myenv, output_dir,
 #                os.remove(plotfilename + ext)
 
 
-def plantakolya_process(cyclic, draw_plots, filename, id, myenv, output_dir, reference):
+
+def plantakolya_process(cyclic, draw_plots, nucmer_output_dir, filename, id, myenv, output_dir, reference):
     print ' ', id_to_str(id), os.path.basename(filename), '...'
-    nucmer_output_dir = os.path.join(output_dir, 'nucmer_output')
-    if not os.path.isdir(nucmer_output_dir):
-        os.mkdir(nucmer_output_dir)
     nucmer_fname = os.path.join(nucmer_output_dir, os.path.basename(filename))
-    nucmer_is_ok = plantakolya(cyclic, draw_plots, filename, nucmer_fname, myenv, output_dir, reference)
+    nucmer_is_ok, result = plantakolya(cyclic, draw_plots, id, filename, nucmer_fname, myenv, output_dir, reference)
     clear_files(filename, nucmer_fname)
 
-    return nucmer_is_ok
+    return nucmer_is_ok, result
 
 
 def do(reference, filenames, cyclic, output_dir, lib_dir, draw_plots):
@@ -1102,32 +1077,80 @@ def do(reference, filenames, cyclic, output_dir, lib_dir, draw_plots):
         ['make', '-C', mummer_path],
         stdout=open(os.path.join(mummer_path, 'make.log'), 'w'), stderr=open(os.path.join(mummer_path, 'make.err'), 'w'))
 
+
     print 'Running contigs analyzer...'
+    nucmer_output_dir = os.path.join(output_dir, 'nucmer_output')
+    if not os.path.isdir(nucmer_output_dir):
+        os.mkdir(nucmer_output_dir)
 
-    #TODO: use joblib
-#    from joblib import Parallel, delayed
+    from joblib import Parallel, delayed
+    statuses_results_pairs = Parallel(n_jobs=len(filenames))(delayed(plantakolya_process)(
+        cyclic, draw_plots, nucmer_output_dir, fname, id, myenv, output_dir, reference)
+          for id, fname in enumerate(filenames))
+    # unzipping
+    statuses, results = [x[0] for x in statuses_results_pairs], [x[1] for x in statuses_results_pairs]
 
-#    statuses = Parallel(n_jobs=len(filenames))(delayed(plantakolya_process)(
-#                                                       cyclic,
-#                                                       draw_plots,
-#                                                       fname,
-#                                                       id,
-#                                                       myenv,
-#                                                       output_dir,
-#                                                       reference)
-#                                               for id, fname in enumerate(filenames))
+    def save_result(result):
+        report = reporting.get(fname)
 
-#    print
-#    print statuses
-#    nucmer_statuses = dict(zip(filenames, statuses))
-#    print nucmer_statuses
-#    print
+        avg_idy = result['avg_idy']
+        region_misassemblies = result['region_misassemblies']
+        misassembled_contigs = result['misassembled_contigs']
+        misassembled_bases = result['misassembled_bases']
+        unaligned = result['unaligned']
+        partially_unaligned = result['partially_unaligned']
+        partially_unaligned_bases = result['partially_unaligned_bases']
+        fully_unaligned_bases = result['fully_unaligned_bases']
+        ambiguous = result['ambiguous']
+        total_ambiguous = result['total_ambiguous']
+        SNPs = result['SNPs']
+        indels = result['indels']
+        total_aligned_bases = result['total_aligned_bases']
+        partially_unaligned_with_misassembly = result['partially_unaligned_with_misassembly']
+        partially_unaligned_with_significant_parts = result['partially_unaligned_with_significant_parts']
 
-    nucmer_statuses = {}
+        report.add_field(reporting.Fields.AVGIDY, '%.3f' % avg_idy)
+        report.add_field(reporting.Fields.MISLOCAL, region_misassemblies.count(Misassembly.LOCAL))
+        report.add_field(reporting.Fields.MISASSEMBL, len(region_misassemblies) - region_misassemblies.count(Misassembly.LOCAL))
+        report.add_field(reporting.Fields.MISCONTIGS, len(misassembled_contigs))
+        report.add_field(reporting.Fields.MISCONTIGSBASES, misassembled_bases)
+        report.add_field(reporting.Fields.UNALIGNED, '%d + %d part' % (unaligned, partially_unaligned))
+        report.add_field(reporting.Fields.UNALIGNEDBASES, (fully_unaligned_bases + partially_unaligned_bases))
+        report.add_field(reporting.Fields.AMBIGUOUS, ambiguous)
+        report.add_field(reporting.Fields.AMBIGUOUSBASES, total_ambiguous)
+        report.add_field(reporting.Fields.MISMATCHES, SNPs)
+        report.add_field(reporting.Fields.INDELS, indels)
+        report.add_field(reporting.Fields.SUBSERROR, "%.2f" % (float(SNPs) * 100000.0 / float(total_aligned_bases)))
+        report.add_field(reporting.Fields.INDELSERROR, "%.2f" % (float(indels) * 100000.0 / float(total_aligned_bases)))
 
-    for id, filename in enumerate(filenames):
-        nucmer_status = plantakolya_process(cyclic, draw_plots, filename, id, myenv, output_dir, reference)
-        nucmer_statuses[filename] = nucmer_status
+        # for misassemblies report:
+        report.add_field(reporting.Fields.MIS_ALL_EXTENSIVE, len(region_misassemblies) - region_misassemblies.count(Misassembly.LOCAL))
+        report.add_field(reporting.Fields.MIS_RELOCATION, region_misassemblies.count(Misassembly.RELOCATION))
+        report.add_field(reporting.Fields.MIS_TRANSLOCATION, region_misassemblies.count(Misassembly.TRANSLOCATION))
+        report.add_field(reporting.Fields.MIS_INVERTION, region_misassemblies.count(Misassembly.INVERSION))
+        report.add_field(reporting.Fields.MIS_EXTENSIVE_CONTIGS, len(misassembled_contigs))
+        report.add_field(reporting.Fields.MIS_EXTENSIVE_BASES, misassembled_bases)
+        report.add_field(reporting.Fields.MIS_LOCAL, region_misassemblies.count(Misassembly.LOCAL))
+
+        # for unaligned report:
+        report.add_field(reporting.Fields.UNALIGNED_FULL_CNTGS, unaligned)
+        report.add_field(reporting.Fields.UNALIGNED_FULL_LENGTH, fully_unaligned_bases)
+        report.add_field(reporting.Fields.UNALIGNED_PART_CNTGS, partially_unaligned)
+        report.add_field(reporting.Fields.UNALIGNED_PART_WITH_MISASSEMBLY, partially_unaligned_with_misassembly)
+        report.add_field(reporting.Fields.UNALIGNED_PART_SIGNIFICANT_PARTS, partially_unaligned_with_significant_parts)
+        report.add_field(reporting.Fields.UNALIGNED_PART_LENGTH, partially_unaligned_bases)
+
+    for id, fname in enumerate(filenames):
+        if statuses[id] == NucmerStatus.OK:
+            save_result(results[id])
+
+    nucmer_statuses = dict(zip(filenames, statuses))
+
+#    nucmer_statuses = {}
+#
+#    for id, filename in enumerate(filenames):
+#        nucmer_status = plantakolya_process(cyclic, draw_plots, filename, id, myenv, output_dir, reference)
+#        nucmer_statuses[filename] = nucmer_status
 
     if NucmerStatus.OK in nucmer_statuses.values():
         reporting.save_misassemblies(output_dir)

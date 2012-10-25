@@ -242,7 +242,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
                 output_dirpath = str(base_dirpath) + '__' + str(i)
                 i += 1
         else:
-            print "\nWarning! Output directory already exists! Existing Nucmer aligns will be used!\n"
+            print "\nWarning! Output directory already exists! Existing Nucmer alignments will be used!\n"
 
     if not os.path.isdir(output_dirpath):
         os.makedirs(output_dirpath)
@@ -469,7 +469,6 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
                    ' The problem concern all the files provided.' if len(old_contigs_fpaths) > 1 else '')
         cleanup(corrected_dirpath, tee)
         return 1
-
 
 
 def cleanup(corrected_dirpath, tee):

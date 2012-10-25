@@ -19,10 +19,13 @@ import os
 import platform
 import subprocess
 import datetime
+import sys
 import fastaparser
 import shutil
 from libs import reporting, qconfig
 from qutils import id_to_str
+
+required_binaries = ['nucmer', 'delta-filter', 'show-coords', 'dnadiff']
 
 class Misassembly:
     LOCAL=0
@@ -1053,6 +1056,13 @@ def plantakolya_process(cyclic, draw_plots, nucmer_output_dir, filename, id, mye
     return nucmer_is_ok, result
 
 
+def all_required_binaries_exist(mummer_path):
+    for required_binary in required_binaries:
+        if not os.path.isfile(os.path.join(mummer_path, required_binary)):
+            return False
+    return True
+
+
 def do(reference, filenames, cyclic, output_dir, lib_dir, draw_plots):
     if not os.path.isdir(output_dir):
         os.mkdir(output_dir)
@@ -1071,12 +1081,17 @@ def do(reference, filenames, cyclic, output_dir, lib_dir, draw_plots):
     # for running our MUMmer
     myenv = os.environ.copy()
     myenv['PATH'] = mummer_path + ':' + myenv['PATH']
-    # making
-    print ("Making MUMmer... (it may take several minutes on the first run)")
-    subprocess.call(
-        ['make', '-C', mummer_path],
-        stdout=open(os.path.join(mummer_path, 'make.log'), 'w'), stderr=open(os.path.join(mummer_path, 'make.err'), 'w'))
 
+    if not all_required_binaries_exist(mummer_path):
+        # making
+        print ("Compiling MUMmer...")
+        subprocess.call(
+            ['make', '-C', mummer_path],
+            stdout=open(os.path.join(mummer_path, 'make.log'), 'w'), stderr=open(os.path.join(mummer_path, 'make.err'), 'w'))
+        if not all_required_binaries_exist(mummer_path):
+            print >>sys.stderr, "Error occurred during MUMmer compilation (", mummer_path, ")! Try to compile it manually!"
+            print >>sys.stderr, "Exiting"
+            sys.exit(1)
 
     print 'Running contigs analyzer...'
     nucmer_output_dir = os.path.join(output_dir, 'nucmer_output')
@@ -1174,4 +1189,4 @@ def do(reference, filenames, cyclic, output_dir, lib_dir, draw_plots):
     if failed == all:
         print '  Nucmer failed.'
 
-    return nucmer_statuses #, report_dict
+    return nucmer_statuses

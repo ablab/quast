@@ -22,3 +22,6 @@ run_test_data/results/*
 libs/html_saver/reports-scripts-old
 
 libs/test_parallel.py
+
+test_data/contigs.fasta
+test_data/reference_10K.fasta

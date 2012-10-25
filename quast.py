@@ -312,7 +312,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
             unziped_reference.close()
             qconfig.reference = corrected_and_unziped_reference_name
         # correcting
-        correct_fasta(qconfig.reference, corrected_and_unziped_reference_name, True)
+        # correct_fasta(qconfig.reference, corrected_and_unziped_reference_name, True)
         qconfig.reference = corrected_and_unziped_reference_name
 
     # we should remove input files with no contigs (e.g. if ll contigs are less than "min_contig" value)
@@ -426,10 +426,6 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
             ########################################################################
             ### GeneMark
             ########################################################################
-
-#                print >> sys.stderr, 'Warning! GeneMark tool for gene prediction doesn\'t work on Mac OS X.'
-#                add_empty_predicted_genes_fields()
-#            else:
             from libs import genemark
             genemark.do(contigs_fpaths, qconfig.genes_lengths, output_dirpath + '/predicted_genes', lib_dir)
 

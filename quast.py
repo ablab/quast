@@ -79,7 +79,7 @@ def corrected_fname_for_nucmer(fpath):
     fname = os.path.basename(fpath)
 
     corr_fname = fname
-    corr_fname = re.sub('[^\w\._-]', '_', corr_fname).strip()
+    corr_fname = re.sub(r'[^\w\._\-|]', '_', corr_fname).strip()
 
     if corr_fname != fname:
         if os.path.isfile(os.path.join(dirpath, corr_fname)):
@@ -100,7 +100,7 @@ def correct_fasta(original_fpath, corrected_fpath, is_reference=False):
     modified_fasta_entries = []
     for name, seq in fastaparser.read_fasta(original_fpath): # in tuples: (name, seq)
         if (len(seq) >= qconfig.min_contig) or is_reference:
-            corr_name = re.sub(r'\W', '', re.sub(r'\s', '_', name))
+            corr_name = re.sub(r'[^\w\._\-|]', '_', name)
             # seq to uppercase, because we later looking only uppercase letters
             corr_seq = seq.upper()
             # removing \r (Nucmer fails on such sequences)
@@ -303,17 +303,20 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
     # if reference in .gz format we should unzip it
     if qconfig.reference:
         ref_basename, ref_extension = os.path.splitext(qconfig.reference)
-        corrected_and_unziped_reference_name = os.path.join(corrected_dirpath, os.path.basename(ref_basename))
-        corrected_and_unziped_reference_name = corrected_fname_for_nucmer(corrected_and_unziped_reference_name)
+        corrected_and_unziped_reference_fname = os.path.join(corrected_dirpath, os.path.basename(ref_basename))
+        corrected_and_unziped_reference_fname = corrected_fname_for_nucmer(corrected_and_unziped_reference_fname)
         # unzipping (if needed)
+
+        corrected_and_unziped_reference_file = open(corrected_and_unziped_reference_fname, 'w')
         if ref_extension == ".gz":
-            unziped_reference = open(corrected_and_unziped_reference_name, 'w')
-            subprocess.call(['gunzip', qconfig.reference, '-c'], stdout=unziped_reference)
-            unziped_reference.close()
-            qconfig.reference = corrected_and_unziped_reference_name
+            subprocess.call(['gunzip', qconfig.reference, '-c'], stdout=corrected_and_unziped_reference_file)
+            qconfig.reference = corrected_and_unziped_reference_fname
+        corrected_and_unziped_reference_file.close()
+
         # correcting
-        # correct_fasta(qconfig.reference, corrected_and_unziped_reference_name, True)
-        qconfig.reference = corrected_and_unziped_reference_name
+        correct_fasta(qconfig.reference, corrected_and_unziped_reference_fname, True)
+
+        qconfig.reference = corrected_and_unziped_reference_fname
 
     # we should remove input files with no contigs (e.g. if ll contigs are less than "min_contig" value)
     contigs_to_remove = []

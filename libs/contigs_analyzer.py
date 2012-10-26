@@ -361,12 +361,32 @@ def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_
             stdout=open(filtered_delta_filename, 'w'), stderr=logfile_err, env=myenv)
         shutil.move(filtered_delta_filename, delta_filename)
 
-        subprocess.call(['show-coords', '-B', delta_filename],
-            stdout=open(coords_btab_filename, 'w'), stderr=logfile_err, env=myenv)
+        # disabling sympalign: part1
+        #subprocess.call(['show-coords', '-B', delta_filename],
+        #    stdout=open(coords_btab_filename, 'w'), stderr=logfile_err, env=myenv)
+        tmp_coords_filename = coords_filename + '_tmp'
+        subprocess.call(['show-coords', delta_filename],
+            stdout=open(tmp_coords_filename, 'w'), stderr=logfile_err, env=myenv)
         subprocess.call(['dnadiff', '-d', delta_filename, '-p', nucmerfilename],
             stdout=open(logfilename_out, 'a'), stderr=logfile_err, env=myenv)
 
-        sympalign(id, coords_filename, coords_btab_filename)
+        # removing waste lines from coords file
+        coords_file = open(coords_filename, 'w')
+        header = []
+        tmp_coords_file = open(tmp_coords_filename)
+        for line in tmp_coords_file:
+            header.append(line)
+            if line.startswith('====='):
+                break
+        coords_file.write(header[-2])
+        coords_file.write(header[-1])
+        for line in tmp_coords_file:
+            coords_file.write(line)
+        coords_file.close()
+        tmp_coords_file.close()
+
+        # disabling sympalign: part2
+        #sympalign(id, coords_filename, coords_btab_filename)
 
         if not os.path.isfile(coords_filename):
             print >> logfile_err, id_to_str(id) + 'Nucmer failed for', filename + ':', coords_filename, 'doesn\'t exist.'
@@ -494,7 +514,8 @@ def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_
             print >> plantafile, 'Top Length: %s  Top ID: %s' % (top_len, top_id)
 
             #Check that top hit captures most of the contig (>99% or within 10 bases)
-            if top_len > ctg_len * peral or ctg_len - top_len < maxun:
+            #if top_len > ctg_len * peral or ctg_len - top_len < maxun:
+            if ctg_len - top_len <= qconfig.min_contig:
                 #Reset top aligns: aligns that share the same value of longest and higest identity
                 top_aligns.append(sorted_aligns[0])
                 sorted_aligns = sorted_aligns[1:]

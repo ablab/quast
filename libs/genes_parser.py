@@ -142,6 +142,7 @@ def parse_txt(file):
             e = int(m.group('end'))
             gene.start = min(s, e)
             gene.end = max(s, e)
+            gene.id = m.group('number')
             genes.append(gene)
 
     return genes

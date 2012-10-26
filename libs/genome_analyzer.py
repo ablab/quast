@@ -37,7 +37,7 @@ def chromosomes_names_dict(features, chr_names):
             chr_name_dict[feature.seqname] = None
 
     if no_chr:
-        print '  Warning: Some of chromosome names in genes or operons differ from the names in the reference.'
+        print '  Warning: Some of the chromosome names in genes or operons differ from the names in the reference.'
     return chr_name_dict
 
 
@@ -248,6 +248,8 @@ def do(reference, filenames, nucmer_dir, output_dir, genes_filename, operons_fil
             total_partial = 0
             found_filename = os.path.join(output_dir, os.path.basename(filename) + suffix)
             found_file = open(found_filename, 'w')
+            print >>found_file, '%s\t\t%s\t%s' % ('ID or #', 'Start', 'End')
+            print >>found_file, '============================'
             for i, region in enumerate(regionlist):
                 found_list[i] = 0
                 for block in aligned_blocks:
@@ -260,7 +262,10 @@ def do(reference, filenames, nucmer_dir, output_dir, genes_filename, operons_fil
                             total_partial -= 1
                         found_list[i] = 1
                         total_full += 1
-                        print >>found_file, '%d\t%d\t%d' % (id + 1, region.start, region.end)
+                        id = str(region.id)
+                        if id == 'None':
+                            id = '# ' + str(region.number + 1)
+                        print >>found_file, '%s\t\t%d\t%d' % (id, region.start, region.end)
                         break
                     elif found_list[i] == 0 and min(region.end, block.end) - max(region.start, block.start) >= min_overlap:
                         found_list[i] = 2

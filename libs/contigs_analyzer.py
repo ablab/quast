@@ -1195,19 +1195,22 @@ def do(reference, filenames, cyclic, output_dir, lib_dir, draw_plots):
     oks = nucmer_statuses.values().count(NucmerStatus.OK)
     not_aligned = nucmer_statuses.values().count(NucmerStatus.NOT_ALIGNED)
     failed = nucmer_statuses.values().count(NucmerStatus.FAILED)
+    problems = not_aligned + failed
     all = len(nucmer_statuses)
 
     if oks == all:
         print '  Done.'
-    else:
-        print '  Done for', str(all - failed), 'out of', str(all) + '.'
+    if oks < all and problems < all:
+        print '  Done for', str(all - problems), 'out of', str(all) + '. For the rest, only basic stats are going to be evaluated.'
+    if problems == all:
+        print '  Failed aligning the contigs for all the assemblies. Only basic stats are going to be evaluated.'
 
-    if NucmerStatus.FAILED in nucmer_statuses.values():
-        print '  Nucmer failed processing', str(failed), 'file' + ('. It' if failed == 1 else 's. They') + ' will be skipped.'
-    if NucmerStatus.NOT_ALIGNED in nucmer_statuses.values():
-        print '  ' + str(not_aligned), 'file' + (' was' if not_aligned == 1 else 's were') + ' not aligned to reference. Only basic stats have been evaluated.'
+#    if NucmerStatus.FAILED in nucmer_statuses.values():
+#        print '  ' + str(failed),      'file' + (' ' if failed == 1 else 's ')      + 'failed to align to the reference. Only basic stats have been evaluated.'
+#    if NucmerStatus.NOT_ALIGNED in nucmer_statuses.values():
+#        print '  ' + str(not_aligned), 'file' + (' was' if not_aligned == 1 else 's were') + ' not aligned to the reference. Only basic stats have been evaluated.'
 
-    if failed == all:
-        print '  Nucmer failed.'
+#    if problems == all:
+#        print '  Nucmer failed.'
 
     return nucmer_statuses

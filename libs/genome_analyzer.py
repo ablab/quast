@@ -211,16 +211,23 @@ def do(reference, filenames, nucmer_dir, output_dir, genes_filename, operons_fil
         # counting genome coverage and gaps number
         covered_bp = 0
         gaps_count = 0
+        gaps_filename = os.path.join(output_dir, os.path.basename(filename) + '_gaps.txt')
+        gaps_file = open(gaps_filename, 'w')
         for chr_name, chr_len in reference_chromosomes.iteritems():
+            print >>gaps_file, chr_name
             cur_gap_size = 0
             for i in range(1, chr_len + 1):
                 if genome_mapping[chr_name][i] == 1:
+                    if cur_gap_size >= min_gap_size:
+                        gaps_count += 1
+                        print >>gaps_file, i - cur_gap_size, i - 1
+
                     covered_bp += 1
                     cur_gap_size = 0
                 else:
                     cur_gap_size += 1
-                    if cur_gap_size == min_gap_size:
-                        gaps_count += 1
+
+        gaps_file.close()
 
         report = reporting.get(filename)
 

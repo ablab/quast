@@ -391,11 +391,10 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
         from libs import contigs_analyzer
         nucmer_statuses = contigs_analyzer.do(qconfig.reference, contigs_fpaths, qconfig.cyclic, output_dirpath + '/contigs_reports', lib_dir, qconfig.draw_plots)
         for contigs_fpath, nucmer_status in nucmer_statuses.items():
-            if nucmer_status == contigs_analyzer.NucmerStatus.FAILED:
+            if nucmer_status == contigs_analyzer.NucmerStatus.FAILED or\
+                nucmer_status == contigs_analyzer.NucmerStatus.NOT_ALIGNED:
                 reporting.delete(contigs_fpath)
                 contigs_fpaths.remove(contigs_fpath)
-#            if nucmer_status == contigs_analyzer.NucmerStatus.NOT_ALIGNED:
-#                qconfig.reference = None
 
 
     # Before continue evaluating, check if nucmer didn't skip all of the contigs files.

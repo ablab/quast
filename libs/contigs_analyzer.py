@@ -341,13 +341,16 @@ def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_
 
     # Checking if there are existing previous nucmer alignments.
     # If they exist, using them to save time.
+    using_existing_alignments = False
     if (os.path.isfile(nucmer_successful_check_filename) and os.path.isfile(coords_filename)
         and os.path.isfile(nucmer_report_filename)):
 
-        print >> plantafile, '\tUsing existing Nucmer alignments...'
-        print '  ' + id_to_str(id) + 'Using existing Nucmer alignments... '
+        if open(nucmer_successful_check_filename).read().split('\n')[1].strip() == str(qconfig.min_contig):
+            print >> plantafile, '\tUsing existing Nucmer alignments...'
+            print '  ' + id_to_str(id) + 'Using existing Nucmer alignments... '
+            using_existing_alignments = True
 
-    else:
+    if not using_existing_alignments:
         print >> plantafile, '\tRunning Nucmer...'
         print '  ' + id_to_str(id) + 'Running Nucmer... '
         # GAGE params of Nucmer
@@ -401,7 +404,9 @@ def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_
             print '  ' + id_to_str(id) + 'Nucmer: nothing aligned for ' + '\'' + os.path.basename(filename) + '\'.'
             return NucmerStatus.NOT_ALIGNED, {}
         nucmer_successful_check_file = open(nucmer_successful_check_filename, 'w')
-        nucmer_successful_check_file.write("Successfully finished " + datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S'))
+        nucmer_successful_check_file.write("Min contig size:\n")
+        nucmer_successful_check_file.write(str(qconfig.min_contig) + '\n')
+        nucmer_successful_check_file.write("Successfully finished on " + datetime.datetime.now().strftime('%Y/%m/%d %H:%M:%S') + '\n')
         nucmer_successful_check_file.close()
 
     # Loading the alignment files

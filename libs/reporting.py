@@ -63,9 +63,10 @@ class Fields:
     AVGIDY = ''
 
     UNCALLED = '# N'
-    UNCALLED_PERCENT = "N's (%)"
+    UNCALLED_PERCENT = "# N's per 100 kbp"
 
     # Unaligned
+    LARGALIGN = 'Largest alignment'
     NA50 = 'NA50'
     NGA50 = 'NGA50'
     NA75 = 'NA75'
@@ -87,7 +88,7 @@ class Fields:
              MISASSEMBL, MISCONTIGS, MISCONTIGSBASES,
              UNALIGNED, UNALIGNEDBASES, AMBIGUOUS, AMBIGUOUSBASES, MAPPEDGENOME, DUPLICATION_RATIO, REFGC,
              UNCALLED_PERCENT, SUBSERROR, INDELSERROR, GENES, OPERONS, GENEMARKUNIQUE, GENEMARK,
-             NA50, LA50, NGA50, LGA50, NA75, LA75, NGA75, LGA75]
+             LARGALIGN, NA50, LA50, NGA50, LGA50, NA75, LA75, NGA75, LGA75]
 
     MIS_ALL_EXTENSIVE = '# misassemblies'
     MIS_RELOCATION = '    # relocations'

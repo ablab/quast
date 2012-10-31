@@ -41,6 +41,7 @@ def usage():
         print >> sys.stderr, "--min-contig <int>           lower threshold for contig length [default: %s]" % qconfig.min_contig
         print >> sys.stderr, ""
         print >> sys.stderr, "Advanced options:"
+        print >> sys.stderr, "--scaffolds                         this flag informs QUAST that provided assemblies are scaffolds"
         print >> sys.stderr, "--gage                              this flag starts QUAST in \"GAGE mode\""
         print >> sys.stderr, "--contig-thresholds   <int,int,..>  comma-separated list of contig length thresholds [default: %s]" % qconfig.contig_thresholds
         print >> sys.stderr, "--genemark-thresholds <int,int,..>  comma-separated list of threshold lengths of genes to search with GeneMark [default is %s]" % qconfig.genes_lengths
@@ -58,6 +59,7 @@ def usage():
         print >> sys.stderr, "-e  --genemark-thresholds    comma-separated list of threshold lengths of genes to search with GeneMark [default: %s]" % qconfig.genes_lengths
         print >> sys.stderr, ""
         print >> sys.stderr, 'Options without arguments'
+        print >> sys.stderr, "-s  --scaffolds              this flag informs QUAST that provided assemblies are scaffolds"
         print >> sys.stderr, '-g  --gage                   use Gage (results are in gage_report.txt)'
         print >> sys.stderr, '-n  --not-circular           genome is not circular (e.g., it is an eukaryote)'
         print >> sys.stderr, "-j  --save-json              save the output also in the JSON format"
@@ -110,8 +112,12 @@ def correct_fasta(original_fpath, corrected_fpath, is_reference=False):
             dic = {'M': 'N', 'K': 'N', 'R': 'N', 'Y': 'N', 'W': 'N', 'S': 'N', 'V': 'N', 'B': 'N', 'H': 'N', 'D': 'N'}
             pat = "(%s)" % "|".join( map(re.escape, dic.keys()) )
             corr_seq = re.sub(pat, lambda m:dic[m.group()], corr_seq)
+            # checking that only A,C,G,T or N presented in sequence
+            if re.compile(r'[^ACGTN]').search(corr_seq):
+                return False
             modified_fasta_entries.append((corr_name, corr_seq))
     fastaparser.write_fasta_to_file(corrected_fpath, modified_fasta_entries)
+    return True
 
 
 def check_dir_name(fpath):
@@ -156,9 +162,6 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
         usage()
         sys.exit(1)
 
-    from libs import qutils
-    qutils.assemblies_number = len(contigs_fpaths)
-
     json_outputpath = None
     output_dirpath = os.path.join(os.path.abspath(qconfig.default_results_root_dirname), qconfig.output_dirname)
 
@@ -193,6 +196,9 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
             qconfig.save_json = True
             qconfig.make_latest_symlink = False
             json_outputpath = arg
+
+        elif opt in ('-s', "--scaffolds"):
+            qconfig.scaffolds = True
 
         elif opt in ('-g', "--gage"):
             qconfig.with_gage = True
@@ -314,12 +320,31 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
         corrected_and_unziped_reference_file.close()
 
         # correcting
-        correct_fasta(qconfig.reference, corrected_and_unziped_reference_fname, True)
+        if not correct_fasta(qconfig.reference, corrected_and_unziped_reference_fname, True):
+            print "\n  Warning! Provided reference will be skipped because it contains non-ACGTN characters.\n"
+            qconfig.reference = ""
+        else:
+            qconfig.reference = corrected_and_unziped_reference_fname
 
-        qconfig.reference = corrected_and_unziped_reference_fname
+    def handle_fasta(contigs_fpath, corr_fpath):
+        lengths = fastaparser.get_lengths_from_fastafile(contigs_fpath)
+        if not sum(1 for l in lengths if l >= qconfig.min_contig):
+            print "\n  Warning! %s will be skipped because it doesn't have contigs >= %d bp.\n" % (os.path.basename(contigs_fpath), qconfig.min_contig)
+            return False
 
-    # we should remove input files with no contigs (e.g. if ll contigs are less than "min_contig" value)
-    contigs_to_remove = []
+        # correcting
+        if not correct_fasta(contigs_fpath, corr_fpath):
+            print "\n  Warning! %s will be skipped because it contains non-ACGTN characters.\n" % (os.path.basename(contigs_fpath))
+            return False
+
+        ## filling column "Assembly" with names of assemblies
+        report = reporting.get(corr_fpath)
+        ## filling columns "Number of contigs >=110 bp", ">=200 bp", ">=500 bp"
+        report.add_field(reporting.Fields.CONTIGS,   [sum(1 for l in lengths if l >= threshold) for threshold in qconfig.contig_thresholds])
+        report.add_field(reporting.Fields.TOTALLENS, [sum(l for l in lengths if l >= threshold) for threshold in qconfig.contig_thresholds])
+        return True
+
+
     ## removing from contigs' names special characters because:
     ## 1) Some embedded tools can fail on some strings with "...", "+", "-", etc
     ## 2) Nucmer fails on names like "contig 1_bla_bla", "contig 2_bla_bla" (it interprets as a contig's name only the first word of caption and gets ambiguous contigs names)
@@ -334,24 +359,51 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
                 i += 1
                 corr_fpath = os.path.join(corrected_dirpath, os.path.basename(basename + '__' + str(i)))
 
-        lengths = fastaparser.get_lengths_from_fastafile(contigs_fpath)
-        if not sum(1 for l in lengths if l >= qconfig.min_contig):
-            print "\n  Warning! %s will not be processed because it doesn't have contigs >= %d bp.\n" % (os.path.basename(contigs_fpath), qconfig.min_contig)
+        if not handle_fasta(contigs_fpath, corr_fpath):
             continue
 
-        ## filling column "Assembly" with names of assemblies
-        report = reporting.get(corr_fpath)
-        ## filling columns "Number of contigs >=110 bp", ">=200 bp", ">=500 bp"
-        report.add_field(reporting.Fields.CONTIGS,   [sum(1 for l in lengths if l >= threshold) for threshold in qconfig.contig_thresholds])
-        report.add_field(reporting.Fields.TOTALLENS, [sum(l for l in lengths if l >= threshold) for threshold in qconfig.contig_thresholds])
-
-        correct_fasta(contigs_fpath, corr_fpath)
         print '  %s ==> %s' % (contigs_fpath, os.path.basename(corr_fpath))
         new_contigs_fpaths.append(os.path.join(__location__, corr_fpath))
+
+        # if option --scaffolds is specified QUAST adds splitted version of assemblies to the comparison
+        if qconfig.scaffolds:
+            print "  splitting scaffolds into contigs:"
+            splitted_path = corr_fpath + '_splitted'
+            shutil.copy(corr_fpath, splitted_path)
+
+            splitted_fasta = []
+            contigs_counter = 0
+            for id, (name, seq) in enumerate(fastaparser.read_fasta(corr_fpath)):
+                i = 0
+                cur_contig_number = 1
+                cur_contig_start = 0
+                while (i < len(seq)) and (seq.find("N", i) != -1):
+                    start = seq.find("N", i)
+                    end = start + 1
+                    while (end != len(seq)) and (seq[end] == 'N'):
+                        end += 1
+
+                    i = end + 1
+                    if (end - start) >= qconfig.Ns_break_threshold:
+                        splitted_fasta.append((name.split()[0] + "_" + str(cur_contig_number), seq[cur_contig_start:start]))
+                        cur_contig_number += 1
+                        cur_contig_start = end
+
+                splitted_fasta.append((name.split()[0] + "_" + str(cur_contig_number), seq[cur_contig_start:]))
+                contigs_counter += cur_contig_number
+
+            fastaparser.write_fasta_to_file(splitted_path, splitted_fasta)
+            print "  %d scaffolds (%s) were broken into %d contigs (%s)" \
+                  % (id + 1, os.path.basename(corr_fpath), contigs_counter, os.path.basename(splitted_path))
+            if handle_fasta(splitted_path, splitted_path):
+                new_contigs_fpaths.append(os.path.join(__location__, splitted_path))
 
     print '  Done.'
     old_contigs_fpaths = contigs_fpaths
     contigs_fpaths = new_contigs_fpaths
+
+    from libs import qutils
+    qutils.assemblies_number = len(contigs_fpaths)
 
     if not contigs_fpaths:
         usage()
@@ -362,7 +414,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
         ### GAGE
         ########################################################################
         if not qconfig.reference:
-            print >> sys.stderr, "\nError! GAGE can't be run without reference!\n"
+            print >> sys.stderr, "\nError! GAGE can't be run without a reference!\n"
         else:
             from libs import gage
             gage.do(qconfig.reference, contigs_fpaths, output_dirpath, qconfig.min_contig, lib_dir)

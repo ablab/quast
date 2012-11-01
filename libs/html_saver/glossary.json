@@ -35,7 +35,7 @@
     "Reference GC (%)"              : "<span>is the total number of G and C nucleotides in the reference, divided by the total length of the reference.</span>",
     "# mismatches"                  : "<span>is the number of mismatches in all aligned bases.</span>",
 
-    "# indels"                          : "<span>is the number of single nucleotide indels in all aligned bases.</span>",
+    "# indels"                      : "<span>is the number of single nucleotide indels in all aligned bases.</span>",
     "# mismatches per 100 kbp"      : "<span>is an average number of mismatches per 100000 aligned bases.</span>",
     "# indels per 100 kbp"          : "<span>is an average number of single nucleotide indels per 100000 aligned bases.</span>",
     "# genes"                       : "<span>is the number of genes in the assembly (complete and partial), based on a user-provided annotated list of gene positions in the reference genome. A gene counts as 'partially covered' if the assembly contains at least 100 bp of this gene but not the whole gene.</span>",
@@ -50,6 +50,6 @@
 
     "Duplication ratio"             : "<span>is the total number of aligned bases in the assembly (i.e. <i>Total length</i> - <i>Unaligned contigs length</i>), divided by the total number of aligned bases in the reference (see the previous metric). Thereby, if the assembly contains many contigs which cover the same regions of the reference its <i>Duplication ratio</i> is much higher than 1.</span>",
 
-    "# N's":                        "<span>is the total number of uncalled bases (N's) in the assembly.</span>",
-    "# N's per 100 kbp"                       : "<span>is the total number of uncalled bases (N's) in the assembly, divided by the total length of the assembly.</span>"
+    "# N's"                         : "<span>is the total number of uncalled bases (N's) in the assembly.</span>",
+    "# N's per 100 kbp"             : "<span>is the total number of uncalled bases (N's) in the assembly, divided by the total length of the assembly.</span>"
 }

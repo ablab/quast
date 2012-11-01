@@ -62,7 +62,7 @@ class Fields:
 
     AVGIDY = ''
 
-    UNCALLED = '# N'
+    UNCALLED = "# N's"
     UNCALLED_PERCENT = "# N's per 100 kbp"
 
     # Unaligned
@@ -153,7 +153,8 @@ class Fields:
         ('Structural variations', [MISASSEMBL, MISCONTIGS, MISCONTIGSBASES,
                                    UNALIGNED, UNALIGNEDBASES, AMBIGUOUS, AMBIGUOUSBASES]),
         ('Genes and operons', [MAPPEDGENOME, DUPLICATION_RATIO, GC, REFGC,
-                               UNCALLED_PERCENT, SUBSERROR, INDELSERROR, GENES, OPERONS, GENEMARKUNIQUE, GENEMARK]),
+                               UNCALLED_PERCENT, SUBSERROR, INDELSERROR, GENES,
+                               OPERONS, GENEMARKUNIQUE, GENEMARK]),
         ('Aligned', [NA50, NGA50, NA75, NGA75, LA50, LGA50, LA75, LGA75])
     ]
 
@@ -163,8 +164,9 @@ class Fields:
         'Less is better': [CONTIGS, NUMCONTIGS, L50, LG50, L75, LG75,
                            MISASSEMBL, MISCONTIGS, MISCONTIGSBASES,
                            UNALIGNED, UNALIGNEDBASES, AMBIGUOUS, AMBIGUOUSBASES,
-                           DUPLICATION_RATIO, UNCALLED_PERCENT],
-        'Equal': [REFLEN, GC, REFGC, SUBSERROR, INDELSERROR]
+                           DUPLICATION_RATIO, MISMATCHES, INDELS, SUBSERROR, INDELSERROR,
+                           UNCALLED, UNCALLED_PERCENT],
+        'Equal': [REFLEN, GC, REFGC,]
     }
 
 # Report for one filename, dict: field -> value

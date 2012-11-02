@@ -18,7 +18,8 @@
 <body>
 <h1>QUAST 1.3 manual</h1>
 
-<p>QUAST stands for QUality ASsesment Tool. QUAST evaluates genome assemblies by computing various metrics.
+<p>QUAST stands for <u>QU</u>ality <u>AS</u>sesment <u>T</u>ool. 
+QUAST evaluates genome assemblies by computing various metrics.
     <br>
     This manual will help you to run the tool and understand its output.
     <br>
@@ -30,7 +31,7 @@
     them separately.
     <br>
     <br>
-    QUAST version 1.3 released under GPL v2 (see <a href="LICENSE">LICENSE</a> for details) on XX November 2012.
+    QUAST version 1.3 was released under GPL v2 (see <a href="LICENSE">LICENSE</a> for details) on XX November 2012.
 </p>
 
 <h2>1. Installation</h2>
@@ -97,7 +98,7 @@ Coordinates are 1-based, i.e. the first nucleotide in the reference has position
 If a <i>start postion</i> less than a corresponding <i>end postion</i>, such gene or operon is on a positive strand, otherwise it is on a negative strand.
 <br><br>
 You can find examples of a reference file and annotated genes and operons in all supported formats in your QUAST installation directory, <code>test_data</code> subdirectory.
-These files correspond to the first 10 kbp of E. coli. Input reads and sample assemblies for this data set are also there.
+These files correspond to the first 10 kbp of <i>E. coli</i>. Input reads and sample assemblies for this data set are also there.
 </p>
 
 <a name="sec1.2"></a>
@@ -164,7 +165,7 @@ These files correspond to the first 10 kbp of E. coli. Input reads and sample as
     <code>--contig-thresholds &lt;int,int,...&gt;</code>
 </p>
 <p>&nbsp;&nbsp;&nbsp;&nbsp;Comma-separated list of contig length thresholds. Used in <b><i># contigs &ge; x</i></b> and
-    <b><i>total length (&ge; x)</i></b> metrics (see <a href="#sec2">section 3</a>). The default value is 500,1000.</p>
+    <b><i>Total length (&ge; x)</i></b> metrics (see <a href="#sec2">section 3</a>). The default value is 500,1000.</p>
 
 <p>
     <code>--genemark-thresholds &lt;int,int,...&gt;</code>
@@ -181,31 +182,31 @@ These files correspond to the first 10 kbp of E. coli. Input reads and sample as
 
 <a name="sec2"></a>
 <h2>3. QUAST output</h2>
-<p>If an output path was not specified manually, QUAST puts its output into <code>quast_results/result_&lt;DATE&gt;/</code> directory and creates a <code>latest</code> symlink to this folder inside <code>quast_results/</code>.
+<p>If an output path was not specified manually, QUAST puts its output into the directory <code>quast_results/result_&lt;DATE&gt;</code> and creates a symlink <code>latest</code> to it inside the directory <code>quast_results/</code>.
 
     <br>
     <br>
-    Output directory contents:
+    QUAST output contains:
 <table style="margin-left: 20px;">
     <tr>
         <td style="padding-right: 20px;">report.txt</td>
-        <td>an assessment summary in a simple text format.</td>
+        <td>an assessment summary in a simple text format,</td>
     </tr>
     <tr>
         <td style="padding-right: 20px;">report.tsv</td>
-        <td>a tab-separated version of the summary, suitable for Google Docs and Excel.</td>
+        <td>a tab-separated version of the summary, suitable for spreadsheets (Google Docs, Excel, etc),</td>
     </tr>
     <tr>
         <td style="padding-right: 20px;">report.tex</td>
-        <td>a LaTeX version of the summary.</td>
+        <td>a LaTeX version of the summary,</td>
     </tr>
     <tr>
         <td style="padding-right: 20px;">plots.pdf</td>
-        <td>plots (file is created if the matplotlib python library is installed).</td>
+        <td>plots (file is created if the matplotlib python library is installed),</td>
     </tr>
     <tr>
         <td style="padding-right: 20px;">report.html</td>
-        <td>an HTML version of the report with all plots inside it.</td>
+        <td>an HTML version of the report with all plots inside it,</td>
     </tr>
     <tr>
         <td style="padding-right: 20px;">contigs_reports/</td>
@@ -213,7 +214,7 @@ These files correspond to the first 10 kbp of E. coli. Input reads and sample as
     </tr>
     <tr>
         <td style="padding-right: 20px; padding-left: 20px;">misassemblies_report</td>
-        <td>a detailed report on misassemblies. See <a href="#sec3.1.2">section 3.1.2</a> for details.</td>
+        <td>a detailed report on misassemblies. See <a href="#sec3.1.2">section 3.1.2</a> for details,</td>
     </tr>
     <tr>
         <td style="padding-right: 20px; padding-left: 20px;">unaligned_report</td>
@@ -225,8 +226,8 @@ These files correspond to the first 10 kbp of E. coli. Input reads and sample as
 
 Note:
 <ul style="margin-top: -12px;">
-    <li>metrics based on a reference genome are computed only if the reference is given (see  <a href="#sec1.3">section 2.3</a>), </li>
-    <li>metrics based on genes and operons are computed only if proper annotations are given (see <a href="#sec1.3">section 2.3</a>), </li>
+    <li>metrics based on a reference genome are computed only if a reference is provided (see  <a href="#sec1.3">section 2.3</a>), </li>
+    <li>metrics based on genes and operons are computed only if proper annotations are provided (see <a href="#sec1.3">section 2.3</a>). </li>
 </ul>
 </p>
 
@@ -256,22 +257,23 @@ Note:
 
 <p><b><i>Reference length</i></b>&nbsp;&nbsp;is the total number of bases in the reference.</p>
 
-<p><b><i>N50</i></b>&nbsp;&nbsp;is the contig length such that using longer or equal length contigs produces half (50%) the bases of
-    the assembly. Usually there is no value that produces exactly 50%, so the more technical definition is
-    the minimal length x such that using contigs of length at least x accounts for at least 50% of the total
-    assembly length.</p>
+<p><b><i>N50</i></b>&nbsp;&nbsp;is the contig length such that using longer or equal length contigs produces 
+    half (50%) of the bases of the assembly. Usually there is no value that produces exactly 50%, 
+    so the technical definition is the minimum length x such that using contigs of length at least 
+    x accounts for at least 50% of the total assembly length.</p>
 
-<p><b><i>NG50</i></b>&nbsp;&nbsp;is the contig length such that using longer or equal length contigs produces half (50%) the bases of
-    the reference genome. This metric could be computed only if the reference is given.</p>
+<p><b><i>NG50</i></b>&nbsp;&nbsp;is the contig length such that using longer or equal length contigs 
+    produces half (50%) of the bases of the reference genome. This metric is computed only if 
+    a reference genome is provided.</p>
 
 <p><b><i>N75 and NG75</i></b>&nbsp;&nbsp;are defined similarly with 75% instead of 50%.</p>
 
-<p><b><i>L50, L75, LG50, LG75</i></b>&nbsp;&nbsp;are evaluated as the numbers of contigs longer or equal to corresponding N-metrics.<br>
-    In other words, L50, for example, is the minimal number of contigs that cover at least 50% of total length.</p>
+<p><b><i>L50, L75, LG50, LG75</i></b>&nbsp;&nbsp;are evaluated as the numbers of contigs of length at least corresponding N-metrics.<br>
+    In other words, L50, for example, is the minimal number of contigs that produce half (50%) of the bases of the assembly.</p>
 
-<p><b><i># misassemblies</i></b>&nbsp;&nbsp;gives the number of positions at the assembled contigs where the left flanking sequence
-    aligns over 1kb away from the right flanking sequence on the reference or they overlap on more than 1 kb or flanking sequences align
-    on different strands or on different chromosomes. This metric could be computed only if the reference is given.</p>
+<p><b><i># misassemblies</i></b>&nbsp;&nbsp;is the number of positions in the assembled contigs where the left flanking sequence aligns 
+    over 1 kbp away from the right flanking sequence on the reference or they overlap on more than 1 kbp or flanking sequences align 
+    on different strands or different chromosomes. This metric is computed only if a reference genome is provided.</p>
 
 <p><b><i># misassembled contigs</i></b>&nbsp;&nbsp;is the number of contigs that contain misassembly events.</p>
 
@@ -289,13 +291,16 @@ Note:
 
 <p><b><i>Ambiguous contigs length</i></b>&nbsp;&nbsp;is the number of total bases contained in all ambiguous contigs. </p>
 
-<p><b><i>Genome fraction (%)</i></b>&nbsp;&nbsp;is the total number of aligned bases in the reference, divided by
-    the genome size. A base in the genome is counted as aligned if there is at least one contig with at least one
-    alignment with this base. Repeates that map to multiple places may be counted many times in this quantity. </p>
+<p><b><i>Genome fraction (%)</i></b>&nbsp;&nbsp;is the total number of aligned bases in the reference, 
+    divided by the genome size. A base in the reference genome is counted as aligned if there is at least one contig with 
+    at least one alignment to this base. Contigs from repeat regions may map to multiple places, and thus may be counted 
+    multiple times in this quantity.</p>
 
-<p><b><i>Duplication ratio</i></b>&nbsp;&nbsp;is the total number of aligned bases in the assembly (i.e. <i>Total length</i> - <i>Unaligned contigs length</i>),
-    divided by the total number of aligned bases in the reference (see the previous metric). Thereby, if the assembly contains many contigs
-    which cover the same regions of the reference its <i>Duplication ratio</i> is much higher than 1. </p>
+<p><b><i>Duplication ratio</i></b>&nbsp;&nbsp;is the total number of aligned bases in the assembly 
+    (i.e. <i>Total length</i> - <i>Unaligned contigs length</i>), divided by the total number of aligned bases in the 
+    reference (see the <b>Genome fraction (%)</b> metric). If the assembly contains many contigs that cover the same 
+    regions of the reference, its <i>Duplication ratio</i> may be much larger than 1. This may occur due to overestimating 
+    repeat multiplicities and due to small overlaps between contigs, among other reasons.</p>
 
 <p><b><i>GC (%)</i></b>&nbsp;&nbsp;is the total number of G and C nucleotides in the assembly,
     divided by the total length of the assembly.</p>
@@ -303,26 +308,25 @@ Note:
 <p><b><i>Reference GC (%)</i></b>&nbsp;&nbsp;is the total number of G and C nucleotides in the reference,
     divided by the total length of the reference.</p>
 
-<p><b><i>N's (%)</i></b>&nbsp;&nbsp;is the total number of uncalled bases (N's) in the assembly, divided
-    by the total length of the assembly.</p>
-
-<p><b><i># mismatches per 100 kbp</i></b>&nbsp;&nbsp;is an average number of mismatches per 100000 aligned bases. This does not
+<p><b><i># mismatches per 100 kbp</i></b>&nbsp;&nbsp;is the average number of mismatches per 100000 aligned bases. This does not
 distinguish between Single Nucleotide Polymorphisms (SNPs), which are true differences in the assembled genome vs. the reference genome,
 and Single Nucleotide Errors (SNEs), which are due to errors in reads or errors in the assembly algorithm.</p>
 
-<p><b><i># indels per 100 kbp</i></b>&nbsp;&nbsp;is an average number of single nucleotide indels per 100000 aligned bases.</p>
+<p><b><i># indels per 100 kbp</i></b>&nbsp;&nbsp;is the average number of single nucleotide indels per 100000 aligned bases.</p>
 
-<p><b><i># genes</i></b>&nbsp;&nbsp;is the number of genes in the assembly (complete and partial), based
-    on an annotated list of genes positions in the reference genome. The value "X + Y part"
-    means X complete genes and Y partial ones (at least 100 bases are aligned but not the whole gene).
-    This metric could be computed only if the reference and genes annotations file are given (see <a href="#sec1.3">section 2.3</a>).</p>
+<p><b><i># N's per 100 kbp</i></b>&nbsp;&nbsp;is the average number of uncalled bases (N's) per 100000 assembly bases.</p>
+
+<p><b><i># genes</i></b>&nbsp;&nbsp;is the number of genes in the assembly (complete and partial), based on a user-provided annotated 
+    list of gene positions in the reference genome. A gene counts as 'partially covered' if the assembly contains at least 100 bp 
+    of this gene but not the whole gene.
+    This metric is computed only if a reference genome and an annotated list of gene positions are provided (see <a href="#sec1.3">section 2.3</a>)</p>
 
 <p><b><i># operons</i></b>&nbsp;&nbsp;is defined similarly to the previous metric but you need
-    operons annotations file for computing this metric. </p>
+    an operons annotations file for computing this metric.</p>
 
 <p><b><i># predicted genes</i></b>&nbsp;&nbsp;is the number of genes in the assembly
-    predicted by QUAST’s gene-finding module, which is based on GeneMarkS.
-    This metric is computed is an annotated list of genes is not provided.</p>
+    predicted by QUAST's gene-finding module, which is based on GeneMarkS.
+    This metric is computed if an annotated list of genes is not provided.</p>
 
 <p><b><i>NA50, NGA50, NA75, NGA75, LA50, LA75, LGA50, LGA75 (A stands for "aligned")</i></b>&nbsp;&nbsp;like the same
     metrics without 'A', but in this case we count lengths (in the case of N-metrics) or number (for L-metrics)
@@ -345,7 +349,7 @@ sequence on the reference, or they overlap by more than 1 kbp and both flanking 
 <p><b><i>Inversion</i></b>&nbsp;&nbsp;is a misassembly where it is not a relocation and the flanking sequences align on
 opposite strands of the same chromosome. </p>
 
-<p><b><i># misassembled contigs</i></b> and <b><i># misassembled contigs</i></b>&nbsp;&nbsp;are the same as the metrics from 
+<p><b><i># misassembled contigs</i></b> and <b><i>Misassembled contigs length</i></b>&nbsp;&nbsp;are the same as the metrics from 
     <a href="#sec3.1.1">section 3.1.1</a> and are counted among all contigs with any type of a misassembly 
     (relocation, translocation or inversion). </p>
 
@@ -386,12 +390,12 @@ opposite strands of the same chromosome. </p>
 
 <p><b><i>Cumulative length</i></b></p>
 
-<p>&nbsp;&nbsp;&nbsp;&nbsp;This plot shows the growth rate of assemblies lengthes. The y-axis is the size of assembly and x-axis is the number of contigs in the assembly
-    (from the largest one to the smallest one). </p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;This plot shows the growth of assembly contig lengths. On the x-axis, contigs are ordered from largest (contig #1) 
+    to smallest. The y-axis gives the size of the x largest contigs in the assembly.</p>
 
 <p><b><i>Nx</i></b></p>
 
-<p>&nbsp;&nbsp;&nbsp;&nbsp;This plot shows the changes of Nx metric value in dependence of x value. The y-axis is the Nx value and x-axis is the x value. </p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;This plot shows the Nx metric value as x varies from 0 to 100. </p>
 
 <p><b><i>NGx</i></b></p>
 
@@ -399,19 +403,22 @@ opposite strands of the same chromosome. </p>
 
 <p><b><i>GC content plot</i></b></p>
 
-<p>&nbsp;&nbsp;&nbsp;&nbsp;This plot shows a distribution of percent of GC among contigs. The x value shows the percent of GC (from 0 to 100)
-    and the y value show the total number of bp in contigs with such GC content. Typically, the distribution is similar to the Gaussian
-    distribution. However, in case of contaminants with different GC content the distribution can have more than one curve.
+<p>&nbsp;&nbsp;&nbsp;&nbsp;This plot shows the distribution of GC percentage among the contigs, 
+    i.e., the total number of bases in contigs with such GC content. Typically, the distribution is approximately Gaussian. 
+    However, for some genomes it is not Gaussian. For assembly projects with contaminants, 
+    the GC distribution of the contaminants often differs from the reference genome and may give a 
+    superposition of multiple curves with different peaks.</p>
 
 <p><b><i>Cumulative length (aligned contigs)</i></b></p>
 
-<p>&nbsp;&nbsp;&nbsp;&nbsp;This plot is similar to <b><i>Cumulative length</i></b> plot but we plot only aligned contigs instead of contigs itself.
-    If a contig has a misassembly with respect to the reference, we break the contig into smaller pieces. This plot could be created only if the reference is given. </p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;This plot is similar to <b><i>Cumulative length</i></b> plot but QUAST plots only aligned contigs instead of contigs itself.
+    If a contig has a misassembly with respect to the reference, QUAST breaks the contig into smaller pieces. 
+    This plot could be created only if a reference genome is provided. </p>
 
 <p><b><i>NAx and NGAx</i></b></p>
 
-<p>&nbsp;&nbsp;&nbsp;&nbsp;These plot are similar to the <b><i>Nx</i></b> and <b><i>NGx</i></b> plots but for NAx and NGAx metrics respectively.
-    These plots could be created only only if the reference is given.</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;These plots are similar to the <b><i>Nx</i></b> and <b><i>NGx</i></b> plots but for NAx and NGAx metrics respectively.
+    These plots could be created only if a reference genome is provided.</p>
 
 <p><b><i>Genes</i></b></p>
 
@@ -433,9 +440,9 @@ opposite strands of the same chromosome. </p>
 </p>
 
 <p>
-    We kindly ask you to attach log <code>&lt;QUAST_output_dir&gt;/quast.log</code> or even archive of <code>&lt;QUAST_output_dir&gt;</code> if you have troubles running QUAST.
+    We kindly ask you to attach a log <code>&lt;QUAST_output_dir&gt;/quast.log</code> or even archive of <code>&lt;QUAST_output_dir&gt;</code> if you have troubles running QUAST.
     <br>
-    Note that if you didn't specify <code>&lt;QUAST_output_dir&gt;</code> manually it was automatically set to <code>quast_results/results_&lt;date_time&gt;</code> and symbolik link
+    Note that if you didn't specify <code>&lt;QUAST_output_dir&gt;</code> manually it was automatically set to <code>quast_results/results_&lt;date_time&gt;</code> and a symlink
     <code>quast_results/latest</code> to that directory was created.
 </p>
 

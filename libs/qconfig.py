@@ -37,3 +37,8 @@ long_options = "output-dir= save-json-to= genes= operons= reference= contig-thre
                "genemark-thresholds= save-json gage not-circular plain-report-no-plots help debug scaffolds".split()
 short_options = "o:G:O:R:t:M:e:J:jpgnhds"
 
+# other constants. Can't be changed by command-line options
+
+# genome analyzer
+min_gap_size = 50 # for calculating number or gaps in genome coverage
+min_gene_overlap = 100 # to partial genes/operons finding

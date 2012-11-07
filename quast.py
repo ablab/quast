@@ -434,17 +434,15 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
     basic_stats.do(qconfig.reference, contigs_fpaths, output_dirpath + '/basic_stats', all_pdf, qconfig.draw_plots,
         json_outputpath, output_dirpath)
 
-    nucmer_statuses = {}
     aligned_fpaths = []
-
     if qconfig.reference:
         ########################################################################
         ### former PLANTAKOLYA, PLANTAGORA
         ########################################################################
         from libs import contigs_analyzer
         nucmer_statuses = contigs_analyzer.do(qconfig.reference, contigs_fpaths, qconfig.cyclic, output_dirpath + '/contigs_reports', lib_dir, qconfig.draw_plots)
-        for contigs_fpath, nucmer_status in nucmer_statuses.items():
-            if nucmer_status == contigs_analyzer.NucmerStatus.OK:
+        for contigs_fpath in contigs_fpaths:
+            if nucmer_statuses[contigs_fpath] == contigs_analyzer.NucmerStatus.OK:
                 aligned_fpaths.append(contigs_fpath)
 
     # Before continue evaluating, check if nucmer didn't skip all of the contigs files.
@@ -496,12 +494,6 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
     if qconfig.draw_plots and all_pdf:
         print '  All pdf files are merged to', all_pdf_filename
         all_pdf.close()
-
-#    for contigs_fpath, nucmer_status in nucmer_statuses.items():
-##            if nucmer_status == contigs_analyzer.NucmerStatus.FAILED:
-##                print 'Warning!', '\'' + os.path.basename(contigs_fpath) + '\'', 'skipped. Nucmer failed processing this contigs.'
-#        if nucmer_status == contigs_analyzer.NucmerStatus.NOT_ALIGNED or nucmer_status == contigs_analyzer.NucmerStatus.FAILED:
-#            print 'Warning! Contigs in', '\'' + os.path.basename(contigs_fpath) + '\'', 'are not aligned on the reference. Most of the metrics are impossible to evaluate and going to be skipped.'
 
     print 'Done.'
     cleanup(corrected_dirpath, tee)

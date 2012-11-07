@@ -5,6 +5,7 @@
 ############################################################################
 
 import os
+import sys
 import fastaparser
 import genes_parser
 from libs import reporting, qconfig
@@ -45,9 +46,6 @@ def do(reference, filenames, nucmer_dir, output_dir, genes_filename, operons_fil
 
     # some important constants
     nucmer_prefix = os.path.join(os.path.join(__location__, ".."), nucmer_dir, 'nucmer_output')
-    #threshold = 10.0 # in %
-    min_gap_size = 50 # for calculating number or gaps in genome coverage
-    min_overlap = 100 # for genes and operons finding
 
     print 'Running Genome analyzer...'
 
@@ -78,35 +76,34 @@ def do(reference, filenames, nucmer_dir, output_dir, genes_filename, operons_fil
         res_file.write('\t' + chr_name + ' (' + str(chr_len) + ' bp)\n')
     res_file.write('\n')
     res_file.write('total genome size: ' + str(genome_size) + '\n\n')
-    res_file.write('gap min size: ' + str(min_gap_size) + '\n')
-    res_file.write('partial gene/operon min size: ' + str(min_overlap) + '\n\n')
+    res_file.write('gap min size: ' + str(qconfig.min_gap_size) + '\n')
+    res_file.write('partial gene/operon min size: ' + str(qconfig.min_gene_overlap) + '\n\n')
 
-    # reading genes
-    genes = genes_parser.get_genes_from_file(genes_filename, 'gene')
-    genes_found = []
-    genes_chr_names_dict = {}
-    if len(genes) == 0:
-        print '  Warning: no genes loaded.'
-        res_file.write('genes loaded: ' + 'None' + '\n')
-    else:
-        print '  Loaded ' + str(len(genes)) + ' genes'
-        res_file.write('genes loaded: ' + str(len(genes)) + '\n')
-        genes_found = [0 for _ in genes] # 0 - gene isn't found, 1 - gene is found, 2 - part of gene is found
-        genes_chr_names_dict = chromosomes_names_dict(genes, reference_chromosomes.keys())
+    # reading genes and operons
+    class FeatureContainer:
+        def __init__(self, region_list=[], found_list=[], full_found=[], chr_names_dict={}):
+            self.region_list = region_list
+            self.found_list = found_list
+            self.full_found = full_found
+            self.chr_names_dict = chr_names_dict
 
-    # reading operons
-    # TODO: clear copy-pasting!
-    operons = genes_parser.get_genes_from_file(operons_filename, 'operon')
-    operons_found = []
-    operons_chr_names_dict = {}
-    if len(operons) == 0:
-        print '  Warning: no operons loaded.'
-        res_file.write('operons loaded: ' + 'None' + '\n')
-    else:
-        print '  Loaded ' + str(len(operons)) + ' operons'
-        res_file.write('operons loaded: ' + str(len(operons)) + '\n')
-        operons_found = [0 for _ in operons] # 0 - gene isn't found, 1 - gene is found, 2 - part of gene is found
-        operons_chr_names_dict = chromosomes_names_dict(operons, reference_chromosomes.keys())
+    genes_container = FeatureContainer()
+    operons_container = FeatureContainer()
+
+    for feature_container, feature_filename, feature_name in [
+        (genes_container, genes_filename, 'gene'),
+        (operons_container, operons_filename, 'operon')]:
+
+        feature_container.region_list = genes_parser.get_genes_from_file(feature_filename, feature_name)
+        if len(feature_container.region_list) == 0:
+            print '  Warning: no ' + feature_name + 's loaded.'
+            res_file.write(feature_name + 's loaded: ' + 'None' + '\n')
+        else:
+            print '  Loaded ' + str(len(feature_container.region_list)) + ' ' + feature_name + 's'
+            res_file.write(feature_name + 's loaded: ' + str(len(feature_container.region_list)) + '\n')
+            feature_container.found_list = [0] * len(feature_container.region_list) # 0 - gene isn't found, 1 - gene is found, 2 - part of gene is found
+            feature_container.chr_names_dict = chromosomes_names_dict(feature_container.region_list, reference_chromosomes.keys())
+            feature_container.full_found = []
 
     # header
     res_file.write('\n\n')
@@ -120,8 +117,6 @@ def do(reference, filenames, nucmer_dir, output_dir, genes_filename, operons_fil
     files_contigs = {}   #  "filename" : [ [contig_blocks] ]   
 
     # for histograms
-    full_genes = []
-    full_operons = []
     genome_mapped = []
 
     # process all contig files  
@@ -218,7 +213,7 @@ def do(reference, filenames, nucmer_dir, output_dir, genes_filename, operons_fil
             cur_gap_size = 0
             for i in range(1, chr_len + 1):
                 if genome_mapping[chr_name][i] == 1:
-                    if cur_gap_size >= min_gap_size:
+                    if cur_gap_size >= qconfig.min_gap_size:
                         gaps_count += 1
                         print >>gaps_file, i - cur_gap_size, i - 1
 
@@ -242,12 +237,12 @@ def do(reference, filenames, nucmer_dir, output_dir, genes_filename, operons_fil
         report.add_field(reporting.Fields.DUPLICATION_RATIO, '%.3f' % duplication_ratio)
         genome_mapped.append(genome_coverage)
 
-        # finding genes and operons
-        for regionlist, chr_names_dict, field, suffix, full_list, found_list in [
-                (genes, genes_chr_names_dict, reporting.Fields.GENES, '_genes.txt', full_genes, genes_found), 
-                (operons, operons_chr_names_dict, reporting.Fields.OPERONS, '_operons.txt', full_operons, operons_found)]:
+         # finding genes and operons
+        for feature_container, field, suffix in [
+                (genes_container, reporting.Fields.GENES, '_genes.txt'),
+                (operons_container, reporting.Fields.OPERONS, '_operons.txt')]:
 
-            if not regionlist:
+            if not feature_container.region_list:
                 res_file.write(' %-10s| %-10s|' % ('None', 'None'))
                 continue    
 
@@ -257,31 +252,31 @@ def do(reference, filenames, nucmer_dir, output_dir, genes_filename, operons_fil
             found_file = open(found_filename, 'w')
             print >>found_file, '%s\t\t%s\t%s' % ('ID or #', 'Start', 'End')
             print >>found_file, '============================'
-            for i, region in enumerate(regionlist):
-                found_list[i] = 0
+            for i, region in enumerate(feature_container.region_list):
+                feature_container.found_list[i] = 0
                 for block in aligned_blocks:
-                    if chr_names_dict[region.seqname] != block.seqname:
+                    if feature_container.chr_names_dict[region.seqname] != block.seqname:
                         continue
                     if region.end <= block.start or block.end <= region.start:
                         continue
                     elif block.start <= region.start and region.end <= block.end:
-                        if found_list[i] == 2: # already found as partial gene
+                        if feature_container.found_list[i] == 2: # already found as partial gene
                             total_partial -= 1
-                        found_list[i] = 1
+                        feature_container.found_list[i] = 1
                         total_full += 1
                         id = str(region.id)
                         if id == 'None':
                             id = '# ' + str(region.number + 1)
                         print >>found_file, '%s\t\t%d\t%d' % (id, region.start, region.end)
                         break
-                    elif found_list[i] == 0 and min(region.end, block.end) - max(region.start, block.start) >= min_overlap:
-                        found_list[i] = 2
+                    elif feature_container.found_list[i] == 0 and min(region.end, block.end) - max(region.start, block.start) >= qconfig.min_gene_overlap:
+                        feature_container.found_list[i] = 2
                         total_partial += 1
 
             res_file.write(' %-10s| %-10s|' % (str(total_full), str(total_partial)))
             found_file.close()
             report.add_field(field, '%s + %s part' % (str(total_full), str(total_partial)))
-            full_list.append(total_full)
+            feature_container.full_found.append(total_full)
 
         # finishing output for current contigs file
         res_file.write('\n')
@@ -290,33 +285,37 @@ def do(reference, filenames, nucmer_dir, output_dir, genes_filename, operons_fil
 
     # saving json
     if json_output_dir:
-        if genes or operons:
+        if genes_container.region_list or operons_container.region_list:
             json_saver.save_contigs(json_output_dir, filenames, files_contigs)
-        if genes:
-            json_saver.save_genes(json_output_dir, genes, genes_found)
-        if operons:
-            json_saver.save_operons(json_output_dir, operons, operons_found)
+        if genes_container.region_list:
+            json_saver.save_genes(json_output_dir, genes_container.region_list, genes_container.found_list)
+        if operons_container.region_list:
+            json_saver.save_operons(json_output_dir, operons_container.region_list, operons_container.found_list)
 
     if qconfig.html_report:
         from libs.html_saver import html_saver
-        if genes or operons:
+        if genes_container.region_list or operons_container.region_list:
             html_saver.save_contigs(results_dir, filenames, files_contigs)
-        if genes:
-            html_saver.save_genes(results_dir, genes, genes_found)
-        if operons:
-            html_saver.save_operons(results_dir, operons, operons_found)
+        if genes_container.region_list:
+            html_saver.save_genes(results_dir, genes_container.region_list, genes_container.found_list)
+        if operons_container.region_list:
+            html_saver.save_operons(results_dir, operons_container.region_list, operons_container.found_list)
 
     if draw_plots:
         # cumulative plots:
         import plotter
-        if genes:
-            plotter.genes_operons_plot(filenames, files_contigs, genes, genes_found, output_dir + '/genes_cumulative_plot', 'genes', all_pdf)
-            plotter.histogram(filenames, full_genes, output_dir + '/complete_genes_histogram', '# complete genes', all_pdf)
-        if operons:
-            plotter.genes_operons_plot(filenames, files_contigs, operons, operons_found, output_dir + '/operons_cumulative_plot', 'operons', all_pdf)
-            plotter.histogram(filenames, full_operons, output_dir + '/complete_operons_histogram', '# complete operons', all_pdf)
-
-        plotter.histogram(filenames, genome_mapped, output_dir + '/genome_fraction_histogram', 'Genome fraction, %', all_pdf, top_value=100)
+        if genes_container.region_list:
+            plotter.genes_operons_plot(filenames, files_contigs, genes_container.region_list,
+                genes_container.found_list, output_dir + '/genes_cumulative_plot', 'genes', all_pdf)
+            plotter.histogram(filenames, genes_container.full_found, output_dir + '/complete_genes_histogram',
+                '# complete genes', all_pdf)
+        if operons_container.region_list:
+            plotter.genes_operons_plot(filenames, files_contigs, operons_container.region_list,
+                operons_container.found_list, output_dir + '/operons_cumulative_plot', 'operons', all_pdf)
+            plotter.histogram(filenames, operons_container.full_found, output_dir + '/complete_operons_histogram',
+                '# complete operons', all_pdf)
+        plotter.histogram(filenames, genome_mapped, output_dir + '/genome_fraction_histogram', 'Genome fraction, %',
+            all_pdf, top_value=100)
 
     print '  Done'
 

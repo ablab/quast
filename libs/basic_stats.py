@@ -21,14 +21,18 @@ def GC_content(filename):
     GC_info = []
     for name, seq_full in fastaparser.read_fasta(filename): # in tuples: (name, seq)
         total_GC_amount += seq_full.count("G") + seq_full.count("C")
-        total_contig_length += len(seq_full)
+        total_contig_length += len(seq_full) - seq_full.count("N")
         n = 100 # blocks of length 100
         # non-overlapping windows
-        for seq in [seq_full[i:i+n] for i in range(0, (len(seq_full) / n) * n, n)]:
+        for seq in [seq_full[i:i+n] for i in range(0, len(seq_full), n)]:
+            # skip block if it has less than half of ACGT letters (it also helps with "ends of contigs")
+            ACGT_len = len(seq) - seq.count("N")
+            if ACGT_len < (n / 2):
+                continue
             # contig_length = len(seq)
             GC_amount = seq.count("G") + seq.count("C")
             #GC_info.append((contig_length, GC_amount * 100.0 / contig_length))
-            GC_info.append((1, GC_amount * 100.0 / n))
+            GC_info.append((1, 100 * GC_amount / ACGT_len))
 
 #        # sliding windows
 #        seq = seq_full[0:n]

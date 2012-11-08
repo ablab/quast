@@ -19,6 +19,8 @@ sed "s/RELEASE_MODE=False/RELEASE_MODE=True/" quast.py > release/$QUAST_FOLDER/q
 
 make -C release/$QUAST_FOLDER/libs/MUMmer3.23-osx/   clean >/dev/null 2>/dev/null
 make -C release/$QUAST_FOLDER/libs/MUMmer3.23-linux/ clean >/dev/null 2>/dev/null
+rm -f   release/$QUAST_FOLDER/libs/MUMmer3.23-linux/make.*
+rm -f   release/$QUAST_FOLDER/libs/MUMmer3.23-osx/make.*
 rm -f   release/$QUAST_FOLDER/libs/gage/*.class
 rm -f   release/$QUAST_FOLDER/libs/*.pyc
 rm -f   release/$QUAST_FOLDER/libs/html_saver/*.pyc

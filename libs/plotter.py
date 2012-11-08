@@ -323,7 +323,7 @@ def GC_content_plot(reference, filenames, lists_of_GC_info, plot_filename, all_p
 
 
 # common routine for genes and operons cumulative plots
-def genes_operons_plot(filenames, files_contigs, genes, found, plot_filename, title, all_pdf=None):
+def genes_operons_plot(filenames, files_feature_in_contigs, plot_filename, title, all_pdf=None):
     if matplotlib_error:
         return
 
@@ -336,28 +336,16 @@ def genes_operons_plot(filenames, files_contigs, genes, found, plot_filename, ti
     color_id = 0
 
     for filename in filenames:
-    # calculate values for the plot
-        contigs = files_contigs[filename]    # [ [contig_blocks] ] 
-        for i, gene in enumerate(genes):
-            found[i] = 0  # mark all genes as 'not found'
+        # calculate values for the plot
+        feature_in_contigs = files_feature_in_contigs[filename]
 
-        x_vals = [0]
+        x_vals = range(len(feature_in_contigs) + 1)
         y_vals = [0]
-        contig_no = 0
         total_full = 0
-        for aligned_blocks in contigs:
-            contig_no += 1
-            for i, gene in enumerate(genes):
-                if found[i] == 0:
-                    for block in aligned_blocks:
-                        if gene.end <= block[0] or block[1] <= gene.start:   # [0] - start, [1] - end
-                            continue
-                        elif block[0] <= gene.start and gene.end <= block[1]:
-                            found[i] = 1
-                            total_full += 1
-                            break
-            x_vals.append(contig_no)
+        for feature_amount in feature_in_contigs:
+            total_full += feature_amount
             y_vals.append(total_full)
+
         if color_id < len(colors):
             matplotlib.pyplot.plot(x_vals, y_vals, color=colors[color_id % len(colors)], lw=linewidth)
         else:

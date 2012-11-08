@@ -1,5 +1,5 @@
 
-function drawGenesPlot(filenames, filesContigs, genes, found, kind, div, legendPlaceholder,  glossary) {
+function drawGenesPlot(filenames, filesFeatureInContigs, kind, div, legendPlaceholder,  glossary) {
     div.html(
         "<span class='plot-header'>" + kind[0].toUpperCase() + kind.slice(1) + "s covered</span>" +
         "<div class='plot-placeholder' id='" + kind + "s-plot-placeholder'></div>"
@@ -13,10 +13,7 @@ function drawGenesPlot(filenames, filesContigs, genes, found, kind, div, legendP
 
     for (var fi = 0; fi < plotsN; fi++) {
         var filename = filenames[fi];
-        var contigs = filesContigs[filename];
-        for (var i = 0; i < genes.length; i++) {
-            found[i] = 0
-        }
+        var featureInContigs = filesFeatureInContigs[filename];
 
         plotsData[fi] = {
             data: [[0, 0]],
@@ -26,25 +23,9 @@ function drawGenesPlot(filenames, filesContigs, genes, found, kind, div, legendP
         var contigNo = 0;
         var totalFull = 0;
 
-        for (var k = 0; k < contigs.length; k++) {
-            var alignedBlocks = contigs[k];
+        for (var k = 0; k < featureInContigs.length; k++) {
             contigNo += 1;
-
-            for (i = 0; i < genes.length; i++) {
-                var g = genes[i];
-
-                if (found[i] == 0) {
-                    for (var bi = 0; bi < alignedBlocks.length; bi++) {
-                        var block = alignedBlocks[bi];
-
-                        if (block[0] <= g[0] && g[1] <= block[1]) {
-                            found[i] = 1;
-                            totalFull += 1;
-                            break;
-                        }
-                    }
-                }
-            }
+            totalFull += featureInContigs[k];
 
             plotsData[fi].data.push([contigNo, totalFull]);
 
@@ -53,8 +34,8 @@ function drawGenesPlot(filenames, filesContigs, genes, found, kind, div, legendP
             }
         }
 
-        if (contigs.length > maxX) {
-            maxX = contigs.length;
+        if (featureInContigs.length > maxX) {
+            maxX = featureInContigs.length;
         }
     }
 

@@ -22,10 +22,11 @@ contigs_lengths_fn    = '/contigs_lengths.json'
 ref_length_fn         = '/ref_length.json'
 aligned_contigs_fn    = '/aligned_contigs_lengths.json'
 assemblies_lengths_fn = '/assemblies_lengths.json'
-contigs_fn            = '/contigs.json'
+in_contigs_suffix_fn  = '_in_contigs.json'
 gc_fn                 = '/gc.json'
-genes_fn              = '/genes.json'
-operons_fn            = '/operons.json'
+
+prefix_fn             = '/'
+suffix_fn             = '.json'
 
 
 def save(filename, what):
@@ -98,26 +99,10 @@ def save_assembly_lengths(output_dir, filenames, assemblies_lengths):
     })
 
 
-def save_contigs(output_dir, filenames, contigs):
-    return save(output_dir + contigs_fn, {
+def save_features_in_contigs(output_dir, filenames, feature_name, features_in_contigs):
+    return save(output_dir + prefix_fn + feature_name + in_contigs_suffix_fn, {
         'filenames' : map(os.path.basename, filenames),
-        'contigs' : dict((os.path.basename(fn), blocks) for (fn, blocks) in contigs.items()),
-    })
-
-
-def save_genes(output_dir, genes, found):
-    genes = [[g.start,g.end] for g in genes]
-    return save(output_dir + genes_fn, {
-        'genes' : genes,
-        'found' : found,
-    })
-
-
-def save_operons(output_dir, operons, found):
-    operons = [[g.start, g.end] for g in operons]
-    return save(output_dir + operons_fn, {
-        'operons' : operons,
-        'found' : found,
+        feature_name + '_in_contigs' : dict((os.path.basename(fn), feature_amounts) for (fn, feature_amounts) in features_in_contigs.items()),
     })
 
 

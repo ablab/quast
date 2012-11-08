@@ -4,9 +4,8 @@ function buildReport() {
     var contigsLengths = null;
     var alignedContigsLengths = null;
     var referenceLength = null;
-    var contigs = null;
-    var genes = null;
-    var operons = null;
+    var genesInContigs = null;
+    var operonsInContigs = null;
     var gcInfos = null;
 
     var glossary = JSON.parse($('#glossary-json').html());
@@ -65,35 +64,26 @@ function buildReport() {
     referenceLength = null;
 
     try {
-        genes = JSON.parse($('#genes-json').html());
+        genesInContigs = JSON.parse($('#genes-in-contigs-json').html());
     } catch (e) {
-        genes = null;
+        genesInContigs = null;
     }
+
     try {
-        operons = JSON.parse($('#operons-json').html());
+        operonsInContigs = JSON.parse($('#operons-in-contigs-json').html());
     } catch (e) {
-        operons = null;
-    }
-    if (genes || operons) {
-        try {
-            contigs = JSON.parse($('#contigs-json').html());
-        } catch (e) {
-            contigs = null;
-        }
+        operonsInContigs = null;
     }
 
-    if (contigs) {
-        if (genes) {
-            drawGenesPlot(contigs.filenames, contigs.contigs, genes.genes, genes.found, 'gene', $('#genes-plot-div'), null,  glossary);
-        }
-        if (operons) {
-            drawGenesPlot(contigs.filenames, contigs.contigs, operons.operons, operons.found, 'operon', $('#operons-plot-div'), null,  glossary);
-        }
+    if (genesInContigs) {
+        drawGenesPlot(genesInContigs.filenames, genesInContigs.genes_in_contigs, 'gene', $('#genes-plot-div'), null,  glossary);
+    }
+    if (operonsInContigs) {
+        drawGenesPlot(operonsInContigs.filenames, operonsInContigs.operons_in_contigs, 'operon', $('#operons-plot-div'), null,  glossary);
     }
 
-    contigs = null;
-    genes = null;
-    operons = null;
+    genesInContigs = null;
+    operonsInContigs = null;
 
     try {
         gcInfos = JSON.parse($('#gc-json').html());

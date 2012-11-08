@@ -140,26 +140,13 @@ def save_assembly_lengths(results_dirpath, filenames, assemblies_lengths):
         append(results_dirpath, json_fpath, 'assembliesLengths')
 
 
-def save_contigs(results_dirpath, filenames, contigs):
-    json_fpath = json_saver.save_contigs(results_dirpath, filenames, contigs)
+def save_features_in_contigs(results_dirpath, filenames, feature_name, feature_in_contigs):
+    json_fpath = json_saver.save_features_in_contigs(results_dirpath, filenames, feature_name, feature_in_contigs)
     if json_fpath:
-        append(results_dirpath, json_fpath, 'contigs')
+        append(results_dirpath, json_fpath, feature_name + 'InContigs')
 
 
 def save_GC_info(results_dirpath, filenames, lists_of_GC_info):
     json_fpath = json_saver.save_GC_info(results_dirpath, filenames, lists_of_GC_info)
     if json_fpath:
         append(results_dirpath, json_fpath, 'gcInfos')
-
-
-def save_genes(results_dirpath, genes, found):
-    json_fpath = json_saver.save_genes(results_dirpath, genes, found)
-    if json_fpath:
-        append(results_dirpath, json_fpath, 'genes')
-
-
-def save_operons(results_dirpath, operons, found):
-    json_fpath = json_saver.save_operons(results_dirpath, operons, found)
-    if json_fpath:
-        append(results_dirpath, json_fpath, 'operons')
-

@@ -299,12 +299,12 @@ def do(reference, filenames, nucmer_dir, output_dir, genes_filename, operons_fil
         # cumulative plots:
         import plotter
         if genes_container.region_list:
-            plotter.genes_operons_plot(filenames, files_genes_in_contigs,
+            plotter.genes_operons_plot(len(genes_container.region_list), filenames, files_genes_in_contigs,
                 output_dir + '/genes_cumulative_plot', 'genes', all_pdf)
             plotter.histogram(filenames, genes_container.full_found, output_dir + '/complete_genes_histogram',
                 '# complete genes', all_pdf)
         if operons_container.region_list:
-            plotter.genes_operons_plot(filenames, files_operons_in_contigs,
+            plotter.genes_operons_plot(len(operons_container.region_list), filenames, files_operons_in_contigs,
                 output_dir + '/operons_cumulative_plot', 'operons', all_pdf)
             plotter.histogram(filenames, operons_container.full_found, output_dir + '/complete_operons_histogram',
                 '# complete operons', all_pdf)

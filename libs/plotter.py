@@ -67,7 +67,7 @@ def cumulative_plot(reference, filenames, lists_of_lengths, plot_filename, title
     matplotlib.pyplot.figure()
     matplotlib.pyplot.rc('font', **font)
     color_id = 0
-    maxlength = 0
+    max_x = 0
     max_y = 0
 
     for filename, lenghts in itertools.izip(filenames, lists_of_lengths):
@@ -86,10 +86,9 @@ def cumulative_plot(reference, filenames, lists_of_lengths, plot_filename, title
             vals_length.append(y)
             # add to plot
 
-        max_y = max(max_y, max(vals_length))
-
-        if len(vals_length) > 0:
-            maxlength = max(vals_contig_index[-1], maxlength)
+        if len(vals_contig_index) > 0:
+            max_x = max(vals_contig_index[-1], max_x)
+            max_y = max(max_y, vals_length[-1])
         if color_id < len(colors):
             matplotlib.pyplot.plot(vals_contig_index, vals_length, color=colors[color_id % len(colors)], lw=linewidth)
         else:
@@ -99,7 +98,8 @@ def cumulative_plot(reference, filenames, lists_of_lengths, plot_filename, title
 
     if reference:
         reference_length = sum(fastaparser.get_lengths_from_fastafile(reference))
-        matplotlib.pyplot.plot([0, maxlength], [reference_length, reference_length], '#000000', lw=linewidth, ls='dashed')
+        matplotlib.pyplot.plot([0, max_x], [reference_length, reference_length], '#000000', lw=linewidth, ls='dashed')
+        max_y = max(max_y, reference_length)
 
     if with_title:
         matplotlib.pyplot.title(title)
@@ -132,6 +132,8 @@ def cumulative_plot(reference, filenames, lists_of_lengths, plot_filename, title
     ax.yaxis.set_major_locator(yLocator)
     ax.xaxis.set_major_locator(xLocator)
     #ax.set_yscale('log')
+
+    #matplotlib.pyplot.ylim([0, int(float(max_y) * 1.1)])
 
     plot_filename += plots_format
     matplotlib.pyplot.savefig(plot_filename)
@@ -323,7 +325,7 @@ def GC_content_plot(reference, filenames, lists_of_GC_info, plot_filename, all_p
 
 
 # common routine for genes and operons cumulative plots
-def genes_operons_plot(filenames, files_feature_in_contigs, plot_filename, title, all_pdf=None):
+def genes_operons_plot(reference_value, filenames, files_feature_in_contigs, plot_filename, title, all_pdf=None):
     if matplotlib_error:
         return
 
@@ -334,6 +336,8 @@ def genes_operons_plot(filenames, files_feature_in_contigs, plot_filename, title
     matplotlib.pyplot.figure()
     matplotlib.pyplot.rc('font', **font)
     color_id = 0
+    max_x = 0
+    max_y = 0
 
     for filename in filenames:
         # calculate values for the plot
@@ -346,11 +350,18 @@ def genes_operons_plot(filenames, files_feature_in_contigs, plot_filename, title
             total_full += feature_amount
             y_vals.append(total_full)
 
+        if len(x_vals) > 0:
+            max_x = max(x_vals[-1], max_x)
+            max_y = max(y_vals[-1], max_y)
         if color_id < len(colors):
             matplotlib.pyplot.plot(x_vals, y_vals, color=colors[color_id % len(colors)], lw=linewidth)
         else:
             matplotlib.pyplot.plot(x_vals, y_vals, color=colors[color_id % len(colors)], lw=linewidth, ls='dashed')
         color_id += 1
+
+    if reference_value:
+        matplotlib.pyplot.plot([0, max_x], [reference_value, reference_value], '#000000', lw=linewidth, ls='dashed')
+        max_y = max(reference_value, max_y)
 
     matplotlib.pyplot.xlabel('Contig index', fontsize=axes_fontsize)
     matplotlib.pyplot.ylabel('Cumulative # complete ' + title, fontsize=axes_fontsize)
@@ -361,13 +372,19 @@ def genes_operons_plot(filenames, files_feature_in_contigs, plot_filename, title
     # Shink current axis's height by 20% on the bottom
     box = ax.get_position()
     ax.set_position([box.x0, box.y0 + box.height * 0.2, box.width, box.height * 0.8])
+
+    legend_list = map(os.path.basename, filenames)
+    if reference_value:
+        legend_list += ['Reference']
+
     # Put a legend below current axis
-    ax.legend(map(os.path.basename, filenames), loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True,
+    ax.legend(legend_list, loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True,
         shadow=True, ncol=4)
 
     xLocator, yLocator = get_locators()
     ax.yaxis.set_major_locator(yLocator)
     ax.xaxis.set_major_locator(xLocator)
+    #matplotlib.pyplot.ylim([0, int(float(max_y) * 1.1)])
 
     plot_filename += plots_format
     matplotlib.pyplot.savefig(plot_filename)

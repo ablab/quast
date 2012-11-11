@@ -519,8 +519,7 @@ def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_
             print >> plantafile, 'Top Length: %s  Top ID: %s' % (top_len, top_id)
 
             #Check that top hit captures most of the contig (>99% or within 10 bases)
-            #if top_len > ctg_len * peral or ctg_len - top_len < maxun:
-            if ctg_len - top_len <= qconfig.min_contig:
+            if top_len > ctg_len * peral or ctg_len - top_len < maxun:
                 #Reset top aligns: aligns that share the same value of longest and higest identity
                 top_aligns.append(sorted_aligns[0])
                 sorted_aligns = sorted_aligns[1:]
@@ -536,25 +535,33 @@ def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_
                     print >> plantafile, '\t\tMarking as ambiguous: %s' % str(ambig)
                     # Kolya: removed redundant code about $ref (for gff AFAIU)
 
-                print >> coords_filtered_file, str(top_aligns[0])
-
                 if len(top_aligns) == 1:
                     #There is only one top align, life is good
                     print >> plantafile, '\t\tOne align captures most of this contig: %s' % str(top_aligns[0])
                     ref_aligns.setdefault(top_aligns[0].ref, []).append(top_aligns[0])
+                    print >> coords_filtered_file, str(top_aligns[0])
                 else:
                     #There is more than one top align
-                    print >> plantafile, '\t\tThis contig has %d significant alignments. [ambiguous]' % len(
+                    print >> plantafile, '\t\tThis contig has %d significant alignments. [different alignments of a repeat]' % len(
                         top_aligns)
-                    #Record these alignments as ambiguous on the reference
-                    for align in top_aligns:
-                        print >> plantafile, '\t\t\tAmbiguous Alignment: %s' % str(align)
-                        ref = align.ref
-                        for i in xrange(align.s1, align.e1+1):
-                            if (ref not in ref_features) or (i not in ref_features[ref]):
-                                ref_features.setdefault(ref, {})[i] = 'A'
 
-                #Increment count of ambiguous contigs and bases
+                    # Alex: count these aligns as normal (just different aligns of one repeat)
+                    while len(top_aligns):
+                        print >> plantafile, '\t\tAlignment: %s' % str(top_aligns[0])
+                        ref_aligns.setdefault(top_aligns[0].ref, []).append(top_aligns[0])
+                        print >> coords_filtered_file, str(top_aligns[0])
+                        top_aligns = top_aligns[1:]
+
+                    #Record these alignments as ambiguous on the reference
+                    #                    for align in top_aligns:
+                    #                        print >> plantafile, '\t\t\tAmbiguous Alignment: %s' % str(align)
+                    #                        ref = align.ref
+                    #                        for i in xrange(align.s1, align.e1+1):
+                    #                            if (ref not in ref_features) or (i not in ref_features[ref]):
+                    #                                ref_features.setdefault(ref, {})[i] = 'A'
+
+                    # Alex: TODO what should we do with these counters?
+                    #Increment count of ambiguous contigs and bases
                     ambiguous += 1
                     total_ambiguous += ctg_len
             else:

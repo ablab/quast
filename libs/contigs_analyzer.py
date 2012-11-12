@@ -324,6 +324,7 @@ def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_
     # reverse complementarity is not an extensive misassemble
     peral = 0.99
     maxun = 10
+    epsilon = 0.98
     smgap = 1000
     umt = 0.1 # threshold for misassembled contigs with aligned less than $umt * 100% (Unaligned Missassembled Threshold)
     nucmer_successful_check_filename = nucmerfilename + '.sf'
@@ -519,13 +520,15 @@ def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_
             print >> plantafile, 'Top Length: %s  Top ID: %s' % (top_len, top_id)
 
             #Check that top hit captures most of the contig (>99% or within 10 bases)
-            if top_len > ctg_len * peral or ctg_len - top_len < maxun:
+            #if top_len > ctg_len * peral or ctg_len - top_len < maxun:
+            if ctg_len - top_len <= qconfig.min_contig:
                 #Reset top aligns: aligns that share the same value of longest and higest identity
                 top_aligns.append(sorted_aligns[0])
                 sorted_aligns = sorted_aligns[1:]
 
                 #Continue grabbing alignments while length and identity are identical
-                while sorted_aligns and top_len == sorted_aligns[0].len2 and top_id == sorted_aligns[0].idy:
+                #while sorted_aligns and top_len == sorted_aligns[0].len2 and top_id == sorted_aligns[0].idy:
+                while sorted_aligns and (float(sorted_aligns[0].len2 * sorted_aligns[0].idy) / float(top_len * top_id) > epsilon):
                     top_aligns.append(sorted_aligns[0])
                     sorted_aligns = sorted_aligns[1:]
 

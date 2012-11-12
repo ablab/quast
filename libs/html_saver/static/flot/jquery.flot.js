@@ -71,7 +71,8 @@
                         lineWidth: 2, // in pixels
                         fill: false,
                         fillColor: null,
-                        steps: false
+                        steps: false,
+                        color: null, // added by Vlad Saveliev
                     },
                     bars: {
                         show: false,
@@ -1935,7 +1936,7 @@
             }
 
             ctx.lineWidth = lw;
-            ctx.strokeStyle = series.color;
+            ctx.strokeStyle = series.lines.color || series.color; // added by Vlad Saveliev; originally ctx.strokeStyle = series.color;
             var fillStyle = getFillStyle(series.lines, series.color, 0, plotHeight);
             if (fillStyle) {
                 ctx.fillStyle = fillStyle;

@@ -8,7 +8,8 @@ body {
 }
 a {
     text-decoration: none;
-    color: #0c4f72;
+    /*color: #0c4f72;*/
+    color: #0077B5;
     border-bottom: 1px solid #487b95;
     border-color: #487b95; /* #487b95 */
     border-color: rgba(12, 79, 114, 0.2); /* #0c4f72; */ /* #a0d2eb; */ /*rgba(0, 88, cc, 0.3);*/
@@ -27,11 +28,22 @@ a:hover {
     border-color: #ffcccc;
     border-color: rgba(255, 0, 0, 0.2); /* #55b2e0; */ /*#005580;*/
 }
+a.dark_bg_link {
+    color: white; /* #0088cc; */
+    border-bottom: 1px solid #cccccc;
+    border-color: #cccccc;
+}
+a.dark_bg_link:hover {
+    color: white; /* #0088cc; */
+    border-bottom: 1px solid white;
+}
+
 
 .dotted-link {
     cursor: pointer;
     text-decoration: none;
-    color: #0c4f72;
+    /*color: #0c4f72;*/
+    color: #0077B5;
     border-bottom: 1px dashed #487b95;
     border-color: #487b95; /* #487b95 */
     border-color: rgba(12, 79, 114, 0.2);
@@ -42,6 +54,10 @@ a:hover {
     border-bottom: 1px dashed #ffcccc;
     border-color: #ffcccc;
     border-color: rgba(255, 0, 0, 0.2);
+}
+
+.selected-switch {
+    background-color: #fafad2;
 }
 
 .json-code {
@@ -57,6 +73,16 @@ a:hover {
     padding: 0px 3px;
     margin-left: -3px;
 }
+
+ul.list {
+    list-style-type: none;
+    padding: 0 0 0 2em;
+    margin: -0.5em 0 0 0;
+}
+ul.list li {
+    margin-bottom: 0.7em;
+}
+
 ul.mdash {
     margin: -1em 0 0 0;
     padding: 0 0 0 2em;
@@ -95,3 +121,27 @@ ul.mdash li:before {
     border-bottom: 1px dashed #b33;
 }
 /************/
+
+/*********/
+
+.hs {
+    /* Полупробел для
+  разделения разрядов чисел:
+  10<span class="hs"></span>000 */
+    margin-left: .2em;
+}
+
+.rhs {
+    /* Полупробел на случай,
+  если реальный пробел важен,
+  например между ценой и валютой:
+  1<span class="rhs">&nbsp;</span>$ */
+    font-size: 50%;
+    line-height: 1;
+}
+
+/*9490<span class="rhs"> </span>€<br/>*/
+/*12<span class="hs"></span>650<span class="rhs"> </span>$<br/>*/
+/*379<span class="hs"></span>000<span*/
+/*class="rhs"> </span><span class="b-rub">Р</span><br/>*/
+/*100<span class="hs"></span>500<span class="rhs"> </span>+*/

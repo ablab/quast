@@ -1,59 +1,182 @@
 
-function filterAndSumGCinfo(GC_info, condition) {
-    var contigs_lengths_cur_bin = [];
-    for (var j = 0; j < GC_info.length; j++) {
-        var GC = GC_info[j];
-        var contig_length = GC[0];
-        var GC_percent = GC[1];
+var normal_scale_span =
+    "<span class='selected-switch'>" +
+        'Normal' +
+        "</span>";
+var normal_scale_a =
+    "<a class='dotted-link' onClick='setNormalScale()'>" +
+        'Normal' +
+        "</a>";
+var log_scale_span =
+    "<span class='selected-switch'>" +
+        'logarithmic' +
+        "</span>";
+var log_scale_a =
+    "<a class='dotted-link' onClick='setLogScale()'>" +
+        'logarithmic' +
+        "</a>";
 
-        if (condition(GC_percent) == true) {
-            contigs_lengths_cur_bin.push(contig_length);
+
+var gc = {
+    isInitialized: false,
+
+    maxY: 0,
+    plot: null,
+    series: null,
+    showWithData: null,
+    minPow: 0,
+    ticks: null,
+    placeholder: null,
+    legendPlaceholder: null,
+    colors: null,
+    yAxisLabeled: false,
+
+    normal_scale_el: normal_scale_span,
+    log_scale_el: log_scale_a,
+
+    draw: function(name, colors, filenames, listsOfGCInfo, reflen,
+        placeholder, legendPlaceholder, glossary, scalePlaceholder) {
+        $(scalePlaceholder).html(
+            "<div id='change-scale' style='margin-right: 3px; visibility: hidden;'>" +
+                "<span id='normal_scale_label'>" +
+                gc.normal_scale_el +
+                "</span>&nbsp;/&nbsp;" +
+                "<span id='log_scale_label'>" +
+                gc.log_scale_el +
+                "</span> scale" +
+                "</div>"
+        );
+
+        if (!gc.isInitialized) {
+            gc.legendPlaceholder = legendPlaceholder;
+            gc.placeholder = placeholder;
+            gc.colors = colors;
+
+            var bin_size = 1.0;
+            var plotsN = filenames.length;
+            gc.series = new Array(plotsN);
+
+            gc.maxY = 0;
+            var minY = Number.MAX_VALUE;
+
+            function updateMinY(y) {
+                if (y < minY && y != 0) {
+                    minY = y;
+                }
+            }
+            function updateMaxY(y) {
+                if (y > gc.maxY) {
+                    gc.maxY = y;
+                }
+            }
+
+            for (var i = 0; i < plotsN; i++) {
+                gc.series[i] = {
+                    data: [],
+                    label: filenames[i],
+                    number: i,
+                    color: colors[i],
+                };
+
+                var GC_info = listsOfGCInfo[i];
+                var cur_bin = 0.0;
+
+                var x = cur_bin;
+                var y = filterAndSumGcInfo(GC_info, function(GC_percent) {
+                    return GC_percent == cur_bin;
+                });
+                gc.series[i].data.push([x, y]);
+
+                updateMinY(y);
+                updateMaxY(y);
+
+                while (cur_bin < 100.0 - bin_size) {
+                    cur_bin += bin_size;
+
+                    x = cur_bin;
+                    y = filterAndSumGcInfo(GC_info, function(GC_percent) {
+                        return GC_percent > (cur_bin - bin_size) && GC_percent <= cur_bin;
+                    });
+                    gc.series[i].data.push([x, y]);
+
+                    updateMinY(y);
+                    updateMaxY(y);
+                }
+
+                x = 100.0;
+                y = filterAndSumGcInfo(GC_info, function(GC_percent) {
+                    return GC_percent > cur_bin && GC_percent <= 100.0;
+                });
+
+                gc.series[i].data.push([x, y]);
+
+                updateMinY(y);
+                updateMaxY(y);
+            }
+
+            for (i = 0; i < plotsN; i++) {
+                gc.series[i].lines = {
+                    show: true,
+                    lineWidth: 1,
+                }
+            }
+
+            // Calculate the minimum possible non-zero Y to clip useless bottoms
+            // of logarithmic plots.
+            var maxYTick = getMaxDecimalTick(gc.maxY);
+            gc.minPow = Math.round(Math.log(minY) / Math.log(10));
+            gc.ticks = [];
+            for (var pow = gc.minPow; Math.pow(10, pow) < maxYTick; pow++) {
+                gc.ticks.push(Math.pow(10, pow));
+            }
+            gc.ticks.push(Math.pow(10, pow));
+
+            gc.showWithData = showInNormalScaleWithData;
+
+            gc.isInitialized = true;
         }
+
+        $.each(gc.series, function(i, series) {
+            $('#legend-placeholder').find('#label_' + series.number + '_id').click(function() {
+                showPlotWithInfo(gc);
+            });
+        });
+
+        showPlotWithInfo(gc);
+
+        $('#change-scale').css('visibility', 'visible');
+
+        $('#contigs_are_ordered').hide();
     }
-    var val_bp = 0;
-    for (var j = 0; j < contigs_lengths_cur_bin.length; j++) {
-        val_bp += contigs_lengths_cur_bin[j];
-    }
-    return val_bp;
-}
+};
 
-// Initial array of colors. If there are more assemblies, no more colors
-// are generated for some reason.
-// This problem appeared in the cumulative plot drawer, where I add
-// two additional black colors for the reference line.
-var colors = ["#FF5900", "#008FFF", "#168A16", "#7C00FF", "#00B7FF", "#FF0080", "#7AE01B", "#782400", "#E01B6A"];
 
-var plotPlaceholderName = '#gc-plot-placeholder';
-
-var plot;
-var plotsData;
-var maxY;
-var minPow;
-var ticks;
-var legendPlaceholder;
-
-function drawInNormalScale() {
-    if (plotsData == null || maxY == null) {
+function showInNormalScaleWithData(series, colors) {
+    if (series == null || gc.maxY == null)
         return;
-    }
-    plot = $.plot($(plotPlaceholderName), plotsData, {
+
+    gc.yAxisLabeled = false;
+
+    gc.plot = $.plot(gc.placeholder, series, {
             shadowSize: 0,
             colors: colors,
             legend: {
-                container: legendPlaceholder,
-                position: 'ne',
-                labelBoxBorderColor: '#FFF',
+                container: $('useless-invisible-element-that-does-not-even-exist'),
             },
             grid: {
                 borderWidth: 1,
+                hoverable: true,
+                autoHighlight: false,
+                mouseActiveRadius: 1000,
             },
             yaxis: {
                 min: 0,
+//                max: gc.maxY + 0.1 * gc.maxY,
                 labelWidth: 120,
                 reserveSpace: true,
                 lineWidth: 0.5,
                 color: '#000',
-                tickFormatter: getBpTickFormatter(maxY),
+                tickFormatter: windowsTickFormatter,
                 minTickSize: 1,
             },
             xaxis: {
@@ -72,32 +195,40 @@ function drawInNormalScale() {
             minTickSize: 1,
         }
     );
+
+    bindTip(gc.placeholder, series, gc.plot, toPrettyString, '%', 'top right');;
 }
 
-function drawInLogarighmicScale() {
-    if (plotsData == null || maxY == null || minPow == null) {
+
+function showInLogarithmicScaleWithData(series, colors) {
+    if (series == null || gc.maxY == null || gc.minPow == null) {
         return;
     }
-    plot = $.plot($(plotPlaceholderName), plotsData, {
+
+    gc.yAxisLabeled = false;
+    
+    gc.plot = $.plot(gc.placeholder, series, {
             shadowSize: 0,
             colors: colors,
             legend: {
-                container: legendPlaceholder,
-                position: 'ne',
-                labelBoxBorderColor: '#FFF',
+                container: $('useless-invisible-element-that-does-not-even-exist'),
             },
             grid: {
+                hoverable: true,
                 borderWidth: 1,
+                autoHighlight: false,
+                mouseActiveRadius: 1000,
             },
             yaxis: {
-                min: Math.pow(10, minPow),
+                min: Math.pow(10, gc.minPow),
+//                max: gc.maxY,
                 labelWidth: 120,
                 reserveSpace: true,
                 lineWidth: 0.5,
                 color: '#000',
-                tickFormatter: getBpLogTickFormatter(maxY),
+                tickFormatter: windowsTickFormatter,
                 minTickSize: 1,
-                ticks: ticks,
+                ticks: gc.ticks,
 
                 transform:  function(v) {
                     return Math.log(v + 0.0001)/*move away from zero*/ / Math.log(10);
@@ -123,133 +254,48 @@ function drawInLogarighmicScale() {
             minTickSize: 1,
         }
     );
+
+    bindTip(gc.placeholder, series, gc.plot, toPrettyString, '%', 'top right');
 }
+
 
 function setLogScale() {
-    $('#normal_scale_label').html(normal_scale_a);
-    $('#log_scale_label').html(log_scale_span);
-    drawInLogarighmicScale();
+    gc.normal_scale_el = normal_scale_a;
+    gc.log_scale_el = log_scale_span;
+    gc.showWithData = showInLogarithmicScaleWithData;
+
+    $('#normal_scale_label').html(gc.normal_scale_el);
+    $('#log_scale_label').html(gc.log_scale_el);
+    showPlotWithInfo(gc);
 }
+
 
 function setNormalScale() {
-    $('#normal_scale_label').html(normal_scale_span);
-    $('#log_scale_label').html(log_scale_a);
-    drawInNormalScale();
+    gc.normal_scale_el = normal_scale_span;
+    gc.log_scale_el = log_scale_a;
+    gc.showWithData = showInNormalScaleWithData;
+
+    $('#normal_scale_label').html(gc.normal_scale_el);
+    $('#log_scale_label').html(gc.log_scale_el);
+    showPlotWithInfo(gc);
 }
 
-var normal_scale_span =
-    "<span>" +
-        'Normal scale' +
-        "</span>";
-var normal_scale_a =
-    "<a class='dotted-link' onClick='setNormalScale()'>" +
-        'Normal scale' +
-        "</a>";
-var log_scale_span =
-    "<span>" +
-        'Logarithmic scale' +
-        "</span>";
-var log_scale_a =
-    "<a class='dotted-link' onClick='setLogScale()'>" +
-        'Logarithmic scale' +
-        "</a>";
 
 
-function drawGCPlot(filenames, listsOfGCInfo, div, legendPh, glossary) {
-    var title = 'GC content';
-    legendPlaceholder = legendPh;
-    div.html(
-        "<div style='width: 675px;'>" +
-        "<div class='plot-header' style='float: left'>" + addTooltipIfDefenitionExists(glossary, title) + "</div>" +
-        "<div id='change-scale' style='float: right; margin-right: 3px; visibility: hidden;'>" +
-        "<span id='normal_scale_label'>" +
-        normal_scale_span +
-        "</span>&nbsp;/&nbsp;<span id='log_scale_label'>" +
-        log_scale_a +
-        "</span>" +
-        "</div>" +
-        "<div style='clear: both'>" +
-        "</div>" +
-        "<div class='plot-placeholder' id='gc-plot-placeholder'></div>" +
-        "</div>"
-    );
+function filterAndSumGcInfo(GC_info, condition) {
+    var contigs_lengths_cur_bin = [];
+    for (var j = 0; j < GC_info.length; j++) {
+        var GC = GC_info[j];
+        var contig_length = GC[0];
+        var GC_percent = GC[1];
 
-    var bin_size = 1.0;
-    var plotsN = filenames.length;
-    plotsData = new Array(plotsN);
-
-    maxY = 0;
-    var minY = Number.MAX_VALUE;
-
-    function updateMinY(y) {
-        if (y < minY && y != 0) {
-            minY = y;
+        if (condition(GC_percent) == true) {
+            contigs_lengths_cur_bin.push(contig_length);
         }
     }
-    function updateMaxY(y) {
-        if (y > maxY) {
-            maxY = y;
-        }
+    var val_bp = 0;
+    for (var j = 0; j < contigs_lengths_cur_bin.length; j++) {
+        val_bp += contigs_lengths_cur_bin[j];
     }
-
-    for (var i = 0; i < plotsN; i++) {
-        plotsData[i] = {
-            data: [],
-            label: filenames[i],
-        };
-
-        var GC_info = listsOfGCInfo[i];
-        var cur_bin = 0.0;
-
-        var x = cur_bin;
-        var y = filterAndSumGCinfo(GC_info, function(GC_percent) {
-            return GC_percent == cur_bin;
-        });
-        plotsData[i].data.push([x, y]);
-
-        updateMinY(y);
-        updateMaxY(y);
-
-        while (cur_bin < 100.0 - bin_size) {
-            cur_bin += bin_size;
-
-            x = cur_bin;
-            y = filterAndSumGCinfo(GC_info, function(GC_percent) {
-                return GC_percent > (cur_bin - bin_size) && GC_percent <= cur_bin;
-            });
-            plotsData[i].data.push([x, y]);
-
-            updateMinY(y);
-            updateMaxY(y);
-        }
-
-        x = 100.0;
-        y = filterAndSumGCinfo(GC_info, function(GC_percent) {
-            return GC_percent > cur_bin && GC_percent <= 100.0;
-        });
-        plotsData[i].data.push([x, y]);
-
-        updateMinY(y);
-        updateMaxY(y);
-    }
-
-    for (i = 0; i < plotsN; i++) {
-        plotsData[i].lines = {
-            show: true,
-            lineWidth: 1,
-        }
-    }
-
-    // Calculate the minimum possible non-zero Y to clip useless bottoms
-    // of logarithmic plots.
-    var maxYTick = getMaxDecimalTick(maxY);
-    minPow = Math.round(Math.log(minY) / Math.log(10));
-    ticks = [];
-    for (var pow = minPow; Math.pow(10, pow) < maxYTick; pow++) {
-        ticks.push(Math.pow(10, pow));
-    }
-    ticks.push(Math.pow(10, pow));
-
-    drawInNormalScale();
-    $('#change-scale').css('visibility', 'visible');
+    return val_bp;
 }

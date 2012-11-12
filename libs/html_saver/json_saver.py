@@ -41,6 +41,19 @@ def save(filename, what):
 
 def save_total_report(output_dir, min_contig):
     from libs import reporting
+    assemblies_names = reporting.assemblies_order
+    report = reporting.grouped_table()
+    t = datetime.datetime.now()
+
+    return save(output_dir + total_report_fn, {
+        'date': t.strftime('%d %B %Y, %A, %H:%M:%S'),
+        'assembliesNames': assemblies_names,
+        'report': report,
+        'minContig': min_contig,
+        })
+
+def save_old_total_report(output_dir, min_contig):
+    from libs import reporting
     table = reporting.table()
 
     def try_convert_back_to_number(str):
@@ -64,11 +77,11 @@ def save_total_report(output_dir, min_contig):
     t = datetime.datetime.now()
 
     return save(output_dir + total_report_fn, {
-            'date' : t.strftime('%d %B %Y, %A, %H:%M:%S'),
-            'header' : header,
-            'results' : results,
-            'min_contig' : min_contig
-    })
+        'date' : t.strftime('%d %B %Y, %A, %H:%M:%S'),
+        'header' : header,
+        'results' : results,
+        'min_contig' : min_contig,
+        })
 
 def save_contigs_lengths(output_dir, filenames, lists_of_lengths):
     lists_of_lengths = [sorted(list, reverse=True) for list in lists_of_lengths]
@@ -103,14 +116,14 @@ def save_features_in_contigs(output_dir, filenames, feature_name, features_in_co
     return save(output_dir + prefix_fn + feature_name + in_contigs_suffix_fn, {
         'filenames' : map(os.path.basename, filenames),
         feature_name + '_in_contigs' : dict((os.path.basename(fn), feature_amounts) for (fn, feature_amounts) in features_in_contigs.items()),
-    })
+        })
 
 
 def save_GC_info(output_dir, filenames, lists_of_GC_info):
     return save(output_dir + gc_fn, {
         'filenames' : map(os.path.basename, filenames),
         'lists_of_gc_info' : lists_of_GC_info,
-    })
+        })
 
 
 

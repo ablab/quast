@@ -251,6 +251,7 @@ def do(reference, filenames, nucmer_dir, output_dir, genes_filename, operons_fil
             for i, region in enumerate(feature_container.region_list):
                 feature_container.found_list[i] = 0
                 for contig_id, name in enumerate(sorted_contigs_names):
+                    cur_feature_is_found = False
                     for block in aligned_blocks[name]:
                         if feature_container.chr_names_dict[region.seqname] != block.seqname:
                             continue
@@ -266,10 +267,14 @@ def do(reference, filenames, nucmer_dir, output_dir, genes_filename, operons_fil
                                 id = '# ' + str(region.number + 1)
                             print >>found_file, '%s\t\t%d\t%d' % (id, region.start, region.end)
                             feature_in_contigs[contig_id] += 1  # inc number of found genes/operons in id-th contig
+
+                            cur_feature_is_found = True
                             break
                         elif feature_container.found_list[i] == 0 and min(region.end, block.end) - max(region.start, block.start) >= qconfig.min_gene_overlap:
                             feature_container.found_list[i] = 2
                             total_partial += 1
+                    if cur_feature_is_found:
+                        break
 
             res_file.write(' %-10s| %-10s|' % (str(total_full), str(total_partial)))
             found_file.close()

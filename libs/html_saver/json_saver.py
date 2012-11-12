@@ -42,7 +42,7 @@ def save(filename, what):
 def save_total_report(output_dir, min_contig):
     from libs import reporting
     assemblies_names = reporting.assemblies_order
-    report = reporting.grouped_table()
+    report = reporting.table(reporting.Fields.grouped_order)
     t = datetime.datetime.now()
 
     return save(output_dir + total_report_fn, {
@@ -52,36 +52,36 @@ def save_total_report(output_dir, min_contig):
         'minContig': min_contig,
         })
 
-def save_old_total_report(output_dir, min_contig):
-    from libs import reporting
-    table = reporting.table()
-
-    def try_convert_back_to_number(str):
-        try:
-            val = int(str)
-        except ValueError:
-            try:
-                val = float(str)
-            except ValueError:
-                val = str
-
-        return val
-
-
-    table = [[try_convert_back_to_number(table[i][j]) for i in xrange(len(table))] for j in xrange(len(table[0]))]
-
-    # TODO: check correctness, not sure that header and result are correct:
-    header = table[0]
-    results = table[1:]
-
-    t = datetime.datetime.now()
-
-    return save(output_dir + total_report_fn, {
-        'date' : t.strftime('%d %B %Y, %A, %H:%M:%S'),
-        'header' : header,
-        'results' : results,
-        'min_contig' : min_contig,
-        })
+#def save_old_total_report(output_dir, min_contig):
+#    from libs import reporting
+#    table = reporting.table()
+#
+#    def try_convert_back_to_number(str):
+#        try:
+#            val = int(str)
+#        except ValueError:
+#            try:
+#                val = float(str)
+#            except ValueError:
+#                val = str
+#
+#        return val
+#
+#
+#    table = [[try_convert_back_to_number(table[i][j]) for i in xrange(len(table))] for j in xrange(len(table[0]))]
+#
+#    # TODO: check correctness, not sure that header and result are correct:
+#    header = table[0]
+#    results = table[1:]
+#
+#    t = datetime.datetime.now()
+#
+#    return save(output_dir + total_report_fn, {
+#        'date' : t.strftime('%d %B %Y, %A, %H:%M:%S'),
+#        'header' : header,
+#        'results' : results,
+#        'min_contig' : min_contig,
+#        })
 
 def save_contigs_lengths(output_dir, filenames, lists_of_lengths):
     lists_of_lengths = [sorted(list, reverse=True) for list in lists_of_lengths]

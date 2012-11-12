@@ -5,6 +5,7 @@
 ############################################################################
 
 import os
+import sys
 from libs import qconfig
 
 ####################################################################################
@@ -224,6 +225,7 @@ def get_quality(metric):
     for quality, metrics in Fields.quality_dict.iteritems():
         if metric in Fields.quality_dict[quality]:
             return quality
+    return Fields.Quality.EQUAL
 
 
 # Report for one filename, dict: field -> value
@@ -266,31 +268,48 @@ def reporting_filter(value):
     return True
 
 
+#def simple_table(order=Fields.order):
+#    return grouped_table(grouped_order=)
+#
+#    table = []
+#
+#    def append_line(rows, field, pattern=None, feature=None, i=None):
+#        quality = get_quality(field)
+#        values = []
+#
+#        for assembly_name in assemblies_order:
+#            report = get(assembly_name)
+#            value = report.get_field(field)
+#            if feature is None:
+#                values.append(value)
+#            else:
+#                values.append(value[i] if i < len(value) else None)
+#
+#        if filter(reporting_filter, values):
+#            metric_name = field if (feature is None) else pattern % feature
+#            #ATTENTION! Contents numeric values, needed to be converted to strings.
+#            rows.append({
+#                'metricName': metric_name,
+#                'quality': quality,
+#                'values': values,
+#                'isMain': field in Fields.main_metrics
+#            })
+#
+#    for field in order:
+#        if isinstance(field, tuple): # TODO: rewrite it nicer
+#            for i, feature in enumerate(field[1]):
+#                append_line(table, field, field[0], feature, i)
+#        else:
+#            append_line(table, field)
+#
+#    return table
+
+
+#ATTENTION! Contents numeric values, needed to be converted into strings
 def table(order=Fields.order):
-    table = []
-    for field in order:
-        if isinstance(field, tuple): # TODO: rewrite it nicer
-            for i, feature in enumerate(field[1]):
-                values = []
-                for assembly_name in assemblies_order:
-                    report = get(assembly_name)
-                    value = report.get_field(field)
-                    values.append(value[i] if i < len(value) else None)
-                if filter(reporting_filter, values): # have at least one element
-                    table.append([field[0] % feature] + [str(val) for val in values])
-        else:
-            values = []
-            for assembly_name in assemblies_order:
-                report = get(assembly_name)
-                value = report.get_field(field)
-                values.append(value)
-            if filter(reporting_filter, values): # have at least one element
-                table.append([field] + [str(val) for val in values])
-    return table
+    if not isinstance(order[0], tuple): # is not a groupped metrics order
+        order = [('', order)]
 
-
-#ATTENTION! Contents numeric values, needed to be converted to strings
-def grouped_table(grouped_order=Fields.grouped_order):
     table = []
 
     def append_line(rows, field, pattern=None, feature=None, i=None):
@@ -312,11 +331,10 @@ def grouped_table(grouped_order=Fields.grouped_order):
                 'metricName': metric_name,
                 'quality': quality,
                 'values': values,
-                'isMain': field in Fields.main_metrics
+                'isMain': field in Fields.main_metrics,
             })
 
-
-    for group_name, metrics in grouped_order:
+    for group_name, metrics in order:
         rows = []
         table.append((group_name, rows))
 
@@ -327,43 +345,115 @@ def grouped_table(grouped_order=Fields.grouped_order):
             else:
                 append_line(rows, field)
 
-    return table
+    if not isinstance(order[0], tuple): # is not a groupped metrics order
+        group_name, rows = table[0]
+        return rows
+    else:
+        return table
 
 
-def save_txt(filename, table):
+def is_groupped_table(table):
+    return isinstance(table[0], tuple)
+
+
+def get_all_rows_out_of_table(table, is_transposed=False):
+    all_rows = []
+    if is_groupped_table(table):
+        for group_name, rows in table:
+            all_rows += rows
+    else:
+        all_rows = table
+
+    return all_rows
+
+
+def save_txt(filename, table, is_transposed=False):
+    all_rows = get_all_rows_out_of_table(table)
+
     # determine width of columns for nice spaces
-    colwidth = [0] * len(table[0])
-    for line in table:
-        for i, x in enumerate(line):
-            colwidth[i] = max(colwidth[i], len(x))
+    colwidths = [0] * (len(all_rows[0]['values']) + 1)
+    for row in all_rows:
+        for i, cell in enumerate([row['metricName']] + map(str, row['values'])):
+            colwidths[i] = max(colwidths[i], len(cell))
             # output it
+
     file = open(filename, 'a')
+
     if min_contig:
         print >>file, 'Contigs of length >= %d are used' % min_contig
         print >>file
-    for line in table:
-        print >>file, '  '.join('%-*s' % (c, l) for c, l in zip(colwidth, line))
+    for row in all_rows:
+        print >>file, '  '.join('%-*s' % (colwidth, cell) for colwidth, cell
+            in zip(colwidths, [row['metricName']] + map(str, row['values'])))
+
     file.close()
 
 
-def save_tsv(filename, table):
+def save_tsv(filename, table, is_transposed=False):
+    all_rows = get_all_rows_out_of_table(table)
+
     file = open(filename, 'a')
-    for line in table:
-        print >>file, '\t'.join(line)
+
+    for row in all_rows:
+        print >>file, '\t'.join([row['metricName']] + map(str, row['values']))
+
     file.close()
 
 
-def save_tex(filename, table):
+def save_tex(filename, table, is_transposed=False):
+    all_rows = get_all_rows_out_of_table(table)
+
     file = open(filename, 'a')
     # Header
     print >>file, '\\begin{table}[ht]'
     print >>file, '\\begin{center}'
     print >>file, '\\caption{(Contigs of length $\geq$ ' + str(min_contig) + ' are used)}'
-    print >>file, '\\begin{tabular}{|l*{' + str(len(table[0]) - 1) + '}{|r}|}'
+
+    rows_n = [0] * len(all_rows[0]['values'])
+    print >>file, '\\begin{tabular}{|l*{' + str(rows_n) + '}{|r}|}'
     print >>file, '\\hline'
+
     # Body
-    for line in table:
-        row = ' & '.join(line)
+    for row in all_rows:
+        values = row['values']
+        if 'quality' in row:
+            quality = row['quality']
+        else:
+            quality = Fields.Quality.EQUAL
+
+        if is_transposed or quality not in [Fields.Quality.MORE_IS_BETTER, Fields.Quality.LESS_IS_BETTER]:
+            cells = map(str, values)
+        else:
+            val = values[0]
+            num_val = None
+            if isinstance(val, int) or isinstance(val, float):
+                num_val = val
+            elif isinstance(val, basestring):
+                try:
+                    num_val = int(val)
+                except ValueError:
+                    try:
+                        num_val = float(val)
+                    except ValueError:
+                        num_val = None
+            else:
+                num_val = val
+
+            if num_val is None:
+                cells = map(str, values)
+            else:
+                best_v = None
+                if quality == Fields.Quality.MORE_IS_BETTER:
+                    best_v = max(values)
+                if quality == Fields.Quality.LESS_IS_BETTER:
+                    best_v = min(values)
+
+                if len([v for v in values if v != best_v]) == 0:
+                    cells = map(str, values)
+                else:
+                    cells = ['{\bf ' + str(v) + '}' if v == best_v else str(v) for v in values]
+
+        row = ' & '.join([row['metricName']] + cells)
         # escape characters
         for esc_char in "\\ % $ # _ { } ~ ^".split():
             row = row.replace(esc_char, '\\' + esc_char)
@@ -371,7 +461,8 @@ def save_tex(filename, table):
         row = row.replace('>=', '$\\geq$')
         row += ' \\\\ \\hline'
         print >>file, row
-        # Footer
+
+    # Footer
     print >>file, '\\end{tabular}'
     print >>file, '\\end{center}'
     print >>file, '\\end{table}'
@@ -394,15 +485,29 @@ def save(output_dirpath, report_name, transposed_report_name, order):
 
     if transposed_report_name:
         print '  Transposed version of total report...'
-        tab = [[tab[i][j] for i in xrange(len(tab))] for j in xrange(len(tab[0]))]
-        report_txt_filename = os.path.join(output_dirpath, transposed_report_name) + '.txt'
-        report_tsv_filename = os.path.join(output_dirpath, transposed_report_name) + '.tsv'
-        report_tex_filename = os.path.join(output_dirpath, transposed_report_name) + '.tex'
-        save_txt(report_txt_filename, tab)
-        save_tsv(report_tsv_filename, tab)
-        save_tex(report_tex_filename, tab)
-        print '    Saved to', report_txt_filename, ',', os.path.basename(report_tsv_filename),\
-        'and', os.path.basename(report_tex_filename)
+
+        all_rows = get_all_rows_out_of_table(tab)
+        if all_rows[0]['metricName'] != Fields.NAME:
+            print >>sys.stderr, 'To transpose table, first column have to be assemblies names'
+        else:
+            # Transposing table
+            transposed_table = [{'metricName': all_rows[0]['metricName'],
+                                 'values': [all_rows[i]['metricName'] for i in xrange(1, len(all_rows))],}]
+            for i in range(len(all_rows[0]['values'])):
+                values = []
+                for j in range(1, len(all_rows)):
+                    values.append(all_rows[j]['values'][i])
+                transposed_table.append({'metricName': all_rows[0]['values'][i], # name of assembly, assuming the first line is assemblies names
+                                         'values': values,})
+
+            report_txt_filename = os.path.join(output_dirpath, transposed_report_name) + '.txt'
+            report_tsv_filename = os.path.join(output_dirpath, transposed_report_name) + '.tsv'
+            report_tex_filename = os.path.join(output_dirpath, transposed_report_name) + '.tex'
+            save_txt(report_txt_filename, transposed_table, is_transposed=True)
+            save_tsv(report_tsv_filename, transposed_table, is_transposed=True)
+            save_tex(report_tex_filename, transposed_table, is_transposed=True)
+            print '    Saved to', report_txt_filename, ',', os.path.basename(report_tsv_filename),\
+            'and', os.path.basename(report_tex_filename)
 
 
 def save_gage(output_dirpath):

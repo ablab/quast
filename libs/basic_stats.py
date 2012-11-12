@@ -43,7 +43,12 @@ def GC_content(filename):
 #            GC_amount = GC_amount + seq_full[i + n].count("G") + seq_full[i + n].count("C")
 #            GC_info.append((1, GC_amount * 100.0 / n))
 
-    return total_GC_amount * 100.0 / total_contig_length, GC_info
+    if total_contig_length == 0:
+        total_GC = None
+    else:
+        total_GC = total_GC_amount * 100.0 / total_contig_length
+
+    return total_GC, GC_info
 
 
 def do(reference, filenames, output_dir, all_pdf, draw_plots, json_output_dir, results_dir):
@@ -113,7 +118,7 @@ def do(reference, filenames, output_dir, all_pdf, draw_plots, json_output_dir, r
             ', N50 = ' + str(n50) + \
             ', L50 = ' + str(l50) + \
             ', Total length = ' + str(total_length) + \
-            ', GC % = ' + ' %.2f' % total_GC + \
+            ', GC % = ' + ('%.2f' % total_GC if total_GC is not None else 'undefined') + \
             ', # N\'s per 100 kbp = ' + ' %.2f' % (float(number_of_Ns) * 100000.0 / float(total_length))\
 
         report.add_field(reporting.Fields.N50, n50)
@@ -129,7 +134,7 @@ def do(reference, filenames, output_dir, all_pdf, draw_plots, json_output_dir, r
         report.add_field(reporting.Fields.NUMCONTIGS, len(lengths_list))
         report.add_field(reporting.Fields.LARGCONTIG, max(lengths_list))
         report.add_field(reporting.Fields.TOTALLEN, total_length)
-        report.add_field(reporting.Fields.GC, ('%.2f' % total_GC))
+        report.add_field(reporting.Fields.GC, ('%.2f' % total_GC if total_GC else None))
         report.add_field(reporting.Fields.UNCALLED, number_of_Ns)
         report.add_field(reporting.Fields.UNCALLED_PERCENT, ('%.2f' % (float(number_of_Ns) * 100000.0 / float(total_length))))
         if reference:

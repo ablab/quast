@@ -546,12 +546,22 @@ def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_
                     print >> plantafile, '\t\tThis contig has %d significant alignments. [different alignments of a repeat]' % len(
                         top_aligns)
 
-                    # Alex: count these aligns as normal (just different aligns of one repeat)
-                    while len(top_aligns):
+                    # Alex: count these aligns as normal (just different aligns of one repeat) or take only the best one
+                    if qconfig.only_best_alignments:
+                        print >> plantafile, '\t\tTaking only one alignment (option --only-best-alignment is set)'
                         print >> plantafile, '\t\tAlignment: %s' % str(top_aligns[0])
                         ref_aligns.setdefault(top_aligns[0].ref, []).append(top_aligns[0])
                         print >> coords_filtered_file, str(top_aligns[0])
                         top_aligns = top_aligns[1:]
+                        print >> plantafile, '\t\tSkipping other alignments:'
+                        for align in top_aligns:
+                            print >> plantafile, '\t\tSkipping alignment ', align
+                    else:
+                        while len(top_aligns):
+                            print >> plantafile, '\t\tAlignment: %s' % str(top_aligns[0])
+                            ref_aligns.setdefault(top_aligns[0].ref, []).append(top_aligns[0])
+                            print >> coords_filtered_file, str(top_aligns[0])
+                            top_aligns = top_aligns[1:]
 
                     #Record these alignments as ambiguous on the reference
                     #                    for align in top_aligns:

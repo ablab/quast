@@ -28,7 +28,7 @@ from libs.html_saver import json_saver
 RELEASE_MODE=False
 
 def usage():
-    print >> sys.stderr, 'QUAST: a quality assessment tool.'
+    print >> sys.stderr, 'QUAST: QUality ASsessment Tool for Genome Assemblies.'
     print >> sys.stderr, 'Usage: python', sys.argv[0], '[options] contig files'
     print >> sys.stderr, ""
 
@@ -46,6 +46,7 @@ def usage():
         print >> sys.stderr, "--contig-thresholds   <int,int,..>  comma-separated list of contig length thresholds [default: %s]" % qconfig.contig_thresholds
         print >> sys.stderr, "--genemark-thresholds <int,int,..>  comma-separated list of threshold lengths of genes to search with GeneMark [default is %s]" % qconfig.genes_lengths
         print >> sys.stderr, '--not-circular                      this flag should be set if the genome is not circular (e.g., it is an eukaryote)'
+        print >> sys.stderr, '--only-best-alignments              this flag forces QUAST to use only one alignment of contigs covering repeats'
         print >> sys.stderr, ""
         print >> sys.stderr, "-h/--help           print this usage message"
     else:
@@ -62,6 +63,7 @@ def usage():
         print >> sys.stderr, "-s  --scaffolds              this flag informs QUAST that provided assemblies are scaffolds"
         print >> sys.stderr, '-g  --gage                   use Gage (results are in gage_report.txt)'
         print >> sys.stderr, '-n  --not-circular           genome is not circular (e.g., it is an eukaryote)'
+        print >> sys.stderr, '-b  --only-best-alignments   QUAST use only one alignment of contigs covering repeats (ambiguous)'
         print >> sys.stderr, "-j  --save-json              save the output also in the JSON format"
         print >> sys.stderr, "-J  --save-json-to <path>    save the JSON-output to a particular path"
         print >> sys.stderr, "-p  --plain-report-no-plots  plain text report only, don't draw plots (to make quast faster)"
@@ -205,6 +207,9 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
 
         elif opt in ('-n', "--not-circular"):
             qconfig.cyclic = False
+
+        elif opt in ('-b', "--only-best-alignments"):
+            qconfig.only_best_alignments = True
 
         elif opt in ('-p', '--plain-report-no-plots'):
             qconfig.draw_plots = False

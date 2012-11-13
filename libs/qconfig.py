@@ -32,10 +32,12 @@ genes = ''
 operons = ''
 with_gage = False
 cyclic = True
+only_best_alignments = False
 
 long_options = "output-dir= save-json-to= genes= operons= reference= contig-thresholds= min-contig= " \
-               "genemark-thresholds= save-json gage not-circular plain-report-no-plots help debug scaffolds".split()
-short_options = "o:G:O:R:t:M:e:J:jpgnhds"
+               "genemark-thresholds= save-json gage not-circular plain-report-no-plots help debug " \
+               "only-best-alignments scaffolds".split()
+short_options = "o:G:O:R:t:M:e:J:jpgnhdsb"
 
 # other constants. Can't be changed by command-line options
 

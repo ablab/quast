@@ -377,7 +377,7 @@ def save_txt(filename, table, is_transposed=False):
             colwidths[i] = max(colwidths[i], len(cell))
             # output it
 
-    file = open(filename, 'a')
+    file = open(filename, 'w')
 
     if min_contig:
         print >>file, 'Contigs of length >= %d are used' % min_contig
@@ -392,7 +392,7 @@ def save_txt(filename, table, is_transposed=False):
 def save_tsv(filename, table, is_transposed=False):
     all_rows = get_all_rows_out_of_table(table)
 
-    file = open(filename, 'a')
+    file = open(filename, 'w')
 
     for row in all_rows:
         print >>file, '\t'.join([row['metricName']] + map(str, row['values']))
@@ -403,13 +403,15 @@ def save_tsv(filename, table, is_transposed=False):
 def save_tex(filename, table, is_transposed=False):
     all_rows = get_all_rows_out_of_table(table)
 
-    file = open(filename, 'a')
+    file = open(filename, 'w')
     # Header
+    print >>file, '\\documentclass[12pt,a4paper]{article}'
+    print >>file, '\\begin{document}'
     print >>file, '\\begin{table}[ht]'
     print >>file, '\\begin{center}'
     print >>file, '\\caption{(Contigs of length $\geq$ ' + str(min_contig) + ' are used)}'
 
-    rows_n = [0] * len(all_rows[0]['values'])
+    rows_n = len(all_rows[0]['values'])
     print >>file, '\\begin{tabular}{|l*{' + str(rows_n) + '}{|r}|}'
     print >>file, '\\hline'
 
@@ -451,14 +453,17 @@ def save_tex(filename, table, is_transposed=False):
                 if len([v for v in values if v != best_v]) == 0:
                     cells = map(str, values)
                 else:
-                    cells = ['{\bf ' + str(v) + '}' if v == best_v else str(v) for v in values]
+                    cells = ['HIGHLIGHTEDSTART' + str(v) + 'HIGHLIGHTEDEND' if v == best_v else str(v) for v in values]
 
         row = ' & '.join([row['metricName']] + cells)
         # escape characters
         for esc_char in "\\ % $ # _ { } ~ ^".split():
             row = row.replace(esc_char, '\\' + esc_char)
-            # more pretty '>='
+        # more pretty '>='
         row = row.replace('>=', '$\\geq$')
+        # pretty highlight
+        row = row.replace('HIGHLIGHTEDSTART', '{\\bf ')
+        row = row.replace('HIGHLIGHTEDEND', '}')
         row += ' \\\\ \\hline'
         print >>file, row
 
@@ -466,6 +471,7 @@ def save_tex(filename, table, is_transposed=False):
     print >>file, '\\end{tabular}'
     print >>file, '\\end{center}'
     print >>file, '\\end{table}'
+    print >>file, '\\end{document}'
     file.close()
 
 

@@ -251,7 +251,7 @@ def process_misassembled_contig(plantafile, output_file, i_start, i_finish, cont
             #MY: output in coords.filtered
             print >> output_file, str(prev)
             prev = sorted_aligns[i+1].clone()
-            print >> plantafile, '\t\t\tExtensive misassembly (',
+            print >> plantafile, '\t\t\t  Extensive misassembly (',
 
             extensive_misassembled_contigs.add(sorted_aligns[i].contig)
             ref_features.setdefault(sorted_aligns[i].ref, {})[sorted_aligns[i].e1] = 'M'
@@ -273,10 +273,10 @@ def process_misassembled_contig(plantafile, output_file, i_start, i_finish, cont
         else:
             if gap < 0:
                 #There is overlap between the two alignments, a local misassembly
-                print >> plantafile, '\t\tOverlap between these two alignments (local misassembly): [%s] %d to %d' % (sorted_aligns[i].ref, sorted_aligns[i].e1, sorted_aligns[i+1].s1)
+                print >> plantafile, '\t\t\t  Overlap between these two alignments (local misassembly): [%s] %d to %d' % (sorted_aligns[i].ref, sorted_aligns[i].e1, sorted_aligns[i+1].s1)
             else:
                 #There is a small gap between the two alignments, a local misassembly
-                print >> plantafile, '\t\tGap in alignment between these two alignments (local misassembly): [%s] %d' % (sorted_aligns[i].ref, sorted_aligns[i].s1)
+                print >> plantafile, '\t\t\t  Gap in alignment between these two alignments (local misassembly): [%s] %d' % (sorted_aligns[i].ref, sorted_aligns[i].s1)
 
             region_misassemblies += [Misassembly.LOCAL]
 
@@ -322,9 +322,8 @@ def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_
     logfile_err = open(logfilename_err, 'a')
     print '  ' + id_to_str(id) + 'Logging to files ' + logfilename_out + ' and ' + os.path.basename(logfilename_err) + '...'
     # reverse complementarity is not an extensive misassemble
-    peral = 0.99
-    maxun = 10
-    epsilon = 0.98
+    maxun = 100
+    epsilon = 0.975 # the average of 100% and 95% (max IDY)
     smgap = 1000
     umt = 0.1 # threshold for misassembled contigs with aligned less than $umt * 100% (Unaligned Missassembled Threshold)
     nucmer_successful_check_filename = nucmerfilename + '.sf'
@@ -519,16 +518,15 @@ def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_
             top_aligns = []
             print >> plantafile, 'Top Length: %s  Top ID: %s' % (top_len, top_id)
 
-            #Check that top hit captures most of the contig (>99% or within 10 bases)
-            #if top_len > ctg_len * peral or ctg_len - top_len < maxun:
-            if ctg_len - top_len <= qconfig.min_contig:
+            #Check that top hit captures most of the contig (currently >97.5% or within 100 bases, former 99% and 10)
+            if top_len > ctg_len * epsilon or ctg_len - top_len < maxun:
                 #Reset top aligns: aligns that share the same value of longest and higest identity
                 top_aligns.append(sorted_aligns[0])
                 sorted_aligns = sorted_aligns[1:]
 
                 #Continue grabbing alignments while length and identity are identical
                 #while sorted_aligns and top_len == sorted_aligns[0].len2 and top_id == sorted_aligns[0].idy:
-                while sorted_aligns and (float(sorted_aligns[0].len2 * sorted_aligns[0].idy) / float(top_len * top_id) > epsilon):
+                while sorted_aligns and ((sorted_aligns[0].len2 * sorted_aligns[0].idy) / (top_len * top_id) > epsilon):
                     top_aligns.append(sorted_aligns[0])
                     sorted_aligns = sorted_aligns[1:]
 
@@ -575,17 +573,73 @@ def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_
                 #Push first alignment on to real aligns
                 real_aligns = [sorted_aligns[0]]
                 last_end = max(sorted_aligns[0].s2, sorted_aligns[0].e2)
+                last_real = sorted_aligns[0]
 
                 #Walk through alignments, if not fully contained within previous, record as real
+                real_groups = dict()
                 for i in xrange(1, num_aligns):
+                    cur_group = (last_end - last_real.len2 + 1, last_end)
                     #If this alignment extends past last alignment's endpoint, add to real, else skip
                     if sorted_aligns[i].s2 > last_end or sorted_aligns[i].e2 > last_end:
-                        real_aligns = [sorted_aligns[i]] + real_aligns
+                        real_aligns = real_aligns + [sorted_aligns[i]]
                         last_end = max(sorted_aligns[i].s2, sorted_aligns[i].e2)
+                        last_real = sorted_aligns[i]
                     else:
-                        print >> plantafile, '\t\tSkipping [%d][%d] redundant alignment %d %s' % (
-                        sorted_aligns[i].s1, sorted_aligns[i].e1, i, str(sorted_aligns[i]))
-                        # Kolya: removed redundant code about $ref (for gff AFAIU)
+                        if (sorted_aligns[i].len2 * sorted_aligns[i].idy) / (last_real.idy * last_real.len2) > epsilon:
+                            if cur_group not in real_groups:
+                                real_groups[cur_group] = [ real_aligns[-1] ]
+                                real_aligns = real_aligns[:-1]
+                            real_groups[cur_group].append(sorted_aligns[i])
+                        else:
+                            print >> plantafile, '\t\tSkipping [%d][%d] redundant alignment %d %s' % (
+                            sorted_aligns[i].s1, sorted_aligns[i].e1, i, str(sorted_aligns[i]))
+                            # Kolya: removed redundant code about $ref (for gff AFAIU)
+
+                # choose appropriate alignments (to minimize total size of contig alignment and reduce # misassemblies
+                if len(real_groups) > 0:
+                    # auxiliary function
+                    def get_group_id_of_align(align):
+                        for k,v in real_groups.items():
+                            if align in v:
+                                return k
+                        return None
+
+                    # adding degenerate groups for single real aligns
+                    if len(real_aligns) > 0:
+                        for align in real_aligns:
+                            cur_group = (min(align.s2, align.e2), max(align.s2, align.e2))
+                            real_groups[cur_group] = [align]
+
+                    sorted_aligns = sorted((align for group in real_groups.values() for align in group), key=lambda x: x.s1)
+                    min_selection = []
+                    min_selection_distance = None
+                    cur_selection = []
+                    cur_selection_group_ids = []
+                    for cur_align in sorted_aligns:
+                        cur_align_group_id = get_group_id_of_align(cur_align)
+                        if cur_align_group_id not in cur_selection_group_ids:
+                            cur_selection.append(cur_align)
+                            cur_selection_group_ids.append(cur_align_group_id)
+                        else:
+                            for align in cur_selection:
+                                if get_group_id_of_align(align) == cur_align_group_id:
+                                    cur_selection.remove(align)
+                                    break
+                            cur_selection.append(cur_align)
+
+                        if len(cur_selection_group_ids) == len(real_groups.keys()):
+                            cur_selection_distance = cur_selection[-1].e1 - cur_selection[0].s1
+                            if (not min_selection) or (cur_selection_distance < min_selection_distance):
+                                min_selection = list(cur_selection)
+                                min_selection_distance = cur_selection_distance
+
+                    # save min selection to real aligns and skip others (as redundant)
+                    real_aligns = list(min_selection)
+                    print >> plantafile, '\t\tSkipping redundant alignments after choosing the best set of alignments'
+                    for align in sorted_aligns:
+                        if align not in real_aligns:
+                            print >> plantafile, '\t\tSkipping [%d][%d] redundant alignment %s' % (
+                                align.s1, align.e1, str(align))
 
                 if len(real_aligns) == 1:
                     #There is only one alignment of this contig to the reference
@@ -668,7 +722,7 @@ def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_
                                 chimeric_index, sorted_num, contig, prev, sorted_aligns, True, ns, smgap,
                                 assembly, misassembled_contigs, extensive_misassembled_contigs, ref_aligns, ref_features)
                             region_misassemblies += x
-                            print >> plantafile, '\t\t\tFake misassembly (caused by circular genome) between these two alignments: [%s] @ %d and %d' % (
+                            print >> plantafile, '\t\t\t  Fake misassembly (caused by circular genome) between these two alignments: [%s] @ %d and %d' % (
                             sorted_aligns[sorted_num].ref, sorted_aligns[sorted_num].e1, sorted_aligns[0].s1)
 
                             prev.e1 = sorted_aligns[0].e1 # [E1]

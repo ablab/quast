@@ -400,6 +400,43 @@ def save_tsv(filename, table, is_transposed=False):
     file.close()
 
 
+def parse_number(val):
+    num = None
+    # Float?
+    try:
+        num = int(val)
+    except ValueError:
+        # Int?
+        try:
+            num = float(val)
+        except ValueError:
+            num = None
+
+    return num
+
+
+def get_num_from_table_value(val):
+    num = None
+    if isinstance(val, int) or isinstance(val, float):
+        num = val
+
+    elif isinstance(val, basestring):
+                                                                      # 'x + y part' format?
+        tokens = val.split()[0]                                       # tokens = [x, +, y, part]
+        if len(tokens) >= 3:                                          # Yes, 'y + x part' format
+            x, y = parse_number(tokens[0]), parse_number(tokens[2])
+            if x is None or y is None:
+                val = None
+            else:
+                val = x, y                                            # Tuple value. Can be compared lexicographically.
+        else:
+            num = parse_number(tokens[0])
+    else:
+        num = val
+
+    return num
+
+
 def save_tex(filename, table, is_transposed=False):
     all_rows = get_all_rows_out_of_table(table)
 
@@ -423,40 +460,25 @@ def save_tex(filename, table, is_transposed=False):
         if is_transposed or quality not in [Fields.Quality.MORE_IS_BETTER, Fields.Quality.LESS_IS_BETTER]:
             cells = map(str, values)
         else:
-            val = values[0]
-            num_val = None  # Is used to check if num_val was further parsed successfully
-            if isinstance(val, int) or isinstance(val, float):
-                num_val = val
-
-            elif isinstance(val, basestring):
-                # 12 + 3 part?
-                val1 = val.split('+')[0]
-
-                # Float?
-                try:
-                    num_val = int(val1)
-                except ValueError:
-                    # Int?
-                    try:
-                        num_val = float(val1)
-                    except ValueError:
-                        num_val = None
-            else:
-                num_val = val
-
-            if num_val is None:
+            # Checking the first value, assuming the others are the same type and format
+            num = get_num_from_table_value(values[0])
+            if num is None:
                 cells = map(str, values)
             else:
-                best_v = None
+                nums = map(get_num_from_table_value, values)
+                best = None
                 if quality == Fields.Quality.MORE_IS_BETTER:
-                    best_v = max(values)
+                    best = max(nums)
                 if quality == Fields.Quality.LESS_IS_BETTER:
-                    best_v = min(values)
+                    best = min(nums)
 
-                if len([v for v in values if v != best_v]) == 0:
+                if len([num for num in nums if num != best]) == 0:
                     cells = map(str, values)
                 else:
-                    cells = ['HIGHLIGHTEDSTART' + str(v) + 'HIGHLIGHTEDEND' if v == best_v else str(v) for v in values]
+                    cells = ['HIGHLIGHTEDSTART' + str(v) + 'HIGHLIGHTEDEND'
+                             if get_num_from_table_value(v) == best
+                             else str(v)
+                             for v in values]
 
         row = ' & '.join([row['metricName']] + cells)
         # escape characters

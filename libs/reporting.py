@@ -418,24 +418,27 @@ def save_tex(filename, table, is_transposed=False):
     # Body
     for row in all_rows:
         values = row['values']
-        if 'quality' in row:
-            quality = row['quality']
-        else:
-            quality = Fields.Quality.EQUAL
+        quality = row['quality'] if ('quality' in row) else Fields.Quality.EQUAL
 
         if is_transposed or quality not in [Fields.Quality.MORE_IS_BETTER, Fields.Quality.LESS_IS_BETTER]:
             cells = map(str, values)
         else:
             val = values[0]
-            num_val = None
+            num_val = None  # Is used to check if num_val was further parsed successfully
             if isinstance(val, int) or isinstance(val, float):
                 num_val = val
+
             elif isinstance(val, basestring):
+                # 12 + 3 part?
+                val1 = val.split('+')[0]
+
+                # Float?
                 try:
-                    num_val = int(val)
+                    num_val = int(val1)
                 except ValueError:
+                    # Int?
                     try:
-                        num_val = float(val)
+                        num_val = float(val1)
                     except ValueError:
                         num_val = None
             else:

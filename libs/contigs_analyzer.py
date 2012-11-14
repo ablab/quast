@@ -322,8 +322,8 @@ def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_
     logfile_err = open(logfilename_err, 'a')
     print '  ' + id_to_str(id) + 'Logging to files ' + logfilename_out + ' and ' + os.path.basename(logfilename_err) + '...'
     # reverse complementarity is not an extensive misassemble
-    maxun = 100
-    epsilon = 0.975 # the average of 100% and 95% (max IDY)
+    maxun = 10
+    epsilon = 0.99
     smgap = 1000
     umt = 0.1 # threshold for misassembled contigs with aligned less than $umt * 100% (Unaligned Missassembled Threshold)
     nucmer_successful_check_filename = nucmerfilename + '.sf'

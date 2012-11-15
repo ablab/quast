@@ -51,8 +51,8 @@ class Fields:
     MISCONTIGSBASES = 'Misassembled contigs length'
     UNALIGNED = '# unaligned contigs'
     UNALIGNEDBASES = 'Unaligned contigs length'
-    AMBIGUOUS = '# ambiguous contigs'
-    AMBIGUOUSBASES = 'Ambiguous contigs length'
+    REPEATS = '# contigs with repeats'
+    REPEATSEXTRABASES = 'Extra bases in contigs with repeats'
 
     UNCALLED = "# N's"
     UNCALLED_PERCENT = "# N's per 100 kbp"
@@ -86,7 +86,7 @@ class Fields:
     # order as printed in report:
     order = [NAME, CONTIGS, TOTALLENS, NUMCONTIGS, LARGCONTIG, TOTALLEN, REFLEN, GC, REFGC,
              N50, NG50, N75, NG75,
-             MISASSEMBL, MISCONTIGS, MISCONTIGSBASES, MISLOCAL,
+             MISASSEMBL, MISLOCAL,
              UNALIGNED, UNALIGNEDBASES, MAPPEDGENOME, DUPLICATION_RATIO,
              UNCALLED_PERCENT, SUBSERROR, INDELSERROR, GENES, OPERONS, GENEMARKUNIQUE, GENEMARK,
              LARGALIGN, NA50, NGA50, NA75, NGA75]
@@ -161,7 +161,7 @@ class Fields:
                        UNALIGNED_PART_WITH_MISASSEMBLY, UNALIGNED_PART_SIGNIFICANT_PARTS,
                        UNALIGNED_PART_LENGTH,]),
 
-        ('Ambiguous', [AMBIGUOUS, AMBIGUOUSBASES,]),
+        #('Ambiguous', [AMBIGUOUS, AMBIGUOUSBASES,]),
 
         ('Genome statistics', [MAPPEDGENOME, DUPLICATION_RATIO, GENES, OPERONS,
                                GENEMARKUNIQUE, GENEMARK, GC, REFGC,
@@ -187,14 +187,15 @@ class Fields:
              MAPPEDGENOME, GENES, OPERONS, GENEMARKUNIQUE, GENEMARK,],
         Quality.LESS_IS_BETTER:
             [NUMCONTIGS, CONTIGS, L50, LG50, L75, LG75,
-             MISLOCAL, MISASSEMBL, MISCONTIGS, MISCONTIGSBASES, UNALIGNED, UNALIGNEDBASES, AMBIGUOUS, AMBIGUOUSBASES,
+             MISLOCAL, MISASSEMBL, MISCONTIGS, MISCONTIGSBASES, UNALIGNED, UNALIGNEDBASES, #AMBIGUOUS, AMBIGUOUSBASES,
              UNCALLED, UNCALLED_PERCENT,
              LA50, LGA50, LA75, LGA75, DUPLICATION_RATIO, INDELS, INDELSERROR, MISMATCHES, SUBSERROR,],
         Quality.EQUAL:
             [REFLEN, GC, REFGC, AVGIDY],
         }
 
-    for name, metrics in filter(lambda (name, metrics): name in ['Misassemblies', 'Unaligned', 'Ambiguous'], grouped_order):
+    #for name, metrics in filter(lambda (name, metrics): name in ['Misassemblies', 'Unaligned', 'Ambiguous'], grouped_order):
+    for name, metrics in filter(lambda (name, metrics): name in ['Misassemblies', 'Unaligned'], grouped_order):
         quality_dict['Less is better'].extend(metrics)
 
 

@@ -302,7 +302,7 @@ def clear_files(filename, nucmerfilename):
     if qconfig.debug:
         return
     # delete temporary files
-    for ext in ['.delta', '.1delta', '.mdelta', '.unqry', '.qdiff', '.rdiff', '.1coords', '.mcoords', '.mgaps', '.ntref', '.gp', '.coords.btab']:
+    for ext in ['.delta', '.1delta', '.mdelta', '.unqry', '.qdiff', '.rdiff', '.1coords', '.mcoords', '.mgaps', '.ntref', '.gp', '.coords.btab', '.coords_tmp']:
         if os.path.isfile(nucmerfilename + ext):
             os.remove(nucmerfilename + ext)
     if os.path.isfile('nucmer.error'):
@@ -483,8 +483,8 @@ def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_
     partially_unaligned = 0
     fully_unaligned_bases = 0
     partially_unaligned_bases = 0
-    ambiguous = 0
-    total_ambiguous = 0
+    repeats = 0
+    total_repeats_extra_bases = 0
     uncovered_regions = 0
     uncovered_region_bases = 0
     total_redundant = 0
@@ -533,7 +533,7 @@ def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_
                 #Mark other alignments as ambiguous
                 while sorted_aligns:
                     ambig = sorted_aligns.pop()
-                    print >> plantafile, '\t\tMarking as ambiguous: %s' % str(ambig)
+                    print >> plantafile, '\t\tMarking as insignificant: %s' % str(ambig) # former ambiguous
                     # Kolya: removed redundant code about $ref (for gff AFAIU)
 
                 if len(top_aligns) == 1:
@@ -557,7 +557,12 @@ def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_
                         for align in top_aligns:
                             print >> plantafile, '\t\tSkipping alignment ', align
                     else:
+                        #Increment count of contigs with repeats and bases
+                        repeats += 1
+                        # we count only extra bases, so we shouldn't include bases in the first alignment
+                        total_repeats_extra_bases -= top_aligns[0].len1
                         while len(top_aligns):
+                            total_repeats_extra_bases += top_aligns[0].len1
                             print >> plantafile, '\t\tAlignment: %s' % str(top_aligns[0])
                             ref_aligns.setdefault(top_aligns[0].ref, []).append(top_aligns[0])
                             print >> coords_filtered_file, str(top_aligns[0])
@@ -571,10 +576,9 @@ def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_
                     #                            if (ref not in ref_features) or (i not in ref_features[ref]):
                     #                                ref_features.setdefault(ref, {})[i] = 'A'
 
-                    # Alex: TODO what should we do with these counters?
                     #Increment count of ambiguous contigs and bases
-                    ambiguous += 1
-                    total_ambiguous += ctg_len
+                    #ambiguous += 1
+                    #total_ambiguous += ctg_len
             else:
                 #Sort all aligns by position on contig, then length
                 sorted_aligns = sorted(sorted_aligns, key=lambda x: (x.len2, x.idy), reverse=True)
@@ -1059,8 +1063,8 @@ def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_
     print >> plantafile, 'Unaligned Contigs: %d + %d part' % (unaligned, partially_unaligned)
     print >> plantafile, 'Partially Unaligned Contigs with Misassemblies: %d' % partially_unaligned_with_misassembly
     print >> plantafile, 'Unaligned Contig Bases: %d' % (fully_unaligned_bases + partially_unaligned_bases)
-    print >> plantafile, 'Ambiguous Contigs: %d' % ambiguous
-    print >> plantafile, 'Ambiguous Contig Bases: %d' % total_ambiguous
+    print >> plantafile, 'Contigs with Repeats: %d' % repeats
+    print >> plantafile, 'Extra Bases in Contigs with Repeats: %d' % total_repeats_extra_bases
     print >> plantafile, 'Mismatches: %d' % SNPs
     print >> plantafile, 'Single Nucleotide Indels: %d' % indels
 
@@ -1111,7 +1115,7 @@ def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_
               'misassembled_contigs': misassembled_contigs, 'misassembled_bases': misassembled_bases,
               'unaligned': unaligned, 'partially_unaligned': partially_unaligned,
               'partially_unaligned_bases': partially_unaligned_bases, 'fully_unaligned_bases': fully_unaligned_bases,
-              'ambiguous': ambiguous, 'total_ambiguous': total_ambiguous, 'SNPs': SNPs, 'indels': indels,
+              'repeats': repeats, 'total_repeats_extra_bases': total_repeats_extra_bases, 'SNPs': SNPs, 'indels': indels,
               'total_aligned_bases': total_aligned_bases,
               'partially_unaligned_with_misassembly': partially_unaligned_with_misassembly,
               'partially_unaligned_with_significant_parts': partially_unaligned_with_significant_parts}
@@ -1216,8 +1220,8 @@ def do(reference, filenames, cyclic, output_dir, lib_dir, draw_plots):
         partially_unaligned = result['partially_unaligned']
         partially_unaligned_bases = result['partially_unaligned_bases']
         fully_unaligned_bases = result['fully_unaligned_bases']
-        ambiguous = result['ambiguous']
-        total_ambiguous = result['total_ambiguous']
+        repeats = result['repeats']
+        total_repeats_extra_bases = result['total_repeats_extra_bases']
         SNPs = result['SNPs']
         indels = result['indels']
         total_aligned_bases = result['total_aligned_bases']
@@ -1231,8 +1235,8 @@ def do(reference, filenames, cyclic, output_dir, lib_dir, draw_plots):
         report.add_field(reporting.Fields.MISCONTIGSBASES, misassembled_bases)
         report.add_field(reporting.Fields.UNALIGNED, '%d + %d part' % (unaligned, partially_unaligned))
         report.add_field(reporting.Fields.UNALIGNEDBASES, (fully_unaligned_bases + partially_unaligned_bases))
-        report.add_field(reporting.Fields.AMBIGUOUS, ambiguous)
-        report.add_field(reporting.Fields.AMBIGUOUSBASES, total_ambiguous)
+        report.add_field(reporting.Fields.REPEATS, repeats)
+        report.add_field(reporting.Fields.REPEATSEXTRABASES, total_repeats_extra_bases)
         report.add_field(reporting.Fields.MISMATCHES, SNPs)
         report.add_field(reporting.Fields.INDELS, indels)
         report.add_field(reporting.Fields.SUBSERROR, "%.2f" % (float(SNPs) * 100000.0 / float(total_aligned_bases)))

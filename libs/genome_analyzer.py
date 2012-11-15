@@ -217,6 +217,9 @@ def do(reference, filenames, nucmer_dir, output_dir, genes_filename, operons_fil
                     cur_gap_size = 0
                 else:
                     cur_gap_size += 1
+            if cur_gap_size >= qconfig.min_gap_size:
+                gaps_count += 1
+                print >>gaps_file, i - cur_gap_size, i - 1
 
         gaps_file.close()
 
@@ -224,8 +227,10 @@ def do(reference, filenames, nucmer_dir, output_dir, genes_filename, operons_fil
 
         genome_coverage = float(covered_bp) * 100 / float(genome_size)
         # calculating duplication ratio
-        duplication_ratio = (report.get_field(reporting.Fields.TOTALLEN) - report.get_field(reporting.Fields.UNALIGNEDBASES)) /\
-            ((genome_coverage / 100.0) * float(genome_size))
+        duplication_ratio = (report.get_field(reporting.Fields.TOTALLEN) + \
+                             report.get_field(reporting.Fields.REPEATSEXTRABASES) - \
+                             report.get_field(reporting.Fields.UNALIGNEDBASES)) /\
+                             ((genome_coverage / 100.0) * float(genome_size))
 
         res_file.write('  %-20s  | %-20s| %-18s| %-12s|'
             % (os.path.basename(filename), genome_coverage, duplication_ratio, str(gaps_count)))

@@ -27,8 +27,32 @@ from libs.html_saver import json_saver
 
 RELEASE_MODE=False
 
+def print_version(stream=sys.stdout):
+    version_filename = os.path.join(__location__, 'VERSION')
+    version = "unknown"
+    build = "unknown"
+    if os.path.isfile(version_filename):
+        version_file = open(version_filename)
+        version = version_file.readline()
+        if version:
+            version = version.strip()
+        else:
+            version = "unknown"
+        build = version_file.readline()
+        if build:
+            build = build.split()[1].strip()
+        else:
+            build = "unknown"
+
+    print >> stream, "Version:", version,
+    print >> stream, "Build:", build
+
+
 def usage():
     print >> sys.stderr, 'QUAST: QUality ASsessment Tool for Genome Assemblies.'
+    print_version(sys.stderr)
+
+    print >> sys.stderr, ""
     print >> sys.stderr, 'Usage: python', sys.argv[0], '[options] contig files'
     print >> sys.stderr, ""
 
@@ -298,7 +322,17 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
     if os.path.isfile(logfile):
         os.remove(logfile)
 
-    tee = support.Tee(logfile, 'w', console=True) # not pure, changes sys.stdout and sys.stderr
+    # saving info about command line and options into log file
+    lfile = open(logfile,'w')
+    print >> lfile, "QUAST started: ",
+    for v in sys.argv:
+        print >> lfile, v,
+    print >> lfile, ""
+    print_version(lfile)
+    print >> lfile, ""
+    lfile.close()
+
+    tee = support.Tee(logfile, 'a', console=True) # not pure, changes sys.stdout and sys.stderr
 
     ########################################################################
 

@@ -16,7 +16,7 @@ from site import addsitedir
 
 __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
 
-addsitedir(os.path.join(__location__, 'env/site-packages'))
+addsitedir(os.path.join(__location__, 'site-packages'))
 
 #sys.path.append(os.path.join(os.path.abspath(sys.path[0]), 'libs'))
 #sys.path.append(os.path.join(os.path.abspath(sys.path[0]), '../spades_pipeline'))

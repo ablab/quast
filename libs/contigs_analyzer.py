@@ -1203,7 +1203,11 @@ def do(reference, filenames, cyclic, output_dir, lib_dir, draw_plots):
         os.mkdir(nucmer_output_dir)
 
     from joblib import Parallel, delayed
-    statuses_results_pairs = Parallel(n_jobs=len(filenames))(delayed(plantakolya_process)(
+    if qconfig.threads is None:
+        n_jobs = len(filenames)
+    else:
+        n_jobs = min(len(filenames), qconfig.threads)
+    statuses_results_pairs = Parallel(n_jobs=n_jobs)(delayed(plantakolya_process)(
         cyclic, draw_plots, nucmer_output_dir, fname, id, myenv, output_dir, reference)
           for id, fname in enumerate(filenames))
     # unzipping

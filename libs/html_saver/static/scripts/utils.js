@@ -271,7 +271,7 @@ function showTip(pageX, pageY, offset, plotWidth, plotHeight,
     sortedYsAndColors.sort(function(a, b) { return a.y < b.y;});
 
     for (i = 0; i < sortedYsAndColors.length; i++) {
-        var item =sortedYsAndColors[i];
+        var item = sortedYsAndColors[i];
 
         $('<div id="tip_line' + i + '">' + toPrettyString(item.y)
             + ', <span style="color: ' + item.color + ';">' + item.label + '</span></div>').css({

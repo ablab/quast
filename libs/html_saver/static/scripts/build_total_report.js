@@ -1,7 +1,7 @@
 
 function buildTotalReport(assembliesNames, report, date, minContig, glossary, qualities, mainMetrics) {
-    $('#subheader').html(date + '.');
-    $('#mincontig').append('Contigs of length ≥ ' + minContig + ' bp are used.');
+    $('#subheader').html('<div>' + date + '.<br><br></div>');
+    $('#mincontig').append('<div>Contigs shorter than ' + minContig + "<span class='rhs'>&nbsp;</span>" + 'bp were skipped.</div>');
     $('#extended_link').append('<a class="dotted-link" id="extended_report_link">Extended report</a>');
     $('#extended_report_link').click(function() {
         $('.row_hidden').fadeToggle('fast');

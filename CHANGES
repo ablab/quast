@@ -1,24 +1,51 @@
 -- Version history --
 
-1.3 - QUAST is now a multi-threaded tool: the most time-consuming step (alignment to 
-      a reference genome) is computing in parallel now. Added GeneMark version for MacOS. 
-      Significally improved HTML-reports. Added more informative error messages. Added simple
-      logic for evaluating scaffolds. Added new metrics (duplication ration, largest alignment).
-      Added more careful counting of misassemblies. Min contig threshold changed from 200 to 500.
-      Fixed several bugs.    
+1.3   QUAST is now a multi-threaded tool: the most time-consuming step (alignment to
+      a reference genome) is computed in parallel.
 
-1.2 - Added indels and N's counting. Added more detailed statistics on misassemblies
-      (classification in inversions, relocations, translocations, local misassemblies).
-      Added more detailed statistics on partially unaligned contigs. Text reports now
-      also available in LaTeX format. Python 2.5 now supported. Fixed bug in reading
-      genes annotations in GFF and NCBI formats. QUAST now can be rerun on existing
-      Nucmer alignments files.
+      A MacOS version of GeneMark.
 
-1.1 - Added mismatches counting. Fixed bug in misassemblies counting
-      (some inversions were omitted). GC content plot is logarithmically scaled.
+      Significantly improved HTML-reports.
+
+      More informative error messages.
+
+      A simple logic for evaluating scaffolds.
+
+      New metrics: duplication ration and largest alignment.
+
+      More careful counting of misassemblies.
+
+      Min contig threshold changed from 200 to 500.
+
+      Fixed several bugs.
+
+
+1.2   Indels and N's counting.
+
+      More detailed statistics on misassemblies (classification in inversions,
+      relocations, translocations, local misassemblies).
+
+      More detailed statistics on partially unaligned contigs.
+
+      Text reports now also available in LaTeX format.
+
+      Python 2.5 now supported.
+
+      Fixed bug in reading genes annotations in GFF and NCBI formats.
+
+      QUAST now can be rerun on existing Nucmer alignments files.
+
+
+1.1   Mismatches counting.
+
+      Fixed bug in misassemblies counting (some inversions were omitted).
+
+      GC content plot is logarithmically scaled.
+
       ORFs are not counted, GeneMark added instead (for gene finding, only on Linux).
-      Nucmer aligner setting changed (from IDY% = 80 to 95, 
+
+      Nucmer aligner setting changed (from IDY% = 80 to 95,
       i.e. now all alignments are more robust).
 
-1.0 - Initial open source release!
 
+1.0   Initial open source release!

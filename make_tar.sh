@@ -4,11 +4,13 @@ VERSION=`cat VERSION`
 NOW=$(date +"%d.%m.%Y_%H:%M")
 ARCHIVE_NAME=quast-$VERSION.tar.gz
 QUAST_FOLDER=quast-$VERSION
+SITE_PACKAGES=site-packages
 
 mkdir release
 mkdir release/$QUAST_FOLDER
 cp -r libs            release/$QUAST_FOLDER
 cp -r test_data       release/$QUAST_FOLDER
+cp -r $SITE_PACKAGES  release/$QUAST_FOLDER
 cp quast.py           release/$QUAST_FOLDER
 cp manual.html        release/$QUAST_FOLDER
 cp VERSION            release/$QUAST_FOLDER
@@ -22,6 +24,9 @@ make -C release/$QUAST_FOLDER/libs/MUMmer3.23-linux/ clean >/dev/null 2>/dev/nul
 rm -f   release/$QUAST_FOLDER/libs/MUMmer3.23-linux/make.*
 rm -f   release/$QUAST_FOLDER/libs/MUMmer3.23-osx/make.*
 rm -f   release/$QUAST_FOLDER/libs/gage/*.class
+rm -f   release/$QUAST_FOLDER/$SITE_PACKAGES/*/*.pyc
+rm -rf  release/$QUAST_FOLDER/$SITE_PACKAGES/*/test
+rm -rf  release/$QUAST_FOLDER/$SITE_PACKAGES/*/tests
 rm -f   release/$QUAST_FOLDER/libs/*.pyc
 rm -f   release/$QUAST_FOLDER/libs/html_saver/*.pyc
 rm -rf  release/$QUAST_FOLDER/quast_results

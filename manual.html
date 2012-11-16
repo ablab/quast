@@ -31,7 +31,7 @@ QUAST evaluates genome assemblies by computing various metrics.
     them separately.
     <br>
     <br>
-    QUAST version 1.3 was released under GPL v2 (see <a href="LICENSE">LICENSE</a> for details) on XX November 2012.
+    QUAST version 1.3 was released under GPL v2 (see <a href="LICENSE">LICENSE</a> for details) on 16 November 2012.
 </p>
 
 <h2>1. Installation</h2>
@@ -81,8 +81,25 @@ Or with <a href="http://peak.telecommunity.com/DevCenter/EasyInstall">Easy Insta
 <a name="sec1"></a>
 <h2>2. Running QUAST</h2>
 
+<a name="sec1.0"></a>
+<h3>2.1 For impatient people</h3>
+<p>
+Running QUAST on test data from the installation tarball (reference genome, gene and operon annotations and two assemblies of the first 10 kbp of <i>E.&nbsp;coli</i>):
+<pre class="code">
+<code>
+    python quast.py -R test_data/reference_10K.fasta.gz -G test_data/genes_10K.txt -O test_data/operons_10K.txt test_data/assembly_10K_1.fasta test_data/assembly_10K_2.fasta    
+</code>
+</pre>    
+Browsing summary of evaluation results with <a href="http://www.greenwoodsoftware.com/less/">less</a> utility:
+<pre class="code">
+<code>
+    less quast_results/latest/report.txt
+</code>
+</pre>    
+</p>
+
 <a name="sec1.1"></a>
-<h3>2.1 Input data</h3>
+<h3>2.2 Input data</h3>
 <p>
     QUAST can work with assemblies and references in FASTA format. Files may be compressed with gzip.
     <br><br>
@@ -99,10 +116,15 @@ If a <i>start postion</i> less than a corresponding <i>end postion</i>, such gen
 <br><br>
 You can find examples of a reference file and annotated genes and operons in all supported formats in your QUAST installation directory, <code>test_data</code> subdirectory.
 These files correspond to the first 10 kbp of <i>E. coli</i>. Input reads and sample assemblies for this data set are also there.
+<br><br>
+<b>Known limitations on input data</b>
+<br>
+Unfortunately, current version of QUAST can work only with assemblies of length less than 4.29 Gbp and with reference genomes of length less than 536 Mbp.
+We plan to increase the maximum available lengths (at least for references) in the next QUAST release.
 </p>
 
 <a name="sec1.2"></a>
-<h3>2.2 GAGE mode</h3>
+<h3>2.3 GAGE mode</h3>
 <p>
     <a href="http://gage.cbcb.umd.edu/index.html">GAGE</a> is one of the well-known assessment tools. However, it has issues that limit its use. For example,
     you can specify only one assembly per run, thereby it is difficult to compare a lot of assemblies simultaneously. In addition, GAGE has fixed the minimum contig length threshold (200 bp).
@@ -114,7 +136,7 @@ These files correspond to the first 10 kbp of <i>E. coli</i>. Input reads and sa
 </p>
 
 <a name="sec1.3"></a>
-<h3>2.3 Command line options</h3>
+<h3>2.4 Command line options</h3>
 
 <p>
     QUAST runs from a command line as follows:
@@ -142,30 +164,35 @@ These files correspond to the first 10 kbp of <i>E. coli</i>. Input reads and sa
 <p>
     <code>-G &lt;filename&gt;</code> (or <code>--genes &lt;filename&gt;</code>)
 </p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;Annotated genes file. See details about the file format in <a href="#sec1.1">section 2.1</a></p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;Annotated genes file. See details about the file format in <a href="#sec1.1">section 2.2</a></p>
 
 <p>
     <code>-O &lt;filename&gt;</code> (or <code>--operons &lt;filename&gt;</code>)
 </p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;Annotated operons file. See details about the file format in <a href="#sec1.1">section 2.1</a></p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;Annotated operons file. See details about the file format in <a href="#sec1.1">section 2.2</a></p>
 
 <p>
     <code>--min-contig &lt;int&gt;</code>
 </p>
 <p>&nbsp;&nbsp;&nbsp;&nbsp;Sets a lower threshold for a contig length. Only contigs of length greater than the threshold will be taken into account
-    (except for some metrics, see <a href="#sec2">section 3</a>). The default value is 200.</p>
+    (except for some metrics, see <a href="#sec2">section 3</a>). The default value is 500.</p>
+
+<p>
+    <code>--threads &lt;int&gt;</code>
+</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;Sets a maximum number of threads QUAST can use. The default value is the number of provided assemblies.</p>
 
 <p>
     <code>--gage</code>
 </p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;This flag starts QUAST in "GAGE mode" (see <a href="#sec1.2">section 2.2</a>).
+<p>&nbsp;&nbsp;&nbsp;&nbsp;This flag starts QUAST in "GAGE mode" (see <a href="#sec1.2">section 2.3</a>).
     Note: in this case, you <i>must</i> also set <b>-R</b> option and you <i>can</i> set <b>--min-contig</b> option.</p>
 
 <p>
     <code>--contig-thresholds &lt;int,int,...&gt;</code>
 </p>
 <p>&nbsp;&nbsp;&nbsp;&nbsp;Comma-separated list of contig length thresholds. Used in <b><i># contigs &ge; x</i></b> and
-    <b><i>Total length (&ge; x)</i></b> metrics (see <a href="#sec2">section 3</a>). The default value is 500,1000.</p>
+    <b><i>Total length (&ge; x)</i></b> metrics (see <a href="#sec2">section 3</a>). The default value is 0,1000.</p>
 
 <p>
     <code>--genemark-thresholds &lt;int,int,...&gt;</code>
@@ -173,9 +200,21 @@ These files correspond to the first 10 kbp of <i>E. coli</i>. Input reads and sa
 <p>&nbsp;&nbsp;&nbsp;&nbsp;Comma-separated list of threshold lengths of genes to search with GeneMark. The default value is 0,300,1500,3000.</p>
 
 <p>
+    <code>--scaffolds</code>
+</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;This flag informs QUAST that provided assemblies are scaffolds. QUAST will add splitted versions 
+    of provided assemblies to the comparison. Assemblies are splitted by continuous fragments of N's of length &ge; 10.</p>
+
+<p>
     <code>--not-circular</code>
 </p>
 <p>&nbsp;&nbsp;&nbsp;&nbsp;This flag should be set if a genome is not circular (e.g., it is an eukaryote).</p>
+
+<p>
+    <code>--only-best-alignments</code>
+</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;This flag forces QUAST to use only the best alignments of contigs covering repeats (one contig -- one alignments). 
+    By default, QUAST uses all alignments of a contig with a repeat to evaluate quality metrics.</p>
 
 <p><code>-h</code> (or <code>--help</code>)</p>
 <p>&nbsp;&nbsp;&nbsp;&nbsp;Print help.</p>
@@ -226,8 +265,8 @@ These files correspond to the first 10 kbp of <i>E. coli</i>. Input reads and sa
 
 Note:
 <ul style="margin-top: -12px;">
-    <li>metrics based on a reference genome are computed only if a reference is provided (see  <a href="#sec1.3">section 2.3</a>), </li>
-    <li>metrics based on genes and operons are computed only if proper annotations are provided (see <a href="#sec1.3">section 2.3</a>). </li>
+    <li>metrics based on a reference genome are computed only if a reference is provided (see  <a href="#sec1.3">section 2.4</a>), </li>
+    <li>metrics based on genes and operons are computed only if proper annotations are provided (see <a href="#sec1.3">section 2.4</a>). </li>
 </ul>
 </p>
 
@@ -237,15 +276,15 @@ Note:
 <h4>3.1.1 Summary report</h4>
 
 <p><b><i># contigs &ge; x</i></b>&nbsp;&nbsp;is total number of contigs of length <code>&ge; x</code>.
-    This metric doesn't depend on <code>--min-contig</code> command line parameter (see <a href="#sec1.3">section 2.3</a>).</p>
+    This metric doesn't depend on <code>--min-contig</code> command line parameter (see <a href="#sec1.3">section 2.4</a>).</p>
 
 <p><b><i>Total length (&ge; x)</i></b>&nbsp;&nbsp;is the total number of bases in contigs of length <code>&ge; x</code>.
-    This metric doesn't depend on <code>--min-contig</code> command line parameter (see <a href="#sec1.3">section 2.3</a>).</p>
+    This metric doesn't depend on <code>--min-contig</code> command line parameter (see <a href="#sec1.3">section 2.4</a>).</p>
 
 <br>
 <i>
     All remaining metrics are computed on the contigs of length <code>&ge; x</code> where <code>x</code> is specified in command line option
-    <code>--min-contig</code> (see <a href="#sec1.3">section 2.3</a>, default is 200).
+    <code>--min-contig</code> (see <a href="#sec1.3">section 2.4</a>, default is 200).
 </i>
 <br>
 
@@ -319,7 +358,7 @@ and Single Nucleotide Errors (SNEs), which are due to errors in reads or errors 
 <p><b><i># genes</i></b>&nbsp;&nbsp;is the number of genes in the assembly (complete and partial), based on a user-provided annotated 
     list of gene positions in the reference genome. A gene counts as 'partially covered' if the assembly contains at least 100 bp 
     of this gene but not the whole gene.
-    This metric is computed only if a reference genome and an annotated list of gene positions are provided (see <a href="#sec1.3">section 2.3</a>)</p>
+    This metric is computed only if a reference genome and an annotated list of gene positions are provided (see <a href="#sec1.3">section 2.4</a>)</p>
 
 <p><b><i># operons</i></b>&nbsp;&nbsp;is defined similarly to the previous metric but you need
     an operons annotations file for computing this metric.</p>
@@ -327,6 +366,10 @@ and Single Nucleotide Errors (SNEs), which are due to errors in reads or errors 
 <p><b><i># predicted genes</i></b>&nbsp;&nbsp;is the number of genes in the assembly
     predicted by QUAST's gene-finding module, which is based on GeneMarkS.
     This metric is computed if an annotated list of genes is not provided.</p>
+
+<p><b><i>Largest alignment</i></b>&nbsp;&nbsp;is the length of the largest continuous alignment in the assembly.
+    This metric is always equal to the <b>Largest contig</b> metric but it can be smaller if the largest contig 
+    of the assembly contains a misassembly event.</p>
 
 <p><b><i>NA50, NGA50, NA75, NGA75, LA50, LA75, LGA50, LGA75 (A stands for "aligned")</i></b>&nbsp;&nbsp;like the same
     metrics without 'A', but in this case we count lengths (in the case of N-metrics) or number (for L-metrics)
@@ -379,7 +422,7 @@ opposite strands of the same chromosome. </p>
     Note that such misassemblies are not counted in <i># misassemblies</i> and other <i>misassemblies</i> statistics.</p>
 
 <p><b><i># both parts are significant</i></b>&nbsp;&nbsp;is the number of partially unaligned contigs which have both aligned and unaligned fragments
-    of size &ge; <i>min-contig</i> (see <a href="#sec1.3">section 2.3</a>).
+    of size &ge; <i>min-contig</i> (see <a href="#sec1.3">section 2.4</a>).
 
 <p><b><i>Partially unaligned length</i></b>&nbsp;&nbsp;is the total number of unaligned bases in all partially unaligned contigs.</p>
 

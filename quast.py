@@ -65,7 +65,7 @@ def usage():
         print >> sys.stderr, "--min-contig <int>           lower threshold for contig length [default: %s]" % qconfig.min_contig
         print >> sys.stderr, ""
         print >> sys.stderr, "Advanced options:"
-        print >> sys.stderr, "--threads                           maximum number of threads [default: number of provided assemblies]"
+        print >> sys.stderr, "--threads    <int>                  maximum number of threads [default: number of provided assemblies]"
         print >> sys.stderr, "--gage                              this flag starts QUAST in \"GAGE mode\""
         print >> sys.stderr, "--contig-thresholds   <int,int,..>  comma-separated list of contig length thresholds [default: %s]" % qconfig.contig_thresholds
         print >> sys.stderr, "--genemark-thresholds <int,int,..>  comma-separated list of threshold lengths of genes to search with GeneMark [default is %s]" % qconfig.genes_lengths
@@ -80,10 +80,10 @@ def usage():
         print >> sys.stderr, "-R           <filename>      reference genome file"
         print >> sys.stderr, "-G/--genes   <filename>      annotated genes file"
         print >> sys.stderr, "-O/--operons <filename>      annotated operons file"
-        print >> sys.stderr, "-M  --min-contig             lower threshold for contig length [default: %s]" % qconfig.min_contig
+        print >> sys.stderr, "-M  --min-contig <int>       lower threshold for contig length [default: %s]" % qconfig.min_contig
         print >> sys.stderr, "-t  --contig-thresholds      comma-separated list of contig length thresholds [default: %s]" % qconfig.contig_thresholds
         print >> sys.stderr, "-e  --genemark-thresholds    comma-separated list of threshold lengths of genes to search with GeneMark [default: %s]" % qconfig.genes_lengths
-        print >> sys.stderr, "-T  --threads                maximum number of threads [default: number of provided assemblies]"
+        print >> sys.stderr, "-T  --threads    <int>       maximum number of threads [default: number of provided assemblies]"
         print >> sys.stderr, ""
         print >> sys.stderr, 'Options without arguments'
         print >> sys.stderr, "-s  --scaffolds              this flag informs QUAST that provided assemblies are scaffolds"

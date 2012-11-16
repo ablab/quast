@@ -1,5 +1,12 @@
 -- Version history --
 
+1.3 - QUAST is now a multi-threaded tool: the most time-consuming step (alignment to 
+      a reference genome) is computing in parallel now. Added GeneMark version for MacOS. 
+      Significally improved HTML-reports. Added more informative error messages. Added simple
+      logic for evaluating scaffolds. Added new metrics (duplication ration, largest alignment).
+      Added more careful counting of misassemblies. Min contig threshold changed from 200 to 500.
+      Fixed several bugs.    
+
 1.2 - Added indels and N's counting. Added more detailed statistics on misassemblies
       (classification in inversions, relocations, translocations, local misassemblies).
       Added more detailed statistics on partially unaligned contigs. Text reports now

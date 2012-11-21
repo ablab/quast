@@ -5,9 +5,11 @@
 ############################################################################
 
 import os
+import shutil
 import subprocess
 from libs import reporting
 from qutils import id_to_str
+import qconfig
 
 
 def do(reference, contigs, output_dirpath, min_contig, lib_dir):
@@ -39,6 +41,12 @@ def do(reference, contigs, output_dirpath, min_contig, lib_dir):
                             reporting.Fields.GAGE_MAXCORCOTING, reporting.Fields.GAGE_CORN50]
 
     tmp_dir = gage_results_path + '/tmp/'
+    if qconfig.debug:
+        if not os.path.isdir(tmp_dir):
+            os.makedirs(tmp_dir)
+    elif os.path.isdir(tmp_dir):
+        shutil.rmtree(tmp_dir)
+
     for id, filename in enumerate(contigs):
         report = reporting.get(filename)
         print ' ', id_to_str(id) + os.path.basename(filename), '...'

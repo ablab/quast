@@ -1,10 +1,10 @@
 
 function buildTotalReport(assembliesNames, report, date, minContig, glossary, qualities, mainMetrics) {
-    $('#subheader').html('<div>' + date + '.<br><br></div>');
-    $('#mincontig').append('<div>Contigs shorter than ' + minContig + "<span class='rhs'>&nbsp;</span>" + 'bp were skipped.</div>');
+    $('#subheader').html('<p>' + date + '</p>');
+    $('#mincontig').append('<p>Contigs shorter than ' + minContig + "<span class='rhs'>&nbsp;</span>" + 'bp were skipped</p>');
     $('#extended_link').append('<a class="dotted-link" id="extended_report_link">Extended report</a>');
     $('#extended_report_link').click(function() {
-        $('.row_hidden').fadeToggle('fast');
+        $('.content-row.row_hidden').fadeToggle('fast');
 
         var link = $('#extended_report_link');
         if (link.html() == 'Extended report') {
@@ -47,8 +47,6 @@ function buildTotalReport(assembliesNames, report, date, minContig, glossary, qu
 
             var trClass = 'content-row';
             if (metric.isMain || $.inArray(metricName, mainMetrics) > -1) {
-                trClass = 'content-row';
-
                 (function(group_n) {
                     var id = '#group_' + group_n;
                     $(function() {
@@ -56,7 +54,7 @@ function buildTotalReport(assembliesNames, report, date, minContig, glossary, qu
                     });
                 })(group_n);
             } else {
-                trClass = 'row_hidden';
+                trClass = 'content-row row_hidden';
             }
 
             table +=

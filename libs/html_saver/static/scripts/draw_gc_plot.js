@@ -35,7 +35,7 @@ var gc = {
     log_scale_el: log_scale_a,
 
     draw: function(name, colors, filenames, listsOfGCInfo, reflen,
-        placeholder, legendPlaceholder, glossary, scalePlaceholder) {
+                   placeholder, legendPlaceholder, glossary, scalePlaceholder) {
         $(scalePlaceholder).html(
             "<div id='change-scale' style='margin-right: 3px; visibility: hidden;'>" +
                 "<span id='normal_scale_label'>" +
@@ -206,7 +206,7 @@ function showInLogarithmicScaleWithData(series, colors) {
     }
 
     gc.yAxisLabeled = false;
-    
+
     gc.plot = $.plot(gc.placeholder, series, {
             shadowSize: 0,
             colors: colors,

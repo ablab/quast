@@ -2,11 +2,10 @@
 <html lang="en">
 <head>
     <script type="text/javascript" src="/static/jquery-1.8.2.min.js"></script>
-    <script type="text/javascript" src="/static/flot/jquery.flot.js"></script>
+    <script type="text/javascript" src="/static/flot/jquery.flot.min.js"></script>
     <script type="text/javascript" src="/static/flot/jquery.flot.dashes.js"></script>
     <!–[if lte IE 8]><script type="text/javascript" src="/static/flot/excanvas.min.js"></script><![endif]–>
 
-    <script type="text/javascript" src="/static/scripts/lighter_darker.js"></script>
     <script type="text/javascript" src="/static/scripts/hsvToRgb.js"></script>
     <script type="text/javascript" src="/static/scripts/utils.js"></script>
     <script type="text/javascript" src="/static/scripts/build_total_report.js"></script>
@@ -16,10 +15,9 @@
     <script type="text/javascript" src="/static/scripts/draw_genes_plot.js"></script>
     <script type="text/javascript" src="/static/scripts/build_report.js"></script>
 
-    <link rel="stylesheet" href="/static/bootstrap/bootstrap.min.css"/>
     <!-- Le HTML5 shim, for IE6-8 support of HTML5 elements -->
     <!--[if lt IE 9]>
-        <script type="text/javascript" src="/static/ie_html5.js"></script>
+    <script type="text/javascript" src="/static/ie_html5.js"></script>
     <![endif]-->
 
     <script type="text/javascript">
@@ -51,90 +49,90 @@
 </head>
 
 <body>
-    <div class="content">
-        <div id='header'>
-            <span style='font-size: 1.5em;'><span class='smallcapitals'>QUAST</span> report</span><br><br>
-            <span id='subheader'>Loading...</span>
-            <span id='mincontig'></span>
-            <br><br>
-            <span id="extended_link"></span>
+<div class="content">
+    <div id='header'>
+        <span style='font-size: 1.5em;'><span class='smallcapitals'>QUAST</span> report</span><br><br>
+        <span id='subheader'>Loading...</span>
+        <span id='mincontig'></span>
+        <br><br>
+        <span id="extended_link"></span>
+    </div>
+
+    <noscript>
+        <div style="margin-left: 0px;">
+            Unfortunately, <span style="font-weight: bold">JavaScript</span> in your
+            browser <span style="font-weight: bold">is disabled</span> or is not supported.</br>
+            We need JavaScript to build report and plots.
+        </div>
+    </noscript>
+
+    <div class='report-and-plots'>
+        <div id='report'>
         </div>
 
-        <noscript>
-            <div style="margin-left: 0px;">
-                Unfortunately, <span style="font-weight: bold">JavaScript</span> in your
-                browser <span style="font-weight: bold">is disabled</span> or is not supported.</br>
-                We need JavaScript to build report and plots.
+        <div class='plots'>
+            <table style='margin: -3px;'>
+                <tr id='all-switches'>
+                    <td>
+                        <div id='plots-switches'></div>
+                    </td>
+                    <td style='text-align: right; padding-right: 22px;'>
+                        <span id='scale-placeholder'></span>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2">
+                        <div id='plot-placeholder' style=''></div>
+                    </td>
+                    <td>
+                        <div id='legend-placeholder'></div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <p id="contigs_are_ordered">Contigs are ordered from largest (contig #1) to smallest.</p>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <div style="clear: left"></div>
+        <div style="clear: right"></div>
+
+        <div class='json-code'>
+            <div id='total-report-json'>
+                {{ totalReport }}
             </div>
-        </noscript>
-
-        <div class='report-and-plots'>
-            <div id='report'>
+            <div id='qualities-json'>
+                {{ qualities }}
+            </div>
+            <div id='main-metrics-json'>
+                {{ mainMetrics }}
             </div>
 
-            <div class='plots'>
-                <table style='margin: -3px;'>
-                    <tr id='all-switches'>
-                        <td>
-                            <div id='plots-switches'></div>
-                        </td>
-                        <td style='text-align: right; padding-right: 22px;'>
-                            <span id='scale-placeholder'></span>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td colspan="2">
-                            <div id='plot-placeholder' style=''></div>
-                        </td>
-                        <td>
-                            <div id='legend-placeholder'></div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <p id="contigs_are_ordered">Contigs are ordered from largest (contig #1) to smallest.</p>
-                        </td>
-                    </tr>
-                </table>
+            <div id="contigs-lengths-json">
+                {{ contigsLenghts }}
             </div>
-
-            <div style="clear: left"></div>
-            <div style="clear: right"></div>
-
-            <div class='json-code'>
-                <div id='total-report-json'>
-                    {{ totalReport }}
-                </div>
-                <div id='qualities-json'>
-                    {{ qualities }}
-                </div>
-                <div id='main-metrics-json'>
-                    {{ mainMetrics }}
-                </div>
-
-                <div id="contigs-lengths-json">
-                    {{ contigsLenghts }}
-                </div>
-                <div id='aligned-contigs-lengths-json'>
-                    {{ alignedContigsLengths }}
-                </div>
-                <div id='assemblies-lengths-json'>
-                    {{ assembliesLengths }}
-                </div>
-                <div id='reference-length-json'>
-                    {{ referenceLength }}
-                </div>
-                <div id='genes-in-contigs-json'>
-                    {{ genesInContigs }}
-                </div>
-                <div id='operons-in-contigs-json'>
-                    {{ operonsInContigs }}
-                </div>
-                <div id='gc-json'>
-                    {{ gcInfos }}
-                </div>
+            <div id='aligned-contigs-lengths-json'>
+                {{ alignedContigsLengths }}
+            </div>
+            <div id='assemblies-lengths-json'>
+                {{ assembliesLengths }}
+            </div>
+            <div id='reference-length-json'>
+                {{ referenceLength }}
+            </div>
+            <div id='genes-in-contigs-json'>
+                {{ genesInContigs }}
+            </div>
+            <div id='operons-in-contigs-json'>
+                {{ operonsInContigs }}
+            </div>
+            <div id='gc-json'>
+                {{ gcInfos }}
             </div>
         </div>
+    </div>
 
     <div class='json-code'>
         <div id='glossary-json'>

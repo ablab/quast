@@ -4,7 +4,7 @@ VERSION=`cat VERSION`
 NOW=$(date +"%d.%m.%Y_%H:%M")
 ARCHIVE_NAME=quast-$VERSION.tar.gz
 QUAST_FOLDER=quast-$VERSION
-SITE_PACKAGES=site-packages
+SITE_PACKAGES=libs/site_packages
 
 mkdir release
 mkdir release/$QUAST_FOLDER

@@ -16,35 +16,48 @@ __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file
 def get_real_path(relpath_in_html_saver):
     return os.path.join(__location__, relpath_in_html_saver)
 
+scripts_inserted = False
+
 report_fname = 'report.html'
+
 template_fpath = get_real_path('template.html')
+
 static_dirname = 'static'
 static_dirpath = get_real_path(static_dirname)
+
 aux_dirname = 'report_html_aux'
-scripts_inserted = False
 aux_files = [
-    'static/jquery-1.8.2.min.js'
-    'static/flot/jquery.flot.min.js'
-    'static/flot/excanvas.min.js'
-    'static/flot/jquery.flot.dashes.js'
-    'static/scripts/build_total_report.js'
-    'static/scripts/draw_cumulative_plot.js'
-    'static/scripts/draw_nx_plot.js'
-    'static/scripts/draw_gc_plot.js'
-    'static/scripts/utils.js'
-    'static/scripts/hsvToRgb.js'
-    'static/scripts/draw_genes_plot.js'
-    'static/scripts/build_report.js'
-    'static/ie_html5.js'
-    'static/bootstrap-tooltip-5px-lower.min.js'
-    'static/report.css'
-    'static/common.css'
-]
+    'jquery-1.8.2.min.js',
+    'flot/jquery.flot.min.js',
+    'flot/excanvas.min.js',
+    'flot/jquery.flot.dashes.js',
+    'scripts/build_total_report.js',
+    'scripts/draw_cumulative_plot.js',
+    'scripts/draw_nx_plot.js',
+    'scripts/draw_gc_plot.js',
+    'scripts/utils.js',
+    'scripts/hsvToRgb.js',
+    'scripts/draw_genes_plot.js',
+    'scripts/build_report.js',
+    'ie_html5.js',
+    'bootstrap/bootstrap-tooltip-5px-lower.min.js',
+    'report.css',
+    'common.css',
+    ]
 
 def init(results_dirpath):
 #    shutil.copy(template_fpath,     os.path.join(results_dirpath, report_fname))
     aux_dirpath = os.path.join(results_dirpath, aux_dirname)
-    shutil.copytree(static_dirpath, aux_dirpath)
+    os.mkdir(aux_dirpath)
+    os.mkdir(aux_dirpath + '/flot')
+    os.mkdir(aux_dirpath + '/scripts')
+    os.mkdir(aux_dirpath + '/bootstrap')
+
+    for aux_f_relpath in aux_files:
+        src = os.path.join(static_dirpath, aux_f_relpath)
+        dst = os.path.join(aux_dirpath, aux_f_relpath)
+        shutil.copyfile(src, dst)
+
     with open(template_fpath) as template_file:
         html = template_file.read()
         html = html.replace("/" + static_dirname, aux_dirname)

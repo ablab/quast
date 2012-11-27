@@ -335,7 +335,7 @@ def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_
     unaligned_filename = nucmerfilename + '.unaligned'
     snps_filename = nucmerfilename + '.snps'
     nucmer_report_filename = nucmerfilename + '.report'
-    plantafile = open(logfilename_out, 'a')
+    plantafile = open(logfilename_out, 'w')
 
     print >> plantafile, 'Aligning contigs to reference...'
 
@@ -345,7 +345,8 @@ def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_
     if (os.path.isfile(nucmer_successful_check_filename) and os.path.isfile(coords_filename)
         and os.path.isfile(nucmer_report_filename)):
 
-        if open(nucmer_successful_check_filename).read().split('\n')[1].strip() == str(qconfig.min_contig):
+        successful_check_content = open(nucmer_successful_check_filename).read().split('\n')
+        if len(successful_check_content) > 2 and successful_check_content[1].strip() == str(qconfig.min_contig):
             print >> plantafile, '\tUsing existing Nucmer alignments...'
             print '  ' + id_to_str(id) + 'Using existing Nucmer alignments... '
             using_existing_alignments = True

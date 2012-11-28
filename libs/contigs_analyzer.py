@@ -420,6 +420,8 @@ def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_
     sum_idy = 0.0
     num_idy = 0
     for line in coords_file:
+        if line.strip() == '':
+            break
         assert line[0] != '='
         #Clear leading spaces from nucmer output
         #Store nucmer lines in an array

@@ -190,6 +190,8 @@ def do(reference, filenames, nucmer_dir, output_dir, genes_filename, operons_fil
             files_operons_in_contigs[filename].append(0)
 
         for line in coordfile:
+            if line.strip() == '':
+                break
             s1 = int(line.split('|')[0].split()[0])
             e1 = int(line.split('|')[0].split()[1])
             contig_name = line.split()[-1].strip()

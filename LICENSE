@@ -42,7 +42,7 @@ appropriate licensing to use this module in QUAST.
 For more details about GeneMarkS please refer to 
 http://exon.gatech.edu/genemarks.cgi website and to the following paper:
 
-Lukashin, A.V. and Borodovsky, M. (1998). GeneMark. hmm: new solutions for gene
+Lukashin, A.V. and Borodovsky, M. (1998). GeneMark.hmm: New solutions for gene
 finding. Nucleic Acids Res, 26(4), 1107-1115.
 
 2. GAGE scripts was provided by GAGE team and also modified by QUAST team. 

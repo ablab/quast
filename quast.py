@@ -324,7 +324,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
                 pat = "(%s)" % "|".join( map(re.escape, dic.keys()) )
                 corr_seq = re.sub(pat, lambda m:dic[m.group()], seq)
                 modified_fasta_entries.append((corr_name, corr_seq))
-        fastaparser.write_fasta_to_file(corr_fpath, modified_fasta_entries)
+        fastaparser.write_fasta(corr_fpath, modified_fasta_entries)
 
         print '  %s ==> %s' % (contigs_fpath, os.path.basename(corr_fpath))
         new_contigs_fpaths.append(os.path.join(__location__, corr_fpath))
@@ -415,7 +415,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
                 add_empty_predicted_genes_fields()
             else:
                 from libs import genemark
-                genemark.run(contigs_fpaths, qconfig.genes_lengths, output_dirpath + '/predicted_genes', lib_dir)
+                genemark.do(contigs_fpaths, qconfig.genes_lengths, output_dirpath + '/predicted_genes', lib_dir)
 
         else:
             add_empty_predicted_genes_fields()

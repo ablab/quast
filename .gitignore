@@ -21,4 +21,4 @@ run_test_data/results/*
 
 libs/html_saver/reports-scripts-old
 
-libs/test_genemark/*
+run_test_data/genemark_out/*

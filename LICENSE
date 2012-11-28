@@ -33,7 +33,7 @@ Contact:
 
 Third-party tools incorporated into QUAST:
 
-1. GeneMarkS gene prediction software was kindly provided by Mark Borodovsky and
+1. GeneMark.hmm gene prediction software was kindly provided by Mark Borodovsky and
 Georgia Institute of Technology. Please, see License Agreement in the file
 libs/genemark_suite_linux_64/gmsuite/LICENSE or online at
 http://exon.gatech.edu/GeneMark/license_download.cgi. If you are not academic, not
@@ -42,9 +42,8 @@ appropriate licensing to use this module in QUAST.
 For more details about GeneMarkS please refer to 
 http://exon.gatech.edu/genemarks.cgi website and to the following paper:
 
-Besemer, J., Lomsadze, A., and Borodovsky, M. (2001). GeneMarkS: a self-training
-method for prediction of gene starts in microbial genomes. Implications for finding
-sequence motifs in regulatory regions. Nucleic Acids Res, 29(12), 2607–2618.
+Lukashin, A.V. and Borodovsky, M. (1998). GeneMark. hmm: new solutions for gene
+finding. Nucleic Acids Res, 26(4), 1107-1115.
 
 2. GAGE scripts was provided by GAGE team and also modified by QUAST team. 
 They can be distributed and used in QUAST pipeline with current remarks and 

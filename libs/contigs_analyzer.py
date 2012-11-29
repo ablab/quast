@@ -357,7 +357,7 @@ def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_
         # GAGE params of Nucmer
         #subprocess.call(['nucmer', '--maxmatch', '-p', nucmerfilename, '-l', '30', '-banded', reference, filename],
         #    stdout=open(logfilename_out, 'a'), stderr=logfile_err, env=myenv)
-        subprocess.call(['nucmer', '--maxmatch', '-p', nucmerfilename, reference, filename],
+        subprocess.call(['nucmer', '-c', str(qconfig.mincluster), '--maxmatch', '-p', nucmerfilename, reference, filename],
              stdout=open(logfilename_out, 'a'), stderr=logfile_err, env=myenv)
 
         # Filtering by IDY% = 95 (as GAGE did)

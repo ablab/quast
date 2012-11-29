@@ -146,7 +146,7 @@ def correct_fasta(original_fpath, corrected_fpath, is_reference=False):
             if re.compile(r'[^ACGTN]').search(corr_seq):
                 return False
             modified_fasta_entries.append((corr_name, corr_seq))
-    fastaparser.write_fasta_to_file(corrected_fpath, modified_fasta_entries)
+    fastaparser.write_fasta(corrected_fpath, modified_fasta_entries)
     return True
 
 
@@ -440,7 +440,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
                 splitted_fasta.append((name.split()[0] + "_" + str(cur_contig_number), seq[cur_contig_start:]))
                 contigs_counter += cur_contig_number
 
-            fastaparser.write_fasta_to_file(splitted_path, splitted_fasta)
+            fastaparser.write_fasta(splitted_path, splitted_fasta)
             print "  %d scaffolds (%s) were broken into %d contigs (%s)" \
                   % (id + 1, os.path.basename(corr_fpath), contigs_counter, os.path.basename(splitted_path))
             if handle_fasta(splitted_path, splitted_path):

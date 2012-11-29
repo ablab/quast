@@ -25,3 +25,4 @@ libs/test_parallel.py
 
 test_data/contigs.fasta
 test_data/reference_10K.fasta
+run_test_data/genemark_out/*

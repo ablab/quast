@@ -1126,7 +1126,7 @@ def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_
     ## outputting misassembled contigs to separate file
     fasta = [(name, seq) for name, seq in fastaparser.read_fasta(filename) if
                          name in extensive_misassembled_contigs]
-    fastaparser.write_fasta_to_file(output_dir + '/' + os.path.basename(filename) + '.mis_contigs', fasta)
+    fastaparser.write_fasta(output_dir + '/' + os.path.basename(filename) + '.mis_contigs', fasta)
 
     plantafile.close()
     logfile_err.close()

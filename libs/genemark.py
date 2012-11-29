@@ -15,10 +15,6 @@ from libs import reporting
 from libs.fastaparser import read_fasta, write_fasta
 from qutils import id_to_str
 
-class Gene(object):
-    def __init__(self, ):
-        pass
-
 def gc_content(sequence):
     GC_count = sequence.count('G') + sequence.count('C')
     length = len(sequence) - sequence.count('N')
@@ -117,7 +113,7 @@ def gmhmm_p_everyGC(tool_dir, fasta_path, out_name, gene_lengths, err_path):
             curr_out.write(id + '\n' + seq)
 
     genes = []
-    _ , _, file_names = next(os.walk(work_dir))
+    _ , _, file_names = os.walk(work_dir).next()
     for file_name in file_names:
         file_path = os.path.join(work_dir, file_name)
         file_out = file_path + '.gmhmm'
@@ -179,7 +175,6 @@ def do(fasta_pathes, gene_lengths, out_dir, lib_dir):
 
         report.add_field(reporting.Fields.GENEMARKUNIQUE, unique)
         report.add_field(reporting.Fields.GENEMARK, cnt)
-        print cnt
 
         print '  Done'
 

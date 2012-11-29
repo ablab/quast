@@ -534,6 +534,13 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
     ########################################################################
     ### TOTAL REPORT
     ########################################################################
+
+    # changing names of assemblies to more human-readable versions if provided
+    if qconfig.legend_names and len(contigs_fpaths) == len(qconfig.legend_names):
+        for id, contigs_fpath in enumerate(contigs_fpaths):
+            report = reporting.get(contigs_fpath)
+            report.add_field(reporting.Fields.NAME, qconfig.legend_names[id])
+
     reporting.save_total(output_dirpath)
 
     if json_outputpath:

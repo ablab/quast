@@ -7,6 +7,7 @@
 import os
 import itertools
 from libs import fastaparser
+from libs import qconfig
 
 # Supported plot formats: .emf, .eps, .pdf, .png, .ps, .raw, .rgba, .svg, .svgz
 #plots_format = '.svg'
@@ -110,9 +111,10 @@ def cumulative_plot(reference, filenames, lists_of_lengths, plot_filename, title
     ax.set_position([box.x0, box.y0 + box.height * 0.2, box.width, box.height * 0.8])
 
     legend_list = map(os.path.basename, filenames)
+    if qconfig.legend_names and len(filenames) == len(qconfig.legend_names):
+        legend_list = qconfig.legend_names[:]
     if reference:
         legend_list += ['Reference']
-
     # Put a legend below current axis
     try: # for matplotlib <= 2009-12-09
         ax.legend(legend_list, loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True,
@@ -193,9 +195,13 @@ def Nx_plot(filenames, lists_of_lengths, plot_filename, title='Nx', reference_le
     # Shink current axis's height by 20% on the bottom
     box = ax.get_position()
     ax.set_position([box.x0, box.y0 + box.height * 0.2, box.width, box.height * 0.8])
+
+    legend_list = map(os.path.basename, filenames)
+    if qconfig.legend_names and len(filenames) == len(qconfig.legend_names):
+        legend_list = qconfig.legend_names[:]
     # Put a legend below current axis
     try: # for matplotlib <= 2009-12-09
-        ax.legend(map(os.path.basename, filenames), loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True,
+        ax.legend(legend_list, loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True,
             shadow=True, ncol=n_columns)
     except ZeroDivisionError:
         pass
@@ -291,7 +297,11 @@ def GC_content_plot(reference, filenames, lists_of_GC_info, plot_filename, all_p
     ax.set_position([box.x0, box.y0 + box.height * 0.2, box.width, box.height * 0.8])
     # Put a legend below current axis
     legend_list = map(os.path.basename, allfilenames)
-    if reference:
+    if qconfig.legend_names and len(filenames) == len(qconfig.legend_names):
+        legend_list = qconfig.legend_names[:]
+        if reference:
+            legend_list += ['Reference']
+    elif reference:
         legend_list[-1] = 'Reference'
     try: # for matplotlib <= 2009-12-09
         ax.legend(legend_list, loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True,
@@ -374,12 +384,16 @@ def genes_operons_plot(reference_value, filenames, files_feature_in_contigs, plo
     ax.set_position([box.x0, box.y0 + box.height * 0.2, box.width, box.height * 0.8])
 
     legend_list = map(os.path.basename, filenames)
+    if qconfig.legend_names and len(filenames) == len(qconfig.legend_names):
+        legend_list = qconfig.legend_names[:]
     if reference_value:
         legend_list += ['Reference']
-
     # Put a legend below current axis
-    ax.legend(legend_list, loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True,
-        shadow=True, ncol=4)
+    try: # for matplotlib <= 2009-12-09
+        ax.legend(legend_list, loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True,
+            shadow=True, ncol=n_columns)
+    except ZeroDivisionError:
+        pass
 
     xLocator, yLocator = get_locators()
     ax.yaxis.set_major_locator(yLocator)
@@ -453,9 +467,13 @@ def histogram(filenames, values, plot_filename, title='', all_pdf=None, yaxis_ti
     box = ax.get_position()
     ax.set_position([box.x0, box.y0 + box.height * 0.2, box.width, box.height * 0.8])
     ax.yaxis.grid(with_grid)
+
+    legend_list = map(os.path.basename, filenames)
+    if qconfig.legend_names and len(filenames) == len(qconfig.legend_names):
+        legend_list = qconfig.legend_names[:]
     # Put a legend below current axis
     try: # for matplotlib <= 2009-12-09
-        ax.legend(map(os.path.basename, filenames), loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True,
+        ax.legend(legend_list, loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True,
             shadow=True, ncol=n_columns)
     except ZeroDivisionError:
         pass

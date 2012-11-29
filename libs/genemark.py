@@ -15,10 +15,6 @@ from libs import reporting
 from libs.fastaparser import read_fasta, write_fasta
 from qutils import id_to_str
 
-class Gene(object):
-    def __init__(self, ):
-        pass
-
 def gc_content(sequence):
     GC_count = sequence.count('G') + sequence.count('C')
     length = len(sequence) - sequence.count('N')
@@ -179,7 +175,6 @@ def do(fasta_pathes, gene_lengths, out_dir, lib_dir):
 
         report.add_field(reporting.Fields.GENEMARKUNIQUE, unique)
         report.add_field(reporting.Fields.GENEMARK, cnt)
-        print cnt
 
         print '  Done'
 

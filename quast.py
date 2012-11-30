@@ -87,6 +87,7 @@ def usage():
         print >> sys.stderr, "-e  --genemark-thresholds    comma-separated list of threshold lengths of genes to search with GeneMark [default: %s]" % qconfig.genes_lengths
         print >> sys.stderr, "-T  --threads    <int>       maximum number of threads [default: number of provided assemblies]"
         print >> sys.stderr, "-c  --mincluster <int>       Nucmer's parameter -- the minimum length of a cluster of matches [default: %s]" % qconfig.mincluster
+        print >> sys.stderr, "-r  --est-ref-size <int>     Estimated reference size (for calculating NG)"
         print >> sys.stderr, ""
         print >> sys.stderr, 'Options without arguments'
         print >> sys.stderr, "-s  --scaffolds              this flag informs QUAST that provided assemblies are scaffolds"
@@ -224,6 +225,9 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
 
         elif opt in ('-c', "--mincluster"):
             qconfig.mincluster = int(arg)
+
+        elif opt in ('-r', "--est-ref-size"):
+            qconfig.estimated_reference_size = int(arg)
 
         elif opt in ('-e', "--genemark-thresholds"):
             qconfig.genes_lengths = arg

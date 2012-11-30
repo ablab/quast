@@ -61,6 +61,13 @@ def do(reference, filenames, output_dir, all_pdf, draw_plots, json_output_dir, r
         reference_length = sum(fastaparser.get_lengths_from_fastafile(reference))
         reference_GC, reference_GC_info = GC_content(reference)
 
+        print 'Reference genome:'
+        print ' ', reference, ', Reference length =', int(reference_length), ', Reference GC % =', '%.2f' % reference_GC
+    elif qconfig.estimated_reference_size:
+        reference_length = qconfig.estimated_reference_size
+        print 'Estimated reference length = ', reference_length
+
+    if reference_length:
         # Saving the reference in JSON
         if json_output_dir:
             json_saver.save_reference_length(json_output_dir, reference_length)
@@ -69,9 +76,6 @@ def do(reference, filenames, output_dir, all_pdf, draw_plots, json_output_dir, r
         if qconfig.html_report:
             from libs.html_saver import html_saver
             html_saver.save_reference_length(results_dir, reference_length)
-
-        print 'Reference genome:'
-        print ' ', reference, ', Reference length =', int(reference_length), ', Reference GC % =', '%.2f' % reference_GC
 
     print 'Contigs files: '
     lists_of_lengths = []
@@ -105,11 +109,11 @@ def do(reference, filenames, output_dir, all_pdf, draw_plots, json_output_dir, r
         report = reporting.get(filename)
         n50, l50 = N50.N50_and_L50(lengths_list)
         ng50, lg50 = None, None
-        if reference:
+        if reference_length:
             ng50, lg50 = N50.NG50_and_LG50(lengths_list, reference_length)
         n75, l75 = N50.N50_and_L50(lengths_list, 75)
         ng75, lg75 = None, None
-        if reference:
+        if reference_length:
             ng75, lg75 = N50.NG50_and_LG50(lengths_list, reference_length, 75)
         total_length = sum(lengths_list)
         total_GC, GC_info = GC_content(filename)
@@ -123,12 +127,12 @@ def do(reference, filenames, output_dir, all_pdf, draw_plots, json_output_dir, r
 
         report.add_field(reporting.Fields.N50, n50)
         report.add_field(reporting.Fields.L50, l50)
-        if reference:
+        if reference_length:
             report.add_field(reporting.Fields.NG50, ng50)
             report.add_field(reporting.Fields.LG50, lg50)
         report.add_field(reporting.Fields.N75, n75)
         report.add_field(reporting.Fields.L75, l75)
-        if reference:
+        if reference_length:
             report.add_field(reporting.Fields.NG75, ng75)
             report.add_field(reporting.Fields.LG75, lg75)
         report.add_field(reporting.Fields.NUMCONTIGS, len(lengths_list))
@@ -140,10 +144,11 @@ def do(reference, filenames, output_dir, all_pdf, draw_plots, json_output_dir, r
         if reference:
             report.add_field(reporting.Fields.REFLEN, int(reference_length))
             report.add_field(reporting.Fields.REFGC, '%.2f' %  reference_GC)
+        elif reference_length:
+            report.add_field(reporting.Fields.ESTREFLEN, int(reference_length))
 
     if json_output_dir:
         json_saver.save_GC_info(json_output_dir, filenames, lists_of_GC_info)
-
 
     if qconfig.html_report:
         from libs.html_saver import html_saver
@@ -166,5 +171,5 @@ def do(reference, filenames, output_dir, all_pdf, draw_plots, json_output_dir, r
         ########################################################################
         # Drawing Nx and NGx plots...
         plotter.Nx_plot(filenames, lists_of_lengths, output_dir + '/Nx_plot', 'Nx', [], all_pdf)
-        if reference:
+        if reference_length:
             plotter.Nx_plot(filenames, lists_of_lengths, output_dir + '/NGx_plot', 'NGx', [reference_length for i in range(len(filenames))], all_pdf)

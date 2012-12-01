@@ -34,11 +34,13 @@ with_gage = False
 cyclic = True
 only_best_alignments = False
 threads = None
+mincluster = 65
+estimated_reference_size = None
 
 long_options = "output-dir= save-json-to= genes= operons= reference= contig-thresholds= min-contig= " \
                "genemark-thresholds= save-json gage not-circular plain-report-no-plots help debug " \
-               "only-best-alignments scaffolds threads=".split()
-short_options = "o:G:O:R:t:M:e:J:jpgnhdsbT:"
+               "only-best-alignments scaffolds threads= mincluster= est-ref-size=".split()
+short_options = "o:G:O:R:t:M:e:J:jpgnhdsbT:c:r:"
 
 # other constants. Can't be changed by command-line options
 

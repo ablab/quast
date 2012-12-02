@@ -1,23 +1,29 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 ############################################################################
 # Copyright (c) 2011-2012 Saint-Petersburg Academic University
 # All Rights Reserved
 # See file LICENSE for details.
 ############################################################################
+import gzip
 
 import sys
+import bz2
 import os
 import shutil
 import re
 import getopt
 import subprocess
 from site import addsitedir
-
+import zipfile
+from libs.qutils import uncompress
 
 __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
 
 addsitedir(os.path.join(__location__, 'libs/site_packages'))
+
+import simplejson as json
+
 
 #sys.path.append(os.path.join(os.path.abspath(sys.path[0]), 'libs'))
 #sys.path.append(os.path.join(os.path.abspath(sys.path[0]), '../spades_pipeline'))
@@ -96,7 +102,8 @@ def usage():
         print >> sys.stderr, '-b  --only-best-alignments   QUAST use only one alignment of contigs covering repeats (ambiguous)'
         print >> sys.stderr, "-j  --save-json              save the output also in the JSON format"
         print >> sys.stderr, "-J  --save-json-to <path>    save the JSON-output to a particular path"
-        print >> sys.stderr, "-p  --plain-report-no-plots  plain text report only, don't draw plots (to make quast faster)"
+        print >> sys.stderr, "`   --no-html                don't build html report"
+        print >> sys.stderr, "`   --no-plots               don't draw plots (to make quast faster)"
         print >> sys.stderr, ""
         print >> sys.stderr, "-d  --debug                  run in debug mode"
         print >> sys.stderr, "-h  --help                   print this usage message"
@@ -252,8 +259,11 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
         elif opt in ('-b', "--only-best-alignments"):
             qconfig.only_best_alignments = True
 
-        elif opt in ('-p', '--plain-report-no-plots'):
+        elif opt == '--no-plots':
             qconfig.draw_plots = False
+
+        elif opt == '--no-html':
+            qconfig.html_report = False
 
         elif opt in ('-d', "--debug"):
             qconfig.debug = True
@@ -268,13 +278,13 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
     for c_fpath in contigs_fpaths:
         assert_file_exists(c_fpath, 'contigs')
 
-#    old_contigs_fpaths = contigs_fpaths[:]
-#    contigs_fpaths = []
-#    for old_c_fpath in old_contigs_fpaths:
-#        contigs_fpaths.append(rename_file_for_nucmer(old_c_fpath))
+    #    old_contigs_fpaths = contigs_fpaths[:]
+    #    contigs_fpaths = []
+    #    for old_c_fpath in old_contigs_fpaths:
+    #        contigs_fpaths.append(rename_file_for_nucmer(old_c_fpath))
 
-#    # For renaming back: contigs_fpaths are to be changed further.
-#    new_contigs_fpaths = contigs_fpaths[:]
+    #    # For renaming back: contigs_fpaths are to be changed further.
+    #    new_contigs_fpaths = contigs_fpaths[:]
 
 
     qconfig.contig_thresholds = map(int, qconfig.contig_thresholds.split(","))
@@ -369,11 +379,14 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
         corrected_and_unziped_reference_fname = corrected_fname_for_nucmer(corrected_and_unziped_reference_fname)
         # unzipping (if needed)
 
-        corrected_and_unziped_reference_file = open(corrected_and_unziped_reference_fname, 'w')
-        if ref_extension == ".gz":
-            subprocess.call(['gunzip', qconfig.reference, '-c'], stdout=corrected_and_unziped_reference_file)
+        if uncompress(qconfig.reference, corrected_and_unziped_reference_fname, sys.stderr):
             qconfig.reference = corrected_and_unziped_reference_fname
-        corrected_and_unziped_reference_file.close()
+
+        #        corrected_and_unziped_reference_file = open(corrected_and_unziped_reference_fname, 'w')
+#        if ref_extension == ".gz":
+#            subprocess.call(['gunzip', qconfig.reference, '-c'], stdout=corrected_and_unziped_reference_file)
+#            qconfig.reference = corrected_and_unziped_reference_fname
+#        corrected_and_unziped_reference_file.close()
 
         # correcting
         if not correct_fasta(qconfig.reference, corrected_and_unziped_reference_fname, True):
@@ -449,7 +462,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
                 contigs_counter += cur_contig_number
 
             fastaparser.write_fasta(splitted_path, splitted_fasta)
-            print "  %d scaffolds (%s) were broken into %d contigs (%s)" \
+            print "  %d scaffolds (%s) were broken into %d contigs (%s)"\
                   % (id + 1, os.path.basename(corr_fpath), contigs_counter, os.path.basename(splitted_path))
             if handle_fasta(splitted_path, splitted_path):
                 new_contigs_fpaths.append(os.path.join(__location__, splitted_path))
@@ -488,7 +501,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
     ########################################################################
     from libs import basic_stats
     basic_stats.do(qconfig.reference, contigs_fpaths, output_dirpath + '/basic_stats', all_pdf, qconfig.draw_plots,
-        json_outputpath, output_dirpath)
+                   json_outputpath, output_dirpath)
 
     aligned_fpaths = []
     if qconfig.reference:
@@ -509,14 +522,14 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
         ########################################################################
         from libs import aligned_stats
         aligned_stats.do(qconfig.reference, aligned_fpaths, output_dirpath + '/contigs_reports',
-            output_dirpath + '/aligned_stats', all_pdf, qconfig.draw_plots, json_outputpath, output_dirpath)
+                         output_dirpath + '/aligned_stats', all_pdf, qconfig.draw_plots, json_outputpath, output_dirpath)
 
         ########################################################################
         ### GENOME_ANALYZER
         ########################################################################
         from libs import genome_analyzer
         genome_analyzer.do(qconfig.reference, aligned_fpaths, output_dirpath + '/contigs_reports',
-            output_dirpath + '/genome_stats', qconfig.genes, qconfig.operons, all_pdf, qconfig.draw_plots, json_outputpath, output_dirpath)
+                           output_dirpath + '/genome_stats', qconfig.genes, qconfig.operons, all_pdf, qconfig.draw_plots, json_outputpath, output_dirpath)
 
     def add_empty_predicted_genes_fields():
         # TODO: make it nicer (not output predicted genes if annotations are provided

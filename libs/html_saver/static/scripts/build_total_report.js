@@ -4,7 +4,7 @@ function buildTotalReport(assembliesNames, report, date, minContig, glossary, qu
     $('#mincontig').append('<p>Contigs shorter than ' + minContig + "<span class='rhs'>&nbsp;</span>" + 'bp were skipped</p>');
     $('#extended_link').append('<a class="dotted-link" id="extended_report_link">Extended report</a>');
     $('#extended_report_link').click(function() {
-        $('.content-row.row_hidden').fadeToggle('fast');
+        $('.row_hidden').fadeToggle('fast');
 
         var link = $('#extended_report_link');
         if (link.html() == 'Extended report') {

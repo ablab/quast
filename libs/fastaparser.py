@@ -6,6 +6,9 @@
 
 import os
 import gzip
+import zipfile
+import bz2
+
 import itertools
 # There exists pyfasta package -- http://pypi.python.org/pypi/pyfasta/
 # Use it !
@@ -57,7 +60,20 @@ def read_fasta(filename):
     seq = ''
     name = ''
     file_ext = os.path.splitext(filename)[1]
-    fasta_file = gzip.open(filename) if file_ext == ".gz" else open(filename)
+    if file_ext == '.gz':
+        fasta_file = gzip.open(filename)
+    elif file_ext == '.bz2':
+        fasta_file = bz2.BZ2File(filename)
+    elif file_ext == '.zip':
+        zfile = zipfile.ZipFile(filename)
+        names = zfile.namelist()
+        if len(names) == 0:
+            raise IOError('Reading %s: zip archive is empty' % filename)
+        fasta_file = zfile.open(names[0])
+    else:
+        fasta_file = open(filename)
+
+#    fasta_file = gzip.open(filename) if file_ext == ".gz" else open(filename)
 
     for line in fasta_file:
         if line[0] == '>':

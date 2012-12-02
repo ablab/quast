@@ -372,21 +372,14 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
         shutil.rmtree(corrected_dirpath)
     os.mkdir(corrected_dirpath)
 
-    # if reference in .gz format we should unzip it
     if qconfig.reference:
         ref_basename, ref_extension = os.path.splitext(qconfig.reference)
         corrected_and_unziped_reference_fname = os.path.join(corrected_dirpath, os.path.basename(ref_basename))
         corrected_and_unziped_reference_fname = corrected_fname_for_nucmer(corrected_and_unziped_reference_fname)
-        # unzipping (if needed)
 
+        # unzipping (if needed)
         if uncompress(qconfig.reference, corrected_and_unziped_reference_fname, sys.stderr):
             qconfig.reference = corrected_and_unziped_reference_fname
-
-        #        corrected_and_unziped_reference_file = open(corrected_and_unziped_reference_fname, 'w')
-#        if ref_extension == ".gz":
-#            subprocess.call(['gunzip', qconfig.reference, '-c'], stdout=corrected_and_unziped_reference_file)
-#            qconfig.reference = corrected_and_unziped_reference_fname
-#        corrected_and_unziped_reference_file.close()
 
         # correcting
         if not correct_fasta(qconfig.reference, corrected_and_unziped_reference_fname, True):

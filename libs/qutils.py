@@ -4,6 +4,8 @@
 # See file LICENSE for details.
 ############################################################################
 
+from __future__ import with_statement
+
 assemblies_number = 0
 
 def id_to_str(id):

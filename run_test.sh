@@ -42,7 +42,7 @@ if [ $? -eq 1 ]; then exit 1; fi; echo; echo; $python_interpreter quast.py $cont
 if [ $? -eq 1 ]; then exit 1; fi; echo; echo; $python_interpreter quast.py $contigs_1K_1 $contigs_1K_2 -o $results_dir/c1k1_c1k2_R_G_O_gage 				 --gage 						-R $reference_1K -G $genes_ncbi_1K -O $operons_1K
 if [ $? -eq 1 ]; then exit 1; fi; echo; echo; $python_interpreter quast.py $contigs_1K_1 $contigs_1K_2 -o $results_dir/c1k1_c1k2_R_G_O_contig-thresholds 	 --contig-thresholds 200,500 	-R $reference_1K -G $genes_ncbi_1K -O $operons_1K
 if [ $? -eq 1 ]; then exit 1; fi; echo; echo; $python_interpreter quast.py $contigs_1K_1 $contigs_1K_2 -o $results_dir/c1k1_c1k2_R_G_O_genemark-thresholds   --genemark-thresholds 0,300 	-R $reference_1K
-if [ $? -eq 1 ]; then exit 1; fi; echo; echo; $python_interpreter quast.py $contigs_1K_1 $contigs_1K_2 -o $results_dir/c1k1_c1k2_R_G_O_not-circular 		 --not-circular 				-R $reference_1K -G $genes_ncbi_1K -O $operons_1K
+if [ $? -eq 1 ]; then exit 1; fi; echo; echo; $python_interpreter quast.py $contigs_1K_1 $contigs_1K_2 -o $results_dir/c1k1_c1k2_R_G_O_eukaryote  		 --eukaryote 				-R $reference_1K -G $genes_ncbi_1K -O $operons_1K
 if [ $? -eq 1 ]; then exit 1; fi; echo; echo; $python_interpreter quast.py $contigs_1K_1 $contigs_1K_2 -o $results_dir/c1k1_c1k2_R_G_O_j 	 			-R $reference_1K -G $genes_1K -O $operons_1K -j
 if [ $? -eq 1 ]; then exit 1; fi; echo; echo; $python_interpreter quast.py $contigs_1K_1 $contigs_1K_2 -o $results_dir/c1k1_c1k2_R_G_O_J-json_report 	-R $reference_1K -G $genes_1K -O $operons_1K -J $results_dir/c1k1_c1k2_R_G_O_J/json_report
 if [ $? -eq 1 ]; then exit 1; fi; echo; echo; $python_interpreter quast.py run_test_data/matched_unpaired.fasta -R run_test_data/not_matched_iter1_unpaired_longest.fasta

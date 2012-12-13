@@ -1,6 +1,6 @@
 <html>
 <head>
-    <title>QUAST 1.3 manual</title>
+    <title>QUAST 2.0 manual</title>
     <style type="text/css">
         body {
             margin-top: 30px;
@@ -16,7 +16,7 @@
     </style>
 </head>
 <body>
-<h1>QUAST 1.3 manual</h1>
+<h1>QUAST 2.0 manual</h1>
 
 <p>QUAST stands for <u>QU</u>ality <u>AS</u>sesment <u>T</u>ool. 
 QUAST evaluates genome assemblies by computing various metrics.
@@ -31,7 +31,7 @@ QUAST evaluates genome assemblies by computing various metrics.
     them separately.
     <br>
     <br>
-    QUAST version 1.3 was released under GPL v2 (see <a href="LICENSE">LICENSE</a> for details) on 16 November 2012.
+    QUAST version 2.0 was released under GPL v2 (see <a href="LICENSE">LICENSE</a> for details) on XX December 2012.
 </p>
 
 <a name="sec1"></a>
@@ -73,9 +73,9 @@ Or with <a href="http://peak.telecommunity.com/DevCenter/EasyInstall">Easy Insta
 </p>
 <pre  class="code">
 <code>
-    wget https://downloads.sourceforge.net/project/quast/quast-1.3.tar.gz
-    tar -xzf quast-1.3.tar.gz
-    cd quast-1.3
+    wget https://downloads.sourceforge.net/project/quast/quast-2.0.tar.gz
+    tar -xzf quast-2.0.tar.gz
+    cd quast-2.0
 </code>
 </pre>
 
@@ -207,9 +207,11 @@ We plan to increase the maximum available lengths (at least for references) in t
     of provided assemblies to the comparison. Assemblies are splitted by continuous fragments of N's of length &ge; 10.</p>
 
 <p>
-    <code>--not-circular</code>
+    <code>--eukaryote</code>
 </p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;This flag should be set if a genome is not circular (e.g., it is an eukaryote).</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;This flag should be set if a genome is an eukaryote. QUAST uses this information in gene finding module (prokaryotes and eukaryotes
+    have different specifics of genes) and in misassembly finding module (prokaryotes have circular chromosomes but FASTA file presents them in a linear way and
+    QUAST should detect misassemlies at the ends of a linear representation correctly).</p>
 
 <p>
     <code>--only-best-alignments</code>

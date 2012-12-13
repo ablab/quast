@@ -30,16 +30,16 @@ reference = ''
 genes = ''
 operons = ''
 with_gage = False
-cyclic = True
+prokaryote = True # former cyclic
 only_best_alignments = False
 threads = None
 mincluster = 65
 estimated_reference_size = None
 
 long_options = "output-dir= save-json-to= genes= operons= reference= contig-thresholds= min-contig= " \
-               "genemark-thresholds= save-json gage not-circular no-plots no-html help debug " \
+               "genemark-thresholds= save-json gage eukaryote no-plots no-html help debug " \
                "only-best-alignments scaffolds threads= mincluster= est-ref-size=".split()
-short_options = "o:G:O:R:t:M:e:J:jgnhdsbT:c:r:"
+short_options = "o:G:O:R:t:M:k:J:jgehdsbT:c:r:"
 
 
 # other constants. Can't be changed by command-line options

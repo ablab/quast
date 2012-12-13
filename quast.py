@@ -78,7 +78,7 @@ def usage():
         print >> sys.stderr, "--contig-thresholds   <int,int,..>  comma-separated list of contig length thresholds [default: %s]" % qconfig.contig_thresholds
         print >> sys.stderr, "--genemark-thresholds <int,int,..>  comma-separated list of threshold lengths of genes to search with GeneMark [default is %s]" % qconfig.genes_lengths
         print >> sys.stderr, "--scaffolds                         this flag informs QUAST that provided assemblies are scaffolds"
-        print >> sys.stderr, '--not-circular                      this flag should be set if the genome is not circular (e.g., it is an eukaryote)'
+        print >> sys.stderr, '--eukaryote                         this flag should be set if the genome is an eukaryote'
         print >> sys.stderr, '--only-best-alignments              this flag forces QUAST to use only one alignment of contigs covering repeats'
         print >> sys.stderr, ""
         print >> sys.stderr, "-h/--help           print this usage message"
@@ -90,7 +90,7 @@ def usage():
         print >> sys.stderr, "-O/--operons <filename>      annotated operons file"
         print >> sys.stderr, "-M  --min-contig <int>       lower threshold for contig length [default: %s]" % qconfig.min_contig
         print >> sys.stderr, "-t  --contig-thresholds      comma-separated list of contig length thresholds [default: %s]" % qconfig.contig_thresholds
-        print >> sys.stderr, "-e  --genemark-thresholds    comma-separated list of threshold lengths of genes to search with GeneMark [default: %s]" % qconfig.genes_lengths
+        print >> sys.stderr, "-k  --genemark-thresholds    comma-separated list of threshold lengths of genes to search with GeneMark [default: %s]" % qconfig.genes_lengths
         print >> sys.stderr, "-T  --threads    <int>       maximum number of threads [default: number of provided assemblies]"
         print >> sys.stderr, "-c  --mincluster <int>       Nucmer's parameter -- the minimum length of a cluster of matches [default: %s]" % qconfig.mincluster
         print >> sys.stderr, "-r  --est-ref-size <int>     Estimated reference size (for calculating NG)"
@@ -98,7 +98,7 @@ def usage():
         print >> sys.stderr, 'Options without arguments'
         print >> sys.stderr, "-s  --scaffolds              this flag informs QUAST that provided assemblies are scaffolds"
         print >> sys.stderr, '-g  --gage                   use Gage (results are in gage_report.txt)'
-        print >> sys.stderr, '-n  --not-circular           genome is not circular (e.g., it is an eukaryote)'
+        print >> sys.stderr, '-e  --eukaryote              genome is an eukaryote'
         print >> sys.stderr, '-b  --only-best-alignments   QUAST use only one alignment of contigs covering repeats (ambiguous)'
         print >> sys.stderr, "-j  --save-json              save the output also in the JSON format"
         print >> sys.stderr, "-J  --save-json-to <path>    save the JSON-output to a particular path"
@@ -236,7 +236,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
         elif opt in ('-r', "--est-ref-size"):
             qconfig.estimated_reference_size = int(arg)
 
-        elif opt in ('-e', "--genemark-thresholds"):
+        elif opt in ('-k', "--genemark-thresholds"):
             qconfig.genes_lengths = arg
 
         elif opt in ('-j', '--save-json'):
@@ -253,8 +253,8 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
         elif opt in ('-g', "--gage"):
             qconfig.with_gage = True
 
-        elif opt in ('-n', "--not-circular"):
-            qconfig.cyclic = False
+        elif opt in ('-e', "--eukaryote"):
+            qconfig.prokaryote = False
 
         elif opt in ('-b', "--only-best-alignments"):
             qconfig.only_best_alignments = True
@@ -502,7 +502,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
         ### former PLANTAKOLYA, PLANTAGORA
         ########################################################################
         from libs import contigs_analyzer
-        nucmer_statuses = contigs_analyzer.do(qconfig.reference, contigs_fpaths, qconfig.cyclic, output_dirpath + '/contigs_reports', lib_dir, qconfig.draw_plots)
+        nucmer_statuses = contigs_analyzer.do(qconfig.reference, contigs_fpaths, qconfig.prokaryote, output_dirpath + '/contigs_reports', lib_dir, qconfig.draw_plots)
         for contigs_fpath in contigs_fpaths:
             if nucmer_statuses[contigs_fpath] == contigs_analyzer.NucmerStatus.OK:
                 aligned_fpaths.append(contigs_fpath)

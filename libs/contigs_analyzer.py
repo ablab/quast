@@ -521,7 +521,7 @@ def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_
             top_aligns = []
             print >> plantafile, 'Top Length: %s  Top ID: %s' % (top_len, top_id)
 
-            #Check that top hit captures most of the contig (currently >97.5% or within 100 bases, former 99% and 10)
+            #Check that top hit captures most of the contig
             if top_len > ctg_len * epsilon or ctg_len - top_len < maxun:
                 #Reset top aligns: aligns that share the same value of longest and higest identity
                 top_aligns.append(sorted_aligns[0])
@@ -597,7 +597,8 @@ def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_
                 for i in xrange(1, num_aligns):
                     cur_group = (last_end - last_real.len2 + 1, last_end)
                     #If this alignment extends past last alignment's endpoint, add to real, else skip
-                    if sorted_aligns[i].s2 > last_end or sorted_aligns[i].e2 > last_end:
+                    extension = max(sorted_aligns[i].s2, sorted_aligns[i].e2) - last_end # negative if no extension
+                    if (extension > maxun) and (extension / min(sorted_aligns[i].len2, last_real.len2) > 1 - epsilon):
                         real_aligns = real_aligns + [sorted_aligns[i]]
                         last_end = max(sorted_aligns[i].s2, sorted_aligns[i].e2)
                         last_real = sorted_aligns[i]

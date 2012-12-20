@@ -25,7 +25,7 @@ import shutil
 from libs import reporting, qconfig
 from qutils import id_to_str
 
-required_binaries = ['nucmer', 'delta-filter', 'show-coords', 'dnadiff']
+required_binaries = ['nucmer', 'delta-filter', 'show-coords', 'dnadiff', 'show-snps']
 
 class Misassembly:
     LOCAL=0
@@ -328,12 +328,14 @@ def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_
     umt = 0.1 # threshold for misassembled contigs with aligned less than $umt * 100% (Unaligned Missassembled Threshold)
     nucmer_successful_check_filename = nucmerfilename + '.sf'
     coords_filename = nucmerfilename + '.coords'
+    coords1_filename = nucmerfilename + '.1coords'
     delta_filename = nucmerfilename + '.delta'
     filtered_delta_filename = nucmerfilename + '.fdelta'
     coords_btab_filename = nucmerfilename + '.coords.btab'
     coords_filtered_filename = nucmerfilename + '.coords.filtered'
     unaligned_filename = nucmerfilename + '.unaligned'
     snps_filename = nucmerfilename + '.snps'
+    show_snps_filename = nucmerfilename + '.show_snps'
     nucmer_report_filename = nucmerfilename + '.report'
     plantafile = open(logfilename_out, 'w')
 
@@ -404,6 +406,18 @@ def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_
             print >> logfile_err, id_to_str(id) + 'Nucmer: nothing aligned for', filename
             print '  ' + id_to_str(id) + 'Nucmer: nothing aligned for ' + '\'' + os.path.basename(filename) + '\'.'
             return NucmerStatus.NOT_ALIGNED, {}
+
+
+        with open(coords_filename) as coords_file:
+            headless_coords_filename = coords_filename + '.headless'
+            headless_coords_file = open(headless_coords_filename, 'w')
+            coords_file.readline()
+            coords_file.readline()
+            headless_coords_file.write(coords_file.read())
+            headless_coords_file.close()
+            headless_coords_file = open(headless_coords_filename)
+            subprocess.call(['show-snps', '-S', '-T', '-H', delta_filename], stdin=headless_coords_file, stdout=open(show_snps_filename, 'w'), stderr=logfile_err, env=myenv)
+
         nucmer_successful_check_file = open(nucmer_successful_check_filename, 'w')
         nucmer_successful_check_file.write("Min contig size:\n")
         nucmer_successful_check_file.write(str(qconfig.min_contig) + '\n')

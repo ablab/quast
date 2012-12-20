@@ -475,11 +475,13 @@ def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_
             continue
         ref = line[10]
         ctg = line[11]
+        pos = int(line[0]) # Kolya: python don't convert int<->str types automatically
+        loc = int(line[3]) # Kolya: same as above
 
         # if (! exists $line[11]) { die "Malformed line in SNP file.  Please check that show-snps has completed succesfully.\n$line\n[$line[9]][$line[10]][$line[11]]\n"; }
 
-        snps.setdefault(ref, {}).setdefault(ctg, {})[line[0]] = 'I' if line[1] == '.' else ('D' if line[2] == '.' else 'S')
-        snp_locs.setdefault(ref, {}).setdefault(ctg, {})[line[0]] = line[3]
+        snps.setdefault(ref, {}).setdefault(ctg, {})[pos] = 'I' if line[1] == '.' else ('D' if line[2] == '.' else 'S')
+        snp_locs.setdefault(ref, {}).setdefault(ctg, {})[pos] = loc
 
     # Loading the regions (if any)
     regions = {}
@@ -819,7 +821,7 @@ def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_
         #Walk through each region on this reference sequence
         for region in regions[ref]:
             end = 0
-            reg_length = region[1] - region[0]
+            reg_length = region[1] - region[0] + 1
             print >> plantafile, '\t\tRegion: %d to %d (%d bp)\n' % (region[0], region[1], reg_length)
 
             #Skipping alignments not in the next region

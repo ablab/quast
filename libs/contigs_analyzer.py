@@ -14,6 +14,7 @@
 # Whole Genome Sequencing and Assembly of Plant Genomes. PLoS ONE 6(12):
 # e28436. doi:10.1371/journal.pone.0028436
 ############################################################################
+from __future__ import with_statement
 
 import os
 import platform
@@ -24,7 +25,6 @@ import fastaparser
 import shutil
 from libs import reporting, qconfig
 from qutils import id_to_str
-from __future__ import with_statement
 
 required_binaries = ['nucmer', 'delta-filter', 'show-coords', 'dnadiff', 'show-snps']
 

@@ -329,7 +329,6 @@ def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_
     umt = 0.1 # threshold for misassembled contigs with aligned less than $umt * 100% (Unaligned Missassembled Threshold)
     nucmer_successful_check_filename = nucmerfilename + '.sf'
     coords_filename = nucmerfilename + '.coords'
-    coords1_filename = nucmerfilename + '.1coords'
     delta_filename = nucmerfilename + '.delta'
     filtered_delta_filename = nucmerfilename + '.fdelta'
     coords_btab_filename = nucmerfilename + '.coords.btab'
@@ -469,7 +468,7 @@ def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_
     print >> plantafile, 'Loading SNPs...'
     snps = {}
     snp_locs = {}
-    for line in open(snps_filename):
+    for line in open(show_snps_filename):
         #print "$line";
         line = line.split()
         if not line[0].isdigit():

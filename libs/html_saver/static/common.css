@@ -4,7 +4,7 @@ body {
     font-family: Lucida Grande, Verdana, Arial, sans-serif;
     font-size: 12px;
     color: black;
-    line-height: 1.3em;
+    /*line-height: 1.3em;*/
 }
 a {
     text-decoration: none;
@@ -50,10 +50,15 @@ a.dark_bg_link:hover {
 }
 .dotted-link:hover {
     text-decoration: none;
-    color: #b33; /* #0088cc; */
-    border-bottom: 1px dashed #ffcccc;
-    border-color: #ffcccc;
-    border-color: rgba(255, 0, 0, 0.2);
+    color: #b33 !important;
+    border-bottom: 1px dashed #b33 !important;
+    border-color: rgba(255, 0, 0, 0.2) !important;
+}
+.js:visited {
+    color: #0077B5;
+    border-bottom: 1px dashed #487b95;
+    border-color: #487b95;
+    border-color: rgba(12, 79, 114, 0.2);
 }
 
 .selected-switch {
@@ -95,6 +100,11 @@ ul.mdash li {
 }
 ul.mdash li:before {
     content: '\2014\a0';
+}
+
+.small_line_indent {
+    height: 0;
+    margin-top: -7px;
 }
 /************/
 
@@ -145,3 +155,15 @@ ul.mdash li:before {
 /*379<span class="hs"></span>000<span*/
 /*class="rhs"> </span><span class="b-rub">Р</span><br/>*/
 /*100<span class="hs"></span>500<span class="rhs"> </span>+*/
+
+/* for wrapping long words with no spaces */
+/* http://stackoverflow.com/questions/3247358/css-how-do-i-wrap-text-with-no-whitespace-inside-a-td */
+.wrapword {
+    white-space: -moz-pre-wrap !important;  /* Mozilla, since 1999 */
+    white-space: -pre-wrap;      /* Opera 4-6 */
+    white-space: -o-pre-wrap;    /* Opera 7 */
+    white-space: pre-wrap;       /* css-3 */
+    word-wrap: break-word;       /* Internet Explorer 5.5+ */
+    word-break: break-all;
+    white-space: normal;
+}

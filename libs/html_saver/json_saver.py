@@ -29,14 +29,17 @@ prefix_fn             = '/'
 suffix_fn             = '.json'
 
 
-def save(filename, what):
+def save(fpath, what):
     if simplejson_error:
         return None
 
-    json_file = open(filename, 'w')
+    if os.path.exists(fpath):
+        os.remove(fpath)
+
+    json_file = open(fpath, 'w')
     json.dump(what, json_file)
     json_file.close()
-    return filename
+    return fpath
 
 
 def save_total_report(output_dir, min_contig):

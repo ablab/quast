@@ -1,8 +1,22 @@
+String.prototype.trunc =
+    function(n){
+        return this.substr(0, n-1) + (this.length > n ? '&hellip;' : '');
+    };
 
 function buildTotalReport(assembliesNames, report, date, minContig, glossary, qualities, mainMetrics) {
     $('#subheader').html('<p>' + date + '</p>');
     $('#mincontig').append('<p>Contigs shorter than ' + minContig + "<span class='rhs'>&nbsp;</span>" + 'bp were skipped</p>');
-    $('#extended_link').append('<a class="dotted-link" id="extended_report_link">Extended report</a>');
+
+//    $('#extended_link').css('width', '183');
+
+    $('#extended_link').append('' +
+        '<div style="float: left; width: 182px;"><a class="dotted-link" id="extended_report_link">Extended report</a>' +
+        '</div>' +
+        '<div style="float: left;"><span id="report_legend" style="display: none;"></span>' +
+        '</div>' +
+        '<div style="clear: both;">' +
+        '</div>');
+
     $('#extended_report_link').click(function() {
         $('.row_hidden').fadeToggle('fast');
 
@@ -10,13 +24,12 @@ function buildTotalReport(assembliesNames, report, date, minContig, glossary, qu
         if (link.html() == 'Extended report') {
             link.html('Short report');
         } else {
-            link.html('Extended report')
+            link.html('Extended report');
         }
     });
 
-
     var table = '';
-    table += '<table cellspacing="0" class="report-table">';
+    table += '<table cellspacing="0" class="report-table draggable">';
 
     for (var group_n = 0; group_n < report.length; group_n++) {
         var group = report[group_n];
@@ -29,14 +42,24 @@ function buildTotalReport(assembliesNames, report, date, minContig, glossary, qu
 
             for (var assembly_n = 0; assembly_n < assembliesNames.length; assembly_n++) {
                 var assemblyName = assembliesNames[assembly_n];
+                if (assemblyName.length > 30) {
+                    assemblyName =
+                        '<span class="tooltip-link" rel="tooltip" title="' + assemblyName + '">' +
+                        assemblyName.trunc(30) +
+                        '</span>'
+                }
+
                 table += '<td>' + assemblyName + '</td>';
             }
 
         } else {
             table +=
                 '<tr class="subheader-tr row_hidden" id="group_' + group_n + '">' +
-                    '<td colspan="' + width + '">' + groupName + '</td>' +
-                    '</tr>';
+                    '<td>' + groupName + '</td>'; //colspan="' + width + '"
+            for (var i = 0; i < width - 1; i++) {
+                table += '<td></td>';
+            }
+            table += '</tr>';
         }
 
         for (var metric_n = 0; metric_n < metrics.length; metric_n++) {
@@ -97,7 +120,38 @@ function buildTotalReport(assembliesNames, report, date, minContig, glossary, qu
 
     $('#report').append(table);
 
-//    $().load(function() {
+    var RED_HUE = 0;
+    var GREEN_HUE = 124;
+    var GREEN_HSL = 'hsl(' + GREEN_HUE + ', 80%, 40%)';
+
+    var legend = '<span>';
+    var step = 4;
+    for (var hue = RED_HUE; hue < GREEN_HUE + step; hue += step) {
+        var lightness = (Math.pow(hue-75, 2))/350 + 35;
+        legend += '<span style="color: hsl(' + hue + ', 80%, ' + lightness + '%);">';
+
+        switch (hue) {
+            case RED_HUE:
+                legend += 'b'; break;
+            case RED_HUE + step:
+                legend += 'a'; break;
+            case RED_HUE + 2 * step:
+                legend += 'd'; break;
+            case GREEN_HUE - 3 * step:
+                legend += 'g'; break;
+            case GREEN_HUE - 2 * step:
+                legend += 'o'; break;
+            case GREEN_HUE - step:
+                legend += 'o'; break;
+            case GREEN_HUE:
+                legend += 'd'; break;
+            default:
+                legend += '.';
+        }
+        legend += '</span>';
+    }
+    legend += '</span>';
+    $('#report_legend').append(legend);
 
     $(".report-table td[number]").mouseenter(function() {
         var cells = $(this).parent().find('td[number]');
@@ -106,9 +160,6 @@ function buildTotalReport(assembliesNames, report, date, minContig, glossary, qu
 
         var min = Math.min.apply(null, numbers);
         var max = Math.max.apply(null, numbers);
-
-        var RED_HUE = 0;
-        var GREEN_HUE = 130;
 
         var maxHue = GREEN_HUE;
         var minHue = RED_HUE;
@@ -119,20 +170,32 @@ function buildTotalReport(assembliesNames, report, date, minContig, glossary, qu
         }
 
         if (max == min) {
-            $(cells).css('color', 'hsl(' + GREEN_HUE + ', 80%, 50%)');
+            $(cells).css('color', GREEN_HSL);
         } else {
             var k = (maxHue - minHue) / (max - min);
-
+            var hue = 0;
+            var lightness = 0;
             cells.each(function(i) {
                 var number = numbers[i];
-                var hue = minHue + (number - min)*k;
-
-                $(this).css('color', 'hsl(' + hue + ', 80%, 50%)');
+                hue = minHue + (number - min)*k;
+                lightness = (Math.pow(hue-75, 2))/350 + 35;
+//                $(this).css('color', 'hsl(' + hue + ', 80%, 35%)');
+                $(this).css('color', 'hsl(' + hue + ', 80%, ' + lightness + '%)');
             });
         }
+
+        $('#report_legend').show();
+
     }).mouseleave(function() {
-            $(this).parent().find('td[number]').css('color', 'black');
+        $(this).parent().find('td[number]').css('color', 'black');
+    });
+
+    $(function() {
+        jQuery.each($(".report-table tr"), function() {
+//            $(this).children(":eq(1)").after($(this).children(":eq(0)"));
         });
+    });
+
 //    });
 }
 //

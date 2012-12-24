@@ -147,7 +147,10 @@
     font-weight: bold;
 }
 
-#report tr:first-child td {
+/*#report tr:first-child td {*/
+    /*border-bottom: 1px solid #bbb;*/
+/*}*/
+#reprot thead td {
     border-bottom: 1px solid #bbb;
 }
 
@@ -195,3 +198,7 @@
         3px 3px 0 white;
 }
 /*************/
+
+#header_element, #dataset_name_p, #comment_p {
+    max-width: 500px;
+}

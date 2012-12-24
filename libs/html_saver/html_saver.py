@@ -43,7 +43,7 @@ aux_files = [
     'bootstrap/bootstrap-tooltip-5px-lower.min.js',
     'report.css',
     'common.css',
-    ]
+]
 
 def init(results_dirpath):
 #    shutil.copy(template_fpath,     os.path.join(results_dirpath, report_fname))
@@ -56,14 +56,18 @@ def init(results_dirpath):
     for aux_f_relpath in aux_files:
         src = os.path.join(static_dirpath, aux_f_relpath)
         dst = os.path.join(aux_dirpath, aux_f_relpath)
-        shutil.copyfile(src, dst)
+        if not os.path.exists(dst):
+            shutil.copyfile(src, dst)
 
     with open(template_fpath) as template_file:
         html = template_file.read()
         html = html.replace("/" + static_dirname, aux_dirname)
         html = html.replace('{{ glossary }}', open(get_real_path('glossary.json')).read())
 
-        with open(os.path.join(results_dirpath, report_fname), 'w') as f_html:
+        html_fpath = os.path.join(results_dirpath, report_fname)
+        if os.path.exists(html_fpath):
+            os.remove(html_fpath)
+        with open(html_fpath, 'w') as f_html:
             f_html.write(html)
 
 
@@ -99,9 +103,9 @@ def init(results_dirpath):
 
 
 def append(results_dirpath, json_fpath, keyword):
-    afp_html = os.path.join(results_dirpath, report_fname)
+    html_fpath = os.path.join(results_dirpath, report_fname)
 
-    if not os.path.isfile(afp_html):
+    if not os.path.isfile(html_fpath):
         init(results_dirpath)
 
     # reading JSON file
@@ -110,14 +114,14 @@ def append(results_dirpath, json_fpath, keyword):
     os.remove(json_fpath)
 
     # reading html template file
-    with open(afp_html) as f_html:
+    with open(html_fpath) as f_html:
         html_text = f_html.read()
 
     # substituting template text with json
     html_text = re.sub('{{ ' + keyword + ' }}', json_text, html_text)
 
     # writing substituted html to final file
-    with open(afp_html, 'w') as f_html:
+    with open(html_fpath, 'w') as f_html:
         f_html.write(html_text)
 
 

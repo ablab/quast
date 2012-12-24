@@ -182,7 +182,7 @@ function addTooltipIfDefinitionExists(glossary, string, dictKey) {
         dictKey = string;
     }
     if (glossary.hasOwnProperty(dictKey)) {
-        return '<a class="tooltip-link" href="#" rel="tooltip" title="' +
+        return '<a class="tooltip-link" rel="tooltip" title="' +
             dictKey + ' ' + glossary[dictKey] + '">' + string + '</a>';
     } else {
         return string;
@@ -275,9 +275,9 @@ function showTip(pageX, pageY, offset, plotWidth, plotHeight,
 
         $('<div id="tip_line' + i + '">' + toPrettyString(item.y)
             + ', <span style="color: ' + item.color + ';">' + item.label + '</span></div>').css({
-                height: LINE_HEIGHT,
-                "font-weight": item.isCurrent ? "bold" : "normal",
-            }).appendTo('#plot_tip');
+            height: LINE_HEIGHT,
+            "font-weight": item.isCurrent ? "bold" : "normal",
+        }).appendTo('#plot_tip');
     }
 }
 

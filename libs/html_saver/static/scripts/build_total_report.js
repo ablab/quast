@@ -10,7 +10,7 @@ function buildTotalReport(assembliesNames, report, date, minContig, glossary, qu
 //    $('#extended_link').css('width', '183');
 
     $('#extended_link').append('' +
-        '<div style="float: left; width: 182px;"><a class="dotted-link" id="extended_report_link">Extended report</a>' +
+        '<div id="extended_report_link_div" style="float: left;"><a class="dotted-link" id="extended_report_link">Extended report</a>' +
         '</div>' +
         '<div style="float: left;"><span id="report_legend" style="display: none;"></span>' +
         '</div>' +
@@ -38,15 +38,15 @@ function buildTotalReport(assembliesNames, report, date, minContig, glossary, qu
         var width = assembliesNames.length + 1;
 
         if (group_n == 0) {
-            table += '<tr class="header-tr"><td>' + groupName + '</td>';
+            table += '<tr class="header-tr"><td id="first_td">' + groupName + '</td>';
 
             for (var assembly_n = 0; assembly_n < assembliesNames.length; assembly_n++) {
                 var assemblyName = assembliesNames[assembly_n];
                 if (assemblyName.length > 30) {
                     assemblyName =
                         '<span class="tooltip-link" rel="tooltip" title="' + assemblyName + '">' +
-                        assemblyName.trunc(30) +
-                        '</span>'
+                            assemblyName.trunc(30) +
+                            '</span>'
                 }
 
                 table += '<td>' + assemblyName + '</td>';
@@ -121,36 +121,44 @@ function buildTotalReport(assembliesNames, report, date, minContig, glossary, qu
     $('#report').append(table);
 
     var RED_HUE = 0;
-    var GREEN_HUE = 124;
+    var GREEN_HUE = 120;
     var GREEN_HSL = 'hsl(' + GREEN_HUE + ', 80%, 40%)';
 
     var legend = '<span>';
-    var step = 4;
+    var step = 6;
     for (var hue = RED_HUE; hue < GREEN_HUE + step; hue += step) {
         var lightness = (Math.pow(hue-75, 2))/350 + 35;
         legend += '<span style="color: hsl(' + hue + ', 80%, ' + lightness + '%);">';
 
         switch (hue) {
             case RED_HUE:
-                legend += 'b'; break;
+                legend += 'w'; break;
             case RED_HUE + step:
-                legend += 'a'; break;
+                legend += 'o'; break;
             case RED_HUE + 2 * step:
-                legend += 'd'; break;
+                legend += 'r'; break;
+            case RED_HUE + 3 * step:
+                legend += 's'; break;
+            case RED_HUE + 4 * step:
+                legend += 't'; break;
+
             case GREEN_HUE - 3 * step:
-                legend += 'g'; break;
+                legend += 'b'; break;
             case GREEN_HUE - 2 * step:
-                legend += 'o'; break;
+                legend += 'e'; break;
             case GREEN_HUE - step:
-                legend += 'o'; break;
+                legend += 's'; break;
             case GREEN_HUE:
-                legend += 'd'; break;
+                legend += 't'; break;
+
             default:
                 legend += '.';
         }
         legend += '</span>';
     }
     legend += '</span>';
+    $('#extended_report_link_div').width($('#first_td').outerWidth());
+
     $('#report_legend').append(legend);
 
     $(".report-table td[number]").mouseenter(function() {
@@ -177,18 +185,19 @@ function buildTotalReport(assembliesNames, report, date, minContig, glossary, qu
             var lightness = 0;
             cells.each(function(i) {
                 var number = numbers[i];
-                hue = minHue + (number - min)*k;
-                lightness = (Math.pow(hue-75, 2))/350 + 35;
+                hue = Math.round(minHue + (number - min)*k);
+                lightness = Math.round((Math.pow(hue-75, 2))/350 + 35);
 //                $(this).css('color', 'hsl(' + hue + ', 80%, 35%)');
                 $(this).css('color', 'hsl(' + hue + ', 80%, ' + lightness + '%)');
             });
         }
 
-        $('#report_legend').show();
+        if (numbers.length > 1)
+            $('#report_legend').show();
 
     }).mouseleave(function() {
-        $(this).parent().find('td[number]').css('color', 'black');
-    });
+            $(this).parent().find('td[number]').css('color', 'black');
+        });
 
     $(function() {
         jQuery.each($(".report-table tr"), function() {

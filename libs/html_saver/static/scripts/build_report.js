@@ -190,7 +190,7 @@ function buildReport() {
     }
 
     if (gcInfos = readJson('gc'))
-        makePlot('gc', 'GC content', gc.draw, gcInfos.lists_of_gc_info, refLen);
+        makePlot('gc', 'GC content', gc.draw, gcInfos, refLen);
 
     return 0;
 }

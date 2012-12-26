@@ -34,7 +34,7 @@ var gc = {
     normal_scale_el: normal_scale_span,
     log_scale_el: log_scale_a,
 
-    draw: function(name, colors, filenames, listsOfGCInfo, reflen,
+    draw: function(name, colors, filenames, gcInfos, reflen,
         placeholder, legendPlaceholder, glossary, scalePlaceholder) {
         $(scalePlaceholder).html(
             "<div id='change-scale' style='margin-right: 3px; visibility: hidden;'>" +
@@ -77,41 +77,69 @@ var gc = {
                     number: i,
                     color: colors[i],
                 };
+            }
 
-                var GC_info = listsOfGCInfo[i];
-                var cur_bin = 0.0;
+            var listsOfGCInfo = gcInfos.lists_of_gc_info;
+            if (listsOfGCInfo) {
+                makeSeriesFromInfo(listsOfGCInfo);
+            } else {
+                var listOfGcDistributions = gcInfos.list_of_GC_distributions;
+                makeSeriesFromDistributions(listOfGcDistributions);
+            }
 
-                var x = cur_bin;
-                var y = filterAndSumGcInfo(GC_info, function(GC_percent) {
-                    return GC_percent == cur_bin;
-                });
-                gc.series[i].data.push([x, y]);
+            function makeSeriesFromInfo(listsOfGCInfo) {
+                for (var i = 0; i < plotsN; i++) {
+                    var GC_info = listsOfGCInfo[i];
+                    var cur_bin = 0.0;
 
-                updateMinY(y);
-                updateMaxY(y);
-
-                while (cur_bin < 100.0 - bin_size) {
-                    cur_bin += bin_size;
-
-                    x = cur_bin;
-                    y = filterAndSumGcInfo(GC_info, function(GC_percent) {
-                        return GC_percent > (cur_bin - bin_size) && GC_percent <= cur_bin;
+                    var x = cur_bin;
+                    var y = filterAndSumGcInfo(GC_info, function(GC_percent) {
+                        return GC_percent == cur_bin;
                     });
                     gc.series[i].data.push([x, y]);
 
                     updateMinY(y);
                     updateMaxY(y);
+
+                    while (cur_bin < 100.0 - bin_size) {
+                        cur_bin += bin_size;
+
+                        x = cur_bin;
+                        y = filterAndSumGcInfo(GC_info, function(GC_percent) {
+                            return GC_percent > (cur_bin - bin_size) && GC_percent <= cur_bin;
+                        });
+                        gc.series[i].data.push([x, y]);
+
+                        updateMinY(y);
+                        updateMaxY(y);
+                    }
+
+                    x = 100.0;
+                    y = filterAndSumGcInfo(GC_info, function(GC_percent) {
+                        return GC_percent > cur_bin && GC_percent <= 100.0;
+                    });
+
+                    gc.series[i].data.push([x, y]);
+
+                    updateMinY(y);
+                    updateMaxY(y);
                 }
+            }
 
-                x = 100.0;
-                y = filterAndSumGcInfo(GC_info, function(GC_percent) {
-                    return GC_percent > cur_bin && GC_percent <= 100.0;
-                });
+            function makeSeriesFromDistributions(listOfGcDistributions) {
+                for (var i = 0; i < plotsN; i++) {
+                    var distributionsXandY = listOfGcDistributions[i];
+                    var distributionsX = distributionsXandY[0];
+                    var distributionsY = distributionsXandY[1];
 
-                gc.series[i].data.push([x, y]);
-
-                updateMinY(y);
-                updateMaxY(y);
+                    for (var j = 0; j < distributionsX.length; j++) {
+                        var x = distributionsX[j];
+                        var y = distributionsY[j];
+                        gc.series[i].data.push([x, y]);
+                        updateMinY(y);
+                        updateMaxY(y);
+                    }
+                }
             }
 
             for (i = 0; i < plotsN; i++) {

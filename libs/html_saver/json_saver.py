@@ -90,42 +90,43 @@ def save_contigs_lengths(output_dir, filenames, lists_of_lengths):
     lists_of_lengths = [sorted(list, reverse=True) for list in lists_of_lengths]
 
     return save(output_dir + contigs_lengths_fn, {
-        'filenames' : map(os.path.basename, filenames),
-        'lists_of_lengths' : lists_of_lengths
+        'filenames': map(os.path.basename, filenames),
+        'lists_of_lengths': lists_of_lengths
     })
 
 
 def save_reference_length(output_dir, reference_length):
-    return save(output_dir + ref_length_fn, { 'reflen' : reference_length })
+    return save(output_dir + ref_length_fn, { 'reflen': reference_length })
 
 
 def save_aligned_contigs_lengths(output_dir, filenames, lists_of_lengths):
     lists_of_lengths = [sorted(list, reverse=True) for list in lists_of_lengths]
 
     return save(output_dir + aligned_contigs_fn, {
-        'filenames' : map(os.path.basename, filenames),
-        'lists_of_lengths' : lists_of_lengths
+        'filenames': map(os.path.basename, filenames),
+        'lists_of_lengths': lists_of_lengths
     })
 
 
 def save_assembly_lengths(output_dir, filenames, assemblies_lengths):
     return save(output_dir + assemblies_lengths_fn, {
-        'filenames' : map(os.path.basename, filenames),
-        'assemblies_lengths' : assemblies_lengths
+        'filenames': map(os.path.basename, filenames),
+        'assemblies_lengths': assemblies_lengths
     })
 
 
 def save_features_in_contigs(output_dir, filenames, feature_name, features_in_contigs):
     return save(output_dir + prefix_fn + feature_name + in_contigs_suffix_fn, {
-        'filenames' : map(os.path.basename, filenames),
-        feature_name + '_in_contigs' : dict((os.path.basename(fn), feature_amounts) for (fn, feature_amounts) in features_in_contigs.items()),
+        'filenames': map(os.path.basename, filenames),
+        feature_name + '_in_contigs': dict((os.path.basename(fn), feature_amounts) for (fn, feature_amounts) in features_in_contigs.items()),
         })
 
 
-def save_GC_info(output_dir, filenames, lists_of_GC_info):
+def save_GC_info(output_dir, filenames, list_of_GC_distributions):
     return save(output_dir + gc_fn, {
-        'filenames' : map(os.path.basename, filenames),
-        'lists_of_gc_info' : lists_of_GC_info,
+        'filenames': map(os.path.basename, filenames),
+        'list_of_GC_distributions': list_of_GC_distributions,
+        'lists_of_gc_info': None,
         })
 
 

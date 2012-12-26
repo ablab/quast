@@ -162,7 +162,7 @@ def save_features_in_contigs(results_dirpath, filenames, feature_name, feature_i
         append(results_dirpath, json_fpath, feature_name + 'InContigs')
 
 
-def save_GC_info(results_dirpath, filenames, lists_of_GC_info):
-    json_fpath = json_saver.save_GC_info(results_dirpath, filenames, lists_of_GC_info)
+def save_GC_info(results_dirpath, filenames, list_of_GC_distributions):
+    json_fpath = json_saver.save_GC_info(results_dirpath, filenames, list_of_GC_distributions)
     if json_fpath:
         append(results_dirpath, json_fpath, 'gcInfos')

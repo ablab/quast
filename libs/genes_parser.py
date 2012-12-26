@@ -28,7 +28,7 @@ def get_genes_from_file(filename, feature):
     genes = []
 
     line = genes_file.readline().rstrip()
-    while line == '' or line.startswith('##'):
+    while line == '' or line.startswith('#'):
         line = genes_file.readline().rstrip()
 
     genes_file.seek(0)

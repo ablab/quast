@@ -120,7 +120,7 @@ def corrected_fname_for_nucmer(fpath):
     fname = os.path.basename(fpath)
 
     corr_fname = fname
-    corr_fname = re.sub(r'[^\w\._\-+|]', '_', corr_fname).strip()
+    corr_fname = re.sub(r'[^\w\._\-+]', '_', corr_fname).strip()
 
     if corr_fname != fname:
         if os.path.isfile(os.path.join(dirpath, corr_fname)):
@@ -141,7 +141,7 @@ def correct_fasta(original_fpath, corrected_fpath, is_reference=False):
     modified_fasta_entries = []
     for name, seq in fastaparser.read_fasta(original_fpath): # in tuples: (name, seq)
         if (len(seq) >= qconfig.min_contig) or is_reference:
-            corr_name = re.sub(r'[^\w\._\-+|]', '_', name)
+            corr_name = re.sub(r'[^\w\._\-+]', '_', name)
             # seq to uppercase, because we later looking only uppercase letters
             corr_seq = seq.upper()
             # removing \r (Nucmer fails on such sequences)

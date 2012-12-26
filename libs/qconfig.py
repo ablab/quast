@@ -48,5 +48,8 @@ short_options = "o:G:O:R:t:M:k:J:jgehdsbT:c:r:"
 min_gap_size = 50 # for calculating number or gaps in genome coverage
 min_gene_overlap = 100 # to partial genes/operons finding
 
+# basic_stats
+GC_bin_size = 1.0
+
 # plotter and maybe other modules in the future
 legend_names = None

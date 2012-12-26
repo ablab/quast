@@ -229,7 +229,7 @@ def Nx_plot(filenames, lists_of_lengths, plot_filename, title='Nx', reference_le
 
 
 # routine for GC-plot    
-def GC_content_plot(reference, filenames, lists_of_GC_info, plot_filename, all_pdf=None):
+def GC_content_plot(reference, filenames, list_of_GC_distributions, plot_filename, all_pdf=None):
     bin_size = 1.0
     title = 'GC content'
 
@@ -248,31 +248,13 @@ def GC_content_plot(reference, filenames, lists_of_GC_info, plot_filename, all_p
     allfilenames = filenames
     if reference:
         allfilenames = filenames + [reference]
-    for id, (filename, GC_info) in enumerate(itertools.izip(allfilenames, lists_of_GC_info)):
-        # GC_info = [(contig_length, GC_percent)]
-        # sorted_GC_info = sorted(GC_info, key=lambda GC_info_contig: GC_info_contig[1])
-        # calculate values for the plot
-        cur_bin = 0.0
-        vals_GC = [cur_bin]
-        vals_bp = [sum(contig_length for (contig_length, GC_percent) in GC_info
-            if GC_percent == cur_bin)]
-
-        while cur_bin < 100.0 - bin_size:
-            cur_bin += bin_size
-            vals_GC.append(cur_bin)
-            vals_bp.append(sum(contig_length for (contig_length, GC_percent) in GC_info
-                if (cur_bin - bin_size) < GC_percent <= cur_bin))
-
-        vals_GC.append(100.0)
-        vals_bp.append(sum(contig_length for (contig_length, GC_percent) in GC_info
-            if cur_bin < GC_percent <= 100.0))
-
-        max_y = max(max_y, max(vals_bp))
+    for id, (GC_distribution_x, GC_distribution_y) in enumerate(list_of_GC_distributions):
+        max_y = max(max_y, max(GC_distribution_y))
 
         # for log scale
-        for id2, bp in enumerate(vals_bp):
-            if bp == 0:
-                vals_bp[id2] = 0.1
+        for id2, v in enumerate(GC_distribution_y):
+            if v == 0:
+                GC_distribution_y[id2] = 0.1
 
         # add to plot
         if reference and (id == len(allfilenames) - 1):
@@ -284,9 +266,8 @@ def GC_content_plot(reference, filenames, lists_of_GC_info, plot_filename, all_p
         else:
             color=colors[color_id % len(colors)]
             ls = 'dashed'
-        matplotlib.pyplot.plot(vals_GC, vals_bp, color=color, lw=linewidth, ls=ls)
+        matplotlib.pyplot.plot(GC_distribution_x, GC_distribution_y, color=color, lw=linewidth, ls=ls)
         color_id += 1
-
 
     if with_title:
         matplotlib.pyplot.title(title)

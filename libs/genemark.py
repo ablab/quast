@@ -17,8 +17,10 @@ from qutils import id_to_str
 
 def gc_content(sequence):
     GC_count = sequence.count('G') + sequence.count('C')
-    length = len(sequence) - sequence.count('N')
-    return round((1.0 * GC_count)/length * 100, 2)
+    ACGT_length = len(sequence) - sequence.count('N')
+    if not ACGT_length:
+        return 0
+    return 100 * GC_count / ACGT_length
 
 def gmhmm_p(tool_exec, fasta_path, heu_path, out_path, err_file):
     """ Run GeneMark.hmm with this heuristic model (heu_path)
@@ -105,8 +107,7 @@ def gmhmm_p_everyGC(tool_dir, fasta_path, out_name, gene_lengths, err_path):
 
     work_dir = tempfile.mkdtemp()
     for id, seq in read_fasta(fasta_path):
-        gc = gc_content(seq)
-        gc = min(70, max(30, int(gc)))
+        gc = min(70, max(30, gc_content(seq)))
         curr_filename = str(gc - gc % 5) + '.fasta'
         current_path = os.path.join(work_dir, curr_filename)
         with open(current_path, 'a') as curr_out:

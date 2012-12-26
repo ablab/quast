@@ -39,8 +39,12 @@ aux_files = [
     'scripts/hsvToRgb.js',
     'scripts/draw_genes_plot.js',
     'scripts/build_report.js',
+    'dragtable.js',
     'ie_html5.js',
     'bootstrap/bootstrap-tooltip-5px-lower.min.js',
+    'bootstrap/bootstrap.min.css',
+    'bootstrap/bootstrap.min.js',
+    'bootstrap/bootstrap-tooltip-vlad.js',
     'report.css',
     'common.css',
 ]

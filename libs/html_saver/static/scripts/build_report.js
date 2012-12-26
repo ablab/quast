@@ -189,8 +189,9 @@ function buildReport() {
         );
     }
 
-    if (gcInfos = readJson('gc'))
+    if (gcInfos = readJson('gc')) {
         makePlot('gc', 'GC content', gc.draw, gcInfos, refLen);
+    }
 
     return 0;
 }

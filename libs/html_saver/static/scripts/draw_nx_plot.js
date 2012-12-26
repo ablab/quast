@@ -32,7 +32,7 @@ var nx = {
         showWithData: null,
     },
 
-    draw: function (name, colors, filenames, listsOfLengths, refLength,
+    draw: function (name, colors, filenames, data, refPlotValue,
                     placeholder, legendPlaceholder, glossary) {
 //    var titleHtml = title;
 //    if (glossary.hasOwnProperty(title)) {
@@ -44,6 +44,9 @@ var nx = {
 //        "<span class='plot-header'>" + titleHtml + "</span>" +
 //        "<div class='plot-placeholder' id='" + title + "-plot-placeholder'></div>"
 //    );
+
+        var listsOfLengths = data.listsOfLengths;
+        var refLength = data.refLen;
 
         var info = nx[name];
 

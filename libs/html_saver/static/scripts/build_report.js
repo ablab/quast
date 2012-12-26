@@ -53,45 +53,50 @@ function buildReport() {
     var legendPlaceholder = document.getElementById('legend-placeholder');
     var scalePlaceholder = document.getElementById('scale-placeholder');
 
-    function getToggleFunction(name, drawPlot, data, refLen) {
+    function getToggleFunction(name, drawPlot, data, refPlotValue) {
         return function() {
             this.parentNode.getElementsByClassName('selected-switch')[0].className = 'plot-switch dotted-link';
             this.className = 'plot-switch selected-switch';
-            togglePlots(name, drawPlot, data, refLen)
+            togglePlots(name, drawPlot, data, refPlotValue)
         };
     }
 
     var toRemoveRefLabel = true;
-    function togglePlots(name, drawPlot, data, refLen) {
+    function togglePlots(name, drawPlot, data, refPlotValue) {
         if (name === 'cumulative') {
             $(plotPlaceholder).addClass('cumulative-plot-placeholder');
-            if (refLen) {
-                $('#legend-placeholder').append(
-                    '<div id="reference-label">' +
-                        '<label for="label_' + assembliesNames.length + '_id" style="color: #000000;">' +
-                        '<input type="checkbox" name="' + assembliesNames.length +
-                        '" checked="checked" id="label_' + assembliesNames.length +
-                        '_id">&nbsp;' + 'Reference,&nbsp;' +
-                        toPrettyString(refLen, 'bp') +
-                        '</label>' +
-                        '</div>');
-            }
-            toRemoveRefLabel = true;
         } else {
             $(plotPlaceholder).removeClass('cumulative-plot-placeholder');
-            if (toRemoveRefLabel) {
-                var el = $('#reference-label');
-                el.remove();
-                toRemoveRefLabel = false;
-            }
+        }
+
+        var el = $('#reference-label');
+        el.remove();
+
+        if (refPlotValue) {
+            $('#legend-placeholder').append(
+                '<div id="reference-label">' +
+                    '<label for="label_' + assembliesNames.length + '_id" style="color: #000000;">' +
+                    '<input type="checkbox" name="' + assembliesNames.length +
+                    '" checked="checked" id="label_' + assembliesNames.length +
+                    '_id">&nbsp;' + 'reference,&nbsp;' +
+                    toPrettyString(refPlotValue) +
+                    '</label>' +
+                    '</div>');
+//        } else {
+//            if (toRemoveRefLabel) {
+//                var el = $('#reference-label');
+//                el.remove();
+//                toRemoveRefLabel = false;
+//            }
         }
 
         $(scalePlaceholder).html('');
-        drawPlot(name, colors, assembliesNames, data, refLen, plotPlaceholder, legendPlaceholder, glossary, scalePlaceholder);
+        drawPlot(name, colors, assembliesNames, data, refPlotValue,
+            plotPlaceholder, legendPlaceholder, glossary, scalePlaceholder);
     }
 
     var firstPlot = true;
-    function makePlot(name, title, drawPlot, data, refLen) {
+    function makePlot(name, title, drawPlot, data, refPlotValue) {
         var switchSpan = document.createElement('span');
         switchSpan.id = name + '-switch';
         switchSpan.innerHTML = title;
@@ -99,14 +104,14 @@ function buildReport() {
 
         if (firstPlot) {
             switchSpan.className = 'plot-switch selected-switch';
-            togglePlots(name, drawPlot, data, refLen);
+            togglePlots(name, drawPlot, data, refPlotValue);
             firstPlot = false;
 
         } else {
             switchSpan.className = 'plot-switch dotted-link';
         }
 
-        $(switchSpan).click(getToggleFunction(name, drawPlot, data, refLen));
+        $(switchSpan).click(getToggleFunction(name, drawPlot, data, refPlotValue));
     }
 
     function readJson(what) {
@@ -154,17 +159,40 @@ function buildReport() {
 
     if (contigsLens = readJson('contigs-lengths')) {
         makePlot('cumulative', 'Cumulative length', cumulative.draw, contigsLens.lists_of_lengths, refLen);
-        makePlot('nx', 'Nx', nx.draw, contigsLens.lists_of_lengths, null);
+        makePlot('nx', 'Nx', nx.draw, {
+                listsOfLengths: contigsLens.lists_of_lengths,
+                refLen: refLen,
+            },
+            null
+        );
     }
 
-    if (alignedContigsLens = readJson('aligned-contigs-lengths'))
-        makePlot('nax', 'NAx', nx.draw, alignedContigsLens.lists_of_lengths, null);
+    if (alignedContigsLens = readJson('aligned-contigs-lengths')) {
+        makePlot('nax', 'NAx', nx.draw, {
+                listsOfLengths: alignedContigsLens.lists_of_lengths,
+                refLen: refLen,
+            },
+            null
+        );
+    }
 
-    if (contigsLens && refLen)
-        makePlot('ngx', 'NGx', nx.draw, contigsLens.lists_of_lengths, refLen);
+    if (contigsLens && refLen) {
+        makePlot('ngx', 'NGx', nx.draw, {
+                listsOfLengths: contigsLens.lists_of_lengths,
+                refLen: refLen,
+            },
+            null
+        );
+    }
 
-    if (alignedContigsLens && refLen)
-        makePlot('ngax', 'NGAx', nx.draw, alignedContigsLens.lists_of_lengths, refLen);
+    if (alignedContigsLens && refLen) {
+        makePlot('ngax', 'NGAx', nx.draw, {
+                listsOfLengths: alignedContigsLens.lists_of_lengths,
+                refLen: refLen,
+            },
+            null
+        );
+    }
 
     genesInContigs = readJson('genes-in-contigs');
     operonsInContigs = readJson('operons-in-contigs');
@@ -177,7 +205,7 @@ function buildReport() {
                 filesFeatureInContigs: genesInContigs.genes_in_contigs,
                 kind: 'gene',
             },
-            refLen
+            genesInContigs.ref_genes_number
         );
     }
     if (operonsInContigs) {
@@ -185,12 +213,12 @@ function buildReport() {
                 filesFeatureInContigs: operonsInContigs.operons_in_contigs,
                 kind: 'operon',
             },
-            refLen
+            operonsInContigs.ref_operons_number
         );
     }
 
     if (gcInfos = readJson('gc')) {
-        makePlot('gc', 'GC content', gc.draw, gcInfos, refLen);
+        makePlot('gc', 'GC content', gc.draw, gcInfos, null);
     }
 
     return 0;

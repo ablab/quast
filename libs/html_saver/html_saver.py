@@ -160,8 +160,8 @@ def save_assembly_lengths(results_dirpath, filenames, assemblies_lengths):
         append(results_dirpath, json_fpath, 'assembliesLengths')
 
 
-def save_features_in_contigs(results_dirpath, filenames, feature_name, feature_in_contigs):
-    json_fpath = json_saver.save_features_in_contigs(results_dirpath, filenames, feature_name, feature_in_contigs)
+def save_features_in_contigs(results_dirpath, filenames, feature_name, feature_in_contigs, ref_feature_num):
+    json_fpath = json_saver.save_features_in_contigs(results_dirpath, filenames, feature_name, feature_in_contigs, ref_feature_num)
     if json_fpath:
         append(results_dirpath, json_fpath, feature_name + 'InContigs')
 

@@ -115,10 +115,11 @@ def save_assembly_lengths(output_dir, filenames, assemblies_lengths):
     })
 
 
-def save_features_in_contigs(output_dir, filenames, feature_name, features_in_contigs):
+def save_features_in_contigs(output_dir, filenames, feature_name, features_in_contigs, ref_features_num):
     return save(output_dir + prefix_fn + feature_name + in_contigs_suffix_fn, {
         'filenames': map(os.path.basename, filenames),
         feature_name + '_in_contigs': dict((os.path.basename(fn), feature_amounts) for (fn, feature_amounts) in features_in_contigs.items()),
+        'ref_' + feature_name + '_number': ref_features_num,
         })
 
 

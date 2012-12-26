@@ -80,13 +80,10 @@ var cumulative = {
 
             cumulative.maxYTick = getMaxDecimalTick(cumulative.maxY);
 
-            for (i = 0; i < plotsN; i++) {
-            }
-
             if (refLenght) {
                 cumulative.series.push({
                     data: [[0, refLenght], [cumulative.maxX, refLenght]],
-                    label: 'Reference,&nbsp;' + toPrettyString(refLenght, 'bp'),
+                    label: 'reference,&nbsp;' + toPrettyString(refLenght, 'bp'),
                     isReference: true,
                     dashes: {
                         show: true,

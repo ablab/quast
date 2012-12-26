@@ -293,19 +293,30 @@ def do(reference, filenames, nucmer_dir, output_dir, genes_filename, operons_fil
 
     res_file.close()
 
+
+    if genes_container.region_list:
+        ref_genes_num = len(genes_container.region_list)
+    else:
+        ref_genes_num = None
+
+    if operons_container.region_list:
+        ref_operons_num = len(operons_container.region_list)
+    else:
+        ref_operons_num = None
+
     # saving json
     if json_output_dir:
         if genes_container.region_list:
-            json_saver.save_features_in_contigs(json_output_dir, filenames, 'genes', files_genes_in_contigs)
+            json_saver.save_features_in_contigs(json_output_dir, filenames, 'genes', files_genes_in_contigs, ref_genes_num)
         if operons_container.region_list:
-            json_saver.save_features_in_contigs(json_output_dir, filenames, 'operons', files_operons_in_contigs)
+            json_saver.save_features_in_contigs(json_output_dir, filenames, 'operons', files_operons_in_contigs, ref_operons_num)
 
     if qconfig.html_report:
         from libs.html_saver import html_saver
         if genes_container.region_list:
-            html_saver.save_features_in_contigs(results_dir, filenames, 'genes', files_genes_in_contigs)
+            html_saver.save_features_in_contigs(results_dir, filenames, 'genes', files_genes_in_contigs, ref_genes_num)
         if operons_container.region_list:
-            html_saver.save_features_in_contigs(results_dir, filenames, 'operons', files_operons_in_contigs)
+            html_saver.save_features_in_contigs(results_dir, filenames, 'operons', files_operons_in_contigs, ref_operons_num)
 
     if draw_plots:
         # cumulative plots:

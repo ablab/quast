@@ -37,7 +37,7 @@ def save(fpath, what):
         os.remove(fpath)
 
     json_file = open(fpath, 'w')
-    json.dump(what, json_file)
+    json.dump(what, json_file, separators=(',', ':'))
     json_file.close()
     return fpath
 
@@ -53,7 +53,7 @@ def save_total_report(output_dir, min_contig):
         'assembliesNames': assemblies_names,
         'report': report,
         'minContig': min_contig,
-        })
+    })
 
 #def save_old_total_report(output_dir, min_contig):
 #    from libs import reporting

@@ -6,6 +6,10 @@
 
 import datetime
 
+# support of large genomes
+MAX_REFERENCE_LENGTH = 536870908  # Nucmer's max length of a reference file
+splitted_ref = []
+
 contig_thresholds = "0,1000"
 min_contig = 500
 #genes_lengths = "0,300,600,900,1200,1500,1800,2100,2400,2700,3000"

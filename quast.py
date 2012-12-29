@@ -108,10 +108,19 @@ def usage():
         print >> sys.stderr, "-d  --debug                  run in debug mode"
         print >> sys.stderr, "-h  --help                   print this usage message"
 
+
+def warning(message=''):
+    print "\nWARNING! " + str(message) + "\n"
+
+
+def error(message='', errcode=1):
+    print >> sys.stderr, "\nERROR! " + str(message) + "\n"
+    sys.exit(errcode)
+
+
 def assert_file_exists(fpath, message=''):
     if not os.path.isfile(fpath):
-        print >> sys.stderr, "\nERROR! File not found (%s): %s\n" % (message, fpath)
-        sys.exit(2)
+        error("File not found (%s): %s" % (message, fpath), 2)
     return fpath
 
 
@@ -153,35 +162,40 @@ def correct_fasta(original_fpath, corrected_fpath, is_reference=False):
             corr_seq = re.sub(pat, lambda m:dic[m.group()], corr_seq)
             # checking that only A,C,G,T or N presented in sequence
             if re.compile(r'[^ACGTN]').search(corr_seq):
+                warning(original_fpath + " will be SKIPPED because it contains non-ACGTN characters!")
                 return False
             modified_fasta_entries.append((corr_name, corr_seq))
     fastaparser.write_fasta(corrected_fpath, modified_fasta_entries)
+
+    if is_reference:
+        ref_len = sum(len(chr_seq) for (chr_name, chr_seq) in modified_fasta_entries)
+        if ref_len > qconfig.MAX_REFERENCE_LENGTH:
+            dir_for_splitted_ref = os.path.join(os.path.dirname(corrected_fpath), 'splitted_ref')
+            os.makedirs(dir_for_splitted_ref)
+            for id, (chr_name, chr_seq) in enumerate(modified_fasta_entries):
+                if len(chr_seq) > qconfig.MAX_REFERENCE_LENGTH:
+                    warning("Chromosome " + chr_name + " will be SKIPPED because it length is greater than " +
+                            str(qconfig.MAX_REFERENCE_LENGTH) + " (Nucmer's constraint)!")
+                    continue
+                qconfig.splitted_ref.append(os.path.join(dir_for_splitted_ref, "chr_" + str(id + 1)))
+                fastaparser.write_fasta(qconfig.splitted_ref[-1], [(chr_name, chr_seq)])
+            if len(qconfig.splitted_ref) == 0:
+                warning("Reference will be SKIPPED because all of its chromosomes exceeded Nucmer's constraint!")
+                return False
     return True
-
-
-def check_dir_name(fpath):
-    dirname = os.path.dirname(fpath)
-
-    if ' ' in dirname:
-        print 'Error: QUAST can\'t use data with spaces in path. Please, replace' + fpath + '.'
-        return False
-    else:
-        return True
 
 
 def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.path.abspath(sys.path[0]), 'libs')):
     if lib_dir == os.path.join(__location__, 'libs'):
         if ' ' in __location__:
-            print >> sys.stderr, 'Error: we does not support spaces in paths. '
-            print >> sys.stderr, 'You are trying to run it from', __location__
-            print >> sys.stderr, 'Please, put QUAST in a different folder, then run it again.'
-            return 1
+            error('Error: we does not support spaces in paths. \n' + \
+                  'You are trying to run it from ' + str(__location__) + '\n' + \
+                  'Please, put QUAST in a different folder, then run it again.\n')
     else:
         if ' ' in lib_dir:
-            print >> sys.stderr, 'Error: we does not support spaces in paths. '
-            print >> sys.stderr, 'You are trying to use libs from', lib_dir
-            print >> sys.stderr, 'Please, put libs in a different folder, then run it again.'
-            return 1
+            error('Error: we does not support spaces in paths. \n' + \
+                  'You are trying to use libs from ' + str(lib_dir) + '\n' + \
+                  'Please, put libs in a different folder, then run it again.\n')
 
 
     ######################
@@ -304,7 +318,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
                 output_dirpath = str(base_dirpath) + '__' + str(i)
                 i += 1
         else:
-            print "\nWarning! Output directory already exists! Existing Nucmer alignments can be used!\n"
+            warning("Output directory already exists! Existing Nucmer alignments can be used!")
 
     if not os.path.isdir(output_dirpath):
         os.makedirs(output_dirpath)
@@ -367,7 +381,11 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
     reload(reporting)
     reporting.min_contig = qconfig.min_contig
 
-    print 'Correcting contig files...'
+    print 'Correcting contig files',
+    if qconfig.reference:
+        print "and reference",
+    print "..."
+
     if os.path.isdir(corrected_dirpath):
         shutil.rmtree(corrected_dirpath)
     os.mkdir(corrected_dirpath)
@@ -383,20 +401,21 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
 
         # correcting
         if not correct_fasta(qconfig.reference, corrected_and_unziped_reference_fname, True):
-            print "\n  Warning! Provided reference will be skipped because it contains non-ACGTN characters.\n"
             qconfig.reference = ""
         else:
             qconfig.reference = corrected_and_unziped_reference_fname
 
+        # splitting reference if needed
+
+
     def handle_fasta(contigs_fpath, corr_fpath):
         lengths = fastaparser.get_lengths_from_fastafile(contigs_fpath)
         if not sum(1 for l in lengths if l >= qconfig.min_contig):
-            print "\n  Warning! %s will be skipped because it doesn't have contigs >= %d bp.\n" % (os.path.basename(contigs_fpath), qconfig.min_contig)
+            warning("%s will be SKIPPED because it doesn't have contigs >= %d bp." % (os.path.basename(contigs_fpath), qconfig.min_contig))
             return False
 
         # correcting
         if not correct_fasta(contigs_fpath, corr_fpath):
-            print "\n  Warning! %s will be skipped because it contains non-ACGTN characters.\n" % (os.path.basename(contigs_fpath))
             return False
 
         ## filling column "Assembly" with names of assemblies
@@ -476,7 +495,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
         ### GAGE
         ########################################################################
         if not qconfig.reference:
-            print >> sys.stderr, "\nError! GAGE can't be run without a reference!\n"
+            warning("GAGE can't be run without a reference and will be SKIPPED!")
         else:
             from libs import gage
             gage.do(qconfig.reference, contigs_fpaths, output_dirpath, qconfig.min_contig, lib_dir)

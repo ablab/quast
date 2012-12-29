@@ -356,11 +356,34 @@ def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_
     if not using_existing_alignments:
         print >> plantafile, '\tRunning Nucmer...'
         print '  ' + id_to_str(id) + 'Running Nucmer... '
-        # GAGE params of Nucmer
-        #subprocess.call(['nucmer', '--maxmatch', '-p', nucmerfilename, '-l', '30', '-banded', reference, filename],
-        #    stdout=open(logfilename_out, 'a'), stderr=logfile_err, env=myenv)
-        subprocess.call(['nucmer', '-c', str(qconfig.mincluster), '--maxmatch', '-p', nucmerfilename, reference, filename],
-             stdout=open(logfilename_out, 'a'), stderr=logfile_err, env=myenv)
+
+        if qconfig.splitted_ref:
+            # filling common delta file
+            delta_file = open(delta_filename, 'w')
+            delta_file.write(reference + " " + filename + "\n")
+            delta_file.write("NUCMER\n")
+
+            # processing each chromosome separately
+            for chr_file in qconfig.splitted_ref:
+                nucmer_chr_filename = nucmerfilename + "_" + os.path.basename(chr_file)
+                subprocess.call(['nucmer', '-c', str(qconfig.mincluster), '--maxmatch', '-p',
+                                 nucmer_chr_filename, chr_file, filename], stdout=open(logfilename_out, 'a'),
+                                 stderr=logfile_err, env=myenv)
+
+                chr_delta_file = open(nucmer_chr_filename + '.delta')
+                chr_delta_file.readline()
+                chr_delta_file.readline()
+                for line in chr_delta_file:
+                    delta_file.write(line)
+                chr_delta_file.close()
+
+            delta_file.close()
+        else:
+            # GAGE params of Nucmer
+            #subprocess.call(['nucmer', '--maxmatch', '-p', nucmerfilename, '-l', '30', '-banded', reference, filename],
+            #    stdout=open(logfilename_out, 'a'), stderr=logfile_err, env=myenv)
+            subprocess.call(['nucmer', '-c', str(qconfig.mincluster), '--maxmatch', '-p', nucmerfilename, reference, filename],
+                 stdout=open(logfilename_out, 'a'), stderr=logfile_err, env=myenv)
 
         # Filtering by IDY% = 95 (as GAGE did)
         subprocess.call(['delta-filter', '-i', '95', delta_filename],

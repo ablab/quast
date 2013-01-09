@@ -366,9 +366,9 @@ def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_
             # processing each chromosome separately
             for chr_file in qconfig.splitted_ref:
                 nucmer_chr_filename = nucmerfilename + "_" + os.path.basename(chr_file)
-                subprocess.call(['nucmer', '-c', str(qconfig.mincluster), '--maxmatch', '-p',
-                                 nucmer_chr_filename, chr_file, filename], stdout=open(logfilename_out, 'a'),
-                                 stderr=logfile_err, env=myenv)
+                subprocess.call(['nucmer', '-c', str(qconfig.mincluster), '-l', str(qconfig.mincluster),
+                                 '--maxmatch', '-p', nucmer_chr_filename, chr_file, filename],
+                                 stdout=open(logfilename_out, 'a'), stderr=logfile_err, env=myenv)
 
                 chr_delta_file = open(nucmer_chr_filename + '.delta')
                 chr_delta_file.readline()
@@ -382,8 +382,9 @@ def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_
             # GAGE params of Nucmer
             #subprocess.call(['nucmer', '--maxmatch', '-p', nucmerfilename, '-l', '30', '-banded', reference, filename],
             #    stdout=open(logfilename_out, 'a'), stderr=logfile_err, env=myenv)
-            subprocess.call(['nucmer', '-c', str(qconfig.mincluster), '--maxmatch', '-p', nucmerfilename, reference, filename],
-                 stdout=open(logfilename_out, 'a'), stderr=logfile_err, env=myenv)
+            subprocess.call(['nucmer', '-c', str(qconfig.mincluster), '-l', str(qconfig.mincluster),
+                             '--maxmatch', '-p', nucmerfilename, reference, filename],
+                             stdout=open(logfilename_out, 'a'), stderr=logfile_err, env=myenv)
 
         # Filtering by IDY% = 95 (as GAGE did)
         subprocess.call(['delta-filter', '-i', '95', delta_filename],
@@ -718,8 +719,10 @@ def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_
                         print >> plantafile, '\t\tThis contig is partially unaligned. (%d out of %d)' % (
                         top_len, ctg_len)
                         print >> plantafile, '\t\tAlignment: %s' % str(sorted_aligns[0])
-                        print >> plantafile, '\t\tUnaligned bases: 1 to %d (%d)' % (begin, begin)
-                        print >> plantafile, '\t\tUnaligned bases: %d to %d (%d)' % (end, ctg_len, ctg_len - end + 1)
+                        if (begin - 1):
+                            print >> plantafile, '\t\tUnaligned bases: 1 to %d (%d)' % (begin - 1, begin - 1)
+                        if (ctg_len - end):
+                            print >> plantafile, '\t\tUnaligned bases: %d to %d (%d)' % (end + 1, ctg_len, ctg_len - end)
                         # check if both parts (aligned and unaligned) have significant length
                         if (unaligned_bases >= qconfig.min_contig) and (ctg_len - unaligned_bases >= qconfig.min_contig):
                             partially_unaligned_with_significant_parts += 1

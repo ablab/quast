@@ -270,43 +270,6 @@ def reporting_filter(value):
     return True
 
 
-#def simple_table(order=Fields.order):
-#    return grouped_table(grouped_order=)
-#
-#    table = []
-#
-#    def append_line(rows, field, pattern=None, feature=None, i=None):
-#        quality = get_quality(field)
-#        values = []
-#
-#        for assembly_name in assemblies_order:
-#            report = get(assembly_name)
-#            value = report.get_field(field)
-#            if feature is None:
-#                values.append(value)
-#            else:
-#                values.append(value[i] if i < len(value) else None)
-#
-#        if filter(reporting_filter, values):
-#            metric_name = field if (feature is None) else pattern % feature
-#            #ATTENTION! Contents numeric values, needed to be converted to strings.
-#            rows.append({
-#                'metricName': metric_name,
-#                'quality': quality,
-#                'values': values,
-#                'isMain': field in Fields.main_metrics
-#            })
-#
-#    for field in order:
-#        if isinstance(field, tuple): # TODO: rewrite it nicer
-#            for i, feature in enumerate(field[1]):
-#                append_line(table, field, field[0], feature, i)
-#        else:
-#            append_line(table, field)
-#
-#    return table
-
-
 #ATTENTION! Contents numeric values, needed to be converted into strings
 def table(order=Fields.order):
     if not isinstance(order[0], tuple): # is not a groupped metrics order

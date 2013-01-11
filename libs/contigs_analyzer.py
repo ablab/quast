@@ -34,158 +34,6 @@ class Misassembly:
     TRANSLOCATION=2
     INVERSION=3
 
-# see bug http://ablab.myjetbrains.com/youtrack/issue/QUAST-74 for more details
-def additional_cleaning(all):
-    counter = 0
-    cleaned = {}
-    for contig in all.iterkeys():
-        #print contig
-        if len(all[contig]) == 1:
-            cleaned[contig] = all[contig]
-        else:
-            # align: 0:start_contig, 1:end_contig, 2:start_reference, 3:end_reference, 4:IDY%, 5:reference_id
-            sorted_aligns = sorted(all[contig], key=lambda align: min(align[0], align[1]))
-            ids_to_discard = []
-            for id1, align1 in enumerate(sorted_aligns[:-1]):
-                if id1 in ids_to_discard:
-                    continue
-
-                for i, align2 in enumerate(sorted_aligns[id1 + 1:]):
-                    id2 = i + id1 + 1
-                    if id2 in ids_to_discard:
-                        continue
-
-                    # if start of align2 > end of align1 than there is no more overlapped aligns with align1
-                    if min(align2[0], align2[1]) > max(align1[0], align1[1]):
-                        break
-
-                    # if all second alignment is inside first alignment then discard it
-                    if max(align2[0], align2[1]) < max(align1[0], align1[1]):
-                        ids_to_discard.append(id2)
-                        continue
-
-                    # if overlap is less than half of shortest of align1 and align2 we shouldn't discard anything
-                    overlap_size =  max(align1[0], align1[1]) - min(align2[0], align2[1]) + 1
-                    threshold = 0.5
-                    if float(overlap_size) < threshold * min(abs(align2[0] - align2[1]), abs(align1[0] - align1[1])):
-                        continue
-
-                    # align with worse IDY% is under suspicion
-                    len_diff =  min(align2[0], align2[1]) - min(align1[0], align1[1])
-                    if align1[4] < align2[4]:
-                        quality_loss = 100.0 * float(len_diff) / float(abs(align2[0] - align2[1]) + 1)
-                        if quality_loss < abs(align1[4] - align2[4]):
-                            #print "discard id1: ", id1, ", quality loss", quality_loss, "lendiff", len_diff, "div", float(abs(align2[0] - align2[1]) + 1)
-                            ids_to_discard.append(id1)
-                    elif align2[4] < align1[4]:
-                        quality_loss = 100.0 * float(len_diff) / float(abs(align1[0] - align1[1]) + 1)
-                        if quality_loss < abs(align1[4] - align2[4]):
-                            #print "discard id2: ", id2, ", quality loss", quality_loss, "lendiff", len_diff, "div", float(abs(align1[0] - align1[1]) + 1)
-                            ids_to_discard.append(id2)
-
-            cleaned[contig] = []
-            for id, align in enumerate(sorted_aligns):
-                if id not in ids_to_discard:
-                    cleaned[contig].append(align)
-            counter += len(ids_to_discard)
-            #print cleaned[contig]
-    return cleaned, counter
-
-
-def sympalign(id, out_filename, in_filename):
-    print '  ' + id_to_str(id) + 'Running SympAlign...'
-    assert in_filename[-5:] == '.btab', in_filename
-    counter = [0, 0]
-    all = {}
-    list_events = []
-    aligns = {}
-    for line in open(in_filename, 'r'):
-        arr = line.split('\t')
-        #    Output format will consist of 21 tab-delimited columns. These are as
-        #    follows: [0] query sequence ID [1] date of alignment [2] length of the query [3] alignment type
-        #    [4] reference file [5] reference sequence ID [6] start of alignment in the query [7] end of alignment
-        #    in the query [8] start of alignment in the reference [9] end of
-        #    alignment in the reference [10] percent identity [11] percent
-        #    similarity [12] length of alignment in the query [13] 0 for
-        #    compatibility [14] 0 for compatibility [15] NULL for compatibility
-        #    [16] 0 for compatibility [17] strand of the query [18] length of the
-        #    reference sequence [19] 0 for compatibility [20] and 0 for
-        #    compatibility.
-        #
-        # NODE_31_length_14785	Aug 23 2011	14785	NUCMER	/home/data/input/E.Coli.K12.MG1655/MG1655-K12.fasta	gi|49175990|ref|NC_000913.2|	14785	14203	3364194	3364776	100.000000	100.000000	583	0	0	NULL	0	Minus	4639675	0	0
-        # NODE_31_length_14785	Aug 23 2011	14785	NUCMER	/home/data/input/E.Coli.K12.MG1655/MG1655-K12.fasta	gi|49175990|ref|NC_000913.2|	14785	1	3650675	3665459	99.945892	99.945892	14785	0	0	NULL	0	Minus	4639675	0	0
-        contig_id = arr[0]
-        contig_len = int(arr[2])
-        ref_id = arr[5]
-        sc, ec, sr, er = map(int, arr[6:10])
-        p = float(arr[10])
-        lc = abs(sc - ec) + 1
-        # lr = abs(sr - er) + 1
-        if lc != int(arr[12]):
-            print '    Error: lc != int(arr[12]) ' + str(lc) + ' ' + str(int(arr[12]))
-            return
-        align = (sc, ec, sr, er, p, ref_id)
-        contig = (contig_id, contig_len)
-        if contig not in aligns:
-            aligns[contig] = []
-        aligns[contig].append(align)
-        counter[0] += 1
-
-    for contig in aligns:
-        contig_id, contig_len = contig
-        superb = False
-        output = []
-        for a in sorted(aligns[contig], key=lambda align: (-abs(align[0] - align[1]), -align[4])):
-            sc, ec, sr, er, p, ref_id = a[0:6]
-            lc = abs(sc - ec) + 1
-            # lr = abs(sr - er) + 1
-            if lc >= 0.99 * contig_len:
-                superb = True
-                output.append(a)
-            else:
-                if superb:
-                    break
-                discard = False
-                for b in output:
-                    sc2, ec2, sr2, er2, p2 = b[0:5]
-                    lc2 = abs(sc2 - ec2) + 1
-                    # lr2 = abs(sr2 - er2) + 1
-                    if min(sc2, ec2) <= min(sc, ec) and max(sc, ec) <= max(sc2, ec2) and (
-                        (lc <= 0.5 * lc2) or (p < p2 * 0.9999)):
-                        discard = True
-                        break
-                if discard:
-                    continue
-                output.append(a)
-        counter[1] += len(output)
-        all[contig] = output
-        for a in output:
-            sc, ec, sr, er, p = a[0:5]
-            xr = min(sr, er)
-            yr = max(sr, er) + 1
-            ev1 = (xr, +1, contig, a)
-            ev2 = (yr, -1, contig, a)
-            list_events += [ev1, ev2]
-
-    print '  ' + id_to_str(id) + '  Cleaned ' + str(counter[0]) + ' down to ' + str(counter[1])
-    all, add_counter = additional_cleaning(all)
-    print '  ' + id_to_str(id) + '  Additionally cleaned ' + str(counter[1]) + ' down to ' + str(add_counter)
-
-    ouf = open(out_filename, 'w')
-    print >> ouf, "    [S1]     [E1]  |     [S2]     [E2]  |  [LEN 1]  [LEN 2]  |  [% IDY]  | [TAGS]"
-    print >> ouf, "====================================================================================="
-    for contig in sorted(all, key=lambda contig: -contig[1]):
-        contig_id, contig_len = contig
-        for a in all[contig]:
-            sc, ec, sr, er, p, ref_id = a[0:6]
-            lc = abs(sc - ec) + 1
-            lr = abs(sr - er) + 1
-            label = ref_id + '\t' + contig_id
-            print >> ouf, '%8d %8d  | %8d %8d  | %8d %8d  | %8.4f  | %s' % (sr, er, sc, ec, lr, lc, p, label)
-    ouf.close()
-    print '  ' + id_to_str(id) + '  Sympaligning is finished.'
-
-
 class Mapping(object):
     def  __init__(self, s1, e1, s2, e2, len1, len2, idy, ref, contig):
         self.s1, self.e1, self.s2, self.e2, self.len1, self.len2, self.idy, self.ref, self.contig = s1, e1, s2, e2, len1, len2, idy, ref, contig
@@ -394,9 +242,6 @@ def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_
             stdout=open(filtered_delta_filename, 'w'), stderr=logfile_err, env=myenv)
         shutil.move(filtered_delta_filename, delta_filename)
 
-        # disabling sympalign: part1
-        #subprocess.call(['show-coords', '-B', delta_filename],
-        #    stdout=open(coords_btab_filename, 'w'), stderr=logfile_err, env=myenv)
         tmp_coords_filename = coords_filename + '_tmp'
         subprocess.call(['show-coords', delta_filename],
             stdout=open(tmp_coords_filename, 'w'), stderr=logfile_err, env=myenv)
@@ -417,9 +262,6 @@ def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_
             coords_file.write(line)
         coords_file.close()
         tmp_coords_file.close()
-
-        # disabling sympalign: part2
-        #sympalign(id, coords_filename, coords_btab_filename)
 
         if not os.path.isfile(coords_filename):
             print >> logfile_err, id_to_str(id) + 'Nucmer failed for', filename + ':', coords_filename, 'doesn\'t exist.'
@@ -1190,26 +1032,6 @@ def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_
     logfile_err.close()
     print '  ' + id_to_str(id) + 'Analysis is finished.'
     return NucmerStatus.OK, result
-
-###  I think we don't need this
-#    if draw_plots and os.path.isfile(delta_filename):
-#        # draw reference coverage plot
-#        print '    Drawing reference coverage plot...',
-#        plotfilename = output_dir + '/mummerplot_' + os.path.basename(filename)
-#        plot_logfilename_out = output_dir + '/mummerplot_' + os.path.basename(filename) + '.stdout'
-#        plot_logfilename_err = output_dir + '/mummerplot_' + os.path.basename(filename) + '.stderr'
-#        plot_logfile_out = open(plot_logfilename_out, 'w')
-#        plot_logfile_err = open(plot_logfilename_err, 'w')
-#        subprocess.call(
-#            ['mummerplot', '--coverage', '--postscript', '--prefix', plotfilename, delta_filename],
-#            stdout=plot_logfile_out, stderr=plot_logfile_err, env=myenv)
-#        plot_logfile_out.close()
-#        plot_logfile_err.close()
-#        print 'saved to', plotfilename + '.ps'
-#        for ext in ['.gp', '.rplot', '.fplot']: # remove redundant files
-#            if os.path.isfile(plotfilename + ext):
-#                os.remove(plotfilename + ext)
-
 
 
 def plantakolya_process(cyclic, draw_plots, nucmer_output_dir, filename, id, myenv, output_dir, reference):

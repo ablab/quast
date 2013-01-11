@@ -24,11 +24,6 @@ addsitedir(os.path.join(__location__, 'libs/site_packages'))
 
 import simplejson as json
 
-
-#sys.path.append(os.path.join(os.path.abspath(sys.path[0]), 'libs'))
-#sys.path.append(os.path.join(os.path.abspath(sys.path[0]), '../spades_pipeline'))
-
-
 from libs import qconfig
 from libs import fastaparser
 from libs.html_saver import json_saver

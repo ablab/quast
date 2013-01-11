@@ -148,36 +148,6 @@ def do(reference, filenames, nucmer_dir, output_dir, genes_filename, operons_fil
         for chr_name, chr_len in reference_chromosomes.iteritems():
             genome_mapping[chr_name] = [0] * (chr_len + 1)
 
-        # '''
-        # nodes_len_coeff = collections.defaultdict(lambda:0.0)
-        # for line in coordfile:
-        #     sections = line.split('|')
-        #     node_id = sections[len(sections) - 1]    
-
-        #     len1 = float(sections[2].split()[0])
-        #     len2 = float(sections[2].split()[1])
-        #     idy = float(sections[3].strip())
-        #     len_coef = (len1 + len2) / 2.0 * idy / 100.0
-        #     if len_coef > nodes_len_coeff[node_id]:
-        #         nodes_len_coeff[node_id] = len_coef
-
-        # coordfile.seek(0)        
-
-        # for line in coordfile: 
-        #     sections = line.split('|')          
-        #     node_id = sections[len(sections) - 1]    
-
-        #     len1 = float(sections[2].split()[0])
-        #     len2 = float(sections[2].split()[1])
-        #     idy = float(sections[3].strip())
-        #     len_coef = (len1 + len2) / 2.0 * idy / 100.0
-        #     if len_coef > nodes_len_coeff[node_id] * (100.0 - threshold) / 100.0:
-        #         s1 = int(sections[0].split()[0])
-        #         e1 = int(sections[0].split()[1])
-        #         for i in range(s1, e1 + 1):
-        #             genome[i] = 1
-        # '''
-
         # for gene finding
         aligned_blocks = {} # contig_name --> list of AlignedBlock
         # for cumulative plots

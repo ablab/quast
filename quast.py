@@ -78,7 +78,9 @@ def usage():
         print >> sys.stderr, "--contig-thresholds   <int,int,..>  comma-separated list of contig length thresholds [default: %s]" % qconfig.contig_thresholds
         print >> sys.stderr, "--genemark-thresholds <int,int,..>  comma-separated list of threshold lengths of genes to search with GeneMark [default is %s]" % qconfig.genes_lengths
         print >> sys.stderr, "--scaffolds                         this flag informs QUAST that provided assemblies are scaffolds"
-        print >> sys.stderr, '--eukaryote                         this flag should be set if the genome is an eukaryote'
+        print >> sys.stderr, '--eukaryote                         this flag informs QUAST that assembled genome is an eukaryote.'
+        print >> sys.stderr, '--use-old-genome-analyzer           this flag forces QUAST to compute Genome fraction, # genes, # operons metrics in compatible'
+        print >> sys.stderr, '                                    with QUAST v.1.0 - 1.3 mode (using all Nucmer\'s alignments without QUAST filtration).'
         print >> sys.stderr, '--allow-repeats                     this flag forces QUAST to use all alignments of a contig with multiple equally good '
         print >> sys.stderr, '                                    alignments (probably a repeat). By default, QUAST skips all alignments of such contigs.'
         print >> sys.stderr, ""
@@ -97,14 +99,15 @@ def usage():
         print >> sys.stderr, "-r  --est-ref-size <int>     Estimated reference size (for calculating NG)"
         print >> sys.stderr, ""
         print >> sys.stderr, 'Options without arguments'
-        print >> sys.stderr, "-s  --scaffolds              this flag informs QUAST that provided assemblies are scaffolds"
-        print >> sys.stderr, '-g  --gage                   use Gage (results are in gage_report.txt)'
-        print >> sys.stderr, '-e  --eukaryote              genome is an eukaryote'
-        print >> sys.stderr, '-a  --allow-repeats          QUAST use all alignments of contigs covering repeats (ambiguous)'
-        print >> sys.stderr, "-j  --save-json              save the output also in the JSON format"
-        print >> sys.stderr, "-J  --save-json-to <path>    save the JSON-output to a particular path"
-        print >> sys.stderr, "`   --no-html                don't build html report"
-        print >> sys.stderr, "`   --no-plots               don't draw plots (to make quast faster)"
+        print >> sys.stderr, "-s  --scaffolds               this flag informs QUAST that provided assemblies are scaffolds"
+        print >> sys.stderr, '-g  --gage                    use Gage (results are in gage_report.txt)'
+        print >> sys.stderr, '-e  --eukaryote               genome is an eukaryote'
+        print >> sys.stderr, '-a  --allow-repeats           use all alignments of contigs covering repeats (ambiguous)'
+        print >> sys.stderr, '-u  --use-old-genome-analyzer compute Genome fraction, # genes, # operons in v.1.0-1.3 style'
+        print >> sys.stderr, "-j  --save-json               save the output also in the JSON format"
+        print >> sys.stderr, "-J  --save-json-to <path>     save the JSON-output to a particular path"
+        print >> sys.stderr, "`   --no-html                 don't build html report"
+        print >> sys.stderr, "`   --no-plots                don't draw plots (to make quast faster)"
         print >> sys.stderr, ""
         print >> sys.stderr, "-d  --debug                  run in debug mode"
         print >> sys.stderr, "-h  --help                   print this usage message"
@@ -273,6 +276,9 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
 
         elif opt in ('-a', "--allow-repeats"):
             qconfig.allow_repeats = True
+
+        elif opt in ('-u', "--use-old-genome-analyzer"):
+            qconfig.use_old_genome_analyzer = True
 
         elif opt == '--no-plots':
             qconfig.draw_plots = False

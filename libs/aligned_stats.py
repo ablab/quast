@@ -37,6 +37,9 @@ def get_lengths_from_coordfile(nucmer_filename): # TODO: re-use Mappings from pl
 
     for line in coordfile:
         splitted = line.split('|')
+        # special case: option --allow-repeats turned on
+        if splitted[-1].split()[-1] == 'repeat':
+            continue
         len2 = int(splitted[2].split()[1])
         aligned_lengths.append(len2)
     coordfile.close()
@@ -70,7 +73,7 @@ def do(reference, filenames, nucmer_dir, output_dir, all_pdf, draw_plots, json_o
         nucmer_filename = os.path.join(nucmer_prefix, os.path.basename(filename) + '.coords.filtered')
         assembly_lengths.append(sum(fastaparser.get_lengths_from_fastafile(filename)))
         if not os.path.isfile(nucmer_filename):
-            print '  Error: nucmer .coords.filtered file (' + nucmer_filename + ') not found, skipping...'
+            print '  Error: Nucmer\'s coords.filtered file (' + nucmer_filename + ') not found, skipping...'
             lists_of_lengths.append([0])
         else:
             lists_of_lengths.append(get_lengths_from_coordfile(nucmer_filename))

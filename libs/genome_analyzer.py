@@ -124,9 +124,13 @@ def do(reference, filenames, nucmer_dir, output_dir, genes_filename, operons_fil
     for id, filename in enumerate(filenames):
         print ' ', id_to_str(id) + os.path.basename(filename) + '...'
 
-        nucmer_filename = os.path.join(nucmer_prefix, os.path.basename(filename) + '.coords')
+        if qconfig.use_old_genome_analyzer:
+            nucmer_filename = os.path.join(nucmer_prefix, os.path.basename(filename) + '.coords')
+        else:
+            nucmer_filename = os.path.join(nucmer_prefix, os.path.basename(filename) + '.coords.filtered')
+
         if not os.path.isfile(nucmer_filename):
-            print '  Error: nucmer .coords file (' + nucmer_filename + ') not found, skipping...'
+            print '  Error: Nucmer\'s coords file (' + nucmer_filename + ') not found, skipping...'
             continue
 
         coordfile = open(nucmer_filename, 'r')
@@ -194,7 +198,7 @@ def do(reference, filenames, nucmer_dir, output_dir, genes_filename, operons_fil
                 break
             s1 = int(line.split('|')[0].split()[0])
             e1 = int(line.split('|')[0].split()[1])
-            contig_name = line.split()[-1].strip()
+            contig_name = line.split()[12].strip()
             chr_name = line.split()[11].strip()
             aligned_blocks[contig_name].append(AlignedBlock(seqname=chr_name, start=s1, end=e1))
             for i in range(s1, e1 + 1):

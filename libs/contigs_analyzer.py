@@ -26,7 +26,7 @@ import shutil
 from libs import reporting, qconfig
 from qutils import id_to_str
 
-required_binaries = ['nucmer', 'delta-filter', 'show-coords', 'dnadiff', 'show-snps']
+required_binaries = ['nucmer', 'delta-filter', 'show-coords', 'show-snps']
 
 class Misassembly:
     LOCAL=0
@@ -336,7 +336,7 @@ def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_
     unaligned_filename = nucmerfilename + '.unaligned'
     snps_filename = nucmerfilename + '.snps'
     show_snps_filename = nucmerfilename + '.show_snps'
-    nucmer_report_filename = nucmerfilename + '.report'
+    #nucmer_report_filename = nucmerfilename + '.report'
     plantafile = open(logfilename_out, 'w')
 
     print >> plantafile, 'Aligning contigs to reference...'
@@ -344,8 +344,8 @@ def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_
     # Checking if there are existing previous nucmer alignments.
     # If they exist, using them to save time.
     using_existing_alignments = False
-    if (os.path.isfile(nucmer_successful_check_filename) and os.path.isfile(coords_filename)
-        and os.path.isfile(nucmer_report_filename)):
+    if (os.path.isfile(nucmer_successful_check_filename) and os.path.isfile(coords_filename)):
+        #and os.path.isfile(nucmer_report_filename)):
 
         successful_check_content = open(nucmer_successful_check_filename).read().split('\n')
         if len(successful_check_content) > 2 and successful_check_content[1].strip() == str(qconfig.min_contig):
@@ -397,8 +397,8 @@ def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_
         tmp_coords_filename = coords_filename + '_tmp'
         subprocess.call(['show-coords', delta_filename],
             stdout=open(tmp_coords_filename, 'w'), stderr=logfile_err, env=myenv)
-        subprocess.call(['dnadiff', '-d', delta_filename, '-p', nucmerfilename],
-            stdout=open(logfilename_out, 'a'), stderr=logfile_err, env=myenv)
+        #subprocess.call(['dnadiff', '-d', delta_filename, '-p', nucmerfilename],
+        #    stdout=open(logfilename_out, 'a'), stderr=logfile_err, env=myenv)
 
         # removing waste lines from coords file
         coords_file = open(coords_filename, 'w')
@@ -422,10 +422,10 @@ def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_
             print >> logfile_err, id_to_str(id) + 'Nucmer failed for', filename + ':', coords_filename, 'doesn\'t exist.'
             print '  ' + id_to_str(id) + 'Nucmer failed for ' + '\'' + os.path.basename(filename) + '\'.'
             return NucmerStatus.FAILED, {}
-        if not os.path.isfile(nucmer_report_filename):
-            print >> logfile_err, id_to_str(id) + 'Nucmer failed for', filename + ':', nucmer_report_filename, 'doesn\'t exist.'
-            print '  ' + id_to_str(id) + 'Nucmer failed for ' + '\'' + os.path.basename(filename) + '\'.'
-            return NucmerStatus.FAILED, {}
+        #if not os.path.isfile(nucmer_report_filename):
+        #    print >> logfile_err, id_to_str(id) + 'Nucmer failed for', filename + ':', nucmer_report_filename, 'doesn\'t exist.'
+        #    print '  ' + id_to_str(id) + 'Nucmer failed for ' + '\'' + os.path.basename(filename) + '\'.'
+        #    return NucmerStatus.FAILED, {}
         if len(open(coords_filename).readlines()[-1].split()) < 13:
             print >> logfile_err, id_to_str(id) + 'Nucmer: nothing aligned for', filename
             print '  ' + id_to_str(id) + 'Nucmer: nothing aligned for ' + '\'' + os.path.basename(filename) + '\'.'
@@ -521,7 +521,6 @@ def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_
     print >> plantafile, '\tTotal Regions: %d' % total_regions
     print >> plantafile, '\tTotal Region Length: %d' % total_reg_len
 
-    SNPs = 0
     unaligned = 0
     partially_unaligned = 0
     fully_unaligned_bases = 0
@@ -589,14 +588,9 @@ def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_
                     print >> plantafile, '\t\tThis contig has %d significant alignments. [different alignments of a repeat]' % len(
                         top_aligns)
 
-                    # Alex: count these aligns as normal (just different aligns of one repeat) or take only the best one
-                    if qconfig.only_best_alignments:
-                        print >> plantafile, '\t\tTaking only one alignment (option --only-best-alignment is set)'
-                        print >> plantafile, '\t\tAlignment: %s' % str(top_aligns[0])
-                        ref_aligns.setdefault(top_aligns[0].ref, []).append(top_aligns[0])
-                        print >> coords_filtered_file, str(top_aligns[0])
-                        top_aligns = top_aligns[1:]
-                        print >> plantafile, '\t\tSkipping other alignments:'
+                    # Alex: skip all alignments or count them as normal (just different aligns of one repeat). Depend on --allow-repeats option
+                    if not qconfig.allow_repeats:
+                        print >> plantafile, '\t\tSkipping these alignments (option --allow-repeats is not set):'
                         for align in top_aligns:
                             print >> plantafile, '\t\tSkipping alignment ', align
                     else:
@@ -1058,8 +1052,8 @@ def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_
                         #If SNP is a deletion, record
                         if snp == 'D':
                             region_deletion += 1
-                            if current.s2 < current.e2: contig_estimate += 1
-                            else: contig_estimate -= 1
+                            if current.s2 < current.e2: contig_estimate -= 1
+                            else: contig_estimate += 1
                         #If SNP is a mismatch, record
                         if snp == 'S':
                             region_snp += 1
@@ -1082,20 +1076,27 @@ def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_
                 snip_right = 0
 
     # calulating SNPs and Subs. error (per 100 kbp)
-    indels = 0
-    total_aligned_bases = 0
-    for line in open(nucmer_report_filename):
-        #                           [REF]                [QRY]
-        # AlignedBases         4501335(97.02%)      4513272(90.71%)    
-        if line.startswith('AlignedBases'):
-            total_aligned_bases = int(line.split()[2].split('(')[0])
-        # TotalSNPs                  516                  516
-        if line.startswith('TotalSNPs'):
-            SNPs = int(line.split()[2])
-        # TotalIndels                 9                    9
-        if line.startswith('TotalIndels'):
-            indels = int(line.split()[2])
-            break
+    ##### getting results from Nucmer's dnadiff
+#    SNPs = 0
+#    indels = 0
+#    total_aligned_bases = 0
+#    for line in open(nucmer_report_filename):
+#        #                           [REF]                [QRY]
+#        # AlignedBases         4501335(97.02%)      4513272(90.71%)
+#        if line.startswith('AlignedBases'):
+#            total_aligned_bases = int(line.split()[2].split('(')[0])
+#        # TotalSNPs                  516                  516
+#        if line.startswith('TotalSNPs'):
+#            SNPs = int(line.split()[2])
+#        # TotalIndels                 9                    9
+#        if line.startswith('TotalIndels'):
+#            indels = int(line.split()[2])
+#            break
+
+    ##### getting results from Plantagora's algorithm
+    SNPs = region_snp
+    indels = region_insertion + region_deletion
+    total_aligned_bases = region_covered
 
     print >> plantafile, '\tLocal Misassemblies: %d' % region_misassemblies.count(Misassembly.LOCAL)
     print >> plantafile, '\tMisassemblies: %d' % (len(region_misassemblies) - region_misassemblies.count(Misassembly.LOCAL))
@@ -1111,12 +1112,17 @@ def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_
     print >> plantafile, 'Unaligned Contig Bases: %d' % (fully_unaligned_bases + partially_unaligned_bases)
     print >> plantafile, 'Contigs with Repeats: %d' % repeats
     print >> plantafile, 'Extra Bases in Contigs with Repeats: %d' % total_repeats_extra_bases
-    print >> plantafile, 'Mismatches: %d' % SNPs
-    print >> plantafile, 'Single Nucleotide Indels: %d' % indels
+    #print >> plantafile, 'Mismatches: %d' % SNPs
+    #print >> plantafile, 'Single Nucleotide Indels: %d' % indels
 
+    print >> plantafile, ''
+    print >> plantafile, '\tCovered Bases: %d' % region_covered
+    print >> plantafile, '\tAmbiguous Bases (e.g. N\'s): %d' % region_ambig
+    print >> plantafile, ''
     print >> plantafile, '\tSNPs: %d' % region_snp
     print >> plantafile, '\tInsertions: %d' % region_insertion
     print >> plantafile, '\tDeletions: %d' % region_deletion
+    print >> plantafile, ''
     print >> plantafile, '\tPositive Gaps: %d' % len(gaps)
     internal = 0
     external = 0

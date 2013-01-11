@@ -79,7 +79,8 @@ def usage():
         print >> sys.stderr, "--genemark-thresholds <int,int,..>  comma-separated list of threshold lengths of genes to search with GeneMark [default is %s]" % qconfig.genes_lengths
         print >> sys.stderr, "--scaffolds                         this flag informs QUAST that provided assemblies are scaffolds"
         print >> sys.stderr, '--eukaryote                         this flag should be set if the genome is an eukaryote'
-        print >> sys.stderr, '--only-best-alignments              this flag forces QUAST to use only one alignment of contigs covering repeats'
+        print >> sys.stderr, '--allow-repeats                     this flag forces QUAST to use all alignments of a contig with multiple equally good '
+        print >> sys.stderr, '                                    alignments (probably a repeat). By default, QUAST skips all alignments of such contigs.'
         print >> sys.stderr, ""
         print >> sys.stderr, "-h/--help           print this usage message"
     else:
@@ -99,7 +100,7 @@ def usage():
         print >> sys.stderr, "-s  --scaffolds              this flag informs QUAST that provided assemblies are scaffolds"
         print >> sys.stderr, '-g  --gage                   use Gage (results are in gage_report.txt)'
         print >> sys.stderr, '-e  --eukaryote              genome is an eukaryote'
-        print >> sys.stderr, '-b  --only-best-alignments   QUAST use only one alignment of contigs covering repeats (ambiguous)'
+        print >> sys.stderr, '-a  --allow-repeats          QUAST use all alignments of contigs covering repeats (ambiguous)'
         print >> sys.stderr, "-j  --save-json              save the output also in the JSON format"
         print >> sys.stderr, "-J  --save-json-to <path>    save the JSON-output to a particular path"
         print >> sys.stderr, "`   --no-html                don't build html report"
@@ -270,8 +271,8 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
         elif opt in ('-e', "--eukaryote"):
             qconfig.prokaryote = False
 
-        elif opt in ('-b', "--only-best-alignments"):
-            qconfig.only_best_alignments = True
+        elif opt in ('-a', "--allow-repeats"):
+            qconfig.allow_repeats = True
 
         elif opt == '--no-plots':
             qconfig.draw_plots = False

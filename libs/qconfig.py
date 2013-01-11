@@ -42,9 +42,9 @@ mincluster = 65
 estimated_reference_size = None
 
 long_options = "output-dir= save-json-to= genes= operons= reference= contig-thresholds= min-contig= " \
-               "genemark-thresholds= save-json gage eukaryote no-plots no-html help debug " \
+               "gene-thresholds= save-json gage eukaryote no-plots no-html help debug " \
                "allow-repeats scaffolds threads= mincluster= est-ref-size= use-old-genome-analyzer".split()
-short_options = "o:G:O:R:t:M:k:J:jgehdsaT:c:r:u"
+short_options = "o:G:O:R:t:M:S:J:jgehdsaT:c:r:u"
 
 
 # other constants. Can't be changed by command-line options

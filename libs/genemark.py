@@ -102,7 +102,7 @@ def gmhmm_p_everyGC(tool_dir, fasta_path, out_name, gene_lengths, err_path):
     tool_exec = os.path.join(tool_dir, 'gmhmmp')
     heu_dir = os.path.join(tool_dir, 'heuristic_mod')
 
-    out_gff_path = out_name + '.gff'
+    out_gff_path = out_name + '_genes.gff'
     out_fasta_path = out_name + '_genes.fasta'
 
     work_dir = tempfile.mkdtemp()

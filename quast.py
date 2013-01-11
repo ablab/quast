@@ -68,16 +68,16 @@ def usage():
         print >> sys.stderr, "--min-contig <int>           lower threshold for contig length [default: %s]" % qconfig.min_contig
         print >> sys.stderr, ""
         print >> sys.stderr, "Advanced options:"
-        print >> sys.stderr, "--threads    <int>                  maximum number of threads [default: number of provided assemblies]"
-        print >> sys.stderr, "--gage                              this flag starts QUAST in \"GAGE mode\""
-        print >> sys.stderr, "--contig-thresholds   <int,int,..>  comma-separated list of contig length thresholds [default: %s]" % qconfig.contig_thresholds
-        print >> sys.stderr, "--genemark-thresholds <int,int,..>  comma-separated list of threshold lengths of genes to search with GeneMark [default is %s]" % qconfig.genes_lengths
-        print >> sys.stderr, "--scaffolds                         this flag informs QUAST that provided assemblies are scaffolds"
-        print >> sys.stderr, '--eukaryote                         this flag informs QUAST that assembled genome is an eukaryote.'
-        print >> sys.stderr, '--use-old-genome-analyzer           this flag forces QUAST to compute Genome fraction, # genes, # operons metrics in compatible'
-        print >> sys.stderr, '                                    with QUAST v.1.0 - 1.3 mode (using all Nucmer\'s alignments without QUAST filtration).'
-        print >> sys.stderr, '--allow-repeats                     this flag forces QUAST to use all alignments of a contig with multiple equally good '
-        print >> sys.stderr, '                                    alignments (probably a repeat). By default, QUAST skips all alignments of such contigs.'
+        print >> sys.stderr, "--threads    <int>                maximum number of threads [default: number of provided assemblies]"
+        print >> sys.stderr, "--gage                            this flag starts QUAST in \"GAGE mode\""
+        print >> sys.stderr, "--contig-thresholds <int,int,..>  comma-separated list of contig length thresholds [default: %s]" % qconfig.contig_thresholds
+        print >> sys.stderr, "--gene-thresholds   <int,int,..>  comma-separated list of threshold lengths of genes to search with Gene Finding module [default is %s]" % qconfig.genes_lengths
+        print >> sys.stderr, "--scaffolds                       this flag informs QUAST that provided assemblies are scaffolds"
+        print >> sys.stderr, '--eukaryote                       this flag informs QUAST that assembled genome is an eukaryote.'
+        print >> sys.stderr, '--use-old-genome-analyzer         this flag forces QUAST to compute Genome fraction, # genes, # operons metrics in compatible'
+        print >> sys.stderr, '                                  with QUAST v.1.0 - 1.3 mode (using all Nucmer\'s alignments without QUAST filtration).'
+        print >> sys.stderr, '--allow-repeats                   this flag forces QUAST to use all alignments of a contig with multiple equally good '
+        print >> sys.stderr, '                                  alignments (probably a repeat). By default, QUAST skips all alignments of such contigs.'
         print >> sys.stderr, ""
         print >> sys.stderr, "-h/--help           print this usage message"
     else:
@@ -88,7 +88,7 @@ def usage():
         print >> sys.stderr, "-O/--operons <filename>      annotated operons file"
         print >> sys.stderr, "-M  --min-contig <int>       lower threshold for contig length [default: %s]" % qconfig.min_contig
         print >> sys.stderr, "-t  --contig-thresholds      comma-separated list of contig length thresholds [default: %s]" % qconfig.contig_thresholds
-        print >> sys.stderr, "-k  --genemark-thresholds    comma-separated list of threshold lengths of genes to search with GeneMark [default: %s]" % qconfig.genes_lengths
+        print >> sys.stderr, "-S  --gene-thresholds        comma-separated list of threshold lengths of genes to search with Gene Finding module [default: %s]" % qconfig.genes_lengths
         print >> sys.stderr, "-T  --threads    <int>       maximum number of threads [default: number of provided assemblies]"
         print >> sys.stderr, "-c  --mincluster <int>       Nucmer's parameter -- the minimum length of a cluster of matches [default: %s]" % qconfig.mincluster
         print >> sys.stderr, "-r  --est-ref-size <int>     Estimated reference size (for calculating NG)"
@@ -249,7 +249,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
         elif opt in ('-r', "--est-ref-size"):
             qconfig.estimated_reference_size = int(arg)
 
-        elif opt in ('-k', "--genemark-thresholds"):
+        elif opt in ('-S', "--gene-thresholds"):
             qconfig.genes_lengths = arg
 
         elif opt in ('-j', '--save-json'):
@@ -553,12 +553,18 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
             report.add_field(reporting.Fields.GENEMARK, [""] * len(qconfig.genes_lengths))
 
     if not qconfig.genes:
-        ########################################################################
-        ### GeneMark
-        ########################################################################
-        from libs import genemark
-        genemark.do(contigs_fpaths, qconfig.genes_lengths, output_dirpath + '/predicted_genes', lib_dir)
-
+        if qconfig.prokaryote:
+            ########################################################################
+            ### GeneMark
+            ########################################################################
+            from libs import genemark
+            genemark.do(contigs_fpaths, qconfig.genes_lengths, output_dirpath + '/predicted_genes', lib_dir)
+        else:
+            ########################################################################
+            ### Glimmer
+            ########################################################################
+            from libs import glimmer
+            glimmer.do(contigs_fpaths, qconfig.genes_lengths, output_dirpath + '/predicted_genes', lib_dir)
     else:
         add_empty_predicted_genes_fields()
 

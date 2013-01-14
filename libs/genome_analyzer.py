@@ -124,7 +124,7 @@ def do(reference, filenames, nucmer_dir, output_dir, genes_filename, operons_fil
     for id, filename in enumerate(filenames):
         print ' ', id_to_str(id) + os.path.basename(filename) + '...'
 
-        if qconfig.use_old_genome_analyzer:
+        if qconfig.use_all_alignments:
             nucmer_filename = os.path.join(nucmer_prefix, os.path.basename(filename) + '.coords')
         else:
             nucmer_filename = os.path.join(nucmer_prefix, os.path.basename(filename) + '.coords.filtered')

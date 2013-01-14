@@ -69,15 +69,17 @@ def usage():
         print >> sys.stderr, ""
         print >> sys.stderr, "Advanced options:"
         print >> sys.stderr, "--threads    <int>                maximum number of threads [default: number of provided assemblies]"
-        print >> sys.stderr, "--gage                            this flag starts QUAST in \"GAGE mode\""
+        print >> sys.stderr, "--gage                            start QUAST in \"GAGE mode\""
         print >> sys.stderr, "--contig-thresholds <int,int,..>  comma-separated list of contig length thresholds [default: %s]" % qconfig.contig_thresholds
-        print >> sys.stderr, "--gene-thresholds   <int,int,..>  comma-separated list of threshold lengths of genes to search with Gene Finding module [default is %s]" % qconfig.genes_lengths
-        print >> sys.stderr, "--scaffolds                       this flag informs QUAST that provided assemblies are scaffolds"
-        print >> sys.stderr, '--eukaryote                       this flag informs QUAST that assembled genome is an eukaryote.'
-        print >> sys.stderr, '--use-old-genome-analyzer         this flag forces QUAST to compute Genome fraction, # genes, # operons metrics in compatible'
-        print >> sys.stderr, '                                  with QUAST v.1.0 - 1.3 mode (using all Nucmer\'s alignments without QUAST filtration).'
-        print >> sys.stderr, '--allow-repeats                   this flag forces QUAST to use all alignments of a contig with multiple equally good '
-        print >> sys.stderr, '                                  alignments (probably a repeat). By default, QUAST skips all alignments of such contigs.'
+        print >> sys.stderr, "--gene-thresholds   <int,int,..>  comma-separated list of threshold lengths of genes to search with Gene Finding module"
+        print >> sys.stderr, "                                  [default is %s]" % qconfig.genes_lengths
+        print >> sys.stderr, "--disable-gene-finding            disable Gene Finding module"
+        print >> sys.stderr, "--scaffolds                       provided assemblies are scaffolds"
+        print >> sys.stderr, "--eukaryote                       genome is an eukaryote"
+        print >> sys.stderr, "--use-all-alignments              compute Genome fraction, # genes, # operons metrics in compatible with QUAST v.1.* mode."
+        print >> sys.stderr, "                                  By default, QUAST filters Nucmer\'s alignments to keep only best ones"
+        print >> sys.stderr, "--allow-repeats                   use all alignments of a contig with multiple equally good alignments (probably a repeat)."
+        print >> sys.stderr, "                                  By default, QUAST skips all alignments of such contigs"
         print >> sys.stderr, ""
         print >> sys.stderr, "-h/--help           print this usage message"
     else:
@@ -94,11 +96,12 @@ def usage():
         print >> sys.stderr, "-r  --est-ref-size <int>     Estimated reference size (for calculating NG)"
         print >> sys.stderr, ""
         print >> sys.stderr, 'Options without arguments'
+        print >> sys.stderr, "-f  --disable-gene-finding    disable Gene Finding module"
         print >> sys.stderr, "-s  --scaffolds               this flag informs QUAST that provided assemblies are scaffolds"
-        print >> sys.stderr, '-g  --gage                    use Gage (results are in gage_report.txt)'
-        print >> sys.stderr, '-e  --eukaryote               genome is an eukaryote'
-        print >> sys.stderr, '-a  --allow-repeats           use all alignments of contigs covering repeats (ambiguous)'
-        print >> sys.stderr, '-u  --use-old-genome-analyzer compute Genome fraction, # genes, # operons in v.1.0-1.3 style'
+        print >> sys.stderr, "-g  --gage                    use Gage (results are in gage_report.txt)"
+        print >> sys.stderr, "-e  --eukaryote               genome is an eukaryote"
+        print >> sys.stderr, "-a  --allow-repeats           use all alignments of contigs covering repeats (ambiguous)"
+        print >> sys.stderr, "-u  --use-all-alignments      compute Genome fraction, # genes, # operons in v.1.0-1.3 style"
         print >> sys.stderr, "-j  --save-json               save the output also in the JSON format"
         print >> sys.stderr, "-J  --save-json-to <path>     save the JSON-output to a particular path"
         print >> sys.stderr, "`   --no-html                 don't build html report"
@@ -269,11 +272,14 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
         elif opt in ('-e', "--eukaryote"):
             qconfig.prokaryote = False
 
+        elif opt in ('-f', "--disable-gene-finding"):
+            qconfig.gene_finding = False
+
         elif opt in ('-a', "--allow-repeats"):
             qconfig.allow_repeats = True
 
-        elif opt in ('-u', "--use-old-genome-analyzer"):
-            qconfig.use_old_genome_analyzer = True
+        elif opt in ('-u', "--use-all-alignments"):
+            qconfig.use_all_alignments = True
 
         elif opt == '--no-plots':
             qconfig.draw_plots = False
@@ -552,7 +558,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
             report.add_field(reporting.Fields.GENEMARKUNIQUE, "")
             report.add_field(reporting.Fields.GENEMARK, [""] * len(qconfig.genes_lengths))
 
-    if not qconfig.genes:
+    if not qconfig.genes and qconfig.gene_finding:
         if qconfig.prokaryote:
             ########################################################################
             ### GeneMark

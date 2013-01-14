@@ -35,16 +35,17 @@ genes = ''
 operons = ''
 with_gage = False
 prokaryote = True # former cyclic
+gene_finding = True
 allow_repeats = False
-use_old_genome_analyzer = False
+use_all_alignments = False
 threads = None
 mincluster = 65
 estimated_reference_size = None
 
 long_options = "output-dir= save-json-to= genes= operons= reference= contig-thresholds= min-contig= " \
                "gene-thresholds= save-json gage eukaryote no-plots no-html help debug " \
-               "allow-repeats scaffolds threads= mincluster= est-ref-size= use-old-genome-analyzer".split()
-short_options = "o:G:O:R:t:M:S:J:jgehdsaT:c:r:u"
+               "allow-repeats scaffolds threads= mincluster= est-ref-size= use-all-alignments disable-gene-finding".split()
+short_options = "o:G:O:R:t:M:S:J:jgehdsaT:c:r:uf"
 
 
 # other constants. Can't be changed by command-line options

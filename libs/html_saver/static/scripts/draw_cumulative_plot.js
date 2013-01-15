@@ -9,7 +9,7 @@ var cumulative = {
     showWithData: null,
     colors: [],
 
-    draw: function(name, colors, filenames, listsOfLengths, refLenght,
+    draw: function(name, title,  colors, filenames, listsOfLengths, refLenght,
                    placeholder, legendPlaceholder, glossary) {
 
         if (!this.isInitialized) {
@@ -63,7 +63,7 @@ var cumulative = {
                 cumulative.series[i].lines = {
                     show: true,
                     lineWidth: 1,
-    //                color: lineColors[i],
+                    //                color: lineColors[i],
                 };
                 //    In order to draw dots instead of lines
                 cumulative.series[i].points = {
@@ -107,21 +107,21 @@ var cumulative = {
             }
 
 
-    //    if (referenceLength) {
-    //        yaxes.push({
-    //            ticks: [referenceLength],
-    //            min: 0,
-    //            max: maxYTick,
-    //            position: 'right',
-    ////            labelWidth: 50,
-    //            reserveSpace: true,
-    //            tickFormatter: function (val, axis) {
-    //                return '<div style="">' + toPrettyStringWithDimension(referenceLength, 'bp') +
-    //                    ' <span style="margin-left: -0.2em;">(reference)</span></div>';
-    //            },
-    //            minTickSize: 1,
-    //        });
-    //    }
+            //    if (referenceLength) {
+            //        yaxes.push({
+            //            ticks: [referenceLength],
+            //            min: 0,
+            //            max: maxYTick,
+            //            position: 'right',
+            ////            labelWidth: 50,
+            //            reserveSpace: true,
+            //            tickFormatter: function (val, axis) {
+            //                return '<div style="">' + toPrettyStringWithDimension(referenceLength, 'bp') +
+            //                    ' <span style="margin-left: -0.2em;">(reference)</span></div>';
+            //            },
+            //            minTickSize: 1,
+            //        });
+            //    }
             var yaxis = {
                 min: 0,
                 max: cumulative.maxYTick,
@@ -179,12 +179,13 @@ var cumulative = {
         showPlotWithInfo(cumulative);
 
         $('#contigs_are_ordered').show();
+        $('#gc_info').hide();
 
-    //    placeholder.resize(function () {
-    //        alert("Placeholder is now "
-    //            + $(this).width() + "x" + $(this).height()
-    //            + " pixels");
-    //    });
+        //    placeholder.resize(function () {
+        //        alert("Placeholder is now "
+        //            + $(this).width() + "x" + $(this).height()
+        //            + " pixels");
+        //    });
 
         // var o = plot.pointOffset({ x: 0, y: 0});
         // $('#cumulative-plot-placeholder').append(

@@ -32,7 +32,7 @@ var nx = {
         showWithData: null,
     },
 
-    draw: function (name, colors, filenames, data, refPlotValue,
+    draw: function (name, title, colors, filenames, data, refPlotValue,
                     placeholder, legendPlaceholder, glossary) {
 //    var titleHtml = title;
 //    if (glossary.hasOwnProperty(title)) {
@@ -99,14 +99,14 @@ var nx = {
                 }
             }
 
-            //    for (i = 0; i < plotsN; i++) {
-            //        plotsData[i].points = {
-            //            show: true,
-            //            radius: 1,
-            //            fill: 1,
-            //            fillColor: false,
-            //        }
-            //    }
+            // for (i = 0; i < plotsN; i++) {
+            //     plotsData[i].points = {
+            //         show: true,
+            //         radius: 1,
+            //         fill: 1,
+            //         fillColor: false,
+            //     }
+            // }
 
             info.showWithData = function(series, colors) {
                 var plot = $.plot(placeholder, series, {
@@ -138,7 +138,7 @@ var nx = {
                             color: '#000',
                             tickFormatter: function (val, axis) {
                                 if (val == 100) {
-                                    return '&nbsp;100%'
+                                    return '&nbsp;x<span class="rhs">&nbsp;</span>=<span class="rhs">&nbsp;</span>100%'
                                 } else {
                                     return val;
                                 }
@@ -147,6 +147,10 @@ var nx = {
                         minTickSize: 1,
                     }
                 );
+
+                var firstLabel = $('.yAxis .tickLabel').last();
+                firstLabel.prepend(title + '<span class="rhs">&nbsp;</span>=<span class="rhs">&nbsp;</span>');
+
                 bindTip(placeholder, series, plot, toPrettyString, '%', 'top right');
 
             };
@@ -163,6 +167,7 @@ var nx = {
         showPlotWithInfo(info);
 
         $('#contigs_are_ordered').hide();
+        $('#gc_info').hide();
     }
 };
 

@@ -22,7 +22,7 @@ var gns = {
         yAxisLabeled: false,
     },
 
-    draw: function (name, colors, filenames, data, refGenesNumber,
+    draw: function (name, title, colors, filenames, data, refGenesNumber,
                     placeholder, legendPlaceholder, glossary) {
 //    div.html(
 //        "<span class='plot-header'>" + kind[0].toUpperCase() + kind.slice(1) + "s covered</span>" +
@@ -131,16 +131,16 @@ var gns = {
                         lineWidth: 0.5,
                         color: '#000',
                         tickFormatter: function (val, axis) {
-                            if (!info.yAxisLabeled && val > info.maxY) {
-                                info.yAxisLabeled = true;
-                                var res = val + ' ' + kind;
-                                if (val > 1) {
-                                    res += 's'
-                                }
-                                return res;
-                            } else {
-                                return val;
-                            }
+//                            if (!info.yAxisLabeled && val > info.maxY) {
+//                                info.yAxisLabeled = true;
+//                                var res = val + ' ' + kind;
+//                                if (val > 1) {
+//                                    res += 's'
+//                                }
+//                                return res;
+//                            } else {
+                            return val;
+//                            }
                         },
                         minTickSize: 1,
                     },
@@ -153,6 +153,9 @@ var gns = {
                         minTickSize: 1,
                     },
                 });
+
+                var firstLabel = $('.yAxis .tickLabel').last();
+                firstLabel.append(' ' + name);
 
                 bindTip(placeholder, series, plot, ordinalNumberToPrettyString, 'contig', 'bottom right');
             };
@@ -169,6 +172,7 @@ var gns = {
         showPlotWithInfo(info);
 
         $('#contigs_are_ordered').show();
+        $('#gc_info').hide();
     }
 };
 

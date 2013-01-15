@@ -32,23 +32,25 @@ function distinctColors(count) {
 
 /**************/
 /* FORMATTING */
-function isInt(num) {
+function isIntegral(num) {
     return num % 1 === 0;
 }
 
-function isFloat(num) {
-    return !isInt(num);
+function isFractional(num) {
+    return !isIntegral(num);
 }
 
 function toPrettyString(num, unit) {
     if (typeof num === 'number') {
         var str;
         if (num <= 9999) {
-            if (isFloat(num)) {
-                if (num <= 9) {
-                    str = num.toFixed(3);
-                } else {
+            if (isFractional(num)) {
+                if (isIntegral(num * 10)) {
+                    str = num.toFixed(1);
+                } else if (isIntegral(num * 100) || num >= 100) {
                     str = num.toFixed(2);
+                } else {
+                    str = num.toFixed(3);
                 }
             } else {
                 str = num.toFixed(0);
@@ -111,7 +113,9 @@ function getMaxDecimalTick(maxY) {
     return maxYTick;
 }
 
-function getBpTickFormatter(maxY) {
+function getBpTickFormatter(maxY, additionalText) {
+    additionalText = additionalText || '';
+
     return function(val, axis) {
         var res;
 
@@ -122,7 +126,7 @@ function getBpTickFormatter(maxY) {
             res = val / 1000000;
 
             if (val > maxY + 1 || val + axis.tickSize >= 1000000000) {
-                res = toPrettyString(res, 'Mbp');
+                res = additionalText + toPrettyString(res, 'Mbp');
             } else {
                 res = toPrettyString(res);
             }
@@ -130,7 +134,7 @@ function getBpTickFormatter(maxY) {
             res = val / 1000;
 
             if (val > maxY + 1 || val + axis.tickSize >= 1000000) {
-                res = toPrettyString(res, 'kbp');
+                res = additionalText + toPrettyString(res, 'kbp');
             } else {
                 res = toPrettyString(res);
             }
@@ -138,27 +142,28 @@ function getBpTickFormatter(maxY) {
             res = val;
 
             if (val > maxY + 1 || val + axis.tickSize >= 1000) {
-                res = toPrettyString(res, 'bp');
+                res = additionalText + toPrettyString(res, 'bp');
             } else {
                 res = toPrettyString(res);
             }
         }
-        return '<span style="word-spacing: -1px;">' + res + '</span>';
+        return res;
     }
 }
 
 function windowsTickFormatter(v, axis) {
-    var val = v.toFixed(0);
-    if (!gc.yAxisLabeled && val > gc.maxY) {
-        gc.yAxisLabeled = true;
-        var res = val + ' window';
-        if (val > 1) {
-            res += 's'
-        }
-        return res;
-    } else {
-        return val;
-    }
+    return toPrettyString(v);
+//    var val = v.toFixed(0);
+//    if (!gc.yAxisLabeled && val > gc.maxY) {
+//        gc.yAxisLabeled = true;
+//        var res = val + ' window';
+//        if (val > 1) {
+//            res += 's'
+//        }
+//        return res;
+//    } else {
+//        return val;
+//    }
 }
 
 function getBpLogTickFormatter(maxY) {
@@ -275,9 +280,9 @@ function showTip(pageX, pageY, offset, plotWidth, plotHeight,
 
         $('<div id="tip_line' + i + '">' + toPrettyString(item.y)
             + ', <span style="color: ' + item.color + ';">' + item.label + '</span></div>').css({
-            height: LINE_HEIGHT,
-            "font-weight": item.isCurrent ? "bold" : "normal",
-        }).appendTo('#plot_tip');
+                height: LINE_HEIGHT,
+                "font-weight": item.isCurrent ? "bold" : "normal",
+            }).appendTo('#plot_tip');
     }
 }
 

@@ -23,7 +23,10 @@
     <![endif]-->
 
     <script type="text/javascript">
-        $(document).ready(buildReport);
+        $(function() {
+            buildReport();
+            $('#contigs_are_ordered').show();
+        });
     </script>
 
     <style type="text/css">
@@ -55,9 +58,12 @@
 <div class="content">
     <div id='header'>
         <span style='font-size: 1.5em;'><span class='smallcapitals'>QUAST</span> report</span><br><br>
-        <span id='subheader'>Loading...</span>
-        <span id='mincontig'></span>
-        <br><br>
+        <span id='subheader'></span>
+        <br>
+        <br>
+        <br>
+        <br>
+        <span id='mincontig'>Loading...</span>
         <span id="extended_link"></span>
     </div>
 
@@ -94,6 +100,8 @@
                 <tr>
                     <td>
                         <p id="contigs_are_ordered">Contigs are ordered from largest (contig #1) to smallest.</p>
+                        <p id="gc_info">Contigs are broken into nonoverlapping 100<span class="rhs">&nbsp;</span>bp windows.
+                            Plot shows numbers of windows for each GC percentage.</p>
                     </td>
                 </tr>
             </table>
@@ -146,11 +154,12 @@
     <script type="text/javascript" src="/static/bootstrap/bootstrap.min.js"></script>
     <script type="text/javascript" src="/static/bootstrap/bootstrap-tooltip-vlad.js"></script>
     <script type="text/javascript">
-        $(document).ready(function () {
+        $(function () {
             $("[rel=tooltip]").tooltip({
                 animation: false,
             });
         });
     </script>
+</div>
 </body>
 </html>

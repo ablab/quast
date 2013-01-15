@@ -5,7 +5,8 @@ String.prototype.trunc =
 
 function buildTotalReport(assembliesNames, report, date, minContig, glossary, qualities, mainMetrics) {
     $('#subheader').html('<p>' + date + '</p>');
-    $('#mincontig').append('<p>Contigs shorter than ' + minContig + "<span class='rhs'>&nbsp;</span>" + 'bp were skipped</p>');
+    $('#mincontig').html('<p>All statistics are based on contigs shorter than ' + minContig +
+        '<span class="rhs">&nbsp;</span>bp, unless otherwise noted. E.g., "# contigs (>= 0 bp)" and "Total length (>= 0 bp)" include all contigs.</p>');
 
 //    $('#extended_link').css('width', '183');
 
@@ -193,7 +194,7 @@ function buildTotalReport(assembliesNames, report, date, minContig, glossary, qu
         }
 
         if (numbers.length > 1)
-            $('#report_legend').show();
+            $('#report_legend').show('fast');
 
     }).mouseleave(function() {
             $(this).parent().find('td[number]').css('color', 'black');

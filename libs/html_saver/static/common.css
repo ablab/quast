@@ -38,6 +38,15 @@ a.dark_bg_link:hover {
     border-bottom: 1px solid white;
 }
 
+.leading_link_dot {
+    border-bottom: white solid 1px;
+}
+
+a.header_link, a.header_link:hover, a.header_link:visited {
+    color: black;
+    border-bottom: 1px solid #bbb;
+}
+
 
 .dotted-link {
     cursor: pointer;

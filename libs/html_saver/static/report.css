@@ -84,11 +84,12 @@
     font-size: 1em;
     margin-left: 0px;
     margin-bottom: 50px;
-    min-width: 726px;
+    /*min-width: 726px;*/
+    min-width: 532px;
 
     float: left;
 
-    margin-right: 60px;
+    margin-right: 100px;
 }
 #report td {
     padding: 2px 1em 0 0;
@@ -148,7 +149,7 @@
 }
 
 /*#report tr:first-child td {*/
-    /*border-bottom: 1px solid #bbb;*/
+/*border-bottom: 1px solid #bbb;*/
 /*}*/
 #reprot thead td {
     border-bottom: 1px solid #bbb;

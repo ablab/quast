@@ -53,16 +53,16 @@ function buildReport() {
     var legendPlaceholder = document.getElementById('legend-placeholder');
     var scalePlaceholder = document.getElementById('scale-placeholder');
 
-    function getToggleFunction(name, drawPlot, data, refPlotValue) {
+    function getToggleFunction(name, title, drawPlot, data, refPlotValue) {
         return function() {
             this.parentNode.getElementsByClassName('selected-switch')[0].className = 'plot-switch dotted-link';
             this.className = 'plot-switch selected-switch';
-            togglePlots(name, drawPlot, data, refPlotValue)
+            togglePlots(name, title, drawPlot, data, refPlotValue)
         };
     }
 
     var toRemoveRefLabel = true;
-    function togglePlots(name, drawPlot, data, refPlotValue) {
+    function togglePlots(name, title, drawPlot, data, refPlotValue) {
         if (name === 'cumulative') {
             $(plotPlaceholder).addClass('cumulative-plot-placeholder');
         } else {
@@ -91,7 +91,7 @@ function buildReport() {
         }
 
         $(scalePlaceholder).html('');
-        drawPlot(name, colors, assembliesNames, data, refPlotValue,
+        drawPlot(name, title, colors, assembliesNames, data, refPlotValue,
             plotPlaceholder, legendPlaceholder, glossary, scalePlaceholder);
     }
 
@@ -104,14 +104,14 @@ function buildReport() {
 
         if (firstPlot) {
             switchSpan.className = 'plot-switch selected-switch';
-            togglePlots(name, drawPlot, data, refPlotValue);
+            togglePlots(name, title, drawPlot, data, refPlotValue);
             firstPlot = false;
 
         } else {
             switchSpan.className = 'plot-switch dotted-link';
         }
 
-        $(switchSpan).click(getToggleFunction(name, drawPlot, data, refPlotValue));
+        $(switchSpan).click(getToggleFunction(name, title, drawPlot, data, refPlotValue));
     }
 
     function readJson(what) {

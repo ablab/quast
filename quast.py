@@ -22,9 +22,8 @@ __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file
 
 addsitedir(os.path.join(__location__, 'libs/site_packages'))
 
-import simplejson as json
-
 from libs import qconfig
+from libs.qutils import warning, error, assert_file_exists
 from libs import fastaparser
 from libs.html_saver import json_saver
 
@@ -121,21 +120,6 @@ def usage():
         print >> sys.stderr, ""
         print >> sys.stderr, "-d  --debug                  run in debug mode"
         print >> sys.stderr, "-h  --help                   print this usage message"
-
-
-def warning(message=''):
-    print "WARNING! " + str(message) + "\n"
-
-
-def error(message='', errcode=1):
-    print >> sys.stderr, "\nERROR! " + str(message) + "\n"
-    sys.exit(errcode)
-
-
-def assert_file_exists(fpath, message=''):
-    if not os.path.isfile(fpath):
-        error("File not found (%s): %s" % (message, fpath), 2)
-    return fpath
 
 
 def corrected_fname_for_nucmer(fpath):
@@ -402,7 +386,8 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
     print >> lfile, ""
     lfile.close()
 
-    tee = support.Tee(logfile, 'a', console=True) # not pure, changes sys.stdout and sys.stderr
+    from libs import qutils
+    tee = qutils.Tee(logfile, 'a', console=True) # not pure, changes sys.stdout and sys.stderr
 
     ########################################################################
 
@@ -512,8 +497,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
     old_contigs_fpaths = contigs_fpaths
     contigs_fpaths = new_contigs_fpaths
 
-    from libs import qutils
-    qutils.assemblies_number = len(contigs_fpaths)
+    qconfig.assemblies_num = len(contigs_fpaths)
 
     if not contigs_fpaths:
         usage()

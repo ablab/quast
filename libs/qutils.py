@@ -5,19 +5,35 @@
 ############################################################################
 
 from __future__ import with_statement
-
-assemblies_number = 0
-
-def id_to_str(id):
-    if assemblies_number == 1:
-        return ''
-    else:
-        return ('%d ' + ('' if id >= 10 else ' ')) % (id + 1)
-
 import gzip
 import zipfile
 import bz2
 import os
+import sys
+import qconfig
+
+
+def warning(message=''):
+    print "====== WARNING! " + str(message) + " ======"
+
+
+def error(message='', errcode=1):
+    print >> sys.stderr, "\n====== ERROR! " + str(message) + " ======\n"
+    if errcode:
+        sys.exit(errcode)
+
+
+def assert_file_exists(fpath, message=''):
+    if not os.path.isfile(fpath):
+        error("File not found (%s): %s" % (message, fpath), 2)
+    return fpath
+
+
+def id_to_str(id):
+    if qconfig.assemblies_num == 1:
+        return ''
+    else:
+        return ('%d ' + ('' if id >= 10 else ' ')) % (id + 1)
 
 def uncompress(compressed_fname, uncompressed_fname, errout):
     fname, ext = os.path.splitext(compressed_fname)
@@ -55,3 +71,27 @@ def uncompress(compressed_fname, uncompressed_fname, errout):
         uncompressed_file.write(compressed_file.read())
         print >> errout, 'Uncompressed'
         return True
+
+class Tee(object):
+    def __init__(self, name, mode, console=True):
+        self.file = open(name, mode)
+        self.stdout = sys.stdout
+        self.stderr = sys.stderr
+        self.console = console
+        sys.stdout = self
+        sys.stderr = self
+
+    def free(self):
+        sys.stdout = self.stdout
+        sys.stderr = self.stderr
+        self.file.close()
+
+    def write(self, data):
+        self.file.write(data)
+        if self.console:
+            self.stdout.write(data)
+        self.flush()
+
+    def flush(self):
+        self.file.flush()
+        self.stdout.flush()

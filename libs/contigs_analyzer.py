@@ -24,7 +24,7 @@ import sys
 import fastaparser
 import shutil
 from libs import reporting, qconfig
-from qutils import id_to_str
+from qutils import id_to_str, error
 
 required_binaries = ['nucmer', 'delta-filter', 'show-coords', 'show-snps']
 
@@ -224,7 +224,7 @@ def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_
 
             # Daemonic processes are not allowed to have children, so if we are already one of parallel processes
             # (i.e. daemonic) we can't start new daemonic processes
-            if qconfig.threads_users_num == 1:
+            if qconfig.assemblies_num == 1:
                 n_jobs = min(qconfig.max_threads, len(prefixes_and_chr_files))
             else:
                 n_jobs = 1
@@ -1091,13 +1091,14 @@ def do(reference, filenames, cyclic, output_dir, lib_dir, draw_plots):
     if not all_required_binaries_exist(mummer_path):
         # making
         print ("Compiling MUMmer...")
-        subprocess.call(
-            ['make', '-C', mummer_path],
-            stdout=open(os.path.join(mummer_path, 'make.log'), 'w'), stderr=open(os.path.join(mummer_path, 'make.err'), 'w'))
-        if not all_required_binaries_exist(mummer_path):
-            print >>sys.stderr, "Error occurred during MUMmer compilation (", mummer_path, ")! Try to compile it manually!"
-            print >>sys.stderr, "Exiting"
-            sys.exit(1)
+        try:
+            subprocess.call(
+                ['make', '-C', mummer_path],
+                stdout=open(os.path.join(mummer_path, 'make.log'), 'w'), stderr=open(os.path.join(mummer_path, 'make.err'), 'w'))
+            if not all_required_binaries_exist(mummer_path):
+                raise
+        except:
+            error("Failed to compile MUMmer (" + mummer_path + ")! Try to compile it manually!")
 
     print 'Running contigs analyzer...'
     nucmer_output_dir = os.path.join(output_dir, 'nucmer_output')
@@ -1105,7 +1106,6 @@ def do(reference, filenames, cyclic, output_dir, lib_dir, draw_plots):
         os.mkdir(nucmer_output_dir)
 
     n_jobs = min(len(filenames), qconfig.max_threads)
-    qconfig.threads_users_num = n_jobs
     from joblib import Parallel, delayed
     statuses_results_pairs = Parallel(n_jobs=n_jobs)(delayed(plantakolya_process)(
         cyclic, draw_plots, nucmer_output_dir, fname, id, myenv, output_dir, reference)
@@ -1143,8 +1143,9 @@ def do(reference, filenames, cyclic, output_dir, lib_dir, draw_plots):
         report.add_field(reporting.Fields.REPEATSEXTRABASES, total_repeats_extra_bases)
         report.add_field(reporting.Fields.MISMATCHES, SNPs)
         report.add_field(reporting.Fields.INDELS, indels)
-        report.add_field(reporting.Fields.SUBSERROR, "%.2f" % (float(SNPs) * 100000.0 / float(total_aligned_bases)))
-        report.add_field(reporting.Fields.INDELSERROR, "%.2f" % (float(indels) * 100000.0 / float(total_aligned_bases)))
+        if total_aligned_bases:
+            report.add_field(reporting.Fields.SUBSERROR, "%.2f" % (float(SNPs) * 100000.0 / float(total_aligned_bases)))
+            report.add_field(reporting.Fields.INDELSERROR, "%.2f" % (float(indels) * 100000.0 / float(total_aligned_bases)))
 
         # for misassemblies report:
         report.add_field(reporting.Fields.MIS_ALL_EXTENSIVE, len(region_misassemblies) - region_misassemblies.count(Misassembly.LOCAL))

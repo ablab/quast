@@ -10,7 +10,7 @@ import fastaparser
 import genes_parser
 from libs import reporting, qconfig
 from libs.html_saver import json_saver
-from qutils import id_to_str
+from qutils import id_to_str, warning, error
 
 __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
 
@@ -38,7 +38,7 @@ def chromosomes_names_dict(features, chr_names):
             chr_name_dict[feature.seqname] = None
 
     if no_chr:
-        print '  Warning: Some of the chromosome names in genes or operons differ from the names in the reference.'
+        warning('Some of the chromosome names in genes or operons differ from the names in the reference.')
     return chr_name_dict
 
 
@@ -96,7 +96,7 @@ def do(reference, filenames, nucmer_dir, output_dir, genes_filename, operons_fil
 
         feature_container.region_list = genes_parser.get_genes_from_file(feature_filename, feature_name)
         if len(feature_container.region_list) == 0:
-            print '  Warning: no ' + feature_name + 's loaded.'
+            warning('No ' + feature_name + 's were loaded.')
             res_file.write(feature_name + 's loaded: ' + 'None' + '\n')
         else:
             print '  Loaded ' + str(len(feature_container.region_list)) + ' ' + feature_name + 's'
@@ -124,14 +124,15 @@ def do(reference, filenames, nucmer_dir, output_dir, genes_filename, operons_fil
     for id, filename in enumerate(filenames):
         print ' ', id_to_str(id) + os.path.basename(filename) + '...'
 
+        nucmer_base_filename = os.path.join(nucmer_prefix, os.path.basename(filename) + '.coords')
         if qconfig.use_all_alignments:
-            nucmer_filename = os.path.join(nucmer_prefix, os.path.basename(filename) + '.coords')
+            nucmer_filename = nucmer_base_filename
         else:
-            nucmer_filename = os.path.join(nucmer_prefix, os.path.basename(filename) + '.coords.filtered')
+            nucmer_filename = nucmer_base_filename + '.filtered'
 
         if not os.path.isfile(nucmer_filename):
-            print '  Error: Nucmer\'s coords file (' + nucmer_filename + ') not found, skipping...'
-            continue
+            error('Nucmer\'s coords file (' + nucmer_filename + ') not found! Try to restart QUAST.')
+            #continue
 
         coordfile = open(nucmer_filename, 'r')
         for line in coordfile:
@@ -170,6 +171,10 @@ def do(reference, filenames, nucmer_dir, output_dir, genes_filename, operons_fil
             e1 = int(line.split('|')[0].split()[1])
             contig_name = line.split()[12].strip()
             chr_name = line.split()[11].strip()
+            if chr_name not in genome_mapping:
+                error("Something went wrong and chromosome names in your coords file (" + nucmer_base_filename + ") "
+                      "differ from the names in the reference. Try to remove the file and restart QUAST.")
+                continue
             aligned_blocks[contig_name].append(AlignedBlock(seqname=chr_name, start=s1, end=e1))
             for i in range(s1, e1 + 1):
                 genome_mapping[chr_name][i] = 1

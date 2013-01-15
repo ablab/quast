@@ -345,7 +345,8 @@ def save_txt(filename, table, is_transposed=False):
     file = open(filename, 'w')
 
     if min_contig:
-        print >>file, 'Contigs of length >= %d are used' % min_contig
+        print >>file, 'All statistics are based on contigs shorter than %d bp, unless otherwise noted.' % min_contig
+        print >>file, 'E.g., "# contigs (>= 0 bp)" and "Total length (>= 0 bp)" include all contigs.'
         print >>file
     for row in all_rows:
         print >>file, '  '.join('%-*s' % (colwidth, cell) for colwidth, cell
@@ -385,7 +386,7 @@ def get_num_from_table_value(val):
     if isinstance(val, int) or isinstance(val, float):
         num = val
 
-    elif isinstance(val, basestring):
+    elif isinstance(val, basestring) and len(val.split()) > 0:
                                                                       # 'x + y part' format?
         tokens = val.split()[0]                                       # tokens = [x, +, y, part]
         if len(tokens) >= 3:                                          # Yes, 'y + x part' format

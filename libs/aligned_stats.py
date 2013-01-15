@@ -8,7 +8,7 @@ import os
 import itertools
 import fastaparser
 from libs import reporting, qconfig
-from qutils import id_to_str
+from qutils import id_to_str, warning, error
 
 __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
 
@@ -67,19 +67,19 @@ def do(reference, filenames, nucmer_dir, output_dir, all_pdf, draw_plots, json_o
     reference_length = sum(fastaparser.get_lengths_from_fastafile(reference))
     lists_of_lengths = []
     assembly_lengths = []
-    print 'Processing .coords files...'
+    print '  Processing .coords.filtered files...'
     for id, filename in enumerate(filenames):
-        print ' ', id_to_str(id) + os.path.basename(filename)
+        print '   ', id_to_str(id) + os.path.basename(filename)
         nucmer_filename = os.path.join(nucmer_prefix, os.path.basename(filename) + '.coords.filtered')
         assembly_lengths.append(sum(fastaparser.get_lengths_from_fastafile(filename)))
         if not os.path.isfile(nucmer_filename):
-            print '  Error: Nucmer\'s coords.filtered file (' + nucmer_filename + ') not found, skipping...'
+            error('Nucmer\'s coords.filtered file (' + nucmer_filename + ') not found! Skipping...', 0)
             lists_of_lengths.append([0])
         else:
             lists_of_lengths.append(get_lengths_from_coordfile(nucmer_filename))
     ########################################################################
 
-    print 'Calculating NA50 and NGA50...'
+    print '  Calculating NA50 and NGA50...'
 
     import N50
     for id, (filename, lens, assembly_len) in enumerate(itertools.izip(filenames, lists_of_lengths, assembly_lengths)):
@@ -91,7 +91,7 @@ def do(reference, filenames, nucmer_dir, output_dir, all_pdf, draw_plots, json_o
         lga50 = N50.LG50(lens, reference_length)
         la75 = N50.LG50(lens, assembly_len, 75)
         lga75 = N50.LG50(lens, reference_length, 75)
-        print ' ', id_to_str(id) + os.path.basename(filename) + \
+        print '   ', id_to_str(id) + os.path.basename(filename) + \
             ', Largest alignment = ' + str(max(lens)) + \
             ', NA50 = ' + str(na50) + \
             ', NGA50 = ' + str(nga50) + \

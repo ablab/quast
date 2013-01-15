@@ -1164,9 +1164,25 @@ def do(reference, filenames, cyclic, output_dir, lib_dir, draw_plots):
         report.add_field(reporting.Fields.UNALIGNED_PART_SIGNIFICANT_PARTS, partially_unaligned_with_significant_parts)
         report.add_field(reporting.Fields.UNALIGNED_PART_LENGTH, partially_unaligned_bases)
 
+
+    def save_result_for_unaligned(result):
+        report = reporting.get(fname)
+
+        unaligned_ctgs = report.get_field(reporting.Fields.NUMCONTIGS)
+        unaligned_length = report.get_field(reporting.Fields.TOTALLEN)
+        report.add_field(reporting.Fields.UNALIGNED, '%d + %d part' % (unaligned_ctgs, 0))
+        report.add_field(reporting.Fields.UNALIGNEDBASES, unaligned_length)
+
+        report.add_field(reporting.Fields.UNALIGNED_FULL_CNTGS, unaligned_ctgs)
+        report.add_field(reporting.Fields.UNALIGNED_FULL_LENGTH, unaligned_length)
+
+
     for id, fname in enumerate(filenames):
         if statuses[id] == NucmerStatus.OK:
             save_result(results[id])
+        elif statuses[id] == NucmerStatus.NOT_ALIGNED:
+            save_result_for_unaligned(results[id])
+
 
     nucmer_statuses = dict(zip(filenames, statuses))
 

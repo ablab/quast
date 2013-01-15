@@ -6,6 +6,7 @@
 
 import datetime
 import os
+from libs.qutils import warning
 
 simplejson_error = False
 try:
@@ -14,7 +15,7 @@ except:
     try:
         import simplejson as json
     except:
-        print 'Warning! Can\'t build html report - please install python-simplejson'
+        warning('Can\'t build html report - please install python-simplejson')
         simplejson_error = True
 
 total_report_fn       = '/report.json'

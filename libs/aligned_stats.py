@@ -8,7 +8,7 @@ import os
 import itertools
 import fastaparser
 from libs import reporting, qconfig
-from qutils import id_to_str, warning, error
+from qutils import id_to_str, warning, error, print_timestamp
 
 __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
 
@@ -62,6 +62,7 @@ def do(reference, filenames, nucmer_dir, output_dir, all_pdf, draw_plots, json_o
         report_dict[os.path.basename(filename)] = []
 
     ########################################################################
+    print_timestamp()
     print 'Running NA-NGA tool...'
 
     reference_length = sum(fastaparser.get_lengths_from_fastafile(reference))

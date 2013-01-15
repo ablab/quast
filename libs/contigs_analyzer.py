@@ -24,7 +24,7 @@ import sys
 import fastaparser
 import shutil
 from libs import reporting, qconfig
-from qutils import id_to_str, error
+from qutils import id_to_str, error, print_timestamp
 
 required_binaries = ['nucmer', 'delta-filter', 'show-coords', 'show-snps']
 
@@ -1073,6 +1073,9 @@ def do(reference, filenames, cyclic, output_dir, lib_dir, draw_plots):
     if not os.path.isdir(output_dir):
         os.mkdir(output_dir)
 
+    print_timestamp()
+    print 'Running Contigs analyzer...'
+
     ########################################################################
     if platform.system() == 'Darwin':
         mummer_path = os.path.join(lib_dir, 'MUMmer3.23-osx')
@@ -1100,7 +1103,6 @@ def do(reference, filenames, cyclic, output_dir, lib_dir, draw_plots):
         except:
             error("Failed to compile MUMmer (" + mummer_path + ")! Try to compile it manually!")
 
-    print 'Running contigs analyzer...'
     nucmer_output_dir = os.path.join(output_dir, 'nucmer_output')
     if not os.path.isdir(nucmer_output_dir):
         os.mkdir(nucmer_output_dir)

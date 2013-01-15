@@ -11,6 +11,7 @@ import bz2
 import os
 import sys
 import qconfig
+import datetime
 
 
 def warning(message=''):
@@ -29,11 +30,18 @@ def assert_file_exists(fpath, message=''):
     return fpath
 
 
+def print_timestamp():
+    now = datetime.datetime.now()
+    current_time = now.strftime("%Y-%m-%d %H:%M:%S")
+    print "\n" + current_time
+    return now
+
 def id_to_str(id):
     if qconfig.assemblies_num == 1:
         return ''
     else:
         return ('%d ' + ('' if id >= 10 else ' ')) % (id + 1)
+
 
 def uncompress(compressed_fname, uncompressed_fname, errout):
     fname, ext = os.path.splitext(compressed_fname)
@@ -72,6 +80,8 @@ def uncompress(compressed_fname, uncompressed_fname, errout):
         print >> errout, 'Uncompressed'
         return True
 
+
+# TODO: get rid of Tee (use python logger instead)
 class Tee(object):
     def __init__(self, name, mode, console=True):
         self.file = open(name, mode)

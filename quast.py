@@ -16,6 +16,7 @@ import getopt
 import subprocess
 from site import addsitedir
 import zipfile
+import datetime
 from libs.qutils import uncompress
 
 __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
@@ -23,7 +24,7 @@ __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file
 addsitedir(os.path.join(__location__, 'libs/site_packages'))
 
 from libs import qconfig
-from libs.qutils import warning, error, assert_file_exists
+from libs.qutils import warning, error, assert_file_exists, print_timestamp
 from libs import fastaparser
 from libs.html_saver import json_saver
 
@@ -57,6 +58,8 @@ def print_system_info(stream=sys.stdout):
         print >> stream, "  OS: " + platform.platform()
         print >> stream, "  Python version: " + str(sys.version_info[0]) + "." + str(sys.version_info[1]) + '.'\
             + str(sys.version_info[2])
+        import multiprocessing
+        print >> stream, "  CPUs number: " + str(multiprocessing.cpu_count())
     except:
         print >> stream, "  Problem occurred when getting system information"
     print >> stream, ""
@@ -372,18 +375,18 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
     ########################################################################
 
     # duplicating output to a log file
-    from libs import support
     if os.path.isfile(logfile):
         os.remove(logfile)
 
     # saving info about command line and options into log file
-    lfile = open(logfile,'w')
+    lfile = open(logfile, 'w')
     print >> lfile, "QUAST started: ",
     for v in sys.argv:
         print >> lfile, v,
     print >> lfile, ""
     print_version(lfile)
     print >> lfile, ""
+    print_system_info(lfile)
     lfile.close()
 
     from libs import qutils
@@ -395,6 +398,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
     reload(reporting)
     reporting.min_contig = qconfig.min_contig
 
+    start_time = print_timestamp()
     print 'Correcting contig files',
     if qconfig.reference:
         print "and reference",
@@ -602,8 +606,10 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
         print '  All pdf files are merged to', all_pdf_filename
         all_pdf.close()
 
-    print 'Done.'
     cleanup(corrected_dirpath, tee)
+    print 'Done.'
+    finish_time = print_timestamp()
+    print "Elapsed time: ", str(finish_time - start_time)
     return 0
 
 #    else:

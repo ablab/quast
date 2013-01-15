@@ -8,7 +8,7 @@ import os
 import shutil
 import subprocess
 from libs import reporting
-from qutils import id_to_str
+from qutils import id_to_str, print_timestamp
 import qconfig
 
 
@@ -23,8 +23,9 @@ def do(reference, contigs, output_dirpath, min_contig, lib_dir):
     gage_tool_path = os.path.join(lib_dir, 'gage/getCorrectnessStats.sh')
 
     ########################################################################
-
+    print_timestamp()
     print 'Running GAGE tool...'
+
     metrics = ['Total units', 'Min', 'Max', 'N50', 'Genome Size', 'Assembly Size', 'Chaff bases',
                'Missing Reference Bases', 'Missing Assembly Bases', 'Missing Assembly Contigs',
                'Duplicated Reference Bases', 'Compressed Reference Bases', 'Bad Trim', 'Avg Idy', 'SNPs', 'Indels < 5bp',

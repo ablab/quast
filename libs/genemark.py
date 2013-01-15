@@ -13,7 +13,7 @@ import tempfile
 
 from libs import reporting
 from libs.fastaparser import read_fasta, write_fasta
-from qutils import id_to_str
+from qutils import id_to_str, print_timestamp
 
 def gc_content(sequence):
     GC_count = sequence.count('G') + sequence.count('C')
@@ -144,7 +144,7 @@ def gmhmm_p_everyGC(tool_dir, fasta_path, out_name, gene_lengths, err_path):
 
 
 def do(fasta_pathes, gene_lengths, out_dir, lib_dir):
-
+    print_timestamp()
     print 'Running GeneMark tool...'
 
     if not os.path.isdir(out_dir):

@@ -12,7 +12,7 @@ import shutil
 
 from libs import reporting
 from libs.fastaparser import read_fasta, write_fasta, rev_comp
-from qutils import id_to_str
+from qutils import id_to_str, print_timestamp
 
 def merge_gffs(gffs, out_path):
     '''Merges all GFF files into a single one, dropping GFF header.'''
@@ -96,7 +96,8 @@ def glimmerHMM(tool_dir, fasta_path, out_path, gene_lengths, err_path):
     return out_gff_path, out_fasta_path, len(unique), total, cnt
 
 def do(fasta_paths, gene_lengths, out_dir, lib_dir):
-    print('Running GlimmerHMM...')
+    print_timestamp()
+    print 'Running GlimmerHMM...'
 
     if not os.path.isdir(out_dir):
         os.makedirs(out_dir)

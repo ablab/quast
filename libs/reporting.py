@@ -7,6 +7,7 @@
 import os
 import sys
 from libs import qconfig
+from libs.qutils import print_timestamp
 
 ####################################################################################
 # Reporting module (singleton) for QUAST
@@ -512,6 +513,7 @@ def save_gage(output_dirpath):
 
 
 def save_total(output_dirpath):
+    print_timestamp()
     print 'Summarizing...'
     save(output_dirpath, "report", "transposed_report", Fields.order)
 

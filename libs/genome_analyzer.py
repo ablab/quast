@@ -10,7 +10,7 @@ import fastaparser
 import genes_parser
 from libs import reporting, qconfig
 from libs.html_saver import json_saver
-from qutils import id_to_str, warning, error
+from qutils import id_to_str, warning, error, print_timestamp
 
 __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
 
@@ -47,6 +47,7 @@ def do(reference, filenames, nucmer_dir, output_dir, genes_filename, operons_fil
     # some important constants
     nucmer_prefix = os.path.join(os.path.join(__location__, ".."), nucmer_dir, 'nucmer_output')
 
+    print_timestamp()
     print 'Running Genome analyzer...'
 
     if not os.path.isdir(output_dir):

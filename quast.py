@@ -51,6 +51,18 @@ def print_version(stream=sys.stdout):
     print >> stream, "Build:", build
 
 
+def print_system_info(stream=sys.stdout):
+    print >> stream, "System information:"
+    try:
+        import platform
+        print >> stream, "  OS: " + platform.platform()
+        print >> stream, "  Python version: " + str(sys.version_info[0]) + "." + str(sys.version_info[1]) + '.'\
+            + str(sys.version_info[2])
+    except:
+        print >> stream, "  Problem occurred when getting system information"
+    print >> stream, ""
+
+
 def usage():
     print >> sys.stderr, 'QUAST: QUality ASsessment Tool for Genome Assemblies.'
     print_version(sys.stderr)
@@ -68,7 +80,7 @@ def usage():
         print >> sys.stderr, "--min-contig <int>           lower threshold for contig length [default: %s]" % qconfig.min_contig
         print >> sys.stderr, ""
         print >> sys.stderr, "Advanced options:"
-        print >> sys.stderr, "--threads    <int>                maximum number of threads [default: number of provided assemblies]"
+        print >> sys.stderr, "--threads    <int>                maximum number of threads [default: number of CPUs]"
         print >> sys.stderr, "--gage                            start QUAST in \"GAGE mode\""
         print >> sys.stderr, "--contig-thresholds <int,int,..>  comma-separated list of contig length thresholds [default: %s]" % qconfig.contig_thresholds
         print >> sys.stderr, "--gene-thresholds   <int,int,..>  comma-separated list of threshold lengths of genes to search with Gene Finding module"
@@ -91,14 +103,14 @@ def usage():
         print >> sys.stderr, "-M  --min-contig <int>       lower threshold for contig length [default: %s]" % qconfig.min_contig
         print >> sys.stderr, "-t  --contig-thresholds      comma-separated list of contig length thresholds [default: %s]" % qconfig.contig_thresholds
         print >> sys.stderr, "-S  --gene-thresholds        comma-separated list of threshold lengths of genes to search with Gene Finding module [default: %s]" % qconfig.genes_lengths
-        print >> sys.stderr, "-T  --threads    <int>       maximum number of threads [default: number of provided assemblies]"
+        print >> sys.stderr, "-T  --threads    <int>       maximum number of threads [default: number of CPUs]"
         print >> sys.stderr, "-c  --mincluster <int>       Nucmer's parameter -- the minimum length of a cluster of matches [default: %s]" % qconfig.mincluster
         print >> sys.stderr, "-r  --est-ref-size <int>     Estimated reference size (for calculating NG)"
         print >> sys.stderr, ""
         print >> sys.stderr, 'Options without arguments'
         print >> sys.stderr, "-f  --disable-gene-finding    disable Gene Finding module"
         print >> sys.stderr, "-s  --scaffolds               this flag informs QUAST that provided assemblies are scaffolds"
-        print >> sys.stderr, "-g  --gage                    use Gage (results are in gage_report.txt)"
+        print >> sys.stderr, "-g  --gage                    use GAGE (results are in gage_report.txt)"
         print >> sys.stderr, "-e  --eukaryote               genome is an eukaryote"
         print >> sys.stderr, "-a  --allow-repeats           use all alignments of contigs covering repeats (ambiguous)"
         print >> sys.stderr, "-u  --use-all-alignments      compute Genome fraction, # genes, # operons in v.1.0-1.3 style"
@@ -112,7 +124,7 @@ def usage():
 
 
 def warning(message=''):
-    print "\nWARNING! " + str(message) + "\n"
+    print "WARNING! " + str(message) + "\n"
 
 
 def error(message='', errcode=1):
@@ -242,9 +254,9 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
             qconfig.min_contig = int(arg)
 
         elif opt in ('-T', "--threads"):
-            qconfig.threads = int(arg)
-            if qconfig.threads < 1:
-                qconfig.threads = 1
+            qconfig.max_threads = int(arg)
+            if qconfig.max_threads < 1:
+                qconfig.max_threads = 1
 
         elif opt in ('-c', "--mincluster"):
             qconfig.mincluster = int(arg)
@@ -311,6 +323,15 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
 
     qconfig.contig_thresholds = map(int, qconfig.contig_thresholds.split(","))
     qconfig.genes_lengths = map(int, qconfig.genes_lengths.split(","))
+    if qconfig.max_threads is None:
+        try:
+            import multiprocessing
+            qconfig.max_threads = multiprocessing.cpu_count()
+        except:
+            warning('Failed to determine the number of CPUs')
+            qconfig.max_threads = qconfig.DEFAULT_MAX_THREADS
+        warning('Maximum number of threads set to ' + str(qconfig.max_threads) + ' (use appropriate option to set it manually)')
+
 
     ########################################################################
     ### CONFIG & CHECKS

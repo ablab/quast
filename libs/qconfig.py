@@ -38,7 +38,7 @@ prokaryote = True # former cyclic
 gene_finding = True
 allow_repeats = False
 use_all_alignments = False
-threads = None
+max_threads = None
 mincluster = 65
 estimated_reference_size = None
 
@@ -49,6 +49,10 @@ short_options = "o:G:O:R:t:M:S:J:jgehdsaT:c:r:uf"
 
 
 # other constants. Can't be changed by command-line options
+
+# for parallelization of contig analyzer
+DEFAULT_MAX_THREADS = 4  # this value is used if QUAST fails to determine number of CPUs
+threads_users_num = 1
 
 # genome analyzer
 min_gap_size = 50 # for calculating number or gaps in genome coverage

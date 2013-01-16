@@ -398,8 +398,9 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
     reload(reporting)
     reporting.min_contig = qconfig.min_contig
 
-    start_time = print_timestamp()
-    print 'Correcting contig files',
+    start_time = print_timestamp("Started: ")
+    print ""
+    print "Correcting contig files",
     if qconfig.reference:
         print "and reference",
     print "..."
@@ -422,9 +423,6 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
             qconfig.reference = ""
         else:
             qconfig.reference = corrected_and_unziped_reference_fname
-
-        # splitting reference if needed
-
 
     def handle_fasta(contigs_fpath, corr_fpath):
         lengths = fastaparser.get_lengths_from_fastafile(contigs_fpath)
@@ -492,7 +490,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
                 contigs_counter += cur_contig_number
 
             fastaparser.write_fasta(splitted_path, splitted_fasta)
-            print "  %d scaffolds (%s) were broken into %d contigs (%s)"\
+            print "    %d scaffolds (%s) were broken into %d contigs (%s)"\
                   % (id + 1, os.path.basename(corr_fpath), contigs_counter, os.path.basename(splitted_path))
             if handle_fasta(splitted_path, splitted_path):
                 new_contigs_fpaths.append(os.path.join(__location__, splitted_path))
@@ -608,8 +606,11 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
 
     cleanup(corrected_dirpath, tee)
     print 'Done.'
-    finish_time = print_timestamp()
+    finish_time = print_timestamp("Finished: ")
     print "Elapsed time: ", str(finish_time - start_time)
+
+    tee.free() # free sys.stdout and sys.stderr from logfile
+
     return 0
 
 #    else:
@@ -627,8 +628,6 @@ def cleanup(corrected_dirpath, tee):
     ## removing correcting input contig files
     if not qconfig.debug:
         shutil.rmtree(corrected_dirpath)
-
-    tee.free() # free sys.stdout and sys.stderr from logfile
 
 
 if __name__ == '__main__':

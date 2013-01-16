@@ -4,17 +4,49 @@
 # See file LICENSE for details.
 ############################################################################
 
+####################################################################################
+###########################  CONFIGURABLE PARAMETERS  ##############################
+####################################################################################
+
+# Supported plot formats: .emf, .eps, .pdf, .png, .ps, .raw, .rgba, .svg, .svgz
+plots_format = '.pdf'
+
+# Feel free to add more colors
+colors = ['#E41A1C', '#377EB8', '#4DAF4A', '#984EA3', '#FF7F00', '#A65628', '#F781BF', '#FFFF33']
+
+# Font of plot captions, axes labels and ticks
+font = {'family': 'sans-serif',
+        'style': 'normal',
+        'weight': 'medium',
+        'size': 10}
+
+# Line params
+line_width = 2.0
+primary_line_style = 'solid' # 'solid', 'dashed', 'dashdot', or 'dotted'
+secondary_line_style = 'dashed' # used only if --scaffolds option is set
+
+# Legend params
+n_columns = 4  # number of columns
+with_grid = True
+with_title = True
+axes_fontsize = 'large' # fontsize of axes labels and ticks
+
+# Special case: reference line params
+reference_color = '#000000'
+reference_ls = 'dashed' # ls = line style
+
+####################################################################################
+########################  END OF CONFIGURABLE PARAMETERS  ##########################
+####################################################################################
+
 import os
 import itertools
 from libs import fastaparser
 from libs import qconfig
 from libs.qutils import warning
 
-# Supported plot formats: .emf, .eps, .pdf, .png, .ps, .raw, .rgba, .svg, .svgz
-#plots_format = '.svg'
-plots_format = '.pdf'
 
-
+# checking if matplotlib is installed
 matplotlib_error = False
 try:
     import matplotlib
@@ -23,26 +55,32 @@ except:
     warning('Can\'t draw plots: please install python-matplotlib')
     matplotlib_error = True
 
-colors = ['#E41A1C', '#377EB8', '#4DAF4A', '#984EA3', '#FF7F00', '#A65628', '#F781BF', '#FFFF33']
+####################################################################################
 
-font = {'family': 'sans-serif',
-        'style': 'normal',
-        'weight': 'medium',
-        'size': 10}
+def get_color_and_ls(id):
+    '''
+    Returns tuple: color, line style
+    '''
 
-# plots params
-linewidth = 2.0
+    ls = primary_line_style
 
-# legend params
-n_columns = 4
-with_grid = True
-with_title = True
-axes_fontsize = 'large' # axes labels and ticks values
+    # special case: we have scaffolds and contigs
+    if qconfig.scaffolds:
+        # contigs should be dashed
+        if id % 2 == 1:
+            ls = secondary_line_style
+        # contigs and scaffolds should be same colored
+        id /= 2
+
+    color = colors[id % len(colors)]
+    return color, ls
+
 
 def get_locators():
     xLocator = matplotlib.ticker.MaxNLocator(nbins=6, integer=True)
     yLocator = matplotlib.ticker.MaxNLocator(nbins=6, integer=True)
     return xLocator, yLocator
+
 
 def y_formatter(ylabel, max_y):
     if max_y <= 3 * 1e+3:
@@ -68,11 +106,10 @@ def cumulative_plot(reference, filenames, lists_of_lengths, plot_filename, title
 
     matplotlib.pyplot.figure()
     matplotlib.pyplot.rc('font', **font)
-    color_id = 0
     max_x = 0
     max_y = 0
 
-    for filename, lenghts in itertools.izip(filenames, lists_of_lengths):
+    for id, (filename, lenghts) in enumerate(itertools.izip(filenames, lists_of_lengths)):
         lenghts.sort(reverse=True)
         # calculate values for the plot
         vals_contig_index = [0]
@@ -91,16 +128,14 @@ def cumulative_plot(reference, filenames, lists_of_lengths, plot_filename, title
         if len(vals_contig_index) > 0:
             max_x = max(vals_contig_index[-1], max_x)
             max_y = max(max_y, vals_length[-1])
-        if color_id < len(colors):
-            matplotlib.pyplot.plot(vals_contig_index, vals_length, color=colors[color_id % len(colors)], lw=linewidth)
-        else:
-            matplotlib.pyplot.plot(vals_contig_index, vals_length, color=colors[color_id % len(colors)], lw=linewidth,
-                ls='dashed')
-        color_id += 1
+
+        color, ls = get_color_and_ls(id)
+        matplotlib.pyplot.plot(vals_contig_index, vals_length, color=color, lw=line_width, ls=ls)
 
     if reference:
         reference_length = sum(fastaparser.get_lengths_from_fastafile(reference))
-        matplotlib.pyplot.plot([0, max_x], [reference_length, reference_length], '#000000', lw=linewidth, ls='dashed')
+        matplotlib.pyplot.plot([0, max_x], [reference_length, reference_length],
+                               color=reference_color, lw=line_width, ls=reference_ls)
         max_y = max(max_y, reference_length)
 
     if with_title:
@@ -157,7 +192,6 @@ def Nx_plot(filenames, lists_of_lengths, plot_filename, title='Nx', reference_le
 
     matplotlib.pyplot.figure()
     matplotlib.pyplot.rc('font', **font)
-    color_id = 0
     max_y = 0
 
     for id, (filename, lengths) in enumerate(itertools.izip(filenames, lists_of_lengths)):
@@ -183,11 +217,8 @@ def Nx_plot(filenames, lists_of_lengths, plot_filename, title='Nx', reference_le
         vals_l.append(0.0)
         max_y = max(max_y, max(vals_l))
 
-        if color_id < len(colors):
-            matplotlib.pyplot.plot(vals_Nx, vals_l, color=colors[color_id % len(colors)], lw=linewidth)
-        else:
-            matplotlib.pyplot.plot(vals_Nx, vals_l, color=colors[color_id % len(colors)], lw=linewidth, ls='dashed')
-        color_id += 1
+        color, ls = get_color_and_ls(id)
+        matplotlib.pyplot.plot(vals_Nx, vals_l, color=color, lw=line_width, ls=ls)
 
     if with_title:
         matplotlib.pyplot.title(title)
@@ -243,7 +274,6 @@ def GC_content_plot(reference, filenames, list_of_GC_distributions, plot_filenam
 
     matplotlib.pyplot.figure()
     matplotlib.pyplot.rc('font', **font)
-    color_id = 0
     max_y = 0
 
     allfilenames = filenames
@@ -259,16 +289,12 @@ def GC_content_plot(reference, filenames, list_of_GC_distributions, plot_filenam
 
         # add to plot
         if reference and (id == len(allfilenames) - 1):
-            color = '#000000'
-            ls = 'dashed'
-        elif color_id < len(colors):
-            color=colors[color_id % len(colors)]
-            ls = 'solid'
+            color = reference_color
+            ls = reference_ls
         else:
-            color=colors[color_id % len(colors)]
-            ls = 'dashed'
-        matplotlib.pyplot.plot(GC_distribution_x, GC_distribution_y, color=color, lw=linewidth, ls=ls)
-        color_id += 1
+            color, ls = get_color_and_ls(id)
+
+        matplotlib.pyplot.plot(GC_distribution_x, GC_distribution_y, color=color, lw=line_width, ls=ls)
 
     if with_title:
         matplotlib.pyplot.title(title)
@@ -327,11 +353,10 @@ def genes_operons_plot(reference_value, filenames, files_feature_in_contigs, plo
 
     matplotlib.pyplot.figure()
     matplotlib.pyplot.rc('font', **font)
-    color_id = 0
     max_x = 0
     max_y = 0
 
-    for filename in filenames:
+    for id, filename in enumerate(filenames):
         # calculate values for the plot
         feature_in_contigs = files_feature_in_contigs[filename]
 
@@ -345,14 +370,13 @@ def genes_operons_plot(reference_value, filenames, files_feature_in_contigs, plo
         if len(x_vals) > 0:
             max_x = max(x_vals[-1], max_x)
             max_y = max(y_vals[-1], max_y)
-        if color_id < len(colors):
-            matplotlib.pyplot.plot(x_vals, y_vals, color=colors[color_id % len(colors)], lw=linewidth)
-        else:
-            matplotlib.pyplot.plot(x_vals, y_vals, color=colors[color_id % len(colors)], lw=linewidth, ls='dashed')
-        color_id += 1
+
+        color, ls = get_color_and_ls(id)
+        matplotlib.pyplot.plot(x_vals, y_vals, color=color, lw=line_width, ls=ls)
 
     if reference_value:
-        matplotlib.pyplot.plot([0, max_x], [reference_value, reference_value], '#000000', lw=linewidth, ls='dashed')
+        matplotlib.pyplot.plot([0, max_x], [reference_value, reference_value],
+            color=reference_color, lw=line_width, ls=reference_ls)
         max_y = max(reference_value, max_y)
 
     matplotlib.pyplot.xlabel('Contig index', fontsize=axes_fontsize)
@@ -388,6 +412,7 @@ def genes_operons_plot(reference_value, filenames, files_feature_in_contigs, plo
 
     if plots_format == '.pdf' and all_pdf:
         matplotlib.pyplot.savefig(all_pdf, format='pdf')
+
 
 # common routine for Histograms    
 def histogram(filenames, values, plot_filename, title='', all_pdf=None, yaxis_title='', bottom_value=None,
@@ -431,13 +456,12 @@ def histogram(filenames, values, plot_filename, title='', all_pdf=None, yaxis_ti
     #positions = numpy.arange(len(filenames))
 
     for id, (filename, val) in enumerate(itertools.izip(filenames, values)):
-        cur_ls = 'solid'
-        if id >= len(colors):
-            cur_ls = 'dashed'
-
-        matplotlib.pyplot.bar(start_pos + (width + interval) * id, val, width, color=colors[id % len(colors)],
-            ls=cur_ls)
-
+        color, ls = get_color_and_ls(id)
+        if ls == primary_line_style:
+            hatch = ''
+        else:
+            hatch = 'x'
+        matplotlib.pyplot.bar(start_pos + (width + interval) * id, val, width, color=color, hatch=hatch)
 
     #matplotlib.pyplot.xticks(positions + width, map(os.path.basename, filenames))
     matplotlib.pyplot.ylabel(yaxis_title, fontsize=axes_fontsize)

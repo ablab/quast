@@ -30,10 +30,10 @@ def assert_file_exists(fpath, message=''):
     return fpath
 
 
-def print_timestamp():
+def print_timestamp(message=''):
     now = datetime.datetime.now()
     current_time = now.strftime("%Y-%m-%d %H:%M:%S")
-    print "\n" + current_time
+    print "\n" + message + current_time
     return now
 
 def id_to_str(id):

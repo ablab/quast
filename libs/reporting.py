@@ -346,8 +346,8 @@ def save_txt(filename, table, is_transposed=False):
     file = open(filename, 'w')
 
     if min_contig:
-        print >>file, 'All statistics are based on contigs shorter than %d bp, unless otherwise noted.' % min_contig
-        print >>file, 'E.g., "# contigs (>= 0 bp)" and "Total length (>= 0 bp)" include all contigs.'
+        print >>file, 'All statistics are based on contigs of size >= %d bp, unless otherwise noted ' % min_contig + \
+                      '(e.g., "# contigs (>= 0 bp)" and "Total length (>= 0 bp)" include all contigs).'
         print >>file
     for row in all_rows:
         print >>file, '  '.join('%-*s' % (colwidth, cell) for colwidth, cell
@@ -413,7 +413,8 @@ def save_tex(filename, table, is_transposed=False):
     print >>file, '\\begin{document}'
     print >>file, '\\begin{table}[ht]'
     print >>file, '\\begin{center}'
-    print >>file, '\\caption{(Contigs of length $\geq$ ' + str(min_contig) + ' are used)}'
+    print >>file, '\\caption{All statistics are based on contigs of size $\geq$ %d bp, unless otherwise noted ' % min_contig + \
+                  '(e.g., "\# contigs ($\geq$ 0 bp)" and "Total length ($\geq$ 0 bp)" include all contigs).}'
 
     rows_n = len(all_rows[0]['values'])
     print >>file, '\\begin{tabular}{|l*{' + str(rows_n) + '}{|r}|}'

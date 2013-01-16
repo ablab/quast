@@ -299,15 +299,6 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
     for c_fpath in contigs_fpaths:
         assert_file_exists(c_fpath, 'contigs')
 
-    #    old_contigs_fpaths = contigs_fpaths[:]
-    #    contigs_fpaths = []
-    #    for old_c_fpath in old_contigs_fpaths:
-    #        contigs_fpaths.append(rename_file_for_nucmer(old_c_fpath))
-
-    #    # For renaming back: contigs_fpaths are to be changed further.
-    #    new_contigs_fpaths = contigs_fpaths[:]
-
-
     qconfig.contig_thresholds = map(int, qconfig.contig_thresholds.split(","))
     qconfig.genes_lengths = map(int, qconfig.genes_lengths.split(","))
     if qconfig.max_threads is None:
@@ -400,7 +391,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
 
     start_time = print_timestamp("Started: ")
     print ""
-    print "Correcting contig files",
+    print "Processing contig files",
     if qconfig.reference:
         print "and reference",
     print "..."
@@ -409,21 +400,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
         shutil.rmtree(corrected_dirpath)
     os.mkdir(corrected_dirpath)
 
-    if qconfig.reference:
-        ref_basename, ref_extension = os.path.splitext(qconfig.reference)
-        corrected_and_unziped_reference_fname = os.path.join(corrected_dirpath, os.path.basename(ref_basename))
-        corrected_and_unziped_reference_fname = corrected_fname_for_nucmer(corrected_and_unziped_reference_fname)
-
-        # unzipping (if needed)
-        if uncompress(qconfig.reference, corrected_and_unziped_reference_fname, sys.stderr):
-            qconfig.reference = corrected_and_unziped_reference_fname
-
-        # correcting
-        if not correct_fasta(qconfig.reference, corrected_and_unziped_reference_fname, True):
-            qconfig.reference = ""
-        else:
-            qconfig.reference = corrected_and_unziped_reference_fname
-
+    # Processing contigs
     def handle_fasta(contigs_fpath, corr_fpath):
         lengths = fastaparser.get_lengths_from_fastafile(contigs_fpath)
         if not sum(1 for l in lengths if l >= qconfig.min_contig):
@@ -440,7 +417,6 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
         report.add_field(reporting.Fields.CONTIGS,   [sum(1 for l in lengths if l >= threshold) for threshold in qconfig.contig_thresholds])
         report.add_field(reporting.Fields.TOTALLENS, [sum(l for l in lengths if l >= threshold) for threshold in qconfig.contig_thresholds])
         return True
-
 
     ## removing from contigs' names special characters because:
     ## 1) Some embedded tools can fail on some strings with "...", "+", "-", etc
@@ -495,15 +471,31 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
             if handle_fasta(splitted_path, splitted_path):
                 new_contigs_fpaths.append(os.path.join(__location__, splitted_path))
 
-    print '  Done.'
-    old_contigs_fpaths = contigs_fpaths
     contigs_fpaths = new_contigs_fpaths
 
     qconfig.assemblies_num = len(contigs_fpaths)
 
     if not contigs_fpaths:
-        usage()
-        sys.exit(1)
+        error("All assemblies were skipped! Please, provide another files or decrease --min-contig threshold!")
+
+    # Processing reference
+    if qconfig.reference:
+        ref_basename, ref_extension = os.path.splitext(qconfig.reference)
+        corrected_and_unziped_reference_fname = os.path.join(corrected_dirpath, os.path.basename(ref_basename))
+        corrected_and_unziped_reference_fname = corrected_fname_for_nucmer(corrected_and_unziped_reference_fname)
+
+        # unzipping (if needed)
+        if uncompress(qconfig.reference, corrected_and_unziped_reference_fname, sys.stderr):
+            qconfig.reference = corrected_and_unziped_reference_fname
+
+        # correcting
+        if not correct_fasta(qconfig.reference, corrected_and_unziped_reference_fname, True):
+            qconfig.reference = ""
+        else:
+            qconfig.reference = corrected_and_unziped_reference_fname
+
+    # End of processing
+    print '  Done.'
 
     if qconfig.with_gage:
         ########################################################################
@@ -612,16 +604,6 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
     tee.free() # free sys.stdout and sys.stderr from logfile
 
     return 0
-
-#    else:
-#        print 'Warning! No contigs were aligned to the reference. Most of the metrics are impossible to evaluate and going to be skipped.'
-#        print 'Done.'
-#        print 'Warning! Nucmer failed processing the file%s with contigs. ' \
-#              'Check out if the contigs and the reference are correct.%s' \
-#                % ('s' if len(old_contigs_fpaths) > 1 else '',
-#                   ' The problem concerns all the files provided.' if len(old_contigs_fpaths) > 1 else '')
-#        cleanup(corrected_dirpath, tee)
-#        return 1
 
 
 def cleanup(corrected_dirpath, tee):

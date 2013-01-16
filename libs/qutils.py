@@ -49,23 +49,23 @@ def uncompress(compressed_fname, uncompressed_fname, errout):
     if ext not in ['.zip', '.bz2', '.gz']:
         return False
 
-    print >> errout, 'Decompressing %s' % compressed_fname
+    print >> errout, '  decompressing %s' % compressed_fname, '...',
     compressed_file = None
 
     if ext == '.zip':
         try:
             zfile = zipfile.ZipFile(compressed_fname)
         except Exception, e:
-            print >> errout, 'Can\'t open zip file:', e.message
+            print >> errout, '\n    can\'t open zip file:', e.message
             return False
 
         names = zfile.namelist()
         if len(names) == 0:
-            print >> errout, 'Zip archive is empty'
+            print >> errout, '\n    zip archive is empty'
             return False
 
         if len(names) > 1:
-            print >> errout, 'Zip archive must contain exactly one file. Using %s' % names[0]
+            print >> errout, '\n    zip archive must contain exactly one file. Using %s' % names[0]
 
         compressed_file = zfile.open(names[0])
 
@@ -77,7 +77,7 @@ def uncompress(compressed_fname, uncompressed_fname, errout):
 
     with open(uncompressed_fname, 'w') as uncompressed_file:
         uncompressed_file.write(compressed_file.read())
-        print >> errout, 'Uncompressed'
+        print >> errout, 'uncompressed!'
         return True
 
 

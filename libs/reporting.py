@@ -4,32 +4,21 @@
 # See file LICENSE for details.
 ############################################################################
 
-import os
-import sys
 from libs import qconfig
-from libs.qutils import print_timestamp
 
-####################################################################################
-# Reporting module (singleton) for QUAST
-#
-# See class Fields to available fields for report.
-# Usage from QUAST modules:
-#  from libs import reporting
-#  report = reporting.get(fasta_filename)
-#  report.add_field(reporting.Field.N50, n50)
-#
-# Import this module only after final changes in qconfig!
-#
-####################################################################################
-
-reports = {} # basefilename -> Report
-assemblies_order = [] # for printing in appropriate order
-min_contig = None # for printing info about min contig in TXT reports
-
-# Available fields for report, values (strings) should be unique!
+# Here you can modify content and order of metrics in QUAST reports and names of metrcis as well
 class Fields:
+
+####################################################################################
+###########################  CONFIGURABLE PARAMETERS  ##############################
+####################################################################################
+
+    ### List of available fields for reports. Values (strings) should be unique! ###
+
+    # Header
     NAME = 'Assembly'
-    # Basic stats
+
+    # Basic statistics
     NUMCONTIGS = '# contigs'
     CONTIGS = ('# contigs (>= %d bp)', tuple(qconfig.contig_thresholds))
     LARGCONTIG = 'Largest contig'
@@ -46,7 +35,7 @@ class Fields:
     L75 = 'L75'
     LG75 = 'LG75'
 
-    # Misassemblies
+    # Misassemblies and unaligned statistics
     MISLOCAL = '# local misassemblies'
     MISASSEMBL = '# misassemblies'
     MISCONTIGS = '# misassembled contigs'
@@ -55,22 +44,10 @@ class Fields:
     UNALIGNEDBASES = 'Unaligned contigs length'
     REPEATS = '# contigs with repeats'
     REPEATSEXTRABASES = 'Extra bases in contigs with repeats'
-
     UNCALLED = "# N's"
     UNCALLED_PERCENT = "# N's per 100 kbp"
 
-    # Aligned
-    LARGALIGN = 'Largest alignment'
-    NA50 = 'NA50'
-    NGA50 = 'NGA50'
-    NA75 = 'NA75'
-    NGA75 = 'NGA75'
-    LA50 = 'LA50'
-    LGA50 = 'LGA50'
-    LA75 = 'LA75'
-    LGA75 = 'LGA75'
-
-    # Genes and operons
+    # Genome statistics
     MAPPEDGENOME = 'Genome fraction (%)'
     DUPLICATION_RATIO = 'Duplication ratio'
     GENES = '# genes'
@@ -85,14 +62,24 @@ class Fields:
     REFGC = 'Reference GC (%)'
     AVGIDY = 'Average %IDY'
 
-    # order as printed in report:
+    # Aligned statitics
+    LARGALIGN = 'Largest alignment'
+    NA50 = 'NA50'
+    NGA50 = 'NGA50'
+    NA75 = 'NA75'
+    NGA75 = 'NGA75'
+    LA50 = 'LA50'
+    LGA50 = 'LGA50'
+    LA75 = 'LA75'
+    LGA75 = 'LGA75'
+
+    ### content and order of metrics in MAIN REPORT (<quast_output_dir>/report.txt, .tex, .tsv):
     order = [NAME, CONTIGS, TOTALLENS, NUMCONTIGS, LARGCONTIG, TOTALLEN, REFLEN, ESTREFLEN, GC, REFGC,
-             N50, NG50, N75, NG75,
-             MISASSEMBL, MISLOCAL,
-             UNALIGNED, UNALIGNEDBASES, MAPPEDGENOME, DUPLICATION_RATIO,
+             N50, NG50, N75, NG75, MISASSEMBL, MISLOCAL, UNALIGNED, UNALIGNEDBASES, MAPPEDGENOME, DUPLICATION_RATIO,
              UNCALLED_PERCENT, SUBSERROR, INDELSERROR, GENES, OPERONS, GENEMARKUNIQUE, GENEMARK,
              LARGALIGN, NA50, NGA50, NA75, NGA75]
 
+    ### additional list of metrics for detailed misassemblies report
     MIS_ALL_EXTENSIVE = '# misassemblies'
     MIS_RELOCATION = '    # relocations'
     MIS_TRANSLOCATION = '    # translocations'
@@ -101,10 +88,11 @@ class Fields:
     MIS_EXTENSIVE_BASES = 'Misassembled contigs length'
     MIS_LOCAL = '# local misassemblies'
 
-    # for detailed misassemblies report
+    # content and order of metrics in DETAILED MISASSEMBLIES REPORT (<quast_output_dir>/contigs_reports/misassemblies_report.txt, .tex, .tsv)
     misassemblies_order = [NAME, MIS_ALL_EXTENSIVE, MIS_RELOCATION, MIS_TRANSLOCATION, MIS_INVERTION,
                            MIS_EXTENSIVE_CONTIGS, MIS_EXTENSIVE_BASES, MIS_LOCAL, MISMATCHES, INDELS]
 
+    ### additional list of metrics for detailed unaligned report
     UNALIGNED_FULL_CNTGS = '# fully unaligned contigs'
     UNALIGNED_FULL_LENGTH = 'Fully unaligned length'
     UNALIGNED_PART_CNTGS = '# partially unaligned contigs'
@@ -112,11 +100,11 @@ class Fields:
     UNALIGNED_PART_SIGNIFICANT_PARTS = '    # both parts are significant'
     UNALIGNED_PART_LENGTH = 'Partially unaligned length'
 
-    # for detailed unaligned report
+    # content and order of metrics in DETAILED UNALIGNED REPORT (<quast_output_dir>/contigs_reports/unaligned_report.txt, .tex, .tsv)
     unaligned_order = [NAME, UNALIGNED_FULL_CNTGS, UNALIGNED_FULL_LENGTH, UNALIGNED_PART_CNTGS,
                        UNALIGNED_PART_WITH_MISASSEMBLY, UNALIGNED_PART_SIGNIFICANT_PARTS, UNALIGNED_PART_LENGTH, UNCALLED]
 
-    # GAGE fields
+    ### list of GAGE metrics (--gage option)
     GAGE_NUMCONTIGS = 'Contigs #'
     GAGE_MINCONTIG = 'Min contig'
     GAGE_MAXCONTIG = 'Max contig'
@@ -143,13 +131,14 @@ class Fields:
     GAGE_MAXCORCOTING = 'Max correct contig'
     GAGE_CORN50 = 'Corrected N50'
 
-    # GAGE order
+    # content and order of metrics in GAGE report (<quast_output_dir>/gage_report.txt, .tex, .tsv)
     gage_order = [NAME, GAGE_NUMCONTIGS, GAGE_MINCONTIG, GAGE_MAXCONTIG, GAGE_N50, GAGE_GENOMESIZE, GAGE_ASSEMBLY_SIZE,
                   GAGE_CHAFFBASES, GAGE_MISSINGREFBASES, GAGE_MISSINGASMBLYBASES, GAGE_MISSINGASMBLYCONTIGS, GAGE_DUPREFBASES,
                   GAGE_COMPRESSEDREFBASES, GAGE_BADTRIM, GAGE_AVGIDY, GAGE_SNPS, GAGE_SHORTINDELS, GAGE_LONGINDELS, GAGE_INVERSIONS,
                   GAGE_RELOCATION, GAGE_TRANSLOCATION, GAGE_NUMCORCONTIGS, GAGE_CORASMBLYSIZE, GAGE_MINCORCONTIG, GAGE_MAXCORCOTING,
                   GAGE_CORN50]
 
+    ### Grouping of metrics and set of main metrics for HTML version of main report
     grouped_order = [
         ('Basic statistics', [NUMCONTIGS, CONTIGS, LARGCONTIG, TOTALLEN, TOTALLENS, REFLEN, ESTREFLEN,
                               N50, N75, NG50, NG75, L50, L75, LG50, LG75,]),
@@ -173,10 +162,17 @@ class Fields:
         ('Aligned statistics', [LARGALIGN, NA50, NA75, NGA50, NGA75, LA50, LA75, LGA50, LGA75,]),
         ]
 
+    # for "short" version of HTML report
     main_metrics = [NUMCONTIGS, LARGCONTIG, TOTALLEN, NG50, UNCALLED_PERCENT,
                     MISASSEMBL, MISCONTIGSBASES,
                     MAPPEDGENOME, SUBSERROR, INDELSERROR,
                     GENES, OPERONS, GENEMARKUNIQUE, GENEMARK,]
+
+
+####################################################################################
+########################  END OF CONFIGURABLE PARAMETERS  ##########################
+####################################################################################
+
 
     class Quality:
         MORE_IS_BETTER='More is better'
@@ -201,6 +197,29 @@ class Fields:
         quality_dict['Less is better'].extend(metrics)
 
 
+#################################################
+
+import os
+import sys
+from libs.qutils import print_timestamp
+
+####################################################################################
+# Reporting module (singleton) for QUAST
+#
+# See class Fields to available fields for report.
+# Usage from QUAST modules:
+#  from libs import reporting
+#  report = reporting.get(fasta_filename)
+#  report.add_field(reporting.Field.N50, n50)
+#
+# Import this module only after final changes in qconfig!
+#
+####################################################################################
+
+reports = {} # basefilename -> Report
+assemblies_order = [] # for printing in appropriate order
+
+#################################################
 
 def get_main_metrics():
     lists = map(take_tuple_metric_apart, Fields.main_metrics)
@@ -345,8 +364,8 @@ def save_txt(filename, table, is_transposed=False):
 
     file = open(filename, 'w')
 
-    if min_contig:
-        print >>file, 'All statistics are based on contigs of size >= %d bp, unless otherwise noted ' % min_contig + \
+    if qconfig.min_contig:
+        print >>file, 'All statistics are based on contigs of size >= %d bp, unless otherwise noted ' % qconfig.min_contig + \
                       '(e.g., "# contigs (>= 0 bp)" and "Total length (>= 0 bp)" include all contigs).'
         print >>file
     for row in all_rows:
@@ -413,7 +432,7 @@ def save_tex(filename, table, is_transposed=False):
     print >>file, '\\begin{document}'
     print >>file, '\\begin{table}[ht]'
     print >>file, '\\begin{center}'
-    print >>file, '\\caption{All statistics are based on contigs of size $\geq$ %d bp, unless otherwise noted ' % min_contig + \
+    print >>file, '\\caption{All statistics are based on contigs of size $\geq$ %d bp, unless otherwise noted ' % qconfig.min_contig + \
                   '(e.g., "\# contigs ($\geq$ 0 bp)" and "Total length ($\geq$ 0 bp)" include all contigs).}'
 
     rows_n = len(all_rows[0]['values'])

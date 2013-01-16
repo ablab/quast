@@ -387,7 +387,6 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
 
     from libs import reporting
     reload(reporting)
-    reporting.min_contig = qconfig.min_contig
 
     start_time = print_timestamp("Started: ")
     print ""

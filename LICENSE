@@ -66,6 +66,13 @@ Barthelson R, McFarlin AJ, Rounsley SD, Young S (2011) Plantagora: Modeling
 Whole Genome Sequencing and Assembly of Plant Genomes. PLoS ONE 6(12): e28436. 
 doi:10.1371/journal.pone.0028436
 
+4. QUAST Gene Finding module uses GlimmerHMM for predicting genes in eukaryoutes.
+For more details about GlimmerHMM please refer to
+http://cbcb.umd.edu/software/glimmerhmm/ website and to the following paper:
+
+Majoros, W.H., Pertea, M., and Salzberg, S.L. TigrScan and GlimmerHMM:
+two open-source ab initio eukaryotic gene-finders. Bioinformatics. 20(16): 2878-9.
+
 -------------------------------------------------------------------------------
 
 		    GNU GENERAL PUBLIC LICENSE

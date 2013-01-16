@@ -26,13 +26,41 @@ QUAST evaluates genome assemblies by computing various metrics.
     You can find all project news and the latest versions of source code and manual
     at <a href="http://sourceforge.net/projects/quast/">http://sourceforge.net/projects/quast/</a>.
     <br>
-    QUAST uses <a href="http://exon.gatech.edu/genemarks.cgi">GeneMarkS</a>, <a href="http://mummer.sourceforge.net/">MUMmer</a>
+    QUAST uses <a href="http://exon.gatech.edu/genemarks.cgi">GeneMarkS</a>, 
+    <a href="http://cbcb.umd.edu/software/glimmerhmm/">GlimmerHMM</a>, <a href="http://mummer.sourceforge.net/">MUMmer</a>,
     and <a href="http://gage.cbcb.umd.edu/index.html">GAGE</a>. All their sources are embedded in QUAST and you needn't to install
     them separately.
     <br>
     <br>
-    QUAST version 2.0 was released under GPL v2 (see <a href="LICENSE">LICENSE</a> for details) on XX December 2012.
+    QUAST version 2.0 was released under GPL v2 (see <a href="LICENSE">LICENSE</a> for details) on XX January 2013.
 </p>
+
+<h2>Table of Contents</h2>
+<ol>
+  <li><a href="#sec1">Installation</a></li> 
+  <li><a href="#sec2">Running QUAST</a> 
+    <ol>
+      <li><a href="#sec2.1">For impatient people</a></li>
+      <li><a href="#sec2.2">Input data</a></li>
+      <li><a href="#sec2.3">GAGE mode</a></li>
+      <li><a href="#sec2.4">Command line options</a></li>
+    </ol>
+  </li>
+  <li><a href="#sec3">QUAST output</a> 
+    <ol>
+      <li><a href="#sec3.1">Metrics description</a>
+        <ol>
+          <li><a href="#sec3.1.1">Summary report</a></li>
+          <li><a href="#sec3.1.2">Misassemblies report</a></li>
+          <li><a href="#sec3.1.3">Unaligned report</a></li>
+        </ol>
+      </li>
+      <li><a href="#sec3.2">Plots descriptions</a></li>      
+    </ol>
+  </li>
+  <li><a href="#sec4">Adjusting QUAST reports and plots</a></li> 
+  <li><a href="#sec5">Feedback and bug reports</a></li> 
+</ol>
 
 <a name="sec1"></a>
 <h2>1. Installation</h2>
@@ -69,7 +97,7 @@ Or with <a href="http://peak.telecommunity.com/DevCenter/EasyInstall">Easy Insta
 </pre>
 
 
-<p>To download <a href="https://downloads.sourceforge.net/project/quast/quast-1.3.tar.gz">the source code tarball</a> and extract it:
+<p>To download <a href="https://downloads.sourceforge.net/project/quast/quast-2.0.tar.gz">QUAST source code tarball</a> and extract it:
 </p>
 <pre  class="code">
 <code>
@@ -102,7 +130,7 @@ Browsing summary of evaluation results with <a href="http://www.greenwoodsoftwar
 <a name="sec2.2"></a>
 <h3>2.2 Input data</h3>
 <p>
-    QUAST can work with assemblies and references in FASTA format. Files may be compressed with gzip.
+    QUAST can work with assemblies and references in FASTA format. Files may be compressed with gzip, bzip2, or zip.
     <br><br>
     You can specify files with annotated genes and operons. We support <a href="http://www.sanger.ac.uk/resources/software/gff/spec.html">the 2nd </a> and <a href="http://www.sequenceontology.org/gff3.shtml">the 3rd version</a>
     of the GFF format, the format used by <a href="http://www.ncbi.nlm.nih.gov/gene">NCBI to store genes</a> ("Summary (text)" format), and a plain TXT format with 4 tab-separated columns:
@@ -120,8 +148,9 @@ These files correspond to the first 10 kbp of <i>E. coli</i>. Input reads and sa
 <br><br>
 <b>Known limitations on input data</b>
 <br>
-Unfortunately, current version of QUAST can work only with assemblies of length less than 4.29 Gbp and with reference genomes of length less than 536 Mbp.
-We plan to increase the maximum available lengths (at least for references) in the next QUAST release.
+QUAST uses Nucmer to align assemblies to a reference genome. Due to Nucmer's limitations on input data size,
+QUAST can work only with assemblies of length less than 4.29 Gbp and with reference genomes of length less than 536 Mbp per chromosome 
+(number of chromosomes is not limited).
 </p>
 
 <a name="sec2.3"></a>
@@ -178,10 +207,12 @@ We plan to increase the maximum available lengths (at least for references) in t
 <p>&nbsp;&nbsp;&nbsp;&nbsp;Sets a lower threshold for a contig length. Only contigs of length greater than the threshold will be taken into account
     (except for some metrics, see <a href="#sec3">section 3</a>). The default value is 500.</p>
 
+<p>Advanced options:</p>
+
 <p>
     <code>--threads &lt;int&gt;</code>
 </p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;Sets a maximum number of threads QUAST can use. The default value is the number of provided assemblies.</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;Sets a maximum number of threads QUAST can use. The default value is the number of CPUs (or 4 if the number of CPUs can't be determined by QUAST).</p>
 
 <p>
     <code>--gage</code>
@@ -196,9 +227,14 @@ We plan to increase the maximum available lengths (at least for references) in t
     <b><i>Total length (&ge; x)</i></b> metrics (see <a href="#sec3">section 3</a>). The default value is 0,1000.</p>
 
 <p>
-    <code>--genemark-thresholds &lt;int,int,...&gt;</code>
+    <code>--gene-thresholds &lt;int,int,...&gt;</code>
 </p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;Comma-separated list of threshold lengths of genes to search with GeneMark. The default value is 0,300,1500,3000.</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;Comma-separated list of threshold lengths of genes to search with gene finding module (GenemarkS or GlimmerHMM). The default value is 0,300,1500,3000.</p>
+
+<p>
+    <code>--disable-gene-finding</code>
+</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;This flag disables Gene Finding module to speed-up evaluating. Note: gene finding module is started in case of annotated genes file is not provided.</p>
 
 <p>
     <code>--scaffolds</code>
@@ -210,14 +246,24 @@ We plan to increase the maximum available lengths (at least for references) in t
     <code>--eukaryote</code>
 </p>
 <p>&nbsp;&nbsp;&nbsp;&nbsp;This flag should be set if a genome is an eukaryote. QUAST uses this information in gene finding module (prokaryotes and eukaryotes
-    have different specifics of genes) and in misassembly finding module (prokaryotes have circular chromosomes but FASTA file presents them in a linear way and
-    QUAST should detect misassemlies at the ends of a linear representation correctly).</p>
+    have different specifics of genes, we use GenemarkS for prokaryotes and GlimmerHMM for eukaryotes) and in misassembly finding module 
+    (prokaryotes have circular chromosomes but FASTA file presents them in a linear way and
+    QUAST should detect misassemlies at the ends of linear representationa correctly).</p>
 
 <p>
-    <code>--only-best-alignments</code>
+    <code>--use-all-alignments</code>
 </p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;This flag forces QUAST to use only the best alignments of contigs covering repeats (one contig -- one alignments). 
-    By default, QUAST uses all alignments of a contig with a repeat to evaluate quality metrics.</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;This flag should be set for computing Genome fraction, # genes, # operons metrics in compatible with <i>QUAST v.1.*</i> mode.
+    By default, QUAST v.2.0 filters Nucmer's alignments to keep only best ones. Roughly speaking, QUAST skips ambiguous and redundant alignments
+    to get <i>one alignment</i> (or one set of non-overlapping or slightly-overlapping alignments) <i>per each contig</i>. QUAST v.1.* used <i>all</i> Nucmer's 
+    alignments to compute these metrics.</p>
+
+<p>
+    <code>--allow-repeats</code>
+</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;This flag forces QUAST to use all alignments of a contig with multiple equally good alignments (probably a repeat).
+    By default, QUAST skips all alignments of such contigs because it can't determine the best alignment. Note: setting this option can cause
+    significant increase of <b># mismatches</b> (repeats are always inexact and contain several SNPs).</p>
 
 <p><code>-h</code> (or <code>--help</code>)</p>
 <p>&nbsp;&nbsp;&nbsp;&nbsp;Print help.</p>
@@ -287,7 +333,7 @@ Note:
 <br>
 <i>
     All remaining metrics are computed on the contigs of length <code>&ge; x</code> where <code>x</code> is specified in command line option
-    <code>--min-contig</code> (see <a href="#sec2.4">section 2.4</a>, default is 200).
+    <code>--min-contig</code> (see <a href="#sec2.4">section 2.4</a>, default is 500).
 </i>
 <br>
 
@@ -328,10 +374,10 @@ Note:
 <p><b><i>Unaligned contigs length</i></b>&nbsp;&nbsp;is the total number of unaligned bases in totally and
     partially unaligned contigs (only bases from unaligned parts). </p>
 
-<p><b><i># ambiguous contigs</i></b>&nbsp;&nbsp;is the number of contigs which have reference alignments
+<!--p><b><i># ambiguous contigs</i></b>&nbsp;&nbsp;is the number of contigs which have reference alignments
     of equal quality in multiple locations on the reference. </p>
 
-<p><b><i>Ambiguous contigs length</i></b>&nbsp;&nbsp;is the number of total bases contained in all ambiguous contigs. </p>
+<p><b><i>Ambiguous contigs length</i></b>&nbsp;&nbsp;is the number of total bases contained in all ambiguous contigs. </p-->
 
 <p><b><i>Genome fraction (%)</i></b>&nbsp;&nbsp;is the total number of aligned bases in the reference, 
     divided by the genome size. A base in the reference genome is counted as aligned if there is at least one contig with 
@@ -449,11 +495,14 @@ opposite strands of the same chromosome. </p>
 
 <p><b><i>GC content plot</i></b></p>
 
-<p>&nbsp;&nbsp;&nbsp;&nbsp;This plot shows the distribution of GC percentage among the contigs, 
-    i.e., the total number of bases in contigs with such GC content. Typically, the distribution is approximately Gaussian. 
+<p>&nbsp;&nbsp;&nbsp;&nbsp;This plot shows the distribution of GC content in the contigs. 
+    The x value shows the percent of GC (from 0 to 100). The y
+    value shows the number of non-overlapping 100 bp windows whose GC
+    content is x. Typically, the distribution is approximately Gaussian. 
     However, for some genomes it is not Gaussian. For assembly projects with contaminants, 
     the GC distribution of the contaminants often differs from the reference genome and may give a 
-    superposition of multiple curves with different peaks.</p>
+    superposition of multiple curves with different peaks.
+</p>
 
 <p><b><i>Cumulative length (aligned contigs)</i></b></p>
 
@@ -476,9 +525,22 @@ opposite strands of the same chromosome. </p>
 
 <p>&nbsp;&nbsp;&nbsp;&nbsp;This plot is similar to the previous one but for operons. </p>
 
-
 <a name="sec4"></a><p>
-<h2>4. Feedback and bug reports</h2>
+<h2>4. Adjusting QUAST reports and plots</h2>
+
+<p>
+    You can easily change content, order of metrics, and metric names in all QUAST reports. For doing this,
+    please edit CONFIGURABLE PARAMETERS section in <code>libs/reporting.py</code>. It contains a lot of informative comments 
+    which will help you to adjust QUAST reports easily even if you are new to Python.
+</p>    
+
+<p>
+    The same statement is true for QUAST plots as well. You can adjust plot colors, style and width of lines, legeng font, plots output format, etc.
+    Please see CONFIGURABLE PARAMETERS section in <code>libs/plotter.py</code>.
+</p>
+
+<a name="sec5"></a><p>
+<h2>5. Feedback and bug reports</h2>
 
 <p>
     We will be thankful if you help us make QUAST better by sending your comments, bug reports, and suggestions

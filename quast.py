@@ -5,28 +5,21 @@
 # All Rights Reserved
 # See file LICENSE for details.
 ############################################################################
-import gzip
 
 import sys
-import bz2
 import os
 import shutil
 import re
 import getopt
-import subprocess
 from site import addsitedir
-import zipfile
-import datetime
-from libs.qutils import uncompress
+from libs import qconfig
+from libs.qutils import notice, warning, error, assert_file_exists, print_timestamp, uncompress
+from libs import fastaparser
+from libs.html_saver import json_saver
 
 __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
 
 addsitedir(os.path.join(__location__, 'libs/site_packages'))
-
-from libs import qconfig
-from libs.qutils import warning, error, assert_file_exists, print_timestamp
-from libs import fastaparser
-from libs.html_saver import json_saver
 
 RELEASE_MODE=True
 
@@ -189,12 +182,12 @@ def correct_fasta(original_fpath, corrected_fpath, is_reference=False):
 def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.path.abspath(sys.path[0]), 'libs')):
     if lib_dir == os.path.join(__location__, 'libs'):
         if ' ' in __location__:
-            error('Error: we does not support spaces in paths. \n' + \
+            error('QUAST does not support spaces in paths. \n' + \
                   'You are trying to run it from ' + str(__location__) + '\n' + \
                   'Please, put QUAST in a different folder, then run it again.\n')
     else:
         if ' ' in lib_dir:
-            error('Error: we does not support spaces in paths. \n' + \
+            error('QUAST does not support spaces in paths. \n' + \
                   'You are trying to use libs from ' + str(lib_dir) + '\n' + \
                   'Please, put libs in a different folder, then run it again.\n')
 
@@ -308,7 +301,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
         except:
             warning('Failed to determine the number of CPUs')
             qconfig.max_threads = qconfig.DEFAULT_MAX_THREADS
-        warning('Maximum number of threads set to ' + str(qconfig.max_threads) + ' (use appropriate option to set it manually)')
+        notice('Maximum number of threads was set to ' + str(qconfig.max_threads) + ' (use appropriate option to set it manually)')
 
 
     ########################################################################
@@ -325,7 +318,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
                 output_dirpath = str(base_dirpath) + '__' + str(i)
                 i += 1
         else:
-            warning("Output directory already exists! Existing Nucmer alignments can be used!")
+            notice("Output directory already exists! Existing Nucmer alignments will be used!")
 
     if not os.path.isdir(output_dirpath):
         os.makedirs(output_dirpath)

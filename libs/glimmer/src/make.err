@@ -1,0 +1,33 @@
+glimmerhmm.c: In function ‘int main(int, char**)’:
+glimmerhmm.c:128:42: warning: format ‘%d’ expects type ‘int’, but argument 3 has type ‘long int’
+glimmerhmm.c: In function ‘long int printexon(List*, int*, int*, int*, long int, long int, long int, int*, long int, FILE*, char*, int, int*)’:
+glimmerhmm.c:645:146: warning: format ‘%7d’ expects type ‘int’, but argument 7 has type ‘long int’
+glimmerhmm.c:664:146: warning: format ‘%7d’ expects type ‘int’, but argument 7 has type ‘long int’
+glimmerhmm.c:683:148: warning: format ‘%7d’ expects type ‘int’, but argument 7 has type ‘long int’
+glimmerhmm.c:703:148: warning: format ‘%7d’ expects type ‘int’, but argument 7 has type ‘long int’
+glimmerhmm.c:722:148: warning: format ‘%7d’ expects type ‘int’, but argument 7 has type ‘long int’
+glimmerhmm.c:743:146: warning: format ‘%7d’ expects type ‘int’, but argument 7 has type ‘long int’
+glimmerhmm.c:763:146: warning: format ‘%7d’ expects type ‘int’, but argument 7 has type ‘long int’
+glimmerhmm.c:781:148: warning: format ‘%7d’ expects type ‘int’, but argument 7 has type ‘long int’
+graph.c: In function ‘Site** graph(char*, long int, char*, long int*, char*, long int, int, char*, int, int)’:
+graph.c:1051:63: warning: format ‘%d’ expects type ‘int’, but argument 3 has type ‘long int’
+graph.c:1062:63: warning: format ‘%d’ expects type ‘int’, but argument 3 has type ‘long int’
+graph.c:1089:65: warning: format ‘%d’ expects type ‘int’, but argument 3 has type ‘long int’
+graph.c:1233:93: warning: format ‘%d’ expects type ‘int*’, but argument 4 has type ‘long int*’
+graph.c:1233:93: warning: format ‘%d’ expects type ‘int*’, but argument 5 has type ‘long int*’
+graph.c:1233:93: warning: format ‘%e’ expects type ‘float*’, but argument 7 has type ‘double*’
+graph.c:2085:63: warning: format ‘%d’ expects type ‘int’, but argument 3 has type ‘long int’
+tree_util_prob.c: In function ‘tree_node* read_tree(char*)’:
+tree_util_prob.c:64:51: warning: deprecated conversion from string constant to ‘char*’
+tree_util_prob.c:67:42: warning: deprecated conversion from string constant to ‘char*’
+tree_util_prob.c:70:42: warning: deprecated conversion from string constant to ‘char*’
+tree_util_prob.c: In function ‘tree_node* read_hp(FILE*)’:
+tree_util_prob.c:192:45: warning: deprecated conversion from string constant to ‘char*’
+tree_util_prob.c:196:51: warning: deprecated conversion from string constant to ‘char*’
+tree_util_prob.c:198:66: warning: deprecated conversion from string constant to ‘char*’
+util.c: In function ‘int* ivector(int, int)’:
+util.c:84:60: warning: deprecated conversion from string constant to ‘char*’
+util.c: In function ‘float* vector(int, int)’:
+util.c:101:59: warning: deprecated conversion from string constant to ‘char*’
+util.c: In function ‘double* dvector(int, int)’:
+util.c:118:60: warning: deprecated conversion from string constant to ‘char*’

@@ -16,7 +16,7 @@ import shutil
 
 from libs import reporting
 from libs.fastaparser import read_fasta, write_fasta, rev_comp
-from qutils import id_to_str, print_timestamp
+from qutils import id_to_str, print_timestamp, error
 
 def merge_gffs(gffs, out_path):
     '''Merges all GFF files into a single one, dropping GFF header.'''
@@ -51,12 +51,7 @@ def glimmerHMM(tool_dir, fasta_path, out_path, gene_lengths, err_path):
                 stdout=err_file, stderr=err_file)
             assert p is 0
 
-    if platform.system() == 'Darwin':
-        tool_exec = os.path.join(tool_dir, 'macosx')
-    elif platform.architecture()[0] == '64bit':
-        tool_exec  = os.path.join(tool_dir, 'linux_64')
-    else:
-        tool_exec  = os.path.join(tool_dir, 'linux_32')
+    tool_exec = os.path.join(tool_dir, 'glimmerhmm')
 
     # Note: why arabidopsis? for no particular reason, really.
     trained_dir = os.path.join(tool_dir, 'trained', 'arabidopsis')
@@ -103,10 +98,24 @@ def do(fasta_paths, gene_lengths, out_dir, lib_dir):
     print_timestamp()
     print 'Running GlimmerHMM...'
 
+    tool_dir = os.path.join(lib_dir, 'glimmer')
+    tool_src = os.path.join(tool_dir, 'src')
+    tool_exec = os.path.join(tool_dir, 'glimmerhmm')
+
+    if not os.path.isfile(tool_exec):
+        # making
+        print ("Compiling GlimmerHMM...")
+        try:
+            subprocess.call(
+                ['make', '-C', tool_src],
+                stdout=open(os.path.join(tool_src, 'make.log'), 'w'), stderr=open(os.path.join(tool_src, 'make.err'), 'w'))
+            if not os.path.isfile(tool_exec):
+                raise
+        except:
+            error("Failed to compile GlimmerHMM (" + tool_src + ")! Try to compile it manually or set --disable-gene-finding option!")
+
     if not os.path.isdir(out_dir):
         os.makedirs(out_dir)
-
-    tool_dir = os.path.join(lib_dir, 'glimmer')
 
     for id, fasta_path in enumerate(fasta_paths):
         report = reporting.get(fasta_path)

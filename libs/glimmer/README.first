@@ -1,0 +1,32 @@
+Copyright (c) 2003  by  Mihaela Pertea.
+
+This system is licensed as open source under the terms in the file LICENSE.
+
+GlimmerHMM system is currently trained for Arabidopsis thaliana, rice, and human. 
+The system is already compiled for linux, 32 bit platforms. 
+You can compile your own system for your unix platform just by typing 
+make in the sources directory.
+
+To run GlimmerHMM  just use your own compiled GlimmerHMM or the 
+already existing pre-compiled GlimmerHMM from the bin directory.You will 
+also need to specify the directory containing the training files.
+
+For instance, if you want to run GlimmerHMM for Arabidopsis on a linux
+platform you should type
+>GlimmerHMM/bin/glimmerhmm_linux fasta.file -d GlimmerHMM/trained_dir/arabidopsis/
+
+To train GlimmerHMM you should first run make in the train directory. 
+Read readme.train from GlimmerHMM/train. After creating your own training
+directory you can use it at the -d option with GlimmerHMM.
+
+For human predictions, if you don't know the GC isochore of your input sequence, use the usual command:
+>GlimmerHMM/bin/glimmerhmm_linux fasta.file -d GlimmerHMM/trained_dir/human
+If you already know the isochore of where the sequence is comming use directly 
+the training directory for that isochore. There were four isochores for which 
+GlimmerHMM was trained for human: 0-43% GC, 43-51% GC, 51-57% GC, and 57-100% GC.
+E.g. suppose the predicted isochore of the input sequence has a 39% GC 
+content. The command to use for running GlimmerHMM should be:
+>GlimmerHMM/bin/glimmerhmm_linux fasta.file -d GlimmerHMM/trained_dir/human/Train0-43
+
+For additional information about GlimmerHMM see http://www.cbcb.umd.edu/software/glimmerhmm/.
+

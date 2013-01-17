@@ -1,0 +1,20 @@
+Copyright (c) 2005  by  Mihaela Pertea.
+
+This system is licensed as open source under the terms in the file LICENSE.
+
+ GlimmerHMM-3.0.1.tar.gz = added trainings for zebrafish and C.elegans
+
+ GlimmerHMM-3.0.0.tar.gz = introduced the possibility of predicting more than the top scoring prediction; introduced the possibility to use protein domains to improve prediction; improved the start and stop site detection modules; introduced the possibility to output gff file
+
+ GlimmerHMM-2.2.0.tar.gz = changed trainGlimmerHMM to have the possibility to specify the training directory name at running with option -d
+
+ GlimmerHMM-2.1.4.tar.gz = small error correction in procedure printgene from trainGlimmerHMM
+
+ GlimmerHMM-2.1.3.tar.gz = updated the procedure calcfalse from dectree_allinfo.pm
+
+ GlimmerHMM-2.1.2.tar.gz = updated the comp procedure from qsort in training directory.
+
+ GlimmerHMM-2.1.0.tar.gz = updated the human train directory; the software code has been modified to accomodate multiple overlapping gene predictions 
+
+ GlimmerHMM-2.0.4.tar.gz = updated Rice train directory;
+ 

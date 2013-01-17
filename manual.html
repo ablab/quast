@@ -113,7 +113,7 @@ Or with <a href="http://peak.telecommunity.com/DevCenter/EasyInstall">Easy Insta
 <a name="sec2.1"></a>
 <h3>2.1 For impatient people</h3>
 <p>
-Running QUAST on test data from the installation tarball (reference genome, gene and operon annotations and two assemblies of the first 10 kbp of <i>E.&nbsp;coli</i>):
+Running QUAST on test data from the installation tarball (reference genome, gene and operon annotations, and two assemblies of the first 10 kbp of <i>E.&nbsp;coli</i>):
 <pre class="code">
 <code>
     python quast.py -R test_data/reference_10K.fasta.gz -G test_data/genes_10K.txt -O test_data/operons_10K.txt test_data/assembly_10K_1.fasta test_data/assembly_10K_2.fasta    
@@ -133,7 +133,7 @@ Browsing summary of evaluation results with <a href="http://www.greenwoodsoftwar
     QUAST can work with assemblies and references in FASTA format. Files may be compressed with gzip, bzip2, or zip.
     <br><br>
     You can specify files with annotated genes and operons. We support <a href="http://www.sanger.ac.uk/resources/software/gff/spec.html">the 2nd </a> and <a href="http://www.sequenceontology.org/gff3.shtml">the 3rd version</a>
-    of the GFF format, the format used by <a href="http://www.ncbi.nlm.nih.gov/gene">NCBI to store genes</a> ("Summary (text)" format), and a plain TXT format with 4 tab-separated columns:
+    of the GFF format (<b>note:</b> &lt;feature&gt; field should be either "gene" or "operon"), the format used by <a href="http://www.ncbi.nlm.nih.gov/gene">NCBI to store genes</a> ("Summary (text)" format), and a plain TXT format with 4 tab-separated columns:
 <ul>
     <li>chromosome name (it has to match a name in the reference file), </li>
     <li>gene or operon id, </li>
@@ -162,7 +162,7 @@ QUAST can work only with assemblies of length less than 4.29 Gbp and with refere
     assemblies with a specified contig threshold and creates files with values of the GAGE metrics (see <a href="http://gage.cbcb.umd.edu/index.html">GAGE site</a> and
     <a href="http://genome.cshlp.org/content/early/2012/01/12/gr.131383.111">GAGE paper</a> for descriptions) in addition to a standard QUAST report.
     <br><br>
-    Note: GAGE can work only with a reference genome.
+    <b>Note:</b> GAGE can work only with a reference genome.
 </p>
 
 <a name="sec2.4"></a>
@@ -182,8 +182,9 @@ QUAST can work only with assemblies of length less than 4.29 Gbp and with refere
 
 <p>
     <code>-o &lt;output_dir&gt; </code></p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;Specify an output directory. The default value is <code>quast_results/results_&lt;date_time&gt;</code>.<br>
-    &nbsp;&nbsp;&nbsp;&nbsp;Note that running QUAST on an existing directory causes it to reuse the Nucmer alignments.
+<p>&nbsp;&nbsp;&nbsp;&nbsp;Specify an output directory. The default value is <code>quast_results/results_&lt;date_time&gt;</code>. 
+    <b>Note:</b> QUAST reuses already generated Nucmer alignments when it is started on an existing directory. Thus, you can add new assemblies
+    to an existing comparison or change QUAST options and efficiently reuse already computed results for speed-up.
 </p>
 
 <p>
@@ -204,7 +205,7 @@ QUAST can work only with assemblies of length less than 4.29 Gbp and with refere
 <p>
     <code>--min-contig &lt;int&gt;</code>
 </p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;Sets a lower threshold for a contig length. Only contigs of length greater than the threshold will be taken into account
+<p>&nbsp;&nbsp;&nbsp;&nbsp;Set a lower threshold for a contig length. Only contigs of length greater than the threshold will be taken into account
     (except for some metrics, see <a href="#sec3">section 3</a>). The default value is 500.</p>
 
 <p>Advanced options:</p>
@@ -212,13 +213,13 @@ QUAST can work only with assemblies of length less than 4.29 Gbp and with refere
 <p>
     <code>--threads &lt;int&gt;</code>
 </p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;Sets a maximum number of threads QUAST can use. The default value is the number of CPUs (or 4 if the number of CPUs can't be determined by QUAST).</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;Set a maximum number of threads QUAST can use. The default value is the number of CPUs (or 4 if QUAST fails to determine the number of CPUs).</p>
 
 <p>
     <code>--gage</code>
 </p>
 <p>&nbsp;&nbsp;&nbsp;&nbsp;This flag starts QUAST in "GAGE mode" (see <a href="#sec2.3">section 2.3</a>).
-    Note: in this case, you <i>must</i> also set <b>-R</b> option and you <i>can</i> set <b>--min-contig</b> option.</p>
+    <b>Note:</b> in this case, you <i>must</i> also set <code>-R</code> option and you <i>can</i> set <code>--min-contig</code> option.</p>
 
 <p>
     <code>--contig-thresholds &lt;int,int,...&gt;</code>
@@ -234,7 +235,7 @@ QUAST can work only with assemblies of length less than 4.29 Gbp and with refere
 <p>
     <code>--disable-gene-finding</code>
 </p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;This flag disables Gene Finding module to speed-up evaluating. Note: gene finding module is started in case of annotated genes file is not provided.</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;This flag disables gene finding module to speed-up evaluating. <b>Note:</b> gene finding module is started in case of annotated genes file is not provided.</p>
 
 <p>
     <code>--scaffolds</code>
@@ -247,22 +248,21 @@ QUAST can work only with assemblies of length less than 4.29 Gbp and with refere
 </p>
 <p>&nbsp;&nbsp;&nbsp;&nbsp;This flag should be set if a genome is an eukaryote. QUAST uses this information in gene finding module (prokaryotes and eukaryotes
     have different specifics of genes, we use GenemarkS for prokaryotes and GlimmerHMM for eukaryotes) and in misassembly finding module 
-    (prokaryotes have circular chromosomes but FASTA file presents them in a linear way and
-    QUAST should detect misassemlies at the ends of linear representationa correctly).</p>
+    (QUAST correctly process linear representations of prokaryote circular chromosomes).</p>
 
 <p>
     <code>--use-all-alignments</code>
 </p>
 <p>&nbsp;&nbsp;&nbsp;&nbsp;This flag should be set for computing Genome fraction, # genes, # operons metrics in compatible with <i>QUAST v.1.*</i> mode.
     By default, QUAST v.2.0 filters Nucmer's alignments to keep only best ones. Roughly speaking, QUAST skips ambiguous and redundant alignments
-    to get <i>one alignment</i> (or one set of non-overlapping or slightly-overlapping alignments) <i>per each contig</i>. QUAST v.1.* used <i>all</i> Nucmer's 
+    to keep <i>one alignment</i> (or one set of non-overlapping or slightly-overlapping alignments) <i>per each contig</i>. QUAST v.1.* used <i>all</i> Nucmer's 
     alignments to compute these metrics.</p>
 
 <p>
     <code>--allow-repeats</code>
 </p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;This flag forces QUAST to use all alignments of a contig with multiple equally good alignments (probably a repeat).
-    By default, QUAST skips all alignments of such contigs because it can't determine the best alignment. Note: setting this option can cause
+<p>&nbsp;&nbsp;&nbsp;&nbsp;This flag forces QUAST to use all alignments of a contig with <i>multiple equally good</i> alignments (probably a repeat).
+    By default, QUAST skips all alignments of such contig because it can't determine the best alignment. <b>Note:</b> setting this option can cause
     significant increase of <b># mismatches</b> (repeats are always inexact and contain several SNPs).</p>
 
 <p><code>-h</code> (or <code>--help</code>)</p>
@@ -312,7 +312,7 @@ QUAST can work only with assemblies of length less than 4.29 Gbp and with refere
 
 <br>
 
-Note:
+<b>Note:</b>
 <ul style="margin-top: -12px;">
     <li>metrics based on a reference genome are computed only if a reference is provided (see  <a href="#sec1.3">section 2.4</a>), </li>
     <li>metrics based on genes and operons are computed only if proper annotations are provided (see <a href="#sec1.3">section 2.4</a>). </li>
@@ -537,6 +537,10 @@ opposite strands of the same chromosome. </p>
 <p>
     The same statement is true for QUAST plots as well. You can adjust plot colors, style and width of lines, legeng font, plots output format, etc.
     Please see CONFIGURABLE PARAMETERS section in <code>libs/plotter.py</code>.
+</p>
+
+<p>
+    <b>Note:</b> you can quickly restart QUAST on an existing report to apply your adjustments. See description of <code>-o</code> option in <a href="#sec2.4">section 2.4</a>.
 </p>
 
 <a name="sec5"></a><p>

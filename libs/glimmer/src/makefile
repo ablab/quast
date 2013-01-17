@@ -3,7 +3,7 @@
 
 
 CC=g++
-CFLAGS=-g
+CFLAGS=-g -I /usr/include/malloc
 
 all: glimmerhmm
 

@@ -1,8 +1,0 @@
-make: Entering directory `/home/alex/biolab/master_rep/quast/libs/glimmer/src'
-g++ -g -c glimmerhmm.c
-g++ -g -c graph.c
-g++ -g -c sites.c
-g++ -g -c tree_util_prob.c
-g++ -g -c util.c
-g++ -g -o ../glimmerhmm glimmerhmm.o graph.o sites.o tree_util_prob.o util.o  -lm 
-make: Leaving directory `/home/alex/biolab/master_rep/quast/libs/glimmer/src'

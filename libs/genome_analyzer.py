@@ -10,7 +10,7 @@ import fastaparser
 import genes_parser
 from libs import reporting, qconfig
 from libs.html_saver import json_saver
-from qutils import id_to_str, warning, error, print_timestamp
+from qutils import id_to_str, notice, warning, error, print_timestamp
 
 __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
 
@@ -97,8 +97,11 @@ def do(reference, filenames, nucmer_dir, output_dir, genes_filename, operons_fil
 
         feature_container.region_list = genes_parser.get_genes_from_file(feature_filename, feature_name)
         if len(feature_container.region_list) == 0:
-            warning('No ' + feature_name + 's were loaded.')
-            res_file.write(feature_name + 's loaded: ' + 'None' + '\n')
+            if feature_filename:
+                warning('No ' + feature_name + 's were loaded.')
+                res_file.write(feature_name + 's loaded: ' + 'None' + '\n')
+            else:
+                notice('Annotated ' + feature_name + 's file was not provided! Use -' + feature_name[0].capitalize() + ' option to specify it!')
         else:
             print '  Loaded ' + str(len(feature_container.region_list)) + ' ' + feature_name + 's'
             res_file.write(feature_name + 's loaded: ' + str(len(feature_container.region_list)) + '\n')

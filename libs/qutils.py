@@ -14,6 +14,10 @@ import qconfig
 import datetime
 
 
+def notice(message=''):
+    print "== NOTE: " + str(message) + " =="
+
+
 def warning(message=''):
     print "====== WARNING! " + str(message) + " ======"
 

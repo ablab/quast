@@ -13,6 +13,7 @@ import subprocess
 import tempfile
 
 from libs import reporting
+from libs import qconfig
 from libs.fastaparser import read_fasta, write_fasta
 from qutils import id_to_str, print_timestamp
 
@@ -104,7 +105,7 @@ def gmhmm_p_everyGC(tool_dir, fasta_path, out_name, gene_lengths, err_path):
     heu_dir = os.path.join(tool_dir, 'heuristic_mod')
 
     out_gff_path = out_name + '_genes.gff'
-    out_fasta_path = out_name + '_genes.fasta'
+    #out_fasta_path = out_name + '_genes.fasta'
 
     work_dir = tempfile.mkdtemp()
     for id, seq in read_fasta(fasta_path):
@@ -131,20 +132,42 @@ def gmhmm_p_everyGC(tool_dir, fasta_path, out_name, gene_lengths, err_path):
 ##Sequence file name: %s
 ''' % fasta_path
     add_genes_to_gff(genes, out_gff_path, gff_header)
-    fasta_header = '''
+    #fasta_header = '''
 ##fasta out for GeneMark.hmm PROKARYOTIC
-##Sequence file name: %s
-''' % fasta_path
-    add_genes_to_fasta(genes, out_fasta_path, fasta_header)
+##Sequence file name: %s ''' % fasta_path
+    #add_genes_to_fasta(genes, out_fasta_path, fasta_header)
 
     cnt = [sum([gene[3] - gene[2] > x for gene in genes]) for x in gene_lengths]
     unique_count = len(set([gene[4] for gene in genes]))
     total_count = len(genes)
 
-    return out_gff_path, out_fasta_path, unique_count, total_count, cnt
+    #return out_gff_path, out_fasta_path, unique_count, total_count, cnt
+    return out_gff_path, unique_count, total_count, cnt
 
 
-def do(fasta_pathes, gene_lengths, out_dir, lib_dir):
+def predict_genes(id, fasta_path, gene_lengths, out_dir, tool_dir):
+    report = reporting.get(fasta_path)
+
+    print '  ' + id_to_str(id) + os.path.basename(fasta_path)
+
+    out_name = os.path.basename(fasta_path)
+    out_path = os.path.join(out_dir, out_name)
+    err_path = os.path.join(out_dir, out_name + '_genemark.stderr')
+    #out_gff_path, out_fasta_path, unique, total, cnt = gmhmm_p_everyGC(tool_dir,
+    #    fasta_path, out_path, gene_lengths, err_path)
+    out_gff_path, unique, total, cnt = gmhmm_p_everyGC(tool_dir,
+        fasta_path, out_path, gene_lengths, err_path)
+
+    print '  ' + id_to_str(id) + '  Genes = ' + str(unique) + ' unique, ' + str(total) + 'total'
+    print '  ' + id_to_str(id) + '  Predicted genes (GFF): ' + out_gff_path
+
+    report.add_field(reporting.Fields.GENEMARKUNIQUE, unique)
+    report.add_field(reporting.Fields.GENEMARK, cnt)
+
+    print '  ' + id_to_str(id) + 'Gene prediction is finished.'
+
+
+def do(fasta_paths, gene_lengths, out_dir, lib_dir):
     print_timestamp()
     print 'Running GeneMark tool...'
 
@@ -161,30 +184,18 @@ def do(fasta_pathes, gene_lengths, out_dir, lib_dir):
 
     install_genemark(tool_dir)
 
-    for id, fasta_path in enumerate(fasta_pathes):
-        report = reporting.get(fasta_path)
+    n_jobs = min(len(fasta_paths), qconfig.max_threads)
+    from joblib import Parallel, delayed
+    Parallel(n_jobs=n_jobs)(delayed(predict_genes)(id, fasta_path, gene_lengths, out_dir, tool_dir)
+        for id, fasta_path in enumerate(fasta_paths))
 
-        print ' ', id_to_str(id), os.path.basename(fasta_path),
-
-        out_name = os.path.basename(fasta_path)
-        out_path = os.path.join(out_dir, out_name)
-        err_path = os.path.join(out_dir, 'genemark.errors')
-        out_gff_path, out_fasta_path, unique, total, cnt = gmhmm_p_everyGC(tool_dir,
-            fasta_path, out_path, gene_lengths, err_path)
-
-        print ', Genes =', unique, 'unique,', total, 'total'
-        print '    GeneMark output: %s and %s'%(out_gff_path, out_fasta_path)
-
-        report.add_field(reporting.Fields.GENEMARKUNIQUE, unique)
-        report.add_field(reporting.Fields.GENEMARK, cnt)
-
-        print '  Done'
+    print '  Done.'
 
 
 if __name__ == '__main__':
-    fasta_pathes = ['../test_data/assembly_10K_1.fasta', '../test_data/assembly_10K_2.fasta']
-    print fasta_pathes
+    fasta_paths = ['../test_data/assembly_10K_1.fasta', '../test_data/assembly_10K_2.fasta']
+    print fasta_paths
     out_dir = '../run_test_data/genemark_out'
     lib_dir = ''
     gene_lengths = [100, 1000, 10000]
-    do(fasta_pathes, gene_lengths, out_dir, lib_dir)
+    do(fasta_paths, gene_lengths, out_dir, lib_dir)

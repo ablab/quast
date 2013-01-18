@@ -126,7 +126,7 @@ def do(reference, filenames, nucmer_dir, output_dir, genes_filename, operons_fil
 
     # process all contig files  
     for id, filename in enumerate(filenames):
-        print ' ', id_to_str(id) + os.path.basename(filename) + '...'
+        print ' ', id_to_str(id) + os.path.basename(filename)
 
         nucmer_base_filename = os.path.join(nucmer_prefix, os.path.basename(filename) + '.coords')
         if qconfig.use_all_alignments:
@@ -317,7 +317,7 @@ def do(reference, filenames, nucmer_dir, output_dir, genes_filename, operons_fil
         plotter.histogram(filenames, genome_mapped, output_dir + '/genome_fraction_histogram', 'Genome fraction, %',
             all_pdf, top_value=100)
 
-    print '  Done'
+    print '  Done.'
 
 class AlignedBlock():
     def __init__(self, seqname=None, start=None, end=None):

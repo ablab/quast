@@ -1054,7 +1054,7 @@ def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_
 
 
 def plantakolya_process(cyclic, draw_plots, nucmer_output_dir, filename, id, myenv, output_dir, reference):
-    print '  ' + id_to_str(id) + os.path.basename(filename) + '...'
+    print '  ' + id_to_str(id) + os.path.basename(filename)
     nucmer_fname = os.path.join(nucmer_output_dir, os.path.basename(filename))
     nucmer_is_ok, result = plantakolya(cyclic, draw_plots, id, filename, nucmer_fname, myenv, output_dir, reference)
     clear_files(filename, nucmer_fname)

@@ -132,4 +132,5 @@ def do(reference, filenames, nucmer_dir, output_dir, all_pdf, draw_plots, json_o
         plotter.Nx_plot(filenames, lists_of_lengths, output_dir + '/NAx_plot', 'NAx', assembly_lengths, all_pdf)
         plotter.Nx_plot(filenames, lists_of_lengths, output_dir + '/NGAx_plot', 'NGAx', [reference_length for i in range(len(filenames))], all_pdf)
 
+    print '  Done.'
     return report_dict

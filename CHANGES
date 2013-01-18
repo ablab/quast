@@ -16,6 +16,8 @@
 
       GlimmerHMM for predicting genes in eukaryotes.
 
+      Gene Finding is parallelized and its run is controlled by --gene-finding option.
+
       Improvement of HTML-reports and plotting units.
 
       Fixed several bugs.

@@ -106,7 +106,7 @@ def write_fasta(filename, fasta, header=None):
     outfile.close()
 
 def comp(letter):
-    return {'A': 'T', 'T': 'A', 'C': 'G', 'G': 'C'}[letter.upper()]
+    return {'A': 'T', 'T': 'A', 'C': 'G', 'G': 'C', 'N': 'N'}[letter.upper()]
 
 
 def rev_comp(seq):

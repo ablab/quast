@@ -228,14 +228,16 @@ QUAST can work only with assemblies of length less than 4.29 Gbp and with refere
     <b><i>Total length (&ge; x)</i></b> metrics (see <a href="#sec3">section 3</a>). The default value is 0,1000.</p>
 
 <p>
-    <code>--gene-thresholds &lt;int,int,...&gt;</code>
+    <code>--gene-finding</code>
 </p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;Comma-separated list of threshold lengths of genes to search with gene finding module (GenemarkS or GlimmerHMM). The default value is 0,300,1500,3000.</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;This flag enables Gene Finding module. This module is disabled by default to speed-up evaluating.</p>
 
 <p>
-    <code>--disable-gene-finding</code>
+    <code>--gene-thresholds &lt;int,int,...&gt;</code>
 </p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;This flag disables gene finding module to speed-up evaluating. <b>Note:</b> gene finding module is started in case of annotated genes file is not provided.</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;Comma-separated list of threshold lengths of genes to search with Gene Finding module (GenemarkS or GlimmerHMM). The default value is 0,300,1500,3000.
+    <b>Note:</b> this list is used only in case of enabled Gene Finding module (see <code>--gene-finding</code> option).
+</p>
 
 <p>
     <code>--scaffolds</code>
@@ -246,8 +248,8 @@ QUAST can work only with assemblies of length less than 4.29 Gbp and with refere
 <p>
     <code>--eukaryote</code>
 </p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;This flag should be set if a genome is an eukaryote. QUAST uses this information in gene finding module (prokaryotes and eukaryotes
-    have different specifics of genes, we use GenemarkS for prokaryotes and GlimmerHMM for eukaryotes) and in misassembly finding module 
+<p>&nbsp;&nbsp;&nbsp;&nbsp;This flag should be set if a genome is an eukaryote. QUAST uses this information in Gene Finding module (prokaryotes and eukaryotes
+    have different specifics of genes, we use GenemarkS for prokaryotes and GlimmerHMM for eukaryotes) and in Contigs Analyzer module 
     (QUAST correctly process linear representations of prokaryote circular chromosomes).</p>
 
 <p>
@@ -413,7 +415,7 @@ and Single Nucleotide Errors (SNEs), which are due to errors in reads or errors 
     an operons annotations file for computing this metric.</p>
 
 <p><b><i># predicted genes</i></b>&nbsp;&nbsp;is the number of genes in the assembly
-    predicted by QUAST's gene-finding module, which is based on GeneMarkS.
+    predicted by QUAST's Gene Finding module, which is based on GeneMarkS.
     This metric is computed if an annotated list of genes is not provided.</p>
 
 <p><b><i>Largest alignment</i></b>&nbsp;&nbsp;is the length of the largest continuous alignment in the assembly.

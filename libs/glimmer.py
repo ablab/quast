@@ -97,8 +97,6 @@ def glimmerHMM(tool_dir, fasta_path, out_path, gene_lengths, err_path):
 
 
 def predict_genes(id, fasta_path, gene_lengths, out_dir, tool_dir):
-    report = reporting.get(fasta_path)
-
     print '  ' + id_to_str(id) + os.path.basename(fasta_path)
 
     out_name = os.path.basename(fasta_path)
@@ -111,10 +109,8 @@ def predict_genes(id, fasta_path, gene_lengths, out_dir, tool_dir):
     print '  ' + id_to_str(id) + '  Genes = ' + str(unique) + ' unique, ' + str(total) + 'total'
     print '  ' + id_to_str(id) + '  Predicted genes (GFF): ' + out_gff_path
 
-    report.add_field(reporting.Fields.GENEMARKUNIQUE, unique)
-    report.add_field(reporting.Fields.GENEMARK, cnt)
-
     print '  ' + id_to_str(id) + 'Gene prediction is finished.'
+    return unique, cnt
 
 
 def do(fasta_paths, gene_lengths, out_dir, lib_dir):
@@ -142,8 +138,15 @@ def do(fasta_paths, gene_lengths, out_dir, lib_dir):
 
     n_jobs = min(len(fasta_paths), qconfig.max_threads)
     from joblib import Parallel, delayed
-    Parallel(n_jobs=n_jobs)(delayed(predict_genes)(id, fasta_path, gene_lengths, out_dir, tool_dir)
+    results = Parallel(n_jobs=n_jobs)(delayed(predict_genes)(id, fasta_path, gene_lengths, out_dir, tool_dir)
         for id, fasta_path in enumerate(fasta_paths))
+
+    # saving results
+    for id, fasta_path in enumerate(fasta_paths):
+        report = reporting.get(fasta_path)
+        unique, cnt = results[id]
+        report.add_field(reporting.Fields.GENEMARKUNIQUE, unique)
+        report.add_field(reporting.Fields.GENEMARK, cnt)
 
     print '  Done.'
 

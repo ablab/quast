@@ -35,7 +35,7 @@ genes = ''
 operons = ''
 with_gage = False
 prokaryote = True # former cyclic
-gene_finding = True
+gene_finding = False
 allow_repeats = False
 use_all_alignments = False
 max_threads = None
@@ -44,7 +44,7 @@ estimated_reference_size = None
 
 long_options = "output-dir= save-json-to= genes= operons= reference= contig-thresholds= min-contig= " \
                "gene-thresholds= save-json gage eukaryote no-plots no-html help debug " \
-               "allow-repeats scaffolds threads= mincluster= est-ref-size= use-all-alignments disable-gene-finding".split()
+               "allow-repeats scaffolds threads= mincluster= est-ref-size= use-all-alignments gene-finding".split()
 short_options = "o:G:O:R:t:M:S:J:jgehdsaT:c:r:uf"
 
 

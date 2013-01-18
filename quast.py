@@ -78,9 +78,9 @@ def usage():
         print >> sys.stderr, "--threads    <int>                maximum number of threads [default: number of CPUs]"
         print >> sys.stderr, "--gage                            start QUAST in \"GAGE mode\""
         print >> sys.stderr, "--contig-thresholds <int,int,..>  comma-separated list of contig length thresholds [default: %s]" % qconfig.contig_thresholds
+        print >> sys.stderr, "--gene-finding                    use Gene Finding module"
         print >> sys.stderr, "--gene-thresholds   <int,int,..>  comma-separated list of threshold lengths of genes to search with Gene Finding module"
         print >> sys.stderr, "                                  [default is %s]" % qconfig.genes_lengths
-        print >> sys.stderr, "--disable-gene-finding            disable Gene Finding module"
         print >> sys.stderr, "--scaffolds                       provided assemblies are scaffolds"
         print >> sys.stderr, "--eukaryote                       genome is an eukaryote"
         print >> sys.stderr, "--use-all-alignments              compute Genome fraction, # genes, # operons metrics in compatible with QUAST v.1.* mode."
@@ -103,7 +103,7 @@ def usage():
         print >> sys.stderr, "-r  --est-ref-size <int>     Estimated reference size (for calculating NG)"
         print >> sys.stderr, ""
         print >> sys.stderr, 'Options without arguments'
-        print >> sys.stderr, "-f  --disable-gene-finding    disable Gene Finding module"
+        print >> sys.stderr, "-f  --gene-finding            use Gene Finding module"
         print >> sys.stderr, "-s  --scaffolds               this flag informs QUAST that provided assemblies are scaffolds"
         print >> sys.stderr, "-g  --gage                    use GAGE (results are in gage_report.txt)"
         print >> sys.stderr, "-e  --eukaryote               genome is an eukaryote"
@@ -264,8 +264,8 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
         elif opt in ('-e', "--eukaryote"):
             qconfig.prokaryote = False
 
-        elif opt in ('-f', "--disable-gene-finding"):
-            qconfig.gene_finding = False
+        elif opt in ('-f', "--gene-finding"):
+            qconfig.gene_finding = True
 
         elif opt in ('-a', "--allow-repeats"):
             qconfig.allow_repeats = True
@@ -301,7 +301,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
         except:
             warning('Failed to determine the number of CPUs')
             qconfig.max_threads = qconfig.DEFAULT_MAX_THREADS
-        notice('Maximum number of threads was set to ' + str(qconfig.max_threads) + ' (use appropriate option to set it manually)')
+        notice('Maximum number of threads was set to ' + str(qconfig.max_threads) + ' (use --threads option to set it manually)')
 
 
     ########################################################################
@@ -549,7 +549,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
             report.add_field(reporting.Fields.GENEMARKUNIQUE, "")
             report.add_field(reporting.Fields.GENEMARK, [""] * len(qconfig.genes_lengths))
 
-    if not qconfig.genes and qconfig.gene_finding:
+    if qconfig.gene_finding:
         if qconfig.prokaryote:
             ########################################################################
             ### GeneMark
@@ -563,6 +563,8 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
             from libs import glimmer
             glimmer.do(contigs_fpaths, qconfig.genes_lengths, output_dirpath + '/predicted_genes', lib_dir)
     else:
+        print ""
+        notice("Gene Finding module was skipped. Use --gene-finding option to enable it.")
         add_empty_predicted_genes_fields()
 
     ########################################################################

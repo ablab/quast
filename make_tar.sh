@@ -10,7 +10,6 @@ mkdir release
 mkdir release/$QUAST_FOLDER
 cp -r libs            release/$QUAST_FOLDER
 cp -r test_data       release/$QUAST_FOLDER
-cp -r $SITE_PACKAGES  release/$QUAST_FOLDER
 cp quast.py           release/$QUAST_FOLDER
 cp manual.html        release/$QUAST_FOLDER
 cp VERSION            release/$QUAST_FOLDER

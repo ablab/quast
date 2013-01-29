@@ -128,7 +128,7 @@ def gmhmm_p_everyGC(tool_dir, fasta_path, out_name, gene_lengths, err_path, tmp_
 
     if not qconfig.debug:
         shutil.rmtree(work_dir)
-        
+
     gff_header = '''
 ##gff out for GeneMark.hmm PROKARYOTIC
 ##Sequence file name: %s
@@ -158,7 +158,7 @@ def predict_genes(id, fasta_path, gene_lengths, out_dir, tool_dir, tmp_dir):
     out_gff_path, unique, total, cnt = gmhmm_p_everyGC(tool_dir,
         fasta_path, out_path, gene_lengths, err_path, tmp_dir)
 
-    print '  ' + id_to_str(id) + '  Genes = ' + str(unique) + ' unique, ' + str(total) + 'total'
+    print '  ' + id_to_str(id) + '  Genes = ' + str(unique) + ' unique, ' + str(total) + ' total'
     print '  ' + id_to_str(id) + '  Predicted genes (GFF): ' + out_gff_path
 
     print '  ' + id_to_str(id) + 'Gene prediction is finished.'

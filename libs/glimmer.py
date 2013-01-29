@@ -107,7 +107,7 @@ def predict_genes(id, fasta_path, gene_lengths, out_dir, tool_dir, tmp_dir):
     #    fasta_path, out_path, gene_lengths, err_path)
     out_gff_path, unique, total, cnt = glimmerHMM(tool_dir,
         fasta_path, out_path, gene_lengths, err_path, tmp_dir)
-    print '  ' + id_to_str(id) + '  Genes = ' + str(unique) + ' unique, ' + str(total) + 'total'
+    print '  ' + id_to_str(id) + '  Genes = ' + str(unique) + ' unique, ' + str(total) + ' total'
     print '  ' + id_to_str(id) + '  Predicted genes (GFF): ' + out_gff_path
 
     print '  ' + id_to_str(id) + 'Gene prediction is finished.'
@@ -121,7 +121,7 @@ def do(fasta_paths, gene_lengths, out_dir, lib_dir):
     tool_dir = os.path.join(lib_dir, 'glimmer')
     tool_src = os.path.join(tool_dir, 'src')
     tool_exec = os.path.join(tool_dir, 'glimmerhmm')
-    tmp_dir = oss.path.join(out_dir, 'tmp')
+    tmp_dir = os.path.join(out_dir, 'tmp')
 
     if not os.path.isfile(tool_exec):
         # making

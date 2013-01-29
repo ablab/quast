@@ -100,14 +100,14 @@ def add_genes_to_fasta(genes, fasta_path, fasta_header):
     write_fasta(fasta_path, inner(), header=fasta_header)
 
 
-def gmhmm_p_everyGC(tool_dir, fasta_path, out_name, gene_lengths, err_path):
+def gmhmm_p_everyGC(tool_dir, fasta_path, out_name, gene_lengths, err_path, tmp_dir):
     tool_exec = os.path.join(tool_dir, 'gmhmmp')
     heu_dir = os.path.join(tool_dir, 'heuristic_mod')
 
     out_gff_path = out_name + '_genes.gff'
     #out_fasta_path = out_name + '_genes.fasta'
 
-    work_dir = tempfile.mkdtemp()
+    work_dir = tempfile.mkdtemp(dir=tmp_dir)
     for id, seq in read_fasta(fasta_path):
         gc = min(70, max(30, gc_content(seq)))
         curr_filename = str(gc - gc % 5) + '.fasta'
@@ -126,7 +126,9 @@ def gmhmm_p_everyGC(tool_dir, fasta_path, out_name, gene_lengths, err_path):
             if gmhmm_p(tool_exec, file_path, heu_path, file_out, err_file):
                 genes.extend(parse_gmhmm_out(file_out))
 
-    shutil.rmtree(work_dir)
+    if not qconfig.debug:
+        shutil.rmtree(work_dir)
+        
     gff_header = '''
 ##gff out for GeneMark.hmm PROKARYOTIC
 ##Sequence file name: %s
@@ -145,7 +147,7 @@ def gmhmm_p_everyGC(tool_dir, fasta_path, out_name, gene_lengths, err_path):
     return out_gff_path, unique_count, total_count, cnt
 
 
-def predict_genes(id, fasta_path, gene_lengths, out_dir, tool_dir):
+def predict_genes(id, fasta_path, gene_lengths, out_dir, tool_dir, tmp_dir):
     print '  ' + id_to_str(id) + os.path.basename(fasta_path)
 
     out_name = os.path.basename(fasta_path)
@@ -154,7 +156,7 @@ def predict_genes(id, fasta_path, gene_lengths, out_dir, tool_dir):
     #out_gff_path, out_fasta_path, unique, total, cnt = gmhmm_p_everyGC(tool_dir,
     #    fasta_path, out_path, gene_lengths, err_path)
     out_gff_path, unique, total, cnt = gmhmm_p_everyGC(tool_dir,
-        fasta_path, out_path, gene_lengths, err_path)
+        fasta_path, out_path, gene_lengths, err_path, tmp_dir)
 
     print '  ' + id_to_str(id) + '  Genes = ' + str(unique) + ' unique, ' + str(total) + 'total'
     print '  ' + id_to_str(id) + '  Predicted genes (GFF): ' + out_gff_path
@@ -167,8 +169,11 @@ def do(fasta_paths, gene_lengths, out_dir, lib_dir):
     print_timestamp()
     print 'Running GeneMark tool...'
 
+    tmp_dir = os.path.join(out_dir, 'tmp')
     if not os.path.isdir(out_dir):
         os.mkdir(out_dir)
+    if not os.path.isdir(tmp_dir):
+        os.mkdir(tmp_dir)
 
     if platform.system() == 'Darwin':
         tool_dir = os.path.join(lib_dir, 'genemark_suite_macosx/gmsuite')
@@ -182,7 +187,7 @@ def do(fasta_paths, gene_lengths, out_dir, lib_dir):
 
     n_jobs = min(len(fasta_paths), qconfig.max_threads)
     from joblib import Parallel, delayed
-    results = Parallel(n_jobs=n_jobs)(delayed(predict_genes)(id, fasta_path, gene_lengths, out_dir, tool_dir)
+    results = Parallel(n_jobs=n_jobs)(delayed(predict_genes)(id, fasta_path, gene_lengths, out_dir, tool_dir, tmp_dir)
         for id, fasta_path in enumerate(fasta_paths))
 
     # saving results
@@ -192,6 +197,8 @@ def do(fasta_paths, gene_lengths, out_dir, lib_dir):
         report.add_field(reporting.Fields.GENEMARKUNIQUE, unique)
         report.add_field(reporting.Fields.GENEMARK, cnt)
 
+    if not qconfig.debug:
+        shutil.rmtree(tmp_dir)
     print '  Done.'
 
 

@@ -42,7 +42,7 @@ def parse_gff(gff_path):
             yield id, attrs.get('Name'), int(start), int(end), strand
 
 
-def glimmerHMM(tool_dir, fasta_path, out_path, gene_lengths, err_path):
+def glimmerHMM(tool_dir, fasta_path, out_path, gene_lengths, err_path, tmp_dir):
     def run(contig_path, tmp_path):
         with open(err_path, 'a') as err_file:
             p = subprocess.call([tool_exec, contig_path,
@@ -58,7 +58,7 @@ def glimmerHMM(tool_dir, fasta_path, out_path, gene_lengths, err_path):
 
     contigs = {}
     gffs = []
-    base_dir = tempfile.mkdtemp()
+    base_dir = tempfile.mkdtemp(dir=tmp_dir)
     for id, seq in read_fasta(fasta_path):
         contig_path = os.path.join(base_dir, id + '.fasta')
         gff_path = os.path.join(base_dir, id + '.gff')
@@ -90,13 +90,14 @@ def glimmerHMM(tool_dir, fasta_path, out_path, gene_lengths, err_path):
             cnt[idx] += end - start > gene_length
 
     #write_fasta(out_fasta_path, genes)
-    shutil.rmtree(base_dir)
+    if not qconfig.debug:
+        shutil.rmtree(base_dir)
 
     #return out_gff_path, out_fasta_path, len(unique), total, cnt
     return out_gff_path, len(unique), total, cnt
 
 
-def predict_genes(id, fasta_path, gene_lengths, out_dir, tool_dir):
+def predict_genes(id, fasta_path, gene_lengths, out_dir, tool_dir, tmp_dir):
     print '  ' + id_to_str(id) + os.path.basename(fasta_path)
 
     out_name = os.path.basename(fasta_path)
@@ -105,7 +106,7 @@ def predict_genes(id, fasta_path, gene_lengths, out_dir, tool_dir):
     #out_gff_path, out_fasta_path, unique, total, cnt = glimmerHMM(tool_dir,
     #    fasta_path, out_path, gene_lengths, err_path)
     out_gff_path, unique, total, cnt = glimmerHMM(tool_dir,
-        fasta_path, out_path, gene_lengths, err_path)
+        fasta_path, out_path, gene_lengths, err_path, tmp_dir)
     print '  ' + id_to_str(id) + '  Genes = ' + str(unique) + ' unique, ' + str(total) + 'total'
     print '  ' + id_to_str(id) + '  Predicted genes (GFF): ' + out_gff_path
 
@@ -120,6 +121,7 @@ def do(fasta_paths, gene_lengths, out_dir, lib_dir):
     tool_dir = os.path.join(lib_dir, 'glimmer')
     tool_src = os.path.join(tool_dir, 'src')
     tool_exec = os.path.join(tool_dir, 'glimmerhmm')
+    tmp_dir = oss.path.join(out_dir, 'tmp')
 
     if not os.path.isfile(tool_exec):
         # making
@@ -135,10 +137,12 @@ def do(fasta_paths, gene_lengths, out_dir, lib_dir):
 
     if not os.path.isdir(out_dir):
         os.makedirs(out_dir)
+    if not os.path.isdir(tmp_dir):
+        os.makedirs(tmp_dir)
 
     n_jobs = min(len(fasta_paths), qconfig.max_threads)
     from joblib import Parallel, delayed
-    results = Parallel(n_jobs=n_jobs)(delayed(predict_genes)(id, fasta_path, gene_lengths, out_dir, tool_dir)
+    results = Parallel(n_jobs=n_jobs)(delayed(predict_genes)(id, fasta_path, gene_lengths, out_dir, tool_dir, tmp_dir)
         for id, fasta_path in enumerate(fasta_paths))
 
     # saving results
@@ -148,28 +152,10 @@ def do(fasta_paths, gene_lengths, out_dir, lib_dir):
         report.add_field(reporting.Fields.GENEMARKUNIQUE, unique)
         report.add_field(reporting.Fields.GENEMARK, cnt)
 
+    if not qconfig.debug:
+        shutil.rmtree(tmp_dir)
     print '  Done.'
 
-#    for id, fasta_path in enumerate(fasta_paths):
-#        report = reporting.get(fasta_path)
-#
-#        print ' ', id_to_str(id), os.path.basename(fasta_path),
-#
-#        out_name = os.path.basename(fasta_path)
-#        out_path = os.path.join(out_dir, out_name)
-#        err_path = os.path.join(out_dir, 'glimmer.errors')
-#        #out_gff_path, out_fasta_path, unique, total, cnt = glimmerHMM(tool_dir,
-#        #    fasta_path, out_path, gene_lengths, err_path)
-#        out_gff_path, unique, total, cnt = glimmerHMM(tool_dir,
-#            fasta_path, out_path, gene_lengths, err_path)
-#
-#        print(', Genes = %i unique, %i total' % (unique, total))
-#        print('    Glimmer output: %s' % (out_gff_path))
-#
-#        report.add_field(reporting.Fields.GENEMARKUNIQUE, unique)
-#        report.add_field(reporting.Fields.GENEMARK, cnt)
-#
-#        print '  Done'
 
 if __name__ == '__main__':
     fasta_paths = ['../test_data/assembly_10K_1.fasta', '../test_data/assembly_10K_2.fasta']

@@ -365,7 +365,7 @@ def main(args):
     # Processing contigs
     def handle_fasta(contigs_fpath, corr_fpath):
         lengths = fastaparser.get_lengths_from_fastafile(contigs_fpath)
-        if not sum(1 for l in lengths if l >= qconfig.min_contig):
+        if not sum(l for l in lengths if l >= qconfig.min_contig):
             warning("%s will be SKIPPED because it doesn't have contigs >= %d bp." % (os.path.basename(contigs_fpath), qconfig.min_contig))
             return False
 
@@ -513,7 +513,7 @@ def main(args):
                            output_dirpath + '/genome_stats', qconfig.genes, qconfig.operons, all_pdf, qconfig.draw_plots, json_outputpath, output_dirpath)
 
     def add_empty_predicted_genes_fields():
-        # TODO: make it nicer (not output predicted genes if annotations are provided
+        #TODO: make it in a more appropriate way (don't output predicted genes if annotations are provided)
         for id, contigs_fpath in enumerate(contigs_fpaths):
             report = reporting.get(contigs_fpath)
             report.add_field(reporting.Fields.GENEMARKUNIQUE, "")

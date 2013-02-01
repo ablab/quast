@@ -6,6 +6,7 @@
 # See file LICENSE for details.
 ############################################################################
 
+import logging
 import sys
 import os
 import shutil
@@ -13,54 +14,19 @@ import re
 import getopt
 from site import addsitedir
 from libs import qconfig
-from libs.qutils import notice, warning, error, assert_file_exists, print_timestamp, uncompress
+from libs.qutils import notice, warning, error, assert_file_exists
+from libs.qutils import print_timestamp, print_system_info, print_version, uncompress
 from libs import fastaparser
 from libs.html_saver import json_saver
 
-__location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
-
-addsitedir(os.path.join(__location__, 'libs/site_packages'))
+addsitedir(os.path.join(qconfig.LIBS_LOCATION, 'site_packages'))
 
 RELEASE_MODE=False
-
-def print_version(stream=sys.stdout):
-    version_filename = os.path.join(__location__, 'VERSION')
-    version = "unknown"
-    build = "unknown"
-    if os.path.isfile(version_filename):
-        version_file = open(version_filename)
-        version = version_file.readline()
-        if version:
-            version = version.strip()
-        else:
-            version = "unknown"
-        build = version_file.readline()
-        if build:
-            build = build.split()[1].strip()
-        else:
-            build = "unknown"
-
-    print >> stream, "Version:", version,
-    print >> stream, "Build:", build
-
-
-def print_system_info(stream=sys.stdout):
-    print >> stream, "System information:"
-    try:
-        import platform
-        print >> stream, "  OS: " + platform.platform()
-        print >> stream, "  Python version: " + str(sys.version_info[0]) + "." + str(sys.version_info[1]) + '.'\
-            + str(sys.version_info[2])
-        import multiprocessing
-        print >> stream, "  CPUs number: " + str(multiprocessing.cpu_count())
-    except:
-        print >> stream, "  Problem occurred when getting system information"
-    print >> stream, ""
 
 
 def usage():
     print >> sys.stderr, 'QUAST: QUality ASsessment Tool for Genome Assemblies.'
-    print_version(sys.stderr)
+    print_version(True)
 
     print >> sys.stderr, ""
     print >> sys.stderr, 'Usage: python', sys.argv[0], '[options] contig files'
@@ -179,18 +145,13 @@ def correct_fasta(original_fpath, corrected_fpath, is_reference=False):
     return True
 
 
-def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.path.abspath(sys.path[0]), 'libs')):
-    if lib_dir == os.path.join(__location__, 'libs'):
-        if ' ' in __location__:
-            error('QUAST does not support spaces in paths. \n' + \
-                  'You are trying to run it from ' + str(__location__) + '\n' + \
-                  'Please, put QUAST in a different folder, then run it again.\n')
-    else:
-        if ' ' in lib_dir:
-            error('QUAST does not support spaces in paths. \n' + \
-                  'You are trying to use libs from ' + str(lib_dir) + '\n' + \
-                  'Please, put libs in a different folder, then run it again.\n')
+def main(args):
 
+    quast_dir = os.path.dirname(qconfig.LIBS_LOCATION)
+    if ' ' in quast_dir:
+        error('QUAST does not support spaces in paths. \n' + \
+              'You are trying to run it from ' + str(quast_dir) + '\n' + \
+              'Please, put QUAST in a different directory, then run it again.\n', console_output=True)
 
     ######################
     ### ARGS
@@ -292,6 +253,58 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
     for c_fpath in contigs_fpaths:
         assert_file_exists(c_fpath, 'contigs')
 
+    ########################################################################
+    ### CONFIG & CHECKS
+    ########################################################################
+
+    # in case of starting two instances of QUAST in the same second
+    existing_alignments = False
+    if os.path.isdir(output_dirpath):
+        # if user starts QUAST with -o <existing dir> then qconfig.make_latest_symlink will be False
+        if qconfig.make_latest_symlink:
+            i = 2
+            base_dirpath = output_dirpath
+            while os.path.isdir(output_dirpath):
+                output_dirpath = str(base_dirpath) + '__' + str(i)
+                i += 1
+        else:
+            existing_alignments = True
+
+    if not os.path.isdir(output_dirpath):
+        os.makedirs(output_dirpath)
+
+    # duplicating output to a log file
+    logfile = os.path.join(output_dirpath, qconfig.logfile)
+    log = logging.getLogger('quast')
+    log.setLevel(logging.DEBUG)
+
+    console = logging.StreamHandler(sys.stdout)
+    console.setFormatter(logging.Formatter('%(message)s'))
+    console.setLevel(logging.DEBUG)
+    log.addHandler(console)
+    log_handler = logging.FileHandler(logfile, mode='w')
+    log.addHandler(log_handler)
+
+    ########################################################################
+
+    command_line = ""
+    for v in sys.argv:
+        command_line += str(v) + ' '
+    log.info("QUAST started: " + command_line)
+    print_version()
+    log.info("")
+    print_system_info()
+
+    start_time = print_timestamp("Started: ")
+    log.info("")
+    log.info("Logging to " + logfile)
+    log.info("")
+
+    ########################################################################
+
+    if existing_alignments:
+        notice("Output directory already exists! Existing Nucmer alignments will be used!")
+
     qconfig.contig_thresholds = map(int, qconfig.contig_thresholds.split(","))
     qconfig.genes_lengths = map(int, qconfig.genes_lengths.split(","))
     if qconfig.max_threads is None:
@@ -304,25 +317,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
         notice('Maximum number of threads was set to ' + str(qconfig.max_threads) + ' (use --threads option to set it manually)')
 
 
-    ########################################################################
-    ### CONFIG & CHECKS
-    ########################################################################
-
-    # in case of starting two instances of QUAST in the same second
-    if os.path.isdir(output_dirpath):
-        # if user starts QUAST with -o <existing dir> then qconfig.make_latest_symlink will be False
-        if qconfig.make_latest_symlink:
-            i = 2
-            base_dirpath = output_dirpath
-            while os.path.isdir(output_dirpath):
-                output_dirpath = str(base_dirpath) + '__' + str(i)
-                i += 1
-        else:
-            notice("Output directory already exists! Existing Nucmer alignments will be used!")
-
-    if not os.path.isdir(output_dirpath):
-        os.makedirs(output_dirpath)
-
+    # 'latest' symlink
     if qconfig.make_latest_symlink:
         prev_dirpath = os.getcwd()
         os.chdir(qconfig.default_results_root_dirname)
@@ -345,10 +340,6 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
             if not os.path.isdir(json_outputpath):
                 os.makedirs(json_outputpath)
 
-
-    # Where log will be saved
-    logfile = os.path.join(output_dirpath, qconfig.logfile)
-
     # Where corrected contigs will be saved
     corrected_dirpath = os.path.join(output_dirpath, qconfig.corrected_dirname)
 
@@ -358,35 +349,14 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
 
     ########################################################################
 
-    # duplicating output to a log file
-    if os.path.isfile(logfile):
-        os.remove(logfile)
-
-    # saving info about command line and options into log file
-    lfile = open(logfile, 'w')
-    print >> lfile, "QUAST started: ",
-    for v in sys.argv:
-        print >> lfile, v,
-    print >> lfile, ""
-    print_version(lfile)
-    print >> lfile, ""
-    print_system_info(lfile)
-    lfile.close()
-
-    from libs import qutils
-    tee = qutils.Tee(logfile, 'a', console=True) # not pure, changes sys.stdout and sys.stderr
-
-    ########################################################################
-
     from libs import reporting
     reload(reporting)
 
-    start_time = print_timestamp("Started: ")
-    print ""
-    print "Processing contig files",
+    message = "Processing contig files"
     if qconfig.reference:
-        print "and reference",
-    print "..."
+        message += " and reference"
+    message += " ..."
+    log.info(message)
 
     if os.path.isdir(corrected_dirpath):
         shutil.rmtree(corrected_dirpath)
@@ -427,12 +397,12 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
         if not handle_fasta(contigs_fpath, corr_fpath):
             continue
 
-        print '  %s ==> %s' % (contigs_fpath, os.path.basename(corr_fpath))
-        new_contigs_fpaths.append(os.path.join(__location__, corr_fpath))
+        log.info('  %s ==> %s' % (contigs_fpath, os.path.basename(corr_fpath)))
+        new_contigs_fpaths.append(corr_fpath)
 
         # if option --scaffolds is specified QUAST adds splitted version of assemblies to the comparison
         if qconfig.scaffolds:
-            print "  splitting scaffolds into contigs:"
+            log.info("  splitting scaffolds into contigs:")
             splitted_path = corr_fpath + '_splitted'
             shutil.copy(corr_fpath, splitted_path)
 
@@ -458,10 +428,10 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
                 contigs_counter += cur_contig_number
 
             fastaparser.write_fasta(splitted_path, splitted_fasta)
-            print "    %d scaffolds (%s) were broken into %d contigs (%s)"\
-                  % (id + 1, os.path.basename(corr_fpath), contigs_counter, os.path.basename(splitted_path))
+            log.info("    %d scaffolds (%s) were broken into %d contigs (%s)"\
+                  % (id + 1, os.path.basename(corr_fpath), contigs_counter, os.path.basename(splitted_path)))
             if handle_fasta(splitted_path, splitted_path):
-                new_contigs_fpaths.append(os.path.join(__location__, splitted_path))
+                new_contigs_fpaths.append(splitted_path)
 
     contigs_fpaths = new_contigs_fpaths
 
@@ -477,7 +447,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
         corrected_and_unziped_reference_fname = corrected_fname_for_nucmer(corrected_and_unziped_reference_fname)
 
         # unzipping (if needed)
-        if uncompress(qconfig.reference, corrected_and_unziped_reference_fname, sys.stderr):
+        if uncompress(qconfig.reference, corrected_and_unziped_reference_fname):
             qconfig.reference = corrected_and_unziped_reference_fname
 
         # correcting
@@ -487,7 +457,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
             qconfig.reference = corrected_and_unziped_reference_fname
 
     # End of processing
-    print '  Done.'
+    log.info('  Done.')
 
     if qconfig.with_gage:
         ########################################################################
@@ -497,7 +467,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
             warning("GAGE can't be run without a reference and will be SKIPPED!")
         else:
             from libs import gage
-            gage.do(qconfig.reference, contigs_fpaths, output_dirpath, qconfig.min_contig, lib_dir)
+            gage.do(qconfig.reference, contigs_fpaths, output_dirpath, qconfig.min_contig)
 
     if qconfig.draw_plots:
         from libs import plotter  # Do not remove this line! It would lead to a warning in matplotlib.
@@ -520,7 +490,7 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
         ### former PLANTAKOLYA, PLANTAGORA
         ########################################################################
         from libs import contigs_analyzer
-        nucmer_statuses = contigs_analyzer.do(qconfig.reference, contigs_fpaths, qconfig.prokaryote, output_dirpath + '/contigs_reports', lib_dir, qconfig.draw_plots)
+        nucmer_statuses = contigs_analyzer.do(qconfig.reference, contigs_fpaths, qconfig.prokaryote, output_dirpath + '/contigs_reports')
         for contigs_fpath in contigs_fpaths:
             if nucmer_statuses[contigs_fpath] == contigs_analyzer.NucmerStatus.OK:
                 aligned_fpaths.append(contigs_fpath)
@@ -555,15 +525,15 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
             ### GeneMark
             ########################################################################
             from libs import genemark
-            genemark.do(contigs_fpaths, qconfig.genes_lengths, output_dirpath + '/predicted_genes', lib_dir)
+            genemark.do(contigs_fpaths, qconfig.genes_lengths, output_dirpath + '/predicted_genes')
         else:
             ########################################################################
             ### Glimmer
             ########################################################################
             from libs import glimmer
-            glimmer.do(contigs_fpaths, qconfig.genes_lengths, output_dirpath + '/predicted_genes', lib_dir)
+            glimmer.do(contigs_fpaths, qconfig.genes_lengths, output_dirpath + '/predicted_genes')
     else:
-        print ""
+        log.info("")
         notice("Gene Finding module was skipped. Use --gene-finding option to enable it.")
         add_empty_predicted_genes_fields()
 
@@ -587,20 +557,22 @@ def main(args, lib_dir=os.path.join(__location__, 'libs')): # os.path.join(os.pa
         html_saver.save_total_report(output_dirpath, qconfig.min_contig)
 
     if qconfig.draw_plots and all_pdf:
-        print '  All pdf files are merged to', all_pdf_filename
+        log.info('  All pdf files are merged to ' + all_pdf_filename)
         all_pdf.close()
 
-    cleanup(corrected_dirpath, tee)
-    print 'Done.'
-    finish_time = print_timestamp("Finished: ")
-    print "Elapsed time: ", str(finish_time - start_time)
+    cleanup(corrected_dirpath)
+    log.info('Done.')
 
-    tee.free() # free sys.stdout and sys.stderr from logfile
+    log.info('')
+    log.info("Log saved to " + logfile)
+
+    finish_time = print_timestamp("Finished: ")
+    log.info("Elapsed time: " + str(finish_time - start_time))
 
     return 0
 
 
-def cleanup(corrected_dirpath, tee):
+def cleanup(corrected_dirpath):
     ## removing correcting input contig files
     if not qconfig.debug:
         shutil.rmtree(corrected_dirpath)

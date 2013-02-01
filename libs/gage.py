@@ -4,6 +4,7 @@
 # See file LICENSE for details.
 ############################################################################
 
+import logging
 import os
 import shutil
 import subprocess
@@ -12,7 +13,7 @@ from qutils import id_to_str, print_timestamp
 import qconfig
 
 
-def do(reference, contigs, output_dirpath, min_contig, lib_dir):
+def do(reference, contigs, output_dirpath, min_contig):
     gage_results_path = os.path.join(output_dirpath, 'gage')
 
     # suffixes for files with report tables in plain text and tab separated formats
@@ -20,11 +21,12 @@ def do(reference, contigs, output_dirpath, min_contig, lib_dir):
         os.mkdir(gage_results_path)
 
     ########################################################################
-    gage_tool_path = os.path.join(lib_dir, 'gage/getCorrectnessStats.sh')
+    gage_tool_path = os.path.join(qconfig.LIBS_LOCATION, 'gage', 'getCorrectnessStats.sh')
 
     ########################################################################
+    log = logging.getLogger('quast')
     print_timestamp()
-    print 'Running GAGE tool...'
+    log.info('Running GAGE tool...')
 
     metrics = ['Total units', 'Min', 'Max', 'N50', 'Genome Size', 'Assembly Size', 'Chaff bases',
                'Missing Reference Bases', 'Missing Assembly Bases', 'Missing Assembly Contigs',
@@ -50,11 +52,11 @@ def do(reference, contigs, output_dirpath, min_contig, lib_dir):
 
     for id, filename in enumerate(contigs):
         report = reporting.get(filename)
-        print ' ', id_to_str(id) + os.path.basename(filename), '...'
+        log.info('  ' + id_to_str(id) + os.path.basename(filename) + '...')
         # run gage tool
         logfilename_out = gage_results_path + '/gage_' + os.path.basename(filename) + '.stdout'
         logfilename_err = gage_results_path + '/gage_' + os.path.basename(filename) + '.stderr'
-        print '    Logging to files', logfilename_out, 'and', os.path.basename(logfilename_err), '...',
+        log.info('  ' + id_to_str(id) + 'Logging to files ' + logfilename_out + ' and ' + os.path.basename(logfilename_err) + '...')
         logfile_out = open(logfilename_out, 'w')
         logfile_err = open(logfilename_err, 'w')
 
@@ -64,7 +66,7 @@ def do(reference, contigs, output_dirpath, min_contig, lib_dir):
 
         logfile_out.close()
         logfile_err.close()
-        print '  Done.'
+        log.info('  ' + id_to_str(id) + 'Done.')
 
         ## find metrics for total report:
         logfile_out = open(logfilename_out, 'r')
@@ -80,8 +82,6 @@ def do(reference, contigs, output_dirpath, min_contig, lib_dir):
                     break
         logfile_out.close()
 
-    print '  Done'
-
     reporting.save_gage(output_dirpath)
 
-    print '  Done.'
+    log.info('  Done.')

@@ -6,6 +6,7 @@
 
 from __future__ import with_statement
 import gzip
+import logging
 import zipfile
 import bz2
 import os
@@ -15,30 +16,77 @@ import datetime
 
 
 def notice(message=''):
-    print "== NOTE: " + str(message) + " =="
+    log = logging.getLogger('quast')
+    log.info("== NOTE: " + str(message) + " ==")
 
 
 def warning(message=''):
-    print "====== WARNING! " + str(message) + " ======"
+    log = logging.getLogger('quast')
+    log.info("====== WARNING! " + str(message) + " ======")
 
 
-def error(message='', errcode=1):
-    print >> sys.stderr, "\n====== ERROR! " + str(message) + " ======\n"
+def error(message='', errcode=1, console_output=False):
+    if console_output:
+        print >> sys.stderr, "\n====== ERROR! " + str(message) + " ======\n"
+    else:
+        log = logging.getLogger('quast')
+        log.info("\n====== ERROR! " + str(message) + " ======\n")
     if errcode:
         sys.exit(errcode)
 
 
 def assert_file_exists(fpath, message=''):
     if not os.path.isfile(fpath):
-        error("File not found (%s): %s" % (message, fpath), 2)
+        error("File not found (%s): %s" % (message, fpath), 2, console_output=True)
     return fpath
 
 
 def print_timestamp(message=''):
     now = datetime.datetime.now()
     current_time = now.strftime("%Y-%m-%d %H:%M:%S")
-    print "\n" + message + current_time
+    log = logging.getLogger('quast')
+    log.info("\n" + message + current_time)
     return now
+
+
+def print_version(to_stderr=False):
+    version_filename = os.path.join(qconfig.LIBS_LOCATION, '..', 'VERSION')
+    version = "unknown"
+    build = "unknown"
+    if os.path.isfile(version_filename):
+        version_file = open(version_filename)
+        version = version_file.readline()
+        if version:
+            version = version.strip()
+        else:
+            version = "unknown"
+        build = version_file.readline()
+        if build:
+            build = build.split()[1].strip()
+        else:
+            build = "unknown"
+
+    if to_stderr:
+        print >> sys.stderr, "Version:", version,
+        print >> sys.stderr, "Build:", build
+    else:
+        log = logging.getLogger("quast")
+        log.info("Version: " + str(version) + " Build: " + str(build))
+
+
+def print_system_info():
+    log = logging.getLogger("quast")
+    log.info("System information:")
+    try:
+        import platform
+        log.info("  OS: " + platform.platform())
+        log.info("  Python version: " + str(sys.version_info[0]) + "." + str(sys.version_info[1]) + '.'\
+        + str(sys.version_info[2]))
+        import multiprocessing
+        log.info("  CPUs number: " + str(multiprocessing.cpu_count()))
+    except:
+        log.info("  Problem occurred when getting system information")
+
 
 def id_to_str(id):
     if qconfig.assemblies_num == 1:
@@ -47,29 +95,30 @@ def id_to_str(id):
         return ('%d ' + ('' if id >= 10 else ' ')) % (id + 1)
 
 
-def uncompress(compressed_fname, uncompressed_fname, errout):
+def uncompress(compressed_fname, uncompressed_fname):
     fname, ext = os.path.splitext(compressed_fname)
 
     if ext not in ['.zip', '.bz2', '.gz']:
         return False
 
-    print >> errout, '  decompressing %s' % compressed_fname, '...',
+    log = logging.getLogger('quast')
+    log.info('  extracting %s ...' % compressed_fname)
     compressed_file = None
 
     if ext == '.zip':
         try:
             zfile = zipfile.ZipFile(compressed_fname)
         except Exception, e:
-            print >> errout, '\n    can\'t open zip file:', e.message
+            error('can\'t open zip file: ' + str(e.message))
             return False
 
         names = zfile.namelist()
         if len(names) == 0:
-            print >> errout, '\n    zip archive is empty'
+            error('zip archive is empty')
             return False
 
         if len(names) > 1:
-            print >> errout, '\n    zip archive must contain exactly one file. Using %s' % names[0]
+            warning('zip archive must contain exactly one file. Using %s' % names[0])
 
         compressed_file = zfile.open(names[0])
 
@@ -81,31 +130,6 @@ def uncompress(compressed_fname, uncompressed_fname, errout):
 
     with open(uncompressed_fname, 'w') as uncompressed_file:
         uncompressed_file.write(compressed_file.read())
-        print >> errout, 'uncompressed!'
-        return True
 
-
-# TODO: get rid of Tee (use python logger instead)
-class Tee(object):
-    def __init__(self, name, mode, console=True):
-        self.file = open(name, mode)
-        self.stdout = sys.stdout
-        self.stderr = sys.stderr
-        self.console = console
-        sys.stdout = self
-        sys.stderr = self
-
-    def free(self):
-        sys.stdout = self.stdout
-        sys.stderr = self.stderr
-        self.file.close()
-
-    def write(self, data):
-        self.file.write(data)
-        if self.console:
-            self.stdout.write(data)
-        self.flush()
-
-    def flush(self):
-        self.file.flush()
-        self.stdout.flush()
+    log.info('      extracted!')
+    return True

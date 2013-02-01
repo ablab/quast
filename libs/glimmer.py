@@ -5,7 +5,7 @@
 ############################################################################
 
 from __future__ import with_statement
-
+import logging
 import os
 import tempfile
 import subprocess
@@ -98,7 +98,8 @@ def glimmerHMM(tool_dir, fasta_path, out_path, gene_lengths, err_path, tmp_dir):
 
 
 def predict_genes(id, fasta_path, gene_lengths, out_dir, tool_dir, tmp_dir):
-    print '  ' + id_to_str(id) + os.path.basename(fasta_path)
+    log = logging.getLogger('quast')
+    log.info('  ' + id_to_str(id) + os.path.basename(fasta_path))
 
     out_name = os.path.basename(fasta_path)
     out_path = os.path.join(out_dir, out_name)
@@ -107,25 +108,26 @@ def predict_genes(id, fasta_path, gene_lengths, out_dir, tool_dir, tmp_dir):
     #    fasta_path, out_path, gene_lengths, err_path)
     out_gff_path, unique, total, cnt = glimmerHMM(tool_dir,
         fasta_path, out_path, gene_lengths, err_path, tmp_dir)
-    print '  ' + id_to_str(id) + '  Genes = ' + str(unique) + ' unique, ' + str(total) + ' total'
-    print '  ' + id_to_str(id) + '  Predicted genes (GFF): ' + out_gff_path
+    log.info('  ' + id_to_str(id) + '  Genes = ' + str(unique) + ' unique, ' + str(total) + ' total')
+    log.info('  ' + id_to_str(id) + '  Predicted genes (GFF): ' + out_gff_path)
 
-    print '  ' + id_to_str(id) + 'Gene prediction is finished.'
+    log.info('  ' + id_to_str(id) + 'Gene prediction is finished.')
     return unique, cnt
 
 
-def do(fasta_paths, gene_lengths, out_dir, lib_dir):
+def do(fasta_paths, gene_lengths, out_dir):
     print_timestamp()
-    print 'Running GlimmerHMM...'
+    log = logging.getLogger('quast')
+    log.info('Running GlimmerHMM...')
 
-    tool_dir = os.path.join(lib_dir, 'glimmer')
+    tool_dir = os.path.join(qconfig.LIBS_LOCATION, 'glimmer')
     tool_src = os.path.join(tool_dir, 'src')
     tool_exec = os.path.join(tool_dir, 'glimmerhmm')
     tmp_dir = os.path.join(out_dir, 'tmp')
 
     if not os.path.isfile(tool_exec):
         # making
-        print ("Compiling GlimmerHMM...")
+        log.info("Compiling GlimmerHMM...")
         try:
             subprocess.call(
                 ['make', '-C', tool_src],
@@ -154,13 +156,5 @@ def do(fasta_paths, gene_lengths, out_dir, lib_dir):
 
     if not qconfig.debug:
         shutil.rmtree(tmp_dir)
-    print '  Done.'
 
-
-if __name__ == '__main__':
-    fasta_paths = ['../test_data/assembly_10K_1.fasta', '../test_data/assembly_10K_2.fasta']
-    print fasta_paths
-    out_dir = '../run_test_data/glimmer_out'
-    lib_dir = ''
-    gene_lengths = [100, 1000, 10000]
-    do(fasta_paths, gene_lengths, out_dir, lib_dir)
+    log.info('  Done.')

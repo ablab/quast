@@ -200,8 +200,8 @@ class Fields:
 #################################################
 
 import os
-import sys
-from libs.qutils import print_timestamp
+import logging
+from libs.qutils import print_timestamp, warning
 
 ####################################################################################
 # Reporting module (singleton) for QUAST
@@ -491,22 +491,23 @@ def save(output_dirpath, report_name, transposed_report_name, order):
     # Where total report will be saved
     tab = table(order)
 
-    print '  Creating total report...'
+    log = logging.getLogger('quast')
+    log.info('  Creating total report...')
     report_txt_filename = os.path.join(output_dirpath, report_name) + '.txt'
     report_tsv_filename = os.path.join(output_dirpath, report_name) + '.tsv'
     report_tex_filename = os.path.join(output_dirpath, report_name) + '.tex'
     save_txt(report_txt_filename, tab)
     save_tsv(report_tsv_filename, tab)
     save_tex(report_tex_filename, tab)
-    print '    Saved to', report_txt_filename, ',', os.path.basename(report_tsv_filename),\
-    'and', os.path.basename(report_tex_filename)
+    log.info('      saved to ' + report_txt_filename + ', ' + os.path.basename(report_tsv_filename) + \
+             ', and ' + os.path.basename(report_tex_filename))
 
     if transposed_report_name:
-        print '  Transposed version of total report...'
+        log.info('  Transposed version of total report...')
 
         all_rows = get_all_rows_out_of_table(tab)
         if all_rows[0]['metricName'] != Fields.NAME:
-            print >>sys.stderr, 'To transpose table, first column have to be assemblies names'
+            warning('transposed version can\'t be created! First column have to be assemblies names')
         else:
             # Transposing table
             transposed_table = [{'metricName': all_rows[0]['metricName'],
@@ -524,8 +525,8 @@ def save(output_dirpath, report_name, transposed_report_name, order):
             save_txt(report_txt_filename, transposed_table, is_transposed=True)
             save_tsv(report_tsv_filename, transposed_table, is_transposed=True)
             save_tex(report_tex_filename, transposed_table, is_transposed=True)
-            print '    Saved to', report_txt_filename, ',', os.path.basename(report_tsv_filename),\
-            'and', os.path.basename(report_tex_filename)
+            log.info('      saved to ' + report_txt_filename + ', ' + os.path.basename(report_tsv_filename) + \
+                     ', and ' + os.path.basename(report_tex_filename))
 
 
 def save_gage(output_dirpath):
@@ -534,7 +535,8 @@ def save_gage(output_dirpath):
 
 def save_total(output_dirpath):
     print_timestamp()
-    print 'Summarizing...'
+    log = logging.getLogger('quast')
+    log.info('Summarizing...')
     save(output_dirpath, "report", "transposed_report", Fields.order)
 
 

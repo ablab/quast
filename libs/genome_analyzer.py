@@ -5,19 +5,11 @@
 ############################################################################
 
 import os
-import sys
 import fastaparser
 import genes_parser
 from libs import reporting, qconfig
 from libs.html_saver import json_saver
 from qutils import id_to_str, notice, warning, error, print_timestamp
-
-__location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
-
-
-s_Mapped_genome = 'Mapped genome (%)'
-s_Genes = 'Genes'
-s_Operons = 'Operons'
 
 
 def chromosomes_names_dict(features, chr_names):
@@ -45,7 +37,7 @@ def chromosomes_names_dict(features, chr_names):
 def do(reference, filenames, nucmer_dir, output_dir, genes_filename, operons_filename, all_pdf, draw_plots, json_output_dir, results_dir):
 
     # some important constants
-    nucmer_prefix = os.path.join(os.path.join(__location__, ".."), nucmer_dir, 'nucmer_output')
+    nucmer_prefix = os.path.join(nucmer_dir, 'nucmer_output')
 
     print_timestamp()
     print 'Running Genome analyzer...'

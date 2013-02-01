@@ -1,20 +1,20 @@
-from __future__ import with_statement
-import shutil
-import re
-from libs.html_saver import json_saver
-
 ############################################################################
 # Copyright (c) 2011-2013 Saint-Petersburg Academic University
 # All Rights Reserved
 # See file LICENSE for details.
 ############################################################################
 
+from __future__ import with_statement
 import os
+import shutil
+import re
+from libs import qconfig
+from libs.html_saver import json_saver
 
-__location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
 
 def get_real_path(relpath_in_html_saver):
-    return os.path.join(__location__, relpath_in_html_saver)
+    return os.path.join(qconfig.LIBS_LOCATION, 'html_saver', relpath_in_html_saver)
+
 
 scripts_inserted = False
 

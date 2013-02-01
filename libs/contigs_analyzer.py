@@ -14,13 +14,13 @@
 # Whole Genome Sequencing and Assembly of Plant Genomes. PLoS ONE 6(12):
 # e28436. doi:10.1371/journal.pone.0028436
 ############################################################################
-from __future__ import with_statement
 
+from __future__ import with_statement
+import logging
 import os
 import platform
 import subprocess
 import datetime
-import sys
 import fastaparser
 import shutil
 from libs import reporting, qconfig
@@ -178,14 +178,17 @@ def run_nucmer(prefix, reference, assembly, log_out, log_err, myenv):
                      stdout=log, stderr=err, env=myenv)
 
 
-def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_dir, reference):
+def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, reference):
+    log = logging.getLogger('quast')
+    log.info('  ' + id_to_str(id) + os.path.basename(filename))
+
     # run plantakolya tool
     logfilename_out = os.path.join(output_dir, "contigs_report_" + os.path.basename(filename) + '.stdout')
     logfilename_err = os.path.join(output_dir, "contigs_report_" + os.path.basename(filename) + '.stderr')
     plantafile_out = open(logfilename_out, 'w')
     plantafile_err = open(logfilename_err, 'w')
 
-    print '  ' + id_to_str(id) + 'Logging to files ' + logfilename_out + ' and ' + os.path.basename(logfilename_err) + '...'
+    log.info('  ' + id_to_str(id) + 'Logging to files ' + logfilename_out + ' and ' + os.path.basename(logfilename_err) + '...')
     # reverse complementarity is not an extensive misassemble
     maxun = 10
     epsilon = 0.99
@@ -212,12 +215,12 @@ def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_
         successful_check_content = open(nucmer_successful_check_filename).read().split('\n')
         if len(successful_check_content) > 2 and successful_check_content[1].strip() == str(qconfig.min_contig):
             print >> plantafile_out, '\tUsing existing Nucmer alignments...'
-            print '  ' + id_to_str(id) + 'Using existing Nucmer alignments... '
+            log.info('  ' + id_to_str(id) + 'Using existing Nucmer alignments... ')
             using_existing_alignments = True
 
     if not using_existing_alignments:
         print >> plantafile_out, '\tRunning Nucmer...'
-        print '  ' + id_to_str(id) + 'Running Nucmer... '
+        log.info('  ' + id_to_str(id) + 'Running Nucmer... ')
 
         if qconfig.splitted_ref:
             prefixes_and_chr_files = [(nucmerfilename + "_" + os.path.basename(chr_file), chr_file) for chr_file in qconfig.splitted_ref]
@@ -229,7 +232,7 @@ def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_
             else:
                 n_jobs = 1
             if n_jobs > 1:
-                print '    ' + 'Aligning to different chromosomes in parallel (' + str(n_jobs) + ' threads)'
+                log.info('    ' + 'Aligning to different chromosomes in parallel (' + str(n_jobs) + ' threads)')
 
             # processing each chromosome separately (if we can)
             from joblib import Parallel, delayed
@@ -284,7 +287,7 @@ def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_
 
         if not os.path.isfile(coords_filename):
             print >> plantafile_err, id_to_str(id) + 'Nucmer failed for', filename + ':', coords_filename, 'doesn\'t exist.'
-            print '  ' + id_to_str(id) + 'Nucmer failed for ' + '\'' + os.path.basename(filename) + '\'.'
+            log.info('  ' + id_to_str(id) + 'Nucmer failed for ' + '\'' + os.path.basename(filename) + '\'.')
             return NucmerStatus.FAILED, {}
         #if not os.path.isfile(nucmer_report_filename):
         #    print >> plantafile_err, id_to_str(id) + 'Nucmer failed for', filename + ':', nucmer_report_filename, 'doesn\'t exist.'
@@ -292,7 +295,7 @@ def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_
         #    return NucmerStatus.FAILED, {}
         if len(open(coords_filename).readlines()[-1].split()) < 13:
             print >> plantafile_err, id_to_str(id) + 'Nucmer: nothing aligned for', filename
-            print '  ' + id_to_str(id) + 'Nucmer: nothing aligned for ' + '\'' + os.path.basename(filename) + '\'.'
+            log.info('  ' + id_to_str(id) + 'Nucmer: nothing aligned for ' + '\'' + os.path.basename(filename) + '\'.')
             return NucmerStatus.NOT_ALIGNED, {}
 
 
@@ -1049,16 +1052,14 @@ def plantakolya(cyclic, draw_plots, id, filename, nucmerfilename, myenv, output_
 
     plantafile_out.close()
     plantafile_err.close()
-    print '  ' + id_to_str(id) + 'Analysis is finished.'
+    log.info('  ' + id_to_str(id) + 'Analysis is finished.')
     return NucmerStatus.OK, result
 
 
-def plantakolya_process(cyclic, draw_plots, nucmer_output_dir, filename, id, myenv, output_dir, reference):
-    print '  ' + id_to_str(id) + os.path.basename(filename)
+def plantakolya_process(cyclic, nucmer_output_dir, filename, id, myenv, output_dir, reference):
     nucmer_fname = os.path.join(nucmer_output_dir, os.path.basename(filename))
-    nucmer_is_ok, result = plantakolya(cyclic, draw_plots, id, filename, nucmer_fname, myenv, output_dir, reference)
+    nucmer_is_ok, result = plantakolya(cyclic, id, filename, nucmer_fname, myenv, output_dir, reference)
     clear_files(filename, nucmer_fname)
-
     return nucmer_is_ok, result
 
 
@@ -1069,18 +1070,20 @@ def all_required_binaries_exist(mummer_path):
     return True
 
 
-def do(reference, filenames, cyclic, output_dir, lib_dir, draw_plots):
+def do(reference, filenames, cyclic, output_dir):
     if not os.path.isdir(output_dir):
         os.mkdir(output_dir)
 
+    log = logging.getLogger('quast')
+
     print_timestamp()
-    print 'Running Contigs analyzer...'
+    log.info('Running Contigs analyzer...')
 
     ########################################################################
     if platform.system() == 'Darwin':
-        mummer_path = os.path.join(lib_dir, 'MUMmer3.23-osx')
+        mummer_path = os.path.join(qconfig.LIBS_LOCATION, 'MUMmer3.23-osx')
     else:
-        mummer_path = os.path.join(lib_dir, 'MUMmer3.23-linux')
+        mummer_path = os.path.join(qconfig.LIBS_LOCATION, 'MUMmer3.23-linux')
 
     ########################################################################
 #    report_dict = {'header' : []}
@@ -1093,7 +1096,7 @@ def do(reference, filenames, cyclic, output_dir, lib_dir, draw_plots):
 
     if not all_required_binaries_exist(mummer_path):
         # making
-        print ("Compiling MUMmer...")
+        log.info("Compiling MUMmer...")
         try:
             subprocess.call(
                 ['make', '-C', mummer_path],
@@ -1110,7 +1113,7 @@ def do(reference, filenames, cyclic, output_dir, lib_dir, draw_plots):
     n_jobs = min(len(filenames), qconfig.max_threads)
     from joblib import Parallel, delayed
     statuses_results_pairs = Parallel(n_jobs=n_jobs)(delayed(plantakolya_process)(
-        cyclic, draw_plots, nucmer_output_dir, fname, id, myenv, output_dir, reference)
+        cyclic, nucmer_output_dir, fname, id, myenv, output_dir, reference)
           for id, fname in enumerate(filenames))
     # unzipping
     statuses, results = [x[0] for x in statuses_results_pairs], [x[1] for x in statuses_results_pairs]
@@ -1191,7 +1194,7 @@ def do(reference, filenames, cyclic, output_dir, lib_dir, draw_plots):
 #    nucmer_statuses = {}
 #
 #    for id, filename in enumerate(filenames):
-#        nucmer_status = plantakolya_process(cyclic, draw_plots, filename, id, myenv, output_dir, reference)
+#        nucmer_status = plantakolya_process(cyclic, filename, id, myenv, output_dir, reference)
 #        nucmer_statuses[filename] = nucmer_status
 
     if NucmerStatus.OK in nucmer_statuses.values():
@@ -1205,18 +1208,17 @@ def do(reference, filenames, cyclic, output_dir, lib_dir, draw_plots):
     all = len(nucmer_statuses)
 
     if oks == all:
-        print '  Done.'
+        log.info('  Done.')
     if oks < all and problems < all:
-        print '  Done for', str(all - problems), 'out of', str(all) + '. For the rest, only basic stats are going to be evaluated.'
+        log.info('  Done for ' + str(all - problems) + 'out of ' + str(all) + '. For the rest, only basic stats are going to be evaluated.')
     if problems == all:
-        print '  Failed aligning the contigs for all the assemblies. Only basic stats are going to be evaluated.'
+        log.info('  Failed aligning the contigs for all the assemblies. Only basic stats are going to be evaluated.')
 
 #    if NucmerStatus.FAILED in nucmer_statuses.values():
-#        print '  ' + str(failed),      'file' + (' ' if failed == 1 else 's ')      + 'failed to align to the reference. Only basic stats have been evaluated.'
+#        log.info('  ' + str(failed) + 'file' + (' ' if failed == 1 else 's ') + 'failed to align to the reference. Only basic stats have been evaluated.')
 #    if NucmerStatus.NOT_ALIGNED in nucmer_statuses.values():
-#        print '  ' + str(not_aligned), 'file' + (' was' if not_aligned == 1 else 's were') + ' not aligned to the reference. Only basic stats have been evaluated.'
-
+#        log.info('  ' + str(not_aligned) + ' file' + (' was' if not_aligned == 1 else 's were') + ' not aligned to the reference. Only basic stats have been evaluated.')
 #    if problems == all:
-#        print '  Nucmer failed.'
+#        log.info('  Nucmer failed.')
 
     return nucmer_statuses

@@ -4,13 +4,13 @@
 # See file LICENSE for details.
 ############################################################################
 
+import logging
 import os
 import itertools
 import fastaparser
 from libs import reporting, qconfig
-from qutils import id_to_str, warning, error, print_timestamp
+from qutils import id_to_str, warning, print_timestamp
 
-__location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
 
 def get_lengths_from_coordfile(nucmer_filename): # TODO: re-use Mappings from plantakolya
     """
@@ -46,6 +46,7 @@ def get_lengths_from_coordfile(nucmer_filename): # TODO: re-use Mappings from pl
 
     return aligned_lengths
 
+
 ######## MAIN ############
 def do(reference, filenames, nucmer_dir, output_dir, all_pdf, draw_plots, json_output_dir, results_dir):
 
@@ -54,7 +55,7 @@ def do(reference, filenames, nucmer_dir, output_dir, all_pdf, draw_plots, json_o
 
     ########################################################################
 
-    nucmer_prefix = os.path.join(os.path.join(__location__, ".."), nucmer_dir, 'nucmer_output')
+    nucmer_prefix = os.path.join(nucmer_dir, 'nucmer_output')
 
     ########################################################################
     report_dict = {'header' : []}
@@ -62,25 +63,28 @@ def do(reference, filenames, nucmer_dir, output_dir, all_pdf, draw_plots, json_o
         report_dict[os.path.basename(filename)] = []
 
     ########################################################################
+    log = logging.getLogger('quast')
+
     print_timestamp()
-    print 'Running NA-NGA tool...'
+    log.info('Running NA-NGA tool...')
 
     reference_length = sum(fastaparser.get_lengths_from_fastafile(reference))
     lists_of_lengths = []
     assembly_lengths = []
-    print '  Processing .coords.filtered files...'
+    log.info('  Processing .coords.filtered files...')
     for id, filename in enumerate(filenames):
-        print '   ', id_to_str(id) + os.path.basename(filename)
+        log.info('    ' + id_to_str(id) + os.path.basename(filename))
         nucmer_filename = os.path.join(nucmer_prefix, os.path.basename(filename) + '.coords.filtered')
         assembly_lengths.append(sum(fastaparser.get_lengths_from_fastafile(filename)))
         if not os.path.isfile(nucmer_filename):
-            error('Nucmer\'s coords.filtered file (' + nucmer_filename + ') not found! Skipping...', 0)
+            #error('Nucmer\'s coords.filtered file (' + nucmer_filename + ') not found! Skipping...', 0)
+            warning('Nucmer\'s coords.filtered file (' + nucmer_filename + ') not found! Skipping...')
             lists_of_lengths.append([0])
         else:
             lists_of_lengths.append(get_lengths_from_coordfile(nucmer_filename))
     ########################################################################
 
-    print '  Calculating NA50 and NGA50...'
+    log.info('  Calculating NA50 and NGA50...')
 
     import N50
     for id, (filename, lens, assembly_len) in enumerate(itertools.izip(filenames, lists_of_lengths, assembly_lengths)):
@@ -92,12 +96,12 @@ def do(reference, filenames, nucmer_dir, output_dir, all_pdf, draw_plots, json_o
         lga50 = N50.LG50(lens, reference_length)
         la75 = N50.LG50(lens, assembly_len, 75)
         lga75 = N50.LG50(lens, reference_length, 75)
-        print '   ', id_to_str(id) + os.path.basename(filename) + \
+        log.info('    ' + id_to_str(id) + os.path.basename(filename) + \
             ', Largest alignment = ' + str(max(lens)) + \
             ', NA50 = ' + str(na50) + \
             ', NGA50 = ' + str(nga50) + \
             ', LA50 = ' + str(la50) +\
-            ', LGA50 = ' + str(lga50)
+            ', LGA50 = ' + str(lga50) )
         report = reporting.get(filename)
         report.add_field(reporting.Fields.LARGALIGN, max(lens))
         report.add_field(reporting.Fields.NA50, na50)
@@ -132,5 +136,5 @@ def do(reference, filenames, nucmer_dir, output_dir, all_pdf, draw_plots, json_o
         plotter.Nx_plot(filenames, lists_of_lengths, output_dir + '/NAx_plot', 'NAx', assembly_lengths, all_pdf)
         plotter.Nx_plot(filenames, lists_of_lengths, output_dir + '/NGAx_plot', 'NGAx', [reference_length for i in range(len(filenames))], all_pdf)
 
-    print '  Done.'
+    log.info('  Done.')
     return report_dict

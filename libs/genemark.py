@@ -5,7 +5,7 @@
 ############################################################################
 
 from __future__ import with_statement
-
+import logging
 import os
 import platform
 import shutil
@@ -148,7 +148,8 @@ def gmhmm_p_everyGC(tool_dir, fasta_path, out_name, gene_lengths, err_path, tmp_
 
 
 def predict_genes(id, fasta_path, gene_lengths, out_dir, tool_dir, tmp_dir):
-    print '  ' + id_to_str(id) + os.path.basename(fasta_path)
+    log = logging.getLogger('quast')
+    log.info('  ' + id_to_str(id) + os.path.basename(fasta_path))
 
     out_name = os.path.basename(fasta_path)
     out_path = os.path.join(out_dir, out_name)
@@ -158,16 +159,17 @@ def predict_genes(id, fasta_path, gene_lengths, out_dir, tool_dir, tmp_dir):
     out_gff_path, unique, total, cnt = gmhmm_p_everyGC(tool_dir,
         fasta_path, out_path, gene_lengths, err_path, tmp_dir)
 
-    print '  ' + id_to_str(id) + '  Genes = ' + str(unique) + ' unique, ' + str(total) + ' total'
-    print '  ' + id_to_str(id) + '  Predicted genes (GFF): ' + out_gff_path
+    log.info('  ' + id_to_str(id) + '  Genes = ' + str(unique) + ' unique, ' + str(total) + ' total')
+    log.info('  ' + id_to_str(id) + '  Predicted genes (GFF): ' + out_gff_path)
 
-    print '  ' + id_to_str(id) + 'Gene prediction is finished.'
+    log.info('  ' + id_to_str(id) + 'Gene prediction is finished.')
     return unique, cnt
 
 
-def do(fasta_paths, gene_lengths, out_dir, lib_dir):
+def do(fasta_paths, gene_lengths, out_dir):
     print_timestamp()
-    print 'Running GeneMark tool...'
+    log = logging.getLogger('quast')
+    log.info('Running GeneMark tool...')
 
     tmp_dir = os.path.join(out_dir, 'tmp')
     if not os.path.isdir(out_dir):
@@ -176,12 +178,12 @@ def do(fasta_paths, gene_lengths, out_dir, lib_dir):
         os.mkdir(tmp_dir)
 
     if platform.system() == 'Darwin':
-        tool_dir = os.path.join(lib_dir, 'genemark_suite_macosx/gmsuite')
+        tool_dir = os.path.join(qconfig.LIBS_LOCATION, 'genemark', 'macosx')
     else:
         if platform.architecture()[0] == '64bit':
-            tool_dir  = os.path.join(lib_dir, 'genemark_suite_linux_64/gmsuite')
+            tool_dir  = os.path.join(qconfig.LIBS_LOCATION, 'genemark', 'linux_64')
         else:
-            tool_dir  = os.path.join(lib_dir, 'genemark_suite_linux_32/gmsuite')
+            tool_dir  = os.path.join(qconfig.LIBS_LOCATION, 'genemark', 'linux_32')
 
     install_genemark(tool_dir)
 
@@ -199,13 +201,4 @@ def do(fasta_paths, gene_lengths, out_dir, lib_dir):
 
     if not qconfig.debug:
         shutil.rmtree(tmp_dir)
-    print '  Done.'
-
-
-if __name__ == '__main__':
-    fasta_paths = ['../test_data/assembly_10K_1.fasta', '../test_data/assembly_10K_2.fasta']
-    print fasta_paths
-    out_dir = '../run_test_data/genemark_out'
-    lib_dir = ''
-    gene_lengths = [100, 1000, 10000]
-    do(fasta_paths, gene_lengths, out_dir, lib_dir)
+    log.info('  Done.')

@@ -5,6 +5,9 @@
 ############################################################################
 
 import datetime
+import os
+
+LIBS_LOCATION = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
 
 # support of large genomes
 MAX_REFERENCE_LENGTH = 536870908  # Nucmer's max length of a reference file

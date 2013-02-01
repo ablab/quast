@@ -13,9 +13,15 @@ LIBS_LOCATION = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
 MAX_REFERENCE_LENGTH = 536870908  # Nucmer's max length of a reference file
 splitted_ref = []
 
+# available options
+long_options = "output-dir= save-json-to= genes= operons= reference= contig-thresholds= min-contig= "\
+               "gene-thresholds= save-json gage eukaryote no-plots no-html help debug "\
+               "allow-repeats scaffolds threads= mincluster= est-ref-size= use-all-alignments gene-finding".split()
+short_options = "o:G:O:R:t:M:S:J:jgehdsaT:c:r:uf"
+
+# default values for options
 contig_thresholds = "0,1000"
 min_contig = 500
-#genes_lengths = "0,300,600,900,1200,1500,1800,2100,2400,2700,3000"
 genes_lengths = "0,300,1500,3000"
 
 default_results_root_dirname = "quast_results"
@@ -45,13 +51,9 @@ max_threads = None
 mincluster = 65
 estimated_reference_size = None
 
-long_options = "output-dir= save-json-to= genes= operons= reference= contig-thresholds= min-contig= " \
-               "gene-thresholds= save-json gage eukaryote no-plots no-html help debug " \
-               "allow-repeats scaffolds threads= mincluster= est-ref-size= use-all-alignments gene-finding".split()
-short_options = "o:G:O:R:t:M:S:J:jgehdsaT:c:r:uf"
+list_of_broken_scaffolds = []
 
-
-# other constants. Can't be changed by command-line options
+# other settings. Can't be changed by command-line options
 
 # for parallelization of contig analyzer
 DEFAULT_MAX_THREADS = 4  # this value is used if QUAST fails to determine number of CPUs

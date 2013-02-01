@@ -58,7 +58,7 @@ except:
 
 ####################################################################################
 
-def get_color_and_ls(id):
+def get_color_and_ls(color_id, filename):
     '''
     Returns tuple: color, line style
     '''
@@ -67,14 +67,17 @@ def get_color_and_ls(id):
 
     # special case: we have scaffolds and contigs
     if qconfig.scaffolds:
-        # contigs should be dashed
-        if id % 2 == 1:
+        # contigs and scaffolds should be equally colored but scaffolds should be dashed
+        if os.path.basename(filename) in qconfig.list_of_broken_scaffolds:
+            next_color_id = color_id
+        else:
             ls = secondary_line_style
-        # contigs and scaffolds should be same colored
-        id /= 2
+            next_color_id = color_id + 1
+    else:
+        next_color_id = color_id + 1
 
-    color = colors[id % len(colors)]
-    return color, ls
+    color = colors[color_id % len(colors)]
+    return color, ls, next_color_id
 
 
 def get_locators():
@@ -110,8 +113,9 @@ def cumulative_plot(reference, filenames, lists_of_lengths, plot_filename, title
     matplotlib.pyplot.rc('font', **font)
     max_x = 0
     max_y = 0
+    color_id = 0
 
-    for id, (filename, lenghts) in enumerate(itertools.izip(filenames, lists_of_lengths)):
+    for (filename, lenghts) in itertools.izip(filenames, lists_of_lengths):
         lenghts.sort(reverse=True)
         # calculate values for the plot
         vals_contig_index = [0]
@@ -131,7 +135,7 @@ def cumulative_plot(reference, filenames, lists_of_lengths, plot_filename, title
             max_x = max(vals_contig_index[-1], max_x)
             max_y = max(max_y, vals_length[-1])
 
-        color, ls = get_color_and_ls(id)
+        color, ls, color_id = get_color_and_ls(color_id, filename)
         matplotlib.pyplot.plot(vals_contig_index, vals_length, color=color, lw=line_width, ls=ls)
 
     if reference:
@@ -196,6 +200,7 @@ def Nx_plot(filenames, lists_of_lengths, plot_filename, title='Nx', reference_le
     matplotlib.pyplot.figure()
     matplotlib.pyplot.rc('font', **font)
     max_y = 0
+    color_id = 0
 
     for id, (filename, lengths) in enumerate(itertools.izip(filenames, lists_of_lengths)):
         lengths.sort(reverse=True)
@@ -220,7 +225,7 @@ def Nx_plot(filenames, lists_of_lengths, plot_filename, title='Nx', reference_le
         vals_l.append(0.0)
         max_y = max(max_y, max(vals_l))
 
-        color, ls = get_color_and_ls(id)
+        color, ls, color_id = get_color_and_ls(color_id, filename)
         matplotlib.pyplot.plot(vals_Nx, vals_l, color=color, lw=line_width, ls=ls)
 
     if with_title:
@@ -277,6 +282,7 @@ def GC_content_plot(reference, filenames, list_of_GC_distributions, plot_filenam
     matplotlib.pyplot.figure()
     matplotlib.pyplot.rc('font', **font)
     max_y = 0
+    color_id = 0
 
     allfilenames = filenames
     if reference:
@@ -294,7 +300,7 @@ def GC_content_plot(reference, filenames, list_of_GC_distributions, plot_filenam
             color = reference_color
             ls = reference_ls
         else:
-            color, ls = get_color_and_ls(id)
+            color, ls, color_id = get_color_and_ls(color_id, allfilenames[id])
 
         matplotlib.pyplot.plot(GC_distribution_x, GC_distribution_y, color=color, lw=line_width, ls=ls)
 
@@ -358,8 +364,9 @@ def genes_operons_plot(reference_value, filenames, files_feature_in_contigs, plo
     matplotlib.pyplot.rc('font', **font)
     max_x = 0
     max_y = 0
+    color_id = 0
 
-    for id, filename in enumerate(filenames):
+    for filename in filenames:
         # calculate values for the plot
         feature_in_contigs = files_feature_in_contigs[filename]
 
@@ -374,7 +381,7 @@ def genes_operons_plot(reference_value, filenames, files_feature_in_contigs, plo
             max_x = max(x_vals[-1], max_x)
             max_y = max(y_vals[-1], max_y)
 
-        color, ls = get_color_and_ls(id)
+        color, ls, color_id = get_color_and_ls(color_id, filename)
         matplotlib.pyplot.plot(x_vals, y_vals, color=color, lw=line_width, ls=ls)
 
     if reference_value:
@@ -457,8 +464,9 @@ def histogram(filenames, values, plot_filename, title='', all_pdf=None, yaxis_ti
     #import numpy
     #positions = numpy.arange(len(filenames))
 
+    color_id = 0
     for id, (filename, val) in enumerate(itertools.izip(filenames, values)):
-        color, ls = get_color_and_ls(id)
+        color, ls, color_id = get_color_and_ls(color_id, filename)
         if ls == primary_line_style:
             hatch = ''
         else:

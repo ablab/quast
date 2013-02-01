@@ -394,21 +394,16 @@ def main(args):
                 i += 1
                 corr_fpath = os.path.join(corrected_dirpath, os.path.basename(basename + '__' + str(i)))
 
-        if not handle_fasta(contigs_fpath, corr_fpath):
-            continue
-
         log.info('  %s ==> %s' % (contigs_fpath, os.path.basename(corr_fpath)))
-        new_contigs_fpaths.append(corr_fpath)
 
         # if option --scaffolds is specified QUAST adds splitted version of assemblies to the comparison
         if qconfig.scaffolds:
-            log.info("  splitting scaffolds into contigs:")
-            splitted_path = corr_fpath + '_splitted'
-            shutil.copy(corr_fpath, splitted_path)
+            log.info("  breaking scaffolds into contigs:")
+            broken_scaffolds_path = corr_fpath + '_broken'
 
-            splitted_fasta = []
+            broken_scaffolds_fasta = []
             contigs_counter = 0
-            for id, (name, seq) in enumerate(fastaparser.read_fasta(corr_fpath)):
+            for id, (name, seq) in enumerate(fastaparser.read_fasta(contigs_fpath)):
                 i = 0
                 cur_contig_number = 1
                 cur_contig_start = 0
@@ -420,18 +415,23 @@ def main(args):
 
                     i = end + 1
                     if (end - start) >= qconfig.Ns_break_threshold:
-                        splitted_fasta.append((name.split()[0] + "_" + str(cur_contig_number), seq[cur_contig_start:start]))
+                        broken_scaffolds_fasta.append((name.split()[0] + "_" + str(cur_contig_number), seq[cur_contig_start:start]))
                         cur_contig_number += 1
                         cur_contig_start = end
 
-                splitted_fasta.append((name.split()[0] + "_" + str(cur_contig_number), seq[cur_contig_start:]))
+                broken_scaffolds_fasta.append((name.split()[0] + "_" + str(cur_contig_number), seq[cur_contig_start:]))
                 contigs_counter += cur_contig_number
 
-            fastaparser.write_fasta(splitted_path, splitted_fasta)
-            log.info("    %d scaffolds (%s) were broken into %d contigs (%s)"\
-                  % (id + 1, os.path.basename(corr_fpath), contigs_counter, os.path.basename(splitted_path)))
-            if handle_fasta(splitted_path, splitted_path):
-                new_contigs_fpaths.append(splitted_path)
+            fastaparser.write_fasta(broken_scaffolds_path, broken_scaffolds_fasta)
+            log.info("      %d scaffolds (%s) were broken into %d contigs (%s)"\
+                  % (id + 1, os.path.basename(corr_fpath), contigs_counter, os.path.basename(broken_scaffolds_path)))
+            if handle_fasta(broken_scaffolds_path, broken_scaffolds_path):
+                new_contigs_fpaths.append(broken_scaffolds_path)
+                qconfig.list_of_broken_scaffolds.append(os.path.basename(broken_scaffolds_path))
+
+        if not handle_fasta(contigs_fpath, corr_fpath):
+            continue
+        new_contigs_fpaths.append(corr_fpath)
 
     contigs_fpaths = new_contigs_fpaths
 

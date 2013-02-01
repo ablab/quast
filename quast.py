@@ -467,7 +467,7 @@ def main(args):
             warning("GAGE can't be run without a reference and will be SKIPPED!")
         else:
             from libs import gage
-            gage.do(qconfig.reference, contigs_fpaths, output_dirpath, qconfig.min_contig)
+            gage.do(qconfig.reference, contigs_fpaths, output_dirpath)
 
     if qconfig.draw_plots:
         from libs import plotter  # Do not remove this line! It would lead to a warning in matplotlib.

@@ -16,9 +16,7 @@ OUTPUT_FOLDER=$3
 MIN_CONTIG=$4
 MIN_CONTIG=`expr $MIN_CONTIG - 1`
 
-create_tmp=0
 if [ ! -e $OUTPUT_FOLDER ]; then
-    create_tmp=1
     mkdir $OUTPUT_FOLDER
 fi
 
@@ -62,6 +60,6 @@ echo ""
 echo "Corrected Contig Stats"
 java -cp $JAVA_PATH:. GetFastaStats -o -min $MIN_CONTIG -genomeSize $GENOMESIZE $CONTIG_FILE.matches.lens 2> /dev/null
 
-if [ $create_tmp -eq 1 ]; then
-    rm -rf $OUTPUT_FOLDER
-fi
+#if [ $DEBUG -eq 0 ]; then
+#    rm -rf $OUTPUT_FOLDER
+#fi

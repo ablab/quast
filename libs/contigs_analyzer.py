@@ -72,7 +72,10 @@ class Mappings(object):
         file.close()
 
 
-def process_misassembled_contig(plantafile, output_file, i_start, i_finish, contig, prev, sorted_aligns, is_1st_chimeric_half, ns, smgap, assembly, misassembled_contigs, extensive_misassembled_contigs, ref_aligns, ref_features):
+def process_misassembled_contig(plantafile, coords_filtered_file, aligned_lenths,
+                                i_start, i_finish, contig_len, prev, cur_aligned_length,
+                                sorted_aligns, is_1st_chimeric_half, gap_threshold,
+                                misassembled_contigs, ref_aligns, ref_features):
     region_misassemblies = []
     for i in xrange(i_start, i_finish):
         print >> plantafile, '\t\t\tReal Alignment %d: %s' % (i+1, str(sorted_aligns[i]))
@@ -95,27 +98,29 @@ def process_misassembled_contig(plantafile, output_file, i_start, i_finish, cont
 
         ref_aligns.setdefault(sorted_aligns[i].ref, []).append(sorted_aligns[i])
 
-        if sorted_aligns[i].ref != sorted_aligns[i+1].ref or gap > ns + smgap or (strand1 != strand2): # different chromosomes or large gap or different strands
+        if sorted_aligns[i].ref != sorted_aligns[i+1].ref or gap > gap_threshold or (strand1 != strand2): # different chromosomes or large gap or different strands
             #Contig spans chromosomes or there is a gap larger than 1kb
             #MY: output in coords.filtered
-            print >> output_file, str(prev)
+            print >> coords_filtered_file, str(prev)
+            aligned_lenths.append(cur_aligned_length)
             prev = sorted_aligns[i+1].clone()
+            cur_aligned_length = prev.len2
+
             print >> plantafile, '\t\t\t  Extensive misassembly (',
 
-            extensive_misassembled_contigs.add(sorted_aligns[i].contig)
             ref_features.setdefault(sorted_aligns[i].ref, {})[sorted_aligns[i].e1] = 'M'
             ref_features.setdefault(sorted_aligns[i+1].ref, {})[sorted_aligns[i+1].e1] = 'M'
 
             if sorted_aligns[i].ref != sorted_aligns[i+1].ref:
                 region_misassemblies += [Misassembly.TRANSLOCATION]
                 print >> plantafile, 'translocation',
-            elif gap > ns + smgap:
+            elif gap > gap_threshold:
                 region_misassemblies += [Misassembly.RELOCATION]
                 print >> plantafile, 'relocation',
             elif strand1 != strand2:
                 region_misassemblies += [Misassembly.INVERSION]
                 print >> plantafile, 'inversion',
-            misassembled_contigs[contig] = len(assembly[contig])
+            misassembled_contigs[sorted_aligns[i].contig] = contig_len
 
             print >> plantafile, ') between these two alignments'
 
@@ -130,26 +135,34 @@ def process_misassembled_contig(plantafile, output_file, i_start, i_finish, cont
             region_misassemblies += [Misassembly.LOCAL]
 
             #MY: output in coords.filtered (separate output for each alignment even if it is just a local misassembly)
-            print >> output_file, str(prev)
+            print >> coords_filtered_file, str(prev)
             prev = sorted_aligns[i+1].clone()
 
+#           uncomment following lines to disable breaking by local misassemblies
 #            #MY: output in coords.filtered (merge alignments if it is just a local misassembly)
 #            prev.e1 = sorted_aligns[i+1].e1 # [E1]
 #            prev.s2 = 0 # [S2]
 #            prev.e2 = 0 # [E2]
 #            prev.len1 = prev.e1 - prev.s1 # [LEN1]
-#            prev.len2 = prev.len2 + sorted_aligns[i+1].len2 - (overlap_in_contig if overlap_in_contig > 0 else 0) # [LEN2]
+#            prev.len2 += sorted_aligns[i+1].len2 - (overlap_in_contig if overlap_in_contig > 0 else 0) # [LEN2]
+
+            if qconfig.strict_NA:
+                aligned_lenths.append(cur_aligned_length)
+                cur_aligned_length = prev.len2
+            else:
+                cur_aligned_length += sorted_aligns[i+1].len2 - (overlap_in_contig if overlap_in_contig > 0 else 0)
 
     #MY: output in coords.filtered
     if not is_1st_chimeric_half:
-        print >> output_file, str(prev)
+        print >> coords_filtered_file, str(prev)
+        aligned_lenths.append(cur_aligned_length)
 
     #Record the very last alignment
     i = i_finish
     print >> plantafile, '\t\t\tReal Alignment %d: %s' % (i+1, str(sorted_aligns[i]))
     ref_aligns.setdefault(sorted_aligns[i].ref, []).append(sorted_aligns[i])
 
-    return prev.clone(), region_misassemblies
+    return cur_aligned_length, prev.clone(), region_misassemblies
 
 def clear_files(filename, nucmerfilename):
     if qconfig.debug:
@@ -201,7 +214,8 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
     #coords_btab_filename = nucmerfilename + '.coords.btab'
     coords_filtered_filename = nucmerfilename + '.coords.filtered'
     unaligned_filename = nucmerfilename + '.unaligned'
-    show_snps_filename = nucmerfilename + '.show_snps'
+    show_snps_filename = nucmerfilename + '.all_snps'
+    used_snps_filename = nucmerfilename + '.used_snps'
     #nucmer_report_filename = nucmerfilename + '.report'
 
     print >> plantafile_out, 'Aligning contigs to reference...'
@@ -288,7 +302,7 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
         if not os.path.isfile(coords_filename):
             print >> plantafile_err, id_to_str(id) + 'Nucmer failed for', filename + ':', coords_filename, 'doesn\'t exist.'
             log.info('  ' + id_to_str(id) + 'Nucmer failed for ' + '\'' + os.path.basename(filename) + '\'.')
-            return NucmerStatus.FAILED, {}
+            return NucmerStatus.FAILED, {}, []
         #if not os.path.isfile(nucmer_report_filename):
         #    print >> plantafile_err, id_to_str(id) + 'Nucmer failed for', filename + ':', nucmer_report_filename, 'doesn\'t exist.'
         #    print '  ' + id_to_str(id) + 'Nucmer failed for ' + '\'' + os.path.basename(filename) + '\'.'
@@ -296,7 +310,7 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
         if len(open(coords_filename).readlines()[-1].split()) < 13:
             print >> plantafile_err, id_to_str(id) + 'Nucmer: nothing aligned for', filename
             log.info('  ' + id_to_str(id) + 'Nucmer: nothing aligned for ' + '\'' + os.path.basename(filename) + '\'.')
-            return NucmerStatus.NOT_ALIGNED, {}
+            return NucmerStatus.NOT_ALIGNED, {}, []
 
 
         with open(coords_filename) as coords_file:
@@ -402,7 +416,8 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
 
     region_misassemblies = []
     misassembled_contigs = {}
-    extensive_misassembled_contigs = set()
+
+    aligned_lengths = []
 
     print >> plantafile_out, 'Analyzing contigs...'
 
@@ -450,6 +465,7 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
                     print >> plantafile_out, '\t\tOne align captures most of this contig: %s' % str(top_aligns[0])
                     ref_aligns.setdefault(top_aligns[0].ref, []).append(top_aligns[0])
                     print >> coords_filtered_file, str(top_aligns[0])
+                    aligned_lengths.append(top_aligns[0].len2)
                 else:
                     #There is more than one top align
                     print >> plantafile_out, '\t\tThis contig has %d significant alignments. [different alignments of a repeat]' % len(
@@ -468,12 +484,12 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
                         while len(top_aligns):
                             print >> plantafile_out, '\t\tAlignment: %s' % str(top_aligns[0])
                             ref_aligns.setdefault(top_aligns[0].ref, []).append(top_aligns[0])
-                            if not first_alignment:
-                                total_repeats_extra_bases += top_aligns[0].len1
-                                print >> coords_filtered_file, str(top_aligns[0]), 'repeat'
-                            else:
+                            if first_alignment:
                                 first_alignment = False
-                                print >> coords_filtered_file, str(top_aligns[0])
+                                aligned_lengths.append(top_aligns[0].len2)
+                            else:
+                                total_repeats_extra_bases += top_aligns[0].len1
+                            print >> coords_filtered_file, str(top_aligns[0]), "repeat"
                             top_aligns = top_aligns[1:]
 
                     #Record these alignments as ambiguous on the reference
@@ -568,6 +584,7 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
                     #There is only one alignment of this contig to the reference
                     #MY: output in coords.filtered
                     print >> coords_filtered_file, str(real_aligns[0])
+                    aligned_lengths.append(real_aligns[0].len2)
 
                     #Is the contig aligned in the reverse compliment?
                     #Record beginning and end of alignment in contig
@@ -610,6 +627,7 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
                         for align in sorted_aligns:
                             print >> plantafile_out, '\t\tAlignment: %s' % str(align)
                             print >> coords_filtered_file, str(align)
+                            aligned_lengths.append(align.len2)
 
                         #Increment tally of partially unaligned contigs
                         partially_unaligned += 1
@@ -624,49 +642,50 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
                         continue
 
                     sorted_num = len(sorted_aligns) - 1
-                    chimeric_found = False
 
                     #MY: computing cyclic references
-                    if cyclic:
-                        if sorted_aligns[0].s1 - 1 + total_reg_len - sorted_aligns[sorted_num].e1 <= ns + smgap:  # fake misassembly aka chimeric one
-                            chimeric_found = True
+                    if cyclic and (sorted_aligns[0].s1 - 1 + total_reg_len - sorted_aligns[sorted_num].e1 <= ns + smgap): # fake misassembly
 
-                            # find fake alignment between "first" blocks and "last" blocks
-                            chimeric_index = 0
-                            for i in xrange(sorted_num):
-                                gap = sorted_aligns[i + 1].s1 - sorted_aligns[i].e1
-                                if gap > ns + smgap:
-                                    chimeric_index = i + 1
-                                    break
+                        # find fake alignment between "first" blocks and "last" blocks
+                        fake_misassembly_index = 0
+                        for i in xrange(sorted_num):
+                            gap = sorted_aligns[i + 1].s1 - sorted_aligns[i].e1
+                            if gap > ns + smgap:
+                                fake_misassembly_index = i + 1
+                                break
 
-                            #MY: for merging local misassemblies
-                            prev = sorted_aligns[chimeric_index].clone()
+                        #MY: for merging local misassemblies
+                        prev = sorted_aligns[fake_misassembly_index].clone()
+                        cur_aligned_length = prev.len2
 
-                            # process "last half" of blocks
-                            prev, x = process_misassembled_contig(plantafile_out, coords_filtered_file,
-                                chimeric_index, sorted_num, contig, prev, sorted_aligns, True, ns, smgap,
-                                assembly, misassembled_contigs, extensive_misassembled_contigs, ref_aligns, ref_features)
-                            region_misassemblies += x
-                            print >> plantafile_out, '\t\t\t  Fake misassembly (caused by circular genome) between these two alignments'
+                        # process "last half" of blocks
+                        cur_aligned_length, prev, x = process_misassembled_contig(plantafile_out, coords_filtered_file,
+                            aligned_lengths, fake_misassembly_index, sorted_num, len(assembly[contig]), prev,
+                            cur_aligned_length, sorted_aligns, True, ns + smgap, misassembled_contigs, ref_aligns, ref_features)
+                        region_misassemblies += x
+                        print >> plantafile_out, '\t\t\t  Fake misassembly (caused by linear representation of circular genome) between these two alignments'
 
-                            prev.e1 = sorted_aligns[0].e1 # [E1]
-                            prev.s2 = 0 # [S2]
-                            prev.e2 = 0 # [E2]
-                            prev.len1 += sorted_aligns[0].e1 - sorted_aligns[0].s1 + 1 # [LEN1]
-                            prev.len2 += sorted_aligns[0].len2 # [LEN2]
+                        # connecting parts of fake misassembly in one alignment
+                        prev.e1 = sorted_aligns[0].e1 # [E1]
+                        prev.s2 = 0 # [S2]
+                        prev.e2 = 0 # [E2]
+                        prev.len1 += sorted_aligns[0].e1 - sorted_aligns[0].s1 + 1 # [LEN1]
+                        prev.len2 += sorted_aligns[0].len2 # [LEN2]
+                        cur_aligned_length += sorted_aligns[0].len2
 
-                            # process "first half" of blocks
-                            prev, x = process_misassembled_contig(plantafile_out, coords_filtered_file, 0,
-                                chimeric_index - 1, contig, prev, sorted_aligns, False, ns, smgap, assembly,
-                                misassembled_contigs, extensive_misassembled_contigs, ref_aligns, ref_features)
-                            region_misassemblies += x
+                        # process "first half" of blocks
+                        cur_aligned_length, prev, x = process_misassembled_contig(plantafile_out, coords_filtered_file,
+                            aligned_lengths, 0, fake_misassembly_index - 1, len(assembly[contig]), prev, cur_aligned_length,
+                            sorted_aligns, False, ns + smgap, misassembled_contigs, ref_aligns, ref_features)
+                        region_misassemblies += x
 
-                    if not chimeric_found:                        
+                    else:
                         #MY: for merging local misassemblies
                         prev = sorted_aligns[0].clone()
-                        prev, x = process_misassembled_contig(plantafile_out, coords_filtered_file, 0, sorted_num,
-                            contig, prev, sorted_aligns, False, ns, smgap, assembly, misassembled_contigs,
-                            extensive_misassembled_contigs, ref_aligns, ref_features)
+                        cur_aligned_length = prev.len2
+                        cur_aligned_length, prev, x = process_misassembled_contig(plantafile_out, coords_filtered_file,
+                            aligned_lengths, 0, sorted_num, len(assembly[contig]), prev, cur_aligned_length,
+                            sorted_aligns, False, ns + smgap, misassembled_contigs, ref_aligns, ref_features)
                         region_misassemblies += x
 
         else:
@@ -1047,20 +1066,20 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
 
     ## outputting misassembled contigs to separate file
     fasta = [(name, seq) for name, seq in fastaparser.read_fasta(filename) if
-                         name in extensive_misassembled_contigs]
-    fastaparser.write_fasta(output_dir + '/' + os.path.basename(filename) + '.mis_contigs', fasta)
+                         name in misassembled_contigs.keys()]
+    fastaparser.write_fasta(os.path.join(output_dir, os.path.basename(filename) + '.mis_contigs'), fasta)
 
     plantafile_out.close()
     plantafile_err.close()
     log.info('  ' + id_to_str(id) + 'Analysis is finished.')
-    return NucmerStatus.OK, result
+    return NucmerStatus.OK, result, aligned_lengths
 
 
 def plantakolya_process(cyclic, nucmer_output_dir, filename, id, myenv, output_dir, reference):
     nucmer_fname = os.path.join(nucmer_output_dir, os.path.basename(filename))
-    nucmer_is_ok, result = plantakolya(cyclic, id, filename, nucmer_fname, myenv, output_dir, reference)
+    nucmer_is_ok, result, aligned_lengths = plantakolya(cyclic, id, filename, nucmer_fname, myenv, output_dir, reference)
     clear_files(filename, nucmer_fname)
-    return nucmer_is_ok, result
+    return nucmer_is_ok, result, aligned_lengths
 
 
 def all_required_binaries_exist(mummer_path):
@@ -1112,11 +1131,13 @@ def do(reference, filenames, cyclic, output_dir):
 
     n_jobs = min(len(filenames), qconfig.max_threads)
     from joblib import Parallel, delayed
-    statuses_results_pairs = Parallel(n_jobs=n_jobs)(delayed(plantakolya_process)(
+    statuses_results_lengths_tuples = Parallel(n_jobs=n_jobs)(delayed(plantakolya_process)(
         cyclic, nucmer_output_dir, fname, id, myenv, output_dir, reference)
           for id, fname in enumerate(filenames))
     # unzipping
-    statuses, results = [x[0] for x in statuses_results_pairs], [x[1] for x in statuses_results_pairs]
+    statuses, results, aligned_lengths = [x[0] for x in statuses_results_lengths_tuples], \
+                                         [x[1] for x in statuses_results_lengths_tuples], \
+                                         [x[2] for x in statuses_results_lengths_tuples]
 
     def save_result(result):
         report = reporting.get(fname)
@@ -1188,8 +1209,8 @@ def do(reference, filenames, cyclic, output_dir):
         elif statuses[id] == NucmerStatus.NOT_ALIGNED:
             save_result_for_unaligned(results[id])
 
-
     nucmer_statuses = dict(zip(filenames, statuses))
+    aligned_lengths_per_fpath = dict(zip(filenames, aligned_lengths))
 
 #    nucmer_statuses = {}
 #
@@ -1221,4 +1242,4 @@ def do(reference, filenames, cyclic, output_dir):
 #    if problems == all:
 #        log.info('  Nucmer failed.')
 
-    return nucmer_statuses
+    return nucmer_statuses, aligned_lengths_per_fpath

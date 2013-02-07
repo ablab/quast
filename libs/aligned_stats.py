@@ -12,43 +12,8 @@ from libs import reporting, qconfig
 from qutils import id_to_str, warning, print_timestamp
 
 
-def get_lengths_from_coordfile(nucmer_filename): # TODO: re-use Mappings from plantakolya
-    """
-    Returns list of aligned blocks' lengths
-    """
-    max_overlap = 0.1 # 10 %
-
-    coordfile = open(nucmer_filename, 'r')
-    for line in coordfile:
-        if line.startswith('='):
-            break
-
-    # EXAMPLE:
-    #    [S1]     [E1]  |     [S2]     [E2]  |  [LEN 1]  [LEN 2]  |  [% IDY]  | [TAGS]
-    #=====================================================================================
-    #  338980   339138  |     2298     2134  |      159      165  |    79.76  | gi|48994873|gb|U00096.2|	NODE_0_length_6088
-    #  374145   374355  |     2306     2097  |      211      210  |    85.45  | gi|48994873|gb|U00096.2|	NODE_0_length_6088
-    # 2302590  2302861  |        1      272  |      272      272  |  98.5294  | gi|48994873|gb|U00096.2|	NODE_681_length_272_
-    # 2302816  2303087  |        1      272  |      272      272  |  98.5294  | gi|48994873|gb|U00096.2|	NODE_681_length_272_
-    # 2302703  2302974  |        1      272  |      272      272  |  98.1618  | gi|48994873|gb|U00096.2|	NODE_681_length_272_
-    # 2302477  2302748  |        1      272  |      272      272  |  96.6912  | gi|48994873|gb|U00096.2|	NODE_681_length_272_
-
-    aligned_lengths = []
-
-    for line in coordfile:
-        splitted = line.split('|')
-        # special case: option --allow-repeats turned on
-        if splitted[-1].split()[-1] == 'repeat':
-            continue
-        len2 = int(splitted[2].split()[1])
-        aligned_lengths.append(len2)
-    coordfile.close()
-
-    return aligned_lengths
-
-
 ######## MAIN ############
-def do(reference, filenames, nucmer_dir, output_dir, all_pdf, draw_plots, json_output_dir, results_dir):
+def do(reference, filenames, aligned_lengths_lists, nucmer_dir, output_dir, all_pdf, draw_plots, json_output_dir, results_dir):
 
     if not os.path.isdir(output_dir):
         os.mkdir(output_dir)
@@ -69,25 +34,16 @@ def do(reference, filenames, nucmer_dir, output_dir, all_pdf, draw_plots, json_o
     log.info('Running NA-NGA tool...')
 
     reference_length = sum(fastaparser.get_lengths_from_fastafile(reference))
-    lists_of_lengths = []
     assembly_lengths = []
-    log.info('  Processing .coords.filtered files...')
-    for id, filename in enumerate(filenames):
-        log.info('    ' + id_to_str(id) + os.path.basename(filename))
-        nucmer_filename = os.path.join(nucmer_prefix, os.path.basename(filename) + '.coords.filtered')
+    for filename in filenames:
         assembly_lengths.append(sum(fastaparser.get_lengths_from_fastafile(filename)))
-        if not os.path.isfile(nucmer_filename):
-            #error('Nucmer\'s coords.filtered file (' + nucmer_filename + ') not found! Skipping...', 0)
-            warning('Nucmer\'s coords.filtered file (' + nucmer_filename + ') not found! Skipping...')
-            lists_of_lengths.append([0])
-        else:
-            lists_of_lengths.append(get_lengths_from_coordfile(nucmer_filename))
+
     ########################################################################
 
     log.info('  Calculating NA50 and NGA50...')
 
     import N50
-    for id, (filename, lens, assembly_len) in enumerate(itertools.izip(filenames, lists_of_lengths, assembly_lengths)):
+    for id, (filename, lens, assembly_len) in enumerate(itertools.izip(filenames, aligned_lengths_lists, assembly_lengths)):
         na50 = N50.NG50(lens, assembly_len)
         nga50 = N50.NG50(lens, reference_length)
         na75 = N50.NG50(lens, assembly_len, 75)
@@ -118,23 +74,23 @@ def do(reference, filenames, nucmer_dir, output_dir, all_pdf, draw_plots, json_o
     # saving to JSON
     if json_output_dir:
         from libs.html_saver import json_saver
-        json_saver.save_aligned_contigs_lengths(json_output_dir, filenames, lists_of_lengths)
+        json_saver.save_aligned_contigs_lengths(json_output_dir, filenames, aligned_lengths_lists)
         json_saver.save_assembly_lengths(json_output_dir, filenames, assembly_lengths)
 
     # saving to html
     if qconfig.html_report:
         from libs.html_saver import html_saver
-        html_saver.save_aligned_contigs_lengths(results_dir, filenames, lists_of_lengths)
+        html_saver.save_aligned_contigs_lengths(results_dir, filenames, aligned_lengths_lists)
         html_saver.save_assembly_lengths(results_dir, filenames, assembly_lengths)
 
     if draw_plots:
         # Drawing cumulative plot (aligned contigs)...
         import plotter
-        plotter.cumulative_plot(reference, filenames, lists_of_lengths, output_dir + '/cumulative_plot', 'Cumulative length (aligned contigs)', all_pdf)
+        plotter.cumulative_plot(reference, filenames, aligned_lengths_lists, output_dir + '/cumulative_plot', 'Cumulative length (aligned contigs)', all_pdf)
 
         # Drawing NAx and NGAx plots...
-        plotter.Nx_plot(filenames, lists_of_lengths, output_dir + '/NAx_plot', 'NAx', assembly_lengths, all_pdf)
-        plotter.Nx_plot(filenames, lists_of_lengths, output_dir + '/NGAx_plot', 'NGAx', [reference_length for i in range(len(filenames))], all_pdf)
+        plotter.Nx_plot(filenames, aligned_lengths_lists, output_dir + '/NAx_plot', 'NAx', assembly_lengths, all_pdf)
+        plotter.Nx_plot(filenames, aligned_lengths_lists, output_dir + '/NGAx_plot', 'NGAx', [reference_length for i in range(len(filenames))], all_pdf)
 
     log.info('  Done.')
     return report_dict

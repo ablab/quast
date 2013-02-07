@@ -16,8 +16,8 @@ splitted_ref = []
 # available options
 long_options = "output-dir= save-json-to= genes= operons= reference= contig-thresholds= min-contig= "\
                "gene-thresholds= save-json gage eukaryote no-plots no-html help debug "\
-               "allow-repeats scaffolds threads= mincluster= est-ref-size= use-all-alignments gene-finding".split()
-short_options = "o:G:O:R:t:M:S:J:jgehdsaT:c:r:uf"
+               "allow-repeats scaffolds threads= mincluster= est-ref-size= use-all-alignments gene-finding strict-NA".split()
+short_options = "o:G:O:R:t:M:S:J:jgehdsaT:c:r:ufn"
 
 # default values for options
 contig_thresholds = "0,1000"
@@ -50,6 +50,7 @@ use_all_alignments = False
 max_threads = None
 mincluster = 65
 estimated_reference_size = None
+strict_NA = False
 
 list_of_broken_scaffolds = []
 

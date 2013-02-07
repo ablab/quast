@@ -42,19 +42,21 @@ def usage():
         print >> sys.stderr, ""
         print >> sys.stderr, "Advanced options:"
         print >> sys.stderr, "--threads    <int>                maximum number of threads [default: number of CPUs]"
-        print >> sys.stderr, "--gage                            start QUAST in \"GAGE mode\""
+        print >> sys.stderr, "--gage                            starts GAGE inside QUAST (\"GAGE mode\")"
         print >> sys.stderr, "--contig-thresholds <int,int,..>  comma-separated list of contig length thresholds [default: %s]" % qconfig.contig_thresholds
-        print >> sys.stderr, "--gene-finding                    use Gene Finding module"
+        print >> sys.stderr, "--gene-finding                    uses Gene Finding module"
         print >> sys.stderr, "--gene-thresholds   <int,int,..>  comma-separated list of threshold lengths of genes to search with Gene Finding module"
         print >> sys.stderr, "                                  [default is %s]" % qconfig.genes_lengths
         print >> sys.stderr, "--scaffolds                       provided assemblies are scaffolds"
         print >> sys.stderr, "--eukaryote                       genome is an eukaryote"
-        print >> sys.stderr, "--use-all-alignments              compute Genome fraction, # genes, # operons metrics in compatible with QUAST v.1.* mode."
+        print >> sys.stderr, "--use-all-alignments              computes Genome fraction, # genes, # operons metrics in compatible with QUAST v.1.* mode."
         print >> sys.stderr, "                                  By default, QUAST filters Nucmer\'s alignments to keep only best ones"
-        print >> sys.stderr, "--allow-repeats                   use all alignments of a contig with multiple equally good alignments (probably a repeat)."
+        print >> sys.stderr, "--allow-repeats                   uses all alignments of a contig with multiple equally good alignments (probably a repeat)."
         print >> sys.stderr, "                                  By default, QUAST skips all alignments of such contigs"
+        print >> sys.stderr, "--strict-NA                       breaks contigs by any misassembly event to compute NAx and NGAx."
+        print >> sys.stderr, "                                  By default, QUAST breaks contigs only by extensive misassemblies (not local ones)"
         print >> sys.stderr, ""
-        print >> sys.stderr, "-h/--help           print this usage message"
+        print >> sys.stderr, "-h/--help           prints this usage message"
     else:
         print >> sys.stderr, 'Options with arguments'
         print >> sys.stderr, "-o  --output-dir             directory to store all result files [default: quast_results/results_<datetime>]"
@@ -69,19 +71,20 @@ def usage():
         print >> sys.stderr, "-r  --est-ref-size <int>     Estimated reference size (for calculating NG)"
         print >> sys.stderr, ""
         print >> sys.stderr, 'Options without arguments'
-        print >> sys.stderr, "-f  --gene-finding            use Gene Finding module"
+        print >> sys.stderr, "-f  --gene-finding            uses Gene Finding module"
         print >> sys.stderr, "-s  --scaffolds               this flag informs QUAST that provided assemblies are scaffolds"
-        print >> sys.stderr, "-g  --gage                    use GAGE (results are in gage_report.txt)"
+        print >> sys.stderr, "-g  --gage                    uses GAGE (results are in gage_report.txt)"
         print >> sys.stderr, "-e  --eukaryote               genome is an eukaryote"
-        print >> sys.stderr, "-a  --allow-repeats           use all alignments of contigs covering repeats (ambiguous)"
-        print >> sys.stderr, "-u  --use-all-alignments      compute Genome fraction, # genes, # operons in v.1.0-1.3 style"
-        print >> sys.stderr, "-j  --save-json               save the output also in the JSON format"
-        print >> sys.stderr, "-J  --save-json-to <path>     save the JSON-output to a particular path"
-        print >> sys.stderr, "`   --no-html                 don't build html report"
-        print >> sys.stderr, "`   --no-plots                don't draw plots (to make quast faster)"
+        print >> sys.stderr, "-a  --allow-repeats           uses all alignments of contigs covering repeats (ambiguous)"
+        print >> sys.stderr, "-u  --use-all-alignments      computes Genome fraction, # genes, # operons in v.1.0-1.3 style"
+        print >> sys.stderr, "-n  --strict-NA               breaks contigs by any misassembly event to compute NAx and NGAx."
+        print >> sys.stderr, "-j  --save-json               saves the output also in the JSON format"
+        print >> sys.stderr, "-J  --save-json-to <path>     saves the JSON-output to a particular path"
+        print >> sys.stderr, "`   --no-html                 doesn't build html report"
+        print >> sys.stderr, "`   --no-plots                doesn't draw plots (to make quast faster)"
         print >> sys.stderr, ""
-        print >> sys.stderr, "-d  --debug                  run in debug mode"
-        print >> sys.stderr, "-h  --help                   print this usage message"
+        print >> sys.stderr, "-d  --debug                  runs in debug mode"
+        print >> sys.stderr, "-h  --help                   prints this usage message"
 
 
 def corrected_fname_for_nucmer(fpath):
@@ -233,6 +236,9 @@ def main(args):
 
         elif opt in ('-u', "--use-all-alignments"):
             qconfig.use_all_alignments = True
+
+        elif opt in ('-n', "--strict-NA"):
+            qconfig.strict_NA = True
 
         elif opt == '--no-plots':
             qconfig.draw_plots = False
@@ -485,24 +491,26 @@ def main(args):
                    json_outputpath, output_dirpath)
 
     aligned_fpaths = []
+    aligned_lengths_lists = []
     if qconfig.reference:
         ########################################################################
         ### former PLANTAKOLYA, PLANTAGORA
         ########################################################################
         from libs import contigs_analyzer
-        nucmer_statuses = contigs_analyzer.do(qconfig.reference, contigs_fpaths, qconfig.prokaryote, output_dirpath + '/contigs_reports')
+        nucmer_statuses, aligned_lengths_per_fpath = contigs_analyzer.do(qconfig.reference, contigs_fpaths, qconfig.prokaryote, output_dirpath + '/contigs_reports')
         for contigs_fpath in contigs_fpaths:
             if nucmer_statuses[contigs_fpath] == contigs_analyzer.NucmerStatus.OK:
                 aligned_fpaths.append(contigs_fpath)
+                aligned_lengths_lists.append(aligned_lengths_per_fpath[contigs_fpath])
 
     # Before continue evaluating, check if nucmer didn't skip all of the contigs files.
-    if len(aligned_fpaths) != 0 and qconfig.reference:
+    if len(aligned_fpaths) and qconfig.reference:
         ##################################################
         # ######################
         ### NA and NGA ("aligned N and NG")
         ########################################################################
         from libs import aligned_stats
-        aligned_stats.do(qconfig.reference, aligned_fpaths, output_dirpath + '/contigs_reports',
+        aligned_stats.do(qconfig.reference, aligned_fpaths, aligned_lengths_lists, output_dirpath + '/contigs_reports',
                          output_dirpath + '/aligned_stats', all_pdf, qconfig.draw_plots, json_outputpath, output_dirpath)
 
         ########################################################################

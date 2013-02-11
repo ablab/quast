@@ -47,8 +47,9 @@ def usage():
         print >> sys.stderr, "--gene-finding                    uses Gene Finding module"
         print >> sys.stderr, "--gene-thresholds   <int,int,..>  comma-separated list of threshold lengths of genes to search with Gene Finding module"
         print >> sys.stderr, "                                  [default is %s]" % qconfig.genes_lengths
-        print >> sys.stderr, "--scaffolds                       provided assemblies are scaffolds"
         print >> sys.stderr, "--eukaryote                       genome is an eukaryote"
+        print >> sys.stderr, "--est-ref-size      <int>         estimated reference size (for computing NGx metrics without a reference)"
+        print >> sys.stderr, "--scaffolds                       provided assemblies are scaffolds"
         print >> sys.stderr, "--use-all-alignments              computes Genome fraction, # genes, # operons metrics in compatible with QUAST v.1.* mode."
         print >> sys.stderr, "                                  By default, QUAST filters Nucmer\'s alignments to keep only best ones"
         print >> sys.stderr, "--allow-ambiguity                 uses all alignments of a contig with multiple equally good alignments (probably a repeat)."
@@ -68,12 +69,12 @@ def usage():
         print >> sys.stderr, "-S  --gene-thresholds        comma-separated list of threshold lengths of genes to search with Gene Finding module [default: %s]" % qconfig.genes_lengths
         print >> sys.stderr, "-T  --threads    <int>       maximum number of threads [default: number of CPUs]"
         print >> sys.stderr, "-c  --mincluster <int>       Nucmer's parameter -- the minimum length of a cluster of matches [default: %s]" % qconfig.mincluster
-        print >> sys.stderr, "-r  --est-ref-size <int>     Estimated reference size (for calculating NG)"
+        print >> sys.stderr, "    --est-ref-size <int>     Estimated reference size (for calculating NG)"
         print >> sys.stderr, ""
         print >> sys.stderr, 'Options without arguments'
         print >> sys.stderr, "-f  --gene-finding            uses Gene Finding module"
         print >> sys.stderr, "-s  --scaffolds               this flag informs QUAST that provided assemblies are scaffolds"
-        print >> sys.stderr, "-g  --gage                    uses GAGE (results are in gage_report.txt)"
+        print >> sys.stderr, "    --gage                    uses GAGE (results are in gage_report.txt)"
         print >> sys.stderr, "-e  --eukaryote               genome is an eukaryote"
         print >> sys.stderr, "-a  --allow-repeats           uses all alignments of contigs covering repeats (ambiguous)"
         print >> sys.stderr, "-u  --use-all-alignments      computes Genome fraction, # genes, # operons in v.1.0-1.3 style"
@@ -205,7 +206,7 @@ def main(args):
         elif opt in ('-c', "--mincluster"):
             qconfig.mincluster = int(arg)
 
-        elif opt in ('-r', "--est-ref-size"):
+        elif opt == "--est-ref-size":
             qconfig.estimated_reference_size = int(arg)
 
         elif opt in ('-S', "--gene-thresholds"):
@@ -222,7 +223,7 @@ def main(args):
         elif opt in ('-s', "--scaffolds"):
             qconfig.scaffolds = True
 
-        elif opt in ('-g', "--gage"):
+        elif opt == "--gage":
             qconfig.with_gage = True
 
         elif opt in ('-e', "--eukaryote"):

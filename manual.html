@@ -1,6 +1,6 @@
 <html>
 <head>
-    <title>QUAST 2.0 manual</title>
+    <title>QUAST 2.1 manual</title>
     <style type="text/css">
         body {
             margin-top: 30px;
@@ -16,7 +16,7 @@
     </style>
 </head>
 <body>
-<h1>QUAST 2.0 manual</h1>
+<h1>QUAST 2.1 manual</h1>
 
 <p>QUAST stands for <u>QU</u>ality <u>AS</u>sesment <u>T</u>ool. 
 QUAST evaluates genome assemblies by computing various metrics.
@@ -32,7 +32,7 @@ QUAST evaluates genome assemblies by computing various metrics.
     them separately.
     <br>
     <br>
-    QUAST version 2.0 was released under GPL v2 (see <a href="LICENSE">LICENSE</a> for details) on 18 January 2013.
+    QUAST version 2.1 was released under GPL v2 (see <a href="LICENSE">LICENSE</a> for details) on XX February 2013.
 </p>
 
 <h2>Table of Contents</h2>
@@ -97,13 +97,13 @@ Or with <a href="http://peak.telecommunity.com/DevCenter/EasyInstall">Easy Insta
 </pre>
 
 
-<p>To download <a href="https://downloads.sourceforge.net/project/quast/quast-2.0.tar.gz">QUAST source code tarball</a> and extract it:
+<p>To download <a href="https://downloads.sourceforge.net/project/quast/quast-2.1.tar.gz">QUAST source code tarball</a> and extract it:
 </p>
 <pre  class="code">
 <code>
-    wget https://downloads.sourceforge.net/project/quast/quast-2.0.tar.gz
-    tar -xzf quast-2.0.tar.gz
-    cd quast-2.0
+    wget https://downloads.sourceforge.net/project/quast/quast-2.1.tar.gz
+    tar -xzf quast-2.1.tar.gz
+    cd quast-2.1
 </code>
 </pre>
 
@@ -205,7 +205,7 @@ QUAST can work only with assemblies of length less than 4.29 Gbp and with refere
 <p>
     <code>--min-contig &lt;int&gt;</code>
 </p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;Set a lower threshold for a contig length. Only contigs of length greater than the threshold will be taken into account
+<p>&nbsp;&nbsp;&nbsp;&nbsp;Lower threshold for a contig length. Only contigs of length greater than the threshold will be taken into account
     (except for some metrics, see <a href="#sec3">section 3</a>). The default value is 500.</p>
 
 <p>Advanced options:</p>
@@ -213,12 +213,12 @@ QUAST can work only with assemblies of length less than 4.29 Gbp and with refere
 <p>
     <code>--threads &lt;int&gt;</code>
 </p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;Set a maximum number of threads QUAST can use. The default value is the number of CPUs (or 4 if QUAST fails to determine the number of CPUs).</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;Maximum number of threads QUAST can use. The default value is the number of CPUs (or 4 if QUAST fails to determine the number of CPUs).</p>
 
 <p>
     <code>--gage</code>
 </p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;This flag starts QUAST in "GAGE mode" (see <a href="#sec2.3">section 2.3</a>).
+<p>&nbsp;&nbsp;&nbsp;&nbsp;Starts QUAST in "GAGE mode" (see <a href="#sec2.3">section 2.3</a>).
     <b>Note:</b> in this case, you <i>must</i> also set <code>-R</code> option and you <i>can</i> set <code>--min-contig</code> option.</p>
 
 <p>
@@ -230,7 +230,7 @@ QUAST can work only with assemblies of length less than 4.29 Gbp and with refere
 <p>
     <code>--gene-finding</code>
 </p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;This flag enables Gene Finding module. This module is disabled by default to speed-up evaluating.</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;Enables Gene Finding module. This module is disabled by default to speed-up evaluating.</p>
 
 <p>
     <code>--gene-thresholds &lt;int,int,...&gt;</code>
@@ -240,12 +240,6 @@ QUAST can work only with assemblies of length less than 4.29 Gbp and with refere
 </p>
 
 <p>
-    <code>--scaffolds</code>
-</p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;This flag informs QUAST that provided assemblies are scaffolds. QUAST will add splitted versions 
-    of provided assemblies to the comparison. Assemblies are splitted by continuous fragments of N's of length &ge; 10.</p>
-
-<p>
     <code>--eukaryote</code>
 </p>
 <p>&nbsp;&nbsp;&nbsp;&nbsp;This flag should be set if a genome is an eukaryote. QUAST uses this information in Gene Finding module (prokaryotes and eukaryotes
@@ -253,10 +247,22 @@ QUAST can work only with assemblies of length less than 4.29 Gbp and with refere
     (QUAST correctly process linear representations of prokaryote circular chromosomes).</p>
 
 <p>
+    <code>--est-ref-size &lt;int&gt;</code>
+</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;Estimated reference size for computing <b><i>NGx</i></b> statistics. <b>Note:</b> this value will be used only if a reference genome file is 
+    not specified (see <code>--R</code> option). </p>
+
+<p>
+    <code>--scaffolds</code>
+</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;This flag informs QUAST that provided assemblies are scaffolds. QUAST will add splitted versions 
+    of provided assemblies to the comparison. Assemblies are splitted by continuous fragments of N's of length &ge; 10.</p>
+
+<p>
     <code>--use-all-alignments</code>
 </p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;This flag should be set for computing Genome fraction, # genes, # operons metrics in compatible with <i>QUAST v.1.*</i> mode.
-    By default, QUAST v.2.0 filters Nucmer's alignments to keep only best ones. Roughly speaking, QUAST skips ambiguous and redundant alignments
+<p>&nbsp;&nbsp;&nbsp;&nbsp;This flag should be set for computing <b><i>Genome fraction, # genes, # operons</i></b> metrics in compatible with <i>QUAST v.1.*</i> mode.
+    By default, QUAST v.2.1 filters Nucmer's alignments to keep only best ones. Roughly speaking, QUAST skips ambiguous and redundant alignments
     to keep <i>one alignment</i> (or one set of non-overlapping or slightly-overlapping alignments) <i>per each contig</i>. QUAST v.1.* used <i>all</i> Nucmer's 
     alignments to compute these metrics.</p>
 
@@ -265,10 +271,16 @@ QUAST can work only with assemblies of length less than 4.29 Gbp and with refere
 </p>
 <p>&nbsp;&nbsp;&nbsp;&nbsp;This flag forces QUAST to use all alignments of a contig with <i>multiple equally good</i> alignments (probably a repeat).
     By default, QUAST skips all alignments of such contig because it can't determine the best alignment. <b>Note:</b> setting this option can cause
-    significant increase of <b># mismatches</b> (repeats are always inexact and contain several SNPs).</p>
+    significant increase of <b><i># mismatches</i></b> (repeats are always inexact and contain several SNPs).</p>
+
+<p>
+    <code>--strict-NA</code>
+</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;This flag forces QUAST to break contigs by <i>any</i> misassembly event to compute <b><i>NAx</i></b> and <b><i>NGAx</i></b> statistics.
+    By default, QUAST breaks contigs <i>only by extensive</i> misassemblies (not local ones).</p>
 
 <p><code>-h</code> (or <code>--help</code>)</p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;Print help.</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;Prints help.</p>
 
 <a name="sec3"></a>
 <h2>3. QUAST output</h2>

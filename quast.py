@@ -51,7 +51,7 @@ def usage():
         print >> sys.stderr, "--eukaryote                       genome is an eukaryote"
         print >> sys.stderr, "--use-all-alignments              computes Genome fraction, # genes, # operons metrics in compatible with QUAST v.1.* mode."
         print >> sys.stderr, "                                  By default, QUAST filters Nucmer\'s alignments to keep only best ones"
-        print >> sys.stderr, "--allow-repeats                   uses all alignments of a contig with multiple equally good alignments (probably a repeat)."
+        print >> sys.stderr, "--allow-ambiguity                 uses all alignments of a contig with multiple equally good alignments (probably a repeat)."
         print >> sys.stderr, "                                  By default, QUAST skips all alignments of such contigs"
         print >> sys.stderr, "--strict-NA                       breaks contigs by any misassembly event to compute NAx and NGAx."
         print >> sys.stderr, "                                  By default, QUAST breaks contigs only by extensive misassemblies (not local ones)"
@@ -231,8 +231,8 @@ def main(args):
         elif opt in ('-f', "--gene-finding"):
             qconfig.gene_finding = True
 
-        elif opt in ('-a', "--allow-repeats"):
-            qconfig.allow_repeats = True
+        elif opt in ('-a', "--allow-ambiguity"):
+            qconfig.allow_ambiguity = True
 
         elif opt in ('-u', "--use-all-alignments"):
             qconfig.use_all_alignments = True

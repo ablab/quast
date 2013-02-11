@@ -205,7 +205,7 @@ def do(reference, filenames, nucmer_dir, output_dir, genes_filename, operons_fil
         genome_coverage = float(covered_bp) * 100 / float(genome_size)
         # calculating duplication ratio
         duplication_ratio = (report.get_field(reporting.Fields.TOTALLEN) + \
-                             report.get_field(reporting.Fields.REPEATSEXTRABASES) - \
+                             report.get_field(reporting.Fields.AMBIGUOUSEXTRABASES) - \
                              report.get_field(reporting.Fields.UNALIGNEDBASES)) /\
                              ((genome_coverage / 100.0) * float(genome_size))
 

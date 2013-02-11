@@ -98,7 +98,7 @@ def process_misassembled_contig(plantafile, coords_filtered_file, aligned_lenths
 
         ref_aligns.setdefault(sorted_aligns[i].ref, []).append(sorted_aligns[i])
 
-        if sorted_aligns[i].ref != sorted_aligns[i+1].ref or gap > gap_threshold or (strand1 != strand2): # different chromosomes or large gap or different strands
+        if sorted_aligns[i].ref != sorted_aligns[i+1].ref or abs(gap) > gap_threshold or (strand1 != strand2): # different chromosomes or large gap or different strands
             #Contig spans chromosomes or there is a gap larger than 1kb
             #MY: output in coords.filtered
             print >> coords_filtered_file, str(prev)
@@ -114,7 +114,7 @@ def process_misassembled_contig(plantafile, coords_filtered_file, aligned_lenths
             if sorted_aligns[i].ref != sorted_aligns[i+1].ref:
                 region_misassemblies += [Misassembly.TRANSLOCATION]
                 print >> plantafile, 'translocation',
-            elif gap > gap_threshold:
+            elif abs(gap) > gap_threshold:
                 region_misassemblies += [Misassembly.RELOCATION]
                 print >> plantafile, 'relocation',
             elif strand1 != strand2:
@@ -406,8 +406,8 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
     partially_unaligned = 0
     fully_unaligned_bases = 0
     partially_unaligned_bases = 0
-    repeats = 0
-    total_repeats_extra_bases = 0
+    ambiguous_contigs = 0
+    ambiguous_contigs_extra_bases = 0
     uncovered_regions = 0
     uncovered_region_bases = 0
     total_redundant = 0
@@ -468,17 +468,21 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
                     aligned_lengths.append(top_aligns[0].len2)
                 else:
                     #There is more than one top align
-                    print >> plantafile_out, '\t\tThis contig has %d significant alignments. [different alignments of a repeat]' % len(
+                    print >> plantafile_out, '\t\tThis contig has %d significant alignments. [An ambiguously mapped contig]' % len(
                         top_aligns)
 
-                    # Alex: skip all alignments or count them as normal (just different aligns of one repeat). Depend on --allow-repeats option
-                    if not qconfig.allow_repeats:
-                        print >> plantafile_out, '\t\tSkipping these alignments (option --allow-repeats is not set):'
+                    #Increment count of ambiguously mapped contigs and bases in them
+                    ambiguous_contigs += 1
+                    # we count only extra bases, so we shouldn't include bases in the first alignment
+                    # in case --allow-ambiguity is not set the number of extra bases will be negative!
+                    ambiguous_contigs_extra_bases -= top_aligns[0].len2
+
+                    # Alex: skip all alignments or count them as normal (just different aligns of one repeat). Depend on --allow-ambiguity option
+                    if not qconfig.allow_ambiguity:
+                        print >> plantafile_out, '\t\tSkipping these alignments (option --allow-ambiguity is not set):'
                         for align in top_aligns:
                             print >> plantafile_out, '\t\tSkipping alignment ', align
                     else:
-                        #Increment count of contigs with repeats and bases
-                        repeats += 1
                         # we count only extra bases, so we shouldn't include bases in the first alignment
                         first_alignment = True
                         while len(top_aligns):
@@ -487,9 +491,8 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
                             if first_alignment:
                                 first_alignment = False
                                 aligned_lengths.append(top_aligns[0].len2)
-                            else:
-                                total_repeats_extra_bases += top_aligns[0].len1
-                            print >> coords_filtered_file, str(top_aligns[0]), "repeat"
+                            ambiguous_contigs_extra_bases += top_aligns[0].len2
+                            print >> coords_filtered_file, str(top_aligns[0]), "ambiguous"
                             top_aligns = top_aligns[1:]
 
                     #Record these alignments as ambiguous on the reference
@@ -1000,9 +1003,13 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
     print >> plantafile_out, 'Partially Unaligned Contigs with Misassemblies: %d' % partially_unaligned_with_misassembly
     print >> plantafile_out, 'Unaligned Contig Bases: %d' % (fully_unaligned_bases + partially_unaligned_bases)
 
-    if qconfig.allow_repeats:
-        print >> plantafile_out, 'Contigs with Repeats: %d' % repeats
-        print >> plantafile_out, 'Extra Bases in Contigs with Repeats: %d' % total_repeats_extra_bases
+    print >> plantafile_out, ''
+    print >> plantafile_out, 'Ambiguously Mapped Contigs: %d' % ambiguous_contigs
+    if qconfig.allow_ambiguity:
+        print >> plantafile_out, 'Extra Bases in Ambiguously Mapped Contigs: %d' % ambiguous_contigs_extra_bases
+    else:
+        print >> plantafile_out, 'Total Bases in Ambiguously Mapped Contigs: %d' % (-ambiguous_contigs_extra_bases)
+        print >> plantafile_out, 'Note that --allow-ambiguity option was not set and these contigs were skipped.'
 
     #print >> plantafile_out, 'Mismatches: %d' % SNPs
     #print >> plantafile_out, 'Single Nucleotide Indels: %d' % indels
@@ -1059,7 +1066,7 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
               'misassembled_contigs': misassembled_contigs, 'misassembled_bases': misassembled_bases,
               'unaligned': unaligned, 'partially_unaligned': partially_unaligned,
               'partially_unaligned_bases': partially_unaligned_bases, 'fully_unaligned_bases': fully_unaligned_bases,
-              'repeats': repeats, 'total_repeats_extra_bases': total_repeats_extra_bases, 'SNPs': SNPs, 'indels': indels,
+              'ambiguous_contigs': ambiguous_contigs, 'ambiguous_contigs_extra_bases': ambiguous_contigs_extra_bases, 'SNPs': SNPs, 'indels': indels,
               'total_aligned_bases': total_aligned_bases,
               'partially_unaligned_with_misassembly': partially_unaligned_with_misassembly,
               'partially_unaligned_with_significant_parts': partially_unaligned_with_significant_parts}
@@ -1150,8 +1157,8 @@ def do(reference, filenames, cyclic, output_dir):
         partially_unaligned = result['partially_unaligned']
         partially_unaligned_bases = result['partially_unaligned_bases']
         fully_unaligned_bases = result['fully_unaligned_bases']
-        repeats = result['repeats']
-        total_repeats_extra_bases = result['total_repeats_extra_bases']
+        ambiguous_contigs = result['ambiguous_contigs']
+        ambiguous_contigs_extra_bases = result['ambiguous_contigs_extra_bases']
         SNPs = result['SNPs']
         indels = result['indels']
         total_aligned_bases = result['total_aligned_bases']
@@ -1165,8 +1172,8 @@ def do(reference, filenames, cyclic, output_dir):
         report.add_field(reporting.Fields.MISCONTIGSBASES, misassembled_bases)
         report.add_field(reporting.Fields.UNALIGNED, '%d + %d part' % (unaligned, partially_unaligned))
         report.add_field(reporting.Fields.UNALIGNEDBASES, (fully_unaligned_bases + partially_unaligned_bases))
-        report.add_field(reporting.Fields.REPEATS, repeats)
-        report.add_field(reporting.Fields.REPEATSEXTRABASES, total_repeats_extra_bases)
+        report.add_field(reporting.Fields.AMBIGUOUS, ambiguous_contigs)
+        report.add_field(reporting.Fields.AMBIGUOUSEXTRABASES, ambiguous_contigs_extra_bases)
         report.add_field(reporting.Fields.MISMATCHES, SNPs)
         report.add_field(reporting.Fields.INDELS, indels)
         if total_aligned_bases:

@@ -88,7 +88,7 @@ def do(reference, filenames, output_dir, all_pdf, draw_plots, json_output_dir, r
         log.info('    ' + os.path.basename(reference) + ', Reference length = ' + str(reference_length) + ', Reference GC % = ' + '%.2f' % reference_GC)
     elif qconfig.estimated_reference_size:
         reference_length = qconfig.estimated_reference_size
-        log.info('  Estimated reference length = ' + reference_length)
+        log.info('  Estimated reference length = ' + str(reference_length))
 
     if reference_length:
         # Saving the reference in JSON

@@ -42,8 +42,8 @@ class Fields:
     MISCONTIGSBASES = 'Misassembled contigs length'
     UNALIGNED = '# unaligned contigs'
     UNALIGNEDBASES = 'Unaligned contigs length'
-    REPEATS = '# contigs with repeats'
-    REPEATSEXTRABASES = 'Extra bases in contigs with repeats'
+    AMBIGUOUS = '# ambiguously mapped contigs'
+    AMBIGUOUSEXTRABASES = 'Extra bases in ambiguously mapped contigs'
     UNCALLED = "# N's"
     UNCALLED_PERCENT = "# N's per 100 kbp"
 

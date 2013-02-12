@@ -76,7 +76,7 @@ def usage():
         print >> sys.stderr, "-s  --scaffolds               this flag informs QUAST that provided assemblies are scaffolds"
         print >> sys.stderr, "    --gage                    uses GAGE (results are in gage_report.txt)"
         print >> sys.stderr, "-e  --eukaryote               genome is an eukaryote"
-        print >> sys.stderr, "-a  --allow-repeats           uses all alignments of contigs covering repeats (ambiguous)"
+        print >> sys.stderr, "-a  --allow-ambiguity         uses all alignments of contigs covering repeats (ambiguous)"
         print >> sys.stderr, "-u  --use-all-alignments      computes Genome fraction, # genes, # operons in v.1.0-1.3 style"
         print >> sys.stderr, "-n  --strict-NA               breaks contigs by any misassembly event to compute NAx and NGAx."
         print >> sys.stderr, "-j  --save-json               saves the output also in the JSON format"

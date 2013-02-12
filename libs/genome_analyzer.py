@@ -172,8 +172,14 @@ def do(reference, filenames, nucmer_dir, output_dir, genes_filename, operons_fil
                       "differ from the names in the reference. Try to remove the file and restart QUAST.")
                 continue
             aligned_blocks[contig_name].append(AlignedBlock(seqname=chr_name, start=s1, end=e1))
-            for i in range(s1, e1 + 1):
-                genome_mapping[chr_name][i] = 1
+            if s1 <= e1:
+                for i in range(s1, e1 + 1):
+                    genome_mapping[chr_name][i] = 1
+            else: # circular genome, contig starts on the end of a chromosome and ends in the beginning
+                for i in range(s1, len(genome_mapping[chr_name])):
+                    genome_mapping[chr_name][i] = 1
+                for i in range(1, e1 + 1):
+                    genome_mapping[chr_name][i] = 1
         coordfile.close()
 
         # counting genome coverage and gaps number
@@ -196,7 +202,7 @@ def do(reference, filenames, nucmer_dir, output_dir, genes_filename, operons_fil
                     cur_gap_size += 1
             if cur_gap_size >= qconfig.min_gap_size:
                 gaps_count += 1
-                print >>gaps_file, i - cur_gap_size, i - 1
+                print >>gaps_file, chr_len - cur_gap_size + 1, chr_len
 
         gaps_file.close()
 
@@ -234,27 +240,38 @@ def do(reference, filenames, nucmer_dir, output_dir, genes_filename, operons_fil
                 feature_container.found_list[i] = 0
                 for contig_id, name in enumerate(sorted_contigs_names):
                     cur_feature_is_found = False
-                    for block in aligned_blocks[name]:
-                        if feature_container.chr_names_dict[region.seqname] != block.seqname:
+                    for cur_block in aligned_blocks[name]:
+                        if feature_container.chr_names_dict[region.seqname] != cur_block.seqname:
                             continue
-                        if region.end <= block.start or block.end <= region.start:
-                            continue
-                        elif block.start <= region.start and region.end <= block.end:
-                            if feature_container.found_list[i] == 2: # already found as partial gene
-                                total_partial -= 1
-                            feature_container.found_list[i] = 1
-                            total_full += 1
-                            id = str(region.id)
-                            if id == 'None':
-                                id = '# ' + str(region.number + 1)
-                            print >>found_file, '%s\t\t%d\t%d' % (id, region.start, region.end)
-                            feature_in_contigs[contig_id] += 1  # inc number of found genes/operons in id-th contig
 
-                            cur_feature_is_found = True
+                        # computing circular genomes
+                        if cur_block.start > cur_block.end:
+                            blocks = [AlignedBlock(seqname=cur_block.seqname, start=cur_block.start, end=region.end + 1),
+                                      AlignedBlock(seqname=cur_block.seqname, start=1, end=cur_block.end)]
+                        else:
+                            blocks = [cur_block]
+
+                        for block in blocks:
+                            if region.end <= block.start or block.end <= region.start:
+                                continue
+                            elif block.start <= region.start and region.end <= block.end:
+                                if feature_container.found_list[i] == 2: # already found as partial gene
+                                    total_partial -= 1
+                                feature_container.found_list[i] = 1
+                                total_full += 1
+                                id = str(region.id)
+                                if id == 'None':
+                                    id = '# ' + str(region.number + 1)
+                                print >>found_file, '%s\t\t%d\t%d' % (id, region.start, region.end)
+                                feature_in_contigs[contig_id] += 1  # inc number of found genes/operons in id-th contig
+
+                                cur_feature_is_found = True
+                                break
+                            elif feature_container.found_list[i] == 0 and min(region.end, block.end) - max(region.start, block.start) >= qconfig.min_gene_overlap:
+                                feature_container.found_list[i] = 2
+                                total_partial += 1
+                        if cur_feature_is_found:
                             break
-                        elif feature_container.found_list[i] == 0 and min(region.end, block.end) - max(region.start, block.start) >= qconfig.min_gene_overlap:
-                            feature_container.found_list[i] = 2
-                            total_partial += 1
                     if cur_feature_is_found:
                         break
 

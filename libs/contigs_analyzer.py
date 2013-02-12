@@ -863,10 +863,9 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
                 else:
                     #Grab next alignment
                     next = sorted_aligns[0]
-                    #print >>plantafile_out, '\t\t\t\tNext Alignment: %s' % next
-                    print >> plantafile_out, '\t\t\t\tNext Alignment: %d %d %s %d %d' % (next.s1, next.e1, next.contig, next.s2, next.e2)
+                    #print >> plantafile_out, '\t\t\t\tNext Alignment: %d %d %s %d %d' % (next.s1, next.e1, next.contig, next.s2, next.e2)
 
-                    if next.s1 >= current.e1:
+                    if next.s1 > current.e1 + 1:
                         #There is a gap beetween this and the next alignment
                         size = next.s1 - current.e1 - 1
                         gaps.append([size, current.contig, next.contig])
@@ -878,14 +877,15 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
                     elif next.e1 <= current.e1:
                         #The next alignment is redundant to the current alignmentt
                         while next.e1 <= current.e1 and sorted_aligns:
-                            total_redundant += next.e1 - next.s1
-                            print >> plantafile_out, '\t\t\t\tThe next contig is redundant. Skipping.'
+                            total_redundant += next.e1 - next.s1 + 1
+                            print >> plantafile_out, '\t\t\t\tThe next alignment (%d %d %s %d %d) is redundant. Skipping.' \
+                                                     % (next.s1, next.e1, next.contig, next.s2, next.e2)
                             redundant.append(current.contig)
+                            sorted_aligns = sorted_aligns[1:]
                             next = sorted_aligns[0]
-                            if next.e1 <= current.e1:
-                                sorted_aligns = sorted_aligns[1:]
                             counter += 1
-                    else:
+
+                    if next.s1 <= current.e1:
                         #This alignment overlaps with the next alignment, negative gap
                         #If contig extends past the region, clip
                         if current.e1 > region[1]:
@@ -897,6 +897,7 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
 
                         #Mark this alignment as negative so overlap region can be ignored
                         negative = True
+                    print >> plantafile_out, '\t\t\t\tNext Alignment: %d %d %s %d %d' % (next.s1, next.e1, next.contig, next.s2, next.e2)
 
                 #Initiate location of SNP on assembly to be first or last base of contig alignment
                 contig_estimate = current.s2
@@ -1057,7 +1058,8 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
         avg = 0.0
     print >> plantafile_out, '\t\tExternal Overlaps Average: %.0f' % avg
 
-    print >> plantafile_out, '\tRedundant Contigs: %d (%d)' % (len(redundant), total_redundant)
+    redundant = list(set(redundant))
+    print >> plantafile_out, '\tContigs with Redundant Alignments: %d (%d)' % (len(redundant), total_redundant)
 
     result = {'avg_idy': avg_idy, 'region_misassemblies': region_misassemblies,
               'misassembled_contigs': misassembled_contigs, 'misassembled_bases': misassembled_bases,

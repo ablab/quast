@@ -72,98 +72,6 @@ class Mappings(object):
         file.close()
 
 
-def process_misassembled_contig(plantafile, coords_filtered_file, aligned_lenths,
-                                i_start, i_finish, contig_len, prev, cur_aligned_length,
-                                sorted_aligns, is_1st_chimeric_half, gap_threshold,
-                                misassembled_contigs, ref_aligns, ref_features):
-    region_misassemblies = []
-    for i in xrange(i_start, i_finish):
-        print >> plantafile, '\t\t\tReal Alignment %d: %s' % (i+1, str(sorted_aligns[i]))
-        #Calculate the distance on the reference between the end of the first alignment and the start of the second
-        gap = sorted_aligns[i+1].s1 - sorted_aligns[i].e1
-        # overlap between positions of alignments in contig
-        overlap_in_contig = 0
-        cur_s = min(sorted_aligns[i].e2, sorted_aligns[i].s2)        
-        cur_e = max(sorted_aligns[i].e2, sorted_aligns[i].s2)
-        next_s = min(sorted_aligns[i+1].e2, sorted_aligns[i+1].s2)        
-        next_e = max(sorted_aligns[i+1].e2, sorted_aligns[i+1].s2)
-        if cur_s < next_s: # current alignment is earlier in contig
-            overlap_in_contig = cur_e - next_s + 1
-        else:              # next alignment is earlier in contig  
-            overlap_in_contig = next_e - cur_s + 1
-
-        #Check strands
-        strand1 = (sorted_aligns[i].s2 > sorted_aligns[i].e2)
-        strand2 = (sorted_aligns[i+1].s2 > sorted_aligns[i+1].e2)
-
-        ref_aligns.setdefault(sorted_aligns[i].ref, []).append(sorted_aligns[i])
-
-        if sorted_aligns[i].ref != sorted_aligns[i+1].ref or abs(gap) > gap_threshold or (strand1 != strand2): # different chromosomes or large gap or different strands
-            #Contig spans chromosomes or there is a gap larger than 1kb
-            #MY: output in coords.filtered
-            print >> coords_filtered_file, str(prev)
-            aligned_lenths.append(cur_aligned_length)
-            prev = sorted_aligns[i+1].clone()
-            cur_aligned_length = prev.len2
-
-            print >> plantafile, '\t\t\t  Extensive misassembly (',
-
-            ref_features.setdefault(sorted_aligns[i].ref, {})[sorted_aligns[i].e1] = 'M'
-            ref_features.setdefault(sorted_aligns[i+1].ref, {})[sorted_aligns[i+1].e1] = 'M'
-
-            if sorted_aligns[i].ref != sorted_aligns[i+1].ref:
-                region_misassemblies += [Misassembly.TRANSLOCATION]
-                print >> plantafile, 'translocation',
-            elif abs(gap) > gap_threshold:
-                region_misassemblies += [Misassembly.RELOCATION]
-                print >> plantafile, 'relocation',
-            elif strand1 != strand2:
-                region_misassemblies += [Misassembly.INVERSION]
-                print >> plantafile, 'inversion',
-            misassembled_contigs[sorted_aligns[i].contig] = contig_len
-
-            print >> plantafile, ') between these two alignments'
-
-        else:
-            if gap < 0:
-                #There is overlap between the two alignments, a local misassembly
-                print >> plantafile, '\t\t\t  Overlap between these two alignments (local misassembly)'
-            else:
-                #There is a small gap between the two alignments, a local misassembly
-                print >> plantafile, '\t\t\t  Gap in alignment between these two alignments (local misassembly)'
-
-            region_misassemblies += [Misassembly.LOCAL]
-
-            #MY: output in coords.filtered (separate output for each alignment even if it is just a local misassembly)
-            print >> coords_filtered_file, str(prev)
-            prev = sorted_aligns[i+1].clone()
-
-#           uncomment following lines to disable breaking by local misassemblies
-#            #MY: output in coords.filtered (merge alignments if it is just a local misassembly)
-#            prev.e1 = sorted_aligns[i+1].e1 # [E1]
-#            prev.s2 = 0 # [S2]
-#            prev.e2 = 0 # [E2]
-#            prev.len1 = prev.e1 - prev.s1 # [LEN1]
-#            prev.len2 += sorted_aligns[i+1].len2 - (overlap_in_contig if overlap_in_contig > 0 else 0) # [LEN2]
-
-            if qconfig.strict_NA:
-                aligned_lenths.append(cur_aligned_length)
-                cur_aligned_length = prev.len2
-            else:
-                cur_aligned_length += sorted_aligns[i+1].len2 - (overlap_in_contig if overlap_in_contig > 0 else 0)
-
-    #MY: output in coords.filtered
-    if not is_1st_chimeric_half:
-        print >> coords_filtered_file, str(prev)
-        aligned_lenths.append(cur_aligned_length)
-
-    #Record the very last alignment
-    i = i_finish
-    print >> plantafile, '\t\t\tReal Alignment %d: %s' % (i+1, str(sorted_aligns[i]))
-    ref_aligns.setdefault(sorted_aligns[i].ref, []).append(sorted_aligns[i])
-
-    return cur_aligned_length, prev.clone(), region_misassemblies
-
 def clear_files(filename, nucmerfilename):
     if qconfig.debug:
         return
@@ -223,8 +131,8 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
     # Checking if there are existing previous nucmer alignments.
     # If they exist, using them to save time.
     using_existing_alignments = False
-    if (os.path.isfile(nucmer_successful_check_filename) and os.path.isfile(coords_filename)):
-        #and os.path.isfile(nucmer_report_filename)):
+    if os.path.isfile(nucmer_successful_check_filename) and os.path.isfile(coords_filename) \
+        and os.path.isfile(show_snps_filename):
 
         successful_check_content = open(nucmer_successful_check_filename).read().split('\n')
         if len(successful_check_content) > 2 and successful_check_content[1].strip() == str(qconfig.min_contig):
@@ -350,6 +258,102 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
         aligns.setdefault(mapping.contig, []).append(mapping)
     avg_idy = sum_idy / num_idy if num_idy else 0
 
+    #### auxiliary functions ####
+    def distance_between_alignments(align1, align2):
+        '''
+        returns distance (in contig) between two alignments
+        '''
+        align1_s = min(align1.e2, align1.s2)
+        align1_e = max(align1.e2, align1.s2)
+        align2_s = min(align2.e2, align2.s2)
+        align2_e = max(align2.e2, align2.s2)
+        if align1_s < align2_s: # alignment 1 is earlier in contig
+            return align2_s - align1_e - 1
+        else:                   # alignment 2 is earlier in contig
+            return align1_s - align2_e - 1
+
+
+    def process_misassembled_contig(aligned_lenths, i_start, i_finish, contig_len, prev, cur_aligned_length,
+                                    sorted_aligns, is_1st_chimeric_half, misassembled_contigs, ref_aligns, ref_features):
+        region_misassemblies = []
+        for i in xrange(i_start, i_finish):
+            print >> plantafile_out, '\t\t\tReal Alignment %d: %s' % (i+1, str(sorted_aligns[i]))
+            #Calculate inconsistency between distances on the reference and on the contig
+            distance_on_contig = distance_between_alignments(sorted_aligns[i], sorted_aligns[i+1])
+            distance_on_reference = sorted_aligns[i+1].s1 - sorted_aligns[i].e1 - 1
+            inconsistency = distance_on_reference - distance_on_contig
+
+            #Check strands
+            strand1 = (sorted_aligns[i].s2 > sorted_aligns[i].e2)
+            strand2 = (sorted_aligns[i+1].s2 > sorted_aligns[i+1].e2)
+
+            ref_aligns.setdefault(sorted_aligns[i].ref, []).append(sorted_aligns[i])
+
+            # different chromosomes or large inconsistency (a gap or an overlap) or different strands
+            if sorted_aligns[i].ref != sorted_aligns[i+1].ref or abs(inconsistency) > smgap or (strand1 != strand2):
+                print >> coords_filtered_file, str(prev)
+                aligned_lenths.append(cur_aligned_length)
+                prev = sorted_aligns[i+1].clone()
+                cur_aligned_length = prev.len2
+
+                print >> plantafile_out, '\t\t\t  Extensive misassembly (',
+
+                ref_features.setdefault(sorted_aligns[i].ref, {})[sorted_aligns[i].e1] = 'M'
+                ref_features.setdefault(sorted_aligns[i+1].ref, {})[sorted_aligns[i+1].e1] = 'M'
+
+                if sorted_aligns[i].ref != sorted_aligns[i+1].ref:
+                    region_misassemblies += [Misassembly.TRANSLOCATION]
+                    print >> plantafile_out, 'translocation',
+                elif abs(inconsistency) > smgap:
+                    region_misassemblies += [Misassembly.RELOCATION]
+                    print >> plantafile_out, 'relocation, size =', inconsistency,
+                elif strand1 != strand2:
+                    region_misassemblies += [Misassembly.INVERSION]
+                    print >> plantafile_out, 'inversion',
+                misassembled_contigs[sorted_aligns[i].contig] = contig_len
+
+                print >> plantafile_out, ') between these two alignments'
+            else:
+                if inconsistency < 0:
+                    #There is an overlap between the two alignments, a local misassembly
+                    print >> plantafile_out, '\t\t\t  Overlap between these two alignments (local misassembly).',
+                else:
+                    #There is a small gap between the two alignments, a local misassembly
+                    print >> plantafile_out, '\t\t\t  Gap between these two alignments (local misassembly).',
+                print >> plantafile_out, 'Distance on contig =', distance_on_contig, ', distance on reference =', distance_on_reference
+
+                region_misassemblies += [Misassembly.LOCAL]
+
+                #MY: output in coords.filtered (separate output for each alignment even if it is just a local misassembly)
+                print >> coords_filtered_file, str(prev)
+                prev = sorted_aligns[i+1].clone()
+
+                #           uncomment the following lines to disable breaking by local misassemblies
+                #            #MY: output in coords.filtered (merge alignments if it is just a local misassembly)
+                #            prev.e1 = sorted_aligns[i+1].e1 # [E1]
+                #            prev.s2 = 0 # [S2]
+                #            prev.e2 = 0 # [E2]
+                #            prev.len1 = prev.e1 - prev.s1 # [LEN1]
+                #            prev.len2 += sorted_aligns[i+1].len2 - (overlap_in_contig if overlap_in_contig > 0 else 0) # [LEN2]
+
+                if qconfig.strict_NA:
+                    aligned_lenths.append(cur_aligned_length)
+                    cur_aligned_length = 0
+                cur_aligned_length += prev.len2 - (-distance_on_contig if distance_on_contig < 0 else 0)
+
+        #MY: output in coords.filtered
+        if not is_1st_chimeric_half:
+            print >> coords_filtered_file, str(prev)
+            aligned_lenths.append(cur_aligned_length)
+
+        #Record the very last alignment
+        i = i_finish
+        print >> plantafile_out, '\t\t\tReal Alignment %d: %s' % (i+1, str(sorted_aligns[i]))
+        ref_aligns.setdefault(sorted_aligns[i].ref, []).append(sorted_aligns[i])
+
+        return cur_aligned_length, prev.clone(), region_misassemblies
+    #### end of aux. functions ###
+
     # Loading the assembly contigs
     print >> plantafile_out, 'Loading Assembly...'
     assembly = {}
@@ -425,10 +429,6 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
     for contig, seq in assembly.iteritems():
         #Recording contig stats
         ctg_len = len(seq)
-        if contig in assembly_ns:
-            ns = len(assembly_ns[contig])
-        else:
-            ns = 0
         print >> plantafile_out, '\tCONTIG: %s (%dbp)' % (contig, ctg_len)
         #Check if this contig aligned to the reference
         if contig in aligns:
@@ -647,13 +647,14 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
                     sorted_num = len(sorted_aligns) - 1
 
                     #MY: computing cyclic references
-                    if cyclic and (sorted_aligns[0].s1 - 1 + total_reg_len - sorted_aligns[sorted_num].e1 <= ns + smgap): # fake misassembly
+                    if cyclic and (sorted_aligns[0].s1 - 1 + total_reg_len - sorted_aligns[sorted_num].e1 -
+                                   distance_between_alignments(sorted_aligns[sorted_num], sorted_aligns[0]) <= smgap): # fake misassembly
 
                         # find fake alignment between "first" blocks and "last" blocks
                         fake_misassembly_index = 0
                         for i in xrange(sorted_num):
                             gap = sorted_aligns[i + 1].s1 - sorted_aligns[i].e1
-                            if gap > ns + smgap:
+                            if gap > distance_between_alignments(sorted_aligns[i], sorted_aligns[i + 1]) + smgap:
                                 fake_misassembly_index = i + 1
                                 break
 
@@ -662,9 +663,9 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
                         cur_aligned_length = prev.len2
 
                         # process "last half" of blocks
-                        cur_aligned_length, prev, x = process_misassembled_contig(plantafile_out, coords_filtered_file,
+                        cur_aligned_length, prev, x = process_misassembled_contig(
                             aligned_lengths, fake_misassembly_index, sorted_num, len(assembly[contig]), prev,
-                            cur_aligned_length, sorted_aligns, True, ns + smgap, misassembled_contigs, ref_aligns, ref_features)
+                            cur_aligned_length, sorted_aligns, True, misassembled_contigs, ref_aligns, ref_features)
                         region_misassemblies += x
                         print >> plantafile_out, '\t\t\t  Fake misassembly (caused by linear representation of circular genome) between these two alignments'
 
@@ -677,18 +678,18 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
                         cur_aligned_length += sorted_aligns[0].len2
 
                         # process "first half" of blocks
-                        cur_aligned_length, prev, x = process_misassembled_contig(plantafile_out, coords_filtered_file,
+                        cur_aligned_length, prev, x = process_misassembled_contig(
                             aligned_lengths, 0, fake_misassembly_index - 1, len(assembly[contig]), prev, cur_aligned_length,
-                            sorted_aligns, False, ns + smgap, misassembled_contigs, ref_aligns, ref_features)
+                            sorted_aligns, False, misassembled_contigs, ref_aligns, ref_features)
                         region_misassemblies += x
 
                     else:
                         #MY: for merging local misassemblies
                         prev = sorted_aligns[0].clone()
                         cur_aligned_length = prev.len2
-                        cur_aligned_length, prev, x = process_misassembled_contig(plantafile_out, coords_filtered_file,
+                        cur_aligned_length, prev, x = process_misassembled_contig(
                             aligned_lengths, 0, sorted_num, len(assembly[contig]), prev, cur_aligned_length,
-                            sorted_aligns, False, ns + smgap, misassembled_contigs, ref_aligns, ref_features)
+                            sorted_aligns, False, misassembled_contigs, ref_aligns, ref_features)
                         region_misassemblies += x
 
         else:

@@ -110,7 +110,6 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
     plantafile_err = open(logfilename_err, 'w')
 
     log.info('  ' + id_to_str(id) + 'Logging to files ' + logfilename_out + ' and ' + os.path.basename(logfilename_err) + '...')
-    # reverse complementarity is not an extensive misassemble
     maxun = 10
     epsilon = 0.99
     smgap = 1000
@@ -324,12 +323,12 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
 
                 region_misassemblies += [Misassembly.LOCAL]
 
-                #MY: output in coords.filtered (separate output for each alignment even if it is just a local misassembly)
+                # output in coords.filtered (separate output for each alignment even if it is just a local misassembly)
                 print >> coords_filtered_file, str(prev)
                 prev = sorted_aligns[i+1].clone()
 
-                #           uncomment the following lines to disable breaking by local misassemblies
-                #            #MY: output in coords.filtered (merge alignments if it is just a local misassembly)
+                ###          uncomment the following lines to disable breaking by local misassemblies
+                #            # output in coords.filtered (merge alignments if it is just a local misassembly)
                 #            prev.e1 = sorted_aligns[i+1].e1 # [E1]
                 #            prev.s2 = 0 # [S2]
                 #            prev.e2 = 0 # [E2]
@@ -341,7 +340,6 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
                     cur_aligned_length = 0
                 cur_aligned_length += prev.len2 - (-distance_on_contig if distance_on_contig < 0 else 0)
 
-        #MY: output in coords.filtered
         if not is_1st_chimeric_half:
             print >> coords_filtered_file, str(prev)
             aligned_lenths.append(cur_aligned_length)
@@ -533,8 +531,7 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
                                 real_aligns = real_aligns[:-1]
                             real_groups[cur_group].append(sorted_aligns[i])
                         else:
-                            print >> plantafile_out, '\t\tSkipping [%d][%d] redundant alignment %d %s' % (
-                            sorted_aligns[i].s1, sorted_aligns[i].e1, i, str(sorted_aligns[i]))
+                            print >> plantafile_out, '\t\tSkipping redundant alignment %d %s' % (i, str(sorted_aligns[i]))
                             # Kolya: removed redundant code about $ref (for gff AFAIU)
 
                 # choose appropriate alignments (to minimize total size of contig alignment and reduce # misassemblies
@@ -585,7 +582,6 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
 
                 if len(real_aligns) == 1:
                     #There is only one alignment of this contig to the reference
-                    #MY: output in coords.filtered
                     print >> coords_filtered_file, str(real_aligns[0])
                     aligned_lengths.append(real_aligns[0].len2)
 
@@ -619,7 +615,7 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
                     print >> plantafile_out, '\t\tThis contig is misassembled. %d total aligns.' % num_aligns
                     #Reset real alignments and sum of real alignments
                     #Sort real alignments by position on the reference
-                    sorted_aligns = sorted(real_aligns, key=lambda x: (x.ref, x.s1))
+                    sorted_aligns = sorted(real_aligns, key=lambda x: (x.ref, x.s1, x.e1))
 
                     # Counting misassembled contigs which are mostly partially unaligned
                     all_aligns_len = sum(x.len2 for x in sorted_aligns)
@@ -646,7 +642,7 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
 
                     sorted_num = len(sorted_aligns) - 1
 
-                    #MY: computing cyclic references
+                    # computing cyclic references
                     if cyclic and (sorted_aligns[0].s1 - 1 + total_reg_len - sorted_aligns[sorted_num].e1 -
                                    distance_between_alignments(sorted_aligns[sorted_num], sorted_aligns[0]) <= smgap): # fake misassembly
 
@@ -658,7 +654,7 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
                                 fake_misassembly_index = i + 1
                                 break
 
-                        #MY: for merging local misassemblies
+                        # for merging local misassemblies
                         prev = sorted_aligns[fake_misassembly_index].clone()
                         cur_aligned_length = prev.len2
 
@@ -684,7 +680,7 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
                         region_misassemblies += x
 
                     else:
-                        #MY: for merging local misassemblies
+                        # for merging local misassemblies
                         prev = sorted_aligns[0].clone()
                         cur_aligned_length = prev.len2
                         cur_aligned_length, prev, x = process_misassembled_contig(

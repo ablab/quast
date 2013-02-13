@@ -293,7 +293,7 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
                 print >> coords_filtered_file, str(prev)
                 aligned_lenths.append(cur_aligned_length)
                 prev = sorted_aligns[i+1].clone()
-                cur_aligned_length = prev.len2
+                cur_aligned_length = prev.len2 - (-distance_on_contig if distance_on_contig < 0 else 0)
 
                 print >> plantafile_out, '\t\t\t  Extensive misassembly (',
 
@@ -373,12 +373,25 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
 
     #Loading the SNP calls
     print >> plantafile_out, 'Loading SNPs...'
+
+    class SNP():
+        def __init__(self, ref=None, ctg=None, ref_pos=None, ctg_pos=None, ref_nucl=None, ctg_nucl=None):
+            self.ref = ref
+            self.ctg = ctg
+            self.ref_pos = ref_pos
+            self.ctg_pos = ctg_pos
+            self.ref_nucl = ref_nucl
+            self.ctg_nucl = ctg_nucl
+            self.type = 'I' if self.ref_nucl == '.' else ('D' if ctg_nucl == '.' else 'S')
+
     snps = {}
-    snp_locs = {}
+    prev_line = None
     for line in open(show_snps_filename):
         #print "$line";
         line = line.split()
         if not line[0].isdigit():
+            continue
+        if prev_line and line == prev_line:
             continue
         ref = line[10]
         ctg = line[11]
@@ -386,9 +399,12 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
         loc = int(line[3]) # Kolya: same as above
 
         # if (! exists $line[11]) { die "Malformed line in SNP file.  Please check that show-snps has completed succesfully.\n$line\n[$line[9]][$line[10]][$line[11]]\n"; }
-
-        snps.setdefault(ref, {}).setdefault(ctg, {})[pos] = 'I' if line[1] == '.' else ('D' if line[2] == '.' else 'S')
-        snp_locs.setdefault(ref, {}).setdefault(ctg, {})[pos] = loc
+        if pos in snps.setdefault(ref, {}).setdefault(ctg, {}):
+            snps.setdefault(ref, {}).setdefault(ctg, {})[pos].append(SNP(ref=ref, ctg=ctg, ref_pos=pos, ctg_pos=loc, ref_nucl=line[1], ctg_nucl=line[2]))
+        else:
+            snps.setdefault(ref, {}).setdefault(ctg, {})[pos] = [SNP(ref=ref, ctg=ctg, ref_pos=pos, ctg_pos=loc, ref_nucl=line[1], ctg_nucl=line[2])]
+        prev_line = line
+    used_snps_file = open(used_snps_filename, 'w')
 
     # Loading the regions (if any)
     regions = {}
@@ -702,6 +718,7 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
     unaligned_file.close()
 
     print >> plantafile_out, 'Analyzing coverage...'
+    print >> plantafile_out, '\tWriting SNPs into', used_snps_filename
 
     region_covered = 0
     region_ambig = 0
@@ -713,6 +730,11 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
     redundant = []
     snip_left = 0
     snip_right = 0
+
+    # for counting short and long indels
+    indels_list = []
+    prev_snp = None
+    cur_indel = 0
 
     #Go through each header in reference file
     for ref, value in regions.iteritems():
@@ -740,7 +762,7 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
                 print >> plantafile_out, '\t\t\tThis align occurs before our region of interest, skipping: %s' % skipped
 
             if not sorted_aligns:
-                print >> plantafile_out, '\t\t\tThere are no more aligns.  Skipping this region.'
+                print >> plantafile_out, '\t\t\tThere are no more aligns. Skipping this region.'
                 continue
 
             #If region starts in a contig, ignore portion of contig prior to region start
@@ -752,10 +774,11 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
                 for z in xrange(sorted_aligns[0].s1, region[0] + 1):
                     if (ref in snps) and (sorted_aligns[0].contig in snps[ref]) and (z in snps[ref][sorted_aligns[0].contig]) and \
                        (ref in ref_features) and (z in ref_features[ref]) and (ref_features[ref][z] != 'A'): # Kolya: never happened before because of bug: z -> i
-                        if snps[ref][sorted_aligns[0].contig][z] == 'I':
-                            snip_left += 1
-                        if snps[ref][sorted_aligns[0].contig][z] == 'D':
-                            snip_left -= 1
+                        for cur_snp in snps[ref][sorted_aligns[0].contig][z]:
+                            if cur_snp.type == 'I':
+                                snip_left += 1
+                            elif cur_snp.type == 'D':
+                                snip_left -= 1
 
                 #Modify alignment to start at region
                 print >> plantafile_out, '\t\t\t\tMoving reference start from %d to %d' % (sorted_aligns[0].s1, region[0])
@@ -806,10 +829,11 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
                     #Account for any indels that may be present
                     for z in xrange(sorted_aligns[0].s1, current.e1 + 2):
                         if (ref in snps) and (sorted_aligns[0].contig in snps[ref]) and (z in snps[ref][sorted_aligns[0].contig]):
-                            if snps[ref][sorted_aligns[0].contig][z] == 'I':
-                                snip_left += 1
-                            if snps[ref][sorted_aligns[0].contig][z] == 'D':
-                                snip_left -= 1
+                            for cur_snp in snps[ref][sorted_aligns[0].contig][z]:
+                                if cur_snp.type == 'I':
+                                    snip_left += 1
+                                elif cur_snp.type == 'D':
+                                    snip_left -= 1
                     #Modifying position in contig of next alignment
                     sorted_aligns[0].s1 = current.e1 + 1
                     if sorted_aligns[0].s2 < sorted_aligns[0].e2:
@@ -865,16 +889,7 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
                     next = sorted_aligns[0]
                     #print >> plantafile_out, '\t\t\t\tNext Alignment: %d %d %s %d %d' % (next.s1, next.e1, next.contig, next.s2, next.e2)
 
-                    if next.s1 > current.e1 + 1:
-                        #There is a gap beetween this and the next alignment
-                        size = next.s1 - current.e1 - 1
-                        gaps.append([size, current.contig, next.contig])
-                        print >> plantafile_out, '\t\t\t\tGap between this and next alignment: %d to %d (%d bp)' % (current.e1, next.s1, size)
-                        #Record ambiguous bases in current gap
-                        for i in xrange(current.e1, next.s1):
-                            if (ref in ref_features) and (i in ref_features[ref]) and (ref_features[ref][i] == 'A'):
-                                region_ambig += 1
-                    elif next.e1 <= current.e1:
+                    if next.e1 <= current.e1:
                         #The next alignment is redundant to the current alignmentt
                         while next.e1 <= current.e1 and sorted_aligns:
                             total_redundant += next.e1 - next.s1 + 1
@@ -885,7 +900,16 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
                             next = sorted_aligns[0]
                             counter += 1
 
-                    if next.s1 <= current.e1:
+                    if next.s1 > current.e1 + 1:
+                        #There is a gap beetween this and the next alignment
+                        size = next.s1 - current.e1 - 1
+                        gaps.append([size, current.contig, next.contig])
+                        print >> plantafile_out, '\t\t\t\tGap between this and next alignment: %d to %d (%d bp)' % (current.e1, next.s1, size)
+                        #Record ambiguous bases in current gap
+                        for i in xrange(current.e1, next.s1):
+                            if (ref in ref_features) and (i in ref_features[ref]) and (ref_features[ref][i] == 'A'):
+                                region_ambig += 1
+                    elif next.s1 <= current.e1:
                         #This alignment overlaps with the next alignment, negative gap
                         #If contig extends past the region, clip
                         if current.e1 > region[1]:
@@ -893,7 +917,7 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
                         #Record gap
                         size = next.s1 - current.e1
                         neg_gaps.append([size, current.contig, next.contig])
-                        print >>plantafile_out, '\t\t\t\tNegative gap between this and next alignment: %dbp %s to %s'  % (size, current.contig, next.contig)
+                        print >>plantafile_out, '\t\t\t\tNegative gap (overlap) between this and next alignment: %d to %d (%d bp)' % (current.e1, next.s1, size)
 
                         #Mark this alignment as negative so overlap region can be ignored
                         negative = True
@@ -916,37 +940,60 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
 
                     #If there is a SNP, and no alternative alignments over this base, record SNPs
                     if (ref in snps) and (current.contig in snps[ref]) and (i in snps[ref][current.contig]):
-                        print >> plantafile_out, '\t\t\t\tSNP: %s, %s, %d, %s, %d, %d' % (ref, current.contig, i, snps[ref][current.contig][i], contig_estimate, snp_locs[ref][current.contig][i])
+                        cur_snps = snps[ref][current.contig][i]
+                        # sorting by pos in contig
+                        if current.s2 < current.e2:
+                            cur_snps = sorted(cur_snps, key=lambda x: x.ctg_pos)
+                        else: # for reverse complement
+                            cur_snps = sorted(cur_snps, key=lambda x: x.ctg_pos, reverse=True)
 
-                        #Capture SNP base
-                        snp = snps[ref][current.contig][i]
+                        for cur_snp in cur_snps:
+                            #print >> plantafile_out, '\t\t\t\tSNP: %s, reference coord: %d, contig coord: %d, estimated contig coord: %d' % \
+                            #                        (cur_snp.type, i, cur_snp.ctg_pos, contig_estimate)
 
-                        #Check that there are not multiple alignments at this location
-                        if (ref in ref_features) and (i in ref_features[ref]):
-                            print >> plantafile_out, '\t\t\t\t\tERROR: SNP at a postion where there are multiple alignments (%s).  Skipping.\n' % ref_features[ref][i]
-                            if current.s2 < current.e2: contig_estimate += 1
-                            else: contig_estimate -= 1
-                            continue
-                        #Check that the position of the SNP in the contig is close to the position of this SNP
-                        elif abs(contig_estimate - snp_locs[ref][current.contig][i]) > 50:
-                            print >> plantafile_out, '\t\t\t\t\tERROR: SNP position in contig was off by %dbp! (%d vs %d)' % (abs(contig_estimate - snp_locs[ref][current.contig][i]), contig_estimate, snp_locs[ref][current.contig][i])
-                            if current.s2 < current.e2: contig_estimate += 1
-                            else: contig_estimate -= 1
-                            continue
+                            #Capture SNP base
+                            snp = cur_snp.type
 
-                        #If SNP is an insertion, record
-                        if snp == 'I':
-                            region_insertion += 1
-                            if current.s2 < current.e2: contig_estimate += 1
-                            else: contig_estimate -= 1
-                        #If SNP is a deletion, record
-                        if snp == 'D':
-                            region_deletion += 1
-                            if current.s2 < current.e2: contig_estimate -= 1
-                            else: contig_estimate += 1
-                        #If SNP is a mismatch, record
-                        if snp == 'S':
-                            region_snp += 1
+                            #Check that there are not multiple alignments at this location
+                            ### Alex: obsolete, we changed algorithm for ambiguous contigs
+                            #if (ref in ref_features) and (i in ref_features[ref]):
+                            #    print >> plantafile_out, '\t\t\t\t\tERROR: SNP at a position where there are multiple alignments (%s).  Skipping.\n' % ref_features[ref][i]
+                            #    if current.s2 < current.e2: contig_estimate += 1
+                            #    else: contig_estimate -= 1
+                            #    continue
+                            #Check that the position of the SNP in the contig is close to the position of this SNP
+                            if abs(contig_estimate - cur_snp.ctg_pos) > 2:
+                                #print >> plantafile_out, '\t\t\t\t\tERROR: SNP position in contig was off by %d bp! (%d vs %d)' \
+                                #         % (abs(contig_estimate - cur_snp.ctg_pos), contig_estimate, cur_snp.ctg_pos)
+                                continue
+
+                            print >> used_snps_file, '%s\t%s\t%d\t%s\t%s\t%d' % (ref, current.contig, cur_snp.ref_pos,
+                                                                                 cur_snp.ref_nucl, cur_snp.ctg_nucl, cur_snp.ctg_pos)
+
+                            #If SNP is an insertion, record
+                            if snp == 'I':
+                                region_insertion += 1
+                                if current.s2 < current.e2: contig_estimate += 1
+                                else: contig_estimate -= 1
+                            #If SNP is a deletion, record
+                            if snp == 'D':
+                                region_deletion += 1
+                                if current.s2 < current.e2: contig_estimate -= 1
+                                else: contig_estimate += 1
+                            #If SNP is a mismatch, record
+                            if snp == 'S':
+                                region_snp += 1
+
+                            if cur_snp.type == 'D' or cur_snp.type == 'I':
+                                if prev_snp and (prev_snp.ref == cur_snp.ref) and (prev_snp.ctg == cur_snp.ctg) and \
+                                    ((cur_snp.type == 'D' and (prev_snp.ref_pos == cur_snp.ref_pos - 1) and (prev_snp.ctg_pos == cur_snp.ctg_pos)) or
+                                    (cur_snp.type == 'I' and (prev_snp.ctg_pos == cur_snp.ctg_pos - 1) and (prev_snp.ref_pos == cur_snp.ref_pos))):
+                                    cur_indel += 1
+                                else:
+                                    if cur_indel:
+                                        indels_list.append(cur_indel)
+                                    cur_indel = 1
+                                prev_snp = cur_snp
 
                     if current.s2 < current.e2: contig_estimate += 1
                     else: contig_estimate -= 1
@@ -964,6 +1011,11 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
                             region_ambig += 1
                 snip_left = 0
                 snip_right = 0
+
+                if cur_indel:
+                    indels_list.append(cur_indel)
+                prev_snp = None
+                cur_indel = 0
 
     # calulating SNPs and Subs. error (per 100 kbp)
     ##### getting results from Nucmer's dnadiff
@@ -987,6 +1039,9 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
     SNPs = region_snp
     indels = region_insertion + region_deletion
     total_aligned_bases = region_covered
+    print >> plantafile_out, 'Analysis is finished!'
+    print >> plantafile_out, 'Founded SNPs were written into', used_snps_filename
+    print >> plantafile_out, '\nResults:'
 
     print >> plantafile_out, '\tLocal Misassemblies: %d' % region_misassemblies.count(Misassembly.LOCAL)
     print >> plantafile_out, '\tMisassemblies: %d' % (len(region_misassemblies) - region_misassemblies.count(Misassembly.LOCAL))
@@ -1014,11 +1069,12 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
 
     print >> plantafile_out, ''
     print >> plantafile_out, '\tCovered Bases: %d' % region_covered
-    print >> plantafile_out, '\tAmbiguous Bases (e.g. N\'s): %d' % region_ambig
+    #print >> plantafile_out, '\tAmbiguous Bases (e.g. N\'s): %d' % region_ambig
     print >> plantafile_out, ''
     print >> plantafile_out, '\tSNPs: %d' % region_snp
     print >> plantafile_out, '\tInsertions: %d' % region_insertion
     print >> plantafile_out, '\tDeletions: %d' % region_deletion
+    #print >> plantafile_out, '\tList of indels lengths:', indels_list
     print >> plantafile_out, ''
     print >> plantafile_out, '\tPositive Gaps: %d' % len(gaps)
     internal = 0
@@ -1065,7 +1121,7 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
               'misassembled_contigs': misassembled_contigs, 'misassembled_bases': misassembled_bases,
               'unaligned': unaligned, 'partially_unaligned': partially_unaligned,
               'partially_unaligned_bases': partially_unaligned_bases, 'fully_unaligned_bases': fully_unaligned_bases,
-              'ambiguous_contigs': ambiguous_contigs, 'ambiguous_contigs_extra_bases': ambiguous_contigs_extra_bases, 'SNPs': SNPs, 'indels': indels,
+              'ambiguous_contigs': ambiguous_contigs, 'ambiguous_contigs_extra_bases': ambiguous_contigs_extra_bases, 'SNPs': SNPs, 'indels_list': indels_list,
               'total_aligned_bases': total_aligned_bases,
               'partially_unaligned_with_misassembly': partially_unaligned_with_misassembly,
               'partially_unaligned_with_significant_parts': partially_unaligned_with_significant_parts}
@@ -1077,6 +1133,7 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
 
     plantafile_out.close()
     plantafile_err.close()
+    used_snps_file.close()
     log.info('  ' + id_to_str(id) + 'Analysis is finished.')
     return NucmerStatus.OK, result, aligned_lengths
 
@@ -1159,7 +1216,7 @@ def do(reference, filenames, cyclic, output_dir):
         ambiguous_contigs = result['ambiguous_contigs']
         ambiguous_contigs_extra_bases = result['ambiguous_contigs_extra_bases']
         SNPs = result['SNPs']
-        indels = result['indels']
+        indels_list = result['indels_list']
         total_aligned_bases = result['total_aligned_bases']
         partially_unaligned_with_misassembly = result['partially_unaligned_with_misassembly']
         partially_unaligned_with_significant_parts = result['partially_unaligned_with_significant_parts']
@@ -1174,10 +1231,16 @@ def do(reference, filenames, cyclic, output_dir):
         report.add_field(reporting.Fields.AMBIGUOUS, ambiguous_contigs)
         report.add_field(reporting.Fields.AMBIGUOUSEXTRABASES, ambiguous_contigs_extra_bases)
         report.add_field(reporting.Fields.MISMATCHES, SNPs)
-        report.add_field(reporting.Fields.INDELS, indels)
+        # different types of indels:
+        report.add_field(reporting.Fields.INDELS, len(indels_list))
+        report.add_field(reporting.Fields.INDELSBASES, sum(indels_list))
+        report.add_field(reporting.Fields.MIS_SHORT_INDELS, len([i for i in indels_list if i <= qconfig.SHORT_INDEL_THRESHOLD]))
+        report.add_field(reporting.Fields.MIS_LONG_INDELS, len([i for i in indels_list if i > qconfig.SHORT_INDEL_THRESHOLD]))
+
         if total_aligned_bases:
             report.add_field(reporting.Fields.SUBSERROR, "%.2f" % (float(SNPs) * 100000.0 / float(total_aligned_bases)))
-            report.add_field(reporting.Fields.INDELSERROR, "%.2f" % (float(indels) * 100000.0 / float(total_aligned_bases)))
+            report.add_field(reporting.Fields.INDELSERROR, "%.2f" % (float(report.get_field(reporting.Fields.INDELS))
+                                                                     * 100000.0 / float(total_aligned_bases)))
 
         # for misassemblies report:
         report.add_field(reporting.Fields.MIS_ALL_EXTENSIVE, len(region_misassemblies) - region_misassemblies.count(Misassembly.LOCAL))

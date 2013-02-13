@@ -56,6 +56,9 @@ list_of_broken_scaffolds = []
 
 # other settings. Can't be changed by command-line options
 
+# for separating indels into short and long ones
+SHORT_INDEL_THRESHOLD = 5
+
 # for parallelization of contig analyzer
 DEFAULT_MAX_THREADS = 4  # this value is used if QUAST fails to determine number of CPUs
 assemblies_num = 1

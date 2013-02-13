@@ -56,6 +56,7 @@ class Fields:
     GENEMARK = ('# predicted genes (>= %d bp)', tuple(qconfig.genes_lengths))
     MISMATCHES = '# mismatches'
     INDELS = '# indels'
+    INDELSBASES = 'Indels length'
     SUBSERROR = '# mismatches per 100 kbp'
     INDELSERROR = '# indels per 100 kbp'
     GC = 'GC (%)'
@@ -87,10 +88,13 @@ class Fields:
     MIS_EXTENSIVE_CONTIGS = '# misassembled contigs'
     MIS_EXTENSIVE_BASES = 'Misassembled contigs length'
     MIS_LOCAL = '# local misassemblies'
+    MIS_SHORT_INDELS = '# short indels (<= %d)' % qconfig.SHORT_INDEL_THRESHOLD
+    MIS_LONG_INDELS = '# long indels (> %d)' % qconfig.SHORT_INDEL_THRESHOLD
 
     # content and order of metrics in DETAILED MISASSEMBLIES REPORT (<quast_output_dir>/contigs_reports/misassemblies_report.txt, .tex, .tsv)
     misassemblies_order = [NAME, MIS_ALL_EXTENSIVE, MIS_RELOCATION, MIS_TRANSLOCATION, MIS_INVERTION,
-                           MIS_EXTENSIVE_CONTIGS, MIS_EXTENSIVE_BASES, MIS_LOCAL, MISMATCHES, INDELS]
+                           MIS_EXTENSIVE_CONTIGS, MIS_EXTENSIVE_BASES, MIS_LOCAL, MISMATCHES,
+                           INDELS, INDELSBASES, MIS_SHORT_INDELS, MIS_LONG_INDELS]
 
     ### additional list of metrics for detailed unaligned report
     UNALIGNED_FULL_CNTGS = '# fully unaligned contigs'
@@ -182,14 +186,15 @@ class Fields:
     quality_dict = {
         Quality.MORE_IS_BETTER:
             [LARGCONTIG, TOTALLEN, TOTALLENS, N50, NG50, N75, NG75, NA50, NGA50, NA75, NGA75, LARGALIGN,
-             MAPPEDGENOME, GENES, OPERONS, GENEMARKUNIQUE, GENEMARK,],
+             MAPPEDGENOME, GENES, OPERONS, GENEMARKUNIQUE, GENEMARK, AVGIDY],
         Quality.LESS_IS_BETTER:
             [NUMCONTIGS, CONTIGS, L50, LG50, L75, LG75,
-             MISLOCAL, MISASSEMBL, MISCONTIGS, MISCONTIGSBASES, UNALIGNED, UNALIGNEDBASES, #AMBIGUOUS, AMBIGUOUSBASES,
+             MISLOCAL, MISASSEMBL, MISCONTIGS, MISCONTIGSBASES, UNALIGNED, UNALIGNEDBASES, AMBIGUOUS, AMBIGUOUSEXTRABASES,
              UNCALLED, UNCALLED_PERCENT,
-             LA50, LGA50, LA75, LGA75, DUPLICATION_RATIO, INDELS, INDELSERROR, MISMATCHES, SUBSERROR,],
+             LA50, LGA50, LA75, LGA75, DUPLICATION_RATIO, INDELS, INDELSERROR, MISMATCHES, SUBSERROR,
+             MIS_SHORT_INDELS, MIS_LONG_INDELS, INDELSBASES],
         Quality.EQUAL:
-            [REFLEN, ESTREFLEN, GC, REFGC, AVGIDY],
+            [REFLEN, ESTREFLEN, GC, REFGC],
         }
 
     #for name, metrics in filter(lambda (name, metrics): name in ['Misassemblies', 'Unaligned', 'Ambiguous'], grouped_order):

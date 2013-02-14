@@ -904,35 +904,42 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
                                                      % (next.s1, next.e1, next.contig, next.s2, next.e2)
                             redundant.append(current.contig)
                             sorted_aligns = sorted_aligns[1:]
-                            next = sorted_aligns[0]
-                            counter += 1
+                            if sorted_aligns:
+                                next = sorted_aligns[0]
+                                counter += 1
+                            else:
+                                #Flag to end loop through alignment
+                                end = True
 
-                    if next.s1 > current.e1 + 1:
-                        #There is a gap beetween this and the next alignment
-                        size = next.s1 - current.e1 - 1
-                        gaps.append([size, current.contig, next.contig])
-                        print >> plantafile_out, '\t\t\t\tGap between this and next alignment: %d to %d (%d bp)' % (current.e1, next.s1, size)
-                        #Record ambiguous bases in current gap
-                        for i in xrange(current.e1, next.s1):
-                            if (ref in ref_features) and (i in ref_features[ref]) and (ref_features[ref][i] == 'A'):
-                                region_ambig += 1
-                    elif next.s1 <= current.e1:
-                        #This alignment overlaps with the next alignment, negative gap
-                        #If contig extends past the region, clip
-                        if current.e1 > region[1]:
-                            current.e1 = region[1]
-                        #Record gap
-                        size = next.s1 - current.e1
-                        neg_gaps.append([size, current.contig, next.contig])
-                        print >>plantafile_out, '\t\t\t\tNegative gap (overlap) between this and next alignment: %d to %d (%d bp)' % (current.e1, next.s1, size)
+                    if not end:
+                        if next.s1 > current.e1 + 1:
+                            #There is a gap beetween this and the next alignment
+                            size = next.s1 - current.e1 - 1
+                            gaps.append([size, current.contig, next.contig])
+                            print >> plantafile_out, '\t\t\t\tGap between this and next alignment: %d to %d (%d bp)' % (current.e1, next.s1, size)
+                            #Record ambiguous bases in current gap
+                            for i in xrange(current.e1, next.s1):
+                                if (ref in ref_features) and (i in ref_features[ref]) and (ref_features[ref][i] == 'A'):
+                                    region_ambig += 1
+                        elif next.s1 <= current.e1:
+                            #This alignment overlaps with the next alignment, negative gap
+                            #If contig extends past the region, clip
+                            if current.e1 > region[1]:
+                                current.e1 = region[1]
+                            #Record gap
+                            size = next.s1 - current.e1
+                            neg_gaps.append([size, current.contig, next.contig])
+                            print >>plantafile_out, '\t\t\t\tNegative gap (overlap) between this and next alignment: %d to %d (%d bp)' % (current.e1, next.s1, size)
 
-                        #Mark this alignment as negative so overlap region can be ignored
-                        negative = True
-                    print >> plantafile_out, '\t\t\t\tNext Alignment: %d %d %s %d %d' % (next.s1, next.e1, next.contig, next.s2, next.e2)
+                            #Mark this alignment as negative so overlap region can be ignored
+                            negative = True
+                        print >> plantafile_out, '\t\t\t\tNext Alignment: %d %d %s %d %d' % (next.s1, next.e1, next.contig, next.s2, next.e2)
 
                 #Initiate location of SNP on assembly to be first or last base of contig alignment
                 contig_estimate = current.s2
-                print >> plantafile_out, '\t\t\t\tContig start coord: %d' % contig_estimate
+                enable_SNPs_output = False
+                if enable_SNPs_output:
+                    print >> plantafile_out, '\t\t\t\tContig start coord: %d' % contig_estimate
 
                 #Assess each reference base of the current alignment
                 for i in xrange(current.s1, current.e1 + 1):
@@ -955,8 +962,9 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
                             cur_snps = sorted(cur_snps, key=lambda x: x.ctg_pos, reverse=True)
 
                         for cur_snp in cur_snps:
-                            #print >> plantafile_out, '\t\t\t\tSNP: %s, reference coord: %d, contig coord: %d, estimated contig coord: %d' % \
-                            #                        (cur_snp.type, i, cur_snp.ctg_pos, contig_estimate)
+                            if enable_SNPs_output:
+                                print >> plantafile_out, '\t\t\t\tSNP: %s, reference coord: %d, contig coord: %d, estimated contig coord: %d' % \
+                                         (cur_snp.type, i, cur_snp.ctg_pos, contig_estimate)
 
                             #Capture SNP base
                             snp = cur_snp.type
@@ -970,8 +978,9 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
                             #    continue
                             #Check that the position of the SNP in the contig is close to the position of this SNP
                             if abs(contig_estimate - cur_snp.ctg_pos) > 2:
-                                #print >> plantafile_out, '\t\t\t\t\tERROR: SNP position in contig was off by %d bp! (%d vs %d)' \
-                                #         % (abs(contig_estimate - cur_snp.ctg_pos), contig_estimate, cur_snp.ctg_pos)
+                                if enable_SNPs_output:
+                                    print >> plantafile_out, '\t\t\t\t\tERROR: SNP position in contig was off by %d bp! (%d vs %d)' \
+                                             % (abs(contig_estimate - cur_snp.ctg_pos), contig_estimate, cur_snp.ctg_pos)
                                 continue
 
                             print >> used_snps_file, '%s\t%s\t%d\t%s\t%s\t%d' % (ref, current.contig, cur_snp.ref_pos,

@@ -526,8 +526,8 @@ def main(args):
         #TODO: make it in a more appropriate way (don't output predicted genes if annotations are provided)
         for id, contigs_fpath in enumerate(contigs_fpaths):
             report = reporting.get(contigs_fpath)
-            report.add_field(reporting.Fields.GENEMARKUNIQUE, "")
-            report.add_field(reporting.Fields.GENEMARK, [""] * len(qconfig.genes_lengths))
+            report.add_field(reporting.Fields.PREDICTED_GENES_UNIQUE, "")
+            report.add_field(reporting.Fields.PREDICTED_GENES, [""] * len(qconfig.genes_lengths))
 
     if qconfig.gene_finding:
         if qconfig.prokaryote:

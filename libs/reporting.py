@@ -53,8 +53,8 @@ class Fields:
     DUPLICATION_RATIO = 'Duplication ratio'
     GENES = '# genes'
     OPERONS = '# operons'
-    GENEMARKUNIQUE = '# predicted genes (unique)'
-    GENEMARK = ('# predicted genes (>= %d bp)', tuple(qconfig.genes_lengths))
+    PREDICTED_GENES_UNIQUE = '# predicted genes (unique)'
+    PREDICTED_GENES = ('# predicted genes (>= %d bp)', tuple(qconfig.genes_lengths))
     MISMATCHES = '# mismatches'
     INDELS = '# indels'
     INDELSBASES = 'Indels length'
@@ -78,7 +78,7 @@ class Fields:
     ### content and order of metrics in MAIN REPORT (<quast_output_dir>/report.txt, .tex, .tsv):
     order = [NAME, CONTIGS, TOTALLENS, NUMCONTIGS, LARGCONTIG, TOTALLEN, REFLEN, ESTREFLEN, GC, REFGC,
              N50, NG50, N75, NG75, MISASSEMBL, MISLOCAL, UNALIGNED, UNALIGNEDBASES, MAPPEDGENOME, DUPLICATION_RATIO,
-             UNCALLED_PERCENT, SUBSERROR, INDELSERROR, GENES, OPERONS, GENEMARKUNIQUE, GENEMARK,
+             UNCALLED_PERCENT, SUBSERROR, INDELSERROR, GENES, OPERONS, PREDICTED_GENES_UNIQUE, PREDICTED_GENES,
              LARGALIGN, NA50, NGA50, NA75, NGA75]
 
     ### for indent before submetrics
@@ -163,7 +163,7 @@ class Fields:
         #('Ambiguous', [AMBIGUOUS, AMBIGUOUSEXTRABASES,]),
 
         ('Genome statistics', [MAPPEDGENOME, DUPLICATION_RATIO, GENES, OPERONS,
-                               GENEMARKUNIQUE, GENEMARK, GC, REFGC,
+                               PREDICTED_GENES_UNIQUE, PREDICTED_GENES, GC, REFGC,
                                SUBSERROR, MISMATCHES, INDELSERROR, INDELS,
                                MIS_SHORT_INDELS, MIS_LONG_INDELS, INDELSBASES,
                                UNCALLED, UNCALLED_PERCENT,]),
@@ -175,7 +175,7 @@ class Fields:
     main_metrics = [NUMCONTIGS, LARGCONTIG, TOTALLEN, NG50, UNCALLED_PERCENT,
                     MISASSEMBL, MISCONTIGSBASES,
                     MAPPEDGENOME, SUBSERROR, INDELSERROR,
-                    GENES, OPERONS, GENEMARKUNIQUE, GENEMARK,]
+                    GENES, OPERONS, PREDICTED_GENES_UNIQUE, PREDICTED_GENES,]
 
 
 ####################################################################################
@@ -191,10 +191,11 @@ class Fields:
     quality_dict = {
         Quality.MORE_IS_BETTER:
             [LARGCONTIG, TOTALLEN, TOTALLENS, N50, NG50, N75, NG75, NA50, NGA50, NA75, NGA75, LARGALIGN,
-             MAPPEDGENOME, GENES, OPERONS, GENEMARKUNIQUE, GENEMARK, AVGIDY],
+             MAPPEDGENOME, GENES, OPERONS, PREDICTED_GENES_UNIQUE, PREDICTED_GENES, AVGIDY],
         Quality.LESS_IS_BETTER:
             [NUMCONTIGS, CONTIGS, L50, LG50, L75, LG75,
-             MISLOCAL, MISASSEMBL, MISCONTIGS, MISCONTIGSBASES, UNALIGNED, UNALIGNEDBASES, AMBIGUOUS, AMBIGUOUSEXTRABASES,
+             MISLOCAL, MISASSEMBL, MISCONTIGS, MISCONTIGSBASES, MISINTERNALOVERLAP,
+             UNALIGNED, UNALIGNEDBASES, AMBIGUOUS, AMBIGUOUSEXTRABASES,
              UNCALLED, UNCALLED_PERCENT,
              LA50, LGA50, LA75, LGA75, DUPLICATION_RATIO, INDELS, INDELSERROR, MISMATCHES, SUBSERROR,
              MIS_SHORT_INDELS, MIS_LONG_INDELS, INDELSBASES],

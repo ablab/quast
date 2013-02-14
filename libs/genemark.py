@@ -184,8 +184,8 @@ def do(fasta_paths, gene_lengths, out_dir):
     for id, fasta_path in enumerate(fasta_paths):
         report = reporting.get(fasta_path)
         unique, cnt = results[id]
-        report.add_field(reporting.Fields.GENEMARKUNIQUE, unique)
-        report.add_field(reporting.Fields.GENEMARK, cnt)
+        report.add_field(reporting.Fields.PREDICTED_GENES_UNIQUE, unique)
+        report.add_field(reporting.Fields.PREDICTED_GENES, cnt)
 
     if not qconfig.debug:
         shutil.rmtree(tmp_dir)

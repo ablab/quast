@@ -76,7 +76,7 @@ def clear_files(filename, nucmerfilename):
     if qconfig.debug:
         return
     # delete temporary files
-    for ext in ['.delta', '.1delta', '.mdelta', '.unqry', '.qdiff', '.rdiff', '.1coords', '.mcoords', '.mgaps', '.ntref', '.gp', '.coords.btab', '.coords_tmp', '.coords.headless', '.snps']:
+    for ext in ['.delta', '.coords_tmp', '.coords.headless']:
         if os.path.isfile(nucmerfilename + ext):
             os.remove(nucmerfilename + ext)
     if os.path.isfile('nucmer.error'):
@@ -272,7 +272,7 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
             return align1_s - align2_e - 1
 
 
-    def process_misassembled_contig(aligned_lenths, i_start, i_finish, contig_len, prev, cur_aligned_length,
+    def process_misassembled_contig(aligned_lenths, i_start, i_finish, contig_len, prev, cur_aligned_length, misassembly_internal_overlap,
                                     sorted_aligns, is_1st_chimeric_half, misassembled_contigs, ref_aligns, ref_features):
         region_misassemblies = []
         for i in xrange(i_start, i_finish):
@@ -281,6 +281,9 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
             distance_on_contig = distance_between_alignments(sorted_aligns[i], sorted_aligns[i+1])
             distance_on_reference = sorted_aligns[i+1].s1 - sorted_aligns[i].e1 - 1
             inconsistency = distance_on_reference - distance_on_contig
+
+            # update misassembly_internal_overlap
+            misassembly_internal_overlap += (-distance_on_contig if distance_on_contig < 0 else 0)
 
             #Check strands
             strand1 = (sorted_aligns[i].s2 > sorted_aligns[i].e2)
@@ -349,7 +352,7 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
         print >> plantafile_out, '\t\t\tReal Alignment %d: %s' % (i+1, str(sorted_aligns[i]))
         ref_aligns.setdefault(sorted_aligns[i].ref, []).append(sorted_aligns[i])
 
-        return cur_aligned_length, prev.clone(), region_misassemblies
+        return cur_aligned_length, misassembly_internal_overlap, prev.clone(), region_misassemblies
     #### end of aux. functions ###
 
     # Loading the assembly contigs
@@ -431,6 +434,7 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
     total_redundant = 0
     partially_unaligned_with_misassembly = 0
     partially_unaligned_with_significant_parts = 0
+    misassembly_internal_overlap = 0
 
     region_misassemblies = []
     misassembled_contigs = {}
@@ -675,9 +679,10 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
                         cur_aligned_length = prev.len2
 
                         # process "last half" of blocks
-                        cur_aligned_length, prev, x = process_misassembled_contig(
+                        cur_aligned_length, misassembly_internal_overlap, prev, x = process_misassembled_contig(
                             aligned_lengths, fake_misassembly_index, sorted_num, len(assembly[contig]), prev,
-                            cur_aligned_length, sorted_aligns, True, misassembled_contigs, ref_aligns, ref_features)
+                            cur_aligned_length, misassembly_internal_overlap, sorted_aligns, True, misassembled_contigs,
+                            ref_aligns, ref_features)
                         region_misassemblies += x
                         print >> plantafile_out, '\t\t\t  Fake misassembly (caused by linear representation of circular genome) between these two alignments'
 
@@ -690,18 +695,20 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
                         cur_aligned_length += sorted_aligns[0].len2
 
                         # process "first half" of blocks
-                        cur_aligned_length, prev, x = process_misassembled_contig(
-                            aligned_lengths, 0, fake_misassembly_index - 1, len(assembly[contig]), prev, cur_aligned_length,
-                            sorted_aligns, False, misassembled_contigs, ref_aligns, ref_features)
+                        cur_aligned_length, misassembly_internal_overlap, prev, x = process_misassembled_contig(
+                            aligned_lengths, 0, fake_misassembly_index - 1, len(assembly[contig]), prev,
+                            cur_aligned_length, misassembly_internal_overlap, sorted_aligns, False, misassembled_contigs,
+                            ref_aligns, ref_features)
                         region_misassemblies += x
 
                     else:
                         # for merging local misassemblies
                         prev = sorted_aligns[0].clone()
                         cur_aligned_length = prev.len2
-                        cur_aligned_length, prev, x = process_misassembled_contig(
-                            aligned_lengths, 0, sorted_num, len(assembly[contig]), prev, cur_aligned_length,
-                            sorted_aligns, False, misassembled_contigs, ref_aligns, ref_features)
+                        cur_aligned_length, misassembly_internal_overlap, prev, x = process_misassembled_contig(
+                            aligned_lengths, 0, sorted_num, len(assembly[contig]), prev,
+                            cur_aligned_length, misassembly_internal_overlap, sorted_aligns, False, misassembled_contigs,
+                            ref_aligns, ref_features)
                         region_misassemblies += x
 
         else:
@@ -1051,6 +1058,7 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
     print >> plantafile_out, '\tMisassembled Contigs: %d' % len(misassembled_contigs)
     misassembled_bases = sum(misassembled_contigs.itervalues())
     print >> plantafile_out, '\tMisassembled Contig Bases: %d' % misassembled_bases
+    print >> plantafile_out, '\tMisassmblies Inter-Contig Overlap: %d' % misassembly_internal_overlap
     print >> plantafile_out, 'Uncovered Regions: %d (%d)' % (uncovered_regions, uncovered_region_bases)
     print >> plantafile_out, 'Unaligned Contigs: %d + %d part' % (unaligned, partially_unaligned)
     print >> plantafile_out, 'Partially Unaligned Contigs with Misassemblies: %d' % partially_unaligned_with_misassembly
@@ -1068,7 +1076,7 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
     #print >> plantafile_out, 'Single Nucleotide Indels: %d' % indels
 
     print >> plantafile_out, ''
-    print >> plantafile_out, '\tCovered Bases: %d' % region_covered
+    print >> plantafile_out, '\tCovered Bases: %d' % region_covered    
     #print >> plantafile_out, '\tAmbiguous Bases (e.g. N\'s): %d' % region_ambig
     print >> plantafile_out, ''
     print >> plantafile_out, '\tSNPs: %d' % region_snp
@@ -1119,6 +1127,7 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
 
     result = {'avg_idy': avg_idy, 'region_misassemblies': region_misassemblies,
               'misassembled_contigs': misassembled_contigs, 'misassembled_bases': misassembled_bases,
+              'misassembly_internal_overlap': misassembly_internal_overlap,
               'unaligned': unaligned, 'partially_unaligned': partially_unaligned,
               'partially_unaligned_bases': partially_unaligned_bases, 'fully_unaligned_bases': fully_unaligned_bases,
               'ambiguous_contigs': ambiguous_contigs, 'ambiguous_contigs_extra_bases': ambiguous_contigs_extra_bases, 'SNPs': SNPs, 'indels_list': indels_list,
@@ -1209,6 +1218,7 @@ def do(reference, filenames, cyclic, output_dir):
         region_misassemblies = result['region_misassemblies']
         misassembled_contigs = result['misassembled_contigs']
         misassembled_bases = result['misassembled_bases']
+        misassembly_internal_overlap = result['misassembly_internal_overlap']
         unaligned = result['unaligned']
         partially_unaligned = result['partially_unaligned']
         partially_unaligned_bases = result['partially_unaligned_bases']
@@ -1226,6 +1236,7 @@ def do(reference, filenames, cyclic, output_dir):
         report.add_field(reporting.Fields.MISASSEMBL, len(region_misassemblies) - region_misassemblies.count(Misassembly.LOCAL))
         report.add_field(reporting.Fields.MISCONTIGS, len(misassembled_contigs))
         report.add_field(reporting.Fields.MISCONTIGSBASES, misassembled_bases)
+        report.add_field(reporting.Fields.MISINTERNALOVERLAP, misassembly_internal_overlap)
         report.add_field(reporting.Fields.UNALIGNED, '%d + %d part' % (unaligned, partially_unaligned))
         report.add_field(reporting.Fields.UNALIGNEDBASES, (fully_unaligned_bases + partially_unaligned_bases))
         report.add_field(reporting.Fields.AMBIGUOUS, ambiguous_contigs)

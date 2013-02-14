@@ -40,6 +40,7 @@ class Fields:
     MISASSEMBL = '# misassemblies'
     MISCONTIGS = '# misassembled contigs'
     MISCONTIGSBASES = 'Misassembled contigs length'
+    MISINTERNALOVERLAP = 'Misassemblies inter-contig overlap'
     UNALIGNED = '# unaligned contigs'
     UNALIGNEDBASES = 'Unaligned contigs length'
     AMBIGUOUS = '# ambiguously mapped contigs'

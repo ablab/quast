@@ -5,8 +5,10 @@
 ############################################################################
 
 from __future__ import with_statement
+import glob
 import gzip
 import logging
+import shutil
 import zipfile
 import bz2
 import os
@@ -133,3 +135,17 @@ def uncompress(compressed_fname, uncompressed_fname):
 
     log.info('      extracted!')
     return True
+
+
+def remove_reports(output_dirpath):
+    for gage_prefix in ["", qconfig.gage_report_prefix]:
+        for report_prefix in [qconfig.report_prefix, qconfig.transposed_report_prefix]:
+            pattern = os.path.join(output_dirpath, gage_prefix + report_prefix + ".*")
+            for f in glob.iglob(pattern):
+                os.remove(f)
+    plots_filename = os.path.join(output_dirpath, qconfig.plots_filename)
+    if os.path.isfile(plots_filename):
+        os.remove(plots_filename)
+    html_report_aux_dir = os.path.join(output_dirpath, qconfig.html_aux_dir)
+    if os.path.isdir(html_report_aux_dir):
+        shutil.rmtree(html_report_aux_dir)

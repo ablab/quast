@@ -338,15 +338,15 @@ QUAST can work only with assemblies of length less than 4.29 Gbp and with refere
 <a name="sec3.1.1"></a>
 <h4>3.1.1 Summary report</h4>
 
-<p><b><i># contigs &ge; x</i></b>&nbsp;&nbsp;is total number of contigs of length <code>&ge; x</code>.
+<p><b><i># contigs (&ge; x bp)</i></b>&nbsp;&nbsp;is total number of contigs of length <code>&ge; x bp</code>.
     This metric doesn't depend on <code>--min-contig</code> command line parameter (see <a href="#sec2.4">section 2.4</a>).</p>
 
-<p><b><i>Total length (&ge; x)</i></b>&nbsp;&nbsp;is the total number of bases in contigs of length <code>&ge; x</code>.
+<p><b><i>Total length (&ge; x bp)</i></b>&nbsp;&nbsp;is the total number of bases in contigs of length <code>&ge; x bp</code>.
     This metric doesn't depend on <code>--min-contig</code> command line parameter (see <a href="#sec2.4">section 2.4</a>).</p>
 
 <br>
 <i>
-    All remaining metrics are computed on the contigs of length <code>&ge; x</code> where <code>x</code> is specified in command line option
+    All remaining metrics are computed on the contigs of length <code>&ge; x bp</code> where <code>x</code> is specified in command line option
     <code>--min-contig</code> (see <a href="#sec2.4">section 2.4</a>, default is 500).
 </i>
 <br>
@@ -414,7 +414,8 @@ QUAST can work only with assemblies of length less than 4.29 Gbp and with refere
 distinguish between Single Nucleotide Polymorphisms (SNPs), which are true differences in the assembled genome vs. the reference genome,
 and Single Nucleotide Errors (SNEs), which are due to errors in reads or errors in the assembly algorithm.</p>
 
-<p><b><i># indels per 100 kbp</i></b>&nbsp;&nbsp;is the average number of single nucleotide indels per 100000 aligned bases.</p>
+<p><b><i># indels per 100 kbp</i></b>&nbsp;&nbsp;is the average number of indels per 100000 aligned bases. 
+    <b>Note:</b> several consecutive single nucleotide indels are counted as one indel.</p>
 
 <p><b><i># N's per 100 kbp</i></b>&nbsp;&nbsp;is the average number of uncalled bases (N's) per 100000 assembly bases.</p>
 
@@ -469,7 +470,13 @@ opposite strands of the same chromosome. </p>
 
 <p><b><i># mismatches</i></b>&nbsp;&nbsp;is the number of mismatches in all aligned bases.</p>
 
-<p><b><i># indels</i></b>&nbsp;&nbsp;is the number of single nucleotide indels in all aligned bases.</p>
+<p><b><i># indels</i></b>&nbsp;&nbsp;is the number of indels in all aligned bases.</p>
+
+<p><b><i># short indels (&le; 5 bp)</i></b>&nbsp;&nbsp;is the number of indels of length <code>&le; 5 bp</code>.</p>
+
+<p><b><i># long indels (&gt; 5 bp)</i></b>&nbsp;&nbsp;is the number of indels of length <code>&gt; 5 bp</code>.</p>
+
+<p><b><i>Indels length</i></b>&nbsp;&nbsp;is the number of total bases contained in all indels.</p>
 
 <a name="sec3.1.3"></a>
 <h4>3.1.3 Unaligned report</h4>

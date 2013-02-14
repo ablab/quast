@@ -18,14 +18,14 @@ def get_real_path(relpath_in_html_saver):
 
 scripts_inserted = False
 
-report_fname = 'report.html'
+report_fname = qconfig.report_prefix + ".html"
 
 template_fpath = get_real_path('template.html')
 
 static_dirname = 'static'
 static_dirpath = get_real_path(static_dirname)
 
-aux_dirname = 'report_html_aux'
+aux_dirname = qconfig.html_aux_dir
 aux_files = [
     'jquery-1.8.2.min.js',
     'flot/jquery.flot.min.js',

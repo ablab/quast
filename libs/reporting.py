@@ -80,28 +80,31 @@ class Fields:
              UNCALLED_PERCENT, SUBSERROR, INDELSERROR, GENES, OPERONS, GENEMARKUNIQUE, GENEMARK,
              LARGALIGN, NA50, NGA50, NA75, NGA75]
 
+    ### for indent before submetrics
+    TAB = '    '
+
     ### additional list of metrics for detailed misassemblies report
     MIS_ALL_EXTENSIVE = '# misassemblies'
-    MIS_RELOCATION = '    # relocations'
-    MIS_TRANSLOCATION = '    # translocations'
-    MIS_INVERTION = '    # inversions'
+    MIS_RELOCATION = TAB + '# relocations'
+    MIS_TRANSLOCATION = TAB + '# translocations'
+    MIS_INVERTION = TAB + '# inversions'
     MIS_EXTENSIVE_CONTIGS = '# misassembled contigs'
     MIS_EXTENSIVE_BASES = 'Misassembled contigs length'
     MIS_LOCAL = '# local misassemblies'
-    MIS_SHORT_INDELS = '# short indels (<= %d)' % qconfig.SHORT_INDEL_THRESHOLD
-    MIS_LONG_INDELS = '# long indels (> %d)' % qconfig.SHORT_INDEL_THRESHOLD
+    MIS_SHORT_INDELS = TAB + '# short indels (<= %d bp)' % qconfig.SHORT_INDEL_THRESHOLD
+    MIS_LONG_INDELS = TAB + '# long indels (> %d bp)' % qconfig.SHORT_INDEL_THRESHOLD
 
     # content and order of metrics in DETAILED MISASSEMBLIES REPORT (<quast_output_dir>/contigs_reports/misassemblies_report.txt, .tex, .tsv)
     misassemblies_order = [NAME, MIS_ALL_EXTENSIVE, MIS_RELOCATION, MIS_TRANSLOCATION, MIS_INVERTION,
                            MIS_EXTENSIVE_CONTIGS, MIS_EXTENSIVE_BASES, MIS_LOCAL, MISMATCHES,
-                           INDELS, INDELSBASES, MIS_SHORT_INDELS, MIS_LONG_INDELS]
+                           INDELS, MIS_SHORT_INDELS, MIS_LONG_INDELS, INDELSBASES]
 
     ### additional list of metrics for detailed unaligned report
     UNALIGNED_FULL_CNTGS = '# fully unaligned contigs'
     UNALIGNED_FULL_LENGTH = 'Fully unaligned length'
     UNALIGNED_PART_CNTGS = '# partially unaligned contigs'
-    UNALIGNED_PART_WITH_MISASSEMBLY = '    # with misassembly'
-    UNALIGNED_PART_SIGNIFICANT_PARTS = '    # both parts are significant'
+    UNALIGNED_PART_WITH_MISASSEMBLY = TAB + '# with misassembly'
+    UNALIGNED_PART_SIGNIFICANT_PARTS = TAB + '# both parts are significant'
     UNALIGNED_PART_LENGTH = 'Partially unaligned length'
 
     # content and order of metrics in DETAILED UNALIGNED REPORT (<quast_output_dir>/contigs_reports/unaligned_report.txt, .tex, .tsv)
@@ -156,11 +159,12 @@ class Fields:
                        UNALIGNED_PART_WITH_MISASSEMBLY, UNALIGNED_PART_SIGNIFICANT_PARTS,
                        UNALIGNED_PART_LENGTH,]),
 
-        #('Ambiguous', [AMBIGUOUS, AMBIGUOUSBASES,]),
+        #('Ambiguous', [AMBIGUOUS, AMBIGUOUSEXTRABASES,]),
 
         ('Genome statistics', [MAPPEDGENOME, DUPLICATION_RATIO, GENES, OPERONS,
                                GENEMARKUNIQUE, GENEMARK, GC, REFGC,
-                               MISMATCHES, SUBSERROR, INDELS, INDELSERROR,
+                               SUBSERROR, MISMATCHES, INDELSERROR, INDELS,
+                               MIS_SHORT_INDELS, MIS_LONG_INDELS, INDELSBASES,
                                UNCALLED, UNCALLED_PERCENT,]),
 
         ('Aligned statistics', [LARGALIGN, NA50, NA75, NGA50, NGA75, LA50, LA75, LGA50, LGA75,]),
@@ -476,8 +480,13 @@ def save_tex(filename, table, is_transposed=False):
         # escape characters
         for esc_char in "\\ % $ # _ { } ~ ^".split():
             row = row.replace(esc_char, '\\' + esc_char)
-        # more pretty '>='
+        # more pretty '>=' and '<=', '>'
         row = row.replace('>=', '$\\geq$')
+        row = row.replace('<=', '$\\leq$')
+        row = row.replace('>', '$>$')
+        # pretty indent
+        if row.startswith(Fields.TAB):
+            row = "\hspace{5mm}" + row.lstrip()
         # pretty highlight
         row = row.replace('HIGHLIGHTEDSTART', '{\\bf ')
         row = row.replace('HIGHLIGHTEDEND', '}')
@@ -535,14 +544,15 @@ def save(output_dirpath, report_name, transposed_report_name, order):
 
 
 def save_gage(output_dirpath):
-    save(output_dirpath, "gage_report", "gage_transposed_report", Fields.gage_order)
+    save(output_dirpath, qconfig.gage_report_prefix + qconfig.report_prefix,
+        qconfig.gage_report_prefix + qconfig.transposed_report_prefix, Fields.gage_order)
 
 
 def save_total(output_dirpath):
     print_timestamp()
     log = logging.getLogger('quast')
     log.info('Summarizing...')
-    save(output_dirpath, "report", "transposed_report", Fields.order)
+    save(output_dirpath, qconfig.report_prefix, qconfig.transposed_report_prefix, Fields.order)
 
 
 def save_misassemblies(output_dirpath):

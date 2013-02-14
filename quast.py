@@ -13,7 +13,7 @@ import shutil
 import re
 import getopt
 from site import addsitedir
-from libs import qconfig
+from libs import qconfig, qutils
 from libs.qutils import notice, warning, error, assert_file_exists
 from libs.qutils import print_timestamp, print_system_info, print_version, uncompress
 from libs import fastaparser
@@ -310,7 +310,8 @@ def main(args):
     ########################################################################
 
     if existing_alignments:
-        notice("Output directory already exists! Existing Nucmer alignments will be used!")
+        notice("Output directory already exists! Existing Nucmer alignments can be used!")
+        qutils.remove_reports(output_dirpath)
 
     qconfig.contig_thresholds = map(int, qconfig.contig_thresholds.split(","))
     qconfig.genes_lengths = map(int, qconfig.genes_lengths.split(","))

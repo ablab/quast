@@ -21,7 +21,7 @@ from libs.html_saver import json_saver
 
 addsitedir(os.path.join(qconfig.LIBS_LOCATION, 'site_packages'))
 
-RELEASE_MODE=False
+RELEASE_MODE=True
 
 
 def usage():

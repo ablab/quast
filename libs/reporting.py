@@ -419,13 +419,13 @@ def get_num_from_table_value(val):
 
     elif isinstance(val, basestring) and len(val.split()) > 0:
                                                                       # 'x + y part' format?
-        tokens = val.split()[0]                                       # tokens = [x, +, y, part]
+        tokens = val.split()                                          # tokens = [x, +, y, part]
         if len(tokens) >= 3:                                          # Yes, 'y + x part' format
             x, y = parse_number(tokens[0]), parse_number(tokens[2])
             if x is None or y is None:
-                val = None
+                num = None
             else:
-                val = x, y                                            # Tuple value. Can be compared lexicographically.
+                num = (x, y)                                          # Tuple value. Can be compared lexicographically.
         else:
             num = parse_number(tokens[0])
     else:

@@ -280,14 +280,19 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
             #Calculate inconsistency between distances on the reference and on the contig
             distance_on_contig = distance_between_alignments(sorted_aligns[i], sorted_aligns[i+1])
             distance_on_reference = sorted_aligns[i+1].s1 - sorted_aligns[i].e1 - 1
-            inconsistency = distance_on_reference - distance_on_contig
 
             # update misassembly_internal_overlap
             misassembly_internal_overlap += (-distance_on_contig if distance_on_contig < 0 else 0)
 
             #Check strands
-            strand1 = (sorted_aligns[i].s2 > sorted_aligns[i].e2)
-            strand2 = (sorted_aligns[i+1].s2 > sorted_aligns[i+1].e2)
+            strand1 = (sorted_aligns[i].s2 < sorted_aligns[i].e2)
+            strand2 = (sorted_aligns[i+1].s2 < sorted_aligns[i+1].e2)
+
+            # inconsistency of positions on reference and on contig
+            if strand1:
+                inconsistency = distance_on_reference - (sorted_aligns[i+1].s2 - sorted_aligns[i].e2 - 1)
+            else:
+                inconsistency = distance_on_reference - (sorted_aligns[i].e2 - sorted_aligns[i+1].s2 - 1)
 
             ref_aligns.setdefault(sorted_aligns[i].ref, []).append(sorted_aligns[i])
 
@@ -308,7 +313,7 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
                     print >> plantafile_out, 'translocation',
                 elif abs(inconsistency) > smgap:
                     region_misassemblies += [Misassembly.RELOCATION]
-                    print >> plantafile_out, 'relocation, size =', inconsistency,
+                    print >> plantafile_out, 'relocation, inconsistency =', inconsistency,
                 elif strand1 != strand2:
                     region_misassemblies += [Misassembly.INVERSION]
                     print >> plantafile_out, 'inversion',
@@ -322,7 +327,8 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
                 else:
                     #There is a small gap between the two alignments, a local misassembly
                     print >> plantafile_out, '\t\t\t  Gap between these two alignments (local misassembly).',
-                print >> plantafile_out, 'Distance on contig =', distance_on_contig, ', distance on reference =', distance_on_reference
+                #print >> plantafile_out, 'Distance on contig =', distance_on_contig, ', distance on reference =', distance_on_reference
+                print >> plantafile_out, 'Inconsistency =', inconsistency
 
                 region_misassemblies += [Misassembly.LOCAL]
 
@@ -725,7 +731,7 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
     unaligned_file.close()
 
     print >> plantafile_out, 'Analyzing coverage...'
-    print >> plantafile_out, '\tWriting SNPs into', used_snps_filename
+    print >> plantafile_out, 'Writing SNPs into', used_snps_filename
 
     region_covered = 0
     region_ambig = 0

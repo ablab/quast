@@ -9,7 +9,7 @@ import os
 import shutil
 import subprocess
 from libs import reporting
-from qutils import id_to_str, print_timestamp
+from qutils import id_to_str, print_timestamp, warning
 import qconfig
 
 
@@ -24,13 +24,14 @@ def run_gage(id, filename, gage_results_path, gage_tool_path, reference, tmp_dir
     logfile_out = open(logfilename_out, 'w')
     logfile_err = open(logfilename_err, 'w')
 
-    subprocess.call(
+    return_code = subprocess.call(
         ['sh', gage_tool_path, reference, filename, tmp_dir, str(qconfig.min_contig)],
         stdout=logfile_out, stderr=logfile_err)
 
     logfile_out.close()
     logfile_err.close()
     log.info('  ' + id_to_str(id) + 'Done.')
+    return return_code
 
 
 def do(reference, contigs, output_dirpath):
@@ -69,30 +70,39 @@ def do(reference, contigs, output_dirpath):
 
     n_jobs = min(len(contigs), qconfig.max_threads)
     from joblib import Parallel, delayed
-    Parallel(n_jobs=n_jobs)(delayed(run_gage)(id, filename, gage_results_path, gage_tool_path, reference, tmp_dir)
+    return_codes = Parallel(n_jobs=n_jobs)(delayed(run_gage)(id, filename, gage_results_path, gage_tool_path, reference, tmp_dir)
         for id, filename in enumerate(contigs))
 
-    ## find metrics for total report:
-    for id, filename in enumerate(contigs):
-        report = reporting.get(filename)
+    error_occurred = False
+    for return_code in return_codes:
+        if return_code:
+            warning("Error occurred while GAGE processes assemblies. See GAGE error logs for details (%s)" %
+                    os.path.join(gage_results_path, 'gage_*.stderr'))
+            error_occurred = True
+            break
 
-        logfilename_out = os.path.join(gage_results_path, 'gage_' + os.path.basename(filename) + '.stdout')
-        logfile_out = open(logfilename_out, 'r')
-        cur_metric_id = 0
-        for line in logfile_out:
-            if metrics[cur_metric_id] in line:
-                if (metrics[cur_metric_id].startswith('N50')):
-                    report.add_field(metrics_in_reporting[cur_metric_id], line.split(metrics[cur_metric_id] + ':')[1].strip())                    
-                else:
-                    report.add_field(metrics_in_reporting[cur_metric_id], line.split(':')[1].strip())
-                cur_metric_id += 1
-                if cur_metric_id == len(metrics):
-                    break
-        logfile_out.close()
+    if not error_occurred:
+        ## find metrics for total report:
+        for id, filename in enumerate(contigs):
+            report = reporting.get(filename)
 
-    reporting.save_gage(output_dirpath)
+            logfilename_out = os.path.join(gage_results_path, 'gage_' + os.path.basename(filename) + '.stdout')
+            logfile_out = open(logfilename_out, 'r')
+            cur_metric_id = 0
+            for line in logfile_out:
+                if metrics[cur_metric_id] in line:
+                    if (metrics[cur_metric_id].startswith('N50')):
+                        report.add_field(metrics_in_reporting[cur_metric_id], line.split(metrics[cur_metric_id] + ':')[1].strip())
+                    else:
+                        report.add_field(metrics_in_reporting[cur_metric_id], line.split(':')[1].strip())
+                    cur_metric_id += 1
+                    if cur_metric_id == len(metrics):
+                        break
+            logfile_out.close()
 
-    if not qconfig.debug:
-        shutil.rmtree(tmp_dir)
+        reporting.save_gage(output_dirpath)
 
-    log.info('  Done.')
+        if not qconfig.debug:
+            shutil.rmtree(tmp_dir)
+
+        log.info('  Done.')

@@ -1,17 +1,18 @@
 -- Version history --
 
-2.1   Option --strict-NA added to control computation of NAx/NGAx metrics. By default,
-      QUAST breaks contigs only by extensive misassemblies to compute NAx/NGAx (like
-      in v.1.*). Option --strict-NA forces QUAST to break contigs by any misassembly
-      event, including local ones (like in v.2.0).
+2.1   Option --strict-NA added to control computation of NAx/NGAx metrics. 
+      This option forces QUAST to break contigs by any misassembly event, 
+      including local misassemblies (like in v.2.0). By default, QUAST v.2.1
+      breaks contigs only by extensive misassemblies to compute NAx/NGAx 
+      (like in v.1.*).
 
       Improvement of indels computation. QUAST now counts consecutive single nucleotide
       indels as one indel. Total length of all indels is also reported (equal to
       # indels metric evaluated with previous versions). Short (<= 5 bp) and long (>5 bp)
       indels are reported.
 
-      Option --est-ref-size added to set estimated reference size in case a reference
-      genome is not available.
+      Option --est-ref-size added to set estimated reference size for computing NGx 
+      metrics in case a reference genome is not available.
 
       GAGE mode is parallelized.
 

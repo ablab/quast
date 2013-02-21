@@ -159,6 +159,7 @@ function buildReport() {
 
     if (contigsLens = readJson('contigs-lengths')) {
         makePlot('cumulative', 'Cumulative length', cumulative.draw, contigsLens.lists_of_lengths, refLen);
+
         makePlot('nx', 'Nx', nx.draw, {
                 listsOfLengths: contigsLens.lists_of_lengths,
                 refLen: refLen,

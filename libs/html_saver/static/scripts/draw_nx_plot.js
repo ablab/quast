@@ -34,16 +34,6 @@ var nx = {
 
     draw: function (name, title, colors, filenames, data, refPlotValue,
                     placeholder, legendPlaceholder, glossary) {
-//    var titleHtml = title;
-//    if (glossary.hasOwnProperty(title)) {
-//        titleHtml = "<a class='tooltip-link' href='#' rel='tooltip' title='" + title + " "
-//            + glossary[title] + "'>" + title + "</a>"
-//    }
-
-//    div.html(
-//        "<span class='plot-header'>" + titleHtml + "</span>" +
-//        "<div class='plot-placeholder' id='" + title + "-plot-placeholder'></div>"
-//    );
 
         var listsOfLengths = data.listsOfLengths;
         var refLength = data.refLen;
@@ -59,12 +49,13 @@ var nx = {
 
                 var size = lengths.length;
 
-                var sumLen = 0;
-                for (var j = 0; j < lengths.length; j++) {
-                    sumLen += lengths[j];
-                }
-                if (refLength) {
+                if (name == 'ngx' || name == 'ngax') {
                     sumLen = refLength;
+                } else {
+                    var sumLen = 0;
+                    for (var j = 0; j < lengths.length; j++) {
+                        sumLen += lengths[j];
+                    }
                 }
 
                 info.series[i] = {

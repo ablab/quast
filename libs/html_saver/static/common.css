@@ -176,3 +176,35 @@ ul.mdash li:before {
     word-break: break-all;
     white-space: normal;
 }
+
+
+.space_1px {
+    height: 1px;
+}
+.space_2px {
+    height: 2px;
+}
+.space_3px {
+    height: 3px;
+}
+.space_4px {
+    height: 4px;
+}
+.space_5px {
+    height: 5px;
+}
+.space_6px {
+    height: 6px;
+}
+.space_7px {
+    height: 7px;
+}
+.space_8px {
+    height: 8px;
+}
+.space_9px {
+    height: 9px;
+}
+.space_10px {
+    height: 10px;
+}

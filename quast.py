@@ -75,7 +75,7 @@ def usage():
         print >> sys.stderr, "-f  --gene-finding            uses Gene Finding module"
         print >> sys.stderr, "-s  --scaffolds               this flag informs QUAST that provided assemblies are scaffolds"
         print >> sys.stderr, "    --gage                    uses GAGE (results are in gage_report.txt)"
-        print >> sys.stderr, "-e  --eukaryote               genome is an eukaryote"
+        print >> sys.stderr, "-e  --eukaryote               genome is eukaryotic"
         print >> sys.stderr, "-a  --allow-ambiguity         uses all alignments of contigs covering repeats (ambiguous)"
         print >> sys.stderr, "-u  --use-all-alignments      computes Genome fraction, # genes, # operons in v.1.0-1.3 style"
         print >> sys.stderr, "-n  --strict-NA               breaks contigs by any misassembly event to compute NAx and NGAx."
@@ -92,8 +92,7 @@ def corrected_fname_for_nucmer(fpath):
     dirpath = os.path.dirname(fpath)
     fname = os.path.basename(fpath)
 
-    corr_fname = fname
-    corr_fname = re.sub(r'[^\w\._\-+]', '_', corr_fname).strip()
+    corr_fname = qutils.correct_name(fname)
 
     if corr_fname != fname:
         if os.path.isfile(os.path.join(dirpath, corr_fname)):
@@ -114,7 +113,7 @@ def correct_fasta(original_fpath, corrected_fpath, is_reference=False):
     modified_fasta_entries = []
     for name, seq in fastaparser.read_fasta(original_fpath): # in tuples: (name, seq)
         if (len(seq) >= qconfig.min_contig) or is_reference:
-            corr_name = re.sub(r'[^\w\._\-+]', '_', name)
+            corr_name = qutils.correct_name(name)
             # seq to uppercase, because we later looking only uppercase letters
             corr_seq = seq.upper()
             # removing \r (Nucmer fails on such sequences)
@@ -150,7 +149,6 @@ def correct_fasta(original_fpath, corrected_fpath, is_reference=False):
 
 
 def main(args):
-
     quast_dir = os.path.dirname(qconfig.LIBS_LOCATION)
     if ' ' in quast_dir:
         error('QUAST does not support spaces in paths. \n' + \

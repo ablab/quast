@@ -4,14 +4,15 @@
 
 import sys
 import os
-import re
+from libs import qconfig, qutils
 
 sys.path.append(os.path.join(os.path.abspath(sys.path[0]), '../libs'))
 
 import fastaparser
 
 def get_corr_name(name):
-    return re.sub(r'\W', '', re.sub(r'\s', '_', name))
+    return qutils.correct_name(name)
+    # return re.sub(r'\W', '', re.sub(r'\s', '_', name))
 
 # MAIN
 if len(sys.argv) != 3:

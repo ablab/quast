@@ -7,6 +7,7 @@
 import os
 import re
 import sys
+from libs import qutils
 
 
 txt_pattern_gi = re.compile(r'gi\|(?P<id>\d+)\|\w+\|(?P<seqname>\S+)\|\s+(?P<number>\d+)\s+(?P<start>\d+)\s+(?P<end>\d+)', re.I)
@@ -82,7 +83,7 @@ def parse_ncbi(file):
         while not m:
             m = ncbi_start_pattern.match(line.rstrip())
 
-        gene = Gene(number = int(m.group('number')), name = m.group('name'))
+        gene = Gene(number=int(m.group('number')), name=qutils.correct_name(m.group('name')))
 
         the_rest_lines = []
 
@@ -140,7 +141,7 @@ def parse_txt(file):
         if not m:
             m = txt_pattern.match(line)
         if m:
-            gene = Gene(number = int(m.group('number')), seqname = m.group('seqname'))
+            gene = Gene(number=int(m.group('number')), seqname=qutils.correct_name(m.group('seqname')))
             s = int(m.group('start'))
             e = int(m.group('end'))
             gene.start = min(s, e)
@@ -166,7 +167,7 @@ def parse_gff(file, feature):
     for line in file:
         m = gff_pattern.match(line)
         if m and m.group('feature') == feature:
-            gene = Gene(seqname = m.group('seqname'), start = int(m.group('start')), end = int(m.group('end')))
+            gene = Gene(seqname=qutils.correct_name(m.group('seqname')), start=int(m.group('start')), end=int(m.group('end')))
 
             attributes = m.group('attributes').split(';')
             for attr in attributes:

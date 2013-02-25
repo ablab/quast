@@ -13,6 +13,7 @@ import zipfile
 import bz2
 import os
 import sys
+import re
 import qconfig
 import datetime
 
@@ -149,3 +150,7 @@ def remove_reports(output_dirpath):
     html_report_aux_dir = os.path.join(output_dirpath, qconfig.html_aux_dir)
     if os.path.isdir(html_report_aux_dir):
         shutil.rmtree(html_report_aux_dir)
+
+
+def correct_name(name):
+    return re.sub(r'[^\w\._\-+]', '_', name.strip())

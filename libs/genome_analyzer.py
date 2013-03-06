@@ -4,6 +4,7 @@
 # See file LICENSE for details.
 ############################################################################
 
+import logging
 import os
 import fastaparser
 import genes_parser
@@ -40,7 +41,8 @@ def do(reference, filenames, nucmer_dir, output_dir, genes_filename, operons_fil
     nucmer_prefix = os.path.join(nucmer_dir, 'nucmer_output')
 
     print_timestamp()
-    print 'Running Genome analyzer...'
+    log = logging.getLogger('quast')
+    log.info('Running Genome analyzer...')
 
     if not os.path.isdir(output_dir):
         os.mkdir(output_dir)
@@ -95,7 +97,7 @@ def do(reference, filenames, nucmer_dir, output_dir, genes_filename, operons_fil
             else:
                 notice('Annotated ' + feature_name + 's file was not provided! Use -' + feature_name[0].capitalize() + ' option to specify it!')
         else:
-            print '  Loaded ' + str(len(feature_container.region_list)) + ' ' + feature_name + 's'
+            log.info('  Loaded ' + str(len(feature_container.region_list)) + ' ' + feature_name + 's')
             res_file.write(feature_name + 's loaded: ' + str(len(feature_container.region_list)) + '\n')
             feature_container.found_list = [0] * len(feature_container.region_list) # 0 - gene isn't found, 1 - gene is found, 2 - part of gene is found
             feature_container.chr_names_dict = chromosomes_names_dict(feature_container.region_list, reference_chromosomes.keys())
@@ -118,7 +120,7 @@ def do(reference, filenames, nucmer_dir, output_dir, genes_filename, operons_fil
 
     # process all contig files  
     for id, filename in enumerate(filenames):
-        print ' ', id_to_str(id) + os.path.basename(filename)
+        log.info(' ' + id_to_str(id) + os.path.basename(filename))
 
         nucmer_base_filename = os.path.join(nucmer_prefix, os.path.basename(filename) + '.coords')
         if qconfig.use_all_alignments:
@@ -327,7 +329,7 @@ def do(reference, filenames, nucmer_dir, output_dir, genes_filename, operons_fil
         plotter.histogram(filenames, genome_mapped, output_dir + '/genome_fraction_histogram', 'Genome fraction, %',
             all_pdf, top_value=100)
 
-    print '  Done.'
+    log.info('  Done.')
 
 class AlignedBlock():
     def __init__(self, seqname=None, start=None, end=None):

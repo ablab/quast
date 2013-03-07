@@ -159,7 +159,7 @@ def predict_genes(id, fasta_fpath, gene_lengths, out_dirpath, tool_dirpath, tmp_
             if not ok:
                 pass  # TODO
             else:
-                genes = parse_gmhmm_out(gmhmm_fpath)
+                genes = dict(parse_gmhmm_out(gmhmm_fpath))
                 add_genes_to_gff(genes, out_gff_fpath)
 
                 cnt = [sum([gene[3] - gene[2] > x for gene in genes]) for x in gene_lengths]
@@ -167,7 +167,7 @@ def predict_genes(id, fasta_fpath, gene_lengths, out_dirpath, tool_dirpath, tmp_
                 total_count = len(genes)
 
                 return out_gff_fpath, unique_count, total_count, cnt
-            
+
     else:
         out_gff_fpath, unique, total, cnt = gmhmm_p_everyGC(
             tool_dirpath, fasta_fpath, out_fpath, gene_lengths, err_fpath, tmp_dirpath)

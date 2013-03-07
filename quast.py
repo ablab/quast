@@ -248,7 +248,7 @@ def main(args):
         elif opt == '--no-html':
             qconfig.html_report = False
 
-        elif opt in ("m", "--meta"):
+        elif opt in ("-m", "--meta"):
             qconfig.meta = True
 
         elif opt in ('-d', "--debug"):

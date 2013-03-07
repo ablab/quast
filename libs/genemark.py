@@ -26,13 +26,13 @@ def gc_content(sequence):
     return 100 * GC_count / ACGT_length
 
 
-def gmhmm_p(tool_exec, fasta_path, heu_path, out_path, err_file):
-    """ Run GeneMark.hmm with this heuristic model (heu_path)
+def gmhmm_p(tool_exec, fasta_fpath, heu_fpath, out_fpath, err_file):
+    """ Run GeneMark.hmm with this heuristic model (heu_dirpath)
         prompt> gmhmmp -m heu_11_45.mod sequence
         prompt> gm -m heu_11_45.mat sequence"""
-    param = [tool_exec, '-d', '-p', '0', '-m', heu_path, '-o', out_path, fasta_path]
+    param = [tool_exec, '-d', '-p', '0', '-m', heu_fpath, '-o', out_fpath, fasta_fpath]
     subprocess.call(param, stdout=err_file, stderr=err_file)
-    return os.path.isfile(out_path)
+    return os.path.isfile(out_fpath)
 
 
 def install_genemark(tool_dirpath):
@@ -119,9 +119,9 @@ def gmhmm_p_everyGC(tool_dirpath, fasta_fpath, out_fname, gene_lengths, err_fpat
         fpath = os.path.join(tmp_dirname, fname)
         gmhmm_fpath = fpath + '.gmhmm'
         gc_str, ext = os.path.splitext(fname)
-        heu_path = os.path.join(heu_dirpath, 'heu_11_' + gc_str + '.mod')
+        heu_fpath = os.path.join(heu_dirpath, 'heu_11_' + gc_str + '.mod')
         with open(err_fpath, 'a') as err_file:
-            if gmhmm_p(tool_exec_fpath, fpath, heu_path, gmhmm_fpath, err_file):
+            if gmhmm_p(tool_exec_fpath, fpath, heu_fpath, gmhmm_fpath, err_file):
                 genes.extend(parse_gmhmm_out(gmhmm_fpath))
 
     if not qconfig.debug:
@@ -147,8 +147,30 @@ def predict_genes(id, fasta_fpath, gene_lengths, out_dirpath, tool_dirpath, tmp_
     err_fpath = os.path.join(out_dirpath, out_fname + '_genemark.stderr')
     # out_gff_fpath, out_fasta_path, unique, total, cnt = gmhmm_p_everyGC(tool_dirpath,
     #     fasta_fpath, out_fpath, gene_lengths, err_fpath)
-    out_gff_fpath, unique, total, cnt = gmhmm_p_everyGC(
-        tool_dirpath, fasta_fpath, out_fpath, gene_lengths, err_fpath, tmp_dirpath)
+
+    if qconfig.meta:
+        tool_exec_fpath = os.path.join(tool_dirpath, 'gmhmmp')
+        heu_fpath = os.path.join(tool_dirpath, 'MetaGeneMark_v1.mod')
+        gmhmm_fpath = fasta_fpath + '.gmhmm'
+        out_gff_fpath = out_fname + '_genes.gff'
+
+        with open(err_fpath, 'a') as err_file:
+            ok = gmhmm_p(tool_exec_fpath, fasta_fpath, heu_fpath, gmhmm_fpath, err_file)
+            if not ok:
+                pass  # TODO
+            else:
+                genes = parse_gmhmm_out(gmhmm_fpath)
+                add_genes_to_gff(genes, out_gff_fpath)
+
+                cnt = [sum([gene[3] - gene[2] > x for gene in genes]) for x in gene_lengths]
+                unique_count = len(set([gene[4] for gene in genes]))
+                total_count = len(genes)
+
+                return out_gff_fpath, unique_count, total_count, cnt
+            
+    else:
+        out_gff_fpath, unique, total, cnt = gmhmm_p_everyGC(
+            tool_dirpath, fasta_fpath, out_fpath, gene_lengths, err_fpath, tmp_dirpath)
 
     log.info('  ' + id_to_str(id) + '  Genes = ' + str(unique) + ' unique, ' + str(total) + ' total')
     log.info('  ' + id_to_str(id) + '  Predicted genes (GFF): ' + out_gff_fpath)

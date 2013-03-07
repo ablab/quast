@@ -34,10 +34,10 @@ def usage():
 
     if RELEASE_MODE:
         print >> sys.stderr, "Options:"
-        print >> sys.stderr, "-o           <dirname>       directory to store all result files [default: quast_results/results_<datetime>]"
-        print >> sys.stderr, "-R           <filename>      reference genome file"
-        print >> sys.stderr, "-G/--genes   <filename>      annotated genes file"
-        print >> sys.stderr, "-O/--operons <filename>      annotated operons file"
+        print >> sys.stderr, "-o            <dirname>      directory to store all result files [default: quast_results/results_<datetime>]"
+        print >> sys.stderr, "-R            <filename>     reference genome file"
+        print >> sys.stderr, "-G  --genes   <filename>     annotated genes file"
+        print >> sys.stderr, "-O  --operons <filename>     annotated operons file"
         print >> sys.stderr, "--min-contig <int>           lower threshold for contig length [default: %s]" % qconfig.min_contig
         print >> sys.stderr, ""
         print >> sys.stderr, "Advanced options:"
@@ -57,13 +57,16 @@ def usage():
         print >> sys.stderr, "--strict-NA                       breaks contigs by any misassembly event to compute NAx and NGAx."
         print >> sys.stderr, "                                  By default, QUAST breaks contigs only by extensive misassemblies (not local ones)"
         print >> sys.stderr, ""
-        print >> sys.stderr, "-h/--help           prints this usage message"
+        print >> sys.stderr, "-m  --meta                        Metagenomic assembly. Uses MetaGeneMark for gene prediction. Accepts multiple reference files (comma-separated list of filenames after -R option)"
+        print >> sys.stderr, ""
+        print >> sys.stderr, "-h  --help                        prints this message"
+
     else:
         print >> sys.stderr, 'Options with arguments'
         print >> sys.stderr, "-o  --output-dir             directory to store all result files [default: quast_results/results_<datetime>]"
-        print >> sys.stderr, "-R           <filename>      reference genome file"
-        print >> sys.stderr, "-G/--genes   <filename>      annotated genes file"
-        print >> sys.stderr, "-O/--operons <filename>      annotated operons file"
+        print >> sys.stderr, "-R            <filename>     reference genome file"
+        print >> sys.stderr, "-G  --genes   <filename>     annotated genes file"
+        print >> sys.stderr, "-O  --operons <filename>     annotated operons file"
         print >> sys.stderr, "-M  --min-contig <int>       lower threshold for contig length [default: %s]" % qconfig.min_contig
         print >> sys.stderr, "-t  --contig-thresholds      comma-separated list of contig length thresholds [default: %s]" % qconfig.contig_thresholds
         print >> sys.stderr, "-S  --gene-thresholds        comma-separated list of threshold lengths of genes to search with Gene Finding module [default: %s]" % qconfig.genes_lengths
@@ -72,20 +75,20 @@ def usage():
         print >> sys.stderr, "    --est-ref-size <int>     Estimated reference size (for calculating NG)"
         print >> sys.stderr, ""
         print >> sys.stderr, 'Options without arguments'
-        print >> sys.stderr, "-f  --gene-finding            uses Gene Finding module"
-        print >> sys.stderr, "-s  --scaffolds               this flag informs QUAST that provided assemblies are scaffolds"
-        print >> sys.stderr, "    --gage                    uses GAGE (results are in gage_report.txt)"
-        print >> sys.stderr, "-e  --eukaryote               genome is eukaryotic"
-        print >> sys.stderr, "-a  --allow-ambiguity         uses all alignments of contigs covering repeats (ambiguous)"
-        print >> sys.stderr, "-u  --use-all-alignments      computes Genome fraction, # genes, # operons in v.1.0-1.3 style"
-        print >> sys.stderr, "-n  --strict-NA               breaks contigs by any misassembly event to compute NAx and NGAx."
-        print >> sys.stderr, "-j  --save-json               saves the output also in the JSON format"
-        print >> sys.stderr, "-J  --save-json-to <path>     saves the JSON-output to a particular path"
-        print >> sys.stderr, "`   --no-html                 doesn't build html report"
-        print >> sys.stderr, "`   --no-plots                doesn't draw plots (to make quast faster)"
+        print >> sys.stderr, "-f  --gene-finding           uses Gene Finding module"
+        print >> sys.stderr, "-s  --scaffolds              this flag informs QUAST that provided assemblies are scaffolds"
+        print >> sys.stderr, "    --gage                   uses GAGE (results are in gage_report.txt)"
+        print >> sys.stderr, "-e  --eukaryote              genome is eukaryotic"
+        print >> sys.stderr, "-a  --allow-ambiguity        uses all alignments of contigs covering repeats (ambiguous)"
+        print >> sys.stderr, "-u  --use-all-alignments     computes Genome fraction, # genes, # operons in v.1.0-1.3 style"
+        print >> sys.stderr, "-n  --strict-NA              breaks contigs by any misassembly event to compute NAx and NGAx."
+        print >> sys.stderr, "-j  --save-json              saves the output also in the JSON format"
+        print >> sys.stderr, "-J  --save-json-to <path>    saves the JSON-output to a particular path"
+        print >> sys.stderr, "`   --no-html                doesn't build html report"
+        print >> sys.stderr, "`   --no-plots               doesn't draw plots (to make quast faster)"
         print >> sys.stderr, ""
         print >> sys.stderr, "-d  --debug                  runs in debug mode"
-        print >> sys.stderr, "-h  --help                   prints this usage message"
+        print >> sys.stderr, "-h  --help                   prints this message"
 
 
 def corrected_fname_for_nucmer(fpath):
@@ -244,6 +247,9 @@ def main(args):
 
         elif opt == '--no-html':
             qconfig.html_report = False
+
+        elif opt in ("m", "--meta"):
+            qconfig.meta = True
 
         elif opt in ('-d', "--debug"):
             qconfig.debug = True

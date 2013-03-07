@@ -17,12 +17,14 @@ from libs import qconfig
 from libs.fastaparser import read_fasta, write_fasta
 from qutils import id_to_str, print_timestamp
 
+
 def gc_content(sequence):
     GC_count = sequence.count('G') + sequence.count('C')
     ACGT_length = len(sequence) - sequence.count('N')
     if not ACGT_length:
         return 0
     return 100 * GC_count / ACGT_length
+
 
 def gmhmm_p(tool_exec, fasta_path, heu_path, out_path, err_file):
     """ Run GeneMark.hmm with this heuristic model (heu_path)
@@ -33,23 +35,23 @@ def gmhmm_p(tool_exec, fasta_path, heu_path, out_path, err_file):
     return os.path.isfile(out_path)
 
 
-def install_genemark(tool_dir):
+def install_genemark(tool_dirpath):
     """Installation instructions for GeneMark Suite.
 
     Please, copy key "gm_key" into users home directory as:
     cp gm_key ~/.gm_key
     (genemark_suite_linux_XX/gmsuite/INSTALL)
     """
-    gm_key_path = os.path.join(tool_dir, 'gm_key')
+    gm_key_path = os.path.join(tool_dirpath, 'gm_key')
     if not os.path.isfile(os.path.expanduser('~/.gm_key')):
         # GeneMark needs this key to work.
         shutil.copyfile(gm_key_path, os.path.expanduser('~/.gm_key'))
 
 
 #Gene = namedtuple('Gene', ['contig_id', 'strand', 'left_index', 'right_index', 'seq'])
-def parse_gmhmm_out(out_path):
+def parse_gmhmm_out(out_fpath):
     reading_gene = False
-    with open(out_path) as f:
+    with open(out_fpath) as f:
         for line in f:
             if line.startswith('>gene'):
                 reading_gene = True
@@ -95,98 +97,100 @@ def add_genes_to_fasta(genes, fasta_path):
     write_fasta(fasta_path, inner())
 
 
-def gmhmm_p_everyGC(tool_dir, fasta_path, out_name, gene_lengths, err_path, tmp_dir):
-    tool_exec = os.path.join(tool_dir, 'gmhmmp')
-    heu_dir = os.path.join(tool_dir, 'heuristic_mod')
+def gmhmm_p_everyGC(tool_dirpath, fasta_fpath, out_fname, gene_lengths, err_fpath, tmp_dirpath):
+    tool_exec_fpath = os.path.join(tool_dirpath, 'gmhmmp')
+    heu_dirpath = os.path.join(tool_dirpath, 'heuristic_mod')
 
-    out_gff_path = out_name + '_genes.gff'
-    #out_fasta_path = out_name + '_genes.fasta'
+    out_gff_fpath = out_fname + '_genes.gff'
+    # out_fasta_path = out_name + '_genes.fasta'
 
-    work_dir = tempfile.mkdtemp(dir=tmp_dir)
-    for id, seq in read_fasta(fasta_path):
+    tmp_dirname = tempfile.mkdtemp(dir=tmp_dirpath)
+    for id, seq in read_fasta(fasta_fpath):
         gc = min(70, max(30, gc_content(seq)))
-        curr_filename = str(gc - gc % 5) + '.fasta'
-        current_path = os.path.join(work_dir, curr_filename)
-        with open(current_path, 'a') as curr_out:
-            curr_out.write('>' + id + '\n' + seq + '\n')
+        gc = gc - gc % 5  # rounds to a divisible by 5
+        current_fname = str(gc) + '.fasta'
+        current_fpath = os.path.join(tmp_dirname, current_fname)
+        with open(current_fpath, 'a') as current_file:
+            current_file.write('>' + id + '\n' + seq + '\n')
 
     genes = []
-    _ , _, file_names = os.walk(work_dir).next()
-    for file_name in file_names:
-        file_path = os.path.join(work_dir, file_name)
-        file_out = file_path + '.gmhmm'
-        gc_str, ext = os.path.splitext(file_name)
-        heu_path = os.path.join(heu_dir, 'heu_11_' + gc_str + '.mod')
-        with open(err_path, 'a') as err_file:
-            if gmhmm_p(tool_exec, file_path, heu_path, file_out, err_file):
-                genes.extend(parse_gmhmm_out(file_out))
+    _, _, fnames = os.walk(tmp_dirname).next()
+    for fname in fnames:
+        fpath = os.path.join(tmp_dirname, fname)
+        gmhmm_fpath = fpath + '.gmhmm'
+        gc_str, ext = os.path.splitext(fname)
+        heu_path = os.path.join(heu_dirpath, 'heu_11_' + gc_str + '.mod')
+        with open(err_fpath, 'a') as err_file:
+            if gmhmm_p(tool_exec_fpath, fpath, heu_path, gmhmm_fpath, err_file):
+                genes.extend(parse_gmhmm_out(gmhmm_fpath))
 
     if not qconfig.debug:
-        shutil.rmtree(work_dir)
+        shutil.rmtree(tmp_dirname)
 
-    add_genes_to_gff(genes, out_gff_path)
+    add_genes_to_gff(genes, out_gff_fpath)
     #add_genes_to_fasta(genes, out_fasta_path)
 
     cnt = [sum([gene[3] - gene[2] > x for gene in genes]) for x in gene_lengths]
     unique_count = len(set([gene[4] for gene in genes]))
     total_count = len(genes)
 
-    #return out_gff_path, out_fasta_path, unique_count, total_count, cnt
-    return out_gff_path, unique_count, total_count, cnt
+    #return out_gff_fpath, out_fasta_path, unique_count, total_count, cnt
+    return out_gff_fpath, unique_count, total_count, cnt
 
 
-def predict_genes(id, fasta_path, gene_lengths, out_dir, tool_dir, tmp_dir):
+def predict_genes(id, fasta_fpath, gene_lengths, out_dirpath, tool_dirpath, tmp_dirpath):
     log = logging.getLogger('quast')
-    log.info('  ' + id_to_str(id) + os.path.basename(fasta_path))
+    log.info('  ' + id_to_str(id) + os.path.basename(fasta_fpath))
 
-    out_name = os.path.basename(fasta_path)
-    out_path = os.path.join(out_dir, out_name)
-    err_path = os.path.join(out_dir, out_name + '_genemark.stderr')
-    #out_gff_path, out_fasta_path, unique, total, cnt = gmhmm_p_everyGC(tool_dir,
-    #    fasta_path, out_path, gene_lengths, err_path)
-    out_gff_path, unique, total, cnt = gmhmm_p_everyGC(tool_dir,
-        fasta_path, out_path, gene_lengths, err_path, tmp_dir)
+    out_fname = os.path.basename(fasta_fpath)
+    out_fpath = os.path.join(out_dirpath, out_fname)
+    err_fpath = os.path.join(out_dirpath, out_fname + '_genemark.stderr')
+    # out_gff_fpath, out_fasta_path, unique, total, cnt = gmhmm_p_everyGC(tool_dirpath,
+    #     fasta_fpath, out_fpath, gene_lengths, err_fpath)
+    out_gff_fpath, unique, total, cnt = gmhmm_p_everyGC(
+        tool_dirpath, fasta_fpath, out_fpath, gene_lengths, err_fpath, tmp_dirpath)
 
     log.info('  ' + id_to_str(id) + '  Genes = ' + str(unique) + ' unique, ' + str(total) + ' total')
-    log.info('  ' + id_to_str(id) + '  Predicted genes (GFF): ' + out_gff_path)
+    log.info('  ' + id_to_str(id) + '  Predicted genes (GFF): ' + out_gff_fpath)
 
     log.info('  ' + id_to_str(id) + 'Gene prediction is finished.')
     return unique, cnt
 
 
-def do(fasta_paths, gene_lengths, out_dir):
+def do(fasta_fpaths, gene_lengths, out_dirpath):
     print_timestamp()
     log = logging.getLogger('quast')
-    log.info('Running GeneMark tool...')
 
-    tmp_dir = os.path.join(out_dir, 'tmp')
-    if not os.path.isdir(out_dir):
-        os.mkdir(out_dir)
-    if not os.path.isdir(tmp_dir):
-        os.mkdir(tmp_dir)
+    tool_name = 'MetaGeneMark' if qconfig.meta else 'GeneMark'
+    tool_dirname = 'metagenemark' if qconfig.meta else 'genemark'
 
-    if platform.system() == 'Darwin':
-        tool_dir = os.path.join(qconfig.LIBS_LOCATION, 'genemark', 'macosx')
+    log.info('Running %s tool...' % tool_name)
+
+    tmp_dirpath = os.path.join(out_dirpath, 'tmp')
+    if not os.path.isdir(out_dirpath):
+        os.mkdir(out_dirpath)
+    if not os.path.isdir(tmp_dirpath):
+        os.mkdir(tmp_dirpath)
+
+    tool_dirpath = os.path.join(qconfig.LIBS_LOCATION, tool_dirname, qconfig.platform_name)
+    if not os.path.exists(tool_dirpath):
+        log.warning('  Sorry, can\'t use %s on this platform, skipping gene prediction.' % tool_name)
+
     else:
-        if platform.architecture()[0] == '64bit':
-            tool_dir  = os.path.join(qconfig.LIBS_LOCATION, 'genemark', 'linux_64')
-        else:
-            tool_dir  = os.path.join(qconfig.LIBS_LOCATION, 'genemark', 'linux_32')
+        install_genemark(tool_dirpath)
 
-    install_genemark(tool_dir)
+        n_jobs = min(len(fasta_fpaths), qconfig.max_threads)
+        from joblib import Parallel, delayed
+        results = Parallel(n_jobs=n_jobs)(delayed(predict_genes)(id, fasta_fpath, gene_lengths, out_dirpath, tool_dirpath, tmp_dirpath)
+            for id, fasta_fpath in enumerate(fasta_fpaths))
 
-    n_jobs = min(len(fasta_paths), qconfig.max_threads)
-    from joblib import Parallel, delayed
-    results = Parallel(n_jobs=n_jobs)(delayed(predict_genes)(id, fasta_path, gene_lengths, out_dir, tool_dir, tmp_dir)
-        for id, fasta_path in enumerate(fasta_paths))
+        # saving results
+        for id, fasta_path in enumerate(fasta_fpaths):
+            report = reporting.get(fasta_path)
+            unique, cnt = results[id]
+            report.add_field(reporting.Fields.PREDICTED_GENES_UNIQUE, unique)
+            report.add_field(reporting.Fields.PREDICTED_GENES, cnt)
 
-    # saving results
-    for id, fasta_path in enumerate(fasta_paths):
-        report = reporting.get(fasta_path)
-        unique, cnt = results[id]
-        report.add_field(reporting.Fields.PREDICTED_GENES_UNIQUE, unique)
-        report.add_field(reporting.Fields.PREDICTED_GENES, cnt)
-
-    if not qconfig.debug:
-        shutil.rmtree(tmp_dir)
-    log.info('  Done.')
+        if not qconfig.debug:
+            shutil.rmtree(tmp_dirpath)
+        log.info('  Done.')

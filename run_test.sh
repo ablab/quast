@@ -28,8 +28,8 @@ set -x
 
                                                 $python_interpreter quast.py $contigs_1K_1 $contigs_1K_2 -o $results_dir/c1k1_c1k2
 
-if [ ! $? -eq 0 ]; then exit 1; fi; echo; echo; $python_interpreter quast.py $contigs_1K_1 $contigs_1K_2 -o $results_dir/c1k1_c1k2_R_m                -R $reference_1K -m
-if [ ! $? -eq 0 ]; then exit 1; fi; echo; echo; $python_interpreter quast.py $contigs_1K_1 $contigs_1K_2 -o $results_dir/c1k1_c1k2_R_m_gene-finding   -R $reference_1K -m --gene-finding
+#if [ ! $? -eq 0 ]; then exit 1; fi; echo; echo; $python_interpreter quast.py $contigs_1K_1 $contigs_1K_2 -o $results_dir/c1k1_c1k2_R_m                -R $reference_1K -m
+#if [ ! $? -eq 0 ]; then exit 1; fi; echo; echo; $python_interpreter quast.py $contigs_1K_1 $contigs_1K_2 -o $results_dir/c1k1_c1k2_R_m_gene-finding   -R $reference_1K -m --gene-finding
 
 if [ ! $? -eq 0 ]; then exit 1; fi; echo; echo; $python_interpreter quast.py $contigs_1K_1 $contigs_1K_2 -o $results_dir/c1k1_c1k2_R 		 -R $reference_1K
 if [ ! $? -eq 0 ]; then exit 1; fi; echo; echo; $python_interpreter quast.py $contigs_1K_1 $contigs_1K_2 -o $results_dir/c1k1_c1k2_G 		 -G $genes_1K

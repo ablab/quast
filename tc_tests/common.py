@@ -64,8 +64,11 @@ operons = 'operons.txt'
 #
 # -h  --help                        Prints this message
 
-
 common_results_dirpath = 'results'
+data_dirpath = 'data'
+
+os.system('chmod -R 777 ' + data_dirpath)
+
 if not os.path.exists(common_results_dirpath):
     os.makedirs(common_results_dirpath)
     os.system("chmod -R 777 " + common_results_dirpath)

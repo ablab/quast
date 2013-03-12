@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 from __future__ import with_statement
 import os
 import shutil
@@ -133,10 +135,10 @@ def assert_metric(name, metric, values, fname='report.tsv'):
 def run_quast(name, contigs=None, params='', expected_exit_code=0):
     results_dirpath = get_results_dirpath(name)
 
-    if os.path.isdir(results_dirpath):
+    if os.path.exists(results_dirpath):
         shutil.rmtree(results_dirpath)
-        os.makedirs(results_dirpath)
-        os.system("chmod -R 777 " + results_dirpath)
+    os.makedirs(results_dirpath)
+    os.system("chmod -R 777 " + results_dirpath)
 
     if not contigs:
         contigs = [contigs_1_10k, contigs_2_10k]

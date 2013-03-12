@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 import os
 from common import run_quast, contigs_2_1k, reference_1k, assert_metric
 

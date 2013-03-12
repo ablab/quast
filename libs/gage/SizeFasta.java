@@ -10,7 +10,7 @@ import java.util.HashMap;
 public class SizeFasta {  
   private static final NumberFormat nf = new DecimalFormat("############.#");
    private boolean ungapped = false;
-   private static final String[] suffix = {"contig", "scafSeq", "fa", "scafSeq", "fna", "fasta", "final"}; 
+   private static final String[] suffix = {"contig", "scafSeq", "fa", "scafSeq", "fna", "fasta", "final", ""};
    private static final String[] suffixFQ = {"fastq", "fq", "txt"};
 
    public SizeFasta() {

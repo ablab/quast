@@ -19,7 +19,7 @@ operons_10k = 'operons_10k.txt'
 
 contigs_1 = 'contigs.fasta'
 contigs_2 = 'contigs.fasta'
-reference = 'reference.fa'
+reference = 'reference.fa.gz'
 genes = 'genes.txt'
 operons = 'operons.txt'
 

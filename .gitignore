@@ -31,3 +31,5 @@ libs/glimmer/src/*.o
 libs/glimmer/src/make.log
 libs/glimmer/src/make.err
 libs/glimmer/glimmerhmm
+
+tc_tests/results/

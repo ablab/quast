@@ -107,8 +107,12 @@ def assert_report_header(name, contigs, fname='report.tsv'):
 
     with open(os.path.join(results_dirpath, fname)) as report_tsv_f:
         header = report_tsv_f.readline()
+        if not header:
+            print 'Empty %s' % fname
+            exit(6)
+
         if len(header.split('\t')) != len(contigs) + 1:
-            print 'Incorrect %s header: %s' % fname, header
+            print 'Incorrect %s header: %s' % (fname, header)
             exit(6)
 
 
@@ -154,9 +158,12 @@ def run_quast(name, contigs=None, params='', expected_exit_code=0):
     print
     os.chdir('..')
 
-    if exit_code != 0:
-        if exit_code != expected_exit_code:
-            print 'Quast finished abnormally with exit code %s' % str(exit_code)
-            exit(4)
+    if exit_code != expected_exit_code:
+        if expected_exit_code == 0:
+            print 'Quast finished abnormally with exit code %d' % exit_code
+            exit(1)
         else:
-            exit(0)
+            print 'Expected exit code %d, got %d instead' % (expected_exit_code, exit_code)
+            exit(4)
+    else:
+        exit(0)

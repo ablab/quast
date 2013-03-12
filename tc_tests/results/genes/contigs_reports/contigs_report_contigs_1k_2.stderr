@@ -1,0 +1,13 @@
+1: PREPARING DATA
+2,3: RUNNING mummer AND CREATING CLUSTERS
+# reading input file "/Users/vladsaveliev/Dropbox/bio/quast/quast_master/tc_tests/results/genes/contigs_reports/nucmer_output/contigs_1k_2.ntref" of length 1001
+# construct suffix tree for sequence of length 1001
+# (maximum reference length is 536870908)
+# (maximum query length is 4294967295)
+# CONSTRUCTIONTIME /Users/vladsaveliev/Dropbox/bio/quast/quast_master/libs/MUMmer3.23-osx/mummer /Users/vladsaveliev/Dropbox/bio/quast/quast_master/tc_tests/results/genes/contigs_reports/nucmer_output/contigs_1k_2.ntref 0.00
+# reading input file "/Users/vladsaveliev/Dropbox/bio/quast/quast_master/tc_tests/results/genes/corrected_input/contigs_1k_2" of length 760
+# matching query-file "/Users/vladsaveliev/Dropbox/bio/quast/quast_master/tc_tests/results/genes/corrected_input/contigs_1k_2"
+# against subject-file "/Users/vladsaveliev/Dropbox/bio/quast/quast_master/tc_tests/results/genes/contigs_reports/nucmer_output/contigs_1k_2.ntref"
+# COMPLETETIME /Users/vladsaveliev/Dropbox/bio/quast/quast_master/libs/MUMmer3.23-osx/mummer /Users/vladsaveliev/Dropbox/bio/quast/quast_master/tc_tests/results/genes/contigs_reports/nucmer_output/contigs_1k_2.ntref 0.00
+# SPACE /Users/vladsaveliev/Dropbox/bio/quast/quast_master/libs/MUMmer3.23-osx/mummer /Users/vladsaveliev/Dropbox/bio/quast/quast_master/tc_tests/results/genes/contigs_reports/nucmer_output/contigs_1k_2.ntref 0.00
+4: FINISHING DATA

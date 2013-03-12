@@ -1,0 +1,68 @@
+Aligning contigs to reference...
+	Running Nucmer...
+Parsing coords...
+Loading Assembly...
+Loading reference...
+	Loaded [gi|49175990|ref|NC_000913.2|]
+Loading SNPs...
+Loading regions...
+	No regions given, using whole reference.
+	Total Regions: 1
+	Total Region Length: 1000
+Analyzing contigs...
+	CONTIG: NODE_0 (760bp)
+Top Length: 600  Top ID: 100.0
+		This contig is misassembled. 2 total aligns.
+			Real Alignment 1: 1 600 | 1 600 | 600 600 | 100.0 | gi|49175990|ref|NC_000913.2| NODE_0
+			  Gap between these two alignments (local misassembly). Inconsistency = 240
+			Real Alignment 2: 841 1000 | 601 760 | 160 160 | 100.0 | gi|49175990|ref|NC_000913.2| NODE_0
+			  Fake misassembly (caused by linear representation of circular genome) between these two alignments
+			Real Alignment 0: 841 1000 | 601 760 | 160 160 | 100.0 | gi|49175990|ref|NC_000913.2| NODE_0
+Analyzing coverage...
+Writing SNPs into /Users/vladsaveliev/Dropbox/bio/quast/quast_master/tc_tests/results/genes/contigs_reports/nucmer_output/contigs_1k_2.used_snps
+	Reference gi|49175990|ref|NC_000913.2|: 3 total alignments. 1 total regions.
+		Region: 1 to 1000 (1000 bp)
+
+			Align 1: 1 600 NODE_0 1 600
+				Gap between this and next alignment: 600 to 841 (240 bp)
+				Next Alignment: 841 1000 NODE_0 601 760
+			Align 2: 841 1000 NODE_0 601 760
+			END in current alignment.  Modifying 1000 to 1000.
+Analysis is finished!
+Founded SNPs were written into /Users/vladsaveliev/Dropbox/bio/quast/quast_master/tc_tests/results/genes/contigs_reports/nucmer_output/contigs_1k_2.used_snps
+
+Results:
+	Local Misassemblies: 1
+	Misassemblies: 0
+		Relocations: 0
+		Translocations: 0
+		Inversions: 0
+	Misassembled Contigs: 0
+	Misassembled Contig Bases: 0
+	Misassmblies Inter-Contig Overlap: 0
+Uncovered Regions: 0 (0)
+Unaligned Contigs: 0 + 0 part
+Partially Unaligned Contigs with Misassemblies: 0
+Unaligned Contig Bases: 0
+
+Ambiguously Mapped Contigs: 0
+Total Bases in Ambiguously Mapped Contigs: 0
+Note that --allow-ambiguity option was not set and these contigs were skipped.
+
+	Covered Bases: 760
+
+	SNPs: 0
+	Insertions: 0
+	Deletions: 0
+
+	Positive Gaps: 1
+		Internal Gaps:  1
+		External Gaps:  0
+		External Gap Total:  0
+		External Gap Average: 0
+	Negative Gaps: 0
+		Internal Overlaps:  0
+		External Overlaps:  0
+		External Overlaps Total:  0
+		External Overlaps Average: 0
+	Contigs with Redundant Alignments: 0 (0)

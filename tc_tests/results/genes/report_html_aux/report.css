@@ -1,0 +1,205 @@
+
+
+/*.blocks > div {*/
+/*float: left;*/
+/*margin-bottom: 5.5em;*/
+/*margin-top: 40px;*/
+/*}*/
+
+.plot-switch {
+    margin-left: 10px;
+}
+
+.plot-wrapper {
+    padding-right: 80px;
+}
+.plot-wrapper#cumulative-plot-div {
+    /*margin-bottom: 5.5em;*/
+    /*padding-right: 0;*/
+}
+.plot-wrapper:last-child {
+    /*margin-bottom: 0px;*/
+}
+
+.plot-header {
+    margin-left: 0px;
+    font-weight: bold;
+    height: 1.5em;
+    display: block;
+}
+
+.plots {
+    margin-bottom: 0px;
+    float: left;
+    /*border: 1px solid green;*/
+}
+.plots td {
+    vertical-align: top;
+    white-space: nowrap;
+    /*border: 1px solid red;*/
+}
+
+#legend-placeholder {
+    margin-top: -2px;
+    margin-left: -5px;
+    position: relative;
+    z-index: 0;
+}
+.legendColorBox div {
+    display: none;
+}
+#legend-placeholder td {
+    vertical-align: top;
+    white-space: nowrap;
+}
+
+#plot-placeholder {
+    width: 962px;
+    height: 600px;
+
+    /*min-width: 500px;*/
+    /*min-height: 500px;*/
+    /*width: 100%;*/
+    /*min-height: 400px;*/
+    /*height: 50%;*/
+
+    margin-left: -125px;
+    margin-right: 20px;
+    float: left;
+
+    z-index: 2;
+
+    /*border: 1px solid blue;*/
+}
+
+/*.cumulative-plot-placeholder {*/
+/*width: 957px;*/
+/*}*/
+
+#report .header-tr td, #report .subheader-tr td {
+    font-weight: bold;
+    border-bottom: 1px solid #bbb;
+}
+#report {
+    font-size: 1em;
+    margin-left: 0px;
+    margin-bottom: 50px;
+    /*min-width: 726px;*/
+    min-width: 532px;
+
+    float: left;
+
+    margin-right: 100px;
+}
+#report td {
+    padding: 2px 1em 0 0;
+    margin: 0;
+    white-space: nowrap;
+    min-width: 100px;
+    max-width: 200px;
+}
+#report td:last-child {
+    padding-right: 0;
+}
+#report .subheader-tr td {
+    height: 20px;
+    vertical-align: bottom;
+}
+
+.row_hidden {
+    display: none;
+}
+
+
+/*
+.plots {
+    margin-left: 1em;
+}*/
+/*.blocks > div {*/
+/*float: left;*/
+/*margin-bottom: 5.5em;*/
+/*margin-top: 0px;*/
+/*}*/
+/*.blocks > div#cumulative-plot-div {*/
+/*margin-bottom: 5.5em;*/
+/*padding-right: 0;*/
+/*}*/
+/*.blocks > div#report {*/
+/*margin-bottom: 1em;*/
+/*}*/
+/*.blocks > div:last-child {*/
+/*margin-bottom: 40px;*/
+/*}*/
+
+
+/*.plot-wrapper {*/
+/*padding-right: 50px;*/
+/*}*/
+
+/*.plot-header {*/
+/*margin-left: 125px;*/
+/*font-weight: bold;*/
+/*height: 1.5em;*/
+/*display: block;*/
+/*}*/
+
+
+#report .report-table-header {
+    font-weight: bold;
+}
+
+/*#report tr:first-child td {*/
+/*border-bottom: 1px solid #bbb;*/
+/*}*/
+#reprot thead td {
+    border-bottom: 1px solid #bbb;
+}
+
+#contigs_are_ordered {
+    z-index: 0;
+
+    position: relative;
+}
+
+
+/*************/
+/* Plot tips */
+
+#plot_tip {
+    position: absolute;
+    opacity: 1;
+    padding: 2px 5px 2px 5px;
+
+    z-index: 1;
+
+    /*background-image: url("/static/img/semi-transparent-10px.png");*/
+}
+
+#plot_tip_vertical_rule, #plot_tip_horizontal_rule {
+    position: absolute;
+    border: 1px solid #BBB;
+    z-index: -2;
+}
+
+#plot_tip_vertical_rule {
+    border-left: 1px;
+}
+
+#plot_tip_horizontal_rule {
+    border-top: 1px;
+}
+
+.white_stroked {
+    color: black;
+    background-color: white;
+    text-shadow:
+        -3px -3px 0 white,
+        3px -3px 0 white,
+        -3px 3px 0 white,
+        3px 3px 0 white;
+}
+/*************/
+
+#header_element, #dataset_name_p, #comment_p {
+    max-width: 500px;
+}

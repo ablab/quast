@@ -1,0 +1,68 @@
+QUAST started: ../../quast.py -o ../results/genes contigs_1k_2.fasta -R reference_1k.fa -G genes_1k.txt 
+Version 2.2
+
+System information:
+  OS: Darwin-12.2.1-x86_64-i386-64bit
+  Python version: 2.5.6
+  Problem occurred when getting system information
+
+Started: 2013-03-12 16:07:40
+
+Logging to /Users/vladsaveliev/Dropbox/bio/quast/quast_master/tc_tests/results/genes/quast.log
+
+NOTICE: Output directory already exists. Existing Nucmer alignments can be used.
+Processing contig files and reference...
+  contigs_1k_2.fasta ==> contigs_1k_2
+Done.
+WARNING! Can't draw plots: please install python-matplotlib.
+
+2013-03-12 16:07:40
+Running Basic statistics processor...
+  Reference genome:
+    reference_1k, Reference length = 1000, Reference GC % = 50.70
+  Contigs files: 
+    contigs_1k_2
+  Calculating N50 and L50...
+    contigs_1k_2, N50 = 760, L50 = 1, Total length = 760, GC % = 51.05, # N's per 100 kbp =  0.00
+Done.
+
+2013-03-12 16:07:40
+Running Contigs analyzer...
+  contigs_1k_2
+  Logging to files /Users/vladsaveliev/Dropbox/bio/quast/quast_master/tc_tests/results/genes/contigs_reports/contigs_report_contigs_1k_2.stdout and contigs_report_contigs_1k_2.stderr...
+  Running Nucmer... 
+  Analysis is finished.
+  Creating total report...
+    saved to /Users/vladsaveliev/Dropbox/bio/quast/quast_master/tc_tests/results/genes/contigs_reports/misassemblies_report.txt, misassemblies_report.tsv, and misassemblies_report.tex
+  Creating total report...
+    saved to /Users/vladsaveliev/Dropbox/bio/quast/quast_master/tc_tests/results/genes/contigs_reports/unaligned_report.txt, unaligned_report.tsv, and unaligned_report.tex
+Done.
+
+2013-03-12 16:07:41
+Running NA-NGA tool...
+  Calculating NA50 and NGA50...
+    contigs_1k_2, Largest alignment = 1360, NA50 = 1360, NGA50 = 1360, LA50 = 1, LGA50 = 1
+  Done.
+
+2013-03-12 16:07:41
+Running Genome analyzer...
+  Loaded 2 genes
+  NOTICE: Annotated operons file was not provided. Use -O option to specify it.
+  contigs_1k_2
+Done.
+
+NOTICE: Genes are not predicted by default. Use --gene-finding option to enable it.
+
+2013-03-12 16:07:41
+Summarizing...
+  Creating total report...
+    saved to /Users/vladsaveliev/Dropbox/bio/quast/quast_master/tc_tests/results/genes/report.txt, report.tsv, and report.tex
+  Transposed version of total report...
+    saved to /Users/vladsaveliev/Dropbox/bio/quast/quast_master/tc_tests/results/genes/transposed_report.txt, transposed_report.tsv, and transposed_report.tex
+  HTML version saved to /Users/vladsaveliev/Dropbox/bio/quast/quast_master/tc_tests/results/genes/report.html
+Done.
+
+Log saved to /Users/vladsaveliev/Dropbox/bio/quast/quast_master/tc_tests/results/genes/quast.log
+
+Finished: 2013-03-12 16:07:41
+Elapsed time: 0:00:00.711030

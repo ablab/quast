@@ -137,7 +137,7 @@ def gmhmm_p_metagenomic(tool_dirpath, fasta_fpath, err_fpath):
 
     with open(err_fpath, 'a') as err_file:
         if gmhmm_p(tool_exec_fpath, fasta_fpath, heu_fpath, gmhmm_fpath, err_file):
-            return dict(parse_gmhmm_out(gmhmm_fpath))
+            return list(parse_gmhmm_out(gmhmm_fpath))
         else:
             return None
 
@@ -151,22 +151,25 @@ def predict_genes(id, fasta_fpath, gene_lengths, out_dirpath, tool_dirpath, gmhm
     genes = gmhmm_p_function(tool_dirpath, fasta_fpath, err_fpath)
 
     if not genes:
-        return None, None
+        unique_count = None
+        count = [None] * len(gene_lengths)
 
-    out_gff_fpath = out_fname + '_genes.gff'
-    add_genes_to_gff(genes, out_gff_fpath)
-    # out_fasta_path = out_name + '_genes.fasta'
-    # add_genes_to_fasta(genes, out_fasta_fpath)
+    else:
+        out_gff_fpath = out_fname + '_genes.gff'
+        add_genes_to_gff(genes, out_gff_fpath)
+        # out_fasta_path = out_name + '_genes.fasta'
+        # add_genes_to_fasta(genes, out_fasta_fpath)
 
-    cnt = [sum([gene[3] - gene[2] > x for gene in genes]) for x in gene_lengths]
-    unique_count = len(set([gene[4] for gene in genes]))
-    total_count = len(genes)
+        count = [sum([gene[3] - gene[2] > x for gene in genes]) for x in gene_lengths]
+        unique_count = len(set([gene[4] for gene in genes]))
+        total_count = len(genes)
 
-    log.info('  ' + id_to_str(id) + '  Genes = ' + str(unique_count) + ' unique, ' + str(total_count) + ' total')
-    log.info('  ' + id_to_str(id) + '  Predicted genes (GFF): ' + out_gff_fpath)
+        log.info('  ' + id_to_str(id) + '  Genes = ' + str(unique_count) + ' unique, ' + str(total_count) + ' total')
+        log.info('  ' + id_to_str(id) + '  Predicted genes (GFF): ' + out_gff_fpath)
 
-    log.info('  ' + id_to_str(id) + 'Gene prediction is finished.')
-    return unique_count, cnt
+        log.info('  ' + id_to_str(id) + 'Gene prediction is finished.')
+
+    return unique_count, count
 
 
 def do(fasta_fpaths, gene_lengths, out_dirpath):
@@ -202,8 +205,10 @@ def do(fasta_fpaths, gene_lengths, out_dirpath):
         # saving results
         for id, fasta_path in enumerate(fasta_fpaths):
             report = reporting.get(fasta_path)
-            unique, cnt = results[id]
-            report.add_field(reporting.Fields.PREDICTED_GENES_UNIQUE, unique)
-            report.add_field(reporting.Fields.PREDICTED_GENES, cnt)
+            unique_count, count = results[id]
+            if unique_count:
+                report.add_field(reporting.Fields.PREDICTED_GENES_UNIQUE, unique_count)
+            if count:
+                report.add_field(reporting.Fields.PREDICTED_GENES, count)
 
         log.info('Done.')

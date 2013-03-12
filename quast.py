@@ -556,12 +556,12 @@ def main(args):
         genome_analyzer.do(qconfig.reference, aligned_fpaths, output_dirpath + '/contigs_reports',
                            output_dirpath + '/genome_stats', qconfig.genes, qconfig.operons, all_pdf, qconfig.draw_plots, json_outputpath, output_dirpath)
 
-    def add_empty_predicted_genes_fields():
-        #TODO: make it in a more appropriate way (don't output predicted genes if annotations are provided)
-        for id, contigs_fpath in enumerate(contigs_fpaths):
-            report = reporting.get(contigs_fpath)
-            report.add_field(reporting.Fields.PREDICTED_GENES_UNIQUE, "")
-            report.add_field(reporting.Fields.PREDICTED_GENES, [""] * len(qconfig.genes_lengths))
+    # def add_empty_predicted_genes_fields():
+    #     # TODO: make it in a more appropriate way (don't output predicted genes if annotations are provided)
+    #     for id, contigs_fpath in enumerate(contigs_fpaths):
+    #         report = reporting.get(contigs_fpath)
+    #         report.add_field(reporting.Fields.PREDICTED_GENES_UNIQUE, "")
+    #         report.add_field(reporting.Fields.PREDICTED_GENES, [""] * len(qconfig.genes_lengths))
 
     if qconfig.gene_finding:
         if qconfig.prokaryote:
@@ -579,7 +579,7 @@ def main(args):
     else:
         log.info("")
         notice("Genes are not predicted by default. Use --gene-finding option to enable it.")
-        add_empty_predicted_genes_fields()
+        # add_empty_predicted_genes_fields()
 
     ########################################################################
     ### TOTAL REPORT

@@ -8,6 +8,6 @@ incorrect_chars_contigs = 'incorrect_chars_in_sequence.fasta'
 only_ns_in_conitgs = 'only_Ns_in_sequence.fasta'
 
 
-run_quast(name, contigs=[contigs_1_1k, only_ns_in_conitgs])
+run_quast(name, contigs=[contigs_1k_1, only_ns_in_conitgs])
 check_report_files(name)
-assert_report_header(name, [contigs_1_1k, only_ns_in_conitgs])
+assert_report_header(name, [contigs_1k_1, only_ns_in_conitgs])

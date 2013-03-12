@@ -4,7 +4,7 @@ import os
 from common import *
 
 name = os.path.basename(__file__)[5:-3]
-contigs = [contigs_1_1k, contigs_2_1k]
+contigs = [contigs_1k_1, contigs_1k_2]
 
 
 run_quast(name, contigs=contigs, params='--threads 2')

@@ -227,8 +227,8 @@ from libs.qutils import print_timestamp, warning
 #
 ####################################################################################
 
-reports = {} # basefilename -> Report
-assemblies_order = [] # for printing in appropriate order
+reports = {}  # basefilename -> Report
+assemblies_order = []  # for printing in appropriate order
 
 #################################################
 
@@ -277,7 +277,7 @@ class Report(object):
 
     def get_field(self, field):
         assert field in Fields.__dict__.itervalues(), 'Unknown field: %s' % field
-        return self.d.get(field, '')
+        return self.d.get(field, None)
 
 
 def get(filename):
@@ -295,15 +295,9 @@ def delete(filename):
         reports.pop(filename)
 
 
-def reporting_filter(value):
-    if value == "":
-        return False
-    return True
-
-
-#ATTENTION! Contents numeric values, needed to be converted into strings
+# ATTENTION! Contents numeric values, needed to be converted into strings
 def table(order=Fields.order):
-    if not isinstance(order[0], tuple): # is not a groupped metrics order
+    if not isinstance(order[0], tuple):  # is not a groupped metrics order
         order = [('', order)]
 
     table = []
@@ -315,14 +309,15 @@ def table(order=Fields.order):
         for assembly_name in assemblies_order:
             report = get(assembly_name)
             value = report.get_field(field)
-            if feature is None:
+
+            if feature is None or value is None:
                 values.append(value)
             else:
                 values.append(value[i] if i < len(value) else None)
 
-        if filter(reporting_filter, values):
+        if filter(lambda v: value is not None, values):
             metric_name = field if (feature is None) else pattern % feature
-            #ATTENTION! Contents numeric values, needed to be converted to strings.
+            # ATTENTION! Contents numeric values, needed to be converted to strings.
             rows.append({
                 'metricName': metric_name,
                 'quality': quality,
@@ -335,13 +330,13 @@ def table(order=Fields.order):
         table.append((group_name, rows))
 
         for field in metrics:
-            if isinstance(field, tuple): # TODO: rewrite it nicer
+            if isinstance(field, tuple):  # TODO: rewrite it nicer
                 for i, feature in enumerate(field[1]):
                     append_line(rows, field, field[0], feature, i)
             else:
                 append_line(rows, field)
 
-    if not isinstance(order[0], tuple): # is not a groupped metrics order
+    if not isinstance(order[0], tuple):  # is not a groupped metrics order
         group_name, rows = table[0]
         return rows
     else:
@@ -363,42 +358,48 @@ def get_all_rows_out_of_table(table, is_transposed=False):
     return all_rows
 
 
+def val_to_str(val):
+    if val is None:
+        return '-'
+    else:
+        return str(val)
+
+
 def save_txt(filename, table, is_transposed=False):
     all_rows = get_all_rows_out_of_table(table)
 
     # determine width of columns for nice spaces
     colwidths = [0] * (len(all_rows[0]['values']) + 1)
     for row in all_rows:
-        for i, cell in enumerate([row['metricName']] + map(str, row['values'])):
+        for i, cell in enumerate([row['metricName']] + map(val_to_str, row['values'])):
             colwidths[i] = max(colwidths[i], len(cell))
             # output it
 
-    file = open(filename, 'w')
+    txt_file = open(filename, 'w')
 
     if qconfig.min_contig:
-        print >>file, 'All statistics are based on contigs of size >= %d bp, unless otherwise noted ' % qconfig.min_contig + \
-                      '(e.g., "# contigs (>= 0 bp)" and "Total length (>= 0 bp)" include all contigs).'
-        print >>file
+        print >>txt_file, 'All statistics are based on contigs of size >= %d bp, unless otherwise noted ' % qconfig.min_contig + \
+                          '(e.g., "# contigs (>= 0 bp)" and "Total length (>= 0 bp)" include all contigs).'
+        print >>txt_file
     for row in all_rows:
-        print >>file, '  '.join('%-*s' % (colwidth, cell) for colwidth, cell
-            in zip(colwidths, [row['metricName']] + map(str, row['values'])))
+        print >>txt_file, '  '.join('%-*s' % (colwidth, cell) for colwidth, cell
+            in zip(colwidths, [row['metricName']] + map(val_to_str, row['values'])))
 
-    file.close()
+    txt_file.close()
 
 
 def save_tsv(filename, table, is_transposed=False):
     all_rows = get_all_rows_out_of_table(table)
 
-    file = open(filename, 'w')
+    tsv_file = open(filename, 'w')
 
     for row in all_rows:
-        print >>file, '\t'.join([row['metricName']] + map(str, row['values']))
+        print >>tsv_file, '\t'.join([row['metricName']] + map(val_to_str, row['values']))
 
-    file.close()
+    tsv_file.close()
 
 
 def parse_number(val):
-    num = None
     # Float?
     try:
         num = int(val)
@@ -413,7 +414,6 @@ def parse_number(val):
 
 
 def get_num_from_table_value(val):
-    num = None
     if isinstance(val, int) or isinstance(val, float):
         num = val
 
@@ -437,18 +437,18 @@ def get_num_from_table_value(val):
 def save_tex(filename, table, is_transposed=False):
     all_rows = get_all_rows_out_of_table(table)
 
-    file = open(filename, 'w')
+    tex_file = open(filename, 'w')
     # Header
-    print >>file, '\\documentclass[12pt,a4paper]{article}'
-    print >>file, '\\begin{document}'
-    print >>file, '\\begin{table}[ht]'
-    print >>file, '\\begin{center}'
-    print >>file, '\\caption{All statistics are based on contigs of size $\geq$ %d bp, unless otherwise noted ' % qconfig.min_contig + \
-                  '(e.g., "\# contigs ($\geq$ 0 bp)" and "Total length ($\geq$ 0 bp)" include all contigs).}'
+    print >>tex_file, '\\documentclass[12pt,a4paper]{article}'
+    print >>tex_file, '\\begin{document}'
+    print >>tex_file, '\\begin{table}[ht]'
+    print >>tex_file, '\\begin{center}'
+    print >>tex_file, '\\caption{All statistics are based on contigs of size $\geq$ %d bp, unless otherwise noted ' % qconfig.min_contig + \
+                      '(e.g., "\# contigs ($\geq$ 0 bp)" and "Total length ($\geq$ 0 bp)" include all contigs).}'
 
     rows_n = len(all_rows[0]['values'])
-    print >>file, '\\begin{tabular}{|l*{' + str(rows_n) + '}{|r}|}'
-    print >>file, '\\hline'
+    print >>tex_file, '\\begin{tabular}{|l*{' + val_to_str(rows_n) + '}{|r}|}'
+    print >>tex_file, '\\hline'
 
     # Body
     for row in all_rows:
@@ -456,12 +456,12 @@ def save_tex(filename, table, is_transposed=False):
         quality = row['quality'] if ('quality' in row) else Fields.Quality.EQUAL
 
         if is_transposed or quality not in [Fields.Quality.MORE_IS_BETTER, Fields.Quality.LESS_IS_BETTER]:
-            cells = map(str, values)
+            cells = map(val_to_str, values)
         else:
             # Checking the first value, assuming the others are the same type and format
             num = get_num_from_table_value(values[0])
-            if num is None:
-                cells = map(str, values)
+            if num is None:  # Not a number
+                cells = map(val_to_str, values)
             else:
                 nums = map(get_num_from_table_value, values)
                 best = None
@@ -471,11 +471,11 @@ def save_tex(filename, table, is_transposed=False):
                     best = min(nums)
 
                 if len([num for num in nums if num != best]) == 0:
-                    cells = map(str, values)
+                    cells = map(val_to_str, values)
                 else:
-                    cells = ['HIGHLIGHTEDSTART' + str(v) + 'HIGHLIGHTEDEND'
+                    cells = ['HIGHLIGHTEDSTART' + val_to_str(v) + 'HIGHLIGHTEDEND'
                              if get_num_from_table_value(v) == best
-                             else str(v)
+                             else val_to_str(v)
                              for v in values]
 
         row = ' & '.join([row['metricName']] + cells)
@@ -493,14 +493,14 @@ def save_tex(filename, table, is_transposed=False):
         row = row.replace('HIGHLIGHTEDSTART', '{\\bf ')
         row = row.replace('HIGHLIGHTEDEND', '}')
         row += ' \\\\ \\hline'
-        print >>file, row
+        print >>tex_file, row
 
     # Footer
-    print >>file, '\\end{tabular}'
-    print >>file, '\\end{center}'
-    print >>file, '\\end{table}'
-    print >>file, '\\end{document}'
-    file.close()
+    print >>tex_file, '\\end{tabular}'
+    print >>tex_file, '\\end{center}'
+    print >>tex_file, '\\end{table}'
+    print >>tex_file, '\\end{document}'
+    tex_file.close()
 
 
 def save(output_dirpath, report_name, transposed_report_name, order):
@@ -547,7 +547,7 @@ def save(output_dirpath, report_name, transposed_report_name, order):
 
 def save_gage(output_dirpath):
     save(output_dirpath, qconfig.gage_report_prefix + qconfig.report_prefix,
-        qconfig.gage_report_prefix + qconfig.transposed_report_prefix, Fields.gage_order)
+         qconfig.gage_report_prefix + qconfig.transposed_report_prefix, Fields.gage_order)
 
 
 def save_total(output_dirpath):

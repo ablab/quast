@@ -7,7 +7,7 @@ from common import *
 name = os.path.basename(__file__)[5:-3]
 
 
-run_quast(name, contigs=[contigs_1_10k], params='--gage -R reference_10k.fa.gz')
+run_quast(name, contigs=[contigs_10k_1], params='--gage -R reference_10k.fa.gz')
 
 check_report_files(name, ['gage_report.txt',
                           'gage_report.tsv',

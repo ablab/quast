@@ -3,16 +3,17 @@
 from __future__ import with_statement
 import os
 import shutil
+import sys
 
 
-contigs_1_1k = 'contigs_1k_1.fasta'
-contigs_2_1k = 'contigs_1k_2.fasta'
+contigs_1k_1 = 'contigs_1k_1.fasta'
+contigs_1k_2 = 'contigs_1k_2.fasta'
 reference_1k = 'reference_1k.fa'
 genes_1k = 'genes_1k.txt'
 operons_1k = 'operons_1k.txt'
 
-contigs_1_10k = 'contigs_10k_1.fasta'
-contigs_2_10k = 'contigs_10k_2.fasta'
+contigs_10k_1 = 'contigs_10k_1.fasta'
+contigs_10k_2 = 'contigs_10k_2.fasta'
 reference_10k = 'reference_10k.fa.gz'
 genes_10k = 'genes_10k.txt'
 operons_10k = 'operons_10k.txt'
@@ -95,11 +96,13 @@ def check_report_files(name, report_fnames=None):
     fail = False
     for fname in report_fnames:
         if not os.path.exists(os.path.join(results_dirpath, fname)):
-            print 'File %s does not exists' % fname
+            print >> sys.stderr, 'File %s does not exists' % fname
             fail = True
 
     if fail:
         exit(5)
+    else:
+        print 'All nesessary files exist'
 
 
 def assert_report_header(name, contigs, fname='report.tsv'):
@@ -108,35 +111,38 @@ def assert_report_header(name, contigs, fname='report.tsv'):
     with open(os.path.join(results_dirpath, fname)) as report_tsv_f:
         header = report_tsv_f.readline()
         if not header:
-            print 'Empty %s' % fname
+            print >> sys.stderr, 'Empty %s' % fname
             exit(6)
 
         if len(header.split('\t')) != len(contigs) + 1:
-            print 'Incorrect %s header: %s' % (fname, header)
+            print >> sys.stderr, 'Incorrect %s header: %s' % (fname, header)
             exit(6)
 
+    print 'Report header in %s is OK' % fname
 
-def assert_metric(name, metric, values, fname='report.tsv'):
+
+def assert_metric(name, metric, values=None, fname='report.tsv'):
     results_dirpath = get_results_dirpath(name)
 
     fpath = os.path.join(results_dirpath, fname)
     if not os.path.isfile(fpath):
-        print 'File %s does not exist' % fpath
+        print >> sys.stderr, 'File %s does not exist' % fpath
         exit(5)
 
     with open(fpath) as report_tsv_f:
         for line in report_tsv_f:
             tokens = line[:-1].split('\t')
             if len(tokens) > 1 and tokens[0] == metric:
-                if values is None:
-                    print 'Assertion of "%s" in %s failed: expected that there is no such metric, got values "%s" instead' \
-                          % (metric, fname, ' '.join(tokens[1:]))
+                if values is None or tokens[1:] == values:
+                    print 'Metric %s is OK' % metric
+                    return True
+                else:
+                    print >> sys.stderr, 'Assertion of "%s" in %s failed: "%s" expected, got "%s" instead' \
+                                         % (metric, fname, ' '.join(values), ' '.join(tokens[1:]))
                     exit(7)
 
-                if tokens[1:] != list(values):
-                    print 'Assertion of "%s" in %s failed: "%s" expected, got "%s" instead' \
-                          % (metric, fname, ' '.join(values), ' '.join(tokens[1:]))
-                    exit(7)
+    print >> sys.stderr, 'Assertion of "%s" in %s failed: no such metric in the file' % (metric, fname)
+    exit(7)
 
 
 def run_quast(name, contigs=None, params='', expected_exit_code=0):
@@ -148,7 +154,7 @@ def run_quast(name, contigs=None, params='', expected_exit_code=0):
     os.system("chmod -R 777 " + results_dirpath)
 
     if not contigs:
-        contigs = [contigs_1_10k, contigs_2_10k]
+        contigs = [contigs_10k_1, contigs_10k_2]
 
     os.chdir('data')
     cmd = '../../quast.py -o ../' + results_dirpath + ' ' + ' '.join(contigs) + ' ' + params
@@ -160,10 +166,10 @@ def run_quast(name, contigs=None, params='', expected_exit_code=0):
 
     if exit_code != expected_exit_code:
         if expected_exit_code == 0:
-            print 'Quast finished abnormally with exit code %d' % exit_code
+            print >> sys.stderr, 'Quast finished abnormally with exit code %d' % exit_code
             exit(1)
         else:
-            print 'Expected exit code %d, got %d instead' % (expected_exit_code, exit_code)
+            print >> sys.stderr, 'Expected exit code %d, got %d instead' % (expected_exit_code, exit_code)
             exit(4)
-    else:
-        exit(0)
+
+    print 'QUAST worked as expected with exit code %s' % exit_code

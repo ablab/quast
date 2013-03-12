@@ -16,7 +16,7 @@ check_report_files(name, ['gage_report.txt',
                           'gage_transposed_report.txt',
                           'gage_transposed_report.tsv'])
 
-assert_metric(name, 'Assembly size', ['760'], 'gage_report.tsv')
+assert_metric(name, 'Assembly size', ['6710'], 'gage_report.tsv')
 
 
 

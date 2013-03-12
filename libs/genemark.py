@@ -50,7 +50,7 @@ def install_genemark(tool_dirpath):
         shutil.copyfile(gm_key_path, os.path.expanduser('~/.gm_key'))
 
 
-#Gene = namedtuple('Gene', ['contig_id', 'strand', 'left_index', 'right_index', 'seq'])
+# Gene = namedtuple('Gene', ['contig_id', 'strand', 'left_index', 'right_index', 'seq'])
 def parse_gmhmm_out(out_fpath):
     reading_gene = False
     with open(out_fpath) as f:
@@ -139,16 +139,19 @@ def gmhmm_p_metagenomic(tool_dirpath, fasta_fpath, err_fpath):
         if gmhmm_p(tool_exec_fpath, fasta_fpath, heu_fpath, gmhmm_fpath, err_file):
             return dict(parse_gmhmm_out(gmhmm_fpath))
         else:
-            return [None, None]
+            return None
 
 
-def predict_genes(id, fasta_fpath, gene_lengths, out_dirpath, tool_dirpath, procedure):
+def predict_genes(id, fasta_fpath, gene_lengths, out_dirpath, tool_dirpath, gmhmm_p_function):
     log.info('  ' + id_to_str(id) + os.path.basename(fasta_fpath))
 
     out_fname = os.path.basename(fasta_fpath)
     err_fpath = os.path.join(out_dirpath, out_fname + '_genemark.stderr')
 
-    genes = procedure(tool_dirpath, fasta_fpath, err_fpath)
+    genes = gmhmm_p_function(tool_dirpath, fasta_fpath, err_fpath)
+
+    if not genes:
+        return None, None
 
     out_gff_fpath = out_fname + '_genes.gff'
     add_genes_to_gff(genes, out_gff_fpath)
@@ -172,11 +175,11 @@ def do(fasta_fpaths, gene_lengths, out_dirpath):
     if qconfig.meta:
         tool_name = 'MetaGeneMark'
         tool_dirname = 'metagenemark'
-        procedure = gmhmm_p_metagenomic
+        gmhmm_p_function = gmhmm_p_metagenomic
     else:
         tool_name = 'GeneMark'
         tool_dirname = 'genemark'
-        procedure = gmhmm_p_everyGC
+        gmhmm_p_function = gmhmm_p_everyGC
 
     log.info('Running %s tool...' % tool_name)
 
@@ -192,7 +195,8 @@ def do(fasta_fpaths, gene_lengths, out_dirpath):
 
         n_jobs = min(len(fasta_fpaths), qconfig.max_threads)
         from joblib import Parallel, delayed
-        results = Parallel(n_jobs=n_jobs)(delayed(predict_genes)(id, fasta_fpath, gene_lengths, out_dirpath, tool_dirpath, procedure)
+        results = Parallel(n_jobs=n_jobs)(delayed(predict_genes)(id, fasta_fpath, gene_lengths,
+                                                                 out_dirpath, tool_dirpath, gmhmm_p_function)
             for id, fasta_fpath in enumerate(fasta_fpaths))
 
         # saving results

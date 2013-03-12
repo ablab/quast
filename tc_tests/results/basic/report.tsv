@@ -1,0 +1,12 @@
+Assembly	contigs_1k_1	contigs_1k_2
+# contigs (>= 0 bp)	1	1
+# contigs (>= 1000 bp)	1	0
+Total length (>= 0 bp)	1000	760
+Total length (>= 1000 bp)	1000	0
+# contigs	1	1
+Largest contig	1000	760
+Total length	1000	760
+GC (%)	50.70	51.05
+N50	1000	760
+N75	1000	760
+# N's per 100 kbp	0.00	0.00

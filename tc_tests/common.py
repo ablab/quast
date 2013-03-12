@@ -63,8 +63,14 @@ operons = 'operons.txt'
 # -h  --help                        Prints this message
 
 
+common_results_dirpath = 'results'
+if not os.path.exists(common_results_dirpath):
+    os.makedirs(common_results_dirpath)
+    os.system("chmod -R 777 " + common_results_dirpath)
+
+
 def get_results_dirpath(dirname):
-    dirpath = os.path.join('results', dirname)
+    dirpath = os.path.join(common_results_dirpath, dirname)
     return dirpath
 
 
@@ -129,6 +135,8 @@ def run_quast(name, contigs=None, params='', expected_exit_code=0):
 
     if os.path.isdir(results_dirpath):
         shutil.rmtree(results_dirpath)
+        os.makedirs(results_dirpath)
+        os.system("chmod -R 777 " + results_dirpath)
 
     if not contigs:
         contigs = [contigs_1_10k, contigs_2_10k]

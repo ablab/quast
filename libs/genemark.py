@@ -202,4 +202,4 @@ def do(fasta_fpaths, gene_lengths, out_dirpath):
             report.add_field(reporting.Fields.PREDICTED_GENES_UNIQUE, unique)
             report.add_field(reporting.Fields.PREDICTED_GENES, cnt)
 
-        log.info('  Done.')
+        log.info('Done.')

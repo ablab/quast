@@ -515,7 +515,7 @@ def save(output_dirpath, report_name, transposed_report_name, order):
     save_txt(report_txt_filename, tab)
     save_tsv(report_tsv_filename, tab)
     save_tex(report_tex_filename, tab)
-    log.info('      saved to ' + report_txt_filename + ', ' + os.path.basename(report_tsv_filename) + \
+    log.info('    saved to ' + report_txt_filename + ', ' + os.path.basename(report_tsv_filename) + \
              ', and ' + os.path.basename(report_tex_filename))
 
     if transposed_report_name:
@@ -541,7 +541,7 @@ def save(output_dirpath, report_name, transposed_report_name, order):
             save_txt(report_txt_filename, transposed_table, is_transposed=True)
             save_tsv(report_tsv_filename, transposed_table, is_transposed=True)
             save_tex(report_tex_filename, transposed_table, is_transposed=True)
-            log.info('      saved to ' + report_txt_filename + ', ' + os.path.basename(report_tsv_filename) + \
+            log.info('    saved to ' + report_txt_filename + ', ' + os.path.basename(report_tsv_filename) + \
                      ', and ' + os.path.basename(report_tex_filename))
 
 

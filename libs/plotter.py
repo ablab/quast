@@ -51,18 +51,20 @@ from libs.qutils import warning
 matplotlib_error = False
 try:
     import matplotlib
-    matplotlib.use('Agg') # non-GUI backend
+    matplotlib.use('Agg')  # non-GUI backend
 except:
-    warning('Can\'t draw plots: please install python-matplotlib')
+    print
+    warning('Can\'t draw plots: please install python-matplotlib.')
     matplotlib_error = True
+
 
 ####################################################################################
 
-def get_color_and_ls(color_id, filename):
-    '''
-    Returns tuple: color, line style
-    '''
 
+def get_color_and_ls(color_id, filename):
+    """
+    Returns tuple: color, line style
+    """
     ls = primary_line_style
 
     # special case: we have scaffolds and contigs
@@ -181,7 +183,7 @@ def cumulative_plot(reference, filenames, lists_of_lengths, plot_filename, title
 
     plot_filename += plots_format
     matplotlib.pyplot.savefig(plot_filename)
-    log.info('      saved to ' + plot_filename)
+    log.info('    saved to ' + plot_filename)
 
     if plots_format == '.pdf' and all_pdf:
         matplotlib.pyplot.savefig(all_pdf, format='pdf')
@@ -262,7 +264,7 @@ def Nx_plot(filenames, lists_of_lengths, plot_filename, title='Nx', reference_le
 
     plot_filename += plots_format
     matplotlib.pyplot.savefig(plot_filename)
-    log.info('      saved to ' + plot_filename)
+    log.info('    saved to ' + plot_filename)
 
     if plots_format == '.pdf' and all_pdf:
         matplotlib.pyplot.savefig(all_pdf, format='pdf')
@@ -344,7 +346,7 @@ def GC_content_plot(reference, filenames, list_of_GC_distributions, plot_filenam
 
     plot_filename += plots_format
     matplotlib.pyplot.savefig(plot_filename)
-    log.info('      saved to ' + plot_filename)
+    log.info('    saved to ' + plot_filename)
 
     if plots_format == '.pdf' and all_pdf:
         matplotlib.pyplot.savefig(all_pdf, format='pdf')
@@ -418,7 +420,7 @@ def genes_operons_plot(reference_value, filenames, files_feature_in_contigs, plo
 
     plot_filename += plots_format
     matplotlib.pyplot.savefig(plot_filename)
-    log.info('      saved to ' + plot_filename)
+    log.info('    saved to ' + plot_filename)
 
     if plots_format == '.pdf' and all_pdf:
         matplotlib.pyplot.savefig(all_pdf, format='pdf')
@@ -502,7 +504,7 @@ def histogram(filenames, values, plot_filename, title='', all_pdf=None, yaxis_ti
 
     plot_filename += plots_format
     matplotlib.pyplot.savefig(plot_filename)
-    log.info('      saved to ' + plot_filename)
+    log.info('    saved to ' + plot_filename)
 
     if plots_format == '.pdf' and all_pdf:
         matplotlib.pyplot.savefig(all_pdf, format='pdf')

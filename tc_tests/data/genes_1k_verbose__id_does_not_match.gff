@@ -1,0 +1,10 @@
+##gff-version 3
+#!gff-spec-version 1.20
+#!processor NCBI annotwriter
+##sequence-region NC_010473.1 1 4686137
+##species http://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?id=316385
+NC_010473.1	RefSeq	region	1	4686137	.	+	.	ID=id0;Dbxref=taxon:316385;Is_circular=true;gbkey=Src;genome=chromosome;mol_type=genomic DNA;old-name=Escherichia coli DH10B;strain=K-12;substrain=DH10B
+NC_010473.1	RefSeq	gene	190	255	.	+	.	ID=gene0;Name=thrL;Dbxref=GeneID:6058969;gbkey=Gene;gene=thrL;locus_tag=ECDH10B_0001
+NC_010473.1	RefSeq	CDS	190	255	.	+	0	ID=cds0;Name=YP_001728984.1;Parent=gene0;Note=involved in threonine biosynthesis%3B controls the expression of the thrLABC operon;Dbxref=ASAP:AEC-0000073,Genbank:YP_001728984.1,GeneID:6058969;gbkey=CDS;product=thr operon leader peptide;protein_id=YP_001728984.1;transl_table=11
+NC_010473.1	RefSeq	gene	337	2799	.	+	.	ID=gene1;Name=thrA;Dbxref=GeneID:6058347;gbkey=Gene;gene=thrA;locus_tag=ECDH10B_0002
+NC_010473.1	RefSeq	CDS	337	2799	.	+	0	ID=cds1;Name=YP_001728985.1;Parent=gene1;Note=multifunctional homotetrameric enzyme that catalyzes the phosphorylation of aspartate to form aspartyl-4-phosphate as well as conversion of aspartate semialdehyde to homoserine%3B functions in a number of amino acid biosynthetic pathways;Dbxref=ASAP:AEC-0000074,Genbank:YP_001728985.1,GeneID:6058347;gbkey=CDS;product=bifunctional aspartokinase I%2Fhomoserine dehydrogenase I;protein_id=YP_001728985.1;transl_table=11

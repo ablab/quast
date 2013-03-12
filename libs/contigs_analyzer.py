@@ -1285,7 +1285,6 @@ def do(reference, filenames, cyclic, output_dir):
         report.add_field(reporting.Fields.UNALIGNED_PART_SIGNIFICANT_PARTS, partially_unaligned_with_significant_parts)
         report.add_field(reporting.Fields.UNALIGNED_PART_LENGTH, partially_unaligned_bases)
 
-
     def save_result_for_unaligned(result):
         report = reporting.get(fname)
 
@@ -1296,7 +1295,6 @@ def do(reference, filenames, cyclic, output_dir):
 
         report.add_field(reporting.Fields.UNALIGNED_FULL_CNTGS, unaligned_ctgs)
         report.add_field(reporting.Fields.UNALIGNED_FULL_LENGTH, unaligned_length)
-
 
     for id, fname in enumerate(filenames):
         if statuses[id] == NucmerStatus.OK:
@@ -1324,11 +1322,11 @@ def do(reference, filenames, cyclic, output_dir):
     all = len(nucmer_statuses)
 
     if oks == all:
-        log.info('  Done.')
+        log.info('Done.')
     if oks < all and problems < all:
-        log.info('  Done for ' + str(all - problems) + 'out of ' + str(all) + '. For the rest, only basic stats are going to be evaluated.')
+        log.info('Done for ' + str(all - problems) + 'out of ' + str(all) + '. For the rest, only basic stats are going to be evaluated.')
     if problems == all:
-        log.info('  Failed aligning the contigs for all the assemblies. Only basic stats are going to be evaluated.')
+        log.info('Failed aligning the contigs for all the assemblies. Only basic stats are going to be evaluated.')
 
 #    if NucmerStatus.FAILED in nucmer_statuses.values():
 #        log.info('  ' + str(failed) + 'file' + (' ' if failed == 1 else 's ') + 'failed to align to the reference. Only basic stats have been evaluated.')

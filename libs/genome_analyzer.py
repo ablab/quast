@@ -13,30 +13,59 @@ from libs.html_saver import json_saver
 from qutils import id_to_str, notice, warning, error, print_timestamp
 
 
-def chromosomes_names_dict(features, chr_names):
+def chromosomes_names_dict(feature, regions, chr_names):
     """
     returns dictionary to translate chromosome name in list of features (genes or operons) to
     chromosome name in reference file.
-    They can differ between each other, e.g. U22222 in the list and gi|48994873|gb|U22222| in the reference
+    They can differ, e.g. U22222 in the list and gi|48994873|gb|U22222| in the reference
     """
-    no_chr = False
-    chr_name_dict = {}
-    for feature in features:
-        for chr_name in chr_names:
-            if feature.seqname in chr_name:
-                chr_name_dict[feature.seqname] = chr_name
-                break
-        if feature.seqname not in chr_name_dict:
-            no_chr = True
-            chr_name_dict[feature.seqname] = None
+    region_2_chr_name = {}
 
-    if no_chr:
-        warning('Some of the chromosome names in genes or operons differ from the names in the reference.')
-    return chr_name_dict
+    # single chromosome
+    if len(chr_names) == 1:
+        chr_name = chr_names[0]
+
+        for region in regions:
+            if region.seqname in chr_name or chr_name in region.seqname:
+                region_2_chr_name[region.seqname] = chr_name
+            else:
+                region_2_chr_name[region.seqname] = None
+
+        if len(region_2_chr_name) == 1:
+            if region_2_chr_name[regions[0].seqname] is None:
+                notice('Reference name in %ss (%s) does not match the name of the reference (%s).'
+                       'QUAST will ignore this ussue and count as if they matched.' % (feature, regions[0].seqname, chr_name),
+                       indent='  ')
+                region_2_chr_name[regions[0].seqname] = chr_name
+
+        else:
+            warning('Some of the reference names in %ss do not match the name of the reference (%s). '
+                    'Check your %s file.' % (feature, chr_name, feature), indent='  ')
+
+    # multiple chromosomes
+    else:
+        for region in regions:
+            no_chr_name_for_the_region = True
+            for chr_name in chr_names:
+                if region.seqname in chr_name or chr_name in region.seqname:
+                    region_2_chr_name[region.seqname] = chr_name
+                    no_chr_name_for_the_region = False
+                    break
+            if no_chr_name_for_the_region:
+                region_2_chr_name[region.seqname] = None
+
+        if None in region_2_chr_name.values():
+            warning('Some of the reference names in %ss does not match any chromosome. '
+                    'Check your %s file.' % (feature, feature), indent='  ')
+
+        if all(chr_name is None for chr_name in region_2_chr_name.values()):
+            warning('Reference names in %ss do not match any chromosome. Check your %s file.' % (feature, feature),
+                    indent='  ')
+
+    return region_2_chr_name
 
 
 def do(reference, filenames, nucmer_dir, output_dir, genes_filename, operons_filename, all_pdf, draw_plots, json_output_dir, results_dir):
-
     # some important constants
     nucmer_prefix = os.path.join(nucmer_dir, 'nucmer_output')
 
@@ -86,21 +115,22 @@ def do(reference, filenames, nucmer_dir, output_dir, genes_filename, operons_fil
     operons_container = FeatureContainer()
 
     for feature_container, feature_filename, feature_name in [
-        (genes_container, genes_filename, 'gene'),
-        (operons_container, operons_filename, 'operon')]:
+            (genes_container, genes_filename, 'gene'),
+            (operons_container, operons_filename, 'operon')]:
 
         feature_container.region_list = genes_parser.get_genes_from_file(feature_filename, feature_name)
         if len(feature_container.region_list) == 0:
             if feature_filename:
-                warning('No ' + feature_name + 's were loaded.')
+                warning('No ' + feature_name + 's were loaded.', indent='  ')
                 res_file.write(feature_name + 's loaded: ' + 'None' + '\n')
             else:
-                notice('Annotated ' + feature_name + 's file was not provided! Use -' + feature_name[0].capitalize() + ' option to specify it!')
+                notice('Annotated ' + feature_name + 's file was not provided. Use -' + feature_name[0].capitalize() + ' option to specify it.',
+                       indent='  ')
         else:
             log.info('  Loaded ' + str(len(feature_container.region_list)) + ' ' + feature_name + 's')
             res_file.write(feature_name + 's loaded: ' + str(len(feature_container.region_list)) + '\n')
-            feature_container.found_list = [0] * len(feature_container.region_list) # 0 - gene isn't found, 1 - gene is found, 2 - part of gene is found
-            feature_container.chr_names_dict = chromosomes_names_dict(feature_container.region_list, reference_chromosomes.keys())
+            feature_container.found_list = [0] * len(feature_container.region_list)  # 0 - gene isn't found, 1 - gene is found, 2 - part of gene is found
+            feature_container.chr_names_dict = chromosomes_names_dict(feature_name, feature_container.region_list, reference_chromosomes.keys())
             feature_container.full_found = []
 
     # header
@@ -120,7 +150,7 @@ def do(reference, filenames, nucmer_dir, output_dir, genes_filename, operons_fil
 
     # process all contig files  
     for id, filename in enumerate(filenames):
-        log.info(' ' + id_to_str(id) + os.path.basename(filename))
+        log.info('  ' + id_to_str(id) + os.path.basename(filename))
 
         nucmer_base_filename = os.path.join(nucmer_prefix, os.path.basename(filename) + '.coords')
         if qconfig.use_all_alignments:
@@ -129,7 +159,8 @@ def do(reference, filenames, nucmer_dir, output_dir, genes_filename, operons_fil
             nucmer_filename = nucmer_base_filename + '.filtered'
 
         if not os.path.isfile(nucmer_filename):
-            error('Nucmer\'s coords file (' + nucmer_filename + ') not found! Try to restart QUAST.')
+            error('Nucmer\'s coords file (' + nucmer_filename + ') not found! Try to restart QUAST.',
+                  indent='  ')
             #continue
 
         coordfile = open(nucmer_filename, 'r')
@@ -177,7 +208,7 @@ def do(reference, filenames, nucmer_dir, output_dir, genes_filename, operons_fil
             if s1 <= e1:
                 for i in range(s1, e1 + 1):
                     genome_mapping[chr_name][i] = 1
-            else: # circular genome, contig starts on the end of a chromosome and ends in the beginning
+            else:  # circular genome, contig starts on the end of a chromosome and ends in the beginning
                 for i in range(s1, len(genome_mapping[chr_name])):
                     genome_mapping[chr_name][i] = 1
                 for i in range(1, e1 + 1):
@@ -329,7 +360,7 @@ def do(reference, filenames, nucmer_dir, output_dir, genes_filename, operons_fil
         plotter.histogram(filenames, genome_mapped, output_dir + '/genome_fraction_histogram', 'Genome fraction, %',
             all_pdf, top_value=100)
 
-    log.info('  Done.')
+    log.info('Done.')
 
 class AlignedBlock():
     def __init__(self, seqname=None, start=None, end=None):

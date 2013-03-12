@@ -196,4 +196,4 @@ def do(reference, filenames, output_dir, all_pdf, draw_plots, json_output_dir, r
         if reference_length:
             plotter.Nx_plot(filenames, lists_of_lengths, output_dir + '/NGx_plot', 'NGx', [reference_length for i in range(len(filenames))], all_pdf)
 
-    log.info('  Done.')
+    log.info('Done.')

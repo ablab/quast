@@ -47,7 +47,7 @@ def do(reference, contigs, output_dirpath):
     ########################################################################
     log = logging.getLogger('quast')
     print_timestamp()
-    log.info('Running GAGE tool...')
+    log.info('Running GAGE...')
 
     metrics = ['Total units', 'Min', 'Max', 'N50', 'Genome Size', 'Assembly Size', 'Chaff bases',
                'Missing Reference Bases', 'Missing Assembly Bases', 'Missing Assembly Contigs',
@@ -75,8 +75,8 @@ def do(reference, contigs, output_dirpath):
 
     error_occurred = False
     for return_code in return_codes:
-        if return_code:
-            warning("Error occurred while GAGE processes assemblies. See GAGE error logs for details (%s)" %
+        if return_code != 0:
+            warning("Error occurred while GAGE was processing assemblies. See GAGE error logs for details (%s)" %
                     os.path.join(gage_results_path, 'gage_*.stderr'))
             error_occurred = True
             break
@@ -105,4 +105,4 @@ def do(reference, contigs, output_dirpath):
         if not qconfig.debug:
             shutil.rmtree(tmp_dir)
 
-        log.info('  Done.')
+        log.info('Done.')

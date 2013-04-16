@@ -29,6 +29,10 @@ def warning(message='', indent=''):
 
 def error(message='', exit_with_code=1, console_output=False, indent=''):
     msg = indent + 'ERROR! ' + str(message)
+
+    with open(qconfig.error_log_fpath, 'w') as error_f:
+        error_f.write(message)
+
     # decorated_msg = '=' * len(msg) + '\n' + msg + '\n' + '=' * len(msg)
     decorated_msg = '\n' + msg + '\n'
 

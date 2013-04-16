@@ -12,6 +12,8 @@ class Fields:
 ####################################################################################
 ###########################  CONFIGURABLE PARAMETERS  ##############################
 ####################################################################################
+    ### for indent before submetrics
+    TAB = '    '
 
     ### List of available fields for reports. Values (strings) should be unique! ###
 
@@ -24,66 +26,17 @@ class Fields:
     LARGCONTIG = 'Largest contig'
     TOTALLEN = 'Total length'
     TOTALLENS = ('Total length (>= %d bp)', tuple(qconfig.contig_thresholds))
-    REFLEN = 'Reference length'
-    ESTREFLEN = 'Estimated reference length'
     N50 = 'N50'
-    NG50 = 'NG50'
     N75 = 'N75'
-    NG75 = 'NG75'
     L50 = 'L50'
-    LG50 = 'LG50'
     L75 = 'L75'
-    LG75 = 'LG75'
+    GC = 'GC (%)'
 
-    # Misassemblies and unaligned statistics
-    MISLOCAL = '# local misassemblies'
+    # Misassemblies
     MISASSEMBL = '# misassemblies'
     MISCONTIGS = '# misassembled contigs'
     MISCONTIGSBASES = 'Misassembled contigs length'
     MISINTERNALOVERLAP = 'Misassemblies inter-contig overlap'
-    UNALIGNED = '# unaligned contigs'
-    UNALIGNEDBASES = 'Unaligned contigs length'
-    AMBIGUOUS = '# ambiguously mapped contigs'
-    AMBIGUOUSEXTRABASES = 'Extra bases in ambiguously mapped contigs'
-    UNCALLED = "# N's"
-    UNCALLED_PERCENT = "# N's per 100 kbp"
-
-    # Genome statistics
-    MAPPEDGENOME = 'Genome fraction (%)'
-    DUPLICATION_RATIO = 'Duplication ratio'
-    GENES = '# genes'
-    OPERONS = '# operons'
-    PREDICTED_GENES_UNIQUE = '# predicted genes (unique)'
-    PREDICTED_GENES = ('# predicted genes (>= %d bp)', tuple(qconfig.genes_lengths))
-    MISMATCHES = '# mismatches'
-    INDELS = '# indels'
-    INDELSBASES = 'Indels length'
-    SUBSERROR = '# mismatches per 100 kbp'
-    INDELSERROR = '# indels per 100 kbp'
-    GC = 'GC (%)'
-    REFGC = 'Reference GC (%)'
-    AVGIDY = 'Average %IDY'
-
-    # Aligned statitics
-    LARGALIGN = 'Largest alignment'
-    NA50 = 'NA50'
-    NGA50 = 'NGA50'
-    NA75 = 'NA75'
-    NGA75 = 'NGA75'
-    LA50 = 'LA50'
-    LGA50 = 'LGA50'
-    LA75 = 'LA75'
-    LGA75 = 'LGA75'
-
-    ### content and order of metrics in MAIN REPORT (<quast_output_dir>/report.txt, .tex, .tsv):
-    order = [NAME, CONTIGS, TOTALLENS, NUMCONTIGS, LARGCONTIG, TOTALLEN, REFLEN, ESTREFLEN, GC, REFGC,
-             N50, NG50, N75, NG75, MISASSEMBL, MISLOCAL, UNALIGNED, UNALIGNEDBASES, MAPPEDGENOME, DUPLICATION_RATIO,
-             UNCALLED_PERCENT, SUBSERROR, INDELSERROR, GENES, OPERONS, PREDICTED_GENES_UNIQUE, PREDICTED_GENES,
-             LARGALIGN, NA50, NGA50, NA75, NGA75]
-
-    ### for indent before submetrics
-    TAB = '    '
-
     ### additional list of metrics for detailed misassemblies report
     MIS_ALL_EXTENSIVE = '# misassemblies'
     MIS_RELOCATION = TAB + '# relocations'
@@ -92,14 +45,13 @@ class Fields:
     MIS_EXTENSIVE_CONTIGS = '# misassembled contigs'
     MIS_EXTENSIVE_BASES = 'Misassembled contigs length'
     MIS_LOCAL = '# local misassemblies'
-    MIS_SHORT_INDELS = TAB + '# short indels (<= %d bp)' % qconfig.SHORT_INDEL_THRESHOLD
-    MIS_LONG_INDELS = TAB + '# long indels (> %d bp)' % qconfig.SHORT_INDEL_THRESHOLD
 
-    # content and order of metrics in DETAILED MISASSEMBLIES REPORT (<quast_output_dir>/contigs_reports/misassemblies_report.txt, .tex, .tsv)
-    misassemblies_order = [NAME, MIS_ALL_EXTENSIVE, MIS_RELOCATION, MIS_TRANSLOCATION, MIS_INVERTION,
-                           MIS_EXTENSIVE_CONTIGS, MIS_EXTENSIVE_BASES, MIS_LOCAL, MISMATCHES,
-                           INDELS, MIS_SHORT_INDELS, MIS_LONG_INDELS, INDELSBASES]
-
+    # Unaligned
+    UNALIGNED = '# unaligned contigs'
+    UNALIGNEDBASES = 'Unaligned contigs length'
+    AMBIGUOUS = '# ambiguously mapped contigs'
+    AMBIGUOUSEXTRABASES = 'Extra bases in ambiguously mapped contigs'
+    MISLOCAL = '# local misassemblies'
     ### additional list of metrics for detailed unaligned report
     UNALIGNED_FULL_CNTGS = '# fully unaligned contigs'
     UNALIGNED_FULL_LENGTH = 'Fully unaligned length'
@@ -107,6 +59,60 @@ class Fields:
     UNALIGNED_PART_WITH_MISASSEMBLY = TAB + '# with misassembly'
     UNALIGNED_PART_SIGNIFICANT_PARTS = TAB + '# both parts are significant'
     UNALIGNED_PART_LENGTH = 'Partially unaligned length'
+
+    # Indels and mismatches
+    MISMATCHES = '# mismatches'
+    INDELS = '# indels'
+    INDELSBASES = 'Indels length'
+    SUBSERROR = '# mismatches per 100 kbp'
+    INDELSERROR = '# indels per 100 kbp'
+    MIS_SHORT_INDELS = TAB + '# short indels (<= %d bp)' % qconfig.SHORT_INDEL_THRESHOLD
+    MIS_LONG_INDELS = TAB + '# long indels (> %d bp)' % qconfig.SHORT_INDEL_THRESHOLD
+    UNCALLED = "# N's"
+    UNCALLED_PERCENT = "# N's per 100 kbp"
+
+    # Genome statistics
+    MAPPEDGENOME = 'Genome fraction (%)'
+    DUPLICATION_RATIO = 'Duplication ratio'
+    GENES = '# genes'
+    OPERONS = '# operons'
+    AVGIDY = 'Average %IDY'  # Deprecated
+    LARGALIGN = 'Largest alignment'
+    NG50 = 'NG50'
+    NA50 = 'NA50'
+    NGA50 = 'NGA50'
+    LG50 = 'LG50'
+    LA50 = 'LA50'
+    LGA50 = 'LGA50'
+    NG75 = 'NG75'
+    NA75 = 'NA75'
+    NGA75 = 'NGA75'
+    LG75 = 'LG75'
+    LA75 = 'LA75'
+    LGA75 = 'LGA75'
+
+    # Predicted genes
+    PREDICTED_GENES_UNIQUE = '# predicted genes (unique)'
+    PREDICTED_GENES = ('# predicted genes (>= %d bp)', tuple(qconfig.genes_lengths))
+
+    # Reference statistics
+    REFLEN = 'Reference length'
+    ESTREFLEN = 'Estimated reference length'
+    REFGC = 'Reference GC (%)'
+    REF_GENES = 'Reference genes'
+    REF_OPERONS = 'Reference operons'
+
+    ### content and order of metrics in MAIN REPORT (<quast_output_dir>/report.txt, .tex, .tsv):
+    order = [NAME, CONTIGS, TOTALLENS, NUMCONTIGS, LARGCONTIG, TOTALLEN, REFLEN, ESTREFLEN, GC, REFGC,
+             N50, NG50, N75, NG75, MISASSEMBL, MISLOCAL, UNALIGNED, UNALIGNEDBASES, MAPPEDGENOME, DUPLICATION_RATIO,
+             UNCALLED_PERCENT, SUBSERROR, INDELSERROR, GENES, OPERONS, PREDICTED_GENES_UNIQUE, PREDICTED_GENES,
+             LARGALIGN, NA50, NGA50, NA75, NGA75]
+
+
+    # content and order of metrics in DETAILED MISASSEMBLIES REPORT (<quast_output_dir>/contigs_reports/misassemblies_report.txt, .tex, .tsv)
+    misassemblies_order = [NAME, MIS_ALL_EXTENSIVE, MIS_RELOCATION, MIS_TRANSLOCATION, MIS_INVERTION,
+                           MIS_EXTENSIVE_CONTIGS, MIS_EXTENSIVE_BASES, MIS_LOCAL, MISMATCHES,
+                           INDELS, MIS_SHORT_INDELS, MIS_LONG_INDELS, INDELSBASES]
 
     # content and order of metrics in DETAILED UNALIGNED REPORT (<quast_output_dir>/contigs_reports/unaligned_report.txt, .tex, .tsv)
     unaligned_order = [NAME, UNALIGNED_FULL_CNTGS, UNALIGNED_FULL_LENGTH, UNALIGNED_PART_CNTGS,
@@ -148,8 +154,8 @@ class Fields:
 
     ### Grouping of metrics and set of main metrics for HTML version of main report
     grouped_order = [
-        ('Basic statistics', [NUMCONTIGS, CONTIGS, LARGCONTIG, TOTALLEN, TOTALLENS, REFLEN, ESTREFLEN,
-                              N50, N75, NG50, NG75, L50, L75, LG50, LG75,]),
+        ('Statistics without reference', [NUMCONTIGS, CONTIGS, LARGCONTIG, TOTALLEN, TOTALLENS,
+                                          N50, N75, L50, L75, GC,]),
 
         ('Misassemblies', [MIS_ALL_EXTENSIVE,
                            MIS_RELOCATION, MIS_TRANSLOCATION, MIS_INVERTION,
@@ -160,23 +166,23 @@ class Fields:
                        UNALIGNED_PART_WITH_MISASSEMBLY, UNALIGNED_PART_SIGNIFICANT_PARTS,
                        UNALIGNED_PART_LENGTH,]),
 
-        #('Ambiguous', [AMBIGUOUS, AMBIGUOUSEXTRABASES,]),
+        ('Mismatches', [MISMATCHES, INDELS, INDELSBASES, SUBSERROR, INDELSERROR,
+                        MIS_SHORT_INDELS, MIS_LONG_INDELS, UNCALLED, UNCALLED_PERCENT,]),
 
-        ('Genome statistics', [MAPPEDGENOME, DUPLICATION_RATIO, GENES, OPERONS,
-                               PREDICTED_GENES_UNIQUE, PREDICTED_GENES, GC, REFGC,
-                               SUBSERROR, MISMATCHES, INDELSERROR, INDELS,
-                               MIS_SHORT_INDELS, MIS_LONG_INDELS, INDELSBASES,
-                               UNCALLED, UNCALLED_PERCENT,]),
+        ('Genome statistics', [MAPPEDGENOME, DUPLICATION_RATIO, GENES, OPERONS, LARGALIGN,
+                               NG50, NG75, NA50, NA75, NGA50, NGA75, LG50, LG75, LA50, LA75, LGA50, LGA75,]),
 
-        ('Aligned statistics', [LARGALIGN, NA50, NA75, NGA50, NGA75, LA50, LA75, LGA50, LGA75,]),
-        ]
+        ('Predicted genes', [PREDICTED_GENES_UNIQUE, PREDICTED_GENES,]),
+        
+        ('Reference statistics', [REFLEN, ESTREFLEN, REFGC, REF_GENES, REF_OPERONS,])
+    ]
 
     # for "short" version of HTML report
-    main_metrics = [NUMCONTIGS, LARGCONTIG, TOTALLEN, NG50, UNCALLED_PERCENT,
-                    MISASSEMBL, MISCONTIGSBASES,
-                    MAPPEDGENOME, SUBSERROR, INDELSERROR,
-                    GENES, OPERONS, PREDICTED_GENES_UNIQUE, PREDICTED_GENES,]
-
+    main_metrics = [NUMCONTIGS, LARGCONTIG, TOTALLEN, N50,
+                    MIS_ALL_EXTENSIVE, MIS_EXTENSIVE_BASES,
+                    SUBSERROR, INDELSERROR, UNCALLED_PERCENT,
+                    MAPPEDGENOME, DUPLICATION_RATIO, GENES, OPERONS, NGA50,
+                    PREDICTED_GENES_UNIQUE, PREDICTED_GENES,]
 
 ####################################################################################
 ########################  END OF CONFIGURABLE PARAMETERS  ##########################
@@ -184,9 +190,9 @@ class Fields:
 
 
     class Quality:
-        MORE_IS_BETTER='More is better'
-        LESS_IS_BETTER='Less is better'
-        EQUAL='Equal'
+        MORE_IS_BETTER = 'More is better'
+        LESS_IS_BETTER = 'Less is better'
+        EQUAL = 'Equal'
 
     quality_dict = {
         Quality.MORE_IS_BETTER:

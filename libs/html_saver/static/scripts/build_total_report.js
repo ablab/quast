@@ -38,6 +38,34 @@ function buildTotalReport(assembliesNames, report, date, minContig, glossary, qu
         var metrics = group[1];
         var width = assembliesNames.length + 1;
 
+        if (groupName == 'Reference statistics') {
+            var stats = {};
+            for (var metric_n = 0; metric_n < metrics.length; metric_n++) {
+                var metric = metrics[metric_n];
+                var metricName = metric.metricName;
+                var value = metric.values[0];
+                stats[metricName] = value;
+            }
+            var refLen = stats['Reference length'];
+            var refGC = stats['Reference GC (%)'];
+            var refGenes = stats['Reference genes'];
+            var refOperons = stats['Reference operons'];
+
+            if (refLen) {
+                $('#dataset_name_p').append('<br>' + toPrettyString(refLen, 'bp'));
+            }
+            if (refGC)
+                $('#dataset_name_p').append('<br>' + toPrettyString(refGC) + ' % GC');
+
+            if (refGenes)
+                $('#dataset_name_p').append('<br>' + toPrettyString(refGenes) + ' genes');
+
+            if (refOperons)
+                $('#dataset_name_p').append('<br>' + toPrettyString(refOperons) + ' operons');
+
+            continue;
+        }
+
         if (group_n == 0) {
             table += '<tr class="header-tr"><td id="first_td">' + groupName + '</td>';
 
@@ -55,7 +83,7 @@ function buildTotalReport(assembliesNames, report, date, minContig, glossary, qu
 
         } else {
             table +=
-                '<tr class="subheader-tr row_hidden" id="group_' + group_n + '">' +
+                '<tr class="subheader-tr row_hidden group_empty" id="group_' + group_n + '">' +
                     '<td>' + groupName + '</td>'; //colspan="' + width + '"
             for (var i = 0; i < width - 1; i++) {
                 table += '<td></td>';
@@ -64,6 +92,13 @@ function buildTotalReport(assembliesNames, report, date, minContig, glossary, qu
         }
 
         for (var metric_n = 0; metric_n < metrics.length; metric_n++) {
+            (function(group_n) {
+                var id_group = '#group_' + group_n;
+                $(function() {
+                    $(id_group).removeClass('group_empty');
+                });
+            })(group_n);
+
             var metric = metrics[metric_n];
             var metricName = metric.metricName;
             var quality = metric.quality;
@@ -72,9 +107,9 @@ function buildTotalReport(assembliesNames, report, date, minContig, glossary, qu
             var trClass = 'content-row';
             if (metric.isMain || $.inArray(metricName, mainMetrics) > -1) {
                 (function(group_n) {
-                    var id = '#group_' + group_n;
+                    var id_group = '#group_' + group_n;
                     $(function() {
-                        $(id).removeClass('row_hidden');
+                        $(id_group).removeClass('row_hidden');
                     });
                 })(group_n);
             } else {
@@ -84,9 +119,9 @@ function buildTotalReport(assembliesNames, report, date, minContig, glossary, qu
             table +=
                 '<tr class="' + trClass + '" quality="' + quality + '">' +
                     '<td><span class="metric-name">' +
-                    addTooltipIfDefinitionExists(glossary, metricName) +
+                        nbsp(addTooltipIfDefinitionExists(glossary, metricName), metricName) +
                     '</span>' +
-                    '</td>';
+                '</td>';
 
             for (var value_n = 0; value_n < values.length; value_n++) {
                 var value = values[value_n];
@@ -118,6 +153,12 @@ function buildTotalReport(assembliesNames, report, date, minContig, glossary, qu
         table += '</tr>';
     }
     table += '</table>';
+
+    (function() {
+        $(function() {
+            $('.group_empty').removeClass('row_hidden');
+        });
+    })();
 
     $('#report').append(table);
 

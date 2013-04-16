@@ -133,6 +133,7 @@ ul.mdash li:before {
     text-decoration: none;
     color: #000;
     border-bottom: 1px dashed #bbb;
+    cursor: hand;
 }
 .tooltip-link:hover {
     text-decoration: none;

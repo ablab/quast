@@ -113,7 +113,7 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
     maxun = 10
     epsilon = 0.99
     smgap = 1000
-    umt = 0.1 # threshold for misassembled contigs with aligned less than $umt * 100% (Unaligned Missassembled Threshold)
+    umt = 0.1  # threshold for misassembled contigs with aligned less than $umt * 100% (Unaligned Missassembled Threshold)
     nucmer_successful_check_filename = nucmerfilename + '.sf'
     coords_filename = nucmerfilename + '.coords'
     delta_filename = nucmerfilename + '.delta'
@@ -371,12 +371,12 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
             assembly_ns[name] = [pos for pos in xrange(len(seq)) if seq[pos] == 'N']
 
     # Loading the reference sequences
-    print >> plantafile_out, 'Loading reference...' # TODO: move up
+    print >> plantafile_out, 'Loading reference...'  # TODO: move up
     references = {}
     ref_aligns = {}
     ref_features = {}
     for name, seq in fastaparser.read_fasta(reference):
-        name = name.split()[0] # no spaces in reference header
+        name = name.split()[0]  # no spaces in reference header
         references[name] = seq
         print >> plantafile_out, '\tLoaded [%s]' % name
 

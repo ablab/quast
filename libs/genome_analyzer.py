@@ -133,6 +133,11 @@ def do(reference, filenames, nucmer_dir, output_dir, genes_filename, operons_fil
             feature_container.chr_names_dict = chromosomes_names_dict(feature_name, feature_container.region_list, reference_chromosomes.keys())
             feature_container.full_found = []
 
+    for filename in filenames:
+        report = reporting.get(filename)
+        report.add_field(reporting.Fields.REF_GENES, len(genes_container.region_list))
+        report.add_field(reporting.Fields.REF_OPERONS, len(operons_container.region_list))
+
     # header
     res_file.write('\n\n')
     res_file.write('  %-20s  | %-20s| %-18s| %-12s| %-10s| %-10s| %-10s| %-10s|\n'

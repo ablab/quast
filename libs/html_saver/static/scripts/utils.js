@@ -180,17 +180,38 @@ function getContigNumberTickFormatter(maxX) {
     }
 }
 
+function trim(str) {
+    return str.replace(/^\s+/g, '');
+}
+
+function nbsp(str, metricName) {
+    if (metricName.length > 0 && metricName[0] == ' ') {
+        str = '&nbsp;&nbsp;&nbsp;' + str;
+    }
+    return str;
+}
+
+function containsObject(obj, list) {
+    var i;
+    for (i = 0; i < list.length; i++) {
+        if (list[i] === obj) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 /*********************/
 /* GLOSSARY TOOLTIPS */
-function addTooltipIfDefinitionExists(glossary, string, dictKey) {
-    if (!dictKey) {
-        dictKey = string;
-    }
-    if (glossary.hasOwnProperty(dictKey)) {
+function addTooltipIfDefinitionExists(glossary, metricName) {
+    metricName = trim(metricName);
+
+    if (containsObject(metricName, Object.keys(glossary))) {
         return '<a class="tooltip-link" rel="tooltip" title="' +
-            dictKey + ' ' + glossary[dictKey] + '">' + string + '</a>';
+            metricName + ' ' + glossary[metricName] + '">' + metricName + '</a>';
     } else {
-        return string;
+        return metricName;
     }
 }
 

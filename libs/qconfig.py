@@ -10,6 +10,8 @@ import platform
 
 LIBS_LOCATION = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
 
+error_log_fpath = os.path.join(LIBS_LOCATION, '..', 'error.log')
+
 if platform.system() == 'Darwin':
     platform_name = 'macosx'
 else:

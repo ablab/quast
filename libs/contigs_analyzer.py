@@ -749,6 +749,7 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
     prev_snp = None
     cur_indel = 0
 
+    nothing_aligned = True
     #Go through each header in reference file
     for ref, value in regions.iteritems():
         #Check to make sure this reference ID contains aligns.
@@ -756,6 +757,7 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
             print >> plantafile_out, 'ERROR: Reference [$ref] does not have any alignments!  Check that this is the same file used for alignment.'
             print >> plantafile_out, 'ERROR: Alignment Reference Headers: %s' % ref_aligns.keys()
             continue
+        nothing_aligned = False
 
         #Sort all alignments in this reference by start location
         sorted_aligns = sorted(ref_aligns[ref], key=lambda x: x.s1)
@@ -1159,7 +1161,10 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
     plantafile_err.close()
     used_snps_file.close()
     log.info('  ' + id_to_str(id) + 'Analysis is finished.')
-    return NucmerStatus.OK, result, aligned_lengths
+    if nothing_aligned:
+        return NucmerStatus.NOT_ALIGNED, result, aligned_lengths
+    else:
+        return NucmerStatus.OK, result, aligned_lengths
 
 
 def plantakolya_process(cyclic, nucmer_output_dir, filename, id, myenv, output_dir, reference):

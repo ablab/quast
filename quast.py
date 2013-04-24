@@ -397,6 +397,22 @@ def main(args):
         shutil.rmtree(corrected_dirpath)
     os.mkdir(corrected_dirpath)
 
+    # Processing reference
+    if qconfig.reference:
+        ref_basename, ref_extension = os.path.splitext(qconfig.reference)
+        corrected_and_unziped_reference_fname = os.path.join(corrected_dirpath, os.path.basename(ref_basename))
+        corrected_and_unziped_reference_fname = corrected_fname_for_nucmer(corrected_and_unziped_reference_fname)
+
+        # unzipping (if needed)
+        if uncompress(qconfig.reference, corrected_and_unziped_reference_fname):
+            qconfig.reference = corrected_and_unziped_reference_fname
+
+        # correcting
+        if not correct_fasta(qconfig.reference, corrected_and_unziped_reference_fname, True):
+            qconfig.reference = ""
+        else:
+            qconfig.reference = corrected_and_unziped_reference_fname
+
     # Processing contigs
     def handle_fasta(contigs_fpath, corr_fpath):
         lengths = fastaparser.get_lengths_from_fastafile(contigs_fpath)
@@ -476,22 +492,6 @@ def main(args):
         error("None of assembly file contain correct contigs. "
               "Please, provide different files or decrease --min-contig threshold.",
               exit_with_code=4)
-
-    # Processing reference
-    if qconfig.reference:
-        ref_basename, ref_extension = os.path.splitext(qconfig.reference)
-        corrected_and_unziped_reference_fname = os.path.join(corrected_dirpath, os.path.basename(ref_basename))
-        corrected_and_unziped_reference_fname = corrected_fname_for_nucmer(corrected_and_unziped_reference_fname)
-
-        # unzipping (if needed)
-        if uncompress(qconfig.reference, corrected_and_unziped_reference_fname):
-            qconfig.reference = corrected_and_unziped_reference_fname
-
-        # correcting
-        if not correct_fasta(qconfig.reference, corrected_and_unziped_reference_fname, True):
-            qconfig.reference = ""
-        else:
-            qconfig.reference = corrected_and_unziped_reference_fname
 
     # End of processing
     log.info('Done.')

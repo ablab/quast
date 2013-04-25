@@ -417,6 +417,7 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
 
     # Loading the regions (if any)
     regions = {}
+    reg_lens = {}
     total_reg_len = 0
     total_regions = 0
     print >> plantafile_out, 'Loading regions...'
@@ -424,6 +425,7 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
     print >> plantafile_out, '\tNo regions given, using whole reference.'
     for name, seq in references.iteritems():
         regions.setdefault(name, []).append([1, len(seq)])
+        reg_lens[name] = len(seq)
         total_regions += 1
         total_reg_len += len(seq)
     print >> plantafile_out, '\tTotal Regions: %d' % total_regions
@@ -669,8 +671,9 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
                     sorted_num = len(sorted_aligns) - 1
 
                     # computing cyclic references
-                    if cyclic and (sorted_aligns[0].s1 - 1 + total_reg_len - sorted_aligns[sorted_num].e1 -
-                                   distance_between_alignments(sorted_aligns[sorted_num], sorted_aligns[0]) <= smgap): # fake misassembly
+                    if cyclic and (sorted_aligns[0].ref == sorted_aligns[1].ref) and \
+                        (sorted_aligns[0].s1 - 1 + reg_lens[sorted_aligns[0].ref] - sorted_aligns[sorted_num].e1 - \
+                        distance_between_alignments(sorted_aligns[sorted_num], sorted_aligns[0]) <= smgap): # fake misassembly
 
                         # find fake alignment between "first" blocks and "last" blocks
                         fake_misassembly_index = 0

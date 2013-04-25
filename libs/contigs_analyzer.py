@@ -113,7 +113,7 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
     maxun = 10
     epsilon = 0.99
     smgap = 1000
-    umt = 0.1  # threshold for misassembled contigs with aligned less than $umt * 100% (Unaligned Missassembled Threshold)
+    umt = 0.5  # threshold for misassembled contigs with aligned less than $umt * 100% (Unaligned Missassembled Threshold)
     nucmer_successful_check_filename = nucmerfilename + '.sf'
     coords_filename = nucmerfilename + '.coords'
     delta_filename = nucmerfilename + '.delta'
@@ -646,10 +646,23 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
                     sorted_aligns = sorted(real_aligns, key=lambda x: (x.ref, x.s1, x.e1))
 
                     # Counting misassembled contigs which are mostly partially unaligned
-                    all_aligns_len = sum(x.len2 for x in sorted_aligns)
-                    if all_aligns_len < umt * ctg_len:
+                    sorted_in_contig_aligns = sorted(real_aligns, key=lambda x: (min(x.s2, x.e2), max(x.s2, x.e2)))
+                    # counting aligned and unaligned bases of a contig
+                    aligned_bases_in_contig = 0
+                    last_e2 = 0
+                    for cur_align in sorted_in_contig_aligns:
+                        if max(cur_align.s2, cur_align.e2) <= last_e2:
+                            continue
+                        elif min(cur_align.s2, cur_align.e2) > last_e2:
+                            aligned_bases_in_contig += (abs(cur_align.e2 - cur_align.s2) + 1)
+                        else:
+                            aligned_bases_in_contig += (max(cur_align.s2, cur_align.e2) - last_e2)
+                        last_e2 = max(cur_align.s2, cur_align.e2)
+
+                    #aligned_bases_in_contig = sum(x.len2 for x in sorted_aligns)
+                    if aligned_bases_in_contig < umt * ctg_len:
                         print >> plantafile_out, '\t\t\tWarning! This contig is more unaligned than misassembled. ' + \
-                            'Contig length is %d and total length of all aligns is %d' % (ctg_len, all_aligns_len)
+                            'Contig length is %d and total length of all aligns is %d' % (ctg_len, aligned_bases_in_contig)
                         partially_unaligned_with_misassembly += 1
                         for align in sorted_aligns:
                             print >> plantafile_out, '\t\tAlignment: %s' % str(align)
@@ -659,10 +672,10 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
                         #Increment tally of partially unaligned contigs
                         partially_unaligned += 1
                         #Increment tally of partially unaligned bases
-                        partially_unaligned_bases += ctg_len - all_aligns_len
-                        print >> plantafile_out, '\t\tUnaligned bases: %d' % (ctg_len - all_aligns_len)
+                        partially_unaligned_bases += ctg_len - aligned_bases_in_contig
+                        print >> plantafile_out, '\t\tUnaligned bases: %d' % (ctg_len - aligned_bases_in_contig)
                         # check if both parts (aligned and unaligned) have significant length
-                        if (all_aligns_len >= qconfig.min_contig) and (ctg_len - all_aligns_len >= qconfig.min_contig):
+                        if (aligned_bases_in_contig >= qconfig.min_contig) and (ctg_len - aligned_bases_in_contig >= qconfig.min_contig):
                             partially_unaligned_with_significant_parts += 1
                             print >> plantafile_out, '\t\tThis contig has both significant aligned and unaligned parts '\
                                                  '(of length >= min-contig)!'

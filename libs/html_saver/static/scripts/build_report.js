@@ -6,7 +6,7 @@ function showPlotWithInfo(info) {
     $('#legend-placeholder').find('input:checked').each(function() {
         var number = $(this).attr('name');
         if (number && info.series && info.series.length > 0) {
-            i = 0;
+            var i = 0;
             do {
                 var series = info.series[i];
                 i++;
@@ -146,6 +146,10 @@ function buildReport() {
 
     /****************/
     /* Plots        */
+
+    while (assembliesNames.length > colors.length) {  // colors is defined in utils.js
+        colors = colors.concat(colors);
+    }
 
     $(plotsSwitchesDiv).html('<b>Plots:</b>');
 

@@ -684,7 +684,7 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
                     sorted_num = len(sorted_aligns) - 1
 
                     # computing cyclic references
-                    if cyclic and (sorted_aligns[0].ref == sorted_aligns[1].ref) and \
+                    if cyclic and (sorted_aligns[0].ref == sorted_aligns[sorted_num].ref) and \
                         (sorted_aligns[0].s1 - 1 + reg_lens[sorted_aligns[0].ref] - sorted_aligns[sorted_num].e1 - \
                         distance_between_alignments(sorted_aligns[sorted_num], sorted_aligns[0]) <= smgap): # fake misassembly
 

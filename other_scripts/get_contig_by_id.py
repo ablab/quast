@@ -4,10 +4,10 @@
 
 import sys
 import os
-from libs import qconfig, qutils
 
 sys.path.append(os.path.join(os.path.abspath(sys.path[0]), '../libs'))
 
+import qconfig, qutils
 import fastaparser
 
 def get_corr_name(name):

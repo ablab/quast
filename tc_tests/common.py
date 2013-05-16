@@ -54,8 +54,8 @@ operons = 'operons.txt'
 # --use-all-alignments              Computes Genome fraction, # genes, # operons metrics in compatible with QUAST v.1.* mode.
 #                                   By default, QUAST filters Nucmer's alignments to keep only best ones
 #
-# --allow-ambiguity                 Uses all alignments of a contig with multiple equally good alignments (probably a repeat).
-#                                   By default, QUAST skips all alignments of such contigs
+# --ambiguity-usage <none|one|all>  Uses none, one, or all alignments of a contig with multiple equally good alignments (probably a repeat).
+#                                   [default is none]
 #
 # --strict-NA                       Breaks contigs by any misassembly event to compute NAx and NGAx.
 #                                   By default, QUAST breaks contigs only by extensive misassemblies (not local ones)

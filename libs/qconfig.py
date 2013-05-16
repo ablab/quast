@@ -28,9 +28,9 @@ splitted_ref = []
 # available options
 long_options = "output-dir= save-json-to= genes= operons= reference= contig-thresholds= min-contig= "\
                "gene-thresholds= save-json gage eukaryote no-plots no-html help debug "\
-               "allow-ambiguity scaffolds threads= mincluster= est-ref-size= use-all-alignments gene-finding "\
+               "ambiguity-usage= scaffolds threads= mincluster= est-ref-size= use-all-alignments gene-finding "\
                "strict-NA meta".split()
-short_options = "o:G:O:R:t:M:S:J:jehdsaT:c:ufnm"
+short_options = "o:G:O:R:t:M:S:J:jehdsa:T:c:ufnm"
 
 # default values for options
 contig_thresholds = "0,1000"
@@ -42,7 +42,7 @@ operons = ''
 with_gage = False
 prokaryote = True  # former cyclic
 gene_finding = False
-allow_ambiguity = False
+ambiguity_usage = 'none'
 use_all_alignments = False
 max_threads = None
 mincluster = 65

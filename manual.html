@@ -1,6 +1,6 @@
 <html>
 <head>
-    <title>QUAST 2.1 manual</title>
+    <title>QUAST 2.2 manual</title>
     <style type="text/css">
         body {
             margin-top: 30px;
@@ -16,7 +16,7 @@
     </style>
 </head>
 <body>
-<h1>QUAST 2.1 manual</h1>
+<h1>QUAST 2.2 manual</h1>
 
 <p>QUAST stands for <u>QU</u>ality <u>AS</u>sesment <u>T</u>ool. 
 QUAST evaluates genome assemblies by computing various metrics.
@@ -32,7 +32,7 @@ QUAST evaluates genome assemblies by computing various metrics.
     them separately.
     <br>
     <br>
-    QUAST version 2.1 was released under GPL v2 (see <a href="LICENSE">LICENSE</a> for details) on 15 February 2013.
+    QUAST version 2.2 was released under GPL v2 (see <a href="LICENSE">LICENSE</a> for details) on XX May 2013.
 </p>
 
 <h2>Table of Contents</h2>
@@ -271,10 +271,11 @@ QUAST can work only with assemblies of length less than 4.29 Gbp and with refere
     alignments to compute these metrics.</p>
 
 <p>
-    <code>--allow-ambiguity</code>
+    <code>--ambiguity-usage &lt;none|one|all&gt;</code>
 </p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;This flag forces QUAST to use all alignments of a contig with <i>multiple equally good</i> alignments (probably a repeat).
-    By default, QUAST skips all alignments of such contig because it can't determine the best alignment. <b>Note:</b> setting this option can cause
+<p>&nbsp;&nbsp;&nbsp;&nbsp;This option controls processing of contigs with <i>multiple equally good</i> alignments (probably repeats).
+    If "none" is specified then QUAST skips all alignments of such contig. If "one" is specified then QUAST uses only one alignment (the first one).
+    Finally, if "all" is specified then all alignments are used. The default value is "none". <b>Note:</b> setting this option to "all" can cause
     significant increase of <b><i># mismatches</i></b> (repeats are always inexact and contain several SNPs).</p>
 
 <p>

@@ -63,8 +63,8 @@ def usage():
         print >> sys.stderr, "--use-all-alignments              Computes Genome fraction, # genes, # operons metrics in compatible with QUAST v.1.* mode."
         print >> sys.stderr, "                                  By default, QUAST filters Nucmer\'s alignments to keep only best ones"
         print >> sys.stderr, ""
-        print >> sys.stderr, "--allow-ambiguity                 Uses all alignments of a contig with multiple equally good alignments (probably a repeat)."
-        print >> sys.stderr, "                                  By default, QUAST skips all alignments of such contigs"
+        print >> sys.stderr, "--ambiguity-usage <none|one|all>  Uses none, one, or all alignments of a contig with multiple equally good alignments."
+        print >> sys.stderr, "                                  [default is %s]" % qconfig.ambiguity_usage
         print >> sys.stderr, ""
         print >> sys.stderr, "--strict-NA                       Breaks contigs by any misassembly event to compute NAx and NGAx."
         print >> sys.stderr, "                                  By default, QUAST breaks contigs only by extensive misassemblies (not local ones)"
@@ -92,7 +92,7 @@ def usage():
         print >> sys.stderr, "-s  --scaffolds                  this flag informs QUAST that provided assemblies are scaffolds"
         print >> sys.stderr, "    --gage                       uses GAGE (results are in gage_report.txt)"
         print >> sys.stderr, "-e  --eukaryote                  genome is eukaryotic"
-        print >> sys.stderr, "-a  --allow-ambiguity            uses all alignments of contigs covering repeats (ambiguous)"
+        print >> sys.stderr, "-a  --ambiguity-usage <str>      uses all alignments of contigs covering repeats (ambiguous). Str is none|one|all"
         print >> sys.stderr, "-u  --use-all-alignments         computes Genome fraction, # genes, # operons in v.1.0-1.3 style"
         print >> sys.stderr, "-n  --strict-NA                  breaks contigs by any misassembly event to compute NAx and NGAx."
         print >> sys.stderr, "-j  --save-json                  saves the output also in the JSON format"
@@ -255,8 +255,9 @@ def main(args):
         elif opt in ('-f', "--gene-finding"):
             qconfig.gene_finding = True
 
-        elif opt in ('-a', "--allow-ambiguity"):
-            qconfig.allow_ambiguity = True
+        elif opt in ('-a', "--ambiguity-usage"):
+            if arg in ["none", "one", "all"]:
+                qconfig.ambiguity_usage = arg
 
         elif opt in ('-u', "--use-all-alignments"):
             qconfig.use_all_alignments = True

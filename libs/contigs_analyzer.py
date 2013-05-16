@@ -504,11 +504,21 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
                     ambiguous_contigs_extra_bases -= top_aligns[0].len2
 
                     # Alex: skip all alignments or count them as normal (just different aligns of one repeat). Depend on --allow-ambiguity option
-                    if not qconfig.allow_ambiguity:
-                        print >> plantafile_out, '\t\tSkipping these alignments (option --allow-ambiguity is not set):'
+                    if qconfig.ambiguity_usage == "none":
+                        print >> plantafile_out, '\t\tSkipping these alignments (option --ambiguity-usage is set to "none"):'
                         for align in top_aligns:
                             print >> plantafile_out, '\t\tSkipping alignment ', align
-                    else:
+                    elif qconfig.ambiguity_usage == "one":
+                        print >> plantafile_out, '\t\tUsing only first of these alignment (option --ambiguity-usage is set to "one"):'
+                        print >> plantafile_out, '\t\tAlignment: %s' % str(top_aligns[0])
+                        ref_aligns.setdefault(top_aligns[0].ref, []).append(top_aligns[0])
+                        aligned_lengths.append(top_aligns[0].len2)
+                        print >> coords_filtered_file, str(top_aligns[0])
+                        top_aligns = top_aligns[1:]
+                        for align in top_aligns:
+                            print >> plantafile_out, '\t\tSkipping alignment ', align
+                    elif qconfig.ambiguity_usage == "all":
+                        print >> plantafile_out, '\t\tUsing all these alignments (option --ambiguity-usage is set to "all"):'
                         # we count only extra bases, so we shouldn't include bases in the first alignment
                         first_alignment = True
                         while len(top_aligns):
@@ -1099,11 +1109,16 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
 
     print >> plantafile_out, ''
     print >> plantafile_out, 'Ambiguously Mapped Contigs: %d' % ambiguous_contigs
-    if qconfig.allow_ambiguity:
+    if qconfig.ambiguity_usage == "all":
         print >> plantafile_out, 'Extra Bases in Ambiguously Mapped Contigs: %d' % ambiguous_contigs_extra_bases
+        print >> plantafile_out, 'Note that --allow-ambiguity option was set to "all" and each contig was used several times.'
     else:
         print >> plantafile_out, 'Total Bases in Ambiguously Mapped Contigs: %d' % (-ambiguous_contigs_extra_bases)
-        print >> plantafile_out, 'Note that --allow-ambiguity option was not set and these contigs were skipped.'
+        if qconfig.ambiguity_usage == "none":
+            print >> plantafile_out, 'Note that --allow-ambiguity option was set to "none" and these contigs were skipped.'
+        else:
+            print >> plantafile_out, 'Note that --allow-ambiguity option was set to "one" and only first alignment per each contig was used.'
+            ambiguous_contigs_extra_bases = 0 # this variable is used in Duplication ratio but we don't need it in this case
 
     #print >> plantafile_out, 'Mismatches: %d' % SNPs
     #print >> plantafile_out, 'Single Nucleotide Indels: %d' % indels

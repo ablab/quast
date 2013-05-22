@@ -559,6 +559,17 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
                     #If this alignment extends past last alignment's endpoint, add to real, else skip
                     extension = max(sorted_aligns[i].s2, sorted_aligns[i].e2) - last_end # negative if no extension
                     if (extension > maxun) and (float(extension) / min(sorted_aligns[i].len2, last_real.len2) > 1.0 - epsilon):
+                        # check whether previous alignment is almost contained in this extension
+                        prev_extension = min(sorted_aligns[i].s2, sorted_aligns[i].e2) - min(last_real.s2, last_real.e2)
+                        if (prev_extension <= maxun) or (float(prev_extension) / min(sorted_aligns[i].len2, last_real.len2) <= 1.0 - epsilon):
+                            if cur_group in real_groups:
+                                for align in real_groups[cur_group]:
+                                    print >> plantafile_out, '\t\tSkipping redundant alignment %s' % (str(align))
+                                del real_groups[cur_group]
+                            else:
+                                real_aligns = real_aligns[:-1]
+                                print >> plantafile_out, '\t\tSkipping redundant alignment %s' % (str(last_real))
+
                         real_aligns = real_aligns + [sorted_aligns[i]]
                         last_end = max(sorted_aligns[i].s2, sorted_aligns[i].e2)
                         last_real = sorted_aligns[i]
@@ -569,7 +580,7 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
                                 real_aligns = real_aligns[:-1]
                             real_groups[cur_group].append(sorted_aligns[i])
                         else:
-                            print >> plantafile_out, '\t\tSkipping redundant alignment %d %s' % (i, str(sorted_aligns[i]))
+                            print >> plantafile_out, '\t\tSkipping redundant alignment %s' % (str(sorted_aligns[i]))
                             # Kolya: removed redundant code about $ref (for gff AFAIU)
 
                 # choose appropriate alignments (to minimize total size of contig alignment and reduce # misassemblies

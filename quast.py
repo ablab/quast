@@ -362,7 +362,7 @@ def main(args):
         latest_symlink = 'latest'
         if os.path.islink(latest_symlink):
             os.remove(latest_symlink)
-        os.symlink(output_dirpath, latest_symlink)
+        os.symlink(os.path.relpath(output_dirpath), latest_symlink)
 
         os.chdir(prev_dirpath)
 

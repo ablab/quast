@@ -93,13 +93,19 @@ def check_report_files(name, report_fnames=None):
         'transposed_report.txt',
         'report_html_aux']
 
-    fail = False
+    files_not_exist = []
     for fname in report_fnames:
         if not os.path.exists(os.path.join(results_dirpath, fname)):
-            print >> sys.stderr, 'File %s does not exists' % fname
-            fail = True
+            files_not_exist.append(fname)
 
-    if fail:
+    if files_not_exist:
+        print >> sys.stderr, 'Test failed:',
+        if len(files_not_exist) == 1:
+            print >> sys.stderr, 'file', files_not_exist[0], 'does not exist in', results_dirpath
+        else:
+            print >> sys.stderr, 'the followning files does not exist in', results_dirpath + ':'
+        for fname in files_not_exist:
+            print >> sys.stderr, '  ' + fname
         exit(5)
     else:
         print 'All nesessary files exist'

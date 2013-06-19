@@ -33,3 +33,4 @@ libs/glimmer/src/make.err
 libs/glimmer/glimmerhmm
 
 tc_tests/results/
+testmeta/

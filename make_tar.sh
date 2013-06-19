@@ -16,7 +16,10 @@ cp VERSION            release/$QUAST_FOLDER
 cp LICENSE            release/$QUAST_FOLDER
 cp CHANGES            release/$QUAST_FOLDER
 echo Build $NOW    >> release/$QUAST_FOLDER/VERSION
-sed "s/RELEASE_MODE=False/RELEASE_MODE=True/" quast.py > release/$QUAST_FOLDER/quast.py
+sed "s/RELEASE_MODE = False/RELEASE_MODE = True/" quast.py > release/$QUAST_FOLDER/quast.py
+if [ -e metaquast.py ]; then
+    sed "s/RELEASE_MODE = False/RELEASE_MODE = True/" metaquast.py > release/$QUAST_FOLDER/metaquast.py
+fi
 
 make -C release/$QUAST_FOLDER/libs/MUMmer3.23-osx/   clean >/dev/null 2>/dev/null
 make -C release/$QUAST_FOLDER/libs/MUMmer3.23-linux/ clean >/dev/null 2>/dev/null

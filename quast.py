@@ -22,7 +22,7 @@ from libs.html_saver import json_saver
 
 addsitedir(os.path.join(qconfig.LIBS_LOCATION, 'site_packages'))
 
-RELEASE_MODE=False
+RELEASE_MODE = False
 
 
 def usage():
@@ -618,7 +618,9 @@ def main(args):
         log.info('  All pdf files are merged to ' + all_pdf_filename)
         all_pdf.close()
 
-    cleanup(corrected_dirpath)
+    if RELEASE_MODE:
+        cleanup(corrected_dirpath)
+
     log.info('Done.')
 
     log.info('')

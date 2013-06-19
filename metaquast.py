@@ -14,7 +14,9 @@ addsitedir(os.path.join(qconfig.LIBS_LOCATION, 'site_packages'))
 import logging
 log = logging.getLogger('meta_quast')
 
-combined_ref_fname = 'combined_reference.fasta'
+COMBINED_REF_FNAME = 'combined_reference.fasta'
+
+RELEASE_MODE = False
 
 
 def usage():
@@ -296,7 +298,7 @@ def main(args):
 
         corrected_ref_fpaths = []
 
-        combined_ref_fpath = os.path.join(corrected_dirpath, combined_ref_fname)
+        combined_ref_fpath = os.path.join(corrected_dirpath, COMBINED_REF_FNAME)
 
         for ref_fpath in ref_fpaths:
             ref_fname = os.path.basename(ref_fpath)
@@ -312,7 +314,7 @@ def main(args):
                 fastaparser.write_fasta(combined_ref_fpath, [(corr_fname, seq)], 'a')
                 log.info('\t' + corr_fname + '\n')
 
-        log.info('\tAll references combined in ' + combined_ref_fname)
+        log.info('\tAll references combined in ' + COMBINED_REF_FNAME)
         ref_fpaths = corrected_ref_fpaths
 
     ## removing from contigs' names special characters because:
@@ -429,7 +431,9 @@ def main(args):
     except:
         pass
 
-    # quast.cleanup(corrected_dirpath)
+    if RELEASE_MODE:
+        quast.cleanup(corrected_dirpath)
+
     log.info('')
     log.info('MetaQUAST finished.')
 

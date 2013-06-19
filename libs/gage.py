@@ -24,6 +24,9 @@ def run_gage(id, filename, gage_results_path, gage_tool_path, reference, tmp_dir
     logfile_out = open(logfilename_out, 'w')
     logfile_err = open(logfilename_err, 'w')
 
+    print
+    print ' '.join(['sh', gage_tool_path, reference, filename, tmp_dir, str(qconfig.min_contig)])
+
     return_code = subprocess.call(
         ['sh', gage_tool_path, reference, filename, tmp_dir, str(qconfig.min_contig)],
         stdout=logfile_out, stderr=logfile_err)

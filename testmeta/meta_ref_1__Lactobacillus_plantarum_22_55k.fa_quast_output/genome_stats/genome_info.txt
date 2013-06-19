@@ -1,0 +1,15 @@
+reference chromosomes:
+	meta_ref_1__Lactobacillus_plantarum_22_55k.fa.fasta (54999 bp)
+
+total genome size: 54999
+
+gap min size: 50
+partial gene/operon min size: 100
+
+
+
+  assembly              | genome fraction (%) | duplication ratio | gaps        | genes     | partial   | operons   | partial   |
+                        |                     |                   | number      |           | genes     |           | operons   |
+================================================================================================================================
+  meta_contigs_1_to_meta_ref_1__Lactobacillus_plantarum_22_55k.fa  | 91.5871197658       | 1.0               | 2           | None      | None      | None      | None      |
+  meta_contigs_2_to_meta_ref_1__Lactobacillus_plantarum_22_55k.fa  | 91.5871197658       | 1.0               | 2           | None      | None      | None      | None      |

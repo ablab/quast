@@ -1,0 +1,211 @@
+/* Main things */
+body {
+    margin: 0;
+    font-family: Lucida Grande, Verdana, Arial, sans-serif;
+    font-size: 12px;
+    color: black;
+    /*line-height: 1.3em;*/
+}
+a {
+    text-decoration: none;
+    /*color: #0c4f72;*/
+    color: #0077B5;
+    border-bottom: 1px solid #487b95;
+    border-color: #487b95; /* #487b95 */
+    border-color: rgba(12, 79, 114, 0.2); /* #0c4f72; */ /* #a0d2eb; */ /*rgba(0, 88, cc, 0.3);*/
+}
+a:visited {
+    text-decoration: none;
+    color: #8C66B2;
+    border-bottom: 1px solid #8c66b2;
+    border-color: #8c66b2;
+    border-color: rgba(102, 51, 153, 0.2);
+}
+a:hover {
+    text-decoration: none;
+    color: #b33; /* #0088cc; */
+    border-bottom: 1px solid #ffcccc;
+    border-color: #ffcccc;
+    border-color: rgba(255, 0, 0, 0.2); /* #55b2e0; */ /*#005580;*/
+}
+a.dark_bg_link {
+    color: white; /* #0088cc; */
+    border-bottom: 1px solid #cccccc;
+    border-color: #cccccc;
+}
+a.dark_bg_link:hover {
+    color: white; /* #0088cc; */
+    border-bottom: 1px solid white;
+}
+
+.leading_link_dot {
+    border-bottom: white solid 1px;
+}
+
+a.header_link, a.header_link:hover, a.header_link:visited {
+    color: black;
+    border-bottom: 1px solid #bbb;
+}
+
+
+.dotted-link {
+    cursor: pointer;
+    text-decoration: none;
+    /*color: #0c4f72;*/
+    color: #0077B5;
+    border-bottom: 1px dashed #487b95;
+    border-color: #487b95; /* #487b95 */
+    border-color: rgba(12, 79, 114, 0.2);
+}
+.dotted-link:hover {
+    text-decoration: none;
+    color: #b33 !important;
+    border-bottom: 1px dashed #b33 !important;
+    border-color: rgba(255, 0, 0, 0.2) !important;
+}
+.js:visited {
+    color: #0077B5;
+    border-bottom: 1px dashed #487b95;
+    border-color: #487b95;
+    border-color: rgba(12, 79, 114, 0.2);
+}
+
+.selected-switch {
+    background-color: #fafad2;
+}
+
+.json-code {
+    display: none;
+}
+.smallcapitals {
+    font-size: .875em;
+    letter-spacing: .15em;
+    margin-right: -.15em;
+}
+.highlight {
+    background-color:#FFF9B5;
+    padding: 0px 3px;
+    margin-left: -3px;
+}
+
+ul.list {
+    list-style-type: none;
+    padding: 0 0 0 2em;
+    margin: -0.5em 0 0 0;
+}
+ul.list li {
+    margin-bottom: 0.7em;
+}
+
+ul.mdash {
+    margin: -1em 0 0 0;
+    padding: 0 0 0 2em;
+}
+ul.mdash li {
+    margin-bottom: 0.7em;
+    list-style-type: none;
+    text-indent: -1.3em;
+    behavior: expression(!this.before ? this.before = this.innerHTML = '&mdash;&nbsp;' + this.innerHTML : '');
+}
+ul.mdash li:before {
+    content: '\2014\a0';
+}
+
+.small_line_indent {
+    height: 0;
+    margin-top: -7px;
+}
+/************/
+
+/* Tooltips */
+.tooltip {
+    font-size: 0.9em;
+    margin-bottom: 5px;
+}
+.tooltip.in {
+    opacity: 1;
+}
+.tooltip-inner {
+    text-align: left;
+}
+.tooltip-link,
+.tooltip-link:visited {
+    text-decoration: none;
+    color: #000;
+    border-bottom: 1px dashed #bbb;
+    cursor: hand;
+}
+.tooltip-link:hover {
+    text-decoration: none;
+    color: #b33;
+    border-bottom: 1px dashed #b33;
+}
+/************/
+
+/*********/
+
+.hs {
+    /* Полупробел для
+  разделения разрядов чисел:
+  10<span class="hs"></span>000 */
+    margin-left: .2em;
+}
+
+.rhs {
+    /* Полупробел на случай,
+  если реальный пробел важен,
+  например между ценой и валютой:
+  1<span class="rhs">&nbsp;</span>$ */
+    font-size: 50%;
+    line-height: 1;
+}
+
+/*9490<span class="rhs"> </span>€<br/>*/
+/*12<span class="hs"></span>650<span class="rhs"> </span>$<br/>*/
+/*379<span class="hs"></span>000<span*/
+/*class="rhs"> </span><span class="b-rub">Р</span><br/>*/
+/*100<span class="hs"></span>500<span class="rhs"> </span>+*/
+
+/* for wrapping long words with no spaces */
+/* http://stackoverflow.com/questions/3247358/css-how-do-i-wrap-text-with-no-whitespace-inside-a-td */
+.wrapword {
+    white-space: -moz-pre-wrap !important;  /* Mozilla, since 1999 */
+    white-space: -pre-wrap;      /* Opera 4-6 */
+    white-space: -o-pre-wrap;    /* Opera 7 */
+    white-space: pre-wrap;       /* css-3 */
+    word-wrap: break-word;       /* Internet Explorer 5.5+ */
+    word-break: break-all;
+    white-space: normal;
+}
+
+
+.space_1px {
+    height: 1px;
+}
+.space_2px {
+    height: 2px;
+}
+.space_3px {
+    height: 3px;
+}
+.space_4px {
+    height: 4px;
+}
+.space_5px {
+    height: 5px;
+}
+.space_6px {
+    height: 6px;
+}
+.space_7px {
+    height: 7px;
+}
+.space_8px {
+    height: 8px;
+}
+.space_9px {
+    height: 9px;
+}
+.space_10px {
+    height: 10px;
+}

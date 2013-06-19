@@ -1,0 +1,28 @@
+Assembly	meta_contigs_1_to_meta_ref_3__Lactobacillus_reuteri_F275_Kitasato_55_65k.fa	meta_contigs_2_to_meta_ref_3__Lactobacillus_reuteri_F275_Kitasato_55_65k.fa
+# contigs (>= 0 bp)	11	6
+Total length (>= 0 bp)	69110	62198
+# contigs	11	6
+Largest contig	27969	27260
+Total length	69110	62198
+Reference length	64999	64999
+GC (%)	40.75	40.64
+Reference GC (%)	40.73	40.73
+N50	17535	16099
+NG50	17535	16099
+N75	11102	10428
+NG75	11102	10428
+# misassemblies	0	0
+Misassembled contigs length	0	0
+# local misassemblies	0	0
+# unaligned contigs	0 + 0 part	0 + 0 part
+Unaligned contigs length	0	0
+Genome fraction (%)	98.397	95.437
+Duplication ratio	1.081	1.003
+# N's per 100 kbp	18.81	0.00
+# mismatches per 100 kbp	64.11	6.45
+# indels per 100 kbp	3.13	0.00
+Largest alignment	27969	27260
+NA50	17534	16099
+NGA50	17534	16099
+NA75	11101	10428
+NGA75	11101	10428

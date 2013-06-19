@@ -1,0 +1,41 @@
+
+System information:
+  OS: Darwin-12.2.1-x86_64-i386-64bit
+  Python version: 2.7.2
+  CPUs number: 4
+
+Started: 2013-06-19 15:41:00
+
+Logging to /Users/vladsaveliev/Dropbox/bio/quast/quast_master/testmeta/quast.log
+
+NOTICE: Maximum number of threads was set to 4 (use --threads option to set it manually)
+
+Processing references...
+	meta_ref_1__Lactobacillus_plantarum_22_55k.fa.fasta
+
+	meta_ref_2__Lactobacillus_delbrueckii_bulgaricus_ATCC_BAA-365_32_60k.fa.fasta
+
+	meta_ref_3__Lactobacillus_reuteri_F275_Kitasato_55_65k.fa.fasta
+
+	All references combined in combined_reference.fasta
+
+Processing contigs...
+	test_data/meta_contigs_1.fasta ==> meta_contigs_1.fasta
+
+	test_data/meta_contigs_2.fasta ==> meta_contigs_2.fasta
+
+Done.
+
+Starting quast.py for the combined reference
+
+Starting quast.py for the reference aligned to meta_ref_1__Lactobacillus_plantarum_22_55k.fa
+
+Starting quast.py for the reference aligned to meta_ref_2__Lactobacillus_delbrueckii_bulgaricus_ATCC_BAA-365_32_60k.fa
+
+Starting quast.py for the reference aligned to meta_ref_3__Lactobacillus_reuteri_F275_Kitasato_55_65k.fa
+Starting quast.py for not alined contigs
+
+MetaQUAST finished.
+
+MetaQUAST log was saved to /Users/vladsaveliev/Dropbox/bio/quast/quast_master/testmeta/quast.log
+Elapsed time: 0:00:04.341119

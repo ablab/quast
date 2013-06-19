@@ -1,0 +1,76 @@
+QUAST started: /Users/vladsaveliev/Dropbox/bio/quast/quast_master/metaquast.py test_data/meta_contigs_1.fasta test_data/meta_contigs_2.fasta -R test_data/meta_ref_1.fasta,test_data/meta_ref_2.fasta,test_data/meta_ref_3.fasta -o testmeta --no-plots -t 0 
+Version 2.2
+
+System information:
+  OS: Darwin-12.2.1-x86_64-i386-64bit
+  Python version: 2.7.2
+  CPUs number: 4
+
+Started: 2013-06-19 15:41:04
+
+Logging to /Users/vladsaveliev/Dropbox/bio/quast/quast_master/testmeta/meta_ref_3__Lactobacillus_reuteri_F275_Kitasato_55_65k.fa_quast_output/quast.log
+
+NOTICE: Maximum number of threads was set to 4 (use --threads option to set it manually)
+Processing contig files and reference...
+  /Users/vladsaveliev/Dropbox/bio/quast/quast_master/testmeta/corrected_input/meta_contigs_1_to_meta_ref_3__Lactobacillus_reuteri_F275_Kitasato_55_65k.fa.fasta ==> meta_contigs_1_to_meta_ref_3__Lactobacillus_reuteri_F275_Kitasato_55_65k.fa
+  /Users/vladsaveliev/Dropbox/bio/quast/quast_master/testmeta/corrected_input/meta_contigs_2_to_meta_ref_3__Lactobacillus_reuteri_F275_Kitasato_55_65k.fa.fasta ==> meta_contigs_2_to_meta_ref_3__Lactobacillus_reuteri_F275_Kitasato_55_65k.fa
+Done.
+
+2013-06-19 15:41:04
+Running Basic statistics processor...
+  Reference genome:
+    meta_ref_3__Lactobacillus_reuteri_F275_Kitasato_55_65k.fa, Reference length = 64999, Reference GC % = 40.73
+  Contigs files: 
+    1  meta_contigs_1_to_meta_ref_3__Lactobacillus_reuteri_F275_Kitasato_55_65k.fa
+    2  meta_contigs_2_to_meta_ref_3__Lactobacillus_reuteri_F275_Kitasato_55_65k.fa
+  Calculating N50 and L50...
+    1  meta_contigs_1_to_meta_ref_3__Lactobacillus_reuteri_F275_Kitasato_55_65k.fa, N50 = 17535, L50 = 2, Total length = 69110, GC % = 40.75, # N's per 100 kbp =  18.81
+    2  meta_contigs_2_to_meta_ref_3__Lactobacillus_reuteri_F275_Kitasato_55_65k.fa, N50 = 16099, L50 = 2, Total length = 62198, GC % = 40.64, # N's per 100 kbp =  0.00
+Done.
+
+2013-06-19 15:41:04
+Running Contigs analyzer...
+  1  meta_contigs_1_to_meta_ref_3__Lactobacillus_reuteri_F275_Kitasato_55_65k.fa
+  2  meta_contigs_2_to_meta_ref_3__Lactobacillus_reuteri_F275_Kitasato_55_65k.fa
+  1  Logging to files /Users/vladsaveliev/Dropbox/bio/quast/quast_master/testmeta/meta_ref_3__Lactobacillus_reuteri_F275_Kitasato_55_65k.fa_quast_output/contigs_reports/contigs_report_meta_contigs_1_to_meta_ref_3__Lactobacillus_reuteri_F275_Kitasato_55_65k.stdout and contigs_report_meta_contigs_1_to_meta_ref_3__Lactobacillus_reuteri_F275_Kitasato_55_65k.stderr...
+  2  Logging to files /Users/vladsaveliev/Dropbox/bio/quast/quast_master/testmeta/meta_ref_3__Lactobacillus_reuteri_F275_Kitasato_55_65k.fa_quast_output/contigs_reports/contigs_report_meta_contigs_2_to_meta_ref_3__Lactobacillus_reuteri_F275_Kitasato_55_65k.stdout and contigs_report_meta_contigs_2_to_meta_ref_3__Lactobacillus_reuteri_F275_Kitasato_55_65k.stderr...
+  1  Running Nucmer... 
+  2  Running Nucmer... 
+  2  Analysis is finished.
+  1  Analysis is finished.
+  Creating total report...
+    saved to /Users/vladsaveliev/Dropbox/bio/quast/quast_master/testmeta/meta_ref_3__Lactobacillus_reuteri_F275_Kitasato_55_65k.fa_quast_output/contigs_reports/misassemblies_report.txt, misassemblies_report.tsv, and misassemblies_report.tex
+  Creating total report...
+    saved to /Users/vladsaveliev/Dropbox/bio/quast/quast_master/testmeta/meta_ref_3__Lactobacillus_reuteri_F275_Kitasato_55_65k.fa_quast_output/contigs_reports/unaligned_report.txt, unaligned_report.tsv, and unaligned_report.tex
+Done.
+
+2013-06-19 15:41:04
+Running NA-NGA tool...
+  Calculating NA50 and NGA50...
+    1  meta_contigs_1_to_meta_ref_3__Lactobacillus_reuteri_F275_Kitasato_55_65k.fa, Largest alignment = 27969, NA50 = 17534, NGA50 = 17534, LA50 = 2, LGA50 = 2
+    2  meta_contigs_2_to_meta_ref_3__Lactobacillus_reuteri_F275_Kitasato_55_65k.fa, Largest alignment = 27260, NA50 = 16099, NGA50 = 16099, LA50 = 2, LGA50 = 2
+  Done.
+
+2013-06-19 15:41:04
+Running Genome analyzer...
+  NOTICE: Annotated genes file was not provided. Use -G option to specify it.
+  NOTICE: Annotated operons file was not provided. Use -O option to specify it.
+  1  meta_contigs_1_to_meta_ref_3__Lactobacillus_reuteri_F275_Kitasato_55_65k.fa
+  2  meta_contigs_2_to_meta_ref_3__Lactobacillus_reuteri_F275_Kitasato_55_65k.fa
+Done.
+
+NOTICE: Genes are not predicted by default. Use --gene-finding option to enable it.
+
+2013-06-19 15:41:04
+Summarizing...
+  Creating total report...
+    saved to /Users/vladsaveliev/Dropbox/bio/quast/quast_master/testmeta/meta_ref_3__Lactobacillus_reuteri_F275_Kitasato_55_65k.fa_quast_output/report.txt, report.tsv, and report.tex
+  Transposed version of total report...
+    saved to /Users/vladsaveliev/Dropbox/bio/quast/quast_master/testmeta/meta_ref_3__Lactobacillus_reuteri_F275_Kitasato_55_65k.fa_quast_output/transposed_report.txt, transposed_report.tsv, and transposed_report.tex
+  HTML version saved to /Users/vladsaveliev/Dropbox/bio/quast/quast_master/testmeta/meta_ref_3__Lactobacillus_reuteri_F275_Kitasato_55_65k.fa_quast_output/report.html
+Done.
+
+Log saved to /Users/vladsaveliev/Dropbox/bio/quast/quast_master/testmeta/meta_ref_3__Lactobacillus_reuteri_F275_Kitasato_55_65k.fa_quast_output/quast.log
+
+Finished: 2013-06-19 15:41:04
+Elapsed time: 0:00:00.614298

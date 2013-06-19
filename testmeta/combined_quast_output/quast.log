@@ -1,0 +1,76 @@
+QUAST started: /Users/vladsaveliev/Dropbox/bio/quast/quast_master/metaquast.py test_data/meta_contigs_1.fasta test_data/meta_contigs_2.fasta -R test_data/meta_ref_1.fasta,test_data/meta_ref_2.fasta,test_data/meta_ref_3.fasta -o testmeta --no-plots -t 0 
+Version 2.2
+
+System information:
+  OS: Darwin-12.2.1-x86_64-i386-64bit
+  Python version: 2.7.2
+  CPUs number: 4
+
+Started: 2013-06-19 15:41:00
+
+Logging to /Users/vladsaveliev/Dropbox/bio/quast/quast_master/testmeta/combined_quast_output/quast.log
+
+NOTICE: Maximum number of threads was set to 4 (use --threads option to set it manually)
+Processing contig files and reference...
+  /Users/vladsaveliev/Dropbox/bio/quast/quast_master/testmeta/corrected_input/meta_contigs_1.fasta ==> meta_contigs_1
+  /Users/vladsaveliev/Dropbox/bio/quast/quast_master/testmeta/corrected_input/meta_contigs_2.fasta ==> meta_contigs_2
+Done.
+
+2013-06-19 15:41:00
+Running Basic statistics processor...
+  Reference genome:
+    combined_reference, Reference length = 179997, Reference GC % = 45.50
+  Contigs files: 
+    1  meta_contigs_1
+    2  meta_contigs_2
+  Calculating N50 and L50...
+    1  meta_contigs_1, N50 = 49658, L50 = 2, Total length = 178145, GC % = 45.24, # N's per 100 kbp =  7.86
+    2  meta_contigs_2, N50 = 49658, L50 = 2, Total length = 172255, GC % = 45.38, # N's per 100 kbp =  0.00
+Done.
+
+2013-06-19 15:41:00
+Running Contigs analyzer...
+  1  meta_contigs_1
+  1  Logging to files /Users/vladsaveliev/Dropbox/bio/quast/quast_master/testmeta/combined_quast_output/contigs_reports/contigs_report_meta_contigs_1.stdout and contigs_report_meta_contigs_1.stderr...
+  1  Running Nucmer... 
+  2  meta_contigs_2
+  2  Logging to files /Users/vladsaveliev/Dropbox/bio/quast/quast_master/testmeta/combined_quast_output/contigs_reports/contigs_report_meta_contigs_2.stdout and contigs_report_meta_contigs_2.stderr...
+  2  Running Nucmer... 
+  2  Analysis is finished.
+  1  Analysis is finished.
+  Creating total report...
+    saved to /Users/vladsaveliev/Dropbox/bio/quast/quast_master/testmeta/combined_quast_output/contigs_reports/misassemblies_report.txt, misassemblies_report.tsv, and misassemblies_report.tex
+  Creating total report...
+    saved to /Users/vladsaveliev/Dropbox/bio/quast/quast_master/testmeta/combined_quast_output/contigs_reports/unaligned_report.txt, unaligned_report.tsv, and unaligned_report.tex
+Done.
+
+2013-06-19 15:41:02
+Running NA-NGA tool...
+  Calculating NA50 and NGA50...
+    1  meta_contigs_1, Largest alignment = 55106, NA50 = 49658, NGA50 = 49658, LA50 = 2, LGA50 = 2
+    2  meta_contigs_2, Largest alignment = 55421, NA50 = 49658, NGA50 = 49658, LA50 = 2, LGA50 = 2
+  Done.
+
+2013-06-19 15:41:02
+Running Genome analyzer...
+  NOTICE: Annotated genes file was not provided. Use -G option to specify it.
+  NOTICE: Annotated operons file was not provided. Use -O option to specify it.
+  1  meta_contigs_1
+  2  meta_contigs_2
+Done.
+
+NOTICE: Genes are not predicted by default. Use --gene-finding option to enable it.
+
+2013-06-19 15:41:02
+Summarizing...
+  Creating total report...
+    saved to /Users/vladsaveliev/Dropbox/bio/quast/quast_master/testmeta/combined_quast_output/report.txt, report.tsv, and report.tex
+  Transposed version of total report...
+    saved to /Users/vladsaveliev/Dropbox/bio/quast/quast_master/testmeta/combined_quast_output/transposed_report.txt, transposed_report.tsv, and transposed_report.tex
+  HTML version saved to /Users/vladsaveliev/Dropbox/bio/quast/quast_master/testmeta/combined_quast_output/report.html
+Done.
+
+Log saved to /Users/vladsaveliev/Dropbox/bio/quast/quast_master/testmeta/combined_quast_output/quast.log
+
+Finished: 2013-06-19 15:41:02
+Elapsed time: 0:00:01.898278

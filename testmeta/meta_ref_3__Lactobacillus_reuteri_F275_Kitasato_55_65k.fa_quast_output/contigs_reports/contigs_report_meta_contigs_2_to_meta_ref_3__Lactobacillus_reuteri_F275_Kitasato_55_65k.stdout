@@ -1,0 +1,110 @@
+Aligning contigs to reference...
+	Running Nucmer...
+Parsing coords...
+Loading Assembly...
+Loading reference...
+	Loaded [meta_ref_3__Lactobacillus_reuteri_F275_Kitasato_55_65k.fa.fasta]
+Loading SNPs...
+Loading regions...
+	No regions given, using whole reference.
+	Total Regions: 1
+	Total Region Length: 64999
+Analyzing contigs...
+CONTIG: NODE_6_length_6988_cov_303.415_ID_9341226 (6988bp)
+Top Length: 6988  Top ID: 99.97
+		Marking as insignificant: 1 79 | 3349 3427 | 79 79 | 100.0 | meta_ref_3__Lactobacillus_reuteri_F275_Kitasato_55_65k.fa.fasta NODE_6_length_6988_cov_303.415_ID_9341226
+		One align captures most of this contig: 25 7012 | 1 6988 | 6988 6988 | 99.97 | meta_ref_3__Lactobacillus_reuteri_F275_Kitasato_55_65k.fa.fasta NODE_6_length_6988_cov_303.415_ID_9341226
+
+CONTIG: NODE_11_length_694_cov_336.263_ID_9343406 (694bp)
+Top Length: 694  Top ID: 99.86
+		One align captures most of this contig: 6958 7651 | 1 694 | 694 694 | 99.86 | meta_ref_3__Lactobacillus_reuteri_F275_Kitasato_55_65k.fa.fasta NODE_11_length_694_cov_336.263_ID_9343406
+
+CONTIG: NODE_3_length_27260_cov_310.524_ID_9332986 (27260bp)
+Top Length: 27260  Top ID: 99.99
+		One align captures most of this contig: 7597 34856 | 1 27260 | 27260 27260 | 99.99 | meta_ref_3__Lactobacillus_reuteri_F275_Kitasato_55_65k.fa.fasta NODE_3_length_27260_cov_310.524_ID_9332986
+
+CONTIG: NODE_4_length_16099_cov_310.325_ID_9343456 (16099bp)
+Top Length: 16099  Top ID: 100.0
+		One align captures most of this contig: 36665 52763 | 1 16099 | 16099 16099 | 100.0 | meta_ref_3__Lactobacillus_reuteri_F275_Kitasato_55_65k.fa.fasta NODE_4_length_16099_cov_310.325_ID_9343456
+
+CONTIG: NODE_5_length_10428_cov_300.989_ID_9343584 (10428bp)
+Top Length: 10428  Top ID: 100.0
+		One align captures most of this contig: 54572 64999 | 1 10428 | 10428 10428 | 100.0 | meta_ref_3__Lactobacillus_reuteri_F275_Kitasato_55_65k.fa.fasta NODE_5_length_10428_cov_300.989_ID_9343584
+
+CONTIG: NODE_9_length_729_cov_671.122_ID_9343806 (729bp)
+Top Length: 729  Top ID: 100.0
+		Marking as insignificant: 53899 54626 | 728 1 | 728 728 | 98.9 | meta_ref_3__Lactobacillus_reuteri_F275_Kitasato_55_65k.fa.fasta NODE_9_length_729_cov_671.122_ID_9343806
+		One align captures most of this contig: 35991 36719 | 729 1 | 729 729 | 100.0 | meta_ref_3__Lactobacillus_reuteri_F275_Kitasato_55_65k.fa.fasta NODE_9_length_729_cov_671.122_ID_9343806
+
+Analyzing coverage...
+Writing SNPs into /Users/vladsaveliev/Dropbox/bio/quast/quast_master/testmeta/meta_ref_3__Lactobacillus_reuteri_F275_Kitasato_55_65k.fa_quast_output/contigs_reports/nucmer_output/meta_contigs_2_to_meta_ref_3__Lactobacillus_reuteri_F275_Kitasato_55_65k.fa.used_snps
+	Reference meta_ref_3__Lactobacillus_reuteri_F275_Kitasato_55_65k.fa.fasta: 6 total alignments. 1 total regions.
+		Region: 1 to 64999 (64999 bp)
+			START in gap: 1 to 25 (24 bp)
+			Align 1: 25 7012 NODE_6_length_6988_cov_303.415_ID_9341226 1 6988
+				Negative gap (overlap) between this and next alignment: 7012 to 6958 (-54 bp)
+				Next Alignment: 6958 7651 NODE_11_length_694_cov_336.263_ID_9343406 1 694
+
+			Previous gap was negative, modifying coordinates to ignore overlap
+				Moving contig start from 1 to 56.
+			Align 2: 7013 7651 NODE_11_length_694_cov_336.263_ID_9343406 56 694
+				Negative gap (overlap) between this and next alignment: 7651 to 7597 (-54 bp)
+				Next Alignment: 7597 34856 NODE_3_length_27260_cov_310.524_ID_9332986 1 27260
+
+			Previous gap was negative, modifying coordinates to ignore overlap
+				Moving contig start from 1 to 56.
+			Align 3: 7652 34856 NODE_3_length_27260_cov_310.524_ID_9332986 56 27260
+				Gap between this and next alignment: 34856 to 35991 (1134 bp)
+				Next Alignment: 35991 36719 NODE_9_length_729_cov_671.122_ID_9343806 729 1
+
+			Align 4: 35991 36719 NODE_9_length_729_cov_671.122_ID_9343806 729 1
+				Negative gap (overlap) between this and next alignment: 36719 to 36665 (-54 bp)
+				Next Alignment: 36665 52763 NODE_4_length_16099_cov_310.325_ID_9343456 1 16099
+
+			Previous gap was negative, modifying coordinates to ignore overlap
+				Moving contig start from 1 to 56.
+			Align 5: 36720 52763 NODE_4_length_16099_cov_310.325_ID_9343456 56 16099
+				Gap between this and next alignment: 52763 to 54572 (1808 bp)
+				Next Alignment: 54572 64999 NODE_5_length_10428_cov_300.989_ID_9343584 1 10428
+
+			Align 6: 54572 64999 NODE_5_length_10428_cov_300.989_ID_9343584 1 10428
+			END in current alignment.  Modifying 64999 to 64999.
+
+Analysis is finished!
+Founded SNPs were written into /Users/vladsaveliev/Dropbox/bio/quast/quast_master/testmeta/meta_ref_3__Lactobacillus_reuteri_F275_Kitasato_55_65k.fa_quast_output/contigs_reports/nucmer_output/meta_contigs_2_to_meta_ref_3__Lactobacillus_reuteri_F275_Kitasato_55_65k.fa.used_snps
+
+Results:
+	Local Misassemblies: 0
+	Misassemblies: 0
+		Relocations: 0
+		Translocations: 0
+		Inversions: 0
+	Misassembled Contigs: 0
+	Misassembled Contig Bases: 0
+	Misassmblies Inter-Contig Overlap: 0
+Uncovered Regions: 0 (0)
+Unaligned Contigs: 0 + 0 part
+Partially Unaligned Contigs with Misassemblies: 0
+Unaligned Contig Bases: 0
+
+Ambiguously Mapped Contigs: 0
+Total Bases in Ambiguously Mapped Contigs: 0
+Note that --allow-ambiguity option was set to "none" and these contigs were skipped.
+
+	Covered Bases: 62033
+
+	SNPs: 4
+	Insertions: 0
+	Deletions: 0
+
+	Positive Gaps: 3
+		Internal Gaps:  0
+		External Gaps:  3
+		External Gap Total:  2966
+		External Gap Average: 989
+	Negative Gaps: 3
+		Internal Overlaps:  0
+		External Overlaps:  3
+		External Overlaps Total: -162
+		External Overlaps Average: -54
+	Contigs with Redundant Alignments: 0 (0)

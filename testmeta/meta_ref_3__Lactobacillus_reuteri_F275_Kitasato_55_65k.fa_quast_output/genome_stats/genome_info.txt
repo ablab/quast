@@ -1,0 +1,15 @@
+reference chromosomes:
+	meta_ref_3__Lactobacillus_reuteri_F275_Kitasato_55_65k.fa.fasta (64999 bp)
+
+total genome size: 64999
+
+gap min size: 50
+partial gene/operon min size: 100
+
+
+
+  assembly              | genome fraction (%) | duplication ratio | gaps        | genes     | partial   | operons   | partial   |
+                        |                     |                   | number      |           | genes     |           | operons   |
+================================================================================================================================
+  meta_contigs_1_to_meta_ref_3__Lactobacillus_reuteri_F275_Kitasato_55_65k.fa  | 98.3968984138       | 1.08056975781     | 3           | None      | None      | None      | None      |
+  meta_contigs_2_to_meta_ref_3__Lactobacillus_reuteri_F275_Kitasato_55_65k.fa  | 95.4368528747       | 1.00265987458     | 2           | None      | None      | None      | None      |

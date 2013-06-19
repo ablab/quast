@@ -1,0 +1,15 @@
+reference chromosomes:
+	meta_ref_2__Lactobacillus_delbrueckii_bulgaricus_ATCC_BAA-365_32_60k.fa.fasta (59999 bp)
+
+total genome size: 59999
+
+gap min size: 50
+partial gene/operon min size: 100
+
+
+
+  assembly              | genome fraction (%) | duplication ratio | gaps        | genes     | partial   | operons   | partial   |
+                        |                     |                   | number      |           | genes     |           | operons   |
+================================================================================================================================
+  meta_contigs_1_to_meta_ref_2__Lactobacillus_delbrueckii_bulgaricus_ATCC_BAA-365_32_60k.fa  | 97.5749595827       | 1.0020326592      | 1           | None      | None      | None      | None      |
+  meta_contigs_2_to_meta_ref_2__Lactobacillus_delbrueckii_bulgaricus_ATCC_BAA-365_32_60k.fa  | 98.1149685828       | 1.0               | 1           | None      | None      | None      | None      |

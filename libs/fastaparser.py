@@ -93,8 +93,8 @@ def print_fasta(fasta):
         for i in xrange(0,len(seq),60):
             print seq[i:i+60]
 
-def write_fasta(filename, fasta):
-    outfile = open(filename, 'a')
+def write_fasta(filename, fasta, mode='w'):
+    outfile = open(filename, mode)
 
     for name, seq in fasta:
         outfile.write('>%s\n' % name)

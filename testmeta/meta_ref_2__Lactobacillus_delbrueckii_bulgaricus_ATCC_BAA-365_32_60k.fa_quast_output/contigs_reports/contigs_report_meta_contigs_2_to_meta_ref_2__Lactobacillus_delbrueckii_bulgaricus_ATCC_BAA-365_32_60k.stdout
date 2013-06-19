@@ -1,0 +1,70 @@
+Aligning contigs to reference...
+	Running Nucmer...
+Parsing coords...
+Loading Assembly...
+Loading reference...
+	Loaded [meta_ref_2__Lactobacillus_delbrueckii_bulgaricus_ATCC_BAA-365_32_60k.fa.fasta]
+Loading SNPs...
+Loading regions...
+	No regions given, using whole reference.
+	Total Regions: 1
+	Total Region Length: 59999
+Analyzing contigs...
+CONTIG: NODE_1_length_55421_cov_26.1146_ID_4744408 (55421bp)
+Top Length: 55421  Top ID: 100.0
+		One align captures most of this contig: 4578 59998 | 55421 1 | 55421 55421 | 100.0 | meta_ref_2__Lactobacillus_delbrueckii_bulgaricus_ATCC_BAA-365_32_60k.fa.fasta NODE_1_length_55421_cov_26.1146_ID_4744408
+
+CONTIG: NODE_7_length_3447_cov_44.4894_ID_2480336 (3447bp)
+Top Length: 3447  Top ID: 99.56
+		One align captures most of this contig: 3 3449 | 3447 1 | 3447 3447 | 99.56 | meta_ref_2__Lactobacillus_delbrueckii_bulgaricus_ATCC_BAA-365_32_60k.fa.fasta NODE_7_length_3447_cov_44.4894_ID_2480336
+
+Analyzing coverage...
+Writing SNPs into /Users/vladsaveliev/Dropbox/bio/quast/quast_master/testmeta/meta_ref_2__Lactobacillus_delbrueckii_bulgaricus_ATCC_BAA-365_32_60k.fa_quast_output/contigs_reports/nucmer_output/meta_contigs_2_to_meta_ref_2__Lactobacillus_delbrueckii_bulgaricus_ATCC_BAA-365_32_60k.fa.used_snps
+	Reference meta_ref_2__Lactobacillus_delbrueckii_bulgaricus_ATCC_BAA-365_32_60k.fa.fasta: 2 total alignments. 1 total regions.
+		Region: 1 to 59999 (59999 bp)
+			START in gap: 1 to 3 (2 bp)
+			Align 1: 3 3449 NODE_7_length_3447_cov_44.4894_ID_2480336 3447 1
+				Gap between this and next alignment: 3449 to 4578 (1128 bp)
+				Next Alignment: 4578 59998 NODE_1_length_55421_cov_26.1146_ID_4744408 55421 1
+
+			Align 2: 4578 59998 NODE_1_length_55421_cov_26.1146_ID_4744408 55421 1
+			END in gap: 59998 to 59999 (1 bp)
+
+Analysis is finished!
+Founded SNPs were written into /Users/vladsaveliev/Dropbox/bio/quast/quast_master/testmeta/meta_ref_2__Lactobacillus_delbrueckii_bulgaricus_ATCC_BAA-365_32_60k.fa_quast_output/contigs_reports/nucmer_output/meta_contigs_2_to_meta_ref_2__Lactobacillus_delbrueckii_bulgaricus_ATCC_BAA-365_32_60k.fa.used_snps
+
+Results:
+	Local Misassemblies: 0
+	Misassemblies: 0
+		Relocations: 0
+		Translocations: 0
+		Inversions: 0
+	Misassembled Contigs: 0
+	Misassembled Contig Bases: 0
+	Misassmblies Inter-Contig Overlap: 0
+Uncovered Regions: 0 (0)
+Unaligned Contigs: 0 + 0 part
+Partially Unaligned Contigs with Misassemblies: 0
+Unaligned Contig Bases: 0
+
+Ambiguously Mapped Contigs: 0
+Total Bases in Ambiguously Mapped Contigs: 0
+Note that --allow-ambiguity option was set to "none" and these contigs were skipped.
+
+	Covered Bases: 58868
+
+	SNPs: 15
+	Insertions: 0
+	Deletions: 0
+
+	Positive Gaps: 3
+		Internal Gaps:  0
+		External Gaps:  3
+		External Gap Total:  1131
+		External Gap Average: 377
+	Negative Gaps: 0
+		Internal Overlaps:  0
+		External Overlaps:  0
+		External Overlaps Total:  0
+		External Overlaps Average: 0
+	Contigs with Redundant Alignments: 0 (0)

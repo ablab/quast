@@ -88,7 +88,7 @@ def partition_contigs(contigs_fpaths, ref_fpaths, corrected_dirpath, alignments_
                     if cont_name in ref_contigs_names:
                         # Collecting all aligned contigs names in order to futher extract not-aligned
                         aligned_contig_names.add(cont_name)
-                        fastaparser.write_fasta(ref_contigs_fpath, [(cont_name, seq)])
+                        fastaparser.write_fasta(ref_contigs_fpath, [(cont_name, seq)], 'a')
 
                 partitions[ref_name].append(ref_contigs_fpath)
 
@@ -97,8 +97,7 @@ def partition_contigs(contigs_fpaths, ref_fpaths, corrected_dirpath, alignments_
         not_aligned_contigs_names = all_contigs_names - aligned_contig_names
         print 'not_aligned_contigs_names'
         print not_aligned_contigs_names
-        with open(not_aligned_fpath, 'w') as f:
-            fastaparser.write_fasta(not_aligned_fpath, [(name, contigs[name]) for name in not_aligned_contigs_names])
+        fastaparser.write_fasta(not_aligned_fpath, [(name, contigs[name]) for name in not_aligned_contigs_names])
 
         not_aligned_fpaths.append(not_aligned_fpath)
 
@@ -309,8 +308,8 @@ def main(args):
                 corr_fpath = os.path.join(corrected_dirpath, corr_fname)
                 corrected_ref_fpaths.append(corr_fpath)
 
-                fastaparser.write_fasta(corr_fpath, [(corr_fname, seq)])
-                fastaparser.write_fasta(combined_ref_fpath, [(corr_fname, seq)])
+                fastaparser.write_fasta(corr_fpath, [(corr_fname, seq)], 'a')
+                fastaparser.write_fasta(combined_ref_fpath, [(corr_fname, seq)], 'a')
                 log.info('\t' + corr_fname + '\n')
 
         log.info('\tAll references combined in ' + combined_ref_fname)

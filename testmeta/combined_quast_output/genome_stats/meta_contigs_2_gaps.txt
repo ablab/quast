@@ -1,0 +1,8 @@
+meta_ref_3__Lactobacillus_reuteri_F275_Kitasato_55_65k.fa.fasta
+34857 35990
+52764 54571
+meta_ref_1__Lactobacillus_plantarum_22_55k.fa.fasta
+1 77
+792 5304
+meta_ref_2__Lactobacillus_delbrueckii_bulgaricus_ATCC_BAA-365_32_60k.fa.fasta
+3450 4577

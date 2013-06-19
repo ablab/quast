@@ -1,0 +1,13 @@
+    [S1]     [E1]  |     [S2]     [E2]  |  [LEN 1]  [LEN 2]  |  [% IDY]  | [TAGS]
+=====================================================================================
+25 3451 | 1 3427 | 3427 3427 | 99.97 | meta_ref_3__Lactobacillus_reuteri_F275_Kitasato_55_65k.fa.fasta NODE_43_length_3427_cov_1.72301
+6958 7819 | 1 862 | 862 862 | 97.45 | meta_ref_3__Lactobacillus_reuteri_F275_Kitasato_55_65k.fa.fasta NODE_38_length_862_cov_88.5167
+6958 7704 | 1 747 | 747 747 | 99.87 | meta_ref_3__Lactobacillus_reuteri_F275_Kitasato_55_65k.fa.fasta NODE_37_length_747_cov_199.488
+6958 7651 | 1 694 | 694 694 | 99.42 | meta_ref_3__Lactobacillus_reuteri_F275_Kitasato_55_65k.fa.fasta NODE_30_length_694_cov_43.795
+53899 64999 | 2 11102 | 11101 11101 | 99.93 | meta_ref_3__Lactobacillus_reuteri_F275_Kitasato_55_65k.fa.fasta NODE_42_length_11102_cov_303.126
+6129 6960 | 832 1 | 832 832 | 100.0 | meta_ref_3__Lactobacillus_reuteri_F275_Kitasato_55_65k.fa.fasta NODE_25_length_832_cov_317.008
+35992 53525 | 17534 1 | 17534 17534 | 99.97 | meta_ref_3__Lactobacillus_reuteri_F275_Kitasato_55_65k.fa.fasta NODE_41_length_17535_cov_311.913
+3868 4924 | 1 1057 | 1057 1057 | 99.91 | meta_ref_3__Lactobacillus_reuteri_F275_Kitasato_55_65k.fa.fasta NODE_32_length_1057_cov_298.503
+7650 35618 | 27969 1 | 27969 27969 | 99.96 | meta_ref_3__Lactobacillus_reuteri_F275_Kitasato_55_65k.fa.fasta NODE_44_length_27969_cov_310.914
+5197 6183 | 1 987 | 987 987 | 100.0 | meta_ref_3__Lactobacillus_reuteri_F275_Kitasato_55_65k.fa.fasta NODE_40_length_987_cov_309.523
+25 3922 | 1 3898 | 3898 3898 | 99.97 | meta_ref_3__Lactobacillus_reuteri_F275_Kitasato_55_65k.fa.fasta NODE_34_length_3898_cov_294.65

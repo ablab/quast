@@ -1,0 +1,16 @@
+111	A	G	361	11	111	1	1	1	1	meta_ref_1__Lactobacillus_plantarum_22_55k.fa.fasta	NODE_18_length_714_cov_2.71927
+122	.	T	373	3	122	1	1	1	1	meta_ref_1__Lactobacillus_plantarum_22_55k.fa.fasta	NODE_18_length_714_cov_2.71927
+125	T	A	376	3	125	1	1	1	1	meta_ref_1__Lactobacillus_plantarum_22_55k.fa.fasta	NODE_18_length_714_cov_2.71927
+183	A	C	106	106	106	0	0	1	1	meta_ref_1__Lactobacillus_plantarum_22_55k.fa.fasta	NODE_18_length_714_cov_2.71927
+5323	T	G	49640	19	19	0	0	1	-1	meta_ref_1__Lactobacillus_plantarum_22_55k.fa.fasta	NODE_6_length_49658_cov_2.58581
+8604	T	C	46359	1221	3300	0	0	1	-1	meta_ref_1__Lactobacillus_plantarum_22_55k.fa.fasta	NODE_6_length_49658_cov_2.58581
+9825	T	C	45138	1221	4521	0	0	1	-1	meta_ref_1__Lactobacillus_plantarum_22_55k.fa.fasta	NODE_6_length_49658_cov_2.58581
+22530	C	T	32433	5363	17226	0	0	1	-1	meta_ref_1__Lactobacillus_plantarum_22_55k.fa.fasta	NODE_6_length_49658_cov_2.58581
+27893	C	T	27070	99	22589	0	0	1	-1	meta_ref_1__Lactobacillus_plantarum_22_55k.fa.fasta	NODE_6_length_49658_cov_2.58581
+27992	T	G	26971	99	22688	0	0	1	-1	meta_ref_1__Lactobacillus_plantarum_22_55k.fa.fasta	NODE_6_length_49658_cov_2.58581
+30179	G	C	24784	18	24784	0	0	1	-1	meta_ref_1__Lactobacillus_plantarum_22_55k.fa.fasta	NODE_6_length_49658_cov_2.58581
+30197	T	C	24766	18	24766	0	0	1	-1	meta_ref_1__Lactobacillus_plantarum_22_55k.fa.fasta	NODE_6_length_49658_cov_2.58581
+42860	T	G	12103	11811	12103	0	0	1	-1	meta_ref_1__Lactobacillus_plantarum_22_55k.fa.fasta	NODE_6_length_49658_cov_2.58581
+54671	A	C	292	247	292	0	0	1	-1	meta_ref_1__Lactobacillus_plantarum_22_55k.fa.fasta	NODE_6_length_49658_cov_2.58581
+54918	C	G	45	36	45	0	0	1	-1	meta_ref_1__Lactobacillus_plantarum_22_55k.fa.fasta	NODE_6_length_49658_cov_2.58581
+54954	T	A	9	9	9	0	0	1	-1	meta_ref_1__Lactobacillus_plantarum_22_55k.fa.fasta	NODE_6_length_49658_cov_2.58581

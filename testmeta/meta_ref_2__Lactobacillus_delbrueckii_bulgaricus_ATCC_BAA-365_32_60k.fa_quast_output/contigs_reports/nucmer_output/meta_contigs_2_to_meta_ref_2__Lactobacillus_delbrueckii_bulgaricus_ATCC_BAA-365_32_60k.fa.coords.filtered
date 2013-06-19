@@ -1,0 +1,4 @@
+    [S1]     [E1]  |     [S2]     [E2]  |  [LEN 1]  [LEN 2]  |  [% IDY]  | [TAGS]
+=====================================================================================
+4578 59998 | 55421 1 | 55421 55421 | 100.0 | meta_ref_2__Lactobacillus_delbrueckii_bulgaricus_ATCC_BAA-365_32_60k.fa.fasta NODE_1_length_55421_cov_26.1146_ID_4744408
+3 3449 | 3447 1 | 3447 3447 | 99.56 | meta_ref_2__Lactobacillus_delbrueckii_bulgaricus_ATCC_BAA-365_32_60k.fa.fasta NODE_7_length_3447_cov_44.4894_ID_2480336

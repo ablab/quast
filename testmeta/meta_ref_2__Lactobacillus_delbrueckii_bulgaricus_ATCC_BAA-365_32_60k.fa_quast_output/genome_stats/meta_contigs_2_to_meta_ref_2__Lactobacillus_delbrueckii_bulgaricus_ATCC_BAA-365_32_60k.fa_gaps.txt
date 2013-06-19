@@ -1,0 +1,2 @@
+meta_ref_2__Lactobacillus_delbrueckii_bulgaricus_ATCC_BAA-365_32_60k.fa.fasta
+3450 4577

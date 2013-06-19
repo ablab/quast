@@ -634,7 +634,7 @@ def main(args):
 
 
 def cleanup(corrected_dirpath):
-    ## removing correcting input contig files
+    # removing correcting input contig files
     if not qconfig.debug:
         shutil.rmtree(corrected_dirpath)
 

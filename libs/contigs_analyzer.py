@@ -23,7 +23,7 @@ import subprocess
 import datetime
 import fastaparser
 import shutil
-from libs import reporting, qconfig
+from libs import reporting, qconfig, qutils
 from qutils import id_to_str, error, print_timestamp
 
 required_binaries = ['nucmer', 'delta-filter', 'show-coords', 'show-snps']
@@ -104,8 +104,12 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
     log.info('  ' + id_to_str(id) + os.path.basename(filename))
 
     # run plantakolya tool
-    logfilename_out = os.path.join(output_dir, "contigs_report_" + os.path.basename(filename) + '.stdout')
-    logfilename_err = os.path.join(output_dir, "contigs_report_" + os.path.basename(filename) + '.stderr')
+    logfilename_out = os.path.join(output_dir, "contigs_report_" +
+                                               os.path.splitext(os.path.basename(filename))[0] +
+                                               '.stdout')
+    logfilename_err = os.path.join(output_dir, "contigs_report_" +
+                                               os.path.splitext(os.path.basename(filename))[0] +
+                                               '.stderr')
     plantafile_out = open(logfilename_out, 'w')
     plantafile_err = open(logfilename_err, 'w')
 
@@ -271,7 +275,6 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
         else:                   # alignment 2 is earlier in contig
             return align1_s - align2_e - 1
 
-
     def process_misassembled_contig(aligned_lenths, i_start, i_finish, contig_len, prev, cur_aligned_length, misassembly_internal_overlap,
                                     sorted_aligns, is_1st_chimeric_half, misassembled_contigs, ref_aligns, ref_features):
         region_misassemblies = []
@@ -286,7 +289,7 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
 
             #Check strands
             strand1 = (sorted_aligns[i].s2 < sorted_aligns[i].e2)
-            strand2 = (sorted_aligns[i+1].s2 < sorted_aligns[i+1].e2)
+            strand2 = (sorted_aligns[i + 1].s2 < sorted_aligns[i+1].e2)
 
             # inconsistency of positions on reference and on contig
             if strand1:
@@ -355,7 +358,7 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
 
         #Record the very last alignment
         i = i_finish
-        print >> plantafile_out, '\t\t\tReal Alignment %d: %s' % (i+1, str(sorted_aligns[i]))
+        print >> plantafile_out, '\t\t\tReal Alignment %d: %s' % (i + 1, str(sorted_aligns[i]))
         ref_aligns.setdefault(sorted_aligns[i].ref, []).append(sorted_aligns[i])
 
         return cur_aligned_length, misassembly_internal_overlap, prev.clone(), region_misassemblies
@@ -455,7 +458,7 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
     for contig, seq in assembly.iteritems():
         #Recording contig stats
         ctg_len = len(seq)
-        print >> plantafile_out, '\tCONTIG: %s (%dbp)' % (contig, ctg_len)
+        print >> plantafile_out, 'CONTIG: %s (%dbp)' % (contig, ctg_len)
         #Check if this contig aligned to the reference
         if contig in aligns:
             #Pull all aligns for this contig
@@ -764,6 +767,8 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
             fully_unaligned_bases += ctg_len
             print >> plantafile_out, '\t\tUnaligned bases: %d  total: %d' % (ctg_len, fully_unaligned_bases)
 
+        print >> plantafile_out
+
     coords_filtered_file.close()
     unaligned_file.close()
 
@@ -805,7 +810,7 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
         for region in regions[ref]:
             end = 0
             reg_length = region[1] - region[0] + 1
-            print >> plantafile_out, '\t\tRegion: %d to %d (%d bp)\n' % (region[0], region[1], reg_length)
+            print >> plantafile_out, '\t\tRegion: %d to %d (%d bp)' % (region[0], region[1], reg_length)
 
             #Skipping alignments not in the next region
             while sorted_aligns and sorted_aligns[0].e1 < region[0]:
@@ -1078,6 +1083,8 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
                 prev_snp = None
                 cur_indel = 0
 
+                print >> plantafile_out
+
     # calulating SNPs and Subs. error (per 100 kbp)
     ##### getting results from Nucmer's dnadiff
 #    SNPs = 0
@@ -1198,6 +1205,17 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
     fasta = [(name, seq) for name, seq in fastaparser.read_fasta(filename) if
                          name in misassembled_contigs.keys()]
     fastaparser.write_fasta(os.path.join(output_dir, os.path.basename(filename) + '.mis_contigs'), fasta)
+
+    alignment_tsv_fpath = os.path.join(output_dir, "alignments_" +
+                                       os.path.splitext(os.path.basename(filename))[0] + '.tsv')
+    print alignment_tsv_fpath
+    alignment_tsv_f = open(alignment_tsv_fpath, 'w')
+    for ref_name, aligns in ref_aligns.iteritems():
+        alignment_tsv_f.write(ref_name)
+        for align in aligns:
+            alignment_tsv_f.write('\t' + align.contig)
+        alignment_tsv_f.write('\n')
+    alignment_tsv_f.close()
 
     plantafile_out.close()
     plantafile_err.close()

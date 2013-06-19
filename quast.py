@@ -70,7 +70,7 @@ def usage():
         print >> sys.stderr, "                                  By default, QUAST breaks contigs only by extensive misassemblies (not local ones)"
         print >> sys.stderr, ""
         print >> sys.stderr, "-m  --meta                        Metagenomic assembly. Uses MetaGeneMark for gene prediction. "
-        print >> sys.stderr, "                                  Accepts multiple reference files (comma-separated list of filenames after -R option)"
+        # print >> sys.stderr, "                                  Accepts multiple reference files (comma-separated list of filenames after -R option)"
         print >> sys.stderr, ""
         print >> sys.stderr, "-h  --help                        Prints this message"
 
@@ -102,6 +102,69 @@ def usage():
         print >> sys.stderr, ""
         print >> sys.stderr, "-d  --debug                      runs in debug mode"
         print >> sys.stderr, "-h  --help                       prints this message"
+
+
+def set_up_log(log, output_dirpath):
+    log.setLevel(logging.DEBUG)
+
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setFormatter(logging.Formatter('%(message)s'))
+    console_handler.setLevel(logging.DEBUG)
+    log.addHandler(console_handler)
+
+    logfile = os.path.join(output_dirpath, qconfig.logfile)
+    file_handler = logging.FileHandler(logfile, mode='w')
+    log.addHandler(file_handler)
+
+    return logfile, [console_handler, file_handler]
+
+
+def set_up_output_dir(output_dirpath, json_outputpath):
+    existing_alignments = False
+
+    if output_dirpath:  # 'output dir was specified with -o option'
+        if os.path.isdir(output_dirpath):
+            existing_alignments = True
+
+    else:  # output dir was not specified, creating our own one
+        output_dirpath = os.path.join(os.path.abspath(
+            qconfig.default_results_root_dirname), qconfig.output_dirname)
+
+        # in case of starting two instances of QUAST in the same second
+        if os.path.isdir(output_dirpath):
+            if qconfig.make_latest_symlink:
+                i = 2
+                base_dirpath = output_dirpath
+                while os.path.isdir(output_dirpath):
+                    output_dirpath = str(base_dirpath) + '__' + str(i)
+                    i += 1
+
+    if not os.path.isdir(output_dirpath):
+        os.makedirs(output_dirpath)
+
+    # 'latest' symlink
+    if qconfig.make_latest_symlink:
+        prev_dirpath = os.getcwd()
+        os.chdir(qconfig.default_results_root_dirname)
+
+        latest_symlink = 'latest'
+        if os.path.islink(latest_symlink):
+            os.remove(latest_symlink)
+        os.symlink(os.path.relpath(output_dirpath), latest_symlink)
+
+        os.chdir(prev_dirpath)
+
+    # Json directory
+    if qconfig.save_json:
+        if json_outputpath:
+            if not os.path.isdir(json_outputpath):
+                os.makedirs(json_outputpath)
+        else:
+            json_outputpath = os.path.join(output_dirpath, qconfig.default_json_dirname)
+            if not os.path.isdir(json_outputpath):
+                os.makedirs(json_outputpath)
+
+    return output_dirpath, json_outputpath, existing_alignments
 
 
 def corrected_fname_for_nucmer(fpath):
@@ -171,6 +234,31 @@ def correct_fasta(original_fpath, corrected_fpath, is_reference=False):
     return True
 
 
+# Processing contigs
+def handle_fasta(contigs_fpath, corr_fpath, reporting):
+    lengths = fastaparser.get_lengths_from_fastafile(contigs_fpath)
+    if not sum(l for l in lengths if l >= qconfig.min_contig):
+        warning("Skipping %s because it doesn't contain contigs >= %d bp."
+                % (os.path.basename(contigs_fpath), qconfig.min_contig),
+                log=log)
+        return False
+
+    # correcting
+    if not correct_fasta(contigs_fpath, corr_fpath):
+        return False
+
+    ## filling column "Assembly" with names of assemblies
+    report = reporting.get(corr_fpath)
+    ## filling columns "Number of contigs >=110 bp", ">=200 bp", ">=500 bp"
+    report.add_field(reporting.Fields.CONTIGS,
+                     [sum(1 for l in lengths if l >= threshold)
+                      for threshold in qconfig.contig_thresholds])
+    report.add_field(reporting.Fields.TOTALLENS,
+                     [sum(l for l in lengths if l >= threshold)
+                      for threshold in qconfig.contig_thresholds])
+    return True
+
+
 def main(args):
     quast_dir = os.path.dirname(qconfig.LIBS_LOCATION)
     if ' ' in quast_dir:
@@ -201,7 +289,7 @@ def main(args):
     output_dirpath = None
 
     for opt, arg in options:
-        # Yes, this is a code duplicating. Python's getopt is non well-thought!!
+        # Yes, this is a code duplicating. I have no idea why I didn't use OptionParser.
         if opt in ('-o', "--output-dir"):
             output_dirpath = os.path.abspath(arg)
             qconfig.make_latest_symlink = False
@@ -287,42 +375,12 @@ def main(args):
     for c_fpath in contigs_fpaths:
         assert_file_exists(c_fpath, 'contigs')
 
-    ########################################################################
-    ### CONFIG & CHECKS
-    ########################################################################
-    existing_alignments = False
+    output_dirpath, json_outputpath, existing_alignments = \
+        set_up_output_dir(output_dirpath, json_outputpath)
 
-    if output_dirpath:  # 'output dir was specified with -o option'
-        if os.path.isdir(output_dirpath):
-            existing_alignments = True
+    corrected_dirpath = os.path.join(output_dirpath, qconfig.corrected_dirname)
 
-    else:  # output dir was not specified, creating our own one
-        output_dirpath = os.path.join(os.path.abspath(qconfig.default_results_root_dirname), qconfig.output_dirname)
-
-        # in case of starting two instances of QUAST in the same second
-        if os.path.isdir(output_dirpath):
-            if qconfig.make_latest_symlink:
-                i = 2
-                base_dirpath = output_dirpath
-                while os.path.isdir(output_dirpath):
-                    output_dirpath = str(base_dirpath) + '__' + str(i)
-                    i += 1
-
-    if not os.path.isdir(output_dirpath):
-        os.makedirs(output_dirpath)
-
-    # duplicating output to a log file
-    logfile = os.path.join(output_dirpath, qconfig.logfile)
-    log.setLevel(logging.DEBUG)
-
-    console = logging.StreamHandler(sys.stdout)
-    console.setFormatter(logging.Formatter('%(message)s'))
-    console.setLevel(logging.DEBUG)
-    log.addHandler(console)
-    log_handler = logging.FileHandler(logfile, mode='w')
-    log.addHandler(log_handler)
-
-    ########################################################################
+    logfile, handlers = set_up_log(log, output_dirpath)
 
     command_line = ""
     for v in sys.argv:
@@ -337,14 +395,15 @@ def main(args):
     log.info("Logging to " + logfile)
     log.info("")
 
-    ########################################################################
-
     if existing_alignments:
         notice("Output directory already exists. Existing Nucmer alignments can be used.")
         qutils.remove_reports(output_dirpath)
 
     qconfig.contig_thresholds = map(int, qconfig.contig_thresholds.split(","))
+
     qconfig.genes_lengths = map(int, qconfig.genes_lengths.split(","))
+
+    # Threadding
     if qconfig.max_threads is None:
         try:
             import multiprocessing
@@ -353,31 +412,6 @@ def main(args):
             warning('Failed to determine the number of CPUs')
             qconfig.max_threads = qconfig.DEFAULT_MAX_THREADS
         notice('Maximum number of threads was set to ' + str(qconfig.max_threads) + ' (use --threads option to set it manually)')
-
-    # 'latest' symlink
-    if qconfig.make_latest_symlink:
-        prev_dirpath = os.getcwd()
-        os.chdir(qconfig.default_results_root_dirname)
-
-        latest_symlink = 'latest'
-        if os.path.islink(latest_symlink):
-            os.remove(latest_symlink)
-        os.symlink(os.path.relpath(output_dirpath), latest_symlink)
-
-        os.chdir(prev_dirpath)
-
-    # Json directory
-    if qconfig.save_json:
-        if json_outputpath:
-            if not os.path.isdir(json_outputpath):
-                os.makedirs(json_outputpath)
-        else:
-            json_outputpath = os.path.join(output_dirpath, qconfig.default_json_dirname)
-            if not os.path.isdir(json_outputpath):
-                os.makedirs(json_outputpath)
-
-    # Where corrected contigs will be saved
-    corrected_dirpath = os.path.join(output_dirpath, qconfig.corrected_dirname)
 
     # Where all pdfs will be saved
     all_pdf_filename = os.path.join(output_dirpath, qconfig.plots_filename)
@@ -388,6 +422,8 @@ def main(args):
     from libs import reporting
     reload(reporting)
 
+    ##################################
+    # Processing contigs and reference
     message = "Processing contig files"
     if qconfig.reference:
         message += " and reference"
@@ -414,23 +450,6 @@ def main(args):
         else:
             qconfig.reference = corrected_and_unziped_reference_fname
 
-    # Processing contigs
-    def handle_fasta(contigs_fpath, corr_fpath):
-        lengths = fastaparser.get_lengths_from_fastafile(contigs_fpath)
-        if not sum(l for l in lengths if l >= qconfig.min_contig):
-            warning("Skipping %s because it doesn't contain contigs >= %d bp." % (os.path.basename(contigs_fpath), qconfig.min_contig))
-            return False
-
-        # correcting
-        if not correct_fasta(contigs_fpath, corr_fpath):
-            return False
-
-        ## filling column "Assembly" with names of assemblies
-        report = reporting.get(corr_fpath)
-        ## filling columns "Number of contigs >=110 bp", ">=200 bp", ">=500 bp"
-        report.add_field(reporting.Fields.CONTIGS,   [sum(1 for l in lengths if l >= threshold) for threshold in qconfig.contig_thresholds])
-        report.add_field(reporting.Fields.TOTALLENS, [sum(l for l in lengths if l >= threshold) for threshold in qconfig.contig_thresholds])
-        return True
 
     ## removing from contigs' names special characters because:
     ## 1) Some embedded tools can fail on some strings with "...", "+", "-", etc
@@ -477,11 +496,11 @@ def main(args):
             fastaparser.write_fasta(broken_scaffolds_path, broken_scaffolds_fasta)
             log.info("      %d scaffolds (%s) were broken into %d contigs (%s)"\
                   % (id + 1, os.path.basename(corr_fpath), contigs_counter, os.path.basename(broken_scaffolds_path)))
-            if handle_fasta(broken_scaffolds_path, broken_scaffolds_path):
+            if handle_fasta(broken_scaffolds_path, broken_scaffolds_path, reporting):
                 new_contigs_fpaths.append(broken_scaffolds_path)
                 qconfig.list_of_broken_scaffolds.append(os.path.basename(broken_scaffolds_path))
 
-        if not handle_fasta(contigs_fpath, corr_fpath):
+        if not handle_fasta(contigs_fpath, corr_fpath, reporting):
             continue
         new_contigs_fpaths.append(corr_fpath)
 
@@ -607,6 +626,9 @@ def main(args):
 
     finish_time = print_timestamp("Finished: ")
     log.info("Elapsed time: " + str(finish_time - start_time))
+
+    for handler in handlers:
+        log.removeHandler(handler)
 
     return 0
 

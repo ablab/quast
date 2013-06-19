@@ -19,15 +19,15 @@ import qconfig
 import datetime
 
 
-def notice(message='', indent=''):
+def notice(message='', indent='', log=log):
     log.info(indent + "NOTICE: " + str(message))
 
 
-def warning(message='', indent=''):
+def warning(message='', indent='', log=log):
     log.info(indent + "WARNING! " + str(message))
 
 
-def error(message='', exit_with_code=1, console_output=False, indent=''):
+def error(message='', exit_with_code=1, console_output=False, indent='', log=log):
     msg = indent + 'ERROR! ' + str(message)
 
     with open(qconfig.error_log_fpath, 'w') as error_f:
@@ -50,14 +50,14 @@ def assert_file_exists(fpath, message=''):
     return fpath
 
 
-def print_timestamp(message=''):
+def print_timestamp(message='', log=log):
     now = datetime.datetime.now()
     current_time = now.strftime("%Y-%m-%d %H:%M:%S")
     log.info("\n" + message + current_time)
     return now
 
 
-def print_version(to_stderr=False):
+def print_version(to_stderr=False, log=log):
     version_filename = os.path.join(qconfig.LIBS_LOCATION, '..', 'VERSION')
     version = "unknown"
     build = "unknown"
@@ -80,7 +80,7 @@ def print_version(to_stderr=False):
         log.info("Version " + str(version) + (", build " + str(build) if build != "unknown" else ""))
 
 
-def print_system_info():
+def print_system_info(log=log):
     log.info("System information:")
     try:
         import platform

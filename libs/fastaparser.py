@@ -94,7 +94,7 @@ def print_fasta(fasta):
             print seq[i:i+60]
 
 def write_fasta(filename, fasta):
-    outfile = open(filename, 'w')
+    outfile = open(filename, 'a')
 
     for name, seq in fasta:
         outfile.write('>%s\n' % name)

@@ -10,8 +10,12 @@ import itertools
 import fastaparser
 from libs.html_saver import json_saver
 from libs import qconfig
-from qutils import id_to_str, print_timestamp
+from qutils import id_to_str
 import reporting
+
+from libs.log import get_logger
+logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
+
 
 def GC_content(filename):  
     """
@@ -71,10 +75,8 @@ def GC_content(filename):
 
 
 def do(reference, filenames, output_dir, all_pdf, draw_plots, json_output_dir, results_dir):
-    log = logging.getLogger('quast')
-
-    print_timestamp()
-    log.info("Running Basic statistics processor...")
+    logger.print_timestamp()
+    logger.info("Running Basic statistics processor...")
     
     if not os.path.isdir(output_dir):
         os.mkdir(output_dir)
@@ -84,11 +86,11 @@ def do(reference, filenames, output_dir, all_pdf, draw_plots, json_output_dir, r
         reference_length = sum(fastaparser.get_lengths_from_fastafile(reference))
         reference_GC, reference_GC_distribution = GC_content(reference)
 
-        log.info('  Reference genome:')
-        log.info('    ' + os.path.basename(reference) + ', Reference length = ' + str(reference_length) + ', Reference GC % = ' + '%.2f' % reference_GC)
+        logger.info('  Reference genome:')
+        logger.info('    ' + os.path.basename(reference) + ', Reference length = ' + str(reference_length) + ', Reference GC % = ' + '%.2f' % reference_GC)
     elif qconfig.estimated_reference_size:
         reference_length = qconfig.estimated_reference_size
-        log.info('  Estimated reference length = ' + str(reference_length))
+        logger.info('  Estimated reference length = ' + str(reference_length))
 
     if reference_length:
         # Saving the reference in JSON
@@ -100,11 +102,11 @@ def do(reference, filenames, output_dir, all_pdf, draw_plots, json_output_dir, r
             from libs.html_saver import html_saver
             html_saver.save_reference_length(results_dir, reference_length)
 
-    log.info('  Contigs files: ')
+    logger.info('  Contigs files: ')
     lists_of_lengths = []
     numbers_of_Ns = []
     for id, filename in enumerate(filenames):
-        log.info('    ' + id_to_str(id) + os.path.basename(filename))
+        logger.info('    ' + id_to_str(id) + os.path.basename(filename))
         #lists_of_lengths.append(fastaparser.get_lengths_from_fastafile(filename))
         list_of_length = []
         number_of_Ns = 0
@@ -124,7 +126,7 @@ def do(reference, filenames, output_dir, all_pdf, draw_plots, json_output_dir, r
 
     ########################################################################
 
-    log.info('  Calculating N50 and L50...')
+    logger.info('  Calculating N50 and L50...')
 
     list_of_GC_distributions = []
     import N50
@@ -141,7 +143,7 @@ def do(reference, filenames, output_dir, all_pdf, draw_plots, json_output_dir, r
         total_length = sum(lengths_list)
         total_GC, GC_distribution = GC_content(filename)
         list_of_GC_distributions.append(GC_distribution)
-        log.info('    ' + id_to_str(id) + os.path.basename(filename) + \
+        logger.info('    ' + id_to_str(id) + os.path.basename(filename) + \
             ', N50 = ' + str(n50) + \
             ', L50 = ' + str(l50) + \
             ', Total length = ' + str(total_length) + \
@@ -196,4 +198,4 @@ def do(reference, filenames, output_dir, all_pdf, draw_plots, json_output_dir, r
         if reference_length:
             plotter.Nx_plot(filenames, lists_of_lengths, output_dir + '/NGx_plot', 'NGx', [reference_length for i in range(len(filenames))], all_pdf)
 
-    log.info('Done.')
+    logger.info('Done.')

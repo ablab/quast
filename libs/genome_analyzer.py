@@ -10,7 +10,10 @@ import fastaparser
 import genes_parser
 from libs import reporting, qconfig
 from libs.html_saver import json_saver
-from qutils import id_to_str, notice, warning, error, print_timestamp
+from qutils import id_to_str
+
+from libs.log import get_logger
+logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 
 
 def chromosomes_names_dict(feature, regions, chr_names):
@@ -33,13 +36,13 @@ def chromosomes_names_dict(feature, regions, chr_names):
 
         if len(region_2_chr_name) == 1:
             if region_2_chr_name[regions[0].seqname] is None:
-                notice('Reference name in %ss (%s) does not match the name of the reference (%s).'
+                logger.notice('Reference name in %ss (%s) does not match the name of the reference (%s).'
                        'QUAST will ignore this ussue and count as if they matched.' % (feature, regions[0].seqname, chr_name),
                        indent='  ')
                 region_2_chr_name[regions[0].seqname] = chr_name
 
         else:
-            warning('Some of the reference names in %ss do not match the name of the reference (%s). '
+            logger.warning('Some of the reference names in %ss do not match the name of the reference (%s). '
                     'Check your %s file.' % (feature, chr_name, feature), indent='  ')
 
     # multiple chromosomes
@@ -55,11 +58,11 @@ def chromosomes_names_dict(feature, regions, chr_names):
                 region_2_chr_name[region.seqname] = None
 
         if None in region_2_chr_name.values():
-            warning('Some of the reference names in %ss does not match any chromosome. '
+            logger.warning('Some of the reference names in %ss does not match any chromosome. '
                     'Check your %s file.' % (feature, feature), indent='  ')
 
         if all(chr_name is None for chr_name in region_2_chr_name.values()):
-            warning('Reference names in %ss do not match any chromosome. Check your %s file.' % (feature, feature),
+            logger.warning('Reference names in %ss do not match any chromosome. Check your %s file.' % (feature, feature),
                     indent='  ')
 
     return region_2_chr_name
@@ -69,9 +72,8 @@ def do(reference, filenames, nucmer_dir, output_dir, genes_filename, operons_fil
     # some important constants
     nucmer_prefix = os.path.join(nucmer_dir, 'nucmer_output')
 
-    print_timestamp()
-    log = logging.getLogger('quast')
-    log.info('Running Genome analyzer...')
+    logger.print_timestamp()
+    logger.info('Running Genome analyzer...')
 
     if not os.path.isdir(output_dir):
         os.mkdir(output_dir)
@@ -121,13 +123,13 @@ def do(reference, filenames, nucmer_dir, output_dir, genes_filename, operons_fil
         feature_container.region_list = genes_parser.get_genes_from_file(feature_filename, feature_name)
         if len(feature_container.region_list) == 0:
             if feature_filename:
-                warning('No ' + feature_name + 's were loaded.', indent='  ')
+                logger.warning('No ' + feature_name + 's were loaded.', indent='  ')
                 res_file.write(feature_name + 's loaded: ' + 'None' + '\n')
             else:
-                notice('Annotated ' + feature_name + 's file was not provided. Use -' + feature_name[0].capitalize() + ' option to specify it.',
+                logger.notice('Annotated ' + feature_name + 's file was not provided. Use -' + feature_name[0].capitalize() + ' option to specify it.',
                        indent='  ')
         else:
-            log.info('  Loaded ' + str(len(feature_container.region_list)) + ' ' + feature_name + 's')
+            logger.info('  Loaded ' + str(len(feature_container.region_list)) + ' ' + feature_name + 's')
             res_file.write(feature_name + 's loaded: ' + str(len(feature_container.region_list)) + '\n')
             feature_container.found_list = [0] * len(feature_container.region_list)  # 0 - gene isn't found, 1 - gene is found, 2 - part of gene is found
             feature_container.chr_names_dict = chromosomes_names_dict(feature_name, feature_container.region_list, reference_chromosomes.keys())
@@ -155,7 +157,7 @@ def do(reference, filenames, nucmer_dir, output_dir, genes_filename, operons_fil
 
     # process all contig files  
     for id, filename in enumerate(filenames):
-        log.info('  ' + id_to_str(id) + os.path.basename(filename))
+        logger.info('  ' + id_to_str(id) + os.path.basename(filename))
 
         nucmer_base_filename = os.path.join(nucmer_prefix, os.path.basename(filename) + '.coords')
         if qconfig.use_all_alignments:
@@ -164,7 +166,7 @@ def do(reference, filenames, nucmer_dir, output_dir, genes_filename, operons_fil
             nucmer_filename = nucmer_base_filename + '.filtered'
 
         if not os.path.isfile(nucmer_filename):
-            error('Nucmer\'s coords file (' + nucmer_filename + ') not found! Try to restart QUAST.',
+            logger.error('Nucmer\'s coords file (' + nucmer_filename + ') not found! Try to restart QUAST.',
                   indent='  ')
             #continue
 
@@ -206,7 +208,7 @@ def do(reference, filenames, nucmer_dir, output_dir, genes_filename, operons_fil
             contig_name = line.split()[12].strip()
             chr_name = line.split()[11].strip()
             if chr_name not in genome_mapping:
-                error("Something went wrong and chromosome names in your coords file (" + nucmer_base_filename + ") "
+                logger.error("Something went wrong and chromosome names in your coords file (" + nucmer_base_filename + ") "
                       "differ from the names in the reference. Try to remove the file and restart QUAST.")
                 continue
             aligned_blocks[contig_name].append(AlignedBlock(seqname=chr_name, start=s1, end=e1))
@@ -365,7 +367,7 @@ def do(reference, filenames, nucmer_dir, output_dir, genes_filename, operons_fil
         plotter.histogram(filenames, genome_mapped, output_dir + '/genome_fraction_histogram', 'Genome fraction, %',
             all_pdf, top_value=100)
 
-    log.info('Done.')
+    logger.info('Done.')
 
 class AlignedBlock():
     def __init__(self, seqname=None, start=None, end=None):

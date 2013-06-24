@@ -6,8 +6,10 @@
 
 import os
 import re
-from libs import qutils
-from qutils import warning
+from libs import qutils, qconfig
+
+from libs.log import get_logger
+logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 
 
 txt_pattern_gi = re.compile(r'gi\|(?P<id>\d+)\|\w+\|(?P<seqname>\S+)\|\s+(?P<number>\d+)\s+(?P<start>\d+)\s+(?P<end>\d+)', re.I)
@@ -44,13 +46,13 @@ def get_genes_from_file(filename, feature):
         try:
             genes = parse_ncbi(genes_file)
         except ParseException, e:
-            warning('Parsing exception ' + e)
-            warning(filename + ' was skipped')
+            logger.warning('Parsing exception ' + e)
+            logger.warning(filename + ' was skipped')
             genes = []
 
     else:
-        warning('Incorrect format of ' + feature + '\'s file! GFF, NCBI and the plain TXT format accepted. See manual.')
-        warning(filename + ' was skipped')
+        logger.warning('Incorrect format of ' + feature + '\'s file! GFF, NCBI and the plain TXT format accepted. See manual.')
+        logger.warning(filename + ' was skipped')
 
     genes_file.close()
     return genes
@@ -112,14 +114,14 @@ def parse_ncbi(file):
                         gene.seqname.lstrip(' ,')
 
                 else:
-                    warning('Wrong NCBI annotation for gene ' + str(gene.number) + '. ' + gene.name + '. Skipping this gene.')
+                    logger.warning('Wrong NCBI annotation for gene ' + str(gene.number) + '. ' + gene.name + '. Skipping this gene.')
 
             if info_line.startswith('ID:'):
                 m = re.match(id_pattern, info_line)
                 if m:
                     gene.id = m.group('id')
                 else:
-                    warning('Can\'t parse gene\'s ID in NCBI format. Gene is ' + str(gene.number) + '. ' + gene.name + '. Skipping it.')
+                    logger.warning('Can\'t parse gene\'s ID in NCBI format. Gene is ' + str(gene.number) + '. ' + gene.name + '. Skipping it.')
 
 
         if gene.start is not None and gene.end is not None:

@@ -10,7 +10,8 @@ import platform
 
 LIBS_LOCATION = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
 
-error_log_fpath = os.path.join(LIBS_LOCATION, '..', 'error.log')
+LOGGER_DEFAULT_NAME = 'quast'
+# error_log_fpath = os.path.join(LIBS_LOCATION, '..', 'error.log')
 
 if platform.system() == 'Darwin':
     platform_name = 'macosx'
@@ -63,7 +64,6 @@ make_latest_symlink = True
 default_json_dirname = "json"
 
 # names of reports, log, etc.
-logfile = "quast.log"
 corrected_dirname = "corrected_input"
 plots_filename = "plots.pdf"
 report_prefix = "report"

@@ -6,7 +6,9 @@
 
 import datetime
 import os
-from libs.qutils import warning
+
+from libs.log import get_logger
+log = get_logger('quast')
 
 simplejson_error = False
 try:
@@ -15,7 +17,7 @@ except:
     try:
         import simplejson as json
     except:
-        warning('Can\'t build html report - please install python-simplejson')
+        log.warning('Can\'t build html report - please install python-simplejson')
         simplejson_error = True
 
 total_report_fn       = '/report.json'

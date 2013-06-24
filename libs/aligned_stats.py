@@ -9,7 +9,10 @@ import os
 import itertools
 import fastaparser
 from libs import reporting, qconfig
-from qutils import id_to_str, warning, print_timestamp
+from qutils import id_to_str
+
+from libs.log import get_logger
+logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 
 
 ######## MAIN ############
@@ -28,10 +31,8 @@ def do(reference, filenames, aligned_lengths_lists, nucmer_dir, output_dir, all_
         report_dict[os.path.basename(filename)] = []
 
     ########################################################################
-    log = logging.getLogger('quast')
-
-    print_timestamp()
-    log.info('Running NA-NGA tool...')
+    logger.print_timestamp()
+    logger.info('Running NA-NGA tool...')
 
     reference_length = sum(fastaparser.get_lengths_from_fastafile(reference))
     assembly_lengths = []
@@ -40,7 +41,7 @@ def do(reference, filenames, aligned_lengths_lists, nucmer_dir, output_dir, all_
 
     ########################################################################
 
-    log.info('  Calculating NA50 and NGA50...')
+    logger.info('  Calculating NA50 and NGA50...')
 
     import N50
     for id, (filename, lens, assembly_len) in enumerate(itertools.izip(filenames, aligned_lengths_lists, assembly_lengths)):
@@ -52,7 +53,7 @@ def do(reference, filenames, aligned_lengths_lists, nucmer_dir, output_dir, all_
         lga50 = N50.LG50(lens, reference_length)
         la75 = N50.LG50(lens, assembly_len, 75)
         lga75 = N50.LG50(lens, reference_length, 75)
-        log.info('    ' + id_to_str(id) + os.path.basename(filename) +
+        logger.info('    ' + id_to_str(id) + os.path.basename(filename) +
                  ', Largest alignment = ' + str(max(lens)) +
                  ', NA50 = ' + str(na50) +
                  ', NGA50 = ' + str(nga50) +
@@ -92,5 +93,5 @@ def do(reference, filenames, aligned_lengths_lists, nucmer_dir, output_dir, all_
         plotter.Nx_plot(filenames, aligned_lengths_lists, output_dir + '/NAx_plot', 'NAx', assembly_lengths, all_pdf)
         plotter.Nx_plot(filenames, aligned_lengths_lists, output_dir + '/NGAx_plot', 'NGAx', [reference_length for i in range(len(filenames))], all_pdf)
 
-    log.info('  Done.')
+    logger.info('  Done.')
     return report_dict

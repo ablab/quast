@@ -5,12 +5,14 @@
 ############################################################################
 
 from __future__ import with_statement
-import logging
 import os
 import shutil
 import re
 from libs import qconfig
 from libs.html_saver import json_saver
+
+from libs.log import get_logger
+log = get_logger('quast')
 
 
 def get_real_path(relpath_in_html_saver):
@@ -134,7 +136,6 @@ def save_total_report(results_dirpath, min_contig):
     json_fpath = json_saver.save_total_report(results_dirpath, min_contig)
     if json_fpath:
         append(results_dirpath, json_fpath, 'totalReport')
-        log = logging.getLogger('quast')
         log.info('  HTML version saved to ' + os.path.join(results_dirpath, report_fname))
 
 

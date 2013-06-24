@@ -9,18 +9,20 @@ import os
 import shutil
 import subprocess
 from libs import reporting
-from qutils import id_to_str, print_timestamp, warning
+from qutils import id_to_str
 import qconfig
+
+from libs.log import get_logger
+logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 
 
 def run_gage(id, filename, gage_results_path, gage_tool_path, reference, tmp_dir):
-    log = logging.getLogger('quast')
-    log.info('  ' + id_to_str(id) + os.path.basename(filename) + '...')
+    logger.info('  ' + id_to_str(id) + os.path.basename(filename) + '...')
 
     # run gage tool
     logfilename_out = os.path.join(gage_results_path, 'gage_' + os.path.basename(filename) + '.stdout')
     logfilename_err = os.path.join(gage_results_path, 'gage_' + os.path.basename(filename) + '.stderr')
-    log.info('  ' + id_to_str(id) + 'Logging to files ' + logfilename_out + ' and ' + os.path.basename(logfilename_err) + '...')
+    logger.info('  ' + id_to_str(id) + 'Logging to files ' + logfilename_out + ' and ' + os.path.basename(logfilename_err) + '...')
     logfile_out = open(logfilename_out, 'w')
     logfile_err = open(logfilename_err, 'w')
 
@@ -33,7 +35,7 @@ def run_gage(id, filename, gage_results_path, gage_tool_path, reference, tmp_dir
 
     logfile_out.close()
     logfile_err.close()
-    log.info('  ' + id_to_str(id) + 'Done.')
+    logger.info('  ' + id_to_str(id) + 'Done.')
     return return_code
 
 
@@ -48,9 +50,8 @@ def do(reference, contigs, output_dirpath):
     gage_tool_path = os.path.join(qconfig.LIBS_LOCATION, 'gage', 'getCorrectnessStats.sh')
 
     ########################################################################
-    log = logging.getLogger('quast')
-    print_timestamp()
-    log.info('Running GAGE...')
+    logger.print_timestamp()
+    logger.info('Running GAGE...')
 
     metrics = ['Total units', 'Min', 'Max', 'N50', 'Genome Size', 'Assembly Size', 'Chaff bases',
                'Missing Reference Bases', 'Missing Assembly Bases', 'Missing Assembly Contigs',
@@ -79,7 +80,7 @@ def do(reference, contigs, output_dirpath):
     error_occurred = False
     for return_code in return_codes:
         if return_code != 0:
-            warning("Error occurred while GAGE was processing assemblies. See GAGE error logs for details (%s)" %
+            logger.warning("Error occurred while GAGE was processing assemblies. See GAGE error logs for details (%s)" %
                     os.path.join(gage_results_path, 'gage_*.stderr'))
             error_occurred = True
             break
@@ -108,4 +109,4 @@ def do(reference, contigs, output_dirpath):
         if not qconfig.debug:
             shutil.rmtree(tmp_dir)
 
-        log.info('Done.')
+        logger.info('Done.')

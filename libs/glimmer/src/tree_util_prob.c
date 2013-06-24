@@ -64,10 +64,10 @@ struct tree_node *read_tree(char *decision_tree)
     error ("Decision Tree file can not be opened.");
   
   if ( !(read_header(dtree))) 
-    error("Decision tree invalid/absent.");
+    log.error("Decision tree invalid/absent.");
   
   if ((root = read_hp(dtree)) == NULL)
-    error("Decision tree invalid/absent.");
+    log.error("Decision tree invalid/absent.");
   
   root->parent = NULL;
   extra_node = NULL;
@@ -193,9 +193,9 @@ struct tree_node *read_hp(FILE *dtree)
       if (c == 'x')
 	{ 
 	  if ((fscanf(dtree,"[%d] +",&i)) != 1) 
-	    error("Read-Hp: Invalid hyperplane equation.");
+	    log.error("Read-Hp: Invalid hyperplane equation.");
 	  if (i <= 0 || i > no_of_dimensions+1) 
-	    error("Read_Hp: Invalid coefficient index in decision tree.");
+	    log.error("Read_Hp: Invalid coefficient index in decision tree.");
 	  cur_node->coefficients[i-1] = temp;
 	}
       else if (c == '=')

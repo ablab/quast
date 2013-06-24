@@ -15,9 +15,10 @@ import tempfile
 from libs import reporting
 from libs import qconfig
 from libs.fastaparser import read_fasta, write_fasta
-from qutils import id_to_str, print_timestamp
+from qutils import id_to_str
 
-log = logging.getLogger('quast')
+from libs.log import get_logger
+logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 
 
 def gc_content(sequence):
@@ -143,7 +144,7 @@ def gmhmm_p_metagenomic(tool_dirpath, fasta_fpath, err_fpath):
 
 
 def predict_genes(id, fasta_fpath, gene_lengths, out_dirpath, tool_dirpath, gmhmm_p_function):
-    log.info('  ' + id_to_str(id) + os.path.basename(fasta_fpath))
+    logger.info('  ' + id_to_str(id) + os.path.basename(fasta_fpath))
 
     out_fname = os.path.basename(fasta_fpath)
     err_fpath = os.path.join(out_dirpath, out_fname + '_genemark.stderr')
@@ -164,16 +165,16 @@ def predict_genes(id, fasta_fpath, gene_lengths, out_dirpath, tool_dirpath, gmhm
         unique_count = len(set([gene[4] for gene in genes]))
         total_count = len(genes)
 
-        log.info('  ' + id_to_str(id) + '  Genes = ' + str(unique_count) + ' unique, ' + str(total_count) + ' total')
-        log.info('  ' + id_to_str(id) + '  Predicted genes (GFF): ' + out_gff_fpath)
+        logger.info('  ' + id_to_str(id) + '  Genes = ' + str(unique_count) + ' unique, ' + str(total_count) + ' total')
+        logger.info('  ' + id_to_str(id) + '  Predicted genes (GFF): ' + out_gff_fpath)
 
-        log.info('  ' + id_to_str(id) + 'Gene prediction is finished.')
+        logger.info('  ' + id_to_str(id) + 'Gene prediction is finished.')
 
     return unique_count, count
 
 
 def do(fasta_fpaths, gene_lengths, out_dirpath):
-    print_timestamp()
+    logger.print_timestamp()
 
     if qconfig.meta:
         tool_name = 'MetaGeneMark'
@@ -184,14 +185,14 @@ def do(fasta_fpaths, gene_lengths, out_dirpath):
         tool_dirname = 'genemark'
         gmhmm_p_function = gmhmm_p_everyGC
 
-    log.info('Running %s tool...' % tool_name)
+    logger.info('Running %s tool...' % tool_name)
 
     if not os.path.isdir(out_dirpath):
         os.mkdir(out_dirpath)
 
     tool_dirpath = os.path.join(qconfig.LIBS_LOCATION, tool_dirname, qconfig.platform_name)
     if not os.path.exists(tool_dirpath):
-        log.warning('  Sorry, can\'t use %s on this platform, skipping gene prediction.' % tool_name)
+        logger.warning('  Sorry, can\'t use %s on this platform, skipping gene prediction.' % tool_name)
 
     else:
         install_genemark(tool_dirpath)
@@ -211,4 +212,4 @@ def do(fasta_fpaths, gene_lengths, out_dirpath):
             if count:
                 report.add_field(reporting.Fields.PREDICTED_GENES, count)
 
-        log.info('Done.')
+        logger.info('Done.')

@@ -1,22 +1,32 @@
+#!/usr/bin/env python
+
+############################################################################
+# Copyright (c) 2011-2013 Saint-Petersburg Academic University
+# All Rights Reserved
+# See file LICENSE for details.
+############################################################################
+
 from __future__ import with_statement
-from __future__ import with_statement
+
+RELEASE_MODE = False
+
 import getopt
 import os
 import shutil
 import sys
 from libs import qconfig, qutils, fastaparser
-from libs.qutils import assert_file_exists, print_version, print_system_info, print_timestamp, notice, warning, error
+from libs.qutils import assert_file_exists
+
+from libs.log import get_logger
+logger = get_logger('metaquast')
+logger.set_up_console_handler(debug=not RELEASE_MODE)
+
 import quast
 
 from site import addsitedir
 addsitedir(os.path.join(qconfig.LIBS_LOCATION, 'site_packages'))
 
-import logging
-log = logging.getLogger('meta_quast')
-
 COMBINED_REF_FNAME = 'combined_reference.fasta'
-
-RELEASE_MODE = False
 
 
 def usage():
@@ -58,7 +68,7 @@ def usage():
     print >> sys.stderr, "-h  --help                        Prints this message"
 
 
-def partition_contigs(contigs_fpaths, ref_fpaths, corrected_dirpath, alignments_fpath):
+def _partition_contigs(contigs_fpaths, ref_fpaths, corrected_dirpath, alignments_fpath):
     # not_aligned_anywhere_dirpath = os.path.join(output_dirpath, 'contigs_not_aligned_anywhere')
     # if os.path.isdir(not_aligned_anywhere_dirpath):
     #     os.rmdir(not_aligned_anywhere_dirpath)
@@ -79,9 +89,9 @@ def partition_contigs(contigs_fpaths, ref_fpaths, corrected_dirpath, alignments_
         with open(alignments_tsv_fpath) as f:
             for line in f.readlines():
                 values = line.split()
-                ref_name = values[0]
+                ref_fname = values[0]
                 ref_contigs_names = values[1:]
-                ref_contigs_fpath = os.path.join(corrected_dirpath, contigs_name + '_to_' + ref_name)
+                ref_contigs_fpath = os.path.join(corrected_dirpath, contigs_name + '_to_' + ref_fname)
 
                 for (cont_name, seq) in fastaparser.read_fasta(contigs_fpath):
                     if not cont_name in contigs.keys():
@@ -92,13 +102,11 @@ def partition_contigs(contigs_fpaths, ref_fpaths, corrected_dirpath, alignments_
                         aligned_contig_names.add(cont_name)
                         fastaparser.write_fasta(ref_contigs_fpath, [(cont_name, seq)], 'a')
 
-                partitions[ref_name].append(ref_contigs_fpath)
+                partitions[ref_fname].append(ref_contigs_fpath)
 
         # Exctraction not aligned contigs
         all_contigs_names = set(contigs.keys())
         not_aligned_contigs_names = all_contigs_names - aligned_contig_names
-        print 'not_aligned_contigs_names'
-        print not_aligned_contigs_names
         fastaparser.write_fasta(not_aligned_fpath, [(name, contigs[name]) for name in not_aligned_contigs_names])
 
         not_aligned_fpaths.append(not_aligned_fpath)
@@ -106,16 +114,77 @@ def partition_contigs(contigs_fpaths, ref_fpaths, corrected_dirpath, alignments_
     return partitions, not_aligned_fpaths
 
 
-def main(args):
-    quast_dir = os.path.dirname(qconfig.LIBS_LOCATION)
-    if ' ' in quast_dir:
-        qutils.error('QUAST does not support spaces in paths. \n' + \
-                     'You are trying to run it from ' + str(quast_dir) + '\n' + \
-                     'Please, put QUAST in a different directory, then try again.\n',
-                     console_output=True,
-                     exit_with_code=3)
+# class LoggingIndentFormatter(logging.Formatter):
+#     def __init__(self, fmt):
+#         logging.Formatter.__init__(self, fmt)
+#
+#     def format(self, record):
+#         indent = '\t'
+#         msg = logging.Formatter.format(self, record)
+#         return '\n'.join([indent + x for x in msg.split('\n')])
 
-    reload(qconfig)
+
+def _start_quast_main(
+        name, args, contigs_fpaths, reference_fpath=None,
+        output_dirpath=None, exit_on_exception=True):
+    args = args[:]
+
+    args.extend(contigs_fpaths)
+
+    if reference_fpath:
+        args.append('-R')
+        args.append(reference_fpath)
+
+    if output_dirpath:
+        args.append('-o')
+        args.append(output_dirpath)
+
+    import quast
+    reload(quast)
+    quast.logger.set_up_console_handler(debug=not RELEASE_MODE, indent_val=1)
+
+    # nested_quast_console_handler = logging.StreamHandler(sys.stdout)
+    # nested_quast_console_handler.setFormatter(
+    #     LoggingIndentFormatter('%(message)s'))
+    # nested_quast_console_handler.setLevel(logging.DEBUG)
+    # log.addHandler(nested_quast_console_handler)
+
+    # print 'quast.py ' + ' '.join(args)
+
+    logger.info_to_file('(logging to ' +
+                        os.path.join(output_dirpath,
+                                     qconfig.LOGGER_DEFAULT_NAME + '.log)'))
+    try:
+        quast.main(args)
+
+    except Exception, e:
+        if exit_on_exception:
+            logger.exception(e)
+        else:
+            msg = 'Error running quast.py' + (' ' + name if name else '')
+            msg += ': ' + e.strerror
+            if e.message:
+                msg += ', ' + e.message
+            logger.error(msg)
+
+
+def main(args):
+    libs_dir = os.path.dirname(qconfig.LIBS_LOCATION)
+    if ' ' in libs_dir:
+        logger.error(
+            'QUAST does not support spaces in paths. \n' + \
+            'You are trying to run it from ' + str(libs_dir) + '\n' + \
+            'Please, put QUAST in a different directory, then try again.\n',
+            to_stderr=True,
+            exit_with_code=3)
+
+    min_contig = qconfig.min_contig
+    genes = ''
+    operons = ''
+    draw_plots = qconfig.draw_plots
+    html_report = qconfig.html_report
+    save_json = qconfig.save_json
+    make_latest_symlink = False
 
     try:
         options, contigs_fpaths = getopt.gnu_getopt(args, qconfig.short_options, qconfig.long_options)
@@ -144,15 +213,15 @@ def main(args):
             args.remove(arg)
 
             output_dirpath = os.path.abspath(arg)
-            qconfig.make_latest_symlink = False
+            make_latest_symlink = False
 
         elif opt in ('-G', "--genes"):
             assert_file_exists(arg, 'genes')
-            qconfig.genes = arg
+            genes = arg
 
         elif opt in ('-O', "--operons"):
             assert_file_exists(arg, 'operons')
-            qconfig.operons = arg
+            operons = arg
 
         elif opt in ('-R', "--reference"):
             # Removing reference args in order to further
@@ -165,68 +234,69 @@ def main(args):
                 assert_file_exists(ref_fpath, 'reference')
                 ref_fpaths[i] = ref_fpath
 
-        elif opt in ('-t', "--contig-thresholds"):
-            qconfig.contig_thresholds = arg
-
         elif opt in ('-M', "--min-contig"):
-            qconfig.min_contig = int(arg)
-
-        elif opt in ('-T', "--threads"):
-            qconfig.max_threads = int(arg)
-            if qconfig.max_threads < 1:
-                qconfig.max_threads = 1
-
-        elif opt in ('-c', "--mincluster"):
-            qconfig.mincluster = int(arg)
-
-        elif opt == "--est-ref-size":
-            qconfig.estimated_reference_size = int(arg)
-
-        elif opt in ('-S', "--gene-thresholds"):
-            qconfig.genes_lengths = arg
+            min_contig = int(arg)
 
         elif opt in ('-j', '--save-json'):
-            qconfig.save_json = True
+            save_json = True
 
         elif opt in ('-J', '--save-json-to'):
-            qconfig.save_json = True
-            qconfig.make_latest_symlink = False
+            save_json = True
+            make_latest_symlink = False
             json_outputpath = arg
 
-        elif opt in ('-s', "--scaffolds"):
-            qconfig.scaffolds = True
-
-        elif opt == "--gage":
-            qconfig.with_gage = True
-
-        elif opt in ('-e', "--eukaryote"):
-            qconfig.prokaryote = False
-
-        elif opt in ('-f', "--gene-finding"):
-            qconfig.gene_finding = True
-
-        elif opt in ('-a', "--ambiguity-usage"):
-            if arg in ["none", "one", "all"]:
-                qconfig.ambiguity_usage = arg
-
-        elif opt in ('-u', "--use-all-alignments"):
-            qconfig.use_all_alignments = True
-
-        elif opt in ('-n', "--strict-NA"):
-            qconfig.strict_NA = True
-
         elif opt == '--no-plots':
-            qconfig.draw_plots = False
+            draw_plots = False
 
         elif opt == '--no-html':
-            qconfig.html_report = False
-
-        elif opt in ('-d', "--debug"):
-            qconfig.debug = True
+            html_report = False
 
         elif opt in ('-h', "--help"):
             usage()
             sys.exit(0)
+
+        elif opt in ('-T', "--threads"):
+            pass
+
+        elif opt in ('-t', "--contig-thresholds"):
+            pass
+
+        elif opt in ('-c', "--mincluster"):
+            pass
+
+        elif opt == "--est-ref-size":
+            pass
+
+        elif opt in ('-S', "--gene-thresholds"):
+            pass
+
+        elif opt in ('-s', "--scaffolds"):
+            pass
+
+        elif opt == "--gage":
+            pass
+
+        elif opt in ('-e', "--eukaryote"):
+            pass
+
+        elif opt in ('-f', "--gene-finding"):
+            pass
+
+        elif opt in ('-a', "--ambiguity-usage"):
+            pass
+
+        elif opt in ('-u', "--use-all-alignments"):
+            pass
+
+        elif opt in ('-n', "--strict-NA"):
+            pass
+
+        elif opt in ("-m", "--meta"):
+            pass
+
+        elif opt in ('-d', "--debug"):
+            pass
+
         else:
             raise ValueError
 
@@ -243,40 +313,14 @@ def main(args):
 
     # Directories
     output_dirpath, json_outputpath, existing_alignments = \
-        quast.set_up_output_dir(output_dirpath, json_outputpath)
+        quast._set_up_output_dir(output_dirpath, json_outputpath,
+                                 make_latest_symlink, save_json)
 
     corrected_dirpath = os.path.join(output_dirpath, qconfig.corrected_dirname)
 
-    logfile, handlers = quast.set_up_log(log, output_dirpath)
-
-    command_line = ''
-    for v in sys.argv:
-        command_line += str(v) + ' '
-    print_version(log)
-    log.info('')
-    print_system_info(log)
-
-    start_time = print_timestamp('Started: ', log)
-    log.info('')
-    log.info('Logging to ' + logfile)
-    log.info('')
-
-    qconfig.contig_thresholds = map(int, qconfig.contig_thresholds.split(","))
-
-    qconfig.genes_lengths = map(int, qconfig.genes_lengths.split(","))
-
-    # Threadding
-    if qconfig.max_threads is None:
-        try:
-            import multiprocessing
-            qconfig.max_threads = multiprocessing.cpu_count()
-        except:
-            warning('Failed to determine the number of CPUs', log=log)
-            qconfig.max_threads = qconfig.DEFAULT_MAX_THREADS
-        notice('Maximum number of threads was set to ' +
-               str(qconfig.max_threads) +
-               ' (use --threads option to set it manually)',
-               log=log)
+    logger.set_up_file_handler(output_dirpath)
+    logger.info(' '.join(sys.argv))
+    logger.start()
 
     # Where all pdfs will be saved
     all_pdf_filename = os.path.join(output_dirpath, qconfig.plots_filename)
@@ -293,8 +337,7 @@ def main(args):
 
     # PROCESSING REFERENCES
     if ref_fpaths:
-        log.info('')
-        log.info('Processing references...')
+        logger.info('Processing references...')
 
         corrected_ref_fpaths = []
 
@@ -312,18 +355,20 @@ def main(args):
 
                 fastaparser.write_fasta(corr_fpath, [(corr_fname, seq)], 'a')
                 fastaparser.write_fasta(combined_ref_fpath, [(corr_fname, seq)], 'a')
-                log.info('\t' + corr_fname + '\n')
+                logger.info('\t' + corr_fname + '\n')
 
-        log.info('\tAll references combined in ' + COMBINED_REF_FNAME)
+        logger.info('\tAll references combined in ' + COMBINED_REF_FNAME)
         ref_fpaths = corrected_ref_fpaths
+
+        logger.info('')
 
     ## removing from contigs' names special characters because:
     ## 1) Some embedded tools can fail on some strings with "...", "+", "-", etc
     ## 2) Nucmer fails on names like "contig 1_bla_bla", "contig 2_bla_bla" (it interprets as a contig's name only the first word of caption and gets ambiguous contigs names)
-    log.info('')
-    log.info('Processing contigs...')
+    logger.info('Processing contigs...')
     new_contigs_fpaths = []
-    for id, contigs_fpath in enumerate(contigs_fpaths):
+
+    for i, contigs_fpath in enumerate(contigs_fpaths):
         contigs_fname = os.path.basename(contigs_fpath)
         corr_fname = quast.corrected_fname_for_nucmer(contigs_fname)
         corr_fpath = os.path.join(corrected_dirpath, corr_fname)
@@ -334,117 +379,102 @@ def main(args):
                 i += 1
                 corr_fpath = os.path.join(corrected_dirpath, os.path.basename(basename + '__' + str(i)) + ext)
 
-        log.info('\t%s ==> %s' % (contigs_fpath, os.path.basename(corr_fpath)))
+        logger.info('\t%s ==> %s' % (contigs_fpath, os.path.basename(corr_fpath)))
 
         # Handle fasta
         lengths = fastaparser.get_lengths_from_fastafile(contigs_fpath)
-        if not sum(l for l in lengths if l >= qconfig.min_contig):
-            warning("Skipping %s because it doesn't contain contigs >= %d bp."
-                    % (os.path.basename(contigs_fpath), qconfig.min_contig),
-                    log=log)
+        if not sum(l for l in lengths if l >= min_contig):
+            logger.warning("Skipping %s because it doesn't contain contigs >= %d bp."
+                           % (os.path.basename(contigs_fpath), min_contig))
             continue
 
         # correcting
-        if not quast.correct_fasta(contigs_fpath, corr_fpath):
+        if not quast.correct_fasta(contigs_fpath, corr_fpath, min_contig):
             continue
 
         new_contigs_fpaths.append(corr_fpath)
 
-        log.info('')
+        logger.info('')
 
     contigs_fpaths = new_contigs_fpaths
 
-    qconfig.assemblies_num = len(contigs_fpaths)
-
     if not contigs_fpaths:
-        error("None of assembly file contain correct contigs. "
-              "Please, provide different files or decrease --min-contig threshold.",
-              exit_with_code=4)
+        logger.error("None of assembly file contain correct contigs. "
+                     "Please, provide different files or decrease --min-contig threshold.",
+                     exit_with_code=4)
 
     # End of processing
-    log.info('Done.')
+    logger.info('Done preprocessing input.')
 
     # Running QUAST(s)
     args += ['--meta']
 
     if not ref_fpaths:
         # No references, running regular quast with MetaGenemark gene finder
-        reload(quast)
-        quast.main(args)
-        args.append('-o')
-        args.append(output_dirpath)
-        log.info('No references provided, running quast.py '
-                 'with MetaGenemark gene finder')
-        quast.main(args)
+        logger.info('')
+        logger.info('No references provided, starting quast.py with MetaGenemark gene finder')
+        _start_quast_main(
+            None,
+            args,
+            contigs_fpaths=contigs_fpaths,
+            output_dirpath=os.path.join(output_dirpath, 'quast_output'),
+            exit_on_exception=True)
         exit(0)
 
     # Running combined reference
-    comb_args = args[:]
-    comb_args.append('-o')
-    comb_args.append(os.path.join(output_dirpath, 'combined_quast_output'))
-    comb_args.append('-R')
-    comb_args.append(combined_ref_fpath)
-    comb_args.extend(contigs_fpaths)
-    log.info('')
-    log.info('Starting quast.py for the combined reference')
-    reload(quast)
-    print 'quast.py ' + ' '.join(args)
-    try:
-        quast.main(comb_args)
-    except Exception, e:
-        print e.message
-        exit(10)
+    run_name = 'for the combined reference'
+    logger.info('')
+    logger.info('Starting quast.py ' + run_name + '...')
+
+    _start_quast_main(run_name, args,
+        contigs_fpaths=contigs_fpaths,
+        reference_fpath=combined_ref_fpath,
+        output_dirpath=os.path.join(output_dirpath, 'combined_quast_output'))
 
     # Partitioning contigs into bins aligned to each reference
-    partitions, not_aligned_fpaths = partition_contigs(
+    partitions, not_aligned_fpaths = _partition_contigs(
         contigs_fpaths, ref_fpaths, corrected_dirpath,
         os.path.join(output_dirpath, 'combined_quast_output', 'contigs_reports', 'alignments_%s.tsv'))
 
-    for partition_contigs_fpaths, ref_fpath in zip(partitions, ref_fpaths):
-        log.info('')
-        partition_name = os.path.splitext(os.path.basename(ref_fpath))[0]
+    for ref_fname, contigs_fpaths in partitions.iteritems():
+        ref_name = os.path.splitext(os.path.basename(ref_fname))[0]
 
-        log.info('Starting quast.py for the reference aligned to ' + partition_name)
-        partition_args = args[:]
-        partition_args.append('-o')
-        partition_args.append(os.path.join(output_dirpath, partition_name + '_quast_output'))
-        partition_args.append('-R')
-        partition_args.append(ref_fpath)
-        ref_fname = os.path.basename(ref_fpath)
-        partition_args.extend(partitions[ref_fname])
-        reload(quast)
-        print 'quast.py' + ' '.join(args)
-        try:
-            quast.main(partition_args)
-        except Exception, e:
-            print e.message
+        logger.info('')
+        if not contigs_fpaths:
+            logger.info('No contigs are aligned to the reference ' + ref_name)
+        else:
+            run_name = 'for the contigs aligned to ' + ref_name
+            logger.info('Starting quast.py ' + run_name)
 
-    log.info('Starting quast.py for not alined contigs')
-    not_aligned_args = args[:]
-    not_aligned_args.append('-o')
-    not_aligned_args.append(os.path.join(output_dirpath, 'not_aligned_quast_output'))
-    not_aligned_args.extend(not_aligned_fpaths)
-    reload(quast)
-    print 'quast.py' + ' '.join(args)
-    try:
-        quast.main(not_aligned_args)
-    except:
-        pass
+            _start_quast_main(run_name, args,
+                contigs_fpaths=contigs_fpaths,
+                reference_fpath=os.path.join(corrected_dirpath, ref_fname),
+                output_dirpath=os.path.join(output_dirpath, ref_name + '_quast_output'),
+                exit_on_exception=False)
+
+    # Finally running for the contigs that has not been aligned to any reference
+    run_name = 'for the contigs not alined anywhere'
+    logger.info('')
+    logger.info('Starting quast.py ' + run_name + '...')
+
+    _start_quast_main(run_name, args,
+        contigs_fpaths=not_aligned_fpaths,
+        output_dirpath=os.path.join(output_dirpath, 'not_aligned_quast_output'),
+        exit_on_exception=False)
 
     if RELEASE_MODE:
-        quast.cleanup(corrected_dirpath)
+        quast._cleanup(corrected_dirpath)
 
-    log.info('')
-    log.info('MetaQUAST finished.')
+    logger.info('')
+    logger.info('MetaQUAST finished.')
+    logger.finish_up()
 
-    log.info('')
-    log.info("MetaQUAST log was saved to " + logfile)
-
-    finish_time = print_timestamp("Finished: ")
-    log.info("Elapsed time: " + str(finish_time - start_time))
 
 if __name__ == '__main__':
-    main(sys.argv[1:])
+    try:
+        main(sys.argv[1:])
+    except Exception, e:
+        logger.exception(e)
 
 
 

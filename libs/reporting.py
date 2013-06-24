@@ -6,6 +6,10 @@
 
 from libs import qconfig
 
+from libs.log import get_logger
+logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
+
+
 # Here you can modify content and order of metrics in QUAST reports and names of metrcis as well
 class Fields:
 
@@ -217,8 +221,9 @@ class Fields:
 #################################################
 
 import os
-import logging
-from libs.qutils import print_timestamp, warning
+
+from libs.log import get_logger
+logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 
 ####################################################################################
 # Reporting module (singleton) for QUAST
@@ -513,23 +518,22 @@ def save(output_dirpath, report_name, transposed_report_name, order):
     # Where total report will be saved
     tab = table(order)
 
-    log = logging.getLogger('quast')
-    log.info('  Creating total report...')
+    logger.info('  Creating total report...')
     report_txt_filename = os.path.join(output_dirpath, report_name) + '.txt'
     report_tsv_filename = os.path.join(output_dirpath, report_name) + '.tsv'
     report_tex_filename = os.path.join(output_dirpath, report_name) + '.tex'
     save_txt(report_txt_filename, tab)
     save_tsv(report_tsv_filename, tab)
     save_tex(report_tex_filename, tab)
-    log.info('    saved to ' + report_txt_filename + ', ' + os.path.basename(report_tsv_filename) + \
+    logger.info('    saved to ' + report_txt_filename + ', ' + os.path.basename(report_tsv_filename) + \
              ', and ' + os.path.basename(report_tex_filename))
 
     if transposed_report_name:
-        log.info('  Transposed version of total report...')
+        logger.info('  Transposed version of total report...')
 
         all_rows = get_all_rows_out_of_table(tab)
         if all_rows[0]['metricName'] != Fields.NAME:
-            warning('transposed version can\'t be created! First column have to be assemblies names')
+            logger.warning('transposed version can\'t be created! First column have to be assemblies names')
         else:
             # Transposing table
             transposed_table = [{'metricName': all_rows[0]['metricName'],
@@ -547,7 +551,7 @@ def save(output_dirpath, report_name, transposed_report_name, order):
             save_txt(report_txt_filename, transposed_table, is_transposed=True)
             save_tsv(report_tsv_filename, transposed_table, is_transposed=True)
             save_tex(report_tex_filename, transposed_table, is_transposed=True)
-            log.info('    saved to ' + report_txt_filename + ', ' + os.path.basename(report_tsv_filename) + \
+            logger.info('    saved to ' + report_txt_filename + ', ' + os.path.basename(report_tsv_filename) + \
                      ', and ' + os.path.basename(report_tex_filename))
 
 
@@ -557,9 +561,8 @@ def save_gage(output_dirpath):
 
 
 def save_total(output_dirpath):
-    print_timestamp()
-    log = logging.getLogger('quast')
-    log.info('Summarizing...')
+    logger.print_timestamp()
+    logger.info('Summarizing...')
     save(output_dirpath, qconfig.report_prefix, qconfig.transposed_report_prefix, Fields.order)
 
 

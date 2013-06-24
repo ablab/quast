@@ -7,8 +7,6 @@
 from __future__ import with_statement
 import glob
 import gzip
-import logging
-log = logging.getLogger('quast')
 import shutil
 import zipfile
 import bz2
@@ -16,81 +14,17 @@ import os
 import sys
 import re
 import qconfig
-import datetime
+
+from libs.log import get_logger
+logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 
 
-def notice(message='', indent='', log=log):
-    log.info(indent + "NOTICE: " + str(message))
-
-
-def warning(message='', indent='', log=log):
-    log.info(indent + "WARNING! " + str(message))
-
-
-def error(message='', exit_with_code=1, console_output=False, indent='', log=log):
-    msg = indent + 'ERROR! ' + str(message)
-
-    with open(qconfig.error_log_fpath, 'w') as error_f:
-        error_f.write(message)
-
-    # decorated_msg = '=' * len(msg) + '\n' + msg + '\n' + '=' * len(msg)
-    decorated_msg = '\n' + msg + '\n'
-
-    if console_output:
-        print >> sys.stderr, decorated_msg
-    else:
-        log.info(decorated_msg)
-    if exit_with_code:
-        exit(exit_with_code)
-
-
-def assert_file_exists(fpath, message=''):
+def assert_file_exists(fpath, message='', logger=logger):
     if not os.path.isfile(fpath):
-        error("File not found (%s): %s" % (message, fpath), 2, console_output=True)
+        logger.error("File not found (%s): %s" % (message, fpath), 2,
+                     to_stderr=True)
+
     return fpath
-
-
-def print_timestamp(message='', log=log):
-    now = datetime.datetime.now()
-    current_time = now.strftime("%Y-%m-%d %H:%M:%S")
-    log.info("\n" + message + current_time)
-    return now
-
-
-def print_version(to_stderr=False, log=log):
-    version_filename = os.path.join(qconfig.LIBS_LOCATION, '..', 'VERSION')
-    version = "unknown"
-    build = "unknown"
-    if os.path.isfile(version_filename):
-        version_file = open(version_filename)
-        version = version_file.readline()
-        if version:
-            version = version.strip()
-        else:
-            version = "unknown"
-        build = version_file.readline()
-        if build:
-            build = build.split()[1].strip()
-        else:
-            build = "unknown"
-
-    if to_stderr:
-        print >> sys.stderr, "Version", str(version) + (", build " + str(build) if build != "unknown" else "")
-    else:
-        log.info("Version " + str(version) + (", build " + str(build) if build != "unknown" else ""))
-
-
-def print_system_info(log=log):
-    log.info("System information:")
-    try:
-        import platform
-        log.info("  OS: " + platform.platform())
-        log.info("  Python version: " + str(sys.version_info[0]) + "." + str(sys.version_info[1]) + '.'\
-                  + str(sys.version_info[2]))
-        import multiprocessing
-        log.info("  CPUs number: " + str(multiprocessing.cpu_count()))
-    except:
-        log.info("  Problem occurred when getting system information")
 
 
 def id_to_str(id):
@@ -100,29 +34,29 @@ def id_to_str(id):
         return ('%d ' + ('' if id >= 10 else ' ')) % (id + 1)
 
 
-def uncompress(compressed_fname, uncompressed_fname):
+def uncompress(compressed_fname, uncompressed_fname, logger=logger):
     fname, ext = os.path.splitext(compressed_fname)
 
     if ext not in ['.zip', '.bz2', '.gz']:
         return False
 
-    log.info('  extracting %s...' % compressed_fname)
+    logger.info('  extracting %s...' % compressed_fname)
     compressed_file = None
 
     if ext == '.zip':
         try:
             zfile = zipfile.ZipFile(compressed_fname)
         except Exception, e:
-            error('can\'t open zip file: ' + str(e.message))
+            logger.error('can\'t open zip file: ' + str(e.message))
             return False
 
         names = zfile.namelist()
         if len(names) == 0:
-            error('zip archive is empty')
+            logger.error('zip archive is empty')
             return False
 
         if len(names) > 1:
-            warning('zip archive must contain exactly one file. Using %s' % names[0])
+            logger.warning('zip archive must contain exactly one file. Using %s' % names[0])
 
         compressed_file = zfile.open(names[0])
 
@@ -135,7 +69,7 @@ def uncompress(compressed_fname, uncompressed_fname):
     with open(uncompressed_fname, 'w') as uncompressed_file:
         uncompressed_file.write(compressed_file.read())
 
-    log.info('    extracted!')
+    logger.info('    extracted!')
     return True
 
 

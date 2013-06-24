@@ -45,7 +45,9 @@ import itertools
 import logging
 from libs import fastaparser
 from libs import qconfig
-from libs.qutils import warning
+
+from libs.log import get_logger
+logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 
 
 # checking if matplotlib is installed
@@ -55,7 +57,7 @@ try:
     matplotlib.use('Agg')  # non-GUI backend
 except:
     print
-    warning('Can\'t draw plots: please install python-matplotlib.')
+    logger.warning('Can\'t draw plots: please install python-matplotlib.')
     matplotlib_error = True
 
 
@@ -107,8 +109,7 @@ def cumulative_plot(reference, filenames, lists_of_lengths, plot_filename, title
     if matplotlib_error:
         return
 
-    log = logging.getLogger('quast')
-    log.info('  Drawing cumulative plot...')
+    logger.info('  Drawing cumulative plot...')
     import matplotlib.pyplot
     import matplotlib.ticker
 
@@ -184,7 +185,7 @@ def cumulative_plot(reference, filenames, lists_of_lengths, plot_filename, title
 
     plot_filename += plots_format
     matplotlib.pyplot.savefig(plot_filename)
-    log.info('    saved to ' + plot_filename)
+    logger.info('    saved to ' + plot_filename)
 
     if plots_format == '.pdf' and all_pdf:
         matplotlib.pyplot.savefig(all_pdf, format='pdf')
@@ -195,8 +196,7 @@ def Nx_plot(filenames, lists_of_lengths, plot_filename, title='Nx', reference_le
     if matplotlib_error:
         return
 
-    log = logging.getLogger('quast')
-    log.info('  Drawing ' + title + ' plot...')
+    logger.info('  Drawing ' + title + ' plot...')
     import matplotlib.pyplot
     import matplotlib.ticker
 
@@ -265,7 +265,7 @@ def Nx_plot(filenames, lists_of_lengths, plot_filename, title='Nx', reference_le
 
     plot_filename += plots_format
     matplotlib.pyplot.savefig(plot_filename)
-    log.info('    saved to ' + plot_filename)
+    logger.info('    saved to ' + plot_filename)
 
     if plots_format == '.pdf' and all_pdf:
         matplotlib.pyplot.savefig(all_pdf, format='pdf')
@@ -277,8 +277,7 @@ def GC_content_plot(reference, filenames, list_of_GC_distributions, plot_filenam
         return
     title = 'GC content'
 
-    log = logging.getLogger('quast')
-    log.info('  Drawing ' + title + ' plot...')
+    logger.info('  Drawing ' + title + ' plot...')
     import matplotlib.pyplot
     import matplotlib.ticker
 
@@ -347,7 +346,7 @@ def GC_content_plot(reference, filenames, list_of_GC_distributions, plot_filenam
 
     plot_filename += plots_format
     matplotlib.pyplot.savefig(plot_filename)
-    log.info('    saved to ' + plot_filename)
+    logger.info('    saved to ' + plot_filename)
 
     if plots_format == '.pdf' and all_pdf:
         matplotlib.pyplot.savefig(all_pdf, format='pdf')
@@ -358,8 +357,7 @@ def genes_operons_plot(reference_value, filenames, files_feature_in_contigs, plo
     if matplotlib_error:
         return
 
-    log = logging.getLogger('quast')
-    log.info('  Drawing ' + title + ' cumulative plot...')
+    logger.info('  Drawing ' + title + ' cumulative plot...')
     import matplotlib.pyplot
     import matplotlib.ticker
 
@@ -421,7 +419,7 @@ def genes_operons_plot(reference_value, filenames, files_feature_in_contigs, plo
 
     plot_filename += plots_format
     matplotlib.pyplot.savefig(plot_filename)
-    log.info('    saved to ' + plot_filename)
+    logger.info('    saved to ' + plot_filename)
 
     if plots_format == '.pdf' and all_pdf:
         matplotlib.pyplot.savefig(all_pdf, format='pdf')
@@ -451,8 +449,7 @@ def histogram(filenames, values, plot_filename, title='', all_pdf=None, yaxis_ti
     if not top_value:
         top_value = (math.ceil(max_value / exponent) + 1) * exponent
 
-    log = logging.getLogger('quast')
-    log.info('  Drawing ' + title + ' histogram...')
+    logger.info('  Drawing ' + title + ' histogram...')
     import matplotlib.pyplot
     import matplotlib.ticker
 
@@ -505,7 +502,7 @@ def histogram(filenames, values, plot_filename, title='', all_pdf=None, yaxis_ti
 
     plot_filename += plots_format
     matplotlib.pyplot.savefig(plot_filename)
-    log.info('    saved to ' + plot_filename)
+    logger.info('    saved to ' + plot_filename)
 
     if plots_format == '.pdf' and all_pdf:
         matplotlib.pyplot.savefig(all_pdf, format='pdf')

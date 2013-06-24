@@ -6,8 +6,8 @@
 # See file LICENSE for details.
 ############################################################################
 
-import logging
-log = logging.getLogger('quast')
+RELEASE_MODE = False
+
 import sys
 import os
 import shutil
@@ -15,19 +15,21 @@ import re
 import getopt
 from site import addsitedir
 from libs import qconfig, qutils
-from libs.qutils import notice, warning, error, assert_file_exists
-from libs.qutils import print_timestamp, print_system_info, print_version, uncompress
+
+from libs.log import get_logger
+logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
+logger.set_up_console_handler(debug=not RELEASE_MODE)
+
+from libs.qutils import assert_file_exists, uncompress
 from libs import fastaparser
 from libs.html_saver import json_saver
 
 addsitedir(os.path.join(qconfig.LIBS_LOCATION, 'site_packages'))
 
-RELEASE_MODE = False
 
-
-def usage():
+def _usage():
     print >> sys.stderr, 'QUAST: QUality ASsessment Tool for Genome Assemblies'
-    print_version(True)
+    logger.print_version(to_stderr=True)
 
     print >> sys.stderr, ""
     print >> sys.stderr, 'Usage: python', sys.argv[0], '[options] <files_with_contigs>'
@@ -104,22 +106,8 @@ def usage():
         print >> sys.stderr, "-h  --help                       prints this message"
 
 
-def set_up_log(log, output_dirpath):
-    log.setLevel(logging.DEBUG)
-
-    console_handler = logging.StreamHandler(sys.stdout)
-    console_handler.setFormatter(logging.Formatter('%(message)s'))
-    console_handler.setLevel(logging.DEBUG)
-    log.addHandler(console_handler)
-
-    logfile = os.path.join(output_dirpath, qconfig.logfile)
-    file_handler = logging.FileHandler(logfile, mode='w')
-    log.addHandler(file_handler)
-
-    return logfile, [console_handler, file_handler]
-
-
-def set_up_output_dir(output_dirpath, json_outputpath):
+def _set_up_output_dir(output_dirpath, json_outputpath,
+                       make_latest_symlink, save_json):
     existing_alignments = False
 
     if output_dirpath:  # 'output dir was specified with -o option'
@@ -132,7 +120,7 @@ def set_up_output_dir(output_dirpath, json_outputpath):
 
         # in case of starting two instances of QUAST in the same second
         if os.path.isdir(output_dirpath):
-            if qconfig.make_latest_symlink:
+            if make_latest_symlink:
                 i = 2
                 base_dirpath = output_dirpath
                 while os.path.isdir(output_dirpath):
@@ -143,7 +131,7 @@ def set_up_output_dir(output_dirpath, json_outputpath):
         os.makedirs(output_dirpath)
 
     # 'latest' symlink
-    if qconfig.make_latest_symlink:
+    if make_latest_symlink:
         prev_dirpath = os.getcwd()
         os.chdir(qconfig.default_results_root_dirname)
 
@@ -155,7 +143,7 @@ def set_up_output_dir(output_dirpath, json_outputpath):
         os.chdir(prev_dirpath)
 
     # Json directory
-    if qconfig.save_json:
+    if save_json:
         if json_outputpath:
             if not os.path.isdir(json_outputpath):
                 os.makedirs(json_outputpath)
@@ -188,10 +176,11 @@ def corrected_fname_for_nucmer(fpath):
     return os.path.join(dirpath, corr_fname)
 
 
-def correct_fasta(original_fpath, corrected_fpath, is_reference=False):
+def correct_fasta(original_fpath, corrected_fpath, min_contig,
+                  is_reference=False):
     modified_fasta_entries = []
     for first_line, seq in fastaparser.read_fasta(original_fpath):
-        if (len(seq) >= qconfig.min_contig) or is_reference:
+        if (len(seq) >= min_contig) or is_reference:
             corr_name = qutils.correct_name(first_line)
 
             # seq to uppercase, because we later looking only uppercase letters
@@ -208,7 +197,7 @@ def correct_fasta(original_fpath, corrected_fpath, is_reference=False):
 
             # make sure that only A, C, G, T or N are in the sequence
             if re.compile(r'[^ACGTN]').search(corr_seq):
-                warning('Skipping ' + original_fpath + ' because it contains non-ACGTN characters.',
+                logger.warning('Skipping ' + original_fpath + ' because it contains non-ACGTN characters.',
                         indent='    ')
                 return False
 
@@ -223,28 +212,27 @@ def correct_fasta(original_fpath, corrected_fpath, is_reference=False):
             os.makedirs(dir_for_splitted_ref)
             for id, (chr_name, chr_seq) in enumerate(modified_fasta_entries):
                 if len(chr_seq) > qconfig.MAX_REFERENCE_LENGTH:
-                    warning("Skipping chromosome " + chr_name + " because it length is greater than " +
+                    logger.warning("Skipping chromosome " + chr_name + " because it length is greater than " +
                             str(qconfig.MAX_REFERENCE_LENGTH) + " (Nucmer's constraint).")
                     continue
                 qconfig.splitted_ref.append(os.path.join(dir_for_splitted_ref, "chr_" + str(id + 1)))
                 fastaparser.write_fasta(qconfig.splitted_ref[-1], [(chr_name, chr_seq)])
             if len(qconfig.splitted_ref) == 0:
-                warning("Skipping reference because all of its chromosomes exceeded Nucmer's constraint.")
+                logger.warning("Skipping reference because all of its chromosomes exceeded Nucmer's constraint.")
                 return False
     return True
 
 
 # Processing contigs
-def handle_fasta(contigs_fpath, corr_fpath, reporting):
+def _handle_fasta(contigs_fpath, corr_fpath, reporting):
     lengths = fastaparser.get_lengths_from_fastafile(contigs_fpath)
     if not sum(l for l in lengths if l >= qconfig.min_contig):
-        warning("Skipping %s because it doesn't contain contigs >= %d bp."
-                % (os.path.basename(contigs_fpath), qconfig.min_contig),
-                log=log)
+        logger.warning("Skipping %s because it doesn't contain contigs >= %d bp."
+                % (os.path.basename(contigs_fpath), qconfig.min_contig))
         return False
 
     # correcting
-    if not correct_fasta(contigs_fpath, corr_fpath):
+    if not correct_fasta(contigs_fpath, corr_fpath, qconfig.min_contig):
         return False
 
     ## filling column "Assembly" with names of assemblies
@@ -262,10 +250,10 @@ def handle_fasta(contigs_fpath, corr_fpath, reporting):
 def main(args):
     quast_dir = os.path.dirname(qconfig.LIBS_LOCATION)
     if ' ' in quast_dir:
-        error('QUAST does not support spaces in paths. \n' + \
+        logger.error('QUAST does not support spaces in paths. \n' + \
               'You are trying to run it from ' + str(quast_dir) + '\n' + \
               'Please, put QUAST in a different directory, then try again.\n',
-              console_output=True,
+              to_stderr=True,
               exit_with_code=3)
 
     ######################
@@ -278,11 +266,11 @@ def main(args):
     except getopt.GetoptError, err:
         print >> sys.stderr, err
         print >> sys.stderr
-        usage()
+        _usage()
         sys.exit(2)
 
     if not contigs_fpaths:
-        usage()
+        _usage()
         sys.exit(2)
 
     json_outputpath = None
@@ -366,7 +354,7 @@ def main(args):
             qconfig.debug = True
 
         elif opt in ('-h', "--help"):
-            usage()
+            _usage()
             sys.exit(0)
 
         else:
@@ -376,27 +364,17 @@ def main(args):
         assert_file_exists(c_fpath, 'contigs')
 
     output_dirpath, json_outputpath, existing_alignments = \
-        set_up_output_dir(output_dirpath, json_outputpath)
+        _set_up_output_dir(output_dirpath, json_outputpath,
+                           qconfig.make_latest_symlink, qconfig.min_contig)
 
     corrected_dirpath = os.path.join(output_dirpath, qconfig.corrected_dirname)
 
-    logfile, handlers = set_up_log(log, output_dirpath)
-
-    command_line = ""
-    for v in sys.argv:
-        command_line += str(v) + ' '
-    log.info("QUAST started: " + command_line)
-    print_version()
-    log.info("")
-    print_system_info()
-
-    start_time = print_timestamp("Started: ")
-    log.info("")
-    log.info("Logging to " + logfile)
-    log.info("")
+    logger.set_up_file_handler(output_dirpath)
+    logger.info(' '.join(['quast.py'] + args))
+    logger.start()
 
     if existing_alignments:
-        notice("Output directory already exists. Existing Nucmer alignments can be used.")
+        logger.notice("Output directory already exists. Existing Nucmer alignments can be used.")
         qutils.remove_reports(output_dirpath)
 
     qconfig.contig_thresholds = map(int, qconfig.contig_thresholds.split(","))
@@ -409,9 +387,9 @@ def main(args):
             import multiprocessing
             qconfig.max_threads = multiprocessing.cpu_count()
         except:
-            warning('Failed to determine the number of CPUs')
+            logger.warning('Failed to determine the number of CPUs')
             qconfig.max_threads = qconfig.DEFAULT_MAX_THREADS
-        notice('Maximum number of threads was set to ' + str(qconfig.max_threads) + ' (use --threads option to set it manually)')
+        logger.notice('Maximum number of threads was set to ' + str(qconfig.max_threads) + ' (use --threads option to set it manually)')
 
     # Where all pdfs will be saved
     all_pdf_filename = os.path.join(output_dirpath, qconfig.plots_filename)
@@ -428,7 +406,7 @@ def main(args):
     if qconfig.reference:
         message += " and reference"
     message += "..."
-    log.info(message)
+    logger.info(message)
 
     if os.path.isdir(corrected_dirpath):
         shutil.rmtree(corrected_dirpath)
@@ -445,7 +423,8 @@ def main(args):
             qconfig.reference = corrected_and_unziped_reference_fname
 
         # correcting
-        if not correct_fasta(qconfig.reference, corrected_and_unziped_reference_fname, True):
+        if not correct_fasta(qconfig.reference, corrected_and_unziped_reference_fname,
+                             qconfig.min_contig, is_reference=True):
             qconfig.reference = ""
         else:
             qconfig.reference = corrected_and_unziped_reference_fname
@@ -465,11 +444,11 @@ def main(args):
                 i += 1
                 corr_fpath = os.path.join(corrected_dirpath, os.path.basename(basename + '__' + str(i)))
 
-        log.info('  %s ==> %s' % (contigs_fpath, os.path.basename(corr_fpath)))
+        logger.info('  %s ==> %s' % (contigs_fpath, os.path.basename(corr_fpath)))
 
         # if option --scaffolds is specified QUAST adds splitted version of assemblies to the comparison
         if qconfig.scaffolds:
-            log.info("  breaking scaffolds into contigs:")
+            logger.info("  breaking scaffolds into contigs:")
             broken_scaffolds_path = corr_fpath + '_broken'
 
             broken_scaffolds_fasta = []
@@ -494,13 +473,13 @@ def main(args):
                 contigs_counter += cur_contig_number
 
             fastaparser.write_fasta(broken_scaffolds_path, broken_scaffolds_fasta)
-            log.info("      %d scaffolds (%s) were broken into %d contigs (%s)"\
+            logger.info("      %d scaffolds (%s) were broken into %d contigs (%s)"\
                   % (id + 1, os.path.basename(corr_fpath), contigs_counter, os.path.basename(broken_scaffolds_path)))
-            if handle_fasta(broken_scaffolds_path, broken_scaffolds_path, reporting):
+            if _handle_fasta(broken_scaffolds_path, broken_scaffolds_path, reporting):
                 new_contigs_fpaths.append(broken_scaffolds_path)
                 qconfig.list_of_broken_scaffolds.append(os.path.basename(broken_scaffolds_path))
 
-        if not handle_fasta(contigs_fpath, corr_fpath, reporting):
+        if not _handle_fasta(contigs_fpath, corr_fpath, reporting):
             continue
         new_contigs_fpaths.append(corr_fpath)
 
@@ -509,19 +488,19 @@ def main(args):
     qconfig.assemblies_num = len(contigs_fpaths)
 
     if not contigs_fpaths:
-        error("None of assembly file contain correct contigs. "
+        logger.error("None of assembly file contain correct contigs. "
               "Please, provide different files or decrease --min-contig threshold.",
               exit_with_code=4)
 
     # End of processing
-    log.info('Done.')
+    logger.info('Done.')
 
     if qconfig.with_gage:
         ########################################################################
         ### GAGE
         ########################################################################
         if not qconfig.reference:
-            warning("GAGE can't be run without a reference and will be skipped.")
+            logger.warning("GAGE can't be run without a reference and will be skipped.")
         else:
             from libs import gage
             gage.do(qconfig.reference, contigs_fpaths, output_dirpath)
@@ -591,8 +570,8 @@ def main(args):
             from libs import glimmer
             glimmer.do(contigs_fpaths, qconfig.genes_lengths, output_dirpath + '/predicted_genes')
     else:
-        log.info("")
-        notice("Genes are not predicted by default. Use --gene-finding option to enable it.")
+        logger.info("")
+        logger.notice("Genes are not predicted by default. Use --gene-finding option to enable it.")
         # add_empty_predicted_genes_fields()
 
     ########################################################################
@@ -615,27 +594,18 @@ def main(args):
         html_saver.save_total_report(output_dirpath, qconfig.min_contig)
 
     if qconfig.draw_plots and all_pdf:
-        log.info('  All pdf files are merged to ' + all_pdf_filename)
+        logger.info('  All pdf files are merged to ' + all_pdf_filename)
         all_pdf.close()
 
     if RELEASE_MODE:
-        cleanup(corrected_dirpath)
+        _cleanup(corrected_dirpath)
 
-    log.info('Done.')
-
-    log.info('')
-    log.info("Log saved to " + logfile)
-
-    finish_time = print_timestamp("Finished: ")
-    log.info("Elapsed time: " + str(finish_time - start_time))
-
-    for handler in handlers:
-        log.removeHandler(handler)
+    logger.finish_up()
 
     return 0
 
 
-def cleanup(corrected_dirpath):
+def _cleanup(corrected_dirpath):
     # removing correcting input contig files
     if not qconfig.debug:
         shutil.rmtree(corrected_dirpath)

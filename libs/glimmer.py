@@ -5,7 +5,6 @@
 ############################################################################
 
 from __future__ import with_statement
-import logging
 import os
 import tempfile
 import subprocess
@@ -16,7 +15,11 @@ import shutil
 from libs import reporting
 from libs import qconfig
 from libs.fastaparser import read_fasta, write_fasta, rev_comp
-from qutils import id_to_str, print_timestamp, error
+from qutils import id_to_str
+
+from libs.log import get_logger
+logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
+
 
 def merge_gffs(gffs, out_path):
     '''Merges all GFF files into a single one, dropping GFF header.'''
@@ -98,8 +101,7 @@ def glimmerHMM(tool_dir, fasta_path, out_path, gene_lengths, err_path, tmp_dir):
 
 
 def predict_genes(id, fasta_path, gene_lengths, out_dir, tool_dir, tmp_dir):
-    log = logging.getLogger('quast')
-    log.info('  ' + id_to_str(id) + os.path.basename(fasta_path))
+    logger.info('  ' + id_to_str(id) + os.path.basename(fasta_path))
 
     out_name = os.path.basename(fasta_path)
     out_path = os.path.join(out_dir, out_name)
@@ -108,17 +110,16 @@ def predict_genes(id, fasta_path, gene_lengths, out_dir, tool_dir, tmp_dir):
     #    fasta_path, out_path, gene_lengths, err_path)
     out_gff_path, unique, total, cnt = glimmerHMM(tool_dir,
         fasta_path, out_path, gene_lengths, err_path, tmp_dir)
-    log.info('  ' + id_to_str(id) + '  Genes = ' + str(unique) + ' unique, ' + str(total) + ' total')
-    log.info('  ' + id_to_str(id) + '  Predicted genes (GFF): ' + out_gff_path)
+    logger.info('  ' + id_to_str(id) + '  Genes = ' + str(unique) + ' unique, ' + str(total) + ' total')
+    logger.info('  ' + id_to_str(id) + '  Predicted genes (GFF): ' + out_gff_path)
 
-    log.info('  ' + id_to_str(id) + 'Gene prediction is finished.')
+    logger.info('  ' + id_to_str(id) + 'Gene prediction is finished.')
     return unique, cnt
 
 
 def do(fasta_paths, gene_lengths, out_dir):
-    print_timestamp()
-    log = logging.getLogger('quast')
-    log.info('Running GlimmerHMM...')
+    logger.print_timestamp()
+    logger.info('Running GlimmerHMM...')
 
     tool_dir = os.path.join(qconfig.LIBS_LOCATION, 'glimmer')
     tool_src = os.path.join(tool_dir, 'src')
@@ -127,7 +128,7 @@ def do(fasta_paths, gene_lengths, out_dir):
 
     if not os.path.isfile(tool_exec):
         # making
-        log.info("Compiling GlimmerHMM...")
+        logger.info("Compiling GlimmerHMM...")
         try:
             subprocess.call(
                 ['make', '-C', tool_src],
@@ -135,7 +136,7 @@ def do(fasta_paths, gene_lengths, out_dir):
             if not os.path.isfile(tool_exec):
                 raise
         except:
-            error("Failed to compile GlimmerHMM (" + tool_src + ")! Try to compile it manually or set --disable-gene-finding option!")
+            logger.error("Failed to compile GlimmerHMM (" + tool_src + ")! Try to compile it manually or set --disable-gene-finding option!")
 
     if not os.path.isdir(out_dir):
         os.makedirs(out_dir)
@@ -157,4 +158,4 @@ def do(fasta_paths, gene_lengths, out_dir):
     if not qconfig.debug:
         shutil.rmtree(tmp_dir)
 
-    log.info('  Done.')
+    logger.info('  Done.')

@@ -6,7 +6,7 @@
 # See file LICENSE for details.
 ############################################################################
 
-RELEASE_MODE = False
+RELEASE_MODE = True
 
 import sys
 import os

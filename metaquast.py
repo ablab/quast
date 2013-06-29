@@ -8,7 +8,7 @@
 
 from __future__ import with_statement
 
-RELEASE_MODE = False
+RELEASE_MODE = True
 
 import getopt
 import os

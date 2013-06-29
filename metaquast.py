@@ -37,34 +37,22 @@ def usage():
     print >> sys.stderr, "-O  --operons <filename>     Annotated operons file"
     print >> sys.stderr, "--min-contig  <int>          Lower threshold for contig length [default: %s]" % qconfig.min_contig
     print >> sys.stderr, ""
-    print >> sys.stderr, ""
     print >> sys.stderr, "Advanced options:"
     print >> sys.stderr, "--threads <int>                   Maximum number of threads [default: number of CPUs]"
-    print >> sys.stderr, ""
     print >> sys.stderr, "--gage                            Starts GAGE inside QUAST (\"GAGE mode\")"
-    print >> sys.stderr, ""
     print >> sys.stderr, "--contig-thresholds <int,int,..>  Comma-separated list of contig length thresholds [default: %s]" % qconfig.contig_thresholds
-    print >> sys.stderr, ""
     print >> sys.stderr, "--gene-finding                    Uses MetaGeneMark for gene finding"
-    print >> sys.stderr, ""
     print >> sys.stderr, "--gene-thresholds <int,int,..>    Comma-separated list of threshold lengths of genes to search with Gene Finding module"
     print >> sys.stderr, "                                  [default is %s]" % qconfig.genes_lengths
-    print >> sys.stderr, ""
     print >> sys.stderr, "--eukaryote                       Genome is an eukaryote"
-    print >> sys.stderr, ""
     print >> sys.stderr, "--est-ref-size <int>              Estimated reference size (for computing NGx metrics without a reference)"
-    print >> sys.stderr, ""
     print >> sys.stderr, "--scaffolds                       Provided assemblies are scaffolds"
-    print >> sys.stderr, ""
     print >> sys.stderr, "--use-all-alignments              Computes Genome fraction, # genes, # operons metrics in compatible with QUAST v.1.* mode."
     print >> sys.stderr, "                                  By default, QUAST filters Nucmer\'s alignments to keep only best ones"
-    print >> sys.stderr, ""
     print >> sys.stderr, "--ambiguity-usage <none|one|all>  Uses none, one, or all alignments of a contig with multiple equally good alignments."
     print >> sys.stderr, "                                  [default is %s]" % qconfig.ambiguity_usage
-    print >> sys.stderr, ""
     print >> sys.stderr, "--strict-NA                       Breaks contigs by any misassembly event to compute NAx and NGAx."
     print >> sys.stderr, "                                  By default, QUAST breaks contigs only by extensive misassemblies (not local ones)"
-    print >> sys.stderr, ""
     print >> sys.stderr, "-h  --help                        Prints this message"
 
 
@@ -184,7 +172,7 @@ def main(args):
     draw_plots = qconfig.draw_plots
     html_report = qconfig.html_report
     save_json = qconfig.save_json
-    make_latest_symlink = False
+    make_latest_symlink = True
 
     try:
         options, contigs_fpaths = getopt.gnu_getopt(args, qconfig.short_options, qconfig.long_options)
@@ -412,7 +400,7 @@ def main(args):
     if not ref_fpaths:
         # No references, running regular quast with MetaGenemark gene finder
         logger.info('')
-        logger.info('No references provided, starting quast.py with MetaGenemark gene finder')
+        logger.info('No references provided, starting quast.py with MetaGeneMark gene finder')
         _start_quast_main(
             None,
             args,
@@ -462,8 +450,7 @@ def main(args):
         output_dirpath=os.path.join(output_dirpath, 'not_aligned_quast_output'),
         exit_on_exception=False)
 
-    if RELEASE_MODE:
-        quast._cleanup(corrected_dirpath)
+    quast._cleanup(corrected_dirpath)
 
     logger.info('')
     logger.info('MetaQUAST finished.')

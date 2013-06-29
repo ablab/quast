@@ -43,37 +43,23 @@ def _usage():
         print >> sys.stderr, "-O  --operons <filename>     Annotated operons file"
         print >> sys.stderr, "--min-contig  <int>          Lower threshold for contig length [default: %s]" % qconfig.min_contig
         print >> sys.stderr, ""
-        print >> sys.stderr, ""
         print >> sys.stderr, "Advanced options:"
         print >> sys.stderr, "--threads <int>                   Maximum number of threads [default: number of CPUs]"
-        print >> sys.stderr, ""
         print >> sys.stderr, "--gage                            Starts GAGE inside QUAST (\"GAGE mode\")"
-        print >> sys.stderr, ""
         print >> sys.stderr, "--contig-thresholds <int,int,..>  Comma-separated list of contig length thresholds [default: %s]" % qconfig.contig_thresholds
-        print >> sys.stderr, ""
         print >> sys.stderr, "--gene-finding                    Uses Gene Finding module"
-        print >> sys.stderr, ""
         print >> sys.stderr, "--gene-thresholds <int,int,..>    Comma-separated list of threshold lengths of genes to search with Gene Finding module"
         print >> sys.stderr, "                                  [default is %s]" % qconfig.genes_lengths
-        print >> sys.stderr, ""
         print >> sys.stderr, "--eukaryote                       Genome is an eukaryote"
-        print >> sys.stderr, ""
         print >> sys.stderr, "--est-ref-size <int>              Estimated reference size (for computing NGx metrics without a reference)"
-        print >> sys.stderr, ""
         print >> sys.stderr, "--scaffolds                       Provided assemblies are scaffolds"
-        print >> sys.stderr, ""
         print >> sys.stderr, "--use-all-alignments              Computes Genome fraction, # genes, # operons metrics in compatible with QUAST v.1.* mode."
         print >> sys.stderr, "                                  By default, QUAST filters Nucmer\'s alignments to keep only best ones"
-        print >> sys.stderr, ""
         print >> sys.stderr, "--ambiguity-usage <none|one|all>  Uses none, one, or all alignments of a contig with multiple equally good alignments."
         print >> sys.stderr, "                                  [default is %s]" % qconfig.ambiguity_usage
-        print >> sys.stderr, ""
         print >> sys.stderr, "--strict-NA                       Breaks contigs by any misassembly event to compute NAx and NGAx."
         print >> sys.stderr, "                                  By default, QUAST breaks contigs only by extensive misassemblies (not local ones)"
-        print >> sys.stderr, ""
         print >> sys.stderr, "-m  --meta                        Metagenomic assembly. Uses MetaGeneMark for gene prediction. "
-        # print >> sys.stderr, "                                  Accepts multiple reference files (comma-separated list of filenames after -R option)"
-        print >> sys.stderr, ""
         print >> sys.stderr, "-h  --help                        Prints this message"
 
     else:
@@ -277,7 +263,7 @@ def main(args):
     output_dirpath = None
 
     for opt, arg in options:
-        # Yes, this is a code duplicating. I have no idea why I didn't use OptionParser.
+        # Yes, this is a code duplicating. But OptionParser is deprecated since version 2.7.
         if opt in ('-o', "--output-dir"):
             output_dirpath = os.path.abspath(arg)
             qconfig.make_latest_symlink = False
@@ -381,7 +367,7 @@ def main(args):
 
     qconfig.genes_lengths = map(int, qconfig.genes_lengths.split(","))
 
-    # Threadding
+    # Threading
     if qconfig.max_threads is None:
         try:
             import multiprocessing
@@ -597,8 +583,7 @@ def main(args):
         logger.info('  All pdf files are merged to ' + all_pdf_filename)
         all_pdf.close()
 
-    if RELEASE_MODE:
-        _cleanup(corrected_dirpath)
+    _cleanup(corrected_dirpath)
 
     logger.finish_up()
 

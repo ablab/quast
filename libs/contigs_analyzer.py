@@ -461,7 +461,7 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
     for contig, seq in assembly.iteritems():
         #Recording contig stats
         ctg_len = len(seq)
-        print >> plantafile_out, 'CONTIG: %s (%dbp)' % (contig, ctg_len)
+        print >> plantafile_out, '\tCONTIG: %s (%dbp)' % (contig, ctg_len)
         #Check if this contig aligned to the reference
         if contig in aligns:
             #Pull all aligns for this contig
@@ -472,7 +472,7 @@ def plantakolya(cyclic, id, filename, nucmerfilename, myenv, output_dir, referen
             top_len = sorted_aligns[0].len2
             top_id = sorted_aligns[0].idy
             top_aligns = []
-            print >> plantafile_out, 'Top Length: %s  Top ID: %s' % (top_len, top_id)
+            print >> plantafile_out, '\tTop Length: %s  Top ID: %s' % (top_len, top_id)
 
             #Check that top hit captures most of the contig
             if top_len > ctg_len * epsilon or ctg_len - top_len < maxun:

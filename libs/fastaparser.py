@@ -8,10 +8,27 @@ import os
 import gzip
 import zipfile
 import bz2
-
 import itertools
 # There exists pyfasta package -- http://pypi.python.org/pypi/pyfasta/
 # Use it !
+
+
+def get_file_handler(filename):
+    file_ext = os.path.splitext(filename)[1]
+    if file_ext == '.gz':
+        file_handler = gzip.open(filename)
+    elif file_ext == '.bz2':
+        file_handler = bz2.BZ2File(filename)
+    elif file_ext == '.zip':
+        zfile = zipfile.ZipFile(filename)
+        names = zfile.namelist()
+        if len(names) == 0:
+            raise IOError('Reading %s: zip archive is empty' % filename)
+        file_handler = zfile.open(names[0])
+    else:
+        file_handler = open(filename)
+    return file_handler
+
 
 def get_lengths_from_fastafile(filename):
     """
@@ -20,7 +37,8 @@ def get_lengths_from_fastafile(filename):
     """
     lengths = []
     l = 0
-    for line in open(filename):
+    file_handler = get_file_handler(filename)
+    for line in file_handler:
         if line[0] == '>':
             if l: # not the first sequence in FASTA
                 lengths.append(l)
@@ -28,6 +46,7 @@ def get_lengths_from_fastafile(filename):
         else:
             l += len(line.strip())
     lengths.append(l)
+    file_handler.close()
     return lengths
 
 
@@ -59,22 +78,7 @@ def read_fasta(filename):
     first = True
     seq = ''
     name = ''
-    file_ext = os.path.splitext(filename)[1]
-    if file_ext == '.gz':
-        fasta_file = gzip.open(filename)
-    elif file_ext == '.bz2':
-        fasta_file = bz2.BZ2File(filename)
-    elif file_ext == '.zip':
-        zfile = zipfile.ZipFile(filename)
-        names = zfile.namelist()
-        if len(names) == 0:
-            raise IOError('Reading %s: zip archive is empty' % filename)
-        fasta_file = zfile.open(names[0])
-    else:
-        fasta_file = open(filename)
-
-#    fasta_file = gzip.open(filename) if file_ext == ".gz" else open(filename)
-
+    fasta_file = get_file_handler(filename)
     for line in fasta_file:
         if line[0] == '>':
             if not first:
@@ -86,12 +90,15 @@ def read_fasta(filename):
             seq += line.strip()
     if name or seq:
         yield name, seq
+    fasta_file.close()
+
 
 def print_fasta(fasta):
     for name, seq in fasta:
         print '>%s' % name
         for i in xrange(0,len(seq),60):
             print seq[i:i+60]
+
 
 def write_fasta(filename, fasta, mode='w'):
     outfile = open(filename, mode)
@@ -101,6 +108,7 @@ def write_fasta(filename, fasta, mode='w'):
         for i in xrange(0,len(seq),60):
             outfile.write(seq[i:i+60] + '\n')
     outfile.close()
+
 
 def comp(letter):
     return {'A': 'T', 'T': 'A', 'C': 'G', 'G': 'C', 'N': 'N'}[letter.upper()]

@@ -32,7 +32,7 @@ QUAST evaluates genome assemblies by computing various metrics.
     them separately.
     <br>
     <br>
-    QUAST version 2.2 was released under GPL v2 (see <a href="LICENSE">LICENSE</a> for details) on XX May 2013.
+    QUAST version 2.2 was released under GPL v2 (see <a href="LICENSE">LICENSE</a> for details) on XX July 2013.
 </p>
 
 <h2>Table of Contents</h2>
@@ -59,7 +59,8 @@ QUAST evaluates genome assemblies by computing various metrics.
     </ol>
   </li>
   <li><a href="#sec4">Adjusting QUAST reports and plots</a></li> 
-  <li><a href="#sec5">Feedback and bug reports</a></li> 
+  <li><a href="#sec5">Citation</a></li>
+  <li><a href="#sec6">Feedback and bug reports</a></li> 
 </ol>
 
 <a name="sec1"></a>
@@ -97,13 +98,13 @@ Or with <a href="http://peak.telecommunity.com/DevCenter/EasyInstall">Easy Insta
 </pre>
 
 
-<p>To download <a href="https://downloads.sourceforge.net/project/quast/quast-2.1.tar.gz">QUAST source code tarball</a> and extract it:
+<p>To download <a href="https://downloads.sourceforge.net/project/quast/quast-2.2.tar.gz">QUAST source code tarball</a> and extract it:
 </p>
 <pre  class="code">
 <code>
-    wget https://downloads.sourceforge.net/project/quast/quast-2.1.tar.gz
-    tar -xzf quast-2.1.tar.gz
-    cd quast-2.1
+    wget https://downloads.sourceforge.net/project/quast/quast-2.2.tar.gz
+    tar -xzf quast-2.2.tar.gz
+    cd quast-2.2
 </code>
 </pre>
 
@@ -266,7 +267,7 @@ QUAST can work only with assemblies of length less than 4.29 Gbp and with refere
     <code>--use-all-alignments</code>
 </p>
 <p>&nbsp;&nbsp;&nbsp;&nbsp;This flag should be set for computing <b><i>Genome fraction, # genes, # operons</i></b> metrics in compatible with <i>QUAST v.1.*</i> mode.
-    By default, QUAST v.2.1 filters Nucmer's alignments to keep only best ones. Roughly speaking, QUAST skips ambiguous and redundant alignments
+    By default, QUAST v.2.* filters Nucmer's alignments to keep only best ones. Roughly speaking, QUAST skips ambiguous and redundant alignments
     to keep <i>one alignment</i> (or one set of non-overlapping or slightly-overlapping alignments) <i>per each contig</i>. QUAST v.1.* used <i>all</i> Nucmer's 
     alignments to compute these metrics.</p>
 
@@ -570,6 +571,20 @@ opposite strands of the same chromosome. </p>
 </p>
 
 <a name="sec5"></a><p>
+<h2>5. Citation</h2>
+
+<p>
+If you use QUAST in your research, please include <i>Gurevich et al., 2013</i> in your 
+reference list:
+</p>
+<p>
+Alexey Gurevich, Vladislav Saveliev, Nikolay Vyahhi and Glenn Tesler, <br>
+QUAST: quality assessment tool for genome assemblies, <br>
+Bioinformatics (2013) 29 (8): 1072-1075. doi: <a href="http://dx.doi.org/10.1093/bioinformatics/btt086">10.1093/bioinformatics/btt086</a><br>
+First published online: February 19, 2013
+</p>
+
+<a name="sec6"></a><p>
 <h2>5. Feedback and bug reports</h2>
 
 <p>

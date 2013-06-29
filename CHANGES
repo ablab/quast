@@ -1,5 +1,18 @@
 -- Version history --
 
+2.2   Added support of metagenomic assemblies. MetaGeneMark embedded for finding
+      genes in such assemblies. Several references could be specified for detailed
+      per each reference analysis.
+     
+      Option --ambiguity-usage added instead of old --allow-ambuguity. Three 
+      different modes of processing ambiguous contigs now available.
+
+      Interactive HTML reports are improved.
+
+      Fixed bugs in misassemblies detection algorithm.
+
+      Fixed several minor bugs.
+
 2.1   Option --strict-NA added to control computation of NAx/NGAx metrics. 
       This option forces QUAST to break contigs by any misassembly event, 
       including local misassemblies (like in v.2.0). By default, QUAST v.2.1

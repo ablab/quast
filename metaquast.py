@@ -56,7 +56,7 @@ def usage():
     print >> sys.stderr, "-h  --help                        Prints this message"
 
 
-def _partition_contigs(contigs_fpaths, ref_fpaths, corrected_dirpath, alignments_fpath):
+def _partition_contigs(contigs_fpaths, ref_fpaths, corrected_dirpath, alignments_fpath_template):
     # not_aligned_anywhere_dirpath = os.path.join(output_dirpath, 'contigs_not_aligned_anywhere')
     # if os.path.isdir(not_aligned_anywhere_dirpath):
     #     os.rmdir(not_aligned_anywhere_dirpath)
@@ -64,22 +64,23 @@ def _partition_contigs(contigs_fpaths, ref_fpaths, corrected_dirpath, alignments
 
     not_aligned_fpaths = []
     # array of fpaths for each reference
-    partitions = dict([(os.path.basename(ref_fpath), []) for ref_fpath in ref_fpaths])
+    partitions = dict([(qutils.name_from_fpath(ref_fpath), []) for ref_fpath in ref_fpaths])
 
     for contigs_fpath in contigs_fpaths:
-        contigs_path, ext = os.path.splitext(contigs_fpath)
-        contigs_name = os.path.basename(contigs_path)
-        not_aligned_fpath = contigs_path + '_not_aligned_anywhere' + ext
+        assembly_name = qutils.name_from_fpath(contigs_fpath)
+        not_aligned_fname = assembly_name + '_not_aligned_anywhere.fasta'
+        not_aligned_fpath = os.path.join(corrected_dirpath, not_aligned_fname)
         contigs = {}
         aligned_contig_names = set()
 
-        alignments_tsv_fpath = alignments_fpath % os.path.splitext(os.path.basename(contigs_fpath))[0]
-        with open(alignments_tsv_fpath) as f:
-            for line in f.readlines():
+        alignments_tsv_fpath = alignments_fpath_template % assembly_name
+        with open(alignments_tsv_fpath) as alignments_tsv_f:
+            for line in alignments_tsv_f.readlines():
                 values = line.split()
-                ref_fname = values[0]
+                ref_name = values[0]
                 ref_contigs_names = values[1:]
-                ref_contigs_fpath = os.path.join(corrected_dirpath, contigs_name + '_to_' + ref_fname)
+                ref_contigs_fpath = os.path.join(
+                    corrected_dirpath, assembly_name + '_to_' + ref_name[:40] + '.fasta')
 
                 for (cont_name, seq) in fastaparser.read_fasta(contigs_fpath):
                     if not cont_name in contigs.keys():
@@ -90,7 +91,7 @@ def _partition_contigs(contigs_fpaths, ref_fpaths, corrected_dirpath, alignments
                         aligned_contig_names.add(cont_name)
                         fastaparser.write_fasta(ref_contigs_fpath, [(cont_name, seq)], 'a')
 
-                partitions[ref_fname].append(ref_contigs_fpath)
+                partitions[ref_name].append(ref_contigs_fpath)
 
         # Exctraction not aligned contigs
         all_contigs_names = set(contigs.keys())
@@ -154,6 +155,81 @@ def _start_quast_main(
             if e.message:
                 msg += ', ' + e.message
             logger.error(msg)
+
+
+def _correct_contigs(contigs_fpaths, corrected_dirpath, min_contig):
+    corrected_contigs_fpaths = []
+
+    for i, contigs_fpath in enumerate(contigs_fpaths):
+        contigs_fname = os.path.basename(contigs_fpath)
+        name, ctg_fasta_ext = qutils.splitext_for_fasta_file(contigs_fname)
+        corr_fpath = qutils.unique_corrected_fpath(
+            os.path.join(corrected_dirpath, name + ctg_fasta_ext))
+
+        assembly_name = qutils.name_from_fpath(corr_fpath)
+        logger.info('  %s ==> %s' % (contigs_fpath, assembly_name))
+
+        # Handle fasta
+        lengths = fastaparser.get_lengths_from_fastafile(contigs_fpath)
+        if not sum(l for l in lengths if l >= min_contig):
+            logger.warning("Skipping %s because it doesn't contain contigs >= %d bp."
+                           % (os.path.basename(contigs_fpath), min_contig))
+            continue
+
+        # correcting
+        if not quast.correct_fasta(contigs_fpath, corr_fpath, min_contig):
+            continue
+
+        corrected_contigs_fpaths.append(corr_fpath)
+
+    return corrected_contigs_fpaths
+
+
+def _correct_refrences(ref_fpaths, corrected_dirpath):
+    common_ref_fasta_ext = ''
+
+    corrected_ref_fpaths = []
+
+    combined_ref_fpath = os.path.join(corrected_dirpath, COMBINED_REF_FNAME)
+
+    def correct_seq(seq_name, seq, ref_name, ref_fasta_ext, total_references):
+        seq_fname = ref_name
+        if total_references > 1:
+            seq_fname += '_' + qutils.correct_name(seq_name[:20])
+        seq_fname += ref_fasta_ext
+
+        corr_seq_fpath = qutils.unique_corrected_fpath(os.path.join(corrected_dirpath, seq_fname))
+        corr_seq_name = qutils.name_from_fpath(corr_seq_fpath)
+
+        corrected_ref_fpaths.append(corr_seq_fpath)
+
+        fastaparser.write_fasta(corr_seq_fpath, [(corr_seq_name, seq)], 'a')
+        fastaparser.write_fasta(combined_ref_fpath, [(corr_seq_name, seq)], 'a')
+
+        return corr_seq_name
+
+    for ref_fpath in ref_fpaths:
+        total_references = 0
+        for _ in fastaparser.read_fasta(ref_fpath):
+            total_references += 1
+
+        if total_references > 1:
+            logger.info('  ' + ref_fpath + ':')
+
+        ref_fname = os.path.basename(ref_fpath)
+        ref_name, ref_fasta_ext = qutils.splitext_for_fasta_file(ref_fname)
+        common_ref_fasta_ext = ref_fasta_ext
+
+        for i, (seq_name, seq) in enumerate(fastaparser.read_fasta(ref_fpath)):
+            corr_seq_name = correct_seq(seq_name, seq, ref_name, ref_fasta_ext, total_references)
+            if total_references > 1:
+                logger.info('    ' + corr_seq_name + '\n')
+            else:
+                logger.info('  ' + ref_fpath + ' ==> ' + corr_seq_name + '')
+
+    logger.info('  All references combined in ' + COMBINED_REF_FNAME)
+
+    return corrected_ref_fpaths, common_ref_fasta_ext, combined_ref_fpath
 
 
 def main(args):
@@ -311,7 +387,7 @@ def main(args):
     logger.start()
 
     # Where all pdfs will be saved
-    all_pdf_filename = os.path.join(output_dirpath, qconfig.plots_filename)
+    all_pdf_fpath = os.path.join(output_dirpath, qconfig.plots_fname)
     all_pdf = None
 
     ########################################################################
@@ -324,82 +400,31 @@ def main(args):
     os.mkdir(corrected_dirpath)
 
     # PROCESSING REFERENCES
+    common_ref_fasta_ext = ''
+
     if ref_fpaths:
-        logger.info('Processing references...')
+        logger.info()
+        logger.info('Reference' + ('s' if len(ref_fpaths) > 0 else '') + ':')
 
-        corrected_ref_fpaths = []
+        ref_fpaths, common_ref_fasta_ext, combined_ref_fpath =\
+            _correct_refrences(ref_fpaths, corrected_dirpath)
 
-        combined_ref_fpath = os.path.join(corrected_dirpath, COMBINED_REF_FNAME)
-
-        for ref_fpath in ref_fpaths:
-            ref_fname = os.path.basename(ref_fpath)
-            ref_name, ext = os.path.splitext(ref_fname)
-            corr_name = qutils.correct_name(ref_name)
-
-            for i, (name, seq) in enumerate(fastaparser.read_fasta(ref_fpath)):
-                corr_fname = corr_name + '_' + qutils.correct_name(name) + ext
-                corr_fpath = os.path.join(corrected_dirpath, corr_fname)
-                corrected_ref_fpaths.append(corr_fpath)
-
-                fastaparser.write_fasta(corr_fpath, [(corr_fname, seq)], 'a')
-                fastaparser.write_fasta(combined_ref_fpath, [(corr_fname, seq)], 'a')
-                logger.info('\t' + corr_fname + '\n')
-
-        logger.info('\tAll references combined in ' + COMBINED_REF_FNAME)
-        ref_fpaths = corrected_ref_fpaths
-
-        logger.info('')
-
-    ## removing from contigs' names special characters because:
-    ## 1) Some embedded tools can fail on some strings with "...", "+", "-", etc
-    ## 2) Nucmer fails on names like "contig 1_bla_bla", "contig 2_bla_bla" (it interprets as a contig's name only the first word of caption and gets ambiguous contigs names)
-    logger.info('Processing contigs...')
-    new_contigs_fpaths = []
-
-    for i, contigs_fpath in enumerate(contigs_fpaths):
-        contigs_fname = os.path.basename(contigs_fpath)
-        corr_fname = quast.corrected_fname_for_nucmer(contigs_fname)
-        corr_fpath = os.path.join(corrected_dirpath, corr_fname)
-        if os.path.isfile(corr_fpath):  # in case of files with equal names
-            i = 1
-            basename, ext = os.path.splitext(corr_fname)
-            while os.path.isfile(corr_fpath):
-                i += 1
-                corr_fpath = os.path.join(corrected_dirpath, os.path.basename(basename + '__' + str(i)) + ext)
-
-        logger.info('\t%s ==> %s' % (contigs_fpath, os.path.basename(corr_fpath)))
-
-        # Handle fasta
-        lengths = fastaparser.get_lengths_from_fastafile(contigs_fpath)
-        if not sum(l for l in lengths if l >= min_contig):
-            logger.warning("Skipping %s because it doesn't contain contigs >= %d bp."
-                           % (os.path.basename(contigs_fpath), min_contig))
-            continue
-
-        # correcting
-        if not quast.correct_fasta(contigs_fpath, corr_fpath, min_contig):
-            continue
-
-        new_contigs_fpaths.append(corr_fpath)
-
-        logger.info('')
-
-    contigs_fpaths = new_contigs_fpaths
+    # PROCESSING CONTIGS
+    logger.info()
+    logger.info('Contigs:')
+    contigs_fpaths = _correct_contigs(contigs_fpaths, corrected_dirpath, min_contig)
 
     if not contigs_fpaths:
         logger.error("None of assembly file contain correct contigs. "
                      "Please, provide different files or decrease --min-contig threshold.",
                      exit_with_code=4)
 
-    # End of processing
-    logger.info('Done preprocessing input.')
-
     # Running QUAST(s)
     args += ['--meta']
 
     if not ref_fpaths:
         # No references, running regular quast with MetaGenemark gene finder
-        logger.info('')
+        logger.info()
         logger.info('No references provided, starting quast.py with MetaGeneMark gene finder')
         _start_quast_main(
             None,
@@ -411,7 +436,7 @@ def main(args):
 
     # Running combined reference
     run_name = 'for the combined reference'
-    logger.info('')
+    logger.info()
     logger.info('Starting quast.py ' + run_name + '...')
 
     _start_quast_main(run_name, args,
@@ -424,9 +449,7 @@ def main(args):
         contigs_fpaths, ref_fpaths, corrected_dirpath,
         os.path.join(output_dirpath, 'combined_quast_output', 'contigs_reports', 'alignments_%s.tsv'))
 
-    for ref_fname, contigs_fpaths in partitions.iteritems():
-        ref_name = os.path.splitext(os.path.basename(ref_fname))[0]
-
+    for ref_name, contigs_fpaths in partitions.iteritems():
         logger.info('')
         if not contigs_fpaths:
             logger.info('No contigs are aligned to the reference ' + ref_name)
@@ -436,13 +459,13 @@ def main(args):
 
             _start_quast_main(run_name, args,
                 contigs_fpaths=contigs_fpaths,
-                reference_fpath=os.path.join(corrected_dirpath, ref_fname),
+                reference_fpath=os.path.join(corrected_dirpath, ref_name) + common_ref_fasta_ext,
                 output_dirpath=os.path.join(output_dirpath, ref_name + '_quast_output'),
                 exit_on_exception=False)
 
     # Finally running for the contigs that has not been aligned to any reference
     run_name = 'for the contigs not alined anywhere'
-    logger.info('')
+    logger.info()
     logger.info('Starting quast.py ' + run_name + '...')
 
     _start_quast_main(run_name, args,

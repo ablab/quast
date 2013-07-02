@@ -4,7 +4,7 @@
 # See file LICENSE for details.
 ############################################################################
 
-from libs import qconfig
+from libs import qconfig, qutils
 
 from libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
@@ -276,7 +276,7 @@ def get_quality(metric):
 class Report(object):
     def __init__(self, name):
         self.d = {}
-        self.add_field(Fields.NAME, name)
+        self.add_field(Fields.NAME, qutils.rm_extentions_for_fasta_file(name))
 
     def add_field(self, field, value):
         assert field in Fields.__dict__.itervalues(), 'Unknown field: %s' % field
@@ -291,19 +291,19 @@ class Report(object):
         return self.d.get(field, None)
 
 
-def get(filename):
-    filename = os.path.basename(filename)
-    if filename not in assemblies_order:
-        assemblies_order.append(filename)
-    return reports.setdefault(filename, Report(filename))
+def get(assembly_fpath):
+    assembly_fpath = os.path.basename(assembly_fpath)
+    if assembly_fpath not in assemblies_order:
+        assemblies_order.append(assembly_fpath)
+    return reports.setdefault(assembly_fpath, Report(assembly_fpath))
 
 
-def delete(filename):
-    filename = os.path.basename(filename)
-    if filename in assemblies_order:
-        assemblies_order.remove(filename)
-    if filename in reports.keys():
-        reports.pop(filename)
+def delete(assembly_fpath):
+    assembly_fpath = os.path.basename(assembly_fpath)
+    if assembly_fpath in assemblies_order:
+        assemblies_order.remove(assembly_fpath)
+    if assembly_fpath in reports.keys():
+        reports.pop(assembly_fpath)
 
 
 # ATTENTION! Contents numeric values, needed to be converted into strings
@@ -376,7 +376,7 @@ def val_to_str(val):
         return str(val)
 
 
-def save_txt(filename, table, is_transposed=False):
+def save_txt(fpath, table, is_transposed=False):
     all_rows = get_all_rows_out_of_table(table)
 
     # determine width of columns for nice spaces
@@ -386,7 +386,7 @@ def save_txt(filename, table, is_transposed=False):
             colwidths[i] = max(colwidths[i], len(cell))
             # output it
 
-    txt_file = open(filename, 'w')
+    txt_file = open(fpath, 'w')
 
     if qconfig.min_contig:
         print >>txt_file, 'All statistics are based on contigs of size >= %d bp, unless otherwise noted ' % qconfig.min_contig + \
@@ -399,10 +399,10 @@ def save_txt(filename, table, is_transposed=False):
     txt_file.close()
 
 
-def save_tsv(filename, table, is_transposed=False):
+def save_tsv(fpath, table, is_transposed=False):
     all_rows = get_all_rows_out_of_table(table)
 
-    tsv_file = open(filename, 'w')
+    tsv_file = open(fpath, 'w')
 
     for row in all_rows:
         print >>tsv_file, '\t'.join([row['metricName']] + map(val_to_str, row['values']))
@@ -445,10 +445,10 @@ def get_num_from_table_value(val):
     return num
 
 
-def save_tex(filename, table, is_transposed=False):
+def save_tex(fpath, table, is_transposed=False):
     all_rows = get_all_rows_out_of_table(table)
 
-    tex_file = open(filename, 'w')
+    tex_file = open(fpath, 'w')
     # Header
     print >>tex_file, '\\documentclass[12pt,a4paper]{article}'
     print >>tex_file, '\\begin{document}'
@@ -519,14 +519,14 @@ def save(output_dirpath, report_name, transposed_report_name, order):
     tab = table(order)
 
     logger.info('  Creating total report...')
-    report_txt_filename = os.path.join(output_dirpath, report_name) + '.txt'
-    report_tsv_filename = os.path.join(output_dirpath, report_name) + '.tsv'
-    report_tex_filename = os.path.join(output_dirpath, report_name) + '.tex'
-    save_txt(report_txt_filename, tab)
-    save_tsv(report_tsv_filename, tab)
-    save_tex(report_tex_filename, tab)
-    logger.info('    saved to ' + report_txt_filename + ', ' + os.path.basename(report_tsv_filename) + \
-             ', and ' + os.path.basename(report_tex_filename))
+    report_txt_fpath = os.path.join(output_dirpath, report_name) + '.txt'
+    report_tsv_fpath = os.path.join(output_dirpath, report_name) + '.tsv'
+    report_tex_fpath = os.path.join(output_dirpath, report_name) + '.tex'
+    save_txt(report_txt_fpath, tab)
+    save_tsv(report_tsv_fpath, tab)
+    save_tex(report_tex_fpath, tab)
+    logger.info('    saved to ' + report_txt_fpath + ', ' + os.path.basename(report_tsv_fpath) + \
+             ', and ' + os.path.basename(report_tex_fpath))
 
     if transposed_report_name:
         logger.info('  Transposed version of total report...')
@@ -545,14 +545,14 @@ def save(output_dirpath, report_name, transposed_report_name, order):
                 transposed_table.append({'metricName': all_rows[0]['values'][i], # name of assembly, assuming the first line is assemblies names
                                          'values': values,})
 
-            report_txt_filename = os.path.join(output_dirpath, transposed_report_name) + '.txt'
-            report_tsv_filename = os.path.join(output_dirpath, transposed_report_name) + '.tsv'
-            report_tex_filename = os.path.join(output_dirpath, transposed_report_name) + '.tex'
-            save_txt(report_txt_filename, transposed_table, is_transposed=True)
-            save_tsv(report_tsv_filename, transposed_table, is_transposed=True)
-            save_tex(report_tex_filename, transposed_table, is_transposed=True)
-            logger.info('    saved to ' + report_txt_filename + ', ' + os.path.basename(report_tsv_filename) + \
-                     ', and ' + os.path.basename(report_tex_filename))
+            report_txt_fpath = os.path.join(output_dirpath, transposed_report_name) + '.txt'
+            report_tsv_fpath = os.path.join(output_dirpath, transposed_report_name) + '.tsv'
+            report_tex_fpath = os.path.join(output_dirpath, transposed_report_name) + '.tex'
+            save_txt(report_txt_fpath, transposed_table, is_transposed=True)
+            save_tsv(report_tsv_fpath, transposed_table, is_transposed=True)
+            save_tex(report_tex_fpath, transposed_table, is_transposed=True)
+            logger.info('    saved to ' + report_txt_fpath + ', ' + os.path.basename(report_tsv_fpath) + \
+                     ', and ' + os.path.basename(report_tex_fpath))
 
 
 def save_gage(output_dirpath):

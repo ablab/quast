@@ -9,7 +9,7 @@
 ####################################################################################
 
 # Supported plot formats: .emf, .eps, .pdf, .png, .ps, .raw, .rgba, .svg, .svgz
-plots_format = '.pdf'
+plots_file_ext = '.pdf'
 
 # Feel free to add more colors
 #colors = ['#E41A1C', '#377EB8', '#4DAF4A', '#984EA3', '#FF7F00', '#A65628', '#F781BF', '#FFFF33']  ## 8-color palette
@@ -43,7 +43,7 @@ reference_ls = 'dashed' # ls = line style
 import os
 import itertools
 import logging
-from libs import fastaparser
+from libs import fastaparser, qutils
 from libs import qconfig
 
 from libs.log import get_logger
@@ -64,7 +64,7 @@ except:
 ####################################################################################
 
 
-def get_color_and_ls(color_id, filename):
+def get_color_and_ls(color_id, fpath):
     """
     Returns tuple: color, line style
     """
@@ -73,7 +73,7 @@ def get_color_and_ls(color_id, filename):
     # special case: we have scaffolds and contigs
     if qconfig.scaffolds:
         # contigs and scaffolds should be equally colored but scaffolds should be dashed
-        if os.path.basename(filename) in qconfig.list_of_broken_scaffolds:
+        if os.path.basename(fpath) in qconfig.list_of_broken_scaffolds:
             next_color_id = color_id
         else:
             ls = secondary_line_style
@@ -105,7 +105,7 @@ def y_formatter(ylabel, max_y):
     return ylabel, mkfunc
 
 
-def cumulative_plot(reference, filenames, lists_of_lengths, plot_filename, title, all_pdf=None):
+def cumulative_plot(reference, contigs_fpaths, lists_of_lengths, plot_fpath, title, all_pdf=None):
     if matplotlib_error:
         return
 
@@ -119,7 +119,7 @@ def cumulative_plot(reference, filenames, lists_of_lengths, plot_filename, title
     max_y = 0
     color_id = 0
 
-    for (filename, lenghts) in itertools.izip(filenames, lists_of_lengths):
+    for (contigs_fpath, lenghts) in itertools.izip(contigs_fpaths, lists_of_lengths):
         lenghts.sort(reverse=True)
         # calculate values for the plot
         vals_contig_index = [0]
@@ -139,7 +139,7 @@ def cumulative_plot(reference, filenames, lists_of_lengths, plot_filename, title
             max_x = max(vals_contig_index[-1], max_x)
             max_y = max(max_y, vals_length[-1])
 
-        color, ls, color_id = get_color_and_ls(color_id, filename)
+        color, ls, color_id = get_color_and_ls(color_id, contigs_fpath)
         matplotlib.pyplot.plot(vals_contig_index, vals_length, color=color, lw=line_width, ls=ls)
 
     if reference:
@@ -156,8 +156,8 @@ def cumulative_plot(reference, filenames, lists_of_lengths, plot_filename, title
     box = ax.get_position()
     ax.set_position([box.x0, box.y0 + box.height * 0.2, box.width, box.height * 0.8])
 
-    legend_list = map(os.path.basename, filenames)
-    if qconfig.legend_names and len(filenames) == len(qconfig.legend_names):
+    legend_list = map(qutils.name_from_fpath, contigs_fpaths)
+    if qconfig.legend_names and len(contigs_fpaths) == len(qconfig.legend_names):
         legend_list = qconfig.legend_names[:]
     if reference:
         legend_list += ['Reference']
@@ -183,16 +183,16 @@ def cumulative_plot(reference, filenames, lists_of_lengths, plot_filename, title
 
     #matplotlib.pyplot.ylim([0, int(float(max_y) * 1.1)])
 
-    plot_filename += plots_format
-    matplotlib.pyplot.savefig(plot_filename)
-    logger.info('    saved to ' + plot_filename)
+    plot_fpath += plots_file_ext
+    matplotlib.pyplot.savefig(plot_fpath)
+    logger.info('    saved to ' + plot_fpath)
 
-    if plots_format == '.pdf' and all_pdf:
+    if plots_file_ext == '.pdf' and all_pdf:
         matplotlib.pyplot.savefig(all_pdf, format='pdf')
 
 
 # common routine for Nx-plot and NGx-plot (and probably for others Nyx-plots in the future)
-def Nx_plot(filenames, lists_of_lengths, plot_filename, title='Nx', reference_lengths=[], all_pdf=None):
+def Nx_plot(contigs_fpaths, lists_of_lengths, plot_fpath, title='Nx', reference_lengths=[], all_pdf=None):
     if matplotlib_error:
         return
 
@@ -205,7 +205,7 @@ def Nx_plot(filenames, lists_of_lengths, plot_filename, title='Nx', reference_le
     max_y = 0
     color_id = 0
 
-    for id, (filename, lengths) in enumerate(itertools.izip(filenames, lists_of_lengths)):
+    for id, (contigs_fpath, lengths) in enumerate(itertools.izip(contigs_fpaths, lists_of_lengths)):
         lengths.sort(reverse=True)
         # calculate values for the plot
         vals_Nx = [0.0]
@@ -228,7 +228,7 @@ def Nx_plot(filenames, lists_of_lengths, plot_filename, title='Nx', reference_le
         vals_l.append(0.0)
         max_y = max(max_y, max(vals_l))
 
-        color, ls, color_id = get_color_and_ls(color_id, filename)
+        color, ls, color_id = get_color_and_ls(color_id, contigs_fpath)
         matplotlib.pyplot.plot(vals_Nx, vals_l, color=color, lw=line_width, ls=ls)
 
     if with_title:
@@ -239,8 +239,8 @@ def Nx_plot(filenames, lists_of_lengths, plot_filename, title='Nx', reference_le
     box = ax.get_position()
     ax.set_position([box.x0, box.y0 + box.height * 0.2, box.width, box.height * 0.8])
 
-    legend_list = map(os.path.basename, filenames)
-    if qconfig.legend_names and len(filenames) == len(qconfig.legend_names):
+    legend_list = map(qutils.name_from_fpath, contigs_fpaths)
+    if qconfig.legend_names and len(contigs_fpaths) == len(qconfig.legend_names):
         legend_list = qconfig.legend_names[:]
     # Put a legend below current axis
     try: # for matplotlib <= 2009-12-09
@@ -263,16 +263,16 @@ def Nx_plot(filenames, lists_of_lengths, plot_filename, title='Nx', reference_le
     ax.yaxis.set_major_locator(yLocator)
     ax.xaxis.set_major_locator(xLocator)
 
-    plot_filename += plots_format
-    matplotlib.pyplot.savefig(plot_filename)
-    logger.info('    saved to ' + plot_filename)
+    plot_fpath += plots_file_ext
+    matplotlib.pyplot.savefig(plot_fpath)
+    logger.info('    saved to ' + plot_fpath)
 
-    if plots_format == '.pdf' and all_pdf:
+    if plots_file_ext == '.pdf' and all_pdf:
         matplotlib.pyplot.savefig(all_pdf, format='pdf')
 
 
 # routine for GC-plot    
-def GC_content_plot(reference, filenames, list_of_GC_distributions, plot_filename, all_pdf=None):
+def GC_content_plot(ref_fpath, contigs_fpaths, list_of_GC_distributions, plot_fpath, all_pdf=None):
     if matplotlib_error:
         return
     title = 'GC content'
@@ -286,10 +286,10 @@ def GC_content_plot(reference, filenames, list_of_GC_distributions, plot_filenam
     max_y = 0
     color_id = 0
 
-    allfilenames = filenames
-    if reference:
-        allfilenames = filenames + [reference]
-    for id, (GC_distribution_x, GC_distribution_y) in enumerate(list_of_GC_distributions):
+    all_fpaths = contigs_fpaths
+    if ref_fpath:
+        all_fpaths = contigs_fpaths + [ref_fpath]
+    for i, (GC_distribution_x, GC_distribution_y) in enumerate(list_of_GC_distributions):
         max_y = max(max_y, max(GC_distribution_y))
 
         # for log scale
@@ -298,11 +298,11 @@ def GC_content_plot(reference, filenames, list_of_GC_distributions, plot_filenam
                 GC_distribution_y[id2] = 0.1
 
         # add to plot
-        if reference and (id == len(allfilenames) - 1):
+        if ref_fpath and (i == len(all_fpaths) - 1):
             color = reference_color
             ls = reference_ls
         else:
-            color, ls, color_id = get_color_and_ls(color_id, allfilenames[id])
+            color, ls, color_id = get_color_and_ls(color_id, all_fpaths[i])
 
         matplotlib.pyplot.plot(GC_distribution_x, GC_distribution_y, color=color, lw=line_width, ls=ls)
 
@@ -314,14 +314,14 @@ def GC_content_plot(reference, filenames, list_of_GC_distributions, plot_filenam
     box = ax.get_position()
     ax.set_position([box.x0, box.y0 + box.height * 0.2, box.width, box.height * 0.8])
     # Put a legend below current axis
-    legend_list = map(os.path.basename, allfilenames)
-    if qconfig.legend_names and len(filenames) == len(qconfig.legend_names):
+    legend_list = map(qutils.name_from_fpath, all_fpaths)
+    if qconfig.legend_names and len(contigs_fpaths) == len(qconfig.legend_names):
         legend_list = qconfig.legend_names[:]
-        if reference:
+        if ref_fpath:
             legend_list += ['Reference']
-    elif reference:
+    elif ref_fpath:
         legend_list[-1] = 'Reference'
-    try: # for matplotlib <= 2009-12-09
+    try:  # for matplotlib <= 2009-12-09
         ax.legend(legend_list, loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True,
             shadow=True, ncol=n_columns)
     except ZeroDivisionError:
@@ -344,16 +344,16 @@ def GC_content_plot(reference, filenames, list_of_GC_distributions, plot_filenam
     #ax.invert_xaxis()
     #matplotlib.pyplot.ylim(matplotlib.pyplot.ylim()[::-1])
 
-    plot_filename += plots_format
-    matplotlib.pyplot.savefig(plot_filename)
-    logger.info('    saved to ' + plot_filename)
+    plot_fpath += plots_file_ext
+    matplotlib.pyplot.savefig(plot_fpath)
+    logger.info('    saved to ' + plot_fpath)
 
-    if plots_format == '.pdf' and all_pdf:
+    if plots_file_ext == '.pdf' and all_pdf:
         matplotlib.pyplot.savefig(all_pdf, format='pdf')
 
 
 # common routine for genes and operons cumulative plots
-def genes_operons_plot(reference_value, filenames, files_feature_in_contigs, plot_filename, title, all_pdf=None):
+def genes_operons_plot(reference_value, contigs_fpaths, files_feature_in_contigs, plot_fpath, title, all_pdf=None):
     if matplotlib_error:
         return
 
@@ -367,9 +367,9 @@ def genes_operons_plot(reference_value, filenames, files_feature_in_contigs, plo
     max_y = 0
     color_id = 0
 
-    for filename in filenames:
+    for contigs_fpath in contigs_fpaths:
         # calculate values for the plot
-        feature_in_contigs = files_feature_in_contigs[filename]
+        feature_in_contigs = files_feature_in_contigs[contigs_fpath]
 
         x_vals = range(len(feature_in_contigs) + 1)
         y_vals = [0]
@@ -382,7 +382,7 @@ def genes_operons_plot(reference_value, filenames, files_feature_in_contigs, plo
             max_x = max(x_vals[-1], max_x)
             max_y = max(y_vals[-1], max_y)
 
-        color, ls, color_id = get_color_and_ls(color_id, filename)
+        color, ls, color_id = get_color_and_ls(color_id, contigs_fpath)
         matplotlib.pyplot.plot(x_vals, y_vals, color=color, lw=line_width, ls=ls)
 
     if reference_value:
@@ -400,8 +400,8 @@ def genes_operons_plot(reference_value, filenames, files_feature_in_contigs, plo
     box = ax.get_position()
     ax.set_position([box.x0, box.y0 + box.height * 0.2, box.width, box.height * 0.8])
 
-    legend_list = map(os.path.basename, filenames)
-    if qconfig.legend_names and len(filenames) == len(qconfig.legend_names):
+    legend_list = map(qutils.name_from_fpath, contigs_fpaths)
+    if qconfig.legend_names and len(contigs_fpaths) == len(qconfig.legend_names):
         legend_list = qconfig.legend_names[:]
     if reference_value:
         legend_list += ['Reference']
@@ -417,16 +417,16 @@ def genes_operons_plot(reference_value, filenames, files_feature_in_contigs, plo
     ax.xaxis.set_major_locator(xLocator)
     #matplotlib.pyplot.ylim([0, int(float(max_y) * 1.1)])
 
-    plot_filename += plots_format
-    matplotlib.pyplot.savefig(plot_filename)
-    logger.info('    saved to ' + plot_filename)
+    plot_fpath += plots_file_ext
+    matplotlib.pyplot.savefig(plot_fpath)
+    logger.info('    saved to ' + plot_fpath)
 
-    if plots_format == '.pdf' and all_pdf:
+    if plots_file_ext == '.pdf' and all_pdf:
         matplotlib.pyplot.savefig(all_pdf, format='pdf')
 
 
 # common routine for Histograms    
-def histogram(filenames, values, plot_filename, title='', all_pdf=None, yaxis_title='', bottom_value=None,
+def histogram(contigs_fpaths, values, plot_fpath, title='', all_pdf=None, yaxis_title='', bottom_value=None,
               top_value=None):
     if matplotlib_error:
         return
@@ -461,19 +461,15 @@ def histogram(filenames, values, plot_filename, title='', all_pdf=None, yaxis_ti
     interval = width / 3
     start_pos = interval / 2
 
-    #import numpy
-    #positions = numpy.arange(len(filenames))
-
     color_id = 0
-    for id, (filename, val) in enumerate(itertools.izip(filenames, values)):
-        color, ls, color_id = get_color_and_ls(color_id, filename)
+    for i, (contigs_fpath, val) in enumerate(itertools.izip(contigs_fpaths, values)):
+        color, ls, color_id = get_color_and_ls(color_id, contigs_fpath)
         if ls == primary_line_style:
             hatch = ''
         else:
             hatch = 'x'
-        matplotlib.pyplot.bar(start_pos + (width + interval) * id, val, width, color=color, hatch=hatch)
+        matplotlib.pyplot.bar(start_pos + (width + interval) * i, val, width, color=color, hatch=hatch)
 
-    #matplotlib.pyplot.xticks(positions + width, map(os.path.basename, filenames))
     matplotlib.pyplot.ylabel(yaxis_title, fontsize=axes_fontsize)
     if with_title:
         matplotlib.pyplot.title(title)
@@ -484,25 +480,25 @@ def histogram(filenames, values, plot_filename, title='', all_pdf=None, yaxis_ti
     ax.set_position([box.x0, box.y0 + box.height * 0.2, box.width, box.height * 0.8])
     ax.yaxis.grid(with_grid)
 
-    legend_list = map(os.path.basename, filenames)
-    if qconfig.legend_names and len(filenames) == len(qconfig.legend_names):
+    legend_list = map(qutils.name_from_fpath, contigs_fpaths)
+    if qconfig.legend_names and len(contigs_fpaths) == len(qconfig.legend_names):
         legend_list = qconfig.legend_names[:]
     # Put a legend below current axis
-    try: # for matplotlib <= 2009-12-09
+    try:  # for matplotlib <= 2009-12-09
         ax.legend(legend_list, loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True,
             shadow=True, ncol=n_columns)
     except ZeroDivisionError:
         pass
 
     ax.axes.get_xaxis().set_visible(False)
-    matplotlib.pyplot.xlim([0, start_pos * 2 + width * len(filenames) + interval * (len(filenames) - 1)])
+    matplotlib.pyplot.xlim([0, start_pos * 2 + width * len(contigs_fpaths) + interval * (len(contigs_fpaths) - 1)])
     matplotlib.pyplot.ylim([bottom_value, top_value])
     yLocator = matplotlib.ticker.MaxNLocator(nbins=6, integer=True, steps=[1,5,10])
     ax.yaxis.set_major_locator(yLocator)
 
-    plot_filename += plots_format
-    matplotlib.pyplot.savefig(plot_filename)
-    logger.info('    saved to ' + plot_filename)
+    plot_fpath += plots_file_ext
+    matplotlib.pyplot.savefig(plot_fpath)
+    logger.info('    saved to ' + plot_fpath)
 
-    if plots_format == '.pdf' and all_pdf:
+    if plots_file_ext == '.pdf' and all_pdf:
         matplotlib.pyplot.savefig(all_pdf, format='pdf')

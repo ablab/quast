@@ -27,50 +27,50 @@ def assert_file_exists(fpath, message='', logger=logger):
     return fpath
 
 
-def id_to_str(id):
+def index_to_str(i):
     if qconfig.assemblies_num == 1:
         return ''
     else:
-        return ('%d ' + ('' if id >= 10 else ' ')) % (id + 1)
+        return ('%d ' + ('' if i >= 10 else ' ')) % (i + 1)
 
 
-def uncompress(compressed_fname, uncompressed_fname, logger=logger):
-    fname, ext = os.path.splitext(compressed_fname)
-
-    if ext not in ['.zip', '.bz2', '.gz']:
-        return False
-
-    logger.info('  extracting %s...' % compressed_fname)
-    compressed_file = None
-
-    if ext == '.zip':
-        try:
-            zfile = zipfile.ZipFile(compressed_fname)
-        except Exception, e:
-            logger.error('can\'t open zip file: ' + str(e.message))
-            return False
-
-        names = zfile.namelist()
-        if len(names) == 0:
-            logger.error('zip archive is empty')
-            return False
-
-        if len(names) > 1:
-            logger.warning('zip archive must contain exactly one file. Using %s' % names[0])
-
-        compressed_file = zfile.open(names[0])
-
-    if ext == '.bz2':
-        compressed_file = bz2.BZ2File(compressed_fname)
-
-    if ext == '.gz':
-        compressed_file = gzip.open(compressed_fname)
-
-    with open(uncompressed_fname, 'w') as uncompressed_file:
-        uncompressed_file.write(compressed_file.read())
-
-    logger.info('    extracted!')
-    return True
+# def uncompress(compressed_fname, uncompressed_fname, logger=logger):
+#     fname, ext = os.path.splitext(compressed_fname)
+#
+#     if ext not in ['.zip', '.bz2', '.gz']:
+#         return False
+#
+#     logger.info('  extracting %s...' % compressed_fname)
+#     compressed_file = None
+#
+#     if ext == '.zip':
+#         try:
+#             zfile = zipfile.ZipFile(compressed_fname)
+#         except Exception, e:
+#             logger.error('can\'t open zip file: ' + str(e.message))
+#             return False
+#
+#         names = zfile.namelist()
+#         if len(names) == 0:
+#             logger.error('zip archive is empty')
+#             return False
+#
+#         if len(names) > 1:
+#             logger.warning('zip archive must contain exactly one file. Using %s' % names[0])
+#
+#         compressed_file = zfile.open(names[0])
+#
+#     if ext == '.bz2':
+#         compressed_file = bz2.BZ2File(compressed_fname)
+#
+#     if ext == '.gz':
+#         compressed_file = gzip.open(compressed_fname)
+#
+#     with open(uncompressed_fname, 'w') as uncompressed_file:
+#         uncompressed_file.write(compressed_file.read())
+#
+#     logger.info('    extracted!')
+#     return True
 
 
 def remove_reports(output_dirpath):
@@ -79,9 +79,9 @@ def remove_reports(output_dirpath):
             pattern = os.path.join(output_dirpath, gage_prefix + report_prefix + ".*")
             for f in glob.iglob(pattern):
                 os.remove(f)
-    plots_filename = os.path.join(output_dirpath, qconfig.plots_filename)
-    if os.path.isfile(plots_filename):
-        os.remove(plots_filename)
+    plots_fpath = os.path.join(output_dirpath, qconfig.plots_fname)
+    if os.path.isfile(plots_fpath):
+        os.remove(plots_fpath)
     html_report_aux_dir = os.path.join(output_dirpath, qconfig.html_aux_dir)
     if os.path.isdir(html_report_aux_dir):
         shutil.rmtree(html_report_aux_dir)
@@ -89,3 +89,47 @@ def remove_reports(output_dirpath):
 
 def correct_name(name):
     return re.sub(r'[^\w\._\-+|]', '_', name.strip())
+
+
+def unique_corrected_fpath(fpath):
+    dirpath = os.path.dirname(fpath)
+    fname = os.path.basename(fpath)
+
+    corr_fname = correct_name(fname)
+
+    if corr_fname != fname:
+        if os.path.isfile(os.path.join(dirpath, corr_fname)):
+            i = 1
+            base_corr_fname = corr_fname
+            while os.path.isfile(os.path.join(dirpath, corr_fname)):
+                str_i = ''
+                if i > 1:
+                    str_i = str(i)
+
+                corr_fname = str(base_corr_fname) + '__' + str_i
+                i += 1
+
+    return os.path.join(dirpath, corr_fname)
+
+
+def rm_extentions_for_fasta_file(fname):
+    return splitext_for_fasta_file(fname)[0]
+
+
+def splitext_for_fasta_file(fname):
+    # "contigs.fasta", ".gz"
+    basename_plus_innerext, outer_ext = os.path.splitext(fname)
+
+    if outer_ext not in ['.zip', '.gz', '.gzip', '.bz2', '.bzip2']:
+        basename_plus_innerext, outer_ext = fname, ''  # not a supported archive
+
+    # "contigs", ".fasta"
+    basename, fasta_ext = os.path.splitext(basename_plus_innerext)
+    if fasta_ext not in ['.fa', '.fasta', '.fas', '.seq', '.fna']:
+        basename, fasta_ext = basename_plus_innerext, ''  # not a supported extention, or no extention
+
+    return basename, fasta_ext
+
+
+def name_from_fpath(corr_fpath):
+    return os.path.splitext(os.path.basename(corr_fpath))[0]

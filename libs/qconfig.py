@@ -37,7 +37,7 @@ short_options = "o:G:O:R:t:M:S:J:jehdsa:T:c:ufnm"
 contig_thresholds = "0,1000"
 min_contig = 500
 genes_lengths = "0,300,1500,3000"
-reference = ''
+ref_fpath = ''
 genes = ''
 operons = ''
 with_gage = False
@@ -65,7 +65,7 @@ default_json_dirname = "json"
 
 # names of reports, log, etc.
 corrected_dirname = "corrected_input"
-plots_filename = "plots.pdf"
+plots_fname = "plots.pdf"
 report_prefix = "report"
 transposed_report_prefix = "transposed_report"
 gage_report_prefix = "gage_"

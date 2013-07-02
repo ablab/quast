@@ -8,105 +8,134 @@ import os
 import gzip
 import zipfile
 import bz2
+from libs import qconfig
 import itertools
-# There exists pyfasta package -- http://pypi.python.org/pypi/pyfasta/
-# Use it !
+# There is a pyfasta package -- http://pypi.python.org/pypi/pyfasta/
+# Use it!
+
+from libs.log import get_logger
+logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 
 
-def get_file_handler(filename):
-    file_ext = os.path.splitext(filename)[1]
-    if file_ext == '.gz':
-        file_handler = gzip.open(filename)
-    elif file_ext == '.bz2':
-        file_handler = bz2.BZ2File(filename)
-    elif file_ext == '.zip':
-        zfile = zipfile.ZipFile(filename)
-        names = zfile.namelist()
-        if len(names) == 0:
-            raise IOError('Reading %s: zip archive is empty' % filename)
-        file_handler = zfile.open(names[0])
+def _get_fasta_file_handler(fpath):
+    fasta_file = None
+
+    _, ext = os.path.splitext(fpath)
+
+    if ext in ['.gz', '.gzip']:
+        fasta_file = gzip.open(fpath)
+
+    elif ext in ['.bz2', '.bzip2']:
+        fasta_file = bz2.BZ2File(fpath)
+
+    elif ext in ['.zip']:
+        try:
+            zfile = zipfile.ZipFile(fpath)
+        except Exception, e:
+            logger.error('Can\'t open zip file: ' + str(e.message))
+        else:
+            names = zfile.namelist()
+            if len(names) == 0:
+                logger.error('Reading %s: zip archive is empty' % fpath)
+
+            if len(names) > 1:
+                logger.warning('Zip archive must contain exactly one file. Using %s' % names[0])
+
+            fasta_file = zfile.open(names[0])
+
     else:
-        file_handler = open(filename)
-    return file_handler
+        try:
+            fasta_file = open(fpath)
+        except IOError, e:
+            logger.exception(e)
+
+    return fasta_file
 
 
-def get_lengths_from_fastafile(filename):
+def get_lengths_from_fastafile(fpath):
     """
         Takes filename of FASTA-file
         Returns list of lengths of sequences in FASTA-file
     """
     lengths = []
     l = 0
-    file_handler = get_file_handler(filename)
-    for line in file_handler:
+    fasta_file = _get_fasta_file_handler(fpath)
+    for line in fasta_file:
         if line[0] == '>':
-            if l: # not the first sequence in FASTA
+            if l:  # not the first sequence in FASTA
                 lengths.append(l)
                 l = 0
         else:
             l += len(line.strip())
+
     lengths.append(l)
-    file_handler.close()
+    fasta_file.close()
     return lengths
 
 
-def split_fasta(filename, outputdir):
+def split_fasta(fpath, output_dirpath):
     """
         Takes filename of FASTA-file and directory to output
         Creates separate FASTA-files for each sequence in FASTA-file
         Returns nothing
         Oops, similar to: pyfasta split --header "%(seqid).fasta" original.fasta
     """
-    if not os.path.isdir(outputdir):
-        os.mkdir(outputdir)
+    if not os.path.isdir(output_dirpath):
+        os.mkdir(output_dirpath)
     outFile = None
-    for line in open(filename):
+    for line in open(fpath):
         if line[0] == '>':
             if outFile:
                 outFile.close()
-            outFile = open(os.path.join(outputdir, line[1:].strip() + '.fa'), 'w')
+            outFile = open(os.path.join(output_dirpath, line[1:].strip() + '.fa'), 'w')
         if outFile:
             outFile.write(line)
     if outFile: # if filename is empty
         outFile.close()
 
 
-def read_fasta(filename):
+def read_fasta(fpath):
     """
         Returns list of FASTA entries (in tuples: name, seq)
     """
+    fasta_file = None
     first = True
     seq = ''
     name = ''
-    fasta_file = get_file_handler(filename)
+
+    fasta_file = _get_fasta_file_handler(fpath)
+
     for line in fasta_file:
         if line[0] == '>':
             if not first:
                 yield name, seq
+
             first = False
             name = line.strip()[1:]
             seq = ''
         else:
             seq += line.strip()
+
     if name or seq:
         yield name, seq
+
     fasta_file.close()
 
 
 def print_fasta(fasta):
     for name, seq in fasta:
         print '>%s' % name
-        for i in xrange(0,len(seq),60):
-            print seq[i:i+60]
+        for i in xrange(0, len(seq), 60):
+            print seq[i:i + 60]
 
 
-def write_fasta(filename, fasta, mode='w'):
-    outfile = open(filename, mode)
+def write_fasta(fpath, fasta, mode='w'):
+    outfile = open(fpath, mode)
 
     for name, seq in fasta:
         outfile.write('>%s\n' % name)
-        for i in xrange(0,len(seq),60):
-            outfile.write(seq[i:i+60] + '\n')
+        for i in xrange(0, len(seq), 60):
+            outfile.write(seq[i:i + 60] + '\n')
     outfile.close()
 
 
@@ -116,4 +145,3 @@ def comp(letter):
 
 def rev_comp(seq):
     return ''.join(itertools.imap(comp, seq[::-1]))
-	

@@ -12,10 +12,8 @@ import shutil
 import subprocess
 import tempfile
 
-from libs import reporting
-from libs import qconfig
+from libs import reporting, qconfig, qutils
 from libs.fastaparser import read_fasta, write_fasta
-from qutils import id_to_str
 
 from libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
@@ -45,10 +43,10 @@ def install_genemark(tool_dirpath):
     cp gm_key ~/.gm_key
     (genemark_suite_linux_XX/gmsuite/INSTALL)
     """
-    gm_key_path = os.path.join(tool_dirpath, 'gm_key')
+    gm_key_fpath = os.path.join(tool_dirpath, 'gm_key')
     if not os.path.isfile(os.path.expanduser('~/.gm_key')):
         # GeneMark needs this key to work.
-        shutil.copyfile(gm_key_path, os.path.expanduser('~/.gm_key'))
+        shutil.copyfile(gm_key_fpath, os.path.expanduser('~/.gm_key'))
 
 
 # Gene = namedtuple('Gene', ['contig_id', 'strand', 'left_index', 'right_index', 'seq'])
@@ -75,8 +73,8 @@ def parse_gmhmm_out(out_fpath):
                     seq.append(line.strip())
 
 
-def add_genes_to_gff(genes, gff_path):
-    gff = open(gff_path, 'w')
+def add_genes_to_gff(genes, gff_fpath):
+    gff = open(gff_fpath, 'w')
     gff.write('##gff out for GeneMark.hmm PROKARYOTIC\n')
     gff.write('##gff-version 3\n')
 
@@ -87,17 +85,17 @@ def add_genes_to_gff(genes, gff_path):
     gff.close()
 
 
-def add_genes_to_fasta(genes, fasta_path):
+def add_genes_to_fasta(genes, fasta_fpath):
     def inner():
-        for id, gene in enumerate(genes):
+        for i, gene in enumerate(genes):
             contig_id, strand, left_index, right_index, gene_fasta = gene
             length = right_index - left_index
             gene_id = '>gene_%d|GeneMark.hmm|%d_nt|%s|%d|%d|%s' % (
-                id + 1, length, strand, left_index, right_index, contig_id
+                i + 1, length, strand, left_index, right_index, contig_id
             )
             yield gene_id, gene_fasta
 
-    write_fasta(fasta_path, inner())
+    write_fasta(fasta_fpath, inner())
 
 
 def gmhmm_p_everyGC(tool_dirpath, fasta_fpath, err_fpath):
@@ -143,20 +141,21 @@ def gmhmm_p_metagenomic(tool_dirpath, fasta_fpath, err_fpath):
             return None
 
 
-def predict_genes(id, fasta_fpath, gene_lengths, out_dirpath, tool_dirpath, gmhmm_p_function):
-    logger.info('  ' + id_to_str(id) + os.path.basename(fasta_fpath))
+def predict_genes(i, contigs_fpath, gene_lengths, out_dirpath, tool_dirpath, gmhmm_p_function):
+    logger.info('  ' + qutils.index_to_str(i) +
+                qutils.name_from_fpath(contigs_fpath))
 
-    out_fname = os.path.basename(fasta_fpath)
-    err_fpath = os.path.join(out_dirpath, out_fname + '_genemark.stderr')
+    assembly_name = qutils.name_from_fpath(contigs_fpath)
+    err_fpath = os.path.join(out_dirpath, assembly_name + '_genemark.stderr')
 
-    genes = gmhmm_p_function(tool_dirpath, fasta_fpath, err_fpath)
+    genes = gmhmm_p_function(tool_dirpath, contigs_fpath, err_fpath)
 
     if not genes:
         unique_count = None
         count = [None] * len(gene_lengths)
 
     else:
-        out_gff_fpath = out_fname + '_genes.gff'
+        out_gff_fpath = os.path.join(out_dirpath, assembly_name + '_genes.gff')
         add_genes_to_gff(genes, out_gff_fpath)
         # out_fasta_path = out_name + '_genes.fasta'
         # add_genes_to_fasta(genes, out_fasta_fpath)
@@ -165,10 +164,10 @@ def predict_genes(id, fasta_fpath, gene_lengths, out_dirpath, tool_dirpath, gmhm
         unique_count = len(set([gene[4] for gene in genes]))
         total_count = len(genes)
 
-        logger.info('  ' + id_to_str(id) + '  Genes = ' + str(unique_count) + ' unique, ' + str(total_count) + ' total')
-        logger.info('  ' + id_to_str(id) + '  Predicted genes (GFF): ' + out_gff_fpath)
+        logger.info('  ' + qutils.index_to_str(i) + '  Genes = ' + str(unique_count) + ' unique, ' + str(total_count) + ' total')
+        logger.info('  ' + qutils.index_to_str(i) + '  Predicted genes (GFF): ' + out_gff_fpath)
 
-        logger.info('  ' + id_to_str(id) + 'Gene prediction is finished.')
+        logger.info('  ' + qutils.index_to_str(i) + 'Gene prediction is finished.')
 
     return unique_count, count
 

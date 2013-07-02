@@ -9,15 +9,15 @@ import os
 import itertools
 import fastaparser
 from libs.html_saver import json_saver
-from libs import qconfig
-from qutils import id_to_str
+from libs import qconfig, qutils
+from qutils import index_to_str
 import reporting
 
 from libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 
 
-def GC_content(filename):  
+def GC_content(contigs_fpath):
     """
        Returns percent of GC for assembly and GC distribution: (list of GC%, list of # windows)
     """
@@ -26,7 +26,7 @@ def GC_content(filename):
     GC_bin_num = int(100 / qconfig.GC_bin_size) + 1
     GC_distribution_x = [i * qconfig.GC_bin_size for i in range(0, GC_bin_num)] # list of X-coordinates, i.e. GC %
     GC_distribution_y = [0] * GC_bin_num # list of Y-coordinates, i.e. # windows with GC % = x
-    for name, seq_full in fastaparser.read_fasta(filename): # in tuples: (name, seq)
+    for name, seq_full in fastaparser.read_fasta(contigs_fpath): # in tuples: (name, seq)
         total_GC_amount += seq_full.count("G") + seq_full.count("C")
         total_contig_length += len(seq_full) - seq_full.count("N")
         n = 100 # blocks of length 100
@@ -42,7 +42,7 @@ def GC_content(filename):
             GC_distribution_y[int(int(GC_percent / qconfig.GC_bin_size) * qconfig.GC_bin_size)] += 1
 
 #    GC_info = []
-#    for name, seq_full in fastaparser.read_fasta(filename): # in tuples: (name, seq)
+#    for name, seq_full in fastaparser.read_fasta(contigs_fpath): # in tuples: (name, seq)
 #        total_GC_amount += seq_full.count("G") + seq_full.count("C")
 #        total_contig_length += len(seq_full) - seq_full.count("N")
 #        n = 100 # blocks of length 100
@@ -74,20 +74,20 @@ def GC_content(filename):
     return total_GC, (GC_distribution_x, GC_distribution_y)
 
 
-def do(reference, filenames, output_dir, all_pdf, draw_plots, json_output_dir, results_dir):
+def do(ref_fpath, contigs_fpaths, output_dirpath, all_pdf, draw_plots, json_output_dir, results_dir):
     logger.print_timestamp()
     logger.info("Running Basic statistics processor...")
     
-    if not os.path.isdir(output_dir):
-        os.mkdir(output_dir)
+    if not os.path.isdir(output_dirpath):
+        os.mkdir(output_dirpath)
 
     reference_length = None
-    if reference:
-        reference_length = sum(fastaparser.get_lengths_from_fastafile(reference))
-        reference_GC, reference_GC_distribution = GC_content(reference)
+    if ref_fpath:
+        reference_length = sum(fastaparser.get_lengths_from_fastafile(ref_fpath))
+        reference_GC, reference_GC_distribution = GC_content(ref_fpath)
 
         logger.info('  Reference genome:')
-        logger.info('    ' + os.path.basename(reference) + ', Reference length = ' + str(reference_length) + ', Reference GC % = ' + '%.2f' % reference_GC)
+        logger.info('    ' + os.path.basename(ref_fpath) + ', Reference length = ' + str(reference_length) + ', Reference GC % = ' + '%.2f' % reference_GC)
     elif qconfig.estimated_reference_size:
         reference_length = qconfig.estimated_reference_size
         logger.info('  Estimated reference length = ' + str(reference_length))
@@ -105,12 +105,12 @@ def do(reference, filenames, output_dir, all_pdf, draw_plots, json_output_dir, r
     logger.info('  Contigs files: ')
     lists_of_lengths = []
     numbers_of_Ns = []
-    for id, filename in enumerate(filenames):
-        logger.info('    ' + id_to_str(id) + os.path.basename(filename))
-        #lists_of_lengths.append(fastaparser.get_lengths_from_fastafile(filename))
+    for id, contigs_fpath in enumerate(contigs_fpaths):
+        logger.info('    ' + qutils.index_to_str(id) + qutils.name_from_fpath(contigs_fpath))
+        #lists_of_lengths.append(fastaparser.get_lengths_from_fastafile(contigs_fpath))
         list_of_length = []
         number_of_Ns = 0
-        for (name, seq) in fastaparser.read_fasta(filename):
+        for (name, seq) in fastaparser.read_fasta(contigs_fpath):
             list_of_length.append(len(seq))
             number_of_Ns += seq.count('N')
         lists_of_lengths.append(list_of_length)
@@ -118,11 +118,11 @@ def do(reference, filenames, output_dir, all_pdf, draw_plots, json_output_dir, r
 
     # saving lengths to JSON
     if json_output_dir:
-        json_saver.save_contigs_lengths(json_output_dir, filenames, lists_of_lengths)
+        json_saver.save_contigs_lengths(json_output_dir, contigs_fpaths, lists_of_lengths)
 
     if qconfig.html_report:
         from libs.html_saver import html_saver
-        html_saver.save_contigs_lengths(results_dir, filenames, lists_of_lengths)
+        html_saver.save_contigs_lengths(results_dir, contigs_fpaths, lists_of_lengths)
 
     ########################################################################
 
@@ -130,8 +130,8 @@ def do(reference, filenames, output_dir, all_pdf, draw_plots, json_output_dir, r
 
     list_of_GC_distributions = []
     import N50
-    for id, (filename, lengths_list, number_of_Ns) in enumerate(itertools.izip(filenames, lists_of_lengths, numbers_of_Ns)):
-        report = reporting.get(filename)
+    for id, (contigs_fpath, lengths_list, number_of_Ns) in enumerate(itertools.izip(contigs_fpaths, lists_of_lengths, numbers_of_Ns)):
+        report = reporting.get(contigs_fpath)
         n50, l50 = N50.N50_and_L50(lengths_list)
         ng50, lg50 = None, None
         if reference_length:
@@ -141,14 +141,15 @@ def do(reference, filenames, output_dir, all_pdf, draw_plots, json_output_dir, r
         if reference_length:
             ng75, lg75 = N50.NG50_and_LG50(lengths_list, reference_length, 75)
         total_length = sum(lengths_list)
-        total_GC, GC_distribution = GC_content(filename)
+        total_GC, GC_distribution = GC_content(contigs_fpath)
         list_of_GC_distributions.append(GC_distribution)
-        logger.info('    ' + id_to_str(id) + os.path.basename(filename) + \
-            ', N50 = ' + str(n50) + \
-            ', L50 = ' + str(l50) + \
-            ', Total length = ' + str(total_length) + \
-            ', GC % = ' + ('%.2f' % total_GC if total_GC is not None else 'undefined') + \
-            ', # N\'s per 100 kbp = ' + ' %.2f' % (float(number_of_Ns) * 100000.0 / float(total_length)) )
+        logger.info('    ' + qutils.index_to_str(id) +
+                    qutils.name_from_fpath(contigs_fpath) + \
+                    ', N50 = ' + str(n50) + \
+                    ', L50 = ' + str(l50) + \
+                    ', Total length = ' + str(total_length) + \
+                    ', GC % = ' + ('%.2f' % total_GC if total_GC is not None else 'undefined') + \
+                    ', # N\'s per 100 kbp = ' + ' %.2f' % (float(number_of_Ns) * 100000.0 / float(total_length)) )
 
         report.add_field(reporting.Fields.N50, n50)
         report.add_field(reporting.Fields.L50, l50)
@@ -166,36 +167,36 @@ def do(reference, filenames, output_dir, all_pdf, draw_plots, json_output_dir, r
         report.add_field(reporting.Fields.GC, ('%.2f' % total_GC if total_GC else None))
         report.add_field(reporting.Fields.UNCALLED, number_of_Ns)
         report.add_field(reporting.Fields.UNCALLED_PERCENT, ('%.2f' % (float(number_of_Ns) * 100000.0 / float(total_length))))
-        if reference:
+        if ref_fpath:
             report.add_field(reporting.Fields.REFLEN, int(reference_length))
-            report.add_field(reporting.Fields.REFGC, '%.2f' %  reference_GC)
+            report.add_field(reporting.Fields.REFGC, '%.2f' % reference_GC)
         elif reference_length:
             report.add_field(reporting.Fields.ESTREFLEN, int(reference_length))
 
     if json_output_dir:
-        json_saver.save_GC_info(json_output_dir, filenames, list_of_GC_distributions)
+        json_saver.save_GC_info(json_output_dir, contigs_fpaths, list_of_GC_distributions)
 
     if qconfig.html_report:
         from libs.html_saver import html_saver
-        html_saver.save_GC_info(results_dir, filenames, list_of_GC_distributions)
+        html_saver.save_GC_info(results_dir, contigs_fpaths, list_of_GC_distributions)
 
     if draw_plots:
         import plotter
         ########################################################################import plotter
-        plotter.cumulative_plot(reference, filenames, lists_of_lengths, output_dir + '/cumulative_plot', 'Cumulative length', all_pdf)
+        plotter.cumulative_plot(ref_fpath, contigs_fpaths, lists_of_lengths, output_dirpath + '/cumulative_plot', 'Cumulative length', all_pdf)
     
         ########################################################################
         # Drawing GC content plot...
         list_of_GC_distributions_with_ref = list_of_GC_distributions
-        if reference:
+        if ref_fpath:
             list_of_GC_distributions_with_ref.append(reference_GC_distribution)
         # Drawing cumulative plot...
-        plotter.GC_content_plot(reference, filenames, list_of_GC_distributions_with_ref, output_dir + '/GC_content_plot', all_pdf)
+        plotter.GC_content_plot(ref_fpath, contigs_fpaths, list_of_GC_distributions_with_ref, output_dirpath + '/GC_content_plot', all_pdf)
 
         ########################################################################
         # Drawing Nx and NGx plots...
-        plotter.Nx_plot(filenames, lists_of_lengths, output_dir + '/Nx_plot', 'Nx', [], all_pdf)
+        plotter.Nx_plot(contigs_fpaths, lists_of_lengths, output_dirpath + '/Nx_plot', 'Nx', [], all_pdf)
         if reference_length:
-            plotter.Nx_plot(filenames, lists_of_lengths, output_dir + '/NGx_plot', 'NGx', [reference_length for i in range(len(filenames))], all_pdf)
+            plotter.Nx_plot(contigs_fpaths, lists_of_lengths, output_dirpath + '/NGx_plot', 'NGx', [reference_length for i in range(len(contigs_fpaths))], all_pdf)
 
     logger.info('Done.')

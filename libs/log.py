@@ -11,15 +11,15 @@ from libs import qconfig
 
 import logging
 
-loggers = {}
+_loggers = {}
 
 
 def get_logger(name):
-    if name in loggers.keys():
-        return loggers[name]
+    if name in _loggers.keys():
+        return _loggers[name]
     else:
-        loggers[name] = QLogger(name)
-        return loggers[name]
+        _loggers[name] = QLogger(name)
+        return _loggers[name]
 
 
 class QLogger(object):
@@ -42,7 +42,7 @@ class QLogger(object):
                 self._logger.removeHandler(handler)
 
         console_handler = logging.StreamHandler(sys.stdout, )
-        console_handler.setFormatter(logging.Formatter(indent_val * '\t' + '%(message)s'))
+        console_handler.setFormatter(logging.Formatter(indent_val * '  ' + '%(message)s'))
         console_handler.setLevel(logging.DEBUG if debug else logging.INFO)
         self._logger.addHandler(console_handler)
 
@@ -67,7 +67,6 @@ class QLogger(object):
         self._start_time = self.print_timestamp('Started: ')
         self._logger.info('')
         self._logger.info('Logging to ' + self._log_fpath)
-        self._logger.info('')
 
     def finish_up(self):
         self._logger.info('Log saved to ' + self._log_fpath)
@@ -78,15 +77,16 @@ class QLogger(object):
         for handler in self._logger.handlers:
             self._logger.removeHandler(handler)
 
-        del loggers[self._name]
+        global _loggers
+        del _loggers[self._name]
 
-    def debug(self, message, indent=''):
+    def debug(self, message='', indent=''):
         self._logger.debug(indent + message)
 
-    def info(self, message, indent=''):
+    def info(self, message='', indent=''):
         self._logger.info(indent + message)
 
-    def info_to_file(self, message, indent=''):
+    def info_to_file(self, message='', indent=''):
         for handler in self._logger.handlers:
             if isinstance(handler, logging.FileHandler):
                 self._logger.removeHandler(handler)
@@ -100,14 +100,17 @@ class QLogger(object):
         self._logger.addHandler(file_handler)
 
     def notice(self, message='', indent=''):
-        self._logger.info(indent + 'NOTICE: ' + str(message))
+        self._logger.info(indent + ('NOTICE: ' + str(message) if message else ''))
 
     def warning(self, message='', indent=''):
-        self._logger.warning(indent + 'WARNING! ' + str(message))
+        self._logger.warning(indent + ('WARNING: ' + str(message) if message else ''))
 
     def error(self, message='', exit_with_code=0, to_stderr=False, indent=''):
-        msg = indent + 'ERROR! ' + str(message)
-        msg = '\n' + msg + '\n'
+        if message:
+            msg = indent + 'ERROR! ' + str(message)
+            msg = '\n' + msg + '\n'
+        else:
+            msg = ''
 
         self._logger.error(msg)
 
@@ -135,11 +138,11 @@ class QLogger(object):
         return now
 
     def print_version(self, to_stderr=False):
-        version_filename = os.path.join(qconfig.LIBS_LOCATION, '..', 'VERSION')
+        version_fpath = os.path.join(qconfig.LIBS_LOCATION, '..', 'VERSION')
         version = "unknown"
         build = "unknown"
-        if os.path.isfile(version_filename):
-            version_file = open(version_filename)
+        if os.path.isfile(version_fpath):
+            version_file = open(version_fpath)
             version = version_file.readline()
             if version:
                 version = version.strip()

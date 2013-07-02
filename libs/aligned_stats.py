@@ -8,43 +8,45 @@ import logging
 import os
 import itertools
 import fastaparser
-from libs import reporting, qconfig
-from qutils import id_to_str
+from libs import reporting, qconfig, qutils
 
 from libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 
 
 ######## MAIN ############
-def do(reference, filenames, aligned_lengths_lists, nucmer_dir, output_dir, all_pdf, draw_plots, json_output_dir, results_dir):
+def do(ref_fpath, contigs_fpaths, aligned_lengths_lists,
+       nucmer_dirpath, output_dirpath, all_pdf, draw_plots,
+       json_output_dirpath, results_dirpath):
 
-    if not os.path.isdir(output_dir):
-        os.mkdir(output_dir)
+    if not os.path.isdir(output_dirpath):
+        os.mkdir(output_dirpath)
 
     ########################################################################
 
-    nucmer_prefix = os.path.join(nucmer_dir, 'nucmer_output')
+    nucmer_prefix = os.path.join(nucmer_dirpath, 'nucmer_output')
 
     ########################################################################
     report_dict = {'header': []}
-    for filename in filenames:
-        report_dict[os.path.basename(filename)] = []
+    for contigs_fpath in contigs_fpaths:
+        report_dict[qutils.name_from_fpath(contigs_fpath)] = []
 
     ########################################################################
     logger.print_timestamp()
     logger.info('Running NA-NGA tool...')
 
-    reference_length = sum(fastaparser.get_lengths_from_fastafile(reference))
+    reference_length = sum(fastaparser.get_lengths_from_fastafile(ref_fpath))
     assembly_lengths = []
-    for filename in filenames:
-        assembly_lengths.append(sum(fastaparser.get_lengths_from_fastafile(filename)))
+    for contigs_fpath in contigs_fpaths:
+        assembly_lengths.append(sum(fastaparser.get_lengths_from_fastafile(contigs_fpath)))
 
     ########################################################################
 
     logger.info('  Calculating NA50 and NGA50...')
 
     import N50
-    for id, (filename, lens, assembly_len) in enumerate(itertools.izip(filenames, aligned_lengths_lists, assembly_lengths)):
+    for i, (contigs_fpath, lens, assembly_len) in enumerate(
+            itertools.izip(contigs_fpaths, aligned_lengths_lists, assembly_lengths)):
         na50 = N50.NG50(lens, assembly_len)
         nga50 = N50.NG50(lens, reference_length)
         na75 = N50.NG50(lens, assembly_len, 75)
@@ -53,13 +55,15 @@ def do(reference, filenames, aligned_lengths_lists, nucmer_dir, output_dir, all_
         lga50 = N50.LG50(lens, reference_length)
         la75 = N50.LG50(lens, assembly_len, 75)
         lga75 = N50.LG50(lens, reference_length, 75)
-        logger.info('    ' + id_to_str(id) + os.path.basename(filename) +
+        logger.info('    ' +
+                    qutils.index_to_str(i) +
+                    qutils.name_from_fpath(contigs_fpath) +
                  ', Largest alignment = ' + str(max(lens)) +
                  ', NA50 = ' + str(na50) +
                  ', NGA50 = ' + str(nga50) +
                  ', LA50 = ' + str(la50) +
                  ', LGA50 = ' + str(lga50))
-        report = reporting.get(filename)
+        report = reporting.get(contigs_fpath)
         report.add_field(reporting.Fields.LARGALIGN, max(lens))
         report.add_field(reporting.Fields.NA50, na50)
         report.add_field(reporting.Fields.NGA50, nga50)
@@ -73,25 +77,25 @@ def do(reference, filenames, aligned_lengths_lists, nucmer_dir, output_dir, all_
     ########################################################################
 
     # saving to JSON
-    if json_output_dir:
+    if json_output_dirpath:
         from libs.html_saver import json_saver
-        json_saver.save_aligned_contigs_lengths(json_output_dir, filenames, aligned_lengths_lists)
-        json_saver.save_assembly_lengths(json_output_dir, filenames, assembly_lengths)
+        json_saver.save_aligned_contigs_lengths(json_output_dirpath, contigs_fpaths, aligned_lengths_lists)
+        json_saver.save_assembly_lengths(json_output_dirpath, contigs_fpaths, assembly_lengths)
 
     # saving to html
     if qconfig.html_report:
         from libs.html_saver import html_saver
-        html_saver.save_aligned_contigs_lengths(results_dir, filenames, aligned_lengths_lists)
-        html_saver.save_assembly_lengths(results_dir, filenames, assembly_lengths)
+        html_saver.save_aligned_contigs_lengths(results_dirpath, contigs_fpaths, aligned_lengths_lists)
+        html_saver.save_assembly_lengths(results_dirpath, contigs_fpaths, assembly_lengths)
 
     if draw_plots:
         # Drawing cumulative plot (aligned contigs)...
         import plotter
-        plotter.cumulative_plot(reference, filenames, aligned_lengths_lists, output_dir + '/cumulative_plot', 'Cumulative length (aligned contigs)', all_pdf)
+        plotter.cumulative_plot(ref_fpath, contigs_fpaths, aligned_lengths_lists, output_dirpath + '/cumulative_plot', 'Cumulative length (aligned contigs)', all_pdf)
 
         # Drawing NAx and NGAx plots...
-        plotter.Nx_plot(filenames, aligned_lengths_lists, output_dir + '/NAx_plot', 'NAx', assembly_lengths, all_pdf)
-        plotter.Nx_plot(filenames, aligned_lengths_lists, output_dir + '/NGAx_plot', 'NGAx', [reference_length for i in range(len(filenames))], all_pdf)
+        plotter.Nx_plot(contigs_fpaths, aligned_lengths_lists, output_dirpath + '/NAx_plot', 'NAx', assembly_lengths, all_pdf)
+        plotter.Nx_plot(contigs_fpaths, aligned_lengths_lists, output_dirpath + '/NGAx_plot', 'NGAx', [reference_length for i in range(len(contigs_fpaths))], all_pdf)
 
     logger.info('  Done.')
     return report_dict

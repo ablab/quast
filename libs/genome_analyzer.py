@@ -8,9 +8,9 @@ import logging
 import os
 import fastaparser
 import genes_parser
-from libs import reporting, qconfig
+from libs import reporting, qconfig, qutils
 from libs.html_saver import json_saver
-from qutils import id_to_str
+from qutils import index_to_str
 
 from libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
@@ -68,19 +68,19 @@ def chromosomes_names_dict(feature, regions, chr_names):
     return region_2_chr_name
 
 
-def do(reference, filenames, nucmer_dir, output_dir, genes_filename, operons_filename, all_pdf, draw_plots, json_output_dir, results_dir):
+def do(ref_fpath, contigs_fpaths, nucmer_dir, output_dirpath, genes_fpath, operons_fpath, all_pdf, draw_plots, json_output_dir, results_dir):
     # some important constants
     nucmer_prefix = os.path.join(nucmer_dir, 'nucmer_output')
 
     logger.print_timestamp()
     logger.info('Running Genome analyzer...')
 
-    if not os.path.isdir(output_dir):
-        os.mkdir(output_dir)
+    if not os.path.isdir(output_dirpath):
+        os.mkdir(output_dirpath)
 
     reference_chromosomes = {}
     genome_size = 0
-    for name, seq in fastaparser.read_fasta(reference):
+    for name, seq in fastaparser.read_fasta(ref_fpath):
         chr_name = name.split()[0]
         chr_len = len(seq)
         genome_size += chr_len
@@ -95,8 +95,8 @@ def do(reference, filenames, nucmer_dir, output_dir, genes_filename, operons_fil
     #ref_file.close()
 
     # RESULTS file
-    result_filename = output_dir + '/genome_info.txt'
-    res_file = open(result_filename, 'w')
+    result_fpath = output_dirpath + '/genome_info.txt'
+    res_file = open(result_fpath, 'w')
     res_file.write('reference chromosomes:\n')
     for chr_name, chr_len in reference_chromosomes.iteritems():
         res_file.write('\t' + chr_name + ' (' + str(chr_len) + ' bp)\n')
@@ -116,13 +116,13 @@ def do(reference, filenames, nucmer_dir, output_dir, genes_filename, operons_fil
     genes_container = FeatureContainer()
     operons_container = FeatureContainer()
 
-    for feature_container, feature_filename, feature_name in [
-            (genes_container, genes_filename, 'gene'),
-            (operons_container, operons_filename, 'operon')]:
+    for feature_container, feature_fpath, feature_name in [
+            (genes_container, genes_fpath, 'gene'),
+            (operons_container, operons_fpath, 'operon')]:
 
-        feature_container.region_list = genes_parser.get_genes_from_file(feature_filename, feature_name)
+        feature_container.region_list = genes_parser.get_genes_from_file(feature_fpath, feature_name)
         if len(feature_container.region_list) == 0:
-            if feature_filename:
+            if feature_fpath:
                 logger.warning('No ' + feature_name + 's were loaded.', indent='  ')
                 res_file.write(feature_name + 's loaded: ' + 'None' + '\n')
             else:
@@ -135,8 +135,8 @@ def do(reference, filenames, nucmer_dir, output_dir, genes_filename, operons_fil
             feature_container.chr_names_dict = chromosomes_names_dict(feature_name, feature_container.region_list, reference_chromosomes.keys())
             feature_container.full_found = []
 
-    for filename in filenames:
-        report = reporting.get(filename)
+    for contigs_fpath in contigs_fpaths:
+        report = reporting.get(contigs_fpath)
         report.add_field(reporting.Fields.REF_GENES, len(genes_container.region_list))
         report.add_field(reporting.Fields.REF_OPERONS, len(operons_container.region_list))
 
@@ -156,21 +156,22 @@ def do(reference, filenames, nucmer_dir, output_dir, genes_filename, operons_fil
     genome_mapped = []
 
     # process all contig files  
-    for id, filename in enumerate(filenames):
-        logger.info('  ' + id_to_str(id) + os.path.basename(filename))
+    for i, contigs_fpath in enumerate(contigs_fpaths):
+        assembly_name = qutils.name_from_fpath(contigs_fpath)
+        logger.info('  ' + index_to_str(i) + assembly_name)
 
-        nucmer_base_filename = os.path.join(nucmer_prefix, os.path.basename(filename) + '.coords')
+        nucmer_base_fpath = os.path.join(nucmer_prefix, assembly_name + '.coords')
         if qconfig.use_all_alignments:
-            nucmer_filename = nucmer_base_filename
+            nucmer_fpath = nucmer_base_fpath
         else:
-            nucmer_filename = nucmer_base_filename + '.filtered'
+            nucmer_fpath = nucmer_base_fpath + '.filtered'
 
-        if not os.path.isfile(nucmer_filename):
-            logger.error('Nucmer\'s coords file (' + nucmer_filename + ') not found! Try to restart QUAST.',
+        if not os.path.isfile(nucmer_fpath):
+            logger.error('Nucmer\'s coords file (' + nucmer_fpath + ') not found! Try to restart QUAST.',
                   indent='  ')
             #continue
 
-        coordfile = open(nucmer_filename, 'r')
+        coordfile = open(nucmer_fpath, 'r')
         for line in coordfile:
             if line.startswith('='):
                 break
@@ -188,17 +189,17 @@ def do(reference, filenames, nucmer_dir, output_dir, genes_filename, operons_fil
         # for gene finding
         aligned_blocks = {} # contig_name --> list of AlignedBlock
         # for cumulative plots
-        files_genes_in_contigs[filename] = []  # i-th element is the number of genes in i-th contig (sorted by length)
-        files_operons_in_contigs[filename] = []
+        files_genes_in_contigs[contigs_fpath] = []  # i-th element is the number of genes in i-th contig (sorted by length)
+        files_operons_in_contigs[contigs_fpath] = []
 
         # for cumulative plots:
-        contig_tuples = fastaparser.read_fasta(filename)  # list of FASTA entries (in tuples: name, seq)
+        contig_tuples = fastaparser.read_fasta(contigs_fpath)  # list of FASTA entries (in tuples: name, seq)
         contig_tuples = sorted(contig_tuples, key=lambda contig: len(contig[1]), reverse=True)
         sorted_contigs_names = [name for (name, seq) in contig_tuples]
         for name in sorted_contigs_names:
             aligned_blocks[name] = []
-            files_genes_in_contigs[filename].append(0)
-            files_operons_in_contigs[filename].append(0)
+            files_genes_in_contigs[contigs_fpath].append(0)
+            files_operons_in_contigs[contigs_fpath].append(0)
 
         for line in coordfile:
             if line.strip() == '':
@@ -208,7 +209,7 @@ def do(reference, filenames, nucmer_dir, output_dir, genes_filename, operons_fil
             contig_name = line.split()[12].strip()
             chr_name = line.split()[11].strip()
             if chr_name not in genome_mapping:
-                logger.error("Something went wrong and chromosome names in your coords file (" + nucmer_base_filename + ") "
+                logger.error("Something went wrong and chromosome names in your coords file (" + nucmer_base_fpath + ") "
                       "differ from the names in the reference. Try to remove the file and restart QUAST.")
                 continue
             aligned_blocks[contig_name].append(AlignedBlock(seqname=chr_name, start=s1, end=e1))
@@ -225,8 +226,8 @@ def do(reference, filenames, nucmer_dir, output_dir, genes_filename, operons_fil
         # counting genome coverage and gaps number
         covered_bp = 0
         gaps_count = 0
-        gaps_filename = os.path.join(output_dir, os.path.basename(filename) + '_gaps.txt')
-        gaps_file = open(gaps_filename, 'w')
+        gaps_fpath = os.path.join(output_dirpath, assembly_name + '_gaps.txt')
+        gaps_file = open(gaps_fpath, 'w')
         for chr_name, chr_len in reference_chromosomes.iteritems():
             print >>gaps_file, chr_name
             cur_gap_size = 0
@@ -246,7 +247,7 @@ def do(reference, filenames, nucmer_dir, output_dir, genes_filename, operons_fil
 
         gaps_file.close()
 
-        report = reporting.get(filename)
+        report = reporting.get(contigs_fpath)
 
         genome_coverage = float(covered_bp) * 100 / float(genome_size)
         # calculating duplication ratio
@@ -257,15 +258,21 @@ def do(reference, filenames, nucmer_dir, output_dir, genes_filename, operons_fil
                              ((genome_coverage / 100.0) * float(genome_size))
 
         res_file.write('  %-20s  | %-20s| %-18s| %-12s|'
-            % (os.path.basename(filename), genome_coverage, duplication_ratio, str(gaps_count)))
+            % (assembly_name, genome_coverage, duplication_ratio, str(gaps_count)))
         report.add_field(reporting.Fields.MAPPEDGENOME, '%.3f' % genome_coverage)
         report.add_field(reporting.Fields.DUPLICATION_RATIO, '%.3f' % duplication_ratio)
         genome_mapped.append(genome_coverage)
 
          # finding genes and operons
         for feature_container, feature_in_contigs, field, suffix in [
-                (genes_container, files_genes_in_contigs[filename], reporting.Fields.GENES, '_genes.txt'),
-                (operons_container, files_operons_in_contigs[filename], reporting.Fields.OPERONS, '_operons.txt')]:
+                (genes_container,
+                 files_genes_in_contigs[contigs_fpath],
+                 reporting.Fields.GENES,
+                 '_genes.txt'),
+                (operons_container,
+                 files_operons_in_contigs[contigs_fpath],
+                 reporting.Fields.OPERONS,
+                 '_operons.txt')]:
 
             if not feature_container.region_list:
                 res_file.write(' %-10s| %-10s|' % ('None', 'None'))
@@ -273,8 +280,8 @@ def do(reference, filenames, nucmer_dir, output_dir, genes_filename, operons_fil
 
             total_full = 0
             total_partial = 0
-            found_filename = os.path.join(output_dir, os.path.basename(filename) + suffix)
-            found_file = open(found_filename, 'w')
+            found_fpath = os.path.join(output_dirpath, assembly_name + suffix)
+            found_file = open(found_fpath, 'w')
             print >>found_file, '%s\t\t%s\t%s' % ('ID or #', 'Start', 'End')
             print >>found_file, '============================'
             for i, region in enumerate(feature_container.region_list):
@@ -300,10 +307,10 @@ def do(reference, filenames, nucmer_dir, output_dir, genes_filename, operons_fil
                                     total_partial -= 1
                                 feature_container.found_list[i] = 1
                                 total_full += 1
-                                id = str(region.id)
-                                if id == 'None':
-                                    id = '# ' + str(region.number + 1)
-                                print >>found_file, '%s\t\t%d\t%d' % (id, region.start, region.end)
+                                i = str(region.id)
+                                if i == 'None':
+                                    i = '# ' + str(region.number + 1)
+                                print >>found_file, '%s\t\t%d\t%d' % (i, region.start, region.end)
                                 feature_in_contigs[contig_id] += 1  # inc number of found genes/operons in id-th contig
 
                                 cur_feature_is_found = True
@@ -340,31 +347,31 @@ def do(reference, filenames, nucmer_dir, output_dir, genes_filename, operons_fil
     # saving json
     if json_output_dir:
         if genes_container.region_list:
-            json_saver.save_features_in_contigs(json_output_dir, filenames, 'genes', files_genes_in_contigs, ref_genes_num)
+            json_saver.save_features_in_contigs(json_output_dir, contigs_fpaths, 'genes', files_genes_in_contigs, ref_genes_num)
         if operons_container.region_list:
-            json_saver.save_features_in_contigs(json_output_dir, filenames, 'operons', files_operons_in_contigs, ref_operons_num)
+            json_saver.save_features_in_contigs(json_output_dir, contigs_fpaths, 'operons', files_operons_in_contigs, ref_operons_num)
 
     if qconfig.html_report:
         from libs.html_saver import html_saver
         if genes_container.region_list:
-            html_saver.save_features_in_contigs(results_dir, filenames, 'genes', files_genes_in_contigs, ref_genes_num)
+            html_saver.save_features_in_contigs(results_dir, contigs_fpaths, 'genes', files_genes_in_contigs, ref_genes_num)
         if operons_container.region_list:
-            html_saver.save_features_in_contigs(results_dir, filenames, 'operons', files_operons_in_contigs, ref_operons_num)
+            html_saver.save_features_in_contigs(results_dir, contigs_fpaths, 'operons', files_operons_in_contigs, ref_operons_num)
 
     if draw_plots:
         # cumulative plots:
         import plotter
         if genes_container.region_list:
-            plotter.genes_operons_plot(len(genes_container.region_list), filenames, files_genes_in_contigs,
-                output_dir + '/genes_cumulative_plot', 'genes', all_pdf)
-            plotter.histogram(filenames, genes_container.full_found, output_dir + '/complete_genes_histogram',
+            plotter.genes_operons_plot(len(genes_container.region_list), contigs_fpaths, files_genes_in_contigs,
+                output_dirpath + '/genes_cumulative_plot', 'genes', all_pdf)
+            plotter.histogram(contigs_fpaths, genes_container.full_found, output_dirpath + '/complete_genes_histogram',
                 '# complete genes', all_pdf)
         if operons_container.region_list:
-            plotter.genes_operons_plot(len(operons_container.region_list), filenames, files_operons_in_contigs,
-                output_dir + '/operons_cumulative_plot', 'operons', all_pdf)
-            plotter.histogram(filenames, operons_container.full_found, output_dir + '/complete_operons_histogram',
+            plotter.genes_operons_plot(len(operons_container.region_list), contigs_fpaths, files_operons_in_contigs,
+                output_dirpath + '/operons_cumulative_plot', 'operons', all_pdf)
+            plotter.histogram(contigs_fpaths, operons_container.full_found, output_dirpath + '/complete_operons_histogram',
                 '# complete operons', all_pdf)
-        plotter.histogram(filenames, genome_mapped, output_dir + '/genome_fraction_histogram', 'Genome fraction, %',
+        plotter.histogram(contigs_fpaths, genome_mapped, output_dirpath + '/genome_fraction_histogram', 'Genome fraction, %',
             all_pdf, top_value=100)
 
     logger.info('Done.')

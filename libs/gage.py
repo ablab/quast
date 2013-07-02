@@ -8,43 +8,45 @@ import logging
 import os
 import shutil
 import subprocess
-from libs import reporting
-from qutils import id_to_str
+from libs import reporting, qutils
 import qconfig
 
 from libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 
 
-def run_gage(id, filename, gage_results_path, gage_tool_path, reference, tmp_dir):
-    logger.info('  ' + id_to_str(id) + os.path.basename(filename) + '...')
+def run_gage(i, contigs_fpath, gage_results_dirpath, gage_tool_path, reference, tmp_dir):
+    assembly_name = qutils.name_from_fpath(contigs_fpath)
+    logger.info('  ' + qutils.index_to_str(i) + assembly_name + '...')
 
     # run gage tool
-    logfilename_out = os.path.join(gage_results_path, 'gage_' + os.path.basename(filename) + '.stdout')
-    logfilename_err = os.path.join(gage_results_path, 'gage_' + os.path.basename(filename) + '.stderr')
-    logger.info('  ' + id_to_str(id) + 'Logging to files ' + logfilename_out + ' and ' + os.path.basename(logfilename_err) + '...')
-    logfile_out = open(logfilename_out, 'w')
-    logfile_err = open(logfilename_err, 'w')
+    log_out_fpath = os.path.join(gage_results_dirpath, 'gage_' + assembly_name + '.stdout')
+    log_err_fpath = os.path.join(gage_results_dirpath, 'gage_' + assembly_name + '.stderr')
+    logger.info('  ' + qutils.index_to_str(i) + 'Logging to files ' +
+                os.path.basename(log_out_fpath) + ' and ' +
+                os.path.basename(log_err_fpath) + '...')
+    log_out_f = open(log_out_fpath, 'w')
+    log_err_f = open(log_err_fpath, 'w')
 
     print
-    print ' '.join(['sh', gage_tool_path, reference, filename, tmp_dir, str(qconfig.min_contig)])
+    print ' '.join(['sh', gage_tool_path, reference, contigs_fpath, tmp_dir, str(qconfig.min_contig)])
 
     return_code = subprocess.call(
-        ['sh', gage_tool_path, reference, filename, tmp_dir, str(qconfig.min_contig)],
-        stdout=logfile_out, stderr=logfile_err)
+        ['sh', gage_tool_path, reference, contigs_fpath, tmp_dir, str(qconfig.min_contig)],
+        stdout=log_out_f, stderr=log_err_f)
 
-    logfile_out.close()
-    logfile_err.close()
-    logger.info('  ' + id_to_str(id) + 'Done.')
+    log_out_f.close()
+    log_err_f.close()
+    logger.info('  ' + qutils.index_to_str(i) + 'Done.')
     return return_code
 
 
-def do(reference, contigs, output_dirpath):
-    gage_results_path = os.path.join(output_dirpath, 'gage')
+def do(ref_fpath, contigs_fpaths, output_dirpath):
+    gage_results_dirpath = os.path.join(output_dirpath, 'gage')
 
     # suffixes for files with report tables in plain text and tab separated formats
-    if not os.path.isdir(gage_results_path):
-        os.mkdir(gage_results_path)
+    if not os.path.isdir(gage_results_dirpath):
+        os.mkdir(gage_results_dirpath)
 
     ########################################################################
     gage_tool_path = os.path.join(qconfig.LIBS_LOCATION, 'gage', 'getCorrectnessStats.sh')
@@ -68,30 +70,33 @@ def do(reference, contigs, output_dirpath):
                             reporting.Fields.GAGE_NUMCORCONTIGS, reporting.Fields.GAGE_CORASMBLYSIZE, reporting.Fields.GAGE_MINCORCONTIG, 
                             reporting.Fields.GAGE_MAXCORCOTING, reporting.Fields.GAGE_CORN50]
 
-    tmp_dir = os.path.join(gage_results_path, 'tmp')
-    if not os.path.exists(tmp_dir):
-        os.makedirs(tmp_dir)
+    tmp_dirpath = os.path.join(gage_results_dirpath, 'tmp')
+    if not os.path.exists(tmp_dirpath):
+        os.makedirs(tmp_dirpath)
 
-    n_jobs = min(len(contigs), qconfig.max_threads)
+    n_jobs = min(len(contigs_fpaths), qconfig.max_threads)
     from joblib import Parallel, delayed
-    return_codes = Parallel(n_jobs=n_jobs)(delayed(run_gage)(id, filename, gage_results_path, gage_tool_path, reference, tmp_dir)
-        for id, filename in enumerate(contigs))
+    return_codes = Parallel(n_jobs=n_jobs)(delayed(run_gage)(i, contigs_fpath, gage_results_dirpath, gage_tool_path, ref_fpath, tmp_dirpath)
+        for i, contigs_fpath in enumerate(contigs_fpaths))
 
     error_occurred = False
     for return_code in return_codes:
         if return_code != 0:
             logger.warning("Error occurred while GAGE was processing assemblies. See GAGE error logs for details (%s)" %
-                    os.path.join(gage_results_path, 'gage_*.stderr'))
+                    os.path.join(gage_results_dirpath, 'gage_*.stderr'))
             error_occurred = True
             break
 
     if not error_occurred:
         ## find metrics for total report:
-        for id, filename in enumerate(contigs):
-            report = reporting.get(filename)
+        for i, contigs_fpath in enumerate(contigs_fpaths):
+            report = reporting.get(contigs_fpath)
 
-            logfilename_out = os.path.join(gage_results_path, 'gage_' + os.path.basename(filename) + '.stdout')
-            logfile_out = open(logfilename_out, 'r')
+            log_out_fpath = os.path.join(gage_results_dirpath,
+                                         'gage_' +
+                                         qutils.name_from_fpath(contigs_fpath) +
+                                         '.stdout')
+            logfile_out = open(log_out_fpath, 'r')
             cur_metric_id = 0
             for line in logfile_out:
                 if metrics[cur_metric_id] in line:
@@ -107,6 +112,6 @@ def do(reference, contigs, output_dirpath):
         reporting.save_gage(output_dirpath)
 
         if not qconfig.debug:
-            shutil.rmtree(tmp_dir)
+            shutil.rmtree(tmp_dirpath)
 
         logger.info('Done.')

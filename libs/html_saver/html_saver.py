@@ -139,8 +139,8 @@ def save_total_report(results_dirpath, min_contig):
         log.info('  HTML version saved to ' + os.path.join(results_dirpath, report_fname))
 
 
-def save_contigs_lengths(results_dirpath, filenames, lists_of_lengths):
-    json_fpath = json_saver.save_contigs_lengths(results_dirpath, filenames, lists_of_lengths)
+def save_contigs_lengths(results_dirpath, contigs_fpaths, lists_of_lengths):
+    json_fpath = json_saver.save_contigs_lengths(results_dirpath, contigs_fpaths, lists_of_lengths)
     if json_fpath:
         append(results_dirpath, json_fpath, 'contigsLenghts')
 
@@ -151,25 +151,25 @@ def save_reference_length(results_dirpath, reference_length):
         append(results_dirpath, json_fpath, 'referenceLength')
 
 
-def save_aligned_contigs_lengths(results_dirpath, filenames, lists_of_lengths):
-    json_fpath = json_saver.save_aligned_contigs_lengths(results_dirpath, filenames, lists_of_lengths)
+def save_aligned_contigs_lengths(results_dirpath, contigs_fpaths, lists_of_lengths):
+    json_fpath = json_saver.save_aligned_contigs_lengths(results_dirpath, contigs_fpaths, lists_of_lengths)
     if json_fpath:
         append(results_dirpath, json_fpath, 'alignedContigsLengths')
 
 
-def save_assembly_lengths(results_dirpath, filenames, assemblies_lengths):
-    json_fpath = json_saver.save_assembly_lengths(results_dirpath, filenames, assemblies_lengths)
+def save_assembly_lengths(results_dirpath, contigs_fpaths, assemblies_lengths):
+    json_fpath = json_saver.save_assembly_lengths(results_dirpath, contigs_fpaths, assemblies_lengths)
     if json_fpath:
         append(results_dirpath, json_fpath, 'assembliesLengths')
 
 
-def save_features_in_contigs(results_dirpath, filenames, feature_name, feature_in_contigs, ref_feature_num):
-    json_fpath = json_saver.save_features_in_contigs(results_dirpath, filenames, feature_name, feature_in_contigs, ref_feature_num)
+def save_features_in_contigs(results_dirpath, contigs_fpaths, feature_name, feature_in_contigs, ref_feature_num):
+    json_fpath = json_saver.save_features_in_contigs(results_dirpath, contigs_fpaths, feature_name, feature_in_contigs, ref_feature_num)
     if json_fpath:
         append(results_dirpath, json_fpath, feature_name + 'InContigs')
 
 
-def save_GC_info(results_dirpath, filenames, list_of_GC_distributions):
-    json_fpath = json_saver.save_GC_info(results_dirpath, filenames, list_of_GC_distributions)
+def save_GC_info(results_dirpath, contigs_fpaths, list_of_GC_distributions):
+    json_fpath = json_saver.save_GC_info(results_dirpath, contigs_fpaths, list_of_GC_distributions)
     if json_fpath:
         append(results_dirpath, json_fpath, 'gcInfos')

@@ -6,6 +6,7 @@
 
 import datetime
 import os
+from libs import qutils
 
 from libs.log import get_logger
 log = get_logger('quast')
@@ -20,7 +21,7 @@ except:
         log.warning('Can\'t build html report - please install python-simplejson')
         simplejson_error = True
 
-total_report_fn       = '/report.json'
+total_report_fname       = '/report.json'
 contigs_lengths_fn    = '/contigs_lengths.json'
 ref_length_fn         = '/ref_length.json'
 aligned_contigs_fn    = '/aligned_contigs_lengths.json'
@@ -45,13 +46,13 @@ def save(fpath, what):
     return fpath
 
 
-def save_total_report(output_dir, min_contig):
+def save_total_report(output_dirpath, min_contig):
     from libs import reporting
     assemblies_names = reporting.assemblies_order
     report = reporting.table(reporting.Fields.grouped_order)
     t = datetime.datetime.now()
 
-    return save(output_dir + total_report_fn, {
+    return save(output_dirpath + total_report_fname, {
         'date': t.strftime('%d %B %Y, %A, %H:%M:%S'),
         'assembliesNames': assemblies_names,
         'report': report,
@@ -89,46 +90,46 @@ def save_total_report(output_dir, min_contig):
 #        'min_contig' : min_contig,
 #        })
 
-def save_contigs_lengths(output_dir, filenames, lists_of_lengths):
+def save_contigs_lengths(output_dirpath, contigs_fpaths, lists_of_lengths):
     lists_of_lengths = [sorted(list, reverse=True) for list in lists_of_lengths]
 
-    return save(output_dir + contigs_lengths_fn, {
-        'filenames': map(os.path.basename, filenames),
+    return save(output_dirpath + contigs_lengths_fn, {
+        'filenames': map(qutils.name_from_fpath, contigs_fpaths),
         'lists_of_lengths': lists_of_lengths
     })
 
 
-def save_reference_length(output_dir, reference_length):
-    return save(output_dir + ref_length_fn, { 'reflen': reference_length })
+def save_reference_length(output_dirpath, reference_length):
+    return save(output_dirpath + ref_length_fn, { 'reflen': reference_length })
 
 
-def save_aligned_contigs_lengths(output_dir, filenames, lists_of_lengths):
+def save_aligned_contigs_lengths(output_dir, contigs_fpaths, lists_of_lengths):
     lists_of_lengths = [sorted(list, reverse=True) for list in lists_of_lengths]
 
     return save(output_dir + aligned_contigs_fn, {
-        'filenames': map(os.path.basename, filenames),
+        'filenames': map(qutils.name_from_fpath, contigs_fpaths),
         'lists_of_lengths': lists_of_lengths
     })
 
 
-def save_assembly_lengths(output_dir, filenames, assemblies_lengths):
-    return save(output_dir + assemblies_lengths_fn, {
-        'filenames': map(os.path.basename, filenames),
+def save_assembly_lengths(output_dirpath, contigs_fpaths, assemblies_lengths):
+    return save(output_dirpath + assemblies_lengths_fn, {
+        'filenames': map(qutils.name_from_fpath, contigs_fpaths),
         'assemblies_lengths': assemblies_lengths
     })
 
 
-def save_features_in_contigs(output_dir, filenames, feature_name, features_in_contigs, ref_features_num):
-    return save(output_dir + prefix_fn + feature_name + in_contigs_suffix_fn, {
-        'filenames': map(os.path.basename, filenames),
+def save_features_in_contigs(output_dirpath, contigs_fpaths, feature_name, features_in_contigs, ref_features_num):
+    return save(output_dirpath + prefix_fn + feature_name + in_contigs_suffix_fn, {
+        'filenames': map(qutils.name_from_fpath, contigs_fpaths),
         feature_name + '_in_contigs': dict((os.path.basename(fn), feature_amounts) for (fn, feature_amounts) in features_in_contigs.items()),
         'ref_' + feature_name + '_number': ref_features_num,
         })
 
 
-def save_GC_info(output_dir, filenames, list_of_GC_distributions):
-    return save(output_dir + gc_fn, {
-        'filenames': map(os.path.basename, filenames),
+def save_GC_info(output_dirpath, contigs_fpaths, list_of_GC_distributions):
+    return save(output_dirpath + gc_fn, {
+        'filenames': map(qutils.name_from_fpath, contigs_fpaths),
         'list_of_GC_distributions': list_of_GC_distributions,
         'lists_of_gc_info': None,
         })

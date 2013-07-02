@@ -20,7 +20,7 @@ from libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 logger.set_up_console_handler(debug=not RELEASE_MODE)
 
-from libs.qutils import assert_file_exists, uncompress
+from libs.qutils import assert_file_exists
 from libs import fastaparser
 from libs.html_saver import json_saver
 
@@ -141,27 +141,6 @@ def _set_up_output_dir(output_dirpath, json_outputpath,
     return output_dirpath, json_outputpath, existing_alignments
 
 
-def corrected_fname_for_nucmer(fpath):
-    dirpath = os.path.dirname(fpath)
-    fname = os.path.basename(fpath)
-
-    corr_fname = qutils.correct_name(fname)
-
-    if corr_fname != fname:
-        if os.path.isfile(os.path.join(dirpath, corr_fname)):
-            i = 1
-            base_corr_fname = corr_fname
-            while os.path.isfile(os.path.join(dirpath, corr_fname)):
-                str_i = ''
-                if i > 1:
-                    str_i = str(i)
-
-                corr_fname = 'copy_' + str_i + '_' + str(base_corr_fname)
-                i += 1
-
-    return os.path.join(dirpath, corr_fname)
-
-
 def correct_fasta(original_fpath, corrected_fpath, min_contig,
                   is_reference=False):
     modified_fasta_entries = []
@@ -194,27 +173,33 @@ def correct_fasta(original_fpath, corrected_fpath, min_contig,
     if is_reference:
         ref_len = sum(len(chr_seq) for (chr_name, chr_seq) in modified_fasta_entries)
         if ref_len > qconfig.MAX_REFERENCE_LENGTH:
-            dir_for_splitted_ref = os.path.join(os.path.dirname(corrected_fpath), 'splitted_ref')
-            os.makedirs(dir_for_splitted_ref)
-            for id, (chr_name, chr_seq) in enumerate(modified_fasta_entries):
+            _, fasta_ext = os.path.splitext(corrected_fpath)
+            splitted_ref_dirpath = os.path.join(os.path.dirname(corrected_fpath), 'splitted_ref')
+            os.makedirs(splitted_ref_dirpath)
+
+            for i, (chr_name, chr_seq) in enumerate(modified_fasta_entries):
                 if len(chr_seq) > qconfig.MAX_REFERENCE_LENGTH:
                     logger.warning("Skipping chromosome " + chr_name + " because it length is greater than " +
                             str(qconfig.MAX_REFERENCE_LENGTH) + " (Nucmer's constraint).")
                     continue
-                qconfig.splitted_ref.append(os.path.join(dir_for_splitted_ref, "chr_" + str(id + 1)))
-                fastaparser.write_fasta(qconfig.splitted_ref[-1], [(chr_name, chr_seq)])
+
+                splitted_ref_fpath = os.path.join(splitted_ref_dirpath, "chr_" + str(i + 1)) + fasta_ext
+                qconfig.splitted_ref.append(splitted_ref_fpath)
+                fastaparser.write_fasta(splitted_ref_fpath, [(chr_name, chr_seq)])
+
             if len(qconfig.splitted_ref) == 0:
                 logger.warning("Skipping reference because all of its chromosomes exceeded Nucmer's constraint.")
                 return False
     return True
 
 
-# Processing contigs
+# Correcting fasta and reporting stats
 def _handle_fasta(contigs_fpath, corr_fpath, reporting):
     lengths = fastaparser.get_lengths_from_fastafile(contigs_fpath)
+
     if not sum(l for l in lengths if l >= qconfig.min_contig):
         logger.warning("Skipping %s because it doesn't contain contigs >= %d bp."
-                % (os.path.basename(contigs_fpath), qconfig.min_contig))
+                % (qutils.name_from_fpath(contigs_fpath), qconfig.min_contig))
         return False
 
     # correcting
@@ -223,6 +208,7 @@ def _handle_fasta(contigs_fpath, corr_fpath, reporting):
 
     ## filling column "Assembly" with names of assemblies
     report = reporting.get(corr_fpath)
+
     ## filling columns "Number of contigs >=110 bp", ">=200 bp", ">=500 bp"
     report.add_field(reporting.Fields.CONTIGS,
                      [sum(1 for l in lengths if l >= threshold)
@@ -233,11 +219,102 @@ def _handle_fasta(contigs_fpath, corr_fpath, reporting):
     return True
 
 
+def _correct_contigs(contigs_fpaths, corrected_dirpath, reporting):
+    ## removing from contigs' names special characters because:
+    ## 1) Some embedded tools can fail on some strings with "...", "+", "-", etc
+    ## 2) Nucmer fails on names like "contig 1_bla_bla", "contig 2_bla_bla" (it interprets as a contig's name only the first word of caption and gets ambiguous contigs names)
+    corrected_contigs_fpaths = []
+
+    for i, contigs_fpath in enumerate(contigs_fpaths):
+        contigs_fname = os.path.basename(contigs_fpath)
+        name, fasta_ext = qutils.splitext_for_fasta_file(contigs_fname)
+        corr_fpath = qutils.unique_corrected_fpath(
+            os.path.join(corrected_dirpath, name + fasta_ext))
+
+        # if os.path.isfile(contigs_fpath):  # in case of files with the same names
+        #     i = 1
+        #     corr_fpath_wo_ext, fasta_ext = os.path.splitext(corr_fpath)
+        #     while os.path.isfile(corr_fpath):
+        #         i += 1
+        #         corr_fname = os.path.basename(corr_fpath_wo_ext + '__' + str(i) + fasta_ext)
+        #         corr_fpath = os.path.join(corrected_dirpath, corr_fname)
+
+        assembly_name = qutils.name_from_fpath(corr_fpath)
+        logger.info('  %s ==> %s' % (contigs_fpath, assembly_name))
+
+        # if option --scaffolds is specified QUAST adds splitted version of assemblies to the comparison
+        if qconfig.scaffolds:
+            logger.info("  breaking scaffolds into contigs:")
+            corr_fpath_wo_ext = os.path.join(corrected_dirpath, qutils.name_from_fpath(corr_fpath))
+            broken_scaffolds_fpath = corr_fpath_wo_ext + '_broken' + fasta_ext
+            broken_scaffolds_fasta = []
+            contigs_counter = 0
+
+            for i, (name, seq) in enumerate(fastaparser.read_fasta(contigs_fpath)):
+                i = 0
+                cur_contig_number = 1
+                cur_contig_start = 0
+                while (i < len(seq)) and (seq.find("N", i) != -1):
+                    start = seq.find("N", i)
+                    end = start + 1
+                    while (end != len(seq)) and (seq[end] == 'N'):
+                        end += 1
+
+                    i = end + 1
+                    if (end - start) >= qconfig.Ns_break_threshold:
+                        broken_scaffolds_fasta.append(
+                            (name.split()[0] + "_" +
+                             str(cur_contig_number),
+                             seq[cur_contig_start:start]))
+                        cur_contig_number += 1
+                        cur_contig_start = end
+
+                broken_scaffolds_fasta.append(
+                    (name.split()[0] + "_" +
+                     str(cur_contig_number),
+                     seq[cur_contig_start:]))
+
+                contigs_counter += cur_contig_number
+
+            fastaparser.write_fasta(broken_scaffolds_fpath, broken_scaffolds_fasta)
+            logger.info("      %d scaffolds (%s) were broken into %d contigs (%s)" \
+                  % (i + 1,
+                     qutils.name_from_fpath(corr_fpath),
+                     contigs_counter,
+                     qutils.name_from_fpath(broken_scaffolds_fpath)))
+
+            if _handle_fasta(broken_scaffolds_fpath, broken_scaffolds_fpath, reporting):
+                corrected_contigs_fpaths.append(broken_scaffolds_fpath)
+                qconfig.list_of_broken_scaffolds.append(qutils.name_from_fpath(broken_scaffolds_fpath))
+
+        if not _handle_fasta(contigs_fpath, corr_fpath, reporting):
+            continue
+
+        corrected_contigs_fpaths.append(corr_fpath)
+
+    return corrected_contigs_fpaths
+
+
+def _correct_reference(ref_fpath, corrected_dirpath):
+    ref_fname = os.path.basename(ref_fpath)
+    name, fasta_ext = qutils.splitext_for_fasta_file(ref_fname)
+    corr_fpath = qutils.unique_corrected_fpath(
+        os.path.join(corrected_dirpath, name + fasta_ext))
+
+    if not correct_fasta(ref_fpath, corr_fpath, qconfig.min_contig, is_reference=True):
+        ref_fpath = ''
+    else:
+        logger.info('  %s ==> %s' % (ref_fpath, qutils.name_from_fpath(corr_fpath)))
+        ref_fpath = corr_fpath
+
+    return ref_fpath
+
+
 def main(args):
-    quast_dir = os.path.dirname(qconfig.LIBS_LOCATION)
-    if ' ' in quast_dir:
+    quast_dirpath = os.path.dirname(qconfig.LIBS_LOCATION)
+    if ' ' in quast_dirpath:
         logger.error('QUAST does not support spaces in paths. \n' + \
-              'You are trying to run it from ' + str(quast_dir) + '\n' + \
+              'You are trying to run it from ' + str(quast_dirpath) + '\n' + \
               'Please, put QUAST in a different directory, then try again.\n',
               to_stderr=True,
               exit_with_code=3)
@@ -275,7 +352,7 @@ def main(args):
             qconfig.operons = assert_file_exists(arg, 'operons')
 
         elif opt in ('-R', "--reference"):
-            qconfig.reference = assert_file_exists(arg, 'reference')
+            qconfig.ref_fpath = assert_file_exists(arg, 'reference')
 
         elif opt in ('-t', "--contig-thresholds"):
             qconfig.contig_thresholds = arg
@@ -346,8 +423,8 @@ def main(args):
         else:
             raise ValueError
 
-    for c_fpath in contigs_fpaths:
-        assert_file_exists(c_fpath, 'contigs')
+    for contigs_fpath in contigs_fpaths:
+        assert_file_exists(contigs_fpath, 'contigs')
 
     output_dirpath, json_outputpath, existing_alignments = \
         _set_up_output_dir(output_dirpath, json_outputpath,
@@ -360,6 +437,7 @@ def main(args):
     logger.start()
 
     if existing_alignments:
+        logger.notice()
         logger.notice("Output directory already exists. Existing Nucmer alignments can be used.")
         qutils.remove_reports(output_dirpath)
 
@@ -375,10 +453,12 @@ def main(args):
         except:
             logger.warning('Failed to determine the number of CPUs')
             qconfig.max_threads = qconfig.DEFAULT_MAX_THREADS
-        logger.notice('Maximum number of threads was set to ' + str(qconfig.max_threads) + ' (use --threads option to set it manually)')
+
+        logger.notice()
+        logger.notice('Maximum number of threads is set to ' + str(qconfig.max_threads) + ' (use --threads option to set it manually)')
 
     # Where all pdfs will be saved
-    all_pdf_filename = os.path.join(output_dirpath, qconfig.plots_filename)
+    all_pdf_fpath = os.path.join(output_dirpath, qconfig.plots_fname)
     all_pdf = None
 
     ########################################################################
@@ -386,90 +466,22 @@ def main(args):
     from libs import reporting
     reload(reporting)
 
-    ##################################
-    # Processing contigs and reference
-    message = "Processing contig files"
-    if qconfig.reference:
-        message += " and reference"
-    message += "..."
-    logger.info(message)
-
     if os.path.isdir(corrected_dirpath):
         shutil.rmtree(corrected_dirpath)
     os.mkdir(corrected_dirpath)
 
-    # Processing reference
-    if qconfig.reference:
-        ref_basename, ref_extension = os.path.splitext(qconfig.reference)
-        corrected_and_unziped_reference_fname = os.path.join(corrected_dirpath, os.path.basename(ref_basename))
-        corrected_and_unziped_reference_fname = corrected_fname_for_nucmer(corrected_and_unziped_reference_fname)
+    # PROCESSING REFERENCE
+    if qconfig.ref_fpath:
+        logger.info()
+        logger.info('Reference:')
+        ref_fpath = _correct_reference(qconfig.ref_fpath, corrected_dirpath)
+    else:
+        ref_fpath = ''
 
-        # unzipping (if needed)
-        if uncompress(qconfig.reference, corrected_and_unziped_reference_fname):
-            qconfig.reference = corrected_and_unziped_reference_fname
-
-        # correcting
-        if not correct_fasta(qconfig.reference, corrected_and_unziped_reference_fname,
-                             qconfig.min_contig, is_reference=True):
-            qconfig.reference = ""
-        else:
-            qconfig.reference = corrected_and_unziped_reference_fname
-
-
-    ## removing from contigs' names special characters because:
-    ## 1) Some embedded tools can fail on some strings with "...", "+", "-", etc
-    ## 2) Nucmer fails on names like "contig 1_bla_bla", "contig 2_bla_bla" (it interprets as a contig's name only the first word of caption and gets ambiguous contigs names)
-    new_contigs_fpaths = []
-    for id, contigs_fpath in enumerate(contigs_fpaths):
-        corr_fname = corrected_fname_for_nucmer(os.path.basename(contigs_fpath))
-        corr_fpath = os.path.splitext(os.path.join(corrected_dirpath, corr_fname))[0]
-        if os.path.isfile(corr_fpath):  # in case of files with the same names
-            i = 1
-            basename = os.path.splitext(corr_fname)[0]
-            while os.path.isfile(corr_fpath):
-                i += 1
-                corr_fpath = os.path.join(corrected_dirpath, os.path.basename(basename + '__' + str(i)))
-
-        logger.info('  %s ==> %s' % (contigs_fpath, os.path.basename(corr_fpath)))
-
-        # if option --scaffolds is specified QUAST adds splitted version of assemblies to the comparison
-        if qconfig.scaffolds:
-            logger.info("  breaking scaffolds into contigs:")
-            broken_scaffolds_path = corr_fpath + '_broken'
-
-            broken_scaffolds_fasta = []
-            contigs_counter = 0
-            for id, (name, seq) in enumerate(fastaparser.read_fasta(contigs_fpath)):
-                i = 0
-                cur_contig_number = 1
-                cur_contig_start = 0
-                while (i < len(seq)) and (seq.find("N", i) != -1):
-                    start = seq.find("N", i)
-                    end = start + 1
-                    while (end != len(seq)) and (seq[end] == 'N'):
-                        end += 1
-
-                    i = end + 1
-                    if (end - start) >= qconfig.Ns_break_threshold:
-                        broken_scaffolds_fasta.append((name.split()[0] + "_" + str(cur_contig_number), seq[cur_contig_start:start]))
-                        cur_contig_number += 1
-                        cur_contig_start = end
-
-                broken_scaffolds_fasta.append((name.split()[0] + "_" + str(cur_contig_number), seq[cur_contig_start:]))
-                contigs_counter += cur_contig_number
-
-            fastaparser.write_fasta(broken_scaffolds_path, broken_scaffolds_fasta)
-            logger.info("      %d scaffolds (%s) were broken into %d contigs (%s)"\
-                  % (id + 1, os.path.basename(corr_fpath), contigs_counter, os.path.basename(broken_scaffolds_path)))
-            if _handle_fasta(broken_scaffolds_path, broken_scaffolds_path, reporting):
-                new_contigs_fpaths.append(broken_scaffolds_path)
-                qconfig.list_of_broken_scaffolds.append(os.path.basename(broken_scaffolds_path))
-
-        if not _handle_fasta(contigs_fpath, corr_fpath, reporting):
-            continue
-        new_contigs_fpaths.append(corr_fpath)
-
-    contigs_fpaths = new_contigs_fpaths
+    # PROCESSING CONTIGS
+    logger.info()
+    logger.info('Contigs:')
+    contigs_fpaths = _correct_contigs(contigs_fpaths, corrected_dirpath, reporting)
 
     qconfig.assemblies_num = len(contigs_fpaths)
 
@@ -478,24 +490,21 @@ def main(args):
               "Please, provide different files or decrease --min-contig threshold.",
               exit_with_code=4)
 
-    # End of processing
-    logger.info('Done.')
-
     if qconfig.with_gage:
         ########################################################################
         ### GAGE
         ########################################################################
-        if not qconfig.reference:
+        if not ref_fpath:
             logger.warning("GAGE can't be run without a reference and will be skipped.")
         else:
             from libs import gage
-            gage.do(qconfig.reference, contigs_fpaths, output_dirpath)
+            gage.do(ref_fpath, contigs_fpaths, output_dirpath)
 
     if qconfig.draw_plots:
         from libs import plotter  # Do not remove this line! It would lead to a warning in matplotlib.
         try:
             from matplotlib.backends.backend_pdf import PdfPages
-            all_pdf = PdfPages(all_pdf_filename)
+            all_pdf = PdfPages(all_pdf_fpath)
         except:
             all_pdf = None
 
@@ -503,36 +512,36 @@ def main(args):
     ### Stats and plots
     ########################################################################
     from libs import basic_stats
-    basic_stats.do(qconfig.reference, contigs_fpaths, output_dirpath + '/basic_stats', all_pdf, qconfig.draw_plots,
+    basic_stats.do(ref_fpath, contigs_fpaths, os.path.join(output_dirpath, 'basic_stats'), all_pdf, qconfig.draw_plots,
                    json_outputpath, output_dirpath)
 
     aligned_fpaths = []
     aligned_lengths_lists = []
-    if qconfig.reference:
+    if ref_fpath:
         ########################################################################
         ### former PLANTAKOLYA, PLANTAGORA
         ########################################################################
         from libs import contigs_analyzer
-        nucmer_statuses, aligned_lengths_per_fpath = contigs_analyzer.do(qconfig.reference, contigs_fpaths, qconfig.prokaryote, output_dirpath + '/contigs_reports')
+        nucmer_statuses, aligned_lengths_per_fpath = contigs_analyzer.do(ref_fpath, contigs_fpaths, qconfig.prokaryote, output_dirpath + '/contigs_reports')
         for contigs_fpath in contigs_fpaths:
             if nucmer_statuses[contigs_fpath] == contigs_analyzer.NucmerStatus.OK:
                 aligned_fpaths.append(contigs_fpath)
                 aligned_lengths_lists.append(aligned_lengths_per_fpath[contigs_fpath])
 
     # Before continue evaluating, check if nucmer didn't skip all of the contigs files.
-    if len(aligned_fpaths) and qconfig.reference:
+    if len(aligned_fpaths) and ref_fpath:
         ########################################################################
         ### NA and NGA ("aligned N and NG")
         ########################################################################
         from libs import aligned_stats
-        aligned_stats.do(qconfig.reference, aligned_fpaths, aligned_lengths_lists, output_dirpath + '/contigs_reports',
+        aligned_stats.do(ref_fpath, aligned_fpaths, aligned_lengths_lists, output_dirpath + '/contigs_reports',
                          output_dirpath + '/aligned_stats', all_pdf, qconfig.draw_plots, json_outputpath, output_dirpath)
 
         ########################################################################
         ### GENOME_ANALYZER
         ########################################################################
         from libs import genome_analyzer
-        genome_analyzer.do(qconfig.reference, aligned_fpaths, output_dirpath + '/contigs_reports',
+        genome_analyzer.do(ref_fpath, aligned_fpaths, output_dirpath + '/contigs_reports',
                            output_dirpath + '/genome_stats', qconfig.genes, qconfig.operons, all_pdf, qconfig.draw_plots, json_outputpath, output_dirpath)
 
     # def add_empty_predicted_genes_fields():
@@ -548,13 +557,13 @@ def main(args):
             ### GeneMark
             ########################################################################
             from libs import genemark
-            genemark.do(contigs_fpaths, qconfig.genes_lengths, output_dirpath + '/predicted_genes')
+            genemark.do(contigs_fpaths, qconfig.genes_lengths, os.path.join(output_dirpath, 'predicted_genes'))
         else:
             ########################################################################
             ### Glimmer
             ########################################################################
             from libs import glimmer
-            glimmer.do(contigs_fpaths, qconfig.genes_lengths, output_dirpath + '/predicted_genes')
+            glimmer.do(contigs_fpaths, qconfig.genes_lengths, os.path.join(output_dirpath, 'predicted_genes'))
     else:
         logger.info("")
         logger.notice("Genes are not predicted by default. Use --gene-finding option to enable it.")
@@ -566,9 +575,9 @@ def main(args):
 
     # changing names of assemblies to more human-readable versions if provided
     if qconfig.legend_names and len(contigs_fpaths) == len(qconfig.legend_names):
-        for id, contigs_fpath in enumerate(contigs_fpaths):
+        for i, contigs_fpath in enumerate(contigs_fpaths):
             report = reporting.get(contigs_fpath)
-            report.add_field(reporting.Fields.NAME, qconfig.legend_names[id])
+            report.add_field(reporting.Fields.NAME, qconfig.legend_names[i])
 
     reporting.save_total(output_dirpath)
 
@@ -580,9 +589,10 @@ def main(args):
         html_saver.save_total_report(output_dirpath, qconfig.min_contig)
 
     if qconfig.draw_plots and all_pdf:
-        logger.info('  All pdf files are merged to ' + all_pdf_filename)
+        logger.info('  All pdf files are merged to ' + all_pdf_fpath)
         all_pdf.close()
 
+    # if RELEASE_MODE:
     _cleanup(corrected_dirpath)
 
     logger.finish_up()

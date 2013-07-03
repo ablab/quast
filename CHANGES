@@ -7,6 +7,11 @@
       Option --ambiguity-usage added instead of old --allow-ambuguity. Three 
       different modes of processing ambiguous contigs now available.
 
+      Option --label (or -l) to provide human-readable assembly names. Those names
+      will be used in reports, plots and logs. For example:
+         -l "SPAdes 2.5, SPAdes 2.4, IDBA-UD"
+         -l SPAdes,"Assembly 2",Assembly3
+
       Interactive HTML reports are improved.
 
       Fixed bugs in misassemblies detection algorithm.

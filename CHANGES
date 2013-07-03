@@ -1,13 +1,13 @@
 -- Version history --
 
-2.2   Added support of metagenomic assemblies. MetaGeneMark embedded for finding
+2.2   Now supports metagenomic assemblies. MetaGeneMark embedded for finding
       genes in such assemblies. Several references could be specified for detailed
       per each reference analysis.
      
       Option --ambiguity-usage added instead of old --allow-ambuguity. Three 
       different modes of processing ambiguous contigs now available.
 
-      Option --label (or -l) to provide human-readable assembly names. Those names
+      Option --labels (or -l) to provide human-readable assembly names. Those names
       will be used in reports, plots and logs. For example:
          -l "SPAdes 2.5, SPAdes 2.4, IDBA-UD"
          -l SPAdes,"Assembly 2",Assembly3

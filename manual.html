@@ -32,7 +32,7 @@ QUAST evaluates genome assemblies by computing various metrics.
     them separately.
     <br>
     <br>
-    QUAST version 2.2 was released under GPL v2 (see <a href="LICENSE">LICENSE</a> for details) on XX July 2013.
+    QUAST version 2.2 was released under GPL v2 (see <a href="LICENSE">LICENSE</a> for details) on 3 July 2013.
 </p>
 
 <h2>Table of Contents</h2>
@@ -221,6 +221,14 @@ QUAST can work only with assemblies of length less than 4.29 Gbp and with refere
 <p>&nbsp;&nbsp;&nbsp;&nbsp;Maximum number of threads QUAST can use. The default value is the number of CPUs (or 4 if QUAST fails to determine the number of CPUs).</p>
 
 <p>
+    <code>-l &lt;--labels&gt;</code>
+</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;Human-readable assembly names. Those names will be used in reports, plots and logs. For example:<br>
+<code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-l "SPAdes 2.5, SPAdes 2.4, IDBA-UD"<br></code>
+<code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-l SPAdes,"Assembly 2",Assembly3"</code>
+</p>
+
+<p>
     <code>--gage</code>
 </p>
 <p>&nbsp;&nbsp;&nbsp;&nbsp;Starts QUAST in "GAGE mode" (see <a href="#sec2.3">section 2.3</a>).
@@ -266,28 +274,60 @@ QUAST can work only with assemblies of length less than 4.29 Gbp and with refere
 <p>
     <code>--use-all-alignments</code>
 </p>
+
 <p>&nbsp;&nbsp;&nbsp;&nbsp;This flag should be set for computing <b><i>Genome fraction, # genes, # operons</i></b> metrics in compatible with <i>QUAST v.1.*</i> mode.
     By default, QUAST v.2.* filters Nucmer's alignments to keep only best ones. Roughly speaking, QUAST skips ambiguous and redundant alignments
     to keep <i>one alignment</i> (or one set of non-overlapping or slightly-overlapping alignments) <i>per each contig</i>. QUAST v.1.* used <i>all</i> Nucmer's 
-    alignments to compute these metrics.</p>
-
+    alignments to compute these metrics.
+</p>
 <p>
     <code>--ambiguity-usage &lt;none|one|all&gt;</code>
 </p>
 <p>&nbsp;&nbsp;&nbsp;&nbsp;This option controls processing of contigs with <i>multiple equally good</i> alignments (probably repeats).
     If "none" is specified then QUAST skips all alignments of such contig. If "one" is specified then QUAST uses only one alignment (the first one).
     Finally, if "all" is specified then all alignments are used. The default value is "one". <b>Note:</b> setting this option to "all" can cause
-    significant increase of <b><i># mismatches</i></b> (repeats are always inexact and contain several SNPs).</p>
-
+    significant increase of <b><i># mismatches</i></b> (repeats are always inexact and contain several SNPs).
+</p>
 <p>
     <code>--strict-NA</code>
 </p>
 <p>&nbsp;&nbsp;&nbsp;&nbsp;This flag forces QUAST to break contigs by <i>any</i> misassembly event to compute <b><i>NAx</i></b> and <b><i>NGAx</i></b> statistics.
-    By default, QUAST breaks contigs <i>only by extensive</i> misassemblies (not local ones).</p>
+    By default, QUAST breaks contigs <i>only by extensive</i> misassemblies (not local ones).
+</p>
 
 <p><code>-h</code> (or <code>--help</code>)</p>
 <p>&nbsp;&nbsp;&nbsp;&nbsp;Prints help.</p>
 
+<p>
+    <code>--meta</code>
+</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;Use gene finding tool, specified for metagenomes (MetaGeneMark)
+    If you have multiple references, <a href='#metaquast'>use metaquast.py</a> insted (it is in the root directory).
+</p>
+
+<a name="seq2.5"></a>
+<h3>2.5 MetaQUAST</h3>
+<p>
+    &nbsp;&nbsp;&nbsp;&nbsp;MetaQUAST accepts multiple references, in several comma-separated files, or in combined in a single fasta-file
+    (combinations are also allowed).<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;The tool partitions all contigs in groups aligned to each reference.
+    Then it runs quast.py for all reference in combination, for each reference separately using corresponding contigs,
+    and finally for the rest contigs that were not alinged anywhere.<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;All outputs are in separate directories inside the directory provided by <code>-o</code>.<br>
+</p>
+
+<pre class="code">
+<code>
+    python metaquast.py [quast.py options] -R &lt;filename,filename,filename...&gt; &lt;contig_file(s)&gt;
+</code>
+</pre>
+
+<p>
+    <code></code>
+</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;All options are the same as for quast.py, except for the <code>-R</code>: it can accept multiple references.</p>
+
+<br>
 <a name="sec3"></a>
 <h2>3. QUAST output</h2>
 <p>If an output path was not specified manually, QUAST puts its output into the directory <code>quast_results/result_&lt;DATE&gt;</code> and creates a symlink <code>latest</code> to it inside the directory <code>quast_results/</code>.

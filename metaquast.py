@@ -45,24 +45,24 @@ def usage():
     print >> sys.stderr, "--min-contig  <int>          Lower threshold for contig length [default: %s]" % qconfig.min_contig
     print >> sys.stderr, ""
     print >> sys.stderr, "Advanced options:"
-    print >> sys.stderr, "--threads <int>                   Maximum number of threads [default: number of CPUs]"
-    print >> sys.stderr, "--gage                            Starts GAGE inside QUAST (\"GAGE mode\")"
-    print >> sys.stderr, "--contig-thresholds <int,int,..>  Comma-separated list of contig length thresholds [default: %s]" % qconfig.contig_thresholds
-    print >> sys.stderr, "--gene-finding                    Uses MetaGeneMark for gene finding"
-    print >> sys.stderr, "--gene-thresholds <int,int,..>    Comma-separated list of threshold lengths of genes to search with Gene Finding module"
-    print >> sys.stderr, "                                  [default is %s]" % qconfig.genes_lengths
-    print >> sys.stderr, "--eukaryote                       Genome is an eukaryote"
-    print >> sys.stderr, "--est-ref-size <int>              Estimated reference size (for computing NGx metrics without a reference)"
-    print >> sys.stderr, "--scaffolds                       Provided assemblies are scaffolds"
-    print >> sys.stderr, "--use-all-alignments              Computes Genome fraction, # genes, # operons metrics in compatible with QUAST v.1.* mode."
-    print >> sys.stderr, "                                  By default, QUAST filters Nucmer\'s alignments to keep only best ones"
-    print >> sys.stderr, "--ambiguity-usage <none|one|all>  Uses none, one, or all alignments of a contig with multiple equally good alignments."
-    print >> sys.stderr, "                                  [default is %s]" % qconfig.ambiguity_usage
-    print >> sys.stderr, "--strict-NA                       Breaks contigs by any misassembly event to compute NAx and NGAx."
-    print >> sys.stderr, "                                  By default, QUAST breaks contigs only by extensive misassemblies (not local ones)"
-    print >> sys.stderr, "-l  --labels                      Names of assemblies to use in reports, comma-separated."
+    print >> sys.stderr, "--threads <int>                        Maximum number of threads [default: number of CPUs]"
+    print >> sys.stderr, "--gage                                 Starts GAGE inside QUAST (\"GAGE mode\")"
+    print >> sys.stderr, "--contig-thresholds <int,int,..>       Comma-separated list of contig length thresholds [default: %s]" % qconfig.contig_thresholds
+    print >> sys.stderr, "--gene-finding                         Uses MetaGeneMark for gene finding"
+    print >> sys.stderr, "--gene-thresholds <int,int,..>         Comma-separated list of threshold lengths of genes to search with Gene Finding module"
+    print >> sys.stderr, "                                       [default is %s]" % qconfig.genes_lengths
+    print >> sys.stderr, "--eukaryote                            Genome is an eukaryote"
+    print >> sys.stderr, "--est-ref-size <int>                   Estimated reference size (for computing NGx metrics without a reference)"
+    print >> sys.stderr, "--scaffolds                            Provided assemblies are scaffolds"
+    print >> sys.stderr, "--use-all-alignments                   Computes Genome fraction, # genes, # operons metrics in compatible with QUAST v.1.* mode."
+    print >> sys.stderr, "                                       By default, QUAST filters Nucmer\'s alignments to keep only best ones"
+    print >> sys.stderr, "--ambiguity-usage <none|one|all>       Uses none, one, or all alignments of a contig with multiple equally good alignments."
+    print >> sys.stderr, "                                       [default is %s]" % qconfig.ambiguity_usage
+    print >> sys.stderr, "--strict-NA                            Breaks contigs by any misassembly event to compute NAx and NGAx."
+    print >> sys.stderr, "                                       By default, QUAST breaks contigs only by extensive misassemblies (not local ones)"
+    print >> sys.stderr, "-l  --labels <\"label, label, ...\">   Names of assemblies to use in reports, comma-separated."
     print >> sys.stderr, ""
-    print >> sys.stderr, "-h  --help                        Prints this message"
+    print >> sys.stderr, "-h  --help                             Prints this message"
 
 
 def _partition_contigs(assemblies, ref_fpaths, corrected_dirpath, alignments_fpath_template):

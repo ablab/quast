@@ -86,24 +86,27 @@ def clear_files(fpath, nucmer_fpath):
     if os.path.isfile(fpath + '.clean'):
         os.remove(fpath + '.clean')
 
+
 class NucmerStatus:
-    FAILED=0
-    OK=1
-    NOT_ALIGNED=2
+    FAILED = 0
+    OK = 1
+    NOT_ALIGNED = 2
 
 
-def run_nucmer(prefix, reference, assembly, log_out, log_err, myenv):
-    log = open(log_out, 'a')
-    err = open(log_err, 'a')
+def run_nucmer(prefix, ref_fpath, contigs_fpath, log_out_fpath, log_err_fpath, myenv):
+    log = open(log_out_fpath, 'a')
+    err = open(log_err_fpath, 'a')
     # additional GAGE params of Nucmer: '-l', '30', '-banded'
     subprocess.call(['nucmer', '-c', str(qconfig.mincluster), '-l', str(qconfig.mincluster),
-                     '--maxmatch', '-p', prefix, reference, assembly],
+                     '--maxmatch', '-p', prefix, ref_fpath, contigs_fpath],
                      stdout=log, stderr=err, env=myenv)
 
 
 def plantakolya(cyclic, i, contigs_fpath, nucmer_fpath, myenv, output_dirpath, ref_fpath):
     assembly_name = qutils.name_from_fpath(contigs_fpath)
-    logger.info('  ' + qutils.index_to_str(i) + assembly_name)
+    assembly_label = qutils.label_from_fpath(contigs_fpath)
+
+    logger.info('  ' + qutils.index_to_str(i) + assembly_label)
 
     # run plantakolya tool
     log_out_fpath = os.path.join(output_dirpath, "contigs_report_" + assembly_name + '.stdout')
@@ -1207,10 +1210,14 @@ def plantakolya(cyclic, i, contigs_fpath, nucmer_fpath, myenv, output_dirpath, r
         return NucmerStatus.OK, result, aligned_lengths
 
 
-def plantakolya_process(cyclic, nucmer_output_dir, contigs_fpath, id, myenv, output_dir, reference):
+def plantakolya_process(cyclic, nucmer_output_dirpath, contigs_fpath,
+                        i, myenv, output_dirpath, ref_fpath):
     assembly_name = qutils.name_from_fpath(contigs_fpath)
-    nucmer_fname = os.path.join(nucmer_output_dir, assembly_name)
-    nucmer_is_ok, result, aligned_lengths = plantakolya(cyclic, id, contigs_fpath, nucmer_fname, myenv, output_dir, reference)
+
+    nucmer_fname = os.path.join(nucmer_output_dirpath, assembly_name)
+    nucmer_is_ok, result, aligned_lengths = plantakolya(
+        cyclic, i, contigs_fpath, nucmer_fname, myenv, output_dirpath, ref_fpath)
+
     clear_files(contigs_fpath, nucmer_fname)
     return nucmer_is_ok, result, aligned_lengths
 

@@ -131,5 +131,9 @@ def splitext_for_fasta_file(fname):
     return basename, fasta_ext
 
 
-def name_from_fpath(corr_fpath):
-    return os.path.splitext(os.path.basename(corr_fpath))[0]
+def name_from_fpath(fpath):
+    return os.path.splitext(os.path.basename(fpath))[0]
+
+
+def label_from_fpath(fpath):
+    return qconfig.assembly_labels_by_fpath[fpath]

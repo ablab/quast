@@ -17,7 +17,9 @@ logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 
 def run_gage(i, contigs_fpath, gage_results_dirpath, gage_tool_path, reference, tmp_dir):
     assembly_name = qutils.name_from_fpath(contigs_fpath)
-    logger.info('  ' + qutils.index_to_str(i) + assembly_name + '...')
+    assembly_label = qutils.label_from_fpath(contigs_fpath)
+
+    logger.info('  ' + qutils.index_to_str(i) + assembly_label + '...')
 
     # run gage tool
     log_out_fpath = os.path.join(gage_results_dirpath, 'gage_' + assembly_name + '.stdout')
@@ -90,12 +92,13 @@ def do(ref_fpath, contigs_fpaths, output_dirpath):
     if not error_occurred:
         ## find metrics for total report:
         for i, contigs_fpath in enumerate(contigs_fpaths):
+            assembly_name = qutils.name_from_fpath(contigs_fpath)
+            assembly_label = qutils.label_from_fpath(contigs_fpath)
+
             report = reporting.get(contigs_fpath)
 
-            log_out_fpath = os.path.join(gage_results_dirpath,
-                                         'gage_' +
-                                         qutils.name_from_fpath(contigs_fpath) +
-                                         '.stdout')
+            log_out_fpath = os.path.join(
+                gage_results_dirpath, 'gage_' + assembly_name + '.stdout')
             logfile_out = open(log_out_fpath, 'r')
             cur_metric_id = 0
             for line in logfile_out:

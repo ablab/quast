@@ -29,6 +29,13 @@ addsitedir(os.path.join(qconfig.LIBS_LOCATION, 'site_packages'))
 COMBINED_REF_FNAME = 'combined_reference.fasta'
 
 
+class Assembly:
+    def __init__(self, fpath, label):
+        self.fpath = fpath
+        self.label = label
+        self.name = os.path.splitext(os.path.basename(self.fpath))[0]
+
+
 def usage():
     print >> sys.stderr, "Options:"
     print >> sys.stderr, "-o            <dirname>      Directory to store all result file. Default: quast_results/results_<datetime>"
@@ -53,36 +60,36 @@ def usage():
     print >> sys.stderr, "                                  [default is %s]" % qconfig.ambiguity_usage
     print >> sys.stderr, "--strict-NA                       Breaks contigs by any misassembly event to compute NAx and NGAx."
     print >> sys.stderr, "                                  By default, QUAST breaks contigs only by extensive misassemblies (not local ones)"
+    print >> sys.stderr, "-l  --labels                      Names of assemblies to use in reports, comma-separated."
+    print >> sys.stderr, ""
     print >> sys.stderr, "-h  --help                        Prints this message"
 
 
-def _partition_contigs(contigs_fpaths, ref_fpaths, corrected_dirpath, alignments_fpath_template):
+def _partition_contigs(assemblies, ref_fpaths, corrected_dirpath, alignments_fpath_template):
     # not_aligned_anywhere_dirpath = os.path.join(output_dirpath, 'contigs_not_aligned_anywhere')
     # if os.path.isdir(not_aligned_anywhere_dirpath):
     #     os.rmdir(not_aligned_anywhere_dirpath)
     # os.mkdir(not_aligned_anywhere_dirpath)
 
-    not_aligned_fpaths = []
-    # array of fpaths for each reference
-    partitions = dict([(qutils.name_from_fpath(ref_fpath), []) for ref_fpath in ref_fpaths])
+    not_aligned_assemblies = []
+    # array of assemblies for each reference
+    assemblies_by_ref = dict([(qutils.name_from_fpath(ref_fpath), []) for ref_fpath in ref_fpaths])
 
-    for contigs_fpath in contigs_fpaths:
-        assembly_name = qutils.name_from_fpath(contigs_fpath)
-        not_aligned_fname = assembly_name + '_not_aligned_anywhere.fasta'
+    for asm in assemblies:
+        not_aligned_fname = asm.name + '_not_aligned_anywhere.fasta'
         not_aligned_fpath = os.path.join(corrected_dirpath, not_aligned_fname)
         contigs = {}
         aligned_contig_names = set()
 
-        alignments_tsv_fpath = alignments_fpath_template % assembly_name
-        with open(alignments_tsv_fpath) as alignments_tsv_f:
-            for line in alignments_tsv_f.readlines():
+        with open(alignments_fpath_template % asm.name) as alignments_tsv_f:
+            for line in alignments_tsv_f:
                 values = line.split()
                 ref_name = values[0]
                 ref_contigs_names = values[1:]
                 ref_contigs_fpath = os.path.join(
-                    corrected_dirpath, assembly_name + '_to_' + ref_name[:40] + '.fasta')
+                    corrected_dirpath, asm.name + '_to_' + ref_name[:40] + '.fasta')
 
-                for (cont_name, seq) in fastaparser.read_fasta(contigs_fpath):
+                for (cont_name, seq) in fastaparser.read_fasta(asm.fpath):
                     if not cont_name in contigs.keys():
                         contigs[cont_name] = seq
 
@@ -91,16 +98,18 @@ def _partition_contigs(contigs_fpaths, ref_fpaths, corrected_dirpath, alignments
                         aligned_contig_names.add(cont_name)
                         fastaparser.write_fasta(ref_contigs_fpath, [(cont_name, seq)], 'a')
 
-                partitions[ref_name].append(ref_contigs_fpath)
+                ref_asm = Assembly(ref_contigs_fpath, asm.label)
+                assemblies_by_ref[ref_name].append(ref_asm)
 
         # Exctraction not aligned contigs
         all_contigs_names = set(contigs.keys())
         not_aligned_contigs_names = all_contigs_names - aligned_contig_names
         fastaparser.write_fasta(not_aligned_fpath, [(name, contigs[name]) for name in not_aligned_contigs_names])
 
-        not_aligned_fpaths.append(not_aligned_fpath)
+        not_aligned_asm = Assembly(not_aligned_fpath, asm.label)
+        not_aligned_assemblies.append(not_aligned_asm)
 
-    return partitions, not_aligned_fpaths
+    return assemblies_by_ref, not_aligned_assemblies
 
 
 # class LoggingIndentFormatter(logging.Formatter):
@@ -114,11 +123,11 @@ def _partition_contigs(contigs_fpaths, ref_fpaths, corrected_dirpath, alignments
 
 
 def _start_quast_main(
-        name, args, contigs_fpaths, reference_fpath=None,
+        name, args, assemblies, reference_fpath=None,
         output_dirpath=None, exit_on_exception=True):
     args = args[:]
 
-    args.extend(contigs_fpaths)
+    args.extend([asm.fpath for asm in assemblies])
 
     if reference_fpath:
         args.append('-R')
@@ -127,6 +136,15 @@ def _start_quast_main(
     if output_dirpath:
         args.append('-o')
         args.append(output_dirpath)
+
+    args.append('--labels')
+
+    def quote(line):
+        if ' ' in line:
+            line = '"%s"' % line
+        return line
+
+    args.append(quote(', '.join([asm.label for asm in assemblies])))
 
     import quast
     reload(quast)
@@ -143,31 +161,36 @@ def _start_quast_main(
     logger.info_to_file('(logging to ' +
                         os.path.join(output_dirpath,
                                      qconfig.LOGGER_DEFAULT_NAME + '.log)'))
-    try:
-        quast.main(args)
+    # try:
+    return quast.main(args)
 
-    except Exception, e:
-        if exit_on_exception:
-            logger.exception(e)
-        else:
-            msg = 'Error running quast.py' + (' ' + name if name else '')
-            msg += ': ' + e.strerror
-            if e.message:
-                msg += ', ' + e.message
-            logger.error(msg)
+    # except Exception, (errno, strerror):
+    #     if exit_on_exception:
+    #         logger.exception(e)
+    #     else:
+    #         msg = 'Error running quast.py' + (' ' + name if name else '')
+    #         msg += ': ' + e.strerror
+    #         if e.message:
+    #             msg += ', ' + e.message
+    #         logger.error(msg)
 
 
-def _correct_contigs(contigs_fpaths, corrected_dirpath, min_contig):
-    corrected_contigs_fpaths = []
+def _correct_contigs(contigs_fpaths, corrected_dirpath, min_contig, labels):
+    assemblies = []
 
     for i, contigs_fpath in enumerate(contigs_fpaths):
         contigs_fname = os.path.basename(contigs_fpath)
-        name, ctg_fasta_ext = qutils.splitext_for_fasta_file(contigs_fname)
-        corr_fpath = qutils.unique_corrected_fpath(
-            os.path.join(corrected_dirpath, name + ctg_fasta_ext))
+        label, ctg_fasta_ext = qutils.splitext_for_fasta_file(contigs_fname)
 
-        assembly_name = qutils.name_from_fpath(corr_fpath)
-        logger.info('  %s ==> %s' % (contigs_fpath, assembly_name))
+        if labels:
+            label = labels[i]
+
+        corr_fpath = qutils.unique_corrected_fpath(
+            os.path.join(corrected_dirpath, label + ctg_fasta_ext))
+
+        assembly = Assembly(corr_fpath, label)
+
+        logger.info('  %s ==> %s' % (contigs_fpath, label))
 
         # Handle fasta
         lengths = fastaparser.get_lengths_from_fastafile(contigs_fpath)
@@ -180,9 +203,9 @@ def _correct_contigs(contigs_fpaths, corrected_dirpath, min_contig):
         if not quast.correct_fasta(contigs_fpath, corr_fpath, min_contig):
             continue
 
-        corrected_contigs_fpaths.append(corr_fpath)
+        assemblies.append(assembly)
 
-    return corrected_contigs_fpaths
+    return assemblies
 
 
 def _correct_refrences(ref_fpaths, corrected_dirpath):
@@ -247,7 +270,6 @@ def main(args):
     operons = ''
     draw_plots = qconfig.draw_plots
     html_report = qconfig.html_report
-    save_json = qconfig.save_json
     make_latest_symlink = True
 
     try:
@@ -265,15 +287,16 @@ def main(args):
     ref_fpaths = []
     combined_ref_fpath = ''
 
-    json_outputpath = None
     output_dirpath = None
+
+    labels = None
 
     for opt, arg in options:
         # Yes, this is a code duplicating. Python's getopt is non well-thought!!
         if opt in ('-o', "--output-dir"):
             # Removing output dir arg in order to further
             # construct other quast calls from this options
-            args.remove('-o')
+            args.remove(opt)
             args.remove(arg)
 
             output_dirpath = os.path.abspath(arg)
@@ -290,7 +313,7 @@ def main(args):
         elif opt in ('-R', "--reference"):
             # Removing reference args in order to further
             # construct quast calls from this args with other reference options
-            args.remove('-R')
+            args.remove(opt)
             args.remove(arg)
 
             ref_fpaths = arg.split(',')
@@ -301,20 +324,6 @@ def main(args):
         elif opt in ('-M', "--min-contig"):
             min_contig = int(arg)
 
-        elif opt in ('-j', '--save-json'):
-            save_json = True
-
-        elif opt in ('-J', '--save-json-to'):
-            save_json = True
-            make_latest_symlink = False
-            json_outputpath = arg
-
-        elif opt == '--no-plots':
-            draw_plots = False
-
-        elif opt == '--no-html':
-            html_report = False
-
         elif opt in ('-h', "--help"):
             usage()
             sys.exit(0)
@@ -322,45 +331,42 @@ def main(args):
         elif opt in ('-T', "--threads"):
             pass
 
+        elif opt in ('-d', "--debug"):
+            RELEASE_MODE = False
+
+        elif opt in ('-l', '--labels'):
+            args.remove(opt)
+            args.remove(arg)
+            labels = quast.parse_labels(arg, contigs_fpaths)
+
+        elif opt in ('-j', '--save-json'):
+            pass
+        elif opt in ('-J', '--save-json-to'):
+            pass
         elif opt in ('-t', "--contig-thresholds"):
             pass
-
         elif opt in ('-c', "--mincluster"):
             pass
-
         elif opt == "--est-ref-size":
             pass
-
         elif opt in ('-S', "--gene-thresholds"):
             pass
-
         elif opt in ('-s', "--scaffolds"):
             pass
-
         elif opt == "--gage":
             pass
-
         elif opt in ('-e', "--eukaryote"):
             pass
-
         elif opt in ('-f', "--gene-finding"):
             pass
-
         elif opt in ('-a', "--ambiguity-usage"):
             pass
-
         elif opt in ('-u', "--use-all-alignments"):
             pass
-
         elif opt in ('-n', "--strict-NA"):
             pass
-
         elif opt in ("-m", "--meta"):
             pass
-
-        elif opt in ('-d', "--debug"):
-            pass
-
         else:
             raise ValueError
 
@@ -376,9 +382,9 @@ def main(args):
     #         shutil.rmtree(output_dirpath)
 
     # Directories
-    output_dirpath, json_outputpath, existing_alignments = \
-        quast._set_up_output_dir(output_dirpath, json_outputpath,
-                                 make_latest_symlink, save_json)
+    output_dirpath, _, existing_alignments = \
+        quast._set_up_output_dir(output_dirpath, None,
+                                 make_latest_symlink, False)
 
     corrected_dirpath = os.path.join(output_dirpath, qconfig.corrected_dirname)
 
@@ -412,12 +418,12 @@ def main(args):
     # PROCESSING CONTIGS
     logger.info()
     logger.info('Contigs:')
-    contigs_fpaths = _correct_contigs(contigs_fpaths, corrected_dirpath, min_contig)
+    assemblies = _correct_contigs(contigs_fpaths, corrected_dirpath, min_contig, labels)
 
-    if not contigs_fpaths:
-        logger.error("None of assembly file contain correct contigs. "
-                     "Please, provide different files or decrease --min-contig threshold.",
-                     exit_with_code=4)
+    if not assemblies:
+        logger.error("None of the assembly files contains correct contigs. "
+                     "Please, provide different files or decrease --min-contig threshold.")
+        return 4
 
     # Running QUAST(s)
     args += ['--meta']
@@ -429,7 +435,7 @@ def main(args):
         _start_quast_main(
             None,
             args,
-            contigs_fpaths=contigs_fpaths,
+            assemblies=assemblies,
             output_dirpath=os.path.join(output_dirpath, 'quast_output'),
             exit_on_exception=True)
         exit(0)
@@ -440,25 +446,25 @@ def main(args):
     logger.info('Starting quast.py ' + run_name + '...')
 
     _start_quast_main(run_name, args,
-        contigs_fpaths=contigs_fpaths,
+        assemblies=assemblies,
         reference_fpath=combined_ref_fpath,
         output_dirpath=os.path.join(output_dirpath, 'combined_quast_output'))
 
     # Partitioning contigs into bins aligned to each reference
-    partitions, not_aligned_fpaths = _partition_contigs(
-        contigs_fpaths, ref_fpaths, corrected_dirpath,
+    assemblies_by_reference, not_aligned_assemblies = _partition_contigs(
+        assemblies, ref_fpaths, corrected_dirpath,
         os.path.join(output_dirpath, 'combined_quast_output', 'contigs_reports', 'alignments_%s.tsv'))
 
-    for ref_name, contigs_fpaths in partitions.iteritems():
+    for ref_name, ref_assemblies in assemblies_by_reference.iteritems():
         logger.info('')
-        if not contigs_fpaths:
-            logger.info('No contigs are aligned to the reference ' + ref_name)
+        if not ref_assemblies:
+            logger.info('No contigs were aligned to the reference ' + ref_name)
         else:
             run_name = 'for the contigs aligned to ' + ref_name
             logger.info('Starting quast.py ' + run_name)
 
             _start_quast_main(run_name, args,
-                contigs_fpaths=contigs_fpaths,
+                assemblies=ref_assemblies,
                 reference_fpath=os.path.join(corrected_dirpath, ref_name) + common_ref_fasta_ext,
                 output_dirpath=os.path.join(output_dirpath, ref_name + '_quast_output'),
                 exit_on_exception=False)
@@ -468,10 +474,13 @@ def main(args):
     logger.info()
     logger.info('Starting quast.py ' + run_name + '...')
 
-    _start_quast_main(run_name, args,
-        contigs_fpaths=not_aligned_fpaths,
+    return_code = _start_quast_main(run_name, args,
+        assemblies=not_aligned_assemblies,
         output_dirpath=os.path.join(output_dirpath, 'not_aligned_quast_output'),
         exit_on_exception=False)
+
+    if return_code not in [0, 4]:
+        logger.error('Error running quast.py for the contigs not aligned anywhere')
 
     quast._cleanup(corrected_dirpath)
 
@@ -482,7 +491,7 @@ def main(args):
 
 if __name__ == '__main__':
     try:
-        main(sys.argv[1:])
+        return_code = main(sys.argv[1:])
     except Exception, e:
         logger.exception(e)
 

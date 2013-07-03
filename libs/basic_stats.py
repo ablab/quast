@@ -106,13 +106,17 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, all_pdf, draw_plots, json_outp
     lists_of_lengths = []
     numbers_of_Ns = []
     for id, contigs_fpath in enumerate(contigs_fpaths):
-        logger.info('    ' + qutils.index_to_str(id) + qutils.name_from_fpath(contigs_fpath))
+        assembly_name = qutils.name_from_fpath(contigs_fpath)
+        assembly_label = qutils.label_from_fpath(contigs_fpath)
+
+        logger.info('    ' + qutils.index_to_str(id) + assembly_label)
         #lists_of_lengths.append(fastaparser.get_lengths_from_fastafile(contigs_fpath))
         list_of_length = []
         number_of_Ns = 0
         for (name, seq) in fastaparser.read_fasta(contigs_fpath):
             list_of_length.append(len(seq))
             number_of_Ns += seq.count('N')
+
         lists_of_lengths.append(list_of_length)
         numbers_of_Ns.append(number_of_Ns)
 
@@ -144,7 +148,7 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, all_pdf, draw_plots, json_outp
         total_GC, GC_distribution = GC_content(contigs_fpath)
         list_of_GC_distributions.append(GC_distribution)
         logger.info('    ' + qutils.index_to_str(id) +
-                    qutils.name_from_fpath(contigs_fpath) + \
+                    qutils.label_from_fpath(contigs_fpath) + \
                     ', N50 = ' + str(n50) + \
                     ', L50 = ' + str(l50) + \
                     ', Total length = ' + str(total_length) + \

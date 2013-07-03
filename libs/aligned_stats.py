@@ -57,7 +57,7 @@ def do(ref_fpath, contigs_fpaths, aligned_lengths_lists,
         lga75 = N50.LG50(lens, reference_length, 75)
         logger.info('    ' +
                     qutils.index_to_str(i) +
-                    qutils.name_from_fpath(contigs_fpath) +
+                    qutils.label_from_fpath(contigs_fpath) +
                  ', Largest alignment = ' + str(max(lens)) +
                  ', NA50 = ' + str(na50) +
                  ', NGA50 = ' + str(nga50) +

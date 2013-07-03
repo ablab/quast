@@ -105,14 +105,20 @@ class QLogger(object):
     def warning(self, message='', indent=''):
         self._logger.warning(indent + ('WARNING: ' + str(message) if message else ''))
 
-    def error(self, message='', exit_with_code=0, to_stderr=False, indent=''):
+    def error(self, message='', exit_with_code=0, to_stderr=False, indent='', fake_if_nested_run=False):
+        if fake_if_nested_run and self._indent_val > 0:
+            self.notice('')
+            self.notice(message)
+            return
+
         if message:
             msg = indent + 'ERROR! ' + str(message)
-            msg = '\n' + msg + '\n'
         else:
             msg = ''
 
+        self._logger.error('')
         self._logger.error(msg)
+        self._logger.error('')
 
         if to_stderr or not self._logger.handlers:
             print >> sys.stderr, msg

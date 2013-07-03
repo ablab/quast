@@ -60,6 +60,8 @@ def _usage():
         print >> sys.stderr, "--strict-NA                       Breaks contigs by any misassembly event to compute NAx and NGAx."
         print >> sys.stderr, "                                  By default, QUAST breaks contigs only by extensive misassemblies (not local ones)"
         print >> sys.stderr, "-m  --meta                        Metagenomic assembly. Uses MetaGeneMark for gene prediction. "
+        print >> sys.stderr, "-l  --labels                      Names of assemblies to use in reports, comma-separated."
+        print >> sys.stderr, ""
         print >> sys.stderr, "-h  --help                        Prints this message"
 
     else:
@@ -87,6 +89,7 @@ def _usage():
         print >> sys.stderr, "-J  --save-json-to <path>        saves the JSON-output to a particular path"
         print >> sys.stderr, "    --no-html                    doesn't build html report"
         print >> sys.stderr, "    --no-plots                   doesn't draw plots (to make quast faster)"
+        print >> sys.stderr, "-l  --labels                     names of assemblies to use in reports, comma-separated."
         print >> sys.stderr, ""
         print >> sys.stderr, "-d  --debug                      runs in debug mode"
         print >> sys.stderr, "-h  --help                       prints this message"
@@ -199,7 +202,7 @@ def _handle_fasta(contigs_fpath, corr_fpath, reporting):
 
     if not sum(l for l in lengths if l >= qconfig.min_contig):
         logger.warning("Skipping %s because it doesn't contain contigs >= %d bp."
-                % (qutils.name_from_fpath(contigs_fpath), qconfig.min_contig))
+                % (qutils.label_from_fpath(corr_fpath), qconfig.min_contig))
         return False
 
     # correcting
@@ -219,7 +222,7 @@ def _handle_fasta(contigs_fpath, corr_fpath, reporting):
     return True
 
 
-def _correct_contigs(contigs_fpaths, corrected_dirpath, reporting):
+def _correct_contigs(contigs_fpaths, corrected_dirpath, reporting, labels):
     ## removing from contigs' names special characters because:
     ## 1) Some embedded tools can fail on some strings with "...", "+", "-", etc
     ## 2) Nucmer fails on names like "contig 1_bla_bla", "contig 2_bla_bla" (it interprets as a contig's name only the first word of caption and gets ambiguous contigs names)
@@ -227,9 +230,13 @@ def _correct_contigs(contigs_fpaths, corrected_dirpath, reporting):
 
     for i, contigs_fpath in enumerate(contigs_fpaths):
         contigs_fname = os.path.basename(contigs_fpath)
-        name, fasta_ext = qutils.splitext_for_fasta_file(contigs_fname)
+        label, fasta_ext = qutils.splitext_for_fasta_file(contigs_fname)
+
+        if labels:
+            label = labels[i]
+
         corr_fpath = qutils.unique_corrected_fpath(
-            os.path.join(corrected_dirpath, name + fasta_ext))
+            os.path.join(corrected_dirpath, label + fasta_ext))
 
         # if os.path.isfile(contigs_fpath):  # in case of files with the same names
         #     i = 1
@@ -240,7 +247,10 @@ def _correct_contigs(contigs_fpaths, corrected_dirpath, reporting):
         #         corr_fpath = os.path.join(corrected_dirpath, corr_fname)
 
         assembly_name = qutils.name_from_fpath(corr_fpath)
-        logger.info('  %s ==> %s' % (contigs_fpath, assembly_name))
+
+        qconfig.assembly_labels_by_fpath[corr_fpath] = label
+
+        logger.info('  %s ==> %s' % (contigs_fpath, label))
 
         # if option --scaffolds is specified QUAST adds splitted version of assemblies to the comparison
         if qconfig.scaffolds:
@@ -310,6 +320,31 @@ def _correct_reference(ref_fpath, corrected_dirpath):
     return ref_fpath
 
 
+def parse_labels(line, contigs_fpaths):
+    def remove_quotes(line):
+        if line[0] == '"':
+            line = line[1:]
+        if line[-1] == '"':
+            line = line[:-1]
+        return line
+
+    # '"Assembly 1, "Assembly 2",Assembly3"'
+    labels = remove_quotes(line).split(',')
+    # 'Assembly 1 '
+    # '"Assembly 2"'
+    # 'Assembly3'
+    labels = [label.strip() for label in labels]
+
+    if len(labels) != len(contigs_fpaths):
+        logger.error('Number of labels is not equal to the number of files with contigs',
+                     11, to_stderr=True)
+        return []
+    else:
+        for i, label in enumerate(labels):
+            labels[i] = remove_quotes(label.strip())
+        return labels
+
+
 def main(args):
     quast_dirpath = os.path.dirname(qconfig.LIBS_LOCATION)
     if ' ' in quast_dirpath:
@@ -338,6 +373,8 @@ def main(args):
 
     json_outputpath = None
     output_dirpath = None
+
+    labels = None
 
     for opt, arg in options:
         # Yes, this is a code duplicating. But OptionParser is deprecated since version 2.7.
@@ -415,6 +452,10 @@ def main(args):
 
         elif opt in ('-d', "--debug"):
             qconfig.debug = True
+            RELEASE_MODE = False
+
+        elif opt in ('-l', '--labels'):
+            labels = parse_labels(arg, contigs_fpaths)
 
         elif opt in ('-h', "--help"):
             _usage()
@@ -481,14 +522,15 @@ def main(args):
     # PROCESSING CONTIGS
     logger.info()
     logger.info('Contigs:')
-    contigs_fpaths = _correct_contigs(contigs_fpaths, corrected_dirpath, reporting)
+    contigs_fpaths = _correct_contigs(contigs_fpaths, corrected_dirpath, reporting, labels)
 
     qconfig.assemblies_num = len(contigs_fpaths)
 
     if not contigs_fpaths:
-        logger.error("None of assembly file contain correct contigs. "
+        logger.error("None of the assembly files contains correct contigs. "
               "Please, provide different files or decrease --min-contig threshold.",
-              exit_with_code=4)
+              fake_if_nested_run=True)
+        return 4
 
     if qconfig.with_gage:
         ########################################################################
@@ -534,15 +576,19 @@ def main(args):
         ### NA and NGA ("aligned N and NG")
         ########################################################################
         from libs import aligned_stats
-        aligned_stats.do(ref_fpath, aligned_fpaths, aligned_lengths_lists, output_dirpath + '/contigs_reports',
-                         output_dirpath + '/aligned_stats', all_pdf, qconfig.draw_plots, json_outputpath, output_dirpath)
+        aligned_stats.do(ref_fpath, aligned_fpaths, aligned_lengths_lists,
+                         os.path.join(output_dirpath, 'contigs_reports'),
+                         os.path.join(output_dirpath, 'aligned_stats'), all_pdf,
+                         qconfig.draw_plots, json_outputpath, output_dirpath)
 
         ########################################################################
         ### GENOME_ANALYZER
         ########################################################################
         from libs import genome_analyzer
-        genome_analyzer.do(ref_fpath, aligned_fpaths, output_dirpath + '/contigs_reports',
-                           output_dirpath + '/genome_stats', qconfig.genes, qconfig.operons, all_pdf, qconfig.draw_plots, json_outputpath, output_dirpath)
+        genome_analyzer.do(ref_fpath, aligned_fpaths, os.path.join(output_dirpath, 'contigs_reports'),
+                           os.path.join(output_dirpath, 'genome_stats'),
+                           qconfig.genes, qconfig.operons, all_pdf, qconfig.draw_plots,
+                           json_outputpath, output_dirpath)
 
     # def add_empty_predicted_genes_fields():
     #     # TODO: make it in a more appropriate way (don't output predicted genes if annotations are provided)
@@ -572,12 +618,9 @@ def main(args):
     ########################################################################
     ### TOTAL REPORT
     ########################################################################
-
-    # changing names of assemblies to more human-readable versions if provided
-    if qconfig.legend_names and len(contigs_fpaths) == len(qconfig.legend_names):
-        for i, contigs_fpath in enumerate(contigs_fpaths):
-            report = reporting.get(contigs_fpath)
-            report.add_field(reporting.Fields.NAME, qconfig.legend_names[i])
+    for contigs_fpath in contigs_fpaths:
+        report = reporting.get(contigs_fpath)
+        report.add_field(reporting.Fields.NAME, qutils.label_from_fpath(contigs_fpath))
 
     reporting.save_total(output_dirpath)
 
@@ -607,4 +650,7 @@ def _cleanup(corrected_dirpath):
 
 
 if __name__ == '__main__':
-    main(sys.argv[1:])
+    # try:
+    return_code = main(sys.argv[1:])
+    # except Exception, e:
+    #     logger.exception(e)

@@ -492,6 +492,7 @@ def main(args):
 if __name__ == '__main__':
     try:
         return_code = main(sys.argv[1:])
+        exit(return_code)
     except Exception, e:
         logger.exception(e)
 

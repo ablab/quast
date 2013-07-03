@@ -4,7 +4,7 @@
       genes in such assemblies. Several references could be specified for detailed
       per each reference analysis.
      
-      Option --ambiguity-usage added instead of old --allow-ambuguity. Three 
+      Option --ambiguity-usage added instead of old --allow-ambiguity. Three
       different modes of processing ambiguous contigs now available.
 
       Option --labels (or -l) to provide human-readable assembly names. Those names

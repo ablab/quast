@@ -142,10 +142,11 @@ def gmhmm_p_metagenomic(tool_dirpath, fasta_fpath, err_fpath):
 
 
 def predict_genes(i, contigs_fpath, gene_lengths, out_dirpath, tool_dirpath, gmhmm_p_function):
-    logger.info('  ' + qutils.index_to_str(i) +
-                qutils.name_from_fpath(contigs_fpath))
-
     assembly_name = qutils.name_from_fpath(contigs_fpath)
+    assembly_label = qutils.label_from_fpath(contigs_fpath)
+
+    logger.info('  ' + qutils.index_to_str(i) + assembly_label)
+
     err_fpath = os.path.join(out_dirpath, assembly_name + '_genemark.stderr')
 
     genes = gmhmm_p_function(tool_dirpath, contigs_fpath, err_fpath)

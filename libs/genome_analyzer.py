@@ -158,7 +158,9 @@ def do(ref_fpath, contigs_fpaths, nucmer_dir, output_dirpath, genes_fpath, opero
     # process all contig files  
     for i, contigs_fpath in enumerate(contigs_fpaths):
         assembly_name = qutils.name_from_fpath(contigs_fpath)
-        logger.info('  ' + index_to_str(i) + assembly_name)
+        assembly_label = qutils.label_from_fpath(contigs_fpath)
+
+        logger.info('  ' + index_to_str(i) + assembly_label)
 
         nucmer_base_fpath = os.path.join(nucmer_prefix, assembly_name + '.coords')
         if qconfig.use_all_alignments:

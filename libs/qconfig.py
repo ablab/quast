@@ -30,8 +30,8 @@ splitted_ref = []
 long_options = "output-dir= save-json-to= genes= operons= reference= contig-thresholds= min-contig= "\
                "gene-thresholds= save-json gage eukaryote no-plots no-html help debug "\
                "ambiguity-usage= scaffolds threads= mincluster= est-ref-size= use-all-alignments gene-finding "\
-               "strict-NA meta".split()
-short_options = "o:G:O:R:t:M:S:J:jehdsa:T:c:ufnm"
+               "strict-NA meta labels=".split()
+short_options = "o:G:O:R:t:M:S:J:jehdsa:T:c:ufnml:"
 
 # default values for options
 contig_thresholds = "0,1000"
@@ -88,7 +88,7 @@ min_gene_overlap = 100  # to partial genes/operons finding
 GC_bin_size = 1.0
 
 # plotter and maybe other modules in the future
-legend_names = None
+assembly_labels_by_fpath = {}
 
 # for scaffolds
 list_of_broken_scaffolds = []

@@ -156,11 +156,10 @@ def cumulative_plot(reference, contigs_fpaths, lists_of_lengths, plot_fpath, tit
     box = ax.get_position()
     ax.set_position([box.x0, box.y0 + box.height * 0.2, box.width, box.height * 0.8])
 
-    legend_list = map(qutils.name_from_fpath, contigs_fpaths)
-    if qconfig.legend_names and len(contigs_fpaths) == len(qconfig.legend_names):
-        legend_list = qconfig.legend_names[:]
+    legend_list = map(qutils.label_from_fpath, contigs_fpaths)
     if reference:
         legend_list += ['Reference']
+
     # Put a legend below current axis
     try: # for matplotlib <= 2009-12-09
         ax.legend(legend_list, loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True,
@@ -239,9 +238,8 @@ def Nx_plot(contigs_fpaths, lists_of_lengths, plot_fpath, title='Nx', reference_
     box = ax.get_position()
     ax.set_position([box.x0, box.y0 + box.height * 0.2, box.width, box.height * 0.8])
 
-    legend_list = map(qutils.name_from_fpath, contigs_fpaths)
-    if qconfig.legend_names and len(contigs_fpaths) == len(qconfig.legend_names):
-        legend_list = qconfig.legend_names[:]
+    legend_list = map(qutils.label_from_fpath, contigs_fpaths)
+
     # Put a legend below current axis
     try: # for matplotlib <= 2009-12-09
         ax.legend(legend_list, loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True,
@@ -289,6 +287,7 @@ def GC_content_plot(ref_fpath, contigs_fpaths, list_of_GC_distributions, plot_fp
     all_fpaths = contigs_fpaths
     if ref_fpath:
         all_fpaths = contigs_fpaths + [ref_fpath]
+
     for i, (GC_distribution_x, GC_distribution_y) in enumerate(list_of_GC_distributions):
         max_y = max(max_y, max(GC_distribution_y))
 
@@ -313,14 +312,12 @@ def GC_content_plot(ref_fpath, contigs_fpaths, list_of_GC_distributions, plot_fp
     # Shink current axis's height by 20% on the bottom
     box = ax.get_position()
     ax.set_position([box.x0, box.y0 + box.height * 0.2, box.width, box.height * 0.8])
-    # Put a legend below current axis
-    legend_list = map(qutils.name_from_fpath, all_fpaths)
-    if qconfig.legend_names and len(contigs_fpaths) == len(qconfig.legend_names):
-        legend_list = qconfig.legend_names[:]
-        if ref_fpath:
-            legend_list += ['Reference']
-    elif ref_fpath:
-        legend_list[-1] = 'Reference'
+    # Put a legend below current axis bx
+
+    legend_list = map(qutils.label_from_fpath, contigs_fpaths)
+    if ref_fpath:
+        legend_list += ['Reference']
+
     try:  # for matplotlib <= 2009-12-09
         ax.legend(legend_list, loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True,
             shadow=True, ncol=n_columns)
@@ -400,13 +397,12 @@ def genes_operons_plot(reference_value, contigs_fpaths, files_feature_in_contigs
     box = ax.get_position()
     ax.set_position([box.x0, box.y0 + box.height * 0.2, box.width, box.height * 0.8])
 
-    legend_list = map(qutils.name_from_fpath, contigs_fpaths)
-    if qconfig.legend_names and len(contigs_fpaths) == len(qconfig.legend_names):
-        legend_list = qconfig.legend_names[:]
+    legend_list = map(qutils.label_from_fpath, contigs_fpaths)
     if reference_value:
         legend_list += ['Reference']
+
     # Put a legend below current axis
-    try: # for matplotlib <= 2009-12-09
+    try:  # for matplotlib <= 2009-12-09
         ax.legend(legend_list, loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True,
             shadow=True, ncol=n_columns)
     except ZeroDivisionError:
@@ -480,9 +476,7 @@ def histogram(contigs_fpaths, values, plot_fpath, title='', all_pdf=None, yaxis_
     ax.set_position([box.x0, box.y0 + box.height * 0.2, box.width, box.height * 0.8])
     ax.yaxis.grid(with_grid)
 
-    legend_list = map(qutils.name_from_fpath, contigs_fpaths)
-    if qconfig.legend_names and len(contigs_fpaths) == len(qconfig.legend_names):
-        legend_list = qconfig.legend_names[:]
+    legend_list = map(qutils.label_from_fpath, contigs_fpaths)
     # Put a legend below current axis
     try:  # for matplotlib <= 2009-12-09
         ax.legend(legend_list, loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True,

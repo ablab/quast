@@ -239,7 +239,7 @@ logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 ####################################################################################
 
 reports = {}  # basefilename -> Report
-assemblies_order = []  # for printing in appropriate order
+assembly_fpaths = []  # for printing in appropriate order
 
 #################################################
 
@@ -292,16 +292,14 @@ class Report(object):
 
 
 def get(assembly_fpath):
-    assembly_fpath = os.path.basename(assembly_fpath)
-    if assembly_fpath not in assemblies_order:
-        assemblies_order.append(assembly_fpath)
+    if assembly_fpath not in assembly_fpaths:
+        assembly_fpaths.append(assembly_fpath)
     return reports.setdefault(assembly_fpath, Report(assembly_fpath))
 
 
 def delete(assembly_fpath):
-    assembly_fpath = os.path.basename(assembly_fpath)
-    if assembly_fpath in assemblies_order:
-        assemblies_order.remove(assembly_fpath)
+    if assembly_fpath in assembly_fpaths:
+        assembly_fpaths.remove(assembly_fpath)
     if assembly_fpath in reports.keys():
         reports.pop(assembly_fpath)
 
@@ -317,8 +315,8 @@ def table(order=Fields.order):
         quality = get_quality(field)
         values = []
 
-        for assembly_name in assemblies_order:
-            report = get(assembly_name)
+        for assembly_fpath in assembly_fpaths:
+            report = get(assembly_fpath)
             value = report.get_field(field)
 
             if feature is None or value is None:

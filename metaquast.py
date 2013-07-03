@@ -367,8 +367,13 @@ def main(args):
             pass
         elif opt in ("-m", "--meta"):
             pass
+        elif opt in ["--no-plots"]:
+            pass
+        elif opt in ["--no-html"]:
+            pass
         else:
-            raise ValueError
+            logger.error('Unknown option: %s. Use -h for help.' % (opt + (' ' + arg) if arg else ''), to_stderr=True)
+            sys.exit(2)
 
     for c_fpath in contigs_fpaths:
         assert_file_exists(c_fpath, 'contigs')

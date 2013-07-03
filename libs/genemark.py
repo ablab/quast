@@ -131,7 +131,7 @@ def gmhmm_p_everyGC(tool_dirpath, fasta_fpath, err_fpath):
 
 def gmhmm_p_metagenomic(tool_dirpath, fasta_fpath, err_fpath):
     tool_exec_fpath = os.path.join(tool_dirpath, 'gmhmmp')
-    heu_fpath = os.path.join(tool_dirpath, 'MetaGeneMark_v1.mod')
+    heu_fpath = os.path.join(tool_dirpath, '../MetaGeneMark_v1.mod')
     gmhmm_fpath = fasta_fpath + '.gmhmm'
 
     with open(err_fpath, 'a') as err_file:

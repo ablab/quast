@@ -221,11 +221,17 @@ QUAST can work only with assemblies of length less than 4.29 Gbp and with refere
 <p>&nbsp;&nbsp;&nbsp;&nbsp;Maximum number of threads QUAST can use. The default value is the number of CPUs (or 4 if QUAST fails to determine the number of CPUs).</p>
 
 <p>
-    <code>-l &lt;--labels&gt;</code>
+    <code>-l &lt;label,label...&gt; or --labels &lt;label,label...&gt; </code>
 </p>
 <p>&nbsp;&nbsp;&nbsp;&nbsp;Human-readable assembly names. Those names will be used in reports, plots and logs. For example:<br>
+<pre class="code">
+<code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-l SPAdes,IDBA-UD</code>
+</pre>
+&nbsp;&nbsp;&nbsp;&nbsp;if your labels include spaces, use quotes:<br>
+<pre class="code">
 <code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-l "SPAdes 2.5, SPAdes 2.4, IDBA-UD"<br></code>
 <code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-l SPAdes,"Assembly 2",Assembly3"</code>
+</pre>
 </p>
 
 <p>
@@ -302,30 +308,45 @@ QUAST can work only with assemblies of length less than 4.29 Gbp and with refere
     <code>--meta</code>
 </p>
 <p>&nbsp;&nbsp;&nbsp;&nbsp;Use gene finding tool, specified for metagenomes (MetaGeneMark)
-    If you have multiple references, <a href='#metaquast'>use metaquast.py</a> insted (it is in the root directory).
+    If you have multiple references, <a href='#metaquast'>use metaquast.py</a> instead
+    (it is in the same directory as quast.py).
 </p>
 
 <a name="seq2.5"></a>
 <h3>2.5 MetaQUAST</h3>
 <p>
-    &nbsp;&nbsp;&nbsp;&nbsp;MetaQUAST accepts multiple references, in several comma-separated files, or in combined in a single fasta-file
-    (combinations are also allowed).<br>
-    &nbsp;&nbsp;&nbsp;&nbsp;The tool partitions all contigs in groups aligned to each reference.
-    Then it runs quast.py for all reference in combination, for each reference separately using corresponding contigs,
-    and finally for the rest contigs that were not alinged anywhere.<br>
-    &nbsp;&nbsp;&nbsp;&nbsp;All outputs are in separate directories inside the directory provided by <code>-o</code>.<br>
-</p>
+    MetaQUAST accepts multiple references, in several comma-separated files, or in a merged single fasta-file
+    (combinations are also allowed). The tool partitions all contigs in groups aligned to each reference.
+    Then it runs quast.py several times:<br>
+<table style="margin-left: 20px;">
+    <tr>
+        <td style="padding-right: 20px; padding-bottom: 5px;">for all reference in combination,</td>
+        <td></td>
+    </tr>
+    <tr>
+        <td style="padding-right: 20px; padding-bottom: 5px;">for each reference separately using corresponding contigs,</td>
+        <td></td>
+    </tr>
+    <tr>
+        <td style="padding-right: 20px; padding-bottom: 5px;">for the rest contigs that were not alinged anywhere.</td>
+        <td></td>
+    </tr>
+</table>
 
+<p>    All outputs are in separate directories inside the directory provided by <code>-o</code> (or in quast_results/latest).<br>
+
+</p>
+Usage:
 <pre class="code">
 <code>
-    python metaquast.py [quast.py options] -R &lt;filename,filename,filename...&gt; &lt;contig_file(s)&gt;
+    python metaquast.py contigs_1 contigs_2 ... -R reference_1,reference_2,reference_3,...
 </code>
 </pre>
 
 <p>
     <code></code>
 </p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;All options are the same as for quast.py, except for the <code>-R</code>: it can accept multiple references.</p>
+<p>All options are the same as for quast.py, except for the <code>-R</code>: it can accept multiple references.</p>
 
 <br>
 <a name="sec3"></a>

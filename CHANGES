@@ -1,22 +1,37 @@
 -- Version history --
 
-2.2   Now supports metagenomic assemblies. MetaGeneMark embedded for finding
-      genes in such assemblies. Several references could be specified for detailed
-      per each reference analysis.
-     
-      Option --ambiguity-usage added instead of old --allow-ambiguity. Three
-      different modes of processing ambiguous contigs now available.
+2.2   1. The tool now supports metagenomic assemblies. It accepts multiple references
+      and produces several reports:
+       — for all contigs and all input genomes merged into one,
+       — separate reports for only contigs aligned to a particular genome,
+       — for the contigs not aligned to any reference provided.
 
-      Option --labels (or -l) to provide human-readable assembly names. Those names
-      will be used in reports, plots and logs. For example:
+      Usage:
+         metaquast.py contigs_1 contigs_2 ... -R reference_1,reference_2,reference_3,...
+
+      All other options for metaquast.py are the same as for quast.py.
+
+      2. MetaGeneMark is used to find genes in metagenomic assemblies.
+      In metaquast.py by default, in quast.py with --meta option.
+
+      3. In place of --allow-ambiguity, a new option --ambiguity-usage (-a) introduced.
+      The new option lets specify a way to process ambiguous regions:
+      -a one, -a all or -a none.
+
+      4. A new option --labels (or -l) allows to provide human-readable assembly names.
+      Those names will be used in reports, plots and logs, instead of file names.
+      For example:
+         -l SPAdes,IDBA-UD
+
+      if your labels include spaces, use quotes:
          -l "SPAdes 2.5, SPAdes 2.4, IDBA-UD"
+
          -l SPAdes,"Assembly 2",Assembly3
 
-      Interactive HTML reports are improved.
+      5. Minor improvements of HTML reports.
 
-      Fixed bugs in misassemblies detection algorithm.
+      6. Fixed bugs in misassemblies detection algorithm.
 
-      Fixed several minor bugs.
 
 2.1   Option --strict-NA added to control computation of NAx/NGAx metrics. 
       This option forces QUAST to break contigs by any misassembly event, 
@@ -42,6 +57,7 @@
       # operons).
 
       Fixed several minor bugs.
+
 
 2.0   Significantly improved assessment of large genomes. Current limit on size of a
       reference genome is 536 Mbp PER CHROMOSOME instead of 536 Mbp TOTAL in the

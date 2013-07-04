@@ -187,9 +187,6 @@ def do(fasta_fpaths, gene_lengths, out_dirpath):
 
     logger.info('Running %s tool...' % tool_name)
 
-    if not os.path.isdir(out_dirpath):
-        os.mkdir(out_dirpath)
-
     tool_dirpath = os.path.join(qconfig.LIBS_LOCATION, tool_dirname, qconfig.platform_name)
     if not os.path.exists(tool_dirpath):
         logger.warning('  Sorry, can\'t use %s on this platform, skipping gene prediction.' % tool_name)
@@ -197,16 +194,19 @@ def do(fasta_fpaths, gene_lengths, out_dirpath):
     else:
         install_genemark(tool_dirpath)
 
+        if not os.path.isdir(out_dirpath):
+            os.mkdir(out_dirpath)
+
         n_jobs = min(len(fasta_fpaths), qconfig.max_threads)
         from joblib import Parallel, delayed
-        results = Parallel(n_jobs=n_jobs)(delayed(predict_genes)(id, fasta_fpath, gene_lengths,
+        results = Parallel(n_jobs=n_jobs)(delayed(predict_genes)(i, fasta_fpath, gene_lengths,
                                                                  out_dirpath, tool_dirpath, gmhmm_p_function)
-            for id, fasta_fpath in enumerate(fasta_fpaths))
+            for i, fasta_fpath in enumerate(fasta_fpaths))
 
         # saving results
-        for id, fasta_path in enumerate(fasta_fpaths):
+        for i, fasta_path in enumerate(fasta_fpaths):
             report = reporting.get(fasta_path)
-            unique_count, count = results[id]
+            unique_count, count = results[i]
             if unique_count:
                 report.add_field(reporting.Fields.PREDICTED_GENES_UNIQUE, unique_count)
             if count:

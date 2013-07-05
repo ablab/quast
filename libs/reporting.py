@@ -112,6 +112,7 @@ class Fields:
              UNCALLED_PERCENT, SUBSERROR, INDELSERROR, GENES, OPERONS, PREDICTED_GENES_UNIQUE, PREDICTED_GENES,
              LARGALIGN, NA50, NGA50, NA75, NGA75]
 
+    andrey_order = [NAME, NG50, CONTIGS, LARGCONTIG, TOTALLEN, MISASSEMBL, MAPPEDGENOME]
 
     # content and order of metrics in DETAILED MISASSEMBLIES REPORT (<quast_output_dir>/contigs_reports/misassemblies_report.txt, .tex, .tsv)
     misassemblies_order = [NAME, MIS_ALL_EXTENSIVE, MIS_RELOCATION, MIS_TRANSLOCATION, MIS_INVERTION,
@@ -444,7 +445,7 @@ def get_num_from_table_value(val):
 
 
 def save_tex(fpath, table, is_transposed=False):
-    all_rows = get_all_rows_out_of_table(table)
+    all_rows = get_all_rows_out_of_table(table, is_transposed)
 
     tex_file = open(fpath, 'w')
     # Header
@@ -511,6 +512,9 @@ def save_tex(fpath, table, is_transposed=False):
     print >>tex_file, '\\end{document}'
     tex_file.close()
 
+    if os.path.basename(fpath) == 'report.tex':
+        pass
+
 
 def save(output_dirpath, report_name, transposed_report_name, order):
     # Where total report will be saved
@@ -523,13 +527,14 @@ def save(output_dirpath, report_name, transposed_report_name, order):
     save_txt(report_txt_fpath, tab)
     save_tsv(report_tsv_fpath, tab)
     save_tex(report_tex_fpath, tab)
-    logger.info('    saved to ' + report_txt_fpath + ', ' + os.path.basename(report_tsv_fpath) + \
-             ', and ' + os.path.basename(report_tex_fpath))
+    logger.info('    saved to ' + report_txt_fpath +
+                ', ' + os.path.basename(report_tsv_fpath) +
+                ', and ' + os.path.basename(report_tex_fpath))
 
     if transposed_report_name:
         logger.info('  Transposed version of total report...')
 
-        all_rows = get_all_rows_out_of_table(tab)
+        all_rows = get_all_rows_out_of_table(tab, is_transposed=True)
         if all_rows[0]['metricName'] != Fields.NAME:
             logger.warning('transposed version can\'t be created! First column have to be assemblies names')
         else:

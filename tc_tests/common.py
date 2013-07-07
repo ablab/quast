@@ -229,6 +229,9 @@ def run_quast(name, contigs=None, params='', expected_exit_code=0):
     print
     os.chdir('..')
 
+    if expected_exit_code is None:
+        return exit_code
+
     if exit_code != expected_exit_code:
         if expected_exit_code == 0:
             print >> sys.stderr, 'Quast finished abnormally with exit code %d' % exit_code

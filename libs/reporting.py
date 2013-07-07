@@ -276,7 +276,7 @@ def get_quality(metric):
 class Report(object):
     def __init__(self, name):
         self.d = {}
-        self.add_field(Fields.NAME, qutils.rm_extentions_for_fasta_file(name))
+        self.add_field(Fields.NAME, name)
 
     def add_field(self, field, value):
         assert field in Fields.__dict__.itervalues(), 'Unknown field: %s' % field
@@ -294,7 +294,7 @@ class Report(object):
 def get(assembly_fpath):
     if assembly_fpath not in assembly_fpaths:
         assembly_fpaths.append(assembly_fpath)
-    return reports.setdefault(assembly_fpath, Report(assembly_fpath))
+    return reports.setdefault(assembly_fpath, Report(qutils.label_from_fpath(assembly_fpath)))
 
 
 def delete(assembly_fpath):

@@ -41,8 +41,10 @@ def _get_fasta_file_handler(fpath):
             if len(names) > 1:
                 logger.warning('Zip archive must contain exactly one file. Using %s' % names[0])
 
-            fasta_file = zfile.open(names[0])
-
+            try:
+                fasta_file = zfile.open(names[0])
+            except AttributeError:
+                logger.error('Use python 2.6 or newer to work with contigs directly in zip.', exit_with_code=20)
     else:
         try:
             fasta_file = open(fpath)

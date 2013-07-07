@@ -14,7 +14,15 @@ print ''
 print ''
 
 zip_contigs = [contigs_1, contigs_1 + '.zip']
-run_quast(name + '_zip', contigs=zip_contigs, expected_exit_code=20)
+exit_code = run_quast(name + '_zip', contigs=zip_contigs, expected_exit_code=None)
+if exit_code == 20:
+    print 'QUAST worked as expected with exit code %s' % exit_code
+if exit_code == 0:
+    print 'QUAST worked as expected with exit code %s' % exit_code
+    check_report_files(name + '_zip')
+    assert_report_header(name + '_zip', zip_contigs)
+    assert_values_equal(name + '_zip')
+
 print ''
 print ''
 

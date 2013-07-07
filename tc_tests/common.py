@@ -18,8 +18,8 @@ reference_10k = 'reference_10k.fa.gz'
 genes_10k = 'genes_10k.txt'
 operons_10k = 'operons_10k.txt'
 
-contigs_1 = 'contigs.fasta'
-contigs_2 = 'contigs.fasta'
+contigs_1 = 'contigs_1.fasta'
+contigs_2 = 'contigs_2.fasta'
 reference = 'reference.fa.gz'
 genes = 'genes.txt'
 operons = 'operons.txt'
@@ -149,6 +149,65 @@ def assert_metric(name, metric, values=None, fname='report.tsv'):
 
     print >> sys.stderr, 'Assertion of "%s" in %s failed: no such metric in the file' % (metric, fname)
     exit(7)
+
+
+def get_metric_values(name, metric, fname='report.tsv'):
+    results_dirpath = get_results_dirpath(name)
+
+    fpath = os.path.join(results_dirpath, fname)
+    if not os.path.isfile(fpath):
+        print >> sys.stderr, 'File %s does not exist' % fpath
+        exit(5)
+
+    with open(fpath) as report_tsv_f:
+        for line in report_tsv_f:
+            tokens = line[:-1].split('\t')
+            if len(tokens) > 1 and tokens[0] == metric:
+                return tokens[1:]
+
+
+def assert_values_equal(name, metric=None, fname='report.tsv'):
+    results_dirpath = get_results_dirpath(name)
+
+    fpath = os.path.join(results_dirpath, fname)
+    if not os.path.isfile(fpath):
+        print >> sys.stderr, 'File %s does not exist' % fpath
+        exit(5)
+
+    def check_values_equal(tokens):
+        values = tokens[1:]
+
+        # assert all equal
+        variants = set(values)
+        if len(variants) == 1 or len(variants) == 0:
+            print 'OK:', '\t'.join(tokens)
+            return True
+        else:
+            print 'FAIL: Values differ:', '\t'.join(tokens)
+            return False
+
+    with open(fpath) as report_tsv_f:
+        fail = False
+
+        for line in report_tsv_f:
+            tokens = line[:-1].split('\t')
+
+            if tokens[0] == 'Assembly':
+                continue
+
+            if metric and tokens[0] == metric:
+                if not check_values_equal(tokens):
+                    exit(8)
+                else:
+                    return True
+
+            if not check_values_equal(tokens):
+                fail = True
+
+        if fail:
+            exit(8)
+        else:
+            return True
 
 
 def run_quast(name, contigs=None, params='', expected_exit_code=0):

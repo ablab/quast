@@ -97,17 +97,16 @@ def unique_corrected_fpath(fpath):
 
     corr_fname = correct_name(fname)
 
-    if corr_fname != fname:
-        if os.path.isfile(os.path.join(dirpath, corr_fname)):
-            i = 1
-            base_corr_fname = corr_fname
-            while os.path.isfile(os.path.join(dirpath, corr_fname)):
-                str_i = ''
-                if i > 1:
-                    str_i = str(i)
+    if os.path.isfile(os.path.join(dirpath, corr_fname)):
+        i = 1
+        base_corr_fname = corr_fname
+        while os.path.isfile(os.path.join(dirpath, corr_fname)):
+            str_i = ''
+            if i > 1:
+                str_i = str(i)
 
-                corr_fname = str(base_corr_fname) + '__' + str_i
-                i += 1
+            corr_fname = str(base_corr_fname) + '__' + str_i
+            i += 1
 
     return os.path.join(dirpath, corr_fname)
 

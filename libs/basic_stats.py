@@ -165,7 +165,7 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, all_pdf, draw_plots, json_outp
         if reference_length:
             report.add_field(reporting.Fields.NG75, ng75)
             report.add_field(reporting.Fields.LG75, lg75)
-        report.add_field(reporting.Fields.NUMCONTIGS, len(lengths_list))
+        report.add_field(reporting.Fields.CONTIGS, len(lengths_list))
         report.add_field(reporting.Fields.LARGCONTIG, max(lengths_list))
         report.add_field(reporting.Fields.TOTALLEN, total_length)
         report.add_field(reporting.Fields.GC, ('%.2f' % total_GC if total_GC else None))

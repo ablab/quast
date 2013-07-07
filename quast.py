@@ -214,10 +214,10 @@ def _handle_fasta(contigs_fpath, corr_fpath, reporting):
     report = reporting.get(corr_fpath)
 
     ## filling columns "Number of contigs >=110 bp", ">=200 bp", ">=500 bp"
-    report.add_field(reporting.Fields.CONTIGS,
+    report.add_field(reporting.Fields.CONTIGS__FOR_THRESHOLDS,
                      [sum(1 for l in lengths if l >= threshold)
                       for threshold in qconfig.contig_thresholds])
-    report.add_field(reporting.Fields.TOTALLENS,
+    report.add_field(reporting.Fields.TOTALLENS__FOR_THRESHOLDS,
                      [sum(l for l in lengths if l >= threshold)
                       for threshold in qconfig.contig_thresholds])
     return True

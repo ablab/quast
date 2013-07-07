@@ -1335,7 +1335,7 @@ def do(reference, contigs_fpaths, cyclic, output_dir):
     def save_result_for_unaligned(result):
         report = reporting.get(fname)
 
-        unaligned_ctgs = report.get_field(reporting.Fields.NUMCONTIGS)
+        unaligned_ctgs = report.get_field(reporting.Fields.CONTIGS)
         unaligned_length = report.get_field(reporting.Fields.TOTALLEN)
         report.add_field(reporting.Fields.UNALIGNED, '%d + %d part' % (unaligned_ctgs, 0))
         report.add_field(reporting.Fields.UNALIGNEDBASES, unaligned_length)

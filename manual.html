@@ -6,36 +6,86 @@
             margin-top: 30px;
             margin-left: 50px;
             max-width: 800px;
+            font-family: Tahoma,sans-serif;
+            font-size: 14px;
         }
-        .code {
+        pre {
             background-color: #EEE;
+            padding: 5px 0px;
+            margin-top: 5px;
+            margin-bottom: 15px;
         }
         table td {
             vertical-align: top;
+        }
+        h1, h2, h3, h4 {
+            margin-bottom: -10px;            
+        }
+        h2 {
+            margin-top: 40px;
+        }
+        h3 {
+            margin-top: 40px;
+        }
+        h4 {
+            margin-top: 30px;
+            font-size: 1.1em;
+        }
+        ul {
+            margin-top: -12px;
+        }
+        li {
+            margin-bottom: 5px;
+        }
+        .options {
+            margin-left: 34px;
+        }
+        .option {      
+            margin-top: 15px;
+            margin-bottom: 5px;
+        }
+        .options .option:first-child {
+            margin-top: 4px;
+        }
+        .metric-name, .metric-ref {
+            font-family: Georgia,serif;            
+        }
+        .metric-name {
+            font-weight: bold;
+        }
+        .metrics_description p {
+            margin-bottom: 20px;
+        }
+        .hs { /* 10<span class="hs"></span>000 */
+            margin-left: .2em; 
+        }
+        .rhs { /* 1<span class="rhs">&nbsp;</span>kb */            
+            font-size: 50%;
+            line-height: 1;
         }
     </style>
 </head>
 <body>
 <h1>QUAST 2.2 manual</h1>
 
-<p>QUAST stands for <u>QU</u>ality <u>AS</u>sesment <u>T</u>ool. 
-QUAST evaluates genome assemblies by computing various metrics.
+<p> QUAST stands for <u>QU</u>ality <u>AS</u>sesment <u>T</u>ool. 
+    The tool evaluates genome assemblies by computing various metrics.
     <br>
-    This manual will help you to run the tool and understand its output.
     <br>
     You can find all project news and the latest versions of source code and manual
     at <a href="http://sourceforge.net/projects/quast/">http://sourceforge.net/projects/quast/</a>.
     <br>
-    QUAST uses <a href="http://exon.gatech.edu/genemarks.cgi">GeneMarkS</a>, 
+    <br>
+    The tool utilizes <a href="http://exon.gatech.edu/genemarks.cgi">GeneMarkS</a>, 
     <a href="http://cbcb.umd.edu/software/glimmerhmm/">GlimmerHMM</a>, <a href="http://mummer.sourceforge.net/">MUMmer</a>,
-    and <a href="http://gage.cbcb.umd.edu/index.html">GAGE</a>. All their sources are embedded in QUAST and you don't need to install
+    and <a href="http://gage.cbcb.umd.edu/index.html">GAGE</a>. These tools are built in, so you don't need to install
     them separately.
     <br>
     <br>
-    QUAST version 2.2 was released under GPL v2 (see <a href="LICENSE">LICENSE</a> for details) on 3 July 2013.
+    Version 2.2 of QUAST was released under GPL v2 (see <a href="LICENSE">LICENSE</a> for details) on 3 July 2013.
 </p>
 
-<h2>Table of Contents</h2>
+<h2>Contents</h2>
 <ol>
   <li><a href="#sec1">Installation</a></li> 
   <li><a href="#sec2">Running QUAST</a> 
@@ -44,6 +94,7 @@ QUAST evaluates genome assemblies by computing various metrics.
       <li><a href="#sec2.2">Input data</a></li>
       <li><a href="#sec2.3">GAGE mode</a></li>
       <li><a href="#sec2.4">Command line options</a></li>
+      <li><a href="#sec2.5">Metagenomic assemblies</a></li>
     </ol>
   </li>
   <li><a href="#sec3">QUAST output</a> 
@@ -67,92 +118,88 @@ QUAST evaluates genome assemblies by computing various metrics.
 <h2>1. Installation</h2>
 
 <p>
-    QUAST can be run on Linux and Mac OS.
+    QUAST can be run on Linux or Mac OS.
     <br>
     It requires:
 <ul>
-    <li>Python v. 2 (2.5 or higher)</li>
-    <li>Perl v. 5.6.0 or higher</li>
-    <li><a href="http://mummer.sourceforge.net/manual/#requirements">MUMmer system requirements</a></li>    
+    <li>Python v. 2 (2.5 or higher),</li>
+    <li>Perl v. 5.6.0 or higher,</li>
+    <li>g++, make, sh, csh, sed, awk, ar.</li>    
 </ul>
-
+All those tools are usually preinstalled on Linux. On Mac OS, initially there is no make tool, and you will have to install 
+<a href='https://developer.apple.com/xcode/'>Xcode</a>. Note that you can optionally install only the
+<a href='https://developer.apple.com/downloads/index.action?name=Command%20Line%20Tools'>Command Line Tools</a> instead of the entire Xcode.
+<br>
+<br>
 It is highly recommended to install <a href="http://matplotlib.sourceforge.net/">Matplotlib</a> Python library for drawing plots.
 <br>
 It can be done on Ubuntu by typing:
 <pre class="code">
-<code>
     sudo apt-get install python-matplotlib
-</code>
 </pre>
 Or with Python <a href="http://www.pip-installer.org/">pip-installer</a>:
 <pre class="code">
-<code>
     pip install matplotlib
-</code>
 </pre>
 Or with the <a href="http://peak.telecommunity.com/DevCenter/EasyInstall">Easy Install</a> python module:
 <pre class="code">
-<code>
     easy_install matplotlib
-</code>
 </pre>
 
-
-<p>To download the <a href="https://downloads.sourceforge.net/project/quast/quast-2.2.tar.gz">QUAST source code tarball</a> and extract it:
-</p>
-<pre  class="code">
-<code>
+To download the <a href="https://downloads.sourceforge.net/project/quast/quast-2.2.tar.gz">QUAST source code tarball</a> and extract it:
+<pre class="code">
     wget https://downloads.sourceforge.net/project/quast/quast-2.2.tar.gz
     tar -xzf quast-2.2.tar.gz
     cd quast-2.2
-</code>
 </pre>
 
 <a name="sec2"></a>
-<h2>2. Running QUAST</h2>
-
+<h2 style='margin-bottom: -30px;'>2. Running QUAST</h2>
 <a name="sec2.1"></a>
-<h3>2.1 For impatient people</h3>
-<p>
-Running QUAST on test data from the installation tarball (reference genome, gene and operon annotations, and two assemblies of the first 10 kbp of <i>E.&nbsp;coli</i>):
+<h3>2.1 For impatient people</h3><br>
+Running QUAST on test data from the installation tarball (reference genome, gene and operon annotations, and two assemblies of the first 10<span class="rhs">&nbsp;</span>kbp of <i>E.&nbsp;coli</i>):
 <pre class="code">
-<code>
     python quast.py test_data/contigs_10k_1.fasta test_data/contigs_10k_2.fasta \
         -R test_data/reference_10k.fasta.gz \
         -G test_data/genes_10k.txt -O test_data/operons_10k.txt
-</code>
 </pre>    
+You can run the same using the <code>--test</code> option:
+<pre class="code">
+    python quast --test
+</pre>
 Browsing the summary of the evaluation results with the <a href="http://www.greenwoodsoftware.com/less/">less</a> utility:
 <pre class="code">
-<code>
     less quast_results/latest/report.txt
-</code>
 </pre>    
-</p>
 
 <a name="sec2.2"></a>
 <h3>2.2 Input data</h3>
 <p>
-    QUAST can work with assemblies and references in FASTA format. Files may be compressed with gzip, bzip2, or zip.
+    QUAST can work with assemblies and references in FASTA format. Files may be compressed with gzip, bzip2, or&nbsp;zip.
     <br><br>
-    You can specify files with annotated genes and operons. We support <a href="http://www.sanger.ac.uk/resources/software/gff/spec.html">the 2nd </a> and <a href="http://www.sequenceontology.org/gff3.shtml">the 3rd version</a>
-    of the GFF format (<b>note:</b> &lt;feature&gt; field should be either "gene" or "operon"), the format used by <a href="http://www.ncbi.nlm.nih.gov/gene">NCBI to store genes</a> ("Summary (text)" format), and a plain TXT format with 4 tab-separated columns:
-<ul>
-    <li>chromosome name (it has to match a name in the reference file), </li>
-    <li>gene or operon id, </li>
-    <li>start position,</li>
-    <li>end postion.</li>
-</ul>
+    You can specify files with annotated genes and operons. We support:
+    <ul>
+        <li>the <a href="http://www.sanger.ac.uk/resources/software/gff/spec.html">2nd</a> and the <a href="http://www.sequenceontology.org/gff3.shtml">3rd version</a> of the GFF format 
+        (note: &lt;feature&gt; field should be either "gene" or "operon");
+        <li>the format used by <a href="http://www.ncbi.nlm.nih.gov/gene">NCBI to store genes</a> ("Summary (text)" format);
+        <li>a plain TXT format with 4 tab-separated columns:<br><br>
+            <ul>
+                <li>chromosome name (it has to match a name in the reference file), </li>
+                <li>gene or operon id, </li>
+                <li>start position,</li>
+                <li>end postion.</li>
+            </ul>
+    </ul>
 Coordinates are 1-based, i.e. the first nucleotide in the reference has position 1, not 0.
 If a <i>start postion</i> less than a corresponding <i>end postion</i>, such gene or operon is on a positive strand, otherwise it is on a negative strand.
 <br><br>
 You can find examples of a reference file and annotated genes and operons in all supported formats in your QUAST installation directory, <code>test_data</code> subdirectory.
-These files correspond to the first 10 kbp of <i>E. coli</i>. Input reads and sample assemblies for this data set are also there.
+These files correspond to the first 10<span class="rhs">&nbsp;</span>kbp of <i>E. coli</i>. Input reads and sample assemblies for this data set are also there.
 <br><br>
 <b>Known limitations on input data</b>
 <br>
 QUAST uses Nucmer to align assemblies to a reference genome. Due to Nucmer's limitations on input data size,
-QUAST can work only with assemblies of length less than 4.29 Gbp and with reference genomes of length less than 536 Mbp per chromosome 
+QUAST can work only with assemblies of length less than 4.29<span class="rhs">&nbsp;</span>Gbp and with reference genomes of length less than 536 Mbp per chromosome 
 (the number of chromosomes is not limited).
 </p>
 
@@ -160,7 +207,7 @@ QUAST can work only with assemblies of length less than 4.29 Gbp and with refere
 <h3>2.3 GAGE mode</h3>
 <p>
     <a href="http://gage.cbcb.umd.edu/index.html">GAGE</a> is one of the well-known assessment tools. However, it has issues that limit its use. For example,
-    you can specify only one assembly per run, so it is difficult to compare a lot of assemblies simultaneously. In addition, GAGE has a fixed minimum contig length threshold (200 bp).
+    you can specify only one assembly per run, so it is difficult to compare a lot of assemblies simultaneously. In addition, GAGE has a fixed minimum contig length threshold (200<span class="rhs">&nbsp;</span>bp).
     All these issues are solved by QUAST in GAGE mode. In this mode you can specify an unlimited number of assemblies and a minimum contig threshold as well. QUAST runs GAGE on all your
     assemblies with a specified contig threshold and creates files with values of the GAGE metrics (see the <a href="http://gage.cbcb.umd.edu/index.html">GAGE site</a> and
     the <a href="http://genome.cshlp.org/content/early/2012/01/12/gr.131383.111">GAGE paper</a> for descriptions) in addition to a standard QUAST report.
@@ -174,158 +221,175 @@ QUAST can work only with assemblies of length less than 4.29 Gbp and with refere
 
 <a name="sec2.4"></a>
 <h3>2.4 Command line options</h3>
-
-<p>
-    QUAST runs from a command line as follows:
-</p>
-
-<pre class="code">
-<code>
+<br>
+QUAST runs from a command line as follows:
+<pre>
     python quast.py [options] &lt;contig_file(s)&gt;
-</code>
 </pre>
 
-<p>QUAST options:</p>
+QUAST options:
+<div class='options'>
+<div class='option'>
+<code><b>-o</b> &lt;output_dir&gt;</code>
+</div>
 
+Specify an output directory. The default value is <code>quast_results/results_&lt;date_time&gt;</code>.
+<p>Note: QUAST reuses already generated Nucmer alignments when it is started on an existing directory. Thus, you can add new assemblies
+to an existing comparison or change QUAST options and efficiently reuse already computed results for speed-up.</p>
+
+<div class='option'>
+<code><b>-R</b> &lt;filename&gt;</code>
+</div>
+
+Reference genome file. Many metrics can't be evaluated without a reference.
+
+<div class='option'>
+<code><b>-G</b> &lt;filename&gt;</code> (or <code><b>--genes</b> &lt;filename&gt;</code>)
+</div>
+
+Annotated genes file. See details about the file format in <a href="#sec2.2">section 2.2</a>
+
+<div class='option'>
+<code><b>-O</b> &lt;filename&gt;</code> (or <code><b>--operons</b> &lt;filename&gt;</code>)
+</div>
+
+Annotated operons file. See details about the file format in <a href="#sec2.2">section 2.2</a>
+
+<div class='option'>
+<code><b>&#8209;&#8209;min&#8209;contig</b> &lt;int&gt;</code>
+</div>
+
+Lower threshold for a contig length. Only contigs of length greater or equal to the threshold will be taken into account
+(except for some metrics, see <a href="#sec3">section 3</a>). The default value is 500.
+</div>
+
+<br>
+Advanced options:
+<div class='options'>
+<div class='option'>
+<code><b>--threads</b></code> (or <code><b>-t</b></code>) <code>&lt;int&gt;</code>
+</div>
+
+Maximum number of threads QUAST can use. The default value is the number of CPUs (or 4 if QUAST fails to determine the number of CPUs).
+
+<div class='option'>
+    <code><b>--labels</b> &lt;label,label...&gt; or <b>-l</b> &lt;label,label...&gt;</code>
+</div>
+
+Human-readable assembly names. Those names will be used in reports, plots and logs. For example:<br>
+<div style='margin-left: 30px; margin-top: 5px; margin-bottom: 10px;'>
+    <code>-l SPAdes,IDBA-UD</code>
+</div>
+If your labels include spaces, use quotes:<br>
+<div style='margin-left: 30px; margin-top: 5px; margin-bottom: 10px;'>
+<code>-l "SPAdes 2.5, SPAdes 2.4, IDBA-UD"<br></code>
+</div>
+<div style='margin-left: 30px; margin-top: 5px; margin-bottom: 10px;'>
+<code>-l SPAdes,"Assembly 2",Assembly3"</code>
+</div>
+
+<div class='option'>
+    <code><b>--gage</b></code>
+</div>
+Starts QUAST in "GAGE mode" (see <a href="#sec2.3">section 2.3</a>).
+Note: in this case, you also have to set the <code>-R</code> option.
+
+<div class='option'>
+    <code><b>--contig-thresholds</b> &lt;int,int,...&gt;</code>
+</div>
+
+Comma-separated list of contig length thresholds. Used in <span class='metric-ref'># contigs &ge; x</span> and
+<span class='metric-name'>Total length (&ge; x)</span> metrics (see <a href="#sec3">section 3</a>). The default value is 0,1000.
+
+<div class='option'>
+    <code><b>--gene-finding</b></code>
+</div>
+Enables Gene Prediction module. This module is disabled by default to speed-up evaluating.
+By default, we asume that the genome is prokaryotic and utilize GenemarkS for gene prediction.
+If the genome is eukaryotic, add the <a href="#eukaryote"><code>--eukaryote</code></a> option.
+If it is a metagenome, add the <a href="#meta"><code>--meta</code></a> option.
+
+<div class='option'>
+    <code><b>--gene-thresholds</b> &lt;int,int,...&gt;</code>
+</div>
+Comma-separated list of threshold lengths of genes to search with the Gene Finding module
+(GenemarkS, GlimmerHMM or MetaGeneMark). The default value is 0,300,1500,3000.
+Note: this list is used only if the Gene Finding module is enabled (see <code>--gene-finding</code> option).
+
+<div class='option'>
+    <a name="eukaryote"></a>
+    <code><b>--eukaryote</b></code>
+</div>
+This flag should be set if the genome is eukaryotic, and omitted if the genome is prokaryotic.
+QUAST uses this information in the Gene Finding module and in the Contig Analyzer module.
+Algorithms for finding genes in prokaryotes and eukaryotes are different.
+We use GenemarkS for prokaryotes and GlimmerHMM for eukaryotes.
+QUAST correctly processes linear representations of prokaryotic circular chromosomes.<br>
+If the --meta option is specified as well, MetaGeneMark will be used for gene prediciton.
+
+<div class='option'>
+    <a name="meta"></a>
+    <code><b>--meta</b></code>
+</div>
+Use MetaGeneMark for gene prediction, which is specifically designed for metagenomes.<br>
+If you have multiple references, <a href='#sec2.5'>use metaquast.py</a> instead
+(it is in the same directory as quast.py).
+
+<div class='option'>
+    <code><b>--est-ref-size</b> &lt;int&gt;</code>
+</div>
+Estimated reference size (in bases) for computing <span class='metric-ref'>NGx</span> statistics. Note: this value will be used only if a reference genome file is
+not specified (see <code>--R</code> option).
+
+<div class='option'>
+    <code><b>--scaffolds</b></code>
+</div>
+The assemblies are scaffolds (rather than contigs). QUAST will add split versions
+of assemblies to the comparison. Assemblies are split by continuous fragments of N's of length &ge; 10.
+
+<div class='option'>
+    <code><b>--use-all-alignments</b></code>
+</div>
+This flag should be set for computing <span class='metric-ref'>Genome fraction, # genes, # operons</span> metrics in the manner used in <i>QUAST v.1.*</i>.
+By default, QUAST v.2.* filters Nucmer's alignments to keep only best ones. Roughly speaking, QUAST skips ambiguous and redundant alignments
+to keep <i>one alignment</i> (or one set of non-overlapping or slightly-overlapping alignments) per each contig. QUAST v.1.* used <i>all</i> of Nucmer's
+alignments to compute these metrics.
+
+<div class='option'>
+    <code><b>--ambiguity-usage</b> &lt;<b>none</b>|<b>one</b>|<b>all</b>&gt;</code>
+</div>
+This option controls processing of contigs with multiple equally good alignments (probably repeats).
+If "none" is specified then QUAST skips all alignments of such contigs. If "one" is specified then QUAST uses only one alignment (the first one).
+Finally, if "all" is specified then all alignments are used. The default value is "one". Note: setting this option to "all" can cause a
+significant increase of <span class='metric-ref'># mismatches</span> (repeats are almost always inexact due to accumulated SNPs, indels, etc.).
+
+<div class='option'>
+    <code><b>--strict-NA</b></code>
+</div>
+
+This flag forces QUAST to break contigs at every misassembly event (including local ones) to compute <span class='metric-ref'>NAx</span> and
+<span class='metric-ref'>NGAx</span> statistics. By default, QUAST breaks contigs <i>only by extensive</i> misassemblies (not local ones).
+
+<div class='option'>
+    <code><b>-h</b></code> (or <code><b>--help</b></code>)
+</div>
+Prints help.
+
+</div>
+
+<a name="sec2.5"></a>
+<h3>2.5 Metagenomic assemblies</h3>
 <p>
-    <code>-o &lt;output_dir&gt; </code></p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;Specify an output directory. The default value is <code>quast_results/results_&lt;date_time&gt;</code>. 
-    <b>Note:</b> QUAST reuses already generated Nucmer alignments when it is started on an existing directory. Thus, you can add new assemblies
-    to an existing comparison or change QUAST options and efficiently reuse already computed results for speed-up.
-</p>
-
-<p>
-    <code>-R &lt;filename&gt;</code>
-</p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;Reference genome file. Many metrics can't be evaluated without a reference.</p>
-
-<p>
-    <code>-G &lt;filename&gt;</code> (or <code>--genes &lt;filename&gt;</code>)
-</p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;Annotated genes file. See details about the file format in <a href="#sec2.2">section 2.2</a></p>
-
-<p>
-    <code>-O &lt;filename&gt;</code> (or <code>--operons &lt;filename&gt;</code>)
-</p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;Annotated operons file. See details about the file format in <a href="#sec2.2">section 2.2</a></p>
-
-<p>
-    <code>--min-contig &lt;int&gt;</code>
-</p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;Lower threshold for a contig length. Only contigs of length greater or equal to the threshold will be taken into account
-    (except for some metrics, see <a href="#sec3">section 3</a>). The default value is 500.</p>
-
-<p>Advanced options:</p>
-
-<p>
-    <code>--threads &lt;int&gt;</code>
-</p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;Maximum number of threads QUAST can use. The default value is the number of CPUs (or 4 if QUAST fails to determine the number of CPUs).</p>
-
-<p>
-    <code>-l &lt;label,label...&gt; or --labels &lt;label,label...&gt; </code>
-</p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;Human-readable assembly names. Those names will be used in reports, plots and logs. For example:<br>
-<pre class="code">
-<code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-l SPAdes,IDBA-UD</code>
-</pre>
-&nbsp;&nbsp;&nbsp;&nbsp;if your labels include spaces, use quotes:<br>
-<pre class="code">
-<code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-l "SPAdes 2.5, SPAdes 2.4, IDBA-UD"<br></code>
-<code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-l SPAdes,"Assembly 2",Assembly3"</code>
-</pre>
-</p>
-
-<p>
-    <code>--gage</code>
-</p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;Starts QUAST in "GAGE mode" (see <a href="#sec2.3">section 2.3</a>).
-    <b>Note:</b> in this case, you <i>must</i> also set <code>-R</code> option and you <i>can</i> set <code>--min-contig</code> option.</p>
-
-<p>
-    <code>--contig-thresholds &lt;int,int,...&gt;</code>
-</p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;Comma-separated list of contig length thresholds. Used in <b><i># contigs &ge; x</i></b> and
-    <b><i>Total length (&ge; x)</i></b> metrics (see <a href="#sec3">section 3</a>). The default value is 0,1000.</p>
-
-<p>
-    <code>--gene-finding</code>
-</p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;Enables Gene Prediction module. This module is disabled by default to speed-up evaluating.</p>
-
-<p>
-    <code>--gene-thresholds &lt;int,int,...&gt;</code>
-</p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;Comma-separated list of threshold lengths of genes to search with the Gene Finding module
-    (GenemarkS, GlimmerHMM or MetaGeneMark). The default value is 0,300,1500,3000.
-    <b>Note:</b> this list is used only if the Gene Finding module is enabled (see <code>--gene-finding</code> option).
-</p>
-
-<p>
-    <code>--eukaryote</code>
-</p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;This flag should be set if the genome is eukaryotic, and omitted if the genome is prokaryotic.
-    QUAST uses this information in the Gene Finding module and in the Contig Analyzer module.
-    Algorithms for finding genes in prokaryotes and eukaryotes are different.
-    We use GenemarkS for prokaryotes and GlimmerHMM for eukaryotes.
-    QUAST correctly processes linear representations of prokaryotic circular chromosomes.<br>
-    &nbsp;&nbsp;&nbsp;&nbsp;If the --meta option is specified as well, the --eukaryote option is ignored, and MetaGeneMark is used for gene prediciton.</p>
-
-<p>
-    <code>--est-ref-size &lt;int&gt;</code>
-</p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;Estimated reference size (in bases) for computing <b><i>NGx</i></b> statistics. <b>Note:</b> this value will be used only if a reference genome file is
-    not specified (see <code>--R</code> option). </p>
-
-<p>
-    <code>--scaffolds</code>
-</p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;The assemblies are scaffolds (rather than contigs). QUAST will add split versions
-    of assemblies to the comparison. Assemblies are split by continuous fragments of N's of length &ge; 10.</p>
-
-<p>
-    <code>--use-all-alignments</code>
-</p>
-
-<p>&nbsp;&nbsp;&nbsp;&nbsp;This flag should be set for computing <b><i>Genome fraction, # genes, # operons</i></b> metrics in the manner used in <i>QUAST v.1.*</i>.
-    By default, QUAST v.2.* filters Nucmer's alignments to keep only best ones. Roughly speaking, QUAST skips ambiguous and redundant alignments
-    to keep <i>one alignment</i> (or one set of non-overlapping or slightly-overlapping alignments) <i>per each contig</i>. QUAST v.1.* used <i>all</i> of Nucmer's
-    alignments to compute these metrics.
-</p>
-<p>
-    <code>--ambiguity-usage &lt;none|one|all&gt;</code>
-</p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;This option controls processing of contigs with <i>multiple equally good</i> alignments (probably repeats).
-    If "none" is specified then QUAST skips all alignments of such contigs. If "one" is specified then QUAST uses only one alignment (the first one).
-    Finally, if "all" is specified then all alignments are used. The default value is "one". <b>Note:</b> setting this option to "all" can cause a
-    significant increase of <b><i># mismatches</i></b> (repeats are almost always inexact due to accumulated SNPs, indels, etc.).
-</p>
-<p>
-    <code>--strict-NA</code>
-</p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;This flag forces QUAST to break contigs at every misassembly event (including local ones) to compute <b><i>NAx</i></b> and
-    <b><i>NGAx</i></b> statistics. By default, QUAST breaks contigs <i>only by extensive</i> misassemblies (not local ones).
-</p>
-
-<p><code>-h</code> (or <code>--help</code>)</p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;Prints help.</p>
-
-<p>
-    <code>--meta</code>
-</p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;Use gene finding tool, specified for metagenomes (MetaGeneMark). If the option is specified,
-    the --eukaryote will be ignored.<br>
-    &nbsp;&nbsp;&nbsp;&nbsp;If you have multiple references, <a href='#metaquast'>use metaquast.py</a> instead
-    (it is in the same directory as quast.py).
-</p>
-
-<a name="seq2.5"></a>
-<h3>2.5 MetaQUAST</h3>
-<p>
-    MetaQUAST accepts multiple references, in several comma-separated files, or in a merged single fasta-file
+    The <code>metaquast.py</code> script accepts multiple references. One can provide several files, a merged single fasta-file
     (combinations are also allowed). The tool partitions all contigs in groups aligned to each reference.
     Then it runs quast.py several times:<br>
-<table style="margin-left: 20px;">
+    <ul>
+        <li>for all references in combination,
+        <li>for each reference separately, by using corresponding contigs,
+        <li>for the rest of the contigs that were not aligned anywhere.
+    </ul>       
+
+<!-- <table style="margin-left: 20px;">
     <tr>
         <td style="padding-right: 20px; padding-bottom: 5px;">- for all references in combination,</td>
         <td></td>
@@ -338,32 +402,24 @@ QUAST can work only with assemblies of length less than 4.29 Gbp and with refere
         <td style="padding-right: 20px; padding-bottom: 5px;">- for the rest of the contigs that were not aligned anywhere.</td>
         <td></td>
     </tr>
-</table>
+</table> -->
 
-<p>    All outputs are in separate directories inside the directory provided by <code>-o</code> (or in quast_results/latest).<br>
-
-</p>
+<p>All outputs are in separate directories inside the directory provided by <code>-o</code> (or in quast_results/latest).</p>
 Usage:
 <pre class="code">
-<code>
     python metaquast.py contigs_1 contigs_2 ... -R reference_1,reference_2,reference_3,...
-</code>
 </pre>
 
-<p>
-    <code></code>
-</p>
-<p>All options are the same as for quast.py, except for <code>-R</code>: it can accept multiple references.</p>
+All options are the same as for quast.py, except for <code>-R</code>: it can accept multiple references.</p>
 
-<br>
 <a name="sec3"></a>
 <h2>3. QUAST output</h2>
 <p>If an output path was not specified manually, QUAST puts its output into the directory <code>quast_results/result_&lt;DATE&gt;</code> and creates a symlink <code>latest</code> to it inside the directory <code>quast_results/</code>.
 
-    <br>
-    <br>
+<br>
+<br>
     QUAST output contains:
-<table style="margin-left: 20px;">
+<table style="margin-left: 20px; font-size: 1em;">
     <tr>
         <td style="padding-right: 20px;">report.txt</td>
         <td>an assessment summary in a simple text format,</td>
@@ -400,242 +456,229 @@ Usage:
 
 <br>
 
-<b>Note:</b>
+Note:
 <ul style="margin-top: -12px;">
     <li>metrics based on a reference genome are computed only if a reference is provided (see  <a href="#sec1.3">section 2.4</a>), </li>
     <li>metrics based on genes and operons are computed only if proper annotations are provided (see <a href="#sec1.3">section 2.4</a>). </li>
 </ul>
 </p>
 
+<div class='metrics_description'>
 <a name="sec3.1"></a>
 <h3>3.1 Metrics description</h3>
 <a name="sec3.1.1"></a>
 <h4>3.1.1 Summary report</h4>
 
-<p><b><i># contigs (&ge; x bp)</i></b>&nbsp;&nbsp;is total number of contigs of length <code>&ge; x bp</code>.
-    This metric doesn't depend on the <code>--min-contig</code> command line parameter (see <a href="#sec2.4">section 2.4</a>).</p>
+<p><span class='metric-name'># contigs (&ge; x<span class="rhs">&nbsp;</span>bp)</span> is total number of contigs of length <code>&ge; x<span class="rhs">&nbsp;</span>bp</code>.
+    This metric doesn't depend on the <code>&#8209;&#8209;min&#8209;contig</code> command line parameter (see <a href="#sec2.4">section 2.4</a>).</p>
 
-<p><b><i>Total length (&ge; x bp)</i></b>&nbsp;&nbsp;is the total number of bases in contigs of length <code>&ge; x bp</code>.
-    This metric doesn't depend on the <code>--min-contig</code> command line parameter (see <a href="#sec2.4">section 2.4</a>).</p>
+<p><span class='metric-name'>Total length (&ge; x<span class="rhs">&nbsp;</span>bp)</span> is the total number of bases in contigs of length <code>&ge; x<span class="rhs">&nbsp;</span>bp</code>.
+    This metric doesn't depend on the <code>&#8209;&#8209;min&#8209;contig</code> command line parameter (see <a href="#sec2.4">section 2.4</a>).<br>
+    <i>All remaining metrics are computed on the contigs of length <code>&ge; x<span class="rhs">&nbsp;</span>bp</code>, where <code>x</code> is specified in command line option
+    <code>&#8209;&#8209;min&#8209;contig</code> (see <a href="#sec2.4">section 2.4</a>, default is 500).</i>
+</p>
 
-<br>
-<i>
-    All remaining metrics are computed on the contigs of length <code>&ge; x bp</code>, where <code>x</code> is specified in command line option
-    <code>--min-contig</code> (see <a href="#sec2.4">section 2.4</a>, default is 500).
-</i>
-<br>
+<p><span class='metric-name'># contigs</span> is the total number of contigs in the assembly.</p>
 
-<p><b><i># contigs</i></b>&nbsp;&nbsp;is the total number of contigs in the assembly.</p>
+<p><span class='metric-name'>Largest contig</span> is the length of the longest contig in the assembly.</p>
 
-<p><b><i>Largest contig</i></b>&nbsp;&nbsp;is the length of the longest contig in the assembly.</p>
+<p><span class='metric-name'>Total length</span> is the total number of bases in the assembly.</p>
 
-<p><b><i>Total length</i></b>&nbsp;&nbsp;is the total number of bases in the assembly.</p>
+<p><span class='metric-name'>Reference length</span> is the total number of bases in the reference.</p>
 
-<p><b><i>Reference length</i></b>&nbsp;&nbsp;is the total number of bases in the reference.</p>
-
-<p><b><i>N50</i></b>&nbsp;&nbsp;is the contig length such that using longer or equal length contigs produces 
-    half of the bases of the assembly. Usually there is no value that produces exactly 50%,
+<p><span class='metric-name'>N50</span> is the contig length such that using longer or equal length contigs produces 
+    half of the bases of the assembly. Usually there is no value that produces exactly 50<span class="rhs">&nbsp;</span>%,
     so the technical definition is the maximum length x such that using contigs of length at least
-    x accounts for at least 50% of the total assembly length.</p>
+    x accounts for at least 50<span class="rhs">&nbsp;</span>% of the total assembly length.</p>
 
-<p><b><i>NG50</i></b>&nbsp;&nbsp;is the contig length such that using longer or equal length contigs 
+<p><span class='metric-name'>NG50</span> is the contig length such that using longer or equal length contigs 
     produces half of the bases of the reference genome. This metric is computed only if
     a reference genome is provided.</p>
 
-<p><b><i>N75 and NG75</i></b>&nbsp;&nbsp;are defined similarly with 75% instead of 50%.</p>
+<p><span class='metric-name'>N75 and NG75</span> are defined similarly with 75<span class="rhs">&nbsp;</span>% instead of 50<span class="rhs">&nbsp;</span>%.</p>
 
-<p><b><i>L50, L75, LG50, LG75</i></b>&nbsp;&nbsp;are the numbers of contigs whose length is at least corresponding N-metrics.<br>
+<p><span class='metric-name'>L50, L75, LG50, LG75</span> are the numbers of contigs whose length is at least corresponding N-metrics.<br>
     In other words, L50, for example, is the minimal number of contigs that produce half of the bases of the assembly.</p>
 
-<p><b><i># misassemblies</i></b>&nbsp;&nbsp;is the number of positions in the assembled contigs where the left flanking sequence aligns 
-    over 1 kbp away from the right flanking sequence on the reference or they overlap on more than 1 kbp or flanking sequences align 
+<p><span class='metric-name'># misassemblies</span> is the number of positions in the assembled contigs where the left flanking sequence aligns 
+    over 1<span class="rhs">&nbsp;</span>kbp away from the right flanking sequence on the reference or they overlap on more than 1<span class="rhs">&nbsp;</span>kbp or flanking sequences align 
     on different strands or different chromosomes. This metric is computed only if a reference genome is provided.</p>
 
-<p><b><i># misassembled contigs</i></b>&nbsp;&nbsp;is the number of contigs that contain misassembly events.</p>
+<p><span class='metric-name'># misassembled contigs</span> is the number of contigs that contain misassembly events.</p>
 
-<p><b><i>Misassembled contigs length</i></b>&nbsp;&nbsp;is the number of total bases contained in all contigs that have one or
+<p><span class='metric-name'>Misassembled contigs length</span> is the number of total bases contained in all contigs that have one or
     more misassemblies.</p>
 
-<p><b><i># unaligned contigs</i></b>&nbsp;&nbsp;is the number of contigs that have no alignment to the
-    reference sequence. The value "X + Y part" means: X totally unaligned contigs plus Y partially unaligned contigs. </p>
+<p><span class='metric-name'># unaligned contigs</span> is the number of contigs that have no alignment to the
+    reference sequence. The value "X<span class='rhs'>&nbsp;</span>+<span class='rhs'>&nbsp;</span>Y part" means: X totally unaligned contigs plus Y partially unaligned contigs. </p>
 
-<p><b><i>Unaligned contigs length</i></b>&nbsp;&nbsp;is the total number of unaligned bases in totally and
+<p><span class='metric-name'>Unaligned contigs length</span> is the total number of unaligned bases in totally and
     partially unaligned contigs (only bases from unaligned parts). </p>
 
-<!--p><b><i># ambiguous contigs</i></b>&nbsp;&nbsp;is the number of contigs which have reference alignments
+<!--p><span class='metric-name'># ambiguous contigs</span> is the number of contigs which have reference alignments
     of equal quality in multiple locations on the reference. </p>
 
-<p><b><i>Ambiguous contigs length</i></b>&nbsp;&nbsp;is the number of total bases contained in all ambiguous contigs. </p-->
+<p><span class='metric-name'>Ambiguous contigs length</span> is the number of total bases contained in all ambiguous contigs. </p-->
 
-<p><b><i>Genome fraction (%)</i></b>&nbsp;&nbsp;is the total number of aligned bases in the reference, 
+<p><span class='metric-name'>Genome fraction (%)</span> is the total number of aligned bases in the reference, 
     divided by the genome size. A base in the reference genome is counted as aligned if there is at least one contig with 
     at least one alignment to this base. Contigs from repeat regions may map to multiple places, and thus may be counted 
     multiple times in this quantity.</p>
 
-<p><b><i>Duplication ratio</i></b>&nbsp;&nbsp;is the total number of aligned bases in the assembly 
-    (i.e. <i>Total length</i> - <i>Unaligned contigs length</i>), divided by the total number of aligned bases in the 
-    reference (see the <b>Genome fraction (%)</b> metric). If the assembly contains many contigs that cover the same 
-    regions of the reference, its <i>Duplication ratio</i> may be much larger than 1. This may occur due to overestimating 
+<p><span class='metric-name'>Duplication ratio</span> is the total number of aligned bases in the assembly 
+    (i.e. <span class='metric-ref'>Total length</span> - <span class='metric-ref'>Unaligned contigs length</span>), divided by the total number of aligned bases in the 
+    reference (see the <span class='metric-ref'>Genome fraction (%)</span> metric). If the assembly contains many contigs that cover the same 
+    regions of the reference, its <span class='metric-ref'>Duplication ratio</span> may be much larger than 1. This may occur due to overestimating 
     repeat multiplicities and due to small overlaps between contigs, among other reasons.</p>
 
-<p><b><i>GC (%)</i></b>&nbsp;&nbsp;is the total number of G and C nucleotides in the assembly,
+<p><span class='metric-name'>GC (%)</span> is the total number of G and C nucleotides in the assembly,
     divided by the total length of the assembly.</p>
 
-<p><b><i>Reference GC (%)</i></b>&nbsp;&nbsp;is the total number of G and C nucleotides in the reference,
+<p><span class='metric-name'>Reference GC (%)</span> is the total number of G and C nucleotides in the reference,
     divided by the total length of the reference.</p>
 
-<p><b><i># mismatches per 100 kbp</i></b>&nbsp;&nbsp;is the average number of mismatches per 100000 aligned bases. This does not
+<p><span class='metric-name'># mismatches per 100<span class="rhs">&nbsp;</span>kbp</span> is the average number of mismatches per 100000 aligned bases. This does not
 distinguish between Single Nucleotide Polymorphisms (SNPs), which are true differences in the assembled genome vs. the reference genome,
 and Single Nucleotide Errors (SNEs), which are due to errors in reads or errors in the assembly algorithm.</p>
 
-<p><b><i># indels per 100 kbp</i></b>&nbsp;&nbsp;is the average number of indels per 100000 aligned bases. 
-    <b>Note:</b> several consecutive single nucleotide indels are counted as one indel.</p>
+<p><span class='metric-name'># indels per 100<span class="rhs">&nbsp;</span>kbp</span> is the average number of indels per 100000 aligned bases. 
+    Note: several consecutive single nucleotide indels are counted as one indel.</p>
 
-<p><b><i># N's per 100 kbp</i></b>&nbsp;&nbsp;is the average number of uncalled bases (N's) per 100000 assembly bases.</p>
+<p><span class='metric-name'># N's per 100<span class="rhs">&nbsp;</span>kbp</span> is the average number of uncalled bases (N's) per 100000 assembly bases.</p>
 
-<p><b><i># genes</i></b>&nbsp;&nbsp;is the number of genes in the assembly (complete and partial), based on a user-provided annotated 
-    list of gene positions in the reference genome. A gene counts as 'partially covered' if the assembly contains at least 100 bp 
+<p><span class='metric-name'># genes</span> is the number of genes in the assembly (complete and partial), based on a user-provided annotated 
+    list of gene positions in the reference genome. A gene counts as 'partially covered' if the assembly contains at least 100<span class="rhs">&nbsp;</span>bp 
     of this gene but not the whole gene.
     This metric is computed only if a reference genome and an annotated list of gene positions are provided (see <a href="#sec2.4">section 2.4</a>)</p>
 
-<p><b><i># operons</i></b>&nbsp;&nbsp;is defined similarly to the previous metric but you need
+<p><span class='metric-name'># operons</span> is defined similarly to the previous metric but you need
     an operons annotations file for computing this metric.</p>
 
-<p><b><i># predicted genes</i></b>&nbsp;&nbsp;is the number of genes in the assembly
+<p><span class='metric-name'># predicted genes</span> is the number of genes in the assembly
     predicted by QUAST's Gene Finding module, which is based on GeneMarkS.
     This metric is computed if an annotated list of genes is not provided.</p>
 
-<p><b><i>Largest alignment</i></b>&nbsp;&nbsp;is the length of the largest continuous alignment in the assembly.
-    This metric is always equal to the <b>Largest contig</b> metric but it can be smaller if the largest contig 
+<p><span class='metric-name'>Largest alignment</span> is the length of the largest continuous alignment in the assembly.
+    This metric is always equal to the <span class='metric-ref'>Largest contig</span> metric but it can be smaller if the largest contig 
     of the assembly contains a misassembly event.</p>
 
-<p><b><i>NA50, NGA50, NA75, NGA75, LA50, LA75, LGA50, LGA75 (A stands for "aligned")</i></b>&nbsp;&nbsp; are like the same
+<p><span class='metric-name'>NA50, NGA50, NA75, NGA75, LA50, LA75, LGA50, LGA75</span> ('A' stands for "aligned") are like the same
     metrics without 'A', but in this case we count the lengths (in the case of N-metrics) or numbers (for L-metrics)
     of aligned blocks instead of contigs.
     I.e. if a contig has a misassembly with respect to the reference, we break the contig into smaller pieces.
-    Also, if a contig has bases that don't align to the reference, they are not counted in NAx, NGAx, LAx and LGAx. </p>
+    Also, if a contig has bases that don't align to the reference, they are not counted in <span class='metric-ref'>NAx, NGAx, LAx</span> and <span class='metric-ref'>LGAx.</span></p>
 
 <a name="sec3.1.2"></a>
 <h4>3.1.2 Misassemblies report</h4>
 
-<p><b><i># misassemblies</i></b>&nbsp;&nbsp;is the same as <i># misassemblies</i> from <a href="#sec3.1.1">section 3.1.1</a>.
-    However, this report contains also a classification of all misassemblies into three groups: <i>relocations</i>, <i>translocations</i>,
-    and <i>inversions</i> (see below).</p>
+<p><span class='metric-name'># misassemblies</span> is the same as <span class='metric-ref'># misassemblies</span> from <a href="#sec3.1.1">section 3.1.1</a>.
+    However, this report contains also a classification of all misassemblies into three groups: <span class='metric-ref'>relocations</span>, <span class='metric-ref'>translocations</span>,
+    and <span class='metric-ref'>inversions</span> (see below).</p>
 
-<p><b><i>Relocation</i></b>&nbsp;&nbsp;is a misassembly where the left flanking sequence aligns over 1 kbp away from the right flanking
-sequence on the reference, or they overlap by more than 1 kbp and both flanking sequences align on the same chromosome. </p>
+<p><span class='metric-name'>Relocation</span> is a misassembly where the left flanking sequence aligns over 1<span class="rhs">&nbsp;</span>kbp away from the right flanking
+sequence on the reference, or they overlap by more than 1<span class="rhs">&nbsp;</span>kbp and both flanking sequences align on the same chromosome. </p>
 
-<p><b><i>Translocation</i></b>&nbsp;&nbsp;is a misassembly where the flanking sequences align on different chromosomes. </p>
+<p><span class='metric-name'>Translocation</span> is a misassembly where the flanking sequences align on different chromosomes. </p>
 
-<p><b><i>Inversion</i></b>&nbsp;&nbsp;is a misassembly where it is not a relocation and the flanking sequences align on
+<p><span class='metric-name'>Inversion</span> is a misassembly where it is not a relocation and the flanking sequences align on
 opposite strands of the same chromosome. </p>
 
-<p><b><i># misassembled contigs</i></b> and <b><i>Misassembled contigs length</i></b>&nbsp;&nbsp;are the same as the metrics from 
+<p><span class='metric-name'># misassembled contigs</span> and <span class='metric-ref'>Misassembled contigs length</span> are the same as the metrics from 
     <a href="#sec3.1.1">section 3.1.1</a> and are counted among all contigs with any type of a misassembly 
     (relocation, translocation or inversion). </p>
 
-<p><b><i># local misassemblies</i></b>&nbsp;&nbsp;is the number of local misassemblies. We define a local misassembly breakpoint 
-    as a breakpoint that satisfies these conditions: 
-<ol>
+<p><span class='metric-name'># local misassemblies</span> is the number of breakpoints that satisfy the following conditions: 
+<ol style='margin-top: -20px;'>
 <li>Two or more distinct alignments cover the breakpoint.</li>
-<li>The gap between left and right flanking sequences is less than 1 kbp.</li>
+<li>The gap between left and right flanking sequences is less than 1<span class="rhs">&nbsp;</span>kbp.</li>
 <li>The left and right flanking sequences both are on the same strand of the same chromosome of the reference genome.</li>
 </ol> </p>
 
-<p><b><i># mismatches</i></b>&nbsp;&nbsp;is the number of mismatches in all aligned bases.</p>
+<p><span class='metric-name'># mismatches</span> is the number of mismatches in all aligned bases.</p>
 
-<p><b><i># indels</i></b>&nbsp;&nbsp;is the number of indels in all aligned bases.</p>
+<p><span class='metric-name'># indels</span> is the number of indels in all aligned bases.</p>
 
-<p><b><i># short indels (&le; 5 bp)</i></b>&nbsp;&nbsp;is the number of indels of length <code>&le; 5 bp</code>.</p>
+<p><span class='metric-name'># short indels (&le; 5<span class="rhs">&nbsp;</span>bp)</span> is the number of indels of length <code>&le; 5<span class="rhs">&nbsp;</span>bp</code>.</p>
 
-<p><b><i># long indels (&gt; 5 bp)</i></b>&nbsp;&nbsp;is the number of indels of length <code>&gt; 5 bp</code>.</p>
+<p><span class='metric-name'># long indels (&gt; 5<span class="rhs">&nbsp;</span>bp)</span> is the number of indels of length <code>&gt; 5<span class="rhs">&nbsp;</span>bp</code>.</p>
 
-<p><b><i>Indels length</i></b>&nbsp;&nbsp;is the number of total bases contained in all indels.</p>
+<p><span class='metric-name'>Indels length</span> is the number of total bases contained in all indels.</p>
 
 <a name="sec3.1.3"></a>
 <h4>3.1.3 Unaligned report</h4>
 
-<p><b><i># fully unaligned contigs</i></b>&nbsp;&nbsp;is the number of contigs that have no alignment to the reference sequence.</p>
+<p><span class='metric-name'># fully unaligned contigs</span> is the number of contigs that have no alignment to the reference sequence.</p>
 
-<p><b><i>Fully unaligned length</i></b>&nbsp;&nbsp;is the total number of bases in all unaligned contigs.</p>
+<p><span class='metric-name'>Fully unaligned length</span> is the total number of bases in all unaligned contigs.</p>
 
-<p><b><i># partially unaligned contigs</i></b>&nbsp;&nbsp;is the number of contigs that are not fully unaligned ones but have fragments
+<p><span class='metric-name'># partially unaligned contigs</span> is the number of contigs that are not fully unaligned ones but have fragments
     with no alignment to the reference sequence.</p>
 
-<p><b><i># with misassembly</i></b>&nbsp;&nbsp;is the number of partially unaligned contigs which have a misassembly in their aligned fragment.
+<p><span class='metric-name'># with misassembly</span> is the number of partially unaligned contigs which have a misassembly in their aligned fragment.
     Note that such misassemblies are not counted in <i># misassemblies</i> and other <i>misassemblies</i> statistics.</p>
 
-<p><b><i># both parts are significant</i></b>&nbsp;&nbsp;is the number of partially unaligned contigs which have both aligned and unaligned fragments
+<p><span class='metric-name'># both parts are significant</span> is the number of partially unaligned contigs which have both aligned and unaligned fragments
     of size &ge; <i>min-contig</i> (see <a href="#sec2.4">section 2.4</a>).
 
-<p><b><i>Partially unaligned length</i></b>&nbsp;&nbsp;is the total number of unaligned bases in all partially unaligned contigs.</p>
+<p><span class='metric-name'>Partially unaligned length</span> is the total number of unaligned bases in all partially unaligned contigs.</p>
 
-<p><b><i># N's</i></b>&nbsp;&nbsp;is the total number of uncalled bases (N's) in the assembly.</p>
+<p><span class='metric-name'># N's</span> is the total number of uncalled bases (N's) in the assembly.</p>
 
 <a name="sec3.2"></a>
 <h3>3.2 Plots descriptions</h3>
 
-<p><b><i>Cumulative length</i></b></p>
-
-<p>&nbsp;&nbsp;&nbsp;&nbsp;This plot shows the growth of assembly contig lengths. On the x-axis, contigs are ordered from largest (contig #1) 
+<p><span class='metric-name'>Cumulative length</span><br>This plot shows the growth of assembly contig lengths. On the x-axis, contigs are ordered from largest (contig #1) 
     to smallest. The y-axis gives the size of the x largest contigs in the assembly.</p>
 
-<p><b><i>Nx</i></b></p>
+<p><span class='metric-name'>Nx</span><br>This plot shows the Nx metric value as x varies from 0 to 100. </p>
 
-<p>&nbsp;&nbsp;&nbsp;&nbsp;This plot shows the Nx metric value as x varies from 0 to 100. </p>
+<p><span class='metric-name'>NGx</span><br>This plot is similar to the previous one but for the NGx metric.</p>
 
-<p><b><i>NGx</i></b></p>
-
-<p>&nbsp;&nbsp;&nbsp;&nbsp;This plot is similar to the previous one but for the NGx metric.</p>
-
-<p><b><i>GC content plot</i></b></p>
-
-<p>&nbsp;&nbsp;&nbsp;&nbsp;This plot shows the distribution of GC content in the contigs. 
+<p><span class='metric-name'>GC content plot</span><br>
+    This plot shows the distribution of GC content in the contigs. 
     The x value shows the percent of GC (from 0 to 100). The y
-    value shows the number of non-overlapping 100 bp windows whose GC
+    value shows the number of non-overlapping 100<span class="rhs">&nbsp;</span>bp windows whose GC
     content is x. Typically, the distribution is approximately Gaussian. 
     However, for some genomes it is not Gaussian. For assembly projects with contaminants, 
     the GC distribution of the contaminants often differs from the reference genome and may give a 
     superposition of multiple curves with different peaks.
 </p>
 
-<p><b><i>Cumulative length (aligned contigs)</i></b></p>
-
-<p>&nbsp;&nbsp;&nbsp;&nbsp;This plot is similar to <b><i>Cumulative length</i></b> plot but QUAST plots only aligned contigs instead of contigs itself.
+<p><span class='metric-name'>Cumulative length (aligned contigs)</span><br>
+    This plot is similar to <span class='metric-ref'>Cumulative length</span> plot but QUAST plots only aligned contigs instead of contigs itself.
     If a contig has a misassembly with respect to the reference, QUAST breaks the contig into smaller pieces. 
     This plot is created only if a reference genome is provided.</p>
 
-<p><b><i>NAx and NGAx</i></b></p>
-
-<p>&nbsp;&nbsp;&nbsp;&nbsp;These plots are similar to the <b><i>Nx</i></b> and <b><i>NGx</i></b> plots but for the NAx and NGAx metrics respectively.
+<p><span class='metric-name'>NAx and NGAx</span><br>
+    These plots are similar to the <span class='metric-ref'>Nx</span> and <span class='metric-ref'>NGx</span> plots but for the NAx and NGAx metrics respectively.
     These plots are created only if a reference genome is provided.</p>
 
-<p><b><i>Genes</i></b></p>
-
-<p>&nbsp;&nbsp;&nbsp;&nbsp;This plot shows the growth rate of full genes in assemblies. The y-axis is the number of full genes in the assembly and
+<p><span class='metric-name'>Genes</span><br>
+    This plot shows the growth rate of full genes in assemblies. The y-axis is the number of full genes in the assembly and
     the x-axis is the number of contigs in the assembly (from the largest one to the smallest one).
     This plot could be created only if the reference and genes annotations file are given.</p>
 
-<p><b><i>Operons</i></b></p>
+<p><span class='metric-name'>Operons</span><br>
+    This plot is similar to the previous one but for operons. </p>
 
-<p>&nbsp;&nbsp;&nbsp;&nbsp;This plot is similar to the previous one but for operons. </p>
+</div>
 
 <a name="sec4"></a><p>
 <h2>4. Adjusting QUAST reports and plots</h2>
 
 <p>
     You can easily change content, order of metrics, and metric names in all QUAST reports. For doing this,
-    please edit the CONFIGURABLE PARAMETERS section in <code>libs/reporting.py</code>. It contains a lot of informative comments,
+    please edit the <code>CONFIGURABLE PARAMETERS</code> section in <code>libs/reporting.py</code>. It contains a lot of informative comments,
     which will help you to adjust QUAST reports easily even if you are new to Python.
 </p>    
 
 <p>
     The same statement is true for QUAST plots as well. You can adjust plot colors, style and width of lines, legeng font, plots output format, etc.
-    Please see the CONFIGURABLE PARAMETERS section in <code>libs/plotter.py</code>.
+    Please see the <code>CONFIGURABLE PARAMETERS</code> section in <code>libs/plotter.py</code>.
 </p>
 
 <p>
-    <b>Note:</b> you can quickly restart QUAST on an existing report to apply your adjustments. See the description of the <code>-o</code> option in <a href="#sec2.4">section 2.4</a>.
+    Note: you can quickly restart QUAST on an existing report to apply your adjustments. See the description of the <code>-o</code> option in <a href="#sec2.4">section 2.4</a>.
 </p>
 
 <a name="sec5"></a><p>
@@ -653,7 +696,7 @@ First published online: February 19, 2013
 </p>
 
 <a name="sec6"></a><p>
-<h2>5. Feedback and bug reports</h2>
+<h2>6. Feedback and bug reports</h2>
 
 <p>
     We will be thankful if you help us make QUAST better by sending your comments, bug reports, and suggestions
@@ -661,10 +704,10 @@ First published online: February 19, 2013
 </p>
 
 <p>
-    We kindly ask you to attach a log <code>&lt;QUAST_output_dir&gt;/quast.log</code> or an archive of <code>&lt;QUAST_output_dir&gt;</code> if you have troubles running QUAST.
+    We kindly ask you to attach the <code>quast.log</code> file from output directory (or an entire archive of the folder) if you have troubles running QUAST.
     <br>
-    Note that if you don't specify <code>&lt;QUAST_output_dir&gt;</code> manually, it is going to be automatically set to <code>quast_results/results_&lt;date_time&gt;</code> and a symlink
-    <code>quast_results/latest</code> to that directory was created.
+    Note that if you don't specify the output directory manually, it is going to be automatically set to <code>quast_results/results_&lt;date_time&gt;</code>, with a symbolic link
+    <code>quast_results/latest</code> to that directory.
 </p>
 
 <br>

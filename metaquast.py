@@ -62,6 +62,7 @@ def usage():
     print >> sys.stderr, "--strict-NA                         Breaks contigs by any misassembly event to compute NAx and NGAx."
     print >> sys.stderr, "                                    By default, QUAST breaks contigs only by extensive misassemblies (not local ones)"
     print >> sys.stderr, ""
+    print >> sys.stderr, "--test                              Runs QUAST with the data in the test_data folder."
     print >> sys.stderr, "-h  --help                          Prints this message"
 
 
@@ -280,6 +281,16 @@ def main(args):
         usage()
         sys.exit(2)
 
+    for opt, arg in options:
+        if opt == '--test':
+            test_options = ['test_data/meta_contigs_1.fasta',
+                  'test_data/meta_contigs_2.fasta',
+                  '-R', 'test_data/meta_ref_1.fasta,test_data/meta_ref_2.fasta,test_data/meta_ref_3.fasta',
+                  '-o', 'test_output']
+
+            main(test_options)
+            sys.exit(0)
+
     if not contigs_fpaths:
         usage()
         sys.exit(2)
@@ -291,13 +302,15 @@ def main(args):
 
     labels = None
 
+    quast_py_args = args[:]
+
     for opt, arg in options:
         # Yes, this is a code duplicating. Python's getopt is non well-thought!!
         if opt in ('-o', "--output-dir"):
             # Removing output dir arg in order to further
             # construct other quast calls from this options
-            args.remove(opt)
-            args.remove(arg)
+            quast_py_args.remove(opt)
+            quast_py_args.remove(arg)
 
             output_dirpath = os.path.abspath(arg)
             make_latest_symlink = False
@@ -313,8 +326,8 @@ def main(args):
         elif opt in ('-R', "--reference"):
             # Removing reference args in order to further
             # construct quast calls from this args with other reference options
-            args.remove(opt)
-            args.remove(arg)
+            quast_py_args.remove(opt)
+            quast_py_args.remove(arg)
 
             ref_fpaths = arg.split(',')
             for i, ref_fpath in enumerate(ref_fpaths):
@@ -335,8 +348,8 @@ def main(args):
             RELEASE_MODE = False
 
         elif opt in ('-l', '--labels'):
-            args.remove(opt)
-            args.remove(arg)
+            quast_py_args.remove(opt)
+            quast_py_args.remove(arg)
             labels = quast.parse_labels(arg, contigs_fpaths)
 
         elif opt in ('-j', '--save-json'):
@@ -379,7 +392,7 @@ def main(args):
         assert_file_exists(c_fpath, 'contigs')
 
     for contigs_fpath in contigs_fpaths:
-        args.remove(contigs_fpath)
+        quast_py_args.remove(contigs_fpath)
 
     # # Removing outout dir if exists
     # if output_dirpath:  # 'output dir was specified with -o option'
@@ -387,14 +400,14 @@ def main(args):
     #         shutil.rmtree(output_dirpath)
 
     # Directories
-    output_dirpath, _, existing_alignments = \
-        quast._set_up_output_dir(output_dirpath, None,
-                                 make_latest_symlink, False)
+    output_dirpath, _, _ = quast._set_up_output_dir(
+        output_dirpath, None, make_latest_symlink,
+        save_json=False, remove_old=True)
 
     corrected_dirpath = os.path.join(output_dirpath, qconfig.corrected_dirname)
 
     logger.set_up_file_handler(output_dirpath)
-    logger.info(' '.join(sys.argv))
+    logger.info(' '.join(['metaquast.py'] + args))
     logger.start()
 
     # Where all pdfs will be saved
@@ -431,7 +444,7 @@ def main(args):
         return 4
 
     # Running QUAST(s)
-    args += ['--meta']
+    quast_py_args += ['--meta']
 
     if not ref_fpaths:
         # No references, running regular quast with MetaGenemark gene finder
@@ -439,7 +452,7 @@ def main(args):
         logger.info('No references provided, starting quast.py with MetaGeneMark gene finder')
         _start_quast_main(
             None,
-            args,
+            quast_py_args,
             assemblies=assemblies,
             output_dirpath=os.path.join(output_dirpath, 'quast_output'),
             exit_on_exception=True)
@@ -450,7 +463,7 @@ def main(args):
     logger.info()
     logger.info('Starting quast.py ' + run_name + '...')
 
-    _start_quast_main(run_name, args,
+    _start_quast_main(run_name, quast_py_args,
         assemblies=assemblies,
         reference_fpath=combined_ref_fpath,
         output_dirpath=os.path.join(output_dirpath, 'combined_quast_output'))
@@ -468,7 +481,7 @@ def main(args):
             run_name = 'for the contigs aligned to ' + ref_name
             logger.info('Starting quast.py ' + run_name)
 
-            _start_quast_main(run_name, args,
+            _start_quast_main(run_name, quast_py_args,
                 assemblies=ref_assemblies,
                 reference_fpath=os.path.join(corrected_dirpath, ref_name) + common_ref_fasta_ext,
                 output_dirpath=os.path.join(output_dirpath, ref_name + '_quast_output'),
@@ -479,7 +492,7 @@ def main(args):
     logger.info()
     logger.info('Starting quast.py ' + run_name + '...')
 
-    return_code = _start_quast_main(run_name, args,
+    return_code = _start_quast_main(run_name, quast_py_args,
         assemblies=not_aligned_assemblies,
         output_dirpath=os.path.join(output_dirpath, 'not_aligned_quast_output'),
         exit_on_exception=False)

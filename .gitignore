@@ -34,3 +34,4 @@ libs/glimmer/glimmerhmm
 
 tc_tests/results/
 test/
+test_output/

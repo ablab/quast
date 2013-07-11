@@ -62,6 +62,7 @@ def _usage():
         print >> sys.stderr, "                                    By default, QUAST breaks contigs only by extensive misassemblies (not local ones)"
         print >> sys.stderr, "-m  --meta                          Metagenomic assembly. Uses MetaGeneMark for gene prediction. "
         print >> sys.stderr, ""
+        print >> sys.stderr, "--test                              Runs QUAST with the data in the test_data folder."
         print >> sys.stderr, "-h  --help                          Prints this message"
 
     else:
@@ -78,11 +79,12 @@ def _usage():
         print >> sys.stderr, "-c  --mincluster   <int>            Nucmer's parameter -- the minimum length of a cluster of matches [default: %s]" % qconfig.mincluster
         print >> sys.stderr, "    --est-ref-size <int>            Estimated reference size (for calculating NG)"
         print >> sys.stderr, ""
-        print >> sys.stderr, "Options without arguments",
+        print >> sys.stderr, "Options without arguments"
         print >> sys.stderr, "-f  --gene-finding                  Uses Gene Finding module"
         print >> sys.stderr, "-s  --scaffolds                     This flag informs QUAST that provided assemblies are scaffolds"
         print >> sys.stderr, "    --gage                          Uses GAGE (results are in gage_report.txt)"
         print >> sys.stderr, "-e  --eukaryote                     Genome is eukaryotic"
+        print >> sys.stderr, "-m  --meta                          Metagenomic assembly. Uses MetaGeneMark for gene prediction. "
         print >> sys.stderr, "-a  --ambiguity-usage <str>         Uses all alignments of contigs covering repeats (ambiguous). Str is none|one|all"
         print >> sys.stderr, "-u  --use-all-alignments            Computes Genome fraction, # genes, # operons in v.1.0-1.3 style"
         print >> sys.stderr, "-n  --strict-NA                     Breaks contigs by any misassembly event to compute NAx and NGAx."
@@ -90,19 +92,25 @@ def _usage():
         print >> sys.stderr, "-J  --save-json-to <path>           Saves the JSON-output to a particular path"
         print >> sys.stderr, "    --no-html                       Doesn't build html report"
         print >> sys.stderr, "    --no-plots                      Doesn't draw plots (to make quast faster)"
-        print >> sys.stderr, "-m  --meta                          Metagenomic assembly. Uses MetaGeneMark for gene prediction. "
         print >> sys.stderr, ""
         print >> sys.stderr, "-d  --debug                         Runs in debug mode"
+        print >> sys.stderr, "--test                              Runs QUAST with the data in the test_data folder."
         print >> sys.stderr, "-h  --help                          Prints this message"
 
 
 def _set_up_output_dir(output_dirpath, json_outputpath,
-                       make_latest_symlink, save_json):
+                       make_latest_symlink, save_json, remove_old=False):
     existing_alignments = False
 
     if output_dirpath:  # 'output dir was specified with -o option'
         if os.path.isdir(output_dirpath):
-            existing_alignments = True
+            if remove_old:
+                try:
+                    shutil.rmtree(output_dirpath)
+                except OSError:
+                    pass
+            else:
+                existing_alignments = True
 
     else:  # output dir was not specified, creating our own one
         output_dirpath = os.path.join(os.path.abspath(
@@ -368,6 +376,16 @@ def main(args):
         _usage()
         sys.exit(2)
 
+    for opt, arg in options:
+        if opt == '--test':
+            main(['test_data/contigs_10k_1.fasta',
+                  'test_data/contigs_10k_2.fasta',
+                  '-R', 'test_data/reference_10k.fasta.gz',
+                  '-O', 'test_data/operons_10k.gff',
+                  '-G', 'test_data/genes_10k.gff',
+                  '-o', 'test_output'])
+            sys.exit(0)
+
     if not contigs_fpaths:
         _usage()
         sys.exit(2)
@@ -448,10 +466,10 @@ def main(args):
         elif opt == '--no-html':
             qconfig.html_report = False
 
-        elif opt in ("-m", "--meta"):
+        elif opt in ('-m', '--meta'):
             qconfig.meta = True
 
-        elif opt in ('-d', "--debug"):
+        elif opt in ('-d', '--debug'):
             qconfig.debug = True
             RELEASE_MODE = False
 

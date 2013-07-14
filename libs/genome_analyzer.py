@@ -87,12 +87,12 @@ def do(ref_fpath, contigs_fpaths, nucmer_dir, output_dirpath, genes_fpath, opero
         reference_chromosomes[chr_name] = chr_len
 
     # reading genome size
-    #genome_size = fastaparser.get_lengths_from_fastafile(reference)[0]
+    # genome_size = fastaparser.get_lengths_from_fastafile(reference)[0]
     # reading reference name
     # >gi|48994873|gb|U00096.2| Escherichia coli str. K-12 substr. MG1655, complete genome
-    #ref_file = open(reference, 'r')
-    #reference_name = ref_file.readline().split()[0][1:]
-    #ref_file.close()
+    # ref_file = open(reference, 'r')
+    # reference_name = ref_file.readline().split()[0][1:]
+    # ref_file.close()
 
     # RESULTS file
     result_fpath = output_dirpath + '/genome_info.txt'
@@ -107,33 +107,37 @@ def do(ref_fpath, contigs_fpaths, nucmer_dir, output_dirpath, genes_fpath, opero
 
     # reading genes and operons
     class FeatureContainer:
-        def __init__(self, region_list=[], found_list=[], full_found=[], chr_names_dict={}):
-            self.region_list = region_list
-            self.found_list = found_list
-            self.full_found = full_found
-            self.chr_names_dict = chr_names_dict
+        def __init__(self, kind='', fpath=''):
+            self.kind = kind  # 'gene' or 'operon'
+            self.fpath = fpath
+            self.region_list = []
+            self.found_list = []
+            self.full_found = []
+            self.chr_names_dict = {}
 
-    genes_container = FeatureContainer()
-    operons_container = FeatureContainer()
+    genes_container = FeatureContainer('gene', genes_fpath)
+    operons_container = FeatureContainer('operon', operons_fpath)
 
-    for feature_container, feature_fpath, feature_name in [
-            (genes_container, genes_fpath, 'gene'),
-            (operons_container, operons_fpath, 'operon')]:
+    for container in [genes_container, operons_container]:
+        container.region_list = genes_parser.get_genes_from_file(container.fpath, container.kind)
 
-        feature_container.region_list = genes_parser.get_genes_from_file(feature_fpath, feature_name)
-        if len(feature_container.region_list) == 0:
-            if feature_fpath:
-                logger.warning('No ' + feature_name + 's were loaded.', indent='  ')
-                res_file.write(feature_name + 's loaded: ' + 'None' + '\n')
+        if len(container.region_list) == 0:
+            if container.fpath:
+                logger.warning('No ' + container.kind + 's were loaded.', indent='  ')
+                res_file.write(container.kind + 's loaded: ' + 'None' + '\n')
             else:
-                logger.notice('Annotated ' + feature_name + 's file was not provided. Use -' + feature_name[0].capitalize() + ' option to specify it.',
-                       indent='  ')
+                logger.notice('Annotated ' + container.kind + 's file was not provided. Use -'
+                              + container.kind[0].capitalize() + ' option to specify it.', indent='  ')
         else:
-            logger.info('  Loaded ' + str(len(feature_container.region_list)) + ' ' + feature_name + 's')
-            res_file.write(feature_name + 's loaded: ' + str(len(feature_container.region_list)) + '\n')
-            feature_container.found_list = [0] * len(feature_container.region_list)  # 0 - gene isn't found, 1 - gene is found, 2 - part of gene is found
-            feature_container.chr_names_dict = chromosomes_names_dict(feature_name, feature_container.region_list, reference_chromosomes.keys())
-            feature_container.full_found = []
+            logger.info('  Loaded ' + str(len(container.region_list)) + ' ' + container.kind + 's')
+            res_file.write(container.kind + 's loaded: ' + str(len(container.region_list)) + '\n')
+
+            # 0 - gene is not found,
+            # 1 - gene is found,
+            # 2 - part of gene is found
+            container.found_list = [0] * len(container.region_list)
+            container.chr_names_dict = chromosomes_names_dict(container.kind, container.region_list, reference_chromosomes.keys())
+            container.full_found = []
 
     for contigs_fpath in contigs_fpaths:
         report = reporting.get(contigs_fpath)
@@ -142,11 +146,11 @@ def do(ref_fpath, contigs_fpaths, nucmer_dir, output_dirpath, genes_fpath, opero
 
     # header
     res_file.write('\n\n')
-    res_file.write('  %-20s  | %-20s| %-18s| %-12s| %-10s| %-10s| %-10s| %-10s|\n'
-        % ('assembly', 'genome fraction (%)', 'duplication ratio', 'gaps', 'genes', 'partial', 'operons', 'partial'))
-    res_file.write('  %-20s  | %-20s| %-18s| %-12s| %-10s| %-10s| %-10s| %-10s|\n'
-        % ('', '', '', 'number', '', 'genes', '', 'operons'))
-    res_file.write('================================================================================================================================\n')
+    res_file.write('%-25s| %-10s| %-12s| %-10s| %-10s| %-10s| %-10s| %-10s|\n'
+        % ('assembly', 'genome', 'duplication', 'gaps', 'genes', 'partial', 'operons', 'partial'))
+    res_file.write('%-25s| %-10s| %-12s| %-10s| %-10s| %-10s| %-10s| %-10s|\n'
+        % ('', 'fraction', 'ratio', 'number', '', 'genes', '', 'operons'))
+    res_file.write('================================================================================================================\n')
 
     # for cumulative plots:
     files_genes_in_contigs = {}   #  "filename" : [ genes in sorted contigs (see below) ]
@@ -189,7 +193,7 @@ def do(ref_fpath, contigs_fpaths, nucmer_dir, output_dirpath, genes_fpath, opero
             genome_mapping[chr_name] = [0] * (chr_len + 1)
 
         # for gene finding
-        aligned_blocks = {} # contig_name --> list of AlignedBlock
+        aligned_blocks_by_contig_name = {}  # contig_name --> list of AlignedBlock
         # for cumulative plots
         files_genes_in_contigs[contigs_fpath] = []  # i-th element is the number of genes in i-th contig (sorted by length)
         files_operons_in_contigs[contigs_fpath] = []
@@ -198,8 +202,9 @@ def do(ref_fpath, contigs_fpaths, nucmer_dir, output_dirpath, genes_fpath, opero
         contig_tuples = fastaparser.read_fasta(contigs_fpath)  # list of FASTA entries (in tuples: name, seq)
         contig_tuples = sorted(contig_tuples, key=lambda contig: len(contig[1]), reverse=True)
         sorted_contigs_names = [name for (name, seq) in contig_tuples]
+
         for name in sorted_contigs_names:
-            aligned_blocks[name] = []
+            aligned_blocks_by_contig_name[name] = []
             files_genes_in_contigs[contigs_fpath].append(0)
             files_operons_in_contigs[contigs_fpath].append(0)
 
@@ -210,11 +215,13 @@ def do(ref_fpath, contigs_fpaths, nucmer_dir, output_dirpath, genes_fpath, opero
             e1 = int(line.split('|')[0].split()[1])
             contig_name = line.split()[12].strip()
             chr_name = line.split()[11].strip()
+
             if chr_name not in genome_mapping:
                 logger.error("Something went wrong and chromosome names in your coords file (" + nucmer_base_fpath + ") "
                       "differ from the names in the reference. Try to remove the file and restart QUAST.")
                 continue
-            aligned_blocks[contig_name].append(AlignedBlock(seqname=chr_name, start=s1, end=e1))
+
+            aligned_blocks_by_contig_name[contig_name].append(AlignedBlock(seqname=chr_name, start=s1, end=e1))
             if s1 <= e1:
                 for i in range(s1, e1 + 1):
                     genome_mapping[chr_name][i] = 1
@@ -243,6 +250,7 @@ def do(ref_fpath, contigs_fpaths, nucmer_dir, output_dirpath, genes_fpath, opero
                     cur_gap_size = 0
                 else:
                     cur_gap_size += 1
+
             if cur_gap_size >= qconfig.min_gap_size:
                 gaps_count += 1
                 print >>gaps_file, chr_len - cur_gap_size + 1, chr_len
@@ -251,33 +259,35 @@ def do(ref_fpath, contigs_fpaths, nucmer_dir, output_dirpath, genes_fpath, opero
 
         report = reporting.get(contigs_fpath)
 
-        genome_coverage = float(covered_bp) * 100 / float(genome_size)
+        genome_fraction = float(covered_bp) * 100 / float(genome_size)
         # calculating duplication ratio
-        duplication_ratio = (report.get_field(reporting.Fields.TOTALLEN) + \
-                             report.get_field(reporting.Fields.MISINTERNALOVERLAP) + \
-                             report.get_field(reporting.Fields.AMBIGUOUSEXTRABASES) - \
-                             report.get_field(reporting.Fields.UNALIGNEDBASES)) /\
-                             ((genome_coverage / 100.0) * float(genome_size))
+        duplication_ratio = (report.get_field(reporting.Fields.TOTALLEN) +
+                             report.get_field(reporting.Fields.MISINTERNALOVERLAP) +
+                             report.get_field(reporting.Fields.AMBIGUOUSEXTRABASES) -
+                             report.get_field(reporting.Fields.UNALIGNEDBASES)) / \
+                            ((genome_fraction / 100.0) * float(genome_size))
 
-        res_file.write('  %-20s  | %-20s| %-18s| %-12s|'
-            % (assembly_name, genome_coverage, duplication_ratio, str(gaps_count)))
-        report.add_field(reporting.Fields.MAPPEDGENOME, '%.3f' % genome_coverage)
+        res_file.write('%-25s| %-10s| %-12s| %-10s|'
+            % (assembly_name[:24], str(genome_fraction) + '%', duplication_ratio, str(gaps_count)))
+
+        report.add_field(reporting.Fields.MAPPEDGENOME, '%.3f' % genome_fraction)
         report.add_field(reporting.Fields.DUPLICATION_RATIO, '%.3f' % duplication_ratio)
-        genome_mapped.append(genome_coverage)
+        genome_mapped.append(genome_fraction)
 
-         # finding genes and operons
-        for feature_container, feature_in_contigs, field, suffix in [
+        # finding genes and operons
+        for container, feature_in_contigs, field, suffix in [
                 (genes_container,
                  files_genes_in_contigs[contigs_fpath],
                  reporting.Fields.GENES,
                  '_genes.txt'),
+
                 (operons_container,
                  files_operons_in_contigs[contigs_fpath],
                  reporting.Fields.OPERONS,
                  '_operons.txt')]:
 
-            if not feature_container.region_list:
-                res_file.write(' %-10s| %-10s|' % ('None', 'None'))
+            if not container.region_list:
+                res_file.write(' %-10s| %-10s|' % ('-', '-'))
                 continue    
 
             total_full = 0
@@ -286,12 +296,13 @@ def do(ref_fpath, contigs_fpaths, nucmer_dir, output_dirpath, genes_fpath, opero
             found_file = open(found_fpath, 'w')
             print >>found_file, '%s\t\t%s\t%s' % ('ID or #', 'Start', 'End')
             print >>found_file, '============================'
-            for i, region in enumerate(feature_container.region_list):
-                feature_container.found_list[i] = 0
+
+            for i, region in enumerate(container.region_list):
+                container.found_list[i] = 0
                 for contig_id, name in enumerate(sorted_contigs_names):
                     cur_feature_is_found = False
-                    for cur_block in aligned_blocks[name]:
-                        if feature_container.chr_names_dict[region.seqname] != cur_block.seqname:
+                    for cur_block in aligned_blocks_by_contig_name[name]:
+                        if container.chr_names_dict[region.seqname] != cur_block.seqname:
                             continue
 
                         # computing circular genomes
@@ -305,9 +316,9 @@ def do(ref_fpath, contigs_fpaths, nucmer_dir, output_dirpath, genes_fpath, opero
                             if region.end <= block.start or block.end <= region.start:
                                 continue
                             elif block.start <= region.start and region.end <= block.end:
-                                if feature_container.found_list[i] == 2: # already found as partial gene
+                                if container.found_list[i] == 2:  # already found as partial gene
                                     total_partial -= 1
-                                feature_container.found_list[i] = 1
+                                container.found_list[i] = 1
                                 total_full += 1
                                 i = str(region.id)
                                 if i == 'None':
@@ -317,8 +328,8 @@ def do(ref_fpath, contigs_fpaths, nucmer_dir, output_dirpath, genes_fpath, opero
 
                                 cur_feature_is_found = True
                                 break
-                            elif feature_container.found_list[i] == 0 and min(region.end, block.end) - max(region.start, block.start) >= qconfig.min_gene_overlap:
-                                feature_container.found_list[i] = 2
+                            elif container.found_list[i] == 0 and min(region.end, block.end) - max(region.start, block.start) >= qconfig.min_gene_overlap:
+                                container.found_list[i] = 2
                                 total_partial += 1
                         if cur_feature_is_found:
                             break
@@ -328,13 +339,12 @@ def do(ref_fpath, contigs_fpaths, nucmer_dir, output_dirpath, genes_fpath, opero
             res_file.write(' %-10s| %-10s|' % (str(total_full), str(total_partial)))
             found_file.close()
             report.add_field(field, '%s + %s part' % (str(total_full), str(total_partial)))
-            feature_container.full_found.append(total_full)
+            container.full_found.append(total_full)
 
         # finishing output for current contigs file
         res_file.write('\n')
 
     res_file.close()
-
 
     if genes_container.region_list:
         ref_genes_num = len(genes_container.region_list)
@@ -377,6 +387,7 @@ def do(ref_fpath, contigs_fpaths, nucmer_dir, output_dirpath, genes_fpath, opero
             all_pdf, top_value=100)
 
     logger.info('Done.')
+
 
 class AlignedBlock():
     def __init__(self, seqname=None, start=None, end=None):

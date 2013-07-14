@@ -49,7 +49,6 @@ def get_genes_from_file(fpath, feature):
             logger.warning('Parsing exception ' + e)
             logger.warning(fpath + ' was skipped')
             genes = []
-
     else:
         logger.warning('Incorrect format of ' + feature + '\'s file! GFF, NCBI and the plain TXT format accepted. See manual.')
         logger.warning(fpath + ' was skipped')

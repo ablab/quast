@@ -173,10 +173,10 @@ def predict_genes(i, contigs_fpath, gene_lengths, out_dirpath, tool_dirpath, gmh
     return unique_count, count
 
 
-def do(fasta_fpaths, gene_lengths, out_dirpath):
+def do(fasta_fpaths, gene_lengths, out_dirpath, meta):
     logger.print_timestamp()
 
-    if qconfig.meta:
+    if meta:
         tool_name = 'MetaGeneMark'
         tool_dirname = 'metagenemark'
         gmhmm_p_function = gmhmm_p_metagenomic

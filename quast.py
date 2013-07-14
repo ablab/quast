@@ -592,7 +592,7 @@ def main(args):
     # Before continue evaluating, check if nucmer didn't skip all of the contigs files.
     if len(aligned_fpaths) and ref_fpath:
         ########################################################################
-        ### NA and NGA ("aligned N and NG")
+        ### NAx and NGAx ("aligned Nx and NGx")
         ########################################################################
         from libs import aligned_stats
         aligned_stats.do(ref_fpath, aligned_fpaths, aligned_lengths_lists,
@@ -617,12 +617,13 @@ def main(args):
     #         report.add_field(reporting.Fields.PREDICTED_GENES, [""] * len(qconfig.genes_lengths))
 
     if qconfig.gene_finding:
-        if qconfig.prokaryote:
+        if qconfig.prokaryote or qconfig.meta:
             ########################################################################
             ### GeneMark
             ########################################################################
             from libs import genemark
-            genemark.do(contigs_fpaths, qconfig.genes_lengths, os.path.join(output_dirpath, 'predicted_genes'))
+            genemark.do(contigs_fpaths, qconfig.genes_lengths, os.path.join(output_dirpath, 'predicted_genes'),
+                        qconfig.meta)
         else:
             ########################################################################
             ### Glimmer

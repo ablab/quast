@@ -1,0 +1,71 @@
+Aligning contigs to reference...
+	Running Nucmer...
+Parsing coords...
+Loading Assembly...
+Loading reference...
+	Loaded [meta_ref_1]
+Loading SNPs...
+Loading regions...
+	No regions given, using whole reference.
+	Total Regions: 1
+	Total Region Length: 54999
+Analyzing contigs...
+CONTIG: NODE_18_length_714_cov_2.71927 (714bp)
+Top Length: 714  Top ID: 99.86
+		Marking as insignificant: 1 131 | 251 382 | 131 132 | 97.73 | meta_ref_1 NODE_18_length_714_cov_2.71927
+		One align captures most of this contig: 78 791 | 1 714 | 714 714 | 99.86 | meta_ref_1 NODE_18_length_714_cov_2.71927
+
+CONTIG: NODE_6_length_49658_cov_2.58581 (49658bp)
+Top Length: 49658  Top ID: 99.98
+		One align captures most of this contig: 5305 54962 | 49658 1 | 49658 49658 | 99.98 | meta_ref_1 NODE_6_length_49658_cov_2.58581
+
+Analyzing coverage...
+Writing SNPs into /Users/vladsaveliev/Dropbox/bio/quast/quast_master/test_meta_output/meta_ref_1_quast_output/contigs_reports/nucmer_output/meta_contigs_1.used_snps
+	Reference meta_ref_1: 2 total alignments. 1 total regions.
+		Region: 1 to 54999 (54999 bp)
+			START in gap: 1 to 78 (77 bp)
+			Align 1: 78 791 NODE_18_length_714_cov_2.71927 1 714
+				Gap between this and next alignment: 791 to 5305 (4513 bp)
+				Next Alignment: 5305 54962 NODE_6_length_49658_cov_2.58581 49658 1
+
+			Align 2: 5305 54962 NODE_6_length_49658_cov_2.58581 49658 1
+			END in gap: 54962 to 54999 (37 bp)
+
+Analysis is finished!
+Founded SNPs were written into /Users/vladsaveliev/Dropbox/bio/quast/quast_master/test_meta_output/meta_ref_1_quast_output/contigs_reports/nucmer_output/meta_contigs_1.used_snps
+
+Results:
+	Local Misassemblies: 0
+	Misassemblies: 0
+		Relocations: 0
+		Translocations: 0
+		Inversions: 0
+	Misassembled Contigs: 0
+	Misassembled Contig Bases: 0
+	Misassmblies Inter-Contig Overlap: 0
+Uncovered Regions: 0 (0)
+Unaligned Contigs: 0 + 0 part
+Partially Unaligned Contigs with Misassemblies: 0
+Unaligned Contig Bases: 0
+
+Ambiguously Mapped Contigs: 0
+Total Bases in Ambiguously Mapped Contigs: 0
+Note that --allow-ambiguity option was set to "one" and only first alignment per each contig was used.
+
+	Covered Bases: 50372
+
+	SNPs: 13
+	Insertions: 0
+	Deletions: 0
+
+	Positive Gaps: 3
+		Internal Gaps:  0
+		External Gaps:  3
+		External Gap Total:  4627
+		External Gap Average: 1542
+	Negative Gaps: 0
+		Internal Overlaps:  0
+		External Overlaps:  0
+		External Overlaps Total:  0
+		External Overlaps Average: 0
+	Contigs with Redundant Alignments: 0 (0)

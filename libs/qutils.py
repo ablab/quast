@@ -101,10 +101,7 @@ def unique_corrected_fpath(fpath):
         i = 1
         base_corr_fname = corr_fname
         while os.path.isfile(os.path.join(dirpath, corr_fname)):
-            str_i = ''
-            if i > 1:
-                str_i = str(i)
-
+            str_i = str(i)
             corr_fname = str(base_corr_fname) + '__' + str_i
             i += 1
 

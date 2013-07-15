@@ -36,8 +36,9 @@ def chromosomes_names_dict(feature, regions, chr_names):
 
         if len(region_2_chr_name) == 1:
             if region_2_chr_name[regions[0].seqname] is None:
-                logger.notice('Reference name in %ss (%s) does not match the name of the reference (%s).'
-                       'QUAST will ignore this ussue and count as if they matched.' % (feature, regions[0].seqname, chr_name),
+                logger.notice('Reference name in %ss (%s) does not match the name of the reference (%s). '
+                              'QUAST will ignore this ussue and count as if they matched.' %
+                              (feature, regions[0].seqname, chr_name),
                        indent='  ')
                 region_2_chr_name[regions[0].seqname] = chr_name
 

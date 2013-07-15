@@ -1,0 +1,13 @@
+1: PREPARING DATA
+2,3: RUNNING mummer AND CREATING CLUSTERS
+# reading input file "/Users/vladsaveliev/Dropbox/bio/quast/quast_master/test_meta_output/meta_ref_3_quast_output/contigs_reports/nucmer_output/meta_contigs_2.ntref" of length 65000
+# construct suffix tree for sequence of length 65000
+# (maximum reference length is 536870908)
+# (maximum query length is 4294967295)
+# CONSTRUCTIONTIME /Users/vladsaveliev/Dropbox/bio/quast/quast_master/libs/MUMmer3.23-osx/mummer /Users/vladsaveliev/Dropbox/bio/quast/quast_master/test_meta_output/meta_ref_3_quast_output/contigs_reports/nucmer_output/meta_contigs_2.ntref 0.01
+# reading input file "/Users/vladsaveliev/Dropbox/bio/quast/quast_master/test_meta_output/meta_ref_3_quast_output/corrected_input/meta_contigs_2.fasta" of length 63021
+# matching query-file "/Users/vladsaveliev/Dropbox/bio/quast/quast_master/test_meta_output/meta_ref_3_quast_output/corrected_input/meta_contigs_2.fasta"
+# against subject-file "/Users/vladsaveliev/Dropbox/bio/quast/quast_master/test_meta_output/meta_ref_3_quast_output/contigs_reports/nucmer_output/meta_contigs_2.ntref"
+# COMPLETETIME /Users/vladsaveliev/Dropbox/bio/quast/quast_master/libs/MUMmer3.23-osx/mummer /Users/vladsaveliev/Dropbox/bio/quast/quast_master/test_meta_output/meta_ref_3_quast_output/contigs_reports/nucmer_output/meta_contigs_2.ntref 0.05
+# SPACE /Users/vladsaveliev/Dropbox/bio/quast/quast_master/libs/MUMmer3.23-osx/mummer /Users/vladsaveliev/Dropbox/bio/quast/quast_master/test_meta_output/meta_ref_3_quast_output/contigs_reports/nucmer_output/meta_contigs_2.ntref 0.12
+4: FINISHING DATA

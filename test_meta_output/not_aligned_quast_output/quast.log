@@ -1,0 +1,41 @@
+/Users/vladsaveliev/Dropbox/bio/quast/quast_master/quast.pyc --meta /Users/vladsaveliev/Dropbox/bio/quast/quast_master/test_meta_output/corrected_input/meta_contigs_1_not_aligned_anywhere.fasta /Users/vladsaveliev/Dropbox/bio/quast/quast_master/test_meta_output/corrected_input/meta_contigs_2_not_aligned_anywhere.fasta -o /Users/vladsaveliev/Dropbox/bio/quast/quast_master/test_meta_output/not_aligned_quast_output --labels "meta_contigs_1, meta_contigs_2"
+
+Started: 2013-07-15 19:35:02
+
+Logging to /Users/vladsaveliev/Dropbox/bio/quast/quast_master/test_meta_output/not_aligned_quast_output/quast.log
+
+NOTICE: Maximum number of threads is set to 4 (use --threads option to set it manually)
+
+Contigs:
+  /Users/vladsaveliev/Dropbox/bio/quast/quast_master/test_meta_output/corrected_input/meta_contigs_1_not_aligned_anywhere.fasta ==> meta_contigs_1
+  /Users/vladsaveliev/Dropbox/bio/quast/quast_master/test_meta_output/corrected_input/meta_contigs_2_not_aligned_anywhere.fasta ==> meta_contigs_2
+WARNING: Skipping meta_contigs_2 because it doesn't contain contigs >= 500 bp.
+
+2013-07-15 19:35:02
+Running Basic statistics processor...
+  Contig files: 
+    meta_contigs_1
+  Calculating N50 and L50...
+    meta_contigs_1, N50 = 1610, L50 = 1, Total length = 2730, GC % = 51.94, # N's per 100 kbp =  0.00
+  Drawing cumulative plot...
+    saved to /Users/vladsaveliev/Dropbox/bio/quast/quast_master/test_meta_output/not_aligned_quast_output/basic_stats/cumulative_plot.pdf
+  Drawing GC content plot...
+    saved to /Users/vladsaveliev/Dropbox/bio/quast/quast_master/test_meta_output/not_aligned_quast_output/basic_stats/GC_content_plot.pdf
+  Drawing Nx plot...
+    saved to /Users/vladsaveliev/Dropbox/bio/quast/quast_master/test_meta_output/not_aligned_quast_output/basic_stats/Nx_plot.pdf
+Done.
+
+NOTICE: Genes are not predicted by default. Use --gene-finding option to enable it.
+
+2013-07-15 19:35:03
+Summarizing...
+  Creating total report...
+    saved to /Users/vladsaveliev/Dropbox/bio/quast/quast_master/test_meta_output/not_aligned_quast_output/report.txt, report.tsv, and report.tex
+  Transposed version of total report...
+    saved to /Users/vladsaveliev/Dropbox/bio/quast/quast_master/test_meta_output/not_aligned_quast_output/transposed_report.txt, transposed_report.tsv, and transposed_report.tex
+  HTML version saved to /Users/vladsaveliev/Dropbox/bio/quast/quast_master/test_meta_output/not_aligned_quast_output/report.html
+  All pdf files are merged to /Users/vladsaveliev/Dropbox/bio/quast/quast_master/test_meta_output/not_aligned_quast_output/plots.pdf
+Log saved to /Users/vladsaveliev/Dropbox/bio/quast/quast_master/test_meta_output/not_aligned_quast_output/quast.log
+
+Finished: 2013-07-15 19:35:03
+Elapsed time: 0:00:01.522625

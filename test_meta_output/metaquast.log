@@ -1,0 +1,43 @@
+/Users/vladsaveliev/Dropbox/bio/quast/quast_master/metaquast.py test_data/meta_contigs_1.fasta test_data/meta_contigs_2.fasta -R test_data/meta_ref_1.fasta,test_data/meta_ref_2.fasta,test_data/meta_ref_3.fasta -o test_meta_output
+
+Version 2.2
+
+System information:
+  OS: Darwin-12.2.1-x86_64-i386-64bit
+  Python version: 2.7.2
+  CPUs number: 4
+
+Started: 2013-07-15 19:34:42
+
+Logging to /Users/vladsaveliev/Dropbox/bio/quast/quast_master/test_meta_output/metaquast.log
+
+References:
+  test_data/meta_ref_1.fasta ==> meta_ref_1
+  test_data/meta_ref_2.fasta ==> meta_ref_2
+  test_data/meta_ref_3.fasta ==> meta_ref_3
+  All references combined in combined_reference.fasta
+
+Contigs:
+  test_data/meta_contigs_1.fasta ==> meta_contigs_1
+  test_data/meta_contigs_2.fasta ==> meta_contigs_2
+
+Starting quast.py for the combined reference...
+(logging to /Users/vladsaveliev/Dropbox/bio/quast/quast_master/test_meta_output/combined_quast_output/quast.log)
+
+Starting quast.py for the contigs aligned to meta_ref_2
+(logging to /Users/vladsaveliev/Dropbox/bio/quast/quast_master/test_meta_output/meta_ref_2_quast_output/quast.log)
+
+Starting quast.py for the contigs aligned to meta_ref_3
+(logging to /Users/vladsaveliev/Dropbox/bio/quast/quast_master/test_meta_output/meta_ref_3_quast_output/quast.log)
+
+Starting quast.py for the contigs aligned to meta_ref_1
+(logging to /Users/vladsaveliev/Dropbox/bio/quast/quast_master/test_meta_output/meta_ref_1_quast_output/quast.log)
+
+Starting quast.py for the contigs not alined anywhere...
+(logging to /Users/vladsaveliev/Dropbox/bio/quast/quast_master/test_meta_output/not_aligned_quast_output/quast.log)
+
+MetaQUAST finished.
+Log saved to /Users/vladsaveliev/Dropbox/bio/quast/quast_master/test_meta_output/metaquast.log
+
+Finished: 2013-07-15 19:35:03
+Elapsed time: 0:00:21.372308

@@ -33,7 +33,7 @@ def do(ref_fpath, contigs_fpaths, aligned_lengths_lists,
 
     ########################################################################
     logger.print_timestamp()
-    logger.info('Running NA-NGA tool...')
+    logger.info('Running NA-NGA calculation...')
 
     reference_length = sum(fastaparser.get_lengths_from_fastafile(ref_fpath))
     assembly_lengths = []

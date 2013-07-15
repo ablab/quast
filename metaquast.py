@@ -38,32 +38,33 @@ class Assembly:
 
 def usage():
     print >> sys.stderr, "Options:"
-    print >> sys.stderr, "-o            <dirname>      Directory to store all result file. Default: quast_results/results_<datetime>"
-    print >> sys.stderr, "-R            <filename>     Reference genomes (accepts multiple fasta files with multiple sequences each)"
-    print >> sys.stderr, "-G  --genes   <filename>     Annotated genes file"
-    print >> sys.stderr, "-O  --operons <filename>     Annotated operons file"
-    print >> sys.stderr, "--min-contig  <int>          Lower threshold for contig length [default: %s]" % qconfig.min_contig
+    print >> sys.stderr, "-o  --output-dir  <dirname>   Directory to store all result files [default: quast_results/results_<datetime>]"
+    print >> sys.stderr, "-R                <filename>  Reference genomes (accepts multiple fasta files with multiple sequences each)"
+    print >> sys.stderr, "-G  --genes       <filename>  File with gene coordiantes in the reference"
+    print >> sys.stderr, "-O  --operons     <filename>  File with operon coordiantes in the reference"
+    print >> sys.stderr, "    --min-contig  <int>       Lower threshold for contig length [default: %s]" % qconfig.min_contig
     print >> sys.stderr, ""
     print >> sys.stderr, "Advanced options:"
-    print >> sys.stderr, "-t  --threads <int>               Maximum number of threads [default: number of CPUs]"
-    print >> sys.stderr, "-l  --labels \"label, label, ...\"  Names of assemblies to use in reports, comma-separated."
-    print >> sys.stderr, "--gage                            Starts GAGE inside QUAST (\"GAGE mode\")"
-    print >> sys.stderr, "--contig-thresholds <int,int,..>  Comma-separated list of contig length thresholds [default: %s]" % qconfig.contig_thresholds
-    print >> sys.stderr, "--gene-finding                    Uses MetaGeneMark for gene finding"
-    print >> sys.stderr, "--gene-thresholds <int,int,..>    Comma-separated list of threshold lengths of genes to search with Gene Finding module"
-    print >> sys.stderr, "                                  [default is %s]" % qconfig.genes_lengths
-    print >> sys.stderr, "--eukaryote                       Genome is an eukaryote"
-    print >> sys.stderr, "--est-ref-size <int>              Estimated reference size (for computing NGx metrics without a reference)"
-    print >> sys.stderr, "--scaffolds                       Provided assemblies are scaffolds"
-    print >> sys.stderr, "--use-all-alignments              Computes Genome fraction, # genes, # operons metrics in compatible with QUAST v.1.* mode."
-    print >> sys.stderr, "                                  By default, QUAST filters Nucmer\'s alignments to keep only best ones"
-    print >> sys.stderr, "--ambiguity-usage <none|one|all>  Uses none, one, or all alignments of a contig with multiple equally good alignments."
-    print >> sys.stderr, "                                  [default is %s]" % qconfig.ambiguity_usage
-    print >> sys.stderr, "--strict-NA                       Breaks contigs by any misassembly event to compute NAx and NGAx."
-    print >> sys.stderr, "                                  By default, QUAST breaks contigs only by extensive misassemblies (not local ones)"
+    print >> sys.stderr, "-T  --threads      <int>              Maximum number of threads [default: number of CPUs]"
+    print >> sys.stderr, "-l  --labels \"label, label, ...\"      Names of assemblies to use in reports, comma-separated. If contain spaces, use quotes"
+    print >> sys.stderr, "-L                                    Take assembly names from their parent directory names"
+    print >> sys.stderr, "-f  --gene-finding                    Predict genes using MetaGeneMark"
+    print >> sys.stderr, "-S  --gene-thresholds                 Comma-separated list of threshold lengths of genes to search with Gene Finding module"
+    print >> sys.stderr, "                                      [default is %s]" % qconfig.genes_lengths
+    print >> sys.stderr, "-e  --eukaryote                       Genome is eukaryotic"
+    print >> sys.stderr, "    --est-ref-size <int>              Estimated reference size (for computing NGx metrics without a reference)"
+    print >> sys.stderr, "    --gage                            Use GAGE (results are in gage_report.txt)"
+    print >> sys.stderr, "-t  --contig-thresholds               Comma-separated list of contig length thresholds [default: %s]" % qconfig.contig_thresholds
+    print >> sys.stderr, "-s  --scaffolds                       Assemblies are scaffolds, split them and add contigs to the comparison"
+    print >> sys.stderr, "-u  --use-all-alignments              Compute genome fraction, # genes, # operons in the v.1.0-1.3 style."
+    print >> sys.stderr, "                                      By default, QUAST filters Nucmer\'s alignments to keep only best ones"
+    print >> sys.stderr, "-a  --ambiguity-usage <none|one|all>  Use none, one, or all alignments of a contig with multiple equally "
+    print >> sys.stderr, "                                      good alignments [default is %s]" % qconfig.ambiguity_usage
+    print >> sys.stderr, "-n  --strict-NA                       Break contigs in any misassembly event when compute NAx and NGAx"
+    print >> sys.stderr, "                                      By default, QUAST breaks contigs only by extensive misassemblies (not local ones)"
     print >> sys.stderr, ""
-    print >> sys.stderr, "--test                            Runs QUAST with the data in the test_data folder."
-    print >> sys.stderr, "-h  --help                        Prints this message"
+    print >> sys.stderr, "    --test                            Run QUAST on the data from the test_data folder, output to test_meta_output"
+    print >> sys.stderr, "-h  --help                            Print this message"
 
 
 def _partition_contigs(assemblies, ref_fpaths, corrected_dirpath, alignments_fpath_template):
@@ -151,14 +152,6 @@ def _start_quast_main(
     reload(quast)
     quast.logger.set_up_console_handler(debug=not RELEASE_MODE, indent_val=1)
 
-    # nested_quast_console_handler = logging.StreamHandler(sys.stdout)
-    # nested_quast_console_handler.setFormatter(
-    #     LoggingIndentFormatter('%(message)s'))
-    # nested_quast_console_handler.setLevel(logging.DEBUG)
-    # log.addHandler(nested_quast_console_handler)
-
-    # print 'quast.py ' + ' '.join(args)
-
     logger.info_to_file('(logging to ' +
                         os.path.join(output_dirpath,
                                      qconfig.LOGGER_DEFAULT_NAME + '.log)'))
@@ -181,10 +174,9 @@ def _correct_contigs(contigs_fpaths, corrected_dirpath, min_contig, labels):
 
     for i, contigs_fpath in enumerate(contigs_fpaths):
         contigs_fname = os.path.basename(contigs_fpath)
-        label, ctg_fasta_ext = qutils.splitext_for_fasta_file(contigs_fname)
+        fname, ctg_fasta_ext = qutils.splitext_for_fasta_file(contigs_fname)
 
-        if labels:
-            label = labels[i]
+        label = labels[i]
 
         corr_fpath = qutils.unique_corrected_fpath(
             os.path.join(corrected_dirpath, label + ctg_fasta_ext))
@@ -301,6 +293,7 @@ def main(args):
     output_dirpath = None
 
     labels = None
+    all_labels_from_dirs = False
 
     quast_py_args = args[:]
 
@@ -352,6 +345,10 @@ def main(args):
             quast_py_args.remove(arg)
             labels = quast.parse_labels(arg, contigs_fpaths)
 
+        elif opt == '-L':
+            quast_py_args.remove(opt)
+            all_labels_from_dirs = True
+
         elif opt in ('-j', '--save-json'):
             pass
         elif opt in ('-J', '--save-json-to'):
@@ -391,6 +388,8 @@ def main(args):
     for c_fpath in contigs_fpaths:
         assert_file_exists(c_fpath, 'contigs')
 
+    labels = quast.process_labels(contigs_fpaths, labels, all_labels_from_dirs)
+
     for contigs_fpath in contigs_fpaths:
         quast_py_args.remove(contigs_fpath)
 
@@ -407,7 +406,7 @@ def main(args):
     corrected_dirpath = os.path.join(output_dirpath, qconfig.corrected_dirname)
 
     logger.set_up_file_handler(output_dirpath)
-    logger.info(' '.join(['metaquast.py'] + args))
+    logger.info(' '.join([os.path.realpath(__file__)] + args))
     logger.start()
 
     # Where all pdfs will be saved

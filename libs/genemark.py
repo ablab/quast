@@ -168,8 +168,6 @@ def predict_genes(i, contigs_fpath, gene_lengths, out_dirpath, tool_dirpath, gmh
         logger.info('  ' + qutils.index_to_str(i) + '  Genes = ' + str(unique_count) + ' unique, ' + str(total_count) + ' total')
         logger.info('  ' + qutils.index_to_str(i) + '  Predicted genes (GFF): ' + out_gff_fpath)
 
-        logger.info('  ' + qutils.index_to_str(i) + 'Gene prediction is finished.')
-
     return unique_count, count
 
 
@@ -185,7 +183,7 @@ def do(fasta_fpaths, gene_lengths, out_dirpath, meta):
         tool_dirname = 'genemark'
         gmhmm_p_function = gmhmm_p_everyGC
 
-    logger.info('Running %s tool...' % tool_name)
+    logger.info('Running %s...' % tool_name)
 
     tool_dirpath = os.path.join(qconfig.LIBS_LOCATION, tool_dirname, qconfig.platform_name)
     if not os.path.exists(tool_dirpath):

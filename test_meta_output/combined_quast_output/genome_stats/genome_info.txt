@@ -1,0 +1,17 @@
+reference chromosomes:
+	meta_ref_2 (59999 bp)
+	meta_ref_3 (64999 bp)
+	meta_ref_1 (54999 bp)
+
+total genome size: 179997
+
+gap min size: 50
+partial gene/operon min size: 100
+
+
+
+assembly                 | genome    | duplication | gaps      | genes     | partial   | operons   | partial   |
+                         | fraction  | ratio       | number    |           | genes     |           | operons   |
+================================================================================================================
+meta_contigs_1           | 96.0421562582%| 1.03049637595| 6         | -         | -         | -         | -         |
+meta_contigs_2           | 95.5765929432%| 1.00127880954| 5         | -         | -         | -         | -         |

@@ -102,7 +102,7 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, all_pdf, draw_plots, json_outp
             from libs.html_saver import html_saver
             html_saver.save_reference_length(results_dir, reference_length)
 
-    logger.info('  Contigs files: ')
+    logger.info('  Contig files: ')
     lists_of_lengths = []
     numbers_of_Ns = []
     for id, contigs_fpath in enumerate(contigs_fpaths):

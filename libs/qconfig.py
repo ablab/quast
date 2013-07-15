@@ -31,7 +31,7 @@ long_options = "output-dir= save-json-to= genes= operons= reference= contig-thre
                "gene-thresholds= save-json gage eukaryote no-plots no-html help debug "\
                "ambiguity-usage= scaffolds threads= mincluster= est-ref-size= use-all-alignments gene-finding "\
                "strict-NA meta labels= test".split()
-short_options = "o:G:O:R:t:M:S:J:jehdsa:T:c:ufnml:"
+short_options = "o:G:O:R:t:M:S:J:jehdsa:T:c:ufnml:L"
 
 # default values for options
 contig_thresholds = "0,1000"

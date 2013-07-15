@@ -1,0 +1,152 @@
+Aligning contigs to reference...
+	Running Nucmer...
+Parsing coords...
+Loading Assembly...
+Loading reference...
+	Loaded [meta_ref_3]
+Loading SNPs...
+Loading regions...
+	No regions given, using whole reference.
+	Total Regions: 1
+	Total Region Length: 64999
+Analyzing contigs...
+CONTIG: NODE_43_length_3427_cov_1.72301 (3427bp)
+Top Length: 3427  Top ID: 99.97
+		Marking as insignificant: 1 79 | 3349 3427 | 79 79 | 100.0 | meta_ref_3 NODE_43_length_3427_cov_1.72301
+		One align captures most of this contig: 25 3451 | 1 3427 | 3427 3427 | 99.97 | meta_ref_3 NODE_43_length_3427_cov_1.72301
+
+CONTIG: NODE_38_length_862_cov_88.5167 (862bp)
+Top Length: 862  Top ID: 97.45
+		One align captures most of this contig: 6958 7819 | 1 862 | 862 862 | 97.45 | meta_ref_3 NODE_38_length_862_cov_88.5167
+
+CONTIG: NODE_37_length_747_cov_199.488 (747bp)
+Top Length: 747  Top ID: 99.87
+		One align captures most of this contig: 6958 7704 | 1 747 | 747 747 | 99.87 | meta_ref_3 NODE_37_length_747_cov_199.488
+
+CONTIG: NODE_30_length_694_cov_43.795 (694bp)
+Top Length: 694  Top ID: 99.42
+		One align captures most of this contig: 6958 7651 | 1 694 | 694 694 | 99.42 | meta_ref_3 NODE_30_length_694_cov_43.795
+
+CONTIG: NODE_42_length_11102_cov_303.126 (11102bp)
+Top Length: 11101  Top ID: 99.93
+		Marking as insignificant: 35992 36719 | 2 729 | 728 728 | 100.0 | meta_ref_3 NODE_42_length_11102_cov_303.126
+		One align captures most of this contig: 53899 64999 | 2 11102 | 11101 11101 | 99.93 | meta_ref_3 NODE_42_length_11102_cov_303.126
+
+CONTIG: NODE_25_length_832_cov_317.008 (832bp)
+Top Length: 832  Top ID: 100.0
+		One align captures most of this contig: 6129 6960 | 832 1 | 832 832 | 100.0 | meta_ref_3 NODE_25_length_832_cov_317.008
+
+CONTIG: NODE_41_length_17535_cov_311.913 (17535bp)
+Top Length: 17534  Top ID: 99.97
+		Marking as insignificant: 53899 54626 | 17534 16807 | 728 728 | 98.9 | meta_ref_3 NODE_41_length_17535_cov_311.913
+		Marking as insignificant: 34802 35618 | 817 1 | 817 817 | 98.65 | meta_ref_3 NODE_41_length_17535_cov_311.913
+		One align captures most of this contig: 35992 53525 | 17534 1 | 17534 17534 | 99.97 | meta_ref_3 NODE_41_length_17535_cov_311.913
+
+CONTIG: NODE_32_length_1057_cov_298.503 (1057bp)
+Top Length: 1057  Top ID: 99.91
+		One align captures most of this contig: 3868 4924 | 1 1057 | 1057 1057 | 99.91 | meta_ref_3 NODE_32_length_1057_cov_298.503
+
+CONTIG: NODE_44_length_27969_cov_310.914 (27969bp)
+Top Length: 27969  Top ID: 99.96
+		Marking as insignificant: 52709 53525 | 817 1 | 817 817 | 99.39 | meta_ref_3 NODE_44_length_27969_cov_310.914
+		One align captures most of this contig: 7650 35618 | 27969 1 | 27969 27969 | 99.96 | meta_ref_3 NODE_44_length_27969_cov_310.914
+
+CONTIG: NODE_40_length_987_cov_309.523 (987bp)
+Top Length: 987  Top ID: 100.0
+		One align captures most of this contig: 5197 6183 | 1 987 | 987 987 | 100.0 | meta_ref_3 NODE_40_length_987_cov_309.523
+
+CONTIG: NODE_34_length_3898_cov_294.65 (3898bp)
+Top Length: 3898  Top ID: 99.97
+		Marking as insignificant: 1 79 | 3349 3427 | 79 79 | 100.0 | meta_ref_3 NODE_34_length_3898_cov_294.65
+		One align captures most of this contig: 25 3922 | 1 3898 | 3898 3898 | 99.97 | meta_ref_3 NODE_34_length_3898_cov_294.65
+
+Analyzing coverage...
+Writing SNPs into /Users/vladsaveliev/Dropbox/bio/quast/quast_master/test_meta_output/meta_ref_3_quast_output/contigs_reports/nucmer_output/meta_contigs_1.used_snps
+	Reference meta_ref_3: 11 total alignments. 1 total regions.
+		Region: 1 to 64999 (64999 bp)
+			START in gap: 1 to 25 (24 bp)
+			Align 1: 25 3451 NODE_43_length_3427_cov_1.72301 1 3427
+				Negative gap (overlap) between this and next alignment: 3451 to 25 (-3426 bp)
+				Next Alignment: 25 3922 NODE_34_length_3898_cov_294.65 1 3898
+
+			Previous gap was negative, modifying coordinates to ignore overlap
+				Moving contig start from 1 to 3428.
+			Align 2: 3452 3922 NODE_34_length_3898_cov_294.65 3428 3898
+				Negative gap (overlap) between this and next alignment: 3922 to 3868 (-54 bp)
+				Next Alignment: 3868 4924 NODE_32_length_1057_cov_298.503 1 1057
+
+			Previous gap was negative, modifying coordinates to ignore overlap
+				Moving contig start from 1 to 56.
+			Align 3: 3923 4924 NODE_32_length_1057_cov_298.503 56 1057
+				Gap between this and next alignment: 4924 to 5197 (272 bp)
+				Next Alignment: 5197 6183 NODE_40_length_987_cov_309.523 1 987
+
+			Align 4: 5197 6183 NODE_40_length_987_cov_309.523 1 987
+				Negative gap (overlap) between this and next alignment: 6183 to 6129 (-54 bp)
+				Next Alignment: 6129 6960 NODE_25_length_832_cov_317.008 832 1
+
+			Previous gap was negative, modifying coordinates to ignore overlap
+				Moving contig start from 832 to 777.
+			Align 5: 6184 6960 NODE_25_length_832_cov_317.008 777 1
+				Negative gap (overlap) between this and next alignment: 6960 to 6958 (-2 bp)
+				Next Alignment: 6958 7819 NODE_38_length_862_cov_88.5167 1 862
+
+			Previous gap was negative, modifying coordinates to ignore overlap
+				Moving contig start from 1 to 4.
+			Align 6: 6961 7819 NODE_38_length_862_cov_88.5167 4 862
+				The next alignment (6958 7704 NODE_37_length_747_cov_199.488 1 747) is redundant. Skipping.
+				The next alignment (6958 7651 NODE_30_length_694_cov_43.795 1 694) is redundant. Skipping.
+				Negative gap (overlap) between this and next alignment: 7819 to 7650 (-169 bp)
+				Next Alignment: 7650 35618 NODE_44_length_27969_cov_310.914 27969 1
+
+			Previous gap was negative, modifying coordinates to ignore overlap
+				Moving contig start from 27969 to 27799.
+			Align 9: 7820 35618 NODE_44_length_27969_cov_310.914 27799 1
+				Gap between this and next alignment: 35618 to 35992 (373 bp)
+				Next Alignment: 35992 53525 NODE_41_length_17535_cov_311.913 17534 1
+
+			Align 10: 35992 53525 NODE_41_length_17535_cov_311.913 17534 1
+				Gap between this and next alignment: 53525 to 53899 (373 bp)
+				Next Alignment: 53899 64999 NODE_42_length_11102_cov_303.126 2 11102
+
+			Align 11: 53899 64999 NODE_42_length_11102_cov_303.126 2 11102
+			END in current alignment.  Modifying 64999 to 64999.
+
+Analysis is finished!
+Founded SNPs were written into /Users/vladsaveliev/Dropbox/bio/quast/quast_master/test_meta_output/meta_ref_3_quast_output/contigs_reports/nucmer_output/meta_contigs_1.used_snps
+
+Results:
+	Local Misassemblies: 0
+	Misassemblies: 0
+		Relocations: 0
+		Translocations: 0
+		Inversions: 0
+	Misassembled Contigs: 0
+	Misassembled Contig Bases: 0
+	Misassmblies Inter-Contig Overlap: 0
+Uncovered Regions: 0 (0)
+Unaligned Contigs: 0 + 0 part
+Partially Unaligned Contigs with Misassemblies: 0
+Unaligned Contig Bases: 0
+
+Ambiguously Mapped Contigs: 0
+Total Bases in Ambiguously Mapped Contigs: 0
+Note that --allow-ambiguity option was set to "one" and only first alignment per each contig was used.
+
+	Covered Bases: 63957
+
+	SNPs: 41
+	Insertions: 1
+	Deletions: 1
+
+	Positive Gaps: 4
+		Internal Gaps:  0
+		External Gaps:  4
+		External Gap Total:  1042
+		External Gap Average: 260
+	Negative Gaps: 5
+		Internal Overlaps:  0
+		External Overlaps:  5
+		External Overlaps Total: -3705
+		External Overlaps Average: -741
+	Contigs with Redundant Alignments: 1 (1441)

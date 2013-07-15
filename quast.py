@@ -37,65 +37,72 @@ def _usage():
 
     if RELEASE_MODE:
         print >> sys.stderr, "Options:"
-        print >> sys.stderr, "-o            <dirname>      Directory to store all result file. Default: quast_results/results_<datetime>"
-        print >> sys.stderr, "-R            <filename>     Reference genome file"
-        print >> sys.stderr, "-G  --genes   <filename>     Annotated genes file"
-        print >> sys.stderr, "-O  --operons <filename>     Annotated operons file"
-        print >> sys.stderr, "--min-contig  <int>          Lower threshold for contig length [default: %s]" % qconfig.min_contig
+        print >> sys.stderr, "-o  --output-dir  <dirname>   Directory to store all result files [default: quast_results/results_<datetime>]"
+        print >> sys.stderr, "-R                <filename>  Reference genome file"
+        print >> sys.stderr, "-G  --genes       <filename>  File with gene coordiantes in the reference"
+        print >> sys.stderr, "-O  --operons     <filename>  File with operon coordiantes in the reference"
+        print >> sys.stderr, "    --min-contig  <int>       Lower threshold for contig length [default: %s]" % qconfig.min_contig
         print >> sys.stderr, ""
         print >> sys.stderr, "Advanced options:"
-        print >> sys.stderr, "-t  --threads <int>               Maximum number of threads [default: number of CPUs]"
-        print >> sys.stderr, "-l  --labels \"label, label, ...\"  Names of assemblies to use in reports, comma-separated."
-        print >> sys.stderr, "--gage                            Starts GAGE inside QUAST (\"GAGE mode\")"
-        print >> sys.stderr, "--contig-thresholds <int,int,..>  Comma-separated list of contig length thresholds [default: %s]" % qconfig.contig_thresholds
-        print >> sys.stderr, "--gene-finding                    Uses Gene Finding module"
-        print >> sys.stderr, "--gene-thresholds <int,int,..>    Comma-separated list of threshold lengths of genes to search with Gene Finding module"
-        print >> sys.stderr, "                                  [default is %s]" % qconfig.genes_lengths
-        print >> sys.stderr, "--eukaryote                       Genome is an eukaryote"
-        print >> sys.stderr, "--est-ref-size <int>              Estimated reference size (for computing NGx metrics without a reference)"
-        print >> sys.stderr, "--scaffolds                       Provided assemblies are scaffolds"
-        print >> sys.stderr, "--use-all-alignments              Computes Genome fraction, # genes, # operons metrics in compatible with QUAST v.1.* mode."
-        print >> sys.stderr, "                                  By default, QUAST filters Nucmer\'s alignments to keep only best ones"
-        print >> sys.stderr, "--ambiguity-usage <none|one|all>  Uses none, one, or all alignments of a contig with multiple equally good alignments."
-        print >> sys.stderr, "                                  [default is %s]" % qconfig.ambiguity_usage
-        print >> sys.stderr, "--strict-NA                       Breaks contigs by any misassembly event to compute NAx and NGAx."
-        print >> sys.stderr, "                                  By default, QUAST breaks contigs only by extensive misassemblies (not local ones)"
-        print >> sys.stderr, "-m  --meta                        Metagenomic assembly. Uses MetaGeneMark for gene prediction. "
+        print >> sys.stderr, "-T  --threads      <int>              Maximum number of threads [default: number of CPUs]"
+        print >> sys.stderr, "-l  --labels \"label, label, ...\"      Names of assemblies to use in reports, comma-separated. If contain spaces, use quotes"
+        print >> sys.stderr, "-L                                    Take assembly names from their parent directory names"
+        print >> sys.stderr, "-f  --gene-finding                    Predict genes (with GeneMarkS from prokaryotes (default), GlimmerHMM"
+        print >> sys.stderr, "                                      for eukaryotes (--eukaryote), or MetaGeneMark for metagenomes (--meta)"
+        print >> sys.stderr, "-S  --gene-thresholds                 Comma-separated list of threshold lengths of genes to search with Gene Finding module"
+        print >> sys.stderr, "                                      [default is %s]" % qconfig.genes_lengths
+        print >> sys.stderr, "-e  --eukaryote                       Genome is eukaryotic"
+        print >> sys.stderr, "-m  --meta                            Metagenomic assembly. Use MetaGeneMark for gene prediction. "
+        print >> sys.stderr, "    --est-ref-size <int>              Estimated reference size (for computing NGx metrics without a reference)"
+        print >> sys.stderr, "    --gage                            Use GAGE (results are in gage_report.txt)"
+        print >> sys.stderr, "-t  --contig-thresholds               Comma-separated list of contig length thresholds [default: %s]" % qconfig.contig_thresholds
+        print >> sys.stderr, "-s  --scaffolds                       Assemblies are scaffolds, split them and add contigs to the comparison"
+        print >> sys.stderr, "-u  --use-all-alignments              Compute genome fraction, # genes, # operons in the v.1.0-1.3 style."
+        print >> sys.stderr, "                                      By default, QUAST filters Nucmer\'s alignments to keep only best ones"
+        print >> sys.stderr, "-a  --ambiguity-usage <none|one|all>  Use none, one, or all alignments of a contig with multiple equally "
+        print >> sys.stderr, "                                      good alignments [default is %s]" % qconfig.ambiguity_usage
+        print >> sys.stderr, "-n  --strict-NA                       Break contigs in any misassembly event when compute NAx and NGAx"
+        print >> sys.stderr, "                                      By default, QUAST breaks contigs only by extensive misassemblies (not local ones)"
         print >> sys.stderr, ""
-        print >> sys.stderr, "--test                            Runs QUAST with the data in the test_data folder."
-        print >> sys.stderr, "-h  --help                        Prints this message"
+        print >> sys.stderr, "    --test                            Run QUAST on the data from the test_data folder, output to test_output"
+        print >> sys.stderr, "-h  --help                            Print this message"
 
     else:
         print >> sys.stderr, 'Options with arguments'
-        print >> sys.stderr, "-o  --output-dir   <dirname>      Directory to store all result files [default: quast_results/results_<datetime>]"
-        print >> sys.stderr, "-R                 <filename>     Reference genome file"
-        print >> sys.stderr, "-G  --genes        <filename>     Annotated genes file"
-        print >> sys.stderr, "-O  --operons      <filename>     Annotated operons file"
-        print >> sys.stderr, "-M  --min-contig   <int>          Lower threshold for contig length [default: %s]" % qconfig.min_contig
-        print >> sys.stderr, "-t  --contig-thresholds           Comma-separated list of contig length thresholds [default: %s]" % qconfig.contig_thresholds
-        print >> sys.stderr, "-S  --gene-thresholds             Comma-separated list of threshold lengths of genes to search with Gene Finding module [default: %s]" % qconfig.genes_lengths
-        print >> sys.stderr, "-T  --threads      <int>          Maximum number of threads [default: number of CPUs]"
-        print >> sys.stderr, "-l  --labels \"label, label, ...\"  Names of assemblies to use in reports, comma-separated."
-        print >> sys.stderr, "-c  --mincluster   <int>          Nucmer's parameter -- the minimum length of a cluster of matches [default: %s]" % qconfig.mincluster
-        print >> sys.stderr, "    --est-ref-size <int>          Estimated reference size (for calculating NG)"
+        print >> sys.stderr, "-o  --output-dir   <dirname>          Directory to store all result files [default: quast_results/results_<datetime>]"
+        print >> sys.stderr, "-R                 <filename>         Reference genome file"
+        print >> sys.stderr, "-G  --genes        <filename>         File with gene coordiantes in the reference"
+        print >> sys.stderr, "-O  --operons      <filename>         File with operon coordiantes in the reference"
+        print >> sys.stderr, "-M  --min-contig   <int>              Lower threshold for contig length [default: %s]" % qconfig.min_contig
+        print >> sys.stderr, "-t  --contig-thresholds               Comma-separated list of contig length thresholds [default: %s]" % qconfig.contig_thresholds
+        print >> sys.stderr, "-a  --ambiguity-usage <none|one|all>  Use none, one, or all alignments of a contig with multiple equally "
+        print >> sys.stderr, "                                      good alignments [default is %s]" % qconfig.ambiguity_usage
+        print >> sys.stderr, "-S  --gene-thresholds                 Comma-separated list of threshold lengths of genes to search with Gene Finding module "
+        print >> sys.stderr, "                                      [default: %s]" % qconfig.genes_lengths
+        print >> sys.stderr, "-T  --threads      <int>              Maximum number of threads [default: number of CPUs]"
+        print >> sys.stderr, "-l  --labels \"label, label, ...\"      Names of assemblies to use in reports, comma-separated. If contain spaces, use quotes"
+        print >> sys.stderr, "-L                                    Take assembly names from their parent directory names"
+        print >> sys.stderr, "-c  --mincluster   <int>              Nucmer's parameter: the minimum length of a cluster of matches [default: %s]" % qconfig.mincluster
+        print >> sys.stderr, "    --est-ref-size <int>              Estimated reference size (for computing NGx metrics without a reference)"
+        print >> sys.stderr, "-J  --save-json-to <path>             Save the JSON output to a particular path"
         print >> sys.stderr, ""
-        print >> sys.stderr, "Options without arguments"
-        print >> sys.stderr, "-f  --gene-finding                Uses Gene Finding module"
-        print >> sys.stderr, "-s  --scaffolds                   This flag informs QUAST that provided assemblies are scaffolds"
-        print >> sys.stderr, "    --gage                        Uses GAGE (results are in gage_report.txt)"
-        print >> sys.stderr, "-e  --eukaryote                   Genome is eukaryotic"
-        print >> sys.stderr, "-m  --meta                        Metagenomic assembly. Uses MetaGeneMark for gene prediction. "
-        print >> sys.stderr, "-a  --ambiguity-usage <str>       Uses all alignments of contigs covering repeats (ambiguous). Str is none|one|all"
-        print >> sys.stderr, "-u  --use-all-alignments          Computes Genome fraction, # genes, # operons in v.1.0-1.3 style"
-        print >> sys.stderr, "-n  --strict-NA                   Breaks contigs by any misassembly event to compute NAx and NGAx."
-        print >> sys.stderr, "-j  --save-json                   Saves the output also in the JSON format"
-        print >> sys.stderr, "-J  --save-json-to <path>         Saves the JSON-output to a particular path"
-        print >> sys.stderr, "    --no-html                     Doesn't build html report"
-        print >> sys.stderr, "    --no-plots                    Doesn't draw plots (to make quast faster)"
+        print >> sys.stderr, "Flags"
+        print >> sys.stderr, "-f  --gene-finding        Predict genes (with GeneMarkS from prokaryotes (default), GlimmerHMM"
+        print >> sys.stderr, "                          for eukaryotes (--eukaryote), or MetaGeneMark for metagenomes (--meta)"
+        print >> sys.stderr, "-s  --scaffolds           Assemblies are scaffolds, split them and add contigs to the comparison"
+        print >> sys.stderr, "    --gage                Use GAGE (results are in gage_report.txt)"
+        print >> sys.stderr, "-e  --eukaryote           Genome is eukaryotic"
+        print >> sys.stderr, "-m  --meta                Metagenomic assembly. Use MetaGeneMark for gene prediction. "
+        print >> sys.stderr, "-u  --use-all-alignments  Compute genome fraction, # genes, # operons in the v.1.0-1.3 style"
+        print >> sys.stderr, "-n  --strict-NA           Break contigs in any misassembly event when compute NAx and NGAx"
+        print >> sys.stderr, "-j  --save-json           Save the output also in the JSON format"
+        print >> sys.stderr, "    --no-html             Do not build html report"
+        print >> sys.stderr, "    --no-plots            Do not draw plots (to make quast faster)"
         print >> sys.stderr, ""
-        print >> sys.stderr, "-d  --debug                       Runs in debug mode"
-        print >> sys.stderr, "--test                            Runs QUAST with the data in the test_data folder."
-        print >> sys.stderr, "-h  --help                        Prints this message"
+        print >> sys.stderr, "-d  --debug               Run in a debug mode"
+        print >> sys.stderr, "    --test                Run QUAST on the data from the test_data folder, output to test_output"
+        print >> sys.stderr, "-h  --help                Print this message"
+
 
 
 def _set_up_output_dir(output_dirpath, json_outputpath,
@@ -239,10 +246,9 @@ def _correct_contigs(contigs_fpaths, corrected_dirpath, reporting, labels):
 
     for i, contigs_fpath in enumerate(contigs_fpaths):
         contigs_fname = os.path.basename(contigs_fpath)
-        label, fasta_ext = qutils.splitext_for_fasta_file(contigs_fname)
+        fname, fasta_ext = qutils.splitext_for_fasta_file(contigs_fname)
 
-        if labels:
-            label = labels[i]
+        label = labels[i]
 
         corr_fpath = qutils.unique_corrected_fpath(
             os.path.join(corrected_dirpath, label + fasta_ext))
@@ -331,11 +337,12 @@ def _correct_reference(ref_fpath, corrected_dirpath):
 
 def parse_labels(line, contigs_fpaths):
     def remove_quotes(line):
-        if line[0] == '"':
-            line = line[1:]
-        if line[-1] == '"':
-            line = line[:-1]
-        return line
+        if line:
+            if line[0] == '"':
+                line = line[1:]
+            if line[-1] == '"':
+                line = line[:-1]
+            return line
 
     # '"Assembly 1, "Assembly 2",Assembly3"'
     labels = remove_quotes(line).split(',')
@@ -345,13 +352,82 @@ def parse_labels(line, contigs_fpaths):
     labels = [label.strip() for label in labels]
 
     if len(labels) != len(contigs_fpaths):
-        logger.error('Number of labels is not equal to the number of files with contigs',
-                     11, to_stderr=True)
+        logger.error('Number of labels does not match the number of files with contigs', 11, to_stderr=True)
         return []
     else:
         for i, label in enumerate(labels):
             labels[i] = remove_quotes(label.strip())
         return labels
+
+
+def get_label_from_par_dir(contigs_fpath):
+    label = os.path.basename(os.path.dirname(os.path.abspath(contigs_fpath)))
+    return label
+
+
+def get_label_from_par_dir_and_fname(contigs_fpath):
+    abspath = os.path.abspath(contigs_fpath)
+    name = qutils.rm_extentions_for_fasta_file(os.path.basename(contigs_fpath))
+    label = os.path.basename(os.path.dirname(abspath)) + '_' + name
+    return label
+
+
+def get_duplicated(labels):
+    # check duplicates
+    occurences = {}
+    for label in labels:
+        if label in occurences:
+            occurences[label] += 1
+        else:
+            occurences[label] = 1
+
+    return [label for dup_label, occurs_num in occurences.items() if occurs_num > 1]
+
+
+def get_labels_from_par_dirs(contigs_fpaths):
+    labels = []
+    for fpath in contigs_fpaths:
+        labels.append(get_label_from_par_dir(fpath))
+
+    for duplicated_label in get_duplicated(labels):
+        for i, (label, fpath) in enumerate(zip(labels, contigs_fpaths)):
+            if label == duplicated_label:
+                labels[i] = get_label_from_par_dir_and_fname(fpath)
+
+    return labels
+
+
+def process_labels(contigs_fpaths, labels, all_labels_from_dirs):
+    # 1. labels if the provided by -l options
+    if labels:
+        # process duplicates, empties
+        for i, label in enumerate(labels):
+            if not label:
+                labels[i] = get_label_from_par_dir_and_fname(contigs_fpaths[i])
+
+    # 2. labels from parent directories if -L flag was privided
+    elif all_labels_from_dirs:
+        labels = get_labels_from_par_dirs(contigs_fpaths)
+
+    # 3. otherwise, labels from fnames
+    else:
+        # labels from fname
+        labels = [qutils.rm_extentions_for_fasta_file(os.path.basename(fpath)) for fpath in contigs_fpaths]
+
+        for duplicated_label in get_duplicated(labels):
+            for i, (label, fpath) in enumerate(zip(labels, contigs_fpaths)):
+                if label == duplicated_label:
+                    labels[i] = get_label_from_par_dir_and_fname(contigs_fpaths[i])
+
+    # fixing remaning duplicates by adding index
+    for duplicated_label in get_duplicated(labels):
+        j = 0
+        for i, (label, fpath) in enumerate(zip(labels, contigs_fpaths)):
+            if label == duplicated_label:
+                labels[i] = label if j == 0 else label + ' ' + str(j)
+                j += 1
+
+    return labels
 
 
 def main(args):
@@ -394,6 +470,7 @@ def main(args):
     output_dirpath = None
 
     labels = None
+    all_labels_from_dirs = False
 
     for opt, arg in options:
         # Yes, this is a code duplicating. But OptionParser is deprecated since version 2.7.
@@ -476,6 +553,9 @@ def main(args):
         elif opt in ('-l', '--labels'):
             labels = parse_labels(arg, contigs_fpaths)
 
+        elif opt == '-L':
+            all_labels_from_dirs = True
+
         elif opt in ('-h', "--help"):
             _usage()
             sys.exit(0)
@@ -486,14 +566,15 @@ def main(args):
     for contigs_fpath in contigs_fpaths:
         assert_file_exists(contigs_fpath, 'contigs')
 
+    labels = process_labels(contigs_fpaths, labels, all_labels_from_dirs)
+
     output_dirpath, json_outputpath, existing_alignments = \
-        _set_up_output_dir(output_dirpath, json_outputpath,
-                           qconfig.make_latest_symlink, qconfig.min_contig)
+        _set_up_output_dir(output_dirpath, json_outputpath, qconfig.make_latest_symlink, qconfig.min_contig)
 
     corrected_dirpath = os.path.join(output_dirpath, qconfig.corrected_dirname)
 
     logger.set_up_file_handler(output_dirpath)
-    logger.info(' '.join(['quast.py'] + args))
+    logger.info(' '.join([os.path.realpath(__file__)] + args))
     logger.start()
 
     if existing_alignments:
@@ -583,7 +664,8 @@ def main(args):
         ### former PLANTAKOLYA, PLANTAGORA
         ########################################################################
         from libs import contigs_analyzer
-        nucmer_statuses, aligned_lengths_per_fpath = contigs_analyzer.do(ref_fpath, contigs_fpaths, qconfig.prokaryote, output_dirpath + '/contigs_reports')
+        nucmer_statuses, aligned_lengths_per_fpath = contigs_analyzer.do(
+            ref_fpath, contigs_fpaths, qconfig.prokaryote, os.path.join(output_dirpath, 'contigs_reports'))
         for contigs_fpath in contigs_fpaths:
             if nucmer_statuses[contigs_fpath] == contigs_analyzer.NucmerStatus.OK:
                 aligned_fpaths.append(contigs_fpath)

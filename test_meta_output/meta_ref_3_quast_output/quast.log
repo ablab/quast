@@ -1,0 +1,90 @@
+/Users/vladsaveliev/Dropbox/bio/quast/quast_master/quast.pyc --meta /Users/vladsaveliev/Dropbox/bio/quast/quast_master/test_meta_output/corrected_input/meta_contigs_1_to_meta_ref_3.fasta /Users/vladsaveliev/Dropbox/bio/quast/quast_master/test_meta_output/corrected_input/meta_contigs_2_to_meta_ref_3.fasta -R /Users/vladsaveliev/Dropbox/bio/quast/quast_master/test_meta_output/corrected_input/meta_ref_3.fasta -o /Users/vladsaveliev/Dropbox/bio/quast/quast_master/test_meta_output/meta_ref_3_quast_output --labels "meta_contigs_1, meta_contigs_2"
+
+Started: 2013-07-15 19:34:53
+
+Logging to /Users/vladsaveliev/Dropbox/bio/quast/quast_master/test_meta_output/meta_ref_3_quast_output/quast.log
+
+NOTICE: Maximum number of threads is set to 4 (use --threads option to set it manually)
+
+Reference:
+  /Users/vladsaveliev/Dropbox/bio/quast/quast_master/test_meta_output/corrected_input/meta_ref_3.fasta ==> meta_ref_3
+
+Contigs:
+  /Users/vladsaveliev/Dropbox/bio/quast/quast_master/test_meta_output/corrected_input/meta_contigs_1_to_meta_ref_3.fasta ==> meta_contigs_1
+  /Users/vladsaveliev/Dropbox/bio/quast/quast_master/test_meta_output/corrected_input/meta_contigs_2_to_meta_ref_3.fasta ==> meta_contigs_2
+
+2013-07-15 19:34:53
+Running Basic statistics processor...
+  Reference genome:
+    meta_ref_3.fasta, Reference length = 64999, Reference GC % = 40.73
+  Contig files: 
+    1  meta_contigs_1
+    2  meta_contigs_2
+  Calculating N50 and L50...
+    1  meta_contigs_1, N50 = 17535, L50 = 2, Total length = 69110, GC % = 40.75, # N's per 100 kbp =  18.81
+    2  meta_contigs_2, N50 = 16099, L50 = 2, Total length = 63015, GC % = 40.67, # N's per 100 kbp =  0.00
+  Drawing cumulative plot...
+    saved to /Users/vladsaveliev/Dropbox/bio/quast/quast_master/test_meta_output/meta_ref_3_quast_output/basic_stats/cumulative_plot.pdf
+  Drawing GC content plot...
+    saved to /Users/vladsaveliev/Dropbox/bio/quast/quast_master/test_meta_output/meta_ref_3_quast_output/basic_stats/GC_content_plot.pdf
+  Drawing Nx plot...
+    saved to /Users/vladsaveliev/Dropbox/bio/quast/quast_master/test_meta_output/meta_ref_3_quast_output/basic_stats/Nx_plot.pdf
+  Drawing NGx plot...
+    saved to /Users/vladsaveliev/Dropbox/bio/quast/quast_master/test_meta_output/meta_ref_3_quast_output/basic_stats/NGx_plot.pdf
+Done.
+
+2013-07-15 19:34:55
+Running Contig analyzer...
+  1  meta_contigs_1
+  2  meta_contigs_2
+  1  Logging to files /Users/vladsaveliev/Dropbox/bio/quast/quast_master/test_meta_output/meta_ref_3_quast_output/contigs_reports/contigs_report_meta_contigs_1.stdout and contigs_report_meta_contigs_1.stderr...
+  1  Running Nucmer... 
+  2  Logging to files /Users/vladsaveliev/Dropbox/bio/quast/quast_master/test_meta_output/meta_ref_3_quast_output/contigs_reports/contigs_report_meta_contigs_2.stdout and contigs_report_meta_contigs_2.stderr...
+  2  Running Nucmer... 
+/Users/vladsaveliev/Dropbox/bio/quast/quast_master/test_meta_output/meta_ref_3_quast_output/contigs_reports/alignments_meta_contigs_2.tsv
+  10430 Analysis is finished.
+/Users/vladsaveliev/Dropbox/bio/quast/quast_master/test_meta_output/meta_ref_3_quast_output/contigs_reports/alignments_meta_contigs_1.tsv
+  11104 Analysis is finished.
+  Creating total report...
+    saved to /Users/vladsaveliev/Dropbox/bio/quast/quast_master/test_meta_output/meta_ref_3_quast_output/contigs_reports/misassemblies_report.txt, misassemblies_report.tsv, and misassemblies_report.tex
+  Creating total report...
+    saved to /Users/vladsaveliev/Dropbox/bio/quast/quast_master/test_meta_output/meta_ref_3_quast_output/contigs_reports/unaligned_report.txt, unaligned_report.tsv, and unaligned_report.tex
+Done.
+
+2013-07-15 19:34:56
+Running NA-NGA calculation...
+  Calculating NA50 and NGA50...
+    1  meta_contigs_1, Largest alignment = 27969, NA50 = 17534, NGA50 = 17534, LA50 = 2, LGA50 = 2
+    2  meta_contigs_2, Largest alignment = 27260, NA50 = 16099, NGA50 = 16099, LA50 = 2, LGA50 = 2
+  Drawing cumulative plot...
+    saved to /Users/vladsaveliev/Dropbox/bio/quast/quast_master/test_meta_output/meta_ref_3_quast_output/aligned_stats/cumulative_plot.pdf
+  Drawing NAx plot...
+    saved to /Users/vladsaveliev/Dropbox/bio/quast/quast_master/test_meta_output/meta_ref_3_quast_output/aligned_stats/NAx_plot.pdf
+  Drawing NGAx plot...
+    saved to /Users/vladsaveliev/Dropbox/bio/quast/quast_master/test_meta_output/meta_ref_3_quast_output/aligned_stats/NGAx_plot.pdf
+  Done.
+
+2013-07-15 19:34:57
+Running Genome analyzer...
+  NOTICE: Annotated genes file was not provided. Use -G option to specify it.
+  NOTICE: Annotated operons file was not provided. Use -O option to specify it.
+  1  meta_contigs_1
+  2  meta_contigs_2
+  Drawing Genome fraction, % histogram...
+    saved to /Users/vladsaveliev/Dropbox/bio/quast/quast_master/test_meta_output/meta_ref_3_quast_output/genome_stats/genome_fraction_histogram.pdf
+Done.
+
+NOTICE: Genes are not predicted by default. Use --gene-finding option to enable it.
+
+2013-07-15 19:34:58
+Summarizing...
+  Creating total report...
+    saved to /Users/vladsaveliev/Dropbox/bio/quast/quast_master/test_meta_output/meta_ref_3_quast_output/report.txt, report.tsv, and report.tex
+  Transposed version of total report...
+    saved to /Users/vladsaveliev/Dropbox/bio/quast/quast_master/test_meta_output/meta_ref_3_quast_output/transposed_report.txt, transposed_report.tsv, and transposed_report.tex
+  HTML version saved to /Users/vladsaveliev/Dropbox/bio/quast/quast_master/test_meta_output/meta_ref_3_quast_output/report.html
+  All pdf files are merged to /Users/vladsaveliev/Dropbox/bio/quast/quast_master/test_meta_output/meta_ref_3_quast_output/plots.pdf
+Log saved to /Users/vladsaveliev/Dropbox/bio/quast/quast_master/test_meta_output/meta_ref_3_quast_output/quast.log
+
+Finished: 2013-07-15 19:34:58
+Elapsed time: 0:00:04.746133

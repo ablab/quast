@@ -1234,7 +1234,7 @@ def do(reference, contigs_fpaths, cyclic, output_dir):
         os.mkdir(output_dir)
 
     logger.print_timestamp()
-    logger.info('Running Contigs analyzer...')
+    logger.info('Running Contig analyzer...')
 
     ########################################################################
     if platform.system() == 'Darwin':

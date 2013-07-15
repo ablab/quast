@@ -156,14 +156,14 @@ class QLogger(object):
                 version = "unknown"
             build = version_file.readline()
             if build:
-                build = build.split()[1].strip()
+                build = build.lower()
             else:
                 build = "unknown"
 
         if to_stderr:
-            print >> sys.stderr, "Version", str(version) + (", build " + str(build) if build != "unknown" else "")
+            print >> sys.stderr, "Version", str(version) + (", " + str(build) if build != "unknown" else "")
         else:
-            self.info("Version " + str(version) + (", build " + str(build) if build != "unknown" else ""))
+            self.info("Version " + str(version) + (", " + str(build) if build != "unknown" else ""))
 
     def print_system_info(self):
         self._logger.info("System information:")

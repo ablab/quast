@@ -1,7 +1,7 @@
 #!/bin/bash
 
 VERSION=`cat VERSION`
-NOW=$(date +"%d.%m.%Y_%H:%M")
+NOW=$(date +"%d.%m.%Y %H:%M")
 ARCHIVE_NAME=quast-$VERSION.tar.gz
 QUAST_FOLDER=quast-$VERSION
 SITE_PACKAGES=libs/site_packages

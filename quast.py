@@ -249,22 +249,8 @@ def _correct_contigs(contigs_fpaths, corrected_dirpath, reporting, labels):
         fname, fasta_ext = qutils.splitext_for_fasta_file(contigs_fname)
 
         label = labels[i]
-
-        corr_fpath = qutils.unique_corrected_fpath(
-            os.path.join(corrected_dirpath, label + fasta_ext))
-
-        # if os.path.isfile(contigs_fpath):  # in case of files with the same names
-        #     i = 1
-        #     corr_fpath_wo_ext, fasta_ext = os.path.splitext(corr_fpath)
-        #     while os.path.isfile(corr_fpath):
-        #         i += 1
-        #         corr_fname = os.path.basename(corr_fpath_wo_ext + '__' + str(i) + fasta_ext)
-        #         corr_fpath = os.path.join(corrected_dirpath, corr_fname)
-
-        assembly_name = qutils.name_from_fpath(corr_fpath)
-
+        corr_fpath = qutils.unique_corrected_fpath(os.path.join(corrected_dirpath, label + fasta_ext))
         qconfig.assembly_labels_by_fpath[corr_fpath] = label
-
         logger.info('  %s ==> %s' % (contigs_fpath, label))
 
         # if option --scaffolds is specified QUAST adds splitted version of assemblies to the comparison
@@ -302,20 +288,19 @@ def _correct_contigs(contigs_fpaths, corrected_dirpath, reporting, labels):
                 contigs_counter += cur_contig_number
 
             fastaparser.write_fasta(broken_scaffolds_fpath, broken_scaffolds_fasta)
-            logger.info("      %d scaffolds (%s) were broken into %d contigs (%s)" \
-                  % (i + 1,
-                     qutils.name_from_fpath(corr_fpath),
-                     contigs_counter,
-                     qutils.name_from_fpath(broken_scaffolds_fpath)))
+            qconfig.assembly_labels_by_fpath[broken_scaffolds_fpath] = label + ' broken'
+            logger.info("      %d scaffolds (%s) were broken into %d contigs (%s)" %
+                        (i + 1,
+                         qutils.name_from_fpath(corr_fpath),
+                         contigs_counter,
+                         qutils.name_from_fpath(broken_scaffolds_fpath)))
 
             if _handle_fasta(broken_scaffolds_fpath, broken_scaffolds_fpath, reporting):
                 corrected_contigs_fpaths.append(broken_scaffolds_fpath)
                 qconfig.list_of_broken_scaffolds.append(qutils.name_from_fpath(broken_scaffolds_fpath))
 
-        if not _handle_fasta(contigs_fpath, corr_fpath, reporting):
-            continue
-
-        corrected_contigs_fpaths.append(corr_fpath)
+        if _handle_fasta(contigs_fpath, corr_fpath, reporting):
+            corrected_contigs_fpaths.append(corr_fpath)
 
     return corrected_contigs_fpaths
 

@@ -52,7 +52,7 @@ class Fields:
 
     # Unaligned
     UNALIGNED = '# unaligned contigs'
-    UNALIGNEDBASES = 'Unaligned contigs length'
+    UNALIGNEDBASES = 'Unaligned length'
     AMBIGUOUS = '# ambiguously mapped contigs'
     AMBIGUOUSEXTRABASES = 'Extra bases in ambiguously mapped contigs'
     MISLOCAL = '# local misassemblies'

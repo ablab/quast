@@ -366,7 +366,8 @@ def get_duplicated(labels):
         else:
             occurences[label] = 1
 
-    return [label for dup_label, occurs_num in occurences.items() if occurs_num > 1]
+    dupls = [dup_label for dup_label, occurs_num in occurences.items() if occurs_num > 1]
+    return dupls
 
 
 def get_labels_from_par_dirs(contigs_fpaths):

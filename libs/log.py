@@ -69,7 +69,7 @@ class QLogger(object):
         self._logger.info('Logging to ' + self._log_fpath)
 
     def finish_up(self):
-        self._logger.info('Log saved to ' + self._log_fpath)
+        self._logger.info('  Log saved to ' + self._log_fpath)
 
         finish_time = self.print_timestamp('Finished: ')
         self._logger.info('Elapsed time: ' + str(finish_time - self._start_time))

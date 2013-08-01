@@ -4,7 +4,6 @@
 # See file LICENSE for details.
 ############################################################################
 
-import logging
 import os
 import itertools
 import fastaparser
@@ -15,20 +14,15 @@ logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 
 
 ######## MAIN ############
-def do(ref_fpath, contigs_fpaths, aligned_lengths_lists,
-       nucmer_dirpath, output_dirpath, all_pdf, draw_plots,
-       json_output_dirpath, results_dirpath):
+def do(ref_fpath, aligned_contigs_fpaths, all_pdf, draw_plots, output_dirpath, json_output_dirpath,
+       aligned_lengths_lists, detailed_contigs_reports_dirpath, aligned_stats_dirpath):
 
-    if not os.path.isdir(output_dirpath):
-        os.mkdir(output_dirpath)
-
-    ########################################################################
-
-    nucmer_prefix = os.path.join(nucmer_dirpath, 'nucmer_output')
+    if not os.path.isdir(aligned_stats_dirpath):
+        os.mkdir(aligned_stats_dirpath)
 
     ########################################################################
     report_dict = {'header': []}
-    for contigs_fpath in contigs_fpaths:
+    for contigs_fpath in aligned_contigs_fpaths:
         report_dict[qutils.name_from_fpath(contigs_fpath)] = []
 
     ########################################################################
@@ -37,16 +31,15 @@ def do(ref_fpath, contigs_fpaths, aligned_lengths_lists,
 
     reference_length = sum(fastaparser.get_lengths_from_fastafile(ref_fpath))
     assembly_lengths = []
-    for contigs_fpath in contigs_fpaths:
+    for contigs_fpath in aligned_contigs_fpaths:
         assembly_lengths.append(sum(fastaparser.get_lengths_from_fastafile(contigs_fpath)))
 
     ########################################################################
-
     logger.info('  Calculating NA50 and NGA50...')
 
     import N50
     for i, (contigs_fpath, lens, assembly_len) in enumerate(
-            itertools.izip(contigs_fpaths, aligned_lengths_lists, assembly_lengths)):
+            itertools.izip(aligned_contigs_fpaths, aligned_lengths_lists, assembly_lengths)):
         na50 = N50.NG50(lens, assembly_len)
         nga50 = N50.NG50(lens, reference_length)
         na75 = N50.NG50(lens, assembly_len, 75)
@@ -75,27 +68,28 @@ def do(ref_fpath, contigs_fpaths, aligned_lengths_lists,
         report.add_field(reporting.Fields.LGA75, lga75)
 
     ########################################################################
-
     # saving to JSON
     if json_output_dirpath:
         from libs.html_saver import json_saver
-        json_saver.save_aligned_contigs_lengths(json_output_dirpath, contigs_fpaths, aligned_lengths_lists)
-        json_saver.save_assembly_lengths(json_output_dirpath, contigs_fpaths, assembly_lengths)
+        json_saver.save_aligned_contigs_lengths(json_output_dirpath, aligned_contigs_fpaths, aligned_lengths_lists)
+        json_saver.save_assembly_lengths(json_output_dirpath, aligned_contigs_fpaths, assembly_lengths)
 
     # saving to html
     if qconfig.html_report:
         from libs.html_saver import html_saver
-        html_saver.save_aligned_contigs_lengths(results_dirpath, contigs_fpaths, aligned_lengths_lists)
-        html_saver.save_assembly_lengths(results_dirpath, contigs_fpaths, assembly_lengths)
+        html_saver.save_aligned_contigs_lengths(output_dirpath, aligned_contigs_fpaths, aligned_lengths_lists)
+        html_saver.save_assembly_lengths(output_dirpath, aligned_contigs_fpaths, assembly_lengths)
 
     if draw_plots:
         # Drawing cumulative plot (aligned contigs)...
         import plotter
-        plotter.cumulative_plot(ref_fpath, contigs_fpaths, aligned_lengths_lists, output_dirpath + '/cumulative_plot', 'Cumulative length (aligned contigs)', all_pdf)
+        plotter.cumulative_plot(ref_fpath, aligned_contigs_fpaths, aligned_lengths_lists,
+                                os.path.join(aligned_stats_dirpath, 'cumulative_plot'),
+                                'Cumulative length (aligned contigs)', all_pdf)
 
         # Drawing NAx and NGAx plots...
-        plotter.Nx_plot(contigs_fpaths, aligned_lengths_lists, output_dirpath + '/NAx_plot', 'NAx', assembly_lengths, all_pdf)
-        plotter.Nx_plot(contigs_fpaths, aligned_lengths_lists, output_dirpath + '/NGAx_plot', 'NGAx', [reference_length for i in range(len(contigs_fpaths))], all_pdf)
+        plotter.Nx_plot(aligned_contigs_fpaths, aligned_lengths_lists, aligned_stats_dirpath + '/NAx_plot', 'NAx', assembly_lengths, all_pdf)
+        plotter.Nx_plot(aligned_contigs_fpaths, aligned_lengths_lists, aligned_stats_dirpath + '/NGAx_plot', 'NGAx', [reference_length for i in range(len(aligned_contigs_fpaths))], all_pdf)
 
     logger.info('  Done.')
     return report_dict

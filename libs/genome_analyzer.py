@@ -69,15 +69,16 @@ def chromosomes_names_dict(feature, regions, chr_names):
     return region_2_chr_name
 
 
-def do(ref_fpath, contigs_fpaths, nucmer_dir, output_dirpath, genes_fpath, operons_fpath, all_pdf, draw_plots, json_output_dir, results_dir):
-    # some important constants
-    nucmer_prefix = os.path.join(nucmer_dir, 'nucmer_output')
+def do(ref_fpath, aligned_contigs_fpaths, all_pdf, draw_plots, output_dirpath, json_output_dirpath,
+       genes_fpath, operons_fpath, detailed_contigs_reports_dirpath, genome_stats_dirpath):
+
+    nucmer_path_dirpath = os.path.join(detailed_contigs_reports_dirpath, 'nucmer_output')
 
     logger.print_timestamp()
     logger.info('Running Genome analyzer...')
 
-    if not os.path.isdir(output_dirpath):
-        os.mkdir(output_dirpath)
+    if not os.path.isdir(genome_stats_dirpath):
+        os.mkdir(genome_stats_dirpath)
 
     reference_chromosomes = {}
     genome_size = 0
@@ -96,7 +97,7 @@ def do(ref_fpath, contigs_fpaths, nucmer_dir, output_dirpath, genes_fpath, opero
     # ref_file.close()
 
     # RESULTS file
-    result_fpath = output_dirpath + '/genome_info.txt'
+    result_fpath = genome_stats_dirpath + '/genome_info.txt'
     res_file = open(result_fpath, 'w')
     res_file.write('reference chromosomes:\n')
     for chr_name, chr_len in reference_chromosomes.iteritems():
@@ -140,7 +141,7 @@ def do(ref_fpath, contigs_fpaths, nucmer_dir, output_dirpath, genes_fpath, opero
             container.chr_names_dict = chromosomes_names_dict(container.kind, container.region_list, reference_chromosomes.keys())
             container.full_found = []
 
-    for contigs_fpath in contigs_fpaths:
+    for contigs_fpath in aligned_contigs_fpaths:
         report = reporting.get(contigs_fpath)
         report.add_field(reporting.Fields.REF_GENES, len(genes_container.region_list))
         report.add_field(reporting.Fields.REF_OPERONS, len(operons_container.region_list))
@@ -161,13 +162,13 @@ def do(ref_fpath, contigs_fpaths, nucmer_dir, output_dirpath, genes_fpath, opero
     genome_mapped = []
 
     # process all contig files  
-    for i, contigs_fpath in enumerate(contigs_fpaths):
+    for i, contigs_fpath in enumerate(aligned_contigs_fpaths):
         assembly_name = qutils.name_from_fpath(contigs_fpath)
         assembly_label = qutils.label_from_fpath(contigs_fpath)
 
         logger.info('  ' + index_to_str(i) + assembly_label)
 
-        nucmer_base_fpath = os.path.join(nucmer_prefix, assembly_name + '.coords')
+        nucmer_base_fpath = os.path.join(nucmer_path_dirpath, assembly_name + '.coords')
         if qconfig.use_all_alignments:
             nucmer_fpath = nucmer_base_fpath
         else:
@@ -236,7 +237,7 @@ def do(ref_fpath, contigs_fpaths, nucmer_dir, output_dirpath, genes_fpath, opero
         # counting genome coverage and gaps number
         covered_bp = 0
         gaps_count = 0
-        gaps_fpath = os.path.join(output_dirpath, assembly_name + '_gaps.txt')
+        gaps_fpath = os.path.join(genome_stats_dirpath, assembly_name + '_gaps.txt')
         gaps_file = open(gaps_fpath, 'w')
         for chr_name, chr_len in reference_chromosomes.iteritems():
             print >>gaps_file, chr_name
@@ -293,7 +294,7 @@ def do(ref_fpath, contigs_fpaths, nucmer_dir, output_dirpath, genes_fpath, opero
 
             total_full = 0
             total_partial = 0
-            found_fpath = os.path.join(output_dirpath, assembly_name + suffix)
+            found_fpath = os.path.join(genome_stats_dirpath, assembly_name + suffix)
             found_file = open(found_fpath, 'w')
             print >>found_file, '%s\t\t%s\t%s' % ('ID or #', 'Start', 'End')
             print >>found_file, '============================'
@@ -358,36 +359,37 @@ def do(ref_fpath, contigs_fpaths, nucmer_dir, output_dirpath, genes_fpath, opero
         ref_operons_num = None
 
     # saving json
-    if json_output_dir:
+    if json_output_dirpath:
         if genes_container.region_list:
-            json_saver.save_features_in_contigs(json_output_dir, contigs_fpaths, 'genes', files_genes_in_contigs, ref_genes_num)
+            json_saver.save_features_in_contigs(json_output_dirpath, aligned_contigs_fpaths, 'genes', files_genes_in_contigs, ref_genes_num)
         if operons_container.region_list:
-            json_saver.save_features_in_contigs(json_output_dir, contigs_fpaths, 'operons', files_operons_in_contigs, ref_operons_num)
+            json_saver.save_features_in_contigs(json_output_dirpath, aligned_contigs_fpaths, 'operons', files_operons_in_contigs, ref_operons_num)
 
     if qconfig.html_report:
         from libs.html_saver import html_saver
         if genes_container.region_list:
-            html_saver.save_features_in_contigs(results_dir, contigs_fpaths, 'genes', files_genes_in_contigs, ref_genes_num)
+            html_saver.save_features_in_contigs(output_dirpath, aligned_contigs_fpaths, 'genes', files_genes_in_contigs, ref_genes_num)
         if operons_container.region_list:
-            html_saver.save_features_in_contigs(results_dir, contigs_fpaths, 'operons', files_operons_in_contigs, ref_operons_num)
+            html_saver.save_features_in_contigs(output_dirpath, aligned_contigs_fpaths, 'operons', files_operons_in_contigs, ref_operons_num)
 
     if draw_plots:
         # cumulative plots:
         import plotter
         if genes_container.region_list:
-            plotter.genes_operons_plot(len(genes_container.region_list), contigs_fpaths, files_genes_in_contigs,
-                output_dirpath + '/genes_cumulative_plot', 'genes', all_pdf)
-            plotter.histogram(contigs_fpaths, genes_container.full_found, output_dirpath + '/complete_genes_histogram',
+            plotter.genes_operons_plot(len(genes_container.region_list), aligned_contigs_fpaths, files_genes_in_contigs,
+                genome_stats_dirpath + '/genes_cumulative_plot', 'genes', all_pdf)
+            plotter.histogram(aligned_contigs_fpaths, genes_container.full_found, genome_stats_dirpath + '/complete_genes_histogram',
                 '# complete genes', all_pdf)
         if operons_container.region_list:
-            plotter.genes_operons_plot(len(operons_container.region_list), contigs_fpaths, files_operons_in_contigs,
-                output_dirpath + '/operons_cumulative_plot', 'operons', all_pdf)
-            plotter.histogram(contigs_fpaths, operons_container.full_found, output_dirpath + '/complete_operons_histogram',
+            plotter.genes_operons_plot(len(operons_container.region_list), aligned_contigs_fpaths, files_operons_in_contigs,
+                genome_stats_dirpath + '/operons_cumulative_plot', 'operons', all_pdf)
+            plotter.histogram(aligned_contigs_fpaths, operons_container.full_found, genome_stats_dirpath + '/complete_operons_histogram',
                 '# complete operons', all_pdf)
-        plotter.histogram(contigs_fpaths, genome_mapped, output_dirpath + '/genome_fraction_histogram', 'Genome fraction, %',
+        plotter.histogram(aligned_contigs_fpaths, genome_mapped, genome_stats_dirpath + '/genome_fraction_histogram', 'Genome fraction, %',
             all_pdf, top_value=100)
 
     logger.info('Done.')
+    return genome_size
 
 
 class AlignedBlock():

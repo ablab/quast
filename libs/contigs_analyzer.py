@@ -642,24 +642,26 @@ def plantakolya(cyclic, i, contigs_fpath, nucmer_fpath, myenv, output_dirpath, r
                         end, begin = sorted_aligns[0].s2, sorted_aligns[0].e2
                     else:
                         end, begin = sorted_aligns[0].e2, sorted_aligns[0].s2
+
                     if (begin - 1) or (ctg_len - end):
                         #Increment tally of partially unaligned contigs
                         partially_unaligned += 1
+
                         #Increment tally of partially unaligned bases
                         unaligned_bases = (begin - 1) + (ctg_len - end)
                         partially_unaligned_bases += unaligned_bases
-                        print >> planta_out_f, '\t\tThis contig is partially unaligned. (%d out of %d)' % (
-                        top_len, ctg_len)
+                        print >> planta_out_f, '\t\tThis contig is partially unaligned. (%d out of %d)' % (top_len, ctg_len)
                         print >> planta_out_f, '\t\tAlignment: %s' % str(sorted_aligns[0])
-                        if (begin - 1):
+                        if begin - 1:
                             print >> planta_out_f, '\t\tUnaligned bases: 1 to %d (%d)' % (begin - 1, begin - 1)
-                        if (ctg_len - end):
+                        if ctg_len - end:
                             print >> planta_out_f, '\t\tUnaligned bases: %d to %d (%d)' % (end + 1, ctg_len, ctg_len - end)
                         # check if both parts (aligned and unaligned) have significant length
                         if (unaligned_bases >= qconfig.min_contig) and (ctg_len - unaligned_bases >= qconfig.min_contig):
                             partially_unaligned_with_significant_parts += 1
                             print >> planta_out_f, '\t\tThis contig has both significant aligned and unaligned parts ' \
-                                                 '(of length >= min-contig)!'
+                                                   '(of length >= min-contig)!'
+
                     ref_aligns.setdefault(sorted_aligns[0].ref, []).append(sorted_aligns[0])
                 else:
                     #There is more than one alignment of this contig to the reference
@@ -701,7 +703,7 @@ def plantakolya(cyclic, i, contigs_fpath, nucmer_fpath, myenv, output_dirpath, r
                         if (aligned_bases_in_contig >= qconfig.min_contig) and (ctg_len - aligned_bases_in_contig >= qconfig.min_contig):
                             partially_unaligned_with_significant_parts += 1
                             print >> planta_out_f, '\t\tThis contig has both significant aligned and unaligned parts '\
-                                                 '(of length >= min-contig)!'
+                                                   '(of length >= min-contig)!'
                         continue
 
                     sorted_num = len(sorted_aligns) - 1
@@ -1183,8 +1185,8 @@ def plantakolya(cyclic, i, contigs_fpath, nucmer_fpath, myenv, output_dirpath, r
               'partially_unaligned_with_significant_parts': partially_unaligned_with_significant_parts}
 
     ## outputting misassembled contigs to separate file
-    fasta = [(name, seq) for name, seq in fastaparser.read_fasta(contigs_fpath) if
-                         name in misassembled_contigs.keys()]
+    fasta = [(name, seq) for name, seq in fastaparser.read_fasta(contigs_fpath)
+             if name in misassembled_contigs.keys()]
     fastaparser.write_fasta(
         os.path.join(output_dirpath,
                      qutils.name_from_fpath(contigs_fpath) + '.mis_contigs.fa'),
@@ -1266,8 +1268,9 @@ def do(reference, contigs_fpaths, cyclic, output_dir):
     n_jobs = min(len(contigs_fpaths), qconfig.max_threads)
     from joblib import Parallel, delayed
     statuses_results_lengths_tuples = Parallel(n_jobs=n_jobs)(delayed(plantakolya_process)(
-        cyclic, nucmer_output_dir, fname, id, myenv, output_dir, reference)
-          for id, fname in enumerate(contigs_fpaths))
+        cyclic, nucmer_output_dir, fname, i, myenv, output_dir, reference)
+             for i, fname in enumerate(contigs_fpaths))
+
     # unzipping
     statuses, results, aligned_lengths = [x[0] for x in statuses_results_lengths_tuples], \
                                          [x[1] for x in statuses_results_lengths_tuples], \

@@ -452,7 +452,7 @@ def main(args):
         _usage()
         sys.exit(2)
 
-    json_outputpath = None
+    json_output_dirpath = None
     output_dirpath = None
 
     labels = None
@@ -499,7 +499,7 @@ def main(args):
         elif opt in ('-J', '--save-json-to'):
             qconfig.save_json = True
             qconfig.make_latest_symlink = False
-            json_outputpath = arg
+            json_output_dirpath = arg
 
         elif opt in ('-s', "--scaffolds"):
             qconfig.scaffolds = True
@@ -554,8 +554,8 @@ def main(args):
 
     labels = process_labels(contigs_fpaths, labels, all_labels_from_dirs)
 
-    output_dirpath, json_outputpath, existing_alignments = \
-        _set_up_output_dir(output_dirpath, json_outputpath, qconfig.make_latest_symlink, qconfig.min_contig)
+    output_dirpath, json_output_dirpath, existing_alignments = \
+        _set_up_output_dir(output_dirpath, json_output_dirpath, qconfig.make_latest_symlink, qconfig.min_contig)
 
     corrected_dirpath = os.path.join(output_dirpath, qconfig.corrected_dirname)
 
@@ -584,12 +584,8 @@ def main(args):
         logger.notice()
         logger.notice('Maximum number of threads is set to ' + str(qconfig.max_threads) + ' (use --threads option to set it manually)')
 
-    # Where all pdfs will be saved
-    all_pdf_fpath = os.path.join(output_dirpath, qconfig.plots_fname)
-    all_pdf = None
 
     ########################################################################
-
     from libs import reporting
     reload(reporting)
 
@@ -628,6 +624,10 @@ def main(args):
             from libs import gage
             gage.do(ref_fpath, contigs_fpaths, output_dirpath)
 
+    # Where all pdfs will be saved
+    all_pdf_fpath = os.path.join(output_dirpath, qconfig.plots_fname)
+    all_pdf = None
+
     if qconfig.draw_plots:
         from libs import plotter  # Do not remove this line! It would lead to a warning in matplotlib.
         try:
@@ -641,10 +641,11 @@ def main(args):
     ########################################################################
     from libs import basic_stats
     basic_stats.do(ref_fpath, contigs_fpaths, os.path.join(output_dirpath, 'basic_stats'), all_pdf, qconfig.draw_plots,
-                   json_outputpath, output_dirpath)
+                   json_output_dirpath, output_dirpath)
 
-    aligned_fpaths = []
+    aligned_contigs_fpaths = []
     aligned_lengths_lists = []
+    contig_alignment_plot_fpath = None
     if ref_fpath:
         ########################################################################
         ### former PLANTAKOLYA, PLANTAGORA
@@ -654,28 +655,41 @@ def main(args):
             ref_fpath, contigs_fpaths, qconfig.prokaryote, os.path.join(output_dirpath, 'contigs_reports'))
         for contigs_fpath in contigs_fpaths:
             if nucmer_statuses[contigs_fpath] == contigs_analyzer.NucmerStatus.OK:
-                aligned_fpaths.append(contigs_fpath)
+                aligned_contigs_fpaths.append(contigs_fpath)
                 aligned_lengths_lists.append(aligned_lengths_per_fpath[contigs_fpath])
 
     # Before continue evaluating, check if nucmer didn't skip all of the contigs files.
-    if len(aligned_fpaths) and ref_fpath:
+    if len(aligned_contigs_fpaths) and ref_fpath:
+        detailed_contigs_reports_dirpath = os.path.join(output_dirpath, 'contigs_reports')
+
         ########################################################################
         ### NAx and NGAx ("aligned Nx and NGx")
         ########################################################################
         from libs import aligned_stats
-        aligned_stats.do(ref_fpath, aligned_fpaths, aligned_lengths_lists,
-                         os.path.join(output_dirpath, 'contigs_reports'),
-                         os.path.join(output_dirpath, 'aligned_stats'), all_pdf,
-                         qconfig.draw_plots, json_outputpath, output_dirpath)
+        aligned_stats.do(
+            ref_fpath, aligned_contigs_fpaths, all_pdf, qconfig.draw_plots, output_dirpath, json_output_dirpath,
+            aligned_lengths_lists, detailed_contigs_reports_dirpath, os.path.join(output_dirpath, 'aligned_stats'))
 
         ########################################################################
         ### GENOME_ANALYZER
         ########################################################################
         from libs import genome_analyzer
-        genome_analyzer.do(ref_fpath, aligned_fpaths, os.path.join(output_dirpath, 'contigs_reports'),
-                           os.path.join(output_dirpath, 'genome_stats'),
-                           qconfig.genes, qconfig.operons, all_pdf, qconfig.draw_plots,
-                           json_outputpath, output_dirpath)
+        genome_size = genome_analyzer.do(
+            ref_fpath, aligned_contigs_fpaths, all_pdf, qconfig.draw_plots, output_dirpath, json_output_dirpath,
+            qconfig.genes, qconfig.operons, detailed_contigs_reports_dirpath, os.path.join(output_dirpath, 'genome_stats'))
+
+        if qconfig.draw_plots:
+            ########################################################################
+            ### VISUALIZE CONTIG ALINGMENT
+            ########################################################################
+            from libs import contig_alignment_plotter
+            contig_alignment_plot_fpath = contig_alignment_plotter.do(
+                contigs_fpaths,
+                os.path.join(detailed_contigs_reports_dirpath,
+                             'contigs_report_%s.stdout'),
+                output_dirpath,
+                genome_size,
+                similar=True)
 
     # def add_empty_predicted_genes_fields():
     #     # TODO: make it in a more appropriate way (don't output predicted genes if annotations are provided)
@@ -712,8 +726,8 @@ def main(args):
 
     reporting.save_total(output_dirpath)
 
-    if json_outputpath:
-        json_saver.save_total_report(json_outputpath, qconfig.min_contig)
+    if json_output_dirpath:
+        json_saver.save_total_report(json_output_dirpath, qconfig.min_contig)
 
     if qconfig.html_report:
         from libs.html_saver import html_saver
@@ -722,6 +736,9 @@ def main(args):
     if qconfig.draw_plots and all_pdf:
         logger.info('  All pdf files are merged to ' + all_pdf_fpath)
         all_pdf.close()
+
+    if contig_alignment_plot_fpath:
+        logger.info('  Contig alignment plot: %s' % contig_alignment_plot_fpath)
 
     # if RELEASE_MODE:
     _cleanup(corrected_dirpath)

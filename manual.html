@@ -168,9 +168,11 @@ To download the <a href="https://downloads.sourceforge.net/project/quast/quast-2
 <h3>2.1 For impatient people</h3><br>
 Running QUAST on test data from the installation tarball (reference genome, gene and operon annotations, and two assemblies of the first 10<span class="rhs">&nbsp;</span>kbp of <i>E.&nbsp;coli</i>):
 <pre class="code">
-    python quast.py test_data/contigs_10k_1.fasta test_data/contigs_10k_2.fasta \
-        -R test_data/reference_10k.fasta.gz \
-        -G test_data/genes_10k.txt -O test_data/operons_10k.txt
+    ./quast.py test_data/contigs_1.fasta \
+               test_data/contigs_2.fasta \
+               -R test_data/reference.fasta.gz \
+               -G test_data/genes.txt \
+               -O test_data/operons.txt \
 </pre>    
 View the summary of the evaluation results with the <a href="http://www.greenwoodsoftware.com/less/">less</a> utility:
 <pre class="code">

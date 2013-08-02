@@ -440,12 +440,11 @@ def main(args):
 
     for opt, arg in options:
         if opt == '--test':
-            main(['test_data/contigs_10k_1.fasta',
-                  'test_data/contigs_10k_2.fasta',
-                  '-R', 'test_data/reference_10k.fasta.gz',
-                  '-O', 'test_data/operons_10k.gff',
-                  '-G', 'test_data/genes_10k.gff',
-                  '-o', 'test_output'])
+            main(['test_data/contigs_1.fasta',
+                  'test_data/contigs_2.fasta',
+                  '-R', 'test_data/reference.fasta.gz',
+                  '-O', 'test_data/operons.gff',
+                  '-G', 'test_data/genes.gff'])
             sys.exit(0)
 
     if not contigs_fpaths:
@@ -626,21 +625,21 @@ def main(args):
 
     # Where all pdfs will be saved
     all_pdf_fpath = os.path.join(output_dirpath, qconfig.plots_fname)
-    all_pdf = None
+    all_pdf_file = None
 
     if qconfig.draw_plots:
         from libs import plotter  # Do not remove this line! It would lead to a warning in matplotlib.
         try:
             from matplotlib.backends.backend_pdf import PdfPages
-            all_pdf = PdfPages(all_pdf_fpath)
+            all_pdf_file = PdfPages(all_pdf_fpath)
         except:
-            all_pdf = None
+            all_pdf_file = None
 
     ########################################################################
     ### Stats and plots
     ########################################################################
     from libs import basic_stats
-    basic_stats.do(ref_fpath, contigs_fpaths, os.path.join(output_dirpath, 'basic_stats'), all_pdf, qconfig.draw_plots,
+    basic_stats.do(ref_fpath, contigs_fpaths, os.path.join(output_dirpath, 'basic_stats'), all_pdf_file, qconfig.draw_plots,
                    json_output_dirpath, output_dirpath)
 
     aligned_contigs_fpaths = []
@@ -667,7 +666,7 @@ def main(args):
         ########################################################################
         from libs import aligned_stats
         aligned_stats.do(
-            ref_fpath, aligned_contigs_fpaths, all_pdf, qconfig.draw_plots, output_dirpath, json_output_dirpath,
+            ref_fpath, aligned_contigs_fpaths, all_pdf_file, qconfig.draw_plots, output_dirpath, json_output_dirpath,
             aligned_lengths_lists, detailed_contigs_reports_dirpath, os.path.join(output_dirpath, 'aligned_stats'))
 
         ########################################################################
@@ -675,7 +674,7 @@ def main(args):
         ########################################################################
         from libs import genome_analyzer
         genome_size = genome_analyzer.do(
-            ref_fpath, aligned_contigs_fpaths, all_pdf, qconfig.draw_plots, output_dirpath, json_output_dirpath,
+            ref_fpath, aligned_contigs_fpaths, all_pdf_file, qconfig.draw_plots, output_dirpath, json_output_dirpath,
             qconfig.genes, qconfig.operons, detailed_contigs_reports_dirpath, os.path.join(output_dirpath, 'genome_stats'))
 
         if qconfig.draw_plots:
@@ -689,7 +688,8 @@ def main(args):
                              'contigs_report_%s.stdout'),
                 output_dirpath,
                 genome_size,
-                similar=True)
+                similar=True,
+                all_pdf_file=all_pdf_file)
 
     # def add_empty_predicted_genes_fields():
     #     # TODO: make it in a more appropriate way (don't output predicted genes if annotations are provided)
@@ -733,9 +733,9 @@ def main(args):
         from libs.html_saver import html_saver
         html_saver.save_total_report(output_dirpath, qconfig.min_contig)
 
-    if qconfig.draw_plots and all_pdf:
+    if qconfig.draw_plots and all_pdf_file:
         logger.info('  All pdf files are merged to ' + all_pdf_fpath)
-        all_pdf.close()
+        all_pdf_file.close()
 
     if contig_alignment_plot_fpath:
         logger.info('  Contig alignment plot: %s' % contig_alignment_plot_fpath)

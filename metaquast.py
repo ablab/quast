@@ -277,8 +277,7 @@ def main(args):
         if opt == '--test':
             test_options = ['test_data/meta_contigs_1.fasta',
                   'test_data/meta_contigs_2.fasta',
-                  '-R', 'test_data/meta_ref_1.fasta,test_data/meta_ref_2.fasta,test_data/meta_ref_3.fasta',
-                  '-o', 'test_meta_output']
+                  '-R', 'test_data/meta_ref_1.fasta,test_data/meta_ref_2.fasta,test_data/meta_ref_3.fasta']
 
             main(test_options)
             sys.exit(0)

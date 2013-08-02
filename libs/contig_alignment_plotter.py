@@ -502,12 +502,12 @@ class Visualizer:
 
 def draw_alignment_plot(contigs_fpaths, genome_length, output_dirpath,
                         lists_of_aligned_blocks, arcs=False, similar=False,
-                        coverage_hist=None):
+                        coverage_hist=None, all_pdf_file=None):
 
     if plotter.matplotlib_error:
         return
 
-    output_fpath = os.path.join(output_dirpath, 'contig_alignment_plot')
+    output_fpath = os.path.join(output_dirpath, 'alignment')
 
     min_visualizer_length = 0
 
@@ -545,7 +545,7 @@ def draw_alignment_plot(contigs_fpaths, genome_length, output_dirpath,
 
 
 def do(contigs_fpaths, contig_report_fpath_pattern, output_dirpath,
-       genome_length, arcs=False, similar=False, coverage_hist=None):
+       genome_length, arcs=False, similar=False, coverage_hist=None, all_pdf_file=None):
     lists_of_aligned_blocks = []
 
     for contigs_fpath in contigs_fpaths:
@@ -555,7 +555,7 @@ def do(contigs_fpaths, contig_report_fpath_pattern, output_dirpath,
 
     return draw_alignment_plot(
         contigs_fpaths, genome_length, output_dirpath,
-        lists_of_aligned_blocks, arcs, similar, coverage_hist)
+        lists_of_aligned_blocks, arcs, similar, coverage_hist, all_pdf_file)
 
 
 def parse_nucmer_contig_report(report_fpath):

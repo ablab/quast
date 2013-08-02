@@ -1,24 +1,9 @@
-<style>
-ul {
-margin-top: -1em;
-}
-ul li {
-margin-bottom: 0.5em;
-}
-.pre {
-white-space: pre;
-margin-top: -1em;
-}
-.code { 
-font-family: monospace;
-}
-</style>
-
 QUAST evaluates genome assemblies.  
-It works either with or without a given reference genome. The tool accepts multiple assemblies, thus it is suitable for comparison.
+It can works both with and without a given reference genome.  
+The tool accepts multiple assemblies, thus is suitable for comparison.
 
-<div class='pre'>
-Usage:<span class='code'>
+Usage
+
     ./quast.py test_data/contigs_1.fasta \
                test_data/contigs_2.fasta \
                -R test_data/reference.fasta.gz \
@@ -26,20 +11,17 @@ Usage:<span class='code'>
                -G test_data/genes.txt \
                -o output_directory  </span>
 
-Output:
-<span class='code'>     report.txt     </span>summary table  
-<span class='code'>     plots.pdf      </span>plots for some statistics  
-<span class='code'>     report.html    </span>everything in HTML  
-<span class='code'>     alignment.svg  </span>visualized alignement of contigs to reference
+Output
 
-Also:  
-<span class='code'>     report.tsv     </span>tab-separated summary, for parsing, or for spreadsheets (Google Docs, Excel, etc)  
-<span class='code'>     report.tex     </span>Latex version
-</div>
+    report.txt     summary table  
+    report.tsv     tab-separated version, for parsing, or for spreadsheets (Google Docs, Excel, etc)  
+    report.tex     Latex version
+    plots.pdf      plots for some statistics  
+    report.html    everything in HTML  
+    alignment.svg  visualized alignement of contigs to reference
+
+
 <br>
-
-<img width=511 height=445 src='Illustration.jpg' style='float: right; margin: 0 10px 10px 30px;'/>
-
 **Metrics based only on contigs:**  
 
 * Number of large contigs (i.e., longer than 500 bp) and total length of them.  

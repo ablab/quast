@@ -6,10 +6,10 @@ Usage
 
     ./quast.py test_data/contigs_1.fasta \
                test_data/contigs_2.fasta \
-               -R test_data/reference.fasta.gz \
-               -O test_data/operons.txt \
-               -G test_data/genes.txt \
-               -o output_directory  </span>
+            -R test_data/reference.fasta.gz \
+            -O test_data/operons.txt \
+            -G test_data/genes.txt \
+            -o output_directory
 
 Output
 

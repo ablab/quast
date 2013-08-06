@@ -440,11 +440,11 @@ def main(args):
 
     for opt, arg in options:
         if opt == '--test':
-            main(['test_data/contigs_1.fasta',
-                  'test_data/contigs_2.fasta',
-                  '-R', 'test_data/reference.fasta.gz',
-                  '-O', 'test_data/operons.gff',
-                  '-G', 'test_data/genes.gff'])
+            main([os.path.join(quast_dirpath, 'test_data/contigs_1.fasta'),
+                  os.path.join(quast_dirpath, 'test_data/contigs_2.fasta'),
+                  '-R', os.path.join(quast_dirpath, 'test_data/reference.fasta.gz'),
+                  '-O', os.path.join(quast_dirpath, 'test_data/operons.gff'),
+                  '-G', os.path.join(quast_dirpath, 'test_data/genes.gff')])
             sys.exit(0)
 
     if not contigs_fpaths:

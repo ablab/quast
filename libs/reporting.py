@@ -112,8 +112,6 @@ class Fields:
              UNCALLED_PERCENT, SUBSERROR, INDELSERROR, GENES, OPERONS, PREDICTED_GENES_UNIQUE, PREDICTED_GENES,
              LARGALIGN, NA50, NGA50, NA75, NGA75, LA50, LGA50, LA75, LGA75, ]
 
-    andrey_order = [NAME, NG50, CONTIGS, LARGCONTIG, TOTALLEN, MISASSEMBL, MAPPEDGENOME]
-
     # content and order of metrics in DETAILED MISASSEMBLIES REPORT (<quast_output_dir>/contigs_reports/misassemblies_report.txt, .tex, .tsv)
     misassemblies_order = [NAME, MIS_ALL_EXTENSIVE, MIS_RELOCATION, MIS_TRANSLOCATION, MIS_INVERTION,
                            MIS_EXTENSIVE_CONTIGS, MIS_EXTENSIVE_BASES, MIS_LOCAL, MISMATCHES,
@@ -324,7 +322,7 @@ def table(order=Fields.order):
             else:
                 values.append(value)
 
-        if filter(lambda v: value is not None, values):
+        if filter(lambda v: v is not None, values):
             metric_name = field if (feature is None) else pattern % feature
             # ATTENTION! Contents numeric values, needed to be converted to strings.
             rows.append({
@@ -356,7 +354,7 @@ def is_groupped_table(table):
     return isinstance(table[0], tuple)
 
 
-def get_all_rows_out_of_table(table, is_transposed=False):
+def get_all_rows_out_of_table(table):
     all_rows = []
     if is_groupped_table(table):
         for group_name, rows in table:
@@ -374,7 +372,7 @@ def val_to_str(val):
         return str(val)
 
 
-def save_txt(fpath, table, is_transposed=False):
+def save_txt(fpath, table):
     all_rows = get_all_rows_out_of_table(table)
 
     # determine width of columns for nice spaces
@@ -397,7 +395,7 @@ def save_txt(fpath, table, is_transposed=False):
     txt_file.close()
 
 
-def save_tsv(fpath, table, is_transposed=False):
+def save_tsv(fpath, table):
     all_rows = get_all_rows_out_of_table(table)
 
     tsv_file = open(fpath, 'w')
@@ -444,7 +442,7 @@ def get_num_from_table_value(val):
 
 
 def save_tex(fpath, table, is_transposed=False):
-    all_rows = get_all_rows_out_of_table(table, is_transposed)
+    all_rows = get_all_rows_out_of_table(table)
 
     tex_file = open(fpath, 'w')
     # Header
@@ -533,7 +531,7 @@ def save(output_dirpath, report_name, transposed_report_name, order):
     if transposed_report_name:
         logger.info('  Transposed version of total report...')
 
-        all_rows = get_all_rows_out_of_table(tab, is_transposed=True)
+        all_rows = get_all_rows_out_of_table(tab)
         if all_rows[0]['metricName'] != Fields.NAME:
             logger.warning('transposed version can\'t be created! First column have to be assemblies names')
         else:
@@ -550,8 +548,8 @@ def save(output_dirpath, report_name, transposed_report_name, order):
             report_txt_fpath = os.path.join(output_dirpath, transposed_report_name) + '.txt'
             report_tsv_fpath = os.path.join(output_dirpath, transposed_report_name) + '.tsv'
             report_tex_fpath = os.path.join(output_dirpath, transposed_report_name) + '.tex'
-            save_txt(report_txt_fpath, transposed_table, is_transposed=True)
-            save_tsv(report_tsv_fpath, transposed_table, is_transposed=True)
+            save_txt(report_txt_fpath, transposed_table)
+            save_tsv(report_tsv_fpath, transposed_table)
             save_tex(report_tex_fpath, transposed_table, is_transposed=True)
             logger.info('    saved to ' + report_txt_fpath + ', ' + os.path.basename(report_tsv_fpath) + \
                      ', and ' + os.path.basename(report_tex_fpath))

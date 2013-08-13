@@ -1,34 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <script type="text/javascript" src="/static/jquery-1.8.2.min.js"></script>
-    <script type="text/javascript" src="/static/flot/jquery.flot.min.js"></script>
-    <script type="text/javascript" src="/static/flot/jquery.flot.dashes.js"></script>
-    <!–[if lte IE 8]><script type="text/javascript" src="/static/flot/excanvas.min.js"></script><![endif]–>
-
-    <script type="text/javascript" src="/static/dragtable.js"></script>
-
-    <script type="text/javascript" src="/static/scripts/hsvToRgb.js"></script>
-    <script type="text/javascript" src="/static/scripts/utils.js"></script>
-    <script type="text/javascript" src="/static/scripts/build_total_report.js"></script>
-    <script type="text/javascript" src="/static/scripts/draw_cumulative_plot.js"></script>
-    <script type="text/javascript" src="/static/scripts/draw_nx_plot.js"></script>
-    <script type="text/javascript" src="/static/scripts/draw_gc_plot.js"></script>
-    <script type="text/javascript" src="/static/scripts/draw_genes_plot.js"></script>
-    <script type="text/javascript" src="/static/scripts/build_report.js"></script>
-
-    <!-- Le HTML5 shim, for IE6-8 support of HTML5 elements -->
-    <!--[if lt IE 9]>
-    <script type="text/javascript" src="/static/ie_html5.js"></script>
-    <![endif]-->
-
-    <script type="text/javascript">
-        $(function() {
-            buildReport();
-            $('#contigs_are_ordered').show();
-        });
-    </script>
-
     <style type="text/css">
         body {
             padding-bottom: 30px;
@@ -52,6 +24,37 @@
     <link rel="stylesheet" type="text/css" href="/static/bootstrap/bootstrap.min.css" />
     <link rel="stylesheet" type="text/css" href="/static/common.css" />
     <link rel="stylesheet" type="text/css" href="/static/report.css" />
+
+    <script type="text/javascript" src="/static/jquery-1.8.2.min.js"></script>
+    <script type="text/javascript" src="/static/flot/jquery.flot.min.js"></script>
+    <script type="text/javascript" src="/static/flot/jquery.flot.dashes.js"></script>
+    <!–[if lte IE 8]><script type="text/javascript" src="/static/flot/excanvas.min.js"></script><![endif]–>
+    <!-- Le HTML5 shim, for IE6-8 support of HTML5 elements -->
+    <!-[if lt IE 9]> <script type="text/javascript" src="/static/ie_html5.js"></script><![endif]-->
+    <script type="text/javascript" src="/static/bootstrap/bootstrap.min.js"></script>
+    <script type="text/javascript" src="/static/bootstrap/bootstrap-tooltip-vlad.js"></script>
+
+    <script type="text/javascript" src="/static/scripts/hsvToRgb.js"></script>
+    <script type="text/javascript" src="/static/scripts/utils.js"></script>
+    <script type="text/javascript" src="/static/scripts/build_total_report.js"></script>
+    <script type="text/javascript" src="/static/scripts/draw_cumulative_plot.js"></script>
+    <script type="text/javascript" src="/static/scripts/draw_nx_plot.js"></script>
+    <script type="text/javascript" src="/static/scripts/draw_gc_plot.js"></script>
+    <script type="text/javascript" src="/static/scripts/draw_genes_plot.js"></script>
+    <script type="text/javascript" src="/static/scripts/build_report.js"></script>
+    <script type="text/javascript" src="/static/dragtable.js"></script>
+
+    <script type="text/javascript">
+        $(function() {
+            buildReport();
+
+            dragTable.init();
+
+            $('#contigs_are_ordered').show();
+
+            $("[rel=tooltip]").tooltip({ animation: false, });
+        });
+    </script>
 </head>
 
 <body>
@@ -150,16 +153,6 @@
             {{ glossary }}
         </div>
     </div>
-
-    <script type="text/javascript" src="/static/bootstrap/bootstrap.min.js"></script>
-    <script type="text/javascript" src="/static/bootstrap/bootstrap-tooltip-vlad.js"></script>
-    <script type="text/javascript">
-        $(function () {
-            $("[rel=tooltip]").tooltip({
-                animation: false,
-            });
-        });
-    </script>
 </div>
 </body>
 </html>

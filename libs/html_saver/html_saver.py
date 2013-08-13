@@ -44,6 +44,7 @@ aux_files = [
     'scripts/build_report.js',
     'dragtable.js',
     'ie_html5.js',
+    'img/draggable.png',
     'bootstrap/bootstrap-tooltip-5px-lower.min.js',
     'bootstrap/bootstrap.min.css',
     'bootstrap/bootstrap.min.js',
@@ -52,19 +53,21 @@ aux_files = [
     'common.css',
 ]
 
+
 def init(results_dirpath):
 #    shutil.copy(template_fpath,     os.path.join(results_dirpath, report_fname))
     aux_dirpath = os.path.join(results_dirpath, aux_dirname)
     os.mkdir(aux_dirpath)
-    os.mkdir(aux_dirpath + '/flot')
-    os.mkdir(aux_dirpath + '/scripts')
-    os.mkdir(aux_dirpath + '/bootstrap')
 
     for aux_f_relpath in aux_files:
-        src = os.path.join(static_dirpath, aux_f_relpath)
-        dst = os.path.join(aux_dirpath, aux_f_relpath)
-        if not os.path.exists(dst):
-            shutil.copyfile(src, dst)
+        src_fpath = os.path.join(static_dirpath, aux_f_relpath)
+        dst_fpath = os.path.join(aux_dirpath, aux_f_relpath)
+
+        if not os.path.exists(os.path.dirname(dst_fpath)):
+            os.makedirs(os.path.dirname(dst_fpath))
+
+        if not os.path.exists(dst_fpath):
+            shutil.copyfile(src_fpath, dst_fpath)
 
     with open(template_fpath) as template_file:
         html = template_file.read()

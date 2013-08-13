@@ -30,7 +30,7 @@ function buildTotalReport(assembliesNames, report, date, minContig, glossary, qu
     });
 
     var table = '';
-    table += '<table cellspacing="0" class="report-table draggable">';
+    table += '<table cellspacing="0" class="report_table draggable" id="main_report_table">';
 
     for (var group_n = 0; group_n < report.length; group_n++) {
         var group = report[group_n];
@@ -67,7 +67,7 @@ function buildTotalReport(assembliesNames, report, date, minContig, glossary, qu
         }
 
         if (group_n == 0) {
-            table += '<tr class="header-tr"><td id="first_td">' + groupName + '</td>';
+            table += '<tr class="top_row_tr"><td id="top_left_td" class="left_column_td"><span>' + groupName + '</span></td>';
 
             for (var assembly_n = 0; assembly_n < assembliesNames.length; assembly_n++) {
                 var assemblyName = assembliesNames[assembly_n];
@@ -78,14 +78,17 @@ function buildTotalReport(assembliesNames, report, date, minContig, glossary, qu
                             '</span>'
                 }
 
-                table += '<td>' + assemblyName + '</td>';
+                table += '<td class="second_through_last_col_headers_td">' +
+                    '<span class="drag_handle"><span class="drag_image"></span></span>' +
+                    '<span class="assembly_name">' + assemblyName + '</span>' +
+                    '</td>';
             }
 
         } else {
             table +=
-                '<tr class="subheader-tr row_hidden group_empty" id="group_' + group_n + '">' +
-                    '<td>' + groupName + '</td>'; //colspan="' + width + '"
-            for (var i = 0; i < width - 1; i++) {
+                '<tr class="group_header row_hidden group_empty" id="group_' + group_n + '">' +
+                    '<td class="left_column_td"><span>' + groupName + '</span></td>'; //colspan="' + width + '"
+            for (var i = 1; i < width; i++) {
                 table += '<td></td>';
             }
             table += '</tr>';
@@ -118,7 +121,7 @@ function buildTotalReport(assembliesNames, report, date, minContig, glossary, qu
 
             table +=
                 '<tr class="' + trClass + '" quality="' + quality + '">' +
-                    '<td><span class="metric-name">' +
+                    '<td class="left_column_td"><span class="metric-name">' +
                         nbsp(addTooltipIfDefinitionExists(glossary, metricName), metricName) +
                     '</span>' +
                 '</td>';
@@ -156,7 +159,7 @@ function buildTotalReport(assembliesNames, report, date, minContig, glossary, qu
 
     (function() {
         $(function() {
-            $('.group_empty').removeClass('row_hidden');
+            $('tr.group_empty').removeClass('row_hidden');
         });
     })();
 
@@ -199,11 +202,14 @@ function buildTotalReport(assembliesNames, report, date, minContig, glossary, qu
         legend += '</span>';
     }
     legend += '</span>';
-    $('#extended_report_link_div').width($('#first_td').outerWidth());
+    $('#extended_report_link_div').width($('#top_left_td').outerWidth());
 
     $('#report_legend').append(legend);
 
-    $(".report-table td[number]").mouseenter(function() {
+    $(".report_table td[number]").mouseenter(function() {
+        if (dragTable && dragTable.isDragging)
+            return;
+
         var cells = $(this).parent().find('td[number]');
         var numbers = $.map(cells, function(cell) { return $(cell).attr('number'); });
         var quality = $(this).parent().attr('quality');
@@ -238,16 +244,8 @@ function buildTotalReport(assembliesNames, report, date, minContig, glossary, qu
             $('#report_legend').show('fast');
 
     }).mouseleave(function() {
-            $(this).parent().find('td[number]').css('color', 'black');
-        });
-
-    $(function() {
-        jQuery.each($(".report-table tr"), function() {
-//            $(this).children(":eq(1)").after($(this).children(":eq(0)"));
-        });
+        $(this).parent().find('td[number]').css('color', 'black');
     });
-
-//    });
 }
 //
 //function buildNewTotalReport(report, glossary) {

@@ -29,7 +29,7 @@
 
   var Tooltip = function (element, options) {
     this.init('tooltip', element, options)
-  }
+  };
 
   Tooltip.prototype = {
 
@@ -37,23 +37,23 @@
 
   , init: function (type, element, options) {
       var eventIn
-        , eventOut
+        , eventOut;
 
-      this.type = type
-      this.$element = $(element)
-      this.options = this.getOptions(options)
-      this.enabled = true
+      this.type = type;
+      this.$element = $(element);
+      this.options = this.getOptions(options);
+      this.enabled = true;
 
       if (this.options.trigger != 'manual') {
-        eventIn  = this.options.trigger == 'hover' ? 'mouseenter' : 'focus'
-        eventOut = this.options.trigger == 'hover' ? 'mouseleave' : 'blur'
-        this.$element.on(eventIn, this.options.selector, $.proxy(this.enter, this))
-        this.$element.on(eventOut, this.options.selector, $.proxy(this.leave, this))
+        eventIn  = this.options.trigger == 'hover' ? 'mouseenter' : 'focus';
+        eventOut = this.options.trigger == 'hover' ? 'mouseleave' : 'blur';
+        this.$element.on(eventIn, this.options.selector, $.proxy(this.enter, this));
+        this.$element.on(eventOut, this.options.selector, $.proxy(this.leave, this));
       }
 
       this.options.selector ?
         (this._options = $.extend({}, this.options, { trigger: 'manual', selector: '' })) :
-        this.fixTitle()
+        this.fixTitle();
     }
 
   , getOptions: function (options) {
@@ -63,34 +63,39 @@
         options.delay = {
           show: options.delay
         , hide: options.delay
-        }
+        };
       }
 
-      return options
+      return options;
     }
 
   , enter: function (e) {
-      var self = $(e.currentTarget)[this.type](this._options).data(this.type)
+      if (dragTable && dragTable.isDragging)
+          return;
 
-      if (!self.options.delay || !self.options.delay.show) return self.show()
+      var self = $(e.currentTarget)[this.type](this._options).data(this.type);
 
-      clearTimeout(this.timeout)
-      self.hoverState = 'in'
-      this.timeout = setTimeout(function() {
-        if (self.hoverState == 'in') self.show()
-      }, self.options.delay.show)
+      if (!self.options.delay || !self.options.delay.show) self.show();
+
+      clearTimeout(this.timeout);
+      self.hoverState = 'in';
+      this.timeout = setTimeout(
+          function() { if (self.hoverState == 'in') self.show(); },
+          self.options.delay.show
+      );
     }
 
   , leave: function (e) {
-      var self = $(e.currentTarget)[this.type](this._options).data(this.type)
+      var self = $(e.currentTarget)[this.type](this._options).data(this.type);
 
-      if (this.timeout) clearTimeout(this.timeout)
-      if (!self.options.delay || !self.options.delay.hide) return self.hide()
+      if (this.timeout) clearTimeout(this.timeout);
+      if (!self.options.delay || !self.options.delay.hide) self.hide();
 
-      self.hoverState = 'out'
-      this.timeout = setTimeout(function() {
-        if (self.hoverState == 'out') self.hide()
-      }, self.options.delay.hide)
+      self.hoverState = 'out';
+      this.timeout = setTimeout(
+          function() { if (self.hoverState == 'out') self.hide() },
+          self.options.delay.hide
+      );
     }
 
   , show: function () {
@@ -100,51 +105,51 @@
         , actualWidth
         , actualHeight
         , placement
-        , tp
+        , tp;
 
       if (this.hasContent() && this.enabled) {
-        $tip = this.tip()
-        this.setContent()
+        $tip = this.tip();
+        this.setContent();
 
         if (this.options.animation) {
-          $tip.addClass('fade')
+          $tip.addClass('fade');
         }
 
         placement = typeof this.options.placement == 'function' ?
           this.options.placement.call(this, $tip[0], this.$element[0]) :
-          this.options.placement
+          this.options.placement;
 
-        inside = /in/.test(placement)
+        inside = /in/.test(placement);
 
         $tip
           .remove()
           .css({ top: 0, left: 0, display: 'block' })
-          .appendTo(inside ? this.$element : document.body)
+          .appendTo(inside ? this.$element : document.body);
 
-        pos = this.getPosition(inside)
+        pos = this.getPosition(inside);
 
-        actualWidth = $tip[0].offsetWidth
-        actualHeight = $tip[0].offsetHeight
+        actualWidth = $tip[0].offsetWidth;
+        actualHeight = $tip[0].offsetHeight;
 
         switch (inside ? placement.split(' ')[1] : placement) {
           case 'bottom':
-            tp = {top: pos.top + pos.height, left: pos.left + pos.width / 2 - actualWidth / 2}
-            break
+            tp = {top: pos.top + pos.height, left: pos.left + pos.width / 2 - actualWidth / 2};
+            break;
           case 'top': // modificated by Vlad Saveliev: +4px to top position
-            tp = {top: pos.top - actualHeight + 4, left: pos.left + pos.width / 2 - actualWidth / 2}
-            break
+            tp = {top: pos.top - actualHeight + 4, left: pos.left + pos.width / 2 - actualWidth / 2};
+            break;
           case 'left':
-            tp = {top: pos.top + pos.height / 2 - actualHeight / 2, left: pos.left - actualWidth}
-            break
+            tp = {top: pos.top + pos.height / 2 - actualHeight / 2, left: pos.left - actualWidth};
+            break;
           case 'right':
-            tp = {top: pos.top + pos.height / 2 - actualHeight / 2, left: pos.left + pos.width}
-            break
+            tp = {top: pos.top + pos.height / 2 - actualHeight / 2, left: pos.left + pos.width};
+            break;
         }
 
         $tip
           .css(tp)
           .addClass(placement)
-          .addClass('in')
+          .addClass('in');
       }
     }
 
@@ -154,31 +159,31 @@
         || ( text.charAt(0) === "<"
           && text.charAt( text.length - 1 ) === ">"
           && text.length >= 3
-        ) || /^(?:[^<]*<[\w\W]+>[^>]*$)/.exec(text)
+        ) || /^(?:[^<]*<[\w\W]+>[^>]*$)/.exec(text);
     }
 
   , setContent: function () {
       var $tip = this.tip()
-        , title = this.getTitle()
+        , title = this.getTitle();
 
-      $tip.find('.tooltip-inner')[this.isHTML(title) ? 'html' : 'text'](title)
-      $tip.removeClass('fade in top bottom left right')
+      $tip.find('.tooltip-inner')[this.isHTML(title) ? 'html' : 'text'](title);
+      $tip.removeClass('fade in top bottom left right');
     }
 
   , hide: function () {
       var that = this
-        , $tip = this.tip()
+        , $tip = this.tip();
 
-      $tip.removeClass('in')
+      $tip.removeClass('in');
 
       function removeWithAnimation() {
         var timeout = setTimeout(function () {
           $tip.off($.support.transition.end).remove()
-        }, 500)
+        }, 500);
 
         $tip.one($.support.transition.end, function () {
-          clearTimeout(timeout)
-          $tip.remove()
+          clearTimeout(timeout);
+          $tip.remove();
         })
       }
 
@@ -188,14 +193,14 @@
     }
 
   , fixTitle: function () {
-      var $e = this.$element
+      var $e = this.$element;
       if ($e.attr('title') || typeof($e.attr('data-original-title')) != 'string') {
-        $e.attr('data-original-title', $e.attr('title') || '').removeAttr('title')
+        $e.attr('data-original-title', $e.attr('title') || '').removeAttr('title');
       }
     }
 
   , hasContent: function () {
-      return this.getTitle()
+      return this.getTitle();
     }
 
   , getPosition: function (inside) {
@@ -208,43 +213,43 @@
   , getTitle: function () {
       var title
         , $e = this.$element
-        , o = this.options
+        , o = this.options;
 
       title = $e.attr('data-original-title')
-        || (typeof o.title == 'function' ? o.title.call($e[0]) :  o.title)
+        || (typeof o.title == 'function' ? o.title.call($e[0]) :  o.title);
 
-      return title
+      return title;
     }
 
   , tip: function () {
-      return this.$tip = this.$tip || $(this.options.template)
+      return this.$tip = this.$tip || $(this.options.template);
     }
 
   , validate: function () {
       if (!this.$element[0].parentNode) {
-        this.hide()
-        this.$element = null
-        this.options = null
+        this.hide();
+        this.$element = null;
+        this.options = null;
       }
     }
 
   , enable: function () {
-      this.enabled = true
+      this.enabled = true;
     }
 
   , disable: function () {
-      this.enabled = false
+      this.enabled = false;
     }
 
   , toggleEnabled: function () {
-      this.enabled = !this.enabled
+      this.enabled = !this.enabled;
     }
 
   , toggle: function () {
-      this[this.tip().hasClass('in') ? 'hide' : 'show']()
+      this[this.tip().hasClass('in') ? 'hide' : 'show']();
     }
 
-  }
+  };
 
 
  /* TOOLTIP PLUGIN DEFINITION
@@ -254,13 +259,13 @@
     return this.each(function () {
       var $this = $(this)
         , data = $this.data('tooltip')
-        , options = typeof option == 'object' && option
-      if (!data) $this.data('tooltip', (data = new Tooltip(this, options)))
-      if (typeof option == 'string') data[option]()
+        , options = typeof option == 'object' && option;
+      if (!data) $this.data('tooltip', (data = new Tooltip(this, options)));
+      if (typeof option == 'string') data[option]();
     })
-  }
+  };
 
-  $.fn.tooltip.Constructor = Tooltip
+  $.fn.tooltip.Constructor = Tooltip;
 
   $.fn.tooltip.defaults = {
     animation: true
@@ -270,6 +275,6 @@
   , trigger: 'hover'
   , title: ''
   , delay: 0
-  }
+  };
 
 }(window.jQuery);

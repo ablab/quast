@@ -221,6 +221,9 @@ function bindTip(placeholder, series, plot, xToPrettyStringFunction, xUnit, posi
     var prevPoint = null;
 
     $(placeholder).bind("plothover", function(event, pos, item) {
+        if (dragTable && dragTable.isDragging)
+            return;
+
         if (item) {
             if (prevPoint != item.dataIndex) {
                 prevPoint = item.dataIndex;

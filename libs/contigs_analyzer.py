@@ -97,8 +97,10 @@ def run_nucmer(prefix, ref_fpath, contigs_fpath, log_out_fpath, log_err_fpath, m
     log = open(log_out_fpath, 'a')
     err = open(log_err_fpath, 'a')
     # additional GAGE params of Nucmer: '-l', '30', '-banded'
-    subprocess.call(['nucmer', '-c', str(qconfig.mincluster), '-l', str(qconfig.mincluster),
-                     '--maxmatch', '-p', prefix, ref_fpath, contigs_fpath],
+    args = ['nucmer', '-c', str(qconfig.mincluster), '-l', str(qconfig.mincluster),
+                     '--maxmatch', '-p', prefix, ref_fpath, contigs_fpath];
+    print ' '.join(args)
+    subprocess.call(args,
                      stdout=log, stderr=err, env=myenv)
 
 

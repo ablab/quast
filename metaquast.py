@@ -405,7 +405,7 @@ def main(args):
     corrected_dirpath = os.path.join(output_dirpath, qconfig.corrected_dirname)
 
     logger.set_up_file_handler(output_dirpath)
-    logger.info(' '.join([os.path.realpath(__file__)] + args))
+    logger.print_command_line(os.path.realpath(__file__), args)
     logger.start()
 
     # Where all pdfs will be saved

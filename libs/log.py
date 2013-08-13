@@ -136,6 +136,13 @@ class QLogger(object):
 
         exit(exit_code)
 
+    def print_command_line(self, program_name, args):
+        for i, arg in enumerate(args):
+            if ' ' in arg or '\t' in arg:
+                args[i] = "'" + arg + "'"
+
+        self.info(' '.join([program_name] + args))
+
     def print_timestamp(self, message=''):
         now = datetime.now()
         current_time = now.strftime("%Y-%m-%d %H:%M:%S")

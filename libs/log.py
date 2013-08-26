@@ -116,12 +116,12 @@ class QLogger(object):
         else:
             msg = ''
 
-        self._logger.error('')
-        self._logger.error(msg)
-        self._logger.error('')
-
         if to_stderr or not self._logger.handlers:
             print >> sys.stderr, msg
+        else:
+            self._logger.error('')
+            self._logger.error(msg)
+            self._logger.error('')
 
         if exit_with_code:
             exit(exit_with_code)

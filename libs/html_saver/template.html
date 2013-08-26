@@ -15,10 +15,10 @@
             width: 100%;
             margin-bottom: 1em;
         }
-        #subheader { /* not used in Quast html report */
-            margin-top: -13px;
-            margin-bottom: 20px;
-        }
+        /*#report_date { *//* not used in Quast html report */
+            /*margin-top: -13px;*/
+            /*margin-bottom: 20px;*/
+        /*}*/
     </style>
 
     <link rel="stylesheet" type="text/css" href="/static/bootstrap/bootstrap.min.css" />
@@ -60,14 +60,25 @@
 <body>
 <div class="content">
     <div id='header'>
-        <span style='font-size: 1.5em;'><span class='smallcapitals'>QUAST</span> report</span><br><br>
-        <span id='subheader'></span>
-        <br>
-        <br>
-        <br>
-        <br>
-        <span id='mincontig'>Loading...</span>
-        <span id="extended_link"></span>
+        <h1 style='font-size: 1.5em;'><span class='smallcapitals'>QUAST</span> report</h1>
+        <p id='report_date'></p>
+        <p id='mincontig'>Loading...</p>
+        <p id="extended_link"></p>
+
+        <p id="data_set_p">
+            <span style="display: none;" id="reference_length">Genome:
+                <span class='val'></span><span class='rhs'>&nbsp;</span>bp</span><span style='display: none;'>
+
+     </span><span style="display: none;" id="reference_gc">,
+                G+C content: <span class='val'></span><span class='rhs'>&nbsp;</span>%
+            </span>
+
+            <span style="display: none;" id="reference_genes"><br>
+                <span class='val'></span> genes</span><span style='display: none;'>
+
+     </span><span style="display: none;" id="reference_operons">, <span class='val'></span> operons
+            </span>
+        </p>
     </div>
 
     <noscript>

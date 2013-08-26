@@ -3,8 +3,8 @@ String.prototype.trunc =
         return this.substr(0, n-1) + (this.length > n ? '&hellip;' : '');
     };
 
-function buildTotalReport(assembliesNames, report, date, minContig, glossary, qualities, mainMetrics) {
-    $('#subheader').html('<p>' + date + '</p>');
+function buildTotalReport(assembliesNames, report, order, date, minContig, glossary, qualities, mainMetrics) {
+    $('#report_date').html('<p>' + date + '</p>');
     $('#mincontig').html('<p>All statistics are based on contigs of size >= ' + minContig +
         '<span class="rhs">&nbsp;</span>bp, unless otherwise noted (e.g., "# contigs (>= 0 bp)" and "Total length (>= 0 bp)" include all contigs.)</p>');
 
@@ -39,29 +39,32 @@ function buildTotalReport(assembliesNames, report, date, minContig, glossary, qu
         var width = assembliesNames.length + 1;
 
         if (groupName == 'Reference statistics') {
-            var stats = {};
+            var referenceValues = {};
             for (var metric_n = 0; metric_n < metrics.length; metric_n++) {
                 var metric = metrics[metric_n];
                 var metricName = metric.metricName;
                 var value = metric.values[0];
-                stats[metricName] = value;
+                referenceValues[metricName] = value;
             }
-            var refLen = stats['Reference length'];
-            var refGC = stats['Reference GC (%)'];
-            var refGenes = stats['Reference genes'];
-            var refOperons = stats['Reference operons'];
+            var refName = referenceValues['Reference name'];
+            var refLen = referenceValues['Reference length'];
+            var refGC = referenceValues['Reference GC (%)'];
+            var refGenes = referenceValues['Reference genes'];
+            var refOperons = referenceValues['Reference operons'];
 
-            if (refLen) {
-                $('#dataset_name_p').append('<br>' + toPrettyString(refLen, 'bp'));
+            if (refName) {
+                $('#reference_name').find('.val').html(refName);
             }
+            $('#reference_name').show();
+
+            if (refLen)
+                $('#reference_length').show().find('.val').html(toPrettyString(refLen));
             if (refGC)
-                $('#dataset_name_p').append('<br>' + toPrettyString(refGC) + ' % GC');
-
+                $('#reference_gc').show().find('.val').html(toPrettyString(refGC));
             if (refGenes)
-                $('#dataset_name_p').append('<br>' + toPrettyString(refGenes) + ' genes');
-
+                $('#reference_genes').show().find('.val').html(toPrettyString(refGenes));
             if (refOperons)
-                $('#dataset_name_p').append('<br>' + toPrettyString(refOperons) + ' operons');
+                $('#reference_operons').show().find('.val').html(toPrettyString(refOperons));
 
             continue;
         }
@@ -70,7 +73,7 @@ function buildTotalReport(assembliesNames, report, date, minContig, glossary, qu
             table += '<tr class="top_row_tr"><td id="top_left_td" class="left_column_td"><span>' + groupName + '</span></td>';
 
             for (var assembly_n = 0; assembly_n < assembliesNames.length; assembly_n++) {
-                var assemblyName = assembliesNames[assembly_n];
+                var assemblyName = assembliesNames[order[assembly_n]];
                 if (assemblyName.length > 30) {
                     assemblyName =
                         '<span class="tooltip-link" rel="tooltip" title="' + assemblyName + '">' +
@@ -78,7 +81,7 @@ function buildTotalReport(assembliesNames, report, date, minContig, glossary, qu
                             '</span>'
                 }
 
-                table += '<td class="second_through_last_col_headers_td">' +
+                table += '<td class="second_through_last_col_headers_td" position="' + order[assembly_n] + '">' +
                     '<span class="drag_handle"><span class="drag_image"></span></span>' +
                     '<span class="assembly_name">' + assemblyName + '</span>' +
                     '</td>';
@@ -94,7 +97,7 @@ function buildTotalReport(assembliesNames, report, date, minContig, glossary, qu
             table += '</tr>';
         }
 
-        for (var metric_n = 0; metric_n < metrics.length; metric_n++) {
+        for (metric_n = 0; metric_n < metrics.length; metric_n++) {
             (function(group_n) {
                 var id_group = '#group_' + group_n;
                 $(function() {
@@ -102,8 +105,8 @@ function buildTotalReport(assembliesNames, report, date, minContig, glossary, qu
                 });
             })(group_n);
 
-            var metric = metrics[metric_n];
-            var metricName = metric.metricName;
+            metric = metrics[metric_n];
+            metricName = metric.metricName;
             var quality = metric.quality;
             var values = metric.values;
 
@@ -126,8 +129,8 @@ function buildTotalReport(assembliesNames, report, date, minContig, glossary, qu
                     '</span>' +
                 '</td>';
 
-            for (var value_n = 0; value_n < values.length; value_n++) {
-                var value = values[value_n];
+            for (var val_n = 0; val_n < values.length; val_n++) {
+                value = values[order[val_n]];
 
                 if (value === null || value === '') {
                     table += '<td><span>-</span></td>';

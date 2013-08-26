@@ -23,7 +23,7 @@ var gns = {
     },
 
     draw: function (name, title, colors, filenames, data, refGenesNumber,
-                    placeholder, legendPlaceholder, glossary) {
+                    placeholder, legendPlaceholder, glossary, order) {
 //    div.html(
 //        "<span class='plot-header'>" + kind[0].toUpperCase() + kind.slice(1) + "s covered</span>" +
 //        "<div class='plot-placeholder' id='" + kind + "s-plot-placeholder'></div>"
@@ -48,14 +48,14 @@ var gns = {
             }
 
             for (var fi = 0; fi < plotsN; fi++) {
-                var filename = filenames[fi];
+                var filename = filenames[order[fi]];
                 var featureInContigs = filesFeatureInContigs[filename];
 
                 info.series[fi] = {
                     data: [[0, 0]],
-                    label: filenames[fi],
+                    label: filenames[order[fi]],
                     number: fi,
-                    color: colors[fi],
+                    color: colors[order[fi]],
                 };
 
                 var contigNo = 0;

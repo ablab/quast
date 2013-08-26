@@ -32,8 +32,42 @@ function showPlotWithInfo(info) {
 }
 
 
+function Range(from, to) {
+    var r  = [];
+    for (var i = from; i < to; i++) {
+        r.push(i);
+    }
+    return r;
+}
+
+
+function recoverOrderFromCookies() {
+    if (!navigator.cookieEnabled)
+        return null;
+
+    var order_string = readCookie("order");
+    if (!order_string)
+        return null;
+
+    var order = [];
+    var fail = false;
+    forEach(order_string.split(' '), function(val) {
+        val = parseInt(val);
+        if (isNaN(val))
+            fail = true;
+        else
+            order.push(val);
+    });
+
+    if (fail)
+        return null;
+
+    return order;
+}
+
 function buildReport() {
     var assembliesNames;
+    var order;
 
     var totalReport = null;
     var qualities = null;
@@ -81,18 +115,12 @@ function buildReport() {
                     '_id">&nbsp;' + 'reference,&nbsp;' +
                     toPrettyString(refPlotValue) +
                     '</label>' +
-                    '</div>');
-//        } else {
-//            if (toRemoveRefLabel) {
-//                var el = $('#reference-label');
-//                el.remove();
-//                toRemoveRefLabel = false;
-//            }
+                    '</div>'
+            );
         }
 
-        $(scalePlaceholder).html('');
         drawPlot(name, title, colors, assembliesNames, data, refPlotValue,
-            plotPlaceholder, legendPlaceholder, glossary, scalePlaceholder);
+            plotPlaceholder, legendPlaceholder, glossary, order);
     }
 
     var firstPlot = true;
@@ -133,13 +161,11 @@ function buildReport() {
     }
 
     assembliesNames = totalReport.assembliesNames;
-//    if (assembliesNames.length === 0)
-//        console.log("Error: no assemblies");
-//        return 1;
 
-//    qualities = readJson('qualities');
-//    mainMetrics = readJson('main-metrics');
-    buildTotalReport(assembliesNames, totalReport.report, totalReport.date, totalReport.minContig, glossary, qualities, mainMetrics);
+    order = recoverOrderFromCookies() || totalReport.order || Range(0, assembliesNames.length);
+
+    buildTotalReport(assembliesNames, totalReport.report, order, totalReport.date,
+        totalReport.minContig, glossary, qualities, mainMetrics);
 
     if (refLen = readJson('reference-length'))
         refLen = refLen.reflen;

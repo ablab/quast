@@ -312,6 +312,103 @@ function showTip(pageX, pageY, offset, plotWidth, plotHeight,
 
 
 
+// Cookie functions based on http://www.quirksmode.org/js/cookies.html
+// Cookies won't work for local files.
+
+var createCookie = function(name, value, days) {
+    var expires = '';
+    if (days) {
+        var date = new Date();
+        date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+        expires = '; expires=' + date.toGMTString();
+    }
+    var path = document.location.pathname;
+    document.cookie = name + '=' + value + expires + '; path=' + path;
+};
+
+var readCookie = function(name) {
+    var nameEQ = name + '=';
+    var ca = document.cookie.split(';');
+    for(var i = 0; i < ca.length; i++) {
+        var c = ca[i];
+        while (c.charAt(0) == ' ') {
+            c = c.substring(1, c.length);
+        }
+        if (c.indexOf(nameEQ) == 0) {
+            return c.substring(nameEQ.length, c.length);
+        }
+    }
+    return null;
+};
+
+var eraseCookie = function(name) {
+    createCookie(name, '', -1);
+};
+
+
+// Dean's forEach: http://dean.edwards.name/base/forEach.js
+/*forEach, version 1.0
+ Copyright 2006, Dean Edwards
+ License: http://www.opensource.org/licenses/mit-license.php */
+
+// array-like enumeration
+if (!Array.forEach) { // mozilla already supports this
+    Array.forEach = function(array, block, context) {
+        for (var i = 0; i < array.length; i++) {
+            block.call(context, array[i], i, array);
+        }
+    };
+}
+
+// generic enumeration
+Function.prototype.forEach = function(object, block, context) {
+    for (var key in object) {
+        if (typeof this.prototype[key] == "undefined") {
+            block.call(context, object[key], key, object);
+        }
+    }
+};
+
+// character enumeration
+String.forEach = function(string, block, context) {
+    Array.forEach(string.split(""), function(chr, index) {
+        block.call(context, chr, index, string);
+    });
+};
+
+// globally resolve forEach enumeration
+var forEach = function(object, block, context) {
+    if (object) {
+        if (object instanceof Function) {                 // functions have a "length" property
+            Function.forEach(object, block, context);
+
+        } else if (object.each instanceof Function) {     // jQuery
+            object.each(function(i, elt) {
+                block(elt);
+            }, context);
+
+        } else if (object.forEach instanceof Function) {  // the object implements a custom forEach method
+            object.forEach(block, context);
+
+        } else if (typeof object == "string") {           // a string
+            String.forEach(object, block, context);
+
+        } else if (typeof object.length == "number") {    // array-like object
+            Array.forEach(object, block, context);
+
+        } else {
+            Object.forEach(object, block, context);
+        }
+    }
+};
+
+
+jQuery.fn.exists = function(){
+    return jQuery(this).length > 0;
+};
+
+
+
 
 
 

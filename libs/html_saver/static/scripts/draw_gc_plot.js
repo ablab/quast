@@ -35,7 +35,7 @@ var gc = {
     log_scale_el: log_scale_a,
 
     draw: function(name, title, colors, filenames, gcInfos, reflen,
-                   placeholder, legendPlaceholder, glossary, scalePlaceholder) {
+                   placeholder, legendPlaceholder, glossary, scalePlaceholder, order) {
         $(scalePlaceholder).html(
             "<div id='change-scale' style='margin-right: 3px; visibility: hidden;'>" +
                 "<span id='normal_scale_label'>" +
@@ -73,9 +73,9 @@ var gc = {
             for (var i = 0; i < plotsN; i++) {
                 gc.series[i] = {
                     data: [],
-                    label: filenames[i],
+                    label: filenames[order[i]],
                     number: i,
-                    color: colors[i],
+                    color: colors[order[i]],
                 };
             }
 
@@ -89,7 +89,8 @@ var gc = {
 
             function makeSeriesFromInfo(listsOfGCInfo) {
                 for (var i = 0; i < plotsN; i++) {
-                    var GC_info = listsOfGCInfo[i];
+                    var GC_info = listsOfGCInfo[order[i]];
+
                     var cur_bin = 0.0;
 
                     var x = cur_bin;
@@ -128,7 +129,7 @@ var gc = {
 
             function makeSeriesFromDistributions(listOfGcDistributions) {
                 for (var i = 0; i < plotsN; i++) {
-                    var distributionsXandY = listOfGcDistributions[i];
+                    var distributionsXandY = listOfGcDistributions[order[i]];
                     var distributionsX = distributionsXandY[0];
                     var distributionsY = distributionsXandY[1];
 

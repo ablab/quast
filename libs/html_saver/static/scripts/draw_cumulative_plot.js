@@ -9,8 +9,8 @@ var cumulative = {
     showWithData: null,
     colors: [],
 
-    draw: function(name, title,  colors, filenames, listsOfLengths, refLenght,
-                   placeholder, legendPlaceholder, glossary) {
+    draw: function(name, title, colors, filenames, listsOfLengths, refLenght,
+                   placeholder, legendPlaceholder, glossary, order) {
 
         if (!this.isInitialized) {
             //    div.html(
@@ -27,14 +27,17 @@ var cumulative = {
             cumulative.colors = colors;
 
             for (var i = 0; i < plotsN; i++) {
-                var lengths = listsOfLengths[i];
+                var lengths = listsOfLengths[order[i]];
+                var asm_name = filenames[order[i]];
+                var color = colors[order[i]];
+                
                 var size = lengths.length;
 
                 cumulative.series[i] = {
                     data: new Array(size+1),
-                    label: filenames[i],
+                    label: asm_name,
                     number: i,
-                    color: colors[i],
+                    color: color,
                 };
 
                 cumulative.series[i].data[0] = [0, 0];

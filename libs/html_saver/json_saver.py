@@ -48,13 +48,14 @@ def save(fpath, what):
 
 def save_total_report(output_dirpath, min_contig):
     from libs import reporting
-    assemblies_names = map(qutils.label_from_fpath, reporting.assembly_fpaths)
+    asm_names = map(qutils.label_from_fpath, reporting.assembly_fpaths)
     report = reporting.table(reporting.Fields.grouped_order)
     t = datetime.datetime.now()
 
     return save(output_dirpath + total_report_fname, {
         'date': t.strftime('%d %B %Y, %A, %H:%M:%S'),
-        'assembliesNames': assemblies_names,
+        'assembliesNames': asm_names,
+        'order': [i for i, _ in enumerate(asm_names)],
         'report': report,
         'minContig': min_contig,
     })
@@ -105,7 +106,7 @@ def save_reference_length(output_dirpath, reference_length):
 
 
 def save_aligned_contigs_lengths(output_dir, contigs_fpaths, lists_of_lengths):
-    lists_of_lengths = [sorted(list, reverse=True) for list in lists_of_lengths]
+    lists_of_lengths = [sorted(one_list, reverse=True) for one_list in lists_of_lengths]
 
     return save(output_dir + aligned_contigs_fn, {
         'filenames': map(qutils.label_from_fpath, contigs_fpaths),

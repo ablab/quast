@@ -33,7 +33,7 @@ var nx = {
     },
 
     draw: function (name, title, colors, filenames, data, refPlotValue,
-                    placeholder, legendPlaceholder, glossary) {
+                    placeholder, legendPlaceholder, glossary, order) {
 
         var listsOfLengths = data.listsOfLengths;
         var refLength = data.refLen;
@@ -45,7 +45,7 @@ var nx = {
             info.series = new Array(plotsN);
 
             for (var i = 0; i < plotsN; i++) {
-                var lengths = listsOfLengths[i];
+                var lengths = listsOfLengths[order[i]];
 
                 var size = lengths.length;
 
@@ -60,9 +60,9 @@ var nx = {
 
                 info.series[i] = {
                     data: [],
-                    label: filenames[i],
+                    label: filenames[order[i]],
                     number: i,
-                    color: colors[i],
+                    color: colors[order[i]],
                 };
                 info.series[i].data.push([0.0, lengths[0]]);
                 var currentLen = 0;

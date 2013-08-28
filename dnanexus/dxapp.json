@@ -1,0 +1,86 @@
+{
+  "name": "quast",
+  "title": "QUAST",
+  "summary": "Quality Assessment Tool for Genome Assemblies",
+  "dxapi": "1.0.0",
+  "version": "2.2.0",
+  "inputSpec": [
+    {
+      "name": "contigs",
+      "label": "Contigs",
+      "class": "array:file",
+      "optional": false
+    },
+    {
+      "name": "reference",
+      "label": "Reference genome file",
+      "class": "file",
+      "optional": true
+    },
+    {
+      "name": "genes",
+      "label": "Annotated genes file",
+      "class": "file",
+      "optional": true
+    },
+    {
+      "name": "operons",
+      "label": "Annotated operons file",
+      "class": "file",
+      "optional": true
+    },
+    {
+      "name": "min_contig",
+      "label": "Min contig threshold",
+      "class": "int",
+      "default": 500,
+      "optional": true
+    },
+    {
+      "name": "gene_finding",
+      "label": "gene finding",
+      "class": "boolean",
+      "optional": true
+    },
+    {
+      "name": "eukaryote",
+      "label": "Genome is an eukaryote",
+      "class": "boolean",
+      "optional": true
+    },
+    {
+      "name": "est_ref_length",
+      "label": "Estimated reference length",
+      "class": "int",
+      "optional": true
+    },
+    {
+      "name": "scaffolds",
+      "label": "Provided assemblies are scaffolds",
+      "class": "boolean",
+      "optional": true
+    }
+  ],
+  "outputSpec": [
+    {
+      "name": "report",
+      "label": "Report",
+      "class": "record"
+    }
+  ],
+  "runSpec": {
+    "interpreter": "python2.7",
+    "file": "src/quast.py"
+  },
+  "details": {
+    "contactURL": "http://bioinf.spbau.ru/quast",
+    "contactEmail": "quast.support@bioinf.spbau.ru",
+    "upstreamAuthor" : "Algorithmic Biology Lab at St. Petersburg Academic University of the Russian Academy of Sciences",
+    "upstreamVersion" : "2.2.0",
+    "upstreamUrl" : "http://bioinf.spbau.ru/quast",
+    "upstreamLicenses" : [ "GPLv2" ],
+    "citations" : [
+        "doi:10.1093/bioinformatics/btt086"
+    ]
+  }
+}

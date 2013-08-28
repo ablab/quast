@@ -18,6 +18,7 @@ from libs.fastaparser import read_fasta, write_fasta
 from libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 
+LICENSE_LIMITATIONS_MODE = False
 
 def gc_content(sequence):
     GC_count = sequence.count('G') + sequence.count('C')
@@ -173,6 +174,9 @@ def predict_genes(i, contigs_fpath, gene_lengths, out_dirpath, tool_dirpath, gmh
 
 def do(fasta_fpaths, gene_lengths, out_dirpath, meta):
     logger.print_timestamp()
+    if LICENSE_LIMITATIONS_MODE:
+        logger.warning("GeneMark tool can't be started because of license limitations!")
+        return
 
     if meta:
         tool_name = 'MetaGeneMark'

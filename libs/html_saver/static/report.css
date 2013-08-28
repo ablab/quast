@@ -207,8 +207,6 @@ table.draggable td.right_to_cell_of_empty_space {
     padding: 2px 5px 2px 5px;
 
     z-index: 1;
-
-    /*background-image: url("/static/img/semi-transparent-10px.png");*/
 }
 
 #plot_tip_vertical_rule, #plot_tip_horizontal_rule {

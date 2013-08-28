@@ -567,9 +567,14 @@ def main(args):
         logger.notice("Output directory already exists. Existing Nucmer alignments can be used.")
         qutils.remove_reports(output_dirpath)
 
-    qconfig.contig_thresholds = map(int, qconfig.contig_thresholds.split(","))
-
-    qconfig.genes_lengths = map(int, qconfig.genes_lengths.split(","))
+    if qconfig.contig_thresholds == "None":
+        qconfig.contig_thresholds = []
+    else:
+        qconfig.contig_thresholds = map(int, qconfig.contig_thresholds.split(","))
+    if qconfig.genes_lengths == "None":
+        qconfig.genes_lengths = []
+    else:
+        qconfig.genes_lengths = map(int, qconfig.genes_lengths.split(","))
 
     # Threading
     if qconfig.max_threads is None:

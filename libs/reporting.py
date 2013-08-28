@@ -70,8 +70,8 @@ class Fields:
     INDELSBASES = 'Indels length'
     SUBSERROR = '# mismatches per 100 kbp'
     INDELSERROR = '# indels per 100 kbp'
-    MIS_SHORT_INDELS = TAB + '# short indels (<= %d bp)' % qconfig.SHORT_INDEL_THRESHOLD
-    MIS_LONG_INDELS = TAB + '# long indels (> %d bp)' % qconfig.SHORT_INDEL_THRESHOLD
+    MIS_SHORT_INDELS = TAB + '# short indels'
+    MIS_LONG_INDELS = TAB + '# long indels'
     UNCALLED = "# N's"
     UNCALLED_PERCENT = "# N's per 100 kbp"
 

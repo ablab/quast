@@ -7,7 +7,6 @@
 import logging
 import os
 import shutil
-import subprocess
 from libs import reporting, qutils
 import qconfig
 
@@ -30,16 +29,20 @@ def run_gage(i, contigs_fpath, gage_results_dirpath, gage_tool_path, reference, 
     log_out_f = open(log_out_fpath, 'w')
     log_err_f = open(log_err_fpath, 'w')
 
-    print
-    print ' '.join(['sh', gage_tool_path, reference, contigs_fpath, tmp_dir, str(qconfig.min_contig)])
-
-    return_code = subprocess.call(
+    return_code = qutils.call_subprocess(
         ['sh', gage_tool_path, reference, contigs_fpath, tmp_dir, str(qconfig.min_contig)],
-        stdout=log_out_f, stderr=log_err_f)
+        stdout=log_out_f,
+        stderr=log_err_f,
+        indent='  ' + qutils.index_to_str(i),
+        only_if_debug=False)
+    if return_code == 0:
+        logger.info('  ' + qutils.index_to_str(i) + 'Failed.')
+    else:
+        logger.info('  ' + qutils.index_to_str(i) + 'Done.')
 
     log_out_f.close()
     log_err_f.close()
-    logger.info('  ' + qutils.index_to_str(i) + 'Done.')
+
     return return_code
 
 
@@ -81,40 +84,37 @@ def do(ref_fpath, contigs_fpaths, output_dirpath):
     return_codes = Parallel(n_jobs=n_jobs)(delayed(run_gage)(i, contigs_fpath, gage_results_dirpath, gage_tool_path, ref_fpath, tmp_dirpath)
         for i, contigs_fpath in enumerate(contigs_fpaths))
 
-    error_occurred = False
-    for return_code in return_codes:
-        if return_code != 0:
-            logger.warning("Error occurred while GAGE was processing assemblies. See GAGE error logs for details (%s)" %
-                    os.path.join(gage_results_dirpath, 'gage_*.stderr'))
-            error_occurred = True
-            break
+    if 0 not in return_codes:
+        logger.warning('Error occurred while GAGE was processing assemblies.'
+                       ' See GAGE error logs for details: %s' %
+                os.path.join(gage_results_dirpath, 'gage_*.stderr'))
+        return
 
-    if not error_occurred:
-        ## find metrics for total report:
-        for i, contigs_fpath in enumerate(contigs_fpaths):
-            assembly_name = qutils.name_from_fpath(contigs_fpath)
-            assembly_label = qutils.label_from_fpath(contigs_fpath)
+    ## find metrics for total report:
+    for i, contigs_fpath in enumerate(contigs_fpaths):
+        assembly_name = qutils.name_from_fpath(contigs_fpath)
+        assembly_label = qutils.label_from_fpath(contigs_fpath)
 
-            report = reporting.get(contigs_fpath)
+        report = reporting.get(contigs_fpath)
 
-            log_out_fpath = os.path.join(
-                gage_results_dirpath, 'gage_' + assembly_name + '.stdout')
-            logfile_out = open(log_out_fpath, 'r')
-            cur_metric_id = 0
-            for line in logfile_out:
-                if metrics[cur_metric_id] in line:
-                    if (metrics[cur_metric_id].startswith('N50')):
-                        report.add_field(metrics_in_reporting[cur_metric_id], line.split(metrics[cur_metric_id] + ':')[1].strip())
-                    else:
-                        report.add_field(metrics_in_reporting[cur_metric_id], line.split(':')[1].strip())
-                    cur_metric_id += 1
-                    if cur_metric_id == len(metrics):
-                        break
-            logfile_out.close()
+        log_out_fpath = os.path.join(
+            gage_results_dirpath, 'gage_' + assembly_name + '.stdout')
+        logfile_out = open(log_out_fpath, 'r')
+        cur_metric_id = 0
+        for line in logfile_out:
+            if metrics[cur_metric_id] in line:
+                if (metrics[cur_metric_id].startswith('N50')):
+                    report.add_field(metrics_in_reporting[cur_metric_id], line.split(metrics[cur_metric_id] + ':')[1].strip())
+                else:
+                    report.add_field(metrics_in_reporting[cur_metric_id], line.split(':')[1].strip())
+                cur_metric_id += 1
+                if cur_metric_id == len(metrics):
+                    break
+        logfile_out.close()
 
-        reporting.save_gage(output_dirpath)
+    reporting.save_gage(output_dirpath)
 
-        if not qconfig.debug:
-            shutil.rmtree(tmp_dirpath)
+    if not qconfig.debug:
+        shutil.rmtree(tmp_dirpath)
 
-        logger.info('Done.')
+    logger.info('Done.')

@@ -8,6 +8,7 @@ from __future__ import with_statement
 import glob
 import gzip
 import shutil
+import subprocess
 import zipfile
 import bz2
 import os
@@ -133,3 +134,53 @@ def name_from_fpath(fpath):
 
 def label_from_fpath(fpath):
     return qconfig.assembly_labels_by_fpath[fpath]
+
+
+def call_subprocess(args, stdin=None, stdout=None, stderr=None,
+                    indent='',
+                    only_if_debug=True, env=None):
+    printed_args = args[:]
+    if stdin:
+        printed_args += ['<', stdin.name]
+    if stdout:
+        printed_args += ['>>' if stdout.mode == 'a' else '>', stdout.name]
+    if stderr:
+        printed_args += ['2>>' if stderr.mode == 'a' else '2>', stderr.name]
+
+    for i, arg in enumerate(printed_args):
+        if arg.startswith(os.getcwd()):
+            printed_args[i] = relpath(arg)
+
+    logger.print_command_line(printed_args, indent, only_if_debug=only_if_debug)
+
+    return_code = subprocess.call(args, stdin=stdin, stdout=stdout, stderr=stderr, env=env)
+
+    if return_code != 0:
+        logger.debug(' ' * len(indent) + 'The tool returned non-zero.' +
+                     (' See ' + relpath(stderr.name) + ' for stderr.' if stderr else ''))
+        # raise SubprocessException(printed_args, return_code)
+
+    return return_code
+
+
+# class SubprocessException(Exception):
+#     def __init__(self, printed_args, return_code):
+#         self.printed_args = printed_args
+#         self.return_code = return_code
+
+
+from posixpath import curdir, sep, pardir, join, abspath, commonprefix
+
+
+def relpath(path, start=curdir):
+    """Return a relative version of a path"""
+    if not path:
+        raise ValueError("No path specified")
+    start_list = abspath(start).split(sep)
+    path_list = abspath(path).split(sep)
+    # Work out how much of the filepath is shared by start and path.
+    i = len(commonprefix([start_list, path_list]))
+    rel_list = [pardir] * (len(start_list) - i) + path_list[i:]
+    if not rel_list:
+        return curdir
+    return join(*rel_list)

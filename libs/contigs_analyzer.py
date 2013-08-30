@@ -18,7 +18,6 @@
 from __future__ import with_statement
 import os
 import platform
-import subprocess
 import datetime
 import fastaparser
 import shutil
@@ -27,7 +26,17 @@ from libs import reporting, qconfig, qutils
 from libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 
+
 required_binaries = ['nucmer', 'delta-filter', 'show-coords', 'show-snps']
+
+if platform.system() == 'Darwin':
+    mummer_dirpath = os.path.join(qconfig.LIBS_LOCATION, 'MUMmer3.23-osx')
+else:
+    mummer_dirpath = os.path.join(qconfig.LIBS_LOCATION, 'MUMmer3.23-linux')
+
+
+def bin_fpath(fname):
+    return os.path.join(mummer_dirpath, fname)
 
 
 class Misassembly:
@@ -77,6 +86,7 @@ class Mappings(object):
 def clear_files(fpath, nucmer_fpath):
     if qconfig.debug:
         return
+
     # delete temporary files
     for ext in ['.delta', '.coords_tmp', '.coords.headless']:
         if os.path.isfile(nucmer_fpath + ext):
@@ -93,22 +103,38 @@ class NucmerStatus:
     NOT_ALIGNED = 2
 
 
-def run_nucmer(prefix, ref_fpath, contigs_fpath, log_out_fpath, log_err_fpath, myenv):
-    log = open(log_out_fpath, 'a')
-    err = open(log_err_fpath, 'a')
+def run_nucmer(prefix, ref_fpath, contigs_fpath, log_out_fpath, log_err_fpath, index, planta_err_f):
     # additional GAGE params of Nucmer: '-l', '30', '-banded'
-    args = ['nucmer', '-c', str(qconfig.mincluster), '-l', str(qconfig.mincluster),
-                     '--maxmatch', '-p', prefix, ref_fpath, contigs_fpath];
-    print ' '.join(args)
-    subprocess.call(args,
-                     stdout=log, stderr=err, env=myenv)
+    return_code = qutils.call_subprocess(
+        [bin_fpath('nucmer'),
+         '-c', str(qconfig.mincluster),
+         '-l', str(qconfig.mincluster),
+         '--maxmatch',
+         '-p', prefix,
+         ref_fpath,
+         contigs_fpath],
+        stdout=open(log_out_fpath, 'a'),
+        stderr=open(log_err_fpath, 'a'),
+        indent='  ' + qutils.index_to_str(index))
+
+    if return_code != 0:
+        print >> planta_err_f, qutils.index_to_str(index) + 'Nucmer failed for', contigs_fpath, '\n'
+
+    return return_code
 
 
-def plantakolya(cyclic, i, contigs_fpath, nucmer_fpath, myenv, output_dirpath, ref_fpath):
+def __fail(contigs_fpath, index):
+    logger.error('  ' + qutils.index_to_str(index) +
+                 'Failed aligning contigs ' + qutils.label_from_fpath(contigs_fpath) + ' to the reference. ' +
+                 ('Run with the --debug flag to see additional information.' if not qconfig.debug else ''))
+    return NucmerStatus.FAILED, {}, []
+
+
+def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_fpath):
     assembly_name = qutils.name_from_fpath(contigs_fpath)
     assembly_label = qutils.label_from_fpath(contigs_fpath)
 
-    logger.info('  ' + qutils.index_to_str(i) + assembly_label)
+    logger.info('  ' + qutils.index_to_str(index) + assembly_label)
 
     # run plantakolya tool
     log_out_fpath = os.path.join(output_dirpath, "contigs_report_" + assembly_name + '.stdout')
@@ -116,7 +142,7 @@ def plantakolya(cyclic, i, contigs_fpath, nucmer_fpath, myenv, output_dirpath, r
     planta_out_f = open(log_out_fpath, 'w')
     planta_err_f = open(log_err_fpath, 'w')
 
-    logger.info('  ' + qutils.index_to_str(i) + 'Logging to files ' + log_out_fpath +
+    logger.info('  ' + qutils.index_to_str(index) + 'Logging to files ' + log_out_fpath +
                 ' and ' + os.path.basename(log_err_fpath) + '...')
     maxun = 10
     epsilon = 0.99
@@ -136,65 +162,93 @@ def plantakolya(cyclic, i, contigs_fpath, nucmer_fpath, myenv, output_dirpath, r
     # Checking if there are existing previous nucmer alignments.
     # If they exist, using them to save time.
     using_existing_alignments = False
-    if os.path.isfile(nucmer_successful_check_fpath) and os.path.isfile(coords_fpath) \
-        and os.path.isfile(show_snps_fpath):
-
+    if os.path.isfile(nucmer_successful_check_fpath) and\
+       os.path.isfile(coords_fpath) and\
+       os.path.isfile(show_snps_fpath):
         successful_check_content = open(nucmer_successful_check_fpath).read().split('\n')
         if len(successful_check_content) > 2 and successful_check_content[1].strip() == str(qconfig.min_contig):
             print >> planta_out_f, '\tUsing existing Nucmer alignments...'
-            logger.info('  ' + qutils.index_to_str(i) + 'Using existing Nucmer alignments... ')
+            logger.info('  ' + qutils.index_to_str(index) + 'Using existing Nucmer alignments... ')
             using_existing_alignments = True
 
     if not using_existing_alignments:
-        print >> planta_out_f, '\tRunning Nucmer...'
-        logger.info('  ' + qutils.index_to_str(i) + 'Running Nucmer... ')
+        print >> planta_out_f, '\tRunning Nucmer'
+        logger.info('  ' + qutils.index_to_str(index) + 'Running Nucmer')
+        nucmer_failed = False
 
-        if qconfig.splitted_ref:
+        if not qconfig.splitted_ref:
+            nucmer_exit_code = run_nucmer(nucmer_fpath, ref_fpath, contigs_fpath,
+                                          log_out_fpath, log_err_fpath, index, planta_err_f)
+            if nucmer_exit_code != 0:
+                return __fail(contigs_fpath, index)
+
+        else:
             prefixes_and_chr_files = [(nucmer_fpath + "_" + os.path.basename(chr_fname), chr_fname)
                                       for chr_fname in qconfig.splitted_ref]
 
-            # Daemonic processes are not allowed to have children, so if we are already one of parallel processes
+            # Daemonic processes are not allowed to have children,
+            # so if we are already one of parallel processes
             # (i.e. daemonic) we can't start new daemonic processes
             if qconfig.assemblies_num == 1:
                 n_jobs = min(qconfig.max_threads, len(prefixes_and_chr_files))
             else:
                 n_jobs = 1
             if n_jobs > 1:
-                logger.info('    ' + 'Aligning to different chromosomes in parallel (' + str(n_jobs) + ' threads)')
+                logger.info('    ' + 'Aligning to different chromosomes in parallel'
+                                     ' (' + str(n_jobs) + ' threads)')
 
             # processing each chromosome separately (if we can)
             from joblib import Parallel, delayed
-            Parallel(n_jobs=n_jobs)(delayed(run_nucmer)(
-                prefix, chr_file, contigs_fpath, log_out_fpath, log_err_fpath, myenv)
+            nucmer_exit_codes = Parallel(n_jobs=n_jobs)(delayed(run_nucmer)(
+                prefix, chr_file, contigs_fpath, log_out_fpath, log_err_fpath, index, planta_err_f)
                 for (prefix, chr_file) in prefixes_and_chr_files)
 
-            # filling common delta file
-            delta_file = open(delta_fpath, 'w')
-            delta_file.write(ref_fpath + " " + contigs_fpath + "\n")
-            delta_file.write("NUCMER\n")
+            if 0 not in nucmer_exit_codes:
+                return __fail(contigs_fpath, index)
 
-            for (prefix, chr_fname) in prefixes_and_chr_files:
-                chr_delta_fpath = prefix + '.delta'
-                if os.path.isfile(chr_delta_fpath):
-                    chr_delta_file = open(chr_delta_fpath)
-                    chr_delta_file.readline()
-                    chr_delta_file.readline()
-                    for line in chr_delta_file:
-                        delta_file.write(line)
-                    chr_delta_file.close()
+            else:
+                # filling common delta file
+                delta_file = open(delta_fpath, 'w')
+                delta_file.write(ref_fpath + " " + contigs_fpath + "\n")
+                delta_file.write("NUCMER\n")
+                for i, (prefix, chr_fname) in enumerate(prefixes_and_chr_files):
+                    if nucmer_exit_codes[i] != 0:
+                        continue
 
-            delta_file.close()
-        else:
-            run_nucmer(nucmer_fpath, ref_fpath, contigs_fpath, log_out_fpath, log_err_fpath, myenv)
+                    chr_delta_fpath = prefix + '.delta'
+                    if os.path.isfile(chr_delta_fpath):
+                        chr_delta_file = open(chr_delta_fpath)
+                        chr_delta_file.readline()
+                        chr_delta_file.readline()
+                        for line in chr_delta_file:
+                            delta_file.write(line)
+                        chr_delta_file.close()
+
+                delta_file.close()
 
         # Filtering by IDY% = 95 (as GAGE did)
-        subprocess.call(['delta-filter', '-i', '95', delta_fpath],
-            stdout=open(filtered_delta_fpath, 'w'), stderr=planta_err_f, env=myenv)
+        return_code = qutils.call_subprocess(
+            [bin_fpath('delta-filter'), '-i', '95', delta_fpath],
+            stdout=open(filtered_delta_fpath, 'w'),
+            stderr=planta_err_f,
+            indent='  ' + qutils.index_to_str(index))
+
+        if return_code != 0:
+            print >> planta_err_f, qutils.index_to_str(index) + 'Delta filter failed for', contigs_fpath, '\n'
+            return __fail(contigs_fpath, index)
+
         shutil.move(filtered_delta_fpath, delta_fpath)
 
         tmp_coords_fpath = coords_fpath + '_tmp'
-        subprocess.call(['show-coords', delta_fpath],
-            stdout=open(tmp_coords_fpath, 'w'), stderr=planta_err_f, env=myenv)
+
+        return_code = qutils.call_subprocess(
+            [bin_fpath('show-coords'), delta_fpath],
+            stdout=open(tmp_coords_fpath, 'w'),
+            stderr=planta_err_f,
+            indent='  ' + qutils.index_to_str(index))
+        if return_code != 0:
+            print >> planta_err_f, qutils.index_to_str(index) + 'Show-coords failed for', contigs_fpath, '\n'
+            return __fail(contigs_fpath, index)
 
         # removing waste lines from coords file
         coords_file = open(coords_fpath, 'w')
@@ -212,26 +266,32 @@ def plantakolya(cyclic, i, contigs_fpath, nucmer_fpath, myenv, output_dirpath, r
         tmp_coords_file.close()
 
         if not os.path.isfile(coords_fpath):
-            print >> planta_err_f, qutils.index_to_str(i) + 'Nucmer failed for', contigs_fpath + ':', coords_fpath, 'doesn\'t exist.'
-            logger.info('  ' + qutils.index_to_str(i) + 'Nucmer failed for ' + '\'' + assembly_name + '\'.')
+            print >> planta_err_f, qutils.index_to_str(index) + 'Nucmer failed for', contigs_fpath + ':', coords_fpath, 'doesn\'t exist.'
+            logger.info('  ' + qutils.index_to_str(index) + 'Nucmer failed for ' + '\'' + assembly_name + '\'.')
             return NucmerStatus.FAILED, {}, []
         if len(open(coords_fpath).readlines()[-1].split()) < 13:
-            print >> planta_err_f, qutils.index_to_str(i) + 'Nucmer: nothing aligned for', contigs_fpath
-            logger.info('  ' + qutils.index_to_str(i) + 'Nucmer: nothing aligned for ' + '\'' + assembly_name + '\'.')
+            print >> planta_err_f, qutils.index_to_str(index) + 'Nucmer: nothing aligned for', contigs_fpath
+            logger.info('  ' + qutils.index_to_str(index) + 'Nucmer: nothing aligned for ' + '\'' + assembly_name + '\'.')
             return NucmerStatus.NOT_ALIGNED, {}, []
 
         with open(coords_fpath) as coords_file:
             headless_coords_fpath = coords_fpath + '.headless'
-            headless_coords_file = open(headless_coords_fpath, 'w')
+            headless_coords_f = open(headless_coords_fpath, 'w')
             coords_file.readline()
             coords_file.readline()
-            headless_coords_file.write(coords_file.read())
-            headless_coords_file.close()
-            headless_coords_file = open(headless_coords_fpath)
-            subprocess.call(['show-snps', '-S', '-T', '-H', delta_fpath],
-                            stdin=headless_coords_file,
-                            stdout=open(show_snps_fpath, 'w'),
-                            stderr=planta_err_f, env=myenv)
+            headless_coords_f.write(coords_file.read())
+            headless_coords_f.close()
+            headless_coords_f = open(headless_coords_fpath)
+
+            return_code = qutils.call_subprocess(
+                [bin_fpath('show-snps'), '-S', '-T', '-H', delta_fpath],
+                stdin=headless_coords_f,
+                stdout=open(show_snps_fpath, 'w'),
+                stderr=planta_err_f,
+                indent='  ' + qutils.index_to_str(index))
+            if return_code != 0:
+                print >> planta_err_f, qutils.index_to_str(index) + 'Show-snps failed for', contigs_fpath, '\n'
+                return __fail(contigs_fpath, index)
 
         nucmer_successful_check_file = open(nucmer_successful_check_fpath, 'w')
         nucmer_successful_check_file.write("Min contig size:\n")
@@ -1195,7 +1255,7 @@ def plantakolya(cyclic, i, contigs_fpath, nucmer_fpath, myenv, output_dirpath, r
         fasta)
 
     alignment_tsv_fpath = os.path.join(output_dirpath, "alignments_" + assembly_name + '.tsv')
-    logger.info(alignment_tsv_fpath)
+    logger.debug('  ' + qutils.index_to_str(index) + 'Alignments: ' + qutils.relpath(alignment_tsv_fpath))
     alignment_tsv_f = open(alignment_tsv_fpath, 'w')
     for ref_name, aligns in ref_aligns.iteritems():
         alignment_tsv_f.write(ref_name)
@@ -1207,28 +1267,28 @@ def plantakolya(cyclic, i, contigs_fpath, nucmer_fpath, myenv, output_dirpath, r
     planta_out_f.close()
     planta_err_f.close()
     used_snps_file.close()
-    logger.info('  ' + qutils.index_to_str(i) + 'Analysis is finished.')
+    logger.info('  ' + qutils.index_to_str(index) + 'Analysis is finished.')
+    logger.debug('')
     if nothing_aligned:
         return NucmerStatus.NOT_ALIGNED, result, aligned_lengths
     else:
         return NucmerStatus.OK, result, aligned_lengths
 
 
-def plantakolya_process(cyclic, nucmer_output_dirpath, contigs_fpath,
-                        i, myenv, output_dirpath, ref_fpath):
+def plantakolya_process(cyclic, nucmer_output_dirpath, contigs_fpath, i, output_dirpath, ref_fpath):
     assembly_name = qutils.name_from_fpath(contigs_fpath)
 
     nucmer_fname = os.path.join(nucmer_output_dirpath, assembly_name)
     nucmer_is_ok, result, aligned_lengths = plantakolya(
-        cyclic, i, contigs_fpath, nucmer_fname, myenv, output_dirpath, ref_fpath)
+        cyclic, i, contigs_fpath, nucmer_fname, output_dirpath, ref_fpath)
 
     clear_files(contigs_fpath, nucmer_fname)
     return nucmer_is_ok, result, aligned_lengths
 
 
-def all_required_binaries_exist(mummer_path):
+def all_required_binaries_exist(mummer_dirpath):
     for required_binary in required_binaries:
-        if not os.path.isfile(os.path.join(mummer_path, required_binary)):
+        if not os.path.isfile(os.path.join(mummer_dirpath, required_binary)):
             return False
     return True
 
@@ -1240,28 +1300,18 @@ def do(reference, contigs_fpaths, cyclic, output_dir):
     logger.print_timestamp()
     logger.info('Running Contig analyzer...')
 
-    ########################################################################
-    if platform.system() == 'Darwin':
-        mummer_path = os.path.join(qconfig.LIBS_LOCATION, 'MUMmer3.23-osx')
-    else:
-        mummer_path = os.path.join(qconfig.LIBS_LOCATION, 'MUMmer3.23-linux')
-
-    ########################################################################
-    # for running our MUMmer
-    myenv = os.environ.copy()
-    myenv['PATH'] = mummer_path + ':' + myenv['PATH']
-
-    if not all_required_binaries_exist(mummer_path):
+    if not all_required_binaries_exist(mummer_dirpath):
         # making
-        logger.info("Compiling MUMmer...")
-        try:
-            subprocess.call(
-                ['make', '-C', mummer_path],
-                stdout=open(os.path.join(mummer_path, 'make.log'), 'w'), stderr=open(os.path.join(mummer_path, 'make.err'), 'w'))
-            if not all_required_binaries_exist(mummer_path):
-                raise
-        except:
-            logger.error("Failed to compile MUMmer (" + mummer_path + ")! Try to compile it manually!")
+        logger.info('Compiling MUMmer:')
+        return_code = qutils.call_subprocess(
+            ['make', '-C', mummer_dirpath],
+            stdout=open(os.path.join(mummer_dirpath, 'make.log'), 'w'),
+            stderr=open(os.path.join(mummer_dirpath, 'make.err'), 'w'),)
+
+        if return_code != 0 or all_required_binaries_exist(mummer_dirpath):
+            logger.error("Failed to compile MUMmer (" + mummer_dirpath + ")! "
+                         "Try to compile it manually. " + ("You can restart Quast with the --debug flag "
+                         "to see the command line." if not qconfig.debug else ""))
 
     nucmer_output_dir = os.path.join(output_dir, 'nucmer_output')
     if not os.path.isdir(nucmer_output_dir):
@@ -1270,7 +1320,7 @@ def do(reference, contigs_fpaths, cyclic, output_dir):
     n_jobs = min(len(contigs_fpaths), qconfig.max_threads)
     from joblib import Parallel, delayed
     statuses_results_lengths_tuples = Parallel(n_jobs=n_jobs)(delayed(plantakolya_process)(
-        cyclic, nucmer_output_dir, fname, i, myenv, output_dir, reference)
+        cyclic, nucmer_output_dir, fname, i, output_dir, reference)
              for i, fname in enumerate(contigs_fpaths))
 
     # unzipping
@@ -1348,11 +1398,11 @@ def do(reference, contigs_fpaths, cyclic, output_dir):
         report.add_field(reporting.Fields.UNALIGNED_FULL_CNTGS, unaligned_ctgs)
         report.add_field(reporting.Fields.UNALIGNED_FULL_LENGTH, unaligned_length)
 
-    for id, fname in enumerate(contigs_fpaths):
-        if statuses[id] == NucmerStatus.OK:
-            save_result(results[id])
-        elif statuses[id] == NucmerStatus.NOT_ALIGNED:
-            save_result_for_unaligned(results[id])
+    for index, fname in enumerate(contigs_fpaths):
+        if statuses[index] == NucmerStatus.OK:
+            save_result(results[index])
+        elif statuses[index] == NucmerStatus.NOT_ALIGNED:
+            save_result_for_unaligned(results[index])
 
     nucmer_statuses = dict(zip(contigs_fpaths, statuses))
     aligned_lengths_per_fpath = dict(zip(contigs_fpaths, aligned_lengths))

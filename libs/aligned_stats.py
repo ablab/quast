@@ -34,9 +34,6 @@ def do(ref_fpath, aligned_contigs_fpaths, all_pdf, draw_plots, output_dirpath, j
     for contigs_fpath in aligned_contigs_fpaths:
         assembly_lengths.append(sum(fastaparser.get_lengths_from_fastafile(contigs_fpath)))
 
-    ########################################################################
-    logger.info('  Calculating NA50 and NGA50...')
-
     import N50
     for i, (contigs_fpath, lens, assembly_len) in enumerate(
             itertools.izip(aligned_contigs_fpaths, aligned_lengths_lists, assembly_lengths)):
@@ -48,7 +45,7 @@ def do(ref_fpath, aligned_contigs_fpaths, all_pdf, draw_plots, output_dirpath, j
         lga50 = N50.LG50(lens, reference_length)
         la75 = N50.LG50(lens, assembly_len, 75)
         lga75 = N50.LG50(lens, reference_length, 75)
-        logger.info('    ' +
+        logger.info('  ' +
                     qutils.index_to_str(i) +
                     qutils.label_from_fpath(contigs_fpath) +
                  ', Largest alignment = ' + str(max(lens)) +
@@ -91,5 +88,5 @@ def do(ref_fpath, aligned_contigs_fpaths, all_pdf, draw_plots, output_dirpath, j
         plotter.Nx_plot(aligned_contigs_fpaths, aligned_lengths_lists, aligned_stats_dirpath + '/NAx_plot', 'NAx', assembly_lengths, all_pdf)
         plotter.Nx_plot(aligned_contigs_fpaths, aligned_lengths_lists, aligned_stats_dirpath + '/NGAx_plot', 'NGAx', [reference_length for i in range(len(aligned_contigs_fpaths))], all_pdf)
 
-    logger.info('  Done.')
+    logger.info('Done.')
     return report_dict

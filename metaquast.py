@@ -8,23 +8,23 @@
 
 from __future__ import with_statement
 
-RELEASE_MODE = False
-
-import getopt
+import sys
 import os
 import shutil
-import sys
+import getopt
 from libs import qconfig, qutils, fastaparser
 from libs.qutils import assert_file_exists
 
 from libs.log import get_logger
 logger = get_logger('metaquast')
-logger.set_up_console_handler(debug=not RELEASE_MODE)
+logger.set_up_console_handler()
 
-import quast
+quast_dirpath = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
 
 from site import addsitedir
-addsitedir(os.path.join(qconfig.LIBS_LOCATION, 'site_packages'))
+addsitedir(os.path.join(quast_dirpath, 'libs', 'site_packages'))
+
+import quast
 
 COMBINED_REF_FNAME = 'combined_reference.fasta'
 
@@ -150,7 +150,7 @@ def _start_quast_main(
 
     import quast
     reload(quast)
-    quast.logger.set_up_console_handler(debug=not RELEASE_MODE, indent_val=1)
+    quast.logger.set_up_console_handler(indent_val=1, qconfig.debug)
 
     logger.info_to_file('(logging to ' +
                         os.path.join(output_dirpath,
@@ -249,14 +249,12 @@ def _correct_refrences(ref_fpaths, corrected_dirpath):
 
 
 def main(args):
-    libs_dir = os.path.dirname(qconfig.LIBS_LOCATION)
-    if ' ' in libs_dir:
-        logger.error(
-            'QUAST does not support spaces in paths. \n' + \
-            'You are trying to run it from ' + str(libs_dir) + '\n' + \
-            'Please, put QUAST in a different directory, then try again.\n',
-            to_stderr=True,
-            exit_with_code=3)
+    if ' ' in quast_dirpath:
+        logger.error('QUAST does not support spaces in paths. \n'
+                     'You are trying to run it from ' + str(quast_dirpath) + '\n'
+                     'Please, put QUAST in a different directory, then try again.\n',
+                     to_stderr=True,
+                     exit_with_code=3)
 
     min_contig = qconfig.min_contig
     genes = ''
@@ -274,13 +272,18 @@ def main(args):
         sys.exit(2)
 
     for opt, arg in options:
-        if opt == '--test':
-            test_options = ['test_data/meta_contigs_1.fasta',
-                  'test_data/meta_contigs_2.fasta',
-                  '-R', 'test_data/meta_ref_1.fasta,test_data/meta_ref_2.fasta,test_data/meta_ref_3.fasta']
+        if opt in ('-d', '--debug'):
+            options.remove((opt, arg))
+            qconfig.debug = True
+            logger.set_up_console_handler(debug=True)
 
-            main(test_options)
-            sys.exit(0)
+        if opt == '--test':
+            options.remove((opt, arg))
+            options += [('-R', 'test_data/meta_ref_1.fasta,'
+                               'test_data/meta_ref_2.fasta,'
+                               'test_data/meta_ref_3.fasta')]
+            contigs_fpaths += ['test_data/meta_contigs_1.fasta',
+                               'test_data/meta_contigs_2.fasta']
 
     if not contigs_fpaths:
         usage()
@@ -297,7 +300,6 @@ def main(args):
     quast_py_args = args[:]
 
     for opt, arg in options:
-        # Yes, this is a code duplicating. Python's getopt is non well-thought!!
         if opt in ('-o', "--output-dir"):
             # Removing output dir arg in order to further
             # construct other quast calls from this options
@@ -335,9 +337,6 @@ def main(args):
 
         elif opt in ('-T', "--threads"):
             pass
-
-        elif opt in ('-d', "--debug"):
-            RELEASE_MODE = False
 
         elif opt in ('-l', '--labels'):
             quast_py_args.remove(opt)
@@ -405,7 +404,7 @@ def main(args):
     corrected_dirpath = os.path.join(output_dirpath, qconfig.corrected_dirname)
 
     logger.set_up_file_handler(output_dirpath)
-    logger.print_command_line(os.path.realpath(__file__), args)
+    logger.print_command_line([os.path.realpath(__file__)] + args, wrap_after=None)
     logger.start()
 
     # Where all pdfs will be saved

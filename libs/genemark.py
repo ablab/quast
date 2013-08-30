@@ -9,7 +9,6 @@ import logging
 import os
 import platform
 import shutil
-import subprocess
 import tempfile
 
 from libs import reporting, qconfig, qutils
@@ -28,13 +27,17 @@ def gc_content(sequence):
     return 100 * GC_count / ACGT_length
 
 
-def gmhmm_p(tool_exec, fasta_fpath, heu_fpath, out_fpath, err_file):
+def gmhmm_p(tool_exec, fasta_fpath, heu_fpath, out_fpath, err_file, index):
     """ Run GeneMark.hmm with this heuristic model (heu_dirpath)
         prompt> gmhmmp -m heu_11_45.mod sequence
         prompt> gm -m heu_11_45.mat sequence"""
-    param = [tool_exec, '-d', '-p', '0', '-m', heu_fpath, '-o', out_fpath, fasta_fpath]
-    subprocess.call(param, stdout=err_file, stderr=err_file)
-    return os.path.isfile(out_fpath)
+    return_code = qutils.call_subprocess(
+        [tool_exec, '-d', '-p', '0', '-m', heu_fpath, '-o', out_fpath, fasta_fpath],
+        stdout=err_file,
+        stderr=err_file,
+        indent='    ' + qutils.index_to_str(index))
+
+    return return_code == 0 and os.path.isfile(out_fpath)
 
 
 def install_genemark(tool_dirpath):
@@ -99,18 +102,18 @@ def add_genes_to_fasta(genes, fasta_fpath):
     write_fasta(fasta_fpath, inner())
 
 
-def gmhmm_p_everyGC(tool_dirpath, fasta_fpath, err_fpath):
+def gmhmm_p_everyGC(tool_dirpath, fasta_fpath, err_fpath, index):
     tool_exec_fpath = os.path.join(tool_dirpath, 'gmhmmp')
     heu_dirpath = os.path.join(tool_dirpath, 'heuristic_mod')
 
     tmp_dirpath = tempfile.mkdtemp()
-    for id, seq in read_fasta(fasta_fpath):
+    for ind, seq in read_fasta(fasta_fpath):
         gc = min(70, max(30, gc_content(seq)))
         gc = gc - gc % 5  # rounds to a divisible by 5
         current_fname = str(gc) + '.fasta'
         current_fpath = os.path.join(tmp_dirpath, current_fname)
         with open(current_fpath, 'a') as current_file:
-            current_file.write('>' + id + '\n' + seq + '\n')
+            current_file.write('>' + ind + '\n' + seq + '\n')
 
     genes = []
     _, _, fnames = os.walk(tmp_dirpath).next()
@@ -121,7 +124,9 @@ def gmhmm_p_everyGC(tool_dirpath, fasta_fpath, err_fpath):
         gc_str, ext = os.path.splitext(fname)
         heu_fpath = os.path.join(heu_dirpath, 'heu_11_' + gc_str + '.mod')
         with open(err_fpath, 'a') as err_file:
-            if gmhmm_p(tool_exec_fpath, sub_fasta_fpath, heu_fpath, out_fpath, err_file):
+            ok = gmhmm_p(tool_exec_fpath, sub_fasta_fpath, heu_fpath,
+                       out_fpath, err_file, index)
+            if ok:
                 genes.extend(parse_gmhmm_out(out_fpath))
 
     if not qconfig.debug:
@@ -130,31 +135,31 @@ def gmhmm_p_everyGC(tool_dirpath, fasta_fpath, err_fpath):
     return genes
 
 
-def gmhmm_p_metagenomic(tool_dirpath, fasta_fpath, err_fpath):
+def gmhmm_p_metagenomic(tool_dirpath, fasta_fpath, err_fpath, index):
     tool_exec_fpath = os.path.join(tool_dirpath, 'gmhmmp')
     heu_fpath = os.path.join(tool_dirpath, '../MetaGeneMark_v1.mod')
     gmhmm_fpath = fasta_fpath + '.gmhmm'
 
     with open(err_fpath, 'a') as err_file:
-        if gmhmm_p(tool_exec_fpath, fasta_fpath, heu_fpath, gmhmm_fpath, err_file):
+        if gmhmm_p(tool_exec_fpath, fasta_fpath, heu_fpath, gmhmm_fpath, err_file, index):
             return list(parse_gmhmm_out(gmhmm_fpath))
         else:
             return None
 
 
-def predict_genes(i, contigs_fpath, gene_lengths, out_dirpath, tool_dirpath, gmhmm_p_function):
+def predict_genes(index, contigs_fpath, gene_lengths, out_dirpath, tool_dirpath, gmhmm_p_function):
     assembly_name = qutils.name_from_fpath(contigs_fpath)
     assembly_label = qutils.label_from_fpath(contigs_fpath)
 
-    logger.info('  ' + qutils.index_to_str(i) + assembly_label)
+    logger.info('  ' + qutils.index_to_str(index) + assembly_label)
 
     err_fpath = os.path.join(out_dirpath, assembly_name + '_genemark.stderr')
 
-    genes = gmhmm_p_function(tool_dirpath, contigs_fpath, err_fpath)
+    genes = gmhmm_p_function(tool_dirpath, contigs_fpath, err_fpath, index)
 
     if not genes:
         unique_count = None
-        count = [None] * len(gene_lengths)
+        count = None  # [None] * len(gene_lengths)
 
     else:
         out_gff_fpath = os.path.join(out_dirpath, assembly_name + '_genes.gff')
@@ -166,8 +171,8 @@ def predict_genes(i, contigs_fpath, gene_lengths, out_dirpath, tool_dirpath, gmh
         unique_count = len(set([gene[4] for gene in genes]))
         total_count = len(genes)
 
-        logger.info('  ' + qutils.index_to_str(i) + '  Genes = ' + str(unique_count) + ' unique, ' + str(total_count) + ' total')
-        logger.info('  ' + qutils.index_to_str(i) + '  Predicted genes (GFF): ' + out_gff_fpath)
+        logger.info('  ' + qutils.index_to_str(index) + '  Genes = ' + str(unique_count) + ' unique, ' + str(total_count) + ' total')
+        logger.info('  ' + qutils.index_to_str(index) + '  Predicted genes (GFF): ' + out_gff_fpath)
 
     return unique_count, count
 
@@ -201,17 +206,17 @@ def do(fasta_fpaths, gene_lengths, out_dirpath, meta):
 
         n_jobs = min(len(fasta_fpaths), qconfig.max_threads)
         from joblib import Parallel, delayed
-        results = Parallel(n_jobs=n_jobs)(delayed(predict_genes)(i, fasta_fpath, gene_lengths,
-                                                                 out_dirpath, tool_dirpath, gmhmm_p_function)
-            for i, fasta_fpath in enumerate(fasta_fpaths))
+        results = Parallel(n_jobs=n_jobs)(delayed(predict_genes)(
+            index, fasta_fpath, gene_lengths, out_dirpath, tool_dirpath, gmhmm_p_function)
+            for index, fasta_fpath in enumerate(fasta_fpaths))
 
         # saving results
         for i, fasta_path in enumerate(fasta_fpaths):
             report = reporting.get(fasta_path)
             unique_count, count = results[i]
-            if unique_count:
+            if unique_count is not None:
                 report.add_field(reporting.Fields.PREDICTED_GENES_UNIQUE, unique_count)
-            if count:
+            if count is not None:
                 report.add_field(reporting.Fields.PREDICTED_GENES, count)
 
         logger.info('Done.')

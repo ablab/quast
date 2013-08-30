@@ -7,7 +7,6 @@
 from __future__ import with_statement
 import os
 import tempfile
-import subprocess
 import itertools
 import csv
 import shutil
@@ -35,22 +34,23 @@ def parse_gff(gff_path):
         r = csv.reader(
             itertools.ifilter(lambda l: not l.startswith("#"), gff_file),
             delimiter='\t')
-        for id, _source, type, start, end, score, strand, phase, extra in r:
+        for index, _source, type, start, end, score, strand, phase, extra in r:
             if type != 'mRNA':
                 continue  # We're only interested in genes here.
 
             attrs = dict(kv.split("=") for kv in extra.split(";"))
-            yield id, attrs.get('Name'), int(start), int(end), strand
+            yield index, attrs.get('Name'), int(start), int(end), strand
 
 
-def glimmerHMM(tool_dir, fasta_path, out_fpath, gene_lengths, err_path, tmp_dir):
+def glimmerHMM(tool_dir, fasta_fpath, out_fpath, gene_lengths, err_path, tmp_dir, index):
     def run(contig_path, tmp_path):
         with open(err_path, 'a') as err_file:
-            p = subprocess.call([tool_exec, contig_path,
-                                 '-d', trained_dir,
-                                 '-g', '-o', tmp_path],
-                stdout=err_file, stderr=err_file)
-            assert p is 0
+            return_code = qutils.call_subprocess(
+                [tool_exec, contig_path, '-d', trained_dir, '-g', '-o', tmp_path],
+                stdout=err_file,
+                stderr=err_file,
+                indent='  ' + qutils.index_to_str(index) + '  ')
+            return return_code
 
     tool_exec = os.path.join(tool_dir, 'glimmerhmm')
 
@@ -60,14 +60,20 @@ def glimmerHMM(tool_dir, fasta_path, out_fpath, gene_lengths, err_path, tmp_dir)
     contigs = {}
     gffs = []
     base_dir = tempfile.mkdtemp(dir=tmp_dir)
-    for id, seq in read_fasta(fasta_path):
-        contig_path = os.path.join(base_dir, id + '.fasta')
-        gff_path = os.path.join(base_dir, id + '.gff')
+    for ind, seq in read_fasta(fasta_fpath):
+        contig_path = os.path.join(base_dir, ind + '.fasta')
+        gff_path = os.path.join(base_dir, ind + '.gff')
 
-        write_fasta(contig_path, [(id, seq)])
-        run(contig_path, gff_path)
-        gffs.append(gff_path)
-        contigs[id] = seq
+        write_fasta(contig_path, [(ind, seq)])
+        if run(contig_path, gff_path) == 0:
+            gffs.append(gff_path)
+            contigs[ind] = seq
+
+    if not gffs:
+        logger.error(
+            'Glimmer failed running Glimmer for %s. ' + ('Run with the --debug option'
+            ' to see the command line.' if not qconfig.debug else '') % qutils.label_from_fpath(fasta_fpath))
+        return None, None, None, None
 
     out_gff_path = merge_gffs(gffs, out_fpath + '_genes.gff')
     #out_fasta_path = out_path + '_genes.fasta'
@@ -98,22 +104,25 @@ def glimmerHMM(tool_dir, fasta_path, out_fpath, gene_lengths, err_path, tmp_dir)
     return out_gff_path, len(unique), total, cnt
 
 
-def predict_genes(i, contigs_fpath, gene_lengths, out_dirpath, tool_dirpath, tmp_dirpath):
+def predict_genes(index, contigs_fpath, gene_lengths, out_dirpath, tool_dirpath, tmp_dirpath):
     assembly_name = qutils.name_from_fpath(contigs_fpath)
     assembly_label = qutils.label_from_fpath(contigs_fpath)
 
-    logger.info('  ' + qutils.index_to_str(i) + assembly_label)
+    logger.info('  ' + qutils.index_to_str(index) + assembly_label)
 
     out_fpath = os.path.join(out_dirpath, assembly_name + '_glimmer.stdout')
     err_fpath = os.path.join(out_dirpath, assembly_name + '_glimmer.stderr')
+
     #out_gff_path, out_fasta_path, unique, total, cnt = glimmerHMM(tool_dir,
     #    fasta_path, out_path, gene_lengths, err_path)
-    out_gff_path, unique, total, cnt = glimmerHMM(tool_dirpath,
-        contigs_fpath, out_fpath, gene_lengths, err_fpath, tmp_dirpath)
-    logger.info('  ' + qutils.index_to_str(i) + '  Genes = ' + str(unique) + ' unique, ' + str(total) + ' total')
-    logger.info('  ' + qutils.index_to_str(i) + '  Predicted genes (GFF): ' + out_gff_path)
 
-    logger.info('  ' + qutils.index_to_str(i) + 'Gene prediction is finished.')
+    out_gff_path, unique, total, cnt = glimmerHMM(tool_dirpath,
+        contigs_fpath, out_fpath, gene_lengths, err_fpath, tmp_dirpath, index)
+
+    if out_gff_path:
+        logger.info('  ' + qutils.index_to_str(index) + '  Genes = ' + str(unique) + ' unique, ' + str(total) + ' total')
+        logger.info('  ' + qutils.index_to_str(index) + '  Predicted genes (GFF): ' + out_gff_path)
+
     return unique, cnt
 
 
@@ -129,17 +138,16 @@ def do(contigs_fpaths, gene_lengths, out_dirpath):
     if not os.path.isfile(tool_exec_fpath):
         # making
         logger.info("Compiling GlimmerHMM...")
-        try:
-            subprocess.call(
-                ['make', '-C', tool_src_dirpath],
-                stdout=open(os.path.join(tool_src_dirpath, 'make.log'), 'w'),
-                stderr=open(os.path.join(tool_src_dirpath, 'make.err'), 'w'))
-            if not os.path.isfile(tool_exec_fpath):
-                raise
-        except:
+        return_code = qutils.call_subprocess(
+            ['make', '-C', tool_src_dirpath],
+            stdout=open(os.path.join(tool_src_dirpath, 'make.log'), 'w'),
+            stderr=open(os.path.join(tool_src_dirpath, 'make.err'), 'w'),
+            indent='    ')
+        if return_code != 0 or not os.path.isfile(tool_exec_fpath):
             logger.error("Failed to compile GlimmerHMM (" + tool_src_dirpath +
                          ")! Try to compile it manually or set --disable-gene-finding "
-                         "option!")
+                         "option. Use --debug option to see runned command lines.")
+            return
 
     if not os.path.isdir(out_dirpath):
         os.makedirs(out_dirpath)
@@ -149,17 +157,19 @@ def do(contigs_fpaths, gene_lengths, out_dirpath):
     n_jobs = min(len(contigs_fpaths), qconfig.max_threads)
     from joblib import Parallel, delayed
     results = Parallel(n_jobs=n_jobs)(delayed(predict_genes)(
-        i, contigs_fpath, gene_lengths, out_dirpath, tool_dirpath, tmp_dirpath)
-        for i, contigs_fpath in enumerate(contigs_fpaths))
+        index, contigs_fpath, gene_lengths, out_dirpath, tool_dirpath, tmp_dirpath)
+        for index, contigs_fpath in enumerate(contigs_fpaths))
 
     # saving results
     for i, contigs_fpath in enumerate(contigs_fpaths):
         report = reporting.get(contigs_fpath)
         unique, cnt = results[i]
-        report.add_field(reporting.Fields.PREDICTED_GENES_UNIQUE, unique)
-        report.add_field(reporting.Fields.PREDICTED_GENES, cnt)
+        if unique is not None:
+            report.add_field(reporting.Fields.PREDICTED_GENES_UNIQUE, unique)
+        if cnt is not None:
+            report.add_field(reporting.Fields.PREDICTED_GENES, cnt)
 
     if not qconfig.debug:
         shutil.rmtree(tmp_dirpath)
 
-    logger.info('  Done.')
+    logger.info('Done.')

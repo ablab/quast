@@ -34,7 +34,7 @@ class QLogger(object):
         self._logger = logging.getLogger(name)
         self._logger.setLevel(logging.DEBUG)
 
-    def set_up_console_handler(self, debug=True, indent_val=0):
+    def set_up_console_handler(self, indent_val=0, debug=False):
         self._indent_val = indent_val
 
         for handler in self._logger.handlers:
@@ -45,6 +45,10 @@ class QLogger(object):
         console_handler.setFormatter(logging.Formatter(indent_val * '  ' + '%(message)s'))
         console_handler.setLevel(logging.DEBUG if debug else logging.INFO)
         self._logger.addHandler(console_handler)
+
+    def set_up_debug_level(self):
+        for handler in self._logger.handlers:
+            handler.setLevel(logging.DEBUG)
 
     def set_up_file_handler(self, output_dirpath):
         for handler in self._logger.handlers:
@@ -136,12 +140,31 @@ class QLogger(object):
 
         exit(exit_code)
 
-    def print_command_line(self, program_name, args):
+    def print_command_line(self, args, indent='',
+                           wrap_after=80, only_if_debug=False):
+        text = ''
+        line = indent
+
         for i, arg in enumerate(args):
             if ' ' in arg or '\t' in arg:
                 args[i] = "'" + arg + "'"
 
-        self.info(' '.join([program_name] + args))
+            line += arg
+
+            if i == len(args) - 1:
+                text += line + '\n'
+
+            elif wrap_after is not None and len(line) > wrap_after:
+                text += line + ' \\\n'
+                line = ' ' * len(indent)
+
+            else:
+                line += ' '
+
+        if only_if_debug:
+            self.debug(text)
+        else:
+            self.info(text)
 
     def print_timestamp(self, message=''):
         now = datetime.now()
@@ -183,5 +206,3 @@ class QLogger(object):
             self._logger.info("  CPUs number: " + str(multiprocessing.cpu_count()))
         except:
             self._logger.info("  Problem occurred when getting system information")
-
-

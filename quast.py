@@ -6,25 +6,23 @@
 # See file LICENSE for details.
 ############################################################################
 
-RELEASE_MODE = False
-
 import sys
 import os
 import shutil
-import re
 import getopt
-from site import addsitedir
-from libs import qconfig, qutils
+import re
+from libs import qconfig, qutils, fastaparser
+from libs.qutils import assert_file_exists
+from libs.html_saver import json_saver
 
 from libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
-logger.set_up_console_handler(debug=not RELEASE_MODE)
+logger.set_up_console_handler()
 
-from libs.qutils import assert_file_exists
-from libs import fastaparser
-from libs.html_saver import json_saver
+quast_dirpath = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
 
-addsitedir(os.path.join(qconfig.LIBS_LOCATION, 'site_packages'))
+from site import addsitedir
+addsitedir(os.path.join(quast_dirpath, 'libs', 'site_packages'))
 
 
 def _usage():
@@ -35,7 +33,7 @@ def _usage():
     print >> sys.stderr, 'Usage: python', sys.argv[0], '[options] <files_with_contigs>'
     print >> sys.stderr, ""
 
-    if RELEASE_MODE:
+    if not qconfig.debug:
         print >> sys.stderr, "Options:"
         print >> sys.stderr, "-o  --output-dir  <dirname>   Directory to store all result files [default: quast_results/results_<datetime>]"
         print >> sys.stderr, "-R                <filename>  Reference genome file"
@@ -102,7 +100,6 @@ def _usage():
         print >> sys.stderr, "-d  --debug               Run in a debug mode"
         print >> sys.stderr, "    --test                Run QUAST on the data from the test_data folder, output to test_output"
         print >> sys.stderr, "-h  --help                Print this message"
-
 
 
 def _set_up_output_dir(output_dirpath, json_outputpath,
@@ -417,17 +414,13 @@ def process_labels(contigs_fpaths, labels, all_labels_from_dirs):
 
 
 def main(args):
-    quast_dirpath = os.path.dirname(qconfig.LIBS_LOCATION)
     if ' ' in quast_dirpath:
-        logger.error('QUAST does not support spaces in paths. \n' + \
-              'You are trying to run it from ' + str(quast_dirpath) + '\n' + \
-              'Please, put QUAST in a different directory, then try again.\n',
-              to_stderr=True,
-              exit_with_code=3)
+        logger.error('QUAST does not support spaces in paths. \n'
+                     'You are trying to run it from ' + str(quast_dirpath) + '\n'
+                     'Please, put QUAST in a different directory, then try again.\n',
+                     to_stderr=True,
+                     exit_with_code=3)
 
-    ######################
-    ### ARGS
-    ######################
     reload(qconfig)
 
     try:
@@ -438,14 +431,19 @@ def main(args):
         _usage()
         sys.exit(2)
 
-    for opt, arg in options:
+    for opt, arg in options[:]:
+        if opt in ('-d', '--debug'):
+            options.remove((opt, arg))
+            qconfig.debug = True
+            logger.set_up_console_handler(debug=True)
+
         if opt == '--test':
-            main([os.path.join(quast_dirpath, 'test_data/contigs_1.fasta'),
-                  os.path.join(quast_dirpath, 'test_data/contigs_2.fasta'),
-                  '-R', os.path.join(quast_dirpath, 'test_data/reference.fasta.gz'),
-                  '-O', os.path.join(quast_dirpath, 'test_data/operons.gff'),
-                  '-G', os.path.join(quast_dirpath, 'test_data/genes.gff')])
-            sys.exit(0)
+            options.remove((opt, arg))
+            options += [('-R', 'test_data/reference.fasta.gz'),
+                        ('-O', 'test_data/operons.gff'),
+                        ('-G', 'test_data/genes.gff')]
+            contigs_fpaths += ['test_data/contigs_1.fasta',
+                               'test_data/contigs_2.fasta']
 
     if not contigs_fpaths:
         _usage()
@@ -457,8 +455,8 @@ def main(args):
     labels = None
     all_labels_from_dirs = False
 
+    # Yes, this is a code duplicating. But OptionParser is deprecated since version 2.7.
     for opt, arg in options:
-        # Yes, this is a code duplicating. But OptionParser is deprecated since version 2.7.
         if opt in ('-o', "--output-dir"):
             output_dirpath = os.path.abspath(arg)
             qconfig.make_latest_symlink = False
@@ -531,10 +529,6 @@ def main(args):
         elif opt in ('-m', '--meta'):
             qconfig.meta = True
 
-        elif opt in ('-d', '--debug'):
-            qconfig.debug = True
-            RELEASE_MODE = False
-
         elif opt in ('-l', '--labels'):
             labels = parse_labels(arg, contigs_fpaths)
 
@@ -559,7 +553,7 @@ def main(args):
     corrected_dirpath = os.path.join(output_dirpath, qconfig.corrected_dirname)
 
     logger.set_up_file_handler(output_dirpath)
-    logger.print_command_line(os.path.realpath(__file__), args)
+    logger.print_command_line([os.path.realpath(__file__)] + args, wrap_after=None)
     logger.start()
 
     if existing_alignments:
@@ -745,8 +739,8 @@ def main(args):
     if contig_alignment_plot_fpath:
         logger.info('  Contig alignment plot: %s' % contig_alignment_plot_fpath)
 
-    # if RELEASE_MODE:
-    _cleanup(corrected_dirpath)
+    if not qconfig.debug:
+        _cleanup(corrected_dirpath)
 
     logger.finish_up()
 

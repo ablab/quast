@@ -257,8 +257,8 @@ def main(args):
                      exit_with_code=3)
 
     min_contig = qconfig.min_contig
-    genes = ''
-    operons = ''
+    genes = []
+    operons = []
     draw_plots = qconfig.draw_plots
     html_report = qconfig.html_report
     make_latest_symlink = True
@@ -311,11 +311,11 @@ def main(args):
 
         elif opt in ('-G', "--genes"):
             assert_file_exists(arg, 'genes')
-            genes = arg
+            genes += arg
 
         elif opt in ('-O', "--operons"):
             assert_file_exists(arg, 'operons')
-            operons = arg
+            operons += arg
 
         elif opt in ('-R', "--reference"):
             # Removing reference args in order to further

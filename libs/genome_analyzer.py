@@ -70,7 +70,7 @@ def chromosomes_names_dict(feature, regions, chr_names):
 
 
 def do(ref_fpath, aligned_contigs_fpaths, all_pdf, draw_plots, output_dirpath, json_output_dirpath,
-       genes_fpath, operons_fpath, detailed_contigs_reports_dirpath, genome_stats_dirpath):
+       genes_fpaths, operons_fpaths, detailed_contigs_reports_dirpath, genome_stats_dirpath):
 
     nucmer_path_dirpath = os.path.join(detailed_contigs_reports_dirpath, 'nucmer_output')
 
@@ -109,27 +109,29 @@ def do(ref_fpath, aligned_contigs_fpaths, all_pdf, draw_plots, output_dirpath, j
 
     # reading genes and operons
     class FeatureContainer:
-        def __init__(self, kind='', fpath=''):
+        def __init__(self, fpaths, kind=''):
             self.kind = kind  # 'gene' or 'operon'
-            self.fpath = fpath
+            self.fpaths = fpaths
             self.region_list = []
             self.found_list = []
             self.full_found = []
             self.chr_names_dict = {}
 
-    genes_container = FeatureContainer('gene', genes_fpath)
-    operons_container = FeatureContainer('operon', operons_fpath)
-
+    genes_container = FeatureContainer(genes_fpaths, 'gene')
+    operons_container = FeatureContainer(operons_fpaths, 'operon')
     for container in [genes_container, operons_container]:
-        container.region_list = genes_parser.get_genes_from_file(container.fpath, container.kind)
+        if not container.fpaths:
+            logger.notice('No file with ' + container.kind + 's provided. '
+                          'Use the -' + container.kind[0].capitalize() + ' option '
+                          'if you want to specify it.', indent='  ')
+            continue
+
+        for fpath in container.fpaths:
+            container.region_list += genes_parser.get_genes_from_file(fpath, container.kind)
 
         if len(container.region_list) == 0:
-            if container.fpath:
-                logger.warning('No ' + container.kind + 's were loaded.', indent='  ')
-                res_file.write(container.kind + 's loaded: ' + 'None' + '\n')
-            else:
-                logger.notice('Annotated ' + container.kind + 's file was not provided. Use -'
-                              + container.kind[0].capitalize() + ' option to specify it.', indent='  ')
+            logger.warning('No ' + container.kind + 's were loaded.', indent='  ')
+            res_file.write(container.kind + 's loaded: ' + 'None' + '\n')
         else:
             logger.info('  Loaded ' + str(len(container.region_list)) + ' ' + container.kind + 's')
             res_file.write(container.kind + 's loaded: ' + str(len(container.region_list)) + '\n')
@@ -143,8 +145,10 @@ def do(ref_fpath, aligned_contigs_fpaths, all_pdf, draw_plots, output_dirpath, j
 
     for contigs_fpath in aligned_contigs_fpaths:
         report = reporting.get(contigs_fpath)
-        report.add_field(reporting.Fields.REF_GENES, len(genes_container.region_list))
-        report.add_field(reporting.Fields.REF_OPERONS, len(operons_container.region_list))
+        if genes_container.fpaths:
+            report.add_field(reporting.Fields.REF_GENES, len(genes_container.region_list))
+        if operons_container.fpaths:
+            report.add_field(reporting.Fields.REF_OPERONS, len(operons_container.region_list))
 
     # header
     res_file.write('\n\n')

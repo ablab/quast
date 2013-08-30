@@ -455,6 +455,10 @@ def main(args):
     labels = None
     all_labels_from_dirs = False
 
+    ref_fpath = ''
+    genes_fpaths = []
+    operons_fpaths = []
+
     # Yes, this is a code duplicating. But OptionParser is deprecated since version 2.7.
     for opt, arg in options:
         if opt in ('-o', "--output-dir"):
@@ -462,13 +466,13 @@ def main(args):
             qconfig.make_latest_symlink = False
 
         elif opt in ('-G', "--genes"):
-            qconfig.genes = assert_file_exists(arg, 'genes')
+            genes_fpaths.append(assert_file_exists(arg, 'genes'))
 
         elif opt in ('-O', "--operons"):
-            qconfig.operons = assert_file_exists(arg, 'operons')
+            operons_fpaths.append(assert_file_exists(arg, 'operons'))
 
         elif opt in ('-R', "--reference"):
-            qconfig.ref_fpath = assert_file_exists(arg, 'reference')
+            ref_fpath = assert_file_exists(arg, 'reference')
 
         elif opt in ('-t', "--contig-thresholds"):
             qconfig.contig_thresholds = arg
@@ -592,10 +596,10 @@ def main(args):
     os.mkdir(corrected_dirpath)
 
     # PROCESSING REFERENCE
-    if qconfig.ref_fpath:
+    if ref_fpath:
         logger.info()
         logger.info('Reference:')
-        ref_fpath = _correct_reference(qconfig.ref_fpath, corrected_dirpath)
+        ref_fpath = _correct_reference(ref_fpath, corrected_dirpath)
     else:
         ref_fpath = ''
 
@@ -674,7 +678,7 @@ def main(args):
         from libs import genome_analyzer
         genome_size = genome_analyzer.do(
             ref_fpath, aligned_contigs_fpaths, all_pdf_file, qconfig.draw_plots, output_dirpath, json_output_dirpath,
-            qconfig.genes, qconfig.operons, detailed_contigs_reports_dirpath, os.path.join(output_dirpath, 'genome_stats'))
+            genes_fpaths, operons_fpaths, detailed_contigs_reports_dirpath, os.path.join(output_dirpath, 'genome_stats'))
 
         if qconfig.draw_plots:
             ########################################################################

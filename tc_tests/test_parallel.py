@@ -26,6 +26,6 @@ run_quast(name, contigs=contigs, params='-G ' + genes_1k + ' -O ' + operons_1k +
 check_report_files(name)
 assert_report_header(name, contigs=contigs)
 assert_metric(name, 'N50', ['1000', '760'])
-assert_metric(name, 'NGA50', ['1000', '1360'])
+assert_metric(name, 'NGA50', ['1000', '760'])
 assert_metric(name, '# genes', ['1 + 1 part', '1 + 1 part'])
 assert_metric(name, '# operons', ['1 + 0 part', '1 + 0 part'])

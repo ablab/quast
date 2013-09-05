@@ -7,7 +7,8 @@ import os
 
 sys.path.append(os.path.join(os.path.abspath(sys.path[0]), '../libs'))
 
-import qconfig, qutils
+#TODO: make the following two lines work!
+import qutils
 import fastaparser
 
 def get_corr_name(name):
@@ -16,8 +17,8 @@ def get_corr_name(name):
 
 # MAIN
 if len(sys.argv) != 3:
-	print("Usage: " + sys.argv[0] + " <input fasta> <contig id or file with list of contig ids>")	
-	sys.exit()
+    print("Usage: " + sys.argv[0] + " <input fasta> <contig id or file with list of contig ids>")
+    sys.exit()
 
 if os.path.isfile(sys.argv[2]):
     list_of_ids = []

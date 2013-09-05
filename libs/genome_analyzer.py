@@ -219,6 +219,8 @@ def do(ref_fpath, aligned_contigs_fpaths, all_pdf, draw_plots, output_dirpath, j
                 break
             s1 = int(line.split('|')[0].split()[0])
             e1 = int(line.split('|')[0].split()[1])
+            s2 = int(line.split('|')[1].split()[0])
+            e2 = int(line.split('|')[1].split()[1])
             contig_name = line.split()[12].strip()
             chr_name = line.split()[11].strip()
 
@@ -228,14 +230,15 @@ def do(ref_fpath, aligned_contigs_fpaths, all_pdf, draw_plots, output_dirpath, j
                 continue
 
             aligned_blocks_by_contig_name[contig_name].append(AlignedBlock(seqname=chr_name, start=s1, end=e1))
-            if s1 <= e1:
-                for i in range(s1, e1 + 1):
-                    genome_mapping[chr_name][i] = 1
-            else:  # circular genome, contig starts on the end of a chromosome and ends in the beginning
+            if s2 == 0 and e2 == 0:  # special case: circular genome, contig starts on the end of a chromosome and ends in the beginning
                 for i in range(s1, len(genome_mapping[chr_name])):
                     genome_mapping[chr_name][i] = 1
                 for i in range(1, e1 + 1):
                     genome_mapping[chr_name][i] = 1
+            else: #if s1 <= e1:
+                for i in range(s1, e1 + 1):
+                    genome_mapping[chr_name][i] = 1
+
         coordfile.close()
 
         # counting genome coverage and gaps number

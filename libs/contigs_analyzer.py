@@ -147,7 +147,9 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
     maxun = 10
     epsilon = 0.99
     smgap = 1000
-    ctg_ref_similarity = 0.1 # for cyclic reference and cyclic contigs
+    # for cyclic reference and cyclic contig!
+    ctg_ref_similarity_at = 0.1   # absolute threshold
+    ctg_ref_similarity_rt = smgap # relative threshold
     umt = 0.5  # threshold for misassembled contigs with aligned less than $umt * 100% (Unaligned Missassembled Threshold)
     nucmer_successful_check_fpath = nucmer_fpath + '.sf'
     coords_fpath = nucmer_fpath + '.coords'
@@ -810,8 +812,9 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
 
                     # for cyclic contigs
                     cyclic_ctg_len = None
-                    if cyclic and (float(max(reg_lens[sorted_aligns[0].ref], ctg_len)) /
-                                   float(min(reg_lens[sorted_aligns[0].ref], ctg_len)) <= 1.0 + ctg_ref_similarity):
+                    if cyclic and ((float(max(reg_lens[sorted_aligns[0].ref], ctg_len)) /
+                                   float(min(reg_lens[sorted_aligns[0].ref], ctg_len)) <= 1.0 + ctg_ref_similarity_at)
+                                   or abs(reg_lens[sorted_aligns[0].ref] - ctg_len) <= ctg_ref_similarity_rt):
                         cyclic_ctg_len = ctg_len
 
                     # computing cyclic references

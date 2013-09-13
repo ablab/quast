@@ -694,13 +694,6 @@ def main(args):
                 similar=True,
                 all_pdf_file=all_pdf_file)
 
-    # def add_empty_predicted_genes_fields():
-    #     # TODO: make it in a more appropriate way (don't output predicted genes if annotations are provided)
-    #     for id, contigs_fpath in enumerate(contigs_fpaths):
-    #         report = reporting.get(contigs_fpath)
-    #         report.add_field(reporting.Fields.PREDICTED_GENES_UNIQUE, "")
-    #         report.add_field(reporting.Fields.PREDICTED_GENES, [""] * len(qconfig.genes_lengths))
-
     if qconfig.gene_finding:
         if qconfig.prokaryote or qconfig.meta:
             ########################################################################
@@ -718,7 +711,6 @@ def main(args):
     else:
         logger.info("")
         logger.notice("Genes are not predicted by default. Use --gene-finding option to enable it.")
-        # add_empty_predicted_genes_fields()
 
     ########################################################################
     ### TOTAL REPORT
@@ -758,8 +750,10 @@ def _cleanup(corrected_dirpath):
 
 
 if __name__ == '__main__':
-    # try:
-    return_code = main(sys.argv[1:])
-    exit(return_code)
-    # except Exception, e:
-    #     logger.exception(e)
+    try:
+        return_code = main(sys.argv[1:])
+        exit(return_code)
+    except Exception, e:
+        logger.exception(e)
+        logger.error('exception caught!')
+

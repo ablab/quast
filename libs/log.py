@@ -77,6 +77,7 @@ class QLogger(object):
 
         finish_time = self.print_timestamp('Finished: ')
         self._logger.info('Elapsed time: ' + str(finish_time - self._start_time))
+        self._logger.info('\nThank you for using QUAST!')
 
         for handler in self._logger.handlers:
             self._logger.removeHandler(handler)
@@ -117,6 +118,8 @@ class QLogger(object):
 
         if message:
             msg = indent + 'ERROR! ' + str(message)
+            msg += "\n\nIn case you have troubles running QUAST, you can write to quast.support@bioinf.spbau.ru\n"
+            msg += "Please provide us with quast.log file from the output directory."
         else:
             msg = ''
 
@@ -125,20 +128,19 @@ class QLogger(object):
         else:
             self._logger.error('')
             self._logger.error(msg)
-            self._logger.error('')
 
         if exit_with_code:
             exit(exit_with_code)
 
-    def exception(self, e, exit_code=1):
+    def exception(self, e, exit_code=0):
         if self._logger.handlers:
             self._logger.error('')
             self._logger.exception(e)
-
         else:
             print >> sys.stderr, str(e)
 
-        exit(exit_code)
+        if exit_code:
+            exit(exit_code)
 
     def print_command_line(self, args, indent='',
                            wrap_after=80, only_if_debug=False):

@@ -3,7 +3,7 @@
   "title": "QUAST",
   "summary": "Quality Assessment Tool for Genome Assemblies",
   "dxapi": "1.0.0",
-  "version": "2.2.0",
+  "version": "1.0.4",
   "inputSpec": [
     {
       "name": "contigs",
@@ -72,6 +72,7 @@
     "interpreter": "python2.7",
     "file": "src/quast.py"
   },
+  "categories" : ["Assembly"],
   "details": {
     "contactURL": "http://bioinf.spbau.ru/quast",
     "contactEmail": "quast.support@bioinf.spbau.ru",

@@ -5,11 +5,10 @@
 import sys
 import os
 
-sys.path.append(os.path.join(os.path.abspath(sys.path[0]), '../libs'))
-
-#TODO: make the following two lines work!
-import qutils
-import fastaparser
+sys.path.append(os.path.join(os.path.abspath(sys.path[0]), '../'))
+import libs
+from libs import qutils
+from libs import fastaparser
 
 def get_corr_name(name):
     return qutils.correct_name(name)

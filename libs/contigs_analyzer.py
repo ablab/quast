@@ -1119,6 +1119,11 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
                     #Mark as covered
                     region_covered += 1
 
+                    if current.s2 < current.e2:
+                        pos_strand = True
+                    else:
+                        pos_strand = False
+
                     #If there is a misassembly, increment count and contig length
                     #if (exists $ref_features{$ref}[$i] && $ref_features{$ref}[$i] eq "M") {
                     #	$region_misassemblies++;
@@ -1129,7 +1134,7 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
                     if (ref in snps) and (current.contig in snps[ref]) and (i in snps[ref][current.contig]):
                         cur_snps = snps[ref][current.contig][i]
                         # sorting by pos in contig
-                        if current.s2 < current.e2:
+                        if pos_strand:
                             cur_snps = sorted(cur_snps, key=lambda x: x.ctg_pos)
                         else: # for reverse complement
                             cur_snps = sorted(cur_snps, key=lambda x: x.ctg_pos, reverse=True)
@@ -1162,12 +1167,12 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
                             #If SNP is an insertion, record
                             if snp == 'I':
                                 region_insertion += 1
-                                if current.s2 < current.e2: contig_estimate += 1
+                                if pos_strand: contig_estimate += 1
                                 else: contig_estimate -= 1
                             #If SNP is a deletion, record
                             if snp == 'D':
                                 region_deletion += 1
-                                if current.s2 < current.e2: contig_estimate -= 1
+                                if pos_strand: contig_estimate -= 1
                                 else: contig_estimate += 1
                             #If SNP is a mismatch, record
                             if snp == 'S':
@@ -1176,7 +1181,8 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
                             if cur_snp.type == 'D' or cur_snp.type == 'I':
                                 if prev_snp and (prev_snp.ref == cur_snp.ref) and (prev_snp.ctg == cur_snp.ctg) and \
                                     ((cur_snp.type == 'D' and (prev_snp.ref_pos == cur_snp.ref_pos - 1) and (prev_snp.ctg_pos == cur_snp.ctg_pos)) or
-                                    (cur_snp.type == 'I' and (prev_snp.ctg_pos == cur_snp.ctg_pos - 1) and (prev_snp.ref_pos == cur_snp.ref_pos))):
+                                     (cur_snp.type == 'I' and ((pos_strand and (prev_snp.ctg_pos == cur_snp.ctg_pos - 1)) or
+                                         (not pos_strand and (prev_snp.ctg_pos == cur_snp.ctg_pos + 1))) and (prev_snp.ref_pos == cur_snp.ref_pos))):
                                     cur_indel += 1
                                 else:
                                     if cur_indel:
@@ -1184,7 +1190,7 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
                                     cur_indel = 1
                                 prev_snp = cur_snp
 
-                    if current.s2 < current.e2: contig_estimate += 1
+                    if pos_strand: contig_estimate += 1
                     else: contig_estimate -= 1
 
                 #Record Ns in current alignment

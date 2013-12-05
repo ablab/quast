@@ -344,7 +344,7 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
                 distance = cyclic_ctg_len - align1_e + align2_s - 1
         return distance
 
-    def process_misassembled_contig(aligned_lenths, i_start, i_finish, contig_len, prev, cur_aligned_length, misassembly_internal_overlap,
+    def process_misassembled_contig(aligned_lengths, i_start, i_finish, contig_len, prev, cur_aligned_length, misassembly_internal_overlap,
                                     sorted_aligns, is_1st_chimeric_half, misassembled_contigs, ref_aligns, ref_features,
                                     cyclic_ctg_len=None, is_cyclic_contig_junction=False, junction_indexes=None):
         region_misassemblies = []
@@ -382,7 +382,7 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
             if sorted_aligns[i].ref != sorted_aligns[i+1].ref or abs(inconsistency) > smgap or (strand1 != strand2):
                 if not is_cyclic_contig_junction:
                     print >> coords_filtered_file, str(prev)
-                    aligned_lenths.append(cur_aligned_length)
+                    aligned_lengths.append(cur_aligned_length)
                     if junction_indexes:
                         if junction_indexes[0] is None:
                             junction_indexes[0] = len(aligned_lengths)
@@ -435,12 +435,14 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
 
                 if is_cyclic_contig_junction:
                     if not qconfig.strict_NA and (junction_indexes[0] != junction_indexes[1]):
-                        updated_aligned_length = aligned_lenths[junction_indexes[0] - 1] + aligned_lenths[junction_indexes[1] - 1]
-                        del aligned_lenths[junction_indexes[1] - 1]
-                        del aligned_lenths[junction_indexes[0] - 1]
-                        aligned_lenths.append(updated_aligned_length)
+                        updated_aligned_length = aligned_lengths[junction_indexes[0] - 1] + aligned_lengths[junction_indexes[1] - 1]
+                        del aligned_lengths[junction_indexes[1] - 1]
+                        del aligned_lengths[junction_indexes[0] - 1]
+                        aligned_lengths.append(updated_aligned_length)
+                    if distance_on_contig < 0: # overlaps on the junction point
+                        aligned_lengths[-1] -= (-distance_on_contig)
                 elif qconfig.strict_NA:
-                    aligned_lenths.append(cur_aligned_length)
+                    aligned_lengths.append(cur_aligned_length)
                     if junction_indexes:
                         if junction_indexes[0] is None:
                             junction_indexes[0] = len(aligned_lengths)
@@ -450,7 +452,7 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
 
         if not is_1st_chimeric_half and not is_cyclic_contig_junction:
             print >> coords_filtered_file, str(prev)
-            aligned_lenths.append(cur_aligned_length)
+            aligned_lengths.append(cur_aligned_length)
             if junction_indexes:
                 if junction_indexes[0] is None:
                     junction_indexes[0] = len(aligned_lengths)

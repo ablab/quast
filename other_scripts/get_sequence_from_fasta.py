@@ -24,7 +24,7 @@ for tup in fastaparser.read_fasta(inp):
         cur_end = len(tup[1])
     else:
         cur_end = min(end, len(tup[1]))    
-    print (tup[0] + "_cropped_" + str(cur_start) + "_" + str(cur_end))
+    print (">" + tup[0] + "_cropped_" + str(cur_start) + "_" + str(cur_end))
     if reverse:
         print (fastaparser.rev_comp(tup[1][cur_start - 1 : cur_end]))
     else:

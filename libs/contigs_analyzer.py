@@ -355,7 +355,11 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
             distance_on_reference = sorted_aligns[i+1].s1 - sorted_aligns[i].e1 - 1
 
             # update misassembly_internal_overlap
-            misassembly_internal_overlap += (-distance_on_contig if distance_on_contig < 0 else 0)
+            if distance_on_contig < 0:
+                if distance_on_reference >= 0:
+                    misassembly_internal_overlap += (-distance_on_contig)
+                elif (-distance_on_reference) < (-distance_on_contig):
+                    misassembly_internal_overlap += (distance_on_reference - distance_on_contig)
 
             #Check strands
             strand1 = (sorted_aligns[i].s2 < sorted_aligns[i].e2)

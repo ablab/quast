@@ -43,7 +43,7 @@ AR   := $(filter /%,$(shell /bin/sh -c 'type ar'))
 
 CXXFLAGS = -O3
 CFLAGS = -O3
-LDFLAGS  = -static
+LDFLAGS =
 
 FLATS = ACKNOWLEDGEMENTS COPYRIGHT INSTALL LICENSE Makefile README ChangeLog
 
@@ -59,7 +59,8 @@ export BIN_DIR AUX_BIN_DIR CXX CC CFLAGS CXXFLAGS LDFLAGS
 .PHONY: all check clean dist scripts uninstall
 
 
-all: kurtz tigr scripts	
+all: kurtz tigr scripts
+
 
 check:
 ifndef TOP_DIR
@@ -103,11 +104,11 @@ dist:
 	rm -rf $(DISTDIR)
 
 
-install: all
+install: all	
 
 
 kurtz:
-	mkdir -p $(AUX_BIN_DIR)    
+	mkdir -p $(AUX_BIN_DIR)
 	cd $(KURTZ_SRC_DIR); $(MAKE) mummer
 
 

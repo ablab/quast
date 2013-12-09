@@ -38,7 +38,6 @@ KURTZ_SRC_DIR := $(TOP_DIR)/src/kurtz
 CC   := $(filter /%,$(shell /bin/sh -c 'type gcc'))
 CXX  := $(filter /%,$(shell /bin/sh -c 'type g++'))
 SED  := $(filter /%,$(shell /bin/sh -c 'type sed'))
-CSH  := $(filter /%,$(shell /bin/sh -c 'type csh'))
 PERL := $(filter /%,$(shell /bin/sh -c 'type perl'))
 AR   := $(filter /%,$(shell /bin/sh -c 'type ar'))
 
@@ -76,9 +75,6 @@ endif
 ifndef SED
 	@echo "ERROR: 'sed' StreamEDitor not found"
 endif
-ifndef CSH
-	@echo "ERROR: 'csh' C-shell not found"
-endif
 ifndef PERL
 	@echo "ERROR: 'perl' PERL not found"
 endif
@@ -99,7 +95,6 @@ dist: DISTDIR = MUMmer$(VERSION)
 dist:
 	mkdir $(DISTDIR)
 	cp -r aux_bin $(DISTDIR)
-	cp -r docs $(DISTDIR)
 	cp -r scripts $(DISTDIR)
 	cp -r src $(DISTDIR)
 	cp $(FLATS) $(DISTDIR)

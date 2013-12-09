@@ -27,7 +27,7 @@ from libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 
 
-required_binaries = ['nucmer', 'delta-filter', 'show-coords', 'show-snps']
+required_binaries = ['nucmer', 'delta-filter', 'show-coords', 'show-snps', 'mummer', 'mgaps']
 
 if platform.system() == 'Darwin':
     mummer_dirpath = os.path.join(qconfig.LIBS_LOCATION, 'MUMmer3.23-osx')
@@ -1380,10 +1380,12 @@ def do(reference, contigs_fpaths, cyclic, output_dir):
             stdout=open(os.path.join(mummer_dirpath, 'make.log'), 'w'),
             stderr=open(os.path.join(mummer_dirpath, 'make.err'), 'w'),)
 
-        if return_code != 0 or all_required_binaries_exist(mummer_dirpath):
+        if return_code != 0 or not all_required_binaries_exist(mummer_dirpath):
             logger.error("Failed to compile MUMmer (" + mummer_dirpath + ")! "
                          "Try to compile it manually. " + ("You can restart Quast with the --debug flag "
                          "to see the command line." if not qconfig.debug else ""))
+            logger.info('Failed aligning the contigs for all the assemblies. Only basic stats are going to be evaluated.')
+            return dict(zip(contigs_fpaths, [NucmerStatus.FAILED] * len(contigs_fpaths))), None
 
     nucmer_output_dir = os.path.join(output_dir, 'nucmer_output')
     if not os.path.isdir(nucmer_output_dir):

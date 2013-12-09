@@ -118,8 +118,9 @@ class QLogger(object):
 
         if message:
             msg = indent + 'ERROR! ' + str(message)
-            msg += "\n\nIn case you have troubles running QUAST, you can write to quast.support@bioinf.spbau.ru\n"
-            msg += "Please provide us with quast.log file from the output directory."
+            if exit_with_code:
+                msg += "\n\nIn case you have troubles running QUAST, you can write to quast.support@bioinf.spbau.ru\n"
+                msg += "Please provide us with quast.log file from the output directory."
         else:
             msg = ''
 

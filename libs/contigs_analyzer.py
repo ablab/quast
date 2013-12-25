@@ -147,9 +147,6 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
     maxun = 10
     epsilon = 0.99
     smgap = 1000
-    # for cyclic reference and cyclic contig!
-    ctg_ref_similarity_at = 0.1   # absolute threshold
-    ctg_ref_similarity_rt = smgap # relative threshold
     umt = 0.5  # threshold for misassembled contigs with aligned less than $umt * 100% (Unaligned Missassembled Threshold)
     nucmer_successful_check_fpath = nucmer_fpath + '.sf'
     coords_fpath = nucmer_fpath + '.coords'
@@ -325,58 +322,49 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
         aligns.setdefault(mapping.contig, []).append(mapping)
     avg_idy = sum_idy / num_idy if num_idy else 0
 
+
     #### auxiliary functions ####
-    def distance_between_alignments(align1, align2, cyclic_ctg_len=None):
+    def distance_between_alignments(align1, align2, pos_strand, cyclic_ref_len=None):
         '''
-        returns distance (in contig) between two alignments
+        returns distance (in reference) between two alignments
         '''
-        align1_s = min(align1.e2, align1.s2)
-        align1_e = max(align1.e2, align1.s2)
-        align2_s = min(align2.e2, align2.s2)
-        align2_e = max(align2.e2, align2.s2)
-        if align1_s < align2_s: # alignment 1 is earlier in contig
-            distance = align2_s - align1_e - 1
-            if cyclic_ctg_len and (cyclic_ctg_len - align2_e + align1_s - 1 < distance):
-                distance = cyclic_ctg_len - align2_e + align1_s - 1
-        else:                   # alignment 2 is earlier in contig
-            distance = align1_s - align2_e - 1
-            if cyclic_ctg_len and (cyclic_ctg_len - align1_e + align2_s - 1 < distance):
-                distance = cyclic_ctg_len - align1_e + align2_s - 1
-        return distance
+        if pos_strand:            # alignment 1 should be earlier in reference
+            distance = align2.s1 - align1.e1 - 1
+        else:                     # alignment 2 should be earlier in reference
+            distance = align1.s1 - align2.e1 - 1
+        cyclic_moment = False
+        if cyclic_ref_len is not None:
+            if align1.e1 < align2.e1 and (cyclic_ref_len - align2.e1 + align1.s1 - 1) < smgap:
+                distance += cyclic_ref_len * (-1 if pos_strand else 1)
+                cyclic_moment = True
+            elif align1.e1 >= align2.e1 and (cyclic_ref_len - align1.e1 + align2.s1 - 1) < smgap:
+                distance += cyclic_ref_len * (1 if pos_strand else -1)
+                cyclic_moment = True
+        return distance, cyclic_moment
 
 
-    def is_misassembly(align1, align2, cyclic_ctg_len=None, misassembly_internal_overlap=None):
+    def is_misassembly(align1, align2, cyclic_ref_lens=None):
         #Calculate inconsistency between distances on the reference and on the contig
-        distance_on_contig = distance_between_alignments(align1, align2, cyclic_ctg_len)
-        distance_on_reference = align2.s1 - align1.e1 - 1
+        distance_on_contig = min(align2.e2, align2.s2) - max(align1.e2, align1.s2) - 1
+        if cyclic_ref_lens is not None and align1.ref == align2.ref:
+            distance_on_reference, cyclic_moment = distance_between_alignments(align1, align2, align1.s2 < align1.e2,
+                cyclic_ref_lens[align1.ref])
+        else:
+            distance_on_reference, cyclic_moment = distance_between_alignments(align1, align2, align1.s2 < align1.e2)
 
-        # update misassembly_internal_overlap
-        if misassembly_internal_overlap is not None and distance_on_contig < 0:
+        misassembly_internal_overlap = 0
+        if distance_on_contig < 0:
             if distance_on_reference >= 0:
-                misassembly_internal_overlap += (-distance_on_contig)
+                misassembly_internal_overlap = (-distance_on_contig)
             elif (-distance_on_reference) < (-distance_on_contig):
-                misassembly_internal_overlap += (distance_on_reference - distance_on_contig)
+                misassembly_internal_overlap = (distance_on_reference - distance_on_contig)
 
-        #Check strands
         strand1 = (align1.s2 < align1.e2)
         strand2 = (align2.s2 < align2.e2)
-
-        # inconsistency of positions on reference and on contig
-        if strand1:
-            inconsistency = distance_on_reference - (align2.s2 - align1.e2 - 1)
-            if cyclic_ctg_len\
-            and (abs(distance_on_reference - (cyclic_ctg_len - align1.e2 + align2.s2 - 1))
-                 < abs(inconsistency)):
-                inconsistency = distance_on_reference - (cyclic_ctg_len - align1.e2 + align2.s2 - 1)
-        else:
-            inconsistency = distance_on_reference - (align1.e2 - align2.s2 - 1)
-            if cyclic_ctg_len\
-            and (abs(distance_on_reference - (cyclic_ctg_len - align2.s2 + align1.e2 - 1))
-                 < abs(inconsistency)):
-                inconsistency = distance_on_reference - (cyclic_ctg_len - align2.s2 + align1.e2 - 1)
+        inconsistency = distance_on_reference - distance_on_contig
 
         aux_data = {"inconsistency": inconsistency, "distance_on_contig": distance_on_contig,
-                    "misassembly_internal_overlap": misassembly_internal_overlap}
+                    "misassembly_internal_overlap": misassembly_internal_overlap, "cyclic_moment": cyclic_moment}
         # different chromosomes or large inconsistency (a gap or an overlap) or different strands
         if align1.ref != align2.ref or abs(inconsistency) > smgap or (strand1 != strand2):
             return True, aux_data
@@ -384,107 +372,71 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
             return False, aux_data
 
 
-    def process_misassembled_contig(aligned_lengths, i_start, i_finish, contig_len, prev, cur_aligned_length, misassembly_internal_overlap,
-                                    sorted_aligns, is_1st_chimeric_half, misassembled_contigs, ref_aligns, ref_features,
-                                    cyclic_ctg_len=None, is_cyclic_contig_junction=False, junction_indexes=None):
-        region_misassemblies = []
-        for i in xrange(i_start, i_finish):
+    def process_misassembled_contig(sorted_aligns, cyclic, aligned_lengths, region_misassemblies, reg_lens, ref_aligns, ref_features):
+        misassembly_internal_overlap = 0
+        prev = sorted_aligns[0].clone()
+        cur_aligned_length = prev.len2
+        is_misassembled = False
+
+        for i in range(len(sorted_aligns) - 1):
             print >> planta_out_f, '\t\t\tReal Alignment %d: %s' % (i+1, str(sorted_aligns[i]))
             is_extensive_misassembly, aux_data = is_misassembly(sorted_aligns[i], sorted_aligns[i+1],
-                cyclic_ctg_len, misassembly_internal_overlap)
+                reg_lens if cyclic else None)
             inconsistency = aux_data["inconsistency"]
             distance_on_contig = aux_data["distance_on_contig"]
-            misassembly_internal_overlap = aux_data["misassembly_internal_overlap"]
+            misassembly_internal_overlap += aux_data["misassembly_internal_overlap"]
+            cyclic_moment = aux_data["cyclic_moment"]
 
-            if not is_cyclic_contig_junction:
-                ref_aligns.setdefault(sorted_aligns[i].ref, []).append(sorted_aligns[i])
+            ref_aligns.setdefault(sorted_aligns[i].ref, []).append(sorted_aligns[i])
+            print >> coords_filtered_file, str(prev)
 
             if is_extensive_misassembly:
-                if not is_cyclic_contig_junction:
-                    print >> coords_filtered_file, str(prev)
-                    aligned_lengths.append(cur_aligned_length)
-                    if junction_indexes:
-                        if junction_indexes[0] is None:
-                            junction_indexes[0] = len(aligned_lengths)
-                        junction_indexes[1] = len(aligned_lengths)
-                    prev = sorted_aligns[i+1].clone()
-                    cur_aligned_length = prev.len2 - (-distance_on_contig if distance_on_contig < 0 else 0)
+                is_misassembled = True
+                aligned_lengths.append(cur_aligned_length)
+                cur_aligned_length = 0
 
                 print >> planta_out_f, '\t\t\t  Extensive misassembly (',
-
-                ref_features.setdefault(sorted_aligns[i].ref, {})[sorted_aligns[i].e1] = 'M'
-                ref_features.setdefault(sorted_aligns[i+1].ref, {})[sorted_aligns[i+1].e1] = 'M'
-
                 if sorted_aligns[i].ref != sorted_aligns[i+1].ref:
-                    region_misassemblies += [Misassembly.TRANSLOCATION]
+                    region_misassemblies.append(Misassembly.TRANSLOCATION)
                     print >> planta_out_f, 'translocation',
                 elif abs(inconsistency) > smgap:
-                    region_misassemblies += [Misassembly.RELOCATION]
+                    region_misassemblies.append(Misassembly.RELOCATION)
                     print >> planta_out_f, 'relocation, inconsistency =', inconsistency,
                 else: #if strand1 != strand2:
-                    region_misassemblies += [Misassembly.INVERSION]
+                    region_misassemblies.append(Misassembly.INVERSION)
                     print >> planta_out_f, 'inversion',
-                misassembled_contigs[sorted_aligns[i].contig] = contig_len
-
                 print >> planta_out_f, ') between these two alignments'
+                ref_features.setdefault(sorted_aligns[i].ref, {})[sorted_aligns[i].e1] = 'M'
+                ref_features.setdefault(sorted_aligns[i+1].ref, {})[sorted_aligns[i+1].e1] = 'M'
             else:
-                if inconsistency < 0:
-                    #There is an overlap between the two alignments, a local misassembly
-                    print >> planta_out_f, '\t\t\t  Overlap between these two alignments (local misassembly).',
+                if cyclic_moment and inconsistency == 0:
+                    print >> planta_out_f, '\t\t\t  Fake misassembly (caused by linear representation of circular genome) between these two alignments'
                 else:
-                    #There is a small gap between the two alignments, a local misassembly
-                    print >> planta_out_f, '\t\t\t  Gap between these two alignments (local misassembly).',
-                #print >> plantafile_out, 'Distance on contig =', distance_on_contig, ', distance on reference =', distance_on_reference
-                print >> planta_out_f, 'Inconsistency =', inconsistency
+                    if qconfig.strict_NA:
+                        aligned_lengths.append(cur_aligned_length)
+                        cur_aligned_length = 0
 
-                region_misassemblies += [Misassembly.LOCAL]
+                    if inconsistency < 0:
+                        #There is an overlap between the two alignments, a local misassembly
+                        print >> planta_out_f, '\t\t\t  Overlap between these two alignments (local misassembly).',
+                    else:
+                        #There is a small gap between the two alignments, a local misassembly
+                        print >> planta_out_f, '\t\t\t  Gap between these two alignments (local misassembly).',
+                        #print >> plantafile_out, 'Distance on contig =', distance_on_contig, ', distance on reference =', distance_on_reference
+                    print >> planta_out_f, 'Inconsistency =', inconsistency, "(linear representation of circular genome)" if cyclic_moment else ""
+                    region_misassemblies.append(Misassembly.LOCAL)
 
-                # output in coords.filtered (separate output for each alignment even if it is just a local misassembly)
-                if not is_cyclic_contig_junction:
-                    print >> coords_filtered_file, str(prev)
-                    prev = sorted_aligns[i+1].clone()
-
-                ###          uncomment the following lines to disable breaking by local misassemblies
-                ###             (WARN: doesn't work correctly on CYCLIC CONTIGS -- doesn't glue at the junction point)
-                #            # output in coords.filtered (merge alignments if it is just a local misassembly)
-                #            prev.e1 = sorted_aligns[i+1].e1 # [E1]
-                #            prev.s2 = 0 # [S2]
-                #            prev.e2 = 0 # [E2]
-                #            prev.len1 = prev.e1 - prev.s1 # [LEN1]
-                #            prev.len2 += sorted_aligns[i+1].len2 - (overlap_in_contig if overlap_in_contig > 0 else 0) # [LEN2]
-
-                if is_cyclic_contig_junction:
-                    if not qconfig.strict_NA and (junction_indexes[0] != junction_indexes[1]):
-                        updated_aligned_length = aligned_lengths[junction_indexes[0] - 1] + aligned_lengths[junction_indexes[1] - 1]
-                        del aligned_lengths[junction_indexes[1] - 1]
-                        del aligned_lengths[junction_indexes[0] - 1]
-                        aligned_lengths.append(updated_aligned_length)
-                    if distance_on_contig < 0: # overlaps on the junction point
-                        aligned_lengths[-1] -= (-distance_on_contig)
-                elif qconfig.strict_NA:
-                    aligned_lengths.append(cur_aligned_length)
-                    if junction_indexes:
-                        if junction_indexes[0] is None:
-                            junction_indexes[0] = len(aligned_lengths)
-                        junction_indexes[1] = len(aligned_lengths)
-                    cur_aligned_length = 0
-                cur_aligned_length += prev.len2 - (-distance_on_contig if distance_on_contig < 0 else 0)
-
-        if not is_1st_chimeric_half and not is_cyclic_contig_junction:
-            print >> coords_filtered_file, str(prev)
-            aligned_lengths.append(cur_aligned_length)
-            if junction_indexes:
-                if junction_indexes[0] is None:
-                    junction_indexes[0] = len(aligned_lengths)
-                junction_indexes[1] = len(aligned_lengths)
+            prev = sorted_aligns[i+1].clone()
+            cur_aligned_length += prev.len2 - (-distance_on_contig if distance_on_contig < 0 else 0)
 
         #Record the very last alignment
-        i = i_finish
+        i = len(sorted_aligns) - 1
         print >> planta_out_f, '\t\t\tReal Alignment %d: %s' % (i + 1, str(sorted_aligns[i]))
-        if not is_cyclic_contig_junction:
-            ref_aligns.setdefault(sorted_aligns[i].ref, []).append(sorted_aligns[i])
+        ref_aligns.setdefault(sorted_aligns[i].ref, []).append(sorted_aligns[i])
+        print >> coords_filtered_file, str(prev)
+        aligned_lengths.append(cur_aligned_length)
 
-        return cur_aligned_length, misassembly_internal_overlap, prev.clone(), region_misassemblies
+        return is_misassembled, misassembly_internal_overlap
     #### end of aux. functions ###
 
     # Loading the assembly contigs
@@ -749,11 +701,10 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
 
                     # save min selection to real aligns and skip others (as redundant)
                     real_aligns = list(min_selection)
-                    print >> planta_out_f, '\t\tSkipping redundant alignments after choosing the best set of alignments'
+                    print >> planta_out_f, '\t\t\tSkipping redundant alignments after choosing the best set of alignments'
                     for align in sorted_aligns:
                         if align not in real_aligns:
-                            print >> planta_out_f, '\t\tSkipping [%d][%d] redundant alignment %s' % (
-                                align.s1, align.e1, str(align))
+                            print >> planta_out_f, '\t\tSkipping redundant alignment %s' % (str(align))
 
                 if len(real_aligns) == 1:
                     #There is only one alignment of this contig to the reference
@@ -790,16 +741,14 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
                 else:
                     #There is more than one alignment of this contig to the reference
                     print >> planta_out_f, '\t\tThis contig is misassembled. %d total aligns.' % num_aligns
-                    #Reset real alignments and sum of real alignments
-                    #Sort real alignments by position on the reference
-                    sorted_aligns = sorted(real_aligns, key=lambda x: (x.ref, x.s1, x.e1))
+                    #Sort real alignments by position on the contig
+                    sorted_aligns = sorted(real_aligns, key=lambda x: (min(x.s2, x.e2), max(x.s2, x.e2)))
 
                     # Counting misassembled contigs which are mostly partially unaligned
-                    sorted_in_contig_aligns = sorted(real_aligns, key=lambda x: (min(x.s2, x.e2), max(x.s2, x.e2)))
                     # counting aligned and unaligned bases of a contig
                     aligned_bases_in_contig = 0
                     last_e2 = 0
-                    for cur_align in sorted_in_contig_aligns:
+                    for cur_align in sorted_aligns:
                         if max(cur_align.s2, cur_align.e2) <= last_e2:
                             continue
                         elif min(cur_align.s2, cur_align.e2) > last_e2:
@@ -830,86 +779,12 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
                                                    '(of length >= min-contig)!'
                         continue
 
-                    sorted_num = len(sorted_aligns) - 1
-
-                    # for cyclic contigs
-                    cyclic_ctg_len = None
-                    if cyclic and ((float(max(reg_lens[sorted_aligns[0].ref], ctg_len)) /
-                                   float(min(reg_lens[sorted_aligns[0].ref], ctg_len)) <= 1.0 + ctg_ref_similarity_at)
-                                   or abs(reg_lens[sorted_aligns[0].ref] - ctg_len) <= ctg_ref_similarity_rt):
-                        cyclic_ctg_len = ctg_len
-
-                    # computing cyclic references
-                    if cyclic and (sorted_aligns[0].ref == sorted_aligns[sorted_num].ref) and \
-                        (sorted_aligns[0].s1 - 1 + reg_lens[sorted_aligns[0].ref] - sorted_aligns[sorted_num].e1 - \
-                        distance_between_alignments(sorted_aligns[sorted_num], sorted_aligns[0], cyclic_ctg_len) <= smgap): # fake misassembly
-
-                        fake_misassembly_index = sorted_num
-                        junction_indexes = [None, None]
-                        if cyclic_ctg_len:
-                            # check whether assumption about cyclic representation of the contig causes an additional misassembly
-                            sorted_in_contig_aligns = sorted(real_aligns, key=lambda x: (min(x.s2, x.e2), max(x.s2, x.e2)))
-                            if is_misassembly(sorted_in_contig_aligns[-1], sorted_in_contig_aligns[0], cyclic_ctg_len)[0]:
-                                cyclic_ctg_len = None
-                                junction_indexes = None
-                                fake_misassembly_index = sorted_aligns.index(sorted_in_contig_aligns[0])
-                        else:
-                            # if the contig is not cyclic, find where "fake" misassembly is
-                            junction_indexes = None
-                            # find fake misassembly between "first" blocks and "last" blocks
-                            for i in xrange(sorted_num):
-                                gap = sorted_aligns[i + 1].s1 - sorted_aligns[i].e1
-                                if gap > distance_between_alignments(sorted_aligns[i], sorted_aligns[i + 1]) + smgap:
-                                    fake_misassembly_index = i + 1
-                                    break
-
-                        # for merging local misassemblies
-                        prev = sorted_aligns[fake_misassembly_index].clone()
-                        cur_aligned_length = prev.len2
-
-                        # process "last half" of blocks
-                        cur_aligned_length, misassembly_internal_overlap, prev, x = process_misassembled_contig(
-                            aligned_lengths, fake_misassembly_index, sorted_num, len(assembly[contig]), prev,
-                            cur_aligned_length, misassembly_internal_overlap, sorted_aligns, True, misassembled_contigs,
-                            ref_aligns, ref_features, cyclic_ctg_len)
-                        region_misassemblies += x
-                        print >> planta_out_f, '\t\t\t  Fake misassembly (caused by linear representation of circular genome) between these two alignments'
-
-                        # connecting parts of fake misassembly in one alignment
-                        prev.e1 = sorted_aligns[0].e1 # [E1]
-                        prev.s2 = 0 # [S2]
-                        prev.e2 = 0 # [E2]
-                        prev.len1 += sorted_aligns[0].e1 - sorted_aligns[0].s1 + 1 # [LEN1]
-                        prev.len2 += sorted_aligns[0].len2 # [LEN2]
-                        cur_aligned_length += sorted_aligns[0].len2
-
-                        # process "first half" of blocks
-                        cur_aligned_length, misassembly_internal_overlap, prev, x = process_misassembled_contig(
-                            aligned_lengths, 0, fake_misassembly_index - 1, len(assembly[contig]), prev,
-                            cur_aligned_length, misassembly_internal_overlap, sorted_aligns, False, misassembled_contigs,
-                            ref_aligns, ref_features, cyclic_ctg_len, junction_indexes=junction_indexes)
-                        region_misassemblies += x
-
-                        if cyclic_ctg_len:
-                            # process junction of cyclic contig
-                            print >> planta_out_f, '\t\tThis contig is CIRCULAR, so processing junction between its first and last alignments:'
-                            cur_aligned_length, misassembly_internal_overlap, prev, x = process_misassembled_contig(
-                                aligned_lengths, sorted_num - 1, sorted_num, len(assembly[contig]), prev,
-                                cur_aligned_length, misassembly_internal_overlap, sorted_aligns, False, misassembled_contigs,
-                                ref_aligns, ref_features, cyclic_ctg_len, is_cyclic_contig_junction=True,
-                                junction_indexes=junction_indexes)
-                            region_misassemblies += x
-
-                    else:
-                        # for merging local misassemblies
-                        prev = sorted_aligns[0].clone()
-                        cur_aligned_length = prev.len2
-                        cur_aligned_length, misassembly_internal_overlap, prev, x = process_misassembled_contig(
-                            aligned_lengths, 0, sorted_num, len(assembly[contig]), prev,
-                            cur_aligned_length, misassembly_internal_overlap, sorted_aligns, False, misassembled_contigs,
-                            ref_aligns, ref_features)
-                        region_misassemblies += x
-
+                    ### processing misassemblies
+                    is_misassembled, current_mio = process_misassembled_contig(sorted_aligns, cyclic,
+                        aligned_lengths, region_misassemblies, reg_lens, ref_aligns, ref_features)
+                    misassembly_internal_overlap += current_mio
+                    if is_misassembled:
+                        misassembled_contigs[contig] = len(assembly[contig])
         else:
             #No aligns to this contig
             print >> planta_out_f, '\t\tThis contig is unaligned. (%d bp)' % ctg_len

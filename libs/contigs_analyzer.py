@@ -148,6 +148,8 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
     epsilon = 0.99
     smgap = 1000
     umt = 0.5  # threshold for misassembled contigs with aligned less than $umt * 100% (Unaligned Missassembled Threshold)
+    ort = 0.9  # threshold for skipping aligns that significantly overlaps with adjacent aligns (Overlap Relative Threshold)
+    oat = 25   # threshold for skipping aligns that significantly overlaps with adjacent aligns (Overlap Absolute Threshold)
     nucmer_successful_check_fpath = nucmer_fpath + '.sf'
     coords_fpath = nucmer_fpath + '.coords'
     delta_fpath = nucmer_fpath + '.delta'
@@ -548,7 +550,7 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
 
             #Check that top hit captures most of the contig
             if top_len > ctg_len * epsilon or ctg_len - top_len < maxun:
-                #Reset top aligns: aligns that share the same value of longest and higest identity
+                #Reset top aligns: aligns that share the same value of longest and highest identity
                 top_aligns.append(sorted_aligns[0])
                 sorted_aligns = sorted_aligns[1:]
 
@@ -739,10 +741,36 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
 
                     ref_aligns.setdefault(sorted_aligns[0].ref, []).append(sorted_aligns[0])
                 else:
-                    #There is more than one alignment of this contig to the reference
-                    print >> planta_out_f, '\t\tThis contig is misassembled. %d total aligns.' % num_aligns
                     #Sort real alignments by position on the contig
                     sorted_aligns = sorted(real_aligns, key=lambda x: (min(x.s2, x.e2), max(x.s2, x.e2)))
+
+                    #Extra skipping of redundant alignments (fully or almost fully covered by adjacent alignments)
+                    if len(sorted_aligns) >= 3:
+                        was_extra_skip = False
+                        prev_end = max(sorted_aligns[0].s2, sorted_aligns[0].e2)
+                        for i in range(1, len(sorted_aligns) - 1):
+                            succ_start = min(sorted_aligns[i + 1].s2, sorted_aligns[i + 1].e2)
+                            gap = succ_start - prev_end - 1
+                            if gap > smgap:
+                                continue
+                            overlap = 0
+                            if prev_end - min(sorted_aligns[i].s2, sorted_aligns[i].e2) + 1 > 0:
+                                overlap += prev_end - min(sorted_aligns[i].s2, sorted_aligns[i].e2) + 1
+                            if max(sorted_aligns[i].s2, sorted_aligns[i].e2) - succ_start + 1 > 0:
+                                overlap += max(sorted_aligns[i].s2, sorted_aligns[i].e2) - succ_start + 1
+                            if gap < oat or (float(overlap) / sorted_aligns[i].len2) > ort:
+                                if not was_extra_skip:
+                                    was_extra_skip = True
+                                    print >> planta_out_f, '\t\t\tSkipping redundant alignments which significantly overlap with adjacent alignments'
+                                print >> planta_out_f, '\t\tSkipping redundant alignment %s' % (str(sorted_aligns[i]))
+                                real_aligns.remove(sorted_aligns[i])
+                            else:
+                                prev_end = max(sorted_aligns[i].s2, sorted_aligns[i].e2)
+                        if was_extra_skip:
+                            sorted_aligns = sorted(real_aligns, key=lambda x: (min(x.s2, x.e2), max(x.s2, x.e2)))
+
+                    #There is more than one alignment of this contig to the reference
+                    print >> planta_out_f, '\t\tThis contig is misassembled. %d total aligns.' % num_aligns
 
                     # Counting misassembled contigs which are mostly partially unaligned
                     # counting aligned and unaligned bases of a contig

@@ -426,6 +426,9 @@ def histogram(contigs_fpaths, values, plot_fpath, title='', all_pdf=None, yaxis_
               top_value=None):
     if matplotlib_error:
         return
+    if len(contigs_fpaths) < 2:  #
+        logger.info('  Skipping drawing ' + title + ' histogram... (less than 2 columns histogram makes no sense)')
+        return
 
     import math
 

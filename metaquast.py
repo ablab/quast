@@ -150,7 +150,7 @@ def _start_quast_main(
 
     import quast
     reload(quast)
-    quast.logger.set_up_console_handler(indent_val=1, qconfig.debug)
+    quast.logger.set_up_console_handler(indent_val=1, debug=qconfig.debug)
 
     logger.info_to_file('(logging to ' +
                         os.path.join(output_dirpath,
@@ -391,25 +391,16 @@ def main(args):
     for contigs_fpath in contigs_fpaths:
         quast_py_args.remove(contigs_fpath)
 
-    # # Removing outout dir if exists
-    # if output_dirpath:  # 'output dir was specified with -o option'
-    #     if os.path.isdir(output_dirpath):
-    #         shutil.rmtree(output_dirpath)
-
     # Directories
     output_dirpath, _, _ = quast._set_up_output_dir(
         output_dirpath, None, make_latest_symlink,
-        save_json=False, remove_old=True)
+        save_json=False)
 
     corrected_dirpath = os.path.join(output_dirpath, qconfig.corrected_dirname)
 
     logger.set_up_file_handler(output_dirpath)
     logger.print_command_line([os.path.realpath(__file__)] + args, wrap_after=None)
     logger.start()
-
-    # Where all pdfs will be saved
-    all_pdf_fpath = os.path.join(output_dirpath, qconfig.plots_fname)
-    all_pdf = None
 
     ########################################################################
 

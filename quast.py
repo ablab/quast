@@ -103,19 +103,12 @@ def _usage():
 
 
 def _set_up_output_dir(output_dirpath, json_outputpath,
-                       make_latest_symlink, save_json, remove_old=False):
+                       make_latest_symlink, save_json):
     existing_alignments = False
 
     if output_dirpath:  # 'output dir was specified with -o option'
         if os.path.isdir(output_dirpath):
-            if remove_old:
-                try:
-                    shutil.rmtree(output_dirpath)
-                except OSError:
-                    pass
-            else:
-                existing_alignments = True
-
+            existing_alignments = True
     else:  # output dir was not specified, creating our own one
         output_dirpath = os.path.join(os.path.abspath(
             qconfig.default_results_root_dirname), qconfig.output_dirname)
@@ -552,7 +545,7 @@ def main(args):
     labels = process_labels(contigs_fpaths, labels, all_labels_from_dirs)
 
     output_dirpath, json_output_dirpath, existing_alignments = \
-        _set_up_output_dir(output_dirpath, json_output_dirpath, qconfig.make_latest_symlink, qconfig.min_contig)
+        _set_up_output_dir(output_dirpath, json_output_dirpath, qconfig.make_latest_symlink, qconfig.save_json)
 
     corrected_dirpath = os.path.join(output_dirpath, qconfig.corrected_dirname)
 

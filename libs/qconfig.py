@@ -62,7 +62,7 @@ make_latest_symlink = True
 default_json_dirname = "json"
 
 # names of reports, log, etc.
-corrected_dirname = "corrected_input"
+corrected_dirname = "quast_corrected_input"
 plots_fname = "plots.pdf"
 report_prefix = "report"
 transposed_report_prefix = "transposed_report"

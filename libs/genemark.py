@@ -48,9 +48,10 @@ def install_genemark(tool_dirpath):
     (genemark_suite_linux_XX/gmsuite/INSTALL)
     """
     gm_key_fpath = os.path.join(tool_dirpath, 'gm_key')
-    if not os.path.isfile(os.path.expanduser('~/.gm_key')):
-        # GeneMark needs this key to work.
-        shutil.copyfile(gm_key_fpath, os.path.expanduser('~/.gm_key'))
+    gm_key_dst = os.path.expanduser('~/.gm_key')
+    import filecmp
+    if not os.path.isfile(gm_key_dst) or not filecmp.cmp(gm_key_dst, gm_key_fpath):
+        shutil.copyfile(gm_key_fpath, gm_key_dst)
 
 
 # Gene = namedtuple('Gene', ['contig_id', 'strand', 'left_index', 'right_index', 'seq'])

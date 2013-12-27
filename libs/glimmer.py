@@ -146,7 +146,7 @@ def do(contigs_fpaths, gene_lengths, out_dirpath):
         if return_code != 0 or not os.path.isfile(tool_exec_fpath):
             logger.error("Failed to compile GlimmerHMM (" + tool_src_dirpath +
                          ")! Try to compile it manually or set --disable-gene-finding "
-                         "option. Use --debug option to see runned command lines.")
+                         "option. Use --debug option to see the command lines.")
             return
 
     if not os.path.isdir(out_dirpath):

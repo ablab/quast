@@ -1,5 +1,30 @@
 -- Version history --
 
+3.0   1. Changed logic in misassembly computation. Fixed several minor bugs in misassembly 
+      detection algorithm and one major bug caused by linear represenation of circular
+      references and contigs in fasta format.
+
+      2. Added contig alignment plots. See details in manual and in the QUAST paper (Fig. 1)
+
+      3. Genome analyzer module (computation of genome fraction, duplication ratio,
+      number of genes and operons) is parallelized.
+
+      4. A new option --test added for testing correct QUAST installation.
+
+      5. A new option --no-plots added for speeding up computation if plots are not needed.
+    
+      6. GeneMark license updated, instructions for manual updating added.
+
+      7. Generation of misleading single-columns histograms removed (when only single assembly
+      file was specified).
+
+      8. More error and exception handlers added.
+
+      9. Fixed several minor bugs.
+       
+      10. Code refactored.
+
+
 2.2   1. The tool now supports metagenomic assemblies. It accepts multiple references
       and produces several reports:
        — for all contigs and all input genomes merged into one,

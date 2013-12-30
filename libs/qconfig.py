@@ -167,6 +167,7 @@ def usage(show_hidden=False, meta=False):
     print >> sys.stderr, "                                      good alignments [default is %s]" % ambiguity_usage
     print >> sys.stderr, "-n  --strict-NA                       Break contigs in any misassembly event when compute NAx and NGAx"
     print >> sys.stderr, "                                      By default, QUAST breaks contigs only by extensive misassemblies (not local ones)"
+    print >> sys.stderr, "    --no-plots                        Do not draw plots (to speed up computation)"
     if show_hidden:
         print >> sys.stderr, ""
         print >> sys.stderr, "Hidden options:"

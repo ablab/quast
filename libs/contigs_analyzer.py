@@ -1301,7 +1301,7 @@ def do(reference, contigs_fpaths, cyclic, output_dir):
 
     if not all_required_binaries_exist(mummer_dirpath):
         # making
-        logger.info('Compiling MUMmer:')
+        logger.info('Compiling MUMmer (details are in ' + os.path.join(mummer_dirpath, 'make.log') + " and make.err)")
         return_code = qutils.call_subprocess(
             ['make', '-C', mummer_dirpath],
             stdout=open(os.path.join(mummer_dirpath, 'make.log'), 'w'),

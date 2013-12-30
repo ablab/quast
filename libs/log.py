@@ -187,7 +187,7 @@ class QLogger(object):
         self._logger.info("System information:")
         try:
             import platform
-            self._logger.info("  OS: " + platform.platform())
+            self._logger.info("  OS: " + platform.platform() + " (%s)" % qconfig.platform_name)
             self._logger.info("  Python version: " + str(sys.version_info[0]) + "." + str(sys.version_info[1]) + '.'\
                       + str(sys.version_info[2]))
             import multiprocessing

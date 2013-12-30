@@ -325,7 +325,7 @@ def process_labels(contigs_fpaths, labels, all_labels_from_dirs):
                 if label == duplicated_label:
                     labels[i] = get_label_from_par_dir_and_fname(contigs_fpaths[i])
 
-    # fixing remaning duplicates by adding index
+    # fixing remaining duplicates by adding index
     for duplicated_label in get_duplicated(labels):
         j = 0
         for i, (label, fpath) in enumerate(zip(labels, contigs_fpaths)):
@@ -370,9 +370,11 @@ def main(args):
 
         if opt == '--test':
             options.remove((opt, arg))
-            options += [('-R', 'test_data/reference.fasta.gz'),
+            options += [('-o', 'quast_test_output'),
+                        ('-R', 'test_data/reference.fasta.gz'),   # for compiling MUMmer
                         ('-O', 'test_data/operons.gff'),
-                        ('-G', 'test_data/genes.gff')]
+                        ('-G', 'test_data/genes.gff'),
+                        ('--gene-finding',''), ('--eukaryote','')] # for compiling GlimmerHMM
             contigs_fpaths += ['test_data/contigs_1.fasta',
                                'test_data/contigs_2.fasta']
 

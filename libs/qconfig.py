@@ -178,7 +178,7 @@ def usage(show_hidden=False, meta=False):
         print >> sys.stderr, "    --no-html               Do not build html report"
         print >> sys.stderr, "    --no-plots              Do not draw plots (to make quast faster)"
     print >> sys.stderr, ""
-    print >> sys.stderr, "    --test                            Run QUAST on the data from the test_data folder, output to test_output"
+    print >> sys.stderr, "    --test                            Run QUAST on the data from the test_data folder, output to quast_test_output"
     print >> sys.stderr, "-h  --help                            Print this usage message"
     if show_hidden:
         print >> sys.stderr, "    --help-hidden                     Print this usage message with all hidden options"

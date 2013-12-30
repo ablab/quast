@@ -246,6 +246,8 @@ def main(args):
         qconfig.usage(meta=True)
         sys.exit(2)
 
+    quast_py_args = args[:]
+
     for opt, arg in options:
         if opt in ('-d', '--debug'):
             options.remove((opt, arg))
@@ -254,7 +256,9 @@ def main(args):
 
         elif opt == '--test':
             options.remove((opt, arg))
-            options += [('-R', 'test_data/meta_ref_1.fasta,'
+            quast_py_args.remove(opt)
+            options += [('-o', 'quast_test_output'),
+                        ('-R', 'test_data/meta_ref_1.fasta,'
                                'test_data/meta_ref_2.fasta,'
                                'test_data/meta_ref_3.fasta')]
             contigs_fpaths += ['test_data/meta_contigs_1.fasta',
@@ -277,14 +281,13 @@ def main(args):
     labels = None
     all_labels_from_dirs = False
 
-    quast_py_args = args[:]
-
     for opt, arg in options:
         if opt in ('-o', "--output-dir"):
             # Removing output dir arg in order to further
             # construct other quast calls from this options
-            quast_py_args.remove(opt)
-            quast_py_args.remove(arg)
+            if opt in quast_py_args and arg in quast_py_args:
+                quast_py_args.remove(opt)
+                quast_py_args.remove(arg)
 
             output_dirpath = os.path.abspath(arg)
             make_latest_symlink = False
@@ -300,8 +303,9 @@ def main(args):
         elif opt in ('-R', "--reference"):
             # Removing reference args in order to further
             # construct quast calls from this args with other reference options
-            quast_py_args.remove(opt)
-            quast_py_args.remove(arg)
+            if opt in quast_py_args and arg in quast_py_args:
+                quast_py_args.remove(opt)
+                quast_py_args.remove(arg)
 
             ref_fpaths = arg.split(',')
             for i, ref_fpath in enumerate(ref_fpaths):
@@ -364,7 +368,8 @@ def main(args):
     labels = quast.process_labels(contigs_fpaths, labels, all_labels_from_dirs)
 
     for contigs_fpath in contigs_fpaths:
-        quast_py_args.remove(contigs_fpath)
+        if contigs_fpath in quast_py_args:
+            quast_py_args.remove(contigs_fpath)
 
     # Directories
     output_dirpath, _, _ = quast._set_up_output_dir(

@@ -8,12 +8,14 @@
 
 
 from __future__ import with_statement
-from libs import qconfig, qutils
+from libs import qconfig, qutils, fastaparser
 import os
 import math
 
 from libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
+
+MAX_REF_NAME = 20
 
 from libs import plotter  # Do not remove this line! It would lead to a warning in matplotlib.
 if not plotter.matplotlib_error:
@@ -30,8 +32,8 @@ def get_similar_threshold(total):
 
 
 class Settings:
-    def __init__(self, max_pos, max_cov_pos, max_cov, assemblies_num):
-        self.max_pos = max_pos
+    def __init__(self, virtual_genome_size, max_cov_pos, max_cov, assemblies_num):
+        self.max_pos = virtual_genome_size
         self.max_cov_pos = max_cov_pos
         self.max_cov = max_cov
 
@@ -349,10 +351,13 @@ class Assemblies:
 
 
 class Visualizer:
-    def __init__(self, assemblies, covHist, settings):
+    def __init__(self, assemblies, covHist, settings, sorted_ref_names, sorted_ref_lengths, virtual_genome_shift):
         self.assemblies = assemblies
         self.covHist = covHist
         self.settings = settings
+        self.sorted_ref_names = sorted_ref_names
+        self.sorted_ref_lengths = sorted_ref_lengths
+        self.virtual_genome_shift = virtual_genome_shift
 
         self.figure = matplotlib.pyplot.figure()
         self.subplot = self.figure.add_subplot(111)
@@ -372,35 +377,45 @@ class Visualizer:
 
 
     def plot_genome_axis(self, offset):
-        self.subplot.add_line(
-            matplotlib.lines.Line2D((offset[0], offset[0] + self.settings.assembly_width), (offset[1], offset[1]),
-                                    c="black", lw=self.settings.axisWeight))
-
-        i = 0.0
-        while i < self.settings.genomeLength - self.settings.xTics / 5.0:
-            x = offset[0] + self.settings.assembly_width * float(i) / float(self.settings.genomeLength)
-
-            if self.settings.dashLines:
-                self.subplot.add_line(
-                    matplotlib.lines.Line2D((x, x), (offset[1] + self.settings.plot_height, self.settings.last_margin),
-                                            c="grey", ls=':', lw=self.settings.dashLineWeight))
-
+        cur_offset = 0
+        for id, ref_length in enumerate(self.sorted_ref_lengths):
             self.subplot.add_line(
-                matplotlib.lines.Line2D((x, x), (offset[1], offset[1] - self.settings.ticLength), c="black",
-                                        lw=self.settings.axisWeight))
+                matplotlib.lines.Line2D((offset[0] + cur_offset * self.settings.scale, offset[0] +
+                                        (cur_offset + ref_length) * self.settings.scale),
+                    (offset[1], offset[1]), c="black", lw=self.settings.axisWeight))
 
-            self.subplot.annotate(str(round(float(i) / self.settings.genomeAnnotationScale, 1)),
-                                  (x + self.settings.xticsStep, offset[1] - self.settings.xticsStep), fontsize=8,
-                                  horizontalalignment='left', verticalalignment='top')
+            i = 0.0
+            while i < ref_length - self.settings.xTics / 5.0:
+                x = offset[0] + cur_offset * self.settings.scale + self.settings.scale * float(i)
 
-            i += self.settings.xTics
+                if self.settings.dashLines: # TODO: multi-chromosomes
+                    self.subplot.add_line(
+                        matplotlib.lines.Line2D((x, x), (offset[1] + self.settings.plot_height, self.settings.last_margin),
+                                                c="grey", ls=':', lw=self.settings.dashLineWeight))
 
-        x = offset[0] + self.settings.assembly_width
-        if self.settings.dashLines:
-            self.subplot.add_line(matplotlib.lines.Line2D((x, x), (offset[1] + self.settings.plot_height , self.settings.last_margin), c="grey", ls=':', lw=self.settings.dashLineWeight))
-        self.subplot.add_line(matplotlib.lines.Line2D((x, x), (offset[1], offset[1] - self.settings.ticLength), c="black", lw=self.settings.axisWeight))
+                self.subplot.add_line(
+                    matplotlib.lines.Line2D((x, x), (offset[1], offset[1] - self.settings.ticLength), c="black",
+                                            lw=self.settings.axisWeight))
 
-        self.subplot.annotate(str(round(float(self.settings.genomeLength) / self.settings.genomeAnnotationScale ,2)), (x + self.settings.xticsStep, offset[1] - self.settings.xticsStep), fontsize=8, horizontalalignment='left', verticalalignment='top')
+                self.subplot.annotate(str(round(float(i) / self.settings.genomeAnnotationScale, 1)),
+                                      (x + self.settings.xticsStep, offset[1] - self.settings.xticsStep), fontsize=8,
+                                      horizontalalignment='left', verticalalignment='top')
+
+                i += self.settings.xTics
+
+            x = offset[0] + (cur_offset + ref_length) * self.settings.scale
+            if self.settings.dashLines:
+                self.subplot.add_line(matplotlib.lines.Line2D((x, x), (offset[1] + self.settings.plot_height , self.settings.last_margin), c="grey", ls=':', lw=self.settings.dashLineWeight))
+            self.subplot.add_line(matplotlib.lines.Line2D((x, x), (offset[1], offset[1] - self.settings.ticLength), c="black", lw=self.settings.axisWeight))
+
+            self.subplot.annotate(str(round(float(ref_length) / self.settings.genomeAnnotationScale, 2)), (x + self.settings.xticsStep, offset[1] - self.settings.xticsStep), fontsize=8, horizontalalignment='left', verticalalignment='top')
+
+            ref_name = self.sorted_ref_names[id]
+            if len(ref_name) > MAX_REF_NAME:
+                ref_name = "chr_%d (.." % id + ref_name[-(MAX_REF_NAME - 10):] + ")"
+            self.subplot.annotate(ref_name, (offset[0] + self.settings.scale * (cur_offset + ref_length / 2.0), offset[1] + 1.5 * self.settings.xLabelStep),
+                fontsize=11, horizontalalignment='center', verticalalignment='top')
+            cur_offset += ref_length + self.virtual_genome_shift
 
         self.subplot.annotate(self.settings.genomeAnnotation, (offset[0] + self.settings.assembly_width / 2.0, offset[1] - self.settings.xLabelStep), fontsize=11, horizontalalignment='center', verticalalignment='top')
 
@@ -500,8 +515,8 @@ class Visualizer:
 #     return hist, max_pos, max_cov
 
 
-def draw_alignment_plot(contigs_fpaths, genome_length, output_dirpath,
-                        lists_of_aligned_blocks, arcs=False, similar=False,
+def draw_alignment_plot(contigs_fpaths, virtual_genome_size, sorted_ref_names, sorted_ref_lengths, virtual_genome_shift,
+                        output_dirpath, lists_of_aligned_blocks, arcs=False, similar=False,
                         coverage_hist=None, all_pdf_file=None):
 
     if plotter.matplotlib_error:
@@ -514,20 +529,20 @@ def draw_alignment_plot(contigs_fpaths, genome_length, output_dirpath,
     assemblies = Assemblies(
         contigs_fpaths,
         lists_of_aligned_blocks,
-        genome_length,
+        virtual_genome_size,
         min_visualizer_length)
 
     asm_number = len(assemblies.assemblies)
 
-    if genome_length == 0:
-        genome_length = assemblies.find_max_pos()
+    if virtual_genome_size == 0:
+        virtual_genome_size = assemblies.find_max_pos()
 
     max_pos, max_cov = 10, 10
     if coverage_hist:
         max_pos = max(coverage_hist.keys())
         max_cov = max(coverage_hist.values())
 
-    settings = Settings(genome_length, max_pos, max_cov, asm_number)
+    settings = Settings(virtual_genome_size, max_pos, max_cov, asm_number)
 
     if arcs and assemblies is not None:
         settings.assemblyStep += 40
@@ -538,27 +553,44 @@ def draw_alignment_plot(contigs_fpaths, genome_length, output_dirpath,
 
     assemblies.apply_colors(settings)
 
-    v = Visualizer(assemblies, coverage_hist, settings)
+    v = Visualizer(assemblies, coverage_hist, settings, sorted_ref_names, sorted_ref_lengths, virtual_genome_shift)
     v.visualize()
     v.save(output_fpath)
     return output_fpath + '.svg'
 
 
 def do(contigs_fpaths, contig_report_fpath_pattern, output_dirpath,
-       genome_length, arcs=False, similar=False, coverage_hist=None, all_pdf_file=None):
+       ref_fpath, arcs=False, similar=False, coverage_hist=None, all_pdf_file=None):
     lists_of_aligned_blocks = []
+
+    total_genome_size = 0
+    reference_chromosomes = dict()
+    for name, seq in fastaparser.read_fasta(ref_fpath):
+        chr_name = name.split()[0]
+        chr_len = len(seq)
+        total_genome_size += chr_len
+        reference_chromosomes[chr_name] = chr_len
+    virtual_genome_shift = int(0.1 * total_genome_size)
+    sorted_ref_names = sorted(reference_chromosomes, key=reference_chromosomes.get, reverse=True)
+    sorted_ref_lengths = sorted(reference_chromosomes.values(), reverse=True)
+    cumulative_ref_lengths = [0]
+    for length in sorted(reference_chromosomes.values(), reverse=True):
+        cumulative_ref_lengths.append(cumulative_ref_lengths[-1] + virtual_genome_shift + length)
+    virtual_genome_size = cumulative_ref_lengths[-1] - virtual_genome_shift
 
     for contigs_fpath in contigs_fpaths:
         report_fpath = contig_report_fpath_pattern % qutils.name_from_fpath(contigs_fpath)
-        aligned_blocks = parse_nucmer_contig_report(report_fpath)
+        aligned_blocks = parse_nucmer_contig_report(report_fpath, sorted_ref_names, cumulative_ref_lengths)
+        if aligned_blocks is None:
+            return None
         lists_of_aligned_blocks.append(aligned_blocks)
 
     return draw_alignment_plot(
-        contigs_fpaths, genome_length, output_dirpath,
+        contigs_fpaths, virtual_genome_size, sorted_ref_names, sorted_ref_lengths, virtual_genome_shift, output_dirpath,
         lists_of_aligned_blocks, arcs, similar, coverage_hist, all_pdf_file)
 
 
-def parse_nucmer_contig_report(report_fpath):
+def parse_nucmer_contig_report(report_fpath, sorted_ref_names, cumulative_ref_lengths):
     aligned_blocks = []
 
     with open(report_fpath) as report_file:
@@ -580,11 +612,19 @@ def parse_nucmer_contig_report(report_fpath):
             if line.startswith('Analyzing coverage...'):
                 break
 
+        cur_shift = 0
         for line in report_file:
             split_line = line.strip().split(' ')
-            if split_line and split_line[0] == 'Align':
-                start = int(split_line[2])
-                end = int(split_line[3])
+            if split_line and split_line[0] == 'Reference':
+                ref_name = split_line[1][:-1]
+                if ref_name in sorted_ref_names:
+                    cur_shift = cumulative_ref_lengths[sorted_ref_names.index(ref_name)]
+                else:
+                    logger.warning('reference name ' + ref_name + ' not found in file with reference!\nCannot draw contig alignment plot!')
+                    return None
+            elif split_line and split_line[0] == 'Align':
+                start = int(split_line[2]) + cur_shift
+                end = int(split_line[3]) + cur_shift
                 contig_id = split_line[4]
                 start_in_contig = int(split_line[5])
                 end_in_contig = int(split_line[6])

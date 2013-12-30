@@ -417,7 +417,6 @@ def do(ref_fpath, aligned_contigs_fpaths, all_pdf, draw_plots, output_dirpath, j
             all_pdf, top_value=100)
 
     logger.info('Done.')
-    return genome_size
 
 
 class AlignedBlock():

@@ -609,7 +609,7 @@ def main(args):
         ### GENOME_ANALYZER
         ########################################################################
         from libs import genome_analyzer
-        genome_size = genome_analyzer.do(
+        genome_analyzer.do(
             ref_fpath, aligned_contigs_fpaths, all_pdf_file, qconfig.draw_plots, output_dirpath, json_output_dirpath,
             genes_fpaths, operons_fpaths, detailed_contigs_reports_dirpath, os.path.join(output_dirpath, 'genome_stats'))
 
@@ -623,7 +623,7 @@ def main(args):
                 os.path.join(detailed_contigs_reports_dirpath,
                              'contigs_report_%s.stdout'),
                 output_dirpath,
-                genome_size,
+                ref_fpath,
                 similar=True,
                 all_pdf_file=all_pdf_file)
 

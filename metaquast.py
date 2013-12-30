@@ -6,20 +6,22 @@
 # See file LICENSE for details.
 ############################################################################
 
-from __future__ import with_statement
-
 import sys
 import os
 import shutil
 import getopt
-from libs import qconfig, qutils, fastaparser
+
+quast_dirpath = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
+sys.path.append(os.path.join(quast_dirpath, 'libs'))
+from libs import qconfig
+qconfig.check_python_version()
+
+from libs import qutils, fastaparser
 from libs.qutils import assert_file_exists
 
 from libs.log import get_logger
 logger = get_logger('metaquast')
 logger.set_up_console_handler()
-
-quast_dirpath = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
 
 from site import addsitedir
 addsitedir(os.path.join(quast_dirpath, 'libs', 'site_packages'))
@@ -83,25 +85,24 @@ def _partition_contigs(assemblies, ref_fpaths, corrected_dirpath, alignments_fpa
         contigs = {}
         aligned_contig_names = set()
 
-        with open(alignments_fpath_template % asm.name) as alignments_tsv_f:
-            for line in alignments_tsv_f:
-                values = line.split()
-                ref_name = values[0]
-                ref_contigs_names = values[1:]
-                ref_contigs_fpath = os.path.join(
-                    corrected_dirpath, asm.name + '_to_' + ref_name[:40] + '.fasta')
+        for line in open(alignments_fpath_template % asm.name):
+            values = line.split()
+            ref_name = values[0]
+            ref_contigs_names = values[1:]
+            ref_contigs_fpath = os.path.join(
+                corrected_dirpath, asm.name + '_to_' + ref_name[:40] + '.fasta')
 
-                for (cont_name, seq) in fastaparser.read_fasta(asm.fpath):
-                    if not cont_name in contigs.keys():
-                        contigs[cont_name] = seq
+            for (cont_name, seq) in fastaparser.read_fasta(asm.fpath):
+                if not cont_name in contigs.keys():
+                    contigs[cont_name] = seq
 
-                    if cont_name in ref_contigs_names:
-                        # Collecting all aligned contigs names in order to futher extract not-aligned
-                        aligned_contig_names.add(cont_name)
-                        fastaparser.write_fasta(ref_contigs_fpath, [(cont_name, seq)], 'a')
+                if cont_name in ref_contigs_names:
+                    # Collecting all aligned contigs names in order to futher extract not-aligned
+                    aligned_contig_names.add(cont_name)
+                    fastaparser.write_fasta(ref_contigs_fpath, [(cont_name, seq)], 'a')
 
-                ref_asm = Assembly(ref_contigs_fpath, asm.label)
-                assemblies_by_ref[ref_name].append(ref_asm)
+            ref_asm = Assembly(ref_contigs_fpath, asm.label)
+            assemblies_by_ref[ref_name].append(ref_asm)
 
         # Exctraction not aligned contigs
         all_contigs_names = set(contigs.keys())
@@ -265,8 +266,9 @@ def main(args):
 
     try:
         options, contigs_fpaths = getopt.gnu_getopt(args, qconfig.short_options, qconfig.long_options)
-    except getopt.GetoptError, err:
-        print >> sys.stderr, err
+    except getopt.GetoptError:
+        _, exc_value, _ = sys.exc_info()
+        print >> sys.stderr, exc_value
         print >> sys.stderr
         usage()
         sys.exit(2)
@@ -380,8 +382,7 @@ def main(args):
         elif opt in ["--no-html"]:
             pass
         else:
-            logger.error('Unknown option: %s. Use -h for help.' % (opt + (' ' + arg) if arg else ''), to_stderr=True)
-            sys.exit(2)
+            logger.error('Unknown option: %s. Use -h for help.' % (opt + ' ' + arg), to_stderr=True, exit_with_code=2)
 
     for c_fpath in contigs_fpaths:
         assert_file_exists(c_fpath, 'contigs')
@@ -416,7 +417,7 @@ def main(args):
 
     if ref_fpaths:
         logger.info()
-        logger.info('Reference' + ('s' if len(ref_fpaths) > 0 else '') + ':')
+        logger.info('Reference(s):')
 
         ref_fpaths, common_ref_fasta_ext, combined_ref_fpath =\
             _correct_refrences(ref_fpaths, corrected_dirpath)
@@ -499,8 +500,10 @@ if __name__ == '__main__':
     try:
         return_code = main(sys.argv[1:])
         exit(return_code)
-    except Exception, e:
-        logger.exception(e)
+    except Exception:
+        _, exc_value, _ = sys.exc_info()
+        logger.exception(exc_value)
+        logger.error('exception caught!')
 
 
 

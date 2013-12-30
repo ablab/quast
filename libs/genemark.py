@@ -47,11 +47,25 @@ def install_genemark(tool_dirpath):
     cp gm_key ~/.gm_key
     (genemark_suite_linux_XX/gmsuite/INSTALL)
     """
+    import subprocess
+    import filecmp
     gm_key_fpath = os.path.join(tool_dirpath, 'gm_key')
     gm_key_dst = os.path.expanduser('~/.gm_key')
-    import filecmp
-    if not os.path.isfile(gm_key_dst) or not filecmp.cmp(gm_key_dst, gm_key_fpath):
+    if not os.path.isfile(gm_key_dst) or \
+        (not filecmp.cmp(gm_key_dst, gm_key_fpath) and os.path.getmtime(gm_key_dst) < os.path.getmtime(gm_key_fpath)):
         shutil.copyfile(gm_key_fpath, gm_key_dst)
+    # checking the installation
+    tool_exec_fpath = os.path.join(tool_dirpath, 'gmhmmp')
+    proc = subprocess.Popen([tool_exec_fpath], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    while not proc.poll():
+        line = proc.stdout.readline()
+        if line.find('license period has ended') != -1:
+            logger.warning('License period for GeneMark has ended! \n' \
+                           'To update license, please visit http://topaz.gatech.edu/license_download.cgi page and fill in the form.\n' \
+                           'You should choose GeneMarkS tool and your operating system (note that GeneMark is free for non-commercial use).\n' \
+                           'Download the license key and replace your ~/.gm_key with the updated version. After that you can restart QUAST.\n')
+            return False
+    return True
 
 
 # Gene = namedtuple('Gene', ['contig_id', 'strand', 'left_index', 'right_index', 'seq'])
@@ -200,7 +214,9 @@ def do(fasta_fpaths, gene_lengths, out_dirpath, meta):
         logger.warning('  Sorry, can\'t use %s on this platform, skipping gene prediction.' % tool_name)
 
     else:
-        install_genemark(tool_dirpath)
+        successful = install_genemark(tool_dirpath)
+        if not successful:
+            return
 
         if not os.path.isdir(out_dirpath):
             os.mkdir(out_dirpath)

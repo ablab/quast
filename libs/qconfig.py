@@ -7,8 +7,11 @@
 import datetime
 import os
 import platform
+import sys
 
 LIBS_LOCATION = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
+
+SUPPORTED_PYTHON_VERSIONS = ['2.5', '2.6', '2.7']
 
 LOGGER_DEFAULT_NAME = 'quast'
 # error_log_fpath = os.path.join(LIBS_LOCATION, '..', 'error.log')
@@ -91,3 +94,10 @@ assembly_labels_by_fpath = {}
 # for scaffolds
 list_of_broken_scaffolds = []
 Ns_break_threshold = 10
+
+
+def check_python_version():
+    if sys.version[0:3] not in SUPPORTED_PYTHON_VERSIONS:
+        sys.stderr.write("ERROR! Python version " + sys.version[0:3] + " is not supported!\n" +\
+                         "Supported versions are " + ", ".join(SUPPORTED_PYTHON_VERSIONS) + "\n")
+        sys.exit(1)

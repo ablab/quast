@@ -11,15 +11,19 @@ import os
 import shutil
 import getopt
 import re
-from libs import qconfig, qutils, fastaparser
+
+quast_dirpath = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
+sys.path.append(os.path.join(quast_dirpath, 'libs'))
+from libs import qconfig
+qconfig.check_python_version()
+
+from libs import qutils, fastaparser
 from libs.qutils import assert_file_exists
 from libs.html_saver import json_saver
 
 from libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 logger.set_up_console_handler()
-
-quast_dirpath = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
 
 from site import addsitedir
 addsitedir(os.path.join(quast_dirpath, 'libs', 'site_packages'))
@@ -400,7 +404,10 @@ def process_labels(contigs_fpaths, labels, all_labels_from_dirs):
         j = 0
         for i, (label, fpath) in enumerate(zip(labels, contigs_fpaths)):
             if label == duplicated_label:
-                labels[i] = label if j == 0 else label + ' ' + str(j)
+                if j == 0:
+                    labels[i] = label
+                else:
+                    labels[i] = label + ' ' + str(j)
                 j += 1
 
     return labels
@@ -418,8 +425,9 @@ def main(args):
 
     try:
         options, contigs_fpaths = getopt.gnu_getopt(args, qconfig.short_options, qconfig.long_options)
-    except getopt.GetoptError, err:
-        print >> sys.stderr, err
+    except getopt.GetoptError:
+        _, exc_value, _ = sys.exc_info()
+        print >> sys.stderr, exc_value
         print >> sys.stderr
         _usage()
         sys.exit(2)
@@ -439,6 +447,7 @@ def main(args):
                                'test_data/contigs_2.fasta']
 
     if not contigs_fpaths:
+        logger.error("You should specify at least one file with contigs!\n")
         _usage()
         sys.exit(2)
 
@@ -536,8 +545,7 @@ def main(args):
             _usage()
             sys.exit(0)
         else:
-            logger.error('Unknown option: %s. Use -h for help.' % (opt + (' ' + arg) if arg else ''), to_stderr=True)
-            sys.exit(2)
+            logger.error('Unknown option: %s. Use -h for help.' % (opt + ' ' + arg), to_stderr=True, exit_with_code=2)
 
     for contigs_fpath in contigs_fpaths:
         assert_file_exists(contigs_fpath, 'contigs')
@@ -746,7 +754,8 @@ if __name__ == '__main__':
     try:
         return_code = main(sys.argv[1:])
         exit(return_code)
-    except Exception, e:
-        logger.exception(e)
+    except Exception:
+        _, exc_value, _ = sys.exc_info()
+        logger.exception(exc_value)
         logger.error('exception caught!')
 

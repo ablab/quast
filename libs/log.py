@@ -125,7 +125,7 @@ class QLogger(object):
             msg = ''
 
         if to_stderr or not self._logger.handlers:
-            print >> sys.stderr, msg
+            sys.stderr.write(msg + '\n')
         else:
             self._logger.error('')
             self._logger.error(msg)

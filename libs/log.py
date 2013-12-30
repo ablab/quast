@@ -177,22 +177,7 @@ class QLogger(object):
         return now
 
     def print_version(self, to_stderr=False):
-        version_fpath = os.path.join(qconfig.LIBS_LOCATION, '..', 'VERSION')
-        version = "unknown"
-        build = "unknown"
-        if os.path.isfile(version_fpath):
-            version_file = open(version_fpath)
-            version = version_file.readline()
-            if version:
-                version = version.strip()
-            else:
-                version = "unknown"
-            build = version_file.readline()
-            if build:
-                build = build.lower()
-            else:
-                build = "unknown"
-
+        version, build = qconfig.quast_version()
         if to_stderr:
             print >> sys.stderr, "Version", str(version) + (", " + str(build) if build != "unknown" else "")
         else:

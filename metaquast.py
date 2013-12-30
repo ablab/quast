@@ -38,37 +38,6 @@ class Assembly:
         self.name = os.path.splitext(os.path.basename(self.fpath))[0]
 
 
-def usage():
-    print >> sys.stderr, "Options:"
-    print >> sys.stderr, "-o  --output-dir  <dirname>   Directory to store all result files [default: quast_results/results_<datetime>]"
-    print >> sys.stderr, "-R                <filename>  Reference genomes (accepts multiple fasta files with multiple sequences each)"
-    print >> sys.stderr, "-G  --genes       <filename>  File with gene coordiantes in the reference"
-    print >> sys.stderr, "-O  --operons     <filename>  File with operon coordiantes in the reference"
-    print >> sys.stderr, "    --min-contig  <int>       Lower threshold for contig length [default: %s]" % qconfig.min_contig
-    print >> sys.stderr, ""
-    print >> sys.stderr, "Advanced options:"
-    print >> sys.stderr, "-T  --threads      <int>              Maximum number of threads [default: number of CPUs]"
-    print >> sys.stderr, "-l  --labels \"label, label, ...\"      Names of assemblies to use in reports, comma-separated. If contain spaces, use quotes"
-    print >> sys.stderr, "-L                                    Take assembly names from their parent directory names"
-    print >> sys.stderr, "-f  --gene-finding                    Predict genes using MetaGeneMark"
-    print >> sys.stderr, "-S  --gene-thresholds                 Comma-separated list of threshold lengths of genes to search with Gene Finding module"
-    print >> sys.stderr, "                                      [default is %s]" % qconfig.genes_lengths
-    print >> sys.stderr, "-e  --eukaryote                       Genome is eukaryotic"
-    print >> sys.stderr, "    --est-ref-size <int>              Estimated reference size (for computing NGx metrics without a reference)"
-    print >> sys.stderr, "    --gage                            Use GAGE (results are in gage_report.txt)"
-    print >> sys.stderr, "-t  --contig-thresholds               Comma-separated list of contig length thresholds [default: %s]" % qconfig.contig_thresholds
-    print >> sys.stderr, "-s  --scaffolds                       Assemblies are scaffolds, split them and add contigs to the comparison"
-    print >> sys.stderr, "-u  --use-all-alignments              Compute genome fraction, # genes, # operons in the v.1.0-1.3 style."
-    print >> sys.stderr, "                                      By default, QUAST filters Nucmer\'s alignments to keep only best ones"
-    print >> sys.stderr, "-a  --ambiguity-usage <none|one|all>  Use none, one, or all alignments of a contig with multiple equally "
-    print >> sys.stderr, "                                      good alignments [default is %s]" % qconfig.ambiguity_usage
-    print >> sys.stderr, "-n  --strict-NA                       Break contigs in any misassembly event when compute NAx and NGAx"
-    print >> sys.stderr, "                                      By default, QUAST breaks contigs only by extensive misassemblies (not local ones)"
-    print >> sys.stderr, ""
-    print >> sys.stderr, "    --test                            Run QUAST on the data from the test_data folder, output to test_meta_output"
-    print >> sys.stderr, "-h  --help                            Print this message"
-
-
 def _partition_contigs(assemblies, ref_fpaths, corrected_dirpath, alignments_fpath_template):
     # not_aligned_anywhere_dirpath = os.path.join(output_dirpath, 'contigs_not_aligned_anywhere')
     # if os.path.isdir(not_aligned_anywhere_dirpath):
@@ -257,6 +226,10 @@ def main(args):
                      to_stderr=True,
                      exit_with_code=3)
 
+    if not args:
+        qconfig.usage(meta=True)
+        sys.exit(0)
+
     min_contig = qconfig.min_contig
     genes = []
     operons = []
@@ -270,7 +243,7 @@ def main(args):
         _, exc_value, _ = sys.exc_info()
         print >> sys.stderr, exc_value
         print >> sys.stderr
-        usage()
+        qconfig.usage(meta=True)
         sys.exit(2)
 
     for opt, arg in options:
@@ -279,7 +252,7 @@ def main(args):
             qconfig.debug = True
             logger.set_up_console_handler(debug=True)
 
-        if opt == '--test':
+        elif opt == '--test':
             options.remove((opt, arg))
             options += [('-R', 'test_data/meta_ref_1.fasta,'
                                'test_data/meta_ref_2.fasta,'
@@ -287,8 +260,13 @@ def main(args):
             contigs_fpaths += ['test_data/meta_contigs_1.fasta',
                                'test_data/meta_contigs_2.fasta']
 
+        elif opt.startswith('--help'):
+            qconfig.usage(opt == "--help-hidden", meta=True)
+            sys.exit(0)
+
     if not contigs_fpaths:
-        usage()
+        logger.error("You should specify at least one file with contigs!\n")
+        qconfig.usage(meta=True)
         sys.exit(2)
 
     ref_fpaths = []
@@ -332,10 +310,6 @@ def main(args):
 
         elif opt in ('-M', "--min-contig"):
             min_contig = int(arg)
-
-        elif opt in ('-h', "--help"):
-            usage()
-            sys.exit(0)
 
         elif opt in ('-T', "--threads"):
             pass

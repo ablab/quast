@@ -377,6 +377,7 @@ def main(args):
                         ('--gene-finding',''), ('--eukaryote','')] # for compiling GlimmerHMM
             contigs_fpaths += ['test_data/contigs_1.fasta',
                                'test_data/contigs_2.fasta']
+            qconfig.test = True
 
         if opt.startswith('--help'):
             qconfig.usage(opt == "--help-hidden")
@@ -494,7 +495,7 @@ def main(args):
     logger.start()
 
     if existing_alignments:
-        logger.notice()
+        logger.info()
         logger.notice("Output directory already exists. Existing Nucmer alignments can be used.")
         qutils.remove_reports(output_dirpath)
 
@@ -516,7 +517,7 @@ def main(args):
             logger.warning('Failed to determine the number of CPUs')
             qconfig.max_threads = qconfig.DEFAULT_MAX_THREADS
 
-        logger.notice()
+        logger.info()
         logger.notice('Maximum number of threads is set to ' + str(qconfig.max_threads) + ' (use --threads option to set it manually)')
 
 
@@ -615,7 +616,7 @@ def main(args):
 
         if qconfig.draw_plots:
             ########################################################################
-            ### VISUALIZE CONTIG ALINGMENT
+            ### VISUALIZE CONTIG ALIGNMENT
             ########################################################################
             from libs import contig_alignment_plotter
             contig_alignment_plot_fpath = contig_alignment_plotter.do(
@@ -669,7 +670,7 @@ def main(args):
         logger.info('  Contig alignment plot: %s' % contig_alignment_plot_fpath)
 
     _cleanup(corrected_dirpath)
-    logger.finish_up()
+    logger.finish_up(check_test=qconfig.test)
     return 0
 
 

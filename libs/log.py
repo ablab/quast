@@ -28,6 +28,9 @@ class QLogger(object):
     _log_fpath = ''
     _start_time = None
     _indent_val = 0
+    _num_notices = 0
+    _num_warnings = 0
+    _num_nf_errors = 0
 
     def __init__(self, name):
         self._name = name
@@ -72,12 +75,23 @@ class QLogger(object):
         self._logger.info('')
         self._logger.info('Logging to ' + self._log_fpath)
 
-    def finish_up(self):
+    def finish_up(self, numbers=None, check_test=False):
         self._logger.info('  Log saved to ' + self._log_fpath)
 
         finish_time = self.print_timestamp('Finished: ')
         self._logger.info('Elapsed time: ' + str(finish_time - self._start_time))
+        if numbers:
+            self.print_numbers_of_notifications(prefix="Total ", numbers=numbers)
+        else:
+            self.print_numbers_of_notifications()
         self._logger.info('\nThank you for using QUAST!')
+        if check_test:
+            if (numbers is not None and numbers[2] > 0) or self._num_nf_errors > 0:
+                self._logger.info('\nTEST FAILED! Please find non-fatal errors in the log and try to fix them!')
+            elif (numbers is not None and numbers[1] > 0) or self._num_warnings > 0:
+                self._logger.info('\nTEST PASSED with WARNINGS!')
+            else:
+                self._logger.info('\nTEST PASSED!')
 
         for handler in self._logger.handlers:
             self._logger.removeHandler(handler)
@@ -105,14 +119,16 @@ class QLogger(object):
         self._logger.addHandler(file_handler)
 
     def notice(self, message='', indent=''):
+        self._num_notices += 1
         self._logger.info(indent + ('NOTICE: ' + str(message) if message else ''))
 
     def warning(self, message='', indent=''):
+        self._num_warnings += 1
         self._logger.warning(indent + ('WARNING: ' + str(message) if message else ''))
 
     def error(self, message='', exit_with_code=0, to_stderr=False, indent='', fake_if_nested_run=False):
         if fake_if_nested_run and self._indent_val > 0:
-            self.notice('')
+            self.info('')
             self.notice(message)
             return
 
@@ -132,6 +148,8 @@ class QLogger(object):
 
         if exit_with_code:
             exit(exit_with_code)
+        else:
+            self._num_nf_errors += 1
 
     def exception(self, e, exit_code=0):
         if self._logger.handlers:
@@ -194,3 +212,12 @@ class QLogger(object):
             self._logger.info("  CPUs number: " + str(multiprocessing.cpu_count()))
         except:
             self._logger.info("  Problem occurred when getting system information")
+
+    def print_numbers_of_notifications(self, prefix="", numbers=None):
+        if not numbers:
+            numbers = (self._num_notices, self._num_warnings, self._num_nf_errors)
+        self._logger.info(prefix + "NOTICEs: %d; WARNINGs: %d; non-fatal ERRORs: %d" %
+                          numbers)
+
+    def get_numbers_of_notifications(self):
+        return (self._num_notices, self._num_warnings, self._num_nf_errors)

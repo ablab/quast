@@ -9,7 +9,8 @@
       3. Genome analyzer module (computation of genome fraction, duplication ratio,
       number of genes and operons) is parallelized.
 
-      4. A new option --test added for testing correct QUAST installation.
+      4. Option --test became an installation util analogue. It compiles all required binaries and 
+      checks correctness of QUAST and metaQUAST execution on test datasets.
 
       5. A new option --no-plots added for speeding up computation if plots are not needed.
     

@@ -56,6 +56,7 @@ html_report = True
 save_json = False
 meta = False
 debug = False
+test = False
 
 
 default_results_root_dirname = "quast_results"

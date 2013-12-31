@@ -96,7 +96,7 @@ def _partition_contigs(assemblies, ref_fpaths, corrected_dirpath, alignments_fpa
 
 def _start_quast_main(
         name, args, assemblies, reference_fpath=None,
-        output_dirpath=None, exit_on_exception=True):
+        output_dirpath=None, exit_on_exception=True, num_notifications_tuple=None):
     args = args[:]
 
     args.extend([asm.fpath for asm in assemblies])
@@ -126,7 +126,11 @@ def _start_quast_main(
                         os.path.join(output_dirpath,
                                      qconfig.LOGGER_DEFAULT_NAME + '.log)'))
     # try:
-    return quast.main(args)
+    return_code = quast.main(args)
+    if num_notifications_tuple:
+        cur_num_notifications = quast.logger.get_numbers_of_notifications()
+        num_notifications_tuple = map(sum, zip(num_notifications_tuple,cur_num_notifications))
+    return return_code, num_notifications_tuple
 
     # except Exception, (errno, strerror):
     #     if exit_on_exception:
@@ -247,6 +251,7 @@ def main(args):
         sys.exit(2)
 
     quast_py_args = args[:]
+    test_mode = False
 
     for opt, arg in options:
         if opt in ('-d', '--debug'):
@@ -263,6 +268,7 @@ def main(args):
                                'test_data/meta_ref_3.fasta')]
             contigs_fpaths += ['test_data/meta_contigs_1.fasta',
                                'test_data/meta_contigs_2.fasta']
+            test_mode = True
 
         elif opt.startswith('--help'):
             qconfig.usage(opt == "--help-hidden", meta=True)
@@ -343,6 +349,8 @@ def main(args):
             pass
         elif opt == "--gage":
             pass
+        elif opt == "--debug":
+            pass
         elif opt in ('-e', "--eukaryote"):
             pass
         elif opt in ('-f', "--gene-finding"):
@@ -417,7 +425,7 @@ def main(args):
     if not ref_fpaths:
         # No references, running regular quast with MetaGenemark gene finder
         logger.info()
-        logger.info('No references provided, starting quast.py with MetaGeneMark gene finder')
+        logger.notice('No references provided, starting quast.py with MetaGeneMark gene finder')
         _start_quast_main(
             None,
             quast_py_args,
@@ -430,11 +438,16 @@ def main(args):
     run_name = 'for the combined reference'
     logger.info()
     logger.info('Starting quast.py ' + run_name + '...')
+    total_num_notices = 0
+    total_num_warnings = 0
+    total_num_nf_errors = 0
+    total_num_notifications = (total_num_notices, total_num_warnings, total_num_nf_errors)
 
-    _start_quast_main(run_name, quast_py_args,
+    return_code, total_num_notifications = _start_quast_main(run_name, quast_py_args,
         assemblies=assemblies,
         reference_fpath=combined_ref_fpath,
-        output_dirpath=os.path.join(output_dirpath, 'combined_quast_output'))
+        output_dirpath=os.path.join(output_dirpath, 'combined_quast_output'),
+        num_notifications_tuple=total_num_notifications)
 
     # Partitioning contigs into bins aligned to each reference
     assemblies_by_reference, not_aligned_assemblies = _partition_contigs(
@@ -449,21 +462,21 @@ def main(args):
             run_name = 'for the contigs aligned to ' + ref_name
             logger.info('Starting quast.py ' + run_name)
 
-            _start_quast_main(run_name, quast_py_args,
+            return_code, total_num_notifications = _start_quast_main(run_name, quast_py_args,
                 assemblies=ref_assemblies,
                 reference_fpath=os.path.join(corrected_dirpath, ref_name) + common_ref_fasta_ext,
                 output_dirpath=os.path.join(output_dirpath, ref_name + '_quast_output'),
-                exit_on_exception=False)
+                exit_on_exception=False, num_notifications_tuple=total_num_notifications)
 
     # Finally running for the contigs that has not been aligned to any reference
     run_name = 'for the contigs not alined anywhere'
     logger.info()
     logger.info('Starting quast.py ' + run_name + '...')
 
-    return_code = _start_quast_main(run_name, quast_py_args,
+    return_code, total_num_notifications = _start_quast_main(run_name, quast_py_args,
         assemblies=not_aligned_assemblies,
         output_dirpath=os.path.join(output_dirpath, 'not_aligned_quast_output'),
-        exit_on_exception=False)
+        exit_on_exception=False, num_notifications_tuple=total_num_notifications)
 
     if return_code not in [0, 4]:
         logger.error('Error running quast.py for the contigs not aligned anywhere')
@@ -472,7 +485,7 @@ def main(args):
 
     logger.info('')
     logger.info('MetaQUAST finished.')
-    logger.finish_up()
+    logger.finish_up(numbers=tuple(total_num_notifications), check_test=test_mode)
 
 
 if __name__ == '__main__':

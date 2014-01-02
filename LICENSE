@@ -1,6 +1,6 @@
 
 QUAST: a QUality ASsessment Tool
-Copyright (c) 2011-2013 Saint-Petersburg Academic University
+Copyright (c) 2011-2014 Saint-Petersburg Academic University
 
 QUAST is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License, Version 2,
@@ -18,12 +18,16 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 -------------------------------------------------------------------------------
 
 Authors:
-
     Alexey Gurevich
     Nikolay Vyahhi
     Vladislav Saveliev
+    Andrey Prjibelsky
     Ekaterina Sosa
     Glenn Tesler
+
+Testers:
+    Irina Vasilinetc
+    Dmitry Antipov
 
 Contact:
     quast.support@bioinf.spbau.ru

@@ -1,6 +1,6 @@
 <html>
 <head>
-    <title>QUAST 2.2 manual</title>
+    <title>QUAST 3.0 manual</title>
     <style type="text/css">
         body {
             margin-top: 30px;
@@ -66,7 +66,7 @@
     </style>
 </head>
 <body>
-<h1>QUAST 2.2 manual</h1>
+<h1>QUAST 3.0 manual</h1>
 
 <p> QUAST stands for <u>QU</u>ality <u>AS</u>sesment <u>T</u>ool. 
     The tool evaluates genome assemblies by computing various metrics.
@@ -76,13 +76,13 @@
     at <a href="http://sourceforge.net/projects/quast/">http://sourceforge.net/projects/quast</a>.
     <br>
     <br>
-    QUAST utilizes <a href="http://mummer.sourceforge.net/">MUMmer</a>, <a href="http://exon.gatech.edu/genemarks.cgi">GeneMarkS</a>, <a href="http://exon.gatech.edu/genemarks.cgi">MetaGeneMark</a>, 
+    QUAST utilizes <a href="http://mummer.sourceforge.net/">MUMmer</a>, <a href="http://exon.gatech.edu/gmhmm2_prok.cgi">GeneMark.hmm</a>, <a href="http://exon.gatech.edu/metagenome/">MetaGeneMark</a>, 
     <a href="http://cbcb.umd.edu/software/glimmerhmm/">GlimmerHMM</a>
-    and <a href="http://gage.cbcb.umd.edu/index.html">GAGE</a>. These tools are built in, so you don't need to install
+    and <a href="http://gage.cbcb.umd.edu/index.html">GAGE</a>. These tools are built in, so you do not need to install
     them separately.
     <br>
     <br>
-    Version 2.2 of QUAST was released under GPL v2 (see <a href="LICENSE">LICENSE</a> for details) on 3 July 2013.
+    Version 3.0 of QUAST was released under GPL v2 (see <a href="LICENSE">LICENSE</a> for details) on 5 January 2014.
 </p>
 
 <h2>Contents</h2>
@@ -112,6 +112,7 @@
   <li><a href="#sec4">Adjusting QUAST reports and plots</a></li> 
   <li><a href="#sec5">Citation</a></li>
   <li><a href="#sec6">Feedback and bug reports</a></li> 
+  <li><a href="#sec7">FAQ</a></li> 
 </ol>
 
 <a name="sec1"></a>
@@ -155,12 +156,36 @@ Or on Ubuntu by typing:
     sudo apt-get install python-matplotlib
 </pre>
 <br>
-To download the <a href="https://downloads.sourceforge.net/project/quast/quast-2.2.tar.gz">QUAST source code tarball</a> and extract it, type:
+To download the <a href="https://downloads.sourceforge.net/project/quast/quast-3.0.tar.gz">QUAST source code tarball</a> and extract it, type:
 <pre class="code">
-    wget https://downloads.sourceforge.net/project/quast/quast-2.2.tar.gz
-    tar -xzf quast-2.2.tar.gz
-    cd quast-2.2
+    wget https://downloads.sourceforge.net/project/quast/quast-3.0.tar.gz
+    tar -xzf quast-3.0.tar.gz
+    cd quast-3.0
 </pre>
+
+<p>
+QUAST automatically compiles all its sub-parts when needed (on the first use). 
+Thus, there is no special installation command for QUAST.
+However, we recommend you to run:
+<pre class="code">
+    python quast.py --test (if you plan to use only quast.py)
+</pre>
+or 
+<pre class="code">
+    python metaquast.py --test  (if you plan to use only metaquast.py)
+</pre>
+or both. 
+These commands run all QUAST and metaQUAST modules and check correctness
+of their work on your platform.
+</p>
+
+<p>
+Note: you should place quast-3.0 directory in the final destination before 
+the first use (e.g. before run with --test). If you want to move QUAST to 
+some new place after several usages you should use clean copy of quast-3.0.
+This limitation is caused by auto-generated absolute paths in compiled 
+modules of QUAST.
+</p>
 
 <a name="sec2"></a>
 <h2 style='margin-bottom: -40px;'>2. Running QUAST</h2>
@@ -189,14 +214,14 @@ View the summary of the evaluation results with the <a href="http://www.greenwoo
     Multiple reference chromosomes can be provided as separate sequences in a single FASTA file.<br>
     <span style='line-height: 50%;'>&nbsp;</span><br>  
     Maximum assembly length is 4.29<span class="rhs">&nbsp;</span>Gbp.<br>
-    Maximum length of a reference sequence is 536<span class="rhs">&nbsp;</span>Mbp. The number of sequences is not limited.<br>
+    Maximum length of a reference sequence (e.g. a chromosome) is 536<span class="rhs">&nbsp;</span>Mbp. The number of sequences in a reference file is not limited.<br>
     <span style='line-height: 50%;'>&nbsp;</span><br>  
     Those restrictions belongs to Nucmer, a tool that QUAST applies to align contigs to a reference genome. 
     The metrics that do not require alignment are computed in any case.<br>
     <br>
     <b>Genes and operons</b><br>
     One can also specify files with gene and operon positions in the reference. QUAST will count fully and partially aligned regions, 
-    and output <a href='#genes'>total values</a> and <a href='#gene_plot'>comulative plots</a>.<br>
+    and output <a href='#genes'>total values</a> and <a href='#gene_plot'>cmulative plots</a>.<br>
     <span style='line-height: 50%;'>&nbsp;</span><br>  
     The following file formats are suported:
     <ul>
@@ -272,7 +297,11 @@ File with operon positions in reference. See details about the file format in <a
 </div>
 Lower threshold for a contig length. Shorter contigs won't be taken into account
 (except for some metrics, see <a href="#sec3">section 3</a>). The default value is 500.
+</div>
 
+<br>
+Advanced options:
+<div class='options'>
 <div class='option'>
 <code><b>-t</b></code> (or <code>--threads</code>) <code>&lt;int&gt;</code>
 </div>
@@ -293,33 +322,17 @@ If your labels include spaces, use quotes:<br>
 <code>-l "SPAdes 2.5, SPAdes 2.4, IDBA-UD"<br></code>
 </div>
 
-</div>
-
-<br>
-Advanced options:
-<div class='options'>
 <div class='option'>
-    <code><b>--scaffolds</b></code>
+    <code><b>-L</b></code>
 </div>
-The assemblies are scaffolds (rather than contigs). QUAST will add split versions
-of assemblies to the comparison. Assemblies are split by continuous fragments of N's of length &ge; 10.
+Take assembly names from their parent directory names.
 
-<div class='option'>
-    <code><b>--ambiguity-usage</b> &lt;<b>none</b>|<b>one</b>|<b>all</b>&gt;</code>
-</div>
-Way of processing equally good alignments (probably repeats):<br>
-<table style="margin-left: 30px; font-size: 1em; vertical-align: bottom;">
-    <tr><td style='width: 40px;'><code>none</code></td><td>skip all such alignments;</td></tr>
-    <tr><td><code>one</code></td><td>take only one (the first one);</td></tr>
-    <tr><td><code>all</code></td><td>use all alignements. Can cause a significant increase of <span class='metric-ref'># mismatches</span>
-    (repeats are almost always inexact due to accumulated SNPs, indels, etc.).</td></tr>
-</table>
 <div class='option'>
     <a name='gene_finding'></a><code><b>--gene-finding</b></code>
 </div>
 Enables gene finding. Affects perfomance, thus disabled by default.<br>
 <span style='line-height: 50%;'>&nbsp;</span><br>  
-By default, we asume that the genome is prokaryotic, and apply GenemarkS for gene finding.
+By default, we asume that the genome is prokaryotic, and apply GeneMark.hmm for gene finding.
 If the genome is eukaryotic, add the <a href='#eukaryote'><code>--eukaryte</code></a> option to enable GlimmerHMM instead.
 If it is a metagenome, add the <a href='#meta'><code>--meta</code></a> option.<br>
 <span style='line-height: 50%;'>&nbsp;</span><br>  
@@ -340,7 +353,7 @@ Note: this list is used only if <code>--gene-finding</code> option is specified.
 </div>
 Genome is eukarytic. Affects gene finding and contig alignment:<br>
 <ol class='my_ol' style='margin-top: 0;'>
-<li>For prokaryotes (which is default), GenemarkS is used. For eukaryotes, GlimmerHMM is used.
+<li>For prokaryotes (which is default), GeneMark.hmm is used. For eukaryotes, GlimmerHMM is used.
 <li>By default, QUAST assumes that a genome is circular and correctly processes its linear representation.
 This options indicates that the genome is not circular.
 </ol>
@@ -356,29 +369,10 @@ Note: if you have multiple references, <a href='#sec2.5'>use metaquast.py</a> in
 (it is in the same directory as quast.py).
 
 <div class='option'>
-    <code><b>--use-all-alignments</b></code>
-</div>
-Compute <span class='metric-ref'>genome fraction, # genes, # operons</span> metrics in the manner used in QUAST v.1.*.
-By default, QUAST v.2.* filters out ambiguous and redundant alignments, keeping only one alignment per contig 
-(or one set of non-overlapping or slightly-overlapping alignments). This option makes QUAST count all alignments.
-
-<div class='option'>
-    <code><b>--contig-thresholds</b> &lt;int,int,...&gt;</code>
-</div>
-Comma-separated list of contig length thresholds. Used in <span class='metric-ref'># contigs &ge; x</span> and
-<span class='metric-ref'>total length (&ge; x)</span> metrics (see <a href="#sec3">section 3</a>). The default value is 0,1000.
-
-<div class='option'>
     <code><b>--est-ref-size</b> &lt;int&gt;</code>
 </div>
 Estimated reference size (in bases) for computing <span class='metric-ref'>NGx</span> statistics. This value will be used only if a reference genome file is
 not specified (see <code>--R</code> option).
-
-<div class='option'>
-    <code><b>--strict-NA</b></code>
-</div>
-Break contigs at every misassembly event (including local ones) to compute <span class='metric-ref'>NAx</span> and
-<span class='metric-ref'>NGAx</span> statistics. By default, QUAST breaks contigs <i>only at extensive</i> misassemblies (not local ones).
 
 <div class='option'>
     <code><b>--gage</b></code>
@@ -387,14 +381,56 @@ Starts QUAST in "GAGE mode" (see <a href="#sec2.3">section 2.3</a>).
 Note: in this case, you also have to set the <code>-R</code> option.
 
 <div class='option'>
+    <code><b>--contig-thresholds</b> &lt;int,int,...&gt;</code>
+</div>
+Comma-separated list of contig length thresholds. Used in <span class='metric-ref'># contigs &ge; x</span> and
+<span class='metric-ref'>total length (&ge; x)</span> metrics (see <a href="#sec3">section 3</a>). The default value is 0,1000.
+
+<div class='option'>
+    <code><b>--scaffolds</b></code>
+</div>
+The assemblies are scaffolds (rather than contigs). QUAST will add split versions
+of assemblies to the comparison. Assemblies are split by continuous fragments of N's of length &ge; 10.
+
+<div class='option'>
+    <code><b>--use-all-alignments</b></code>
+</div>
+Compute <span class='metric-ref'>genome fraction, # genes, # operons</span> metrics in the manner used in QUAST v.1.*.
+By default, QUAST v.2.0 and higher filters out ambiguous and redundant alignments, keeping only one alignment per contig 
+(or one set of non-overlapping or slightly-overlapping alignments). This option makes QUAST count all alignments.
+
+<div class='option'>
+    <code><b>--ambiguity-usage</b> &lt;<b>none</b>|<b>one</b>|<b>all</b>&gt;</code>
+</div>
+Way of processing equally good alignments (probably repeats):<br>
+<table style="margin-left: 30px; font-size: 1em; vertical-align: bottom;">
+    <tr><td style='width: 40px;'><code>none</code></td><td>skip all such alignments;</td></tr>
+    <tr><td><code>one</code></td><td>take only one (the first one);</td></tr>
+    <tr><td><code>all</code></td><td>use all alignements. Can cause a significant increase of <span class='metric-ref'># mismatches</span>
+    (repeats are almost always inexact due to accumulated SNPs, indels, etc.).</td></tr>
+</table>
+The default value is 'one'.
+
+<div class='option'>
+    <code><b>--strict-NA</b></code>
+</div>
+Break contigs at every misassembly event (including local ones) to compute <span class='metric-ref'>NAx</span> and
+<span class='metric-ref'>NGAx</span> statistics. By default, QUAST breaks contigs <i>only at extensive</i> misassemblies (not local ones).
+
+<div class='option'>
+    <code><b>--no-plots</b></code>
+</div>
+Do not draw plots. This will speed up computation but you will get only text reports as a result.
+
+<div class='option'>
     <code><b>--test</b></code>
 </div>
-Runs the tool on a data from the <code>test_data</code> folder.
+Run the tool on a data from the <code>test_data</code> folder and check correctness of the evaluation process. Output is saved in quast_test_output.
 
 <div class='option'>
     <code><b>-h</b></code> (or <code>--help</code>)
 </div>
-Prints help.
+Print help.
 
 </div>
 
@@ -454,12 +490,16 @@ All options are the same as for quast.py, except for <code>-R</code>: it can acc
         <td>a LaTeX version of the summary,</td>
     </tr>
     <tr>
+        <td style="padding-right: 20px;">alignment.svg</td>
+        <td>a contig alignment plot (file is created if the matplotlib python library is installed),</td>
+    </tr>
+    <tr>
         <td style="padding-right: 20px;">plots.pdf</td>
-        <td>plots (file is created if the matplotlib python library is installed),</td>
+        <td>all other plots (file is created if the matplotlib python library is installed),</td>
     </tr>
     <tr>
         <td style="padding-right: 20px;">report.html</td>
-        <td>an HTML version of the report with all plots inside it,</td>
+        <td>an HTML version of the report with interactive plots inside it,</td>
     </tr>
     <tr>
         <td style="padding-right: 20px;">contigs_reports/</td>
@@ -511,6 +551,11 @@ Note:
 
 <p><span class='metric-name'>Reference length</span> is the total number of bases in the reference.</p>
 
+<p><a name='GC'></a><span class='metric-name'>GC (%)</span> is the total number of G and C nucleotides in the assembly,
+    divided by the total length of the assembly.</p>
+
+<p><span class='metric-name'>Reference GC (%)</span> is the percentage of G and C nucleotides in the reference.</p>
+
 <p><a name='N50'></a><span class='metric-name'>N50</span> is the length for which the collection of all contigs of that length or longer 
     covers at least half an assembly.<br>
 
@@ -535,6 +580,13 @@ Note:
 
 <p><span class='metric-name'>Misassembled contigs length</span> is the total number of bases in misassembled contigs.</p>
 
+<p><span class='metric-name'># local misassemblies</span> is the number of breakpoints that satisfy the following conditions: 
+<ol class='my_ol' style='margin-top: -24px;'>
+<li>Two or more distinct alignments cover the breakpoint.</li>
+<li>The gap between left and right flanking sequences is less than 1<span class="rhs">&nbsp;</span>kbp.</li>
+<li>The left and right flanking sequences both are on the same strand of the same chromosome of the reference genome.</li>
+</ol> </p>
+
 <p><span class='metric-name'># unaligned contigs</span> is the number of contigs that have no alignment to the
     reference sequence. The value "X<span class='rhs'>&nbsp;</span>+<span class='rhs'>&nbsp;</span>Y part" means X totally unaligned contigs plus Y partially unaligned contigs. </p>
 
@@ -555,10 +607,7 @@ Note:
     regions of the reference, its <span class='metric-ref'>duplication ratio</span> may be much larger than 1. This may occur due to overestimating 
     repeat multiplicities and due to small overlaps between contigs, among other reasons.</p>
 
-<p><a name='GC'></a><span class='metric-name'>GC (%)</span> is the total number of G and C nucleotides in the assembly,
-    divided by the total length of the assembly.</p>
-
-<p><span class='metric-name'>Reference GC (%)</span> is the percentage of G and C nucleotides in the reference.</p>
+<p><span class='metric-name'># N's per 100<span class="rhs">&nbsp;</span>kbp</span> is the average number of uncalled bases (N's) per 100<span class='hs'></span>000 assembly bases.</p>
 
 <p><span class='metric-name'># mismatches per 100<span class="rhs">&nbsp;</span>kbp</span> is the average number of mismatches 
     per 100<span class='hs'></span>000 aligned bases. True SNPs and sequencing errors are not distinguished and are counted equally.
@@ -567,8 +616,6 @@ Note:
 
 <p><span class='metric-name'># indels per 100<span class="rhs">&nbsp;</span>kbp</span> is the average number of indels per 100<span class='hs'></span>000 aligned bases. 
     Several consecutive single nucleotide indels are counted as one indel.</p>
-
-<p><span class='metric-name'># N's per 100<span class="rhs">&nbsp;</span>kbp</span> is the average number of uncalled bases (N's) per 100<span class='hs'></span>000 assembly bases.</p>
 
 <p><a name='genes'></a><span class='metric-name'># genes</span> is the number of genes in the assembly (complete and partial), based on a user-provided 
     list of gene positions in the reference. A gene 'partially covered' if the assembly contains at least 100<span class="rhs">&nbsp;</span>bp 
@@ -579,7 +626,7 @@ Note:
 <p><span class='metric-name'># operons</span> is defined similarly to <span class='metric-ref'># genes</span>, but an operon positions file required instead.</p>
 
 <p><a name='predicted_genes'><span class='metric-name'># predicted genes</span> is the number of genes in the assembly
-    found by GeneMarkS, GlimmerHMM or MetaGeneMark. See the description of the <a href='#gene_finding'><code>--gene-finding</code></a> option for details.</p>
+    found by GeneMark.hmm, GlimmerHMM or MetaGeneMark. See the description of the <a href='#gene_finding'><code>--gene-finding</code></a> option for details.</p>
 
 <p><span class='metric-name'>Largest alignment</span> is the length of the largest continuous alignment in the assembly.
     A value can be smaller than a value of <a href='largest_contig'><span class='metric-ref'>largest contig</span></a> if the largest contig is misassembled.</p>
@@ -608,12 +655,9 @@ opposite strands of the same chromosome. </p>
     <a href="#sec3.1.1">section 3.1.1</a> and are counted among all contigs with any type of a misassembly 
     (relocation, translocation or inversion). </p>
 
-<p><span class='metric-name'># local misassemblies</span> is the number of breakpoints that satisfy the following conditions: 
-<ol class='my_ol' style='margin-top: -24px;'>
-<li>Two or more distinct alignments cover the breakpoint.</li>
-<li>The gap between left and right flanking sequences is less than 1<span class="rhs">&nbsp;</span>kbp.</li>
-<li>The left and right flanking sequences both are on the same strand of the same chromosome of the reference genome.</li>
-</ol> </p>
+<p><span class='metric-name'># local misassemblies</span> is the same as <span class='metric-ref'># local misassemblies</span> from 
+<a href="#sec3.1.1">section 3.1.1</a>.
+</p>
 
 <p><span class='metric-name'># mismatches</span> is the number of mismatches in all aligned bases.</p>
 
@@ -649,6 +693,12 @@ opposite strands of the same chromosome. </p>
 
 <a name="sec3.2"></a>
 <h3>3.2 Plots description</h3>
+
+<p><span class='metric-name'>Contig alignment plot</span> shows alignment of contigs to the reference genome and the positions of misassemblies in these contigs.
+Contigs that align correctly are colored blue if the boundaries agree (within 2000 bp on each side) in at least half of the assemblies, and green otherwise.
+Blocks of misassembled contigs are colored orange if the boundaries agree in at least half of the assemblies, and red otherwise.
+Contigs are staggered vertically and are shown in different shades of their color in order to distinguish the separate contigs, including small ones. If the reference
+file consists of several sequences all of them are drawn on the single plot horizontally next to each other.</p>
 
 <p><span class='metric-name'>Cumulative length plot</span> shows the growth of contig lengths. On the x-axis, contigs are ordered from the largest 
     to smallest. The y-axis gives the size of the x largest contigs in the assembly.</p>
@@ -722,6 +772,170 @@ First published online: February 19, 2013
     Note that if you didn't specify the output directory manually, it is going to be automatically set to <code>quast_results/results_&lt;date_time&gt;</code>, with a symbolic link <code>quast_results/latest</code> to that directory.
 </p>
 
+<a name="sec7"></a><p>
+<h2>7. FAQ</h2>
+<p>
+This section contains most popular questions about QUAST output. Read answers for deeper understanding of results generated by the tool.
+</p>
+<p>
+In several answers there are descriptions of files under <code>&lt;quast_output_dir&gt;</code> directory.
+<br>
+If you use the command-line version of QUAST you specify <code>&lt;quast_output_dir&gt;</code> by -o option or it is <code>"quast_results/latest"</code> by default.
+<br>
+If you use http://quast.bioinf.spbau.ru/ you should download full report by pressing <code>"Download report"</code> button (at top-right corner), 
+decompress result and go to <code>"full_report"</code> subdirectory.
+</p>
+
+<br>
+<p><b><i>
+Q1. It seems that QUAST is giving me a differing number of misassemblies
+and misassembled contigs. Does this imply that QUAST looks for
+multiple misassemblies within one contig?
+</b></i></p>
+<p>
+Yes, you are right, QUAST looks for multiple misassemblies within one contig. Thus,
+number of misassemled contigs is always less or equal to number of misassemblies.
+</p>
+
+<br>
+<p><b><i>
+Q2. Is there a way to get only misassembled contigs of the assembly?
+</b></i></p>
+<p>
+Yes, there is such way.
+<br>
+QUAST copies all misassembled contigs of <code>"&lt;assembly_name&gt;"</code> assembly into 
+<code>&lt;quast_output_dir&gt;/contigs_reports/&lt;assembly_name&gt;.mis_contigs.fa</code> file. 
+<br>
+E.g. if your assembly is "contigs.fasta" then the file is "contigs.mis_contigs.fa", 
+if your assembly is "ecoli_assembly_1.fasta" then the file is "ecoli_assembly_1.mis_contigs.fa".
+<br>
+</p>
+
+<br>
+<p><b><i>
+Q3. Is it possible to find which misassembly corresponds to each contig and which kind of a misassembly it is?
+</b></i></p>
+<p>
+Yes, it is possible.
+<br>
+You should open <code>&lt;quast_output_dir&gt;/contigs_reports/contigs_report_&lt;assembly_name>.stdout&gt;</code> file. 
+<br> 
+E.g. if your assembly is "contigs.fasta" then the file is "contigs_report_contigs.stdout", if your assembly is "ecoli_assembly_1.fasta" then the file is "contigs_report_ecoli_assembly_1.stdout".
+<br> 
+<br>
+After that, you should look for "Extensive misassembly" in the file and look around to detect contig name which corresponds this misassembly. 
+<br><br>
+Let's look at the following example:
+<br>
+<code>
+<pre>
+CONTIG: <b>NODE_772 (575bp)</b>
+Top Length: 296  Top ID: 100.0
+    Skipping redundant alignment 1096745 1096882 | 138 1 | 138 138 | 98.55 | Escherichia_coli NODE_772
+    This contig is misassembled. 3 total aligns.
+        Real Alignment 1: 924846 925134 | 287 575 | 289 289 | 100.0 | Escherichia_coli NODE_772
+            <b>Extensive misassembly ( inversion )</b> between these two alignments
+        Real Alignment 2: 924906 925201 | 296 1 | 296 296 | 100.0 | Escherichia_coli NODE_772
+</pre>
+</code>
+In this example, we can see that contig name is <b>NODE_772</b>, its length is <b>575 bp</b>. 
+This contig has two alignments and one misassembly. <b>Inversion</b> is a type of the misassembly. QUAST also reports relocations and translocations, 
+see <a href="#sec3.1.2">section 3.1.2</a> for details.
+
+<br><br>
+Let's look at another example:
+<br>
+<code>
+<pre>
+CONTIG: <b>Contig_753 (140518bp)</b>
+Top Length: 121089  Top ID: 99.98
+    Skipping redundant alignments after choosing the best set of alignments
+    Skipping redundant alignment 273398 273468 | 18977 18907 | 71 71 | 100.0 | Escherichia_coli Contig_753
+    <i>....</i>
+    Skipping redundant alignment 3363797 3363867 | 18977 18907 | 71 71 | 100.0 | Escherichia_coli Contig_753
+    This contig is misassembled. 14 total aligns.
+        Real Alignment 1: 1425621 1426074 | 19431 18978 | 454 454 | 100.0 | Escherichia_coli Contig_753
+            <i>Gap between these two alignments (local misassembly)</i>. Inconsistency = 148
+        Real Alignment 2: 1426295 1426818 | 18905 18382 | 524 524 | 100.0 | Escherichia_coli Contig_753
+            <b>Extensive misassembly ( relocation, inconsistency = 2224055 )</b> between these two alignments
+        Real Alignment 3: 3650278 3650348 | 18977 18907 | 71 71 | 100.0 | Escherichia_coli Contig_753
+            <b>Extensive misassembly ( relocation, inconsistency = 236807 )</b> between these two alignments
+        Real Alignment 4: 3765544 3886652 | 140518 19430 | 121109 121089 | 99.98 | Escherichia_coli Contig_753
+            <b>Extensive misassembly ( relocation, inconsistency = -1052 )</b> between these two alignments
+        Real Alignment 5: 3886649 3905037 | 18381 1 | 18389 18381 | 99.96 | Escherichia_coli Contig_753
+</pre>
+</code>
+This contig is <b>Contigs_753</b> of length <b>140518 bp</b>. It has <b>3 extensive misassemblies</b> (all three are <b>relocations</b>) and one local misassembly.
+</p>
+
+<br>
+<p><b><i>
+Q4. Could you explain the format of Real Alignments in contigs report files (see the answer for Q3)?
+</b></i></p>
+<p>
+Yes, sure. Let's look at the following example:
+<br>
+<code>
+<pre>
+    Real Alignment 1: 19796 20513 | 29511 30228 | 718 718 | 100.0 | ENA|U00096|U00096.2_Escherichia_coli contig-710
+</pre>
+</code>
+The first two numbers are position on the target, and the second two are position on the query. 
+Note that positions on the target are always ascending while positions on the query can be 
+ascending (positive strand) and descending (negative one).
+<br><br>
+The next two numbers (in this case: 718 718) mean "the number of aligned bases on the target" and "the number of aligned bases on the query". 
+They are usually equal to each other but they can be slightly different because of short insertions and deletions. Actually, these numbers are excessive because they can be easily 
+calculated based on the first two pairs of numbers (positions on the target and positions on the query). However, sometimes it is convenient to look at these numbers.
+<br><br>
+The last number (in this case: 100.0) is the Nucmer aligner quality metric. It is called "identity %" (IDY %) and it describes the quality of the alignment 
+(the number of mismatches and indels between the target and the query). If IDY% = 100.0 then the alignment is perfect, 
+i.e. all bases on the target and on the query are equal to each other. If IDY% is less than 100.0 
+then the target and the query are slightly different. Quast has a threshold on IDY% which is 95%. 
+Thus we don't use alignments with IDY% less than 95% (they are relatively bad).
+<br><br>
+And finally, the last two columns are the name of the target sequence (i.e. reference name) and the name of the query (i.e. contig name).
+</p>
+<br>
+<p><b><i>
+Q5. Where does QUAST save information about SNPs?
+</b></i></p>
+<p>
+There are two output files concerning SNPs. Both of them are saved in <code>&lt;quast_output_dir&gt;/contigs_reports/nucmer_output/</code> directory.
+<br>
+The first one has extension ".all_snps" and it is raw Nucmer aligner output. Its format is:
+<br>
+<code>
+<pre>
+     [P1]  [SUB] [SUB]  [P2]  [BUFF] [DIST] [R] [Q] [FRM] [TAGS]
+     15383   T     G   3339560 1     15383   3   2    1     -1    Escherichia_coli contig_15
+</pre>
+</code>
+Where: P1 is position on the reference, SUB is nucleotide in the reference, SUB is nucleotide in the contig, P2 is position on the contig, 
+BUFF is the distance from this SNP to the nearest mismatch (end of alignment, indel, SNP, etc) in the same alignment, while the [DIST] column 
+specifies the distance from this SNP to the nearest sequence end. 
+<br>
+R and Q specify the number of other alignments which overlap this position (in Reference and Query (i.e. contig) respectively).
+FRM and TAGS are not documented in Nucmer help message, and the last two columns are reference name and contig name.
+<br>
+<br>
+The second file ("*.used_snps") is generated by QUAST. 
+<br>
+We analyse all alignments and filter them by skiping some "uninformative" alignments (redundant, duplicated) and after that include in ".used_snps" file 
+only those of all SNPs which were actually appear in filtered alignments. Thus, reported by QUAST numbers of "# mismatches per 100 kbp", "# indels per 100 kbp" includes statistics 
+from USED SNPs, not ALL SNPs.
+<br>
+In addition, we use our own format of ".used_snps" file. 
+<br>
+<code>
+<pre>
+  Escherichia_coli  contig_15  728803  C   .  3217983
+</pre>
+</code>
+where the columns are: reference name, contig name, position on the reference, nucleotide in the reference, nucleotide in the contig 
+(in this case it is ".", i.e. an absence of a nucleotide in the contig which means a deletion) and the final column is position on the contig.
+</p>
 <br>
 <br>
 </body>

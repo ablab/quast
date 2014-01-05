@@ -150,7 +150,7 @@ def usage(show_hidden=False, meta=False):
     if meta:
         print >> sys.stderr, "-f  --gene-finding                    Predict genes using MetaGeneMark"
     else:
-        print >> sys.stderr, "-f  --gene-finding                    Predict genes (with GeneMarkS from prokaryotes (default), GlimmerHMM"
+        print >> sys.stderr, "-f  --gene-finding                    Predict genes (with GeneMark.hmm for prokaryotes (default), GlimmerHMM"
         print >> sys.stderr, "                                      for eukaryotes (--eukaryote), or MetaGeneMark for metagenomes (--meta)"
     print >> sys.stderr, "-S  --gene-thresholds                 Comma-separated list of threshold lengths of genes to search with Gene Finding module"
     print >> sys.stderr, "                                      [default is %s]" % genes_lengths

@@ -32,7 +32,7 @@ def index_to_str(i):
     if qconfig.assemblies_num == 1:
         return ''
     else:
-        return ('%d ' + ('' if i >= 10 else ' ')) % (i + 1)
+        return ('%d ' + ('' if (i + 1) >= 10 else ' ')) % (i + 1)
 
 
 # def uncompress(compressed_fname, uncompressed_fname, logger=logger):

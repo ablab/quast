@@ -62,13 +62,20 @@ def get_lengths_from_fastafile(fpath):
     lengths = []
     l = 0
     fasta_file = _get_fasta_file_handler(fpath)
-    for line in fasta_file:
-        if line[0] == '>':
-            if l:  # not the first sequence in FASTA
-                lengths.append(l)
-                l = 0
+    for raw_line in fasta_file:
+        if raw_line.find('\r') != -1:
+            lines = raw_line.split('\r')
         else:
-            l += len(line.strip())
+            lines = [raw_line]
+        for line in lines:
+            if not line:
+                continue
+            if line[0] == '>':
+                if l:  # not the first sequence in FASTA
+                    lengths.append(l)
+                    l = 0
+            else:
+                l += len(line.strip())
 
     lengths.append(l)
     fasta_file.close()
@@ -100,23 +107,29 @@ def read_fasta(fpath):
     """
         Returns list of FASTA entries (in tuples: name, seq)
     """
-    fasta_file = None
     first = True
     seq = ''
     name = ''
 
     fasta_file = _get_fasta_file_handler(fpath)
 
-    for line in fasta_file:
-        if line[0] == '>':
-            if not first:
-                yield name, seq
-
-            first = False
-            name = line.strip()[1:]
-            seq = ''
+    for raw_line in fasta_file:
+        if raw_line.find('\r') != -1:
+            lines = raw_line.split('\r')
         else:
-            seq += line.strip()
+            lines = [raw_line]
+        for line in lines:
+            if not line:
+                continue
+            if line[0] == '>':
+                if not first:
+                    yield name, seq
+
+                first = False
+                name = line.strip()[1:]
+                seq = ''
+            else:
+                seq += line.strip()
 
     if name or seq:
         yield name, seq

@@ -90,9 +90,6 @@ def correct_fasta(original_fpath, corrected_fpath, min_contig,
             # seq to uppercase, because we later looking only uppercase letters
             corr_seq = seq.upper()
 
-            # removing \r (Nucmer fails on such sequences)
-            corr_seq = corr_seq.strip('\r')
-
             # correcting alternatives (gage can't work with alternatives)
             # dic = {'M': 'A', 'K': 'G', 'R': 'A', 'Y': 'C', 'W': 'A', 'S': 'C', 'V': 'A', 'B': 'C', 'H': 'A', 'D': 'A'}
             dic = {'M': 'N', 'K': 'N', 'R': 'N', 'Y': 'N', 'W': 'N', 'S': 'N', 'V': 'N', 'B': 'N', 'H': 'N', 'D': 'N'}

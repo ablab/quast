@@ -21,9 +21,11 @@
 
       8. More error and exception handlers added.
 
-      9. Fixed several minor bugs.
+      9. Fixed bug with indel counting (caused slightly overestimated indels rate in some cases).
+      
+      10. Fixed several minor bugs.
        
-      10. Code refactored.
+      11. Code refactored.
 
 
 2.2   1. The tool now supports metagenomic assemblies. It accepts multiple references

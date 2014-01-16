@@ -49,6 +49,6 @@ of their work on your platform.
 
 NOTE: You should place quast-3.0 directory in the final destination before 
 the first use (e.g. before run with --test). If you want to move QUAST to 
-some new place after several usages you should use clean copy of quast-3.0.
-This limitation is caused by auto-generated absolute paths in compiled 
+some new place after several usages you should use a clean copy of quast-3.0.
+This limitation is caused by auto-generation of absolute paths in compiled 
 modules of QUAST.

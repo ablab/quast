@@ -640,7 +640,7 @@ def main(args):
         logger.info('Drawing large plots...')
         logger.info('This may take a while: press Ctrl-C to skip this step..')
         try:
-            number_of_steps = sum([1 if value else 0 for value in [detailed_contigs_reports_dirpath, all_pdf_file]])
+            number_of_steps = sum([int(bool(value)) for value in [detailed_contigs_reports_dirpath, all_pdf_file]])
             if detailed_contigs_reports_dirpath:
                 ########################################################################
                 ### VISUALIZE CONTIG ALIGNMENT

@@ -29,9 +29,6 @@ from site import addsitedir
 addsitedir(os.path.join(quast_dirpath, 'libs', 'site_packages'))
 
 
-
-
-
 def _set_up_output_dir(output_dirpath, json_outputpath,
                        make_latest_symlink, save_json):
     existing_alignments = False
@@ -643,11 +640,12 @@ def main(args):
         logger.info('Drawing large plots...')
         logger.info('This may take a while: press Ctrl-C to skip this step..')
         try:
+            number_of_steps = sum([1 if value else 0 for value in [detailed_contigs_reports_dirpath, all_pdf_file]])
             if detailed_contigs_reports_dirpath:
                 ########################################################################
                 ### VISUALIZE CONTIG ALIGNMENT
                 ########################################################################
-                logger.info('  1 of 2: Creating contig alignment plot...')
+                logger.info('  1 of %d: Creating contig alignment plot...' % number_of_steps)
                 from libs import contig_alignment_plotter
                 contig_alignment_plot_fpath = contig_alignment_plotter.do(
                     contigs_fpaths, os.path.join(detailed_contigs_reports_dirpath, 'contigs_report_%s.stdout'),
@@ -655,7 +653,7 @@ def main(args):
 
             if all_pdf_file:
                 # full report in PDF format: all tables and plots
-                logger.info('  2 of 2: Creating PDF with all tables and plots...')
+                logger.info('  %d of %d: Creating PDF with all tables and plots...' % (number_of_steps, number_of_steps))
                 plotter.fill_all_pdf_file(all_pdf_file)
             logger.info('Done')
         except KeyboardInterrupt:

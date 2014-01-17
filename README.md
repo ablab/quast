@@ -13,11 +13,11 @@ Usage
 
 Output
 
-    report.txt     summary table  
+    report.txt     summary table
     report.tsv     tab-separated version, for parsing, or for spreadsheets (Google Docs, Excel, etc)  
     report.tex     Latex version
-    plots.pdf      plots for some statistics  
-    report.html    everything in HTML  
+    report.pdf     PDF version, includes all tables and plots for some statistics
+    report.html    everything in an interactive HTML file
     alignment.svg  visualized alignement of contigs to reference
 
 

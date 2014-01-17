@@ -1,4 +1,4 @@
-QUAST 3.0 INSTALLATION README
+QUAST 2.3 INSTALLATION README
 
 1. SYSTEM REQUIREMENTS
 
@@ -33,9 +33,9 @@ Or on Ubuntu by typing:
 3. INSTALLATION
 
 To download the QUAST source code tarball and extract it, type:
-    wget https://downloads.sourceforge.net/project/quast/quast-3.0.tar.gz
-    tar -xzf quast-3.0.tar.gz
-    cd quast-3.0
+    wget https://downloads.sourceforge.net/project/quast/quast-2.3.tar.gz
+    tar -xzf quast-2.3.tar.gz
+    cd quast-2.3
 
 QUAST automatically compiles all its sub-parts when needed (on the first use). 
 Thus, there is no special installation command for QUAST.
@@ -47,8 +47,8 @@ or both.
 These commands run all QUAST and metaQUAST modules and check correctness
 of their work on your platform.
 
-NOTE: You should place quast-3.0 directory in the final destination before 
+NOTE: You should place quast-2.3 directory in the final destination before 
 the first use (e.g. before run with --test). If you want to move QUAST to 
-some new place after several usages you should use a clean copy of quast-3.0.
+some new place after several usages you should use a clean copy of quast-2.3.
 This limitation is caused by auto-generation of absolute paths in compiled 
 modules of QUAST.

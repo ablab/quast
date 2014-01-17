@@ -1,6 +1,6 @@
 -- Version history --
 
-3.0   1. Changed logic in misassembly computation. Fixed several minor bugs in misassembly 
+2.3   1. Changed logic in misassembly computation. Fixed several minor bugs in misassembly 
       detection algorithm and one major bug caused by linear represenation of circular
       references and contigs in fasta format.
 

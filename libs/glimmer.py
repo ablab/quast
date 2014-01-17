@@ -17,6 +17,7 @@ from libs.fastaparser import read_fasta, write_fasta, rev_comp
 from libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 
+OUTPUT_FASTA = False # whether output only .gff or with corresponding .fasta files
 
 def merge_gffs(gffs, out_path):
     '''Merges all GFF files into a single one, dropping GFF header.'''
@@ -76,27 +77,24 @@ def glimmerHMM(tool_dir, fasta_fpath, out_fpath, gene_lengths, err_path, tmp_dir
         return None, None, None, None
 
     out_gff_path = merge_gffs(gffs, out_fpath + '_genes.gff')
-    #out_fasta_path = out_path + '_genes.fasta'
     unique, total = set(), 0
-    #genes = []
+    genes = []
     cnt = [0] * len(gene_lengths)
     for contig, gene_id, start, end, strand in parse_gff(out_gff_path):
         total += 1
-
         if strand == '+':
             gene_seq = contigs[contig][start:end + 1]
         else:
             gene_seq = rev_comp(contigs[contig][start:end + 1])
-
         if gene_seq not in unique:
             unique.add(gene_seq)
-
-        #genes.append((gene_id, gene_seq))
-
+        genes.append((gene_id, gene_seq))
         for idx, gene_length in enumerate(gene_lengths):
             cnt[idx] += end - start > gene_length
 
-    #write_fasta(out_fasta_path, genes)
+    if OUTPUT_FASTA:
+        out_fasta_path = out_fpath + '_genes.fasta'
+        write_fasta(out_fasta_path, genes)
     if not qconfig.debug:
         shutil.rmtree(base_dir)
 
@@ -110,7 +108,7 @@ def predict_genes(index, contigs_fpath, gene_lengths, out_dirpath, tool_dirpath,
 
     logger.info('  ' + qutils.index_to_str(index) + assembly_label)
 
-    out_fpath = os.path.join(out_dirpath, assembly_name + '_glimmer.stdout')
+    out_fpath = os.path.join(out_dirpath, assembly_name + '_glimmer')
     err_fpath = os.path.join(out_dirpath, assembly_name + '_glimmer.stderr')
 
     #out_gff_path, out_fasta_path, unique, total, cnt = glimmerHMM(tool_dir,

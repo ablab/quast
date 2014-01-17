@@ -139,7 +139,7 @@ def save_total_report(results_dirpath, min_contig):
     json_fpath = json_saver.save_total_report(results_dirpath, min_contig)
     if json_fpath:
         append(results_dirpath, json_fpath, 'totalReport')
-        log.info('  HTML version saved to ' + os.path.join(results_dirpath, report_fname))
+        log.info('  HTML version (interactive tables and plots) saved to ' + os.path.join(results_dirpath, report_fname))
 
 
 def save_contigs_lengths(results_dirpath, contigs_fpaths, lists_of_lengths):

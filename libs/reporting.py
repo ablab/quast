@@ -513,6 +513,30 @@ def save_tex(fpath, table, is_transposed=False):
         pass
 
 
+def save_pdf(report_name, table):
+    if not qconfig.draw_plots:
+        return
+
+    all_rows = get_all_rows_out_of_table(table)
+
+    column_widths = [0] * (len(all_rows[0]['values']) + 1)
+    for row in all_rows:
+        for i, cell in enumerate([row['metricName']] + map(val_to_str, row['values'])):
+            column_widths[i] = max(column_widths[i], len(cell))
+
+    if qconfig.min_contig:
+        extra_info = 'All statistics are based on contigs of size >= %d bp, unless otherwise noted ' % qconfig.min_contig +\
+                     '\n(e.g., "# contigs (>= 0 bp)" and "Total length (>= 0 bp)" include all contigs).'
+    else:
+        extra_info = ''
+    table_to_draw = []
+    for row in all_rows:
+        table_to_draw.append(['%s' % cell for cell
+            in [row['metricName']] + map(val_to_str, row['values'])])
+    from libs import plotter
+    plotter.draw_report_table(report_name, extra_info, table_to_draw, column_widths)
+
+
 def save(output_dirpath, report_name, transposed_report_name, order):
     # Where total report will be saved
     tab = table(order)
@@ -524,6 +548,7 @@ def save(output_dirpath, report_name, transposed_report_name, order):
     save_txt(report_txt_fpath, tab)
     save_tsv(report_tsv_fpath, tab)
     save_tex(report_tex_fpath, tab)
+    save_pdf(report_name, tab)
     logger.info('    saved to ' + report_txt_fpath +
                 ', ' + os.path.basename(report_tsv_fpath) +
                 ', and ' + os.path.basename(report_tex_fpath))

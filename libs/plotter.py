@@ -42,7 +42,6 @@ reference_ls = 'dashed' # ls = line style
 
 import os
 import itertools
-import logging
 from libs import fastaparser, qutils
 from libs import qconfig
 
@@ -60,7 +59,9 @@ except:
     logger.warning('Can\'t draw plots: please install python-matplotlib.')
     matplotlib_error = True
 
-
+# for creating PDF file with all plots and tables
+pdf_plots_figures = []
+pdf_tables_figures = []
 ####################################################################################
 
 
@@ -105,7 +106,7 @@ def y_formatter(ylabel, max_y):
     return ylabel, mkfunc
 
 
-def cumulative_plot(reference, contigs_fpaths, lists_of_lengths, plot_fpath, title, all_pdf=None):
+def cumulative_plot(reference, contigs_fpaths, lists_of_lengths, plot_fpath, title):
     if matplotlib_error:
         return
 
@@ -113,7 +114,7 @@ def cumulative_plot(reference, contigs_fpaths, lists_of_lengths, plot_fpath, tit
     import matplotlib.pyplot
     import matplotlib.ticker
 
-    matplotlib.pyplot.figure()
+    figure = matplotlib.pyplot.figure()
     matplotlib.pyplot.rc('font', **font)
     max_x = 0
     max_y = 0
@@ -185,13 +186,11 @@ def cumulative_plot(reference, contigs_fpaths, lists_of_lengths, plot_fpath, tit
     plot_fpath += plots_file_ext
     matplotlib.pyplot.savefig(plot_fpath)
     logger.info('    saved to ' + plot_fpath)
-
-    if plots_file_ext == '.pdf' and all_pdf:
-        matplotlib.pyplot.savefig(all_pdf, format='pdf')
+    pdf_plots_figures.append(figure)
 
 
 # common routine for Nx-plot and NGx-plot (and probably for others Nyx-plots in the future)
-def Nx_plot(contigs_fpaths, lists_of_lengths, plot_fpath, title='Nx', reference_lengths=[], all_pdf=None):
+def Nx_plot(contigs_fpaths, lists_of_lengths, plot_fpath, title='Nx', reference_lengths=None):
     if matplotlib_error:
         return
 
@@ -199,7 +198,7 @@ def Nx_plot(contigs_fpaths, lists_of_lengths, plot_fpath, title='Nx', reference_
     import matplotlib.pyplot
     import matplotlib.ticker
 
-    matplotlib.pyplot.figure()
+    figure = matplotlib.pyplot.figure()
     matplotlib.pyplot.rc('font', **font)
     max_y = 0
     color_id = 0
@@ -264,13 +263,11 @@ def Nx_plot(contigs_fpaths, lists_of_lengths, plot_fpath, title='Nx', reference_
     plot_fpath += plots_file_ext
     matplotlib.pyplot.savefig(plot_fpath)
     logger.info('    saved to ' + plot_fpath)
-
-    if plots_file_ext == '.pdf' and all_pdf:
-        matplotlib.pyplot.savefig(all_pdf, format='pdf')
+    pdf_plots_figures.append(figure)
 
 
 # routine for GC-plot    
-def GC_content_plot(ref_fpath, contigs_fpaths, list_of_GC_distributions, plot_fpath, all_pdf=None):
+def GC_content_plot(ref_fpath, contigs_fpaths, list_of_GC_distributions, plot_fpath):
     if matplotlib_error:
         return
     title = 'GC content'
@@ -279,7 +276,7 @@ def GC_content_plot(ref_fpath, contigs_fpaths, list_of_GC_distributions, plot_fp
     import matplotlib.pyplot
     import matplotlib.ticker
 
-    matplotlib.pyplot.figure()
+    figure = matplotlib.pyplot.figure()
     matplotlib.pyplot.rc('font', **font)
     max_y = 0
     color_id = 0
@@ -344,13 +341,11 @@ def GC_content_plot(ref_fpath, contigs_fpaths, list_of_GC_distributions, plot_fp
     plot_fpath += plots_file_ext
     matplotlib.pyplot.savefig(plot_fpath)
     logger.info('    saved to ' + plot_fpath)
-
-    if plots_file_ext == '.pdf' and all_pdf:
-        matplotlib.pyplot.savefig(all_pdf, format='pdf')
+    pdf_plots_figures.append(figure)
 
 
 # common routine for genes and operons cumulative plots
-def genes_operons_plot(reference_value, contigs_fpaths, files_feature_in_contigs, plot_fpath, title, all_pdf=None):
+def genes_operons_plot(reference_value, contigs_fpaths, files_feature_in_contigs, plot_fpath, title):
     if matplotlib_error:
         return
 
@@ -358,7 +353,7 @@ def genes_operons_plot(reference_value, contigs_fpaths, files_feature_in_contigs
     import matplotlib.pyplot
     import matplotlib.ticker
 
-    matplotlib.pyplot.figure()
+    figure = matplotlib.pyplot.figure()
     matplotlib.pyplot.rc('font', **font)
     max_x = 0
     max_y = 0
@@ -416,13 +411,11 @@ def genes_operons_plot(reference_value, contigs_fpaths, files_feature_in_contigs
     plot_fpath += plots_file_ext
     matplotlib.pyplot.savefig(plot_fpath)
     logger.info('    saved to ' + plot_fpath)
-
-    if plots_file_ext == '.pdf' and all_pdf:
-        matplotlib.pyplot.savefig(all_pdf, format='pdf')
+    pdf_plots_figures.append(figure)
 
 
 # common routine for Histograms    
-def histogram(contigs_fpaths, values, plot_fpath, title='', all_pdf=None, yaxis_title='', bottom_value=None,
+def histogram(contigs_fpaths, values, plot_fpath, title='', yaxis_title='', bottom_value=None,
               top_value=None):
     if matplotlib_error:
         return
@@ -452,7 +445,7 @@ def histogram(contigs_fpaths, values, plot_fpath, title='', all_pdf=None, yaxis_
     import matplotlib.pyplot
     import matplotlib.ticker
 
-    matplotlib.pyplot.figure()
+    figure = matplotlib.pyplot.figure()
     matplotlib.pyplot.rc('font', **font)
 
     #bars' params
@@ -496,6 +489,71 @@ def histogram(contigs_fpaths, values, plot_fpath, title='', all_pdf=None, yaxis_
     plot_fpath += plots_file_ext
     matplotlib.pyplot.savefig(plot_fpath)
     logger.info('    saved to ' + plot_fpath)
+    pdf_plots_figures.append(figure)
 
-    if plots_file_ext == '.pdf' and all_pdf:
-        matplotlib.pyplot.savefig(all_pdf, format='pdf')
+
+def draw_report_table(report_name, extra_info, table_to_draw, column_widths):
+    if matplotlib_error:
+        return
+
+    # some magic constants ..
+    font_size = 12
+    font_scale = 2
+    external_font_scale = 10
+    letter_height_coeff = 0.10
+    letter_width_coeff = 0.04
+
+    # .. and their derivatives
+    #font_scale = 2 * float(font["size"]) / font_size
+    row_height = letter_height_coeff * font_scale
+    nrows = len(table_to_draw)
+    external_text_height = float(font["size"] * letter_height_coeff * external_font_scale) / font_size
+    total_height = nrows * row_height + 2 * external_text_height
+    total_width = letter_width_coeff * font_scale * sum(column_widths)
+
+    import matplotlib.pyplot
+    figure = matplotlib.pyplot.figure(figsize=(total_width, total_height))
+    matplotlib.pyplot.rc('font', **font)
+    matplotlib.pyplot.axis('off')
+    ### all cells are equal (no header and no row labels)
+    #matplotlib.pyplot.text(0, 1. - float(2 * row_height) / total_height, report_name, horizontalalignment='center')
+    #matplotlib.pyplot.text(0, 0, extra_info)
+    #matplotlib.pyplot.table(cellText=table_to_draw,
+    #    colWidths=[float(column_width) / sum(column_widths) for column_width in column_widths],
+    #    rowLoc='right', loc='center')
+    matplotlib.pyplot.text(0.5 - float(column_widths[0]) / (2 * sum(column_widths)),
+                           1. - float(2 * row_height) / total_height, report_name, horizontalalignment='center')
+    matplotlib.pyplot.text(0 - float(column_widths[0]) / (2 * sum(column_widths)), 0, extra_info)
+    colLabels=table_to_draw[0][1:]
+    rowLabels=[item[0] for item in table_to_draw[1:]]
+    restValues=[item[1:] for item in table_to_draw[1:]]
+    matplotlib.pyplot.table(cellText=restValues, rowLabels=rowLabels, colLabels=colLabels,
+        colWidths=[float(column_width) / sum(column_widths) for column_width in column_widths[1:]],
+        rowLoc='left', colLoc='center', cellLoc='right', loc='center')
+    #matplotlib.pyplot.savefig(all_pdf, format='pdf', bbox_inches='tight')
+    pdf_tables_figures.append(figure)
+
+
+def fill_all_pdf_file(all_pdf):
+    if matplotlib_error or not all_pdf:
+        return
+
+    # moving main report in the beginning
+    global pdf_tables_figures
+    if len(pdf_tables_figures):
+        pdf_tables_figures = [pdf_tables_figures[-1]] + pdf_tables_figures[:-1]
+
+    for figure in pdf_tables_figures:
+        all_pdf.savefig(figure, bbox_inches='tight')
+    for figure in pdf_plots_figures:
+        all_pdf.savefig(figure)
+
+    d = all_pdf.infodict()
+    d['Title'] = 'QUAST full report'
+    d['Author'] = 'QUAST'
+    import datetime
+    d['CreationDate'] = datetime.datetime.now()
+    d['ModDate'] = datetime.datetime.now()
+    all_pdf.close()
+
+

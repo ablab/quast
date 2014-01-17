@@ -573,7 +573,7 @@ def main(args):
     ### Stats and plots
     ########################################################################
     from libs import basic_stats
-    basic_stats.do(ref_fpath, contigs_fpaths, os.path.join(output_dirpath, 'basic_stats'), all_pdf_file, qconfig.draw_plots,
+    basic_stats.do(ref_fpath, contigs_fpaths, os.path.join(output_dirpath, 'basic_stats'),
                    json_output_dirpath, output_dirpath)
 
     aligned_contigs_fpaths = []
@@ -600,15 +600,15 @@ def main(args):
         ########################################################################
         from libs import aligned_stats
         aligned_stats.do(
-            ref_fpath, aligned_contigs_fpaths, all_pdf_file, qconfig.draw_plots, output_dirpath, json_output_dirpath,
-            aligned_lengths_lists, detailed_contigs_reports_dirpath, os.path.join(output_dirpath, 'aligned_stats'))
+            ref_fpath, aligned_contigs_fpaths, output_dirpath, json_output_dirpath,
+            aligned_lengths_lists, os.path.join(output_dirpath, 'aligned_stats'))
 
         ########################################################################
         ### GENOME_ANALYZER
         ########################################################################
         from libs import genome_analyzer
         genome_analyzer.do(
-            ref_fpath, aligned_contigs_fpaths, all_pdf_file, qconfig.draw_plots, output_dirpath, json_output_dirpath,
+            ref_fpath, aligned_contigs_fpaths, output_dirpath, json_output_dirpath,
             genes_fpaths, operons_fpaths, detailed_contigs_reports_dirpath, os.path.join(output_dirpath, 'genome_stats'))
 
         if qconfig.draw_plots:
@@ -617,13 +617,8 @@ def main(args):
             ########################################################################
             from libs import contig_alignment_plotter
             contig_alignment_plot_fpath = contig_alignment_plotter.do(
-                contigs_fpaths,
-                os.path.join(detailed_contigs_reports_dirpath,
-                             'contigs_report_%s.stdout'),
-                output_dirpath,
-                ref_fpath,
-                similar=True,
-                all_pdf_file=all_pdf_file)
+                contigs_fpaths, os.path.join(detailed_contigs_reports_dirpath, 'contigs_report_%s.stdout'),
+                output_dirpath, ref_fpath, similar=True)
 
     if qconfig.gene_finding:
         if qconfig.prokaryote or qconfig.meta:
@@ -659,9 +654,9 @@ def main(args):
         from libs.html_saver import html_saver
         html_saver.save_total_report(output_dirpath, qconfig.min_contig)
 
-    if qconfig.draw_plots and all_pdf_file:
-        logger.info('  All pdf files are merged to ' + all_pdf_fpath)
-        all_pdf_file.close()
+    if all_pdf_file and os.path.isfile(all_pdf_fpath):
+        logger.info('  PDF version (tables and plots) saved to ' + all_pdf_fpath)
+        plotter.fill_all_pdf_file(all_pdf_file)
 
     if contig_alignment_plot_fpath:
         logger.info('  Contig alignment plot: %s' % contig_alignment_plot_fpath)

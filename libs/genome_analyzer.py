@@ -246,7 +246,7 @@ def process_single_file(contigs_fpath, index, nucmer_path_dirpath, genome_stats_
     return results, genes_in_contigs, operons_in_contigs
 
 
-def do(ref_fpath, aligned_contigs_fpaths, all_pdf, draw_plots, output_dirpath, json_output_dirpath,
+def do(ref_fpath, aligned_contigs_fpaths, output_dirpath, json_output_dirpath,
        genes_fpaths, operons_fpaths, detailed_contigs_reports_dirpath, genome_stats_dirpath):
 
     nucmer_path_dirpath = os.path.join(detailed_contigs_reports_dirpath, 'nucmer_output')
@@ -400,21 +400,21 @@ def do(ref_fpath, aligned_contigs_fpaths, all_pdf, draw_plots, output_dirpath, j
         if operons_container.region_list:
             html_saver.save_features_in_contigs(output_dirpath, aligned_contigs_fpaths, 'operons', files_operons_in_contigs, ref_operons_num)
 
-    if draw_plots:
+    if qconfig.draw_plots:
         # cumulative plots:
         import plotter
         if genes_container.region_list:
             plotter.genes_operons_plot(len(genes_container.region_list), aligned_contigs_fpaths, files_genes_in_contigs,
-                genome_stats_dirpath + '/genes_cumulative_plot', 'genes', all_pdf)
+                genome_stats_dirpath + '/genes_cumulative_plot', 'genes')
             plotter.histogram(aligned_contigs_fpaths, full_found_genes, genome_stats_dirpath + '/complete_genes_histogram',
-                '# complete genes', all_pdf)
+                '# complete genes')
         if operons_container.region_list:
             plotter.genes_operons_plot(len(operons_container.region_list), aligned_contigs_fpaths, files_operons_in_contigs,
-                genome_stats_dirpath + '/operons_cumulative_plot', 'operons', all_pdf)
+                genome_stats_dirpath + '/operons_cumulative_plot', 'operons')
             plotter.histogram(aligned_contigs_fpaths, full_found_operons, genome_stats_dirpath + '/complete_operons_histogram',
-                '# complete operons', all_pdf)
-        plotter.histogram(aligned_contigs_fpaths, genome_mapped, genome_stats_dirpath + '/genome_fraction_histogram', 'Genome fraction, %',
-            all_pdf, top_value=100)
+                '# complete operons')
+        plotter.histogram(aligned_contigs_fpaths, genome_mapped, genome_stats_dirpath + '/genome_fraction_histogram',
+            'Genome fraction, %', top_value=100)
 
     logger.info('Done.')
 

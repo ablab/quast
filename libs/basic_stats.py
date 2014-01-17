@@ -74,7 +74,7 @@ def GC_content(contigs_fpath):
     return total_GC, (GC_distribution_x, GC_distribution_y)
 
 
-def do(ref_fpath, contigs_fpaths, output_dirpath, all_pdf, draw_plots, json_output_dir, results_dir):
+def do(ref_fpath, contigs_fpaths, output_dirpath, json_output_dir, results_dir):
     logger.print_timestamp()
     logger.info("Running Basic statistics processor...")
     
@@ -184,10 +184,10 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, all_pdf, draw_plots, json_outp
         from libs.html_saver import html_saver
         html_saver.save_GC_info(results_dir, contigs_fpaths, list_of_GC_distributions)
 
-    if draw_plots:
+    if qconfig.draw_plots:
         import plotter
         ########################################################################import plotter
-        plotter.cumulative_plot(ref_fpath, contigs_fpaths, lists_of_lengths, output_dirpath + '/cumulative_plot', 'Cumulative length', all_pdf)
+        plotter.cumulative_plot(ref_fpath, contigs_fpaths, lists_of_lengths, output_dirpath + '/cumulative_plot', 'Cumulative length')
     
         ########################################################################
         # Drawing GC content plot...
@@ -195,12 +195,12 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, all_pdf, draw_plots, json_outp
         if ref_fpath:
             list_of_GC_distributions_with_ref.append(reference_GC_distribution)
         # Drawing cumulative plot...
-        plotter.GC_content_plot(ref_fpath, contigs_fpaths, list_of_GC_distributions_with_ref, output_dirpath + '/GC_content_plot', all_pdf)
+        plotter.GC_content_plot(ref_fpath, contigs_fpaths, list_of_GC_distributions_with_ref, output_dirpath + '/GC_content_plot')
 
         ########################################################################
         # Drawing Nx and NGx plots...
-        plotter.Nx_plot(contigs_fpaths, lists_of_lengths, output_dirpath + '/Nx_plot', 'Nx', [], all_pdf)
+        plotter.Nx_plot(contigs_fpaths, lists_of_lengths, output_dirpath + '/Nx_plot', 'Nx', [])
         if reference_length:
-            plotter.Nx_plot(contigs_fpaths, lists_of_lengths, output_dirpath + '/NGx_plot', 'NGx', [reference_length for i in range(len(contigs_fpaths))], all_pdf)
+            plotter.Nx_plot(contigs_fpaths, lists_of_lengths, output_dirpath + '/NGx_plot', 'NGx', [reference_length for i in range(len(contigs_fpaths))])
 
     logger.info('Done.')

@@ -67,7 +67,7 @@ default_json_dirname = "json"
 
 # names of reports, log, etc.
 corrected_dirname = "quast_corrected_input"
-plots_fname = "plots.pdf"
+plots_fname = "report.pdf"
 report_prefix = "report"
 transposed_report_prefix = "transposed_report"
 gage_report_prefix = "gage_"

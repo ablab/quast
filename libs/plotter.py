@@ -516,13 +516,13 @@ def draw_report_table(report_name, extra_info, table_to_draw, column_widths):
     matplotlib.pyplot.rc('font', **font)
     matplotlib.pyplot.axis('off')
     ### all cells are equal (no header and no row labels)
-    #matplotlib.pyplot.text(0, 1. - float(2 * row_height) / total_height, report_name, horizontalalignment='center')
+    #matplotlib.pyplot.text(0, 1. - float(2 * row_height) / total_height, report_name)
     #matplotlib.pyplot.text(0, 0, extra_info)
     #matplotlib.pyplot.table(cellText=table_to_draw,
     #    colWidths=[float(column_width) / sum(column_widths) for column_width in column_widths],
     #    rowLoc='right', loc='center')
     matplotlib.pyplot.text(0.5 - float(column_widths[0]) / (2 * sum(column_widths)),
-                           1. - float(2 * row_height) / total_height, report_name, horizontalalignment='center')
+                           1. - float(2 * row_height) / total_height, report_name.replace('_', ' ').capitalize())
     matplotlib.pyplot.text(0 - float(column_widths[0]) / (2 * sum(column_widths)), 0, extra_info)
     colLabels=table_to_draw[0][1:]
     rowLabels=[item[0] for item in table_to_draw[1:]]

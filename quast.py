@@ -538,6 +538,9 @@ def main(args):
     logger.info()
     logger.info('Contigs:')
     contigs_fpaths = _correct_contigs(contigs_fpaths, corrected_dirpath, reporting, labels)
+    for contigs_fpath in contigs_fpaths:
+        report = reporting.get(contigs_fpath)
+        report.add_field(reporting.Fields.NAME, qutils.label_from_fpath(contigs_fpath))
 
     qconfig.assemblies_num = len(contigs_fpaths)
 
@@ -592,6 +595,7 @@ def main(args):
                 aligned_lengths_lists.append(aligned_lengths_per_fpath[contigs_fpath])
 
     # Before continue evaluating, check if nucmer didn't skip all of the contigs files.
+    detailed_contigs_reports_dirpath = None
     if len(aligned_contigs_fpaths) and ref_fpath:
         detailed_contigs_reports_dirpath = os.path.join(output_dirpath, 'contigs_reports')
 
@@ -611,15 +615,6 @@ def main(args):
             ref_fpath, aligned_contigs_fpaths, output_dirpath, json_output_dirpath,
             genes_fpaths, operons_fpaths, detailed_contigs_reports_dirpath, os.path.join(output_dirpath, 'genome_stats'))
 
-        if qconfig.draw_plots:
-            ########################################################################
-            ### VISUALIZE CONTIG ALIGNMENT
-            ########################################################################
-            from libs import contig_alignment_plotter
-            contig_alignment_plot_fpath = contig_alignment_plotter.do(
-                contigs_fpaths, os.path.join(detailed_contigs_reports_dirpath, 'contigs_report_%s.stdout'),
-                output_dirpath, ref_fpath, similar=True)
-
     if qconfig.gene_finding:
         if qconfig.prokaryote or qconfig.meta:
             ########################################################################
@@ -637,15 +632,43 @@ def main(args):
     else:
         logger.info("")
         logger.notice("Genes are not predicted by default. Use --gene-finding option to enable it.")
+    ########################################################################
+    reports_fpaths, transposed_reports_fpaths = reporting.save_total(output_dirpath)
+
+    ########################################################################
+    ### LARGE DRAWING TASKS
+    ########################################################################
+    if qconfig.draw_plots:
+        logger.print_timestamp()
+        logger.info('Drawing large plots...')
+        logger.info('This may take a while: press Ctrl-C to skip this step..')
+        try:
+            if detailed_contigs_reports_dirpath:
+                ########################################################################
+                ### VISUALIZE CONTIG ALIGNMENT
+                ########################################################################
+                logger.info('  1 of 2: Creating contig alignment plot...')
+                from libs import contig_alignment_plotter
+                contig_alignment_plot_fpath = contig_alignment_plotter.do(
+                    contigs_fpaths, os.path.join(detailed_contigs_reports_dirpath, 'contigs_report_%s.stdout'),
+                    output_dirpath, ref_fpath, similar=True)
+
+            if all_pdf_file:
+                # full report in PDF format: all tables and plots
+                logger.info('  2 of 2: Creating PDF with all tables and plots...')
+                plotter.fill_all_pdf_file(all_pdf_file)
+            logger.info('Done')
+        except KeyboardInterrupt:
+            logger.info('..step skipped!')
+            os.remove(all_pdf_fpath)
 
     ########################################################################
     ### TOTAL REPORT
     ########################################################################
-    for contigs_fpath in contigs_fpaths:
-        report = reporting.get(contigs_fpath)
-        report.add_field(reporting.Fields.NAME, qutils.label_from_fpath(contigs_fpath))
-
-    reporting.save_total(output_dirpath)
+    logger.print_timestamp()
+    logger.info('RESULTS:')
+    logger.info('  Text versions of total report are saved to ' + reports_fpaths)
+    logger.info('  Text versions of transposed total report are saved to ' + transposed_reports_fpaths)
 
     if json_output_dirpath:
         json_saver.save_total_report(json_output_dirpath, qconfig.min_contig)
@@ -654,9 +677,8 @@ def main(args):
         from libs.html_saver import html_saver
         html_saver.save_total_report(output_dirpath, qconfig.min_contig)
 
-    if all_pdf_file and os.path.isfile(all_pdf_fpath):
+    if os.path.isfile(all_pdf_fpath):
         logger.info('  PDF version (tables and plots) saved to ' + all_pdf_fpath)
-        plotter.fill_all_pdf_file(all_pdf_file)
 
     if contig_alignment_plot_fpath:
         logger.info('  Contig alignment plot: %s' % contig_alignment_plot_fpath)
@@ -679,5 +701,5 @@ if __name__ == '__main__':
     except Exception:
         _, exc_value, _ = sys.exc_info()
         logger.exception(exc_value)
-        logger.error('exception caught!')
+        logger.error('exception caught!', exit_with_code=1)
 

@@ -537,11 +537,12 @@ def save_pdf(report_name, table):
     plotter.draw_report_table(report_name, extra_info, table_to_draw, column_widths)
 
 
-def save(output_dirpath, report_name, transposed_report_name, order):
+def save(output_dirpath, report_name, transposed_report_name, order, silent=False):
     # Where total report will be saved
     tab = table(order)
 
-    logger.info('  Creating total report...')
+    if not silent:
+        logger.info('  Creating total report...')
     report_txt_fpath = os.path.join(output_dirpath, report_name) + '.txt'
     report_tsv_fpath = os.path.join(output_dirpath, report_name) + '.tsv'
     report_tex_fpath = os.path.join(output_dirpath, report_name) + '.tex'
@@ -549,12 +550,15 @@ def save(output_dirpath, report_name, transposed_report_name, order):
     save_tsv(report_tsv_fpath, tab)
     save_tex(report_tex_fpath, tab)
     save_pdf(report_name, tab)
-    logger.info('    saved to ' + report_txt_fpath +
-                ', ' + os.path.basename(report_tsv_fpath) +
-                ', and ' + os.path.basename(report_tex_fpath))
+    reports_fpaths = report_txt_fpath + ', ' + os.path.basename(report_tsv_fpath) + ', and ' + \
+                     os.path.basename(report_tex_fpath)
+    transposed_reports_fpaths = None
+    if not silent:
+        logger.info('    saved to ' + reports_fpaths)
 
     if transposed_report_name:
-        logger.info('  Transposed version of total report...')
+        if not silent:
+            logger.info('  Transposed version of total report...')
 
         all_rows = get_all_rows_out_of_table(tab)
         if all_rows[0]['metricName'] != Fields.NAME:
@@ -576,8 +580,11 @@ def save(output_dirpath, report_name, transposed_report_name, order):
             save_txt(report_txt_fpath, transposed_table)
             save_tsv(report_tsv_fpath, transposed_table)
             save_tex(report_tex_fpath, transposed_table, is_transposed=True)
-            logger.info('    saved to ' + report_txt_fpath + ', ' + os.path.basename(report_tsv_fpath) + \
-                     ', and ' + os.path.basename(report_tex_fpath))
+            transposed_reports_fpaths = report_txt_fpath + ', ' + os.path.basename(report_tsv_fpath) + \
+                                        ', and ' + os.path.basename(report_tex_fpath)
+            if not silent:
+                logger.info('    saved to ' + transposed_reports_fpaths)
+    return reports_fpaths, transposed_reports_fpaths
 
 
 def save_gage(output_dirpath):
@@ -585,10 +592,11 @@ def save_gage(output_dirpath):
          qconfig.gage_report_prefix + qconfig.transposed_report_prefix, Fields.gage_order)
 
 
-def save_total(output_dirpath):
-    logger.print_timestamp()
-    logger.info('Summarizing...')
-    save(output_dirpath, qconfig.report_prefix, qconfig.transposed_report_prefix, Fields.order)
+def save_total(output_dirpath, silent=True):
+    if not silent:
+        logger.print_timestamp()
+        logger.info('Summarizing...')
+    return save(output_dirpath, qconfig.report_prefix, qconfig.transposed_report_prefix, Fields.order, silent=silent)
 
 
 def save_misassemblies(output_dirpath):

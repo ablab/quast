@@ -44,7 +44,7 @@ class Settings:
         self.color_correct_similar = ["#377eb8", "#576e88"]
 
         #width
-        self.assembly_width = 800.0
+        self.assembly_width = 1700.0
         self.last_margin = 20.0
 
         #scales
@@ -131,8 +131,11 @@ class Settings:
         self.xLabelStep = self.xticsStep + 25
         self.yLabelStep = self.yticsStep + 95
 
-        self.totalHeight = self.plot_height + self.plot_margin + assemblies_num * self.assemblyStep + self.last_margin
         self.totalWidth = self.xOffset + self.assembly_width
+        self.totalHeight = self.plot_height + self.plot_margin + assemblies_num * self.assemblyStep + self.last_margin
+
+        self.totalWidthInches = 14
+        self.totalHeightInches = self.totalWidthInches * self.totalHeight / self.totalWidth
 
         self.contigEdgeDelta = 3000
         self.minSimilarContig = 10000
@@ -359,8 +362,9 @@ class Visualizer:
         self.sorted_ref_lengths = sorted_ref_lengths
         self.virtual_genome_shift = virtual_genome_shift
 
-        self.figure = matplotlib.pyplot.figure()
+        self.figure = matplotlib.pyplot.figure(figsize=(settings.totalWidthInches, settings.totalHeightInches))
         self.subplot = self.figure.add_subplot(111)
+        self.extent = self.subplot.get_window_extent().transformed(self.figure.dpi_scale_trans.inverted())
 
     def __del__(self):
         pass
@@ -373,7 +377,9 @@ class Visualizer:
     def save(self, fileName):
         self.subplot.axis("equal")
         self.subplot.axis("off")
-        self.figure.savefig(fileName + ".svg", format='svg')
+        finalFileName = fileName + ".svg"
+        self.figure.savefig(finalFileName, bbox_inches=self.extent) #, format='svg')
+        return finalFileName
 
 
     def plot_genome_axis(self, offset):
@@ -440,8 +446,7 @@ class Visualizer:
             else:
                 y = offset[1] + self.settings.zeroCovStep * self.settings.plot_y_scale
                 color = self.settings.zeroCoverageColor
-
-                self.subplot.add_line(matplotlib.lines.Line2D((x, x + self.settings.dot_length), (y, y), c=color, lw=self.settings.dotWeight))
+            self.subplot.add_line(matplotlib.lines.Line2D((x, x + self.settings.dot_length), (y, y), c=color, lw=self.settings.dotWeight))
 
 
     def plot_assembly(self, assembly, offset):
@@ -517,8 +522,7 @@ class Visualizer:
 
 def draw_alignment_plot(contigs_fpaths, virtual_genome_size, sorted_ref_names, sorted_ref_lengths, virtual_genome_shift,
                         output_dirpath, lists_of_aligned_blocks, arcs=False, similar=False,
-                        coverage_hist=None, all_pdf_file=None):
-
+                        coverage_hist=None):
     if plotter.matplotlib_error:
         return
 
@@ -555,12 +559,11 @@ def draw_alignment_plot(contigs_fpaths, virtual_genome_size, sorted_ref_names, s
 
     v = Visualizer(assemblies, coverage_hist, settings, sorted_ref_names, sorted_ref_lengths, virtual_genome_shift)
     v.visualize()
-    v.save(output_fpath)
-    return output_fpath + '.svg'
+    return v.save(output_fpath)
 
 
 def do(contigs_fpaths, contig_report_fpath_pattern, output_dirpath,
-       ref_fpath, arcs=False, similar=False, coverage_hist=None, all_pdf_file=None):
+       ref_fpath, arcs=False, similar=False, coverage_hist=None):
     lists_of_aligned_blocks = []
 
     total_genome_size = 0
@@ -585,9 +588,10 @@ def do(contigs_fpaths, contig_report_fpath_pattern, output_dirpath,
             return None
         lists_of_aligned_blocks.append(aligned_blocks)
 
-    return draw_alignment_plot(
+    plot_fpath = draw_alignment_plot(
         contigs_fpaths, virtual_genome_size, sorted_ref_names, sorted_ref_lengths, virtual_genome_shift, output_dirpath,
-        lists_of_aligned_blocks, arcs, similar, coverage_hist, all_pdf_file)
+        lists_of_aligned_blocks, arcs, similar, coverage_hist)
+    return plot_fpath
 
 
 def parse_nucmer_contig_report(report_fpath, sorted_ref_names, cumulative_ref_lengths):

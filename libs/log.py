@@ -173,7 +173,7 @@ class QLogger(object):
             line += arg
 
             if i == len(args) - 1:
-                text += line + '\n'
+                text += line
 
             elif wrap_after is not None and len(line) > wrap_after:
                 text += line + ' \\\n'

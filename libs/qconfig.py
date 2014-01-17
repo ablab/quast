@@ -117,7 +117,7 @@ def quast_version():
             version = "unknown"
         build = version_file.readline()
         if build:
-            build = build.lower()
+            build = build.strip().lower()
         else:
             build = "unknown"
     return version, build

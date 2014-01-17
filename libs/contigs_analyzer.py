@@ -130,6 +130,26 @@ def __fail(contigs_fpath, index):
     return NucmerStatus.FAILED, {}, []
 
 
+def create_nucmer_successful_check(fpath, contigs_fpath, ref_fpath):
+    nucmer_successful_check_file = open(fpath, 'w')
+    nucmer_successful_check_file.write("Assembly file size in bytes: %d\n" % os.path.getsize(contigs_fpath))
+    nucmer_successful_check_file.write("Reference file size in bytes: %d\n" % os.path.getsize(ref_fpath))
+    nucmer_successful_check_file.write("Successfully finished on " +
+                                       datetime.datetime.now().strftime('%Y/%m/%d %H:%M:%S') + '\n')
+    nucmer_successful_check_file.close()
+
+
+def check_nucmer_successful_check(fpath, contigs_fpath, ref_fpath):
+    successful_check_content = open(fpath).read().split('\n')
+    if len(successful_check_content) < 2:
+        return False
+    if not successful_check_content[0].strip().endswith(str(os.path.getsize(contigs_fpath))):
+        return False
+    if not successful_check_content[1].strip().endswith(str(os.path.getsize(ref_fpath))):
+        return False
+    return True
+
+
 def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_fpath):
     assembly_name = qutils.name_from_fpath(contigs_fpath)
     assembly_label = qutils.label_from_fpath(contigs_fpath)
@@ -167,8 +187,7 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
     if os.path.isfile(nucmer_successful_check_fpath) and\
        os.path.isfile(coords_fpath) and\
        os.path.isfile(show_snps_fpath):
-        successful_check_content = open(nucmer_successful_check_fpath).read().split('\n')
-        if len(successful_check_content) > 2 and successful_check_content[1].strip() == str(qconfig.min_contig):
+        if check_nucmer_successful_check(nucmer_successful_check_fpath, contigs_fpath, ref_fpath):
             print >> planta_out_f, '\tUsing existing Nucmer alignments...'
             logger.info('  ' + qutils.index_to_str(index) + 'Using existing Nucmer alignments... ')
             using_existing_alignments = True
@@ -295,13 +314,7 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
                 print >> planta_err_f, qutils.index_to_str(index) + 'Show-snps failed for', contigs_fpath, '\n'
                 return __fail(contigs_fpath, index)
 
-        nucmer_successful_check_file = open(nucmer_successful_check_fpath, 'w')
-        nucmer_successful_check_file.write("Min contig size:\n")
-        nucmer_successful_check_file.write(str(qconfig.min_contig) + '\n')
-        nucmer_successful_check_file.write("Successfully finished on " +
-                                           datetime.datetime.now().strftime('%Y/%m/%d %H:%M:%S') +
-                                           '\n')
-        nucmer_successful_check_file.close()
+        create_nucmer_successful_check(nucmer_successful_check_fpath, contigs_fpath, ref_fpath)
 
     # Loading the alignment files
     print >> planta_out_f, 'Parsing coords...'

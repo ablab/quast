@@ -765,6 +765,7 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
                             succ_start = min(sorted_aligns[i + 1].s2, sorted_aligns[i + 1].e2)
                             gap = succ_start - prev_end - 1
                             if gap > smgap:
+                                prev_end = max(sorted_aligns[i].s2, sorted_aligns[i].e2)
                                 continue
                             overlap = 0
                             if prev_end - min(sorted_aligns[i].s2, sorted_aligns[i].e2) + 1 > 0:

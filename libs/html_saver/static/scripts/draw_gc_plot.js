@@ -34,8 +34,8 @@ var gc = {
     normal_scale_el: normal_scale_span,
     log_scale_el: log_scale_a,
 
-    draw: function(name, title, colors, filenames, gcInfos, reflen,
-                   placeholder, legendPlaceholder, glossary, scalePlaceholder, order) {
+    draw: function(name, title, colors, filenames, gcInfos, reflen, 
+                   placeholder, legendPlaceholder, glossary, order, scalePlaceholder) {
         $(scalePlaceholder).html(
             "<div id='change-scale' style='margin-right: 3px; visibility: hidden;'>" +
                 "<span id='normal_scale_label'>" +

@@ -79,6 +79,22 @@ var gc = {
                 };
             }
 
+            function makeSeriesFromDistributions(listOfGcDistributions) {
+                for (var i = 0; i < plotsN; i++) {
+                    var distributionsXandY = listOfGcDistributions[order[i]];
+                    var distributionsX = distributionsXandY[0];
+                    var distributionsY = distributionsXandY[1];
+
+                    for (var j = 0; j < distributionsX.length; j++) {
+                        var x = distributionsX[j];
+                        var y = distributionsY[j];
+                        gc.series[i].data.push([x, y]);
+                        updateMinY(y);
+                        updateMaxY(y);
+                    }
+                }
+            }
+
             var listsOfGCInfo = gcInfos.lists_of_gc_info;
             if (listsOfGCInfo) {
                 makeSeriesFromInfo(listsOfGCInfo);
@@ -124,22 +140,6 @@ var gc = {
 
                     updateMinY(y);
                     updateMaxY(y);
-                }
-            }
-
-            function makeSeriesFromDistributions(listOfGcDistributions) {
-                for (var i = 0; i < plotsN; i++) {
-                    var distributionsXandY = listOfGcDistributions[order[i]];
-                    var distributionsX = distributionsXandY[0];
-                    var distributionsY = distributionsXandY[1];
-
-                    for (var j = 0; j < distributionsX.length; j++) {
-                        var x = distributionsX[j];
-                        var y = distributionsY[j];
-                        gc.series[i].data.push([x, y]);
-                        updateMinY(y);
-                        updateMaxY(y);
-                    }
                 }
             }
 

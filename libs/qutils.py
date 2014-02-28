@@ -19,6 +19,7 @@ import qconfig
 from libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 
+MAX_CONTIG_NAME = 1021  # Nucmer's constraint
 
 def assert_file_exists(fpath, message='', logger=logger):
     if not os.path.isfile(fpath):
@@ -89,7 +90,7 @@ def remove_reports(output_dirpath):
 
 
 def correct_name(name):
-    return re.sub(r'[^\w\._\-+|]', '_', name.strip())
+    return re.sub(r'[^\w\._\-+|]', '_', name.strip())[:MAX_CONTIG_NAME]
 
 
 def unique_corrected_fpath(fpath):

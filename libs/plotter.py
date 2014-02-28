@@ -54,7 +54,9 @@ matplotlib_error = False
 try:
     import matplotlib
     matplotlib.use('Agg')  # non-GUI backend
-except:
+    if matplotlib.__version__.startswith('0'):
+        logger.warning('matplotlib version is rather old! Please use matplotlib version 1.0 or higher for better results.')
+except Exception:
     print
     logger.warning('Can\'t draw plots: please install python-matplotlib.')
     matplotlib_error = True
@@ -165,7 +167,7 @@ def cumulative_plot(reference, contigs_fpaths, lists_of_lengths, plot_fpath, tit
     try: # for matplotlib <= 2009-12-09
         ax.legend(legend_list, loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True,
             shadow=True, ncol=n_columns)
-    except ZeroDivisionError:
+    except Exception: # ZeroDivisionError: ValueError:
         pass
 
     ylabel = 'Cumulative length '
@@ -243,7 +245,7 @@ def Nx_plot(contigs_fpaths, lists_of_lengths, plot_fpath, title='Nx', reference_
     try: # for matplotlib <= 2009-12-09
         ax.legend(legend_list, loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True,
             shadow=True, ncol=n_columns)
-    except ZeroDivisionError:
+    except Exception:
         pass
 
     ylabel = 'Contig length  '
@@ -318,7 +320,7 @@ def GC_content_plot(ref_fpath, contigs_fpaths, list_of_GC_distributions, plot_fp
     try:  # for matplotlib <= 2009-12-09
         ax.legend(legend_list, loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True,
             shadow=True, ncol=n_columns)
-    except ZeroDivisionError:
+    except Exception:
         pass
 
     ylabel = '# windows'
@@ -400,7 +402,7 @@ def genes_operons_plot(reference_value, contigs_fpaths, files_feature_in_contigs
     try:  # for matplotlib <= 2009-12-09
         ax.legend(legend_list, loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True,
             shadow=True, ncol=n_columns)
-    except ZeroDivisionError:
+    except Exception:
         pass
 
     xLocator, yLocator = get_locators()
@@ -477,7 +479,7 @@ def histogram(contigs_fpaths, values, plot_fpath, title='', yaxis_title='', bott
     try:  # for matplotlib <= 2009-12-09
         ax.legend(legend_list, loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True,
             shadow=True, ncol=n_columns)
-    except ZeroDivisionError:
+    except Exception:
         pass
 
     ax.axes.get_xaxis().set_visible(False)
@@ -548,12 +550,15 @@ def fill_all_pdf_file(all_pdf):
     for figure in pdf_plots_figures:
         all_pdf.savefig(figure)
 
-    d = all_pdf.infodict()
-    d['Title'] = 'QUAST full report'
-    d['Author'] = 'QUAST'
-    import datetime
-    d['CreationDate'] = datetime.datetime.now()
-    d['ModDate'] = datetime.datetime.now()
+    try:  # for matplotlib < v.1.0
+        d = all_pdf.infodict()
+        d['Title'] = 'QUAST full report'
+        d['Author'] = 'QUAST'
+        import datetime
+        d['CreationDate'] = datetime.datetime.now()
+        d['ModDate'] = datetime.datetime.now()
+    except AttributeError:
+        pass
     all_pdf.close()
 
 

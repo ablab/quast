@@ -1,3 +1,9 @@
+//***************************************************************************
+//* Copyright (c) 2011 Steven L. Salzberg et al.
+//* All Rights Reserved
+//* See file LICENSE for details.
+//****************************************************************************
+
 import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.InputStreamReader;

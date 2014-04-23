@@ -1,3 +1,9 @@
+############################################################################
+# Copyright (c) 2011 Steven L. Salzberg et al.
+# All Rights Reserved
+# See file LICENSE for details.
+############################################################################
+
 FILENAME=$1
 SCRIPT_PATH=$2
 CONTIG_FILE=$3

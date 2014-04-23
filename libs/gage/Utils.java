@@ -1,3 +1,9 @@
+//***************************************************************************
+//* Copyright (c) 2011 Steven L. Salzberg et al.
+//* All Rights Reserved
+//* See file LICENSE for details.
+//****************************************************************************
+
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
 

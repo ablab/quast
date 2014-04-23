@@ -35,7 +35,7 @@ def run_gage(i, contigs_fpath, gage_results_dirpath, gage_tool_path, reference, 
         stderr=log_err_f,
         indent='  ' + qutils.index_to_str(i),
         only_if_debug=False)
-    if return_code == 0:
+    if return_code != 0:
         logger.info('  ' + qutils.index_to_str(i) + 'Failed.')
     else:
         logger.info('  ' + qutils.index_to_str(i) + 'Done.')

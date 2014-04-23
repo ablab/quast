@@ -1,4 +1,11 @@
 #!/bin/sh
+
+############################################################################
+# Copyright (c) 2011 Steven L. Salzberg et al.
+# All Rights Reserved
+# See file LICENSE for details.
+############################################################################
+
 MACHINE=`uname`
 PROC=`uname -p`
 SCRIPT_PATH=$0

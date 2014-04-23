@@ -59,9 +59,10 @@ http://exon.gatech.edu/gmhmm2_prok.cgi website and to the following paper:
 Lukashin, A.V. and Borodovsky, M. (1998). GeneMark.hmm: New solutions for gene
 finding. Nucleic Acids Res, 26(4), 1107-1115.
 
-2. GAGE scripts was provided by GAGE team and also modified by QUAST team. 
-They can be distributed and used in QUAST pipeline with current remarks and 
-citation. For more details about GAGE please refer to 
+2. Dr. Salzbeg kindly agreed to include GAGE scripts as a part of QUAST under GPLv2.
+These scripts was also modified by QUAST team. They can be distributed and used in 
+QUAST pipeline with current remarks and citation. 
+For more details about GAGE please refer to 
 http://http://gage.cbcb.umd.edu/data/index.html website and to 
 the following paper:
 

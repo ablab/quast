@@ -146,11 +146,12 @@ def cumulative_plot(reference, contigs_fpaths, lists_of_lengths, plot_fpath, tit
         x_vals = range(1, len(y_vals) + 1) # for reference only: starting from X=1
         # extend reference curve to the max X-axis point
         reference_length = y_vals[-1]
+        max_x = max(max_x, x_vals[-1])
+        max_y = max(max_y, reference_length)
         y_vals.append(reference_length)
         x_vals.append(max_x)
         matplotlib.pyplot.plot(x_vals, y_vals,
                                color=reference_color, lw=line_width, ls=reference_ls)
-        max_y = max(max_y, reference_length)
 
     if with_title:
         matplotlib.pyplot.title(title)
@@ -383,7 +384,7 @@ def genes_operons_plot(reference_value, contigs_fpaths, files_feature_in_contigs
         matplotlib.pyplot.plot(x_vals, y_vals, color=color, lw=line_width, ls=ls)
 
     if reference_value:
-        matplotlib.pyplot.plot([0, max_x], [reference_value, reference_value],
+        matplotlib.pyplot.plot([1, max_x], [reference_value, reference_value],
             color=reference_color, lw=line_width, ls=reference_ls)
         max_y = max(reference_value, max_y)
 
@@ -411,6 +412,8 @@ def genes_operons_plot(reference_value, contigs_fpaths, files_feature_in_contigs
     xLocator, yLocator = get_locators()
     ax.yaxis.set_major_locator(yLocator)
     ax.xaxis.set_major_locator(xLocator)
+    if logarithmic_x_scale:
+        ax.set_xscale('log')
     #matplotlib.pyplot.ylim([0, int(float(max_y) * 1.1)])
 
     plot_fpath += plots_file_ext

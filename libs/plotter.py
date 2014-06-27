@@ -36,6 +36,9 @@ axes_fontsize = 'large' # fontsize of axes labels and ticks
 reference_color = '#000000'
 reference_ls = 'dashed' # ls = line style
 
+# axis params:
+logarithmic_x_scale = False  # for cumulative plots only
+
 ####################################################################################
 ########################  END OF CONFIGURABLE PARAMETERS  ##########################
 ####################################################################################
@@ -123,31 +126,29 @@ def cumulative_plot(reference, contigs_fpaths, lists_of_lengths, plot_fpath, tit
     color_id = 0
 
     for (contigs_fpath, lenghts) in itertools.izip(contigs_fpaths, lists_of_lengths):
-        lenghts.sort(reverse=True)
-        # calculate values for the plot
-        vals_contig_index = [0]
         vals_length = [0]
-        lcur = 0
-        lind = 0
-        for l in lenghts:
-            lcur += l
-            lind += 1
-            x = lind
-            vals_contig_index.append(x)
-            y = lcur
-            vals_length.append(y)
-            # add to plot
-
-        if len(vals_contig_index) > 0:
+        for l in sorted(lenghts, reverse=True):
+            vals_length.append(vals_length[-1] + l)
+        vals_contig_index = range(0, len(vals_length))
+        if vals_contig_index:
             max_x = max(vals_contig_index[-1], max_x)
             max_y = max(max_y, vals_length[-1])
-
         color, ls, color_id = get_color_and_ls(color_id, contigs_fpath)
         matplotlib.pyplot.plot(vals_contig_index, vals_length, color=color, lw=line_width, ls=ls)
 
     if reference:
-        reference_length = sum(fastaparser.get_lengths_from_fastafile(reference))
-        matplotlib.pyplot.plot([0, max_x], [reference_length, reference_length],
+        y_vals = []
+        for l in sorted(fastaparser.get_lengths_from_fastafile(reference), reverse=True):
+            if y_vals:
+                y_vals.append(y_vals[-1] + l)
+            else:
+                y_vals = [l]
+        x_vals = range(1, len(y_vals) + 1) # for reference only: starting from X=1
+        # extend reference curve to the max X-axis point
+        reference_length = y_vals[-1]
+        y_vals.append(reference_length)
+        x_vals.append(max_x)
+        matplotlib.pyplot.plot(x_vals, y_vals,
                                color=reference_color, lw=line_width, ls=reference_ls)
         max_y = max(max_y, reference_length)
 
@@ -181,6 +182,8 @@ def cumulative_plot(reference, contigs_fpaths, lists_of_lengths, plot_fpath, tit
     xLocator, yLocator = get_locators()
     ax.yaxis.set_major_locator(yLocator)
     ax.xaxis.set_major_locator(xLocator)
+    if logarithmic_x_scale:
+        ax.set_xscale('log')
     #ax.set_yscale('log')
 
     #matplotlib.pyplot.ylim([0, int(float(max_y) * 1.1)])

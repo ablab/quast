@@ -107,8 +107,8 @@ def correct_fasta(original_fpath, corrected_fpath, min_contig,
         ref_len = sum(len(chr_seq) for (chr_name, chr_seq) in modified_fasta_entries)
         if ref_len > qconfig.MAX_REFERENCE_LENGTH:
             _, fasta_ext = os.path.splitext(corrected_fpath)
-            splitted_ref_dirpath = os.path.join(os.path.dirname(corrected_fpath), 'splitted_ref')
-            os.makedirs(splitted_ref_dirpath)
+            split_ref_dirpath = os.path.join(os.path.dirname(corrected_fpath), 'split_ref')
+            os.makedirs(split_ref_dirpath)
 
             for i, (chr_name, chr_seq) in enumerate(modified_fasta_entries):
                 if len(chr_seq) > qconfig.MAX_REFERENCE_LENGTH:
@@ -116,9 +116,9 @@ def correct_fasta(original_fpath, corrected_fpath, min_contig,
                             str(qconfig.MAX_REFERENCE_LENGTH) + " (Nucmer's constraint).")
                     continue
 
-                splitted_ref_fpath = os.path.join(splitted_ref_dirpath, "chr_" + str(i + 1)) + fasta_ext
-                qconfig.splitted_ref.append(splitted_ref_fpath)
-                fastaparser.write_fasta(splitted_ref_fpath, [(chr_name, chr_seq)])
+                split_ref_fpath = os.path.join(split_ref_dirpath, "chr_" + str(i + 1)) + fasta_ext
+                qconfig.splitted_ref.append(split_ref_fpath)
+                fastaparser.write_fasta(split_ref_fpath, [(chr_name, chr_seq)])
 
             if len(qconfig.splitted_ref) == 0:
                 logger.warning("Skipping reference because all of its chromosomes exceeded Nucmer's constraint.")
@@ -167,7 +167,7 @@ def _correct_contigs(contigs_fpaths, corrected_dirpath, reporting, labels):
         qconfig.assembly_labels_by_fpath[corr_fpath] = label
         logger.info('  %s ==> %s' % (contigs_fpath, label))
 
-        # if option --scaffolds is specified QUAST adds splitted version of assemblies to the comparison
+        # if option --scaffolds is specified QUAST adds split version of assemblies to the comparison
         if qconfig.scaffolds:
             logger.info("  breaking scaffolds into contigs:")
             corr_fpath_wo_ext = os.path.join(corrected_dirpath, qutils.name_from_fpath(corr_fpath))
@@ -205,9 +205,9 @@ def _correct_contigs(contigs_fpaths, corrected_dirpath, reporting, labels):
             qconfig.assembly_labels_by_fpath[broken_scaffolds_fpath] = label + ' broken'
             logger.info("      %d scaffolds (%s) were broken into %d contigs (%s)" %
                         (i + 1,
-                         qutils.name_from_fpath(corr_fpath),
+                         qutils.label_from_fpath(corr_fpath),
                          contigs_counter,
-                         qutils.name_from_fpath(broken_scaffolds_fpath)))
+                         qutils.label_from_fpath(broken_scaffolds_fpath)))
 
             if _handle_fasta(broken_scaffolds_fpath, broken_scaffolds_fpath, reporting):
                 corrected_contigs_fpaths.append(broken_scaffolds_fpath)

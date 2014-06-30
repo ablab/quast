@@ -106,7 +106,6 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, json_output_dir, results_dir):
     lists_of_lengths = []
     numbers_of_Ns = []
     for id, contigs_fpath in enumerate(contigs_fpaths):
-        assembly_name = qutils.name_from_fpath(contigs_fpath)
         assembly_label = qutils.label_from_fpath(contigs_fpath)
 
         logger.info('    ' + qutils.index_to_str(id) + assembly_label)

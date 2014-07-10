@@ -175,17 +175,26 @@ def _correct_contigs(contigs_fpaths, corrected_dirpath, min_contig, labels):
     return assemblies
 
 
-def _correct_refrences(ref_fpaths, corrected_dirpath):
+def _correct_references(ref_fpaths, corrected_dirpath):
     common_ref_fasta_ext = ''
 
     corrected_ref_fpaths = []
 
     combined_ref_fpath = os.path.join(corrected_dirpath, COMBINED_REF_FNAME)
 
+    seq_fnames = []
+
     def correct_seq(seq_name, seq, ref_name, ref_fasta_ext, total_references):
         seq_fname = ref_name
         if total_references > 1:
             seq_fname += '_' + qutils.correct_name(seq_name[:20])
+            if seq_fname in seq_fnames:
+                i = 2
+                while seq_fname + '_%d' % i in seq_fnames:
+                    i += 1
+                seq_fname += '_%d' % i
+            seq_fnames.append(seq_fname)
+
         seq_fname += ref_fasta_ext
 
         corr_seq_fpath = qutils.unique_corrected_fpath(os.path.join(corrected_dirpath, seq_fname))
@@ -407,7 +416,7 @@ def main(args):
         logger.info('Reference(s):')
 
         ref_fpaths, common_ref_fasta_ext, combined_ref_fpath =\
-            _correct_refrences(ref_fpaths, corrected_dirpath)
+            _correct_references(ref_fpaths, corrected_dirpath)
 
     # PROCESSING CONTIGS
     logger.info()

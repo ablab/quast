@@ -294,7 +294,7 @@ File with operon positions in reference. See details about the file format in <a
 
 <div class='option'>
 <a name='min_contig'></a>
-<code><b>&#8209;&#8209;min&#8209;contig</b> &lt;int&gt;</code>
+<code><b>--min-contig</b> &lt;int&gt;</code>
 </div>
 Lower threshold for a contig length. Shorter contigs won't be taken into account
 (except for some metrics, see <a href="#sec3">section 3</a>). The default value is 500.
@@ -534,14 +534,14 @@ Note:
 
 <p><span class='metric-name'># contigs (&ge;<span class="rhs">&nbsp;</span>x<span class="rhs">&nbsp;</span>bp)</span> 
     is total number of contigs of length <code>&ge; x<span class="rhs">&nbsp;</span>bp</code>.
-    Not affected by the <code>&#8209;&#8209;min&#8209;contig</code> parameter (see <a href="#sec2.4">section 2.4</a>).</p>
+    Not affected by the <code>--min-contig</code> parameter (see <a href="#sec2.4">section 2.4</a>).</p>
 
 <p><span class='metric-name'>Total length (&ge;<span class="rhs">&nbsp;</span>x<span class="rhs">&nbsp;</span>bp)</span> 
     is the total number of bases in contigs of length <code>&ge; x<span class="rhs">&nbsp;</span>bp</code>.
-    Not affected by the <code>&#8209;&#8209;min&#8209;contig</code> parameter (see <a href="#sec2.4">section 2.4</a>).<br>
+    Not affected by the <code>--min-contig</code> parameter (see <a href="#sec2.4">section 2.4</a>).<br>
     <br>
     <i>All remaining metrics are computed only the contigs that exceed the threshold specified by specified by the
-    <code>&#8209;&#8209;min&#8209;contig</code> option (see <a href="#sec2.4">section 2.4</a>, default is 500).</i>
+    <code>--min-contig</code> option (see <a href="#sec2.4">section 2.4</a>, default is 500).</i>
 </p>
 
 <p><span class='metric-name'># contigs</span> is the total number of contigs in the assembly.</p>

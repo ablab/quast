@@ -140,8 +140,8 @@ def usage(show_hidden=False, meta=False):
         print >> sys.stderr, "-R                <filename>  Reference genomes (accepts multiple fasta files with multiple sequences each)"
     else:
         print >> sys.stderr, "-R                <filename>  Reference genome file"
-    print >> sys.stderr, "-G  --genes       <filename>  File with gene coordiantes in the reference"
-    print >> sys.stderr, "-O  --operons     <filename>  File with operon coordiantes in the reference"
+    print >> sys.stderr, "-G  --genes       <filename>  File with gene coordinates in the reference"
+    print >> sys.stderr, "-O  --operons     <filename>  File with operon coordinates in the reference"
     print >> sys.stderr, "-M  --min-contig  <int>       Lower threshold for contig length [default: %s]" % min_contig
     print >> sys.stderr, ""
     print >> sys.stderr, "Advanced options:"

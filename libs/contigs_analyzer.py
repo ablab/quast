@@ -91,10 +91,6 @@ def clear_files(fpath, nucmer_fpath):
     for ext in ['.delta', '.coords_tmp', '.coords.headless']:
         if os.path.isfile(nucmer_fpath + ext):
             os.remove(nucmer_fpath + ext)
-    if os.path.isfile('nucmer.error'):
-        os.remove('nucmer.error')
-    if os.path.isfile(fpath + '.clean'):
-        os.remove(fpath + '.clean')
 
 
 class NucmerStatus:

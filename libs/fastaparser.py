@@ -108,7 +108,7 @@ def read_fasta(fpath):
         Returns list of FASTA entries (in tuples: name, seq)
     """
     first = True
-    seq = ''
+    seq = []
     name = ''
 
     fasta_file = _get_fasta_file_handler(fpath)
@@ -127,9 +127,9 @@ def read_fasta(fpath):
 
                 first = False
                 name = line.strip()[1:]
-                seq = ''
+                seq = []
             else:
-                seq += line.strip()
+                seq.append(line.strip())
 
     if name or seq:
         yield name, seq

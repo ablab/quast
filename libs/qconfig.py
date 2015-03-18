@@ -31,7 +31,7 @@ splitted_ref = []
 
 # available options
 long_options = "output-dir= save-json-to= genes= operons= reference= contig-thresholds= min-contig= "\
-               "gene-thresholds= save-json gage eukaryote no-plots no-html help debug "\
+               "gene-thresholds= save-json gage eukaryote no-plots no-html no-check no-gc help debug "\
                "ambiguity-usage= scaffolds threads= mincluster= est-ref-size= use-all-alignments gene-finding "\
                "strict-NA meta labels= test help-hidden".split()
 short_options = "o:G:O:R:t:M:S:J:jehdsa:T:c:ufnml:L"
@@ -57,6 +57,8 @@ save_json = False
 meta = False
 debug = False
 test = False
+no_check = False
+no_gc = False
 
 
 default_results_root_dirname = "quast_results"
@@ -179,6 +181,8 @@ def usage(show_hidden=False, meta=False):
         print >> sys.stderr, "-J  --save-json-to <path>   Save the JSON output to a particular path"
         print >> sys.stderr, "    --no-html               Do not build html report"
         print >> sys.stderr, "    --no-plots              Do not draw plots (to make quast faster)"
+        print >> sys.stderr, "    --no-check              Do not check correctness of fasta file"
+        print >> sys.stderr, "    --no-gc                 Do not compute GC% and GC-distribution"
     print >> sys.stderr, ""
     print >> sys.stderr, "    --test                            Run QUAST on the data from the test_data folder, output to quast_test_output"
     print >> sys.stderr, "-h  --help                            Print this usage message"

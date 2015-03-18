@@ -123,7 +123,7 @@ def read_fasta(fpath):
                 continue
             if line[0] == '>':
                 if not first:
-                    yield name, seq
+                    yield name, "".join(seq)
 
                 first = False
                 name = line.strip()[1:]
@@ -132,7 +132,7 @@ def read_fasta(fpath):
                 seq.append(line.strip())
 
     if name or seq:
-        yield name, seq
+        yield name, "".join(seq)
 
     fasta_file.close()
 

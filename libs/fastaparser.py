@@ -159,4 +159,5 @@ def comp(letter):
 
 
 def rev_comp(seq):
-    return ''.join(itertools.imap(comp, seq[::-1]))
+    c = dict(zip('ATCGNatcgn', 'TAGCNtagcn'))
+    return ''.join(c.get(nucleotide, '') for nucleotide in reversed(seq))

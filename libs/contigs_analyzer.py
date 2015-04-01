@@ -157,8 +157,10 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
     # run plantakolya tool
     log_out_fpath = os.path.join(output_dirpath, "contigs_report_" + assembly_name + '.stdout')
     log_err_fpath = os.path.join(output_dirpath, "contigs_report_" + assembly_name + '.stderr')
+    misassembly_fpath = os.path.join(output_dirpath, "contigs_report_" + assembly_name + '.mis_contigs.info')
     planta_out_f = open(log_out_fpath, 'w')
     planta_err_f = open(log_err_fpath, 'w')
+    misassembly_file = open(misassembly_fpath, 'w')
 
     logger.info('  ' + qutils.index_to_str(index) + 'Logging to files ' + log_out_fpath +
                 ' and ' + os.path.basename(log_err_fpath) + '...')
@@ -412,23 +414,30 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
                 is_misassembled = True
                 aligned_lengths.append(cur_aligned_length)
                 cur_aligned_length = 0
-
+                print >> misassembly_file, sorted_aligns[i].contig
+                print >> misassembly_file, 'Extensive misassembly (',
                 print >> planta_out_f, '\t\t\t  Extensive misassembly (',
                 if sorted_aligns[i].ref != sorted_aligns[i+1].ref:
                     if qconfig.meta and \
                             not check_chr_for_refs(sorted_aligns[i].ref, sorted_aligns[i+1].ref):  # if chromosomes from different references
                             region_misassemblies.append(Misassembly.INTERSPECTRANSLOCATION)
                             print >> planta_out_f, 'interspecies translocation',
+                            print >> misassembly_file, 'interspecies translocation',
                     else:
                         region_misassemblies.append(Misassembly.TRANSLOCATION)
                         print >> planta_out_f, 'translocation',
+                        print >> misassembly_file, 'translocation',
                 elif abs(inconsistency) > smgap:
                     region_misassemblies.append(Misassembly.RELOCATION)
                     print >> planta_out_f, 'relocation, inconsistency =', inconsistency,
+                    print >> misassembly_file, 'relocation, inconsistency =', inconsistency,
                 else: #if strand1 != strand2:
                     region_misassemblies.append(Misassembly.INVERSION)
                     print >> planta_out_f, 'inversion',
+                    print >> misassembly_file, 'inversion',
                 print >> planta_out_f, ') between these two alignments'
+                print >> misassembly_file, ') between %s %s and %s %s' % (sorted_aligns[i].s2, sorted_aligns[i].e2,
+                                                                          sorted_aligns[i+1].s2, sorted_aligns[i+1].e2)
                 ref_features.setdefault(sorted_aligns[i].ref, {})[sorted_aligns[i].e1] = 'M'
                 ref_features.setdefault(sorted_aligns[i+1].ref, {})[sorted_aligns[i+1].e1] = 'M'
             else:
@@ -560,6 +569,7 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
         #Recording contig stats
         ctg_len = len(seq)
         print >> planta_out_f, 'CONTIG: %s (%dbp)' % (contig, ctg_len)
+
         #Check if this contig aligned to the reference
         if contig in aligns:
             #Pull all aligns for this contig

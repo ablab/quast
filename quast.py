@@ -161,11 +161,11 @@ def _correct_contigs(contigs_fpaths, corrected_dirpath, reporting, labels):
     ## 2) Nucmer fails on names like "contig 1_bla_bla", "contig 2_bla_bla" (it interprets as a contig's name only the first word of caption and gets ambiguous contigs names)
     corrected_contigs_fpaths = []
 
-    for i, contigs_fpath in enumerate(contigs_fpaths):
+    for file_counter, contigs_fpath in enumerate(contigs_fpaths):
         contigs_fname = os.path.basename(contigs_fpath)
         fname, fasta_ext = qutils.splitext_for_fasta_file(contigs_fname)
 
-        label = labels[i]
+        label = labels[file_counter]
         corr_fpath = qutils.unique_corrected_fpath(os.path.join(corrected_dirpath, label + fasta_ext))
         qconfig.assembly_labels_by_fpath[corr_fpath] = label
         logger.info('  %s ==> %s' % (contigs_fpath, label))
@@ -178,36 +178,37 @@ def _correct_contigs(contigs_fpaths, corrected_dirpath, reporting, labels):
             broken_scaffolds_fasta = []
             contigs_counter = 0
 
-            for i, (name, seq) in enumerate(fastaparser.read_fasta(contigs_fpath)):
-                i = 0
-                cur_contig_number = 1
+            scaffold_counter = 0
+            for scaffold_counter, (name, seq) in enumerate(fastaparser.read_fasta(contigs_fpath)):
+                cumul_contig_length = 0
+                total_contigs_for_the_scaf = 1
                 cur_contig_start = 0
-                while (i < len(seq)) and (seq.find("N", i) != -1):
-                    start = seq.find("N", i)
+                while (cumul_contig_length < len(seq)) and (seq.find('N', cumul_contig_length) != -1):
+                    start = seq.find("N", file_counter)
                     end = start + 1
                     while (end != len(seq)) and (seq[end] == 'N'):
                         end += 1
 
-                    i = end + 1
+                    cumul_contig_length = end + 1
                     if (end - start) >= qconfig.Ns_break_threshold:
                         broken_scaffolds_fasta.append(
                             (name.split()[0] + "_" +
-                             str(cur_contig_number),
+                             str(total_contigs_for_the_scaf),
                              seq[cur_contig_start:start]))
-                        cur_contig_number += 1
+                        total_contigs_for_the_scaf += 1
                         cur_contig_start = end
 
                 broken_scaffolds_fasta.append(
                     (name.split()[0] + "_" +
-                     str(cur_contig_number),
+                     str(total_contigs_for_the_scaf),
                      seq[cur_contig_start:]))
 
-                contigs_counter += cur_contig_number
+                contigs_counter += total_contigs_for_the_scaf
 
             fastaparser.write_fasta(broken_scaffolds_fpath, broken_scaffolds_fasta)
             qconfig.assembly_labels_by_fpath[broken_scaffolds_fpath] = label + ' broken'
             logger.info("      %d scaffolds (%s) were broken into %d contigs (%s)" %
-                        (i + 1,
+                        (scaffold_counter + 1,
                          qutils.label_from_fpath(corr_fpath),
                          contigs_counter,
                          qutils.label_from_fpath(broken_scaffolds_fpath)))

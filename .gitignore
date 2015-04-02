@@ -31,3 +31,8 @@ libs/glimmer/glimmerhmm
 tc_tests/results/
 test/
 test_output/
+quast_test_output/
+
+libs/Busco/augustus-3.0.3/src/LICENCE.TXT
+libs/Busco/hmmer-3.1b2-mac/
+libs/bwa-master/make.*

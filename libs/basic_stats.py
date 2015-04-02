@@ -17,7 +17,7 @@ from libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 
 
-def GC_content(contigs_fpath):
+def GC_content(contigs_fpath, skip=False):
     """
        Returns percent of GC for assembly and GC distribution: (list of GC%, list of # windows)
     """
@@ -26,6 +26,10 @@ def GC_content(contigs_fpath):
     GC_bin_num = int(100 / qconfig.GC_bin_size) + 1
     GC_distribution_x = [i * qconfig.GC_bin_size for i in range(0, GC_bin_num)] # list of X-coordinates, i.e. GC %
     GC_distribution_y = [0] * GC_bin_num # list of Y-coordinates, i.e. # windows with GC % = x
+    total_GC = None
+    if skip:
+        return total_GC, (GC_distribution_x, GC_distribution_y)
+
     for name, seq_full in fastaparser.read_fasta(contigs_fpath): # in tuples: (name, seq)
         total_GC_amount += seq_full.count("G") + seq_full.count("C")
         total_contig_length += len(seq_full) - seq_full.count("N")
@@ -144,7 +148,7 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, json_output_dir, results_dir):
         if reference_length:
             ng75, lg75 = N50.NG50_and_LG50(lengths_list, reference_length, 75)
         total_length = sum(lengths_list)
-        total_GC, GC_distribution = GC_content(contigs_fpath)
+        total_GC, GC_distribution = GC_content(contigs_fpath, skip=qconfig.no_gc)
         list_of_GC_distributions.append(GC_distribution)
         logger.info('    ' + qutils.index_to_str(id) +
                     qutils.label_from_fpath(contigs_fpath) + \
@@ -153,7 +157,7 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, json_output_dir, results_dir):
                     ', Total length = ' + str(total_length) + \
                     ', GC % = ' + ('%.2f' % total_GC if total_GC is not None else 'undefined') + \
                     ', # N\'s per 100 kbp = ' + ' %.2f' % (float(number_of_Ns) * 100000.0 / float(total_length)) )
-
+        
         report.add_field(reporting.Fields.N50, n50)
         report.add_field(reporting.Fields.L50, l50)
         if reference_length:

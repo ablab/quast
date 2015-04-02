@@ -136,9 +136,12 @@ def _handle_fasta(contigs_fpath, corr_fpath, reporting):
         return False
 
     # correcting
-    if not correct_fasta(contigs_fpath, corr_fpath, qconfig.min_contig):
-        return False
-
+    if qconfig.no_check:
+        shutil.copy2(contigs_fpath, corr_fpath)
+    else:
+        if not correct_fasta(contigs_fpath, corr_fpath, qconfig.min_contig):
+            return False
+    
     ## filling column "Assembly" with names of assemblies
     report = reporting.get(corr_fpath)
 
@@ -463,6 +466,12 @@ def main(args):
 
         elif opt == '--no-html':
             qconfig.html_report = False
+
+        elif opt == '--no-check':
+            qconfig.no_check = True
+
+        elif opt == '--no-gc':
+            qconfig.no_gc = True
 
         elif opt in ('-m', '--meta'):
             qconfig.meta = True

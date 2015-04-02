@@ -108,7 +108,7 @@ def read_fasta(fpath):
         Returns list of FASTA entries (in tuples: name, seq)
     """
     first = True
-    seq = ''
+    seq = []
     name = ''
 
     fasta_file = _get_fasta_file_handler(fpath)
@@ -123,16 +123,16 @@ def read_fasta(fpath):
                 continue
             if line[0] == '>':
                 if not first:
-                    yield name, seq
+                    yield name, "".join(seq)
 
                 first = False
                 name = line.strip()[1:]
-                seq = ''
+                seq = []
             else:
-                seq += line.strip()
+                seq.append(line.strip())
 
     if name or seq:
-        yield name, seq
+        yield name, "".join(seq)
 
     fasta_file.close()
 
@@ -159,4 +159,5 @@ def comp(letter):
 
 
 def rev_comp(seq):
-    return ''.join(itertools.imap(comp, seq[::-1]))
+    c = dict(zip('ATCGNatcgn', 'TAGCNtagcn'))
+    return ''.join(c.get(nucleotide, '') for nucleotide in reversed(seq))

@@ -19,8 +19,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 Authors:
     Alexey Gurevich
-    Nikolay Vyahhi
     Vladislav Saveliev
+    Nikolay Vyahhi
+    Alla Mikheenko
     Andrey Prjibelsky
     Ekaterina Sosa
     Glenn Tesler
@@ -47,17 +48,30 @@ First published online: February 19, 2013
 
 Third-party tools incorporated into QUAST:
 
-1. GeneMark.hmm gene prediction software was kindly provided by Mark Borodovsky and
+1. GeneMark gene prediction software was kindly provided by Mark Borodovsky and
 Georgia Institute of Technology. Please, see License Agreement in the file
 libs/genemark/linux_64/LICENSE or online at
 http://exon.gatech.edu/GeneMark/license_download.cgi. If you are not academic, not
 non-profit institution and not U.S. Governmental agency, you need to receive an
 appropriate licensing to use this module in QUAST.
-For more details about GeneMark.hmm please refer to 
-http://exon.gatech.edu/gmhmm2_prok.cgi website and to the following paper:
+For more details about GeneMarkS please refer to 
+http://exon.gatech.edu/GeneMark/genemarks.cgi website and to the following paper:
 
-Lukashin, A.V. and Borodovsky, M. (1998). GeneMark.hmm: New solutions for gene
-finding. Nucleic Acids Res, 26(4), 1107-1115.
+John Besemer, Alexandre Lomsadze and Mark Borodovsky 
+GeneMarkS: a self-training method for prediction of gene starts in microbial genomes. 
+Implications for finding sequence motifs in regulatory regions. 
+Nucleic Acids Research (2001) 29, pp 2607-2618
+
+For more details about MetaGeneMark please refer to 
+http://exon.gatech.edu/GeneMark/meta_gmhmmp.cgi website and to the following papers:
+
+Wenhan Zhu, Alex Lomsadze and Mark Borodovsky 
+Ab initio gene identification in metagenomic sequences 
+Nucleic Acids Research (2010) 38, e132
+
+John Besemer and Mark Borodovsky 
+Heuristic approach to deriving models for gene finding 
+Nucleic Acids Research (1999) 27, pp 3911-3920
 
 2. Dr. Salzbeg kindly agreed to include GAGE scripts as a part of QUAST under GPLv2.
 These scripts was also modified by QUAST team. They can be distributed and used in 

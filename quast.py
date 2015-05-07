@@ -462,6 +462,9 @@ def main(args):
         elif opt in ('-n', "--strict-NA"):
             qconfig.strict_NA = True
 
+        elif opt == '--no-snps':
+            qconfig.show_snps = False
+
         elif opt == '--no-plots':
             qconfig.draw_plots = False
 

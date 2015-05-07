@@ -186,7 +186,7 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
     using_existing_alignments = False
     if os.path.isfile(nucmer_successful_check_fpath) and\
        os.path.isfile(coords_fpath) and\
-       os.path.isfile(show_snps_fpath):
+       (os.path.isfile(show_snps_fpath) or not qconfig.show_snps):
         if check_nucmer_successful_check(nucmer_successful_check_fpath, contigs_fpath, ref_fpath):
             print >> planta_out_f, '\tUsing existing Nucmer alignments...'
             logger.info('  ' + qutils.index_to_str(index) + 'Using existing Nucmer alignments... ')
@@ -295,24 +295,25 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
             logger.info('  ' + qutils.index_to_str(index) + 'Nucmer: nothing aligned for ' + '\'' + assembly_name + '\'.')
             return NucmerStatus.NOT_ALIGNED, {}, []
 
-        with open(coords_fpath) as coords_file:
-            headless_coords_fpath = coords_fpath + '.headless'
-            headless_coords_f = open(headless_coords_fpath, 'w')
-            coords_file.readline()
-            coords_file.readline()
-            headless_coords_f.write(coords_file.read())
-            headless_coords_f.close()
-            headless_coords_f = open(headless_coords_fpath)
+        if qconfig.show_snps:
+            with open(coords_fpath) as coords_file:
+                headless_coords_fpath = coords_fpath + '.headless'
+                headless_coords_f = open(headless_coords_fpath, 'w')
+                coords_file.readline()
+                coords_file.readline()
+                headless_coords_f.write(coords_file.read())
+                headless_coords_f.close()
+                headless_coords_f = open(headless_coords_fpath)
 
-            return_code = qutils.call_subprocess(
-                [bin_fpath('show-snps'), '-S', '-T', '-H', delta_fpath],
-                stdin=headless_coords_f,
-                stdout=open(show_snps_fpath, 'w'),
-                stderr=planta_err_f,
-                indent='  ' + qutils.index_to_str(index))
-            if return_code != 0:
-                print >> planta_err_f, qutils.index_to_str(index) + 'Show-snps failed for', contigs_fpath, '\n'
-                return __fail(contigs_fpath, index)
+                return_code = qutils.call_subprocess(
+                    [bin_fpath('show-snps'), '-S', '-T', '-H', delta_fpath],
+                    stdin=headless_coords_f,
+                    stdout=open(show_snps_fpath, 'w'),
+                    stderr=planta_err_f,
+                    indent='  ' + qutils.index_to_str(index))
+                if return_code != 0:
+                    print >> planta_err_f, qutils.index_to_str(index) + 'Show-snps failed for', contigs_fpath, '\n'
+                    return __fail(contigs_fpath, index)
 
         create_nucmer_successful_check(nucmer_successful_check_fpath, contigs_fpath, ref_fpath)
 
@@ -474,7 +475,8 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
         print >> planta_out_f, '\tLoaded [%s]' % name
 
     #Loading the SNP calls
-    print >> planta_out_f, 'Loading SNPs...'
+    if qconfig.show_snps:
+        print >> planta_out_f, 'Loading SNPs...'
 
     class SNP():
         def __init__(self, ref=None, ctg=None, ref_pos=None, ctg_pos=None, ref_nucl=None, ctg_nucl=None):
@@ -486,27 +488,28 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
             self.ctg_nucl = ctg_nucl
             self.type = 'I' if self.ref_nucl == '.' else ('D' if ctg_nucl == '.' else 'S')
 
-    snps = {}
-    prev_line = None
-    for line in open(show_snps_fpath):
-        #print "$line";
-        line = line.split()
-        if not line[0].isdigit():
-            continue
-        if prev_line and line == prev_line:
-            continue
-        ref = line[10]
-        ctg = line[11]
-        pos = int(line[0]) # Kolya: python don't convert int<->str types automatically
-        loc = int(line[3]) # Kolya: same as above
+    if qconfig.show_snps:
+        snps = {}
+        prev_line = None
+        for line in open(show_snps_fpath):
+            #print "$line";
+            line = line.split()
+            if not line[0].isdigit():
+                continue
+            if prev_line and line == prev_line:
+                continue
+            ref = line[10]
+            ctg = line[11]
+            pos = int(line[0]) # Kolya: python don't convert int<->str types automatically
+            loc = int(line[3]) # Kolya: same as above
 
-        # if (! exists $line[11]) { die "Malformed line in SNP file.  Please check that show-snps has completed succesfully.\n$line\n[$line[9]][$line[10]][$line[11]]\n"; }
-        if pos in snps.setdefault(ref, {}).setdefault(ctg, {}):
-            snps.setdefault(ref, {}).setdefault(ctg, {})[pos].append(SNP(ref=ref, ctg=ctg, ref_pos=pos, ctg_pos=loc, ref_nucl=line[1], ctg_nucl=line[2]))
-        else:
-            snps.setdefault(ref, {}).setdefault(ctg, {})[pos] = [SNP(ref=ref, ctg=ctg, ref_pos=pos, ctg_pos=loc, ref_nucl=line[1], ctg_nucl=line[2])]
-        prev_line = line
-    used_snps_file = open(used_snps_fpath, 'w')
+            # if (! exists $line[11]) { die "Malformed line in SNP file.  Please check that show-snps has completed succesfully.\n$line\n[$line[9]][$line[10]][$line[11]]\n"; }
+            if pos in snps.setdefault(ref, {}).setdefault(ctg, {}):
+                snps.setdefault(ref, {}).setdefault(ctg, {})[pos].append(SNP(ref=ref, ctg=ctg, ref_pos=pos, ctg_pos=loc, ref_nucl=line[1], ctg_nucl=line[2]))
+            else:
+                snps.setdefault(ref, {}).setdefault(ctg, {})[pos] = [SNP(ref=ref, ctg=ctg, ref_pos=pos, ctg_pos=loc, ref_nucl=line[1], ctg_nucl=line[2])]
+            prev_line = line
+        used_snps_file = open(used_snps_fpath, 'w')
 
     # Loading the regions (if any)
     regions = {}
@@ -843,7 +846,8 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
     unaligned_file.close()
 
     print >> planta_out_f, 'Analyzing coverage...'
-    print >> planta_out_f, 'Writing SNPs into', used_snps_fpath
+    if qconfig.show_snps:
+        print >> planta_out_f, 'Writing SNPs into', used_snps_fpath
 
     region_covered = 0
     region_ambig = 0
@@ -875,6 +879,10 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
         sorted_aligns = sorted(ref_aligns[ref], key=lambda x: x.s1)
         total_aligns = len(sorted_aligns)
         print >> planta_out_f, '\tReference %s: %d total alignments. %d total regions.' % (ref, total_aligns, len(regions[ref]))
+
+        # the rest is needed for SNPs stats only
+        if not qconfig.show_snps:
+            continue
 
         #Walk through each region on this reference sequence
         for region in regions[ref]:
@@ -1166,7 +1174,8 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
     indels = region_insertion + region_deletion
     total_aligned_bases = region_covered
     print >> planta_out_f, 'Analysis is finished!'
-    print >> planta_out_f, 'Founded SNPs were written into', used_snps_fpath
+    if qconfig.show_snps:
+        print >> planta_out_f, 'Founded SNPs were written into', used_snps_fpath
     print >> planta_out_f, '\nResults:'
 
     print >> planta_out_f, '\tLocal Misassemblies: %d' % region_misassemblies.count(Misassembly.LOCAL)
@@ -1196,58 +1205,64 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
             print >> planta_out_f, 'Note that --allow-ambiguity option was set to "one" and only first alignment per each contig was used.'
             ambiguous_contigs_extra_bases = 0 # this variable is used in Duplication ratio but we don't need it in this case
 
-    #print >> plantafile_out, 'Mismatches: %d' % SNPs
-    #print >> plantafile_out, 'Single Nucleotide Indels: %d' % indels
+    if qconfig.show_snps:
+        #print >> plantafile_out, 'Mismatches: %d' % SNPs
+        #print >> plantafile_out, 'Single Nucleotide Indels: %d' % indels
 
-    print >> planta_out_f, ''
-    print >> planta_out_f, '\tCovered Bases: %d' % region_covered
-    #print >> plantafile_out, '\tAmbiguous Bases (e.g. N\'s): %d' % region_ambig
-    print >> planta_out_f, ''
-    print >> planta_out_f, '\tSNPs: %d' % region_snp
-    print >> planta_out_f, '\tInsertions: %d' % region_insertion
-    print >> planta_out_f, '\tDeletions: %d' % region_deletion
-    #print >> plantafile_out, '\tList of indels lengths:', indels_list
-    print >> planta_out_f, ''
-    print >> planta_out_f, '\tPositive Gaps: %d' % len(gaps)
-    internal = 0
-    external = 0
-    summ = 0
-    for gap in gaps:
-        if gap[1] == gap[2]:
-            internal += 1
+        print >> planta_out_f, ''
+        print >> planta_out_f, '\tCovered Bases: %d' % region_covered
+        #print >> plantafile_out, '\tAmbiguous Bases (e.g. N\'s): %d' % region_ambig
+        print >> planta_out_f, ''
+        print >> planta_out_f, '\tSNPs: %d' % region_snp
+        print >> planta_out_f, '\tInsertions: %d' % region_insertion
+        print >> planta_out_f, '\tDeletions: %d' % region_deletion
+        #print >> plantafile_out, '\tList of indels lengths:', indels_list
+        print >> planta_out_f, ''
+        print >> planta_out_f, '\tPositive Gaps: %d' % len(gaps)
+        internal = 0
+        external = 0
+        summ = 0
+        for gap in gaps:
+            if gap[1] == gap[2]:
+                internal += 1
+            else:
+                external += 1
+                summ += gap[0]
+        print >> planta_out_f, '\t\tInternal Gaps: % d' % internal
+        print >> planta_out_f, '\t\tExternal Gaps: % d' % external
+        print >> planta_out_f, '\t\tExternal Gap Total: % d' % summ
+        if external:
+            avg = summ * 1.0 / external
         else:
-            external += 1
-            summ += gap[0]
-    print >> planta_out_f, '\t\tInternal Gaps: % d' % internal
-    print >> planta_out_f, '\t\tExternal Gaps: % d' % external
-    print >> planta_out_f, '\t\tExternal Gap Total: % d' % summ
-    if external:
-        avg = summ * 1.0 / external
-    else:
-        avg = 0.0
-    print >> planta_out_f, '\t\tExternal Gap Average: %.0f' % avg
+            avg = 0.0
+        print >> planta_out_f, '\t\tExternal Gap Average: %.0f' % avg
 
-    print >> planta_out_f, '\tNegative Gaps: %d' % len(neg_gaps)
-    internal = 0
-    external = 0
-    summ = 0
-    for gap in neg_gaps:
-        if gap[1] == gap[2]:
-            internal += 1
+        print >> planta_out_f, '\tNegative Gaps: %d' % len(neg_gaps)
+        internal = 0
+        external = 0
+        summ = 0
+        for gap in neg_gaps:
+            if gap[1] == gap[2]:
+                internal += 1
+            else:
+                external += 1
+                summ += gap[0]
+        print >> planta_out_f, '\t\tInternal Overlaps: % d' % internal
+        print >> planta_out_f, '\t\tExternal Overlaps: % d' % external
+        print >> planta_out_f, '\t\tExternal Overlaps Total: % d' % summ
+        if external:
+            avg = summ * 1.0 / external
         else:
-            external += 1
-            summ += gap[0]
-    print >> planta_out_f, '\t\tInternal Overlaps: % d' % internal
-    print >> planta_out_f, '\t\tExternal Overlaps: % d' % external
-    print >> planta_out_f, '\t\tExternal Overlaps Total: % d' % summ
-    if external:
-        avg = summ * 1.0 / external
-    else:
-        avg = 0.0
-    print >> planta_out_f, '\t\tExternal Overlaps Average: %.0f' % avg
+            avg = 0.0
+        print >> planta_out_f, '\t\tExternal Overlaps Average: %.0f' % avg
 
-    redundant = list(set(redundant))
-    print >> planta_out_f, '\tContigs with Redundant Alignments: %d (%d)' % (len(redundant), total_redundant)
+        redundant = list(set(redundant))
+        print >> planta_out_f, '\tContigs with Redundant Alignments: %d (%d)' % (len(redundant), total_redundant)
+
+    if not qconfig.show_snps:
+        SNPs = None
+        indels_list = None
+        total_aligned_bases = None
 
     result = {'avg_idy': avg_idy, 'region_misassemblies': region_misassemblies,
               'misassembled_contigs': misassembled_contigs, 'misassembled_bases': misassembled_bases,
@@ -1279,7 +1294,8 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
 
     planta_out_f.close()
     planta_err_f.close()
-    used_snps_file.close()
+    if qconfig.show_snps:
+        used_snps_file.close()
     logger.info('  ' + qutils.index_to_str(index) + 'Analysis is finished.')
     logger.debug('')
     if nothing_aligned:
@@ -1375,10 +1391,11 @@ def do(reference, contigs_fpaths, cyclic, output_dir):
         report.add_field(reporting.Fields.AMBIGUOUSEXTRABASES, ambiguous_contigs_extra_bases)
         report.add_field(reporting.Fields.MISMATCHES, SNPs)
         # different types of indels:
-        report.add_field(reporting.Fields.INDELS, len(indels_list))
-        report.add_field(reporting.Fields.INDELSBASES, sum(indels_list))
-        report.add_field(reporting.Fields.MIS_SHORT_INDELS, len([i for i in indels_list if i <= qconfig.SHORT_INDEL_THRESHOLD]))
-        report.add_field(reporting.Fields.MIS_LONG_INDELS, len([i for i in indels_list if i > qconfig.SHORT_INDEL_THRESHOLD]))
+        if indels_list is not None:
+            report.add_field(reporting.Fields.INDELS, len(indels_list))
+            report.add_field(reporting.Fields.INDELSBASES, sum(indels_list))
+            report.add_field(reporting.Fields.MIS_SHORT_INDELS, len([i for i in indels_list if i <= qconfig.SHORT_INDEL_THRESHOLD]))
+            report.add_field(reporting.Fields.MIS_LONG_INDELS, len([i for i in indels_list if i > qconfig.SHORT_INDEL_THRESHOLD]))
 
         if total_aligned_bases:
             report.add_field(reporting.Fields.SUBSERROR, "%.2f" % (float(SNPs) * 100000.0 / float(total_aligned_bases)))

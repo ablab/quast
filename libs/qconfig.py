@@ -33,7 +33,7 @@ splitted_ref = []
 long_options = "output-dir= save-json-to= genes= operons= reference= contig-thresholds= min-contig= "\
                "gene-thresholds= save-json gage eukaryote no-plots no-html help debug "\
                "ambiguity-usage= scaffolds threads= mincluster= est-ref-size= use-all-alignments gene-finding "\
-               "strict-NA meta labels= test help-hidden".split()
+               "strict-NA meta labels= test help-hidden no-snps".split()
 short_options = "o:G:O:R:t:M:S:J:jehdsa:T:c:ufnml:L"
 
 # default values for options
@@ -57,7 +57,7 @@ save_json = False
 meta = False
 debug = False
 test = False
-
+show_snps = True
 
 default_results_root_dirname = "quast_results"
 output_dirname = "results_" + datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
@@ -169,6 +169,7 @@ def usage(show_hidden=False, meta=False):
     print >> sys.stderr, "-n  --strict-NA                       Break contigs in any misassembly event when compute NAx and NGAx"
     print >> sys.stderr, "                                      By default, QUAST breaks contigs only by extensive misassemblies (not local ones)"
     print >> sys.stderr, "    --no-plots                        Do not draw plots (to speed up computation)"
+    print >> sys.stderr, "    --no-snps                         Do not report SNPs (to make quast faster & reduce memory consumption on large genomes)"
     if show_hidden:
         print >> sys.stderr, ""
         print >> sys.stderr, "Hidden options:"

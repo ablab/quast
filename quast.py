@@ -654,7 +654,7 @@ def main(args):
         logger.info('Drawing large plots...')
         logger.info('This may take a while: press Ctrl-C to skip this step..')
         try:
-            if qconfig.show_snps:
+            if detailed_contigs_reports_dirpath and qconfig.show_snps:
                 contig_report_fpath_pattern = os.path.join(detailed_contigs_reports_dirpath, 'contigs_report_%s.stdout')
             else:
                 contig_report_fpath_pattern = None

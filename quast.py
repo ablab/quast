@@ -654,15 +654,19 @@ def main(args):
         logger.info('Drawing large plots...')
         logger.info('This may take a while: press Ctrl-C to skip this step..')
         try:
-            number_of_steps = sum([int(bool(value)) for value in [detailed_contigs_reports_dirpath, all_pdf_file]])
-            if detailed_contigs_reports_dirpath:
+            if qconfig.show_snps:
+                contig_report_fpath_pattern = os.path.join(detailed_contigs_reports_dirpath, 'contigs_report_%s.stdout')
+            else:
+                contig_report_fpath_pattern = None
+            number_of_steps = sum([int(bool(value)) for value in [contig_report_fpath_pattern, all_pdf_file]])
+            if contig_report_fpath_pattern:
                 ########################################################################
                 ### VISUALIZE CONTIG ALIGNMENT
                 ########################################################################
                 logger.info('  1 of %d: Creating contig alignment plot...' % number_of_steps)
                 from libs import contig_alignment_plotter
                 contig_alignment_plot_fpath = contig_alignment_plotter.do(
-                    contigs_fpaths, os.path.join(detailed_contigs_reports_dirpath, 'contigs_report_%s.stdout'),
+                    contigs_fpaths, contig_report_fpath_pattern,
                     output_dirpath, ref_fpath, similar=True)
 
             if all_pdf_file:

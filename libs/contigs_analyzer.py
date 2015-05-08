@@ -666,7 +666,7 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
                         last_end = max(sorted_aligns[i].s2, sorted_aligns[i].e2)
                         last_real = sorted_aligns[i]
                     else:
-                        if (sorted_aligns[i].len2 * sorted_aligns[i].idy) / (last_real.idy * last_real.len2) > epsilon:
+                        if float(sorted_aligns[i].len2) / float(last_real.len2) > epsilon:
                             if cur_group not in real_groups:
                                 real_groups[cur_group] = [ real_aligns[-1] ]
                                 real_aligns = real_aligns[:-1]
@@ -677,12 +677,23 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
 
                 # choose appropriate alignments (to minimize total size of contig alignment and reduce # misassemblies
                 if len(real_groups) > 0:
-                    # auxiliary function
-                    def get_group_id_of_align(align):
+                    # auxiliary functions
+                    def __get_group_id_of_align(align):
                         for k,v in real_groups.items():
                             if align in v:
                                 return k
                         return None
+
+                    def __count_misassemblies(aligns, cyclic_ref_lens):
+                        count = 0
+                        sorted_aligns = sorted(aligns, key=lambda x: (min(x.s2, x.e2), max(x.s2, x.e2)))
+                        for i in range(len(sorted_aligns) - 1):
+                            is_extensive_misassembly, _ = is_misassembly(sorted_aligns[i], sorted_aligns[i+1], cyclic_ref_lens)
+                            if is_extensive_misassembly:
+                                count += 1
+                        return count
+
+                    # end of auxiliary functions
 
                     # adding degenerate groups for single real aligns
                     if len(real_aligns) > 0:
@@ -690,28 +701,29 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
                             cur_group = (min(align.s2, align.e2), max(align.s2, align.e2))
                             real_groups[cur_group] = [align]
 
-                    sorted_aligns = sorted((align for group in real_groups.values() for align in group), key=lambda x: x.s1)
+                    sorted_aligns = sorted((align for group in real_groups.values() for align in group),
+                                           key=lambda x: (x.ref, x.s1))
                     min_selection = []
-                    min_selection_distance = None
+                    min_selection_mis_count = None
                     cur_selection = []
                     cur_selection_group_ids = []
                     for cur_align in sorted_aligns:
-                        cur_align_group_id = get_group_id_of_align(cur_align)
+                        cur_align_group_id = __get_group_id_of_align(cur_align)
                         if cur_align_group_id not in cur_selection_group_ids:
                             cur_selection.append(cur_align)
                             cur_selection_group_ids.append(cur_align_group_id)
                         else:
                             for align in cur_selection:
-                                if get_group_id_of_align(align) == cur_align_group_id:
+                                if __get_group_id_of_align(align) == cur_align_group_id:
                                     cur_selection.remove(align)
                                     break
                             cur_selection.append(cur_align)
 
                         if len(cur_selection_group_ids) == len(real_groups.keys()):
-                            cur_selection_distance = cur_selection[-1].e1 - cur_selection[0].s1
-                            if (not min_selection) or (cur_selection_distance < min_selection_distance):
+                            cur_selection_mis_count = __count_misassemblies(cur_selection, reg_lens if cyclic else None)
+                            if (not min_selection) or (cur_selection_mis_count < min_selection_mis_count):
                                 min_selection = list(cur_selection)
-                                min_selection_distance = cur_selection_distance
+                                min_selection_mis_count = cur_selection_mis_count
 
                     # save min selection to real aligns and skip others (as redundant)
                     real_aligns = list(min_selection)

@@ -408,8 +408,16 @@ def main(args):
         shutil.rmtree(corrected_dirpath)
     os.mkdir(corrected_dirpath)
 
-    # PROCESSING REFERENCES
     common_ref_fasta_ext = ''
+
+    # SEARCHING REFERENCES
+    if not ref_fpaths:
+        logger.info()
+        logger.info("No references provided, starting search for reference genomes in NCBI's database..")
+        from libs import search_references_meta
+        ref_fpaths = search_references_meta.do(contigs_fpaths, corrected_dirpath)
+
+    # PROCESSING REFERENCES
 
     if ref_fpaths:
         logger.info()

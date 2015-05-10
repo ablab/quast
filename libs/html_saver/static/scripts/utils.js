@@ -232,7 +232,7 @@ function bindTip(placeholder, series, plot, xToPrettyStringFunction, xUnit, posi
 
                 showTip(item.pageX, item.pageY, plot.offset(),
                     plot.width(), plot.height(),
-                    series, item.seriesIndex, item.dataIndex,
+                    series, item.seriesIndex, x, item.dataIndex,
                     xToPrettyStringFunction(x, xUnit) + ':',
                     position);
             }
@@ -247,7 +247,7 @@ function bindTip(placeholder, series, plot, xToPrettyStringFunction, xUnit, posi
 
 var tipElementExists = false;
 function showTip(pageX, pageY, offset, plotWidth, plotHeight,
-                 series, centralSeriesIndex, xIndex, xStr, position) {
+                 series, centralSeriesIndex, xPos, xIndex, xStr, position) {
     const LINE_HEIGHT = 16; // pixels
 
     position = ((position != null) ? position : 'bottom right');
@@ -291,7 +291,8 @@ function showTip(pageX, pageY, offset, plotWidth, plotHeight,
     var sortedYsAndColors = [];
     for (var i = 0; i < series.length; i++) {
         sortedYsAndColors.push({
-            y: (series[i].data[xIndex] || series[i].data[series[i].data.length - 1])[1],
+            y: (i == centralSeriesIndex ? (series[i].data[xIndex] || series[i].data[series[i].data.length - 1])[1] :
+                findNearestPoint(series[i].data, xPos)),
             color: series[i].color,
             label: (series[i].isReference ? 'Reference' : series[i].label),
             isCurrent: i == centralSeriesIndex,
@@ -300,7 +301,7 @@ function showTip(pageX, pageY, offset, plotWidth, plotHeight,
     sortedYsAndColors.sort(function(a, b) { return a.y < b.y;});
 
     for (i = 0; i < sortedYsAndColors.length; i++) {
-        var item =sortedYsAndColors[i];
+        var item = sortedYsAndColors[i];
 
         $('<div id="tip_line' + i + '">' + toPrettyString(item.y)
             + ', <span style="color: ' + item.color + ';">' + item.label + '</span></div>').css({
@@ -310,6 +311,12 @@ function showTip(pageX, pageY, offset, plotWidth, plotHeight,
     }
 }
 
+function findNearestPoint(points, x) {
+    for (var i = 0; i < points.length; i++) {
+        if (points[i][0] >= x) return points[i][1];
+    }
+    return points[points.length-1][1]
+}
 
 
 // Cookie functions based on http://www.quirksmode.org/js/cookies.html

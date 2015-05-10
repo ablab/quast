@@ -33,7 +33,9 @@ var nx = {
     },
 
     draw: function (name, title, colors, filenames, data, refPlotValue,
-                    placeholder, legendPlaceholder, glossary, order) {
+                    placeholder, legendPlaceholder, glossary, order, scalePlaceholder) {
+
+        $(scalePlaceholder).empty();
 
         var listsOfLengths = data.listsOfLengths;
         var refLength = data.refLen;

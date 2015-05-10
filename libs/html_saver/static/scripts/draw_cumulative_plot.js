@@ -10,7 +10,9 @@ var cumulative = {
     colors: [],
 
     draw: function(name, title, colors, filenames, listsOfLengths, refLenght,
-                   placeholder, legendPlaceholder, glossary, order) {
+                   placeholder, legendPlaceholder, glossary, order, scalePlaceholder) {
+
+        $(scalePlaceholder).empty()
 
         if (!this.isInitialized) {
             //    div.html(

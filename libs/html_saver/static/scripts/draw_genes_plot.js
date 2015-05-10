@@ -23,11 +23,12 @@ var gns = {
     },
 
     draw: function (name, title, colors, filenames, data, refGenesNumber,
-                    placeholder, legendPlaceholder, glossary, order) {
+                    placeholder, legendPlaceholder, glossary, order, scalePlaceholder) {
 //    div.html(
 //        "<span class='plot-header'>" + kind[0].toUpperCase() + kind.slice(1) + "s covered</span>" +
 //        "<div class='plot-placeholder' id='" + kind + "s-plot-placeholder'></div>"
 //    );
+        $(scalePlaceholder).empty()
 
         var info = gns[name];
 

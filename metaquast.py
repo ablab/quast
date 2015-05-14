@@ -471,11 +471,13 @@ def main(args):
         assemblies, ref_fpaths, corrected_dirpath,
         os.path.join(output_dirpath, 'combined_quast_output', 'contigs_reports', 'alignments_%s.tsv'))
 
+    ref_names = []
     for ref_name, ref_assemblies in assemblies_by_reference.iteritems():
         logger.info('')
         if not ref_assemblies:
             logger.info('No contigs were aligned to the reference ' + ref_name)
         else:
+            ref_names.append(ref_name)
             run_name = 'for the contigs aligned to ' + ref_name
             logger.info('Starting quast.py ' + run_name)
 
@@ -484,7 +486,11 @@ def main(args):
                 reference_fpath=os.path.join(corrected_dirpath, ref_name) + common_ref_fasta_ext,
                 output_dirpath=os.path.join(output_dirpath, ref_name + '_quast_output'),
                 exit_on_exception=False, num_notifications_tuple=total_num_notifications)
-
+    if ref_names:
+        from libs import create_meta_summary
+        create_meta_summary.do(output_dirpath, labels, reporting.Fields.main_metrics, ref_names)
+        logger.info('')
+        logger.info('Text versions of reports and graphics for each metric (for all references and assemblies) are saved to ' + output_dirpath)
     # Finally running for the contigs that has not been aligned to any reference
     run_name = 'for the contigs not alined anywhere'
     logger.info()

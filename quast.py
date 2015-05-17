@@ -691,7 +691,7 @@ def main(args):
 
     if qconfig.html_report:
         from libs.html_saver import html_saver
-        html_saver.save_total_report(output_dirpath, qconfig.min_contig)
+        html_saver.save_total_report(output_dirpath, qconfig.min_contig, ref_fpath)
 
     if os.path.isfile(all_pdf_fpath):
         logger.info('  PDF version (tables and plots) saved to ' + all_pdf_fpath)

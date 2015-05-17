@@ -37,6 +37,14 @@
     display: none;
 }
 
+#report tr.secondary_hidden {
+    display: none;
+}
+
+#report td.secondary_td {
+	padding-left: 10px !important;
+}
+
 #report_legend {
     padding-left: 15px;  /* compensate drag handles */
 }

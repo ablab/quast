@@ -15,7 +15,8 @@ quast_dirpath = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
 sys.path.append(os.path.join(quast_dirpath, 'libs'))
 from libs import qconfig
 qconfig.check_python_version()
-
+from libs.html_saver import html_saver
+from libs.html_saver import json_saver
 from libs import qutils, fastaparser
 from libs.qutils import assert_file_exists
 
@@ -459,13 +460,14 @@ def main(args):
     total_num_warnings = 0
     total_num_nf_errors = 0
     total_num_notifications = (total_num_notices, total_num_warnings, total_num_nf_errors)
+    json_texts = []
 
     return_code, total_num_notifications = _start_quast_main(run_name, quast_py_args,
         assemblies=assemblies,
         reference_fpath=combined_ref_fpath,
         output_dirpath=os.path.join(output_dirpath, 'combined_quast_output'),
         num_notifications_tuple=total_num_notifications)
-
+    json_texts.append(json_saver.json_text)
     # Partitioning contigs into bins aligned to each reference
     assemblies_by_reference, not_aligned_assemblies = _partition_contigs(
         assemblies, ref_fpaths, corrected_dirpath,
@@ -486,11 +488,17 @@ def main(args):
                 reference_fpath=os.path.join(corrected_dirpath, ref_name) + common_ref_fasta_ext,
                 output_dirpath=os.path.join(output_dirpath, ref_name + '_quast_output'),
                 exit_on_exception=False, num_notifications_tuple=total_num_notifications)
+            json_texts.append(json_saver.json_text)
+
     if ref_names:
+        summary_dirpath = os.path.join(output_dirpath, 'summary')
         from libs import create_meta_summary
         create_meta_summary.do(output_dirpath, labels, reporting.Fields.main_metrics, ref_names)
         logger.info('')
-        logger.info('Text versions of reports and graphics for each metric (for all references and assemblies) are saved to ' + output_dirpath)
+        logger.info('Text versions of reports and graphics for each metric (for all references and assemblies) are saved to ' + summary_dirpath)
+        html_saver.create_meta_report(summary_dirpath, json_texts)
+        logger.info('Extended version of HTML-report (for all references and assemblies) are saved to ' + summary_dirpath)
+
     # Finally running for the contigs that has not been aligned to any reference
     run_name = 'for the contigs not alined anywhere'
     logger.info()

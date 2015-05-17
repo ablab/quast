@@ -34,14 +34,12 @@ aux_files = [
     'flot/jquery.flot.min.js',
     'flot/excanvas.min.js',
     'flot/jquery.flot.dashes.js',
-    'scripts/build_total_report.js',
     'scripts/draw_cumulative_plot.js',
     'scripts/draw_nx_plot.js',
     'scripts/draw_gc_plot.js',
     'scripts/utils.js',
     'scripts/hsvToRgb.js',
     'scripts/draw_genes_plot.js',
-    'scripts/build_report.js',
     'dragtable.js',
     'ie_html5.js',
     'img/draggable.png',
@@ -51,10 +49,14 @@ aux_files = [
     'bootstrap/bootstrap-tooltip-vlad.js',
     'report.css',
     'common.css',
+    'scripts/build_report.js',
+    'scripts/build_total_report.js',
+    'scripts/build_report_meta.js',
+    'scripts/build_total_report_meta.js',
 ]
 
 
-def init(results_dirpath):
+def init(results_dirpath, meta=False):
 #    shutil.copy(template_fpath,     os.path.join(results_dirpath, report_fname))
     aux_dirpath = os.path.join(results_dirpath, aux_dirname)
     os.mkdir(aux_dirpath)
@@ -71,15 +73,19 @@ def init(results_dirpath):
 
     with open(template_fpath) as template_file:
         html = template_file.read()
+        if not meta:
+            html = html.replace('{{ buildreport }}', 'scripts/build_report.js')
+            html = html.replace('{{ buildtotalreport }}', 'scripts/build_total_report.js')
+        else:
+            html = html.replace('{{ buildreport }}', 'scripts/build_report_meta.js')
+            html = html.replace('{{ buildtotalreport }}', 'scripts/build_total_report_meta.js')
         html = html.replace("/" + static_dirname, aux_dirname)
         html = html.replace('{{ glossary }}', open(get_real_path('glossary.json')).read())
-
         html_fpath = os.path.join(results_dirpath, report_fname)
         if os.path.exists(html_fpath):
             os.remove(html_fpath)
         with open(html_fpath, 'w') as f_html:
             f_html.write(html)
-
 
 #def init_old(results_dirpath):
 #    with open(template_fpath) as template_file:
@@ -133,12 +139,26 @@ def append(results_dirpath, json_fpath, keyword):
     # writing substituted html to final file
     with open(html_fpath, 'w') as f_html:
         f_html.write(html_text)
+    return json_text
 
 
-def save_total_report(results_dirpath, min_contig):
-    json_fpath = json_saver.save_total_report(results_dirpath, min_contig)
+def create_meta_report(results_dirpath, json_texts):
+    html_fpath = os.path.join(results_dirpath, report_fname)
+    if not os.path.isfile(html_fpath):
+        init(results_dirpath, True)
+    # reading html template file
+    with open(html_fpath) as f_html:
+        html_text = f_html.read()
+    keyword = 'totalReport'
+    html_text = re.sub('{{ ' + keyword + ' }}', '[' + ','.join(json_texts) + ']', html_text)
+    with open(html_fpath, 'w') as f_html:
+        f_html.write(html_text)
+
+
+def save_total_report(results_dirpath, min_contig, ref_fpath):
+    json_fpath = json_saver.save_total_report(results_dirpath, min_contig, ref_fpath)
     if json_fpath:
-        append(results_dirpath, json_fpath, 'totalReport')
+        json_saver.json_text = append(results_dirpath, json_fpath, 'totalReport')
         log.info('  HTML version (interactive tables and plots) saved to ' + os.path.join(results_dirpath, report_fname))
 
 

@@ -287,10 +287,11 @@ function toggleSecondary(caller)
 {
 	if(!caller.hasClass("primary"))
 		return;
-	var nx = caller.next(".content-row");
-    while (!nx.hasClass("primary") && (nx.length > 0)) {
-        nx.toggleClass("secondary_hidden");
-        nx = nx.next(".content-row");
+	var nextRow = caller.next(".content-row");
+    while (!nextRow.hasClass("primary") && (nextRow.length > 0)) {
+        nextRow.toggleClass("secondary_hidden");
+        nextRow.css('background-color', '#F5F5DC');
+        nextRow = nextRow.next(".content-row");
     }
 }
 //

@@ -26,12 +26,12 @@ Output
 
 * Number of large contigs (i.e., longer than 500 bp) and total length of them.  
 * Length of the largest contig.  
-* N50 (length of a contig, such that all the contigs ofat least the same length together cover at least 50% of the assembly).  
+* N50 (length of a contig, such that all the contigs of at least the same length together cover at least 50% of the assembly).
 * Number of predicted genes, discovered either by GeneMark.hmm (for prokaryotes), GlimmerHMM (for eukaryotes) or MetaGeneMark (for metagenomes).  
 
 **When a reference is given:**  
 
-* Numbers of misassemblies of different kinds (inversions, relocations, translocations or local).  
+* Numbers of misassemblies of different kinds (inversions, relocations, translocations, interspecial translocations (--meta only) or local).
 * Number and total length of unaligned contigs.  
 * Numbers of mismatches and indels, over the assembly and per 100 kb.  
 * Genome fraction %, assembled part of the reference.  

@@ -1,6 +1,6 @@
-QUAST 2.3 README
+QUAST 2.4 README
 
-QUAST stands for QUality ASsesment Tool. 
+QUAST stands for QUality ASsessment Tool.
 The tool evaluates genome assemblies by computing various metrics. 
 You can find all project news and the latest version of the tool at 
 http://sourceforge.net/projects/quast 

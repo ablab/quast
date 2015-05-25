@@ -1,6 +1,17 @@
 -- Version history --
 
-2.3   1. Changed logic in misassembly computation. Fixed several minor bugs in misassembly 
+2.4   1. Plots and reports for each metric and HTML-report with results for all references are created
+      by metaQUAST.
+
+      2. MetaQUAST search references in NCBI's database, if no references are provided.
+
+      3, New metrics for --meta only: interspecial translocations and # contigs with potential
+      interspecial translocations.
+
+      4. Fixed metaQUAST's handling of references with more than one chromosome.
+
+
+2.3   1. Changed logic in misassembly computation. Fixed several minor bugs in misassembly
       detection algorithm and one major bug caused by linear represenation of circular
       references and contigs in fasta format.
 

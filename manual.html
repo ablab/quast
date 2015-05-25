@@ -1,6 +1,6 @@
 <html>
 <head>
-    <title>QUAST 2.3 manual</title>
+    <title>QUAST 2.4 manual</title>
     <style type="text/css">
         body {
             margin-top: 30px;
@@ -66,9 +66,9 @@
     </style>
 </head>
 <body>
-<h1>QUAST 2.3 manual</h1>
+<h1>QUAST 2.4 manual</h1>
 
-<p> QUAST stands for <u>QU</u>ality <u>AS</u>sesment <u>T</u>ool. 
+<p> QUAST stands for <u>QU</u>ality <u>AS</u>sessment <u>T</u>ool.
     The tool evaluates genome assemblies by computing various metrics.
     <br>
     <br>
@@ -77,12 +77,12 @@
     <br>
     <br>
     QUAST utilizes <a href="http://mummer.sourceforge.net/">MUMmer</a>, <a href="http://exon.gatech.edu/GeneMark/">GeneMarkS</a>, <a href="http://exon.gatech.edu/GeneMark/">MetaGeneMark</a>, 
-    <a href="http://cbcb.umd.edu/software/glimmerhmm/">GlimmerHMM</a>
+    <a href="http://cbcb.umd.edu/software/glimmerhmm/">GlimmerHMM</a>,   <a href="http://blast.ncbi.nlm.nih.gov/Blast.cgi">BLAST</a>
     and <a href="http://gage.cbcb.umd.edu/index.html">GAGE</a>. These tools are built in, so you do not need to install
     them separately.
     <br>
     <br>
-    Version 2.3 of QUAST was released under GPL v2 (see <a href="LICENSE">LICENSE</a> for details) on 17 January 2014.
+    Version 2.4 of QUAST was released under GPL v2 (see <a href="LICENSE">LICENSE</a> for details) on 17 January 2014.
 </p>
 
 <h2>Contents</h2>
@@ -157,11 +157,11 @@ Or on Ubuntu by typing:
     sudo apt-get install python-matplotlib
 </pre>
 <br>
-To download the <a href="https://downloads.sourceforge.net/project/quast/quast-2.3.tar.gz">QUAST source code tarball</a> and extract it, type:
+To download the <a href="https://downloads.sourceforge.net/project/quast/quast-2.4.tar.gz">QUAST source code tarball</a> and extract it, type:
 <pre class="code">
-    wget https://downloads.sourceforge.net/project/quast/quast-2.3.tar.gz
-    tar -xzf quast-2.3.tar.gz
-    cd quast-2.3
+    wget https://downloads.sourceforge.net/project/quast/quast-2.4.tar.gz
+    tar -xzf quast-2.4.tar.gz
+    cd quast-2.4
 </pre>
 
 <p>
@@ -181,9 +181,9 @@ of their work on your platform.
 </p>
 
 <p>
-Note: you should place quast-2.3 directory in the final destination before 
+Note: you should place quast-2.4 directory in the final destination before
 the first use (e.g. before run with --test). If you want to move QUAST to 
-some new place after several usages you should use a clean copy of quast-2.3.
+some new place after several usages you should use a clean copy of quast-2.4.
 This limitation is caused by auto-generation of absolute paths in compiled 
 modules of QUAST.
 </p>
@@ -334,7 +334,7 @@ Take assembly names from their parent directory names.
 Enables gene finding. Affects perfomance, thus disabled by default.<br>
 <span style='line-height: 50%;'>&nbsp;</span><br>  
 By default, we assume that the genome is prokaryotic, and apply GeneMark.hmm for gene finding.
-If the genome is eukaryotic, add the <a href='#eukaryote'><code>--eukaryte</code></a> option to enable GlimmerHMM instead.
+If the genome is eukaryotic, add the <a href='#eukaryote'><code>--eukaryote</code></a> option to enable GlimmerHMM instead.
 If it is a metagenome, add the <a href='#meta'><code>--meta</code></a> option.<br>
 <span style='line-height: 50%;'>&nbsp;</span><br>  
 If a <a href='#sec2.2'>gene file</a> is provided by <code>-G</code> as well, both 
@@ -407,7 +407,7 @@ Way of processing equally good alignments (probably repeats):<br>
 <table style="margin-left: 30px; font-size: 1em; vertical-align: bottom;">
     <tr><td style='width: 40px;'><code>none</code></td><td>skip all such alignments;</td></tr>
     <tr><td><code>one</code></td><td>take only one (the first one);</td></tr>
-    <tr><td><code>all</code></td><td>use all alignements. Can cause a significant increase of <span class='metric-ref'># mismatches</span>
+    <tr><td><code>all</code></td><td>use all alignments. Can cause a significant increase of <span class='metric-ref'># mismatches</span>
     (repeats are almost always inexact due to accumulated SNPs, indels, etc.).</td></tr>
 </table>
 The default value is 'one'.
@@ -462,7 +462,9 @@ Print help.
     </tr>
 </table> -->
 
-<p>All outputs are in separate directories inside the directory provided by <code>-o</code> (or in quast_results/latest).</p>
+<p>All outputs are in separate directories inside the directory provided by <code>-o</code> (or in quast_results/latest).
+Also plots and reports for each metric and combined HTML version of the report are saved in <code>&lt;quast_output_dir&gt;/summary/</code>.
+You can view results for each reference by clicking on any row in HTML-report.</p>
 Usage:
 <pre class="code">
     python metaquast.py contigs_1 contigs_2 ... -R reference_1,reference_2,reference_3,...
@@ -599,12 +601,12 @@ Note:
 
 <p><span class='metric-name'>Ambiguous contigs length</span> is the number of total bases contained in all ambiguous contigs. </p-->
 
-<p><span class='metric-name'>Genome fraction (%)</span> is the percentage of alinged bases in the reference.
+<p><span class='metric-name'>Genome fraction (%)</span> is the percentage of aligned bases in the reference.
     A base in the reference is aligned if there is at least one contig with at least one alignment to this base. 
     Contigs from repetitive regions may map to multiple places, and thus may be counted multiple times.</p>
 
 <p><span class='metric-name'>Duplication ratio</span> is the total number of aligned bases in the assembly divided by the total number of aligned bases in the 
-    reference (see <span class='metric-ref'>Genome fraction (%)</span> for the 'aligned base' defenition). If the assembly contains many contigs that cover the same 
+    reference (see <span class='metric-ref'>Genome fraction (%)</span> for the 'aligned base' definition). If the assembly contains many contigs that cover the same
     regions of the reference, its <span class='metric-ref'>duplication ratio</span> may be much larger than 1. This may occur due to overestimating 
     repeat multiplicities and due to small overlaps between contigs, among other reasons.</p>
 
@@ -642,21 +644,26 @@ Note:
 
 <p><span class='metric-name'># misassemblies</span> is the same as <span class='metric-ref'># misassemblies</span> from <a href="#sec3.1.1">section 3.1.1</a>.
     However, this report also contains a classification of all misassemblies into three groups: <span class='metric-ref'>relocations</span>, <span class='metric-ref'>translocations</span>,
-    and <span class='metric-ref'>inversions</span> (see below).</p>
+    and <span class='metric-ref'>inversions</span> (see below). For metagenomic assemblies, this classification also includes interspecial translocation.</p>
 
 <p><span class='metric-name'>Relocation</span> is a misassembly where the left flanking sequence aligns over 1<span class="rhs">&nbsp;</span>kbp away from the right flanking
 sequence on the reference, or they overlap by more than 1<span class="rhs">&nbsp;</span>kbp, and both flanking sequences align on the same chromosome. </p>
 
 <p><span class='metric-name'>Translocation</span> is a misassembly where the flanking sequences align on different chromosomes. </p>
 
+<p><span class='metric-name'>Interspecial translocation</span> is a misassembly where the flanking sequences align on different references (--meta only). </p>
+
 <p><span class='metric-name'>Inversion</span> is a misassembly where the flanking sequences align on
 opposite strands of the same chromosome. </p>
 
 <p><span class='metric-name'># misassembled contigs</span> and <span class='metric-ref'>misassembled contigs length</span> are the same as the metrics from 
     <a href="#sec3.1.1">section 3.1.1</a> and are counted among all contigs with any type of a misassembly 
-    (relocation, translocation or inversion). </p>
+    (relocation, translocation, interspecial translocation or inversion). </p>
 
-<p><span class='metric-name'># local misassemblies</span> is the same as <span class='metric-ref'># local misassemblies</span> from 
+<p><span class='metric-name'># potentially misassembled contigs</span> is the number of contigs that could contain
+    interspecial translocation. This metric is computed only for metagenomic assemblies. </p>
+
+<p><span class='metric-name'># local misassemblies</span> is the same as <span class='metric-ref'># local misassemblies</span> from
 <a href="#sec3.1.1">section 3.1.1</a>.
 </p>
 
@@ -743,7 +750,7 @@ file consists of several sequences all of them are drawn on the single plot hori
     which will help you to adjust QUAST reports easily even if you are new to Python.
 </p>    
 
-<p> You can also adjust plot colors, style and width of lines, legeng font, plots output format, etc.
+<p> You can also adjust plot colors, style and width of lines, legend font, plots output format, etc.
     Please see the <code>CONFIGURABLE PARAMETERS</code> section in <code>libs/plotter.py</code>.
 </p>
 
@@ -922,7 +929,7 @@ FRM and TAGS are not documented in Nucmer help message, and the last two columns
 <br>
 The second file ("*.used_snps") is generated by QUAST. 
 <br>
-We analyse all alignments and filter them by skiping some "uninformative" alignments (redundant, duplicated) and after that include in ".used_snps" file
+We analyse all alignments and filter them by skipping some "uninformative" alignments (redundant, duplicated) and after that include in ".used_snps" file
 only those of all SNPs which were actually appear in filtered alignments. Thus, reported by QUAST numbers of "# mismatches per 100 kbp", "# indels per 100 kbp" includes statistics 
 from USED SNPs, not ALL SNPs.
 <br>

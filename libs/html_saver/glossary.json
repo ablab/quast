@@ -31,8 +31,10 @@
 
     "# relocations"                 : "<span>is the number of relocation events among all misassembly events. Relocation is a misassembly where the left flanking sequence aligns over 1 kbp away from the right flanking sequence on the reference, or they overlap by more than 1 kbp and both flanking sequences align on the same chromosome.</span>",
     "# translocations"              : "<span>is the number of translocation events among all misassembly events. Translocation is a misassembly where the flanking sequences align on different chromosomes.</span>",
+    "# interspecial translocations" : "<span>is the number of interspecial translocation events among all misassembly events. Interspecial translocation is a misassembly where the flanking sequences align on different references (--meta only).</span>",
     "# inversions"                  : "<span>is the number of inversion events among all misassembly events. Inversion is a misassembly where it is not a <i>relocation</i> and the flanking sequences align on opposite strands of the same chromosome.</span>",
     "# local misassemblies"         : "<span>is the number of local misassemblies. We define a local misassembly breakpoint as a breakpoint that satisfies these conditions: <ol> <li>Two or more distinct alignments cover the breakpoint.</li> <li>The gap between left and right flanking sequences is less than 1 kbp.</li> <li>The left and right flanking sequences both are on the same strand of the same chromosome of the reference genome.</li> </ol> </span>",
+    "# potentially misassembled contigs": "<span>is the number of contigs that could potentially contain interspecial translocation.</span>",
 
     "# fully unaligned contigs"     : "<span>is the number of contigs that have no alignment to the reference sequence.</span>",
     "Fully unaligned length"        : "<span>is the total number of bases contained in all fully unaligned contigs.</span>",

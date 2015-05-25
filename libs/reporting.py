@@ -46,9 +46,11 @@ class Fields:
     MIS_RELOCATION = TAB + '# relocations'
     MIS_TRANSLOCATION = TAB + '# translocations'
     MIS_INVERTION = TAB + '# inversions'
+    MIS_ISTRANSLOCATIONS = TAB + '# interspecial translocations'
     MIS_EXTENSIVE_CONTIGS = '# misassembled contigs'
     MIS_EXTENSIVE_BASES = 'Misassembled contigs length'
     MIS_LOCAL = '# local misassemblies'
+    CONTIGS_WITH_ISTRANSLOCATIONS = '# potentially misassembled contigs'
 
     # Unaligned
     UNALIGNED = '# unaligned contigs'
@@ -114,7 +116,9 @@ class Fields:
 
     # content and order of metrics in DETAILED MISASSEMBLIES REPORT (<quast_output_dir>/contigs_reports/misassemblies_report.txt, .tex, .tsv)
     misassemblies_order = [NAME, MIS_ALL_EXTENSIVE, MIS_RELOCATION, MIS_TRANSLOCATION, MIS_INVERTION,
-                           MIS_EXTENSIVE_CONTIGS, MIS_EXTENSIVE_BASES, MIS_LOCAL, MISMATCHES,
+                           MIS_ISTRANSLOCATIONS, CONTIGS_WITH_ISTRANSLOCATIONS,
+                           MIS_EXTENSIVE_CONTIGS, MIS_EXTENSIVE_BASES,
+                           MIS_LOCAL, MISMATCHES,
                            INDELS, MIS_SHORT_INDELS, MIS_LONG_INDELS, INDELSBASES]
 
     # content and order of metrics in DETAILED UNALIGNED REPORT (<quast_output_dir>/contigs_reports/unaligned_report.txt, .tex, .tsv)
@@ -162,6 +166,7 @@ class Fields:
 
         ('Misassemblies', [MIS_ALL_EXTENSIVE,
                            MIS_RELOCATION, MIS_TRANSLOCATION, MIS_INVERTION,
+                           MIS_ISTRANSLOCATIONS, CONTIGS_WITH_ISTRANSLOCATIONS,
                            MIS_EXTENSIVE_CONTIGS, MIS_EXTENSIVE_BASES,
                            MIS_LOCAL]),
 
@@ -203,6 +208,7 @@ class Fields:
         Quality.LESS_IS_BETTER:
             [CONTIGS, CONTIGS__FOR_THRESHOLDS, L50, LG50, L75, LG75,
              MISLOCAL, MISASSEMBL, MISCONTIGS, MISCONTIGSBASES, MISINTERNALOVERLAP,
+             CONTIGS_WITH_ISTRANSLOCATIONS,
              UNALIGNED, UNALIGNEDBASES, AMBIGUOUS, AMBIGUOUSEXTRABASES,
              UNCALLED, UNCALLED_PERCENT,
              LA50, LGA50, LA75, LGA75, DUPLICATION_RATIO, INDELS, INDELSERROR, MISMATCHES, SUBSERROR,

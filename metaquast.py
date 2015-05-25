@@ -28,6 +28,7 @@ from site import addsitedir
 addsitedir(os.path.join(quast_dirpath, 'libs', 'site_packages'))
 
 import quast
+from libs import contigs_analyzer
 
 COMBINED_REF_FNAME = 'combined_reference.fasta'
 
@@ -48,31 +49,38 @@ def _partition_contigs(assemblies, ref_fpaths, corrected_dirpath, alignments_fpa
     not_aligned_assemblies = []
     # array of assemblies for each reference
     assemblies_by_ref = dict([(qutils.name_from_fpath(ref_fpath), []) for ref_fpath in ref_fpaths])
+    added_ref_asm = []
 
     for asm in assemblies:
         not_aligned_fname = asm.name + '_not_aligned_anywhere.fasta'
         not_aligned_fpath = os.path.join(corrected_dirpath, not_aligned_fname)
         contigs = {}
         aligned_contig_names = set()
+        aligned_contigs_for_each_ref = {}
 
         for line in open(alignments_fpath_template % asm.name):
             values = line.split()
-            ref_name = values[0]
+            ref_name = contigs_analyzer.ref_labels_by_chromosomes[values[0]]
             ref_contigs_names = values[1:]
             ref_contigs_fpath = os.path.join(
                 corrected_dirpath, asm.name + '_to_' + ref_name[:40] + '.fasta')
+            if ref_name not in aligned_contigs_for_each_ref:
+                aligned_contigs_for_each_ref[ref_name] = []
 
             for (cont_name, seq) in fastaparser.read_fasta(asm.fpath):
                 if not cont_name in contigs.keys():
                     contigs[cont_name] = seq
 
-                if cont_name in ref_contigs_names:
+                if cont_name in ref_contigs_names and cont_name not in aligned_contigs_for_each_ref[ref_name]:
                     # Collecting all aligned contigs names in order to futher extract not-aligned
                     aligned_contig_names.add(cont_name)
+                    aligned_contigs_for_each_ref[ref_name].append(cont_name)
                     fastaparser.write_fasta(ref_contigs_fpath, [(cont_name, seq)], 'a')
 
             ref_asm = Assembly(ref_contigs_fpath, asm.label)
-            assemblies_by_ref[ref_name].append(ref_asm)
+            if ref_asm.name not in added_ref_asm:
+                assemblies_by_ref[ref_name].append(ref_asm)
+                added_ref_asm.append(ref_asm.name)
 
         # Exctraction not aligned contigs
         all_contigs_names = set(contigs.keys())
@@ -187,45 +195,34 @@ def _correct_references(ref_fpaths, corrected_dirpath):
 
     def correct_seq(seq_name, seq, ref_name, ref_fasta_ext, total_references):
         seq_fname = ref_name
-        if total_references > 1:
-            seq_fname += '_' + qutils.correct_name(seq_name[:20])
-            if seq_fname in seq_fnames:
-                i = 2
-                while seq_fname + '_%d' % i in seq_fnames:
-                    i += 1
-                seq_fname += '_%d' % i
-            seq_fnames.append(seq_fname)
-
         seq_fname += ref_fasta_ext
-
-        corr_seq_fpath = qutils.unique_corrected_fpath(os.path.join(corrected_dirpath, seq_fname))
+        if total_references > 1:
+            corr_seq_fpath = corrected_ref_fpaths[-1]
+        else:
+            corr_seq_fpath = qutils.unique_corrected_fpath(os.path.join(corrected_dirpath, seq_fname))
         corr_seq_name = qutils.name_from_fpath(corr_seq_fpath)
+        if total_references > 1:
+            corr_seq_name += '_' + qutils.correct_name(seq_name[:20])
 
         corrected_ref_fpaths.append(corr_seq_fpath)
 
         fastaparser.write_fasta(corr_seq_fpath, [(corr_seq_name, seq)], 'a')
         fastaparser.write_fasta(combined_ref_fpath, [(corr_seq_name, seq)], 'a')
 
+        contigs_analyzer.ref_labels_by_chromosomes[corr_seq_name] = ref_name
+
         return corr_seq_name
 
     for ref_fpath in ref_fpaths:
         total_references = 0
-        for _ in fastaparser.read_fasta(ref_fpath):
-            total_references += 1
-
-        if total_references > 1:
-            logger.info('  ' + ref_fpath + ':')
-
         ref_fname = os.path.basename(ref_fpath)
         ref_name, ref_fasta_ext = qutils.splitext_for_fasta_file(ref_fname)
         common_ref_fasta_ext = ref_fasta_ext
 
         for i, (seq_name, seq) in enumerate(fastaparser.read_fasta(ref_fpath)):
+            total_references += 1
             corr_seq_name = correct_seq(seq_name, seq, ref_name, ref_fasta_ext, total_references)
-            if total_references > 1:
-                logger.info('    ' + corr_seq_name + '\n')
-            else:
-                logger.info('  ' + ref_fpath + ' ==> ' + corr_seq_name + '')
+        logger.info('  ' + ref_fpath + ' ==> ' + corr_seq_name + '')
 
     logger.info('  All references combined in ' + COMBINED_REF_FNAME)
 
@@ -414,7 +411,7 @@ def main(args):
     # SEARCHING REFERENCES
     if not ref_fpaths:
         logger.info()
-        logger.info("No references provided, starting search for reference genomes in NCBI's database..")
+        logger.info("No references are provided, starting search for reference genomes in NCBI's database..")
         from libs import search_references_meta
         ref_fpaths = search_references_meta.do(contigs_fpaths, corrected_dirpath)
 
@@ -443,7 +440,7 @@ def main(args):
     if not ref_fpaths:
         # No references, running regular quast with MetaGenemark gene finder
         logger.info()
-        logger.notice('No references provided, starting quast.py with MetaGeneMark gene finder')
+        logger.notice('No references are provided, starting quast.py with MetaGeneMark gene finder')
         _start_quast_main(
             None,
             quast_py_args,

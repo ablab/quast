@@ -418,7 +418,7 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
                     if qconfig.meta and \
                             not check_chr_for_refs(sorted_aligns[i].ref, sorted_aligns[i+1].ref):  # if chromosomes from different references
                             region_misassemblies.append(Misassembly.INTERSPECTRANSLOCATION)
-                            print >> planta_out_f, 'interspecial translocation',
+                            print >> planta_out_f, 'interspecies translocation',
                     else:
                         region_misassemblies.append(Misassembly.TRANSLOCATION)
                         print >> planta_out_f, 'translocation',
@@ -773,7 +773,7 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
                         if (unaligned_bases >= qconfig.min_contig) and (ctg_len - unaligned_bases >= qconfig.min_contig):
                             partially_unaligned_with_significant_parts += 1
                             print >> planta_out_f, '\t\tThis contig has both significant aligned and unaligned parts ' \
-                                                   '(of length >= min-contig)!' + (' It can contain interspecial translocations' if qconfig.meta else '')
+                                                   '(of length >= min-contig)!' + (' It can contain interspecies translocations' if qconfig.meta else '')
                             if qconfig.meta:
                                 contigs_with_istranslocations += 1
 
@@ -844,7 +844,7 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
                         if (aligned_bases_in_contig >= qconfig.min_contig) and (ctg_len - aligned_bases_in_contig >= qconfig.min_contig):
                             partially_unaligned_with_significant_parts += 1
                             print >> planta_out_f, '\t\tThis contig has both significant aligned and unaligned parts ' \
-                                                   '(of length >= min-contig)!' + (' It can contain interspecial translocations' if qconfig.meta else '')
+                                                   '(of length >= min-contig)!' + (' It can contain interspecies translocations' if qconfig.meta else '')
                             if qconfig.meta:
                                 contigs_with_istranslocations += 1
                         continue

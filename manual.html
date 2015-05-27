@@ -644,24 +644,24 @@ Note:
 
 <p><span class='metric-name'># misassemblies</span> is the same as <span class='metric-ref'># misassemblies</span> from <a href="#sec3.1.1">section 3.1.1</a>.
     However, this report also contains a classification of all misassemblies into three groups: <span class='metric-ref'>relocations</span>, <span class='metric-ref'>translocations</span>,
-    and <span class='metric-ref'>inversions</span> (see below). For metagenomic assemblies, this classification also includes interspecial translocation.</p>
+    and <span class='metric-ref'>inversions</span> (see below). For metagenomic assemblies, this classification also includes interspecies translocation.</p>
 
 <p><span class='metric-name'>Relocation</span> is a misassembly where the left flanking sequence aligns over 1<span class="rhs">&nbsp;</span>kbp away from the right flanking
 sequence on the reference, or they overlap by more than 1<span class="rhs">&nbsp;</span>kbp, and both flanking sequences align on the same chromosome. </p>
 
 <p><span class='metric-name'>Translocation</span> is a misassembly where the flanking sequences align on different chromosomes. </p>
 
-<p><span class='metric-name'>Interspecial translocation</span> is a misassembly where the flanking sequences align on different references (--meta only). </p>
+<p><span class='metric-name'>Interspecies translocation</span> is a misassembly where the flanking sequences align on different references (--meta only). </p>
 
 <p><span class='metric-name'>Inversion</span> is a misassembly where the flanking sequences align on
 opposite strands of the same chromosome. </p>
 
 <p><span class='metric-name'># misassembled contigs</span> and <span class='metric-ref'>misassembled contigs length</span> are the same as the metrics from 
     <a href="#sec3.1.1">section 3.1.1</a> and are counted among all contigs with any type of a misassembly 
-    (relocation, translocation, interspecial translocation or inversion). </p>
+    (relocation, translocation, interspecies translocation or inversion). </p>
 
-<p><span class='metric-name'># potentially misassembled contigs</span> is the number of contigs that could contain
-    interspecial translocation. This metric is computed only for metagenomic assemblies. </p>
+<p><span class='metric-name'># possibly misassembled contigs</span> is the number of contigs that contain large unaligned fragment and thus could possibly contain
+    interspecies translocation with unknown reference. This metric is computed only for metagenomic assemblies. </p>
 
 <p><span class='metric-name'># local misassemblies</span> is the same as <span class='metric-ref'># local misassemblies</span> from
 <a href="#sec3.1.1">section 3.1.1</a>.

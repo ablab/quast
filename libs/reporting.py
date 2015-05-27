@@ -46,11 +46,11 @@ class Fields:
     MIS_RELOCATION = TAB + '# relocations'
     MIS_TRANSLOCATION = TAB + '# translocations'
     MIS_INVERTION = TAB + '# inversions'
-    MIS_ISTRANSLOCATIONS = TAB + '# interspecial translocations'
+    MIS_ISTRANSLOCATIONS = TAB + '# interspecies translocations'
     MIS_EXTENSIVE_CONTIGS = '# misassembled contigs'
     MIS_EXTENSIVE_BASES = 'Misassembled contigs length'
     MIS_LOCAL = '# local misassemblies'
-    CONTIGS_WITH_ISTRANSLOCATIONS = '# potentially misassembled contigs'
+    CONTIGS_WITH_ISTRANSLOCATIONS = '# possibly misassembled contigs'
 
     # Unaligned
     UNALIGNED = '# unaligned contigs'

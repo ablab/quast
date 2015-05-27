@@ -17,10 +17,8 @@ def do(output_dirpath, labels, metrics, ref_names):
     os.mkdir(summary_dirpath)
     ref_num = len(ref_names)
     contigs_num = len(labels)
-    colors = ['red', 'blue', 'green', 'yellow', 'black', 'grey', 'cyan', 'magenta']
-    assert (contigs_num <= len(colors))
-    labels = sorted(labels)
-    ref_names = sorted(ref_names)
+    #labels = sorted(labels)
+    #ref_names = sorted(ref_names)
     for metric in metrics:
         all_rows = []
         row = {'metricName': 'References', 'values': ref_names}
@@ -30,7 +28,7 @@ def do(output_dirpath, labels, metrics, ref_names):
             results = []
             metric_not_found = False
             for i in range(contigs_num):
-                row = {'values': [], 'metricName': labels[i]}
+                row = {'metricName': labels[i], 'values': []}
                 all_rows.append(row)
             for i, ref_name in enumerate(ref_names):
                 results.append([])
@@ -40,9 +38,14 @@ def do(output_dirpath, labels, metrics, ref_names):
                 if metric not in columns:
                     metric_not_found = True
                     break
+                next_values = map(lambda s: s.strip(), results_file.readline().split('\t'))
                 for j in range(contigs_num):
-                    values = map(lambda s: s.strip(), results_file.readline().split('\t'))
-                    metr_res = values[columns.index(metric)].split()[0]
+                    values = next_values
+                    if values[0] != labels[j]:
+                        metr_res = None
+                    else:
+                        metr_res = values[columns.index(metric)].split()[0]
+                        next_values = map(lambda s: s.strip(), results_file.readline().split('\t'))
                     all_rows[j + 1]['values'].append(metr_res)
                     results[i].append(metr_res)
             if metric_not_found:

@@ -491,6 +491,19 @@ def main(args):
                 exit_on_exception=False, num_notifications_tuple=total_num_notifications)
             json_texts.append(json_saver.json_text)
 
+    # Finally running for the contigs that has not been aligned to any reference
+    run_name = 'for the contigs not alined anywhere'
+    logger.info()
+    logger.info('Starting quast.py ' + run_name + '...')
+
+    return_code, total_num_notifications = _start_quast_main(run_name, quast_py_args,
+        assemblies=not_aligned_assemblies,
+        output_dirpath=os.path.join(output_dirpath, qconfig.not_aligned_name + '_quast_output'),
+        exit_on_exception=False, num_notifications_tuple=total_num_notifications)
+
+    if return_code not in [0, 4]:
+        logger.error('Error running quast.py for the contigs not aligned anywhere')
+
     if ref_names:
         summary_dirpath = os.path.join(output_dirpath, 'summary')
         from libs import create_meta_summary
@@ -499,19 +512,6 @@ def main(args):
         logger.info('Text versions of reports and graphics for each metric (for all references and assemblies) are saved to ' + summary_dirpath)
         html_saver.create_meta_report(summary_dirpath, json_texts)
         logger.info('Extended version of HTML-report (for all references and assemblies) are saved to ' + summary_dirpath)
-
-    # Finally running for the contigs that has not been aligned to any reference
-    run_name = 'for the contigs not alined anywhere'
-    logger.info()
-    logger.info('Starting quast.py ' + run_name + '...')
-
-    return_code, total_num_notifications = _start_quast_main(run_name, quast_py_args,
-        assemblies=not_aligned_assemblies,
-        output_dirpath=os.path.join(output_dirpath, 'not_aligned_quast_output'),
-        exit_on_exception=False, num_notifications_tuple=total_num_notifications)
-
-    if return_code not in [0, 4]:
-        logger.error('Error running quast.py for the contigs not aligned anywhere')
 
     quast._cleanup(corrected_dirpath)
     logger.info('')

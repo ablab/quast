@@ -76,6 +76,8 @@ report_prefix = "report"
 transposed_report_prefix = "transposed_report"
 gage_report_prefix = "gage_"
 html_aux_dir = "report_html_aux"
+meta_summary_dir = "summary"
+not_aligned_name = "not_aligned"
 
 # other settings (mostly constants). Can't be changed by command-line options
 

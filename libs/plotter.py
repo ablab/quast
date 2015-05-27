@@ -70,7 +70,7 @@ pdf_tables_figures = []
 ####################################################################################
 
 
-def get_color_and_ls(color_id, fpath):
+def get_color_and_ls(color_id, fpath=None):
     """
     Returns tuple: color, line style
     """
@@ -79,7 +79,7 @@ def get_color_and_ls(color_id, fpath):
     # special case: we have scaffolds and contigs
     if qconfig.scaffolds:
         # contigs and scaffolds should be equally colored but scaffolds should be dashed
-        if os.path.basename(fpath) in qconfig.list_of_broken_scaffolds:
+        if fpath and os.path.basename(fpath) in qconfig.list_of_broken_scaffolds:
             next_color_id = color_id
         else:
             ls = secondary_line_style
@@ -498,6 +498,55 @@ def histogram(contigs_fpaths, values, plot_fpath, title='', yaxis_title='', bott
     matplotlib.pyplot.savefig(plot_fpath)
     logger.info('    saved to ' + plot_fpath)
     pdf_plots_figures.append(figure)
+
+
+# metaQuast summary plots (per each metric separately)
+def draw_meta_summary_plot(labels, ref_names, all_rows, results, plot_fpath, title='', yaxis_title=''):
+    if matplotlib_error:
+        return
+
+    import matplotlib.pyplot
+    import matplotlib.ticker
+    import math
+
+    ref_num = len(ref_names)
+    contigs_num = len(labels)
+
+    fig = matplotlib.pyplot.figure()
+    ax = fig.add_subplot(111)
+    matplotlib.pyplot.xticks(range(1, ref_num + 1), ref_names, size='small')
+    matplotlib.pyplot.title(title)
+    box = ax.get_position()
+    ax.set_position([box.x0, box.y0, box.width * 0.8, box.height * 1.0])
+
+    color_id = 0
+    for j in range(contigs_num):
+        color, ls, color_id = get_color_and_ls(color_id)
+        to_plot = []
+        arr = range(1, ref_num + 1)
+        for i in range(ref_num):
+            to_plot.append(results[i][j])
+            arr[i] += 0.07 * (j - (contigs_num - 1) * 0.5)
+        ax.plot(arr, to_plot, 'ro', color=colors[j])
+    matplotlib.pyplot.xlim([0, ref_num + 1])
+    ymax = 0
+    for j in range(contigs_num):
+        ymax = max(ymax, float(all_rows[j + 1]['values'][j]))
+    if ymax == 0:
+        matplotlib.pyplot.ylim([0, 0.1])
+    else:
+        matplotlib.pyplot.ylim([0, math.ceil(ymax * 1.05)])
+    legend = []
+    for j in range(contigs_num):
+        legend.append(labels[j])
+
+    ax.legend(legend, loc='center left', bbox_to_anchor=(1.0, 0.5), numpoints=1)
+    current_figure = matplotlib.pyplot.gcf()
+    default_size = current_figure.get_size_inches()
+    current_figure.set_size_inches(2 * default_size)
+
+    plot_fpath += plots_file_ext
+    matplotlib.pyplot.savefig(plot_fpath)
 
 
 def draw_report_table(report_name, extra_info, table_to_draw, column_widths):

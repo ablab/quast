@@ -14,6 +14,7 @@ LIBS_LOCATION = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
 SUPPORTED_PYTHON_VERSIONS = ['2.5', '2.6', '2.7']
 
 LOGGER_DEFAULT_NAME = 'quast'
+LOGGER_META_NAME = 'metaquast'
 # error_log_fpath = os.path.join(LIBS_LOCATION, '..', 'error.log')
 
 if platform.system() == 'Darwin':
@@ -69,6 +70,7 @@ default_json_dirname = "json"
 
 # names of reports, log, etc.
 corrected_dirname = "quast_corrected_input"
+downloaded_dirname = "quast_downloaded_references"
 plots_fname = "report.pdf"
 report_prefix = "report"
 transposed_report_prefix = "transposed_report"
@@ -97,6 +99,12 @@ assembly_labels_by_fpath = {}
 # for scaffolds
 list_of_broken_scaffolds = []
 Ns_break_threshold = 10
+
+# for searching references in NCBI
+identity_threshold = 90 #  min % identity
+min_length = 300
+min_bitscore = 1000
+max_references = 20
 
 
 def check_python_version():

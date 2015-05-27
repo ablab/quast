@@ -21,7 +21,7 @@ from libs import qutils, fastaparser
 from libs.qutils import assert_file_exists
 
 from libs.log import get_logger
-logger = get_logger('metaquast')
+logger = get_logger(qconfig.LOGGER_META_NAME)
 logger.set_up_console_handler()
 
 from site import addsitedir
@@ -412,8 +412,12 @@ def main(args):
     if not ref_fpaths:
         logger.info()
         logger.info("No references are provided, starting search for reference genomes in NCBI's database..")
+        downloaded_dirpath = os.path.join(output_dirpath, qconfig.downloaded_dirname)
+        if os.path.isdir(downloaded_dirpath):
+            shutil.rmtree(downloaded_dirpath)
+        os.mkdir(downloaded_dirpath)
         from libs import search_references_meta
-        ref_fpaths = search_references_meta.do(contigs_fpaths, corrected_dirpath)
+        ref_fpaths = search_references_meta.do(contigs_fpaths, downloaded_dirpath)
 
     # PROCESSING REFERENCES
 
@@ -510,7 +514,6 @@ def main(args):
         logger.error('Error running quast.py for the contigs not aligned anywhere')
 
     quast._cleanup(corrected_dirpath)
-
     logger.info('')
     logger.info('MetaQUAST finished.')
     logger.finish_up(numbers=tuple(total_num_notifications), check_test=test_mode)

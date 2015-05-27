@@ -7,7 +7,7 @@ import qconfig
 import math
 from libs.log import get_logger
 
-logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
+logger = get_logger(qconfig.LOGGER_META_NAME)
 
 
 def do(output_dirpath, labels, metrics, ref_names):
@@ -26,9 +26,8 @@ def do(output_dirpath, labels, metrics, ref_names):
         row = {'metricName': 'References', 'values': ref_names}
         all_rows.append(row)
         if not isinstance(metric, tuple):
-            summary_fpath = os.path.join(summary_dirpath, metric.replace(' ', '_') + '.txt')
+            summary_fpath_base = os.path.join(summary_dirpath, metric.replace(' ', '_'))
             results = []
-            ymax = 0
             metric_not_found = False
             for i in range(contigs_num):
                 row = {'values': [], 'metricName': labels[i]}
@@ -45,40 +44,14 @@ def do(output_dirpath, labels, metrics, ref_names):
                     values = map(lambda s: s.strip(), results_file.readline().split('\t'))
                     metr_res = values[columns.index(metric)].split()[0]
                     all_rows[j + 1]['values'].append(metr_res)
-                    ymax = max(ymax, float(metr_res))
                     results[i].append(metr_res)
             if metric_not_found:
                 continue
-            fig = plt.figure()
-            ax = fig.add_subplot(111)
-            plt.xticks(range(1, ref_num + 1), ref_names, size='small')
-            title = metric
-            plt.title(title)
-            box = ax.get_position()
-            ax.set_position([box.x0, box.y0, box.width * 0.8, box.height * 1.0])
 
-            for j in range(contigs_num):
-                to_plot = []
-                arr = range(1, ref_num + 1)
-                for i in range(ref_num):
-                    to_plot.append(results[i][j])
-                    arr[i] += 0.07 * (j - (contigs_num - 1) * 0.5)
-                ax.plot(arr, to_plot, 'ro', color=colors[j])
-            plt.xlim([0, ref_num + 1])
-            if ymax == 0:
-                plt.ylim([-0.1, 0.1])
-            else:
-                plt.ylim([0, math.ceil(ymax * 1.05)])
-            legend = []
-            for j in range(contigs_num):
-                legend.append(labels[j])
-
-            ax.legend(legend, loc='center left', bbox_to_anchor=(1.0, 0.5), numpoints=1)
-            current_figure = plt.gcf()
-            default_size = current_figure.get_size_inches()
-            current_figure.set_size_inches(2 * default_size)
-            plt.savefig(os.path.join(summary_dirpath, metric + '.jpg'))
-            print_file(all_rows, ref_num, summary_fpath)
+            if qconfig.draw_plots:
+                import plotter
+                plotter.draw_meta_summary_plot(labels, ref_names, all_rows, results, summary_fpath_base, title=metric)
+            print_file(all_rows, ref_num, summary_fpath_base + '.txt')
 
 
 def print_file(all_rows, ref_num, fpath):

@@ -2,24 +2,21 @@ import os
 import shlex
 from libs import qconfig, qutils
 from libs.log import get_logger
-logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
+logger = get_logger(qconfig.LOGGER_META_NAME)
 from urllib2 import urlopen
 import xml.etree.ElementTree as ET
 import shutil
 import tarfile
 
-identity_threshold = 90 #  min % identity
-min_length = 300
-min_bitscore = 1000
-max_references = 20
 
 def blast_fpath(fname):
     blast_dirpath = os.path.join(qconfig.LIBS_LOCATION, 'blast', qconfig.platform_name)
     return os.path.join(blast_dirpath, fname)
 
-def download_refs(ref_fpaths, organism, corrected_dirpath):
+
+def download_refs(ref_fpaths, organism, downloaded_dirpath):
     ncbi_url = 'http://eutils.ncbi.nlm.nih.gov/entrez/eutils/'
-    ref_fpath = os.path.join(corrected_dirpath, organism.replace('/','') + '.fasta')
+    ref_fpath = os.path.join(downloaded_dirpath, organism.replace('/','') + '.fasta')
     organism = organism.replace('_', '+')
     request = urlopen(ncbi_url + 'esearch.fcgi?db=genome&term=%s' % organism)
     response = request.read()
@@ -40,11 +37,11 @@ def download_refs(ref_fpaths, organism, corrected_dirpath):
         with open(ref_fpath, "w") as fasta_file:
             fasta_file.write(fasta)
         ref_fpaths.append(ref_fpath)
-        logger.info('  Successfully downloaded %s reference genome!' % organism.replace('+', ' '))
+        logger.info('  Successfully downloaded %s' % organism.replace('+', ' '))
     return ref_fpaths
 
 
-def do(contigs_fpaths, corrected_dirpath):
+def do(contigs_fpaths, downloaded_dirpath):
     logger.print_timestamp()
     blastdb_dirpath = os.path.join(qconfig.LIBS_LOCATION, 'blast', '16S_RNA_blastdb')
     db_fpath = os.path.join(blastdb_dirpath, 'silva_119.db')
@@ -61,14 +58,16 @@ def do(contigs_fpaths, corrected_dirpath):
         for item in tar:
             tar.extract(item, blastdb_dirpath)
         os.remove(db_gz_fpath)
-    logger.info('  Running BlastN..')
-    err_fpath = os.path.join(corrected_dirpath, 'blast.err')
-    blast_res_fpath = os.path.join(corrected_dirpath, 'blast.res')
-    logger.debug('')
-    for contigs_fpath in contigs_fpaths:
+    logger.info('Running BlastN..')
+    err_fpath = os.path.join(downloaded_dirpath, 'blast.err')
+    blast_res_fpath = os.path.join(downloaded_dirpath, 'blast.res')
+    for index, contigs_fpath in enumerate(contigs_fpaths):
         cmd = blast_fpath('blastn') + (' -query %s -db %s -outfmt 7' % (
             contigs_fpath, db_fpath))
+        assembly_name = qutils.name_from_fpath(contigs_fpath)
+        logger.info('  ' + 'processing ' + assembly_name)
         qutils.call_subprocess(shlex.split(cmd), stdout=open(blast_res_fpath, 'a'), stderr=open(err_fpath, 'a'))
+    logger.info('')
     organisms = []
     scores_organisms = []
     ref_fpaths = []
@@ -78,7 +77,7 @@ def do(contigs_fpaths, corrected_dirpath):
             idy = float(line[2])
             length = int(line[3])
             score = float(line[11])
-            if idy >= identity_threshold and length >= min_length and score >= min_bitscore: #  and (not scores or min(scores) - score < max_identity_difference):
+            if idy >= qconfig.identity_threshold and length >= qconfig.min_length and score >= qconfig.min_bitscore: #  and (not scores or min(scores) - score < max_identity_difference):
                 organism = line[1].split(';')[-1]
                 if 'uncultured' not in organism:
                     specie = organism.split('_')
@@ -89,10 +88,12 @@ def do(contigs_fpaths, corrected_dirpath):
                     if specie not in organisms:
                         scores_organisms.append((score, organism))
                         organisms.append(specie)
+    logger.print_timestamp()
+    logger.info('Trying to download found references from NCBI..')
     for (score, organism) in sorted(scores_organisms, reverse=True):
-        if len(ref_fpaths) == max_references:
+        if len(ref_fpaths) == qconfig.max_references:
             break
-        ref_fpaths = download_refs(ref_fpaths, organism, corrected_dirpath)
+        ref_fpaths = download_refs(ref_fpaths, organism, downloaded_dirpath)
     if not ref_fpaths:
         logger.info('Reference genomes are not found.')
     if not qconfig.debug:

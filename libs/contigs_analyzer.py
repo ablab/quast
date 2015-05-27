@@ -855,6 +855,10 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
                     misassembly_internal_overlap += current_mio
                     if is_misassembled:
                         misassembled_contigs[contig] = len(assembly[contig])
+                    if qconfig.meta and (ctg_len - aligned_bases_in_contig >= qconfig.min_contig):
+                        print >> planta_out_f, '\t\tThis contig has significant unaligned parts ' \
+                                               '(of length >= min-contig)!' + (' It can contain interspecies translocations' if qconfig.meta else '')
+                        contigs_with_istranslocations += 1
         else:
             #No aligns to this contig
             print >> planta_out_f, '\t\tThis contig is unaligned. (%d bp)' % ctg_len

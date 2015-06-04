@@ -222,11 +222,18 @@ def _correct_references(ref_fpaths, corrected_dirpath):
 
         return corr_seq_name, corr_seq_fpath
 
+    ref_fnames = [os.path.basename(ref_fpath) for ref_fpath in ref_fpaths]
+    ref_names = []
+    for ref_fname in ref_fnames:
+        ref_name, ref_fasta_ext = qutils.splitext_for_fasta_file(ref_fname)
+        ref_names.append(ref_name)
+    dupl_ref_names = [ref_name for ref_name in ref_names if ref_names.count(ref_name) > 1]
+
     for ref_fpath in ref_fpaths:
         total_references = 0
         ref_fname = os.path.basename(ref_fpath)
         ref_name, ref_fasta_ext = qutils.splitext_for_fasta_file(ref_fname)
-        if os.path.isfile(os.path.join(corrected_dirpath, ref_fname)):
+        if ref_name in dupl_ref_names:
             ref_name = get_label_from_par_dir_and_fname(ref_fpath)
 
         common_ref_fasta_ext = ref_fasta_ext

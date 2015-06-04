@@ -51,6 +51,8 @@ from libs import qconfig
 from libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 
+import reporting
+
 
 # checking if matplotlib is installed
 matplotlib_error = False
@@ -180,6 +182,7 @@ def cumulative_plot(reference, contigs_fpaths, lists_of_lengths, plot_fpath, tit
     mkformatter = matplotlib.ticker.FuncFormatter(mkfunc)
     ax.yaxis.set_major_formatter(mkformatter)
 
+
     xLocator, yLocator = get_locators()
     ax.yaxis.set_major_locator(yLocator)
     ax.xaxis.set_major_locator(xLocator)
@@ -207,6 +210,7 @@ def Nx_plot(contigs_fpaths, lists_of_lengths, plot_fpath, title='Nx', reference_
     figure = matplotlib.pyplot.figure()
     matplotlib.pyplot.rc('font', **font)
     max_y = 0
+
     color_id = 0
 
     for id, (contigs_fpath, lengths) in enumerate(itertools.izip(contigs_fpaths, lists_of_lengths)):
@@ -250,6 +254,7 @@ def Nx_plot(contigs_fpaths, lists_of_lengths, plot_fpath, title='Nx', reference_
         ax.legend(legend_list, loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True,
             shadow=True, ncol=n_columns)
     except Exception:
+
         pass
 
     ylabel = 'Contig length  '
@@ -260,6 +265,7 @@ def Nx_plot(contigs_fpaths, lists_of_lengths, plot_fpath, title='Nx', reference_
     mkformatter = matplotlib.ticker.FuncFormatter(mkfunc)
     ax.yaxis.set_major_formatter(mkformatter)
     matplotlib.pyplot.xlim([0, 100])
+
     #ax.invert_xaxis() 
     #matplotlib.pyplot.ylim(matplotlib.pyplot.ylim()[::-1])
     xLocator, yLocator = get_locators()
@@ -398,6 +404,7 @@ def genes_operons_plot(reference_value, contigs_fpaths, files_feature_in_contigs
     box = ax.get_position()
     ax.set_position([box.x0, box.y0 + box.height * 0.2, box.width, box.height * 0.8])
 
+
     legend_list = map(qutils.label_from_fpath, contigs_fpaths)
     if reference_value:
         legend_list += ['Reference']
@@ -501,7 +508,7 @@ def histogram(contigs_fpaths, values, plot_fpath, title='', yaxis_title='', bott
 
 
 # metaQuast summary plots (per each metric separately)
-def draw_meta_summary_plot(labels, ref_names, all_rows, results, plot_fpath, title='', yaxis_title=''):
+def draw_meta_summary_plot(labels, ref_names, all_rows, results, plot_fpath, title='', reverse=False, yaxis_title=''):
     if matplotlib_error:
         return
 
@@ -514,34 +521,221 @@ def draw_meta_summary_plot(labels, ref_names, all_rows, results, plot_fpath, tit
 
     fig = matplotlib.pyplot.figure()
     ax = fig.add_subplot(111)
-    matplotlib.pyplot.xticks(range(1, ref_num + 1), ref_names, size='small')
     matplotlib.pyplot.title(title)
     box = ax.get_position()
-    ax.set_position([box.x0, box.y0, box.width * 0.8, box.height * 1.0])
+    ax.set_position([box.x0, box.y0, box.width * 0.9, box.height * 1.0])
     ax.yaxis.grid(with_grid)
-
+    arr_x = []
+    arr_y = []
+    values = []
+    arr_y_by_refs = []
     color_id = 0
     for j in range(contigs_num):
         color, ls, color_id = get_color_and_ls(color_id)
-        to_plot = []
+        to_plot_x = []
+        to_plot_y = []
         arr = range(1, ref_num + 1)
         for i in range(ref_num):
-            to_plot.append(results[i][j])
             arr[i] += 0.07 * (j - (contigs_num - 1) * 0.5)
-        ax.plot(arr, to_plot, 'ro', color=colors[j])
+            to_plot_x.append(arr[i])
+            if results[i][j] and results[i][j] != '-':
+                to_plot_y.append(float(results[i][j]))
+            else:
+                to_plot_y.append(None)
+        arr_x.append(to_plot_x)
+        arr_y.append(to_plot_y)
+
+    refs = []
+    for i in range(ref_num):
+        points_y = [arr_y[j][i] for j in range(contigs_num) if i < len(arr_y[j])]
+        significant_points_y = [points_y[k] for k in range(len(points_y)) if points_y[k] is not None]
+        if significant_points_y:
+            arr_y_by_refs.append(points_y)
+            values.append(sum(filter(None, points_y))/len(points_y))
+            refs.append(ref_names[i])
+
+    sorted_values = sorted(itertools.izip(values, refs, arr_y_by_refs), reverse=reverse, key=lambda x: x[0])
+    values, refs, arr_y_by_refs = [[x[i] for x in sorted_values] for i in range(3)]
+    matplotlib.pyplot.xticks(range(1, len(refs) + 1), refs, size='small', rotation='vertical')
+    for j in range(contigs_num):
+        points_x = [arr_x[j][i] for i in range(len(arr_y_by_refs))]
+        points_y = [arr_y_by_refs[i][j] for i in range(len(arr_y_by_refs))]
+        ax.plot(points_x, points_y, 'ro:', color=colors[j])
     matplotlib.pyplot.xlim([0, ref_num + 1])
     ymax = 0
     for i in range(ref_num):
         for j in range(contigs_num):
-            if all_rows[j + 1]['values'][i] is not None:
+            if all_rows[j + 1]['values'][i] is not None and all_rows[j + 1]['values'][i] != '-':
                 ymax = max(ymax, float(all_rows[j + 1]['values'][i]))
     if ymax == 0:
         matplotlib.pyplot.ylim([0, 0.1])
     else:
         matplotlib.pyplot.ylim([0, math.ceil(ymax * 1.05)])
+
+    if yaxis_title:
+        ylabel = yaxis_title
+        ylabel, mkfunc = y_formatter(ylabel, ymax)
+        matplotlib.pyplot.ylabel(ylabel, fontsize=axes_fontsize)
+        mkformatter = matplotlib.ticker.FuncFormatter(mkfunc)
+        ax.yaxis.set_major_formatter(mkformatter)
+
     legend = []
     for j in range(contigs_num):
         legend.append(labels[j])
+
+    ax.legend(legend, loc='center left', bbox_to_anchor=(1.0, 0.5), numpoints=1)
+
+    plot_fpath += plots_file_ext
+    matplotlib.pyplot.tight_layout()
+    matplotlib.pyplot.savefig(plot_fpath, bbox_inches='tight')
+
+# metaQuast misassemblies by types plots (all references for 1 assembly)
+def draw_meta_summary_misassembl_plot(results, ref_names, contig_num, plot_fpath, title='', yaxis_title=''):
+    if matplotlib_error:
+        return
+
+    import matplotlib.pyplot
+    import matplotlib.ticker
+    import math
+
+    refs_num = len(ref_names)
+    refs = []
+    fig = matplotlib.pyplot.figure()
+    ax = fig.add_subplot(111)
+    matplotlib.pyplot.title(title)
+    box = ax.get_position()
+    ax.set_position([box.x0, box.y0, box.width * 0.9, box.height * 1.0])
+    ax.yaxis.grid(with_grid)
+    misassemblies = [reporting.Fields.MIS_RELOCATION, reporting.Fields.MIS_TRANSLOCATION, reporting.Fields.MIS_INVERTION,
+                           reporting.Fields.MIS_ISTRANSLOCATIONS]
+    legend_n = []
+    ymax = 0
+    arr_x = range(1, refs_num + 1)
+    for j in range(refs_num):
+        ymax_j = 0
+        to_plot = []
+        type_misassembly = 0
+        while len(to_plot) == 0 and type_misassembly < len(misassemblies):
+            result = results[type_misassembly][j][contig_num]
+            if result and result != '-':
+                to_plot.append(float(result))
+                ax.bar(arr_x[j], to_plot[0], width=0.08, color=colors[type_misassembly])
+                legend_n.append(type_misassembly)
+                ymax_j = float(to_plot[0])
+            type_misassembly += 1
+        for i in range(type_misassembly, len(misassemblies)):
+            result = results[i][j][contig_num]
+            if result and result != '-':
+                to_plot.append(float(result))
+                ax.bar(arr_x[j], to_plot[-1], width=0.08, color=colors[i], bottom = to_plot[-2])
+                legend_n.append(i)
+                ymax_j += float(to_plot[-1])
+        if to_plot:
+            ymax = max(ymax, ymax_j)
+            refs.append(ref_names[j])
+        else:
+            arr_x.insert(j, None)
+
+    matplotlib.pyplot.xticks(range(1, len(refs) + 1), refs, size='small', rotation='vertical')
+    legend_n = set(legend_n)
+    legend = []
+    for i in sorted(legend_n):
+        legend.append(misassemblies[i])
+    matplotlib.pyplot.xlim([0, refs_num + 1])
+    matplotlib.pyplot.tight_layout()
+
+    if ymax == 0:
+        matplotlib.pyplot.ylim([0, 0.1])
+    else:
+        matplotlib.pyplot.ylim([0, math.ceil(ymax * 1.1)])
+
+    ax.legend(legend, loc='center left', bbox_to_anchor=(1.0, 0.5), numpoints=1)
+
+    plot_fpath += plots_file_ext
+    matplotlib.pyplot.tight_layout()
+    matplotlib.pyplot.savefig(plot_fpath, bbox_inches='tight')
+
+
+# Quast misassemblies by types plot (for all assemblies)
+def draw_misassembl_plot(reports, plot_fpath, title='', yaxis_title=''):
+    if matplotlib_error:
+        return
+
+    import matplotlib.pyplot
+    import matplotlib.ticker
+    import math
+
+    contigs_num = len(reports)
+    labels = []
+    fig = matplotlib.pyplot.figure()
+    ax = fig.add_subplot(111)
+    for j in range(contigs_num):
+        labels.append(reports[j].get_field(reporting.Fields.NAME))
+
+    matplotlib.pyplot.xticks(range(1, contigs_num + 1), labels, size='small')
+    matplotlib.pyplot.title(title)
+    box = ax.get_position()
+    ax.set_position([box.x0, box.y0, box.width * 0.8, box.height * 1.0])
+    ax.yaxis.grid(with_grid)
+    misassemblies = [reporting.Fields.MIS_RELOCATION, reporting.Fields.MIS_TRANSLOCATION, reporting.Fields.MIS_INVERTION,
+                           reporting.Fields.MIS_ISTRANSLOCATIONS]
+    legend_n = []
+    ymax = 0
+    main_arr_x = range(1, len(misassemblies) + 1)
+    arr_x = []
+    arr_y = []
+    for j in range(len(reports)):
+        arr_x.append([0 for x in range(len(misassemblies))])
+        arr_y.append([0 for x in range(len(misassemblies))])
+        ymax_j = 0
+
+        type_misassembly = 0
+        while len(arr_x[j]) == 0 and type_misassembly < len(misassemblies):
+            result = reports[j].get_field(misassemblies[type_misassembly])
+            if result and result != '-':
+                arr_y[j][type_misassembly] = float(result)
+                arr_x[j][type_misassembly] = main_arr_x[j] + 0.07 * (type_misassembly - (len(misassemblies) * 0.5))
+                legend_n.append(type_misassembly)
+                ymax_j = float(result)
+            type_misassembly += 1
+        for i in range(type_misassembly, len(misassemblies)):
+            result = reports[j].get_field(misassemblies[i])
+            if result and result != '-':
+                arr_y[j][i] = float(result)
+                arr_x[j][i] = main_arr_x[j] + 0.07 * (i - (len(misassemblies) * 0.5))
+                legend_n.append(i)
+                ymax_j += float(result)
+        ymax = max(ymax, ymax_j)
+    for i in range(len(misassemblies)):
+        points_x = [arr_x[j][i] for j in range(contigs_num) if arr_x[j][i] != 0]
+        points_y = [arr_y[j][i] for j in range(contigs_num) if arr_y[j][i] != 0]
+        if points_y and points_x:
+            ax.bar(points_x, points_y, width=0.05, color=colors[i])
+    for j in range(len(reports)):
+        if (arr_y[j]):
+            points_y = [arr_y[j][i] for i in range(len(misassemblies))]
+            significant_points_y = [arr_y[j][i] for i in range(len(misassemblies)) if arr_y[j][i] != 0]
+            if len(significant_points_y) > 1:
+                type_misassembly = 0
+                while points_y[type_misassembly] == 0:
+                    type_misassembly += 1
+                point_x = main_arr_x[j] + 0.07 * (len(misassemblies) * 0.5)
+                ax.bar(point_x, points_y[type_misassembly], width=0.05, color=colors[0])
+                type_misassembly += 1
+                for i in range(type_misassembly, len(arr_y[j])):
+                    if points_y[i] > 0:
+                        ax.bar(point_x, points_y[i], width=0.05, color=colors[i], bottom=sum(points_y[:i]))
+
+    legend_n = set(legend_n)
+    legend = []
+    for i in sorted(legend_n):
+        legend.append(misassemblies[i])
+    matplotlib.pyplot.xlim([0, contigs_num + 1])
+    matplotlib.pyplot.tight_layout()
+    if ymax == 0:
+        matplotlib.pyplot.ylim([0, 0.1])
+    else:
+        matplotlib.pyplot.ylim([0, math.ceil(ymax * 1.1)])
 
     ax.legend(legend, loc='center left', bbox_to_anchor=(1.0, 0.5), numpoints=1)
     current_figure = matplotlib.pyplot.gcf()
@@ -549,7 +743,8 @@ def draw_meta_summary_plot(labels, ref_names, all_rows, results, plot_fpath, tit
     current_figure.set_size_inches(2 * default_size)
 
     plot_fpath += plots_file_ext
-    matplotlib.pyplot.savefig(plot_fpath)
+    matplotlib.pyplot.tight_layout()
+    matplotlib.pyplot.savefig(plot_fpath, bbox_inches='tight')
 
 
 def draw_report_table(report_name, extra_info, table_to_draw, column_widths):

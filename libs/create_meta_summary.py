@@ -1,66 +1,86 @@
 import matplotlib
 matplotlib.use('Agg')
-import matplotlib.pyplot as plt
 import os
 import shutil
 import qconfig
-import math
 from libs.log import get_logger
-
+import reporting
 logger = get_logger(qconfig.LOGGER_META_NAME)
 
+def get_results_for_metric(ref_names, metric, contigs_num, labels, output_dirpath, report_fname):
 
-def do(output_dirpath, labels, metrics, ref_names):
+    all_rows = []
+    cur_ref_names = []
+    row = {'metricName': 'References', 'values': cur_ref_names}
+    all_rows.append(row)
+    results = []
+    for i in range(contigs_num):
+        row = {'metricName': labels[i], 'values': []}
+        all_rows.append(row)
+    for i, ref_name in enumerate(ref_names):
+        results.append([])
+        results_fpath = os.path.join(output_dirpath, ref_name + '_quast_output', report_fname)
+        results_file = open(results_fpath, 'r')
+        columns = map(lambda s: s.strip(), results_file.readline().split('\t'))
+        if metric not in columns:
+            all_rows[0]['values'] = cur_ref_names
+            break
+        cur_ref_names.append(ref_name)
+        next_values = map(lambda s: s.strip(), results_file.readline().split('\t'))
+        for j in range(contigs_num):
+            values = next_values
+            if not values[0]:
+                metr_res = None
+            else:
+                metr_res = values[columns.index(metric)].split()[0]
+                next_values = map(lambda s: s.strip(), results_file.readline().split('\t'))
+            all_rows[j + 1]['values'].append(metr_res)
+            results[i].append(metr_res)
+    return results, all_rows, cur_ref_names
+
+
+def do(output_dirpath, labels, metrics, misassembl_metrics, ref_names):
     summary_dirpath = os.path.join(output_dirpath, qconfig.meta_summary_dir)
     if os.path.exists(summary_dirpath):
         shutil.rmtree(summary_dirpath)
     os.mkdir(summary_dirpath)
-    ref_names.append(qconfig.not_aligned_name)  # extra case
-    ref_num = len(ref_names)
+    ref_names = sorted(ref_names)
+    ref_names.append(qconfig.not_aligned_name) # extra case
     contigs_num = len(labels)
-    #labels = sorted(labels)
-    #ref_names = sorted(ref_names)
-    for metric in metrics:
-        all_rows = []
-        cur_ref_names = ref_names
-        row = {'metricName': 'References', 'values': cur_ref_names}
-        all_rows.append(row)
-        if not isinstance(metric, tuple):
-            summary_fpath_base = os.path.join(summary_dirpath, metric.replace(' ', '_'))
-            results = []
-            metric_not_found = False
-            for i in range(contigs_num):
-                row = {'metricName': labels[i], 'values': []}
-                all_rows.append(row)
-            for i, ref_name in enumerate(ref_names):
-                results.append([])
-                results_fpath = os.path.join(output_dirpath, ref_name + '_quast_output', 'transposed_report.tsv')
-                results_file = open(results_fpath, 'r')
-                columns = map(lambda s: s.strip(), results_file.readline().split('\t'))
-                if metric not in columns:
-                    if ref_name == qconfig.not_aligned_name:
-                        cur_ref_names = ref_names[:-1]
-                        all_rows[0]['values'] = cur_ref_names
-                    else:
-                        metric_not_found = True
-                    break
-                next_values = map(lambda s: s.strip(), results_file.readline().split('\t'))
-                for j in range(contigs_num):
-                    values = next_values
-                    if values[0] != labels[j]:
-                        metr_res = None
-                    else:
-                        metr_res = values[columns.index(metric)].split()[0]
-                        next_values = map(lambda s: s.strip(), results_file.readline().split('\t'))
-                    all_rows[j + 1]['values'].append(metr_res)
-                    results[i].append(metr_res)
-            if metric_not_found:
-                continue
 
-            if qconfig.draw_plots:
-                import plotter
-                plotter.draw_meta_summary_plot(labels, cur_ref_names, all_rows, results, summary_fpath_base, title=metric)
-            print_file(all_rows, len(cur_ref_names), summary_fpath_base + '.txt')
+    for metric in metrics:
+         if not isinstance(metric, tuple):
+            summary_fpath_base = os.path.join(summary_dirpath, metric.replace(' ', '_'))
+            results, all_rows, cur_ref_names = get_results_for_metric(ref_names, metric, contigs_num, labels, output_dirpath, qconfig.transposed_report_prefix + '.tsv')
+            if not results or not results[0]:
+                continue
+            if cur_ref_names:
+                print_file(all_rows, len(cur_ref_names), summary_fpath_base + '.txt')
+
+                if qconfig.draw_plots:
+                    import plotter
+                    reverse = False
+                    if reporting.get_quality(metric) == reporting.Fields.Quality.MORE_IS_BETTER:
+                        reverse = True
+                    y_label = None
+                    if metric == reporting.Fields.TOTALLEN:
+                        y_label = 'Total length'
+                    elif metric in [reporting.Fields.LARGCONTIG, reporting.Fields.N50, reporting.Fields.NGA50, reporting.Fields.MIS_EXTENSIVE_BASES]:
+                        y_label = 'Contig length'
+                    plotter.draw_meta_summary_plot(labels, cur_ref_names, all_rows, results, summary_fpath_base, title=metric, reverse=reverse, yaxis_title=y_label)
+                    if metric == reporting.Fields.MISASSEMBL:
+                        mis_results = []
+                        report_fname = os.path.join('contigs_reports', qconfig.transposed_report_prefix + '_misassemblies' + '.tsv')
+                        for misassembl_metric in misassembl_metrics:
+                            if ref_names[-1] == qconfig.not_aligned_name:
+                                cur_ref_names = ref_names[:-1]
+                            results, all_rows, cur_ref_names = get_results_for_metric(cur_ref_names, misassembl_metric[len(reporting.Fields.TAB):], contigs_num, labels, output_dirpath, report_fname)
+                            if results:
+                                mis_results.append(results)
+                        if mis_results:
+                            for contig_num in range(contigs_num):
+                                summary_fpath_base = os.path.join(summary_dirpath, labels[contig_num] + '_misassemblies')
+                                plotter.draw_meta_summary_misassembl_plot(mis_results, cur_ref_names, contig_num, summary_fpath_base, title=metric)
 
 
 def print_file(all_rows, ref_num, fpath):

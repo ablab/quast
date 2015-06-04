@@ -899,7 +899,7 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
     for ref, value in regions.iteritems():
         #Check to make sure this reference ID contains aligns.
         if ref not in ref_aligns:
-            print >> planta_out_f, 'ERROR: Reference [$ref] does not have any alignments!  Check that this is the same file used for alignment.'
+            print >> planta_out_f, 'ERROR: Reference %s does not have any alignments!  Check that this is the same file used for alignment.' % ref
             print >> planta_out_f, 'ERROR: Alignment Reference Headers: %s' % ref_aligns.keys()
             continue
         nothing_aligned = False
@@ -1212,7 +1212,7 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
     print >> planta_out_f, '\t\tRelocations: %d' % region_misassemblies.count(Misassembly.RELOCATION)
     print >> planta_out_f, '\t\tTranslocations: %d' % region_misassemblies.count(Misassembly.TRANSLOCATION)
     if qconfig.meta:
-        print >> planta_out_f, '\t\tInterspecial translocations: %d' % region_misassemblies.count(Misassembly.INTERSPECTRANSLOCATION)
+        print >> planta_out_f, '\t\tInterspecies translocations: %d' % region_misassemblies.count(Misassembly.INTERSPECTRANSLOCATION)
     print >> planta_out_f, '\t\tInversions: %d' % region_misassemblies.count(Misassembly.INVERSION)
     if qconfig.meta:
         print >> planta_out_f, '\tPotentially Misassembled Contigs (i/s translocations): %d' % contigs_with_istranslocations
@@ -1392,6 +1392,7 @@ def do(reference, contigs_fpaths, cyclic, output_dir):
     statuses, results, aligned_lengths = [x[0] for x in statuses_results_lengths_tuples], \
                                          [x[1] for x in statuses_results_lengths_tuples], \
                                          [x[2] for x in statuses_results_lengths_tuples]
+    reports = []
 
     def save_result(result):
         report = reporting.get(fname)
@@ -1456,6 +1457,7 @@ def do(reference, contigs_fpaths, cyclic, output_dir):
         report.add_field(reporting.Fields.UNALIGNED_PART_WITH_MISASSEMBLY, partially_unaligned_with_misassembly)
         report.add_field(reporting.Fields.UNALIGNED_PART_SIGNIFICANT_PARTS, partially_unaligned_with_significant_parts)
         report.add_field(reporting.Fields.UNALIGNED_PART_LENGTH, partially_unaligned_bases)
+        reports.append(report)
 
     def save_result_for_unaligned(result):
         report = reporting.get(fname)
@@ -1486,6 +1488,9 @@ def do(reference, contigs_fpaths, cyclic, output_dir):
     if NucmerStatus.OK in nucmer_statuses.values():
         reporting.save_misassemblies(output_dir)
         reporting.save_unaligned(output_dir)
+    if qconfig.draw_plots:
+        import plotter
+        plotter.draw_misassembl_plot(reports, output_dir + '/misassemblies_plot', 'Misassemblies')
 
     oks = nucmer_statuses.values().count(NucmerStatus.OK)
     not_aligned = nucmer_statuses.values().count(NucmerStatus.NOT_ALIGNED)

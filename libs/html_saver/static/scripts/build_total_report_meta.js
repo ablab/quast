@@ -3,7 +3,7 @@ String.prototype.trunc =
         return this.substr(0, n-1) + (this.length > n ? '&hellip;' : '');
     };
 
-function fillOneRow(metric, mainMetrics, group_n, order, glossary, primary, rowName)
+function fillOneRow(metric, mainMetrics, group_n, order, glossary, primary, rowName, report_n, assembliesNames, notAlignedContigs)
 {
     (function(group_n) {
         var id_group = '#group_' + group_n;
@@ -39,10 +39,17 @@ function fillOneRow(metric, mainMetrics, group_n, order, glossary, primary, rowN
 
     table +=
         '<tr class="' + trClass + '" quality="' + quality + '" onclick="toggleSecondary($(this))">' +
-            '<td class="left_column_td' + tdClass + '"><span class="metric-name">' +
+            '<td class="left_column_td' + tdClass + '"><span class="metric-name">' + (primary ? '+ ' : '') +
                 nbsp(addTooltipIfDefinitionExists(glossary, rowName), metricName) +
             '</span>' +
         '</td>';
+
+    if (report_n > -1) {
+        for (var not_aligned_n = 0; not_aligned_n < notAlignedContigs[report_n].length; not_aligned_n++) {
+            values.splice(assembliesNames.indexOf(notAlignedContigs[report_n][not_aligned_n]), 0, '');
+        }
+    }
+
     for (var val_n = 0; val_n < values.length; val_n++) {
         value = values[order[val_n]];
 
@@ -99,7 +106,6 @@ function buildTotalReport(assembliesNames, report, order, date, minContig, gloss
 
     var table = '';
     table += '<table cellspacing="0" class="report_table draggable" id="main_report_table">';
-
     var refNames = []
     for (var report_n = 0; report_n < reports.length; report_n++) {
                 var refName = reports[report_n].referenceName;
@@ -108,11 +114,22 @@ function buildTotalReport(assembliesNames, report, order, date, minContig, gloss
     reports = refNames.map(function (name, report_n) {
     return {
         name: name,
-        report: this[report_n].report
+        report: this[report_n].report,
+        asmNames: this[report_n].assembliesNames
         };
     }, reports);
     reports.sort( function( a, b ) { return a.name > b.name; });
-    console.log(refNames)
+    notAlignedContigs = {};
+    for(report_n = 0; report_n < reports.length; report_n++ ) {
+        notAlignedContigs[report_n] = [];
+        for (var assembly_n = 0; assembly_n < assembliesNames.length; assembly_n++) {
+            var assemblyName = assembliesNames[assembly_n];
+            if (reports[report_n].asmNames.indexOf(assemblyName) == -1) {
+                notAlignedContigs[report_n].push(assemblyName);
+            }
+        }
+    }
+
     for (var group_n = 0; group_n < report.length; group_n++) {
         var group = report[group_n];
         var groupName = group[0];
@@ -178,16 +195,19 @@ function buildTotalReport(assembliesNames, report, order, date, minContig, gloss
             }
             table += '</tr>';
         }
-
         for (metric_n = 0; metric_n < metrics.length; metric_n++) {
             var metric = metrics[metric_n];
-            table += fillOneRow(metric, mainMetrics, group_n, order, glossary, true, metric.metricName);
+            table += fillOneRow(metric, mainMetrics, group_n, order, glossary, true, metric.metricName, -1, assembliesNames, notAlignedContigs);
             for(report_n = 0; report_n < reports.length; report_n++ ) {  //  add information for each reference
                 var metrics_ref = reports[report_n].report[group_n][1];
-                table += fillOneRow(metrics_ref[metric_n], mainMetrics, group_n, order, glossary, false, reports[report_n].name);
+                for (var metric_ext_n = 0; metric_ext_n < metrics_ref.length; metric_ext_n++){
+                    if (metrics_ref[metric_ext_n].metricName == metrics[metric_n].metricName) {
+                        table += fillOneRow(metrics_ref[metric_ext_n], mainMetrics, group_n, order, glossary, false, reports[report_n].name, report_n, assembliesNames, notAlignedContigs);
+                        break;
+                    }
+                }
             }
         }
-
         table += '</tr>';
     }
     table += '</table>';
@@ -285,13 +305,16 @@ function buildTotalReport(assembliesNames, report, order, date, minContig, gloss
 
 function toggleSecondary(caller)
 {
-	if(!caller.hasClass("primary"))
+	if(!caller.hasClass('primary'))
 		return;
-	var nextRow = caller.next(".content-row");
-    while (!nextRow.hasClass("primary") && (nextRow.length > 0)) {
-        nextRow.toggleClass("secondary_hidden");
+	var nextRow = caller.next('.content-row');
+    var sign = nextRow.css('display') == 'none' ? '-' : '+';
+    var left_column = caller.context.firstChild;
+    left_column.textContent = sign + left_column.textContent.slice(1);
+    while (!nextRow.hasClass('primary') && (nextRow.length > 0)) {
+        nextRow.toggleClass('secondary_hidden');
         nextRow.css('background-color', '#F5F5DC');
-        nextRow = nextRow.next(".content-row");
+        nextRow = nextRow.next('.content-row');
     }
 }
 //

@@ -2,7 +2,7 @@
 /* REPORT TABLE */
 #report {    
     margin: 0 100px 50px 0;
-    min-width: 532px;
+    min-width: 600px;
     float: left;
 
     font-size: 1em;
@@ -12,7 +12,7 @@
     margin: 0;
     padding: 2px 0.6em 0 14px;
     min-width: 100px;
-    max-width: 200px;
+    max-width: 300px;
     white-space: nowrap;
 }
 

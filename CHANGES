@@ -1,14 +1,18 @@
 -- Version history --
 
-2.4   1. Plots and reports for each metric and HTML-report with results for all references are created
+2.4   1. Plots and reports for each metric, misassemblies plot for each assembly, and HTML-report with results for all references are created
       by metaQUAST.
 
-      2. MetaQUAST search references in NCBI's database, if no references are provided.
+      2. MetaQUAST searches references in NCBI's database, if no references are provided.
 
-      3, New metrics for --meta only: interspecial translocations and # contigs with potential
-      interspecial translocations.
+      3. Added misassemblies plots.
 
-      4. Fixed metaQUAST's handling of references with more than one chromosome.
+      4. New metrics for --meta only: interspecies translocations and # contigs with possibly
+      interspecies translocations.
+
+      5. Fixed metaQUAST's handling of references with more than one chromosome.
+
+      6. An option --reference in metaQUAST allows to specify directory with references.
 
 
 2.3   1. Changed logic in misassembly computation. Fixed several minor bugs in misassembly

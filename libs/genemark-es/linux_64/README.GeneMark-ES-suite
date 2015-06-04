@@ -1,0 +1,166 @@
+# ==============================================================
+# GeneMark-ES Suite 4.21
+#
+# Georgia Institute of Technology
+# Last modified: January 10, 2015
+#
+# Dr. Mark Borodovsky
+# Bioinformatics Lab
+#
+# Affiliation:
+# * Center for Bioinformatics and Computational Genomics at  Georgia Tech;
+# * Joint Georgia Tech and Emory Wallace H Coulter Department of Biomedical Engineering;
+# * School of Computational Science and Engineering at Georgia Tech;
+# 
+# This eukaryotic gene prediction suite with automatic training contains:
+#   GeneMark.hmm,  GeneMark.ES,  GeneMark.ET,  GeneMark.EP  and  *.PLUS modules
+#
+# Some of the modules are not ready to run (e.g. GeneMark.EP) in this beta version of code.
+#
+# ==============================================================
+# Algorithms included into this package were described in the following publications:
+#
+# Gene prediction algorithm Genemark-ET
+#    Lomsadze A., Burns P. and  Borodovsky M.
+#    "Integration of RNA-Seq Data into Eukaryotic Gene Finding Algorithm
+#     with Semi-Supervised Training."
+#    Nucleic Acids Research, 2014, July 2
+#
+# Gene prediction algorithm GeneMark.hmm ES BP version 2.0
+#    Ter-Hovhannisyan V., Lomsadze A., Chernoff Y. and Borodovsky M.
+#    "Gene prediction in novel fungal genomes using an ab initio
+#     algorithm with unsupervised training."
+#    Genome Research, 2008, Dec 18(12):1979-90
+#
+# Gene prediction algorithm GeneMark-ES version 1.0
+#    Lomsadze A., Ter-Hovhannisyan V., Chernoff Y. and Borodovsky M.
+#    "Gene identification in novel eukaryotic genomes by
+#     self-training algorithm."
+#    Nucleic Acids Research, 2005, Vol. 33, No. 20, 6494-6506
+#
+==============================================================
+# Copyright:
+#    Georgia Institute of Technology, Atlanta, Georgia, USA
+#
+# Please report problems to:
+#    Alex Lomsadze alexl@gatech.edu
+#    Mark Borodovsky borodovsky@gatech.edu
+# ==============================================================
+
+1. INSTALLATION
+
+Since configuration script for this package is yet under development a user should check and adjust the following:
+
+Default location of PERL is on the first line of all "*.pl" files:
+   /usr/bin/perl
+
+Required PERL modules available on CPAN
+   YAML
+   Hash::Merge
+   Logger::Simple
+   Parallel::ForkManager
+
+To install GeneMark-ET, just copy content of the distribution directory to desired location and code is ready to run.
+
+#------------------------------------
+2. HOW TO RUN
+
+To run GeneMark-ES
+
+   gmes_petap.pl --ES --sequence seq.fna 
+   gmes_petap.pl --ES  --fungi --sequence seq.fna    
+
+To run GeneMark-ET, provide i/genomic sequence and ii/ RNA-Seq read mapped intron coordinates in GFF format 
+
+   gmes_petap.pl --sequence seq.fna --ET introns.gff  --et_score 4
+
+User should adjust command line parameter "--et_score", depending on the type of
+RNA-Seq read alignment tool used.
+In case of TopHat2, default value for --et score is 10.
+If UnSplicer or TrueSight are used then default value is 0.5
+
+#------------------------------------
+3. GENERAL INTRUCTIONS: USE OF PARAMETERS
+
+Usage:  ./gmes_petap.pl  [options]  --sequence [filename]
+
+GeneMark-ES Suite version 4.21
+   includes transcript (GeneMark-ET) and protein (GeneMark-EP) based training and prediction
+
+Input sequence/s should be in FASTA format
+
+Algorithm options
+  --ES           to run self-training
+  --fungus       to run algorithm with branch point model (most useful for fungal genomes)
+  --ET           [filename]; to run training with introns coordinates from RNA-Seq read alignments (GFF format)
+  --et_score     [number]; 4 (default) minimum score of intron in initiation of the ET algorithm
+  --evidence     [filename]; to use in prediction external evidence (RNA or protein) mapped to genome
+  --training     to run training step only
+  --prediction   to run prediction step only
+
+Sequence pre-processing options
+  --max_contig   [number]; 5000000 (default) will split input genomic sequence into contigs shorter then max_contig
+  --min_contig   [number]; 50000 (default); will ignore contigs shorter then min_contig in training 
+  --max_gap      [number]; 5000 (default); will split sequence at gaps longer than max_gap
+                 Letters 'n' and 'N' are interpreted as standing within gaps 
+  --max_mask     [number]; 5000 (default); will split sequence at repeats longer then max_mask
+                 Letters 'x' and 'X' are interpreted as results of hard masking of repeats
+  --soft_mask    to indicate that lowercase letters stand for repeats
+
+Other options
+  --cores        [number]; 1 (default) to run program with multiple threads 
+  --v            verbose
+
+Developer options:
+  --pbs          to run on cluster with PBS support
+  --usr_cfg      [filename]; to customize configuration file
+  --ini_mod      [filename]; use this file with parameters for algorithm initiation
+  --max_intergenic      [number]; 10000 (default) maximum length of intergenic regions
+  --min_gene_prediction [number]; 300 minimum allowed gene length in prediction step
+  --test_set     [filename]; to evaluate prediction accuracy on the given test set
+  --key_bin
+  --debug
+
+WARNING: the algorithm is supposed to work best for genomes with uniform composition 
+(with variance in GC content in 1000 nt long windows accross genome smaller than 20%) 
+
+RUNNING TIME: On single 3 GHz CPU the program works for 2-3 hours on D. melanogaster genome (~100Mb).
+Please use --cores or --pbs options for large genomes.
+
+#------------------------------------
+4. FORMAT OF INPUT DATA
+
+For GeneMark-ET
+
+Intron coordinates should be in GFF format.
+
+Example line from GFF file:
+"2L	TopHat2	intron	2740	2888	25	+	.	."
+
+To convert intron predictions by TopHat2 from "bet" to "gff" format you may
+use the following script from essuite distribution:
+
+   path_to/essuite/bet_to_gff.pl  --bet  path_to/tophat_out/junctions.bed   --gff introns.gff  --label TopHat2
+
+Required values in the GFF format file:
+see http://www.sanger.ac.uk/resources/software/gff/spec.html
+
+Column <seqname>    value should match the corresponding definition line in the FASTA file with sequence
+Column <source>     in this case TopHat2 (value in this column is not used currently)
+Column <feature>    value "intron"
+Column <start><end> intron coordinates, <start> points to first nucleotide of intron and <end> to the last one. 
+                    Index starts from "1"
+Column <score>      in case of TopHat2, score is the number of reads spanning this intron (reported by TopHat2)
+                    in case of UnSplicer or TrueSight, score is the probability like estimate of intron quality, reported by these tools
+Column <strand>     + or -
+Values in other columns (frame and attribute) are not used in this program version.
+
+FASTA format
+https://www.ncbi.nlm.nih.gov/BLAST/blastcgihelp.shtml
+
+In the definition lines of FASTA file shoudl be unique for each contig
+">unique_contig_name"
+
+IMPORTANT: the names of contigs in <seqname> column in GFF should be the same as in FASTA file 'unique_contig_name' definition fields  
+
+#------------------------------------

@@ -5,9 +5,7 @@
 ############################################################################
 
 from __future__ import with_statement
-import logging
 import os
-import platform
 import shutil
 import tempfile
 
@@ -40,10 +38,8 @@ def gmhmm_p(tool_exec, fasta_fpath, heu_fpath, out_fpath, err_file, index):
 
     return return_code == 0 and os.path.isfile(out_fpath)
 
-
 def install_genemark(tool_dirpath):
     """Installation instructions for GeneMark Suite.
-
     Please, copy key "gm_key" into users home directory as:
     cp gm_key ~/.gm_key
     (genemark_suite_linux_XX/gmsuite/INSTALL)
@@ -92,10 +88,24 @@ def parse_gmhmm_out(out_fpath):
                 else:
                     seq.append(line.strip())
 
+def parse_gtf_out(out_fpath):
+    with open(out_fpath) as f:
+        for line in f:
+            if 'CDS' in line:
+                l = line.strip().split()
+                contig_id, strand, left_index, right_index, gene = l[0], l[6], l[3], l[4], l[9]
+                left_index = int(left_index)
+                right_index = int(right_index)
+                yield contig_id, strand, left_index, right_index, gene
 
-def add_genes_to_gff(genes, gff_fpath):
+
+
+def add_genes_to_gff(genes, gff_fpath, prokaryote):
     gff = open(gff_fpath, 'w')
-    gff.write('##gff out for GeneMark.hmm PROKARYOTIC\n')
+    if prokaryote:
+        gff.write('##gff out for GeneMark.hmm PROKARYOTIC\n')
+    else:
+        gff.write('##gff out for GeneMark-ES EUKARYOTIC\n')
     gff.write('##gff-version 3\n')
 
     for id, gene in enumerate(genes):
@@ -150,7 +160,6 @@ def gmhmm_p_everyGC(tool_dirpath, fasta_fpath, err_fpath, index, tmp_dirpath):
 
     return genes
 
-
 def gmhmm_p_metagenomic(tool_dirpath, fasta_fpath, err_fpath, index, tmp_dirpath=None):
     tool_exec_fpath = os.path.join(tool_dirpath, 'gmhmmp')
     heu_fpath = os.path.join(tool_dirpath, '../MetaGeneMark_v1.mod')
@@ -162,8 +171,30 @@ def gmhmm_p_metagenomic(tool_dirpath, fasta_fpath, err_fpath, index, tmp_dirpath
         else:
             return None
 
+def gm_es(tool_dirpath, fasta_fpath, err_fpath, index, tmp_dirpath):
 
-def predict_genes(index, contigs_fpath, gene_lengths, out_dirpath, tool_dirpath, tmp_dirpath, gmhmm_p_function):
+    tool_exec_fpath = os.path.join(tool_dirpath, 'gmes_petap.pl')
+    libs_dirpath = os.path.join(qconfig.LIBS_LOCATION, 'genemark-es', 'lib')
+    err_file = open(err_fpath, 'w')
+    tmp_dirpath += qutils.name_from_fpath(fasta_fpath)
+    if not os.path.isdir(tmp_dirpath):
+            os.mkdir(tmp_dirpath)
+    return_code = qutils.call_subprocess(
+        ['perl', '-I', libs_dirpath, tool_exec_fpath, '--ES', '--cores', str(qconfig.max_threads), '--sequence', fasta_fpath,
+         '--out', tmp_dirpath],
+        stdout=err_file,
+        stderr=err_file,
+        indent='    ' + qutils.index_to_str(index))
+    if return_code != 0:
+        return
+    genes = []
+    _, _, fnames = os.walk(tmp_dirpath).next()
+    for fname in fnames:
+        if fname.endswith('gtf'):
+            genes.extend(parse_gtf_out(os.path.join(tmp_dirpath, fname)))
+    return genes
+
+def predict_genes(index, contigs_fpath, gene_lengths, out_dirpath, tool_dirpath, tmp_dirpath, gmhmm_p_function, prokaryote):
     assembly_name = qutils.name_from_fpath(contigs_fpath)
     assembly_label = qutils.label_from_fpath(contigs_fpath)
 
@@ -179,7 +210,7 @@ def predict_genes(index, contigs_fpath, gene_lengths, out_dirpath, tool_dirpath,
     else:
         tool_name = "genemark"
         out_gff_fpath = os.path.join(out_dirpath, assembly_name + '_' + tool_name + '_genes.gff')
-        add_genes_to_gff(genes, out_gff_fpath)
+        add_genes_to_gff(genes, out_gff_fpath, prokaryote)
         if OUTPUT_FASTA:
             out_fasta_fpath = os.path.join(out_dirpath, assembly_name + '_' + tool_name + '_genes.fasta')
             add_genes_to_fasta(genes, out_fasta_fpath)
@@ -194,7 +225,7 @@ def predict_genes(index, contigs_fpath, gene_lengths, out_dirpath, tool_dirpath,
     return unique_count, count
 
 
-def do(fasta_fpaths, gene_lengths, out_dirpath, meta):
+def do(fasta_fpaths, gene_lengths, out_dirpath, prokaryote, meta):
     logger.print_timestamp()
     if LICENSE_LIMITATIONS_MODE:
         logger.warning("GeneMark tool can't be started because of license limitations!")
@@ -204,10 +235,14 @@ def do(fasta_fpaths, gene_lengths, out_dirpath, meta):
         tool_name = 'MetaGeneMark'
         tool_dirname = 'metagenemark'
         gmhmm_p_function = gmhmm_p_metagenomic
-    else:
+    elif prokaryote:
         tool_name = 'GeneMark'
         tool_dirname = 'genemark'
         gmhmm_p_function = gmhmm_p_everyGC
+    else:
+        tool_name = 'GeneMark-ES'
+        tool_dirname = 'genemark-es'
+        gmhmm_p_function = gm_es
 
     logger.info('Running %s...' % tool_name)
 
@@ -215,9 +250,10 @@ def do(fasta_fpaths, gene_lengths, out_dirpath, meta):
     if not os.path.exists(tool_dirpath):
         logger.warning('  Sorry, can\'t use %s on this platform, skipping gene prediction.' % tool_name)
     else:
-        successful = install_genemark(tool_dirpath)
-        if not successful:
-            return
+        if tool_name != 'GeneMark-ES':
+            successful = install_genemark(tool_dirpath)
+            if not successful:
+                return
 
         if not os.path.isdir(out_dirpath):
             os.mkdir(out_dirpath)
@@ -228,7 +264,7 @@ def do(fasta_fpaths, gene_lengths, out_dirpath, meta):
         n_jobs = min(len(fasta_fpaths), qconfig.max_threads)
         from joblib import Parallel, delayed
         results = Parallel(n_jobs=n_jobs)(delayed(predict_genes)(
-            index, fasta_fpath, gene_lengths, out_dirpath, tool_dirpath, tmp_dirpath, gmhmm_p_function)
+            index, fasta_fpath, gene_lengths, out_dirpath, tool_dirpath, tmp_dirpath, gmhmm_p_function, prokaryote)
             for index, fasta_fpath in enumerate(fasta_fpaths))
 
         # saving results

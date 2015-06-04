@@ -1,0 +1,3618 @@
+=head1 NAME
+
+Object::InsideOut - Comprehensive inside-out object support module
+
+=head1 VERSION
+
+This document describes Object::InsideOut version 3.98
+
+=head1 SYNOPSIS
+
+ package My::Class; {
+     use Object::InsideOut;
+
+     # Numeric field
+     #   With combined get+set accessor
+     my @data
+            :Field
+            :Type(numeric)
+            :Accessor(data);
+
+     # Takes 'INPUT' (or 'input', etc.) as a mandatory parameter to ->new()
+     my %init_args :InitArgs = (
+         'INPUT' => {
+             'Regex'     => qr/^input$/i,
+             'Mandatory' => 1,
+             'Type'      => 'numeric',
+         },
+     );
+
+     # Handle class-specific args as part of ->new()
+     sub init :Init
+     {
+         my ($self, $args) = @_;
+
+         # Put 'input' parameter into 'data' field
+         $self->set(\@data, $args->{'INPUT'});
+     }
+ }
+
+ package My::Class::Sub; {
+     use Object::InsideOut qw(My::Class);
+
+     # List field
+     #   With standard 'get_X' and 'set_X' accessors
+     #   Takes 'INFO' as an optional list parameter to ->new()
+     #     Value automatically added to @info array
+     #     Defaults to [ 'empty' ]
+     my @info
+            :Field
+            :Type(list)
+            :Standard(info)
+            :Arg('Name' => 'INFO', 'Default' => 'empty');
+ }
+
+ package Foo; {
+     use Object::InsideOut;
+
+     # Field containing My::Class objects
+     #   With combined accessor
+     #   Plus automatic parameter processing on object creation
+     my @foo
+            :Field
+            :Type(My::Class)
+            :All(foo);
+ }
+
+ package main;
+
+ my $obj = My::Class::Sub->new('Input' => 69);
+ my $info = $obj->get_info();               # [ 'empty' ]
+ my $data = $obj->data();                   # 69
+ $obj->data(42);
+ $data = $obj->data();                      # 42
+
+ $obj = My::Class::Sub->new('INFO' => 'help', 'INPUT' => 86);
+ $data = $obj->data();                      # 86
+ $info = $obj->get_info();                  # [ 'help' ]
+ $obj->set_info(qw(foo bar baz));
+ $info = $obj->get_info();                  # [ 'foo', 'bar', 'baz' ]
+
+ my $foo_obj = Foo->new('foo' => $obj);
+ $foo_obj->foo()->data();                   # 86
+
+=head1 DESCRIPTION
+
+This module provides comprehensive support for implementing classes using the
+inside-out object model.
+
+Object::InsideOut implements inside-out objects as anonymous scalar references
+that are blessed into a class with the scalar containing the ID for the object
+(usually a sequence number).  For Perl 5.8.3 and later, the scalar reference
+is set as B<read-only> to prevent I<accidental> modifications to the ID.
+Object data (i.e., fields) are stored within the class's package in either
+arrays indexed by the object's ID, or hashes keyed to the object's ID.
+
+The virtues of the inside-out object model over the I<blessed hash> object
+model have been extolled in detail elsewhere.  See the informational links
+under L</"SEE ALSO">.  Briefly, inside-out objects offer the following
+advantages over I<blessed hash> objects:
+
+=over
+
+=item * Encapsulation
+
+Object data is enclosed within the class's code and is accessible only through
+the class-defined interface.
+
+=item * Field Name Collision Avoidance
+
+Inheritance using I<blessed hash> classes can lead to conflicts if any classes
+use the same name for a field (i.e., hash key).  Inside-out objects are immune
+to this problem because object data is stored inside each class's package, and
+not in the object itself.
+
+=item * Compile-time Name Checking
+
+A common error with I<blessed hash> classes is the misspelling of field names:
+
+ $obj->{'coment'} = 'Say what?';   # Should be 'comment' not 'coment'
+
+As there is no compile-time checking on hash keys, such errors do not usually
+manifest themselves until runtime.
+
+With inside-out objects, I<text> hash keys are not used for accessing field
+data.  Field names and the data index (i.e., $$self) are checked by the Perl
+compiler such that any typos are easily caught using S<C<perl -c>>.
+
+ $coment[$$self] = $value;    # Causes a compile-time error
+    # or with hash-based fields
+ $comment{$$self} = $value;   # Also causes a compile-time error
+
+=back
+
+Object::InsideOut offers all the capabilities of other inside-out object
+modules with the following additional key advantages:
+
+=over
+
+=item * Speed
+
+When using arrays to store object data, Object::InsideOut objects are as
+much as 40% faster than I<blessed hash> objects for fetching and setting data,
+and even with hashes they are still several percent faster than I<blessed
+hash> objects.
+
+=item * Threads
+
+Object::InsideOut is thread safe, and thoroughly supports sharing objects
+between threads using L<threads::shared>.
+
+=item * Flexibility
+
+Allows control over object ID specification, accessor naming, parameter name
+matching, and much more.
+
+=item * Runtime Support
+
+Supports classes that may be loaded at runtime (i.e., using
+S<C<eval { require ...; };>>).  This makes it usable from within L<mod_perl>,
+as well.  Also supports additions to class hierarchies, and dynamic creation
+of object fields during runtime.
+
+=item * Exception Objects
+
+Object::InsideOut uses L<Exception::Class> for handling errors in an
+OO-compatible manner.
+
+=item * Object Serialization
+
+Object::InsideOut has built-in support for object dumping and reloading that
+can be accomplished in either an automated fashion or through the use of
+class-supplied subroutines.  Serialization using L<Storable> is also
+supported.
+
+=item * Foreign Class Inheritance
+
+Object::InsideOut allows classes to inherit from foreign (i.e.,
+non-Object::InsideOut) classes, thus allowing you to sub-class other Perl
+class, and access their methods from your own objects.
+
+=item * Introspection
+
+Obtain constructor parameters and method metadata for Object::InsideOut
+classes.
+
+=back
+
+=head1 CLASSES
+
+To use this module, each of your classes will start with
+S<C<use Object::InsideOut;>>:
+
+ package My::Class; {
+     use Object::InsideOut;
+     ...
+ }
+
+Sub-classes (child classes) inherit from base classes (parent classes) by
+telling Object::InsideOut what the parent class is:
+
+ package My::Sub; {
+     use Object::InsideOut qw(My::Parent);
+     ...
+ }
+
+Multiple inheritance is also supported:
+
+ package My::Project; {
+     use Object::InsideOut qw(My::Class Another::Class);
+     ...
+ }
+
+Object::InsideOut acts as a replacement for the C<base> pragma:  It loads the
+parent module(s), calls their C<-E<gt>import()> methods, and sets up the
+sub-class's @ISA array.  Therefore, you should not S<C<use base ...>> yourself,
+nor try to set up C<@ISA> arrays.  Further, you should not use a class's
+C<@ISA> array to determine a class's hierarchy:  See L</"INTROSPECTION"> for
+details on how to do this.
+
+If a parent class takes parameters (e.g., symbols to be exported via
+L<Exporter|/"Usage With C<Exporter>">), enclose them in an array ref
+(mandatory) following the name of the parent class:
+
+ package My::Project; {
+     use Object::InsideOut 'My::Class'      => [ 'param1', 'param2' ],
+                           'Another::Class' => [ 'param' ];
+     ...
+ }
+
+=head1 OBJECTS
+
+=head2 Object Creation
+
+Objects are created using the C<-E<gt>new()> method which is exported by
+Object::InsideOut to each class, and is invoked in the following manner:
+
+ my $obj = My::Class->new();
+
+Object::InsideOut then handles all the messy details of initializing the
+object in each of the classes in the invoking class's hierarchy.  As such,
+classes do not (normally) implement their own C<-E<gt>new()> method.
+
+Usually, object fields are initially populated with data as part of the
+object creation process by passing parameters to the C<-E<gt>new()> method.
+Parameters are passed in as combinations of S<C<key =E<gt> value>> pairs
+and/or hash refs:
+
+ my $obj = My::Class->new('param1' => 'value1');
+     # or
+ my $obj = My::Class->new({'param1' => 'value1'});
+     # or even
+ my $obj = My::Class->new(
+     'param_X' => 'value_X',
+     'param_Y' => 'value_Y',
+     {
+         'param_A' => 'value_A',
+         'param_B' => 'value_B',
+     },
+     {
+         'param_Q' => 'value_Q',
+     },
+ );
+
+Additionally, parameters can be segregated in hash refs for specific classes:
+
+ my $obj = My::Class->new(
+     'foo' => 'bar',
+     'My::Class'      => { 'param' => 'value' },
+     'Parent::Class'  => { 'data'  => 'info'  },
+ );
+
+The initialization methods for both classes in the above will get
+S<C<'foo' =E<gt> 'bar'>>, C<My::Class> will also get
+S<C<'param' =E<gt> 'value'>>, and C<Parent::Class> will also get
+S<C<'data' =E<gt> 'info'>>.  In this scheme, class-specific parameters will
+override general parameters specified at a higher level:
+
+ my $obj = My::Class->new(
+     'default' => 'bar',
+     'Parent::Class'  => { 'default' => 'baz' },
+ );
+
+C<My::Class> will get S<C<'default' =E<gt> 'bar'>>, and C<Parent::Class> will
+get S<C<'default' =E<gt> 'baz'>>.
+
+Calling C<-E<gt>new()> on an object works, too, and operates the same as
+calling C<-E<gt>new()> for the class of the object (i.e., C<$obj-E<gt>new()>
+is the same as C<ref($obj)-E<gt>new()>).
+
+How the parameters passed to the C<-E<gt>new()> method are used to
+initialize the object is discussed later under L</"OBJECT INITIALIZATION">.
+
+NOTE: You cannot create objects from Object::InsideOut itself:
+
+ # This is an error
+ # my $obj = Object::InsideOut->new();
+
+In this way, Object::InsideOut is not an object class, but functions more like
+a pragma.
+
+=head2 Object IDs
+
+As stated earlier, this module implements inside-out objects as anonymous,
+read-only scalar references that are blessed into a class with the scalar
+containing the ID for the object.
+
+Within methods, the object is passed in as the first argument:
+
+ sub my_method
+ {
+     my $self = shift;
+     ...
+ }
+
+The object's ID is then obtained by dereferencing the object:  C<$$self>.
+Normally, this is only needed when accessing the object's field data:
+
+ my @my_field :Field;
+
+ sub my_method
+ {
+     my $self = shift;
+     ...
+     my $data = $my_field[$$self];
+     ...
+ }
+
+At all other times, and especially in application code, the object should be
+treated as an I<opaque> entity.
+
+=head1 ATTRIBUTES
+
+Much of the power of Object::InsideOut comes from the use of I<attributes>:
+I<Tags> on variables and subroutines that the L<attributes> module sends to
+Object::InsideOut at compile time.  Object::InsideOut then makes use of the
+information in these tags to handle such operations as object construction,
+automatic accessor generation, and so on.
+
+(Note:  The use of attributes is not the same thing as
+L<source filtering|Filter::Simple>.)
+
+An attribute consists of an identifier preceded by a colon, and optionally
+followed by a set of parameters in parentheses.  For example, the attributes
+on the following array declare it as an object field, and specify the
+generation of an accessor method for that field:
+
+ my @level :Field :Accessor(level);
+
+When multiple attributes are assigned to a single entity, they may all appear
+on the same line (as shown above), or on separate lines:
+
+ my @level
+     :Field
+     :Accessor(level);
+
+However, due to limitations in the Perl parser, the entirety of any one
+attribute must be on a single line:
+
+ # This doesn't work
+ # my @level
+ #     :Field
+ #     :Accessor('Name'   => 'level',
+ #               'Return' => 'Old');
+
+ # Each attribute must be all on one line
+ my @level
+     :Field
+     :Accessor('Name' => 'level', 'Return' => 'Old');
+
+For Object::InsideOut's purposes, the case of an attribute's name does not
+matter:
+
+ my @data :Field;
+    # or
+ my @data :FIELD;
+
+However, by convention (as denoted in the L<attributes> module), an
+attribute's name should not be all lowercase.
+
+=head1 FIELDS
+
+=head2 Field Declarations
+
+Object data fields consist of arrays within a class's package into which data
+are stored using the object's ID as the array index.  An array is declared as
+being an object field by following its declaration with the C<:Field>
+attribute:
+
+ my @info :Field;
+
+Object data fields may also be hashes:
+
+ my %data :Field;
+
+However, as array access is as much as 40% faster than hash access, you should
+stick to using arrays.  See L</"HASH ONLY CLASSES"> for more information on
+when hashes may be required.
+
+=head2 Getting Data
+
+In class code, data can be fetched directly from an object's field array
+(hash) using the object's ID:
+
+ $data = $field[$$self];
+     # or
+ $data = $field{$$self};
+
+=head2 Setting Data
+
+Analogous to the above, data can be put directly into an object's field array
+(hash) using the object's ID:
+
+ $field[$$self] = $data;
+     # or
+ $field{$$self} = $data;
+
+However, in threaded applications that use data sharing (i.e., use
+C<threads::shared>), the above will not work when the object is shared between
+threads and the data being stored is either an array, hash or scalar reference
+(this includes other objects).  This is because the C<$data> must first be
+converted into shared data before it can be put into the field.
+
+Therefore, Object::InsideOut automatically exports a method called
+C<-E<gt>set()> to each class.  This method should be used in class code to put
+data into object fields whenever there is the possibility that
+the class code may be used in an application that uses L<threads::shared>
+(i.e., to make your class code B<thread-safe>).  The C<-E<gt>set()> method
+handles all details of converting the data to a shared form, and storing it in
+the field.
+
+The C<-E<gt>set()> method, requires two arguments:  A reference to the object
+field array/hash, and the data (as a scalar) to be put in it:
+
+ my @my_field :Field;
+
+ sub store_data
+ {
+     my ($self, $data) = @_;
+     ...
+     $self->set(\@my_field, $data);
+ }
+
+To be clear, the C<-E<gt>set()> method is used inside class code; not
+application code.  Use it inside any object methods that set data in object
+field arrays/hashes.
+
+In the event of a method naming conflict, the C<-E<gt>set()> method can be
+called using its fully-qualified name:
+
+ $self->Object::InsideOut::set(\@field, $data);
+
+=head1 OBJECT INITIALIZATION
+
+As stated in L</"Object Creation">, object fields are initially populated with
+data as part of the object creation process by passing S<C<key =E<gt> value>>
+parameters to the C<-E<gt>new()> method.  These parameters can be processed
+automatically into object fields, or can be passed to a class-specific object
+initialization subroutine.
+
+=head2 Field-Specific Parameters
+
+When an object creation parameter corresponds directly to an object field, you
+can specify for Object::InsideOut to automatically place the parameter into
+the field by adding the C<:Arg> attribute to the field declaration:
+
+ my @foo :Field :Arg(foo);
+
+For the above, the following would result in C<$val> being placed in
+C<My::Class>'s C<@foo> field during object creation:
+
+ my $obj = My::Class->new('foo' => $val);
+
+=head2 Object Initialization Subroutines
+
+Many times, object initialization parameters do not correspond directly to
+object fields, or they may require special handling.  For these, parameter
+processing is accomplished through a combination of an C<:InitArgs>
+labeled hash, and an C<:Init> labeled subroutine.
+
+The C<:InitArgs> labeled hash specifies the parameters to be extracted from
+the argument list supplied to the C<-E<gt>new()> method.  Those parameters
+(and only those parameters) which match the keys in the C<:InitArgs> hash are
+then packaged together into a single hash ref.  The newly created object and
+this parameter hash ref are then sent to the C<:Init> subroutine for
+processing.
+
+Here is an example of a class with an I<automatically handled> field and an
+I<:Init handled> field:
+
+ package My::Class; {
+     use Object::InsideOut;
+
+     # Automatically handled field
+     my @my_data  :Field  :Acc(data)  :Arg(MY_DATA);
+
+     # ':Init' handled field
+     my @my_field :Field;
+
+     my %init_args :InitArgs = (
+         'MY_PARAM' => '',
+     );
+
+     sub _init :Init
+     {
+         my ($self, $args) = @_;
+
+         if (exists($args->{'MY_PARAM'})) {
+             $self->set(\@my_field, $args->{'MY_PARAM'});
+         }
+     }
+
+     ...
+ }
+
+An object for this class would be created as follows:
+
+ my $obj = My::Class->new('MY_DATA'  => $dat,
+                          'MY_PARAM' => $parm);
+
+This results in, first of all, C<$dat> being placed in the object's
+C<@my_data> field because the C<MY_DATA> key is specified in the C<:Arg>
+attribute for that field.
+
+Then, C<_init> is invoked with arguments consisting of the object (i.e.,
+C<$self>) and a hash ref consisting only of S<C<{ 'MY_PARAM' =E<gt> $param }>>
+because the key C<MY_PARAM> is specified in the C<:InitArgs> hash.
+C<_init> checks that the parameter C<MY_PARAM> exists in the hash ref, and
+then (since it does exist) adds C<$parm> to the object's C<@my_field> field.
+
+=over
+
+=item Setting Data
+
+Data processed by the C<:Init> subroutine may be placed directly into the
+class's field arrays (hashes) using the object's ID (i.e., C<$$self>):
+
+ $my_field[$$self] = $args->{'MY_PARAM'};
+
+However, as shown in the example above, it is strongly recommended that you
+use the L<-E<gt>set()|/"Setting Data"> method:
+
+ $self->set(\@my_field, $args->{'MY_PARAM'});
+
+which handles converting the data to a shared format when needed for
+applications using L<threads::shared>.
+
+=item All Parameters
+
+The C<:InitArgs> hash and the C<:Arg> attribute on fields act as filters that
+constrain which initialization parameters are and are not sent to the C<:Init>
+subroutine.  If, however, a class does not have an C<:InitArgs> hash B<and>
+does not use the C<:Arg> attribute on any of its fields, then its C<:Init>
+subroutine (if it exists, of course) will get all the initialization
+parameters supplied to the C<-E<gt>new()> method.
+
+=back
+
+=head2 Mandatory Parameters
+
+Field-specific parameters may be declared mandatory as follows:
+
+ my @data :Field
+          :Arg('Name' => 'data', 'Mandatory' => 1);
+
+If a mandatory parameter is missing from the argument list to C<-E<gt>new()>,
+an error is generated.
+
+For C<:Init> handled parameters, use:
+
+ my %init_args :InitArgs = (
+     'data' => {
+         'Mandatory' => 1,
+     },
+ );
+
+C<Mandatory> may be abbreviated to C<Mand>, and C<Required> or C<Req> are
+synonymous.
+
+=head2 Default Values
+
+For optional parameters, defaults can be specified for field-specific
+parameters using either of these syntaxes:
+
+ my @data :Field
+          :Arg('Name' => 'data', 'Default' => 'foo');
+
+ my @info :Field  :Arg(info)  :Default('bar');
+
+If an optional parameter with a specified default is missing from the argument
+list to C<-E<gt>new()>, then the default is assigned to the field when the
+object is created (before the C<:Init> subroutine, if any, is called).
+
+The format for C<:Init> handled parameters is:
+
+ my %init_args :InitArgs = (
+     'data' => {
+         'Default' => 'foo',
+     },
+ );
+
+In this case, if the parameter is missing from the argument list to
+C<-E<gt>new()>, then the parameter key is paired with the default value and
+added to the C<:Init> argument hash ref (e.g., S<C<{ 'data' =E<gt> 'foo' }>>).
+
+Fields can also be assigned a default value even if not associated with an
+initialization parameter:
+
+ my @hash  :Field  :Default({});
+ my @tuple :Field  :Default([1, 'bar']);
+
+Note that when using C<:Default>, the value must be properly structured Perl
+code (e.g., strings must be quoted as illustrated above).
+
+C<Default> and C<:Default> may be abbreviated to C<Def> and C<:Def>
+respectively.
+
+=head3 Generated Default Values
+
+It is also possible to I<generate> default values on a per object basis by
+using code in the C<:Default> directive.
+
+ my @IQ :Field  :Default(50 + rand 100);
+ my @ID :Field  :Default(our $next; ++$next);
+
+The above, for example, will initialize the C<IQ> attribute of each new
+object to a different random number, while its C<ID> attribute will be
+initialized with a sequential integer.
+
+The code in a C<:Default> specifier can also refer to the object being
+initialized, either as C<$_[0]> or as C<$self>.  For example:
+
+ my @unique_ID :Field  :Default($self->gen_unique_ID);
+
+Any code specified as a default will I<not> have access to the surrounding
+lexical scope.  For example, this will not work:
+
+ my $MAX = 100;
+ my $MIN = 0;
+
+ my @bar :Field
+         :Default($MIN + rand($MAX-$MIX));     # Error
+
+For anything lexical or complex, you should factor the initializer out into
+a utility subroutine:
+
+ sub _rand_max :Restricted
+ {
+     $MIN + rand($MAX-$MIX)
+ }
+
+ my @bar :Field
+         :Default(_rand_max);
+
+When specifying a generated default using the C<Default> tag inside an C<:Arg>
+directive, you will need to wrap the code in a C<sub { }>, and C<$_[0]> (but
+not C<$self>) can be used to access the object being initialized:
+
+ my @baz :Field
+         :Arg(Name => 'baz', Default => sub { $_[0]->biz });
+
+System functions need to similarly be wrapped in C<sub { }>:
+
+ my @rand :Field
+          :Type(numeric)
+          :Arg(Name => 'Rand', Default => sub { rand });
+
+Subroutines can be accessed using a code reference:
+
+ my @data :Field
+          :Arg(Name => 'Data', Default => \&gen_default);
+
+On the other hand, the above can also be simplified by using the C<:Default>
+directive instead:
+
+ my @baz  :Field  :Arg(baz)   :Default($self->biz);
+ my @rand :Field  :Arg(Rand)  :Default(rand)  :Type(numeric);
+ my @data :Field  :Arg(Data)  :Default(gen_default);
+
+Using generated defaults in the C<:InitArgs> hash requires the use of the same
+types of syntax as with the C<Default> tag in an C<:Arg> directive:
+
+ my %init_args :InitArgs = (
+     'Baz' => {
+         'Default' => sub { $_[0]->biz },
+     },
+     'Rand' => {
+         'Default' => sub { rand },
+     },
+     'Data' => {
+         'Default' => \&gen_default,
+     },
+ );
+
+=head3 Sequential defaults
+
+In the previous section, one of the examples is not as safe or as convenient
+as it should be:
+
+ my @ID :Field  :Default(our $next; ++$next);
+
+The problem is the shared variable (C<$next>) that's needed to track the
+allocation of C<ID> values.  Because it has to persist between calls, that
+variable has to be a package variable, except under Perl 5.10 or later where
+it could be a state variable instead:
+
+ use feature 'state';
+
+ my @ID :Field  :Default(state $next; ++$next);
+
+The version with the package variable is unsafe, because anyone could then
+spoof ID numbers just by reassigning that universally accessible variable:
+
+    $MyClass::next = 0;        # Spoof the next object
+    my $obj = MyClass->new;    # Object now has ID 1
+
+The state-variable version avoids this problem, but even that version is
+more complicated (and hence more error-prone) than it needs to be.
+
+The C<:SequenceFrom> directive (which can be abbreviated to C<:SeqFrom> or
+C<:Seq>) makes it much easier to specify that an attribute's default value is
+taken from a linearly increasing sequence.  For instance, the ID example above
+could be rewritten as:
+
+ my @ID :Field  :SequenceFrom(1);
+
+This directive automatically creates a hidden variable, initializes it to the
+initial value specified, generates a sequence starting at that initial value,
+and then uses successive elements of that sequence each time a default value
+is needed for that attribute during object creation.
+
+If the initial value is a scalar, then the default sequence is generated by
+by computing C<$previous_value++>.  If it is an object, it is generated by
+calling C<< $obj->next() >> (or by calling C<$obj++> if the object doesn't
+have a C<next()> method).
+
+This makes it simple to create a series of objects with attributes whose
+values default to simple numeric, alphabetic, or alphanumeric sequences,
+or to the sequence specified by an iterator object of some kind:
+
+ my @ID :Field  :SeqFrom(1);                 # 1, 2, 3...
+
+ my @ID :Field  :SeqFrom('AAA');             # 'AAA', 'AAB', 'AAC'...
+
+ my @ID :Field  :SeqFrom('A01');             # 'A01', 'A02', 'A03'...
+
+ my @ID :Field  :SeqFrom(ID_Iterator->new);  # ->next, ->next, ->next...
+
+In every other respect a C<:SequenceFrom> directive is just like a
+C<:Default>.  For example, it can be used in conjunction with the C<:Arg>
+directive as follows:
+
+ my @ID :Field  :Arg(ID)  :SeqFrom(1);
+
+However, not as a tag inside the C<:Arg> directive:
+
+ my @ID :Field  :Arg('Name' => 'ID', 'SeqFrom' => 1)   # WRONG
+
+For the C<:InitArgs> hash, you will need to I<roll your own> sequential
+defaults if required:
+
+ use feature 'state';
+
+ my %init_args :InitArgs = (
+     'Counter' => {
+         'Default' => sub { state $next; ++$next }
+     },
+ );
+
+=head2 Parameter Name Matching
+
+Rather than having to rely on exact matches to parameter keys in the
+C<-E<gt>new()> argument list, you can specify a regular expressions to be used
+to match them to field-specific parameters:
+
+ my @param :Field
+           :Arg('Name' => 'param', 'Regexp' => qr/^PARA?M$/i);
+
+In this case, the parameter's key could be any of the following: PARAM, PARM,
+Param, Parm, param, parm, and so on.  And the following would result in
+C<$data> being placed in C<My::Class>'s C<@param> field during object
+creation:
+
+ my $obj = My::Class->new('Parm' => $data);
+
+For C<:Init> handled parameters, you would similarly use:
+
+ my %init_args :InitArgs = (
+     'Param' => {
+         'Regex' => qr/^PARA?M$/i,
+     },
+ );
+
+In this case, the match results in S<C<{ 'Param' =E<gt> $data }>> being sent
+to the C<:Init> subroutine as the argument hash.  Note that the C<:InitArgs>
+hash key is substituted for the original argument key.  This eliminates the
+need for any parameter key pattern matching within the C<:Init> subroutine.
+
+C<Regexp> may be abbreviated to C<Regex> or C<Re>.
+
+=head2 Object Pre-initialization
+
+Occasionally, a child class may need to send a parameter to a parent class as
+part of object initialization.  This can be accomplished by supplying a
+C<:PreInit> labeled subroutine in the child class.  These subroutines, if
+found, are called in order from the bottom of the class hierarchy upward
+(i.e., child classes first).
+
+The subroutine should expect two arguments:  The newly created
+(uninitialized) object (i.e., C<$self>), and a hash ref of all the parameters
+from the C<-E<gt>new()> method call, including any additional parameters added
+by other C<:PreInit> subroutines.
+
+ sub pre_init :PreInit
+ {
+     my ($self, $args) = @_;
+     ...
+ }
+
+The parameter hash ref will not be exactly as supplied to C<-E<gt>new()>, but
+will be I<flattened> into a single hash ref.  For example,
+
+ my $obj = My::Class->new(
+     'param_X' => 'value_X',
+     {
+         'param_A' => 'value_A',
+         'param_B' => 'value_B',
+     },
+     'My::Class' => { 'param' => 'value' },
+ );
+
+would produce
+
+ {
+     'param_X' => 'value_X',
+     'param_A' => 'value_A',
+     'param_B' => 'value_B',
+     'My::Class' => { 'param' => 'value' }
+ }
+
+as the hash ref to the C<:PreInit> subroutine.
+
+The C<:PreInit> subroutine may then add, modify or even remove any parameters
+from the hash ref as needed for its purposes.  After all the C<:PreInit>
+subroutines have been executed, object initialization will then proceed using
+the resulting parameter hash.
+
+The C<:PreInit> subroutine should not try to set data in its class's fields or
+in other class's fields (e.g., using I<set> methods) as such changes will be
+overwritten during initialization phase which follows pre-initialization.  The
+C<:PreInit> subroutine is only intended for modifying initialization
+parameters prior to initialization.
+
+=head2 Initialization Sequence
+
+For the most part, object initialization can be conceptualized as proceeding
+from parent classes down through child classes.  As such, calling child class
+methods from a parent class during object initialization may not work because
+the object will not have been fully initialized in the child classes.
+
+Knowing the order of events during object initialization may help in
+determining when this can be done safely:
+
+=over
+
+=item 1.  The scalar reference for the object is created, populated with an
+L</"Object ID">, and blessed into the appropriate class.
+
+=item 2.  L<:PreInit|/"Object Pre-initialization"> subroutines are called in
+order from the bottom of the class hierarchy upward (i.e., child classes
+first).
+
+=item 3.  From the top of the class hierarchy downward (i.e., parent classes
+first), L</"Default Values"> are assigned to fields.  (These may be
+overwritten by subsequent steps below.)
+
+=item 4.  From the top of the class hierarchy downward, parameters to the
+C<-E<gt>new()> method are processed for C<:Arg> field attributes and entries
+in the C<:InitArgs> hash:
+
+=over
+
+=item a.  L</"Parameter Preprocessing"> is performed.
+
+=item b.  Checks for L</"Mandatory Parameters"> are made.
+
+=item c.  L</"Default Values"> specified in the C<:InitArgs> hash are added
+for subsequent processing by the C<:Init> subroutine.
+
+=item d.  L<Type checking|/"TYPE CHECKING"> is performed.
+
+=item e.  L</"Field-Specific Parameters"> are assigned to fields.
+
+=back
+
+=item 5.  From the top of the class hierarchy downward, L<:Init|/"Object
+Initialization Subroutines"> subroutines are called with parameters specified
+in the C<:InitArgs> hash.
+
+=item 6.  Checks are made for any parameters to C<-E<gt>new()> that were
+not handled in the above.  (See next section.)
+
+=back
+
+=head2 Unhandled Parameters
+
+It is an error to include any parameters to the C<-E<gt>new()> method that are
+not handled by at least one class in the hierarchy.  The primary purpose of
+this is to catch typos in parameter names:
+
+  my $obj = Person->new('nane' => 'John');   # Should be 'name'
+
+The only time that checks for unhandled parameters are not made is when at
+least one class in the hierarchy does not have an C<:InitArgs> hash B<and>
+does not use the C<:Arg> attribute on any of its fields B<and> uses an
+L<:Init|/"Object Initialization Subroutines"> subroutine for processing
+parameters.  In such a case, it is not possible for Object::InsideOut to
+determine which if any of the parameters are not handled by the C<:Init>
+subroutine.
+
+If you add the following construct to the start of your application:
+
+ BEGIN {
+     no warnings 'once';
+     $OIO::Args::Unhandled::WARN_ONLY = 1;
+ }
+
+then unhandled parameters will only generate warnings rather than causing
+exceptions to be thrown.
+
+=head2 Modifying C<:InitArgs>
+
+For performance purposes, Object::InsideOut I<normalizes> each class's
+C<:InitArgs> hash by creating keys in the form of C<'_X'> for the various
+options it handles (e.g., C<'_R'> for C<'Regexp'>).
+
+If a class has the unusual requirement to modify its C<:InitArgs> hash during
+runtime, then it must renormalize the hash after making such changes by
+invoking C<Object::InsideOut::normalize()> on it so that Object::InsideOut
+will pick up the changes:
+
+ Object::InsideOut::normalize(\%init_args);
+
+=head1 ACCESSOR GENERATION
+
+Accessors are object methods used to get data out of and put data into an
+object.  You can, of course, write your own accessor code, but this can get a
+bit tedious, especially if your class has lots of fields.  Object::InsideOut
+provides the capability to automatically generate accessors for you.
+
+=head2 Basic Accessors
+
+A I<get> accessor is vary basic:  It just returns the value of an object's
+field:
+
+ my @data :Field;
+
+ sub fetch_data
+ {
+     my $self = shift;
+     return ($data[$$self]);
+ }
+
+and you would use it as follows:
+
+ my $data = $obj->fetch_data();
+
+To have Object::InsideOut generate such a I<get> accessor for you, add a
+C<:Get> attribute to the field declaration, specifying the name for the
+accessor in parentheses:
+
+ my @data :Field :Get(fetch_data);
+
+Similarly, a I<set> accessor puts data in an object's field.  The I<set>
+accessors generated by Object::InsideOut check that they are called with at
+least one argument.  They are specified using the C<:Set> attribute:
+
+ my @data :Field :Set(store_data);
+
+Some programmers use the convention of naming I<get> and I<set> accessors
+using I<get_> and I<set_> prefixes.  Such I<standard> accessors can be
+generated using the C<:Standard> attribute (which may be abbreviated to
+C<:Std>):
+
+ my @data :Field :Std(data);
+
+which is equivalent to:
+
+ my @data :Field :Get(get_data) :Set(set_data);
+
+Other programmers prefer to use a single I<combination> accessors that
+performs both functions:  When called with no arguments, it I<gets>, and when
+called with an argument, it I<sets>.  Object::InsideOut will generate such
+accessors with the C<:Accessor> attribute.  (This can be abbreviated to
+C<:Acc>, or you can use C<:Get_Set> or C<:Combined> or C<:Combo> or even
+C<Mutator>.)  For example:
+
+ my @data :Field :Acc(data);
+
+The generated accessor would be used in this manner:
+
+ $obj->data($val);           # Puts data into the object's field
+ my $data = $obj->data();    # Fetches the object's field data
+
+=head2 I<Set> Accessor Return Value
+
+For any of the automatically generated methods that perform I<set> operations,
+the default for the method's return value is the value being set (i.e., the
+I<new> value).
+
+You can specify the I<set> accessor's return value using the C<Return>
+attribute parameter (which may be abbreviated to C<Ret>).  For example, to
+explicitly specify the default behavior use:
+
+ my @data :Field :Set('Name' => 'store_data', 'Return' => 'New');
+
+You can specify that the accessor should return the I<old> (previous) value
+(or C<undef> if unset):
+
+ my @data :Field :Acc('Name' => 'data', 'Ret' => 'Old');
+
+You may use C<Previous>, C<Prev> or C<Prior> as synonyms for C<Old>.
+
+Finally, you can specify that the accessor should return the object itself:
+
+ my @data :Field :Std('Name' => 'data', 'Ret' => 'Object');
+
+C<Object> may be abbreviated to C<Obj>, and is also synonymous with C<Self>.
+
+=head2 Method Chaining
+
+An obvious case where method chaining can be used is when a field is used to
+store an object:  A method for the stored object can be chained to the I<get>
+accessor call that retrieves that object:
+
+ $obj->get_stored_object()->stored_object_method()
+
+Chaining can be done off of I<set> accessors based on their return value (see
+above).  In this example with a I<set> accessor that returns the I<new> value:
+
+ $obj->set_stored_object($stored_obj)->stored_object_method()
+
+the I<set_stored_object()> call stores the new object, returning it as well,
+and then the I<stored_object_method()> call is invoked via the stored/returned
+object.  The same would work for I<set> accessors that return the I<old>
+value, too, but in that case the chained method is invoked via the previously
+stored (and now returned) object.
+
+If the L<Want> module (version 0.12 or later) is available, then
+Object::InsideOut also tries to do I<the right thing> with method chaining for
+I<set> accessors that don't store/return objects.  In this case, the object
+used to invoke the I<set> accessor will also be used to invoke the chained
+method (just as though the I<set> accessor were declared with
+S<C<'Return' =E<gt> 'Object'>>):
+
+ $obj->set_data('data')->do_something();
+
+To make use of this feature, just add C<use Want;> to the beginning of your
+application.
+
+Note, however, that this special handling does not apply to I<get> accessors,
+nor to I<combination> accessors invoked without an argument (i.e., when used
+as a I<get> accessor).  These must return objects in order for method chaining
+to succeed.
+
+=head2 :lvalue Accessors
+
+As documented in L<perlsub/"Lvalue subroutines">, an C<:lvalue> subroutine
+returns a modifiable value.  This modifiable value can then, for example, be
+used on the left-hand side (hence C<LVALUE>) of an assignment statement, or
+a substitution regular expression.
+
+For Perl 5.8.0 and later, Object::InsideOut supports the generation of
+C<:lvalue> accessors such that their use in an C<LVALUE> context will set the
+value of the object's field.  Just add C<'lvalue' =E<gt> 1> to the I<set>
+accessor's attribute.  (C<'lvalue'> may be abbreviated to C<'lv'>.)
+
+Additionally, C<:Lvalue> (or its abbreviation C<:lv>) may be used for a
+combined I<get/set> I<:lvalue> accessor.  In other words, the following are
+equivalent:
+
+ :Acc('Name' => 'email', 'lvalue' => 1)
+
+ :Lvalue(email)
+
+Here is a detailed example:
+
+ package Contact; {
+     use Object::InsideOut;
+
+     # Create separate a get accessor and an :lvalue set accessor
+     my @name  :Field
+               :Get(name)
+               :Set('Name' => 'set_name', 'lvalue' => 1);
+
+     # Create a standard get_/set_ pair of accessors
+     #   The set_ accessor will be an :lvalue accessor
+     my @phone :Field
+               :Std('Name' => 'phone', 'lvalue' => 1);
+
+     # Create a combined get/set :lvalue accessor
+     my @email :Field
+               :Lvalue(email);
+ }
+
+ package main;
+
+ my $obj = Contact->new();
+
+ # Use :lvalue accessors in assignment statements
+ $obj->set_name()  = 'Jerry D. Hedden';
+ $obj->set_phone() = '800-555-1212';
+ $obj->email()     = 'jdhedden AT cpan DOT org';
+
+ # Use :lvalue accessor in substituion regexp
+ $obj->email() =~ s/ AT (\w+) DOT /\@$1./;
+
+ # Use :lvalue accessor in a 'substr' call
+ substr($obj->set_phone(), 0, 3) = '888';
+
+ print("Contact info:\n");
+ print("\tName:  ", $obj->name(),      "\n");
+ print("\tPhone: ", $obj->get_phone(), "\n");
+ print("\tEmail: ", $obj->email(),     "\n");
+
+The use of C<:lvalue> accessors requires the installation of the L<Want>
+module (version 0.12 or later) from CPAN.  See particularly the section
+L<Want/"Lvalue subroutines:"> for more information.
+
+C<:lvalue> accessors also work like regular I<set> accessors in being able to
+accept arguments, return values, and so on:
+
+ my @pri :Field
+         :Lvalue('Name' => 'priority', 'Return' => 'Old');
+  ...
+ my $old_pri = $obj->priority(10);
+
+C<:lvalue> accessors can be used in L<method chains|/"Method Chaining">.
+
+B<Caveats>:
+While still classified as I<experimental>, Perl's support for C<:lvalue>
+subroutines has been around since 5.6.0, and a good number of CPAN modules
+make use of them.
+
+By definition, because C<:lvalue> accessors return the I<location> of a field,
+they break encapsulation.  As a result, some OO advocates eschew the use of
+C<:lvalue> accessors.
+
+C<:lvalue> accessors are slower than corresponding I<non-lvalue> accessors.
+This is due to the fact that more code is needed to handle all the diverse
+ways in which C<:lvalue> accessors may be used.  (I've done my best to
+optimize the generated code.)  For example, here's the code that is generated
+for a simple combined accessor:
+
+ *Foo::foo = sub {
+     return ($$field[${$_[0]}]) if (@_ == 1);
+     $$field[${$_[0]}] = $_[1];
+ };
+
+And the corresponding code for an C<:lvalue> combined accessor:
+
+ *Foo::foo = sub :lvalue {
+     my $rv = !Want::want_lvalue(0);
+     Want::rreturn($$field[${$_[0]}]) if ($rv && (@_ == 1));
+     my $assign;
+     if (my @args = Want::wantassign(1)) {
+         @_ = ($_[0], @args);
+         $assign = 1;
+     }
+     if (@_ > 1) {
+         $$field[${$_[0]}] = $_[1];
+         Want::lnoreturn if $assign;
+         Want::rreturn($$field[${$_[0]}]) if $rv;
+     }
+     ((@_ > 1) && (Want::wantref() eq 'OBJECT') &&
+      !Scalar::Util::blessed($$field[${$_[0]}]))
+            ? $_[0] : $$field[${$_[0]}];
+ };
+
+=head1 ALL-IN-ONE
+
+Parameter naming and accessor generation may be combined:
+
+ my @data :Field :All(data);
+
+This is I<syntactic shorthand> for:
+
+ my @data :Field :Arg(data) :Acc(data);
+
+If you want the accessor to be C<:lvalue>, use:
+
+ my @data :Field :LV_All(data);
+
+If I<standard> accessors are desired, use:
+
+ my @data :Field :Std_All(data);
+
+Attribute parameters affecting the I<set> accessor may also be used.  For
+example, if you want I<standard> accessors with an C<:lvalue> I<set> accessor:
+
+ my @data :Field :Std_All('Name' => 'data', 'Lvalue' => 1);
+
+If you want a combined accessor that returns the I<old> value on I<set>
+operations:
+
+ my @data :Field :All('Name' => 'data', 'Ret' => 'Old');
+
+And so on.
+
+If you need to add attribute parameters that affect the C<:Arg> portion
+(e.g., C<Default>, C<Mandatory>, etc.), then you cannot use C<:All>.  Fall
+back to using the separate attributes.  For example:
+
+ my @data :Field :Arg('Name' => 'data', 'Mand' => 1)
+                 :Acc('Name' => 'data', 'Ret' => 'Old');
+
+=head1 READONLY FIELDS
+
+If you want to declare a I<read-only> field (i.e., one that can be initialized
+and retrieved, but which doesn't have a I<set> accessor):
+
+ my @data :Field :Arg(data) :Get(data);
+
+there is a I<syntactic shorthand> for that, too:
+
+ my @data :Field :ReadOnly(data);
+
+or just:
+
+ my @data :Field :RO(data);
+
+If a I<standard> I<get> accessor is desired, use:
+
+ my @data :Field :Std_RO(data);
+
+For obvious reasons, attribute parameters affecting the I<set> accessor cannot
+be used with read-only fields, nor can C<:ReadOnly> be combined with
+C<:LValue>.
+
+As with C<:All>, if you need to add attribute parameters that affect the
+C<:Arg> portion then you cannot use the C<:RO> shorthand:  Fall back to using
+the separate attributes in such cases.  For example:
+
+ my @data :Field :Arg('Name' => 'data', 'Mand' => 1)
+                 :Get('Name' => 'data');
+
+=head1 DELEGATORS
+
+In addition to autogenerating accessors for a given field, you can also
+autogenerate I<delegators> to that field.  A delegator is an accessor that
+forwards its call to one of the object's fields.
+
+For example, if your I<Car> object has an C<@engine> field, then you might
+need to send all acceleration requests to the I<Engine> object stored in that
+field.  Likewise, all braking requests may need to be forwarded to I<Car>'s
+field that stores the I<Brakes> object:
+
+ package Car; {
+     use Object::InsideOut;
+
+     my @engine :Field :Get(engine);
+     my @brakes :Field :Get(brakes);
+
+     sub _init :Init(private)  {
+         my ($self, $args) = @_;
+
+         $self->engine(Engine->new());
+         $self->brakes(Brakes->new());
+     }
+
+     sub accelerate {
+         my ($self) = @_;
+         $self->engine->accelerate();
+     }
+
+     sub decelerate {
+         my ($self) = @_;
+         $self->engine->decelerate();
+     }
+
+     sub brake {
+         my ($self, $foot_pressure) = @_;
+         $self->brakes->brake($foot_pressure);
+     }
+ }
+
+If the I<Car> needs to forward other method calls to its I<Engine> or
+I<Brakes>, this quickly becomes tedious, repetitive, and error-prone. So,
+instead, you can just tell Object::InsideOut that a particular method should
+be automatically forwarded to a particular field, by specifying a C<:Handles>
+attribute:
+
+ package Car; {
+     use Object::InsideOut;
+
+     my @engine :Field
+                :Get(engine)
+                :Handles(accelerate, decelerate);
+     my @brakes :Field
+                :Get(brakes)
+                :Handles(brake);
+
+     sub _init :Init(private)  {
+         my ($self, $args) = @_;
+
+         $self->engine(Engine->new());
+         $self->brakes(Brakes->new());
+     }
+ }
+
+This option generates and installs a single delegator method for each of its
+arguments, so the second example has exactly the same effect as the first
+example. The delegator simply calls the corresponding method on the object
+stored in the field, passing it the same argument list it received.
+
+Sometimes, however, you may need to delegate a particular method to a field,
+but under a different name.  For example, if the I<Brake> class provides an
+C<engage()> method, rather than a C<brake()> method, then you'd need
+C<Car::brake()> to be implemented as:
+
+     sub brake {
+         my ($self, $foot_pressure) = @_;
+         $self->brakes->engage($foot_pressure);
+     }
+
+You can achieve that using the C<:Handles> attribute, like so:
+
+     my @brakes :Field
+                :Get(brakes)
+                :Handles(brake-->engage);
+
+The long arrow version still creates a delegator method C<brake()>, but makes
+that method delegate to your I<Brakes> object by calling its C<engage()>
+method instead.
+
+If you are delegating a large number of methods to a particular field, the
+C<:Handles> declarations soon become tedious:
+
+ my @onboard_computer :Field :Get(comp)
+                      :Type(Computer::Onboard)
+                      :Handles(engine_monitor engine_diagnostics)
+                      :Handles(engine_control airbag_deploy)
+                      :Handles(GPS_control GPS_diagnostics GPS_reset)
+                      :Handles(climate_control reversing_camera)
+                      :Handles(cruise_control auto_park)
+                      :Handles(iPod_control cell_phone_connect);
+
+And, of course, every time the interface of the C<Computer::Onboard> class
+changes, you have to change those C<:Handles> declarations, too.
+
+Sometimes, all you really want to say is: "This field should handle anything
+it I<can> handle".  To do that, you write:
+
+ my @onboard_computer :Field :Get(comp)
+                      :Type(Computer::Onboard)
+                      :Handles(Computer::Onboard);
+
+That is, if a C<:Handles> directive is given a name that includes a C<::>, it
+treats that name as a class name, rather than a method name.  Then it checks
+that class's metadata (see L<INTROSPECTION>), retrieves a list of all the
+method names from the class, and uses that as the list of method names to
+delegate.
+
+Unlike an explicit C<:Handles( method_name )>, a C<:Handles( Class::Name )> is
+tolerant of name collisions. If any method of C<Class::Name> has the same name
+as another method or delegator that has already been installed in the current
+class, then C<:Handles> just silently ignores that particular method, and
+doesn't try to replace the existing one.  In other words, a
+C<:Handles(Class::Name)> won't install a delegator to a method in
+C<Class::Name> if that method is already being handled somewhere else by the
+current class.
+
+For classes that don't have a C<::> in their name (e.g., C<DateTime> and
+C<POE>), just append a C<::> to the class name:
+
+ my @init_time :Field :Get(init_time)
+                      :Type(    DateTime        )
+                      :Default( DateTime->now() )
+                      :Handles( DateTime::      );
+
+Note that, when using the class-based version of C<:Handles>, every method is
+delegated with its name unchanged.  If some of the object's methods should be
+delegated under different names, you have to specify that explicitly (and
+beforehand):
+
+ my @onboard_computer :Field :Get(comp) :Type(Computer::Onboard)
+                # rename this method when delegating...
+                      :Handles( iPod_control-->get_iPod )
+                # delegate everything else with names unchanged...
+                      :Handles( Computer::Onboard );
+
+C<Handles> may be abbreviated to C<Handle> or C<Hand>.
+
+NOTES: Failure to add the appropriate object to the delegation field will lead
+to errors such as:  B<Can't call method "bar" on an undefined value>.
+
+Typos in C<:Handles> attribute declarations will lead to errors such as:
+B<Can't locate object method "bat" via package "Foo">.  Adding an object of
+the wrong class to the delegation field will lead to the same error, but can
+be avoided by adding a C<:Type> attribute for the appropriate class.
+
+=head1 PERMISSIONS
+
+=head2 Restricted and Private Accessors
+
+By default, L<automatically generated accessors|/"ACCESSOR GENERATION">, can
+be called at any time.  In other words, their access permission is I<public>.
+
+If desired, accessors can be made I<restricted> - in which case they can only
+be called from within the class and any child classes in the hierarchy that
+are derived from it - or I<private> - such that they can only be called from
+within the accessors' class.  Here are examples of the syntax for adding
+permissions:
+
+ my @data     :Field :Std('Name' => 'data',     'Permission' => 'private');
+ my @info     :Field :Set('Name' => 'set_info', 'Perm' => 'restricted');
+ my @internal :Field :Acc('Name' => 'internal', 'Private' => 1);
+ my @state    :Field :Get('Name' => 'state',    'Restricted' => 1);
+
+When creating a I<standard> pair of I<get_/set_> accessors, the permission
+setting is applied to both accessors.  If different permissions are required
+on the two accessors, then you'll have to use separate C<:Get> and C<:Set>
+attributes on the field.
+
+ # Create a private set method
+ #  and a restricted get method on the 'foo' field
+ my @foo :Field
+         :Set('Name' => 'set_foo', 'Priv' => 1)
+         :Get('Name' => 'get_foo', 'Rest' => 1);
+
+ # Create a restricted set method
+ #  and a public get method on the 'bar' field
+ my %bar :Field
+         :Set('Name' => 'set_bar', 'Perm' => 'restrict')
+         :Get(get_bar);
+
+C<Permission> may be abbreviated to C<Perm>; C<Private> may be abbreviated to
+C<Priv>; and C<Restricted> may be abbreviated to C<Restrict>.
+
+=head2 Restricted and Private Methods
+
+In the same vein as describe above, access to methods can be narrowed by use
+of C<:Restricted> and C<:Private> attributes.
+
+ sub foo :Restricted
+ {
+     my $self = shift;
+     ...
+ }
+
+Without either of these attributes, most methods have I<public> access.  If
+desired, you may explicitly label them with the C<:Public> attribute.
+
+=head2 Exemptions
+
+It is also possible to specify classes that are exempt from the I<Restricted>
+and I<Private> access permissions (i.e., the method may be called from those
+classes as well):
+
+ my %foo :Field
+         :Acc('Name' => 'foo', 'Perm' => 'Restrict(Exempt::Class)')
+         :Get(get_bar);
+
+ sub bar :Private(Some::Class, Another::Class)
+ {
+     my $self = shift;
+     ...
+ }
+
+An example of when this might be needed is with delegation mechanisms.
+
+=head2 Hidden Methods
+
+For subroutines marked with the following attributes (most of which are
+discussed later in this document):
+
+=over
+
+=item :ID
+
+=item :PreInit
+
+=item :Init
+
+=item :Replicate
+
+=item :Destroy
+
+=item :Automethod
+
+=item :Dumper
+
+=item :Pumper
+
+=item :MOD_*_ATTRS
+
+=item :FETCH_*_ATTRS
+
+=back
+
+Object::InsideOut normally renders them uncallable (hidden) to class and
+application code (as they should normally only be needed by Object::InsideOut
+itself).  If needed, this behavior can be overridden by adding the C<Public>,
+C<Restricted> or C<Private> attribute parameters:
+
+ sub _init :Init(private)    # Callable from within this class
+ {
+     my ($self, $args) = @_;
+
+     ...
+ }
+
+=head2 Restricted and Private Classes
+
+Permission for object creation on a class can be narrowed by adding a
+C<:Restricted> or C<:Private> flag to its S<C<use Object::InsideOut ...>>
+declaration.  This basically adds C<:Restricted/:Private> permissions on the
+C<-E<gt>new()> method for that class.  Exemptions are also supported.
+
+ package Foo; {
+     use Object::InsideOut;
+     ...
+ }
+
+ package Bar; {
+     use Object::InsideOut 'Foo', ':Restricted(Ping, Pong)';
+     ...
+ }
+
+In the above, class C<Bar> inherits from class C<Foo>, and its constructor is
+restricted to itself, classes that inherit from C<Bar>, and the classes
+C<Ping> and C<Pong>.
+
+As constructors are inherited, any class that inherits from C<Bar> would also
+be a restricted class.  To overcome this, any child class would need to add
+its own permission declaration:
+
+ package Baz; {
+     use Object::InsideOut qw/Bar :Private(My::Class)/;
+     ...
+ }
+
+Here, class C<Baz> inherits from class C<Bar>, and its constructor is
+restricted to itself (i.e., private) and class C<My::Class>.
+
+Inheriting from a C<:Private> class is permitted, but objects cannot be
+created for that class unless it has a permission declaration of its own:
+
+ package Zork; {
+     use Object::InsideOut qw/:Public Baz/;
+     ...
+ }
+
+Here, class C<Zork> inherits from class C<Baz>, and its constructor has
+unrestricted access.  (In general, don't use the C<:Public> declaration for a
+class except to overcome constructor permissions inherited from parent
+classes.)
+
+=head1 TYPE CHECKING
+
+Object::InsideOut can be directed to add type-checking code to the
+I<set/combined> accessors it generates, and to perform type checking on
+object initialization parameters.
+
+=head2 Field Type Checking
+
+Type checking for a field can be specified by adding the C<:Type> attribute to
+the field declaration:
+
+ my @count :Field :Type(numeric);
+
+ my @objs :Field :Type(list(My::Class));
+
+The C<:Type> attribute results in type checking code being added to
+I<set/combined> accessors generated by Object::InsideOut, and will perform
+type checking on object initialization parameters processed by the C<:Arg>
+attribute.
+
+Available Types are:
+
+=over
+
+=item 'scalar'
+
+Permits anything that is not a reference.
+
+=item 'numeric'
+
+Can also be specified as C<Num> or C<Number>.  This uses
+L<Scalar::Util::looks_like_number()|Scalar::Util/"looks_like_number EXPR"> to
+test the input value.
+
+=item 'list' or 'array'
+
+=item 'list(_subtype_)' or 'array(_subtype_)'
+
+This type permits an accessor to accept multiple values (which are then
+placed in an array ref) or a single array ref.
+
+For object initialization parameters, it permits a single value (which is then
+placed in an array ref) or an array ref.
+
+When specified, the contents of the resulting array ref are checked against
+the specified subtype:
+
+=over
+
+=item 'scalar'
+
+Same as for the basic type above.
+
+=item 'numeric'
+
+Same as for the basic type above.
+
+=item A class name
+
+Same as for the basic type below.
+
+=item A reference type
+
+Any reference type (in all caps) as returned by L<ref()|perlfunc/"ref EXPR">).
+
+=back
+
+=item 'ARRAY_ref'
+
+=item 'ARRAY_ref(_subtype_)'
+
+This specifies that only a single array reference is permitted.  Can also be
+specified as C<ARRAYref>.
+
+When specified, the contents of the array ref are checked against the
+specified subtype as per the above.
+
+=item 'HASH'
+
+This type permits an accessor to accept multiple S<C<key =E<gt> value>> pairs
+(which are then placed in a hash ref) or a single hash ref.
+
+For object initialization parameters, only a single ref is permitted.
+
+=item 'HASH_ref'
+
+This specifies that only a single hash reference is permitted.  Can also be
+specified as C<HASHref>.
+
+=item 'SCALAR_ref'
+
+This type permits an accessor to accept a single scalar reference.  Can also
+be specified as C<SCALARref>.
+
+=item A class name
+
+This permits only an object of the specified class, or one of its sub-classes
+(i.e., type checking is done using C<-E<gt>isa()>).  For example,
+C<My::Class>.  The class name C<UNIVERSAL> permits any object.  The class name
+C<Object::InsideOut> permits any object generated by an Object::InsideOut
+class.
+
+=item Other reference type
+
+This permits only a reference of the specified type (as returned by
+L<ref()|perlfunc/"ref EXPR">).  The type must be specified in all caps.
+For example, C<CODE>.
+
+=back
+
+The C<:Type> attribute can also be supplied with a code reference to provide
+custom type checking.  The code ref may either be in the form of an anonymous
+subroutine, or a fully-qualified subroutine name.  The result of executing the
+code ref on the input argument should be a boolean value.  Here's some
+examples:
+
+ package My::Class; {
+     use Object::InsideOut;
+
+     # Type checking using an anonymous subroutine
+     #  (This checks that the argument is an object)
+     my @data :Field :Type(sub { Scalar::Util::blessed($_[0]) })
+                     :Acc(data);
+
+     # Type checking using a fully-qualified subroutine name
+     my @num  :Field :Type(\&My::Class::positive)
+                     :Acc(num);
+
+     # The type checking subroutine may be made 'Private'
+     sub positive :Private
+     {
+         return (Scalar::Util::looks_like_number($_[0]) &&
+                 ($_[0] > 0));
+     }
+ }
+
+=head2 Type Checking on C<:Init> Parameters
+
+For object initialization parameters that are sent to the C<:Init> subroutine
+during object initialization, the parameter's type can be specified in the
+C<:InitArgs> hash for that parameter using the same types as specified in the
+previous section.  For example:
+
+ my %init_args :InitArgs = (
+     'COUNT' => {
+         'Type' => 'numeric',
+     },
+     'OBJS' => {
+         'Type' => 'list(My::Class)',
+     },
+ );
+
+One exception involves custom type checking:  If referenced in an C<:InitArgs>
+hash, the type checking subroutine cannot be made C<:Private>:
+
+ package My::Class; {
+     use Object::InsideOut;
+
+     sub check_type   # Cannot be :Private
+     {
+        ...
+     }
+
+     my %init_args :InitArgs = (
+         'ARG' => {
+             'Type' => \&check_type,
+         },
+     );
+
+     ...
+ }
+
+Also, as shown, it also doesn't have to be a fully-qualified name.
+
+=head1 CUMULATIVE METHODS
+
+Normally, methods with the same name in a class hierarchy are masked (i.e.,
+overridden) by inheritance - only the method in the most-derived class is
+called.  With cumulative methods, this masking is removed, and the same-named
+method is called in each of the classes within the hierarchy.  The return
+results from each call (if any) are then gathered together into the return
+value for the original method call.  For example,
+
+ package My::Class; {
+     use Object::InsideOut;
+
+     sub what_am_i :Cumulative
+     {
+         my $self = shift;
+
+         my $ima = (ref($self) eq __PACKAGE__)
+                     ? q/I was created as a /
+                     : q/My top class is /;
+
+         return ($ima . __PACKAGE__);
+     }
+ }
+
+ package My::Foo; {
+     use Object::InsideOut 'My::Class';
+
+     sub what_am_i :Cumulative
+     {
+         my $self = shift;
+
+         my $ima = (ref($self) eq __PACKAGE__)
+                     ? q/I was created as a /
+                     : q/I'm also a /;
+
+         return ($ima . __PACKAGE__);
+     }
+ }
+
+ package My::Child; {
+     use Object::InsideOut 'My::Foo';
+
+     sub what_am_i :Cumulative
+     {
+         my $self = shift;
+
+         my $ima = (ref($self) eq __PACKAGE__)
+                     ? q/I was created as a /
+                     : q/I'm in class /;
+
+         return ($ima . __PACKAGE__);
+     }
+ }
+
+ package main;
+
+ my $obj = My::Child->new();
+ my @desc = $obj->what_am_i();
+ print(join("\n", @desc), "\n");
+
+produces:
+
+ My top class is My::Class
+ I'm also a My::Foo
+ I was created as a My::Child
+
+When called in a list context (as in the above), the return results of
+cumulative methods are accumulated, and returned as a list.
+
+In a scalar context, a results object is returned that segregates the results
+by class for each of the cumulative method calls.  Through overloading, this
+object can then be dereferenced as an array, hash, string, number, or boolean.
+For example, the above could be rewritten as:
+
+ my $obj = My::Child->new();
+ my $desc = $obj->what_am_i();        # Results object
+ print(join("\n", @{$desc}), "\n");   # Dereference as an array
+
+The following uses hash dereferencing:
+
+ my $obj = My::Child->new();
+ my $desc = $obj->what_am_i();
+ while (my ($class, $value) = each(%{$desc})) {
+     print("Class $class reports:\n\t$value\n");
+ }
+
+and produces:
+
+ Class My::Class reports:
+         My top class is My::Class
+ Class My::Child reports:
+         I was created as a My::Child
+ Class My::Foo reports:
+         I'm also a My::Foo
+
+As illustrated above, cumulative methods are tagged with the C<:Cumulative>
+attribute (or S<C<:Cumulative(top down)>>), and propagate from the I<top down>
+through the class hierarchy (i.e., from the parent classes down through the
+child classes).  If tagged with S<C<:Cumulative(bottom up)>>, they will
+propagated from the object's class upward through the parent classes.
+
+=head1 CHAINED METHODS
+
+In addition to C<:Cumulative>, Object::InsideOut provides a way of creating
+methods that are chained together so that their return values are passed as
+input arguments to other similarly named methods in the same class hierarchy.
+In this way, the chained methods act as though they were I<piped> together.
+
+For example, imagine you had a method called C<format_name> that formats some
+text for display:
+
+ package Subscriber; {
+     use Object::InsideOut;
+
+     sub format_name {
+         my ($self, $name) = @_;
+
+         # Strip leading and trailing whitespace
+         $name =~ s/^\s+//;
+         $name =~ s/\s+$//;
+
+         return ($name);
+     }
+ }
+
+And elsewhere you have a second class that formats the case of names:
+
+ package Person; {
+     use Lingua::EN::NameCase qw(nc);
+     use Object::InsideOut;
+
+     sub format_name
+     {
+         my ($self, $name) = @_;
+
+         # Attempt to properly case names
+         return (nc($name));
+     }
+ }
+
+And you decide that you'd like to perform some formatting of your own, and
+then have all the parent methods apply their own formatting.  Normally, if you
+have a single parent class, you'd just call the method directly with
+C<$self-E<gt>SUPER::format_name($name)>, but if you have more than one parent
+class you'd have to explicitly call each method directly:
+
+ package Customer; {
+     use Object::InsideOut qw(Person Subscriber);
+
+     sub format_name
+     {
+         my ($self, $name) = @_;
+
+         # Compress all whitespace into a single space
+         $name =~ s/\s+/ /g;
+
+         $name = $self->Subscriber::format_name($name);
+         $name = $self->Person::format_name($name);
+
+         return $name;
+     }
+ }
+
+With Object::InsideOut, you'd add the C<:Chained> attribute to each class's
+C<format_name> method, and the methods will be chained together automatically:
+
+ package Subscriber; {
+     use Object::InsideOut;
+
+     sub format_name :Chained
+     {
+         my ($self, $name) = @_;
+
+         # Strip leading and trailing whitespace
+         $name =~ s/^\s+//;
+         $name =~ s/\s+$//;
+
+         return ($name);
+     }
+ }
+
+ package Person; {
+     use Lingua::EN::NameCase qw(nc);
+     use Object::InsideOut;
+
+     sub format_name :Chained
+     {
+         my ($self, $name) = @_;
+
+         # Attempt to properly case names
+         return (nc($name));
+     }
+ }
+
+ package Customer; {
+     use Object::InsideOut qw(Person Subscriber);
+
+     sub format_name :Chained
+     {
+         my ($self, $name) = @_;
+
+         # Compress all whitespace into a single space
+         $name =~ s/\s+/ /g;
+
+         return ($name);
+     }
+ }
+
+So passing in someone's name to C<format_name> in C<Customer> would cause
+leading and trailing whitespace to be removed, then the name to be properly
+cased, and finally whitespace to be compressed to a single space.  The
+resulting C<$name> would be returned to the caller:
+
+ my ($name) = $obj->format_name($name_raw);
+
+Unlike C<:Cumulative> methods, C<:Chained> methods B<always> returns an array
+- even if there is only one value returned.  Therefore, C<:Chained>
+methods should always be called in an array context, as illustrated above.
+
+The default direction is to chain methods from the parent classes at the top
+of the class hierarchy down through the child classes.  You may use the
+attribute S<C<:Chained(top down)>> to make this more explicit.
+
+If you label the method with the S<C<:Chained(bottom up)>> attribute, then the
+chained methods are called starting with the object's class and working
+upward through the parent classes in the class hierarchy, similar to how
+S<C<:Cumulative(bottom up)>> works.
+
+=head1 ARGUMENT MERGING
+
+As mentioned under L<"Object Creation">, the C<-E<gt>new()> method can take
+parameters that are passed in as combinations of S<C<key =E<gt> value>> pairs
+and/or hash refs:
+
+ my $obj = My::Class->new(
+     'param_X' => 'value_X',
+     'param_Y' => 'value_Y',
+     {
+         'param_A' => 'value_A',
+         'param_B' => 'value_B',
+     },
+     {
+         'param_Q' => 'value_Q',
+     },
+ );
+
+The parameters are I<merged> into a single hash ref before they are processed.
+
+Adding the C<:MergeArgs> attribute to your methods gives them a similar
+capability.  Your method will then get two arguments:  The object and a single
+hash ref of the I<merged> arguments.  For example:
+
+ package Foo; {
+     use Object::InsideOut;
+
+     ...
+
+     sub my_method :MergeArgs {
+         my ($self, $args) = @_;
+
+         my $param = $args->{'param'};
+         my $data  = $args->{'data'};
+         my $flag  = $args->{'flag'};
+         ...
+     }
+ }
+
+ package main;
+
+ my $obj = Foo->new(...);
+
+ $obj->my_method( { 'data' => 42,
+                    'flag' => 'true' },
+                  'param' => 'foo' );
+
+=head1 ARGUMENT VALIDATION
+
+A number of users have asked about argument validation for methods:
+L<http://www.cpanforum.com/threads/3204>.  For this, I recommend using
+L<Params::Validate>:
+
+ package Foo; {
+     use Object::InsideOut;
+     use Params::Validate ':all';
+
+     sub foo
+     {
+         my $self = shift;
+         my %args = validate(@_, { bar => 1 });
+         my $bar = $args{bar};
+         ...
+     }
+ }
+
+Using L<Attribute::Params::Validate>, attributes are used for argument
+validation specifications:
+
+ package Foo; {
+     use Object::InsideOut;
+     use Attribute::Params::Validate;
+
+     sub foo :method :Validate(bar => 1)
+     {
+         my $self = shift;
+         my %args = @_;
+         my $bar = $args{bar};
+         ...
+     }
+ }
+
+Note that in the above, Perl's C<:method> attribute (in all lowercase) is
+needed.
+
+There is some incompatibility between Attribute::Params::Validate and some of
+Object::InsideOut's attributes.  Namely, you cannot use C<:Validate> with
+C<:Private>, C<:Restricted>, C<:Cumulative>, C<:Chained> or C<:MergeArgs>.
+In these cases, use the C<validate()> function from L<Params::Validate>
+instead.
+
+=head1 AUTOMETHODS
+
+There are significant issues related to Perl's C<AUTOLOAD> mechanism that
+cause it to be ill-suited for use in a class hierarchy. Therefore,
+Object::InsideOut implements its own C<:Automethod> mechanism to overcome
+these problems.
+
+Classes requiring C<AUTOLOAD>-type capabilities must provided a subroutine
+labeled with the C<:Automethod> attribute.  The C<:Automethod> subroutine
+will be called with the object and the arguments in the original method call
+(the same as for C<AUTOLOAD>).  The C<:Automethod> subroutine should return
+either a subroutine reference that implements the requested method's
+functionality, or else just end with C<return;> to indicate that it doesn't
+know how to handle the request.
+
+Using its own C<AUTOLOAD> subroutine (which is exported to every class),
+Object::InsideOut walks through the class tree, calling each C<:Automethod>
+subroutine, as needed, to fulfill an unimplemented method call.
+
+The name of the method being called is passed as C<$_> instead of
+C<$AUTOLOAD>, and is I<not> prefixed with the class name.  If the
+C<:Automethod> subroutine also needs to access the C<$_> from the caller's
+scope, it is available as C<$CALLER::_>.
+
+Automethods can also be made to act as L</"CUMULATIVE METHODS"> or L</"CHAINED
+METHODS">.  In these cases, the C<:Automethod> subroutine should return two
+values: The subroutine ref to handle the method call, and a string designating
+the type of method.  The designator has the same form as the attributes used
+to designate C<:Cumulative> and C<:Chained> methods:
+
+ ':Cumulative'  or  ':Cumulative(top down)'
+ ':Cumulative(bottom up)'
+ ':Chained'     or  ':Chained(top down)'
+ ':Chained(bottom up)'
+
+The following skeletal code illustrates how an C<:Automethod> subroutine could
+be structured:
+
+ sub _automethod :Automethod
+ {
+     my $self = shift;
+     my @args = @_;
+
+     my $method_name = $_;
+
+     # This class can handle the method directly
+     if (...) {
+         my $handler = sub {
+             my $self = shift;
+             ...
+             return ...;
+         };
+
+         ### OPTIONAL ###
+         # Install the handler so it gets called directly next time
+         # no strict refs;
+         # *{__PACKAGE__.'::'.$method_name} = $handler;
+         ################
+
+         return ($handler);
+     }
+
+     # This class can handle the method as part of a chain
+     if (...) {
+         my $chained_handler = sub {
+             my $self = shift;
+             ...
+             return ...;
+         };
+
+         return ($chained_handler, ':Chained');
+     }
+
+     # This class cannot handle the method request
+     return;
+ }
+
+Note: The I<OPTIONAL> code above for installing the generated handler as a
+method should not be used with C<:Cumulative> or C<:Chained> automethods.
+
+=head1 OBJECT SERIALIZATION
+
+=head2 Basic Serialization
+
+=over
+
+=item my $array_ref = $obj->dump();
+
+=item my $string = $obj->dump(1);
+
+Object::InsideOut exports a method called C<-E<gt>dump()> to each class that
+returns either a I<Perl> or a string representation of the object that invokes
+the method.
+
+The I<Perl> representation is returned when C<-E<gt>dump()> is called without
+arguments.  It consists of an array ref whose first element is the name of the
+object's class, and whose second element is a hash ref containing the object's
+data.  The object data hash ref contains keys for each of the classes that make
+up the object's hierarchy. The values for those keys are hash refs containing
+S<C<key =E<gt> value>> pairs for the object's fields.  For example:
+
+ [
+   'My::Class::Sub',
+   {
+     'My::Class' => {
+                      'data' => 'value'
+                    },
+     'My::Class::Sub' => {
+                           'life' => 42
+                         }
+   }
+ ]
+
+The name for an object field (I<data> and I<life> in the example above) can be
+specified by adding the C<:Name> attribute to the field:
+
+ my @life :Field :Name(life);
+
+If the C<:Name> attribute is not used, then the name for a field will be
+either the name associated with an C<:All> or C<:Arg> attribute, its I<get>
+method name, its I<set> method name, or, failing all that, a string of the
+form C<ARRAY(0x...)> or C<HASH(0x...)>.
+
+When called with a I<true> argument, C<-E<gt>dump()> returns a string version
+of the I<Perl> representation using L<Data::Dumper>.
+
+Note that using L<Data::Dumper> directly on an inside-out object will not
+produce the desired results (it'll just output the contents of the scalar
+ref).  Also, if inside-out objects are stored inside other structures, a dump
+of those structures will not contain the contents of the object's fields.
+
+In the event of a method naming conflict, the C<-E<gt>dump()> method can be
+called using its fully-qualified name:
+
+ my $dump = $obj->Object::InsideOut::dump();
+
+=item my $obj = Object::InsideOut->pump($data);
+
+C<Object::InsideOut-E<gt>pump()> takes the output from the C<-E<gt>dump()>
+method, and returns an object that is created using that data.  If C<$data> is
+the array ref returned by using C<$obj-E<gt>dump()>, then the data is inserted
+directly into the corresponding fields for each class in the object's class
+hierarchy.  If C<$data> is the string returned by using C<$obj-E<gt>dump(1)>,
+then it is C<eval>ed to turn it into an array ref, and then processed as
+above.
+
+B<Caveats>:
+If any of an object's fields are dumped to field name keys of the form
+C<ARRAY(0x...)> or C<HASH(0x...)> (see above), then the data will not be
+reloadable using C<Object::InsideOut-E<gt>pump()>.  To overcome this problem,
+the class developer must either add C<:Name> attributes to the C<:Field>
+declarations (see above), or provide a C<:Dumper>/C<:Pumper> pair of
+subroutines as described below.
+
+Dynamically altering a class (e.g., using
+L<-E<gt>create_field()|/"DYNAMIC FIELD CREATION">) after objects have been
+dumped will result in C<undef> fields when pumped back in regardless of
+whether or not the added fields have defaults.
+
+Modifying the output from C<-E<gt>dump()>, and then feeding it into
+C<Object::InsideOut-E<gt>pump()> will work, but is not specifically
+supported.  If you know what you're doing, fine, but you're on your own.
+
+=item C<:Dumper> Subroutine Attribute
+
+If a class requires special processing to dump its data, then it can provide a
+subroutine labeled with the C<:Dumper> attribute.  This subroutine will be
+sent the object that is being dumped.  It may then return any type of scalar
+the developer deems appropriate.  Usually, this would be a hash ref containing
+S<C<key =E<gt> value>> pairs for the object's fields.  For example:
+
+ my @data :Field;
+
+ sub _dump :Dumper
+ {
+     my $obj = $_[0];
+
+     my %field_data;
+     $field_data{'data'} = $data[$$obj];
+
+     return (\%field_data);
+ }
+
+Just be sure not to call your C<:Dumper> subroutine C<dump> as that is the
+name of the dump method exported by Object::InsideOut as explained above.
+
+=item C<:Pumper> Subroutine Attribute
+
+If a class supplies a C<:Dumper> subroutine, it will most likely need to
+provide a complementary C<:Pumper> labeled subroutine that will be used as
+part of creating an object from dumped data using
+C<Object::InsideOut-E<gt>pump()>.  The subroutine will be supplied the new
+object that is being created, and whatever scalar was returned by the
+C<:Dumper> subroutine.  The corresponding C<:Pumper> for the example
+C<:Dumper> above would be:
+
+ sub _pump :Pumper
+ {
+     my ($obj, $field_data) = @_;
+
+     $obj->set(\@data, $field_data->{'data'});
+ }
+
+=back
+
+=head2 Storable
+
+Object::InsideOut also supports object serialization using the L<Storable>
+module.  There are two methods for specifying that a class can be serialized
+using L<Storable>.  The first method involves adding L<Storable> to the
+Object::InsideOut declaration in your package:
+
+ package My::Class; {
+     use Object::InsideOut qw(Storable);
+     ...
+ }
+
+and adding S<C<use Storable;>> in your application.  Then you can use the
+C<-E<gt>store()> and C<-E<gt>freeze()> methods to serialize your objects, and
+the C<retrieve()> and C<thaw()> subroutines to de-serialize them.
+
+ package main;
+ use Storable;
+ use My::Class;
+
+ my $obj = My::Class->new(...);
+ $obj->store('/tmp/object.dat');
+ ...
+ my $obj2 = retrieve('/tmp/object.dat');
+
+The other method of specifying L<Storable> serialization involves setting a
+S<C<::storable>> variable inside a C<BEGIN> block for the class prior to its
+use:
+
+ package main;
+ use Storable;
+
+ BEGIN {
+     $My::Class::storable = 1;
+ }
+ use My::Class;
+
+NOTE: The I<caveats> discussed above for the C<-E<gt>pump()> method are also
+applicable when using the Storable module.
+
+=head1 OBJECT COERCION
+
+Object::InsideOut provides support for various forms of object coercion
+through the L<overload> mechanism.  For instance, if you want an object to be
+usable directly in a string, you would supply a subroutine in your class
+labeled with the C<:Stringify> attribute:
+
+ sub as_string :Stringify
+ {
+     my $self = $_[0];
+     my $string = ...;
+     return ($string);
+ }
+
+Then you could do things like:
+
+ print("The object says, '$obj'\n");
+
+For a boolean context, you would supply:
+
+ sub as_bool :Boolify
+ {
+     my $self = $_[0];
+     my $true_or_false = ...;
+     return ($true_or_false);
+ }
+
+and use it in this manner:
+
+ if (! defined($obj)) {
+     # The object is undefined
+     ....
+
+ } elsif (! $obj) {
+     # The object returned a false value
+     ...
+ }
+
+The following coercion attributes are supported:
+
+=over
+
+=item :Stringify
+
+=item :Numerify
+
+=item :Boolify
+
+=item :Arrayify
+
+=item :Hashify
+
+=item :Globify
+
+=item :Codify
+
+=back
+
+Coercing an object to a scalar (C<:Scalarify>) is B<not> supported as C<$$obj>
+is the ID of the object and cannot be overridden.
+
+=head1 CLONING
+
+=head2 Object Cloning
+
+Copies of objects can be created using the C<-E<gt>clone()> method which is
+exported by Object::InsideOut to each class:
+
+ my $obj2 = $obj->clone();
+
+When called without arguments, C<-E<gt>clone()> creates a I<shallow> copy of
+the object, meaning that any complex data structures (i.e., array, hash or
+scalar refs) stored in the object will be shared with its clone.
+
+Calling C<-E<gt>clone()> with a I<true> argument:
+
+ my $obj2 = $obj->clone(1);
+
+creates a I<deep> copy of the object such that internally held array, hash
+or scalar refs are I<replicated> and stored in the newly created clone.
+
+I<Deep> cloning can also be controlled at the field level, and is covered in
+the next section.
+
+Note that cloning does not clone internally held objects.  For example, if
+C<$foo> contains a reference to C<$bar>, a clone of C<$foo> will also contain
+a reference to C<$bar>; not a clone of C<$bar>.  If such behavior is needed,
+it must be provided using a L<:Replicate|/"Object Replication"> subroutine.
+
+=head2 Field Cloning
+
+Object cloning can be controlled at the field level such that specified
+fields are I<deeply> copied when C<-E<gt>clone()> is called without any
+arguments.  This is done by adding the C<:Deep> attribute to the field:
+
+ my @data :Field :Deep;
+
+=head1 WEAK FIELDS
+
+Frequently, it is useful to store L<weaken|Scalar::Util/"weaken REF">ed
+references to data or objects in a field.  Such a field can be declared as
+C<:Weak> so that data (i.e., references) set via Object::InsideOut generated
+accessors, parameter processing using C<:Arg>, the C<-E<gt>set()> method,
+etc., will automatically be L<weaken|Scalar::Util/"weaken REF">ed after being
+stored in the field array/hash.
+
+ my @data :Field :Weak;
+
+NOTE: If data in a I<weak> field is set directly (i.e., the C<-E<gt>set()>
+method is not used), then L<weaken()|Scalar::Util/"weaken REF"> must be
+invoked on the stored reference afterwards:
+
+ $self->set(\@field, $data);
+ Scalar::Util::weaken($field[$$self]);
+
+(This is another reason why the C<-E<gt>set()> method is recommended for
+setting field data within class code.)
+
+=head1 DYNAMIC FIELD CREATION
+
+Normally, object fields are declared as part of the class code.  However,
+some classes may need the capability to create object fields I<on-the-fly>,
+for example, as part of an C<:Automethod>.  Object::InsideOut provides a class
+method for this:
+
+ # Dynamically create a hash field with standard accessors
+ My::Class->create_field('%'.$fld, ":Std($fld)");
+
+The first argument is the class into which the field will be added.  The
+second argument is a string containing the name of the field preceded by
+either a C<@> or C<%> to declare an array field or hash field, respectively.
+The remaining string arguments should be attributes declaring accessors and
+the like.  The C<:Field> attribute is assumed, and does not need to be added
+to the attribute list.  For example:
+
+ My::Class->create_field('@data', ":Type(numeric)",
+                                  ":Acc(data)");
+
+ My::Class->create_field('@obj', ":Type(Some::Class)",
+                                 ":Acc(obj)",
+                                 ":Weak");
+
+Field creation will fail if you try to create an array field within a class
+whose hierarchy has been declared L<:hash_only|/"HASH ONLY CLASSES">.
+
+Here's an example of an C<:Automethod> subroutine that uses dynamic field
+creation:
+
+ package My::Class; {
+     use Object::InsideOut;
+
+     sub _automethod :Automethod
+     {
+         my $self = $_[0];
+         my $class = ref($self) || $self;
+         my $method = $_;
+
+         # Extract desired field name from get_/set_ method name
+         my ($fld_name) = $method =~ /^[gs]et_(.*)$/;
+         if (! $fld_name) {
+             return;    # Not a recognized method
+         }
+
+         # Create the field and its standard accessors
+         $class->create_field('@'.$fld_name, ":Std($fld_name)");
+
+         # Return code ref for newly created accessor
+         no strict 'refs';
+         return *{$class.'::'.$method}{'CODE'};
+     }
+ }
+
+=head1 RUNTIME INHERITANCE
+
+The class method C<-E<gt>add_class()> provides the capability to dynamically
+add classes to a class hierarchy at runtime.
+
+For example, suppose you had a simple I<state> class:
+
+ package Trait::State; {
+     use Object::InsideOut;
+
+     my %state :Field :Set(state);
+ }
+
+This could be added to another class at runtime using:
+
+ My::Class->add_class('Trait::State');
+
+This permits, for example, application code to dynamically modify a class
+without having it create an actual sub-class.
+
+=head1 PREPROCESSING
+
+=head2 Parameter Preprocessing
+
+You can specify a code ref (either in the form of an anonymous subroutine, or
+a subroutine name) for an object initialization parameter that will be called
+on that parameter prior to taking any of the other parameter actions described
+above.  Here's an example:
+
+ package My::Class; {
+     use Object::InsideOut;
+
+     # The parameter preprocessing subroutine
+     sub preproc
+     {
+         my ($class, $param, $spec, $obj, $value) = @_;
+
+         # Preform parameter preprocessing
+         ...
+
+         # Return result
+         return ...;
+     }
+
+     my @data :Field
+              :Arg('Name' => 'DATA', 'Preprocess' => \&My::Class::preproc);
+
+     my %init_args :InitArgs = (
+         'PARAM' => {
+             'Preprocess' => \&preproc,
+         },
+     );
+
+     ...
+ }
+
+When used in the C<:Arg> attribute, the subroutine name must be
+fully-qualified, as illustrated.  Further, if not referenced in the
+C<:InitArgs> hash, the preprocessing subroutine can be given the C<:Private>
+attribute.
+
+As the above illustrates, the parameter preprocessing subroutine is sent five
+arguments:
+
+=over
+
+=item * The name of the class associated with the parameter
+
+This would be C<My::Class> in the example above.
+
+=item * The name of the parameter
+
+Either C<DATA> or C<PARAM> in the example above.
+
+=item * A hash ref of the parameter's specifiers
+
+This is either a hash ref containing the C<:Arg> attribute parameters, or the
+hash ref paired to the parameter's key in the C<:InitArgs> hash.
+
+=item * The object being initialized
+
+=item * The parameter's value
+
+This is the value assigned to the parameter in the C<-E<gt>new()> method's
+argument list.  If the parameter was not provided to C<-E<gt>new()>, then
+C<undef> will be sent.
+
+=back
+
+The return value of the preprocessing subroutine will then be assigned to the
+parameter.
+
+Be careful about what types of data the preprocessing subroutine tries to make
+use of C<external> to the arguments supplied.  For instance, because the order
+of parameter processing is not specified, the preprocessing subroutine cannot
+rely on whether or not some other parameter is set.  Such processing would
+need to be done in the C<:Init> subroutine.  It can, however, make use of
+object data set by classes I<higher up> in the class hierarchy.  (That is why
+the object is provided as one of the arguments.)
+
+Possible uses for parameter preprocessing include:
+
+=over
+
+=item * Overriding the supplied value (or even deleting it by returning C<undef>)
+
+=item * Providing a dynamically-determined default value
+
+=back
+
+I<Preprocess> may be abbreviated to I<Preproc> or I<Pre>.
+
+=head2 I<Set> Accessor Preprocessing
+
+You can specify a code ref (either in the form of an anonymous subroutine, or
+a fully-qualified subroutine name) for a I<set/combined> accessor that will be
+called on the arguments supplied to the accessor prior to its taking the usual
+actions of type checking and adding the data to the field.  Here's an example:
+
+ package My::Class; {
+     use Object::InsideOut;
+
+     my @data :Field
+              :Acc('Name' => 'data', 'Preprocess' => \&My::Class::preproc);
+
+     # The set accessor preprocessing subroutine may be made 'Private'
+     sub preproc :Private
+     {
+         my ($self, $field, @args) = @_;
+
+         # Preform preprocessing on the accessor's arguments
+         ...
+
+         # Return result
+         return ...;
+     }
+ }
+
+As the above illustrates, the accessor preprocessing subroutine is sent the
+following arguments:
+
+=over
+
+=item * The object used to invoke the accessor
+
+=item * A reference to the field associated with the accessor
+
+=item * The argument(s) sent to the accessor
+
+There will always be at least one argument.
+
+=back
+
+Usually, the preprocessing subroutine would return just a single value.  For
+fields declared as type C<List>, multiple values may be returned.
+
+Following preprocessing, the I<set> accessor will operate on whatever value(s)
+are returned by the preprocessing subroutine.
+
+=head1 SPECIAL PROCESSING
+
+=head2 Object ID
+
+By default, the ID of an object is derived from a sequence counter for the
+object's class hierarchy.  This should suffice for nearly all cases of class
+development.  If there is a special need for the module code to control the
+object ID (see L<Math::Random::MT::Auto> as an example), then a
+subroutine labelled with the C<:ID> attribute can be specified:
+
+ sub _id :ID
+ {
+     my $class = $_[0];
+
+     # Generate/determine a unique object ID
+     ...
+
+     return ($id);
+ }
+
+The ID returned by your subroutine can be any kind of I<regular> scalar (e.g.,
+a string or a number).  However, if the ID is something other than a
+low-valued integer, then you will have to architect B<all> your classes using
+hashes for the object fields.  See L<HASH ONLY CLASSES> for details.
+
+Within any class hierarchy, only one class may specify an C<:ID> subroutine.
+
+=head2 Object Replication
+
+Object replication occurs explicitly when the C<-E<gt>clone()> method is
+called on an object, and implicitly when threads are created in a threaded
+application.  In nearly all cases, Object::InsideOut will take care of all the
+details for you.
+
+In rare cases, a class may require special handling for object replication.
+It must then provide a subroutine labeled with the C<:Replicate> attribute.
+This subroutine will be sent three arguments:  The parent and the cloned
+objects, and a flag:
+
+ sub _replicate :Replicate
+ {
+     my ($parent, $clone, $flag) = @_;
+
+     # Special object replication processing
+     if ($clone eq 'CLONE') {
+        # Handling for thread cloning
+        ...
+     } elsif ($clone eq 'deep') {
+        # Deep copy of the parent
+        ...
+     } else {
+        # Shallow copying
+        ...
+     }
+ }
+
+In the case of thread cloning, C<$flag> will be set to the C<'CLONE'>, and the
+C<$parent> object is just a non-blessed anonymous scalar reference that
+contains the ID for the object in the parent thread.
+
+When invoked via the C<-E<gt>clone()> method, C<$flag> will be either an empty
+string which denotes that a I<shallow> copy is being produced for the clone,
+or C<$flag> will be set to C<'deep'> indicating a I<deep> copy is being
+produced.
+
+The C<:Replicate> subroutine only needs to deal with the special replication
+processing needed by the object:  Object::InsideOut will handle all the other
+details.
+
+=head2 Object Destruction
+
+Object::InsideOut exports a C<DESTROY> method to each class that deletes an
+object's data from the object field arrays (hashes).  If a class requires
+additional destruction processing (e.g., closing filehandles), then it must
+provide a subroutine labeled with the C<:Destroy> attribute.  This subroutine
+will be sent the object that is being destroyed:
+
+ sub _destroy :Destroy
+ {
+     my $obj = $_[0];
+
+     # Special object destruction processing
+ }
+
+The C<:Destroy> subroutine only needs to deal with the special destruction
+processing:  The C<DESTROY> method will handle all the other details of object
+destruction.
+
+=head1 FOREIGN CLASS INHERITANCE
+
+Object::InsideOut supports inheritance from foreign (i.e.,
+non-Object::InsideOut) classes.  This means that your classes can inherit from
+other Perl class, and access their methods from your own objects.
+
+One method of declaring foreign class inheritance is to add the class name to
+the Object::InsideOut declaration inside your package:
+
+ package My::Class; {
+     use Object::InsideOut qw(Foreign::Class);
+     ...
+ }
+
+This allows you to access the foreign class's static (i.e., class) methods
+from your own class.  For example, suppose C<Foreign::Class> has a class
+method called C<foo>.  With the above, you can access that method using
+C<My::Class-E<gt>foo()> instead.
+
+Multiple foreign inheritance is supported, as well:
+
+ package My::Class; {
+     use Object::InsideOut qw(Foreign::Class Other::Foreign::Class);
+     ...
+ }
+
+=over
+
+=item $self->inherit($obj, ...);
+
+To use object methods from foreign classes, an object must I<inherit> from an
+object of that class.  This would normally be done inside a class's C<:Init>
+subroutine:
+
+ package My::Class; {
+     use Object::InsideOut qw(Foreign::Class);
+
+     sub init :Init
+     {
+         my ($self, $args) = @_;
+
+         my $foreign_obj = Foreign::Class->new(...);
+         $self->inherit($foreign_obj);
+     }
+ }
+
+Thus, with the above, if C<Foreign::Class> has an object method called C<bar>,
+you can call that method from your own objects:
+
+ package main;
+
+ my $obj = My::Class->new();
+ $obj->bar();
+
+Object::InsideOut's C<AUTOLOAD> subroutine handles the dispatching of the
+C<-E<gt>bar()> method call using the internally held inherited object (in this
+case, C<$foreign_obj>).
+
+Multiple inheritance is supported, as well:  You can call the
+C<-E<gt>inherit()> method multiple times, or make just one call with all the
+objects to be inherited from.
+
+C<-E<gt>inherit()> is a restricted method.  In other words, you cannot use it
+on an object outside of code belonging to the object's class tree (e.g., you
+can't call it from application code).
+
+In the event of a method naming conflict, the C<-E<gt>inherit()> method can be
+called using its fully-qualified name:
+
+ $self->Object::InsideOut::inherit($obj);
+
+=item my @objs = $self->heritage();
+
+=item my $obj = $self->heritage($class);
+
+=item my @objs = $self->heritage($class1, $class2, ...);
+
+Your class code can retrieve any inherited objects using the
+C<-E<gt>heritage()> method. When called without any arguments, it returns a
+list of any objects that were stored by the calling class using the calling
+object.  In other words, if class C<My::Class> uses object C<$obj> to store
+foreign objects C<$fobj1> and C<$fobj2>, then later on in class C<My::Class>,
+C<$obj-E<gt>heritage()> will return C<$fobj1> and C<$fobj2>.
+
+C<-E<gt>heritage()> can also be called with one or more class name arguments.
+In this case, only objects of the specified class(es) are returned.
+
+In the event of a method naming conflict, the C<-E<gt>heritage()> method can
+be called using its fully-qualified name:
+
+ my @objs = $self->Object::InsideOut::heritage();
+
+=item $self->disinherit($class [, ...])
+
+=item $self->disinherit($obj [, ...])
+
+The C<-E<gt>disinherit()> method disassociates (i.e., deletes) the inheritance
+of foreign object(s) from an object.  The foreign objects may be specified by
+class, or using the actual inherited object (retrieved via C<-E<gt>heritage()>,
+for example).
+
+The call is only effective when called inside the class code that established
+the initial inheritance.  In other words, if an inheritance is set up inside a
+class, then disinheritance can only be done from inside that class.
+
+In the event of a method naming conflict, the C<-E<gt>disinherit()> method can
+be called using its fully-qualified name:
+
+ $self->Object::InsideOut::disinherit($obj [, ...])
+
+=back
+
+B<NOTE>:  With foreign inheritance, you only have access to class and object
+methods.  The encapsulation of the inherited objects is strong, meaning that
+only the class where the inheritance takes place has direct access to the
+inherited object.  If access to the inherited objects themselves, or their
+internal hash fields (in the case of I<blessed hash> objects), is needed
+outside the class, then you'll need to write your own accessors for that.
+
+B<LIMITATION>:  You cannot use fully-qualified method names to access foreign
+methods (when encapsulated foreign objects are involved).  Thus, the following
+will not work:
+
+ my $obj = My::Class->new();
+ $obj->Foreign::Class::bar();
+
+Normally, you shouldn't ever need to do the above:  C<$obj-E<gt>bar()> would
+suffice.
+
+The only time this may be an issue is when the I<native> class I<overrides> an
+inherited foreign class's method (e.g., C<My::Class> has its own
+C<-E<gt>bar()> method).  Such overridden methods are not directly callable.
+If such overriding is intentional, then this should not be an issue:  No one
+should be writing code that tries to by-pass the override.  However, if the
+overriding is accidentally, then either the I<native> method should be renamed,
+or the I<native> class should provide a wrapper method so that the
+functionality of the overridden method is made available under a different
+name.
+
+=head2 C<use base> and Fully-qualified Method Names
+
+The foreign inheritance methodology handled by the above is predicated on
+non-Object::InsideOut classes that generate their own objects and expect their
+object methods to be invoked via those objects.
+
+There are exceptions to this rule:
+
+=over
+
+=item 1. Foreign object methods that expect to be invoked via the inheriting
+class's object, or foreign object methods that don't care how they are invoked
+(i.e., they don't make reference to the invoking object).
+
+This is the case where a class provides auxiliary methods for your objects,
+but from which you don't actually create any objects (i.e., there is no
+corresponding foreign object, and C<$obj-E<gt>inherit($foreign)> is not used.)
+
+In this case, you can either:
+
+a. Declare the foreign class using the standard method (i.e.,
+S<C<use Object::InsideOut qw(Foreign::Class);>>), and invoke its methods using
+their full path (e.g., C<$obj-E<gt>Foreign::Class::method();>); or
+
+b. You can use the L<base> pragma so that you don't have to use the full path
+for foreign methods.
+
+ package My::Class; {
+     use Object::InsideOut;
+     use base 'Foreign::Class';
+     ...
+ }
+
+The former scheme is faster.
+
+=item 2. Foreign class methods that expect to be invoked via the inheriting
+class.
+
+As with the above, you can either invoke the class methods using their full
+path (e.g., C<My::Class-E<gt>Foreign::Class::method();>), or you can
+S<C<use base>> so that you don't have to use the full path.  Again, using the
+full path is faster.
+
+L<Class::Singleton> is an example of this type of class.
+
+=item 3. Class methods that don't care how they are invoked (i.e., they don't
+make reference to the invoking class).
+
+In this case, you can either use
+S<C<use Object::InsideOut qw(Foreign::Class);>> for consistency, or use
+S<C<use base qw(Foreign::Class);>> if (slightly) better performance is needed.
+
+=back
+
+If you're not familiar with the inner workings of the foreign class such that
+you don't know if or which of the above exceptions applies, then the formulaic
+approach would be to first use the documented method for foreign inheritance
+(i.e., S<C<use Object::InsideOut qw(Foreign::Class);>>).  If that works, then
+I strongly recommend that you just use that approach unless you have a good
+reason not to.  If it doesn't work, then try S<C<use base>>.
+
+=head1 INTROSPECTION
+
+For Perl 5.8.0 and later, Object::InsideOut provides an introspection API that
+allow you to obtain metadata on a class's hierarchy, constructor parameters,
+and methods.
+
+=over
+
+=item my $meta = My::Class->meta();
+
+=item my $meta = $obj->meta();
+
+The C<-E<gt>meta()> method, which is exported by Object::InsideOut to each
+class, returns an L<Object::InsideOut::Metadata> object which can then be
+I<queried> for information about the invoking class or invoking object's
+class:
+
+ # Get an object's class hierarchy
+ my @classes = $obj->meta()->get_classes();
+
+ # Get info on the args for a class's constructor (i.e., ->new() parameters)
+ my %args = My::Class->meta()->get_args();
+
+ # Get info on the methods that can be called by an object
+ my %methods = $obj->meta()->get_methods();
+
+=item My::Class->isa();
+
+=item $obj->isa();
+
+When called in an array context, calling C<-E<gt>isa()> without any arguments
+on an Object::InsideOut class or object returns a list of the classes in the
+class hierarchy for that class or object, and is equivalent to:
+
+ my @classes = $obj->meta()->get_classes();
+
+When called in a scalar context, it returns an array ref containing the
+classes.
+
+=item My::Class->can();
+
+=item $obj->can();
+
+When called in an array context, calling C<-E<gt>can()> without any arguments
+on an Object::InsideOut class or object returns a list of the method names for
+that class or object, and is equivalent to:
+
+ my %methods = $obj->meta()->get_methods();
+ my @methods = keys(%methods);
+
+When called in a scalar context, it returns an array ref containing the
+method names.
+
+=back
+
+See L<Object::InsideOut::Metadata> for more details.
+
+=head1 THREAD SUPPORT
+
+For Perl 5.8.1 and later, Object::InsideOut fully supports L<threads> (i.e.,
+is thread safe), and supports the sharing of Object::InsideOut objects between
+threads using L<threads::shared>.
+
+To use Object::InsideOut in a threaded application, you must put
+S<C<use threads;>> at the beginning of the application.  (The use of
+S<C<require threads;>> after the program is running is not supported.)  If
+object sharing is to be utilized, then S<C<use threads::shared;>> should
+follow.
+
+If you just S<C<use threads;>>, then objects from one thread will be copied
+and made available in a child thread.
+
+The addition of S<C<use threads::shared;>> in and of itself does not alter the
+behavior of Object::InsideOut objects.  The default behavior is to I<not>
+share objects between threads (i.e., they act the same as with
+S<C<use threads;>> alone).
+
+To enable the sharing of objects between threads, you must specify which
+classes will be involved with thread object sharing.  There are two methods
+for doing this.  The first involves setting a C<::shared> variable (inside
+a C<BEGIN> block) for the class prior to its use:
+
+ use threads;
+ use threads::shared;
+
+ BEGIN {
+     $My::Class::shared = 1;
+ }
+ use My::Class;
+
+The other method is for a class to add a C<:SHARED> flag to its
+S<C<use Object::InsideOut ...>> declaration:
+
+ package My::Class; {
+     use Object::InsideOut ':SHARED';
+     ...
+ }
+
+When either sharing flag is set for one class in an object hierarchy, then all
+the classes in the hierarchy are affected.
+
+If a class cannot support thread object sharing (e.g., one of the object
+fields contains code refs [which Perl cannot share between threads]), it
+should specifically declare this fact:
+
+ package My::Class; {
+     use Object::InsideOut ':NOT_SHARED';
+     ...
+ }
+
+However, you cannot mix thread object sharing classes with non-sharing
+classes in the same class hierarchy:
+
+ use threads;
+ use threads::shared;
+
+ package My::Class; {
+     use Object::InsideOut ':SHARED';
+     ...
+ }
+
+ package Other::Class; {
+     use Object::InsideOut ':NOT_SHARED';
+     ...
+ }
+
+ package My::Derived; {
+     use Object::InsideOut qw(My::Class Other::Class);   # ERROR!
+     ...
+ }
+
+Here is a complete example with thread object sharing enabled:
+
+ use threads;
+ use threads::shared;
+
+ package My::Class; {
+     use Object::InsideOut ':SHARED';
+
+     # One list-type field
+     my @data :Field :Type(list) :Acc(data);
+ }
+
+ package main;
+
+ # New object
+ my $obj = My::Class->new();
+
+ # Set the object's 'data' field
+ $obj->data(qw(foo bar baz));
+
+ # Print out the object's data
+ print(join(', ', @{$obj->data()}), "\n");       # "foo, bar, baz"
+
+ # Create a thread and manipulate the object's data
+ my $rc = threads->create(
+         sub {
+             # Read the object's data
+             my $data = $obj->data();
+             # Print out the object's data
+             print(join(', ', @{$data}), "\n");  # "foo, bar, baz"
+             # Change the object's data
+             $obj->data(@$data[1..2], 'zooks');
+             # Print out the object's modified data
+             print(join(', ', @{$obj->data()}), "\n");  # "bar, baz, zooks"
+             return (1);
+         }
+     )->join();
+
+ # Show that changes in the object are visible in the parent thread
+ # I.e., this shows that the object was indeed shared between threads
+ print(join(', ', @{$obj->data()}), "\n");       # "bar, baz, zooks"
+
+=head1 HASH ONLY CLASSES
+
+For performance considerations, it is recommended that arrays be used for
+class fields whenever possible.  The only time when hash-bases fields are
+required is when a class must provide its own L<object ID|/"Object ID">, and
+those IDs are something other than low-valued integers.  In this case, hashes
+must be used for fields not only in the class that defines the object ID
+subroutine, but also in every class in any class hierarchy that include such a
+class.
+
+The I<hash only> requirement can be enforced by adding the C<:HASH_ONLY> flag
+to a class's S<C<use Object::InsideOut ...>> declaration:
+
+ package My::Class; {
+     use Object::InsideOut ':hash_only';
+
+     ...
+ }
+
+This will cause Object::Inside to check every class in any class hierarchy
+that includes such flagged classes to make sure their fields are hashes and
+not arrays.  It will also fail any L<-E<gt>create_field()|/"DYNAMIC FIELD
+CREATION"> call that tries to create an array-based field in any such class.
+
+=head1 SECURITY
+
+In the default case where Object::InsideOut provides object IDs that are
+sequential integers, it is possible to hack together a I<fake>
+Object::InsideOut object, and so gain access to another object's data:
+
+ my $fake = bless(\do{my $scalar}, 'Some::Class');
+ $$fake = 86;   # ID of another object
+ my $stolen = $fake->get_data();
+
+Why anyone would try to do this is unknown.  How this could be used for any
+sort of malicious exploitation is also unknown.  However, if preventing this
+sort of security issue is a requirement, it can be accomplished by adding the
+C<:SECURE> flag to a class's S<C<use Object::InsideOut ...>> declaration:
+
+ package My::Class; {
+     use Object::InsideOut ':SECURE';
+
+     ...
+ }
+
+This places the module C<Object::InsideOut::Secure> in the class hierarchy.
+Object::InsideOut::Secure provides an L<:ID subroutine|/"Object ID"> that
+generates random integers for object IDs, thus preventing other code from
+being able to create fake objects by I<guessing> at IDs.
+
+Using C<:SECURE> mode requires L<Math::Random::MT::Auto> (v5.04 or later).
+
+Because the object IDs used with C<:SECURE> mode are large random values,
+the L<:HASH_ONLY|/"HASH ONLY CLASSES"> flag is forced on all the classes in
+the hierarchy.
+
+For efficiency, it is recommended that the C<:SECURE> flag be added to the
+topmost class(es) in a hierarchy.
+
+=head1 ATTRIBUTE HANDLERS
+
+Object::InsideOut uses I<attribute 'modify' handlers> as described in
+L<attributes/"Package-specific Attribute Handling">, and provides a mechanism
+for adding attribute handlers to your own classes.  Instead of naming your
+attribute handler as C<MODIFY_*_ATTRIBUTES>, name it something else and then
+label it with the C<:MODIFY_*_ATTRIBUTES> attribute (or C<:MOD_*_ATTRS> for
+short).  Your handler should work just as described in
+L<attributes/"Package-specific Attribute Handling"> with regard to its input
+arguments, and must return a list of the attributes which were not recognized
+by your handler.  Here's an example:
+
+ package My::Class; {
+     use Object::InsideOut;
+
+     sub _scalar_attrs :MOD_SCALAR_ATTRS
+     {
+         my ($pkg, $scalar, @attrs) = @_;
+         my @unused_attrs;         # List of any unhandled attributes
+
+         while (my $attr = shift(@attrs)) {
+             if ($attr =~ /.../) {
+                 # Handle attribute
+                 ...
+             } else {
+                 # We don't handle this attribute
+                 push(@unused_attrs, $attr);
+             }
+         }
+
+         return (@unused_attrs);   # Pass along unhandled attributes
+     }
+ }
+
+Attribute 'modify' handlers are called I<upward> through the class hierarchy
+(i.e., I<bottom up>).  This provides child classes with the capability to
+I<override> the handling of attributes by parent classes, or to add attributes
+(via the returned list of unhandled attributes) for parent classes to process.
+
+Attribute 'modify' handlers should be located at the beginning of a package,
+or at least before any use of attributes on the corresponding type of variable
+or subroutine:
+
+ package My::Class; {
+     use Object::InsideOut;
+
+     sub _array_attrs :MOD_ARRAY_ATTRS
+     {
+        ...
+     }
+
+     my @my_array :MyArrayAttr;
+ }
+
+For I<attribute 'fetch' handlers>, follow the same procedures:  Label the
+subroutine with the C<:FETCH_*_ATTRIBUTES> attribute (or C<:FETCH_*_ATTRS> for
+short).  Contrary to the documentation in L<attributes/"Package-specific
+Attribute Handling">, I<attribute 'fetch' handlers> receive B<two> arguments:
+The relevant package name, and a reference to a variable or subroutine for
+which package-defined attributes are desired.
+
+Attribute handlers are normal rendered L<hidden|/"Hidden Methods">.
+
+=head1 SPECIAL USAGE
+
+=head2 Usage With C<Exporter>
+
+It is possible to use L<Exporter> to export functions from one inside-out
+object class to another:
+
+ use strict;
+ use warnings;
+
+ package Foo; {
+     use Object::InsideOut 'Exporter';
+     BEGIN {
+         our @EXPORT_OK = qw(foo_name);
+     }
+
+     sub foo_name
+     {
+         return (__PACKAGE__);
+     }
+ }
+
+ package Bar; {
+     use Object::InsideOut 'Foo' => [ qw(foo_name) ];
+
+     sub get_foo_name
+     {
+         return (foo_name());
+     }
+ }
+
+ package main;
+
+ print("Bar got Foo's name as '", Bar::get_foo_name(), "'\n");
+
+Note that the C<BEGIN> block is needed to ensure that the L<Exporter> symbol
+arrays (in this case C<@EXPORT_OK>) get populated properly.
+
+=head2 Usage With C<require> and C<mod_perl>
+
+Object::InsideOut usage under L<mod_perl> and with runtime-loaded classes is
+supported automatically; no special coding is required.
+
+B<Caveat>:
+Runtime loading of classes should be performed before any objects are created
+within any of the classes in their hierarchies.  If Object::InsideOut cannot
+create a hierarchy because of previously created objects (even if all those
+objects have been destroyed), a runtime error will be generated.
+
+=head2 Singleton Classes
+
+A singleton class is a case where you would provide your own C<-E<gt>new()>
+method that in turn calls Object::InsideOut's C<-E<gt>new()> method:
+
+ package My::Class; {
+     use Object::InsideOut;
+
+     my $singleton;
+
+     sub new {
+         my $thing = shift;
+         if (! $singleton) {
+             $singleton = $thing->Object::InsideOut::new(@_);
+         }
+         return ($singleton);
+     }
+ }
+
+=head1 DIAGNOSTICS
+
+Object::InsideOut uses C<Exception::Class> for reporting errors.  The base
+error class for this module is C<OIO>.  Here is an example of the basic manner
+for trapping and handling errors:
+
+ my $obj;
+ eval { $obj = My::Class->new(); };
+ if (my $e = OIO->caught()) {
+     warn('Failure creating object: '.$e);
+     ...
+ }
+
+A more comprehensive approach might employ elements of the following:
+
+ eval { ... };
+ if (my $e = OIO->caught()) {
+     # An error generated by Object::InsideOut
+     ...
+ } elsif (my $e = Exception::Class::Base->caught()) {
+     # An error generated by other code that uses Exception::Class
+     ...
+ } elsif ($@) {
+     # An unhandled error (i.e., generated by code that doesn't use
+     # Exception::Class)
+     ...
+ }
+
+I have tried to make the messages and information returned by the error
+objects as informative as possible.  Suggested improvements are welcome.
+Also, please bring to my attention any conditions that you encounter where an
+error occurs as a result of Object::InsideOut code that doesn't generate an
+Exception::Class object.  Here is one such error:
+
+=over
+
+=item Invalid ARRAY/HASH attribute
+
+This error indicates you forgot C<use Object::InsideOut;> in your class's
+code.
+
+=back
+
+Object::InsideOut installs a C<__DIE__> handler (see L<perlfunc/"die LIST">
+and L<perlfunc/"eval BLOCK">) to catch any errant exceptions from
+class-specific code, namely, C<:Init>, C<:Replicate>, C<:Destroy>, etc.
+subroutines.  When using C<eval> blocks inside these subroutines, you should
+localize C<$SIG{'__DIE__'}> to keep Object::InsideOut's C<__DIE__> handler
+from interfering with exceptions generated inside the C<eval> blocks.  For
+example:
+
+ sub _init :Init {
+     ...
+     eval {
+         local $SIG{'__DIE__'};
+         ...
+     };
+     if $@ {
+         # Handle caught exception
+     }
+     ...
+ }
+
+Here's another example, where the C<die> function is used as a method of flow
+control for leaving an C<eval> block:
+
+ eval {
+     local $SIG{'__DIE__'};           # Suppress any existing __DIE__ handler
+     ...
+     die({'found' => 1}) if $found;   # Leave the eval block
+     ...
+ };
+ if ($@) {
+     die unless (ref($@) && $@->{'found'});   # Propagate any 'real' error
+     # Handle 'found' case
+     ...
+ }
+ # Handle 'not found' case
+
+Similarly, if calling code from other modules that use the above flow control
+mechanism, but without localizing C<$SIG{'__DIE__'}>, you can workaround this
+deficiency with your own C<eval> block:
+
+ eval {
+     local $SIG{'__DIE__'};     # Suppress any existing __DIE__ handler
+     Some::Module::func();      # Call function that fails to localize
+ };
+ if ($@) {
+     # Handle caught exception
+ }
+
+In addition, you should file a bug report against the offending module along
+with a patch that adds the missing S<C<local $SIG{'__DIE__'};>> statement.
+
+=head1 BUGS AND LIMITATIONS
+
+If you receive an error similar to this:
+
+ ERROR: Attempt to DESTROY object ID 1 of class Foo twice
+
+the cause may be that some module used by your application is doing
+C<require threads> somewhere in the background.  L<DBI> is one such module.
+The workaround is to add C<use threads;> at the start of your application.
+
+Another cause of the above is returning a non-shared object from a thread
+either explicitly or implicitly when the result of the last statement in the
+thread subroutine is an object.  For example:
+
+ sub thr_func {
+     my $obj = MyClass->new();
+ }
+
+which is equivalent to:
+
+ sub thr_func {
+     return MyClass->new();
+ }
+
+This can be avoided by ensuring your thread subroutine ends with C<return;>.
+
+The equality operator (e.g., C<if ($obj1 == $obj2) { ...>) is overloaded
+for C<:SHARED> classes when L<threads::shared> is loaded.  The L<overload>
+subroutine compares object classes and IDs because references to the same
+thread shared object may have different refaddrs.
+
+You cannot overload an object to a scalar context (i.e., can't C<:SCALARIFY>).
+
+You cannot use two instances of the same class with mixed thread object
+sharing in same application.
+
+Cannot use attributes on I<subroutine stubs> (i.e., forward declaration
+without later definition) with C<:Automethod>:
+
+ package My::Class; {
+     sub method :Private;   # Will not work
+
+     sub _automethod :Automethod
+     {
+         # Code to handle call to 'method' stub
+     }
+ }
+
+Due to limitations in the Perl parser, the entirety of any one attribute must
+be on a single line.  (However, multiple attributes may appear on separate
+lines.)
+
+If a I<set> accessor accepts scalars, then you can store any inside-out
+object type in it.  If its C<Type> is set to C<HASH>, then it can store any
+I<blessed hash> object.
+
+Returning objects from threads does not work:
+
+ my $obj = threads->create(sub { return (Foo->new()); })->join();  # BAD
+
+Instead, use thread object sharing, create the object before launching the
+thread, and then manipulate the object inside the thread:
+
+ my $obj = Foo->new();   # Class 'Foo' is set ':SHARED'
+ threads->create(sub { $obj->set_data('bar'); })->join();
+ my $data = $obj->get_data();
+
+Due to a limitation in L<threads::shared> version 1.39 and earlier, if storing
+shared objects inside other shared objects, you should use C<delete()> to
+remove them from internal fields (e.g., C<delete($field[$$self]);>) when
+necessary so that the objects' destructor gets called.  Upgrading to version
+1.40 or later alleviates most of this issue except during global destruction.
+See L<threads::shared|/"BUGS AND LIMITATIONS"> for more.
+
+With Perl 5.8.8 and earlier, there are bugs associated with L<threads::shared>
+that may prevent you from storing objects inside of shared objects, or using
+foreign inheritance with shared objects.  With Perl 5.8.9 (and later) together
+with L<threads::shared> 1.15 (and later), you can store shared objects inside
+of other shared objects, and you can use foreign inheritance with shared
+objects (provided the foreign class supports shared objects as well).
+
+Due to internal complexities, the following actions are not supported in code
+that uses L<threads::shared> while there are any threads active:
+
+=over
+
+=item * Runtime loading of Object::InsideOut classes
+
+=item * Using L<-E<gt>add_class()|/"RUNTIME INHERITANCE">
+
+=back
+
+It is recommended that such activities, if needed, be performed in the main
+application code before any threads are created (or at least while there are
+no active threads).
+
+For Perl 5.6.0 through 5.8.0, a Perl bug prevents package variables (e.g.,
+object attribute arrays/hashes) from being referenced properly from subroutine
+refs returned by an C<:Automethod> subroutine.  For Perl 5.8.0 there is no
+workaround:  This bug causes Perl to core dump.  For Perl 5.6.0 through 5.6.2,
+the workaround is to create a ref to the required variable inside the
+C<:Automethod> subroutine, and use that inside the subroutine ref:
+
+ package My::Class; {
+     use Object::InsideOut;
+
+     my %data;
+
+     sub auto :Automethod
+     {
+         my $self = $_[0];
+         my $name = $_;
+
+         my $data = \%data;      # Workaround for 5.6.X bug
+
+         return sub {
+                     my $self = shift;
+                     if (! @_) {
+                         return ($$data{$name});
+                     }
+                     $$data{$name} = shift;
+                };
+     }
+ }
+
+For Perl 5.8.1 through 5.8.4, a Perl bug produces spurious warning messages
+when threads are destroyed.  These messages are innocuous, and can be
+suppressed by adding the following to your application code:
+
+ $SIG{'__WARN__'} = sub {
+         if ($_[0] !~ /^Attempt to free unreferenced scalar/) {
+             print(STDERR @_);
+         }
+     };
+
+A better solution would be to upgrade L<threads> and L<threads::shared> from
+CPAN, especially if you encounter other problems associated with threads.
+
+For Perl 5.8.4 and 5.8.5, the L</"Storable"> feature does not work due to a
+Perl bug.  Use Object::InsideOut v1.33 if needed.
+
+Due to bugs in the Perl interpreter, using the introspection API (i.e.
+C<-E<gt>meta()>, etc.) requires Perl 5.8.0 or later.
+
+The version of L<Want> that is available via PPM for ActivePerl is defective,
+and causes failures when using C<:lvalue> accessors.  Remove it, and then
+download and install the L<Want> module using CPAN.
+
+L<Devel::StackTrace> (used by L<Exception::Class>) makes use of the I<DB>
+namespace.  As a consequence, Object::InsideOut thinks that S<C<package DB>>
+is already loaded.  Therefore, if you create a class called I<DB> that is
+sub-classed by other packages, you may need to C<require> it as follows:
+
+ package DB::Sub; {
+     require DB;
+     use Object::InsideOut qw(DB);
+     ...
+ }
+
+View existing bug reports at, and submit any new bugs, problems, patches, etc.
+to: L<http://rt.cpan.org/Public/Dist/Display.html?Name=Object-InsideOut>
+
+=head1 REQUIREMENTS
+
+=over
+
+=item Perl 5.6.0 or later
+
+=item L<Exception::Class> v1.22 or later
+
+=item L<Scalar::Util> v1.10 or later
+
+It is possible to install a I<pure perl> version of Scalar::Util, however, it
+will be missing the L<weaken()|Scalar::Util/"weaken REF"> function which is
+needed by Object::InsideOut.  You'll need to upgrade your version of
+Scalar::Util to one that supports its C<XS> code.
+
+=item L<Test::More> v0.50 or later
+
+Needed for testing during installation.
+
+=item L<Want> v0.12 or later
+
+Optional.  Provides support for L</":lvalue Accessors">.
+
+=item L<Math::Random::MT::Auto> v5.04 or later)
+
+Optional.  Provides support for L<:SECURE mode|/"SECURITY">.
+
+=back
+
+To cover all of the above requirements and more, it is recommended that you
+install L<Bundle::Object::InsideOut> using CPAN:
+
+ perl -MCPAN -e 'install Bundle::Object::InsideOut'
+
+This will install the latest versions of all the required and optional modules
+needed for full support of all of the features provided by Object::InsideOut.
+
+=head1 SEE ALSO
+
+Object::InsideOut Discussion Forum on CPAN:
+L<http://www.cpanforum.com/dist/Object-InsideOut>
+
+Inside-out Object Model:
+L<http://www.perlfoundation.org/perl5/index.cgi?inside_out_object>,
+L<http://www.perlmonks.org/?node_id=219378>,
+L<http://www.perlmonks.org/?node_id=483162>,
+L<http://www.perlmonks.org/?node_id=515650>,
+Chapters 15 and 16 of I<Perl Best Practices> by Damian Conway
+
+L<Object::InsideOut::Metadata>
+
+L<Storable>, L<Exception:Class>, L<Want>, L<Math::Random::MT::Auto>,
+L<attributes>, L<overload>
+
+=head1 ACKNOWLEDGEMENTS
+
+Abigail S<E<lt>perl AT abigail DOT nlE<gt>> for inside-out objects in general.
+
+Damian Conway S<E<lt>dconway AT cpan DOT orgE<gt>> for L<Class::Std>, and for
+delegator methods.
+
+David A. Golden S<E<lt>dagolden AT cpan DOT orgE<gt>> for thread handling for
+inside-out objects.
+
+Dan Kubb S<E<lt>dan.kubb-cpan AT autopilotmarketing DOT comE<gt>> for
+C<:Chained> methods.
+
+=head1 AUTHOR
+
+Jerry D. Hedden, S<E<lt>jdhedden AT cpan DOT orgE<gt>>
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright 2005 - 2012 Jerry D. Hedden. All rights reserved.
+
+This program is free software; you can redistribute it and/or modify it under
+the same terms as Perl itself.
+
+=head1 TRANSLATIONS
+
+A Japanese translation of this documentation by
+TSUJII, Naofumi S<E<lt>tsun DOT nt AT gmail DOT comE<gt>>
+is available at L<http://perldoc.jp/docs/modules/>.
+
+=cut

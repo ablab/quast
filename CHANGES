@@ -14,6 +14,9 @@
 
       6. An option --reference in metaQUAST allows to specify directory with references.
 
+      7. GeneMark-ES is used for predicting genes in eukaryotic genomes instead of Glimmer-HMM.
+      For using Glimmer-HMM, a new option --glimmer added.
+
 
 2.3   1. Changed logic in misassembly computation. Fixed several minor bugs in misassembly
       detection algorithm and one major bug caused by linear represenation of circular

@@ -76,7 +76,8 @@
     at <a href="http://sourceforge.net/projects/quast/">http://sourceforge.net/projects/quast</a>.
     <br>
     <br>
-    QUAST utilizes <a href="http://mummer.sourceforge.net/">MUMmer</a>, <a href="http://exon.gatech.edu/GeneMark/">GeneMarkS</a>, <a href="http://exon.gatech.edu/GeneMark/">MetaGeneMark</a>, 
+    QUAST utilizes <a href="http://mummer.sourceforge.net/">MUMmer</a>, <a href="http://exon.gatech.edu/GeneMark/">GeneMarkS</a>, <a href="http://exon.gatech.edu/GeneMark/">MetaGeneMark</a>,
+    <a href="http://exon.gatech.edu/GeneMark/gmes_instructions.html">GeneMark-ES</a>,
     <a href="http://cbcb.umd.edu/software/glimmerhmm/">GlimmerHMM</a>,   <a href="http://blast.ncbi.nlm.nih.gov/Blast.cgi">BLAST</a>
     and <a href="http://gage.cbcb.umd.edu/index.html">GAGE</a>. These tools are built in, so you do not need to install
     them separately.
@@ -334,13 +335,18 @@ Take assembly names from their parent directory names.
 Enables gene finding. Affects perfomance, thus disabled by default.<br>
 <span style='line-height: 50%;'>&nbsp;</span><br>  
 By default, we assume that the genome is prokaryotic, and apply GeneMark.hmm for gene finding.
-If the genome is eukaryotic, add the <a href='#eukaryote'><code>--eukaryote</code></a> option to enable GlimmerHMM instead.
+If the genome is eukaryotic, add the <a href='#eukaryote'><code>--eukaryote</code></a> option to enable option to enable GeneMark-ES instead.
 If it is a metagenome, add the <a href='#meta'><code>--meta</code></a> option.<br>
 <span style='line-height: 50%;'>&nbsp;</span><br>  
 If a <a href='#sec2.2'>gene file</a> is provided by <code>-G</code> as well, both 
 <span class='metric_ref'><a href='#genes'># genes</a></span> in the file covered by the assembly, and
 <span class='metric_ref'><a href='#predicted_genes'># predicted genes</a></span> are reported. Note that operons are not predicted,
 but a file of known operon positions can be provided instead.<br>
+
+<div class='option'>
+    <code><b>--glimmer</b></code>
+</div>
+Use GlimmerHMM for gene finding for eukaryotes instead of GeneMark-ES.
 
 <div class='option'>
     <code><b>--gene-thresholds</b> &lt;int,int,...&gt;</code>
@@ -354,7 +360,7 @@ Note: this list is used only if <code>--gene-finding</code> option is specified.
 </div>
 Genome is eukaryotic. Affects gene finding and contig alignment:<br>
 <ol class='my_ol' style='margin-top: 0;'>
-<li>For prokaryotes (which is default), GeneMark.hmm is used. For eukaryotes, GlimmerHMM are used.
+<li>For prokaryotes (which is default), GeneMark.hmm is used. For eukaryotes, GeneMark-ES are used.
 <li>By default, QUAST assumes that a genome is circular and correctly processes its linear representation.
 This options indicates that the genome is not circular.
 </ol>
@@ -629,7 +635,7 @@ Note:
 <p><span class='metric-name'># operons</span> is defined similarly to <span class='metric-ref'># genes</span>, but an operon positions file required instead.</p>
 
 <p><a name='predicted_genes'><span class='metric-name'># predicted genes</span> is the number of genes in the assembly
-    found by GeneMark.hmm, GlimmerHMM or MetaGeneMark. See the description of the <a href='#gene_finding'><code>--gene-finding</code></a> option for details.</p>
+    found by GeneMark.hmm, GeneMark-ES, GlimmerHMM or MetaGeneMark. See the description of the <a href='#gene_finding'><code>--gene-finding</code></a> option for details.</p>
 
 <p><span class='metric-name'>Largest alignment</span> is the length of the largest continuous alignment in the assembly.
     A value can be smaller than a value of <a href='largest_contig'><span class='metric-ref'>largest contig</span></a> if the largest contig is misassembled.</p>

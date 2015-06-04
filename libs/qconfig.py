@@ -32,7 +32,7 @@ splitted_ref = []
 
 # available options
 long_options = "output-dir= save-json-to= genes= operons= reference= contig-thresholds= min-contig= "\
-               "gene-thresholds= save-json gage eukaryote no-plots no-html no-check no-gc help debug "\
+               "gene-thresholds= save-json gage eukaryote glimmer no-plots no-html no-check no-gc help debug "\
                "ambiguity-usage= scaffolds threads= mincluster= est-ref-size= use-all-alignments gene-finding "\
                "strict-NA meta labels= test help-hidden no-snps".split()
 short_options = "o:G:O:R:t:M:S:J:jehdsa:T:c:ufnml:L"
@@ -61,6 +61,7 @@ test = False
 no_check = False
 no_gc = False
 show_snps = True
+glimmer = False
 
 default_results_root_dirname = "quast_results"
 output_dirname = "results_" + datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
@@ -164,8 +165,9 @@ def usage(show_hidden=False, meta=False):
     if meta:
         print >> sys.stderr, "-f  --gene-finding                    Predict genes using MetaGeneMark"
     else:
-        print >> sys.stderr, "-f  --gene-finding                    Predict genes (with GeneMark.hmm for prokaryotes (default), GlimmerHMM"
+        print >> sys.stderr, "-f  --gene-finding                    Predict genes (with GeneMark.hmm for prokaryotes (default), GeneMArk-ES"
         print >> sys.stderr, "                                      for eukaryotes (--eukaryote), or MetaGeneMark for metagenomes (--meta)"
+    print >> sys.stderr, "    --glimmer                         Predict genes with GlimmerHMM instead of GeneMark-ES"
     print >> sys.stderr, "-S  --gene-thresholds                 Comma-separated list of threshold lengths of genes to search with Gene Finding module"
     print >> sys.stderr, "                                      [default is %s]" % genes_lengths
     print >> sys.stderr, "-e  --eukaryote                       Genome is eukaryotic"

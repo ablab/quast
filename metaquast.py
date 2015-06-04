@@ -208,6 +208,8 @@ def _correct_references(ref_fpaths, corrected_dirpath):
             corr_seq_fpath = corrected_ref_fpaths[-1]
         else:
             corr_seq_fpath = qutils.unique_corrected_fpath(os.path.join(corrected_dirpath, seq_fname))
+            corrected_ref_fpaths.append(corr_seq_fpath)
+
         corr_seq_name = qutils.name_from_fpath(corr_seq_fpath)
         if total_references > 1:
             corr_seq_name += '_' + qutils.correct_name(seq_name[:20])
@@ -233,7 +235,7 @@ def _correct_references(ref_fpaths, corrected_dirpath):
         for i, (seq_name, seq) in enumerate(fastaparser.read_fasta(ref_fpath)):
             total_references += 1
             corr_seq_name, corr_seq_fpath = correct_seq(seq_name, seq, ref_name, ref_fasta_ext, total_references)
-        corrected_ref_fpaths.append(corr_seq_fpath)
+
         logger.info('  ' + ref_fpath + ' ==> ' + corr_seq_name + '')
 
     logger.info('  All references combined in ' + COMBINED_REF_FNAME)

@@ -310,7 +310,8 @@ function toggleSecondary(caller)
 	var nextRow = caller.next('.content-row');
     var sign = nextRow.css('display') == 'none' ? '-' : '+';
     var left_column = caller.context.firstChild;
-    left_column.textContent = sign + left_column.textContent.slice(1);
+    var index = leftColumn.innerHTML.indexOf('>') + 1
+    leftColumn.innerHTML = leftColumn.innerHTML.substr(0,index) + sign + leftColumn.innerHTML.substr(index+1)
     while (!nextRow.hasClass('primary') && (nextRow.length > 0)) {
         nextRow.toggleClass('secondary_hidden');
         nextRow.css('background-color', '#F5F5DC');

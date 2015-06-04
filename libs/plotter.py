@@ -568,7 +568,7 @@ def draw_meta_summary_plot(labels, ref_names, all_rows, results, plot_fpath, tit
             if all_rows[j + 1]['values'][i] is not None and all_rows[j + 1]['values'][i] != '-':
                 ymax = max(ymax, float(all_rows[j + 1]['values'][i]))
     if ymax == 0:
-        matplotlib.pyplot.ylim([0, 0.1])
+        matplotlib.pyplot.ylim([0, 5])
     else:
         matplotlib.pyplot.ylim([0, math.ceil(ymax * 1.05)])
 
@@ -578,6 +578,9 @@ def draw_meta_summary_plot(labels, ref_names, all_rows, results, plot_fpath, tit
         matplotlib.pyplot.ylabel(ylabel, fontsize=axes_fontsize)
         mkformatter = matplotlib.ticker.FuncFormatter(mkfunc)
         ax.yaxis.set_major_formatter(mkformatter)
+
+    if ymax == 0:
+        matplotlib.pyplot.ylim([0, 5])
 
     legend = []
     for j in range(contigs_num):
@@ -645,7 +648,7 @@ def draw_meta_summary_misassembl_plot(results, ref_names, contig_num, plot_fpath
     matplotlib.pyplot.tight_layout()
 
     if ymax == 0:
-        matplotlib.pyplot.ylim([0, 0.1])
+        matplotlib.pyplot.ylim([0, 5])
     else:
         matplotlib.pyplot.ylim([0, math.ceil(ymax * 1.1)])
 
@@ -733,7 +736,7 @@ def draw_misassembl_plot(reports, plot_fpath, title='', yaxis_title=''):
     matplotlib.pyplot.xlim([0, contigs_num + 1])
     matplotlib.pyplot.tight_layout()
     if ymax == 0:
-        matplotlib.pyplot.ylim([0, 0.1])
+        matplotlib.pyplot.ylim([0, 5])
     else:
         matplotlib.pyplot.ylim([0, math.ceil(ymax * 1.1)])
 

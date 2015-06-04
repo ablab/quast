@@ -64,9 +64,9 @@ def do(output_dirpath, labels, metrics, misassembl_metrics, ref_names):
                         reverse = True
                     y_label = None
                     if metric == reporting.Fields.TOTALLEN:
-                        y_label = 'Total length'
+                        y_label = 'Total length '
                     elif metric in [reporting.Fields.LARGCONTIG, reporting.Fields.N50, reporting.Fields.NGA50, reporting.Fields.MIS_EXTENSIVE_BASES]:
-                        y_label = 'Contig length'
+                        y_label = 'Contig length '
                     plotter.draw_meta_summary_plot(labels, cur_ref_names, all_rows, results, summary_fpath_base, title=metric, reverse=reverse, yaxis_title=y_label)
                     if metric == reporting.Fields.MISASSEMBL:
                         mis_results = []

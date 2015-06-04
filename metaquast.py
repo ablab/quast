@@ -68,7 +68,7 @@ def _partition_contigs(assemblies, ref_fpaths, corrected_dirpath, alignments_fpa
                 aligned_contigs_for_each_ref[ref_name] = []
 
             for (cont_name, seq) in fastaparser.read_fasta(asm.fpath):
-                if not cont_name in contigs.keys():
+                if not cont_name in contigs:
                     contigs[cont_name] = seq
 
                 if cont_name in ref_contigs_names and cont_name not in aligned_contigs_for_each_ref[ref_name]:
@@ -497,7 +497,7 @@ def main(args):
             logger.info()
             logger.info('Downloaded reference(s):')
             corrected_ref_fpaths, common_ref_fasta_ext, combined_ref_fpath, chromosomes_by_refs, ref_names =\
-            _correct_refrences(ref_fpaths, corrected_dirpath)
+                _correct_references(ref_fpaths, corrected_dirpath)
 
     if not ref_fpaths:
         # No references, running regular quast with MetaGenemark gene finder

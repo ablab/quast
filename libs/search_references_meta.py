@@ -16,28 +16,23 @@ def blast_fpath(fname):
 
 def download_refs(ref_fpaths, organism, downloaded_dirpath):
     ncbi_url = 'http://eutils.ncbi.nlm.nih.gov/entrez/eutils/'
-    ref_fpath = os.path.join(downloaded_dirpath, organism.replace('/','') + '.fasta')
+    ref_fpath = os.path.join(downloaded_dirpath, organism.translate(None, '/=.;,') + '.fasta')
     organism = organism.replace('_', '+')
-    request = urlopen(ncbi_url + 'esearch.fcgi?db=genome&term=%s' % organism)
+    request = urlopen(ncbi_url + 'esearch.fcgi?db=nuccore&term=%s+AND+refseq[filter]&retmax=500' % organism)
     response = request.read()
     xml_tree = ET.fromstring(response)
     if xml_tree.find('Count').text == '0': #  Organism is not found
         return ref_fpaths
-    ref_id = xml_tree.find('IdList').find('Id').text
-    request = urlopen(ncbi_url + 'elink.fcgi?dbfrom=genome&db=nuccore&id=%s&term='
-                                 '(gene+in+chromosome[prop]+OR+gene+in+genomic[prop])\+AND+srcdb+refseq[prop]' % ref_id)
-    response = request.read()
-    xml_tree = ET.fromstring(response)
-    if xml_tree[0][2][2].tag == 'Info': #  No reference genome on NCBI site
-        return ref_fpaths
-    ref_id = xml_tree.find('LinkSet').find('LinkSetDb').find('Link').find('Id').text
-    request = urlopen(ncbi_url + 'efetch.fcgi?db=nuccore&id=%s&rettype=fasta&retmode=text' % ref_id)
+    refs_id = [ref_id.text for ref_id in xml_tree.find('IdList').findall('Id')]
+    request = urlopen(ncbi_url + 'efetch.fcgi?db=sequences&id=%s&rettype=fasta&retmode=text' % ','.join(refs_id))
     fasta = request.read()
     if fasta:
         with open(ref_fpath, "w") as fasta_file:
             fasta_file.write(fasta)
         ref_fpaths.append(ref_fpath)
         logger.info('  Successfully downloaded %s' % organism.replace('+', ' '))
+    else:
+        logger.info("  %s is not found in NCBI's database" % organism.replace('+', ' '))
     return ref_fpaths
 
 
@@ -61,6 +56,7 @@ def do(contigs_fpaths, downloaded_dirpath):
     logger.info('Running BlastN..')
     err_fpath = os.path.join(downloaded_dirpath, 'blast.err')
     blast_res_fpath = os.path.join(downloaded_dirpath, 'blast.res')
+
     for index, contigs_fpath in enumerate(contigs_fpaths):
         cmd = blast_fpath('blastn') + (' -query %s -db %s -outfmt 7' % (
             contigs_fpath, db_fpath))
@@ -79,17 +75,15 @@ def do(contigs_fpaths, downloaded_dirpath):
             score = float(line[11])
             if idy >= qconfig.identity_threshold and length >= qconfig.min_length and score >= qconfig.min_bitscore: #  and (not scores or min(scores) - score < max_identity_difference):
                 organism = line[1].split(';')[-1]
-                if 'uncultured' not in organism:
-                    specie = organism.split('_')
-                    if len(specie) > 1:
-                        specie = specie[0] + specie[1]
-                    else:
-                        specie = specie[0]
+                specie = organism.split('_')
+                if len(specie) > 2:
+                    specie = specie[0] + specie[1]
                     if specie not in organisms:
                         scores_organisms.append((score, organism))
                         organisms.append(specie)
     logger.print_timestamp()
     logger.info('Trying to download found references from NCBI..')
+    sorted(scores_organisms, reverse=True)
     for (score, organism) in sorted(scores_organisms, reverse=True):
         if len(ref_fpaths) == qconfig.max_references:
             break

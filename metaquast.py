@@ -79,8 +79,9 @@ def _partition_contigs(assemblies, ref_fpaths, corrected_dirpath, alignments_fpa
 
             ref_asm = Assembly(ref_contigs_fpath, asm.label)
             if ref_asm.name not in added_ref_asm:
-                assemblies_by_ref[ref_name].append(ref_asm)
-                added_ref_asm.append(ref_asm.name)
+                if ref_name in assemblies_by_ref:
+                    assemblies_by_ref[ref_name].append(ref_asm)
+                    added_ref_asm.append(ref_asm.name)
 
         # Exctraction not aligned contigs
         all_contigs_names = set(contigs.keys())
@@ -191,7 +192,7 @@ def _correct_references(ref_fpaths, corrected_dirpath):
 
     combined_ref_fpath = os.path.join(corrected_dirpath, COMBINED_REF_FNAME)
 
-    seq_fnames = []
+    chromosomes_by_refs = {}
 
     def correct_seq(seq_name, seq, ref_name, ref_fasta_ext, total_references):
         seq_fname = ref_name
@@ -210,6 +211,7 @@ def _correct_references(ref_fpaths, corrected_dirpath):
         fastaparser.write_fasta(combined_ref_fpath, [(corr_seq_name, seq)], 'a')
 
         contigs_analyzer.ref_labels_by_chromosomes[corr_seq_name] = ref_name
+        chromosomes_by_refs[ref_name].append((corr_seq_name, len(seq)))
 
         return corr_seq_name
 
@@ -218,6 +220,7 @@ def _correct_references(ref_fpaths, corrected_dirpath):
         ref_fname = os.path.basename(ref_fpath)
         ref_name, ref_fasta_ext = qutils.splitext_for_fasta_file(ref_fname)
         common_ref_fasta_ext = ref_fasta_ext
+        chromosomes_by_refs[ref_name] = []
 
         for i, (seq_name, seq) in enumerate(fastaparser.read_fasta(ref_fpath)):
             total_references += 1
@@ -226,7 +229,36 @@ def _correct_references(ref_fpaths, corrected_dirpath):
 
     logger.info('  All references combined in ' + COMBINED_REF_FNAME)
 
-    return corrected_ref_fpaths, common_ref_fasta_ext, combined_ref_fpath
+    return corrected_ref_fpaths, common_ref_fasta_ext, combined_ref_fpath, chromosomes_by_refs, ref_fpaths
+
+def remove_unaligned_downloaded_refs(output_dirpath, labels, ref_fpaths, chromosomes_by_refs):
+
+    contigs_stdout_dirpath = os.path.join(output_dirpath, 'combined_quast_output', 'contigs_reports')
+    contigs_reports_fpaths = [os.path.join(contigs_stdout_dirpath, 'contigs_report_' + label + '.stdout') for label in labels];
+    unaligned_refs = []
+    for i in range(len(contigs_reports_fpaths)):
+        unaligned_refs.append(set())
+        with open(contigs_reports_fpaths[i], 'r') as report_file:
+            for line in report_file:
+                if 'ERROR: Reference' in line:
+                    line = line.split()
+                    unaligned_refs[i].add(line[2])
+    for unaligned_ref in unaligned_refs[1:]:
+        unaligned_refs[0].intersection_update(unaligned_ref)
+    corr_refs = []
+    for ref_fpath in ref_fpaths:
+        ref_fname = os.path.basename(ref_fpath)
+        ref, ref_fasta_ext = qutils.splitext_for_fasta_file(ref_fname)
+        unaligned_len = 0
+        aligned_len = 0
+        for chromosome in chromosomes_by_refs[ref]:
+            if chromosome[0] in unaligned_refs[0]:
+                unaligned_len += chromosome[1]
+            else:
+                aligned_len += chromosome[1]
+        if aligned_len > (unaligned_len + aligned_len) * 0.1:
+            corr_refs.append(ref_fpath)
+    return corr_refs
 
 
 def main(args):
@@ -319,11 +351,14 @@ def main(args):
             if opt in quast_py_args and arg in quast_py_args:
                 quast_py_args.remove(opt)
                 quast_py_args.remove(arg)
+            if os.path.isdir(arg):
+                ref_fpaths = [os.path.join(arg,fn) for fn in next(os.walk(arg))[2]]
+            else:
+                ref_fpaths = arg.split(',')
+                for i, ref_fpath in enumerate(ref_fpaths):
+                    assert_file_exists(ref_fpath, 'reference')
+                    ref_fpaths[i] = ref_fpath
 
-            ref_fpaths = arg.split(',')
-            for i, ref_fpath in enumerate(ref_fpaths):
-                assert_file_exists(ref_fpath, 'reference')
-                ref_fpaths[i] = ref_fpath
 
         elif opt in ('-M', "--min-contig"):
             min_contig = int(arg)
@@ -418,6 +453,8 @@ def main(args):
         os.mkdir(downloaded_dirpath)
         from libs import search_references_meta
         ref_fpaths = search_references_meta.do(contigs_fpaths, downloaded_dirpath)
+        if ref_fpaths:
+            qconfig.download_refs = True
 
     # PROCESSING REFERENCES
 
@@ -425,14 +462,13 @@ def main(args):
         logger.info()
         logger.info('Reference(s):')
 
-        ref_fpaths, common_ref_fasta_ext, combined_ref_fpath =\
+        corrected_ref_fpaths, common_ref_fasta_ext, combined_ref_fpath, chromosomes_by_refs, ref_names =\
             _correct_references(ref_fpaths, corrected_dirpath)
 
     # PROCESSING CONTIGS
     logger.info()
     logger.info('Contigs:')
     assemblies = _correct_contigs(contigs_fpaths, corrected_dirpath, min_contig, labels)
-
     if not assemblies:
         logger.error("None of the assembly files contains correct contigs. "
                      "Please, provide different files or decrease --min-contig threshold.")
@@ -462,14 +498,39 @@ def main(args):
     total_num_nf_errors = 0
     total_num_notifications = (total_num_notices, total_num_warnings, total_num_nf_errors)
     json_texts = []
-
-    return_code, total_num_notifications = _start_quast_main(run_name, quast_py_args,
+    return_code, total_num_notifications = _start_quast_main(run_name, quast_py_args + ["--ambiguity-usage"] + ['all'],
         assemblies=assemblies,
         reference_fpath=combined_ref_fpath,
         output_dirpath=os.path.join(output_dirpath, 'combined_quast_output'),
         num_notifications_tuple=total_num_notifications)
+
     json_texts.append(json_saver.json_text)
+
+    if qconfig.downloaded_refs:
+        logger.info()
+        logger.info('Removing downloaded references having no alignments ..')
+        ref_fpaths = remove_unaligned_downloaded_refs(output_dirpath, labels, ref_fpaths, chromosomes_by_refs)
+        if ref_fpaths:
+            logger.info()
+            logger.info('Filtered reference(s):')
+            os.remove(combined_ref_fpath)
+            corrected_ref_fpaths, common_ref_fasta_ext, combined_ref_fpath, chromosomes_by_refs, ref_names =\
+                    _correct_references(ref_fpaths, corrected_dirpath)
+            run_name = 'for the corrected combined reference'
+            logger.info()
+            logger.info('Starting quast.py ' + run_name + '...')
+            return_code, total_num_notifications = _start_quast_main(run_name, quast_py_args + ["--ambiguity-usage"] + ['all'],
+                assemblies=assemblies,
+                reference_fpath=combined_ref_fpath,
+                output_dirpath=os.path.join(output_dirpath, 'combined_quast_output'),
+                num_notifications_tuple=total_num_notifications)
+            json_texts = json_texts[:-1]
+            json_texts.append(json_saver.json_text)
+        else:
+            logger.info('No references have any aligments')
+
     # Partitioning contigs into bins aligned to each reference
+
     assemblies_by_reference, not_aligned_assemblies = _partition_contigs(
         assemblies, ref_fpaths, corrected_dirpath,
         os.path.join(output_dirpath, 'combined_quast_output', 'contigs_reports', 'alignments_%s.tsv'))
@@ -492,7 +553,7 @@ def main(args):
             json_texts.append(json_saver.json_text)
 
     # Finally running for the contigs that has not been aligned to any reference
-    run_name = 'for the contigs not alined anywhere'
+    run_name = 'for the contigs not aligned anywhere'
     logger.info()
     logger.info('Starting quast.py ' + run_name + '...')
 
@@ -500,6 +561,7 @@ def main(args):
         assemblies=not_aligned_assemblies,
         output_dirpath=os.path.join(output_dirpath, qconfig.not_aligned_name + '_quast_output'),
         exit_on_exception=False, num_notifications_tuple=total_num_notifications)
+    json_texts.append(json_saver.json_text)
 
     if return_code not in [0, 4]:
         logger.error('Error running quast.py for the contigs not aligned anywhere')
@@ -507,7 +569,10 @@ def main(args):
     if ref_names:
         summary_dirpath = os.path.join(output_dirpath, 'summary')
         from libs import create_meta_summary
-        create_meta_summary.do(output_dirpath, labels, reporting.Fields.main_metrics, ref_names)
+        metrics_for_plots = reporting.Fields.main_metrics
+        misassembl_metrics = [reporting.Fields.MIS_RELOCATION, reporting.Fields.MIS_TRANSLOCATION, reporting.Fields.MIS_INVERTION,
+                           reporting.Fields.MIS_ISTRANSLOCATIONS]
+        create_meta_summary.do(output_dirpath, labels, metrics_for_plots, misassembl_metrics, ref_names)
         logger.info('')
         logger.info('Text versions of reports and graphics for each metric (for all references and assemblies) are saved to ' + summary_dirpath)
         html_saver.create_meta_report(summary_dirpath, json_texts)

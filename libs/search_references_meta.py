@@ -36,7 +36,7 @@ def download_refs(ref_fpaths, organism, downloaded_dirpath):
     return ref_fpaths
 
 
-def do(contigs_fpaths, downloaded_dirpath):
+def do(assemblies, downloaded_dirpath):
     logger.print_timestamp()
     blastdb_dirpath = os.path.join(qconfig.LIBS_LOCATION, 'blast', '16S_RNA_blastdb')
     db_fpath = os.path.join(blastdb_dirpath, 'silva_119.db')
@@ -57,7 +57,8 @@ def do(contigs_fpaths, downloaded_dirpath):
     err_fpath = os.path.join(downloaded_dirpath, 'blast.err')
     blast_res_fpath = os.path.join(downloaded_dirpath, 'blast.res')
 
-    for index, contigs_fpath in enumerate(contigs_fpaths):
+    for index, assembly in enumerate(assemblies):
+        contigs_fpath = assembly.fpath
         cmd = blast_fpath('blastn') + (' -query %s -db %s -outfmt 7' % (
             contigs_fpath, db_fpath))
         assembly_name = qutils.name_from_fpath(contigs_fpath)

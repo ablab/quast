@@ -185,6 +185,13 @@ def _correct_contigs(contigs_fpaths, corrected_dirpath, min_contig, labels):
     return assemblies
 
 
+def get_label_from_par_dir_and_fname(contigs_fpath):
+    abspath = os.path.abspath(contigs_fpath)
+    name = qutils.rm_extentions_for_fasta_file(os.path.basename(contigs_fpath))
+    label = os.path.basename(os.path.dirname(abspath)) + '_' + name
+    return label
+
+
 def _correct_references(ref_fpaths, corrected_dirpath):
     common_ref_fasta_ext = ''
 
@@ -205,26 +212,28 @@ def _correct_references(ref_fpaths, corrected_dirpath):
         if total_references > 1:
             corr_seq_name += '_' + qutils.correct_name(seq_name[:20])
 
-        corrected_ref_fpaths.append(corr_seq_fpath)
-
         fastaparser.write_fasta(corr_seq_fpath, [(corr_seq_name, seq)], 'a')
         fastaparser.write_fasta(combined_ref_fpath, [(corr_seq_name, seq)], 'a')
 
         contigs_analyzer.ref_labels_by_chromosomes[corr_seq_name] = ref_name
         chromosomes_by_refs[ref_name].append((corr_seq_name, len(seq)))
 
-        return corr_seq_name
+        return corr_seq_name, corr_seq_fpath
 
     for ref_fpath in ref_fpaths:
         total_references = 0
         ref_fname = os.path.basename(ref_fpath)
         ref_name, ref_fasta_ext = qutils.splitext_for_fasta_file(ref_fname)
+        if os.path.isfile(os.path.join(corrected_dirpath, ref_fname)):
+            ref_name = get_label_from_par_dir_and_fname(ref_fpath)
+
         common_ref_fasta_ext = ref_fasta_ext
         chromosomes_by_refs[ref_name] = []
 
         for i, (seq_name, seq) in enumerate(fastaparser.read_fasta(ref_fpath)):
             total_references += 1
-            corr_seq_name = correct_seq(seq_name, seq, ref_name, ref_fasta_ext, total_references)
+            corr_seq_name, corr_seq_fpath = correct_seq(seq_name, seq, ref_name, ref_fasta_ext, total_references)
+        corrected_ref_fpaths.append(corr_seq_fpath)
         logger.info('  ' + ref_fpath + ' ==> ' + corr_seq_name + '')
 
     logger.info('  All references combined in ' + COMBINED_REF_FNAME)
@@ -406,9 +415,9 @@ def main(args):
         elif opt in ("-m", "--meta"):
             pass
         elif opt in ["--no-plots"]:
-            pass
+            draw_plots = False
         elif opt in ["--no-html"]:
-            pass
+            html_report = False
         else:
             logger.error('Unknown option: %s. Use -h for help.' % (opt + ' ' + arg), to_stderr=True, exit_with_code=2)
 
@@ -443,19 +452,6 @@ def main(args):
 
     common_ref_fasta_ext = ''
 
-    # SEARCHING REFERENCES
-    if not ref_fpaths:
-        logger.info()
-        logger.info("No references are provided, starting search for reference genomes in NCBI's database..")
-        downloaded_dirpath = os.path.join(output_dirpath, qconfig.downloaded_dirname)
-        if os.path.isdir(downloaded_dirpath):
-            shutil.rmtree(downloaded_dirpath)
-        os.mkdir(downloaded_dirpath)
-        from libs import search_references_meta
-        ref_fpaths = search_references_meta.do(contigs_fpaths, downloaded_dirpath)
-        if ref_fpaths:
-            qconfig.download_refs = True
-
     # PROCESSING REFERENCES
 
     if ref_fpaths:
@@ -476,6 +472,23 @@ def main(args):
 
     # Running QUAST(s)
     quast_py_args += ['--meta']
+
+    # SEARCHING REFERENCES
+    if not ref_fpaths:
+        logger.info()
+        logger.info("No references are provided, starting search for reference genomes in NCBI's database..")
+        downloaded_dirpath = os.path.join(output_dirpath, qconfig.downloaded_dirname)
+        if os.path.isdir(downloaded_dirpath):
+            shutil.rmtree(downloaded_dirpath)
+        os.mkdir(downloaded_dirpath)
+        from libs import search_references_meta
+        ref_fpaths = search_references_meta.do(assemblies, downloaded_dirpath)
+        if ref_fpaths:
+            qconfig.downloaded_refs = True
+            logger.info()
+            logger.info('Downloaded reference(s):')
+            corrected_ref_fpaths, common_ref_fasta_ext, combined_ref_fpath, chromosomes_by_refs, ref_names =\
+            _correct_refrences(ref_fpaths, corrected_dirpath)
 
     if not ref_fpaths:
         # No references, running regular quast with MetaGenemark gene finder
@@ -532,7 +545,7 @@ def main(args):
     # Partitioning contigs into bins aligned to each reference
 
     assemblies_by_reference, not_aligned_assemblies = _partition_contigs(
-        assemblies, ref_fpaths, corrected_dirpath,
+        assemblies, corrected_ref_fpaths, corrected_dirpath,
         os.path.join(output_dirpath, 'combined_quast_output', 'contigs_reports', 'alignments_%s.tsv'))
 
     ref_names = []
@@ -568,15 +581,17 @@ def main(args):
 
     if ref_names:
         summary_dirpath = os.path.join(output_dirpath, 'summary')
-        from libs import create_meta_summary
-        metrics_for_plots = reporting.Fields.main_metrics
-        misassembl_metrics = [reporting.Fields.MIS_RELOCATION, reporting.Fields.MIS_TRANSLOCATION, reporting.Fields.MIS_INVERTION,
-                           reporting.Fields.MIS_ISTRANSLOCATIONS]
-        create_meta_summary.do(output_dirpath, labels, metrics_for_plots, misassembl_metrics, ref_names)
-        logger.info('')
-        logger.info('Text versions of reports and graphics for each metric (for all references and assemblies) are saved to ' + summary_dirpath)
-        html_saver.create_meta_report(summary_dirpath, json_texts)
-        logger.info('Extended version of HTML-report (for all references and assemblies) are saved to ' + summary_dirpath)
+        if draw_plots:
+            from libs import create_meta_summary
+            metrics_for_plots = reporting.Fields.main_metrics
+            misassembl_metrics = [reporting.Fields.MIS_RELOCATION, reporting.Fields.MIS_TRANSLOCATION, reporting.Fields.MIS_INVERTION,
+                               reporting.Fields.MIS_ISTRANSLOCATIONS]
+            create_meta_summary.do(output_dirpath, labels, metrics_for_plots, misassembl_metrics, ref_names)
+            logger.info('')
+            logger.info('Text versions of reports and graphics for each metric (for all references and assemblies) are saved to ' + summary_dirpath)
+        if html_report:
+            html_saver.create_meta_report(summary_dirpath, json_texts)
+            logger.info('Extended version of HTML-report (for all references and assemblies) are saved to ' + summary_dirpath)
 
     quast._cleanup(corrected_dirpath)
     logger.info('')

@@ -1,13 +1,18 @@
 import os
 import shlex
+import sys
+import platform
 from libs import qconfig, qutils
 from libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_META_NAME)
 from urllib2 import urlopen
 import xml.etree.ElementTree as ET
-import shutil
-import tarfile
 
+silva_db_path = 'http://www.arb-silva.de/fileadmin/silva_databases/release_119/Exports/'
+if platform.system() == 'Darwin':
+    sed_cmd = "sed -i '' "
+else:
+    sed_cmd = 'sed -i '
 
 def blast_fpath(fname):
     blast_dirpath = os.path.join(qconfig.LIBS_LOCATION, 'blast', qconfig.platform_name)
@@ -36,27 +41,40 @@ def download_refs(ref_fpaths, organism, downloaded_dirpath):
     return ref_fpaths
 
 
+def show_progress(a,b,c):
+    print "% 3.1f%% of %d bytes\r" % (min(100, float(a * b) / c * 100), c),
+    sys.stdout.flush()
+
+
 def do(assemblies, downloaded_dirpath):
     logger.print_timestamp()
     blastdb_dirpath = os.path.join(qconfig.LIBS_LOCATION, 'blast', '16S_RNA_blastdb')
     db_fpath = os.path.join(blastdb_dirpath, 'silva_119.db')
-    if not os.path.isfile(db_fpath + '.nsq'):
-        db_gz_fpath = os.path.join(blastdb_dirpath, 'blastdb.tar.gz')
-        db_files = [os.path.join(blastdb_dirpath, 'blastdb_1.tar.gz'),
-                    os.path.join(blastdb_dirpath, 'blastdb_2.tar.gz')]
-        with open(db_gz_fpath, 'wb') as zipfile:
-            for file in db_files:
-                with open(file, 'rb') as splitfile:
-                    shutil.copyfileobj(splitfile, zipfile)
-                os.remove(file)
-        tar = tarfile.open(db_gz_fpath, 'r:gz')
-        for item in tar:
-            tar.extract(item, blastdb_dirpath)
-        os.remove(db_gz_fpath)
-    logger.info('Running BlastN..')
     err_fpath = os.path.join(downloaded_dirpath, 'blast.err')
-    blast_res_fpath = os.path.join(downloaded_dirpath, 'blast.res')
+    if not os.path.isdir(blastdb_dirpath):
+        os.mkdir(blastdb_dirpath)
 
+    if not os.path.isfile(db_fpath + '.nsq'):
+        log_fpath = os.path.join(downloaded_dirpath, 'blastdb.log')
+        logger.info("Downloading SILVA ribosomal RNA gene database...")
+        silva_fname = 'SILVA_119_SSURef_Nr99_tax_silva.fasta'
+        db_gz_fpath = os.path.join(blastdb_dirpath, silva_fname + '.gz')
+        silva_fpath = os.path.join(blastdb_dirpath, silva_fname)
+        import urllib, gzip
+        silva_download = urllib.URLopener()
+        silva_download.retrieve(silva_db_path + silva_fname + '.gz', db_gz_fpath, show_progress)
+        with open(silva_fpath, "wb") as db_file:
+            f = gzip.open(db_gz_fpath, 'rb')
+            db_file.write(f.read())
+        cmd = sed_cmd + " 's/ /_/g' %s" % silva_fpath
+        qutils.call_subprocess(shlex.split(cmd), stdout=open(log_fpath, 'a'), stderr=open(err_fpath, 'a'))
+        cmd = blast_fpath('makeblastdb') + (' -in %s -dbtype nucl -out %s' % (silva_fpath, db_fpath))
+        qutils.call_subprocess(shlex.split(cmd), stdout = open(log_fpath, 'w'), stderr=open(err_fpath, 'a'))
+        os.remove(db_gz_fpath)
+        os.remove(silva_fpath)
+
+    logger.info('Running BlastN..')
+    blast_res_fpath = os.path.join(downloaded_dirpath, 'blast.res')
     for index, assembly in enumerate(assemblies):
         contigs_fpath = assembly.fpath
         cmd = blast_fpath('blastn') + (' -query %s -db %s -outfmt 7' % (

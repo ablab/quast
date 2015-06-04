@@ -52,6 +52,7 @@ def _partition_contigs(assemblies, ref_fpaths, corrected_dirpath, alignments_fpa
     added_ref_asm = []
 
     for asm in assemblies:
+        logger.info('  ' + 'processing ' + asm.name)
         not_aligned_fname = asm.name + '_not_aligned_anywhere.fasta'
         not_aligned_fpath = os.path.join(corrected_dirpath, not_aligned_fname)
         contigs = {}
@@ -551,7 +552,7 @@ def main(args):
         else:
             logger.info('No references have any aligments')
 
-    # Partitioning contigs into bins aligned to each reference
+    logger.info('Partitioning contigs into bins aligned to each reference..')
 
     assemblies_by_reference, not_aligned_assemblies = _partition_contigs(
         assemblies, corrected_ref_fpaths, corrected_dirpath,

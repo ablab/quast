@@ -2,6 +2,7 @@ import os
 import shlex
 import sys
 import platform
+import re
 from libs import qconfig, qutils
 from libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_META_NAME)
@@ -21,7 +22,7 @@ def blast_fpath(fname):
 
 def download_refs(ref_fpaths, organism, downloaded_dirpath):
     ncbi_url = 'http://eutils.ncbi.nlm.nih.gov/entrez/eutils/'
-    ref_fpath = os.path.join(downloaded_dirpath, organism.translate(None, '/=.;,') + '.fasta')
+    ref_fpath = os.path.join(downloaded_dirpath, re.sub('[/=]', '', organism) + '.fasta')
     organism = organism.replace('_', '+')
     request = urlopen(ncbi_url + 'esearch.fcgi?db=nuccore&term=%s+AND+refseq[filter]&retmax=500' % organism)
     response = request.read()

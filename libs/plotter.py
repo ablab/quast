@@ -614,6 +614,8 @@ def draw_meta_summary_misassembl_plot(results, ref_names, contig_num, plot_fpath
     legend_n = []
     ymax = 0
     arr_x = range(1, refs_num + 1)
+    bar_width = 0.3
+
     for j in range(refs_num):
         ymax_j = 0
         to_plot = []
@@ -622,7 +624,7 @@ def draw_meta_summary_misassembl_plot(results, ref_names, contig_num, plot_fpath
             result = results[type_misassembly][j][contig_num] if results[type_misassembly][j] else None
             if result and result != '-':
                 to_plot.append(float(result))
-                ax.bar(arr_x[j], to_plot[0], width=0.08, color=colors[type_misassembly])
+                ax.bar(arr_x[j], to_plot[0], width=bar_width, color=colors[type_misassembly])
                 legend_n.append(type_misassembly)
                 ymax_j = float(to_plot[0])
             type_misassembly += 1
@@ -630,7 +632,7 @@ def draw_meta_summary_misassembl_plot(results, ref_names, contig_num, plot_fpath
             result = results[i][j][contig_num]
             if result and result != '-':
                 to_plot.append(float(result))
-                ax.bar(arr_x[j], to_plot[-1], width=0.08, color=colors[i], bottom = sum(to_plot[:-1]))
+                ax.bar(arr_x[j], to_plot[-1], width=bar_width, color=colors[i], bottom = sum(to_plot[:-1]))
                 legend_n.append(i)
                 ymax_j += float(to_plot[-1])
         if to_plot:

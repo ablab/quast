@@ -308,8 +308,8 @@ function toggleSecondary(caller)
 	if(!caller.hasClass('primary'))
 		return;
 	var nextRow = caller.next('.content-row');
-    var sign = nextRow.css('display') == 'none' ? '-' : '+';
-    var left_column = caller.context.firstChild;
+    var sign = nextRow.css('display') == 'none' ? '&minus;' : '+';
+    var leftColumn = caller.context.firstChild;
     var index = leftColumn.innerHTML.indexOf('>') + 1
     leftColumn.innerHTML = leftColumn.innerHTML.substr(0,index) + sign + leftColumn.innerHTML.substr(index+1)
     while (!nextRow.hasClass('primary') && (nextRow.length > 0)) {

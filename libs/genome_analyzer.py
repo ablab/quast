@@ -82,7 +82,7 @@ def process_single_file(contigs_fpath, index, nucmer_path_dirpath, genome_stats_
     assembly_name = qutils.name_from_fpath(contigs_fpath)
     assembly_label = qutils.label_from_fpath(contigs_fpath)
     results = dict()
-
+    ref_lengths = {}
     logger.info('  ' + qutils.index_to_str(index) + assembly_label)
 
     nucmer_base_fpath = os.path.join(nucmer_path_dirpath, assembly_name + '.coords')
@@ -153,16 +153,18 @@ def process_single_file(contigs_fpath, index, nucmer_path_dirpath, genome_stats_
     for chr_name, chr_len in reference_chromosomes.iteritems():
         print >>gaps_file, chr_name
         cur_gap_size = 0
+        aligned_len = 0
         for i in range(1, chr_len + 1):
             if genome_mapping[chr_name][i] == 1:
                 if cur_gap_size >= qconfig.min_gap_size:
                     gaps_count += 1
                     print >>gaps_file, i - cur_gap_size, i - 1
+                aligned_len += 1
                 covered_bp += 1
                 cur_gap_size = 0
             else:
                 cur_gap_size += 1
-
+        ref_lengths[chr_name] = aligned_len
         if cur_gap_size >= qconfig.min_gap_size:
             gaps_count += 1
             print >>gaps_file, chr_len - cur_gap_size + 1, chr_len
@@ -249,7 +251,8 @@ def process_single_file(contigs_fpath, index, nucmer_path_dirpath, genome_stats_
         found_file.close()
 
     logger.info('  ' + qutils.index_to_str(index) + 'Analysis is finished.')
-    return results, genes_in_contigs, operons_in_contigs
+
+    return ref_lengths, (results, genes_in_contigs, operons_in_contigs)
 
 
 def do(ref_fpath, aligned_contigs_fpaths, output_dirpath, json_output_dirpath,
@@ -282,13 +285,6 @@ def do(ref_fpath, aligned_contigs_fpaths, output_dirpath, json_output_dirpath,
     # RESULTS file
     result_fpath = genome_stats_dirpath + '/genome_info.txt'
     res_file = open(result_fpath, 'w')
-    res_file.write('reference chromosomes:\n')
-    for chr_name, chr_len in reference_chromosomes.iteritems():
-        res_file.write('\t' + chr_name + ' (' + str(chr_len) + ' bp)\n')
-    res_file.write('\n')
-    res_file.write('total genome size: ' + str(genome_size) + '\n\n')
-    res_file.write('gap min size: ' + str(qconfig.min_gap_size) + '\n')
-    res_file.write('partial gene/operon min size: ' + str(qconfig.min_gene_overlap) + '\n\n')
 
     genes_container = FeatureContainer(genes_fpaths, 'gene')
     operons_container = FeatureContainer(operons_fpaths, 'operon')
@@ -317,14 +313,6 @@ def do(ref_fpath, aligned_contigs_fpaths, output_dirpath, json_output_dirpath,
         if operons_container.fpaths:
             report.add_field(reporting.Fields.REF_OPERONS, len(operons_container.region_list))
 
-    # header
-    res_file.write('\n\n')
-    res_file.write('%-25s| %-10s| %-12s| %-10s| %-10s| %-10s| %-10s| %-10s|\n'
-        % ('assembly', 'genome', 'duplication', 'gaps', 'genes', 'partial', 'operons', 'partial'))
-    res_file.write('%-25s| %-10s| %-12s| %-10s| %-10s| %-10s| %-10s| %-10s|\n'
-        % ('', 'fraction', 'ratio', 'number', '', 'genes', '', 'operons'))
-    res_file.write('================================================================================================================\n')
-
     # for cumulative plots:
     files_genes_in_contigs = {}   #  "filename" : [ genes in sorted contigs (see below) ]
     files_operons_in_contigs = {}
@@ -337,10 +325,32 @@ def do(ref_fpath, aligned_contigs_fpaths, output_dirpath, json_output_dirpath,
     # process all contig files
     n_jobs = min(len(aligned_contigs_fpaths), qconfig.max_threads)
     from joblib import Parallel, delayed
-    results_genes_operons_tuples = Parallel(n_jobs=n_jobs)(delayed(process_single_file)(
+    process_results = Parallel(n_jobs=n_jobs)(delayed(process_single_file)(
         contigs_fpath, index, nucmer_path_dirpath, genome_stats_dirpath,
         reference_chromosomes, genes_container, operons_container)
         for index, contigs_fpath in enumerate(aligned_contigs_fpaths))
+
+    ref_lengths = [process_results[i][0] for i in range(len(process_results))]
+    results_genes_operons_tuples = [process_results[i][1] for i in range(len(process_results))]
+    ref_lengths_by_contigs = {}
+    for ref in reference_chromosomes:
+        ref_lengths_by_contigs[ref] = [ref_lengths[i][ref] for i in range(len(ref_lengths))]
+    res_file.write('reference chromosomes:\n')
+    for chr_name, chr_len in reference_chromosomes.iteritems():
+        aligned_len = max(ref_lengths_by_contigs[chr_name])
+        res_file.write('\t' + chr_name + ' (total length: ' + str(chr_len) + ' bp, maximal covered length: ' + str(aligned_len) + ' bp)\n')
+    res_file.write('\n')
+    res_file.write('total genome size: ' + str(genome_size) + '\n\n')
+    res_file.write('gap min size: ' + str(qconfig.min_gap_size) + '\n')
+    res_file.write('partial gene/operon min size: ' + str(qconfig.min_gene_overlap) + '\n\n')
+    # header
+    # header
+    res_file.write('\n\n')
+    res_file.write('%-25s| %-10s| %-12s| %-10s| %-10s| %-10s| %-10s| %-10s|\n'
+        % ('assembly', 'genome', 'duplication', 'gaps', 'genes', 'partial', 'operons', 'partial'))
+    res_file.write('%-25s| %-10s| %-12s| %-10s| %-10s| %-10s| %-10s| %-10s|\n'
+        % ('', 'fraction', 'ratio', 'number', '', 'genes', '', 'operons'))
+    res_file.write('================================================================================================================\n')
 
     for contigs_fpath, (results, genes_in_contigs, operons_in_contigs) in zip(aligned_contigs_fpaths, results_genes_operons_tuples):
         assembly_name = qutils.name_from_fpath(contigs_fpath)

@@ -250,32 +250,29 @@ def _correct_references(ref_fpaths, corrected_dirpath):
 
     return corrected_ref_fpaths, common_ref_fasta_ext, combined_ref_fpath, chromosomes_by_refs, ref_fpaths
 
-def remove_unaligned_downloaded_refs(output_dirpath, labels, ref_fpaths, chromosomes_by_refs):
+def remove_unaligned_downloaded_refs(output_dirpath, ref_fpaths, chromosomes_by_refs):
 
-    contigs_stdout_dirpath = os.path.join(output_dirpath, 'combined_quast_output', 'contigs_reports')
-    contigs_reports_fpaths = [os.path.join(contigs_stdout_dirpath, 'contigs_report_' + label + '.stdout') for label in labels];
-    unaligned_refs = []
-    for i in range(len(contigs_reports_fpaths)):
-        unaligned_refs.append(set())
-        with open(contigs_reports_fpaths[i], 'r') as report_file:
-            for line in report_file:
-                if 'ERROR: Reference' in line:
-                    line = line.split()
-                    unaligned_refs[i].add(line[2])
-    for unaligned_ref in unaligned_refs[1:]:
-        unaligned_refs[0].intersection_update(unaligned_ref)
+    genome_info_dirpath = os.path.join(output_dirpath, 'combined_quast_output', 'genome_stats')
+    genome_info_fpath = os.path.join(genome_info_dirpath, 'genome_info.txt')
+    refs_len = {}
+    with open(genome_info_fpath, 'r') as report_file:
+        report_file.readline()
+        for line in report_file:
+            if line == '\n' or not line:
+                break
+            line = line.split()
+            refs_len[line[0]] = (line[3], line[7])
+
     corr_refs = []
     for ref_fpath in ref_fpaths:
         ref_fname = os.path.basename(ref_fpath)
         ref, ref_fasta_ext = qutils.splitext_for_fasta_file(ref_fname)
-        unaligned_len = 0
         aligned_len = 0
+        all_len = 0
         for chromosome in chromosomes_by_refs[ref]:
-            if chromosome[0] in unaligned_refs[0]:
-                unaligned_len += chromosome[1]
-            else:
-                aligned_len += chromosome[1]
-        if aligned_len > (unaligned_len + aligned_len) * 0.1:
+            aligned_len += int(refs_len[chromosome[0]][1])
+            all_len += int(refs_len[chromosome[0]][0])
+        if aligned_len > all_len * 0.1:
             corr_refs.append(ref_fpath)
     return corr_refs
 
@@ -482,6 +479,7 @@ def main(args):
 
     # Running QUAST(s)
     quast_py_args += ['--meta']
+    downloaded_refs = False
 
     # SEARCHING REFERENCES
     if not ref_fpaths:
@@ -494,7 +492,7 @@ def main(args):
         from libs import search_references_meta
         ref_fpaths = search_references_meta.do(assemblies, downloaded_dirpath)
         if ref_fpaths:
-            qconfig.downloaded_refs = True
+            downloaded_refs = True
             logger.info()
             logger.info('Downloaded reference(s):')
             corrected_ref_fpaths, common_ref_fasta_ext, combined_ref_fpath, chromosomes_by_refs, ref_names =\
@@ -529,16 +527,16 @@ def main(args):
 
     json_texts.append(json_saver.json_text)
 
-    if qconfig.downloaded_refs:
+    if downloaded_refs:
         logger.info()
-        logger.info('Removing downloaded references having no alignments ..')
-        ref_fpaths = remove_unaligned_downloaded_refs(output_dirpath, labels, ref_fpaths, chromosomes_by_refs)
-        if ref_fpaths:
+        logger.info('Removing downloaded references with low genome fraction..')
+        corr_ref_fpaths = remove_unaligned_downloaded_refs(output_dirpath, ref_fpaths, chromosomes_by_refs)
+        if corr_ref_fpaths and corr_ref_fpaths != ref_fpaths:
             logger.info()
             logger.info('Filtered reference(s):')
             os.remove(combined_ref_fpath)
             corrected_ref_fpaths, common_ref_fasta_ext, combined_ref_fpath, chromosomes_by_refs, ref_names =\
-                    _correct_references(ref_fpaths, corrected_dirpath)
+                    _correct_references(corr_ref_fpaths, corrected_dirpath)
             run_name = 'for the corrected combined reference'
             logger.info()
             logger.info('Starting quast.py ' + run_name + '...')
@@ -549,9 +547,12 @@ def main(args):
                 num_notifications_tuple=total_num_notifications)
             json_texts = json_texts[:-1]
             json_texts.append(json_saver.json_text)
+        elif corr_ref_fpaths == ref_fpaths:
+            logger.info('All downloaded references have genome fraction more than 10%')
         else:
-            logger.info('No references have any aligments')
+            logger.info('All downloaded references have low genome fraction')
 
+    logger.info()
     logger.info('Partitioning contigs into bins aligned to each reference..')
 
     assemblies_by_reference, not_aligned_assemblies = _partition_contigs(

@@ -24,17 +24,25 @@ def download_refs(ref_fpaths, organism, downloaded_dirpath):
     ncbi_url = 'http://eutils.ncbi.nlm.nih.gov/entrez/eutils/'
     ref_fpath = os.path.join(downloaded_dirpath, re.sub('[/=]', '', organism) + '.fasta')
     organism = organism.replace('_', '+')
-    request = urlopen(ncbi_url + 'esearch.fcgi?db=nuccore&term=%s+AND+refseq[filter]&retmax=500' % organism)
+    request = urlopen(ncbi_url + 'esearch.fcgi?db=nuccore&term=%s+[Organism]+AND+refseq[filter]&retmax=500' % organism)
     response = request.read()
     xml_tree = ET.fromstring(response)
     if xml_tree.find('Count').text == '0': #  Organism is not found
+        logger.info("  %s is not found in NCBI's database" % organism.replace('+', ' '))
         return ref_fpaths
     refs_id = [ref_id.text for ref_id in xml_tree.find('IdList').findall('Id')]
-    request = urlopen(ncbi_url + 'efetch.fcgi?db=sequences&id=%s&rettype=fasta&retmode=text' % ','.join(refs_id))
-    fasta = request.read()
-    if fasta:
-        with open(ref_fpath, "w") as fasta_file:
-            fasta_file.write(fasta)
+    for ref_id in refs_id:
+        request = urlopen(ncbi_url + 'efetch.fcgi?db=sequences&id=%s&rettype=fasta&retmode=text' % ref_id)
+        fasta = request.read()
+        if fasta:
+            if 'complete genome' in fasta[:100]:
+                with open(ref_fpath, "w") as fasta_file:
+                    fasta_file.write(fasta)
+                break
+            else:
+                with open(ref_fpath, "a") as fasta_file:
+                    fasta_file.write(fasta)
+    if os.path.exists(ref_fpath):
         ref_fpaths.append(ref_fpath)
         logger.info('  Successfully downloaded %s' % organism.replace('+', ' '))
     else:
@@ -78,8 +86,8 @@ def do(assemblies, downloaded_dirpath):
     blast_res_fpath = os.path.join(downloaded_dirpath, 'blast.res')
     for index, assembly in enumerate(assemblies):
         contigs_fpath = assembly.fpath
-        cmd = blast_fpath('blastn') + (' -query %s -db %s -outfmt 7' % (
-            contigs_fpath, db_fpath))
+        cmd = blast_fpath('blastn') + (' -query %s -db %s -outfmt 7 -num_threads %s' % (
+            contigs_fpath, db_fpath, qconfig.max_threads))
         assembly_name = qutils.name_from_fpath(contigs_fpath)
         logger.info('  ' + 'processing ' + assembly_name)
         qutils.call_subprocess(shlex.split(cmd), stdout=open(blast_res_fpath, 'a'), stderr=open(err_fpath, 'a'))

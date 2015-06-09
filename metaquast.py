@@ -261,7 +261,7 @@ def remove_unaligned_downloaded_refs(output_dirpath, ref_fpaths, chromosomes_by_
             if line == '\n' or not line:
                 break
             line = line.split()
-            refs_len[line[0]] = (line[3], line[7])
+            refs_len[line[0]] = (line[3], line[8])
 
     corr_refs = []
     for ref_fpath in ref_fpaths:
@@ -380,7 +380,9 @@ def main(args):
             min_contig = int(arg)
 
         elif opt in ('-T', "--threads"):
-            pass
+            qconfig.max_threads = int(arg)
+            if qconfig.max_threads < 1:
+                qconfig.max_threads = 1
 
         elif opt in ('-l', '--labels'):
             quast_py_args.remove(opt)
@@ -447,6 +449,18 @@ def main(args):
     logger.set_up_file_handler(output_dirpath)
     logger.print_command_line([os.path.realpath(__file__)] + args, wrap_after=None)
     logger.start()
+
+    # Threading
+    if qconfig.max_threads is None:
+        try:
+            import multiprocessing
+            qconfig.max_threads = multiprocessing.cpu_count()
+        except:
+            logger.warning('Failed to determine the number of CPUs')
+            qconfig.max_threads = qconfig.DEFAULT_MAX_THREADS
+
+        logger.info()
+        logger.notice('Maximum number of threads is set to ' + str(qconfig.max_threads) + ' (use --threads option to set it manually)')
 
     ########################################################################
 

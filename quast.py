@@ -126,7 +126,8 @@ def correct_fasta(original_fpath, corrected_fpath, min_contig,
                     qconfig.splitted_ref.append(split_ref_fpath)
                     cur_len = 0
                     num_file += 1
-
+            if cur_len > 0:
+                qconfig.splitted_ref.append(split_ref_fpath)
             if len(qconfig.splitted_ref) == 0:
                 logger.warning("Skipping reference because all of its chromosomes exceeded Nucmer's constraint.")
                 return False

@@ -1,5 +1,5 @@
 ############################################################################
-# Copyright (c) 2011-2015 Saint-Petersburg Academic University
+# Copyright (c) 2011-2014 Saint-Petersburg Academic University
 # All Rights Reserved
 # See file LICENSE for details.
 ############################################################################
@@ -148,7 +148,7 @@ def check_nucmer_successful_check(fpath, contigs_fpath, ref_fpath):
     return True
 
 
-def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_fpath):
+def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_fpath, parallel_by_chr):
     assembly_name = qutils.name_from_fpath(contigs_fpath)
     assembly_label = qutils.label_from_fpath(contigs_fpath)
 
@@ -208,7 +208,7 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
             # Daemonic processes are not allowed to have children,
             # so if we are already one of parallel processes
             # (i.e. daemonic) we can't start new daemonic processes
-            if qconfig.assemblies_num == 1:
+            if parallel_by_chr:
                 n_jobs = min(qconfig.max_threads, len(prefixes_and_chr_files))
             else:
                 n_jobs = 1
@@ -1338,12 +1338,12 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
         return NucmerStatus.OK, result, aligned_lengths
 
 
-def plantakolya_process(cyclic, nucmer_output_dirpath, contigs_fpath, i, output_dirpath, ref_fpath):
+def plantakolya_process(cyclic, nucmer_output_dirpath, contigs_fpath, i, output_dirpath, ref_fpath, parallel_by_chr=False):
     assembly_name = qutils.name_from_fpath(contigs_fpath)
 
     nucmer_fname = os.path.join(nucmer_output_dirpath, assembly_name)
-    nucmer_is_ok, result, aligned_lengths = plantakolya(
-        cyclic, i, contigs_fpath, nucmer_fname, output_dirpath, ref_fpath)
+    nucmer_is_ok, result, aligned_lengths = plantakolya(cyclic, i, contigs_fpath, nucmer_fname,
+                                                        output_dirpath, ref_fpath, parallel_by_chr=parallel_by_chr)
 
     clear_files(contigs_fpath, nucmer_fname)
     return nucmer_is_ok, result, aligned_lengths
@@ -1384,9 +1384,20 @@ def do(reference, contigs_fpaths, cyclic, output_dir):
 
     n_jobs = min(len(contigs_fpaths), qconfig.max_threads)
     from joblib import Parallel, delayed
-    statuses_results_lengths_tuples = Parallel(n_jobs=n_jobs)(delayed(plantakolya_process)(
+    if not qconfig.splitted_ref:
+        statuses_results_lengths_tuples = Parallel(n_jobs=n_jobs)(delayed(plantakolya_process)(
         cyclic, nucmer_output_dir, fname, i, output_dir, reference)
              for i, fname in enumerate(contigs_fpaths))
+    else:
+        if len(contigs_fpaths) >= len(qconfig.splitted_ref):
+            statuses_results_lengths_tuples = Parallel(n_jobs=n_jobs)(delayed(plantakolya_process)(
+        cyclic, nucmer_output_dir, fname, i, output_dir, reference)
+             for i, fname in enumerate(contigs_fpaths))
+        else:
+            statuses_results_lengths_tuples = []
+            for i, contigs_fpath in enumerate(contigs_fpaths):
+                statuses_results_lengths_tuples.append(plantakolya_process(cyclic, nucmer_output_dir, contigs_fpath, i,
+                                                                           output_dir, reference, parallel_by_chr=True))
 
     # unzipping
     statuses, results, aligned_lengths = [x[0] for x in statuses_results_lengths_tuples], \

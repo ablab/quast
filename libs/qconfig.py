@@ -29,6 +29,7 @@ else:
 # support of large genomes
 MAX_REFERENCE_LENGTH = 536870908  # Nucmer's max length of a reference file
 splitted_ref = []
+MAX_REFERENCE_FILE_LENGTH = 50000000  # Max length of one part of reference
 
 # available options
 long_options = "output-dir= save-json-to= genes= operons= reference= contig-thresholds= min-contig= "\

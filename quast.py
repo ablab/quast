@@ -105,20 +105,27 @@ def correct_fasta(original_fpath, corrected_fpath, min_contig,
 
     if is_reference:
         ref_len = sum(len(chr_seq) for (chr_name, chr_seq) in modified_fasta_entries)
-        if ref_len > qconfig.MAX_REFERENCE_LENGTH:
+        if ref_len > qconfig.MAX_REFERENCE_FILE_LENGTH:
             _, fasta_ext = os.path.splitext(corrected_fpath)
             split_ref_dirpath = os.path.join(os.path.dirname(corrected_fpath), 'split_ref')
             os.makedirs(split_ref_dirpath)
+            cur_len = 0
+            num_file = 0
+            max_len = ref_len/qconfig.max_threads
 
-            for i, (chr_name, chr_seq) in enumerate(modified_fasta_entries):
+            for (chr_name, chr_seq) in modified_fasta_entries:
                 if len(chr_seq) > qconfig.MAX_REFERENCE_LENGTH:
                     logger.warning("Skipping chromosome " + chr_name + " because it length is greater than " +
                             str(qconfig.MAX_REFERENCE_LENGTH) + " (Nucmer's constraint).")
                     continue
+                cur_len += len(chr_seq)
 
-                split_ref_fpath = os.path.join(split_ref_dirpath, "chr_" + str(i + 1)) + fasta_ext
-                qconfig.splitted_ref.append(split_ref_fpath)
-                fastaparser.write_fasta(split_ref_fpath, [(chr_name, chr_seq)])
+                split_ref_fpath = os.path.join(split_ref_dirpath, "chr_" + str(num_file + 1)) + fasta_ext
+                fastaparser.write_fasta(split_ref_fpath, [(chr_name, chr_seq)], mode='a')
+                if cur_len > max_len:
+                    qconfig.splitted_ref.append(split_ref_fpath)
+                    cur_len = 0
+                    num_file += 1
 
             if len(qconfig.splitted_ref) == 0:
                 logger.warning("Skipping reference because all of its chromosomes exceeded Nucmer's constraint.")
@@ -722,4 +729,3 @@ if __name__ == '__main__':
         _, exc_value, _ = sys.exc_info()
         logger.exception(exc_value)
         logger.error('exception caught!', exit_with_code=1)
-

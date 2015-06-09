@@ -1,3 +1,9 @@
+############################################################################
+# Copyright (c) 2011-2015 Saint-Petersburg Academic University
+# All Rights Reserved
+# See file LICENSE for details.
+############################################################################
+
 import matplotlib
 matplotlib.use('Agg')
 import os

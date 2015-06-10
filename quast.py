@@ -574,13 +574,6 @@ def main(args):
     qconfig.assemblies_num = len(contigs_fpaths)
     bed_fpath = None
 
-    if qconfig.reads:
-        from libs import reads_analyzer
-        if reads_fpaths:
-            bed_fpath = reads_analyzer.do(ref_fpath, contigs_fpaths, reads_fpaths, os.path.join(output_dirpath, 'reads_reports'))
-        if reads_inter_fpath:
-            bed_fpath = reads_analyzer.do(ref_fpath, contigs_fpaths, reads_inter_fpath, os.path.join(output_dirpath, 'reads_reports'))
-
     for contigs_fpath in contigs_fpaths:
         report = reporting.get(contigs_fpath)
         report.add_field(reporting.Fields.NAME, qutils.label_from_fpath(contigs_fpath))

@@ -180,7 +180,7 @@ def gm_es(tool_dirpath, fasta_fpath, err_fpath, index, tmp_dirpath, num_threads)
     if not os.path.isdir(tmp_dirpath):
             os.mkdir(tmp_dirpath)
     return_code = qutils.call_subprocess(
-        ['perl', '-I', libs_dirpath, tool_exec_fpath, '--ES', '--cores', num_threads, '--sequence', fasta_fpath,
+        ['perl', '-I', libs_dirpath, tool_exec_fpath, '--ES', '--cores', str(num_threads), '--sequence', fasta_fpath,
          '--out', tmp_dirpath],
         stdout=err_file,
         stderr=err_file,
@@ -251,7 +251,7 @@ def do(fasta_fpaths, gene_lengths, out_dirpath, prokaryote, meta):
     if not os.path.exists(tool_dirpath):
         logger.warning('  Sorry, can\'t use %s on this platform, skipping gene prediction.' % tool_name)
     else:
-        successful = install_genemark(tool_dirpath)
+        successful = install_genemark(os.path.join(qconfig.LIBS_LOCATION, 'genemark', qconfig.platform_name))
         if not successful:
             return
 

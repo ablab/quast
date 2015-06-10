@@ -129,7 +129,7 @@ def add_genes_to_fasta(genes, fasta_fpath):
     write_fasta(fasta_fpath, inner())
 
 
-def gmhmm_p_everyGC(tool_dirpath, fasta_fpath, err_fpath, index, tmp_dirpath):
+def gmhmm_p_everyGC(tool_dirpath, fasta_fpath, err_fpath, index, tmp_dirpath, num_threads):
     tmp_dirpath = tempfile.mkdtemp(dir=tmp_dirpath)
 
     tool_exec_fpath = os.path.join(tool_dirpath, 'gmsn.pl')
@@ -161,7 +161,7 @@ def gmhmm_p_everyGC(tool_dirpath, fasta_fpath, err_fpath, index, tmp_dirpath):
     return genes
 
 
-def gmhmm_p_metagenomic(tool_dirpath, fasta_fpath, err_fpath, index, tmp_dirpath=None):
+def gmhmm_p_metagenomic(tool_dirpath, fasta_fpath, err_fpath, index, tmp_dirpath=None, num_threads=None):
     tool_exec_fpath = os.path.join(tool_dirpath, 'gmhmmp')
     heu_fpath = os.path.join(tool_dirpath, '../MetaGeneMark_v1.mod')
     gmhmm_fpath = fasta_fpath + '.gmhmm'
@@ -173,7 +173,7 @@ def gmhmm_p_metagenomic(tool_dirpath, fasta_fpath, err_fpath, index, tmp_dirpath
             return None
 
 
-def gm_es(tool_dirpath, fasta_fpath, err_fpath, index, tmp_dirpath):
+def gm_es(tool_dirpath, fasta_fpath, err_fpath, index, tmp_dirpath, num_threads):
 
     tool_exec_fpath = os.path.join(tool_dirpath, 'gmes_petap.pl')
     libs_dirpath = os.path.join(qconfig.LIBS_LOCATION, 'genemark-es', 'lib')
@@ -182,7 +182,7 @@ def gm_es(tool_dirpath, fasta_fpath, err_fpath, index, tmp_dirpath):
     if not os.path.isdir(tmp_dirpath):
             os.mkdir(tmp_dirpath)
     return_code = qutils.call_subprocess(
-        ['perl', '-I', libs_dirpath, tool_exec_fpath, '--ES', '--cores', str(qconfig.max_threads), '--sequence', fasta_fpath,
+        ['perl', '-I', libs_dirpath, tool_exec_fpath, '--ES', '--cores', num_threads, '--sequence', fasta_fpath,
          '--out', tmp_dirpath],
         stdout=err_file,
         stderr=err_file,
@@ -197,7 +197,7 @@ def gm_es(tool_dirpath, fasta_fpath, err_fpath, index, tmp_dirpath):
     return genes
 
 
-def predict_genes(index, contigs_fpath, gene_lengths, out_dirpath, tool_dirpath, tmp_dirpath, gmhmm_p_function, prokaryote):
+def predict_genes(index, contigs_fpath, gene_lengths, out_dirpath, tool_dirpath, tmp_dirpath, gmhmm_p_function, prokaryote, num_threads):
     assembly_name = qutils.name_from_fpath(contigs_fpath)
     assembly_label = qutils.label_from_fpath(contigs_fpath)
 
@@ -205,7 +205,7 @@ def predict_genes(index, contigs_fpath, gene_lengths, out_dirpath, tool_dirpath,
 
     err_fpath = os.path.join(out_dirpath, assembly_name + '_genemark.stderr')
 
-    genes = gmhmm_p_function(tool_dirpath, contigs_fpath, err_fpath, index, tmp_dirpath)
+    genes = gmhmm_p_function(tool_dirpath, contigs_fpath, err_fpath, index, tmp_dirpath, num_threads)
 
     if not genes:
         unique_count = None
@@ -264,9 +264,10 @@ def do(fasta_fpaths, gene_lengths, out_dirpath, prokaryote, meta):
             os.mkdir(tmp_dirpath)
 
         n_jobs = min(len(fasta_fpaths), qconfig.max_threads)
+        num_threads = max(1, qconfig.max_threads//n_jobs)
         from joblib import Parallel, delayed
         results = Parallel(n_jobs=n_jobs)(delayed(predict_genes)(
-            index, fasta_fpath, gene_lengths, out_dirpath, tool_dirpath, tmp_dirpath, gmhmm_p_function, prokaryote)
+            index, fasta_fpath, gene_lengths, out_dirpath, tool_dirpath, tmp_dirpath, gmhmm_p_function, prokaryote, num_threads)
             for index, fasta_fpath in enumerate(fasta_fpaths))
 
         # saving results

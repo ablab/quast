@@ -16,7 +16,8 @@ from libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 
 LICENSE_LIMITATIONS_MODE = False
-OUTPUT_FASTA = False # whether output only .gff or with corresponding .fasta files
+OUTPUT_FASTA = False  # whether output only .gff or with corresponding .fasta files
+
 
 def gc_content(sequence):
     GC_count = sequence.count('G') + sequence.count('C')
@@ -38,11 +39,11 @@ def gmhmm_p(tool_exec, fasta_fpath, heu_fpath, out_fpath, err_file, index):
 
     return return_code == 0 and os.path.isfile(out_fpath)
 
+
 def install_genemark(tool_dirpath):
-    """Installation instructions for GeneMark Suite.
+    """Installation instructions for GeneMark.
     Please, copy key "gm_key" into users home directory as:
     cp gm_key ~/.gm_key
-    (genemark_suite_linux_XX/gmsuite/INSTALL)
     """
     import subprocess
     import filecmp
@@ -88,6 +89,7 @@ def parse_gmhmm_out(out_fpath):
                 else:
                     seq.append(line.strip())
 
+
 def parse_gtf_out(out_fpath):
     with open(out_fpath) as f:
         for line in f:
@@ -97,7 +99,6 @@ def parse_gtf_out(out_fpath):
                 left_index = int(left_index)
                 right_index = int(right_index)
                 yield contig_id, strand, left_index, right_index, gene
-
 
 
 def add_genes_to_gff(genes, gff_fpath, prokaryote):
@@ -160,6 +161,7 @@ def gmhmm_p_everyGC(tool_dirpath, fasta_fpath, err_fpath, index, tmp_dirpath):
 
     return genes
 
+
 def gmhmm_p_metagenomic(tool_dirpath, fasta_fpath, err_fpath, index, tmp_dirpath=None):
     tool_exec_fpath = os.path.join(tool_dirpath, 'gmhmmp')
     heu_fpath = os.path.join(tool_dirpath, '../MetaGeneMark_v1.mod')
@@ -170,6 +172,7 @@ def gmhmm_p_metagenomic(tool_dirpath, fasta_fpath, err_fpath, index, tmp_dirpath
             return list(parse_gmhmm_out(gmhmm_fpath))
         else:
             return None
+
 
 def gm_es(tool_dirpath, fasta_fpath, err_fpath, index, tmp_dirpath):
 
@@ -193,6 +196,7 @@ def gm_es(tool_dirpath, fasta_fpath, err_fpath, index, tmp_dirpath):
         if fname.endswith('gtf'):
             genes.extend(parse_gtf_out(os.path.join(tmp_dirpath, fname)))
     return genes
+
 
 def predict_genes(index, contigs_fpath, gene_lengths, out_dirpath, tool_dirpath, tmp_dirpath, gmhmm_p_function, prokaryote):
     assembly_name = qutils.name_from_fpath(contigs_fpath)
@@ -236,7 +240,7 @@ def do(fasta_fpaths, gene_lengths, out_dirpath, prokaryote, meta):
         tool_dirname = 'metagenemark'
         gmhmm_p_function = gmhmm_p_metagenomic
     elif prokaryote:
-        tool_name = 'GeneMark'
+        tool_name = 'GeneMarkS'
         tool_dirname = 'genemark'
         gmhmm_p_function = gmhmm_p_everyGC
     else:

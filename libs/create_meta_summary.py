@@ -4,14 +4,13 @@
 # See file LICENSE for details.
 ############################################################################
 
-import matplotlib
-matplotlib.use('Agg')
 import os
 import shutil
 import qconfig
 from libs.log import get_logger
 import reporting
 logger = get_logger(qconfig.LOGGER_META_NAME)
+
 
 def get_results_for_metric(ref_names, metric, contigs_num, labels, output_dirpath, report_fname):
 

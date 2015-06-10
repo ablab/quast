@@ -16,7 +16,8 @@ from libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 
 LICENSE_LIMITATIONS_MODE = False
-OUTPUT_FASTA = False # whether output only .gff or with corresponding .fasta files
+OUTPUT_FASTA = False  # whether output only .gff or with corresponding .fasta files
+
 
 def gc_content(sequence):
     GC_count = sequence.count('G') + sequence.count('C')
@@ -38,11 +39,11 @@ def gmhmm_p(tool_exec, fasta_fpath, heu_fpath, out_fpath, err_file, index):
 
     return return_code == 0 and os.path.isfile(out_fpath)
 
+
 def install_genemark(tool_dirpath):
-    """Installation instructions for GeneMark Suite.
+    """Installation instructions for GeneMark.
     Please, copy key "gm_key" into users home directory as:
     cp gm_key ~/.gm_key
-    (genemark_suite_linux_XX/gmsuite/INSTALL)
     """
     import subprocess
     import filecmp
@@ -58,7 +59,7 @@ def install_genemark(tool_dirpath):
         line = proc.stdout.readline()
         if line.find('license period has ended') != -1:
             logger.warning('License period for GeneMark has ended! \n' \
-                           'To update license, please visit http://topaz.gatech.edu/license_download.cgi page and fill in the form.\n' \
+                           'To update license, please visit http://exon.gatech.edu/GeneMark/license_download.cgi page and fill in the form.\n' \
                            'You should choose GeneMarkS tool and your operating system (note that GeneMark is free for non-commercial use).\n' \
                            'Download the license key and replace your ~/.gm_key with the updated version. After that you can restart QUAST.\n')
             return False
@@ -88,6 +89,7 @@ def parse_gmhmm_out(out_fpath):
                 else:
                     seq.append(line.strip())
 
+
 def parse_gtf_out(out_fpath):
     with open(out_fpath) as f:
         for line in f:
@@ -97,7 +99,6 @@ def parse_gtf_out(out_fpath):
                 left_index = int(left_index)
                 right_index = int(right_index)
                 yield contig_id, strand, left_index, right_index, gene
-
 
 
 def add_genes_to_gff(genes, gff_fpath, prokaryote):
@@ -237,7 +238,7 @@ def do(fasta_fpaths, gene_lengths, out_dirpath, prokaryote, meta):
         tool_dirname = 'genemark'
         gmhmm_p_function = gmhmm_p_metagenomic
     elif prokaryote:
-        tool_name = 'GeneMark'
+        tool_name = 'GeneMarkS'
         tool_dirname = 'genemark'
         gmhmm_p_function = gmhmm_p_everyGC
     else:

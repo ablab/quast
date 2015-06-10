@@ -115,7 +115,7 @@ def correct_fasta(original_fpath, corrected_fpath, min_contig,
 
             for (chr_name, chr_seq) in modified_fasta_entries:
                 if len(chr_seq) > qconfig.MAX_REFERENCE_LENGTH:
-                    logger.warning("Skipping chromosome " + chr_name + " because it length is greater than " +
+                    logger.warning("Skipping chromosome " + chr_name + " because its length is greater than " +
                             str(qconfig.MAX_REFERENCE_LENGTH) + " (Nucmer's constraint).")
                     continue
                 cur_len += len(chr_seq)

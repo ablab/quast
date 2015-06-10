@@ -1,10 +1,12 @@
-#!/usr/bin/perl -w
+#!/usr/bin/perl
 #=============================================================
 #
-# This program runs GeneMark.hmm version 2.x [ref 1]
+# This program runs GeneMark.hmm version 3.x [ref 1]
 # with Heuristic models version 2.0 [ref 2]
 # on single or multi record sequence in FASTA like format
 #
+# Optional: GeneMark prediction and grapth
+# 
 # References:
 # [1]
 #    Besemer J., Lomsadze A. and Borodovsky M.
@@ -18,46 +20,63 @@
 #    Nucleic Acids Research, 1999, Vol. 27, No. 19, pp. 3911-3920
 #
 # Please report problems to
-#   Alex Lomsadze at alexl@amber.gatech.edu
+#   Alex Lomsadze at alexl@gatech.edu
 #
 #=============================================================
 
 use strict;
+use warnings;
 use FindBin qw($RealBin);
 use Getopt::Long;
-use File::Temp qw/ tempfile /;
 
-my $VERSION = "1.1";
+my $VERSION = "2.0";
+my $debug = 0;
 
 #------------------------------------------------
 # installation settings: required directories and files
 
-# GeneMark Suite executables installation directory
-my $dir = $RealBin;
-
-# GeneMark Suite directory with configuration and shared files
-my $shared_dir = $dir;
-
-# gene finding program GeneMark.hmm: gmhmmp version 2.6q
-my $hmm = $dir ."/gmhmmp";
+my $gmsuite_dir = $RealBin;                                # GeneMark Suite installation directory
+my $hmm = File::Spec->catfile( $gmsuite_dir, "gmhmmp" );   # GeneMark.hmm gene finding program <gmhmmp>; version 3.*
+my $genemark = File::Spec->catfile( $gmsuite_dir, "gm" );  # GeneMark gene finding program <gm>, version 2.5p for graph
+my $ps_gm_overlay = File::Spec->catfile( $gmsuite_dir, "ps_gm_overlay.pl" );  # script to overlay PS files
 
 # directory with heuristic models for GeneMark.hmm: heuristic version 2.0;
-my $heu_dir = $shared_dir . "/heuristic_mod";
+my $heu_mod_dir = File::Spec->catdir( $gmsuite_dir , "heuristic_mod" );
+my $heu_mat_dir = File::Spec->catdir( $gmsuite_dir , "heuristic_mat" );
 
-# sequence parsing tool
-my $probuild = $dir . "/probuild";
+my $heu_11_mod = File::Spec->catfile( $gmsuite_dir, "heu_11.mod" );
+my $heu_1_mod  = File::Spec->catfile( $gmsuite_dir, "heu_1.mod" );
+my $heu_4_mod  = File::Spec->catfile( $gmsuite_dir, "heu_4.mod" );
 
-#------------------------------------------------
+my $mgm_11_mod = File::Spec->catfile( $gmsuite_dir, "MetaGeneMark_v1.mod" );
+
+# ------------------------------------------------
 # command line parameters
 
-my $seqfile;
-my $outfile;
-my $writeAA;
-my $writeNT;
-my $iniProb;
-my $gcode = "11";
-my $verbose;
+# not in GMS
+
+my $gc_to_run;
+my $mod_type;
+my $gm_gcode;
+
+# shared with GMS
+
+my $seqfile = '';
+
+my $output = '';            # predicted gene coordinates are here
+my $shape = "partial";
+my $motif = "1";            # this turns on/off motif in Genemark.hmm prokaryotic
+my $strand = "both";
+my $format = "LST";
+my $ps = '';
+my $pdf = '';
+my $faa = '';
+my $fnn = '';
+my $gcode = '11';
 my $test;
+
+my $out_name_heuristic = "GeneMark_hmm_heuristic.mod";
+my $out_gm_heu = "GeneMark_heuristic.mat";
 
 #------------------------------------------------
 # constants
@@ -68,255 +87,177 @@ my $MIN_LENGTH = 40;
 my $GENETIC_CODE = "11|4|1";
 my $MIN_HEURISTIC_GC = 30;
 my $MAX_HEURISTIC_GC = 70;
-my $TAIL_SEP = "\#===\n";
-my $HEAD_SEP = "\# ";
 
 #------------------------------------------------
-# program name
 
-my $name = $0;
-$name =~ s/.*\///;
+if ( $#ARGV == -1 ) { print Usage(); exit 1; }
 
-my $usage =
-"
-Usage: $name [options] -s <sequence file name>
+ParseCMD();
+SelfTest() if $test;
+CheckInput_A();
+SetParamaterFileNames( $gcode, $mod_type, $gc_to_run );
+SetOutputNames();
 
-Input sequence in FASTA format
+SetHmmCmd();
+my $command = $hmm;
 
-Optional parameters:
+print $command ."\n" if $debug;
 
-  -outfile   <string> output file name
-             default: <sequence file name>.lst
-  -a         write predicted protein sequence
-  -n         write nucleotide sequence of predicted genes
-  -i         <number> initial probability of non-coding state
-  -gcode     <number> genetic code
-             default: $gcode; supported: 11, 4 and 1
-  -test      installation test
-  -verbose   progress information on
+RunSystem( $command, "predict genes\n" );
 
-Version $VERSION
-";
-
-if ( $#ARGV == -1 ) { print $usage; exit(1); }
-
-# parse command line
-if ( !GetOptions
-  (
-    'seqfile=s'   => \$seqfile,
-    'outfile=s'   => \$outfile,
-    'a'           => \$writeAA,
-    'd'           => \$writeNT,
-    'i=f'         => \$iniProb,
-    'gcode=s'     => \$gcode,
-    'verbose'     => \$verbose,
-    'test'        => \$test
-  )
-) { exit(1); };
-
-# all values are passed by keys
-if (  $#ARGV != -1 )
-  { print "Error in command line\n"; exit(1); }
-
-#------------------------------------------------
-# parse/check input
-
-if ( $verbose ) { print "parse input\n"; }
-
-if ( defined $test ) { &SelfTest(); exit(0); }
-
-if ( !defined $seqfile )
-  { print "Error: sequence file name is missing\n"; exit(1); }
-
-if ( !&CheckFile( $seqfile, "efr" ) ) {exit 1;}
-
-if ( $GENETIC_CODE !~ /\b$gcode\b/ )
-  { print "Error: genetic code [$gcode] is not supported\n"; exit(1); }
-
-if ( !defined $outfile )
-  { $outfile = $seqfile . ".lst"; }
-
-if ( $seqfile eq $outfile )
-  { print "Error: input and output files have the same name\n"; exit(1); }
-
-# pass parameters for gmhmmp
-my $hmm_opt = "";
-if ( defined $writeAA )
-  { $hmm_opt .= " -a "; }
-if (defined $writeNT )
-  { $hmm_opt .= " -d " };
-if ( defined $iniProb )
-  { $hmm_opt .= " -i $iniProb "; }
-
-#------------------------------------------------
-#prepare files
-
-if ( $verbose ) { print "prepare files\n"; }
-
-open(IN, "$seqfile") || die "Can't open $seqfile: $!\n";
-open(OUT, ">$outfile") || die "Can't open $outfile: $!\n";
-
-my ( $fh, $tmpfile ) = tempfile( "tmp_seq_XXXXX" );
-if ( !fileno($fh) ) { die "Can't open temporally  file: $!\n"; }
-close $fh;
-
-if ( $verbose ) { print "tempfile $tmpfile\n"; }
-
-my $tmpout = $tmpfile . ".lst";
-
-my $line = "";
-my $line_number = 0;
-
-my $defline = "";
-my $record = "";
-my $length = 0;
-
-my $status = 1;
-
-my $count_good = 0;
-my $count_bad = 0;
-
-#parse sequence
-
-while ( $line = <IN> )
+if( $mod_type )
 {
-  ++$line_number;
-
-  # parse definition line
-  if ( $line =~ /^\s*(>.*?)\s*$/ )
-  {
-    &RunRecord( $defline );
-
-    $defline = $1 . "\n";
-    $status = 1;
-    $record = "";
-    $length = 0;
-
-    next;
-  }
-
-  # no ">" allowed in sequence
-  if ( $line =~ m/>/ )
-  {
-    print "Wrong symbol in DNA sequence was found on line $line_number; record ignored\n";
-    $status = 0;
-    next;
-  }
-
-  # remove non alphabet
-  $line =~ tr/a-zA-Z//dc;
-
-  # skip empty lines
-  if ( $line =~ /^\s*$/ ) { next;}
-
-  # replace allowed nucleic acid code (non A T C G) by N
-  $line =~ tr/RYKMSWBDHVrykmswbdhv/N/;
-
-  # mark record if unexpected letter was found
-  if ( $line =~ m/[^ATCGNatcgn]/ )
-  {
-    print "Wrong letter in DNA sequence was found on line $line_number; record ignored\n";
-    $status = 0;
-    next;
-  }
-
-  $record .= ( $line . "\n" );
-  $length += length($line);
+	$out_gm_heu = SetMat( $output );
 }
 
-&RunRecord( $defline );
+GetPS_PDF() if ($ps or $pdf);
 
-unlink $tmpfile, $tmpout;
-close IN;
-close OUT;
-
-if ( $verbose )
-{
-  print "good records $count_good\n";
-  print "bad records $count_bad\n";
-}
-
-exit(0);
+exit 0;
 
 #=============================================================
 # sub section:
 #=============================================================
-sub RunRecord
+sub SetMat
 {
-  my( $def ) = @_;
+	my( $file_name ) = shift;
+	
+	my $gc = 0;
+	
+	open( my $IN, $file_name ) or die("error on open file: $file_name");
+	while( my $line = <$IN> )
+	{
+		if( $line =~ /^Model information:/ )
+		{
+			if( $line =~ /_(\d+)\s*$/ )
+			{
+				$gc = $1;
+			}
+			
+			last;
+		}
+	}
+	close $IN;
+	
+	if( $gc == 0 ) { die" error, gc value for GeneMark is missing: $file_name\n"; }
+	
+	return GetHeuristicFileName( $gc, $gcode, $heu_mat_dir, ".mat" );
+}
+#------------------------------------------------
+sub GetPS_PDF
+{
+	my $tmp_ps = "out.ps";
 
-  if ( $verbose ) { print "running $def"; }
+	MakeGMgraph( $out_gm_heu, $seqfile, $tmp_ps  );
 
-  # no fasta record
-  if (( $def eq "" )&&( $record eq "" ))
-  {
-    print "FASTA recod not found\n";
-    return 1;
-  }
+	my $tmp_ps_hmm = $tmp_ps ."_hmm";
 
-  # no def line for valid record - create one
-  if ( $def eq "" )
-    { $def = ">definition line missing\n"; }
+	$command = "$ps_gm_overlay -int_file $output -outfile $tmp_ps_hmm  $tmp_ps";
+	RunSystem( $command, "overlay hmm graphs: " );
 
-  # bad record found
-  if ( !$status )
-  {
-     print OUT $HEAD_SEP . $def;
-     print OUT "record ignored: bad sequence\n";
-     print OUT $TAIL_SEP;
+	unlink $tmp_ps;
+	rename $tmp_ps_hmm, $tmp_ps;
 
-     ++$count_bad;
-     return 1;
-  }
+	system( "ps2pdf  $tmp_ps  $pdf ") if $pdf;
+	rename $tmp_ps, $ps if $ps;
+	
+	unlink $tmp_ps;
+}
+#------------------------------------------------
+sub MakeGMgraph
+{
+	my( $mat, $sname, $graph_name ) = @_;
 
-  # check minimum length
-  if ( $length < $MIN_LENGTH )
-  {
-     print OUT $HEAD_SEP . $def;
-     print OUT "record ignored: sequence short\n";
-     print OUT $TAIL_SEP;
+	my $symlink_name = File::Spec->splitpath( $sname ) ."_for_gm";
+	if ( -e $symlink_name ) { unlink $symlink_name ;}
 
-     ++$count_bad;
-     return 1;
-  }
+	if ( symlink $sname, $symlink_name ) {;}
+	else { print "error on symlink\n"; exit 1; }
+	
+	my $gm_gcode_option = ' -c ';
 
-  # create temp file with sequence for gmhmmp
-  open($fh, ">$tmpfile") || die "Can't open $tmpfile: $!\n";
-  print $fh "$def\n";
-  print $fh $record;
-  close ($fh);
+	if( $gcode )
+	{
+		$gm_gcode_option .= File::Spec->catfile( $gmsuite_dir, "gm_". $gcode .".tbl" )
+	}
 
-  # calculate GC of sequence and get name of corresponding Heuristic model
-  my $gc = `$probuild --gc --seq $tmpfile --GC_LABEL "" --GC_PRECISION 1`;
-  chomp($gc);
-  if ( !$gc =~ /\d+\.\d/ )
-    { print "Error: unexpected format\n"; exit(1); }
-  my $mod = &GetHeuristicFileName( $gc, $gcode, $heu_dir, ".mod" );
+	$command = "$genemark -gkfns  $gm_gcode_option -m $mat  $symlink_name ";
+	RunSystem( $command, "make gm graph: " );
 
-  # get predictions
-  my $result = system( "$hmm -m $mod $tmpfile $hmm_opt" );
+	print $command ."\n" if $debug;
 
-  if ( !$result )
-  {
-    print OUT $HEAD_SEP . $def;
-    open($fh, "$tmpout") || die "Can't open $tmpout: $!\n";
-    while(<$fh>)
-    {
-      s/^Sequence file name: \S+,/Sequence file name: $seqfile,/;
+	unlink  $symlink_name;
+	unlink  $symlink_name .".lst";
 
-      print OUT $_;
-    }
-    close ($fh);
-    print OUT $TAIL_SEP;
-    ++$count_good;
-  }
-  else
-  {
-    print OUT $HEAD_SEP . $def;
-    print OUT "record ignored: error running gmhmmp\n";
-    print OUT $TAIL_SEP;
-    ++$count_bad;
-  }
+	rename $symlink_name .".ps", $graph_name;
+}
+# -----------------------------------------------
+sub RunSystem
+{
+	my( $com, $text ) = @_;
+	if ( system( $com ) ) { print "error on last system call: $text\n"; exit 1; }
+}
+# -----------------------------------------------
+sub SetHmmCmd
+{
+	# set prediction for linear genome; no partial genes at the sequence ends
+	$hmm = $hmm . " -i 1 " if ( $shape eq "linear" ); 
+
+	# set strand to predict
+	if( $strand eq "direct" )      { $hmm .= " -s d "; }
+	elsif( $strand eq "reverse" )  { $hmm .= " -s r "; }
+		
+	if( $format eq "LST" )         { $hmm .= " -f L "; }
+	elsif( $format eq "GFF" )      { $hmm .= " -f G "; }
+	
+	$hmm .= " -g $gcode " if $gcode;
+	
+	$hmm .= " -o $output ";
+	$hmm .= " -D $fnn " if $fnn;
+	$hmm .= " -A $faa " if $faa;	
+	$hmm .= " -m $out_name_heuristic ";
+	$hmm .= " ". $seqfile;
+}
+# -----------------------------------------------
+sub SetOutputNames
+{
+	if( ! $output )
+	{
+		if ( $format eq "LST" )      { $output = File::Spec->splitpath( $seqfile ) .".lst";  }
+		elsif ( $format eq "GFF" )   { $output = File::Spec->splitpath( $seqfile ) .".gff"; }
+	
+		$fnn = File::Spec->splitpath( $seqfile ) .".fnn" if $fnn;
+		$faa = File::Spec->splitpath( $seqfile ) .".faa" if $faa;
+		$ps  = File::Spec->splitpath( $seqfile ). ".ps"  if $ps;
+		$pdf = File::Spec->splitpath( $seqfile ). ".pdf" if $pdf;
+	}
+	else
+	{
+		$fnn = $output . ".fnn" if $fnn;
+		$faa = $output . ".faa" if $faa;
+		$ps  = $output . ".ps"  if $ps;
+		$pdf = $output . ".pdf" if $pdf;
+	}
+}
+# -----------------------------------------------
+sub SetParamaterFileNames
+{
+	$gm_gcode = File::Spec->catfile( $gmsuite_dir, 'gm_'. $gcode .".tbl" );
+
+	if ( $mod_type and  $mod_type eq "1999" )
+	{
+		$out_name_heuristic = $heu_11_mod if $gcode eq '11';
+		$out_name_heuristic = $heu_1_mod  if $gcode eq '1';
+		$out_name_heuristic = $heu_4_mod  if $gcode eq '4';
+	}
+	elsif( $mod_type and  $mod_type eq "2010" )
+	{
+		$out_name_heuristic = $mgm_11_mod if $gcode eq '11';
+	}
+	elsif( $gc_to_run )
+	{
+		$out_name_heuristic = GetHeuristicFileName( $gc_to_run, $gcode, $heu_mod_dir, ".mod" );
+		$out_gm_heu         = GetHeuristicFileName( $gc_to_run, $gcode, $heu_mat_dir, ".mat" );
+	}
 }
 #------------------------------------------------
 sub GetHeuristicFileName
@@ -334,20 +275,20 @@ sub SelfTest
 {
   print "installation test ...\n";
 
-  &CheckFile( $heu_dir, "edrx" );
-  &CheckFile( $hmm , "efx");
-  &CheckFile( $probuild , "efx");
+  CheckFile( $heu_mod_dir, "er" );
+  CheckFile( $heu_mat_dir, "er" );
+  CheckFile( $hmm , "ex");
 
   my @array = split( /\|/, $GENETIC_CODE );
   my $code  = '';
   my $GC = 0;
 
-  # test presence of heuristic model files for GeneMark.hmm  ".mod"
   foreach $code ( @array )
   {
     for ( $GC = $MIN_HEURISTIC_GC; $GC <= $MAX_HEURISTIC_GC; ++$GC )
     {
-      &CheckFile( &GetHeuristicFileName( $GC, $code, $heu_dir, ".mod" ), "efr" );
+       CheckFile( GetHeuristicFileName( $GC, $code, $heu_mod_dir, ".mod" ), "er" );
+       CheckFile( GetHeuristicFileName( $GC, $code, $heu_mat_dir, ".mat" ), "er" );
     }
   }
 
@@ -381,4 +322,81 @@ sub CheckFile
   }
   return $result;
 }
-#------------------------------------------------
+# -----------------------------------------------
+sub CheckInput_A
+{
+	my $OUTPUT_FORMAT = "LST|GFF";
+	my $SHAPE_TYPE = "linear|circular|partial";
+	my $STRAND = "direct|reverse|both";
+	my $GENETIC_CODE = "11|4|1|25";
+	
+	if ( $OUTPUT_FORMAT !~ /\b$format\b/ )   { print "Error: format [$format] is not supported\n"; exit 1; }
+	if ( $SHAPE_TYPE !~ /\b$shape\b/ )       { print "Error: sequence organization [$shape] is not supported\n"; exit 1 ; }
+	if ( $STRAND !~ /\b$strand\b/ )          { print "Error: strand [$strand] is not supported\n"; exit 1; }
+	if ( $GENETIC_CODE !~ /\b$gcode\b/ )     { print "Error: genetic code [$gcode] is not supported\n"; exit 1 ; }
+}
+# -----------------------------------------------
+sub ParseCMD
+{
+	if ( !GetOptions
+	  (
+	    'output=s'    => \$output,
+	    'shape=s'     => \$shape,
+	    'strand=s'    => \$strand,
+	    'format=s'    => \$format,
+	    'gcode=s'     => \$gcode,
+	    'ps'          => \$ps,
+	    'pdf'         => \$pdf,
+	    'faa'         => \$faa,
+	    'fnn'         => \$fnn,
+	    'gc=i'        => \$gc_to_run,
+	    'type=s'      => \$mod_type,
+	    'test'        => \$test,
+	    'debug'       => \$debug
+	  )
+	) { exit 1; }
+	
+	if ( $#ARGV == -1 ) { print "Error: sequence file name is missing\n"; exit 1; }
+	if ( $#ARGV > 0 ) { print "Error: more than one input sequence file was specified\n"; exit 1; }
+	
+	$seqfile = shift @ARGV;
+}
+# -----------------------------------------------
+sub Usage
+{
+my $text =
+"
+this code runs GeneMark.hmm prokaryotic with GeneMarkS derived parameters
+Usage: $0 [options] <sequence file name>
+
+Input sequence in FASTA format
+
+Select parameters:
+--type      <string> type of heuristic model to use
+--gc        <number>  run with specified GC model
+--gcode     <number> genetic code
+            (default: $gcode; supported: 11, 4 and 1)
+
+Output options:
+(output is in current working directory)
+--output    <string> output file with predicted gene coordinates by GeneMarh.hmm
+            (default: <sequence file name>.lst)
+--format    <string> output coordinates of predicted genes in this format
+            (default: $format; supported: LST and GFF)
+--fnn       create file with nucleotide sequence of predicted genes
+--faa       create file with protein sequence of predicted genes
+Attention, graphical output works only if input FASTA with one sequence in file
+--ps        create GeneMark graphical output in PostScript format
+--pdf       create GeneMark graphical output in PDF format
+
+Set running option
+--shape     <string> sequence organization
+            (default: $shape; supported: linear, circular and partial)
+--strand    <string> sequence strand to predict genes in
+            (default: '$strand'; supported: direct, reverse and both )
+Developer options:
+--test
+";
+        return $text;
+}
+# -----------------------------------------------

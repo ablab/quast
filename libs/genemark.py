@@ -129,31 +129,30 @@ def add_genes_to_fasta(genes, fasta_fpath):
 
 
 def gmhmm_p_everyGC(tool_dirpath, fasta_fpath, err_fpath, index, tmp_dirpath):
-    tool_exec_fpath = os.path.join(tool_dirpath, 'gmhmmp')
-    heu_dirpath = os.path.join(tool_dirpath, 'heuristic_mod')
-
     tmp_dirpath = tempfile.mkdtemp(dir=tmp_dirpath)
-    for ind, seq in read_fasta(fasta_fpath):
-        gc = min(70, max(30, gc_content(seq)))
-        gc = gc - gc % 5  # rounds to a divisible by 5
-        current_fname = str(gc) + '.fasta'
-        current_fpath = os.path.join(tmp_dirpath, current_fname)
-        with open(current_fpath, 'a') as current_file:
-            current_file.write('>' + ind + '\n' + seq + '\n')
+
+    tool_exec_fpath = os.path.join(tool_dirpath, 'gmsn.pl')
+    err_file = open(err_fpath, 'w')
+    fasta_name = qutils.name_from_fpath(fasta_fpath)
+    return_code = qutils.call_subprocess(
+        ['perl', tool_exec_fpath, '--name', fasta_name, '--clean', '--out', tmp_dirpath,
+         fasta_fpath ],
+        stdout=err_file,
+        stderr=err_file,
+        indent='    ' + qutils.index_to_str(index))
+    if return_code != 0:
+        return
 
     genes = []
-    _, _, fnames = os.walk(tmp_dirpath).next()
-    for fname in fnames:
-        sub_fasta_fpath = os.path.join(tmp_dirpath, fname)
-        out_fpath = sub_fasta_fpath + '.gmhmm'
-
-        gc_str, ext = os.path.splitext(fname)
-        heu_fpath = os.path.join(heu_dirpath, 'heu_11_' + gc_str + '.mod')
-        with open(err_fpath, 'a') as err_file:
-            ok = gmhmm_p(tool_exec_fpath, sub_fasta_fpath, heu_fpath,
-                       out_fpath, err_file, index)
-            if ok:
-                genes.extend(parse_gmhmm_out(out_fpath))
+    tool_exec_fpath = os.path.join(tool_dirpath, 'gmhmmp')
+    sub_fasta_fpath = os.path.join(tmp_dirpath, fasta_name)
+    out_fpath = sub_fasta_fpath + '.gmhmm'
+    heu_fpath = os.path.join(tmp_dirpath, fasta_name + '_hmm_heuristic.mod')
+    with open(err_fpath, 'a') as err_file:
+        ok = gmhmm_p(tool_exec_fpath, fasta_fpath, heu_fpath,
+                   out_fpath, err_file, index)
+        if ok:
+            genes.extend(parse_gmhmm_out(out_fpath))
 
     if not qconfig.debug:
         shutil.rmtree(tmp_dirpath)
@@ -233,7 +232,7 @@ def do(fasta_fpaths, gene_lengths, out_dirpath, prokaryote, meta):
 
     if meta:
         tool_name = 'MetaGeneMark'
-        tool_dirname = 'metagenemark'
+        tool_dirname = 'genemark'
         gmhmm_p_function = gmhmm_p_metagenomic
     elif prokaryote:
         tool_name = 'GeneMark'
@@ -250,10 +249,9 @@ def do(fasta_fpaths, gene_lengths, out_dirpath, prokaryote, meta):
     if not os.path.exists(tool_dirpath):
         logger.warning('  Sorry, can\'t use %s on this platform, skipping gene prediction.' % tool_name)
     else:
-        if tool_name != 'GeneMark-ES':
-            successful = install_genemark(tool_dirpath)
-            if not successful:
-                return
+        successful = install_genemark(tool_dirpath)
+        if not successful:
+            return
 
         if not os.path.isdir(out_dirpath):
             os.mkdir(out_dirpath)

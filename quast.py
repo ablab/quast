@@ -116,7 +116,7 @@ def correct_fasta(original_fpath, corrected_fpath, min_contig,
                             str(qconfig.MAX_REFERENCE_LENGTH) + " (Nucmer's constraint).")
                     continue
 
-               split_ref_fpath = os.path.join(split_ref_dirpath, "chr_" + str(num_file + 1)) + fasta_ext
+                split_ref_fpath = os.path.join(split_ref_dirpath, "chr_" + str(num_file + 1)) + fasta_ext
                 fastaparser.write_fasta(split_ref_fpath, [(chr_name, chr_seq)], mode='a')
                 if cur_len > max_len:
                     qconfig.splitted_ref.append(split_ref_fpath)

@@ -605,15 +605,17 @@ def main(args):
         logger.error('Error running quast.py for the contigs not aligned anywhere')
 
     if ref_names:
-        summary_dirpath = os.path.join(output_dirpath, 'summary')
         logger.print_timestamp()
         logger.info("Summarizing results...")
+        summary_dirpath = os.path.join(output_dirpath, 'summary')
+        if not os.path.isdir(summary_dirpath):
+            os.mkdir(summary_dirpath)
         if draw_plots:
             from libs import create_meta_summary
             metrics_for_plots = reporting.Fields.main_metrics
             misassembl_metrics = [reporting.Fields.MIS_RELOCATION, reporting.Fields.MIS_TRANSLOCATION, reporting.Fields.MIS_INVERTION,
                                reporting.Fields.MIS_ISTRANSLOCATIONS]
-            create_meta_summary.do(output_dirpath, labels, metrics_for_plots, misassembl_metrics, ref_names)
+            create_meta_summary.do(summary_dirpath, labels, metrics_for_plots, misassembl_metrics, ref_names)
         if html_report:
             html_saver.create_meta_report(summary_dirpath, json_texts)
 

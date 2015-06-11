@@ -3,7 +3,7 @@ String.prototype.trunc =
         return this.substr(0, n-1) + (this.length > n ? '&hellip;' : '');
     };
 
-function fillOneRow(metric, mainMetrics, group_n, order, glossary, primary, rowName, report_n, assembliesNames, notAlignedContigs)
+function fillOneRow(metric, mainMetrics, group_n, order, glossary, primary, rowName, report_n, assembliesNames, notAlignedContigs, notExtendedMetrics)
 {
     (function(group_n) {
         var id_group = '#group_' + group_n;
@@ -29,7 +29,8 @@ function fillOneRow(metric, mainMetrics, group_n, order, glossary, primary, rowN
         trClass = 'content-row row_hidden row_to_hide';
     }
 	var tdClass = '';
-    if (!primary)
+
+    if (!primary && $.inArray(metricName, notExtendedMetrics) == -1)
 	{
         trClass += ' secondary_hidden';
 		tdClass = ' secondary_td';
@@ -37,12 +38,18 @@ function fillOneRow(metric, mainMetrics, group_n, order, glossary, primary, rowN
     else
         trClass += ' primary';
 
+    not_extend = false;
+    if ($.inArray(metricName, notExtendedMetrics) > -1){
+        not_extend = true;
+        trClass += ' not_extend';
+    }
+
     table +=
         '<tr class="' + trClass + '" quality="' + quality + '" onclick="toggleSecondary($(this))">' +
-            '<td class="left_column_td' + tdClass + '"><span class="metric-name">' + (primary ? '+ ' : '') +
-                nbsp(addTooltipIfDefinitionExists(glossary, rowName), metricName) +
-            '</span>' +
-        '</td>';
+        '<td class="left_column_td' + tdClass + '"><span class="metric-name">' + (primary && !not_extend ? '+ ' : '') +
+        (not_extend && metricName == '# possibly misassembled contigs' ? '&nbsp&nbsp&nbsp&nbsp' : not_extend ? '&nbsp&nbsp&nbsp&nbsp' : '')
+        + nbsp(addTooltipIfDefinitionExists(glossary, rowName), metricName) +
+        '</span>' + '</td>';
 
     if (report_n > -1) {
         for (var not_aligned_n = 0; not_aligned_n < notAlignedContigs[report_n].length; not_aligned_n++) {
@@ -129,6 +136,7 @@ function buildTotalReport(assembliesNames, report, order, date, minContig, gloss
             }
         }
     }
+    notExtendedMetrics = ['    # interspecies translocations', '# possibly misassembled contigs'];
 
     for (var group_n = 0; group_n < report.length; group_n++) {
         var group = report[group_n];
@@ -197,12 +205,12 @@ function buildTotalReport(assembliesNames, report, order, date, minContig, gloss
         }
         for (metric_n = 0; metric_n < metrics.length; metric_n++) {
             var metric = metrics[metric_n];
-            table += fillOneRow(metric, mainMetrics, group_n, order, glossary, true, metric.metricName, -1, assembliesNames, notAlignedContigs);
+            table += fillOneRow(metric, mainMetrics, group_n, order, glossary, true, metric.metricName, -1, assembliesNames, notAlignedContigs, notExtendedMetrics);
             for(report_n = 0; report_n < reports.length; report_n++ ) {  //  add information for each reference
                 var metrics_ref = reports[report_n].report[group_n][1];
                 for (var metric_ext_n = 0; metric_ext_n < metrics_ref.length; metric_ext_n++){
                     if (metrics_ref[metric_ext_n].metricName == metrics[metric_n].metricName) {
-                        table += fillOneRow(metrics_ref[metric_ext_n], mainMetrics, group_n, order, glossary, false, reports[report_n].name, report_n, assembliesNames, notAlignedContigs);
+                        table += fillOneRow(metrics_ref[metric_ext_n], mainMetrics, group_n, order, glossary, false, reports[report_n].name, report_n, assembliesNames, notAlignedContigs, notExtendedMetrics);
                         break;
                     }
                 }
@@ -305,7 +313,7 @@ function buildTotalReport(assembliesNames, report, order, date, minContig, gloss
 
 function toggleSecondary(caller)
 {
-	if(!caller.hasClass('primary'))
+	if(!caller.hasClass('primary') || caller.hasClass('not_extend'))
 		return;
 	var nextRow = caller.next('.content-row');
     var sign = nextRow.css('display') == 'none' ? '&minus;' : '+';

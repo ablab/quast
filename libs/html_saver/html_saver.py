@@ -153,6 +153,8 @@ def create_meta_report(results_dirpath, json_texts):
     html_text = re.sub('{{ ' + keyword + ' }}', '[' + ','.join(json_texts) + ']', html_text)
     with open(html_fpath, 'w') as f_html:
         f_html.write(html_text)
+    meta_log = get_logger(qconfig.LOGGER_META_NAME)
+    meta_log.info('  Extended version of HTML-report (for all references and assemblies) is saved to ' + html_fpath)
 
 
 def save_total_report(results_dirpath, min_contig, ref_fpath):

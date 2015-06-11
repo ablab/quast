@@ -50,6 +50,7 @@ from libs import qconfig
 
 from libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
+meta_logger = get_logger(qconfig.LOGGER_META_NAME)
 
 import reporting
 
@@ -512,6 +513,7 @@ def draw_meta_summary_plot(labels, ref_names, all_rows, results, plot_fpath, tit
     if matplotlib_error:
         return
 
+    meta_logger.info('  Drawing ' + title + ' metaQUAST summary plot...')
     import matplotlib.pyplot
     import matplotlib.ticker
     import math
@@ -591,12 +593,15 @@ def draw_meta_summary_plot(labels, ref_names, all_rows, results, plot_fpath, tit
     plot_fpath += plots_file_ext
     matplotlib.pyplot.tight_layout()
     matplotlib.pyplot.savefig(plot_fpath, bbox_inches='tight')
+    logger.info('    saved to ' + plot_fpath)
+
 
 # metaQuast misassemblies by types plots (all references for 1 assembly)
-def draw_meta_summary_misassembl_plot(results, ref_names, contig_num, plot_fpath, title='', yaxis_title=''):
+def draw_meta_summary_misassembl_plot(results, ref_names, contig_num, plot_fpath, title=''):
     if matplotlib_error:
         return
 
+    meta_logger.info('  Drawing metaQUAST summary misassemblies plot for ' + title + '...')
     import matplotlib.pyplot
     import matplotlib.ticker
     import math
@@ -653,12 +658,14 @@ def draw_meta_summary_misassembl_plot(results, ref_names, contig_num, plot_fpath
         matplotlib.pyplot.ylim([0, 5])
     else:
         matplotlib.pyplot.ylim([0, math.ceil(ymax * 1.1)])
+    matplotlib.pyplot.ylabel('# misassemblies', fontsize=axes_fontsize)
 
     ax.legend(legend, loc='center left', bbox_to_anchor=(1.0, 0.5), numpoints=1)
 
     plot_fpath += plots_file_ext
     matplotlib.pyplot.tight_layout()
     matplotlib.pyplot.savefig(plot_fpath, bbox_inches='tight')
+    logger.info('    saved to ' + plot_fpath)
 
 
 # Quast misassemblies by types plot (for all assemblies)
@@ -666,14 +673,15 @@ def draw_misassembl_plot(reports, plot_fpath, title='', yaxis_title=''):
     if matplotlib_error:
         return
 
+    logger.info('  Drawing misassemblies by types plot...')
     import matplotlib.pyplot
     import matplotlib.ticker
     import math
 
     contigs_num = len(reports)
     labels = []
-    fig = matplotlib.pyplot.figure()
-    ax = fig.add_subplot(111)
+    figure = matplotlib.pyplot.figure()
+    ax = figure.add_subplot(111)
     for j in range(contigs_num):
         labels.append(reports[j].get_field(reporting.Fields.NAME))
 
@@ -686,7 +694,7 @@ def draw_misassembl_plot(reports, plot_fpath, title='', yaxis_title=''):
                            reporting.Fields.MIS_ISTRANSLOCATIONS]
     legend_n = []
     ymax = 0
-    main_arr_x = range(1, len(misassemblies) + 1)
+    main_arr_x = range(1, len(reports) + 1)
     arr_x = []
     arr_y = []
     for j in range(len(reports)):
@@ -750,6 +758,8 @@ def draw_misassembl_plot(reports, plot_fpath, title='', yaxis_title=''):
     plot_fpath += plots_file_ext
     matplotlib.pyplot.tight_layout()
     matplotlib.pyplot.savefig(plot_fpath, bbox_inches='tight')
+    logger.info('    saved to ' + plot_fpath)
+    pdf_plots_figures.append(figure)
 
 
 def draw_report_table(report_name, extra_info, table_to_draw, column_widths):

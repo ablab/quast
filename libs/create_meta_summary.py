@@ -86,7 +86,9 @@ def do(output_dirpath, labels, metrics, misassembl_metrics, ref_names):
                         if mis_results:
                             for contig_num in range(contigs_num):
                                 summary_fpath_base = os.path.join(summary_dirpath, labels[contig_num] + '_misassemblies')
-                                plotter.draw_meta_summary_misassembl_plot(mis_results, cur_ref_names, contig_num, summary_fpath_base, title=metric)
+                                plotter.draw_meta_summary_misassembl_plot(mis_results, cur_ref_names, contig_num, summary_fpath_base, title=labels[contig_num])
+    logger.info('')
+    logger.info('  Text versions of reports and plots for each metric (for all references and assemblies) are saved to ' + summary_dirpath + '/')
 
 
 def print_file(all_rows, ref_num, fpath):

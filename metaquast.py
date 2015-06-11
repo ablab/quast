@@ -606,17 +606,16 @@ def main(args):
 
     if ref_names:
         summary_dirpath = os.path.join(output_dirpath, 'summary')
+        logger.print_timestamp()
+        logger.info("Summarizing results...")
         if draw_plots:
             from libs import create_meta_summary
             metrics_for_plots = reporting.Fields.main_metrics
             misassembl_metrics = [reporting.Fields.MIS_RELOCATION, reporting.Fields.MIS_TRANSLOCATION, reporting.Fields.MIS_INVERTION,
                                reporting.Fields.MIS_ISTRANSLOCATIONS]
             create_meta_summary.do(output_dirpath, labels, metrics_for_plots, misassembl_metrics, ref_names)
-            logger.info('')
-            logger.info('Text versions of reports and graphics for each metric (for all references and assemblies) are saved to ' + summary_dirpath)
         if html_report:
             html_saver.create_meta_report(summary_dirpath, json_texts)
-            logger.info('Extended version of HTML-report (for all references and assemblies) are saved to ' + summary_dirpath)
 
     quast._cleanup(corrected_dirpath)
     logger.info('')

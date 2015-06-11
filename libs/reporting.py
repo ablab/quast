@@ -606,7 +606,7 @@ def save_total(output_dirpath, silent=True):
 
 
 def save_misassemblies(output_dirpath):
-    save(output_dirpath, "misassemblies_report", qconfig.transposed_report_prefix + "_misassemblies", Fields.misassemblies_order, silent=True)
+    save(output_dirpath, "misassemblies_report", qconfig.transposed_report_prefix + "_misassemblies", Fields.misassemblies_order)
 
 
 def save_unaligned(output_dirpath):

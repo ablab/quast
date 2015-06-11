@@ -397,6 +397,7 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
         prev = sorted_aligns[0].clone()
         cur_aligned_length = prev.len2
         is_misassembled = False
+        contig_is_printed = False
 
         for i in range(len(sorted_aligns) - 1):
             print >> planta_out_f, '\t\t\tReal Alignment %d: %s' % (i+1, str(sorted_aligns[i]))
@@ -414,7 +415,9 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
                 is_misassembled = True
                 aligned_lengths.append(cur_aligned_length)
                 cur_aligned_length = 0
-                print >> misassembly_file, sorted_aligns[i].contig
+                if not contig_is_printed:
+                    print >> misassembly_file, sorted_aligns[i].contig
+                    contig_is_printed = True
                 print >> misassembly_file, 'Extensive misassembly (',
                 print >> planta_out_f, '\t\t\t  Extensive misassembly (',
                 if sorted_aligns[i].ref != sorted_aligns[i+1].ref:

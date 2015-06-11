@@ -45,7 +45,7 @@ def get_results_for_metric(ref_names, metric, contigs_num, labels, output_dirpat
     return results, all_rows, cur_ref_names
 
 
-def do(summary_dirpath, labels, metrics, misassembl_metrics, ref_names):
+def do(output_dirpath, summary_dirpath, labels, metrics, misassembl_metrics, ref_names):
     ref_names = sorted(ref_names)
     ref_names.append(qconfig.not_aligned_name) # extra case
     contigs_num = len(labels)

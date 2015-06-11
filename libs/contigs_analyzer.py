@@ -358,7 +358,6 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
                 cyclic_moment = True
         return distance, cyclic_moment
 
-
     def is_misassembly(align1, align2, cyclic_ref_lens=None):
         #Calculate inconsistency between distances on the reference and on the contig
         distance_on_contig = min(align2.e2, align2.s2) - max(align1.e2, align1.s2) - 1
@@ -387,12 +386,15 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
         else:
             return False, aux_data
 
-
     def check_chr_for_refs(chr1, chr2):
         return ref_labels_by_chromosomes[chr1] == ref_labels_by_chromosomes[chr2]
 
+    def check_ns_between_aligns(contig_seq, align1, align2):
+        return contig_seq[max(align1.e2, align1.s2): min(align2.e2, align2.s2) - 1] == \
+               "N" * (min(align2.e2, align2.s2) - max(align1.e2, align1.s2) - 1)
 
-    def process_misassembled_contig(sorted_aligns, cyclic, aligned_lengths, region_misassemblies, reg_lens, ref_aligns, ref_features):
+    def process_misassembled_contig(sorted_aligns, cyclic, aligned_lengths, region_misassemblies,
+                                    reg_lens, ref_aligns, ref_features, contig_seq):
         misassembly_internal_overlap = 0
         prev = sorted_aligns[0].clone()
         cur_aligned_length = prev.len2
@@ -444,8 +446,10 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
                 ref_features.setdefault(sorted_aligns[i].ref, {})[sorted_aligns[i].e1] = 'M'
                 ref_features.setdefault(sorted_aligns[i+1].ref, {})[sorted_aligns[i+1].e1] = 'M'
             else:
-                if cyclic_moment and inconsistency == 0:
+                if inconsistency == 0 and cyclic_moment:
                     print >> planta_out_f, '\t\t\t  Fake misassembly (caused by linear representation of circular genome) between these two alignments'
+                elif inconsistency == 0 and check_ns_between_aligns(contig_seq, sorted_aligns[i], sorted_aligns[i+1]):
+                    print >> planta_out_f, '\t\t\t  Fake misassembly between these two alignments: inconsistency = 0, gap is filled with Ns'
                 else:
                     if qconfig.strict_NA:
                         aligned_lengths.append(cur_aligned_length)
@@ -864,7 +868,7 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
 
                     ### processing misassemblies
                     is_misassembled, current_mio = process_misassembled_contig(sorted_aligns, cyclic,
-                        aligned_lengths, region_misassemblies, reg_lens, ref_aligns, ref_features)
+                        aligned_lengths, region_misassemblies, reg_lens, ref_aligns, ref_features, seq)
                     misassembly_internal_overlap += current_mio
                     if is_misassembled:
                         misassembled_contigs[contig] = len(assembly[contig])

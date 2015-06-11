@@ -59,6 +59,8 @@ aux_files = [
 def init(results_dirpath, meta=False):
 #    shutil.copy(template_fpath,     os.path.join(results_dirpath, report_fname))
     aux_dirpath = os.path.join(results_dirpath, aux_dirname)
+    if os.path.isdir(aux_dirpath):
+        shutil.rmtree(aux_dirpath)
     os.mkdir(aux_dirpath)
 
     for aux_f_relpath in aux_files:
@@ -144,8 +146,7 @@ def append(results_dirpath, json_fpath, keyword):
 
 def create_meta_report(results_dirpath, json_texts):
     html_fpath = os.path.join(results_dirpath, report_fname)
-    if not os.path.isfile(html_fpath):
-        init(results_dirpath, True)
+    init(results_dirpath, True)
     # reading html template file
     with open(html_fpath) as f_html:
         html_text = f_html.read()

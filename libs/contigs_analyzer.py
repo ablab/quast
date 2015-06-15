@@ -429,8 +429,9 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
                     if combined_ref and \
                             not check_chr_for_refs(sorted_aligns[i].ref, sorted_aligns[i+1].ref):  # if chromosomes from different references
                             region_misassemblies.append(Misassembly.INTERSPECTRANSLOCATION)
-                            references_misassemblies[sorted_aligns[i].ref] += 1
-                            references_misassemblies[sorted_aligns[i+1].ref] += 1
+                            ref1, ref2 = ref_labels_by_chromosomes[sorted_aligns[i].ref], ref_labels_by_chromosomes[sorted_aligns[i+1].ref]
+                            references_misassemblies[ref1] += 1
+                            references_misassemblies[ref2] += 1
                             print >> planta_out_f, 'interspecies translocation',
                             print >> misassembly_file, 'interspecies translocation',
                     else:
@@ -572,7 +573,7 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
     region_misassemblies = []
     misassembled_contigs = {}
     references_misassemblies = {}
-    for ref in references:
+    for ref in ref_labels_by_chromosomes.values():
         references_misassemblies[ref] = 0
 
     aligned_lengths = []

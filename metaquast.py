@@ -48,6 +48,7 @@ def parallel_partition_contigs(asm, assemblies_by_ref, corrected_dirpath, alignm
     contigs = {}
     aligned_contig_names = set()
     aligned_contigs_for_each_ref = {}
+    contigs_seq = fastaparser.read_fasta(asm.fpath)
 
     for line in open(alignments_fpath_template % asm.name):
         values = line.split()
@@ -58,7 +59,7 @@ def parallel_partition_contigs(asm, assemblies_by_ref, corrected_dirpath, alignm
         if ref_name not in aligned_contigs_for_each_ref:
             aligned_contigs_for_each_ref[ref_name] = []
 
-        for (cont_name, seq) in fastaparser.read_fasta(asm.fpath):
+        for (cont_name, seq) in contigs_seq:
             if not cont_name in contigs:
                 contigs[cont_name] = seq
 

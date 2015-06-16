@@ -40,58 +40,66 @@ class Assembly:
         self.name = os.path.splitext(os.path.basename(self.fpath))[0]
 
 
+def parallel_partition_contigs(asm, assemblies_by_ref, corrected_dirpath, alignments_fpath_template):
+    logger.info('  ' + 'processing ' + asm.name)
+    added_ref_asm = []
+    not_aligned_fname = asm.name + '_not_aligned_anywhere.fasta'
+    not_aligned_fpath = os.path.join(corrected_dirpath, not_aligned_fname)
+    contigs = {}
+    aligned_contig_names = set()
+    aligned_contigs_for_each_ref = {}
+
+    for line in open(alignments_fpath_template % asm.name):
+        values = line.split()
+        ref_name = contigs_analyzer.ref_labels_by_chromosomes[values[0]]
+        ref_contigs_names = values[1:]
+        ref_contigs_fpath = os.path.join(
+            corrected_dirpath, asm.name + '_to_' + ref_name[:40] + '.fasta')
+        if ref_name not in aligned_contigs_for_each_ref:
+            aligned_contigs_for_each_ref[ref_name] = []
+
+        for (cont_name, seq) in fastaparser.read_fasta(asm.fpath):
+            if not cont_name in contigs:
+                contigs[cont_name] = seq
+
+            if cont_name in ref_contigs_names and cont_name not in aligned_contigs_for_each_ref[ref_name]:
+                # Collecting all aligned contigs names in order to futher extract not-aligned
+                aligned_contig_names.add(cont_name)
+                aligned_contigs_for_each_ref[ref_name].append(cont_name)
+                fastaparser.write_fasta(ref_contigs_fpath, [(cont_name, seq)], 'a')
+
+        ref_asm = Assembly(ref_contigs_fpath, asm.label)
+        if ref_asm.name not in added_ref_asm:
+            if ref_name in assemblies_by_ref:
+                assemblies_by_ref[ref_name].append(ref_asm)
+                added_ref_asm.append(ref_asm.name)
+
+    # Exctraction not aligned contigs
+    all_contigs_names = set(contigs.keys())
+    not_aligned_contigs_names = all_contigs_names - aligned_contig_names
+    fastaparser.write_fasta(not_aligned_fpath, [(name, contigs[name]) for name in not_aligned_contigs_names])
+
+    not_aligned_asm = Assembly(not_aligned_fpath, asm.label)
+    return assemblies_by_ref, not_aligned_asm
+
+
 def _partition_contigs(assemblies, ref_fpaths, corrected_dirpath, alignments_fpath_template):
     # not_aligned_anywhere_dirpath = os.path.join(output_dirpath, 'contigs_not_aligned_anywhere')
     # if os.path.isdir(not_aligned_anywhere_dirpath):
     #     os.rmdir(not_aligned_anywhere_dirpath)
     # os.mkdir(not_aligned_anywhere_dirpath)
 
-    not_aligned_assemblies = []
     # array of assemblies for each reference
     assemblies_by_ref = dict([(qutils.name_from_fpath(ref_fpath), []) for ref_fpath in ref_fpaths])
-    added_ref_asm = []
-
-    for asm in assemblies:
-        logger.info('  ' + 'processing ' + asm.name)
-        not_aligned_fname = asm.name + '_not_aligned_anywhere.fasta'
-        not_aligned_fpath = os.path.join(corrected_dirpath, not_aligned_fname)
-        contigs = {}
-        aligned_contig_names = set()
-        aligned_contigs_for_each_ref = {}
-
-        for line in open(alignments_fpath_template % asm.name):
-            values = line.split()
-            ref_name = contigs_analyzer.ref_labels_by_chromosomes[values[0]]
-            ref_contigs_names = values[1:]
-            ref_contigs_fpath = os.path.join(
-                corrected_dirpath, asm.name + '_to_' + ref_name[:40] + '.fasta')
-            if ref_name not in aligned_contigs_for_each_ref:
-                aligned_contigs_for_each_ref[ref_name] = []
-
-            for (cont_name, seq) in fastaparser.read_fasta(asm.fpath):
-                if not cont_name in contigs:
-                    contigs[cont_name] = seq
-
-                if cont_name in ref_contigs_names and cont_name not in aligned_contigs_for_each_ref[ref_name]:
-                    # Collecting all aligned contigs names in order to futher extract not-aligned
-                    aligned_contig_names.add(cont_name)
-                    aligned_contigs_for_each_ref[ref_name].append(cont_name)
-                    fastaparser.write_fasta(ref_contigs_fpath, [(cont_name, seq)], 'a')
-
-            ref_asm = Assembly(ref_contigs_fpath, asm.label)
-            if ref_asm.name not in added_ref_asm:
-                if ref_name in assemblies_by_ref:
-                    assemblies_by_ref[ref_name].append(ref_asm)
-                    added_ref_asm.append(ref_asm.name)
-
-        # Exctraction not aligned contigs
-        all_contigs_names = set(contigs.keys())
-        not_aligned_contigs_names = all_contigs_names - aligned_contig_names
-        fastaparser.write_fasta(not_aligned_fpath, [(name, contigs[name]) for name in not_aligned_contigs_names])
-
-        not_aligned_asm = Assembly(not_aligned_fpath, asm.label)
-        not_aligned_assemblies.append(not_aligned_asm)
-
+    n_jobs = min(qconfig.max_threads, len(assemblies))
+    from joblib import Parallel, delayed
+    assemblies = Parallel(n_jobs=n_jobs)(delayed(parallel_partition_contigs)(asm,
+                                assemblies_by_ref, corrected_dirpath, alignments_fpath_template) for asm in assemblies)
+    assemblies_dicts = [assembly[0] for assembly in assemblies]
+    assemblies_by_ref = {}
+    for k in assemblies_dicts[0].keys():
+        assemblies_by_ref[k] = [val for sublist in (assemblies_dicts[i][k] for i in range(len(assemblies_dicts))) for val in sublist]
+    not_aligned_assemblies = [assembly[1] for assembly in assemblies]
     return assemblies_by_ref, not_aligned_assemblies
 
 
@@ -154,36 +162,37 @@ def _start_quast_main(
     #         logger.error(msg)
 
 
+def _parallel_correct_contigs(contigs_fpath, label, corrected_dirpath, min_contig):
+    contigs_fname = os.path.basename(contigs_fpath)
+    fname, ctg_fasta_ext = qutils.splitext_for_fasta_file(contigs_fname)
+
+    corr_fpath = qutils.unique_corrected_fpath(
+        os.path.join(corrected_dirpath, label + ctg_fasta_ext))
+
+    assembly = Assembly(corr_fpath, label)
+
+    logger.info('  %s ==> %s' % (contigs_fpath, label))
+
+    # Handle fasta
+    lengths = fastaparser.get_lengths_from_fastafile(contigs_fpath)
+    if not sum(l for l in lengths if l >= min_contig):
+        logger.warning("Skipping %s because it doesn't contain contigs >= %d bp."
+                       % (os.path.basename(contigs_fpath), min_contig))
+        return
+    # correcting
+    if not quast.correct_fasta(contigs_fpath, corr_fpath, min_contig):
+        return
+
+    return assembly
+
+
 def _correct_contigs(contigs_fpaths, corrected_dirpath, min_contig, labels):
-    assemblies = []
+    n_jobs = min(len(contigs_fpaths), qconfig.max_threads)
+    from joblib import Parallel, delayed
+    assemblies = Parallel(n_jobs=n_jobs)(delayed(_parallel_correct_contigs)(contigs_fpath, labels[i],
+            corrected_dirpath, min_contig) for i, contigs_fpath in enumerate(contigs_fpaths))
 
-    for i, contigs_fpath in enumerate(contigs_fpaths):
-        contigs_fname = os.path.basename(contigs_fpath)
-        fname, ctg_fasta_ext = qutils.splitext_for_fasta_file(contigs_fname)
-
-        label = labels[i]
-
-        corr_fpath = qutils.unique_corrected_fpath(
-            os.path.join(corrected_dirpath, label + ctg_fasta_ext))
-
-        assembly = Assembly(corr_fpath, label)
-
-        logger.info('  %s ==> %s' % (contigs_fpath, label))
-
-        # Handle fasta
-        lengths = fastaparser.get_lengths_from_fastafile(contigs_fpath)
-        if not sum(l for l in lengths if l >= min_contig):
-            logger.warning("Skipping %s because it doesn't contain contigs >= %d bp."
-                           % (os.path.basename(contigs_fpath), min_contig))
-            continue
-
-        # correcting
-        if not quast.correct_fasta(contigs_fpath, corr_fpath, min_contig):
-            continue
-
-        assemblies.append(assembly)
-
-    return assemblies
+    return [assembly for assembly in assemblies if assembly is not None]
 
 
 def get_label_from_par_dir_and_fname(contigs_fpath):

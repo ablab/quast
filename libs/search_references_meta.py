@@ -36,8 +36,8 @@ def download_refs(ref_fpaths, organism, downloaded_dirpath):
     if xml_tree.find('Count').text == '0': #  Organism is not found
         logger.info("  %s is not found in NCBI's database" % organism.replace('+', ' '))
         return ref_fpaths
-    refs_id = [ref_id.text for ref_id in xml_tree.find('IdList').findall('Id')]
-    for ref_id in refs_id:
+    refs_id = set([ref_id.text for ref_id in xml_tree.find('IdList').findall('Id')])
+    for ref_id in sorted(refs_id):
         request = urlopen(ncbi_url + 'efetch.fcgi?db=sequences&id=%s&rettype=fasta&retmode=text' % ref_id)
         fasta = request.read()
         if fasta:
@@ -110,15 +110,21 @@ def do(assemblies, downloaded_dirpath):
             if idy >= qconfig.identity_threshold and length >= qconfig.min_length and score >= qconfig.min_bitscore: #  and (not scores or min(scores) - score < max_identity_difference):
                 organism = line[1].split(';')[-1]
                 specie = organism.split('_')
-                if len(specie) > 2:
-                    specie = specie[0] + specie[1]
+                if len(specie) > 1 and 'uncultured' not in organism:
+                    specie = specie[0] + '_' + specie[1]
                     if specie not in organisms:
                         scores_organisms.append((score, organism))
                         organisms.append(specie)
+                    else:
+                        num_organism = [x for x, y in enumerate(scores_organisms) if specie in y[1]]
+                        if num_organism and score > scores_organisms[num_organism[0]][0]:
+                            scores_organisms.remove(scores_organisms[num_organism[0]])
+                            scores_organisms.append((score, organism))
+
     logger.print_timestamp()
     logger.info('Trying to download found references from NCBI..')
-    sorted(scores_organisms, reverse=True)
-    for (score, organism) in sorted(scores_organisms, reverse=True):
+    scores_organisms = sorted(scores_organisms, reverse=True)
+    for (score, organism) in scores_organisms:
         if len(ref_fpaths) == qconfig.max_references:
             break
         ref_fpaths = download_refs(ref_fpaths, organism, downloaded_dirpath)

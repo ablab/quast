@@ -109,7 +109,7 @@ downloaded_refs = False
 identity_threshold = 90 #  min % identity
 min_length = 300
 min_bitscore = 1000
-max_references = 20
+max_references = 50
 
 
 def check_python_version():

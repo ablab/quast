@@ -141,7 +141,7 @@ def _start_quast_main(
     import quast
     reload(quast)
     quast.logger.set_up_console_handler(indent_val=1, debug=qconfig.debug)
-
+    quast.logger.set_up_metaquast()
     logger.info_to_file('(logging to ' +
                         os.path.join(output_dirpath,
                                      qconfig.LOGGER_DEFAULT_NAME + '.log)'))

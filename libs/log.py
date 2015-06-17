@@ -31,11 +31,15 @@ class QLogger(object):
     _num_notices = 0
     _num_warnings = 0
     _num_nf_errors = 0
+    _is_metaquast = False
 
     def __init__(self, name):
         self._name = name
         self._logger = logging.getLogger(name)
         self._logger.setLevel(logging.DEBUG)
+
+    def set_up_metaquast(self):
+        self._is_metaquast = True
 
     def set_up_console_handler(self, indent_val=0, debug=False):
         self._indent_val = indent_val
@@ -65,7 +69,7 @@ class QLogger(object):
         self._logger.addHandler(file_handler)
 
     def start(self):
-        if self._indent_val == 0:
+        if self._indent_val == 0 and not self._is_metaquast:
             self._logger.info('')
             self.print_version()
             self._logger.info('')
@@ -76,22 +80,23 @@ class QLogger(object):
         self._logger.info('Logging to ' + self._log_fpath)
 
     def finish_up(self, numbers=None, check_test=False):
-        self._logger.info('  Log saved to ' + self._log_fpath)
+        if not self._is_metaquast:
+            self._logger.info('  Log saved to ' + self._log_fpath)
 
-        finish_time = self.print_timestamp('Finished: ')
-        self._logger.info('Elapsed time: ' + str(finish_time - self._start_time))
-        if numbers:
-            self.print_numbers_of_notifications(prefix="Total ", numbers=numbers)
-        else:
-            self.print_numbers_of_notifications()
-        self._logger.info('\nThank you for using QUAST!')
-        if check_test:
-            if (numbers is not None and numbers[2] > 0) or self._num_nf_errors > 0:
-                self._logger.info('\nTEST FAILED! Please find non-fatal errors in the log and try to fix them!')
-            elif (numbers is not None and numbers[1] > 0) or self._num_warnings > 0:
-                self._logger.info('\nTEST PASSED with WARNINGS!')
+            finish_time = self.print_timestamp('Finished: ')
+            self._logger.info('Elapsed time: ' + str(finish_time - self._start_time))
+            if numbers:
+                self.print_numbers_of_notifications(prefix="Total ", numbers=numbers)
             else:
-                self._logger.info('\nTEST PASSED!')
+                self.print_numbers_of_notifications()
+            self._logger.info('\nThank you for using QUAST!')
+            if check_test:
+                if (numbers is not None and numbers[2] > 0) or self._num_nf_errors > 0:
+                    self._logger.info('\nTEST FAILED! Please find non-fatal errors in the log and try to fix them!')
+                elif (numbers is not None and numbers[1] > 0) or self._num_warnings > 0:
+                    self._logger.info('\nTEST PASSED with WARNINGS!')
+                else:
+                    self._logger.info('\nTEST PASSED!')
 
         for handler in self._logger.handlers:
             self._logger.removeHandler(handler)

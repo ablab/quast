@@ -30,13 +30,17 @@ def download_refs(ref_fpaths, organism, downloaded_dirpath):
     ncbi_url = 'http://eutils.ncbi.nlm.nih.gov/entrez/eutils/'
     ref_fpath = os.path.join(downloaded_dirpath, re.sub('[/=]', '', organism) + '.fasta')
     organism = organism.replace('_', '+')
-    request = urlopen(ncbi_url + 'esearch.fcgi?db=nuccore&term=%s+[Organism]+AND+refseq[filter]&retmax=500' % organism)
+    request = urlopen(ncbi_url + 'esearch.fcgi?db=assembly&term=%s+[Organism]&retmax=100' % organism)
     response = request.read()
     xml_tree = ET.fromstring(response)
     if xml_tree.find('Count').text == '0': #  Organism is not found
         logger.info("  %s is not found in NCBI's database" % organism.replace('+', ' '))
         return ref_fpaths
-    refs_id = set([ref_id.text for ref_id in xml_tree.find('IdList').findall('Id')])
+    ref_id = xml_tree.find('IdList').find('Id').text
+    request = urlopen(ncbi_url + 'elink.fcgi?dbfrom=assembly&db=nuccore&id=%s&linkname="assembly_nuccore_refseq"' % ref_id)
+    response = request.read()
+    xml_tree = ET.fromstring(response)
+    refs_id = sorted([ref_id.find('Id').text for ref_id in xml_tree.find('LinkSet').find('LinkSetDb').findall('Link')])
     for ref_id in sorted(refs_id):
         request = urlopen(ncbi_url + 'efetch.fcgi?db=sequences&id=%s&rettype=fasta&retmode=text' % ref_id)
         fasta = request.read()
@@ -116,9 +120,9 @@ def do(assemblies, downloaded_dirpath):
                         scores_organisms.append((score, organism))
                         organisms.append(specie)
                     else:
-                        num_organism = [x for x, y in enumerate(scores_organisms) if specie in y[1]]
-                        if num_organism and score > scores_organisms[num_organism[0]][0]:
-                            scores_organisms.remove(scores_organisms[num_organism[0]])
+                        tuple_scores = [x for x in scores_organisms if specie in x[1]]
+                        if tuple_scores and score > tuple_scores[0][0]:
+                            scores_organisms.remove((tuple_scores[0][0], tuple_scores[0][1]))
                             scores_organisms.append((score, organism))
 
     logger.print_timestamp()

@@ -137,6 +137,42 @@ def read_fasta(fpath):
     fasta_file.close()
 
 
+def read_fasta_one_time(fpath):
+    """
+        Returns list of FASTA entries (in tuples: name, seq)
+    """
+    first = True
+    seq = []
+    name = ''
+
+    fasta_file = _get_fasta_file_handler(fpath)
+    list_seq = []
+
+    for raw_line in fasta_file:
+        if raw_line.find('\r') != -1:
+            lines = raw_line.split('\r')
+        else:
+            lines = [raw_line]
+        for line in lines:
+            if not line:
+                continue
+            if line[0] == '>':
+                if not first:
+                    list_seq.append((name, "".join(seq)))
+
+                first = False
+                name = line.strip()[1:]
+                seq = []
+            else:
+                seq.append(line.strip())
+
+    if name or seq:
+        list_seq.append((name, "".join(seq)))
+
+    fasta_file.close()
+    return list_seq
+
+
 def print_fasta(fasta):
     for name, seq in fasta:
         print '>%s' % name

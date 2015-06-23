@@ -54,6 +54,7 @@ libs/genemark/linux_64/LICENSE or online at
 http://exon.gatech.edu/GeneMark/license_download.cgi. If you are not academic, not
 non-profit institution and not U.S. Governmental agency, you need to receive an
 appropriate licensing to use this module in QUAST.
+
 For more details about GeneMarkS please refer to 
 http://exon.gatech.edu/GeneMark/genemarks.cgi website and to the following paper:
 
@@ -61,6 +62,13 @@ John Besemer, Alexandre Lomsadze and Mark Borodovsky
 GeneMarkS: a self-training method for prediction of gene starts in microbial genomes. 
 Implications for finding sequence motifs in regulatory regions. 
 Nucleic Acids Research (2001) 29, pp 2607-2618
+
+For more details about GeneMark-ES please refer to 
+http://exon.gatech.edu/GeneMark/gmes_instructions.html website and to the following paper:
+
+Alexandre Lomsadze, Vardges Ter-Hovhannisyan, Yury O. Chernoff, and Mark Borodovsky 
+Gene identification in novel eukaryotic genomes by self-training algorithm.
+Nucleic Acids Research (2005) 33, pp 6494-6506
 
 For more details about MetaGeneMark please refer to 
 http://exon.gatech.edu/GeneMark/meta_gmhmmp.cgi website and to the following papers:
@@ -101,6 +109,21 @@ http://cbcb.umd.edu/software/glimmerhmm/ website and to the following paper:
 
 Majoros, W.H., Pertea, M., and Salzberg, S.L. TigrScan and GlimmerHMM:
 two open-source ab initio eukaryotic gene-finders. Bioinformatics. 20(16): 2878-9.
+
+5. MetaQUAST uses BLAST and SILVA 16S rRNA database for predicting content of de novo
+metagenomic assemblies. 
+For more details about BLAST please refer to
+http://blast.ncbi.nlm.nih.gov/Blast.cgi website and to the following paper:
+
+Altschul, S.F., Gish, W., Miller, W., Myers, E.W. & Lipman, D.J. (1990) 
+Basic local alignment search tool. J. Mol. Biol. 215:403-410.
+
+For more details about SILVA please refer to
+http://www.arb-silva.de/ website and to the following paper:
+
+Quast C, Pruesse E, Yilmaz P, Gerken J, Schweer T, Yarza P, Peplies J, Glöckner FO (2013) 
+The SILVA ribosomal RNA gene database project: improved data processing and web-based tools. 
+Nucl. Acids Res. 41 (D1): D590-D596.
 
 -------------------------------------------------------------------------------
 

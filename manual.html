@@ -1,6 +1,6 @@
 <html>
 <head>
-    <title>QUAST 2.4 manual</title>
+    <title>QUAST 3.0 manual</title>
     <style type="text/css">
         body {
             margin-top: 30px;
@@ -66,7 +66,7 @@
     </style>
 </head>
 <body>
-<h1>QUAST 2.4 manual</h1>
+<h1>QUAST 3.0 manual</h1>
 
 <p> QUAST stands for <u>QU</u>ality <u>AS</u>sessment <u>T</u>ool.
     The tool evaluates genome assemblies by computing various metrics.
@@ -76,14 +76,11 @@
     at <a href="http://sourceforge.net/projects/quast/">http://sourceforge.net/projects/quast</a>.
     <br>
     <br>
-    QUAST utilizes <a href="http://mummer.sourceforge.net/">MUMmer</a>, <a href="http://exon.gatech.edu/GeneMark/">GeneMarkS</a>, <a href="http://exon.gatech.edu/GeneMark/">MetaGeneMark</a>,
-    <a href="http://exon.gatech.edu/GeneMark/gmes_instructions.html">GeneMark-ES</a>,
-    <a href="http://cbcb.umd.edu/software/glimmerhmm/">GlimmerHMM</a>,   <a href="http://blast.ncbi.nlm.nih.gov/Blast.cgi">BLAST</a>
-    and <a href="http://gage.cbcb.umd.edu/index.html">GAGE</a>. These tools are built in, so you do not need to install
-    them separately.
+    QUAST utilizes <a href="http://mummer.sourceforge.net/">MUMmer</a>, <a href="http://exon.gatech.edu/GeneMark/">GeneMarkS</a>, <a href="http://exon.gatech.edu/GeneMark/gmes_instructions.html">GeneMark-ES</a>, <a href="http://cbcb.umd.edu/software/glimmerhmm/">GlimmerHMM</a>, and <a href="http://gage.cbcb.umd.edu/index.html">GAGE</a>. For In addition, MetaQUAST uses <a href="http://exon.gatech.edu/GeneMark/">MetaGeneMark</a>, <a href="http://blast.ncbi.nlm.nih.gov/Blast.cgi">BLAST</a>, and <a href="http://www.arb-silva.de/">SILVA</a> 16S rRNA database. These tools are built in, so you do not need to install
+    them separately. GeneMark tools are pre-built, the rest will be compiled on the first use. SILVA database will be downloaded on the first use (see details below).
     <br>
     <br>
-    Version 2.4 of QUAST was released under GPL v2 (see <a href="LICENSE">LICENSE</a> for details) on 17 January 2014.
+    Version 3.0 of QUAST was released under GPL v2 on XX June 2015. Note that some QUAST modules depend on third-party tools which are not under GPL v2. Thus, the authors of these tools should be contacted for not academic use of these modules (see <a href="LICENSE">LICENSE</a> for details).
 </p>
 
 <h2>Contents</h2>
@@ -158,11 +155,11 @@ Or on Ubuntu by typing:
     sudo apt-get install python-matplotlib
 </pre>
 <br>
-To download the <a href="https://downloads.sourceforge.net/project/quast/quast-2.4.tar.gz">QUAST source code tarball</a> and extract it, type:
+To download the <a href="https://downloads.sourceforge.net/project/quast/quast-3.0.tar.gz">QUAST source code tarball</a> and extract it, type:
 <pre class="code">
-    wget https://downloads.sourceforge.net/project/quast/quast-2.4.tar.gz
-    tar -xzf quast-2.4.tar.gz
-    cd quast-2.4
+    wget https://downloads.sourceforge.net/project/quast/quast-3.0.tar.gz
+    tar -xzf quast-3.0.tar.gz
+    cd quast-3.0
 </pre>
 
 <p>
@@ -177,14 +174,14 @@ or
     python metaquast.py --test  (if you plan to use only metaquast.py)
 </pre>
 or both. 
-These commands run all QUAST and metaQUAST modules and check correctness
+These commands run all QUAST and MetaQUAST modules and check correctness
 of their work on your platform.
 </p>
 
 <p>
-Note: you should place quast-2.4 directory in the final destination before
+Note: you should place quast-3.0 directory in the final destination before
 the first use (e.g. before run with --test). If you want to move QUAST to 
-some new place after several usages you should use a clean copy of quast-2.4.
+some new place after several usages you should use a clean copy of quast-3.0.
 This limitation is caused by auto-generation of absolute paths in compiled 
 modules of QUAST.
 </p>

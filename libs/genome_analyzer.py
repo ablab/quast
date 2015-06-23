@@ -194,8 +194,8 @@ def process_single_file(contigs_fpath, index, nucmer_path_dirpath, genome_stats_
         total_partial = 0
         found_fpath = os.path.join(genome_stats_dirpath, assembly_name + suffix)
         found_file = open(found_fpath, 'w')
-        print >>found_file, '%s\t\t%s\t%s' % ('ID or #', 'Start', 'End')
-        print >>found_file, '============================'
+        print >>found_file, '%s\t\t%s\t%s\t%s' % ('ID or #', 'Start', 'End', 'Type')
+        print >>found_file, '========================================='
 
         # 0 - gene is not found,
         # 1 - gene is found,
@@ -227,7 +227,7 @@ def process_single_file(contigs_fpath, index, nucmer_path_dirpath, genome_stats_
                             region_id = str(region.id)
                             if region_id == 'None':
                                 region_id = '# ' + str(region.number + 1)
-                            print >>found_file, '%s\t\t%d\t%d' % (region_id, region.start, region.end)
+                            print >>found_file, '%s\t\t%d\t%d\tcomplete' % (region_id, region.start, region.end)
                             feature_in_contigs[contig_id] += 1  # inc number of found genes/operons in id-th contig
 
                             cur_feature_is_found = True
@@ -239,12 +239,12 @@ def process_single_file(contigs_fpath, index, nucmer_path_dirpath, genome_stats_
                         break
                 if cur_feature_is_found:
                     break
-            ## adding info about partially found genes/operons
-            # if found_list[i] == 2:  # partial gene/operon
-            #     region_id = str(region.id)
-            #     if region_id == 'None':
-            #         region_id = '# ' + str(region.number + 1)
-            #     print >>found_file, '%s\t\t%d\t%d\tpartial' % (region_id, region.start, region.end)
+            # adding info about partially found genes/operons
+            if found_list[i] == 2:  # partial gene/operon
+                region_id = str(region.id)
+                if region_id == 'None':
+                    region_id = '# ' + str(region.number + 1)
+                print >>found_file, '%s\t\t%d\t%d\tpartial' % (region_id, region.start, region.end)
 
         results[field + "_full"] = total_full
         results[field + "_partial"] = total_partial

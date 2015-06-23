@@ -12,8 +12,6 @@ import shutil
 import getopt
 import re
 
-quast_dirpath = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
-sys.path.append(os.path.join(quast_dirpath, 'libs'))
 from libs import qconfig
 qconfig.check_python_version()
 
@@ -26,7 +24,7 @@ logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 logger.set_up_console_handler()
 
 from site import addsitedir
-addsitedir(os.path.join(quast_dirpath, 'libs', 'site_packages'))
+addsitedir(os.path.join(qconfig.LIBS_LOCATION, 'site_packages'))
 
 
 def _set_up_output_dir(output_dirpath, json_outputpath,
@@ -361,9 +359,9 @@ def process_labels(contigs_fpaths, labels, all_labels_from_dirs):
 
 
 def main(args):
-    if ' ' in quast_dirpath:
+    if ' ' in qconfig.QUAST_HOME:
         logger.error('QUAST does not support spaces in paths. \n'
-                     'You are trying to run it from ' + str(quast_dirpath) + '\n'
+                     'You are trying to run it from ' + str(qconfig.QUAST_HOME) + '\n'
                      'Please, put QUAST in a different directory, then try again.\n',
                      to_stderr=True,
                      exit_with_code=3)
@@ -392,13 +390,13 @@ def main(args):
         if opt == '--test':
             options.remove((opt, arg))
             options += [('-o', 'quast_test_output'),
-                        ('-R', 'test_data/reference.fasta.gz'),   # for compiling MUMmer
-                        ('-O', 'test_data/operons.gff'),
-                        ('-G', 'test_data/genes.gff'),
+                        ('-R', os.path.join(qconfig.QUAST_HOME, 'test_data', 'reference.fasta.gz')),   # for compiling MUMmer
+                        ('-O', os.path.join(qconfig.QUAST_HOME, 'test_data', 'operons.gff')),
+                        ('-G', os.path.join(qconfig.QUAST_HOME, 'test_data', 'genes.gff')),
                         ('--gage', ''), # for compiling GAGE Java classes
                         ('--gene-finding', ''), ('--eukaryote', ''), ('--glimmer', '')] # for compiling GlimmerHMM
-            contigs_fpaths += ['test_data/contigs_1.fasta',
-                               'test_data/contigs_2.fasta']
+            contigs_fpaths += [os.path.join(qconfig.QUAST_HOME, 'test_data', 'contigs_1.fasta'),
+                               os.path.join(qconfig.QUAST_HOME, 'test_data', 'contigs_2.fasta')]
             qconfig.test = True
 
         if opt.startswith('--help'):

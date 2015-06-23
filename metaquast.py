@@ -11,8 +11,6 @@ import os
 import shutil
 import getopt
 
-quast_dirpath = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
-sys.path.append(os.path.join(quast_dirpath, 'libs'))
 from libs import qconfig
 qconfig.check_python_version()
 from libs.html_saver import html_saver
@@ -25,7 +23,7 @@ logger = get_logger(qconfig.LOGGER_META_NAME)
 logger.set_up_console_handler()
 
 from site import addsitedir
-addsitedir(os.path.join(quast_dirpath, 'libs', 'site_packages'))
+addsitedir(os.path.join(qconfig.LIBS_LOCATION, 'site_packages'))
 
 import quast
 from libs import contigs_analyzer
@@ -288,9 +286,9 @@ def remove_unaligned_downloaded_refs(output_dirpath, ref_fpaths, chromosomes_by_
 
 
 def main(args):
-    if ' ' in quast_dirpath:
+    if ' ' in qconfig.QUAST_HOME:
         logger.error('QUAST does not support spaces in paths. \n'
-                     'You are trying to run it from ' + str(quast_dirpath) + '\n'
+                     'You are trying to run it from ' + str(qconfig.QUAST_HOME) + '\n'
                      'Please, put QUAST in a different directory, then try again.\n',
                      to_stderr=True,
                      exit_with_code=3)
@@ -328,11 +326,11 @@ def main(args):
             options.remove((opt, arg))
             quast_py_args.remove(opt)
             options += [('-o', 'quast_test_output'),
-                        ('-R', 'test_data/meta_ref_1.fasta,'
-                               'test_data/meta_ref_2.fasta,'
-                               'test_data/meta_ref_3.fasta')]
-            contigs_fpaths += ['test_data/meta_contigs_1.fasta',
-                               'test_data/meta_contigs_2.fasta']
+                        ('-R', ','.join([os.path.join(qconfig.QUAST_HOME, 'test_data', 'meta_ref_1.fasta'),
+                                         os.path.join(qconfig.QUAST_HOME, 'test_data', 'meta_ref_2.fasta'),
+                                         os.path.join(qconfig.QUAST_HOME, 'test_data', 'meta_ref_3.fasta')]))]
+            contigs_fpaths += [os.path.join(qconfig.QUAST_HOME, 'test_data', 'meta_contigs_1.fasta'),
+                               os.path.join(qconfig.QUAST_HOME, 'test_data', 'meta_contigs_2.fasta')]
             test_mode = True
 
         elif opt.startswith('--help'):

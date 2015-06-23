@@ -9,7 +9,8 @@ import os
 import platform
 import sys
 
-LIBS_LOCATION = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
+QUAST_HOME = os.path.abspath(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+LIBS_LOCATION = os.path.join(QUAST_HOME, 'libs')
 
 SUPPORTED_PYTHON_VERSIONS = ['2.5', '2.6', '2.7']
 
@@ -120,7 +121,7 @@ def check_python_version():
 
 
 def quast_version():
-    version_fpath = os.path.join(LIBS_LOCATION, '..', 'VERSION')
+    version_fpath = os.path.join(QUAST_HOME, 'VERSION')
     version = "unknown"
     build = "unknown"
     if os.path.isfile(version_fpath):

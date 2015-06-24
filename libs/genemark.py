@@ -10,9 +10,10 @@ import shutil
 import tempfile
 
 from libs import reporting, qconfig, qutils
-from libs.fastaparser import read_fasta, write_fasta
+from libs.fastaparser import write_fasta
 
 from libs.log import get_logger
+
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 
 LICENSE_LIMITATIONS_MODE = False
@@ -137,7 +138,7 @@ def gmhmm_p_everyGC(tool_dirpath, fasta_fpath, err_fpath, index, tmp_dirpath, nu
     fasta_name = qutils.name_from_fpath(fasta_fpath)
     return_code = qutils.call_subprocess(
         ['perl', tool_exec_fpath, '--name', fasta_name, '--clean', '--out', tmp_dirpath,
-         fasta_fpath ],
+         fasta_fpath],
         stdout=err_file,
         stderr=err_file,
         indent='    ' + qutils.index_to_str(index))
@@ -179,7 +180,7 @@ def gm_es(tool_dirpath, fasta_fpath, err_fpath, index, tmp_dirpath, num_threads)
     err_file = open(err_fpath, 'w')
     tmp_dirpath += qutils.name_from_fpath(fasta_fpath)
     if not os.path.isdir(tmp_dirpath):
-            os.mkdir(tmp_dirpath)
+        os.mkdir(tmp_dirpath)
     return_code = qutils.call_subprocess(
         ['perl', '-I', libs_dirpath, tool_exec_fpath, '--ES', '--cores', str(num_threads), '--sequence', fasta_fpath,
          '--out', tmp_dirpath],
@@ -196,7 +197,8 @@ def gm_es(tool_dirpath, fasta_fpath, err_fpath, index, tmp_dirpath, num_threads)
     return genes
 
 
-def predict_genes(index, contigs_fpath, gene_lengths, out_dirpath, tool_dirpath, tmp_dirpath, gmhmm_p_function, prokaryote, num_threads):
+def predict_genes(index, contigs_fpath, gene_lengths, out_dirpath, tool_dirpath, tmp_dirpath, gmhmm_p_function,
+                  prokaryote, num_threads):
     assembly_name = qutils.name_from_fpath(contigs_fpath)
     assembly_label = qutils.label_from_fpath(contigs_fpath)
 
@@ -263,7 +265,7 @@ def do(fasta_fpaths, gene_lengths, out_dirpath, prokaryote, meta):
             os.mkdir(tmp_dirpath)
 
         n_jobs = min(len(fasta_fpaths), qconfig.max_threads)
-        num_threads = max(1, qconfig.max_threads//n_jobs)
+        num_threads = max(1, qconfig.max_threads // n_jobs)
         from joblib import Parallel, delayed
         results = Parallel(n_jobs=n_jobs)(delayed(predict_genes)(
             index, fasta_fpath, gene_lengths, out_dirpath, tool_dirpath, tmp_dirpath, gmhmm_p_function, prokaryote, num_threads)
@@ -277,6 +279,11 @@ def do(fasta_fpaths, gene_lengths, out_dirpath, prokaryote, meta):
                 report.add_field(reporting.Fields.PREDICTED_GENES_UNIQUE, unique_count)
             if count is not None:
                 report.add_field(reporting.Fields.PREDICTED_GENES, count)
+            if unique_count is None and count is None:
+                logger.error('  ' + qutils.index_to_str(i) +
+                     'Failed predicting genes in ' + qutils.label_from_fpath(fasta_path) + '. ' +
+                     ('File may be too small for GeneMark-ES. Try to use GeneMark.hmm instead (remove --eukaryote option).'
+                         if tool_name == 'GeneMark-ES' and os.path.getsize(fasta_path) < 2000000 else ''))
 
         if not qconfig.debug:
             shutil.rmtree(tmp_dirpath)

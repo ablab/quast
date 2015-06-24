@@ -614,8 +614,7 @@ def draw_meta_summary_misassembl_plot(results, ref_names, contig_num, plot_fpath
     box = ax.get_position()
     ax.set_position([box.x0, box.y0, box.width * 0.9, box.height * 1.0])
     ax.yaxis.grid(with_grid)
-    misassemblies = [reporting.Fields.MIS_RELOCATION, reporting.Fields.MIS_TRANSLOCATION, reporting.Fields.MIS_INVERTION,
-                           reporting.Fields.MIS_ISTRANSLOCATIONS]
+    misassemblies = [reporting.Fields.MIS_RELOCATION, reporting.Fields.MIS_TRANSLOCATION, reporting.Fields.MIS_INVERTION]
     legend_n = []
     ymax = 0
     arr_x = range(1, refs_num + 1)

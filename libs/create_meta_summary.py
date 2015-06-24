@@ -41,6 +41,8 @@ def get_results_for_metric(ref_names, metric, contigs_num, labels, output_dirpat
                 next_values = map(lambda s: s.strip(), results_file.readline().split('\t'))
             all_rows[j + 1]['values'].append(metr_res)
             results[i].append(metr_res)
+    if not cur_ref_names:
+        cur_ref_names = ref_names
     return results, all_rows, cur_ref_names
 
 
@@ -72,9 +74,9 @@ def do(output_dirpath, summary_dirpath, labels, metrics, misassembl_metrics, ref
                     if metric == reporting.Fields.MISASSEMBL:
                         mis_results = []
                         report_fname = os.path.join('contigs_reports', qconfig.transposed_report_prefix + '_misassemblies' + '.tsv')
-                        for misassembl_metric in misassembl_metrics:
-                            if ref_names[-1] == qconfig.not_aligned_name:
+                        if ref_names[-1] == qconfig.not_aligned_name:
                                 cur_ref_names = ref_names[:-1]
+                        for misassembl_metric in misassembl_metrics:
                             results, all_rows, cur_ref_names = get_results_for_metric(cur_ref_names, misassembl_metric[len(reporting.Fields.TAB):], contigs_num, labels, output_dirpath, report_fname)
                             if results:
                                 mis_results.append(results)

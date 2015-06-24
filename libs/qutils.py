@@ -90,7 +90,8 @@ def remove_reports(output_dirpath):
 
 
 def correct_name(name):
-    return re.sub(r'[^\w\._\-+|]', '_', name.strip())[:MAX_CONTIG_NAME]
+    name = re.sub(r'[^\w\._\-+|]', '_', name.strip())[:MAX_CONTIG_NAME]
+    return re.sub(r"[\|+=/]", '_', name.strip())[:MAX_CONTIG_NAME]
 
 
 def unique_corrected_fpath(fpath):

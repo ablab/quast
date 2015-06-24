@@ -65,7 +65,7 @@ function recoverOrderFromCookies() {
     return order;
 }
 
-function buildReport() {
+function buildReport(isMeta) {
     var assembliesNames;
     var order;
 
@@ -159,13 +159,22 @@ function buildReport() {
         console.log("Error: cannot read #total-report-json");
         return 1;
     }
+    if (isMeta == true) {
+        totalReports = totalReport.slice(1);
+        totalReport = totalReport[0]
+    }
 
     assembliesNames = totalReport.assembliesNames;
 
     order = recoverOrderFromCookies() || totalReport.order || Range(0, assembliesNames.length);
 
     buildTotalReport(assembliesNames, totalReport.report, order, totalReport.date,
-        totalReport.minContig, glossary, qualities, mainMetrics);
+        totalReport.minContig, glossary, qualities, mainMetrics, isMeta == true ? totalReports : null);
+
+    if (isMeta == true) {
+        $('.plots').hide();
+        return 0;
+    }
 
     if (refLen = readJson('reference-length'))
         refLen = refLen.reflen;

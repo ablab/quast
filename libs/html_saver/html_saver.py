@@ -51,8 +51,6 @@ aux_files = [
     'common.css',
     'scripts/build_report.js',
     'scripts/build_total_report.js',
-    'scripts/build_report_meta.js',
-    'scripts/build_total_report_meta.js',
 ]
 
 
@@ -75,12 +73,9 @@ def init(results_dirpath, meta=False):
 
     with open(template_fpath) as template_file:
         html = template_file.read()
-        if not meta:
-            html = html.replace('{{ buildreport }}', 'scripts/build_report.js')
-            html = html.replace('{{ buildtotalreport }}', 'scripts/build_total_report.js')
-        else:
-            html = html.replace('{{ buildreport }}', 'scripts/build_report_meta.js')
-            html = html.replace('{{ buildtotalreport }}', 'scripts/build_total_report_meta.js')
+        html = html.replace('{{ buildreport }}', 'scripts/build_report.js')
+        html = html.replace('{{ buildtotalreport }}', 'scripts/build_total_report.js')
+        html = html.replace('{{ func_buildreport }}', 'buildReport(%s);' % str(meta).lower())
         html = html.replace("/" + static_dirname, aux_dirname)
         html = html.replace('{{ glossary }}', open(get_real_path('glossary.json')).read())
         html_fpath = os.path.join(results_dirpath, report_fname)

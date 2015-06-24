@@ -578,7 +578,8 @@ Note:
     <ul style='margin-top: -24px;'>
     <li>the left flanking sequence aligns over 1<span class="rhs">&nbsp;</span>kbp away from the right flanking sequence on the reference;
     <li>flanking sequences overlap on more than 1<span class="rhs">&nbsp;</span>kbp;
-    <li>flanking sequences align to different strands or different chromosomes. 
+    <li>flanking sequences align to different strands or different chromosomes; 
+    <li>flanking sequences align on different references (MetaQUAST only).
     </ul>
     This metric requires a reference genome.</p>
 
@@ -654,7 +655,7 @@ sequence on the reference, or they overlap by more than 1<span class="rhs">&nbsp
 
 <p><span class='metric-name'>Translocation</span> is a misassembly where the flanking sequences align on different chromosomes. </p>
 
-<p><span class='metric-name'>Interspecies translocation</span> is a misassembly where the flanking sequences align on different references (--meta only). </p>
+<p><span class='metric-name'>Interspecies translocation</span> is a misassembly where the flanking sequences align on different references (MetaQUAST only). </p>
 
 <p><span class='metric-name'>Inversion</span> is a misassembly where the flanking sequences align on
 opposite strands of the same chromosome. </p>
@@ -663,8 +664,7 @@ opposite strands of the same chromosome. </p>
     <a href="#sec3.1.1">section 3.1.1</a> and are counted among all contigs with any type of a misassembly 
     (relocation, translocation, interspecies translocation or inversion). </p>
 
-<p><span class='metric-name'># possibly misassembled contigs</span> is the number of contigs that contain large unaligned fragment and thus could possibly contain
-    interspecies translocation with unknown reference. This metric is computed only for metagenomic assemblies. </p>
+<p><span class='metric-name'># possibly misassembled contigs</span> is the number of contigs that contain large unaligned fragment and thus could possibly contain interspecies translocation with unknown reference (MetaQUAST only). </p>
 
 <p><span class='metric-name'># local misassemblies</span> is the same as <span class='metric-ref'># local misassemblies</span> from
 <a href="#sec3.1.1">section 3.1.1</a>.
@@ -828,16 +828,30 @@ if your assembly is "ecoli_assembly_1.fasta" then the file is "ecoli_assembly_1.
 Q3. Is it possible to find which misassembly corresponds to each contig and which kind of a misassembly it is?
 </b></i></p>
 <p>
-Yes, it is possible.
+Yes, it is possible. QUAST produces report with detailed info about each contig alignments and the short version with only extensive misassemlies records.
 <br>
-You should open <code>&lt;quast_output_dir&gt;/contigs_reports/contigs_report_&lt;assembly_name>.stdout</code> file.
-<br> 
-E.g. if your assembly is "contigs.fasta" then the file is "contigs_report_contigs.stdout", if your assembly is "ecoli_assembly_1.fasta" then the file is "contigs_report_ecoli_assembly_1.stdout".
+<br>
+Let's start with <i>the short one</i>. It is saved to <code>&lt;quast_output_dir&gt;/contigs_reports/contigs_report_&lt;assembly_name>.mis_contigs.info</code>. E.g. if your assembly is "contigs.fasta" then the file is "contigs_report_contigs.mis_contigs.info", if your assembly is "ecoli_assembly_1.fasta" then the file is "contigs_report_ecoli_assembly_1.stdout".
+<br>
+The content of this file looks like this:
+<br>
+<code>
+<pre>
+NODE_601
+Extensive misassembly ( inversion ) between 287 575 and 296 1
+Extensive misassembly ( relocation, inconsistency = 2655 ) between 16800 18907 and 18905 20382
+</pre>
+</code>
+In this example, we can see that contig named <b>NODE_601</b> has two extensive misassemblies. The first is an <b>inversion</b>. It occured between fragments 287 575 and 296 1 (coordinates on the contig). The first fragment (287-575 bp) aligned to the forward strand and the second one (1-296 bp) to the reverse strand (coordinates are descenating). The second misassembly is a <b>relocation</b>. It occured between fragments 16800-18907 and 18905-20382. They aligned to the reference with inconsistency of 2655 bp (a gap or an overlap).
+<br>
+<br>
+<br>
+Let's move to <i>the detailed report</i>. Here you can find information about all misassembled, unaligned and properly aligned contigs. This report is saved to <code>&lt;quast_output_dir&gt;/contigs_reports/contigs_report_&lt;assembly_name>.stdout</code> file. E.g. if your assembly is "contigs.fasta" then the file is "contigs_report_contigs.stdout", if your assembly is "ecoli_assembly_1.fasta" then the file is "contigs_report_ecoli_assembly_1.mis_contigs.info".
 <br> 
 <br>
-After that, you should look for "Extensive misassembly" in the file and look around to detect contig name which corresponds this misassembly. 
+To get info about misassemblies, you should look for "Extensive misassembly" words in the report and look around to detect contig name which corresponds this misassembly. 
 <br><br>
-Let's look at the following example:
+Look at the following example:
 <br>
 <code>
 <pre>
@@ -855,7 +869,7 @@ This contig has two alignments and one misassembly. <b>Inversion</b> is a type o
 see <a href="#sec3.1.2">section 3.1.2</a> for details.
 
 <br><br>
-Let's look at another example:
+Here is another example:
 <br>
 <code>
 <pre>
@@ -945,6 +959,21 @@ In addition, we use our own format of ".used_snps" file.
 </code>
 where the columns are: reference name, contig name, position on the reference, nucleotide in the reference, nucleotide in the contig 
 (in this case it is ".", i.e. an absence of a nucleotide in the contig which means a deletion) and the final column is position on the contig.
+</p>
+
+<br>
+<p><b><i>
+Q6. What does "broken" version of an assembly refer to while assessing scaffolds' quality (--scaffolds option)?
+</b></i></p>
+<p>
+Actually, the difference between "broken" and original assembly (scaffolds) is very simple. QUAST splits input fasta by continuous fragments of N's of length &ge; 10 and call this a "_broken" assembly. By doing this we try to reconstruct "contigs" which were used for construction of the scaffolds. After that, user can compare results for real scaffolds and "reconstructed contigs" and find out whether scaffolding step was useful or not.
+<br>
+<br>
+If you have both contigs.fasta and scaffolds.fasta it is better to specify both files to QUAST and don't set "--scaffolds" option. The comparison of real contigs vs real scaffolds is more honest and informative than scaffolds vs scaffolds_broken. 
+<br>
+<br>
+To sum up, you should use "--scaffolds" option if you don't have original file with contigs but want to compare your scaffolds with it.
+<br>
 </p>
 <br>
 <br>

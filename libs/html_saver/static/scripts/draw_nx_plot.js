@@ -55,8 +55,10 @@ var nx = {
                     sumLen = refLength;
                 } else {
                     var sumLen = 0;
-                    for (var j = 0; j < lengths.length; j++) {
-                        sumLen += lengths[j];
+                    var list_lengths = lengths;
+                    if (name == 'nax') list_lengths = data.listsOfAllLengths[order[i]];
+                    for (var j = 0; j < list_lengths.length; j++) {
+                        sumLen += list_lengths[j];
                     }
                 }
 

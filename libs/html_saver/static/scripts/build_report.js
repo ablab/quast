@@ -32,40 +32,7 @@ function showPlotWithInfo(info) {
 }
 
 
-function Range(from, to) {
-    var r  = [];
-    for (var i = from; i < to; i++) {
-        r.push(i);
-    }
-    return r;
-}
-
-
-function recoverOrderFromCookies() {
-    if (!navigator.cookieEnabled)
-        return null;
-
-    var order_string = readCookie("order");
-    if (!order_string)
-        return null;
-
-    var order = [];
-    var fail = false;
-    forEach(order_string.split(' '), function(val) {
-        val = parseInt(val);
-        if (isNaN(val))
-            fail = true;
-        else
-            order.push(val);
-    });
-
-    if (fail)
-        return null;
-
-    return order;
-}
-
-function buildReport(isMeta) {
+function buildReport() {
     var assembliesNames;
     var order;
 
@@ -142,16 +109,6 @@ function buildReport(isMeta) {
         $(switchSpan).click(getToggleFunction(name, title, drawPlot, data, refPlotValue));
     }
 
-    function readJson(what) {
-        var result;
-        try {
-            result = JSON.parse($('#' + what + '-json').html());
-        } catch (e) {
-            result = null;
-        }
-        return result;
-    }
-
     /****************/
     /* Total report */
 
@@ -159,22 +116,13 @@ function buildReport(isMeta) {
         console.log("Error: cannot read #total-report-json");
         return 1;
     }
-    if (isMeta == true) {
-        totalReports = totalReport.slice(1);
-        totalReport = totalReport[0]
-    }
 
     assembliesNames = totalReport.assembliesNames;
 
     order = recoverOrderFromCookies() || totalReport.order || Range(0, assembliesNames.length);
 
     buildTotalReport(assembliesNames, totalReport.report, order, totalReport.date,
-        totalReport.minContig, glossary, qualities, mainMetrics, isMeta == true ? totalReports : null);
-
-    if (isMeta == true) {
-        $('.plots').hide();
-        return 0;
-    }
+        totalReport.minContig, glossary, qualities, mainMetrics);
 
     if (refLen = readJson('reference-length'))
         refLen = refLen.reflen;
@@ -210,7 +158,6 @@ function buildReport(isMeta) {
     if (alignedContigsLens = readJson('aligned-contigs-lengths')) {
         makePlot('nax', 'NAx', nx.draw, {
                 listsOfLengths: alignedContigsLens.lists_of_lengths,
-                listsOfAllLengths: contigsLens.lists_of_lengths,
                 refLen: refLen,
             },
             null
@@ -264,7 +211,4 @@ function buildReport(isMeta) {
 
     return 0;
 }
-
-
-
 

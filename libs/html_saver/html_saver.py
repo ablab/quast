@@ -49,19 +49,21 @@ aux_files = [
     'bootstrap/bootstrap-tooltip-vlad.js',
     'report.css',
     'common.css',
-    'scripts/build_report.js',
-    'scripts/build_total_report.js',
+    'scripts/build_report_common.js',
+    'scripts/build_total_report_common.js',
 ]
 
+aux_simple_files = ['scripts/build_report.js', 'scripts/build_total_report.js']
+aux_meta_files = ['scripts/build_report_meta.js', 'scripts/build_total_report_meta.js']
 
-def init(results_dirpath, meta=False):
-#    shutil.copy(template_fpath,     os.path.join(results_dirpath, report_fname))
+
+def init(results_dirpath, is_meta=False):
     aux_dirpath = os.path.join(results_dirpath, aux_dirname)
     if os.path.isdir(aux_dirpath):
         shutil.rmtree(aux_dirpath)
     os.mkdir(aux_dirpath)
 
-    for aux_f_relpath in aux_files:
+    for aux_f_relpath in aux_files + (aux_meta_files if is_meta else aux_simple_files):
         src_fpath = os.path.join(static_dirpath, aux_f_relpath)
         dst_fpath = os.path.join(aux_dirpath, aux_f_relpath)
 
@@ -73,9 +75,12 @@ def init(results_dirpath, meta=False):
 
     with open(template_fpath) as template_file:
         html = template_file.read()
-        html = html.replace('{{ buildreport }}', 'scripts/build_report.js')
-        html = html.replace('{{ buildtotalreport }}', 'scripts/build_total_report.js')
-        html = html.replace('{{ func_buildreport }}', 'buildReport(%s);' % str(meta).lower())
+        if is_meta:
+            html = html.replace('{{ buildreport }}', 'scripts/build_report_meta.js')
+            html = html.replace('{{ buildtotalreport }}', 'scripts/build_total_report_meta.js')
+        else:
+            html = html.replace('{{ buildreport }}', 'scripts/build_report.js')
+            html = html.replace('{{ buildtotalreport }}', 'scripts/build_total_report.js')
         html = html.replace("/" + static_dirname, aux_dirname)
         html = html.replace('{{ glossary }}', open(get_real_path('glossary.json')).read())
         html_fpath = os.path.join(results_dirpath, report_fname)
@@ -83,6 +88,7 @@ def init(results_dirpath, meta=False):
             os.remove(html_fpath)
         with open(html_fpath, 'w') as f_html:
             f_html.write(html)
+
 
 #def init_old(results_dirpath):
 #    with open(template_fpath) as template_file:

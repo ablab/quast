@@ -184,7 +184,7 @@ function trim(str) {
     return str.replace(/^\s+/g, '');
 }
 
-function nbsp(str, metricName) {
+function initial_spaces_to_nbsp(str, metricName) {
     if (metricName.length > 0 && metricName[0] == ' ') {
         str = '&nbsp;&nbsp;&nbsp;' + str;
     }
@@ -415,12 +415,12 @@ jQuery.fn.exists = function(){
 };
 
 
-
-
-
-
-
-
-
+function Range(from, to) {
+    var r  = [];
+    for (var i = from; i < to; i++) {
+        r.push(i);
+    }
+    return r;
+}
 
 

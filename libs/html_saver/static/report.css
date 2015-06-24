@@ -41,8 +41,28 @@
     display: none;
 }
 
-#report td.secondary_td {
-	padding-left: 10px !important;
+/*#report td.secondary_td {*/
+	/*padding-left: 10px !important;*/
+/*}*/
+
+#report span.metric-name.expandable {
+    margin-left: -13px;
+}
+
+#report span.metric-name.secondary {
+    margin-left: 13px;
+}
+
+#report span.metric-name.expandable.collapsed::before {
+    content: '+ ';
+    color: #DDD;
+    cursor: pointer;
+}
+
+#report span.metric-name.expandable.expanded::before {
+    content: '\2212\a0';  /* &minus&nbsp */
+    color: #DDD;
+    cursor: pointer;
 }
 
 #report_legend {

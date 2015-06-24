@@ -809,6 +809,7 @@ def fill_all_pdf_file(all_pdf):
 
     # moving main report in the beginning
     global pdf_tables_figures
+    global pdf_plots_figures
     if len(pdf_tables_figures):
         pdf_tables_figures = [pdf_tables_figures[-1]] + pdf_tables_figures[:-1]
 
@@ -827,6 +828,8 @@ def fill_all_pdf_file(all_pdf):
     except AttributeError:
         pass
     all_pdf.close()
+    pdf_tables_figures = []
+    pdf_plots_figures = []
     import matplotlib.pyplot
     matplotlib.pyplot.close('all')  # closing all open figures
 

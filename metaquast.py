@@ -324,7 +324,7 @@ def main(args):
             qconfig.debug = True
             logger.set_up_console_handler(debug=True)
 
-        elif opt == '--test':
+        elif opt == '--test' or opt == '--test-no-ref':
             options.remove((opt, arg))
             quast_py_args.remove(opt)
             options += [('-o', 'quast_test_output'),
@@ -445,8 +445,9 @@ def main(args):
             draw_plots = False
         elif opt == '--no-html':
             html_report = False
-        elif opt == '--download':
-            download_refs = True
+        elif opt == '--test-no-ref':
+            quast_py_args.remove(opt)
+            ref_fpaths = []
         elif opt == '--fast':  # --no-check, --no-gc, --no-plots, --no-snps
             qconfig.no_check = True
             qconfig.no_gc = True
@@ -498,10 +499,6 @@ def main(args):
 
     common_ref_fasta_ext = ''
 
-    if download_refs:
-        quast_py_args.remove('--download')
-        from libs import search_references_meta
-        search_references_meta.download_blastdb()
     # PROCESSING REFERENCES
 
     if ref_fpaths:

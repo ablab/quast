@@ -36,7 +36,7 @@ MAX_REFERENCE_FILE_LENGTH = 50000000  # Max length of one part of reference
 long_options = "output-dir= save-json-to= genes= operons= reference= contig-thresholds= min-contig= "\
                "gene-thresholds= save-json gage eukaryote glimmer no-plots no-html no-check no-gc help debug "\
                "ambiguity-usage= scaffolds threads= mincluster= est-ref-size= use-all-alignments gene-finding "\
-               "strict-NA meta labels= test help-hidden no-snps download fast".split()
+               "strict-NA meta labels= test help-hidden no-snps test-no-ref fast".split()
 short_options = "o:G:O:R:t:M:S:J:jehdsa:T:c:ufnml:L"
 
 # default values for options
@@ -187,6 +187,8 @@ def usage(show_hidden=False, meta=False):
     print >> sys.stderr, "                                      By default, QUAST breaks contigs only by extensive misassemblies (not local ones)"
     print >> sys.stderr, "    --no-plots                        Do not draw plots (to speed up computation)"
     print >> sys.stderr, "    --no-snps                         Do not report SNPs (to make quast faster & reduce memory consumption on large genomes)"
+    print >> sys.stderr, "    --fast                            Do not draw plots, report SNPs, check correctness of fasta file," \
+                         "                                      compute GC% and GC-distribution (to make quast faster & reduce memory consumption on large genomes)"
     if show_hidden:
         print >> sys.stderr, ""
         print >> sys.stderr, "Hidden options:"
@@ -201,6 +203,10 @@ def usage(show_hidden=False, meta=False):
         print >> sys.stderr, "    --no-gc                 Do not compute GC% and GC-distribution"
     print >> sys.stderr, ""
     print >> sys.stderr, "    --test                            Run QUAST on the data from the test_data folder, output to quast_test_output"
+    if meta:
+        print >> sys.stderr, "    --test-no-ref                 Run MetaQUAST without references on the data from the test_data folder, output to quast_test_output." \
+                             "                                  MetaQUAST will download SILVA 16S rRNA database (~170 Mb) for searching reference genomes. " \
+                             "                                  Internet connection is required."
     print >> sys.stderr, "-h  --help                            Print this usage message"
     if show_hidden:
         print >> sys.stderr, "    --help-hidden                     Print this usage message with all hidden options"

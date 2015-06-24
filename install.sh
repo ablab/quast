@@ -6,7 +6,7 @@ if [ $return_code -ne 0 ]; then
    echo 'ERROR! QUAST TEST FAILED!'
 fi
 echo 'Starting MetaQUAST...'
-$(dirname "$0")/metaquast.py --test --download
+$(dirname "$0")/metaquast.py --test-no-ref
 return_code=$?
 if [ $return_code -ne 0 ]; then
    echo 'ERROR! METAQUAST TEST FAILED!'

@@ -6,6 +6,7 @@
 # See file LICENSE for details.
 ############################################################################
 
+from __future__ import with_statement
 import sys
 import os
 import shutil

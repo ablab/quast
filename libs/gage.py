@@ -21,8 +21,8 @@ def run_gage(i, contigs_fpath, gage_results_dirpath, gage_tool_path, reference, 
     logger.info('  ' + qutils.index_to_str(i) + assembly_label + '...')
 
     # run gage tool
-    log_out_fpath = os.path.join(gage_results_dirpath, 'gage_' + assembly_name + '.stdout')
-    log_err_fpath = os.path.join(gage_results_dirpath, 'gage_' + assembly_name + '.stderr')
+    log_out_fpath = os.path.join(gage_results_dirpath, 'gage_' + assembly_label + '.stdout')
+    log_err_fpath = os.path.join(gage_results_dirpath, 'gage_' + assembly_label + '.stderr')
     logger.info('  ' + qutils.index_to_str(i) + 'Logging to files ' +
                 os.path.basename(log_out_fpath) + ' and ' +
                 os.path.basename(log_err_fpath) + '...')

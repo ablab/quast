@@ -85,7 +85,7 @@ def process_single_file(contigs_fpath, index, nucmer_path_dirpath, genome_stats_
     ref_lengths = {}
     logger.info('  ' + qutils.index_to_str(index) + assembly_label)
 
-    nucmer_base_fpath = os.path.join(nucmer_path_dirpath, assembly_name + '.coords')
+    nucmer_base_fpath = os.path.join(nucmer_path_dirpath, assembly_label + '.coords')
     if qconfig.use_all_alignments:
         nucmer_fpath = nucmer_base_fpath
     else:
@@ -148,7 +148,7 @@ def process_single_file(contigs_fpath, index, nucmer_path_dirpath, genome_stats_
     # counting genome coverage and gaps number
     covered_bp = 0
     gaps_count = 0
-    gaps_fpath = os.path.join(genome_stats_dirpath, assembly_name + '_gaps.txt')
+    gaps_fpath = os.path.join(genome_stats_dirpath, assembly_label + '_gaps.txt')
     gaps_file = open(gaps_fpath, 'w')
     for chr_name, chr_len in reference_chromosomes.iteritems():
         print >>gaps_file, chr_name
@@ -192,7 +192,7 @@ def process_single_file(contigs_fpath, index, nucmer_path_dirpath, genome_stats_
 
         total_full = 0
         total_partial = 0
-        found_fpath = os.path.join(genome_stats_dirpath, assembly_name + suffix)
+        found_fpath = os.path.join(genome_stats_dirpath, assembly_label + suffix)
         found_file = open(found_fpath, 'w')
         print >>found_file, '%s\t\t%s\t%s\t%s' % ('ID or #', 'Start', 'End', 'Type')
         print >>found_file, '========================================='

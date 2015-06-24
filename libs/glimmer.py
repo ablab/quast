@@ -108,8 +108,8 @@ def predict_genes(index, contigs_fpath, gene_lengths, out_dirpath, tool_dirpath,
 
     logger.info('  ' + qutils.index_to_str(index) + assembly_label)
 
-    out_fpath = os.path.join(out_dirpath, assembly_name + '_glimmer')
-    err_fpath = os.path.join(out_dirpath, assembly_name + '_glimmer.stderr')
+    out_fpath = os.path.join(out_dirpath, assembly_label + '_glimmer')
+    err_fpath = os.path.join(out_dirpath, assembly_label + '_glimmer.stderr')
 
     #out_gff_path, out_fasta_path, unique, total, cnt = glimmerHMM(tool_dir,
     #    fasta_path, out_path, gene_lengths, err_path)

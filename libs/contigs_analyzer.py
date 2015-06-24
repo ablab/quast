@@ -156,9 +156,9 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
     logger.info('  ' + qutils.index_to_str(index) + assembly_label)
 
     # run plantakolya tool
-    log_out_fpath = os.path.join(output_dirpath, "contigs_report_" + assembly_name + '.stdout')
-    log_err_fpath = os.path.join(output_dirpath, "contigs_report_" + assembly_name + '.stderr')
-    misassembly_fpath = os.path.join(output_dirpath, "contigs_report_" + assembly_name + '.mis_contigs.info')
+    log_out_fpath = os.path.join(output_dirpath, "contigs_report_" + assembly_label + '.stdout')
+    log_err_fpath = os.path.join(output_dirpath, "contigs_report_" + assembly_label + '.stderr')
+    misassembly_fpath = os.path.join(output_dirpath, "contigs_report_" + assembly_label + '.mis_contigs.info')
     planta_out_f = open(log_out_fpath, 'w')
     planta_err_f = open(log_err_fpath, 'w')
     misassembly_file = open(misassembly_fpath, 'w')
@@ -1367,8 +1367,9 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
 
 def plantakolya_process(cyclic, nucmer_output_dirpath, contigs_fpath, i, output_dirpath, ref_fpath, parallel_by_chr=False):
     assembly_name = qutils.name_from_fpath(contigs_fpath)
+    assembly_label = qutils.label_from_fpath(contigs_fpath)
 
-    nucmer_fname = os.path.join(nucmer_output_dirpath, assembly_name)
+    nucmer_fname = os.path.join(nucmer_output_dirpath, assembly_label)
     nucmer_is_ok, result, aligned_lengths = plantakolya(cyclic, i, contigs_fpath, nucmer_fname,
                                                         output_dirpath, ref_fpath, parallel_by_chr=parallel_by_chr)
 
@@ -1447,7 +1448,6 @@ def do(reference, contigs_fpaths, cyclic, output_dir):
         for row in all_rows:
             print >> txt_file, '  '.join('%-*s' % (colwidth, cell) for colwidth, cell
                                          in zip(colwidths, [row['metricName']] + map(val_to_str, row['values'])))
-
 
     if reference.endswith(COMBINED_REF_FNAME):
         ref_misassemblies = [result['istranslocations_by_refs'] for result in results]

@@ -36,7 +36,7 @@ MAX_REFERENCE_FILE_LENGTH = 50000000  # Max length of one part of reference
 long_options = "output-dir= save-json-to= genes= operons= reference= contig-thresholds= min-contig= "\
                "gene-thresholds= save-json gage eukaryote glimmer no-plots no-html no-check no-gc help debug "\
                "ambiguity-usage= scaffolds threads= mincluster= est-ref-size= use-all-alignments gene-finding "\
-               "strict-NA meta labels= test help-hidden no-snps".split()
+               "strict-NA meta labels= test help-hidden no-snps download fast".split()
 short_options = "o:G:O:R:t:M:S:J:jehdsa:T:c:ufnml:L"
 
 # default values for options

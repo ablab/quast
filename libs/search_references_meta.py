@@ -11,15 +11,21 @@ import platform
 import re
 from libs import qconfig, qutils
 from libs.log import get_logger
+
 logger = get_logger(qconfig.LOGGER_META_NAME)
 from urllib2 import urlopen
 import xml.etree.ElementTree as ET
 
 silva_db_path = 'http://www.arb-silva.de/fileadmin/silva_databases/release_119/Exports/'
+silva_fname = 'SILVA_119_SSURef_Nr99_tax_silva.fasta'
+blastdb_dirpath = os.path.join(qconfig.LIBS_LOCATION, 'blast', '16S_RNA_blastdb')
+db_fpath = os.path.join(blastdb_dirpath, 'silva_119.db')
+
 if platform.system() == 'Darwin':
     sed_cmd = "sed -i '' "
 else:
     sed_cmd = 'sed -i '
+
 
 def blast_fpath(fname):
     blast_dirpath = os.path.join(qconfig.LIBS_LOCATION, 'blast', qconfig.platform_name)
@@ -33,11 +39,12 @@ def download_refs(ref_fpaths, organism, downloaded_dirpath):
     request = urlopen(ncbi_url + 'esearch.fcgi?db=assembly&term=%s+[Organism]&retmax=100' % organism)
     response = request.read()
     xml_tree = ET.fromstring(response)
-    if xml_tree.find('Count').text == '0': #  Organism is not found
+    if xml_tree.find('Count').text == '0':  # Organism is not found
         logger.info("  %s is not found in NCBI's database" % organism.replace('+', ' '))
         return ref_fpaths
     ref_id = xml_tree.find('IdList').find('Id').text
-    request = urlopen(ncbi_url + 'elink.fcgi?dbfrom=assembly&db=nuccore&id=%s&linkname="assembly_nuccore_refseq"' % ref_id)
+    request = urlopen(
+        ncbi_url + 'elink.fcgi?dbfrom=assembly&db=nuccore&id=%s&linkname="assembly_nuccore_refseq"' % ref_id)
     response = request.read()
     xml_tree = ET.fromstring(response)
     refs_id = sorted([ref_id.find('Id').text for ref_id in xml_tree.find('LinkSet').find('LinkSetDb').findall('Link')])
@@ -60,37 +67,59 @@ def download_refs(ref_fpaths, organism, downloaded_dirpath):
     return ref_fpaths
 
 
-def show_progress(a,b,c):
+def show_progress(a, b, c):
     print "% 3.1f%% of %d bytes\r" % (min(100, float(a * b) / c * 100), c),
     sys.stdout.flush()
 
 
-def do(assemblies, downloaded_dirpath):
-    logger.print_timestamp()
-    blastdb_dirpath = os.path.join(qconfig.LIBS_LOCATION, 'blast', '16S_RNA_blastdb')
-    db_fpath = os.path.join(blastdb_dirpath, 'silva_119.db')
-    err_fpath = os.path.join(downloaded_dirpath, 'blast.err')
+def download_blastdb():
+    logger.info()
+    if os.path.isfile(db_fpath + '.nsq'):
+        logger.info('SILVA ribosomal RNA gene database has already been downloaded.')
+        return 0
+    log_fpath = os.path.join(blastdb_dirpath, 'blastdb.log')
+    logger.info('Downloading SILVA ribosomal RNA gene database...')
+    logger.info('Logging to %s...' % log_fpath)
+    db_gz_fpath = os.path.join(blastdb_dirpath, silva_fname + '.gz')
+    silva_fpath = os.path.join(blastdb_dirpath, silva_fname)
+    import urllib, gzip
     if not os.path.isdir(blastdb_dirpath):
         os.mkdir(blastdb_dirpath)
 
-    if not os.path.isfile(db_fpath + '.nsq'):
-        log_fpath = os.path.join(downloaded_dirpath, 'blastdb.log')
-        logger.info("Downloading SILVA ribosomal RNA gene database...")
-        silva_fname = 'SILVA_119_SSURef_Nr99_tax_silva.fasta'
-        db_gz_fpath = os.path.join(blastdb_dirpath, silva_fname + '.gz')
-        silva_fpath = os.path.join(blastdb_dirpath, silva_fname)
-        import urllib, gzip
-        silva_download = urllib.URLopener()
+    silva_download = urllib.URLopener()
+    try:
         silva_download.retrieve(silva_db_path + silva_fname + '.gz', db_gz_fpath, show_progress)
-        with open(silva_fpath, "wb") as db_file:
-            f = gzip.open(db_gz_fpath, 'rb')
-            db_file.write(f.read())
-        cmd = sed_cmd + " 's/ /_/g' %s" % silva_fpath
-        qutils.call_subprocess(shlex.split(cmd), stdout=open(log_fpath, 'a'), stderr=open(err_fpath, 'a'))
-        cmd = blast_fpath('makeblastdb') + (' -in %s -dbtype nucl -out %s' % (silva_fpath, db_fpath))
-        qutils.call_subprocess(shlex.split(cmd), stdout = open(log_fpath, 'w'), stderr=open(err_fpath, 'a'))
-        os.remove(db_gz_fpath)
-        os.remove(silva_fpath)
+    except:
+        logger.error(
+            'Failed downloading SILVA rRNA gene database (%s)! The search for reference genomes cannot be performed. '
+            'Try to download it manually in  %s.' % (silva_db_path + silva_fname, blastdb_dirpath))
+        return 1
+    with open(silva_fpath, "wb") as db_file:
+        f = gzip.open(db_gz_fpath, 'rb')
+        db_file.write(f.read())
+    cmd = sed_cmd + " 's/ /_/g' %s" % silva_fpath
+    qutils.call_subprocess(shlex.split(cmd), stdout=open(log_fpath, 'a'), stderr=open(log_fpath, 'a'))
+    cmd = blast_fpath('makeblastdb') + (' -in %s -dbtype nucl -out %s' % (silva_fpath, db_fpath))
+    qutils.call_subprocess(shlex.split(cmd), stdout=open(log_fpath, 'w'), stderr=open(log_fpath, 'a'))
+    os.remove(db_gz_fpath)
+    os.remove(silva_fpath)
+    os.remove(log_fpath)
+    if not os.path.exists(db_fpath + 'nsq'):
+        logger.error('Failed making BLAST database ("' + blastdb_dirpath +
+                     '"). Try to make it manually.')
+        return 1
+    return 0
+
+
+def do(assemblies, downloaded_dirpath):
+    logger.print_timestamp()
+    err_fpath = os.path.join(downloaded_dirpath, 'blast.err')
+    if not os.path.isdir(blastdb_dirpath):
+        os.mkdir(blastdb_dirpath)
+    if not os.path.isfile(db_fpath + '.nsq'):
+        return_code = download_blastdb()
+        if return_code != 0:
+            return None
 
     logger.info('Running BlastN..')
     blast_res_fpath = os.path.join(downloaded_dirpath, 'blast.res')
@@ -111,7 +140,7 @@ def do(assemblies, downloaded_dirpath):
             idy = float(line[2])
             length = int(line[3])
             score = float(line[11])
-            if idy >= qconfig.identity_threshold and length >= qconfig.min_length and score >= qconfig.min_bitscore: #  and (not scores or min(scores) - score < max_identity_difference):
+            if idy >= qconfig.identity_threshold and length >= qconfig.min_length and score >= qconfig.min_bitscore:  # and (not scores or min(scores) - score < max_identity_difference):
                 organism = line[1].split(';')[-1]
                 specie = organism.split('_')
                 if len(specie) > 1 and 'uncultured' not in organism:

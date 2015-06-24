@@ -304,6 +304,7 @@ def main(args):
     draw_plots = qconfig.draw_plots
     html_report = qconfig.html_report
     make_latest_symlink = True
+    download_refs = False
 
     try:
         options, contigs_fpaths = getopt.gnu_getopt(args, qconfig.short_options, qconfig.long_options)
@@ -432,10 +433,25 @@ def main(args):
             pass
         elif opt in ("-m", "--meta"):
             pass
-        elif opt in ["--no-plots"]:
+        elif opt == '--glimmer':
+            pass
+        elif opt == '--no-snps':
+            pass
+        elif opt == '--no-check':
+            pass
+        elif opt == '--no-gc':
+            pass
+        elif opt == '--no-plots':
             draw_plots = False
-        elif opt in ["--no-html"]:
+        elif opt == '--no-html':
             html_report = False
+        elif opt == '--download':
+            download_refs = True
+        elif opt == '--fast':  # --no-check, --no-gc, --no-plots, --no-snps
+            qconfig.no_check = True
+            qconfig.no_gc = True
+            qconfig.show_snps = False
+            draw_plots = False
         else:
             logger.error('Unknown option: %s. Use -h for help.' % (opt + ' ' + arg), to_stderr=True, exit_with_code=2)
 
@@ -482,6 +498,10 @@ def main(args):
 
     common_ref_fasta_ext = ''
 
+    if download_refs:
+        quast_py_args.remove('--download')
+        from libs import search_references_meta
+        search_references_meta.download_blastdb()
     # PROCESSING REFERENCES
 
     if ref_fpaths:

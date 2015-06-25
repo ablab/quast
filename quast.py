@@ -749,4 +749,4 @@ if __name__ == '__main__':
     except Exception:
         _, exc_value, _ = sys.exc_info()
         logger.exception(exc_value)
-        logger.error('exception caught!', exit_with_code=1)
+        logger.error('exception caught!', exit_with_code=1, to_stderr=True)

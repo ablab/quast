@@ -35,27 +35,32 @@ def blast_fpath(fname):
     return os.path.join(blast_dirpath, fname)
 
 
-def download_refs(ref_fpaths, organism, downloaded_dirpath):
+def download_refs(organism, downloaded_dirpath):
     ncbi_url = 'http://eutils.ncbi.nlm.nih.gov/entrez/eutils/'
     ref_fpath = os.path.join(downloaded_dirpath, re.sub('[/=]', '', organism) + '.fasta')
     organism = organism.replace('_', '+')
     request = urlopen(ncbi_url + 'esearch.fcgi?db=assembly&term=%s+[Organism]&retmax=100' % organism)
     response = request.read()
     xml_tree = ET.fromstring(response)
+
     if xml_tree.find('Count').text == '0':  # Organism is not found
-        logger.info("  %s is not found in NCBI's database" % organism.replace('+', ' '))
-        return ref_fpaths
+        return None
+
     ref_id = xml_tree.find('IdList').find('Id').text
     request = urlopen(
         ncbi_url + 'elink.fcgi?dbfrom=assembly&db=nuccore&id=%s&linkname="assembly_nuccore_refseq"' % ref_id)
     response = request.read()
     xml_tree = ET.fromstring(response)
+
+    link_set = xml_tree.find('LinkSet')
+    if link_set is None:
+        return None
+
     link_db = xml_tree.find('LinkSet').find('LinkSetDb')
     if link_db is None:
-        logger.info("  %s is not found in NCBI's database" % organism.replace('+', ' '))
-        return ref_fpaths
-    refs_id = sorted([ref_id.find('Id').text for ref_id in link_db.findall('Link')])
-    for ref_id in sorted(refs_id):
+        return None
+
+    for ref_id in sorted(ref_id.find('Id').text for ref_id in link_db.findall('Link')):
         request = urlopen(ncbi_url + 'efetch.fcgi?db=sequences&id=%s&rettype=fasta&retmode=text' % ref_id)
         fasta = request.read()
         if fasta:
@@ -66,12 +71,14 @@ def download_refs(ref_fpaths, organism, downloaded_dirpath):
             else:
                 with open(ref_fpath, "a") as fasta_file:
                     fasta_file.write(fasta)
-    if os.path.exists(ref_fpath):
-        ref_fpaths.append(ref_fpath)
-        logger.info('  Successfully downloaded %s' % organism.replace('+', ' '))
-    else:
-        logger.info("  %s is not found in NCBI's database" % organism.replace('+', ' '))
-    return ref_fpaths
+
+    if not os.path.isfile(ref_fpath):
+        return None
+    if os.path.getsize(ref_fpath) < 0:
+        os.remove(ref_fpath)
+        return None
+
+    return ref_fpath
 
 
 def show_progress(a, b, c):
@@ -175,12 +182,33 @@ def do(assemblies, downloaded_dirpath):
                             scores_organisms.append((score, organism))
 
     logger.print_timestamp()
-    logger.info('Trying to download found references from NCBI..')
+    logger.info('Trying to download found references from NCBI. '
+                'Totally ' + str(len(scores_organisms)) + ' organisms to try.')
     scores_organisms = sorted(scores_organisms, reverse=True)
+    max_organism_name_len = 0
     for (score, organism) in scores_organisms:
+        max_organism_name_len = max(len(organism), max_organism_name_len)
+
+    total_downloaded = 0
+    total_scored_left = len(scores_organisms)
+    total_needed = min(total_scored_left, qconfig.max_references)
+
+    for (score, organism) in scores_organisms:
+        total_scored_left -= 1
         if len(ref_fpaths) == qconfig.max_references:
             break
-        ref_fpaths = download_refs(ref_fpaths, organism, downloaded_dirpath)
+
+        new_ref_fpath = download_refs(organism, downloaded_dirpath)
+        spaces = (max_organism_name_len - len(organism)) * ' '
+        if new_ref_fpath:
+            total_downloaded += 1
+            total_needed = min(total_scored_left, qconfig.max_references)
+            logger.info("  %s%s | successfully downloaded (total %d, %d more to go)" %
+                        (organism.replace('+', ' '), spaces, total_downloaded, total_needed))
+            ref_fpaths.append(new_ref_fpath)
+        else:
+            logger.info("  %s%s | not found in the NCBI database" % (organism.replace('+', ' '), spaces))
+
     if not ref_fpaths:
         logger.info('Reference genomes are not found.')
     if not qconfig.debug:

@@ -387,6 +387,8 @@ def main(args):
                     assert_file_exists(ref_fpath, 'reference')
                     ref_fpaths[i] = ref_fpath
 
+        elif opt == '--max-references':
+            qconfig.max_references = int(arg)
 
         elif opt in ('-M', "--min-contig"):
             min_contig = int(arg)

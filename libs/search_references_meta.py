@@ -50,7 +50,11 @@ def download_refs(ref_fpaths, organism, downloaded_dirpath):
         ncbi_url + 'elink.fcgi?dbfrom=assembly&db=nuccore&id=%s&linkname="assembly_nuccore_refseq"' % ref_id)
     response = request.read()
     xml_tree = ET.fromstring(response)
-    refs_id = sorted([ref_id.find('Id').text for ref_id in xml_tree.find('LinkSet').find('LinkSetDb').findall('Link')])
+    link_db = xml_tree.find('LinkSet').find('LinkSetDb')
+    if link_db is None:
+        logger.info("  %s is not found in NCBI's database" % organism.replace('+', ' '))
+        return ref_fpaths
+    refs_id = sorted([ref_id.find('Id').text for ref_id in link_db.findall('Link')])
     for ref_id in sorted(refs_id):
         request = urlopen(ncbi_url + 'efetch.fcgi?db=sequences&id=%s&rettype=fasta&retmode=text' % ref_id)
         fasta = request.read()

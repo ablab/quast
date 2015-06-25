@@ -582,7 +582,7 @@ def do(contigs_fpaths, contig_report_fpath_pattern, output_dirpath,
     virtual_genome_size = cumulative_ref_lengths[-1] - virtual_genome_shift
 
     for contigs_fpath in contigs_fpaths:
-        report_fpath = contig_report_fpath_pattern % qutils.name_from_fpath(contigs_fpath)
+        report_fpath = contig_report_fpath_pattern % qutils.label_from_fpath(contigs_fpath)
         aligned_blocks = parse_nucmer_contig_report(report_fpath, sorted_ref_names, cumulative_ref_lengths)
         if aligned_blocks is None:
             return None

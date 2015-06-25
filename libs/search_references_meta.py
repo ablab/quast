@@ -143,8 +143,8 @@ def do(assemblies, downloaded_dirpath):
         contigs_fpath = assembly.fpath
         cmd = blast_fpath('blastn') + (' -query %s -db %s -outfmt 7 -num_threads %s' % (
             contigs_fpath, db_fpath, qconfig.max_threads))
-        assembly_label = qutils.label_from_fpath(contigs_fpath)
-        logger.info('  ' + 'processing ' + assembly_label)
+        assembly_name = qutils.name_from_fpath(contigs_fpath)
+        logger.info('  ' + 'processing ' + assembly_name)
         qutils.call_subprocess(shlex.split(cmd), stdout=open(blast_res_fpath, 'a'), stderr=open(err_fpath, 'a'))
     logger.info('')
     organisms = []

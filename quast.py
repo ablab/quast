@@ -142,9 +142,7 @@ def _handle_fasta(contigs_fpath, corr_fpath, reporting):
         return False
 
     # correcting
-    if qconfig.no_check:
-        shutil.copy2(contigs_fpath, corr_fpath)
-    else:
+    if not qconfig.no_check:
         if not correct_fasta(contigs_fpath, corr_fpath, qconfig.min_contig):
             return False
     
@@ -173,6 +171,8 @@ def _correct_contigs(contigs_fpaths, corrected_dirpath, reporting, labels):
     broken_scaffolds = [corrected_fpaths[i][1] for i in range(len(corrected_fpaths)) if corrected_fpaths[i][1]]
     corrected_fpaths = [corrected_fpaths[i][0] for i in range(len(corrected_fpaths))]
     for i, (contigs_fpath, corr_fpath) in enumerate(corrected_fpaths):
+        if qconfig.no_check:
+            corr_fpath = contigs_fpath
         qconfig.assembly_labels_by_fpath[corr_fpath] = labels[i]
         if _handle_fasta(contigs_fpath, corr_fpath, reporting):
             corrected_contigs_fpaths.append(corr_fpath)

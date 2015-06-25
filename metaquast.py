@@ -180,8 +180,9 @@ def _parallel_correct_contigs(contigs_fpath, label, corrected_dirpath, min_conti
                        % (os.path.basename(contigs_fpath), min_contig))
         return
     # correcting
-    if not quast.correct_fasta(contigs_fpath, corr_fpath, min_contig):
-        return
+    if not qconfig.no_check:
+        if not quast.correct_fasta(contigs_fpath, corr_fpath, min_contig):
+            return
 
     return assembly
 
@@ -515,6 +516,7 @@ def main(args):
 
     # Running QUAST(s)
     quast_py_args += ['--meta']
+    quast_py_args += ['--no-check']
     downloaded_refs = False
 
     # SEARCHING REFERENCES

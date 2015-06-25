@@ -76,7 +76,7 @@
     at <a href="http://sourceforge.net/projects/quast/">http://sourceforge.net/projects/quast</a>.
     <br>
     <br>
-    QUAST utilizes <a href="http://mummer.sourceforge.net/">MUMmer</a>, <a href="http://exon.gatech.edu/GeneMark/">GeneMarkS</a>, <a href="http://exon.gatech.edu/GeneMark/gmes_instructions.html">GeneMark-ES</a>, <a href="http://cbcb.umd.edu/software/glimmerhmm/">GlimmerHMM</a>, and <a href="http://gage.cbcb.umd.edu/index.html">GAGE</a>. For In addition, MetaQUAST uses <a href="http://exon.gatech.edu/GeneMark/">MetaGeneMark</a>, <a href="http://blast.ncbi.nlm.nih.gov/Blast.cgi">BLAST</a>, and <a href="http://www.arb-silva.de/">SILVA</a> 16S rRNA database. These tools are built in, so you do not need to install
+    QUAST utilizes <a href="http://mummer.sourceforge.net/">MUMmer</a>, <a href="http://exon.gatech.edu/GeneMark/">GeneMarkS</a>, <a href="http://exon.gatech.edu/GeneMark/gmes_instructions.html">GeneMark-ES</a>, <a href="http://cbcb.umd.edu/software/glimmerhmm/">GlimmerHMM</a>, and <a href="http://gage.cbcb.umd.edu/index.html">GAGE</a>. In addition, MetaQUAST uses <a href="http://exon.gatech.edu/GeneMark/">MetaGeneMark</a>, <a href="http://blast.ncbi.nlm.nih.gov/Blast.cgi">BLAST</a>, and <a href="http://www.arb-silva.de/">SILVA</a> 16S rRNA database. These tools are built in, so you do not need to install
     them separately. GeneMark tools are pre-built, the rest will be compiled on the first use. SILVA database will be downloaded on the first use (see details below).
     <br>
     <br>
@@ -167,15 +167,20 @@ QUAST automatically compiles all its sub-parts when needed (on the first use).
 Thus, there is no special installation command for QUAST.
 However, we recommend you to run:
 <pre class="code">
-    python quast.py --test (if you plan to use only quast.py)
+    python quast.py --test (if you plan to use quast.py)
 </pre>
-or 
+or/and
 <pre class="code">
-    python metaquast.py --test  (if you plan to use only metaquast.py)
+    python metaquast.py --test  (if you plan to use metaquast.py with references)
 </pre>
-or both. 
+or/and 
+<pre class="code">
+    python metaquast.py --test-no-ref  (if you plan to use metaquast.py without references)
+</pre>
 These commands run all QUAST and MetaQUAST modules and check correctness
 of their work on your platform.
+<br><br>
+We also provide <code>./install.sh</code> script which runs all three mentioned above commands.
 </p>
 
 <p>
@@ -331,7 +336,7 @@ Take assembly names from their parent directory names.
 </div>
 Enables gene finding. Affects perfomance, thus disabled by default.<br>
 <span style='line-height: 50%;'>&nbsp;</span><br>  
-By default, we assume that the genome is prokaryotic, and apply GeneMark.hmm for gene finding.
+By default, we assume that the genome is prokaryotic, and apply GeneMarkS for gene finding.
 If the genome is eukaryotic, add the <a href='#eukaryote'><code>--eukaryote</code></a> option to enable option to enable GeneMark-ES instead.
 If it is a metagenome, add the <a href='#meta'><code>--meta</code></a> option.<br>
 <span style='line-height: 50%;'>&nbsp;</span><br>  
@@ -357,7 +362,7 @@ Note: this list is used only if <code>--gene-finding</code> option is specified.
 </div>
 Genome is eukaryotic. Affects gene finding and contig alignment:<br>
 <ol class='my_ol' style='margin-top: 0;'>
-<li>For prokaryotes (which is default), GeneMark.hmm is used. For eukaryotes, GeneMark-ES are used.
+<li>For prokaryotes (which is default), GeneMarkS is used. For eukaryotes, GeneMark-ES is used.
 <li>By default, QUAST assumes that a genome is circular and correctly processes its linear representation.
 This options indicates that the genome is not circular.
 </ol>
@@ -369,7 +374,7 @@ This options indicates that the genome is not circular.
 Use MetaGeneMark for gene finding, if the <code>--gene-finding</code> option is specified.
 If the <code>--eukaryote</code> option is also provided, MetaGeneMark still will be used.<br>
 <span style='line-height: 50%;'>&nbsp;</span><br>  
-Note: if you have multiple references, <a href='#sec2.5'>use metaquast.py</a> instead
+Note: if you are working with metagonome assemblies, we recommend <a href='#sec2.5'>to use metaquast.py</a> instead of quast.py
 (it is in the same directory as quast.py).
 
 <div class='option'>
@@ -420,12 +425,48 @@ The default value is 'one'.
 </div>
 Break contigs at every misassembly event (including local ones) to compute <span class='metric-ref'>NAx</span> and
 <span class='metric-ref'>NGAx</span> statistics. By default, QUAST breaks contigs <i>only at extensive</i> misassemblies (not local ones).
+</div>
+
+<br>
+Speedup options:
+<div class='options'>
 
 <div class='option'>
-    <code><b>--no-plots</b></code>
+<code><b>--no-check</b></code>
 </div>
-Do not draw plots. This will speed up computation but you will get only text reports as a result.
+Do not check and correct input FASTA files. By default, QUAST corrects sequence names by replacing special characters (e.g. &amp;, &#124;, " ", etc) with underscore ("_"). QUAST also checks sequences itself and reports a presence of non-ACGTN characters. Alternative symbols (M, K, R, etc) are replaced with N.
+Note that uncorrected FASTA files may cause failing of third-party tools incorporated to QUAST, e.g. GAGE or Nucmer.
 
+
+<div class='option'>
+<code><b>--no-plots</b></code>
+</div>
+Do not draw plots.
+
+<div class='option'>
+<code><b>--no-html</b></code>
+</div>
+Do not build HTML report.
+
+<div class='option'>
+<code><b>--no-snps</b></code>
+</div>
+Do not report SNPs statistics. This may significantly reduce memory consumption on large genomes and speed up computation. However, all SNP-related metrics will not reported (e.g. <code># mismatches per 100</code>).
+
+<div class='option'>
+<code><b>--no-gc</b></code>
+</div>
+Do not compute GC% and do not produce GC-distribution plots (both in HTML report and in PDF).
+
+<div class='option'>
+<code><b>--fast</b></code>
+</div>
+A shortcut for using all of speedup options at a time.
+</div>
+
+<br>
+Other:
+<div class='options'>
 <div class='option'>
     <code><b>--test</b></code>
 </div>
@@ -441,9 +482,10 @@ Print help.
 <a name="sec2.5"></a>
 <h3>2.5 Metagenomic assemblies</h3>
 <p>
-    The <code>metaquast.py</code> script accepts multiple references. One can provide several files, a merged FASTA file with multiple sequences, or a combination.
-    The tool partitions all contigs in groups aligned to each reference.
-    Then it runs quast.py for each of the following:<br>
+    The <code>metaquast.py</code> script accepts multiple references. One can provide several files or directory with multiple reference files inside.
+    The tool partitions all contigs in groups aligned to each reference. Note that a contig may belong to several groups simultaneously if it aligns to several references. 
+    <br>
+    MetaQUAST runs quast.py for each of the following:<br>
     <ul>
         <li>for all references in combination,
         <li>for each reference separately, by using corresponding contigs,
@@ -462,7 +504,7 @@ Usage:
     python metaquast.py contigs_1 contigs_2 ... -R reference_1,reference_2,reference_3,...
 </pre>
 
-<p>All options are the same as for quast.py, except for <code>-R</code>: it can accept multiple references or directory with references.</p>
+<p>All options are the same as for quast.py, except for <code>-R</code>: it can accept multiple references (comma-separated without spaces in between) or directory with references.</p>
 
 <a name="sec3"></a>
 <h2>3. QUAST output</h2>
@@ -622,7 +664,7 @@ Note:
 <p><span class='metric-name'># operons</span> is defined similarly to <span class='metric-ref'># genes</span>, but an operon positions file required instead.</p>
 
 <p><a name='predicted_genes'><span class='metric-name'># predicted genes</span> is the number of genes in the assembly
-    found by GeneMark.hmm, GeneMark-ES, GlimmerHMM or MetaGeneMark. See the description of the <a href='#gene_finding'><code>--gene-finding</code></a> option for details.</p>
+    found by GeneMarkS, GeneMark-ES, GlimmerHMM or MetaGeneMark. See the description of the <a href='#gene_finding'><code>--gene-finding</code></a> option for details.</p>
 
 <p><span class='metric-name'>Largest alignment</span> is the length of the largest continuous alignment in the assembly.
     A value can be smaller than a value of <a href='largest_contig'><span class='metric-ref'>largest contig</span></a> if the largest contig is misassembled.</p>

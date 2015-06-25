@@ -34,22 +34,25 @@ Or on Ubuntu by typing:
 3. INSTALLATION
 
 To download the QUAST source code tarball and extract it, type:
-    wget https://downloads.sourceforge.net/project/quast/quast-2.3.tar.gz
-    tar -xzf quast-2.3.tar.gz
-    cd quast-2.3
+    wget https://downloads.sourceforge.net/project/quast/quast-3.0.tar.gz
+    tar -xzf quast-3.0.tar.gz
+    cd quast-3.0
 
 QUAST automatically compiles all its sub-parts when needed (on the first use). 
 Thus, there is no special installation command for QUAST.
 However, we recommend you to run:
-    python quast.py --test (if you plan to use only quast.py)
-or 
-    python metaquast.py --test  (if you plan to use only metaquast.py)
-or both. 
+    python quast.py --test (if you plan to use quast.py)
+or/and 
+    python metaquast.py --test  (if you plan to use metaquast.py with references)
+or/and
+    python metaquast.py --test-no-ref  (if you plan to use metaquast.py without references) 
 These commands run all QUAST and metaQUAST modules and check correctness
 of their work on your platform.
 
-NOTE: You should place quast-2.3 directory in the final destination before 
+We also provide ./install.sh script which runs all three mentioned above commands.
+
+NOTE: You should place quast-3.0 directory in the final destination before
 the first use (e.g. before run with --test). If you want to move QUAST to 
-some new place after several usages you should use a clean copy of quast-2.3.
+some new place after several usages you should use a clean copy of quast-3.0.
 This limitation is caused by auto-generation of absolute paths in compiled 
 modules of QUAST.

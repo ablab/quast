@@ -503,6 +503,7 @@ def main(args):
             qconfig.no_gc = True
             qconfig.show_snps = False
             qconfig.draw_plots = False
+            qconfig.html_report = False
 
         elif opt in ('-m', '--meta'):
             qconfig.meta = True

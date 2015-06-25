@@ -185,10 +185,14 @@ def usage(show_hidden=False, meta=False):
     print >> sys.stderr, "                                      good alignments [default is %s]" % ambiguity_usage
     print >> sys.stderr, "-n  --strict-NA                       Break contigs in any misassembly event when compute NAx and NGAx"
     print >> sys.stderr, "                                      By default, QUAST breaks contigs only by extensive misassemblies (not local ones)"
-    print >> sys.stderr, "    --no-plots                        Do not draw plots (to speed up computation)"
-    print >> sys.stderr, "    --no-snps                         Do not report SNPs (to make quast faster & reduce memory consumption on large genomes)"
-    print >> sys.stderr, "    --fast                            Do not draw plots, report SNPs, check correctness of fasta file," \
-                         "                                      compute GC% and GC-distribution (to make quast faster & reduce memory consumption on large genomes)"
+    print >> sys.stderr, ""
+    print >> sys.stderr, "Speedup options:"
+    print >> sys.stderr, "    --no-check                        Do not check and correct input fasta files"
+    print >> sys.stderr, "    --no-plots                        Do not draw plots"
+    print >> sys.stderr, "    --no-html                         Do not build html report"
+    print >> sys.stderr, "    --no-snps                         Do not report SNPs (may significantly reduce memory consumption on large genomes)"
+    print >> sys.stderr, "    --no-gc                           Do not compute GC% and GC-distribution"
+    print >> sys.stderr, "    --fast                            A combination of all speedup options"
     if show_hidden:
         print >> sys.stderr, ""
         print >> sys.stderr, "Hidden options:"
@@ -197,16 +201,16 @@ def usage(show_hidden=False, meta=False):
         print >> sys.stderr, "-c  --mincluster   <int>    Nucmer's parameter: the minimum length of a cluster of matches [default: %s]" % mincluster
         print >> sys.stderr, "-j  --save-json             Save the output also in the JSON format"
         print >> sys.stderr, "-J  --save-json-to <path>   Save the JSON output to a particular path"
-        print >> sys.stderr, "    --no-html               Do not build html report"
-        print >> sys.stderr, "    --no-plots              Do not draw plots (to make quast faster)"
-        print >> sys.stderr, "    --no-check              Do not check correctness of fasta file"
-        print >> sys.stderr, "    --no-gc                 Do not compute GC% and GC-distribution"
+
     print >> sys.stderr, ""
-    print >> sys.stderr, "    --test                            Run QUAST on the data from the test_data folder, output to quast_test_output"
+    print >> sys.stderr, "Other:"
     if meta:
-        print >> sys.stderr, "    --test-no-ref                 Run MetaQUAST without references on the data from the test_data folder, output to quast_test_output." \
-                             "                                  MetaQUAST will download SILVA 16S rRNA database (~170 Mb) for searching reference genomes. " \
-                             "                                  Internet connection is required."
+        print >> sys.stderr, "    --test                            Run MetaQUAST on the data from the test_data folder, output to quast_test_output"
+        print >> sys.stderr, "    --test-no-ref                     Run MetaQUAST without references on the data from the test_data folder, output to quast_test_output."
+        print >> sys.stderr, "                                      MetaQUAST will download SILVA 16S rRNA database (~170 Mb) for searching reference genomes."
+        print >> sys.stderr, "                                      Internet connection is required."
+    else:
+        print >> sys.stderr, "    --test                            Run QUAST on the data from the test_data folder, output to quast_test_output"
     print >> sys.stderr, "-h  --help                            Print this usage message"
     if show_hidden:
         print >> sys.stderr, "    --help-hidden                     Print this usage message with all hidden options"

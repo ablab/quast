@@ -470,7 +470,10 @@ def main(args):
     corrected_dirpath = os.path.join(output_dirpath, qconfig.corrected_dirname)
 
     logger.set_up_file_handler(output_dirpath)
-    logger.print_command_line([os.path.realpath(__file__)] + args, wrap_after=None)
+    args = [os.path.realpath(__file__)]
+    for k, v in options: args.extend([k, v])
+    args.extend(contigs_fpaths)
+    logger.print_command_line(args, wrap_after=None)
     logger.start()
 
     # Threading

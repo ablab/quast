@@ -84,8 +84,9 @@ function fillOneRow(metric, mainMetrics, group_n, order, glossary, is_primary, r
 function buildTotalReport(assembliesNames, report, order, date, minContig, glossary,
                           qualities, mainMetrics, reports) {
     $('#report_date').html('<p>' + date + '</p>');
-    $('#mincontig').html('<p>All statistics are based on contigs of size >= ' + minContig +
+    $('#mincontig').html('<p>All statistics are based on contigs of size &ge; ' + minContig +
         '<span class="rhs">&nbsp;</span>bp, unless otherwise noted (e.g., "# contigs (>= 0 bp)" and "Total length (>= 0 bp)" include all contigs.)</p>');
+    $('#per_ref_msg').html('<p>Clicking on a row with <span style="color: #DDD">+</span> will expand detailed values for each reference. Note that # contigs may not sum up, because one contig may be aligned to multiple references.</p>');
 
 //    $('#extended_link').css('width', '183');
 

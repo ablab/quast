@@ -6,15 +6,18 @@
 
 import os
 import shlex
+import shutil
 import sys
 import platform
 import re
+import gzip
 from libs import qconfig, qutils
 from libs.log import get_logger
 
 logger = get_logger(qconfig.LOGGER_META_NAME)
 from urllib2 import urlopen
 import xml.etree.ElementTree as ET
+import urllib
 
 silva_db_path = 'http://www.arb-silva.de/fileadmin/silva_databases/release_119/Exports/'
 silva_fname = 'SILVA_119_SSURef_Nr99_tax_silva.fasta'
@@ -73,41 +76,53 @@ def show_progress(a, b, c):
 
 
 def download_blastdb():
-    logger.info()
     if os.path.isfile(db_fpath + '.nsq'):
-        logger.info('SILVA ribosomal RNA gene database has already been downloaded.')
+        logger.info()
+        logger.info('SILVA rRNA database has already been downloaded, unpacked and BLAST database created. '
+                    'If not, please remove %s and rerun MetaQUAST' % db_fpath + '.nsq')
         return 0
     log_fpath = os.path.join(blastdb_dirpath, 'blastdb.log')
-    logger.info('Downloading SILVA ribosomal RNA gene database...')
-    logger.info('Logging to %s...' % log_fpath)
     db_gz_fpath = os.path.join(blastdb_dirpath, silva_fname + '.gz')
     silva_fpath = os.path.join(blastdb_dirpath, silva_fname)
-    import urllib, gzip
-    if not os.path.isdir(blastdb_dirpath):
-        os.mkdir(blastdb_dirpath)
 
-    silva_download = urllib.URLopener()
-    try:
-        silva_download.retrieve(silva_db_path + silva_fname + '.gz', db_gz_fpath, show_progress)
-    except:
-        logger.error(
-            'Failed downloading SILVA rRNA gene database (%s)! The search for reference genomes cannot be performed. '
-            'Try to download it manually in  %s.' % (silva_db_path + silva_fname, blastdb_dirpath))
-        return 1
-    with open(silva_fpath, "wb") as db_file:
-        f = gzip.open(db_gz_fpath, 'rb')
-        db_file.write(f.read())
-    cmd = sed_cmd + " 's/ /_/g' %s" % silva_fpath
-    qutils.call_subprocess(shlex.split(cmd), stdout=open(log_fpath, 'a'), stderr=open(log_fpath, 'a'))
+    logger.info()
+    if os.path.isfile(db_gz_fpath):
+        logger.info('SILVA ribosomal RNA gene database has already been downloaded.')
+    else:
+        logger.info('Downloading SILVA ribosomal RNA gene database...')
+        if not os.path.isdir(blastdb_dirpath):
+            os.mkdir(blastdb_dirpath)
+        silva_download = urllib.URLopener()
+        silva_remote_fpath = silva_db_path + silva_fname + '.gz'
+        try:
+            silva_download.retrieve(silva_remote_fpath, db_gz_fpath + '.download', show_progress)
+        except Exception:
+            logger.error(
+                'Failed downloading SILVA rRNA gene database (%s)! The search for reference genomes cannot be performed. '
+                'Try to download it manually in %s and restart MetaQUAST.' % (silva_remote_fpath, blastdb_dirpath))
+            return 1
+        shutil.move(db_gz_fpath + '.download', db_gz_fpath)
+
+    logger.info('Processing downloaded file. Logging to %s...' % log_fpath)
+    if not os.path.isfile(silva_fpath):
+        logger.info('Unpacking and replacing " " with "_"...')
+        with open(silva_fpath + ".unpacked", "wb") as db_file:
+            f = gzip.open(db_gz_fpath, 'rb')
+            db_file.write(f.read())
+        cmd = sed_cmd + " 's/ /_/g' %s" % (silva_fpath + ".unpacked")
+        qutils.call_subprocess(shlex.split(cmd), stdout=open(log_fpath, 'a'), stderr=open(log_fpath, 'a'))
+        shutil.move(silva_fpath + ".unpacked", silva_fpath)
+
+    logger.info('Making BLAST database...')
     cmd = blast_fpath('makeblastdb') + (' -in %s -dbtype nucl -out %s' % (silva_fpath, db_fpath))
     qutils.call_subprocess(shlex.split(cmd), stdout=open(log_fpath, 'w'), stderr=open(log_fpath, 'a'))
-    os.remove(db_gz_fpath)
-    os.remove(silva_fpath)
-    os.remove(log_fpath)
-    if not os.path.exists(db_fpath + 'nsq'):
-        logger.error('Failed making BLAST database ("' + blastdb_dirpath +
-                     '"). Try to make it manually.')
+    if not os.path.exists(db_fpath + '.nsq'):
+        logger.error('Failed to make BLAST database ("' + blastdb_dirpath +
+                     '"). See details in log. Try to make it manually: %s' % cmd)
         return 1
+    else:
+        os.remove(db_gz_fpath)
+        os.remove(silva_fpath)
     return 0
 
 
@@ -118,6 +133,7 @@ def do(assemblies, downloaded_dirpath):
         os.mkdir(blastdb_dirpath)
     if not os.path.isfile(db_fpath + '.nsq'):
         return_code = download_blastdb()
+        logger.info()
         if return_code != 0:
             return None
 

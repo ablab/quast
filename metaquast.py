@@ -327,10 +327,11 @@ def main(args):
         elif opt == '--test' or opt == '--test-no-ref':
             options.remove((opt, arg))
             quast_py_args.remove(opt)
-            options += [('-o', 'quast_test_output'),
-                        ('-R', ','.join([os.path.join(qconfig.QUAST_HOME, 'test_data', 'meta_ref_1.fasta'),
-                                         os.path.join(qconfig.QUAST_HOME, 'test_data', 'meta_ref_2.fasta'),
-                                         os.path.join(qconfig.QUAST_HOME, 'test_data', 'meta_ref_3.fasta')]))]
+            options += [('-o', 'quast_test_output')]
+            if opt == '--test':
+                options += [('-R', ','.join([os.path.join(qconfig.QUAST_HOME, 'test_data', 'meta_ref_1.fasta'),
+                            os.path.join(qconfig.QUAST_HOME, 'test_data', 'meta_ref_2.fasta'),
+                            os.path.join(qconfig.QUAST_HOME, 'test_data', 'meta_ref_3.fasta')]))]
             contigs_fpaths += [os.path.join(qconfig.QUAST_HOME, 'test_data', 'meta_contigs_1.fasta'),
                                os.path.join(qconfig.QUAST_HOME, 'test_data', 'meta_contigs_2.fasta')]
             test_mode = True
@@ -445,14 +446,9 @@ def main(args):
             draw_plots = False
         elif opt == '--no-html':
             html_report = False
-        elif opt == '--test-no-ref':
-            quast_py_args.remove(opt)
-            ref_fpaths = []
-        elif opt == '--fast':  # --no-check, --no-gc, --no-plots, --no-snps
-            qconfig.no_check = True
-            qconfig.no_gc = True
-            qconfig.show_snps = False
+        elif opt == '--fast':  # --no-check, --no-gc, --no-snps will automatically set in QUAST runs
             draw_plots = False
+            html_report = False
         else:
             logger.error('Unknown option: %s. Use -h for help.' % (opt + ' ' + arg), to_stderr=True, exit_with_code=2)
 
@@ -524,7 +520,8 @@ def main(args):
     # SEARCHING REFERENCES
     if not ref_fpaths:
         logger.info()
-        logger.info("No references are provided, starting search for reference genomes in NCBI's database..")
+        logger.info("No references are provided, starting to search for reference genomes in SILVA rRNA database "
+                    "and to download them from NCBI...")
         downloaded_dirpath = os.path.join(output_dirpath, qconfig.downloaded_dirname)
         if os.path.isdir(downloaded_dirpath):
             shutil.rmtree(downloaded_dirpath)
@@ -537,6 +534,9 @@ def main(args):
             logger.info('Downloaded reference(s):')
             corrected_ref_fpaths, common_ref_fasta_ext, combined_ref_fpath, chromosomes_by_refs, ref_names =\
                 _correct_references(ref_fpaths, corrected_dirpath)
+        elif test_mode:
+            logger.error('Failed to download or setup SILVA rRNA database for working without '
+                         'references on metagenome datasets!', to_stderr=True, exit_with_code=4)
 
     if not ref_fpaths:
         # No references, running regular quast with MetaGenemark gene finder
@@ -658,7 +658,7 @@ if __name__ == '__main__':
     except Exception:
         _, exc_value, _ = sys.exc_info()
         logger.exception(exc_value)
-        logger.error('exception caught!')
+        logger.error('exception caught!', exit_with_code=1)
 
 
 

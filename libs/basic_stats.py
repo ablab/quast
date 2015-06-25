@@ -171,7 +171,7 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, json_output_dir, results_dir):
         report.add_field(reporting.Fields.CONTIGS, len(lengths_list))
         report.add_field(reporting.Fields.LARGCONTIG, max(lengths_list))
         report.add_field(reporting.Fields.TOTALLEN, total_length)
-        report.add_field(reporting.Fields.GC, ('%.2f' % total_GC if total_GC else None))
+        report.add_field(reporting.Fields.GC, ('%.2f' % total_GC if total_GC is not None else None))
         report.add_field(reporting.Fields.UNCALLED, number_of_Ns)
         report.add_field(reporting.Fields.UNCALLED_PERCENT, ('%.2f' % (float(number_of_Ns) * 100000.0 / float(total_length))))
         if ref_fpath:

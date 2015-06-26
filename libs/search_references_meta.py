@@ -40,7 +40,7 @@ def try_send_request(url):
         request = urlopen(url)
     except Exception:
         logger.error('ERROR! Cannot established internet connection to download reference genomes! '
-                     'Check internet connection or run MetaQUAST with option "--max-ref-num 0".')
+                     'Check internet connection or run MetaQUAST with option "--max-ref-number 0".')
     return request.read()
 
 
@@ -159,7 +159,6 @@ def parallel_blast(contigs_fpath, blast_res_fpath, err_fpath, blast_check_fpath,
 def check_blast(blast_check_fpath, files_sizes, assemblies_fpaths, assemblies):
     downloaded_organisms = []
     not_founded_organisms = []
-    changed_contigs = []
     for assembly_fpath in assemblies_fpaths:
         assembly_name = qutils.name_from_fpath(assembly_fpath)
         check_fpath = blast_check_fpath  + '_' + assembly_name
@@ -183,9 +182,7 @@ def check_blast(blast_check_fpath, files_sizes, assemblies_fpaths, assemblies):
                             downloaded_organisms += line[1].rstrip().split(',')
                         elif line[0] == 'Not_founded:':
                             not_founded_organisms += line[1].rstrip().split(',')
-        if not downloaded_organisms and not not_founded_organisms:
-            changed_contigs.append(assembly_name)
-    return assemblies, set(downloaded_organisms), set(not_founded_organisms), changed_contigs
+    return assemblies, set(downloaded_organisms), set(not_founded_organisms)
 
 
 def do(assemblies, downloaded_dirpath):
@@ -204,7 +201,7 @@ def do(assemblies, downloaded_dirpath):
     files_sizes = dict((assembly.fpath, os.path.getsize(assembly.fpath)) for assembly in assemblies)
     assemblies_fpaths = dict((assembly.fpath, assembly) for assembly in assemblies)
     contigs_names = [qutils.name_from_fpath(assembly.fpath) for assembly in assemblies]
-    blast_assemblies, downloaded_organisms, not_founded_organisms, changed_contigs = \
+    blast_assemblies, downloaded_organisms, not_founded_organisms = \
         check_blast(blast_check_fpath, files_sizes, assemblies_fpaths, blast_assemblies)
 
     if len(blast_assemblies) > 0:
@@ -275,6 +272,15 @@ def do(assemblies, downloaded_dirpath):
                             (organism.replace('+', ' '), spaces, total_downloaded))
         else:
             scores_organisms.insert(0, (5000, organism))
+
+    total_needed = max(total_needed, 0)
+    if total_needed == 0:
+        if not ref_fpaths:
+            logger.info('Reference genomes are not found.')
+        if not qconfig.debug and os.path.exists(err_fpath):
+            os.remove(err_fpath)
+        return ref_fpaths
+
     logger.print_timestamp()
     logger.info('Trying to download found references from NCBI. '
                 'Totally ' + str(total_needed) + ' organisms to try.')
@@ -285,7 +291,7 @@ def do(assemblies, downloaded_dirpath):
         spaces = (max_organism_name_len - len(organism)) * ' '
         new_ref_fpath = None
         was_downloaded = False
-        if organism not in not_founded_organisms and organism not in downloaded_organisms:
+        if not os.path.exists(ref_fpath) and organism not in not_founded_organisms and organism not in downloaded_organisms:
             new_ref_fpath = download_refs(organism, ref_fpath)
         elif os.path.exists(ref_fpath) and organism not in downloaded_organisms:
             was_downloaded = True
@@ -304,10 +310,14 @@ def do(assemblies, downloaded_dirpath):
         elif organism not in downloaded_organisms:
             logger.info("  %s%s | not found in the NCBI database" % (organism.replace('+', ' '), spaces))
             not_founded_organisms.add(organism)
-    for contig_name in changed_contigs:
+    for contig_name in contigs_names:
         check_fpath = blast_check_fpath  + '_' + contig_name
-        with open(check_fpath, 'a') as check_file:
-            check_file.writelines('---\n')
+        with open(check_fpath) as check_file:
+            text = check_file.read()
+            text = text[:text.find('\n')]
+        with open(check_fpath, 'w') as check_file:
+            check_file.writelines(text)
+            check_file.writelines('\n---\n')
             cur_downloaded_organisms = [organism for organism in downloaded_organisms if organism in organisms_assemblies[contig_name]]
             cur_not_founded_organisms = [organism for organism in not_founded_organisms if organism in organisms_assemblies[contig_name]]
             check_file.writelines('Downloaded: %s\n' % ','.join(cur_downloaded_organisms))

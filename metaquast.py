@@ -547,7 +547,7 @@ def main(args):
     if not ref_fpaths:
         logger.info()
         if qconfig.max_references == 0:
-            logger.notice("Maximum number of references (--max-ref-num) is set to 0, search in SILVA rRNA database is disabled")
+            logger.notice("Maximum number of references (--max-ref-number) is set to 0, search in SILVA rRNA database is disabled")
         else:
             logger.info("No references are provided, starting to search for reference genomes in SILVA rRNA database "
                         "and to download them from NCBI...")

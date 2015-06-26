@@ -1522,6 +1522,7 @@ def do(reference, contigs_fpaths, cyclic, output_dir):
         report.add_field(reporting.Fields.MIS_LOCAL, region_misassemblies.count(Misassembly.LOCAL))
         if reference.endswith(COMBINED_REF_FNAME):
             report.add_field(reporting.Fields.MIS_ISTRANSLOCATIONS, region_misassemblies.count(Misassembly.INTERSPECTRANSLOCATION))
+        if qconfig.meta:
             report.add_field(reporting.Fields.CONTIGS_WITH_ISTRANSLOCATIONS, contigs_with_istranslocations)
 
         # for unaligned report:

@@ -130,6 +130,25 @@ def splitext_for_fasta_file(fname):
     return basename, fasta_ext
 
 
+def check_is_fasta_file(fname):
+    if 'blast.res' in fname or 'blast.check' in fname or fname == 'blast.err':
+        return False
+
+    basename_plus_innerext, outer_ext = os.path.splitext(fname)
+    basename, fasta_ext = os.path.splitext(basename_plus_innerext)
+    if fasta_ext == '':
+        outer_ext, fasta_ext = fasta_ext, outer_ext
+    if outer_ext not in ['.zip', '.gz', '.gzip', '.bz2', '.bzip2', '']:
+        logger.warning('Skipping %s because it is not a supported archive.' % fname)
+        return False
+
+    if fasta_ext not in ['.fa', '.fasta', '.fas', '.seq', '.fna']:
+        logger.warning('Skipping %s because it has not a supported extension.' % fname)
+        return False
+
+    return True
+
+
 def name_from_fpath(fpath):
     return os.path.splitext(os.path.basename(fpath))[0]
 

@@ -1,6 +1,6 @@
 /****************/
 /* REPORT TABLE */
-#report {    
+.report {    
     margin: 0 100px 50px 0;
     min-width: 600px;
     float: left;
@@ -8,7 +8,7 @@
     font-size: 1em;
 }
 
-#report td {
+.report td {
     margin: 0;
     padding: 2px 0.6em 0 14px;
     min-width: 100px;
@@ -16,57 +16,61 @@
     white-space: nowrap;
 }
 
-#report tr.top_row_tr td,
-#report tr.group_header td {
+.report tr.top_row_tr td,
+.report tr.group_header td {
     font-weight: bold;
     border-bottom: 1px solid #bbb;
 }
-#report tr.group_header td {
+.report tr.group_header td {
     height: 20px;
     vertical-align: bottom;
 }
 
-#report tr td:first-child {
+.report tr td:first-child {
     padding-left: 0;
 }
-#report tr td:last-child {
+.report tr td:last-child {
     padding-right: 0;
 }
 
-#report tr.row_hidden, tr.group_empty {
+.report tr.row_hidden, tr.group_empty {
     display: none;
 }
 
-#report tr.secondary_hidden {
+.report tr.secondary_hidden {
     display: none;
 }
 
-/*#report td.secondary_td {*/
+/*.report td.secondary_td {*/
 	/*padding-left: 10px !important;*/
 /*}*/
 
-#report span.metric-name.expandable {
+span.metric-name.expandable {
     margin-left: -13px;
 }
 
-#report span.metric-name.secondary {
+span.metric-name.secondary {
     margin-left: 13px;
 }
 
-#report span.metric-name.expandable.collapsed::before {
+span.metric-name.expandable.collapsed::before {
     content: '+ ';
     color: #CCC;
     cursor: pointer;
 }
 
-#report span.metric-name.expandable.expanded::before {
+span.metric-name.expandable.expanded::before {
     content: '\2212\a0';  /* &minus&nbsp */
     color: #CCC;
     cursor: pointer;
 }
 
-#report_legend {
+.report_legend {
     padding-left: 15px;  /* compensate drag handles */
+}
+
+.report table.table_hidden {
+    display: none;
 }
 
 #contigs_are_ordered {
@@ -74,11 +78,12 @@
     position: relative;
 }
 
-/*#report .report-table-header {
+
+/*.report .report-table-header {
     font-weight: bold;
 }*/
 
-/*#report thead td {
+/*.report thead td {
     border-bottom: 1px solid #bbb;
 }*/
 
@@ -117,7 +122,7 @@ table.draggable td.cell_of_moving_table .drag_handle {
     cursor: -webkit-grabbing !important;
 }
 
-/* Override the styles for the first and the last columns of the table#report.
+/* Override the styles for the first and the last columns of the table.report.
    The cloned table contains a single column which is both first and last,
    and we don't need it to inherit those styles. */
 table.draggable td.cell_of_moving_table {

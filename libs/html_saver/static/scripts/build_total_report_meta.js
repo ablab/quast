@@ -81,6 +81,65 @@ function fillOneRow(metric, mainMetrics, group_n, order, glossary, is_primary, r
 }
 
 
+function buildGenomeTable(reports, group_n, numColumns) {
+    var tableGenome = '';
+    tableGenome += '<div class="report" style="margin: 0 0px 0px 0">';
+    tableGenome += '<table cellspacing="0" id="refgenome" class="table_hidden" style="margin: 0 0px 20px 0">';
+    tableGenome += '<tr class="top_row_tr"><td class="left_column_td"><span>' + 'Reference genome' + '</span></td>';
+    var colNames = ['Length', 'GC (%)', 'Genes', 'Operons'];
+    for (var col_n = 0; col_n < numColumns; col_n++) {
+        var columnName = colNames[col_n];
+        tableGenome += '<td class="second_through_last_col_headers_td" position="' + col_n + '">' +
+            '<span class="drag_handle"><span class="drag_image"></span></span>' +
+            '<span class="assembly_name">' + columnName + '</span>' +
+            '</td>';
+    }
+    for(var report_n = 0; report_n < reports.length; report_n++ ) {
+        var trClass = 'content-row';
+        var refName = reports[report_n].name;
+        if (refName == 'not_aligned') continue;
+        tableGenome +=
+            '<tr class="' + trClass + '">' +
+            '<td class="left_column_td"><span class="metric-name">' + refName +
+            '</span>' +
+            '</td>';
+        var metrics = reports[report_n].report[group_n][1];
+        for (var metric_n = 0; metric_n < metrics.length; metric_n++) {
+            var metric = metrics[metric_n];
+            if (metric.metricName == 'Reference name') continue;
+
+            var value = metric.values[0];
+
+            if (value === null || value === '') {
+                tableGenome += '<td><span>-</span></td>';
+            } else {
+                if (typeof value === 'number') {
+                    tableGenome +=
+                        '<td number="' + value + '"><span>'
+                        + toPrettyString(value) + '</span></td>';
+                } else {
+                    var result = /([0-9\.]+)(.*)/.exec(value);
+                    var num = parseFloat(result[1]);
+                    var rest = result[2];
+//                        alert('value = ' + value + ' result = ' + result);
+
+//                        var num = parseFloat(value);
+
+                    if (num !== null) {
+                        tableGenome += '<td number="' + num + '"><span>' + toPrettyString(num) + rest + '</span></td>';
+                    } else {
+                        tableGenome += '<td><span>' + value + '</span></td>';
+                    }
+                }
+            }
+        }
+    }
+    tableGenome += '</table>';
+    tableGenome += '</div>';
+    return tableGenome;
+}
+
+
 function buildTotalReport(assembliesNames, report, order, date, minContig, glossary,
                           qualities, mainMetrics, reports) {
     $('#report_date').html('<p>' + date + '</p>');
@@ -90,7 +149,7 @@ function buildTotalReport(assembliesNames, report, order, date, minContig, gloss
         'Clicking on a row with <span style="color: #CCC">+</span> sign will expand values for contigs aligned to each of input references separately.<br>' +
         'Note that some metrics (e.g. # contigs) may not sum up, because one contig may be aligned to several references and thus, counted several times.</p>');
 
-//    $('#extended_link').css('width', '183');
+    // $('#extended_link').css('width', '183');
 
     $('#extended_link').append('' +
         '<div id="extended_report_link_div" style="float: left;"><a class="dotted-link" id="extended_report_link">Extended report</a>' +
@@ -136,7 +195,7 @@ function buildTotalReport(assembliesNames, report, order, date, minContig, gloss
             }
         }
     }
-    notExtendedMetrics = ['    # interspecies translocations', '# possibly misassembled contigs'];
+    notExtendedMetrics = ['    # interspecies translocations'];
 
     for (var group_n = 0; group_n < report.length; group_n++) {
         var group = report[group_n];
@@ -159,20 +218,36 @@ function buildTotalReport(assembliesNames, report, order, date, minContig, gloss
             var refGenes = referenceValues['Reference genes'];
             var refOperons = referenceValues['Reference operons'];
 
+            var numColumns = 0;
+
             if (refName) {
                 $('#reference_name').find('.val').html(refName);
             }
             $('#reference_name').show();
 
-            if (refLen)
+            if (refLen) {
                 $('#reference_length').show().find('.val').html(toPrettyString(refLen));
-            if (refGC)
+                numColumns++;
+            }
+            if (refGC) {
                 $('#reference_gc').show().find('.val').html(toPrettyString(refGC));
-            if (refGenes)
+                numColumns++;
+            }
+            if (refGenes) {
                 $('#reference_genes').show().find('.val').html(toPrettyString(refGenes));
-            if (refOperons)
+                numColumns++;
+            }
+            if (refOperons) {
                 $('#reference_operons').show().find('.val').html(toPrettyString(refOperons));
+                numColumns++;
+            }
 
+            $('#main_ref_genome').attr('class', 'metric-name expandable collapsed');
+            $('#header').append(buildGenomeTable(reports, group_n, numColumns));
+            $('#data_set_p').click(function() {
+                $('#main_ref_genome').toggleClass('collapsed').toggleClass('expanded');
+                $('#refgenome').toggleClass('table_hidden');
+            });
             continue;
         }
 

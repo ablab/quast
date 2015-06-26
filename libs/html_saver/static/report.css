@@ -55,13 +55,13 @@
 
 #report span.metric-name.expandable.collapsed::before {
     content: '+ ';
-    color: #DDD;
+    color: #CCC;
     cursor: pointer;
 }
 
 #report span.metric-name.expandable.expanded::before {
     content: '\2212\a0';  /* &minus&nbsp */
-    color: #DDD;
+    color: #CCC;
     cursor: pointer;
 }
 

@@ -48,31 +48,31 @@ def parallel_partition_contigs(asm, assemblies_by_ref, corrected_dirpath, alignm
     aligned_contig_names = set()
     aligned_contigs_for_each_ref = {}
     contigs_seq = fastaparser.read_fasta_one_time(asm.fpath)
+    if os.path.exists(alignments_fpath_template % asm.name):
+        for line in open(alignments_fpath_template % asm.name):
+            values = line.split()
+            ref_name = contigs_analyzer.ref_labels_by_chromosomes[values[0]]
+            ref_contigs_names = values[1:]
+            ref_contigs_fpath = os.path.join(
+                corrected_dirpath, asm.name + '_to_' + ref_name[:40] + '.fasta')
+            if ref_name not in aligned_contigs_for_each_ref:
+                aligned_contigs_for_each_ref[ref_name] = []
 
-    for line in open(alignments_fpath_template % asm.name):
-        values = line.split()
-        ref_name = contigs_analyzer.ref_labels_by_chromosomes[values[0]]
-        ref_contigs_names = values[1:]
-        ref_contigs_fpath = os.path.join(
-            corrected_dirpath, asm.name + '_to_' + ref_name[:40] + '.fasta')
-        if ref_name not in aligned_contigs_for_each_ref:
-            aligned_contigs_for_each_ref[ref_name] = []
+            for (cont_name, seq) in contigs_seq:
+                if not cont_name in contigs:
+                    contigs[cont_name] = seq
 
-        for (cont_name, seq) in contigs_seq:
-            if not cont_name in contigs:
-                contigs[cont_name] = seq
+                if cont_name in ref_contigs_names and cont_name not in aligned_contigs_for_each_ref[ref_name]:
+                    # Collecting all aligned contigs names in order to futher extract not-aligned
+                    aligned_contig_names.add(cont_name)
+                    aligned_contigs_for_each_ref[ref_name].append(cont_name)
+                    fastaparser.write_fasta(ref_contigs_fpath, [(cont_name, seq)], 'a')
 
-            if cont_name in ref_contigs_names and cont_name not in aligned_contigs_for_each_ref[ref_name]:
-                # Collecting all aligned contigs names in order to futher extract not-aligned
-                aligned_contig_names.add(cont_name)
-                aligned_contigs_for_each_ref[ref_name].append(cont_name)
-                fastaparser.write_fasta(ref_contigs_fpath, [(cont_name, seq)], 'a')
-
-        ref_asm = Assembly(ref_contigs_fpath, asm.label)
-        if ref_asm.name not in added_ref_asm:
-            if ref_name in assemblies_by_ref:
-                assemblies_by_ref[ref_name].append(ref_asm)
-                added_ref_asm.append(ref_asm.name)
+            ref_asm = Assembly(ref_contigs_fpath, asm.label)
+            if ref_asm.name not in added_ref_asm:
+                if ref_name in assemblies_by_ref:
+                    assemblies_by_ref[ref_name].append(ref_asm)
+                    added_ref_asm.append(ref_asm.name)
 
     # Exctraction not aligned contigs
     all_contigs_names = set(contigs.keys())
@@ -397,7 +397,7 @@ def main(args):
             if opt in quast_py_args and arg in quast_py_args:
                 quast_py_args = __remove_from_quast_py_args(quast_py_args, opt, arg)
             if os.path.isdir(arg):
-                ref_fpaths = [os.path.join(arg,fn) for fn in next(os.walk(arg))[2]]
+                ref_fpaths = [os.path.join(arg,fn) for fn in next(os.walk(arg))[2] if qutils.check_is_fasta_file(fn)]
             else:
                 ref_fpaths = arg.split(',')
                 for i, ref_fpath in enumerate(ref_fpaths):
@@ -552,9 +552,8 @@ def main(args):
             logger.info("No references are provided, starting to search for reference genomes in SILVA rRNA database "
                         "and to download them from NCBI...")
             downloaded_dirpath = os.path.join(output_dirpath, qconfig.downloaded_dirname)
-            if os.path.isdir(downloaded_dirpath):
-                shutil.rmtree(downloaded_dirpath)
-            os.mkdir(downloaded_dirpath)
+            if not os.path.isdir(downloaded_dirpath):
+                os.mkdir(downloaded_dirpath)
             from libs import search_references_meta
             ref_fpaths = search_references_meta.do(assemblies, downloaded_dirpath)
             if ref_fpaths:

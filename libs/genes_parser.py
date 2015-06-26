@@ -175,7 +175,7 @@ def parse_gff(file, feature):
             attributes = m.group('attributes').split(';')
             for attr in attributes:
                 if attr and attr != '' and '=' in attr:
-                    key, val = attr.split('=')
+                    key, val = attr.split('=')[:2]
                     if key.lower() == 'id':
                         gene.id = val
                     if key.lower() == 'name':

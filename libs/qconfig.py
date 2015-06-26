@@ -36,7 +36,7 @@ MAX_REFERENCE_FILE_LENGTH = 50000000  # Max length of one part of reference
 long_options = "output-dir= save-json-to= genes= operons= reference= contig-thresholds= min-contig= "\
                "gene-thresholds= save-json gage eukaryote glimmer no-plots no-html no-check no-gc help debug "\
                "ambiguity-usage= scaffolds threads= mincluster= est-ref-size= use-all-alignments gene-finding "\
-               "strict-NA meta labels= test help-hidden no-snps test-no-ref fast".split()
+               "strict-NA meta labels= test help-hidden no-snps test-no-ref fast max-ref-number=".split()
 short_options = "o:G:O:R:t:M:S:J:jehdsa:T:c:ufnml:L"
 
 # default values for options
@@ -153,7 +153,7 @@ def usage(show_hidden=False, meta=False):
     print >> sys.stderr, "Options:"
     print >> sys.stderr, "-o  --output-dir  <dirname>   Directory to store all result files [default: quast_results/results_<datetime>]"
     if meta:
-        print >> sys.stderr, "-R                <filename>  Reference genomes (accepts multiple fasta files with multiple sequences each)"
+        print >> sys.stderr, "-R                <filename>  Comma-separated list of reference genomes or directory with reference genomes"
     else:
         print >> sys.stderr, "-R                <filename>  Reference genome file"
     print >> sys.stderr, "-G  --genes       <filename>  File with gene coordinates in the reference"
@@ -171,11 +171,14 @@ def usage(show_hidden=False, meta=False):
         print >> sys.stderr, "                                      for eukaryotes (--eukaryote), or MetaGeneMark for metagenomes (--meta)"
     print >> sys.stderr, "    --glimmer                         Predict genes with GlimmerHMM instead of GeneMark-ES"
     print >> sys.stderr, "-S  --gene-thresholds                 Comma-separated list of threshold lengths of genes to search with Gene Finding module"
-    print >> sys.stderr, "                                      [default is %s]" % genes_lengths
+    print >> sys.stderr, "                                      [default: %s]" % genes_lengths
     print >> sys.stderr, "-e  --eukaryote                       Genome is eukaryotic"
     if not meta:
         print >> sys.stderr, "-m  --meta                            Use MetaGeneMark for gene prediction. "
-    print >> sys.stderr, "    --est-ref-size <int>              Estimated reference size (for computing NGx metrics without a reference)"
+        print >> sys.stderr, "    --est-ref-size <int>              Estimated reference size (for computing NGx metrics without a reference)"
+    else:
+        print >> sys.stderr, "    --max-ref-number <int>            Maximum number of references (per each assembly) to download after looking in SILVA database." \
+                             "                                      Set 0 for not looking in SILVA at all [default: %s]" % max_references
     print >> sys.stderr, "    --gage                            Use GAGE (results are in gage_report.txt)"
     print >> sys.stderr, "-t  --contig-thresholds               Comma-separated list of contig length thresholds [default: %s]" % contig_thresholds
     print >> sys.stderr, "-s  --scaffolds                       Assemblies are scaffolds, split them and add contigs to the comparison"

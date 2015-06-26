@@ -182,17 +182,16 @@ def do(assemblies, downloaded_dirpath):
                             scores_organisms.append((score, organism))
 
     logger.print_timestamp()
+    total_scored_left = len(scores_organisms)
+    total_needed = min(total_scored_left, qconfig.max_references)
     logger.info('Trying to download found references from NCBI. '
-                'Totally ' + str(len(scores_organisms)) + ' organisms to try.')
+                'Totally ' + str(total_needed) + ' organisms to try.')
     scores_organisms = sorted(scores_organisms, reverse=True)
     max_organism_name_len = 0
     for (score, organism) in scores_organisms:
         max_organism_name_len = max(len(organism), max_organism_name_len)
 
     total_downloaded = 0
-    total_scored_left = len(scores_organisms)
-    total_needed = min(total_scored_left, qconfig.max_references)
-
     for (score, organism) in scores_organisms:
         total_scored_left -= 1
         if len(ref_fpaths) == qconfig.max_references:

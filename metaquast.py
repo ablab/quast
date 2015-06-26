@@ -260,6 +260,7 @@ def _correct_references(ref_fpaths, corrected_dirpath):
 
     return corrected_ref_fpaths, common_ref_fasta_ext, combined_ref_fpath, chromosomes_by_refs, ref_fpaths
 
+
 def remove_unaligned_downloaded_refs(output_dirpath, ref_fpaths, chromosomes_by_refs):
 
     genome_info_dirpath = os.path.join(output_dirpath, 'combined_quast_output', 'genome_stats')
@@ -287,6 +288,25 @@ def remove_unaligned_downloaded_refs(output_dirpath, ref_fpaths, chromosomes_by_
     return corr_refs
 
 
+# safe remove from quast_py_args, e.g. removes correctly "--test-no" (full is "--test-no-ref") and corresponding argument
+def __remove_from_quast_py_args(quast_py_args, opt, arg=None):
+    opt_idx = None
+    if opt in quast_py_args:
+        opt_idx = quast_py_args.index(opt)
+    if opt_idx is None:
+        common_length = -1
+        for idx, o in enumerate(quast_py_args):
+            if opt.startswith(o):
+                if len(o) > common_length:
+                    opt_idx = idx
+                    common_length = len(o)
+    if opt_idx is not None:
+        if arg:
+            del quast_py_args[opt_idx + 1]
+        del quast_py_args[opt_idx]
+    return quast_py_args
+
+
 def main(args):
     if ' ' in qconfig.QUAST_HOME:
         logger.error('QUAST does not support spaces in paths. \n'
@@ -305,7 +325,6 @@ def main(args):
     draw_plots = qconfig.draw_plots
     html_report = qconfig.html_report
     make_latest_symlink = True
-    download_refs = False
 
     try:
         options, contigs_fpaths = getopt.gnu_getopt(args, qconfig.short_options, qconfig.long_options)
@@ -327,7 +346,7 @@ def main(args):
 
         elif opt == '--test' or opt == '--test-no-ref':
             options.remove((opt, arg))
-            quast_py_args.remove(opt)
+            quast_py_args = __remove_from_quast_py_args(quast_py_args, opt)
             options += [('-o', 'quast_test_output')]
             if opt == '--test':
                 options += [('-R', ','.join([os.path.join(qconfig.QUAST_HOME, 'test_data', 'meta_ref_1.fasta'),
@@ -359,8 +378,7 @@ def main(args):
             # Removing output dir arg in order to further
             # construct other quast calls from this options
             if opt in quast_py_args and arg in quast_py_args:
-                quast_py_args.remove(opt)
-                quast_py_args.remove(arg)
+                quast_py_args = __remove_from_quast_py_args(quast_py_args, opt, arg)
 
             output_dirpath = os.path.abspath(arg)
             make_latest_symlink = False
@@ -377,8 +395,7 @@ def main(args):
             # Removing reference args in order to further
             # construct quast calls from this args with other reference options
             if opt in quast_py_args and arg in quast_py_args:
-                quast_py_args.remove(opt)
-                quast_py_args.remove(arg)
+                quast_py_args = __remove_from_quast_py_args(quast_py_args, opt, arg)
             if os.path.isdir(arg):
                 ref_fpaths = [os.path.join(arg,fn) for fn in next(os.walk(arg))[2]]
             else:
@@ -387,8 +404,11 @@ def main(args):
                     assert_file_exists(ref_fpath, 'reference')
                     ref_fpaths[i] = ref_fpath
 
-        elif opt == '--max-references':
+        elif opt == '--max-ref-number':
+            quast_py_args = __remove_from_quast_py_args(quast_py_args, opt, arg)
             qconfig.max_references = int(arg)
+            if qconfig.max_references < 0:
+                qconfig.max_references = 0
 
         elif opt in ('-M', "--min-contig"):
             min_contig = int(arg)
@@ -399,12 +419,11 @@ def main(args):
                 qconfig.max_threads = 1
 
         elif opt in ('-l', '--labels'):
-            quast_py_args.remove(opt)
-            quast_py_args.remove(arg)
+            quast_py_args = __remove_from_quast_py_args(quast_py_args, opt, arg)
             labels = quast.parse_labels(arg, contigs_fpaths)
 
         elif opt == '-L':
-            quast_py_args.remove(opt)
+            quast_py_args = __remove_from_quast_py_args(quast_py_args, opt)
             all_labels_from_dirs = True
 
         elif opt in ('-j', '--save-json'):
@@ -527,23 +546,26 @@ def main(args):
     # SEARCHING REFERENCES
     if not ref_fpaths:
         logger.info()
-        logger.info("No references are provided, starting to search for reference genomes in SILVA rRNA database "
-                    "and to download them from NCBI...")
-        downloaded_dirpath = os.path.join(output_dirpath, qconfig.downloaded_dirname)
-        if os.path.isdir(downloaded_dirpath):
-            shutil.rmtree(downloaded_dirpath)
-        os.mkdir(downloaded_dirpath)
-        from libs import search_references_meta
-        ref_fpaths = search_references_meta.do(assemblies, downloaded_dirpath)
-        if ref_fpaths:
-            downloaded_refs = True
-            logger.info()
-            logger.info('Downloaded reference(s):')
-            corrected_ref_fpaths, common_ref_fasta_ext, combined_ref_fpath, chromosomes_by_refs, ref_names =\
-                _correct_references(ref_fpaths, corrected_dirpath)
-        elif test_mode:
-            logger.error('Failed to download or setup SILVA rRNA database for working without '
-                         'references on metagenome datasets!', to_stderr=True, exit_with_code=4)
+        if qconfig.max_references == 0:
+            logger.notice("Maximum number of references (--max-ref-num) is set to 0, search in SILVA rRNA database is disabled")
+        else:
+            logger.info("No references are provided, starting to search for reference genomes in SILVA rRNA database "
+                        "and to download them from NCBI...")
+            downloaded_dirpath = os.path.join(output_dirpath, qconfig.downloaded_dirname)
+            if os.path.isdir(downloaded_dirpath):
+                shutil.rmtree(downloaded_dirpath)
+            os.mkdir(downloaded_dirpath)
+            from libs import search_references_meta
+            ref_fpaths = search_references_meta.do(assemblies, downloaded_dirpath)
+            if ref_fpaths:
+                downloaded_refs = True
+                logger.info()
+                logger.info('Downloaded reference(s):')
+                corrected_ref_fpaths, common_ref_fasta_ext, combined_ref_fpath, chromosomes_by_refs, ref_names =\
+                    _correct_references(ref_fpaths, corrected_dirpath)
+            elif test_mode:
+                logger.error('Failed to download or setup SILVA rRNA database for working without '
+                             'references on metagenome datasets!', to_stderr=True, exit_with_code=4)
 
     if not ref_fpaths:
         # No references, running regular quast with MetaGenemark gene finder

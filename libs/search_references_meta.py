@@ -259,21 +259,19 @@ def do(assemblies, downloaded_dirpath):
 
     total_downloaded = 0
     total_scored_left = len(scores_organisms)
-    total_needed = min(total_scored_left, qconfig.max_references)
     for organism in downloaded_organisms:
         ref_fpath = os.path.join(downloaded_dirpath, re.sub('[/.=]', '', organism) + '.fasta')
         if os.path.exists(ref_fpath):
             if len(ref_fpaths) == qconfig.max_references:
                 break
             total_downloaded += 1
-            total_needed -= 1
+            total_scored_left -= 1
             spaces = (max_organism_name_len - len(organism)) * ' '
             logger.info("  %s%s | was downloaded previously (total %d)" %
                             (organism.replace('+', ' '), spaces, total_downloaded))
         else:
             scores_organisms.insert(0, (5000, organism))
 
-    total_needed = max(total_needed, 0)
     if total_needed == 0:
         if not ref_fpaths:
             logger.info('Reference genomes are not found.')
@@ -283,7 +281,7 @@ def do(assemblies, downloaded_dirpath):
 
     logger.print_timestamp()
     logger.info('Trying to download found references from NCBI. '
-                'Totally ' + str(total_needed) + ' organisms to try.')
+                'Totally ' + str(total_scored_left) + ' organisms to try.')
 
     for (score, organism) in scores_organisms:
         total_scored_left -= 1
@@ -298,13 +296,12 @@ def do(assemblies, downloaded_dirpath):
             new_ref_fpath = ref_fpath
         if new_ref_fpath:
             total_downloaded += 1
-            total_needed = min(total_scored_left, qconfig.max_references)
             if was_downloaded:
                 logger.info("  %s%s | was downloaded previously (total %d, %d more to go)" %
-                            (organism.replace('+', ' '), spaces, total_downloaded, total_needed))
+                            (organism.replace('+', ' '), spaces, total_downloaded, total_scored_left))
             else:
                 logger.info("  %s%s | successfully downloaded (total %d, %d more to go)" %
-                        (organism.replace('+', ' '), spaces, total_downloaded, total_needed))
+                        (organism.replace('+', ' '), spaces, total_downloaded, total_scored_left))
             ref_fpaths.append(new_ref_fpath)
             downloaded_organisms.add(organism)
         elif organism not in downloaded_organisms:

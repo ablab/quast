@@ -265,14 +265,15 @@ def do(assemblies, downloaded_dirpath):
             if len(ref_fpaths) == qconfig.max_references:
                 break
             total_downloaded += 1
-            total_scored_left -= 1
+            if organisms_assemblies and organism in organisms_assemblies.values()[0]:
+                total_scored_left -= 1
             spaces = (max_organism_name_len - len(organism)) * ' '
             logger.info("  %s%s | was downloaded previously (total %d)" %
                             (organism.replace('+', ' '), spaces, total_downloaded))
         else:
             scores_organisms.insert(0, (5000, organism))
 
-    if total_needed == 0:
+    if total_scored_left == 0:
         if not ref_fpaths:
             logger.info('Reference genomes are not found.')
         if not qconfig.debug and os.path.exists(err_fpath):

@@ -157,6 +157,10 @@ def label_from_fpath(fpath):
     return qconfig.assembly_labels_by_fpath[fpath]
 
 
+def label_from_fpath_for_fname(fpath):
+    return re.sub('[/= ]', '_', qconfig.assembly_labels_by_fpath[fpath])
+
+
 def call_subprocess(args, stdin=None, stdout=None, stderr=None,
                     indent='',
                     only_if_debug=True, env=None):

@@ -79,8 +79,7 @@ def chromosomes_names_dict(feature, regions, chr_names):
 
 def process_single_file(contigs_fpath, index, nucmer_path_dirpath, genome_stats_dirpath,
                         reference_chromosomes, genes_container, operons_container):
-    assembly_name = qutils.name_from_fpath(contigs_fpath)
-    assembly_label = qutils.label_from_fpath(contigs_fpath)
+    assembly_label = qutils.label_from_fpath_for_fname(contigs_fpath)
     results = dict()
     ref_lengths = {}
     logger.info('  ' + qutils.index_to_str(index) + assembly_label)

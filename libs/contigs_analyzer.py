@@ -150,8 +150,7 @@ def check_nucmer_successful_check(fpath, contigs_fpath, ref_fpath):
 
 
 def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_fpath, parallel_by_chr):
-    assembly_name = qutils.name_from_fpath(contigs_fpath)
-    assembly_label = qutils.label_from_fpath(contigs_fpath)
+    assembly_label = qutils.label_from_fpath_for_fname(contigs_fpath)
 
     logger.info('  ' + qutils.index_to_str(index) + assembly_label)
 
@@ -292,11 +291,11 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
 
         if not os.path.isfile(coords_fpath):
             print >> planta_err_f, qutils.index_to_str(index) + 'Nucmer failed for', contigs_fpath + ':', coords_fpath, 'doesn\'t exist.'
-            logger.info('  ' + qutils.index_to_str(index) + 'Nucmer failed for ' + '\'' + assembly_name + '\'.')
+            logger.info('  ' + qutils.index_to_str(index) + 'Nucmer failed for ' + '\'' + assembly_label + '\'.')
             return NucmerStatus.FAILED, {}, []
         if len(open(coords_fpath).readlines()[-1].split()) < 13:
             print >> planta_err_f, qutils.index_to_str(index) + 'Nucmer: nothing aligned for', contigs_fpath
-            logger.info('  ' + qutils.index_to_str(index) + 'Nucmer: nothing aligned for ' + '\'' + assembly_name + '\'.')
+            logger.info('  ' + qutils.index_to_str(index) + 'Nucmer: nothing aligned for ' + '\'' + assembly_label + '\'.')
             return NucmerStatus.NOT_ALIGNED, {}, []
 
         if qconfig.show_snps:
@@ -1343,7 +1342,7 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
                      qutils.name_from_fpath(contigs_fpath) + '.mis_contigs.fa'),
         fasta)
 
-    alignment_tsv_fpath = os.path.join(output_dirpath, "alignments_" + assembly_name + '.tsv')
+    alignment_tsv_fpath = os.path.join(output_dirpath, "alignments_" + assembly_label + '.tsv')
     logger.debug('  ' + qutils.index_to_str(index) + 'Alignments: ' + qutils.relpath(alignment_tsv_fpath))
     alignment_tsv_f = open(alignment_tsv_fpath, 'w')
     for ref_name, aligns in ref_aligns.iteritems():
@@ -1366,8 +1365,7 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
 
 
 def plantakolya_process(cyclic, nucmer_output_dirpath, contigs_fpath, i, output_dirpath, ref_fpath, parallel_by_chr=False):
-    assembly_name = qutils.name_from_fpath(contigs_fpath)
-    assembly_label = qutils.label_from_fpath(contigs_fpath)
+    assembly_label = qutils.label_from_fpath_for_fname(contigs_fpath)
 
     nucmer_fname = os.path.join(nucmer_output_dirpath, assembly_label)
     nucmer_is_ok, result, aligned_lengths = plantakolya(cyclic, i, contigs_fpath, nucmer_fname,

@@ -105,7 +105,7 @@ def parse_gtf_out(out_fpath):
 def add_genes_to_gff(genes, gff_fpath, prokaryote):
     gff = open(gff_fpath, 'w')
     if prokaryote:
-        gff.write('##gff out for GeneMark.hmm PROKARYOTIC\n')
+        gff.write('##gff out for GeneMarkS PROKARYOTIC\n')
     else:
         gff.write('##gff out for GeneMark-ES EUKARYOTIC\n')
     gff.write('##gff-version 3\n')
@@ -199,12 +199,11 @@ def gm_es(tool_dirpath, fasta_fpath, err_fpath, index, tmp_dirpath, num_threads)
 
 def predict_genes(index, contigs_fpath, gene_lengths, out_dirpath, tool_dirpath, tmp_dirpath, gmhmm_p_function,
                   prokaryote, num_threads):
-    assembly_name = qutils.name_from_fpath(contigs_fpath)
-    assembly_label = qutils.label_from_fpath(contigs_fpath)
+    assembly_label = qutils.label_from_fpath_for_fname(contigs_fpath)
 
     logger.info('  ' + qutils.index_to_str(index) + assembly_label)
 
-    err_fpath = os.path.join(out_dirpath, assembly_name + '_genemark.stderr')
+    err_fpath = os.path.join(out_dirpath, assembly_label + '_genemark.stderr')
 
     genes = gmhmm_p_function(tool_dirpath, contigs_fpath, err_fpath, index, tmp_dirpath, num_threads)
 
@@ -213,10 +212,10 @@ def predict_genes(index, contigs_fpath, gene_lengths, out_dirpath, tool_dirpath,
         count = None  # [None] * len(gene_lengths)
     else:
         tool_name = "genemark"
-        out_gff_fpath = os.path.join(out_dirpath, assembly_name + '_' + tool_name + '_genes.gff')
+        out_gff_fpath = os.path.join(out_dirpath, assembly_label + '_' + tool_name + '_genes.gff')
         add_genes_to_gff(genes, out_gff_fpath, prokaryote)
         if OUTPUT_FASTA:
-            out_fasta_fpath = os.path.join(out_dirpath, assembly_name + '_' + tool_name + '_genes.fasta')
+            out_fasta_fpath = os.path.join(out_dirpath, assembly_label + '_' + tool_name + '_genes.fasta')
             add_genes_to_fasta(genes, out_fasta_fpath)
 
         count = [sum([gene[3] - gene[2] > x for gene in genes]) for x in gene_lengths]
@@ -282,7 +281,7 @@ def do(fasta_fpaths, gene_lengths, out_dirpath, prokaryote, meta):
             if unique_count is None and count is None:
                 logger.error('  ' + qutils.index_to_str(i) +
                      'Failed predicting genes in ' + qutils.label_from_fpath(fasta_path) + '. ' +
-                     ('File may be too small for GeneMark-ES. Try to use GeneMark.hmm instead (remove --eukaryote option).'
+                     ('File may be too small for GeneMark-ES. Try to use GeneMarkS instead (remove --eukaryote option).'
                          if tool_name == 'GeneMark-ES' and os.path.getsize(fasta_path) < 2000000 else ''))
 
         if not qconfig.debug:

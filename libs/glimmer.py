@@ -103,8 +103,7 @@ def glimmerHMM(tool_dir, fasta_fpath, out_fpath, gene_lengths, err_path, tmp_dir
 
 
 def predict_genes(index, contigs_fpath, gene_lengths, out_dirpath, tool_dirpath, tmp_dirpath):
-    assembly_name = qutils.name_from_fpath(contigs_fpath)
-    assembly_label = qutils.label_from_fpath(contigs_fpath)
+    assembly_label = qutils.label_from_fpath_for_fname(contigs_fpath)
 
     logger.info('  ' + qutils.index_to_str(index) + assembly_label)
 

@@ -28,7 +28,7 @@ if platform.system() == 'Darwin':
     sed_cmd = "sed -i '' "
 else:
     sed_cmd = 'sed -i '
-
+is_quast_first_run = False
 
 def blast_fpath(fname):
     blast_dirpath = os.path.join(qconfig.LIBS_LOCATION, 'blast', qconfig.platform_name)

@@ -1404,10 +1404,16 @@ def do(reference, contigs_fpaths, cyclic, output_dir):
             logger.info('Failed aligning the contigs for all the assemblies. Only basic stats are going to be evaluated.')
             return dict(zip(contigs_fpaths, [NucmerStatus.FAILED] * len(contigs_fpaths))), None
 
-    nucmer_output_dir = os.path.join(output_dir, 'nucmer_output')
+    nucmer_output_dirname = 'nucmer_output'
+    nucmer_output_dir = os.path.join(output_dir, nucmer_output_dirname)
     if not os.path.isdir(nucmer_output_dir):
         os.mkdir(nucmer_output_dir)
-
+    if reference.endswith(COMBINED_REF_FNAME):
+        from libs import search_references_meta
+        if search_references_meta.is_quast_first_run:
+            nucmer_output_dir = os.path.join(nucmer_output_dir, 'aux')
+            if not os.path.isdir(nucmer_output_dir):
+                os.mkdir(nucmer_output_dir)
     n_jobs = min(len(contigs_fpaths), qconfig.max_threads)
     from joblib import Parallel, delayed
     if not qconfig.splitted_ref:

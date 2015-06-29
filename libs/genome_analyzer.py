@@ -258,6 +258,9 @@ def do(ref_fpath, aligned_contigs_fpaths, output_dirpath, json_output_dirpath,
        genes_fpaths, operons_fpaths, detailed_contigs_reports_dirpath, genome_stats_dirpath):
 
     nucmer_path_dirpath = os.path.join(detailed_contigs_reports_dirpath, 'nucmer_output')
+    from libs import search_references_meta
+    if search_references_meta.is_quast_first_run:
+        nucmer_path_dirpath = os.path.join(nucmer_path_dirpath, 'aux')
 
     logger.print_timestamp()
     logger.info('Running Genome analyzer...')

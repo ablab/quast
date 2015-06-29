@@ -262,7 +262,6 @@ def _correct_references(ref_fpaths, corrected_dirpath):
 
 
 def remove_unaligned_downloaded_refs(output_dirpath, ref_fpaths, chromosomes_by_refs):
-
     genome_info_dirpath = os.path.join(output_dirpath, 'combined_quast_output', 'genome_stats')
     genome_info_fpath = os.path.join(genome_info_dirpath, 'genome_info.txt')
     refs_len = {}
@@ -557,6 +556,7 @@ def main(args):
             from libs import search_references_meta
             ref_fpaths = search_references_meta.do(assemblies, downloaded_dirpath)
             if ref_fpaths:
+                search_references_meta.is_quast_first_run = True
                 downloaded_refs = True
                 logger.info()
                 logger.info('Downloaded reference(s):')
@@ -594,6 +594,7 @@ def main(args):
         num_notifications_tuple=total_num_notifications)
 
     json_texts.append(json_saver.json_text)
+    search_references_meta.is_quast_first_run = False
 
     if downloaded_refs:
         logger.info()

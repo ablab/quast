@@ -83,25 +83,26 @@ function fillOneRow(metric, mainMetrics, group_n, order, glossary, is_primary, r
 
 function buildGenomeTable(reports, group_n, numColumns) {
     var tableGenome = '';
-    tableGenome += '<div class="report" style="margin: 0 0px 0px 0">';
-    tableGenome += '<table cellspacing="0" id="refgenome" class="table_hidden" style="margin: 0 0px 20px 0">';
-    tableGenome += '<tr class="top_row_tr"><td class="left_column_td"><span>' + 'Reference genome' + '</span></td>';
-    var colNames = ['Length', 'GC (%)', 'Genes', 'Operons'];
+    tableGenome += '<div class="report" id="ref_report">';
+    tableGenome += '<table cellspacing="0" id="refgenome">';
+    tableGenome += '<tr class="top_row_tr"><td class="left_column_td"><span>' + 'Reference' + '</span></td>';
+    var colNames = ['Size, bp', 'GC, %', 'Genes', 'Operons'];
     for (var col_n = 0; col_n < numColumns; col_n++) {
         var columnName = colNames[col_n];
-        tableGenome += '<td class="second_through_last_col_headers_td" position="' + col_n + '">' +
-            '<span class="drag_handle"><span class="drag_image"></span></span>' +
+        tableGenome += '<td class="second_through_last_col_headers_td">' +
             '<span class="assembly_name">' + columnName + '</span>' +
-            '</td>';
+        '</td>';
     }
-    for(var report_n = 0; report_n < reports.length; report_n++ ) {
+    for (var report_n = 0; report_n < reports.length; report_n++ ) {
         var trClass = 'content-row';
         var refName = reports[report_n].name;
         if (refName == 'not_aligned') continue;
         tableGenome +=
             '<tr class="' + trClass + '">' +
-            '<td class="left_column_td"><span class="metric-name">' + refName +
-            '</span>' +
+            '<td class="left_column_td">' +
+                '<span class="metric-name">' +
+                    '<a href="../' + refName + '_quast_output/report.html">' + refName + '</a>' +
+                '</span>' +
             '</td>';
         var metrics = reports[report_n].report[group_n][1];
         for (var metric_n = 0; metric_n < metrics.length; metric_n++) {
@@ -134,7 +135,9 @@ function buildGenomeTable(reports, group_n, numColumns) {
             }
         }
     }
+
     tableGenome += '</table>';
+
     tableGenome += '</div>';
     return tableGenome;
 }
@@ -148,27 +151,6 @@ function buildTotalReport(assembliesNames, report, order, date, minContig, gloss
     $('#per_ref_msg').html('<p>Rows show values for the whole assembly (column name) vs. combined reference (concatenation of input references).<br>' +
         'Clicking on a row with <span style="color: #CCC">+</span> sign will expand values for contigs aligned to each of input references separately.<br>' +
         'Note that some metrics (e.g. # contigs) may not sum up, because one contig may be aligned to several references and thus, counted several times.</p>');
-
-    // $('#extended_link').css('width', '183');
-
-    $('#extended_link').append('' +
-        '<div id="extended_report_link_div" style="float: left;"><a class="dotted-link" id="extended_report_link">Extended report</a>' +
-        '</div>' +
-        '<div style="float: left;"><span id="report_legend" style="display: none;"></span>' +
-        '</div>' +
-        '<div style="clear: both;">' +
-        '</div>');
-
-    $('#extended_report_link').click(function() {
-        $('.row_to_hide').toggleClass('row_hidden');
-
-        var link = $('#extended_report_link');
-        if (link.html() == 'Extended report') {
-            link.html('Short report');
-        } else {
-            link.html('Extended report');
-        }
-    });
 
     var table = '';
     table += '<table cellspacing="0" class="report_table draggable" id="main_report_table">';
@@ -195,7 +177,7 @@ function buildTotalReport(assembliesNames, report, order, date, minContig, gloss
             }
         }
     }
-    notExtendedMetrics = ['    # interspecies translocations'];
+    var notExtendedMetrics = ['    # interspecies translocations'];
 
     for (var group_n = 0; group_n < report.length; group_n++) {
         var group = report[group_n];
@@ -242,12 +224,10 @@ function buildTotalReport(assembliesNames, report, order, date, minContig, gloss
                 numColumns++;
             }
 
-            $('#main_ref_genome').attr('class', 'metric-name expandable collapsed');
-            $('#header').append(buildGenomeTable(reports, group_n, numColumns));
-            $('#data_set_p').click(function() {
-                $('#main_ref_genome').toggleClass('collapsed').toggleClass('expanded');
-                $('#refgenome').toggleClass('table_hidden');
-            });
+            $('#main_ref_genome').html(buildGenomeTable(reports, group_n, numColumns));
+            //$('#data_set_p').click(function() {
+            //    $('#refgenome').toggle();
+            //});
             continue;
         }
 
@@ -294,6 +274,9 @@ function buildTotalReport(assembliesNames, report, order, date, minContig, gloss
         table += '</tr>';
     }
     table += '</table>';
+
+    //table += '<p id="extended_link"><a class="dotted-link" id="extended_report_link" onclick="extendedLinkClick($(this))">Extended report</a></p>';
+    table += biuldExtendedLinkClick();
 
     setUpHeatMap(table);
 }

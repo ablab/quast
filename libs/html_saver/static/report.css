@@ -2,16 +2,29 @@
 /* REPORT TABLE */
 .report {    
     margin: 0 100px 50px 0;
-    min-width: 600px;
     float: left;
-
     font-size: 1em;
+}
+
+#main_report {
+    /*min-width: 600px;*/
+}
+
+/*#extended_link {*/
+    /*margin-top: 5px;*/
+/*}*/
+
+#ref_report {
+    /*min-width: 300px;*/
+    margin-right: 70px;
+    margin-bottom: 20px;
+    /*margin-right: 200px;*/
 }
 
 .report td {
     margin: 0;
     padding: 2px 0.6em 0 14px;
-    min-width: 100px;
+    /*min-width: 100px;*/
     max-width: 300px;
     white-space: nowrap;
 }
@@ -19,11 +32,16 @@
 .report tr.top_row_tr td,
 .report tr.group_header td {
     font-weight: bold;
-    border-bottom: 1px solid #bbb;
+    border-bottom: 1px solid #ddd;
 }
 .report tr.group_header td {
     height: 20px;
     vertical-align: bottom;
+}
+
+#ref_report tr.top_row_tr td,
+#ref_report tr.group_header td {
+    font-weight: normal;
 }
 
 .report tr td:first-child {
@@ -67,10 +85,6 @@ span.metric-name.expandable.expanded::before {
 
 .report_legend {
     padding-left: 15px;  /* compensate drag handles */
-}
-
-.report table.table_hidden {
-    display: none;
 }
 
 #contigs_are_ordered {
@@ -170,6 +184,11 @@ table.draggable td.right_to_cell_of_empty_space {
     /*outline-right: 1px solid #888888;*/
 }
 
+/********/
+/* META */
+#main_ref_genome {
+
+}
 
 /************/
 /* PLOTTING */
@@ -190,7 +209,7 @@ table.draggable td.right_to_cell_of_empty_space {
 
 .plots {
     margin-top: 2px;
-    margin-bottom: 0px;
+    margin-bottom: 0;
     float: left;
 }
 .plots td {

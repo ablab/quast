@@ -11,13 +11,13 @@ function setUpHeatMap(table) {
         });
     })();
 
-    $('#report').append(table);
+    $('#main_report').append(table);
 
     var RED_HUE = 0;
     var GREEN_HUE = 120;
     var GREEN_HSL = 'hsl(' + GREEN_HUE + ', 80%, 40%)';
 
-    $('#extended_report_link_div').width($('#top_left_td').outerWidth());
+    //$('#extended_report_link_div').width($('#top_left_td').outerWidth());
 
     $(".report_table td[number]").mouseenter(function () {
         if (dragTable && dragTable.isDragging)
@@ -62,3 +62,21 @@ function setUpHeatMap(table) {
         $(this).parent().find('td[number]').css('color', 'black');
     });
 }
+
+
+function extendedClick() {
+    $('.row_to_hide').toggleClass('row_hidden');
+
+    var link = $('#extended_report_link');
+    if (link.html() == 'Extended report') {
+        link.html('Short report');
+    } else {
+        link.html('Extended report');
+    }
+}
+
+function biuldExtendedLinkClick() {
+    return '<p id="extended_link"><a class="dotted-link" id="extended_report_link" onclick="extendedClick($(this))">Extended report</a></p>';
+}
+
+

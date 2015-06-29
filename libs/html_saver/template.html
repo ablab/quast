@@ -64,27 +64,31 @@
         <p id='report_date'></p>
         <p id='mincontig'>Loading...</p>
         <p id='per_ref_msg'></p>
-        <p id="extended_link"></p>
 
-        <p id="data_set_p"><span id="main_ref_genome">
-            <span style="display: none;" id="reference_length">Genome:
-                <span class='val'></span><span class='rhs'>&nbsp;</span>bp</span><span style='display: none;'>
+        <p id="data_set_p">
+            <span id="main_ref_genome">
+                <span style="display: none;" id="reference_length">
+                    Reference size:
+                    <span class='val'></span><span class='rhs'>&nbsp;</span>bp,
+                </span>
 
-     </span><span style="display: none;" id="reference_gc">,
-                G+C content: <span class='val'></span><span class='rhs'>&nbsp;</span>%
-            </span>
+                <span style="display: none;" id="reference_gc">G+C content:
+                    <span class='val'></span><span class='rhs'>&nbsp;</span>%
+                </span>
 
-            <span style="display: none;" id="reference_genes"><br>
-                <span class='val'></span> genes</span><span style='display: none;'>
+                <span style="display: none;" id="reference_genes"><br>
+                    <span class='val'></span> genes
+                </span>
 
-     </span><span style="display: none;" id="reference_operons">, <span class='val'></span> operons
-            </span>
+                <span style="display: none;" id="reference_operons">,
+                    <span class='val'></span> operons
+                </span>
             </span>
         </p>
     </div>
 
     <noscript>
-        <div style="margin-left: 0px;">
+        <div style="margin-left: 0;">
             Unfortunately, <span style="font-weight: bold">JavaScript</span> in your
             browser <span style="font-weight: bold">is disabled</span> or is not supported.</br>
             We need JavaScript to build report and plots.
@@ -92,7 +96,7 @@
     </noscript>
 
     <div class='report-and-plots'>
-        <div class='report' id='report'>
+        <div class='report' id='main_report'>
         </div>
 
         <div class='plots'>

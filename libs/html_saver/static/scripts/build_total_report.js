@@ -4,27 +4,6 @@ function buildTotalReport(assembliesNames, report, order, date, minContig,
     $('#mincontig').html('<p>All statistics are based on contigs of size >= ' + minContig +
         '<span class="rhs">&nbsp;</span>bp, unless otherwise noted (e.g., "# contigs (>= 0 bp)" and "Total length (>= 0 bp)" include all contigs.)</p>');
 
-//    $('#extended_link').css('width', '183');
-
-    $('#extended_link').append('' +
-        '<div id="extended_report_link_div" style="float: left;"><a class="dotted-link" id="extended_report_link">Extended report</a>' +
-        '</div>' +
-        '<div style="float: left;"><span id="report_legend" style="display: none;"></span>' +
-        '</div>' +
-        '<div style="clear: both;">' +
-        '</div>');
-
-    $('#extended_report_link').click(function() {
-        $('.row_hidden').fadeToggle('fast');
-
-        var link = $('#extended_report_link');
-        if (link.html() == 'Extended report') {
-            link.html('Short report');
-        } else {
-            link.html('Extended report');
-        }
-    });
-
     var table = '';
     table += '<table cellspacing="0" class="report_table draggable" id="main_report_table">';
 
@@ -115,7 +94,7 @@ function buildTotalReport(assembliesNames, report, order, date, minContig,
                     });
                 })(group_n);
             } else {
-                trClass = 'content-row row_hidden';
+                trClass = 'content-row row_hidden row_to_hide';
             }
 
             table +=
@@ -155,6 +134,8 @@ function buildTotalReport(assembliesNames, report, order, date, minContig,
         table += '</tr>';
     }
     table += '</table>';
+
+    table += biuldExtendedLinkClick();
 
     setUpHeatMap(table);
 }

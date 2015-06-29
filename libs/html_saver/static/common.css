@@ -84,7 +84,7 @@ a.header_link, a.header_link:hover, a.header_link:visited {
 }
 .highlight {
     background-color:#FFF9B5;
-    padding: 0px 3px;
+    padding: 0 3px;
     margin-left: -3px;
 }
 

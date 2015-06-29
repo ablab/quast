@@ -17,6 +17,7 @@ qconfig.check_python_version()
 from libs.html_saver import html_saver
 from libs.html_saver import json_saver
 from libs import qutils, fastaparser
+from libs import search_references_meta
 from libs.qutils import assert_file_exists
 
 from libs.log import get_logger
@@ -553,7 +554,6 @@ def main(args):
             downloaded_dirpath = os.path.join(output_dirpath, qconfig.downloaded_dirname)
             if not os.path.isdir(downloaded_dirpath):
                 os.mkdir(downloaded_dirpath)
-            from libs import search_references_meta
             ref_fpaths = search_references_meta.do(assemblies, downloaded_dirpath)
             if ref_fpaths:
                 search_references_meta.is_quast_first_run = True

@@ -5,6 +5,7 @@
 # All Rights Reserved
 # See file LICENSE for details.
 ############################################################################
+from os.path import relpath, dirname, basename
 
 import sys
 import os
@@ -58,7 +59,7 @@ def _set_up_output_dir(output_dirpath, json_outputpath,
         latest_symlink = 'latest'
         if os.path.islink(latest_symlink):
             os.remove(latest_symlink)
-        os.symlink(output_dirpath, latest_symlink)
+        os.symlink(basename(output_dirpath), latest_symlink)
 
         os.chdir(prev_dirpath)
 

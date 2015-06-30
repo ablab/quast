@@ -849,6 +849,8 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
                         else:
                             aligned_bases_in_contig += (max(cur_align.s2, cur_align.e2) - last_e2)
                         last_e2 = max(cur_align.s2, cur_align.e2)
+                        if qconfig.ambiguity_usage == 'all':
+                            ref_aligns.setdefault(cur_align.ref, []).append(cur_align)
 
                     #aligned_bases_in_contig = sum(x.len2 for x in sorted_aligns)
                     if aligned_bases_in_contig < umt * ctg_len:

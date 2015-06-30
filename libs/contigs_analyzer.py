@@ -350,11 +350,13 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
             distance = align1.s1 - align2.e1 - 1
         cyclic_moment = False
         if cyclic_ref_len is not None:
+            cyclic_distance = distance
             if align1.e1 < align2.e1 and (cyclic_ref_len - align2.e1 + align1.s1 - 1) < smgap:
-                distance += cyclic_ref_len * (-1 if pos_strand else 1)
-                cyclic_moment = True
+                cyclic_distance += cyclic_ref_len * (-1 if pos_strand else 1)
             elif align1.e1 >= align2.e1 and (cyclic_ref_len - align1.e1 + align2.s1 - 1) < smgap:
-                distance += cyclic_ref_len * (1 if pos_strand else -1)
+                cyclic_distance += cyclic_ref_len * (1 if pos_strand else -1)
+            if abs(cyclic_distance) < abs(distance):
+                distance = cyclic_distance
                 cyclic_moment = True
         return distance, cyclic_moment
 

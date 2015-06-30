@@ -341,12 +341,9 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
         aligns.setdefault(mapping.contig, []).append(mapping)
     avg_idy = sum_idy / num_idy if num_idy else 0
 
-
     #### auxiliary functions ####
     def distance_between_alignments(align1, align2, pos_strand, cyclic_ref_len=None):
-        '''
-        returns distance (in reference) between two alignments
-        '''
+        # returns distance (in reference) between two alignments
         if pos_strand:            # alignment 1 should be earlier in reference
             distance = align2.s1 - align1.e1 - 1
         else:                     # alignment 2 should be earlier in reference
@@ -389,6 +386,55 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
         else:
             return False, aux_data
 
+    def exclude_internal_overlaps(align1, align2):
+        def __shift_start(align, new_start):
+            if qconfig.debug:
+                print >> planta_out_f, '\t\t\t\tchanging %s' % str(align),
+            if align.s2 < align.e2:
+                align.s1 += (new_start - align.s2)
+                align.s2 = new_start
+                align.len2 = align.e2 - align.s2 + 1
+            else:
+                align.e1 -= (new_start - align.e2)
+                align.e2 = new_start
+                align.len2 = align.s2 - align.e2 + 1
+            align.len1 = align.e1 - align.s1 + 1
+            if qconfig.debug:
+                print >> planta_out_f, 'to %s' % str(align)
+
+        def __shift_end(align, new_end):
+            if qconfig.debug:
+                print >> planta_out_f, '\t\t\t\tchanging %s' % str(align),
+            if align.s2 < align.e2:
+                align.e1 -= (align.e2 - new_end)
+                align.e2 = new_end
+                align.len2 = align.e2 - align.s2 + 1
+            else:
+                align.s1 += (align.s2 - new_end)
+                align.s2 = new_end
+                align.len2 = align.s2 - align.e2 + 1
+            align.len1 = align.e1 - align.s1 + 1
+            if qconfig.debug:
+                print >> planta_out_f, 'to %s' % str(align)
+
+        if qconfig.ambiguity_usage == 'all':
+            return
+        distance_on_contig = min(align2.e2, align2.s2) - max(align1.e2, align1.s2) - 1
+        if distance_on_contig >= 0:  # no overlap
+            return
+        if qconfig.debug:
+            print >> planta_out_f, '\t\t\tExcluding internal overlap of size %d ' \
+                                   '(ambiguity_usage is "%s"):' % (-distance_on_contig, qconfig.ambiguity_usage)
+        if qconfig.ambiguity_usage == 'one':  # left only one of two copies (remove overlap from shorter alignment)
+            if align1.len2 >= align2.len2:
+                __shift_start(align2, max(align1.e2, align1.s2) + 1)
+            else:
+                __shift_end(align1, min(align2.e2, align2.s2) - 1)
+        else:  # ambiguity_usage == 'none':  removing both copies
+            new_end = min(align2.e2, align2.s2) - 1
+            __shift_start(align2, max(align1.e2, align1.s2) + 1)
+            __shift_end(align1, new_end)
+
     def check_chr_for_refs(chr1, chr2):
         return ref_labels_by_chromosomes[chr1] == ref_labels_by_chromosomes[chr2]
 
@@ -398,12 +444,13 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
 
     def process_misassembled_contig(sorted_aligns, cyclic, aligned_lengths, region_misassemblies, reg_lens, ref_aligns, ref_features, contig_seq, references_misassemblies):
         misassembly_internal_overlap = 0
-        prev = sorted_aligns[0].clone()
+        prev = sorted_aligns[0]
         cur_aligned_length = prev.len2
         is_misassembled = False
         contig_is_printed = False
 
         for i in range(len(sorted_aligns) - 1):
+            exclude_internal_overlaps(sorted_aligns[i], sorted_aligns[i+1])
             print >> planta_out_f, '\t\t\tReal Alignment %d: %s' % (i+1, str(sorted_aligns[i]))
             is_extensive_misassembly, aux_data = is_misassembly(sorted_aligns[i], sorted_aligns[i+1],
                 reg_lens if cyclic else None)
@@ -470,7 +517,7 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
                     print >> planta_out_f, 'Inconsistency =', inconsistency, "(linear representation of circular genome)" if cyclic_moment else ""
                     region_misassemblies.append(Misassembly.LOCAL)
 
-            prev = sorted_aligns[i+1].clone()
+            prev = sorted_aligns[i+1]
             cur_aligned_length += prev.len2 - (-distance_on_contig if distance_on_contig < 0 else 0)
 
         #Record the very last alignment

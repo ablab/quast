@@ -27,7 +27,8 @@
 
       4. Improved misassemblies detection algorithm:
        - more accurate algorithm for processing multiple ambiguous alignments;
-       - fixing of some Nucmer errors;
+       - using --ambiguity-usage value for processing internal overlaps between adjacent aligned
+         blocks of a misassembled contig;
        - marking of local misassemblies caused by stretch of N's and having zero inconsistency as 
          fake misassemblies.
 

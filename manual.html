@@ -411,12 +411,18 @@ By default, QUAST v.2.0 and higher filters out ambiguous and redundant alignment
 <div class='option'>
     <a name='ambiguity_usage'></a><code><b>--ambiguity-usage</b> &lt;<b>none</b>|<b>one</b>|<b>all</b>&gt;</code>
 </div>
-Way of processing equally good alignments (probably repeats):<br>
+Way of processing equally good alignments of a contig (probably repeats):<br>
 <table style="margin-left: 30px; font-size: 1em; vertical-align: bottom;">
     <tr><td style='width: 40px;'><code>none</code></td><td>skip all such alignments;</td></tr>
     <tr><td><code>one</code></td><td>take only one (the first one);</td></tr>
     <tr><td><code>all</code></td><td>use all alignments. Can cause a significant increase of <span class='metric-ref'># mismatches</span>
     (repeats are almost always inexact due to accumulated SNPs, indels, etc.).</td></tr>
+</table>
+This option is also used for processing internal overlaps between adjacent aligned blocks of a misassembled contig:
+<table style="margin-left: 30px; font-size: 1em; vertical-align: bottom;">
+    <tr><td style='width: 40px;'><code>none</code></td><td>exclude (remove) overlapped fragments from both blocks;</td></tr>
+    <tr><td><code>one</code></td><td>remove overlapped fragment from only one block (the shortest one);</td></tr>
+    <tr><td><code>all</code></td><td>use both blocks unchanged.</td></tr>
 </table>
 The default value is 'one'.
 

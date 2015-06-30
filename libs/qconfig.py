@@ -184,8 +184,8 @@ def usage(show_hidden=False, meta=False):
     print >> sys.stderr, "-s  --scaffolds                       Assemblies are scaffolds, split them and add contigs to the comparison"
     print >> sys.stderr, "-u  --use-all-alignments              Compute genome fraction, # genes, # operons in the v.1.0-1.3 style."
     print >> sys.stderr, "                                      By default, QUAST filters Nucmer\'s alignments to keep only best ones"
-    print >> sys.stderr, "-a  --ambiguity-usage <none|one|all>  Use none, one, or all alignments of a contig with multiple equally "
-    print >> sys.stderr, "                                      good alignments [default is %s]" % ambiguity_usage
+    print >> sys.stderr, "-a  --ambiguity-usage <none|one|all>  Use none, one, or all alignments (or aligned fragments internal overlaps) of a contig"
+    print >> sys.stderr, "                                      when all of them are equally good. [default is %s]" % ambiguity_usage
     print >> sys.stderr, "-n  --strict-NA                       Break contigs in any misassembly event when compute NAx and NGAx"
     print >> sys.stderr, "                                      By default, QUAST breaks contigs only by extensive misassemblies (not local ones)"
     print >> sys.stderr, ""

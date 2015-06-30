@@ -151,7 +151,8 @@ function buildTotalReport(assembliesNames, report, order, date, minContig, gloss
     $('#per_ref_msg').html('<p>Rows show values for the whole assembly (column name) vs. combined reference (concatenation of input references).<br>' +
         'Clicking on a row with <span style="color: #CCC">+</span> sign will expand values for contigs aligned to each of input references separately.<br>' +
         'Note that some metrics (e.g. # contigs) may not sum up, because one contig may be aligned to several references and thus, counted several times.</p>');
-
+    $('#quast_name').html('MetaQUAST');
+    $('#report_name').html('summary report');
     var table = '';
     table += '<table cellspacing="0" class="report_table draggable" id="main_report_table">';
     var refNames = [];

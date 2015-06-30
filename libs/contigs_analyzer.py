@@ -947,11 +947,8 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
                             print >> planta_out_f, '\t\tAlignment: %s' % str(align)
                             print >> coords_filtered_file, str(align)
                             aligned_lengths.append(align.len2)
-                            if qconfig.ambiguity_usage == 'all':
-                                ref_aligns.setdefault(align.ref, []).append(align)
+                            ref_aligns.setdefault(align.ref, []).append(align)
 
-                        if qconfig.ambiguity_usage == 'one':
-                            ref_aligns.setdefault(sorted_aligns[0].ref, []).append(sorted_aligns[0])
                         #Increment tally of partially unaligned contigs
                         partially_unaligned += 1
                         #Increment tally of partially unaligned bases

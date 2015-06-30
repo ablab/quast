@@ -409,7 +409,7 @@ By default, QUAST v.2.0 and higher filters out ambiguous and redundant alignment
 (or one set of non-overlapping or slightly overlapping alignments). This option makes QUAST count all alignments.
 
 <div class='option'>
-    <code><b>--ambiguity-usage</b> &lt;<b>none</b>|<b>one</b>|<b>all</b>&gt;</code>
+    <a name='ambiguity_usage'></a><code><b>--ambiguity-usage</b> &lt;<b>none</b>|<b>one</b>|<b>all</b>&gt;</code>
 </div>
 Way of processing equally good alignments (probably repeats):<br>
 <table style="margin-left: 30px; font-size: 1em; vertical-align: bottom;">
@@ -465,25 +465,33 @@ A shortcut for using all of speedup options at a time.
 </div>
 
 <br>
+MetaQUAST only:
+<div class='options'>
+<div class='option'>
+    <code><b>--test-no-ref</b></code>
+</div>
+Run MetaQUAST on a data from the <code>test_data</code> folder, but without reference genomes. The tool will download
+    SILVA 16S rRNA gene database (170 Mb), which will be required if you plan to use MetaQUAST without references.
+     See <a href="#sec2.5">section 2.5</a> for details about algorithm of searching references.
+
+<div class='option'>
+    <a href='max_ref_num'></a><code><b>--max-ref-num</b></code> <code>&lt;int&gt;</code>
+</div>
+Maximum number of references (per each assembly) to download after searching in SILVA database. Default value is 30.
+</div>
+
+<br>
 Other:
 <div class='options'>
 <div class='option'>
     <code><b>--test</b></code>
 </div>
-Run the tool on a data from the <code>test_data</code> folder and check correctness of the evaluation process. Output is saved in quast_test_output.
+Run the tool on a data from the <code>test_data</code> folder and check correctness of the evaluation process. Output is saved in <code>quast_test_output</code>.
 
-<div class='option'>
-    <code><b>--test-no-ref</b></code> (MetaQUAST only)
-</div>
-Run MetaQUAST on a data from the <code>test_data</code> folder, but without reference genomes. The tool will download
-    SILVA 16S rRNA gene database (170 Mb), which will be required if you plan to use MetaQUAST without references.
-     See <a href="#sec2.5">section 2.5</a> for details about algorithm of searching references.
- 
 <div class='option'>
     <code><b>-h</b></code> (or <code>--help</code>)
 </div>
 Print help.
-
 </div>
 
 <a name="sec2.5"></a>
@@ -501,15 +509,17 @@ Print help.
 
 <p>If you run MetaQUAST without provided references, the tool will attempts to identify which organisms is presented in metagenome.
 MetaQUAST uses BLASTN for aligning contigs to FASTA file, containing small subunit ribosomal RNA sequences (SILVA rRNA database).
-50 reference genomes for organisms with maximal score are downloaded from NCBI database to <code>&lt;quast_output_dir&gt;/quast_downloaded_references/</code>.
+For each assembly, 30 reference genomes with maximal score are chosen (by default). Maximum number of references to download can be specified with the option <a href='#max_ref_num'><code>--max-ref-number</code></a>.
+<p>Reference genomes for the chosen organisms are downloaded from NCBI database to <code>&lt;quast_output_dir&gt;/quast_downloaded_references/</code>.
 After first running <code>quast.py</code>, MetaQUAST removes reference genomes with low genome fraction (less than 10%) and run <code>quast.py</code> with remaining references.
- 
+Notable, for all references in combination MetaQUAST runs quast.py with option <a href='#ambiguity_usage'><code>--ambiguity-usage</code></a> 'all'.
+
 <p>Usage:
 <pre class="code">
     python metaquast.py contigs_1 contigs_2 ... -R reference_1,reference_2,reference_3,...
 </pre>
 
-<p>All options are the same as for quast.py, except for <code>-R</code>: it can accept multiple references (comma-separated without spaces in between) or directory with references.</p>
+<p>All options are the same as for <code>quast.py</code>, except for <code>-R</code>: it can accept multiple references (comma-separated without spaces in between) or directory with references.</p>
 
 <a name="sec3"></a>
 <h2>3. QUAST output</h2>

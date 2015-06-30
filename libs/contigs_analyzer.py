@@ -519,13 +519,11 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
             else:
                 if inconsistency == 0 and cyclic_moment:
                     print >> planta_out_f, '\t\t\t  Fake misassembly (caused by linear representation of circular genome) between these two alignments'
-                elif inconsistency <= qconfig.MAX_INDEL_LENGTH and \
+                elif abs(inconsistency) <= qconfig.MAX_INDEL_LENGTH and \
                         count_not_ns_between_aligns(contig_seq, sorted_aligns[i], sorted_aligns[i+1]) <= qconfig.MAX_INDEL_LENGTH:
                     print >> planta_out_f, '\t\t\t  Fake misassembly between these two alignments: inconsistency =', inconsistency,
                     print >> planta_out_f, ', gap in the contig is small or absent or filled mostly with Ns',
                     not_ns_number = count_not_ns_between_aligns(contig_seq, sorted_aligns[i], sorted_aligns[i+1])
-                    #TODO: count them in global stats!
-                    #TODO: indel --> insertion, deletion
                     if inconsistency == 0:
                         print >> planta_out_f, '(no indel; %d mismatches)' % not_ns_number
                         indels_info.mismatches += not_ns_number

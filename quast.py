@@ -250,12 +250,12 @@ def _correct_reference(ref_fpath, corrected_dirpath):
     name, fasta_ext = qutils.splitext_for_fasta_file(ref_fname)
     corr_fpath = qutils.unique_corrected_fpath(
         os.path.join(corrected_dirpath, name + fasta_ext))
-
-    if not correct_fasta(ref_fpath, corr_fpath, qconfig.min_contig, is_reference=True):
-        ref_fpath = ''
-    else:
-        logger.info('  %s ==> %s' % (ref_fpath, qutils.name_from_fpath(corr_fpath)))
-        ref_fpath = corr_fpath
+    if not qconfig.no_check:
+        if not correct_fasta(ref_fpath, corr_fpath, qconfig.min_contig, is_reference=True):
+            ref_fpath = ''
+        else:
+            logger.info('  %s ==> %s' % (ref_fpath, qutils.name_from_fpath(corr_fpath)))
+            ref_fpath = corr_fpath
 
     return ref_fpath
 
@@ -589,6 +589,7 @@ def main(args):
     logger.info()
     logger.info('Contigs:')
 
+    old_contigs_fpaths = contigs_fpaths
     contigs_fpaths = _correct_contigs(contigs_fpaths, corrected_dirpath, reporting, labels)
     for contigs_fpath in contigs_fpaths:
         report = reporting.get(contigs_fpath)
@@ -640,7 +641,7 @@ def main(args):
         ########################################################################
         from libs import contigs_analyzer
         nucmer_statuses, aligned_lengths_per_fpath = contigs_analyzer.do(
-            ref_fpath, contigs_fpaths, qconfig.prokaryote, os.path.join(output_dirpath, 'contigs_reports'))
+            ref_fpath, contigs_fpaths, qconfig.prokaryote, os.path.join(output_dirpath, 'contigs_reports'), old_contigs_fpaths)
         for contigs_fpath in contigs_fpaths:
             if nucmer_statuses[contigs_fpath] == contigs_analyzer.NucmerStatus.OK:
                 aligned_contigs_fpaths.append(contigs_fpath)

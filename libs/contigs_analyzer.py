@@ -164,7 +164,7 @@ def check_nucmer_successful_check(fpath, contigs_fpath, ref_fpath):
     return True
 
 
-def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_fpath, parallel_by_chr):
+def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_fpath, old_contigs_fpath, parallel_by_chr):
     assembly_label = qutils.label_from_fpath_for_fname(contigs_fpath)
 
     logger.info('  ' + qutils.index_to_str(index) + assembly_label)
@@ -206,7 +206,7 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
     if os.path.isfile(nucmer_successful_check_fpath) and\
        os.path.isfile(coords_fpath) and\
        (os.path.isfile(show_snps_fpath) or not qconfig.show_snps):
-        if check_nucmer_successful_check(nucmer_successful_check_fpath, contigs_fpath, ref_fpath):
+        if check_nucmer_successful_check(nucmer_successful_check_fpath, old_contigs_fpath, ref_fpath):
             print >> planta_out_f, '\tUsing existing Nucmer alignments...'
             logger.info('  ' + qutils.index_to_str(index) + 'Using existing Nucmer alignments... ')
             using_existing_alignments = True
@@ -334,7 +334,7 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
                     print >> planta_err_f, qutils.index_to_str(index) + 'Show-snps failed for', contigs_fpath, '\n'
                     return __fail(contigs_fpath, index)
 
-        create_nucmer_successful_check(nucmer_successful_check_fpath, contigs_fpath, ref_fpath)
+        create_nucmer_successful_check(nucmer_successful_check_fpath, old_contigs_fpath, ref_fpath)
 
     # Loading the alignment files
     print >> planta_out_f, 'Parsing coords...'
@@ -1452,11 +1452,12 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
 
 
 def plantakolya_process(cyclic, nucmer_output_dirpath, contigs_fpath, i, output_dirpath, ref_fpath, parallel_by_chr=False):
+    contigs_fpath, old_contigs_fpath = contigs_fpath
     assembly_label = qutils.label_from_fpath_for_fname(contigs_fpath)
 
     nucmer_fname = os.path.join(nucmer_output_dirpath, assembly_label)
     nucmer_is_ok, result, aligned_lengths = plantakolya(cyclic, i, contigs_fpath, nucmer_fname,
-                                                        output_dirpath, ref_fpath, parallel_by_chr=parallel_by_chr)
+                                                        output_dirpath, ref_fpath, old_contigs_fpath, parallel_by_chr=parallel_by_chr)
 
     clear_files(contigs_fpath, nucmer_fname)
     return nucmer_is_ok, result, aligned_lengths
@@ -1469,7 +1470,7 @@ def all_required_binaries_exist(mummer_dirpath):
     return True
 
 
-def do(reference, contigs_fpaths, cyclic, output_dir):
+def do(reference, contigs_fpaths, cyclic, output_dir, old_contigs_fpaths):
     if not os.path.isdir(output_dir):
         os.mkdir(output_dir)
 
@@ -1506,15 +1507,15 @@ def do(reference, contigs_fpaths, cyclic, output_dir):
     if not qconfig.splitted_ref:
         statuses_results_lengths_tuples = Parallel(n_jobs=n_jobs)(delayed(plantakolya_process)(
         cyclic, nucmer_output_dir, fname, i, output_dir, reference)
-             for i, fname in enumerate(contigs_fpaths))
+             for i, fname in enumerate(zip(contigs_fpaths, old_contigs_fpaths)))
     else:
         if len(contigs_fpaths) >= len(qconfig.splitted_ref):
             statuses_results_lengths_tuples = Parallel(n_jobs=n_jobs)(delayed(plantakolya_process)(
         cyclic, nucmer_output_dir, fname, i, output_dir, reference)
-             for i, fname in enumerate(contigs_fpaths))
+             for i, fname in enumerate(zip(contigs_fpaths, old_contigs_fpaths)))
         else:
             statuses_results_lengths_tuples = []
-            for i, contigs_fpath in enumerate(contigs_fpaths):
+            for i, contigs_fpath in enumerate(zip(contigs_fpaths, old_contigs_fpaths)):
                 statuses_results_lengths_tuples.append(plantakolya_process(cyclic, nucmer_output_dir, contigs_fpath, i,
                                                                            output_dir, reference, parallel_by_chr=True))
 
@@ -1541,23 +1542,24 @@ def do(reference, contigs_fpaths, cyclic, output_dir):
                                          in zip(colwidths, [row['metricName']] + map(val_to_str, row['values'])))
 
     if reference.endswith(COMBINED_REF_FNAME):
-        ref_misassemblies = [result['istranslocations_by_refs'] for result in results]
-        all_rows = []
-        cur_ref_names = []
-        row = {'metricName': 'Assembly', 'values': cur_ref_names}
-        all_rows.append(row)
-        for fpath in contigs_fpaths:
-            all_rows[0]['values'].append(qutils.name_from_fpath(fpath))
-        for k in ref_misassemblies[0].keys():
-            row = {'metricName': k, 'values': []}
-            for index, fpath in enumerate(contigs_fpaths):
-                row['values'].append(ref_misassemblies[index][k])
+        ref_misassemblies = [result['istranslocations_by_refs'] for result in results if result]
+        if ref_misassemblies:
+            all_rows = []
+            cur_ref_names = []
+            row = {'metricName': 'Assembly', 'values': cur_ref_names}
             all_rows.append(row)
+            for fpath in contigs_fpaths:
+                all_rows[0]['values'].append(qutils.name_from_fpath(fpath))
+            for k in ref_misassemblies[0].keys():
+                row = {'metricName': k, 'values': []}
+                for index, fpath in enumerate(contigs_fpaths):
+                    row['values'].append(ref_misassemblies[index][k])
+                all_rows.append(row)
 
-        misassembly_by_ref_fpath = os.path.join(output_dir, 'interspecies_translocations_by_refs.info')
-        print >> open(misassembly_by_ref_fpath, 'w'), 'Number of interspecies translocations by references: \n'
-        print_file(all_rows, len(ref_misassemblies[0]), misassembly_by_ref_fpath)
-        logger.info('  Information about interspecies translocations by references is saved to ' + misassembly_by_ref_fpath)
+            misassembly_by_ref_fpath = os.path.join(output_dir, 'interspecies_translocations_by_refs.info')
+            print >> open(misassembly_by_ref_fpath, 'w'), 'Number of interspecies translocations by references: \n'
+            print_file(all_rows, len(ref_misassemblies[0]), misassembly_by_ref_fpath)
+            logger.info('  Information about interspecies translocations by references is saved to ' + misassembly_by_ref_fpath)
 
     def save_result(result):
         report = reporting.get(fname)

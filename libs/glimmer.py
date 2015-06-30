@@ -10,6 +10,7 @@ import tempfile
 import itertools
 import csv
 import shutil
+import re
 
 from libs import reporting, qconfig, qutils
 from libs.fastaparser import read_fasta, write_fasta, rev_comp
@@ -62,6 +63,7 @@ def glimmerHMM(tool_dir, fasta_fpath, out_fpath, gene_lengths, err_path, tmp_dir
     gffs = []
     base_dir = tempfile.mkdtemp(dir=tmp_dir)
     for ind, seq in read_fasta(fasta_fpath):
+        ind = re.sub('[/. ]', '_', ind)
         contig_path = os.path.join(base_dir, ind + '.fasta')
         gff_path = os.path.join(base_dir, ind + '.gff')
 

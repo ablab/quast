@@ -75,7 +75,7 @@ def parse_gmhmm_out(out_fpath):
             if line.startswith('>gene'):
                 reading_gene = True
                 seq = []
-                seq_id, contig_id = line.strip().split()
+                seq_id, contig_id = line.strip().split('\t')
                 # >gene_2|GeneMark.hmm|57_nt|+|1|57	>NODE_3_length_713_cov_1.25228
                 _, _, _, strand, left_index, right_index = seq_id.split('|')
                 contig_id = contig_id[1:]

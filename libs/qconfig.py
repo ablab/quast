@@ -84,8 +84,9 @@ not_aligned_name = "not_aligned"
 
 # other settings (mostly constants). Can't be changed by command-line options
 
-# for separating indels into short and long ones
-SHORT_INDEL_THRESHOLD = 5
+# indels and misassemblies
+SHORT_INDEL_THRESHOLD = 5 # for separating short and long indels
+MAX_INDEL_LENGTH = 85  # for separating indels and local misassemblies (Nucmer default value)
 
 # for parallelization
 DEFAULT_MAX_THREADS = 4  # this value is used if QUAST fails to determine number of CPUs
@@ -140,7 +141,10 @@ def quast_version():
 
 
 def usage(show_hidden=False, meta=False):
-    print >> sys.stderr, 'QUAST: QUality ASsessment Tool for Genome Assemblies'
+    if meta:
+        print >> sys.stderr, 'MetaQUAST: QUality ASsessment Tool for Metagenome Assemblies'
+    else:
+        print >> sys.stderr, 'QUAST: QUality ASsessment Tool for Genome Assemblies'
     version, build = quast_version()
     print >> sys.stderr, "Version", str(version),
     if build != "unknown":

@@ -29,8 +29,8 @@
        - more accurate algorithm for processing multiple ambiguous alignments;
        - using --ambiguity-usage value for processing internal overlaps between adjacent aligned
          blocks of a misassembled contig;
-       - marking of local misassemblies caused by stretch of N's and having zero inconsistency as 
-         fake misassemblies.
+       - marking of local misassemblies with small inconsistency (<= 85 bp) as fake misassemblies
+         (indels or mismatches) if gap on the contig is filled mostly with Ns.
 
       5. Fixed HTML-reports issues:
        - Y-axis coordinates on plots interactive hangover tooltips;

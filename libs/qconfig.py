@@ -36,8 +36,8 @@ MAX_REFERENCE_FILE_LENGTH = 50000000  # Max length of one part of reference
 long_options = "output-dir= save-json-to= genes= operons= reference= contig-thresholds= min-contig= "\
                "gene-thresholds= save-json gage eukaryote glimmer no-plots no-html no-check no-gc help debug "\
                "ambiguity-usage= scaffolds threads= mincluster= est-ref-size= use-all-alignments gene-finding "\
-               "strict-NA meta labels= test help-hidden no-snps test-no-ref fast max-ref-number=".split()
-short_options = "o:G:O:R:t:M:S:J:jehdsa:T:c:ufnml:L"
+               "strict-NA meta labels= test help-hidden no-snps test-no-ref fast max-ref-number= extensive-mis-size=".split()
+short_options = "o:G:O:R:t:M:S:J:jehdsa:T:c:ufnml:Lx:"
 
 # default values for options
 contig_thresholds = "0,1000"
@@ -87,6 +87,7 @@ not_aligned_name = "not_aligned"
 # indels and misassemblies
 SHORT_INDEL_THRESHOLD = 5 # for separating short and long indels
 MAX_INDEL_LENGTH = 85  # for separating indels and local misassemblies (Nucmer default value)
+extensive_misassembly_threshold = 1000  # for separating local and extensive misassemblies (relocation)
 
 # for parallelization
 DEFAULT_MAX_THREADS = 4  # this value is used if QUAST fails to determine number of CPUs
@@ -186,12 +187,14 @@ def usage(show_hidden=False, meta=False):
     print >> sys.stderr, "    --gage                            Use GAGE (results are in gage_report.txt)"
     print >> sys.stderr, "-t  --contig-thresholds               Comma-separated list of contig length thresholds [default: %s]" % contig_thresholds
     print >> sys.stderr, "-s  --scaffolds                       Assemblies are scaffolds, split them and add contigs to the comparison"
-    print >> sys.stderr, "-u  --use-all-alignments              Compute genome fraction, # genes, # operons in the v.1.0-1.3 style."
+    print >> sys.stderr, "-u  --use-all-alignments              Compute genome fraction, # genes, # operons in QUAST v.1.* style."
     print >> sys.stderr, "                                      By default, QUAST filters Nucmer\'s alignments to keep only best ones"
     print >> sys.stderr, "-a  --ambiguity-usage <none|one|all>  Use none, one, or all alignments (or aligned fragments internal overlaps) of a contig"
     print >> sys.stderr, "                                      when all of them are equally good. [default is %s]" % ambiguity_usage
     print >> sys.stderr, "-n  --strict-NA                       Break contigs in any misassembly event when compute NAx and NGAx"
     print >> sys.stderr, "                                      By default, QUAST breaks contigs only by extensive misassemblies (not local ones)"
+    print >> sys.stderr, "-x  --extensive-mis-size  <int>       Lower threshold for extensive misassembly size. All relocations with inconsistency"
+    print >> sys.stderr, "                                      less than extensive-mis-size are counted as local misassemblies. [default is %s]" % extensive_misassembly_threshold
     print >> sys.stderr, ""
     print >> sys.stderr, "Speedup options:"
     print >> sys.stderr, "    --no-check                        Do not check and correct input fasta files"

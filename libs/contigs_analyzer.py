@@ -181,10 +181,11 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
                 ' and ' + os.path.basename(log_err_fpath) + '...')
     maxun = 10
     epsilon = 0.99
-    smgap = 1000
+    smgap = qconfig.extensive_misassembly_threshold
     umt = 0.5  # threshold for misassembled contigs with aligned less than $umt * 100% (Unaligned Missassembled Threshold)
     ort = 0.9  # threshold for skipping aligns that significantly overlaps with adjacent aligns (Overlap Relative Threshold)
     oat = 25   # threshold for skipping aligns that significantly overlaps with adjacent aligns (Overlap Absolute Threshold)
+    odgap = 1000 # threshold for detecting aligns that significantly overlaps with adjacent aligns (Overlap Detecting Gap)
     nucmer_successful_check_fpath = nucmer_fpath + '.sf'
     coords_fpath = nucmer_fpath + '.coords'
     delta_fpath = nucmer_fpath + '.delta'
@@ -904,7 +905,7 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
                         for i in range(1, len(sorted_aligns) - 1):
                             succ_start = min(sorted_aligns[i + 1].s2, sorted_aligns[i + 1].e2)
                             gap = succ_start - prev_end - 1
-                            if gap > smgap:
+                            if gap > odgap:
                                 prev_end = max(sorted_aligns[i].s2, sorted_aligns[i].e2)
                                 continue
                             overlap = 0

@@ -30,7 +30,9 @@
        - using --ambiguity-usage value for processing internal overlaps between adjacent aligned
          blocks of a misassembled contig;
        - marking of local misassemblies with small inconsistency (<= 85 bp) as fake misassemblies
-         (indels or mismatches) if gap on the contig is filled mostly with Ns.
+         (indels or mismatches) if gap on the contig is filled mostly with Ns;
+       - option --extensive-mis-size/-x to set extensive misassembly size, i.e. min inconsistency
+         size for relocations (default is 1000 as earlier).
 
       5. Fixed HTML-reports issues:
        - Y-axis coordinates on plots interactive hangover tooltips;

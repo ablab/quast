@@ -484,6 +484,12 @@ def main(args):
         elif opt in ('-n', "--strict-NA"):
             qconfig.strict_NA = True
 
+        elif opt in ('-x', "--extensive-mis-size"):
+            if int(arg) <= qconfig.MAX_INDEL_LENGTH:
+                logger.error("--extensive-mis-size should be greater than maximum indel length (%d)!"
+                             % qconfig.MAX_INDEL_LENGTH, 1, to_stderr=True)
+            qconfig.extensive_misassembly_threshold = int(arg)
+
         elif opt == '--no-snps':
             qconfig.show_snps = False
 

@@ -431,6 +431,13 @@ The default value is 'one'.
 </div>
 Break contigs at every misassembly event (including local ones) to compute <span class='metric-ref'>NAx</span> and
 <span class='metric-ref'>NGAx</span> statistics. By default, QUAST breaks contigs <i>only at extensive</i> misassemblies (not local ones).
+
+<div class='option'>
+    <a name='extensive_mis_size'></a><code><b>--extensive-mis-size</b></code>
+</div>
+Lower threshold for the relocation size (gap or overlap size between left and right flanking sequence, see <a href="#sec3.1.2">section 3.1.2</a> for details).
+Shorter relocations are considered as local misassemblies. Does not affect other types of extensive misassemblies (inversions and translocations).
+The default value is 1000. Note that the threshold should be greater than maximum indel length which is 85 bp for Nucmer by default.
 </div>
 
 <br>
@@ -633,7 +640,8 @@ Note:
     <li>flanking sequences align to different strands or different chromosomes; 
     <li>flanking sequences align on different references (MetaQUAST only).
     </ul>
-    This metric requires a reference genome.</p>
+    This metric requires a reference genome. Note that default threshold of 1<span class="rhs">&nbsp;</span>kbp can be
+changed by <a href='#extensive_mis_size'><code>--extensive-mis-size</code></a> option.</p>
 
 <p><span class='metric-name'># misassembled contigs</span> is the number of contigs that contain misassembly events.</p>
 
@@ -703,7 +711,8 @@ Note:
     and <span class='metric-ref'>inversions</span> (see below). For metagenomic assemblies, this classification also includes interspecies translocation.</p>
 
 <p><span class='metric-name'>Relocation</span> is a misassembly where the left flanking sequence aligns over 1<span class="rhs">&nbsp;</span>kbp away from the right flanking
-sequence on the reference, or they overlap by more than 1<span class="rhs">&nbsp;</span>kbp, and both flanking sequences align on the same chromosome. </p>
+sequence on the reference, or they overlap by more than 1<span class="rhs">&nbsp;</span>kbp, and both flanking sequences align on the same chromosome. Note that default threshold of 1<span class="rhs">&nbsp;</span>kbp can be
+changed by <a href='#extensive_mis_size'><code>--extensive-mis-size</code></a> option.</p></p>
 
 <p><span class='metric-name'>Translocation</span> is a misassembly where the flanking sequences align on different chromosomes. </p>
 
@@ -731,6 +740,9 @@ opposite strands of the same chromosome. </p>
 <p><span class='metric-name'># long indels (&gt;<span class="rhs">&nbsp;</span>5<span class="rhs">&nbsp;</span>bp)</span> is the number of indels of length <code>&gt;<span class="rhs">&nbsp;</span>5<span class="rhs">&nbsp;</span>bp</code>.</p>
 
 <p><span class='metric-name'>Indels length</span> is the total number of bases contained in all indels.</p>
+
+<p> Note: Nucmer's default maximum length of indel is 85 bp. All indels larger than 85 bp are considered as local misassemblies.
+</p>
 
 
 <a name="sec3.1.3"></a>

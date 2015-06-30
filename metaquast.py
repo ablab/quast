@@ -11,6 +11,7 @@ import sys
 import os
 import shutil
 import getopt
+import re
 
 from libs import qconfig
 qconfig.check_python_version()
@@ -213,15 +214,30 @@ def _correct_references(ref_fpaths, corrected_dirpath):
 
     chromosomes_by_refs = {}
 
-    def correct_seq(seq_name, seq, ref_name, ref_fasta_ext, total_references):
+    def correct_seq(seq_name, seq, ref_name, ref_fasta_ext, total_references, ref_fpath):
         seq_fname = ref_name
         seq_fname += ref_fasta_ext
+
+        for first_line, seq in fastaparser.read_fasta(ref_fpath):
+            # seq to uppercase, because we later looking only uppercase letters
+            corr_seq = seq.upper()
+            # correcting alternatives (gage can't work with alternatives)
+            # dic = {'M': 'A', 'K': 'G', 'R': 'A', 'Y': 'C', 'W': 'A', 'S': 'C', 'V': 'A', 'B': 'C', 'H': 'A', 'D': 'A'}
+            dic = {'M': 'N', 'K': 'N', 'R': 'N', 'Y': 'N', 'W': 'N', 'S': 'N', 'V': 'N', 'B': 'N', 'H': 'N', 'D': 'N'}
+            pat = "(%s)" % "|".join(map(re.escape, dic.keys()))
+            corr_seq = re.sub(pat, lambda m: dic[m.group()], corr_seq)
+
+            # make sure that only A, C, G, T or N are in the sequence
+            if re.compile(r'[^ACGTN]').search(corr_seq):
+                logger.warning('Skipping ' + ref_fpath + ' because it contains non-ACGTN characters.',
+                        indent='    ')
+                return None, None
+
         if total_references > 1:
             corr_seq_fpath = corrected_ref_fpaths[-1]
         else:
             corr_seq_fpath = qutils.unique_corrected_fpath(os.path.join(corrected_dirpath, seq_fname))
             corrected_ref_fpaths.append(corr_seq_fpath)
-
         corr_seq_name = qutils.name_from_fpath(corr_seq_fpath)
         if total_references > 1:
             corr_seq_name += '_' + qutils.correct_name(seq_name[:20])
@@ -253,9 +269,11 @@ def _correct_references(ref_fpaths, corrected_dirpath):
 
         for i, (seq_name, seq) in enumerate(fastaparser.read_fasta(ref_fpath)):
             total_references += 1
-            corr_seq_name, corr_seq_fpath = correct_seq(seq_name, seq, ref_name, ref_fasta_ext, total_references)
-
-        logger.info('  ' + ref_fpath + ' ==> ' + corr_seq_name + '')
+            corr_seq_name, corr_seq_fpath = correct_seq(seq_name, seq, ref_name, ref_fasta_ext, total_references, ref_fpath)
+            if not corr_seq_name:
+                break
+        if corr_seq_name:
+            logger.info('  ' + ref_fpath + ' ==> ' + corr_seq_name + '')
 
     logger.info('  All references combined in ' + COMBINED_REF_FNAME)
 

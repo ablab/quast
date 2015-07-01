@@ -5,8 +5,8 @@
 # All Rights Reserved
 # See file LICENSE for details.
 ############################################################################
-from os.path import relpath, dirname, basename
 
+from os.path import basename
 import sys
 import os
 import shutil
@@ -18,7 +18,6 @@ qconfig.check_python_version()
 
 from libs import qutils, fastaparser
 from libs.qutils import assert_file_exists
-from libs.html_saver import json_saver
 
 from libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
@@ -624,6 +623,12 @@ def main(args):
             all_pdf_file = PdfPages(all_pdf_fpath)
         except:
             all_pdf_file = None
+
+    if json_output_dirpath:
+        from libs.html_saver import json_saver
+        if json_saver.simplejson_error:
+            json_output_dirpath = None
+
 
     ########################################################################
     ### Stats and plots

@@ -12,7 +12,7 @@ from libs import qconfig
 from libs.html_saver import json_saver
 
 from libs.log import get_logger
-log = get_logger('quast')
+log = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 
 
 def get_real_path(relpath_in_html_saver):

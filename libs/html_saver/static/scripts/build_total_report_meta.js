@@ -179,7 +179,8 @@ function buildTotalReport(assembliesNames, report, order, date, minContig, gloss
         }
     }
     var notExtendedMetrics = ['    # interspecies translocations'];
-
+    if (minContig > 0)
+        notExtendedMetrics = ['    # interspecies translocations', '# contigs (&gt;= 0 bp)', 'Total length (&gt;= 0 bp)'];
     for (var group_n = 0; group_n < report.length; group_n++) {
         var group = report[group_n];
         var groupName = group[0];

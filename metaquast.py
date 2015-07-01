@@ -163,38 +163,19 @@ def _start_quast_main(
     #         logger.error(msg)
 
 
-def _parallel_correct_contigs(contigs_fpath, label, corrected_dirpath, min_contig):
-    contigs_fname = os.path.basename(contigs_fpath)
-    fname, ctg_fasta_ext = qutils.splitext_for_fasta_file(contigs_fname)
+def _correct_contigs(contigs_fpaths, output_dirpath, labels):
+    assemblies = [Assembly(contigs_fpaths[i], labels[i]) for i in range(len(contigs_fpaths))]
+    corr_assemblies = []
+    for (contigs_fpath, label) in zip(contigs_fpaths, labels):
+        contigs_fname = os.path.basename(contigs_fpath)
+        fname, ctg_fasta_ext = qutils.splitext_for_fasta_file(contigs_fname)
 
-    corr_fpath = qutils.unique_corrected_fpath(
-        os.path.join(corrected_dirpath, label + ctg_fasta_ext))
+        corr_fpath = qutils.unique_corrected_fpath(
+            os.path.join(output_dirpath, qconfig.corrected_dirname, label + ctg_fasta_ext))
 
-    assembly = Assembly(corr_fpath, label)
+        corr_assemblies.append(Assembly(corr_fpath, label))
 
-    logger.info('  %s ==> %s' % (contigs_fpath, label))
-
-    # Handle fasta
-    lengths = fastaparser.get_lengths_from_fastafile(contigs_fpath)
-    if not sum(l for l in lengths if l >= min_contig):
-        logger.warning("Skipping %s because it doesn't contain contigs >= %d bp."
-                       % (os.path.basename(contigs_fpath), min_contig))
-        return
-    # correcting
-    if not qconfig.no_check:
-        if not quast.correct_fasta(contigs_fpath, corr_fpath, min_contig):
-            return
-
-    return assembly
-
-
-def _correct_contigs(contigs_fpaths, corrected_dirpath, min_contig, labels):
-    n_jobs = min(len(contigs_fpaths), qconfig.max_threads)
-    from joblib import Parallel, delayed
-    assemblies = Parallel(n_jobs=n_jobs)(delayed(_parallel_correct_contigs)(contigs_fpath, labels[i],
-            corrected_dirpath, min_contig) for i, contigs_fpath in enumerate(contigs_fpaths))
-
-    return [assembly for assembly in assemblies if assembly is not None]
+    return assemblies, corr_assemblies
 
 
 def get_label_from_par_dir_and_fname(contigs_fpath):
@@ -225,15 +206,15 @@ def _correct_references(ref_fpaths, corrected_dirpath):
         corr_seq_name = qutils.name_from_fpath(corr_seq_fpath)
         if total_references > 1:
             corr_seq_name += '_' + qutils.correct_name(seq_name[:20])
-
-        corr_seq = seq.upper()
-        dic = {'M': 'N', 'K': 'N', 'R': 'N', 'Y': 'N', 'W': 'N', 'S': 'N', 'V': 'N', 'B': 'N', 'H': 'N', 'D': 'N'}
-        pat = "(%s)" % "|".join(map(re.escape, dic.keys()))
-        corr_seq = re.sub(pat, lambda m: dic[m.group()], corr_seq)
-        if re.compile(r'[^ACGTN]').search(corr_seq):
-            logger.warning('Skipping ' + ref_fpath + ' because it contains non-ACGTN characters.',
-                    indent='    ')
-            return None, None
+        if not qconfig.no_check:
+            corr_seq = seq.upper()
+            dic = {'M': 'N', 'K': 'N', 'R': 'N', 'Y': 'N', 'W': 'N', 'S': 'N', 'V': 'N', 'B': 'N', 'H': 'N', 'D': 'N'}
+            pat = "(%s)" % "|".join(map(re.escape, dic.keys()))
+            corr_seq = re.sub(pat, lambda m: dic[m.group()], corr_seq)
+            if re.compile(r'[^ACGTN]').search(corr_seq):
+                logger.warning('Skipping ' + ref_fpath + ' because it contains non-ACGTN characters.',
+                        indent='    ')
+                return None, None
 
         fastaparser.write_fasta(corr_seq_fpath, [(corr_seq_name, seq)], 'a')
         fastaparser.write_fasta(combined_ref_fpath, [(corr_seq_name, seq)], 'a')
@@ -543,7 +524,7 @@ def main(args):
     # PROCESSING CONTIGS
     logger.info()
     logger.info('Contigs:')
-    assemblies = _correct_contigs(contigs_fpaths, corrected_dirpath, min_contig, labels)
+    assemblies, correct_assemblies = _correct_contigs(contigs_fpaths, output_dirpath, labels)
     if not assemblies:
         logger.error("None of the assembly files contains correct contigs. "
                      "Please, provide different files or decrease --min-contig threshold.")
@@ -551,7 +532,6 @@ def main(args):
 
     # Running QUAST(s)
     quast_py_args += ['--meta']
-    quast_py_args += ['--no-check']
     downloaded_refs = False
 
     # SEARCHING REFERENCES
@@ -608,7 +588,7 @@ def main(args):
         output_dirpath=os.path.join(output_dirpath, 'combined_quast_output'),
         num_notifications_tuple=total_num_notifications)
 
-    if json_texts:
+    if json_texts is not None:
         json_texts.append(json_saver.json_text)
     search_references_meta.is_quast_first_run = False
 
@@ -630,13 +610,21 @@ def main(args):
                 reference_fpath=combined_ref_fpath,
                 output_dirpath=os.path.join(output_dirpath, 'combined_quast_output'),
                 num_notifications_tuple=total_num_notifications)
-            if json_texts:
+            if json_texts is not None:
                 json_texts = json_texts[:-1]
                 json_texts.append(json_saver.json_text)
         elif corr_ref_fpaths == ref_fpaths:
             logger.info('All downloaded references have genome fraction more than 10%')
         else:
             logger.info('All downloaded references have low genome fraction')
+
+    quast_py_args += ['--no-check-meta']
+    assemblies = correct_assemblies
+    qconfig.contig_thresholds = [str(threshold) for threshold in qconfig.contig_thresholds if threshold > qconfig.min_contig]
+    if not qconfig.contig_thresholds:
+        qconfig.contig_thresholds = ['None']
+    quast_py_args += ['-t']
+    quast_py_args += qconfig.contig_thresholds
 
     logger.info()
     logger.info('Partitioning contigs into bins aligned to each reference..')
@@ -660,7 +648,7 @@ def main(args):
                 reference_fpath=os.path.join(corrected_dirpath, ref_name) + common_ref_fasta_ext,
                 output_dirpath=os.path.join(output_dirpath, ref_name + '_quast_output'),
                 exit_on_exception=False, num_notifications_tuple=total_num_notifications)
-            if json_texts:
+            if json_texts is not None:
                 json_texts.append(json_saver.json_text)
 
     # Finally running for the contigs that has not been aligned to any reference
@@ -672,7 +660,7 @@ def main(args):
         assemblies=not_aligned_assemblies,
         output_dirpath=os.path.join(output_dirpath, qconfig.not_aligned_name + '_quast_output'),
         exit_on_exception=False, num_notifications_tuple=total_num_notifications)
-    if json_texts:
+    if json_texts is not None:
         json_texts.append(json_saver.json_text)
 
     if return_code not in [0, 4]:
@@ -694,7 +682,7 @@ def main(args):
             from libs.html_saver import html_saver
             html_saver.create_meta_report(summary_dirpath, json_texts)
 
-    quast._cleanup(corrected_dirpath)
+    quast._cleanup(corrected_dirpath, '')
     logger.info('')
     logger.info('MetaQUAST finished.')
     logger.finish_up(numbers=tuple(total_num_notifications), check_test=test_mode)

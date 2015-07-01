@@ -99,7 +99,7 @@ def _partition_contigs(assemblies, ref_fpaths, corrected_dirpath, alignments_fpa
     assemblies_dicts = [assembly[0] for assembly in assemblies]
     assemblies_by_ref = {}
     for k in assemblies_dicts[0].keys():
-        assemblies_by_ref[k] = [val for sublist in (assemblies_dicts[i][k] for i in range(len(assemblies_dicts))) for val in sublist]
+        assemblies_by_ref[k] = set([val for sublist in (assemblies_dicts[i][k] for i in range(len(assemblies_dicts))) for val in sublist])
     not_aligned_assemblies = [assembly[1] for assembly in assemblies]
     return assemblies_by_ref, not_aligned_assemblies
 
@@ -690,7 +690,7 @@ def main(args):
             misassembl_metrics = [reporting.Fields.MIS_RELOCATION, reporting.Fields.MIS_TRANSLOCATION, reporting.Fields.MIS_INVERTION,
                                reporting.Fields.MIS_ISTRANSLOCATIONS]
             create_meta_summary.do(output_dirpath, summary_dirpath, labels, metrics_for_plots, misassembl_metrics, ref_names)
-        if html_report:
+        if html_report and json_texts:
             from libs.html_saver import html_saver
             html_saver.create_meta_report(summary_dirpath, json_texts)
 

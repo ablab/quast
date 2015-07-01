@@ -1,5 +1,5 @@
 function fillOneRow(metric, mainMetrics, group_n, order, glossary, is_primary, rowName,
-                    report_n, assembliesNames, notAlignedContigs, notExtendedMetrics) {
+                    report_n, assembliesNames, notAlignedContigs, notExtendedMetrics, isEmptyRows) {
     (function(group_n) {
         var id_group = '#group_' + group_n;
         $(function() {
@@ -33,7 +33,7 @@ function fillOneRow(metric, mainMetrics, group_n, order, glossary, is_primary, r
     }
 
     var not_extend = false;
-    if ($.inArray(metricName, notExtendedMetrics) > -1){
+    if ($.inArray(metricName, notExtendedMetrics) > -1 || isEmptyRows == true){
         not_extend = true;
         trClass += ' not_extend';
     }
@@ -262,7 +262,17 @@ function buildTotalReport(assembliesNames, report, order, date, minContig, gloss
         }
         for (metric_n = 0; metric_n < metrics.length; metric_n++) {
             var metric = metrics[metric_n];
-            table += fillOneRow(metric, mainMetrics, group_n, order, glossary, true, metric.metricName, -1, assembliesNames, notAlignedContigs, notExtendedMetrics);
+            var isEmptyRows = true;
+            for(report_n = 0; report_n < reports.length; report_n++ ) {  //  add information for each reference
+                var metrics_ref = reports[report_n].report[group_n][1];
+                for (var metric_ext_n = 0; metric_ext_n < metrics_ref.length; metric_ext_n++){
+                    if (metrics_ref[metric_ext_n].metricName == metrics[metric_n].metricName) {
+                        isEmptyRows = false;
+                        break;
+                    }
+                }
+            }
+            table += fillOneRow(metric, mainMetrics, group_n, order, glossary, true, metric.metricName, -1, assembliesNames, notAlignedContigs, notExtendedMetrics, isEmptyRows);
             for(report_n = 0; report_n < reports.length; report_n++ ) {  //  add information for each reference
                 var metrics_ref = reports[report_n].report[group_n][1];
                 for (var metric_ext_n = 0; metric_ext_n < metrics_ref.length; metric_ext_n++){

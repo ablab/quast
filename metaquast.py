@@ -532,6 +532,7 @@ def main(args):
 
     # Running QUAST(s)
     quast_py_args += ['--meta']
+    quast_py_args += ['--combined-ref']
     downloaded_refs = False
 
     # SEARCHING REFERENCES
@@ -625,6 +626,7 @@ def main(args):
         qconfig.contig_thresholds = ['None']
     quast_py_args += ['-t']
     quast_py_args += qconfig.contig_thresholds
+    quast_py_args.remove('--combined-ref')
 
     logger.info()
     logger.info('Partitioning contigs into bins aligned to each reference..')

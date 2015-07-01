@@ -9,15 +9,15 @@ import os
 from libs import qutils, qconfig
 
 from libs.log import get_logger
-log = get_logger('quast')
+log = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 
 simplejson_error = False
 try:
     import json
-except:
+except ImportError:
     try:
         import simplejson as json
-    except:
+    except ImportError:
         log.warning('Can\'t build html report - please install python-simplejson')
         simplejson_error = True
 

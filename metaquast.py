@@ -15,8 +15,6 @@ import re
 
 from libs import qconfig
 qconfig.check_python_version()
-from libs.html_saver import html_saver
-from libs.html_saver import json_saver
 from libs import qutils, fastaparser
 from libs import search_references_meta
 from libs.qutils import assert_file_exists
@@ -604,14 +602,19 @@ def main(args):
     total_num_warnings = 0
     total_num_nf_errors = 0
     total_num_notifications = (total_num_notices, total_num_warnings, total_num_nf_errors)
-    json_texts = []
+    if qconfig.html_report:
+        from libs.html_saver import json_saver
+        json_texts = []
+    else:
+        json_texts = None
     return_code, total_num_notifications = _start_quast_main(run_name, quast_py_args + ["--ambiguity-usage"] + ['all'],
         assemblies=assemblies,
         reference_fpath=combined_ref_fpath,
         output_dirpath=os.path.join(output_dirpath, 'combined_quast_output'),
         num_notifications_tuple=total_num_notifications)
 
-    json_texts.append(json_saver.json_text)
+    if json_texts:
+        json_texts.append(json_saver.json_text)
     search_references_meta.is_quast_first_run = False
 
     if downloaded_refs:
@@ -632,8 +635,9 @@ def main(args):
                 reference_fpath=combined_ref_fpath,
                 output_dirpath=os.path.join(output_dirpath, 'combined_quast_output'),
                 num_notifications_tuple=total_num_notifications)
-            json_texts = json_texts[:-1]
-            json_texts.append(json_saver.json_text)
+            if json_texts:
+                json_texts = json_texts[:-1]
+                json_texts.append(json_saver.json_text)
         elif corr_ref_fpaths == ref_fpaths:
             logger.info('All downloaded references have genome fraction more than 10%')
         else:
@@ -661,7 +665,8 @@ def main(args):
                 reference_fpath=os.path.join(corrected_dirpath, ref_name) + common_ref_fasta_ext,
                 output_dirpath=os.path.join(output_dirpath, ref_name + '_quast_output'),
                 exit_on_exception=False, num_notifications_tuple=total_num_notifications)
-            json_texts.append(json_saver.json_text)
+            if json_texts:
+                json_texts.append(json_saver.json_text)
 
     # Finally running for the contigs that has not been aligned to any reference
     run_name = 'for the contigs not aligned anywhere'
@@ -672,7 +677,8 @@ def main(args):
         assemblies=not_aligned_assemblies,
         output_dirpath=os.path.join(output_dirpath, qconfig.not_aligned_name + '_quast_output'),
         exit_on_exception=False, num_notifications_tuple=total_num_notifications)
-    json_texts.append(json_saver.json_text)
+    if json_texts:
+        json_texts.append(json_saver.json_text)
 
     if return_code not in [0, 4]:
         logger.error('Error running quast.py for the contigs not aligned anywhere')
@@ -690,6 +696,7 @@ def main(args):
                                reporting.Fields.MIS_ISTRANSLOCATIONS]
             create_meta_summary.do(output_dirpath, summary_dirpath, labels, metrics_for_plots, misassembl_metrics, ref_names)
         if html_report:
+            from libs.html_saver import html_saver
             html_saver.create_meta_report(summary_dirpath, json_texts)
 
     quast._cleanup(corrected_dirpath)

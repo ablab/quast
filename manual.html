@@ -1066,6 +1066,22 @@ If you have both contigs.fasta and scaffolds.fasta it is better to specify both 
 To sum up, you should use "--scaffolds" option if you don't have original file with contigs but want to compare your scaffolds with it.
 <br>
 </p>
+
+<br>
+<p><b><i>
+Q7. Can I add new assemblies to existing QUAST report without need to realign already processed assemblies?
+    Or can I at least rerun existing QUAST report with slightly modified options set?
+</b></i></p>
+<p>
+Yes, sure! You just need to specify existing QUAST output directory with <code>-o</code> option and our tool
+    will reuse already generated Nucmer alignments and will run alignment process only for new assemblies.
+    Note that all of QUAST options except <code>--min-contig</code> do not affect Nucmer alignment process,
+    so you can rerun previous QUAST command with modified options and QUAST will reuse existing alignments also.
+    <br>
+    <i>Hint</i>: if you run QUAST without specifying output dir with <code>-o</code> option you can rerun it on the same directory
+    with <code>-o quast_results/latest</code>.
+<br>
+</p>
 <br>
 <br>
 </body>

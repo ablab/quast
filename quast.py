@@ -25,7 +25,7 @@ logger.set_up_console_handler()
 
 from site import addsitedir
 addsitedir(os.path.join(qconfig.LIBS_LOCATION, 'site_packages'))
-
+COMBINED_REF_FNAME = 'combined_reference.fasta'
 
 def _set_up_output_dir(output_dirpath, json_outputpath,
                        make_latest_symlink, save_json):
@@ -82,21 +82,23 @@ def correct_fasta(original_fpath, corrected_fpath, min_contig,
         if (len(seq) >= min_contig) or is_reference:
             corr_name = qutils.correct_name(first_line)
 
-            # seq to uppercase, because we later looking only uppercase letters
-            corr_seq = seq.upper()
+            if not qconfig.no_check:
+                # seq to uppercase, because we later looking only uppercase letters
+                corr_seq = seq.upper()
 
-            # correcting alternatives (gage can't work with alternatives)
-            # dic = {'M': 'A', 'K': 'G', 'R': 'A', 'Y': 'C', 'W': 'A', 'S': 'C', 'V': 'A', 'B': 'C', 'H': 'A', 'D': 'A'}
-            dic = {'M': 'N', 'K': 'N', 'R': 'N', 'Y': 'N', 'W': 'N', 'S': 'N', 'V': 'N', 'B': 'N', 'H': 'N', 'D': 'N'}
-            pat = "(%s)" % "|".join(map(re.escape, dic.keys()))
-            corr_seq = re.sub(pat, lambda m: dic[m.group()], corr_seq)
+                # correcting alternatives (gage can't work with alternatives)
+                # dic = {'M': 'A', 'K': 'G', 'R': 'A', 'Y': 'C', 'W': 'A', 'S': 'C', 'V': 'A', 'B': 'C', 'H': 'A', 'D': 'A'}
+                dic = {'M': 'N', 'K': 'N', 'R': 'N', 'Y': 'N', 'W': 'N', 'S': 'N', 'V': 'N', 'B': 'N', 'H': 'N', 'D': 'N'}
+                pat = "(%s)" % "|".join(map(re.escape, dic.keys()))
+                corr_seq = re.sub(pat, lambda m: dic[m.group()], corr_seq)
 
-            # make sure that only A, C, G, T or N are in the sequence
-            if re.compile(r'[^ACGTN]').search(corr_seq):
-                logger.warning('Skipping ' + original_fpath + ' because it contains non-ACGTN characters.',
-                        indent='    ')
-                return False
-
+                # make sure that only A, C, G, T or N are in the sequence
+                if re.compile(r'[^ACGTN]').search(corr_seq):
+                    logger.warning('Skipping ' + original_fpath + ' because it contains non-ACGTN characters.',
+                            indent='    ')
+                    return False
+            else:
+                corr_seq = seq
             modified_fasta_entries.append((corr_name, corr_seq))
 
     fastaparser.write_fasta(corrected_fpath, modified_fasta_entries)
@@ -142,7 +144,7 @@ def _handle_fasta(contigs_fpath, corr_fpath, reporting):
         return False
 
     # correcting
-    if not qconfig.no_check:
+    if not qconfig.no_check_meta:
         if not correct_fasta(contigs_fpath, corr_fpath, qconfig.min_contig):
             return False
     
@@ -249,7 +251,7 @@ def _correct_reference(ref_fpath, corrected_dirpath):
     name, fasta_ext = qutils.splitext_for_fasta_file(ref_fname)
     corr_fpath = qutils.unique_corrected_fpath(
         os.path.join(corrected_dirpath, name + fasta_ext))
-    if not qconfig.no_check:
+    if not ref_fpath.endswith(COMBINED_REF_FNAME):
         if not correct_fasta(ref_fpath, corr_fpath, qconfig.min_contig, is_reference=True):
             ref_fpath = ''
         else:
@@ -514,6 +516,10 @@ def main(args):
         elif opt in ('-m', '--meta'):
             qconfig.meta = True
 
+        elif opt == '--no-check-meta':
+            qconfig.no_check = True
+            qconfig.no_check_meta = True
+
         elif opt in ('-l', '--labels'):
             labels = parse_labels(arg, contigs_fpaths)
 
@@ -572,9 +578,12 @@ def main(args):
     from libs import reporting
     reload(reporting)
 
-    if os.path.isdir(corrected_dirpath):
-        shutil.rmtree(corrected_dirpath)
-    os.mkdir(corrected_dirpath)
+    if ref_fpath.endswith(COMBINED_REF_FNAME):
+        corrected_dirpath = os.path.join(output_dirpath, '..', qconfig.corrected_dirname)
+    else:
+        if os.path.isdir(corrected_dirpath):
+            shutil.rmtree(corrected_dirpath)
+        os.mkdir(corrected_dirpath)
 
     # PROCESSING REFERENCE
     if ref_fpath:
@@ -747,14 +756,14 @@ def main(args):
     if contig_alignment_plot_fpath:
         logger.info('  Contig alignment plot: %s' % contig_alignment_plot_fpath)
 
-    _cleanup(corrected_dirpath)
+    _cleanup(corrected_dirpath, ref_fpath)
     logger.finish_up(check_test=qconfig.test)
     return 0
 
 
-def _cleanup(corrected_dirpath):
+def _cleanup(corrected_dirpath, ref_fpath):
     # removing correcting input contig files
-    if not qconfig.debug:
+    if not qconfig.debug and not ref_fpath.endswith(COMBINED_REF_FNAME):
         shutil.rmtree(corrected_dirpath)
 
 

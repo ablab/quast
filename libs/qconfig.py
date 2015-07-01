@@ -34,9 +34,9 @@ MAX_REFERENCE_FILE_LENGTH = 50000000  # Max length of one part of reference
 
 # available options
 long_options = "output-dir= save-json-to= genes= operons= reference= contig-thresholds= min-contig= "\
-               "gene-thresholds= save-json gage eukaryote glimmer no-plots no-html no-check no-gc help debug "\
+               "gene-thresholds= save-json gage eukaryote glimmer no-plots no-html no-check no-check-meta no-gc help debug "\
                "ambiguity-usage= scaffolds threads= mincluster= est-ref-size= use-all-alignments gene-finding "\
-               "strict-NA meta labels= test help-hidden no-snps test-no-ref fast max-ref-number= extensive-mis-size=".split()
+               "strict-NA meta labels= test help-hidden no-snps test-no-ref fast max-ref-number= extensive-mis-size= ".split()
 short_options = "o:G:O:R:t:M:S:J:jehdsa:T:c:ufnml:Lx:"
 
 # default values for options
@@ -61,6 +61,7 @@ meta = False
 debug = False
 test = False
 no_check = False
+no_check_meta = False  # for metaQUAST, without checking min-contig
 no_gc = False
 show_snps = True
 glimmer = False

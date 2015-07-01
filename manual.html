@@ -79,7 +79,7 @@
     QUAST utilizes <a href="http://mummer.sourceforge.net/">MUMmer</a>, <a href="http://exon.gatech.edu/GeneMark/">GeneMarkS</a>, <a href="http://exon.gatech.edu/GeneMark/gmes_instructions.html">GeneMark-ES</a>, <a href="http://cbcb.umd.edu/software/glimmerhmm/">GlimmerHMM</a>, and <a href="http://gage.cbcb.umd.edu/index.html">GAGE</a>. In addition, MetaQUAST uses <a href="http://exon.gatech.edu/GeneMark/">MetaGeneMark</a>, <a href="http://blast.ncbi.nlm.nih.gov/Blast.cgi">BLAST</a>, and <a href="http://www.arb-silva.de/">SILVA</a> 16S rRNA database. These tools are built in into the QUAST package which is ready for use by academic, non-profit institutions and U.S. Government agencies. If you are not in one of these categories please refer to <a href="LICENSE">LICENSE</a> section 'Third-party tools incorporated into QUAST' for guidelines on how to complete the licensing process.     
     <br>
     <br>
-    Version 3.0 of QUAST was released under GPL v2 on XX June 2015. Note that some of build-in third-party tools are not under GPL v2. See <a href="LICENSE">LICENSE</a> for details.
+    Version 3.0 of QUAST was released under GPL v2 on XX July 2015. Note that some of build-in third-party tools are not under GPL v2. See <a href="LICENSE">LICENSE</a> for details.
 </p>
 
 <h2>Contents</h2>
@@ -433,11 +433,11 @@ Break contigs at every misassembly event (including local ones) to compute <span
 <span class='metric-ref'>NGAx</span> statistics. By default, QUAST breaks contigs <i>only at extensive</i> misassemblies (not local ones).
 
 <div class='option'>
-    <a name='extensive_mis_size'></a><code><b>--extensive-mis-size</b></code>
+    <a name='extensive_mis_size'></a><code><b>--extensive-mis-size</b></code> <code>&lt;int&gt;</code>
 </div>
 Lower threshold for the relocation size (gap or overlap size between left and right flanking sequence, see <a href="#sec3.1.2">section 3.1.2</a> for details).
 Shorter relocations are considered as local misassemblies. Does not affect other types of extensive misassemblies (inversions and translocations).
-The default value is 1000. Note that the threshold should be greater than maximum indel length which is 85 bp for Nucmer by default.
+The default value is 1000. Note that the threshold should be greater than maximum indel length which is 85 bp (Nucmer default value).
 </div>
 
 <br>
@@ -447,9 +447,17 @@ Speedup options:
 <div class='option'>
 <code><b>--no-check</b></code>
 </div>
-Do not check and correct input FASTA files. By default, QUAST corrects sequence names by replacing special characters (e.g. &amp;, &#124;, " ", etc) with underscore ("_"). QUAST also checks sequences itself and reports a presence of non-ACGTN characters. Alternative symbols (M, K, R, etc) are replaced with N.
-Note that uncorrected FASTA files may cause failing of third-party tools incorporated to QUAST, e.g. GAGE or Nucmer.
-
+    Do not check and correct input FASTA files (both reference and assemblies).
+    By default, QUAST corrects sequence names by replacing special characters
+    (all symbols except latin letters, numbers, underscores, dots, and minus signs) with underscore ("_").
+    QUAST also checks and corrects sequences itself. Lowercase letters are uppercased.
+    Alternative nucleotide symbols (M, K, R, etc) are replaced with N. If non-ACGTN characters
+    are present after this modifications the whole FASTA file is skipped from further processing.
+    <br>
+    <b>Note</b>: Use this option at your own risk. Incorrect FASTA files may cause failing of
+    third-party tools incorporated to QUAST, i.e. GAGE, Nucmer, GeneMark*, GlimmerHMM.
+    This option is useful for running QUAST without <code>-R</code> and <code>--gene-finding</code>
+    (no third-party tools will be run) or if you are absolutely sure that your FASTA files are correct.
 
 <div class='option'>
 <code><b>--no-plots</b></code>
@@ -474,7 +482,7 @@ Do not compute GC% and do not produce GC-distribution plots (both in HTML report
 <div class='option'>
 <code><b>--fast</b></code>
 </div>
-A shortcut for using all of speedup options at a time.
+A shortcut for using all of speedup options except --no-check.
 </div>
 
 <br>

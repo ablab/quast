@@ -197,12 +197,12 @@ def usage(show_hidden=False, meta=False):
     print >> sys.stderr, "                                      less than extensive-mis-size are counted as local misassemblies. [default is %s]" % extensive_misassembly_threshold
     print >> sys.stderr, ""
     print >> sys.stderr, "Speedup options:"
-    print >> sys.stderr, "    --no-check                        Do not check and correct input fasta files"
+    print >> sys.stderr, "    --no-check                        Do not check and correct input fasta files. Use at your own risk (see manual)"
     print >> sys.stderr, "    --no-plots                        Do not draw plots"
     print >> sys.stderr, "    --no-html                         Do not build html report"
     print >> sys.stderr, "    --no-snps                         Do not report SNPs (may significantly reduce memory consumption on large genomes)"
     print >> sys.stderr, "    --no-gc                           Do not compute GC% and GC-distribution"
-    print >> sys.stderr, "    --fast                            A combination of all speedup options"
+    print >> sys.stderr, "    --fast                            A combination of all speedup options except --no-check"
     if show_hidden:
         print >> sys.stderr, ""
         print >> sys.stderr, "Hidden options:"

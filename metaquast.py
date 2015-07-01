@@ -51,28 +51,29 @@ def parallel_partition_contigs(asm, assemblies_by_ref, corrected_dirpath, alignm
     if os.path.exists(alignments_fpath_template % asm.name):
         for line in open(alignments_fpath_template % asm.name):
             values = line.split()
-            ref_name = contigs_analyzer.ref_labels_by_chromosomes[values[0]]
-            ref_contigs_names = values[1:]
-            ref_contigs_fpath = os.path.join(
-                corrected_dirpath, asm.name + '_to_' + ref_name[:40] + '.fasta')
-            if ref_name not in aligned_contigs_for_each_ref:
-                aligned_contigs_for_each_ref[ref_name] = []
+            if values[0] in contigs_analyzer.ref_labels_by_chromosomes[values[0]]:
+                ref_name = contigs_analyzer.ref_labels_by_chromosomes[values[0]]
+                ref_contigs_names = values[1:]
+                ref_contigs_fpath = os.path.join(
+                    corrected_dirpath, asm.name + '_to_' + ref_name[:40] + '.fasta')
+                if ref_name not in aligned_contigs_for_each_ref:
+                    aligned_contigs_for_each_ref[ref_name] = []
 
-            for (cont_name, seq) in contigs_seq:
-                if not cont_name in contigs:
-                    contigs[cont_name] = seq
+                for (cont_name, seq) in contigs_seq:
+                    if not cont_name in contigs:
+                        contigs[cont_name] = seq
 
-                if cont_name in ref_contigs_names and cont_name not in aligned_contigs_for_each_ref[ref_name]:
-                    # Collecting all aligned contigs names in order to futher extract not-aligned
-                    aligned_contig_names.add(cont_name)
-                    aligned_contigs_for_each_ref[ref_name].append(cont_name)
-                    fastaparser.write_fasta(ref_contigs_fpath, [(cont_name, seq)], 'a')
+                    if cont_name in ref_contigs_names and cont_name not in aligned_contigs_for_each_ref[ref_name]:
+                        # Collecting all aligned contigs names in order to futher extract not-aligned
+                        aligned_contig_names.add(cont_name)
+                        aligned_contigs_for_each_ref[ref_name].append(cont_name)
+                        fastaparser.write_fasta(ref_contigs_fpath, [(cont_name, seq)], 'a')
 
-            ref_asm = Assembly(ref_contigs_fpath, asm.label)
-            if ref_asm.name not in added_ref_asm:
-                if ref_name in assemblies_by_ref:
-                    assemblies_by_ref[ref_name].append(ref_asm)
-                    added_ref_asm.append(ref_asm.name)
+                ref_asm = Assembly(ref_contigs_fpath, asm.label)
+                if ref_asm.name not in added_ref_asm:
+                    if ref_name in assemblies_by_ref:
+                        assemblies_by_ref[ref_name].append(ref_asm)
+                        added_ref_asm.append(ref_asm.name)
 
     # Exctraction not aligned contigs
     all_contigs_names = set(contigs.keys())
@@ -216,21 +217,6 @@ def _correct_references(ref_fpaths, corrected_dirpath):
         seq_fname = ref_name
         seq_fname += ref_fasta_ext
 
-        for first_line, seq in fastaparser.read_fasta(ref_fpath):
-            # seq to uppercase, because we later looking only uppercase letters
-            corr_seq = seq.upper()
-            # correcting alternatives (gage can't work with alternatives)
-            # dic = {'M': 'A', 'K': 'G', 'R': 'A', 'Y': 'C', 'W': 'A', 'S': 'C', 'V': 'A', 'B': 'C', 'H': 'A', 'D': 'A'}
-            dic = {'M': 'N', 'K': 'N', 'R': 'N', 'Y': 'N', 'W': 'N', 'S': 'N', 'V': 'N', 'B': 'N', 'H': 'N', 'D': 'N'}
-            pat = "(%s)" % "|".join(map(re.escape, dic.keys()))
-            corr_seq = re.sub(pat, lambda m: dic[m.group()], corr_seq)
-
-            # make sure that only A, C, G, T or N are in the sequence
-            if re.compile(r'[^ACGTN]').search(corr_seq):
-                logger.warning('Skipping ' + ref_fpath + ' because it contains non-ACGTN characters.',
-                        indent='    ')
-                return None, None
-
         if total_references > 1:
             corr_seq_fpath = corrected_ref_fpaths[-1]
         else:
@@ -239,6 +225,15 @@ def _correct_references(ref_fpaths, corrected_dirpath):
         corr_seq_name = qutils.name_from_fpath(corr_seq_fpath)
         if total_references > 1:
             corr_seq_name += '_' + qutils.correct_name(seq_name[:20])
+
+        corr_seq = seq.upper()
+        dic = {'M': 'N', 'K': 'N', 'R': 'N', 'Y': 'N', 'W': 'N', 'S': 'N', 'V': 'N', 'B': 'N', 'H': 'N', 'D': 'N'}
+        pat = "(%s)" % "|".join(map(re.escape, dic.keys()))
+        corr_seq = re.sub(pat, lambda m: dic[m.group()], corr_seq)
+        if re.compile(r'[^ACGTN]').search(corr_seq):
+            logger.warning('Skipping ' + ref_fpath + ' because it contains non-ACGTN characters.',
+                    indent='    ')
+            return None, None
 
         fastaparser.write_fasta(corr_seq_fpath, [(corr_seq_name, seq)], 'a')
         fastaparser.write_fasta(combined_ref_fpath, [(corr_seq_name, seq)], 'a')

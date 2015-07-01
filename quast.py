@@ -25,7 +25,7 @@ logger.set_up_console_handler()
 
 from site import addsitedir
 addsitedir(os.path.join(qconfig.LIBS_LOCATION, 'site_packages'))
-COMBINED_REF_FNAME = 'combined_reference.fasta'
+is_combined_ref = False
 
 def _set_up_output_dir(output_dirpath, json_outputpath,
                        make_latest_symlink, save_json):
@@ -251,7 +251,7 @@ def _correct_reference(ref_fpath, corrected_dirpath):
     name, fasta_ext = qutils.splitext_for_fasta_file(ref_fname)
     corr_fpath = qutils.unique_corrected_fpath(
         os.path.join(corrected_dirpath, name + fasta_ext))
-    if not ref_fpath.endswith(COMBINED_REF_FNAME):
+    if not is_combined_ref:
         if not correct_fasta(ref_fpath, corr_fpath, qconfig.min_contig, is_reference=True):
             ref_fpath = ''
         else:
@@ -415,6 +415,7 @@ def main(args):
 
     labels = None
     all_labels_from_dirs = False
+    is_combined_ref = False
 
     ref_fpath = ''
     genes_fpaths = []
@@ -528,6 +529,9 @@ def main(args):
 
         elif opt == '--glimmer':
             qconfig.glimmer = True
+
+        elif opt == '--combined-ref':
+            is_combined_ref = True
         else:
             logger.error('Unknown option: %s. Use -h for help.' % (opt + ' ' + arg), to_stderr=True, exit_with_code=2)
 
@@ -578,7 +582,7 @@ def main(args):
     from libs import reporting
     reload(reporting)
 
-    if ref_fpath.endswith(COMBINED_REF_FNAME):
+    if is_combined_ref:
         corrected_dirpath = os.path.join(output_dirpath, '..', qconfig.corrected_dirname)
     else:
         if os.path.isdir(corrected_dirpath):
@@ -756,14 +760,14 @@ def main(args):
     if contig_alignment_plot_fpath:
         logger.info('  Contig alignment plot: %s' % contig_alignment_plot_fpath)
 
-    _cleanup(corrected_dirpath, ref_fpath)
+    _cleanup(corrected_dirpath, is_combined_ref)
     logger.finish_up(check_test=qconfig.test)
     return 0
 
 
-def _cleanup(corrected_dirpath, ref_fpath):
+def _cleanup(corrected_dirpath, is_combined_ref):
     # removing correcting input contig files
-    if not qconfig.debug and not ref_fpath.endswith(COMBINED_REF_FNAME):
+    if not qconfig.debug and not is_combined_ref:
         shutil.rmtree(corrected_dirpath)
 
 

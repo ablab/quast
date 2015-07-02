@@ -247,7 +247,7 @@ def do(assemblies, downloaded_dirpath):
                 scores_organisms.append(score)
         organisms_assemblies[contig_name] = [score[1] for score in all_scores]
 
-    ref_fpaths = [os.path.join(downloaded_dirpath,fn) for fn in next(os.walk(downloaded_dirpath))[2] if qutils.check_is_fasta_file(fn)]
+    ref_fpaths = [os.path.join(downloaded_dirpath,file) for (path, dirs, files) in os.walk(downloaded_dirpath) for file in files if qutils.check_is_fasta_file(file)]
     if len(ref_fpaths) > 0:
         logger.info('Trying to use previously downloaded references...')
 

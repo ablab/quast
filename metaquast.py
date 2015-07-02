@@ -84,7 +84,7 @@ def parallel_partition_contigs(asm, assemblies_by_ref, corrected_dirpath, alignm
     return assemblies_by_ref, not_aligned_asm
 
 
-def _partition_contigs(assemblies, ref_fpaths, corrected_dirpath, alignments_fpath_template):
+def _partition_contigs(assemblies, ref_fpaths, corrected_dirpath, alignments_fpath_template, labels):
     # not_aligned_anywhere_dirpath = os.path.join(output_dirpath, 'contigs_not_aligned_anywhere')
     # if os.path.isdir(not_aligned_anywhere_dirpath):
     #     os.rmdir(not_aligned_anywhere_dirpath)
@@ -99,7 +99,13 @@ def _partition_contigs(assemblies, ref_fpaths, corrected_dirpath, alignments_fpa
     assemblies_dicts = [assembly[0] for assembly in assemblies]
     assemblies_by_ref = {}
     for k in assemblies_dicts[0].keys():
-        assemblies_by_ref[k] = set([val for sublist in (assemblies_dicts[i][k] for i in range(len(assemblies_dicts))) for val in sublist])
+        assemblies_by_ref[k] = []
+        not_sorted_assemblies = set([val for sublist in (assemblies_dicts[i][k] for i in range(len(assemblies_dicts))) for val in sublist])
+        for label in labels:  # sort by label
+            for assembly in not_sorted_assemblies:
+                if assembly.label == label:
+                    assemblies_by_ref[k].append(assembly)
+                    break
     not_aligned_assemblies = [assembly[1] for assembly in assemblies]
     return assemblies_by_ref, not_aligned_assemblies
 
@@ -389,7 +395,7 @@ def main(args):
             if opt in quast_py_args and arg in quast_py_args:
                 quast_py_args = __remove_from_quast_py_args(quast_py_args, opt, arg)
             if os.path.isdir(arg):
-                ref_fpaths = [os.path.join(arg,fn) for fn in next(os.walk(arg))[2] if qutils.check_is_fasta_file(fn)]
+                ref_fpaths = [os.path.join(arg,file) for (path, dirs, files) in os.walk(arg) for file in files if qutils.check_is_fasta_file(file)]
             else:
                 ref_fpaths = arg.split(',')
                 for i, ref_fpath in enumerate(ref_fpaths):
@@ -633,7 +639,7 @@ def main(args):
 
     assemblies_by_reference, not_aligned_assemblies = _partition_contigs(
         assemblies, corrected_ref_fpaths, corrected_dirpath,
-        os.path.join(output_dirpath, 'combined_quast_output', 'contigs_reports', 'alignments_%s.tsv'))
+        os.path.join(output_dirpath, 'combined_quast_output', 'contigs_reports', 'alignments_%s.tsv'), labels)
 
     ref_names = []
     for ref_name, ref_assemblies in assemblies_by_reference.iteritems():

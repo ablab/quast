@@ -690,7 +690,7 @@ def main(args):
             from libs.html_saver import html_saver
             html_saver.create_meta_report(summary_dirpath, json_texts)
 
-    quast._cleanup(corrected_dirpath, '')
+    quast._cleanup(corrected_dirpath)
     logger.info('')
     logger.info('MetaQUAST finished.')
     logger.finish_up(numbers=tuple(total_num_notifications), check_test=test_mode)

@@ -65,6 +65,7 @@ no_check_meta = False  # for metaQUAST, without checking min-contig
 no_gc = False
 show_snps = True
 glimmer = False
+is_combined_ref = False
 
 default_results_root_dirname = "quast_results"
 output_dirname = "results_" + datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')

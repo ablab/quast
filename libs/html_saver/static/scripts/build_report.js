@@ -158,6 +158,7 @@ function buildReport() {
     if (alignedContigsLens = readJson('aligned-contigs-lengths')) {
         makePlot('nax', 'NAx', nx.draw, {
                 listsOfLengths: alignedContigsLens.lists_of_lengths,
+                listsOfAllLengths: contigsLens.lists_of_lengths,
                 refLen: refLen,
             },
             null

@@ -65,6 +65,7 @@ no_check_meta = False  # for metaQUAST, without checking min-contig
 no_gc = False
 show_snps = True
 glimmer = False
+is_combined_ref = False
 
 # the following 2 are for web-quast:
 error_log_fname = 'error.log'

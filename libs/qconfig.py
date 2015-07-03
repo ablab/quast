@@ -35,9 +35,9 @@ MAX_REFERENCE_FILE_LENGTH = 50000000  # Max length of one part of reference
 # available options
 long_options = "output-dir= save-json-to= genes= operons= reference= contig-thresholds= min-contig= "\
                "gene-thresholds= save-json gage eukaryote glimmer no-plots no-html no-check no-check-meta combined-ref no-gc help debug "\
-               "ambiguity-usage= scaffolds threads= mincluster= est-ref-size= use-all-alignments gene-finding "\
+               "ambiguity-usage= scaffolds threads= min-cluster= min-alignment= est-ref-size= use-all-alignments gene-finding "\
                "strict-NA meta labels= test help-hidden no-snps test-no-ref fast max-ref-number= extensive-mis-size= ".split()
-short_options = "o:G:O:R:t:M:S:J:jehdsa:T:c:ufnml:Lx:"
+short_options = "o:G:O:R:t:M:S:J:jehdsa:T:c:ufnml:Lx:i:"
 
 # default values for options
 contig_thresholds = "0,1000"
@@ -50,7 +50,8 @@ gene_finding = False
 ambiguity_usage = 'one'
 use_all_alignments = False
 max_threads = None
-mincluster = 65
+min_cluster = 65
+min_alignment = 0
 estimated_reference_size = None
 strict_NA = False
 scaffolds = False
@@ -195,6 +196,7 @@ def usage(show_hidden=False, meta=False):
     print >> sys.stderr, "-s  --scaffolds                       Assemblies are scaffolds, split them and add contigs to the comparison"
     print >> sys.stderr, "-u  --use-all-alignments              Compute genome fraction, # genes, # operons in QUAST v.1.* style."
     print >> sys.stderr, "                                      By default, QUAST filters Nucmer\'s alignments to keep only best ones"
+    print >> sys.stderr, "-i  --min-alignment <int>             Nucmer's parameter: the minimum alignment length [default: %s]" % min_alignment
     print >> sys.stderr, "-a  --ambiguity-usage <none|one|all>  Use none, one, or all alignments (or aligned fragments internal overlaps) of a contig"
     print >> sys.stderr, "                                      when all of them are equally good. [default is %s]" % ambiguity_usage
     print >> sys.stderr, "-n  --strict-NA                       Break contigs in any misassembly event when compute NAx and NGAx"
@@ -214,7 +216,7 @@ def usage(show_hidden=False, meta=False):
         print >> sys.stderr, "Hidden options:"
         print >> sys.stderr, "-d  --debug                 Run in a debug mode"
         print >> sys.stderr, "-L                          Take assembly names from their parent directory names"
-        print >> sys.stderr, "-c  --mincluster   <int>    Nucmer's parameter: the minimum length of a cluster of matches [default: %s]" % mincluster
+        print >> sys.stderr, "-c  --min-cluster   <int>   Nucmer's parameter: the minimum length of a cluster of matches [default: %s]" % min_cluster
         print >> sys.stderr, "-j  --save-json             Save the output also in the JSON format"
         print >> sys.stderr, "-J  --save-json-to <path>   Save the JSON output to a particular path"
 

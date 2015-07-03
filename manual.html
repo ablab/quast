@@ -409,6 +409,12 @@ By default, QUAST v.2.0 and higher filters out ambiguous and redundant alignment
 (or one set of non-overlapping or slightly overlapping alignments). This option makes QUAST count all alignments.
 
 <div class='option'>
+    <a name='min_alignment'></a><code><b>--min-alignment</b></code> <code>&lt;int&gt;</code>
+</div>
+Minimum length of alignment. It is Nucmer's parameter which filters all alignments shorter than the value. Default is 0 bp.
+    However, Nucmer produce only alignments longer than 65 bp (default min cluster size).
+
+<div class='option'>
     <a name='ambiguity_usage'></a><code><b>--ambiguity-usage</b> &lt;<b>none</b>|<b>one</b>|<b>all</b>&gt;</code>
 </div>
 Way of processing equally good alignments of a contig (probably repeats):<br>

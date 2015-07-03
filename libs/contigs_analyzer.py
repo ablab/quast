@@ -124,8 +124,8 @@ def run_nucmer(prefix, ref_fpath, contigs_fpath, log_out_fpath, log_err_fpath, i
     # additional GAGE params of Nucmer: '-l', '30', '-banded'
     return_code = qutils.call_subprocess(
         [bin_fpath('nucmer'),
-         '-c', str(qconfig.mincluster),
-         '-l', str(qconfig.mincluster),
+         '-c', str(qconfig.min_cluster),
+         '-l', str(qconfig.min_cluster),
          '--maxmatch',
          '-p', prefix,
          ref_fpath,
@@ -271,7 +271,7 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
 
         # Filtering by IDY% = 95 (as GAGE did)
         return_code = qutils.call_subprocess(
-            [bin_fpath('delta-filter'), '-i', '95', delta_fpath],
+            [bin_fpath('delta-filter'), '-i', '95', '-l', str(qconfig.min_alignment), delta_fpath],
             stdout=open(filtered_delta_fpath, 'w'),
             stderr=planta_err_f,
             indent='  ' + qutils.index_to_str(index))

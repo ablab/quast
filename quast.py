@@ -453,8 +453,11 @@ def main(args):
             if qconfig.max_threads < 1:
                 qconfig.max_threads = 1
 
-        elif opt in ('-c', "--mincluster"):
-            qconfig.mincluster = int(arg)
+        elif opt in ('-c', "--min-cluster"):
+            qconfig.min_cluster = int(arg)
+
+        elif opt in ('-i', "--min-alignment"):
+            qconfig.min_alignment = int(arg)
 
         elif opt == "--est-ref-size":
             qconfig.estimated_reference_size = int(arg)

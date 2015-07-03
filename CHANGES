@@ -25,14 +25,16 @@
        - contigs_report_<assembly_name>.mis_contig.info with brief details about misassembled 
          contigs only. 
 
-      4. Improved misassemblies detection algorithm:
+      4. Improved and updated misassemblies detection algorithm:
        - more accurate algorithm for processing multiple ambiguous alignments;
        - using --ambiguity-usage value for processing internal overlaps between adjacent aligned
          blocks of a misassembled contig;
        - marking of local misassemblies with small inconsistency (<= 85 bp) as fake misassemblies
          (indels or mismatches) if gap on the contig is filled mostly with Ns;
        - option --extensive-mis-size/-x to set extensive misassembly size, i.e. min inconsistency
-         size for relocations (default is 1000 as earlier).
+         size for relocations (default is 1000 as earlier);
+       - option --min-alignment/-i to set minimum alignment length (Nucmer's parameter), default
+         is 0.
 
       5. Fixed HTML-reports issues:
        - Y-axis coordinates on plots interactive hangover tooltips;

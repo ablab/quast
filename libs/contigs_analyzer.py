@@ -1496,7 +1496,7 @@ def do(reference, contigs_fpaths, cyclic, output_dir, old_contigs_fpaths):
     nucmer_output_dir = os.path.join(output_dir, nucmer_output_dirname)
     if not os.path.isdir(nucmer_output_dir):
         os.mkdir(nucmer_output_dir)
-    if reference.endswith(COMBINED_REF_FNAME):
+    if qconfig.is_combined_ref:
         from libs import search_references_meta
         if search_references_meta.is_quast_first_run:
             nucmer_output_dir = os.path.join(nucmer_output_dir, 'aux')
@@ -1541,8 +1541,8 @@ def do(reference, contigs_fpaths, cyclic, output_dir, old_contigs_fpaths):
             print >> txt_file, '  '.join('%-*s' % (colwidth, cell) for colwidth, cell
                                          in zip(colwidths, [row['metricName']] + map(val_to_str, row['values'])))
 
-    if reference.endswith(COMBINED_REF_FNAME):
-        ref_misassemblies = [result['istranslocations_by_refs'] for result in results if result]
+    if qconfig.is_combined_ref:
+        ref_misassemblies = [result['istranslocations_by_refs'] if result else None for result in results]
         if ref_misassemblies:
             all_rows = []
             cur_ref_names = []
@@ -1553,7 +1553,7 @@ def do(reference, contigs_fpaths, cyclic, output_dir, old_contigs_fpaths):
             for k in ref_misassemblies[0].keys():
                 row = {'metricName': k, 'values': []}
                 for index, fpath in enumerate(contigs_fpaths):
-                    row['values'].append(ref_misassemblies[index][k])
+                    row['values'].append(ref_misassemblies[index][k] if ref_misassemblies[index] else None)
                 all_rows.append(row)
 
             misassembly_by_ref_fpath = os.path.join(output_dir, 'interspecies_translocations_by_refs.info')

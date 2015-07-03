@@ -10,7 +10,7 @@ function showPlotWithInfo(info) {
             do {
                 var series = info.series[i];
                 i++;
-            } while (series.number != number && i <= info.series.length);
+            } while (i <= info.series.length && (series == null || series.number != number));
             //
             if (i <= info.series.length) {
                 newSeries.push(series);
@@ -150,6 +150,7 @@ function buildReport() {
         makePlot('nx', 'Nx', nx.draw, {
                 listsOfLengths: contigsLens.lists_of_lengths,
                 refLen: refLen,
+                filenames: contigsLens.filenames
             },
             null
         );
@@ -160,6 +161,7 @@ function buildReport() {
                 listsOfLengths: alignedContigsLens.lists_of_lengths,
                 listsOfAllLengths: contigsLens.lists_of_lengths,
                 refLen: refLen,
+                filenames: alignedContigsLens.filenames
             },
             null
         );
@@ -169,6 +171,7 @@ function buildReport() {
         makePlot('ngx', 'NGx', nx.draw, {
                 listsOfLengths: contigsLens.lists_of_lengths,
                 refLen: refLen,
+                filenames: contigsLens.filenames
             },
             null
         );
@@ -178,6 +181,7 @@ function buildReport() {
         makePlot('ngax', 'NGAx', nx.draw, {
                 listsOfLengths: alignedContigsLens.lists_of_lengths,
                 refLen: refLen,
+                filenames: alignedContigsLens.filenames
             },
             null
         );
@@ -212,4 +216,3 @@ function buildReport() {
 
     return 0;
 }
-

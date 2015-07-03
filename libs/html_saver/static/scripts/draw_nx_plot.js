@@ -39,24 +39,26 @@ var nx = {
 
         var listsOfLengths = data.listsOfLengths;
         var refLength = data.refLen;
-
+        var cur_filenames = data.filenames;
         var info = nx[name];
 
         if (!info.isInitialized) {
-            var plotsN = filenames.length;
+            var plotsN = cur_filenames.length;
             info.series = new Array(plotsN);
 
             for (var i = 0; i < plotsN; i++) {
+
                 var lengths = listsOfLengths[order[i]];
 
                 var size = lengths.length;
+                var index = $.inArray(cur_filenames[order[i]], filenames);
 
                 if (name == 'ngx' || name == 'ngax') {
                     sumLen = refLength;
                 } else {
                     var sumLen = 0;
                     var list_lengths = lengths;
-                    if (name == 'nax') list_lengths = data.listsOfAllLengths[order[i]];
+                    if (name == 'nax') list_lengths = data.listsOfAllLengths[index];
                     for (var j = 0; j < list_lengths.length; j++) {
                         sumLen += list_lengths[j];
                     }
@@ -64,9 +66,9 @@ var nx = {
 
                 info.series[i] = {
                     data: [],
-                    label: filenames[order[i]],
+                    label: filenames[index],
                     number: i,
-                    color: colors[order[i]],
+                    color: colors[index],
                 };
                 info.series[i].data.push([0.0, lengths[0]]);
                 var currentLen = 0;
@@ -102,7 +104,6 @@ var nx = {
             //         fillColor: false,
             //     }
             // }
-
             info.showWithData = function(series, colors) {
                 var plot = $.plot(placeholder, series, {
                         shadowSize: 0,
@@ -165,5 +166,3 @@ var nx = {
         $('#gc_info').hide();
     }
 };
-
-

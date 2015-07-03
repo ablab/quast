@@ -17,16 +17,18 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 -------------------------------------------------------------------------------
 
-Authors:
+Main authors:
     Alexey Gurevich
     Vladislav Saveliev
-    Nikolay Vyahhi
     Alla Mikheenko
-    Andrey Prjibelsky
-    Ekaterina Sosa
+    Nikolay Vyahhi
     Glenn Tesler
 
-Testers:
+Other contributors:
+    Andrey Prjibelsky
+    Aleksey Komissarov
+
+Thanks for testing and feedback:
     Irina Vasilinetc
     Dmitry Antipov
 

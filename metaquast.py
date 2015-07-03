@@ -602,7 +602,7 @@ def main(args):
 
     if downloaded_refs:
         logger.info()
-        logger.info('Excluding from further analysis downloaded references with low genome fraction..')
+        logger.info('Excluding downloaded references with low genome fraction from further analysis..')
         corr_ref_fpaths = remove_unaligned_downloaded_refs(output_dirpath, ref_fpaths, chromosomes_by_refs)
         if corr_ref_fpaths and corr_ref_fpaths != ref_fpaths:
             logger.info()
@@ -622,9 +622,9 @@ def main(args):
                 json_texts = json_texts[:-1]
                 json_texts.append(json_saver.json_text)
         elif corr_ref_fpaths == ref_fpaths:
-            logger.info('All downloaded references have genome fraction more than 10%. Nothing was deleted.')
+            logger.info('All downloaded references have genome fraction more than 10%. Nothing was excluded.')
         else:
-            logger.info('All downloaded references have low genome fraction. Nothing was deleted.')
+            logger.info('All downloaded references have low genome fraction. Nothing was excluded for now.')
 
     quast_py_args += ['--no-check-meta']
     assemblies = correct_assemblies
@@ -646,7 +646,7 @@ def main(args):
     for ref_name, ref_assemblies in assemblies_by_reference.iteritems():
         logger.info('')
         if not ref_assemblies:
-            logger.info('No contigs were aligned to the reference ' + ref_name)
+            logger.info('No contigs were aligned to the reference ' + ref_name + ', skipping..')
         else:
             ref_names.append(ref_name)
             run_name = 'for the contigs aligned to ' + ref_name

@@ -498,7 +498,7 @@ def histogram(contigs_fpaths, values, plot_fpath, title='', yaxis_title='', bott
 
     ax.axes.get_xaxis().set_visible(False)
     matplotlib.pyplot.xlim([0, start_pos * 2 + width * len(contigs_fpaths) + interval * (len(contigs_fpaths) - 1)])
-    matplotlib.pyplot.ylim([bottom_value, top_value])
+    matplotlib.pyplot.ylim([max(bottom_value, 0), top_value])
     yLocator = matplotlib.ticker.MaxNLocator(nbins=6, integer=True, steps=[1,5,10])
     ax.yaxis.set_major_locator(yLocator)
 
@@ -587,9 +587,10 @@ def draw_meta_summary_plot(labels, ref_names, all_rows, results, plot_fpath, tit
     legend = []
     for j in range(contigs_num):
         legend.append(labels[j])
-
-    ax.legend(legend, loc='center left', bbox_to_anchor=(1.0, 0.5), numpoints=1)
-
+    try:
+        ax.legend(legend, loc='center left', bbox_to_anchor=(1.0, 0.5), numpoints=1)
+    except Exception:
+        pass
     plot_fpath += plots_file_ext
     matplotlib.pyplot.tight_layout()
     matplotlib.pyplot.savefig(plot_fpath, bbox_inches='tight')
@@ -749,15 +750,17 @@ def draw_misassembl_plot(reports, plot_fpath, title='', yaxis_title=''):
     else:
         matplotlib.pyplot.ylim([0, math.ceil(ymax * 1.1)])
 
-    ax.legend(legend, loc='center left', bbox_to_anchor=(1.0, 0.5), numpoints=1)
-    current_figure = matplotlib.pyplot.gcf()
-    default_size = current_figure.get_size_inches()
-    current_figure.set_size_inches(2 * default_size)
+    try:  # for matplotlib <= 2009-12-09
+        ax.legend(legend, loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True,
+            shadow=True, numpoints=1)
+    except Exception:
+        pass
 
     plot_fpath += plots_file_ext
     matplotlib.pyplot.tight_layout()
     matplotlib.pyplot.savefig(plot_fpath, bbox_inches='tight')
     logger.info('    saved to ' + plot_fpath)
+    ax.set_position([box.x0, box.y0 + box.height * 0.2, box.width, box.height * 0.8])
     pdf_plots_figures.append(figure)
 
 

@@ -68,6 +68,9 @@ class Mapping(object):
     def __str__(self):
         return ' '.join(str(x) for x in [self.s1, self.e1, '|', self.s2, self.e2, '|', self.len1, self.len2, '|', self.idy, '|', self.ref, self.contig])
 
+    def short_str(self):
+        return ' '.join(str(x) for x in [self.s1, self.e1, '|', self.s2, self.e2, '|', self.len1, self.len2])
+
     def clone(self):
         return Mapping.from_line(str(self))
 
@@ -404,10 +407,11 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
         else:
             return False, aux_data
 
-    def exclude_internal_overlaps(align1, align2):
-        def __shift_start(align, new_start):
-            if qconfig.debug:
-                print >> planta_out_f, '\t\t\t\tchanging %s' % str(align),
+    def exclude_internal_overlaps(align1, align2, i):
+        # returns size of align1.len2 decrease (or 0 if not changed). It is important for cur_aligned_len calculation
+
+        def __shift_start(align, new_start, indent=''):
+            print >> planta_out_f, indent + '%s' % align.short_str(),
             if align.s2 < align.e2:
                 align.s1 += (new_start - align.s2)
                 align.s2 = new_start
@@ -417,12 +421,10 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
                 align.e2 = new_start
                 align.len2 = align.s2 - align.e2 + 1
             align.len1 = align.e1 - align.s1 + 1
-            if qconfig.debug:
-                print >> planta_out_f, 'to %s' % str(align)
+            print >> planta_out_f, '--> %s' % align.short_str()
 
-        def __shift_end(align, new_end):
-            if qconfig.debug:
-                print >> planta_out_f, '\t\t\t\tchanging %s' % str(align),
+        def __shift_end(align, new_end, indent=''):
+            print >> planta_out_f, indent + '%s' % align.short_str(),
             if align.s2 < align.e2:
                 align.e1 -= (align.e2 - new_end)
                 align.e2 = new_end
@@ -432,26 +434,27 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
                 align.s2 = new_end
                 align.len2 = align.s2 - align.e2 + 1
             align.len1 = align.e1 - align.s1 + 1
-            if qconfig.debug:
-                print >> planta_out_f, 'to %s' % str(align)
+            print >> planta_out_f, '--> %s' % align.short_str()
 
         if qconfig.ambiguity_usage == 'all':
-            return
+            return 0
         distance_on_contig = min(align2.e2, align2.s2) - max(align1.e2, align1.s2) - 1
         if distance_on_contig >= 0:  # no overlap
-            return
-        if qconfig.debug:
-            print >> planta_out_f, '\t\t\tExcluding internal overlap of size %d ' \
-                                   '(ambiguity_usage is "%s"):' % (-distance_on_contig, qconfig.ambiguity_usage)
+            return 0
+        prev_len2 = align1.len2
+        print >> planta_out_f, '\t\t\tExcluding internal overlap of size %d between Alignment %d and %d: ' \
+                               % (-distance_on_contig, i+1, i+2),
         if qconfig.ambiguity_usage == 'one':  # left only one of two copies (remove overlap from shorter alignment)
             if align1.len2 >= align2.len2:
                 __shift_start(align2, max(align1.e2, align1.s2) + 1)
             else:
                 __shift_end(align1, min(align2.e2, align2.s2) - 1)
         else:  # ambiguity_usage == 'none':  removing both copies
+            print >> planta_out_f
             new_end = min(align2.e2, align2.s2) - 1
-            __shift_start(align2, max(align1.e2, align1.s2) + 1)
-            __shift_end(align1, new_end)
+            __shift_start(align2, max(align1.e2, align1.s2) + 1, '\t\t\t  ')
+            __shift_end(align1, new_end, '\t\t\t  ')
+        return prev_len2 - align1.len2
 
     def check_chr_for_refs(chr1, chr2):
         return ref_labels_by_chromosomes[chr1] == ref_labels_by_chromosomes[chr2]
@@ -467,9 +470,10 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
         is_misassembled = False
         contig_is_printed = False
         indels_info = IndelsInfo()
+        contig_aligned_length = 0  # for internal debugging purposes
 
         for i in range(len(sorted_aligns) - 1):
-            exclude_internal_overlaps(sorted_aligns[i], sorted_aligns[i+1])
+            cur_aligned_length -= exclude_internal_overlaps(sorted_aligns[i], sorted_aligns[i+1], i)
             print >> planta_out_f, '\t\t\tReal Alignment %d: %s' % (i+1, str(sorted_aligns[i]))
             is_extensive_misassembly, aux_data = is_misassembly(sorted_aligns[i], sorted_aligns[i+1],
                 reg_lens if cyclic else None)
@@ -484,6 +488,7 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
             if is_extensive_misassembly:
                 is_misassembled = True
                 aligned_lengths.append(cur_aligned_length)
+                contig_aligned_length += cur_aligned_length
                 cur_aligned_length = 0
                 if not contig_is_printed:
                     print >> misassembly_file, sorted_aligns[i].contig
@@ -543,6 +548,7 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
                 else:
                     if qconfig.strict_NA:
                         aligned_lengths.append(cur_aligned_length)
+                        contig_aligned_length += cur_aligned_length
                         cur_aligned_length = 0
 
                     if inconsistency < 0:
@@ -564,6 +570,11 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
         ref_aligns.setdefault(sorted_aligns[i].ref, []).append(sorted_aligns[i])
         print >> coords_filtered_file, str(prev)
         aligned_lengths.append(cur_aligned_length)
+        contig_aligned_length += cur_aligned_length
+
+        assert contig_aligned_length <= len(contig_seq), "Internal QUAST bug: contig aligned length is greater than " \
+                                                         "contig length (contig: %s, len: %d, aligned: %d)!" % \
+                                                         (sorted_aligns[0].contig, contig_aligned_length, len(contig_seq))
 
         return is_misassembled, misassembly_internal_overlap, references_misassemblies, indels_info
     #### end of aux. functions ###

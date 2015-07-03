@@ -463,6 +463,10 @@ def main(args):
             qconfig.make_latest_symlink = False
             json_output_dirpath = arg
 
+        elif opt == '--err-fpath':  # for web-quast
+            qconfig.save_error = True
+            qconfig.error_log_fname = arg
+
         elif opt in ('-s', "--scaffolds"):
             qconfig.scaffolds = True
 
@@ -744,7 +748,7 @@ def main(args):
     logger.info('  Text versions of transposed total report are saved to ' + transposed_reports_fpaths)
 
     if json_output_dirpath:
-        json_saver.save_total_report(json_output_dirpath, qconfig.min_contig)
+        json_saver.save_total_report(json_output_dirpath, qconfig.min_contig, ref_fpath)
 
     if qconfig.html_report:
         from libs.html_saver import html_saver

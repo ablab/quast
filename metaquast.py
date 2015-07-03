@@ -279,9 +279,10 @@ def remove_unaligned_downloaded_refs(output_dirpath, ref_fpaths, chromosomes_by_
         aligned_len = 0
         all_len = 0
         for chromosome in chromosomes_by_refs[ref]:
-            aligned_len += int(refs_len[chromosome[0]][1])
-            all_len += int(refs_len[chromosome[0]][0])
-        if aligned_len > all_len * 0.1:
+            if chromosome[0] in refs_len:
+                aligned_len += int(refs_len[chromosome[0]][1])
+                all_len += int(refs_len[chromosome[0]][0])
+        if aligned_len > all_len * 0.1 and aligned_len > 0:
             corr_refs.append(ref_fpath)
     return corr_refs
 
@@ -601,7 +602,7 @@ def main(args):
 
     if downloaded_refs:
         logger.info()
-        logger.info('Removing downloaded references with low genome fraction..')
+        logger.info('Excluding from further analysis downloaded references with low genome fraction..')
         corr_ref_fpaths = remove_unaligned_downloaded_refs(output_dirpath, ref_fpaths, chromosomes_by_refs)
         if corr_ref_fpaths and corr_ref_fpaths != ref_fpaths:
             logger.info()
@@ -621,9 +622,9 @@ def main(args):
                 json_texts = json_texts[:-1]
                 json_texts.append(json_saver.json_text)
         elif corr_ref_fpaths == ref_fpaths:
-            logger.info('All downloaded references have genome fraction more than 10%')
+            logger.info('All downloaded references have genome fraction more than 10%. Nothing was deleted.')
         else:
-            logger.info('All downloaded references have low genome fraction')
+            logger.info('All downloaded references have low genome fraction. Nothing was deleted.')
 
     quast_py_args += ['--no-check-meta']
     assemblies = correct_assemblies

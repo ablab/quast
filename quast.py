@@ -426,6 +426,12 @@ def main(args):
         if opt in ('-o', "--output-dir"):
             output_dirpath = os.path.abspath(arg)
             qconfig.make_latest_symlink = False
+            if ' ' in output_dirpath:
+                logger.error('QUAST does not support spaces in paths. \n'
+                             'You have specified ' + str(output_dirpath) + ' as an output path.\n'
+                             'Please, use a different directory.\n',
+                             to_stderr=True,
+                             exit_with_code=3)
 
         elif opt in ('-G', "--genes"):
             genes_fpaths.append(assert_file_exists(arg, 'genes'))

@@ -33,12 +33,12 @@ var gns = {
         var info = gns[name];
 
         info.yAxisLabeled = false;
-
+        var cur_filenames = data.filenames;
         if (!info.isInitialized) {
             var filesFeatureInContigs = data.filesFeatureInContigs;
             var kind = data.kind;
 
-            var plotsN = filenames.length;
+            var plotsN = cur_filenames.length;
             info.series = new Array(plotsN);
 
             info.maxY = 0;
@@ -49,14 +49,15 @@ var gns = {
             }
 
             for (var fi = 0; fi < plotsN; fi++) {
-                var filename = filenames[order[fi]];
+                var index = $.inArray(cur_filenames[order[fi]], filenames);
+                var filename = filenames[index];
                 var featureInContigs = filesFeatureInContigs[filename];
 
                 info.series[fi] = {
                     data: [[0, 0]],
-                    label: filenames[order[fi]],
+                    label: filenames[index],
                     number: fi,
-                    color: colors[order[fi]],
+                    color: colors[index],
                 };
 
                 var contigNo = 0;

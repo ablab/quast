@@ -197,6 +197,7 @@ function buildReport() {
         makePlot('genes', 'Genes', gns.draw,  {
                 filesFeatureInContigs: genesInContigs.genes_in_contigs,
                 kind: 'gene',
+                filenames: genesInContigs.filenames
             },
             genesInContigs.ref_genes_number
         );
@@ -205,6 +206,7 @@ function buildReport() {
         makePlot('operons', 'Operons', gns.draw, {
                 filesFeatureInContigs: operonsInContigs.operons_in_contigs,
                 kind: 'operon',
+                filenames: operonsInContigs.filenames
             },
             operonsInContigs.ref_operons_number
         );

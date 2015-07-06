@@ -123,21 +123,23 @@ def download_blastdb():
     logger.info('Processing downloaded file. Logging to %s...' % log_fpath)
     if not os.path.isfile(silva_fpath):
         logger.info('Unpacking and replacing " " with "_"...')
-        with open(silva_fpath + ".unpacked", "wb") as db_file:
-            f = gzip.open(db_gz_fpath, 'rb')
-            db_file.write(f.read())
-        cmd = sed_cmd + " 's/ /_/g' %s" % (silva_fpath + ".unpacked")
-        qutils.call_subprocess(shlex.split(cmd), stdout=open(log_fpath, 'a'), stderr=open(log_fpath, 'a'))
-        shutil.move(silva_fpath + ".unpacked", silva_fpath)
+
+        unpacked_fpath = silva_fpath + ".unpacked"
+        cmd = "gunzip -c %s" % db_gz_fpath
+        qutils.call_subprocess(shlex.split(cmd), stdout=open(unpacked_fpath, 'w'), stderr=open(log_fpath, 'a'), logger=logger)
+
+        cmd = sed_cmd + " 's/ /_/g' %s" % unpacked_fpath
+        qutils.call_subprocess(shlex.split(cmd), stdout=open(log_fpath, 'a'), stderr=open(log_fpath, 'a'), logger=logger)
+        shutil.move(unpacked_fpath, silva_fpath)
 
     logger.info('Making BLAST database...')
     cmd = blast_fpath('makeblastdb') + (' -in %s -dbtype nucl -out %s' % (silva_fpath, db_fpath))
-    qutils.call_subprocess(shlex.split(cmd), stdout=open(log_fpath, 'w'), stderr=open(log_fpath, 'a'))
+    qutils.call_subprocess(shlex.split(cmd), stdout=open(log_fpath, 'a'), stderr=open(log_fpath, 'a'), logger=logger)
     if not os.path.exists(db_fpath + '.nsq'):
         logger.error('Failed to make BLAST database ("' + blastdb_dirpath +
                      '"). See details in log. Try to make it manually: %s' % cmd)
         return 1
-    else:
+    elif not qconfig.debug:
         os.remove(db_gz_fpath)
         os.remove(silva_fpath)
     return 0
@@ -150,7 +152,7 @@ def parallel_blast(contigs_fpath, blast_res_fpath, err_fpath, blast_check_fpath,
     res_fpath = blast_res_fpath + '_' + assembly_name
     check_fpath =  blast_check_fpath + '_' + assembly_name
     logger.info('  ' + 'processing ' + assembly_name)
-    qutils.call_subprocess(shlex.split(cmd), stdout=open(res_fpath, 'w'), stderr=open(err_fpath, 'a'))
+    qutils.call_subprocess(shlex.split(cmd), stdout=open(res_fpath, 'w'), stderr=open(err_fpath, 'a'), logger=logger)
     logger.info('  ' + 'BLAST results for %s are saved to %s...' % (assembly_name, res_fpath))
     with open(check_fpath, 'w') as check_file:
         check_file.writelines('Assembly: %s size: %d\n' % (contigs_fpath, os.path.getsize(contigs_fpath)))

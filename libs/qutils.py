@@ -163,7 +163,7 @@ def label_from_fpath_for_fname(fpath):
 
 def call_subprocess(args, stdin=None, stdout=None, stderr=None,
                     indent='',
-                    only_if_debug=True, env=None):
+                    only_if_debug=True, env=None, logger=logger):
     printed_args = args[:]
     if stdin:
         printed_args += ['<', stdin.name]

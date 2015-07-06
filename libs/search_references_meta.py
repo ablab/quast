@@ -40,8 +40,8 @@ def try_send_request(url):
     try:
         request = urlopen(url)
     except Exception:
-        logger.error('ERROR! Cannot established internet connection to download reference genomes! '
-                     'Check internet connection or run MetaQUAST with option "--max-ref-number 0".')
+        logger.error('Cannot established internet connection to download reference genomes! '
+                     'Check internet connection or run MetaQUAST with option "--max-ref-number 0".', exit_with_code=404)
     return request.read()
 
 

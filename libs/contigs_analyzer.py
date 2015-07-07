@@ -1680,7 +1680,7 @@ def do(reference, contigs_fpaths, cyclic, output_dir, old_contigs_fpaths):
     if oks == all:
         logger.info('Done.')
     if oks < all and problems < all:
-        logger.info('Done for ' + str(all - problems) + 'out of ' + str(all) + '. For the rest, only basic stats are going to be evaluated.')
+        logger.info('Done for ' + str(all - problems) + ' out of ' + str(all) + '. For the rest, only basic stats are going to be evaluated.')
     if problems == all:
         logger.info('Failed aligning the contigs for all the assemblies. Only basic stats are going to be evaluated.')
 

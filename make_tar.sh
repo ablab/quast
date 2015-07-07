@@ -19,14 +19,17 @@ cp LICENSE            release/$QUAST_FOLDER
 cp CHANGES            release/$QUAST_FOLDER
 cp README             release/$QUAST_FOLDER
 cp INSTALL            release/$QUAST_FOLDER
+cp install.sh         release/$QUAST_FOLDER
 echo Build $NOW    >> release/$QUAST_FOLDER/VERSION
 
 sh clean.sh release/$QUAST_FOLDER
 
 rm -f   release/$QUAST_FOLDER/libs/.gitignore
 rm -fr  release/$QUAST_FOLDER/quast_results
+rm -fr  release/$QUAST_FOLDER/quast_test_output
 rm -fr  release/$QUAST_FOLDER/$SITE_PACKAGES/*/test
 rm -fr  release/$QUAST_FOLDER/$SITE_PACKAGES/*/tests
+rm -fr  release/$QUAST_FOLDER/libs/blast/16S_RNA_blastdb
 
 cd release
 tar -pczf $ARCHIVE_NAME $QUAST_FOLDER

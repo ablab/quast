@@ -189,8 +189,8 @@ def usage(show_hidden=False, meta=False):
         print >> sys.stderr, "-m  --meta                            Use MetaGeneMark for gene prediction. "
         print >> sys.stderr, "    --est-ref-size <int>              Estimated reference size (for computing NGx metrics without a reference)"
     else:
-        print >> sys.stderr, "    --max-ref-number <int>            Maximum number of references (per each assembly) to download after looking in SILVA database." \
-                             "                                      Set 0 for not looking in SILVA at all [default: %s]" % max_references
+        print >> sys.stderr, "    --max-ref-number <int>            Maximum number of references (per each assembly) to download after looking in SILVA database."
+        print >> sys.stderr, "                                      Set 0 for not looking in SILVA at all [default: %s]" % max_references
     print >> sys.stderr, "    --gage                            Use GAGE (results are in gage_report.txt)"
     print >> sys.stderr, "-t  --contig-thresholds               Comma-separated list of contig length thresholds [default: %s]" % contig_thresholds
     print >> sys.stderr, "-s  --scaffolds                       Assemblies are scaffolds, split them and add contigs to the comparison"

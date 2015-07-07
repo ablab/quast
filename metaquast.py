@@ -318,7 +318,6 @@ def main(args):
         qconfig.usage(meta=True)
         sys.exit(0)
 
-    min_contig = qconfig.min_contig
     genes = []
     operons = []
     draw_plots = qconfig.draw_plots
@@ -410,7 +409,7 @@ def main(args):
                 qconfig.max_references = 0
 
         elif opt in ('-M', "--min-contig"):
-            min_contig = int(arg)
+            qconfig.min_contig = int(arg)
 
         elif opt in ('-T', "--threads"):
             qconfig.max_threads = int(arg)
@@ -447,11 +446,17 @@ def main(args):
             pass
         elif opt in ('-f', "--gene-finding"):
             pass
+        elif opt in ('-i', "--min-alignment"):
+            pass
+        elif opt in ('-c', "--min-cluster"):
+            pass
         elif opt in ('-a', "--ambiguity-usage"):
             pass
         elif opt in ('-u', "--use-all-alignments"):
             pass
         elif opt in ('-n', "--strict-NA"):
+            pass
+        elif opt in ("-x", "--extensive-mis-size"):
             pass
         elif opt in ("-m", "--meta"):
             pass

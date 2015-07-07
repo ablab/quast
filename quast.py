@@ -195,11 +195,11 @@ def _parallel_correct_contigs(file_counter, contigs_fpath, corrected_dirpath, la
 
     label = labels[file_counter]
     corr_fpath = qutils.unique_corrected_fpath(os.path.join(corrected_dirpath, label + fasta_ext))
-    logger.info('  %s ==> %s' % (contigs_fpath, label))
+    logger.info('  ' + qutils.index_to_str(file_counter, force=(len(labels) > 1)) + '%s ==> %s' % (contigs_fpath, label))
 
     # if option --scaffolds is specified QUAST adds split version of assemblies to the comparison
     if qconfig.scaffolds:
-        logger.info("  breaking scaffolds into contigs:")
+        logger.info('  ' + qutils.index_to_str(file_counter, force=(len(labels) > 1)) + '  breaking scaffolds into contigs:')
         corr_fpath_wo_ext = os.path.join(corrected_dirpath, qutils.name_from_fpath(corr_fpath))
         broken_scaffolds_fpath = corr_fpath_wo_ext + '_broken' + fasta_ext
         broken_scaffolds_fasta = []
@@ -207,11 +207,15 @@ def _parallel_correct_contigs(file_counter, contigs_fpath, corrected_dirpath, la
 
         scaffold_counter = 0
         for scaffold_counter, (name, seq) in enumerate(fastaparser.read_fasta(contigs_fpath)):
+            if contigs_counter % 100 == 0:
+                pass
+            if contigs_counter > 520:
+                pass
             cumul_contig_length = 0
             total_contigs_for_the_scaf = 1
             cur_contig_start = 0
             while (cumul_contig_length < len(seq)) and (seq.find('N', cumul_contig_length) != -1):
-                start = seq.find("N", file_counter)
+                start = seq.find("N", cumul_contig_length)
                 end = start + 1
                 while (end != len(seq)) and (seq[end] == 'N'):
                     end += 1
@@ -233,12 +237,12 @@ def _parallel_correct_contigs(file_counter, contigs_fpath, corrected_dirpath, la
             contigs_counter += total_contigs_for_the_scaf
 
         fastaparser.write_fasta(broken_scaffolds_fpath, broken_scaffolds_fasta)
-        qconfig.assembly_labels_by_fpath[broken_scaffolds_fpath] = label + ' broken'
-        logger.info("      %d scaffolds (%s) were broken into %d contigs (%s)" %
+        logger.info("  " + qutils.index_to_str(file_counter, force=(len(labels) > 1)) +
+                    "    %d scaffolds (%s) were broken into %d contigs (%s)" %
                     (scaffold_counter + 1,
-                     qutils.label_from_fpath(corr_fpath),
+                     label,
                      contigs_counter,
-                     qutils.label_from_fpath(broken_scaffolds_fpath)))
+                     label + ' broken'))
 
         broken_scaffolds = (broken_scaffolds_fpath, broken_scaffolds_fpath)
 

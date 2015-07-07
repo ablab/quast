@@ -29,8 +29,8 @@ def assert_file_exists(fpath, message='', logger=logger):
     return fpath
 
 
-def index_to_str(i):
-    if qconfig.assemblies_num == 1:
+def index_to_str(i, force=False):
+    if qconfig.assemblies_num == 1 and not force:
         return ''
     else:
         return ('%d ' + ('' if (i + 1) >= 10 else ' ')) % (i + 1)

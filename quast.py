@@ -166,6 +166,7 @@ def _correct_contigs(contigs_fpaths, corrected_dirpath, reporting, labels):
     ## 1) Some embedded tools can fail on some strings with "...", "+", "-", etc
     ## 2) Nucmer fails on names like "contig 1_bla_bla", "contig 2_bla_bla" (it interprets as a contig's name only the first word of caption and gets ambiguous contigs names)
     corrected_contigs_fpaths = []
+    old_contigs_fpaths = []
     n_jobs = min(len(contigs_fpaths), qconfig.max_threads)
     from joblib import Parallel, delayed
     corrected_fpaths = Parallel(n_jobs=n_jobs)(delayed(_parallel_correct_contigs)(i, contigs_fpath,
@@ -178,13 +179,15 @@ def _correct_contigs(contigs_fpaths, corrected_dirpath, reporting, labels):
         qconfig.assembly_labels_by_fpath[corr_fpath] = labels[i]
         if _handle_fasta(contigs_fpath, corr_fpath, reporting):
             corrected_contigs_fpaths.append(corr_fpath)
+            old_contigs_fpaths.append(contigs_fpath)
     for i, (broken_scaffold_fpath, broken_scaffold_fpath) in enumerate(broken_scaffolds):
         qconfig.assembly_labels_by_fpath[broken_scaffold_fpath] = labels[i] + ' broken'
         if _handle_fasta(broken_scaffold_fpath, broken_scaffold_fpath, reporting):
             corrected_contigs_fpaths.append(broken_scaffold_fpath)
+            old_contigs_fpaths.append(broken_scaffold_fpath)  # no "old" fpaths for broken scaffolds
             qconfig.list_of_broken_scaffolds.append(qutils.name_from_fpath(broken_scaffold_fpath))
 
-    return corrected_contigs_fpaths
+    return corrected_contigs_fpaths, old_contigs_fpaths
 
 
 def _parallel_correct_contigs(file_counter, contigs_fpath, corrected_dirpath, labels):
@@ -618,8 +621,7 @@ def main(args):
     logger.info()
     logger.info('Contigs:')
 
-    old_contigs_fpaths = contigs_fpaths
-    contigs_fpaths = _correct_contigs(contigs_fpaths, corrected_dirpath, reporting, labels)
+    contigs_fpaths, old_contigs_fpaths = _correct_contigs(contigs_fpaths, corrected_dirpath, reporting, labels)
     for contigs_fpath in contigs_fpaths:
         report = reporting.get(contigs_fpath)
         report.add_field(reporting.Fields.NAME, qutils.label_from_fpath(contigs_fpath))

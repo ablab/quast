@@ -24,6 +24,7 @@ silva_db_path = 'http://www.arb-silva.de/fileadmin/silva_databases/release_119/E
 silva_fname = 'SILVA_119_SSURef_Nr99_tax_silva.fasta'
 blastdb_dirpath = os.path.join(qconfig.LIBS_LOCATION, 'blast', '16S_RNA_blastdb')
 db_fpath = os.path.join(blastdb_dirpath, 'silva_119.db')
+db_nsq_fsize = 194318557
 
 if platform.system() == 'Darwin':
     sed_cmd = "sed -i '' "
@@ -135,7 +136,7 @@ def download_blastdb():
     logger.info('Making BLAST database...')
     cmd = blast_fpath('makeblastdb') + (' -in %s -dbtype nucl -out %s' % (silva_fpath, db_fpath))
     qutils.call_subprocess(shlex.split(cmd), stdout=open(log_fpath, 'a'), stderr=open(log_fpath, 'a'), logger=logger)
-    if not os.path.exists(db_fpath + '.nsq'):
+    if not os.path.exists(db_fpath + '.nsq') or os.path.getsize(db_fpath + '.nsq') < db_nsq_fsize:
         logger.error('Failed to make BLAST database ("' + blastdb_dirpath +
                      '"). See details in log. Try to make it manually: %s' % cmd)
         return 1
@@ -193,11 +194,12 @@ def do(assemblies, downloaded_dirpath):
     err_fpath = os.path.join(downloaded_dirpath, 'blast.err')
     if not os.path.isdir(blastdb_dirpath):
         os.mkdir(blastdb_dirpath)
-    if not os.path.isfile(db_fpath + '.nsq'):
+    if not os.path.isfile(db_fpath + '.nsq') or os.path.getsize(db_fpath + '.nsq') < db_nsq_fsize:
         return_code = download_blastdb()
         logger.info()
         if return_code != 0:
             return None
+
     blast_assemblies = assemblies[:]
     blast_check_fpath = os.path.join(downloaded_dirpath, 'blast.check')
     blast_res_fpath = os.path.join(downloaded_dirpath, 'blast.res')
@@ -306,7 +308,7 @@ def do(assemblies, downloaded_dirpath):
             else:
                 logger.info("  %s%s | successfully downloaded (total %d, %d more to go)" %
                         (organism.replace('+', ' '), spaces, total_downloaded, total_scored_left))
-            ref_fpaths.append(new_ref_fpath)
+                ref_fpaths.append(new_ref_fpath)
             downloaded_organisms.add(organism)
         elif organism not in downloaded_organisms:
             logger.info("  %s%s | not found in the NCBI database" % (organism.replace('+', ' '), spaces))

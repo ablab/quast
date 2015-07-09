@@ -68,16 +68,25 @@ def download_refs(organism, ref_fpath):
     if link_db is None:
         return None
 
+    is_first_piece = False
     for ref_id in sorted(ref_id.find('Id').text for ref_id in link_db.findall('Link')):
         fasta = try_send_request(ncbi_url + 'efetch.fcgi?db=sequences&id=%s&rettype=fasta&retmode=text' % ref_id)
         if fasta:
-            if 'complete genome' in fasta[:100]:
+            if 'complete genome' in fasta[:150]:
                 with open(ref_fpath, "w") as fasta_file:
                     fasta_file.write(fasta)
                 break
             else:
+                if 'shotgun sequence' in fasta[:150]:
+                    if not is_first_piece:
+                        is_first_piece = True
+                        if ',' in fasta[:150]:
+                            first_line = fasta[:fasta.find(',')]
+                            fasta = first_line + '\n' + fasta[fasta.find('\n')+1:]
+                    else:
+                        fasta = fasta[fasta.find('\n')+1:]
                 with open(ref_fpath, "a") as fasta_file:
-                    fasta_file.write(fasta)
+                    fasta_file.write(fasta.rstrip())
 
     if not os.path.isfile(ref_fpath):
         return None
@@ -298,7 +307,7 @@ def do(assemblies, downloaded_dirpath):
         spaces = (max_organism_name_len - len(organism)) * ' '
         new_ref_fpath = None
         was_downloaded = False
-        if not os.path.exists(ref_fpath) and organism not in not_founded_organisms and organism not in downloaded_organisms:
+        if not os.path.exists(ref_fpath) and organism not in not_founded_organisms:
             new_ref_fpath = download_refs(organism, ref_fpath)
         elif os.path.exists(ref_fpath) and organism not in downloaded_organisms:
             was_downloaded = True

@@ -233,6 +233,7 @@ def do(assemblies, downloaded_dirpath):
                     score = float(line[11])
                     if idy >= qconfig.identity_threshold and length >= qconfig.min_length and score >= qconfig.min_bitscore:  # and (not scores or min(scores) - score < max_identity_difference):
                         organism = line[1].split(';')[-1]
+                        organism = re.sub('[\[\]]', '', organism)
                         specie = organism.split('_')
                         if len(specie) > 1 and 'uncultured' not in organism:
                             specie = specie[0] + '_' + specie[1]
@@ -251,8 +252,9 @@ def do(assemblies, downloaded_dirpath):
                 scores_organisms.append(score)
         organisms_assemblies[contig_name] = [score[1] for score in all_scores]
 
-    ref_fpaths = [os.path.join(downloaded_dirpath,file) for (path, dirs, files) in os.walk(downloaded_dirpath) for file in files if qutils.check_is_fasta_file(file)]
-    if len(ref_fpaths) > 0:
+    ref_fpaths = []
+    downloaded_ref_fpaths = [os.path.join(downloaded_dirpath,file) for (path, dirs, files) in os.walk(downloaded_dirpath) for file in files if qutils.check_is_fasta_file(file)]
+    if len(downloaded_ref_fpaths) > 0:
         logger.info('Trying to use previously downloaded references...')
 
     max_organism_name_len = 0
@@ -275,6 +277,7 @@ def do(assemblies, downloaded_dirpath):
             spaces = (max_organism_name_len - len(organism)) * ' '
             logger.info("  %s%s | was downloaded previously (total %d)" %
                             (organism.replace('+', ' '), spaces, total_downloaded))
+            ref_fpaths.append(ref_fpath)
         else:
             scores_organisms.insert(0, (5000, organism))
 
@@ -305,6 +308,8 @@ def do(assemblies, downloaded_dirpath):
             if was_downloaded:
                 logger.info("  %s%s | was downloaded previously (total %d, %d more to go)" %
                             (organism.replace('+', ' '), spaces, total_downloaded, total_scored_left))
+                if new_ref_fpath not in ref_fpaths:
+                    ref_fpaths.append(new_ref_fpath)
             else:
                 logger.info("  %s%s | successfully downloaded (total %d, %d more to go)" %
                         (organism.replace('+', ' '), spaces, total_downloaded, total_scored_left))
@@ -314,7 +319,7 @@ def do(assemblies, downloaded_dirpath):
             logger.info("  %s%s | not found in the NCBI database" % (organism.replace('+', ' '), spaces))
             not_founded_organisms.add(organism)
     for contig_name in contigs_names:
-        check_fpath = blast_check_fpath  + '_' + contig_name
+        check_fpath = blast_check_fpath + '_' + contig_name
         with open(check_fpath) as check_file:
             text = check_file.read()
             text = text[:text.find('\n')]

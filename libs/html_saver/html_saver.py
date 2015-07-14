@@ -8,7 +8,7 @@ from __future__ import with_statement
 import os
 import shutil
 import re
-from libs import qconfig
+from libs import qconfig, qutils
 from libs.html_saver import json_saver
 
 from libs.log import get_logger
@@ -155,7 +155,41 @@ def create_meta_report(results_dirpath, json_texts):
     html_text = re.sub('{{ ' + keyword + ' }}', '[' + ','.join(json_texts) + ']', html_text)
     with open(html_fpath, 'w') as f_html:
         f_html.write(html_text)
+    from libs import search_references_meta
+    taxons_for_crona = search_references_meta.taxons_for_crona
     meta_log = get_logger(qconfig.LOGGER_META_NAME)
+    if taxons_for_crona:
+        meta_log.info('  Drawing interactive Krona plots...')
+        krona_dirpath = os.path.join(qconfig.LIBS_LOCATION, 'kronatools')
+        import json
+        json_data = json.loads(json_texts[0])
+        assemblies = json_data['assembliesNames']
+        crona_txt_ext = '_taxonomy.txt'
+        for index, name in enumerate(assemblies):
+            crona_file = open(os.path.join(results_dirpath, name + crona_txt_ext), 'w')
+            crona_file.close()
+        for json_text in json_texts[1:]:
+            json_data = json.loads(json_text)
+            ref = json_data['referenceName']
+            report = json_data['report'][0]
+            for metric in report[1]:
+                if metric['metricName'] == 'Total length':
+                    lengths = metric['values']
+                    break
+            for index, name in enumerate(assemblies):
+                crona_fpath = os.path.join(results_dirpath, name + crona_txt_ext)
+                with open(crona_fpath, 'a') as f_crona:
+                    if ref in taxons_for_crona:
+                        f_crona.write(str(lengths[index]) + '\t' + taxons_for_crona[ref] + '\n')
+                    else:
+                        f_crona.write(str(lengths[index]) + '\n')
+        for index, name in enumerate(assemblies):
+            crona_fpath = os.path.join(results_dirpath, name + '_taxonomy_chart.html')
+            qutils.call_subprocess(
+            ['perl', '-I', krona_dirpath + '/lib', krona_dirpath + '/scripts/ImportText.pl', os.path.join(results_dirpath, name + crona_txt_ext), '-o', crona_fpath, '-a'],
+            stdout=open(os.devnull, 'w'), stderr=open(os.devnull, 'w'))
+            meta_log.info('  Krona plot for ' + name + ' is saved to ' + crona_fpath)
+
     meta_log.info('  Extended version of HTML-report (for all references and assemblies) is saved to ' + html_fpath)
 
 

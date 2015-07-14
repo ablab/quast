@@ -116,10 +116,10 @@ Ns_break_threshold = 10
 
 # for searching references in NCBI
 downloaded_refs = False
-identity_threshold = 90 #  min % identity
+identity_threshold = 80 #  min % identity
 min_length = 300
-min_bitscore = 1000
-max_references = 30
+min_bitscore = 300
+max_references = 50
 
 
 def check_python_version():

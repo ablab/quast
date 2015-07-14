@@ -31,6 +31,7 @@ if platform.system() == 'Darwin':
 else:
     sed_cmd = 'sed -i '
 is_quast_first_run = False
+taxons_for_crona = {}
 
 def blast_fpath(fname):
     blast_dirpath = os.path.join(qconfig.LIBS_LOCATION, 'blast', qconfig.platform_name)
@@ -234,13 +235,16 @@ def do(assemblies, downloaded_dirpath):
         organisms = []
         res_fpath = blast_res_fpath + '_' + contig_name
         if os.path.exists(res_fpath):
+            refs_for_query = 0
             for line in open(res_fpath):
-                if not line.startswith('#'):
+                if refs_for_query == 0 and not line.startswith('#'):
                     line = line.split()
                     idy = float(line[2])
                     length = int(line[3])
                     score = float(line[11])
                     if idy >= qconfig.identity_threshold and length >= qconfig.min_length and score >= qconfig.min_bitscore:  # and (not scores or min(scores) - score < max_identity_difference):
+                        taxons = line[1][line[1].find('_')+1:].replace('_', " ")
+                        taxons = taxons.replace(';', '\t')
                         organism = line[1].split(';')[-1]
                         organism = re.sub('[\[\]]', '', organism)
                         specie = organism.split('_')
@@ -248,12 +252,18 @@ def do(assemblies, downloaded_dirpath):
                             specie = specie[0] + '_' + specie[1]
                             if specie not in organisms:
                                 all_scores.append((score, organism))
+                                taxons_for_crona[organism] = taxons
                                 organisms.append(specie)
+                                refs_for_query += 1
                             else:
                                 tuple_scores = [x for x in all_scores if specie in x[1]]
                                 if tuple_scores and score > tuple_scores[0][0]:
                                     all_scores.remove((tuple_scores[0][0], tuple_scores[0][1]))
                                     all_scores.append((score, organism))
+                                    taxons_for_crona[organism] = taxons
+                                    refs_for_query += 1
+                elif line.startswith('#'):
+                    refs_for_query = 0
         all_scores = sorted(all_scores, reverse=True)
         all_scores = all_scores[:qconfig.max_references]
         for score in all_scores:

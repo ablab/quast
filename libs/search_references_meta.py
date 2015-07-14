@@ -252,7 +252,7 @@ def do(assemblies, downloaded_dirpath):
                             specie = specie[0] + '_' + specie[1]
                             if specie not in organisms:
                                 all_scores.append((score, organism))
-                                taxons_for_crona[organism] = taxons
+                                taxons_for_crona[re.sub('[/.=]', '', organism)] = taxons
                                 organisms.append(specie)
                                 refs_for_query += 1
                             else:
@@ -260,7 +260,7 @@ def do(assemblies, downloaded_dirpath):
                                 if tuple_scores and score > tuple_scores[0][0]:
                                     all_scores.remove((tuple_scores[0][0], tuple_scores[0][1]))
                                     all_scores.append((score, organism))
-                                    taxons_for_crona[organism] = taxons
+                                    taxons_for_crona[re.sub('[/.=]', '', organism)] = taxons
                                     refs_for_query += 1
                 elif line.startswith('#'):
                     refs_for_query = 0

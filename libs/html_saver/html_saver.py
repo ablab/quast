@@ -178,7 +178,8 @@ def create_meta_report(results_dirpath, json_texts):
                 if metric['metricName'] == 'Total length':
                     lengths = metric['values']
                     break
-            for index, name in enumerate(assemblies):
+            cur_assemblies = json_data['assembliesNames']
+            for index, name in enumerate(cur_assemblies):
                 crona_fpath = os.path.join(results_dirpath, name + crona_txt_ext)
                 with open(crona_fpath, 'a') as f_crona:
                     if ref in taxons_for_crona:

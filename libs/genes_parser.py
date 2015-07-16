@@ -12,11 +12,11 @@ from libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 
 
-txt_pattern_gi = re.compile(r'gi\|(?P<id>\d+)\|\w+\|(?P<seqname>\S+)\|\s+(?P<gene_id>\S+)\s+(?P<start>\d+)\s+(?P<end>\d+)', re.I)
+txt_pattern_gi = re.compile(r'gi\|(?P<id>\d+)\|\w+\|(?P<seqname>\S+)\|\s+(?P<gene_id>.+)\s+(?P<start>\d+)\s+(?P<end>\d+)$', re.I)
 
-txt_pattern = re.compile(r'(?P<seqname>\S+)\s+(?P<gene_id>\S+)\s+(?P<start>\d+)\s+(?P<end>\d+)', re.I)
+txt_pattern = re.compile(r'(?P<seqname>\S+)\s+(?P<gene_id>.+)\s+(?P<start>\d+)\s+(?P<end>\d+)$', re.I)
 
-gff_pattern = re.compile(r'(?P<seqname>\S+)\s+\S+\s+(?P<feature>\S+)\s+(?P<start>\d+)\s+(?P<end>\d+)\s+\S+\s+(?P<strand>[\+\-\.]?)\s+\S+\s+(?P<attributes>.+)', re.I)
+gff_pattern = re.compile(r'(?P<seqname>\S+)\s+\S+\s+(?P<feature>\S+)\s+(?P<start>\d+)\s+(?P<end>\d+)\s+\S+\s+(?P<strand>[\+\-\.]?)\s+\S+\s+(?P<attributes>.+)$', re.I)
 
 ncbi_start_pattern = re.compile(r'(?P<number>\d+)\.\s*(?P<name>\S+)\s*$', re.I)
 

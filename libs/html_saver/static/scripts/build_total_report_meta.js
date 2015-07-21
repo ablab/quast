@@ -14,6 +14,8 @@ function fillOneRow(metric, mainMetrics, group_n, order, glossary, is_primary, r
 
     var trClass = 'content-row';
     if (metric.isMain || $.inArray(metricName, mainMetrics) > -1) {
+        var numPlot = $.inArray(metricName, mainMetrics);
+        var iconPlots = '<img id="' + numPlot + '" src="report_html_aux/img/icon_plot.png" onclick="setPlot($(this))"/>';
         (function(group_n) {
             var id_group = '#group_' + group_n;
             $(function() {
@@ -44,6 +46,7 @@ function fillOneRow(metric, mainMetrics, group_n, order, glossary, is_primary, r
         '<span class="metric-name' +
           (is_primary ? ' primary' : ' secondary') + (not_extend || !is_primary ? '' : ' expandable collapsed') + '">' +
            initial_spaces_to_nbsp(addTooltipIfDefinitionExists(glossary, rowName), metricName) +
+        (is_primary ? ("&nbsp" + iconPlots) : '') +
         '</span></td>';
           //(not_extend && metricName == '# possibly misassembled contigs' ? '&nbsp&nbsp&nbsp&nbsp' : not_extend ? '&nbsp&nbsp&nbsp&nbsp' : '')
 
@@ -52,9 +55,14 @@ function fillOneRow(metric, mainMetrics, group_n, order, glossary, is_primary, r
             values.splice(assembliesNames.indexOf(notAlignedContigs[report_n][not_aligned_n]), 0, '');
         }
     }
+    var icon_misassemblies = ''
+    if (metricName == "# misassemblies") {
 
+    }
     for (var val_n = 0; val_n < values.length; val_n++) {
         var value = values[order[val_n]];
+        var plotSrc = assembliesNames[order[val_n]] + "_misassemblies.jpg";
+        icon_misassemblies = '<img id="' + plotSrc + '" src="report_html_aux/img/icon_plot.png" onclick="setPlot($(this))"/>';
 
         if (value === null || value === '') {
             table += '<td><span>-</span></td>';
@@ -295,6 +303,8 @@ function buildTotalReport(assembliesNames, report, order, date, minContig, gloss
 
 
 function toggleSecondary(caller) {
+    var event = window.event;
+    if(event.target.nodeName == "IMG") return;
     if (!caller.hasClass('primary') || caller.hasClass('not_extend')) {
         return;
     }
@@ -311,4 +321,12 @@ function toggleSecondary(caller) {
         nextRow.css('background-color', '#F5F5DC');
         nextRow = nextRow.next('.content-row');
     }
+}
+
+function setPlot(icon) {
+    num = icon.attr('id')
+    names = ['contigs', 'largest', 'totallen', 'n50', 'misassemblies', 'misassembled', 'mismatches', 'indels',
+            'ns', 'genome', 'duplication', 'nga50'];
+    switchSpan = names[num] + '-switch';
+    document.getElementById(switchSpan).click();
 }

@@ -117,6 +117,16 @@ def save_aligned_contigs_lengths(output_dir, contigs_fpaths, lists_of_lengths):
     })
 
 
+def save_meta_summary(output_dirpath, coord_x, coord_y, name_coord, labels, refs_names):
+    coord_fn = prefix_fn + 'coord' + name_coord + suffix_fn
+    return save(output_dirpath + coord_fn, {
+        'coord_x': coord_x,
+        'coord_y': coord_y,
+        'filenames': labels,
+        'refnames': refs_names
+    })
+
+
 def save_assembly_lengths(output_dirpath, contigs_fpaths, assemblies_lengths):
     return save(output_dirpath + assemblies_lengths_fn, {
         'filenames': map(qutils.label_from_fpath, contigs_fpaths),

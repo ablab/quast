@@ -509,7 +509,7 @@ def histogram(contigs_fpaths, values, plot_fpath, title='', yaxis_title='', bott
 
 
 # metaQuast summary plots (per each metric separately)
-def draw_meta_summary_plot(labels, ref_names, all_rows, results, plot_fpath, title='', reverse=False, yaxis_title=''):
+def draw_meta_summary_plot(output_dirpath, labels, ref_names, all_rows, results, plot_fpath, title='', reverse=False, yaxis_title=''):
     if matplotlib_error:
         return
 
@@ -559,10 +559,15 @@ def draw_meta_summary_plot(labels, ref_names, all_rows, results, plot_fpath, tit
     sorted_values = sorted(itertools.izip(values, refs, arr_y_by_refs), reverse=reverse, key=lambda x: x[0])
     values, refs, arr_y_by_refs = [[x[i] for x in sorted_values] for i in range(3)]
     matplotlib.pyplot.xticks(range(1, len(refs) + 1), refs, size='small', rotation='vertical')
+    json_points_x = []
+    json_points_y = []
     for j in range(contigs_num):
         points_x = [arr_x[j][i] for i in range(len(arr_y_by_refs))]
         points_y = [arr_y_by_refs[i][j] for i in range(len(arr_y_by_refs))]
         ax.plot(points_x, points_y, 'ro:', color=colors[j])
+        json_points_x.append(points_x)
+        json_points_y.append(points_y)
+
     matplotlib.pyplot.xlim([0, ref_num + 1])
     ymax = 0
     for i in range(ref_num):
@@ -584,6 +589,10 @@ def draw_meta_summary_plot(labels, ref_names, all_rows, results, plot_fpath, tit
     if ymax == 0:
         matplotlib.pyplot.ylim([0, 5])
 
+    if qconfig.html_report:
+        from libs.html_saver import html_saver
+        html_saver.save_meta_summary(output_dirpath, json_points_x, json_points_y, title.replace(' ', '_'), labels, refs)
+
     legend = []
     for j in range(contigs_num):
         legend.append(labels[j])
@@ -591,7 +600,7 @@ def draw_meta_summary_plot(labels, ref_names, all_rows, results, plot_fpath, tit
         ax.legend(legend, loc='center left', bbox_to_anchor=(1.0, 0.5), numpoints=1)
     except Exception:
         pass
-    plot_fpath += plots_file_ext
+    plot_fpath += '.png'
     matplotlib.pyplot.tight_layout()
     matplotlib.pyplot.savefig(plot_fpath, bbox_inches='tight')
     logger.info('    saved to ' + plot_fpath)
@@ -662,7 +671,7 @@ def draw_meta_summary_misassembl_plot(results, ref_names, contig_num, plot_fpath
 
     ax.legend(legend, loc='center left', bbox_to_anchor=(1.0, 0.5), numpoints=1)
 
-    plot_fpath += plots_file_ext
+    plot_fpath += '.png'
     matplotlib.pyplot.tight_layout()
     matplotlib.pyplot.savefig(plot_fpath, bbox_inches='tight')
     logger.info('    saved to ' + plot_fpath)

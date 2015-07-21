@@ -40,6 +40,7 @@
     <script type="text/javascript" src="/static/scripts/draw_nx_plot.js"></script>
     <script type="text/javascript" src="/static/scripts/draw_gc_plot.js"></script>
     <script type="text/javascript" src="/static/scripts/draw_genes_plot.js"></script>
+    <script type="text/javascript" src="/static/scripts/draw_metasummary_plot.js"></script>
     <script type="text/javascript" src="/static/scripts/build_report_common.js"></script>
     <script type="text/javascript" src="/static/{{ buildreport }}"></script>
     <script type="text/javascript" src="/static/dragtable.js"></script>
@@ -159,6 +160,20 @@
             </div>
             <div id='operons-in-contigs-json'>
                 {{ operonsInContigs }}
+            </div>
+            <div id='summary-json'>
+                [{{ #_contigs }},
+                {{ Largest_contig }},
+                {{ Total_length }},
+                {{ N50 }},
+                {{ #_misassemblies }},
+                {{ Misassembled_contigs_length }},
+                {{ #_mismatches_per_100_kbp }},
+                {{ #_indels_per_100_kbp }},
+                {{ #_N's_per_100_kbp }},
+                {{ Genome_fraction }},
+                {{ Duplication_ratio }},
+                {{ NGA50 }}]
             </div>
             <div id='gc-json'>
                 {{ gcInfos }}

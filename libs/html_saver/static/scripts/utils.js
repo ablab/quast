@@ -65,6 +65,10 @@ function toPrettyString(num, unit) {
     }
 }
 
+function refToPrettyString(num, refs) {
+    return refs[Math.round(num)-1];
+}
+
 function ordinalNumberToPrettyString(num, unit) {
     var numStr = num.toString();
     var lastDigit = numStr[numStr.length-1];
@@ -180,6 +184,30 @@ function getContigNumberTickFormatter(maxX) {
     }
 }
 
+function getJustNumberTickFormatter(maxY, additionalText) {
+    return function (val, axis) {
+        additionalText = additionalText || '';
+        if (val > maxY + 1) {
+                res = additionalText + toPrettyString(val);
+            } else {
+                res = toPrettyString(val);
+            }
+        return res;
+    }
+}
+
+function getPercentTickFormatter(maxY, additionalText) {
+    return function (val, axis) {
+        additionalText = additionalText || '';
+            if (val > maxY + 1 || val + axis.tickSize >= 100) {
+                res = additionalText + toPrettyString(val, '%');
+            } else {
+                res = toPrettyString(val);
+            }
+        return res;
+    }
+}
+
 function trim(str) {
     return str.replace(/^\s+/g, '');
 }
@@ -217,7 +245,7 @@ function addTooltipIfDefinitionExists(glossary, metricName) {
 
 /*************/
 /* PLOT TIPS */
-function bindTip(placeholder, series, plot, xToPrettyStringFunction, xUnit, position) {
+function bindTip(placeholder, series, plot, xToPrettyStringFunction, xUnit, position, summaryPlots) {
     var prevPoint = null;
 
     $(placeholder).bind("plothover", function(event, pos, item) {
@@ -247,7 +275,7 @@ function bindTip(placeholder, series, plot, xToPrettyStringFunction, xUnit, posi
 
 var tipElementExists = false;
 function showTip(pageX, pageY, offset, plotWidth, plotHeight,
-                 series, centralSeriesIndex, xPos, xIndex, xStr, position) {
+                 series, centralSeriesIndex, xPos, xIndex, xStr, position, summaryPlots) {
     const LINE_HEIGHT = 16; // pixels
 
     position = ((position != null) ? position : 'bottom right');
@@ -291,7 +319,7 @@ function showTip(pageX, pageY, offset, plotWidth, plotHeight,
     var sortedYsAndColors = [];
     for (var i = 0; i < series.length; i++) {
         sortedYsAndColors.push({
-            y: (i == centralSeriesIndex ? (series[i].data[xIndex] || series[i].data[series[i].data.length - 1])[1] :
+            y: summaryPlots ? series[i].data[xIndex][1] : (i == centralSeriesIndex ? (series[i].data[xIndex] || series[i].data[series[i].data.length - 1])[1] :
                 findNearestPoint(series[i].data, xPos)),
             color: series[i].color,
             label: (series[i].isReference ? 'Reference' : series[i].label),

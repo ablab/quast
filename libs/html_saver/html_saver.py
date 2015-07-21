@@ -36,6 +36,7 @@ aux_files = [
     'flot/jquery.flot.dashes.js',
     'scripts/draw_cumulative_plot.js',
     'scripts/draw_nx_plot.js',
+    'scripts/draw_metasummary_plot.js',
     'scripts/draw_gc_plot.js',
     'scripts/utils.js',
     'scripts/hsvToRgb.js',
@@ -43,6 +44,7 @@ aux_files = [
     'dragtable.js',
     'ie_html5.js',
     'img/draggable.png',
+    'img/icon_plot.png',
     'bootstrap/bootstrap-tooltip-5px-lower.min.js',
     'bootstrap/bootstrap.min.css',
     'bootstrap/bootstrap.min.js',
@@ -145,14 +147,21 @@ def append(results_dirpath, json_fpath, keyword):
     return json_text
 
 
-def create_meta_report(results_dirpath, json_texts):
+def init_meta_report(results_dirpath):
     html_fpath = os.path.join(results_dirpath, report_fname)
     init(results_dirpath, True)
+
+
+def create_meta_report(results_dirpath, json_texts):
+    html_fpath = os.path.join(results_dirpath, report_fname)
+    if not os.path.isfile(html_fpath):
+        init(results_dirpath, True)
     # reading html template file
     with open(html_fpath) as f_html:
         html_text = f_html.read()
     keyword = 'totalReport'
     html_text = re.sub('{{ ' + keyword + ' }}', '[' + ','.join(json_texts) + ']', html_text)
+    html_text = re.sub(r'{{(\s+\w+\s+)}}', '{}', html_text)
     with open(html_fpath, 'w') as f_html:
         f_html.write(html_text)
     from libs import search_references_meta
@@ -221,6 +230,13 @@ def save_contigs_lengths(results_dirpath, contigs_fpaths, lists_of_lengths):
     json_fpath = json_saver.save_contigs_lengths(results_dirpath, contigs_fpaths, lists_of_lengths)
     if json_fpath:
         append(results_dirpath, json_fpath, 'contigsLenghts')
+
+
+def save_meta_summary(results_dirpath, coord_x, coord_y, name_coord, labels, refs):  # coordinates for Nx, NAx, NGx, NGAX
+    name_coord = name_coord.replace('_(%)', '')
+    json_fpath = json_saver.save_meta_summary(results_dirpath, coord_x, coord_y, name_coord, labels, refs)
+    if json_fpath:
+        append(results_dirpath, json_fpath, name_coord)
 
 
 def save_reference_length(results_dirpath, reference_length):

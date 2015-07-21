@@ -693,6 +693,9 @@ def main(args):
         summary_dirpath = os.path.join(output_dirpath, 'summary')
         if not os.path.isdir(summary_dirpath):
             os.mkdir(summary_dirpath)
+        if html_report and json_texts:
+            from libs.html_saver import html_saver
+            html_saver.init_meta_report(summary_dirpath)
         if draw_plots:
             from libs import create_meta_summary
             metrics_for_plots = reporting.Fields.main_metrics
@@ -700,7 +703,6 @@ def main(args):
                                reporting.Fields.MIS_ISTRANSLOCATIONS]
             create_meta_summary.do(output_dirpath, summary_dirpath, labels, metrics_for_plots, misassembl_metrics, ref_names)
         if html_report and json_texts:
-            from libs.html_saver import html_saver
             html_saver.create_meta_report(summary_dirpath, json_texts)
 
     quast._cleanup(corrected_dirpath)

@@ -85,9 +85,16 @@ def do(output_dirpath, summary_dirpath, labels, metrics, misassembl_metrics, ref
                             if results:
                                 mis_results.append(results)
                         if mis_results:
+                            json_points = []
                             for contig_num in range(contigs_num):
                                 summary_fpath_base = os.path.join(summary_dirpath, labels[contig_num] + '_misassemblies')
-                                plotter.draw_meta_summary_misassembl_plot(mis_results, cur_ref_names, contig_num, summary_fpath_base, title=labels[contig_num])
+                                json_points.append(plotter.draw_meta_summary_misassembl_plot(mis_results, cur_ref_names, contig_num, summary_fpath_base, title=labels[contig_num]))
+                            if qconfig.html_report:
+                                from libs.html_saver import html_saver
+                                if ref_names[-1] == qconfig.not_aligned_name:
+                                    cur_ref_names = ref_names[:-1]
+                                if json_points:
+                                    html_saver.save_meta_misassemblies(summary_dirpath, json_points, labels, cur_ref_names)
     logger.info('')
     logger.info('  Text versions of reports and plots for each metric (for all references and assemblies) are saved to ' + summary_dirpath + '/')
 

@@ -29,6 +29,8 @@
     <script type="text/javascript" src="/static/jquery-1.8.2.min.js"></script>
     <script type="text/javascript" src="/static/flot/jquery.flot.min.js"></script>
     <script type="text/javascript" src="/static/flot/jquery.flot.dashes.js"></script>
+    <script type="text/javascript" src="/static/flot/jquery.flot.tickrotor.js"> </script>
+    <script type="text/javascript" src="/static/flot/jquery.flot.stack.js"> </script>
     <script type="text/javascript" src="/static/bootstrap/bootstrap.min.js"></script>
     <script type="text/javascript" src="/static/bootstrap/bootstrap-tooltip-vlad.js"></script>
 
@@ -41,6 +43,7 @@
     <script type="text/javascript" src="/static/scripts/draw_gc_plot.js"></script>
     <script type="text/javascript" src="/static/scripts/draw_genes_plot.js"></script>
     <script type="text/javascript" src="/static/scripts/draw_metasummary_plot.js"></script>
+    <script type="text/javascript" src="/static/scripts/draw_meta_misassembl_plot.js"></script>
     <script type="text/javascript" src="/static/scripts/build_report_common.js"></script>
     <script type="text/javascript" src="/static/{{ buildreport }}"></script>
     <script type="text/javascript" src="/static/dragtable.js"></script>
@@ -162,18 +165,21 @@
                 {{ operonsInContigs }}
             </div>
             <div id='summary-json'>
-                [{{ #_contigs }},
+                [{{ num_contigs }},
                 {{ Largest_contig }},
                 {{ Total_length }},
                 {{ N50 }},
-                {{ #_misassemblies }},
+                {{ num_misassemblies }},
                 {{ Misassembled_contigs_length }},
-                {{ #_mismatches_per_100_kbp }},
-                {{ #_indels_per_100_kbp }},
-                {{ #_N's_per_100_kbp }},
+                {{ num_mismatches_per_100_kbp }},
+                {{ num_indels_per_100_kbp }},
+                {{ num_N's_per_100_kbp }},
                 {{ Genome_fraction }},
                 {{ Duplication_ratio }},
                 {{ NGA50 }}]
+            </div>
+            <div id='misassemblies-json'>
+                {{ allMisassemblies }}
             </div>
             <div id='gc-json'>
                 {{ gcInfos }}

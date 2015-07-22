@@ -200,7 +200,7 @@ def cumulative_plot(reference, contigs_fpaths, lists_of_lengths, plot_fpath, tit
 
 
 # common routine for Nx-plot and NGx-plot (and probably for others Nyx-plots in the future)
-def Nx_plot(contigs_fpaths, lists_of_lengths, plot_fpath, title='Nx', reference_lengths=None):
+def Nx_plot(results_dir, reduce_points, contigs_fpaths, lists_of_lengths, plot_fpath, title='Nx', reference_lengths=None):
     if matplotlib_error:
         return
 
@@ -213,8 +213,16 @@ def Nx_plot(contigs_fpaths, lists_of_lengths, plot_fpath, title='Nx', reference_
     max_y = 0
 
     color_id = 0
+    json_vals_x = []  # coordinates for Nx-like plots in HTML-report
+    json_vals_y = []
 
     for id, (contigs_fpath, lengths) in enumerate(itertools.izip(contigs_fpaths, lists_of_lengths)):
+        if not lengths:
+            json_vals_x.append([])
+            json_vals_y.append([])
+            continue
+        vals_x = [0.0]
+        vals_y = [lengths[0]]
         lengths.sort(reverse=True)
         # calculate values for the plot
         vals_Nx = [0.0]
@@ -224,6 +232,9 @@ def Nx_plot(contigs_fpaths, lists_of_lengths, plot_fpath, title='Nx', reference_
         lsum = sum(lengths)
         if reference_lengths:
             lsum = reference_lengths[id]
+        min_difference = 0
+        if reduce_points:
+            min_difference = qconfig.min_difference
         for l in lengths:
             lcur += l
             x = lcur * 100.0 / lsum
@@ -231,14 +242,27 @@ def Nx_plot(contigs_fpaths, lists_of_lengths, plot_fpath, title='Nx', reference_
             vals_l.append(l)
             vals_Nx.append(x)
             vals_l.append(l)
+            if vals_y[-1] - l > min_difference or len(vals_x) == 1:
+                vals_x.append(vals_x[-1] + 1e-10) # eps
+                vals_y.append(l)
+                vals_x.append(x)
+                vals_y.append(l)
             # add to plot
 
         vals_Nx.append(vals_Nx[-1] + 1e-10) # eps
         vals_l.append(0.0)
+        vals_x.append(vals_x[-1] + 1e-10) # eps
+        vals_y.append(0.0)
+        json_vals_x.append(vals_x)
+        json_vals_y.append(vals_y)
         max_y = max(max_y, max(vals_l))
 
         color, ls, color_id = get_color_and_ls(color_id, contigs_fpath)
         matplotlib.pyplot.plot(vals_Nx, vals_l, color=color, lw=line_width, ls=ls)
+
+    if qconfig.html_report:
+        from libs.html_saver import html_saver
+        html_saver.save_coord(results_dir, json_vals_x, json_vals_y, 'coord' + title, contigs_fpaths)
 
     if with_title:
         matplotlib.pyplot.title(title)
@@ -629,6 +653,8 @@ def draw_meta_summary_misassembl_plot(results, ref_names, contig_num, plot_fpath
     ymax = 0
     arr_x = range(1, refs_num + 1)
     bar_width = 0.3
+    json_points_x = []
+    json_points_y = []
 
     for j in range(refs_num):
         ymax_j = 0
@@ -641,19 +667,25 @@ def draw_meta_summary_misassembl_plot(results, ref_names, contig_num, plot_fpath
                 ax.bar(arr_x[j], to_plot[0], width=bar_width, color=colors[type_misassembly])
                 legend_n.append(type_misassembly)
                 ymax_j = float(to_plot[0])
+                json_points_x.append(arr_x[j])
+                json_points_y.append(to_plot[0])
             type_misassembly += 1
         for i in range(type_misassembly, len(misassemblies)):
             result = results[i][j][contig_num]
             if result and result != '-':
                 to_plot.append(float(result))
-                ax.bar(arr_x[j], to_plot[-1], width=bar_width, color=colors[i], bottom = sum(to_plot[:-1]))
+                ax.bar(arr_x[j], to_plot[-1], width=bar_width, color=colors[i], bottom=sum(to_plot[:-1]))
                 legend_n.append(i)
                 ymax_j += float(to_plot[-1])
+                json_points_x.append(arr_x[j])
+                json_points_y.append(to_plot[-1])
         if to_plot:
             ymax = max(ymax, ymax_j)
             refs.append(ref_names[j])
         else:
             arr_x.insert(j, None)
+            json_points_x.append(j)
+            json_points_y.append(None)
 
     matplotlib.pyplot.xticks(range(1, len(refs) + 1), refs, size='small', rotation='vertical')
     legend_n = set(legend_n)
@@ -675,6 +707,7 @@ def draw_meta_summary_misassembl_plot(results, ref_names, contig_num, plot_fpath
     matplotlib.pyplot.tight_layout()
     matplotlib.pyplot.savefig(plot_fpath, bbox_inches='tight')
     logger.info('    saved to ' + plot_fpath)
+    return json_points_x, json_points_y
 
 
 # Quast misassemblies by types plot (for all assemblies)

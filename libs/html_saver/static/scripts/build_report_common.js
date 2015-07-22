@@ -1,17 +1,18 @@
-function showPlotWithInfo(info) {
+function showPlotWithInfo(info, index) {
     var newSeries = [];
     var newColors = [];
-
+    var oldSeries = info.series;
+    if (index != undefined) oldSeries = info.series[index];
     $('#legend-placeholder').find('input:checked').each(function() {
         var number = $(this).attr('name');
-        if (number && info.series && info.series.length > 0) {
+        if (number && oldSeries && oldSeries.length > 0) {
             var i = 0;
             do {
-                var series = info.series[i];
+                var series = oldSeries[i];
                 i++;
-            } while (i <= info.series.length && (series == null || series.number != number));
+            } while (i <= oldSeries.length && (series == null || series.number != number));
             //
-            if (i <= info.series.length) {
+            if (i <= oldSeries.length) {
                 newSeries.push(series);
                 newColors.push(series.color);
             } else {

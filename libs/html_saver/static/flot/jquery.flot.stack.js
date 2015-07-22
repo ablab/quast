@@ -43,21 +43,52 @@ adjusted (e.g for bar charts or filled areas).
                 if (s == allseries[i])
                     break;
                 
-                if (allseries[i].stack == s.stack)
+                if (allseries[i].stack == s.stack && allseries[i].datapoints.points.length != 0 )
                     res = allseries[i];
             }
-            
+			
             return res;
         }
         
         function stackData(plot, s, datapoints) {
-            if (s.stack == null)
+            if (s.stack == null || datapoints.points.length == 0)
                 return;
-
+		
             var other = findMatchingSeries(s, plot.getData());
+
             if (!other)
                 return;
-
+            
+            // less points ? add points to match the previous serie
+            if ( other.datapoints.points.length > datapoints.points.length ) {
+            	var completedpoints = [];
+            	var w = 0, x = 0, y = 0, z = -1,
+            		ods = other.datapoints.points.length,
+            		ops = other.datapoints.pointsize,
+            		ds = datapoints.points.length,
+            		dps = datapoints.pointsize;
+            	for( x = 0; x < ods; x += ops ) {
+            		z = -1;
+            		for( y = 0; y < ds ; y += dps ) {
+            			if ( other.datapoints.points[x] == datapoints.points[y] ) {
+            				z = y;
+            				break;
+            			}
+            		}
+            		if ( z > -1 ) {
+            			for( w = 0; w < dps; ++w )
+            				completedpoints.push( datapoints.points[z + w] );
+            		}
+            		else {
+            			completedpoints.push( other.datapoints.points[x] );
+						for( w = 1; w < ops; ++w )
+							completedpoints.push( 0 );
+            		}
+            	}
+            	s.datapoints.points = completedpoints;
+            	datapoints.points = completedpoints;
+            }
+	
             var ps = datapoints.pointsize,
                 points = datapoints.points,
                 otherps = other.datapoints.pointsize,
@@ -86,7 +117,7 @@ adjusted (e.g for bar charts or filled areas).
                     i += ps;
                 }
                 else if (j >= otherpoints.length) {
-                    // for lines, we can't use the rest of the points
+					// for lines, we can't use the rest of the points
                     if (!withlines) {
                         for (m = 0; m < ps; ++m)
                             newpoints.push(points[i + m]);
@@ -132,7 +163,7 @@ adjusted (e.g for bar charts or filled areas).
 
                         j += otherps;
                     }
-                    else { // px < qx
+                    else { // px < qx	
                         if (fromgap && withlines) {
                             // if we come from a gap, we just skip this point
                             i += ps;

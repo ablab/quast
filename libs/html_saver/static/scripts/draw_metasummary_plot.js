@@ -91,6 +91,16 @@ var summary = {
     draw: function (name, title, colors, filenames, data, refPlotValue, tickX,
                     placeholder, legendPlaceholder, glossary, order, scalePlaceholder) {
 
+        $('#legend-placeholder').empty();
+        
+        filenames.forEach(function(filename, i) {
+        var id = 'label_' + i + '_id';
+        $('#legend-placeholder').append('<div>' +
+            '<label for="' + id + '" style="color: ' + colors[i] + '">' +
+            '<input type="checkbox" name="' + i + '" checked="checked" id="' + id + '">&nbsp;' + filename + '</label>' +
+            '</div>');
+        });
+
         $(scalePlaceholder).empty();
 
         var coordX = data.coord_x;
@@ -141,6 +151,11 @@ var summary = {
                 yFormatter = getJustNumberTickFormatter;
             else if (name == 'genome')
                 yFormatter = getPercentTickFormatter;
+                var refTicks = [];
+                for (var i = 0; i < refs.length; i++)
+                {
+                    refTicks.push([i+1,refs[i]]);
+                }
             info.showWithData = function(series, colors) {
                 var plot = $.plot(placeholder, series, {
                         shadowSize: 0,
@@ -168,12 +183,9 @@ var summary = {
                             min: 0,
                             max: refs.length+1,
                             lineWidth: 1,
+                            rotateTicks: 90,
                             color: '#000',
-                            tickFormatter: function (val, axis) {
-                                    if (refs[val-1] != undefined)
-                                        return refs[val-1];
-                                    else return '';
-                            }
+                            ticks: refTicks
                         },
                         minTickSize: 1,
                     }

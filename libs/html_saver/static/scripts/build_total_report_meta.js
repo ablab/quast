@@ -46,7 +46,7 @@ function fillOneRow(metric, mainMetrics, group_n, order, glossary, is_primary, r
         '<span class="metric-name' +
           (is_primary ? ' primary' : ' secondary') + (not_extend || !is_primary ? '' : ' expandable collapsed') + '">' +
            initial_spaces_to_nbsp(addTooltipIfDefinitionExists(glossary, rowName), metricName) +
-        (is_primary ? ("&nbsp" + iconPlots) : '') +
+        (metric.isMain ? ("&nbsp" + iconPlots) : '') +
         '</span></td>';
           //(not_extend && metricName == '# possibly misassembled contigs' ? '&nbsp&nbsp&nbsp&nbsp' : not_extend ? '&nbsp&nbsp&nbsp&nbsp' : '')
 
@@ -311,11 +311,6 @@ function toggleSecondary(caller) {
     var nextRow = caller.next('.content-row');
     $(caller).find('.metric-name').toggleClass('collapsed').toggleClass('expanded');
 
-    //var sign = nextRow.css('display') == 'none' ? '&minus;' : '+';
-    //var sign_span = '<span class="expand_sign" style="color: gray; cursor: pointer">' + sign + '</span>';
-    //var leftColumn = caller.context.firstChild;
-    //var index = leftColumn.innerHTML.indexOf('>') + 1;
-    //leftColumn.innerHTML = leftColumn.innerHTML.substr(0, index) + sign_span + leftColumn.innerHTML.substr(index+1);
     while (!nextRow.hasClass('primary') && (nextRow.length > 0)) {
         nextRow.toggleClass('secondary_hidden');
         nextRow.css('background-color', '#F5F5DC');

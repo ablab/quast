@@ -36,7 +36,6 @@ aux_files = [
     'flot/jquery.flot.dashes.js',
     'scripts/draw_cumulative_plot.js',
     'scripts/draw_nx_plot.js',
-    'scripts/draw_metasummary_plot.js',
     'scripts/draw_gc_plot.js',
     'scripts/utils.js',
     'scripts/hsvToRgb.js',
@@ -56,7 +55,8 @@ aux_files = [
 ]
 
 aux_simple_files = ['scripts/build_report.js', 'scripts/build_total_report.js']
-aux_meta_files = ['scripts/build_report_meta.js', 'scripts/build_total_report_meta.js']
+aux_meta_files = ['scripts/build_report_meta.js', 'scripts/build_total_report_meta.js',
+    'flot/jquery.flot.tickrotor.js', 'flot/jquery.flot.stack.js', 'scripts/draw_metasummary_plot.js', 'scripts/draw_meta_misassembl_plot.js',]
 
 
 def init(results_dirpath, is_meta=False):
@@ -234,7 +234,17 @@ def save_contigs_lengths(results_dirpath, contigs_fpaths, lists_of_lengths):
 
 def save_meta_summary(results_dirpath, coord_x, coord_y, name_coord, labels, refs):  # coordinates for Nx, NAx, NGx, NGAX
     name_coord = name_coord.replace('_(%)', '')
+    name_coord = name_coord.replace('#', 'num')
     json_fpath = json_saver.save_meta_summary(results_dirpath, coord_x, coord_y, name_coord, labels, refs)
+    if json_fpath:
+        append(results_dirpath, json_fpath, name_coord)
+
+
+def save_meta_misassemblies(results_dirpath, coords, labels, refs):  # coordinates for Nx, NAx, NGx, NGAX
+    name_coord = 'allMisassemblies'
+    coords_x = [coord[0] for coord in coords]
+    coords_y = [coord[1] for coord in coords]
+    json_fpath = json_saver.save_meta_misassemblies(results_dirpath, coords_x, coords_y, name_coord, labels, refs)
     if json_fpath:
         append(results_dirpath, json_fpath, name_coord)
 

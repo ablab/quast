@@ -318,13 +318,16 @@ function showTip(pageX, pageY, offset, plotWidth, plotHeight,
 
     var sortedYsAndColors = [];
     for (var i = 0; i < series.length; i++) {
-        sortedYsAndColors.push({
-            y: summaryPlots ? series[i].data[xIndex][1] : (i == centralSeriesIndex ? (series[i].data[xIndex] || series[i].data[series[i].data.length - 1])[1] :
-                findNearestPoint(series[i].data, xPos)),
-            color: series[i].color,
-            label: (series[i].isReference ? 'Reference' : series[i].label),
-            isCurrent: i == centralSeriesIndex,
-        });
+        var nearestPoint = series[i].data[xIndex][1]
+        if (!summaryPlots || (summaryPlots && nearestPoint != null)) {
+            sortedYsAndColors.push({
+                y: summaryPlots ? nearestPoint : (i == centralSeriesIndex ? (series[i].data[xIndex] || series[i].data[series[i].data.length - 1])[1] :
+                    findNearestPoint(series[i].data, xPos)),
+                color: series[i].color,
+                label: (series[i].isReference ? 'Reference' : series[i].label),
+                isCurrent: i == centralSeriesIndex,
+            });
+        }
     }
     sortedYsAndColors.sort(function(a, b) { return a.y < b.y;});
 

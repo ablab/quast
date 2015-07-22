@@ -4,6 +4,8 @@
 # See file LICENSE for details.
 ############################################################################
 
+
+
 import os
 import shutil
 import qconfig
@@ -23,13 +25,13 @@ def get_results_for_metric(ref_names, metric, contigs_num, labels, output_dirpat
         row = {'metricName': labels[i], 'values': []}
         all_rows.append(row)
     for i, ref_name in enumerate(ref_names):
-        results.append([])
         results_fpath = os.path.join(output_dirpath, ref_name + '_quast_output', report_fname)
         results_file = open(results_fpath, 'r')
         columns = map(lambda s: s.strip(), results_file.readline().split('\t'))
         if metric not in columns:
             all_rows[0]['values'] = cur_ref_names
-            break
+            continue
+        results.append([])
         cur_ref_names.append(ref_name)
         next_values = map(lambda s: s.strip(), results_file.readline().split('\t'))
         cur_results = [None] * len(labels)
@@ -42,7 +44,7 @@ def get_results_for_metric(ref_names, metric, contigs_num, labels, output_dirpat
                 cur_results[index_contig] = metr_res
         for j in range(contigs_num):
             all_rows[j + 1]['values'].append(cur_results[j])
-            results[i].append(cur_results[j])
+            results[-1].append(cur_results[j])
     if not cur_ref_names:
         cur_ref_names = ref_names
     return results, all_rows, cur_ref_names

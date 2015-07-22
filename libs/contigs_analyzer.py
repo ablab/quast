@@ -897,7 +897,6 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
                             if qconfig.meta:
                                 contigs_with_istranslocations += 1
 
-
                     ref_aligns.setdefault(sorted_aligns[0].ref, []).append(sorted_aligns[0])
                 else:
                     #Sort real alignments by position on the contig
@@ -1560,7 +1559,10 @@ def do(reference, contigs_fpaths, cyclic, output_dir, old_contigs_fpaths):
             for k in ref_misassemblies[0].keys():
                 row = {'metricName': k, 'values': []}
                 for index, fpath in enumerate(contigs_fpaths):
-                    row['values'].append(ref_misassemblies[index][k] if ref_misassemblies[index] else None)
+                    if ref_misassemblies[index]:
+                        row['values'].append(ref_misassemblies[index][k])
+                    else:
+                        row['values'].append(None)
                 all_rows.append(row)
 
             misassembly_by_ref_fpath = os.path.join(output_dir, 'interspecies_translocations_by_refs.info')

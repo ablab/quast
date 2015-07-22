@@ -21,6 +21,12 @@ def GC_content(contigs_fpath, skip=False):
     """
        Returns percent of GC for assembly and GC distribution: (list of GC%, list of # windows)
     """
+    if not reference:
+        assembly_label = qutils.label_from_fpath(contigs_fpath)
+        logger.info('    ' + qutils.index_to_str(index) + assembly_label)
+        #lists_of_lengths.append(fastaparser.get_lengths_from_fastafile(contigs_fpath))
+        list_of_length = []
+        number_of_Ns = 0
     total_GC_amount = 0
     total_contig_length = 0
     GC_bin_num = int(100 / qconfig.GC_bin_size) + 1
@@ -74,8 +80,10 @@ def GC_content(contigs_fpath, skip=False):
         total_GC = None
     else:
         total_GC = total_GC_amount * 100.0 / total_contig_length
-
-    return total_GC, (GC_distribution_x, GC_distribution_y)
+    if not reference:
+        return list_of_length, number_of_Ns, total_GC, (GC_distribution_x, GC_distribution_y)
+    else:
+        return total_GC, (GC_distribution_x, GC_distribution_y)
 
 
 def do(ref_fpath, contigs_fpaths, output_dirpath, json_output_dir, results_dir):
@@ -94,6 +102,7 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, json_output_dir, results_dir):
         logger.info('    ' + os.path.basename(ref_fpath) + ', Reference length = ' + str(reference_length) + ', Reference GC % = ' + '%.2f' % reference_GC)
     elif qconfig.estimated_reference_size:
         reference_length = qconfig.estimated_reference_size
+        qconfig.ref_len = reference_length
         logger.info('  Estimated reference length = ' + str(reference_length))
 
     if reference_length:
@@ -122,22 +131,42 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, json_output_dir, results_dir):
 
         lists_of_lengths.append(list_of_length)
         numbers_of_Ns.append(number_of_Ns)
+        
+    num_contigs = max([len(list_of_length) for list_of_length in lists_of_lengths])
+
+    multiplicator = 1
+    if num_contigs > qconfig.max_points:
+        import math
+        multiplicator = int(math.ceil(int(num_contigs/qconfig.max_points)))
+        lists_of_lengths = [sorted(list, reverse=True) for list in lists_of_lengths]
+        corr_lists_of_lengths = [[sum(list_of_length[((i-1)*multiplicator):(i*multiplicator)]) for i in range(1, qconfig.max_points) if (i*multiplicator) < len(list_of_length)]
+                            for list_of_length in lists_of_lengths]
+        for num_list in range(len(corr_lists_of_lengths)):
+            list_len = len(lists_of_lengths[num_list])
+            last_index = (int(list_len/multiplicator)-1)*multiplicator
+            corr_lists_of_lengths[num_list].append(sum(lists_of_lengths[num_list][last_index:]))
+    else:
+        corr_lists_of_lengths = lists_of_lengths
 
     # saving lengths to JSON
     if json_output_dir:
-        json_saver.save_contigs_lengths(json_output_dir, contigs_fpaths, lists_of_lengths)
+        json_saver.save_contigs_lengths(json_output_dir, contigs_fpaths, corr_lists_of_lengths)
+        json_saver.save_tick_x(output_dirpath, multiplicator)
 
     if qconfig.html_report:
         from libs.html_saver import html_saver
-        html_saver.save_contigs_lengths(results_dir, contigs_fpaths, lists_of_lengths)
+        html_saver.save_contigs_lengths(results_dir, contigs_fpaths, corr_lists_of_lengths)
+        html_saver.save_tick_x(results_dir, multiplicator)
 
     ########################################################################
 
     logger.info('  Calculating N50 and L50...')
 
     list_of_GC_distributions = []
+    largest_contig = 0
     import N50
-    for id, (contigs_fpath, lengths_list, number_of_Ns) in enumerate(itertools.izip(contigs_fpaths, lists_of_lengths, numbers_of_Ns)):
+    for id, (contigs_fpath, lengths_list, number_of_Ns, total_GC, GC_distribution) in \
+            enumerate(itertools.izip(contigs_fpaths, lists_of_lengths, numbers_of_Ns, total_GCs, GC_distributions)):
         report = reporting.get(contigs_fpath)
         n50, l50 = N50.N50_and_L50(lengths_list)
         ng50, lg50 = None, None
@@ -156,7 +185,7 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, json_output_dir, results_dir):
                     ', L50 = ' + str(l50) + \
                     ', Total length = ' + str(total_length) + \
                     ', GC % = ' + ('%.2f' % total_GC if total_GC is not None else 'undefined') + \
-                    ', # N\'s per 100 kbp = ' + ' %.2f' % (float(number_of_Ns) * 100000.0 / float(total_length)) )
+                    ', # N\'s per 100 kbp = ' + ' %.2f' % (float(number_of_Ns) * 100000.0 / float(total_length)) if total_length != 0 else 'undefined')
         
         report.add_field(reporting.Fields.N50, n50)
         report.add_field(reporting.Fields.L50, l50)
@@ -169,16 +198,21 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, json_output_dir, results_dir):
             report.add_field(reporting.Fields.NG75, ng75)
             report.add_field(reporting.Fields.LG75, lg75)
         report.add_field(reporting.Fields.CONTIGS, len(lengths_list))
-        report.add_field(reporting.Fields.LARGCONTIG, max(lengths_list))
-        report.add_field(reporting.Fields.TOTALLEN, total_length)
-        report.add_field(reporting.Fields.GC, ('%.2f' % total_GC if total_GC is not None else None))
-        report.add_field(reporting.Fields.UNCALLED, number_of_Ns)
-        report.add_field(reporting.Fields.UNCALLED_PERCENT, ('%.2f' % (float(number_of_Ns) * 100000.0 / float(total_length))))
+        if lengths_list:
+            report.add_field(reporting.Fields.LARGCONTIG, max(lengths_list))
+            largest_contig = max(largest_contig, max(lengths_list))
+            report.add_field(reporting.Fields.TOTALLEN, total_length)
+            report.add_field(reporting.Fields.GC, ('%.2f' % total_GC if total_GC is not None else None))
+            report.add_field(reporting.Fields.UNCALLED, number_of_Ns)
+            report.add_field(reporting.Fields.UNCALLED_PERCENT, ('%.2f' % (float(number_of_Ns) * 100000.0 / float(total_length))))
         if ref_fpath:
             report.add_field(reporting.Fields.REFLEN, int(reference_length))
             report.add_field(reporting.Fields.REFGC, '%.2f' % reference_GC)
         elif reference_length:
             report.add_field(reporting.Fields.ESTREFLEN, int(reference_length))
+
+    import math
+    qconfig.min_difference = math.ceil((largest_contig/1000)/600)  # divide on height of plot
 
     if json_output_dir:
         json_saver.save_GC_info(json_output_dir, contigs_fpaths, list_of_GC_distributions)
@@ -202,8 +236,8 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, json_output_dir, results_dir):
 
         ########################################################################
         # Drawing Nx and NGx plots...
-        plotter.Nx_plot(contigs_fpaths, lists_of_lengths, output_dirpath + '/Nx_plot', 'Nx', [])
+        plotter.Nx_plot(results_dir, num_contigs > qconfig.max_points, contigs_fpaths, lists_of_lengths, output_dirpath + '/Nx_plot', 'Nx', [])
         if reference_length:
-            plotter.Nx_plot(contigs_fpaths, lists_of_lengths, output_dirpath + '/NGx_plot', 'NGx', [reference_length for i in range(len(contigs_fpaths))])
+            plotter.Nx_plot(results_dir, num_contigs > qconfig.max_points, contigs_fpaths, lists_of_lengths, output_dirpath + '/NGx_plot', 'NGx', [reference_length for i in range(len(contigs_fpaths))])
 
     logger.info('Done.')

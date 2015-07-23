@@ -135,16 +135,16 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, json_output_dir, results_dir):
     num_contigs = max([len(list_of_length) for list_of_length in lists_of_lengths])
 
     multiplicator = 1
-    if num_contigs > qconfig.max_points:
+    if num_contigs >= (qconfig.max_points*2):
         import math
-        multiplicator = int(math.ceil(int(num_contigs/qconfig.max_points)))
+        multiplicator = int(num_contigs/qconfig.max_points)
+        max_points = num_contigs/multiplicator
         lists_of_lengths = [sorted(list, reverse=True) for list in lists_of_lengths]
-        corr_lists_of_lengths = [[sum(list_of_length[((i-1)*multiplicator):(i*multiplicator)]) for i in range(1, qconfig.max_points) if (i*multiplicator) < len(list_of_length)]
-                            for list_of_length in lists_of_lengths]
+        corr_lists_of_lengths = [[sum(list_of_length[((i-1)*multiplicator):(i*multiplicator)]) for i in range(1, max_points)
+                                  if (i*multiplicator) < len(list_of_length)] for list_of_length in lists_of_lengths]
         for num_list in range(len(corr_lists_of_lengths)):
-            list_len = len(lists_of_lengths[num_list])
-            last_index = (int(list_len/multiplicator)-1)*multiplicator
-            corr_lists_of_lengths[num_list].append(sum(lists_of_lengths[num_list][last_index:]))
+            last_index = len(corr_lists_of_lengths[num_list])
+            corr_lists_of_lengths[num_list].append(sum(lists_of_lengths[num_list][last_index*multiplicator:]))
     else:
         corr_lists_of_lengths = lists_of_lengths
 

@@ -57,6 +57,10 @@ aux_files = [
 aux_simple_files = ['scripts/build_report.js', 'scripts/build_total_report.js']
 aux_meta_files = ['scripts/build_report_meta.js', 'scripts/build_total_report_meta.js',
     'flot/jquery.flot.tickrotor.js', 'flot/jquery.flot.stack.js', 'scripts/draw_metasummary_plot.js', 'scripts/draw_meta_misassembl_plot.js',]
+aux_meta_scripts = ['<script type="text/javascript" src="/static/scripts/draw_metasummary_plot.js"></script>',
+                    '<script type="text/javascript" src="/static/scripts/draw_meta_misassembl_plot.js"></script>',
+                    '<script type="text/javascript" src="/static/flot/jquery.flot.tickrotor.js"></script>',
+                    '<script type="text/javascript" src="/static/flot/jquery.flot.stack.js"></script>']
 
 
 def init(results_dirpath, is_meta=False):
@@ -80,9 +84,11 @@ def init(results_dirpath, is_meta=False):
         if is_meta:
             html = html.replace('{{ buildreport }}', 'scripts/build_report_meta.js')
             html = html.replace('{{ buildtotalreport }}', 'scripts/build_total_report_meta.js')
+            html = html.replace('{{ metascripts }}', '\n'.join(aux_meta_scripts))
         else:
             html = html.replace('{{ buildreport }}', 'scripts/build_report.js')
             html = html.replace('{{ buildtotalreport }}', 'scripts/build_total_report.js')
+            html = html.replace('{{ metascripts }}', '')
         html = html.replace("/" + static_dirname, aux_dirname)
         html = html.replace('{{ glossary }}', open(get_real_path('glossary.json')).read())
         html_fpath = os.path.join(results_dirpath, report_fname)
@@ -161,7 +167,7 @@ def create_meta_report(results_dirpath, json_texts):
         html_text = f_html.read()
     keyword = 'totalReport'
     html_text = re.sub('{{ ' + keyword + ' }}', '[' + ','.join(json_texts) + ']', html_text)
-    html_text = re.sub(r'{{(\s+\w+\s+)}}', '{}', html_text)
+    html_text = re.sub(r'{{(\s+\S+\s+)}}', '{}', html_text)
     with open(html_fpath, 'w') as f_html:
         f_html.write(html_text)
     from libs import search_references_meta
@@ -242,8 +248,8 @@ def save_meta_summary(results_dirpath, coord_x, coord_y, name_coord, labels, ref
 
 def save_meta_misassemblies(results_dirpath, coords, labels, refs):  # coordinates for Nx, NAx, NGx, NGAX
     name_coord = 'allMisassemblies'
-    coords_x = [coord[0] for coord in coords]
-    coords_y = [coord[1] for coord in coords]
+    coords_x = [coord[0] if coord else None for coord in coords]
+    coords_y = [coord[1] if coord else None for coord in coords]
     json_fpath = json_saver.save_meta_misassemblies(results_dirpath, coords_x, coords_y, name_coord, labels, refs)
     if json_fpath:
         append(results_dirpath, json_fpath, name_coord)

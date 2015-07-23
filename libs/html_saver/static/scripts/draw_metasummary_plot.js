@@ -151,11 +151,11 @@ var summary = {
                 yFormatter = getJustNumberTickFormatter;
             else if (name == 'genome')
                 yFormatter = getPercentTickFormatter;
-                var refTicks = [];
-                for (var i = 0; i < refs.length; i++)
-                {
-                    refTicks.push([i+1,refs[i]]);
-                }
+            var refTicks = [];
+            for (var i = 0; i < refs.length; i++)
+            {
+                refTicks.push([i+1,refs[i]]);
+            }
             info.showWithData = function(series, colors) {
                 var plot = $.plot(placeholder, series, {
                         shadowSize: 0,
@@ -209,7 +209,6 @@ var summary = {
 
         showPlotWithInfo(info);
 
-        $('#contigs_are_ordered').hide();
         $('#gc_info').hide();
     }
 };

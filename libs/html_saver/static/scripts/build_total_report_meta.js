@@ -46,7 +46,7 @@ function fillOneRow(metric, mainMetrics, group_n, order, glossary, is_primary, r
         '<span class="metric-name' +
           (is_primary ? ' primary' : ' secondary') + (not_extend || !is_primary ? '' : ' expandable collapsed') + '">' +
            initial_spaces_to_nbsp(addTooltipIfDefinitionExists(glossary, rowName), metricName) +
-        (metric.isMain ? ("&nbsp" + iconPlots) : '') +
+        (metric.isMain && is_primary ? ("&nbsp" + iconPlots) : '') +
         '</span></td>';
           //(not_extend && metricName == '# possibly misassembled contigs' ? '&nbsp&nbsp&nbsp&nbsp' : not_extend ? '&nbsp&nbsp&nbsp&nbsp' : '')
 

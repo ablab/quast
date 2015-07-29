@@ -49,21 +49,35 @@ def get_results_for_metric(ref_names, metric, contigs_num, labels, output_dirpat
         cur_ref_names = ref_names
     return results, all_rows, cur_ref_names
 
-
 def do(output_dirpath, summary_dirpath, labels, metrics, misassembl_metrics, ref_names):
     ref_names = sorted(ref_names)
     ref_names.append(qconfig.not_aligned_name) # extra case
     contigs_num = len(labels)
-
+    for ext in ['TXT', 'PNG', 'TEX', 'TSV']:
+        if not os.path.isdir(os.path.join(summary_dirpath, ext)):
+            os.mkdir(os.path.join(summary_dirpath, ext))
     for metric in metrics:
          if not isinstance(metric, tuple):
-            summary_fpath_base = os.path.join(summary_dirpath, metric.replace(' ', '_'))
+            summary_txt_fpath = os.path.join(summary_dirpath, 'TXT', metric.replace(' ', '_') + '.txt')
+            summary_tex_fpath = os.path.join(summary_dirpath, 'TEX', metric.replace(' ', '_') + '.tex')
+            summary_tsv_fpath = os.path.join(summary_dirpath, 'TSV', metric.replace(' ', '_') + '.tsv')
+            summary_png_fpath = os.path.join(summary_dirpath, 'PNG', metric.replace(' ', '_') + '.png')
             results, all_rows, cur_ref_names = get_results_for_metric(ref_names, metric, contigs_num, labels, output_dirpath, qconfig.transposed_report_prefix + '.tsv')
             if not results or not results[0]:
                 continue
             if cur_ref_names:
-                print_file(all_rows, len(cur_ref_names), summary_fpath_base + '.txt')
+                transposed_table = [{'metricName': 'Assemblies',
+                                 'values': [all_rows[i]['metricName'] for i in xrange(1, len(all_rows))],}]
+                for i in range(len(all_rows[0]['values'])):
+                    values = []
+                    for j in range(1, len(all_rows)):
+                        values.append(all_rows[j]['values'][i])
+                    transposed_table.append({'metricName': all_rows[0]['values'][i], # name of reference
+                                             'values': values,})
 
+                print_file(transposed_table, len(cur_ref_names), summary_txt_fpath)
+                reporting.save_tsv(summary_tsv_fpath, transposed_table)
+                reporting.save_tex(summary_tex_fpath, transposed_table)
                 if qconfig.draw_plots:
                     import plotter
                     reverse = False
@@ -74,7 +88,7 @@ def do(output_dirpath, summary_dirpath, labels, metrics, misassembl_metrics, ref
                         y_label = 'Total length '
                     elif metric in [reporting.Fields.LARGCONTIG, reporting.Fields.N50, reporting.Fields.NGA50, reporting.Fields.MIS_EXTENSIVE_BASES]:
                         y_label = 'Contig length '
-                    plotter.draw_meta_summary_plot(summary_dirpath, labels, cur_ref_names, all_rows, results, summary_fpath_base, title=metric, reverse=reverse, yaxis_title=y_label)
+                    plotter.draw_meta_summary_plot(summary_dirpath, labels, cur_ref_names, all_rows, results, summary_png_fpath, title=metric, reverse=reverse, yaxis_title=y_label)
                     if metric == reporting.Fields.MISASSEMBL:
                         mis_results = []
                         report_fname = os.path.join('contigs_reports', qconfig.transposed_report_prefix + '_misassemblies' + '.tsv')

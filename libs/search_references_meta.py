@@ -127,8 +127,6 @@ def download_blast_files(blast_filename):
                 'Try to download it manually in %s and restart MetaQUAST.' % blast_dirpath)
             return 1
         logger.info('%s successfully downloaded!' % blast_filename)
-    else:
-        logger.info('%s has already been downloaded.' % blast_filename)
 
     return 0
 
@@ -199,10 +197,6 @@ def parallel_blast(contigs_fpath, blast_res_fpath, err_fpath, blast_check_fpath,
     return
 
 
-def cmd_exists(cmd):
-    return qutils.call_subprocess([cmd, '-h'], stdout=open(os.devnull, 'w'), stderr=open(os.devnull, 'w'))
-
-
 def check_blast(blast_check_fpath, files_sizes, assemblies_fpaths, assemblies):
     downloaded_organisms = []
     not_founded_organisms = []
@@ -237,21 +231,17 @@ def do(assemblies, downloaded_dirpath):
     err_fpath = os.path.join(downloaded_dirpath, 'blast.err')
     if not os.path.isdir(blastdb_dirpath):
         os.mkdir(blastdb_dirpath)
-    existed_blast = [cmd_exists(cmd) for cmd in blast_filenames]
-    if sum(existed_blast) == 0:
-        global blast_dirpath
-        blast_dirpath = ''
-    else:
-        for i, cmd in enumerate(blast_filenames):
-            blast_file = blast_fpath(cmd)
-            if not os.path.exists(blast_file) or os.path.getsize(blast_file) != blast_filesizes[i]:
-                if os.path.exists(blast_file):
-                    os.remove(blast_file)
-                return_code = download_blast_files(cmd)
-                logger.info()
-                if return_code != 0:
-                    return None
-            os.chmod(blast_file, os.stat(blast_file).st_mode | stat.S_IEXEC)
+
+    for i, cmd in enumerate(blast_filenames):
+        blast_file = blast_fpath(cmd)
+        if not os.path.exists(blast_file) or os.path.getsize(blast_file) != blast_filesizes[i]:
+            if os.path.exists(blast_file):
+                os.remove(blast_file)
+            return_code = download_blast_files(cmd)
+            logger.info()
+            if return_code != 0:
+                return None
+        os.chmod(blast_file, os.stat(blast_file).st_mode | stat.S_IEXEC)
 
     if not os.path.isfile(db_fpath + '.nsq') or os.path.getsize(db_fpath + '.nsq') < db_nsq_fsize:
         if os.path.isdir(blastdb_dirpath):

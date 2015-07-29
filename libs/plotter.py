@@ -624,7 +624,6 @@ def draw_meta_summary_plot(output_dirpath, labels, ref_names, all_rows, results,
         ax.legend(legend, loc='center left', bbox_to_anchor=(1.0, 0.5), numpoints=1)
     except Exception:
         pass
-    plot_fpath += '.png'
     matplotlib.pyplot.tight_layout()
     matplotlib.pyplot.savefig(plot_fpath, bbox_inches='tight')
     logger.info('    saved to ' + plot_fpath)

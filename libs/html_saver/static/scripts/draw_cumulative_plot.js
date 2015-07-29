@@ -9,7 +9,7 @@ var cumulative = {
     showWithData: null,
     colors: [],
 
-    draw: function(name, title, colors, filenames, listsOfLengths, refLenght,
+    draw: function(name, title, colors, filenames, listsOfLengths, refLenght, tickX,
                    placeholder, legendPlaceholder, glossary, order, scalePlaceholder) {
 
         $(scalePlaceholder).empty()
@@ -164,12 +164,12 @@ var cumulative = {
                         max: cumulative.maxX,
                         lineWidth: 0.5,
                         color: '#000',
-                        tickFormatter: getContigNumberTickFormatter(cumulative.maxX),
-                        minTickSize: 1,
+                        tickFormatter: getContigNumberTickFormatter(cumulative.maxX, tickX),
+                        minTickSize: tickX,
                     },
                 });
 
-                bindTip(placeholder, series, plot, ordinalNumberToPrettyString, 'contig', 'bottom right');
+                bindTip(placeholder, series, plot, ordinalNumberToPrettyString, tickX, 'contig', 'bottom right');
             };
 
             cumulative.isInitialized = true;

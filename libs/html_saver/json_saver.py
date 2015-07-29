@@ -24,6 +24,7 @@ except ImportError:
 total_report_fname    = '/report.json'
 contigs_lengths_fn    = '/contigs_lengths.json'
 ref_length_fn         = '/ref_length.json'
+tick_x_fn             = '/tick_x.json'
 aligned_contigs_fn    = '/aligned_contigs_lengths.json'
 assemblies_lengths_fn = '/assemblies_lengths.json'
 in_contigs_suffix_fn  = '_in_contigs.json'
@@ -74,7 +75,7 @@ def save_total_report(output_dirpath, min_contig, ref_fpath):
 #            try:
 #                val = float(str)
 #            except ValueError:
-#                val = str
+#                val = strref_length_fn
 #
 #        return val
 #
@@ -103,17 +104,20 @@ def save_contigs_lengths(output_dirpath, contigs_fpaths, lists_of_lengths):
         'lists_of_lengths': lists_of_lengths
     })
 
-
 def save_reference_length(output_dirpath, reference_length):
     return save(output_dirpath + ref_length_fn, {'reflen': reference_length})
 
 
-def save_aligned_contigs_lengths(output_dir, contigs_fpaths, lists_of_lengths):
-    lists_of_lengths = [sorted(one_list, reverse=True) for one_list in lists_of_lengths]
+def save_tick_x(output_dirpath, tick_x):
+    return save(output_dirpath + tick_x_fn, {'tickX': tick_x})
 
-    return save(output_dir + aligned_contigs_fn, {
-        'filenames': map(qutils.label_from_fpath, contigs_fpaths),
-        'lists_of_lengths': lists_of_lengths
+
+def save_coord(output_dirpath, coord_x, coord_y, name_coord, contigs_fpaths):
+    coord_fn = prefix_fn + 'coord' + name_coord + suffix_fn
+    return save(output_dirpath + coord_fn, {
+        'coord_x': coord_x,
+        'coord_y': coord_y,
+        'filenames': map(qutils.label_from_fpath, contigs_fpaths)
     })
 
 

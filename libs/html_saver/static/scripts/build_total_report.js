@@ -26,6 +26,10 @@ function buildTotalReport(assembliesNames, report, order, date, minContig,
             var refGC = referenceValues['Reference GC (%)'];
             var refGenes = referenceValues['Reference genes'];
             var refOperons = referenceValues['Reference operons'];
+            var refChr = referenceValues['Reference chromosomes'];
+            var refTotalreads = referenceValues['Reference reads'];
+            var refMappedreads = referenceValues['Reference mapped reads'];
+            var refPairedreads = referenceValues['Reference properly paired reads'];
 
             if (refName) {
                 $('#reference_name').find('.val').html(refName);
@@ -40,7 +44,14 @@ function buildTotalReport(assembliesNames, report, order, date, minContig,
                 $('#reference_genes').show().find('.val').html(toPrettyString(refGenes));
             if (refOperons)
                 $('#reference_operons').show().find('.val').html(toPrettyString(refOperons));
-
+            if (refChr)
+                $('#reference_chr').show().find('.val').html(toPrettyString(refChr));
+            if (refTotalreads)
+                $('#reference_reads').show().find('.val').html(toPrettyString(refTotalreads));
+            if (refMappedreads)
+                $('#reference_mappedreads').show().find('.val').html(toPrettyString(refMappedreads));
+            if (refPairedreads)
+                $('#reference_pairedreads').show().find('.val').html(toPrettyString(refPairedreads));
             continue;
         }
 

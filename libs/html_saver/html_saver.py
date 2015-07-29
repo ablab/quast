@@ -232,10 +232,10 @@ def save_total_report(results_dirpath, min_contig, ref_fpath):
         log.info('  HTML version (interactive tables and plots) saved to ' + os.path.join(results_dirpath, report_fname))
 
 
-def save_contigs_lengths(results_dirpath, contigs_fpaths, lists_of_lengths):
-    json_fpath = json_saver.save_contigs_lengths(results_dirpath, contigs_fpaths, lists_of_lengths)
+def save_coord(results_dirpath, coord_x, coord_y, name_coord, contigs_fpaths):  # coordinates for Nx, NAx, NGx, NGAX
+    json_fpath = json_saver.save_coord(results_dirpath, coord_x, coord_y, name_coord, contigs_fpaths)
     if json_fpath:
-        append(results_dirpath, json_fpath, 'contigsLenghts')
+        append(results_dirpath, json_fpath, name_coord)
 
 
 def save_meta_summary(results_dirpath, coord_x, coord_y, name_coord, labels, refs):  # coordinates for Nx, NAx, NGx, NGAX
@@ -261,10 +261,16 @@ def save_reference_length(results_dirpath, reference_length):
         append(results_dirpath, json_fpath, 'referenceLength')
 
 
-def save_aligned_contigs_lengths(results_dirpath, contigs_fpaths, lists_of_lengths):
-    json_fpath = json_saver.save_aligned_contigs_lengths(results_dirpath, contigs_fpaths, lists_of_lengths)
+def save_tick_x(results_dirpath, tick_x):
+    json_fpath = json_saver.save_tick_x(results_dirpath, tick_x)
     if json_fpath:
-        append(results_dirpath, json_fpath, 'alignedContigsLengths')
+        append(results_dirpath, json_fpath, 'tickX')
+
+
+def save_contigs_lengths(results_dirpath, contigs_fpaths, lists_of_lengths):
+    json_fpath = json_saver.save_contigs_lengths(results_dirpath, contigs_fpaths, lists_of_lengths)
+    if json_fpath:
+        append(results_dirpath, json_fpath, 'contigsLengths')
 
 
 def save_assembly_lengths(results_dirpath, contigs_fpaths, assemblies_lengths):

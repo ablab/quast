@@ -69,7 +69,8 @@ function refToPrettyString(num, refs) {
     return refs[Math.round(num)-1];
 }
 
-function ordinalNumberToPrettyString(num, unit) {
+function ordinalNumberToPrettyString(num, unit, tickX) {
+    num = num * tickX;
     var numStr = num.toString();
     var lastDigit = numStr[numStr.length-1];
     var beforeLastDigit = numStr[numStr.length-2];
@@ -174,12 +175,12 @@ function getBpLogTickFormatter(maxY) {
     return getBpTickFormatter(maxY);
 }
 
-function getContigNumberTickFormatter(maxX) {
+function getContigNumberTickFormatter(maxX, tickX) {
     return function (val, axis) {
         if (typeof axis.tickSize == 'number' && val > maxX - axis.tickSize) {
-            return "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" + ordinalNumberToPrettyString(val, 'contig');
+            return "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" + ordinalNumberToPrettyString(val, 'contig', tickX);
         } else {
-            return val;
+            return val * tickX;;
         }
     }
 }
@@ -245,7 +246,7 @@ function addTooltipIfDefinitionExists(glossary, metricName) {
 
 /*************/
 /* PLOT TIPS */
-function bindTip(placeholder, series, plot, xToPrettyStringFunction, xUnit, position, summaryPlots) {
+function bindTip(placeholder, series, plot, xToPrettyStringFunction, tickX, xUnit, position, summaryPlots) {
     var prevPoint = null;
 
     $(placeholder).bind("plothover", function(event, pos, item) {
@@ -261,8 +262,8 @@ function bindTip(placeholder, series, plot, xToPrettyStringFunction, xUnit, posi
                 showTip(item.pageX, item.pageY, plot.offset(),
                     plot.width(), plot.height(),
                     series, item.seriesIndex, x, item.dataIndex,
-                    xToPrettyStringFunction(x, xUnit) + ':',
-                    position);
+                    xToPrettyStringFunction(x, xUnit, tickX) + ':',
+                    position, summaryPlots);
             }
         } else {
             $('#plot_tip').hide();

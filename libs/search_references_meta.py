@@ -13,6 +13,7 @@ import sys
 import platform
 import re
 import gzip
+import time
 from libs import qconfig, qutils
 from libs.log import get_logger
 
@@ -105,8 +106,9 @@ def download_refs(organism, ref_fpath):
 
 
 def show_progress(a, b, c):
-    print "% 3.1f%% of %d bytes\r" % (min(100, float(a * b) / c * 100), c),
-    sys.stdout.flush()
+    if a > 0 and a % int(c/(b*100)) == 0:
+        print("% 3.1f%% of %d bytes\r" % (min(100, int(float(a * b) / c * 100)), c)),
+        sys.stdout.flush()
 
 def download_blast_files(blast_filename):
     logger.info()

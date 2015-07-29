@@ -17,16 +17,10 @@ from libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 
 
-def parallel_get_length_and_GC_content(index, contigs_fpath, skip=False, reference=False):
+def GC_content(contigs_fpath, skip=False):
     """
        Returns percent of GC for assembly and GC distribution: (list of GC%, list of # windows)
     """
-    if not reference:
-        assembly_label = qutils.label_from_fpath(contigs_fpath)
-        logger.info('    ' + qutils.index_to_str(index) + assembly_label)
-        #lists_of_lengths.append(fastaparser.get_lengths_from_fastafile(contigs_fpath))
-        list_of_length = []
-        number_of_Ns = 0
     total_GC_amount = 0
     total_contig_length = 0
     GC_bin_num = int(100 / qconfig.GC_bin_size) + 1
@@ -37,24 +31,19 @@ def parallel_get_length_and_GC_content(index, contigs_fpath, skip=False, referen
         return total_GC, (GC_distribution_x, GC_distribution_y)
 
     for name, seq_full in fastaparser.read_fasta(contigs_fpath): # in tuples: (name, seq)
-        # list_of_length.append(len(seq))
-        if not reference:
-            number_of_Ns += seq_full.count('N')
-            list_of_length.append(len(seq_full))
-        if not skip:
-            total_GC_amount += seq_full.count("G") + seq_full.count("C")
-            total_contig_length += len(seq_full) - seq_full.count("N")
-            n = 100 # blocks of length 100
-            # non-overlapping windows
-            for seq in [seq_full[i:i+n] for i in range(0, len(seq_full), n)]:
-                # skip block if it has less than half of ACGT letters (it also helps with "ends of contigs")
-                ACGT_len = len(seq) - seq.count("N")
-                if ACGT_len < (n / 2):
-                    continue
+        total_GC_amount += seq_full.count("G") + seq_full.count("C")
+        total_contig_length += len(seq_full) - seq_full.count("N")
+        n = 100 # blocks of length 100
+        # non-overlapping windows
+        for seq in [seq_full[i:i+n] for i in range(0, len(seq_full), n)]:
+            # skip block if it has less than half of ACGT letters (it also helps with "ends of contigs")
+            ACGT_len = len(seq) - seq.count("N")
+            if ACGT_len < (n / 2):
+                continue
 
-                GC_len = seq.count("G") + seq.count("C")
-                GC_percent = 100.0 * GC_len / ACGT_len
-                GC_distribution_y[int(int(GC_percent / qconfig.GC_bin_size) * qconfig.GC_bin_size)] += 1
+            GC_len = seq.count("G") + seq.count("C")
+            GC_percent = 100.0 * GC_len / ACGT_len
+            GC_distribution_y[int(int(GC_percent / qconfig.GC_bin_size) * qconfig.GC_bin_size)] += 1
 
 #    GC_info = []
 #    for name, seq_full in fastaparser.read_fasta(contigs_fpath): # in tuples: (name, seq)
@@ -85,10 +74,8 @@ def parallel_get_length_and_GC_content(index, contigs_fpath, skip=False, referen
         total_GC = None
     else:
         total_GC = total_GC_amount * 100.0 / total_contig_length
-    if not reference:
-        return list_of_length, number_of_Ns, total_GC, (GC_distribution_x, GC_distribution_y)
-    else:
-        return total_GC, (GC_distribution_x, GC_distribution_y)
+
+    return total_GC, (GC_distribution_x, GC_distribution_y)
 
 
 def do(ref_fpath, contigs_fpaths, output_dirpath, json_output_dir, results_dir):
@@ -101,13 +88,12 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, json_output_dir, results_dir):
     reference_length = None
     if ref_fpath:
         reference_length = sum(fastaparser.get_lengths_from_fastafile(ref_fpath))
-        reference_GC, reference_GC_distribution = parallel_get_length_and_GC_content(0, ref_fpath, skip=False, reference=True)
+        reference_GC, reference_GC_distribution = GC_content(ref_fpath)
 
         logger.info('  Reference genome:')
         logger.info('    ' + os.path.basename(ref_fpath) + ', Reference length = ' + str(reference_length) + ', Reference GC % = ' + '%.2f' % reference_GC)
     elif qconfig.estimated_reference_size:
         reference_length = qconfig.estimated_reference_size
-        qconfig.ref_len = reference_length
         logger.info('  Estimated reference length = ' + str(reference_length))
 
     if reference_length:
@@ -121,13 +107,22 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, json_output_dir, results_dir):
             html_saver.save_reference_length(results_dir, reference_length)
 
     logger.info('  Contig files: ')
-    n_jobs = min(qconfig.max_threads, len(contigs_fpaths))
-    from joblib import Parallel, delayed
-    results = Parallel(n_jobs=n_jobs)(delayed(parallel_get_length_and_GC_content)(index, contigs_fpath, qconfig.no_gc, reference=False) for (index, contigs_fpath) in enumerate(contigs_fpaths))
-    lists_of_lengths = [result[0] for result in results]
-    numbers_of_Ns = [result[1] for result in results]
-    total_GCs = [result[2] for result in results]
-    GC_distributions = [result[3] for result in results]
+    lists_of_lengths = []
+    numbers_of_Ns = []
+    for id, contigs_fpath in enumerate(contigs_fpaths):
+        assembly_label = qutils.label_from_fpath(contigs_fpath)
+
+        logger.info('    ' + qutils.index_to_str(id) + assembly_label)
+        #lists_of_lengths.append(fastaparser.get_lengths_from_fastafile(contigs_fpath))
+        list_of_length = []
+        number_of_Ns = 0
+        for (name, seq) in fastaparser.read_fasta(contigs_fpath):
+            list_of_length.append(len(seq))
+            number_of_Ns += seq.count('N')
+
+        lists_of_lengths.append(list_of_length)
+        numbers_of_Ns.append(number_of_Ns)
+
     num_contigs = max([len(list_of_length) for list_of_length in lists_of_lengths])
 
     multiplicator = 1
@@ -161,8 +156,7 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, json_output_dir, results_dir):
     list_of_GC_distributions = []
     largest_contig = 0
     import N50
-    for id, (contigs_fpath, lengths_list, number_of_Ns, total_GC, GC_distribution) in \
-            enumerate(itertools.izip(contigs_fpaths, lists_of_lengths, numbers_of_Ns, total_GCs, GC_distributions)):
+    for id, (contigs_fpath, lengths_list, number_of_Ns) in enumerate(itertools.izip(contigs_fpaths, lists_of_lengths, numbers_of_Ns)):
         report = reporting.get(contigs_fpath)
         n50, l50 = N50.N50_and_L50(lengths_list)
         ng50, lg50 = None, None
@@ -173,6 +167,7 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, json_output_dir, results_dir):
         if reference_length:
             ng75, lg75 = N50.NG50_and_LG50(lengths_list, reference_length, 75)
         total_length = sum(lengths_list)
+        total_GC, GC_distribution = GC_content(contigs_fpath, skip=qconfig.no_gc)
         list_of_GC_distributions.append(GC_distribution)
         logger.info('    ' + qutils.index_to_str(id) +
                     qutils.label_from_fpath(contigs_fpath) + \

@@ -133,6 +133,20 @@ def check_python_version():
         sys.exit(1)
 
 
+def set_max_threads(logger):
+    global max_threads
+    if max_threads is None:
+        try:
+            import multiprocessing
+            max_threads = max(1, multiprocessing.cpu_count() / 4)
+        except:
+            logger.warning('Failed to determine the number of CPUs')
+            max_threads = DEFAULT_MAX_THREADS
+        logger.info()
+        logger.notice('Maximum number of threads is set to ' + str(max_threads) +
+                      ' (use --threads option to set it manually)')
+
+
 def quast_version():
     version_fpath = os.path.join(QUAST_HOME, 'VERSION')
     version = "unknown"
@@ -177,7 +191,7 @@ def usage(show_hidden=False, meta=False):
     print >> sys.stderr, "-M  --min-contig  <int>       Lower threshold for contig length [default: %s]" % min_contig
     print >> sys.stderr, ""
     print >> sys.stderr, "Advanced options:"
-    print >> sys.stderr, "-T  --threads      <int>              Maximum number of threads [default: number of CPUs]"
+    print >> sys.stderr, "-T  --threads      <int>              Maximum number of threads [default: 25% of the number of CPUs]"
     print >> sys.stderr, "-l  --labels \"label, label, ...\"      Names of assemblies to use in reports, comma-separated. If contain spaces, use quotes"
     print >> sys.stderr, "-L                                    Take assembly names from their parent directory names"
     if meta:

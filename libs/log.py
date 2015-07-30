@@ -208,15 +208,15 @@ class QLogger(object):
 
     def print_system_info(self):
         self._logger.info("System information:")
+        import platform
+        self._logger.info("  OS: " + platform.platform() + " (%s)" % qconfig.platform_name)
+        self._logger.info("  Python version: " + str(sys.version_info[0]) + "." + str(sys.version_info[1]) + '.'\
+                  + str(sys.version_info[2]))
         try:
-            import platform
-            self._logger.info("  OS: " + platform.platform() + " (%s)" % qconfig.platform_name)
-            self._logger.info("  Python version: " + str(sys.version_info[0]) + "." + str(sys.version_info[1]) + '.'\
-                      + str(sys.version_info[2]))
             import multiprocessing
             self._logger.info("  CPUs number: " + str(multiprocessing.cpu_count()))
-        except:
-            self._logger.info("  Problem occurred when getting system information")
+        except ImportError:
+            self._logger.info("  Problem occurred when getting CPUs number information")
 
     def print_numbers_of_notifications(self, prefix="", numbers=None):
         if not numbers:

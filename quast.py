@@ -592,17 +592,7 @@ def main(args):
     else:
         qconfig.genes_lengths = map(int, qconfig.genes_lengths.split(","))
 
-    # Threading
-    if qconfig.max_threads is None:
-        try:
-            import multiprocessing
-            qconfig.max_threads = multiprocessing.cpu_count()
-        except:
-            logger.warning('Failed to determine the number of CPUs')
-            qconfig.max_threads = qconfig.DEFAULT_MAX_THREADS
-
-        logger.info()
-        logger.notice('Maximum number of threads is set to ' + str(qconfig.max_threads) + ' (use --threads option to set it manually)')
+    qconfig.set_max_threads(logger)
 
     ########################################################################
     from libs import reporting

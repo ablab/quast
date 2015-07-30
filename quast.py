@@ -533,6 +533,13 @@ def main(args):
             qconfig.draw_plots = False
             qconfig.html_report = False
 
+        elif opt == ('--plots-format'):
+            supported_formats = ['emf', 'eps', 'pdf', 'png', 'ps', 'raw', 'rgba', 'svg', 'svgz']
+            if arg.lower() in supported_formats:
+                qconfig.plot_extension = arg.lower()
+            else:
+                logger.error('Format %s is not supported. Please, use supported formats: %s.' % (arg, ', '.join(supported_formats)), to_stderr=True, exit_with_code=2)
+
         elif opt in ('-m', '--meta'):
             qconfig.meta = True
 

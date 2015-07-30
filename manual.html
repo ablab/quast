@@ -335,6 +335,12 @@ If your labels include spaces, use quotes:<br>
 Take assembly names from their parent directory names.
 
 <div class='option'>
+<code>--plots-format</code> <code>&lt;int&gt;</code>
+</div>
+File format for plots. Supported formats: emf, eps, pdf, png, ps, raw, rgba, svg, svgz.
+The default format is PDF.
+
+<div class='option'>
     <a name='gene_finding'></a><code><b>--gene-finding</b></code>
 </div>
 Enables gene finding. Affects perfomance, thus disabled by default.<br>
@@ -831,13 +837,14 @@ file consists of several sequences all of them are drawn on the single plot hori
 <p>All outputs are in separate directories inside the directory provided by <code>-o</code> (or in quast_results/latest).
 Also, plots and reports for each metric as well as combined HTML report are saved in <code>&lt;quast_output_dir&gt;/summary/</code>.
 
-<p><span class='metric-name'>Summary plots</span><br>
+<p><span class='metric-name'>Metric-level plots</span><br>
     These plots are created for each metric to show its values for all assemblies vs all references.
     References on the plot are sorted by the mean value of this metric in all assemblies.
     References are always sorted from the best results to the worst ones, thus the plot can be descending or ascending depend on the metric.</p>
 
-<p><span class='metric-name'>Summary text reports</span><br>
-    These files contain the same information as the summary plots, but in text format.
+<p><span class='metric-name'>Metric-level reports (TXT, TSV and TEX versions)</span><br>
+    These files contain the same information as the metric-level plots, but in a different formats:
+    simple text format, a tab-separated version, and a LaTeX version.
 
 <p><span class='metric-name'>Summary HTML-report</span><br>
     Summary HTML-report is created on the basis of HTML-report in <code>combined_quast_output/</code>. Each row is expandable and contains data for all references.

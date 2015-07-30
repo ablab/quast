@@ -8,9 +8,6 @@
 ###########################  CONFIGURABLE PARAMETERS  ##############################
 ####################################################################################
 
-# Supported plot formats: .emf, .eps, .pdf, .png, .ps, .raw, .rgba, .svg, .svgz
-plots_file_ext = '.pdf'
-
 # Feel free to add more colors
 #colors = ['#E41A1C', '#377EB8', '#4DAF4A', '#984EA3', '#FF7F00', '#A65628', '#F781BF', '#FFFF33']  ## 8-color palette
 colors = ['#E31A1C', '#1F78B4', '#33A02C', '#6A3D9A', '#FF7F00', '#FB9A99', '#A6CEE3', '#B2DF8A','#CAB2D6', '#FDBF6F'] # 10-color palette
@@ -54,6 +51,8 @@ meta_logger = get_logger(qconfig.LOGGER_META_NAME)
 
 import reporting
 
+# Supported plot formats: .emf, .eps, .pdf, .png, .ps, .raw, .rgba, .svg, .svgz
+plots_file_ext = '.' + qconfig.plot_extension
 
 # checking if matplotlib is installed
 matplotlib_error = False

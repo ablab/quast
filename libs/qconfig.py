@@ -36,7 +36,7 @@ MAX_REFERENCE_FILE_LENGTH = 50000000  # Max length of one part of reference
 long_options = "output-dir= save-json-to= genes= operons= reference= contig-thresholds= min-contig= "\
                "gene-thresholds= err-fpath= save-json gage eukaryote glimmer no-plots no-html no-check no-check-meta combined-ref no-gc help debug "\
                "ambiguity-usage= scaffolds threads= min-cluster= min-alignment= est-ref-size= use-all-alignments gene-finding "\
-               "strict-NA meta labels= test help-hidden no-snps test-no-ref fast max-ref-number= extensive-mis-size= ".split()
+               "strict-NA meta labels= test help-hidden no-snps test-no-ref fast max-ref-number= extensive-mis-size= plots-format=".split()
 short_options = "o:G:O:R:t:M:S:J:jehdsa:T:c:ufnml:Lx:i:"
 
 # default values for options
@@ -123,6 +123,8 @@ min_length = 300
 min_bitscore = 300
 max_references = 50
 
+# plot extension
+plot_extension = "pdf"
 
 def check_python_version():
     if sys.version[0:3] not in SUPPORTED_PYTHON_VERSIONS:

@@ -481,6 +481,8 @@ def main(args):
         elif opt == '--fast':  # --no-check, --no-gc, --no-snps will automatically set in QUAST runs
             draw_plots = False
             html_report = False
+        elif opt == ('--plots-format'):
+            pass
         else:
             logger.error('Unknown option: %s. Use -h for help.' % (opt + ' ' + arg), to_stderr=True, exit_with_code=2)
 
@@ -696,12 +698,11 @@ def main(args):
         if html_report and json_texts:
             from libs.html_saver import html_saver
             html_saver.init_meta_report(summary_dirpath)
-        if draw_plots:
-            from libs import create_meta_summary
-            metrics_for_plots = reporting.Fields.main_metrics
-            misassembl_metrics = [reporting.Fields.MIS_RELOCATION, reporting.Fields.MIS_TRANSLOCATION, reporting.Fields.MIS_INVERTION,
-                               reporting.Fields.MIS_ISTRANSLOCATIONS]
-            create_meta_summary.do(output_dirpath, summary_dirpath, labels, metrics_for_plots, misassembl_metrics, ref_names)
+        from libs import create_meta_summary
+        metrics_for_plots = reporting.Fields.main_metrics
+        misassembl_metrics = [reporting.Fields.MIS_RELOCATION, reporting.Fields.MIS_TRANSLOCATION, reporting.Fields.MIS_INVERTION,
+                           reporting.Fields.MIS_ISTRANSLOCATIONS]
+        create_meta_summary.do(output_dirpath, summary_dirpath, labels, metrics_for_plots, misassembl_metrics, ref_names)
         if html_report and json_texts:
             html_saver.create_meta_report(summary_dirpath, json_texts)
 

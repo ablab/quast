@@ -63,6 +63,11 @@
 	/*padding-left: 10px !important;*/
 /*}*/
 
+span.heatmap_legend {
+    font-size: 11px;
+    display: inline-block;
+}
+
 span.metric-name.expandable {
     margin-left: -13px;
 }

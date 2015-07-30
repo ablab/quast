@@ -4,7 +4,20 @@ String.prototype.trunc =
     };
 
 
+function getColor (hue, lightness) {
+        lightness = lightness ? lightness : 92;
+        var rgb = hslToRgb(hue / 360, 0.8, lightness / 100);
+        return '#' + rgb[0].toString(16) + rgb[1].toString(16) + rgb[2].toString(16);
+}
+
+function getMedian (x) {
+    if (x.length == 0) return null;
+    if (x.length % 2 == 1) return x[(x.length - 1) / 2];
+    else return (x[(x.length / 2) - 1] + x[(x.length / 2)]) / 2;
+}
+
 function setUpHeatMap(table) {
+    
     (function () {
         $(function () {
             $('tr.group_empty').removeClass('row_hidden');
@@ -12,58 +25,128 @@ function setUpHeatMap(table) {
     })();
 
     $('#main_report').append(table);
+    var rows = $('#main_report_table').find('.content-row');
+    var first_row = $(rows[0]).find('td[number]');
+    if (first_row.length > 1) {
+        var canvas = document.getElementById('gradientHeatmap');
+          var context = canvas.getContext('2d');
+          context.rect(0, 0, canvas.width, canvas.height);
 
-    var RED_HUE = 0;
-    var GREEN_HUE = 120;
-    var GREEN_HSL = 'hsl(' + GREEN_HUE + ', 80%, 40%)';
-
-    //$('#extended_report_link_div').width($('#top_left_td').outerWidth());
-
-    $(".report_table td[number]").mouseenter(function () {
-        if (dragTable && dragTable.isDragging)
-            return;
-
-        var cells = $(this).parent().find('td[number]');
-        var numbers = $.map(cells, function (cell) {
-            return $(cell).attr('number');
-        });
-        var quality = $(this).parent().attr('quality');
-
-        var min = Math.min.apply(null, numbers);
-        var max = Math.max.apply(null, numbers);
-
-        var maxHue = GREEN_HUE;
-        var minHue = RED_HUE;
-
-        if (quality == 'Less is better') {
-            maxHue = RED_HUE;
-            minHue = GREEN_HUE;
-        }
-
-        if (max == min) {
-            $(cells).css('color', GREEN_HSL);
-        } else {
-            var k = (maxHue - minHue) / (max - min);
-            var hue = 0;
-            var lightness = 0;
-            cells.each(function (i) {
-                var number = numbers[i];
-                hue = Math.round(minHue + (number - min) * k);
-                lightness = Math.round((Math.pow(hue - 75, 2)) / 350 + 35);
-//                $(this).css('color', 'hsl(' + hue + ', 80%, 35%)');
-                $(this).css('color', 'hsl(' + hue + ', 80%, ' + lightness + '%)');
+          var gradient = context.createLinearGradient(0, 0, canvas.width, canvas.height);
+          gradient.addColorStop(0, getColor(0, 50));
+          gradient.addColorStop(0.5, 'white');
+          gradient.addColorStop(1, getColor(240, 55));
+          canvas.style.border = "1px solid rgba(0, 0, 0, .5)";
+          context.fillStyle = gradient;
+          context.fill();
+          $('#heatmaps_chbox').change(function(){
+               if($(this).is(':checked')) toggleHeatMap('on');
+               else toggleHeatMap('off');
             });
-        }
-
-        if (numbers.length > 1)
-            $('#report_legend').show('fast');
-
-    }).mouseleave(function () {
-        $(this).parent().find('td[number]').css('color', 'black');
-    });
+          toggleHeatMap('on');
+          $('#heatmap_header').show();
+    }
 }
 
+function toggleHeatMap(state){
+    var rows = $('#main_report_table').find('.content-row');
+    for (var rows_n = 0; rows_n < rows.length; rows_n++) {
+        var cells = $(rows[rows_n]).find('td[number]');
+        if (state == 'on') {
+            var quality = $(rows[rows_n]).attr('quality');
+            heatMapOneRow(cells, quality);
+        }
+        else cells.each(function (i) {
+            $(this).css('background', 'white');
+            $(this).css('color', 'black');
+        });
+    }
+}
 
+function heatMapOneRow (cells, quality) {
+    var BLUE_HUE = 240;
+    var BLUE_OUTER_BRT = 55;
+    var BLUE_INNER_BRT = 65;
+
+    var RED_HUE = 0;
+    var RED_OUTER_BRT = 50;
+    var RED_INNER_BRT = 60;
+
+    var MIN_NORMAL_BRT = 80;
+    var MEDIAN_BRT = 100;
+
+    var numbers = $.map(cells, function (cell) {
+        return parseFloat($(cell).attr('number'));
+    });
+    
+    var min = Math.min.apply(null, numbers);
+    var max = Math.max.apply(null, numbers);
+
+    var topHue = BLUE_HUE;
+    var lowHue = RED_HUE;
+    
+    var innerTopBrt = BLUE_INNER_BRT;
+    var outerTopBrt = BLUE_OUTER_BRT;
+    var innerLowBrt = RED_INNER_BRT;
+    var outerLowBrt = RED_OUTER_BRT;
+
+    if (quality == 'Less is better') {
+        topHue = RED_HUE;
+        lowHue = BLUE_HUE;
+
+        innerTopBrt = RED_INNER_BRT;
+        outerTopBrt = RED_OUTER_BRT;
+        innerLowBrt = BLUE_INNER_BRT;
+        outerLowBrt = BLUE_OUTER_BRT;
+    }
+
+    var twoCols = cells.length == 2;
+
+    if (max == min) {
+        $(cells).css('color', MEDIAN_BRT);
+    } else {
+        var sortedValues = numbers.slice().sort(function(a, b) {
+          return a - b;
+        });
+        var median = getMedian(sortedValues);
+        var l = numbers.length;
+        var q1 = sortedValues[Math.floor((l - 1) / 4)];
+        var q3 = sortedValues[Math.floor((l - 1) * 3 / 4)];
+
+        var d = q3 - q1;
+        var low_outer_fence = q1 - 3 * d;
+        var low_inner_fence = q1 - 1.5 * d;
+        var top_inner_fence = q3 + 1.5 * d;
+        var top_outer_fence = q3 + 3 * d;
+        cells.each(function (i) {
+            var number = numbers[i];
+            if (number < low_outer_fence) {
+                $(this).css('background', getColor(lowHue, twoCols ? null : outerLowBrt));
+                if (twoCols != true) $(this).css('color', 'white');
+            }
+            else if (number < low_inner_fence) {
+                $(this).css('background', getColor(lowHue, twoCols ? null : innerLowBrt));
+            }
+            else if (number < median) {
+                var k = (MEDIAN_BRT - MIN_NORMAL_BRT) / (median - low_inner_fence);
+                var brt = Math.round(MEDIAN_BRT - (median - number) * k);
+                $(this).css('background', getColor(lowHue, twoCols ? null : brt));
+            }
+            else if (number > top_inner_fence) {
+                $(this).css('background', getColor(topHue, twoCols ? null : innerTopBrt));
+            }
+            else if (number > top_outer_fence) {
+                $(this).css('background', getColor(topHue, twoCols ? null : outerTopBrt));
+                if (twoCols != true) $(this).css('color', 'white');
+            }
+            else if (number > median) {
+                var k = (MEDIAN_BRT - MIN_NORMAL_BRT) / (top_inner_fence - median);
+                var brt = Math.round(MEDIAN_BRT - (number - median) * k);
+                $(this).css('background', getColor(topHue, twoCols ? null : brt));
+            }
+        });
+    }
+}
 function extendedClick() {
     $('.row_to_hide').toggleClass('row_hidden');
 

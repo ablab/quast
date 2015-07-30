@@ -76,7 +76,7 @@ def do(output_dirpath, summary_dirpath, labels, metrics, misassembl_metrics, ref
                     transposed_table.append({'metricName': all_rows[0]['values'][i], # name of reference
                                              'values': values,})
 
-                print_file(transposed_table, len(cur_ref_names), summary_txt_fpath)
+                print_file(transposed_table, len(transposed_table[0]['values']), summary_txt_fpath)
                 reporting.save_tsv(summary_tsv_fpath, transposed_table)
                 reporting.save_tex(summary_tex_fpath, transposed_table)
                 if qconfig.draw_plots:

@@ -681,9 +681,9 @@ def draw_meta_summary_misassembl_plot(results, ref_names, contig_num, plot_fpath
             ymax = max(ymax, ymax_j)
             refs.append(ref_names[j])
         else:
-            arr_x.insert(j, None)
-            json_points_x.append(j)
-            json_points_y.append(None)
+            for i in range(len(misassemblies)):
+                json_points_x.append(arr_x[j])
+                json_points_y.append(0)
 
     matplotlib.pyplot.xticks(range(1, len(refs) + 1), refs, size='small', rotation='vertical')
     legend_n = set(legend_n)
@@ -701,7 +701,7 @@ def draw_meta_summary_misassembl_plot(results, ref_names, contig_num, plot_fpath
 
     ax.legend(legend, loc='center left', bbox_to_anchor=(1.0, 0.5), numpoints=1)
 
-    plot_fpath += '.png'
+    plot_fpath += plots_file_ext
     matplotlib.pyplot.tight_layout()
     matplotlib.pyplot.savefig(plot_fpath, bbox_inches='tight')
     logger.info('    saved to ' + plot_fpath)

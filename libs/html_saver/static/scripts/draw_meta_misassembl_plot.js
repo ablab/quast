@@ -78,7 +78,9 @@ var misassemblies = {
                     refTicks.push([ref_n + 1, main_refnames[ref_n]]);
             }
             misassemblies.refTicks = refTicks;
-
+            refs = refs.filter( function(el) {
+              return main_refnames.indexOf(el) > -1;
+            } );
             for (var file_n = 0; file_n < filenames.length; file_n++) {
                 var coordX = data.coord_x[file_n];
                 var coordY = data.coord_y[file_n];

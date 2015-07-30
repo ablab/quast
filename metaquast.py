@@ -326,7 +326,6 @@ def main(args):
 
     genes = []
     operons = []
-    draw_plots = qconfig.draw_plots
     html_report = qconfig.html_report
     make_latest_symlink = True
 
@@ -414,10 +413,10 @@ def main(args):
             if qconfig.max_references < 0:
                 qconfig.max_references = 0
 
-        elif opt in ('-M', "--min-contig"):
+        elif opt in ('-m', "--min-contig"):
             qconfig.min_contig = int(arg)
 
-        elif opt in ('-T', "--threads"):
+        elif opt in ('-t', "--threads"):
             qconfig.max_threads = int(arg)
             if qconfig.max_threads < 1:
                 qconfig.max_threads = 1
@@ -434,13 +433,13 @@ def main(args):
             pass
         elif opt in ('-J', '--save-json-to'):
             pass
-        elif opt in ('-t', "--contig-thresholds"):
+        elif opt == "--contig-thresholds":
             pass
         elif opt in ('-c', "--mincluster"):
             pass
         elif opt == "--est-ref-size":
             pass
-        elif opt in ('-S', "--gene-thresholds"):
+        elif opt == "--gene-thresholds":
             pass
         elif opt in ('-s', "--scaffolds"):
             pass
@@ -460,11 +459,11 @@ def main(args):
             pass
         elif opt in ('-u', "--use-all-alignments"):
             pass
-        elif opt in ('-n', "--strict-NA"):
+        elif opt == "--strict-NA":
             pass
-        elif opt in ("-x", "--extensive-mis-size"):
+        elif opt in ('-x', "--extensive-mis-size"):
             pass
-        elif opt in ("-m", "--meta"):
+        elif opt == "--meta":
             pass
         elif opt == '--glimmer':
             pass
@@ -475,13 +474,12 @@ def main(args):
         elif opt == '--no-gc':
             pass
         elif opt == '--no-plots':
-            draw_plots = False
+            pass
         elif opt == '--no-html':
             html_report = False
         elif opt == '--fast':  # --no-check, --no-gc, --no-snps will automatically set in QUAST runs
-            draw_plots = False
             html_report = False
-        elif opt == ('--plots-format'):
+        elif opt == '--plots-format':
             pass
         else:
             logger.error('Unknown option: %s. Use -h for help.' % (opt + ' ' + arg), to_stderr=True, exit_with_code=2)

@@ -452,13 +452,13 @@ def main(args):
         elif opt in ('-R', "--reference"):
             ref_fpath = assert_file_exists(arg, 'reference')
 
-        elif opt in ('-t', "--contig-thresholds"):
+        elif opt == "--contig-thresholds":
             qconfig.contig_thresholds = arg
 
-        elif opt in ('-M', "--min-contig"):
+        elif opt in ('-m', "--min-contig"):
             qconfig.min_contig = int(arg)
 
-        elif opt in ('-T', "--threads"):
+        elif opt in ('-t', "--threads"):
             qconfig.max_threads = int(arg)
             if qconfig.max_threads < 1:
                 qconfig.max_threads = 1
@@ -472,7 +472,7 @@ def main(args):
         elif opt == "--est-ref-size":
             qconfig.estimated_reference_size = int(arg)
 
-        elif opt in ('-S', "--gene-thresholds"):
+        elif opt == "--gene-thresholds":
             qconfig.genes_lengths = arg
 
         elif opt in ('-j', '--save-json'):
@@ -506,7 +506,7 @@ def main(args):
         elif opt in ('-u', "--use-all-alignments"):
             qconfig.use_all_alignments = True
 
-        elif opt in ('-n', "--strict-NA"):
+        elif opt == "--strict-NA":
             qconfig.strict_NA = True
 
         elif opt in ('-x', "--extensive-mis-size"):
@@ -537,14 +537,14 @@ def main(args):
             qconfig.draw_plots = False
             qconfig.html_report = False
 
-        elif opt == ('--plots-format'):
-            supported_formats = ['emf', 'eps', 'pdf', 'png', 'ps', 'raw', 'rgba', 'svg', 'svgz']
-            if arg.lower() in supported_formats:
+        elif opt == '--plots-format':
+            if arg.lower() in qconfig.supported_plot_extensions:
                 qconfig.plot_extension = arg.lower()
             else:
-                logger.error('Format %s is not supported. Please, use supported formats: %s.' % (arg, ', '.join(supported_formats)), to_stderr=True, exit_with_code=2)
+                logger.error('Format "%s" is not supported. Please, use one of the supported formats: %s.' %
+                             (arg, ', '.join(qconfig.supported_plot_extensions)), to_stderr=True, exit_with_code=2)
 
-        elif opt in ('-m', '--meta'):
+        elif opt == '--meta':
             qconfig.meta = True
 
         elif opt == '--no-check-meta':

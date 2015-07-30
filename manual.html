@@ -300,7 +300,7 @@ File with operon positions in reference. See details about the file format in <a
 
 <div class='option'>
 <a name='min_contig'></a>
-<code><b>--min-contig</b> &lt;int&gt;</code>
+<code><b>--min-contig</b></code> (or <code>-m</code>) <code>&lt;int&gt;</code>
 </div>
 Lower threshold for a contig length. Shorter contigs won't be taken into account
 (except for some metrics, see <a href="#sec3">section 3</a>). The default value is 500.
@@ -310,9 +310,9 @@ Lower threshold for a contig length. Shorter contigs won't be taken into account
 Advanced options:
 <div class='options'>
 <div class='option'>
-<code>--threads</code> (or <code><b>-T</b></code> -- <b>upper</b>case "T") <code>&lt;int&gt;</code>
+<code><b>--threads</b></code> (or <code>-t</code>) <code>&lt;int&gt;</code>
 </div>
-Maximum number of threads. The default value is 25% of the number of CPUs but not less than 1. If QUAST fails to determine the number of CPUs, the number is set to 4.
+Maximum number of threads. The default value is 25% of CPUs but not less than 1. If QUAST fails to determine the number of CPUs, the number is set to 4.
 
 <div class='option'>
 <code><b>--labels</b></code> (or <code>-l</code>) <code>&lt;label,label...&gt;</code>
@@ -335,13 +335,7 @@ If your labels include spaces, use quotes:<br>
 Take assembly names from their parent directory names.
 
 <div class='option'>
-<code><b>--plots-format</b></code>  <code>&lt;format&gt;</code>
-</div>
-File format for plots. Supported formats: emf, eps, pdf, png, ps, raw, rgba, svg, svgz.
-The default format is PDF.
-
-<div class='option'>
-    <a name='gene_finding'></a><code><b>--gene-finding</b></code>
+    <a name='gene_finding'></a><code><b>--gene-finding</b></code> (or <code>-f</code>)
 </div>
 Enables gene finding. Affects perfomance, thus disabled by default.<br>
 <span style='line-height: 50%;'>&nbsp;</span><br>  
@@ -367,7 +361,7 @@ Note: this list is used only if <code>--gene-finding</code> option is specified.
 
 <div class='option'>
     <a name="eukaryote"></a>
-    <code><b>--eukaryote</b></code>
+    <code><b>--eukaryote</b></code> (or <code>-e</code>)
 </div>
 Genome is eukaryotic. Affects gene finding and contig alignment:<br>
 <ol class='my_ol' style='margin-top: 0;'>
@@ -405,26 +399,26 @@ Comma-separated list of contig length thresholds. Used in <span class='metric-re
 <span class='metric-ref'>total length (&ge; x)</span> metrics (see <a href="#sec3">section 3</a>). The default value is 0,1000.
 
 <div class='option'>
-    <code><b>--scaffolds</b></code>
+    <code><b>--scaffolds</b></code> (or <code>-s</code>)
 </div>
 The assemblies are scaffolds (rather than contigs). QUAST will add split versions
 of assemblies to the comparison. Assemblies are split by continuous fragments of N's of length &ge; 10.
 
 <div class='option'>
-    <code><b>--use-all-alignments</b></code>
+    <code><b>--use-all-alignments</b></code> (or <code>-u</code>)
 </div>
 Compute <span class='metric-ref'>genome fraction, # genes, # operons</span> metrics in the manner used in QUAST v.1.*.
 By default, QUAST v.2.0 and higher filters out ambiguous and redundant alignments, keeping only one alignment per contig 
 (or one set of non-overlapping or slightly overlapping alignments). This option makes QUAST count all alignments.
 
 <div class='option'>
-    <a name='min_alignment'></a><code><b>--min-alignment</b></code> <code>&lt;int&gt;</code>
+    <a name='min_alignment'></a><code><b>--min-alignment</b></code> (or <code>-i</code>) <code>&lt;int&gt;</code>
 </div>
 Minimum length of alignment. It is Nucmer's parameter which filters all alignments shorter than the value. Default is 0 bp.
     In any case, Nucmer will not produce alignments shorter than 65 bp (default min cluster size).
 
 <div class='option'>
-    <a name='ambiguity_usage'></a><code><b>--ambiguity-usage</b> &lt;<b>none</b>|<b>one</b>|<b>all</b>&gt;</code>
+    <a name='ambiguity_usage'></a><code><b>--ambiguity-usage</b> (or <code>-a</code>) &lt;<b>none</b>|<b>one</b>|<b>all</b>&gt;</code>
 </div>
 Way of processing equally good alignments of a contig (probably repeats):<br>
 <table style="margin-left: 30px; font-size: 1em; vertical-align: bottom;">
@@ -453,8 +447,14 @@ Break contigs at every misassembly event (including local ones) to compute <span
 Lower threshold for the relocation size (gap or overlap size between left and right flanking sequence, see <a href="#sec3.1.2">section 3.1.2</a> for details).
 Shorter relocations are considered as local misassemblies. Does not affect other types of extensive misassemblies (inversions and translocations).
 The default value is 1000. Note that the threshold should be greater than maximum indel length which is 85 bp (Nucmer default value).
-</div>
 
+<div class='option'>
+<code><b>--plots-format</b></code>  <code>&lt;format&gt;</code>
+</div>
+File format for plots. Supported formats: emf, eps, pdf, png, ps, raw, rgba, svg, svgz.
+The default format is PDF.
+
+</div>
 <br>
 Speedup options:
 <div class='options'>
@@ -860,7 +860,7 @@ You can view results separately for each reference by clicking on a row preceede
     which will help you to adjust QUAST reports easily even if you are new to Python.
 </p>    
 
-<p> You can also adjust plot colors, style and width of lines, legend font, plots output format, etc.
+<p> You can also adjust plot colors, style and width of lines, legend font, etc.
     Please see the <code>CONFIGURABLE PARAMETERS</code> section in <code>libs/plotter.py</code>.
 </p>
 

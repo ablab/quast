@@ -313,13 +313,13 @@ function toggleSecondary(caller) {
 
     while (!nextRow.hasClass('primary') && (nextRow.length > 0)) {
         nextRow.toggleClass('secondary_hidden');
-        nextRow.css('background-color', '#F5F5DC');
+        nextRow.find('.left_column_td').css('background-color', '#E8E8E8');
         nextRow = nextRow.next('.content-row');
     }
 }
 
 function setPlot(icon) {
-    num = icon.attr('id')
+    num = icon.attr('id');
     names = ['contigs', 'largest', 'totallen', 'n50', 'misassemblies', 'misassembled', 'mismatches', 'indels',
             'ns', 'genome', 'duplication', 'nga50'];
     switchSpan = names[num] + '-switch';

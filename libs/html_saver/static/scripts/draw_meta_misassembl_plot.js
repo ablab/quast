@@ -175,7 +175,6 @@ function showAllAssemblies(series, colors) {
     );
     var firstLabel = $('.yAxis .tickLabel').last();
     firstLabel.append(' misassemblies');
-    $('#contigs_are_ordered').show();
     bindTip(misassemblies.placeholder, series, misassemblies.plot, refToPrettyString, 1, refs, 'top right', true);
 }
 
@@ -220,7 +219,6 @@ function showOneAssembly(series, colors) {
 
     var firstLabel = $('.yAxis .tickLabel').last();
     firstLabel.append(' misassemblies');
-    $('#contigs_are_ordered').hide();
     bindTip(misassemblies.placeholder, series, misassemblies.plot, refToPrettyString, 1, refs,  'top right');
 }
 

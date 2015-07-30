@@ -81,6 +81,6 @@ function buildReport() {
     }
 
     if (firstPlot) $('.plots').hide();
-    $('#contigs_are_ordered').html('References are ordered from the best to the worst results.');
+    $('#contigs_are_ordered').html('References are ordered starting from the best average value among all assemblies.');
     return 0;
 }

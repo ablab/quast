@@ -1556,7 +1556,7 @@ def do(reference, contigs_fpaths, cyclic, output_dir, old_contigs_fpaths):
             all_rows.append(row)
             for fpath in contigs_fpaths:
                 all_rows[0]['values'].append(qutils.name_from_fpath(fpath))
-            for k in ref_misassemblies[0].keys():
+            for k in ref_labels_by_chromosomes.values():
                 row = {'metricName': k, 'values': []}
                 for index, fpath in enumerate(contigs_fpaths):
                     if ref_misassemblies[index]:

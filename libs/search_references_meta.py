@@ -288,7 +288,7 @@ def do(assemblies, downloaded_dirpath):
                     if idy >= qconfig.identity_threshold and length >= qconfig.min_length and score >= qconfig.min_bitscore:  # and (not scores or min(scores) - score < max_identity_difference):
                         taxons = line[1][line[1].find('_')+1:].replace('_', " ")
                         domain = taxons.split(';')[0]
-                        if domain in ['Bacteria', 'Archaea']:
+                        if domain in ['Bacteria', 'Archaea'] and 'Chloroplast' not in taxons and 'mitochondria' not in taxons:
                             taxons = taxons.replace(';', '\t')
                             organism = line[1].split(';')[-1]
                             organism = re.sub('[\[\]]', '', organism)
@@ -330,18 +330,20 @@ def do(assemblies, downloaded_dirpath):
 
     total_downloaded = 0
     total_scored_left = len(scores_organisms)
+
+    list_organisms = [organism for organisms_assembly in organisms_assemblies.values() for organism in organisms_assembly]
     for organism in downloaded_organisms:
         ref_fpath = os.path.join(downloaded_dirpath, re.sub('[/.=]', '', organism) + '.fasta')
         if os.path.exists(ref_fpath):
             if len(ref_fpaths) == qconfig.max_references:
                 break
-            total_downloaded += 1
-            if organisms_assemblies and organism in organisms_assemblies.values()[0]:
+            if organisms_assemblies and organism in list_organisms:
+                total_downloaded += 1
                 total_scored_left -= 1
-            spaces = (max_organism_name_len - len(organism)) * ' '
-            logger.info("  %s%s | was downloaded previously (total %d)" %
-                            (organism.replace('+', ' '), spaces, total_downloaded))
-            ref_fpaths.append(ref_fpath)
+                spaces = (max_organism_name_len - len(organism)) * ' '
+                logger.info("  %s%s | was downloaded previously (total %d)" %
+                                (organism.replace('+', ' '), spaces, total_downloaded))
+                ref_fpaths.append(ref_fpath)
         else:
             scores_organisms.insert(0, (5000, organism))
 
@@ -357,7 +359,6 @@ def do(assemblies, downloaded_dirpath):
                 'Totally ' + str(total_scored_left) + ' organisms to try.')
 
     for (score, organism) in scores_organisms:
-        total_scored_left -= 1
         ref_fpath = os.path.join(downloaded_dirpath, re.sub('[/.=]', '', organism) + '.fasta')
         spaces = (max_organism_name_len - len(organism)) * ' '
         new_ref_fpath = None
@@ -368,6 +369,7 @@ def do(assemblies, downloaded_dirpath):
             was_downloaded = True
             new_ref_fpath = ref_fpath
         if new_ref_fpath:
+            total_scored_left -= 1
             total_downloaded += 1
             if was_downloaded:
                 logger.info("  %s%s | was downloaded previously (total %d, %d more to go)" %
@@ -380,6 +382,7 @@ def do(assemblies, downloaded_dirpath):
                 ref_fpaths.append(new_ref_fpath)
             downloaded_organisms.add(organism)
         elif organism not in downloaded_organisms:
+            total_scored_left -= 1
             logger.info("  %s%s | not found in the NCBI database" % (organism.replace('+', ' '), spaces))
             not_founded_organisms.add(organism)
     for contig_name in contigs_names:

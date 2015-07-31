@@ -1,5 +1,32 @@
 -- Version history --
 
+3.1   1. MetaQUAST:
+       - more specific algorithm for reference searching and downloading, particularly
+         only Bacteria and Archaea are downloaded;
+       - Krona charts are added for showing taxonomic profile based on found references;
+       - metric-level and misassemblies plots are added to summary HTML report;
+       - better structure for text reports and plots in summary folder.
+
+      2. Significantly reduced size of the installation package. This is done by removing
+         BLAST binaries which are needed only for MetaQUAST run without references. On the
+         first such run, BLAST binary for target OS will be automatically downloaded.
+
+      3. Heatmaps added to HTML reports.
+
+      4. Separate install.sh and more complex install_full.sh scripts for installing regular
+         versions of QUAST and MetaQUAST or extended one (with ability to run MetaQUAST without
+         reference genomes).
+
+      5. New option "--plots-format" for selecting output format for plots (PDF by default).
+
+      6. Default number of threads changed from 100% CPUs to 25% of CPUs.
+
+      7. Changes in one-letter options, including replacing confusing -T to -t for --threads
+         and -M to -m for --min-contig.
+
+      8. Fixed several minor bugs.
+
+
 3.0   1. Significant changes in MetaQUAST functionality:
        - if no references are provided, MetaQUAST downloads references from NCBI database
          based on best hits of assemblies alignments vs SILVA 16S rRNA database 

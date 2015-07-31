@@ -1,6 +1,6 @@
 <html>
 <head>
-    <title>QUAST 3.0 manual</title>
+    <title>QUAST 3.1 manual</title>
     <style type="text/css">
         body {
             margin-top: 30px;
@@ -66,7 +66,7 @@
     </style>
 </head>
 <body>
-<h1>QUAST 3.0 manual</h1>
+<h1>QUAST 3.1 manual</h1>
 
 <p> QUAST stands for <u>QU</u>ality <u>AS</u>sessment <u>T</u>ool.
     The tool evaluates genome assemblies by computing various metrics.
@@ -76,10 +76,18 @@
     at <a href="http://sourceforge.net/projects/quast/">http://sourceforge.net/projects/quast</a>.
     <br>
     <br>
-    QUAST utilizes <a href="http://mummer.sourceforge.net/">MUMmer</a>, <a href="http://exon.gatech.edu/GeneMark/">GeneMarkS</a>, <a href="http://exon.gatech.edu/GeneMark/gmes_instructions.html">GeneMark-ES</a>, <a href="http://cbcb.umd.edu/software/glimmerhmm/">GlimmerHMM</a>, and <a href="http://gage.cbcb.umd.edu/index.html">GAGE</a>. In addition, MetaQUAST uses <a href="http://exon.gatech.edu/GeneMark/">MetaGeneMark</a>, <a href="http://blast.ncbi.nlm.nih.gov/Blast.cgi">BLAST</a>, and <a href="http://www.arb-silva.de/">SILVA</a> 16S rRNA database. These tools are built in into the QUAST package which is ready for use by academic, non-profit institutions and U.S. Government agencies. If you are not in one of these categories please refer to <a href="LICENSE">LICENSE</a> section 'Third-party tools incorporated into QUAST' for guidelines on how to complete the licensing process.     
+    QUAST utilizes <a href="http://mummer.sourceforge.net/">MUMmer</a>, <a href="http://exon.gatech.edu/GeneMark/">GeneMarkS</a>,
+    <a href="http://exon.gatech.edu/GeneMark/gmes_instructions.html">GeneMark-ES</a>, <a href="http://cbcb.umd.edu/software/glimmerhmm/">GlimmerHMM</a>,
+    and <a href="http://gage.cbcb.umd.edu/index.html">GAGE</a>.
+    In addition, MetaQUAST uses <a href="http://exon.gatech.edu/GeneMark/">MetaGeneMark</a>,
+    <a href="http://blast.ncbi.nlm.nih.gov/Blast.cgi">BLAST</a>, and
+    <a href="http://www.arb-silva.de/">SILVA</a> 16S rRNA database.
+    These tools are built in into the QUAST package which is ready for use by academic, non-profit institutions and U.S. Government agencies.
+    If you are not in one of these categories please refer to <a href="LICENSE">LICENSE</a> section 'Third-party tools incorporated into QUAST'
+    for guidelines on how to complete the licensing process.
     <br>
     <br>
-    Version 3.0 of QUAST was released under GPL v2 on 7 July 2015. Note that some of build-in third-party tools are not under GPL v2. See <a href="LICENSE">LICENSE</a> for details.
+    Version 3.1 of QUAST was released under GPL v2 on XX August 2015. Note that some of build-in third-party tools are not under GPL v2. See <a href="LICENSE">LICENSE</a> for details.
 </p>
 
 <h2>Contents</h2>
@@ -155,11 +163,11 @@ Or on Ubuntu by typing:
     sudo apt-get install python-matplotlib
 </pre>
 <br>
-To download the <a href="https://downloads.sourceforge.net/project/quast/quast-3.0.tar.gz">QUAST source code tarball</a> and extract it, type:
+To download the <a href="https://downloads.sourceforge.net/project/quast/quast-3.1.tar.gz">QUAST source code tarball</a> and extract it, type:
 <pre class="code">
-    wget https://downloads.sourceforge.net/project/quast/quast-3.0.tar.gz
-    tar -xzf quast-3.0.tar.gz
-    cd quast-3.0
+    wget https://downloads.sourceforge.net/project/quast/quast-3.1.tar.gz
+    tar -xzf quast-3.1.tar.gz
+    cd quast-3.1
 </pre>
 
 <p>
@@ -187,9 +195,9 @@ which runs only the first two commands.
 </p>
 
 <p>
-Note: you should place quast-3.0 directory in the final destination before
+Note: you should place quast-3.1 directory in the final destination before
 the first use (e.g. before run with --test). If you want to move QUAST to 
-some new place after several usages you should use a clean copy of quast-3.0.
+some new place after several usages you should use a clean copy of quast-3.1.
 This limitation is caused by auto-generation of absolute paths in compiled 
 modules of QUAST.
 </p>
@@ -507,8 +515,9 @@ MetaQUAST only:
     <code><b>--test-no-ref</b></code>
 </div>
 Run MetaQUAST on a data from the <code>test_data</code> folder, but without reference genomes. The tool will download
-    SILVA 16S rRNA gene database (170 Mb), which will be required if you plan to use MetaQUAST without references.
-     See <a href="#sec2.5">section 2.5</a> for details about algorithm of searching references.
+    SILVA 16S rRNA gene database (170 Mb) and BLAST binaries (55-75 Mb depending on your OS),
+    which will be required if you plan to use MetaQUAST without references.
+    See <a href="#sec2.5">section 2.5</a> for details about reference search algorithm.
 
 <div class='option'>
     <a href='max_ref_num'></a><code><b>--max-ref-num</b></code> <code>&lt;int&gt;</code>

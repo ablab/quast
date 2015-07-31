@@ -136,6 +136,18 @@ Quast C, Pruesse E, Yilmaz P, Gerken J, Schweer T, Yarza P, Peplies J, Glöckner
 The SILVA ribosomal RNA gene database project: improved data processing and web-based tools. 
 Nucl. Acids Res. 41 (D1): D590-D596.
 
+6. MetaQUAST uses Krona tools for visualizing dataset taxonomic profile based on
+reference genomes found in SILVA database. Please, see License Agreement in the file
+libs/kronatools/LICENSE.txt or online at
+http://sourceforge.net/p/krona/git/ci/master/tree/KronaTools/LICENSE.txt.
+
+For more details about Krona tools please refer to
+http://sourceforge.net/p/krona/home/krona/ website and to the following paper:
+
+Ondov BD, Bergman NH, and Phillippy AM. Interactive metagenomic visualization in a Web
+browser. BMC Bioinformatics. 2011 Sep 30; 12(1):385.
+
+
 -------------------------------------------------------------------------------
 
 		    GNU GENERAL PUBLIC LICENSE

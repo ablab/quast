@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# installs general QUAST pipeline, general MetaQUAST pipeline,
+# and MetaQUAST for de novo datasets (without references)
+
 quast_home=$(dirname "$0")
 
 stdout_log_fname=$quast_home/install_log.stdout

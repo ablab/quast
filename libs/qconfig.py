@@ -195,7 +195,6 @@ def usage(show_hidden=False, meta=False):
     print >> sys.stderr, "-t  --threads      <int>              Maximum number of threads [default: 25% of CPUs]"
     print >> sys.stderr, "-l  --labels \"label, label, ...\"      Names of assemblies to use in reports, comma-separated. If contain spaces, use quotes"
     print >> sys.stderr, "-L                                    Take assembly names from their parent directory names"
-    print >> sys.stderr, "--plots-format                        File format for plots. Supported formats: emf, eps, pdf, png, ps, raw, rgba, svg, svgz."
     if meta:
         print >> sys.stderr, "-f  --gene-finding                    Predict genes using MetaGeneMark"
     else:

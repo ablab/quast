@@ -259,9 +259,9 @@ View the summary of the evaluation results with the <a href="http://www.greenwoo
         <li>Only one assembly per run. It complicates assembly comparison. 
         <li>Fixed threshold for a minimum contig length (200<span class="rhs">&nbsp;</span>bp).
     </ul>
-    These issues are solved by QUAST in GAGE mode (run with a <code>--gage</code> option). QUAST filters contigs according to a specified threshold and runs GAGE on every assembly. 
-    GAGE statistics (see the <a href="http://gage.cbcb.umd.edu/index.html">GAGE site</a> and the <a href="http://genome.cshlp.org/content/early/2012/01/12/gr.131383.111">GAGE paper</a> for descriptions) 
-    are reported in addition to a standard QUAST report.<br>
+    These issues are solved by QUAST in GAGE mode (run with <code>--gage</code>). QUAST filters contigs according to a specified threshold and runs GAGE on every assembly.
+    GAGE statistics (see <a href="http://gage.cbcb.umd.edu/index.html">GAGE website</a> and <a href="http://genome.cshlp.org/content/early/2012/01/12/gr.131383.111">GAGE paper</a> for the descriptions)
+    are reported in addition to standard QUAST report.<br>
     <span style='line-height: 50%;'>&nbsp;</span><br>  
     Note:<br><br>
     <ul>
@@ -299,7 +299,7 @@ Reference genome file. Optional. Many metrics can't be evaluated without a refer
 </div>
 File with gene positions in reference. See details about the file format in <a href="#sec2.2">section 2.2</a>.<br>
 <span style='line-height: 50%;'>&nbsp;</span><br>
-If you do not have gene positions, you can make QUAST predict genes by the <code><a href='#gene_finding'>--gene-finding</code> option</a>.<br>
+If you do not have gene positions, you can make QUAST predict genes by <code><a href='#gene_finding'>--gene-finding</a></code>.<br>
 
 <div class='option'>
 <code><b>-O</b> &lt;path&gt;</code> (or <code>--operons &lt;path&gt;</code>)
@@ -320,7 +320,7 @@ Advanced options:
 <div class='option'>
 <code><b>--threads</b></code> (or <code>-t</code>) <code>&lt;int&gt;</code>
 </div>
-Maximum number of threads. The default value is 25% of CPUs but not less than 1. If QUAST fails to determine the number of CPUs, the number is set to 4.
+Maximum number of threads. The default value is 25% of CPUs but not less than 1. If QUAST fails to determine the number of CPUs, maximum threads number is set to 4.
 
 <div class='option'>
 <code><b>--labels</b></code> (or <code>-l</code>) <code>&lt;label,label...&gt;</code>
@@ -348,8 +348,8 @@ Take assembly names from their parent directory names.
 Enables gene finding. Affects perfomance, thus disabled by default.<br>
 <span style='line-height: 50%;'>&nbsp;</span><br>  
 By default, we assume that the genome is prokaryotic, and apply GeneMarkS for gene finding.
-If the genome is eukaryotic, add the <a href='#eukaryote'><code>--eukaryote</code></a> option to enable option to enable GeneMark-ES instead.
-If it is a metagenome, add the <a href='#meta'><code>--meta</code></a> option.<br>
+If the genome is eukaryotic, use <a href='#eukaryote'><code>--eukaryote</code></a> to enable option to enable GeneMark-ES instead.
+If it is a metagenome, use <a href='#meta'><code>--meta</code></a>.<br>
 <span style='line-height: 50%;'>&nbsp;</span><br>  
 If a <a href='#sec2.2'>gene file</a> is provided by <code>-G</code> as well, both 
 <span class='metric_ref'><a href='#genes'># genes</a></span> in the file covered by the assembly, and
@@ -382,8 +382,8 @@ This options indicates that the genome is not circular.
     <a name="meta"></a>
     <code><b>--meta</b></code>
 </div>
-Use MetaGeneMark for gene finding, if the <code>--gene-finding</code> option is specified.
-If the <code>--eukaryote</code> option is also provided, MetaGeneMark still will be used.<br>
+Use MetaGeneMark for gene finding, if <code>--gene-finding</code> is specified.
+If <code>--eukaryote</code> is also provided, MetaGeneMark still will be used.<br>
 <span style='line-height: 50%;'>&nbsp;</span><br>  
 Note: if you are working with metagenome assemblies, we recommend <a href='#sec2.5'>to use metaquast.py</a> instead of quast.py
 (it is in the same directory as quast.py).
@@ -398,7 +398,7 @@ not specified (see <code>--R</code> option).
     <code><b>--gage</b></code>
 </div>
 Starts QUAST in "GAGE mode" (see <a href="#sec2.3">section 2.3</a>).
-Note: in this case, you also have to set the <code>-R</code> option.
+Note: in this case, you also have to specify reference genome with <code>-R</code>.
 
 <div class='option'>
     <code><b>--contig-thresholds</b> &lt;int,int,...&gt;</code>
@@ -552,23 +552,27 @@ Print help.
         <li>for the rest of the contigs that were not aligned to any reference.
     </ul>
 
-<p>If you run MetaQUAST without provided references, the tool will attempts to identify which organisms is presented in metagenome.
-MetaQUAST uses BLASTN for aligning contigs to FASTA file, containing small subunit ribosomal RNA sequences (SILVA rRNA database).
-For each assembly, 30 reference genomes with maximal score are chosen (by default). Maximum number of references to download can be specified with the option <a href='#max_ref_num'><code>--max-ref-number</code></a>.
-<p>Reference genomes for the chosen organisms are downloaded from NCBI database to <code>&lt;quast_output_dir&gt;/quast_downloaded_references/</code>.
-After first running <code>quast.py</code>, MetaQUAST removes reference genomes with low genome fraction (less than 10%) and run <code>quast.py</code> with remaining references.
-Notable, for all references in combination MetaQUAST runs quast.py with option <a href='#ambiguity_usage'><code>--ambiguity-usage</code></a> 'all'.
+<p>If you run MetaQUAST without providing reference genomes, the tool will try to identify genome content of the metagenome.
+MetaQUAST uses BLASTN for aligning contigs to SILVA rRNA database, i.e. FASTA file containing small subunit ribosomal RNA sequences.
+For each assembly, 30 reference genomes with top scores are chosen.
+Maximum number of references to download can be specified with <a href='#max_ref_num'><code>--max-ref-number</code></a>.
+<p>Reference genomes for the chosen genomes are downloaded from NCBI database to <code>&lt;quast_output_dir&gt;/quast_downloaded_references/</code>.
+After first run of <code>quast.py</code>, MetaQUAST removes reference genomes with low genome fraction (less than 10%) and run <code>quast.py</code> on remaining references.
+Note that MetaQUAST uses <a href='#ambiguity_usage'><code>--ambiguity-usage</code></a> 'all' when running quast.py on
+the concatenation of all input references ("combined reference").
 
 <p>Usage:
 <pre class="code">
     python metaquast.py contigs_1 contigs_2 ... -R reference_1,reference_2,reference_3,...
 </pre>
 
-<p>All options are the same as for <code>quast.py</code>, except for <code>-R</code>: it can accept multiple references (comma-separated without spaces in between) or directory with references.</p>
+<p>All options are the same as for <code>quast.py</code>, except for <code>-R</code>: it can accept multiple references (comma-separated list without spaces in between)
+    or a directory with references.</p>
 
 <a name="sec3"></a>
 <h2>3. QUAST output</h2>
-<p>If an output path was not specified manually, QUAST puts its output into the directory <code>quast_results/result_&lt;DATE&gt;</code> and creates a symlink <code>latest</code> to it inside the directory <code>quast_results/</code>.
+<p>If an output path is not specified manually (with <code>-o</code>), QUAST puts its output into <code>quast_results/result_&lt;DATE&gt;</code> directory and
+    creates <code>latest</code> symlink to it under <code>quast_results/</code> directory.
 
 <br>
 <br>
@@ -576,27 +580,27 @@ Notable, for all references in combination MetaQUAST runs quast.py with option <
 <table style="margin-left: 20px; font-size: 1em;">
     <tr>
         <td style="padding-right: 20px;">report.txt</td>
-        <td>an assessment summary in a simple text format,</td>
+        <td>assessment summary in plain text format,</td>
     </tr>
     <tr>
         <td style="padding-right: 20px;">report.tsv</td>
-        <td>a tab-separated version of the summary, suitable for spreadsheets (Google Docs, Excel, etc),</td>
+        <td>tab-separated version of the summary, suitable for spreadsheets (Google Docs, Excel, etc),</td>
     </tr>
     <tr>
         <td style="padding-right: 20px;">report.tex</td>
-        <td>a LaTeX version of the summary,</td>
+        <td>LaTeX version of the summary,</td>
     </tr>
     <tr>
         <td style="padding-right: 20px;">alignment.svg</td>
-        <td>a contig alignment plot (file is created if the matplotlib python library is installed),</td>
+        <td>contig alignment plot (file is created if matplotlib python library is installed),</td>
     </tr>
     <tr>
         <td style="padding-right: 20px;">report.pdf</td>
-        <td>all other plots combined with all tables (file is created if the matplotlib python library is installed),</td>
+        <td>all other plots combined with all tables (file is created if matplotlib python library is installed),</td>
     </tr>
     <tr>
         <td style="padding-right: 20px;">report.html</td>
-        <td>an HTML version of the report with interactive plots inside it,</td>
+        <td>HTML version of the report with interactive plots inside,</td>
     </tr>
     <tr>
         <td style="padding-right: 20px;">contigs_reports/</td>
@@ -604,11 +608,11 @@ Notable, for all references in combination MetaQUAST runs quast.py with option <
     </tr>
     <tr>
         <td style="padding-right: 20px; padding-left: 20px;">misassemblies_report</td>
-        <td>a detailed report on misassemblies. See <a href="#sec3.1.2">section 3.1.2</a> for details,</td>
+        <td>detailed report on misassemblies. See <a href="#sec3.1.2">section 3.1.2</a> for details,</td>
     </tr>
     <tr>
         <td style="padding-right: 20px; padding-left: 20px;">unaligned_report</td>
-        <td>a detailed report on unaligned and partially unaligned contigs. See <a href="#sec3.1.3">section 3.1.3</a> for details.</td>
+        <td>detailed report on unaligned and partially unaligned contigs. See <a href="#sec3.1.3">section 3.1.3</a> for details.</td>
     </tr>
 </table>
 
@@ -636,8 +640,8 @@ Note:
     is the total number of bases in contigs of length <code>&ge; x<span class="rhs">&nbsp;</span>bp</code>.
     Not affected by the <code>--min-contig</code> parameter (see <a href="#sec2.4">section 2.4</a>).<br>
     <br>
-    <i>All remaining metrics are computed only the contigs that exceed the threshold specified by specified by the
-    <code>--min-contig</code> option (see <a href="#sec2.4">section 2.4</a>, default is 500).</i>
+    <i>All remaining metrics are computed for contigs that exceed the threshold specified by
+    <code>--min-contig</code> (see <a href="#sec2.4">section 2.4</a>, default is 500 bp).</i>
 </p>
 
 <p><span class='metric-name'># contigs</span> is the total number of contigs in the assembly.</p>
@@ -673,7 +677,7 @@ Note:
     <li>flanking sequences align on different references (MetaQUAST only).
     </ul>
     This metric requires a reference genome. Note that default threshold of 1<span class="rhs">&nbsp;</span>kbp can be
-changed by <a href='#extensive_mis_size'><code>--extensive-mis-size</code></a> option.</p>
+changed by <a href='#extensive_mis_size'><code>--extensive-mis-size</code></a>.</p>
 
 <p><span class='metric-name'># misassembled contigs</span> is the number of contigs that contain misassembly events.</p>
 
@@ -725,7 +729,7 @@ changed by <a href='#extensive_mis_size'><code>--extensive-mis-size</code></a> o
 <p><span class='metric-name'># operons</span> is defined similarly to <span class='metric-ref'># genes</span>, but an operon positions file required instead.</p>
 
 <p><a name='predicted_genes'><span class='metric-name'># predicted genes</span> is the number of genes in the assembly
-    found by GeneMarkS, GeneMark-ES, GlimmerHMM or MetaGeneMark. See the description of the <a href='#gene_finding'><code>--gene-finding</code></a> option for details.</p>
+    found by GeneMarkS, GeneMark-ES, GlimmerHMM or MetaGeneMark. See the description of <a href='#gene_finding'><code>--gene-finding</code></a> option for details.</p>
 
 <p><span class='metric-name'>Largest alignment</span> is the length of the largest continuous alignment in the assembly.
     A value can be smaller than a value of <a href='largest_contig'><span class='metric-ref'>largest contig</span></a> if the largest contig is misassembled.</p>
@@ -744,7 +748,7 @@ changed by <a href='#extensive_mis_size'><code>--extensive-mis-size</code></a> o
 
 <p><span class='metric-name'>Relocation</span> is a misassembly where the left flanking sequence aligns over 1<span class="rhs">&nbsp;</span>kbp away from the right flanking
 sequence on the reference, or they overlap by more than 1<span class="rhs">&nbsp;</span>kbp, and both flanking sequences align on the same chromosome. Note that default threshold of 1<span class="rhs">&nbsp;</span>kbp can be
-changed by <a href='#extensive_mis_size'><code>--extensive-mis-size</code></a> option.</p></p>
+changed by <a href='#extensive_mis_size'><code>--extensive-mis-size</code></a>.</p>
 
 <p><span class='metric-name'>Translocation</span> is a misassembly where the flanking sequences align on different chromosomes. </p>
 
@@ -873,8 +877,8 @@ You can view results separately for each reference by clicking on a row preceede
     Please see the <code>CONFIGURABLE PARAMETERS</code> section in <code>libs/plotter.py</code>.
 </p>
 
-<p> Note: if you restart QUAST on the same directory with new parameters, is will reuse alignments and run much faster.
-    See the description of the <code>-o</code> option in <a href="#sec2.4">section 2.4</a>.
+<p> Note: if you restart QUAST on the same directory with new parameters, is will reuse existing alignments and run much faster.
+    See the description of <code>-o</code> option in <a href="#sec2.4">section 2.4</a>.
 </p>
 
 <a name="sec5"></a><p>

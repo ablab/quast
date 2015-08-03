@@ -236,8 +236,13 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
             # processing each chromosome separately (if we can)
             from joblib import Parallel, delayed
             nucmer_exit_codes = Parallel(n_jobs=n_jobs)(delayed(run_nucmer)(
-                prefix, chr_file, contigs_fpath, log_out_fpath, log_err_fpath, index)
-                for (prefix, chr_file) in prefixes_and_chr_files)
+                prefix, chr_file, contigs_fpath, log_out_fpath, log_err_fpath + "_part%d" % (i + 1), index)
+                for i, (prefix, chr_file) in enumerate(prefixes_and_chr_files))
+
+            print >> planta_err_f, "Stderr outputs for reference parts are in:"
+            for i in range(len(prefixes_and_chr_files)):
+                print >> planta_err_f, log_err_fpath + "_part%d" % (i + 1)
+            print >> planta_err_f, ""
 
             if 0 not in nucmer_exit_codes:
                 return __fail(contigs_fpath, index)

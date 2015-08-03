@@ -120,7 +120,7 @@ class NucmerStatus:
     NOT_ALIGNED = 2
 
 
-def run_nucmer(prefix, ref_fpath, contigs_fpath, log_out_fpath, log_err_fpath, index, planta_err_f):
+def run_nucmer(prefix, ref_fpath, contigs_fpath, log_out_fpath, log_err_fpath, index):
     # additional GAGE params of Nucmer: '-l', '30', '-banded'
     return_code = qutils.call_subprocess(
         [bin_fpath('nucmer'),
@@ -133,9 +133,6 @@ def run_nucmer(prefix, ref_fpath, contigs_fpath, log_out_fpath, log_err_fpath, i
         stdout=open(log_out_fpath, 'a'),
         stderr=open(log_err_fpath, 'a'),
         indent='  ' + qutils.index_to_str(index))
-
-    if return_code != 0:
-        print >> planta_err_f, qutils.index_to_str(index) + 'Nucmer failed for', contigs_fpath, '\n'
 
     return return_code
 
@@ -217,7 +214,7 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
 
         if not qconfig.splitted_ref:
             nucmer_exit_code = run_nucmer(nucmer_fpath, ref_fpath, contigs_fpath,
-                                          log_out_fpath, log_err_fpath, index, planta_err_f)
+                                          log_out_fpath, log_err_fpath, index)
             if nucmer_exit_code != 0:
                 return __fail(contigs_fpath, index)
 
@@ -239,7 +236,7 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
             # processing each chromosome separately (if we can)
             from joblib import Parallel, delayed
             nucmer_exit_codes = Parallel(n_jobs=n_jobs)(delayed(run_nucmer)(
-                prefix, chr_file, contigs_fpath, log_out_fpath, log_err_fpath, index, planta_err_f)
+                prefix, chr_file, contigs_fpath, log_out_fpath, log_err_fpath, index)
                 for (prefix, chr_file) in prefixes_and_chr_files)
 
             if 0 not in nucmer_exit_codes:
@@ -252,6 +249,9 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
                 delta_file.write("NUCMER\n")
                 for i, (prefix, chr_fname) in enumerate(prefixes_and_chr_files):
                     if nucmer_exit_codes[i] != 0:
+                        logger.warning('  ' + qutils.index_to_str(index) +
+                        'Failed aligning contigs %s to reference part %s! Skipping this part. ' % (qutils.label_from_fpath(contigs_fpath),
+                        chr_fname) + ('Run with the --debug flag to see additional information.' if not qconfig.debug else ''))
                         continue
 
                     chr_delta_fpath = prefix + '.delta'

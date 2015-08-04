@@ -50,9 +50,17 @@ def get_results_for_metric(ref_names, metric, contigs_num, labels, output_dirpat
         cur_ref_names = ref_names
     return results, all_rows, cur_ref_names
 
-def do(output_dirpath, summary_dirpath, labels, metrics, misassembl_metrics, ref_names):
+def get_labels(output_dirpath, report_fname):
+    results_fpath = os.path.join(output_dirpath, 'combined_quast_output', report_fname)
+    results_file = open(results_fpath, 'r')
+    values = map(lambda s: s.strip(), results_file.readline().split('\t'))
+    return values[1:]
+
+
+def do(output_dirpath, summary_dirpath, metrics, misassembl_metrics, ref_names):
     ref_names = sorted(ref_names)
     ref_names.append(qconfig.not_aligned_name) # extra case
+    labels = get_labels(output_dirpath, qconfig.report_prefix + '.tsv')
     contigs_num = len(labels)
     plots_dirname = qconfig.plot_extension.upper()
     for ext in ['TXT', plots_dirname, 'TEX', 'TSV']:

@@ -172,20 +172,23 @@ def create_meta_report(results_dirpath, json_texts):
     with open(html_fpath, 'w') as f_html:
         f_html.write(html_text)
     from libs import search_references_meta
-    taxons_for_crona = search_references_meta.taxons_for_crona
+    taxons_for_krona = search_references_meta.taxons_for_krona
     meta_log = get_logger(qconfig.LOGGER_META_NAME)
-    if taxons_for_crona:
+    if taxons_for_krona:
         meta_log.info('  Drawing interactive Krona plots...')
         krona_dirpath = os.path.join(qconfig.LIBS_LOCATION, 'kronatools')
+        krona_res_dirpath = os.path.join(results_dirpath, 'Krona')
+        if not os.path.isdir(krona_res_dirpath):
+            os.mkdir(krona_res_dirpath)
         import json
         json_data = json.loads(json_texts[0])
         assemblies = json_data['assembliesNames']
-        crona_txt_ext = '_taxonomy.txt'
-        crona_common_fpath = os.path.join(results_dirpath, 'overall' + crona_txt_ext)
-        crona_common_file = open(crona_common_fpath, 'w')
+        krona_txt_ext = '_taxonomy.txt'
+        krona_common_fpath = os.path.join(krona_res_dirpath, 'overall' + krona_txt_ext)
+        krona_common_file = open(krona_common_fpath, 'w')
         for index, name in enumerate(assemblies):
-            crona_file = open(os.path.join(results_dirpath, name + crona_txt_ext), 'w')
-            crona_file.close()
+            krona_file = open(os.path.join(krona_res_dirpath, name + krona_txt_ext), 'w')
+            krona_file.close()
         for json_text in json_texts[1:]:
             json_data = json.loads(json_text)
             ref = json_data['referenceName']
@@ -196,32 +199,32 @@ def create_meta_report(results_dirpath, json_texts):
                     break
             cur_assemblies = json_data['assembliesNames']
             for index, name in enumerate(cur_assemblies):
-                crona_fpath = os.path.join(results_dirpath, name + crona_txt_ext)
-                with open(crona_fpath, 'a') as f_crona:
-                    if ref in taxons_for_crona:
-                        f_crona.write(str(lengths[index]) + '\t' + taxons_for_crona[ref] + '\n')
+                krona_fpath = os.path.join(krona_res_dirpath, name + krona_txt_ext)
+                with open(krona_fpath, 'a') as f_krona:
+                    if ref in taxons_for_krona:
+                        f_krona.write(str(lengths[index]) + '\t' + taxons_for_krona[ref] + '\n')
                     else:
-                        f_crona.write(str(lengths[index]) + '\n')
-            if ref in taxons_for_crona:
-                crona_common_file.write(str(sum(lengths)) + '\t' + taxons_for_crona[ref] + '\n')
+                        f_krona.write(str(lengths[index]) + '\n')
+            if ref in taxons_for_krona:
+                krona_common_file.write(str(sum(lengths)) + '\t' + taxons_for_krona[ref] + '\n')
             else:
-                crona_common_file.write(str(sum(lengths)) + '\n')
-        crona_common_file.close()
+                krona_common_file.write(str(sum(lengths)) + '\n')
+        krona_common_file.close()
         for index, name in enumerate(assemblies):
-            crona_fpath = os.path.join(results_dirpath, name + '_taxonomy_chart.html')
-            crona_txt_fpath = os.path.join(results_dirpath, name + crona_txt_ext)
+            krona_fpath = os.path.join(krona_res_dirpath, name + '_taxonomy_chart.html')
+            krona_txt_fpath = os.path.join(krona_res_dirpath, name + krona_txt_ext)
             qutils.call_subprocess(
-            ['perl', '-I', krona_dirpath + '/lib', krona_dirpath + '/scripts/ImportText.pl', crona_txt_fpath, '-o', crona_fpath, '-a'],
+            ['perl', '-I', krona_dirpath + '/lib', krona_dirpath + '/scripts/ImportText.pl', krona_txt_fpath, '-o', krona_fpath, '-a'],
             stdout=open(os.devnull, 'w'), stderr=open(os.devnull, 'w'))
-            meta_log.info('  Krona plot for ' + name + ' is saved to ' + crona_fpath)
-            os.remove(crona_txt_fpath)
+            meta_log.info('  Krona plot for ' + name + ' is saved to ' + krona_fpath)
+            os.remove(krona_txt_fpath)
         if len(assemblies) > 1:
-            crona_fpath = os.path.join(results_dirpath, 'summary_taxonomy_chart.html')
+            krona_fpath = os.path.join(krona_res_dirpath, 'summary_taxonomy_chart.html')
             qutils.call_subprocess(
-                ['perl', '-I', krona_dirpath + '/lib', krona_dirpath + '/scripts/ImportText.pl', crona_common_fpath, '-o', crona_fpath, '-a'],
+                ['perl', '-I', krona_dirpath + '/lib', krona_dirpath + '/scripts/ImportText.pl', krona_common_fpath, '-o', krona_fpath, '-a'],
                 stdout=open(os.devnull, 'w'), stderr=open(os.devnull, 'w'))
-        os.remove(crona_common_fpath)
-        meta_log.info('  Summary Krona plot is saved to ' + crona_fpath)
+            meta_log.info('  Summary Krona plot is saved to ' + krona_fpath)
+        os.remove(krona_common_fpath)
 
     meta_log.info('  Extended version of HTML-report (for all references and assemblies) is saved to ' + html_fpath)
 

@@ -27,6 +27,9 @@ def get_results_for_metric(ref_names, metric, contigs_num, labels, output_dirpat
         all_rows.append(row)
     for i, ref_name in enumerate(ref_names):
         results_fpath = os.path.join(output_dirpath, ref_name + '_quast_output', report_fname)
+        if not os.path.exists(results_fpath):
+            all_rows[0]['values'] = cur_ref_names
+            continue
         results_file = open(results_fpath, 'r')
         columns = map(lambda s: s.strip(), results_file.readline().split('\t'))
         if metric not in columns:

@@ -100,18 +100,6 @@
         <p>
         <span id="main_ref_genome">
         </p>
-        <div id="heatmap_header" style='display: none;'>
-            <div style="padding-right: 10px; display: inline-block; vertical-align:top;">
-                <canvas id="gradientHeatmap" width="150" height="6"></canvas>
-                <div style="margin-left: 2px; text-align: justify;">
-                    <span class="heatmap_legend">Worst</span>
-                    <span style="margin-left: -5px;" class="heatmap_legend">Median</span>
-                    <span class="heatmap_legend">Best</span>
-                    <span class="heatmap_legend" style='width: 100%; height: 0;'></span>
-                </div>
-            </div>
-            <label for="heatmaps_chbox"><input type="checkbox" checked="checked" id="heatmaps_chbox">Show heatmap</label>
-        </div>
     </div>
 
     <noscript>
@@ -124,8 +112,19 @@
 
     <div class='report-and-plots'>
         <div class='report' id='main_report'>
+                <div id="heatmap_header" style='display: none;'>
+                <div style="padding-right: 10px; display: inline-block; vertical-align:top;">
+                    <canvas id="gradientHeatmap" width="150" height="6"></canvas>
+                    <div style="margin-left: 2px; text-align: justify;">
+                        <span class="heatmap_legend">Worst</span>
+                        <span style="margin-left: -5px;" class="heatmap_legend">Median</span>
+                        <span class="heatmap_legend">Best</span>
+                        <span class="heatmap_legend" style='width: 100%; height: 0;'></span>
+                    </div>
+                </div>
+                <label for="heatmaps_chbox"><input type="checkbox" checked="checked" id="heatmaps_chbox">Show heatmap</label>
+            </div>
         </div>
-
         <div class='plots'>
             <table style='margin: -3px;'>
                 <tr id='all-switches'>

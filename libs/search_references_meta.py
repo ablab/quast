@@ -40,7 +40,7 @@ if platform.system() == 'Darwin':
 else:
     sed_cmd = 'sed -i '
 is_quast_first_run = False
-taxons_for_crona = {}
+taxons_for_krona = {}
 
 def blast_fpath(fname):
     return os.path.join(blast_dirpath, fname)
@@ -298,7 +298,7 @@ def do(assemblies, downloaded_dirpath):
                                 specie = specie[0] + '_' + specie[1]
                                 if specie not in organisms:
                                     all_scores.append((score, organism))
-                                    taxons_for_crona[re.sub('[/.=]', '', organism)] = taxons
+                                    taxons_for_krona[re.sub('[/.=]', '', organism)] = taxons
                                     organisms.append(specie)
                                     refs_for_query += 1
                                 else:
@@ -306,7 +306,7 @@ def do(assemblies, downloaded_dirpath):
                                     if tuple_scores and score > tuple_scores[0][0]:
                                         all_scores.remove((tuple_scores[0][0], tuple_scores[0][1]))
                                         all_scores.append((score, organism))
-                                        taxons_for_crona[re.sub('[/.=]', '', organism)] = taxons
+                                        taxons_for_krona[re.sub('[/.=]', '', organism)] = taxons
                                         refs_for_query += 1
                 elif line.startswith('#'):
                     refs_for_query = 0

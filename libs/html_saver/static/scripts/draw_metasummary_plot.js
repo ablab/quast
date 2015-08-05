@@ -193,7 +193,8 @@ var summary = {
 
                 var firstLabel = $('.yAxis .tickLabel').last();
                 firstLabel.prepend(title + '<span class="rhs">&nbsp;</span>=<span class="rhs">&nbsp;</span>');
-
+                if (name == 'genome') firstLabel.html(title);
+                
                 bindTip(placeholder, series, plot, refToPrettyString, 1, refs, 'top right', true);
 
             };

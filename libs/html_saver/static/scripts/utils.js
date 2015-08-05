@@ -248,15 +248,16 @@ function addTooltipIfDefinitionExists(glossary, metricName) {
 /* PLOT TIPS */
 function bindTip(placeholder, series, plot, xToPrettyStringFunction, tickX, xUnit, position, summaryPlots) {
     var prevPoint = null;
+    var prevIndex = null;
 
     $(placeholder).bind("plothover", function(event, pos, item) {
         if (dragTable && dragTable.isDragging)
             return;
 
         if (item) {
-            if (prevPoint != item.dataIndex) {
+            if (prevPoint != item.dataIndex || (summaryPlots && item.seriesIndex != prevIndex)) {
                 prevPoint = item.dataIndex;
-
+                prevIndex = item.seriesIndex;
                 var x = item.datapoint[0];
 
                 showTip(item.pageX, item.pageY, plot.offset(),

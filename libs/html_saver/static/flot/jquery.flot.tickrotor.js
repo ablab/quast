@@ -152,7 +152,7 @@
                     }
                     ctx.save();
                     ctx.font = font;
-                    if (rotateTicks <= 90) {
+                    if (rotateTicks < 90) {
                         // Center such that the top of the label is at the center of the tick.
                         xoffset = -Math.ceil(Math.cos(radsAboveHoriz) * tick.height);
                         yoffset = Math.ceil(Math.sin(radsAboveHoriz) * tick.height);
@@ -164,12 +164,12 @@
                         // rotate counterclockwise, which means the label
                         // has to *end* at the center of the tick.
                         xoffset = Math.ceil(Math.cos(radsAboveHoriz) * tick.height)
-                                  - Math.ceil(Math.cos(radsAboveHoriz) * tick.width);
-                        yoffset = Math.ceil(Math.sin(radsAboveHoriz) * tick.width)
+                                  - Math.ceil(Math.cos(rotateTicksRads) * tick.width);
+                        yoffset = Math.ceil(Math.sin(rotateTicksRads) * tick.width)
                                   + Math.ceil(Math.sin(radsAboveHoriz) * tick.height);
                         ctx.translate(Math.round(plot.getPlotOffset().left + xaxis.p2c(tick.v) + xoffset),
-                                      box.top + box.padding + plot.getOptions().grid.labelMargin + yoffset);
-                        ctx.rotate(-radsAboveHoriz);
+                                      box.top - box.padding + plot.getOptions().grid.labelMargin + yoffset);
+                        ctx.rotate(-rotateTicksRads);
                     }
                     ctx.fillText(tick.label, 0, 0);
                     ctx.restore();

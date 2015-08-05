@@ -570,12 +570,12 @@ def main(args):
     if not ref_fpaths:
         # No references, running regular quast with MetaGenemark gene finder
         logger.info()
-        logger.notice('No references are provided, starting quast.py with MetaGeneMark gene finder')
+        logger.notice('No references are provided, starting regular QUAST with MetaGeneMark gene finder')
         _start_quast_main(
             None,
             quast_py_args,
             assemblies=assemblies,
-            output_dirpath=os.path.join(output_dirpath, 'quast_output'),
+            output_dirpath=output_dirpath,
             exit_on_exception=True)
         exit(0)
 
@@ -595,7 +595,7 @@ def main(args):
     return_code, total_num_notifications = _start_quast_main(run_name, quast_py_args + ["--ambiguity-usage"] + ['all'],
         assemblies=assemblies,
         reference_fpath=combined_ref_fpath,
-        output_dirpath=os.path.join(output_dirpath, 'combined_quast_output'),
+        output_dirpath=os.path.join(output_dirpath, qconfig.combined_name + qconfig.quast_output_suffix),
         num_notifications_tuple=total_num_notifications)
 
     if json_texts is not None:
@@ -619,7 +619,7 @@ def main(args):
             return_code, total_num_notifications = _start_quast_main(run_name, quast_py_args + ["--ambiguity-usage"] + ['all'],
                 assemblies=assemblies,
                 reference_fpath=combined_ref_fpath,
-                output_dirpath=os.path.join(output_dirpath, 'combined_quast_output'),
+                output_dirpath=os.path.join(output_dirpath, qconfig.combined_name + qconfig.quast_output_suffix),
                 num_notifications_tuple=total_num_notifications)
             if json_texts is not None:
                 json_texts = json_texts[:-1]
@@ -643,7 +643,7 @@ def main(args):
 
     assemblies_by_reference, not_aligned_assemblies = _partition_contigs(
         assemblies, corrected_ref_fpaths, corrected_dirpath,
-        os.path.join(output_dirpath, 'combined_quast_output', 'contigs_reports', 'alignments_%s.tsv'), labels)
+        os.path.join(output_dirpath, qconfig.combined_name + qconfig.quast_output_suffix, 'contigs_reports', 'alignments_%s.tsv'), labels)
 
     ref_names = []
     for ref_name, ref_assemblies in assemblies_by_reference.iteritems():
@@ -658,7 +658,7 @@ def main(args):
             return_code, total_num_notifications = _start_quast_main(run_name, quast_py_args,
                 assemblies=ref_assemblies,
                 reference_fpath=os.path.join(corrected_dirpath, ref_name) + common_ref_fasta_ext,
-                output_dirpath=os.path.join(output_dirpath, ref_name + '_quast_output'),
+                output_dirpath=os.path.join(output_dirpath, ref_name + qconfig.quast_output_suffix),
                 exit_on_exception=False, num_notifications_tuple=total_num_notifications)
             if json_texts is not None:
                 json_texts.append(json_saver.json_text)
@@ -670,7 +670,7 @@ def main(args):
 
     return_code, total_num_notifications = _start_quast_main(run_name, quast_py_args,
         assemblies=not_aligned_assemblies,
-        output_dirpath=os.path.join(output_dirpath, qconfig.not_aligned_name + '_quast_output'),
+        output_dirpath=os.path.join(output_dirpath, qconfig.not_aligned_name + qconfig.quast_output_suffix),
         exit_on_exception=False, num_notifications_tuple=total_num_notifications)
     if json_texts is not None:
         json_texts.append(json_saver.json_text)

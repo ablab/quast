@@ -26,7 +26,7 @@ def get_results_for_metric(ref_names, metric, contigs_num, labels, output_dirpat
         row = {'metricName': labels[i], 'values': []}
         all_rows.append(row)
     for i, ref_name in enumerate(ref_names):
-        results_fpath = os.path.join(output_dirpath, ref_name + '_quast_output', report_fname)
+        results_fpath = os.path.join(output_dirpath, ref_name + qconfig.quast_output_suffix, report_fname)
         if not os.path.exists(results_fpath):
             all_rows[0]['values'] = cur_ref_names
             continue
@@ -53,14 +53,17 @@ def get_results_for_metric(ref_names, metric, contigs_num, labels, output_dirpat
         cur_ref_names = ref_names
     return results, all_rows, cur_ref_names
 
+
 def get_labels(output_dirpath, report_fname):
-    results_fpath = os.path.join(output_dirpath, 'combined_quast_output', report_fname)
+    results_fpath = os.path.join(output_dirpath, qconfig.combined_name + qconfig.quast_output_suffix, report_fname)
     results_file = open(results_fpath, 'r')
     values = map(lambda s: s.strip(), results_file.readline().split('\t'))
     return values[1:]
 
 
 def do(output_dirpath, summary_dirpath, metrics, misassembl_metrics, ref_names):
+    import plotter
+
     ref_names = sorted(ref_names)
     ref_names.append(qconfig.not_aligned_name) # extra case
     labels = get_labels(output_dirpath, qconfig.report_prefix + '.tsv')
@@ -70,7 +73,7 @@ def do(output_dirpath, summary_dirpath, metrics, misassembl_metrics, ref_names):
         if not os.path.isdir(os.path.join(summary_dirpath, ext)):
             os.mkdir(os.path.join(summary_dirpath, ext))
     for metric in metrics:
-         if not isinstance(metric, tuple):
+        if not isinstance(metric, tuple):
             summary_txt_fpath = os.path.join(summary_dirpath, 'TXT', metric.replace(' ', '_') + '.txt')
             summary_tex_fpath = os.path.join(summary_dirpath, 'TEX', metric.replace(' ', '_') + '.tex')
             summary_tsv_fpath = os.path.join(summary_dirpath, 'TSV', metric.replace(' ', '_') + '.tsv')
@@ -92,7 +95,6 @@ def do(output_dirpath, summary_dirpath, metrics, misassembl_metrics, ref_names):
                 reporting.save_tsv(summary_tsv_fpath, transposed_table)
                 reporting.save_tex(summary_tex_fpath, transposed_table)
                 if qconfig.draw_plots:
-                    import plotter
                     reverse = False
                     if reporting.get_quality(metric) == reporting.Fields.Quality.MORE_IS_BETTER:
                         reverse = True

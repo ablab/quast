@@ -26,7 +26,7 @@ function fillOneRow(metric, mainMetrics, group_n, order, glossary, is_primary, r
         trClass = 'content-row row_hidden row_to_hide';
     }
     var tdClass = '';
-    if (!is_primary && $.inArray(metricName, notExtendedMetrics) == -1) {
+    if (!is_primary) {
         trClass += ' secondary_hidden';
         tdClass = 'secondary_td';
     }

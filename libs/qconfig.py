@@ -81,14 +81,18 @@ default_json_dirname = "json"
 
 # names of reports, log, etc.
 corrected_dirname = "quast_corrected_input"
-downloaded_dirname = "quast_downloaded_references"
 plots_fname = "report.pdf"
 report_prefix = "report"
 transposed_report_prefix = "transposed_report"
 gage_report_prefix = "gage_"
 html_aux_dir = "report_html_aux"
+# for MetaQUAST
+downloaded_dirname = "quast_downloaded_references"
 meta_summary_dir = "summary"
 not_aligned_name = "not_aligned"
+combined_name = "combined"
+quast_output_suffix = "_quast_output"
+
 
 # other settings (mostly constants). Can't be changed by command-line options
 

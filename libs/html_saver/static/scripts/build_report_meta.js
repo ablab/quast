@@ -40,8 +40,8 @@ function buildReport() {
     if (summaryReports = readJson('summary')){
         name_reports = ['contigs', 'largest', 'totallen', 'n50', 'misassemblies', 'misassembled', 'mismatches', 'indels',
             'ns', 'genome', 'duplication', 'nga50'];
-        title_reports = ['Contigs', 'Largest contig', 'Total length', 'N50', 'Misassemblies', 'Misassembled length', 'Mismatches',
-        'Indels', "N's", 'Genome fraction', 'Duplication ratio', 'NGA50'];
+        title_reports = ['Contigs', 'Largest contig', 'Total len', 'N50', 'Misassemblies', 'Misassembled len', 'Mismatches',
+        'Indels', "N's", 'Genome frac.', 'Dup. ratio', 'NGA50'];
         for (var i = 0; i < summaryReports.length; i++) {
             if (summaryReports[i].refnames != undefined) {
                 if (name_reports[i] == 'misassemblies') {

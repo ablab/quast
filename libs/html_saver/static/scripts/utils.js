@@ -275,6 +275,10 @@ function bindTip(placeholder, series, plot, xToPrettyStringFunction, tickX, xUni
     });
 }
 
+function unBindTips(placeholder) {
+    $(placeholder).unbind("plothover");
+}
+
 var tipElementExists = false;
 function showTip(pageX, pageY, offset, plotWidth, plotHeight,
                  series, centralSeriesIndex, xPos, xIndex, xStr, position, summaryPlots) {

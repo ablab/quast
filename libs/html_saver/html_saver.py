@@ -163,14 +163,7 @@ def create_meta_report(results_dirpath, json_texts):
     html_fpath = os.path.join(results_dirpath, report_fname)
     if not os.path.isfile(html_fpath):
         init(results_dirpath, True)
-    # reading html template file
-    with open(html_fpath) as f_html:
-        html_text = f_html.read()
-    keyword = 'totalReport'
-    html_text = re.sub('{{ ' + keyword + ' }}', '[' + ','.join(json_texts) + ']', html_text)
-    html_text = re.sub(r'{{(\s+\S+\s+)}}', '{}', html_text)
-    with open(html_fpath, 'w') as f_html:
-        f_html.write(html_text)
+
     from libs import search_references_meta
     taxons_for_krona = search_references_meta.taxons_for_krona
     meta_log = get_logger(qconfig.LOGGER_META_NAME)
@@ -210,12 +203,14 @@ def create_meta_report(results_dirpath, json_texts):
             else:
                 krona_common_file.write(str(sum(lengths)) + '\n')
         krona_common_file.close()
+        krona_fpaths=[]
         for index, name in enumerate(assemblies):
             krona_fpath = os.path.join(krona_res_dirpath, name + '_taxonomy_chart.html')
             krona_txt_fpath = os.path.join(krona_res_dirpath, name + krona_txt_ext)
             qutils.call_subprocess(
             ['perl', '-I', krona_dirpath + '/lib', krona_dirpath + '/scripts/ImportText.pl', krona_txt_fpath, '-o', krona_fpath, '-a'],
             stdout=open(os.devnull, 'w'), stderr=open(os.devnull, 'w'))
+            krona_fpaths.append('Krona/' + name + '_taxonomy_chart.html')
             meta_log.info('  Krona plot for ' + name + ' is saved to ' + krona_fpath)
             os.remove(krona_txt_fpath)
         if len(assemblies) > 1:
@@ -225,7 +220,16 @@ def create_meta_report(results_dirpath, json_texts):
                 stdout=open(os.devnull, 'w'), stderr=open(os.devnull, 'w'))
             meta_log.info('  Summary Krona plot is saved to ' + krona_fpath)
         os.remove(krona_common_fpath)
+        save_krona_paths(results_dirpath, krona_fpaths, assemblies)
 
+    # reading html template file
+    with open(html_fpath) as f_html:
+        html_text = f_html.read()
+    keyword = 'totalReport'
+    html_text = re.sub('{{ ' + keyword + ' }}', '[' + ','.join(json_texts) + ']', html_text)
+    html_text = re.sub(r'{{(\s+\S+\s+)}}', '{}', html_text)
+    with open(html_fpath, 'w') as f_html:
+        f_html.write(html_text)
     meta_log.info('  Extended version of HTML-report (for all references and assemblies) is saved to ' + html_fpath)
 
 
@@ -293,3 +297,8 @@ def save_GC_info(results_dirpath, contigs_fpaths, list_of_GC_distributions):
     json_fpath = json_saver.save_GC_info(results_dirpath, contigs_fpaths, list_of_GC_distributions)
     if json_fpath:
         append(results_dirpath, json_fpath, 'gcInfos')
+
+def save_krona_paths(results_dirpath, krona_fpaths, labels):
+    json_fpath = json_saver.save_krona_paths(results_dirpath,krona_fpaths, labels)
+    if json_fpath:
+        append(results_dirpath, json_fpath, 'krona')

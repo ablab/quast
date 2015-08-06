@@ -210,7 +210,7 @@ def create_meta_report(results_dirpath, json_texts):
             qutils.call_subprocess(
             ['perl', '-I', krona_dirpath + '/lib', krona_dirpath + '/scripts/ImportText.pl', krona_txt_fpath, '-o', krona_fpath, '-a'],
             stdout=open(os.devnull, 'w'), stderr=open(os.devnull, 'w'))
-            krona_fpaths.append('Krona/' + name + '_taxonomy_chart.html')
+            krona_fpaths.append(os.path.join('Krona', name + '_taxonomy_chart.html'))
             meta_log.info('  Krona plot for ' + name + ' is saved to ' + krona_fpath)
             os.remove(krona_txt_fpath)
         if len(assemblies) > 1:

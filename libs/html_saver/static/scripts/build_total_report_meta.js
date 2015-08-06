@@ -55,10 +55,7 @@ function fillOneRow(metric, mainMetrics, group_n, order, glossary, is_primary, r
             values.splice(assembliesNames.indexOf(notAlignedContigs[report_n][not_aligned_n]), 0, '');
         }
     }
-    var icon_misassemblies = ''
-    if (metricName == "# misassemblies") {
-
-    }
+    var icon_misassemblies = '';
     for (var val_n = 0; val_n < values.length; val_n++) {
         var value = values[order[val_n]];
         var plotSrc = assembliesNames[order[val_n]] + "_misassemblies.jpg";
@@ -161,6 +158,23 @@ function buildTotalReport(assembliesNames, report, order, date, minContig, gloss
         'Note that some metrics (e.g. # contigs) may not sum up, because one contig may be aligned to several references and thus, counted several times.</p>');
     $('#quast_name').html('MetaQUAST');
     $('#report_name').html('summary report');
+    if (kronaPaths = readJson('krona')) {
+        if (kronaPaths.length > 0) {
+            $('#krona').html('Krona charts: ');
+            for (var assembly_n = 0; assembly_n < assembliesNames.length; assembly_n++ ) {
+                var assemblyName = assembliesNames[assembly_n];
+                $('#krona').append(
+                    '&nbsp<span class="metric-name">' +
+                    '<a href="' + kronaPaths.paths[assembly_n] + '">' + assemblyName + '</a>' +
+                    '</span>&nbsp');
+            }
+            if (assembliesNames.length > 1)  $('#krona').append(
+                    '&nbsp<span class="metric-name">' +
+                    '<a href="Krona/summary_taxonomy_chart.html">Summary</a>' +
+                    '</span>&nbsp');
+        }
+    }
+
     var table = '';
     table += '<table cellspacing="0" class="report_table draggable" id="main_report_table">';
     var refNames = [];

@@ -27,7 +27,6 @@ silva_db_path = 'http://www.arb-silva.de/fileadmin/silva_databases/release_119/E
 silva_fname = 'SILVA_119_SSURef_Nr99_tax_silva.fasta'
 
 blast_filenames = ['makeblastdb', 'blastn']
-blast_filesizes = [22812840, 32501336]
 blast_common_path = 'http://quast.bioinf.spbau.ru/static/blast/' + qconfig.platform_name
 blast_dirpath = os.path.join(qconfig.LIBS_LOCATION, 'blast')
 
@@ -111,6 +110,7 @@ def show_progress(a, b, c):
         print("% 3.1f%% of %d bytes\r" % (min(100, int(float(a * b) / c * 100)), c)),
         sys.stdout.flush()
 
+
 def download_blast_files(blast_filename):
     logger.info()
     if not os.path.isdir(blast_dirpath):
@@ -123,15 +123,17 @@ def download_blast_files(blast_filename):
     if not os.path.exists(blast_fpath):
         logger.info('Downloading %s...' % blast_filename)
         try:
-            blast_download.retrieve(blast_webpath, blast_fpath, show_progress)
+            blast_download.retrieve(blast_webpath, blast_fpath + '.download', show_progress)
         except Exception:
             logger.error(
                 'Failed downloading BLAST! The search for reference genomes cannot be performed. '
                 'Try to download it manually in %s and restart MetaQUAST.' % blast_dirpath)
             return 1
+        shutil.move(blast_fpath + '.download', blast_fpath)
         logger.info('%s successfully downloaded!' % blast_filename)
 
     return 0
+
 
 def download_blastdb():
     if os.path.isfile(db_fpath + '.nsq'):
@@ -233,13 +235,11 @@ def do(assemblies, downloaded_dirpath):
     logger.print_timestamp()
     err_fpath = os.path.join(downloaded_dirpath, 'blast.err')
     if not os.path.isdir(blastdb_dirpath):
-        os.mkdir(blastdb_dirpath)
+        os.makedirs(blastdb_dirpath)
 
     for i, cmd in enumerate(blast_filenames):
         blast_file = blast_fpath(cmd)
-        if not os.path.exists(blast_file) or os.path.getsize(blast_file) != blast_filesizes[i]:
-            if os.path.exists(blast_file):
-                os.remove(blast_file)
+        if not os.path.exists(blast_file):
             return_code = download_blast_files(cmd)
             logger.info()
             if return_code != 0:

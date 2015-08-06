@@ -45,7 +45,7 @@ function fillOneRow(metric, mainMetrics, group_n, order, glossary, is_primary, r
         '<td class="left_column_td ' + tdClass + '">' +
         '<span class="metric-name' +
           (is_primary ? ' primary' : ' secondary') + (not_extend || !is_primary ? '' : ' expandable collapsed') + '">' +
-           initial_spaces_to_nbsp(addTooltipIfDefinitionExists(glossary, rowName), metricName) +
+           initial_spaces_to_nbsp(addTooltipIfDefinitionExists(glossary, rowName.trunc(55)), metricName) +
         (metric.isMain && is_primary ? ("&nbsp" + iconPlots) : '') +
         '</span></td>';
           //(not_extend && metricName == '# possibly misassembled contigs' ? '&nbsp&nbsp&nbsp&nbsp' : not_extend ? '&nbsp&nbsp&nbsp&nbsp' : '')
@@ -159,7 +159,7 @@ function buildTotalReport(assembliesNames, report, order, date, minContig, gloss
     $('#quast_name').html('MetaQUAST');
     $('#report_name').html('summary report');
     if (kronaPaths = readJson('krona')) {
-        if (kronaPaths.length > 0) {
+        if (kronaPaths.paths != undefined) {
             $('#krona').html('Krona charts: ');
             for (var assembly_n = 0; assembly_n < assembliesNames.length; assembly_n++ ) {
                 var assemblyName = assembliesNames[assembly_n];

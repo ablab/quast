@@ -15,7 +15,7 @@ function fillOneRow(metric, mainMetrics, group_n, order, glossary, is_primary, r
     var trClass = 'content-row';
     if (metric.isMain || $.inArray(metricName, mainMetrics) > -1) {
         var numPlot = $.inArray(metricName, mainMetrics);
-        var iconPlots = '<img id="' + numPlot + '" src="report_html_aux/img/icon_plot.png" onclick="setPlot($(this))"/>';
+        var iconPlots = '<img id="' + numPlot + '" style="vertical-align: bottom" src="report_html_aux/img/icon_plot.png" onclick="setPlot($(this))"/>';
         (function(group_n) {
             var id_group = '#group_' + group_n;
             $(function() {

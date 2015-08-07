@@ -252,15 +252,14 @@ function createLegend(labels, colors, index){
     $('#legend-placeholder').empty();
     var selectors = "";
     var filenames = misassemblies.filenames;
-    
+
     labels.forEach(function(label, i) {
     var id = 'label_' + i + '_id'; 
-    var link = '<span id="' + filenames[i] + '-switch"' +
-                "class='plot-switch dotted-link'>by type </span>";
+    var link = '<span id="' + filenames[i] + '-switch"' + "class='plot-mis-type-switch dotted-link'>by type<br></span><br>";
     $('#legend-placeholder').append('<div>' +
         '<label for="' + id + '" style="color: ' + colors[i] + '">' +
         '<input type="checkbox" name="' + i + '" checked="checked" id="' + id + '">&nbsp;' + label +'</label>' + 
-        (index == 0 ? link : '') + '</div>');
+        (index == 0 ? '<br>' + link : '') + '</div>');
     });
     if (index > 0) {
         for (var filenames_n = 0; filenames_n < filenames.length; filenames_n++){

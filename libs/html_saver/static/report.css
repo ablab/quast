@@ -201,12 +201,16 @@ table.draggable td.right_to_cell_of_empty_space {
     margin-left: 10px;
 }
 
+.plot-mis-type-switch {
+    margin-left: 23px;
+}
+
 .plot-wrapper {
     padding-right: 80px;
 }
 
 .plot-header {
-    margin-left: 0px;
+    margin-left: 0;
     font-weight: bold;
     height: 1.5em;
     display: block;
@@ -239,7 +243,7 @@ table.draggable td.right_to_cell_of_empty_space {
 }
 
 #plot-placeholder {
-    width: 962px;
+    width: 986px;
     height: 600px;
 
     /* for auto sizing plots when resizing the page 

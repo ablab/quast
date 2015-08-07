@@ -33,10 +33,10 @@ function setUpHeatMap(table) {
           context.rect(0, 0, canvas.width, canvas.height);
 
           var gradient = context.createLinearGradient(0, 0, canvas.width, canvas.height);
-          gradient.addColorStop(0, getColor(0, 50));
+          gradient.addColorStop(0, getColor(0, 65));
           gradient.addColorStop(0.5, 'white');
-          gradient.addColorStop(1, getColor(240, 55));
-          canvas.style.border = "1px solid rgba(0, 0, 0, .5)";
+          gradient.addColorStop(1, getColor(240, 65));
+          canvas.style.border = "0px solid rgba(0, 0, 0, .1)";
           context.fillStyle = gradient;
           context.fill();
           $('#heatmaps_chbox').change(function(){

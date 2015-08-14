@@ -146,7 +146,7 @@ function buildTotalReport(assembliesNames, report, order, date, minContig,
     }
     table += '</table>';
 
-    table += biuldExtendedLinkClick();
+    table += buildExtendedLinkClick();
 
     setUpHeatMap(table);
 }

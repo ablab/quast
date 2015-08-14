@@ -48,7 +48,6 @@ function fillOneRow(metric, mainMetrics, group_n, order, glossary, is_primary, r
            initial_spaces_to_nbsp(addTooltipIfDefinitionExists(glossary, rowName.trunc(55)), metricName) +
         (metric.isMain && is_primary ? ("&nbsp" + iconPlots) : '') +
         '</span></td>';
-          //(not_extend && metricName == '# possibly misassembled contigs' ? '&nbsp&nbsp&nbsp&nbsp' : not_extend ? '&nbsp&nbsp&nbsp&nbsp' : '')
 
     if (report_n > -1) {
         for (var not_aligned_n = 0; not_aligned_n < notAlignedContigs[report_n].length; not_aligned_n++) {
@@ -248,10 +247,7 @@ function buildTotalReport(assembliesNames, report, order, date, minContig, gloss
                 numColumns++;
             }
 
-            $('#main_ref_genome').html(buildGenomeTable(reports, group_n, numColumns));
-            //$('#data_set_p').click(function() {
-            //    $('#refgenome').toggle();
-            //});
+            $('#main_ref_genome').html(buildGenomeTable(reports, group_n, numColumns))
             continue;
         }
 
@@ -310,7 +306,7 @@ function buildTotalReport(assembliesNames, report, order, date, minContig, gloss
     table += '</table>';
 
     //table += '<p id="extended_link"><a class="dotted-link" id="extended_report_link" onclick="extendedLinkClick($(this))">Extended report</a></p>';
-    table += biuldExtendedLinkClick();
+    table += buildExtendedLinkClick();
 
     setUpHeatMap(table);
 }

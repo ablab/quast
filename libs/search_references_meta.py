@@ -88,11 +88,8 @@ def download_refs(organism, ref_fpath):
                 if 'shotgun sequence' in fasta[:150]:
                     if not is_first_piece:
                         is_first_piece = True
-                        if ',' in fasta[:150]:
-                            first_line = fasta[:fasta.find(',')]
-                            fasta = first_line + '\n' + fasta[fasta.find('\n')+1:]
                     else:
-                        fasta = fasta[fasta.find('\n')+1:]
+                        fasta = '\n' + fasta.rstrip()
                 with open(ref_fpath, "a") as fasta_file:
                     fasta_file.write(fasta.rstrip())
 

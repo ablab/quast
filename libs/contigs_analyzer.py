@@ -782,15 +782,16 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
                 last_real = sorted_aligns[0]
 
                 #Walk through alignments, if not fully contained within previous, record as real
+                abs_threshold_for_extensions = max(maxun, qconfig.min_cluster)
                 real_groups = dict()
                 for i in xrange(1, num_aligns):
                     cur_group = (last_end - last_real.len2 + 1, last_end)
                     #If this alignment extends past last alignment's endpoint, add to real, else skip
-                    extension = max(sorted_aligns[i].s2, sorted_aligns[i].e2) - last_end # negative if no extension
-                    if (extension > maxun) and (float(extension) / min(sorted_aligns[i].len2, last_real.len2) > 1.0 - epsilon):
+                    extension = max(sorted_aligns[i].s2, sorted_aligns[i].e2) - last_end  # negative if no extension
+                    if (extension > abs_threshold_for_extensions) and (float(extension) / min(sorted_aligns[i].len2, last_real.len2) > 1.0 - epsilon):
                         # check whether previous alignment is almost contained in this extension
                         prev_extension = min(sorted_aligns[i].s2, sorted_aligns[i].e2) - min(last_real.s2, last_real.e2)
-                        if (prev_extension <= maxun) or (float(prev_extension) / min(sorted_aligns[i].len2, last_real.len2) <= 1.0 - epsilon):
+                        if (prev_extension <= abs_threshold_for_extensions) or (float(prev_extension) / min(sorted_aligns[i].len2, last_real.len2) <= 1.0 - epsilon):
                             if cur_group in real_groups:
                                 for align in real_groups[cur_group]:
                                     print >> planta_out_f, '\t\tSkipping redundant alignment %s' % (str(align))

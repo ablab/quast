@@ -158,7 +158,7 @@ function extendedClick() {
     }
 }
 
-function biuldExtendedLinkClick() {
+function buildExtendedLinkClick() {
     return '<p id="extended_link"><a class="dotted-link" id="extended_report_link" onclick="extendedClick($(this))">Extended report</a></p>';
 }
 

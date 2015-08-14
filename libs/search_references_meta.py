@@ -400,4 +400,5 @@ def do(assemblies, downloaded_dirpath):
         logger.info('Reference genomes are not found.')
     if not qconfig.debug and os.path.exists(err_fpath):
         os.remove(err_fpath)
+    ref_fpaths.sort()
     return ref_fpaths

@@ -163,12 +163,12 @@ function buildTotalReport(assembliesNames, report, order, date, minContig, gloss
             for (var assembly_n = 0; assembly_n < assembliesNames.length; assembly_n++ ) {
                 var assemblyName = assembliesNames[assembly_n];
                 $('#krona').append(
-                    '&nbsp<span class="metric-name">' +
+                    '&nbsp&nbsp<span class="metric-name">' +
                     '<a href="' + kronaPaths.paths[assembly_n] + '">' + assemblyName + '</a>' +
-                    '</span>&nbsp');
+                    '</span>&nbsp&nbsp');
             }
             if (assembliesNames.length > 1)  $('#krona').append(
-                    '&nbsp<span class="metric-name">' +
+                    '&nbsp&nbsp&nbsp&nbsp<span class="metric-name">' +
                     '<a href="Krona/summary_taxonomy_chart.html">Summary</a>' +
                     '</span>&nbsp');
         }

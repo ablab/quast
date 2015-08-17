@@ -736,29 +736,29 @@ changed by <a href='#extensive_mis_size'><code>--extensive-mis-size</code></a>.<
 
 <p><a name='NAx'><a name='NGAx'></a><span class='metric-name'>NA50, NGA50, NA75, NGA75, LA50, LA75, LGA50, LGA75</span> ("A" stands for "aligned") are similar to
     the corresponding metrics without "A", but in this case aligned blocks instead of contigs are considered.<br>
-    Aligned blocks are obtained by breaking contigs in misassembly events and removing all analigned bases.</p>
+    Aligned blocks are obtained by breaking contigs at misassembly events and removing all unaligned bases.</p>
 
 
 <a name="sec3.1.2"></a>
 <h4>3.1.2 Misassemblies report</h4>
 
 <p><span class='metric-name'># misassemblies</span> is the same as <span class='metric-ref'># misassemblies</span> from <a href="#sec3.1.1">section 3.1.1</a>.
-    However, this report also contains a classification of all misassemblies into three groups: <span class='metric-ref'>relocations</span>, <span class='metric-ref'>translocations</span>,
+    However, this report also contains a classification of all misassembly events into three groups: <span class='metric-ref'>relocations</span>, <span class='metric-ref'>translocations</span>,
     and <span class='metric-ref'>inversions</span> (see below). For metagenomic assemblies, this classification also includes interspecies translocation.</p>
 
-<p><span class='metric-name'>Relocation</span> is a misassembly where the left flanking sequence aligns over 1<span class="rhs">&nbsp;</span>kbp away from the right flanking
+<p><span class='metric-name'>Relocation</span> is a misassembly event (breakpoint) where the left flanking sequence aligns over 1<span class="rhs">&nbsp;</span>kbp away from the right flanking
 sequence on the reference, or they overlap by more than 1<span class="rhs">&nbsp;</span>kbp, and both flanking sequences align on the same chromosome. Note that default threshold of 1<span class="rhs">&nbsp;</span>kbp can be
 changed by <a href='#extensive_mis_size'><code>--extensive-mis-size</code></a>.</p>
 
-<p><span class='metric-name'>Translocation</span> is a misassembly where the flanking sequences align on different chromosomes. </p>
+<p><span class='metric-name'>Translocation</span> is a misassembly event (breakpoint) where the flanking sequences align on different chromosomes. </p>
 
-<p><span class='metric-name'>Interspecies translocation</span> is a misassembly where the flanking sequences align on different references (MetaQUAST only). </p>
+<p><span class='metric-name'>Interspecies translocation</span> is a misassembly event (breakpoint) where the flanking sequences align on different references (MetaQUAST only). </p>
 
-<p><span class='metric-name'>Inversion</span> is a misassembly where the flanking sequences align on
+<p><span class='metric-name'>Inversion</span> is a misassembly event (breakpoint) where the flanking sequences align on
 opposite strands of the same chromosome. </p>
 
 <p><span class='metric-name'># misassembled contigs</span> and <span class='metric-ref'>misassembled contigs length</span> are the same as the metrics from
-    <a href="#sec3.1.1">section 3.1.1</a> and are counted among all contigs with any type of a misassembly 
+    <a href="#sec3.1.1">section 3.1.1</a> and are counted among all contigs with any type of a misassembly event
     (relocation, translocation, interspecies translocation or inversion). </p>
 
 <p><span class='metric-name'># possibly misassembled contigs</span> is the number of contigs that contain large unaligned fragment and thus could possibly contain interspecies translocation with unknown reference (MetaQUAST only). </p>
@@ -791,8 +791,8 @@ opposite strands of the same chromosome. </p>
 <p><span class='metric-name'># partially unaligned contigs</span> is the number of contigs that are not fully unaligned, but have fragments
     with no alignment to the reference sequence.</p>
 
-<p><span class='metric-name'># with misassembly</span> is the number of partially unaligned contigs that have a misassembly in their aligned fragment.
-    Note that such misassemblies are not counted in <span class='metric_ref'># misassemblies</span> and other <span class='metric_ref'>misassemblies</span> statistics.</p>
+<p><span class='metric-name'># with misassembly</span> is the number of partially unaligned contigs that have a misassembly event in their aligned fragment.
+    Note that such misassembly events are not counted in <span class='metric_ref'># misassemblies</span> and other <span class='metric_ref'>misassemblies</span> statistics.</p>
 
 <p><span class='metric-name'># both parts are significant</span> is the number of partially unaligned contigs that have both aligned and unaligned fragments
     longer than the value of <a href='#min_contig'><code>--min-contig</code></a>.
@@ -804,7 +804,7 @@ opposite strands of the same chromosome. </p>
 <a name="sec3.2"></a>
 <h3>3.2 Plots description</h3>
 
-<p><span class='metric-name'>Contig alignment plot</span> shows alignment of contigs to the reference genome and the positions of misassemblies in these contigs.
+<p><span class='metric-name'>Contig alignment plot</span> shows alignment of contigs to the reference genome and the positions of misassembly events in these contigs.
 Contigs that align correctly are colored blue if the boundaries agree (within 2 kbp on each side, contigs are larger than 10 kbp) in at least half of the assemblies, 
 and green otherwise.
 Blocks of misassembled contigs are colored orange if the boundaries agree in at least half of the assemblies, and red otherwise.
@@ -828,7 +828,7 @@ file consists of several sequences all of them are drawn on the single plot hori
 </p>
 
 <p><span class='metric-name'>Cumulative length plot for aligned contigs</span> shows the growth of lengths of aligned blocks.
-    If a contig has a misassembly, QUAST breaks it into smaller pieces called aligned blocks.<br>
+    If a contig has a misassembly event, QUAST breaks it into smaller pieces called aligned blocks.<br>
     <span style='line-height: 50%;'>&nbsp;</span><br>
     On the x-axis, blocks are ordered from the largest 
     to smallest. The y-axis gives the size of the x largest aligned blocks.<br>
@@ -928,7 +928,7 @@ and misassembled contigs. Does this imply that QUAST looks for
 multiple misassemblies within one contig?
 </b></i></p>
 <p>
-Yes, you are right, QUAST looks for multiple misassemblies within one contig. Thus,
+Yes, you are right, QUAST looks for multiple misassembly events within one contig. Thus,
 number of misassemled contigs is always less or equal to number of misassemblies.
 </p>
 
@@ -949,7 +949,7 @@ if your assembly is "ecoli_assembly_1.fasta" then the file is "ecoli_assembly_1.
 
 <br>
 <p><b><i>
-Q3. Is it possible to find which misassembly corresponds to each contig and which kind of a misassembly it is?
+Q3. Is it possible to find which misassembly corresponds to each contig and which kind of a misassembly event it is?
 </b></i></p>
 <p>
 Yes, it is possible. QUAST produces report with detailed info about each contig alignments and the short version with only extensive misassemlies records.

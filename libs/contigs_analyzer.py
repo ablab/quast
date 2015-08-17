@@ -872,16 +872,18 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
                             print >> planta_out_f, '\t\tSkipping redundant alignment %s' % (str(align))
 
                 if len(real_aligns) == 1:
+                    the_only_align = real_aligns[0]
+
                     #There is only one alignment of this contig to the reference
-                    print >> coords_filtered_file, str(real_aligns[0])
-                    aligned_lengths.append(real_aligns[0].len2)
+                    print >> coords_filtered_file, str(the_only_align)
+                    aligned_lengths.append(the_only_align.len2)
 
                     #Is the contig aligned in the reverse compliment?
                     #Record beginning and end of alignment in contig
-                    if sorted_aligns[0].s2 > sorted_aligns[0].e2:
-                        end, begin = sorted_aligns[0].s2, sorted_aligns[0].e2
+                    if the_only_align.s2 > the_only_align.e2:
+                        end, begin = the_only_align.s2, the_only_align.e2
                     else:
-                        end, begin = sorted_aligns[0].e2, sorted_aligns[0].s2
+                        end, begin = the_only_align.e2, the_only_align.s2
 
                     if (begin - 1) or (ctg_len - end):
                         #Increment tally of partially unaligned contigs
@@ -890,8 +892,8 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
                         #Increment tally of partially unaligned bases
                         unaligned_bases = (begin - 1) + (ctg_len - end)
                         partially_unaligned_bases += unaligned_bases
-                        print >> planta_out_f, '\t\tThis contig is partially unaligned. (%d out of %d)' % (top_len, ctg_len)
-                        print >> planta_out_f, '\t\tAlignment: %s' % str(sorted_aligns[0])
+                        print >> planta_out_f, '\t\tThis contig is partially unaligned. (Aligned %d out of %d bases)' % (top_len, ctg_len)
+                        print >> planta_out_f, '\t\tAlignment: %s' % str(the_only_align)
                         if begin - 1:
                             print >> planta_out_f, '\t\tUnaligned bases: 1 to %d (%d)' % (begin - 1, begin - 1)
                         if ctg_len - end:
@@ -904,7 +906,7 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
                             if qconfig.meta:
                                 contigs_with_istranslocations += 1
 
-                    ref_aligns.setdefault(sorted_aligns[0].ref, []).append(sorted_aligns[0])
+                    ref_aligns.setdefault(the_only_align.ref, []).append(the_only_align)
                 else:
                     #Sort real alignments by position on the contig
                     sorted_aligns = sorted(real_aligns, key=lambda x: (min(x.s2, x.e2), max(x.s2, x.e2)))

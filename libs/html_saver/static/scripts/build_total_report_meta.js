@@ -188,7 +188,6 @@ function buildTotalReport(assembliesNames, report, order, date, minContig, gloss
         asmNames: this[report_n].assembliesNames
         };
     }, reports);
-    reports.sort( function( a, b ) { return a.name > b.name; });
     notAlignedContigs = {};
     for(report_n = 0; report_n < reports.length; report_n++ ) {
         notAlignedContigs[report_n] = [];

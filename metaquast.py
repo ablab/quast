@@ -98,15 +98,17 @@ def _partition_contigs(assemblies, ref_fpaths, corrected_dirpath, alignments_fpa
     assemblies = Parallel(n_jobs=n_jobs)(delayed(parallel_partition_contigs)(asm,
                                 assemblies_by_ref, corrected_dirpath, alignments_fpath_template) for asm in assemblies)
     assemblies_dicts = [assembly[0] for assembly in assemblies]
-    assemblies_by_ref = {}
-    for k in assemblies_dicts[0].keys():
-        assemblies_by_ref[k] = []
+    sorted_refs = [qutils.name_from_fpath(ref_fpath) for ref_fpath in ref_fpaths]
+    assemblies_by_ref = []
+    for k in sorted_refs:
         not_sorted_assemblies = set([val for sublist in (assemblies_dicts[i][k] for i in range(len(assemblies_dicts))) for val in sublist])
+        sorted_assemblies = []
         for label in labels:  # sort by label
             for assembly in not_sorted_assemblies:
                 if assembly.label == label:
-                    assemblies_by_ref[k].append(assembly)
+                    sorted_assemblies.append(assembly)
                     break
+        assemblies_by_ref.append((k, sorted_assemblies))
     not_aligned_assemblies = [assembly[1] for assembly in assemblies]
     return assemblies_by_ref, not_aligned_assemblies
 
@@ -647,7 +649,7 @@ def main(args):
         os.path.join(output_dirpath, qconfig.combined_name + qconfig.quast_output_suffix, 'contigs_reports', 'alignments_%s.tsv'), labels)
 
     ref_names = []
-    for ref_name, ref_assemblies in assemblies_by_reference.iteritems():
+    for ref_name, ref_assemblies in assemblies_by_reference:
         logger.info('')
         if not ref_assemblies:
             logger.info('No contigs were aligned to the reference ' + ref_name + ', skipping..')

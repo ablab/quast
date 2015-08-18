@@ -57,10 +57,9 @@ var misassemblies = {
                         show: true,
                         fillColor: colors[index]
                     },
-                    dashes: {
+                    lines: {
                         show: true,
-                        dashLength: 2,
-                        lineWidth: 0.5
+                        lineWidth: 0.1
                     }
                 };
                 for (var k = 0; k < size; k++) {

@@ -144,7 +144,7 @@ var summary = {
             }
 
             for (i = 0; i < plotsN; i++) {
-                info.series[i].lines = {show: true, dashLength: 2, lineWidth: 0.1}
+                info.series[i].lines = {show: true, lineWidth: 0.1}
             }
             var yFormatter = getBpTickFormatter;
             if ($.inArray(name, ['contigs', 'misassemblies', 'mismatches', 'indels', 'ns', 'duplication']) > -1)

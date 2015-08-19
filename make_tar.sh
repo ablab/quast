@@ -20,6 +20,7 @@ cp CHANGES            release/$QUAST_FOLDER
 cp README             release/$QUAST_FOLDER
 cp INSTALL            release/$QUAST_FOLDER
 cp install.sh         release/$QUAST_FOLDER
+cp install_full.sh    release/$QUAST_FOLDER
 echo Build $NOW    >> release/$QUAST_FOLDER/VERSION
 
 sh clean.sh release/$QUAST_FOLDER

@@ -38,7 +38,7 @@ long_options = "output-dir= save-json-to= genes= operons= reference= contig-thre
                "gene-thresholds= err-fpath= save-json gage eukaryote glimmer no-plots no-html no-check no-check-meta combined-ref no-gc help debug "\
                "ambiguity-usage= scaffolds threads= min-cluster= min-alignment= est-ref-size= use-all-alignments gene-finding "\
                "strict-NA meta labels= test help-hidden no-snps test-no-ref fast max-ref-number= extensive-mis-size= plots-format=".split()
-short_options = "o:G:O:R:t:m:J:jehda:c:ufl:Lx:i:"
+short_options = "o:G:O:R:t:m:J:jehda:c:ufl:Lx:i:s"
 
 # default values for options
 contig_thresholds = "0,1000"
@@ -190,7 +190,7 @@ def usage(show_hidden=False, meta=False):
     print >> sys.stderr, "Options:"
     print >> sys.stderr, "-o  --output-dir  <dirname>   Directory to store all result files [default: quast_results/results_<datetime>]"
     if meta:
-        print >> sys.stderr, "-R                <filename>  Comma-separated list of reference genomes or directory with reference genomes"
+        print >> sys.stderr, "-R   <filename,filename,...>  Comma-separated list of reference genomes or directory with reference genomes"
     else:
         print >> sys.stderr, "-R                <filename>  Reference genome file"
     print >> sys.stderr, "-G  --genes       <filename>  File with gene coordinates in the reference"
@@ -207,7 +207,7 @@ def usage(show_hidden=False, meta=False):
         print >> sys.stderr, "-f  --gene-finding                    Predict genes (with GeneMark.hmm for prokaryotes (default), GeneMark-ES"
         print >> sys.stderr, "                                      for eukaryotes (--eukaryote), or MetaGeneMark for metagenomes (--meta)"
     print >> sys.stderr, "    --glimmer                         Predict genes with GlimmerHMM instead of GeneMark-ES"
-    print >> sys.stderr, "    --gene-thresholds                 Comma-separated list of threshold lengths of genes to search with Gene Finding module"
+    print >> sys.stderr, "    --gene-thresholds <int,int,...>   Comma-separated list of threshold lengths of genes to search with Gene Finding module"
     print >> sys.stderr, "                                      [default: %s]" % genes_lengths
     print >> sys.stderr, "-e  --eukaryote                       Genome is eukaryotic"
     if not meta:
@@ -217,7 +217,7 @@ def usage(show_hidden=False, meta=False):
         print >> sys.stderr, "    --max-ref-number <int>            Maximum number of references (per each assembly) to download after looking in SILVA database."
         print >> sys.stderr, "                                      Set 0 for not looking in SILVA at all [default: %s]" % max_references
     print >> sys.stderr, "    --gage                            Use GAGE (results are in gage_report.txt)"
-    print >> sys.stderr, "    --contig-thresholds               Comma-separated list of contig length thresholds [default: %s]" % contig_thresholds
+    print >> sys.stderr, "    --contig-thresholds <int,int,...> Comma-separated list of contig length thresholds [default: %s]" % contig_thresholds
     print >> sys.stderr, "-s  --scaffolds                       Assemblies are scaffolds, split them and add contigs to the comparison"
     print >> sys.stderr, "-u  --use-all-alignments              Compute genome fraction, # genes, # operons in QUAST v.1.* style."
     print >> sys.stderr, "                                      By default, QUAST filters Nucmer\'s alignments to keep only best ones"

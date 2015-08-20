@@ -551,9 +551,9 @@ def main(args):
     if not ref_fpaths:
         logger.info()
         if qconfig.max_references == 0:
-            logger.notice("Maximum number of references (--max-ref-number) is set to 0, search in SILVA rRNA database is disabled")
+            logger.notice("Maximum number of references (--max-ref-number) is set to 0, search in SILVA 16S rRNA database is disabled")
         else:
-            logger.info("No references are provided, starting to search for reference genomes in SILVA rRNA database "
+            logger.info("No references are provided, starting to search for reference genomes in SILVA 16S rRNA database "
                         "and to download them from NCBI...")
             downloaded_dirpath = os.path.join(output_dirpath, qconfig.downloaded_dirname)
             if not os.path.isdir(downloaded_dirpath):
@@ -567,7 +567,7 @@ def main(args):
                 corrected_ref_fpaths, common_ref_fasta_ext, combined_ref_fpath, chromosomes_by_refs, ref_names =\
                     _correct_references(ref_fpaths, corrected_dirpath)
             elif test_mode:
-                logger.error('Failed to download or setup SILVA rRNA database for working without '
+                logger.error('Failed to download or setup SILVA 16S rRNA database for working without '
                              'references on metagenome datasets!', to_stderr=True, exit_with_code=4)
 
     if not ref_fpaths:
@@ -598,7 +598,7 @@ def main(args):
     return_code, total_num_notifications = _start_quast_main(run_name, quast_py_args + ["--ambiguity-usage"] + ['all'],
         assemblies=assemblies,
         reference_fpath=combined_ref_fpath,
-        output_dirpath=os.path.join(output_dirpath, qconfig.combined_name + qconfig.quast_output_suffix),
+        output_dirpath=os.path.join(output_dirpath, qconfig.combined_output_name),
         num_notifications_tuple=total_num_notifications)
 
     if json_texts is not None:
@@ -622,7 +622,7 @@ def main(args):
             return_code, total_num_notifications = _start_quast_main(run_name, quast_py_args + ["--ambiguity-usage"] + ['all'],
                 assemblies=assemblies,
                 reference_fpath=combined_ref_fpath,
-                output_dirpath=os.path.join(output_dirpath, qconfig.combined_name + qconfig.quast_output_suffix),
+                output_dirpath=os.path.join(output_dirpath, qconfig.combined_output_name),
                 num_notifications_tuple=total_num_notifications)
             if json_texts is not None:
                 json_texts = json_texts[:-1]
@@ -646,9 +646,10 @@ def main(args):
 
     assemblies_by_reference, not_aligned_assemblies = _partition_contigs(
         assemblies, corrected_ref_fpaths, corrected_dirpath,
-        os.path.join(output_dirpath, qconfig.combined_name + qconfig.quast_output_suffix, 'contigs_reports', 'alignments_%s.tsv'), labels)
+        os.path.join(output_dirpath, qconfig.combined_output_name, 'contigs_reports', 'alignments_%s.tsv'), labels)
 
     ref_names = []
+    output_dirpath_per_ref = os.path.join(output_dirpath, qconfig.per_ref_dir)
     for ref_name, ref_assemblies in assemblies_by_reference:
         logger.info('')
         if not ref_assemblies:
@@ -661,7 +662,7 @@ def main(args):
             return_code, total_num_notifications = _start_quast_main(run_name, quast_py_args,
                 assemblies=ref_assemblies,
                 reference_fpath=os.path.join(corrected_dirpath, ref_name) + common_ref_fasta_ext,
-                output_dirpath=os.path.join(output_dirpath, ref_name + qconfig.quast_output_suffix),
+                output_dirpath=os.path.join(output_dirpath_per_ref, ref_name),
                 exit_on_exception=False, num_notifications_tuple=total_num_notifications)
             if json_texts is not None:
                 json_texts.append(json_saver.json_text)
@@ -684,19 +685,17 @@ def main(args):
     if ref_names:
         logger.print_timestamp()
         logger.info("Summarizing results...")
-        summary_dirpath = os.path.join(output_dirpath, 'summary')
-        if not os.path.isdir(summary_dirpath):
-            os.mkdir(summary_dirpath)
+
         if html_report and json_texts:
             from libs.html_saver import html_saver
-            html_saver.init_meta_report(summary_dirpath)
+            html_saver.init_meta_report(output_dirpath)
         from libs import create_meta_summary
         metrics_for_plots = reporting.Fields.main_metrics
         misassembl_metrics = [reporting.Fields.MIS_RELOCATION, reporting.Fields.MIS_TRANSLOCATION, reporting.Fields.MIS_INVERTION,
                            reporting.Fields.MIS_ISTRANSLOCATIONS]
-        create_meta_summary.do(output_dirpath, summary_dirpath, metrics_for_plots, misassembl_metrics, ref_names)
+        create_meta_summary.do(output_dirpath, output_dirpath_per_ref, metrics_for_plots, misassembl_metrics, ref_names)
         if html_report and json_texts:
-            html_saver.create_meta_report(summary_dirpath, json_texts)
+            html_saver.create_meta_report(output_dirpath, json_texts)
 
     quast._cleanup(corrected_dirpath)
     logger.info('')

@@ -135,7 +135,7 @@ def download_blast_files(blast_filename):
 def download_blastdb():
     if os.path.isfile(db_fpath + '.nsq'):
         logger.info()
-        logger.info('SILVA rRNA database has already been downloaded, unpacked and BLAST database created. '
+        logger.info('SILVA 16S rRNA database has already been downloaded, unpacked and BLAST database created. '
                     'If not, please remove %s and rerun MetaQUAST' % db_fpath + '.nsq')
         return 0
     log_fpath = os.path.join(blastdb_dirpath, 'blastdb.log')
@@ -144,9 +144,9 @@ def download_blastdb():
 
     logger.info()
     if os.path.isfile(db_gz_fpath):
-        logger.info('SILVA ribosomal RNA gene database has already been downloaded.')
+        logger.info('SILVA 16S ribosomal RNA gene database has already been downloaded.')
     else:
-        logger.info('Downloading SILVA ribosomal RNA gene database...')
+        logger.info('Downloading SILVA 16S ribosomal RNA gene database...')
         if not os.path.isdir(blastdb_dirpath):
             os.mkdir(blastdb_dirpath)
         silva_download = urllib.URLopener()
@@ -155,7 +155,7 @@ def download_blastdb():
             silva_download.retrieve(silva_remote_fpath, db_gz_fpath + '.download', show_progress)
         except Exception:
             logger.error(
-                'Failed downloading SILVA rRNA gene database (%s)! The search for reference genomes cannot be performed. '
+                'Failed downloading SILVA 16S rRNA gene database (%s)! The search for reference genomes cannot be performed. '
                 'Try to download it manually in %s and restart MetaQUAST.' % (silva_remote_fpath, blastdb_dirpath))
             return 1
         shutil.move(db_gz_fpath + '.download', db_gz_fpath)

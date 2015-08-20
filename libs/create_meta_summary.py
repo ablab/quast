@@ -26,7 +26,7 @@ def get_results_for_metric(ref_names, metric, contigs_num, labels, output_dirpat
         row = {'metricName': labels[i], 'values': []}
         all_rows.append(row)
     for i, ref_name in enumerate(ref_names):
-        results_fpath = os.path.join(output_dirpath, ref_name + qconfig.quast_output_suffix, report_fname)
+        results_fpath = os.path.join(output_dirpath, ref_name, report_fname)
         if not os.path.exists(results_fpath):
             all_rows[0]['values'] = cur_ref_names
             continue
@@ -55,13 +55,13 @@ def get_results_for_metric(ref_names, metric, contigs_num, labels, output_dirpat
 
 
 def get_labels(output_dirpath, report_fname):
-    results_fpath = os.path.join(output_dirpath, qconfig.combined_name + qconfig.quast_output_suffix, report_fname)
+    results_fpath = os.path.join(output_dirpath, qconfig.combined_output_name, report_fname)
     results_file = open(results_fpath, 'r')
     values = map(lambda s: s.strip(), results_file.readline().split('\t'))
     return values[1:]
 
 
-def do(output_dirpath, summary_dirpath, metrics, misassembl_metrics, ref_names):
+def do(output_dirpath, output_dirpath_per_ref, metrics, misassembl_metrics, ref_names):
     import plotter
 
     ref_names = sorted(ref_names)
@@ -70,15 +70,15 @@ def do(output_dirpath, summary_dirpath, metrics, misassembl_metrics, ref_names):
     contigs_num = len(labels)
     plots_dirname = qconfig.plot_extension.upper()
     for ext in ['TXT', plots_dirname, 'TEX', 'TSV']:
-        if not os.path.isdir(os.path.join(summary_dirpath, ext)):
-            os.mkdir(os.path.join(summary_dirpath, ext))
+        if not os.path.isdir(os.path.join(output_dirpath, ext)):
+            os.mkdir(os.path.join(output_dirpath, ext))
     for metric in metrics:
         if not isinstance(metric, tuple):
-            summary_txt_fpath = os.path.join(summary_dirpath, 'TXT', metric.replace(' ', '_') + '.txt')
-            summary_tex_fpath = os.path.join(summary_dirpath, 'TEX', metric.replace(' ', '_') + '.tex')
-            summary_tsv_fpath = os.path.join(summary_dirpath, 'TSV', metric.replace(' ', '_') + '.tsv')
-            summary_png_fpath = os.path.join(summary_dirpath, plots_dirname, metric.replace(' ', '_') + '.' + qconfig.plot_extension)
-            results, all_rows, cur_ref_names = get_results_for_metric(ref_names, metric, contigs_num, labels, output_dirpath, qconfig.transposed_report_prefix + '.tsv')
+            summary_txt_fpath = os.path.join(output_dirpath, 'TXT', metric.replace(' ', '_') + '.txt')
+            summary_tex_fpath = os.path.join(output_dirpath, 'TEX', metric.replace(' ', '_') + '.tex')
+            summary_tsv_fpath = os.path.join(output_dirpath, 'TSV', metric.replace(' ', '_') + '.tsv')
+            summary_png_fpath = os.path.join(output_dirpath, plots_dirname, metric.replace(' ', '_') + '.' + qconfig.plot_extension)
+            results, all_rows, cur_ref_names = get_results_for_metric(ref_names, metric, contigs_num, labels, output_dirpath_per_ref, qconfig.transposed_report_prefix + '.tsv')
             if not results or not results[0]:
                 continue
             if cur_ref_names:
@@ -103,29 +103,29 @@ def do(output_dirpath, summary_dirpath, metrics, misassembl_metrics, ref_names):
                         y_label = 'Total length '
                     elif metric in [reporting.Fields.LARGCONTIG, reporting.Fields.N50, reporting.Fields.NGA50, reporting.Fields.MIS_EXTENSIVE_BASES]:
                         y_label = 'Contig length '
-                    plotter.draw_meta_summary_plot(summary_dirpath, labels, cur_ref_names, all_rows, results, summary_png_fpath, title=metric, reverse=reverse, yaxis_title=y_label)
+                    plotter.draw_meta_summary_plot(output_dirpath, labels, cur_ref_names, all_rows, results, summary_png_fpath, title=metric, reverse=reverse, yaxis_title=y_label)
                 if metric == reporting.Fields.MISASSEMBL:
                     mis_results = []
                     report_fname = os.path.join('contigs_reports', qconfig.transposed_report_prefix + '_misassemblies' + '.tsv')
                     if ref_names[-1] == qconfig.not_aligned_name:
                             cur_ref_names = ref_names[:-1]
                     for misassembl_metric in misassembl_metrics:
-                        results, all_rows, cur_ref_names = get_results_for_metric(cur_ref_names, misassembl_metric[len(reporting.Fields.TAB):], contigs_num, labels, output_dirpath, report_fname)
+                        results, all_rows, cur_ref_names = get_results_for_metric(cur_ref_names, misassembl_metric[len(reporting.Fields.TAB):], contigs_num, labels, output_dirpath_per_ref, report_fname)
                         if results:
                             mis_results.append(results)
                     if mis_results and qconfig.draw_plots:
                         json_points = []
                         for contig_num in range(contigs_num):
-                            summary_fpath_base = os.path.join(summary_dirpath, plots_dirname, labels[contig_num] + '_misassemblies')
-                            json_points.append(plotter.draw_meta_summary_misassembl_plot(mis_results, cur_ref_names, contig_num, summary_fpath_base, title=labels[contig_num]))
+                            plot_fpath = os.path.join(output_dirpath, plots_dirname, labels[contig_num] + '_misassemblies')
+                            json_points.append(plotter.draw_meta_summary_misassembl_plot(mis_results, cur_ref_names, contig_num, plot_fpath, title=labels[contig_num]))
                         if qconfig.html_report:
                             from libs.html_saver import html_saver
                             if ref_names[-1] == qconfig.not_aligned_name:
                                 cur_ref_names = ref_names[:-1]
                             if json_points:
-                                html_saver.save_meta_misassemblies(summary_dirpath, json_points, labels, cur_ref_names)
+                                html_saver.save_meta_misassemblies(output_dirpath, json_points, labels, cur_ref_names)
     logger.info('')
-    logger.info('  Text versions of reports and plots for each metric (for all references and assemblies) are saved to ' + summary_dirpath + '/')
+    logger.info('  Text versions of reports and plots for each metric (for all references and assemblies) are saved to ' + output_dirpath + '/')
 
 
 def print_file(all_rows, ref_num, fpath):

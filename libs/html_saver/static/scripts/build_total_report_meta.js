@@ -54,11 +54,9 @@ function fillOneRow(metric, mainMetrics, group_n, order, glossary, is_primary, r
             values.splice(assembliesNames.indexOf(notAlignedContigs[report_n][not_aligned_n]), 0, '');
         }
     }
-    var icon_misassemblies = '';
+
     for (var val_n = 0; val_n < values.length; val_n++) {
         var value = values[order[val_n]];
-        var plotSrc = assembliesNames[order[val_n]] + "_misassemblies.jpg";
-        icon_misassemblies = '<img id="' + plotSrc + '" src="report_html_aux/img/icon_plot.png" onclick="setPlot($(this))"/>';
 
         if (value === null || value === '') {
             table += '<td><span>-</span></td>';
@@ -105,7 +103,7 @@ function buildGenomeTable(reports, group_n, numColumns) {
             '<tr class="' + trClass + '">' +
             '<td class="left_column_td">' +
                 '<span class="metric-name">' +
-                    '<a href="../' + refName + '_quast_output/report.html">' + refName + '</a>' +
+                    '<a href="runs_per_reference/' + refName + '/report.html">' + refName + '</a>' +
                 '</span>' +
             '</td>';
         var metrics = reports[report_n].report[group_n][1];

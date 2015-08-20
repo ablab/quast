@@ -1514,7 +1514,7 @@ def do(reference, contigs_fpaths, cyclic, output_dir, old_contigs_fpaths):
     if qconfig.is_combined_ref:
         from libs import search_references_meta
         if search_references_meta.is_quast_first_run:
-            nucmer_output_dir = os.path.join(nucmer_output_dir, 'aux')
+            nucmer_output_dir = os.path.join(nucmer_output_dir, 'raw')
             if not os.path.isdir(nucmer_output_dir):
                 os.mkdir(nucmer_output_dir)
     n_jobs = min(len(contigs_fpaths), qconfig.max_threads)

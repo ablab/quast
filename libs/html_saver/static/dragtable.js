@@ -4,12 +4,6 @@
  Dan Vanderkam, http://danvk.org/DT/
  http://code.google.com/p/DT/
 
- Instructions:
- - Download this file
- - Add <script src="DT.js"></script> to your HTML.
- - Add class="draggable" to any table you might like to reorder.
- - Drag the headers around to reorder them.
-
  This is code was based on:
  - Stuart Langridge's SortTable (kryogenix.org/code/browser/sorttable)
  - Mike Hall's draggable class (http://www.brainjar.com/dhtml/drag/)

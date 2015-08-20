@@ -31,67 +31,47 @@ static_dirpath = get_real_path(static_dirname)
 
 aux_dirname = qconfig.html_aux_dir
 aux_files = [
-    'jquery-1.8.2.min.js',
-    'flot/jquery.flot.min.js',
-    'flot/excanvas.min.js',
-    'flot/jquery.flot.dashes.js',
-    'scripts/draw_cumulative_plot.js',
-    'scripts/draw_nx_plot.js',
-    'scripts/draw_gc_plot.js',
-    'scripts/utils.js',
-    'scripts/hsvToRgb.js',
-    'scripts/draw_genes_plot.js',
-    'dragtable.js',
-    'ie_html5.js',
-    'img/draggable.png',
-    'img/icon_plot.png',
-    'bootstrap/bootstrap-tooltip-5px-lower.min.js',
-    'bootstrap/bootstrap.min.css',
-    'bootstrap/bootstrap.min.js',
-    'bootstrap/bootstrap-tooltip-vlad.js',
-    'report.css',
-    'common.css',
-    'scripts/build_report_common.js',
-    'scripts/build_total_report_common.js',
+    'static/jquery-1.8.2.min.js',
+    'static/flot/jquery.flot.min.js',
+    'static/flot/excanvas.min.js',
+    'static/flot/jquery.flot.dashes.js',
+    'static/scripts/draw_cumulative_plot.js',
+    'static/scripts/draw_nx_plot.js',
+    'static/scripts/draw_gc_plot.js',
+    'static/scripts/utils.js',
+    'static/scripts/hsvToRgb.js',
+    'static/scripts/draw_genes_plot.js',
+    'static/dragtable.js',
+    'static/ie_html5.js',
+    'static/bootstrap/bootstrap-tooltip-5px-lower.min.js',
+    'static/bootstrap/bootstrap.min.js',
+    'static/bootstrap/bootstrap-tooltip-vlad.js',
+    'static/scripts/build_report_common.js',
+    'static/scripts/build_total_report_common.js',
 ]
 
-aux_simple_files = ['scripts/build_report.js', 'scripts/build_total_report.js']
-aux_meta_files = ['scripts/build_report_meta.js', 'scripts/build_total_report_meta.js',
-    'flot/jquery.flot.tickrotor.js', 'flot/jquery.flot.stack.js', 'scripts/draw_metasummary_plot.js', 'scripts/draw_meta_misassembl_plot.js',]
-aux_meta_scripts = ['<script type="text/javascript" src="/static/scripts/draw_metasummary_plot.js"></script>',
-                    '<script type="text/javascript" src="/static/scripts/draw_meta_misassembl_plot.js"></script>',
-                    '<script type="text/javascript" src="/static/flot/jquery.flot.tickrotor.js"></script>',
-                    '<script type="text/javascript" src="/static/flot/jquery.flot.stack.js"></script>']
-
+aux_meta_files = ['static/flot/jquery.flot.tickrotor.js', 'static/flot/jquery.flot.stack.js', 'static/scripts/draw_metasummary_plot.js', 'static/scripts/draw_meta_misassembl_plot.js',]
 
 def init(results_dirpath, is_meta=False):
-    aux_dirpath = os.path.join(results_dirpath, aux_dirname)
-    if os.path.isdir(aux_dirpath):
-        shutil.rmtree(aux_dirpath)
-    os.mkdir(aux_dirpath)
-
-    for aux_f_relpath in aux_files + (aux_meta_files if is_meta else aux_simple_files):
-        src_fpath = os.path.join(static_dirpath, aux_f_relpath)
-        dst_fpath = os.path.join(aux_dirpath, aux_f_relpath)
-
-        if not os.path.exists(os.path.dirname(dst_fpath)):
-            os.makedirs(os.path.dirname(dst_fpath))
-
-        if not os.path.exists(dst_fpath):
-            shutil.copyfile(src_fpath, dst_fpath)
 
     with open(template_fpath) as template_file:
         html = template_file.read()
+        script_texts = []
+        for aux_file in aux_files:
+            script_texts.append('<script type="text/javascript">' + open(get_real_path(aux_file)).read() + '</script>')
+        html = html.replace('{{ allscripts }}', '\n'.join(script_texts))
         if is_meta:
-            html = html.replace('{{ buildreport }}', 'scripts/build_report_meta.js')
-            html = html.replace('{{ buildtotalreport }}', 'scripts/build_total_report_meta.js')
-            html = html.replace('{{ metascripts }}', '\n'.join(aux_meta_scripts))
+            html = html.replace('{{ buildreport }}', open(get_real_path('static/scripts/build_report_meta.js')).read())
+            html = html.replace('{{ buildtotalreport }}', open(get_real_path('static/scripts/build_total_report_meta.js')).read())
+            html = html.replace('{{ metascripts }}', '\n'.join([open(get_real_path(aux_meta_file)).read() for aux_meta_file in aux_meta_files]))
         else:
-            html = html.replace('{{ buildreport }}', 'scripts/build_report.js')
-            html = html.replace('{{ buildtotalreport }}', 'scripts/build_total_report.js')
+            html = html.replace('{{ buildreport }}', open(get_real_path('static/scripts/build_report.js')).read())
+            html = html.replace('{{ buildtotalreport }}', open(get_real_path('static/scripts/build_total_report.js')).read())
             html = html.replace('{{ metascripts }}', '')
-        html = html.replace("/" + static_dirname, aux_dirname)
         html = html.replace('{{ glossary }}', open(get_real_path('glossary.json')).read())
+        html = html.replace('{{ bootstrap }}', open(get_real_path('static/bootstrap/bootstrap.min.css')).read())
+        html = html.replace('{{ common }}', open(get_real_path('static/common.css')).read())
+        html = html.replace('{{ report }}', open(get_real_path('static/report.css')).read())
         html_fpath = os.path.join(results_dirpath, report_fname)
         if os.path.exists(html_fpath):
             os.remove(html_fpath)

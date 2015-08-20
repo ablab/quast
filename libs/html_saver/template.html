@@ -22,31 +22,24 @@
         /*}*/
     </style>
 
-    <link rel="stylesheet" type="text/css" href="/static/bootstrap/bootstrap.min.css" />
-    <link rel="stylesheet" type="text/css" href="/static/common.css" />
-    <link rel="stylesheet" type="text/css" href="/static/report.css" />
+    <style type="text/css">
+        {{ bootstrap }}
+    </style>
+    <style type="text/css">
+        {{ common }}
+    </style>
+    <style type="text/css">
+        {{ report }}
+    </style>
 
-    <script type="text/javascript" src="/static/jquery-1.8.2.min.js"></script>
-    <script type="text/javascript" src="/static/flot/jquery.flot.min.js"></script>
-    <script type="text/javascript" src="/static/flot/jquery.flot.dashes.js"></script>
-    <script type="text/javascript" src="/static/bootstrap/bootstrap.min.js"></script>
-    <script type="text/javascript" src="/static/bootstrap/bootstrap-tooltip-vlad.js"></script>
-
-    <script type="text/javascript" src="/static/scripts/hsvToRgb.js"></script>
-    <script type="text/javascript" src="/static/scripts/utils.js"></script>
-    <script type="text/javascript" src="/static/scripts/build_total_report_common.js"></script>
-    <script type="text/javascript" src="/static/{{ buildtotalreport }}"></script>
-    <script type="text/javascript" src="/static/scripts/draw_cumulative_plot.js"></script>
-    <script type="text/javascript" src="/static/scripts/draw_nx_plot.js"></script>
-    <script type="text/javascript" src="/static/scripts/draw_gc_plot.js"></script>
-    <script type="text/javascript" src="/static/scripts/draw_genes_plot.js"></script>
-    <script type="text/javascript" src="/static/scripts/build_report_common.js"></script>
-    {{ metascripts }}
-    <script type="text/javascript" src="/static/{{ buildreport }}"></script>
-    <script type="text/javascript" src="/static/dragtable.js"></script>
+    {{ allscripts }}
+    <script type="text/javascript">{{ buildtotalreport }}</script>
+    <script type="text/javascript">{{ metascripts }}</script>
+    <script type="text/javascript">{{ buildreport }}</script>
 
     <script type="text/javascript">
         $(function() {
+
             buildReport();
 
             dragTable.init();

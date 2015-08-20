@@ -544,7 +544,6 @@ def main(args):
 
     # Running QUAST(s)
     quast_py_args += ['--meta']
-    quast_py_args += ['--combined-ref']
     downloaded_refs = False
 
     # SEARCHING REFERENCES
@@ -583,6 +582,7 @@ def main(args):
         exit(0)
 
     # Running combined reference
+    quast_py_args += ['--combined-ref']
     run_name = 'for the combined reference'
     logger.info()
     logger.info('Starting quast.py ' + run_name + '...')

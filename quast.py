@@ -412,7 +412,7 @@ def main(args):
                                os.path.join(qconfig.QUAST_HOME, 'test_data', 'contigs_2.fasta')]
             qconfig.test = True
 
-        if opt.startswith('--help'):
+        if opt.startswith('--help') or opt == '-h':
             qconfig.usage(opt == "--help-hidden")
             sys.exit(0)
 

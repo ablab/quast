@@ -362,7 +362,7 @@ def main(args):
                                os.path.join(qconfig.QUAST_HOME, 'test_data', 'meta_contigs_2.fasta')]
             test_mode = True
 
-        elif opt.startswith('--help'):
+        elif opt.startswith('--help') or opt == '-h':
             qconfig.usage(opt == "--help-hidden", meta=True)
             sys.exit(0)
 

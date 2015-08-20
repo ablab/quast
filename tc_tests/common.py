@@ -90,8 +90,7 @@ def check_report_files(name, report_fnames=None):
         'report.txt',
         'transposed_report.tex',
         'transposed_report.tsv',
-        'transposed_report.txt',
-        'report_html_aux']
+        'transposed_report.txt']
 
     files_not_exist = []
     for fname in report_fnames:

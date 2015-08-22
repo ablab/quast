@@ -676,19 +676,31 @@ def main(args):
                 json_texts.append(json_saver.json_text)
 
     # Finally running for the contigs that has not been aligned to any reference
+    no_unaligned_contigs = True
+    for assembly in not_aligned_assemblies:
+        if os.path.isfile(assembly.fpath) and os.stat(assembly.fpath).st_size != 0:
+            no_unaligned_contigs = False
+            break
+
     run_name = 'for the contigs not aligned anywhere'
     logger.info()
-    logger.info('Starting quast.py ' + run_name + '...')
+    if no_unaligned_contigs:
+        logger.info('Skipping quast.py ' + run_name + ' (everything is aligned!)')
+    else:
+        logger.info('Starting quast.py ' + run_name + '...')
 
-    return_code, total_num_notifications = _start_quast_main(run_name, quast_py_args,
-        assemblies=not_aligned_assemblies,
-        output_dirpath=os.path.join(output_dirpath, qconfig.not_aligned_name + qconfig.quast_output_suffix),
-        exit_on_exception=False, num_notifications_tuple=total_num_notifications)
-    if json_texts is not None:
-        json_texts.append(json_saver.json_text)
+        return_code, total_num_notifications = _start_quast_main(run_name, quast_py_args,
+            assemblies=not_aligned_assemblies,
+            output_dirpath=os.path.join(output_dirpath, qconfig.not_aligned_name + qconfig.quast_output_suffix),
+            exit_on_exception=False, num_notifications_tuple=total_num_notifications)
 
-    if return_code not in [0, 4]:
-        logger.error('Error running quast.py for the contigs not aligned anywhere')
+        if return_code not in [0, 4]:
+            logger.error('Error running quast.py for the contigs not aligned anywhere')
+        elif return_code == 4:  # no unaligned contigs, i.e. everything aligned
+            no_unaligned_contigs = True
+        if not no_unaligned_contigs:
+            if json_texts is not None:
+                json_texts.append(json_saver.json_text)
 
     if ref_names:
         logger.print_timestamp()
@@ -701,7 +713,8 @@ def main(args):
         metrics_for_plots = reporting.Fields.main_metrics
         misassembl_metrics = [reporting.Fields.MIS_RELOCATION, reporting.Fields.MIS_TRANSLOCATION, reporting.Fields.MIS_INVERTION,
                            reporting.Fields.MIS_ISTRANSLOCATIONS]
-        create_meta_summary.do(output_dirpath, output_dirpath_per_ref, metrics_for_plots, misassembl_metrics, ref_names)
+        create_meta_summary.do(output_dirpath, output_dirpath_per_ref, metrics_for_plots, misassembl_metrics,
+                               ref_names if no_unaligned_contigs else ref_names + [qconfig.not_aligned_name])
         if html_report and json_texts:
             html_saver.create_meta_report(output_dirpath, json_texts)
 

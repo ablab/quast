@@ -64,8 +64,6 @@ def get_labels(output_dirpath, report_fname):
 def do(output_dirpath, output_dirpath_per_ref, metrics, misassembl_metrics, ref_names):
     import plotter
 
-    ref_names = sorted(ref_names)
-    ref_names.append(qconfig.not_aligned_name) # extra case
     labels = get_labels(output_dirpath, qconfig.report_prefix + '.tsv')
     contigs_num = len(labels)
     plots_dirname = qconfig.plot_extension.upper()
@@ -108,7 +106,7 @@ def do(output_dirpath, output_dirpath_per_ref, metrics, misassembl_metrics, ref_
                     mis_results = []
                     report_fname = os.path.join('contigs_reports', qconfig.transposed_report_prefix + '_misassemblies' + '.tsv')
                     if ref_names[-1] == qconfig.not_aligned_name:
-                            cur_ref_names = ref_names[:-1]
+                        cur_ref_names = ref_names[:-1]
                     for misassembl_metric in misassembl_metrics:
                         results, all_rows, cur_ref_names = get_results_for_metric(cur_ref_names, misassembl_metric[len(reporting.Fields.TAB):], contigs_num, labels, output_dirpath_per_ref, report_fname)
                         if results:

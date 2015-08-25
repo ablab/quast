@@ -24,7 +24,10 @@
       7. Changes in one-letter options, including replacing confusing -T to -t for --threads
          and -M to -m for --min-contig.
 
-      8. Fixed several minor bugs.
+      8. Skipping broken version of scaffolds from analysis if they are equal to original
+         ones (see --scaffold option for details).
+
+      9. Fixed several minor bugs.
 
 
 3.0   1. Significant changes in MetaQUAST functionality:

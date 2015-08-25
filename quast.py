@@ -260,7 +260,7 @@ def _parallel_correct_contigs(file_counter, contigs_fpath, corrected_dirpath, la
             broken_scaffolds = (broken_scaffolds_fpath, broken_scaffolds_fpath)
         else:
             logger.info("  " + qutils.index_to_str(file_counter, force=(len(labels) > 1)) +
-                    "    WARNING: nothing was broken, skipping %s from further analysis" % label)
+                    "    WARNING: nothing was broken, skipping '%s broken' from further analysis" % label)
 
     corr_fpaths = (contigs_fpath, corr_fpath)
     return corr_fpaths, broken_scaffolds

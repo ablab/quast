@@ -410,7 +410,9 @@ Comma-separated list of contig length thresholds. Used in <span class='metric-re
     <code><b>--scaffolds</b></code> (or <code>-s</code>)
 </div>
 The assemblies are scaffolds (rather than contigs). QUAST will add split versions
-of assemblies to the comparison. Assemblies are split by continuous fragments of N's of length &ge; 10.
+of assemblies to the comparison (named &lt;assembly_name&gt;_broken).
+Assemblies are split by continuous fragments of N's of length &ge; 10.
+If broken version is equal to the original assembly (i.e. nothing was split) it is not included in the comparison.
 
 <div class='option'>
     <code><b>--use-all-alignments</b></code> (or <code>-u</code>)

@@ -58,6 +58,8 @@ def init(results_dirpath, is_meta=False):
         html = template_file.read()
         script_texts = []
         for aux_file in aux_files:
+            if qconfig.no_gc and "draw_gc_plot" in aux_file:
+                continue
             script_texts.append('<script type="text/javascript">' + open(get_real_path(aux_file)).read() + '</script>')
         html = html.replace('{{ allscripts }}', '\n'.join(script_texts))
         if is_meta:

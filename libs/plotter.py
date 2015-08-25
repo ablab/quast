@@ -312,6 +312,8 @@ def Nx_plot(results_dir, reduce_points, contigs_fpaths, lists_of_lengths, plot_f
 def GC_content_plot(ref_fpath, contigs_fpaths, list_of_GC_distributions, plot_fpath):
     if matplotlib_error:
         return
+    if qconfig.no_gc:
+        return
     title = 'GC content'
 
     logger.info('  Drawing ' + title + ' plot...')

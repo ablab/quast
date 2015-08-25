@@ -45,6 +45,11 @@ def blast_fpath(fname):
     return os.path.join(blast_dirpath, fname)
 
 
+def natural_sort_key(s, _nsre=re.compile('([0-9]+)')):
+    return [int(text) if text.isdigit() else text.lower()
+            for text in re.split(_nsre, s[0])]
+
+
 def try_send_request(url):
     try:
         request = urlopen(url)
@@ -77,21 +82,22 @@ def download_refs(organism, ref_fpath):
         return None
 
     is_first_piece = False
+    fasta_files = []
     for ref_id in sorted(ref_id.find('Id').text for ref_id in link_db.findall('Link')):
         fasta = try_send_request(ncbi_url + 'efetch.fcgi?db=sequences&id=%s&rettype=fasta&retmode=text' % ref_id)
         if fasta:
+            fasta_files.append(fasta)
             if 'complete genome' in fasta[:150]:
-                with open(ref_fpath, "w") as fasta_file:
-                    fasta_file.write(fasta)
+                fasta_files = [fasta]
                 break
+    fasta_names = [f.split('|')[-1] for f in fasta_files]
+    with open(ref_fpath, "w") as fasta_file:
+        for name, fasta in sorted(zip(fasta_names, fasta_files), key=natural_sort_key):
+            if not is_first_piece:
+                is_first_piece = True
             else:
-                if 'shotgun sequence' in fasta[:150]:
-                    if not is_first_piece:
-                        is_first_piece = True
-                    else:
-                        fasta = '\n' + fasta.rstrip()
-                with open(ref_fpath, "a") as fasta_file:
-                    fasta_file.write(fasta.rstrip())
+                fasta = '\n' + fasta.rstrip()
+            fasta_file.write(fasta.rstrip())
 
     if not os.path.isfile(ref_fpath):
         return None

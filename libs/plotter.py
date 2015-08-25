@@ -70,28 +70,34 @@ except Exception:
 # for creating PDF file with all plots and tables
 pdf_plots_figures = []
 pdf_tables_figures = []
+
+dict_color_and_ls = {}
 ####################################################################################
 
 
-def get_color_and_ls(color_id, fpath=None):
+def save_colors_and_ls(fpaths):
+    if not dict_color_and_ls:
+        color_id = 0
+        next_color_id = color_id
+        ls = primary_line_style
+        for fpath in fpaths:
+             if qconfig.scaffolds:
+                # contigs and scaffolds should be equally colored but scaffolds should be dashed
+                if fpath and fpath in qconfig.dict_of_broken_scaffolds:
+                    color = dict_color_and_ls[qconfig.dict_of_broken_scaffolds[fpath]][0]
+                    ls = secondary_line_style
+                else:
+                    next_color_id += 1
+                    color = colors[color_id % len(colors)]
+             dict_color_and_ls[fpath] = (color, ls)
+             color_id = next_color_id
+
+
+def get_color_and_ls(fpath):
     """
     Returns tuple: color, line style
     """
-    ls = primary_line_style
-
-    # special case: we have scaffolds and contigs
-    if qconfig.scaffolds:
-        # contigs and scaffolds should be equally colored but scaffolds should be dashed
-        if fpath and os.path.basename(fpath) in qconfig.list_of_broken_scaffolds:
-            next_color_id = color_id
-        else:
-            ls = secondary_line_style
-            next_color_id = color_id + 1
-    else:
-        next_color_id = color_id + 1
-
-    color = colors[color_id % len(colors)]
-    return color, ls, next_color_id
+    return dict_color_and_ls[fpath]
 
 
 def get_locators():
@@ -126,7 +132,6 @@ def cumulative_plot(reference, contigs_fpaths, lists_of_lengths, plot_fpath, tit
     matplotlib.pyplot.rc('font', **font)
     max_x = 0
     max_y = 0
-    color_id = 0
 
     for (contigs_fpath, lenghts) in itertools.izip(contigs_fpaths, lists_of_lengths):
         vals_length = [0]
@@ -136,7 +141,7 @@ def cumulative_plot(reference, contigs_fpaths, lists_of_lengths, plot_fpath, tit
         if vals_contig_index:
             max_x = max(vals_contig_index[-1], max_x)
             max_y = max(max_y, vals_length[-1])
-        color, ls, color_id = get_color_and_ls(color_id, contigs_fpath)
+        color, ls = get_color_and_ls(contigs_fpath)
         matplotlib.pyplot.plot(vals_contig_index, vals_length, color=color, lw=line_width, ls=ls)
 
     if reference:
@@ -171,7 +176,7 @@ def cumulative_plot(reference, contigs_fpaths, lists_of_lengths, plot_fpath, tit
     # Put a legend below current axis
     try: # for matplotlib <= 2009-12-09
         ax.legend(legend_list, loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True,
-            shadow=True, ncol=n_columns)
+            shadow=True, ncol=n_columns if n_columns<3 else 3)
     except Exception: # ZeroDivisionError: ValueError:
         pass
 
@@ -194,7 +199,7 @@ def cumulative_plot(reference, contigs_fpaths, lists_of_lengths, plot_fpath, tit
     #matplotlib.pyplot.ylim([0, int(float(max_y) * 1.1)])
 
     plot_fpath += plots_file_ext
-    matplotlib.pyplot.savefig(plot_fpath)
+    matplotlib.pyplot.savefig(plot_fpath, bbox_inches='tight')
     logger.info('    saved to ' + plot_fpath)
     pdf_plots_figures.append(figure)
 
@@ -257,7 +262,7 @@ def Nx_plot(results_dir, reduce_points, contigs_fpaths, lists_of_lengths, plot_f
         json_vals_y.append(vals_y)
         max_y = max(max_y, max(vals_l))
 
-        color, ls, color_id = get_color_and_ls(color_id, contigs_fpath)
+        color, ls = get_color_and_ls(contigs_fpath)
         matplotlib.pyplot.plot(vals_Nx, vals_l, color=color, lw=line_width, ls=ls)
 
     if qconfig.html_report:
@@ -277,9 +282,8 @@ def Nx_plot(results_dir, reduce_points, contigs_fpaths, lists_of_lengths, plot_f
     # Put a legend below current axis
     try: # for matplotlib <= 2009-12-09
         ax.legend(legend_list, loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True,
-            shadow=True, ncol=n_columns)
+            shadow=True, ncol=n_columns if n_columns<3 else 3)
     except Exception:
-
         pass
 
     ylabel = 'Contig length  '
@@ -298,7 +302,7 @@ def Nx_plot(results_dir, reduce_points, contigs_fpaths, lists_of_lengths, plot_f
     ax.xaxis.set_major_locator(xLocator)
 
     plot_fpath += plots_file_ext
-    matplotlib.pyplot.savefig(plot_fpath)
+    matplotlib.pyplot.savefig(plot_fpath, bbox_inches='tight')
     logger.info('    saved to ' + plot_fpath)
     pdf_plots_figures.append(figure)
 
@@ -335,7 +339,7 @@ def GC_content_plot(ref_fpath, contigs_fpaths, list_of_GC_distributions, plot_fp
             color = reference_color
             ls = reference_ls
         else:
-            color, ls, color_id = get_color_and_ls(color_id, all_fpaths[i])
+            color, ls = get_color_and_ls(all_fpaths[i])
 
         matplotlib.pyplot.plot(GC_distribution_x, GC_distribution_y, color=color, lw=line_width, ls=ls)
 
@@ -354,7 +358,7 @@ def GC_content_plot(ref_fpath, contigs_fpaths, list_of_GC_distributions, plot_fp
 
     try:  # for matplotlib <= 2009-12-09
         ax.legend(legend_list, loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True,
-            shadow=True, ncol=n_columns)
+            shadow=True, ncol=n_columns if n_columns<3 else 3)
     except Exception:
         pass
 
@@ -376,7 +380,7 @@ def GC_content_plot(ref_fpath, contigs_fpaths, list_of_GC_distributions, plot_fp
     #matplotlib.pyplot.ylim(matplotlib.pyplot.ylim()[::-1])
 
     plot_fpath += plots_file_ext
-    matplotlib.pyplot.savefig(plot_fpath)
+    matplotlib.pyplot.savefig(plot_fpath, bbox_inches='tight')
     logger.info('    saved to ' + plot_fpath)
     pdf_plots_figures.append(figure)
 
@@ -411,7 +415,7 @@ def genes_operons_plot(reference_value, contigs_fpaths, files_feature_in_contigs
             max_x = max(x_vals[-1], max_x)
             max_y = max(y_vals[-1], max_y)
 
-        color, ls, color_id = get_color_and_ls(color_id, contigs_fpath)
+        color, ls = get_color_and_ls(contigs_fpath)
         matplotlib.pyplot.plot(x_vals, y_vals, color=color, lw=line_width, ls=ls)
 
     if reference_value:
@@ -437,7 +441,7 @@ def genes_operons_plot(reference_value, contigs_fpaths, files_feature_in_contigs
     # Put a legend below current axis
     try:  # for matplotlib <= 2009-12-09
         ax.legend(legend_list, loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True,
-            shadow=True, ncol=n_columns)
+            shadow=True, ncol=n_columns if n_columns<3 else 3)
     except Exception:
         pass
 
@@ -449,7 +453,7 @@ def genes_operons_plot(reference_value, contigs_fpaths, files_feature_in_contigs
     #matplotlib.pyplot.ylim([0, int(float(max_y) * 1.1)])
 
     plot_fpath += plots_file_ext
-    matplotlib.pyplot.savefig(plot_fpath)
+    matplotlib.pyplot.savefig(plot_fpath, bbox_inches='tight')
     logger.info('    saved to ' + plot_fpath)
     pdf_plots_figures.append(figure)
 
@@ -477,7 +481,7 @@ def histogram(contigs_fpaths, values, plot_fpath, title='', yaxis_title='', bott
         exponent = math.pow(10, math.floor(math.log(max_value - min_value, 10)))
 
     if not bottom_value:
-        bottom_value = (math.floor(min_value / exponent) - 1) * exponent
+        bottom_value = (math.floor(min_value / exponent) - 5) * exponent
     if not top_value:
         top_value = (math.ceil(max_value / exponent) + 1) * exponent
 
@@ -495,7 +499,7 @@ def histogram(contigs_fpaths, values, plot_fpath, title='', yaxis_title='', bott
 
     color_id = 0
     for i, (contigs_fpath, val) in enumerate(itertools.izip(contigs_fpaths, values)):
-        color, ls, color_id = get_color_and_ls(color_id, contigs_fpath)
+        color, ls = get_color_and_ls(contigs_fpath)
         if ls == primary_line_style:
             hatch = ''
         else:
@@ -516,7 +520,7 @@ def histogram(contigs_fpaths, values, plot_fpath, title='', yaxis_title='', bott
     # Put a legend below current axis
     try:  # for matplotlib <= 2009-12-09
         ax.legend(legend_list, loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True,
-            shadow=True, ncol=n_columns)
+            shadow=True, ncol=n_columns if n_columns<3 else 3)
     except Exception:
         pass
 
@@ -527,7 +531,7 @@ def histogram(contigs_fpaths, values, plot_fpath, title='', yaxis_title='', bott
     ax.yaxis.set_major_locator(yLocator)
 
     plot_fpath += plots_file_ext
-    matplotlib.pyplot.savefig(plot_fpath)
+    matplotlib.pyplot.savefig(plot_fpath, bbox_inches='tight')
     logger.info('    saved to ' + plot_fpath)
     pdf_plots_figures.append(figure)
 
@@ -555,9 +559,7 @@ def draw_meta_summary_plot(output_dirpath, labels, ref_names, all_rows, results,
     arr_y = []
     values = []
     arr_y_by_refs = []
-    color_id = 0
     for j in range(contigs_num):
-        color, ls, color_id = get_color_and_ls(color_id)
         to_plot_x = []
         to_plot_y = []
         arr = range(1, ref_num + 1)
@@ -692,7 +694,6 @@ def draw_meta_summary_misassembl_plot(results, ref_names, contig_num, plot_fpath
     for i in sorted(legend_n):
         legend.append(misassemblies[i])
     matplotlib.pyplot.xlim([0, refs_num + 1])
-    matplotlib.pyplot.tight_layout()
 
     if ymax == 0:
         matplotlib.pyplot.ylim([0, 5])
@@ -785,7 +786,6 @@ def draw_misassembl_plot(reports, plot_fpath, title='', yaxis_title=''):
     for i in sorted(legend_n):
         legend.append(misassemblies[i])
     matplotlib.pyplot.xlim([0, contigs_num + 1])
-    matplotlib.pyplot.tight_layout()
     if ymax == 0:
         matplotlib.pyplot.ylim([0, 5])
     else:

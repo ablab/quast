@@ -81,23 +81,24 @@ def save_colors_and_ls(fpaths):
         next_color_id = color_id
         ls = primary_line_style
         for fpath in fpaths:
-             if qconfig.scaffolds:
-                # contigs and scaffolds should be equally colored but scaffolds should be dashed
-                if fpath and fpath in qconfig.dict_of_broken_scaffolds:
-                    color = dict_color_and_ls[qconfig.dict_of_broken_scaffolds[fpath]][0]
-                    ls = secondary_line_style
-                else:
-                    next_color_id += 1
-                    color = colors[color_id % len(colors)]
-             dict_color_and_ls[fpath] = (color, ls)
-             color_id = next_color_id
+            label = qutils.label_from_fpath(fpath)
+            # contigs and scaffolds should be equally colored but scaffolds should be dashed
+            if fpath and fpath in qconfig.dict_of_broken_scaffolds:
+                color = dict_color_and_ls[qutils.label_from_fpath(qconfig.dict_of_broken_scaffolds[fpath])][0]
+                ls = secondary_line_style
+            else:
+                 next_color_id += 1
+                 color = colors[color_id % len(colors)]
+            dict_color_and_ls[label] = (color, ls)
+            color_id = next_color_id
 
 
 def get_color_and_ls(fpath):
+    label = qutils.label_from_fpath(fpath)
     """
     Returns tuple: color, line style
     """
-    return dict_color_and_ls[fpath]
+    return dict_color_and_ls[label]
 
 
 def get_locators():

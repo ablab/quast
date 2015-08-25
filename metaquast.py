@@ -125,7 +125,7 @@ def _partition_contigs(assemblies, ref_fpaths, corrected_dirpath, alignments_fpa
 
 def _start_quast_main(
         name, args, assemblies, reference_fpath=None,
-        output_dirpath=None, exit_on_exception=True, num_notifications_tuple=None):
+        output_dirpath=None, exit_on_exception=True, num_notifications_tuple=None, is_first_run=None):
     args = args[:]
 
     args.extend([asm.fpath for asm in assemblies])
@@ -159,7 +159,13 @@ def _start_quast_main(
     if num_notifications_tuple:
         cur_num_notifications = quast.logger.get_numbers_of_notifications()
         num_notifications_tuple = map(sum, zip(num_notifications_tuple,cur_num_notifications))
-    return return_code, num_notifications_tuple
+
+    if is_first_run:
+        labels = [qconfig.assembly_labels_by_fpath[fpath] for fpath in qconfig.assemblies_fpaths]
+        assemblies = [Assembly(fpath, qconfig.assembly_labels_by_fpath[fpath]) for fpath in qconfig.assemblies_fpaths]
+        return return_code, num_notifications_tuple, assemblies, labels
+    else:
+        return return_code, num_notifications_tuple
 
     # except Exception, (errno, strerror):
     #     if exit_on_exception:
@@ -595,11 +601,14 @@ def main(args):
         json_texts = []
     else:
         json_texts = None
-    return_code, total_num_notifications = _start_quast_main(run_name, quast_py_args + ["--ambiguity-usage"] + ['all'],
+    return_code, total_num_notifications, assemblies, labels = _start_quast_main(run_name, quast_py_args + ["--ambiguity-usage"] + ['all'],
         assemblies=assemblies,
         reference_fpath=combined_ref_fpath,
         output_dirpath=os.path.join(output_dirpath, qconfig.combined_output_name),
-        num_notifications_tuple=total_num_notifications)
+        num_notifications_tuple=total_num_notifications, is_first_run=True)
+    for arg in args:
+        if arg in ('-s', "--scaffolds"):
+            quast_py_args.remove(arg)
 
     if json_texts is not None:
         json_texts.append(json_saver.json_text)
@@ -633,7 +642,6 @@ def main(args):
             logger.info('All downloaded references have low genome fraction. Nothing was excluded for now.')
 
     quast_py_args += ['--no-check-meta']
-    assemblies = correct_assemblies
     qconfig.contig_thresholds = [str(threshold) for threshold in qconfig.contig_thresholds if threshold > qconfig.min_contig]
     if not qconfig.contig_thresholds:
         qconfig.contig_thresholds = ['None']

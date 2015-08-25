@@ -114,6 +114,7 @@ GC_bin_size = 1.0
 
 # plotter and reporting and maybe other modules in the future
 assembly_labels_by_fpath = {}
+assemblies_fpaths = []
 max_points = 1500 # max points on plots (== max number of contigs)
 min_difference = 0
 

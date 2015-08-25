@@ -175,21 +175,28 @@ def _correct_contigs(contigs_fpaths, corrected_dirpath, reporting, labels):
     from joblib import Parallel, delayed
     corrected_fpaths = Parallel(n_jobs=n_jobs)(delayed(_parallel_correct_contigs)(i, contigs_fpath,
             corrected_dirpath, labels) for i, contigs_fpath in enumerate(contigs_fpaths))
-    broken_scaffolds = [corrected_fpaths[i][1] for i in range(len(corrected_fpaths)) if corrected_fpaths[i][1]]
-    corrected_fpaths = [corrected_fpaths[i][0] for i in range(len(corrected_fpaths))]
-    for i, (contigs_fpath, corr_fpath) in enumerate(corrected_fpaths):
+    corr_fpaths = [corrected_fpaths[i][0] for i in range(len(corrected_fpaths))]
+    for i, (contigs_fpath, corr_fpath) in enumerate(corr_fpaths):
         if qconfig.no_check_meta:
             corr_fpath = contigs_fpath
         qconfig.assembly_labels_by_fpath[corr_fpath] = labels[i]
         if _handle_fasta(contigs_fpath, corr_fpath, reporting):
             corrected_contigs_fpaths.append(corr_fpath)
             old_contigs_fpaths.append(contigs_fpath)
-    for i, (broken_scaffold_fpath, broken_scaffold_fpath) in enumerate(broken_scaffolds):
-        qconfig.assembly_labels_by_fpath[broken_scaffold_fpath] = labels[i] + ' broken'
-        if _handle_fasta(broken_scaffold_fpath, broken_scaffold_fpath, reporting):
-            corrected_contigs_fpaths.append(broken_scaffold_fpath)
-            old_contigs_fpaths.append(broken_scaffold_fpath)  # no "old" fpaths for broken scaffolds
-            qconfig.list_of_broken_scaffolds.append(qutils.name_from_fpath(broken_scaffold_fpath))
+    if qconfig.scaffolds:
+        broken_scaffolds = [corrected_fpaths[i][1] for i in range(len(corrected_fpaths))]
+        for i in range(len(broken_scaffolds)):
+            if broken_scaffolds[i]:
+                broken_scaffold_fpath = broken_scaffolds[i][0]
+                qconfig.assembly_labels_by_fpath[broken_scaffold_fpath] = labels[i] + ' broken'
+                if _handle_fasta(broken_scaffold_fpath, broken_scaffold_fpath, reporting):
+                    corrected_contigs_fpaths.append(broken_scaffold_fpath)
+                    old_contigs_fpaths.append(broken_scaffold_fpath)  # no "old" fpaths for broken scaffolds
+                qconfig.dict_of_broken_scaffolds[broken_scaffold_fpath] = corrected_contigs_fpaths[i]
+        if qconfig.draw_plots:
+            from libs import plotter
+            plotter.dict_color_and_ls = {}
+            plotter.save_colors_and_ls(corrected_contigs_fpaths)
 
     return corrected_contigs_fpaths, old_contigs_fpaths
 
@@ -242,16 +249,18 @@ def _parallel_correct_contigs(file_counter, contigs_fpath, corrected_dirpath, la
                  seq[cur_contig_start:]))
 
             contigs_counter += total_contigs_for_the_scaf
-
-        fastaparser.write_fasta(broken_scaffolds_fpath, broken_scaffolds_fasta)
-        logger.info("  " + qutils.index_to_str(file_counter, force=(len(labels) > 1)) +
-                    "    %d scaffolds (%s) were broken into %d contigs (%s)" %
-                    (scaffold_counter + 1,
-                     label,
-                     contigs_counter,
-                     label + ' broken'))
-
-        broken_scaffolds = (broken_scaffolds_fpath, broken_scaffolds_fpath)
+        if scaffold_counter + 1 != contigs_counter:
+            fastaparser.write_fasta(broken_scaffolds_fpath, broken_scaffolds_fasta)
+            logger.info("  " + qutils.index_to_str(file_counter, force=(len(labels) > 1)) +
+                        "    %d scaffolds (%s) were broken into %d contigs (%s)" %
+                        (scaffold_counter + 1,
+                         label,
+                         contigs_counter,
+                         label + ' broken'))
+            broken_scaffolds = (broken_scaffolds_fpath, broken_scaffolds_fpath)
+        else:
+            logger.info("  " + qutils.index_to_str(file_counter, force=(len(labels) > 1)) +
+                    "    WARNING: nothing was broken, skipping %s from further analysis" % label)
 
     corr_fpaths = (contigs_fpath, corr_fpath)
     return corr_fpaths, broken_scaffolds

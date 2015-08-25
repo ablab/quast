@@ -62,6 +62,7 @@ aux_meta_scripts = ['<script type="text/javascript" src="/static/scripts/draw_me
                     '<script type="text/javascript" src="/static/scripts/draw_meta_misassembl_plot.js"></script>',
                     '<script type="text/javascript" src="/static/flot/jquery.flot.tickrotor.js"></script>',
                     '<script type="text/javascript" src="/static/flot/jquery.flot.stack.js"></script>']
+aux_gc_script = '<script type="text/javascript" src="/static/scripts/draw_gc_plot.js"></script>'
 
 
 def init(results_dirpath, is_meta=False):
@@ -90,6 +91,10 @@ def init(results_dirpath, is_meta=False):
             html = html.replace('{{ buildreport }}', 'scripts/build_report.js')
             html = html.replace('{{ buildtotalreport }}', 'scripts/build_total_report.js')
             html = html.replace('{{ metascripts }}', '')
+        if qconfig.no_gc:
+            html = html.replace('{{ gc_script }}', '')
+        else:
+            html = html.replace('{{ gc_script }}', aux_gc_script)
         html = html.replace("/" + static_dirname, aux_dirname)
         html = html.replace('{{ glossary }}', open(get_real_path('glossary.json')).read())
         html_fpath = os.path.join(results_dirpath, report_fname)

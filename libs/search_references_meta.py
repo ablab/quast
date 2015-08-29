@@ -247,7 +247,9 @@ def do(assemblies, downloaded_dirpath):
             logger.info()
             if return_code != 0:
                 return None
-        os.chmod(blast_file, os.stat(blast_file).st_mode | stat.S_IEXEC)
+        st = os.stat(blast_file)
+        if not (bool(st.st_mode & stat.S_IXUSR) and bool(st.st_mode & stat.S_IXGRP) and bool(st.st_mode & stat.S_IXOTH)):
+            os.chmod(blast_file, st.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
     if not os.path.isfile(db_fpath + '.nsq') or os.path.getsize(db_fpath + '.nsq') < db_nsq_fsize:
         if os.path.isdir(blastdb_dirpath):

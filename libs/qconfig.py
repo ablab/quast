@@ -122,6 +122,7 @@ min_difference = 0
 # for scaffolds
 dict_of_broken_scaffolds = {}
 Ns_break_threshold = 10
+scaffolds_gap_threshold = 10000
 
 # for searching references in NCBI
 downloaded_refs = False

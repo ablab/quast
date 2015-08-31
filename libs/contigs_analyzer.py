@@ -47,6 +47,7 @@ class Misassembly:
     TRANSLOCATION = 2
     INVERSION = 3
     INTERSPECTRANSLOCATION = 4  #for --meta, if translocation occurs between chromosomes of different references
+    SCAFFOLD_GAP = 5
 
 
 class Mapping(object):
@@ -465,6 +466,12 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
         gap_in_contig = contig_seq[max(align1.e2, align1.s2): min(align2.e2, align2.s2) - 1]
         return len(gap_in_contig) - gap_in_contig.count('N')
 
+    def is_gap_filled_ns(contig_seq, align1, align2):
+        gap_in_contig = contig_seq[max(align1.e2, align1.s2): min(align2.e2, align2.s2) - 1]
+        if len(gap_in_contig) == 0:
+            return False
+        return gap_in_contig.count('N')/len(gap_in_contig) > 0.95
+
     def process_misassembled_contig(sorted_aligns, cyclic, aligned_lengths, region_misassemblies, reg_lens, ref_aligns, ref_features, contig_seq, references_misassemblies):
         misassembly_internal_overlap = 0
         prev = sorted_aligns[0]
@@ -488,41 +495,47 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
             print >> coords_filtered_file, str(prev)
 
             if is_extensive_misassembly:
-                is_misassembled = True
-                aligned_lengths.append(cur_aligned_length)
-                contig_aligned_length += cur_aligned_length
-                cur_aligned_length = 0
-                if not contig_is_printed:
-                    print >> misassembly_file, sorted_aligns[i].contig
-                    contig_is_printed = True
-                print >> misassembly_file, 'Extensive misassembly (',
-                print >> planta_out_f, '\t\t\t  Extensive misassembly (',
-                if sorted_aligns[i].ref != sorted_aligns[i+1].ref:
-                    if qconfig.is_combined_ref and \
-                            not check_chr_for_refs(sorted_aligns[i].ref, sorted_aligns[i+1].ref):  # if chromosomes from different references
-                            region_misassemblies.append(Misassembly.INTERSPECTRANSLOCATION)
-                            ref1, ref2 = ref_labels_by_chromosomes[sorted_aligns[i].ref], ref_labels_by_chromosomes[sorted_aligns[i+1].ref]
-                            references_misassemblies[ref1] += 1
-                            references_misassemblies[ref2] += 1
-                            print >> planta_out_f, 'interspecies translocation',
-                            print >> misassembly_file, 'interspecies translocation',
-                    else:
-                        region_misassemblies.append(Misassembly.TRANSLOCATION)
-                        print >> planta_out_f, 'translocation',
-                        print >> misassembly_file, 'translocation',
-                elif abs(inconsistency) > smgap:
-                    region_misassemblies.append(Misassembly.RELOCATION)
-                    print >> planta_out_f, 'relocation, inconsistency =', inconsistency,
-                    print >> misassembly_file, 'relocation, inconsistency =', inconsistency,
-                else: #if strand1 != strand2:
-                    region_misassemblies.append(Misassembly.INVERSION)
-                    print >> planta_out_f, 'inversion',
-                    print >> misassembly_file, 'inversion',
-                print >> planta_out_f, ') between these two alignments'
-                print >> misassembly_file, ') between %s %s and %s %s' % (sorted_aligns[i].s2, sorted_aligns[i].e2,
-                                                                          sorted_aligns[i+1].s2, sorted_aligns[i+1].e2)
-                ref_features.setdefault(sorted_aligns[i].ref, {})[sorted_aligns[i].e1] = 'M'
-                ref_features.setdefault(sorted_aligns[i+1].ref, {})[sorted_aligns[i+1].e1] = 'M'
+                if qconfig.scaffolds and abs(inconsistency) <= qconfig.scaffolds_gap_threshold and is_gap_filled_ns(contig_seq, sorted_aligns[i], sorted_aligns[i+1]) \
+                    and sorted_aligns[i].ref == sorted_aligns[i+1].ref and (sorted_aligns[i].s2 < sorted_aligns[i].e2) == (sorted_aligns[i+1].s2 < sorted_aligns[i+1].e2):
+                    print >> planta_out_f, '\t\t\t  Fake misassembly between these two alignments: scaffold gap misassembly,',
+                    print >> planta_out_f, 'gap length difference =', inconsistency
+                    region_misassemblies.append(Misassembly.SCAFFOLD_GAP)
+                else:
+                    is_misassembled = True
+                    aligned_lengths.append(cur_aligned_length)
+                    contig_aligned_length += cur_aligned_length
+                    cur_aligned_length = 0
+                    if not contig_is_printed:
+                        print >> misassembly_file, sorted_aligns[i].contig
+                        contig_is_printed = True
+                    print >> misassembly_file, 'Extensive misassembly (',
+                    print >> planta_out_f, '\t\t\t  Extensive misassembly (',
+                    if sorted_aligns[i].ref != sorted_aligns[i+1].ref:
+                        if qconfig.is_combined_ref and \
+                                not check_chr_for_refs(sorted_aligns[i].ref, sorted_aligns[i+1].ref):  # if chromosomes from different references
+                                region_misassemblies.append(Misassembly.INTERSPECTRANSLOCATION)
+                                ref1, ref2 = ref_labels_by_chromosomes[sorted_aligns[i].ref], ref_labels_by_chromosomes[sorted_aligns[i+1].ref]
+                                references_misassemblies[ref1] += 1
+                                references_misassemblies[ref2] += 1
+                                print >> planta_out_f, 'interspecies translocation',
+                                print >> misassembly_file, 'interspecies translocation',
+                        else:
+                            region_misassemblies.append(Misassembly.TRANSLOCATION)
+                            print >> planta_out_f, 'translocation',
+                            print >> misassembly_file, 'translocation',
+                    elif abs(inconsistency) > smgap:
+                        region_misassemblies.append(Misassembly.RELOCATION)
+                        print >> planta_out_f, 'relocation, inconsistency =', inconsistency,
+                        print >> misassembly_file, 'relocation, inconsistency =', inconsistency,
+                    else: #if strand1 != strand2:
+                        region_misassemblies.append(Misassembly.INVERSION)
+                        print >> planta_out_f, 'inversion',
+                        print >> misassembly_file, 'inversion',
+                    print >> planta_out_f, ') between these two alignments'
+                    print >> misassembly_file, ') between %s %s and %s %s' % (sorted_aligns[i].s2, sorted_aligns[i].e2,
+                                                                              sorted_aligns[i+1].s2, sorted_aligns[i+1].e2)
+                    ref_features.setdefault(sorted_aligns[i].ref, {})[sorted_aligns[i].e1] = 'M'
+                    ref_features.setdefault(sorted_aligns[i+1].ref, {})[sorted_aligns[i+1].e1] = 'M'
             else:
                 if inconsistency == 0 and cyclic_moment:
                     print >> planta_out_f, '\t\t\t  Fake misassembly (caused by linear representation of circular genome) between these two alignments'
@@ -1341,6 +1354,8 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
     if qconfig.is_combined_ref:
         print >> planta_out_f, '\t\tInterspecies translocations: %d' % region_misassemblies.count(Misassembly.INTERSPECTRANSLOCATION)
     print >> planta_out_f, '\t\tInversions: %d' % region_misassemblies.count(Misassembly.INVERSION)
+    if qconfig.scaffolds and contigs_fpath not in qconfig.dict_of_broken_scaffolds:
+        print >> planta_out_f, '\t\tScaffold gap misassemblies: %d' % region_misassemblies.count(Misassembly.SCAFFOLD_GAP)
     if qconfig.is_combined_ref:
         print >> planta_out_f, '\tPotentially Misassembled Contigs (i/s translocations): %d' % contigs_with_istranslocations
     print >> planta_out_f, '\tMisassembled Contigs: %d' % len(misassembled_contigs)

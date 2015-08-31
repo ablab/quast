@@ -173,9 +173,12 @@ def _correct_contigs(contigs_fpaths, corrected_dirpath, reporting, labels):
     old_contigs_fpaths = []
     n_jobs = min(len(contigs_fpaths), qconfig.max_threads)
     from joblib import Parallel, delayed
-    corrected_fpaths = Parallel(n_jobs=n_jobs)(delayed(_parallel_correct_contigs)(i, contigs_fpath,
+    corrected_info = Parallel(n_jobs=n_jobs)(delayed(_parallel_correct_contigs)(i, contigs_fpath,
             corrected_dirpath, labels) for i, contigs_fpath in enumerate(contigs_fpaths))
-    corr_fpaths = [corrected_fpaths[i][0] for i in range(len(corrected_fpaths))]
+    logs = [corrected_info[i][2] for i in range(len(corrected_info))]
+    for log in logs:
+        logger.info('\n'.join(log))
+    corr_fpaths = [corrected_info[i][0] for i in range(len(corrected_info))]
     for i, (contigs_fpath, corr_fpath) in enumerate(corr_fpaths):
         if qconfig.no_check_meta:
             corr_fpath = contigs_fpath
@@ -184,7 +187,7 @@ def _correct_contigs(contigs_fpaths, corrected_dirpath, reporting, labels):
             corrected_contigs_fpaths.append(corr_fpath)
             old_contigs_fpaths.append(contigs_fpath)
     if qconfig.scaffolds:
-        broken_scaffolds = [corrected_fpaths[i][1] for i in range(len(corrected_fpaths))]
+        broken_scaffolds = [corrected_info[i][1] for i in range(len(corrected_info))]
         for i in range(len(broken_scaffolds)):
             if broken_scaffolds[i]:
                 broken_scaffold_fpath = broken_scaffolds[i][0]
@@ -209,7 +212,8 @@ def _parallel_correct_contigs(file_counter, contigs_fpath, corrected_dirpath, la
 
     label = labels[file_counter]
     corr_fpath = qutils.unique_corrected_fpath(os.path.join(corrected_dirpath, label + fasta_ext))
-    logger.info('  ' + qutils.index_to_str(file_counter, force=(len(labels) > 1)) + '%s ==> %s' % (contigs_fpath, label))
+    logs = []
+    logs.append('  ' + qutils.index_to_str(file_counter, force=(len(labels) > 1)) + '%s ==> %s' % (contigs_fpath, label))
 
     # if option --scaffolds is specified QUAST adds split version of assemblies to the comparison
     if qconfig.scaffolds:
@@ -251,7 +255,7 @@ def _parallel_correct_contigs(file_counter, contigs_fpath, corrected_dirpath, la
             contigs_counter += total_contigs_for_the_scaf
         if scaffold_counter + 1 != contigs_counter:
             fastaparser.write_fasta(broken_scaffolds_fpath, broken_scaffolds_fasta)
-            logger.info("  " + qutils.index_to_str(file_counter, force=(len(labels) > 1)) +
+            logs.append("  " + qutils.index_to_str(file_counter, force=(len(labels) > 1)) +
                         "    %d scaffolds (%s) were broken into %d contigs (%s)" %
                         (scaffold_counter + 1,
                          label,
@@ -259,11 +263,11 @@ def _parallel_correct_contigs(file_counter, contigs_fpath, corrected_dirpath, la
                          label + ' broken'))
             broken_scaffolds = (broken_scaffolds_fpath, broken_scaffolds_fpath)
         else:
-            logger.info("  " + qutils.index_to_str(file_counter, force=(len(labels) > 1)) +
+            logs.append("  " + qutils.index_to_str(file_counter, force=(len(labels) > 1)) +
                     "    WARNING: nothing was broken, skipping '%s broken' from further analysis" % label)
 
     corr_fpaths = (contigs_fpath, corr_fpath)
-    return corr_fpaths, broken_scaffolds
+    return corr_fpaths, broken_scaffolds, logs
 
 
 def _correct_reference(ref_fpath, corrected_dirpath):

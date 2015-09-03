@@ -316,14 +316,12 @@ def do(assemblies, downloaded_dirpath):
         all_scores = sorted(all_scores, reverse=True)
         all_scores = all_scores[:qconfig.max_references]
         for score in all_scores:
-            if not organisms_assemblies or (organisms_assemblies.values() and score[1] not in organisms_assemblies.values()[0]):
+            if not organisms_assemblies or (organisms_assemblies.values() and not [1 for list in organisms_assemblies.values() if score[1] in list]):
                 scores_organisms.append(score)
         organisms_assemblies[contig_name] = [score[1] for score in all_scores]
 
     ref_fpaths = []
     downloaded_ref_fpaths = [os.path.join(downloaded_dirpath,file) for (path, dirs, files) in os.walk(downloaded_dirpath) for file in files if qutils.check_is_fasta_file(file)]
-    if len(downloaded_ref_fpaths) > 0:
-        logger.info('Trying to use previously downloaded references...')
 
     max_organism_name_len = 0
     for (score, organism) in scores_organisms:
@@ -335,22 +333,6 @@ def do(assemblies, downloaded_dirpath):
     total_downloaded = 0
     total_scored_left = len(scores_organisms)
 
-    list_organisms = [organism for organisms_assembly in organisms_assemblies.values() for organism in organisms_assembly]
-    for organism in downloaded_organisms:
-        ref_fpath = os.path.join(downloaded_dirpath, re.sub('[/.=]', '', organism) + '.fasta')
-        if os.path.exists(ref_fpath):
-            if len(ref_fpaths) == qconfig.max_references:
-                break
-            if organisms_assemblies and organism in list_organisms:
-                total_downloaded += 1
-                total_scored_left -= 1
-                spaces = (max_organism_name_len - len(organism)) * ' '
-                logger.info("  %s%s | was downloaded previously (total %d)" %
-                                (organism.replace('+', ' '), spaces, total_downloaded))
-                ref_fpaths.append(ref_fpath)
-        else:
-            scores_organisms.insert(0, (5000, organism))
-
     if total_scored_left == 0:
         if not ref_fpaths:
             logger.info('Reference genomes are not found.')
@@ -361,6 +343,8 @@ def do(assemblies, downloaded_dirpath):
     logger.print_timestamp()
     logger.info('Trying to download found references from NCBI. '
                 'Totally ' + str(total_scored_left) + ' organisms to try.')
+    if len(downloaded_ref_fpaths) > 0:
+        logger.info('MetaQUAST will attempt to use previously downloaded references...')
 
     for (score, organism) in scores_organisms:
         ref_fpath = os.path.join(downloaded_dirpath, re.sub('[/.=]', '', organism) + '.fasta')
@@ -369,7 +353,7 @@ def do(assemblies, downloaded_dirpath):
         was_downloaded = False
         if not os.path.exists(ref_fpath) and organism not in not_founded_organisms:
             new_ref_fpath = download_refs(organism, ref_fpath)
-        elif os.path.exists(ref_fpath) and organism not in downloaded_organisms:
+        elif os.path.exists(ref_fpath):
             was_downloaded = True
             new_ref_fpath = ref_fpath
         if new_ref_fpath:
@@ -385,7 +369,7 @@ def do(assemblies, downloaded_dirpath):
                         (organism.replace('+', ' '), spaces, total_downloaded, total_scored_left))
                 ref_fpaths.append(new_ref_fpath)
             downloaded_organisms.add(organism)
-        elif organism not in downloaded_organisms:
+        else:
             total_scored_left -= 1
             logger.info("  %s%s | not found in the NCBI database" % (organism.replace('+', ' '), spaces))
             not_founded_organisms.add(organism)

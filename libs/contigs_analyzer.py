@@ -594,15 +594,6 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
         return is_misassembled, misassembly_internal_overlap, references_misassemblies, indels_info
     #### end of aux. functions ###
 
-    # Loading the assembly contigs
-    print >> planta_out_f, 'Loading Assembly...'
-    assembly = {}
-    assembly_ns = {}
-    for name, seq in fastaparser.read_fasta(contigs_fpath):
-        assembly[name] = seq
-        if 'N' in seq:
-            assembly_ns[name] = [pos for pos in xrange(len(seq)) if seq[pos] == 'N']
-
     # Loading the reference sequences
     print >> planta_out_f, 'Loading reference...'  # TODO: move up
     references = {}
@@ -619,8 +610,6 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
 
     class SNP():
         def __init__(self, ref=None, ctg=None, ref_pos=None, ctg_pos=None, ref_nucl=None, ctg_nucl=None):
-            self.ref = ref
-            self.ctg = ctg
             self.ref_pos = ref_pos
             self.ctg_pos = ctg_pos
             self.ref_nucl = ref_nucl
@@ -644,9 +633,9 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
 
             # if (! exists $line[11]) { die "Malformed line in SNP file.  Please check that show-snps has completed succesfully.\n$line\n[$line[9]][$line[10]][$line[11]]\n"; }
             if pos in snps.setdefault(ref, {}).setdefault(ctg, {}):
-                snps.setdefault(ref, {}).setdefault(ctg, {})[pos].append(SNP(ref=ref, ctg=ctg, ref_pos=pos, ctg_pos=loc, ref_nucl=line[1], ctg_nucl=line[2]))
+                snps.setdefault(ref, {}).setdefault(ctg, {})[pos].append(SNP(ref_pos=pos, ctg_pos=loc, ref_nucl=line[1], ctg_nucl=line[2]))
             else:
-                snps.setdefault(ref, {}).setdefault(ctg, {})[pos] = [SNP(ref=ref, ctg=ctg, ref_pos=pos, ctg_pos=loc, ref_nucl=line[1], ctg_nucl=line[2])]
+                snps.setdefault(ref, {}).setdefault(ctg, {})[pos] = [SNP(ref_pos=pos, ctg_pos=loc, ref_nucl=line[1], ctg_nucl=line[2])]
             prev_line = line
         used_snps_file = open(used_snps_fpath, 'w')
 
@@ -694,7 +683,10 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
     print >> planta_out_f, 'Analyzing contigs...'
 
     unaligned_file = open(unaligned_fpath, 'w')
-    for contig, seq in assembly.iteritems():
+    for contig, seq in fastaparser.read_fasta(contigs_fpath):
+        contig_ns = None
+        if 'N' in seq:
+            contig_ns = [pos for pos in xrange(len(seq)) if seq[pos] == 'N']
         #Recording contig stats
         ctg_len = len(seq)
         print >> planta_out_f, 'CONTIG: %s (%dbp)' % (contig, ctg_len)
@@ -997,7 +989,7 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
                     misassembly_internal_overlap += current_mio
                     total_indels_info += indels_info
                     if is_misassembled:
-                        misassembled_contigs[contig] = len(assembly[contig])
+                        misassembled_contigs[contig] = len(seq)
                     if qconfig.meta and (ctg_len - aligned_bases_in_contig >= qconfig.min_contig):
                         print >> planta_out_f, '\t\tThis contig has significant unaligned parts ' \
                                                '(of length >= min-contig)!' + (' It can contain interspecies translocations' if qconfig.meta else '')
@@ -1303,8 +1295,7 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
                                 total_indels_info.mismatches += 1
 
                             if cur_snp.type == 'D' or cur_snp.type == 'I':
-                                if prev_snp and (prev_snp.ref == cur_snp.ref) and (prev_snp.ctg == cur_snp.ctg) and \
-                                    ((cur_snp.type == 'D' and (prev_snp.ref_pos == cur_snp.ref_pos - 1) and (prev_snp.ctg_pos == cur_snp.ctg_pos)) or
+                                if prev_snp and ((cur_snp.type == 'D' and (prev_snp.ref_pos == cur_snp.ref_pos - 1) and (prev_snp.ctg_pos == cur_snp.ctg_pos)) or
                                      (cur_snp.type == 'I' and ((pos_strand and (prev_snp.ctg_pos == cur_snp.ctg_pos - 1)) or
                                          (not pos_strand and (prev_snp.ctg_pos == cur_snp.ctg_pos + 1))) and (prev_snp.ref_pos == cur_snp.ref_pos))):
                                     cur_indel += 1
@@ -1321,12 +1312,12 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
                 if current.s2 < current.e2:
                     #print "\t\t(forward)Recording Ns from $current[3]+$snip_left to $current[4]-$snip_right...\n";
                     for i in (current.s2 + snip_left, current.e2 - snip_right + 1):
-                        if (current.contig in assembly_ns) and (i in assembly_ns[current.contig]):
+                        if contig_ns and (i in contig_ns):
                             region_ambig += 1
                 else:
                     #print "\t\t(reverse)Recording Ns from $current[4]+$snip_right to $current[3]-$snip_left...\n";
                     for i in (current.e2 + snip_left, current.s2 - snip_right + 1):
-                        if (current.contig in assembly_ns) and (i in assembly_ns[current.contig]):
+                        if contig_ns and (i in contig_ns):
                             region_ambig += 1
                 snip_left = 0
                 snip_right = 0

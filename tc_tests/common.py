@@ -14,6 +14,8 @@ operons_1k = 'operons_1k.txt'
 
 contigs_10k_1 = 'contigs_10k_1.fasta'
 contigs_10k_2 = 'contigs_10k_2.fasta'
+contigs_10k_1_scaffolds = 'contigs_10k_1_scaffolds.fasta'
+contigs_10k_1_broken = 'contigs_10k_1_scaffolds_broken.fasta'
 reference_10k = 'reference_10k.fa.gz'
 genes_10k = 'genes_10k.txt'
 operons_10k = 'operons_10k.txt'

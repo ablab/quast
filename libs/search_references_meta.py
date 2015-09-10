@@ -51,11 +51,16 @@ def natural_sort_key(s, _nsre=re.compile('([0-9]+)')):
 
 
 def try_send_request(url):
-    try:
-        request = urlopen(url)
-    except Exception:
-        logger.error('Cannot established internet connection to download reference genomes! '
-                     'Check internet connection or run MetaQUAST with option "--max-ref-number 0".', exit_with_code=404)
+    attempts = 0
+    while attempts < 3:
+        try:
+            request = urlopen(url, timeout=10)
+            break
+        except Exception:
+            attempts += 1
+            if attempts >= 3:
+                logger.error('Cannot established internet connection to download reference genomes! '
+                         'Check internet connection or run MetaQUAST with option "--max-ref-number 0".', exit_with_code=404)
     return request.read()
 
 

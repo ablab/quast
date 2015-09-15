@@ -60,8 +60,9 @@ matplotlib_error = False
 try:
     import matplotlib
     matplotlib.use('Agg')  # non-GUI backend
-    if matplotlib.__version__.startswith('0'):
-        logger.warning('matplotlib version is rather old! Please use matplotlib version 1.0 or higher for better results.')
+    if matplotlib.__version__.startswith('0') or matplotlib.__version__.startswith('1.0'):
+        logger.warning('matplotlib version is rather old! Please use matplotlib version 1.1 or higher for better results.')
+        matplotlib_error = True
 except Exception:
     print
     logger.warning('Can\'t draw plots: please install python-matplotlib.')

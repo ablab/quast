@@ -595,8 +595,8 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
                                 not check_chr_for_refs(sorted_aligns[i].ref, sorted_aligns[i+1].ref):  # if chromosomes from different references
                                 region_misassemblies.append(Misassembly.INTERSPECTRANSLOCATION)
                                 ref1, ref2 = ref_labels_by_chromosomes[sorted_aligns[i].ref], ref_labels_by_chromosomes[sorted_aligns[i+1].ref]
-                                references_misassemblies[ref1] += 1
-                                references_misassemblies[ref2] += 1
+                                references_misassemblies[ref1][ref2] += 1
+                                references_misassemblies[ref2][ref1] += 1
                                 print >> planta_out_f, 'interspecies translocation',
                                 print >> misassembly_file, 'interspecies translocation',
                         else:
@@ -753,7 +753,7 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
     misassembled_contigs = {}
     references_misassemblies = {}
     for ref in ref_labels_by_chromosomes.values():
-        references_misassemblies[ref] = 0
+        references_misassemblies[ref] = dict((key, 0) for key in ref_labels_by_chromosomes.values())
 
     aligned_lengths = []
 
@@ -1642,36 +1642,39 @@ def do(reference, contigs_fpaths, cyclic, output_dir, old_contigs_fpaths, bed_fp
 
     def print_file(all_rows, ref_num, fpath):
         colwidths = [0] * (ref_num + 1)
-        for row in all_rows:
-            for i, cell in enumerate([row['metricName']] + map(val_to_str, row['values'])):
-                colwidths[i] = max(colwidths[i], len(cell))
+        for i, cell in enumerate([all_rows[0]['metricName']] + map(val_to_str, all_rows[0]['values'])):
+            colwidths[i] = max(colwidths[i], len(cell))
         txt_file = open(fpath, 'a')
         for row in all_rows:
             print >> txt_file, '  '.join('%-*s' % (colwidth, cell) for colwidth, cell
                                          in zip(colwidths, [row['metricName']] + map(val_to_str, row['values'])))
 
     if qconfig.is_combined_ref:
-        ref_misassemblies = [result['istranslocations_by_refs'] if result else None for result in results]
+        ref_misassemblies = [result['istranslocations_by_refs'] if result else [] for result in results]
         if ref_misassemblies:
-            all_rows = []
-            cur_assembly_names = []
-            row = {'metricName': 'Assembly', 'values': cur_assembly_names}
-            all_rows.append(row)
-            for fpath in contigs_fpaths:
-                all_rows[0]['values'].append(qutils.name_from_fpath(fpath))
-            for k in ref_labels_by_chromosomes.values():
-                row = {'metricName': k, 'values': []}
-                for index, fpath in enumerate(contigs_fpaths):
-                    if ref_misassemblies[index]:
-                        row['values'].append(ref_misassemblies[index][k])
-                    else:
-                        row['values'].append(None)
-                all_rows.append(row)
+            for i, fpath in enumerate(contigs_fpaths):
+                if ref_misassemblies[i]:
+                    assembly_name = qutils.name_from_fpath(fpath)
+                    all_rows = []
+                    all_refs = sorted(list(set([ref for ref in ref_labels_by_chromosomes.values()])))
+                    row = {'metricName': 'References', 'values': [ref_num+1 for ref_num in range(len(all_refs))]}
+                    all_rows.append(row)
+                    for k in all_refs:
+                        row = {'metricName': k, 'values': []}
+                        for ref in all_refs:
+                            if ref == k or ref not in ref_misassemblies[i]:
+                                row['values'].append(None)
+                            else:
+                                row['values'].append(ref_misassemblies[i][ref][k])
+                        all_rows.append(row)
+                    misassembly_by_ref_fpath = os.path.join(output_dir, 'interspecies_translocations_by_refs_%s.info' % assembly_name)
+                    print >> open(misassembly_by_ref_fpath, 'w'), 'Number of interspecies translocations by references: \n'
+                    print_file(all_rows, len(all_refs), misassembly_by_ref_fpath)
 
-            misassembly_by_ref_fpath = os.path.join(output_dir, 'interspecies_translocations_by_refs.info')
-            print >> open(misassembly_by_ref_fpath, 'w'), 'Number of interspecies translocations by references: \n'
-            print_file(all_rows, len(cur_assembly_names), misassembly_by_ref_fpath)
-            logger.info('  Information about interspecies translocations by references is saved to ' + misassembly_by_ref_fpath)
+                    print >> open(misassembly_by_ref_fpath, 'a'), 'References: \n'
+                    for ref_num, ref in enumerate(all_refs):
+                        print >> open(misassembly_by_ref_fpath, 'a'), str(ref_num+1) + ' - ' + ref
+                    logger.info('  Information about interspecies translocations by references is saved to ' + misassembly_by_ref_fpath)
 
     def save_result(result):
         report = reporting.get(fname)

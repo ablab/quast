@@ -171,7 +171,7 @@ def parse_gff(file, feature):
 
     for line in file:
         m = gff_pattern.match(line)
-        if m and m.group('feature') == feature:
+        if m and m.group('feature').lower() == feature:
             gene = Gene(seqname=qutils.correct_name(m.group('seqname')),
                         start=int(m.group('start')),
                         end=int(m.group('end')))

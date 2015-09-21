@@ -92,16 +92,15 @@ def do(output_dirpath, output_dirpath_per_ref, metrics, misassembl_metrics, ref_
                 print_file(transposed_table, len(transposed_table[0]['values']), summary_txt_fpath)
                 reporting.save_tsv(summary_tsv_fpath, transposed_table)
                 reporting.save_tex(summary_tex_fpath, transposed_table)
-                if qconfig.draw_plots:
-                    reverse = False
-                    if reporting.get_quality(metric) == reporting.Fields.Quality.MORE_IS_BETTER:
-                        reverse = True
-                    y_label = None
-                    if metric == reporting.Fields.TOTALLEN:
-                        y_label = 'Total length '
-                    elif metric in [reporting.Fields.LARGCONTIG, reporting.Fields.N50, reporting.Fields.NGA50, reporting.Fields.MIS_EXTENSIVE_BASES]:
-                        y_label = 'Contig length '
-                    plotter.draw_meta_summary_plot(output_dirpath, labels, cur_ref_names, all_rows, results, summary_png_fpath, title=metric, reverse=reverse, yaxis_title=y_label)
+                reverse = False
+                if reporting.get_quality(metric) == reporting.Fields.Quality.MORE_IS_BETTER:
+                    reverse = True
+                y_label = None
+                if metric == reporting.Fields.TOTALLEN:
+                    y_label = 'Total length '
+                elif metric in [reporting.Fields.LARGCONTIG, reporting.Fields.N50, reporting.Fields.NGA50, reporting.Fields.MIS_EXTENSIVE_BASES]:
+                    y_label = 'Contig length '
+                plotter.draw_meta_summary_plot(output_dirpath, labels, cur_ref_names, all_rows, results, summary_png_fpath, title=metric, reverse=reverse, yaxis_title=y_label)
                 if metric == reporting.Fields.MISASSEMBL:
                     mis_results = []
                     report_fname = os.path.join('contigs_reports', qconfig.transposed_report_prefix + '_misassemblies' + '.tsv')
@@ -111,7 +110,7 @@ def do(output_dirpath, output_dirpath_per_ref, metrics, misassembl_metrics, ref_
                         results, all_rows, cur_ref_names = get_results_for_metric(cur_ref_names, misassembl_metric[len(reporting.Fields.TAB):], contigs_num, labels, output_dirpath_per_ref, report_fname)
                         if results:
                             mis_results.append(results)
-                    if mis_results and qconfig.draw_plots:
+                    if mis_results:
                         json_points = []
                         for contig_num in range(contigs_num):
                             plot_fpath = os.path.join(output_dirpath, plots_dirname, labels[contig_num] + '_misassemblies')

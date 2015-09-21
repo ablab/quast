@@ -77,16 +77,16 @@ def do(ref_fpath, aligned_contigs_fpaths, output_dirpath, json_output_dirpath,
         from libs.html_saver import html_saver
         html_saver.save_assembly_lengths(output_dirpath, aligned_contigs_fpaths, assembly_lengths)
 
+    import plotter
     if qconfig.draw_plots:
         # Drawing cumulative plot (aligned contigs)...
-        import plotter
         plotter.cumulative_plot(ref_fpath, aligned_contigs_fpaths, aligned_lengths_lists,
                                 os.path.join(aligned_stats_dirpath, 'cumulative_plot'),
                                 'Cumulative length (aligned contigs)')
 
         # Drawing NAx and NGAx plots...
-        plotter.Nx_plot(output_dirpath, num_contigs > qconfig.max_points, aligned_contigs_fpaths, aligned_lengths_lists, aligned_stats_dirpath + '/NAx_plot', 'NAx', assembly_lengths)
-        plotter.Nx_plot(output_dirpath, num_contigs > qconfig.max_points, aligned_contigs_fpaths, aligned_lengths_lists, aligned_stats_dirpath + '/NGAx_plot', 'NGAx', [reference_length for i in range(len(aligned_contigs_fpaths))])
+    plotter.Nx_plot(output_dirpath, num_contigs > qconfig.max_points, aligned_contigs_fpaths, aligned_lengths_lists, aligned_stats_dirpath + '/NAx_plot', 'NAx', assembly_lengths)
+    plotter.Nx_plot(output_dirpath, num_contigs > qconfig.max_points, aligned_contigs_fpaths, aligned_lengths_lists, aligned_stats_dirpath + '/NGAx_plot', 'NGAx', [reference_length for i in range(len(aligned_contigs_fpaths))])
 
     logger.info('Done.')
     return report_dict

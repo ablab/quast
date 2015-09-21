@@ -212,8 +212,12 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, json_output_dir, results_dir):
         from libs.html_saver import html_saver
         html_saver.save_GC_info(results_dir, contigs_fpaths, list_of_GC_distributions)
 
+    import plotter
+    plotter.Nx_plot(results_dir, num_contigs > qconfig.max_points, contigs_fpaths, lists_of_lengths, output_dirpath + '/Nx_plot', 'Nx', [])
+    if reference_length:
+        plotter.Nx_plot(results_dir, num_contigs > qconfig.max_points, contigs_fpaths, lists_of_lengths, output_dirpath + '/NGx_plot', 'NGx', [reference_length for i in range(len(contigs_fpaths))])
+
     if qconfig.draw_plots:
-        import plotter
         ########################################################################import plotter
         plotter.cumulative_plot(ref_fpath, contigs_fpaths, lists_of_lengths, output_dirpath + '/cumulative_plot', 'Cumulative length')
     
@@ -227,8 +231,5 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, json_output_dir, results_dir):
 
         ########################################################################
         # Drawing Nx and NGx plots...
-        plotter.Nx_plot(results_dir, num_contigs > qconfig.max_points, contigs_fpaths, lists_of_lengths, output_dirpath + '/Nx_plot', 'Nx', [])
-        if reference_length:
-            plotter.Nx_plot(results_dir, num_contigs > qconfig.max_points, contigs_fpaths, lists_of_lengths, output_dirpath + '/NGx_plot', 'NGx', [reference_length for i in range(len(contigs_fpaths))])
 
     logger.info('Done.')

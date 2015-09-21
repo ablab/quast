@@ -61,7 +61,7 @@ try:
     import matplotlib
     matplotlib.use('Agg')  # non-GUI backend
     if matplotlib.__version__.startswith('0') or matplotlib.__version__.startswith('1.0'):
-        logger.warning('Can\'t draw plots: matplotlib version is old! Please use matplotlib version 1.1 or higher.')
+        logger.warning('matplotlib version is rather old! Please use matplotlib version 1.1 or higher for better results.')
         matplotlib_error = True
 except Exception:
     print
@@ -208,16 +208,17 @@ def cumulative_plot(reference, contigs_fpaths, lists_of_lengths, plot_fpath, tit
 
 # common routine for Nx-plot and NGx-plot (and probably for others Nyx-plots in the future)
 def Nx_plot(results_dir, reduce_points, contigs_fpaths, lists_of_lengths, plot_fpath, title='Nx', reference_lengths=None):
-    if matplotlib_error:
-        return
+    draw_plots = True
+    if matplotlib_error or not qconfig.draw_plots:
+        draw_plots = False
+    if draw_plots:
+        logger.info('  Drawing ' + title + ' plot...')
+        import matplotlib.pyplot
+        import matplotlib.ticker
 
-    logger.info('  Drawing ' + title + ' plot...')
-    import matplotlib.pyplot
-    import matplotlib.ticker
-
-    figure = matplotlib.pyplot.figure()
-    matplotlib.pyplot.rc('font', **font)
-    max_y = 0
+        figure = matplotlib.pyplot.figure()
+        matplotlib.pyplot.rc('font', **font)
+        max_y = 0
 
     color_id = 0
     json_vals_x = []  # coordinates for Nx-like plots in HTML-report
@@ -245,32 +246,34 @@ def Nx_plot(results_dir, reduce_points, contigs_fpaths, lists_of_lengths, plot_f
         for l in lengths:
             lcur += l
             x = lcur * 100.0 / lsum
-            vals_Nx.append(vals_Nx[-1] + 1e-10) # eps
-            vals_l.append(l)
-            vals_Nx.append(x)
-            vals_l.append(l)
+            if draw_plots:
+                vals_Nx.append(vals_Nx[-1] + 1e-10) # eps
+                vals_l.append(l)
+                vals_Nx.append(x)
+                vals_l.append(l)
             if vals_y[-1] - l > min_difference or len(vals_x) == 1:
                 vals_x.append(vals_x[-1] + 1e-10) # eps
                 vals_y.append(l)
                 vals_x.append(x)
                 vals_y.append(l)
             # add to plot
-
-        vals_Nx.append(vals_Nx[-1] + 1e-10) # eps
-        vals_l.append(0.0)
-        vals_x.append(vals_x[-1] + 1e-10) # eps
-        vals_y.append(0.0)
         json_vals_x.append(vals_x)
         json_vals_y.append(vals_y)
-        max_y = max(max_y, max(vals_l))
-
-        color, ls = get_color_and_ls(contigs_fpath)
-        matplotlib.pyplot.plot(vals_Nx, vals_l, color=color, lw=line_width, ls=ls)
+        if draw_plots:
+            vals_Nx.append(vals_Nx[-1] + 1e-10) # eps
+            vals_l.append(0.0)
+            vals_x.append(vals_x[-1] + 1e-10) # eps
+            vals_y.append(0.0)
+            max_y = max(max_y, max(vals_l))
+            color, ls = get_color_and_ls(contigs_fpath)
+            matplotlib.pyplot.plot(vals_Nx, vals_l, color=color, lw=line_width, ls=ls)
 
     if qconfig.html_report:
         from libs.html_saver import html_saver
         html_saver.save_coord(results_dir, json_vals_x, json_vals_y, 'coord' + title, contigs_fpaths)
 
+    if not draw_plots:
+        return
     if with_title:
         matplotlib.pyplot.title(title)
     matplotlib.pyplot.grid(with_grid)
@@ -542,23 +545,25 @@ def histogram(contigs_fpaths, values, plot_fpath, title='', yaxis_title='', bott
 
 # metaQuast summary plots (per each metric separately)
 def draw_meta_summary_plot(output_dirpath, labels, ref_names, all_rows, results, plot_fpath, title='', reverse=False, yaxis_title=''):
-    if matplotlib_error:
-        return
-
-    meta_logger.info('  Drawing ' + title + ' metaQUAST summary plot...')
-    import matplotlib.pyplot
-    import matplotlib.ticker
+    draw_plots = True
+    if matplotlib_error or not qconfig.draw_plots:
+        draw_plots = False
     import math
+
+    if draw_plots:
+        meta_logger.info('  Drawing ' + title + ' metaQUAST summary plot...')
+        import matplotlib.pyplot
+        import matplotlib.ticker
+        fig = matplotlib.pyplot.figure()
+        ax = fig.add_subplot(111)
+        matplotlib.pyplot.title(title)
+        box = ax.get_position()
+        ax.set_position([box.x0, box.y0, box.width * 0.9, box.height * 1.0])
+        ax.yaxis.grid(with_grid)
 
     ref_num = len(ref_names)
     contigs_num = len(labels)
 
-    fig = matplotlib.pyplot.figure()
-    ax = fig.add_subplot(111)
-    matplotlib.pyplot.title(title)
-    box = ax.get_position()
-    ax.set_position([box.x0, box.y0, box.width * 0.9, box.height * 1.0])
-    ax.yaxis.grid(with_grid)
     arr_x = []
     arr_y = []
     values = []
@@ -588,71 +593,75 @@ def draw_meta_summary_plot(output_dirpath, labels, ref_names, all_rows, results,
 
     sorted_values = sorted(itertools.izip(values, refs, arr_y_by_refs), reverse=reverse, key=lambda x: x[0])
     values, refs, arr_y_by_refs = [[x[i] for x in sorted_values] for i in range(3)]
-    matplotlib.pyplot.xticks(range(1, len(refs) + 1), refs, size='small', rotation='vertical')
+    if draw_plots:
+        matplotlib.pyplot.xticks(range(1, len(refs) + 1), refs, size='small', rotation='vertical')
     json_points_x = []
     json_points_y = []
     for j in range(contigs_num):
         points_x = [arr_x[j][i] for i in range(len(arr_y_by_refs))]
         points_y = [arr_y_by_refs[i][j] for i in range(len(arr_y_by_refs))]
-        ax.plot(points_x, points_y, 'ro:', color=colors[j])
+        if draw_plots:
+            ax.plot(points_x, points_y, 'ro:', color=colors[j])
         json_points_x.append(points_x)
         json_points_y.append(points_y)
-
-    matplotlib.pyplot.xlim([0, ref_num + 1])
-    ymax = 0
-    for i in range(ref_num):
-        for j in range(contigs_num):
-            if all_rows[j + 1]['values'][i] is not None and all_rows[j + 1]['values'][i] != '-':
-                ymax = max(ymax, float(all_rows[j + 1]['values'][i]))
-    if ymax == 0:
-        matplotlib.pyplot.ylim([0, 5])
-    else:
-        matplotlib.pyplot.ylim([0, math.ceil(ymax * 1.05)])
-
-    if yaxis_title:
-        ylabel = yaxis_title
-        ylabel, mkfunc = y_formatter(ylabel, ymax)
-        matplotlib.pyplot.ylabel(ylabel, fontsize=axes_fontsize)
-        mkformatter = matplotlib.ticker.FuncFormatter(mkfunc)
-        ax.yaxis.set_major_formatter(mkformatter)
-
-    if ymax == 0:
-        matplotlib.pyplot.ylim([0, 5])
 
     if qconfig.html_report:
         from libs.html_saver import html_saver
         html_saver.save_meta_summary(output_dirpath, json_points_x, json_points_y, title.replace(' ', '_'), labels, refs)
+    if draw_plots:
+        matplotlib.pyplot.xlim([0, ref_num + 1])
+        ymax = 0
+        for i in range(ref_num):
+            for j in range(contigs_num):
+                if all_rows[j + 1]['values'][i] is not None and all_rows[j + 1]['values'][i] != '-':
+                    ymax = max(ymax, float(all_rows[j + 1]['values'][i]))
+        if ymax == 0:
+            matplotlib.pyplot.ylim([0, 5])
+        else:
+            matplotlib.pyplot.ylim([0, math.ceil(ymax * 1.05)])
 
-    legend = []
-    for j in range(contigs_num):
-        legend.append(labels[j])
-    try:
-        ax.legend(legend, loc='center left', bbox_to_anchor=(1.0, 0.5), numpoints=1)
-    except Exception:
-        pass
-    matplotlib.pyplot.tight_layout()
-    matplotlib.pyplot.savefig(plot_fpath, bbox_inches='tight')
-    logger.info('    saved to ' + plot_fpath)
+        if yaxis_title:
+            ylabel = yaxis_title
+            ylabel, mkfunc = y_formatter(ylabel, ymax)
+            matplotlib.pyplot.ylabel(ylabel, fontsize=axes_fontsize)
+            mkformatter = matplotlib.ticker.FuncFormatter(mkfunc)
+            ax.yaxis.set_major_formatter(mkformatter)
+
+        if ymax == 0:
+            matplotlib.pyplot.ylim([0, 5])
+
+        legend = []
+        for j in range(contigs_num):
+            legend.append(labels[j])
+        try:
+            ax.legend(legend, loc='center left', bbox_to_anchor=(1.0, 0.5), numpoints=1)
+        except Exception:
+            pass
+        matplotlib.pyplot.tight_layout()
+        matplotlib.pyplot.savefig(plot_fpath, bbox_inches='tight')
+        logger.info('    saved to ' + plot_fpath)
 
 
 # metaQuast misassemblies by types plots (all references for 1 assembly)
 def draw_meta_summary_misassembl_plot(results, ref_names, contig_num, plot_fpath, title=''):
-    if matplotlib_error:
-        return
-
-    meta_logger.info('  Drawing metaQUAST summary misassemblies plot for ' + title + '...')
-    import matplotlib.pyplot
-    import matplotlib.ticker
+    draw_plots = True
+    if matplotlib_error or not qconfig.draw_plots:
+        draw_plots = False
     import math
+    if draw_plots:
+        meta_logger.info('  Drawing metaQUAST summary misassemblies plot for ' + title + '...')
+        import matplotlib.pyplot
+        import matplotlib.ticker
 
     refs_num = len(ref_names)
     refs = []
-    fig = matplotlib.pyplot.figure()
-    ax = fig.add_subplot(111)
-    matplotlib.pyplot.title(title)
-    box = ax.get_position()
-    ax.set_position([box.x0, box.y0, box.width * 0.9, box.height * 1.0])
-    ax.yaxis.grid(with_grid)
+    if draw_plots:
+        fig = matplotlib.pyplot.figure()
+        ax = fig.add_subplot(111)
+        matplotlib.pyplot.title(title)
+        box = ax.get_position()
+        ax.set_position([box.x0, box.y0, box.width * 0.9, box.height * 1.0])
+        ax.yaxis.grid(with_grid)
     misassemblies = [reporting.Fields.MIS_RELOCATION, reporting.Fields.MIS_TRANSLOCATION, reporting.Fields.MIS_INVERTION]
     legend_n = []
     ymax = 0
@@ -669,9 +678,10 @@ def draw_meta_summary_misassembl_plot(results, ref_names, contig_num, plot_fpath
             result = results[type_misassembly][j][contig_num] if results[type_misassembly][j] else None
             if result and result != '-':
                 to_plot.append(float(result))
-                ax.bar(arr_x[j], to_plot[0], width=bar_width, color=colors[type_misassembly])
-                legend_n.append(type_misassembly)
-                ymax_j = float(to_plot[0])
+                if draw_plots:
+                    ax.bar(arr_x[j], to_plot[0], width=bar_width, color=colors[type_misassembly])
+                    legend_n.append(type_misassembly)
+                    ymax_j = float(to_plot[0])
                 json_points_x.append(arr_x[j])
                 json_points_y.append(to_plot[0])
             type_misassembly += 1
@@ -679,9 +689,10 @@ def draw_meta_summary_misassembl_plot(results, ref_names, contig_num, plot_fpath
             result = results[i][j][contig_num]
             if result and result != '-':
                 to_plot.append(float(result))
-                ax.bar(arr_x[j], to_plot[-1], width=bar_width, color=colors[i], bottom=sum(to_plot[:-1]))
-                legend_n.append(i)
-                ymax_j += float(to_plot[-1])
+                if draw_plots:
+                    ax.bar(arr_x[j], to_plot[-1], width=bar_width, color=colors[i], bottom=sum(to_plot[:-1]))
+                    legend_n.append(i)
+                    ymax_j += float(to_plot[-1])
                 json_points_x.append(arr_x[j])
                 json_points_y.append(to_plot[-1])
         if to_plot:
@@ -691,26 +702,26 @@ def draw_meta_summary_misassembl_plot(results, ref_names, contig_num, plot_fpath
             for i in range(len(misassemblies)):
                 json_points_x.append(arr_x[j])
                 json_points_y.append(0)
+    if draw_plots:
+        matplotlib.pyplot.xticks(range(1, len(refs) + 1), refs, size='small', rotation='vertical')
+        legend_n = set(legend_n)
+        legend = []
+        for i in sorted(legend_n):
+            legend.append(misassemblies[i])
+        matplotlib.pyplot.xlim([0, refs_num + 1])
 
-    matplotlib.pyplot.xticks(range(1, len(refs) + 1), refs, size='small', rotation='vertical')
-    legend_n = set(legend_n)
-    legend = []
-    for i in sorted(legend_n):
-        legend.append(misassemblies[i])
-    matplotlib.pyplot.xlim([0, refs_num + 1])
+        if ymax == 0:
+            matplotlib.pyplot.ylim([0, 5])
+        else:
+            matplotlib.pyplot.ylim([0, math.ceil(ymax * 1.1)])
+        matplotlib.pyplot.ylabel('# misassemblies', fontsize=axes_fontsize)
 
-    if ymax == 0:
-        matplotlib.pyplot.ylim([0, 5])
-    else:
-        matplotlib.pyplot.ylim([0, math.ceil(ymax * 1.1)])
-    matplotlib.pyplot.ylabel('# misassemblies', fontsize=axes_fontsize)
+        ax.legend(legend, loc='center left', bbox_to_anchor=(1.0, 0.5), numpoints=1)
 
-    ax.legend(legend, loc='center left', bbox_to_anchor=(1.0, 0.5), numpoints=1)
-
-    plot_fpath += plots_file_ext
-    matplotlib.pyplot.tight_layout()
-    matplotlib.pyplot.savefig(plot_fpath, bbox_inches='tight')
-    logger.info('    saved to ' + plot_fpath)
+        plot_fpath += plots_file_ext
+        matplotlib.pyplot.tight_layout()
+        matplotlib.pyplot.savefig(plot_fpath, bbox_inches='tight')
+        logger.info('    saved to ' + plot_fpath)
     return json_points_x, json_points_y
 
 

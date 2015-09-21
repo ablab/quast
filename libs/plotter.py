@@ -544,12 +544,12 @@ def histogram(contigs_fpaths, values, plot_fpath, title='', yaxis_title='', bott
 
 
 # metaQuast summary plots (per each metric separately)
-def draw_meta_summary_plot(output_dirpath, labels, ref_names, all_rows, results, plot_fpath, title='', reverse=False, yaxis_title=''):
+def draw_meta_summary_plot(html_fpath, output_dirpath, labels, ref_names, all_rows, results, plot_fpath, title='', reverse=False, yaxis_title=''):
     draw_plots = True
     if matplotlib_error or not qconfig.draw_plots:
         draw_plots = False
-    import math
 
+    import math
     if draw_plots:
         meta_logger.info('  Drawing ' + title + ' metaQUAST summary plot...')
         import matplotlib.pyplot
@@ -607,7 +607,8 @@ def draw_meta_summary_plot(output_dirpath, labels, ref_names, all_rows, results,
 
     if qconfig.html_report:
         from libs.html_saver import html_saver
-        html_saver.save_meta_summary(output_dirpath, json_points_x, json_points_y, title.replace(' ', '_'), labels, refs)
+        html_saver.save_meta_summary(html_fpath, output_dirpath, json_points_x, json_points_y,
+                                     title.replace(' ', '_'), labels, refs)
     if draw_plots:
         matplotlib.pyplot.xlim([0, ref_num + 1])
         ymax = 0

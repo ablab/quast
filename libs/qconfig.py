@@ -92,7 +92,6 @@ per_ref_dir = "runs_per_reference"
 meta_summary_dir = "summary"
 not_aligned_name = "not_aligned"
 combined_output_name = "combined_reference"
-quast_output_suffix = "_quast_output"
 
 
 # other settings (mostly constants). Can't be changed by command-line options

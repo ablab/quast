@@ -271,7 +271,7 @@ def _correct_references(ref_fpaths, corrected_dirpath):
 
 
 def remove_unaligned_downloaded_refs(output_dirpath, ref_fpaths, chromosomes_by_refs):
-    genome_info_dirpath = os.path.join(output_dirpath, 'combined_quast_output', 'genome_stats')
+    genome_info_dirpath = os.path.join(output_dirpath, qconfig.combined_output_name, 'genome_stats')
     genome_info_fpath = os.path.join(genome_info_dirpath, 'genome_info.txt')
     refs_len = {}
     with open(genome_info_fpath, 'r') as report_file:
@@ -588,6 +588,7 @@ def main(args):
         exit(0)
 
     # Running combined reference
+    combined_output_dirpath = os.path.join(output_dirpath, qconfig.combined_output_name)
     quast_py_args += ['--combined-ref']
     run_name = 'for the combined reference'
     logger.info()
@@ -604,7 +605,7 @@ def main(args):
     return_code, total_num_notifications, assemblies, labels = _start_quast_main(run_name, quast_py_args + ["--ambiguity-usage"] + ['all'],
         assemblies=assemblies,
         reference_fpath=combined_ref_fpath,
-        output_dirpath=os.path.join(output_dirpath, qconfig.combined_output_name),
+        output_dirpath=combined_output_dirpath,
         num_notifications_tuple=total_num_notifications, is_first_run=True)
     for arg in args:
         if arg in ('-s', "--scaffolds"):
@@ -631,7 +632,7 @@ def main(args):
             return_code, total_num_notifications = _start_quast_main(run_name, quast_py_args + ["--ambiguity-usage"] + ['all'],
                 assemblies=assemblies,
                 reference_fpath=combined_ref_fpath,
-                output_dirpath=os.path.join(output_dirpath, qconfig.combined_output_name),
+                output_dirpath=combined_output_dirpath,
                 num_notifications_tuple=total_num_notifications)
             if json_texts is not None:
                 json_texts = json_texts[:-1]
@@ -655,7 +656,7 @@ def main(args):
 
     assemblies_by_reference, not_aligned_assemblies = _partition_contigs(
         assemblies, corrected_ref_fpaths, corrected_dirpath,
-        os.path.join(output_dirpath, qconfig.combined_output_name, 'contigs_reports', 'alignments_%s.tsv'), labels)
+        os.path.join(combined_output_dirpath, 'contigs_reports', 'alignments_%s.tsv'), labels)
 
     ref_names = []
     output_dirpath_per_ref = os.path.join(output_dirpath, qconfig.per_ref_dir)
@@ -692,7 +693,7 @@ def main(args):
 
         return_code, total_num_notifications = _start_quast_main(run_name, quast_py_args,
             assemblies=not_aligned_assemblies,
-            output_dirpath=os.path.join(output_dirpath, qconfig.not_aligned_name + qconfig.quast_output_suffix),
+            output_dirpath=os.path.join(output_dirpath, qconfig.not_aligned_name),
             exit_on_exception=False, num_notifications_tuple=total_num_notifications)
 
         if return_code not in [0, 4]:
@@ -707,14 +708,19 @@ def main(args):
         logger.print_timestamp()
         logger.info("Summarizing results...")
 
+        summary_output_dirpath = os.path.join(output_dirpath, qconfig.meta_summary_dir)
+        if not os.path.isdir(summary_output_dirpath):
+            os.makedirs(summary_output_dirpath)
         if html_report and json_texts:
             from libs.html_saver import html_saver
-            html_saver.init_meta_report(output_dirpath)
+            html_summary_report_fpath = html_saver.init_meta_report(output_dirpath)
+        else:
+            html_summary_report_fpath = None
         from libs import create_meta_summary
         metrics_for_plots = reporting.Fields.main_metrics
         misassembl_metrics = [reporting.Fields.MIS_RELOCATION, reporting.Fields.MIS_TRANSLOCATION, reporting.Fields.MIS_INVERTION,
                            reporting.Fields.MIS_ISTRANSLOCATIONS]
-        create_meta_summary.do(output_dirpath, output_dirpath_per_ref, metrics_for_plots, misassembl_metrics,
+        create_meta_summary.do(html_summary_report_fpath, summary_output_dirpath, combined_output_dirpath, output_dirpath_per_ref, metrics_for_plots, misassembl_metrics,
                                ref_names if no_unaligned_contigs else ref_names + [qconfig.not_aligned_name])
         if html_report and json_texts:
             html_saver.create_meta_report(output_dirpath, json_texts)

@@ -52,8 +52,8 @@ aux_files = [
 
 aux_meta_files = ['static/flot/jquery.flot.tickrotor.js', 'static/flot/jquery.flot.stack.js', 'static/scripts/draw_metasummary_plot.js', 'static/scripts/draw_meta_misassembl_plot.js',]
 
-def init(results_dirpath, is_meta=False):
 
+def init(html_fpath, is_meta=False):
     with open(template_fpath) as template_file:
         html = template_file.read()
         script_texts = []
@@ -74,7 +74,6 @@ def init(results_dirpath, is_meta=False):
         html = html.replace('{{ bootstrap }}', open(get_real_path('static/bootstrap/bootstrap.min.css')).read())
         html = html.replace('{{ common }}', open(get_real_path('static/common.css')).read())
         html = html.replace('{{ report }}', open(get_real_path('static/report.css')).read())
-        html_fpath = os.path.join(results_dirpath, report_fname)
         if os.path.exists(html_fpath):
             os.remove(html_fpath)
         with open(html_fpath, 'w') as f_html:
@@ -112,11 +111,12 @@ def init(results_dirpath, is_meta=False):
 #            f_html.write(html)
 
 
-def append(results_dirpath, json_fpath, keyword):
-    html_fpath = os.path.join(results_dirpath, report_fname)
+def append(results_dirpath, json_fpath, keyword, html_fpath=None):
+    if html_fpath is None:
+        html_fpath = os.path.join(results_dirpath, report_fname)
 
     if not os.path.isfile(html_fpath):
-        init(results_dirpath)
+        init(html_fpath)
 
     # reading JSON file
     with open(json_fpath) as f_json:
@@ -138,13 +138,14 @@ def append(results_dirpath, json_fpath, keyword):
 
 def init_meta_report(results_dirpath):
     html_fpath = os.path.join(results_dirpath, report_fname)
-    init(results_dirpath, True)
+    init(html_fpath, is_meta=True)
+    return html_fpath
 
 
 def create_meta_report(results_dirpath, json_texts):
     html_fpath = os.path.join(results_dirpath, report_fname)
     if not os.path.isfile(html_fpath):
-        init(results_dirpath, True)
+        init(html_fpath, is_meta=True)
 
     from libs import search_references_meta
     taxons_for_krona = search_references_meta.taxons_for_krona
@@ -237,21 +238,21 @@ def save_coord(results_dirpath, coord_x, coord_y, name_coord, contigs_fpaths):  
         append(results_dirpath, json_fpath, name_coord)
 
 
-def save_meta_summary(results_dirpath, coord_x, coord_y, name_coord, labels, refs):  # coordinates for Nx, NAx, NGx, NGAX
+def save_meta_summary(html_fpath, results_dirpath, coord_x, coord_y, name_coord, labels, refs):
     name_coord = name_coord.replace('_(%)', '')
     name_coord = name_coord.replace('#', 'num')
     json_fpath = json_saver.save_meta_summary(results_dirpath, coord_x, coord_y, name_coord, labels, refs)
     if json_fpath:
-        append(results_dirpath, json_fpath, name_coord)
+        append(results_dirpath, json_fpath, name_coord, html_fpath)
 
 
-def save_meta_misassemblies(results_dirpath, coords, labels, refs):  # coordinates for Nx, NAx, NGx, NGAX
+def save_meta_misassemblies(html_fpath, results_dirpath, coords, labels, refs):
     name_coord = 'allMisassemblies'
     coords_x = [coord[0] if coord else None for coord in coords]
     coords_y = [coord[1] if coord else None for coord in coords]
     json_fpath = json_saver.save_meta_misassemblies(results_dirpath, coords_x, coords_y, name_coord, labels, refs)
     if json_fpath:
-        append(results_dirpath, json_fpath, name_coord)
+        append(results_dirpath, json_fpath, name_coord, html_fpath)
 
 
 def save_reference_length(results_dirpath, reference_length):

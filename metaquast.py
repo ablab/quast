@@ -659,7 +659,7 @@ def main(args):
         os.path.join(combined_output_dirpath, 'contigs_reports', 'alignments_%s.tsv'), labels)
 
     ref_names = []
-    output_dirpath_per_ref = os.path.join(output_dirpath, qconfig.per_ref_dir)
+    output_dirpath_per_ref = os.path.join(output_dirpath, qconfig.per_ref_dirname)
     for ref_name, ref_assemblies in assemblies_by_reference:
         logger.info('')
         if not ref_assemblies:

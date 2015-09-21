@@ -167,7 +167,7 @@ function buildTotalReport(assembliesNames, report, order, date, minContig, gloss
             }
             if (assembliesNames.length > 1)  $('#krona').append(
                     '&nbsp&nbsp&nbsp&nbsp<span class="metric-name">' +
-                    '<a href="Krona/summary_taxonomy_chart.html">Summary</a>' +
+                    '<a href="' + kronaPaths.paths[assembliesNames.length] + '">Summary</a>' +
                     '</span>&nbsp');
         }
     }

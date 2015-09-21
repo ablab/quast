@@ -88,10 +88,11 @@ gage_report_prefix = "gage_"
 html_aux_dir = "report_html_aux"
 # for MetaQUAST
 downloaded_dirname = "quast_downloaded_references"
-per_ref_dir = "runs_per_reference"
+per_ref_dirname = "runs_per_reference"
 meta_summary_dir = "summary"
 not_aligned_name = "not_aligned"
 combined_output_name = "combined_reference"
+krona_dirname = "krona_charts"
 
 
 # other settings (mostly constants). Can't be changed by command-line options

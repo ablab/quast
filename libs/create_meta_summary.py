@@ -100,7 +100,7 @@ def do(output_dirpath, summary_dirpath, metrics, misassembl_metrics, ref_names):
                     y_label = 'Total length '
                 elif metric in [reporting.Fields.LARGCONTIG, reporting.Fields.N50, reporting.Fields.NGA50, reporting.Fields.MIS_EXTENSIVE_BASES]:
                     y_label = 'Contig length '
-                plotter.draw_meta_summary_plot(output_dirpath, labels, cur_ref_names, all_rows, results, summary_png_fpath, title=metric, reverse=reverse, yaxis_title=y_label)
+                plotter.draw_meta_summary_plot(summary_dirpath, labels, cur_ref_names, all_rows, results, summary_png_fpath, title=metric, reverse=reverse, yaxis_title=y_label)
                 if metric == reporting.Fields.MISASSEMBL:
                     mis_results = []
                     report_fname = os.path.join('contigs_reports', qconfig.transposed_report_prefix + '_misassemblies' + '.tsv')

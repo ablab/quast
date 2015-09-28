@@ -11,6 +11,8 @@
 
 # Feel free to add more colors
 #colors = ['#E41A1C', '#377EB8', '#4DAF4A', '#984EA3', '#FF7F00', '#A65628', '#F781BF', '#FFFF33']  ## 8-color palette
+from libs.html_saver import json_saver
+
 colors = ['#E31A1C', '#1F78B4', '#33A02C', '#6A3D9A', '#FF7F00', '#FB9A99', '#A6CEE3', '#B2DF8A','#CAB2D6', '#FDBF6F'] # 10-color palette
 
 # Font of plot captions, axes labels and ticks
@@ -207,7 +209,7 @@ def cumulative_plot(reference, contigs_fpaths, lists_of_lengths, plot_fpath, tit
 
 
 # common routine for Nx-plot and NGx-plot (and probably for others Nyx-plots in the future)
-def Nx_plot(results_dir, reduce_points, contigs_fpaths, lists_of_lengths, plot_fpath, title='Nx', reference_lengths=None):
+def Nx_plot(results_dir, reduce_points, contigs_fpaths, lists_of_lengths, plot_fpath, title='Nx', reference_lengths=None, json_output_dir=None):
     draw_plots = True
     if matplotlib_error or not qconfig.draw_plots:
         draw_plots = False
@@ -267,7 +269,9 @@ def Nx_plot(results_dir, reduce_points, contigs_fpaths, lists_of_lengths, plot_f
             max_y = max(max_y, max(vals_l))
             color, ls = get_color_and_ls(contigs_fpath)
             matplotlib.pyplot.plot(vals_Nx, vals_l, color=color, lw=line_width, ls=ls)
-
+            
+    if json_output_dir:
+        json_saver.save_coord(json_output_dir, json_vals_x, json_vals_y, 'coord' + title, contigs_fpaths)
     if qconfig.html_report:
         from libs.html_saver import html_saver
         html_saver.save_coord(results_dir, json_vals_x, json_vals_y, 'coord' + title, contigs_fpaths)

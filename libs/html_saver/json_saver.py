@@ -115,7 +115,7 @@ def save_tick_x(output_dirpath, tick_x):
 
 
 def save_coord(output_dirpath, coord_x, coord_y, name_coord, contigs_fpaths):
-    coord_fn = prefix_fn + 'coord' + name_coord + suffix_fn
+    coord_fn = prefix_fn + name_coord + suffix_fn
     return save(output_dirpath + coord_fn, {
         'coord_x': coord_x,
         'coord_y': coord_y,

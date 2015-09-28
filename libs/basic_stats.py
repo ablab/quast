@@ -143,7 +143,7 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, json_output_dir, results_dir):
     # saving lengths to JSON
     if json_output_dir:
         json_saver.save_contigs_lengths(json_output_dir, contigs_fpaths, corr_lists_of_lengths)
-        json_saver.save_tick_x(output_dirpath, multiplicator)
+        json_saver.save_tick_x(json_output_dir, multiplicator)
 
     if qconfig.html_report:
         from libs.html_saver import html_saver
@@ -213,9 +213,9 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, json_output_dir, results_dir):
         html_saver.save_GC_info(results_dir, contigs_fpaths, list_of_GC_distributions)
 
     import plotter
-    plotter.Nx_plot(results_dir, num_contigs > qconfig.max_points, contigs_fpaths, lists_of_lengths, output_dirpath + '/Nx_plot', 'Nx', [])
+    plotter.Nx_plot(results_dir, num_contigs > qconfig.max_points, contigs_fpaths, lists_of_lengths, output_dirpath + '/Nx_plot', 'Nx', [], json_output_dir)
     if reference_length:
-        plotter.Nx_plot(results_dir, num_contigs > qconfig.max_points, contigs_fpaths, lists_of_lengths, output_dirpath + '/NGx_plot', 'NGx', [reference_length for i in range(len(contigs_fpaths))])
+        plotter.Nx_plot(results_dir, num_contigs > qconfig.max_points, contigs_fpaths, lists_of_lengths, output_dirpath + '/NGx_plot', 'NGx', [reference_length for i in range(len(contigs_fpaths))], json_output_dir)
 
     if qconfig.draw_plots:
         ########################################################################import plotter

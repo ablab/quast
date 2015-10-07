@@ -26,6 +26,13 @@ reference = 'reference.fa.gz'
 genes = 'genes.txt'
 operons = 'operons.txt'
 
+meta_contigs_1 = 'meta_contigs_1.fasta'
+meta_contigs_2 = 'meta_contigs_2.fasta'
+meta_references = ['meta_ref_1.fasta', 'meta_ref_2.fasta', 'meta_ref_3.fasta']
+
+per_ref_dirname = "runs_per_reference"
+combined_output_name = "combined_reference"
+
 
 # Options:
 # -o            <dirname>      Directory to store all result file. Default: quast_results/results_<datetime>
@@ -211,7 +218,7 @@ def assert_values_equal(name, metric=None, fname='report.tsv'):
             return True
 
 
-def run_quast(name, contigs=None, params='', expected_exit_code=0):
+def run_quast(name, contigs=None, params='', expected_exit_code=0, meta=False):
     results_dirpath = get_results_dirpath(name)
 
     if os.path.exists(results_dirpath):
@@ -223,7 +230,10 @@ def run_quast(name, contigs=None, params='', expected_exit_code=0):
         contigs = [contigs_10k_1, contigs_10k_2]
 
     os.chdir('data')
-    cmd = '../../quast.py -o ../' + results_dirpath + ' ' + ' '.join(contigs) + ' ' + params
+    quast_fpath = '../../quast.py'
+    if meta:
+        quast_fpath = '../../metaquast.py'
+    cmd = quast_fpath + ' -o ../' + results_dirpath + ' ' + ' '.join(contigs) + ' ' + params
     print cmd
     print
     exit_code = os.system(cmd) >> 8

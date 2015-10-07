@@ -645,7 +645,7 @@ def main(args):
     quast_py_args += ['--no-check-meta']
     qconfig.contig_thresholds = ','.join([str(threshold) for threshold in qconfig.contig_thresholds if threshold > qconfig.min_contig])
     if not qconfig.contig_thresholds:
-        qconfig.contig_thresholds = ['None']
+        qconfig.contig_thresholds = 'None'
     quast_py_args = __remove_from_quast_py_args(quast_py_args, '--contig-thresholds', qconfig.contig_thresholds)
     quast_py_args += ['--contig-thresholds']
     quast_py_args += [qconfig.contig_thresholds]

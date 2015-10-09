@@ -128,7 +128,7 @@
     QUAST can be run on Linux or Mac OS.
 </p>
 <p>
-    It requires:
+    Its default pipeline requires:
 </p>
 <ul>
     <li>python 2 (2.5 or higher)</li>
@@ -140,6 +140,13 @@
     <li>sed</li>
     <li>awk</li>
     <li>ar</li>    
+</ul>
+<p>
+    In addition, QUAST submodules require:
+</p>
+<ul>
+    <li>Java JDK (tested with OpenJDK 6) for GAGE</li>
+    <li>Time::HiRes perl module for GeneMark-ES</li>
 </ul>
 All those tools are usually preinstalled on Linux.<br>
 Mac OS, however, initially misses <code>make</code>, <code>g++</code> and <code>ar</code>, so you will have to install 

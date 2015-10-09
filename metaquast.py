@@ -41,22 +41,23 @@ class Assembly:
 
 
 def parallel_partition_contigs(asm, assemblies_by_ref, corrected_dirpath, alignments_fpath_template):
-    logger.info('  ' + 'processing ' + asm.name)
+    assembly_label = qutils.label_from_fpath_for_fname(asm.fpath)
+    logger.info('  ' + 'processing ' + assembly_label)
     added_ref_asm = []
-    not_aligned_fname = asm.name + '_not_aligned_anywhere.fasta'
+    not_aligned_fname = assembly_label + '_not_aligned_anywhere.fasta'
     not_aligned_fpath = os.path.join(corrected_dirpath, not_aligned_fname)
     contigs = {}
     aligned_contig_names = set()
     aligned_contigs_for_each_ref = {}
     contigs_seq = fastaparser.read_fasta_one_time(asm.fpath)
-    if os.path.exists(alignments_fpath_template % asm.name):
-        for line in open(alignments_fpath_template % asm.name):
+    if os.path.exists(alignments_fpath_template % assembly_label):
+        for line in open(alignments_fpath_template % assembly_label):
             values = line.split()
             if values[0] in contigs_analyzer.ref_labels_by_chromosomes.keys():
                 ref_name = contigs_analyzer.ref_labels_by_chromosomes[values[0]]
                 ref_contigs_names = values[1:]
                 ref_contigs_fpath = os.path.join(
-                    corrected_dirpath, asm.name + '_to_' + ref_name[:40] + '.fasta')
+                    corrected_dirpath, assembly_label + '_to_' + ref_name[:40] + '.fasta')
                 if ref_name not in aligned_contigs_for_each_ref:
                     aligned_contigs_for_each_ref[ref_name] = []
 
@@ -70,7 +71,7 @@ def parallel_partition_contigs(asm, assemblies_by_ref, corrected_dirpath, alignm
                         aligned_contigs_for_each_ref[ref_name].append(cont_name)
                         fastaparser.write_fasta(ref_contigs_fpath, [(cont_name, seq)], 'a')
 
-                ref_asm = Assembly(ref_contigs_fpath, asm.label)
+                ref_asm = Assembly(ref_contigs_fpath, assembly_label)
                 if ref_asm.name not in added_ref_asm:
                     if ref_name in assemblies_by_ref:
                         assemblies_by_ref[ref_name].append(ref_asm)

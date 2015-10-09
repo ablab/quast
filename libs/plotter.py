@@ -11,7 +11,9 @@
 
 # Feel free to add more colors
 #colors = ['#E41A1C', '#377EB8', '#4DAF4A', '#984EA3', '#FF7F00', '#A65628', '#F781BF', '#FFFF33']  ## 8-color palette
-colors = ['#E31A1C', '#1F78B4', '#33A02C', '#6A3D9A', '#FF7F00', '#FB9A99', '#A6CEE3', '#B2DF8A','#CAB2D6', '#FDBF6F'] # 10-color palette
+#red, blue, green, magenta, orange, maroon, aqua, light green, light purple, olive, navy, team, lime
+colors = ['#E31A1C', '#1F78B4', '#33A02C', '#6A3D9A', '#FF7F00', '#800000', '#A6CEE3', '#B2DF8A','#CAB2D6', '#FDBF6F'
+          '#000080', '#008080', '#00FF00'] # 14-color palette
 
 # Font of plot captions, axes labels and ticks
 font = {'family': 'sans-serif',

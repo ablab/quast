@@ -723,6 +723,8 @@ def main(args):
         create_meta_summary.do(html_summary_report_fpath, summary_output_dirpath, combined_output_dirpath, output_dirpath_per_ref, metrics_for_plots, misassembl_metrics,
                                ref_names if no_unaligned_contigs else ref_names + [qconfig.not_aligned_name])
         if html_report and json_texts:
+            from libs import plotter
+            html_saver.save_colors(output_dirpath, contigs_fpaths, plotter.dict_color_and_ls, meta=True)
             html_saver.create_meta_report(output_dirpath, json_texts)
 
     quast._cleanup(corrected_dirpath)

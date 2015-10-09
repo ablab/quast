@@ -787,6 +787,7 @@ def main(args):
 
     if qconfig.html_report:
         from libs.html_saver import html_saver
+        html_saver.save_colors(output_dirpath, contigs_fpaths, plotter.dict_color_and_ls)
         html_saver.save_total_report(output_dirpath, qconfig.min_contig, ref_fpath)
 
     if os.path.isfile(all_pdf_fpath):

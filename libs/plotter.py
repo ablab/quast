@@ -79,23 +79,22 @@ dict_color_and_ls = {}
 def save_colors_and_ls(fpaths):
     if not dict_color_and_ls:
         color_id = 0
-        next_color_id = color_id
-        ls = primary_line_style
         for fpath in fpaths:
+            ls = primary_line_style
             label = qutils.label_from_fpath(fpath)
             # contigs and scaffolds should be equally colored but scaffolds should be dashed
             if fpath and fpath in qconfig.dict_of_broken_scaffolds:
                 color = dict_color_and_ls[qutils.label_from_fpath(qconfig.dict_of_broken_scaffolds[fpath])][0]
                 ls = secondary_line_style
             else:
-                 next_color_id += 1
                  color = colors[color_id % len(colors)]
+                 color_id += 1
             dict_color_and_ls[label] = (color, ls)
-            color_id = next_color_id
 
 
-def get_color_and_ls(fpath):
-    label = qutils.label_from_fpath(fpath)
+def get_color_and_ls(fpath, label=None):
+    if not label:
+        label = qutils.label_from_fpath(fpath)
     """
     Returns tuple: color, line style
     """
@@ -601,7 +600,8 @@ def draw_meta_summary_plot(html_fpath, output_dirpath, labels, ref_names, all_ro
         points_x = [arr_x[j][i] for i in range(len(arr_y_by_refs))]
         points_y = [arr_y_by_refs[i][j] for i in range(len(arr_y_by_refs))]
         if draw_plots:
-            ax.plot(points_x, points_y, 'ro:', color=colors[j])
+            color, ls = get_color_and_ls(None, labels[j])
+            ax.plot(points_x, points_y, 'o:', color=color, ls=ls)
         json_points_x.append(points_x)
         json_points_y.append(points_y)
 

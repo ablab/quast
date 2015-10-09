@@ -123,6 +123,10 @@ def save_coord(output_dirpath, coord_x, coord_y, name_coord, contigs_fpaths):
     })
 
 
+def save_colors(output_dirpath, colors):
+    return save(output_dirpath + prefix_fn + 'colors' + suffix_fn, colors)
+
+
 def save_meta_summary(output_dirpath, coord_x, coord_y, name_coord, labels, refs_names):
     coord_fn = prefix_fn + 'coord' + name_coord + suffix_fn
     return save(output_dirpath + coord_fn, {

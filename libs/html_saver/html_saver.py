@@ -19,6 +19,22 @@ log = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 def get_real_path(relpath_in_html_saver):
     return os.path.join(qconfig.LIBS_LOCATION, 'html_saver', relpath_in_html_saver)
 
+html_colors = [
+    '#FF0000',  #red
+    '#0000FF',  #blue
+    '#008000',  #green
+    '#FFA500',  #orange
+    '#FF00FF',  #fushua
+    '#CCCC00',  #yellow
+    '#800000',  #maroon
+    '#00CCCC',  #aqua
+    '#808080',  #gray
+    '#800080',  #purple
+    '#808000',  #olive
+    '#000080',  #navy
+    '#008080',  #team
+    '#00FF00',  #lime
+]
 
 scripts_inserted = False
 
@@ -238,6 +254,23 @@ def save_coord(results_dirpath, coord_x, coord_y, name_coord, contigs_fpaths):  
     json_fpath = json_saver.save_coord(results_dirpath, coord_x, coord_y, name_coord, contigs_fpaths)
     if json_fpath:
         append(results_dirpath, json_fpath, name_coord)
+
+
+def save_colors(results_dirpath, contigs_fpaths, dict_colors, meta=False):  # coordinates for Nx, NAx, NGx, NGAX
+    from libs import plotter
+    if meta:
+        html_fpath = os.path.join(results_dirpath, report_fname)
+        with open(html_fpath) as f_html:
+            html_text = f_html.read()
+        html_text = re.sub('{{ ' + 'colors' + ' }}', 'standard_colors', html_text)
+        with open(html_fpath, 'w') as f_html:
+            f_html.write(html_text)
+    else:
+        colors_and_ls = [dict_colors[qutils.label_from_fpath(contigs_fpath)] for contigs_fpath in contigs_fpaths]
+        colors = [color_and_ls[0] for color_and_ls in colors_and_ls]
+        colors_for_html = [html_colors[plotter.colors.index(color)] for color in colors]
+        json_fpath = json_saver.save_colors(results_dirpath, colors_for_html)
+        append(results_dirpath, json_fpath, 'colors')
 
 
 def save_meta_summary(html_fpath, results_dirpath, coord_x, coord_y, name_coord, labels, refs):

@@ -296,6 +296,9 @@ def do(assemblies, downloaded_dirpath):
             refs_for_query = 0
             for line in open(res_fpath):
                 if refs_for_query == 0 and not line.startswith('#') and len(line.split()) > 10:
+                    # TODO: find and parse "Fields" line to detect each column indexes:
+                    # Fields: query id, subject id, % identity, alignment length, mismatches, gap opens, q. start, q. end, s. start, s. end, evalue, bit score
+                    # We need: identity, legnth, score, query and subject id.
                     line = line.split()
                     idy = float(line[2])
                     length = int(line[3])

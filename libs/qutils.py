@@ -213,3 +213,16 @@ def relpath(path, start=curdir):
     if not rel_list:
         return curdir
     return join(*rel_list)
+
+def get_path_to_program(program):
+    """
+    returns the path to an executable or None if it can't be found
+    """
+    def is_exe(fpath):
+        return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
+
+    for path in os.environ["PATH"].split(os.pathsep):
+        exe_file = os.path.join(path, program)
+        if is_exe(exe_file):
+            return exe_file
+    return None

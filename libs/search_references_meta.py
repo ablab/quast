@@ -42,7 +42,12 @@ is_quast_first_run = False
 taxons_for_krona = {}
 
 def blast_fpath(fname):
-    return os.path.join(blast_dirpath, fname)
+    blast_path = os.path.join(blast_dirpath, fname)
+    if os.path.exists(blast_path):
+        return blast_path
+
+    blast_path = qutils.get_path_to_program(fname)
+    return blast_path
 
 
 def natural_sort_key(s, _nsre=re.compile('([0-9]+)')):
@@ -135,7 +140,7 @@ def download_blast_files(blast_filename):
         except Exception:
             logger.error(
                 'Failed downloading BLAST! The search for reference genomes cannot be performed. '
-                'Try to download it manually in %s and restart MetaQUAST.' % blast_dirpath)
+                'Try to download and add it to PATH manually and restart MetaQUAST.' % blast_dirpath)
             return 1
         shutil.move(blast_fpath + '.download', blast_fpath)
         logger.info('%s successfully downloaded!' % blast_filename)
@@ -247,12 +252,13 @@ def do(assemblies, downloaded_dirpath):
 
     for i, cmd in enumerate(blast_filenames):
         blast_file = blast_fpath(cmd)
-        if not os.path.exists(blast_file):
+        if not blast_file:
             return_code = download_blast_files(cmd)
             logger.info()
             if return_code != 0:
                 return None
-        os.chmod(blast_file, os.stat(blast_file).st_mode | stat.S_IEXEC)
+            blast_file = blast_fpath(cmd)
+            os.chmod(blast_file, os.stat(blast_file).st_mode | stat.S_IEXEC)
 
     if not os.path.isfile(db_fpath + '.nsq') or os.path.getsize(db_fpath + '.nsq') < db_nsq_fsize:
         if os.path.isdir(blastdb_dirpath):
@@ -289,7 +295,7 @@ def do(assemblies, downloaded_dirpath):
         if os.path.exists(res_fpath):
             refs_for_query = 0
             for line in open(res_fpath):
-                if refs_for_query == 0 and not line.startswith('#'):
+                if refs_for_query == 0 and not line.startswith('#') and len(line.split()) > 10:
                     line = line.split()
                     idy = float(line[2])
                     length = int(line[3])

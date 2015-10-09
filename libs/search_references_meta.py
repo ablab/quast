@@ -139,8 +139,8 @@ def download_blast_files(blast_filename):
             blast_download.retrieve(blast_webpath, blast_fpath + '.download', show_progress)
         except Exception:
             logger.error(
-                'Failed downloading BLAST! The search for reference genomes cannot be performed. '
-                'Try to download and add it to PATH manually and restart MetaQUAST.' % blast_dirpath)
+                'Failed downloading %s! The search for reference genomes cannot be performed. '
+                'Please install it and ensure it is in your PATH, then restart MetaQUAST.' % blast_filename)
             return 1
         shutil.move(blast_fpath + '.download', blast_fpath)
         logger.info('%s successfully downloaded!' % blast_filename)

@@ -416,11 +416,12 @@ def main(args):
         if opt == '--test':
             options.remove((opt, arg))
             options += [('-o', 'quast_test_output'),
-                        ('-R', os.path.join(qconfig.QUAST_HOME, 'test_data', 'reference.fasta.gz')),   # for compiling MUMmer
+                        ('-R', os.path.join(qconfig.QUAST_HOME, 'test_data', 'reference.fasta.gz')),  # for compiling MUMmer
                         ('-O', os.path.join(qconfig.QUAST_HOME, 'test_data', 'operons.gff')),
                         ('-G', os.path.join(qconfig.QUAST_HOME, 'test_data', 'genes.gff')),
-                        ('--gage', ''), # for compiling GAGE Java classes
-                        ('--gene-finding', ''), ('--eukaryote', ''), ('--glimmer', '')] # for compiling GlimmerHMM
+                        ('--gage', ''),  # for compiling GAGE Java classes
+                        ('--gene-finding', ''), ('--eukaryote', ''), ('--glimmer', ''),  # for compiling GlimmerHMM
+                        ('--threads', '1')]  # temporary solution for correct processing of non-fatal Errors number
             contigs_fpaths += [os.path.join(qconfig.QUAST_HOME, 'test_data', 'contigs_1.fasta'),
                                os.path.join(qconfig.QUAST_HOME, 'test_data', 'contigs_2.fasta')]
             qconfig.test = True

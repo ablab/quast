@@ -41,7 +41,7 @@ class Assembly:
 
 
 def parallel_partition_contigs(asm, assemblies_by_ref, corrected_dirpath, alignments_fpath_template):
-    assembly_label = qutils.label_from_fpath_for_fname(asm.fpath)
+    assembly_label = qutils.label_from_fpath(asm.fpath)
     logger.info('  ' + 'processing ' + assembly_label)
     added_ref_asm = []
     not_aligned_fname = assembly_label + '_not_aligned_anywhere.fasta'
@@ -630,11 +630,11 @@ def main(args):
             run_name = 'for the corrected combined reference'
             logger.info()
             logger.info('Starting quast.py ' + run_name + '...')
-            return_code, total_num_notifications = _start_quast_main(run_name, quast_py_args + ["--ambiguity-usage"] + ['all'],
+            return_code, total_num_notifications, assemblies, labels = _start_quast_main(run_name, quast_py_args + ["--ambiguity-usage"] + ['all'],
                 assemblies=assemblies,
                 reference_fpath=combined_ref_fpath,
                 output_dirpath=combined_output_dirpath,
-                num_notifications_tuple=total_num_notifications)
+                num_notifications_tuple=total_num_notifications, is_first_run=True)
             if json_texts is not None:
                 json_texts = json_texts[:-1]
                 json_texts.append(json_saver.json_text)

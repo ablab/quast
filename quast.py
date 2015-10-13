@@ -566,6 +566,9 @@ def main(args):
             qconfig.no_check = True
             qconfig.no_check_meta = True
 
+        elif opt == '--references-list':
+            pass
+
         elif opt in ('-l', '--labels'):
             labels = parse_labels(arg, contigs_fpaths)
 

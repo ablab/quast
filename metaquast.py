@@ -338,6 +338,7 @@ def main(args):
     operons = []
     html_report = qconfig.html_report
     make_latest_symlink = True
+    ref_txt_fpath = None
 
     try:
         options, contigs_fpaths = getopt.gnu_getopt(args, qconfig.short_options, qconfig.long_options)
@@ -476,6 +477,8 @@ def main(args):
             pass
         elif opt == "--meta":
             pass
+        elif opt == '--references-list':
+            ref_txt_fpath = arg
         elif opt == '--glimmer':
             pass
         elif opt == '--no-snps':
@@ -559,15 +562,19 @@ def main(args):
         if qconfig.max_references == 0:
             logger.notice("Maximum number of references (--max-ref-number) is set to 0, search in SILVA 16S rRNA database is disabled")
         else:
-            logger.info("No references are provided, starting to search for reference genomes in SILVA 16S rRNA database "
+            if ref_txt_fpath:
+                logger.info("List of references was provided, starting to download reference genomes from NCBI...")
+            else:
+                logger.info("No references are provided, starting to search for reference genomes in SILVA 16S rRNA database "
                         "and to download them from NCBI...")
             downloaded_dirpath = os.path.join(output_dirpath, qconfig.downloaded_dirname)
             if not os.path.isdir(downloaded_dirpath):
                 os.mkdir(downloaded_dirpath)
-            ref_fpaths = search_references_meta.do(assemblies, downloaded_dirpath)
+            ref_fpaths = search_references_meta.do(assemblies, downloaded_dirpath, ref_txt_fpath)
             if ref_fpaths:
                 search_references_meta.is_quast_first_run = True
-                downloaded_refs = True
+                if not ref_txt_fpath:
+                    downloaded_refs = True
                 logger.info()
                 logger.info('Downloaded reference(s):')
                 corrected_ref_fpaths, common_ref_fasta_ext, combined_ref_fpath, chromosomes_by_refs, ref_names =\

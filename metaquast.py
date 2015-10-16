@@ -411,7 +411,7 @@ def main(args):
             if opt in quast_py_args and arg in quast_py_args:
                 quast_py_args = __remove_from_quast_py_args(quast_py_args, opt, arg)
             if os.path.isdir(arg):
-                ref_fpaths = [os.path.join(arg,file) for (path, dirs, files) in os.walk(arg) for file in files if qutils.check_is_fasta_file(file)]
+                ref_fpaths = [os.path.join(path,file) for (path, dirs, files) in os.walk(arg) for file in files if qutils.check_is_fasta_file(file)]
                 ref_fpaths.sort()
             else:
                 ref_fpaths = arg.split(',')

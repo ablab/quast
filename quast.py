@@ -275,12 +275,11 @@ def _correct_reference(ref_fpath, corrected_dirpath):
     name, fasta_ext = qutils.splitext_for_fasta_file(ref_fname)
     corr_fpath = qutils.unique_corrected_fpath(
         os.path.join(corrected_dirpath, name + fasta_ext))
-    if not qconfig.is_combined_ref:
-        if not correct_fasta(ref_fpath, corr_fpath, qconfig.min_contig, is_reference=True):
-            ref_fpath = ''
-        else:
-            logger.info('  %s ==> %s' % (ref_fpath, qutils.name_from_fpath(corr_fpath)))
-            ref_fpath = corr_fpath
+    if not correct_fasta(ref_fpath, corr_fpath, qconfig.min_contig, is_reference=True):
+        ref_fpath = ''
+    else:
+        logger.info('  %s ==> %s' % (ref_fpath, qutils.name_from_fpath(corr_fpath)))
+        ref_fpath = corr_fpath
 
     return ref_fpath
 

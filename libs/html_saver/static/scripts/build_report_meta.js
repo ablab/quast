@@ -23,7 +23,7 @@ function buildReport() {
 
     order = recoverOrderFromCookies() || totalReport.order || Range(0, assembliesNames.length);
 
-    mainMetrics = ['# contigs', 'Largest contig', 'Total length', 'N50', '# misassemblies', 'Misassembled contigs length',
+    mainMetrics = ['# contigs', 'Largest contig', 'Total length', '# misassemblies', 'Misassembled contigs length',
         '# mismatches per 100 kbp', '# indels per 100 kbp', "# N's per 100 kbp", 'Genome fraction (%)', 'Duplication ratio', 'NGA50'];
     buildTotalReport(assembliesNames, totalReport.report, order, totalReport.date,
         totalReport.minContig, glossary, qualities, mainMetrics, totalReports.slice(1));
@@ -38,9 +38,9 @@ function buildReport() {
     var firstPlot = true;
 
     if (summaryReports = readJson('summary')){
-        name_reports = ['contigs', 'largest', 'totallen', 'n50', 'misassemblies', 'misassembled', 'mismatches',
+        name_reports = ['contigs', 'largest', 'totallen', 'misassemblies', 'misassembled', 'mismatches',
             'indels', 'ns', 'genome', 'duplication', 'nga50'];
-        title_reports = ['Contigs', 'Largest contig', 'Total len', 'N50', 'Misassemblies', 'Mis. len', 'Mismatches',
+        title_reports = ['Contigs', 'Largest contig', 'Total len', 'Misassemblies', 'Mis. len', 'Mismatches',
             'Indels', "N's per 100 kbp", 'Genome frac.', 'Dup. ratio', 'NGA50'];
         for (var i = 0; i < summaryReports.length; i++) {
             if (summaryReports[i].refnames != undefined) {

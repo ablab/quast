@@ -42,7 +42,7 @@ long_options = "output-dir= save-json-to= genes= operons= reference= contig-thre
 short_options = "o:G:O:R:t:m:J:jehda:c:ufl:Lx:i:s"
 
 # default values for options
-contig_thresholds = "0,1000"
+contig_thresholds = "0,1000,5000,10000,25000,50000"
 min_contig = 500
 genes_lengths = "0,300,1500,3000"
 ref_fpath = ''

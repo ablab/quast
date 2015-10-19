@@ -31,6 +31,9 @@ class Fields:
     LARGCONTIG = 'Largest contig'
     TOTALLEN = 'Total length'
     TOTALLENS__FOR_THRESHOLDS = ('Total length (>= %d bp)', tuple(qconfig.contig_thresholds))
+    TOTALLENS__FOR_1000_THRESHOLD = 'Total length (>= 1000 bp)'
+    TOTALLENS__FOR_10000_THRESHOLD = 'Total length (>= 10000 bp)'
+    TOTALLENS__FOR_50000_THRESHOLD = 'Total length (>= 50000 bp)'
     N50 = 'N50'
     N75 = 'N75'
     L50 = 'L50'
@@ -188,7 +191,8 @@ class Fields:
     ]
 
     # for "short" version of HTML report
-    main_metrics = [CONTIGS, LARGCONTIG, TOTALLEN, N50,
+    main_metrics = [CONTIGS, LARGCONTIG, TOTALLEN,
+                    TOTALLENS__FOR_1000_THRESHOLD, TOTALLENS__FOR_10000_THRESHOLD, TOTALLENS__FOR_50000_THRESHOLD,
                     MIS_ALL_EXTENSIVE, MIS_EXTENSIVE_BASES,
                     SUBSERROR, INDELSERROR, UNCALLED_PERCENT,
                     MAPPEDGENOME, DUPLICATION_RATIO, GENES, OPERONS, NGA50,
@@ -205,7 +209,7 @@ class Fields:
 
     quality_dict = {
         Quality.MORE_IS_BETTER:
-            [LARGCONTIG, TOTALLEN, TOTALLENS__FOR_THRESHOLDS, N50, NG50, N75, NG75, NA50, NGA50, NA75, NGA75, LARGALIGN,
+            [LARGCONTIG, TOTALLEN, TOTALLENS__FOR_THRESHOLDS, TOTALLENS__FOR_10000_THRESHOLD, N50, NG50, N75, NG75, NA50, NGA50, NA75, NGA75, LARGALIGN,
              MAPPEDGENOME, GENES, OPERONS, PREDICTED_GENES_UNIQUE, PREDICTED_GENES, AVGIDY],
         Quality.LESS_IS_BETTER:
             [CONTIGS, CONTIGS__FOR_THRESHOLDS, L50, LG50, L75, LG75,
@@ -317,7 +321,7 @@ def table(order=Fields.order):
 
     table = []
 
-    def append_line(rows, field, are_multiple_tresholds=False, pattern=None, feature=None, i=None):
+    def append_line(rows, field, are_multiple_thresholds=False, pattern=None, feature=None, i=None):
         quality = get_quality(field)
         values = []
 
@@ -325,19 +329,19 @@ def table(order=Fields.order):
             report = get(assembly_fpath)
             value = report.get_field(field)
 
-            if are_multiple_tresholds:
+            if are_multiple_thresholds:
                 values.append(value[i] if (value and i < len(value)) else None)
             else:
                 values.append(value)
 
-        if filter(lambda v: v is not None, values):
+        if filter(lambda v: v is not None, values) or (field == 'NGA50' and not qconfig.is_combined_ref and report.get_field(Fields.REFLEN)):
             metric_name = field if (feature is None) else pattern % feature
             # ATTENTION! Contents numeric values, needed to be converted to strings.
             rows.append({
                 'metricName': metric_name,
                 'quality': quality,
                 'values': values,
-                'isMain': field in Fields.main_metrics,
+                'isMain': metric_name in Fields.main_metrics,
             })
 
     for group_name, metrics in order:

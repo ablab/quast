@@ -141,6 +141,22 @@ function buildReport() {
         makePlot(firstPlot, assembliesNames, order, 'gc', 'GC content', gc.draw, gcInfos, null);
     }
 
+    var noReference = true;
+    var report = totalReport.report;
+    for (var group_n = 0; group_n < report.length; group_n++) {
+        var group = report[group_n];
+        var groupName = group[0];
+        if (groupName == 'Reference statistics' && group[1].length > 0) {
+            noReference = false;
+        }
+    }
+    if (noReference) extendAll();
     return 0;
 }
 
+function extendAll() {
+    $('.row_to_hide').toggleClass('row_hidden');
+
+    var link = $('#extended_report_link');
+    link.hide();
+}

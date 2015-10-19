@@ -39,31 +39,34 @@ def do(ref_fpath, aligned_contigs_fpaths, output_dirpath, json_output_dirpath,
     for i, (contigs_fpath, lens, assembly_len) in enumerate(
             itertools.izip(aligned_contigs_fpaths, aligned_lengths_lists, assembly_lengths)):
         na50 = N50.NG50(lens, assembly_len)
-        nga50 = N50.NG50(lens, reference_length)
         na75 = N50.NG50(lens, assembly_len, 75)
-        nga75 = N50.NG50(lens, reference_length, 75)
         la50 = N50.LG50(lens, assembly_len)
-        lga50 = N50.LG50(lens, reference_length)
         la75 = N50.LG50(lens, assembly_len, 75)
-        lga75 = N50.LG50(lens, reference_length, 75)
+        if not qconfig.is_combined_ref:
+            nga50 = N50.NG50(lens, reference_length)
+            nga75 = N50.NG50(lens, reference_length, 75)
+            lga50 = N50.LG50(lens, reference_length)
+            lga75 = N50.LG50(lens, reference_length, 75)
+
         logger.info('  ' +
                     qutils.index_to_str(i) +
                     qutils.label_from_fpath(contigs_fpath) +
                  ', Largest alignment = ' + str(max(lens)) +
                  ', NA50 = ' + str(na50) +
-                 ', NGA50 = ' + str(nga50) +
+                 (', NGA50 = ' + str(nga50)) if not qconfig.is_combined_ref else '' +
                  ', LA50 = ' + str(la50) +
-                 ', LGA50 = ' + str(lga50))
+                 (', LGA50 = ' + str(lga50)) if not qconfig.is_combined_ref else '')
         report = reporting.get(contigs_fpath)
         report.add_field(reporting.Fields.LARGALIGN, max(lens))
         report.add_field(reporting.Fields.NA50, na50)
-        report.add_field(reporting.Fields.NGA50, nga50)
         report.add_field(reporting.Fields.NA75, na75)
-        report.add_field(reporting.Fields.NGA75, nga75)
         report.add_field(reporting.Fields.LA50, la50)
-        report.add_field(reporting.Fields.LGA50, lga50)
         report.add_field(reporting.Fields.LA75, la75)
-        report.add_field(reporting.Fields.LGA75, lga75)
+        if not qconfig.is_combined_ref:
+            report.add_field(reporting.Fields.NGA50, nga50)
+            report.add_field(reporting.Fields.NGA75, nga75)
+            report.add_field(reporting.Fields.LGA50, lga50)
+            report.add_field(reporting.Fields.LGA75, lga75)
 
     ########################################################################
     num_contigs = max([len(aligned_lengths_lists[i]) for i in range(len(aligned_lengths_lists))])
@@ -86,7 +89,8 @@ def do(ref_fpath, aligned_contigs_fpaths, output_dirpath, json_output_dirpath,
 
         # Drawing NAx and NGAx plots...
     plotter.Nx_plot(output_dirpath, num_contigs > qconfig.max_points, aligned_contigs_fpaths, aligned_lengths_lists, aligned_stats_dirpath + '/NAx_plot', 'NAx', assembly_lengths)
-    plotter.Nx_plot(output_dirpath, num_contigs > qconfig.max_points, aligned_contigs_fpaths, aligned_lengths_lists, aligned_stats_dirpath + '/NGAx_plot', 'NGAx', [reference_length for i in range(len(aligned_contigs_fpaths))])
+    if not qconfig.is_combined_ref:
+        plotter.Nx_plot(output_dirpath, num_contigs > qconfig.max_points, aligned_contigs_fpaths, aligned_lengths_lists, aligned_stats_dirpath + '/NGAx_plot', 'NGAx', [reference_length for i in range(len(aligned_contigs_fpaths))])
 
     logger.info('Done.')
     return report_dict

@@ -13,12 +13,6 @@ var summary = {
         maxYTick: 0,
         series: null,
         showWithData: null
-    },n50: {
-        isInitialized: false,
-        maxY: 0,
-        maxYTick: 0,
-        series: null,
-        showWithData: null
     },nga50: {
         isInitialized: false,
         maxY: 0,
@@ -75,12 +69,6 @@ var summary = {
         series: null,
         showWithData: null
     },duplication: {
-        isInitialized: false,
-        maxY: 0,
-        maxYTick: 0,
-        series: null,
-        showWithData: null
-    },indels: {
         isInitialized: false,
         maxY: 0,
         maxYTick: 0,

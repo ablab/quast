@@ -53,9 +53,9 @@ def do(ref_fpath, aligned_contigs_fpaths, output_dirpath, json_output_dirpath,
                     qutils.label_from_fpath(contigs_fpath) +
                  ', Largest alignment = ' + str(max(lens)) +
                  ', NA50 = ' + str(na50) +
-                 (', NGA50 = ' + str(nga50)) if not qconfig.is_combined_ref else '' +
+                 (', NGA50 = ' + str(nga50) if not qconfig.is_combined_ref and nga50 else '') +
                  ', LA50 = ' + str(la50) +
-                 (', LGA50 = ' + str(lga50)) if not qconfig.is_combined_ref else '')
+                 (', LGA50 = ' + str(lga50) if not qconfig.is_combined_ref and lga50 else ''))
         report = reporting.get(contigs_fpath)
         report.add_field(reporting.Fields.LARGALIGN, max(lens))
         report.add_field(reporting.Fields.NA50, na50)

@@ -201,27 +201,25 @@ def download_blastdb():
     return 0
 
 
-def parallel_blast(contigs_fpath, blast_res_fpath, err_fpath, blast_check_fpath, blast_threads):
+def parallel_blast(contigs_fpath, label, blast_res_fpath, err_fpath, blast_check_fpath, blast_threads):
     cmd = blast_fpath('blastn') + (' -query %s -db %s -outfmt 7 -num_threads %s' % (
             contigs_fpath, db_fpath, blast_threads))
-    assembly_name = qutils.name_from_fpath(contigs_fpath)
-    res_fpath = blast_res_fpath + '_' + assembly_name
-    check_fpath = blast_check_fpath + '_' + assembly_name
-    logger.info('  ' + 'processing ' + assembly_name)
+    res_fpath = blast_res_fpath + '_' + label
+    check_fpath = blast_check_fpath + '_' + label
+    logger.info('  ' + 'processing ' + label)
     qutils.call_subprocess(shlex.split(cmd), stdout=open(res_fpath, 'w'), stderr=open(err_fpath, 'a'), logger=logger)
-    logger.info('  ' + 'BLAST results for %s are saved to %s...' % (assembly_name, res_fpath))
+    logger.info('  ' + 'BLAST results for %s are saved to %s...' % (label, res_fpath))
     with open(check_fpath, 'w') as check_file:
         check_file.writelines('Assembly: %s size: %d\n' % (contigs_fpath, os.path.getsize(contigs_fpath)))
     return
 
 
-def check_blast(blast_check_fpath, files_sizes, assemblies_fpaths, assemblies):
+def check_blast(blast_check_fpath, files_sizes, assemblies_fpaths, assemblies, labels):
     downloaded_organisms = []
     not_founded_organisms = []
     blast_assemblies = [assembly for assembly in assemblies]
-    for assembly_fpath in assemblies_fpaths:
-        assembly_name = qutils.name_from_fpath(assembly_fpath)
-        check_fpath = blast_check_fpath  + '_' + assembly_name
+    for i, assembly_fpath in enumerate(assemblies_fpaths):
+        check_fpath = blast_check_fpath  + '_' + labels[i]
         existing_assembly = None
         assembly_info = True
         if os.path.exists(check_fpath):
@@ -233,7 +231,7 @@ def check_blast(blast_check_fpath, files_sizes, assemblies_fpaths, assemblies):
                     if assembly in files_sizes.keys() and int(size) == files_sizes[assembly]:
                         existing_assembly = assemblies_fpaths[assembly]
                         assembly_name = qutils.name_from_fpath(existing_assembly.fpath)
-                        logger.info('  Using existing BLAST alignments for %s... ' % assembly_name)
+                        logger.info('  Using existing BLAST alignments for %s... ' % labels[i])
                         blast_assemblies.remove(existing_assembly)
                 elif line and existing_assembly:
                     line = line.split(' ')
@@ -245,7 +243,7 @@ def check_blast(blast_check_fpath, files_sizes, assemblies_fpaths, assemblies):
     return blast_assemblies, set(downloaded_organisms), set(not_founded_organisms)
 
 
-def do(assemblies, downloaded_dirpath, ref_txt_fpath=None):
+def do(assemblies, labels, downloaded_dirpath, ref_txt_fpath=None):
     logger.print_timestamp()
     err_fpath = os.path.join(downloaded_dirpath, 'blast.err')
     contigs_names = [qutils.name_from_fpath(assembly.fpath) for assembly in assemblies]
@@ -253,21 +251,21 @@ def do(assemblies, downloaded_dirpath, ref_txt_fpath=None):
     files_sizes = dict((assembly.fpath, os.path.getsize(assembly.fpath)) for assembly in assemblies)
     assemblies_fpaths = dict((assembly.fpath, assembly) for assembly in assemblies)
     blast_assemblies, downloaded_organisms, not_founded_organisms = \
-        check_blast(blast_check_fpath, files_sizes, assemblies_fpaths, assemblies)
+        check_blast(blast_check_fpath, files_sizes, assemblies_fpaths, assemblies, labels)
 
     if ref_txt_fpath:
         organisms = parse_refs_list(ref_txt_fpath)
         organisms_assemblies = None
     else:
-        scores_organisms, organisms_assemblies = process_blast(blast_assemblies, downloaded_dirpath, contigs_names, blast_check_fpath, err_fpath)
+        scores_organisms, organisms_assemblies = process_blast(blast_assemblies, downloaded_dirpath, contigs_names, labels, blast_check_fpath, err_fpath)
         if not scores_organisms:
-            return None, None
+            return None
         scores_organisms = sorted(scores_organisms, reverse=True)
         organisms = [organism for (score, organism) in scores_organisms]
 
     downloaded_ref_fpaths = [os.path.join(downloaded_dirpath,file) for (path, dirs, files) in os.walk(downloaded_dirpath) for file in files if qutils.check_is_fasta_file(file)]
 
-    ref_fpaths = process_refs(organisms, downloaded_dirpath, not_founded_organisms, contigs_names, downloaded_ref_fpaths,
+    ref_fpaths = process_refs(organisms, labels, downloaded_dirpath, not_founded_organisms, contigs_names, downloaded_ref_fpaths,
                  blast_check_fpath, err_fpath, organisms_assemblies)
 
     if not ref_fpaths:
@@ -278,7 +276,7 @@ def do(assemblies, downloaded_dirpath, ref_txt_fpath=None):
     return ref_fpaths
 
 
-def process_blast(blast_assemblies, downloaded_dirpath, contigs_names, blast_check_fpath, err_fpath):
+def process_blast(blast_assemblies, downloaded_dirpath, contigs_names, labels, blast_check_fpath, err_fpath):
     if not os.path.isdir(blastdb_dirpath):
         os.makedirs(blastdb_dirpath)
 
@@ -308,15 +306,15 @@ def process_blast(blast_assemblies, downloaded_dirpath, contigs_names, blast_che
         blast_threads = max(1, qconfig.max_threads // n_jobs)
         from joblib import Parallel, delayed
         Parallel(n_jobs=n_jobs)(delayed(parallel_blast)(
-                    assembly.fpath, blast_res_fpath, err_fpath, blast_check_fpath, blast_threads) for assembly in blast_assemblies)
+                    assembly.fpath, labels[i], blast_res_fpath, err_fpath, blast_check_fpath, blast_threads) for i, assembly in enumerate(blast_assemblies))
 
     logger.info('')
     scores_organisms = []
     organisms_assemblies = {}
-    for contig_name in contigs_names:
+    for label in labels:
         all_scores = []
         organisms = []
-        res_fpath = blast_res_fpath + '_' + contig_name
+        res_fpath = blast_res_fpath + '_' + label
         if os.path.exists(res_fpath):
             refs_for_query = 0
             for line in open(res_fpath):
@@ -357,7 +355,7 @@ def process_blast(blast_assemblies, downloaded_dirpath, contigs_names, blast_che
         for score in all_scores:
             if not organisms_assemblies or (organisms_assemblies.values() and not [1 for list in organisms_assemblies.values() if score[1] in list]):
                 scores_organisms.append(score)
-        organisms_assemblies[contig_name] = [score[1] for score in all_scores]
+        organisms_assemblies[label] = [score[1] for score in all_scores]
     if not scores_organisms:
         logger.info('Reference genomes are not found.')
         return None, None
@@ -374,7 +372,7 @@ def parse_refs_list(ref_txt_fpath):
                 organisms.append(organism)
     return organisms
 
-def process_refs(organisms, downloaded_dirpath, not_founded_organisms, contigs_names, downloaded_ref_fpaths,
+def process_refs(organisms, labels, downloaded_dirpath, not_founded_organisms, contigs_names, downloaded_ref_fpaths,
                  blast_check_fpath, err_fpath, organisms_assemblies=None):
     ref_fpaths = []
     downloaded_organisms = []
@@ -426,8 +424,8 @@ def process_refs(organisms, downloaded_dirpath, not_founded_organisms, contigs_n
             total_scored_left -= 1
             logger.info("  %s%s | not found in the NCBI database" % (organism.replace('+', ' '), spaces))
             not_founded_organisms.add(organism)
-    for contig_name in contigs_names:
-        check_fpath = blast_check_fpath + '_' + contig_name
+    for label in labels:
+        check_fpath = blast_check_fpath + '_' + label
         with open(check_fpath) as check_file:
             text = check_file.read()
             text = text[:text.find('\n')]
@@ -435,9 +433,9 @@ def process_refs(organisms, downloaded_dirpath, not_founded_organisms, contigs_n
             check_file.writelines(text)
             check_file.writelines('\n---\n')
             cur_downloaded_organisms = [organism for organism in downloaded_organisms] if not organisms_assemblies else \
-                [organism for organism in downloaded_organisms if organism in organisms_assemblies[contig_name]]
+                [organism for organism in downloaded_organisms if organism in organisms_assemblies[label]]
             cur_not_founded_organisms = [organism for organism in not_founded_organisms] if not organisms_assemblies else \
-                [organism for organism in not_founded_organisms if organism in organisms_assemblies[contig_name]]
+                [organism for organism in not_founded_organisms if organism in organisms_assemblies[label]]
             check_file.writelines('Downloaded: %s\n' % ','.join(cur_downloaded_organisms))
             check_file.writelines('Not_founded: %s\n' % ','.join(cur_not_founded_organisms))
     return ref_fpaths

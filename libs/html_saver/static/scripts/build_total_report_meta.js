@@ -51,11 +51,12 @@ function fillOneRow(metric, mainMetrics, group_n, order, glossary, is_primary, r
         (metric.isMain && is_primary && metricName.indexOf("gt;=") == -1 ? ("&nbsp" + iconPlots) : '') +
         '</span></td>';
 
-    tooltipForGenomeStatistics = 'These metrics are not calculated for the combined reference';
+    tooltipForGenomeStatistics = 'Metrics that depend on the reference length are not calculated for the combined reference.';
+    tooltipForGCStatistics = 'GC content is not calculated for the combined reference.';
     if (is_primary && $.inArray(metricName, metricsNotForCombinedReference) != -1) {
         for (var val_n = 0; val_n < values.length; val_n++) {
             table += '<td><a class="tooltip-link" rel="tooltip" title="' +
-            tooltipForGenomeStatistics + '"> ... </a></td>';
+                (metricName.indexOf('GC') == -1 ? tooltipForGenomeStatistics : tooltipForGCStatistics)  + '"> ... </a></td>';
         }
         return table;
     }
@@ -164,9 +165,10 @@ function buildTotalReport(assembliesNames, report, order, date, minContig, gloss
     $('#per_ref_msg').html('<p>Rows show values for the whole assembly (column name) vs. combined reference (concatenation of input references).<br>' +
         'Clicking on a row with <span style="color: #CCC">+</span> sign will expand values for contigs aligned to each of input references separately.<br>' +
         'Note that some metrics (e.g. # contigs) may not sum up, because one contig may be aligned to several references and thus, counted several times.<br>' +
-        'All metrics depending on reference length (NG50, LG50, etc) and GC % are not calculated for the combined reference.<br>' +
-        'Combined reference is just a concatenation of reference genomes of species, possibly presented in the metagenomic dataset, and it may miss really presented species.<br>' +
-        'Length and GC content of the combined reference cannot be compared with real assembly length and GC content.</p>');
+        'All metrics that depend on the reference length (such as NG50, LG50, etc), plus the GC % are not calculated for the combined reference.<br>' +
+        'The combined reference is just a concatenation of all available reference genomes of the species, presumably represented in the metagenomic dataset, ' +
+        'but not necessarily the real content.<br>So it might miss many correctly assembled species, ' +
+        'and therefore it doesn\'t make sense to apply the size and the GC content of the combined reference for assembly evaluation.</p>');
     $('#quast_name').html('MetaQUAST');
     $('#report_name').html('summary report');
     if (kronaPaths = readJson('krona')) {

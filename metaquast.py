@@ -220,8 +220,7 @@ def _correct_references(ref_fpaths, corrected_dirpath):
             corr_seq_fpath = qutils.unique_corrected_fpath(os.path.join(corrected_dirpath, seq_fname))
             corrected_ref_fpaths.append(corr_seq_fpath)
         corr_seq_name = qutils.name_from_fpath(corr_seq_fpath)
-        if total_references > 1:
-            corr_seq_name += '_' + qutils.correct_name(seq_name[:20])
+        corr_seq_name += '_' + qutils.correct_name(seq_name[:20])
         if not qconfig.no_check:
             corr_seq = seq.upper()
             dic = {'M': 'N', 'K': 'N', 'R': 'N', 'Y': 'N', 'W': 'N', 'S': 'N', 'V': 'N', 'B': 'N', 'H': 'N', 'D': 'N'}
@@ -284,7 +283,6 @@ def remove_unaligned_downloaded_refs(output_dirpath, ref_fpaths, chromosomes_by_
             refs_len[line[0]] = (line[3], line[8])
 
     corr_refs = []
-    corr_ref_labels_by_chromosomes = {}
     for ref_fpath in ref_fpaths:
         ref_fname = os.path.basename(ref_fpath)
         ref, ref_fasta_ext = qutils.splitext_for_fasta_file(ref_fname)
@@ -296,11 +294,7 @@ def remove_unaligned_downloaded_refs(output_dirpath, ref_fpaths, chromosomes_by_
                 all_len += int(refs_len[chromosome[0]][0])
         if aligned_len > all_len * 0.1 and aligned_len > 0:
             corr_refs.append(ref_fpath)
-            good_ref = qutils.name_from_fpath(ref_fpath)
-            for chromosome in contigs_analyzer.ref_labels_by_chromosomes.keys():
-                if contigs_analyzer.ref_labels_by_chromosomes[chromosome] == good_ref:
-                    corr_ref_labels_by_chromosomes[chromosome] = good_ref
-    return corr_refs, corr_ref_labels_by_chromosomes
+    return corr_refs
 
 
 # safe remove from quast_py_args, e.g. removes correctly "--test-no" (full is "--test-no-ref") and corresponding argument
@@ -626,14 +620,14 @@ def main(args):
     if downloaded_refs:
         logger.info()
         logger.info('Excluding downloaded references with low genome fraction from further analysis..')
-        corr_ref_fpaths, corr_ref_labels_by_chromosomes = remove_unaligned_downloaded_refs(output_dirpath, ref_fpaths, chromosomes_by_refs)
+        corr_ref_fpaths = remove_unaligned_downloaded_refs(output_dirpath, ref_fpaths, chromosomes_by_refs)
         if corr_ref_fpaths and corr_ref_fpaths != ref_fpaths:
             logger.info()
             logger.info('Filtered reference(s):')
             os.remove(combined_ref_fpath)
+            contigs_analyzer.ref_labels_by_chromosomes = {}
             corrected_ref_fpaths, common_ref_fasta_ext, combined_ref_fpath, chromosomes_by_refs, ref_names =\
                     _correct_references(corr_ref_fpaths, corrected_dirpath)
-            contigs_analyzer.ref_labels_by_chromosomes = corr_ref_labels_by_chromosomes
             run_name = 'for the corrected combined reference'
             logger.info()
             logger.info('Starting quast.py ' + run_name + '...')

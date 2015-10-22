@@ -110,6 +110,8 @@ def correct_fasta(original_fpath, corrected_fpath, min_contig,
             qconfig.splitted_ref = []  # important for MetaQUAST which runs QUAST multiple times
             _, fasta_ext = os.path.splitext(corrected_fpath)
             split_ref_dirpath = os.path.join(os.path.dirname(corrected_fpath), 'split_ref')
+            if os.path.exists(split_ref_dirpath):
+                shutil.rmtree(split_ref_dirpath, ignore_errors=True)
             os.makedirs(split_ref_dirpath)
             max_len = min(ref_len/qconfig.max_threads, qconfig.MAX_REFERENCE_LENGTH)
             cur_part_len = 0

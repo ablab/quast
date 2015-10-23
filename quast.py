@@ -198,7 +198,7 @@ def _correct_contigs(contigs_fpaths, corrected_dirpath, reporting, labels):
                     corrected_contigs_fpaths.append(broken_scaffold_fpath)
                     old_contigs_fpaths.append(broken_scaffold_fpath)  # no "old" fpaths for broken scaffolds
                 qconfig.dict_of_broken_scaffolds[broken_scaffold_fpath] = corrected_contigs_fpaths[i]
-    if qconfig.draw_plots:
+    if qconfig.draw_plots or qconfig.html_report:
         from libs import plotter
         if not plotter.dict_color_and_ls:
             plotter.save_colors_and_ls(corrected_contigs_fpaths)
@@ -668,7 +668,7 @@ def main(args):
     all_pdf_fpath = os.path.join(output_dirpath, qconfig.plots_fname)
     all_pdf_file = None
 
-    if qconfig.draw_plots:
+    if qconfig.draw_plots or qconfig.html_report:
         from libs import plotter  # Do not remove this line! It would lead to a warning in matplotlib.
         try:
             from matplotlib.backends.backend_pdf import PdfPages

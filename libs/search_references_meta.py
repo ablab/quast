@@ -78,22 +78,32 @@ def download_refs(organism, ref_fpath):
     if xml_tree.find('Count').text == '0':  # Organism is not found
         return None
 
-    ref_id = xml_tree.find('IdList').find('Id').text
-    response = try_send_request(
-        ncbi_url + 'elink.fcgi?dbfrom=assembly&db=nuccore&id=%s&linkname="assembly_nuccore_refseq"' % ref_id)
-    xml_tree = ET.fromstring(response)
+    ref_id_list = xml_tree.find('IdList').findall('Id')
+    best_ref_links = []
+    for id in ref_id_list:
+        response = try_send_request(
+            ncbi_url + 'elink.fcgi?dbfrom=assembly&db=nuccore&id=%s&linkname="assembly_nuccore_refseq"' % id.text)
+        xml_tree = ET.fromstring(response)
 
-    link_set = xml_tree.find('LinkSet')
-    if link_set is None:
-        return None
+        link_set = xml_tree.find('LinkSet')
+        if link_set is None:
+            continue
+        link_db = xml_tree.find('LinkSet').find('LinkSetDb')
+        if link_db is None:
+            continue
+        ref_links = link_db.findall('Link')
+        if best_ref_links and len(ref_links) > len(best_ref_links):
+            continue
+        best_ref_links = ref_links
+        if best_ref_links and len(best_ref_links) < 3:
+            break
 
-    link_db = xml_tree.find('LinkSet').find('LinkSetDb')
-    if link_db is None:
+    if not best_ref_links:
         return None
 
     is_first_piece = False
     fasta_files = []
-    for ref_id in sorted(ref_id.find('Id').text for ref_id in link_db.findall('Link')):
+    for ref_id in sorted(link.find('Id').text for link in best_ref_links):
         fasta = try_send_request(ncbi_url + 'efetch.fcgi?db=sequences&id=%s&rettype=fasta&retmode=text' % ref_id)
         if fasta:
             fasta_files.append(fasta)
@@ -306,7 +316,7 @@ def process_blast(blast_assemblies, downloaded_dirpath, contigs_names, labels, b
         blast_threads = max(1, qconfig.max_threads // n_jobs)
         from joblib import Parallel, delayed
         Parallel(n_jobs=n_jobs)(delayed(parallel_blast)(
-                    assembly.fpath, labels[i], blast_res_fpath, err_fpath, blast_check_fpath, blast_threads) for i, assembly in enumerate(blast_assemblies))
+                    assembly.fpath, assembly.label, blast_res_fpath, err_fpath, blast_check_fpath, blast_threads) for i, assembly in enumerate(blast_assemblies))
 
     logger.info('')
     scores_organisms = []

@@ -605,7 +605,8 @@ def draw_meta_summary_plot(output_dirpath, labels, ref_names, all_rows, results,
         points_x = [arr_x[j][i] for i in range(len(arr_y_by_refs))]
         points_y = [arr_y_by_refs[i][j] for i in range(len(arr_y_by_refs))]
         if draw_plots:
-            ax.plot(points_x, points_y, 'ro:', color=colors[j])
+            color, ls = dict_color_and_ls[labels[j]]
+            ax.plot(points_x, points_y, 'ro:', color=color, ls=ls)
         json_points_x.append(points_x)
         json_points_y.append(points_y)
 

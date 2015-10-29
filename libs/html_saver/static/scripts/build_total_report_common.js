@@ -5,9 +5,9 @@ String.prototype.trunc =
 
 
 function getColor (hue, lightness) {
-        lightness = lightness ? lightness : 92;
-        var rgb = hslToRgb(hue / 360, 0.8, lightness / 100);
-        return '#' + rgb[0].toString(16) + rgb[1].toString(16) + rgb[2].toString(16);
+    lightness = lightness ? lightness : 92;
+    var rgb = hslToRgb(hue / 360, 0.8, lightness / 100);
+    return '#' + rgb[0].toString(16) + rgb[1].toString(16) + rgb[2].toString(16);
 }
 
 function getMedian (x) {

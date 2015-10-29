@@ -54,7 +54,7 @@ function fillOneRow(metric, mainMetrics, group_n, order, glossary, is_primary, r
     tooltipForGenomeStatistics = 'Metrics that depend on the reference length are not calculated for the combined reference.';
     tooltipForGCStatistics = 'GC content is not calculated for the combined reference.';
     if (is_primary && $.inArray(metricName, metricsNotForCombinedReference) != -1) {
-        for (var val_n = 0; val_n < values.length; val_n++) {
+        for (var val_n = 0; val_n < assembliesNames.length; val_n++) {
             table += '<td><a class="tooltip-link" rel="tooltip" title="' +
                 (metricName.indexOf('GC') == -1 ? tooltipForGenomeStatistics : tooltipForGCStatistics)  + '"> ... </a></td>';
         }
@@ -151,6 +151,12 @@ function buildGenomeTable(reports, group_n, numColumns) {
     }
 
     tableGenome += '</table>';
+    tableGenome += '<br>';
+    tableGenome += '<hr>';
+    tableGenome +=
+            '<span class="metric-name">' +
+                '<a href="not_aligned/report.html">' + 'Not aligned contigs' + '</a>' +
+            '</span>';
 
     tableGenome += '</div>';
     return tableGenome;

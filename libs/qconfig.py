@@ -38,8 +38,8 @@ long_options = "output-dir= save-json-to= genes= operons= reference= contig-thre
                "gene-thresholds= err-fpath= save-json gage eukaryote glimmer no-plots no-html no-check no-check-meta combined-ref no-gc help debug "\
                "ambiguity-usage= scaffolds threads= min-cluster= min-alignment= est-ref-size= use-all-alignments gene-finding "\
                "strict-NA meta labels= test help-hidden no-snps test-no-ref fast max-ref-number= extensive-mis-size= plots-format= " \
-               "references-list=".split()
-short_options = "o:G:O:R:t:m:J:jehda:c:ufl:Lx:i:s"
+               "references-list= bed-file= 1= 2= 12=".split()
+short_options = "o:G:O:R:t:m:J:jehda:c:ufl:Lx:i:s1:2:"
 
 # default values for options
 contig_thresholds = "0,1000,5000,10000,25000,50000"

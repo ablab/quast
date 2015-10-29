@@ -50,6 +50,16 @@ class Misassembly:
     SCAFFOLD_GAP = 5
 
 
+class StructuralVariations(object):
+    def __init__(self):
+        self.inversions = []
+        self.relocations = []
+        self.translocations = []
+
+    def get_count(self):
+        return len(self.inversions) + len(self.relocations) + len(self.translocations)
+
+
 class Mapping(object):
     def __init__(self, s1, e1, s2, e2, len1, len2, idy, ref, contig):
         self.s1, self.e1, self.s2, self.e2, self.len1, self.len2, self.idy, self.ref, self.contig = s1, e1, s2, e2, len1, len2, idy, ref, contig
@@ -165,7 +175,7 @@ def check_nucmer_successful_check(fpath, contigs_fpath, ref_fpath):
     return True
 
 
-def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_fpath, old_contigs_fpath, parallel_by_chr):
+def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_fpath, old_contigs_fpath, bed_fpath, parallel_by_chr):
     assembly_label = qutils.label_from_fpath_for_fname(contigs_fpath)
 
     logger.info('  ' + qutils.index_to_str(index) + assembly_label)
@@ -401,14 +411,66 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
         strand1 = (align1.s2 < align1.e2)
         strand2 = (align2.s2 < align2.e2)
         inconsistency = distance_on_reference - distance_on_contig
-
         aux_data = {"inconsistency": inconsistency, "distance_on_contig": distance_on_contig,
-                    "misassembly_internal_overlap": misassembly_internal_overlap, "cyclic_moment": cyclic_moment}
+                    "misassembly_internal_overlap": misassembly_internal_overlap, "cyclic_moment": cyclic_moment,
+                    "is_sv": False}
+        if region_struct_variations:
+            #check if it is structural variation
+            is_sv = check_sv(align1, align2, inconsistency, region_struct_variations)
+            if is_sv:
+                aux_data['is_sv'] = True
+                return False, aux_data
         # different chromosomes or large inconsistency (a gap or an overlap) or different strands
         if align1.ref != align2.ref or abs(inconsistency) > smgap or (strand1 != strand2):
             return True, aux_data
         else:
             return False, aux_data
+
+    def check_sv(align1, align2, inconsistency, region_struct_variations):
+        max_error = min(2 * smgap, max(smgap, inconsistency * 0.05))
+        if align2.s1 < align1.s1:
+            align1, align2 = align2, align1
+        if align1.ref != align2.ref:
+            variations = region_struct_variations.translocations
+        elif (align1.s2 < align1.e2) != (align2.s2 < align2.e2) and abs(inconsistency) < smgap:
+            variations = region_struct_variations.inversions
+        else:
+            variations = region_struct_variations.relocations
+        for index, sv in enumerate(variations):
+            if abs(sv[0].e1-align1.e1) <= max_error and sv[0].ref == align1.ref:
+                if abs(sv[1].s1-align2.s1) <= max_error and sv[1].ref == align2.ref:
+                    return True
+                if align1.ref == align2.ref:  # unite large deletion
+                    prev_end = sv[1].e1
+                    index_variation = index + 1
+                    while index_variation < len(variations) and variations[index_variation][0].s1 - prev_end <= max_error and variations[index_variation][0].ref == align2.ref:
+                        sv = variations[index_variation]
+                        if abs(sv[1].s1 - align2.s1) <= max_error and sv[1].ref == align2.ref:
+                            return True
+                        prev_end = sv[1].e1
+                        index_variation += 1
+            if abs(sv[0].e1 - align2.e1) <= max_error and abs(sv[1].s1 - align1.s1) <= max_error and \
+                        sv[0].ref == align2.ref and sv[1].ref == align1.ref:
+                return True
+        return False
+
+    def find_all_sv(bed_fpath):
+        if not bed_fpath:
+            return None
+        region_struct_variations = StructuralVariations()
+        f = open(bed_fpath)
+        for line in f:
+            l = line.split()
+            if len(l) > 10 and not line.startswith('#'):
+                align1 = Mapping(s1=int(l[1]), e1=int(l[2]), ref=l[0], s2=None, e2=None, len1=None, len2=None, idy=None, contig=None)
+                align2 = Mapping(s1=int(l[4]), e1=int(l[5]),  ref=l[3], s2=None, e2=None, len1=None, len2=None, idy=None, contig=None)
+                if 'INV' in l[8]:
+                    region_struct_variations.inversions.append((align1, align2))
+                elif l[0] != l[3]:  # different chromosomes
+                    region_struct_variations.translocations.append((align1, align2))
+                else:
+                    region_struct_variations.relocations.append((align1, align2))
+        return region_struct_variations
 
     def exclude_internal_overlaps(align1, align2, i):
         # returns size of align1.len2 decrease (or 0 if not changed). It is important for cur_aligned_len calculation
@@ -472,7 +534,8 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
             return False
         return gap_in_contig.count('N')/len(gap_in_contig) > 0.95
 
-    def process_misassembled_contig(sorted_aligns, cyclic, aligned_lengths, region_misassemblies, reg_lens, ref_aligns, ref_features, contig_seq, references_misassemblies):
+    def process_misassembled_contig(sorted_aligns, cyclic, aligned_lengths, region_misassemblies, reg_lens, ref_aligns,
+                                    ref_features, contig_seq, references_misassemblies, region_struct_variations, misassemblies_matched_sv):
         misassembly_internal_overlap = 0
         prev = sorted_aligns[0]
         cur_aligned_length = prev.len2
@@ -490,11 +553,14 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
             distance_on_contig = aux_data["distance_on_contig"]
             misassembly_internal_overlap += aux_data["misassembly_internal_overlap"]
             cyclic_moment = aux_data["cyclic_moment"]
+            is_sv = aux_data["is_sv"]
 
             ref_aligns.setdefault(sorted_aligns[i].ref, []).append(sorted_aligns[i])
             print >> coords_filtered_file, str(prev)
-
-            if is_extensive_misassembly:
+            if is_sv:
+                print >> planta_out_f, '\t\t\t  Fake misassembly (caused by structural variations of genome) between these two alignments'
+                misassemblies_matched_sv += 1
+            if is_extensive_misassembly and not is_sv:
                 if qconfig.scaffolds and abs(inconsistency) <= qconfig.scaffolds_gap_threshold and is_gap_filled_ns(contig_seq, sorted_aligns[i], sorted_aligns[i+1]) \
                     and sorted_aligns[i].ref == sorted_aligns[i+1].ref and (sorted_aligns[i].s2 < sorted_aligns[i].e2) == (sorted_aligns[i+1].s2 < sorted_aligns[i+1].e2):
                     print >> planta_out_f, '\t\t\t  Fake misassembly between these two alignments: scaffold gap size misassembly,',
@@ -536,7 +602,7 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
                                                                               sorted_aligns[i+1].s2, sorted_aligns[i+1].e2)
                     ref_features.setdefault(sorted_aligns[i].ref, {})[sorted_aligns[i].e1] = 'M'
                     ref_features.setdefault(sorted_aligns[i+1].ref, {})[sorted_aligns[i+1].e1] = 'M'
-            else:
+            elif not is_sv:
                 if inconsistency == 0 and cyclic_moment:
                     print >> planta_out_f, '\t\t\t  Fake misassembly (caused by linear representation of circular genome) between these two alignments'
                 elif abs(inconsistency) <= qconfig.MAX_INDEL_LENGTH and \
@@ -591,7 +657,7 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
                                                          "contig length (contig: %s, len: %d, aligned: %d)!" % \
                                                          (sorted_aligns[0].contig, contig_aligned_length, len(contig_seq))
 
-        return is_misassembled, misassembly_internal_overlap, references_misassemblies, indels_info
+        return is_misassembled, misassembly_internal_overlap, references_misassemblies, indels_info, misassemblies_matched_sv
     #### end of aux. functions ###
 
     # Loading the reference sequences
@@ -676,6 +742,9 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
         references_misassemblies[ref] = 0
 
     aligned_lengths = []
+
+    misassemblies_matched_sv = 0
+    region_struct_variations = find_all_sv(bed_fpath)
 
     # for counting SNPs and indels (both original (.all_snps) and corrected from Nucmer's local misassemblies)
     total_indels_info = IndelsInfo()
@@ -984,8 +1053,8 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
                         continue
 
                     ### processing misassemblies
-                    is_misassembled, current_mio, references_misassemblies, indels_info = process_misassembled_contig(sorted_aligns, cyclic,
-                        aligned_lengths, region_misassemblies, reg_lens, ref_aligns, ref_features, seq, references_misassemblies)
+                    is_misassembled, current_mio, references_misassemblies, indels_info, misassemblies_matched_sv = process_misassembled_contig(sorted_aligns, cyclic,
+                        aligned_lengths, region_misassemblies, reg_lens, ref_aligns, ref_features, seq, references_misassemblies, region_struct_variations, misassemblies_matched_sv)
                     misassembly_internal_overlap += current_mio
                     total_indels_info += indels_info
                     if is_misassembled:
@@ -1349,6 +1418,9 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
         print >> planta_out_f, '\tPotentially Misassembled Contigs (i/s translocations): %d' % contigs_with_istranslocations
     if qconfig.scaffolds and contigs_fpath not in qconfig.dict_of_broken_scaffolds:
         print >> planta_out_f, '\tScaffold gap misassemblies: %d' % region_misassemblies.count(Misassembly.SCAFFOLD_GAP)
+    if bed_fpath:
+        print >> planta_out_f, '\tFake misassemblies matched with structural variations: %d' % misassemblies_matched_sv
+
     print >> planta_out_f, '\tMisassembled Contigs: %d' % len(misassembled_contigs)
     misassembled_bases = sum(misassembled_contigs.itervalues())
     print >> planta_out_f, '\tMisassembled Contig Bases: %d' % misassembled_bases
@@ -1431,6 +1503,8 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
         total_aligned_bases = None
 
     result = {'avg_idy': avg_idy, 'region_misassemblies': region_misassemblies,
+              'region_struct_variations': region_struct_variations.get_count() if region_struct_variations else None,
+              'misassemblies_matched_sv': misassemblies_matched_sv,
               'misassembled_contigs': misassembled_contigs, 'misassembled_bases': misassembled_bases,
               'misassembly_internal_overlap': misassembly_internal_overlap,
               'unaligned': unaligned, 'partially_unaligned': partially_unaligned,
@@ -1472,13 +1546,13 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
         return NucmerStatus.OK, result, aligned_lengths
 
 
-def plantakolya_process(cyclic, nucmer_output_dirpath, contigs_fpath, i, output_dirpath, ref_fpath, parallel_by_chr=False):
+def plantakolya_process(cyclic, nucmer_output_dirpath, contigs_fpath, i, output_dirpath, ref_fpath, bed_fpath, parallel_by_chr=False):
     contigs_fpath, old_contigs_fpath = contigs_fpath
     assembly_label = qutils.label_from_fpath_for_fname(contigs_fpath)
 
     nucmer_fname = os.path.join(nucmer_output_dirpath, assembly_label)
     nucmer_is_ok, result, aligned_lengths = plantakolya(cyclic, i, contigs_fpath, nucmer_fname,
-                                                        output_dirpath, ref_fpath, old_contigs_fpath, parallel_by_chr=parallel_by_chr)
+                                                        output_dirpath, ref_fpath, old_contigs_fpath, bed_fpath, parallel_by_chr=parallel_by_chr)
 
     clear_files(contigs_fpath, nucmer_fname)
     return nucmer_is_ok, result, aligned_lengths
@@ -1491,7 +1565,7 @@ def all_required_binaries_exist(mummer_dirpath):
     return True
 
 
-def do(reference, contigs_fpaths, cyclic, output_dir, old_contigs_fpaths):
+def do(reference, contigs_fpaths, cyclic, output_dir, old_contigs_fpaths, bed_fpath=None):
     if not os.path.isdir(output_dir):
         os.mkdir(output_dir)
 
@@ -1527,18 +1601,18 @@ def do(reference, contigs_fpaths, cyclic, output_dir, old_contigs_fpaths):
     from joblib import Parallel, delayed
     if not qconfig.splitted_ref:
         statuses_results_lengths_tuples = Parallel(n_jobs=n_jobs)(delayed(plantakolya_process)(
-        cyclic, nucmer_output_dir, fname, i, output_dir, reference)
+        cyclic, nucmer_output_dir, fname, i, output_dir, reference, bed_fpath)
              for i, fname in enumerate(zip(contigs_fpaths, old_contigs_fpaths)))
     else:
         if len(contigs_fpaths) >= len(qconfig.splitted_ref):
             statuses_results_lengths_tuples = Parallel(n_jobs=n_jobs)(delayed(plantakolya_process)(
-        cyclic, nucmer_output_dir, fname, i, output_dir, reference)
+        cyclic, nucmer_output_dir, fname, i, output_dir, reference, bed_fpath)
              for i, fname in enumerate(zip(contigs_fpaths, old_contigs_fpaths)))
         else:
             statuses_results_lengths_tuples = []
             for i, contigs_fpath in enumerate(zip(contigs_fpaths, old_contigs_fpaths)):
                 statuses_results_lengths_tuples.append(plantakolya_process(cyclic, nucmer_output_dir, contigs_fpath, i,
-                                                                           output_dir, reference, parallel_by_chr=True))
+                                                                           output_dir, reference, bed_fpath, parallel_by_chr=True))
 
     # unzipping
     statuses, results, aligned_lengths = [x[0] for x in statuses_results_lengths_tuples], \
@@ -1590,6 +1664,8 @@ def do(reference, contigs_fpaths, cyclic, output_dir, old_contigs_fpaths):
 
         avg_idy = result['avg_idy']
         region_misassemblies = result['region_misassemblies']
+        region_struct_variations = result['region_struct_variations']
+        misassemblies_matched_sv = result['misassemblies_matched_sv']
         misassembled_contigs = result['misassembled_contigs']
         misassembled_bases = result['misassembled_bases']
         misassembly_internal_overlap = result['misassembly_internal_overlap']
@@ -1612,6 +1688,7 @@ def do(reference, contigs_fpaths, cyclic, output_dir, old_contigs_fpaths):
         report.add_field(reporting.Fields.MISCONTIGS, len(misassembled_contigs))
         report.add_field(reporting.Fields.MISCONTIGSBASES, misassembled_bases)
         report.add_field(reporting.Fields.MISINTERNALOVERLAP, misassembly_internal_overlap)
+        report.add_field(reporting.Fields.STRUCT_VARIATIONS, misassemblies_matched_sv)
         report.add_field(reporting.Fields.UNALIGNED, '%d + %d part' % (unaligned, partially_unaligned))
         report.add_field(reporting.Fields.UNALIGNEDBASES, (fully_unaligned_bases + partially_unaligned_bases))
         report.add_field(reporting.Fields.AMBIGUOUS, ambiguous_contigs)

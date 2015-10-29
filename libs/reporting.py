@@ -56,6 +56,8 @@ class Fields:
     MIS_LOCAL = '# local misassemblies'
     MIS_SCAFFOLDS_GAP = '# scaffold gap size misassemblies'
     CONTIGS_WITH_ISTRANSLOCATIONS = '# possibly misassembled contigs'
+    ### structural variations
+    STRUCT_VARIATIONS = '# structural variations'
 
     # Unaligned
     UNALIGNED = '# unaligned contigs'
@@ -115,7 +117,8 @@ class Fields:
 
     ### content and order of metrics in MAIN REPORT (<quast_output_dir>/report.txt, .tex, .tsv):
     order = [NAME, CONTIGS__FOR_THRESHOLDS, TOTALLENS__FOR_THRESHOLDS, CONTIGS, LARGCONTIG, TOTALLEN, REFLEN, ESTREFLEN, GC, REFGC,
-             N50, NG50, N75, NG75, L50, LG50, L75, LG75, MISASSEMBL, MISCONTIGS, MISCONTIGSBASES, MISLOCAL, MIS_SCAFFOLDS_GAP, UNALIGNED, UNALIGNEDBASES, MAPPEDGENOME, DUPLICATION_RATIO,
+             N50, NG50, N75, NG75, L50, LG50, L75, LG75, MISASSEMBL, MISCONTIGS, MISCONTIGSBASES, MISLOCAL, MIS_SCAFFOLDS_GAP,
+             STRUCT_VARIATIONS, UNALIGNED, UNALIGNEDBASES, MAPPEDGENOME, DUPLICATION_RATIO,
              UNCALLED_PERCENT, SUBSERROR, INDELSERROR, GENES, OPERONS, PREDICTED_GENES_UNIQUE, PREDICTED_GENES,
              LARGALIGN, NA50, NGA50, NA75, NGA75, LA50, LGA50, LA75, LGA75, ]
 
@@ -123,7 +126,7 @@ class Fields:
     misassemblies_order = [NAME, MIS_ALL_EXTENSIVE, MIS_RELOCATION, MIS_TRANSLOCATION, MIS_INVERTION,
                            MIS_ISTRANSLOCATIONS, CONTIGS_WITH_ISTRANSLOCATIONS,
                            MIS_EXTENSIVE_CONTIGS, MIS_EXTENSIVE_BASES,
-                           MIS_LOCAL, MIS_SCAFFOLDS_GAP, MISMATCHES,
+                           MIS_LOCAL, MIS_SCAFFOLDS_GAP, STRUCT_VARIATIONS, MISMATCHES,
                            INDELS, MIS_SHORT_INDELS, MIS_LONG_INDELS, INDELSBASES]
 
     # content and order of metrics in DETAILED UNALIGNED REPORT (<quast_output_dir>/contigs_reports/unaligned_report.txt, .tex, .tsv)
@@ -173,7 +176,7 @@ class Fields:
                            MIS_RELOCATION, MIS_TRANSLOCATION, MIS_INVERTION,
                            MIS_ISTRANSLOCATIONS, CONTIGS_WITH_ISTRANSLOCATIONS,
                            MIS_EXTENSIVE_CONTIGS, MIS_EXTENSIVE_BASES,
-                           MIS_LOCAL, MIS_SCAFFOLDS_GAP]),
+                           MIS_LOCAL, MIS_SCAFFOLDS_GAP, STRUCT_VARIATIONS]),
 
         ('Unaligned', [UNALIGNED_FULL_CNTGS, UNALIGNED_FULL_LENGTH, UNALIGNED_PART_CNTGS,
                        UNALIGNED_PART_WITH_MISASSEMBLY, UNALIGNED_PART_SIGNIFICANT_PARTS,
@@ -220,7 +223,7 @@ class Fields:
              LA50, LGA50, LA75, LGA75, DUPLICATION_RATIO, INDELS, INDELSERROR, MISMATCHES, SUBSERROR,
              MIS_SHORT_INDELS, MIS_LONG_INDELS, INDELSBASES],
         Quality.EQUAL:
-            [REFLEN, ESTREFLEN, GC, REFGC],
+            [REFLEN, ESTREFLEN, GC, REFGC, STRUCT_VARIATIONS],
         }
 
     #for name, metrics in filter(lambda (name, metrics): name in ['Misassemblies', 'Unaligned', 'Ambiguous'], grouped_order):

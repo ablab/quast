@@ -28,7 +28,7 @@ from site import addsitedir
 addsitedir(os.path.join(qconfig.LIBS_LOCATION, 'site_packages'))
 
 import quast
-from libs import contigs_analyzer
+from libs import contigs_analyzer, reads_analyzer
 
 COMBINED_REF_FNAME = 'combined_reference.fasta'
 
@@ -375,7 +375,8 @@ def main(args):
 
     ref_fpaths = []
     combined_ref_fpath = ''
-
+    reads_fpath_f = ''
+    reads_fpath_r = ''
     output_dirpath = None
 
     labels = None
@@ -489,6 +490,12 @@ def main(args):
             html_report = False
         elif opt == '--plots-format':
             pass
+        elif opt in ('-1', '--reads1'):
+            reads_fpath_f = arg
+            quast_py_args = __remove_from_quast_py_args(quast_py_args, opt, arg)
+        elif opt in ('-2', '--reads2'):
+            reads_fpath_r = arg
+            quast_py_args = __remove_from_quast_py_args(quast_py_args, opt, arg)
         else:
             logger.error('Unknown option: %s. Use -h for help.' % (opt + ' ' + arg), to_stderr=True, exit_with_code=2)
 
@@ -591,6 +598,18 @@ def main(args):
 
     # Running combined reference
     combined_output_dirpath = os.path.join(output_dirpath, qconfig.combined_output_name)
+
+    reads_fpaths = []
+    if reads_fpath_f:
+        reads_fpaths.append(reads_fpath_f)
+    if reads_fpath_r:
+        reads_fpaths.append(reads_fpath_r)
+    if reads_fpaths:
+        bed_fpath = reads_analyzer.do(combined_ref_fpath, contigs_fpaths, reads_fpaths, ref_fpaths, os.path.join(combined_output_dirpath, 'structural_variations'))
+        if bed_fpath:
+            quast_py_args += ['--bed-file']
+            quast_py_args += [bed_fpath]
+
     quast_py_args += ['--combined-ref']
     run_name = 'for the combined reference'
     logger.info()

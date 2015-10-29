@@ -17,7 +17,7 @@ import re
 from libs import qconfig
 qconfig.check_python_version()
 
-from libs import qutils, fastaparser
+from libs import qutils, fastaparser, reads_analyzer
 from libs.qutils import assert_file_exists
 
 from libs.log import get_logger
@@ -446,6 +446,9 @@ def main(args):
     ref_fpath = ''
     genes_fpaths = []
     operons_fpaths = []
+    bed_fpath = None
+    reads_fpath_f = ''
+    reads_fpath_r = ''
 
     # Yes, this is a code duplicating. But OptionParser is deprecated since version 2.7.
     for opt, arg in options:
@@ -581,6 +584,12 @@ def main(args):
 
         elif opt == '--combined-ref':
             qconfig.is_combined_ref = True
+        elif opt in ('-1', '--reads1'):
+            reads_fpath_f = arg
+        elif opt in ('-2', '--reads2'):
+            reads_fpath_r = arg
+        elif opt == '--bed-file':
+            bed_fpath = arg
         else:
             logger.error('Unknown option: %s. Use -h for help.' % (opt + ' ' + arg), to_stderr=True, exit_with_code=2)
 
@@ -647,6 +656,14 @@ def main(args):
 
     qconfig.assemblies_num = len(contigs_fpaths)
 
+    reads_fpaths = []
+    if reads_fpath_f:
+        reads_fpaths.append(reads_fpath_f)
+    if reads_fpath_r:
+        reads_fpaths.append(reads_fpath_r)
+    if reads_fpaths:
+        bed_fpath = reads_analyzer.do(ref_fpath, contigs_fpaths, reads_fpaths, None, os.path.join(output_dirpath, 'structural_variations'))
+
     if not contigs_fpaths:
         logger.error("None of the assembly files contains correct contigs. "
               "Please, provide different files or decrease --min-contig threshold.",
@@ -698,7 +715,7 @@ def main(args):
         ########################################################################
         from libs import contigs_analyzer
         nucmer_statuses, aligned_lengths_per_fpath = contigs_analyzer.do(
-            ref_fpath, contigs_fpaths, qconfig.prokaryote, os.path.join(output_dirpath, 'contigs_reports'), old_contigs_fpaths)
+            ref_fpath, contigs_fpaths, qconfig.prokaryote, os.path.join(output_dirpath, 'contigs_reports'), old_contigs_fpaths, bed_fpath)
         for contigs_fpath in contigs_fpaths:
             if nucmer_statuses[contigs_fpath] == contigs_analyzer.NucmerStatus.OK:
                 aligned_contigs_fpaths.append(contigs_fpath)

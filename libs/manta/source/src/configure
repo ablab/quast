@@ -1,0 +1,348 @@
+#!/usr/bin/env bash
+#
+# Manta - Structural Variant and Indel Caller
+# Copyright (c) 2013-2015 Illumina, Inc.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+
+
+#
+# Top level configuration file
+#
+
+set -o nounset
+set -o pipefail
+
+
+usage()
+{
+    cat <<EOF
+
+Manta SV caller build configuration
+
+Usage: $0 [options]
+
+Options: [defaults in brackets after descriptions]
+
+Configuration:
+  --help                  print this message
+  --verbose               display more information (enables CMAKE_VERBOSE_MAKEFILE)
+  --jobs=N                build cmake and boost in N parallel jobs if needed [$parallel_jobs]
+  --with-cmake=CMAKE      specify the cmake executable [cmake]
+  --with-eclipse          create the eclipse project files
+  --with-version-control  create the eclipse project in the source tree to
+                          allow version control within eclipse
+  --build-type=TYPE       specify the build type for CMake (affects compiler
+                          options). Allowed values are "Debug", "Release",
+                          "RelWithDebInfo", "ASan" [$build_type]
+                            Debug: No optimization and all debug symbols
+                            Release: All portable optimization
+                            RelWithDebInfo: Most optimizations, try to keep stack trace info
+                            ASan: Light optimization with google addresss sanitizer on
+  --package-type=type     enables generation of deployment package target (make package)
+                          Valid types are: rpm, deb, tgz
+
+Directory and file names:
+  --prefix=PREFIX         install files in tree rooted at PREFIX
+                          [$prefix_dir]
+
+Some influential environment variables:
+  BOOST_ROOT       root location of the boost library and headers
+  CC               C compiler command
+  CXX              C++ compiler command
+
+Use these variables to override the choices made by 'configure' or to help
+it to find libraries and programs with nonstandard names/locations. Typically
+CC and CXX must be provided together to refer to the c and c++ front-ends of
+the same compiler to ensure a successful build.
+
+EOF
+    exit 2
+
+#  CXXFLAGS         C++ compiler flags
+#  LDFLAGS          linker flags, e.g. -L<lib dir> if you have libraries in a
+#                   nonstandard directory <lib dir>
+#  CPPFLAGS         C/C++ preprocessor flags, e.g. -I<include dir> if you have
+#                   headers in a nonstandard directory <include dir>
+#  CMAKE_OPTIONS    CMake command line options
+}
+
+
+#
+# utilities:
+#
+clog ()
+{
+    echo $@ 1>&2
+}
+
+# rel to absolute path. works for existing paths only
+rel2abs ()
+{
+    (cd "$1" && pwd -P)
+}
+
+
+# Helper function to fix windows paths.
+fix_slashes ()
+{
+    echo "$1" | sed 's/\\/\//g'
+}
+
+
+create_path ()
+{
+    mkdir -p "$1" || exit 1
+    rel2abs "$1" || exit 1
+}
+
+
+
+#
+# Detect system and directory information.
+#
+system="`uname`"
+processor="`uname -p`"
+arch="`uname -a`"
+source_dir="`echo $0 | sed -n '/\//{s/\/[^\/]*$//;p;}'`"
+source_dir="$(rel2abs $source_dir)"
+redist_dir="${source_dir}/../redist"
+src_bootstrap_dir="${source_dir}/cmake/bootstrap"
+build_dir="$(pwd -P)"
+
+
+# Determine whether this is a MinGW environment.
+system_mingw=false
+if echo "${system}" | grep MINGW >/dev/null 2>&1; then
+    system_mingw=true
+fi
+
+# Determine whether this is OS X
+system_darwin=false
+if echo "${system}" | grep Darwin >/dev/null 2>&1; then
+    system_darwin=true
+fi
+
+# Choose the default install prefix.
+get_default_prefix() {
+  if ${system_mingw}; then
+    if [ "x${PROGRAMFILES}" != "x" ]; then
+        echo `fix_slashes "${PROGRAMFILES}/CMake"`
+    elif [ "x${ProgramFiles}" != "x" ]; then
+        echo `fix_slashes "${ProgramFiles}/CMake"`
+    elif [ "x${SYSTEMDRIVE}" != "x" ]; then
+        echo `fix_slashes "${SYSTEMDRIVE}/Program Files/CMake"`
+    elif [ "x${SystemDrive}" != "x" ]; then
+        echo `fix_slashes "${SystemDrive}/Program Files/CMake"`
+    else
+        echo "c:/Program Files/CMake"
+    fi
+  else
+    echo "/usr/local"
+  fi
+}
+
+
+#
+# defaults:
+#
+prefix_dir=$(get_default_prefix)
+build_type=Release
+cmake=
+parallel_jobs=1
+cmake_generator="Unix Makefiles"
+is_verbose=false
+package_type=none
+if [ -z "${CMAKE_OPTIONS+xxx}" ]; then CMAKE_OPTIONS=""; fi
+
+# Parse arguments
+for a in "$@"; do
+    if   echo $a | grep "^--prefix=" > /dev/null 2> /dev/null; then
+        prefix_dir=`echo $a | sed "s/^--prefix=//"`
+        prefix_dir=`fix_slashes "${prefix_dir}"`
+    elif echo $a | grep "^--help" > /dev/null 2> /dev/null; then
+        usage
+    elif echo $a | grep "^-h" > /dev/null 2> /dev/null; then
+        usage
+    elif echo $a | grep "^--with-cmake=" > /dev/null 2> /dev/null; then
+        cmake=`echo $a | sed "s/^--with-cmake=//"`
+        cmake=`fix_slashes "${cmake}"`
+    elif echo $a | grep "^--build-type=" > /dev/null 2> /dev/null; then
+        build_type=`echo $a | sed "s/^--build-type=//"`
+    elif echo $a | grep "^--with-eclipse" > /dev/null 2> /dev/null; then
+        cmake_generator="Eclipse CDT4 - Unix Makefiles"
+    elif echo $a | grep "^--with-version-control" > /dev/null 2> /dev/null; then
+        CMAKE_OPTIONS="$CMAKE_OPTIONS -DECLIPSE_CDT4_GENERATE_SOURCE_PROJECT=TRUE"
+    elif echo $a | grep "^--verbose" > /dev/null 2> /dev/null; then
+        is_verbose=true
+    elif echo $a | grep "^--package-type=" > /dev/null 2> /dev/null; then
+        package_type=`echo $a | sed "s/^--package-type=//"`
+    elif echo $a | grep "^--jobs=" > /dev/null 2> /dev/null; then
+        parallel_jobs=`echo $a | sed "s/^--jobs=//"`
+    else
+        clog "ERROR: unknown argument: $a"
+        exit 2
+    fi
+done
+
+
+#
+# prevent in-source builds (but allow usage to be triggered first)
+#
+if [ "$source_dir" == "$build_dir" ]; then
+    cat <<EOF 1>&2
+
+ERROR: This project cannot be built in the source directory. Please run
+       configuration in a separate directory. Example:
+
+    """
+    mkdir ../build
+    cd ../build
+    \${MANTA_ROOT_DIR}/src/configure [configure_options]
+    """
+
+EOF
+    exit 1
+fi
+
+#
+# setup cmake options
+#
+CMAKE_OPTIONS="$CMAKE_OPTIONS -DCMAKE_BUILD_TYPE:STRING=${build_type}"
+CMAKE_OPTIONS="$CMAKE_OPTIONS -DCMAKE_PARALLEL:STRING=${parallel_jobs}"
+
+if $is_verbose; then
+    CMAKE_OPTIONS="$CMAKE_OPTIONS -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DBoost_DEBUG:BOOL=ON"
+fi
+
+
+is_package=true
+if   [ "deb" == "${package_type}" ]; then
+    CMAKE_OPTIONS="$CMAKE_OPTIONS \
+        -DCPACK_GENERATOR:STRING=DEB \
+        -DCPACK_SYSTEM_NAME:STRING=${system}-$processor \
+        -DCPACK_DEBIAN_PACKAGE_ARCHITECTURE:STRING='`dpkg --print-architecture`'"
+
+elif [ "rpm" == "${package_type}" ]; then
+    CMAKE_OPTIONS="$CMAKE_OPTIONS \
+        -DCPACK_GENERATOR:STRING=RPM \
+        -DCPACK_SYSTEM_NAME:STRING=${system}-$processor"
+
+elif [ "tgz" == "${package_type}" ]; then
+    CMAKE_OPTIONS="$CMAKE_OPTIONS \
+        -DCPACK_GENERATOR:STRING=TGZ"
+
+elif [ "none" != "${package_type}" ]; then
+	clog "ERROR: unrecognized package option: $package_type"
+	exit 1
+
+else
+    is_package=false
+    if [ "x${prefix_dir}" != "x" ]; then prefix_dir=$(create_path "${prefix_dir}") || exit 1; fi
+
+fi
+
+CMAKE_OPTIONS="-DCMAKE_INSTALL_PREFIX:PATH=\"$prefix_dir\" $CMAKE_OPTIONS"
+
+
+
+# create the build directory if necessary
+if ! [ -d "${build_dir}" ]; then
+    mkdir "${build_dir}"
+    if [ "$?" != 0 ]; then
+        clog "ERROR: Couldn't create the build directory: ${build_dir}"
+        exit 1
+    fi
+fi
+
+
+
+#
+# install cmake if required:
+#
+cmake_install_dir="${build_dir}/bootstrap/cmake"
+if [ "x${cmake}" == "x" ] ; then
+    cmake=$(bash ${src_bootstrap_dir}/installCmake.bash ${redist_dir} ${cmake_install_dir} ${parallel_jobs})
+
+    if [ "$?" != "0" ]; then
+        clog "ERROR: Failed to verify or install cmake"
+        exit 1
+    fi
+
+    bootstrapped_cmake="${cmake_install_dir}/bin/cmake"
+    if [ $cmake == $bootstrapped_cmake ]; then
+        echo "Using installed cmake: $cmake"
+    else
+        echo "Using existing cmake: $cmake"
+    fi
+fi
+
+
+# display information if required
+if $is_verbose; then
+    cat<<EOF
+Source  directory: ${source_dir}
+Prefix  directory: ${prefix_dir}
+Build   directory: ${build_dir}
+Cmake  executable: ${cmake}
+
+EOF
+fi
+
+
+
+#
+# finally, invoke cmake
+#
+cmake_command="${cmake} -H\"${source_dir}\" -B\"${build_dir}\" -G\"${cmake_generator}\" ${CMAKE_OPTIONS}"
+
+if $is_verbose || $is_package ; then
+    cat<<EOF
+
+Running on: $arch
+Configuring the build directory with:
+    $cmake_command
+EOF
+fi
+
+eval $cmake_command
+
+
+if [ "$?" != 0 ]; then
+    cat<<EOF 1>&2
+Couldn't configure the project:
+
+$cmake_command
+
+Moving CMakeCache.txt to CMakeCache.txt.removed
+
+EOF
+    if [ -f ${build_dir}/CMakeCache.txt ]; then
+        rm -f ${build_dir}/CMakeCache.txt.removed && mv ${build_dir}/CMakeCache.txt ${build_dir}/CMakeCache.txt.removed
+    fi
+    exit 1
+fi
+
+
+cat<<EOF
+
+The build directory ${build_dir} was configured successfully
+
+Type "make" at the top level of the root directory to build
+
+EOF
+
+

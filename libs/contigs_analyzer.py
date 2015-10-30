@@ -427,32 +427,44 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
             return False, aux_data
 
     def check_sv(align1, align2, inconsistency, region_struct_variations):
-        max_error = min(2 * smgap, max(smgap, inconsistency * 0.05))
+        max_error = smgap / 2  # min(2 * smgap, max(smgap, inconsistency * 0.05))
+        max_gap = smgap / 4
         if align2.s1 < align1.s1:
             align1, align2 = align2, align1
-        if align1.ref != align2.ref:
-            variations = region_struct_variations.translocations
+        if align1.ref != align2.ref:  # translocation
+            for sv in region_struct_variations.translocations:
+                if sv[0].ref == align1.ref and sv[1].ref == align2.ref and \
+                                abs(sv[0].e1-align1.e1) <= max_error and \
+                                abs(sv[1].s1-align2.s1) <= max_error:
+                    return True
+                if sv[0].ref == align2.ref and sv[1].ref == align1.ref and \
+                                abs(sv[0].e1-align2.e1) <= max_error and \
+                                abs(sv[1].s1-align1.s1) <= max_error:
+                    return True
         elif (align1.s2 < align1.e2) != (align2.s2 < align2.e2) and abs(inconsistency) < smgap:
-            variations = region_struct_variations.inversions
+            for sv in region_struct_variations.inversions:
+                if align1.ref == sv[0].ref and align1.ref == sv[1].ref and \
+                                abs(sv[0].e1-align1.e1) <= max_error and \
+                                abs(sv[1].s1-align2.e1) <= max_error:  # here should be "e1", not "s1"!
+                    return True
         else:
             variations = region_struct_variations.relocations
-        for index, sv in enumerate(variations):
-            if abs(sv[0].e1-align1.e1) <= max_error and sv[0].ref == align1.ref:
-                if abs(sv[1].s1-align2.s1) <= max_error and sv[1].ref == align2.ref:
-                    return True
-                # unite large deletion (relocations only)
-                if align1.ref == align2.ref:
-                    prev_end = sv[1].e1
-                    index_variation = index + 1
-                    while index_variation < len(variations) and variations[index_variation][0].s1 - prev_end <= max_error and variations[index_variation][0].ref == align2.ref:
-                        sv = variations[index_variation]
-                        if abs(sv[1].s1 - align2.s1) <= max_error and sv[1].ref == align2.ref:
-                            return True
+            for index, sv in enumerate(variations):
+                if abs(sv[0].e1-align1.e1) <= max_error and sv[0].ref == align1.ref:
+                    if abs(sv[1].s1-align2.s1) <= max_error and sv[1].ref == align2.ref:
+                        return True
+                    # unite large deletion (relocations only)
+                    if align1.ref == align2.ref:
                         prev_end = sv[1].e1
-                        index_variation += 1
-            if abs(sv[0].e1 - align2.e1) <= max_error and abs(sv[1].s1 - align1.s1) <= max_error and \
-                        sv[0].ref == align2.ref and sv[1].ref == align1.ref:
-                return True
+                        index_variation = index + 1
+                        while index_variation < len(variations) and \
+                                                variations[index_variation][0].s1 - prev_end <= max_gap and \
+                                                variations[index_variation][0].ref == align2.ref:
+                            sv = variations[index_variation]
+                            if abs(sv[1].s1 - align2.s1) <= max_error and sv[1].ref == align2.ref:
+                                return True
+                            prev_end = sv[1].e1
+                            index_variation += 1
         return False
 
     def find_all_sv(bed_fpath):

@@ -1,7 +1,5 @@
-import pipes
 import shutil
-import stat
-import subprocess
+import copy
 from libs import reporting, qconfig, qutils, fastaparser, contigs_analyzer
 
 from libs.log import get_logger
@@ -14,6 +12,21 @@ bowtie_dirpath = os.path.join(qconfig.LIBS_LOCATION, 'bowtie2')
 samtools_dirpath = os.path.join(qconfig.LIBS_LOCATION, 'samtools')
 manta_dirpath = os.path.join(qconfig.LIBS_LOCATION, 'manta')
 manta_bin_dirpath = os.path.join(qconfig.LIBS_LOCATION, 'manta', 'build/bin')
+
+
+class QuastDeletion(object):
+    CONFIDENCE_INTERVAL = 0
+    MERGE_GAP = 500  # for merging neighbouring deletions into superdeletions
+
+    def __init__(self, ref, start, end):
+        self.ref, self.start, self.end = ref, start, end
+        self.id = 'QuastDEL'
+
+    def __str__(self):
+        return '\t'.join([self.ref, self.start - self.CONFIDENCE_INTERVAL, self.start + self.CONFIDENCE_INTERVAL,
+                          self.ref, self.end - self.CONFIDENCE_INTERVAL, self.end + self.CONFIDENCE_INTERVAL,
+                          self.id] + ['-'] * 4)
+
 
 def process_one_ref(cur_ref_fpath, output_dirpath, err_path):
     ref = qutils.name_from_fpath(cur_ref_fpath)
@@ -49,6 +62,7 @@ def process_one_ref(cur_ref_fpath, output_dirpath, err_path):
     vcfToBedpe.vcfToBedpe(open(unpacked_fpath), open(ref_bed_fpath, 'w'))
     return ref_bed_fpath
 
+
 def create_bed_files(main_ref_fpath, meta_ref_fpaths, ref_labels, deletions, output_dirpath, bed_fpath, err_path):
     logger.info('  Searching structural variations...')
     if meta_ref_fpaths:
@@ -61,9 +75,9 @@ def create_bed_files(main_ref_fpath, meta_ref_fpaths, ref_labels, deletions, out
         bed_fpath = process_one_ref(main_ref_fpath, output_dirpath, err_path)
     bed_file = open(bed_fpath, 'a')
     for deletion in deletions:
-        info = deletion + ['0'] * 5
-        bed_file.write(' '.join(info) + '\n')
+        bed_file.write(str(deletion) + '\n')
     return bed_fpath
+
 
 def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpaths, output_dirpath, res_path, log_path, err_path):
     ref_name = qutils.name_from_fpath(main_ref_fpath)
@@ -95,7 +109,7 @@ def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpat
     logger.info('  Done.')
     os.chdir(prev_dir)
     if not os.path.exists(sam_fpath) or os.path.getsize(sam_fpath) == 0:
-        logger.error('  Failed running Bowtie2 for reference. See ' + log_path + ' for information.')
+        logger.error('  Failed running Bowtie2 for the reference. See ' + log_path + ' for information.')
         logger.info('  Failed searching structural variations.')
         return None
     logger.info('  Sorting SAM-file...')
@@ -138,7 +152,7 @@ def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpat
                 if len(line) > 5:
                     pos = int(line[3])
                     if pos - prev_pos > qconfig.extensive_misassembly_threshold and prev_ref == line[2]:
-                        deletions.append([line[2], str(prev_pos), str(prev_pos + len(line[9])), line[2], str(pos), str(pos + len(line[9]))])
+                        deletions.append(QuastDeletion(line[2], prev_pos + len(line[9]), pos))
                     prev_pos = pos
                     prev_ref = line[2]
                     if meta_ref_fpaths:
@@ -156,19 +170,22 @@ def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpat
         logger.info('  Failed searching structural variations.')
         return None
 
+
 def bin_fpath(fname):
     return os.path.join(bowtie_dirpath, fname)
 
+
 def samtools_fpath(fname):
     return os.path.join(samtools_dirpath, fname)
+
 
 def all_required_binaries_exist(bin_dirpath, binary):
     if not os.path.isfile(os.path.join(bin_dirpath, binary)):
         return False
     return True
 
-def do(ref_fpath, contigs_fpaths, reads_fpaths, meta_ref_fpaths, output_dir, interleaved=False):
 
+def do(ref_fpath, contigs_fpaths, reads_fpaths, meta_ref_fpaths, output_dir, interleaved=False):
     logger.print_timestamp()
     logger.info('Running Structural Variants caller...')
 
@@ -253,5 +270,3 @@ def do(ref_fpath, contigs_fpaths, reads_fpaths, meta_ref_fpaths, output_dir, int
 
     logger.info('Done.')
     return bed_fpath
-
-

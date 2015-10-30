@@ -440,7 +440,8 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
             if abs(sv[0].e1-align1.e1) <= max_error and sv[0].ref == align1.ref:
                 if abs(sv[1].s1-align2.s1) <= max_error and sv[1].ref == align2.ref:
                     return True
-                if align1.ref == align2.ref:  # unite large deletion
+                # unite large deletion (relocations only)
+                if align1.ref == align2.ref:
                     prev_end = sv[1].e1
                     index_variation = index + 1
                     while index_variation < len(variations) and variations[index_variation][0].s1 - prev_end <= max_error and variations[index_variation][0].ref == align2.ref:

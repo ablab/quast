@@ -78,7 +78,7 @@ BUILT_TEST_PROGRAMS = \
 	test/split/test_parse_args \
 	test/vcf-miniview
 
-all: $(PROGRAMS) $(BUILT_MISC_PROGRAMS) $(BUILT_TEST_PROGRAMS)
+all: $(PROGRAMS) $(BUILT_MISC_PROGRAMS) #$(BUILT_TEST_PROGRAMS)
 
 
 # Adjust $(HTSDIR) to point to your top-level htslib directory

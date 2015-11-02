@@ -427,7 +427,7 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
             return False, aux_data
 
     def check_sv(align1, align2, inconsistency, region_struct_variations):
-        max_error = smgap / 2  # min(2 * smgap, max(smgap, inconsistency * 0.05))
+        max_error = smgap / 4  # min(2 * smgap, max(smgap, inconsistency * 0.05))
         max_gap = smgap / 4
         if align2.s1 < align1.s1:
             align1, align2 = align2, align1

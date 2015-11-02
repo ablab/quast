@@ -1,6 +1,7 @@
 import shutil
 import copy
-from libs import reporting, qconfig, qutils, fastaparser, contigs_analyzer
+from libs import reporting, qconfig, qutils, contigs_analyzer
+from qutils import is_non_empty_file
 
 from libs.log import get_logger
 
@@ -14,17 +15,73 @@ manta_dirpath = os.path.join(qconfig.LIBS_LOCATION, 'manta')
 manta_bin_dirpath = os.path.join(qconfig.LIBS_LOCATION, 'manta', 'build/bin')
 
 
-class QuastDeletion(object):
-    CONFIDENCE_INTERVAL = 0
-    MERGE_GAP = 500  # for merging neighbouring deletions into superdeletions
+class Mapping(object):
+    MIN_MAP_QUALITY = 50  # for distiguishing "good" reads and "bad" ones
 
-    def __init__(self, ref, start, end):
-        self.ref, self.start, self.end = ref, start, end
+    def __init__(self, fields):
+        self.ref, self.start, self.mapq, self.ref_next, self.len = \
+            fields[2], int(fields[3]), fields[4], fields[6], len(fields[9])
+        self.end = self.start + self.len - 1  # actually not always true because of indels
+
+    @staticmethod
+    def parse(line):
+        if line.split('\t') != 11:
+            return None
+        mapping = Mapping(line.split('\t'))
+        return mapping
+
+
+class QuastDeletion(object):
+    ''' describes situtations: GGGGBBBBBNNNNNNNNNNNNBBBBBBGGGGGG, where
+    G -- "good" read (high mapping quality)
+    B -- "bad" read (low mapping quality)
+    N -- no mapped reads
+    size of Ns fragment -- "deletion" (not less than MIN_GAP)
+    size of Bs fragment -- confidence interval (not more than MAX_CONFIDENCE_INTERVAL,
+        fixing last/first G position otherwise)
+    '''
+
+    MAX_CONFIDENCE_INTERVAL = 300
+    MIN_GAP = 1000
+
+    def __init__(self, ref, prev_good=None, prev_bad=None, next_bad=None, next_good=None):
+        self.ref, self.prev_good, self.prev_bad, self.next_bad, self.next_good = \
+            ref, prev_good, prev_bad, next_bad, next_good
         self.id = 'QuastDEL'
 
+    def is_valid(self):
+        return self.prev_good is not None and self.prev_bad is not None and \
+               self.next_bad is not None and self.next_good is not None and \
+               (self.next_bad - self.prev_bad > QuastDeletion.MIN_GAP)
+
+    def set_prev_good(self, prev_good):
+        self.prev_good = prev_good
+        if self.prev_bad is None:
+            self.prev_bad = prev_good
+        return self  # to use this function like "deletion = QuastDeletion(ref).set_prev_good(coord)"
+
+    def set_prev_bad(self, prev_bad):
+        self.prev_bad = prev_bad
+        if self.prev_good is None or self.prev_good + QuastDeletion.MAX_CONFIDENCE_INTERVAL < self.prev_bad:
+            self.prev_good = max(1, self.prev_bad - QuastDeletion.MAX_CONFIDENCE_INTERVAL)
+        return self  # to use this function like "deletion = QuastDeletion(ref).set_prev_bad(coord)"
+
+    def set_next_good(self, next_good):
+        if self.next_bad is None:
+            self.next_bad = next_good
+        if next_good - QuastDeletion.MAX_CONFIDENCE_INTERVAL > self.next_bad:
+            self.next_good = self.next_bad + QuastDeletion.MAX_CONFIDENCE_INTERVAL
+        else:
+            self.next_good = next_good
+
+    def set_next_bad(self, next_bad):
+        self.next_bad = next_bad
+        if self.next_good is None:
+            self.next_good = next_bad
+
     def __str__(self):
-        return '\t'.join([self.ref, self.start - self.CONFIDENCE_INTERVAL, self.start + self.CONFIDENCE_INTERVAL,
-                          self.ref, self.end - self.CONFIDENCE_INTERVAL, self.end + self.CONFIDENCE_INTERVAL,
+        return '\t'.join([self.ref, self.prev_good, self.prev_bad,
+                          self.ref, self.next_bad, self.next_good,
                           self.id] + ['-'] * 4)
 
 
@@ -87,82 +144,137 @@ def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpat
     sam_sorted_fpath = os.path.join(output_dirpath, ref_name + '.sorted.sam')
     bed_fpath = os.path.join(res_path, ref_name + '.bed')
 
-    if os.path.isfile(bed_fpath):
-        logger.info('  Using existing BED-file')
+    if is_non_empty_file(bed_fpath):
+        logger.info('  Using existing BED-file: ' + bed_fpath)
         return bed_fpath
 
     logger.info('  ' + 'Pre-processing for searching structural variations...')
     logger.info('  ' + 'Logging to %s...' % err_path)
-    logger.info('  Running Bowtie2...')
-    abs_reads_fpaths = []  # use absolute paths because we will change workdir
-    for reads_fpath in reads_fpaths:
-        abs_reads_fpaths.append(os.path.abspath(reads_fpath))
+    if is_non_empty_file(sam_fpath):
+        logger.info('  Using existing SAM-file: ' + sam_fpath)
+    else:
+        logger.info('  Running Bowtie2...')
+        abs_reads_fpaths = []  # use absolute paths because we will change workdir
+        for reads_fpath in reads_fpaths:
+            abs_reads_fpaths.append(os.path.abspath(reads_fpath))
 
-    prev_dir = os.getcwd()
-    os.chdir(output_dirpath)
-    cmd = [bin_fpath('bowtie2-build'), main_ref_fpath, ref_name]
-    qutils.call_subprocess(cmd, stdout=open(log_path, 'a'), stderr=open(err_path, 'a'))
+        prev_dir = os.getcwd()
+        os.chdir(output_dirpath)
+        cmd = [bin_fpath('bowtie2-build'), main_ref_fpath, ref_name]
+        qutils.call_subprocess(cmd, stdout=open(log_path, 'a'), stderr=open(err_path, 'a'))
 
-    cmd = bin_fpath('bowtie2') + ' -x ' + ref_name + ' -1 ' + abs_reads_fpaths[0] + ' -2 ' + abs_reads_fpaths[1] + ' -S ' + \
-          sam_fpath + ' --no-unal -a -p %s' % str(qconfig.max_threads)
-    qutils.call_subprocess(shlex.split(cmd), stdout=open(log_path, 'a'), stderr=open(err_path, 'a'))
-    logger.info('  Done.')
-    os.chdir(prev_dir)
-    if not os.path.exists(sam_fpath) or os.path.getsize(sam_fpath) == 0:
-        logger.error('  Failed running Bowtie2 for the reference. See ' + log_path + ' for information.')
-        logger.info('  Failed searching structural variations.')
-        return None
+        cmd = bin_fpath('bowtie2') + ' -x ' + ref_name + ' -1 ' + abs_reads_fpaths[0] + ' -2 ' + abs_reads_fpaths[1] + ' -S ' + \
+              sam_fpath + ' --no-unal -a -p %s' % str(qconfig.max_threads)
+        qutils.call_subprocess(shlex.split(cmd), stdout=open(log_path, 'a'), stderr=open(err_path, 'a'))
+        logger.info('  Done.')
+        os.chdir(prev_dir)
+        if not os.path.exists(sam_fpath) or os.path.getsize(sam_fpath) == 0:
+            logger.error('  Failed running Bowtie2 for the reference. See ' + log_path + ' for information.')
+            logger.info('  Failed searching structural variations.')
+            return None
     logger.info('  Sorting SAM-file...')
-    qutils.call_subprocess([samtools_fpath('samtools'), 'view', '-@', str(qconfig.max_threads), '-bS', sam_fpath], stdout=open(bam_fpath, 'w'),
-                           stderr=open(err_path, 'a'))
-    qutils.call_subprocess([samtools_fpath('samtools'), 'sort', '-@', str(qconfig.max_threads), bam_fpath, bam_sorted_fpath],
-                           stderr=open(err_path, 'a'))
-    qutils.call_subprocess([samtools_fpath('samtools'), 'view', '-@', str(qconfig.max_threads), bam_sorted_fpath + '.bam'], stdout=open(sam_sorted_fpath, 'w'),
-                           stderr=open(err_path, 'a'))
-    logger.info('  Splitting SAM-file by references...')
+    if is_non_empty_file(sam_sorted_fpath):
+        logger.info('  Using existing sorted SAM-file: ' + sam_fpath)
+    else:
+        qutils.call_subprocess([samtools_fpath('samtools'), 'view', '-@', str(qconfig.max_threads), '-bS', sam_fpath], stdout=open(bam_fpath, 'w'),
+                               stderr=open(err_path, 'a'))
+        qutils.call_subprocess([samtools_fpath('samtools'), 'sort', '-@', str(qconfig.max_threads), bam_fpath, bam_sorted_fpath],
+                               stderr=open(err_path, 'a'))
+        qutils.call_subprocess([samtools_fpath('samtools'), 'view', '-@', str(qconfig.max_threads), bam_sorted_fpath + '.bam'], stdout=open(sam_sorted_fpath, 'w'),
+                               stderr=open(err_path, 'a'))
+    if meta_ref_fpaths:
+        logger.info('  Splitting SAM-file by references...')
     headers = []
+    seq_name_length = {}
     with open(sam_fpath) as sam_file:
         for line in sam_file:
-            l = line.split('\t')
-            if len(l) > 5:
+            if not line.startswith('@'):
                 break
+            if line.startswith('@SQ') and 'SN:' in line and 'LN:' in line:
+                seq_name = line.split('\tSN:')[1].split('\t')[0]
+                seq_length = int(line.split('\tLN:')[1].split('\t')[0])
+                seq_name_length[seq_name] = seq_length
             headers.append(line.strip())
     if meta_ref_fpaths:
         ref_files = {}
         for cur_ref_fpath in meta_ref_fpaths:
             ref = qutils.name_from_fpath(cur_ref_fpath)
-            new_ref_sam_file = open(os.path.join(output_dirpath, ref + '.sam'), 'w')
-            new_ref_sam_file.write(headers[0] + '\n')
-            chrs = []
-            for h in headers:
-                l = h.split('\t')
-                sn = l[1].split(':')
-                if sn[0] == 'SN' and sn[1] in ref_labels and ref_labels[sn[1]] == ref:
-                    new_ref_sam_file.write(h+'\n')
-                    chrs.append(sn[1])
-            new_ref_sam_file.write(headers[-1]+'\n')
-            ref_files[ref] = new_ref_sam_file
+            new_ref_sam_fpath = os.path.join(output_dirpath, ref + '.sam')
+            if is_non_empty_file(new_ref_sam_fpath):
+                logger.info('  Using existing split SAM-file for %s: %s' % (ref, new_ref_sam_fpath))
+                ref_files[ref] = None
+            else:
+                new_ref_sam_file = open(new_ref_sam_fpath, 'w')
+                new_ref_sam_file.write(headers[0] + '\n')
+                chrs = []
+                for h in (h for h in headers if h.startswith('@SQ') and 'SN:' in h):
+                    seq_name = h.split('\tSN:')[1].split('\t')[0]
+                    if seq_name in ref_labels and ref_labels[seq_name] == ref:
+                        new_ref_sam_file.write(h + '\n')
+                        chrs.append(seq_name)
+                new_ref_sam_file.write(headers[-1] + '\n')
+                ref_files[ref] = new_ref_sam_file
     deletions = []
+    logger.info('  Looking for trivial deletions (long zero-covered fragments)...')
     with open(sam_sorted_fpath) as sam_file:
-        prev_pos = 0
-        prev_ref = ''
+        cur_deletion = None
         for line in sam_file:
-            if line:
-                line = line.split('\t')
-                if len(line) > 5:
-                    pos = int(line[3])
-                    if pos - prev_pos > qconfig.extensive_misassembly_threshold and prev_ref == line[2]:
-                        deletions.append(QuastDeletion(line[2], prev_pos + len(line[9]), pos))
-                    prev_pos = pos
-                    prev_ref = line[2]
-                    if meta_ref_fpaths:
-                        cur_ref = ref_labels[line[2]]
-                        if line[6].strip() == '=' or cur_ref in line[6]:
-                            ref_files[cur_ref].write('\t'.join(line))
+            mapping = Mapping.parse(line)
+            if mapping:
+                # common case: continue some possible deletion on the same reference
+                if cur_deletion and cur_deletion.ref == mapping.ref:
+                    if cur_deletion.next_bad is None:  # previous mapping was in region BEFORE 0-covered fragment
+                        # just passed 0-covered fragment
+                        if mapping.start - cur_deletion.prev_bad > QuastDeletion.MIN_GAP:
+                            cur_deletion.set_next_bad(mapping.start)
+                            if mapping.mapq >= Mapping.MIN_MAP_QUALITY:
+                                cur_deletion.set_next_good(mapping.start)
+                                if cur_deletion.is_valid():
+                                    deletions.append(cur_deletion)
+                                cur_deletion = QuastDeletion(mapping.ref).set_prev_good(mapping.end)
+                        # continue region BEFORE 0-covered fragment
+                        elif mapping.mapq >= Mapping.MIN_MAP_QUALITY:
+                            cur_deletion.set_prev_good(mapping.end)
+                        else:
+                            cur_deletion.set_prev_bad(mapping.end)
+                    else:  # previous mapping was in region AFTER 0-covered fragment
+                        # just passed another 0-cov fragment
+                        if mapping.start - cur_deletion.prev_bad > QuastDeletion.MIN_GAP:
+                            if cur_deletion.is_valid():   # add previous fragment's deletion if needed
+                                deletions.append(cur_deletion)
+                            cur_deletion = QuastDeletion(mapping.ref).set_prev_bad(cur_deletion.next_bad)
+                        # continue region AFTER 0-covered fragment
+                        elif mapping.mapq >= Mapping.MIN_MAP_QUALITY:
+                            cur_deletion.set_next_good(mapping.end)
+                            if cur_deletion.is_valid():
+                                deletions.append(cur_deletion)
+                            cur_deletion = QuastDeletion(mapping.ref).set_prev_good(mapping.end)
+                        else:
+                            cur_deletion.set_next_bad(mapping.start)
+                # special case: just started or just switched to the next reference
+                else:
+                    if cur_deletion and cur_deletion.ref in seq_name_length:  # switched to the next ref
+                        cur_deletion.set_next_good(seq_name_length[cur_deletion.ref])
+                        if cur_deletion.is_valid():
+                            deletions.append(cur_deletion)
+                    cur_deletion = QuastDeletion(mapping.ref).set_prev_good(mapping.end)
+
+                if meta_ref_fpaths:
+                    cur_ref = ref_labels[mapping.ref]
+                    if mapping.ref_next.strip() == '=' or cur_ref == ref_labels[mapping.ref_next]:
+                        if ref_files[cur_ref] is not None:
+                            ref_files[cur_ref].write(line)
+        if cur_deletion and cur_deletion.ref in seq_name_length:  # switched to the next ref
+            cur_deletion.set_next_good(seq_name_length[cur_deletion.ref])
+            if cur_deletion.is_valid():
+                deletions.append(cur_deletion)
+    logger.info('  Looking for trivial deletions: %d found' % len(deletions))
     if meta_ref_fpaths:
-        for ref in ref_files:
-            ref_files[ref].close()
+        for ref_handler in ref_files.values():
+            if ref_handler is not None:
+                ref_handler.close()
     create_bed_files(main_ref_fpath, meta_ref_fpaths, ref_labels, deletions, output_dirpath, bed_fpath, err_path)
+
     if os.path.exists(bed_fpath):
         logger.info('  Structural variations saved to ' + bed_fpath)
         return bed_fpath

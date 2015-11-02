@@ -214,6 +214,7 @@ def relpath(path, start=curdir):
         return curdir
     return join(*rel_list)
 
+
 def get_path_to_program(program):
     """
     returns the path to an executable or None if it can't be found
@@ -226,3 +227,7 @@ def get_path_to_program(program):
         if is_exe(exe_file):
             return exe_file
     return None
+
+
+def is_non_empty_file(fpath):
+    return os.path.exists(fpath) and os.path.getsize(fpath) != 0

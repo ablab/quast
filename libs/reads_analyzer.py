@@ -16,7 +16,7 @@ manta_bin_dirpath = os.path.join(qconfig.LIBS_LOCATION, 'manta', 'build/bin')
 
 
 class Mapping(object):
-    MIN_MAP_QUALITY = 50  # for distiguishing "good" reads and "bad" ones
+    MIN_MAP_QUALITY = 20  # for distiguishing "good" reads and "bad" ones
 
     def __init__(self, fields):
         self.ref, self.start, self.mapq, self.ref_next, self.len = \
@@ -43,7 +43,7 @@ class QuastDeletion(object):
         fixing last/first G position otherwise)
     '''
 
-    MAX_CONFIDENCE_INTERVAL = 300
+    MAX_CONFIDENCE_INTERVAL = 150
     MIN_GAP = 1000
 
     def __init__(self, ref, prev_good=None, prev_bad=None, next_bad=None, next_good=None, next_bad_end=None):
@@ -246,7 +246,7 @@ def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpat
                         if mapping.start - cur_deletion.next_bad_end > QuastDeletion.MIN_GAP:
                             if cur_deletion.is_valid():   # add previous fragment's deletion if needed
                                 deletions.append(cur_deletion)
-                            cur_deletion = QuastDeletion(mapping.ref).set_prev_bad(position=cur_deletion.next_bad)
+                            cur_deletion = QuastDeletion(mapping.ref).set_prev_bad(position=cur_deletion.next_bad_end)
                         # continue region AFTER 0-covered fragment
                         elif mapping.mapq >= Mapping.MIN_MAP_QUALITY:
                             cur_deletion.set_next_good(mapping)

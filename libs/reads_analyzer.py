@@ -20,12 +20,14 @@ class Mapping(object):
 
     def __init__(self, fields):
         self.ref, self.start, self.mapq, self.ref_next, self.len = \
-            fields[2], int(fields[3]), fields[4], fields[6], len(fields[9])
+            fields[2], int(fields[3]), int(fields[4]), fields[6], len(fields[9])
         self.end = self.start + self.len - 1  # actually not always true because of indels
 
     @staticmethod
     def parse(line):
-        if line.split('\t') != 11:
+        if line.startswith('@'):  # comment
+            return None
+        if line.split('\t') < 11:  # not valid line
             return None
         mapping = Mapping(line.split('\t'))
         return mapping
@@ -44,9 +46,9 @@ class QuastDeletion(object):
     MAX_CONFIDENCE_INTERVAL = 300
     MIN_GAP = 1000
 
-    def __init__(self, ref, prev_good=None, prev_bad=None, next_bad=None, next_good=None):
-        self.ref, self.prev_good, self.prev_bad, self.next_bad, self.next_good = \
-            ref, prev_good, prev_bad, next_bad, next_good
+    def __init__(self, ref, prev_good=None, prev_bad=None, next_bad=None, next_good=None, next_bad_end=None):
+        self.ref, self.prev_good, self.prev_bad, self.next_bad, self.next_good, self.next_bad_end = \
+            ref, prev_good, prev_bad, next_bad, next_good, next_bad_end
         self.id = 'QuastDEL'
 
     def is_valid(self):
@@ -54,43 +56,45 @@ class QuastDeletion(object):
                self.next_bad is not None and self.next_good is not None and \
                (self.next_bad - self.prev_bad > QuastDeletion.MIN_GAP)
 
-    def set_prev_good(self, prev_good):
-        self.prev_good = prev_good
-        if self.prev_bad is None:
-            self.prev_bad = prev_good
+    def set_prev_good(self, mapping):
+        self.prev_good = mapping.end
+        self.prev_bad = self.prev_good  # prev_bad cannot be earlier than prev_good!
         return self  # to use this function like "deletion = QuastDeletion(ref).set_prev_good(coord)"
 
-    def set_prev_bad(self, prev_bad):
-        self.prev_bad = prev_bad
+    def set_prev_bad(self, mapping=None, position=None):
+        self.prev_bad = position if position else mapping.end
         if self.prev_good is None or self.prev_good + QuastDeletion.MAX_CONFIDENCE_INTERVAL < self.prev_bad:
             self.prev_good = max(1, self.prev_bad - QuastDeletion.MAX_CONFIDENCE_INTERVAL)
         return self  # to use this function like "deletion = QuastDeletion(ref).set_prev_bad(coord)"
 
-    def set_next_good(self, next_good):
+    def set_next_good(self, mapping=None, position=None):
+        self.next_good = position if position else mapping.start
         if self.next_bad is None:
-            self.next_bad = next_good
-        if next_good - QuastDeletion.MAX_CONFIDENCE_INTERVAL > self.next_bad:
+            self.next_bad = self.next_good
+        elif self.next_good - QuastDeletion.MAX_CONFIDENCE_INTERVAL > self.next_bad:
             self.next_good = self.next_bad + QuastDeletion.MAX_CONFIDENCE_INTERVAL
-        else:
-            self.next_good = next_good
 
-    def set_next_bad(self, next_bad):
-        self.next_bad = next_bad
-        if self.next_good is None:
-            self.next_good = next_bad
+    def set_next_bad(self, mapping):
+        self.next_bad = mapping.start
+        self.next_bad_end = mapping.end
+        self.next_good = self.next_bad  # next_good is always None at this moment (deletion is complete already otherwise)
+
+    def set_next_bad_end(self, mapping):
+        self.next_bad_end = mapping.end
 
     def __str__(self):
-        return '\t'.join([self.ref, self.prev_good, self.prev_bad,
+        return '\t'.join(map(str, [self.ref, self.prev_good, self.prev_bad,
                           self.ref, self.next_bad, self.next_good,
-                          self.id] + ['-'] * 4)
+                          self.id]) + ['-'] * 4)
 
 
-def process_one_ref(cur_ref_fpath, output_dirpath, err_path):
+def process_one_ref(cur_ref_fpath, output_dirpath, err_path, bed_fpath=None):
     ref = qutils.name_from_fpath(cur_ref_fpath)
     ref_sam_fpath = os.path.join(output_dirpath, ref + '.sam')
     ref_bam_fpath = os.path.join(output_dirpath, ref + '.bam')
     ref_bamsorted_fpath = os.path.join(output_dirpath, ref + '.sorted')
-    if os.path.getsize(ref_sam_fpath) < 1024 * 1024:
+    ref_bed_fpath = bed_fpath if bed_fpath else os.path.join(output_dirpath, ref + '.bed')
+    if os.path.getsize(ref_sam_fpath) < 1024 * 1024:  # TODO: make it better (small files will cause Manta crush -- "not enough reads...")
         return None
     if not os.path.exists(ref_bamsorted_fpath + '.bam'):
         qutils.call_subprocess([samtools_fpath('samtools'), 'view', '-bS', ref_sam_fpath], stdout=open(ref_bam_fpath, 'w'),
@@ -115,7 +119,6 @@ def process_one_ref(cur_ref_fpath, output_dirpath, err_path):
     cmd = 'gunzip -c %s' % temp_fpath
     qutils.call_subprocess(shlex.split(cmd), stdout=open(unpacked_fpath, 'w'), stderr=open(err_path, 'a'))
     from manta import vcfToBedpe
-    ref_bed_fpath = os.path.join(output_dirpath, ref + '.bed')
     vcfToBedpe.vcfToBedpe(open(unpacked_fpath), open(ref_bed_fpath, 'w'))
     return ref_bed_fpath
 
@@ -126,13 +129,14 @@ def create_bed_files(main_ref_fpath, meta_ref_fpaths, ref_labels, deletions, out
         from joblib import Parallel, delayed
         n_jobs = min(len(meta_ref_fpaths), qconfig.max_threads)
         bed_fpaths = Parallel(n_jobs=n_jobs)(delayed(process_one_ref)(cur_ref_fpath, output_dirpath, err_path) for cur_ref_fpath in meta_ref_fpaths)
-        bed_fpaths = [f for f in bed_fpaths if f]
+        bed_fpaths = [f for f in bed_fpaths if f is not None]
         qutils.call_subprocess(['cat'] + bed_fpaths, stdout=open(bed_fpath, 'w'), stderr=open(err_path, 'a'))
     else:
-        bed_fpath = process_one_ref(main_ref_fpath, output_dirpath, err_path)
+        process_one_ref(main_ref_fpath, output_dirpath, err_path, bed_fpath=bed_fpath)
     bed_file = open(bed_fpath, 'a')
     for deletion in deletions:
         bed_file.write(str(deletion) + '\n')
+    bed_file.close()
     return bed_fpath
 
 
@@ -221,43 +225,43 @@ def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpat
         for line in sam_file:
             mapping = Mapping.parse(line)
             if mapping:
-                # common case: continue some possible deletion on the same reference
+                # common case: continue current deletion (potential) on the same reference
                 if cur_deletion and cur_deletion.ref == mapping.ref:
                     if cur_deletion.next_bad is None:  # previous mapping was in region BEFORE 0-covered fragment
                         # just passed 0-covered fragment
                         if mapping.start - cur_deletion.prev_bad > QuastDeletion.MIN_GAP:
-                            cur_deletion.set_next_bad(mapping.start)
+                            cur_deletion.set_next_bad(mapping)
                             if mapping.mapq >= Mapping.MIN_MAP_QUALITY:
-                                cur_deletion.set_next_good(mapping.start)
+                                cur_deletion.set_next_good(mapping)
                                 if cur_deletion.is_valid():
                                     deletions.append(cur_deletion)
-                                cur_deletion = QuastDeletion(mapping.ref).set_prev_good(mapping.end)
+                                cur_deletion = QuastDeletion(mapping.ref).set_prev_good(mapping)
                         # continue region BEFORE 0-covered fragment
                         elif mapping.mapq >= Mapping.MIN_MAP_QUALITY:
-                            cur_deletion.set_prev_good(mapping.end)
+                            cur_deletion.set_prev_good(mapping)
                         else:
-                            cur_deletion.set_prev_bad(mapping.end)
+                            cur_deletion.set_prev_bad(mapping)
                     else:  # previous mapping was in region AFTER 0-covered fragment
-                        # just passed another 0-cov fragment
-                        if mapping.start - cur_deletion.prev_bad > QuastDeletion.MIN_GAP:
+                        # just passed another 0-cov fragment between end of cur_deletion BBB region and this mapping
+                        if mapping.start - cur_deletion.next_bad_end > QuastDeletion.MIN_GAP:
                             if cur_deletion.is_valid():   # add previous fragment's deletion if needed
                                 deletions.append(cur_deletion)
-                            cur_deletion = QuastDeletion(mapping.ref).set_prev_bad(cur_deletion.next_bad)
+                            cur_deletion = QuastDeletion(mapping.ref).set_prev_bad(position=cur_deletion.next_bad)
                         # continue region AFTER 0-covered fragment
                         elif mapping.mapq >= Mapping.MIN_MAP_QUALITY:
-                            cur_deletion.set_next_good(mapping.end)
+                            cur_deletion.set_next_good(mapping)
                             if cur_deletion.is_valid():
                                 deletions.append(cur_deletion)
-                            cur_deletion = QuastDeletion(mapping.ref).set_prev_good(mapping.end)
+                            cur_deletion = QuastDeletion(mapping.ref).set_prev_good(mapping)
                         else:
-                            cur_deletion.set_next_bad(mapping.start)
+                            cur_deletion.set_next_bad_end(mapping)
                 # special case: just started or just switched to the next reference
                 else:
                     if cur_deletion and cur_deletion.ref in seq_name_length:  # switched to the next ref
-                        cur_deletion.set_next_good(seq_name_length[cur_deletion.ref])
+                        cur_deletion.set_next_good(position=seq_name_length[cur_deletion.ref])
                         if cur_deletion.is_valid():
                             deletions.append(cur_deletion)
-                    cur_deletion = QuastDeletion(mapping.ref).set_prev_good(mapping.end)
+                    cur_deletion = QuastDeletion(mapping.ref).set_prev_good(mapping)
 
                 if meta_ref_fpaths:
                     cur_ref = ref_labels[mapping.ref]
@@ -265,7 +269,7 @@ def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpat
                         if ref_files[cur_ref] is not None:
                             ref_files[cur_ref].write(line)
         if cur_deletion and cur_deletion.ref in seq_name_length:  # switched to the next ref
-            cur_deletion.set_next_good(seq_name_length[cur_deletion.ref])
+            cur_deletion.set_next_good(position=seq_name_length[cur_deletion.ref])
             if cur_deletion.is_valid():
                 deletions.append(cur_deletion)
     logger.info('  Looking for trivial deletions: %d found' % len(deletions))
@@ -373,7 +377,7 @@ def do(ref_fpath, contigs_fpaths, reads_fpaths, meta_ref_fpaths, output_dir, int
     if not os.path.isdir(temp_output_dir):
         os.mkdir(temp_output_dir)
 
-    log_path = os.path.join(temp_output_dir, 'align_reads.log')
+    log_path = os.path.join(temp_output_dir, 'align_reads.log')  # TODO: don't clear these logs!
     err_path = os.path.join(temp_output_dir, 'align_reads.err')
     logger.info('  ' + 'Logging to files %s and %s...' % (log_path, err_path))
     bed_fpath = run_processing_reads(ref_fpath, meta_ref_fpaths, contigs_analyzer.ref_labels_by_chromosomes, reads_fpaths, temp_output_dir, output_dir, log_path, err_path)

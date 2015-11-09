@@ -97,32 +97,39 @@ def process_one_ref(cur_ref_fpath, output_dirpath, err_path, bed_fpath=None):
     ref_bam_fpath = os.path.join(output_dirpath, ref + '.bam')
     ref_bamsorted_fpath = os.path.join(output_dirpath, ref + '.sorted')
     ref_bed_fpath = bed_fpath if bed_fpath else os.path.join(output_dirpath, ref + '.bed')
-    if os.path.getsize(ref_sam_fpath) < 1024 * 1024:  # TODO: make it better (small files will cause Manta crush -- "not enough reads...")
+    if os.path.getsize(ref_sam_fpath) < 0: # 1024 * 1024:  # TODO: make it better (small files will cause Manta crush -- "not enough reads...")
         return None
+    if is_non_empty_file(ref_bed_fpath):
+        logger.info('  Using existing Manta BED-file: ' + ref_bed_fpath)
+        return ref_bed_fpath
     if not os.path.exists(ref_bamsorted_fpath + '.bam'):
         qutils.call_subprocess([samtools_fpath('samtools'), 'view', '-bS', ref_sam_fpath], stdout=open(ref_bam_fpath, 'w'),
                                stderr=open(err_path, 'a'))
         qutils.call_subprocess([samtools_fpath('samtools'), 'sort', ref_bam_fpath, ref_bamsorted_fpath],
                                stderr=open(err_path, 'a'))
-    qutils.call_subprocess([samtools_fpath('samtools'), 'index', ref_bamsorted_fpath + '.bam'], stderr=open(err_path, 'a'))
-    qutils.call_subprocess([samtools_fpath('samtools'), 'faidx', cur_ref_fpath], stderr=open(err_path, 'a'))
+    if not is_non_empty_file(ref_bamsorted_fpath + '.bam.bai'):
+        qutils.call_subprocess([samtools_fpath('samtools'), 'index', ref_bamsorted_fpath + '.bam'], stderr=open(err_path, 'a'))
+    if not is_non_empty_file(cur_ref_fpath + '.fai'):
+        qutils.call_subprocess([samtools_fpath('samtools'), 'faidx', cur_ref_fpath], stderr=open(err_path, 'a'))
     vcfoutput_dirpath = os.path.join(output_dirpath, ref + '_manta')
-    if os.path.exists(vcfoutput_dirpath):
-        shutil.rmtree(vcfoutput_dirpath, ignore_errors=True)
-    os.makedirs(vcfoutput_dirpath)
-    qutils.call_subprocess([os.path.join(manta_bin_dirpath, 'configManta.py'), '--normalBam', ref_bamsorted_fpath + '.bam',
-                            '--referenceFasta', cur_ref_fpath, '--runDir', vcfoutput_dirpath],
-                           stdout=open(err_path, 'a'), stderr=open(err_path, 'a'))
-    if not os.path.exists(os.path.join(vcfoutput_dirpath, 'runWorkflow.py')):
-        return None
-    qutils.call_subprocess([os.path.join(vcfoutput_dirpath, 'runWorkflow.py'), '-m', 'local', '-j', str(qconfig.max_threads)],
-                           stderr=open(err_path, 'a'))
-    temp_fpath = os.path.join(vcfoutput_dirpath, 'results/variants/diploidSV.vcf.gz')
-    unpacked_fpath = temp_fpath + '.unpacked'
-    cmd = 'gunzip -c %s' % temp_fpath
-    qutils.call_subprocess(shlex.split(cmd), stdout=open(unpacked_fpath, 'w'), stderr=open(err_path, 'a'))
+    found_SV_fpath = os.path.join(vcfoutput_dirpath, 'results/variants/diploidSV.vcf.gz')
+    unpacked_SV_fpath = found_SV_fpath + '.unpacked'
+    if not is_non_empty_file(found_SV_fpath):
+        if os.path.exists(vcfoutput_dirpath):
+            shutil.rmtree(vcfoutput_dirpath, ignore_errors=True)
+        os.makedirs(vcfoutput_dirpath)
+        qutils.call_subprocess([os.path.join(manta_bin_dirpath, 'configManta.py'), '--normalBam', ref_bamsorted_fpath + '.bam',
+                                '--referenceFasta', cur_ref_fpath, '--runDir', vcfoutput_dirpath],
+                               stdout=open(err_path, 'a'), stderr=open(err_path, 'a'))
+        if not os.path.exists(os.path.join(vcfoutput_dirpath, 'runWorkflow.py')):
+            return None
+        qutils.call_subprocess([os.path.join(vcfoutput_dirpath, 'runWorkflow.py'), '-m', 'local', '-j', str(qconfig.max_threads)],
+                               stderr=open(err_path, 'a'))
+    if not is_non_empty_file(unpacked_SV_fpath):
+        cmd = 'gunzip -c %s' % found_SV_fpath
+        qutils.call_subprocess(shlex.split(cmd), stdout=open(unpacked_SV_fpath, 'w'), stderr=open(err_path, 'a'))
     from manta import vcfToBedpe
-    vcfToBedpe.vcfToBedpe(open(unpacked_fpath), open(ref_bed_fpath, 'w'))
+    vcfToBedpe.vcfToBedpe(open(unpacked_SV_fpath), open(ref_bed_fpath, 'w'))
     return ref_bed_fpath
 
 
@@ -181,7 +188,7 @@ def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpat
             return None
     logger.info('  Sorting SAM-file...')
     if is_non_empty_file(sam_sorted_fpath):
-        logger.info('  Using existing sorted SAM-file: ' + sam_fpath)
+        logger.info('  Using existing sorted SAM-file: ' + sam_sorted_fpath)
     else:
         qutils.call_subprocess([samtools_fpath('samtools'), 'view', '-@', str(qconfig.max_threads), '-bS', sam_fpath], stdout=open(bam_fpath, 'w'),
                                stderr=open(err_path, 'a'))
@@ -304,7 +311,10 @@ def all_required_binaries_exist(bin_dirpath, binary):
     return True
 
 
-def do(ref_fpath, contigs_fpaths, reads_fpaths, meta_ref_fpaths, output_dir, interleaved=False):
+def do(ref_fpath, contigs_fpaths, reads_fpaths, meta_ref_fpaths, output_dir, interleaved=False, external_logger=None):
+    if external_logger:
+        global logger
+        logger = external_logger
     logger.print_timestamp()
     logger.info('Running Structural Variants caller...')
 

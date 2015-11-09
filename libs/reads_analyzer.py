@@ -140,7 +140,8 @@ def create_bed_files(main_ref_fpath, meta_ref_fpaths, ref_labels, deletions, out
         n_jobs = min(len(meta_ref_fpaths), qconfig.max_threads)
         bed_fpaths = Parallel(n_jobs=n_jobs)(delayed(process_one_ref)(cur_ref_fpath, output_dirpath, err_path) for cur_ref_fpath in meta_ref_fpaths)
         bed_fpaths = [f for f in bed_fpaths if f is not None]
-        qutils.call_subprocess(['cat'] + bed_fpaths, stdout=open(bed_fpath, 'w'), stderr=open(err_path, 'a'))
+        if bed_fpaths:
+            qutils.call_subprocess(['cat'] + bed_fpaths, stdout=open(bed_fpath, 'w'), stderr=open(err_path, 'a'))
     else:
         process_one_ref(main_ref_fpath, output_dirpath, err_path, bed_fpath=bed_fpath)
     bed_file = open(bed_fpath, 'a')

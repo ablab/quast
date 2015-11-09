@@ -94,6 +94,10 @@ meta_summary_dir = "summary"
 not_aligned_name = "not_aligned"
 combined_output_name = "combined_reference"
 krona_dirname = "krona_charts"
+# for reads analyzer
+variation_dirname = 'structural_variations'
+trivial_deletions_fname = 'trivial_deletions.bed'
+manta_sv_fname = 'manta_sv.bed'
 
 
 # other settings (mostly constants). Can't be changed by command-line options

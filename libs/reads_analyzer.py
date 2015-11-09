@@ -136,23 +136,24 @@ def process_one_ref(cur_ref_fpath, output_dirpath, err_path, bed_fpath=None):
     return ref_bed_fpath
 
 
-def create_bed_files(main_ref_fpath, meta_ref_fpaths, ref_labels, deletions, output_dirpath, bed_fpath, err_path):
-    logger.info('  Searching structural variations...')
+def search_sv_with_manta(main_ref_fpath, meta_ref_fpaths, output_dirpath, err_path):
+    logger.info('  Searching structural variations with Manta...')
+    final_bed_fpath = os.path.join(output_dirpath, qconfig.manta_sv_fname)
+    if os.path.exists(final_bed_fpath):
+        logger.info('    Using existing file: ' + final_bed_fpath)
+        return final_bed_fpath
+
     if meta_ref_fpaths:
         from joblib import Parallel, delayed
         n_jobs = min(len(meta_ref_fpaths), qconfig.max_threads)
         bed_fpaths = Parallel(n_jobs=n_jobs)(delayed(process_one_ref)(cur_ref_fpath, output_dirpath, err_path) for cur_ref_fpath in meta_ref_fpaths)
         bed_fpaths = [f for f in bed_fpaths if f is not None]
         if bed_fpaths:
-            qutils.call_subprocess(['cat'] + bed_fpaths, stdout=open(bed_fpath, 'w'),
-                                   stderr=open(err_path, 'a'), logger=logger)
+            qutils.cat_files(bed_fpaths, final_bed_fpath)
     else:
-        process_one_ref(main_ref_fpath, output_dirpath, err_path, bed_fpath=bed_fpath)
-    bed_file = open(bed_fpath, 'a')
-    for deletion in deletions:
-        bed_file.write(str(deletion) + '\n')
-    bed_file.close()
-    return bed_fpath
+        process_one_ref(main_ref_fpath, output_dirpath, err_path, bed_fpath=final_bed_fpath)
+    logger.info('    Saving to: ' + final_bed_fpath)
+    return final_bed_fpath
 
 
 def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpaths, output_dirpath, res_path, log_path, err_path):
@@ -214,13 +215,14 @@ def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpat
                 seq_length = int(line.split('\tLN:')[1].split('\t')[0])
                 seq_name_length[seq_name] = seq_length
             headers.append(line.strip())
+    need_ref_spliting = False
     if meta_ref_fpaths:
         ref_files = {}
         for cur_ref_fpath in meta_ref_fpaths:
             ref = qutils.name_from_fpath(cur_ref_fpath)
             new_ref_sam_fpath = os.path.join(output_dirpath, ref + '.sam')
             if is_non_empty_file(new_ref_sam_fpath):
-                logger.info('  Using existing split SAM-file for %s: %s' % (ref, new_ref_sam_fpath))
+                logger.info('    Using existing split SAM-file for %s: %s' % (ref, new_ref_sam_fpath))
                 ref_files[ref] = None
             else:
                 new_ref_sam_file = open(new_ref_sam_fpath, 'w')
@@ -233,66 +235,82 @@ def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpat
                         chrs.append(seq_name)
                 new_ref_sam_file.write(headers[-1] + '\n')
                 ref_files[ref] = new_ref_sam_file
+                need_ref_spliting = True
     deletions = []
+    trivial_deletions_fpath = os.path.join(output_dirpath, qconfig.trivial_deletions_fname)
     logger.info('  Looking for trivial deletions (long zero-covered fragments)...')
-    with open(sam_sorted_fpath) as sam_file:
-        cur_deletion = None
-        for line in sam_file:
-            mapping = Mapping.parse(line)
-            if mapping:
-                # common case: continue current deletion (potential) on the same reference
-                if cur_deletion and cur_deletion.ref == mapping.ref:
-                    if cur_deletion.next_bad is None:  # previous mapping was in region BEFORE 0-covered fragment
-                        # just passed 0-covered fragment
-                        if mapping.start - cur_deletion.prev_bad > QuastDeletion.MIN_GAP:
-                            cur_deletion.set_next_bad(mapping)
+    need_trivial_deletions = True
+    if os.path.exists(trivial_deletions_fpath):
+        need_trivial_deletions = False
+        logger.info('    Using existing file: ' + trivial_deletions_fpath)
+
+    if need_trivial_deletions or need_ref_spliting:
+        with open(sam_sorted_fpath) as sam_file:
+            cur_deletion = None
+            for line in sam_file:
+                mapping = Mapping.parse(line)
+                if mapping:
+                    # common case: continue current deletion (potential) on the same reference
+                    if cur_deletion and cur_deletion.ref == mapping.ref:
+                        if cur_deletion.next_bad is None:  # previous mapping was in region BEFORE 0-covered fragment
+                            # just passed 0-covered fragment
+                            if mapping.start - cur_deletion.prev_bad > QuastDeletion.MIN_GAP:
+                                cur_deletion.set_next_bad(mapping)
+                                if mapping.mapq >= Mapping.MIN_MAP_QUALITY:
+                                    cur_deletion.set_next_good(mapping)
+                                    if cur_deletion.is_valid():
+                                        deletions.append(cur_deletion)
+                                    cur_deletion = QuastDeletion(mapping.ref).set_prev_good(mapping)
+                            # continue region BEFORE 0-covered fragment
+                            elif mapping.mapq >= Mapping.MIN_MAP_QUALITY:
+                                cur_deletion.set_prev_good(mapping)
+                            else:
+                                cur_deletion.set_prev_bad(mapping)
+                        else:  # previous mapping was in region AFTER 0-covered fragment
+                            # just passed another 0-cov fragment between end of cur_deletion BAD region and this mapping
+                            if mapping.start - cur_deletion.next_bad_end > QuastDeletion.MIN_GAP:
+                                if cur_deletion.is_valid():   # add previous fragment's deletion if needed
+                                    deletions.append(cur_deletion)
+                                cur_deletion = QuastDeletion(mapping.ref).set_prev_bad(position=cur_deletion.next_bad_end)
+                            # continue region AFTER 0-covered fragment (old one or new/another one -- see "if" above)
                             if mapping.mapq >= Mapping.MIN_MAP_QUALITY:
                                 cur_deletion.set_next_good(mapping)
                                 if cur_deletion.is_valid():
                                     deletions.append(cur_deletion)
                                 cur_deletion = QuastDeletion(mapping.ref).set_prev_good(mapping)
-                        # continue region BEFORE 0-covered fragment
-                        elif mapping.mapq >= Mapping.MIN_MAP_QUALITY:
-                            cur_deletion.set_prev_good(mapping)
-                        else:
-                            cur_deletion.set_prev_bad(mapping)
-                    else:  # previous mapping was in region AFTER 0-covered fragment
-                        # just passed another 0-cov fragment between end of cur_deletion BAD region and this mapping
-                        if mapping.start - cur_deletion.next_bad_end > QuastDeletion.MIN_GAP:
-                            if cur_deletion.is_valid():   # add previous fragment's deletion if needed
-                                deletions.append(cur_deletion)
-                            cur_deletion = QuastDeletion(mapping.ref).set_prev_bad(position=cur_deletion.next_bad_end)
-                        # continue region AFTER 0-covered fragment (old one or new/another one -- see "if" above)
-                        if mapping.mapq >= Mapping.MIN_MAP_QUALITY:
-                            cur_deletion.set_next_good(mapping)
+                            else:
+                                cur_deletion.set_next_bad_end(mapping)
+                    # special case: just started or just switched to the next reference
+                    else:
+                        if cur_deletion and cur_deletion.ref in seq_name_length:  # switched to the next ref
+                            cur_deletion.set_next_good(position=seq_name_length[cur_deletion.ref])
                             if cur_deletion.is_valid():
                                 deletions.append(cur_deletion)
-                            cur_deletion = QuastDeletion(mapping.ref).set_prev_good(mapping)
-                        else:
-                            cur_deletion.set_next_bad_end(mapping)
-                # special case: just started or just switched to the next reference
-                else:
-                    if cur_deletion and cur_deletion.ref in seq_name_length:  # switched to the next ref
-                        cur_deletion.set_next_good(position=seq_name_length[cur_deletion.ref])
-                        if cur_deletion.is_valid():
-                            deletions.append(cur_deletion)
-                    cur_deletion = QuastDeletion(mapping.ref).set_prev_good(mapping)
+                        cur_deletion = QuastDeletion(mapping.ref).set_prev_good(mapping)
 
-                if meta_ref_fpaths:
-                    cur_ref = ref_labels[mapping.ref]
-                    if mapping.ref_next.strip() == '=' or cur_ref == ref_labels[mapping.ref_next]:
-                        if ref_files[cur_ref] is not None:
-                            ref_files[cur_ref].write(line)
-        if cur_deletion and cur_deletion.ref in seq_name_length:  # switched to the next ref
-            cur_deletion.set_next_good(position=seq_name_length[cur_deletion.ref])
-            if cur_deletion.is_valid():
-                deletions.append(cur_deletion)
-    logger.info('  Looking for trivial deletions: %d found' % len(deletions))
-    if meta_ref_fpaths:
-        for ref_handler in ref_files.values():
-            if ref_handler is not None:
-                ref_handler.close()
-    create_bed_files(main_ref_fpath, meta_ref_fpaths, ref_labels, deletions, output_dirpath, bed_fpath, err_path)
+                    if need_ref_spliting:
+                        cur_ref = ref_labels[mapping.ref]
+                        if mapping.ref_next.strip() == '=' or cur_ref == ref_labels[mapping.ref_next]:
+                            if ref_files[cur_ref] is not None:
+                                ref_files[cur_ref].write(line)
+            if cur_deletion and cur_deletion.ref in seq_name_length:  # switched to the next ref
+                cur_deletion.set_next_good(position=seq_name_length[cur_deletion.ref])
+                if cur_deletion.is_valid():
+                    deletions.append(cur_deletion)
+        if need_ref_spliting:
+            for ref_handler in ref_files.values():
+                if ref_handler is not None:
+                    ref_handler.close()
+        if need_trivial_deletions:
+            logger.info('  Trivial deletions: %d found' % len(deletions))
+            logger.info('    Saving to: ' + trivial_deletions_fpath)
+            with open(trivial_deletions_fpath, 'w') as f:
+                for deletion in deletions:
+                    f.write(str(deletion) + '\n')
+
+    manta_sv_fapth = search_sv_with_manta(main_ref_fpath, meta_ref_fpaths, output_dirpath, err_path)
+
+    qutils.cat_files([trivial_deletions_fpath, manta_sv_fapth], bed_fpath)
 
     if os.path.exists(bed_fpath):
         logger.info('  Structural variations saved to ' + bed_fpath)

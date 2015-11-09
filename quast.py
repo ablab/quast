@@ -663,7 +663,7 @@ def main(args):
         reads_fpaths.append(reads_fpath_r)
     if reads_fpaths:
         bed_fpath = reads_analyzer.do(ref_fpath, contigs_fpaths, reads_fpaths, None,
-                                      os.path.join(output_dirpath, 'structural_variations'),
+                                      os.path.join(output_dirpath, qconfig.variation_dirname),
                                       external_logger=logger)
 
     if not contigs_fpaths:

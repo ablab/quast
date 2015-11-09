@@ -230,4 +230,15 @@ def get_path_to_program(program):
 
 
 def is_non_empty_file(fpath):
-    return os.path.exists(fpath) and os.path.getsize(fpath) < 10
+    return os.path.exists(fpath) and os.path.getsize(fpath) > 10
+
+
+def cat_files(in_fnames, out_fname):
+    if not isinstance(in_fnames, list):
+        in_fnames = [in_fnames]
+    with open(out_fname, 'w') as outfile:
+        for fname in in_fnames:
+            if os.path.exists(fname):
+                with open(fname) as infile:
+                    for line in infile:
+                        outfile.write(line)

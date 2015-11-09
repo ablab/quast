@@ -606,7 +606,7 @@ def main(args):
         reads_fpaths.append(reads_fpath_r)
     if reads_fpaths:
         bed_fpath = reads_analyzer.do(combined_ref_fpath, contigs_fpaths, reads_fpaths, ref_fpaths,
-                                      os.path.join(combined_output_dirpath, 'structural_variations'),
+                                      os.path.join(combined_output_dirpath, qconfig.variation_dirname),
                                       external_logger=logger)
         if bed_fpath:
             quast_py_args += ['--bed-file']

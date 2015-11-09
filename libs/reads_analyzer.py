@@ -97,7 +97,7 @@ def process_one_ref(cur_ref_fpath, output_dirpath, err_path, bed_fpath=None):
     ref_bam_fpath = os.path.join(output_dirpath, ref + '.bam')
     ref_bamsorted_fpath = os.path.join(output_dirpath, ref + '.sorted')
     ref_bed_fpath = bed_fpath if bed_fpath else os.path.join(output_dirpath, ref + '.bed')
-    if os.path.getsize(ref_sam_fpath) < 0: # 1024 * 1024:  # TODO: make it better (small files will cause Manta crush -- "not enough reads...")
+    if os.path.getsize(ref_sam_fpath) < 1024 * 1024:  # TODO: make it better (small files will cause Manta crush -- "not enough reads...")
         return None
     if is_non_empty_file(ref_bed_fpath):
         logger.info('  Using existing Manta BED-file: ' + ref_bed_fpath)

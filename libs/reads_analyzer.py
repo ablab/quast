@@ -98,6 +98,7 @@ def process_one_ref(cur_ref_fpath, output_dirpath, err_path, bed_fpath=None):
     ref_bamsorted_fpath = os.path.join(output_dirpath, ref + '.sorted')
     ref_bed_fpath = bed_fpath if bed_fpath else os.path.join(output_dirpath, ref + '.bed')
     if os.path.getsize(ref_sam_fpath) < 1024 * 1024:  # TODO: make it better (small files will cause Manta crush -- "not enough reads...")
+        logger.info('  SAM file is too small for Manta (%d Kb), skipping..' % (os.path.getsize(ref_sam_fpath) // 1024))
         return None
     if is_non_empty_file(ref_bed_fpath):
         logger.info('  Using existing Manta BED-file: ' + ref_bed_fpath)
@@ -310,7 +311,7 @@ def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpat
 
     manta_sv_fapth = search_sv_with_manta(main_ref_fpath, meta_ref_fpaths, output_dirpath, err_path)
 
-    qutils.cat_files([trivial_deletions_fpath, manta_sv_fapth], bed_fpath)
+    qutils.cat_files([manta_sv_fapth, trivial_deletions_fpath], bed_fpath)
 
     if os.path.exists(bed_fpath):
         logger.info('  Structural variations saved to ' + bed_fpath)
@@ -413,8 +414,8 @@ def do(ref_fpath, contigs_fpaths, reads_fpaths, meta_ref_fpaths, output_dir, int
     if not os.path.isdir(temp_output_dir):
         os.mkdir(temp_output_dir)
 
-    log_path = os.path.join(temp_output_dir, 'align_reads.log')  # TODO: don't clear these logs!
-    err_path = os.path.join(temp_output_dir, 'align_reads.err')
+    log_path = os.path.join(output_dir, 'sv_calling.log')
+    err_path = os.path.join(output_dir, 'sv_calling.err')
     logger.info('  ' + 'Logging to files %s and %s...' % (log_path, err_path))
     bed_fpath = run_processing_reads(ref_fpath, meta_ref_fpaths, contigs_analyzer.ref_labels_by_chromosomes, reads_fpaths, temp_output_dir, output_dir, log_path, err_path)
     if not qconfig.debug:

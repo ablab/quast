@@ -104,13 +104,15 @@ def process_one_ref(cur_ref_fpath, output_dirpath, err_path, bed_fpath=None):
         return ref_bed_fpath
     if not os.path.exists(ref_bamsorted_fpath + '.bam'):
         qutils.call_subprocess([samtools_fpath('samtools'), 'view', '-bS', ref_sam_fpath], stdout=open(ref_bam_fpath, 'w'),
-                               stderr=open(err_path, 'a'))
+                               stderr=open(err_path, 'a'), logger=logger)
         qutils.call_subprocess([samtools_fpath('samtools'), 'sort', ref_bam_fpath, ref_bamsorted_fpath],
-                               stderr=open(err_path, 'a'))
+                               stderr=open(err_path, 'a'), logger=logger)
     if not is_non_empty_file(ref_bamsorted_fpath + '.bam.bai'):
-        qutils.call_subprocess([samtools_fpath('samtools'), 'index', ref_bamsorted_fpath + '.bam'], stderr=open(err_path, 'a'))
+        qutils.call_subprocess([samtools_fpath('samtools'), 'index', ref_bamsorted_fpath + '.bam'],
+                               stderr=open(err_path, 'a'), logger=logger)
     if not is_non_empty_file(cur_ref_fpath + '.fai'):
-        qutils.call_subprocess([samtools_fpath('samtools'), 'faidx', cur_ref_fpath], stderr=open(err_path, 'a'))
+        qutils.call_subprocess([samtools_fpath('samtools'), 'faidx', cur_ref_fpath],
+                               stderr=open(err_path, 'a'), logger=logger)
     vcfoutput_dirpath = os.path.join(output_dirpath, ref + '_manta')
     found_SV_fpath = os.path.join(vcfoutput_dirpath, 'results/variants/diploidSV.vcf.gz')
     unpacked_SV_fpath = found_SV_fpath + '.unpacked'
@@ -120,14 +122,15 @@ def process_one_ref(cur_ref_fpath, output_dirpath, err_path, bed_fpath=None):
         os.makedirs(vcfoutput_dirpath)
         qutils.call_subprocess([os.path.join(manta_bin_dirpath, 'configManta.py'), '--normalBam', ref_bamsorted_fpath + '.bam',
                                 '--referenceFasta', cur_ref_fpath, '--runDir', vcfoutput_dirpath],
-                               stdout=open(err_path, 'a'), stderr=open(err_path, 'a'))
+                               stdout=open(err_path, 'a'), stderr=open(err_path, 'a'), logger=logger)
         if not os.path.exists(os.path.join(vcfoutput_dirpath, 'runWorkflow.py')):
             return None
         qutils.call_subprocess([os.path.join(vcfoutput_dirpath, 'runWorkflow.py'), '-m', 'local', '-j', str(qconfig.max_threads)],
-                               stderr=open(err_path, 'a'))
+                               stderr=open(err_path, 'a'), logger=logger)
     if not is_non_empty_file(unpacked_SV_fpath):
         cmd = 'gunzip -c %s' % found_SV_fpath
-        qutils.call_subprocess(shlex.split(cmd), stdout=open(unpacked_SV_fpath, 'w'), stderr=open(err_path, 'a'))
+        qutils.call_subprocess(shlex.split(cmd), stdout=open(unpacked_SV_fpath, 'w'),
+                               stderr=open(err_path, 'a'), logger=logger)
     from manta import vcfToBedpe
     vcfToBedpe.vcfToBedpe(open(unpacked_SV_fpath), open(ref_bed_fpath, 'w'))
     return ref_bed_fpath
@@ -141,7 +144,8 @@ def create_bed_files(main_ref_fpath, meta_ref_fpaths, ref_labels, deletions, out
         bed_fpaths = Parallel(n_jobs=n_jobs)(delayed(process_one_ref)(cur_ref_fpath, output_dirpath, err_path) for cur_ref_fpath in meta_ref_fpaths)
         bed_fpaths = [f for f in bed_fpaths if f is not None]
         if bed_fpaths:
-            qutils.call_subprocess(['cat'] + bed_fpaths, stdout=open(bed_fpath, 'w'), stderr=open(err_path, 'a'))
+            qutils.call_subprocess(['cat'] + bed_fpaths, stdout=open(bed_fpath, 'w'),
+                                   stderr=open(err_path, 'a'), logger=logger)
     else:
         process_one_ref(main_ref_fpath, output_dirpath, err_path, bed_fpath=bed_fpath)
     bed_file = open(bed_fpath, 'a')
@@ -176,11 +180,11 @@ def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpat
         prev_dir = os.getcwd()
         os.chdir(output_dirpath)
         cmd = [bin_fpath('bowtie2-build'), main_ref_fpath, ref_name]
-        qutils.call_subprocess(cmd, stdout=open(log_path, 'a'), stderr=open(err_path, 'a'))
+        qutils.call_subprocess(cmd, stdout=open(log_path, 'a'), stderr=open(err_path, 'a'), logger=logger)
 
         cmd = bin_fpath('bowtie2') + ' -x ' + ref_name + ' -1 ' + abs_reads_fpaths[0] + ' -2 ' + abs_reads_fpaths[1] + ' -S ' + \
               sam_fpath + ' --no-unal -a -p %s' % str(qconfig.max_threads)
-        qutils.call_subprocess(shlex.split(cmd), stdout=open(log_path, 'a'), stderr=open(err_path, 'a'))
+        qutils.call_subprocess(shlex.split(cmd), stdout=open(log_path, 'a'), stderr=open(err_path, 'a'), logger=logger)
         logger.info('  Done.')
         os.chdir(prev_dir)
         if not os.path.exists(sam_fpath) or os.path.getsize(sam_fpath) == 0:
@@ -192,11 +196,11 @@ def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpat
         logger.info('  Using existing sorted SAM-file: ' + sam_sorted_fpath)
     else:
         qutils.call_subprocess([samtools_fpath('samtools'), 'view', '-@', str(qconfig.max_threads), '-bS', sam_fpath], stdout=open(bam_fpath, 'w'),
-                               stderr=open(err_path, 'a'))
+                               stderr=open(err_path, 'a'), logger=logger)
         qutils.call_subprocess([samtools_fpath('samtools'), 'sort', '-@', str(qconfig.max_threads), bam_fpath, bam_sorted_fpath],
-                               stderr=open(err_path, 'a'))
+                               stderr=open(err_path, 'a'), logger=logger)
         qutils.call_subprocess([samtools_fpath('samtools'), 'view', '-@', str(qconfig.max_threads), bam_sorted_fpath + '.bam'], stdout=open(sam_sorted_fpath, 'w'),
-                               stderr=open(err_path, 'a'))
+                               stderr=open(err_path, 'a'), logger=logger)
     if meta_ref_fpaths:
         logger.info('  Splitting SAM-file by references...')
     headers = []
@@ -328,7 +332,7 @@ def do(ref_fpath, contigs_fpaths, reads_fpaths, meta_ref_fpaths, output_dir, int
         return_code = qutils.call_subprocess(
             ['make', '-C', bowtie_dirpath],
             stdout=open(os.path.join(bowtie_dirpath, 'make.log'), 'w'),
-            stderr=open(os.path.join(bowtie_dirpath, 'make.err'), 'w'), )
+            stderr=open(os.path.join(bowtie_dirpath, 'make.err'), 'w'), logger=logger)
 
         if return_code != 0 or not all_required_binaries_exist(bowtie_dirpath, 'bowtie2-align-l'):
             logger.error('Failed to compile Bowtie2 (' + bowtie_dirpath + ')! '
@@ -345,7 +349,7 @@ def do(ref_fpath, contigs_fpaths, reads_fpaths, meta_ref_fpaths, output_dir, int
         return_code = qutils.call_subprocess(
             ['make', '-C', samtools_dirpath],
             stdout=open(os.path.join(samtools_dirpath, 'make.log'), 'w'),
-            stderr=open(os.path.join(samtools_dirpath, 'make.err'), 'w'), )
+            stderr=open(os.path.join(samtools_dirpath, 'make.err'), 'w'), logger=logger)
 
         if return_code != 0 or not all_required_binaries_exist(samtools_dirpath, 'samtools'):
             logger.error('Failed to compile SAMtools (' + samtools_dirpath + ')! '
@@ -366,17 +370,17 @@ def do(ref_fpath, contigs_fpaths, reads_fpaths, meta_ref_fpaths, output_dir, int
             [os.path.join(manta_dirpath, 'source', 'src', 'configure'), '--prefix=' + os.path.join(manta_dirpath, 'build'),
              '--jobs=' + str(qconfig.max_threads)],
             stdout=open(os.path.join(manta_dirpath, 'make.log'), 'w'),
-            stderr=open(os.path.join(manta_dirpath, 'make.err'), 'w'), )
+            stderr=open(os.path.join(manta_dirpath, 'make.err'), 'w'), logger=logger)
         if return_code == 0:
             return_code = qutils.call_subprocess(
                 ['make', '-j' + str(qconfig.max_threads)],
                 stdout=open(os.path.join(manta_dirpath, 'make.log'), 'a'),
-                stderr=open(os.path.join(manta_dirpath, 'make.err'), 'a'), )
+                stderr=open(os.path.join(manta_dirpath, 'make.err'), 'a'), logger=logger)
             if return_code == 0:
                 return_code = qutils.call_subprocess(
                 ['make', 'install'],
                 stdout=open(os.path.join(manta_dirpath, 'make.log'), 'a'),
-                stderr=open(os.path.join(manta_dirpath, 'make.err'), 'a'), )
+                stderr=open(os.path.join(manta_dirpath, 'make.err'), 'a'), logger=logger)
         os.chdir(prev_dir)
         if return_code != 0 or not all_required_binaries_exist(manta_bin_dirpath, 'configManta.py'):
             logger.error('Failed to compile Manta (' + manta_dirpath + ')! '

@@ -230,4 +230,4 @@ def get_path_to_program(program):
 
 
 def is_non_empty_file(fpath):
-    return os.path.exists(fpath) and os.path.getsize(fpath) != 0
+    return os.path.exists(fpath) and os.path.getsize(fpath) < 10

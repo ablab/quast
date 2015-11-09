@@ -44,7 +44,7 @@ class QuastDeletion(object):
     '''
 
     MAX_CONFIDENCE_INTERVAL = 150
-    MIN_GAP = 1000
+    MIN_GAP = qconfig.extensive_misassembly_threshold - 2 * MAX_CONFIDENCE_INTERVAL
 
     def __init__(self, ref, prev_good=None, prev_bad=None, next_bad=None, next_good=None, next_bad_end=None):
         self.ref, self.prev_good, self.prev_bad, self.next_bad, self.next_good, self.next_bad_end = \
@@ -77,10 +77,13 @@ class QuastDeletion(object):
     def set_next_bad(self, mapping):
         self.next_bad = mapping.start
         self.next_bad_end = mapping.end
-        self.next_good = self.next_bad  # next_good is always None at this moment (deletion is complete already otherwise)
+        self.next_good = self.next_bad  # next_good is always None at this moment (deletion is complete otherwise)
 
     def set_next_bad_end(self, mapping):
+        if self.next_bad is None:
+            self.next_bad = mapping.start
         self.next_bad_end = mapping.end
+        self.next_good = min(mapping.start, self.next_bad + QuastDeletion.MAX_CONFIDENCE_INTERVAL)
 
     def __str__(self):
         return '\t'.join(map(str, [self.ref, self.prev_good, self.prev_bad,
@@ -242,13 +245,13 @@ def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpat
                         else:
                             cur_deletion.set_prev_bad(mapping)
                     else:  # previous mapping was in region AFTER 0-covered fragment
-                        # just passed another 0-cov fragment between end of cur_deletion BBB region and this mapping
+                        # just passed another 0-cov fragment between end of cur_deletion BAD region and this mapping
                         if mapping.start - cur_deletion.next_bad_end > QuastDeletion.MIN_GAP:
                             if cur_deletion.is_valid():   # add previous fragment's deletion if needed
                                 deletions.append(cur_deletion)
                             cur_deletion = QuastDeletion(mapping.ref).set_prev_bad(position=cur_deletion.next_bad_end)
-                        # continue region AFTER 0-covered fragment
-                        elif mapping.mapq >= Mapping.MIN_MAP_QUALITY:
+                        # continue region AFTER 0-covered fragment (old one or new/another one -- see "if" above)
+                        if mapping.mapq >= Mapping.MIN_MAP_QUALITY:
                             cur_deletion.set_next_good(mapping)
                             if cur_deletion.is_valid():
                                 deletions.append(cur_deletion)

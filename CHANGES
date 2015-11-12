@@ -1,5 +1,28 @@
 -- Version history --
 
+3.2   1. The tool now accepts raw reads for improving quality assessment (experimental
+      feature, try with care):
+       - reads should be provided with --reads1 (or -1), --reads2 (or -2) options,
+       - reads are aligned to reference genome using bowtie2 (embedded),
+       - Manta structural variation (SV) calling tool (embedded) is run on bowtie2 output,
+       - found SVs are used for classifying QUAST misassemblies into true ones and fakes
+        ones (caused by structural differences between reference sequence and
+        sequenced organism). Fake misassemblies are excluded from "# misassemlies" metric
+        and reported in novel "# structural variants" metric.
+
+      2. HTML reports content is reformatted, especially in MetaQUAST reports:
+       - GC % and all metrics based on genome length (NG50, NGA50, LGA75, etc) are excluded
+       from the combined reference statistics (they don't make sense there);
+       - N50 is replaced with more fair and comparable metrics such as "Total length >= 1000 bp",
+       "Total length >= 10000 bp" in the main MetaQUAST report. Extended version still has N50.
+       - N50 is also hidden in single-genome QUAST reports, and exposed NGA50 instead.
+
+      3. MetaQUAST output directory content is reformatted.
+
+      4. Scaffolds misassemblies are introduced.
+
+      5. Fixed several minor and major bugs.
+
 3.1   1. MetaQUAST:
        - more specific algorithm for reference searching and downloading, particularly
          only Bacteria and Archaea are downloaded;

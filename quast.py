@@ -584,6 +584,10 @@ def main(args):
 
         elif opt == '--combined-ref':
             qconfig.is_combined_ref = True
+
+        elif opt == '--memory-efficient':
+            qconfig.memory_efficient = True
+
         elif opt in ('-1', '--reads1'):
             reads_fpath_f = arg
         elif opt in ('-2', '--reads2'):

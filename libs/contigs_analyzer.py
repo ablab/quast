@@ -236,7 +236,7 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
             # Daemonic processes are not allowed to have children,
             # so if we are already one of parallel processes
             # (i.e. daemonic) we can't start new daemonic processes
-            if parallel_by_chr:
+            if parallel_by_chr and not qconfig.memory_efficient:
                 n_jobs = min(qconfig.max_threads, len(prefixes_and_chr_files))
             else:
                 n_jobs = 1
@@ -1618,7 +1618,7 @@ def do(reference, contigs_fpaths, cyclic, output_dir, old_contigs_fpaths, bed_fp
         cyclic, nucmer_output_dir, fname, i, output_dir, reference, bed_fpath)
              for i, fname in enumerate(zip(contigs_fpaths, old_contigs_fpaths)))
     else:
-        if len(contigs_fpaths) >= len(qconfig.splitted_ref):
+        if len(contigs_fpaths) >= len(qconfig.splitted_ref) and not qconfig.memory_efficient:
             statuses_results_lengths_tuples = Parallel(n_jobs=n_jobs)(delayed(plantakolya_process)(
         cyclic, nucmer_output_dir, fname, i, output_dir, reference, bed_fpath)
              for i, fname in enumerate(zip(contigs_fpaths, old_contigs_fpaths)))

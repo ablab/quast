@@ -409,10 +409,6 @@ def main(args):
         sys.exit(2)
 
     for opt, arg in options[:]:
-        if opt in ('-d', '--debug'):
-            options.remove((opt, arg))
-            qconfig.debug = True
-            logger.set_up_console_handler(debug=True)
 
         if opt == '--test':
             options.remove((opt, arg))
@@ -452,7 +448,11 @@ def main(args):
 
     # Yes, this is a code duplicating. But OptionParser is deprecated since version 2.7.
     for opt, arg in options:
-        if opt in ('-o', "--output-dir"):
+        if opt in ('-d', '--debug'):
+            qconfig.debug = True
+            logger.set_up_console_handler(debug=True)
+
+        elif opt in ('-o', "--output-dir"):
             output_dirpath = os.path.abspath(arg)
             qconfig.make_latest_symlink = False
             if ' ' in output_dirpath:
@@ -625,6 +625,9 @@ def main(args):
         qconfig.genes_lengths = map(int, qconfig.genes_lengths.split(","))
 
     qconfig.set_max_threads(logger)
+
+    logger.info()
+    logger.print_params()
 
     ########################################################################
     from libs import reporting

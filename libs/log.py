@@ -193,6 +193,31 @@ class QLogger(object):
         else:
             self.info(text)
 
+    def print_params(self, indent='',
+                           wrap_after=80, only_if_debug=False):
+        self._logger.info("Main parameters: ")
+        text = '  '
+        line = indent
+        params = {'Threads: ': qconfig.max_threads, 'eukaryotic: ': not qconfig.prokaryote, 'meta: ': qconfig.meta, 'scaffolds: ': qconfig.scaffolds,
+                  'minimum contig length: ': qconfig.min_contig, 'minimum alignment length (Nucmer): ': qconfig.min_alignment,
+                  'ambiguity: ': qconfig.ambiguity_usage, 'use all alignments: ': qconfig.use_all_alignments,
+                  'threshold for extensive misassembly size: ': qconfig.extensive_misassembly_threshold}
+        for i, param in enumerate(params):
+            if params[param]:
+                line += param + str(params[param]).lower()
+
+                if i == len(params) - 1:
+                    text += line
+
+                elif wrap_after is not None and len(line) > wrap_after:
+                    text += line + ', \\\n'
+                    line = ' ' * len(indent) + '  '
+
+                else:
+                    line += ', '
+
+        self.info(text)
+
     def print_timestamp(self, message=''):
         now = datetime.now()
         current_time = now.strftime("%Y-%m-%d %H:%M:%S")

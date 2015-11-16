@@ -490,6 +490,8 @@ def main(args):
             html_report = False
         elif opt == '--plots-format':
             pass
+        elif opt == '--memory-efficient':
+            pass
         elif opt in ('-1', '--reads1'):
             reads_fpath_f = arg
             quast_py_args = __remove_from_quast_py_args(quast_py_args, opt, arg)

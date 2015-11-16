@@ -1,5 +1,7 @@
+from __future__ import with_statement
 import shutil
-import copy
+import urllib
+import urllib2
 from libs import reporting, qconfig, qutils, contigs_analyzer
 from qutils import is_non_empty_file
 
@@ -12,7 +14,10 @@ import os
 bowtie_dirpath = os.path.join(qconfig.LIBS_LOCATION, 'bowtie2')
 samtools_dirpath = os.path.join(qconfig.LIBS_LOCATION, 'samtools')
 manta_dirpath = os.path.join(qconfig.LIBS_LOCATION, 'manta')
+manta_build_dirpath = os.path.join(qconfig.LIBS_LOCATION, 'manta', 'build')
 manta_bin_dirpath = os.path.join(qconfig.LIBS_LOCATION, 'manta', 'build/bin')
+config_manta_fpath = os.path.join(manta_build_dirpath, 'configManta.py')
+manta_download_path = 'https://github.com/Illumina/manta/releases/download/v0.29.1/manta-0.29.1.centos5_x86_64.tar.bz2'
 
 
 class Mapping(object):
@@ -121,7 +126,7 @@ def process_one_ref(cur_ref_fpath, output_dirpath, err_path, bed_fpath=None):
         if os.path.exists(vcfoutput_dirpath):
             shutil.rmtree(vcfoutput_dirpath, ignore_errors=True)
         os.makedirs(vcfoutput_dirpath)
-        qutils.call_subprocess([os.path.join(manta_bin_dirpath, 'configManta.py'), '--normalBam', ref_bamsorted_fpath + '.bam',
+        qutils.call_subprocess([config_manta_fpath, '--normalBam', ref_bamsorted_fpath + '.bam',
                                 '--referenceFasta', cur_ref_fpath, '--runDir', vcfoutput_dirpath],
                                stdout=open(err_path, 'a'), stderr=open(err_path, 'a'), logger=logger)
         if not os.path.exists(os.path.join(vcfoutput_dirpath, 'runWorkflow.py')):
@@ -216,7 +221,7 @@ def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpat
                 seq_length = int(line.split('\tLN:')[1].split('\t')[0])
                 seq_name_length[seq_name] = seq_length
             headers.append(line.strip())
-    need_ref_spliting = False
+    need_ref_splitting = False
     if meta_ref_fpaths:
         ref_files = {}
         for cur_ref_fpath in meta_ref_fpaths:
@@ -236,7 +241,7 @@ def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpat
                         chrs.append(seq_name)
                 new_ref_sam_file.write(headers[-1] + '\n')
                 ref_files[ref] = new_ref_sam_file
-                need_ref_spliting = True
+                need_ref_splitting = True
     deletions = []
     trivial_deletions_fpath = os.path.join(output_dirpath, qconfig.trivial_deletions_fname)
     logger.info('  Looking for trivial deletions (long zero-covered fragments)...')
@@ -245,7 +250,7 @@ def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpat
         need_trivial_deletions = False
         logger.info('    Using existing file: ' + trivial_deletions_fpath)
 
-    if need_trivial_deletions or need_ref_spliting:
+    if need_trivial_deletions or need_ref_splitting:
         with open(sam_sorted_fpath) as sam_file:
             cur_deletion = None
             for line in sam_file:
@@ -289,7 +294,7 @@ def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpat
                                 deletions.append(cur_deletion)
                         cur_deletion = QuastDeletion(mapping.ref).set_prev_good(mapping)
 
-                    if need_ref_spliting:
+                    if need_ref_splitting:
                         cur_ref = ref_labels[mapping.ref]
                         if mapping.ref_next.strip() == '=' or cur_ref == ref_labels[mapping.ref_next]:
                             if ref_files[cur_ref] is not None:
@@ -298,7 +303,7 @@ def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpat
                 cur_deletion.set_next_good(position=seq_name_length[cur_deletion.ref])
                 if cur_deletion.is_valid():
                     deletions.append(cur_deletion)
-        if need_ref_spliting:
+        if need_ref_splitting:
             for ref_handler in ref_files.values():
                 if ref_handler is not None:
                     ref_handler.close()
@@ -309,9 +314,11 @@ def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpat
                 for deletion in deletions:
                     f.write(str(deletion) + '\n')
 
-    manta_sv_fapth = search_sv_with_manta(main_ref_fpath, meta_ref_fpaths, output_dirpath, err_path)
-
-    qutils.cat_files([manta_sv_fapth, trivial_deletions_fpath], bed_fpath)
+    if os.path.exists(config_manta_fpath):
+        manta_sv_fpath = search_sv_with_manta(main_ref_fpath, meta_ref_fpaths, output_dirpath, err_path)
+        qutils.cat_files([manta_sv_fpath, trivial_deletions_fpath], bed_fpath)
+    elif os.path.exists(trivial_deletions_fpath):
+        shutil.copy(trivial_deletions_fpath, bed_fpath)
 
     if os.path.exists(bed_fpath):
         logger.info('  Structural variations saved to ' + bed_fpath)
@@ -358,7 +365,7 @@ def do(ref_fpath, contigs_fpaths, reads_fpaths, meta_ref_fpaths, output_dir, int
                                                                    'Try to compile it manually. ' + (
                              'You can restart QUAST with the --debug flag '
                              'to see the command line.' if not qconfig.debug else ''))
-            logger.info('Failed aligning the reads.')
+            logger.info('Failed searching structural variations')
             return None
 
     if not all_required_binaries_exist(samtools_dirpath, 'samtools'):
@@ -375,39 +382,68 @@ def do(ref_fpath, contigs_fpaths, reads_fpaths, meta_ref_fpaths, output_dir, int
                                                                              'Try to compile it manually. ' + (
                              'You can restart QUAST with the --debug flag '
                              'to see the command line.' if not qconfig.debug else ''))
-            logger.info('Failed aligning the reads.')
+            logger.info('Failed searching structural variations')
             return None
 
     if not all_required_binaries_exist(manta_bin_dirpath, 'configManta.py'):
         # making
-        logger.info('Compiling Manta (details are in ' + os.path.join(manta_dirpath, 'make.log') + ' and make.err)')
-        prev_dir = os.getcwd()
-        if not os.path.exists(os.path.join(manta_dirpath, 'build')):
-            os.mkdir(os.path.join(manta_dirpath, 'build'))
-        os.chdir(os.path.join(manta_dirpath, 'build'))
-        return_code = qutils.call_subprocess(
-            [os.path.join(manta_dirpath, 'source', 'src', 'configure'), '--prefix=' + os.path.join(manta_dirpath, 'build'),
-             '--jobs=' + str(qconfig.max_threads)],
-            stdout=open(os.path.join(manta_dirpath, 'make.log'), 'w'),
-            stderr=open(os.path.join(manta_dirpath, 'make.err'), 'w'), logger=logger)
-        if return_code == 0:
+        if not os.path.exists(manta_build_dirpath):
+            os.mkdir(manta_build_dirpath)
+        if qconfig.platform_name == 'linux_64':
+            logger.info('  Downloading binary distribution of Manta...')
+            manta_downloaded_fpath = os.path.join(manta_build_dirpath, 'manta.tar.bz2')
+            response = urllib2.urlopen(manta_download_path)
+            content = response.read()
+            if content:
+                logger.info('  Manta successfully downloaded!')
+                f = open(manta_downloaded_fpath + '.download', 'w' )
+                f.write(content)
+                f.close()
+                if os.path.exists(manta_downloaded_fpath + '.download'):
+                    logger.info('  Unpacking Manta...')
+                    shutil.move(manta_downloaded_fpath + '.download', manta_downloaded_fpath)
+                    import tarfile
+                    tar = tarfile.open(manta_downloaded_fpath, "r:bz2")
+                    tar.extractall(manta_build_dirpath)
+                    tar.close()
+                    manta_temp_dirpath = os.path.join(manta_build_dirpath, tar.members[0].name)
+                    from distutils.dir_util import copy_tree
+                    copy_tree(manta_temp_dirpath, manta_build_dirpath)
+                    shutil.rmtree(manta_temp_dirpath)
+                    os.remove(manta_downloaded_fpath)
+                    logger.info('  Done')
+            else:
+                logger.info('  Failed downloading Manta from %s!' % manta_download_path)
+
+
+        if not all_required_binaries_exist(manta_bin_dirpath, 'configManta.py'):
+            logger.info('Compiling Manta (details are in ' + os.path.join(manta_dirpath, 'make.log') + ' and make.err)')
+            prev_dir = os.getcwd()
+            os.chdir(manta_build_dirpath)
             return_code = qutils.call_subprocess(
-                ['make', '-j' + str(qconfig.max_threads)],
-                stdout=open(os.path.join(manta_dirpath, 'make.log'), 'a'),
-                stderr=open(os.path.join(manta_dirpath, 'make.err'), 'a'), logger=logger)
+                [os.path.join(manta_dirpath, 'source', 'src', 'configure'), '--prefix=' + os.path.join(manta_dirpath, 'build'),
+                 '--jobs=' + str(qconfig.max_threads)],
+                stdout=open(os.path.join(manta_dirpath, 'make.log'), 'w'),
+                stderr=open(os.path.join(manta_dirpath, 'make.err'), 'w'), logger=logger)
             if return_code == 0:
                 return_code = qutils.call_subprocess(
-                ['make', 'install'],
-                stdout=open(os.path.join(manta_dirpath, 'make.log'), 'a'),
-                stderr=open(os.path.join(manta_dirpath, 'make.err'), 'a'), logger=logger)
-        os.chdir(prev_dir)
-        if return_code != 0 or not all_required_binaries_exist(manta_bin_dirpath, 'configManta.py'):
-            logger.error('Failed to compile Manta (' + manta_dirpath + ')! '
-                                                                   'Try to compile it manually. ' + (
-                             'You can restart QUAST with the --debug flag '
-                             'to see the command line.' if not qconfig.debug else ''))
-            logger.info('Failed aligning the reads.')
-            return None
+                    ['make', '-j' + str(qconfig.max_threads)],
+                    stdout=open(os.path.join(manta_dirpath, 'make.log'), 'a'),
+                    stderr=open(os.path.join(manta_dirpath, 'make.err'), 'a'), logger=logger)
+                if return_code == 0:
+                    return_code = qutils.call_subprocess(
+                    ['make', 'install'],
+                    stdout=open(os.path.join(manta_dirpath, 'make.log'), 'a'),
+                    stderr=open(os.path.join(manta_dirpath, 'make.err'), 'a'), logger=logger)
+            os.chdir(prev_dir)
+            if return_code != 0 or not all_required_binaries_exist(manta_bin_dirpath, 'configManta.py'):
+                logger.error('Failed to compile Manta (' + manta_dirpath + ')! '
+                                                                       'Try to compile it manually ' + (
+                                 'or download binary distribution from https://github.com/Illumina/manta/releases '
+                                 'and unpack it into ' + os.path.join(manta_dirpath, 'build/') if qconfig.platform_name == 'linux_64' else '') + (
+                                 '. You can restart QUAST with the --debug flag '
+                                 'to see the command line.' if not qconfig.debug else '.'))
+                logger.info('Failed searching structural variations. QUAST will search trivial deletions only.')
 
     temp_output_dir = os.path.join(output_dir, 'temp_output')
 
@@ -417,7 +453,11 @@ def do(ref_fpath, contigs_fpaths, reads_fpaths, meta_ref_fpaths, output_dir, int
     log_path = os.path.join(output_dir, 'sv_calling.log')
     err_path = os.path.join(output_dir, 'sv_calling.err')
     logger.info('  ' + 'Logging to files %s and %s...' % (log_path, err_path))
-    bed_fpath = run_processing_reads(ref_fpath, meta_ref_fpaths, contigs_analyzer.ref_labels_by_chromosomes, reads_fpaths, temp_output_dir, output_dir, log_path, err_path)
+    try:
+        bed_fpath = run_processing_reads(ref_fpath, meta_ref_fpaths, contigs_analyzer.ref_labels_by_chromosomes, reads_fpaths, temp_output_dir, output_dir, log_path, err_path)
+    except:
+        bed_fpath = None
+        logger.error('Failed searching structural variations! This function is experimental and may work improperly. Sorry for the inconvenience.')
     if not qconfig.debug:
         shutil.rmtree(temp_output_dir, ignore_errors=True)
 

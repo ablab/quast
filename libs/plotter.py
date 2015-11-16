@@ -110,10 +110,10 @@ def get_locators():
 
 
 def y_formatter(ylabel, max_y):
-    if max_y <= 3 * 1e+3:
+    if max_y <= 5 * 1e+3:
         mkfunc = lambda x, pos: '%d' % (x * 1)
         ylabel += '(bp)'
-    elif max_y <= 3 * 1e+6:
+    elif max_y <= 5 * 1e+6:
         mkfunc = lambda x, pos: '%d' % (x * 1e-3)
         ylabel += '(kbp)'
     else:

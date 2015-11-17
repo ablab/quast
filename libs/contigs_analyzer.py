@@ -1588,7 +1588,7 @@ def do(reference, contigs_fpaths, cyclic, output_dir, old_contigs_fpaths, bed_fp
 
     if not all_required_binaries_exist(mummer_dirpath):
         # making
-        logger.info('Compiling MUMmer (details are in ' + os.path.join(mummer_dirpath, 'make.log') + " and make.err)")
+        logger.main_info('Compiling MUMmer (details are in ' + os.path.join(mummer_dirpath, 'make.log') + " and make.err)")
         return_code = qutils.call_subprocess(
             ['make', '-C', mummer_dirpath],
             stdout=open(os.path.join(mummer_dirpath, 'make.log'), 'w'),
@@ -1598,7 +1598,7 @@ def do(reference, contigs_fpaths, cyclic, output_dir, old_contigs_fpaths, bed_fp
             logger.error("Failed to compile MUMmer (" + mummer_dirpath + ")! "
                          "Try to compile it manually. " + ("You can restart Quast with the --debug flag "
                          "to see the command line." if not qconfig.debug else ""))
-            logger.info('Failed aligning the contigs for all the assemblies. Only basic stats are going to be evaluated.')
+            logger.main_info('Failed aligning the contigs for all the assemblies. Only basic stats are going to be evaluated.')
             return dict(zip(contigs_fpaths, [NucmerStatus.FAILED] * len(contigs_fpaths))), None
 
     nucmer_output_dirname = 'nucmer_output'
@@ -1787,11 +1787,11 @@ def do(reference, contigs_fpaths, cyclic, output_dir, old_contigs_fpaths, bed_fp
     all = len(nucmer_statuses)
 
     if oks == all:
-        logger.info('Done.')
+        logger.main_info('Done.')
     if oks < all and problems < all:
-        logger.info('Done for ' + str(all - problems) + ' out of ' + str(all) + '. For the rest, only basic stats are going to be evaluated.')
+        logger.main_info('Done for ' + str(all - problems) + ' out of ' + str(all) + '. For the rest, only basic stats are going to be evaluated.')
     if problems == all:
-        logger.info('Failed aligning the contigs for all the assemblies. Only basic stats are going to be evaluated.')
+        logger.main_info('Failed aligning the contigs for all the assemblies. Only basic stats are going to be evaluated.')
 
 #    if NucmerStatus.FAILED in nucmer_statuses.values():
 #        log.info('  ' + str(failed) + 'file' + (' ' if failed == 1 else 's ') + 'failed to align to the reference. Only basic stats have been evaluated.')

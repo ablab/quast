@@ -124,8 +124,8 @@ def do(html_fpath, output_dirpath, combined_output_dirpath, output_dirpath_per_r
                                 cur_ref_names = ref_names[:-1]
                             if json_points:
                                 html_saver.save_meta_misassemblies(html_fpath, output_dirpath, json_points, labels, cur_ref_names)
-    logger.info('')
-    logger.info('  Text versions of reports and plots for each metric (for all references and assemblies) are saved to ' + output_dirpath + '/')
+    logger.main_info('')
+    logger.main_info('  Text versions of reports and plots for each metric (for all references and assemblies) are saved to ' + output_dirpath + '/')
 
 
 def print_file(all_rows, ref_num, fpath):

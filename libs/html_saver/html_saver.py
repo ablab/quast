@@ -219,7 +219,7 @@ def create_meta_report(results_dirpath, json_texts):
                 ['perl', '-I', krona_dirpath + '/lib', krona_dirpath + '/scripts/ImportText.pl', krona_txt_fpath, '-o', krona_fpath, '-a'],
                 stdout=open(os.devnull, 'w'), stderr=open(os.devnull, 'w'))
                 krona_fpaths.append(os.path.join(qconfig.krona_dirname, name + '_taxonomy_chart.html'))
-                meta_log.info('  Krona chart for ' + name + ' is saved to ' + krona_fpath)
+                meta_log.main_info('  Krona chart for ' + name + ' is saved to ' + krona_fpath)
                 os.remove(krona_txt_fpath)
             if len(assemblies) > 1:
                 name = 'summary'
@@ -227,7 +227,7 @@ def create_meta_report(results_dirpath, json_texts):
                 qutils.call_subprocess(
                     ['perl', '-I', krona_dirpath + '/lib', krona_dirpath + '/scripts/ImportText.pl', krona_common_fpath, '-o', krona_fpath, '-a'],
                     stdout=open(os.devnull, 'w'), stderr=open(os.devnull, 'w'))
-                meta_log.info('  Summary Krona chart is saved to ' + krona_fpath)
+                meta_log.main_info('  Summary Krona chart is saved to ' + krona_fpath)
                 krona_fpaths.append(os.path.join(qconfig.krona_dirname, name + '_taxonomy_chart.html'))  # extra fpath!
             os.remove(krona_common_fpath)
             save_krona_paths(results_dirpath, krona_fpaths, assemblies)
@@ -240,7 +240,7 @@ def create_meta_report(results_dirpath, json_texts):
     html_text = re.sub(r'{{(\s+\S+\s+)}}', '{}', html_text)
     with open(html_fpath, 'w') as f_html:
         f_html.write(html_text)
-    meta_log.info('  Extended version of HTML-report (for all references and assemblies) is saved to ' + html_fpath)
+    meta_log.main_info('  Extended version of HTML-report (for all references and assemblies) is saved to ' + html_fpath)
 
 
 def save_total_report(results_dirpath, min_contig, ref_fpath):

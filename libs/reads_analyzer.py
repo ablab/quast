@@ -321,10 +321,10 @@ def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpat
         shutil.copy(trivial_deletions_fpath, bed_fpath)
 
     if os.path.exists(bed_fpath):
-        logger.info('  Structural variations saved to ' + bed_fpath)
+        logger.main_info('  Structural variations saved to ' + bed_fpath)
         return bed_fpath
     else:
-        logger.info('  Failed searching structural variations.')
+        logger.main_info('  Failed searching structural variations.')
         return None
 
 
@@ -347,14 +347,14 @@ def do(ref_fpath, contigs_fpaths, reads_fpaths, meta_ref_fpaths, output_dir, int
         global logger
         logger = external_logger
     logger.print_timestamp()
-    logger.info('Running Structural Variants caller...')
+    logger.main_info('Running Structural Variants caller...')
 
     if not os.path.isdir(output_dir):
         os.makedirs(output_dir)
 
     if not all_required_binaries_exist(bowtie_dirpath, 'bowtie2-align-l'):
         # making
-        logger.info('Compiling Bowtie2 (details are in ' + os.path.join(bowtie_dirpath, 'make.log') + ' and make.err)')
+        logger.main_info('Compiling Bowtie2 (details are in ' + os.path.join(bowtie_dirpath, 'make.log') + ' and make.err)')
         return_code = qutils.call_subprocess(
             ['make', '-C', bowtie_dirpath],
             stdout=open(os.path.join(bowtie_dirpath, 'make.log'), 'w'),
@@ -365,12 +365,12 @@ def do(ref_fpath, contigs_fpaths, reads_fpaths, meta_ref_fpaths, output_dir, int
                                                                    'Try to compile it manually. ' + (
                              'You can restart QUAST with the --debug flag '
                              'to see the command line.' if not qconfig.debug else ''))
-            logger.info('Failed searching structural variations')
+            logger.main_info('Failed searching structural variations')
             return None
 
     if not all_required_binaries_exist(samtools_dirpath, 'samtools'):
         # making
-        logger.info(
+        logger.main_info(
             'Compiling SAMtools (details are in ' + os.path.join(samtools_dirpath, 'make.log') + ' and make.err)')
         return_code = qutils.call_subprocess(
             ['make', '-C', samtools_dirpath],
@@ -382,7 +382,7 @@ def do(ref_fpath, contigs_fpaths, reads_fpaths, meta_ref_fpaths, output_dir, int
                                                                              'Try to compile it manually. ' + (
                              'You can restart QUAST with the --debug flag '
                              'to see the command line.' if not qconfig.debug else ''))
-            logger.info('Failed searching structural variations')
+            logger.main_info('Failed searching structural variations')
             return None
 
     if not all_required_binaries_exist(manta_bin_dirpath, 'configManta.py'):
@@ -390,12 +390,12 @@ def do(ref_fpath, contigs_fpaths, reads_fpaths, meta_ref_fpaths, output_dir, int
         if not os.path.exists(manta_build_dirpath):
             os.mkdir(manta_build_dirpath)
         if qconfig.platform_name == 'linux_64':
-            logger.info('  Downloading binary distribution of Manta...')
+            logger.main_info('  Downloading binary distribution of Manta...')
             manta_downloaded_fpath = os.path.join(manta_build_dirpath, 'manta.tar.bz2')
             response = urllib2.urlopen(manta_download_path)
             content = response.read()
             if content:
-                logger.info('  Manta successfully downloaded!')
+                logger.main_info('  Manta successfully downloaded!')
                 f = open(manta_downloaded_fpath + '.download', 'w' )
                 f.write(content)
                 f.close()
@@ -411,13 +411,13 @@ def do(ref_fpath, contigs_fpaths, reads_fpaths, meta_ref_fpaths, output_dir, int
                     copy_tree(manta_temp_dirpath, manta_build_dirpath)
                     shutil.rmtree(manta_temp_dirpath)
                     os.remove(manta_downloaded_fpath)
-                    logger.info('  Done')
+                    logger.main_info('  Done')
             else:
-                logger.info('  Failed downloading Manta from %s!' % manta_download_path)
+                logger.main_info('  Failed downloading Manta from %s!' % manta_download_path)
 
 
         if not all_required_binaries_exist(manta_bin_dirpath, 'configManta.py'):
-            logger.info('Compiling Manta (details are in ' + os.path.join(manta_dirpath, 'make.log') + ' and make.err)')
+            logger.main_info('Compiling Manta (details are in ' + os.path.join(manta_dirpath, 'make.log') + ' and make.err)')
             prev_dir = os.getcwd()
             os.chdir(manta_build_dirpath)
             return_code = qutils.call_subprocess(
@@ -443,7 +443,7 @@ def do(ref_fpath, contigs_fpaths, reads_fpaths, meta_ref_fpaths, output_dir, int
                                  'and unpack it into ' + os.path.join(manta_dirpath, 'build/') if qconfig.platform_name == 'linux_64' else '') + (
                                  '. You can restart QUAST with the --debug flag '
                                  'to see the command line.' if not qconfig.debug else '.'))
-                logger.info('Failed searching structural variations. QUAST will search trivial deletions only.')
+                logger.main_info('Failed searching structural variations. QUAST will search trivial deletions only.')
 
     temp_output_dir = os.path.join(output_dir, 'temp_output')
 

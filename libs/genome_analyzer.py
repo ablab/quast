@@ -267,7 +267,7 @@ def do(ref_fpath, aligned_contigs_fpaths, output_dirpath, json_output_dirpath,
         nucmer_path_dirpath = os.path.join(nucmer_path_dirpath, 'raw')
 
     logger.print_timestamp()
-    logger.info('Running Genome analyzer...')
+    logger.main_info('Running Genome analyzer...')
 
     if not os.path.isdir(genome_stats_dirpath):
         os.mkdir(genome_stats_dirpath)
@@ -437,7 +437,7 @@ def do(ref_fpath, aligned_contigs_fpaths, output_dirpath, json_output_dirpath,
         plotter.histogram(aligned_contigs_fpaths, genome_mapped, genome_stats_dirpath + '/genome_fraction_histogram',
             'Genome fraction, %', top_value=100)
 
-    logger.info('Done.')
+    logger.main_info('Done.')
 
 
 class AlignedBlock():

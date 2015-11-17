@@ -109,6 +109,13 @@ class QLogger(object):
         self._logger.debug(indent + message)
 
     def info(self, message='', indent=''):
+        if qconfig.silent:
+            self._logger.debug(indent + message)
+        else:
+            self._logger.info(indent + message)
+
+    # main_info always print in stdout
+    def main_info(self, message='', indent=''):
         self._logger.info(indent + message)
 
     def info_to_file(self, message='', indent=''):
@@ -191,7 +198,7 @@ class QLogger(object):
         if only_if_debug:
             self.debug(text)
         else:
-            self.info(text)
+            self.main_info(text)
 
     def print_params(self, indent='',
                            wrap_after=80, only_if_debug=False):
@@ -216,13 +223,13 @@ class QLogger(object):
                 else:
                     line += ', '
 
-        self.info(text)
+        self._logger.info(text)
 
     def print_timestamp(self, message=''):
         now = datetime.now()
         current_time = now.strftime("%Y-%m-%d %H:%M:%S")
-        self.info('')
-        self.info(message + current_time)
+        self.main_info('')
+        self.main_info(message + current_time)
         return now
 
     def print_version(self, to_stderr=False):

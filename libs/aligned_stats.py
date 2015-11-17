@@ -28,7 +28,7 @@ def do(ref_fpath, aligned_contigs_fpaths, output_dirpath, json_output_dirpath,
 
     ########################################################################
     logger.print_timestamp()
-    logger.info('Running NA-NGA calculation...')
+    logger.main_info('Running NA-NGA calculation...')
 
     reference_length = sum(fastaparser.get_lengths_from_fastafile(ref_fpath))
     assembly_lengths = []
@@ -92,5 +92,5 @@ def do(ref_fpath, aligned_contigs_fpaths, output_dirpath, json_output_dirpath,
     if not qconfig.is_combined_ref:
         plotter.Nx_plot(output_dirpath, num_contigs > qconfig.max_points, aligned_contigs_fpaths, aligned_lengths_lists, aligned_stats_dirpath + '/NGAx_plot', 'NGAx', [reference_length for i in range(len(aligned_contigs_fpaths))])
 
-    logger.info('Done.')
+    logger.main_info('Done.')
     return report_dict

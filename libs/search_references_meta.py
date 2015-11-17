@@ -240,8 +240,7 @@ def check_blast(blast_check_fpath, files_sizes, assemblies_fpaths, assemblies, l
                     assembly, size = line.split()[1], line.split()[3]
                     if assembly in files_sizes.keys() and int(size) == files_sizes[assembly]:
                         existing_assembly = assemblies_fpaths[assembly]
-                        assembly_name = qutils.name_from_fpath(existing_assembly.fpath)
-                        logger.info('  Using existing BLAST alignments for %s... ' % labels[i])
+                        logger.main_info('  Using existing BLAST alignments for %s... ' % labels[i])
                         blast_assemblies.remove(existing_assembly)
                 elif line and existing_assembly:
                     line = line.split(' ')
@@ -262,16 +261,16 @@ def do(assemblies, labels, downloaded_dirpath, ref_txt_fpath=None):
     assemblies_fpaths = dict((assembly.fpath, assembly) for assembly in assemblies)
     blast_assemblies, downloaded_organisms, not_founded_organisms = \
         check_blast(blast_check_fpath, files_sizes, assemblies_fpaths, assemblies, labels)
+    organisms = []
 
     if ref_txt_fpath:
         organisms = parse_refs_list(ref_txt_fpath)
         organisms_assemblies = None
     else:
         scores_organisms, organisms_assemblies = process_blast(blast_assemblies, downloaded_dirpath, contigs_names, labels, blast_check_fpath, err_fpath)
-        if not scores_organisms:
-            return None
-        scores_organisms = sorted(scores_organisms, reverse=True)
-        organisms = [organism for (score, organism) in scores_organisms]
+        if scores_organisms:
+            scores_organisms = sorted(scores_organisms, reverse=True)
+            organisms = [organism for (score, organism) in scores_organisms]
 
     downloaded_ref_fpaths = [os.path.join(downloaded_dirpath,file) for (path, dirs, files) in os.walk(downloaded_dirpath) for file in files if qutils.check_is_fasta_file(file)]
 
@@ -279,7 +278,7 @@ def do(assemblies, labels, downloaded_dirpath, ref_txt_fpath=None):
                  blast_check_fpath, err_fpath, organisms_assemblies)
 
     if not ref_fpaths:
-        logger.info('Reference genomes are not found.')
+        logger.main_info('Reference genomes are not found.')
     if not qconfig.debug and os.path.exists(err_fpath):
         os.remove(err_fpath)
     ref_fpaths.sort()
@@ -311,14 +310,14 @@ def process_blast(blast_assemblies, downloaded_dirpath, contigs_names, labels, b
     blast_res_fpath = os.path.join(downloaded_dirpath, 'blast.res')
 
     if len(blast_assemblies) > 0:
-        logger.info('Running BlastN..')
+        logger.main_info('Running BlastN..')
         n_jobs = min(qconfig.max_threads, len(blast_assemblies))
         blast_threads = max(1, qconfig.max_threads // n_jobs)
         from joblib import Parallel, delayed
         Parallel(n_jobs=n_jobs)(delayed(parallel_blast)(
                     assembly.fpath, assembly.label, blast_res_fpath, err_fpath, blast_check_fpath, blast_threads) for i, assembly in enumerate(blast_assemblies))
 
-    logger.info('')
+    logger.main_info('')
     scores_organisms = []
     organisms_assemblies = {}
     for label in labels:
@@ -367,7 +366,6 @@ def process_blast(blast_assemblies, downloaded_dirpath, contigs_names, labels, b
                 scores_organisms.append(score)
         organisms_assemblies[label] = [score[1] for score in all_scores]
     if not scores_organisms:
-        logger.info('Reference genomes are not found.')
         return None, None
     return scores_organisms, organisms_assemblies
 
@@ -386,26 +384,25 @@ def process_refs(organisms, labels, downloaded_dirpath, not_founded_organisms, c
                  blast_check_fpath, err_fpath, organisms_assemblies=None):
     ref_fpaths = []
     downloaded_organisms = []
+
+    total_downloaded = 0
+    total_scored_left = len(organisms)
+    if total_scored_left == 0:
+        if not qconfig.debug and os.path.exists(err_fpath):
+            os.remove(err_fpath)
+        return ref_fpaths
+
     max_organism_name_len = 0
     for organism in organisms:
         max_organism_name_len = max(len(organism), max_organism_name_len)
     for organism in downloaded_organisms:
         max_organism_name_len = max(len(organism), max_organism_name_len)
 
-    total_downloaded = 0
-    total_scored_left = len(organisms)
-    if total_scored_left == 0:
-        if not ref_fpaths:
-            logger.info('Reference genomes are not found.')
-        if not qconfig.debug and os.path.exists(err_fpath):
-            os.remove(err_fpath)
-        return ref_fpaths
-
     logger.print_timestamp()
-    logger.info('Trying to download found references from NCBI. '
+    logger.main_info('Trying to download found references from NCBI. '
                 'Totally ' + str(total_scored_left) + ' organisms to try.')
     if len(downloaded_ref_fpaths) > 0:
-        logger.info('MetaQUAST will attempt to use previously downloaded references...')
+        logger.main_info('MetaQUAST will attempt to use previously downloaded references...')
 
     for organism in organisms:
         ref_fpath = os.path.join(downloaded_dirpath, re.sub('[/.=]', '', organism) + '.fasta')
@@ -421,18 +418,18 @@ def process_refs(organisms, labels, downloaded_dirpath, not_founded_organisms, c
             total_scored_left -= 1
             total_downloaded += 1
             if was_downloaded:
-                logger.info("  %s%s | was downloaded previously (total %d, %d more to go)" %
+                logger.main_info("  %s%s | was downloaded previously (total %d, %d more to go)" %
                             (organism.replace('+', ' '), spaces, total_downloaded, total_scored_left))
                 if new_ref_fpath not in ref_fpaths:
                     ref_fpaths.append(new_ref_fpath)
             else:
-                logger.info("  %s%s | successfully downloaded (total %d, %d more to go)" %
+                logger.main_info("  %s%s | successfully downloaded (total %d, %d more to go)" %
                         (organism.replace('+', ' '), spaces, total_downloaded, total_scored_left))
                 ref_fpaths.append(new_ref_fpath)
             downloaded_organisms.append(organism)
         else:
             total_scored_left -= 1
-            logger.info("  %s%s | not found in the NCBI database" % (organism.replace('+', ' '), spaces))
+            logger.main_info("  %s%s | not found in the NCBI database" % (organism.replace('+', ' '), spaces))
             not_founded_organisms.add(organism)
     for label in labels:
         check_fpath = blast_check_fpath + '_' + label

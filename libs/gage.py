@@ -58,7 +58,7 @@ def do(ref_fpath, contigs_fpaths, output_dirpath):
 
     ########################################################################
     logger.print_timestamp()
-    logger.info('Running GAGE...')
+    logger.main_info('Running GAGE...')
 
     metrics = ['Total units', 'Min', 'Max', 'N50', 'Genome Size', 'Assembly Size', 'Chaff bases',
                'Missing Reference Bases', 'Missing Assembly Bases', 'Missing Assembly Contigs',
@@ -116,4 +116,4 @@ def do(ref_fpath, contigs_fpaths, output_dirpath):
     if not qconfig.debug:
         shutil.rmtree(tmp_dirpath)
 
-    logger.info('Done.')
+    logger.main_info('Done.')

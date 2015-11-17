@@ -182,7 +182,7 @@ def _start_quast_main(
 def _correct_contigs(contigs_fpaths, output_dirpath, labels):
     assemblies = [Assembly(contigs_fpaths[i], labels[i]) for i in range(len(contigs_fpaths))]
     corr_assemblies = []
-    for (contigs_fpath, label) in zip(contigs_fpaths, labels):
+    for file_counter, (contigs_fpath, label) in enumerate(zip(contigs_fpaths, labels)):
         contigs_fname = os.path.basename(contigs_fpath)
         fname, ctg_fasta_ext = qutils.splitext_for_fasta_file(contigs_fname)
 
@@ -190,6 +190,7 @@ def _correct_contigs(contigs_fpaths, output_dirpath, labels):
             os.path.join(output_dirpath, qconfig.corrected_dirname, label + ctg_fasta_ext))
 
         corr_assemblies.append(Assembly(corr_fpath, label))
+        logger.main_info('  ' + qutils.index_to_str(file_counter, force=(len(labels) > 1)) + '%s ==> %s' % (contigs_fpath, label))
 
     return assemblies, corr_assemblies
 
@@ -263,9 +264,9 @@ def _correct_references(ref_fpaths, corrected_dirpath):
             if not corr_seq_name:
                 break
         if corr_seq_fpath:
-            logger.info('  ' + ref_fpath + ' ==> ' + qutils.name_from_fpath(corr_seq_fpath) + '')
+            logger.main_info('  ' + ref_fpath + ' ==> ' + qutils.name_from_fpath(corr_seq_fpath) + '')
 
-    logger.info('  All references combined in ' + COMBINED_REF_FNAME)
+    logger.main_info('  All references combined in ' + COMBINED_REF_FNAME)
 
     return corrected_ref_fpaths, common_ref_fasta_ext, combined_ref_fpath, chromosomes_by_refs, ref_fpaths
 
@@ -492,6 +493,8 @@ def main(args):
             pass
         elif opt == '--memory-efficient':
             pass
+        elif opt == '--silent':
+            qconfig.silent = True
         elif opt in ('-1', '--reads1'):
             reads_fpath_f = arg
             quast_py_args = __remove_from_quast_py_args(quast_py_args, opt, arg)
@@ -540,15 +543,15 @@ def main(args):
     # PROCESSING REFERENCES
 
     if ref_fpaths:
-        logger.info()
-        logger.info('Reference(s):')
+        logger.main_info()
+        logger.main_info('Reference(s):')
 
         corrected_ref_fpaths, common_ref_fasta_ext, combined_ref_fpath, chromosomes_by_refs, ref_names =\
             _correct_references(ref_fpaths, corrected_dirpath)
 
     # PROCESSING CONTIGS
-    logger.info()
-    logger.info('Contigs:')
+    logger.main_info()
+    logger.main_info('Contigs:')
     assemblies, correct_assemblies = _correct_contigs(contigs_fpaths, output_dirpath, labels)
     if not assemblies:
         logger.error("None of the assembly files contains correct contigs. "
@@ -561,14 +564,14 @@ def main(args):
 
     # SEARCHING REFERENCES
     if not ref_fpaths:
-        logger.info()
+        logger.main_info()
         if qconfig.max_references == 0:
             logger.notice("Maximum number of references (--max-ref-number) is set to 0, search in SILVA 16S rRNA database is disabled")
         else:
             if ref_txt_fpath:
-                logger.info("List of references was provided, starting to download reference genomes from NCBI...")
+                logger.main_info("List of references was provided, starting to download reference genomes from NCBI...")
             else:
-                logger.info("No references are provided, starting to search for reference genomes in SILVA 16S rRNA database "
+                logger.main_info("No references are provided, starting to search for reference genomes in SILVA 16S rRNA database "
                         "and to download them from NCBI...")
             downloaded_dirpath = os.path.join(output_dirpath, qconfig.downloaded_dirname)
             if not os.path.isdir(downloaded_dirpath):
@@ -578,8 +581,8 @@ def main(args):
                 search_references_meta.is_quast_first_run = True
                 if not ref_txt_fpath:
                     downloaded_refs = True
-                logger.info()
-                logger.info('Downloaded reference(s):')
+                logger.main_info()
+                logger.main_info('Downloaded reference(s):')
                 corrected_ref_fpaths, common_ref_fasta_ext, combined_ref_fpath, chromosomes_by_refs, ref_names =\
                     _correct_references(ref_fpaths, corrected_dirpath)
             elif test_mode:
@@ -588,7 +591,7 @@ def main(args):
 
     if not ref_fpaths:
         # No references, running regular quast with MetaGenemark gene finder
-        logger.info()
+        logger.main_info()
         logger.notice('No references are provided, starting regular QUAST with MetaGeneMark gene finder')
         _start_quast_main(
             None,
@@ -616,8 +619,8 @@ def main(args):
 
     quast_py_args += ['--combined-ref']
     run_name = 'for the combined reference'
-    logger.info()
-    logger.info('Starting quast.py ' + run_name + '...')
+    logger.main_info()
+    logger.main_info('Starting quast.py ' + run_name + '...')
     total_num_notices = 0
     total_num_warnings = 0
     total_num_nf_errors = 0
@@ -641,19 +644,19 @@ def main(args):
     search_references_meta.is_quast_first_run = False
 
     if downloaded_refs:
-        logger.info()
-        logger.info('Excluding downloaded references with low genome fraction from further analysis..')
+        logger.main_info()
+        logger.main_info('Excluding downloaded references with low genome fraction from further analysis..')
         corr_ref_fpaths = remove_unaligned_downloaded_refs(output_dirpath, ref_fpaths, chromosomes_by_refs)
         if corr_ref_fpaths and corr_ref_fpaths != ref_fpaths:
-            logger.info()
-            logger.info('Filtered reference(s):')
+            logger.main_info()
+            logger.main_info('Filtered reference(s):')
             os.remove(combined_ref_fpath)
             contigs_analyzer.ref_labels_by_chromosomes = {}
             corrected_ref_fpaths, common_ref_fasta_ext, combined_ref_fpath, chromosomes_by_refs, ref_names =\
                     _correct_references(corr_ref_fpaths, corrected_dirpath)
             run_name = 'for the corrected combined reference'
-            logger.info()
-            logger.info('Starting quast.py ' + run_name + '...')
+            logger.main_info()
+            logger.main_info('Starting quast.py ' + run_name + '...')
             return_code, total_num_notifications, assemblies, labels = _start_quast_main(run_name, quast_py_args + ["--ambiguity-usage"] + ['all'],
                 assemblies=assemblies,
                 reference_fpath=combined_ref_fpath,
@@ -663,9 +666,9 @@ def main(args):
                 json_texts = json_texts[:-1]
                 json_texts.append(json_saver.json_text)
         elif corr_ref_fpaths == ref_fpaths:
-            logger.info('All downloaded references have genome fraction more than 10%. Nothing was excluded.')
+            logger.main_info('All downloaded references have genome fraction more than 10%. Nothing was excluded.')
         else:
-            logger.info('All downloaded references have low genome fraction. Nothing was excluded for now.')
+            logger.main_info('All downloaded references have low genome fraction. Nothing was excluded for now.')
 
     quast_py_args += ['--no-check-meta']
     qconfig.contig_thresholds = ','.join([str(threshold) for threshold in qconfig.contig_thresholds if threshold > qconfig.min_contig])
@@ -676,8 +679,8 @@ def main(args):
     quast_py_args += [qconfig.contig_thresholds]
     quast_py_args.remove('--combined-ref')
 
-    logger.info()
-    logger.info('Partitioning contigs into bins aligned to each reference..')
+    logger.main_info()
+    logger.main_info('Partitioning contigs into bins aligned to each reference..')
 
     assemblies_by_reference, not_aligned_assemblies = _partition_contigs(
         assemblies, corrected_ref_fpaths, corrected_dirpath,
@@ -686,13 +689,13 @@ def main(args):
     ref_names = []
     output_dirpath_per_ref = os.path.join(output_dirpath, qconfig.per_ref_dirname)
     for ref_name, ref_assemblies in assemblies_by_reference:
-        logger.info('')
+        logger.main_info('')
         if not ref_assemblies:
-            logger.info('No contigs were aligned to the reference ' + ref_name + ', skipping..')
+            logger.main_info('No contigs were aligned to the reference ' + ref_name + ', skipping..')
         else:
             ref_names.append(ref_name)
             run_name = 'for the contigs aligned to ' + ref_name
-            logger.info('Starting quast.py ' + run_name)
+            logger.main_info('Starting quast.py ' + run_name)
 
             return_code, total_num_notifications = _start_quast_main(run_name, quast_py_args,
                 assemblies=ref_assemblies,
@@ -710,11 +713,11 @@ def main(args):
             break
 
     run_name = 'for the contigs not aligned anywhere'
-    logger.info()
+    logger.main_info()
     if no_unaligned_contigs:
-        logger.info('Skipping quast.py ' + run_name + ' (everything is aligned!)')
+        logger.main_info('Skipping quast.py ' + run_name + ' (everything is aligned!)')
     else:
-        logger.info('Starting quast.py ' + run_name + '...')
+        logger.main_info('Starting quast.py ' + run_name + '...')
 
         return_code, total_num_notifications = _start_quast_main(run_name, quast_py_args,
             assemblies=not_aligned_assemblies,
@@ -731,7 +734,7 @@ def main(args):
 
     if ref_names:
         logger.print_timestamp()
-        logger.info("Summarizing results...")
+        logger.main_info("Summarizing results...")
 
         summary_output_dirpath = os.path.join(output_dirpath, qconfig.meta_summary_dir)
         if not os.path.isdir(summary_output_dirpath):
@@ -753,8 +756,8 @@ def main(args):
             html_saver.create_meta_report(output_dirpath, json_texts)
 
     quast._cleanup(corrected_dirpath)
-    logger.info('')
-    logger.info('MetaQUAST finished.')
+    logger.main_info('')
+    logger.main_info('MetaQUAST finished.')
     logger.finish_up(numbers=tuple(total_num_notifications), check_test=test_mode)
 
 

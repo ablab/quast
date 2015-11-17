@@ -128,7 +128,7 @@ def predict_genes(index, contigs_fpath, gene_lengths, out_dirpath, tool_dirpath,
 
 def do(contigs_fpaths, gene_lengths, out_dirpath):
     logger.print_timestamp()
-    logger.info('Running GlimmerHMM...')
+    logger.main_info('Running GlimmerHMM...')
 
     tool_dirpath = os.path.join(qconfig.LIBS_LOCATION, 'glimmer')
     tool_src_dirpath = os.path.join(tool_dirpath, 'src')
@@ -137,7 +137,7 @@ def do(contigs_fpaths, gene_lengths, out_dirpath):
 
     if not os.path.isfile(tool_exec_fpath):
         # making
-        logger.info("Compiling GlimmerHMM...")
+        logger.main_info("Compiling GlimmerHMM...")
         return_code = qutils.call_subprocess(
             ['make', '-C', tool_src_dirpath],
             stdout=open(os.path.join(tool_src_dirpath, 'make.log'), 'w'),
@@ -172,4 +172,4 @@ def do(contigs_fpaths, gene_lengths, out_dirpath):
     if not qconfig.debug:
         shutil.rmtree(tmp_dirpath)
 
-    logger.info('Done.')
+    logger.main_info('Done.')

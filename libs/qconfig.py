@@ -38,7 +38,7 @@ long_options = "output-dir= save-json-to= genes= operons= reference= contig-thre
                "gene-thresholds= err-fpath= save-json gage eukaryote glimmer no-plots no-html no-check no-check-meta combined-ref no-gc help debug "\
                "ambiguity-usage= scaffolds threads= min-cluster= min-alignment= est-ref-size= use-all-alignments gene-finding "\
                "strict-NA meta labels= test help-hidden no-snps test-no-ref fast max-ref-number= extensive-mis-size= plots-format= " \
-               "references-list= bed-file= reads1= reads2= memory-efficient".split()
+               "references-list= bed-file= reads1= reads2= memory-efficient silent".split()
 short_options = "o:G:O:R:t:m:J:jehda:c:ufl:Lx:i:s1:2:"
 
 # default values for options
@@ -69,6 +69,9 @@ no_gc = False
 show_snps = True
 glimmer = False
 is_combined_ref = False
+
+#print in stdout only main information
+silent = False
 
 # the following 2 are for web-quast:
 error_log_fname = 'error.log'
@@ -239,7 +242,7 @@ def usage(show_hidden=False, meta=False):
     print >> sys.stderr, "    --plots-format  <str>             Save plots in specified format. [default: %s]" % plot_extension
     print >> sys.stderr, "                                      Supported formats: %s." % ', '.join(supported_plot_extensions)
     print >> sys.stderr, "    --memory-efficient                Run Nucmer using one thread, separately per each assembly and each chromosome. " \
-                         "                                      Reduce memory consumption for large genomes."
+                         "                                      Reduce memory consumption on large genomes."
     print >> sys.stderr, ""
     print >> sys.stderr, "Speedup options:"
     print >> sys.stderr, "    --no-check                        Do not check and correct input fasta files. Use at your own risk (see manual)"
@@ -252,6 +255,7 @@ def usage(show_hidden=False, meta=False):
         print >> sys.stderr, ""
         print >> sys.stderr, "Hidden options:"
         print >> sys.stderr, "-d  --debug                 Run in a debug mode"
+        print >> sys.stderr, "    --silent                Do not print detailed information about each step in stdout (log file is not affected)."
         print >> sys.stderr, "-L                          Take assembly names from their parent directory names"
         print >> sys.stderr, "-c  --min-cluster   <int>   Nucmer's parameter: the minimum length of a cluster of matches [default: %s]" % min_cluster
         print >> sys.stderr, "-j  --save-json             Save the output also in the JSON format"

@@ -81,7 +81,7 @@ def GC_content(contigs_fpath, skip=False):
 
 def do(ref_fpath, contigs_fpaths, output_dirpath, json_output_dir, results_dir):
     logger.print_timestamp()
-    logger.info("Running Basic statistics processor...")
+    logger.main_info("Running Basic statistics processor...")
     
     if not os.path.isdir(output_dirpath):
         os.mkdir(output_dirpath)
@@ -233,4 +233,4 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, json_output_dir, results_dir):
                 list_of_GC_distributions_with_ref.append(reference_GC_distribution)
             plotter.GC_content_plot(ref_fpath, contigs_fpaths, list_of_GC_distributions_with_ref, output_dirpath + '/GC_content_plot')
 
-    logger.info('Done.')
+    logger.main_info('Done.')

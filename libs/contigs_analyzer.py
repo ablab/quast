@@ -129,6 +129,7 @@ class NucmerStatus:
     FAILED = 0
     OK = 1
     NOT_ALIGNED = 2
+    ERROR = 3
 
 
 def run_nucmer(prefix, ref_fpath, contigs_fpath, log_out_fpath, log_err_fpath, index):
@@ -152,7 +153,7 @@ def __fail(contigs_fpath, index):
     logger.error('  ' + qutils.index_to_str(index) +
                  'Failed aligning contigs ' + qutils.label_from_fpath(contigs_fpath) + ' to the reference. ' +
                  ('Run with the --debug flag to see additional information.' if not qconfig.debug else ''))
-    return NucmerStatus.FAILED, {}, []
+    return NucmerStatus.ERROR, {}, []
 
 
 def create_nucmer_successful_check(fpath, contigs_fpath, ref_fpath):
@@ -1584,7 +1585,8 @@ def do(reference, contigs_fpaths, cyclic, output_dir, old_contigs_fpaths, bed_fp
         os.mkdir(output_dir)
 
     logger.print_timestamp()
-    logger.info('Running Contig analyzer...')
+    logger.main_info('Running Contig analyzer...')
+    num_nf_errors = logger._num_nf_errors
 
     if not all_required_binaries_exist(mummer_dirpath):
         # making
@@ -1783,8 +1785,11 @@ def do(reference, contigs_fpaths, cyclic, output_dir, old_contigs_fpaths, bed_fp
     oks = nucmer_statuses.values().count(NucmerStatus.OK)
     not_aligned = nucmer_statuses.values().count(NucmerStatus.NOT_ALIGNED)
     failed = nucmer_statuses.values().count(NucmerStatus.FAILED)
-    problems = not_aligned + failed
+    errors = nucmer_statuses.values().count(NucmerStatus.ERROR)
+    problems = not_aligned + failed + errors
     all = len(nucmer_statuses)
+
+    logger._num_nf_errors = num_nf_errors + errors
 
     if oks == all:
         logger.main_info('Done.')

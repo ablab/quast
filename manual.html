@@ -414,7 +414,7 @@ Comma-separated list of contig length thresholds. Used in <span class='metric-re
 <span class='metric-ref'>total length (&ge; x)</span> metrics (see <a href="#sec3">section 3</a>). The default value is 0,1000.
 
 <div class='option'>
-    <code><b>--scaffolds</b></code> (or <code>-s</code>)
+    <a name='scaffolds'></a><code><b>--scaffolds</b></code> (or <code>-s</code>)
 </div>
 The assemblies are scaffolds (rather than contigs). QUAST will add split versions
 of assemblies to the comparison (named &lt;assembly_name&gt;_broken).
@@ -471,7 +471,35 @@ The default value is 1000. Note that the threshold should be greater than maximu
 File format for plots. Supported formats: emf, eps, pdf, png, ps, raw, rgba, svg, svgz.
 The default format is PDF.
 
+<div class='option'>
+<code><b>--memory-efficient</b></code>
 </div>
+Run Nucmer using one thread, separately per each assembly and each chromosome. This may significantly reduce memory consumption on large genomes.
+
+<div class='option'>
+<code><b>--silent</b></code>
+</div>
+Do not print detailed information about each step in standard output. This option does not affect <code>quast.log</code> file.
+</div>
+
+<br>
+Structural variations calling (experimental feature):
+<div class='options'>
+
+<div class='option'>
+<code><b>--reads1</b></code> (or <code>-1</code>)
+</div>
+File with forward reads.
+
+<div class='option'>
+<code><b>--reads2</b></code> (or <code>-2</code>)
+</div>
+File with reverse reads.
+<p>Reads are used for SV detection. Reads are aligned to reference genome using bowtie2, then Manta structural variation (SV) calling tool is run on bowtie2 output.
+Found SVs are used for classifying QUAST misassemblies into true ones and fakes ones (caused by structural differences between reference sequence and
+    sequenced organism). Fake misassemblies are excluded from <a href="#misassemblies"><code># misassemblies</code></a> metric and reported in novel <a href="#sv"><code># structural variants</code></a> metric.
+</div>
+
 <br>
 Speedup options:
 <div class='options'>
@@ -678,7 +706,7 @@ Note:
 <p><span class='metric-name'>L50 (L75, LG50, LG75)</span> is the number of contigs equal to or longer than N50 (N75, NG50, NG75)<br>
     In other words, L50, for example, is the minimal number of contigs that cover half the assembly.</p>
 
-<p><span class='metric-name'># misassemblies</span> is the number of positions in the contigs that satisfy one of the following criteria:<br>
+<p><a name='misassemblies'></a><span class='metric-name'># misassemblies</span> is the number of positions in the contigs that satisfy one of the following criteria:<br>
     <ul style='margin-top: -24px;'>
     <li>the left flanking sequence aligns over 1<span class="rhs">&nbsp;</span>kbp away from the right flanking sequence on the reference;
     <li>flanking sequences overlap on more than 1<span class="rhs">&nbsp;</span>kbp;
@@ -766,6 +794,8 @@ changed by <a href='#extensive_mis_size'><code>--extensive-mis-size</code></a>.<
 <p><span class='metric-name'>Inversion</span> is a misassembly event (breakpoint) where the flanking sequences align on
 opposite strands of the same chromosome. </p>
 
+<p><span class='metric-name'>Scaffold gap size misassemblies</span> is a misassembly event (breakpoint) where the flanking sequences combined in scaffold on the wrong distance (<a href='#scaffolds'><code>--scaffolds</code></a> only). These misassemblies are not included in the total number of misassemblies. </p>
+
 <p><span class='metric-name'># misassembled contigs</span> and <span class='metric-ref'>misassembled contigs length</span> are the same as the metrics from
     <a href="#sec3.1.1">section 3.1.1</a> and are counted among all contigs with any type of a misassembly event
     (relocation, translocation, interspecies translocation or inversion). </p>
@@ -774,6 +804,9 @@ opposite strands of the same chromosome. </p>
 
 <p><span class='metric-name'># local misassemblies</span> is the same as <span class='metric-ref'># local misassemblies</span> from
 <a href="#sec3.1.1">section 3.1.1</a>.
+</p>
+
+<p><a name='sv'></a><span class='metric-name'># structural variants</span> is the number of misassemblies matched with structural variations of genome. These misassemblies are not included in the total number of misassemblies.
 </p>
 
 <p><span class='metric-name'># mismatches</span> is the number of mismatches in all aligned bases.</p>
@@ -856,8 +889,10 @@ file consists of several sequences all of them are drawn on the single plot hori
 </div>
 <a name="sec3.3"></a>
 <h3>3.3 MetaQUAST output</h3>
-<p>All outputs are in separate directories inside the directory provided by <code>-o</code> (or in quast_results/latest).
-Also, plots and reports for each metric as well as combined HTML report are saved in <code>&lt;quast_output_dir&gt;/summary/</code>.
+<p>Output for combined reference is inside the directory provided by <code>-o</code> (or in quast_results/latest).
+    All outputs per each reference are in separate directories inside the directory <code>&lt;quast_output_dir&gt;/runs_per_reference</code>.
+Also, plots and reports for each metric are saved in <code>&lt;quast_output_dir&gt;/summary/</code>.
+    Combined HTML report is saved in <code>&lt;quast_output_dir&gt;/report.html</code>.
 
 <p><span class='metric-name'>Metric-level plots</span><br>
     These plots are created for each metric to show its values for all assemblies vs all references.

@@ -243,6 +243,9 @@ def usage(show_hidden=False, meta=False):
     print >> sys.stderr, "                                      Supported formats: %s." % ', '.join(supported_plot_extensions)
     print >> sys.stderr, "    --memory-efficient                Run Nucmer using one thread, separately per each assembly and each chromosome. " \
                          "                                      Reduce memory consumption on large genomes."
+    print >> sys.stderr, "-1    --reads1                        File with forward reads. "
+    print >> sys.stderr, "-2    --reads2                        File with reverse reads. " \
+                         "                                      Reads are used for structural variant detection. "
     print >> sys.stderr, ""
     print >> sys.stderr, "Speedup options:"
     print >> sys.stderr, "    --no-check                        Do not check and correct input fasta files. Use at your own risk (see manual)"

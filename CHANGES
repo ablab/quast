@@ -7,7 +7,7 @@
        - Manta structural variation (SV) calling tool (embedded) is run on bowtie2 output,
        - found SVs are used for classifying QUAST misassemblies into true ones and fakes
         ones (caused by structural differences between reference sequence and
-        sequenced organism). Fake misassemblies are excluded from "# misassemlies" metric
+        sequenced organism). Fake misassemblies are excluded from "# misassemblies" metric
         and reported in novel "# structural variants" metric.
 
       2. HTML reports content is reformatted, especially in MetaQUAST reports:

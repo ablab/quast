@@ -175,7 +175,7 @@ class QLogger(object):
             exit(exit_code)
 
     def print_command_line(self, args, indent='',
-                           wrap_after=80, only_if_debug=False):
+                           wrap_after=80, only_if_debug=False, is_main=False):
         text = ''
         line = indent
 
@@ -197,8 +197,10 @@ class QLogger(object):
 
         if only_if_debug:
             self.debug(text)
-        else:
+        elif is_main:
             self.main_info(text)
+        else:
+            self.info(text)
 
     def print_params(self, indent='',
                            wrap_after=80, only_if_debug=False):

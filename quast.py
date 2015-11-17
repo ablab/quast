@@ -613,7 +613,7 @@ def main(args):
     args = [os.path.realpath(__file__)]
     for k, v in options: args.extend([k, v])
     args.extend(contigs_fpaths)
-    logger.print_command_line(args, wrap_after=None)
+    logger.print_command_line(args, wrap_after=None, is_main=True)
     logger.start()
 
     if existing_alignments:

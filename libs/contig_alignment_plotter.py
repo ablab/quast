@@ -618,7 +618,7 @@ def do(contigs_fpaths, contig_report_fpath_pattern, output_dirpath,
     plot_fpath, assemblies = draw_alignment_plot(
         contigs_fpaths, virtual_genome_size, sorted_ref_names, sorted_ref_lengths, virtual_genome_shift, output_dirpath,
         lists_of_aligned_blocks, arcs, similar, coverage_hist)
-    if assemblies:
+    if assemblies and qconfig.create_contig_alignment_html:
         js_data_gen(assemblies, contigs_fpaths, chr_names, reference_chromosomes, output_dirpath, cov_fpath, ref_fpath, virtual_genome_size)
 
     return plot_fpath

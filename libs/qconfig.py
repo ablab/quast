@@ -70,7 +70,7 @@ show_snps = True
 glimmer = False
 is_combined_ref = False
 
-#print in stdout only main information
+# print in stdout only main information
 silent = False
 
 # the following 2 are for web-quast:
@@ -101,7 +101,8 @@ krona_dirname = "krona_charts"
 variation_dirname = 'structural_variations'
 trivial_deletions_fname = 'trivial_deletions.bed'
 manta_sv_fname = 'manta_sv.bed'
-
+# do not draw interactive contig alignment plot
+create_contig_alignment_html = False
 
 # other settings (mostly constants). Can't be changed by command-line options
 

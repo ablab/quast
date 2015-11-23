@@ -22,6 +22,15 @@ if [ $return_code -ne 0 ]; then
    echo 'ERROR! QUAST TEST FAILED!'
    exit 1
 fi
+echo "Starting QUAST test with structural variants detection... (stdout redirected to $stdout_log_fname)"
+echo "" > $stdout_log_fname
+echo "Starting QUAST test with structural variants detection" >> $stdout_log_fname
+$quast_home/quast.py --test-sv-calling >> $stdout_log_fname
+return_code=$?
+if [ $return_code -ne 0 ]; then
+   echo 'ERROR! QUAST TEST WITH STRUCTURAL VARIANTS DETECTION FAILED!'
+   exit 1
+fi
 echo "Starting MetaQUAST test... (stdout redirected to $stdout_log_fname)"
 echo "" >> $stdout_log_fname
 echo "Starting MetaQUAST test" >> $stdout_log_fname

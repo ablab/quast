@@ -78,7 +78,8 @@
     <br>
     QUAST utilizes <a href="http://mummer.sourceforge.net/">MUMmer</a>, <a href="http://exon.gatech.edu/GeneMark/">GeneMarkS</a>,
     <a href="http://exon.gatech.edu/GeneMark/gmes_instructions.html">GeneMark-ES</a>, <a href="http://cbcb.umd.edu/software/glimmerhmm/">GlimmerHMM</a>,
-    and <a href="http://gage.cbcb.umd.edu/index.html">GAGE</a>.
+    <a href="http://bowtie-bio.sourceforge.net/bowtie2/index.shtml">Bowtie2</a>, <a href="http://samtools.sourceforge.net">SAMtools</a>,
+    <a href="https://github.com/Illumina/manta/">Manta Structural Variant (SV) Caller</a>, and <a href="http://gage.cbcb.umd.edu/index.html">GAGE</a>.
     In addition, MetaQUAST uses <a href="http://exon.gatech.edu/GeneMark/">MetaGeneMark</a>, <a href="http://sourceforge.net/p/krona/home/krona/">Krona tools</a>,
     <a href="http://blast.ncbi.nlm.nih.gov/Blast.cgi">BLAST</a>, and
     <a href="http://www.arb-silva.de/">SILVA</a> 16S rRNA database.
@@ -186,6 +187,10 @@ However, we recommend you to run:
 </pre>
 or/and
 <pre class="code">
+    python quast.py --test-sv-calling  (if you plan to use QUAST with SV calling)
+</pre>
+or/and
+<pre class="code">
     python metaquast.py --test  (if you plan to use metaquast.py with references)
 </pre>
 or/and 
@@ -196,8 +201,8 @@ These commands run all QUAST and MetaQUAST modules and check correctness
 of their work on your platform.
 <br><br>
 We also provide <code>./install.sh</code> and <code>./install_full.sh</code> scripts.
-If you plan to use metaquast.py without references, you should use <code>./install_full.sh</code>, which runs all three mentioned above commands
-and downloads necessary files (SILVA 16S rRNA gene database and BLAST). Otherwise, it is enough to use <code>./install.sh</code>,
+If you plan to use metaquast.py without references or use QUAST with SV calling, you should use <code>./install_full.sh</code>, which runs all four mentioned above commands,
+compiles tools for reads alignment and SV detection (SAMtools, Bowtie2, and Manta), and downloads necessary files (SILVA 16S rRNA gene database and BLAST). Otherwise, it is enough to use <code>./install.sh</code>,
 which runs only the first two commands.
 </p>
 
@@ -495,7 +500,7 @@ File with forward reads.
 <code><b>--reads2</b></code> (or <code>-2</code>)
 </div>
 File with reverse reads.
-<p>Reads are used for SV detection. Reads are aligned to reference genome using bowtie2, then Manta structural variation (SV) calling tool is run on bowtie2 output.
+<p>Reads are used for SV detection. Reads are aligned to reference genome using bowtie2, then Manta SV calling tool is run on bowtie2 output.
 Found SVs are used for classifying QUAST misassemblies into true ones and fakes ones (caused by structural differences between reference sequence and
     sequenced organism). Fake misassemblies are excluded from <a href="#misassemblies"><code># misassemblies</code></a> metric and reported in novel <a href="#sv"><code># structural variants</code></a> metric.
 </div>
@@ -569,6 +574,12 @@ Other:
     <code><b>--test</b></code>
 </div>
 Run the tool on a data from the <code>test_data</code> folder and check correctness of the evaluation process. Output is saved in <code>quast_test_output</code>.
+
+<div class='option'>
+    <code><b>--test-sv-calling</b></code>
+</div>
+Run the tool on a data from the <code>test_data</code> folder using the reads for SV detection. The tool will compile the required programs
+    (SAMtools, Bowtie2, and Manta Structural Variant Caller).
 
 <div class='option'>
     <code><b>-h</b></code> (or <code>--help</code>)

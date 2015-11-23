@@ -16,7 +16,7 @@ samtools_dirpath = os.path.join(qconfig.LIBS_LOCATION, 'samtools')
 manta_dirpath = os.path.join(qconfig.LIBS_LOCATION, 'manta')
 manta_build_dirpath = os.path.join(qconfig.LIBS_LOCATION, 'manta', 'build')
 manta_bin_dirpath = os.path.join(qconfig.LIBS_LOCATION, 'manta', 'build/bin')
-config_manta_fpath = os.path.join(manta_build_dirpath, 'configManta.py')
+config_manta_fpath = os.path.join(manta_bin_dirpath, 'configManta.py')
 manta_download_path = 'https://github.com/Illumina/manta/releases/download/v0.29.1/manta-0.29.1.centos5_x86_64.tar.bz2'
 
 
@@ -414,7 +414,6 @@ def do(ref_fpath, contigs_fpaths, reads_fpaths, meta_ref_fpaths, output_dir, int
                     logger.main_info('  Done')
             else:
                 logger.main_info('  Failed downloading Manta from %s!' % manta_download_path)
-
 
         if not all_required_binaries_exist(manta_bin_dirpath, 'configManta.py'):
             logger.main_info('Compiling Manta (details are in ' + os.path.join(manta_dirpath, 'make.log') + ' and make.err)')

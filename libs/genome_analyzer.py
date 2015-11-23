@@ -97,6 +97,7 @@ def process_single_file(contigs_fpath, index, nucmer_path_dirpath, genome_stats_
     if not os.path.isfile(nucmer_fpath):
         logger.error('Nucmer\'s coords file (' + nucmer_fpath + ') not found! Try to restart QUAST.',
             indent='  ')
+        return None
 
     coordfile = open(nucmer_fpath, 'r')
     for line in coordfile:
@@ -136,6 +137,7 @@ def process_single_file(contigs_fpath, index, nucmer_path_dirpath, genome_stats_
         if chr_name not in genome_mapping:
             logger.error("Something went wrong and chromosome names in your coords file (" + nucmer_base_fpath + ") " \
                          "differ from the names in the reference. Try to remove the file and restart QUAST.")
+            return None
 
         aligned_blocks_by_contig_name[contig_name].append(AlignedBlock(seqname=chr_name, start=s1, end=e1))
         if s2 == 0 and e2 == 0:  # special case: circular genome, contig starts on the end of a chromosome and ends in the beginning
@@ -329,12 +331,20 @@ def do(ref_fpath, aligned_contigs_fpaths, output_dirpath, json_output_dirpath,
     full_found_operons = []
 
     # process all contig files
+    num_nf_errors = logger._num_nf_errors
     n_jobs = min(len(aligned_contigs_fpaths), qconfig.max_threads)
     from joblib import Parallel, delayed
     process_results = Parallel(n_jobs=n_jobs)(delayed(process_single_file)(
         contigs_fpath, index, nucmer_path_dirpath, genome_stats_dirpath,
         reference_chromosomes, genes_container, operons_container)
         for index, contigs_fpath in enumerate(aligned_contigs_fpaths))
+    num_nf_errors += len([res for res in process_results if res is None])
+    logger._num_nf_errors = num_nf_errors
+    process_results = [res for res in process_results if res]
+    if not process_results:
+        logger.main_info('Genome analyzer failed for all the assemblies.')
+        res_file.close()
+        return
 
     ref_lengths = [process_results[i][0] for i in range(len(process_results))]
     results_genes_operons_tuples = [process_results[i][1] for i in range(len(process_results))]

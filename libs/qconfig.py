@@ -145,6 +145,7 @@ max_references = 50
 plot_extension = "pdf"
 supported_plot_extensions = ['emf', 'eps', 'pdf', 'png', 'ps', 'raw', 'rgba', 'svg', 'svgz']
 
+
 def check_python_version():
     if sys.version[0:3] not in SUPPORTED_PYTHON_VERSIONS:
         sys.stderr.write("ERROR! Python version " + sys.version[0:3] + " is not supported!\n" +\
@@ -242,11 +243,11 @@ def usage(show_hidden=False, meta=False):
     print >> sys.stderr, "                                      less than extensive-mis-size are counted as local misassemblies. [default: %s]" % extensive_misassembly_threshold
     print >> sys.stderr, "    --plots-format  <str>             Save plots in specified format. [default: %s]" % plot_extension
     print >> sys.stderr, "                                      Supported formats: %s." % ', '.join(supported_plot_extensions)
-    print >> sys.stderr, "    --memory-efficient                Run Nucmer using one thread, separately per each assembly and each chromosome. " \
-                         "                                      Reduce memory consumption on large genomes."
-    print >> sys.stderr, "-1    --reads1                        File with forward reads. "
-    print >> sys.stderr, "-2    --reads2                        File with reverse reads. " \
-                         "                                      Reads are used for structural variant detection. "
+    print >> sys.stderr, "    --memory-efficient                Run Nucmer using one thread, separately per each assembly and each chromosome. "
+    print >> sys.stderr, "                                      This may significantly reduce memory consumption on large genomes."
+    print >> sys.stderr, "-1  --reads1  <filename>              File with forward reads (in FASTQ format, may be gzipped). "
+    print >> sys.stderr, "-2  --reads2  <filename>              File with reverse reads (in FASTQ format, may be gzipped). "
+    print >> sys.stderr, "                                      Reads are used for structural variant detection. "
     print >> sys.stderr, ""
     print >> sys.stderr, "Speedup options:"
     print >> sys.stderr, "    --no-check                        Do not check and correct input fasta files. Use at your own risk (see manual)"

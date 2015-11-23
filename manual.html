@@ -69,7 +69,8 @@
 <h1>QUAST 3.2 manual</h1>
 
 <p> QUAST stands for <u>QU</u>ality <u>AS</u>sessment <u>T</u>ool.
-    The tool evaluates genome assemblies by computing various metrics.
+    The tool evaluates genome assemblies by computing various metrics. This document provides instructions
+    for the general QUAST tool for genome assemblies and MetaQUAST, the extension for metagenomic datasets.
     <br>
     <br>
     You can find all project news and the latest version of the tool
@@ -78,17 +79,20 @@
     <br>
     QUAST utilizes <a href="http://mummer.sourceforge.net/">MUMmer</a>, <a href="http://exon.gatech.edu/GeneMark/">GeneMarkS</a>,
     <a href="http://exon.gatech.edu/GeneMark/gmes_instructions.html">GeneMark-ES</a>, <a href="http://cbcb.umd.edu/software/glimmerhmm/">GlimmerHMM</a>,
-    <a href="http://bowtie-bio.sourceforge.net/bowtie2/index.shtml">Bowtie2</a>, <a href="http://samtools.sourceforge.net">SAMtools</a>,
-    <a href="https://github.com/Illumina/manta/">Manta Structural Variant (SV) Caller</a>, and <a href="http://gage.cbcb.umd.edu/index.html">GAGE</a>.
+    and <a href="http://gage.cbcb.umd.edu/index.html">GAGE</a>.
     In addition, MetaQUAST uses <a href="http://exon.gatech.edu/GeneMark/">MetaGeneMark</a>, <a href="http://sourceforge.net/p/krona/home/krona/">Krona tools</a>,
     <a href="http://blast.ncbi.nlm.nih.gov/Blast.cgi">BLAST</a>, and
     <a href="http://www.arb-silva.de/">SILVA</a> 16S rRNA database.
-    These tools are built in into the QUAST package which is ready for use by academic, non-profit institutions and U.S. Government agencies.
+    Starting from version 3.2, QUAST package also includes reads processing tools for finding structural variants between the reference genome and actual organism.
+    These tools are <a href="http://bowtie-bio.sourceforge.net/bowtie2/index.shtml">Bowtie2</a>,
+    <a href="https://github.com/samtools/samtools">SAMtools</a>, and <a href="https://github.com/Illumina/manta">Manta</a>.
+    <br>
+    All tools from above are built in into the QUAST package which is ready for use by academic, non-profit institutions and U.S. Government agencies.
     If you are not in one of these categories please refer to <a href="LICENSE">LICENSE</a> section 'Third-party tools incorporated into QUAST'
     for guidelines on how to complete the licensing process.
     <br>
     <br>
-    Version 3.2 of QUAST was released under GPL v2 on XX November 2015. Note that some of build-in third-party tools are not under GPL v2. See <a href="LICENSE">LICENSE</a> for details.
+    Version 3.2 of QUAST was released under GPL v2 on 25 November 2015. Note that some of build-in third-party tools are not under GPL v2. See <a href="LICENSE">LICENSE</a> for details.
 </p>
 
 <h2>Contents</h2>
@@ -134,7 +138,7 @@
 <ul>
     <li>python 2 (2.5 or higher)</li>
     <li>perl 5.6.0 or higher</li>
-    <li>g++</li>
+    <li>gcc 4.7 or higher</li>
     <li>make</li>
     <li>sh</li>
     <li>csh</li>
@@ -148,6 +152,8 @@
 <ul>
     <li>Java JDK (tested with OpenJDK 6) for GAGE</li>
     <li>Time::HiRes perl module for GeneMark-ES</li>
+    <li>Boost (tested with v1.56.0) for Manta</li>
+    <li>cmake (tested with v2.8.12) for Manta</li>
 </ul>
 All those tools are usually preinstalled on Linux.<br>
 Mac OS, however, initially misses <code>make</code>, <code>g++</code> and <code>ar</code>, so you will have to install 
@@ -156,7 +162,7 @@ Mac OS, however, initially misses <code>make</code>, <code>g++</code> and <code>
 <br>
 <br>
 It is also highly recommended to install the <a href="http://matplotlib.sourceforge.net/">Matplotlib</a> Python library for drawing plots. 
-We recommend to use Matplotlib version 1.0 or higher. Tested with Matplotlib v.1.3.1.
+We recommend to use Matplotlib version 1.1 or higher. Tested with Matplotlib v.1.3.1.
 <br>
 Installation can be done with Python <a href="http://www.pip-installer.org/">pip-installer</a>:
 <pre class="code">
@@ -488,21 +494,21 @@ Do not print detailed information about each step in standard output. This optio
 </div>
 
 <br>
-Structural variations calling (experimental feature):
+Structural variant (SV) calling and processing (<b>experimental</b>, please use it with care until we finalize the feature):
 <div class='options'>
 
 <div class='option'>
 <code><b>--reads1</b></code> (or <code>-1</code>)
 </div>
-File with forward reads.
+File with forward reads in FASTQ format (may be gzipped).
 
 <div class='option'>
 <code><b>--reads2</b></code> (or <code>-2</code>)
 </div>
-File with reverse reads.
+File with reverse reads in FASTQ format (may be gzipped).
 <p>Reads are used for SV detection. Reads are aligned to reference genome using bowtie2, then Manta SV calling tool is run on bowtie2 output.
-Found SVs are used for classifying QUAST misassemblies into true ones and fakes ones (caused by structural differences between reference sequence and
-    sequenced organism). Fake misassemblies are excluded from <a href="#misassemblies"><code># misassemblies</code></a> metric and reported in novel <a href="#sv"><code># structural variants</code></a> metric.
+Found SVs are used for classifying QUAST misassemblies into true ones and fake ones (caused by structural differences between reference sequence and
+    sequenced organism). Fake misassemblies are excluded from <a href="#misassemblies"><code># misassemblies</code></a> metric and reported in <a href="#sv"><code># structural variants</code></a> metric.
 </div>
 
 <br>

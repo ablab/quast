@@ -25,12 +25,11 @@ html_colors = [
     '#008000',  #green
     '#A22DCC',  #fushua
     '#FFA500',  #orange
-    '#CCCC00',  #yellow
     '#800000',  #maroon
     '#00CCCC',  #aqua
     '#B2DF8A',  #light green
-    '#CAB2D6',  #light purple
-    '#FDBF6F',  #olive
+    '#333300',  #dark green
+    '#CCCC00',  #olive
     '#000080',  #navy
     '#008080',  #team
     '#00FF00',  #lime

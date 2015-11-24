@@ -4,6 +4,9 @@
     "Total length"                  : "<span>is the total number of bases in the assembly.</span>",
     "Reference length"              : "<span>is the total number of bases in the reference.</span>",
 
+    "# contigs (>= 0 bp)"           : "<span>is the total number of contigs in the assembly that have size greater or equal than 0 bp.</span>",
+    "Total length (>= 0 bp)"        : "<span>is the total number of bases in the contigs having size greater or equal than 0 bp.</span>",
+
     "N50"                           : "<span>is the contig length such that using longer or equal length contigs produces half (50%) of the bases of the assembly. Usually there is no value that produces exactly 50%, so the technical definition is the maximum length x such that using contigs of length at least x accounts for at least 50% of the total assembly length.</span>",
     "NG50"                          : "<span>is the contig length such that using longer or equal length contigs produces half (50%) of the bases of the reference genome. This metric is computed only if a reference genome is provided.</span>",
     "N75"                           : "<span>is the contig length such that using longer or equal length contigs produces 75% of the bases of the assembly. Usually there is no value that produces exactly 75%, so the technical definition is the maximum length x such that using contigs of length at least x accounts for at least 75% of the total assembly length.</span>",
@@ -34,6 +37,7 @@
     "# interspecies translocations" : "<span>is the number of interspecies translocation events among all misassembly events. Interspecies translocation is a misassembly where the flanking sequences align on different references (--meta only).</span>",
     "# inversions"                  : "<span>is the number of inversion events among all misassembly events. Inversion is a misassembly where it is not a <i>relocation</i> and the flanking sequences align on opposite strands of the same chromosome.</span>",
     "# local misassemblies"         : "<span>is the number of local misassemblies. We define a local misassembly breakpoint as a breakpoint that satisfies these conditions: <ol> <li>Two or more distinct alignments cover the breakpoint.</li> <li>The gap between left and right flanking sequences is less than 1 kbp.</li> <li>The left and right flanking sequences both are on the same strand of the same chromosome of the reference genome.</li> </ol> </span>",
+    "# scaffold gap size misassemblies" : "<span>is the number of scaffold gap size misassemblies. We define scaffold gap size misassembly as a breakpoint where the flanking sequences combined in scaffold on the wrong distance. These misassemblies are not included in the total number of misassemblies. </span>",
     "# possibly misassembled contigs": "<span>is the number of contigs that contain large unaligned fragment and thus could possibly contain interspecies translocation with unknown reference.</span>",
     "# structural variations"       : "<span>is the number of misassemblies matched with structural variations.</span>",
 
@@ -61,6 +65,8 @@
 
     "# genes"                       : "<span>is the number of genes in the assembly (complete and partial), based on a user-provided annotated list of gene positions in the reference genome. A gene counts as 'partially covered' if the assembly contains at least 100 bp of this gene but not the whole gene.</span>",
     "# operons"                     : "<span>is the number of operons in the assembly (complete and partial), based on a user-provided annotated list of operon positions in the reference genome. An operon counts as 'partially covered' if the assembly contains at least 100 bp of this operon but not the whole operon.</span>",
+    "# predicted genes (unique)"    : "<span>is the number of unique genes in the assembly found by a gene prediction tool.</span>",
+    "# predicted genes (>= 0 bp)"   : "<span>is the number of found genes having length greater or equal than 0 bp.</span>",
 
     "Cumulative length"             : "<span>plot shows the growth of assembly contig lengths. On the x-axis, contigs are ordered from largest (contig #1) to smallest. The y-axis gives the size of the x largest contigs in the assembly.</span>",
     "Nx"                            : "<span>plot shows the Nx metric value as x varies from 0 to 100.</span>  <span>Nx is the minimum contig length <b>y</b> such that using contigs of length at least <b>y</b> accounts for at least x% of the total assembly length.</span>",

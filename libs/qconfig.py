@@ -285,7 +285,7 @@ def usage(show_hidden=False, meta=False):
     else:
         print >> sys.stderr, "    --test                            Run QUAST on the data from the test_data folder, output to quast_test_output"
         print >> sys.stderr, "    --test-sv                         Run QUAST with structural variants detection on the data from the test_data folder, output to quast_test_output."
-    print >> sys.stderr, "-h  --help                                Print this usage message"
-    print >> sys.stderr, "-v  --version                             Print version"
+    print >> sys.stderr, "-h  --help                            Print this usage message"
+    print >> sys.stderr, "-v  --version                         Print version"
     if show_hidden:
         print >> sys.stderr, "    --help-hidden                     Print this usage message with all hidden options"

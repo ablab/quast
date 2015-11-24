@@ -34,7 +34,7 @@ splitted_ref = []
 MAX_REFERENCE_FILE_LENGTH = 50000000  # Max length of one part of reference
 
 # available options
-long_options = "test test-no-ref test-sv-calling output-dir= save-json-to= genes= operons= reference= contig-thresholds= min-contig= "\
+long_options = "test test-no-ref test-sv output-dir= save-json-to= genes= operons= reference= contig-thresholds= min-contig= "\
                "gene-thresholds= err-fpath= save-json gage eukaryote glimmer no-plots no-html no-check no-check-meta combined-ref no-gc help debug "\
                "ambiguity-usage= scaffolds threads= min-cluster= min-alignment= est-ref-size= use-all-alignments gene-finding "\
                "strict-NA meta labels= help-hidden no-snps fast max-ref-number= extensive-mis-size= plots-format= " \
@@ -248,6 +248,7 @@ def usage(show_hidden=False, meta=False):
     print >> sys.stderr, "-1  --reads1  <filename>              File with forward reads (in FASTQ format, may be gzipped). "
     print >> sys.stderr, "-2  --reads2  <filename>              File with reverse reads (in FASTQ format, may be gzipped). "
     print >> sys.stderr, "                                      Reads are used for structural variant detection. "
+    print >> sys.stderr, "    --silent                          Do not print detailed information about each step in stdout (log file is not affected)."
     print >> sys.stderr, ""
     print >> sys.stderr, "Speedup options:"
     print >> sys.stderr, "    --no-check                        Do not check and correct input fasta files. Use at your own risk (see manual)"
@@ -260,11 +261,11 @@ def usage(show_hidden=False, meta=False):
         print >> sys.stderr, ""
         print >> sys.stderr, "Hidden options:"
         print >> sys.stderr, "-d  --debug                 Run in a debug mode"
-        print >> sys.stderr, "    --silent                Do not print detailed information about each step in stdout (log file is not affected)."
         print >> sys.stderr, "-L                          Take assembly names from their parent directory names"
         print >> sys.stderr, "-c  --min-cluster   <int>   Nucmer's parameter: the minimum length of a cluster of matches [default: %s]" % min_cluster
         print >> sys.stderr, "-j  --save-json             Save the output also in the JSON format"
         print >> sys.stderr, "-J  --save-json-to <path>   Save the JSON output to a particular path"
+        print >> sys.stderr, "    --contig-alignment-html Create interactive contig alignment plot"
 
     print >> sys.stderr, ""
     print >> sys.stderr, "Other:"
@@ -275,6 +276,7 @@ def usage(show_hidden=False, meta=False):
         print >> sys.stderr, "                                      Internet connection is required."
     else:
         print >> sys.stderr, "    --test                            Run QUAST on the data from the test_data folder, output to quast_test_output"
+        print >> sys.stderr, "    --test-sv                         Run QUAST with structural variants detection on the data from the test_data folder, output to quast_test_output."
     print >> sys.stderr, "-h  --help                            Print this usage message"
     if show_hidden:
         print >> sys.stderr, "    --help-hidden                     Print this usage message with all hidden options"

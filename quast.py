@@ -410,7 +410,7 @@ def main(args):
 
     for opt, arg in options[:]:
 
-        if opt == '--test' or opt == '--test-sv-calling':
+        if opt == '--test' or opt == '--test-sv':
             options.remove((opt, arg))
             options += [('-o', 'quast_test_output'),
                         ('-R', os.path.join(qconfig.QUAST_HOME, 'test_data', 'reference.fasta.gz')),  # for compiling MUMmer
@@ -418,7 +418,7 @@ def main(args):
                         ('-G', os.path.join(qconfig.QUAST_HOME, 'test_data', 'genes.gff')),
                         ('--gage', ''),  # for compiling GAGE Java classes
                         ('--gene-finding', ''), ('--eukaryote', ''), ('--glimmer', '')]  # for compiling GlimmerHMM
-            if opt == '--test-sv-calling':
+            if opt == '--test-sv':
                 options += [('-1', os.path.join(qconfig.QUAST_HOME, 'test_data', 'reads1.fastq.gz')),
                             ('-2', os.path.join(qconfig.QUAST_HOME, 'test_data', 'reads2.fastq.gz'))]
             contigs_fpaths += [os.path.join(qconfig.QUAST_HOME, 'test_data', 'contigs_1.fasta'),
@@ -599,6 +599,9 @@ def main(args):
             reads_fpath_r = arg
         elif opt == '--bed-file':
             bed_fpath = arg
+
+        elif opt == '--contig-alignment-html':
+            qconfig.create_contig_alignment_html = True
         else:
             logger.error('Unknown option: %s. Use -h for help.' % (opt + ' ' + arg), to_stderr=True, exit_with_code=2)
 

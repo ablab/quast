@@ -113,7 +113,7 @@ def unique_corrected_fpath(fpath):
 
 
 def rm_extentions_for_fasta_file(fname):
-    return splitext_for_fasta_file(fname)[0]
+    return correct_name(splitext_for_fasta_file(fname)[0])
 
 
 def splitext_for_fasta_file(fname):

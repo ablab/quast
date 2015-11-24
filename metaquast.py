@@ -366,6 +366,10 @@ def main(args):
             qconfig.usage(opt == "--help-hidden", meta=True)
             sys.exit(0)
 
+        elif opt.startswith('--version') or opt == '-v':
+            qconfig.print_version(meta=True)
+            sys.exit(0)
+
     if not contigs_fpaths:
         logger.error("You should specify at least one file with contigs!\n")
         qconfig.usage(meta=True)

@@ -38,8 +38,8 @@ long_options = "test test-no-ref test-sv output-dir= save-json-to= genes= operon
                "gene-thresholds= err-fpath= save-json gage eukaryote glimmer no-plots no-html no-check no-check-meta combined-ref no-gc help debug "\
                "ambiguity-usage= scaffolds threads= min-cluster= min-alignment= est-ref-size= use-all-alignments gene-finding "\
                "strict-NA meta labels= help-hidden no-snps fast max-ref-number= extensive-mis-size= plots-format= " \
-               "references-list= bed-file= reads1= reads2= memory-efficient silent".split()
-short_options = "o:G:O:R:t:m:J:jehda:c:ufl:Lx:i:s1:2:"
+               "references-list= bed-file= reads1= reads2= memory-efficient silent version".split()
+short_options = "o:G:O:R:t:m:J:jehvda:c:ufl:Lx:i:s1:2:"
 
 # default values for options
 contig_thresholds = "0,1000,5000,10000,25000,50000"
@@ -185,6 +185,14 @@ def quast_version():
             build = "unknown"
     return version, build
 
+def print_version(meta=False):
+    version, build = quast_version()
+    print >> sys.stderr, 'QUAST v' + str(version),
+    if build != 'unknown':
+        print >> sys.stderr, 'build ' + build,
+    if meta:
+        print >> sys.stderr, '(MetaQUAST mode)'
+
 
 def usage(show_hidden=False, meta=False):
     if meta:
@@ -277,6 +285,7 @@ def usage(show_hidden=False, meta=False):
     else:
         print >> sys.stderr, "    --test                            Run QUAST on the data from the test_data folder, output to quast_test_output"
         print >> sys.stderr, "    --test-sv                         Run QUAST with structural variants detection on the data from the test_data folder, output to quast_test_output."
-    print >> sys.stderr, "-h  --help                            Print this usage message"
+    print >> sys.stderr, "-h  --help                                Print this usage message"
+    print >> sys.stderr, "-v  --version                             Print version"
     if show_hidden:
         print >> sys.stderr, "    --help-hidden                     Print this usage message with all hidden options"

@@ -1707,7 +1707,8 @@ def do(reference, contigs_fpaths, cyclic, output_dir, old_contigs_fpaths, bed_fp
         report.add_field(reporting.Fields.MISCONTIGS, len(misassembled_contigs))
         report.add_field(reporting.Fields.MISCONTIGSBASES, misassembled_bases)
         report.add_field(reporting.Fields.MISINTERNALOVERLAP, misassembly_internal_overlap)
-        report.add_field(reporting.Fields.STRUCT_VARIATIONS, misassemblies_matched_sv)
+        if bed_fpath:
+            report.add_field(reporting.Fields.STRUCT_VARIATIONS, misassemblies_matched_sv)
         report.add_field(reporting.Fields.UNALIGNED, '%d + %d part' % (unaligned, partially_unaligned))
         report.add_field(reporting.Fields.UNALIGNEDBASES, (fully_unaligned_bases + partially_unaligned_bases))
         report.add_field(reporting.Fields.AMBIGUOUS, ambiguous_contigs)

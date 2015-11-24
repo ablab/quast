@@ -34,10 +34,6 @@ blastdb_dirpath = os.path.join(qconfig.LIBS_LOCATION, 'blast', '16S_RNA_blastdb'
 db_fpath = os.path.join(blastdb_dirpath, 'silva_119.db')
 db_nsq_fsize = 194318557
 
-if platform.system() == 'Darwin':
-    sed_cmd = "sed -i '' "
-else:
-    sed_cmd = 'sed -i '
 is_quast_first_run = False
 taxons_for_krona = {}
 
@@ -194,8 +190,10 @@ def download_blastdb():
         cmd = "gunzip -c %s" % db_gz_fpath
         qutils.call_subprocess(shlex.split(cmd), stdout=open(unpacked_fpath, 'w'), stderr=open(log_fpath, 'a'), logger=logger)
 
-        cmd = sed_cmd + " 's/ /_/g' %s" % unpacked_fpath
-        qutils.call_subprocess(shlex.split(cmd), stdout=open(log_fpath, 'a'), stderr=open(log_fpath, 'a'), logger=logger)
+        in_file = open(unpacked_fpath).read()
+        out_file = open(unpacked_fpath, 'w')
+        out_file.write(in_file.replace(' ', '_'))
+        out_file.close()
         shutil.move(unpacked_fpath, silva_fpath)
 
     logger.info('Making BLAST database...')

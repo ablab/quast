@@ -99,17 +99,17 @@ def _partition_contigs(assemblies, ref_fpaths, corrected_dirpath, alignments_fpa
     assemblies = Parallel(n_jobs=n_jobs)(delayed(parallel_partition_contigs)(asm,
                                 assemblies_by_ref, corrected_dirpath, alignments_fpath_template) for asm in assemblies)
     assemblies_dicts = [assembly[0] for assembly in assemblies]
-    sorted_refs = [qutils.name_from_fpath(ref_fpath) for ref_fpath in ref_fpaths]
     assemblies_by_ref = []
-    for k in sorted_refs:
-        not_sorted_assemblies = set([val for sublist in (assemblies_dicts[i][k] for i in range(len(assemblies_dicts))) for val in sublist])
+    for ref_fpath in ref_fpaths:
+        ref_name = qutils.name_from_fpath(ref_fpath)
+        not_sorted_assemblies = set([val for sublist in (assemblies_dicts[i][ref_name] for i in range(len(assemblies_dicts))) for val in sublist])
         sorted_assemblies = []
         for label in labels:  # sort by label
             for assembly in not_sorted_assemblies:
                 if assembly.label == label:
                     sorted_assemblies.append(assembly)
                     break
-        assemblies_by_ref.append((k, sorted_assemblies))
+        assemblies_by_ref.append((ref_fpath, sorted_assemblies))
     not_aligned_assemblies = [assembly[1] for assembly in assemblies]
     return assemblies_by_ref, not_aligned_assemblies
 
@@ -203,8 +203,6 @@ def get_label_from_par_dir_and_fname(contigs_fpath):
 
 
 def _correct_references(ref_fpaths, corrected_dirpath):
-    common_ref_fasta_ext = ''
-
     corrected_ref_fpaths = []
 
     combined_ref_fpath = os.path.join(corrected_dirpath, COMBINED_REF_FNAME)
@@ -253,8 +251,7 @@ def _correct_references(ref_fpaths, corrected_dirpath):
         ref_name, ref_fasta_ext = qutils.splitext_for_fasta_file(ref_fname)
         if ref_name in dupl_ref_names:
             ref_name = get_label_from_par_dir_and_fname(ref_fpath)
-
-        common_ref_fasta_ext = ref_fasta_ext
+            
         chromosomes_by_refs[ref_name] = []
 
         corr_seq_fpath = None
@@ -268,7 +265,7 @@ def _correct_references(ref_fpaths, corrected_dirpath):
 
     logger.main_info('  All references combined in ' + COMBINED_REF_FNAME)
 
-    return corrected_ref_fpaths, common_ref_fasta_ext, combined_ref_fpath, chromosomes_by_refs, ref_fpaths
+    return corrected_ref_fpaths, combined_ref_fpath, chromosomes_by_refs, ref_fpaths
 
 
 def remove_unaligned_downloaded_refs(output_dirpath, ref_fpaths, chromosomes_by_refs):
@@ -540,15 +537,13 @@ def main(args):
         shutil.rmtree(corrected_dirpath)
     os.mkdir(corrected_dirpath)
 
-    common_ref_fasta_ext = ''
-
     # PROCESSING REFERENCES
 
     if ref_fpaths:
         logger.main_info()
         logger.main_info('Reference(s):')
 
-        corrected_ref_fpaths, common_ref_fasta_ext, combined_ref_fpath, chromosomes_by_refs, ref_names =\
+        corrected_ref_fpaths, combined_ref_fpath, chromosomes_by_refs, ref_names =\
             _correct_references(ref_fpaths, corrected_dirpath)
 
     # PROCESSING CONTIGS
@@ -585,9 +580,9 @@ def main(args):
                     downloaded_refs = True
                 logger.main_info()
                 logger.main_info('Downloaded reference(s):')
-                corrected_ref_fpaths, common_ref_fasta_ext, combined_ref_fpath, chromosomes_by_refs, ref_names =\
+                corrected_ref_fpaths, combined_ref_fpath, chromosomes_by_refs, ref_names =\
                     _correct_references(ref_fpaths, corrected_dirpath)
-            elif test_mode:
+            elif test_mode and ref_fpaths is None:
                 logger.error('Failed to download or setup SILVA 16S rRNA database for working without '
                              'references on metagenome datasets!', to_stderr=True, exit_with_code=4)
 
@@ -654,7 +649,7 @@ def main(args):
             logger.main_info('Filtered reference(s):')
             os.remove(combined_ref_fpath)
             contigs_analyzer.ref_labels_by_chromosomes = {}
-            corrected_ref_fpaths, common_ref_fasta_ext, combined_ref_fpath, chromosomes_by_refs, ref_names =\
+            corrected_ref_fpaths, combined_ref_fpath, chromosomes_by_refs, ref_names =\
                     _correct_references(corr_ref_fpaths, corrected_dirpath)
             run_name = 'for the corrected combined reference'
             logger.main_info()
@@ -690,7 +685,8 @@ def main(args):
 
     ref_names = []
     output_dirpath_per_ref = os.path.join(output_dirpath, qconfig.per_ref_dirname)
-    for ref_name, ref_assemblies in assemblies_by_reference:
+    for ref_fpath, ref_assemblies in assemblies_by_reference:
+        ref_name = qutils.name_from_fpath(ref_fpath)
         logger.main_info('')
         if not ref_assemblies:
             logger.main_info('No contigs were aligned to the reference ' + ref_name + ', skipping..')
@@ -701,7 +697,7 @@ def main(args):
 
             return_code, total_num_notifications = _start_quast_main(run_name, quast_py_args,
                 assemblies=ref_assemblies,
-                reference_fpath=os.path.join(corrected_dirpath, ref_name) + common_ref_fasta_ext,
+                reference_fpath=ref_fpath,
                 output_dirpath=os.path.join(output_dirpath_per_ref, ref_name),
                 exit_on_exception=False, num_notifications_tuple=total_num_notifications)
             if json_texts is not None:

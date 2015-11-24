@@ -5,23 +5,37 @@
        - reads should be provided with --reads1 (or -1), --reads2 (or -2) options,
        - reads are aligned to reference genome using bowtie2 (embedded),
        - Manta structural variation (SV) calling tool (embedded) is run on bowtie2 output,
-       - found SVs are used for classifying QUAST misassemblies into true ones and fakes
-        ones (caused by structural differences between reference sequence and
-        sequenced organism). Fake misassemblies are excluded from "# misassemblies" metric
-        and reported in novel "# structural variants" metric.
+       - found SVs are used for classifying QUAST misassemblies into true ones and fake
+         ones (caused by structural differences between reference sequence and
+         sequenced organism). Fake misassemblies are excluded from "# misassemblies" metric
+         and reported in novel "# structural variants" metric.
 
-      2. HTML reports content is reformatted, especially in MetaQUAST reports:
+      2. HTML reports content reformatted, especially in MetaQUAST reports:
        - GC % and all metrics based on genome length (NG50, NGA50, LGA75, etc) are excluded
-       from the combined reference statistics (they don't make sense there);
+         from the combined reference statistics (they don't make sense there);
        - N50 is replaced with more fair and comparable metrics such as "Total length >= 1000 bp",
-       "Total length >= 10000 bp" in the main MetaQUAST report. Extended version still has N50.
-       - N50 is also hidden in single-genome QUAST reports, and exposed NGA50 instead.
+         "Total length >= 10000 bp" in the main MetaQUAST report. Extended version still has N50.
+       - N50 is also hidden in single-genome QUAST reports and exposed NGA50 instead.
 
-      3. MetaQUAST output directory content is reformatted.
+      3. Scaffold gap size misassemblies are introduced. They are reported only when --scaffolds
+         is used.
 
-      4. Scaffolds misassemblies are introduced.
+      4. Several new options added:
+       - "--memory-efficient" for running QUAST with minimal memory consumption (but much slower)
+       - "--test-sv" for testing structural variants mode (see 1.)
+       - "--silent" for minimal output to stdout (full verbose output is saved in the logs anyway)
 
-      5. Fixed several minor and major bugs.
+      5. MetaQUAST output directory content is reformatted. Per reference reports are saved
+         under , summary reports are under summary directory. The only top-level files are
+         metaquast.log and report.html (summary HTML report with links to all subreports).
+
+      6. Colors in HTML reports and PDF/PNG plots are synchronized, now they are the same
+         for the same assemblies.
+
+      7. Additional check for Matplotlib v1.1 (needed for drawing PDF/PNG plots since QUAST v3.1)
+
+      8. Fixed several minor and major bugs.
+
 
 3.1   1. MetaQUAST:
        - more specific algorithm for reference searching and downloading, particularly

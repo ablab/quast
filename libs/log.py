@@ -235,11 +235,10 @@ class QLogger(object):
         return now
 
     def print_version(self, to_stderr=False):
-        version, build = qconfig.quast_version()
         if to_stderr:
-            print >> sys.stderr, "Version", str(version) + (", " + str(build) if build != "unknown" else "")
+            print >> sys.stderr, "Version: " + qconfig.quast_version()
         else:
-            self.info("Version " + str(version) + (", " + str(build) if build != "unknown" else ""))
+            self.info("Version: " + qconfig.quast_version())
 
     def print_system_info(self):
         self._logger.info("System information:")

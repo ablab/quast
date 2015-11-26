@@ -169,8 +169,8 @@ def set_max_threads(logger):
 
 def quast_version():
     version_fpath = os.path.join(QUAST_HOME, 'VERSION')
-    version = "unknown"
-    build = "unknown"
+    version = None
+    build = None
     if os.path.isfile(version_fpath):
         version_file = open(version_fpath)
         version = version_file.readline()
@@ -181,15 +181,14 @@ def quast_version():
         build = version_file.readline()
         if build:
             build = build.strip().lower()
-        else:
-            build = "unknown"
-    return version, build
+    if build:
+        return version + ", " + build
+    else:
+        return version
+
 
 def print_version(meta=False):
-    version, build = quast_version()
-    full_version = 'QUAST v' + str(version)
-    if build != 'unknown':
-        full_version += ' build ' + build
+    full_version = 'QUAST v' + quast_version()
     if meta:
         full_version += ' (MetaQUAST mode)'
     print >> sys.stderr, full_version
@@ -201,10 +200,7 @@ def usage(show_hidden=False, meta=False, short=True):
         print >> sys.stderr, 'MetaQUAST: QUality ASsessment Tool for Metagenome Assemblies'
     else:
         print >> sys.stderr, 'QUAST: QUality ASsessment Tool for Genome Assemblies'
-    version, build = quast_version()
-    print >> sys.stderr, "Version:", str(version),
-    if build != "unknown":
-        print >> sys.stderr, ", " + str(build),
+    print >> sys.stderr, "Version:", quast_version(),
 
     print >> sys.stderr, "\n"
     print >> sys.stderr, 'Usage: python', sys.argv[0], '[options] <files_with_contigs>'

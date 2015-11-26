@@ -187,11 +187,12 @@ def quast_version():
 
 def print_version(meta=False):
     version, build = quast_version()
-    print >> sys.stderr, 'QUAST v' + str(version),
+    full_version = 'QUAST v' + str(version)
     if build != 'unknown':
-        print >> sys.stderr, 'build ' + build,
+        full_version += ' build ' + build
     if meta:
-        print >> sys.stderr, '(MetaQUAST mode)'
+        full_version += ' (MetaQUAST mode)'
+    print >> sys.stderr, full_version
 
 
 def usage(show_hidden=False, meta=False):

@@ -363,7 +363,7 @@ def main(args):
             test_mode = True
 
         elif opt.startswith('--help') or opt == '-h':
-            qconfig.usage(opt == "--help-hidden", meta=True)
+            qconfig.usage(opt == "--help-hidden", meta=True, short=False)
             sys.exit(0)
 
         elif opt.startswith('--version') or opt == '-v':

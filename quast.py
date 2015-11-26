@@ -426,7 +426,7 @@ def main(args):
             qconfig.test = True
 
         if opt.startswith('--help') or opt == '-h':
-            qconfig.usage(opt == "--help-hidden")
+            qconfig.usage(opt == "--help-hidden", short=False)
             sys.exit(0)
 
         elif opt.startswith('--version') or opt == '-v':

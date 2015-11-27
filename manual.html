@@ -193,7 +193,7 @@ However, we recommend you to run:
 </pre>
 or/and
 <pre class="code">
-    python quast.py --test-sv  (if you plan to use QUAST with SV calling)
+    python quast.py --test-sv  (if you plan to use quast.py or metaquast.py with SV calling)
 </pre>
 or/and
 <pre class="code">
@@ -207,9 +207,9 @@ These commands run all QUAST and MetaQUAST modules and check correctness
 of their work on your platform.
 <br><br>
 We also provide <code>./install.sh</code> and <code>./install_full.sh</code> scripts.
-If you plan to use metaquast.py without references or use QUAST with SV calling, you should use <code>./install_full.sh</code>, which runs all four mentioned above commands,
+If you plan to use MetaQUAST without references or use SV calling, you should use <code>./install_full.sh</code>, which runs all four mentioned above commands,
 compiles tools for reads alignment and SV detection (SAMtools, Bowtie2, and Manta), and downloads necessary files (SILVA 16S rRNA gene database and BLAST). Otherwise, it is enough to use <code>./install.sh</code>,
-which runs only the first two commands.
+which runs only two simple --test commands.
 </p>
 
 <p>
@@ -966,6 +966,7 @@ If you use MetaQUAST in your research, please include <i>Mikheenko et al., 2015<
 Alla Mikheenko, Vladislav Saveliev, Alexey Gurevich, <br>
 MetaQUAST: evaluation of metagenome assemblies, <br>
 Bioinformatics (2015). doi: <a href="http://dx.doi.org/10.1093/bioinformatics/btv697">10.1093/bioinformatics/btv697</a><br>
+First published online: November 26, 2015
 </div>
 
 <a name="sec6"></a><p>

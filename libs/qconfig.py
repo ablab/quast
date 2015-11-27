@@ -168,7 +168,7 @@ def set_max_threads(logger):
 
 
 def quast_version():
-    version_fpath = os.path.join(QUAST_HOME, 'VERSION')
+    version_fpath = os.path.join(QUAST_HOME, 'VERSION.txt')
     version = None
     build = None
     if os.path.isfile(version_fpath):

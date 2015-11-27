@@ -21,7 +21,7 @@
          is used.
 
       4. Several new options added:
-       - "--memory-efficient" for running QUAST with minimal memory consumption (but much slower)
+       - "--memory-efficient" for running QUAST with minimal memory consumption (but significantly slower)
        - "--test-sv" for testing structural variants mode (see 1.)
        - "--silent" for minimal output to stdout (full verbose output is saved in the logs anyway)
 

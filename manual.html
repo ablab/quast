@@ -70,7 +70,7 @@
 
 <p> QUAST stands for <u>QU</u>ality <u>AS</u>sessment <u>T</u>ool.
     The tool evaluates genome assemblies by computing various metrics. This document provides instructions
-    for the general QUAST tool for genome assemblies and MetaQUAST, the extension for metagenomic datasets.
+    for the general QUAST tool for genome assemblies, and MetaQUAST, the extension for metagenomic datasets.
     <br>
     <br>
     You can find all project news and the latest version of the tool
@@ -87,7 +87,7 @@
     These tools are <a href="http://bowtie-bio.sourceforge.net/bowtie2/index.shtml">Bowtie2</a>,
     <a href="https://github.com/samtools/samtools">SAMtools</a>, and <a href="https://github.com/Illumina/manta">Manta</a>.
     <br>
-    All tools from above are built in into the QUAST package which is ready for use by academic, non-profit institutions and U.S. Government agencies.
+    All tools above are built in into the QUAST package which is ready for use by academic, non-profit institutions and U.S. Government agencies.
     If you are not in one of these categories please refer to <a href="LICENSE">LICENSE</a> section 'Third-party tools incorporated into QUAST'
     for guidelines on how to complete the licensing process.
     <br>
@@ -506,27 +506,26 @@ File with forward reads in FASTQ format (may be gzipped).
 <code><b>--reads2</b></code> (or <code>-2</code>)
 </div>
 File with reverse reads in FASTQ format (may be gzipped).
-<p>Reads are used for SV detection. Reads are aligned to reference genome using bowtie2, then Manta SV calling tool is run on bowtie2 output.
+<p>Reads are used for SV detection: Reads are aligned to reference genome using bowtie2, then Manta SV calling tool is run on bowtie2 output.
 Found SVs are used for classifying QUAST misassemblies into true ones and fake ones (caused by structural differences between reference sequence and
-    sequenced organism). Fake misassemblies are excluded from <a href="#misassemblies"><code># misassemblies</code></a> metric and reported in <a href="#sv"><code># structural variants</code></a> metric.
+    sequenced organism). Fake misassemblies are excluded from <a href="#misassemblies"><code>#&nbsp;misassemblies</code></a> and reported as <a href="#sv"><code>#&nbsp;structural variants</code></a>.
 </div>
 
 <br>
-Speedup options:
+Speed-up options:
 <div class='options'>
 
 <div class='option'>
 <code><b>--no-check</b></code>
 </div>
-    Do not check and correct input FASTA files (both reference and assemblies).
+    <div style='margin-bottom: 6;'>Do not check and correct input FASTA files (both reference and assemblies).
     By default, QUAST corrects sequence names by replacing special characters
     (all symbols except latin letters, numbers, underscores, dots, and minus signs) with underscore ("_").
     QUAST also checks and corrects sequences itself. Lowercase letters are uppercased.
     Alternative nucleotide symbols (M, K, R, etc) are replaced with N. If non-ACGTN characters
-    are present after this modifications the whole FASTA file is skipped from further processing.
-    <br>
-    <b>Note</b>: Use this option at your own risk. Incorrect FASTA files may cause failing of
-    third-party tools incorporated to QUAST, i.e. GAGE, Nucmer, GeneMark*, GlimmerHMM.
+    are present after this modifications the whole FASTA file is skipped from further processing. </div>
+    <i>Caution</i>: use this option at your own risk. Incorrect FASTA files may cause failing of
+    third-party tools incorporated to QUAST, i.e. GAGE, Nucmer, GeneMark, GlimmerHMM.
     This option is useful for running QUAST without <code>-R</code> and <code>--gene-finding</code>
     (no third-party tools will be run) or if you are absolutely sure that your FASTA files are correct.
 
@@ -553,7 +552,7 @@ Do not compute GC% and do not produce GC-distribution plots (both in HTML report
 <div class='option'>
 <code><b>--fast</b></code>
 </div>
-A shortcut for using all of speedup options except --no-check.
+A shortcut for using all of speed-up options except --no-check.
 </div>
 
 <br>

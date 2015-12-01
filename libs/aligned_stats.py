@@ -88,9 +88,11 @@ def do(ref_fpath, aligned_contigs_fpaths, output_dirpath, json_output_dirpath,
                                 'Cumulative length (aligned contigs)')
 
         # Drawing NAx and NGAx plots...
-    plotter.Nx_plot(output_dirpath, num_contigs > qconfig.max_points, aligned_contigs_fpaths, aligned_lengths_lists, aligned_stats_dirpath + '/NAx_plot', 'NAx', assembly_lengths)
+    plotter.Nx_plot(output_dirpath, num_contigs > qconfig.max_points, aligned_contigs_fpaths, aligned_lengths_lists, aligned_stats_dirpath + '/NAx_plot', 'NAx',
+                    assembly_lengths, json_output_dir=json_output_dirpath)
     if not qconfig.is_combined_ref:
-        plotter.Nx_plot(output_dirpath, num_contigs > qconfig.max_points, aligned_contigs_fpaths, aligned_lengths_lists, aligned_stats_dirpath + '/NGAx_plot', 'NGAx', [reference_length for i in range(len(aligned_contigs_fpaths))])
+        plotter.Nx_plot(output_dirpath, num_contigs > qconfig.max_points, aligned_contigs_fpaths, aligned_lengths_lists,
+                        aligned_stats_dirpath + '/NGAx_plot', 'NGAx', [reference_length for i in range(len(aligned_contigs_fpaths))], json_output_dir=json_output_dirpath)
 
     logger.main_info('Done.')
     return report_dict

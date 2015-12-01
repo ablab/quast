@@ -208,7 +208,7 @@ def cumulative_plot(reference, contigs_fpaths, lists_of_lengths, plot_fpath, tit
 
 
 # common routine for Nx-plot and NGx-plot (and probably for others Nyx-plots in the future)
-def Nx_plot(results_dir, reduce_points, contigs_fpaths, lists_of_lengths, plot_fpath, title='Nx', reference_lengths=None):
+def Nx_plot(results_dir, reduce_points, contigs_fpaths, lists_of_lengths, plot_fpath, title='Nx', reference_lengths=None, json_output_dir=None):
     draw_plots = True
     if matplotlib_error or not qconfig.draw_plots:
         draw_plots = False
@@ -272,6 +272,9 @@ def Nx_plot(results_dir, reduce_points, contigs_fpaths, lists_of_lengths, plot_f
     if qconfig.html_report:
         from libs.html_saver import html_saver
         html_saver.save_coord(results_dir, json_vals_x, json_vals_y, 'coord' + title, contigs_fpaths)
+    if json_output_dir:
+        from libs.html_saver import json_saver
+        json_saver.save_coord(json_output_dir, json_vals_x, json_vals_y, title, contigs_fpaths)
 
     if not draw_plots:
         return

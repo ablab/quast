@@ -143,7 +143,7 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, json_output_dir, results_dir):
     # saving lengths to JSON
     if json_output_dir:
         json_saver.save_contigs_lengths(json_output_dir, contigs_fpaths, corr_lists_of_lengths)
-        json_saver.save_tick_x(output_dirpath, multiplicator)
+        json_saver.save_tick_x(json_output_dir, multiplicator)
 
     if qconfig.html_report:
         from libs.html_saver import html_saver

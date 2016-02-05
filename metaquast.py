@@ -268,9 +268,7 @@ def _correct_references(ref_fpaths, corrected_dirpath):
     return corrected_ref_fpaths, combined_ref_fpath, chromosomes_by_refs, ref_fpaths
 
 
-def remove_unaligned_downloaded_refs(output_dirpath, ref_fpaths, chromosomes_by_refs):
-    genome_info_dirpath = os.path.join(output_dirpath, qconfig.combined_output_name, 'genome_stats')
-    genome_info_fpath = os.path.join(genome_info_dirpath, 'genome_info.txt')
+def remove_unaligned_downloaded_refs(genome_info_fpath, ref_fpaths, chromosomes_by_refs):
     refs_len = {}
     with open(genome_info_fpath, 'r') as report_file:
         report_file.readline()
@@ -644,10 +642,23 @@ def main(args):
         json_texts.append(json_saver.json_text)
     search_references_meta.is_quast_first_run = False
 
+    genome_info_dirpath = os.path.join(output_dirpath, qconfig.combined_output_name, 'genome_stats')
+    genome_info_fpath = os.path.join(genome_info_dirpath, 'genome_info.txt')
+    if not os.path.exists(genome_info_fpath):
+        logger.main_info('')
+        logger.main_info('Failed aligning the contigs for all the references. ' + ('Try to restart MetaQUAST with another references.'
+                                                        if not downloaded_refs else 'Try to use option --max-ref-number to change maximum number of references '
+                                                                                    '(per each assembly) to download.'))
+        logger.main_info('')
+        quast._cleanup(corrected_dirpath)
+        logger.main_info('MetaQUAST finished.')
+        logger.finish_up(numbers=tuple(total_num_notifications), check_test=test_mode)
+        return
+
     if downloaded_refs:
         logger.main_info()
         logger.main_info('Excluding downloaded references with low genome fraction from further analysis..')
-        corr_ref_fpaths = remove_unaligned_downloaded_refs(output_dirpath, ref_fpaths, chromosomes_by_refs)
+        corr_ref_fpaths = remove_unaligned_downloaded_refs(genome_info_fpath, ref_fpaths, chromosomes_by_refs)
         if corr_ref_fpaths and corr_ref_fpaths != ref_fpaths:
             logger.main_info()
             logger.main_info('Filtered reference(s):')

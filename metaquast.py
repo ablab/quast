@@ -468,6 +468,8 @@ def main(args):
             pass
         elif opt == "--strict-NA":
             pass
+        elif opt == '--fragmented':
+            pass
         elif opt in ('-x', "--extensive-mis-size"):
             pass
         elif opt == "--meta":

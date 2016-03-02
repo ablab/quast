@@ -37,7 +37,7 @@ MAX_REFERENCE_FILE_LENGTH = 50000000  # Max length of one part of reference
 long_options = "test test-no-ref test-sv output-dir= save-json-to= genes= operons= reference= contig-thresholds= min-contig= "\
                "gene-thresholds= err-fpath= save-json gage eukaryote glimmer no-plots no-html no-check no-check-meta combined-ref no-gc help debug "\
                "ambiguity-usage= scaffolds threads= min-cluster= min-alignment= est-ref-size= use-all-alignments gene-finding "\
-               "strict-NA meta labels= help-hidden no-snps fast max-ref-number= extensive-mis-size= plots-format= " \
+               "strict-NA meta labels= help-hidden no-snps fast max-ref-number= extensive-mis-size= plots-format= fragmented " \
                "references-list= bed-file= reads1= reads2= memory-efficient silent version".split()
 short_options = "o:G:O:R:t:m:J:jehvda:c:ufl:Lx:i:s1:2:"
 
@@ -69,6 +69,7 @@ no_gc = False
 show_snps = True
 glimmer = False
 is_combined_ref = False
+check_for_fragmented_ref = False
 
 # print in stdout only main information
 silent = False

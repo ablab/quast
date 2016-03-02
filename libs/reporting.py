@@ -55,6 +55,7 @@ class Fields:
     MIS_EXTENSIVE_BASES = 'Misassembled contigs length'
     MIS_LOCAL = '# local misassemblies'
     MIS_SCAFFOLDS_GAP = '# scaffold gap size misassemblies'
+    MIS_FRAGMENTED = '# misassemblies caused by fragmented reference'
     CONTIGS_WITH_ISTRANSLOCATIONS = '# possibly misassembled contigs'
     ### structural variations
     STRUCT_VARIATIONS = '# structural variations'
@@ -126,7 +127,7 @@ class Fields:
     misassemblies_order = [NAME, MIS_ALL_EXTENSIVE, MIS_RELOCATION, MIS_TRANSLOCATION, MIS_INVERTION,
                            MIS_ISTRANSLOCATIONS, CONTIGS_WITH_ISTRANSLOCATIONS,
                            MIS_EXTENSIVE_CONTIGS, MIS_EXTENSIVE_BASES,
-                           MIS_LOCAL, MIS_SCAFFOLDS_GAP, STRUCT_VARIATIONS, MISMATCHES,
+                           MIS_LOCAL, MIS_SCAFFOLDS_GAP, MIS_FRAGMENTED, STRUCT_VARIATIONS, MISMATCHES,
                            INDELS, MIS_SHORT_INDELS, MIS_LONG_INDELS, INDELSBASES]
 
     # content and order of metrics in DETAILED UNALIGNED REPORT (<quast_output_dir>/contigs_reports/unaligned_report.txt, .tex, .tsv)

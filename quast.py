@@ -524,6 +524,9 @@ def main(args):
         elif opt in ('-f', "--gene-finding"):
             qconfig.gene_finding = True
 
+        elif opt == "--fragmented":
+            qconfig.check_for_fragmented_ref = True
+
         elif opt in ('-a', "--ambiguity-usage"):
             if arg in ["none", "one", "all"]:
                 qconfig.ambiguity_usage = arg

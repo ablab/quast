@@ -502,8 +502,6 @@ def main(args):
         elif opt in ('-2', '--reads2'):
             reads_fpath_r = arg
             quast_py_args = __remove_from_quast_py_args(quast_py_args, opt, arg)
-        elif opt == '--contig-alignment-html':
-            qconfig.create_contig_alignment_html = True
         else:
             logger.error('Unknown option: %s. Use -h for help.' % (opt + ' ' + arg), to_stderr=True, exit_with_code=2)
 

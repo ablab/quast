@@ -551,6 +551,7 @@ def main(args):
 
         elif opt == '--no-html':
             qconfig.html_report = False
+            qconfig.create_contig_alignment_html = False
 
         elif opt == '--no-check':
             qconfig.no_check = True
@@ -564,6 +565,7 @@ def main(args):
             qconfig.show_snps = False
             qconfig.draw_plots = False
             qconfig.html_report = False
+            qconfig.create_contig_alignment_html = False
 
         elif opt == '--plots-format':
             if arg.lower() in qconfig.supported_plot_extensions:
@@ -607,8 +609,6 @@ def main(args):
         elif opt == '--bed-file':
             bed_fpath = arg
 
-        elif opt == '--contig-alignment-html':
-            qconfig.create_contig_alignment_html = True
         else:
             logger.error('Unknown option: %s. Use -h for help.' % (opt + ' ' + arg), to_stderr=True, exit_with_code=2)
 

@@ -7,6 +7,7 @@
 
 from __future__ import with_statement
 import os
+import glob
 import shutil
 import tempfile
 
@@ -286,6 +287,8 @@ def do(fasta_fpaths, gene_lengths, out_dirpath, prokaryote, meta):
                          if tool_name == 'GeneMark-ES' and os.path.getsize(fasta_path) < 2000000 else ''))
 
         if not qconfig.debug:
-            shutil.rmtree(tmp_dirpath)
+            for dirpath in glob.iglob(tmp_dirpath + '*'):
+                if os.path.isdir(dirpath):
+                    shutil.rmtree(dirpath)
 
         logger.main_info('Done.')

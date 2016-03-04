@@ -274,10 +274,10 @@ def usage(show_hidden=False, meta=False, short=True):
             print >> sys.stderr, "Hidden options:"
             print >> sys.stderr, "-d  --debug                 Run in a debug mode"
             print >> sys.stderr, "-L                          Take assembly names from their parent directory names"
+            print >> sys.stderr, "    --fragmented            Reference genome may be fragmented into small pieces (e.g. scaffolded reference)"
             print >> sys.stderr, "-c  --min-cluster   <int>   Nucmer's parameter: the minimum length of a cluster of matches [default: %s]" % min_cluster
             print >> sys.stderr, "-j  --save-json             Save the output also in the JSON format"
             print >> sys.stderr, "-J  --save-json-to <path>   Save the JSON output to a particular path"
-            print >> sys.stderr, "    --contig-alignment-html Create interactive contig alignment plot"
 
         print >> sys.stderr, ""
         print >> sys.stderr, "Other:"

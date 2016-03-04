@@ -88,19 +88,13 @@ class Mapping(object):
     def clone(self):
         return Mapping.from_line(str(self))
 
+    def start(self):
+        """Return start on contig (alsways <= end)"""
+        return min(self.s2, self.e2)
 
-class Mappings(object):
-    def __init__(self):
-        self.aligns = {} # contig -> [mapping]
-        self.cnt = 0
-
-    def add(self, mapping):
-        self.aligns.setdefault(mapping.contig, []).append(mapping)
-
-    @classmethod
-    def from_coords(cls, fpath):
-        f = open(fpath, 'w')
-        f.close()
+    def end(self):
+        """Return end on contig (alsways >= start)"""
+        return max(self.s2, self.e2)
 
 
 class IndelsInfo(object):
@@ -904,34 +898,32 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
                     #ambiguous += 1
                     #total_ambiguous += ctg_len
             else:
-                # choose appropriate alignments (to minimize total size of contig alignment and reduce # misassemblies
+                # choose appropriate alignments (to maximize total size of contig alignment and reduce # misassemblies
                 if len(sorted_aligns) > 0:
-                    extensive_penalty = max(50, min(qconfig.extensive_misassembly_threshold / 4, ctg_len * 0.05)) - 1
-                    local_penalty = max(2, min(qconfig.MAX_INDEL_LENGTH / 2, ctg_len * 0.01)) - 1
+                    extensive_penalty = max(50, int(round(min(qconfig.extensive_misassembly_threshold / 4.0, ctg_len * 0.05)))) - 1
+                    local_penalty = max(2, int(round(min(qconfig.MAX_INDEL_LENGTH / 2.0, ctg_len * 0.01)))) - 1
+                    scaffold_gap_penalty = 5
 
                     # auxiliary functions
-                    def __get_added_len(set_aligns, cur_align, ctg_len):
-                        cur_start = min(cur_align.s2, cur_align.e2)
-                        cur_end = max(cur_align.s2, cur_align.e2)
-                        len_added_to_right = cur_end - max(cur_start, (max(set_aligns[-2].s2, set_aligns[-2].e2)))
-                        len_added_to_left = 0
-                        last_num_align = -2
-                        last_align = set_aligns[last_num_align]
-                        while cur_start < min(last_align.s2, last_align.e2):
-                            last_align = set_aligns[last_num_align]
-                            len_added_to_left += min(last_align.s2, last_align.e2) - cur_start
-                            last_num_align -= 1
-                            if abs(last_num_align) <= len(set_aligns):
-                                last_align = set_aligns[last_num_align]
-                                len_added_to_left -= max(0, max(last_align.s2, last_align.e2) - cur_start + 1)
+                    def __get_added_len(set_aligns, cur_align):
+                        last_align_idx = -2
+                        last_align = set_aligns[last_align_idx]
+                        added_right = cur_align.end() - max(cur_align.start(), last_align.end())
+                        added_left = 0
+                        while cur_align.start() < last_align.start():
+                            added_left += last_align.start() - cur_align.start()
+                            last_align_idx -= 1
+                            if -last_align_idx <= len(set_aligns):
+                                prev_start = last_align.start()  # in case of overlapping of old and new last_align
+                                last_align = set_aligns[last_align_idx]
+                                added_left -= max(0, min(prev_start, last_align.end()) - cur_align.start() + 1)
                             else:
                                 break
-                        added_len = len_added_to_right + len_added_to_left
-                        return added_len
+                        return added_right + added_left
 
-                    def __get_score(score, aligns, cyclic_ref_lens, ctg_len, uncovered_len):
+                    def __get_score(score, aligns, cyclic_ref_lens, uncovered_len):
                         if len(aligns) > 1:
-                            added_len = __get_added_len(aligns, aligns[-1], ctg_len)
+                            added_len = __get_added_len(aligns, aligns[-1])
                             uncovered_len -= added_len
                             score += added_len
                             align1, align2 = aligns[-2], aligns[-1]
@@ -941,47 +933,53 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
                             elif abs(aux_data['inconsistency']) > qconfig.MAX_INDEL_LENGTH and not aux_data['is_scaffold_gap']:
                                 score -= local_penalty
                             elif aux_data['is_scaffold_gap']:
-                                score -= 5
+                                score -= scaffold_gap_penalty
                         else:
                             score += aligns[-1].len2
                             uncovered_len -= aligns[-1].len2
                         return score, uncovered_len
+
+                    class ScoredAlignSet(object):
+                        def __init__(self, score, indexes, uncovered):
+                            self.score = score
+                            self.indexes = indexes
+                            self.uncovered = uncovered
                     # end of auxiliary functions
 
-                    sorted_aligns = sorted(sorted_aligns, key=lambda x: max(x.s2, x.e2))
-                    all_sets_aligns = [[0, [], ctg_len]]
+                    sorted_aligns = sorted(sorted_aligns, key=lambda x: x.end())
+                    all_scored_sets = [ScoredAlignSet(0, [], ctg_len)]
                     max_score = 0
-                    scores = {}
+                    best_set = []
 
-                    for num_align, align in enumerate(sorted_aligns):
+                    for idx, align in enumerate(sorted_aligns):
                         cur_max_score = 0
-                        new_aligns = []
-                        for score_set_aligns in all_sets_aligns:
-                            prev_score = score_set_aligns[0]
-                            if (prev_score + align.len2) > cur_max_score:  # else this set can't be the best on this step
-                                cur_set_aligns = [sorted_aligns[i] for i in score_set_aligns[1]] + [align]
-                                score, uncovered_len = __get_score(score_set_aligns[0], cur_set_aligns, reg_lens if cyclic else None, ctg_len, score_set_aligns[2])
-                                new_set = score_set_aligns[1] + [num_align]
-                                if score + uncovered_len < max_score:
-                                    all_sets_aligns.remove(score_set_aligns)
-                                else:
-                                    cur_max_score = max(cur_max_score, score)
-                                    new_aligns.append((score, new_set, uncovered_len))
-                        if new_aligns:
-                            new_align = sorted(new_aligns, key=lambda x: x[0], reverse=True)[0]  # get only best set on current step
-                            scores[new_align[0]] = new_align[1]
-                            all_sets_aligns.append(new_align)
-                        max_score = max(max_score, cur_max_score)
+                        new_scored_set = None
+                        sets_to_remove = []
+                        for scored_set in all_scored_sets:
+                            if (scored_set.score + align.len2) > cur_max_score:  # otherwise this set can't be the best with current align
+                                cur_set_aligns = [sorted_aligns[i] for i in scored_set.indexes] + [align]
+                                score, uncovered = __get_score(scored_set.score, cur_set_aligns,
+                                                               reg_lens if cyclic else None, scored_set.uncovered)
+                                if score + uncovered < max_score:
+                                    sets_to_remove.append(scored_set)
+                                elif score > cur_max_score:
+                                    cur_max_score = score
+                                    new_scored_set = ScoredAlignSet(score, scored_set.indexes + [idx], uncovered)
+                        for bad_set in sets_to_remove:
+                            all_scored_sets.remove(bad_set)
+                        if new_scored_set:
+                            all_scored_sets.append(new_scored_set)
+                            if cur_max_score > max_score:
+                                max_score = cur_max_score
+                                best_set = new_scored_set.indexes
 
-                    max_score = max(scores.keys())
-                    best_set = scores[max_score]
+                    # save best selection to real aligns and skip others (as redundant)
                     real_aligns = list([sorted_aligns[i] for i in best_set])
-                    # save min selection to real aligns and skip others (as redundant)
                     if len(sorted_aligns) > len(real_aligns):
                         print >> planta_out_f, '\t\t\tSkipping redundant alignments after choosing the best set of alignments'
-                    for align in sorted_aligns:
-                        if align not in real_aligns:
-                            print >> planta_out_f, '\t\tSkipping redundant alignment %s' % (str(align))
+                        for align in sorted_aligns:
+                            if align not in real_aligns:
+                                print >> planta_out_f, '\t\tSkipping redundant alignment %s' % (str(align))
 
                 if len(real_aligns) == 1:
                     the_only_align = real_aligns[0]

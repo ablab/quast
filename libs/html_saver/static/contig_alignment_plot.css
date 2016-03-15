@@ -236,19 +236,19 @@ a {
     fill: white;
 }
 
-.mainItem.correct.similar.odd {
+.mainItem.similar.odd {
     fill: #377eb8;
 }
 
-.mainItem.correct.similar {
+.mainItem.similar {
     fill: #576e88;
 }
 
-.mainItem.correct.odd {
+.mainItem.odd {
     fill: #4daf4a;
 }
 
-.mainItem.correct {
+.mainItem {
     fill: #40cf40;
 }
 
@@ -268,25 +268,25 @@ a {
     fill: #b82525;
 }
 
-.miniItem.correct.similar.odd {
+.miniItem.similar.odd {
     stroke-width: 10;
     stroke: #377eb8;
     fill: #377eb8;
 }
 
-.miniItem.correct.similar {
+.miniItem.similar {
     stroke-width: 10;
     stroke: #576e88;
     fill: #576e88;
 }
 
-.miniItem.correct.odd {
+.miniItem.odd {
     stroke-width: 10;
     stroke: #4daf4a;
     fill: #4daf4a;
 }
 
-.miniItem.correct {
+.miniItem {
     stroke-width: 10;
     stroke: #40cf40;
     fill: #40cf40;

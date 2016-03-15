@@ -15,6 +15,7 @@ import math
 import libs.html_saver.html_saver as html_saver
 from shutil import copyfile
 
+from libs import reporting
 from libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 
@@ -772,6 +773,7 @@ def js_data_gen(assemblies, contigs_fpaths, chr_names, chromosomes_length, outpu
         aligned_assemblies[chr] = []
         with open(os.path.join(output_all_files_dir_path, 'data_%s.js' % short_chr), 'w') as result:
             result.write('"use strict";\n')
+            data_str = ''
             if contigs_analyzer.ref_labels_by_chromosomes:
                 contigs = [contig for contig in chr_names if contig_names_by_refs[contig] == chr]
                 result.write('var links_to_chromosomes = {};\n')
@@ -786,7 +788,7 @@ def js_data_gen(assemblies, contigs_fpaths, chr_names, chromosomes_length, outpu
             num_contigs[chr] = len(contigs)
             for contig in contigs:
                 aligned_bases_by_chr[chr].extend(aligned_bases[contig])
-            data_str = 'var chromosomes_len = {};\n'
+            data_str += 'var chromosomes_len = {};\n'
             for contig in contigs:
                 l = chromosomes_length[contig]
                 data_str += 'chromosomes_len["{contig}"] = {l};\n'.format(**locals())
@@ -797,6 +799,7 @@ def js_data_gen(assemblies, contigs_fpaths, chr_names, chromosomes_length, outpu
             data_str += 'contig_data["{chr}"] = [ '.format(**locals())
             prev_len = 0
             chr_lengths = [0] + [chromosomes_length[contig] for contig in contigs]
+            ms_types = set()
             for num_contig, contig in enumerate(contigs):
                 if num_contig > 0:
                     prev_len += chr_lengths[num_contig]
@@ -804,10 +807,26 @@ def js_data_gen(assemblies, contigs_fpaths, chr_names, chromosomes_length, outpu
                     for alignment in chr_to_aligned_blocks[contig]:
                         if alignment.misassembled:
                             num_misassemblies[chr] += 1
+                            for num_alignment, el in enumerate(alignment.misassembled_structure):
+                                if type(el) == list:
+                                    if int(el[0]) == alignment.unshifted_start and int(el[1]) == alignment.unshifted_end:
+                                        break
+                            alignment.misassembled = ''
+                            if type(alignment.misassembled_structure[num_alignment - 1]) == str:
+                                misassembly_type = alignment.misassembled_structure[num_alignment - 1].split(',')[0].strip()
+                                alignment.misassembled += misassembly_type
+                                ms_types.add(misassembly_type)
+                            if num_alignment + 1 < len(alignment.misassembled_structure):
+                                misassembly_type = alignment.misassembled_structure[num_alignment + 1].split(',')[0].strip()
+                                alignment.misassembled += ';' + misassembly_type
+                                ms_types.add(misassembly_type)
+                        else:
+                            alignment.misassembled = False
                         corr_start = prev_len + alignment.unshifted_start
                         corr_end = prev_len + alignment.unshifted_end
                         data_str += '{{name: "{alignment.name}", corr_start: {corr_start}, corr_end: {corr_end},' \
-                                    'start: {alignment.unshifted_start}, end: {alignment.unshifted_end}, assembly: "{alignment.label}", similar: "{alignment.similar}", misassembled: "{alignment.misassembled}" '.format(**locals())
+                                    'start: {alignment.unshifted_start}, end: {alignment.unshifted_end}, assembly: "{alignment.label}", ' \
+                                    'similar: "{alignment.similar}", misassembled: "{alignment.misassembled}" '.format(**locals())
                         if alignment.name != 'FICTIVE':
                             if len(aligned_assemblies[chr]) < len(contigs_fpaths) and alignment.label not in aligned_assemblies[chr]:
                                 aligned_assemblies[chr].append(alignment.label)
@@ -869,6 +888,10 @@ def js_data_gen(assemblies, contigs_fpaths, chr_names, chromosomes_length, outpu
                     for line in template:
                         if line.find('<script type="text/javascript" src=""></script>') != -1:
                             result.write('<script type="text/javascript" src="data_{short_chr}.js"></script>\n'.format(**locals()))
+                        elif line.find('<!--- misassemblies selector: ---->') != -1:
+                            for ms_type in sorted(ms_types):
+                                result.write('<label><input type="checkbox" id="{ms_type}" name="misassemblies_select" '
+                                         'checked="checked"/> {ms_type}s</label>\n'.format(**locals()))
                         else:
                             result.write(line)
                             if line.find('<body>') != -1:

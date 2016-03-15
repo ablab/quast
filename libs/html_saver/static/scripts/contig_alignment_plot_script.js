@@ -542,25 +542,7 @@ THE SOFTWARE.
 
     display();
 
-    document.getElementById('left').onclick=function() {
-            keyPress('left', 2) };
-    document.getElementById('left_shift').onclick=function() {
-            keyPress('left', 10) };
-    document.getElementById('right').onclick=function() {
-            keyPress('right', 2) };
-    document.getElementById('right_shift').onclick=function() {
-            keyPress('right', 10) };
-    document.getElementById('zoom_in').onclick=function() {
-            keyPress('zoom_in', 25) };
-    document.getElementById('zoom_in_5').onclick=function() {
-            keyPress('zoom_in', 40) };
-    document.getElementById('zoom_out').onclick=function() {
-            keyPress('zoom_out', 50) };
-    document.getElementById('zoom_out_5').onclick=function() {
-            keyPress('zoom_out', 200) };
-
-    document.getElementById('input_coords').onkeydown=function() {
-            enterCoords(this) };
+    setupInterface();
 
     function display() {
         x_main = d3.scale.linear()
@@ -732,6 +714,7 @@ THE SOFTWARE.
                     return (d.id == selected_id ? 1 : 0);
                 });
 
+
         other.on('click', function A(d, i) {
             selected_id = d.id;
             changeInfo(d);
@@ -852,6 +835,35 @@ THE SOFTWARE.
         display();
     }
 
+    function setupInterface() {
+        document.getElementById('left').onclick=function() {
+            keyPress('left', 2) };
+        document.getElementById('left_shift').onclick=function() {
+            keyPress('left', 10) };
+        document.getElementById('right').onclick=function() {
+            keyPress('right', 2) };
+        document.getElementById('right_shift').onclick=function() {
+            keyPress('right', 10) };
+        document.getElementById('zoom_in').onclick=function() {
+            keyPress('zoom_in', 25) };
+        document.getElementById('zoom_in_5').onclick=function() {
+            keyPress('zoom_in', 40) };
+        document.getElementById('zoom_out').onclick=function() {
+            keyPress('zoom_out', 50) };
+        document.getElementById('zoom_out_5').onclick=function() {
+            keyPress('zoom_out', 200) };
+
+        document.getElementById('input_coords').onkeydown=function() {
+            enterCoords(this) };
+
+        var checkboxes = document.getElementsByName('misassemblies_select');
+        for(var i = 0; i < checkboxes.length; i++) {
+            checkboxes[i].addEventListener('change', function(){
+                showMisassemblies();
+            });
+        }
+    }
+
     function keyPressAnswer() {
         if (d3.event.target.className == 'textBox') return;
         var charCode = d3.event.which || d3.event.keyCode;
@@ -956,13 +968,15 @@ THE SOFTWARE.
     // is there a better way to do a bunch of lines as a single path with d3?
     function getPaths(items) {
         var paths = {}, d, result = [];
+        var misassemblies = {};
         var curLane = 0;
         var isSimilarNow = "False";
         var numItem = 0;
         for (var c, i = 0; i < items.length; i++) {
             d = items[i];
             if (d.lane != curLane) numItem = 0;
-            c = (d.misassembled == "False" ? "correct" : "misassembled");
+            d.misassemblies = d.misassembled == "False" ? "" : d.misassembled;
+            c = (d.misassembled == "False" ? "" : "misassembled");
             c += (d.similar == "True" ? " similar" : "");
             if (d.similar != isSimilarNow) numItem = 0;
             c += (numItem % 2 == 0 ? " odd" : "");
@@ -979,13 +993,14 @@ THE SOFTWARE.
                 y += .04 * miniLanesHeight;
 
             paths[c] += ['M', x_mini(d.corr_start), (y), 'H', x_mini(d.corr_end)].join(' ');
+            misassemblies[c] = d.misassembled == "False" ? "" : d.misassembled;
             isSimilarNow = d.similar;
             curLane = d.lane;
             numItem++;
         }
 
         for (var className in paths) {
-            result.push({class: className, path: paths[className]});
+            result.push({class: className, path: paths[className], misassemblies: misassemblies[className]});
         }
 
         return result;
@@ -1163,4 +1178,45 @@ THE SOFTWARE.
             p.attr('class', p.attr('class') == 'open' ? 'close' : 'open');
         }
         d3.event.stopPropagation();
+    }
+
+    function showMisassemblies() {
+        for (var numItem = 0; numItem < items.length; numItem++) {
+            if (items[numItem].misassemblies) {
+                var msTypes = items[numItem].misassemblies.split(';');
+                var isMisassembled = "False";
+                for (var i = 0; i < msTypes.length; i++) {
+                    if (msTypes[i] && document.getElementById(msTypes[i]).checked) isMisassembled = "True";
+                }
+                if (isMisassembled && items[numItem].misassembled == "False") {
+                    items[numItem].class = "misassembled" + items[numItem].class;
+                }
+                else items[numItem].class = items[numItem].class.replace("misassembled", "");
+                items[numItem].misassembled = isMisassembled;
+            }
+        }
+        d3.selectAll("g")
+            .classed("misassembled", function (e) {
+                if (e && e.misassemblies) {
+                    var msTypes = e.misassemblies.split(';');
+                    for (var i = 0; i < msTypes.length; i++) {
+                        if (msTypes[i] && document.getElementById(msTypes[i]).checked) {
+                            e.misassembled = "True";
+                            return true;
+                        }
+                    }
+                    e.misassembled = "False";
+                    return false;
+                }
+            });
+        d3.selectAll("path")
+            .classed("misassembled", function (e) {
+                if (e && e.misassemblies) {
+                    var msTypes = e.misassemblies.split(';');
+                    for (var i = 0; i < msTypes.length; i++) {
+                        if (msTypes[i] && document.getElementById(msTypes[i]).checked) return true;
+                    }
+                    return false;
+                }
+            });
     }

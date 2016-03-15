@@ -559,6 +559,9 @@ THE SOFTWARE.
     document.getElementById('zoom_out_5').onclick=function() {
             keyPress('zoom_out', 200) };
 
+    document.getElementById('input_coords').onkeydown=function() {
+            enterCoords(this) };
+
     function display() {
         x_main = d3.scale.linear()
             .range([0, chartWidth]);
@@ -593,6 +596,7 @@ THE SOFTWARE.
             mini_cov.select('.brush').call(brush_cov.extent([minExtent, maxExtent]));
 
         x_main.domain([minExtent, maxExtent]);
+        document.getElementById('input_coords').value = Math.round(minExtent) + "-" + Math.round(maxExtent);
 
         // shift the today line
         main.select('.main.curLine')
@@ -817,7 +821,7 @@ THE SOFTWARE.
 
     function keyPress (cmd, deltaCoeff) {
         var ext = brush.extent();
-        var delta = .01 * (ext[1] - ext[0]);
+        var delta = Math.max(.01 * (ext[1] - ext[0]), 1);
         if (deltaCoeff) delta *= deltaCoeff;
         switch (cmd) {
             case 'zoom_in':
@@ -849,27 +853,53 @@ THE SOFTWARE.
     }
 
     function keyPressAnswer() {
-        var key = d3.event.keyCode;
+        if (d3.event.target.className == 'textBox') return;
         var charCode = d3.event.which || d3.event.keyCode;
         var charStr = String.fromCharCode(charCode);
         if (d3.event.shiftKey) deltaCoeff = 5;
         else deltaCoeff = 1;
+        var ext = brush.extent();
         if (charStr == '-' || charStr == '_') // -
             keyPress('zoom_out', deltaCoeff);
-        else if ((charStr == '+' || charStr == '=') && ext[1] - ext[0] > 0) // +
+        else if ((charStr == '+' || charStr == '=') && ext[1] - ext[0] > deltaCoeff * 2) // +
             keyPress('zoom_in', deltaCoeff);
     }
 
     function keyDownAnswer() {
         var key = d3.event.keyCode;
+        if (d3.event.target.className == 'textBox') return;
         if (d3.event.shiftKey) deltaCoeff = 5;
         else deltaCoeff = 1;
-        if (key == 39) // >
+        var ext = brush.extent();
+        if (key == 39 && x_mini.domain()[1] - ext[0] > deltaCoeff + 1) // >
             keyPress('right', deltaCoeff);
-        else if (key == 37) // <
+        else if (key == 37 && ext[1] > deltaCoeff + 1) // <
             keyPress('left', deltaCoeff);
         else if (key == 27)
             keyPress('esc');
+    }
+
+    function enterCoords(textBox) {
+        var key = this.event.keyCode;
+        if (key == 27) {
+            document.getElementById('input_coords').blur();
+        }
+        if (key == 13) {
+            var coordText = textBox.value;
+            var coords = coordText.split("-");
+            if (coords.length >= 2 && parseInt(coords[0]) <= parseInt(coords[1])) {
+                var startCoord = parseInt(coords[0]);
+                var endCoord = parseInt(coords[1]);
+                brush.extent([startCoord, Math.max(endCoord, startCoord + 5)]);
+            }
+            else if (coords.length == 1) {
+                var startCoord = parseInt(coords[0]);
+                var brushExtent = brush.extent();
+                var brushSize = brushExtent[1] - brushExtent[0];
+                brush.extent([startCoord, startCoord + brushSize]);
+            }
+            display();
+        }
     }
 
     function sync() {

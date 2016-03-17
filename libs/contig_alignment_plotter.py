@@ -620,7 +620,8 @@ def do(contigs_fpaths, contig_report_fpath_pattern, output_dirpath,
         contigs_fpaths, virtual_genome_size, sorted_ref_names, sorted_ref_lengths, virtual_genome_shift, output_dirpath,
         lists_of_aligned_blocks, arcs, similar, coverage_hist)
     if assemblies and qconfig.create_contig_alignment_html:
-        js_data_gen(assemblies, contigs_fpaths, chr_names, reference_chromosomes, output_dirpath, cov_fpath, ref_fpath, virtual_genome_size)
+        js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chr_names, reference_chromosomes,
+                    output_dirpath, cov_fpath, ref_fpath, virtual_genome_size)
 
     return plot_fpath
 
@@ -702,7 +703,8 @@ def parse_nucmer_contig_report(report_fpath, sorted_ref_names, cumulative_ref_le
     return aligned_blocks
 
 
-def js_data_gen(assemblies, contigs_fpaths, chr_names, chromosomes_length, output_dir_path, cov_fpath, ref_fpath, genome_size):
+def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chr_names, chromosomes_length,
+                output_dir_path, cov_fpath, ref_fpath, genome_size):
     chr_to_aligned_blocks = dict()
     for chr in chr_names:
         chr_init = []
@@ -765,6 +767,25 @@ def js_data_gen(assemblies, contigs_fpaths, chr_names, chromosomes_length, outpu
     aligned_bases_by_chr = {}
     num_misassemblies = {}
     aligned_assemblies = {}
+
+    with open(os.path.join(output_all_files_dir_path, 'data_assemblies.js'), 'w') as result:
+        data_str = ''
+        data_str += 'var assemblies_links = {};\n'
+        data_str += 'var assemblies_len = {};\n'
+        data_str += 'var assemblies_contigs = {};\n'
+        data_str += 'var assemblies_misassemblies = {};\n'
+        for contigs_fpath in contigs_fpaths:
+            label = qutils.label_from_fpath(contigs_fpath)
+            contig_stdout_fpath = contig_report_fpath_pattern % qutils.label_from_fpath_for_fname(contigs_fpath)
+            report = reporting.get(contigs_fpath)
+            l = report.get_field(reporting.Fields.TOTALLEN)
+            contigs = report.get_field(reporting.Fields.CONTIGS)
+            ext_misassemblies = report.get_field(reporting.Fields.MIS_ALL_EXTENSIVE)
+            data_str += 'assemblies_links["{label}"] = "{contig_stdout_fpath}";\n'.format(**locals())
+            data_str += 'assemblies_len["{label}"] = {l};\n'.format(**locals())
+            data_str += 'assemblies_contigs["{label}"] = {contigs};\n'.format(**locals())
+            data_str += 'assemblies_misassemblies["{label}"] = {ext_misassemblies};\n'.format(**locals())
+        result.write(data_str)
 
     for i, chr in enumerate(chr_full_names):
         short_chr = chr[:30]
@@ -888,6 +909,7 @@ def js_data_gen(assemblies, contigs_fpaths, chr_names, chromosomes_length, outpu
                     for line in template:
                         if line.find('<script type="text/javascript" src=""></script>') != -1:
                             result.write('<script type="text/javascript" src="data_{short_chr}.js"></script>\n'.format(**locals()))
+                            result.write('<script type="text/javascript" src="data_assemblies.js"></script>\n'.format(**locals()))
                         elif line.find('<!--- misassemblies selector: ---->') != -1:
                             for ms_type in sorted(ms_types):
                                 result.write('<label><input type="checkbox" id="{ms_type}" name="misassemblies_select" '

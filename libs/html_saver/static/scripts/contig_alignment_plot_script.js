@@ -85,6 +85,18 @@ THE SOFTWARE.
                 }
             }
 
+            for (var laneNum = 0; laneNum < lanes.length; laneNum++) {
+                if (lanes[laneNum].label) {
+                    assemblyName = lanes[laneNum].label;
+                    var description = assemblyName + '\n';
+                    description += 'Length: ' + assemblies_len[assemblyName] + '\n';
+                    description += 'Contigs: ' + assemblies_contigs[assemblyName] + '\n';
+                    description += 'Misassemblies: ' + assemblies_misassemblies[assemblyName];
+                    lanes[laneNum].description = description;
+                    lanes[laneNum].link = assemblies_links[assemblyName];
+                }
+            }
+
             return {lanes: lanes, items: items};
         };
 
@@ -107,7 +119,7 @@ THE SOFTWARE.
                  return getTextSize(d.label);
                  }), 120)*/ 145
             },
-            mainLanesHeight = 40,
+            mainLanesHeight = 50,
             miniLanesHeight = 18,
             lanesInterval = 20,
             miniScale = 50,
@@ -186,11 +198,68 @@ THE SOFTWARE.
             })
             .attr('x', -10)
             .attr('y', function (d) {
-                return y_main(d.id + .5);
+                return y_main(d.id + .1);
             })
             .attr('dy', '.5ex')
             .attr('text-anchor', 'end')
-            .attr('class', 'laneText');
+            .attr('class', 'laneText')
+            .on('click', expandAssemblyInfo);
+
+    function expandAssemblyInfo(d) {
+        d3.select(this)
+        .on('click', collapseAssemblyInfo)
+        .text(function(d) { return d.description; })
+        .call(wrap, 90);
+    }
+
+    function collapseAssemblyInfo(d) {
+        d3.select(this)
+        .on('click', expandAssemblyInfo)
+        .text(function(d) { return getVisibleText(d.label, 150); });
+    }
+
+    function wrap(text, width) {
+      text.each(function() {
+          var text = d3.select(this),
+              words = text.text().split(/\n/).reverse(),
+              word,
+              line = [],
+              lineNumber = 0,
+              lineHeight = 1.1,
+              y = text.attr('y'),
+              dy = parseFloat(text.attr('dy')),
+              tspan = text.text(null).append('tspan').attr('x', -60).attr('y', y).attr('dy', dy + 'em');
+          var linkAdded = false;
+          while (word = words.pop()) {
+            line.push(word);
+            tspan.text(line.join(' '));
+            if (tspan.node().getComputedTextLength() > width) {
+                line.pop();
+                tspan.text(line.join(' '));
+                line = [word];
+                if (!linkAdded) {
+                    linkAdded = true;
+                    tspan = text.append('tspan')
+                            .attr('y', y)
+                            .attr('dy', lineNumber * lineHeight + dy + 'em')
+                            .attr('text-decoration', 'underline')
+                            .attr('fill', '#0000EE')
+                            .style("cursor", "pointer")
+                            .text('(.stdout)')
+                            .on('click',function(d) {
+                                window.open(d.link, '_blank');
+                                d3.event.stopPropagation();
+                            });
+                }
+                tspan = text.append('tspan')
+                    .attr('x', -10)
+                    .attr('y', y)
+                    .attr('dy', ++lineNumber * lineHeight + dy + 'em')
+                    .text(word);
+            }
+          }
+      });
+    }
 
     // draw the lanes for the mini chart
     mini.append('g').selectAll('.laneLines')

@@ -832,22 +832,23 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chr_nam
                                 if type(el) == list:
                                     if int(el[0]) == alignment.unshifted_start and int(el[1]) == alignment.unshifted_end:
                                         break
-                            alignment.misassembled = ''
+                            alignment.misassemblies = ''
                             if type(alignment.misassembled_structure[num_alignment - 1]) == str:
                                 misassembly_type = alignment.misassembled_structure[num_alignment - 1].split(',')[0].strip()
-                                alignment.misassembled += misassembly_type
+                                alignment.misassemblies += misassembly_type
                                 ms_types.add(misassembly_type)
                             if num_alignment + 1 < len(alignment.misassembled_structure):
                                 misassembly_type = alignment.misassembled_structure[num_alignment + 1].split(',')[0].strip()
-                                alignment.misassembled += ';' + misassembly_type
+                                alignment.misassemblies += ';' + misassembly_type
                                 ms_types.add(misassembly_type)
                         else:
                             alignment.misassembled = False
+                            alignment.misassemblies = ''
                         corr_start = prev_len + alignment.unshifted_start
                         corr_end = prev_len + alignment.unshifted_end
                         data_str += '{{name: "{alignment.name}", corr_start: {corr_start}, corr_end: {corr_end},' \
                                     'start: {alignment.unshifted_start}, end: {alignment.unshifted_end}, assembly: "{alignment.label}", ' \
-                                    'similar: "{alignment.similar}", misassembled: "{alignment.misassembled}" '.format(**locals())
+                                    'similar: "{alignment.similar}", misassemblies: "{alignment.misassemblies}" '.format(**locals())
                         if alignment.name != 'FICTIVE':
                             if len(aligned_assemblies[chr]) < len(contigs_fpaths) and alignment.label not in aligned_assemblies[chr]:
                                 aligned_assemblies[chr].append(alignment.label)

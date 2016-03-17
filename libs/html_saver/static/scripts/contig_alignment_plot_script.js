@@ -1044,7 +1044,7 @@ THE SOFTWARE.
         for (var c, i = 0; i < items.length; i++) {
             d = items[i];
             if (d.lane != curLane) numItem = 0;
-            d.misassemblies = d.misassembled == "False" ? "" : d.misassembled;
+            d.misassembled = d.misassemblies ? "True" : "False";
             c = (d.misassembled == "False" ? "" : "misassembled");
             c += (d.similar == "True" ? " similar" : "");
             if (d.similar != isSimilarNow) numItem = 0;
@@ -1062,7 +1062,7 @@ THE SOFTWARE.
                 y += .04 * miniLanesHeight;
 
             paths[c] += ['M', x_mini(d.corr_start), (y), 'H', x_mini(d.corr_end)].join(' ');
-            misassemblies[c] = d.misassembled == "False" ? "" : d.misassembled;
+            misassemblies[c] = d.misassemblies;
             isSimilarNow = d.similar;
             curLane = d.lane;
             numItem++;

@@ -37,7 +37,8 @@ MAX_REFERENCE_FILE_LENGTH = 50000000  # Max length of one part of reference
 long_options = "test test-no-ref test-sv output-dir= save-json-to= genes= operons= reference= contig-thresholds= min-contig= "\
                "gene-thresholds= err-fpath= save-json gage eukaryote glimmer no-plots no-html no-check no-check-meta combined-ref no-gc help debug "\
                "ambiguity-usage= scaffolds threads= min-cluster= min-alignment= est-ref-size= use-all-alignments gene-finding "\
-               "strict-NA meta labels= help-hidden no-snps fast max-ref-number= extensive-mis-size= plots-format= fragmented " \
+               "strict-NA meta labels= help-hidden no-snps fast max-ref-number= extensive-mis-size= plots-format= " \
+               "fragmented= significant-part-size= " \
                "references-list= bed-file= reads1= reads2= memory-efficient silent version".split()
 short_options = "o:G:O:R:t:m:J:jehvda:c:ufl:Lx:i:s1:2:"
 
@@ -70,6 +71,7 @@ show_snps = True
 glimmer = False
 is_combined_ref = False
 check_for_fragmented_ref = False
+significant_part_size = 500
 
 # print in stdout only main information
 silent = False
@@ -254,6 +256,8 @@ def usage(show_hidden=False, meta=False, short=True):
         print >> sys.stderr, "                                      By default, QUAST breaks contigs only by extensive misassemblies (not local ones)"
         print >> sys.stderr, "-x  --extensive-mis-size  <int>       Lower threshold for extensive misassembly size. All relocations with inconsistency"
         print >> sys.stderr, "                                      less than extensive-mis-size are counted as local misassemblies. [default: %s]" % extensive_misassembly_threshold
+        print >> sys.stderr, "    --significant-part-size  <int>    Lower threshold for detecting partially unaligned contigs with both significant "
+        print >> sys.stderr, "                                      aligned and unaligned parts. [default: %s]" % significant_part_size
         print >> sys.stderr, "    --plots-format  <str>             Save plots in specified format. [default: %s]" % plot_extension
         print >> sys.stderr, "                                      Supported formats: %s." % ', '.join(supported_plot_extensions)
         print >> sys.stderr, "    --memory-efficient                Run Nucmer using one thread, separately per each assembly and each chromosome. "
@@ -274,7 +278,9 @@ def usage(show_hidden=False, meta=False, short=True):
             print >> sys.stderr, "Hidden options:"
             print >> sys.stderr, "-d  --debug                 Run in a debug mode"
             print >> sys.stderr, "-L                          Take assembly names from their parent directory names"
-            print >> sys.stderr, "    --fragmented            Reference genome may be fragmented into small pieces (e.g. scaffolded reference)"
+            print >> sys.stderr, "    --fragmented    <int>   Reference genome may be fragmented into small pieces (e.g. scaffolded reference), "
+            print >> sys.stderr, "                            VALUE: min size of a fragment which is used for potential i/s translocation"
+            print >> sys.stderr, "                            detection (set 0 for unknown size and using threshold defined by --significant-part-size)."
             print >> sys.stderr, "-c  --min-cluster   <int>   Nucmer's parameter: the minimum length of a cluster of matches [default: %s]" % min_cluster
             print >> sys.stderr, "-j  --save-json             Save the output also in the JSON format"
             print >> sys.stderr, "-J  --save-json-to <path>   Save the JSON output to a particular path"

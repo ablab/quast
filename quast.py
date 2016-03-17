@@ -526,6 +526,8 @@ def main(args):
 
         elif opt == "--fragmented":
             qconfig.check_for_fragmented_ref = True
+            if int(arg) != 0:
+                qconfig.significant_part_size = int(arg)
 
         elif opt in ('-a', "--ambiguity-usage"):
             if arg in ["none", "one", "all"]:
@@ -542,6 +544,8 @@ def main(args):
                 logger.error("--extensive-mis-size should be greater than maximum indel length (%d)!"
                              % qconfig.MAX_INDEL_LENGTH, 1, to_stderr=True)
             qconfig.extensive_misassembly_threshold = int(arg)
+        elif opt == "--significant-part-size":
+            qconfig.significant_part_size = int(arg)
 
         elif opt == '--no-snps':
             qconfig.show_snps = False

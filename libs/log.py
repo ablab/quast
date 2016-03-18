@@ -58,7 +58,7 @@ class QLogger(object):
         for handler in self._logger.handlers:
             handler.setLevel(logging.DEBUG)
 
-    def set_up_file_handler(self, output_dirpath):
+    def set_up_file_handler(self, output_dirpath, err_fpath=None):
         for handler in self._logger.handlers:
             if isinstance(handler, logging.FileHandler):
                 self._logger.removeHandler(handler)
@@ -66,8 +66,12 @@ class QLogger(object):
         self._log_fpath = os.path.join(output_dirpath, self._name + '.log')
         file_handler = logging.FileHandler(self._log_fpath, mode='w')
         file_handler.setLevel(logging.DEBUG)
-
         self._logger.addHandler(file_handler)
+
+        if err_fpath:
+            err_handler = logging.FileHandler(err_fpath, mode='w')
+            err_handler.setLevel(logging.ERROR)
+            self._logger.addHandler(err_handler)
 
     def start(self):
         if self._indent_val == 0 and not self._is_metaquast:
@@ -83,6 +87,8 @@ class QLogger(object):
     def finish_up(self, numbers=None, check_test=False):
         if not self._is_metaquast:
             self._logger.info('  Log saved to ' + self._log_fpath)
+            if qconfig.save_error:
+                self._logger.info('  Errors saved to ' + qconfig.error_log_fpath)
 
             finish_time = self.print_timestamp('Finished: ')
             self._logger.info('Elapsed time: ' + str(finish_time - self._start_time))

@@ -77,7 +77,7 @@ significant_part_size = 500
 silent = False
 
 # the following 2 are for web-quast:
-error_log_fname = 'error.log'
+error_log_fpath = 'error.log'
 save_error = False
 
 default_results_root_dirname = "quast_results"

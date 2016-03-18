@@ -442,6 +442,9 @@ def main(args):
             pass
         elif opt in ('-J', '--save-json-to'):
             pass
+        elif opt == '--err-fpath':  # for web-quast
+            qconfig.save_error = True
+            qconfig.error_log_fpath = arg
         elif opt == "--contig-thresholds":
             pass
         elif opt in ('-c', "--mincluster"):
@@ -523,7 +526,7 @@ def main(args):
 
     corrected_dirpath = os.path.join(output_dirpath, qconfig.corrected_dirname)
 
-    logger.set_up_file_handler(output_dirpath)
+    logger.set_up_file_handler(output_dirpath, qconfig.error_log_fpath if qconfig.save_error else None)
     args = [os.path.realpath(__file__)]
     for k, v in options: args.extend([k, v])
     args.extend(contigs_fpaths)

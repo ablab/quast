@@ -526,8 +526,6 @@ def main(args):
 
         elif opt == "--fragmented":
             qconfig.check_for_fragmented_ref = True
-            if int(arg) != 0:
-                qconfig.significant_part_size = int(arg)
 
         elif opt in ('-a', "--ambiguity-usage"):
             if arg in ["none", "one", "all"]:

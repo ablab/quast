@@ -472,6 +472,8 @@ def main(args):
             pass
         elif opt in ('-x', "--extensive-mis-size"):
             pass
+        elif opt == "--significant-part-size":
+            pass
         elif opt == "--meta":
             pass
         elif opt == '--references-list':

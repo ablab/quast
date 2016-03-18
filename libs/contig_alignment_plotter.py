@@ -835,12 +835,13 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chr_nam
                             alignment.misassemblies = ''
                             if type(alignment.misassembled_structure[num_alignment - 1]) == str:
                                 misassembly_type = alignment.misassembled_structure[num_alignment - 1].split(',')[0].strip()
-                                alignment.misassemblies += misassembly_type
+                                alignment.misassemblies += ';' + misassembly_type
                                 ms_types.add(misassembly_type)
-                            if num_alignment + 1 < len(alignment.misassembled_structure):
+                            if num_alignment + 1 < len(alignment.misassembled_structure) and type(alignment.misassembled_structure[num_alignment + 1]) == str:
                                 misassembly_type = alignment.misassembled_structure[num_alignment + 1].split(',')[0].strip()
                                 alignment.misassemblies += ';' + misassembly_type
                                 ms_types.add(misassembly_type)
+                            alignment.misassemblies = alignment.misassemblies.lstrip(';')
                         else:
                             alignment.misassembled = False
                             alignment.misassemblies = ''
@@ -914,7 +915,7 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chr_nam
                         elif line.find('<!--- misassemblies selector: ---->') != -1:
                             for ms_type in sorted(ms_types):
                                 result.write('<label><input type="checkbox" id="{ms_type}" name="misassemblies_select" '
-                                         'checked="checked"/> {ms_type}s</label>\n'.format(**locals()))
+                                         'checked="checked"/> {ms_type}</label>\n'.format(**locals()))
                         else:
                             result.write(line)
                             if line.find('<body>') != -1:

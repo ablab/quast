@@ -767,203 +767,190 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chr_nam
     aligned_bases_by_chr = {}
     num_misassemblies = {}
     aligned_assemblies = {}
-    min_n50 = None
 
-    with open(os.path.join(output_all_files_dir_path, 'data_assemblies.js'), 'w') as result:
-        data_str = ''
-        data_str += 'var assemblies_links = {};\n'
-        data_str += 'var assemblies_len = {};\n'
-        data_str += 'var assemblies_contigs = {};\n'
-        data_str += 'var assemblies_misassemblies = {};\n'
-        for contigs_fpath in contigs_fpaths:
-            label = qutils.label_from_fpath(contigs_fpath)
-            contig_stdout_fpath = contig_report_fpath_pattern % qutils.label_from_fpath_for_fname(contigs_fpath)
-            report = reporting.get(contigs_fpath)
-            l = report.get_field(reporting.Fields.TOTALLEN)
-            contigs = report.get_field(reporting.Fields.CONTIGS)
-            ext_misassemblies = report.get_field(reporting.Fields.MIS_ALL_EXTENSIVE)
-            min_n50 = min(min_n50, report.get_field(reporting.Fields.N50)) \
-                if min_n50 else report.get_field(reporting.Fields.N50)
-            data_str += 'assemblies_links["{label}"] = "{contig_stdout_fpath}";\n'.format(**locals())
-            data_str += 'assemblies_len["{label}"] = {l};\n'.format(**locals())
-            data_str += 'assemblies_contigs["{label}"] = {contigs};\n'.format(**locals())
-            data_str += 'assemblies_misassemblies["{label}"] = {ext_misassemblies};\n'.format(**locals())
-        result.write(data_str)
+    assemblies_data = ''
+    assemblies_data += 'var assemblies_links = {};\n'
+    assemblies_data += 'var assemblies_len = {};\n'
+    assemblies_data += 'var assemblies_contigs = {};\n'
+    assemblies_data += 'var assemblies_misassemblies = {};\n'
+    min_n50 = None
+    for contigs_fpath in contigs_fpaths:
+        label = qutils.label_from_fpath(contigs_fpath)
+        contig_stdout_fpath = contig_report_fpath_pattern % qutils.label_from_fpath_for_fname(contigs_fpath)
+        report = reporting.get(contigs_fpath)
+        l = report.get_field(reporting.Fields.TOTALLEN)
+        contigs = report.get_field(reporting.Fields.CONTIGS)
+        min_n50 = min(min_n50, report.get_field(reporting.Fields.N50)) if min_n50 else report.get_field(reporting.Fields.N50)
+        ext_misassemblies = report.get_field(reporting.Fields.MIS_ALL_EXTENSIVE)
+        assemblies_data += 'assemblies_links["{label}"] = "{contig_stdout_fpath}";\n'.format(**locals())
+        assemblies_data += 'assemblies_len["{label}"] = {l};\n'.format(**locals())
+        assemblies_data += 'assemblies_contigs["{label}"] = {contigs};\n'.format(**locals())
+        assemblies_data += 'assemblies_misassemblies["{label}"] = {ext_misassemblies};\n'.format(**locals())
 
     for i, chr in enumerate(chr_full_names):
         short_chr = chr[:30]
         num_misassemblies[chr] = 0
         aligned_bases_by_chr[chr] = []
         aligned_assemblies[chr] = []
-        with open(os.path.join(output_all_files_dir_path, 'data_%s.js' % short_chr), 'w') as result:
-            result.write('"use strict";\n')
-            data_str = ''
-            if contigs_analyzer.ref_labels_by_chromosomes:
-                contigs = [contig for contig in chr_names if contig_names_by_refs[contig] == chr]
-                result.write('var links_to_chromosomes = {};\n')
-                links_to_chromosomes = []
-                used_chromosomes = []
-            elif chr == NAME_FOR_ONE_PLOT:
-                contigs = chr_names
-            else:
-                contigs = [chr]
-            chr_size = sum([chromosomes_length[contig] for contig in contigs])
-            chr_sizes[chr] = chr_size
-            num_contigs[chr] = len(contigs)
-            for contig in contigs:
-                aligned_bases_by_chr[chr].extend(aligned_bases[contig])
-            data_str += 'var chromosomes_len = {};\n'
-            for contig in contigs:
-                l = chromosomes_length[contig]
-                data_str += 'chromosomes_len["{contig}"] = {l};\n'.format(**locals())
-            result.write(data_str)
+        data_str = ''
+        if contigs_analyzer.ref_labels_by_chromosomes:
+            contigs = [contig for contig in chr_names if contig_names_by_refs[contig] == chr]
+            data_str += 'var links_to_chromosomes = {};\n'
+            links_to_chromosomes = []
+            used_chromosomes = []
+        elif chr == NAME_FOR_ONE_PLOT:
+            contigs = chr_names
+        else:
+            contigs = [chr]
+        chr_size = sum([chromosomes_length[contig] for contig in contigs])
+        chr_sizes[chr] = chr_size
+        num_contigs[chr] = len(contigs)
+        for contig in contigs:
+            aligned_bases_by_chr[chr].extend(aligned_bases[contig])
+        data_str += 'var chromosomes_len = {};\n'
+        for contig in contigs:
+            l = chromosomes_length[contig]
+            data_str += 'chromosomes_len["{contig}"] = {l};\n'.format(**locals())
 
-            # adding assembly data
-            data_str = 'var contig_data = {};\n'
-            data_str += 'contig_data["{chr}"] = [ '.format(**locals())
-            prev_len = 0
-            chr_lengths = [0] + [chromosomes_length[contig] for contig in contigs]
-            ms_types = set()
+        # adding assembly data
+        data_str += 'var contig_data = {};\n'
+        data_str += 'contig_data["{chr}"] = [ '.format(**locals())
+        prev_len = 0
+        chr_lengths = [0] + [chromosomes_length[contig] for contig in contigs]
+        ms_types = set()
+        min_len_for_splitting = max(1000, min_n50 / 2)
+        len_misassembled_end = min(10000, int(0.1 * min_len_for_splitting))
+        for num_contig, contig in enumerate(contigs):
+            if num_contig > 0:
+                prev_len += chr_lengths[num_contig]
+            if len(chr_to_aligned_blocks[contig]) > 0:
+                for alignment in chr_to_aligned_blocks[contig]:
+                    misassembled_ends = []
+                    if alignment.misassembled:
+                        num_misassemblies[chr] += 1
+                        for num_alignment, el in enumerate(alignment.misassembled_structure):
+                            if type(el) == list:
+                                if int(el[0]) == alignment.unshifted_start and int(el[1]) == alignment.unshifted_end:
+                                    break
+                        alignment.misassemblies = ''
+                        if type(alignment.misassembled_structure[num_alignment - 1]) == str:
+                            misassembly_type = alignment.misassembled_structure[num_alignment - 1].split(',')[0].strip()
+                            alignment.misassemblies += misassembly_type
+                            ms_types.add(misassembly_type)
+                            misassembled_ends.append('L')
+                        if num_alignment + 1 < len(alignment.misassembled_structure):
+                            misassembly_type = alignment.misassembled_structure[num_alignment + 1].split(',')[0].strip()
+                            alignment.misassemblies += ';' + misassembly_type
+                            ms_types.add(misassembly_type)
+                            misassembled_ends.append('R')
+                    else:
+                        alignment.misassembled = False
+                        alignment.misassemblies = ''
 
-            min_len_for_splitting = max(1000, min_n50 / 2)
-            len_misassembled_end = min(10000, int(0.1 * min_len_for_splitting))
+                    corr_start = prev_len + alignment.unshifted_start
+                    corr_end = prev_len + alignment.unshifted_end
+                    one_part = True
+                    if corr_end - corr_start > min_len_for_splitting and misassembled_ends:
+                        one_part = False
+                    supplementary = False
+                    data_str += '{{name: "{alignment.name}", corr_start: {corr_start}, corr_end: {corr_end},' \
+                                'start: {alignment.unshifted_start}, end: {alignment.unshifted_end}, assembly: "{alignment.label}", ' \
+                                'similar: "{alignment.similar}", misassemblies: "{alignment.misassemblies}", ' \
+                                'one_part: "{one_part}"'.format(**locals())
 
-            for num_contig, contig in enumerate(contigs):
-                if num_contig > 0:
-                    prev_len += chr_lengths[num_contig]
-                if len(chr_to_aligned_blocks[contig]) > 0:
-                    for alignment in chr_to_aligned_blocks[contig]:
-                        misassembled_ends = []
-                        if alignment.misassembled:
-                            num_misassemblies[chr] += 1
-                            for num_alignment, el in enumerate(alignment.misassembled_structure):
-                                if type(el) == list:
-                                    if int(el[0]) == alignment.unshifted_start and int(el[1]) == alignment.unshifted_end:
-                                        break
-                            alignment.misassemblies = ''
-                            if type(alignment.misassembled_structure[num_alignment - 1]) == str:
-                                misassembly_type = alignment.misassembled_structure[num_alignment - 1].split(',')[0].strip()
-                                alignment.misassemblies += ';' + misassembly_type
-                                ms_types.add(misassembly_type)
-                                misassembled_ends.append('L')
-                            if num_alignment + 1 < len(alignment.misassembled_structure):
-                                misassembly_type = alignment.misassembled_structure[num_alignment + 1].split(',')[0].strip()
-                                alignment.misassemblies += ';' + misassembly_type
-                                ms_types.add(misassembly_type)
-                                misassembled_ends.append('R')
-                            alignment.misassemblies = alignment.misassemblies.lstrip(';')
+                    if alignment.name != 'FICTIVE':
+                        if len(aligned_assemblies[chr]) < len(contigs_fpaths) and alignment.label not in aligned_assemblies[chr]:
+                            aligned_assemblies[chr].append(alignment.label)
+                        data_str += ', structure: ['
+                        for el in alignment.misassembled_structure:
+                            if type(el) == list:
+                                if el[5] in contigs:
+                                    num_chr = contigs.index(el[5])
+                                    corr_len = sum(chr_lengths[:num_chr+1])
+                                else:
+                                    corr_len = -int(el[1])
+                                    if contigs_analyzer.ref_labels_by_chromosomes and el[5] not in used_chromosomes:
+                                        used_chromosomes.append(el[5])
+                                        new_chr = contig_names_by_refs[el[5]]
+                                        links_to_chromosomes.append('links_to_chromosomes["{el[5]}"] = "{new_chr}";\n'.format(**locals()))
+                                corr_el_start = corr_len + int(el[0])
+                                corr_el_end = corr_len + int(el[1])
+                                data_str += '{{type: "A", corr_start: {corr_el_start}, corr_end: {corr_el_end}, start: {el[0]}, ' \
+                                            'end: {el[1]}, start_in_contig: {el[2]}, end_in_contig: {el[3]}, IDY: {el[4]}, ' \
+                                            'chr: "{el[5]}"}},'.format(**locals())
+                            elif type(el) == str:
+                                data_str += '{{type: "M", mstype: "{el}"}},'.format(**locals())
+                        if data_str[-1] == '[':
+                            data_str = data_str + ']},'
                         else:
-                            alignment.misassembled = False
-                            alignment.misassemblies = ''
-                        corr_start = prev_len + alignment.unshifted_start
-                        corr_end = prev_len + alignment.unshifted_end
-                        one_part = True
-                        if corr_end - corr_start > min_len_for_splitting and misassembled_ends:
-                            one_part = False
-                        supplementary = False
-                        data_str += '{{name: "{alignment.name}", corr_start: {corr_start}, corr_end: {corr_end},' \
-                                    'start: {alignment.unshifted_start}, end: {alignment.unshifted_end}, assembly: "{alignment.label}", ' \
-                                    'similar: "{alignment.similar}", misassemblies: "{alignment.misassemblies}", ' \
-                                    'one_part: "{one_part}"'.format(**locals())
+                            data_str = data_str[: -1] + ']},'
 
-                        if alignment.name != 'FICTIVE':
-                            if len(aligned_assemblies[chr]) < len(contigs_fpaths) and alignment.label not in aligned_assemblies[chr]:
-                                aligned_assemblies[chr].append(alignment.label)
-                            data_str += ', structure: ['
-                            for el in alignment.misassembled_structure:
-                                if type(el) == list:
-                                    if el[5] in contigs:
-                                        num_chr = contigs.index(el[5])
-                                        corr_len = sum(chr_lengths[:num_chr+1])
-                                    else:
-                                        corr_len = -int(el[1])
-                                        if contigs_analyzer.ref_labels_by_chromosomes and el[5] not in used_chromosomes:
-                                            used_chromosomes.append(el[5])
-                                            new_chr = contig_names_by_refs[el[5]]
-                                            links_to_chromosomes.append('links_to_chromosomes["{el[5]}"] = "{new_chr}";\n'.format(**locals()))
-                                    corr_el_start = corr_len + int(el[0])
-                                    corr_el_end = corr_len + int(el[1])
-                                    data_str += '{{type: "A", corr_start: {corr_el_start}, corr_end: {corr_el_end}, start: {el[0]}, ' \
-                                                'end: {el[1]}, start_in_contig: {el[2]}, end_in_contig: {el[3]}, IDY: {el[4]}, ' \
-                                                'chr: "{el[5]}"}},'.format(**locals())
-                                elif type(el) == str:
-                                    data_str += '{{type: "M", mstype: "{el}"}},'.format(**locals())
-                            if data_str[-1] == '[':
-                                data_str = data_str + ']},'
-                            else:
-                                data_str = data_str[: -1] + ']},'
+                        if not one_part:
+                            supplementary = True
+                            if 'L' in misassembled_ends:
+                                new_start = corr_start
+                                new_end = corr_start + len_misassembled_end
+                                cur_misassembly = alignment.misassemblies.split(';')[0]
+                                data_str += '{{name: "{alignment.name}", corr_start: {new_start}, corr_end: {new_end}, real_end: {corr_end},' \
+                                            'chr: "{el[5]}", one_part: "{one_part}", supp: "L", assembly: "{alignment.label}", ' \
+                                            'misassemblies: "{cur_misassembly}"}},'.format(**locals())
+                            if 'R' in misassembled_ends:
+                                new_start = corr_end - len_misassembled_end
+                                new_end = corr_end
+                                cur_misassembly = alignment.misassemblies.split(';')[1] if ';' in alignment.misassemblies else ''
+                                data_str += '{{corr_start: {new_start}, corr_end: {new_end}, real_start: {corr_start}, ' \
+                                            'chr: "{el[5]}", one_part: "{one_part}", supp: "R", assembly: "{alignment.label}",' \
+                                            'misassemblies: "{cur_misassembly}"}},'.format(**locals())
+                    else: data_str += '},'
 
-                            if not one_part:
-                                supplementary = True
-                                if 'L' in misassembled_ends:
-                                    new_start = corr_start
-                                    new_end = corr_start + len_misassembled_end
-                                    cur_misassembly = alignment.misassemblies.split(';')[0]
-                                    data_str += '{{corr_start: {new_start}, corr_end: {new_end}, ' \
-                                                'chr: "{el[5]}", one_part: "{one_part}", supp: "L", assembly: "{alignment.label}", ' \
-                                                'misassemblies: "{cur_misassembly}"}},'.format(**locals())
-                                if 'R' in misassembled_ends:
-                                    new_start = corr_end - len_misassembled_end
-                                    new_end = corr_end
-                                    cur_misassembly = alignment.misassemblies.split(';')[1] if ';' in alignment.misassemblies else ''
-                                    data_str += '{{corr_start: {new_start}, corr_end: {new_end}, ' \
-                                                'chr: "{el[5]}", one_part: "{one_part}", supp: "R", assembly: "{alignment.label}",' \
-                                                'misassemblies: "{cur_misassembly}"}},'.format(**locals())
-                        else: data_str += '},'
-            data_str = data_str[:-1] + '];\n\n'
-            result.write(data_str)
-            if contigs_analyzer.ref_labels_by_chromosomes:
-                result.write(''.join(links_to_chromosomes))
-            if cov_fpath:
-                # adding coverage data
-                data_str = 'var coverage_data = {};\n'
-                if cov_data[chr]:
-                    data_str += 'coverage_data["{chr}"] = [ '.format(**locals())
-                    for e in cov_data[chr]:
-                        data_str += '{e},'.format(**locals())
-                        if len(data_str) > 10000 and e != cov_data[chr][-1]:
-                            result.write(data_str)
-                            data_str = ''
-                    data_str = data_str[:-1] + '];\n'
-                    result.write(data_str)
-                    data_str = ''
+        data_str = data_str[:-1] + '];\n\n'
+        if contigs_analyzer.ref_labels_by_chromosomes:
+            data_str += ''.join(links_to_chromosomes) + '\n'
+        if cov_fpath:
+            # adding coverage data
+            data_str += 'var coverage_data = {};\n'
+            if cov_data[chr]:
+                data_str += 'coverage_data["{chr}"] = [ '.format(**locals())
+                for e in cov_data[chr]:
+                    data_str += '{e},'.format(**locals())
+                data_str += data_str[:-1] + '];\n'
 
-                data_str = 'var not_covered = {};\n'
-                data_str += 'not_covered["{chr}"] = [ '.format(**locals())
-                if len(not_covered[chr]) > 0:
-                    for e in not_covered[chr]:
-                        data_str += '{e},'.format(**locals())
-                        if len(data_str) > 10000 and e != cov_data[chr][-1]:
-                            result.write(data_str)
-                            data_str = ''
-                    data_str = data_str[:-1]
-                data_str += '];\n'
-                result.write(data_str)
-                data_str = ''
+            data_str += 'var not_covered = {};\n'
+            data_str += 'not_covered["{chr}"] = [ '.format(**locals())
+            if len(not_covered[chr]) > 0:
+                for e in not_covered[chr]:
+                    data_str += '{e},'.format(**locals())
+                data_str = data_str[:-1]
+            data_str += '];\n'
 
-            with open(html_saver.get_real_path('_chr_templ.html'), 'r') as template:
-                with open(os.path.join(output_all_files_dir_path, '_{short_chr}.html'.format(**locals())), 'w') as result:
-                    for line in template:
-                        if line.find('<script type="text/javascript" src=""></script>') != -1:
-                            result.write('<script type="text/javascript" src="data_{short_chr}.js"></script>\n'.format(**locals()))
-                            result.write('<script type="text/javascript" src="data_assemblies.js"></script>\n'.format(**locals()))
-                        elif line.find('<!--- misassemblies selector: ---->') != -1:
-                            for ms_type in sorted(ms_types):
-                                result.write('<label><input type="checkbox" id="{ms_type}" name="misassemblies_select" '
-                                         'checked="checked"/> {ms_type}</label>\n'.format(**locals()))
-                        else:
-                            result.write(line)
-                            if line.find('<body>') != -1:
-                                chr_size = chr_sizes[chr]
-                                chr_name = chr.replace('_', ' ')
-                                if len(chr_name) > 50:
-                                    chr_name = chr_name[:50] + '...'
-                                title = 'CONTIG ALIGNMENT BROWSER: %s (' % chr_name + ('%s fragments, ' % num_contigs[chr] if num_contigs[chr] > 1 else '') + '%s bp)' % format_long_numbers(chr_size)
-                                result.write('<div class = "block title"><a href="../{summary_fname}"><button class="back_button">&crarr;</button></a>{title}</div>\n'.format(**locals()))
-                            if line.find('<script type="text/javascript">') != -1:
-                                chromosome = '","'.join(contigs)
-                                result.write('var CHROMOSOME = "{chr}";\n'.format(**locals()))
-                                result.write('var chrContigs = ["{chromosome}"];\n'.format(**locals()))
+        with open(html_saver.get_real_path('_chr_templ.html'), 'r') as template:
+            with open(os.path.join(output_all_files_dir_path, '_{short_chr}.html'.format(**locals())), 'w') as result:
+                for line in template:
+                    if line.find('<!--- data: ---->') != -1:
+                        result.write(data_str)
+                        result.write(assemblies_data)
+                        chromosome = '","'.join(contigs)
+                        result.write('var CHROMOSOME = "{chr}";\n'.format(**locals()))
+                        result.write('var chrContigs = ["{chromosome}"];\n'.format(**locals()))
+                    elif line.find('<!--- misassemblies selector: ---->') != -1:
+                        for ms_type in sorted(ms_types):
+                            result.write('<label><input type="checkbox" id="{ms_type}" name="misassemblies_select" '
+                                     'checked="checked"/> {ms_type}s</label>\n'.format(**locals()))
+                    elif line.find('<!--- css: ---->') != -1:
+                        result.write(open(html_saver.get_real_path(os.path.join('static', 'contig_alignment_plot.css'))).read())
+                    elif line.find('<!--- scripts: ---->') != -1:
+                        result.write(open(html_saver.get_real_path(os.path.join('static', 'd3.js'))).read())
+                        result.write(open(html_saver.get_real_path(os.path.join('static', 'scripts',
+                                                                                'contig_alignment_plot_script.js'))).read())
+                    else:
+                        result.write(line)
+                        if line.find('<body>') != -1:
+                            chr_size = chr_sizes[chr]
+                            chr_name = chr.replace('_', ' ')
+                            if len(chr_name) > 50:
+                                chr_name = chr_name[:50] + '...'
+                            title = 'CONTIG ALIGNMENT BROWSER: %s (' % chr_name + ('%s fragments, ' % num_contigs[chr] if num_contigs[chr] > 1 else '') + '%s bp)' % format_long_numbers(chr_size)
+                            result.write('<div class = "block title"><a href="../{summary_fname}"><button class="back_button">&crarr;</button></a>{title}</div>\n'.format(**locals()))
 
     with open(html_saver.get_real_path('alignment_summary_templ.html'), 'r') as template:
         with open(summary_path, 'w') as result:

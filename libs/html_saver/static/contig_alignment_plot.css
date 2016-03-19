@@ -256,16 +256,32 @@ a {
     fill: #ff7500;
 }
 
+.mainItem.misassembled.light_color.similar.odd {
+    fill: #ffc200;
+}
+
 .mainItem.misassembled.similar {
     fill: #e09110;
+}
+
+.mainItem.misassembled.light_color.similar {
+    fill: #ffd200;
 }
 
 .mainItem.misassembled.odd {
     fill: #e41a1c;
 }
 
+.mainItem.misassembled.light_color.odd {
+    fill: #FF657A;
+}
+
 .mainItem.misassembled {
     fill: #b82525;
+}
+
+.mainItem.misassembled.light_color {
+    fill: #FF6565;
 }
 
 .miniItem.similar.odd {
@@ -298,10 +314,22 @@ a {
     fill: #ff7500;
 }
 
+.miniItem.misassembled.light_color.similar.odd {
+    stroke-width: 10;
+    stroke: #ffc200;
+    fill: #ffc200;
+}
+
 .miniItem.misassembled.similar {
     stroke-width: 10;
     stroke: #e09110;
     fill: #e09110;
+}
+
+.miniItem.misassembled.light_color.similar {
+    stroke-width: 10;
+    stroke: #ffd200;
+    fill: #ffd200;
 }
 
 .miniItem.misassembled.odd {
@@ -310,10 +338,22 @@ a {
     fill: #e41a1c;
 }
 
+.miniItem.misassembled.light_color.odd {
+    stroke-width: 10;
+    stroke: #FF657A;
+    fill: #FF657A;
+}
+
 .miniItem.misassembled {
     stroke-width: 10;
     stroke: #b82525;
     fill: #b82525;
+}
+
+.miniItem.misassembled.light_color {
+    stroke-width: 10;
+    stroke: #FF6565;
+    fill: #FF6565;
 }
 
 .brush .extent {

@@ -47,7 +47,7 @@ THE SOFTWARE.
         var isOverlapping = function(item, lane) {
             if (lane)
                 for (var i = 0; i < lane.length; i++)
-                    if (item.corr_start <= lane[i].corr_end && lane[i].corr_start <= item.corr_end)
+                    if (!item.supp && item.corr_start <= lane[i].corr_end && lane[i].corr_start <= item.corr_end)
                         return true;
 
             return false;
@@ -55,7 +55,7 @@ THE SOFTWARE.
 
 
         var collapseLanes = function (chart) {
-            var lanes = [], items = [], laneId = 0, itemId = 0;
+            var lanes = [], items = [], laneId = 0, itemId = 0, groupId = 0;
 
             for (var assemblyName in chart.assemblies) {
                 var lane = chart.assemblies[assemblyName];
@@ -67,7 +67,9 @@ THE SOFTWARE.
                         var item = subLane[j];
                         if (item.name != 'FICTIVE') {
                             item.lane = laneId;
+                            if (!item.supp) groupId++;
                             item.id = itemId;
+                            item.groupId = groupId;
                             items.push(item);
                             itemId++;
                             numItems++;
@@ -402,7 +404,7 @@ THE SOFTWARE.
                         }
                     }
                 }); // each
-                if (e.length > 0) {
+                if (e.length > 0 && itemToSelect) {
                     e = itemToSelect[0].pop();
                     e.__onclick();
                 }
@@ -620,6 +622,7 @@ THE SOFTWARE.
                 , minExtent = Math.max(brush.extent()[0], x_mini.domain()[0])
                 , maxExtent = Math.min(brush.extent()[1], x_mini.domain()[1])
                 , visibleText = function (d) {
+                    if (!d.name) return;
                     var drawLimit = letterSize * 3;
                     var visibleLength = x_main(Math.min(maxExtent, d.corr_end)) - x_main(Math.max(minExtent, d.corr_start)) - 20;
                     if (visibleLength > drawLimit)
@@ -726,25 +729,33 @@ THE SOFTWARE.
 
         rects.select('.R')
                 .attr('transform',  function (d) {
-                    if (d.id == selected_id){return 'translate(1,1)';}
+                    if (d.groupId == selected_id) {
+                        if (d.supp == "L") return 'translate(2,2)';
+                        if (d.supp == "R") return 'translate(0,2)';
+                        return 'translate(1,1)';
+                    }
                 })
                 .attr('width', function (d) {
                     var w = x_main(Math.min(maxExtent, d.corr_end)) - x_main(Math.max(minExtent, d.corr_start));
-                    return (d.id == selected_id ? Math.max(w - 2, .5) : w);
+                    return (d.groupId == selected_id ? Math.max(w - 2, .5) : w);
                 })
                 .attr('height', function (d) {
-                    return (d.id == selected_id ? mainLanesHeight - 2 : mainLanesHeight);
+                    return (d.groupId == selected_id ? mainLanesHeight - (d.supp ? 4 : 2) : mainLanesHeight);
                 })
                 .attr('stroke', 'black')
                 .attr('stroke-width', function (d) {
-                    return (d.id == selected_id ? 2 : 0);
+                    return (d.groupId == selected_id ? 2 : 0);
                 })
                 .attr('stroke-opacity', function (d) {
-                    return (d.id == selected_id ? 1 : 0);
+                    return ((d.groupId == selected_id && !d.supp) ? 1 : 0);
+                })
+                .attr('opacity', function (d) {
+                    return (d.supp && d.misassembled != "True" ? 0 : 1);
                 });
 
-        rects.select('text')
-                .text(visibleText);
+
+        itemRects.selectAll('text')
+                .remove();
         rects.exit().remove();
 
         var other = rects.enter().append('g')
@@ -761,41 +772,62 @@ THE SOFTWARE.
                 })
                 .attr('width', function (d) {
                     return x_main(Math.min(maxExtent, d.corr_end)) - x_main(Math.max(minExtent, d.corr_start));
+                })
+                .attr('pointer-events', function (d) {
+                    return ((d.supp) ? 'none' : 'painted');
                 });
 
         other.append('rect')
                 .attr('class', 'R')
                 .attr('transform',  function (d) {
-                    if (d.id == selected_id){return 'translate(1,1)';}
+                    if (d.groupId == selected_id) {
+                        if (d.supp == "L") return 'translate(2,2)';
+                        if (d.supp == "R") return 'translate(0,2)';
+                        return 'translate(1,1)';
+                    }
                 })
                 .attr('width', function (d) {
                     var w = x_main(Math.min(maxExtent, d.corr_end)) - x_main(Math.max(minExtent, d.corr_start));
-                    return (d.id == selected_id ? Math.max(w - 2, .5) : w);
+                    return (d.groupId == selected_id ? Math.max(w - 2, .5) : w);
                 })
                 .attr('height', function (d) {
-                    return (d.id == selected_id ? mainLanesHeight - 4 : mainLanesHeight);
+                    return (d.groupId == selected_id ? mainLanesHeight - 4 : mainLanesHeight);
                 })
                 .attr('stroke', 'black')
                 .attr('stroke-width', function (d) {
-                    return (d.id == selected_id ? 2 : 0);
+                    return (d.groupId == selected_id ? 2 : 0);
                 })
                 .attr('stroke-opacity', function (d) {
-                    return (d.id == selected_id ? 1 : 0);
+                    return ((d.groupId == selected_id && !d.supp) ? 1 : 0);
+                })
+                .attr('opacity', function (d) {
+                    return (d.supp && d.misassembled != "True" ? 0 : 1);
                 });
 
 
         other.on('click', function A(d, i) {
-            selected_id = d.id;
+            selected_id = d.groupId;
             changeInfo(d);
         })
                 .on('mouseenter', glow)
                 .on('mouseleave', disglow);
 
-        other.append('text')
-                .text(visibleText)
-                .attr('text-anchor', 'start')
-                .attr('class', 'itemLabel')
-                .attr('transform', 'translate(5, 20)');
+        itemRects.selectAll('text')
+            .data(visItems, function (d) {
+                return d.id;
+            })
+            .attr('class', 'itemLabel')
+            .enter().append('text')
+            .attr('x', function(d) {
+               return x_main(Math.max(minExtent, d.corr_start)) + 5;
+            })
+            .attr('y', function(d) {
+              var y = y_main(d.lane) + .25 * lanesInterval;
+              d.class.search("misassembled") != -1 ? y += .25 * lanesInterval : 0;
+              d.class.search("odd") != -1 ? y += .25 * lanesInterval : 0;
+              return y + 20;
+            })
+            .text(visibleText);
 
 
         // upd coverage
@@ -985,7 +1017,7 @@ THE SOFTWARE.
 
     function sync() {
         var minExtent = Math.max(brush_cov.extent()[0], x_cov_mini_S.domain()[0]),
-                maxExtent = Math.min(brush_cov.extent()[1], x_cov_mini_S.domain()[1])
+                maxExtent = Math.min(brush_cov.extent()[1], x_cov_mini_S.domain()[1]);
         brush.extent([minExtent, maxExtent]);
         display();
     }
@@ -1041,14 +1073,18 @@ THE SOFTWARE.
         var curLane = 0;
         var isSimilarNow = "False";
         var numItem = 0;
+
+        var countSupplementary = 0;
         for (var c, i = 0; i < items.length; i++) {
             d = items[i];
             if (d.lane != curLane) numItem = 0;
             d.misassembled = d.misassemblies ? "True" : "False";
             c = (d.misassembled == "False" ? "" : "misassembled");
             c += (d.similar == "True" ? " similar" : "");
+            c += ((!d.supp && d.one_part == "False") ? " light_color" : "");
+            if (d.supp) countSupplementary++;
             if (d.similar != isSimilarNow) numItem = 0;
-            c += (numItem % 2 == 0 ? " odd" : "");
+            c += ((numItem - countSupplementary + (d.supp ? 1 : 0)) % 2 == 0 ? " odd" : "");
 
             items[i].class = c;
 
@@ -1083,18 +1119,19 @@ THE SOFTWARE.
 
 
     function glow() {
-        d3.select(this)
-                .transition()
-                .style({'opacity': .5})
-                .select('rect');
+        d3.select(this.parentNode).append('rect')
+                .attr('class', 'glow')
+                .attr('pointer-events', 'none')
+                .attr('width', d3.select(this).attr('width'))
+                .attr('height', d3.select(this).select('rect').attr('height'))
+                .attr('fill', 'white')
+                .attr('opacity', .5)
+                .attr('transform', d3.select(this).attr('transform'));
     }
 
 
     function disglow() {
-        d3.select(this)
-                .transition()
-                .style({'opacity': 1})
-                .select('rect');
+        d3.select(this.parentNode).select('.glow').remove();
     }
 
 
@@ -1264,24 +1301,21 @@ THE SOFTWARE.
                 items[numItem].misassembled = isMisassembled;
             }
         }
-        d3.selectAll("g")
-            .classed("misassembled", function (e) {
-                if (e && e.misassemblies) {
-                    var msTypes = e.misassemblies.split(';');
-                    for (var i = 0; i < msTypes.length; i++) {
-                        if (msTypes[i] && document.getElementById(msTypes[i]).checked) {
-                            e.misassembled = "True";
-                            return true;
-                        }
-                    }
-                    e.misassembled = "False";
-                    return false;
+        d3.selectAll('g')
+            .classed('misassembled', function (d) {
+                if (d && d.misassemblies) {
+                    return d.misassembled == 'True';
+                }
+            })
+            .attr('opacity', function (d) {
+                if (d && d.misassemblies) {
+                  return (d.supp && d.misassembled != 'True' ? 0 : 1);
                 }
             });
-        d3.selectAll("path")
-            .classed("misassembled", function (e) {
-                if (e && e.misassemblies) {
-                    var msTypes = e.misassemblies.split(';');
+        d3.selectAll('path')
+            .classed('misassembled', function (d) {
+                if (d && d.misassemblies) {
+                    var msTypes = d.misassemblies.split(';');
                     for (var i = 0; i < msTypes.length; i++) {
                         if (msTypes[i] && document.getElementById(msTypes[i]).checked) return true;
                     }

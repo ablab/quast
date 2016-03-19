@@ -767,6 +767,7 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chr_nam
     aligned_bases_by_chr = {}
     num_misassemblies = {}
     aligned_assemblies = {}
+    min_n50 = None
 
     with open(os.path.join(output_all_files_dir_path, 'data_assemblies.js'), 'w') as result:
         data_str = ''
@@ -781,6 +782,8 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chr_nam
             l = report.get_field(reporting.Fields.TOTALLEN)
             contigs = report.get_field(reporting.Fields.CONTIGS)
             ext_misassemblies = report.get_field(reporting.Fields.MIS_ALL_EXTENSIVE)
+            min_n50 = min(min_n50, report.get_field(reporting.Fields.N50)) \
+                if min_n50 else report.get_field(reporting.Fields.N50)
             data_str += 'assemblies_links["{label}"] = "{contig_stdout_fpath}";\n'.format(**locals())
             data_str += 'assemblies_len["{label}"] = {l};\n'.format(**locals())
             data_str += 'assemblies_contigs["{label}"] = {contigs};\n'.format(**locals())
@@ -821,11 +824,16 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chr_nam
             prev_len = 0
             chr_lengths = [0] + [chromosomes_length[contig] for contig in contigs]
             ms_types = set()
+
+            min_len_for_splitting = max(1000, min_n50 / 2)
+            len_misassembled_end = min(10000, int(0.1 * min_len_for_splitting))
+
             for num_contig, contig in enumerate(contigs):
                 if num_contig > 0:
                     prev_len += chr_lengths[num_contig]
                 if len(chr_to_aligned_blocks[contig]) > 0:
                     for alignment in chr_to_aligned_blocks[contig]:
+                        misassembled_ends = []
                         if alignment.misassembled:
                             num_misassemblies[chr] += 1
                             for num_alignment, el in enumerate(alignment.misassembled_structure):
@@ -837,19 +845,27 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chr_nam
                                 misassembly_type = alignment.misassembled_structure[num_alignment - 1].split(',')[0].strip()
                                 alignment.misassemblies += ';' + misassembly_type
                                 ms_types.add(misassembly_type)
-                            if num_alignment + 1 < len(alignment.misassembled_structure) and type(alignment.misassembled_structure[num_alignment + 1]) == str:
+                                misassembled_ends.append('L')
+                            if num_alignment + 1 < len(alignment.misassembled_structure):
                                 misassembly_type = alignment.misassembled_structure[num_alignment + 1].split(',')[0].strip()
                                 alignment.misassemblies += ';' + misassembly_type
                                 ms_types.add(misassembly_type)
+                                misassembled_ends.append('R')
                             alignment.misassemblies = alignment.misassemblies.lstrip(';')
                         else:
                             alignment.misassembled = False
                             alignment.misassemblies = ''
                         corr_start = prev_len + alignment.unshifted_start
                         corr_end = prev_len + alignment.unshifted_end
+                        one_part = True
+                        if corr_end - corr_start > min_len_for_splitting and misassembled_ends:
+                            one_part = False
+                        supplementary = False
                         data_str += '{{name: "{alignment.name}", corr_start: {corr_start}, corr_end: {corr_end},' \
                                     'start: {alignment.unshifted_start}, end: {alignment.unshifted_end}, assembly: "{alignment.label}", ' \
-                                    'similar: "{alignment.similar}", misassemblies: "{alignment.misassemblies}" '.format(**locals())
+                                    'similar: "{alignment.similar}", misassemblies: "{alignment.misassemblies}", ' \
+                                    'one_part: "{one_part}"'.format(**locals())
+
                         if alignment.name != 'FICTIVE':
                             if len(aligned_assemblies[chr]) < len(contigs_fpaths) and alignment.label not in aligned_assemblies[chr]:
                                 aligned_assemblies[chr].append(alignment.label)
@@ -865,15 +881,34 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chr_nam
                                             used_chromosomes.append(el[5])
                                             new_chr = contig_names_by_refs[el[5]]
                                             links_to_chromosomes.append('links_to_chromosomes["{el[5]}"] = "{new_chr}";\n'.format(**locals()))
-                                    corr_start = corr_len + int(el[0])
-                                    corr_end = corr_len + int(el[1])
-                                    data_str += '{{type: "A", corr_start: {corr_start}, corr_end: {corr_end}, start: {el[0]}, end: {el[1]}, start_in_contig: {el[2]}, end_in_contig: {el[3]}, IDY: {el[4]}, chr: "{el[5]}"}},'.format(**locals())
+                                    corr_el_start = corr_len + int(el[0])
+                                    corr_el_end = corr_len + int(el[1])
+                                    data_str += '{{type: "A", corr_start: {corr_el_start}, corr_end: {corr_el_end}, start: {el[0]}, ' \
+                                                'end: {el[1]}, start_in_contig: {el[2]}, end_in_contig: {el[3]}, IDY: {el[4]}, ' \
+                                                'chr: "{el[5]}"}},'.format(**locals())
                                 elif type(el) == str:
                                     data_str += '{{type: "M", mstype: "{el}"}},'.format(**locals())
                             if data_str[-1] == '[':
                                 data_str = data_str + ']},'
                             else:
                                 data_str = data_str[: -1] + ']},'
+
+                            if not one_part:
+                                supplementary = True
+                                if 'L' in misassembled_ends:
+                                    new_start = corr_start
+                                    new_end = corr_start + len_misassembled_end
+                                    cur_misassembly = alignment.misassemblies.split(';')[0]
+                                    data_str += '{{corr_start: {new_start}, corr_end: {new_end}, ' \
+                                                'chr: "{el[5]}", one_part: "{one_part}", supp: "L", assembly: "{alignment.label}", ' \
+                                                'misassemblies: "{cur_misassembly}"}},'.format(**locals())
+                                if 'R' in misassembled_ends:
+                                    new_start = corr_end - len_misassembled_end
+                                    new_end = corr_end
+                                    cur_misassembly = alignment.misassemblies.split(';')[1] if ';' in alignment.misassemblies else ''
+                                    data_str += '{{corr_start: {new_start}, corr_end: {new_end}, ' \
+                                                'chr: "{el[5]}", one_part: "{one_part}", supp: "R", assembly: "{alignment.label}",' \
+                                                'misassemblies: "{cur_misassembly}"}},'.format(**locals())
                         else: data_str += '},'
             data_str = data_str[:-1] + '];\n\n'
             result.write(data_str)

@@ -585,7 +585,7 @@ def make_output_dir(output_dir_path):
 
 
 def do(contigs_fpaths, contig_report_fpath_pattern, output_dirpath,
-       ref_fpath, cov_fpath=None, arcs=False, similar=False, coverage_hist=None):
+       ref_fpath, cov_fpath=None, arcs=False, similar=False, features=None, coverage_hist=None):
     make_output_dir(output_dirpath)
 
     lists_of_aligned_blocks = []
@@ -621,7 +621,7 @@ def do(contigs_fpaths, contig_report_fpath_pattern, output_dirpath,
         lists_of_aligned_blocks, arcs, similar, coverage_hist)
     if assemblies and qconfig.create_contig_alignment_html:
         js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chr_names, reference_chromosomes,
-                    output_dirpath, cov_fpath, ref_fpath, virtual_genome_size)
+                    output_dirpath, cov_fpath, ref_fpath, virtual_genome_size, features)
 
     return plot_fpath
 
@@ -704,7 +704,7 @@ def parse_nucmer_contig_report(report_fpath, sorted_ref_names, cumulative_ref_le
 
 
 def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chr_names, chromosomes_length,
-                output_dir_path, cov_fpath, ref_fpath, genome_size):
+                output_dir_path, cov_fpath, ref_fpath, genome_size, features):
     chr_to_aligned_blocks = dict()
     for chr in chr_names:
         chr_init = []
@@ -787,6 +787,41 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chr_nam
         assemblies_data += 'assemblies_contigs["{label}"] = {contigs};\n'.format(**locals())
         assemblies_data += 'assemblies_misassemblies["{label}"] = {ext_misassemblies};\n'.format(**locals())
 
+    ref_ids = {}
+    ref_contigs_dict = {}
+    chr_lengths_dict = {}
+
+    ref_data = 'var references_id = {};\n'
+    for i, chr in enumerate(chr_full_names):
+        ref_ids[chr] = i
+        ref_data += 'references_id[{i}] = "{chr}";\n'.format(**locals())
+        if contigs_analyzer.ref_labels_by_chromosomes:
+            ref_contigs = [contig for contig in chr_names if contig_names_by_refs[contig] == chr]
+        elif chr == NAME_FOR_ONE_PLOT:
+            ref_contigs = chr_names
+        else:
+            ref_contigs = [chr]
+        ref_contigs_dict[chr] = ref_contigs
+        chr_lengths_dict[chr] = [0] + [chromosomes_length[contig] for contig in ref_contigs]
+
+    features_data = 'var features_data;\n'
+    if features:
+        features_data += 'features_data = [ '
+        containers_kind = []
+        for feature_container in features:
+            if len(feature_container.region_list) == 0:
+                continue
+            features_data += '[ '
+            for region in feature_container.region_list:
+                chr = feature_container.chr_names_dict[region.chromosome] if region.chromosome else feature_container.chr_names_dict[region.seqname]
+                ref_id = ref_ids[chr]
+                name = region.name if region.name else ''
+                features_data += '{{name: "{name}", start: {region.start}, end: {region.end}, id_: "{region.id}", ' \
+                                 'kind: "{feature_container.kind}", chr:{ref_id}}},'.format(**locals())
+            containers_kind.append(feature_container.kind)
+            features_data += '],'
+        features_data = features_data[:-1] + '];\n'
+
     for i, chr in enumerate(chr_full_names):
         short_chr = chr[:30]
         num_misassemblies[chr] = 0
@@ -794,37 +829,34 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chr_nam
         aligned_assemblies[chr] = []
         data_str = ''
         if contigs_analyzer.ref_labels_by_chromosomes:
-            contigs = [contig for contig in chr_names if contig_names_by_refs[contig] == chr]
             data_str += 'var links_to_chromosomes = {};\n'
             links_to_chromosomes = []
             used_chromosomes = []
-        elif chr == NAME_FOR_ONE_PLOT:
-            contigs = chr_names
-        else:
-            contigs = [chr]
-        chr_size = sum([chromosomes_length[contig] for contig in contigs])
+
+        ref_contigs = ref_contigs_dict[chr]
+        chr_lengths = chr_lengths_dict[chr]
+        chr_size = sum([chromosomes_length[contig] for contig in ref_contigs])
         chr_sizes[chr] = chr_size
-        num_contigs[chr] = len(contigs)
-        for contig in contigs:
-            aligned_bases_by_chr[chr].extend(aligned_bases[contig])
+        num_contigs[chr] = len(ref_contigs)
+        for ref_contig in ref_contigs:
+            aligned_bases_by_chr[chr].extend(aligned_bases[ref_contig])
         data_str += 'var chromosomes_len = {};\n'
-        for contig in contigs:
-            l = chromosomes_length[contig]
-            data_str += 'chromosomes_len["{contig}"] = {l};\n'.format(**locals())
+        for ref_contig in ref_contigs:
+            l = chromosomes_length[ref_contig]
+            data_str += 'chromosomes_len["{ref_contig}"] = {l};\n'.format(**locals())
 
         # adding assembly data
         data_str += 'var contig_data = {};\n'
         data_str += 'contig_data["{chr}"] = [ '.format(**locals())
         prev_len = 0
-        chr_lengths = [0] + [chromosomes_length[contig] for contig in contigs]
         ms_types = set()
         min_len_for_splitting = max(1000, min_n50 / 2)
         len_misassembled_end = min(10000, int(0.1 * min_len_for_splitting))
-        for num_contig, contig in enumerate(contigs):
+        for num_contig, ref_contig in enumerate(ref_contigs):
             if num_contig > 0:
                 prev_len += chr_lengths[num_contig]
-            if len(chr_to_aligned_blocks[contig]) > 0:
-                for alignment in chr_to_aligned_blocks[contig]:
+            if len(chr_to_aligned_blocks[ref_contig]) > 0:
+                for alignment in chr_to_aligned_blocks[ref_contig]:
                     misassembled_ends = []
                     if alignment.misassembled:
                         num_misassemblies[chr] += 1
@@ -864,8 +896,8 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chr_nam
                         data_str += ', structure: ['
                         for el in alignment.misassembled_structure:
                             if type(el) == list:
-                                if el[5] in contigs:
-                                    num_chr = contigs.index(el[5])
+                                if el[5] in ref_contigs:
+                                    num_chr = ref_contigs.index(el[5])
                                     corr_len = sum(chr_lengths[:num_chr+1])
                                 else:
                                     corr_len = -int(el[1])
@@ -928,8 +960,10 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chr_nam
                 for line in template:
                     if line.find('<!--- data: ---->') != -1:
                         result.write(data_str)
+                        result.write(ref_data)
+                        result.write(features_data)
                         result.write(assemblies_data)
-                        chromosome = '","'.join(contigs)
+                        chromosome = '","'.join(ref_contigs)
                         result.write('var CHROMOSOME = "{chr}";\n'.format(**locals()))
                         result.write('var chrContigs = ["{chromosome}"];\n'.format(**locals()))
                     elif line.find('<!--- misassemblies selector: ---->') != -1:

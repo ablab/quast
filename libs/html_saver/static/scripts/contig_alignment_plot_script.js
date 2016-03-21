@@ -152,6 +152,8 @@ THE SOFTWARE.
     var letterSize = getSize('w') - 1;
     var numberSize = getSize('0') - 1;
 
+    var featuresData = parseFeaturesData(CHROMOSOME);
+
     var chart = d3.select('body').append('div').attr('id', 'chart')
             .append('svg:svg')
             .attr('width', width + margin.right + margin.left)
@@ -172,6 +174,14 @@ THE SOFTWARE.
 
     var mini = chart.append('g')
             .attr('transform', 'translate(' + margin.left + ',' + (mainHeight + mainScale + coverageHeight + 50) + ')')
+            .attr('width', chartWidth)
+            .attr('height', miniHeight + miniScale)
+            .attr('class', 'mini');
+
+    //annotations track
+    var annotationsOffsetY = mainHeight + mainScale + coverageHeight + miniHeight + miniScale + 50;
+    var annotations = chart.append('g')
+            .attr('transform', 'translate(' + margin.left + ',' + annotationsOffsetY + ')')
             .attr('width', chartWidth)
             .attr('height', miniHeight + miniScale)
             .attr('class', 'mini');
@@ -293,6 +303,36 @@ THE SOFTWARE.
             .attr('text-anchor', 'end')
             .attr('class', 'laneText');
 
+    // draw the lanes for the annotations chart
+    annotations.append('g').selectAll('.laneLines')
+            .data(featuresData.lanes)
+            .enter().append('line')
+            .attr('x1', 0)
+            .attr('y1', function (d) {
+                return d3.round(y_mini(d.id)) + .5;
+            })
+            .attr('x2', chartWidth)
+            .attr('y2', function (d) {
+                return d3.round(y_mini(d.id)) + .5;
+            })
+            .attr('stroke', function (d) {
+                return d.label === '' ? 'white' : 'lightgray'
+            });
+
+    annotations.append('g').selectAll('.laneText')
+            .data(featuresData.lanes)
+            .enter().append('text')
+            .text(function (d) {
+                return d.label;
+            })
+            .attr('x', -10)
+            .attr('y', function (d) {
+                return y_mini(d.id + .5);
+            })
+            .attr('dy', '.5ex')
+            .attr('text-anchor', 'end')
+            .attr('class', 'laneText');
+
     // draw the x axis
     var miniTickValue;
 
@@ -348,15 +388,23 @@ THE SOFTWARE.
             .attr('class', 'main axis')
             .call(xMainAxis);
 
-    mini.append('g')
-            .attr('transform', 'translate(0,' + miniHeight + ')')
-            .attr('class', 'axis')
-            .call(xMiniAxis).append('text')
-            .attr('transform', 'translate(' + x_mini(x_mini.domain()[1]) + ',' + (miniScale / 2 + 2) + ')');
-    var lastTickValue = miniTicksValues.pop();
-    var lastTick = mini.select(".axis").selectAll("g")[0].pop();
-    d3.select(lastTick).select('text').text(format(lastTickValue) + ' ' + miniTickValue)
-            .attr('transform', 'translate(-10, 0)');
+
+    var lastTickValue = miniTicksValues[miniTicksValues.length - 1];
+
+    function appendMiniXAxis(lane) {
+      lane.append('g')
+              .attr('transform', 'translate(0,' + miniHeight + ')')
+              .attr('class', 'axis')
+              .call(xMiniAxis).append('text')
+              .attr('transform', 'translate(' + x_mini(x_mini.domain()[1]) + ',' + (miniScale / 2 + 2) + ')');
+      var lastTick = lane.select(".axis").selectAll("g")[0].pop();
+      d3.select(lastTick).select('text').text(format(lastTickValue) + ' ' + miniTickValue)
+              .attr('transform', 'translate(-10, 0)');
+    }
+
+    appendMiniXAxis(mini);
+    if (featuresData.features.length > 0) appendMiniXAxis(annotations);
+
     // draw a line representing today's date
     main.append('line')
             .attr('y1', 0)
@@ -430,6 +478,46 @@ THE SOFTWARE.
             .attr('height', miniHeight)
             .attr('visibility', 'hidden')
             .on('mouseup', moveBrush);
+
+    var div = d3.select('body').append('div')
+                .attr('class', 'feature_tip')
+                .style('opacity', 0);
+
+    var annotationsItems = annotations.append('g').selectAll('miniItems')
+            .data(getFeaturePaths(featuresData.features))
+            .enter().append('rect')
+            .attr('class', function (d) {
+              return d.class;
+            })
+            .attr('transform', function (d) {
+              return 'translate(' + d.x + ', ' + d.y + ')';
+            })
+            .attr('width', function (d) {
+              return x_mini(d.end - d.start);
+            })
+            .attr('height', 10)
+            .on('mouseenter', selectFeature)
+            .on('mouseleave', deselectFeature)
+            .on('click',  function(d) {
+                            div.transition()
+                            .duration(200)
+                            .style('opacity', .9);
+                            var tooltipText = d ? '<strong>' + (d.name ? d.name + ',' : '') + '</strong> <span>' +
+                                              (d.id ? ' ID=' + d.id + ',' : '') + ' coordinates: ' + d.start + '-' + d.end + '</span>' : '';
+                            div.html(tooltipText)
+                            .style('left', (d3.event.pageX) + 'px')
+                            .style('top', (d.y + annotationsOffsetY + 145) + 'px')
+            });
+
+    annotations.append('g').selectAll('miniItems')
+                            .data(getFeaturePaths(featuresData.features))
+                            .enter().append('text')
+                            .text(function (d) { return getVisibleText(d.name ? d.name : 'ID=' + d.id, x_mini(d.end - d.start) - 5) } )
+                            .attr('class', 'itemLabel')
+                            .attr('pointer-events', 'none')
+                            .attr('transform', function (d) {
+                              return 'translate(' + (d.x + 5) + ', ' + (d.y + 8) + ')';
+                            });
 
     // draw the selection area
     var delta = (x_mini.domain()[1] - x_mini.domain()[0]) / 8;
@@ -1148,7 +1236,7 @@ THE SOFTWARE.
             var t_plus_len = fullText + ' (' + lenChromosome + ' bp)';
             if (getSize(t_plus_len) <= l) return t_plus_len;
         }
-        return (t.length < 3 ? '' : t + (t.length >= fullText.length ? '' : '...'));
+        return (t.length <= 3 ? '' : t + (t.length >= fullText.length ? '' : '...'));
     }
 
 
@@ -1322,4 +1410,102 @@ THE SOFTWARE.
                     return false;
                 }
             });
+    }
+
+    function parseFeaturesData() {
+      var lanes = [];
+      var features = [];
+      var data = {};
+      var laneId = 0, itemId = 0;
+
+      for (container in features_data) {
+        for (var i = 0; i < features_data[container].length; i++) {
+          if (references_id[features_data[container][i].chr] != chr) continue;
+          if (!data[container])
+              data[container] = [];
+          var sublane = 0;
+          while (isOverlappingUnshifted(features_data[container][i], data[container][sublane]))
+            sublane++;
+          if (!data[container][sublane])
+            data[container][sublane] = [];
+          data[container][sublane].push(features_data[container][i]);
+        }
+      }
+
+      for (container in data) {
+        var lane = data[container];
+        for (var i = 0; i < lane.length; i++) {
+            var subLane = lane[i];
+            var numItems = 0;
+            for (var j = 0; j < subLane.length; j++) {
+              var item = subLane[j];
+              item.lane = laneId;
+              item.id = itemId;
+              features.push(item);
+              itemId++;
+              numItems++;
+            };
+            if (numItems > 0){
+                lanes.push({
+                id: laneId,
+                label: i === 0 ? lane[i][0].kind : ''});
+                laneId++;
+            }
+        }
+      }
+      return {lanes: lanes, features: features}
+    }
+
+    function isOverlappingUnshifted(item, lane) {
+        if (lane)
+            for (var i = 0; i < lane.length; i++)
+                if (item.start <= lane[i].end && lane[i].start <= item.end)
+                    return true;
+
+        return false;
+    }
+
+    function selectFeature() {
+        d3.select(this)
+                .transition()
+                .style({'opacity': .5})
+                .select('rect');
+    }
+
+    function deselectFeature() {
+        d3.select(this)
+                .transition()
+                .style({'opacity': 1})
+                .select('rect');
+
+        div.transition()
+          .duration(200)
+          .style('opacity', 0);
+    }
+
+    function getFeaturePaths(features) {
+        var d, result = [];
+        var curLane = 0;
+        var numItem = 0;
+
+        for (var c, i = 0; i < features.length; i++) {
+            d = features[i];
+            if (d.lane != curLane) numItem = 0;
+            c = "annotation ";
+            c += (numItem % 2 == 0 ? "odd" : "");
+
+            features[i].class = c;
+
+            var x = x_mini(d.start);
+            var y = y_mini(d.lane);
+            y += .15 * miniLanesHeight;
+            if (d.class.search("odd") != -1)
+                y += .04 * miniLanesHeight;
+
+            result.push({class: c, name: d.name, start: d.start, end: d.end, id: d.id_, y: y, x: x});
+            curLane = d.lane;
+            numItem++;
+        }
+
+        return result;
     }

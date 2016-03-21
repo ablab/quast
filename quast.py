@@ -764,7 +764,7 @@ def main(args):
         ### GENOME_ANALYZER
         ########################################################################
         from libs import genome_analyzer
-        genome_analyzer.do(
+        features_containers = genome_analyzer.do(
             ref_fpath, aligned_contigs_fpaths, output_dirpath, json_output_dirpath,
             genes_fpaths, operons_fpaths, detailed_contigs_reports_dirpath, os.path.join(output_dirpath, 'genome_stats'))
 
@@ -810,7 +810,7 @@ def main(args):
                 from libs import contig_alignment_plotter
                 contig_alignment_plot_fpath = contig_alignment_plotter.do(
                     contigs_fpaths, contig_report_fpath_pattern,
-                    output_dirpath, ref_fpath, similar=True)
+                    output_dirpath, ref_fpath, similar=True, features=features_containers)
 
             if all_pdf_file:
                 # full report in PDF format: all tables and plots

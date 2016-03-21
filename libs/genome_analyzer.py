@@ -448,6 +448,7 @@ def do(ref_fpath, aligned_contigs_fpaths, output_dirpath, json_output_dirpath,
             'Genome fraction, %', top_value=100)
 
     logger.main_info('Done.')
+    return [genes_container, operons_container]
 
 
 class AlignedBlock():

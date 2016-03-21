@@ -870,7 +870,7 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chr_nam
                             alignment.misassemblies += misassembly_type
                             ms_types.add(misassembly_type)
                             misassembled_ends.append('L')
-                        if num_alignment + 1 < len(alignment.misassembled_structure):
+                        if num_alignment + 1 < len(alignment.misassembled_structure) and type(alignment.misassembled_structure[num_alignment + 1]) == str:
                             misassembly_type = alignment.misassembled_structure[num_alignment + 1].split(',')[0].strip()
                             alignment.misassemblies += ';' + misassembly_type
                             ms_types.add(misassembly_type)

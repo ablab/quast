@@ -1015,10 +1015,3 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chr_nam
                         result.write('<td>%.3f</td>' % chr_genome)
                         result.write('<td>%s</td>' % num_misassemblies[chr])
                         result.write('</tr>')
-
-    copyfile(html_saver.get_real_path(os.path.join('static', 'contig_alignment_plot.css')),
-             os.path.join(output_all_files_dir_path, 'contig_alignment_plot.css'))
-    copyfile(html_saver.get_real_path(os.path.join('static', 'd3.js')),
-             os.path.join(output_all_files_dir_path, 'd3.js'))
-    copyfile(html_saver.get_real_path(os.path.join('static', 'scripts', 'contig_alignment_plot_script.js')),
-             os.path.join(output_all_files_dir_path, 'contig_alignment_plot_script.js'))

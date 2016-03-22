@@ -34,6 +34,7 @@ THE SOFTWARE.
 
                 while (isOverlapping(data[i], chart.assemblies[data[i].assembly][sublane]))
                     sublane++;
+                if (data[i].supp) sublane--;
 
                 if (!chart.assemblies[data[i].assembly][sublane])
                     chart.assemblies[data[i].assembly][sublane] = [];
@@ -46,9 +47,14 @@ THE SOFTWARE.
 
         var isOverlapping = function(item, lane) {
             if (lane)
-                for (var i = 0; i < lane.length; i++)
+                for (var i = 0; i < lane.length; i++) {
                     if (!item.supp && item.corr_start <= lane[i].corr_end && lane[i].corr_start <= item.corr_end)
                         return true;
+                    else if (item.supp == "L" && item.corr_start <= lane[i].corr_end && lane[i].corr_start <= item.real_end)
+                        return true;
+                    else if (item.supp == "R" && item.real_start <= lane[i].corr_end && lane[i].corr_start <= item.corr_end)
+                        return true;
+                }
 
             return false;
         };
@@ -153,7 +159,14 @@ THE SOFTWARE.
     var numberSize = getSize('0') - 1;
 
     var featuresData = parseFeaturesData(CHROMOSOME);
-
+    var annotationLanesHeight = 30, featureHeight = 20;
+    var annotationsHeight = annotationLanesHeight * featuresData.lanes.length;
+    var ext = d3.extent(featuresData.lanes, function (d) {
+        return d.id;
+    });
+    var y_anno = d3.scale.linear().domain([ext[0], ext[1] + 1]).range([0, annotationsHeight]);
+    height = mainHeight + mainScale + 4 * coverageHeight + miniHeight + miniScale +
+        annotationsHeight + 100 - margin.bottom - margin.top;
     var chart = d3.select('body').append('div').attr('id', 'chart')
             .append('svg:svg')
             .attr('width', width + margin.right + margin.left)
@@ -183,7 +196,7 @@ THE SOFTWARE.
     var annotations = chart.append('g')
             .attr('transform', 'translate(' + margin.left + ',' + annotationsOffsetY + ')')
             .attr('width', chartWidth)
-            .attr('height', miniHeight + miniScale)
+            .attr('height', annotationLanesHeight)
             .attr('class', 'mini');
 
     // draw the lanes for the main chart
@@ -309,11 +322,11 @@ THE SOFTWARE.
             .enter().append('line')
             .attr('x1', 0)
             .attr('y1', function (d) {
-                return d3.round(y_mini(d.id)) + .5;
+                return d3.round(y_anno(d.id)) + .5;
             })
             .attr('x2', chartWidth)
             .attr('y2', function (d) {
-                return d3.round(y_mini(d.id)) + .5;
+                return d3.round(y_anno(d.id)) + .5;
             })
             .attr('stroke', function (d) {
                 return d.label === '' ? 'white' : 'lightgray'
@@ -327,7 +340,7 @@ THE SOFTWARE.
             })
             .attr('x', -10)
             .attr('y', function (d) {
-                return y_mini(d.id + .5);
+                return y_anno(d.id + .5);
             })
             .attr('dy', '.5ex')
             .attr('text-anchor', 'end')
@@ -427,7 +440,7 @@ THE SOFTWARE.
             .attr('width', function (d) {
               return x_mini(d.end - d.start);
             })
-            .attr('height', 10)
+            .attr('height', featureHeight)
             .on('mouseenter', selectFeature)
             .on('mouseleave', deselectFeature)
             .on('click',  function(d) {
@@ -448,7 +461,7 @@ THE SOFTWARE.
                             .attr('class', 'itemLabel')
                             .attr('pointer-events', 'none')
                             .attr('transform', function (d) {
-                              return 'translate(' + (d.x + 5) + ', ' + (d.y + 8) + ')';
+                              return 'translate(' + (d.x + 5) + ', ' + (d.y + featureHeight / 2) + ')';
                             });
 
     // draw the selection area
@@ -1087,7 +1100,7 @@ THE SOFTWARE.
                 .call(xMainAxis);
 
         var xMiniAxis = appendXAxis(mini, x_mini, miniHeight, miniTickValue);
-        if (featuresData.features.length > 0) var xAnnotationsAxis = appendXAxis(annotations, x_mini, miniHeight, miniTickValue);
+        if (featuresData.features.length > 0) var xAnnotationsAxis = appendXAxis(annotations, x_mini, annotationsHeight, miniTickValue);
 
         // add scale text
         scaleText = main.append('g')
@@ -1116,7 +1129,7 @@ THE SOFTWARE.
 
         if (featuresData.features.length > 0)
           annotations.append('g')
-            .attr('transform', 'translate(0,' + miniHeight + ')')
+            .attr('transform', 'translate(0,' + annotationsHeight + ')')
             .attr('class', 'axis')
             .call(xAnnotationsAxis).append('text')
             .text('Genome, ' + miniTickValue)
@@ -1236,14 +1249,17 @@ THE SOFTWARE.
         var countSupplementary = 0;
         for (var c, i = 0; i < items.length; i++) {
             d = items[i];
-            if (d.lane != curLane) numItem = 0;
+            if (d.lane != curLane) {
+                numItem = 0;
+                countSupplementary = 0;
+            }
             d.misassembled = d.misassemblies ? "True" : "False";
             c = (d.misassembled == "False" ? "" : "misassembled");
             c += (d.similar == "True" ? " similar" : "");
             c += ((!d.supp && d.one_part == "False") ? " light_color" : "");
             if (d.supp) countSupplementary++;
-            if (d.similar != isSimilarNow) numItem = 0;
-            c += ((numItem - countSupplementary + (d.supp ? 1 : 0)) % 2 == 0 ? " odd" : "");
+            if (d.similar != isSimilarNow && !d.supp) numItem = 0;
+            c += ((numItem - countSupplementary ) % 2 == 0 ? " odd" : "");
 
             items[i].class = c;
 
@@ -1568,10 +1584,10 @@ THE SOFTWARE.
             features[i].class = c;
 
             var x = x_mini(d.start);
-            var y = y_mini(d.lane);
-            y += .15 * miniLanesHeight;
+            var y = y_anno(d.lane);
+            y += .15 * annotationLanesHeight;
             if (d.class.search("odd") != -1)
-                y += .04 * miniLanesHeight;
+                y += .04 * annotationLanesHeight;
 
             result.push({class: c, name: d.name, start: d.start, end: d.end, id: d.id_, y: y, x: x});
             curLane = d.lane;

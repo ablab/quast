@@ -334,76 +334,8 @@ THE SOFTWARE.
             .attr('class', 'laneText');
 
     // draw the x axis
-    var miniTickValue;
-
-    if (x_mini.domain()[1] > 1000000000)
-        miniTickValue = 'Gbp';
-    else if (x_mini.domain()[1] > 1000000)
-        miniTickValue = 'Mbp';
-    else if (x_mini.domain()[1] > 1000)
-        miniTickValue = 'kbp';
-    else
-        miniTickValue = 'bp';
-
-    var miniTicksValues = x_mini.ticks(5);
-    miniTicksValues = [x_mini.domain()[0]].concat(miniTicksValues);
-    miniTicksValues.push(x_mini.domain()[1]);
-
-    var format = function (d) {
-                if (miniTickValue == 'Gbp')
-                    return d3.round(d / 1000000000, 2);
-                else if (miniTickValue == 'Mbp')
-                    return d3.round(d / 1000000, 2);
-                else if (miniTickValue == 'kbp')
-                    return d3.round(d / 1000, 2);
-                else
-                    return d;
-            };
-
-    var min_ticks_delta = Math.max(getTextSize(format(miniTicksValues.slice(-1)[0]).toString(), numberSize),
-                getTextSize(format(miniTicksValues.slice(-2)[0]).toString(), numberSize));
-    if (x_mini(miniTicksValues.slice(-1)[0]) - x_mini(miniTicksValues.slice(-2)[0]) < min_ticks_delta) {
-        miniTicksValues.splice(-2, 1)
-    }
-
-    var xMiniAxis = d3.svg.axis()
-            .scale(x_mini)
-            .orient('bottom')
-            .tickSize(6, 0, 0)
-            .tickValues(miniTicksValues)
-            .tickFormat(format);
-
-    var mainTickValue;
-
-    var xMainAxis = d3.svg.axis()
-            .scale(x_main)
-            .orient('bottom')
-            .tickSize(6, 0, 0);
-    var mainTicksValues = [];
-
-    xMainAxis.tickValues(mainTicksValues)
-                .tickFormat(format);
-    main.append('g')
-            .attr('transform', 'translate(0,' + mainHeight + ')')
-            .attr('class', 'main axis')
-            .call(xMainAxis);
-
-
-    var lastTickValue = miniTicksValues[miniTicksValues.length - 1];
-
-    function appendMiniXAxis(lane) {
-      lane.append('g')
-              .attr('transform', 'translate(0,' + miniHeight + ')')
-              .attr('class', 'axis')
-              .call(xMiniAxis).append('text')
-              .attr('transform', 'translate(' + x_mini(x_mini.domain()[1]) + ',' + (miniScale / 2 + 2) + ')');
-      var lastTick = lane.select(".axis").selectAll("g")[0].pop();
-      d3.select(lastTick).select('text').text(format(lastTickValue) + ' ' + miniTickValue)
-              .attr('transform', 'translate(-10, 0)');
-    }
-
-    appendMiniXAxis(mini);
-    if (featuresData.features.length > 0) appendMiniXAxis(annotations);
+    var xMainAxis, scaleText;
+    setupXAxis();
 
     // draw a line representing today's date
     main.append('line')
@@ -744,6 +676,8 @@ THE SOFTWARE.
         main.select('.main.curLine')
                 .attr('x1', x_main(current) + .5)
                 .attr('x2', x_main(current) + .5);
+
+        mainAxisUpdate();
 
         //upd arrows
         var shift = 4.03;
@@ -1138,6 +1072,143 @@ THE SOFTWARE.
         display();
     }
 
+    function setupXAxis() {
+        var mainTickValue;
+        var miniTickValue = getTickValue(x_mini.domain()[1]);
+
+        xMainAxis = d3.svg.axis()
+                .scale(x_main)
+                .orient('bottom')
+                .tickSize(6, 0, 0);
+
+        main.append('g')
+                .attr('transform', 'translate(0,' + mainHeight + ')')
+                .attr('class', 'main axis')
+                .call(xMainAxis);
+
+        var xMiniAxis = appendXAxis(mini, x_mini, miniHeight, miniTickValue);
+        if (featuresData.features.length > 0) var xAnnotationsAxis = appendXAxis(annotations, x_mini, miniHeight, miniTickValue);
+
+        // add scale text
+        scaleText = main.append('g')
+                .attr('class', 'scaleText');
+
+        scaleText.append('text')
+                .attr('x', -45)
+                .attr('y', mainHeight + 5)
+                .attr('dy', '.5ex')
+                .attr('text-anchor', 'end')
+                .text('Tick value: ');
+
+        scaleText.append('text')
+                .attr('x', -40)
+                .attr('y', mainHeight + 5)
+                .attr('dy', '.5ex')
+                .attr('class', 'val')
+                .text(mainTickValue);
+
+        mini.append('g')
+            .attr('transform', 'translate(0,' + miniHeight + ')')
+            .attr('class', 'axis')
+            .call(xMiniAxis).append('text')
+            .text('Genome, ' + miniTickValue)
+            .attr('transform', 'translate(' + x_mini((x_mini.domain()[1] - x_mini.domain()[0]) / 2) + ',' + (miniScale / 2 + 2) + ')');
+
+        if (featuresData.features.length > 0)
+          annotations.append('g')
+            .attr('transform', 'translate(0,' + miniHeight + ')')
+            .attr('class', 'axis')
+            .call(xAnnotationsAxis).append('text')
+            .text('Genome, ' + miniTickValue)
+            .attr('transform', 'translate(' + x_mini((x_mini.domain()[1] - x_mini.domain()[0]) / 2) + ',' + (miniScale / 2 + 2) + ')');
+    }
+
+    function getTickValue(value) {
+        if (value > 1000000000)
+          return 'Gbp';
+        else if (value > 1000000)
+          return 'Mbp';
+        else if (value > 1000)
+          return 'kbp';
+        else
+          return 'bp';
+    }
+
+    function formatValue(d, tickValue) {
+          if (tickValue == 'Gbp')
+              return d3.round(d / 1000000000, 2);
+          else if (tickValue == 'Mbp')
+              return d3.round(d / 1000000, 2);
+          else if (tickValue == 'kbp')
+              return d3.round(d / 1000, 2);
+          else
+              return d;
+      }
+
+    function appendXAxis(lane, scale, laneHeight, tickValue) {
+      var ticksValues = scale.ticks(5);
+      ticksValues = [scale.domain()[0]].concat(ticksValues);
+      ticksValues.push(scale.domain()[1]);
+
+      var min_ticks_delta = Math.max(getTextSize(formatValue(ticksValues.slice(-1)[0], tickValue).toString(), numberSize),
+                  getTextSize(formatValue(ticksValues.slice(-2)[0], tickValue).toString(), numberSize));
+      if (scale(ticksValues.slice(-1)[0]) - scale(ticksValues.slice(-2)[0]) < min_ticks_delta) {
+          ticksValues.splice(-2, 1)
+      }
+
+      var xAxis = d3.svg.axis()
+            .scale(scale)
+            .orient('bottom')
+            .tickSize(6, 0, 0)
+            .tickValues(ticksValues)
+            .tickFormat(function(d) {
+              return formatValue(d, tickValue);
+            });
+
+      lane.append('g')
+              .attr('transform', 'translate(0,' + laneHeight + ')')
+              .attr('class', 'axis')
+              .call(xAxis).append('text')
+              .attr('transform', 'translate(' + scale(scale.domain()[1]) + ',' + (laneHeight / 2 + 2) + ')');
+      var lastTick = lane.select(".axis").selectAll("g")[0].pop();
+      var lastTickValue = ticksValues.pop();
+      d3.select(lastTick).select('text').text(formatValue(lastTickValue, tickValue) + ' ' + tickValue)
+              .attr('transform', 'translate(-10, 0)');
+      return xAxis;
+    }
+
+    function mainAxisUpdate() {
+        var domain = x_main.domain()[1] - x_main.domain()[0];
+        mainTickValue = getTickValue(domain);
+
+        var mainTicksValues = [];
+        if (x_main.domain()[0] != x_main.ticks(5)[0])
+            mainTicksValues = [x_main.domain()[0]];
+        mainTicksValues = mainTicksValues.concat(x_main.ticks(5));
+        if (x_main.domain()[1] != mainTicksValues[mainTicksValues.length - 1])
+            mainTicksValues.push(x_main.domain()[1]);
+
+        xMainAxis.tickValues(mainTicksValues)
+                .tickFormat(function(d) {
+                              return formatValue(d, mainTickValue);
+                            });
+
+        var min_ticks_delta = Math.max(getTextSize(formatValue(mainTicksValues[0], mainTickValue).toString(), numberSize),
+                getTextSize(formatValue(mainTicksValues[1], mainTickValue).toString(), numberSize));
+
+        if (x_main(mainTicksValues[1]) - x_main(mainTicksValues[0]) < min_ticks_delta) {
+            mainTicksValues.splice(1, 1)
+        }
+
+        if (x_main(mainTicksValues.slice(-1)[0]) - x_main(mainTicksValues.slice(-2)[0]) < min_ticks_delta) {
+            mainTicksValues.splice(-2, 1)
+        }
+
+        main.select('.main.axis')
+                .call(xMainAxis);
+        scaleText.select('.val')
+                .text(mainTickValue);
+    }
 
     function getSize(text) {
         var tmp = document.createElement("span");

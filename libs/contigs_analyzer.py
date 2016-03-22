@@ -85,6 +85,9 @@ class Mapping(object):
     def short_str(self):
         return ' '.join(str(x) for x in [self.s1, self.e1, '|', self.s2, self.e2, '|', self.len1, self.len2])
 
+    def icarus_report_str(self):
+        return '\t'.join(str(x) for x in [self.s1, self.e1, self.s2, self.e2, self.ref, self.contig, self.idy])
+
     def clone(self):
         return Mapping.from_line(str(self))
 
@@ -179,11 +182,16 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
     logger.info('  ' + qutils.index_to_str(index) + assembly_label)
 
     # run plantakolya tool
-    log_out_fpath = os.path.join(output_dirpath, "contigs_report_" + assembly_label + '.stdout')
-    log_err_fpath = os.path.join(output_dirpath, "contigs_report_" + assembly_label + '.stderr')
-    misassembly_fpath = os.path.join(output_dirpath, "contigs_report_" + assembly_label + '.mis_contigs.info')
+    log_out_fpath = os.path.join(output_dirpath, qconfig.contig_report_fname_pattern % assembly_label + '.stdout')
+    log_err_fpath = os.path.join(output_dirpath, qconfig.contig_report_fname_pattern % assembly_label + '.stderr')
+    icarus_out_fpath = os.path.join(output_dirpath, qconfig.icarus_report_fname_pattern % assembly_label)
+    misassembly_fpath = os.path.join(output_dirpath, qconfig.contig_report_fname_pattern % assembly_label + '.mis_contigs.info')
     planta_out_f = open(log_out_fpath, 'w')
     planta_err_f = open(log_err_fpath, 'w')
+    icarus_out_f = open(icarus_out_fpath, 'w')
+    icarus_header_cols = ['S1', 'E1', 'S2', 'E2', 'Reference', 'Contig', 'IDY']
+    print >> icarus_out_f, '\t'.join(icarus_header_cols)
+
     misassembly_file = open(misassembly_fpath, 'w')
 
     logger.info('  ' + qutils.index_to_str(index) + 'Logging to files ' + log_out_fpath +
@@ -601,6 +609,8 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
             is_sv = aux_data["is_sv"]
 
             print >> planta_out_f, '\t\t\tReal Alignment %d: %s' % (i+1, str(sorted_aligns[i]))
+            print >> icarus_out_f, sorted_aligns[i].icarus_report_str()
+
             ref_aligns.setdefault(sorted_aligns[i].ref, []).append(sorted_aligns[i])
             print >> coords_filtered_file, str(prev)
             if is_sv:
@@ -631,18 +641,22 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
                             references_misassemblies[ref2][ref1] += 1
                             print >> planta_out_f, 'interspecies translocation',
                             print >> misassembly_file, 'interspecies translocation',
+                            print >> icarus_out_f, 'interspecies translocation'
                     else:
                         region_misassemblies.append(Misassembly.TRANSLOCATION)
                         print >> planta_out_f, 'translocation',
                         print >> misassembly_file, 'translocation',
+                        print >> icarus_out_f, 'translocation'
                 elif abs(inconsistency) > smgap:
                     region_misassemblies.append(Misassembly.RELOCATION)
                     print >> planta_out_f, 'relocation, inconsistency =', inconsistency,
                     print >> misassembly_file, 'relocation, inconsistency =', inconsistency,
+                    print >> icarus_out_f, 'relocation, inconsistency =', inconsistency
                 else: #if strand1 != strand2:
                     region_misassemblies.append(Misassembly.INVERSION)
                     print >> planta_out_f, 'inversion',
                     print >> misassembly_file, 'inversion',
+                    print >> icarus_out_f, 'inversion'
                 print >> planta_out_f, ') between these two alignments'
                 print >> misassembly_file, ') between %s %s and %s %s' % (sorted_aligns[i].s2, sorted_aligns[i].e2,
                                                                           sorted_aligns[i+1].s2, sorted_aligns[i+1].e2)
@@ -691,6 +705,7 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
                         #print >> plantafile_out, 'Distance on contig =', distance_on_contig, ', distance on reference =', distance_on_reference
                     print >> planta_out_f, 'Inconsistency =', inconsistency, "(linear representation of circular genome)" if cyclic_moment else "",\
                         "(fragmentation of reference genome)" if sorted_aligns[i].ref != sorted_aligns[i+1].ref else ""
+                    print >> icarus_out_f, 'local misassembly'
                     region_misassemblies.append(Misassembly.LOCAL)
 
             prev = sorted_aligns[i+1]
@@ -699,6 +714,7 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
         #Record the very last alignment
         i = len(sorted_aligns) - 1
         print >> planta_out_f, '\t\t\tReal Alignment %d: %s' % (i + 1, str(sorted_aligns[i]))
+        print >> icarus_out_f, sorted_aligns[i].icarus_report_str()
         ref_aligns.setdefault(sorted_aligns[i].ref, []).append(sorted_aligns[i])
         print >> coords_filtered_file, str(prev)
         aligned_lengths.append(cur_aligned_length)
@@ -844,6 +860,7 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
                 if len(top_aligns) == 1:
                     #There is only one top align, life is good
                     print >> planta_out_f, '\t\tOne align captures most of this contig: %s' % str(top_aligns[0])
+                    print >> icarus_out_f, top_aligns[0].icarus_report_str()
                     ref_aligns.setdefault(top_aligns[0].ref, []).append(top_aligns[0])
                     print >> coords_filtered_file, str(top_aligns[0])
                     aligned_lengths.append(top_aligns[0].len2)
@@ -866,6 +883,7 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
                     elif qconfig.ambiguity_usage == "one":
                         print >> planta_out_f, '\t\tUsing only first of these alignment (option --ambiguity-usage is set to "one"):'
                         print >> planta_out_f, '\t\tAlignment: %s' % str(top_aligns[0])
+                        print >> icarus_out_f, top_aligns[0].icarus_report_str()
                         ref_aligns.setdefault(top_aligns[0].ref, []).append(top_aligns[0])
                         aligned_lengths.append(top_aligns[0].len2)
                         print >> coords_filtered_file, str(top_aligns[0])
@@ -878,6 +896,7 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
                         first_alignment = True
                         while len(top_aligns):
                             print >> planta_out_f, '\t\tAlignment: %s' % str(top_aligns[0])
+                            print >> icarus_out_f, top_aligns[0].icarus_report_str()
                             ref_aligns.setdefault(top_aligns[0].ref, []).append(top_aligns[0])
                             if first_alignment:
                                 first_alignment = False
@@ -1004,6 +1023,7 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
                         partially_unaligned_bases += unaligned_bases
                         print >> planta_out_f, '\t\tThis contig is partially unaligned. (Aligned %d out of %d bases)' % (top_len, ctg_len)
                         print >> planta_out_f, '\t\tAlignment: %s' % str(the_only_align)
+                        print >> icarus_out_f, the_only_align.icarus_report_str()
                         if begin - 1:
                             print >> planta_out_f, '\t\tUnaligned bases: 1 to %d (%d)' % (begin - 1, begin - 1)
                         if ctg_len - end:
@@ -1069,6 +1089,7 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
                         partially_unaligned_with_misassembly += 1
                         for align in sorted_aligns:
                             print >> planta_out_f, '\t\tAlignment: %s' % str(align)
+                            print >> icarus_out_f, align.icarus_report_str()
                             print >> coords_filtered_file, str(align)
                             aligned_lengths.append(align.len2)
                             ref_aligns.setdefault(align.ref, []).append(align)

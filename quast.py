@@ -798,18 +798,18 @@ def main(args):
         logger.main_info('This may take a while: press Ctrl-C to skip this step..')
         try:
             if detailed_contigs_reports_dirpath and qconfig.show_snps:
-                contig_report_fpath_pattern = os.path.join(detailed_contigs_reports_dirpath, 'contigs_report_%s.stdout')
+                report_for_icarus_fpath_pattern = os.path.join(detailed_contigs_reports_dirpath, qconfig.icarus_report_fname_pattern)
             else:
-                contig_report_fpath_pattern = None
-            number_of_steps = sum([int(bool(value)) for value in [contig_report_fpath_pattern, all_pdf_file]])
-            if contig_report_fpath_pattern:
+                report_for_icarus_fpath_pattern = None
+            number_of_steps = sum([int(bool(value)) for value in [report_for_icarus_fpath_pattern, all_pdf_file]])
+            if report_for_icarus_fpath_pattern:
                 ########################################################################
                 ### VISUALIZE CONTIG ALIGNMENT
                 ########################################################################
                 logger.main_info('  1 of %d: Creating contig alignment plot...' % number_of_steps)
                 from libs import contig_alignment_plotter
                 contig_alignment_plot_fpath = contig_alignment_plotter.do(
-                    contigs_fpaths, contig_report_fpath_pattern,
+                    contigs_fpaths, report_for_icarus_fpath_pattern,
                     output_dirpath, ref_fpath, similar=True, features=features_containers)
 
             if all_pdf_file:

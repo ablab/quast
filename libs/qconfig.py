@@ -93,6 +93,9 @@ report_prefix = "report"
 transposed_report_prefix = "transposed_report"
 gage_report_prefix = "gage_"
 html_aux_dir = "report_html_aux"
+contig_report_fname_pattern = 'contigs_report_%s'
+icarus_report_fname_pattern = 'all_alignments_%s.tsv'
+
 # for MetaQUAST
 downloaded_dirname = "quast_downloaded_references"
 per_ref_dirname = "runs_per_reference"

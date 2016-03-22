@@ -47,14 +47,9 @@ THE SOFTWARE.
 
         var isOverlapping = function(item, lane) {
             if (lane)
-                for (var i = 0; i < lane.length; i++) {
-                    if (!item.supp && item.corr_start <= lane[i].corr_end && lane[i].corr_start <= item.corr_end)
+                for (var i = 0; i < lane.length; i++)
+                    if (item.corr_start <= lane[i].corr_end && lane[i].corr_start <= item.corr_end)
                         return true;
-                    else if (item.supp == "L" && item.corr_start <= lane[i].corr_end && lane[i].corr_start <= item.real_end)
-                        return true;
-                    else if (item.supp == "R" && item.real_start <= lane[i].corr_end && lane[i].corr_start <= item.corr_end)
-                        return true;
-                }
 
             return false;
         };

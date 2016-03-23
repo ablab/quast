@@ -108,7 +108,11 @@ variation_dirname = 'structural_variations'
 trivial_deletions_fname = 'trivial_deletions.bed'
 manta_sv_fname = 'manta_sv.bed'
 
+# for Icarus
 create_contig_alignment_html = True
+alignment_summary_fname = 'alignment_summary_templ.html'
+contig_size_plot_fname = 'contig_size_plots.html'
+contig_size_plot_name = 'CONTIG SIZES PLOT'
 
 # other settings (mostly constants). Can't be changed by command-line options
 

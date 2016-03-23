@@ -21,95 +21,94 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
-    var ContigData = function(chromosome) {
+    function parseData (data) {
+        chart = { assemblies: {} };
 
-        var parseData = function (data) {
-            chart = { assemblies: {} };
+        for (var i = 0; i < data.length; i++) {
+            if (!chart.assemblies[data[i].assembly])
+                chart.assemblies[data[i].assembly] = [];
 
-            for (var i = 0; i < data.length; i++) {
-                if (!chart.assemblies[data[i].assembly])
-                    chart.assemblies[data[i].assembly] = [];
+            chart.assemblies[data[i].assembly].push(data[i]);
+        }
 
-                chart.assemblies[data[i].assembly].push(data[i]);
-            }
+        return collapseLanes(chart);
+    }
 
-            return collapseLanes(chart);
-        };
+    function isOverlapping (item, lane) {
+        if (lane)
+            for (var i = 0; i < lane.length; i++)
+                if (item.corr_start <= lane[i].corr_end && lane[i].corr_start <= item.corr_end)
+                    return true;
 
-        var isOverlapping = function(item, lane) {
-            if (lane)
-                for (var i = 0; i < lane.length; i++)
-                    if (item.corr_start <= lane[i].corr_end && lane[i].corr_start <= item.corr_end)
-                        return true;
-
-            return false;
-        };
+        return false;
+    }
 
 
-        var collapseLanes = function (chart) {
-            var lanes = [], items = [], laneId = 0, itemId = 0, groupId = 0;
+    function collapseLanes (chart) {
+        var lanes = [], items = [], laneId = 0, itemId = 0, groupId = 0;
 
-            for (var assemblyName in chart.assemblies) {
-                var lane = chart.assemblies[assemblyName];
+        for (var assemblyName in chart.assemblies) {
+            var lane = chart.assemblies[assemblyName];
 
-                for (var i = 0; i < lane.length; i++) {
-                    var numItems = 0;
-                    var item = lane[i];
-                    if (item.name != 'FICTIVE') {
-                        var misassembled_ends = item.mis_ends.split(';');
-                        item.supp = '';
-                        item.lane = laneId;
-                        item.id = itemId;
-                        item.groupId = groupId;
-                        items.push(item);
-                        itemId++;
-                        numItems++;
-                        if (misassembled_ends) {
-                            for (num in misassembled_ends) {
-                                if (!misassembled_ends[num]) continue;
-                                var suppItem = {};
-                                suppItem.name = item.name;
-                                suppItem.corr_start = item.corr_start;
-                                suppItem.corr_end = item.corr_end;
-                                suppItem.assembly = item.assembly;
-                                suppItem.id = itemId;
-                                suppItem.lane = laneId;
-                                suppItem.groupId = groupId;
-                                suppItem.supp = misassembled_ends[num];
-                                suppItem.misassemblies = item.misassemblies.split(';')[num];
-                                items.push(suppItem);
-                                itemId++;
-                                numItems++;
-                            }
+            for (var i = 0; i < lane.length; i++) {
+                var numItems = 0;
+                var item = lane[i];
+                if (item.name != 'FICTIVE') {
+                    if (item.mis_ends) var misassembled_ends = item.mis_ends.split(';');
+                    item.supp = '';
+                    item.lane = laneId;
+                    item.id = itemId;
+                    item.groupId = groupId;
+                    items.push(item);
+                    itemId++;
+                    numItems++;
+                    if (item.mis_ends && misassembled_ends) {
+                        for (num in misassembled_ends) {
+                            if (!misassembled_ends[num]) continue;
+                            var suppItem = {};
+                            suppItem.name = item.name;
+                            suppItem.corr_start = item.corr_start;
+                            suppItem.corr_end = item.corr_end;
+                            suppItem.assembly = item.assembly;
+                            suppItem.id = itemId;
+                            suppItem.lane = laneId;
+                            suppItem.groupId = groupId;
+                            suppItem.supp = misassembled_ends[num];
+                            suppItem.misassemblies = item.misassemblies.split(';')[num];
+                            items.push(suppItem);
+                            itemId++;
+                            numItems++;
                         }
-                        groupId++;
                     }
-                }
-
-                if (numItems > 0){
-                    lanes.push({
-                    id: laneId,
-                    label: i === 0 ? assemblyName : ''
-                    });
-                    laneId++;
+                    groupId++;
                 }
             }
 
-            for (var laneNum = 0; laneNum < lanes.length; laneNum++) {
-                if (lanes[laneNum].label) {
-                    assemblyName = lanes[laneNum].label;
-                    var description = assemblyName + '\n';
-                    description += 'Length: ' + assemblies_len[assemblyName] + '\n';
-                    description += 'Contigs: ' + assemblies_contigs[assemblyName] + '\n';
-                    description += 'Misassemblies: ' + assemblies_misassemblies[assemblyName];
-                    lanes[laneNum].description = description;
-                    lanes[laneNum].link = assemblies_links[assemblyName];
-                }
+            if (numItems > 0){
+                lanes.push({
+                id: laneId,
+                label: assemblyName
+                });
+                laneId++;
             }
+        }
 
-            return {lanes: lanes, items: items};
-        };
+        for (var laneNum = 0; laneNum < lanes.length; laneNum++) {
+            if (lanes[laneNum].label) {
+                assemblyName = lanes[laneNum].label;
+                var description = assemblyName + '\n';
+                description += 'Length: ' + assemblies_len[assemblyName] + '\n';
+                description += 'Contigs: ' + assemblies_contigs[assemblyName] + '\n';
+                description += 'Misassemblies: ' + assemblies_misassemblies[assemblyName];
+                lanes[laneNum].description = description;
+                lanes[laneNum].link = assemblies_links[assemblyName];
+            }
+        }
 
+        return {lanes: lanes, items: items};
+    };
+
+    var ContigData = function(chromosome) {
         // return parseData(generateRandomWorkItems());
         return parseData(contig_data[chromosome]);
     };
@@ -120,9 +119,10 @@ THE SOFTWARE.
     var root = typeof exports !== "undefined" && exports !== null ? exports : window;
     root.contigData = ContigData;
 
-    var data = contigData(CHROMOSOME),
-            lanes = data.lanes,
-            items = data.items;
+    if (CHROMOSOME) var data = contigData(CHROMOSOME);
+    else var data = parseData(contig_data);
+    var lanes = data.lanes, items = data.items;
+
     var w = 0.9 * (window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth) - 300;
     var margin = {
                 top: 20, right: 15, bottom: 15, left: /*Math.max(d3.max(lanes, function (d) {
@@ -131,6 +131,8 @@ THE SOFTWARE.
             },
             mainLanesHeight = 50,
             miniLanesHeight = 18,
+            annotationLanesHeight = 30,
+            featureHeight = 20;
             offsetsY = [0, .3, .15],
             misassembledOffsetY = .25,
             lanesInterval = 20,
@@ -142,11 +144,13 @@ THE SOFTWARE.
             mainHeight = lanes.length * (mainLanesHeight + lanesInterval),
             coverageHeight = typeof coverage_data != 'undefined' ? 125 : 0;
             coverageSpace = typeof coverage_data != 'undefined' ? 50 : 0;
-    height = Math.max(mainHeight + 4 * coverageHeight + miniHeight + miniScale + mainScale - margin.bottom - margin.top, 500);
     var total_len = 0;
-    for (var chr in chromosomes_len) {
-        total_len += chromosomes_len[chr];
-    };
+    if (CHROMOSOME) {
+      for (var chr in chromosomes_len) {
+          total_len += chromosomes_len[chr];
+      };
+    }
+    else total_len = contigs_total_len;
     var x_mini = d3.scale.linear()
             .domain([0, total_len])
             .range([0, chartWidth]);
@@ -162,13 +166,15 @@ THE SOFTWARE.
     var letterSize = getSize('w') - 1;
     var numberSize = getSize('0') - 1;
 
-    var featuresData = parseFeaturesData(CHROMOSOME);
-    var annotationLanesHeight = 30, featureHeight = 20;
-    var annotationsHeight = annotationLanesHeight * featuresData.lanes.length;
-    var ext = d3.extent(featuresData.lanes, function (d) {
-        return d.id;
-    });
-    var y_anno = d3.scale.linear().domain([ext[0], ext[1] + 1]).range([0, annotationsHeight]);
+    if (CHROMOSOME) {
+      var featuresData = parseFeaturesData(CHROMOSOME);
+      var annotationsHeight = annotationLanesHeight * featuresData.lanes.length;
+      var ext = d3.extent(featuresData.lanes, function (d) {
+          return d.id;
+      });
+      var y_anno = d3.scale.linear().domain([ext[0], ext[1] + 1]).range([0, annotationsHeight]);
+    }
+    else var annotationsHeight = 0;
     height = mainHeight + mainScale + 4 * coverageHeight + miniHeight + miniScale +
         annotationsHeight + 100 - margin.bottom - margin.top;
     var chart = d3.select('body').append('div').attr('id', 'chart')
@@ -321,7 +327,8 @@ THE SOFTWARE.
             .attr('class', 'laneText');
 
     // draw the lanes for the annotations chart
-    annotations.append('g').selectAll('.laneLines')
+    if (featuresData) {
+        annotations.append('g').selectAll('.laneLines')
             .data(featuresData.lanes)
             .enter().append('line')
             .attr('x1', 0)
@@ -336,7 +343,7 @@ THE SOFTWARE.
                 return d.label === '' ? 'white' : 'lightgray'
             });
 
-    annotations.append('g').selectAll('.laneText')
+        annotations.append('g').selectAll('.laneText')
             .data(featuresData.lanes)
             .enter().append('text')
             .text(function (d) {
@@ -349,6 +356,7 @@ THE SOFTWARE.
             .attr('dy', '.5ex')
             .attr('text-anchor', 'end')
             .attr('class', 'laneText');
+    }
 
     // draw the x axis
     var xMainAxis, scaleText;
@@ -434,8 +442,8 @@ THE SOFTWARE.
     var div = d3.select('body').append('div')
                 .attr('class', 'feature_tip')
                 .style('opacity', 0);
-
-    var annotationsItems = annotations.append('g').selectAll('miniItems')
+    if (featuresData) {
+        var annotationsItems = annotations.append('g').selectAll('miniItems')
             .data(getFeaturePaths(featuresData.features))
             .enter().append('rect')
             .attr('class', function (d) {
@@ -461,7 +469,7 @@ THE SOFTWARE.
                             .style('top', (d.y + annotationsOffsetY + 145) + 'px')
             });
 
-    annotations.append('g').selectAll('miniItems')
+        annotations.append('g').selectAll('miniItems')
                             .data(getFeaturePaths(featuresData.features))
                             .enter().append('text')
                             .text(function (d) { return getVisibleText(d.name ? d.name : 'ID=' + d.id, x_mini(d.end - d.start) - 5) } )
@@ -470,6 +478,7 @@ THE SOFTWARE.
                             .attr('transform', function (d) {
                               return 'translate(' + (d.x + 5) + ', ' + (d.y + featureHeight / 2) + ')';
                             });
+    }
 
     // draw the selection area
     var delta = (x_mini.domain()[1] - x_mini.domain()[0]) / 8;
@@ -639,12 +648,14 @@ THE SOFTWARE.
     var arrow = "M0,101.08h404.308L202.151,303.229L0,101.08z";
     var lines = [];
     var len = 0;
-    var commonChrName = CHROMOSOME.length + 1;
-    if (chrContigs.length > 1) {
-        for (var chr in chromosomes_len) {
-            var shortName = chr.slice(commonChrName, chr.length);
-            lines.push({name: shortName, corr_start: len, corr_end: len + chromosomes_len[chr], y1: 0, y2: mainHeight, len: chromosomes_len[chr]});
-            len += chromosomes_len[chr];
+    if (CHROMOSOME) {
+        var commonChrName = CHROMOSOME.length + 1;
+        if (chrContigs.length > 1) {
+            for (var chr in chromosomes_len) {
+                var shortName = chr.slice(commonChrName, chr.length);
+                lines.push({name: shortName, corr_start: len, corr_end: len + chromosomes_len[chr], y1: 0, y2: mainHeight, len: chromosomes_len[chr]});
+                len += chromosomes_len[chr];
+            }
         }
     }
     var itemLines = main.append('g')
@@ -1175,7 +1186,8 @@ THE SOFTWARE.
                 .call(xMainAxis);
 
         var xMiniAxis = appendXAxis(mini, x_mini, miniHeight, miniTickValue);
-        if (featuresData.features.length > 0) var xAnnotationsAxis = appendXAxis(annotations, x_mini, annotationsHeight, miniTickValue);
+        if (featuresData && featuresData.features.length > 0)
+            var xAnnotationsAxis = appendXAxis(annotations, x_mini, annotationsHeight, miniTickValue);
 
         // add scale text
         scaleText = main.append('g')
@@ -1202,7 +1214,7 @@ THE SOFTWARE.
             .text('Genome, ' + miniTickValue)
             .attr('transform', 'translate(' + x_mini((x_mini.domain()[1] - x_mini.domain()[0]) / 2) + ',' + (miniScale / 2 + 2) + ')');
 
-        if (featuresData.features.length > 0)
+        if (featuresData && featuresData.features.length > 0)
           annotations.append('g')
             .attr('transform', 'translate(0,' + annotationsHeight + ')')
             .attr('class', 'axis')
@@ -1327,18 +1339,17 @@ THE SOFTWARE.
 
             if (!paths[c]) paths[c] = '';
 
-            var x = d.supp == "R" ? x_mini(d.corr_end) : x_mini(d.corr_start);
-            var y = y_mini(d.lane);
-            if (!d.supp) y += .5 * miniLanesHeight;
-            if (d.supp) y += .2 * miniLanesHeight;
+            var startX = d.supp == "R" ? x_mini(d.corr_end) : x_mini(d.corr_start);
+            var pathEnd = x_mini(d.corr_end);
+            var startY = y_mini(d.lane);
+            if (!d.supp) startY += .5 * miniLanesHeight;
+            if (d.supp) startY += .2 * miniLanesHeight;
             if (d.class.search("misassembled") != -1)
-                y += .08 * miniLanesHeight;
+                startY += .08 * miniLanesHeight;
             if (d.class.search("odd") != -1)
-                y += .04 * miniLanesHeight;
-            var startX = x,
-                startY = y;
+                startY += .04 * miniLanesHeight;
             if (d.supp && !isSmall) startY += .02 * miniLanesHeight;
-            if (!d.supp || isSmall) path = ['M', startX, startY, 'H', x_mini(d.corr_end)].join(' ');
+            if (!d.supp || isSmall) path = ['M', startX, startY, 'H', pathEnd].join(' ');
             else if (d.supp == "L") path = ['M', startX, startY, 'L', startX + (Math.sqrt(3) * miniPathHeight / 2), startY + miniPathHeight / 2,
               'L', startX, startY + miniPathHeight, 'L',  startX, startY].join(' ');
             else if (d.supp == "R") path = ['M', startX, startY, 'L', startX - (Math.sqrt(3) * miniPathHeight / 2), startY + miniPathHeight / 2,
@@ -1347,7 +1358,7 @@ THE SOFTWARE.
             isSimilarNow = d.similar;
             curLane = d.lane;
             numItem++;
-            result.push({class: d.class, path: path, misassemblies: misassemblies[d.class], supp: d.supp, x: x, y: y});
+            result.push({class: d.class, path: path, misassemblies: misassemblies[d.class], supp: d.supp, x: startX, y: startY});
         }
         return result;
     }
@@ -1404,8 +1415,11 @@ THE SOFTWARE.
                 .style({'display': 'block', 'word-break': 'break-all', 'word-wrap': 'break-word'})
                 .text('Name: ' + d.name, 280);
 
-        info.append('p')
+        if (d.structure)
+          info.append('p')
                 .text('Type: ' + (d.misassembled == "True" ? 'misassembled' : 'correct'));
+        else info.append('p')
+                .text('Size: ' + d.size + ' bp');
 
         var appendPositionElement = function(data, start, end, whereAppend, start_in_contig, end_in_contig, is_expanded) {
             var posVal = function (d) {
@@ -1425,12 +1439,13 @@ THE SOFTWARE.
                 return d;
             };
 
-            var e = data.filter(function (d) {
+            var e = !data ? '' : data.filter(function (d) {
                 if (d.type == 'A') {
                     if (start_in_contig && d.start_in_contig == start_in_contig && d.end_in_contig == end_in_contig) return d;
                     else if (!start_in_contig && d.corr_start <= start && end <= d.corr_end) return d;
                 }
             })[0];
+            if (!e) return;
             var ndash = String.fromCharCode(8211);
             if (is_expanded)
                 var whereAppendBlock = whereAppend.append('p')

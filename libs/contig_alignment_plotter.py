@@ -202,8 +202,9 @@ class Arc:
 
 
 class Contig:
-    def __init__(self, name):
+    def __init__(self, name, size=None):
         self.name = name
+        self.size = size
         self.alignments = []
         self.arcs = []
 
@@ -594,6 +595,7 @@ def do(contigs_fpaths, contig_report_fpath_pattern, output_dirpath,
     make_output_dir(output_dirpath)
 
     lists_of_aligned_blocks = []
+    contigs_by_assemblies = {}
     structures_by_labels = {}
 
     total_genome_size = 0
@@ -615,13 +617,14 @@ def do(contigs_fpaths, contig_report_fpath_pattern, output_dirpath,
 
     for contigs_fpath in contigs_fpaths:
         report_fpath = contig_report_fpath_pattern % qutils.label_from_fpath_for_fname(contigs_fpath)
-        aligned_blocks, misassembled_id_to_structure = parse_nucmer_contig_report(report_fpath, sorted_ref_names, cumulative_ref_lengths)
+        aligned_blocks, misassembled_id_to_structure, contigs = parse_nucmer_contig_report(report_fpath, sorted_ref_names, cumulative_ref_lengths)
         if aligned_blocks is None:
             return None
         label = qutils.name_from_fpath(contigs_fpath)
         for block in aligned_blocks:
             block.label = label
         lists_of_aligned_blocks.append(aligned_blocks)
+        contigs_by_assemblies[label] = contigs
         structures_by_labels[label] = misassembled_id_to_structure
 
     plot_fpath, assemblies = draw_alignment_plot(
@@ -629,12 +632,13 @@ def do(contigs_fpaths, contig_report_fpath_pattern, output_dirpath,
         lists_of_aligned_blocks, arcs, similar, coverage_hist)
     if assemblies and qconfig.create_contig_alignment_html:
         js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, reference_chromosomes,
-                    output_dirpath, structures_by_labels, features=features, cov_fpath=cov_fpath)
+                    output_dirpath, structures_by_labels, contigs_by_assemblies=contigs_by_assemblies, features=features, cov_fpath=cov_fpath)
 
     return plot_fpath
 
 def parse_nucmer_contig_report(report_fpath, sorted_ref_names, cumulative_ref_lengths):
     aligned_blocks = []
+    contigs = []
     misassembled_contigs_ids = set()
 
     with open(report_fpath) as report_file:
@@ -658,6 +662,10 @@ def parse_nucmer_contig_report(report_fpath, sorted_ref_names, cumulative_ref_le
                 ref_col = split_line.index('Reference')
                 contig_col = split_line.index('Contig')
                 idy_col = split_line.index('IDY')
+            elif split_line and split_line[0] == 'CONTIG':
+                _, name, size = split_line
+                contig = Contig(name=name, size=size)
+                contigs.append(contig)
             elif split_line and len(split_line) < 5:
                 misassembled_id_to_structure[contig_id].append(line.strip())
                 if 'local' not in line:
@@ -685,11 +693,11 @@ def parse_nucmer_contig_report(report_fpath, sorted_ref_names, cumulative_ref_le
         if block.name in misassembled_contigs_ids:
             block.misassembled = True
 
-    return aligned_blocks, misassembled_id_to_structure 
+    return aligned_blocks, misassembled_id_to_structure, contigs
 
 
 def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromosomes_length,
-                output_dirpath, structures_by_labels, features=None, cov_fpath=None):
+                output_dirpath, structures_by_labels, contigs_by_assemblies, features=None, cov_fpath=None):
     chr_to_aligned_blocks = dict()
     chr_names = chromosomes_length.keys()
     for chr in chr_names:
@@ -706,7 +714,7 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
         for align in assembly.alignments:
             chr_to_aligned_blocks[align.ref_name].append(align)
 
-    summary_fname = 'alignment_summary.html'
+    summary_fname = qconfig.alignment_summary_fname
     summary_path = os.path.join(output_dirpath, summary_fname)
     output_all_files_dir_path = os.path.join(output_dirpath, alignment_plots_dirname)
     if not os.path.exists(output_all_files_dir_path):
@@ -939,9 +947,13 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
                         result.write('var CHROMOSOME = "{chr}";\n'.format(**locals()))
                         result.write('var chrContigs = ["{chromosome}"];\n'.format(**locals()))
                     elif line.find('<!--- misassemblies selector: ---->') != -1:
-                        for ms_type in sorted(ms_types):
-                            result.write('<label><input type="checkbox" id="{ms_type}" name="misassemblies_select" '
-                                     'checked="checked"/> {ms_type}</label>\n'.format(**locals()))
+                        if ms_types:
+                            result.write('<div class="menu_block" align="center">')
+                            result.write('Misassembly type to show:')
+                            for ms_type in sorted(ms_types):
+                                result.write('<label><input type="checkbox" id="{ms_type}" name="misassemblies_select" '
+                                         'checked="checked"/> {ms_type}</label>\n'.format(**locals()))
+                            result.write('</div>')
                     elif line.find('<!--- css: ---->') != -1:
                         result.write(open(html_saver.get_real_path(os.path.join('static', 'contig_alignment_plot.css'))).read())
                     elif line.find('<!--- scripts: ---->') != -1:
@@ -958,12 +970,48 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
                             title = 'CONTIG ALIGNMENT BROWSER: %s (' % chr_name + ('%s fragments, ' % num_contigs[chr] if num_contigs[chr] > 1 else '') + '%s bp)' % format_long_numbers(chr_size)
                             result.write('<div class = "block title"><a href="../{summary_fname}"><button class="back_button">&crarr;</button></a>{title}</div>\n'.format(**locals()))
 
-    with open(html_saver.get_real_path('alignment_summary_templ.html'), 'r') as template:
+    contigs_sizes_str = 'var contig_data = {};\n'
+    contigs_sizes_str += 'var CHROMOSOME;\n'
+    contigs_sizes_str += 'contig_data = [ '.format(**locals())
+    total_len = 0
+    for assembly in contigs_by_assemblies:
+        cum_length = 0
+        for alignment in sorted(contigs_by_assemblies[assembly], key=lambda x: x.size, reverse=True):
+            start_contig = cum_length
+            end_contig = cum_length + int(alignment.size)
+            contigs_sizes_str += '{{name: "{alignment.name}", assembly: "{assembly}", ' \
+                                 'size: "{alignment.size}", corr_start: {start_contig}, corr_end: {end_contig} }}, '.format(**locals())
+            cum_length = end_contig
+        total_len = max(total_len, cum_length)
+    contigs_sizes_str = contigs_sizes_str[:-1] + '];\n\n'
+    contigs_sizes_str += 'var contigs_total_len = {total_len};\n'.format(**locals())
+
+    with open(html_saver.get_real_path('_chr_templ.html'), 'r') as template:
+        with open(os.path.join(output_all_files_dir_path, qconfig.contig_size_plot_fname), 'w') as result:
+            for line in template:
+                if line.find('<!--- data: ---->') != -1:
+                    result.write(assemblies_data)
+                    result.write(contigs_sizes_str)
+                elif line.find('<!--- css: ---->') != -1:
+                    result.write(open(html_saver.get_real_path(os.path.join('static', 'contig_alignment_plot.css'))).read())
+                elif line.find('<!--- scripts: ---->') != -1:
+                    result.write(open(html_saver.get_real_path(os.path.join('static', 'd3.js'))).read())
+                    result.write(open(html_saver.get_real_path(os.path.join('static', 'scripts',
+                                                                            'contig_alignment_plot_script.js'))).read())
+                else:
+                    result.write(line)
+                    if line.find('<body>') != -1:
+                        title = 'CONTIG ALIGNMENT BROWSER'
+                        result.write('<div class = "block title"><a href="../{summary_fname}"><button class="back_button">&crarr;</button></a>{title}</div>\n'.format(**locals()))
+
+    with open(html_saver.get_real_path(qconfig.alignment_summary_fname), 'r') as template:
         with open(summary_path, 'w') as result:
             num_aligned_assemblies = [len(aligned_assemblies[chr]) for chr in chr_full_names]
             is_unaligned_asm_exists = len(set(num_aligned_assemblies)) > 1
             for line in template:
                 result.write(line)
+                if line.find('<!--- css: ---->') != -1:
+                    result.write(open(html_saver.get_real_path(os.path.join('static', 'contig_alignment_plot.css'))).read())
                 if line.find('<!--- assemblies: ---->') != -1:
                     if not is_unaligned_asm_exists:
                         result.write('<div class="subtitle"># assemblies: %s</div>' % len(contigs_fpaths))
@@ -987,3 +1035,7 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
                         result.write('<td>%.3f</td>' % chr_genome)
                         result.write('<td>%s</td>' % num_misassemblies[chr])
                         result.write('</tr>')
+                    result.write('<tr>')
+                    contig_size_plot_link = os.path.join(alignment_plots_dirname, qconfig.contig_size_plot_fname)
+                    result.write('<td><a href="%s">%s</a></td>' % (contig_size_plot_link, qconfig.contig_size_plot_name))
+                    result.write('</tr>')

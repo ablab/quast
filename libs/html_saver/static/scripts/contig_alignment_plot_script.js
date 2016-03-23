@@ -466,9 +466,11 @@ THE SOFTWARE.
                             .style('opacity', .9);
                             var tooltipText = d ? '<strong>' + (d.name ? d.name + ',' : '') + '</strong> <span>' +
                                               (d.id ? ' ID=' + d.id + ',' : '') + ' coordinates: ' + d.start + '-' + d.end + '</span>' : '';
-                            div.html(tooltipText)
-                            .style('left', (d3.event.pageX) + 'px')
-                            .style('top', (d.y + annotationsOffsetY + 145) + 'px')
+                            if (div.html() != tooltipText)
+                                div.html(tooltipText)
+                                .style('left', (d3.event.pageX) + 'px')
+                                .style('top', (d.y + annotationsOffsetY + 145) + 'px')
+                            else removeTooltip();
             });
 
         annotations.append('g').selectAll('miniItems')
@@ -815,7 +817,7 @@ THE SOFTWARE.
                     return (d.groupId == selected_id ? 1 : 0);
                 })
                 .attr('opacity', function (d) {
-                  if (!d.size) return 1;
+                  if (!d || !d.size) return 1;
                   return d.size > thresholdSize ? 1 : paleContigsOpacity;
                 });
         rects.exit().remove();
@@ -860,7 +862,7 @@ THE SOFTWARE.
                     return (d.groupId == selected_id ? 1 : 0);
                 })
                 .attr('opacity', function (d) {
-                  if (!d.size) return 1;
+                  if (!d || !d.size) return 1;
                   return d.size > thresholdSize ? 1 : paleContigsOpacity;
                 });
 
@@ -961,7 +963,7 @@ THE SOFTWARE.
         //only for contig size plot
         mini.selectAll('path')
             .attr('opacity', function (d) {
-              if (!d.size) return 1;
+              if (!d || !d.size) return 1;
               return d.size > thresholdSize ? 1 : paleContigsOpacity;
             });
 
@@ -1065,12 +1067,21 @@ THE SOFTWARE.
                     .text('<CLICK ON CONTIG>');
                 arrows = [];
                 mini.selectAll('.arrow').remove();
+                removeTooltip();
                 selected_id = null;
                 break
             }
         }
         itemNonRects.select('.glow').remove();
         display();
+    }
+
+    function removeTooltip() {
+        div = d3.select('body').select('.feature_tip');
+        div.transition()
+            .duration(200)
+            .style('opacity', 0);
+        div.html('');
     }
 
     function setupInterface() {
@@ -1093,8 +1104,9 @@ THE SOFTWARE.
 
         document.getElementById('input_coords').onkeydown=function() {
             enterCoords(this) };
-        document.getElementById('input_contig_threshold').onkeydown=function() {
-            setContigSizeThreshold(this) };
+        if (document.getElementById('input_contig_threshold'))
+            document.getElementById('input_contig_threshold').onkeydown=function() {
+                setContigSizeThreshold(this) };
 
         var checkboxes = document.getElementsByName('misassemblies_select');
         for(var i = 0; i < checkboxes.length; i++) {

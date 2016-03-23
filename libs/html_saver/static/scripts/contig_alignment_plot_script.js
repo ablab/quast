@@ -1150,20 +1150,24 @@ THE SOFTWARE.
         }
         if (key == 13) {
             var coordText = textBox.value;
-            var coords = coordText.split("-");
-            if (coords.length >= 2 && parseInt(coords[0]) <= parseInt(coords[1])) {
-                var startCoord = parseInt(coords[0]);
-                var endCoord = parseInt(coords[1]);
-                brush.extent([startCoord, Math.max(endCoord, startCoord + 5)]);
-            }
-            else if (coords.length == 1) {
-                var startCoord = parseInt(coords[0]);
-                var brushExtent = brush.extent();
-                var brushSize = brushExtent[1] - brushExtent[0];
-                brush.extent([startCoord, startCoord + brushSize]);
-            }
-            display();
+            var coords = coordText.split('-');
+            setCoords(coords);
         }
+    }
+
+    function setCoords(coords) {
+        if (coords.length >= 2 && parseInt(coords[0]) <= parseInt(coords[1])) {
+            var startCoord = parseInt(coords[0]);
+            var endCoord = parseInt(coords[1]);
+            brush.extent([startCoord, Math.max(endCoord, startCoord + 5)]);
+        }
+        else if (coords.length == 1) {
+            var startCoord = parseInt(coords[0]);
+            var brushExtent = brush.extent();
+            var brushSize = brushExtent[1] - brushExtent[0];
+            brush.extent([startCoord, startCoord + brushSize]);
+        }
+        display();
     }
 
     function setContigSizeThreshold(textBox) {
@@ -1497,7 +1501,10 @@ THE SOFTWARE.
             else var whereAppendBlock = whereAppend;
             var d = whereAppendBlock.append('span')
                     .attr('class', is_expanded ? 'head' : 'head main')
-                    .on('click', openClose)
+                    .on('click', function(d) {
+                        setCoords([e.corr_start]);
+                        d3.event.stopPropagation();
+                    })
                     .text(['Position:', posVal(e.start), ndash, posVal(e.end), mainTickValue, ' '].join(' '));
             if (chrContigs.indexOf(e.chr) == -1) {
                 d.append('a')

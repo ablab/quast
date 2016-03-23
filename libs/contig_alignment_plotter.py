@@ -860,6 +860,7 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
                                 alignment.misassemblies += misassembly_type
                                 ms_types.add(misassembly_type)
                             misassembled_ends.append('L')
+                        else: misassembled_ends.append('')
                         if num_alignment + 1 < len(contig_structure[alignment.name]) and \
                                         type(contig_structure[alignment.name][num_alignment + 1]) == str:
                             misassembly_type = contig_structure[alignment.name][num_alignment + 1].split(',')[0].strip()
@@ -867,6 +868,7 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
                                 alignment.misassemblies += ';' + misassembly_type
                                 ms_types.add(misassembly_type)
                             misassembled_ends.append('R')
+                        else: misassembled_ends.append('')
                     else:
                         alignment.misassembled = False
                         alignment.misassemblies = ''
@@ -875,12 +877,13 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
                     corr_end = prev_len + alignment.unshifted_end
                     one_part = True
                     if corr_end - corr_start > min_len_for_splitting and misassembled_ends:
-                        one_part = False
-                    supplementary = False
+                        one_part = ''
+                        misassembled_ends = ';'.join(misassembled_ends)
+                    else: misassembled_ends = ''
                     data_str += '{{name: "{alignment.name}", corr_start: {corr_start}, corr_end: {corr_end},' \
                                 'start: {alignment.unshifted_start}, end: {alignment.unshifted_end}, assembly: "{alignment.label}", ' \
                                 'similar: "{alignment.similar}", misassemblies: "{alignment.misassemblies}", ' \
-                                'one_part: "{one_part}"'.format(**locals())
+                                'one_part: "{one_part}", mis_ends: "{misassembled_ends}"'.format(**locals())
 
                     if alignment.name != 'FICTIVE':
                         if len(aligned_assemblies[chr]) < len(contigs_fpaths) and alignment.label not in aligned_assemblies[chr]:
@@ -909,22 +912,6 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
                         else:
                             data_str = data_str[: -1] + ']},'
 
-                        if not one_part:
-                            supplementary = True
-                            if 'L' in misassembled_ends:
-                                new_start = corr_start
-                                new_end = corr_start + len_misassembled_end
-                                cur_misassembly = alignment.misassemblies.split(';')[0]
-                                data_str += '{{name: "{alignment.name}", corr_start: {corr_start}, corr_end: {corr_end},' \
-                                            'chr: "{el.ref_name}", one_part: "{one_part}", supp: "L", assembly: "{alignment.label}", ' \
-                                            'misassemblies: "{cur_misassembly}"}},'.format(**locals())
-                            if 'R' in misassembled_ends:
-                                new_start = corr_end - len_misassembled_end
-                                new_end = corr_end
-                                cur_misassembly = alignment.misassemblies.split(';')[1] if ';' in alignment.misassemblies else ''
-                                data_str += '{{corr_start: {corr_start}, corr_end: {corr_end}, ' \
-                                            'chr: "{el.ref_name}", one_part: "{one_part}", supp: "R", assembly: "{alignment.label}",' \
-                                            'misassemblies: "{cur_misassembly}"}},'.format(**locals())
                     else: data_str += '},'
 
         data_str = data_str[:-1] + '];\n\n'

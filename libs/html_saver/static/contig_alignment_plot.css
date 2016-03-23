@@ -227,9 +227,17 @@ a {
     stroke: black;
 }
 
+path {
+    shape-rendering: optimizeSpeed;
+}
+
 .mainItem {
     stroke-width: .2;
     stroke: white;
+}
+
+.mainItem.end {
+    stroke-width: 0;
 }
 
 .mainItem .S {

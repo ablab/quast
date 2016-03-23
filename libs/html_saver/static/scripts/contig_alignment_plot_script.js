@@ -34,7 +34,6 @@ THE SOFTWARE.
 
                 while (isOverlapping(data[i], chart.assemblies[data[i].assembly][sublane]))
                     sublane++;
-                if (data[i].supp) sublane--;
 
                 if (!chart.assemblies[data[i].assembly][sublane])
                     chart.assemblies[data[i].assembly][sublane] = [];
@@ -67,13 +66,33 @@ THE SOFTWARE.
                     for (var j = 0; j < subLane.length; j++) {
                         var item = subLane[j];
                         if (item.name != 'FICTIVE') {
+                            var misassembled_ends = item.mis_ends.split(';');
+                            item.supp = '';
                             item.lane = laneId;
-                            if (!item.supp) groupId++;
                             item.id = itemId;
                             item.groupId = groupId;
                             items.push(item);
                             itemId++;
                             numItems++;
+                            if (misassembled_ends) {
+                                for (num in misassembled_ends) {
+                                    if (!misassembled_ends[num]) continue;
+                                    var suppItem = {};
+                                    suppItem.name = item.name;
+                                    suppItem.corr_start = item.corr_start;
+                                    suppItem.corr_end = item.corr_end;
+                                    suppItem.assembly = item.assembly;
+                                    suppItem.id = itemId;
+                                    suppItem.lane = laneId;
+                                    suppItem.groupId = groupId;
+                                    suppItem.supp = misassembled_ends[num];
+                                    suppItem.misassemblies = item.misassemblies.split(';')[num];
+                                    items.push(suppItem);
+                                    itemId++;
+                                    numItems++;
+                                }
+                            }
+                            groupId++;
                         }
                     }
 
@@ -400,12 +419,15 @@ THE SOFTWARE.
     // draw the items
     var itemRects = main.append('g')
             .attr('clip-path', 'url(#clip)');
+    var itemNonRects = main.append('g')
+            .attr('clip-path', 'url(#clip)');
 
     mini.append('g').selectAll('miniItems')
             .data(getPaths(items))
             .enter().append('path')
             .attr('class', function (d) {
-                return 'miniItem ' + d.class;
+                if (!d.supp) return 'miniItem ' + d.class;
+                else return 'mainItem end ' + d.class;
             })
             .attr('d', function (d) {
                 return d.path;
@@ -741,8 +763,17 @@ THE SOFTWARE.
         chartArrows.exit().remove();
         // update the item rects
 
+        var rectItems = [];
+        var nonRectItems = [];
+        for (item in visItems) {
+          if (visItems[item].supp ) {
+            var w = x_main(visItems[item].corr_end) - x_main(visItems[item].corr_start);
+            if (w > mainLanesHeight) nonRectItems.push(visItems[item]);
+        }
+          else rectItems.push(visItems[item]);
+        }
         rects = itemRects.selectAll('g')
-                .data(visItems, function (d) {
+                .data(rectItems, function (d) {
                     return d.id;
                 })
                 .attr('transform', function (d) {
@@ -755,13 +786,15 @@ THE SOFTWARE.
                 })
                 .attr('width', function (d) {
                     return x_main(Math.min(maxExtent, d.corr_end)) - x_main(Math.max(minExtent, d.corr_start));
+                })
+                .classed('light_color', function (d) {
+                    if (d.one_part) return false;
+                    return x_main(d.corr_end) - x_main(d.corr_start) > mainLanesHeight;
                 });
 
         rects.select('.R')
                 .attr('transform',  function (d) {
                     if (d.groupId == selected_id) {
-                        if (d.supp == "L") return 'translate(2,2)';
-                        if (d.supp == "R") return 'translate(0,2)';
                         return 'translate(1,1)';
                     }
                 })
@@ -777,15 +810,8 @@ THE SOFTWARE.
                     return (d.groupId == selected_id ? 2 : 0);
                 })
                 .attr('stroke-opacity', function (d) {
-                    return ((d.groupId == selected_id && !d.supp) ? 1 : 0);
-                })
-                .attr('opacity', function (d) {
-                    return (d.supp && d.misassembled != "True" ? 0 : 1);
+                    return (d.groupId == selected_id ? 1 : 0);
                 });
-
-
-        itemRects.selectAll('text')
-                .remove();
         rects.exit().remove();
 
         var other = rects.enter().append('g')
@@ -797,22 +823,20 @@ THE SOFTWARE.
                     var y = y_main(d.lane) + .25 * lanesInterval;
                     d.class.search("misassembled") != -1 ? y += .25 * lanesInterval : 0;
                     d.class.search("odd") != -1 ? y += .25 * lanesInterval : 0;
-
                     return 'translate(' + x + ', ' + y + ')';
                 })
                 .attr('width', function (d) {
                     return x_main(Math.min(maxExtent, d.corr_end)) - x_main(Math.max(minExtent, d.corr_start));
                 })
-                .attr('pointer-events', function (d) {
-                    return ((d.supp) ? 'none' : 'painted');
+                .classed('light_color', function (d) {
+                    if (d.one_part) return false;
+                    return x_main(d.corr_end) - x_main(d.corr_start) > mainLanesHeight;
                 });
 
         other.append('rect')
                 .attr('class', 'R')
                 .attr('transform',  function (d) {
                     if (d.groupId == selected_id) {
-                        if (d.supp == "L") return 'translate(2,2)';
-                        if (d.supp == "R") return 'translate(0,2)';
                         return 'translate(1,1)';
                     }
                 })
@@ -828,12 +852,79 @@ THE SOFTWARE.
                     return (d.groupId == selected_id ? 2 : 0);
                 })
                 .attr('stroke-opacity', function (d) {
-                    return ((d.groupId == selected_id && !d.supp) ? 1 : 0);
-                })
-                .attr('opacity', function (d) {
-                    return (d.supp && d.misassembled != "True" ? 0 : 1);
+                    return (d.groupId == selected_id ? 1 : 0);
                 });
 
+        var nonRects = itemNonRects.selectAll('g')
+                .data(nonRectItems, function (d) {
+                    return d.id;
+                })
+                .attr('transform', function (d) {
+                    var x = d.supp == "L" ? x_main(d.corr_start) : x_main(d.corr_end);
+                    var y = y_main(d.lane) + .25 * lanesInterval;
+                    d.class.search("misassembled") != -1 ? y += .25 * lanesInterval : 0;
+                    d.class.search("odd") != -1 ? y += .25 * lanesInterval : 0;
+
+                    return 'translate(' + x + ', ' + y + ')';
+                });
+
+        nonRects.selectAll('path')
+                .attr('transform',  function (d) {
+                    if (d.groupId == selected_id) {
+                        if (d.supp == "L") return 'translate(2,0)';
+                        else return 'translate(-2,0)';
+                    }
+                })
+                .attr('d', function (d) {
+                    var startX = 0;
+                    var startY = d.groupId == selected_id ? 2 : 0;
+                    if (d.supp == "L") path = ['M', startX, startY, 'L', startX + (Math.sqrt(3) * (mainLanesHeight - startY) / 2),
+                        (startY + (mainLanesHeight - startY)) / 2, 'L', startX, mainLanesHeight - startY, 'L',  startX, startY].join(' ');
+                    if (d.supp == "R") path = ['M', startX, startY, 'L', startX - (Math.sqrt(3) * (mainLanesHeight - startY) / 2),
+                        (startY + (mainLanesHeight - startY)) / 2, 'L', startX, mainLanesHeight - startY, 'L',  startX, startY].join(' ');
+                    return path;
+                })
+                .attr('opacity', function (d) {
+                    return (d.misassembled != "True" ? 0 : 1);
+                });
+
+        nonRects.exit().remove();
+        itemNonRects.selectAll('text')
+                .remove();
+
+        var otherNonRects = nonRects.enter().append('g')
+                .attr('class', function (d) {
+                    return 'mainItem end ' + d.class;
+                })
+                .attr('transform', function (d) {
+                    var x = d.supp == "L" ? x_main(d.corr_start) : x_main(d.corr_end);
+                    var y = y_main(d.lane) + .25 * lanesInterval;
+                    d.class.search("misassembled") != -1 ? y += .25 * lanesInterval : 0;
+                    d.class.search("odd") != -1 ? y += .25 * lanesInterval : 0;
+
+                    return 'translate(' + x + ', ' + y + ')';                })
+                .attr('pointer-events', 'none');
+
+        otherNonRects.append('path')
+                .attr('class', 'R')
+                .attr('transform',  function (d) {
+                    if (d.groupId == selected_id) {
+                        if (d.supp == "L") return 'translate(2,2)';
+                        else return 'translate(0,2)';
+                    }
+                })
+                .attr('d', function (d) {
+                    var startX = 0;
+                    var startY = d.groupId == selected_id ? 2 : 0;
+                    if (d.supp == "L") path = ['M', startX, startY, 'L', startX + (Math.sqrt(3) * (mainLanesHeight - startY) / 2),
+                        (startY + (mainLanesHeight - startY)) / 2, 'L', startX, mainLanesHeight - startY, 'L',  startX, startY].join(' ');
+                    if (d.supp == "R") path = ['M', startX, startY, 'L', startX - (Math.sqrt(3) * (mainLanesHeight - startY) / 2),
+                        (startY + (mainLanesHeight - startY)) / 2, 'L', startX, mainLanesHeight - startY, 'L',  startX, startY].join(' ');
+                    return path;
+                })
+                .attr('opacity', function (d) {
+                    return (d.misassembled != "True" ? 0 : 1);
+                });
 
         other.on('click', function A(d, i) {
             selected_id = d.groupId;
@@ -842,8 +933,8 @@ THE SOFTWARE.
                 .on('mouseenter', glow)
                 .on('mouseleave', disglow);
 
-        itemRects.selectAll('text')
-            .data(visItems, function (d) {
+        itemNonRects.selectAll('text')
+            .data(rectItems, function (d) {
                 return d.id;
             })
             .attr('class', 'itemLabel')
@@ -1235,6 +1326,8 @@ THE SOFTWARE.
     // ugly - but draws mini 2x faster than append lines or line generator
     // is there a better way to do a bunch of lines as a single path with d3?
     function getPaths(items) {
+        var miniPathHeight = 10;
+
         var paths = {}, d, result = [];
         var misassemblies = {};
         var curLane = 0;
@@ -1248,10 +1341,12 @@ THE SOFTWARE.
                 numItem = 0;
                 countSupplementary = 0;
             }
+            var isSmall = x_mini(d.corr_end) - x_mini(d.corr_start) < miniPathHeight;
+
             d.misassembled = d.misassemblies ? "True" : "False";
             c = (d.misassembled == "False" ? "" : "misassembled");
             c += (d.similar == "True" ? " similar" : "");
-            c += ((!d.supp && d.one_part == "False") ? " light_color" : "");
+            c += ((!d.supp && !d.one_part && !isSmall) ? " light_color" : "");
             if (d.supp) countSupplementary++;
             if (d.similar != isSimilarNow && !d.supp) numItem = 0;
             c += ((numItem - countSupplementary ) % 2 == 0 ? " odd" : "");
@@ -1260,24 +1355,28 @@ THE SOFTWARE.
 
             if (!paths[c]) paths[c] = '';
 
+            var x = d.supp == "R" ? x_mini(d.corr_end) : x_mini(d.corr_start);
             var y = y_mini(d.lane);
-            y += .5 * miniLanesHeight;
+            if (!d.supp) y += .5 * miniLanesHeight;
+            if (d.supp) y += .2 * miniLanesHeight;
             if (d.class.search("misassembled") != -1)
                 y += .08 * miniLanesHeight;
             if (d.class.search("odd") != -1)
                 y += .04 * miniLanesHeight;
-
-            paths[c] += ['M', x_mini(d.corr_start), (y), 'H', x_mini(d.corr_end)].join(' ');
+            var startX = x,
+                startY = y;
+            if (d.supp && !isSmall) startY += .02 * miniLanesHeight;
+            if (!d.supp || isSmall) path = ['M', startX, startY, 'H', x_mini(d.corr_end)].join(' ');
+            else if (d.supp == "L") path = ['M', startX, startY, 'L', startX + (Math.sqrt(3) * miniPathHeight / 2), startY + miniPathHeight / 2,
+              'L', startX, startY + miniPathHeight, 'L',  startX, startY].join(' ');
+            else if (d.supp == "R") path = ['M', startX, startY, 'L', startX - (Math.sqrt(3) * miniPathHeight / 2), startY + miniPathHeight / 2,
+              'L', startX, startY + miniPathHeight, 'L',  startX, startY].join(' ');
             misassemblies[c] = d.misassemblies;
             isSimilarNow = d.similar;
             curLane = d.lane;
             numItem++;
+            result.push({class: d.class, path: path, misassemblies: misassemblies[d.class], supp: d.supp, x: x, y: y});
         }
-
-        for (var className in paths) {
-            result.push({class: className, path: paths[className], misassemblies: misassemblies[className]});
-        }
-
         return result;
     }
 
@@ -1289,7 +1388,7 @@ THE SOFTWARE.
 
 
     function glow() {
-        d3.select(this.parentNode).append('rect')
+        itemNonRects.append('rect')
                 .attr('class', 'glow')
                 .attr('pointer-events', 'none')
                 .attr('width', d3.select(this).attr('width'))
@@ -1301,7 +1400,7 @@ THE SOFTWARE.
 
 
     function disglow() {
-        d3.select(this.parentNode).select('.glow').remove();
+        itemNonRects.select('.glow').remove();
     }
 
 

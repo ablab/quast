@@ -138,6 +138,8 @@ THE SOFTWARE.
             lanesInterval = 20,
             miniScale = 50,
             mainScale = 50,
+            thresholdSize = 0,
+            paleContigsOpacity = .25,
             width = w,
             chartWidth = w,
             miniHeight = lanes.length * miniLanesHeight,
@@ -811,6 +813,10 @@ THE SOFTWARE.
                 })
                 .attr('stroke-opacity', function (d) {
                     return (d.groupId == selected_id ? 1 : 0);
+                })
+                .attr('opacity', function (d) {
+                  if (!d.size) return 1;
+                  return d.size > thresholdSize ? 1 : paleContigsOpacity;
                 });
         rects.exit().remove();
 
@@ -852,6 +858,10 @@ THE SOFTWARE.
                 })
                 .attr('stroke-opacity', function (d) {
                     return (d.groupId == selected_id ? 1 : 0);
+                })
+                .attr('opacity', function (d) {
+                  if (!d.size) return 1;
+                  return d.size > thresholdSize ? 1 : paleContigsOpacity;
                 });
 
         var nonRects = itemNonRects.selectAll('g')
@@ -948,6 +958,12 @@ THE SOFTWARE.
                 return y + 20;
             })
             .text(visibleText);
+        //only for contig size plot
+        mini.selectAll('path')
+            .attr('opacity', function (d) {
+              if (!d.size) return 1;
+              return d.size > thresholdSize ? 1 : paleContigsOpacity;
+            });
 
 
         // upd coverage
@@ -1077,6 +1093,8 @@ THE SOFTWARE.
 
         document.getElementById('input_coords').onkeydown=function() {
             enterCoords(this) };
+        document.getElementById('input_contig_threshold').onkeydown=function() {
+            setContigSizeThreshold(this) };
 
         var checkboxes = document.getElementsByName('misassemblies_select');
         for(var i = 0; i < checkboxes.length; i++) {
@@ -1132,6 +1150,18 @@ THE SOFTWARE.
                 var brushSize = brushExtent[1] - brushExtent[0];
                 brush.extent([startCoord, startCoord + brushSize]);
             }
+            display();
+        }
+    }
+
+    function setContigSizeThreshold(textBox) {
+        var key = this.event.keyCode;
+        if (key == 27) {
+            document.getElementById('input_coords').blur();
+        }
+        if (key == 13) {
+            if (parseInt(textBox.value)) thresholdSize = parseInt(textBox.value);
+            else thresholdSize = 0;
             display();
         }
     }
@@ -1358,7 +1388,8 @@ THE SOFTWARE.
             isSimilarNow = d.similar;
             curLane = d.lane;
             numItem++;
-            result.push({class: d.class, path: path, misassemblies: misassemblies[d.class], supp: d.supp, x: startX, y: startY});
+            result.push({class: d.class, path: path, misassemblies: misassemblies[d.class], supp: d.supp,
+                x: startX, y: startY, size: d.size});
         }
         return result;
     }

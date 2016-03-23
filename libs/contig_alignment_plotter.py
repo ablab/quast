@@ -992,6 +992,9 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
                 if line.find('<!--- data: ---->') != -1:
                     result.write(assemblies_data)
                     result.write(contigs_sizes_str)
+                elif line.find('<!--- Contig size threshold: ---->') != -1:
+                    result.write('&nbsp&nbsp&nbsp&nbsp&nbsp Show contigs larger than '
+                                 '<input class="textBox" id="input_contig_threshold" type="text" maxlength="10" /> bp')
                 elif line.find('<!--- css: ---->') != -1:
                     result.write(open(html_saver.get_real_path(os.path.join('static', 'contig_alignment_plot.css'))).read())
                 elif line.find('<!--- scripts: ---->') != -1:

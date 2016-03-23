@@ -30,15 +30,7 @@ THE SOFTWARE.
                 if (!chart.assemblies[data[i].assembly])
                     chart.assemblies[data[i].assembly] = [];
 
-                var sublane = 0;
-
-                while (isOverlapping(data[i], chart.assemblies[data[i].assembly][sublane]))
-                    sublane++;
-
-                if (!chart.assemblies[data[i].assembly][sublane])
-                    chart.assemblies[data[i].assembly][sublane] = [];
-
-                chart.assemblies[data[i].assembly][sublane].push(data[i]);
+                chart.assemblies[data[i].assembly].push(data[i]);
             }
 
             return collapseLanes(chart);
@@ -61,49 +53,45 @@ THE SOFTWARE.
                 var lane = chart.assemblies[assemblyName];
 
                 for (var i = 0; i < lane.length; i++) {
-                    var subLane = lane[i];
                     var numItems = 0;
-                    for (var j = 0; j < subLane.length; j++) {
-                        var item = subLane[j];
-                        if (item.name != 'FICTIVE') {
-                            var misassembled_ends = item.mis_ends.split(';');
-                            item.supp = '';
-                            item.lane = laneId;
-                            item.id = itemId;
-                            item.groupId = groupId;
-                            items.push(item);
-                            itemId++;
-                            numItems++;
-                            if (misassembled_ends) {
-                                for (num in misassembled_ends) {
-                                    if (!misassembled_ends[num]) continue;
-                                    var suppItem = {};
-                                    suppItem.name = item.name;
-                                    suppItem.corr_start = item.corr_start;
-                                    suppItem.corr_end = item.corr_end;
-                                    suppItem.assembly = item.assembly;
-                                    suppItem.id = itemId;
-                                    suppItem.lane = laneId;
-                                    suppItem.groupId = groupId;
-                                    suppItem.supp = misassembled_ends[num];
-                                    suppItem.misassemblies = item.misassemblies.split(';')[num];
-                                    items.push(suppItem);
-                                    itemId++;
-                                    numItems++;
-                                }
+                    var item = lane[i];
+                    if (item.name != 'FICTIVE') {
+                        var misassembled_ends = item.mis_ends.split(';');
+                        item.supp = '';
+                        item.lane = laneId;
+                        item.id = itemId;
+                        item.groupId = groupId;
+                        items.push(item);
+                        itemId++;
+                        numItems++;
+                        if (misassembled_ends) {
+                            for (num in misassembled_ends) {
+                                if (!misassembled_ends[num]) continue;
+                                var suppItem = {};
+                                suppItem.name = item.name;
+                                suppItem.corr_start = item.corr_start;
+                                suppItem.corr_end = item.corr_end;
+                                suppItem.assembly = item.assembly;
+                                suppItem.id = itemId;
+                                suppItem.lane = laneId;
+                                suppItem.groupId = groupId;
+                                suppItem.supp = misassembled_ends[num];
+                                suppItem.misassemblies = item.misassemblies.split(';')[num];
+                                items.push(suppItem);
+                                itemId++;
+                                numItems++;
                             }
-                            groupId++;
                         }
+                        groupId++;
                     }
+                }
 
-                    if (numItems > 0){
-                        lanes.push({
-                        id: laneId,
-                        label: i === 0 ? assemblyName : ''
-                        });
-                        laneId++;
-                    }
-
+                if (numItems > 0){
+                    lanes.push({
+                    id: laneId,
+                    label: i === 0 ? assemblyName : ''
+                    });
+                    laneId++;
                 }
             }
 
@@ -143,6 +131,8 @@ THE SOFTWARE.
             },
             mainLanesHeight = 50,
             miniLanesHeight = 18,
+            offsetsY = [0, .3, .15],
+            misassembledOffsetY = .25,
             lanesInterval = 20,
             miniScale = 50,
             mainScale = 50,
@@ -779,8 +769,8 @@ THE SOFTWARE.
                 .attr('transform', function (d) {
                     var x = x_main(Math.max(minExtent, d.corr_start));
                     var y = y_main(d.lane) + .25 * lanesInterval;
-                    d.class.search("misassembled") != -1 ? y += .25 * lanesInterval : 0;
-                    d.class.search("odd") != -1 ? y += .25 * lanesInterval : 0;
+                    d.class.search("misassembled") != -1 ? y += misassembledOffsetY * lanesInterval : 0;
+                    y += offsetsY[d.order % 3] * lanesInterval;
 
                     return 'translate(' + x + ', ' + y + ')';
                 })
@@ -788,7 +778,6 @@ THE SOFTWARE.
                     return x_main(Math.min(maxExtent, d.corr_end)) - x_main(Math.max(minExtent, d.corr_start));
                 })
                 .classed('light_color', function (d) {
-                    if (d.one_part) return false;
                     return x_main(d.corr_end) - x_main(d.corr_start) > mainLanesHeight;
                 });
 
@@ -821,15 +810,14 @@ THE SOFTWARE.
                 .attr('transform', function (d) {
                     var x = x_main(Math.max(minExtent, d.corr_start));
                     var y = y_main(d.lane) + .25 * lanesInterval;
-                    d.class.search("misassembled") != -1 ? y += .25 * lanesInterval : 0;
-                    d.class.search("odd") != -1 ? y += .25 * lanesInterval : 0;
+                    d.class.search("misassembled") != -1 ? y += misassembledOffsetY * lanesInterval : 0;
+                    y += offsetsY[d.order % 3] * lanesInterval;
                     return 'translate(' + x + ', ' + y + ')';
                 })
                 .attr('width', function (d) {
                     return x_main(Math.min(maxExtent, d.corr_end)) - x_main(Math.max(minExtent, d.corr_start));
                 })
                 .classed('light_color', function (d) {
-                    if (d.one_part) return false;
                     return x_main(d.corr_end) - x_main(d.corr_start) > mainLanesHeight;
                 });
 
@@ -862,8 +850,8 @@ THE SOFTWARE.
                 .attr('transform', function (d) {
                     var x = d.supp == "L" ? x_main(d.corr_start) : x_main(d.corr_end);
                     var y = y_main(d.lane) + .25 * lanesInterval;
-                    d.class.search("misassembled") != -1 ? y += .25 * lanesInterval : 0;
-                    d.class.search("odd") != -1 ? y += .25 * lanesInterval : 0;
+                    d.class.search("misassembled") != -1 ? y += misassembledOffsetY * lanesInterval : 0;
+                    y += offsetsY[d.order % 3] * lanesInterval;
 
                     return 'translate(' + x + ', ' + y + ')';
                 });
@@ -899,8 +887,8 @@ THE SOFTWARE.
                 .attr('transform', function (d) {
                     var x = d.supp == "L" ? x_main(d.corr_start) : x_main(d.corr_end);
                     var y = y_main(d.lane) + .25 * lanesInterval;
-                    d.class.search("misassembled") != -1 ? y += .25 * lanesInterval : 0;
-                    d.class.search("odd") != -1 ? y += .25 * lanesInterval : 0;
+                    d.class.search("misassembled") != -1 ? y += misassembledOffsetY * lanesInterval : 0;
+                    y += offsetsY[d.order % 3] * lanesInterval;
 
                     return 'translate(' + x + ', ' + y + ')';                })
                 .attr('pointer-events', 'none');
@@ -943,10 +931,10 @@ THE SOFTWARE.
                return x_main(Math.max(minExtent, d.corr_start)) + 5;
             })
             .attr('y', function(d) {
-              var y = y_main(d.lane) + .25 * lanesInterval;
-              d.class.search("misassembled") != -1 ? y += .25 * lanesInterval : 0;
-              d.class.search("odd") != -1 ? y += .25 * lanesInterval : 0;
-              return y + 20;
+                var y = y_main(d.lane) + .25 * lanesInterval;
+                d.class.search("misassembled") != -1 ? y += misassembledOffsetY * lanesInterval : 0;
+                y += offsetsY[d.order % 3] * lanesInterval;
+                return y + 20;
             })
             .text(visibleText);
 
@@ -1054,6 +1042,7 @@ THE SOFTWARE.
                 break
             }
         }
+        itemNonRects.select('.glow').remove();
         display();
     }
 
@@ -1346,12 +1335,12 @@ THE SOFTWARE.
             d.misassembled = d.misassemblies ? "True" : "False";
             c = (d.misassembled == "False" ? "" : "misassembled");
             c += (d.similar == "True" ? " similar" : "");
-            c += ((!d.supp && !d.one_part && !isSmall) ? " light_color" : "");
+            c += ((!d.supp && !isSmall) ? " light_color" : "");
             if (d.supp) countSupplementary++;
-            if (d.similar != isSimilarNow && !d.supp) numItem = 0;
-            c += ((numItem - countSupplementary ) % 2 == 0 ? " odd" : "");
+            c += ((numItem - countSupplementary) % 2 == 0 ? " odd" : "");
 
             items[i].class = c;
+            items[i].order = numItem - countSupplementary;
 
             if (!paths[c]) paths[c] = '';
 

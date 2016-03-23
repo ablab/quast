@@ -760,14 +760,12 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
     assemblies_data += 'var assemblies_len = {};\n'
     assemblies_data += 'var assemblies_contigs = {};\n'
     assemblies_data += 'var assemblies_misassemblies = {};\n'
-    min_n50 = None
     for contigs_fpath in contigs_fpaths:
         label = qutils.label_from_fpath(contigs_fpath)
         contig_stdout_fpath = contig_report_fpath_pattern % qutils.label_from_fpath_for_fname(contigs_fpath)
         report = reporting.get(contigs_fpath)
         l = report.get_field(reporting.Fields.TOTALLEN)
         contigs = report.get_field(reporting.Fields.CONTIGS)
-        min_n50 = min(min_n50, report.get_field(reporting.Fields.N50)) if min_n50 else report.get_field(reporting.Fields.N50)
         ext_misassemblies = report.get_field(reporting.Fields.MIS_ALL_EXTENSIVE)
         assemblies_data += 'assemblies_links["{label}"] = "{contig_stdout_fpath}";\n'.format(**locals())
         assemblies_data += 'assemblies_len["{label}"] = {l};\n'.format(**locals())
@@ -837,8 +835,6 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
         data_str += 'contig_data["{chr}"] = [ '.format(**locals())
         prev_len = 0
         ms_types = set()
-        min_len_for_splitting = max(1000, min_n50 / 2)
-        len_misassembled_end = min(10000, int(0.1 * min_len_for_splitting))
         for num_contig, ref_contig in enumerate(ref_contigs):
             if num_contig > 0:
                 prev_len += chr_lengths[num_contig]
@@ -875,15 +871,12 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
 
                     corr_start = prev_len + alignment.unshifted_start
                     corr_end = prev_len + alignment.unshifted_end
-                    one_part = True
-                    if corr_end - corr_start > min_len_for_splitting and misassembled_ends:
-                        one_part = ''
-                        misassembled_ends = ';'.join(misassembled_ends)
+                    if misassembled_ends: misassembled_ends = ';'.join(misassembled_ends)
                     else: misassembled_ends = ''
                     data_str += '{{name: "{alignment.name}", corr_start: {corr_start}, corr_end: {corr_end},' \
                                 'start: {alignment.unshifted_start}, end: {alignment.unshifted_end}, assembly: "{alignment.label}", ' \
                                 'similar: "{alignment.similar}", misassemblies: "{alignment.misassemblies}", ' \
-                                'one_part: "{one_part}", mis_ends: "{misassembled_ends}"'.format(**locals())
+                                'mis_ends: "{misassembled_ends}"'.format(**locals())
 
                     if alignment.name != 'FICTIVE':
                         if len(aligned_assemblies[chr]) < len(contigs_fpaths) and alignment.label not in aligned_assemblies[chr]:

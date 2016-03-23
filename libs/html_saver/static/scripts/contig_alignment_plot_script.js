@@ -1223,6 +1223,7 @@ THE SOFTWARE.
     }
 
     function formatValue(d, tickValue) {
+          d = Math.round(d);
           if (tickValue == 'Gbp')
               return d3.round(d / 1000000000, 2);
           else if (tickValue == 'Mbp')
@@ -1267,30 +1268,12 @@ THE SOFTWARE.
 
     function mainAxisUpdate() {
         var domain = x_main.domain()[1] - x_main.domain()[0];
+        var start = x_main.domain()[0];
         mainTickValue = getTickValue(domain);
 
-        var mainTicksValues = [];
-        if (x_main.domain()[0] != x_main.ticks(5)[0])
-            mainTicksValues = [x_main.domain()[0]];
-        mainTicksValues = mainTicksValues.concat(x_main.ticks(5));
-        if (x_main.domain()[1] != mainTicksValues[mainTicksValues.length - 1])
-            mainTicksValues.push(x_main.domain()[1]);
-
-        xMainAxis.tickValues(mainTicksValues)
-                .tickFormat(function(d) {
-                              return formatValue(d, mainTickValue);
+        xMainAxis.tickFormat(function(d) {
+                              return formatValue(start + d * domain, mainTickValue);
                             });
-
-        var min_ticks_delta = Math.max(getTextSize(formatValue(mainTicksValues[0], mainTickValue).toString(), numberSize),
-                getTextSize(formatValue(mainTicksValues[1], mainTickValue).toString(), numberSize));
-
-        if (x_main(mainTicksValues[1]) - x_main(mainTicksValues[0]) < min_ticks_delta) {
-            mainTicksValues.splice(1, 1)
-        }
-
-        if (x_main(mainTicksValues.slice(-1)[0]) - x_main(mainTicksValues.slice(-2)[0]) < min_ticks_delta) {
-            mainTicksValues.splice(-2, 1)
-        }
 
         main.select('.main.axis')
                 .call(xMainAxis);

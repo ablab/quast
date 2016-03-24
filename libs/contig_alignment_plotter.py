@@ -705,7 +705,7 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
         for fpath in contigs_fpaths:
             f = Alignment('FICTIVE', start=0, end=0, unshifted_start=0, unshifted_end=0, is_rc=False,
                           start_in_contig=0, end_in_contig=0, position_in_ref=0, ref_name=None, idy=None)
-            f.label = qutils.label_from_fpath(fpath)
+            f.label = qutils.name_from_fpath(fpath)
             f.unshifted_start = 0
             f.unshifted_end = 0
             chr_init.append(f)
@@ -769,7 +769,7 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
     assemblies_data += 'var assemblies_contigs = {};\n'
     assemblies_data += 'var assemblies_misassemblies = {};\n'
     for contigs_fpath in contigs_fpaths:
-        label = qutils.label_from_fpath(contigs_fpath)
+        label = qutils.name_from_fpath(contigs_fpath)
         contig_stdout_fpath = contig_report_fpath_pattern % qutils.label_from_fpath_for_fname(contigs_fpath)
         report = reporting.get(contigs_fpath)
         l = report.get_field(reporting.Fields.TOTALLEN)

@@ -1027,7 +1027,7 @@ THE SOFTWARE.
                 .attr('class', 'refs')
                 .attr('transform', function (d) {
                     var x = x_main(Math.max(minExtent, d.corr_start));
-                    var y = d.y2 + 10;
+                    var y = d.y2 - 3;
 
                     return 'translate(' + x + ', ' + y + ')';
                 })
@@ -1038,7 +1038,7 @@ THE SOFTWARE.
                 .text(visibleText)
                 .attr('text-anchor', 'start')
                 .attr('class', 'itemLabel')
-                .attr('transform', 'translate(10, 0)');
+                .attr('transform', 'translate(5, 0)');
     }
 
     function keyPress (cmd, deltaCoeff) {

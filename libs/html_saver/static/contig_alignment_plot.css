@@ -380,11 +380,40 @@ path {
 }
 
 .annotation {
-    fill: #6785E4;
+    fill: #707070;
 }
 
 .annotation.odd {
-    fill: #3F62D5;
+    fill: #4D4D4D;
+}
+
+.feature_tip {
+  position: absolute;
+  text-align: center;
+  width: 100px;
+  padding: 2px;
+  font: 11px sans-serif;
+  background: lightsteelblue;
+  border: 0px;
+  border-radius: 8px;
+  content: "\25BC";
+}
+
+.trackBtn {
+    rx: 20;
+    ry: 20;
+    stroke: black;
+    stroke-width: 1;
+    fill: white;
+}
+
+.trackBtnText {
+    font-size: 11px;
+}
+
+.trackBtn:hover {
+    stroke: red;
+    cursor: pointer;
 }
 
 .feature_tip {

@@ -131,8 +131,8 @@ THE SOFTWARE.
             },
             mainLanesHeight = 50,
             miniLanesHeight = 18,
-            annotationLanesHeight = 30,
-            featureHeight = 20;
+            annotationLanesHeight = 45,
+            featureHeight = 30;
             offsetsY = [0, .3, .15],
             misassembledOffsetY = .25,
             lanesInterval = 20,
@@ -167,6 +167,7 @@ THE SOFTWARE.
     });
     var y_main = d3.scale.linear().domain([ext[0], ext[1] + 1]).range([0, mainHeight]);
     var y_mini = d3.scale.linear().domain([ext[0], ext[1] + 1]).range([0, miniHeight]);
+    var zoomBtn, zoomTxt, hideBtn, hideTxt;
 
     var letterSize = getSize('w') - 1;
     var numberSize = getSize('0') - 1;
@@ -200,18 +201,28 @@ THE SOFTWARE.
             .attr('height', mainHeight + mainScale)
             .attr('class', 'main');
 
-    var mini = chart.append('g')
-            .attr('transform', 'translate(' + margin.left + ',' + (mainHeight + mainScale + coverageHeight + 50) + ')')
-            .attr('width', chartWidth)
-            .attr('height', miniHeight + miniScale)
-            .attr('class', 'mini');
-
     //annotations track
-    var annotationsOffsetY = mainHeight + mainScale + coverageHeight + miniHeight + miniScale + 50;
-    var annotations = chart.append('g')
+    var featuresZoom = false, featuresHidden = false;
+    var annotationsOffsetY = mainHeight + mainScale + coverageHeight + 50;
+
+    var annotationsMain = chart.append('g')
             .attr('transform', 'translate(' + margin.left + ',' + annotationsOffsetY + ')')
             .attr('width', chartWidth)
             .attr('height', annotationLanesHeight)
+            .attr('class', 'main')
+            .attr('display', 'none')
+            .attr('id', 'annotationsMain');
+    var annotationsMini = chart.append('g')
+            .attr('transform', 'translate(' + margin.left + ',' + annotationsOffsetY + ')')
+            .attr('width', chartWidth)
+            .attr('height', annotationLanesHeight)
+            .attr('class', 'mini')
+            .attr('id', 'annotationsMini');
+
+    var mini = chart.append('g')
+            .attr('transform', 'translate(' + margin.left + ',' + (annotationsOffsetY + annotationsHeight+ coverageHeight + 50) + ')')
+            .attr('width', chartWidth)
+            .attr('height', miniHeight + miniScale)
             .attr('class', 'mini');
 
     // draw the lanes for the main chart
@@ -333,38 +344,13 @@ THE SOFTWARE.
 
     // draw the lanes for the annotations chart
     if (featuresData) {
-        annotations.append('g').selectAll('.laneLines')
-            .data(featuresData.lanes)
-            .enter().append('line')
-            .attr('x1', 0)
-            .attr('y1', function (d) {
-                return d3.round(y_anno(d.id)) + .5;
-            })
-            .attr('x2', chartWidth)
-            .attr('y2', function (d) {
-                return d3.round(y_anno(d.id)) + .5;
-            })
-            .attr('stroke', function (d) {
-                return d.label === '' ? 'white' : 'lightgray'
-            });
-
-        annotations.append('g').selectAll('.laneText')
-            .data(featuresData.lanes)
-            .enter().append('text')
-            .text(function (d) {
-                return d.label;
-            })
-            .attr('x', -10)
-            .attr('y', function (d) {
-                return y_anno(d.id + .5);
-            })
-            .attr('dy', '.5ex')
-            .attr('text-anchor', 'end')
-            .attr('class', 'laneText');
+        var featurePaths = getFeaturePaths(featuresData.features);
+        addFeatureTrackInfo(annotationsMini, y_anno);
+        addFeatureTrackInfo(annotationsMain, y_anno);
     }
 
     // draw the x axis
-    var xMainAxis, scaleText;
+    var xMainAxis, scaleTextMain, scaleTextFeatures;
     setupXAxis();
 
     // draw a line representing today's date
@@ -472,45 +458,7 @@ THE SOFTWARE.
     var div = d3.select('body').append('div')
                 .attr('class', 'feature_tip')
                 .style('opacity', 0);
-    if (featuresData) {
-        var annotationsItems = annotations.append('g').selectAll('miniItems')
-            .data(getFeaturePaths(featuresData.features))
-            .enter().append('rect')
-            .attr('class', function (d) {
-              return d.class;
-            })
-            .attr('transform', function (d) {
-              return 'translate(' + d.x + ', ' + d.y + ')';
-            })
-            .attr('width', function (d) {
-              return x_mini(d.end - d.start);
-            })
-            .attr('height', featureHeight)
-            .on('mouseenter', selectFeature)
-            .on('mouseleave', deselectFeature)
-            .on('click',  function(d) {
-                            div.transition()
-                            .duration(200)
-                            .style('opacity', .9);
-                            var tooltipText = d ? '<strong>' + (d.name ? d.name + ',' : '') + '</strong> <span>' +
-                                              (d.id ? ' ID=' + d.id + ',' : '') + ' coordinates: ' + d.start + '-' + d.end + '</span>' : '';
-                            if (div.html() != tooltipText)
-                                div.html(tooltipText)
-                                .style('left', (d3.event.pageX) + 'px')
-                                .style('top', (d.y + annotationsOffsetY + 145) + 'px')
-                            else removeTooltip();
-            });
-
-        annotations.append('g').selectAll('miniItems')
-                            .data(getFeaturePaths(featuresData.features))
-                            .enter().append('text')
-                            .text(function (d) { return getVisibleText(d.name ? d.name : 'ID=' + d.id, x_mini(d.end - d.start) - 5) } )
-                            .attr('class', 'itemLabel')
-                            .attr('pointer-events', 'none')
-                            .attr('transform', function (d) {
-                              return 'translate(' + (d.x + 5) + ', ' + (d.y + featureHeight / 2) + ')';
-                            });
-    }
+    if (featuresData) addFeatureTrackItems(annotationsMini, x_mini);
 
     // draw the selection area
     var delta = (x_mini.domain()[1] - x_mini.domain()[0]) / 8;
@@ -703,6 +651,8 @@ THE SOFTWARE.
     var itemLines = main.append('g')
             .attr('clip-path', 'url(#clip)');
     var itemLabels = main.append('g');
+    var featurePath = annotationsMain.append('g')
+        .attr('clip-path', 'url(#clip)');
 
     display();
 
@@ -811,8 +761,12 @@ THE SOFTWARE.
                 .attr('transform', 'scale(0.02)');
 
         chartArrows.exit().remove();
-        // update the item rects
 
+        //update features
+        if (featuresZoom && !featuresHidden) drawFeaturesMain(minExtent, maxExtent);
+        removeTooltip();
+
+        // update the item rects
         var rectItems = [];
         var nonRectItems = [];
         for (item in visItems) {
@@ -991,9 +945,11 @@ THE SOFTWARE.
         })
                 .on('mouseenter', glow)
                 .on('mouseleave', disglow);
-
+        var visTexts = visItems.filter(function (d) {
+            if (x_main(Math.max(minExtent, d.corr_end)) - x_main(Math.max(minExtent, d.corr_start)) > 20) return d;
+        });
         itemNonRects.selectAll('text')
-            .data(rectItems, function (d) {
+            .data(visTexts, function (d) {
                 return d.id;
             })
             .attr('class', 'itemLabel')
@@ -1175,6 +1131,46 @@ THE SOFTWARE.
                 showMisassemblies();
             });
         }
+        addTrackButtons();
+    }
+
+    function addTrackButtons() {
+        var btnHeight = 20;
+        var zoomBtnWidth = 65;
+        var hideBtnWidth = 67;
+        var zoomContainer = chart.append('g')
+            .attr('transform', 'translate(' + (margin.left - zoomBtnWidth) + ', ' + annotationsOffsetY + ')')
+            .attr('width', zoomBtnWidth)
+            .attr('height', btnHeight);
+        zoomBtn = zoomContainer.append('rect')
+                    .attr('transform', 'translate(-8, -13)')
+                    .attr('width', zoomBtnWidth)
+                    .attr('height', btnHeight)
+                    .attr('class', 'trackBtn')
+                    .on('click', function(d) {
+                        zoomTrack('features', 'in');
+                    });
+        zoomTxt = zoomContainer.append('text')
+                    .attr('class', 'trackBtnText')
+                    .attr('pointer-events', 'none')
+                    .text('Zoom in');
+
+        var hideBtnContainer = chart.append('g')
+            .attr('transform', 'translate(' + (margin.left - zoomBtnWidth - hideBtnWidth - 5) + ', ' + annotationsOffsetY + ')')
+            .attr('width', hideBtnWidth)
+            .attr('height', btnHeight);
+        hideBtn = hideBtnContainer.append('rect')
+                    .attr('transform', 'translate(-7, -13)')
+                    .attr('width', hideBtnWidth)
+                    .attr('height', btnHeight)
+                    .attr('class', 'trackBtn')
+                    .on('click', function(d) {
+                        hideTrack('features', true);
+                    });
+        hideTxt = hideBtnContainer.append('text')
+                    .attr('class', 'trackBtnText')
+                    .attr('pointer-events', 'none')
+                    .text('Hide track');
     }
 
     function keyPressAnswer() {
@@ -1328,11 +1324,26 @@ THE SOFTWARE.
                 .call(xMainAxis);
 
         var xMiniAxis = appendXAxis(mini, x_mini, miniHeight, miniTickValue);
-        if (featuresData && featuresData.features.length > 0)
-            var xAnnotationsAxis = appendXAxis(annotations, x_mini, annotationsHeight, miniTickValue);
 
         // add scale text
-        scaleText = main.append('g')
+        scaleTextMain = addScaleText(main, mainTickValue);
+        scaleTextFeatures = addScaleText(annotationsMain, mainTickValue);
+
+        mini.append('g')
+            .attr('transform', 'translate(0,' + miniHeight + ')')
+            .attr('class', 'axis')
+            .call(xMiniAxis).append('text')
+            .text('Genome, ' + miniTickValue)
+            .attr('transform', 'translate(' + x_mini((x_mini.domain()[1] - x_mini.domain()[0]) / 2) + ',' + (miniScale / 2 + 2) + ')');
+
+        if (featuresData && featuresData.features.length > 0) {
+            addFeatureTrackX(annotationsMini, miniTickValue, x_mini);
+            addFeatureTrackX(annotationsMain, mainTickValue, x_main);
+        }
+    }
+
+    function addScaleText(track, mainTickValue) {
+        var scaleText = track.append('g')
                 .attr('class', 'scaleText');
 
         scaleText.append('text')
@@ -1348,21 +1359,17 @@ THE SOFTWARE.
                 .attr('dy', '.5ex')
                 .attr('class', 'val')
                 .text(mainTickValue);
+        return scaleText;
+    }
 
-        mini.append('g')
-            .attr('transform', 'translate(0,' + miniHeight + ')')
-            .attr('class', 'axis')
-            .call(xMiniAxis).append('text')
-            .text('Genome, ' + miniTickValue)
-            .attr('transform', 'translate(' + x_mini((x_mini.domain()[1] - x_mini.domain()[0]) / 2) + ',' + (miniScale / 2 + 2) + ')');
-
-        if (featuresData && featuresData.features.length > 0)
-          annotations.append('g')
+    function addFeatureTrackX(annotations, tickValue, scale) {
+        var xAnnotationsAxis = appendXAxis(annotations, scale, annotationsHeight, tickValue);
+        annotations.append('g')
             .attr('transform', 'translate(0,' + annotationsHeight + ')')
             .attr('class', 'axis')
             .call(xAnnotationsAxis).append('text')
-            .text('Genome, ' + miniTickValue)
-            .attr('transform', 'translate(' + x_mini((x_mini.domain()[1] - x_mini.domain()[0]) / 2) + ',' + (miniScale / 2 + 2) + ')');
+            .text(tickValue ? 'Genome, ' + tickValue : '')
+            .attr('transform', 'translate(' + scale((scale.domain()[1] - scale.domain()[0]) / 2) + ',' + (miniScale / 2 + 2) + ')');
     }
 
     function getTickValue(value) {
@@ -1407,6 +1414,7 @@ THE SOFTWARE.
             .tickFormat(function(d) {
               return formatValue(d, tickValue);
             });
+      if (!tickValue) return xAxis;
 
       lane.append('g')
               .attr('transform', 'translate(0,' + laneHeight + ')')
@@ -1431,7 +1439,11 @@ THE SOFTWARE.
 
         main.select('.main.axis')
                 .call(xMainAxis);
-        scaleText.select('.val')
+        annotationsMain.select('.axis')
+                .call(xMainAxis);
+        scaleTextMain.select('.val')
+                .text(mainTickValue);
+        scaleTextFeatures.select('.val')
                 .text(mainTickValue);
     }
 
@@ -1746,46 +1758,71 @@ THE SOFTWARE.
           if (references_id[features_data[container][i].chr] != chr) continue;
           if (!data[container])
               data[container] = [];
-          var sublane = 0;
-          while (isOverlappingUnshifted(features_data[container][i], data[container][sublane]))
-            sublane++;
-          if (!data[container][sublane])
-            data[container][sublane] = [];
-          data[container][sublane].push(features_data[container][i]);
+          data[container].push(features_data[container][i]);
         }
       }
 
       for (container in data) {
         var lane = data[container];
+        var numItems = 0;
         for (var i = 0; i < lane.length; i++) {
-            var subLane = lane[i];
-            var numItems = 0;
-            for (var j = 0; j < subLane.length; j++) {
-              var item = subLane[j];
-              item.lane = laneId;
-              item.id = itemId;
-              features.push(item);
-              itemId++;
-              numItems++;
-            };
-            if (numItems > 0){
-                lanes.push({
-                id: laneId,
-                label: i === 0 ? lane[i][0].kind : ''});
-                laneId++;
-            }
+            var item = lane[i];
+            item.lane = laneId;
+            item.id = itemId;
+            features.push(item);
+            itemId++;
+            numItems++;
+        }
+        if (numItems > 0) {
+            lanes.push({
+            id: laneId,
+            label: lane[0].kind });
+            laneId++;
         }
       }
       return {lanes: lanes, features: features}
     }
 
-    function isOverlappingUnshifted(item, lane) {
-        if (lane)
-            for (var i = 0; i < lane.length; i++)
-                if (item.start <= lane[i].end && lane[i].start <= item.end)
-                    return true;
-
-        return false;
+    function addFeatureTrackItems(annotations, scale) {
+        var annotationsItems = annotations.append('g').selectAll('miniItems')
+            .data(featurePaths)
+            .enter().append('rect')
+            .attr('class', function (d) {
+              return d.class;
+            })
+            .attr('transform', function (d) {
+              return 'translate(' + d.x + ', ' + d.y + ')';
+            })
+            .attr('width', function (d) {
+              return scale(d.end - d.start);
+            })
+            .attr('height', featureHeight)
+            .on('mouseenter', selectFeature)
+            .on('mouseleave', deselectFeature)
+            .on('click',  function(d) {
+                            div.transition()
+                            .duration(200)
+                            .style('opacity', .9);
+                            var tooltipText = d ? '<strong>' + (d.name ? d.name + ',' : '') + '</strong> <span>' +
+                                              (d.id ? ' ID=' + d.id + ',' : '') + ' coordinates: ' + d.start + '-' + d.end + '</span>' : '';
+                            if (div.html() != tooltipText)
+                                div.html(tooltipText)
+                                .style('left', (d3.event.pageX) + 'px')
+                                .style('top', (d.y + annotationsOffsetY + 145) + 'px')
+                            else removeTooltip();
+            });
+        var visFeatureTexts = featurePaths.filter(function (d) {
+                if (scale(d.end) - scale(d.start) > 10) return d;
+        });
+        annotations.append('g').selectAll('miniItems')
+                            .data(visFeatureTexts)
+                            .enter().append('text')
+                            .text(function (d) { return getVisibleText(d.name ? d.name : 'ID=' + d.id, scale(d.end) - scale(d.start)) } )
+                            .attr('class', 'itemLabel')
+                            .attr('pointer-events', 'none')
+                            .attr('transform', function (d) {
+                              return 'translate(' + (d.x + 3) + ', ' + (d.y + featureHeight / 2) + ')';
+                            });
     }
 
     function selectFeature() {
@@ -1800,10 +1837,37 @@ THE SOFTWARE.
                 .transition()
                 .style({'opacity': 1})
                 .select('rect');
+    }
 
-        div.transition()
-          .duration(200)
-          .style('opacity', 0);
+    function addFeatureTrackInfo (annotations) {
+        annotations.append('g').selectAll('.laneLines')
+            .data(featuresData.lanes)
+            .enter().append('line')
+            .attr('x1', 0)
+            .attr('y1', function (d) {
+                return d3.round(y_anno(d.id)) + .5;
+            })
+            .attr('x2', chartWidth)
+            .attr('y2', function (d) {
+                return d3.round(y_anno(d.id)) + .5;
+            })
+            .attr('stroke', function (d) {
+                return d.label === '' ? 'white' : 'lightgray'
+            });
+
+        annotations.append('g').selectAll('.laneText')
+            .data(featuresData.lanes)
+            .enter().append('text')
+            .text(function (d) {
+                return d.label;
+            })
+            .attr('x', -10)
+            .attr('y', function (d) {
+                return y_anno(d.id + .5);
+            })
+            .attr('dy', '.5ex')
+            .attr('text-anchor', 'end')
+            .attr('class', 'laneText');
     }
 
     function getFeaturePaths(features) {
@@ -1825,10 +1889,176 @@ THE SOFTWARE.
             if (d.class.search("odd") != -1)
                 y += .04 * annotationLanesHeight;
 
-            result.push({class: c, name: d.name, start: d.start, end: d.end, id: d.id_, y: y, x: x});
+            result.push({class: c, name: d.name, start: d.start, end: d.end, id: d.id_, y: y, x: x, lane: d.lane, order: i});
             curLane = d.lane;
             numItem++;
         }
-
         return result;
+    }
+
+    function drawFeaturesMain(minExtent, maxExtent) {
+        var featuresItems = featurePaths.filter(function (d) {
+                if (d.start < maxExtent && d.end > minExtent) {
+                    var drawLimit = 1;
+                    var visibleLength = x_main(Math.min(maxExtent, d.end)) - x_main(Math.max(minExtent, d.start));
+                    if (visibleLength > drawLimit)
+                        return d;
+                }
+            });
+        var featureRects = featurePath.selectAll('g')
+                .data(featuresItems, function (d) {
+                    return d.id;
+                })
+                .attr('transform', function (d) {
+                    var x = x_main(Math.max(minExtent, d.start));
+                    var y = y_anno(d.lane) + .25 * lanesInterval;
+                    y += offsetsY[d.order % 3] * lanesInterval;
+                    return 'translate(' + x + ', ' + y + ')';
+                })
+                .attr('width', function (d) {
+                    return x_main(Math.min(maxExtent, d.end)) - x_main(Math.max(minExtent, d.start));
+                });
+
+        featureRects.select('.R')
+                .attr('width', function (d) {
+                    var w = x_main(Math.min(maxExtent, d.end)) - x_main(Math.max(minExtent, d.start));
+                    return w;
+                })
+                .attr('height', function (d) {
+                    return featureHeight;
+                });
+        featureRects.exit().remove();
+        featurePath.selectAll('text')
+                .remove();
+
+        var otherFeatures = featureRects.enter().append('g')
+                .attr('class', function (d) {
+                    return d.class;
+                })
+                .attr('transform', function (d) {
+                    var x = x_main(Math.max(minExtent, d.start));
+                    var y = y_anno(d.lane) + .25 * lanesInterval;
+                    y += offsetsY[d.order % 3] * lanesInterval;
+
+                    return 'translate(' + x + ', ' + y + ')';
+                })
+                .attr('width', function (d) {
+                    return x_main(Math.min(maxExtent, d.end)) - x_main(Math.max(minExtent, d.start));
+                });
+
+        otherFeatures.append('rect')
+                .attr('class', 'R')
+                .attr('width', function (d) {
+                    var w = x_main(Math.min(maxExtent, d.end)) - x_main(Math.max(minExtent, d.start));
+                    return w;
+                })
+                .attr('height', function (d) {
+                    return featureHeight;
+                })
+                .on('mouseenter', selectFeature)
+                .on('mouseleave', deselectFeature)
+                .on('click',  function(d) {
+                                div.transition()
+                                    .duration(200)
+                                    .style('opacity', .9);
+                                var tooltipText = d ? '<strong>' + (d.name ? d.name + ',' : '') + '</strong> <span>' +
+                                                  (d.id ? ' ID=' + d.id + ',' : '') + ' coordinates: ' + d.start + '-' + d.end + '</span>' : '';
+                                if (div.html() != tooltipText)
+                                    div.html(tooltipText)
+                                    .style('left', (d3.event.pageX) + 'px')
+                                    .style('top', (d.y + annotationsOffsetY + 145) + 'px');
+                                else removeTooltip();
+                });
+        var visFeatureTexts = featuresItems.filter(function (d) {
+                if (x_main(d.end) - x_main(d.start) > 20) return d;
+        });
+        featurePath.selectAll('text')
+            .data(visFeatureTexts, function (d) {
+                return d.id;
+            })
+            .attr('class', 'itemLabel')
+            .enter().append('text')
+            .attr('x', function(d) {
+               return x_main(Math.max(minExtent, d.start)) + 2;
+            })
+            .attr('y', function(d) {
+                var y = y_anno(d.lane) + .25 * lanesInterval;
+                y += offsetsY[d.order % 3] * lanesInterval;
+                return y + 15;
+            })
+            .text(function(d) {
+                var w = x_main(Math.min(maxExtent, d.end)) - x_main(Math.max(minExtent, d.start));
+                return getVisibleText(d.name ? d.name : 'ID=' + d.id, w - 10);
+            });
+    }
+
+
+    function zoomTrack(track, zoom) {
+        removeTooltip();
+        if (track == 'features') {
+            if (zoom == 'in') {
+                featuresZoom = true;
+                annotationsMini.attr('display', 'none');
+                annotationsMain.attr('display', '');
+                var minExtent = Math.max(brush.extent()[0], x_mini.domain()[0]),
+                maxExtent = Math.min(brush.extent()[1], x_mini.domain()[1])
+                drawFeaturesMain(minExtent, maxExtent);
+                zoomBtn.on('click', function(d) {
+                    zoomTrack('features', 'out');
+                });
+                zoomTxt.text('Zoom out');
+            }
+            else {
+                featuresZoom = false;
+                annotationsMain.attr('display', 'none');
+                annotationsMini.attr('display', '');
+                zoomBtn.on('click', function(d) {
+                    zoomTrack('features', 'in');
+                });
+                zoomTxt.text('Zoom in');
+            }
+        }
+    }
+
+    function hideTrack(track, doHide) {
+        removeTooltip();
+        if (track == 'features') {
+            if (doHide) {
+                featuresHidden = true;
+                annotationsMini.attr('display', 'none');
+                annotationsMain.attr('display', 'none');
+                hideBtn.on('click', function(d) {
+                            hideTrack('features', false);
+                        })
+                        .attr('width', 108)
+                        .attr('height', 20)
+                hideTxt.text('Show annotations');
+                zoomBtn.attr('display', 'none');
+                zoomTxt.text('');
+            }
+            else {
+                featuresHidden = false;
+                zoomBtn.attr('display', '');
+                if (featuresZoom) {
+                    annotationsMain.attr('display', '');
+                    zoomBtn.on('click', function(d) {
+                        zoomTrack('features', 'out');
+                    });
+                    zoomTxt.text('Zoom out');
+                }
+                else {
+                    annotationsMini.attr('display', '');
+                    zoomBtn.on('click', function(d) {
+                        zoomTrack('features', 'in');
+                    });
+                    zoomTxt.text('Zoom in');
+                }
+                hideBtn.on('click', function(d) {
+                            hideTrack('features', true);
+                        })
+                        .attr('width', 65)
+                        .attr('height', 20)
+                hideTxt.text('Hide track');
+            }
+        }
     }

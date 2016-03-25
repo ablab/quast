@@ -797,7 +797,7 @@ def main(args):
         logger.main_info('Drawing large plots...')
         logger.main_info('This may take a while: press Ctrl-C to skip this step..')
         try:
-            if detailed_contigs_reports_dirpath and qconfig.show_snps:
+            if detailed_contigs_reports_dirpath:
                 report_for_icarus_fpath_pattern = os.path.join(detailed_contigs_reports_dirpath, qconfig.icarus_report_fname_pattern)
             else:
                 report_for_icarus_fpath_pattern = None

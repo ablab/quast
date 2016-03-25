@@ -1093,9 +1093,7 @@ THE SOFTWARE.
 
     function removeTooltip() {
         div = d3.select('body').select('.feature_tip');
-        div.transition()
-            .duration(200)
-            .style('opacity', 0);
+        div.style('opacity', 0);
         div.html('');
     }
 
@@ -1311,23 +1309,14 @@ THE SOFTWARE.
 
     function setupXAxis() {
         var mainTickValue;
-        var miniTickValue = getTickValue(x_mini.domain()[1]);
-
         xMainAxis = d3.svg.axis()
                 .scale(x_main)
                 .orient('bottom')
                 .tickSize(6, 0, 0);
-
-        main.append('g')
-                .attr('transform', 'translate(0,' + mainHeight + ')')
-                .attr('class', 'main axis')
-                .call(xMainAxis);
+        addMainAxis(main, mainHeight);
+        var miniTickValue = getTickValue(x_mini.domain()[1]);
 
         var xMiniAxis = appendXAxis(mini, x_mini, miniHeight, miniTickValue);
-
-        // add scale text
-        scaleTextMain = addScaleText(main, mainTickValue);
-        scaleTextFeatures = addScaleText(annotationsMain, mainTickValue);
 
         mini.append('g')
             .attr('transform', 'translate(0,' + miniHeight + ')')
@@ -1338,28 +1327,8 @@ THE SOFTWARE.
 
         if (featuresData && featuresData.features.length > 0) {
             addFeatureTrackX(annotationsMini, miniTickValue, x_mini);
-            addFeatureTrackX(annotationsMain, mainTickValue, x_main);
+            addMainAxis(annotationsMain, annotationsHeight);
         }
-    }
-
-    function addScaleText(track, mainTickValue) {
-        var scaleText = track.append('g')
-                .attr('class', 'scaleText');
-
-        scaleText.append('text')
-                .attr('x', -45)
-                .attr('y', mainHeight + 5)
-                .attr('dy', '.5ex')
-                .attr('text-anchor', 'end')
-                .text('Tick value: ');
-
-        scaleText.append('text')
-                .attr('x', -40)
-                .attr('y', mainHeight + 5)
-                .attr('dy', '.5ex')
-                .attr('class', 'val')
-                .text(mainTickValue);
-        return scaleText;
     }
 
     function addFeatureTrackX(annotations, tickValue, scale) {
@@ -1370,6 +1339,13 @@ THE SOFTWARE.
             .call(xAnnotationsAxis).append('text')
             .text(tickValue ? 'Genome, ' + tickValue : '')
             .attr('transform', 'translate(' + scale((scale.domain()[1] - scale.domain()[0]) / 2) + ',' + (miniScale / 2 + 2) + ')');
+    }
+
+    function addMainAxis(track, trackHeight) {
+        track.append('g')
+                .attr('transform', 'translate(0,' + trackHeight + ')')
+                .attr('class', 'main axis')
+                .call(xMainAxis);
     }
 
     function getTickValue(value) {
@@ -1436,15 +1412,15 @@ THE SOFTWARE.
         xMainAxis.tickFormat(function(d) {
                               return formatValue(start + d * domain, mainTickValue);
                             });
+        updateTrack(main);
+        updateTrack(annotationsMain);
+    }
 
-        main.select('.main.axis')
-                .call(xMainAxis);
-        annotationsMain.select('.axis')
-                .call(xMainAxis);
-        scaleTextMain.select('.val')
-                .text(mainTickValue);
-        scaleTextFeatures.select('.val')
-                .text(mainTickValue);
+    function updateTrack(track) {
+        track.select('.main.axis').call(xMainAxis);
+        var lastTick = track.select(".axis").selectAll("g")[0].pop();
+        d3.select(lastTick).select('text').text(formatValue(x_main.domain()[1], mainTickValue) + ' ' + mainTickValue)
+                  .attr('transform', 'translate(-10, 0)');
     }
 
     function getSize(text) {

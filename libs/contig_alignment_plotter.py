@@ -664,7 +664,7 @@ def parse_nucmer_contig_report(report_fpath, sorted_ref_names, cumulative_ref_le
                 idy_col = split_line.index('IDY')
             elif split_line and split_line[0] == 'CONTIG':
                 _, name, size = split_line
-                contig = Contig(name=name, size=size)
+                contig = Contig(name=name, size=int(size))
                 contigs.append(contig)
             elif split_line and len(split_line) < 5:
                 misassembled_id_to_structure[contig_id].append(line.strip())
@@ -762,6 +762,8 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
     aligned_bases_by_chr = {}
     num_misassemblies = {}
     aligned_assemblies = {}
+    assemblies_n50 = defaultdict(dict)
+    nx_marks = [reporting.Fields.N50, reporting.Fields.N75, reporting.Fields.NG50,reporting.Fields.NG75]
 
     assemblies_data = ''
     assemblies_data += 'var assemblies_links = {};\n'
@@ -779,6 +781,8 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
         assemblies_data += 'assemblies_len["{label}"] = {l};\n'.format(**locals())
         assemblies_data += 'assemblies_contigs["{label}"] = {contigs};\n'.format(**locals())
         assemblies_data += 'assemblies_misassemblies["{label}"] = {ext_misassemblies};\n'.format(**locals())
+        for nx in nx_marks:
+            assemblies_n50[label][nx] = report.get_field(nx)
 
     ref_ids = {}
     ref_contigs_dict = {}
@@ -807,6 +811,8 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
             features_data += '[ '
             for region in feature_container.region_list:
                 chr = feature_container.chr_names_dict[region.chromosome] if region.chromosome else feature_container.chr_names_dict[region.seqname]
+                if chr not in ref_ids:
+                    continue
                 ref_id = ref_ids[chr]
                 name = region.name if region.name else ''
                 features_data += '{{name: "{name}", start: {region.start}, end: {region.end}, id_: "{region.id}", ' \
@@ -972,18 +978,31 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
 
     contigs_sizes_str = 'var contig_data = {};\n'
     contigs_sizes_str += 'var CHROMOSOME;\n'
+    min_contig_size = qconfig.min_contig
+    contigs_sizes_str += 'var minContigSize = {min_contig_size};\n'.format(**locals())
     contigs_sizes_str += 'contig_data = [ '.format(**locals())
+    contigs_sizes_lines = []
     total_len = 0
     for assembly in contigs_by_assemblies:
         cum_length = 0
-        for alignment in sorted(contigs_by_assemblies[assembly], key=lambda x: x.size, reverse=True):
+        contigs = sorted(contigs_by_assemblies[assembly], key=lambda x: x.size, reverse=True)
+        for i, alignment in enumerate(contigs):
             start_contig = cum_length
-            end_contig = cum_length + int(alignment.size)
-            contigs_sizes_str += '{{name: "{alignment.name}", assembly: "{assembly}", ' \
-                                 'size: "{alignment.size}", corr_start: {start_contig}, corr_end: {end_contig} }}, '.format(**locals())
+            end_contig = cum_length + alignment.size
+            marks = []
+            for nx in nx_marks:
+                if assemblies_n50[assembly][nx] == alignment.size and \
+                        (i + 1 >= len(contigs) or contigs[i+1].size != alignment.size):
+                    marks.append(nx)
+            marks = ','.join(marks)
+            contigs_sizes_str += '{{name: "{alignment.name}", assembly: "{assembly}", size: "{alignment.size}", ' \
+                                 'marks: "{marks}", corr_start: {start_contig}, corr_end: {end_contig} }}, '.format(**locals())
+            if marks:
+                contigs_sizes_lines.append('{{assembly: "{assembly}", corr_end: {end_contig}, label: "{marks}"}}'.format(**locals()))
             cum_length = end_contig
         total_len = max(total_len, cum_length)
     contigs_sizes_str = contigs_sizes_str[:-1] + '];\n\n'
+    contigs_sizes_str += 'var contigLines = [' + ','.join(contigs_sizes_lines) + '];\n\n'
     contigs_sizes_str += 'var contigs_total_len = {total_len};\n'.format(**locals())
 
     with open(html_saver.get_real_path('_chr_templ.html'), 'r') as template:

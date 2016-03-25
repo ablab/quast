@@ -207,7 +207,7 @@ a {
 }
 
 .chart {
-    shape-rendering: crispEdges;
+    shape-rendering: optimizeSpeed;
 }
 
 .mini text {
@@ -238,6 +238,10 @@ path {
 
 .mainItem.end {
     stroke-width: 0;
+}
+
+.main_labels rect {
+    fill: #fff;
 }
 
 .mainItem .S {
@@ -362,6 +366,17 @@ path {
     stroke-width: 10;
     stroke: #FF6565;
     fill: #FF6565;
+}
+
+.miniItems.text {
+    text-shadow: 1px 0 0 #000,
+                -1px 0 0 #000,
+                 0 1px 0 #000,
+                0 -1px 0 #000,
+                 1px 1px #000,
+             -1px -1px 0 #000,
+              1px -1px 0 #000,
+              -1px 1px 0 #000;
 }
 
 .annotation {

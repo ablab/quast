@@ -138,7 +138,6 @@ THE SOFTWARE.
             lanesInterval = 20,
             miniScale = 50,
             mainScale = 50,
-            thresholdSize = 0,
             paleContigsOpacity = .25,
             width = w,
             chartWidth = w,
@@ -146,6 +145,10 @@ THE SOFTWARE.
             mainHeight = lanes.length * (mainLanesHeight + lanesInterval),
             coverageHeight = typeof coverage_data != 'undefined' ? 125 : 0;
             coverageSpace = typeof coverage_data != 'undefined' ? 50 : 0;
+
+    var contigsColors = {'N50': '#9500CB', 'N75': '#9500CB', 'NG50': '#00F5D1', 'NG75': '#00F5D1'};
+    var isContigSizePlot = !CHROMOSOME;
+
     var total_len = 0;
     if (CHROMOSOME) {
       for (var chr in chromosomes_len) {
@@ -246,7 +249,7 @@ THE SOFTWARE.
         d3.select(this)
         .on('click', collapseAssemblyInfo)
         .text(function(d) { return d.description; })
-        .call(wrap, 90);
+        .call(wrap, 90, true);
     }
 
     function collapseAssemblyInfo(d) {
@@ -255,7 +258,7 @@ THE SOFTWARE.
         .text(function(d) { return getVisibleText(d.label, 150); });
     }
 
-    function wrap(text, width) {
+    function wrap(text, width, addStdoutLink) {
       text.each(function() {
           var text = d3.select(this),
               words = text.text().split(/\n/).reverse(),
@@ -265,7 +268,7 @@ THE SOFTWARE.
               lineHeight = 1.1,
               y = text.attr('y'),
               dy = parseFloat(text.attr('dy')),
-              tspan = text.text(null).append('tspan').attr('x', -60).attr('y', y).attr('dy', dy + 'em');
+              tspan = text.text(null).append('tspan').attr('x', addStdoutLink ? -60 : 0).attr('y', y).attr('dy', dy + 'em');
           var linkAdded = false;
           while (word = words.pop()) {
             line.push(word);
@@ -274,7 +277,7 @@ THE SOFTWARE.
                 line.pop();
                 tspan.text(line.join(' '));
                 line = [word];
-                if (!linkAdded) {
+                if (!linkAdded && addStdoutLink) {
                     linkAdded = true;
                     tspan = text.append('tspan')
                             .attr('y', y)
@@ -422,16 +425,41 @@ THE SOFTWARE.
     var itemNonRects = main.append('g')
             .attr('clip-path', 'url(#clip)');
 
+    var miniPaths = getPaths(items);
     mini.append('g').selectAll('miniItems')
-            .data(getPaths(items))
+            .data(miniPaths)
             .enter().append('path')
             .attr('class', function (d) {
-                if (!d.supp) return 'miniItem ' + d.class;
-                else return 'mainItem end ' + d.class;
+              if (d.text) return '';
+              if (!d.supp) return 'miniItem ' + d.class;
+              else return 'mainItem end ' + d.class;
             })
             .attr('d', function (d) {
-                return d.path;
+              return d.path;
+            })
+            .attr('stroke-width', 10)
+            .attr('stroke', function (d) {
+              if (d.text) return addGradient(d, d.text, true);
             });
+
+    if (isContigSizePlot) {
+        var miniPathsText = miniPaths.filter(function (d) {
+                if (d.text) return d;
+        });
+        mini.append('g').selectAll('miniItems')
+            .data(miniPathsText)
+            .enter().append('text')
+            .attr('class', 'miniItems text')
+            .text(function (d) {
+                return d.text;
+            })
+            .style('fill', 'white')
+            .attr('transform', function (d) {
+                var x = Math.max(d.x + 1, d.x + x_mini(d.size) / 2 - getSize(d.text) / 2);
+                var y = d.y + 3;
+                return 'translate(' + x + ', ' + y + ')';
+            });
+    }
 
     // invisible hit area to move around the selection window
     mini.append('rect')
@@ -650,21 +678,31 @@ THE SOFTWARE.
 
     var arrows = [];
     var arrow = "M0,101.08h404.308L202.151,303.229L0,101.08z";
-    var lines = [];
-    var len = 0;
+    var separatedLines = [];
+    var currentLen = 0;
     if (CHROMOSOME) {
         var commonChrName = CHROMOSOME.length + 1;
         if (chrContigs.length > 1) {
             for (var chr in chromosomes_len) {
                 var shortName = chr.slice(commonChrName, chr.length);
-                lines.push({name: shortName, corr_start: len, corr_end: len + chromosomes_len[chr], y1: 0, y2: mainHeight, len: chromosomes_len[chr]});
-                len += chromosomes_len[chr];
+                refLines.push({name: shortName, corr_start: currentLen, corr_end: len + chromosomes_len[chr],
+                               y1: 0, y2: mainHeight, len: chromosomes_len[chr]});
+                currentLen += chromosomes_len[chr];
             }
         }
     }
+    else {
+        for (line in contigLines) {
+            for (lane in lanes)
+                if (lanes[lane].label == contigLines[line].assembly)
+                    contigLines[line].lane = lanes[lane].id;
+        }
+        separatedLines = contigLines;
+        for (i in items) addGradient(items[i], items[i].marks, false);
+    }
     var itemLines = main.append('g')
             .attr('clip-path', 'url(#clip)');
-    var refNames = main.append('g');
+    var itemLabels = main.append('g');
 
     display();
 
@@ -677,8 +715,13 @@ THE SOFTWARE.
                 , minExtent = Math.max(brush.extent()[0], x_mini.domain()[0])
                 , maxExtent = Math.min(brush.extent()[1], x_mini.domain()[1])
                 , visibleText = function (d) {
-                    if (!d.name) return;
+                    if (!d.name && !d.label) return;
                     var drawLimit = letterSize * 3;
+                    if (d.label) {
+                       visibleLength = (x_main(d.corr_end) - x_main(minExtent))  + (x_main(maxExtent) - x_main(d.corr_end));
+                       if (visibleLength > drawLimit)
+                           return getVisibleText(d.label, visibleLength);
+                    }
                     var visibleLength = x_main(Math.min(maxExtent, d.corr_end)) - x_main(Math.max(minExtent, d.corr_start)) - 20;
                     if (visibleLength > drawLimit)
                         return getVisibleText(d.name, visibleLength, d.len);
@@ -686,11 +729,13 @@ THE SOFTWARE.
                 visibleArrows = arrows.filter(function (d) {
                     if (d.corr_start < maxExtent && d.corr_end > minExtent) return d;
                 }),
-                visibleLines = lines.filter(function (d) {
+                visibleLines = separatedLines.filter(function (d) {
                     if (d.corr_end < maxExtent) return d;
                 }),
-                visibleRefNames = lines.filter(function (d) {
-                    if (d.corr_start < maxExtent && d.corr_end > minExtent) return d;
+                visibleLinesLabels = separatedLines.filter(function (d) {
+                    if (d.name && d.corr_start < maxExtent && d.corr_end > minExtent) return d;
+                    var textSize = getSize(d.label) / 2;
+                    if (d.label && d.corr_end - textSize > minExtent && d.corr_end + textSize < maxExtent) return d;
                 });
         visItems = items.filter(function (d) {
                 if (d.corr_start < maxExtent && d.corr_end > minExtent) {
@@ -718,26 +763,26 @@ THE SOFTWARE.
         var shift = 4.03;
 
         //lines between reference contigs
-        main.selectAll('.lines').remove();
+        main.selectAll('.main_lines').remove();
         var lineContigs = itemLines.selectAll('.g')
                 .data(visibleLines, function (d) {
                     return d.id;
                 });
 
-        var others = lineContigs.enter().append('g')
-                .attr('class', 'lines')
+        var lines = lineContigs.enter().append('g')
+                .attr('class', 'main_lines')
                 .attr('transform', function (d) {
                     var x = x_main(d.corr_end);
-                    var y = 0;
+                    var y = d.assembly ? y_main(d.lane) : 0;
 
                     return 'translate(' + x + ', ' + y + ')';
                 });
-        others.append('rect')
+        lines.append('rect')
                 .attr('width', function (d) {
                     return 1;
                 })
                 .attr('height', function (d) {
-                    return d.y2;
+                    return d.assembly ? mainLanesHeight + lanesInterval : d.y2;
                 })
                 .attr('fill', '#300000');
 
@@ -818,13 +863,16 @@ THE SOFTWARE.
                 })
                 .attr('opacity', function (d) {
                   if (!d || !d.size) return 1;
-                  return d.size > thresholdSize ? 1 : paleContigsOpacity;
+                  return d.size > minContigSize ? 1 : paleContigsOpacity;
                 });
         rects.exit().remove();
 
         var other = rects.enter().append('g')
                 .attr('class', function (d) {
-                    return 'mainItem ' + d.class;
+                    if (!d.marks) return 'mainItem ' + d.class;
+                })// Define the gradient
+                .attr('fill', function (d) {
+                    if (d.marks) return addGradient(d, d.marks, false, true);
                 })
                 .attr('transform', function (d) {
                     var x = x_main(Math.max(minExtent, d.corr_start));
@@ -863,7 +911,7 @@ THE SOFTWARE.
                 })
                 .attr('opacity', function (d) {
                   if (!d || !d.size) return 1;
-                  return d.size > thresholdSize ? 1 : paleContigsOpacity;
+                  return d.size > minContigSize ? 1 : paleContigsOpacity;
                 });
 
         var nonRects = itemNonRects.selectAll('g')
@@ -959,12 +1007,14 @@ THE SOFTWARE.
                 y += offsetsY[d.order % 3] * lanesInterval;
                 return y + 20;
             })
-            .text(visibleText);
+            .text(function(d) {
+                if (!d.size || d.size > minContigSize) return visibleText(d);
+            });
         //only for contig size plot
         mini.selectAll('path')
             .attr('opacity', function (d) {
               if (!d || !d.size) return 1;
-              return d.size > thresholdSize ? 1 : paleContigsOpacity;
+              return d.size > minContigSize ? 1 : paleContigsOpacity;
             });
 
 
@@ -1016,29 +1066,38 @@ THE SOFTWARE.
                     .append('path')
                     .attr('d', not_covered_line);
         }
-        main.selectAll('.refs').remove();
+        main.selectAll('.main_labels').remove();
 
-        var visibleRefs = refNames.selectAll('.g')
-                .data(visibleRefNames, function (d) {
-                    return d.id;
-                });
+        var visibleLabels = itemLabels.selectAll('.g')
+                            .data(visibleLinesLabels, function (d) {
+                                return d.id;
+                            });
 
-        var otherRefs = visibleRefs.enter().append('g')
-                .attr('class', 'refs')
-                .attr('transform', function (d) {
-                    var x = x_main(Math.max(minExtent, d.corr_start));
-                    var y = d.y2 - 3;
+        var labels = visibleLabels.enter().append('g')
+                        .attr('class', 'main_labels')
+                        .attr('transform', function (d) {
+                            var x = d.corr_start ? x_main(Math.max(minExtent, d.corr_start)) + 5 :
+                                                   x_main(d.corr_end) - getSize(d.label);
+                            var y = d.y2 ? d.y2 - 3 : y_main(d.lane) + 5;
 
-                    return 'translate(' + x + ', ' + y + ')';
-                })
+                            return 'translate(' + x + ', ' + y + ')';
+                        })
+                        .attr('width', function (d) {
+                            if (d.corr_start) return x_main(Math.min(maxExtent, d.corr_end)) - x_main(Math.max(minExtent, d.corr_start));
+                            return getSize(d.label);
+                        });
+        labels.append('rect')
+                .attr('class', 'main_labels')
+                .attr('height', 15)
                 .attr('width', function (d) {
-                    return x_main(Math.min(maxExtent, d.corr_end)) - x_main(Math.max(minExtent, d.corr_start));
-                });
-        otherRefs.append('text')
+                    if (d.corr_start) return x_main(Math.min(maxExtent, d.corr_end)) - x_main(Math.max(minExtent, d.corr_start));
+                    return getSize(d.label);
+                })
+                .attr('transform', 'translate(0, -12)');
+        labels.append('text')
                 .text(visibleText)
                 .attr('text-anchor', 'start')
-                .attr('class', 'itemLabel')
-                .attr('transform', 'translate(5, 0)');
+                .attr('class', 'itemLabel');
     }
 
     function keyPress (cmd, deltaCoeff) {
@@ -1104,9 +1163,11 @@ THE SOFTWARE.
 
         document.getElementById('input_coords').onkeydown=function() {
             enterCoords(this) };
-        if (document.getElementById('input_contig_threshold'))
+        if (document.getElementById('input_contig_threshold')) {
+            document.getElementById('input_contig_threshold').value = minContigSize;
             document.getElementById('input_contig_threshold').onkeydown=function() {
                 setContigSizeThreshold(this) };
+        }
 
         var checkboxes = document.getElementsByName('misassemblies_select');
         for(var i = 0; i < checkboxes.length; i++) {
@@ -1176,8 +1237,8 @@ THE SOFTWARE.
             document.getElementById('input_coords').blur();
         }
         if (key == 13) {
-            if (parseInt(textBox.value)) thresholdSize = parseInt(textBox.value);
-            else thresholdSize = 0;
+            if (parseInt(textBox.value)) minContigSize = parseInt(textBox.value);
+            else minContigSize = 0;
             display();
         }
     }
@@ -1215,6 +1276,41 @@ THE SOFTWARE.
             brush_cov.extent([begin, end]);
         }
         display();
+    }
+
+    function addGradient(d, marks, miniItem, gradientExists) {
+      var gradientId = 'gradient' + d.id + (miniItem ? 'mini' : '');
+      marks = marks.split(',');
+      if (marks.length == 1) return contigsColors[marks[0]];
+      if (gradientExists) return 'url(#' + gradientId + ')';
+      var gradient = chart.append("svg:defs")
+          .append("svg:linearGradient")
+          .attr("id", gradientId)
+          .attr("spreadMethod", "pad");
+      if (miniItem) {
+          gradient.attr("x1", d.x)
+                  .attr("y1", d.y)
+                  .attr("x2", d.x + x_mini(d.size))
+                  .attr("y2", d.y + 10)
+                  .attr("gradientUnits", "userSpaceOnUse")
+      }
+        if (marks.length == 2) {
+          gradientSteps = ["0%", "100%"];
+        }
+        if (marks.length == 3) {
+          gradientSteps = ["0%", "50%", "100%"];
+        }
+        if (marks.length == 4) {
+          gradientSteps = ["0%", "33%", "67%", "100%"];
+        }
+
+      for (m in marks)
+        gradient.append("svg:stop")
+          .attr("offset", gradientSteps[m])
+          .attr("stop-color", contigsColors[marks[m]])
+          .attr("stop-opacity", 1);
+
+      return 'url(#' + gradientId + ')';
     }
 
     function setupXAxis() {
@@ -1379,6 +1475,15 @@ THE SOFTWARE.
             c += ((!d.supp && !isSmall) ? " light_color" : "");
             if (d.supp) countSupplementary++;
             c += ((numItem - countSupplementary) % 2 == 0 ? " odd" : "");
+            var text = '';
+
+            if (d.marks) {  // NX for contig size plot
+              var marks = d.marks;
+              text = marks;
+              marks = marks.split(',');
+              for (m in marks)
+                c += " " + marks[m].toLowerCase();
+            }
 
             items[i].class = c;
             items[i].order = numItem - countSupplementary;
@@ -1405,7 +1510,7 @@ THE SOFTWARE.
             curLane = d.lane;
             numItem++;
             result.push({class: d.class, path: path, misassemblies: misassemblies[d.class], supp: d.supp,
-                x: startX, y: startY, size: d.size});
+                x: startX, y: startY, size: d.size, text: text});
         }
         return result;
     }
@@ -1447,7 +1552,7 @@ THE SOFTWARE.
             var t_plus_len = fullText + ' (' + lenChromosome + ' bp)';
             if (getSize(t_plus_len) <= l) return t_plus_len;
         }
-        return (t.length <= 3 ? '' : t + (t.length >= fullText.length ? '' : '...'));
+        return (t.length < fullText.length && t.length <= 3 ? '' : t + (t.length >= fullText.length ? '' : '...'));
     }
 
 

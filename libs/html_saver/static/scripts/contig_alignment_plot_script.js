@@ -203,21 +203,25 @@ THE SOFTWARE.
 
     //annotations track
     var featuresZoom = false, featuresHidden = false;
+    if (!featuresData || featuresData.features.length == 0)
+      featuresHidden = true;
     var annotationsOffsetY = mainHeight + mainScale + coverageHeight + 50;
 
-    var annotationsMain = chart.append('g')
+    if (!featuresHidden) {
+      var annotationsMain = chart.append('g')
             .attr('transform', 'translate(' + margin.left + ',' + annotationsOffsetY + ')')
             .attr('width', chartWidth)
             .attr('height', annotationLanesHeight)
             .attr('class', 'main')
             .attr('display', 'none')
             .attr('id', 'annotationsMain');
-    var annotationsMini = chart.append('g')
+      var annotationsMini = chart.append('g')
             .attr('transform', 'translate(' + margin.left + ',' + annotationsOffsetY + ')')
             .attr('width', chartWidth)
             .attr('height', annotationLanesHeight)
             .attr('class', 'mini')
             .attr('id', 'annotationsMini');
+    }
 
     var mini = chart.append('g')
             .attr('transform', 'translate(' + margin.left + ',' + (annotationsOffsetY + annotationsHeight+ coverageHeight + 50) + ')')
@@ -343,7 +347,7 @@ THE SOFTWARE.
             .attr('class', 'laneText');
 
     // draw the lanes for the annotations chart
-    if (featuresData) {
+    if (!featuresHidden) {
         var featurePaths = getFeaturePaths(featuresData.features);
         addFeatureTrackInfo(annotationsMini, y_anno);
         addFeatureTrackInfo(annotationsMain, y_anno);
@@ -651,7 +655,8 @@ THE SOFTWARE.
     var itemLines = main.append('g')
             .attr('clip-path', 'url(#clip)');
     var itemLabels = main.append('g');
-    var featurePath = annotationsMain.append('g')
+    if (!featuresHidden)
+      var featurePath = annotationsMain.append('g')
         .attr('clip-path', 'url(#clip)');
 
     display();
@@ -1129,7 +1134,7 @@ THE SOFTWARE.
                 showMisassemblies();
             });
         }
-        addTrackButtons();
+        if (!featuresHidden) addTrackButtons();
     }
 
     function addTrackButtons() {
@@ -1325,7 +1330,7 @@ THE SOFTWARE.
             .text('Genome, ' + miniTickValue)
             .attr('transform', 'translate(' + x_mini((x_mini.domain()[1] - x_mini.domain()[0]) / 2) + ',' + (miniScale / 2 + 2) + ')');
 
-        if (featuresData && featuresData.features.length > 0) {
+        if (!featuresHidden) {
             addFeatureTrackX(annotationsMini, miniTickValue, x_mini);
             addMainAxis(annotationsMain, annotationsHeight);
         }
@@ -1413,14 +1418,15 @@ THE SOFTWARE.
                               return formatValue(start + d * domain, mainTickValue);
                             });
         updateTrack(main);
-        updateTrack(annotationsMain);
+        if (!featuresHidden) updateTrack(annotationsMain);
     }
 
     function updateTrack(track) {
         track.select('.main.axis').call(xMainAxis);
         var lastTick = track.select(".axis").selectAll("g")[0].pop();
+        var textSize = (formatValue(x_main.domain()[1], mainTickValue).toString().length - 2) * numberSize;
         d3.select(lastTick).select('text').text(formatValue(x_main.domain()[1], mainTickValue) + ' ' + mainTickValue)
-                  .attr('transform', 'translate(-10, 0)');
+                  .attr('transform', 'translate(-' + textSize + ', 0)');
     }
 
     function getSize(text) {

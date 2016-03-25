@@ -172,6 +172,7 @@ THE SOFTWARE.
     var letterSize = getSize('w') - 1;
     var numberSize = getSize('0') - 1;
 
+    var annotationsHeight = 0;
     if (CHROMOSOME) {
       var featuresData = parseFeaturesData(CHROMOSOME);
       var annotationsHeight = annotationLanesHeight * featuresData.lanes.length;
@@ -180,7 +181,9 @@ THE SOFTWARE.
       });
       var y_anno = d3.scale.linear().domain([ext[0], ext[1] + 1]).range([0, annotationsHeight]);
     }
-    else var annotationsHeight = 0;
+
+    var spaceAfterMain = 20;
+    var spaceAfterAnnotations = 50;
     height = mainHeight + mainScale + 4 * coverageHeight + miniHeight + miniScale +
         annotationsHeight + 100 - margin.bottom - margin.top;
     var chart = d3.select('body').append('div').attr('id', 'chart')
@@ -205,7 +208,7 @@ THE SOFTWARE.
     var featuresZoom = false, featuresHidden = false;
     if (!featuresData || featuresData.features.length == 0)
       featuresHidden = true;
-    var annotationsOffsetY = mainHeight + mainScale + coverageHeight + 50;
+    var annotationsOffsetY = mainHeight + mainScale + coverageHeight + spaceAfterMain;
 
     if (!featuresHidden) {
       var annotationsMain = chart.append('g')
@@ -224,7 +227,8 @@ THE SOFTWARE.
     }
 
     var mini = chart.append('g')
-            .attr('transform', 'translate(' + margin.left + ',' + (annotationsOffsetY + annotationsHeight+ coverageHeight + 50) + ')')
+            .attr('transform', 'translate(' + margin.left + ',' + (annotationsOffsetY + annotationsHeight +
+                coverageHeight + spaceAfterAnnotations) + ')')
             .attr('width', chartWidth)
             .attr('height', miniHeight + miniScale)
             .attr('class', 'mini');
@@ -2009,6 +2013,11 @@ THE SOFTWARE.
                 featuresHidden = true;
                 annotationsMini.attr('display', 'none');
                 annotationsMain.attr('display', 'none');
+                mini.transition()
+                      .duration(200)
+                      .attr('transform', function(d) {
+                        return 'translate(' + margin.left + ',' + (annotationsOffsetY + coverageHeight + spaceAfterMain) + ')'
+                  });
                 hideBtn.on('click', function(d) {
                             hideTrack('features', false);
                         })
@@ -2021,15 +2030,25 @@ THE SOFTWARE.
             else {
                 featuresHidden = false;
                 zoomBtn.attr('display', '');
+                mini.transition()
+                      .duration(200)
+                      .attr('transform', function(d) {
+                        return 'translate(' + margin.left + ',' + (annotationsOffsetY + annotationsHeight +
+                            coverageHeight + spaceAfterAnnotations) + ')'
+                  });
                 if (featuresZoom) {
-                    annotationsMain.attr('display', '');
+                    annotationsMain.transition()
+                                  .delay(150)
+                                  .attr('display', '');
                     zoomBtn.on('click', function(d) {
                         zoomTrack('features', 'out');
                     });
                     zoomTxt.text('Zoom out');
                 }
                 else {
-                    annotationsMini.attr('display', '');
+                    annotationsMini.transition()
+                                   .delay(150)
+                                   .attr('display', '');
                     zoomBtn.on('click', function(d) {
                         zoomTrack('features', 'in');
                     });

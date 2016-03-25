@@ -380,11 +380,11 @@ path {
 }
 
 .annotation {
-    fill: #707070;
+    fill: #8e8e8e;
 }
 
 .annotation.odd {
-    fill: #4D4D4D;
+    fill: #bbbbbb;
 }
 
 .feature_tip {

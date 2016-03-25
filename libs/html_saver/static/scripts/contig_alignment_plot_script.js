@@ -1541,16 +1541,16 @@ THE SOFTWARE.
 
     function getVisibleText(fullText, l, lenChromosome) {
         var t = '';
-        if (getSize(fullText) > l) {
+        if ((fullText.length - 1) * letterSize > l) {
             t = fullText.slice(0, fullText.length - 1);
-            while (getSize(t) > l && t.length > 3) {
+            while ((t.length - 1) * letterSize > l && t.length > 3) {
                 t = fullText.slice(0, t.length - 1);
             }
         }
         else t = fullText;
         if (lenChromosome && t.length == fullText.length) {
             var t_plus_len = fullText + ' (' + lenChromosome + ' bp)';
-            if (getSize(t_plus_len) <= l) return t_plus_len;
+            if ((t_plus_len.length - 2)* letterSize <= l) return t_plus_len;
         }
         return (t.length < fullText.length && t.length <= 3 ? '' : t + (t.length >= fullText.length ? '' : '...'));
     }

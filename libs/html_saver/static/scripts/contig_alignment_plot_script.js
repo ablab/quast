@@ -1280,7 +1280,7 @@ THE SOFTWARE.
 
     function addGradient(d, marks, miniItem, gradientExists) {
       var gradientId = 'gradient' + d.id + (miniItem ? 'mini' : '');
-      marks = marks.split(',');
+      marks = marks.split(', ');
       if (marks.length == 1) return contigsColors[marks[0]];
       if (gradientExists) return 'url(#' + gradientId + ')';
       var gradient = chart.append("svg:defs")
@@ -1480,7 +1480,7 @@ THE SOFTWARE.
             if (d.marks) {  // NX for contig size plot
               var marks = d.marks;
               text = marks;
-              marks = marks.split(',');
+              marks = marks.split(', ');
               for (m in marks)
                 c += " " + marks[m].toLowerCase();
             }

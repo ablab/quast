@@ -994,7 +994,7 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
                 if assemblies_n50[assembly][nx] == alignment.size and \
                         (i + 1 >= len(contigs) or contigs[i+1].size != alignment.size):
                     marks.append(nx)
-            marks = ','.join(marks)
+            marks = ', '.join(marks)
             contigs_sizes_str += '{{name: "{alignment.name}", assembly: "{assembly}", size: "{alignment.size}", ' \
                                  'marks: "{marks}", corr_start: {start_contig}, corr_end: {end_contig} }}, '.format(**locals())
             if marks:

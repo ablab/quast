@@ -810,8 +810,10 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
                 continue
             features_data += '[ '
             for region in feature_container.region_list:
-                chr = feature_container.chr_names_dict[region.chromosome] if region.chromosome else feature_container.chr_names_dict[region.seqname]
-                if chr not in ref_ids:
+                chr = region.chromosome if region.chromosome and region.chromosome in feature_container.chr_names_dict \
+                    else region.seqname
+                chr = feature_container.chr_names_dict[chr] if chr in feature_container.chr_names_dict else None
+                if not chr or chr not in ref_ids:
                     continue
                 ref_id = ref_ids[chr]
                 name = region.name if region.name else ''

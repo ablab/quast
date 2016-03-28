@@ -131,8 +131,8 @@ THE SOFTWARE.
             },
             mainLanesHeight = 50,
             miniLanesHeight = 18,
-            annotationLanesHeight = 45,
-            featureHeight = 30;
+            annotationLanesHeight = 40,
+            featureHeight = 20;
             offsetsY = [0, .3, .15],
             misassembledOffsetY = .25,
             lanesInterval = 20,
@@ -222,7 +222,7 @@ THE SOFTWARE.
             .attr('transform', 'translate(' + margin.left + ',' + annotationsOffsetY + ')')
             .attr('width', chartWidth)
             .attr('height', annotationLanesHeight)
-            .attr('class', 'mini')
+            .attr('class', 'main')
             .attr('id', 'annotationsMini');
     }
 
@@ -299,6 +299,7 @@ THE SOFTWARE.
                 if (!linkAdded && addStdoutLink) {
                     linkAdded = true;
                     tspan = text.append('tspan')
+                            .attr('x', -10)
                             .attr('y', y)
                             .attr('dy', lineNumber * lineHeight + dy + 'em')
                             .attr('text-decoration', 'underline')
@@ -466,7 +467,7 @@ THE SOFTWARE.
     var div = d3.select('body').append('div')
                 .attr('class', 'feature_tip')
                 .style('opacity', 0);
-    if (featuresData) addFeatureTrackItems(annotationsMini, x_mini);
+    if (!featuresHidden) addFeatureTrackItems(annotationsMini, x_mini);
 
     // draw the selection area
     var delta = (x_mini.domain()[1] - x_mini.domain()[0]) / 8;
@@ -1071,7 +1072,8 @@ THE SOFTWARE.
         if (deltaCoeff) delta *= deltaCoeff;
         switch (cmd) {
             case 'zoom_in':
-                brush.extent([ext[0] + delta, ext[1] - delta]);
+                if (ext[1] - ext[0] > deltaCoeff * 2)
+                    brush.extent([ext[0] + delta, ext[1] - delta]);
                 break;
             case 'zoom_out':
                 brush.extent([ext[0] - delta, ext[1] + delta]);
@@ -1189,7 +1191,7 @@ THE SOFTWARE.
         var ext = brush.extent();
         if (charStr == '-' || charStr == '_') // -
             keyPress('zoom_out', deltaCoeff);
-        else if ((charStr == '+' || charStr == '=') && ext[1] - ext[0] > deltaCoeff * 2) // +
+        else if (charStr == '+' || charStr == '=') // +
             keyPress('zoom_in', deltaCoeff);
     }
 
@@ -1786,19 +1788,21 @@ THE SOFTWARE.
             .on('mouseenter', selectFeature)
             .on('mouseleave', deselectFeature)
             .on('click',  function(d) {
-                            div.transition()
-                            .duration(200)
-                            .style('opacity', .9);
                             var tooltipText = d ? '<strong>' + (d.name ? d.name + ',' : '') + '</strong> <span>' +
                                               (d.id ? ' ID=' + d.id + ',' : '') + ' coordinates: ' + d.start + '-' + d.end + '</span>' : '';
-                            if (div.html() != tooltipText)
+
+                            if (div.html() != tooltipText) {
+                                div.transition()
+                                    .duration(200)
+                                    .style('opacity', .9);
                                 div.html(tooltipText)
-                                .style('left', (d3.event.pageX) + 'px')
-                                .style('top', (d.y + annotationsOffsetY + 145) + 'px')
+                                    .style('left', (d3.event.pageX) + 'px')
+                                    .style('top', (d.y + annotationsOffsetY + 145) + 'px');
+                            }
                             else removeTooltip();
             });
         var visFeatureTexts = featurePaths.filter(function (d) {
-                if (scale(d.end) - scale(d.start) > 10) return d;
+                if (scale(d.end) - scale(d.start) > 45) return d;
         });
         annotations.append('g').selectAll('miniItems')
                             .data(visFeatureTexts)
@@ -1807,7 +1811,7 @@ THE SOFTWARE.
                             .attr('class', 'itemLabel')
                             .attr('pointer-events', 'none')
                             .attr('transform', function (d) {
-                              return 'translate(' + (d.x + 3) + ', ' + (d.y + featureHeight / 2) + ')';
+                              return 'translate(' + (d.x + 3) + ', ' + (d.y + featureHeight / 2 + 3) + ')';
                             });
     }
 
@@ -1944,19 +1948,20 @@ THE SOFTWARE.
                 .on('mouseenter', selectFeature)
                 .on('mouseleave', deselectFeature)
                 .on('click',  function(d) {
-                                div.transition()
-                                    .duration(200)
-                                    .style('opacity', .9);
                                 var tooltipText = d ? '<strong>' + (d.name ? d.name + ',' : '') + '</strong> <span>' +
                                                   (d.id ? ' ID=' + d.id + ',' : '') + ' coordinates: ' + d.start + '-' + d.end + '</span>' : '';
-                                if (div.html() != tooltipText)
+                                if (div.html() != tooltipText) {
+                                    div.transition()
+                                        .duration(200)
+                                        .style('opacity', .9);
                                     div.html(tooltipText)
-                                    .style('left', (d3.event.pageX) + 'px')
-                                    .style('top', (d.y + annotationsOffsetY + 145) + 'px');
+                                        .style('left', (d3.event.pageX) + 'px')
+                                        .style('top', (d.y + annotationsOffsetY + 145) + 'px');
+                                }
                                 else removeTooltip();
                 });
         var visFeatureTexts = featuresItems.filter(function (d) {
-                if (x_main(d.end) - x_main(d.start) > 20) return d;
+            if (x_main(Math.min(maxExtent, d.end)) - x_main(Math.max(minExtent, d.start)) > 45) return d;
         });
         featurePath.selectAll('text')
             .data(visFeatureTexts, function (d) {
@@ -1970,7 +1975,7 @@ THE SOFTWARE.
             .attr('y', function(d) {
                 var y = y_anno(d.lane) + .25 * lanesInterval;
                 y += offsetsY[d.order % 3] * lanesInterval;
-                return y + 15;
+                return y + featureHeight / 2 + 3;
             })
             .text(function(d) {
                 var w = x_main(Math.min(maxExtent, d.end)) - x_main(Math.max(minExtent, d.start));

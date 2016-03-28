@@ -3,12 +3,43 @@
   <style type="text/css" rel="stylesheet">
 	<!--- css: ---->
   </style>
+  <script type="text/javascript">
+	  <!--- scripts: ---->
+  </script>
 </head>
 <body>
-    <div class="block title">
-         CONTIG ALIGNMENT BROWSER: MAIN MENU
-	    <!--- assemblies: ---->
+    <div class="top-panel">
+		<table class="layout-table">
+			<tr>
+			<td class='layout-table-td layout-table-fst-td'>
+				<div style="width: 100%;">
+					<h1 style='letter-spacing: .05em; margin-right: -.10em;'>
+						Icarus
+					</h1>
+				</div>
+				<div style='margin-top: -7px; width: 100%;'>
+                    <p><b>Interactive Contig Assessment vieweR</b>
+                        by <a href="http://bioinf.spbau.ru/en" class='dark_bg_link'>Center of Algoritmic Biotechnology</a>
+                    </p>
+                </div>
+			</td>
+			</tr>
+		</table>
     </div>
+	<div class="content">
+	<h2 style='letter-spacing: .05em; margin-right: -.10em;'>
+		General
+	</h2>
+	<div class="subtitle">
+		<!--- assemblies: ---->
+	</div>
+	<div>
+		<!--- links: ---->
+	</div>
+	<br><br><hr>
+	<h2 style='letter-spacing: .05em; margin-right: -.10em;'>
+		Contig alignment browsers
+	</h2>
 	<table class="summary_table">
 		<thead>
 			<th>
@@ -32,5 +63,11 @@
 	    <!--- references: ---->
 		</tbody>
 	</table>
+	</div>
+<script>
+	$(document).ready(function(){
+		$('[data-toggle="tooltip"]').tooltip({delay: {show: 200, hide: 100}});
+	});
+</script>
 </body>
 </html>

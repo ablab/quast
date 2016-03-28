@@ -18,7 +18,6 @@ body {
     border-collapse: collapse;
     font-size: 16px;
     color: black;
-    margin-left: auto;
     margin-right: auto;
 }
 
@@ -28,28 +27,20 @@ body {
     text-align: left;
 }
 
-.summary_table th {
-    border-bottom: 1px solid #ddd;
-}
-
 .block {
-    font-family: sans-serif;
     color: white;
-    background: darkcyan;
-    margin: 5px;
+    background: #444;
     padding: 5px;
-    border: 5px rgb(200, 200, 200) solid;
+    margin-top: 5px;
     overflow: hidden;
 }
 
 .menu_block {
-    font-family: arial;
     font-size: 16px;
     color: white;
-    background: darkcyan;
-    margin: 5px;
+    background: #444;
     padding: 5px;
-    border: 2px rgb(200, 200, 200) solid;
+    margin-top: 5px;
     overflow: hidden;
 }
 
@@ -92,11 +83,6 @@ body {
     display: none;
 }
 
-p {
-    font-size: 10px;
-    text-align: left;
-}
-
 span {
     font-size: 10px;
     text-align: left;
@@ -109,7 +95,8 @@ span {
 }
 
 .subtitle {
-    font-size: 18px;
+    padding-bottom: 10px;
+    font-size: 14px;
 }
 
 a {

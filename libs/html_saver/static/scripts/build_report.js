@@ -151,6 +151,7 @@ function buildReport() {
         }
     }
     if (noReference) extendAll();
+    appendIcarusLinks();
     return 0;
 }
 

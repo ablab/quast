@@ -53,11 +53,31 @@
 </head>
 
 <body>
+<div class="top-panel">
+    <table class="layout-table">
+        <tr>
+        <td class='layout-table-td layout-table-fst-td'>
+            <div style="width: 100%;">
+                <h1 style='letter-spacing: .05em; margin-right: -.10em;'>
+                    QUAST
+                </h1>
+            </div>
+            <div style='margin-top: -7px; width: 100%;'>
+                <p><b>QUality ASsesment Tool for Genome Assemblies</b>
+                    by <a href="http://bioinf.spbau.ru/en" class='dark_bg_link'>Center of Algoritmic Biotechnology</a>
+                </p>
+            </div>
+        </td>
+        </tr>
+    </table>
+</div>
 <div class="content">
     <div id='header'>
         <h1 style='font-size: 1.5em;'><span class='smallcapitals' id='quast_name'>QUAST</span>
             <span id='report_name'>report</span></h1>
         <p id='report_date'></p>
+
+        <p id='icarus'></p>
         <p id='mincontig'>Loading...</p>
         <p id='per_ref_msg'></p>
         <p id='krona'></p>
@@ -213,6 +233,9 @@
             </div>
             <div id='gc-json'>
                 {{ gcInfos }}
+            </div>
+            <div id='icarus-json'>
+                {{ icarus }}
             </div>
         </div>
     </div>

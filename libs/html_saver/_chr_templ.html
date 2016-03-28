@@ -32,14 +32,36 @@ THE SOFTWARE.
 </style>
 </head>
 <body>
+<div class="top-panel">
+	<table class="layout-table">
+		<tr>
+		<td class='layout-table-td layout-table-fst-td'>
+			<div style="width: 100%; text-align: center;">
+				<h2 style='letter-spacing: .05em; margin-right: -.10em;'>
+					<!--- title: ---->
+				</h2>
+			</div>
+		</td>
+		</tr>
+	</table>
+</div>
 <div class="menu_block" align="center">
-	move <button id="left_shift"><<</button><button id="left"><</button>
-	<button id="right">></button><button id="right_shift">>></button>&nbsp&nbsp&nbsp&nbsp&nbsp
-	zoom in <button id="zoom_in">2x</button><button id="zoom_in_5">5x</button>&nbsp&nbsp&nbsp&nbsp&nbsp
-	zoom out <button id="zoom_out">2x</button><button id="zoom_out_5">5x</button>
-	&nbsp&nbsp&nbsp&nbsp&nbspCoordinates: <input class="textBox" id="input_coords" type="text" maxlength="30" />
+	move <button id="left_shift" class="btn btn-inverse"><<</button>
+	<button id="left" class="btn btn-inverse"><</button>
+	<button id="right" class="btn btn-inverse">></button>
+	<button id="right_shift" class="btn btn-inverse">>></button>
+	&nbsp&nbsp&nbsp&nbsp&nbsp
+	zoom in <button id="zoom_in" class="btn btn-inverse">2x</button>
+	<button id="zoom_in_5" class="btn btn-inverse">5x</button>
+	&nbsp&nbsp&nbsp&nbsp&nbsp
+	zoom out <button id="zoom_out" class="btn btn-inverse">2x</button>
+	<button id="zoom_out_5" class="btn btn-inverse">5x</button>
+	&nbsp&nbsp&nbsp&nbsp&nbsp
+	Coordinates: <input class="textBox" id="input_coords" type="text" maxlength="30" />
 	<!--- Contig size threshold: ---->
 </div>
+<button id="zoomBtn" class="btn btn-inverse" style="display: none;position:absolute;">Zoom in</button>
+<button id="hideBtn" class="btn btn-inverse" style="display: none;position:absolute;">Hide track</button>
 <!--- misassemblies selector: ---->
 <script type="text/javascript">
 	<!--- data: ---->

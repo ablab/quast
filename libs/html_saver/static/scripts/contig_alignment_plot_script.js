@@ -1144,42 +1144,24 @@ THE SOFTWARE.
     }
 
     function addTrackButtons() {
-        var btnHeight = 20;
-        var zoomBtnWidth = 65;
-        var hideBtnWidth = 67;
-        var zoomContainer = chart.append('g')
-            .attr('transform', 'translate(' + (margin.left - zoomBtnWidth) + ', ' + annotationsOffsetY + ')')
-            .attr('width', zoomBtnWidth)
-            .attr('height', btnHeight);
-        zoomBtn = zoomContainer.append('rect')
-                    .attr('transform', 'translate(-8, -13)')
-                    .attr('width', zoomBtnWidth)
-                    .attr('height', btnHeight)
-                    .attr('class', 'trackBtn')
-                    .on('click', function(d) {
-                        zoomTrack('features', 'in');
-                    });
-        zoomTxt = zoomContainer.append('text')
-                    .attr('class', 'trackBtnText')
-                    .attr('pointer-events', 'none')
-                    .text('Zoom in');
+        var btnHeight = 30;
+        var menuOffsetY = 125;
+        var hideBtnExpandWidth = 130;
+        var hideBtn = document.getElementById('hideBtn');
+        hideBtn.style.display = "";
+        hideBtn.style.left = margin.left - hideBtnExpandWidth;
+        hideBtn.style.top = annotationsOffsetY + margin.top + menuOffsetY;
+        hideBtn.onclick = function() {
+            hideTrack('features', true);
+        };
 
-        var hideBtnContainer = chart.append('g')
-            .attr('transform', 'translate(' + (margin.left - zoomBtnWidth - hideBtnWidth - 5) + ', ' + annotationsOffsetY + ')')
-            .attr('width', hideBtnWidth)
-            .attr('height', btnHeight);
-        hideBtn = hideBtnContainer.append('rect')
-                    .attr('transform', 'translate(-7, -13)')
-                    .attr('width', hideBtnWidth)
-                    .attr('height', btnHeight)
-                    .attr('class', 'trackBtn')
-                    .on('click', function(d) {
-                        hideTrack('features', true);
-                    });
-        hideTxt = hideBtnContainer.append('text')
-                    .attr('class', 'trackBtnText')
-                    .attr('pointer-events', 'none')
-                    .text('Hide track');
+        var zoomBtn = document.getElementById('zoomBtn');
+        zoomBtn.style.display = "";
+        zoomBtn.style.left = margin.left - hideBtnExpandWidth;
+        zoomBtn.style.top = annotationsOffsetY + margin.top + menuOffsetY + btnHeight + 5;
+        zoomBtn.onclick = function() {
+            zoomTrack('features', 'in');
+        };
     }
 
     function keyPressAnswer() {
@@ -1987,6 +1969,7 @@ THE SOFTWARE.
     function zoomTrack(track, zoom) {
         removeTooltip();
         if (track == 'features') {
+            var zoomBtn = document.getElementById('zoomBtn');
             if (zoom == 'in') {
                 featuresZoom = true;
                 annotationsMini.attr('display', 'none');
@@ -1994,19 +1977,19 @@ THE SOFTWARE.
                 var minExtent = Math.max(brush.extent()[0], x_mini.domain()[0]),
                 maxExtent = Math.min(brush.extent()[1], x_mini.domain()[1])
                 drawFeaturesMain(minExtent, maxExtent);
-                zoomBtn.on('click', function(d) {
+                zoomBtn.onclick = function() {
                     zoomTrack('features', 'out');
-                });
-                zoomTxt.text('Zoom out');
+                };
+                zoomBtn.innerHTML = 'Zoom out';
             }
             else {
                 featuresZoom = false;
                 annotationsMain.attr('display', 'none');
                 annotationsMini.attr('display', '');
-                zoomBtn.on('click', function(d) {
+                zoomBtn.onclick = function() {
                     zoomTrack('features', 'in');
-                });
-                zoomTxt.text('Zoom in');
+                };
+                zoomBtn.innerHTML = 'Zoom in';
             }
         }
     }
@@ -2014,6 +1997,8 @@ THE SOFTWARE.
     function hideTrack(track, doHide) {
         removeTooltip();
         if (track == 'features') {
+            var hideBtn = document.getElementById('hideBtn');
+            var zoomBtn = document.getElementById('zoomBtn');
             if (doHide) {
                 featuresHidden = true;
                 annotationsMini.attr('display', 'none');
@@ -2022,19 +2007,16 @@ THE SOFTWARE.
                       .duration(200)
                       .attr('transform', function(d) {
                         return 'translate(' + margin.left + ',' + (annotationsOffsetY + coverageHeight + spaceAfterMain) + ')'
-                  });
-                hideBtn.on('click', function(d) {
-                            hideTrack('features', false);
-                        })
-                        .attr('width', 108)
-                        .attr('height', 20)
-                hideTxt.text('Show annotations');
-                zoomBtn.attr('display', 'none');
-                zoomTxt.text('');
+                        });
+                hideBtn.onclick = function() {
+                    hideTrack('features', false);
+                };
+                hideBtn.innerHTML = 'Show annotations';
+                zoomBtn.style.display = "none";
             }
             else {
                 featuresHidden = false;
-                zoomBtn.attr('display', '');
+                zoomBtn.style.display = "";
                 mini.transition()
                       .duration(200)
                       .attr('transform', function(d) {
@@ -2045,26 +2027,22 @@ THE SOFTWARE.
                     annotationsMain.transition()
                                   .delay(150)
                                   .attr('display', '');
-                    zoomBtn.on('click', function(d) {
+                    zoomBtn.onclick = function() {
                         zoomTrack('features', 'out');
-                    });
-                    zoomTxt.text('Zoom out');
+                    };
                 }
                 else {
                     annotationsMini.transition()
                                    .delay(150)
                                    .attr('display', '');
-                    zoomBtn.on('click', function(d) {
+                    zoomBtn.onclick = function() {
                         zoomTrack('features', 'in');
-                    });
-                    zoomTxt.text('Zoom in');
+                    };
                 }
-                hideBtn.on('click', function(d) {
+                hideBtn.onclick = function() {
                             hideTrack('features', true);
-                        })
-                        .attr('width', 65)
-                        .attr('height', 20)
-                hideTxt.text('Hide track');
+                };
+                hideBtn.innerHTML = 'Hide track';
             }
         }
     }

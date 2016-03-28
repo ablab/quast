@@ -82,5 +82,6 @@ function buildReport() {
 
     if (firstPlot) $('.plots').hide();
     $('#contigs_are_ordered').html('References are ordered starting from the best average value among all assemblies.');
+    appendIcarusLinks();
     return 0;
 }

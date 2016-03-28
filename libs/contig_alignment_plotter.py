@@ -23,10 +23,7 @@ from libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 
 MAX_REF_NAME = 20
-MAX_SIZE_FOR_COMB_PLOT = 50000000  # if reference is small and has many contigs
-MIN_CONTIGS_FOR_COMB_PLOT = 10
 NAME_FOR_ONE_PLOT = 'Main plot'
-alignment_plots_dirname = 'alignment_plot'
 
 from libs import plotter  # Do not remove this line! It would lead to a warning in matplotlib.
 if not plotter.matplotlib_error:
@@ -716,14 +713,14 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
 
     summary_fname = qconfig.alignment_summary_fname
     summary_path = os.path.join(output_dirpath, summary_fname)
-    output_all_files_dir_path = os.path.join(output_dirpath, alignment_plots_dirname)
+    output_all_files_dir_path = os.path.join(output_dirpath, qconfig.alignment_plots_dirname)
     if not os.path.exists(output_all_files_dir_path):
         os.mkdir(output_all_files_dir_path)
     import contigs_analyzer
     if contigs_analyzer.ref_labels_by_chromosomes:
         contig_names_by_refs = contigs_analyzer.ref_labels_by_chromosomes
         chr_full_names = list(set([contig_names_by_refs[contig] for contig in chr_names]))
-    elif sum(chromosomes_length.values()) < MAX_SIZE_FOR_COMB_PLOT and len(chr_names) >= MIN_CONTIGS_FOR_COMB_PLOT:
+    elif sum(chromosomes_length.values()) < qconfig.MAX_SIZE_FOR_COMB_PLOT and len(chr_names) > 1:
         chr_full_names = [NAME_FOR_ONE_PLOT]
     else:
         chr_full_names = chr_names
@@ -787,6 +784,8 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
     ref_ids = {}
     ref_contigs_dict = {}
     chr_lengths_dict = {}
+    back_button = '<div style="margin-top: 10px;margin-bottom: -20px;"><a href="../alignment_summary.html">' \
+                  '<button class="btn btn-inverse">Back to main menu</button></div>'.format(**locals())
 
     ref_data = 'var references_id = {};\n'
     for i, chr in enumerate(chr_full_names):
@@ -825,6 +824,8 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
 
     for i, chr in enumerate(chr_full_names):
         short_chr = chr[:30]
+        if len(chr_full_names) == 1:
+            short_chr = qconfig.one_alignment_viewer_name
         num_misassemblies[chr] = 0
         aligned_bases_by_chr[chr] = []
         aligned_assemblies[chr] = []
@@ -964,19 +965,23 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
                             result.write('</div>')
                     elif line.find('<!--- css: ---->') != -1:
                         result.write(open(html_saver.get_real_path(os.path.join('static', 'contig_alignment_plot.css'))).read())
+                        result.write(open(html_saver.get_real_path(os.path.join('static', 'common.css'))).read())
+                        result.write(open(html_saver.get_real_path(os.path.join('static', 'bootstrap', 'bootstrap.css'))).read())
                     elif line.find('<!--- scripts: ---->') != -1:
                         result.write(open(html_saver.get_real_path(os.path.join('static', 'd3.js'))).read())
                         result.write(open(html_saver.get_real_path(os.path.join('static', 'scripts',
                                                                                 'contig_alignment_plot_script.js'))).read())
                     else:
                         result.write(line)
-                        if line.find('<body>') != -1:
+                    if line.find('<!--- title: ---->') != -1:
                             chr_size = chr_sizes[chr]
                             chr_name = chr.replace('_', ' ')
                             if len(chr_name) > 50:
                                 chr_name = chr_name[:50] + '...'
-                            title = 'CONTIG ALIGNMENT BROWSER: %s (' % chr_name + ('%s fragments, ' % num_contigs[chr] if num_contigs[chr] > 1 else '') + '%s bp)' % format_long_numbers(chr_size)
-                            result.write('<div class = "block title"><a href="../{summary_fname}"><button class="back_button">&crarr;</button></a>{title}</div>\n'.format(**locals()))
+                            num_fragments = num_contigs[chr] + ' fragments, ' if num_contigs[chr] > 1 else ''
+                            chr_size_bp = format_long_numbers(chr_size)
+                            title = 'Icarus. Contig alignment viewer: {chr_name} ({num_fragments}{chr_size_bp} bp)'.format(**locals())
+                            result.write('{title}{back_button}'.format(**locals()))
 
     contigs_sizes_str = 'var contig_data = {};\n'
     contigs_sizes_str += 'var CHROMOSOME;\n'
@@ -1018,17 +1023,25 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
                                  '<input class="textBox" id="input_contig_threshold" type="text" maxlength="10" /> bp')
                 elif line.find('<!--- css: ---->') != -1:
                     result.write(open(html_saver.get_real_path(os.path.join('static', 'contig_alignment_plot.css'))).read())
+                    result.write(open(html_saver.get_real_path(os.path.join('static', 'common.css'))).read())
+                    result.write(open(html_saver.get_real_path(os.path.join('static', 'bootstrap', 'bootstrap.css'))).read())
                 elif line.find('<!--- scripts: ---->') != -1:
                     result.write(open(html_saver.get_real_path(os.path.join('static', 'd3.js'))).read())
                     result.write(open(html_saver.get_real_path(os.path.join('static', 'scripts',
                                                                             'contig_alignment_plot_script.js'))).read())
                 else:
                     result.write(line)
-                    if line.find('<body>') != -1:
-                        title = 'CONTIG ALIGNMENT BROWSER'
-                        result.write('<div class = "block title"><a href="../{summary_fname}"><button class="back_button">&crarr;</button></a>{title}</div>\n'.format(**locals()))
+                    if line.find('<!--- title: ---->') != -1:
+                        title = 'Icarus. Contig size viewer'
+                        result.write('{title}{back_button}'.format(**locals()))
 
-    with open(html_saver.get_real_path(qconfig.alignment_summary_fname), 'r') as template:
+    icarus_links = defaultdict(list)
+    if len(chr_full_names) > 1:
+        chr_link = qconfig.alignment_summary_fname
+        #icarus_def = 'Icarus: interactive contig assessment viewer'
+        icarus_links["links"].append(chr_link)
+        icarus_links["links_names"].append('Icarus main menu')
+    with open(html_saver.get_real_path(qconfig.alignment_summary_template_fname), 'r') as template:
         with open(summary_path, 'w') as result:
             num_aligned_assemblies = [len(aligned_assemblies[chr]) for chr in chr_full_names]
             is_unaligned_asm_exists = len(set(num_aligned_assemblies)) > 1
@@ -1036,9 +1049,14 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
                 result.write(line)
                 if line.find('<!--- css: ---->') != -1:
                     result.write(open(html_saver.get_real_path(os.path.join('static', 'contig_alignment_plot.css'))).read())
+                    result.write(open(html_saver.get_real_path(os.path.join('static', 'common.css'))).read())
+                    result.write(open(html_saver.get_real_path(os.path.join('static', 'bootstrap', 'bootstrap.css'))).read())
+                if line.find('<!--- scripts: ---->') != -1:
+                    result.write(open(html_saver.get_real_path(os.path.join('static', 'jquery-1.8.2.js'))).read())
+                    result.write(open(html_saver.get_real_path(os.path.join('static', 'bootstrap', 'bootstrap.min.js'))).read())
                 if line.find('<!--- assemblies: ---->') != -1:
-                    if not is_unaligned_asm_exists:
-                        result.write('<div class="subtitle"># assemblies: %s</div>' % len(contigs_fpaths))
+                    labels = [qutils.name_from_fpath(contigs_fpath) for contigs_fpath in contigs_fpaths]
+                    result.write('<b>Assemblies: </b>' + ', '.join(labels))
                 if line.find('<!--- th_assemblies: ---->') != -1:
                     if is_unaligned_asm_exists:
                         result.write('<th># assemblies</th>')
@@ -1046,8 +1064,18 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
                     for chr in sorted(chr_full_names):
                         result.write('<tr>')
                         short_chr = chr[:30]
-                        chr_link = os.path.join(alignment_plots_dirname, '_{short_chr}.html'.format(**locals()))
+                        if len(chr_full_names) == 1:
+                            short_chr = qconfig.one_alignment_viewer_name
+                            contig_alignment_name = qconfig.contig_alignment_plot_name
+                            chr_link = os.path.join(qconfig.alignment_plots_dirname, '_{short_chr}.html'.format(**locals()))
+                            icarus_links["links"].append(chr_link)
+                            icarus_links["links_names"].append(contig_alignment_name)
+                        else:
+                            chr_link = os.path.join(qconfig.alignment_plots_dirname, '_{short_chr}.html'.format(**locals()))
                         chr_name = chr.replace('_', ' ')
+                        if len(chr_name) > 50:
+                            short_name = chr[:50]
+                            chr_name = '<a href="#" data-toggle="tooltip" title="{chr_name}">{short_name}...</a>'.format(**locals())
                         aligned_lengths = [aligned_len for aligned_len in aligned_bases_by_chr[chr] if aligned_len is not None]
                         chr_genome = sum(aligned_lengths) * 100.0 / (chr_sizes[chr] * len(contigs_fpaths))
                         chr_size = chr_sizes[chr]
@@ -1059,7 +1087,16 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
                         result.write('<td>%.3f</td>' % chr_genome)
                         result.write('<td>%s</td>' % num_misassemblies[chr])
                         result.write('</tr>')
-                    result.write('<tr>')
-                    contig_size_plot_link = os.path.join(alignment_plots_dirname, qconfig.contig_size_plot_fname)
-                    result.write('<td><a href="%s">%s</a></td>' % (contig_size_plot_link, qconfig.contig_size_plot_name))
-                    result.write('</tr>')
+                if line.find('<!--- links: ---->') != -1:
+                    contig_size_name = qconfig.contig_size_plot_name
+                    contig_size_browser_fname = os.path.join(qconfig.alignment_plots_dirname, qconfig.contig_size_plot_fname)
+                    icarus_links["links"].append(contig_size_browser_fname)
+                    icarus_links["links_names"].append(contig_size_name)
+                    result.write('<span class="links_after_content">')
+                    contig_size_browser_link = '<a href="{contig_size_browser_fname}">{contig_size_name}</a>'.format(**locals())
+                    result.write(contig_size_browser_link)
+                    result.write('&nbsp&nbsp&nbsp&nbsp&nbsp')
+                    result.write('<a href="%s">QUAST report</a></span>' % html_saver.report_fname)
+                    result.write('</span>')
+
+    html_saver.save_icarus_links(output_dirpath, icarus_links)

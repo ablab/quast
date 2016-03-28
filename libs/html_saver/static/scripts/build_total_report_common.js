@@ -162,4 +162,14 @@ function buildExtendedLinkClick() {
     return '<p id="extended_link"><a class="dotted-link" id="extended_report_link" onclick="extendedClick($(this))">Extended report</a></p>';
 }
 
-
+function appendIcarusLinks() {
+    if (icarusLinks = readJson('icarus')) {
+        if (icarusLinks.links != undefined) {
+            var links = '';
+            for (var link_n = 0; link_n < icarusLinks.links.length; link_n++) {
+                links += '<a href="' + icarusLinks.links[link_n] + '">' + icarusLinks.links_names[link_n] + '</a><br>'
+            }
+            $('#icarus').html(links);
+        }
+    }
+}

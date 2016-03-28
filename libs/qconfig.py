@@ -110,9 +110,14 @@ manta_sv_fname = 'manta_sv.bed'
 
 # for Icarus
 create_contig_alignment_html = True
-alignment_summary_fname = 'alignment_summary_templ.html'
+alignment_plots_dirname = 'alignment_plot'
+alignment_summary_fname = 'alignment_summary.html'
+alignment_summary_template_fname = 'alignment_summary_templ.html'
 contig_size_plot_fname = 'contig_size_plots.html'
-contig_size_plot_name = 'CONTIG SIZES PLOT'
+contig_size_plot_name = 'Contig size browser'
+contig_alignment_plot_name = 'Contig alignment viewer'
+one_alignment_viewer_name = 'alignment_viewer'
+MAX_SIZE_FOR_COMB_PLOT = 50000000
 
 # other settings (mostly constants). Can't be changed by command-line options
 

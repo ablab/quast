@@ -325,6 +325,11 @@ def save_GC_info(results_dirpath, contigs_fpaths, list_of_GC_distributions):
         append(results_dirpath, json_fpath, 'gcInfos')
 
 def save_krona_paths(results_dirpath, krona_fpaths, labels):
-    json_fpath = json_saver.save_krona_paths(results_dirpath,krona_fpaths, labels)
+    json_fpath = json_saver.save_krona_paths(results_dirpath, krona_fpaths, labels)
     if json_fpath:
         append(results_dirpath, json_fpath, 'krona')
+
+def save_icarus_links(results_dirpath, icarus_links):
+    json_fpath = json_saver.save_icarus_links(results_dirpath, icarus_links)
+    if json_fpath:
+        append(results_dirpath, json_fpath, 'icarus')

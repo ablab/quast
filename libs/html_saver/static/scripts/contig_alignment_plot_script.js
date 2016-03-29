@@ -1130,7 +1130,7 @@ THE SOFTWARE.
             enterCoords(this) };
         if (document.getElementById('input_contig_threshold')) {
             document.getElementById('input_contig_threshold').value = minContigSize;
-            document.getElementById('input_contig_threshold').onkeydown=function() {
+            document.getElementById('input_contig_threshold').onkeyup = function() {
                 setContigSizeThreshold(this) };
         }
 
@@ -1221,11 +1221,11 @@ THE SOFTWARE.
     function setContigSizeThreshold(textBox) {
         var key = this.event.keyCode;
         if (key == 27) {
-            document.getElementById('input_coords').blur();
+            document.getElementById('input_contig_threshold').blur();
         }
-        if (key == 13) {
+        else {
             if (parseInt(textBox.value)) minContigSize = parseInt(textBox.value);
-            else minContigSize = 0;
+            else if (key == 13) minContigSize = 0;
             display();
         }
     }

@@ -113,9 +113,9 @@ create_contig_alignment_html = True
 alignment_plots_dirname = 'alignment_plot'
 alignment_summary_fname = 'alignment_summary.html'
 alignment_summary_template_fname = 'alignment_summary_templ.html'
-contig_size_plot_fname = 'contig_size_plots.html'
-contig_size_plot_name = 'Contig size browser'
-contig_alignment_plot_name = 'Contig alignment viewer'
+contig_size_viewer_fname = 'contig_size_viewer.html'
+contig_size_viewer_name = 'Contig size viewer'
+contig_alignment_viewer_name = 'Contig alignment viewer'
 one_alignment_viewer_name = 'alignment_viewer'
 MAX_SIZE_FOR_COMB_PLOT = 50000000
 

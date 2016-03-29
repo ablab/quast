@@ -283,6 +283,18 @@ path {
     fill: #FF6565;
 }
 
+.mainItem.disabled_misassembled {
+    fill: #8e8e8e;
+}
+
+.mainItem.disabled_misassembled.odd {
+    fill: #bbbbbb;
+}
+
+.mainItem.end.disabled_misassembled {
+    opacity: 0;
+}
+
 .miniItem.similar.odd {
     stroke-width: 10;
     stroke: #377eb8;
@@ -353,6 +365,18 @@ path {
     stroke-width: 10;
     stroke: #FF6565;
     fill: #FF6565;
+}
+
+.miniItem.disabled_misassembled {
+    stroke-width: 10;
+    stroke: #8e8e8e;
+    fill: #8e8e8e;
+}
+
+.miniItem.disabled_misassembled.odd {
+    stroke-width: 10;
+    stroke: #bbbbbb;
+    fill: #bbbbbb;
 }
 
 .miniItems.text {

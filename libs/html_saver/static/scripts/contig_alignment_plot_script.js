@@ -134,7 +134,6 @@ THE SOFTWARE.
             annotationLanesHeight = 40,
             featureHeight = 20;
             offsetsY = [0, .3, .15],
-            misassembledOffsetY = .25,
             lanesInterval = 20,
             miniScale = 50,
             mainScale = 50,
@@ -793,7 +792,6 @@ THE SOFTWARE.
                 .attr('transform', function (d) {
                     var x = x_main(Math.max(minExtent, d.corr_start));
                     var y = y_main(d.lane) + .25 * lanesInterval;
-                    d.class.search("misassembled") != -1 ? y += misassembledOffsetY * lanesInterval : 0;
                     y += offsetsY[d.order % 3] * lanesInterval;
 
                     return 'translate(' + x + ', ' + y + ')';
@@ -841,7 +839,6 @@ THE SOFTWARE.
                 .attr('transform', function (d) {
                     var x = x_main(Math.max(minExtent, d.corr_start));
                     var y = y_main(d.lane) + .25 * lanesInterval;
-                    d.class.search("misassembled") != -1 ? y += misassembledOffsetY * lanesInterval : 0;
                     y += offsetsY[d.order % 3] * lanesInterval;
                     return 'translate(' + x + ', ' + y + ')';
                 })
@@ -885,7 +882,6 @@ THE SOFTWARE.
                 .attr('transform', function (d) {
                     var x = d.supp == "L" ? x_main(d.corr_start) : x_main(d.corr_end);
                     var y = y_main(d.lane) + .25 * lanesInterval;
-                    d.class.search("misassembled") != -1 ? y += misassembledOffsetY * lanesInterval : 0;
                     y += offsetsY[d.order % 3] * lanesInterval;
 
                     return 'translate(' + x + ', ' + y + ')';
@@ -906,9 +902,6 @@ THE SOFTWARE.
                     if (d.supp == "R") path = ['M', startX, startY, 'L', startX - (Math.sqrt(3) * (mainLanesHeight - startY) / 2),
                         (startY + (mainLanesHeight - startY)) / 2, 'L', startX, mainLanesHeight - startY, 'L',  startX, startY].join(' ');
                     return path;
-                })
-                .attr('opacity', function (d) {
-                    return (d.misassembled != "True" ? 0 : 1);
                 });
 
         nonRects.exit().remove();
@@ -922,7 +915,6 @@ THE SOFTWARE.
                 .attr('transform', function (d) {
                     var x = d.supp == "L" ? x_main(d.corr_start) : x_main(d.corr_end);
                     var y = y_main(d.lane) + .25 * lanesInterval;
-                    d.class.search("misassembled") != -1 ? y += misassembledOffsetY * lanesInterval : 0;
                     y += offsetsY[d.order % 3] * lanesInterval;
 
                     return 'translate(' + x + ', ' + y + ')';                })
@@ -944,9 +936,6 @@ THE SOFTWARE.
                     if (d.supp == "R") path = ['M', startX, startY, 'L', startX - (Math.sqrt(3) * (mainLanesHeight - startY) / 2),
                         (startY + (mainLanesHeight - startY)) / 2, 'L', startX, mainLanesHeight - startY, 'L',  startX, startY].join(' ');
                     return path;
-                })
-                .attr('opacity', function (d) {
-                    return (d.misassembled != "True" ? 0 : 1);
                 });
 
         other.on('click', function A(d, i) {
@@ -955,7 +944,7 @@ THE SOFTWARE.
         })
                 .on('mouseenter', glow)
                 .on('mouseleave', disglow);
-        var visTexts = visItems.filter(function (d) {
+        var visTexts = rectItems.filter(function (d) {
             if (x_main(Math.max(minExtent, d.corr_end)) - x_main(Math.max(minExtent, d.corr_start)) > 20) return d;
         });
         itemNonRects.selectAll('text')
@@ -969,7 +958,6 @@ THE SOFTWARE.
             })
             .attr('y', function(d) {
                 var y = y_main(d.lane) + .25 * lanesInterval;
-                d.class.search("misassembled") != -1 ? y += misassembledOffsetY * lanesInterval : 0;
                 y += offsetsY[d.order % 3] * lanesInterval;
                 return y + 20;
             })
@@ -1410,7 +1398,7 @@ THE SOFTWARE.
     function updateTrack(track) {
         track.select('.main.axis').call(xMainAxis);
         var lastTick = track.select(".axis").selectAll("g")[0].pop();
-        var textSize = (formatValue(x_main.domain()[1], mainTickValue).toString().length - 2) * numberSize;
+        var textSize = Math.max(0, (formatValue(x_main.domain()[1], mainTickValue).toString().length - 2) * numberSize);
         d3.select(lastTick).select('text').text(formatValue(x_main.domain()[1], mainTickValue) + ' ' + mainTickValue)
                   .attr('transform', 'translate(-' + textSize + ', 0)');
     }
@@ -1685,10 +1673,11 @@ THE SOFTWARE.
                 for (var i = 0; i < msTypes.length; i++) {
                     if (msTypes[i] && document.getElementById(msTypes[i]).checked) isMisassembled = "True";
                 }
-                if (isMisassembled && items[numItem].misassembled == "False") {
-                    items[numItem].class = "misassembled" + items[numItem].class;
+                if (isMisassembled == "True" && items[numItem].misassembled == "False") {
+                    items[numItem].class = items[numItem].class.replace("disabled_misassembled", "misassembled");
                 }
-                else items[numItem].class = items[numItem].class.replace("misassembled", "");
+                else if (isMisassembled == "False")
+                    items[numItem].class = items[numItem].class.replace(/\bmisassembled\b/g, "disabled_misassembled");
                 items[numItem].misassembled = isMisassembled;
             }
         }
@@ -1696,6 +1685,11 @@ THE SOFTWARE.
             .classed('misassembled', function (d) {
                 if (d && d.misassemblies) {
                     return d.misassembled == 'True';
+                }
+            })
+            .classed('disabled_misassembled', function (d) {
+                if (d && d.misassemblies) {
+                    return d.misassembled != 'True';
                 }
             })
             .attr('opacity', function (d) {
@@ -1711,6 +1705,15 @@ THE SOFTWARE.
                         if (msTypes[i] && document.getElementById(msTypes[i]).checked) return true;
                     }
                     return false;
+                }
+            })
+            .classed('disabled_misassembled', function (d) {
+                if (d && d.misassemblies) {
+                    var msTypes = d.misassemblies.split(';');
+                    for (var i = 0; i < msTypes.length; i++) {
+                        if (msTypes[i] && document.getElementById(msTypes[i]).checked) return false;
+                    }
+                    return true;
                 }
             });
     }

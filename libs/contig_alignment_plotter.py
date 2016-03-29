@@ -25,6 +25,10 @@ logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 MAX_REF_NAME = 20
 NAME_FOR_ONE_PLOT = 'Main plot'
 
+misassemblies_types = ['relocation', 'translocation', 'inversion', 'local']
+if qconfig.is_combined_ref:
+    misassemblies_types.append('interspecies translocation')
+
 from libs import plotter  # Do not remove this line! It would lead to a warning in matplotlib.
 if not plotter.matplotlib_error:
     import matplotlib
@@ -665,8 +669,7 @@ def parse_nucmer_contig_report(report_fpath, sorted_ref_names, cumulative_ref_le
                 contigs.append(contig)
             elif split_line and len(split_line) < 5:
                 misassembled_id_to_structure[contig_id].append(line.strip())
-                if 'local' not in line:
-                    misassembled_contigs_ids.add(contig_id)
+                misassembled_contigs_ids.add(contig_id)
             elif split_line and len(split_line) > 5:
                 unshifted_start, unshifted_end, start_in_contig, end_in_contig, ref_name, contig_id, idy = split_line[start_col], \
                             split_line[end_col], split_line[start_in_contig_col], split_line[end_in_contig_col], split_line[ref_col], \
@@ -851,7 +854,7 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
         data_str += 'var contig_data = {};\n'
         data_str += 'contig_data["{chr}"] = [ '.format(**locals())
         prev_len = 0
-        ms_types = set()
+        ms_types = defaultdict(int)
         for num_contig, ref_contig in enumerate(ref_contigs):
             if num_contig > 0:
                 prev_len += chr_lengths[num_contig]
@@ -869,17 +872,19 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
                         alignment.misassemblies = ''
                         if type(contig_structure[alignment.name][num_alignment - 1]) == str:
                             misassembly_type = contig_structure[alignment.name][num_alignment - 1].split(',')[0].strip()
-                            if 'local' not in misassembly_type:
-                                alignment.misassemblies += misassembly_type
-                                ms_types.add(misassembly_type)
+                            if 'local' in misassembly_type:
+                                misassembly_type = 'local'
+                            alignment.misassemblies += misassembly_type
+                            ms_types[misassembly_type] += 1
                             misassembled_ends.append('L')
                         else: misassembled_ends.append('')
                         if num_alignment + 1 < len(contig_structure[alignment.name]) and \
                                         type(contig_structure[alignment.name][num_alignment + 1]) == str:
                             misassembly_type = contig_structure[alignment.name][num_alignment + 1].split(',')[0].strip()
-                            if 'local' not in misassembly_type:
-                                alignment.misassemblies += ';' + misassembly_type
-                                ms_types.add(misassembly_type)
+                            if 'local' in misassembly_type:
+                                misassembly_type = 'local'
+                            alignment.misassemblies += ';' + misassembly_type
+                            ms_types[misassembly_type] += 1
                             misassembled_ends.append('R')
                         else: misassembled_ends.append('')
                     else:
@@ -956,13 +961,14 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
                         result.write('var CHROMOSOME = "{chr}";\n'.format(**locals()))
                         result.write('var chrContigs = ["{chromosome}"];\n'.format(**locals()))
                     elif line.find('<!--- misassemblies selector: ---->') != -1:
-                        if ms_types:
-                            result.write('<div class="menu_block" align="center">')
-                            result.write('Misassembly type to show:')
-                            for ms_type in sorted(ms_types):
-                                result.write('<label><input type="checkbox" id="{ms_type}" name="misassemblies_select" '
-                                         'checked="checked"/> {ms_type}</label>\n'.format(**locals()))
-                            result.write('</div>')
+                        result.write('<div class="menu_block" align="center">')
+                        result.write('Misassembly type to show:')
+                        for ms_type in misassemblies_types:
+                            ms_count = ms_types[ms_type]
+                            is_checked = 'checked="checked"' if ms_count > 0 else ''
+                            result.write('<label><input type="checkbox" id="{ms_type}" name="misassemblies_select" '
+                                     '{is_checked}/> {ms_type} ({ms_count})</label>&nbsp&nbsp'.format(**locals()))
+                        result.write('</div>')
                     elif line.find('<!--- css: ---->') != -1:
                         result.write(open(html_saver.get_real_path(os.path.join('static', 'contig_alignment_plot.css'))).read())
                         result.write(open(html_saver.get_real_path(os.path.join('static', 'common.css'))).read())

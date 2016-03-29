@@ -787,8 +787,6 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
     ref_ids = {}
     ref_contigs_dict = {}
     chr_lengths_dict = {}
-    back_button = '<div style="margin-top: 10px;margin-bottom: -20px;"><a href="../alignment_summary.html">' \
-                  '<button class="btn btn-inverse">Back to main menu</button></div>'.format(**locals())
 
     ref_data = 'var references_id = {};\n'
     for i, chr in enumerate(chr_full_names):
@@ -987,7 +985,7 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
                             num_fragments = num_contigs[chr] + ' fragments, ' if num_contigs[chr] > 1 else ''
                             chr_size_bp = format_long_numbers(chr_size)
                             title = 'Icarus. Contig alignment viewer: {chr_name} ({num_fragments}{chr_size_bp} bp)'.format(**locals())
-                            result.write('{title}{back_button}'.format(**locals()))
+                            result.write(title)
 
     contigs_sizes_str = 'var contig_data = {};\n'
     contigs_sizes_str += 'var CHROMOSOME;\n'
@@ -1039,7 +1037,7 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
                     result.write(line)
                     if line.find('<!--- title: ---->') != -1:
                         title = 'Icarus. Contig size viewer'
-                        result.write('{title}{back_button}'.format(**locals()))
+                        result.write(title)
 
     icarus_links = defaultdict(list)
     if len(chr_full_names) > 1:

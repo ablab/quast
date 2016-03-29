@@ -27,7 +27,7 @@ NAME_FOR_ONE_PLOT = 'Main plot'
 
 misassemblies_types = ['relocation', 'translocation', 'inversion', 'local']
 if qconfig.is_combined_ref:
-    misassemblies_types.append('interspecies translocation')
+    misassemblies_types = ['relocation', 'translocation', 'inversion', 'interspecies translocation', 'local']
 
 from libs import plotter  # Do not remove this line! It would lead to a warning in matplotlib.
 if not plotter.matplotlib_error:

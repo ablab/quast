@@ -146,7 +146,7 @@ THE SOFTWARE.
             coverageHeight = typeof coverage_data != 'undefined' ? 125 : 0;
             coverageSpace = typeof coverage_data != 'undefined' ? 50 : 0;
 
-    var contigsColors = {'N50': '#9500CB', 'N75': '#9500CB', 'NG50': '#00F5D1', 'NG75': '#00F5D1'};
+    var contigsColors = {'N50': '#9369A6', 'N75': '#9369A6', 'NG50': '#6993A6', 'NG75': '#6993A6'};
     var isContigSizePlot = !CHROMOSOME;
 
     var total_len = 0;
@@ -1272,24 +1272,21 @@ THE SOFTWARE.
       if (gradientExists) return 'url(#' + gradientId + ')';
       var gradient = chart.append("svg:defs")
           .append("svg:linearGradient")
-          .attr("id", gradientId)
-          .attr("spreadMethod", "pad");
+          .attr("id", gradientId);
       if (miniItem) {
           gradient.attr("x1", d.x)
                   .attr("y1", d.y)
-                  .attr("x2", d.x + x_mini(d.size))
-                  .attr("y2", d.y + 10)
-                  .attr("gradientUnits", "userSpaceOnUse")
+                  .attr("x2", d.x)
+                  .attr("y2", d.y + 1)
+                  .attr("gradientUnits", "userSpaceOnUse");
       }
-        if (marks.length == 2) {
-          gradientSteps = ["0%", "100%"];
-        }
-        if (marks.length == 3) {
-          gradientSteps = ["0%", "50%", "100%"];
-        }
-        if (marks.length == 4) {
-          gradientSteps = ["0%", "33%", "67%", "100%"];
-        }
+      else {
+          gradient.attr("x1", "0%")
+                  .attr("y1", "0%")
+                  .attr("x2", "0%")
+                  .attr("y2", "100%");
+      }
+      gradientSteps = ["50%", "50%"];
 
       for (m in marks)
         gradient.append("svg:stop")
@@ -1299,6 +1296,7 @@ THE SOFTWARE.
 
       return 'url(#' + gradientId + ')';
     }
+
 
     function setupXAxis() {
         var mainTickValue;
@@ -1492,7 +1490,7 @@ THE SOFTWARE.
             curLane = d.lane;
             numItem++;
             result.push({class: d.class, path: path, misassemblies: misassemblies[d.class], supp: d.supp,
-                x: startX, y: startY, size: d.size, text: text});
+                x: startX, y: startY, size: d.size, text: text, id: d.id});
         }
         return result;
     }

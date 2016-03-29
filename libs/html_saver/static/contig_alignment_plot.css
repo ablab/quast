@@ -127,19 +127,16 @@ a {
     border-color: rgba(255, 0, 0, 0.2); /* #55b2e0; */ /*#005580;*/
 }
 
-.arrow path {
-    stroke: black;
-    stroke-width: 50;
-    transform: scale(0.02);
-    -ms-transform: scale(0.02); /* IE 9 */
-    -webkit-transform: scale(0.02); /* Safari and Chrome */
-    -o-transform: scale(0.02); /* Opera */
-    -moz-transform: scale(0.02);
-    fill: cyan;
+.arrow {
+    stroke: #866D00;
+    stroke-width: 2;
+    fill: #866D00;
 }
 
-.arrow.selected path {
-    fill: yellow;
+.arrow_selected {
+    stroke: #508600;
+    stroke-width: 2;
+    fill: #508600;
 }
 
 .main .arrow path {
@@ -295,6 +292,14 @@ path {
     opacity: 0;
 }
 
+.mainItem.unknown.odd {
+    fill: #678B9C;
+}
+
+.mainItem.unknown {
+    fill: #7DA6B9;
+}
+
 .miniItem.similar.odd {
     stroke-width: 10;
     stroke: #377eb8;
@@ -377,6 +382,18 @@ path {
     stroke-width: 10;
     stroke: #bbbbbb;
     fill: #bbbbbb;
+}
+
+.miniItem.unknown.odd {
+    stroke-width: 10;
+    stroke: #678B9C;
+    fill: #678B9C;
+}
+
+.miniItem.unknown {
+    stroke-width: 10;
+    stroke: #40cf40;
+    fill: #678B9C;
 }
 
 .miniItems.text {

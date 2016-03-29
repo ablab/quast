@@ -99,9 +99,11 @@ THE SOFTWARE.
                 var description = assemblyName + '\n';
                 description += 'Length: ' + assemblies_len[assemblyName] + '\n';
                 description += 'Contigs: ' + assemblies_contigs[assemblyName] + '\n';
-                description += 'Misassemblies: ' + assemblies_misassemblies[assemblyName];
+                if (!isContigSizePlot)
+                    description += 'Misassemblies: ' + assemblies_misassemblies[assemblyName];
                 lanes[laneNum].description = description;
-                lanes[laneNum].link = assemblies_links[assemblyName];
+                if (!isContigSizePlot)
+                    lanes[laneNum].link = assemblies_links[assemblyName];
             }
         }
 
@@ -119,6 +121,7 @@ THE SOFTWARE.
     var root = typeof exports !== "undefined" && exports !== null ? exports : window;
     root.contigData = ContigData;
 
+    var isContigSizePlot = !CHROMOSOME;
     if (CHROMOSOME) var data = contigData(CHROMOSOME);
     else var data = parseData(contig_data);
     var lanes = data.lanes, items = data.items;
@@ -145,8 +148,7 @@ THE SOFTWARE.
             coverageHeight = typeof coverage_data != 'undefined' ? 125 : 0;
             coverageSpace = typeof coverage_data != 'undefined' ? 50 : 0;
 
-    var contigsColors = {'N50': '#9369A6', 'N75': '#9369A6', 'NG50': '#6993A6', 'NG75': '#6993A6'};
-    var isContigSizePlot = !CHROMOSOME;
+    var contigsColors = {'N50': '#9369A6', 'N75': '#9369A6', 'NG50': '#78C3E6', 'NG75': '#78C3E6'};
 
     var total_len = 0;
     if (CHROMOSOME) {
@@ -267,20 +269,8 @@ THE SOFTWARE.
             .attr('dy', '.5ex')
             .attr('text-anchor', 'end')
             .attr('class', 'laneText')
-            .on('click', expandAssemblyInfo);
-
-    function expandAssemblyInfo(d) {
-        d3.select(this)
-        .on('click', collapseAssemblyInfo)
-        .text(function(d) { return d.description; })
-        .call(wrap, 90, true);
-    }
-
-    function collapseAssemblyInfo(d) {
-        d3.select(this)
-        .on('click', expandAssemblyInfo)
-        .text(function(d) { return getVisibleText(d.label, 150); });
-    }
+            .text(function(d) { return d.description; })
+            .call(wrap, 90, !isContigSizePlot);
 
     function wrap(text, width, addStdoutLink) {
       text.each(function() {
@@ -292,7 +282,7 @@ THE SOFTWARE.
               lineHeight = 1.1,
               y = text.attr('y'),
               dy = parseFloat(text.attr('dy')),
-              tspan = text.text(null).append('tspan').attr('x', addStdoutLink ? -60 : 0).attr('y', y).attr('dy', dy + 'em');
+              tspan = text.text(null).append('tspan').attr('x', addStdoutLink ? -50 : -10).attr('y', y).attr('dy', dy + 'em');
           var linkAdded = false;
           while (word = words.pop()) {
             line.push(word);
@@ -310,7 +300,7 @@ THE SOFTWARE.
                             .attr('text-decoration', 'underline')
                             .attr('fill', '#0000EE')
                             .style("cursor", "pointer")
-                            .text('(.stdout)')
+                            .text('(TSV)')
                             .on('click',function(d) {
                                 window.open(d.link, '_blank');
                                 d3.event.stopPropagation();
@@ -570,9 +560,6 @@ THE SOFTWARE.
                 .attr('class', 'notCovered')
                 .attr('d', not_covered_line);
         mini_cov.append('text')
-                .attr('transform', 'translate(' + (chartWidth / 2) + ',' + (coverageHeight + 50) + ')')
-                .text('Genome, ' + miniTickValue);
-        mini_cov.append('text')
                 .text('Coverage')
                 .attr('transform', 'rotate(-90 20, 80)');
 
@@ -632,7 +619,22 @@ THE SOFTWARE.
     }
 
     var arrows = [];
-    var arrow = "M0,101.08h404.308L202.151,303.229L0,101.08z";
+    var markerWidth = 3,
+        markerHeight = 3;
+
+    chart.append("svg:defs").selectAll("marker")
+        .data(["arrow", "arrow_selected"])
+        .enter().append("svg:marker")
+        .attr("id", String)
+        .attr("viewBox", "0 -5 10 10")
+        .attr("refX", 0)
+        .attr("refY", 0)
+        .attr("markerWidth", markerWidth)
+        .attr("markerHeight", markerHeight)
+        .attr("orient", "auto")
+        .append("svg:path")
+        .attr("d", "M0,-5L10,0L0,5");
+
     var separatedLines = [];
     var currentLen = 0;
     if (CHROMOSOME) {
@@ -661,6 +663,9 @@ THE SOFTWARE.
     if (!featuresHidden)
       var featurePath = annotationsMain.append('g')
         .attr('clip-path', 'url(#clip)');
+
+    var rectItems = [];
+    var nonRectItems = [];
 
     display();
 
@@ -775,8 +780,8 @@ THE SOFTWARE.
         removeTooltip();
 
         // update the item rects
-        var rectItems = [];
-        var nonRectItems = [];
+        rectItems = [];
+        nonRectItems = [];
         for (item in visItems) {
           if (visItems[item].supp ) {
             var w = x_main(visItems[item].corr_end) - x_main(visItems[item].corr_start);
@@ -1080,6 +1085,7 @@ THE SOFTWARE.
                     .text('<CLICK ON CONTIG>');
                 arrows = [];
                 mini.selectAll('.arrow').remove();
+                mini.selectAll('.arrow_selected').remove();
                 removeTooltip();
                 selected_id = null;
                 break
@@ -1132,7 +1138,7 @@ THE SOFTWARE.
 
     function addTrackButtons() {
         var btnHeight = 30;
-        var menuOffsetY = 125;
+        var menuOffsetY = 140;
         var hideBtnExpandWidth = 130;
         hideBtnAnnotationsMini = document.getElementById('hideBtnAnnoMini');
         hideBtnAnnotationsMini.style.display = "";
@@ -1189,19 +1195,36 @@ THE SOFTWARE.
         }
     }
 
-    function setCoords(coords) {
+    function setCoords(coords, animation) {
+        var ext = brush.extent();
         if (coords.length >= 2 && parseInt(coords[0]) <= parseInt(coords[1])) {
             var startCoord = parseInt(coords[0]);
-            var endCoord = parseInt(coords[1]);
-            brush.extent([startCoord, Math.max(endCoord, startCoord + 5)]);
+            var endCoord = Math.max(parseInt(coords[1]), startCoord + 5);
         }
         else if (coords.length == 1) {
             var startCoord = parseInt(coords[0]);
-            var brushExtent = brush.extent();
-            var brushSize = brushExtent[1] - brushExtent[0];
-            brush.extent([startCoord, startCoord + brushSize]);
+            var brushSize = ext[1] - ext[0];
+            var endCoord = startCoord + brushSize;
         }
-        display();
+        if (animation) {
+            var delta = Math.max(2, 0.1 * (ext[1] - ext[0]));
+            if (ext[0] > startCoord) delta = -delta;
+            var numSteps = Math.max(1, parseInt((startCoord - ext[0]) / delta));
+            delta = (startCoord - ext[0]) / numSteps;
+            timerId = setInterval(function() {
+                ext = [ext[0] + delta, ext[1] + delta];
+                if ((delta > 0 && ext[0] >= startCoord) || (delta < 0 && ext[0] <= startCoord)) {
+                    clearInterval(timerId);
+                    return;
+                }
+                brush.extent(ext);
+                display();
+            }, 5)
+        }
+        else {
+            brush.extent([startCoord, endCoord]);
+            display();
+        }
     }
 
     function setContigSizeThreshold(textBox) {
@@ -1298,9 +1321,7 @@ THE SOFTWARE.
         mini.append('g')
             .attr('transform', 'translate(0,' + miniHeight + ')')
             .attr('class', 'axis')
-            .call(xMiniAxis).append('text')
-            .text('Genome, ' + miniTickValue)
-            .attr('transform', 'translate(' + x_mini((x_mini.domain()[1] - x_mini.domain()[0]) / 2) + ',' + (miniScale / 2 + 2) + ')');
+            .call(xMiniAxis);
 
         if (!featuresHidden) {
             addFeatureTrackX(annotationsMini, miniTickValue, x_mini);
@@ -1313,9 +1334,7 @@ THE SOFTWARE.
         annotations.append('g')
             .attr('transform', 'translate(0,' + annotationsHeight + ')')
             .attr('class', 'axis')
-            .call(xAnnotationsAxis).append('text')
-            .text(tickValue ? 'Genome, ' + tickValue : '')
-            .attr('transform', 'translate(' + scale((scale.domain()[1] - scale.domain()[0]) / 2) + ',' + (miniScale / 2 + 2) + ')');
+            .call(xAnnotationsAxis);
     }
 
     function addMainAxis(track, trackHeight) {
@@ -1442,6 +1461,7 @@ THE SOFTWARE.
             if (d.supp) countSupplementary++;
             c += ((numItem - countSupplementary) % 2 == 0 ? " odd" : "");
             var text = '';
+            if (isContigSizePlot) c += " unknown";
 
             if (d.marks) {  // NX for contig size plot
               var marks = d.marks;
@@ -1533,13 +1553,28 @@ THE SOFTWARE.
                 .style({'display': 'block', 'word-break': 'break-all', 'word-wrap': 'break-word'})
                 .text('Name: ' + d.name, 280);
 
-        if (d.structure)
-          info.append('p')
-                .text('Type: ' + (d.misassembled == "True" ? 'misassembled' : 'correct'));
+        if (d.structure) {
+            var contig_type = d.misassemblies ? 'misassembled' : 'correct';
+            if (d.similar == "True" && !d.misassemblies) contig_type += ' (similar in >= 50% of the assemblies)';
+            if (d.misassemblies) {
+                var misassemblies = d.misassemblies.split(';');
+                if (misassemblies[0] && misassemblies[1])
+                    contig_type += ' (both sides';
+                else if (misassemblies[0])
+                    contig_type += ' (left side';
+                else
+                    contig_type += ' (right side';
+
+                if (d.similar == "True") contig_type += ', similar in >= 50% of the assemblies';
+                contig_type += ')'
+            }
+            info.append('p')
+                .text('Type: ' + contig_type);
+        }
         else info.append('p')
                 .text('Size: ' + d.size + ' bp');
 
-        var appendPositionElement = function(data, start, end, whereAppend, start_in_contig, end_in_contig, is_expanded) {
+        var appendPositionElement = function(data, start, end, assembly, whereAppend, start_in_contig, end_in_contig, is_expanded) {
             var posVal = function (d) {
                 if (mainTickValue == 'Gbp')
                     return d3.round(d / 1000000000, 2);
@@ -1572,11 +1607,29 @@ THE SOFTWARE.
             else var whereAppendBlock = whereAppend;
             var d = whereAppendBlock.append('span')
                     .attr('class', is_expanded ? 'head' : 'head main')
-                    .on('click', function(d) {
-                        setCoords([e.corr_start]);
-                        d3.event.stopPropagation();
-                    })
-                    .text(['Position:', posVal(e.start), ndash, posVal(e.end), mainTickValue, ' '].join(' '));
+                    .append('text');
+            d.append('tspan')
+                .attr('x', -50)
+                .text('Position: ');
+            d.append('tspan')
+                .style('text-decoration', 'underline')
+                .style('color', '#7ED5F5')
+                .style('cursor', 'pointer')
+                .text([posVal(e.start), ndash, posVal(e.end), mainTickValue, ' '].join(' '))
+                .on('click',function(d) {
+                    var brushExtent = brush.extent();
+                    var brushSize = brushExtent[1] - brushExtent[0];
+                    setCoords([e.corr_start - brushSize / 2, e.corr_start + brushSize / 2], true);
+                    for (i in items) {
+                        if (items[i].assembly == assembly && items[i].corr_start == e.corr_start && items[i].corr_end == e.corr_end) {
+                            selected_id = items[i].groupId;
+                            display();
+                            break;
+                        }
+                    }
+                    d3.event.stopPropagation();
+                });
+
             if (chrContigs.indexOf(e.chr) == -1) {
                 d.append('a')
                         .attr('href', '_' + (links_to_chromosomes ? links_to_chromosomes[e.chr] : e.chr) + '.html')
@@ -1600,7 +1653,7 @@ THE SOFTWARE.
             d.append('p')
                     .text(['IDY:', e.IDY, '%'].join(' '));
         };
-        appendPositionElement(d.structure, d.corr_start, d.corr_end, info);
+        appendPositionElement(d.structure, d.corr_start, d.corr_end, d.assembly, info);
 
         showArrows(d);
         if (d.misassembled == "True") {
@@ -1612,7 +1665,7 @@ THE SOFTWARE.
             for (var i = 0; i < d.structure.length; ++i) {
                 var e = d.structure[i];
                 if (e.type == "A") {
-                    appendPositionElement(d.structure, e.corr_start, e.corr_end, blocks, e.start_in_contig, e.end_in_contig, true);
+                    appendPositionElement(d.structure, e.corr_start, e.corr_end, d.assembly, blocks, e.start_in_contig, e.end_in_contig, true);
                 } else {
                     blocks.append('p')
                             .text(e.mstype);
@@ -1623,9 +1676,10 @@ THE SOFTWARE.
 
 
     function showArrows(d) {
-        var shift = 4.03;
+        var shift = 0;
         arrows = [];
         mini.selectAll('.arrow').remove();
+        mini.selectAll('.arrow_selected').remove();
         var y = y_mini(d.lane) - 1;
 
         if (d.misassembled == "True") {
@@ -1635,10 +1689,16 @@ THE SOFTWARE.
                     if (!(e.corr_start <= d.corr_start && d.corr_end <= e.corr_end) && chrContigs.indexOf(e.chr) != -1) {
                         arrows.push({start: e.corr_start, end: e.corr_end, lane: d.lane, selected: false});
                         mini.append('g')
-                                .attr('transform', 'translate(' + (x_mini((e.corr_end + e.corr_start) / 2) - shift) + ',' + y + ')')
+                                .attr('transform', 'translate(' + x_mini((e.corr_end + e.corr_start) / 2) + ',0)')
                                 .attr('class', 'arrow')
-                                .append('path')
-                                .attr('d', arrow)
+                                .append("svg:path")
+                                .attr("d", 'M0,0V' + (1 + d.lane * miniLanesHeight))
+                                .attr("class", function (d) {
+                                return "path arrow";
+                            })
+                                .attr("marker-end", function (d) {
+                                return "url(#arrow)";
+                            });
                     }
                 }
             }
@@ -1646,10 +1706,16 @@ THE SOFTWARE.
 
         arrows.push({start: d.corr_start, end: d.corr_end, lane: d.lane, selected: true});
         mini.append('g')
-                .attr('transform', 'translate(' + (x_mini((d.corr_end + d.corr_start) / 2) - 4.03) + ',' + y + ')')
-                .attr('class', 'arrow selected')
-                .append('path')
-                .attr('d', arrow);
+                .attr('transform', 'translate(' + x_mini((d.corr_end + d.corr_start) / 2) + ',0)')
+                .attr('class', 'arrow_selected')
+                .append("svg:path")
+                .attr("d", 'M0,0V' + (1 + d.lane * miniLanesHeight))
+                .attr("class", function (d) {
+                return "path arrow_selected";
+            })
+                .attr("marker-end", function (d) {
+                return "url(#arrow_selected)";
+            });
         display();
     }
 

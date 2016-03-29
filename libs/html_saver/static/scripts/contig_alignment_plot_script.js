@@ -1856,6 +1856,7 @@ THE SOFTWARE.
                             .enter().append('text')
                             .text(function (d) { return getVisibleText(d.name ? d.name : 'ID=' + d.id, scale(d.end) - scale(d.start)) } )
                             .attr('class', 'itemLabel')
+                            .attr('fill', 'white')
                             .attr('pointer-events', 'none')
                             .attr('transform', function (d) {
                               return 'translate(' + (d.x + 3) + ', ' + (d.y + featureHeight / 2 + 3) + ')';
@@ -2016,6 +2017,7 @@ THE SOFTWARE.
             })
             .attr('class', 'itemLabel')
             .enter().append('text')
+            .attr('fill', 'white')
             .attr('x', function(d) {
                return x_main(Math.max(minExtent, d.start)) + 2;
             })

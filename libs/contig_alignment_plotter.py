@@ -978,14 +978,13 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
                     else:
                         result.write(line)
                     if line.find('<!--- title: ---->') != -1:
-                            chr_size = chr_sizes[chr]
-                            chr_name = chr.replace('_', ' ')
-                            if len(chr_name) > 50:
-                                chr_name = chr_name[:50] + '...'
-                            num_fragments = num_contigs[chr] + ' fragments, ' if num_contigs[chr] > 1 else ''
-                            chr_size_bp = format_long_numbers(chr_size)
-                            title = 'Icarus. Contig alignment viewer: {chr_name} ({num_fragments}{chr_size_bp} bp)'.format(**locals())
-                            result.write(title)
+                        title = 'Icarus. Contig alignment viewer.'
+                        result.write(title)
+                    if line.find('<!--- reference: ---->') != -1:
+                        chr_name = chr.replace('_', ' ')
+                        if len(chr_name) > 90:
+                            chr_name = chr_name[:90] + '...'
+                        result.write(chr_name)
 
     contigs_sizes_str = 'var contig_data = {};\n'
     contigs_sizes_str += 'var CHROMOSOME;\n'

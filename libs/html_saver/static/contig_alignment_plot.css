@@ -454,6 +454,13 @@ path {
     font-size: 12px;
 }
 
+.reftitle {
+    font-size: 20px;
+    font-weight: bold;
+    text-align: center;
+    padding: 10px;
+}
+
 .moving_button {
     -webkit-transition:all 200ms ease;
    -moz-transition:all 200ms ease;

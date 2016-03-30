@@ -148,7 +148,7 @@ THE SOFTWARE.
             coverageHeight = typeof coverage_data != 'undefined' ? 125 : 0;
             coverageSpace = typeof coverage_data != 'undefined' ? 50 : 0;
 
-    var contigsColors = {'N50': '#9369A6', 'N75': '#9369A6', 'NG50': '#78C3E6', 'NG75': '#78C3E6'};
+    var contigsColors = {'N50': '#7437BA', 'N75': '#7437BA', 'NG50': '#B53778', 'NG75': '#B53778'};
 
     // legend items
     var legendItemWidth = 50;
@@ -1271,24 +1271,35 @@ THE SOFTWARE.
 
     function setCoords(coords, animation) {
         var ext = brush.extent();
+        var startCoord = ext[0], endCoord = ext[1];
         if (coords.length >= 2 && parseInt(coords[0]) <= parseInt(coords[1])) {
-            var startCoord = parseInt(coords[0]);
-            var endCoord = Math.max(parseInt(coords[1]), startCoord + 5);
+            startCoord = parseInt(coords[0]);
+            endCoord = Math.max(parseInt(coords[1]), startCoord + 5);
         }
-        else if (coords.length == 1) {
-            var startCoord = parseInt(coords[0]);
+        else if (coords.length == 1 && parseInt(coords[0])) {
+            startCoord = parseInt(coords[0]);
             var brushSize = ext[1] - ext[0];
-            var endCoord = startCoord + brushSize;
+            endCoord = startCoord + brushSize;
         }
         if (animation) {
-            var delta = Math.max(2, 0.1 * (ext[1] - ext[0]));
+            var distance = Math.abs(startCoord - ext[0]);
+            var distRange = distance / (ext[1] - ext[0]);
+            if (distRange > 50) {
+                distRange = distRange * 0.02;
+                var zoomDelta = (distRange - 1) * .5 * 100;
+                brush.extent([ext[0] - zoomDelta, ext[1] + zoomDelta]);
+            }
+            var delta = Math.max(2, 0.02 * distance);
+            ext = brush.extent();
+            var numSteps = Math.max(1, parseInt(distance / delta));
             if (ext[0] > startCoord) delta = -delta;
-            var numSteps = Math.max(1, parseInt((startCoord - ext[0]) / delta));
             delta = (startCoord - ext[0]) / numSteps;
             timerId = setInterval(function() {
                 ext = [ext[0] + delta, ext[1] + delta];
                 if ((delta > 0 && ext[0] >= startCoord) || (delta < 0 && ext[0] <= startCoord)) {
                     clearInterval(timerId);
+                    brush.extent([startCoord, endCoord]);
+                    display();
                     return;
                 }
                 brush.extent(ext);
@@ -1738,6 +1749,7 @@ THE SOFTWARE.
                     for (i in items) {
                         if (items[i].assembly == assembly && items[i].corr_start == e.corr_start && items[i].corr_end == e.corr_end) {
                             selected_id = items[i].groupId;
+                            showArrows(items[i]);
                             display();
                             break;
                         }
@@ -2285,10 +2297,10 @@ THE SOFTWARE.
         removeTooltip();
         var paneToHide, hideBtn, textToShow, offsetY;
         if (track == 'features') {
+            textToShow = 'Show annotation';
             if (pane == 'main') {
                 paneToHide = annotationsMain;
                 hideBtn = hideBtnAnnotationsMain;
-                textToShow = 'Show detailed annotations pane';
                 if (doHide) {
                     covMainOffsetY -= annotationsHeight;
                     miniOffsetY -= annotationsHeight;
@@ -2312,7 +2324,6 @@ THE SOFTWARE.
             else {
                 paneToHide = annotationsMini;
                 hideBtn = hideBtnAnnotationsMini;
-                textToShow = 'Show annotations overview pane';
                 if (doHide) {
                     covMiniOffsetY -= annotationsHeight;
                     hideBtnCoverageMiniOffsetY -= annotationsHeight;
@@ -2324,10 +2335,10 @@ THE SOFTWARE.
             }
         }
         else {
+            textToShow = 'Show read coverage';
             if (pane == 'main') {
                 paneToHide = main_cov;
                 hideBtn = hideBtnCoverageMain;
-                textToShow = 'Show detailed coverage pane';
                 if (doHide) {
                     miniOffsetY -= coverageHeight;
                     annotationsMiniOffsetY -= coverageHeight;
@@ -2347,7 +2358,6 @@ THE SOFTWARE.
             else {
                 paneToHide = mini_cov;
                 hideBtn = hideBtnCoverageMini;
-                textToShow = 'Show coverage overview pane';
             }
         }
         if (track == 'features') {

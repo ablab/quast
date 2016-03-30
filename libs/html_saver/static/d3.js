@@ -4540,6 +4540,10 @@
       });
     }
     function redrawX(g) {
+      if (extent[1][0] == extent[0][0]) {
+        extent[0][0] = extent[1][0] - 2;
+        return;
+      }
       g.select(".extent").attr("x", extent[0][0]);
       g.selectAll(".extent,.n>rect,.s>rect").attr("width", extent[1][0] - extent[0][0]);
     }

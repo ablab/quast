@@ -716,6 +716,7 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
 
     summary_fname = qconfig.alignment_summary_fname
     summary_path = os.path.join(output_dirpath, summary_fname)
+    main_menu_link = '<a href="../{summary_fname}" style="color: white">Main menu</a>'.format(**locals())
     output_all_files_dir_path = os.path.join(output_dirpath, qconfig.alignment_plots_dirname)
     if not os.path.exists(output_all_files_dir_path):
         os.mkdir(output_all_files_dir_path)
@@ -777,10 +778,12 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
         l = report.get_field(reporting.Fields.TOTALLEN)
         contigs = report.get_field(reporting.Fields.CONTIGS)
         ext_misassemblies = report.get_field(reporting.Fields.MIS_ALL_EXTENSIVE)
+        local_misassemblies = report.get_field(reporting.Fields.MIS_LOCAL)
         assemblies_data += 'assemblies_links["{label}"] = "{contig_stdout_fpath}";\n'.format(**locals())
         assemblies_data += 'assemblies_len["{label}"] = {l};\n'.format(**locals())
         assemblies_data += 'assemblies_contigs["{label}"] = {contigs};\n'.format(**locals())
-        assemblies_data += 'assemblies_misassemblies["{label}"] = {ext_misassemblies};\n'.format(**locals())
+        assemblies_data += 'assemblies_misassemblies["{label}"] = "{ext_misassemblies} ' \
+                           '(+{local_misassemblies})";\n'.format(**locals())
         for nx in nx_marks:
             assemblies_n50[label][nx] = report.get_field(nx)
 
@@ -962,9 +965,13 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
                         result.write('<div class="menu_block" align="center">')
                         result.write('Misassembly type to show:')
                         for ms_type in misassemblies_types:
-                            ms_count = ms_types[ms_type]
+                            ms_count = ms_types[ms_type] / 2
                             is_checked = 'checked="checked"' if ms_count > 0 else ''
-                            result.write('<label><input type="checkbox" id="{ms_type}" name="misassemblies_select" '
+                            if ms_type == 'local':
+                                result.write('&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp<label><input type="checkbox" id="{ms_type}" '
+                                             'name="misassemblies_select" {is_checked}/> <i>{ms_type} ({ms_count})</i></label>&nbsp&nbsp'.format(**locals()))
+                            else:
+                                result.write('<label><input type="checkbox" id="{ms_type}" name="misassemblies_select" '
                                      '{is_checked}/> {ms_type} ({ms_count})</label>&nbsp&nbsp'.format(**locals()))
                         result.write('</div>')
                     elif line.find('<!--- css: ---->') != -1:
@@ -985,7 +992,7 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
                             chr_name = chr_name[:90] + '...'
                         result.write(chr_name)
                     elif line.find('<!--- menu: ---->') != -1:
-                        result.write('<a href="../{summary_fname}">Main menu</a>'.format(**locals()))
+                        result.write(main_menu_link)
                     else:
                         result.write(line)
 
@@ -1036,7 +1043,7 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
                     result.write(open(html_saver.get_real_path(os.path.join('static', 'scripts',
                                                                             'contig_alignment_plot_script.js'))).read())
                 elif line.find('<!--- menu: ---->') != -1:
-                    result.write('<a href="../{summary_fname}">Main menu</a>'.format(**locals()))
+                    result.write(main_menu_link)
                 elif line.find('<!--- title: ---->') != -1:
                     result.write('Icarus')
                 elif line.find('<!--- subtitle: ---->') != -1:

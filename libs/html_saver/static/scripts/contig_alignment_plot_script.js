@@ -194,7 +194,7 @@ THE SOFTWARE.
     var spaceAfterMain = 20;
     var spaceAfterTrack = 50;
     var menuOffsetY = 130;
-    height = mainHeight + mainScale + 4 * coverageHeight + miniHeight + miniScale +
+    height = mainHeight + mainScale + 2 * coverageHeight + miniHeight + miniScale +
         annotationsHeight * 2 + 100;
     var chart = d3.select('body').append('div').attr('id', 'chart')
             .append('svg:svg')
@@ -215,17 +215,21 @@ THE SOFTWARE.
             .attr('class', 'main');
 
     //annotations track
-    var featuresHidden = false, featuresMainHidden = true;
+    var featuresHidden = false, featuresMainHidden = true, coverageMainHidden = true;
     if (!featuresData || featuresData.features.length == 0)
       featuresHidden = true;
 
-    var annotationsMainOffsetY = mainHeight + mainScale + spaceAfterMain;
-    var covMainOffsetY = typeof coverage_data != 'undefined' ? annotationsMainOffsetY + spaceAfterTrack : annotationsMainOffsetY;
+    var annotationsMainOffsetY = mainHeight + mainScale + (featuresHidden ? 0 : spaceAfterMain);
+    var covMainOffsetY = typeof coverage_data != 'undefined' ? (annotationsMainOffsetY +
+                            (featuresHidden ? spaceAfterMain : spaceAfterTrack)) : annotationsMainOffsetY;
     var miniOffsetY = covMainOffsetY + spaceAfterTrack;
-    var annotationsMiniOffsetY = miniOffsetY + miniHeight + spaceAfterTrack;
+    var annotationsMiniOffsetY = miniOffsetY + miniHeight + (featuresHidden ? 0 : spaceAfterTrack);
     var covMiniOffsetY = annotationsMiniOffsetY + annotationsHeight + spaceAfterTrack;
     var hideBtnsOffsetY = margin.top + menuOffsetY;
     var hideBtnAnnotationsMiniOffsetY = annotationsMiniOffsetY + hideBtnsOffsetY;
+    var hideBtnAnnotationsMainOffsetY = annotationsMainOffsetY + hideBtnsOffsetY;
+    var hideBtnCoverageMiniOffsetY = covMiniOffsetY + hideBtnsOffsetY;
+    var hideBtnCoverageMainOffsetY = covMainOffsetY + hideBtnsOffsetY;
 
     if (!featuresHidden)
       var annotationsMain = chart.append('g')
@@ -362,7 +366,7 @@ THE SOFTWARE.
     }
 
     // draw the x axis
-    var xMainAxis, scaleTextMain, scaleTextFeatures;
+    var xMainAxis, xMiniAxis, scaleTextMain, scaleTextFeatures;
     setupXAxis();
 
     // draw a line representing today's date
@@ -618,6 +622,7 @@ THE SOFTWARE.
 
         var main_cov = chart.append('g')
                 .attr('class', 'COV')
+                .attr('display', 'none')
                 .attr('transform', 'translate(' + margin.left + ', ' + covMainOffsetY + ')');
         main_cov.append('g')
                 .attr('class', 'x')
@@ -988,7 +993,7 @@ THE SOFTWARE.
 
 
         // upd coverage
-        if (typeof coverage_data != 'undefined') {
+        if (typeof coverage_data != 'undefined' && !coverageMainHidden) {
             main_cov.select('.covered').remove();
             main_cov.select('.notCovered').remove();
 
@@ -1145,26 +1150,31 @@ THE SOFTWARE.
                 showMisassemblies();
             });
         }
-        if (!featuresHidden) addTrackButtons();
+        if (!featuresHidden) addAnnotationsTrackButtons();
+        if (typeof coverage_data != 'undefined') addCovTrackButtons();
     }
 
-    function addTrackButtons() {
-        var btnHeight = 30;
-        var menuOffsetY = 140;
-        var hideBtnExpandWidth = 130;
+    function addCovTrackButtons() {
+        hideBtnCoverageMini = document.getElementById('hideBtnCovMini');
+        setTrackBtnPos(hideBtnCoverageMini, hideBtnCoverageMiniOffsetY, 'cov', 'mini', true);
+        hideBtnCoverageMain = document.getElementById('hideBtnCovMain');
+        setTrackBtnPos(hideBtnCoverageMain, hideBtnCoverageMainOffsetY, 'cov', 'main', false);
+    }
+
+    function addAnnotationsTrackButtons() {
         hideBtnAnnotationsMini = document.getElementById('hideBtnAnnoMini');
-        hideBtnAnnotationsMini.style.display = "";
-        hideBtnAnnotationsMini.style.left = margin.left - hideBtnExpandWidth;
-        hideBtnAnnotationsMini.style.top = hideBtnAnnotationsMiniOffsetY;
-        hideBtnAnnotationsMini.onclick = function() {
-            hideTrack('features', 'mini', true);
-        };
+        setTrackBtnPos(hideBtnAnnotationsMini, hideBtnAnnotationsMiniOffsetY, 'features', 'mini', true);
         hideBtnAnnotationsMain = document.getElementById('hideBtnAnnoMain');
-        hideBtnAnnotationsMain.style.display = "";
-        hideBtnAnnotationsMain.style.left = margin.left - hideBtnExpandWidth;
-        hideBtnAnnotationsMain.style.top = annotationsMainOffsetY + margin.top + menuOffsetY;
-        hideBtnAnnotationsMain.onclick = function() {
-            hideTrack('features', 'main', false);
+        setTrackBtnPos(hideBtnAnnotationsMain, hideBtnAnnotationsMainOffsetY, 'features', 'main', false);
+    }
+
+    function setTrackBtnPos(hideBtn, offsetY, track, pane, doHide) {
+        var hideBtnExpandWidth = 130;
+        hideBtn.style.display = "";
+        hideBtn.style.left = margin.left - hideBtnExpandWidth;
+        hideBtn.style.top = offsetY;
+        hideBtn.onclick = function() {
+            hideTrack(track, pane, doHide);
         };
     }
 
@@ -1328,7 +1338,7 @@ THE SOFTWARE.
         addMainAxis(main, mainHeight);
         var miniTickValue = getTickValue(x_mini.domain()[1]);
 
-        var xMiniAxis = appendXAxis(mini, x_mini, miniHeight, miniTickValue);
+        xMiniAxis = appendXAxis(mini, x_mini, miniHeight, miniTickValue);
 
         mini.append('g')
             .attr('transform', 'translate(0,' + miniHeight + ')')
@@ -2184,13 +2194,17 @@ THE SOFTWARE.
                     annotationsMiniOffsetY -= annotationsHeight;
                     covMiniOffsetY -= annotationsHeight;
                     hideBtnAnnotationsMiniOffsetY -= annotationsHeight;
+                    hideBtnCoverageMainOffsetY -= annotationsHeight;
+                    hideBtnCoverageMiniOffsetY -= annotationsHeight;
                 }
                 else {
-                    covMiniOffsetY += annotationsHeight;
+                    covMainOffsetY += annotationsHeight;
                     miniOffsetY += annotationsHeight;
                     annotationsMiniOffsetY += annotationsHeight;
                     covMiniOffsetY += annotationsHeight;
                     hideBtnAnnotationsMiniOffsetY += annotationsHeight;
+                    hideBtnCoverageMainOffsetY += annotationsHeight;
+                    hideBtnCoverageMiniOffsetY += annotationsHeight;
                 }
                 featuresMainHidden = doHide;
             }
@@ -2198,9 +2212,44 @@ THE SOFTWARE.
                 paneToHide = annotationsMini;
                 hideBtn = hideBtnAnnotationsMini;
                 textToShow = 'Show annotations overview pane';
-                if (doHide) covMiniOffsetY -= annotationsHeight;
-                else covMiniOffsetY += annotationsHeight;
+                if (doHide) {
+                    covMiniOffsetY -= annotationsHeight;
+                    hideBtnCoverageMiniOffsetY -= annotationsHeight;
+                }
+                else {
+                    covMiniOffsetY += annotationsHeight;
+                    hideBtnCoverageMiniOffsetY += annotationsHeight;
+                }
             }
+        }
+        else {
+            if (pane == 'main') {
+                paneToHide = main_cov;
+                hideBtn = hideBtnCoverageMain;
+                textToShow = 'Show detailed coverage pane';
+                if (doHide) {
+                    miniOffsetY -= coverageHeight;
+                    annotationsMiniOffsetY -= coverageHeight;
+                    covMiniOffsetY -= coverageHeight;
+                    hideBtnAnnotationsMiniOffsetY -= coverageHeight;
+                    hideBtnCoverageMiniOffsetY -= coverageHeight;
+                }
+                else {
+                    miniOffsetY += coverageHeight;
+                    annotationsMiniOffsetY += coverageHeight;
+                    covMiniOffsetY += coverageHeight;
+                    hideBtnAnnotationsMiniOffsetY += coverageHeight;
+                    hideBtnCoverageMiniOffsetY += coverageHeight;
+                }
+                coverageMainHidden = doHide;
+            }
+            else {
+                paneToHide = mini_cov;
+                hideBtn = hideBtnCoverageMini;
+                textToShow = 'Show coverage overview pane';
+            }
+        }
+        if (track == 'features') {
             if (pane == 'main') {
                 if (main_cov)
                     main_cov.transition()
@@ -2218,38 +2267,67 @@ THE SOFTWARE.
                       .attr('transform', function(d) {
                         return 'translate(' + margin.left + ',' + annotationsMiniOffsetY + ')'
                         });
+                if (main_cov)
+                    hideBtnCoverageMain.style.top = hideBtnCoverageMainOffsetY;
+                if (mini_cov)
+                    hideBtnCoverageMini.style.top = hideBtnCoverageMiniOffsetY;
                 hideBtnAnnotationsMini.style.top = hideBtnAnnotationsMiniOffsetY;
                 if (mini_cov)
                     mini_cov.transition()
-                      .duration(200)
-                      .attr('transform', function(d) {
-                        return 'translate(' + margin.left + ',' + covMiniOffsetY + ')'
-                        });
-            }
-            else {
-                if (mini_cov)
-                    mini_cov.transition()
-                          .duration(200)
-                          .attr('transform', function(d) {
-                            return 'translate(' + margin.left + ',' + covMiniOffsetY + ')'
+                            .duration(200)
+                            .attr('transform', function(d) {
+                                return 'translate(' + margin.left + ',' + covMiniOffsetY + ')'
                             });
             }
-            if (doHide) {
-                paneToHide.attr('display', 'none');
-                hideBtn.onclick = function() {
-                    hideTrack('features', pane, false);
-                };
-                hideBtn.innerHTML = textToShow;
-            }
             else {
-                paneToHide.transition()
-                          .delay(150)
-                          .attr('display', '');
-                hideBtn.onclick = function() {
-                    hideTrack('features', pane, true);
-                };
-                hideBtn.innerHTML = 'Hide';
-                display();
+                if (mini_cov) {
+                    hideBtnCoverageMini.style.top = hideBtnCoverageMiniOffsetY;
+                    mini_cov.transition()
+                            .duration(200)
+                            .attr('transform', function(d) {
+                                return 'translate(' + margin.left + ',' + covMiniOffsetY + ')'
+                            });
+                }
             }
+        }
+        else {
+            if (pane == 'main') {
+                mini.transition()
+                    .duration(200)
+                    .attr('transform', function(d) {
+                        return 'translate(' + margin.left + ',' + miniOffsetY + ')'
+                    });
+                if (!featuresHidden) {
+                    annotationsMini.transition()
+                                   .duration(200)
+                                   .attr('transform', function(d) {
+                                       return 'translate(' + margin.left + ',' + annotationsMiniOffsetY + ')'
+                                   });
+                    hideBtnAnnotationsMini.style.top = hideBtnAnnotationsMiniOffsetY;
+                }
+                hideBtnCoverageMini.style.top = hideBtnCoverageMiniOffsetY;
+                mini_cov.transition()
+                        .duration(200)
+                        .attr('transform', function(d) {
+                            return 'translate(' + margin.left + ',' + covMiniOffsetY + ')'
+                        });
+            }
+        }
+        if (doHide) {
+            paneToHide.attr('display', 'none');
+            hideBtn.onclick = function() {
+                hideTrack(track, pane, false);
+            };
+            hideBtn.innerHTML = textToShow;
+        }
+        else {
+            paneToHide.transition()
+                      .delay(150)
+                      .attr('display', '');
+            hideBtn.onclick = function() {
+                hideTrack(track, pane, true);
+            };
+            hideBtn.innerHTML = 'Hide';
+            display();
         }
     }

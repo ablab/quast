@@ -449,6 +449,7 @@ def main(args):
     genes_fpaths = []
     operons_fpaths = []
     bed_fpath = None
+    cov_fpath = None
     reads_fpath_f = ''
     reads_fpath_r = ''
 
@@ -686,7 +687,7 @@ def main(args):
     if reads_fpath_r:
         reads_fpaths.append(reads_fpath_r)
     if reads_fpaths:
-        bed_fpath = reads_analyzer.do(ref_fpath, contigs_fpaths, reads_fpaths, None,
+        bed_fpath, cov_fpath = reads_analyzer.do(ref_fpath, contigs_fpaths, reads_fpaths, None,
                                       os.path.join(output_dirpath, qconfig.variation_dirname),
                                       external_logger=logger)
 
@@ -810,7 +811,7 @@ def main(args):
                 from libs import contig_alignment_plotter
                 contig_alignment_plot_fpath = contig_alignment_plotter.do(
                     contigs_fpaths, report_for_icarus_fpath_pattern,
-                    output_dirpath, ref_fpath, similar=True, features=features_containers)
+                    output_dirpath, ref_fpath, similar=True, features=features_containers, cov_fpath=cov_fpath)
 
             if all_pdf_file:
                 # full report in PDF format: all tables and plots

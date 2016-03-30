@@ -937,7 +937,7 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
                 data_str += 'coverage_data["{chr}"] = [ '.format(**locals())
                 for e in cov_data[chr]:
                     data_str += '{e},'.format(**locals())
-                data_str += data_str[:-1] + '];\n'
+                data_str = data_str[:-1] + '];\n'
 
             data_str += 'var not_covered = {};\n'
             data_str += 'not_covered["{chr}"] = [ '.format(**locals())

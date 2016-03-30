@@ -169,10 +169,13 @@ def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpat
     bam_sorted_fpath = os.path.join(output_dirpath, ref_name + '.sorted')
     sam_sorted_fpath = os.path.join(output_dirpath, ref_name + '.sorted.sam')
     bed_fpath = os.path.join(res_path, ref_name + '.bed')
+    cov_fpath = os.path.join(res_path, ref_name + '.cov')
 
     if is_non_empty_file(bed_fpath):
         logger.info('  Using existing BED-file: ' + bed_fpath)
-        return bed_fpath
+        if not os.path.isfile(cov_fpath):
+            cov_fpath = get_coverage(output_dirpath, ref_name, bam_fpath, err_path, cov_fpath)
+        return bed_fpath, cov_fpath
 
     logger.info('  ' + 'Pre-processing for searching structural variations...')
     logger.info('  ' + 'Logging to %s...' % err_path)
@@ -197,7 +200,7 @@ def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpat
         if not os.path.exists(sam_fpath) or os.path.getsize(sam_fpath) == 0:
             logger.error('  Failed running Bowtie2 for the reference. See ' + log_path + ' for information.')
             logger.info('  Failed searching structural variations.')
-            return None
+            return None, None
     logger.info('  Sorting SAM-file...')
     if is_non_empty_file(sam_sorted_fpath):
         logger.info('  Using existing sorted SAM-file: ' + sam_sorted_fpath)
@@ -208,6 +211,8 @@ def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpat
                                stderr=open(err_path, 'a'), logger=logger)
         qutils.call_subprocess([samtools_fpath('samtools'), 'view', '-@', str(qconfig.max_threads), bam_sorted_fpath + '.bam'], stdout=open(sam_sorted_fpath, 'w'),
                                stderr=open(err_path, 'a'), logger=logger)
+
+    cov_fpath = get_coverage(output_dirpath, ref_name, bam_fpath, err_path, cov_fpath)
     if meta_ref_fpaths:
         logger.info('  Splitting SAM-file by references...')
     headers = []
@@ -322,10 +327,22 @@ def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpat
 
     if os.path.exists(bed_fpath):
         logger.main_info('  Structural variations saved to ' + bed_fpath)
-        return bed_fpath
+        return bed_fpath, cov_fpath
     else:
         logger.main_info('  Failed searching structural variations.')
-        return None
+        return None, cov_fpath
+
+
+def get_coverage(output_dirpath, ref_name, bam_fpath, err_path, cov_fpath):
+    if not is_non_empty_file(cov_fpath):
+        bamsorted_fpath = os.path.join(output_dirpath, ref_name + '.sorted')
+        if not is_non_empty_file(bamsorted_fpath + '.bam'):
+            qutils.call_subprocess([samtools_fpath('samtools'), 'sort',  '-@', str(qconfig.max_threads), bam_fpath,
+                                    bamsorted_fpath], stdout=open(err_path, 'w'), stderr=open(err_path, 'a'))
+        qutils.call_subprocess([samtools_fpath('samtools'), 'depth', bamsorted_fpath + '.bam'], stdout=open(cov_fpath, 'w'),
+                               stderr=open(err_path, 'a'))
+        qutils.assert_file_exists(cov_fpath, 'coverage file')
+    return cov_fpath
 
 
 def bin_fpath(fname):
@@ -366,7 +383,7 @@ def do(ref_fpath, contigs_fpaths, reads_fpaths, meta_ref_fpaths, output_dir, int
                              'You can restart QUAST with the --debug flag '
                              'to see the command line.' if not qconfig.debug else ''))
             logger.main_info('Failed searching structural variations')
-            return None
+            return None, None
 
     if not all_required_binaries_exist(samtools_dirpath, 'samtools'):
         # making
@@ -383,7 +400,7 @@ def do(ref_fpath, contigs_fpaths, reads_fpaths, meta_ref_fpaths, output_dir, int
                              'You can restart QUAST with the --debug flag '
                              'to see the command line.' if not qconfig.debug else ''))
             logger.main_info('Failed searching structural variations')
-            return None
+            return None, None
 
     if not all_required_binaries_exist(manta_bin_dirpath, 'configManta.py'):
         # making

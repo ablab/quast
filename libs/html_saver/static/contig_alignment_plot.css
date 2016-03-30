@@ -13,6 +13,35 @@ body {
     width: 240px;
 }
 
+#legend {
+    float: right;
+    width: 240px;
+}
+
+#legend.collapsed p {
+    margin-bottom: 5px;
+}
+
+#legend.collapsed p::before {
+    float: left;
+    font-size: 12px;
+    content: '+ ';
+    color: #DDD;
+    cursor: pointer;
+}
+
+#legend.expanded p::before {
+    float: left;
+    font-size: 12px;
+    content: '\2212\a0';  /* &minus&nbsp */
+    color: #DDD;
+    cursor: pointer;
+}
+
+.collapsed svg {
+    height: 0px;
+}
+
 .summary_table {
     padding-left: 5px;
     border-collapse: collapse;

@@ -150,6 +150,14 @@ THE SOFTWARE.
 
     var contigsColors = {'N50': '#9369A6', 'N75': '#9369A6', 'NG50': '#78C3E6', 'NG75': '#78C3E6'};
 
+    // legend items
+    var legendItemWidth = 50;
+    var legendItemHeight = 30;
+    var legendItemXSpace = 5;
+    var legendItemYSpace = 20;
+    var legendItemOddOffset = 5;
+    var legendTextOffsetX = legendItemWidth * 2 + legendItemXSpace;
+
     var total_len = 0;
     if (CHROMOSOME) {
       for (var chr in chromosomes_len) {
@@ -270,19 +278,19 @@ THE SOFTWARE.
             .attr('text-anchor', 'end')
             .attr('class', 'laneText')
             .text(function(d) { return d.description; })
-            .call(wrap, 90, !isContigSizePlot);
+            .call(wrap, 90, !isContigSizePlot, -10, /\n/);
 
-    function wrap(text, width, addStdoutLink) {
+    function wrap(text, width, addStdoutLink, offsetX, separator) {
       text.each(function() {
           var text = d3.select(this),
-              words = text.text().split(/\n/).reverse(),
+              words = text.text().split(separator).reverse(),
               word,
               line = [],
               lineNumber = 0,
               lineHeight = 1.1,
               y = text.attr('y'),
               dy = parseFloat(text.attr('dy')),
-              tspan = text.text(null).append('tspan').attr('x', addStdoutLink ? -50 : -10).attr('y', y).attr('dy', dy + 'em');
+              tspan = text.text(null).append('tspan').attr('x', addStdoutLink ? -50 : offsetX).attr('y', y).attr('dy', dy + 'em');
           var linkAdded = false;
           while (word = words.pop()) {
             line.push(word);
@@ -294,7 +302,7 @@ THE SOFTWARE.
                 if (!linkAdded && addStdoutLink) {
                     linkAdded = true;
                     tspan = text.append('tspan')
-                            .attr('x', -10)
+                            .attr('x', offsetX)
                             .attr('y', y)
                             .attr('dy', lineNumber * lineHeight + dy + 'em')
                             .attr('text-decoration', 'underline')
@@ -307,7 +315,7 @@ THE SOFTWARE.
                             });
                 }
                 tspan = text.append('tspan')
-                    .attr('x', -10)
+                    .attr('x', offsetX)
                     .attr('y', y)
                     .attr('dy', ++lineNumber * lineHeight + dy + 'em')
                     .text(word);
@@ -494,6 +502,9 @@ THE SOFTWARE.
     info.append('p')
             .style({'text-align': 'center'})
             .text('<CLICK ON CONTIG>');
+
+    // draw legend
+    appendLegend();
 
     var selected_id;
     var prev = undefined;
@@ -1082,6 +1093,7 @@ THE SOFTWARE.
                 info.selectAll('span')
                     .remove();
                 info.append('p')
+                    .style({'text-align': 'center'})
                     .text('<CLICK ON CONTIG>');
                 arrows = [];
                 mini.selectAll('.arrow').remove();
@@ -1780,6 +1792,131 @@ THE SOFTWARE.
                     return true;
                 }
             });
+    }
+
+    function appendLegend() {
+        var menu = d3.select('body').append('div')
+                .attr('id', 'legend')
+                .attr('class', 'expanded');
+        var block = menu.append('div')
+                .attr('class', 'block')
+                .style('float', 'left');
+        var header = block.append('p')
+                .style('text-align', 'center')
+                .style('font-size', '16px')
+                .style('margin-top', '5px')
+                .text('Legend');
+        var legend = block.append('svg:svg')
+            .attr('width', "100%")
+            .attr('class', 'chart');
+
+        var legendHeight = 0;
+        if (isContigSizePlot) legendHeight = appendLegendContigSize(legend);
+        else legendHeight = appendLegendAlignmentViewer(legend);
+        legend.attr('height', legendHeight);
+
+        header.on('click', function() {
+            menu.attr('class', function() {
+                return menu.attr('class') == 'collapsed' ? 'expanded' : 'collapsed';
+            });
+            legend.attr('class', function() {
+                return legend.attr('class') == 'collapsed' ? 'expanded' : 'collapsed';
+            })
+        });
+    }
+
+    function appendLegendAlignmentViewer(legend) {
+        var classes = ['', 'similar', 'misassembled light_color', 'misassembled', 'misassembled similar', 'disabled_misassembled', 'annotation'];
+        var classDescriptions = ['correct contigs', 'correct contigs similar among >= 50% assemblies', 'misassembled blocks (misassembly event on the left side, on the right side)', 'misassembled blocks (zoom in to get details about misassembly event side)', 'misassembled blocks similar among >= 50% assemblies', 'unchecked misassembled blocks (see checkboxes controls)', 'genome features (e.g. genes)'];
+        var prevOffsetY = 0;
+        var offsetY = 0;
+        for (numClass in classes) {
+            offsetY = addLegendItemWithText(legend, prevOffsetY, classes[numClass], classDescriptions[numClass], true);
+            if (classes[numClass] == 'misassembled light_color') {
+                legend.append('path')
+                    .attr('transform',  function (d) {
+                        return 'translate(0.5,' + prevOffsetY + ')';
+                    })
+                    .attr('class', function (d) {
+                        return 'mainItem end misassembled';
+                    })
+                    .attr('d', function (d) {
+                        var startX = 0;
+                        var startY = 0;
+                        path = ['M', startX, startY, 'L', startX + (Math.sqrt(3) * (legendItemHeight - startY) / 2),
+                            (startY + (legendItemHeight - startY)) / 2, 'L', startX, legendItemHeight - startY, 'L',  startX, startY].join(' ');
+                        return path;
+                    });
+                legend.append('path')
+                    .attr('transform',  function (d) {
+                        return 'translate(' + (legendItemWidth * 2 - 0.5) + ',' + (prevOffsetY + legendItemOddOffset) + ')';
+                    })
+                    .attr('class', function (d) {
+                        return 'mainItem end misassembled odd';
+                    })
+                    .attr('d', function (d) {
+                        var startX = 0;
+                        var startY = 0;
+                        path = ['M', startX, startY, 'L', startX - (Math.sqrt(3) * (legendItemHeight - startY) / 2),
+                            (startY + (legendItemHeight - startY)) / 2, 'L', startX, legendItemHeight - startY, 'L',  startX, startY].join(' ');
+                        return path;
+                    });
+            }
+            prevOffsetY = offsetY;
+        }
+        return offsetY;
+    }
+
+    function appendLegendContigSize(legend) {
+        var classes = ['unknown', '', '', ''];
+        var classMarks = ['', 'N50', 'NG50', 'N50, NG50'];
+        var classDescriptions = ['contigs', 'contig of length = Nx statistic (x is 50 or 75)',
+        'contig of length = NGx statistic (x is 50 or 75)', 'contig of length = Nx and  NGx simultaneously'];
+        var offsetY = 0;
+        for (numClass in classes) {
+            offsetY = addLegendItemWithText(legend, offsetY, classes[numClass], classDescriptions[numClass],
+                numClass == 0, classMarks[numClass])
+        }
+        return offsetY;
+    }
+
+    function addLegendItemWithText(legend, offsetY, className, description, addOdd, marks) {
+        legend.append('g')
+                .attr('class', 'mainItem ' + className)
+                .append('rect')
+                .attr('class', 'R')
+                .attr('width', legendItemWidth)
+                .attr('height', legendItemHeight)
+                .attr('x', addOdd ? 0 : legendItemWidth / 2)
+                .attr('y', offsetY)
+                .attr('stroke', 'black')
+                .attr('stroke-width', 1)
+                .attr('fill', function (d) {
+                    d = {id: className};
+                    if (marks) return addGradient(d, marks, false, false);
+                });
+        if (addOdd)
+            legend.append('g')
+                .attr('class', 'mainItem ' + className + ' odd')
+                .append('rect')
+                .attr('class', 'R')
+                .attr('width', legendItemWidth)
+                .attr('height', legendItemHeight)
+                .attr('x', legendItemWidth)
+                .attr('y', offsetY + legendItemOddOffset)
+                .attr('stroke', 'black')
+                .attr('stroke-width', 1);
+        legend.append('text')
+                .attr('x', legendTextOffsetX)
+                .attr('y', offsetY + legendItemOddOffset)
+                .attr('dy', '.5ex')
+                .style('fill', 'white')
+                .text(description)
+                .call(wrap, 130, false, legendTextOffsetX, ' ');
+        offsetY += legendItemHeight;
+        offsetY += legendItemYSpace;
+        offsetY += 10 * Math.max(0, Math.ceil(description.length / 13 - 3));
+        return offsetY;
     }
 
     function parseFeaturesData() {

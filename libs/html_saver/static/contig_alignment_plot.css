@@ -25,17 +25,19 @@ body {
 #legend.collapsed p::before {
     float: left;
     font-size: 12px;
-    content: '+ ';
+    content: '\a0+\a0';
     color: #DDD;
     cursor: pointer;
+    border: 1px rgb(200, 200, 200) solid;
 }
 
 #legend.expanded p::before {
     float: left;
     font-size: 12px;
-    content: '\2212\a0';  /* &minus&nbsp */
+    content: '\a0\2212\a0';  /* &minus&nbsp */
     color: #DDD;
     cursor: pointer;
+    border: 1px rgb(200, 200, 200) solid;
 }
 
 .collapsed svg {
@@ -157,20 +159,13 @@ a {
 }
 
 .arrow {
-    stroke: #866D00;
+    stroke: #666;
     stroke-width: 2;
-    fill: #866D00;
 }
 
 .arrow_selected {
-    stroke: #508600;
+    stroke: #000;
     stroke-width: 2;
-    fill: #508600;
-}
-
-.main .arrow path {
-    fill: black;
-    stroke-width: 100;
 }
 
 .COV .y {
@@ -421,8 +416,8 @@ path {
 
 .miniItem.unknown {
     stroke-width: 10;
-    stroke: #40cf40;
-    fill: #678B9C;
+    stroke: #7DA6B9;
+    fill: #7DA6B9;
 }
 
 .miniItems.text {

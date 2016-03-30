@@ -97,10 +97,10 @@ THE SOFTWARE.
             if (lanes[laneNum].label) {
                 assemblyName = lanes[laneNum].label;
                 var description = assemblyName + '\n';
-                description += 'Length: ' + assemblies_len[assemblyName] + '\n';
-                description += 'Contigs: ' + assemblies_contigs[assemblyName] + '\n';
+                description += 'length: ' + assemblies_len[assemblyName] + '\n';
+                description += 'contigs: ' + assemblies_contigs[assemblyName] + '\n';
                 if (!isContigSizePlot)
-                    description += 'Misassemblies: ' + assemblies_misassemblies[assemblyName];
+                    description += 'misassemblies: ' + assemblies_misassemblies[assemblyName];
                 lanes[laneNum].description = description;
                 if (!isContigSizePlot)
                     lanes[laneNum].link = assemblies_links[assemblyName];
@@ -193,7 +193,7 @@ THE SOFTWARE.
 
     var spaceAfterMain = 20;
     var spaceAfterTrack = 50;
-    var menuOffsetY = 130;
+    var menuOffsetY = 160;
     height = mainHeight + mainScale + 2 * coverageHeight + miniHeight + miniScale +
         annotationsHeight * 2 + 100;
     var chart = d3.select('body').append('div').attr('id', 'chart')
@@ -244,7 +244,7 @@ THE SOFTWARE.
             .attr('transform', 'translate(' + margin.left + ',' + miniOffsetY + ')')
             .attr('width', chartWidth)
             .attr('height', miniHeight + miniScale)
-            .attr('class', 'mini');
+            .attr('class', 'main');
     if (!featuresHidden)
       var annotationsMini = chart.append('g')
             .attr('transform', 'translate(' + margin.left + ',' + annotationsMiniOffsetY + ')')
@@ -294,7 +294,9 @@ THE SOFTWARE.
               lineHeight = 1.1,
               y = text.attr('y'),
               dy = parseFloat(text.attr('dy')),
-              tspan = text.text(null).append('tspan').attr('x', addStdoutLink ? -50 : offsetX).attr('y', y).attr('dy', dy + 'em');
+              tspan = text.text(null).append('tspan').attr('x', addStdoutLink ? -50 : offsetX)
+                                    .attr('y', y).attr('dy', dy + 'em')
+                                    .style('font-weight', 'bold');
           var linkAdded = false;
           while (word = words.pop()) {
             line.push(word);
@@ -637,6 +639,23 @@ THE SOFTWARE.
     var arrows = [];
     var markerWidth = 3,
         markerHeight = 3;
+    var markerCircleR = 2,
+        markerCircleD = 4;
+
+    chart.append("svg:defs").selectAll("marker")
+        .data(["arrow", "arrow_selected"])
+        .enter().append("svg:marker")
+        .attr("id", function (d) {
+            return 'start_' + d })
+        .attr("refX", markerCircleR)
+        .attr("refY", markerCircleR)
+        .attr("markerWidth", markerCircleD)
+        .attr("markerHeight", markerCircleD)
+        .append("circle")
+        .attr("cx", markerCircleR)
+        .attr("cy", markerCircleR)
+        .attr("r", markerCircleR);
+    d3.select('#start_arrow').select('circle').style('fill', '#909090');
 
     chart.append("svg:defs").selectAll("marker")
         .data(["arrow", "arrow_selected"])
@@ -650,6 +669,7 @@ THE SOFTWARE.
         .attr("orient", "auto")
         .append("svg:path")
         .attr("d", "M0,-5L10,0L0,5");
+    d3.select('#arrow').select('path').style('fill', '#777777');
 
     var separatedLines = [];
     var currentLen = 0;
@@ -1698,7 +1718,7 @@ THE SOFTWARE.
 
 
     function showArrows(d) {
-        var shift = 0;
+        var verticalShift = -7;
         arrows = [];
         mini.selectAll('.arrow').remove();
         mini.selectAll('.arrow_selected').remove();
@@ -1711,16 +1731,19 @@ THE SOFTWARE.
                     if (!(e.corr_start <= d.corr_start && d.corr_end <= e.corr_end) && chrContigs.indexOf(e.chr) != -1) {
                         arrows.push({start: e.corr_start, end: e.corr_end, lane: d.lane, selected: false});
                         mini.append('g')
-                                .attr('transform', 'translate(' + x_mini((e.corr_end + e.corr_start) / 2) + ',0)')
+                                .attr('transform', 'translate(' + x_mini((e.corr_end + e.corr_start) / 2) + ',' + verticalShift +')')
                                 .attr('class', 'arrow')
                                 .append("svg:path")
-                                .attr("d", 'M0,0V' + (1 + d.lane * miniLanesHeight))
+                                .attr("d", 'M0,0V' + (Math.abs(verticalShift) + 1 + d.lane * miniLanesHeight))
                                 .attr("class", function (d) {
-                                return "path arrow";
-                            })
+                                    return "path arrow";
+                                })
+                                .attr("marker-start", function (d) {
+                                    return "url(#start_arrow)";
+                                })
                                 .attr("marker-end", function (d) {
-                                return "url(#arrow)";
-                            });
+                                    return "url(#arrow)";
+                                });
                     }
                 }
             }
@@ -1728,16 +1751,19 @@ THE SOFTWARE.
 
         arrows.push({start: d.corr_start, end: d.corr_end, lane: d.lane, selected: true});
         mini.append('g')
-                .attr('transform', 'translate(' + x_mini((d.corr_end + d.corr_start) / 2) + ',0)')
+                .attr('transform', 'translate(' + x_mini((d.corr_end + d.corr_start) / 2) + ',' + verticalShift +')')
                 .attr('class', 'arrow_selected')
                 .append("svg:path")
-                .attr("d", 'M0,0V' + (1 + d.lane * miniLanesHeight))
+                .attr("d", 'M0,0V' + (Math.abs(verticalShift) + 1 + d.lane * miniLanesHeight))
                 .attr("class", function (d) {
-                return "path arrow_selected";
-            })
+                    return "path arrow_selected";
+                })
+                .attr("marker-start", function (d) {
+                    return "url(#start_arrow_selected)";
+                })
                 .attr("marker-end", function (d) {
-                return "url(#arrow_selected)";
-            });
+                    return "url(#arrow_selected)";
+                });
         display();
     }
 
@@ -1767,7 +1793,7 @@ THE SOFTWARE.
                 items[numItem].misassembled = isMisassembled;
             }
         }
-        d3.selectAll('g')
+        chart.selectAll('g')
             .classed('misassembled', function (d) {
                 if (d && d.misassemblies) {
                     return d.misassembled == 'True';
@@ -1783,7 +1809,7 @@ THE SOFTWARE.
                   return (d.supp && d.misassembled != 'True' ? 0 : 1);
                 }
             });
-        d3.selectAll('path')
+        chart.selectAll('path')
             .classed('misassembled', function (d) {
                 if (d && d.misassemblies) {
                     var msTypes = d.misassemblies.split(';');
@@ -1837,7 +1863,9 @@ THE SOFTWARE.
 
     function appendLegendAlignmentViewer(legend) {
         var classes = ['', 'similar', 'misassembled light_color', 'misassembled', 'misassembled similar', 'disabled_misassembled', 'annotation'];
-        var classDescriptions = ['correct contigs', 'correct contigs similar among >= 50% assemblies', 'misassembled blocks (misassembly event on the left side, on the right side)', 'misassembled blocks (zoom in to get details about misassembly event side)', 'misassembled blocks similar among >= 50% assemblies', 'unchecked misassembled blocks (see checkboxes controls)', 'genome features (e.g. genes)'];
+        var classDescriptions = ['correct contigs', 'correct contigs similar among >= 50% assemblies', 'misassembled blocks ' +
+        '(misassembly event on the left side, on the right side)', 'misassembled blocks (zoom in to get details about misassembly event side)',
+            'misassembled blocks similar among >= 50% assemblies', 'unchecked misassembled blocks (see checkboxes)', 'genome features (e.g. genes)'];
         var prevOffsetY = 0;
         var offsetY = 0;
         for (numClass in classes) {
@@ -1881,7 +1909,7 @@ THE SOFTWARE.
         var classes = ['unknown', '', '', ''];
         var classMarks = ['', 'N50', 'NG50', 'N50, NG50'];
         var classDescriptions = ['contigs', 'contig of length = Nx statistic (x is 50 or 75)',
-        'contig of length = NGx statistic (x is 50 or 75)', 'contig of length = Nx and  NGx simultaneously'];
+        'contig of length = NGx statistic (x is 50 or 75)', 'contig of length = Nx and NGx simultaneously'];
         var offsetY = 0;
         for (numClass in classes) {
             offsetY = addLegendItemWithText(legend, offsetY, classes[numClass], classDescriptions[numClass],

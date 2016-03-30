@@ -975,16 +975,19 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
                         result.write(open(html_saver.get_real_path(os.path.join('static', 'd3.js'))).read())
                         result.write(open(html_saver.get_real_path(os.path.join('static', 'scripts',
                                                                                 'contig_alignment_plot_script.js'))).read())
-                    else:
-                        result.write(line)
-                    if line.find('<!--- title: ---->') != -1:
-                        title = 'Icarus. Contig alignment viewer.'
-                        result.write(title)
-                    if line.find('<!--- reference: ---->') != -1:
+                    elif line.find('<!--- title: ---->') != -1:
+                        result.write('Icarus')
+                    elif line.find('<!--- subtitle: ---->') != -1:
+                        result.write('Contig alignment viewer')
+                    elif line.find('<!--- reference: ---->') != -1:
                         chr_name = chr.replace('_', ' ')
                         if len(chr_name) > 90:
                             chr_name = chr_name[:90] + '...'
                         result.write(chr_name)
+                    elif line.find('<!--- menu: ---->') != -1:
+                        result.write('<a href="../{summary_fname}">Main menu</a>'.format(**locals()))
+                    else:
+                        result.write(line)
 
     contigs_sizes_str = 'var contig_data = {};\n'
     contigs_sizes_str += 'var CHROMOSOME;\n'
@@ -1032,11 +1035,14 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
                     result.write(open(html_saver.get_real_path(os.path.join('static', 'd3.js'))).read())
                     result.write(open(html_saver.get_real_path(os.path.join('static', 'scripts',
                                                                             'contig_alignment_plot_script.js'))).read())
+                elif line.find('<!--- menu: ---->') != -1:
+                    result.write('<a href="../{summary_fname}">Main menu</a>'.format(**locals()))
+                elif line.find('<!--- title: ---->') != -1:
+                    result.write('Icarus')
+                elif line.find('<!--- subtitle: ---->') != -1:
+                    result.write('Contig size viewer')
                 else:
                     result.write(line)
-                    if line.find('<!--- title: ---->') != -1:
-                        title = 'Icarus. Contig size viewer'
-                        result.write(title)
 
     icarus_links = defaultdict(list)
     if len(chr_full_names) > 1:
@@ -1044,6 +1050,7 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
         #icarus_def = 'Icarus: interactive contig assessment viewer'
         icarus_links["links"].append(chr_link)
         icarus_links["links_names"].append('Icarus main menu')
+
     with open(html_saver.get_real_path(qconfig.alignment_summary_template_fname), 'r') as template:
         with open(summary_path, 'w') as result:
             num_aligned_assemblies = [len(aligned_assemblies[chr]) for chr in chr_full_names]

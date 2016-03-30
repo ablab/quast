@@ -255,3 +255,18 @@ ul.mdash li:before {
 .links_after_content{
     font-size: 14px;
 }
+
+p {
+    display: block;
+    font-size: 0.9em;
+}
+
+h1 {
+    display: block;
+    font-size: 1.6em;
+    -webkit-margin-before: 0.25em;
+    -webkit-margin-after: 0px;
+    -webkit-margin-start: 0px;
+    -webkit-margin-end: 0px;
+    font-weight: bold;
+}

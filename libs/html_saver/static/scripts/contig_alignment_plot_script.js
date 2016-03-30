@@ -678,7 +678,7 @@ THE SOFTWARE.
         if (chrContigs.length > 1) {
             for (var chr in chromosomes_len) {
                 var shortName = chr.slice(commonChrName, chr.length);
-                refLines.push({name: shortName, corr_start: currentLen, corr_end: len + chromosomes_len[chr],
+                separatedLines.push({name: shortName, corr_start: currentLen, corr_end: len + chromosomes_len[chr],
                                y1: 0, y2: mainHeight, len: chromosomes_len[chr]});
                 currentLen += chromosomes_len[chr];
             }
@@ -702,6 +702,37 @@ THE SOFTWARE.
 
     var rectItems = [];
     var nonRectItems = [];
+
+    if (isContigSizePlot) {
+        var drag = d3.behavior.drag()
+            .on('dragstart', function () {
+                d3.event.sourceEvent.stopPropagation();
+            })
+             .on('drag', function() {
+                lineCountContigs.attr('transform', 'translate(' + d3.event.x + ',0)');
+                getNumberOfContigs(d3.event.x);
+                d3.event.sourceEvent.stopPropagation();
+            });
+        var startPos = 400;
+
+        var lineCountContigs = itemLines.append('g')
+                .attr('id', 'countLine')
+                .attr('transform', function (d) {
+                    return 'translate(' + startPos + ', 0)';
+                })
+                .attr('width', function (d) {
+                    return 5;
+                })
+                .call(drag);
+        lineCountContigs.append('rect')
+                .attr('width', function (d) {
+                    return 1;
+                })
+                .attr('height', function (d) {
+                    return mainHeight;
+                })
+                .attr('fill', '#300000');
+    }
 
     display();
 
@@ -1010,7 +1041,8 @@ THE SOFTWARE.
               if (!d || !d.size) return 1;
               return d.size > minContigSize ? 1 : paleContigsOpacity;
             });
-
+        if (isContigSizePlot)
+            getNumberOfContigs(d3.transform(d3.select('#countLine').attr("transform")).translate[0]);
 
         // upd coverage
         if (typeof coverage_data != 'undefined' && !coverageMainHidden) {
@@ -1278,6 +1310,47 @@ THE SOFTWARE.
             if (parseInt(textBox.value)) minContigSize = parseInt(textBox.value);
             else if (key == 13) minContigSize = 0;
             display();
+        }
+    }
+
+    function getNumberOfContigs(x) {
+        lineCountContigs.selectAll('g')
+                .remove();
+        for (item in rectItems) {
+            if (x_main(rectItems[item].corr_start) <= x && x <= x_main(rectItems[item].corr_end)) {
+                 var container = lineCountContigs.append('g')
+                        .attr('transform', function (d) {
+                            d = rectItems[item];
+                            order = d.order + 1;
+                            var x = -getSize(order) - 50;
+                            var y = y_main(d.lane) + mainLanesHeight / 2;
+
+                            return 'translate(' + x + ', ' + y + ')';
+                        })
+                        .attr('width', function (d) {
+                        });
+                container.append('rect')
+                        .attr('height', 15)
+                        .attr('width', function (d) {
+                            d = rectItems[item];
+                            order = d.order + 1;
+                            return getSize(order) + 50;
+                        })
+                        .attr('fill', '#fff')
+                        .attr('transform', 'translate(-3, -12)');
+                container.append('text')
+                        .text(function (d) {
+                            d = rectItems[item];
+                            var suffix = 'th';
+                            order = d.order + 1;
+                            if (order[order.length - 1] == '1') suffix = 'st';
+                            if (order[order.length - 1] == '2') suffix = 'nd';
+                            if (order[order.length - 1] == '3') suffix = 'rd';
+                            return order + suffix + ' contig';
+                        })
+                        .attr('text-anchor', 'start')
+                        .attr('class', 'itemLabel');
+            }
         }
     }
 

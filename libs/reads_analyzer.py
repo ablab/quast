@@ -171,7 +171,7 @@ def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpat
     bed_fpath = os.path.join(res_path, ref_name + '.bed')
     cov_fpath = os.path.join(res_path, ref_name + '.cov')
 
-    if is_non_empty_file(bed_fpath):
+    if os.path.exists(bed_fpath):
         logger.info('  Using existing BED-file: ' + bed_fpath)
         if not os.path.isfile(cov_fpath):
             cov_fpath = get_coverage(output_dirpath, ref_name, bam_fpath, err_path, cov_fpath)

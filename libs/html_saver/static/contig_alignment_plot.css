@@ -192,7 +192,11 @@ a {
     stroke-width: 1px;
 }
 
-.coverage .y text, .x text {
+.coverage .y text {
+    font: 12px sans-serif;
+}
+
+.coverage .axis text {
     font: 12px sans-serif;
 }
 
@@ -433,13 +437,19 @@ path {
     fill: #49190C;
 }
 
+.featureLabel {
+    fill: #ffffcc;
+    font-size: 8px;
+    pointer-events: none;
+}
+
 .feature_tip {
   position: absolute;
   text-align: center;
   width: 100px;
   padding: 2px;
   font: 11px sans-serif;
-  background: lightsteelblue;
+  background: lightgray;
   border: 0px;
   border-radius: 8px;
   content: "\25BC";

@@ -800,6 +800,7 @@ def main(args):
         try:
             if detailed_contigs_reports_dirpath:
                 report_for_icarus_fpath_pattern = os.path.join(detailed_contigs_reports_dirpath, qconfig.icarus_report_fname_pattern)
+                stdout_pattern = os.path.join(detailed_contigs_reports_dirpath, qconfig.contig_report_fname_pattern)
             else:
                 report_for_icarus_fpath_pattern = None
             number_of_steps = sum([int(bool(value)) for value in [report_for_icarus_fpath_pattern, all_pdf_file]])
@@ -811,7 +812,7 @@ def main(args):
                 from libs import contig_alignment_plotter
                 contig_alignment_plot_fpath = contig_alignment_plotter.do(
                     contigs_fpaths, report_for_icarus_fpath_pattern,
-                    output_dirpath, ref_fpath, similar=True, features=features_containers, cov_fpath=cov_fpath)
+                    output_dirpath, ref_fpath, stdout_pattern=stdout_pattern, similar=True, features=features_containers, cov_fpath=cov_fpath)
 
             if all_pdf_file:
                 # full report in PDF format: all tables and plots

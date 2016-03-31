@@ -93,7 +93,7 @@ report_prefix = "report"
 transposed_report_prefix = "transposed_report"
 gage_report_prefix = "gage_"
 html_aux_dir = "report_html_aux"
-contig_report_fname_pattern = 'contigs_report_%s'
+contig_report_fname_pattern = 'contigs_report_%s.stdout'
 icarus_report_fname_pattern = 'all_alignments_%s.tsv'
 
 # for MetaQUAST
@@ -110,8 +110,8 @@ manta_sv_fname = 'manta_sv.bed'
 
 # for Icarus
 create_contig_alignment_html = True
-alignment_plots_dirname = 'alignment_plot'
-alignment_summary_fname = 'alignment_summary.html'
+alignment_plots_dirname = 'icarus_viewers'
+alignment_summary_fname = 'Icarus.html'
 alignment_summary_template_fname = 'alignment_summary_templ.html'
 contig_size_viewer_fname = 'contig_size_viewer.html'
 contig_size_viewer_name = 'Contig size viewer'

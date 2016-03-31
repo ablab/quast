@@ -592,7 +592,7 @@ def make_output_dir(output_dir_path):
 
 
 def do(contigs_fpaths, contig_report_fpath_pattern, output_dirpath,
-       ref_fpath, cov_fpath=None, arcs=False, similar=False, features=None, coverage_hist=None):
+       ref_fpath, cov_fpath=None, arcs=False, stdout_pattern=None, similar=False, features=None, coverage_hist=None):
     make_output_dir(output_dirpath)
 
     lists_of_aligned_blocks = []
@@ -633,7 +633,8 @@ def do(contigs_fpaths, contig_report_fpath_pattern, output_dirpath,
         lists_of_aligned_blocks, arcs, similar, coverage_hist)
     if assemblies and qconfig.create_contig_alignment_html:
         js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, reference_chromosomes,
-                    output_dirpath, structures_by_labels, contigs_by_assemblies=contigs_by_assemblies, features=features, cov_fpath=cov_fpath)
+                    output_dirpath, structures_by_labels, stdout_pattern=stdout_pattern, contigs_by_assemblies=contigs_by_assemblies,
+                    features=features, cov_fpath=cov_fpath)
 
     return plot_fpath
 
@@ -697,7 +698,7 @@ def parse_nucmer_contig_report(report_fpath, sorted_ref_names, cumulative_ref_le
 
 
 def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromosomes_length,
-                output_dirpath, structures_by_labels, contigs_by_assemblies, features=None, cov_fpath=None):
+                output_dirpath, structures_by_labels, contigs_by_assemblies, stdout_pattern=None, features=None, cov_fpath=None):
     chr_to_aligned_blocks = dict()
     chr_names = chromosomes_length.keys()
     for chr in chr_names:
@@ -773,7 +774,7 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
     assemblies_data += 'var assemblies_misassemblies = {};\n'
     for contigs_fpath in contigs_fpaths:
         label = qutils.name_from_fpath(contigs_fpath)
-        contig_stdout_fpath = contig_report_fpath_pattern % qutils.label_from_fpath_for_fname(contigs_fpath)
+        contig_stdout_fpath = stdout_pattern % qutils.label_from_fpath_for_fname(contigs_fpath)
         report = reporting.get(contigs_fpath)
         l = report.get_field(reporting.Fields.TOTALLEN)
         contigs = report.get_field(reporting.Fields.CONTIGS)
@@ -782,8 +783,8 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
         assemblies_data += 'assemblies_links["{label}"] = "{contig_stdout_fpath}";\n'.format(**locals())
         assemblies_data += 'assemblies_len["{label}"] = {l};\n'.format(**locals())
         assemblies_data += 'assemblies_contigs["{label}"] = {contigs};\n'.format(**locals())
-        assemblies_data += 'assemblies_misassemblies["{label}"] = "{ext_misassemblies} ' \
-                           '(+{local_misassemblies})";\n'.format(**locals())
+        assemblies_data += 'assemblies_misassemblies["{label}"] = "{ext_misassemblies}' \
+                           '+{local_misassemblies}";\n'.format(**locals())
         for nx in nx_marks:
             assemblies_n50[label][nx] = report.get_field(nx)
 
@@ -951,7 +952,7 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
             data_str += '];\n'
 
         with open(html_saver.get_real_path('_chr_templ.html'), 'r') as template:
-            with open(os.path.join(output_all_files_dir_path, '_{short_chr}.html'.format(**locals())), 'w') as result:
+            with open(os.path.join(output_all_files_dir_path, '{short_chr}.html'.format(**locals())), 'w') as result:
                 for line in template:
                     if line.find('<!--- data: ---->') != -1:
                         result.write(data_str)
@@ -1081,13 +1082,13 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
                         result.write('<tr>')
                         short_chr = chr[:30]
                         if len(chr_full_names) == 1:
-                            short_chr = qconfig.one_alignment_viewer_name
+                            html_name = qconfig.one_alignment_viewer_name
                             contig_alignment_name = qconfig.contig_alignment_viewer_name
-                            chr_link = os.path.join(qconfig.alignment_plots_dirname, '_{short_chr}.html'.format(**locals()))
+                            chr_link = os.path.join(qconfig.alignment_plots_dirname, '{html_name}.html'.format(**locals()))
                             icarus_links["links"].append(chr_link)
                             icarus_links["links_names"].append(contig_alignment_name)
                         else:
-                            chr_link = os.path.join(qconfig.alignment_plots_dirname, '_{short_chr}.html'.format(**locals()))
+                            chr_link = os.path.join(qconfig.alignment_plots_dirname, '{short_chr}.html'.format(**locals()))
                         chr_name = chr.replace('_', ' ')
                         tooltip = ''
                         if len(chr_name) > 50:

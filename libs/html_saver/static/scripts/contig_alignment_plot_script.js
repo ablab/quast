@@ -1021,9 +1021,9 @@ THE SOFTWARE.
     function addSelectionAreas() {
         brush = drawBrush(mini, miniHeight);
         if (!featuresHidden)
-            brush_cov = drawBrush(annotationsMini, annotationsHeight, 'features');
+            brush_anno = drawBrush(annotationsMini, annotationsHeight, 'features');
         if (drawCoverage)
-            brush_anno = drawBrush(mini_cov, coverageHeight, 'coverage');
+            brush_cov = drawBrush(mini_cov, coverageHeight, 'coverage');
     }
     function keyPress (cmd, deltaCoeff) {
         var ext = brush.extent();

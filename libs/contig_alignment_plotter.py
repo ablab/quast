@@ -774,7 +774,7 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
     assemblies_data += 'var assemblies_misassemblies = {};\n'
     for contigs_fpath in contigs_fpaths:
         label = qutils.name_from_fpath(contigs_fpath)
-        contig_stdout_fpath = stdout_pattern % qutils.label_from_fpath_for_fname(contigs_fpath)
+        contig_stdout_fpath = stdout_pattern % qutils.label_from_fpath_for_fname(contigs_fpath) + '.stdout'
         report = reporting.get(contigs_fpath)
         l = report.get_field(reporting.Fields.TOTALLEN)
         contigs = report.get_field(reporting.Fields.CONTIGS)

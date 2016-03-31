@@ -195,8 +195,20 @@ THE SOFTWARE.
     var spaceAfterMain = 20;
     var spaceAfterTrack = 50;
     var menuOffsetY = 85;
-    height = mainHeight + mainScale + 2 * coverageHeight + miniHeight + miniScale +
-        annotationsHeight * 2 + 100;
+    var annotationsMainOffsetY = mainHeight + mainScale + (featuresHidden ? 0 : spaceAfterMain);
+    var covMainOffsetY = typeof coverage_data != 'undefined' ? (annotationsMainOffsetY +
+                            (featuresHidden ? spaceAfterMain : spaceAfterTrack)) : annotationsMainOffsetY;
+    var miniOffsetY = covMainOffsetY + spaceAfterTrack;
+    var annotationsMiniOffsetY = miniOffsetY + miniHeight + (featuresHidden ? 0 : spaceAfterTrack);
+    var covMiniOffsetY = annotationsMiniOffsetY + annotationsHeight + spaceAfterTrack;
+    var hideBtnsOffsetY = margin.top + menuOffsetY;
+    var hideBtnAnnotationsMiniOffsetY = annotationsMiniOffsetY + hideBtnsOffsetY;
+    var hideBtnAnnotationsMainOffsetY = annotationsMainOffsetY + hideBtnsOffsetY;
+    var hideBtnCoverageMiniOffsetY = covMiniOffsetY + hideBtnsOffsetY;
+    var hideBtnCoverageMainOffsetY = covMainOffsetY + hideBtnsOffsetY;
+
+    height = covMiniOffsetY + coverageHeight * 2 + annotationsHeight + 100;
+
     var chart = d3.select('body').append('div').attr('id', 'chart')
             .append('svg:svg')
             .attr('width', width + margin.right + margin.left)
@@ -221,18 +233,6 @@ THE SOFTWARE.
       featuresHidden = true;
     if (typeof coverage_data != "undefined")
         drawCoverage = true;
-
-    var annotationsMainOffsetY = mainHeight + mainScale + (featuresHidden ? 0 : spaceAfterMain);
-    var covMainOffsetY = typeof coverage_data != 'undefined' ? (annotationsMainOffsetY +
-                            (featuresHidden ? spaceAfterMain : spaceAfterTrack)) : annotationsMainOffsetY;
-    var miniOffsetY = covMainOffsetY + spaceAfterTrack;
-    var annotationsMiniOffsetY = miniOffsetY + miniHeight + (featuresHidden ? 0 : spaceAfterTrack);
-    var covMiniOffsetY = annotationsMiniOffsetY + annotationsHeight + spaceAfterTrack;
-    var hideBtnsOffsetY = margin.top + menuOffsetY;
-    var hideBtnAnnotationsMiniOffsetY = annotationsMiniOffsetY + hideBtnsOffsetY;
-    var hideBtnAnnotationsMainOffsetY = annotationsMainOffsetY + hideBtnsOffsetY;
-    var hideBtnCoverageMiniOffsetY = covMiniOffsetY + hideBtnsOffsetY;
-    var hideBtnCoverageMainOffsetY = covMainOffsetY + hideBtnsOffsetY;
 
     var brush, brush_cov, brush_anno;
     if (!featuresHidden)
@@ -333,7 +333,7 @@ THE SOFTWARE.
                             .attr('dy', ++lineNumber * lineHeight + dy + 'em')
                             .text(word[0]);
                     tspan = text.append('tspan')
-                            .attr('x', msOffset)
+                            .attr('x', -10)
                             .attr('y', y)
                             .attr('dy', lineNumber * lineHeight + dy + 'em')
                             .style('font-style', 'italic')

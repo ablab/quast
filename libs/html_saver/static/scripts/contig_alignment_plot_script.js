@@ -1016,8 +1016,17 @@ THE SOFTWARE.
         })
                 .on('mouseenter', glow)
                 .on('mouseleave', disglow);
+        var prevX = 0;
+        var prevLane = -1;
         var visTexts = rectItems.filter(function (d) {
-            if (x_main(Math.max(minExtent, d.corr_end)) - x_main(Math.max(minExtent, d.corr_start)) > 20) return d;
+            var textStart = x_main(Math.max(minExtent, d.corr_start));
+            if (textStart - prevX > 20 || d.lane != prevLane) {
+                if (x_main(Math.max(minExtent, d.corr_end)) - textStart > 20) {
+                    prevX = textStart;
+                    prevLane = d.lane;
+                    return d;
+                }
+            }
         });
         itemNonRects.selectAll('text')
             .data(visTexts, function (d) {

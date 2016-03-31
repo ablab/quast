@@ -194,7 +194,7 @@ THE SOFTWARE.
 
     var spaceAfterMain = 20;
     var spaceAfterTrack = 50;
-    var menuOffsetY = 160;
+    var menuOffsetY = 85;
     height = mainHeight + mainScale + 2 * coverageHeight + miniHeight + miniScale +
         annotationsHeight * 2 + 100;
     var chart = d3.select('body').append('div').attr('id', 'chart')

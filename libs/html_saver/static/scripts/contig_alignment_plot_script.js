@@ -1284,17 +1284,17 @@ THE SOFTWARE.
             endCoord = startCoord + brushSize;
         }
         startCoord = Math.max(0, startCoord);
-        endCoord = Math.min(endCoord, x_main(x_mini.domain()[1]));
-        startCoord = Math.min(startCoord, endCoord - 10);
+        endCoord = Math.min(endCoord, x_mini.domain()[1]);
+        startCoord = Math.min(startCoord, endCoord - minBrushExtent);
         if (animation) {
             var distance = Math.abs(startCoord - ext[0]);
             var distRange = distance / (ext[1] - ext[0]);
             if (distRange > 50) {
-                distRange = distRange * 0.02;
+                distRange = distRange * 0.05;
                 var zoomDelta = (distRange - 1) * .5 * 100;
                 brush.extent([ext[0] - zoomDelta, ext[1] + zoomDelta]);
             }
-            var delta = Math.max(2, 0.02 * distance);
+            var delta = Math.max(5, 0.05 * distance);
             ext = brush.extent();
             var numSteps = Math.max(1, parseInt(distance / delta));
             if (ext[0] > startCoord) delta = -delta;
@@ -1705,7 +1705,7 @@ THE SOFTWARE.
         else info.append('p')
                 .text('Size: ' + d.size + ' bp');
 
-        var appendPositionElement = function(data, start, end, assembly, whereAppend, start_in_contig, end_in_contig, is_expanded) {
+        var appendPositionElement = function(data, start, end, assembly, whereAppend, start_in_contig, end_in_contig, prev_start, is_expanded) {
             var posVal = function (d) {
                 if (mainTickValue == 'Gbp')
                     return d3.round(d / 1000000000, 2);
@@ -1750,7 +1750,9 @@ THE SOFTWARE.
                 .on('click',function(d) {
                     var brushExtent = brush.extent();
                     var brushSize = brushExtent[1] - brushExtent[0];
-                    setCoords([e.corr_start - brushSize / 2, e.corr_start + brushSize / 2], true);
+                    if (prev_start && prev_start > e.corr_start) point = e.corr_end;
+                    else if (prev_start) point = e.corr_start;
+                    setCoords([point - brushSize / 2, point + brushSize / 2], true);
                     for (i in items) {
                         if (items[i].assembly == assembly && items[i].corr_start == e.corr_start && items[i].corr_end == e.corr_end) {
                             selected_id = items[i].groupId;
@@ -1797,7 +1799,8 @@ THE SOFTWARE.
             for (var i = 0; i < d.structure.length; ++i) {
                 var e = d.structure[i];
                 if (e.type == "A") {
-                    appendPositionElement(d.structure, e.corr_start, e.corr_end, d.assembly, blocks, e.start_in_contig, e.end_in_contig, true);
+                    appendPositionElement(d.structure, e.corr_start, e.corr_end, d.assembly, blocks, e.start_in_contig,
+                        e.end_in_contig, d.corr_start, true);
                 } else {
                     blocks.append('p')
                             .text(e.mstype);

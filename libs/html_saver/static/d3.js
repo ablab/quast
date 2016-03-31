@@ -4540,8 +4540,8 @@
       });
     }
     function redrawX(g) {
-      if (extent[1][0] == extent[0][0]) {
-        extent[0][0] = extent[1][0] - 2;
+      if (extent[1][0] - extent[0][0] < minBrushExtent) {
+        extent[0][0] = extent[1][0] - minBrushExtent;
         return;
       }
       g.select(".extent").attr("x", extent[0][0]);

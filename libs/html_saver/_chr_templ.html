@@ -26,7 +26,6 @@ THE SOFTWARE.
 <html>
 <head>
     <!-- <script type="text/javascript" src="http://mbostock.github.com/d3/d3.v2.js"></script> -->
-
 <style type="text/css" rel="stylesheet">
 	<!--- css: ---->
 </style>
@@ -52,24 +51,25 @@ THE SOFTWARE.
 				</div>
 			</div>
 		</td>
+        <td>
+            <div align="center" style="float: left;margin-left:-400px; margin-top: 10px;">
+				move <button id="left_shift" class="btn btn-inverse"><<</button>
+				<button id="left" class="btn btn-inverse"><</button>
+				<button id="right" class="btn btn-inverse">></button>
+				<button id="right_shift" class="btn btn-inverse">>></button>
+				&nbsp&nbsp&nbsp&nbsp&nbsp
+				zoom in <button id="zoom_in" class="btn btn-inverse">2x</button>
+				<button id="zoom_in_5" class="btn btn-inverse">5x</button>
+				&nbsp&nbsp&nbsp&nbsp&nbsp
+				zoom out <button id="zoom_out" class="btn btn-inverse">2x</button>
+				<button id="zoom_out_5" class="btn btn-inverse">5x</button>
+				&nbsp&nbsp&nbsp&nbsp&nbsp
+				coordinates: <input class="textBox" id="input_coords" type="text" maxlength="30" />
+				<!--- Contig size threshold: ---->
+				<!--- misassemblies selector: ---->
+			</div>
 		</tr>
 	</table>
-</div>
-<div class="menu_block" align="center">
-	move <button id="left_shift" class="btn btn-inverse"><<</button>
-	<button id="left" class="btn btn-inverse"><</button>
-	<button id="right" class="btn btn-inverse">></button>
-	<button id="right_shift" class="btn btn-inverse">>></button>
-	&nbsp&nbsp&nbsp&nbsp&nbsp
-	zoom in <button id="zoom_in" class="btn btn-inverse">2x</button>
-	<button id="zoom_in_5" class="btn btn-inverse">5x</button>
-	&nbsp&nbsp&nbsp&nbsp&nbsp
-	zoom out <button id="zoom_out" class="btn btn-inverse">2x</button>
-	<button id="zoom_out_5" class="btn btn-inverse">5x</button>
-	&nbsp&nbsp&nbsp&nbsp&nbsp
-	coordinates: <input class="textBox" id="input_coords" type="text" maxlength="30" />
-	<!--- Contig size threshold: ---->
-<!--- misassemblies selector: ---->
 </div>
 <div class="reftitle">
 	<!--- reference: ---->

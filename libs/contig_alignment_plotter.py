@@ -962,7 +962,7 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
                         result.write('var CHROMOSOME = "{chr}";\n'.format(**locals()))
                         result.write('var chrContigs = ["{chromosome}"];\n'.format(**locals()))
                     elif line.find('<!--- misassemblies selector: ---->') != -1:
-                        result.write('<div class="menu_block" align="center">')
+                        result.write('<div align="center" style="margin-top: 7px;">')
                         result.write('Misassembly type to show:')
                         for ms_type in misassemblies_types:
                             ms_count = ms_types[ms_type] / 2
@@ -1032,8 +1032,8 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
                     result.write(assemblies_data)
                     result.write(contigs_sizes_str)
                 elif line.find('<!--- Contig size threshold: ---->') != -1:
-                    result.write('&nbsp&nbsp&nbsp&nbsp&nbsp hide contigs < '
-                                 '<input class="textBox" id="input_contig_threshold" type="text" size="5" /> bp')
+                    result.write('<div align="center" style="margin-top: 7px;">Hide contigs < '
+                                 '<input class="textBox" id="input_contig_threshold" type="text" size="5" /> bp </div>')
                 elif line.find('<!--- css: ---->') != -1:
                     result.write(open(html_saver.get_real_path(os.path.join('static', 'contig_alignment_plot.css'))).read())
                     result.write(open(html_saver.get_real_path(os.path.join('static', 'common.css'))).read())
@@ -1063,21 +1063,20 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
             num_aligned_assemblies = [len(aligned_assemblies[chr]) for chr in chr_full_names]
             is_unaligned_asm_exists = len(set(num_aligned_assemblies)) > 1
             for line in template:
-                result.write(line)
                 if line.find('<!--- css: ---->') != -1:
                     result.write(open(html_saver.get_real_path(os.path.join('static', 'contig_alignment_plot.css'))).read())
                     result.write(open(html_saver.get_real_path(os.path.join('static', 'common.css'))).read())
                     result.write(open(html_saver.get_real_path(os.path.join('static', 'bootstrap', 'bootstrap.css'))).read())
-                if line.find('<!--- scripts: ---->') != -1:
+                elif line.find('<!--- scripts: ---->') != -1:
                     result.write(open(html_saver.get_real_path(os.path.join('static', 'jquery-1.8.2.js'))).read())
                     result.write(open(html_saver.get_real_path(os.path.join('static', 'bootstrap', 'bootstrap.min.js'))).read())
-                if line.find('<!--- assemblies: ---->') != -1:
+                elif line.find('<!--- assemblies: ---->') != -1:
                     labels = [qutils.name_from_fpath(contigs_fpath) for contigs_fpath in contigs_fpaths]
-                    result.write('<b>Assemblies: </b>' + ', '.join(labels))
-                if line.find('<!--- th_assemblies: ---->') != -1:
+                    result.write('Assemblies: ' + ', '.join(labels))
+                elif line.find('<!--- th_assemblies: ---->') != -1:
                     if is_unaligned_asm_exists:
                         result.write('<th># assemblies</th>')
-                if line.find('<!--- references: ---->') != -1:
+                elif line.find('<!--- references: ---->') != -1:
                     for chr in sorted(chr_full_names):
                         result.write('<tr>')
                         short_chr = chr[:30]
@@ -1106,16 +1105,16 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
                         result.write('<td>%.3f</td>' % chr_genome)
                         result.write('<td>%s</td>' % num_misassemblies[chr])
                         result.write('</tr>')
-                if line.find('<!--- links: ---->') != -1:
+                elif line.find('<!--- links: ---->') != -1:
                     contig_size_name = qconfig.contig_size_viewer_name
                     contig_size_browser_fname = os.path.join(qconfig.alignment_plots_dirname, qconfig.contig_size_viewer_fname)
                     icarus_links["links"].append(contig_size_browser_fname)
                     icarus_links["links_names"].append(contig_size_name)
-                    result.write('<span class="links_after_content">')
-                    contig_size_browser_link = '<a href="{contig_size_browser_fname}">{contig_size_name}</a>'.format(**locals())
+                    contig_size_browser_link = '<tr><td><a href="{contig_size_browser_fname}">{contig_size_name}</a></td></tr>'.format(**locals())
                     result.write(contig_size_browser_link)
-                    result.write('&nbsp&nbsp&nbsp&nbsp&nbsp')
-                    result.write('<a href="%s">QUAST report</a></span>' % html_saver.report_fname)
+                    result.write('<tr><td><a href="%s">QUAST report</a></td></tr>' % html_saver.report_fname)
                     result.write('</span>')
+                else:
+                    result.write(line)
 
     html_saver.save_icarus_links(output_dirpath, icarus_links)

@@ -174,6 +174,7 @@ THE SOFTWARE.
     var ext = d3.extent(lanes, function (d) {
         return d.id;
     });
+    var minBrushExtent = 10;
     var y_main = d3.scale.linear().domain([ext[0], ext[1] + 1]).range([0, mainHeight]);
     var y_mini = d3.scale.linear().domain([ext[0], ext[1] + 1]).range([0, miniHeight]);
     var hideBtnAnnotationsMini, hideBtnAnnotationsMain;
@@ -1128,11 +1129,12 @@ THE SOFTWARE.
 
     function keyPress (cmd, deltaCoeff) {
         var ext = brush.extent();
-        var delta = Math.max(.01 * (ext[1] - ext[0]), 1);
+        var delta = .01 * (ext[1] - ext[0]);
         if (deltaCoeff) delta *= deltaCoeff;
+        delta = Math.max(1, delta);
         switch (cmd) {
             case 'zoom_in':
-                if (ext[1] - ext[0] > deltaCoeff * 2)
+                if (ext[1] - ext[0] - 2 * delta > minBrushExtent)
                     brush.extent([ext[0] + delta, ext[1] - delta]);
                 break;
             case 'zoom_out':
@@ -1249,9 +1251,9 @@ THE SOFTWARE.
         if (d3.event.shiftKey) deltaCoeff = 5;
         else deltaCoeff = 1;
         var ext = brush.extent();
-        if (key == 39 && x_mini.domain()[1] - ext[0] > deltaCoeff + 1) // >
+        if (key == 39 && x_mini.domain()[1] - ext[0] > minBrushExtent) // >
             keyPress('right', deltaCoeff);
-        else if (key == 37 && ext[1] > deltaCoeff + 1) // <
+        else if (key == 37 && ext[1] > minBrushExtent) // <
             keyPress('left', deltaCoeff);
         else if (key == 27)
             keyPress('esc');
@@ -1281,6 +1283,9 @@ THE SOFTWARE.
             var brushSize = ext[1] - ext[0];
             endCoord = startCoord + brushSize;
         }
+        startCoord = Math.max(0, startCoord);
+        endCoord = Math.min(endCoord, x_main(x_mini.domain()[1]));
+        startCoord = Math.min(startCoord, endCoord - 10);
         if (animation) {
             var distance = Math.abs(startCoord - ext[0]);
             var distRange = distance / (ext[1] - ext[0]);

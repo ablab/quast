@@ -307,15 +307,15 @@ path {
     fill: #FF6565;
 }
 
-.mainItem.disabled_misassembled {
+.mainItem.disabled {
     fill: #8e8e8e;
 }
 
-.mainItem.disabled_misassembled.odd {
+.mainItem.disabled.odd {
     fill: #bbbbbb;
 }
 
-.mainItem.end.disabled_misassembled {
+.mainItem.end.disabled {
     opacity: 0;
 }
 
@@ -399,13 +399,13 @@ path {
     fill: #FF6565;
 }
 
-.miniItem.disabled_misassembled {
+.miniItem.disabled {
     stroke-width: 10;
     stroke: #8e8e8e;
     fill: #8e8e8e;
 }
 
-.miniItem.disabled_misassembled.odd {
+.miniItem.disabled.odd {
     stroke-width: 10;
     stroke: #bbbbbb;
     fill: #bbbbbb;
@@ -513,6 +513,14 @@ path {
     font-weight: bold;
     text-align: center;
     padding: 10px;
+}
+
+.warning {
+    font-size: 20px;
+    font-weight: bold;
+    text-align: center;
+    padding: 10px;
+    color: red;
 }
 
 .moving_button {

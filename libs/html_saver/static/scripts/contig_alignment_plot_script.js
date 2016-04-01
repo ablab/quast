@@ -211,9 +211,8 @@ THE SOFTWARE.
 
     var brush, brush_cov, brush_anno;
 
-    var spaceAfterMain = 20;
-    var spaceAfterTrack = 50;
-    var menuOffsetY = 85;
+    var spaceAfterMain = 10;
+    var spaceAfterTrack = 40;
     var annotationsMainOffsetY = mainHeight + mainScale + (featuresHidden ? 0 : spaceAfterMain);
     var covMainOffsetY = typeof coverage_data != 'undefined' ? (annotationsMainOffsetY +
                             (featuresHidden ? spaceAfterMain : spaceAfterTrack)) : annotationsMainOffsetY;
@@ -487,25 +486,6 @@ THE SOFTWARE.
               if (d.text) return addGradient(d, d.text, true);
             });
 
-    if (isContigSizePlot) {
-        var miniPathsText = miniPaths.filter(function (d) {
-                if (d.text) return d;
-        });
-        mini.append('g').selectAll('miniItems')
-            .data(miniPathsText)
-            .enter().append('text')
-            .attr('class', 'miniItems text')
-            .text(function (d) {
-                return d.text;
-            })
-            .style('fill', 'white')
-            .attr('transform', function (d) {
-                var x = Math.max(d.x + 1, d.x + x_mini(d.size) / 2 - getSize(d.text) / 2);
-                var y = d.y + 3;
-                return 'translate(' + x + ', ' + y + ')';
-            });
-    }
-
     var div = d3.select('body').append('div')
                 .attr('class', 'feature_tip')
                 .style('opacity', 0);
@@ -590,6 +570,19 @@ THE SOFTWARE.
         }
         separatedLines = contigLines;
         for (i in items) addGradient(items[i], items[i].marks, false);
+        mini.append('g').selectAll('miniItems')
+            .data(separatedLines)
+            .enter().append('text')
+            .attr('class', 'miniItems text')
+            .text(function (d) {
+                return d.label;
+            })
+            .style('fill', 'white')
+            .attr('transform', function (d) {
+                var x = Math.max(x_mini(d.corr_end) - x_mini(d.size) + 1, (x_mini(d.corr_end) - x_mini(d.size) / 2) - getSize(d.label) / 2);
+                var y = y_mini(d.lane) + miniLanesHeight - 4;
+                return 'translate(' + x + ', ' + y + ')';
+            });
     }
 
     var itemLabels = main.append('g');
@@ -664,8 +657,10 @@ THE SOFTWARE.
                 }),
                 visibleLinesLabels = separatedLines.filter(function (d) {
                     if (d.name && d.corr_start < maxExtent && d.corr_end > minExtent) return d;
-                    var textSize = d.label.length * letterSize / 2;
-                    if (d.label && d.corr_end - textSize > minExtent && d.corr_end + textSize < maxExtent) return d;
+                    if (d.label) {
+                        var textSize = d.label.length * letterSize / 2;
+                        if (d.label && d.corr_end - textSize > minExtent && d.corr_end + textSize < maxExtent) return d;
+                    }
                 });
         visItems = items.filter(function (d) {
                 if (d.corr_start < maxExtent && d.corr_end > minExtent) {
@@ -1616,7 +1611,10 @@ THE SOFTWARE.
             if (d.supp) countSupplementary++;
             c += ((numItem - countSupplementary) % 2 == 0 ? " odd" : "");
             var text = '';
-            if (isContigSizePlot) c += " unknown";
+            if (isContigSizePlot) {
+                if (d.type == "small_contigs") c += " disabled";
+                else c += " unknown";
+            }
 
             if (d.marks) {  // NX for contig size plot
               var marks = d.marks;
@@ -1918,10 +1916,10 @@ THE SOFTWARE.
                     if (msTypes[i] && document.getElementById(msTypes[i]).checked) isMisassembled = "True";
                 }
                 if (isMisassembled == "True" && items[numItem].misassembled == "False") {
-                    items[numItem].class = items[numItem].class.replace("disabled_misassembled", "misassembled");
+                    items[numItem].class = items[numItem].class.replace("disabled", "misassembled");
                 }
                 else if (isMisassembled == "False")
-                    items[numItem].class = items[numItem].class.replace(/\bmisassembled\b/g, "disabled_misassembled");
+                    items[numItem].class = items[numItem].class.replace(/\bmisassembled\b/g, "disabled");
                 items[numItem].misassembled = isMisassembled;
             }
         }
@@ -1931,7 +1929,7 @@ THE SOFTWARE.
                     return d.misassembled == 'True';
                 }
             })
-            .classed('disabled_misassembled', function (d) {
+            .classed('disabled', function (d) {
                 if (d && d.misassemblies) {
                     return d.misassembled != 'True';
                 }
@@ -1951,7 +1949,7 @@ THE SOFTWARE.
                     return false;
                 }
             })
-            .classed('disabled_misassembled', function (d) {
+            .classed('disabled', function (d) {
                 if (d && d.misassemblies) {
                     var msTypes = d.misassemblies.split(';');
                     for (var i = 0; i < msTypes.length; i++) {
@@ -1994,7 +1992,7 @@ THE SOFTWARE.
     }
 
     function appendLegendAlignmentViewer(legend) {
-        var classes = ['', 'similar', 'misassembled light_color', 'misassembled', 'misassembled similar', 'disabled_misassembled', 'annotation'];
+        var classes = ['', 'similar', 'misassembled light_color', 'misassembled', 'misassembled similar', 'disabled', 'annotatiosn'];
         var classDescriptions = ['correct contigs', 'correct contigs similar among >= 50% assemblies', 'misassembled blocks ' +
         '(misassembly event on the left side, on the right side)', 'misassembled blocks (zoom in to get details about misassembly event side)',
             'misassembled blocks similar among >= 50% assemblies', 'unchecked misassembled blocks (see checkboxes)', 'genome features (e.g. genes)'];

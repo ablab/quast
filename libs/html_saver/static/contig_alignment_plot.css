@@ -434,6 +434,22 @@ path {
               -1px 1px 0 #000;
 }
 
+.block_circle {
+  width: 16px;
+  height: 16px;
+  -webkit-border-radius: 8px;
+  -moz-border-radius: 8px;
+  border-radius: 50%;
+  background: darkgray;
+  box-shadow: inset 3px 3px 4px #000;
+  float: right;
+  display: none;
+}
+
+.block_circle.selected {
+  display: block;
+}
+
 .annotation {
     fill: #612B1C;
 }
@@ -475,18 +491,6 @@ path {
 .trackBtn:hover {
     stroke: red;
     cursor: pointer;
-}
-
-.feature_tip {
-  position: absolute;
-  text-align: center;
-  width: 100px;
-  padding: 2px;
-  font: 11px sans-serif;
-  background: lightsteelblue;
-  border: 0px;
-  border-radius: 8px;
-  content: "\25BC";
 }
 
 .brush .extent {

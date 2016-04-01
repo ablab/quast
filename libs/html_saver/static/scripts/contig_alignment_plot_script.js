@@ -1784,6 +1784,10 @@ THE SOFTWARE.
                         if (items[i].assembly == assembly && items[i].corr_start == e.corr_start && items[i].corr_end == e.corr_end) {
                             selected_id = items[i].groupId;
                             showArrows(items[i]);
+                            whereAppend.selectAll('.block_circle')
+                              .classed('selected', function() {
+                                return (this.id ==  'circle' + items[i].corr_start + '_' + items[i].corr_end);
+                              });
                             display();
                             break;
                         }
@@ -1791,9 +1795,20 @@ THE SOFTWARE.
                     d3.event.stopPropagation();
                 });
 
+            if (is_expanded) {
+                if (prev_start == start)
+                    d.append('div')
+                     .attr('id', 'circle' + start+ '_' + end)
+                     .attr('class', 'block_circle selected');
+                else
+                    d.append('div')
+                     .attr('id', 'circle' + start + '_' + end)
+                     .attr('class', 'block_circle');
+            }
+
             if (chrContigs.indexOf(e.chr) == -1) {
                 d.append('a')
-                        .attr('href', '_' + (links_to_chromosomes ? links_to_chromosomes[e.chr] : e.chr) + '.html')
+                        .attr('href', (links_to_chromosomes ? links_to_chromosomes[e.chr] : e.chr) + '.html')
                         .attr('target', '_blank')
                         .text('(' + e.chr + ')');
             }
@@ -1820,7 +1835,7 @@ THE SOFTWARE.
         var blocks = info.append('p')
                 .attr('class', 'head main')
                 .text('Blocks: ' + d.structure.filter(function(d) { if (d.type == "A") return d;}).length);
-        
+
         for (var i = 0; i < d.structure.length; ++i) {
             var e = d.structure[i];
             if (e.type == "A") {

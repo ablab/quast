@@ -38,7 +38,7 @@ long_options = "test test-no-ref test-sv output-dir= save-json-to= genes= operon
                "gene-thresholds= err-fpath= save-json gage eukaryote glimmer no-plots no-html no-check no-check-meta combined-ref no-gc help debug "\
                "ambiguity-usage= scaffolds threads= min-cluster= min-alignment= est-ref-size= use-all-alignments gene-finding "\
                "strict-NA meta labels= help-hidden no-snps fast max-ref-number= extensive-mis-size= plots-format= " \
-               "fragmented significant-part-size= " \
+               "fragmented significant-part-size= unique-mapping " \
                "references-list= bed-file= reads1= reads2= memory-efficient silent version".split()
 short_options = "o:G:O:R:t:m:J:jehvda:c:ufl:Lx:i:s1:2:"
 
@@ -66,6 +66,7 @@ debug = False
 test = False
 no_check = False
 no_check_meta = False  # for metaQUAST, without checking min-contig
+unique_mapping = False  # for metaQUAST only
 no_gc = False
 show_snps = True
 glimmer = False
@@ -264,6 +265,9 @@ def usage(show_hidden=False, meta=False, short=True):
         print >> sys.stderr, "-i  --min-alignment <int>             Nucmer's parameter: the minimum alignment length [default: %s]" % min_alignment
         print >> sys.stderr, "-a  --ambiguity-usage <none|one|all>  Use none, one, or all alignments (or aligned fragments internal overlaps) of a contig"
         print >> sys.stderr, "                                      when all of them are equally good. [default: %s]" % ambiguity_usage
+        if meta:
+            print >> sys.stderr, "    --unique-mapping                  Use only one alignment of a contig, when it maps to multiple references (MetaQUAST only),"
+            print >> sys.stderr, "                                      i.e. force --ambiguity-usage=one for the combined reference (default is 'all')"
         print >> sys.stderr, "    --strict-NA                       Break contigs in any misassembly event when compute NAx and NGAx"
         print >> sys.stderr, "                                      By default, QUAST breaks contigs only by extensive misassemblies (not local ones)"
         print >> sys.stderr, "-x  --extensive-mis-size  <int>       Lower threshold for extensive misassembly size. All relocations with inconsistency"

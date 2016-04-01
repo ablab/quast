@@ -1494,13 +1494,13 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
     print >> planta_out_f, 'Ambiguously Mapped Contigs: %d' % ambiguous_contigs
     if qconfig.ambiguity_usage == "all":
         print >> planta_out_f, 'Extra Bases in Ambiguously Mapped Contigs: %d' % ambiguous_contigs_extra_bases
-        print >> planta_out_f, 'Note that --allow-ambiguity option was set to "all" and each contig was used several times.'
+        print >> planta_out_f, 'Note that --allow-ambiguity option was set to "all" and each of these contigs was used several times.'
     else:
         print >> planta_out_f, 'Total Bases in Ambiguously Mapped Contigs: %d' % (-ambiguous_contigs_extra_bases)
         if qconfig.ambiguity_usage == "none":
             print >> planta_out_f, 'Note that --allow-ambiguity option was set to "none" and these contigs were skipped.'
         else:
-            print >> planta_out_f, 'Note that --allow-ambiguity option was set to "one" and only first alignment per each contig was used.'
+            print >> planta_out_f, 'Note that --allow-ambiguity option was set to "one" and only first alignment per each of these contigs was used.'
             ambiguous_contigs_extra_bases = 0 # this variable is used in Duplication ratio but we don't need it in this case
 
     if qconfig.show_snps:

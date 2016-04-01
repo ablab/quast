@@ -467,6 +467,9 @@ def main(args):
             pass
         elif opt in ('-a', "--ambiguity-usage"):
             pass
+        elif opt == '--unique-mapping':
+            qconfig.unique_mapping = True
+            __remove_from_quast_py_args(quast_py_args, opt, arg)
         elif opt in ('-u', "--use-all-alignments"):
             pass
         elif opt == "--strict-NA":
@@ -634,7 +637,8 @@ def main(args):
         json_texts = []
     else:
         json_texts = None
-    return_code, total_num_notifications, assemblies, labels = _start_quast_main(run_name, quast_py_args + ["--ambiguity-usage"] + ['all'],
+    return_code, total_num_notifications, assemblies, labels = \
+        _start_quast_main(run_name, quast_py_args + ["--ambiguity-usage"] + (['one'] if qconfig.unique_mapping else ['all']),
         assemblies=assemblies,
         reference_fpath=combined_ref_fpath,
         output_dirpath=combined_output_dirpath,
@@ -674,7 +678,8 @@ def main(args):
             run_name = 'for the corrected combined reference'
             logger.main_info()
             logger.main_info('Starting quast.py ' + run_name + '...')
-            return_code, total_num_notifications, assemblies, labels = _start_quast_main(run_name, quast_py_args + ["--ambiguity-usage"] + ['all'],
+            return_code, total_num_notifications, assemblies, labels = \
+                _start_quast_main(run_name, quast_py_args + ["--ambiguity-usage"] +  + (['one'] if qconfig.unique_mapping else ['all']),
                 assemblies=assemblies,
                 reference_fpath=combined_ref_fpath,
                 output_dirpath=combined_output_dirpath,

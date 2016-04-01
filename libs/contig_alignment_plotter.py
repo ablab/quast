@@ -577,7 +577,7 @@ def draw_alignment_plot(contigs_fpaths, virtual_genome_size, sorted_ref_names, s
 
     assemblies.apply_colors(settings)
 
-    if not plotter.matplotlib_error:
+    if qconfig.draw_svg and not plotter.matplotlib_error:
         v = Visualizer(assemblies, coverage_hist, settings, sorted_ref_names, sorted_ref_lengths, virtual_genome_shift)
         v.visualize()
         plot_fpath = v.save(output_fpath)
@@ -631,12 +631,14 @@ def do(contigs_fpaths, contig_report_fpath_pattern, output_dirpath,
     plot_fpath, assemblies = draw_alignment_plot(
         contigs_fpaths, virtual_genome_size, sorted_ref_names, sorted_ref_lengths, virtual_genome_shift, output_dirpath,
         lists_of_aligned_blocks, arcs, similar, coverage_hist)
-    if assemblies and qconfig.create_contig_alignment_html:
-        js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, reference_chromosomes,
+    if assemblies and qconfig.create_icarus_html:
+        icarus_html_fpath = js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, reference_chromosomes,
                     output_dirpath, structures_by_labels, stdout_pattern=stdout_pattern, contigs_by_assemblies=contigs_by_assemblies,
                     features=features, cov_fpath=cov_fpath)
+    else:
+        icarus_html_fpath = None
 
-    return plot_fpath
+    return icarus_html_fpath, plot_fpath
 
 def parse_nucmer_contig_report(report_fpath, sorted_ref_names, cumulative_ref_lengths):
     aligned_blocks = []

@@ -496,6 +496,10 @@ def main(args):
             pass
         elif opt == '--no-html':
             html_report = False
+        elif opt == '--no-icarus':
+            qconfig.create_icarus_html = False
+        elif opt == '--svg':
+            pass
         elif opt == '--fast':  # --no-check, --no-gc, --no-snps will automatically set in QUAST runs
             html_report = False
         elif opt == '--plots-format':

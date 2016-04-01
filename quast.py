@@ -554,7 +554,10 @@ def main(args):
 
         elif opt == '--no-html':
             qconfig.html_report = False
-            qconfig.create_contig_alignment_html = False
+            qconfig.create_icarus_html = False
+
+        elif opt == '--no-icarus':
+            qconfig.create_icarus_html = False
 
         elif opt == '--no-check':
             qconfig.no_check = True
@@ -568,7 +571,10 @@ def main(args):
             qconfig.show_snps = False
             qconfig.draw_plots = False
             qconfig.html_report = False
-            qconfig.create_contig_alignment_html = False
+            qconfig.create_icarus_html = False
+
+        elif opt == '--svg':
+            qconfig.draw_svg = True
 
         elif opt == '--plots-format':
             if arg.lower() in qconfig.supported_plot_extensions:
@@ -736,6 +742,7 @@ def main(args):
     aligned_contigs_fpaths = []
     aligned_lengths_lists = []
     contig_alignment_plot_fpath = None
+    icarus_html_fpath = None
     if ref_fpath:
         ########################################################################
         ### former PLANTAKOLYA, PLANTAGORA
@@ -804,13 +811,13 @@ def main(args):
             else:
                 report_for_icarus_fpath_pattern = None
             number_of_steps = sum([int(bool(value)) for value in [report_for_icarus_fpath_pattern, all_pdf_file]])
-            if report_for_icarus_fpath_pattern:
+            if report_for_icarus_fpath_pattern and (qconfig.draw_svg or qconfig.create_icarus_html):
                 ########################################################################
                 ### VISUALIZE CONTIG ALIGNMENT
                 ########################################################################
                 logger.main_info('  1 of %d: Creating contig alignment plot...' % number_of_steps)
                 from libs import contig_alignment_plotter
-                contig_alignment_plot_fpath = contig_alignment_plotter.do(
+                icarus_html_fpath, contig_alignment_plot_fpath = contig_alignment_plotter.do(
                     contigs_fpaths, report_for_icarus_fpath_pattern,
                     output_dirpath, ref_fpath, stdout_pattern=stdout_pattern, similar=True, features=features_containers, cov_fpath=cov_fpath)
 
@@ -842,7 +849,10 @@ def main(args):
     if os.path.isfile(all_pdf_fpath):
         logger.main_info('  PDF version (tables and plots) saved to ' + all_pdf_fpath)
 
-    if contig_alignment_plot_fpath:
+    if icarus_html_fpath:
+        logger.main_info('  Icarus main menu: %s' % icarus_html_fpath)
+
+    if qconfig.draw_svg and contig_alignment_plot_fpath:
         logger.main_info('  Contig alignment plot: %s' % contig_alignment_plot_fpath)
 
     _cleanup(corrected_dirpath)

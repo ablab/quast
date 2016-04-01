@@ -110,7 +110,8 @@ trivial_deletions_fname = 'trivial_deletions.bed'
 manta_sv_fname = 'manta_sv.bed'
 
 # for Icarus
-create_contig_alignment_html = True
+draw_svg = False
+create_icarus_html = True
 alignment_plots_dirname = 'icarus_viewers'
 alignment_summary_fname = 'icarus.html'
 alignment_summary_template_fname = 'alignment_summary_templ.html'
@@ -298,6 +299,9 @@ def usage(show_hidden=False, meta=False, short=True):
             print >> sys.stderr, "-c  --min-cluster   <int>   Nucmer's parameter: the minimum length of a cluster of matches [default: %s]" % min_cluster
             print >> sys.stderr, "-j  --save-json             Save the output also in the JSON format"
             print >> sys.stderr, "-J  --save-json-to <path>   Save the JSON output to a particular path"
+            print >> sys.stderr, "--no-icarus                 Do not create Icarus files"
+            print >> sys.stderr, "--svg                       Draw contig alignment plot (in SVG format)"
+
 
         print >> sys.stderr, ""
         print >> sys.stderr, "Other:"

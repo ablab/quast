@@ -766,21 +766,18 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
     assemblies_data += 'var assemblies_contigs = {};\n'
     assemblies_data += 'var assemblies_misassemblies = {};\n'
     assemblies_data += 'var assemblies_n50 = {};\n'
+    assemblies_contig_size_data = ''
     for contigs_fpath in contigs_fpaths:
         label = qconfig.assembly_labels_by_fpath[contigs_fpath]
         contig_stdout_fpath = stdout_pattern % qutils.label_from_fpath_for_fname(contigs_fpath) + '.stdout'
         report = reporting.get(contigs_fpath)
         l = report.get_field(reporting.Fields.TOTALLEN)
         contigs = report.get_field(reporting.Fields.CONTIGS)
-        ext_misassemblies = report.get_field(reporting.Fields.MIS_ALL_EXTENSIVE)
-        local_misassemblies = report.get_field(reporting.Fields.MIS_LOCAL)
         n50 = report.get_field(reporting.Fields.N50)
         assemblies_data += 'assemblies_links["{label}"] = "{contig_stdout_fpath}";\n'.format(**locals())
-        assemblies_data += 'assemblies_len["{label}"] = {l};\n'.format(**locals())
-        assemblies_data += 'assemblies_contigs["{label}"] = {contigs};\n'.format(**locals())
-        assemblies_data += 'assemblies_misassemblies["{label}"] = "{ext_misassemblies}' \
-                           '+{local_misassemblies}";\n'.format(**locals())
-        assemblies_data += 'assemblies_n50["{label}"] = "{n50}";\n'.format(**locals())
+        assemblies_contig_size_data += 'assemblies_len["{label}"] = {l};\n'.format(**locals())
+        assemblies_contig_size_data += 'assemblies_contigs["{label}"] = {contigs};\n'.format(**locals())
+        assemblies_contig_size_data += 'assemblies_n50["{label}"] = "{n50}";\n'.format(**locals())
         for nx in nx_marks:
             assemblies_n50[label][nx] = report.get_field(nx)
 
@@ -831,6 +828,7 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
         aligned_bases_by_chr[chr] = []
         aligned_assemblies[chr] = []
         data_str = []
+        additional_assemblies_data = ''
         if contigs_analyzer.ref_labels_by_chromosomes:
             data_str.append('var links_to_chromosomes = {};')
             links_to_chromosomes = []
@@ -851,16 +849,21 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
         # adding assembly data
         data_str.append('var contig_data = {};')
         data_str.append('contig_data["{chr}"] = {{}};'.format(**locals()))
+        assemblies_len = defaultdict(int)
+        assemblies_contigs = defaultdict(set)
+        ms_types = dict()
         for assembly in chr_to_aligned_blocks.keys():
             data_str.append('contig_data["{chr}"]["{assembly}"] = [ '.format(**locals()))
             prev_len = 0
-            ms_types = defaultdict(int)
+            ms_types[assembly] = defaultdict(int)
             for num_contig, ref_contig in enumerate(ref_contigs):
                 if num_contig > 0:
                     prev_len += chr_lengths[num_contig]
                 if ref_contig in chr_to_aligned_blocks[assembly]:
                     prev_end = None
                     for alignment in sorted(chr_to_aligned_blocks[assembly][ref_contig], key=lambda x: x.start):
+                        assemblies_len[assembly] += abs(alignment.end_in_contig - alignment.start_in_contig) + 1
+                        assemblies_contigs[assembly].add(alignment.name)
                         contig_structure = structures_by_labels[alignment.label]
                         misassembled_ends = []
                         if alignment.misassembled:
@@ -876,7 +879,7 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
                                     if 'local' in misassembly_type:
                                         misassembly_type = 'local'
                                     alignment.misassemblies += misassembly_type
-                                    ms_types[misassembly_type] += 1
+                                    ms_types[assembly][misassembly_type] += 1
                                     misassembled_ends.append('L')
                             else: misassembled_ends.append('')
                             if num_alignment + 1 < len(contig_structure[alignment.name]) and \
@@ -886,7 +889,7 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
                                     if 'local' in misassembly_type:
                                         misassembly_type = 'local'
                                     alignment.misassemblies += ';' + misassembly_type
-                                    ms_types[misassembly_type] += 1
+                                    ms_types[assembly][misassembly_type] += 1
                                     misassembled_ends.append('R')
                             else: misassembled_ends.append('')
                         else:
@@ -927,8 +930,16 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
                             data_str[-1] = data_str[-1][:-1] + ']},'
 
                         else: data_str[-1] += '},'
-
             data_str[-1] = data_str[-1][:-1] + '];'
+            assembly_len = assemblies_len[assembly]
+            assembly_contigs = len(assemblies_contigs[assembly])
+            local_misassemblies = ms_types[assembly]['local'] / 2
+            ext_misassemblies = sum(ms_types[assembly].values()) / 2 - local_misassemblies
+            additional_assemblies_data += 'assemblies_len["{assembly}"] = {assembly_len};\n'.format(**locals())
+            additional_assemblies_data += 'assemblies_contigs["{assembly}"] = {assembly_contigs};\n'.format(**locals())
+            additional_assemblies_data += 'assemblies_misassemblies["{assembly}"] = "{ext_misassemblies}' \
+                               '+{local_misassemblies}";\n'.format(**locals())
+
         if contigs_analyzer.ref_labels_by_chromosomes:
             data_str.append(''.join(links_to_chromosomes))
         if cov_fpath:
@@ -948,6 +959,7 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
                 data_str[-1] = data_str[-1][:-1]
             data_str[-1] += '];'
         data_str = '\n'.join(data_str)
+
         with open(html_saver.get_real_path('_chr_templ.html'), 'r') as template:
             with open(os.path.join(output_all_files_dir_path, '{short_chr}.html'.format(**locals())), 'w') as result:
                 for line in template:
@@ -956,6 +968,7 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
                         result.write(ref_data)
                         result.write(features_data)
                         result.write(assemblies_data)
+                        result.write(additional_assemblies_data)
                         chromosome = '","'.join(ref_contigs)
                         result.write('var CHROMOSOME = "{chr}";\n'.format(**locals()))
                         result.write('var chrContigs = ["{chromosome}"];\n'.format(**locals()))
@@ -963,7 +976,7 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
                         result.write('<div align="center" style="margin-top: 7px;">')
                         result.write('Misassembly type to show:')
                         for ms_type in misassemblies_types:
-                            ms_count = ms_types[ms_type] / 2
+                            ms_count = sum(ms_types[assembly][ms_type] / 2 for assembly in chr_to_aligned_blocks.keys())
                             is_checked = 'checked="checked"' if ms_count > 0 else ''
                             if ms_type == 'local':
                                 result.write('&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp<label><input type="checkbox" id="{ms_type}" '
@@ -1031,6 +1044,7 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
                 if line.find('<!--- data: ---->') != -1:
                     result.write(assemblies_data)
                     result.write(contigs_sizes_str)
+                    result.write(assemblies_contig_size_data)
                 elif line.find('<!--- Contig size threshold: ---->') != -1:
                     result.write('<div align="center" style="margin-top: 7px;">Hide contigs < '
                                  '<input class="textBox" id="input_contig_threshold" type="text" size="5" /> bp </div>')
@@ -1118,3 +1132,4 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
                     result.write(line)
 
     html_saver.save_icarus_links(output_dirpath, icarus_links)
+    return summary_path

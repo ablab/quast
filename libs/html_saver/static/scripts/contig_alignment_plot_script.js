@@ -1820,8 +1820,7 @@ THE SOFTWARE.
         var blocks = info.append('p')
                 .attr('class', 'head main')
                 .text('Blocks: ' + d.structure.filter(function(d) { if (d.type == "A") return d;}).length);
-
-
+        
         for (var i = 0; i < d.structure.length; ++i) {
             var e = d.structure[i];
             if (e.type == "A") {

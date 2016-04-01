@@ -615,12 +615,14 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
             print >> coords_filtered_file, str(prev)
             if is_sv:
                 print >> planta_out_f, '\t\t\t  Fake misassembly (caused by structural variations of genome) between these two alignments'
+                print >> icarus_out_f, 'fake misassembly (structural variations of genome)'
                 misassemblies_matched_sv += 1
 
             elif qconfig.scaffolds and aux_data["is_scaffold_gap"]:
                 print >> planta_out_f, '\t\t\t  Fake misassembly between these two alignments: scaffold gap size misassembly,',
                 print >> planta_out_f, 'gap length difference =', inconsistency
                 region_misassemblies.append(Misassembly.SCAFFOLD_GAP)
+                print >> icarus_out_f, 'fake misassembly (scaffold gap size misassembly)'
 
             elif is_extensive_misassembly and not is_sv:
                 is_misassembled = True
@@ -666,9 +668,11 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
             elif not is_sv:
                 if inconsistency == 0 and cyclic_moment:
                     print >> planta_out_f, '\t\t\t  Fake misassembly (caused by linear representation of circular genome) between these two alignments'
+                    print >> icarus_out_f, 'fake misassembly (linear representation of circular genome)'
                 elif qconfig.check_for_fragmented_ref and sorted_aligns[i].ref != sorted_aligns[i+1].ref and not is_translocation:
                     print >> planta_out_f, '\t\t\t  Fake misassembly (caused by fragmentation of reference genome) between these two alignments'
                     region_misassemblies.append(Misassembly.FRAGMENTED)
+                    print >> icarus_out_f, 'fake misassembly (fragmentation of reference genome)'
                 elif abs(inconsistency) <= qconfig.MAX_INDEL_LENGTH and \
                         count_not_ns_between_aligns(contig_seq, sorted_aligns[i], sorted_aligns[i+1]) <= qconfig.MAX_INDEL_LENGTH:
                     print >> planta_out_f, '\t\t\t  Fake misassembly between these two alignments: inconsistency =', inconsistency,
@@ -690,6 +694,7 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
                         else:
                             indels_info.deletions += indel_length
                         indels_info.mismatches += mismatches
+                    print >> icarus_out_f, 'fake misassembly (gap in the contig is small or filled with Ns)'
                 else:
                     if qconfig.strict_NA:
                         aligned_lengths.append(cur_aligned_length)

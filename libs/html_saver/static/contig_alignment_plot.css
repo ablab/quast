@@ -244,6 +244,11 @@ path {
 
 .mainItem.end {
     stroke-width: 0;
+    opacity: 0;
+}
+
+.mainItem.end.misassembled {
+    opacity: 1;
 }
 
 .main_labels rect {

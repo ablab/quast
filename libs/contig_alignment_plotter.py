@@ -621,7 +621,7 @@ def do(contigs_fpaths, contig_report_fpath_pattern, output_dirpath,
         aligned_blocks, misassembled_id_to_structure, contigs = parse_nucmer_contig_report(report_fpath, sorted_ref_names, cumulative_ref_lengths)
         if aligned_blocks is None:
             return None
-        label = qutils.name_from_fpath(contigs_fpath)
+        label = qconfig.assembly_labels_by_fpath[contigs_fpath]
         for block in aligned_blocks:
             block.label = label
         lists_of_aligned_blocks.append(aligned_blocks)
@@ -699,21 +699,12 @@ def parse_nucmer_contig_report(report_fpath, sorted_ref_names, cumulative_ref_le
 
 def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromosomes_length,
                 output_dirpath, structures_by_labels, contigs_by_assemblies, stdout_pattern=None, features=None, cov_fpath=None):
-    chr_to_aligned_blocks = dict()
+    chr_to_aligned_blocks = defaultdict(dict)
     chr_names = chromosomes_length.keys()
-    for chr in chr_names:
-        chr_init = []
-        for fpath in contigs_fpaths:
-            f = Alignment('FICTIVE', start=0, end=0, unshifted_start=0, unshifted_end=0, is_rc=False,
-                          start_in_contig=0, end_in_contig=0, position_in_ref=0, ref_name=None, idy=None)
-            f.label = qutils.name_from_fpath(fpath)
-            f.unshifted_start = 0
-            f.unshifted_end = 0
-            chr_init.append(f)
-        chr_to_aligned_blocks.setdefault(chr, chr_init)
     for assembly in assemblies.assemblies:
+        chr_to_aligned_blocks[assembly.label] = defaultdict(list)
         for align in assembly.alignments:
-            chr_to_aligned_blocks[align.ref_name].append(align)
+            chr_to_aligned_blocks[assembly.label][align.ref_name].append(align)
 
     summary_fname = qconfig.alignment_summary_fname
     summary_path = os.path.join(output_dirpath, summary_fname)
@@ -772,19 +763,22 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
     assemblies_data += 'var assemblies_len = {};\n'
     assemblies_data += 'var assemblies_contigs = {};\n'
     assemblies_data += 'var assemblies_misassemblies = {};\n'
+    assemblies_data += 'var assemblies_n50 = {};\n'
     for contigs_fpath in contigs_fpaths:
-        label = qutils.name_from_fpath(contigs_fpath)
+        label = qconfig.assembly_labels_by_fpath[contigs_fpath]
         contig_stdout_fpath = stdout_pattern % qutils.label_from_fpath_for_fname(contigs_fpath) + '.stdout'
         report = reporting.get(contigs_fpath)
         l = report.get_field(reporting.Fields.TOTALLEN)
         contigs = report.get_field(reporting.Fields.CONTIGS)
         ext_misassemblies = report.get_field(reporting.Fields.MIS_ALL_EXTENSIVE)
         local_misassemblies = report.get_field(reporting.Fields.MIS_LOCAL)
+        n50 = report.get_field(reporting.Fields.N50)
         assemblies_data += 'assemblies_links["{label}"] = "{contig_stdout_fpath}";\n'.format(**locals())
         assemblies_data += 'assemblies_len["{label}"] = {l};\n'.format(**locals())
         assemblies_data += 'assemblies_contigs["{label}"] = {contigs};\n'.format(**locals())
         assemblies_data += 'assemblies_misassemblies["{label}"] = "{ext_misassemblies}' \
                            '+{local_misassemblies}";\n'.format(**locals())
+        assemblies_data += 'assemblies_n50["{label}"] = "{n50}";\n'.format(**locals())
         for nx in nx_marks:
             assemblies_n50[label][nx] = report.get_field(nx)
 
@@ -834,9 +828,9 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
         num_misassemblies[chr] = 0
         aligned_bases_by_chr[chr] = []
         aligned_assemblies[chr] = []
-        data_str = ''
+        data_str = []
         if contigs_analyzer.ref_labels_by_chromosomes:
-            data_str += 'var links_to_chromosomes = {};\n'
+            data_str.append('var links_to_chromosomes = {};')
             links_to_chromosomes = []
             used_chromosomes = []
 
@@ -847,110 +841,111 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
         num_contigs[chr] = len(ref_contigs)
         for ref_contig in ref_contigs:
             aligned_bases_by_chr[chr].extend(aligned_bases[ref_contig])
-        data_str += 'var chromosomes_len = {};\n'
+        data_str.append('var chromosomes_len = {};')
         for ref_contig in ref_contigs:
             l = chromosomes_length[ref_contig]
-            data_str += 'chromosomes_len["{ref_contig}"] = {l};\n'.format(**locals())
+            data_str.append('chromosomes_len["{ref_contig}"] = {l};'.format(**locals()))
 
         # adding assembly data
-        data_str += 'var contig_data = {};\n'
-        data_str += 'contig_data["{chr}"] = [ '.format(**locals())
-        prev_len = 0
-        ms_types = defaultdict(int)
-        for num_contig, ref_contig in enumerate(ref_contigs):
-            if num_contig > 0:
-                prev_len += chr_lengths[num_contig]
-            if len(chr_to_aligned_blocks[ref_contig]) > 0:
-                prev_end = None
-                for alignment in sorted(chr_to_aligned_blocks[ref_contig], key=lambda x: x.start):
-                    contig_structure = structures_by_labels[alignment.label]
-                    misassembled_ends = []
-                    if alignment.misassembled:
-                        num_misassemblies[chr] += 1
-                        for num_alignment, el in enumerate(contig_structure[alignment.name]):
-                            if isinstance(el, Alignment):
-                                if el.start == alignment.start and el.end == alignment.end:
-                                    break
-                        alignment.misassemblies = ''
-                        if type(contig_structure[alignment.name][num_alignment - 1]) == str:
-                            misassembly_type = contig_structure[alignment.name][num_alignment - 1].split(',')[0].strip()
-                            if 'local' in misassembly_type:
-                                misassembly_type = 'local'
-                            alignment.misassemblies += misassembly_type
-                            ms_types[misassembly_type] += 1
-                            misassembled_ends.append('L')
-                        else: misassembled_ends.append('')
-                        if num_alignment + 1 < len(contig_structure[alignment.name]) and \
-                                        type(contig_structure[alignment.name][num_alignment + 1]) == str:
-                            misassembly_type = contig_structure[alignment.name][num_alignment + 1].split(',')[0].strip()
-                            if 'local' in misassembly_type:
-                                misassembly_type = 'local'
-                            alignment.misassemblies += ';' + misassembly_type
-                            ms_types[misassembly_type] += 1
-                            misassembled_ends.append('R')
-                        else: misassembled_ends.append('')
-                    else:
-                        alignment.misassembled = False
-                        alignment.misassemblies = ''
-
-                    corr_start = prev_len + alignment.unshifted_start
-                    corr_end = prev_len + alignment.unshifted_end
-                    if misassembled_ends: misassembled_ends = ';'.join(misassembled_ends)
-                    else: misassembled_ends = ''
-                    data_str += '{{name: "{alignment.name}", corr_start: {corr_start}, corr_end: {corr_end},' \
-                                'start: {alignment.unshifted_start}, end: {alignment.unshifted_end}, assembly: "{alignment.label}", ' \
-                                'similar: "{alignment.similar}", misassemblies: "{alignment.misassemblies}", ' \
-                                'mis_ends: "{misassembled_ends}"'.format(**locals())
-
-                    if alignment.name != 'FICTIVE':
-                        if len(aligned_assemblies[chr]) < len(contigs_fpaths) and alignment.label not in aligned_assemblies[chr]:
-                            aligned_assemblies[chr].append(alignment.label)
-                        data_str += ', structure: ['
-                        for el in contig_structure[alignment.name]:
-                            if isinstance(el, Alignment):
-                                if el.ref_name in ref_contigs:
-                                    num_chr = ref_contigs.index(el.ref_name)
-                                    corr_len = sum(chr_lengths[:num_chr+1])
-                                else:
-                                    corr_len = -int(el.end)
-                                    if contigs_analyzer.ref_labels_by_chromosomes and el.ref_name not in used_chromosomes:
-                                        used_chromosomes.append(el.ref_name)
-                                        new_chr = contig_names_by_refs[el.ref_name]
-                                        links_to_chromosomes.append('links_to_chromosomes["{el.ref_name}"] = "{new_chr}";\n'.format(**locals()))
-                                corr_el_start = corr_len + int(el.start)
-                                corr_el_end = corr_len + int(el.end)
-                                data_str += '{{type: "A", corr_start: {corr_el_start}, corr_end: {corr_el_end}, start: {el.start}, ' \
-                                            'end: {el.end}, start_in_contig: {el.start_in_contig}, end_in_contig: {el.end_in_contig}, ' \
-                                            'IDY: {el.idy}, chr: "{el.ref_name}"}},'.format(**locals())
-                            elif type(el) == str:
-                                data_str += '{{type: "M", mstype: "{el}"}},'.format(**locals())
-                        if data_str[-1] == '[':
-                            data_str = data_str + ']},'
+        data_str.append('var contig_data = {};')
+        data_str.append('contig_data["{chr}"] = {{}};'.format(**locals()))
+        for assembly in chr_to_aligned_blocks.keys():
+            data_str.append('contig_data["{chr}"]["{assembly}"] = [ '.format(**locals()))
+            prev_len = 0
+            ms_types = defaultdict(int)
+            for num_contig, ref_contig in enumerate(ref_contigs):
+                if num_contig > 0:
+                    prev_len += chr_lengths[num_contig]
+                if ref_contig in chr_to_aligned_blocks[assembly]:
+                    prev_end = None
+                    for alignment in sorted(chr_to_aligned_blocks[assembly][ref_contig], key=lambda x: x.start):
+                        contig_structure = structures_by_labels[alignment.label]
+                        misassembled_ends = []
+                        if alignment.misassembled:
+                            num_misassemblies[chr] += 1
+                            for num_alignment, el in enumerate(contig_structure[alignment.name]):
+                                if isinstance(el, Alignment):
+                                    if el.start == alignment.start and el.end == alignment.end:
+                                        break
+                            alignment.misassemblies = ''
+                            if type(contig_structure[alignment.name][num_alignment - 1]) == str:
+                                misassembly_type = contig_structure[alignment.name][num_alignment - 1].split(',')[0].strip()
+                                if not 'fake' in misassembly_type:
+                                    if 'local' in misassembly_type:
+                                        misassembly_type = 'local'
+                                    alignment.misassemblies += misassembly_type
+                                    ms_types[misassembly_type] += 1
+                                    misassembled_ends.append('L')
+                            else: misassembled_ends.append('')
+                            if num_alignment + 1 < len(contig_structure[alignment.name]) and \
+                                            type(contig_structure[alignment.name][num_alignment + 1]) == str:
+                                misassembly_type = contig_structure[alignment.name][num_alignment + 1].split(',')[0].strip()
+                                if not 'fake' in misassembly_type:
+                                    if 'local' in misassembly_type:
+                                        misassembly_type = 'local'
+                                    alignment.misassemblies += ';' + misassembly_type
+                                    ms_types[misassembly_type] += 1
+                                    misassembled_ends.append('R')
+                            else: misassembled_ends.append('')
                         else:
-                            data_str = data_str[: -1] + ']},'
+                            alignment.misassembled = False
+                            alignment.misassemblies = ''
 
-                    else: data_str += '},'
+                        corr_start = prev_len + alignment.unshifted_start
+                        corr_end = prev_len + alignment.unshifted_end
+                        if misassembled_ends: misassembled_ends = ';'.join(misassembled_ends)
+                        else: misassembled_ends = ''
+                        data_str.append('{{name: "{alignment.name}", corr_start: {corr_start}, corr_end: {corr_end},' \
+                                    'start: {alignment.unshifted_start}, end: {alignment.unshifted_end}, ' \
+                                    'similar: "{alignment.similar}", misassemblies: "{alignment.misassemblies}", ' \
+                                    'mis_ends: "{misassembled_ends}"'.format(**locals()))
 
-        data_str = data_str[:-1] + '];\n\n'
+                        if alignment.name != 'FICTIVE':
+                            if len(aligned_assemblies[chr]) < len(contigs_fpaths) and alignment.label not in aligned_assemblies[chr]:
+                                aligned_assemblies[chr].append(alignment.label)
+                            data_str.append(', structure: [ ')
+                            for el in contig_structure[alignment.name]:
+                                if isinstance(el, Alignment):
+                                    if el.ref_name in ref_contigs:
+                                        num_chr = ref_contigs.index(el.ref_name)
+                                        corr_len = sum(chr_lengths[:num_chr+1])
+                                    else:
+                                        corr_len = -int(el.end)
+                                        if contigs_analyzer.ref_labels_by_chromosomes and el.ref_name not in used_chromosomes:
+                                            used_chromosomes.append(el.ref_name)
+                                            new_chr = contig_names_by_refs[el.ref_name]
+                                            links_to_chromosomes.append('links_to_chromosomes["{el.ref_name}"] = "{new_chr}";'.format(**locals()))
+                                    corr_el_start = corr_len + int(el.start)
+                                    corr_el_end = corr_len + int(el.end)
+                                    data_str.append('{{type: "A", corr_start: {corr_el_start}, corr_end: {corr_el_end}, start: {el.start}, '
+                                                    'end: {el.end}, start_in_contig: {el.start_in_contig}, end_in_contig: {el.end_in_contig}, '
+                                                    'IDY: {el.idy}, chr: "{el.ref_name}"}},'.format(**locals()))
+                                elif type(el) == str:
+                                    data_str.append('{{type: "M", mstype: "{el}"}},'.format(**locals()))
+                            data_str[-1] = data_str[-1][:-1] + ']},'
+
+                        else: data_str[-1] += '},'
+
+            data_str[-1] = data_str[-1][:-1] + '];'
         if contigs_analyzer.ref_labels_by_chromosomes:
-            data_str += ''.join(links_to_chromosomes) + '\n'
+            data_str.append(''.join(links_to_chromosomes))
         if cov_fpath:
             # adding coverage data
-            data_str += 'var coverage_data = {};\n'
+            data_str.append('var coverage_data = {};')
             if cov_data[chr]:
-                data_str += 'coverage_data["{chr}"] = [ '.format(**locals())
+                data_str.append('coverage_data["{chr}"] = [ '.format(**locals()))
                 for e in cov_data[chr]:
-                    data_str += '{e},'.format(**locals())
-                data_str = data_str[:-1] + '];\n'
+                    data_str.append('{e},'.format(**locals()))
+                data_str[-1] = data_str[-1][:-1] + '];'
 
-            data_str += 'var not_covered = {};\n'
-            data_str += 'not_covered["{chr}"] = [ '.format(**locals())
+            data_str.append('var not_covered = {};')
+            data_str.append('not_covered["{chr}"] = [ '.format(**locals()))
             if len(not_covered[chr]) > 0:
                 for e in not_covered[chr]:
-                    data_str += '{e},'.format(**locals())
-                data_str = data_str[:-1]
-            data_str += '];\n'
-
+                    data_str.append('{e},'.format(**locals()))
+                data_str[-1] = data_str[-1][:-1]
+            data_str[-1] += '];'
+        data_str = '\n'.join(data_str)
         with open(html_saver.get_real_path('_chr_templ.html'), 'r') as template:
             with open(os.path.join(output_all_files_dir_path, '{short_chr}.html'.format(**locals())), 'w') as result:
                 for line in template:
@@ -997,32 +992,34 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
                     else:
                         result.write(line)
 
-    contigs_sizes_str = 'var contig_data = {};\n'
-    contigs_sizes_str += 'var CHROMOSOME;\n'
+    contigs_sizes_str = ['var contig_data = {};']
+    contigs_sizes_str.append('var CHROMOSOME;')
     min_contig_size = qconfig.min_contig
-    contigs_sizes_str += 'var minContigSize = {min_contig_size};\n'.format(**locals())
-    contigs_sizes_str += 'contig_data = [ '.format(**locals())
+    contigs_sizes_str.append('var minContigSize = {min_contig_size};'.format(**locals()))
     contigs_sizes_lines = []
     total_len = 0
     for assembly in contigs_by_assemblies:
+        contigs_sizes_str.append('contig_data["{assembly}"] = [ '.format(**locals()))
         cum_length = 0
         contigs = sorted(contigs_by_assemblies[assembly], key=lambda x: x.size, reverse=True)
+        not_used_nx = [nx for nx in nx_marks]
         for i, alignment in enumerate(contigs):
-            start_contig = cum_length
             end_contig = cum_length + alignment.size
             marks = []
-            for nx in nx_marks:
+            for nx in not_used_nx:
                 if assemblies_n50[assembly][nx] == alignment.size and \
                         (i + 1 >= len(contigs) or contigs[i+1].size != alignment.size):
                     marks.append(nx)
             marks = ', '.join(marks)
-            contigs_sizes_str += '{{name: "{alignment.name}", assembly: "{assembly}", size: "{alignment.size}", ' \
-                                 'marks: "{marks}", corr_start: {start_contig}, corr_end: {end_contig} }}, '.format(**locals())
             if marks:
                 contigs_sizes_lines.append('{{assembly: "{assembly}", corr_end: {end_contig}, label: "{marks}"}}'.format(**locals()))
+                not_used_nx = [nx for nx in not_used_nx if nx not in marks]
+            marks = ', marks: "' + marks + '"' if marks else ''
+            contigs_sizes_str.append('{name: "' + alignment.name + '", size: ' + str(alignment.size) + marks + '},')
             cum_length = end_contig
         total_len = max(total_len, cum_length)
-    contigs_sizes_str = contigs_sizes_str[:-1] + '];\n\n'
+        contigs_sizes_str[-1] = contigs_sizes_str[-1][:-1] + '];\n\n'
+    contigs_sizes_str = '\n'.join(contigs_sizes_str)
     contigs_sizes_str += 'var contigLines = [' + ','.join(contigs_sizes_lines) + '];\n\n'
     contigs_sizes_str += 'var contigs_total_len = {total_len};\n'.format(**locals())
 
@@ -1072,7 +1069,7 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
                     result.write(open(html_saver.get_real_path(os.path.join('static', 'jquery-1.8.2.js'))).read())
                     result.write(open(html_saver.get_real_path(os.path.join('static', 'bootstrap', 'bootstrap.min.js'))).read())
                 elif line.find('<!--- assemblies: ---->') != -1:
-                    labels = [qutils.name_from_fpath(contigs_fpath) for contigs_fpath in contigs_fpaths]
+                    labels = [qconfig.assembly_labels_by_fpath[contigs_fpath] for contigs_fpath in contigs_fpaths]
                     result.write('Assemblies: ' + ', '.join(labels))
                 elif line.find('<!--- th_assemblies: ---->') != -1:
                     if is_unaligned_asm_exists:

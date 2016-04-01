@@ -24,11 +24,12 @@ THE SOFTWARE.
     function parseData (data) {
         chart = { assemblies: {} };
 
-        for (var i = 0; i < data.length; i++) {
-            if (!chart.assemblies[data[i].assembly])
-                chart.assemblies[data[i].assembly] = [];
-
-            chart.assemblies[data[i].assembly].push(data[i]);
+        for (var assembly in data) {
+            var alignments = data[assembly];
+            if (!chart.assemblies[assembly])
+                chart.assemblies[assembly] = [];
+            for (var numAlign in alignments)
+                chart.assemblies[assembly].push(alignments[numAlign]);
         }
 
         return collapseLanes(chart);
@@ -49,39 +50,43 @@ THE SOFTWARE.
 
         for (var assemblyName in chart.assemblies) {
             var lane = chart.assemblies[assemblyName];
-
+            var currentLen = 0;
             for (var i = 0; i < lane.length; i++) {
                 var numItems = 0;
                 var item = lane[i];
-                if (item.name != 'FICTIVE') {
-                    if (item.mis_ends) var misassembled_ends = item.mis_ends.split(';');
-                    item.supp = '';
-                    item.lane = laneId;
-                    item.id = itemId;
-                    item.groupId = groupId;
-                    items.push(item);
-                    itemId++;
-                    numItems++;
-                    if (item.mis_ends && misassembled_ends) {
-                        for (num in misassembled_ends) {
-                            if (!misassembled_ends[num]) continue;
-                            var suppItem = {};
-                            suppItem.name = item.name;
-                            suppItem.corr_start = item.corr_start;
-                            suppItem.corr_end = item.corr_end;
-                            suppItem.assembly = item.assembly;
-                            suppItem.id = itemId;
-                            suppItem.lane = laneId;
-                            suppItem.groupId = groupId;
-                            suppItem.supp = misassembled_ends[num];
-                            suppItem.misassemblies = item.misassemblies.split(';')[num];
-                            items.push(suppItem);
-                            itemId++;
-                            numItems++;
-                        }
-                    }
-                    groupId++;
+                if (item.mis_ends) var misassembled_ends = item.mis_ends.split(';');
+                item.supp = '';
+                item.lane = laneId;
+                item.id = itemId;
+                item.groupId = groupId;
+                item.assembly = assemblyName;
+                if (isContigSizePlot) {
+                    item.corr_start = currentLen;
+                    currentLen += item.size;
+                    item.corr_end = currentLen;
                 }
+                items.push(item);
+                itemId++;
+                numItems++;
+                if (item.mis_ends && misassembled_ends) {
+                    for (num in misassembled_ends) {
+                        if (!misassembled_ends[num]) continue;
+                        var suppItem = {};
+                        suppItem.name = item.name;
+                        suppItem.corr_start = item.corr_start;
+                        suppItem.corr_end = item.corr_end;
+                        suppItem.assembly = item.assembly;
+                        suppItem.id = itemId;
+                        suppItem.lane = laneId;
+                        suppItem.groupId = groupId;
+                        suppItem.supp = misassembled_ends[num];
+                        suppItem.misassemblies = item.misassemblies.split(';')[num];
+                        items.push(suppItem);
+                        itemId++;
+                        numItems++;
+                    }
+                }
+                groupId++;
             }
 
             if (numItems > 0){
@@ -101,6 +106,8 @@ THE SOFTWARE.
                 description += 'contigs: ' + assemblies_contigs[assemblyName] + '\n';
                 if (!isContigSizePlot)
                     description += 'misassemblies: ' + assemblies_misassemblies[assemblyName];
+                else
+                    description += 'N50: ' + assemblies_n50[assemblyName];
                 lanes[laneNum].description = description;
                 if (!isContigSizePlot)
                     lanes[laneNum].link = assemblies_links[assemblyName];
@@ -134,8 +141,10 @@ THE SOFTWARE.
             },
             mainLanesHeight = 50,
             miniLanesHeight = 18,
-            annotationLanesHeight = 18,
-            featureHeight = 10;
+            annotationMiniLanesHeight = 18,
+            featureMiniHeight = 10;
+            annotationLanesHeight = 40,
+            featureHeight = 20;
             offsetsY = [0, .3, .15],
             lanesInterval = 20,
             miniScale = 50,
@@ -182,15 +191,25 @@ THE SOFTWARE.
     var letterSize = getSize('w') - 1;
     var numberSize = getSize('0') - 1;
 
-    var annotationsHeight = 0;
+    var annotationsHeight = 0, annotationsMiniHeight = 0;
     if (CHROMOSOME) {
       var featuresData = parseFeaturesData(CHROMOSOME);
-      var annotationsHeight = annotationLanesHeight * featuresData.lanes.length;
+      annotationsHeight = annotationLanesHeight * featuresData.lanes.length;
+      annotationsMiniHeight = annotationMiniLanesHeight * featuresData.lanes.length;
       var ext = d3.extent(featuresData.lanes, function (d) {
           return d.id;
       });
+      var y_anno_mini = d3.scale.linear().domain([ext[0], ext[1] + 1]).range([0, annotationsMiniHeight]);
       var y_anno = d3.scale.linear().domain([ext[0], ext[1] + 1]).range([0, annotationsHeight]);
     }
+
+    var featuresHidden = false, featuresMainHidden = true, drawCoverage = false, coverageMainHidden = true;
+    if (!featuresData || featuresData.features.length == 0)
+      featuresHidden = true;
+    if (typeof coverage_data != "undefined")
+        drawCoverage = true;
+
+    var brush, brush_cov, brush_anno;
 
     var spaceAfterMain = 20;
     var spaceAfterTrack = 50;
@@ -200,12 +219,9 @@ THE SOFTWARE.
                             (featuresHidden ? spaceAfterMain : spaceAfterTrack)) : annotationsMainOffsetY;
     var miniOffsetY = covMainOffsetY + spaceAfterTrack;
     var annotationsMiniOffsetY = miniOffsetY + miniHeight + (featuresHidden ? 0 : spaceAfterTrack);
-    var covMiniOffsetY = annotationsMiniOffsetY + annotationsHeight + spaceAfterTrack;
-    var hideBtnsOffsetY = margin.top + menuOffsetY;
-    var hideBtnAnnotationsMiniOffsetY = annotationsMiniOffsetY + hideBtnsOffsetY;
-    var hideBtnAnnotationsMainOffsetY = annotationsMainOffsetY + hideBtnsOffsetY;
-    var hideBtnCoverageMiniOffsetY = covMiniOffsetY + hideBtnsOffsetY;
-    var hideBtnCoverageMainOffsetY = covMainOffsetY + hideBtnsOffsetY;
+    var covMiniOffsetY = annotationsMiniOffsetY + annotationsMiniHeight + spaceAfterTrack;
+
+    var hideBtnAnnotationsMiniOffsetY,hideBtnAnnotationsMainOffsetY,hideBtnCoverageMiniOffsetY, hideBtnCoverageMainOffsetY;
 
     height = covMiniOffsetY + coverageHeight * 2 + annotationsHeight + 100;
 
@@ -228,34 +244,34 @@ THE SOFTWARE.
             .attr('class', 'main');
 
     //annotations track
-    var featuresHidden = false, featuresMainHidden = true, drawCoverage = false, coverageMainHidden = true;
-    if (!featuresData || featuresData.features.length == 0)
-      featuresHidden = true;
-    if (typeof coverage_data != "undefined")
-        drawCoverage = true;
-
-    var brush, brush_cov, brush_anno;
-    if (!featuresHidden)
-      var annotationsMain = chart.append('g')
+    if (!featuresHidden) {
+        var annotationsMain = chart.append('g')
             .attr('transform', 'translate(' + margin.left + ',' + annotationsMainOffsetY + ')')
             .attr('width', chartWidth)
             .attr('height', annotationLanesHeight)
             .attr('class', 'main')
-            .attr('display', 'none')
             .attr('id', 'annotationsMain');
+        var annotationsMainBounds = annotationsMain[0][0].getBoundingClientRect();
+        var hideBtnAnnotationsMainOffsetY = annotationsMainBounds.top - 3;
+        annotationsMain.attr('display', 'none')
+    }
 
     var mini = chart.append('g')
             .attr('transform', 'translate(' + margin.left + ',' + miniOffsetY + ')')
             .attr('width', chartWidth)
             .attr('height', miniHeight + miniScale)
             .attr('class', 'main');
-    if (!featuresHidden)
-      var annotationsMini = chart.append('g')
+    if (!featuresHidden) {
+        var annotationsMini = chart.append('g')
             .attr('transform', 'translate(' + margin.left + ',' + annotationsMiniOffsetY + ')')
             .attr('width', chartWidth)
-            .attr('height', annotationLanesHeight)
+            .attr('height', annotationMiniLanesHeight)
             .attr('class', 'main')
             .attr('id', 'annotationsMini');
+        var annotationsMiniBounds = annotationsMini[0][0].getBoundingClientRect();
+        var hideBtnAnnotationsMiniOffsetY = annotationsMiniBounds.top - 3;
+    }
+
     // draw the lanes for the main chart
     main.append('g').selectAll('.laneLines')
             .data(lanes)
@@ -305,7 +321,7 @@ THE SOFTWARE.
           while (word = words.pop()) {
             line.push(word);
             tspan.text(line.join(' '));
-            if (tspan.node().getComputedTextLength() > width) {
+            if (tspan.node().getComputedTextLength() > width && line.length > 1) {
                 line.pop();
                 tspan.text(line.join(' '));
                 line = [word];
@@ -384,7 +400,7 @@ THE SOFTWARE.
     // draw the lanes for the annotations chart
     if (!featuresHidden) {
         var featurePaths = getFeaturePaths(featuresData.features);
-        addFeatureTrackInfo(annotationsMini, y_anno);
+        addFeatureTrackInfo(annotationsMini, y_anno_mini);
         addFeatureTrackInfo(annotationsMain, y_anno);
     }
 
@@ -560,7 +576,7 @@ THE SOFTWARE.
         if (chrContigs.length > 1) {
             for (var chr in chromosomes_len) {
                 var shortName = chr.slice(commonChrName, chr.length);
-                separatedLines.push({name: shortName, corr_start: currentLen, corr_end: len + chromosomes_len[chr],
+                separatedLines.push({name: shortName, corr_start: currentLen, corr_end: currentLen + chromosomes_len[chr],
                                y1: 0, y2: mainHeight, len: chromosomes_len[chr]});
                 currentLen += chromosomes_len[chr];
             }
@@ -648,7 +664,7 @@ THE SOFTWARE.
                 }),
                 visibleLinesLabels = separatedLines.filter(function (d) {
                     if (d.name && d.corr_start < maxExtent && d.corr_end > minExtent) return d;
-                    var textSize = getSize(d.label) / 2;
+                    var textSize = d.label.length * letterSize / 2;
                     if (d.label && d.corr_end - textSize > minExtent && d.corr_end + textSize < maxExtent) return d;
                 });
         visItems = items.filter(function (d) {
@@ -995,21 +1011,21 @@ THE SOFTWARE.
                         .attr('class', 'main_labels')
                         .attr('transform', function (d) {
                             var x = d.corr_start ? x_main(Math.max(minExtent, d.corr_start)) + 5 :
-                                                   x_main(d.corr_end) - getSize(d.label);
+                                                   x_main(d.corr_end) - d.label.length * letterSize;
                             var y = d.y2 ? d.y2 - 3 : y_main(d.lane) + 5;
 
                             return 'translate(' + x + ', ' + y + ')';
                         })
                         .attr('width', function (d) {
                             if (d.corr_start) return x_main(Math.min(maxExtent, d.corr_end)) - x_main(Math.max(minExtent, d.corr_start));
-                            return getSize(d.label);
+                            return d.label.length * letterSize;
                         });
         labels.append('rect')
                 .attr('class', 'main_labels')
                 .attr('height', 15)
                 .attr('width', function (d) {
                     if (d.corr_start) return x_main(Math.min(maxExtent, d.corr_end)) - x_main(Math.max(minExtent, d.corr_start));
-                    return getSize(d.label);
+                    return d.label.length * letterSize;
                 })
                 .attr('transform', 'translate(0, -12)');
         labels.append('text')
@@ -1021,7 +1037,7 @@ THE SOFTWARE.
     function addSelectionAreas() {
         brush = drawBrush(mini, miniHeight);
         if (!featuresHidden)
-            brush_anno = drawBrush(annotationsMini, annotationsHeight, 'features');
+            brush_anno = drawBrush(annotationsMini, annotationsMiniHeight, 'features');
         if (drawCoverage)
             brush_cov = drawBrush(mini_cov, coverageHeight, 'coverage');
     }
@@ -1072,13 +1088,13 @@ THE SOFTWARE.
 
     function setupInterface() {
         document.getElementById('left').onclick=function() {
-            keyPress('left', 2) };
+            keyPress('left', 1) };
         document.getElementById('left_shift').onclick=function() {
-            keyPress('left', 10) };
+            keyPress('left', 5) };
         document.getElementById('right').onclick=function() {
-            keyPress('right', 2) };
+            keyPress('right', 1) };
         document.getElementById('right_shift').onclick=function() {
-            keyPress('right', 10) };
+            keyPress('right', 5) };
         document.getElementById('zoom_in').onclick=function() {
             keyPress('zoom_in', 25) };
         document.getElementById('zoom_in_5').onclick=function() {
@@ -1232,36 +1248,28 @@ THE SOFTWARE.
                 .remove();
         for (item in rectItems) {
             if (x_main(rectItems[item].corr_start) <= x && x <= x_main(rectItems[item].corr_end)) {
-                 var container = lineCountContigs.append('g')
+                d = rectItems[item];
+                order = (d.order + 1).toString();
+                offsetX = order.length * letterSize + 50;
+                offsetY = y_main(d.lane) + mainLanesHeight / 2;
+                var suffix = 'th';
+                var lastNumber = order.slice(-1);
+                if (lastNumber == '1' && order != "11") suffix = 'st';
+                else if (lastNumber == '2' && order != "12") suffix = 'nd';
+                else if (lastNumber == '3' && order != "13") suffix = 'rd';
+                var container = lineCountContigs.append('g')
                         .attr('transform', function (d) {
-                            d = rectItems[item];
-                            order = d.order + 1;
-                            var x = -getSize(order) - 50;
-                            var y = y_main(d.lane) + mainLanesHeight / 2;
-
-                            return 'translate(' + x + ', ' + y + ')';
+                            return 'translate(' + (-offsetX) + ', ' + offsetY + ')';
                         })
                         .attr('width', function (d) {
                         });
                 container.append('rect')
                         .attr('height', 15)
-                        .attr('width', function (d) {
-                            d = rectItems[item];
-                            order = d.order + 1;
-                            return getSize(order) + 50;
-                        })
+                        .attr('width', offsetX)
                         .attr('fill', '#fff')
                         .attr('transform', 'translate(-3, -12)');
                 container.append('text')
-                        .text(function (d) {
-                            d = rectItems[item];
-                            var suffix = 'th';
-                            var lastNumber = order.toString().slice(-1);
-                            if (lastNumber == '1' && order != 11) suffix = 'st';
-                            if (lastNumber == '2' && order != 12) suffix = 'nd';
-                            if (lastNumber == '3' && order != 13) suffix = 'rd';
-                            return order + suffix + ' contig';
-                        })
+                        .text(order + suffix + ' contig')
                         .attr('text-anchor', 'start')
                         .attr('class', 'itemLabel');
             }
@@ -1296,6 +1304,7 @@ THE SOFTWARE.
     }
 
     function addGradient(d, marks, miniItem, gradientExists) {
+      if (!marks) return;
       var gradientId = 'gradient' + d.id + (miniItem ? 'mini' : '');
       marks = marks.split(', ');
       if (marks.length == 1) return contigsColors[marks[0]];
@@ -1345,7 +1354,7 @@ THE SOFTWARE.
             .call(xMiniAxis);
 
         if (!featuresHidden) {
-            addMiniXAxis(annotationsMini, x_mini, annotationsHeight, miniTickValue);
+            addMiniXAxis(annotationsMini, x_mini, annotationsMiniHeight, miniTickValue);
             addMainXAxis(annotationsMain, annotationsHeight);
         }
         if (drawCoverage) {
@@ -1496,7 +1505,8 @@ THE SOFTWARE.
         mini_cov = chart.append('g')
                 .attr('class', 'coverage')
                 .attr('transform', 'translate(' + margin.left + ', ' + covMiniOffsetY + ')');
-
+        var coverageMiniBounds = mini_cov[0][0].getBoundingClientRect();
+        hideBtnCoverageMiniOffsetY = coverageMiniBounds.top - 3;
         mini_cov.append('g')
                 .attr('class', 'y')
                 .call(y_cov_mini_A);
@@ -1554,8 +1564,11 @@ THE SOFTWARE.
 
         main_cov = chart.append('g')
                 .attr('class', 'COV')
-                .attr('display', 'none')
                 .attr('transform', 'translate(' + margin.left + ', ' + covMainOffsetY + ')');
+
+        var coverageMainBounds = main_cov[0][0].getBoundingClientRect();
+        hideBtnCoverageMainOffsetY = coverageMainBounds.top - 3;
+        main_cov.attr('display', 'none')
         main_cov.append('g')
                 .attr('class', 'y')
                 .attr('transform', 'translate(0, 0)')
@@ -2113,7 +2126,7 @@ THE SOFTWARE.
             .attr('width', function (d) {
               return scale(d.end - d.start);
             })
-            .attr('height', featureHeight)
+            .attr('height', featureMiniHeight)
             .on('mouseenter', selectFeature)
             .on('mouseleave', deselectFeature)
             .on('click',  function(d) {
@@ -2140,7 +2153,7 @@ THE SOFTWARE.
                             .text(function (d) { return getVisibleText(d.name ? d.name : 'ID=' + d.id, scale(d.end) - scale(d.start)) } )
                             .attr('class', 'featureLabel')
                             .attr('transform', function (d) {
-                              return 'translate(' + (d.x + 3) + ', ' + (d.y + featureHeight / 2 + 3) + ')';
+                              return 'translate(' + (d.x + 3) + ', ' + (d.y + featureMiniHeight / 2 + 3) + ')';
                             });
     }
 
@@ -2158,17 +2171,17 @@ THE SOFTWARE.
                 .select('rect');
     }
 
-    function addFeatureTrackInfo (annotations) {
+    function addFeatureTrackInfo (annotations, scale) {
         annotations.append('g').selectAll('.laneLines')
             .data(featuresData.lanes)
             .enter().append('line')
             .attr('x1', 0)
             .attr('y1', function (d) {
-                return d3.round(y_anno(d.id)) + .5;
+                return d3.round(scale(d.id)) + .5;
             })
             .attr('x2', chartWidth)
             .attr('y2', function (d) {
-                return d3.round(y_anno(d.id)) + .5;
+                return d3.round(scale(d.id)) + .5;
             })
             .attr('stroke', function (d) {
                 return d.label === '' ? 'white' : 'lightgray'
@@ -2182,7 +2195,7 @@ THE SOFTWARE.
             })
             .attr('x', -10)
             .attr('y', function (d) {
-                return y_anno(d.id + .5);
+                return scale(d.id + .5);
             })
             .attr('dy', '.5ex')
             .attr('text-anchor', 'end')
@@ -2203,10 +2216,10 @@ THE SOFTWARE.
             features[i].class = c;
 
             var x = x_mini(d.start);
-            var y = y_anno(d.lane);
-            y += .15 * annotationLanesHeight;
+            var y = y_anno_mini(d.lane);
+            y += .15 * annotationMiniLanesHeight;
             if (d.class.search("odd") != -1)
-                y += .04 * annotationLanesHeight;
+                y += .04 * annotationMiniLanesHeight;
 
             result.push({class: c, name: d.name, start: d.start, end: d.end, id: d.id_, y: y, x: x, lane: d.lane, order: i});
             curLane = d.lane;
@@ -2347,12 +2360,12 @@ THE SOFTWARE.
                 paneToHide = annotationsMini;
                 hideBtn = hideBtnAnnotationsMini;
                 if (doHide) {
-                    covMiniOffsetY -= annotationsHeight;
-                    hideBtnCoverageMiniOffsetY -= annotationsHeight;
+                    covMiniOffsetY -= annotationsMiniHeight;
+                    hideBtnCoverageMiniOffsetY -= annotationsMiniHeight;
                 }
                 else {
-                    covMiniOffsetY += annotationsHeight;
-                    hideBtnCoverageMiniOffsetY += annotationsHeight;
+                    covMiniOffsetY += annotationsMiniHeight;
+                    hideBtnCoverageMiniOffsetY += annotationsMiniHeight;
                 }
             }
         }

@@ -708,10 +708,10 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
         for align in assembly.alignments:
             chr_to_aligned_blocks[assembly.label][align.ref_name].append(align)
 
-    summary_fname = qconfig.alignment_summary_fname
+    summary_fname = qconfig.icarus_html_fname
     summary_path = os.path.join(output_dirpath, summary_fname)
     main_menu_link = '<a href="../{summary_fname}" style="color: white">Main menu</a>'.format(**locals())
-    output_all_files_dir_path = os.path.join(output_dirpath, qconfig.alignment_plots_dirname)
+    output_all_files_dir_path = os.path.join(output_dirpath, qconfig.icarus_dirname)
     if not os.path.exists(output_all_files_dir_path):
         os.mkdir(output_all_files_dir_path)
     import contigs_analyzer
@@ -829,8 +829,9 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
         aligned_assemblies[chr] = []
         data_str = []
         additional_assemblies_data = ''
+        data_str.append('var links_to_chromosomes;')
         if contigs_analyzer.ref_labels_by_chromosomes:
-            data_str.append('var links_to_chromosomes = {};')
+            data_str.append('links_to_chromosomes = {};')
             links_to_chromosomes = []
             used_chromosomes = []
 
@@ -900,10 +901,10 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
                         corr_end = prev_len + alignment.unshifted_end
                         if misassembled_ends: misassembled_ends = ';'.join(misassembled_ends)
                         else: misassembled_ends = ''
-                        data_str.append('{{name: "{alignment.name}", corr_start: {corr_start}, corr_end: {corr_end},' \
-                                    'start: {alignment.unshifted_start}, end: {alignment.unshifted_end}, ' \
-                                    'similar: "{alignment.similar}", misassemblies: "{alignment.misassemblies}", ' \
-                                    'mis_ends: "{misassembled_ends}"'.format(**locals()))
+                        data_str.append('{name: "' + alignment.name + '",corr_start:' + str(corr_start) + ', corr_end: ' + str(corr_end) +
+                                        ',start:' + str(alignment.unshifted_start) + ',end:' + str(alignment.unshifted_end) +
+                                        ',similar:"' + ('True' if alignment.similar else 'False') + '", misassemblies:"'  + alignment.misassemblies +
+                                        '",mis_ends:"' + misassembled_ends + '"')
 
                         if alignment.name != 'FICTIVE':
                             if len(aligned_assemblies[chr]) < len(contigs_fpaths) and alignment.label not in aligned_assemblies[chr]:
@@ -922,9 +923,10 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
                                             links_to_chromosomes.append('links_to_chromosomes["{el.ref_name}"] = "{new_chr}";'.format(**locals()))
                                     corr_el_start = corr_len + int(el.start)
                                     corr_el_end = corr_len + int(el.end)
-                                    data_str.append('{{type: "A", corr_start: {corr_el_start}, corr_end: {corr_el_end}, start: {el.start}, '
-                                                    'end: {el.end}, start_in_contig: {el.start_in_contig}, end_in_contig: {el.end_in_contig}, '
-                                                    'IDY: {el.idy}, chr: "{el.ref_name}"}},'.format(**locals()))
+                                    data_str.append('{type: "A",corr_start: ' + str(corr_el_start) + ',corr_end: ' +
+                                                    str(corr_el_end) + ',start:' + str(el.start) + ',end:' + str(el.end) +
+                                                    ',start_in_contig:' + str(el.start_in_contig) + ',end_in_contig:' +
+                                                    str(el.end_in_contig) + ',IDY:' + el.idy + ',chr: "' + el.ref_name + '"},')
                                 elif type(el) == str:
                                     data_str.append('{{type: "M", mstype: "{el}"}},'.format(**locals()))
                             data_str[-1] = data_str[-1][:-1] + ']},'
@@ -1067,12 +1069,12 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
 
     icarus_links = defaultdict(list)
     if len(chr_full_names) > 1:
-        chr_link = qconfig.alignment_summary_fname
+        chr_link = qconfig.icarus_html_fname
         #icarus_def = 'Icarus: interactive contig assessment viewer'
         icarus_links["links"].append(chr_link)
         icarus_links["links_names"].append('Icarus main menu')
 
-    with open(html_saver.get_real_path(qconfig.alignment_summary_template_fname), 'r') as template:
+    with open(html_saver.get_real_path(qconfig.icarus_menu_template_fname), 'r') as template:
         with open(summary_path, 'w') as result:
             num_aligned_assemblies = [len(aligned_assemblies[chr]) for chr in chr_full_names]
             is_unaligned_asm_exists = len(set(num_aligned_assemblies)) > 1
@@ -1092,16 +1094,17 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
                         result.write('<th># assemblies</th>')
                 elif line.find('<!--- references: ---->') != -1:
                     for chr in sorted(chr_full_names):
+                        result.write('<!--- reference:%s ---->' % chr)
                         result.write('<tr>')
                         short_chr = chr[:30]
                         if len(chr_full_names) == 1:
                             html_name = qconfig.one_alignment_viewer_name
                             contig_alignment_name = qconfig.contig_alignment_viewer_name
-                            chr_link = os.path.join(qconfig.alignment_plots_dirname, '{html_name}.html'.format(**locals()))
+                            chr_link = os.path.join(qconfig.icarus_dirname, '{html_name}.html'.format(**locals()))
                             icarus_links["links"].append(chr_link)
                             icarus_links["links_names"].append(contig_alignment_name)
                         else:
-                            chr_link = os.path.join(qconfig.alignment_plots_dirname, '{short_chr}.html'.format(**locals()))
+                            chr_link = os.path.join(qconfig.icarus_dirname, '{short_chr}.html'.format(**locals()))
                         chr_name = chr.replace('_', ' ')
                         tooltip = ''
                         if len(chr_name) > 50:
@@ -1118,10 +1121,10 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
                             result.write('<td>%s</td>' % len(aligned_assemblies[chr]))
                         result.write('<td>%.3f</td>' % chr_genome)
                         result.write('<td>%s</td>' % num_misassemblies[chr])
-                        result.write('</tr>')
+                        result.write('</tr>\n')
                 elif line.find('<!--- links: ---->') != -1:
                     contig_size_name = qconfig.contig_size_viewer_name
-                    contig_size_browser_fname = os.path.join(qconfig.alignment_plots_dirname, qconfig.contig_size_viewer_fname)
+                    contig_size_browser_fname = os.path.join(qconfig.icarus_dirname, qconfig.contig_size_viewer_fname)
                     icarus_links["links"].append(contig_size_browser_fname)
                     icarus_links["links_names"].append(contig_size_name)
                     contig_size_browser_link = '<tr><td><a href="{contig_size_browser_fname}">{contig_size_name}</a></td></tr>'.format(**locals())

@@ -249,6 +249,30 @@ def save_total_report(results_dirpath, min_contig, ref_fpath):
         log.info('  HTML version (interactive tables and plots) saved to ' + os.path.join(results_dirpath, report_fname))
 
 
+def create_meta_icarus(results_dirpath, output_dirpath_per_ref, ref_names):
+    icarus_dirpath = os.path.join(results_dirpath, qconfig.icarus_dirname)
+    if not os.path.isdir(icarus_dirpath):
+        os.mkdir(icarus_dirpath)
+    contig_size_fpath = os.path.join(results_dirpath, qconfig.combined_output_name, qconfig.icarus_dirname, qconfig.contig_size_viewer_fname)
+    contig_size_top_fpath = os.path.join(results_dirpath, qconfig.icarus_dirname, qconfig.contig_size_viewer_fname)
+    shutil.copy(contig_size_fpath, contig_size_top_fpath)
+    for ref in ref_names:
+        icarus_ref_fpath = os.path.join(output_dirpath_per_ref, ref, qconfig.icarus_dirname, qconfig.alignment_viewer_fpath)
+        icarus_top_ref_fpath = os.path.join(results_dirpath, qconfig.icarus_dirname, ref + '.html')
+        shutil.copy(icarus_ref_fpath, icarus_top_ref_fpath)
+    icarus_menu_fpath = os.path.join(results_dirpath, qconfig.combined_output_name, qconfig.icarus_html_fname)
+    icarus_menu_top_fpath = os.path.join(results_dirpath, qconfig.icarus_html_fname)
+    with open(icarus_menu_fpath, 'r') as template:
+        with open(icarus_menu_top_fpath, 'w') as result:
+            for line in template:
+                if line.find('<!--- reference') != -1:
+                    l = line.split(':')
+                    if len(l) > 1 and l[1].split()[0] not in ref_names:
+                        continue
+                result.write(line)
+    return icarus_menu_top_fpath
+
+
 def save_coord(results_dirpath, coord_x, coord_y, name_coord, contigs_fpaths):  # coordinates for Nx, NAx, NGx, NGAX
     json_fpath = json_saver.save_coord(results_dirpath, coord_x, coord_y, name_coord, contigs_fpaths)
     if json_fpath:

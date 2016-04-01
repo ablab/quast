@@ -699,6 +699,24 @@ def parse_nucmer_contig_report(report_fpath, sorted_ref_names, cumulative_ref_le
     return aligned_blocks, misassembled_id_to_structure, contigs
 
 
+def add_contig(cum_length, contig, not_used_nx, assemblies_n50, assembly, contigs, contig_size_lines, num, only_nx=False):
+    end_contig = cum_length + contig.size
+    marks = []
+    align = None
+    for nx in not_used_nx:
+        if assemblies_n50[assembly][nx] == contig.size and \
+                (num + 1 >= len(contigs) or contigs[num + 1].size != contig.size):
+            marks.append(nx)
+    marks = ', '.join(marks)
+    if marks:
+        contig_size_lines.append('{{assembly: "{assembly}", corr_end: {end_contig}, label: "{marks}", size: {contig.size}}}'.format(**locals()))
+        not_used_nx = [nx for nx in not_used_nx if nx not in marks]
+    marks = ', marks: "' + marks + '"' if marks else ''
+    if not only_nx or marks:
+        align = '{name: "' + contig.name + '", size: ' + str(contig.size) + marks + '},'
+    return end_contig, contig_size_lines, align, not_used_nx
+
+
 def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromosomes_length,
                 output_dirpath, structures_by_labels, contigs_by_assemblies, stdout_pattern=None, features=None, cov_fpath=None):
     chr_to_aligned_blocks = defaultdict(dict)
@@ -1003,7 +1021,9 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
                         chr_name = chr.replace('_', ' ')
                         if len(chr_name) > 90:
                             chr_name = chr_name[:90] + '...'
+                        result.write('<div class="reftitle">')
                         result.write(chr_name)
+                        result.write('</div>')
                     elif line.find('<!--- menu: ---->') != -1:
                         result.write(main_menu_link)
                     else:
@@ -1011,34 +1031,41 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
 
     contigs_sizes_str = ['var contig_data = {};']
     contigs_sizes_str.append('var CHROMOSOME;')
-    min_contig_size = qconfig.min_contig
-    contigs_sizes_str.append('var minContigSize = {min_contig_size};'.format(**locals()))
     contigs_sizes_lines = []
     total_len = 0
+    min_contig_size = qconfig.min_contig
     for assembly in contigs_by_assemblies:
         contigs_sizes_str.append('contig_data["{assembly}"] = [ '.format(**locals()))
         cum_length = 0
         contigs = sorted(contigs_by_assemblies[assembly], key=lambda x: x.size, reverse=True)
+        last_contig_num = min(len(contigs) - 1, qconfig.max_contigs_num_for_size_viewer)
+        contig_threshold = contigs[last_contig_num].size
         not_used_nx = [nx for nx in nx_marks]
         for i, alignment in enumerate(contigs):
-            end_contig = cum_length + alignment.size
-            marks = []
-            for nx in not_used_nx:
-                if assemblies_n50[assembly][nx] == alignment.size and \
-                        (i + 1 >= len(contigs) or contigs[i+1].size != alignment.size):
-                    marks.append(nx)
-            marks = ', '.join(marks)
-            if marks:
-                contigs_sizes_lines.append('{{assembly: "{assembly}", corr_end: {end_contig}, label: "{marks}"}}'.format(**locals()))
-                not_used_nx = [nx for nx in not_used_nx if nx not in marks]
-            marks = ', marks: "' + marks + '"' if marks else ''
-            contigs_sizes_str.append('{name: "' + alignment.name + '", size: ' + str(alignment.size) + marks + '},')
-            cum_length = end_contig
+            if alignment.size < contig_threshold:
+                break
+            cum_length, contigs_sizes_lines, align, not_used_nx = add_contig(cum_length, alignment, not_used_nx, assemblies_n50,
+                                                                assembly, contigs, contigs_sizes_lines, i)
+            contigs_sizes_str.append(align)
+        if len(contigs) > qconfig.max_contigs_num_for_size_viewer:
+            min_contig_size = contig_threshold
+            assembly_len = cum_length
+            remained_len = sum(alignment.size for alignment in contigs[last_contig_num:])
+            cum_length += remained_len
+            contigs_sizes_str.append(('{{name: "contigs less than {min_contig_size} bp", size: ' + str(remained_len) +
+                                     ', type:"small_contigs"}},').format(**locals()))
+        if not_used_nx and last_contig_num < len(contigs):
+            for i, alignment in enumerate(contigs[last_contig_num:]):
+                if not not_used_nx:
+                    break
+                assembly_len, contigs_sizes_lines, align, not_used_nx = add_contig(assembly_len, alignment, not_used_nx, assemblies_n50,
+                                                                    assembly, contigs, contigs_sizes_lines, last_contig_num + i, only_nx=True)
         total_len = max(total_len, cum_length)
         contigs_sizes_str[-1] = contigs_sizes_str[-1][:-1] + '];\n\n'
     contigs_sizes_str = '\n'.join(contigs_sizes_str)
     contigs_sizes_str += 'var contigLines = [' + ','.join(contigs_sizes_lines) + '];\n\n'
     contigs_sizes_str += 'var contigs_total_len = {total_len};\n'.format(**locals())
+    contigs_sizes_str += 'var minContigSize = {min_contig_size};'.format(**locals())
 
     with open(html_saver.get_real_path('_chr_templ.html'), 'r') as template:
         with open(os.path.join(output_all_files_dir_path, qconfig.contig_size_viewer_fname), 'w') as result:
@@ -1064,6 +1091,10 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
                     result.write('Icarus')
                 elif line.find('<!--- subtitle: ---->') != -1:
                     result.write('Contig size viewer')
+                elif line.find('<!--- warning: ---->') != -1:
+                    result.write('<div class="warning">')
+                    result.write('Warning: total number of contigs is too large! Contigs < %s bp were NOT loaded.' % str(min_contig_size))
+                    result.write('</div>')
                 else:
                     result.write(line)
 

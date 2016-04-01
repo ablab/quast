@@ -1817,21 +1817,19 @@ THE SOFTWARE.
         appendPositionElement(d.structure, d.corr_start, d.corr_end, d.assembly, info);
 
         showArrows(d);
-        if (d.misassembled == "True") {
-            var blocks = info.append('p')
-                    .attr('class', 'head main')
-                    .text('Blocks: ' + d.structure.filter(function(d) { if (d.type == "A") return d;}).length);
+        var blocks = info.append('p')
+                .attr('class', 'head main')
+                .text('Blocks: ' + d.structure.filter(function(d) { if (d.type == "A") return d;}).length);
 
 
-            for (var i = 0; i < d.structure.length; ++i) {
-                var e = d.structure[i];
-                if (e.type == "A") {
-                    appendPositionElement(d.structure, e.corr_start, e.corr_end, d.assembly, blocks, e.start_in_contig,
-                        e.end_in_contig, d.corr_start, true);
-                } else {
-                    blocks.append('p')
-                            .text(e.mstype);
-                }
+        for (var i = 0; i < d.structure.length; ++i) {
+            var e = d.structure[i];
+            if (e.type == "A") {
+                appendPositionElement(d.structure, e.corr_start, e.corr_end, d.assembly, blocks, e.start_in_contig,
+                    e.end_in_contig, d.corr_start, true);
+            } else {
+                blocks.append('p')
+                        .text(e.mstype);
             }
         }
     }

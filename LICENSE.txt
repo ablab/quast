@@ -1,6 +1,6 @@
 
 QUAST: QUality ASsessment Tool for Genome Assemblies
-Copyright (c) 2015 Saint Petersburg State University
+Copyright (c) 2015-2016 Saint Petersburg State University
 Copyright (c) 2011-2015 Saint Petersburg Academic University
 
 QUAST is free software; you can redistribute it and/or modify
@@ -26,7 +26,8 @@ Main authors:
     Glenn Tesler
 
 Other contributors:
-    Andrey Prjibelsky
+    Andrey Prjibelski
+    Gleb Valin
     Aleksey Komissarov
 
 Thanks for testing and feedback:
@@ -48,14 +49,19 @@ QUAST: quality assessment tool for genome assemblies,
 Bioinformatics (2013) 29 (8): 1072-1075. doi: 10.1093/bioinformatics/btt086
 First published online: February 19, 2013
 
-If you use MetaQUAST in your research, please include Mikheenko et al., into your
+If you use MetaQUAST in your research, please include Mikheenko et al., 2016 into your
 reference list:
 
 Alla Mikheenko, Vladislav Saveliev, Alexey Gurevich,
 MetaQUAST: evaluation of metagenome assemblies,
-Bioinformatics (2015). doi: 10.1093/bioinformatics/btv697
+Bioinformatics (2016) 32 (7): 1088-1090. doi: 10.1093/bioinformatics/btv697
 First published online: November 26, 2015
 
+If you use Icarus visualizations in your research, please include Mikheenko et al., 2016 into your reference list:
+
+Alla Mikheenko, Gleb Valin, Andrey Prjibelski, Vladislav Saveliev, Alexey Gurevich,
+Icarus: visualizer for assembly quality assessment,
+Submitted to Bioinformatics (2016)
 
 Third-party tools incorporated into QUAST:
 

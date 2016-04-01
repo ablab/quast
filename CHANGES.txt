@@ -1,5 +1,33 @@
 -- Version history --
 
+4.0   1. Icarus added! Icarus stands for Interactive Contig Assessment browseR.
+         Icarus complements QUAST output with interactive visualisations of assembly
+         alignments to the reference genome, and all assembly features detected by 
+         QUAST (e.g. misassemblies, genes). Icarus generate two types of viewers:
+       - Contig alignment viewer (available if a reference genome is provided). Shows
+         contig alignments to the reference, misassemblies, similarities between assemblies,
+         genome annotations (if genes/operons are provided), read coverage along the genome
+         (if reads are provided).
+       - Contig size viewer. Draws contigs ordered from largest to smallest. Allows hiding
+         of short contigs. Explicitly shows contigs of length N50, N75 (and NG50, NG75).
+
+      2. Improved misassembly detection algorithm in case of multiple ambiguous mappings of
+         contig fragments. The algorithm identifies best set of mappings of non-overlapping 
+         contig fragments. The set minimises possible number of misassemblies, i.e. this 
+         algorithm reduces false negatives (erroneously detected misassemblies).
+
+      3. Several new options added:
+       - "--significant-part-size" for setting threshold on detecting partially unaligned 
+         contigs with both significant aligned and unaligned parts (default: 500bp as earlier).
+       - "--unique-mapping" for forcing -a=one for the combined reference (MetaQUAST only)
+
+      4. Fixed bug with skipping "broken" scaffolds in per reference runs of MetaQUAST.
+
+      5. Fixed several minor bugs.
+
+      6. Citation for MetaQUAST paper updated, citation for Icarus paper added.
+
+
 3.2   1. The tool now accepts raw reads for improving quality assessment (experimental
       feature, try with care):
        - reads should be provided with --reads1 (or -1), --reads2 (or -2) options,

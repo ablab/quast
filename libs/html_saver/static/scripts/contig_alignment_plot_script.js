@@ -139,14 +139,14 @@ THE SOFTWARE.
                  return getTextSize(d.label);
                  }), 120)*/ 145
             },
-            mainLanesHeight = 50,
+            mainLanesHeight = 45,
             miniLanesHeight = 18,
             annotationMiniLanesHeight = 18,
-            featureMiniHeight = 10;
+            featureMiniHeight = 10,
             annotationLanesHeight = 40,
-            featureHeight = 20;
+            featureHeight = 20,
             offsetsY = [0, .3, .15],
-            lanesInterval = 20,
+            lanesInterval = 25,
             miniScale = 50,
             mainScale = 50,
             paleContigsOpacity = .25,
@@ -1005,23 +1005,15 @@ THE SOFTWARE.
         var labels = visibleLabels.enter().append('g')
                         .attr('class', 'main_labels')
                         .attr('transform', function (d) {
-                            var x = d.corr_start ? x_main(Math.max(minExtent, d.corr_start)) + 5 :
-                                                   x_main(d.corr_end) - d.label.length * letterSize;
+                            var x = d.label ? x_main(d.corr_end) - d.label.length * letterSize :
+                                                   x_main(Math.max(minExtent, d.corr_start)) + 5 ;
                             var y = d.y2 ? d.y2 - 3 : y_main(d.lane) + 5;
 
                             return 'translate(' + x + ', ' + y + ')';
-                        })
-                        .attr('width', function (d) {
-                            if (d.corr_start) return x_main(Math.min(maxExtent, d.corr_end)) - x_main(Math.max(minExtent, d.corr_start));
-                            return d.label.length * letterSize;
                         });
         labels.append('rect')
                 .attr('class', 'main_labels')
                 .attr('height', 15)
-                .attr('width', function (d) {
-                    if (d.corr_start) return x_main(Math.min(maxExtent, d.corr_end)) - x_main(Math.max(minExtent, d.corr_start));
-                    return d.label.length * letterSize;
-                })
                 .attr('transform', 'translate(0, -12)');
         labels.append('text')
                 .text(visibleText)
@@ -1830,18 +1822,20 @@ THE SOFTWARE.
         appendPositionElement(d.structure, d.corr_start, d.corr_end, d.assembly, info);
 
         showArrows(d);
-        var blocks = info.append('p')
-                .attr('class', 'head main')
-                .text('Blocks: ' + d.structure.filter(function(d) { if (d.type == "A") return d;}).length);
+        if (d.structure) {
+            var blocks = info.append('p')
+                    .attr('class', 'head main')
+                    .text('Blocks: ' + d.structure.filter(function(d) { if (d.type == "A") return d;}).length);
 
-        for (var i = 0; i < d.structure.length; ++i) {
-            var e = d.structure[i];
-            if (e.type == "A") {
-                appendPositionElement(d.structure, e.corr_start, e.corr_end, d.assembly, blocks, e.start_in_contig,
-                    e.end_in_contig, d.corr_start, true);
-            } else {
-                blocks.append('p')
-                        .text(e.mstype);
+            for (var i = 0; i < d.structure.length; ++i) {
+                var e = d.structure[i];
+                if (e.type == "A") {
+                    appendPositionElement(d.structure, e.corr_start, e.corr_end, d.assembly, blocks, e.start_in_contig,
+                        e.end_in_contig, d.corr_start, true);
+                } else {
+                    blocks.append('p')
+                            .text(e.mstype);
+                }
             }
         }
     }
@@ -1854,7 +1848,7 @@ THE SOFTWARE.
         mini.selectAll('.arrow_selected').remove();
         var y = y_mini(d.lane) - 1;
 
-        if (d.misassembled == "True") {
+        if (d.structure) {
             for (var i = 0; i < d.structure.length; ++i) {
                 var e = d.structure[i];
                 if (e.type == "A") {

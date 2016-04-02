@@ -10,7 +10,7 @@
 
 from __future__ import with_statement
 
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 
 from libs import qconfig, qutils, fastaparser, genome_analyzer
 import os
@@ -600,7 +600,7 @@ def do(contigs_fpaths, contig_report_fpath_pattern, output_dirpath,
     structures_by_labels = {}
 
     total_genome_size = 0
-    reference_chromosomes = dict()
+    reference_chromosomes = OrderedDict()
     chr_names = []
     for name, seq in fastaparser.read_fasta(ref_fpath):
         chr_name = name.split()[0]
@@ -612,13 +612,14 @@ def do(contigs_fpaths, contig_report_fpath_pattern, output_dirpath,
     sorted_ref_names = sorted(reference_chromosomes, key=reference_chromosomes.get, reverse=True)
     sorted_ref_lengths = sorted(reference_chromosomes.values(), reverse=True)
     cumulative_ref_lengths = [0]
-    for length in sorted(reference_chromosomes.values(), reverse=True):
+    for length in reference_chromosomes.values():
         cumulative_ref_lengths.append(cumulative_ref_lengths[-1] + virtual_genome_shift + length)
     virtual_genome_size = cumulative_ref_lengths[-1] - virtual_genome_shift
 
     for contigs_fpath in contigs_fpaths:
         report_fpath = contig_report_fpath_pattern % qutils.label_from_fpath_for_fname(contigs_fpath)
-        aligned_blocks, misassembled_id_to_structure, contigs = parse_nucmer_contig_report(report_fpath, sorted_ref_names, cumulative_ref_lengths)
+        aligned_blocks, misassembled_id_to_structure, contigs = parse_nucmer_contig_report(report_fpath,
+                                                                    reference_chromosomes.keys(), cumulative_ref_lengths)
         if aligned_blocks is None:
             return None
         label = qconfig.assembly_labels_by_fpath[contigs_fpath]
@@ -640,7 +641,7 @@ def do(contigs_fpaths, contig_report_fpath_pattern, output_dirpath,
 
     return icarus_html_fpath, plot_fpath
 
-def parse_nucmer_contig_report(report_fpath, sorted_ref_names, cumulative_ref_lengths):
+def parse_nucmer_contig_report(report_fpath, ref_names, cumulative_ref_lengths):
     aligned_blocks = []
     contigs = []
     misassembled_contigs_ids = set()
@@ -679,7 +680,7 @@ def parse_nucmer_contig_report(report_fpath, sorted_ref_names, cumulative_ref_le
                             split_line[contig_col], split_line[idy_col]
                 unshifted_start, unshifted_end, start_in_contig, end_in_contig = int(unshifted_start), int(unshifted_end),\
                                                                                  int(start_in_contig), int(end_in_contig)
-                cur_shift = cumulative_ref_lengths[sorted_ref_names.index(ref_name)]
+                cur_shift = cumulative_ref_lengths[ref_names.index(ref_name)]
                 start = unshifted_start + cur_shift
                 end = unshifted_end + cur_shift
 
@@ -735,7 +736,9 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
     import contigs_analyzer
     if contigs_analyzer.ref_labels_by_chromosomes:
         contig_names_by_refs = contigs_analyzer.ref_labels_by_chromosomes
-        chr_full_names = list(set([contig_names_by_refs[contig] for contig in chr_names]))
+        added_refs = set()
+        chr_full_names = [added_refs.add(ref) or ref for ref in [contig_names_by_refs[contig] for contig in chr_names]
+                          if ref not in added_refs]
     elif sum(chromosomes_length.values()) < qconfig.MAX_SIZE_FOR_COMB_PLOT and len(chr_names) > 1:
         chr_full_names = [NAME_FOR_ONE_PLOT]
     else:
@@ -873,11 +876,8 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
         ms_types = dict()
         for assembly in chr_to_aligned_blocks.keys():
             data_str.append('contig_data["{chr}"]["{assembly}"] = [ '.format(**locals()))
-            prev_len = 0
             ms_types[assembly] = defaultdict(int)
             for num_contig, ref_contig in enumerate(ref_contigs):
-                if num_contig > 0:
-                    prev_len += chr_lengths[num_contig]
                 if ref_contig in chr_to_aligned_blocks[assembly]:
                     prev_end = None
                     for alignment in sorted(chr_to_aligned_blocks[assembly][ref_contig], key=lambda x: x.start):
@@ -915,14 +915,12 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
                             alignment.misassembled = False
                             alignment.misassemblies = ''
 
-                        corr_start = prev_len + alignment.unshifted_start
-                        corr_end = prev_len + alignment.unshifted_end
                         if misassembled_ends: misassembled_ends = ';'.join(misassembled_ends)
                         else: misassembled_ends = ''
-                        data_str.append('{name: "' + alignment.name + '",corr_start:' + str(corr_start) + ', corr_end: ' + str(corr_end) +
-                                        ',start:' + str(alignment.unshifted_start) + ',end:' + str(alignment.unshifted_end) +
-                                        ',similar:"' + ('True' if alignment.similar else 'False') + '", misassemblies:"'  + alignment.misassemblies +
-                                        '",mis_ends:"' + misassembled_ends + '"')
+                        data_str.append('{name: "' + alignment.name + '",corr_start:' + str(alignment.start) +
+                                        ', corr_end: ' + str(alignment.end) + ',start:' + str(alignment.unshifted_start) +
+                                        ',end:' + str(alignment.unshifted_end) + ',similar:"' + ('True' if alignment.similar else 'False') +
+                                        '", misassemblies:"'  + alignment.misassemblies + '",mis_ends:"' + misassembled_ends + '"')
 
                         if alignment.name != 'FICTIVE':
                             if len(aligned_assemblies[chr]) < len(contigs_fpaths) and alignment.label not in aligned_assemblies[chr]:
@@ -939,8 +937,8 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
                                             used_chromosomes.append(el.ref_name)
                                             new_chr = contig_names_by_refs[el.ref_name]
                                             links_to_chromosomes.append('links_to_chromosomes["{el.ref_name}"] = "{new_chr}";'.format(**locals()))
-                                    corr_el_start = corr_len + int(el.start)
-                                    corr_el_end = corr_len + int(el.end)
+                                    corr_el_start = el.start
+                                    corr_el_end = el.end
                                     data_str.append('{type: "A",corr_start: ' + str(corr_el_start) + ',corr_end: ' +
                                                     str(corr_el_end) + ',start:' + str(el.start) + ',end:' + str(el.end) +
                                                     ',start_in_contig:' + str(el.start_in_contig) + ',end_in_contig:' +
@@ -1034,21 +1032,24 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
     contigs_sizes_lines = []
     total_len = 0
     min_contig_size = qconfig.min_contig
+    too_many_contigs = False
     for assembly in contigs_by_assemblies:
         contigs_sizes_str.append('contig_data["{assembly}"] = [ '.format(**locals()))
         cum_length = 0
         contigs = sorted(contigs_by_assemblies[assembly], key=lambda x: x.size, reverse=True)
-        last_contig_num = min(len(contigs) - 1, qconfig.max_contigs_num_for_size_viewer)
+        last_contig_num = min(len(contigs) - 1, qconfig.max_contigs_num_for_size_viewer - 1)
         contig_threshold = contigs[last_contig_num].size
         not_used_nx = [nx for nx in nx_marks]
+        if len(contigs) > qconfig.max_contigs_num_for_size_viewer:
+            too_many_contigs = True
+
         for i, alignment in enumerate(contigs):
-            if alignment.size < contig_threshold:
+            if i > last_contig_num:
                 break
             cum_length, contigs_sizes_lines, align, not_used_nx = add_contig(cum_length, alignment, not_used_nx, assemblies_n50,
                                                                 assembly, contigs, contigs_sizes_lines, i)
             contigs_sizes_str.append(align)
         if len(contigs) > qconfig.max_contigs_num_for_size_viewer:
-            min_contig_size = contig_threshold
             assembly_len = cum_length
             remained_len = sum(alignment.size for alignment in contigs[last_contig_num:])
             cum_length += remained_len
@@ -1091,9 +1092,10 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
                     result.write('Icarus')
                 elif line.find('<!--- subtitle: ---->') != -1:
                     result.write('Contig size viewer')
-                elif line.find('<!--- warning: ---->') != -1:
+                elif line.find('<!--- warning: ---->') != -1 and too_many_contigs:
                     result.write('<div class="warning">')
-                    result.write('Warning: total number of contigs is too large! Contigs < %s bp were NOT loaded.' % str(min_contig_size))
+                    result.write('Warning: total number of contigs is too large! ONLY first %s contigs were loaded.' %
+                                 str(qconfig.max_contigs_num_for_size_viewer))
                     result.write('</div>')
                 else:
                     result.write(line)

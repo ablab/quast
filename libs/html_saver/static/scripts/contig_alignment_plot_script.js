@@ -146,6 +146,7 @@ THE SOFTWARE.
             annotationLanesHeight = 40,
             featureHeight = 20,
             offsetsY = [0, .3, .15],
+            offsetsMiniY = [0, .1, .05],
             lanesInterval = 25,
             miniScale = 50,
             mainScale = 50,
@@ -961,17 +962,27 @@ THE SOFTWARE.
             step = Math.round(l / cov_main_dots_amount);
 
             var y_max = 1;
-            for (var s, i = (minExtent / 100); i + step <= (maxExtent / 100); i += step) {
-                s = d3.sum(coverage_data[CHROMOSOME].slice(i, i + step), function (d) {
+            var cov_lines = [];
+            for (var s, i = (minExtent / 100);; i += step) {
+                coverage = coverage_data[CHROMOSOME].slice(i, i + step);
+                if (coverage.length == 0) break;
+                s = d3.sum(coverage, function (d) {
                             return d
-                        }) / step;
+                        }) / coverage.length;
                 y_max = Math.max(y_max, s);
                 if (s >= 1)
-                    line += ['M', x_main(i * 100), y_cov_main_S(s), 'H', x_main((i + step) * 100)].join(' ');
+                    cov_lines.push([x_main(i * 100), s, x_main((i + step) * 100)]);
+                if (i + step > (maxExtent / 100)) break;
             }
 
+            y_max = y_max < 100 ? 100 : Math.ceil(y_max / 100) * 100;
             y_cov_main_S.domain([y_max + 100, .1]);
             y_cov_main_A.scale(y_cov_main_S);
+            for (i = 0; i < cov_lines.length; i++) {
+                cov_line = cov_lines[i];
+                line += ['M', cov_line[0], y_cov_main_S(cov_line[1]), 'H', cov_line[2]].join(' ');
+            }
+
             y_cov_main_A.tickValues(y_cov_main_S.ticks().filter(y_cov_main_vals));
             main_cov.select('.y').call(y_cov_main_A);
 
@@ -1555,7 +1566,7 @@ THE SOFTWARE.
 
         var coverageMainBounds = main_cov[0][0].getBoundingClientRect();
         hideBtnCoverageMainOffsetY = coverageMainBounds.top - 3;
-        main_cov.attr('display', 'none')
+        main_cov.attr('display', 'none');
         main_cov.append('g')
                 .attr('class', 'y')
                 .attr('transform', 'translate(0, 0)')
@@ -1624,13 +1635,9 @@ THE SOFTWARE.
             var startX = d.supp == "R" ? x_mini(d.corr_end) : x_mini(d.corr_start);
             var pathEnd = x_mini(d.corr_end);
             var startY = y_mini(d.lane);
-            if (!d.supp) startY += .5 * miniLanesHeight;
-            if (d.supp) startY += .2 * miniLanesHeight;
-            if (d.class.search("misassembled") != -1)
-                startY += .08 * miniLanesHeight;
-            if (d.class.search("odd") != -1)
-                startY += .04 * miniLanesHeight;
-            if (d.supp && !isSmall) startY += .02 * miniLanesHeight;
+            startY += offsetsMiniY[items[i].order % 3] * miniLanesHeight;
+            if (!d.supp) startY += .45 * miniLanesHeight;
+            if (d.supp) startY += .15 * miniLanesHeight;
             if (!d.supp || isSmall) path = ['M', startX, startY, 'H', pathEnd].join(' ');
             else if (d.supp == "L") path = ['M', startX, startY, 'L', startX + (Math.sqrt(3) * miniPathHeight / 2), startY + miniPathHeight / 2,
               'L', startX, startY + miniPathHeight, 'L',  startX, startY].join(' ');

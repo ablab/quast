@@ -9,6 +9,8 @@ from __future__ import with_statement
 import os
 import shutil
 import re
+from collections import defaultdict
+
 from libs import qconfig, qutils
 from libs.html_saver import json_saver
 
@@ -251,11 +253,17 @@ def save_total_report(results_dirpath, min_contig, ref_fpath):
 
 def create_meta_icarus(results_dirpath, output_dirpath_per_ref, ref_names):
     icarus_dirpath = os.path.join(results_dirpath, qconfig.icarus_dirname)
+    icarus_links = defaultdict(list)
     if not os.path.isdir(icarus_dirpath):
         os.mkdir(icarus_dirpath)
+    icarus_links["links"].append(qconfig.icarus_html_fname)
+    icarus_links["links_names"].append('Icarus main menu')
     contig_size_fpath = os.path.join(results_dirpath, qconfig.combined_output_name, qconfig.icarus_dirname, qconfig.contig_size_viewer_fname)
     contig_size_top_fpath = os.path.join(results_dirpath, qconfig.icarus_dirname, qconfig.contig_size_viewer_fname)
     shutil.copy(contig_size_fpath, contig_size_top_fpath)
+    contig_size_link = os.path.join(qconfig.icarus_dirname, qconfig.contig_size_viewer_fname)
+    icarus_links["links"].append(contig_size_link)
+    icarus_links["links_names"].append(qconfig.contig_size_viewer_name)
     for ref in ref_names:
         icarus_ref_fpath = os.path.join(output_dirpath_per_ref, ref, qconfig.icarus_dirname, qconfig.alignment_viewer_fpath)
         icarus_top_ref_fpath = os.path.join(results_dirpath, qconfig.icarus_dirname, ref + '.html')
@@ -270,6 +278,7 @@ def create_meta_icarus(results_dirpath, output_dirpath_per_ref, ref_names):
                     if len(l) > 1 and l[1].split()[0] not in ref_names:
                         continue
                 result.write(line)
+    save_icarus_links(results_dirpath, icarus_links)
     return icarus_menu_top_fpath
 
 

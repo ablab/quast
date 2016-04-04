@@ -212,7 +212,7 @@ THE SOFTWARE.
 
     var brush, brush_cov, brush_anno;
 
-    var spaceAfterMain = 10;
+    var spaceAfterMain = 0;
     var spaceAfterTrack = 40;
     var annotationsMainOffsetY = mainHeight + mainScale + (featuresHidden ? 0 : spaceAfterMain);
     var covMainOffsetY = typeof coverage_data != 'undefined' ? (annotationsMainOffsetY +
@@ -220,8 +220,6 @@ THE SOFTWARE.
     var miniOffsetY = covMainOffsetY + spaceAfterTrack;
     var annotationsMiniOffsetY = miniOffsetY + miniHeight + (featuresHidden ? 0 : spaceAfterTrack);
     var covMiniOffsetY = annotationsMiniOffsetY + annotationsMiniHeight + spaceAfterTrack;
-
-    var hideBtnAnnotationsMiniOffsetY,hideBtnAnnotationsMainOffsetY,hideBtnCoverageMiniOffsetY, hideBtnCoverageMainOffsetY;
 
     height = covMiniOffsetY + coverageHeight * 2 + annotationsHeight + 100;
 
@@ -243,6 +241,13 @@ THE SOFTWARE.
             .attr('height', mainHeight + mainScale)
             .attr('class', 'main');
 
+    var mainOffsetY = 120;
+
+    var hideBtnAnnotationsMiniOffsetY = annotationsMiniOffsetY + mainOffsetY;
+    var hideBtnAnnotationsMainOffsetY = annotationsMainOffsetY + mainOffsetY;
+    var hideBtnCoverageMiniOffsetY = covMiniOffsetY + mainOffsetY;
+    var hideBtnCoverageMainOffsetY = covMainOffsetY + mainOffsetY;
+
     //annotations track
     if (!featuresHidden) {
         var annotationsMain = chart.append('g')
@@ -251,8 +256,6 @@ THE SOFTWARE.
             .attr('height', annotationLanesHeight)
             .attr('class', 'main')
             .attr('id', 'annotationsMain');
-        var annotationsMainBounds = annotationsMain[0][0].getBoundingClientRect();
-        var hideBtnAnnotationsMainOffsetY = annotationsMainBounds.top - 3;
         annotationsMain.attr('display', 'none')
     }
 
@@ -268,8 +271,6 @@ THE SOFTWARE.
             .attr('height', annotationMiniLanesHeight)
             .attr('class', 'main')
             .attr('id', 'annotationsMini');
-        var annotationsMiniBounds = annotationsMini[0][0].getBoundingClientRect();
-        var hideBtnAnnotationsMiniOffsetY = annotationsMiniBounds.top - 3;
     }
 
     // draw the lanes for the main chart
@@ -1503,8 +1504,6 @@ THE SOFTWARE.
         mini_cov = chart.append('g')
                 .attr('class', 'coverage')
                 .attr('transform', 'translate(' + margin.left + ', ' + covMiniOffsetY + ')');
-        var coverageMiniBounds = mini_cov[0][0].getBoundingClientRect();
-        hideBtnCoverageMiniOffsetY = coverageMiniBounds.top - 3;
         mini_cov.append('g')
                 .attr('class', 'y')
                 .call(y_cov_mini_A);
@@ -1564,8 +1563,6 @@ THE SOFTWARE.
                 .attr('class', 'COV')
                 .attr('transform', 'translate(' + margin.left + ', ' + covMainOffsetY + ')');
 
-        var coverageMainBounds = main_cov[0][0].getBoundingClientRect();
-        hideBtnCoverageMainOffsetY = coverageMainBounds.top - 3;
         main_cov.attr('display', 'none');
         main_cov.append('g')
                 .attr('class', 'y')

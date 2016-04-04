@@ -1,4 +1,17 @@
 /* Main things */
+html, body, div, span, h1, h3, h4, h5, h6, blockquote, pre,
+a, em, sub, sup, dl, dt, dd, ol, ul, li,
+fieldset, form, label, legend,
+table, caption, tbody, tfoot, thead, tr, th, td,
+article, aside, canvas, details, figure, figcaption, footer, header, hgroup,
+menu, nav, output, section, time {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    font-size: 100%;
+    font: inherit;
+    vertical-align: baseline;
+}
 body {
     margin: 0;
     font-family: Lucida Grande, Verdana, Arial, sans-serif;
@@ -215,6 +228,7 @@ ul.mdash li:before {
     margin-top: -3px;
     border-spacing: 0px;
     color: white;
+    font-size: medium;
 }
 
 .layout-table td.layout-table-td {
@@ -264,6 +278,7 @@ p {
 h1 {
     display: block;
     font-size: 26px;
+    padding: 0 -3px 0 5px;
     -webkit-margin-before: 5px;
     -webkit-margin-after: 0px;
     -webkit-margin-start: 0px;

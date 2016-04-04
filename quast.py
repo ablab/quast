@@ -757,6 +757,7 @@ def main(args):
 
     # Before continue evaluating, check if nucmer didn't skip all of the contigs files.
     detailed_contigs_reports_dirpath = None
+    features_containers = None
     if len(aligned_contigs_fpaths) and ref_fpath:
         detailed_contigs_reports_dirpath = os.path.join(output_dirpath, 'contigs_reports')
 
@@ -810,12 +811,13 @@ def main(args):
                 stdout_pattern = os.path.join(detailed_contigs_reports_dirpath, qconfig.contig_report_fname_pattern)
             else:
                 report_for_icarus_fpath_pattern = None
+                stdout_pattern = None
             number_of_steps = sum([int(bool(value)) for value in [report_for_icarus_fpath_pattern, all_pdf_file]])
-            if report_for_icarus_fpath_pattern and (qconfig.draw_svg or qconfig.create_icarus_html):
+            if qconfig.draw_svg or qconfig.create_icarus_html:
                 ########################################################################
                 ### VISUALIZE CONTIG ALIGNMENT
                 ########################################################################
-                logger.main_info('  1 of %d: Creating contig alignment plot...' % number_of_steps)
+                logger.main_info('  1 of %d: Creating Icarus viewers...' % number_of_steps)
                 from libs import contig_alignment_plotter
                 icarus_html_fpath, contig_alignment_plot_fpath = contig_alignment_plotter.do(
                     contigs_fpaths, report_for_icarus_fpath_pattern,

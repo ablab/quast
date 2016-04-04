@@ -781,7 +781,7 @@ def main(args):
             from libs import plotter
             html_saver.save_colors(output_dirpath, contigs_fpaths, plotter.dict_color_and_ls, meta=True)
             if qconfig.create_icarus_html:
-                icarus_html_fpath = html_saver.create_meta_icarus(output_dirpath, output_dirpath_per_ref, ref_names)
+                icarus_html_fpath = html_saver.create_meta_icarus(output_dirpath, ref_names)
                 logger.main_info('  Icarus main menu: %s' % icarus_html_fpath)
             html_saver.create_meta_report(output_dirpath, json_texts)
 

@@ -1,8 +1,8 @@
 /* Main things */
 html, body, div, span, h1, h3, h4, h5, h6, blockquote, pre,
-a, em, sub, sup, dl, dt, dd, ol, ul, li,
+em, sub, sup, dl, dt, dd, ol, ul, li,
 fieldset, form, label, legend,
-table, caption, tbody, tfoot, thead, tr, th, td,
+table, caption, tbody, tfoot, thead,
 article, aside, canvas, details, figure, figcaption, footer, header, hgroup,
 menu, nav, output, section, time {
     margin: 0;

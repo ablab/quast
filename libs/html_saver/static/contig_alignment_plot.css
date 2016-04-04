@@ -124,11 +124,6 @@ span {
     font-size: 14px;
 }
 
-a {
-    color: white;
-    text-decoration: underline;
-}
-
 .summary_table a {
     text-decoration: none;
     /*color: #0c4f72;*/

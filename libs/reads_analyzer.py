@@ -472,7 +472,7 @@ def do(ref_fpath, contigs_fpaths, reads_fpaths, meta_ref_fpaths, output_dir, int
     try:
         bed_fpath, cov_fpath = run_processing_reads(ref_fpath, meta_ref_fpaths, contigs_analyzer.ref_labels_by_chromosomes, reads_fpaths, temp_output_dir, output_dir, log_path, err_path)
     except:
-        bed_fpath, cov_fpath = None
+        bed_fpath, cov_fpath = None, None
         logger.error('Failed searching structural variations! This function is experimental and may work improperly. Sorry for the inconvenience.')
     if not qconfig.debug:
         shutil.rmtree(temp_output_dir, ignore_errors=True)

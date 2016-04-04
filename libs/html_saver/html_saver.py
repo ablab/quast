@@ -70,62 +70,46 @@ aux_files = [
 aux_meta_files = ['static/flot/jquery.flot.tickrotor.js', 'static/flot/jquery.flot.stack.js', 'static/scripts/draw_metasummary_plot.js', 'static/scripts/draw_meta_misassembl_plot.js',]
 
 
+def js_html(script_rel_path):
+    if qconfig.debug:
+        return '<script type="text/javascript" src="' + get_real_path(script_rel_path) + '"></script>'
+    else:
+        return '<script type="text/javascript">\n' + open(get_real_path(script_rel_path)).read() + '\n</script>\n'
+
+
+def css_html(css_rel_path):
+    if qconfig.debug:
+        return '<link rel="stylesheet" href="' + get_real_path(css_rel_path) + '"></link>'
+    else:
+        return '<style rel="stylesheet">\n' + open(get_real_path(css_rel_path)).read() + '\n</style>\n'
+
+
 def init(html_fpath, is_meta=False):
     with open(template_fpath) as template_file:
         html = template_file.read()
+
         script_texts = []
-        for aux_file in aux_files:
-            if qconfig.no_gc and "draw_gc_plot" in aux_file:
+        for aux_f_rel_path in aux_files:
+            if qconfig.no_gc and "draw_gc_plot" in aux_f_rel_path:
                 continue
-            script_texts.append('<script type="text/javascript">' + open(get_real_path(aux_file)).read() + '</script>')
+            script_texts.append(js_html(aux_f_rel_path))
         html = html.replace('{{ allscripts }}', '\n'.join(script_texts))
         if is_meta:
-            html = html.replace('{{ buildreport }}', open(get_real_path('static/scripts/build_report_meta.js')).read())
-            html = html.replace('{{ buildtotalreport }}', open(get_real_path('static/scripts/build_total_report_meta.js')).read())
-            html = html.replace('{{ metascripts }}', '\n'.join([open(get_real_path(aux_meta_file)).read() for aux_meta_file in aux_meta_files]))
+            html = html.replace('{{ buildreport }}', js_html('static/scripts/build_report_meta.js'))
+            html = html.replace('{{ buildtotalreport }}', js_html('static/scripts/build_total_report_meta.js'))
+            html = html.replace('{{ metascripts }}', '\n'.join([js_html(aux_meta_file) for aux_meta_file in aux_meta_files]))
         else:
-            html = html.replace('{{ buildreport }}', open(get_real_path('static/scripts/build_report.js')).read())
-            html = html.replace('{{ buildtotalreport }}', open(get_real_path('static/scripts/build_total_report.js')).read())
+            html = html.replace('{{ buildreport }}', js_html('static/scripts/build_report.js'))
+            html = html.replace('{{ buildtotalreport }}', js_html('static/scripts/build_total_report.js'))
             html = html.replace('{{ metascripts }}', '')
+        html = html.replace('{{ bootstrap }}', css_html('static/bootstrap/bootstrap.min.css'))
+        html = html.replace('{{ common }}', css_html('static/common.css'))
+        html = html.replace('{{ report }}', css_html('static/report.css'))
         html = html.replace('{{ glossary }}', open(get_real_path('glossary.json')).read())
-        html = html.replace('{{ bootstrap }}', open(get_real_path('static/bootstrap/bootstrap.min.css')).read())
-        html = html.replace('{{ common }}', open(get_real_path('static/common.css')).read())
-        html = html.replace('{{ report }}', open(get_real_path('static/report.css')).read())
         if os.path.exists(html_fpath):
             os.remove(html_fpath)
         with open(html_fpath, 'w') as f_html:
             f_html.write(html)
-
-
-#def init_old(results_dirpath):
-#    with open(template_fpath) as template_file:
-#        html = template_file.read()
-#
-#        for fp_script in support_files:
-#            with open(get_real_path(fp_script)) as f:
-#                html = html.replace(
-#                    '<script type="text/javascript" src="' + fp_script + '"></script>',
-#                    '<script type="text/javascript">\n' + f.read() + '\n\t</script>\n')
-#
-#        html = html.replace('<link rel="stylesheet" type="text/css" href="static/report.css" />',
-#                            '<style rel="stylesheet">\n' + open(get_real_path('static/report.css')).read() + '\n</style>\n\n')
-#
-#        html = html.replace('<link rel="stylesheet" href="static/bootstrap/bootstrap.min.css"/>',
-#                            '<style rel="stylesheet">\n' + open(get_real_path('static/bootstrap/bootstrap.min.css')).read() + '\n</style>\n\n')
-#
-#        html = html.replace(
-#            '<script type="text/javascript" src="static/ie_html5.js"></script>',
-#            '<script type="text/javascript" >\n' + open(get_real_path('static/ie_html5.js')).read() + '\n</script>')
-#
-#        html = html.replace(
-#            '<script type="text/javascript" src="static/bootstrap/bootstrap-tooltip-5px-lower-min.js"></script>',
-#            '<script type="text/javascript" >\n' + open(
-#                get_real_path('static/bootstrap/bootstrap-tooltip-5px-lower-min.js')).read() + '\n</script>')
-#
-#        html = html.replace('{{ glossary }}', open(get_real_path('glossary.json')).read())
-#
-#        with open(os.path.join(results_dirpath, report_fname), 'w') as f_html:
-#            f_html.write(html)
 
 
 def append(results_dirpath, json_fpath, keyword, html_fpath=None):

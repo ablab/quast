@@ -1028,13 +1028,12 @@ def save_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, chr_length
                                  '{is_checked}/> {ms_type} ({ms_count})</label>&nbsp&nbsp'.format(**locals()))
                     result.write('</div>')
                 elif line.find('<!--- css: ---->') != -1:
-                    result.write(open(html_saver.get_real_path(os.path.join('static', 'common.css'))).read())
-                    result.write(open(html_saver.get_real_path(os.path.join('static', 'contig_alignment_plot.css'))).read())
-                    result.write(open(html_saver.get_real_path(os.path.join('static', 'bootstrap', 'bootstrap.css'))).read())
+                    result.write(html_saver.css_html(os.path.join('static', 'contig_alignment_plot.css')))
+                    result.write(html_saver.css_html(os.path.join('static', 'common.css')))
+                    result.write(html_saver.css_html(os.path.join('static', 'bootstrap', 'bootstrap.css')))
                 elif line.find('<!--- scripts: ---->') != -1:
-                    result.write(open(html_saver.get_real_path(os.path.join('static', 'd3.js'))).read())
-                    result.write(open(html_saver.get_real_path(os.path.join('static', 'scripts',
-                                                                            'contig_alignment_plot_script.js'))).read())
+                    result.write(html_saver.js_html(os.path.join('static', 'd3.js')))
+                    result.write(html_saver.js_html(os.path.join('static', 'scripts', 'contig_alignment_plot_script.js')))
                 elif line.find('<!--- title: ---->') != -1:
                     result.write('Icarus')
                 elif line.find('<!--- subtitle: ---->') != -1:
@@ -1140,13 +1139,12 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
                     result.write('<div align="center" style="margin-top: 7px;">Hide contigs < '
                                  '<input class="textBox" id="input_contig_threshold" type="text" size="5" /> bp </div>')
                 elif line.find('<!--- css: ---->') != -1:
-                    result.write(open(html_saver.get_real_path(os.path.join('static', 'common.css'))).read())
-                    result.write(open(html_saver.get_real_path(os.path.join('static', 'contig_alignment_plot.css'))).read())
-                    result.write(open(html_saver.get_real_path(os.path.join('static', 'bootstrap', 'bootstrap.css'))).read())
+                    result.write(html_saver.css_html(os.path.join('static', 'contig_alignment_plot.css')))
+                    result.write(html_saver.css_html(os.path.join('static', 'common.css')))
+                    result.write(html_saver.css_html(os.path.join('static', 'bootstrap', 'bootstrap.css')))
                 elif line.find('<!--- scripts: ---->') != -1:
-                    result.write(open(html_saver.get_real_path(os.path.join('static', 'd3.js'))).read())
-                    result.write(open(html_saver.get_real_path(os.path.join('static', 'scripts',
-                                                                            'contig_alignment_plot_script.js'))).read())
+                    result.write(html_saver.js_html(os.path.join('static', 'd3.js')))
+                    result.write(html_saver.js_html(os.path.join('static', 'scripts', 'contig_alignment_plot_script.js')))
                 elif line.find('<!--- menu: ---->') != -1:
                     result.write(main_menu_link)
                 elif line.find('<!--- title: ---->') != -1:
@@ -1173,12 +1171,12 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
             is_unaligned_asm_exists = len(set(num_aligned_assemblies)) > 1
             for line in template:
                 if line.find('<!--- css: ---->') != -1:
-                    result.write(open(html_saver.get_real_path(os.path.join('static', 'common.css'))).read())
-                    result.write(open(html_saver.get_real_path(os.path.join('static', 'contig_alignment_plot.css'))).read())
-                    result.write(open(html_saver.get_real_path(os.path.join('static', 'bootstrap', 'bootstrap.css'))).read())
+                    result.write(html_saver.css_html(os.path.join('static', 'contig_alignment_plot.css')))
+                    result.write(html_saver.css_html(os.path.join('static', 'common.css')))
+                    result.write(html_saver.css_html(os.path.join('static', 'bootstrap', 'bootstrap.css')))
                 elif line.find('<!--- scripts: ---->') != -1:
-                    result.write(open(html_saver.get_real_path(os.path.join('static', 'jquery-1.8.2.js'))).read())
-                    result.write(open(html_saver.get_real_path(os.path.join('static', 'bootstrap', 'bootstrap.min.js'))).read())
+                    result.write(html_saver.js_html(os.path.join('static', 'd3.js')))
+                    result.write(html_saver.js_html(os.path.join('static', 'scripts', 'contig_alignment_plot_script.js')))
                 elif line.find('<!--- assemblies: ---->') != -1:
                     labels = [qconfig.assembly_labels_by_fpath[contigs_fpath] for contigs_fpath in contigs_fpaths]
                     result.write('Assemblies: ' + ', '.join(labels))

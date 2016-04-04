@@ -3,21 +3,16 @@
 <head>
     <meta http-equiv="Content-Type" content="text/html;charset=utf-8" >
 
-    <style type="text/css">
-        {{ common }}
-    </style>
-    <style type="text/css">
-        {{ bootstrap }}
-    </style>
-    <style type="text/css">
-        {{ report }}
-    </style>
+    {{ bootstrap }}
+    {{ common }}
+    {{ report }}
 
     {{ allscripts }}
+
     <script type="text/javascript">var colors = {{ colors }}</script>
-    <script type="text/javascript">{{ buildtotalreport }}</script>
-    <script type="text/javascript">{{ metascripts }}</script>
-    <script type="text/javascript">{{ buildreport }}</script>
+    {{ buildtotalreport }}
+    {{ metascripts }}
+    {{ buildreport }}
 
     <script type="text/javascript">
         $(function() {
@@ -44,7 +39,7 @@
                 </h1>
             </div>
             <div style='margin-top: -7px;'>
-                <p><b>QUality ASsessment Tool for Genome Assemblies</b>
+                <p><b>Quality Assessment Tool for Genome Assemblies</b>
                     by <a href="http://bioinf.spbau.ru/en" class='dark_bg_link'>Center of Algoritmic Biotechnology</a>
                 </p>
             </div>
@@ -54,8 +49,6 @@
 </div>
 <div class="content">
     <div id='header'>
-        <h1 style='font-size: 1.5em;'><span class='smallcapitals' id='quast_name'>QUAST</span>
-            <span id='report_name'>report</span></h1>
         <p id='report_date'></p>
 
         <p id='icarus'></p>

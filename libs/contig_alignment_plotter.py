@@ -964,7 +964,8 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
             assembly_len = assemblies_len[assembly]
             assembly_contigs = len(assemblies_contigs[assembly])
             local_misassemblies = ms_types[assembly]['local'] / 2
-            ext_misassemblies = sum(ms_types[assembly].values()) / 2 - local_misassemblies
+            ext_misassemblies = (sum(ms_types[assembly].values()) - ms_types[assembly]['interspecies translocation']) / 2 - \
+                                local_misassemblies + ms_types[assembly]['interspecies translocation']
             additional_assemblies_data += 'assemblies_len["{assembly}"] = {assembly_len};\n'.format(**locals())
             additional_assemblies_data += 'assemblies_contigs["{assembly}"] = {assembly_contigs};\n'.format(**locals())
             additional_assemblies_data += 'assemblies_misassemblies["{assembly}"] = "{ext_misassemblies}' \
@@ -1006,7 +1007,8 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
                         result.write('<div align="center" style="margin-top: 7px;">')
                         result.write('Misassembly type to show:')
                         for ms_type in misassemblies_types:
-                            ms_count = sum(ms_types[assembly][ms_type] / 2 for assembly in chr_to_aligned_blocks.keys())
+                            factor = 1 if ms_type == 'interspecies translocation' else 2
+                            ms_count = sum(ms_types[assembly][ms_type] / factor for assembly in chr_to_aligned_blocks.keys())
                             is_checked = 'checked="checked"' if ms_count > 0 else ''
                             if ms_type == 'local':
                                 result.write('&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp<label><input type="checkbox" id="{ms_type}" '

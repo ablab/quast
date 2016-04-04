@@ -628,7 +628,7 @@ def main(args):
             reads_fpath_f = arg
         elif opt in ('-2', '--reads2'):
             reads_fpath_r = arg
-        elif opt == '--bed-file':
+        elif opt == '--sv-bed':
             bed_fpath = arg
 
         else:

@@ -398,6 +398,7 @@ def main(args):
     combined_ref_fpath = ''
     reads_fpath_f = ''
     reads_fpath_r = ''
+    bed_fpath = None
     output_dirpath = None
 
     labels = None
@@ -535,6 +536,8 @@ def main(args):
         elif opt in ('-2', '--reads2'):
             reads_fpath_r = arg
             quast_py_args = __remove_from_quast_py_args(quast_py_args, opt, arg)
+        elif opt == '--sv-bed':
+            bed_fpath = arg
         else:
             logger.error('Unknown option: %s. Use -h for help.' % (opt + ' ' + arg), to_stderr=True, exit_with_code=2)
 
@@ -641,13 +644,13 @@ def main(args):
         reads_fpaths.append(reads_fpath_f)
     if reads_fpath_r:
         reads_fpaths.append(reads_fpath_r)
-    if reads_fpaths:
+    if reads_fpaths and not bed_fpath:
         bed_fpath = reads_analyzer.do(combined_ref_fpath, contigs_fpaths, reads_fpaths, corrected_ref_fpaths,
                                       os.path.join(combined_output_dirpath, qconfig.variation_dirname),
                                       external_logger=logger)
-        if bed_fpath:
-            quast_py_args += ['--bed-file']
-            quast_py_args += [bed_fpath]
+    if bed_fpath:
+        quast_py_args += ['--sv-bed']
+        quast_py_args += [bed_fpath]
 
     for arg in args:
         if arg in ('-s', "--scaffolds"):

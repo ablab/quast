@@ -18,6 +18,7 @@ from libs import qconfig
 qconfig.check_python_version()
 from libs import qutils, fastaparser
 from libs import search_references_meta
+from libs import plotter
 from libs.qutils import assert_file_exists
 
 from libs.log import get_logger
@@ -42,22 +43,23 @@ class Assembly:
 
 def parallel_partition_contigs(asm, assemblies_by_ref, corrected_dirpath, alignments_fpath_template):
     assembly_label = qutils.label_from_fpath(asm.fpath)
+    corr_assembly_label = assembly_label.replace(' ', '_')
     logger.info('  ' + 'processing ' + assembly_label)
     added_ref_asm = []
-    not_aligned_fname = assembly_label + '_not_aligned_anywhere.fasta'
+    not_aligned_fname = corr_assembly_label + '_not_aligned_anywhere.fasta'
     not_aligned_fpath = os.path.join(corrected_dirpath, not_aligned_fname)
     contigs = {}
     aligned_contig_names = set()
     aligned_contigs_for_each_ref = {}
     contigs_seq = fastaparser.read_fasta_one_time(asm.fpath)
-    if os.path.exists(alignments_fpath_template % assembly_label):
-        for line in open(alignments_fpath_template % assembly_label):
+    if os.path.exists(alignments_fpath_template % corr_assembly_label):
+        for line in open(alignments_fpath_template % corr_assembly_label):
             values = line.split()
             if values[0] in contigs_analyzer.ref_labels_by_chromosomes.keys():
                 ref_name = contigs_analyzer.ref_labels_by_chromosomes[values[0]]
                 ref_contigs_names = values[1:]
                 ref_contigs_fpath = os.path.join(
-                    corrected_dirpath, assembly_label + '_to_' + ref_name[:40] + '.fasta')
+                    corrected_dirpath, corr_assembly_label + '_to_' + ref_name[:40] + '.fasta')
                 if ref_name not in aligned_contigs_for_each_ref:
                     aligned_contigs_for_each_ref[ref_name] = []
 
@@ -182,6 +184,7 @@ def _start_quast_main(
 def _correct_contigs(contigs_fpaths, output_dirpath, labels):
     assemblies = [Assembly(contigs_fpaths[i], labels[i]) for i in range(len(contigs_fpaths))]
     corr_assemblies = []
+    logs = []
     for file_counter, (contigs_fpath, label) in enumerate(zip(contigs_fpaths, labels)):
         contigs_fname = os.path.basename(contigs_fpath)
         fname, ctg_fasta_ext = qutils.splitext_for_fasta_file(contigs_fname)
@@ -190,8 +193,26 @@ def _correct_contigs(contigs_fpaths, output_dirpath, labels):
             os.path.join(output_dirpath, qconfig.corrected_dirname, label + ctg_fasta_ext))
 
         corr_assemblies.append(Assembly(corr_fpath, label))
+        qconfig.assembly_labels_by_fpath[contigs_fpath] = label
         logger.main_info('  ' + qutils.index_to_str(file_counter, force=(len(labels) > 1)) + '%s ==> %s' % (contigs_fpath, label))
+        if qconfig.scaffolds:
+            broken_scaffold_fpath, logs = quast.broke_scaffolds(file_counter, labels, contigs_fpath, output_dirpath, logs)
+            if not broken_scaffold_fpath:
+                continue
+            broken_label = labels[file_counter] + ' broken'
+            qconfig.assembly_labels_by_fpath[broken_scaffold_fpath] = broken_label
+            qconfig.dict_of_broken_scaffolds[broken_scaffold_fpath] = contigs_fpath
+            assemblies.append(Assembly(broken_scaffold_fpath, broken_label))
 
+            corr_broken_fpath = qutils.unique_corrected_fpath(
+                os.path.join(output_dirpath, qconfig.corrected_dirname, broken_label + ctg_fasta_ext))
+            corr_assemblies.append(Assembly(corr_broken_fpath, broken_label))
+    for log in logs:
+        logger.main_info(log)
+    if qconfig.draw_plots:
+        corr_fpaths = [asm.fpath for asm in assemblies]
+        corr_labels = [asm.label for asm in assemblies]
+        plotter.save_colors_and_ls(corr_fpaths, labels=corr_labels)
     return assemblies, corr_assemblies
 
 
@@ -251,7 +272,7 @@ def _correct_references(ref_fpaths, corrected_dirpath):
         ref_name, ref_fasta_ext = qutils.splitext_for_fasta_file(ref_fname)
         if ref_name in dupl_ref_names:
             ref_name = get_label_from_par_dir_and_fname(ref_fpath)
-            
+
         chromosomes_by_refs[ref_name] = []
 
         corr_seq_fpath = None
@@ -452,7 +473,7 @@ def main(args):
         elif opt == "--gene-thresholds":
             pass
         elif opt in ('-s', "--scaffolds"):
-            pass
+            qconfig.scaffolds = True
         elif opt == "--gage":
             pass
         elif opt == "--debug":
@@ -628,7 +649,18 @@ def main(args):
             quast_py_args += ['--bed-file']
             quast_py_args += [bed_fpath]
 
+    for arg in args:
+        if arg in ('-s', "--scaffolds"):
+            quast_py_args.remove(arg)
+
     quast_py_args += ['--combined-ref']
+    if qconfig.draw_plots:
+        if plotter.dict_color_and_ls:
+            colors_and_ls = [plotter.dict_color_and_ls[asm.label] for asm in assemblies]
+            quast_py_args += ['--colors']
+            quast_py_args += [','.join([style[0] for style in colors_and_ls])]
+            quast_py_args += ['--ls']
+            quast_py_args += [','.join([style[1] for style in colors_and_ls])]
     run_name = 'for the combined reference'
     logger.main_info()
     logger.main_info('Starting quast.py ' + run_name + '...')
@@ -647,9 +679,6 @@ def main(args):
         reference_fpath=combined_ref_fpath,
         output_dirpath=combined_output_dirpath,
         num_notifications_tuple=total_num_notifications, is_first_run=True)
-    for arg in args:
-        if arg in ('-s', "--scaffolds"):
-            quast_py_args.remove(arg)
 
     if json_texts is not None:
         json_texts.append(json_saver.json_text)
@@ -778,7 +807,6 @@ def main(args):
         create_meta_summary.do(html_summary_report_fpath, summary_output_dirpath, combined_output_dirpath, output_dirpath_per_ref, metrics_for_plots, misassembl_metrics,
                                ref_names if no_unaligned_contigs else ref_names + [qconfig.not_aligned_name])
         if html_report and json_texts:
-            from libs import plotter
             html_saver.save_colors(output_dirpath, contigs_fpaths, plotter.dict_color_and_ls, meta=True)
             if qconfig.create_icarus_html:
                 icarus_html_fpath = html_saver.create_meta_icarus(output_dirpath, ref_names)

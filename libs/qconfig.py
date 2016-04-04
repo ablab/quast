@@ -39,7 +39,7 @@ long_options = "test test-no-ref test-sv output-dir= save-json-to= genes= operon
                "ambiguity-usage= scaffolds threads= min-cluster= min-alignment= est-ref-size= use-all-alignments gene-finding "\
                "strict-NA meta labels= help-hidden no-snps fast max-ref-number= extensive-mis-size= plots-format= " \
                "fragmented significant-part-size= unique-mapping " \
-               "references-list= bed-file= reads1= reads2= memory-efficient silent version".split()
+               "references-list= bed-file= reads1= reads2= memory-efficient silent version colors= ls=".split()
 short_options = "o:G:O:R:t:m:J:jehvda:c:ufl:Lx:i:s1:2:"
 
 # default values for options
@@ -108,6 +108,8 @@ krona_dirname = "krona_charts"
 variation_dirname = 'structural_variations'
 trivial_deletions_fname = 'trivial_deletions.bed'
 manta_sv_fname = 'manta_sv.bed'
+used_colors = None
+used_ls = None
 
 # for Icarus
 draw_svg = False

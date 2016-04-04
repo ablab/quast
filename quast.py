@@ -18,6 +18,7 @@ from libs import qconfig
 qconfig.check_python_version()
 
 from libs import qutils, fastaparser, reads_analyzer
+from libs import plotter  # Do not remove this line! It would lead to a warning in matplotlib.
 from libs.qutils import assert_file_exists
 
 from libs.log import get_logger
@@ -207,7 +208,6 @@ def _correct_contigs(contigs_fpaths, corrected_dirpath, reporting, labels):
 
 
 def _parallel_correct_contigs(file_counter, contigs_fpath, corrected_dirpath, labels):
-
     broken_scaffolds = None
     contigs_fname = os.path.basename(contigs_fpath)
     fname, fasta_ext = qutils.splitext_for_fasta_file(contigs_fname)
@@ -219,57 +219,65 @@ def _parallel_correct_contigs(file_counter, contigs_fpath, corrected_dirpath, la
 
     # if option --scaffolds is specified QUAST adds split version of assemblies to the comparison
     if qconfig.scaffolds:
-        logger.info('  ' + qutils.index_to_str(file_counter, force=(len(labels) > 1)) + '  breaking scaffolds into contigs:')
-        corr_fpath_wo_ext = os.path.join(corrected_dirpath, qutils.name_from_fpath(corr_fpath))
-        broken_scaffolds_fpath = corr_fpath_wo_ext + '_broken' + fasta_ext
-        broken_scaffolds_fasta = []
-        contigs_counter = 0
-
-        scaffold_counter = 0
-        for scaffold_counter, (name, seq) in enumerate(fastaparser.read_fasta(contigs_fpath)):
-            if contigs_counter % 100 == 0:
-                pass
-            if contigs_counter > 520:
-                pass
-            cumul_contig_length = 0
-            total_contigs_for_the_scaf = 1
-            cur_contig_start = 0
-            while (cumul_contig_length < len(seq)) and (seq.find('N', cumul_contig_length) != -1):
-                start = seq.find("N", cumul_contig_length)
-                end = start + 1
-                while (end != len(seq)) and (seq[end] == 'N'):
-                    end += 1
-
-                cumul_contig_length = end + 1
-                if (end - start) >= qconfig.Ns_break_threshold:
-                    broken_scaffolds_fasta.append(
-                        (name.split()[0] + "_" +
-                         str(total_contigs_for_the_scaf),
-                         seq[cur_contig_start:start]))
-                    total_contigs_for_the_scaf += 1
-                    cur_contig_start = end
-
-            broken_scaffolds_fasta.append(
-                (name.split()[0] + "_" +
-                 str(total_contigs_for_the_scaf),
-                 seq[cur_contig_start:]))
-
-            contigs_counter += total_contigs_for_the_scaf
-        if scaffold_counter + 1 != contigs_counter:
-            fastaparser.write_fasta(broken_scaffolds_fpath, broken_scaffolds_fasta)
-            logs.append("  " + qutils.index_to_str(file_counter, force=(len(labels) > 1)) +
-                        "    %d scaffolds (%s) were broken into %d contigs (%s)" %
-                        (scaffold_counter + 1,
-                         label,
-                         contigs_counter,
-                         label + ' broken'))
-            broken_scaffolds = (broken_scaffolds_fpath, broken_scaffolds_fpath)
-        else:
-            logs.append("  " + qutils.index_to_str(file_counter, force=(len(labels) > 1)) +
-                    "    WARNING: nothing was broken, skipping '%s broken' from further analysis" % label)
+        broken_scaffolds, logs = broke_scaffolds(file_counter, labels, contigs_fpath, corrected_dirpath, logs)
 
     corr_fpaths = (contigs_fpath, corr_fpath)
     return corr_fpaths, broken_scaffolds, logs
+
+def broke_scaffolds(file_counter, labels, contigs_fpath, corrected_dirpath, logs):
+    logger.info('  ' + qutils.index_to_str(file_counter, force=(len(labels) > 1)) + '  breaking scaffolds into contigs:')
+    contigs_fname = os.path.basename(contigs_fpath)
+    fname, fasta_ext = qutils.splitext_for_fasta_file(contigs_fname)
+    label = labels[file_counter]
+    corr_fpath = qutils.unique_corrected_fpath(os.path.join(corrected_dirpath, label + fasta_ext))
+    corr_fpath_wo_ext = os.path.join(corrected_dirpath, qutils.name_from_fpath(corr_fpath))
+    broken_scaffolds_fpath = corr_fpath_wo_ext + '_broken' + fasta_ext
+    broken_scaffolds_fasta = []
+    contigs_counter = 0
+
+    scaffold_counter = 0
+    for scaffold_counter, (name, seq) in enumerate(fastaparser.read_fasta(contigs_fpath)):
+        if contigs_counter % 100 == 0:
+            pass
+        if contigs_counter > 520:
+            pass
+        cumul_contig_length = 0
+        total_contigs_for_the_scaf = 1
+        cur_contig_start = 0
+        while (cumul_contig_length < len(seq)) and (seq.find('N', cumul_contig_length) != -1):
+            start = seq.find("N", cumul_contig_length)
+            end = start + 1
+            while (end != len(seq)) and (seq[end] == 'N'):
+                end += 1
+
+            cumul_contig_length = end + 1
+            if (end - start) >= qconfig.Ns_break_threshold:
+                broken_scaffolds_fasta.append(
+                    (name.split()[0] + "_" +
+                     str(total_contigs_for_the_scaf),
+                     seq[cur_contig_start:start]))
+                total_contigs_for_the_scaf += 1
+                cur_contig_start = end
+
+        broken_scaffolds_fasta.append(
+            (name.split()[0] + "_" +
+             str(total_contigs_for_the_scaf),
+             seq[cur_contig_start:]))
+
+        contigs_counter += total_contigs_for_the_scaf
+    if scaffold_counter + 1 != contigs_counter:
+        fastaparser.write_fasta(broken_scaffolds_fpath, broken_scaffolds_fasta)
+        logs.append("  " + qutils.index_to_str(file_counter, force=(len(labels) > 1)) +
+                    "    %d scaffolds (%s) were broken into %d contigs (%s)" %
+                    (scaffold_counter + 1,
+                     label,
+                     contigs_counter,
+                     label + ' broken'))
+        return broken_scaffolds_fpath, logs
+
+    logs.append("  " + qutils.index_to_str(file_counter, force=(len(labels) > 1)) +
+            "    WARNING: nothing was broken, skipping '%s broken' from further analysis" % label)
+    return None, logs
 
 
 def _correct_reference(ref_fpath, corrected_dirpath):
@@ -605,6 +613,11 @@ def main(args):
         elif opt == '--combined-ref':
             qconfig.is_combined_ref = True
 
+        elif opt == '--colors':
+            qconfig.used_colors = arg.split(',')
+        elif opt == '--ls':
+            qconfig.used_ls = arg.split(',')
+
         elif opt == '--memory-efficient':
             qconfig.memory_efficient = True
 
@@ -625,6 +638,10 @@ def main(args):
         assert_file_exists(contigs_fpath, 'contigs')
 
     labels = process_labels(contigs_fpaths, labels, all_labels_from_dirs)
+
+    if qconfig.used_colors and qconfig.used_ls:
+        for i, label in enumerate(labels):
+            plotter.dict_color_and_ls[label] = (qconfig.used_colors[i], qconfig.used_ls[i])
 
     output_dirpath, json_output_dirpath, existing_alignments = \
         _set_up_output_dir(output_dirpath, json_output_dirpath, qconfig.make_latest_symlink, qconfig.save_json)
@@ -719,7 +736,6 @@ def main(args):
     all_pdf_file = None
 
     if qconfig.draw_plots or qconfig.html_report:
-        from libs import plotter  # Do not remove this line! It would lead to a warning in matplotlib.
         try:
             from matplotlib.backends.backend_pdf import PdfPages
             all_pdf_file = PdfPages(all_pdf_fpath)
@@ -791,7 +807,7 @@ def main(args):
             from libs import genemark
             genemark.do(contigs_fpaths, qconfig.genes_lengths, os.path.join(output_dirpath, 'predicted_genes'), qconfig.prokaryote,
                         qconfig.meta)
-            
+
     else:
         logger.main_info("")
         logger.notice("Genes are not predicted by default. Use --gene-finding option to enable it.")

@@ -78,12 +78,14 @@ dict_color_and_ls = {}
 ####################################################################################
 
 
-def save_colors_and_ls(fpaths):
+def save_colors_and_ls(fpaths, labels=None):
+    if not labels:
+        labels = [qutils.label_from_fpath(fpath) for fpath in fpaths]
     if not dict_color_and_ls:
         color_id = 0
-        for fpath in fpaths:
+        for i, fpath in enumerate(fpaths):
             ls = primary_line_style
-            label = qutils.label_from_fpath(fpath)
+            label = labels[i]
             # contigs and scaffolds should be equally colored but scaffolds should be dashed
             if fpath and fpath in qconfig.dict_of_broken_scaffolds:
                 color = dict_color_and_ls[qutils.label_from_fpath(qconfig.dict_of_broken_scaffolds[fpath])][0]

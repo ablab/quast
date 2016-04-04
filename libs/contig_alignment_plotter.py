@@ -605,6 +605,7 @@ def do(contigs_fpaths, contig_report_fpath_pattern, output_dirpath,
     reference_chromosomes = OrderedDict()
     assemblies = None
     chr_names = []
+    features_data = None
 
     plot_fpath = None
 

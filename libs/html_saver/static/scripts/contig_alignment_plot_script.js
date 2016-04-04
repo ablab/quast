@@ -2090,7 +2090,7 @@ THE SOFTWARE.
         return offsetY;
     }
 
-    function parseFeaturesData() {
+    function parseFeaturesData(chr) {
       var lanes = [];
       var features = [];
       var data = {};
@@ -2098,7 +2098,7 @@ THE SOFTWARE.
 
       for (container in features_data) {
         for (var i = 0; i < features_data[container].length; i++) {
-          if (references_id[features_data[container][i].chr] != chr) continue;
+          if (chr != "Main plot" && references_id[features_data[container][i].chr] != references_id[chr]) continue;
           if (!data[container])
               data[container] = [];
           data[container].push(features_data[container][i]);

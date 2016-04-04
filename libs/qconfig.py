@@ -115,6 +115,7 @@ create_icarus_html = True
 icarus_dirname = 'icarus_viewers'
 icarus_html_fname = 'icarus.html'
 icarus_menu_template_fname = 'alignment_summary_templ.html'
+icarus_link = 'Icarus: contig browser'
 contig_size_viewer_fname = 'contig_size_viewer.html'
 contig_size_viewer_name = 'Contig size viewer'
 contig_alignment_viewer_name = 'Contig alignment viewer'

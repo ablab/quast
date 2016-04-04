@@ -1119,7 +1119,7 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
         chr_link = qconfig.icarus_html_fname
         #icarus_def = 'Icarus: interactive contig assessment viewer'
         icarus_links["links"].append(chr_link)
-        icarus_links["links_names"].append('Icarus main menu')
+        icarus_links["links_names"].append(qconfig.icarus_link)
 
     with open(html_saver.get_real_path(qconfig.icarus_menu_template_fname), 'r') as template:
         with open(summary_path, 'w') as result:
@@ -1149,7 +1149,7 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
                             contig_alignment_name = qconfig.contig_alignment_viewer_name
                             chr_link = os.path.join(qconfig.icarus_dirname, '{html_name}.html'.format(**locals()))
                             icarus_links["links"].append(chr_link)
-                            icarus_links["links_names"].append(contig_alignment_name)
+                            icarus_links["links_names"].append(qconfig.icarus_link)
                         else:
                             chr_link = os.path.join(qconfig.icarus_dirname, '{short_chr}.html'.format(**locals()))
                         chr_name = chr.replace('_', ' ')
@@ -1172,8 +1172,9 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
                 elif line.find('<!--- links: ---->') != -1:
                     contig_size_name = qconfig.contig_size_viewer_name
                     contig_size_browser_fname = os.path.join(qconfig.icarus_dirname, qconfig.contig_size_viewer_fname)
-                    icarus_links["links"].append(contig_size_browser_fname)
-                    icarus_links["links_names"].append(contig_size_name)
+                    if not chr_names:
+                        icarus_links["links"].append(contig_size_browser_fname)
+                        icarus_links["links_names"].append(qconfig.icarus_link)
                     contig_size_browser_link = '<tr><td><a href="{contig_size_browser_fname}">{contig_size_name}</a></td></tr>'.format(**locals())
                     result.write(contig_size_browser_link)
                     result.write('<tr><td><a href="%s">QUAST report</a></td></tr>' % html_saver.report_fname)

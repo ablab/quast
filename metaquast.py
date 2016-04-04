@@ -715,7 +715,7 @@ def main(args):
             logger.main_info()
             logger.main_info('Starting quast.py ' + run_name + '...')
             return_code, total_num_notifications, assemblies, labels = \
-                _start_quast_main(run_name, quast_py_args + ["--ambiguity-usage"] +  + (['one'] if qconfig.unique_mapping else ['all']),
+                _start_quast_main(run_name, quast_py_args + ["--ambiguity-usage"] + (['one'] if qconfig.unique_mapping else ['all']),
                 assemblies=assemblies,
                 reference_fpath=combined_ref_fpath,
                 output_dirpath=combined_output_dirpath,

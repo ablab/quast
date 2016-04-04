@@ -204,12 +204,12 @@ THE SOFTWARE.
       var y_anno = d3.scale.linear().domain([ext[0], ext[1] + 1]).range([0, annotationsHeight]);
     }
 
-    var featuresHidden = false, featuresMainHidden = true, drawCoverage = false, coverageMainHidden = true;
+    var featuresHidden = false, drawCoverage = false, coverageMainHidden = true;
     if (!featuresData || featuresData.features.length == 0)
       featuresHidden = true;
     if (typeof coverage_data != "undefined")
         drawCoverage = true;
-
+    var featuresMainHidden = featuresHidden || lanes.length > 3;
     var brush, brush_cov, brush_anno;
 
     var spaceAfterMain = 0;
@@ -217,6 +217,8 @@ THE SOFTWARE.
     var annotationsMainOffsetY = mainHeight + mainScale + (featuresHidden ? 0 : spaceAfterMain);
     var covMainOffsetY = typeof coverage_data != 'undefined' ? (annotationsMainOffsetY +
                             (featuresHidden ? spaceAfterMain : spaceAfterTrack)) : annotationsMainOffsetY;
+    if (!featuresMainHidden)
+        covMainOffsetY += annotationsHeight;
     var miniOffsetY = covMainOffsetY + spaceAfterTrack;
     var annotationsMiniOffsetY = miniOffsetY + miniHeight + (featuresHidden ? 0 : spaceAfterTrack);
     var covMiniOffsetY = annotationsMiniOffsetY + annotationsMiniHeight + spaceAfterTrack;
@@ -256,7 +258,8 @@ THE SOFTWARE.
             .attr('height', annotationLanesHeight)
             .attr('class', 'main')
             .attr('id', 'annotationsMain');
-        annotationsMain.attr('display', 'none')
+        if (featuresMainHidden)
+            annotationsMain.attr('display', 'none')
     }
 
     var mini = chart.append('g')
@@ -1132,7 +1135,9 @@ THE SOFTWARE.
         hideBtnAnnotationsMini = document.getElementById('hideBtnAnnoMini');
         setTrackBtnPos(hideBtnAnnotationsMini, hideBtnAnnotationsMiniOffsetY, 'features', 'mini', true);
         hideBtnAnnotationsMain = document.getElementById('hideBtnAnnoMain');
-        setTrackBtnPos(hideBtnAnnotationsMain, hideBtnAnnotationsMainOffsetY, 'features', 'main', false);
+        if (!featuresMainHidden)
+            hideBtnAnnotationsMain.innerHTML = "Hide";
+        setTrackBtnPos(hideBtnAnnotationsMain, hideBtnAnnotationsMainOffsetY, 'features', 'main', !featuresMainHidden);
     }
 
     function setTrackBtnPos(hideBtn, offsetY, track, pane, doHide) {

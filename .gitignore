@@ -4,9 +4,6 @@ quast_results_archive_json/*
 results_json/*
 quality.pyc
 show-snps.err
-libs/MUMmer3.23-linux/
-libs/MUMmer3.23-osx/
-libs/gage/*.class
 libs/*.pyc
 libs/html_saver/*.pyc
 libs/.DS_Store
@@ -17,7 +14,6 @@ libs/.DS_Store
 *.o
 
 quast_website/.idea/*
-quast-1.0.0.tar.gz
 
 run_test_data/results/*
 
@@ -26,8 +22,6 @@ libs/html_saver/reports-scripts-old
 libs/test_parallel.py
 
 libs/glimmer/src/*.o
-libs/glimmer/src/make.log
-libs/glimmer/src/make.err
 libs/glimmer/glimmerhmm
 
 tc_tests/results/
@@ -36,12 +30,34 @@ test_output/
 test_data/
 quast_test_output/
 
+make.log
+make.err
+
+libs/MUMmer3.23-linux/
+libs/MUMmer3.23-osx/
+
+libs/gage/*.class
+
 libs/Busco/augustus-3.0.3/src/LICENCE.TXT
 libs/Busco/hmmer-3.1b2-mac/
 libs/bwa-master/make.*
 
 libs/blast/16S_RNA_blastdb/
 
-libs/bowtie2/
-libs/samtools/
-libs/manta/
+libs/samtools/version.h
+libs/samtools/samtools
+libs/samtools/libbam.a
+libs/samtools/htslib-1.2.1/libhts.a
+libs/samtools/htslib-1.2.1/version.h
+libs/samtools/misc/ace2sam
+libs/samtools/misc/maq2sam-long
+libs/samtools/misc/maq2sam-short
+libs/samtools/misc/md5fa
+libs/samtools/misc/md5sum-lite
+libs/samtools/misc/wgsim
+
+libs/bowtie2/bowtie2-align-*
+libs/bowtie2/bowtie2-build-*
+libs/bowtie2/bowtie2-inspect-*
+
+libs/manta/build

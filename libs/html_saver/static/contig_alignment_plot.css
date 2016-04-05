@@ -422,11 +422,10 @@ path {
 .feature_tip {
   position: absolute;
   text-align: center;
-  width: 100px;
   padding: 2px;
   font: 11px sans-serif;
   background: lightgray;
-  border: 0px;
+  border: 1px black solid;
   border-radius: 8px;
   content: "\25BC";
 }
@@ -485,6 +484,10 @@ path {
     -ms-transition:all 200ms ease;
      -o-transition:all 200ms ease;
         transition:all 200ms ease;
+}
+
+.assembly_name {
+    font-size: 13px;
 }
 
 .click_a_contig_text {

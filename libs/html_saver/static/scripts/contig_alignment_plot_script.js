@@ -333,15 +333,26 @@ THE SOFTWARE.
               tspan = text.text(null).append('tspan').attr('x', addStdoutLink ? -40 : offsetX)
                                     .attr('y', y).attr('dy', dy + 'em')
                                     .style('font-weight', 'bold');
-          var linkAdded = false;
+          var firstLine = true;
           while (word = words.pop()) {
             line.push(word);
             tspan.text(line.join(' '));
             if (tspan.node().getComputedTextLength() > width && line.length > 1) {
                 line.pop();
-                tspan.text(line.join(' '));
+                var displayedText = line.join(' ');
+                if (displayedText.length * letterSize > width && firstLine) {
+                    var fullName = displayedText;
+                    tspan.on('mouseover',function(d) {
+                        addTooltip(d, '<span class="assembly_name">' + fullName + '</span>');
+                    });
+                    tspan.on('mouseout',function(d) {
+                        removeTooltip();
+                    });
+                    displayedText = fullName.substring(0, width / letterSize) + '...';
+                }
+                tspan.text(displayedText);
                 line = [word];
-                if (!linkAdded && addStdoutLink) {
+                if (firstLine && addStdoutLink) {
                     linkAdded = true;
                     tspan = text.append('tspan')
                             .attr('x', offsetX)
@@ -356,6 +367,7 @@ THE SOFTWARE.
                                 d3.event.stopPropagation();
                             });
                 }
+                firstLine = false;
                 if (word.search("\\+") != -1) {
                     word = word.split('+');
                     msOffset = -word[1].length * letterSize;
@@ -1093,6 +1105,21 @@ THE SOFTWARE.
         p = info.append('p');
         p.text('<click a contig to get details>');
         p.attr('class', 'click_a_contig_text');
+    }
+
+    function addTooltip(feature, tooltipText) {
+        if (!tooltipText)
+            tooltipText = feature ? '<strong>' + (feature.name ? feature.name + ',' : '') + '</strong> <span>' +
+                          (feature.id ? ' ID=' + feature.id + ',' : '') + ' coordinates: ' + feature.start + '-' + feature.end + '</span>' : '';
+        if (div.html() != tooltipText) {
+            div.transition()
+                .duration(200)
+                .style('opacity', 1);
+            div.html(tooltipText)
+                .style('left', (d3.event.pageX - 50) + 'px')
+                .style('top', (d3.event.pageY + 5) + 'px');
+        }
+        else removeTooltip();
     }
 
     function removeTooltip() {
@@ -2158,18 +2185,7 @@ THE SOFTWARE.
             .on('mouseenter', selectFeature)
             .on('mouseleave', deselectFeature)
             .on('click',  function(d) {
-                            var tooltipText = d ? '<strong>' + (d.name ? d.name + ',' : '') + '</strong> <span>' +
-                                              (d.id ? ' ID=' + d.id + ',' : '') + ' coordinates: ' + d.start + '-' + d.end + '</span>' : '';
-
-                            if (div.html() != tooltipText) {
-                                div.transition()
-                                    .duration(200)
-                                    .style('opacity', .9);
-                                div.html(tooltipText)
-                                    .style('left', (d3.event.pageX) + 'px')
-                                    .style('top', (d.y + annotationsMiniOffsetY + 145) + 'px');
-                            }
-                            else removeTooltip();
+                addTooltip(d);
             });
         var visFeatureTexts = featurePaths.filter(function (d) {
                 if (scale(d.end) - scale(d.start) > 45) return d;
@@ -2318,17 +2334,7 @@ THE SOFTWARE.
                 .on('mouseenter', selectFeature)
                 .on('mouseleave', deselectFeature)
                 .on('click',  function(d) {
-                                var tooltipText = d ? '<strong>' + (d.name ? d.name + ',' : '') + '</strong> <span>' +
-                                                  (d.id ? ' ID=' + d.id + ',' : '') + ' coordinates: ' + d.start + '-' + d.end + '</span>' : '';
-                                if (div.html() != tooltipText) {
-                                    div.transition()
-                                        .duration(200)
-                                        .style('opacity', .9);
-                                    div.html(tooltipText)
-                                        .style('left', (d3.event.pageX) + 'px')
-                                        .style('top', (d.y + annotationsMainOffsetY + 145) + 'px');
-                                }
-                                else removeTooltip();
+                    addTooltip(d);
                 });
         var visFeatureTexts = featuresItems.filter(function (d) {
             if (x_main(Math.min(maxExtent, d.end)) - x_main(Math.max(minExtent, d.start)) > 45) return d;

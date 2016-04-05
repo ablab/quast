@@ -1689,7 +1689,7 @@ THE SOFTWARE.
                 .attr('width', d3.select(this).attr('width'))
                 .attr('height', d3.select(this).select('rect').attr('height'))
                 .attr('fill', 'white')
-                .attr('opacity', .5)
+                .attr('opacity', .3)
                 .attr('transform', d3.select(this).attr('transform'));
     }
 

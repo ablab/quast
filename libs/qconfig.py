@@ -294,7 +294,7 @@ def usage(show_hidden=False, meta=False, short=True):
         print >> sys.stderr, "Speedup options:"
         print >> sys.stderr, "    --no-check                        Do not check and correct input fasta files. Use at your own risk (see manual)"
         print >> sys.stderr, "    --no-plots                        Do not draw plots"
-        print >> sys.stderr, "    --no-html                         Do not build html report"
+        print >> sys.stderr, "    --no-html                         Do not build html reports and Icarus viewers"
         print >> sys.stderr, "    --no-snps                         Do not report SNPs (may significantly reduce memory consumption on large genomes)"
         print >> sys.stderr, "    --no-gc                           Do not compute GC% and GC-distribution"
         print >> sys.stderr, "    --fast                            A combination of all speedup options except --no-check"

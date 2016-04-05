@@ -2364,6 +2364,8 @@ THE SOFTWARE.
 
     function hideTrack(track, pane, doHide) {
         removeTooltip();
+        var hideBtnCoverageMain = document.getElementById('hideBtnCovMain');
+        var hideBtnCoverageMini = document.getElementById('hideBtnCovMini');
         var paneToHide, hideBtn, textToShow, offsetY;
         if (track == 'features') {
             textToShow = 'Show annotation';

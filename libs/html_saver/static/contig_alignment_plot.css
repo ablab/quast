@@ -211,6 +211,10 @@ span {
     shape-rendering: optimizeSpeed;
 }
 
+.legend {
+    shape-rendering: geometricPrecision;
+}
+
 .mini text {
     font: 9px sans-serif;
 }
@@ -235,6 +239,11 @@ path {
 .mainItem {
     stroke-width: .2;
     stroke: white;
+}
+
+.mainItem.legend {
+    stroke-width: 1;
+    stroke: black;
 }
 
 .mainItem.end {

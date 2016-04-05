@@ -1657,7 +1657,7 @@ THE SOFTWARE.
             var startY = y_mini(d.lane);
             if (INTERLACE_BLOCKS_VERT_OFFSET) startY += offsetsMiniY[items[i].order % 3] * miniLanesHeight;
             if (!d.supp) startY += .45 * miniLanesHeight;
-            if (d.supp) startY += .15 * miniLanesHeight;
+            if (d.supp) startY += .18 * miniLanesHeight;
             if (!d.supp || isSmall) path = ['M', startX, startY, 'H', pathEnd].join(' ');
             else if (d.supp == "L") path = ['M', startX, startY, 'L', startX + (Math.sqrt(3) * miniPathHeight / 2), startY + miniPathHeight / 2,
               'L', startX, startY + miniPathHeight, 'L',  startX, startY].join(' ');
@@ -1995,7 +1995,7 @@ THE SOFTWARE.
                 .text('Legend');
         var legend = block.append('svg:svg')
             .attr('width', "100%")
-            .attr('class', 'chart');
+            .attr('class', 'legend');
 
         var legendHeight = 0;
         if (isContigSizePlot) legendHeight = appendLegendContigSize(legend);
@@ -2013,7 +2013,7 @@ THE SOFTWARE.
     }
 
     function appendLegendAlignmentViewer(legend) {
-        var classes = ['', 'similar', 'misassembled light_color', 'misassembled', 'misassembled similar', 'disabled', 'annotatiosn'];
+        var classes = ['', 'similar', 'misassembled light_color', 'misassembled', 'misassembled similar', 'disabled', 'annotation'];
         var classDescriptions = ['correct contigs', 'correct contigs similar among >= 50% assemblies', 'misassembled blocks ' +
         '(misassembly event on the left side, on the right side)', 'misassembled blocks (zoom in to get details about misassembly event side)',
             'misassembled blocks similar among >= 50% assemblies', 'unchecked misassembled blocks (see checkboxes)', 'genome features (e.g. genes)'];
@@ -2071,30 +2071,24 @@ THE SOFTWARE.
 
     function addLegendItemWithText(legend, offsetY, className, description, addOdd, marks) {
         legend.append('g')
-                .attr('class', 'mainItem ' + className)
+                .attr('class', 'mainItem legend ' + className)
                 .append('rect')
-                .attr('class', 'R')
                 .attr('width', legendItemWidth)
                 .attr('height', legendItemHeight)
                 .attr('x', addOdd ? 0 : legendItemWidth / 2)
                 .attr('y', offsetY)
-                .attr('stroke', 'black')
-                .attr('stroke-width', 1)
                 .attr('fill', function (d) {
                     d = {id: className};
                     if (marks) return addGradient(d, marks, false, false);
                 });
         if (addOdd)
             legend.append('g')
-                .attr('class', 'mainItem ' + className + ' odd')
+                .attr('class', 'mainItem legend ' + className + ' odd')
                 .append('rect')
-                .attr('class', 'R')
                 .attr('width', legendItemWidth)
                 .attr('height', legendItemHeight)
                 .attr('x', legendItemWidth)
-                .attr('y', offsetY + legendItemOddOffset)
-                .attr('stroke', 'black')
-                .attr('stroke-width', 1);
+                .attr('y', offsetY + legendItemOddOffset);
         legend.append('text')
                 .attr('x', legendTextOffsetX)
                 .attr('y', offsetY + legendItemOddOffset)

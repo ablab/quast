@@ -21,6 +21,11 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
+
+    INTERLACE_BLOCKS_VERT_OFFSET = true;
+    INTERLACE_BLOCKS_COLOR = true;
+    BLOCKS_SHADOW = false;
+
     function parseData (data) {
         chart = { assemblies: {} };
 
@@ -147,7 +152,7 @@ THE SOFTWARE.
             featureHeight = 20,
             offsetsY = [0, .3, .15],
             offsetsMiniY = [0, .1, .05],
-            lanesInterval = 25,
+            lanesInterval = 15,
             miniScale = 50,
             mainScale = 50,
             paleContigsOpacity = .25,
@@ -237,6 +242,12 @@ THE SOFTWARE.
             .attr('width', width)
             .attr('height', mainHeight);
 
+    var filter = chart.append('defs')
+            .append('filter').attr('id', 'shadow');
+    filter.append('feOffset').attr('result', 'offOut').attr('in', 'SourceAlpha').attr('dx', '2');
+    filter.append('feGaussianBlur').attr('result', 'blurOut').attr('in', 'offOut').attr('stdDeviation', '2');
+    filter.append('feBlend').attr('in', 'SourceGraphic').attr('in2', 'blurOut').attr('mode', 'normal');
+
     var main = chart.append('g')
             .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')')
             .attr('width', chartWidth)
@@ -279,7 +290,7 @@ THE SOFTWARE.
     // draw the lanes for the main chart
     main.append('g').selectAll('.laneLines')
             .data(lanes)
-            .enter().append('line')
+            //.enter().append('line')
             .attr('x1', 0)
             .attr('y1', function (d) {
                 return d3.round(y_main(d.id)) + .5;
@@ -374,7 +385,7 @@ THE SOFTWARE.
     // draw the lanes for the mini chart
     mini.append('g').selectAll('.laneLines')
             .data(lanes)
-            .enter().append('line')
+            //.enter().append('line')
             .attr('x1', 0)
             .attr('y1', function (d) {
                 return d3.round(y_mini(d.id)) + .5;
@@ -511,7 +522,7 @@ THE SOFTWARE.
             .attr('class', 'block');
     info.append('p')
             .style({'text-align': 'center'})
-            .text('<CLICK ON CONTIG>');
+            .text('Click a contig to get details');
 
     // draw legend
     appendLegend();
@@ -765,7 +776,7 @@ THE SOFTWARE.
                 .attr('transform', function (d) {
                     var x = x_main(Math.max(minExtent, d.corr_start));
                     var y = y_main(d.lane) + .25 * lanesInterval;
-                    y += offsetsY[d.order % 3] * lanesInterval;
+                    if (INTERLACE_BLOCKS_VERT_OFFSET) y += offsetsY[d.order % 3] * lanesInterval;
 
                     return 'translate(' + x + ', ' + y + ')';
                 })
@@ -812,7 +823,7 @@ THE SOFTWARE.
                 .attr('transform', function (d) {
                     var x = x_main(Math.max(minExtent, d.corr_start));
                     var y = y_main(d.lane) + .25 * lanesInterval;
-                    y += offsetsY[d.order % 3] * lanesInterval;
+                    if (INTERLACE_BLOCKS_VERT_OFFSET) y += offsetsY[d.order % 3] * lanesInterval;
                     return 'translate(' + x + ', ' + y + ')';
                 })
                 .attr('width', function (d) {
@@ -821,6 +832,8 @@ THE SOFTWARE.
                 .classed('light_color', function (d) {
                     return x_main(d.corr_end) - x_main(d.corr_start) > mainLanesHeight;
                 });
+
+        if (BLOCKS_SHADOW) other.attr('filter', 'url(#shadow)');
 
         other.append('rect')
                 .attr('class', 'R')
@@ -855,7 +868,7 @@ THE SOFTWARE.
                 .attr('transform', function (d) {
                     var x = d.supp == "L" ? x_main(d.corr_start) : x_main(d.corr_end);
                     var y = y_main(d.lane) + .25 * lanesInterval;
-                    y += offsetsY[d.order % 3] * lanesInterval;
+                    if (INTERLACE_BLOCKS_VERT_OFFSET) y += offsetsY[d.order % 3] * lanesInterval;
 
                     return 'translate(' + x + ', ' + y + ')';
                 });
@@ -870,9 +883,9 @@ THE SOFTWARE.
                 .attr('d', function (d) {
                     var startX = 0;
                     var startY = d.groupId == selected_id ? 2 : 0;
-                    if (d.supp == "L") path = ['M', startX, startY, 'L', startX + (Math.sqrt(3) * (mainLanesHeight - startY) / 2),
+                    if (d.supp == "L") path = ['M', startX, startY, 'L', startX + (Math.sqrt(0.5) * (mainLanesHeight - startY) / 2),
                         (startY + (mainLanesHeight - startY)) / 2, 'L', startX, mainLanesHeight - startY, 'L',  startX, startY].join(' ');
-                    if (d.supp == "R") path = ['M', startX, startY, 'L', startX - (Math.sqrt(3) * (mainLanesHeight - startY) / 2),
+                    if (d.supp == "R") path = ['M', startX, startY, 'L', startX - (Math.sqrt(0.5) * (mainLanesHeight - startY) / 2),
                         (startY + (mainLanesHeight - startY)) / 2, 'L', startX, mainLanesHeight - startY, 'L',  startX, startY].join(' ');
                     return path;
                 });
@@ -888,7 +901,7 @@ THE SOFTWARE.
                 .attr('transform', function (d) {
                     var x = d.supp == "L" ? x_main(d.corr_start) : x_main(d.corr_end);
                     var y = y_main(d.lane) + .25 * lanesInterval;
-                    y += offsetsY[d.order % 3] * lanesInterval;
+                    if (INTERLACE_BLOCKS_VERT_OFFSET) y += offsetsY[d.order % 3] * lanesInterval;
 
                     return 'translate(' + x + ', ' + y + ')';                })
                 .attr('pointer-events', 'none');
@@ -904,9 +917,9 @@ THE SOFTWARE.
                 .attr('d', function (d) {
                     var startX = 0;
                     var startY = d.groupId == selected_id ? 2 : 0;
-                    if (d.supp == "L") path = ['M', startX, startY, 'L', startX + (Math.sqrt(3) * (mainLanesHeight - startY) / 2),
+                    if (d.supp == "L") path = ['M', startX, startY, 'L', startX + (Math.sqrt(0.5) * (mainLanesHeight - startY) / 2),
                         (startY + (mainLanesHeight - startY)) / 2, 'L', startX, mainLanesHeight - startY, 'L',  startX, startY].join(' ');
-                    if (d.supp == "R") path = ['M', startX, startY, 'L', startX - (Math.sqrt(3) * (mainLanesHeight - startY) / 2),
+                    if (d.supp == "R") path = ['M', startX, startY, 'L', startX - (Math.sqrt(0.5) * (mainLanesHeight - startY) / 2),
                         (startY + (mainLanesHeight - startY)) / 2, 'L', startX, mainLanesHeight - startY, 'L',  startX, startY].join(' ');
                     return path;
                 });
@@ -940,7 +953,7 @@ THE SOFTWARE.
             })
             .attr('y', function(d) {
                 var y = y_main(d.lane) + .25 * lanesInterval;
-                y += offsetsY[d.order % 3] * lanesInterval;
+                if (INTERLACE_BLOCKS_VERT_OFFSET) y += offsetsY[d.order % 3] * lanesInterval;
                 return y + 20;
             })
             .text(function(d) {
@@ -1614,7 +1627,7 @@ THE SOFTWARE.
             c += (d.similar == "True" ? " similar" : "");
             c += ((!d.supp && !isSmall) ? " light_color" : "");
             if (d.supp) countSupplementary++;
-            c += ((numItem - countSupplementary) % 2 == 0 ? " odd" : "");
+            if (INTERLACE_BLOCKS_COLOR) c += ((numItem - countSupplementary) % 2 == 0 ? " odd" : "");
             var text = '';
             if (isContigSizePlot) {
                 if (d.type == "small_contigs") c += " disabled";
@@ -1637,7 +1650,7 @@ THE SOFTWARE.
             var startX = d.supp == "R" ? x_mini(d.corr_end) : x_mini(d.corr_start);
             var pathEnd = x_mini(d.corr_end);
             var startY = y_mini(d.lane);
-            startY += offsetsMiniY[items[i].order % 3] * miniLanesHeight;
+            if (INTERLACE_BLOCKS_VERT_OFFSET) startY += offsetsMiniY[items[i].order % 3] * miniLanesHeight;
             if (!d.supp) startY += .45 * miniLanesHeight;
             if (d.supp) startY += .15 * miniLanesHeight;
             if (!d.supp || isSmall) path = ['M', startX, startY, 'H', pathEnd].join(' ');
@@ -2014,7 +2027,7 @@ THE SOFTWARE.
                     .attr('d', function (d) {
                         var startX = 0;
                         var startY = 0;
-                        path = ['M', startX, startY, 'L', startX + (Math.sqrt(3) * (legendItemHeight - startY) / 2),
+                        path = ['M', startX, startY, 'L', startX + (Math.sqrt(1) * (legendItemHeight - startY) / 2),
                             (startY + (legendItemHeight - startY)) / 2, 'L', startX, legendItemHeight - startY, 'L',  startX, startY].join(' ');
                         return path;
                     });
@@ -2028,7 +2041,7 @@ THE SOFTWARE.
                     .attr('d', function (d) {
                         var startX = 0;
                         var startY = 0;
-                        path = ['M', startX, startY, 'L', startX - (Math.sqrt(3) * (legendItemHeight - startY) / 2),
+                        path = ['M', startX, startY, 'L', startX - (Math.sqrt(1) * (legendItemHeight - startY) / 2),
                             (startY + (legendItemHeight - startY)) / 2, 'L', startX, legendItemHeight - startY, 'L',  startX, startY].join(' ');
                         return path;
                     });
@@ -2187,7 +2200,7 @@ THE SOFTWARE.
     function addFeatureTrackInfo (annotations, scale) {
         annotations.append('g').selectAll('.laneLines')
             .data(featuresData.lanes)
-            .enter().append('line')
+            //.enter().append('line')
             .attr('x1', 0)
             .attr('y1', function (d) {
                 return d3.round(scale(d.id)) + .5;
@@ -2224,7 +2237,7 @@ THE SOFTWARE.
             d = features[i];
             if (d.lane != curLane) numItem = 0;
             c = "annotation ";
-            c += (numItem % 2 == 0 ? "odd" : "");
+            if (INTERLACE_BLOCKS_COLOR) c += (numItem % 2 == 0 ? "odd" : "");
 
             features[i].class = c;
 
@@ -2257,7 +2270,7 @@ THE SOFTWARE.
                 .attr('transform', function (d) {
                     var x = x_main(Math.max(minExtent, d.start));
                     var y = y_anno(d.lane) + .25 * featureHeight;
-                    y += offsetsY[d.order % 3] * featureHeight;
+                    if (INTERLACE_BLOCKS_VERT_OFFSET) y += offsetsY[d.order % 3] * featureHeight;
                     return 'translate(' + x + ', ' + y + ')';
                 })
                 .attr('width', function (d) {
@@ -2283,7 +2296,7 @@ THE SOFTWARE.
                 .attr('transform', function (d) {
                     var x = x_main(Math.max(minExtent, d.start));
                     var y = y_anno(d.lane) + .25 * featureHeight;
-                    y += offsetsY[d.order % 3] * featureHeight;
+                    if (INTERLACE_BLOCKS_VERT_OFFSET) y += offsetsY[d.order % 3] * featureHeight;
 
                     return 'translate(' + x + ', ' + y + ')';
                 })
@@ -2331,7 +2344,7 @@ THE SOFTWARE.
             })
             .attr('y', function(d) {
                 var y = y_anno(d.lane) + .25 * featureHeight;
-                y += offsetsY[d.order % 3] * featureHeight;
+                if (INTERLACE_BLOCKS_VERT_OFFSET) y += offsetsY[d.order % 3] * featureHeight;
                 return y + featureHeight / 2 + 3;
             })
             .text(function(d) {

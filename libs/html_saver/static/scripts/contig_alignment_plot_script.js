@@ -56,8 +56,8 @@ THE SOFTWARE.
         for (var assemblyName in chart.assemblies) {
             var lane = chart.assemblies[assemblyName];
             var currentLen = 0;
+            var numItems = 0;
             for (var i = 0; i < lane.length; i++) {
-                var numItems = 0;
                 var item = lane[i];
                 if (item.mis_ends) var misassembled_ends = item.mis_ends.split(';');
                 item.supp = '';

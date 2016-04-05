@@ -640,6 +640,8 @@ def do(contigs_fpaths, contig_report_fpath_pattern, output_dirpath,
             report_fpath = contig_report_fpath_pattern % qutils.label_from_fpath_for_fname(contigs_fpath)
             aligned_blocks, misassembled_id_to_structure, contigs = parse_nucmer_contig_report(report_fpath,
                                                                         reference_chromosomes.keys(), cumulative_ref_lengths)
+            if not contigs:
+                contigs = parse_contigs_fpath(contigs_fpath)
             if aligned_blocks is None:
                 return None
             for block in aligned_blocks:
@@ -648,9 +650,9 @@ def do(contigs_fpaths, contig_report_fpath_pattern, output_dirpath,
             structures_by_labels[label] = misassembled_id_to_structure
         contigs_by_assemblies[label] = contigs
 
-    if contigs_fpaths and features:
+    if contigs_fpaths and ref_fpath and features:
         features_data = parse_features_data(features, cumulative_ref_lengths, reference_chromosomes.keys())
-    if reference_chromosomes:
+    if reference_chromosomes and lists_of_aligned_blocks:
         plot_fpath, assemblies = draw_alignment_plot(
             contigs_fpaths, virtual_genome_size, sorted_ref_names, sorted_ref_lengths, virtual_genome_shift, output_dirpath,
             lists_of_aligned_blocks, arcs, similar, coverage_hist)
@@ -1078,7 +1080,7 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
                 contigs_by_assemblies, ref_fpath=None, stdout_pattern=None, features_data=None, cov_fpath=None):
     chr_full_names = []
     chr_names = []
-    if chromosomes_length:
+    if chromosomes_length and assemblies:
         chr_to_aligned_blocks = OrderedDict()
         chr_names = chromosomes_length.keys()
         for assembly in assemblies.assemblies:

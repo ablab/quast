@@ -14,11 +14,11 @@ cp -r test_data       release/$QUAST_FOLDER
 cp quast.py           release/$QUAST_FOLDER
 cp metaquast.py       release/$QUAST_FOLDER
 cp manual.html        release/$QUAST_FOLDER
-cp VERSION            release/$QUAST_FOLDER
-cp LICENSE            release/$QUAST_FOLDER
-cp CHANGES            release/$QUAST_FOLDER
-cp README             release/$QUAST_FOLDER
-cp INSTALL            release/$QUAST_FOLDER
+cp VERSION.txt        release/$QUAST_FOLDER
+cp LICENSE.txt        release/$QUAST_FOLDER
+cp CHANGES.txt        release/$QUAST_FOLDER
+cp README.txt         release/$QUAST_FOLDER
+cp INSTALL.txt        release/$QUAST_FOLDER
 cp install.sh         release/$QUAST_FOLDER
 cp install_full.sh    release/$QUAST_FOLDER
 echo Build $NOW    >> release/$QUAST_FOLDER/VERSION

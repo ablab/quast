@@ -522,9 +522,7 @@ THE SOFTWARE.
             .text('Contig info');
     info = menu.append('div')
             .attr('class', 'block');
-    p = info.append('p');
-    p.text('<click a contig to get details>');
-    p.attr('class', 'click_a_contig_text');
+    addClickContigText(info);
 
     // draw legend
     appendLegend();
@@ -1079,9 +1077,7 @@ THE SOFTWARE.
                     .remove();
                 info.selectAll('span')
                     .remove();
-                info.append('p')
-                    .style({'text-align': 'center'})
-                    .text('<CLICK ON CONTIG>');
+                addClickContigText(info);
                 arrows = [];
                 mini.selectAll('.arrow').remove();
                 mini.selectAll('.arrow_selected').remove();
@@ -1092,6 +1088,12 @@ THE SOFTWARE.
         }
         itemNonRects.select('.glow').remove();
         display();
+    }
+
+    function addClickContigText(info) {
+        p = info.append('p');
+        p.text('<click a contig to get details>');
+        p.attr('class', 'click_a_contig_text');
     }
 
     function removeTooltip() {

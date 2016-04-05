@@ -28,7 +28,7 @@ main_menu_link = '<a href="../{summary_fname}" style="color: white; text-decorat
 
 misassemblies_types = ['relocation', 'translocation', 'inversion', 'local']
 if qconfig.is_combined_ref:
-    misassemblies_types = ['relocation', 'translocation', 'inversion', 'interspecies translocation', 'local']
+    misassemblies_types = ['relocation', 'translocation', 'inversion', 'i/s translocation', 'local']
 
 from libs import plotter  # Do not remove this line! It would lead to a warning in matplotlib.
 if not plotter.matplotlib_error:
@@ -695,6 +695,7 @@ def parse_nucmer_contig_report(report_fpath, ref_names, cumulative_ref_lengths):
                 contig = Contig(name=name, size=int(size))
                 contigs.append(contig)
             elif split_line and len(split_line) < 5:
+                line.replace('interspecies', 'i/s')
                 misassembled_id_to_structure[contig_id].append(line.strip())
             elif split_line and len(split_line) > 5:
                 unshifted_start, unshifted_end, start_in_contig, end_in_contig, ref_name, contig_id, idy = split_line[start_col], \
@@ -979,8 +980,8 @@ def save_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, chr_length
         assembly_len = assemblies_len[assembly]
         assembly_contigs = len(assemblies_contigs[assembly])
         local_misassemblies = ms_types[assembly]['local'] / 2
-        ext_misassemblies = (sum(ms_types[assembly].values()) - ms_types[assembly]['interspecies translocation']) / 2 - \
-                            local_misassemblies + ms_types[assembly]['interspecies translocation']
+        ext_misassemblies = (sum(ms_types[assembly].values()) - ms_types[assembly]['i/s translocation']) / 2 - \
+                            local_misassemblies + ms_types[assembly]['i/s translocation']
         additional_assemblies_data += 'assemblies_len["{assembly}"] = {assembly_len};\n'.format(**locals())
         additional_assemblies_data += 'assemblies_contigs["{assembly}"] = {assembly_contigs};\n'.format(**locals())
         additional_assemblies_data += 'assemblies_misassemblies["{assembly}"] = "{ext_misassemblies}' \
@@ -1021,10 +1022,10 @@ def save_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, chr_length
                 elif line.find('<!--- misassemblies selector: ---->') != -1:
                     ms_counts_by_type = OrderedDict()
                     for ms_type in misassemblies_types:
-                        factor = 1 if ms_type == 'interspecies translocation' else 2
+                        factor = 1 if ms_type == 'i/s translocation' else 2
                         ms_counts_by_type[ms_type] = sum(ms_types[assembly][ms_type] / factor for assembly in chr_to_aligned_blocks.keys())
                     total_ms_count = sum(ms_counts_by_type.values())
-                    # result.write('Misassemblies ({total_ms_count}): '.format(**locals()))
+                    result.write('Show misassemblies ({total_ms_count}): '.format(**locals()))
                     for ms_type, ms_count in ms_counts_by_type.items():
                         is_checked = 'checked="checked"'  #if ms_count > 0 else ''
                         if ms_type != 'local':
@@ -1033,7 +1034,7 @@ def save_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, chr_length
                             result.write('<label><input type="checkbox" id="{ms_type}" name="misassemblies_select" '
                                  '{is_checked}/>{ms_type} ({ms_count})</label>'.format(**locals()))
                         else:
-                            result.write('<label><input type="checkbox" id="{ms_type}" name="misassemblies_select" '
+                            result.write('+ <label><input type="checkbox" id="{ms_type}" name="misassemblies_select" '
                                  '{is_checked}/><i>{ms_type} ({ms_count})</i></label>'.format(**locals()))
                 elif line.find('<!--- css: ---->') != -1:
                     result.write(html_saver.css_html(os.path.join('static', 'contig_alignment_plot.css')))
@@ -1207,8 +1208,8 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
                             viewer_link = '<a href="{chr_link}">{viewer_name}</a>'.format(**locals())
                             viewer_info = viewer_link + ' (aligned to sequences from ' + os.path.basename(ref_fpath) + ').<br>' \
                                     '<b>Fragments:</b> ' + str(num_contigs[chr]) + ', <b>length:</b> ' + format_long_numbers(chr_size) + \
-                                    'bp, <b>mean genome fraction:</b> ' + str(chr_genome) + '%, <b>misassembled blocks:</b> ' + \
-                                    str(num_misassemblies[chr]) + ')'
+                                    ('bp, <b>mean genome fraction:</b> %.3f' % chr_genome) + '%, <b>misassembled blocks:</b> ' + \
+                                    str(num_misassemblies[chr])
                             icarus_links["links"].append(chr_link)
                             icarus_links["links_names"].append(qconfig.icarus_link)
                             result.write('<div class="subtitle">')

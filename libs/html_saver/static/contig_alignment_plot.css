@@ -489,7 +489,6 @@ path {
 
 .click_a_contig_text {
     text-align: center;
-    color: black;
     /*text-shadow: -0.5px -0.5px 2px rgba(137, 137, 137, 0.78);*/
 }
 
@@ -519,5 +518,5 @@ path {
 }
 
 #misassemblies_selector_panel label {
-    margin-right: 15px;
+    margin-right: 10px;
 }

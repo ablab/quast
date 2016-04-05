@@ -148,8 +148,10 @@ THE SOFTWARE.
             miniLanesHeight = 18,
             annotationMiniLanesHeight = 18,
             featureMiniHeight = 10,
-            annotationLanesHeight = 40,
-            featureHeight = 20,
+            annotationLanesHeight = 30,
+            featureHeight = 25,
+            featureHeight = 25,
+            annotationLanesInterval = 10,
             offsetsY = [0, .3, .15],
             offsetsMiniY = [0, .1, .05],
             lanesInterval = 15,
@@ -200,7 +202,7 @@ THE SOFTWARE.
     var annotationsHeight = 0, annotationsMiniHeight = 0;
     if (CHROMOSOME) {
       var featuresData = parseFeaturesData(CHROMOSOME);
-      annotationsHeight = annotationLanesHeight * featuresData.lanes.length;
+      annotationsHeight = (annotationLanesHeight + annotationLanesInterval) * featuresData.lanes.length;
       annotationsMiniHeight = annotationMiniLanesHeight * featuresData.lanes.length;
       var ext = d3.extent(featuresData.lanes, function (d) {
           return d.id;
@@ -2110,7 +2112,7 @@ THE SOFTWARE.
 
       for (container in features_data) {
         for (var i = 0; i < features_data[container].length; i++) {
-          if (chr != "Main plot" && references_id[features_data[container][i].chr] != references_id[chr]) continue;
+          if (chr != "Main plot" && features_data[container][i].chr != references_id[chr]) continue;
           if (!data[container])
               data[container] = [];
           data[container].push(features_data[container][i]);
@@ -2268,8 +2270,8 @@ THE SOFTWARE.
                 })
                 .attr('transform', function (d) {
                     var x = x_main(Math.max(minExtent, d.start));
-                    var y = y_anno(d.lane) + .25 * featureHeight;
-                    if (INTERLACE_BLOCKS_VERT_OFFSET) y += offsetsY[d.order % 3] * featureHeight;
+                    var y = y_anno(d.lane) + .15 * featureHeight;
+                    if (INTERLACE_BLOCKS_VERT_OFFSET) y += offsetsMiniY[d.order % 2] * featureHeight;
                     return 'translate(' + x + ', ' + y + ')';
                 })
                 .attr('width', function (d) {
@@ -2294,8 +2296,8 @@ THE SOFTWARE.
                 })
                 .attr('transform', function (d) {
                     var x = x_main(Math.max(minExtent, d.start));
-                    var y = y_anno(d.lane) + .25 * featureHeight;
-                    if (INTERLACE_BLOCKS_VERT_OFFSET) y += offsetsY[d.order % 3] * featureHeight;
+                    var y = y_anno(d.lane) + .15 * featureHeight;
+                    if (INTERLACE_BLOCKS_VERT_OFFSET) y += offsetsMiniY[d.order % 2] * featureHeight;
 
                     return 'translate(' + x + ', ' + y + ')';
                 })
@@ -2342,9 +2344,9 @@ THE SOFTWARE.
                return x_main(Math.max(minExtent, d.start)) + 2;
             })
             .attr('y', function(d) {
-                var y = y_anno(d.lane) + .25 * featureHeight;
-                if (INTERLACE_BLOCKS_VERT_OFFSET) y += offsetsY[d.order % 3] * featureHeight;
-                return y + featureHeight / 2 + 3;
+                var y = y_anno(d.lane) + .15 * featureHeight;
+                if (INTERLACE_BLOCKS_VERT_OFFSET) y += offsetsMiniY[d.order % 2] * featureHeight;
+                return y + featureHeight / 2;
             })
             .text(function(d) {
                 var w = x_main(Math.min(maxExtent, d.end)) - x_main(Math.max(minExtent, d.start));

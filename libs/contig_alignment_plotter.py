@@ -23,7 +23,6 @@ from libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 
 MAX_REF_NAME = 20
-NAME_FOR_ONE_PLOT = 'Main plot'
 summary_fname = qconfig.icarus_html_fname
 main_menu_link = '<a href="../{summary_fname}" style="color: white; text-decoration: none;">Main menu</a>'.format(**locals())
 
@@ -657,7 +656,7 @@ def do(contigs_fpaths, contig_report_fpath_pattern, output_dirpath,
             lists_of_aligned_blocks, arcs, similar, coverage_hist)
     if (assemblies or contigs_by_assemblies) and qconfig.create_icarus_html:
         icarus_html_fpath = js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, reference_chromosomes,
-                    output_dirpath, structures_by_labels, stdout_pattern=stdout_pattern, contigs_by_assemblies=contigs_by_assemblies,
+                    output_dirpath, structures_by_labels, ref_fpath=ref_fpath, stdout_pattern=stdout_pattern, contigs_by_assemblies=contigs_by_assemblies,
                     features_data=features_data, cov_fpath=cov_fpath)
     else:
         icarus_html_fpath = None
@@ -758,7 +757,7 @@ def parse_cov_fpath(cov_fpath, chr_names, chr_full_names):
             if contigs_analyzer.ref_labels_by_chromosomes:
                 contig_names_by_refs = contigs_analyzer.ref_labels_by_chromosomes
                 contigs = [contig for contig in chr_names if contig_names_by_refs[contig] == chr]
-            elif chr == NAME_FOR_ONE_PLOT:
+            elif len(chr_full_names) == 1:
                 contigs = chr_names
             else:
                 contigs = [chr]
@@ -1055,8 +1054,28 @@ def save_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, chr_length
                     result.write(line)
     return num_misassemblies, aligned_assemblies
 
-def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromosomes_length,
-                output_dirpath, structures_by_labels, contigs_by_assemblies, stdout_pattern=None, features_data=None, cov_fpath=None):
+
+def get_info_by_chr(chr, aligned_bases_by_chr, chr_sizes, contigs_fpaths, one_chromosome=False):
+    short_chr = chr[:30]
+    if one_chromosome:
+        html_name = qconfig.one_alignment_viewer_name
+        chr_link = os.path.join(qconfig.icarus_dirname, '{html_name}.html'.format(**locals()))
+    else:
+        chr_link = os.path.join(qconfig.icarus_dirname, '{short_chr}.html'.format(**locals()))
+    chr_name = chr.replace('_', ' ')
+    tooltip = ''
+    if len(chr_name) > 50:
+        short_name = chr[:50]
+        tooltip = 'data-toggle="tooltip" title="{chr_name}">'
+        chr_name = '{short_name}...'.format(**locals())
+    aligned_lengths = [aligned_len for aligned_len in aligned_bases_by_chr[chr] if aligned_len is not None]
+    chr_genome = sum(aligned_lengths) * 100.0 / (chr_sizes[chr] * len(contigs_fpaths))
+    chr_size = chr_sizes[chr]
+    return chr_link, chr_name, chr_genome, chr_size
+
+
+def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromosomes_length, output_dirpath, structures_by_labels,
+                contigs_by_assemblies, ref_fpath=None, stdout_pattern=None, features_data=None, cov_fpath=None):
     chr_full_names = []
     chr_names = []
     if chromosomes_length:
@@ -1077,7 +1096,7 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
         chr_full_names = [added_refs.add(ref) or ref for ref in [contig_names_by_refs[contig] for contig in chr_names]
                           if ref not in added_refs]
     elif sum(chromosomes_length.values()) < qconfig.MAX_SIZE_FOR_COMB_PLOT and len(chr_names) > 1:
-        chr_full_names = [NAME_FOR_ONE_PLOT]
+        chr_full_names = [qutils.name_from_fpath(ref_fpath)]
     else:
         chr_full_names = chr_names
 
@@ -1097,11 +1116,11 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
 
     ref_data = 'var references_id = {};\n'
     for i, chr in enumerate(chr_names):
-        ref_data += 'references_id[{i}] = "{chr}";\n'.format(**locals())
+        ref_data += 'references_id["{chr}"] = {i};\n'.format(**locals())
     for i, chr in enumerate(chr_full_names):
         if contigs_analyzer.ref_labels_by_chromosomes:
             ref_contigs = [contig for contig in chr_names if contig_names_by_refs[contig] == chr]
-        elif chr == NAME_FOR_ONE_PLOT:
+        elif len(chr_full_names) == 1:
             ref_contigs = chr_names
         else:
             ref_contigs = [chr]
@@ -1182,35 +1201,33 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
                     labels = [qconfig.assembly_labels_by_fpath[contigs_fpath] for contigs_fpath in contigs_fpaths]
                     result.write('Assemblies: ' + ', '.join(labels))
                 elif line.find('<!--- div_references: ---->') != -1:
-                    if chr_full_names:
+                    if chr_full_names and len(chr_full_names) > 1:
                         result.write('<div>')
                     else:
+                        if chr_full_names:
+                            chr = chr_full_names[0]
+                            chr_link, chr_name, chr_genome, chr_size = get_info_by_chr(chr, aligned_bases_by_chr, chr_sizes,
+                                                                                       contigs_fpaths, one_chromosome=True)
+                            viewer_name = qconfig.contig_alignment_viewer_name
+                            viewer_link = '<a href="{chr_link}">{viewer_name}</a>'.format(**locals())
+                            viewer_info = viewer_link + ' (aligned to sequences from ' + os.path.basename(ref_fpath) + ').<br>' \
+                                    '<b>Fragments:</b> ' + str(num_contigs[chr]) + ', <b>length:</b> ' + format_long_numbers(chr_size) + \
+                                    'bp, <b>mean genome fraction:</b> ' + str(chr_genome) + '%, <b>misassembled blocks:</b> ' + \
+                                    str(num_misassemblies[chr]) + ')'
+                            icarus_links["links"].append(chr_link)
+                            icarus_links["links_names"].append(qconfig.icarus_link)
+                            result.write('<div class="subtitle">')
+                            result.write(viewer_info)
+                            result.write('</div>')
                         result.write('<div style="display:none;">')
                 elif line.find('<!--- th_assemblies: ---->') != -1:
                     if is_unaligned_asm_exists:
                         result.write('<th># assemblies</th>')
-                elif line.find('<!--- references: ---->') != -1:
+                elif line.find('<!--- references: ---->') != -1 and len(chr_full_names) > 1:
                     for chr in sorted(chr_full_names):
+                        chr_link, chr_name, chr_genome, chr_size = get_info_by_chr(chr, aligned_bases_by_chr, chr_sizes, contigs_fpaths)
                         result.write('<!--- reference:%s ---->' % chr)
                         result.write('<tr>')
-                        short_chr = chr[:30]
-                        if len(chr_full_names) == 1:
-                            html_name = qconfig.one_alignment_viewer_name
-                            contig_alignment_name = qconfig.contig_alignment_viewer_name
-                            chr_link = os.path.join(qconfig.icarus_dirname, '{html_name}.html'.format(**locals()))
-                            icarus_links["links"].append(chr_link)
-                            icarus_links["links_names"].append(qconfig.icarus_link)
-                        else:
-                            chr_link = os.path.join(qconfig.icarus_dirname, '{short_chr}.html'.format(**locals()))
-                        chr_name = chr.replace('_', ' ')
-                        tooltip = ''
-                        if len(chr_name) > 50:
-                            short_name = chr[:50]
-                            tooltip = 'data-toggle="tooltip" title="{chr_name}">'
-                            chr_name = '{short_name}...'.format(**locals())
-                        aligned_lengths = [aligned_len for aligned_len in aligned_bases_by_chr[chr] if aligned_len is not None]
-                        chr_genome = sum(aligned_lengths) * 100.0 / (chr_sizes[chr] * len(contigs_fpaths))
-                        chr_size = chr_sizes[chr]
                         result.write('<td><a href="{chr_link}">{chr_name}</a></td>'.format(**locals()))
                         result.write('<td>%s</td>' % num_contigs[chr])
                         result.write('<td>%s</td>' % format_long_numbers(chr_size))

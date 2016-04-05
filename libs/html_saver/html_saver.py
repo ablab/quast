@@ -241,7 +241,7 @@ def create_meta_icarus(results_dirpath, ref_names):
     if not os.path.isdir(icarus_dirpath):
         os.mkdir(icarus_dirpath)
     icarus_links["links"].append(qconfig.icarus_html_fname)
-    icarus_links["links_names"].append('Icarus main menu')
+    icarus_links["links_names"].append(qconfig.icarus_link)
     contig_size_fpath = os.path.join(results_dirpath, qconfig.combined_output_name, qconfig.icarus_dirname, qconfig.contig_size_viewer_fname)
     contig_size_top_fpath = os.path.join(results_dirpath, qconfig.icarus_dirname, qconfig.contig_size_viewer_fname)
     shutil.copy(contig_size_fpath, contig_size_top_fpath)

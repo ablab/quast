@@ -149,8 +149,7 @@ THE SOFTWARE.
             annotationMiniLanesHeight = 18,
             featureMiniHeight = 10,
             annotationLanesHeight = 30,
-            featureHeight = 25,
-            featureHeight = 25,
+            featureHeight = 20,
             annotationLanesInterval = 10,
             offsetsY = [0, .3, .15],
             offsetsMiniY = [0, .1, .05],
@@ -202,7 +201,7 @@ THE SOFTWARE.
     var annotationsHeight = 0, annotationsMiniHeight = 0;
     if (CHROMOSOME) {
       var featuresData = parseFeaturesData(CHROMOSOME);
-      annotationsHeight = (annotationLanesHeight + annotationLanesInterval) * featuresData.lanes.length;
+      annotationsHeight = annotationLanesHeight * featuresData.lanes.length;
       annotationsMiniHeight = annotationMiniLanesHeight * featuresData.lanes.length;
       var ext = d3.extent(featuresData.lanes, function (d) {
           return d.id;
@@ -2260,7 +2259,7 @@ THE SOFTWARE.
     function drawFeaturesMain(minExtent, maxExtent) {
         var featuresItems = featurePaths.filter(function (d) {
                 if (d.start < maxExtent && d.end > minExtent) {
-                    var drawLimit = 1;
+                    var drawLimit = 0;
                     var visibleLength = x_main(Math.min(maxExtent, d.end)) - x_main(Math.max(minExtent, d.start));
                     if (visibleLength > drawLimit)
                         return d;

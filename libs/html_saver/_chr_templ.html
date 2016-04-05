@@ -34,44 +34,47 @@ THE SOFTWARE.
 <div class="top-panel">
 	<table class="layout-table">
 		<tr>
-		<td class='layout-table-td layout-table-fst-td'>
+		<td class='layout-table-td'>
 			<div>
-				<button class="btn btn-inverse" style="float: left; margin-left: -120px; margin-top: 5px;">
+				<button class="btn btn-inverse" id="to_main_menu_button">
 					<!--- menu: ---->
 				</button>
-				<div>
+				<div class="page_title">
 					<h1>
-						<!--- title: ---->
-					</h1>
-					<div style='margin-top: -7px; width: 100%;'>
-						<p><b>
-							<!--- subtitle: ---->
-						</b></p>
+                        Icarus
+                    </h1>
+					<div class="page_subtitle">
+						<p><b>Contig browser</b></p>
 					</div>
 				</div>
 			</div>
 		</td>
         <td>
-            <div align="center" style="float: left;margin-left:-400px; margin-top: 10px;">
-				move <button id="left_shift" class="btn btn-inverse"><<</button>
+            <div id='contols_panel'>
+				Move <button id="left_shift" class="btn btn-inverse"><<</button>
 				<button id="left" class="btn btn-inverse"><</button>
 				<button id="right" class="btn btn-inverse">></button>
 				<button id="right_shift" class="btn btn-inverse">>></button>
-				&nbsp&nbsp&nbsp&nbsp&nbsp
-				zoom in <button id="zoom_in" class="btn btn-inverse">2x</button>
-				<button id="zoom_in_5" class="btn btn-inverse">5x</button>
-				&nbsp&nbsp&nbsp&nbsp&nbsp
-				zoom out <button id="zoom_out" class="btn btn-inverse">2x</button>
-				<button id="zoom_out_5" class="btn btn-inverse">5x</button>
-				&nbsp&nbsp&nbsp&nbsp&nbsp
-				coordinates: <input class="textBox" id="input_coords" type="text" maxlength="30" />
+                &nbsp;&nbsp;
+				zoom
+                <button id="zoom_in_5" class="btn btn-inverse">+<span class="hs"></span>5x</button>
+				<button id="zoom_in" class="btn btn-inverse">+<span class="hs"></span>2x</button>
+				<button id="zoom_out" class="btn btn-inverse">–<span class="hs"></span>2x</button>
+				<button id="zoom_out_5" class="btn btn-inverse">–<span class="hs"></span>5x</button>
+                &nbsp;&nbsp;
+				go to <input class="textBox" id="input_coords" type="text" maxlength="30" />
 				<!--- Contig size threshold: ---->
+                <div id="misassemblies_selector_panel">
+                Show misassemblies:
 				<!--- misassemblies selector: ---->
+                </div>
 			</div>
 		</tr>
 	</table>
 </div>
+<div class="reftitle">
 	<!--- reference: ---->
+</div>
 	<!--- warning: ---->
 <button id="hideBtnAnnoMini" class="btn moving_button btn-mini" style="display: none; position: absolute;">Hide</button>
 <button id="hideBtnAnnoMain" class="btn moving_button btn-mini" style="display: none; position: absolute;">Show annotation</button>

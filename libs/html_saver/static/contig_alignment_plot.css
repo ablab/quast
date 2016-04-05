@@ -7,6 +7,12 @@
     width: 240px;
 }
 
+#to_main_menu_button {
+    float: left;
+    margin-left: -120px;
+    margin-top: 0px;
+}
+
 #legend {
     float: right;
     width: 240px;
@@ -458,10 +464,11 @@ path {
 }
 
 .reftitle {
-    font-size: 20px;
+    font-size: 16px;
     font-weight: bold;
-    text-align: center;
+    /*text-align: center;*/
     padding: 10px;
+    margin-left: 137px;
 }
 
 .warning {
@@ -484,4 +491,33 @@ path {
     text-align: center;
     color: black;
     /*text-shadow: -0.5px -0.5px 2px rgba(137, 137, 137, 0.78);*/
+}
+
+.layout-table {
+    max-width: 940px;
+}
+
+#contols_panel {
+    float: left;
+    margin-top: 10px;
+    font-size: 13px;
+    margin-left: 30px;
+}
+
+/*#contols_panel button {*/
+    /*margin-top: -3px;*/
+/*}*/
+#contols_panel * {
+    vertical-align: baseline;
+}
+
+#misassemblies_selector_panel {
+    margin-top: 10px;
+}
+
+#misassemblies_selector_panel {
+}
+
+#misassemblies_selector_panel label {
+    margin-right: 15px;
 }

@@ -19,6 +19,12 @@ body {
     color: black;
     padding-bottom: 30px;
 }
+.page_title {
+    margin-top: 10px;
+}
+.page_subtitle {
+    margin-top: -5px;
+}
 a {
     text-decoration: none;
     /*color: #0c4f72;*/
@@ -226,7 +232,7 @@ ul.mdash li:before {
     width: 99%;
     margin-left: -3px;
     margin-top: -3px;
-    border-spacing: 0px;
+    border-spacing: 0;
     color: white;
     font-size: medium;
 }

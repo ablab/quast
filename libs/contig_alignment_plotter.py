@@ -1019,19 +1019,22 @@ def save_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, chr_length
                     result.write('var CHROMOSOME = "{chr}";\n'.format(**locals()))
                     result.write('var chrContigs = ["{chromosome}"];\n'.format(**locals()))
                 elif line.find('<!--- misassemblies selector: ---->') != -1:
-                    result.write('<div align="center" style="margin-top: 7px;">')
-                    result.write('Misassembly type to show: ')
+                    ms_counts_by_type = OrderedDict()
                     for ms_type in misassemblies_types:
                         factor = 1 if ms_type == 'interspecies translocation' else 2
-                        ms_count = sum(ms_types[assembly][ms_type] / factor for assembly in chr_to_aligned_blocks.keys())
-                        is_checked = 'checked="checked"' if ms_count > 0 else ''
-                        if ms_type == 'local':
-                            result.write('&nbsp&nbsp<label><input type="checkbox" id="{ms_type}" '
-                                         'name="misassemblies_select" {is_checked}/> <i>{ms_type} ({ms_count})</i></label>&nbsp&nbsp'.format(**locals()))
+                        ms_counts_by_type[ms_type] = sum(ms_types[assembly][ms_type] / factor for assembly in chr_to_aligned_blocks.keys())
+                    total_ms_count = sum(ms_counts_by_type.values())
+                    # result.write('Misassemblies ({total_ms_count}): '.format(**locals()))
+                    for ms_type, ms_count in ms_counts_by_type.items():
+                        is_checked = 'checked="checked"'  #if ms_count > 0 else ''
+                        if ms_type != 'local':
+                            if ms_count != 1:
+                                ms_type += 's'
+                            result.write('<label><input type="checkbox" id="{ms_type}" name="misassemblies_select" '
+                                 '{is_checked}/>{ms_type} ({ms_count})</label>'.format(**locals()))
                         else:
                             result.write('<label><input type="checkbox" id="{ms_type}" name="misassemblies_select" '
-                                 '{is_checked}/> {ms_type} ({ms_count})</label>&nbsp&nbsp'.format(**locals()))
-                    result.write('</div>')
+                                 '{is_checked}/><i>{ms_type} ({ms_count})</i></label>'.format(**locals()))
                 elif line.find('<!--- css: ---->') != -1:
                     result.write(html_saver.css_html(os.path.join('static', 'contig_alignment_plot.css')))
                     result.write(html_saver.css_html(os.path.join('static', 'common.css')))
@@ -1039,17 +1042,11 @@ def save_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, chr_length
                 elif line.find('<!--- scripts: ---->') != -1:
                     result.write(html_saver.js_html(os.path.join('static', 'd3.js')))
                     result.write(html_saver.js_html(os.path.join('static', 'scripts', 'contig_alignment_plot_script.js')))
-                elif line.find('<!--- title: ---->') != -1:
-                    result.write('Icarus')
-                elif line.find('<!--- subtitle: ---->') != -1:
-                    result.write('Contig alignment viewer')
                 elif line.find('<!--- reference: ---->') != -1:
                     chr_name = chr.replace('_', ' ')
-                    if len(chr_name) > 90:
-                        chr_name = chr_name[:90] + '...'
-                    result.write('<div class="reftitle">')
+                    # if len(chr_name) > 120:
+                    #     chr_name = chr_name[:90] + '...'
                     result.write(chr_name)
-                    result.write('</div>')
                 elif line.find('<!--- menu: ---->') != -1:
                     result.write(main_menu_link)
                 else:
@@ -1169,10 +1166,6 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
                     result.write(html_saver.js_html(os.path.join('static', 'scripts', 'contig_alignment_plot_script.js')))
                 elif line.find('<!--- menu: ---->') != -1:
                     result.write(main_menu_link)
-                elif line.find('<!--- title: ---->') != -1:
-                    result.write('Icarus')
-                elif line.find('<!--- subtitle: ---->') != -1:
-                    result.write('Contig size viewer')
                 elif line.find('<!--- warning: ---->') != -1 and too_many_contigs:
                     result.write('<div class="warning">')
                     result.write('Warning: total number of contigs is too large! ONLY first %s contigs were loaded.' %

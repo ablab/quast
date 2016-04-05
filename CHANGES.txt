@@ -19,7 +19,13 @@
       3. Several new options added:
        - "--significant-part-size" for setting threshold on detecting partially unaligned 
          contigs with both significant aligned and unaligned parts (default: 500bp as earlier).
-       - "--unique-mapping" for forcing -a=one for the combined reference (MetaQUAST only)
+       - "--fragmented" for notifying QUAST about fragmented reference genome (e.g. scaffold
+         reference). QUAST will try to detect misassemblies caused by the fragmentation and
+         mark them "fake".
+       - "--unique-mapping" for forcing -a=one for the combined reference (MetaQUAST only).
+       - "--sv-bed" for specifying BED file with structural variations. Note that QUAST may
+         create such BED automatically using Manta SV caller if reads are specified.
+         However, it is rather slow (includes reads alignment).
 
       4. Fixed bug with skipping "broken" scaffolds in per reference runs of MetaQUAST.
 

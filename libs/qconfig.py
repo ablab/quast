@@ -281,6 +281,7 @@ def usage(show_hidden=False, meta=False, short=True):
         print >> sys.stderr, "                                      less than extensive-mis-size are counted as local misassemblies. [default: %s]" % extensive_misassembly_threshold
         print >> sys.stderr, "    --significant-part-size  <int>    Lower threshold for detecting partially unaligned contigs with both significant "
         print >> sys.stderr, "                                      aligned and unaligned parts. [default: %s]" % significant_part_size
+        print >> sys.stderr, "    --fragmented                      Reference genome may be fragmented into small pieces (e.g. scaffolded reference) "
         print >> sys.stderr, "    --plots-format  <str>             Save plots in specified format. [default: %s]" % plot_extension
         print >> sys.stderr, "                                      Supported formats: %s." % ', '.join(supported_plot_extensions)
         print >> sys.stderr, "    --memory-efficient                Run Nucmer using one thread, separately per each assembly and each chromosome. "
@@ -288,6 +289,7 @@ def usage(show_hidden=False, meta=False, short=True):
         print >> sys.stderr, "-1  --reads1  <filename>              File with forward reads (in FASTQ format, may be gzipped). "
         print >> sys.stderr, "-2  --reads2  <filename>              File with reverse reads (in FASTQ format, may be gzipped). "
         print >> sys.stderr, "                                      Reads are used for structural variant detection. "
+        print >> sys.stderr, "    --sv-bed  <filename>              File with structural variations (in BED format)"
         print >> sys.stderr, ""
         print >> sys.stderr, "Speedup options:"
         print >> sys.stderr, "    --no-check                        Do not check and correct input fasta files. Use at your own risk (see manual)"
@@ -300,19 +302,15 @@ def usage(show_hidden=False, meta=False, short=True):
             print >> sys.stderr, ""
             print >> sys.stderr, "Hidden options:"
             print >> sys.stderr, "-d  --debug                 Run in a debug mode"
-            print >> sys.stderr, "-L                          Take assembly names from their parent directory names"
-            print >> sys.stderr, "    --fragmented            Reference genome may be fragmented into small pieces (e.g. scaffolded reference) "
             print >> sys.stderr, "-c  --min-cluster   <int>   Nucmer's parameter: the minimum length of a cluster of matches [default: %s]" % min_cluster
-            print >> sys.stderr, "--sv-bed                    File with structural variations (in BED format)"
             print >> sys.stderr, "-j  --save-json             Save the output also in the JSON format"
             print >> sys.stderr, "-J  --save-json-to <path>   Save the JSON output to a particular path"
             print >> sys.stderr, "--no-icarus                 Do not create Icarus files"
             print >> sys.stderr, "--svg                       Draw contig alignment plot (in SVG format)"
 
-
         print >> sys.stderr, ""
         print >> sys.stderr, "Other:"
-        print >> sys.stderr, "    --silent                          Do not print detailed information about each step in stdout (log file is not affected)."
+        print >> sys.stderr, "    --silent                          Do not print detailed information about each step to stdout (log file is not affected)."
         if meta:
             print >> sys.stderr, "    --test                            Run MetaQUAST on the data from the test_data folder, output to quast_test_output"
             print >> sys.stderr, "    --test-no-ref                     Run MetaQUAST without references on the data from the test_data folder, output to quast_test_output."

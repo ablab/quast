@@ -14,6 +14,7 @@ libs/.DS_Store
 .idea
 .DS_Store
 *pyc
+*.o
 
 quast_website/.idea/*
 quast-1.0.0.tar.gz
@@ -32,6 +33,7 @@ libs/glimmer/glimmerhmm
 tc_tests/results/
 test/
 test_output/
+test_data/
 quast_test_output/
 
 libs/Busco/augustus-3.0.3/src/LICENCE.TXT
@@ -39,3 +41,7 @@ libs/Busco/hmmer-3.1b2-mac/
 libs/bwa-master/make.*
 
 libs/blast/16S_RNA_blastdb/
+
+libs/bowtie2/
+libs/samtools/
+libs/manta/

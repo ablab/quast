@@ -1019,13 +1019,13 @@ def save_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, chr_length
                     result.write('var chrContigs = ["{chromosome}"];\n'.format(**locals()))
                 elif line.find('<!--- misassemblies selector: ---->') != -1:
                     result.write('<div align="center" style="margin-top: 7px;">')
-                    result.write('Misassembly type to show:')
+                    result.write('Misassembly type to show: ')
                     for ms_type in misassemblies_types:
                         factor = 1 if ms_type == 'interspecies translocation' else 2
                         ms_count = sum(ms_types[assembly][ms_type] / factor for assembly in chr_to_aligned_blocks.keys())
                         is_checked = 'checked="checked"' if ms_count > 0 else ''
                         if ms_type == 'local':
-                            result.write('&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp<label><input type="checkbox" id="{ms_type}" '
+                            result.write('&nbsp&nbsp<label><input type="checkbox" id="{ms_type}" '
                                          'name="misassemblies_select" {is_checked}/> <i>{ms_type} ({ms_count})</i></label>&nbsp&nbsp'.format(**locals()))
                         else:
                             result.write('<label><input type="checkbox" id="{ms_type}" name="misassemblies_select" '

@@ -520,9 +520,9 @@ THE SOFTWARE.
             .text('Contig info');
     info = menu.append('div')
             .attr('class', 'block');
-    info.append('p')
-            .style({'text-align': 'center'})
-            .text('Click a contig to get details');
+    p = info.append('p');
+    p.text('<click a contig to get details>');
+    p.attr('class', 'click_a_contig_text');
 
     // draw legend
     appendLegend();
@@ -765,7 +765,8 @@ THE SOFTWARE.
         for (item in visItems) {
           if (visItems[item].supp ) {
             var w = x_main(visItems[item].corr_end) - x_main(visItems[item].corr_start);
-            if (w > mainLanesHeight) nonRectItems.push(visItems[item]);
+            var triangle_width = Math.sqrt(0.5) * mainLanesHeight / 2;
+            if (w > triangle_width * 1.5) nonRectItems.push(visItems[item]);
         }
           else rectItems.push(visItems[item]);
         }
@@ -782,10 +783,10 @@ THE SOFTWARE.
                 })
                 .attr('width', function (d) {
                     return x_main(Math.min(maxExtent, d.corr_end)) - x_main(Math.max(minExtent, d.corr_start));
-                })
-                .classed('light_color', function (d) {
-                    return x_main(d.corr_end) - x_main(d.corr_start) > mainLanesHeight;
                 });
+                //.classed('light_color', function (d) {
+                //    return x_main(d.corr_end) - x_main(d.corr_start) > mainLanesHeight;
+                //});
 
         rects.select('.R')
                 .attr('transform',  function (d) {
@@ -828,10 +829,10 @@ THE SOFTWARE.
                 })
                 .attr('width', function (d) {
                     return x_main(Math.min(maxExtent, d.corr_end)) - x_main(Math.max(minExtent, d.corr_start));
-                })
-                .classed('light_color', function (d) {
-                    return x_main(d.corr_end) - x_main(d.corr_start) > mainLanesHeight;
                 });
+                //.classed('light_color', function (d) {
+                //    return x_main(d.corr_end) - x_main(d.corr_start) > mainLanesHeight;
+                //});
 
         if (BLOCKS_SHADOW) other.attr('filter', 'url(#shadow)');
 
@@ -873,6 +874,18 @@ THE SOFTWARE.
                     return 'translate(' + x + ', ' + y + ')';
                 });
 
+        function make_triangle(d) {
+            var startX = 0;
+            var startY = d.groupId == selected_id ? 2 : 0;
+            if (d.supp == "L")
+                path = ['M', startX, startY, 'L', startX + (0.5 * (mainLanesHeight - startY) / 2),
+                    (startY + (mainLanesHeight - startY)) / 2, 'L', startX, mainLanesHeight - startY, 'L',  startX, startY].join(' ');
+            if (d.supp == "R")
+                path = ['M', startX, startY, 'L', startX - (0.5 * (mainLanesHeight - startY) / 2),
+                    (startY + (mainLanesHeight - startY)) / 2, 'L', startX, mainLanesHeight - startY, 'L',  startX, startY].join(' ');
+            return path;
+        }
+
         nonRects.selectAll('path')
                 .attr('transform',  function (d) {
                     if (d.groupId == selected_id) {
@@ -880,15 +893,7 @@ THE SOFTWARE.
                         else return 'translate(-2,0)';
                     }
                 })
-                .attr('d', function (d) {
-                    var startX = 0;
-                    var startY = d.groupId == selected_id ? 2 : 0;
-                    if (d.supp == "L") path = ['M', startX, startY, 'L', startX + (Math.sqrt(0.5) * (mainLanesHeight - startY) / 2),
-                        (startY + (mainLanesHeight - startY)) / 2, 'L', startX, mainLanesHeight - startY, 'L',  startX, startY].join(' ');
-                    if (d.supp == "R") path = ['M', startX, startY, 'L', startX - (Math.sqrt(0.5) * (mainLanesHeight - startY) / 2),
-                        (startY + (mainLanesHeight - startY)) / 2, 'L', startX, mainLanesHeight - startY, 'L',  startX, startY].join(' ');
-                    return path;
-                });
+                .attr('d', make_triangle);
 
         nonRects.exit().remove();
         itemNonRects.selectAll('text')
@@ -914,15 +919,7 @@ THE SOFTWARE.
                         else return 'translate(0,2)';
                     }
                 })
-                .attr('d', function (d) {
-                    var startX = 0;
-                    var startY = d.groupId == selected_id ? 2 : 0;
-                    if (d.supp == "L") path = ['M', startX, startY, 'L', startX + (Math.sqrt(0.5) * (mainLanesHeight - startY) / 2),
-                        (startY + (mainLanesHeight - startY)) / 2, 'L', startX, mainLanesHeight - startY, 'L',  startX, startY].join(' ');
-                    if (d.supp == "R") path = ['M', startX, startY, 'L', startX - (Math.sqrt(0.5) * (mainLanesHeight - startY) / 2),
-                        (startY + (mainLanesHeight - startY)) / 2, 'L', startX, mainLanesHeight - startY, 'L',  startX, startY].join(' ');
-                    return path;
-                });
+                .attr('d', make_triangle);
 
         other.on('click', function A(d, i) {
             selected_id = d.groupId;
@@ -1633,7 +1630,7 @@ THE SOFTWARE.
             d.misassembled = d.misassemblies ? "True" : "False";
             c = (d.misassembled == "False" ? "" : "misassembled");
             c += (d.similar == "True" ? " similar" : "");
-            c += ((!d.supp && !isSmall) ? " light_color" : "");
+            //c += ((!d.supp && !isSmall) ? " light_color" : "");
             if (d.supp) countSupplementary++;
             if (INTERLACE_BLOCKS_COLOR) c += ((numItem - countSupplementary) % 2 == 0 ? " odd" : "");
             var text = '';

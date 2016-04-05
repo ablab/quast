@@ -419,7 +419,7 @@ THE SOFTWARE.
         addFeatureTrackInfo(annotationsMain, y_anno);
     }
 
-    var mini_cov, main_cov, x_cov_mini_S, y_cov_main_S, y_cov_main_A, y_cov_main_vals;
+    var mini_cov, main_cov, x_cov_mini_S, y_cov_main_S, y_cov_main_A, y_cov_vals;
     if (drawCoverage)
         setupCoverage();
     // draw the x axis
@@ -992,15 +992,15 @@ THE SOFTWARE.
                 if (i + step > (maxExtent / 100)) break;
             }
 
-            y_max = y_max < 100 ? 100 : Math.ceil(y_max / 100) * 100;
-            y_cov_main_S.domain([y_max + 100, .1]);
+            y_max = getNextMaxCovValue(y_max);
+            y_cov_main_S.domain([y_max, .1]);
             y_cov_main_A.scale(y_cov_main_S);
             for (i = 0; i < cov_lines.length; i++) {
                 cov_line = cov_lines[i];
                 line += ['M', cov_line[0], y_cov_main_S(cov_line[1]), 'H', cov_line[2]].join(' ');
             }
 
-            y_cov_main_A.tickValues(y_cov_main_S.ticks().filter(y_cov_main_vals));
+            y_cov_main_A.tickValues(y_cov_main_S.ticks().filter(y_cov_vals));
             main_cov.select('.y').call(y_cov_main_A);
 
             var not_covered_line = '',
@@ -1502,22 +1502,34 @@ THE SOFTWARE.
         return newBrush;
     }
 
+    function getNextMaxCovValue(maxY) {
+        var factor = Math.max(1, Math.ceil(Math.log(maxY) * Math.LOG10E));
+        return Math.pow(10, factor) * 1.1
+    }
+
     function setupCoverage() {
         // draw mini coverage
         x_cov_mini_S = x_mini,      // x coverage scale
+        y_max = Math.max.apply(null, coverage_data[CHROMOSOME]);
+
         y_cov_mini_S = d3.scale.log()
-                .domain([Math.max(d3.max(coverage_data[CHROMOSOME], function (d) {
-                    return d;
-                }), 100) + 100, .1])
+                .domain([getNextMaxCovValue(y_max), .1])
                 .range([0, coverageHeight]),
+        y_cov_main_S = y_cov_mini_S;
+
+        y_cov_vals = function(tickValue) {
+            var i = 0;
+            for (; Math.pow(10, i) < tickValue; ++i);
+            if (tickValue == Math.pow(10, i) && tickValue <= y_cov_main_S.domain()[0]) return tickValue;
+        };
+
         y_cov_mini_A = d3.svg.axis()
                 .scale(y_cov_mini_S)
                 .orient('left')
-                .tickValues(y_cov_mini_S.ticks().filter(function (d) {
-                    var i = 0;
-                    for (; Math.pow(10, i) < d; ++i);
-                    if (d == Math.pow(10, i) && d <= y_cov_mini_S.domain()[0]) return d;
-                }))
+                .tickValues(y_cov_mini_S.ticks().filter(y_cov_vals))
+                .tickFormat(function(tickValue) {
+                    return tickValue;
+                })
                 .tickSize(2, 0);
         mini_cov = chart.append('g')
                 .attr('class', 'coverage')
@@ -1561,18 +1573,14 @@ THE SOFTWARE.
                 .attr('transform', 'rotate(-90 20, 80)');
 
         // draw main coverage
-        y_cov_main_S = y_cov_mini_S;
-
-        y_cov_main_vals = function (d) {
-            var i = 0;
-            for (; Math.pow(10, i) < d; ++i);
-            if (d == Math.pow(10, i) && d <= y_cov_main_S.domain()[0]) return d;
-        };
 
         y_cov_main_A = y_cov_mini_A = d3.svg.axis()
                 .scale(y_cov_main_S)
                 .orient('left')
-                .tickValues(y_cov_main_S.ticks().filter(y_cov_main_vals))
+                .tickValues(y_cov_main_S.ticks().filter(y_cov_vals))
+                .tickFormat(function(tickValue) {
+                    return tickValue;
+                })
                 .tickSize(2, 0);
 
         var x_cov_main_A = xMainAxis;

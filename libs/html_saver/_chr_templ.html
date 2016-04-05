@@ -43,30 +43,38 @@ THE SOFTWARE.
 					<h1>
                         Icarus
                     </h1>
-					<div class="page_subtitle">
-						<p><b>Contig browser</b></p>
-					</div>
+                    <p class="page_subtitle">
+                        <b>QUAST Contig Browser</b>
+                    </p>
 				</div>
 			</div>
 		</td>
         <td>
             <div id='contols_panel'>
-				Move <button id="left_shift" class="btn btn-inverse"><<</button>
-				<button id="left" class="btn btn-inverse"><</button>
-				<button id="right" class="btn btn-inverse">></button>
-				<button id="right_shift" class="btn btn-inverse">>></button>
-                &nbsp;&nbsp;
-				zoom
-                <button id="zoom_in_5" class="btn btn-inverse">+<span class="hs"></span>5x</button>
-				<button id="zoom_in" class="btn btn-inverse">+<span class="hs"></span>2x</button>
-				<button id="zoom_out" class="btn btn-inverse">–<span class="hs"></span>2x</button>
-				<button id="zoom_out_5" class="btn btn-inverse">–<span class="hs"></span>5x</button>
-                &nbsp;&nbsp;
-				go to <input class="textBox" id="input_coords" type="text" maxlength="30" />
-				<!--- Contig size threshold: ---->
-                <div id="misassemblies_selector_panel">
-				<!--- misassemblies selector: ---->
-                </div>
+                <span style="white-space: nowrap;">
+                    Move
+                    <button id="left_shift" class="btn btn-inverse"><<</button>
+                    <button id="left" class="btn btn-inverse"><</button>
+                    <button id="right" class="btn btn-inverse">></button>
+                    <button id="right_shift" class="btn btn-inverse">>></button>
+                </span>
+                <span style="white-space: nowrap; margin-left: 7px">
+                    zoom
+                    <button id="zoom_in_5" class="btn btn-inverse">+<span class="hs"></span>5x</button>
+                    <button id="zoom_in" class="btn btn-inverse">+<span class="hs"></span>2x</button>
+                    <button id="zoom_out" class="btn btn-inverse">–<span class="hs"></span>2x</button>
+                    <button id="zoom_out_5" class="btn btn-inverse">–<span class="hs"></span>5x</button>
+                </span>
+                <span style="white-space: nowrap; margin-left: 7px">
+                    go to coordinate <input class="textBox" id="input_coords" type="text" maxlength="30" />
+                </span>
+                <br>
+                <span style="white-space: nowrap;">
+                    <!--- Contig size threshold: ---->
+                </span>
+                <span id="misassemblies_selector_panel">
+	    			<!--- misassemblies selector: ---->
+                </span>
 			</div>
 		</tr>
 	</table>
@@ -78,7 +86,7 @@ THE SOFTWARE.
 <button id="hideBtnAnnoMini" class="btn moving_button btn-mini" style="display: none; position: absolute;">Hide</button>
 <button id="hideBtnAnnoMain" class="btn moving_button btn-mini" style="display: none; position: absolute;">Show annotation</button>
 <button id="hideBtnCovMini" class="btn moving_button btn-mini" style="display: none; position: absolute;">Hide</button>
-<button id="hideBtnCovMain" class="btn moving_button btn-mini" style="display: none; position: absolute;">Show read coverage</button>
+<button id="hideBtnCovMain" class="btn moving_button btn-mini" style="display: none; position: absolute;">Show coverage</button>
 <script type="text/javascript">
 	window.onbeforeunload = function(){
 		window.scrollTo(0,0);

@@ -20,10 +20,11 @@ body {
     padding-bottom: 30px;
 }
 .page_title {
-    margin-top: 10px;
+    padding-top: 3px;
+    margin-bottom: -3px;
 }
 .page_subtitle {
-    margin-top: -5px;
+    line-height: 100%;
 }
 a {
     text-decoration: none;
@@ -256,7 +257,7 @@ ul.mdash li:before {
     color: white;
     min-width: 650px;
     padding: 5px 10px 5px 150px;
-    height: 70px;
+    /*height: 70px;*/
 }
 .top-panel {
     text-shadow: -1px -1px 0px #111;

@@ -10,62 +10,54 @@
 			<td class='layout-table-td'>
 				<div class="page_title">
 					<h1>
-						Icarus
-					</h1>
+                        Icarus
+                    </h1>
+                    <p class="page_subtitle">
+						<b>QUAST Contig Browser</b> by <a href="http://bioinf.spbau.ru/en" class='dark_bg_link'>Center of Algoritmic Biotechnology</a>
+					</p>
 				</div>
-				<div class="page_subtitle">
-                    <p><b>Interactive Contig Assessment browser</b>
-                        by <a href="http://bioinf.spbau.ru/en" class='dark_bg_link'>Center of Algoritmic Biotechnology</a>
-                    </p>
-                </div>
 			</td>
 			</tr>
 		</table>
     </div>
 	<div class="content">
-	<h2 style='letter-spacing: .05em; margin-right: -.10em;'>
-		General
-	</h2>
-	<table class="summary_table">
-		<thead>
-			<th>
-			<!--- assemblies: ---->
-			</th>
-		</thead>
-		<tbody>
-		<!--- links: ---->
-		</tbody>
-	</table>
-	<br><br><hr>
-		<!--- div_references: ---->
-	<h2 style='letter-spacing: .05em; margin-right: -.10em;'>
-		Contig alignment viewers
-	</h2>
-	<table class="summary_table">
-		<thead>
-			<th>
-				Reference
-			</th>
-			<th>
-				# fragments
-			</th>
-			<th>
-				Length, bp
-			</th>
-	    	<!--- th_assemblies: ---->
-			<th>
-				Mean genome fraction, %
-			</th>
-			<th>
-				# misassembled blocks
-			</th>
-		</thead>
-		<tbody>
-	    <!--- references: ---->
-		</tbody>
-	</table>
-	</div>
+		<div class="icarus_summary_content">
+			<table class="summary_table assemblies_table">
+				<thead>
+					<!--- assemblies: ---->
+				</thead>
+				<tbody>
+					<!--- links: ---->
+				</tbody>
+			</table>
+			<br>
+				<!--- div_references: ---->
+			<h3>Select a viewer of contigs aligned to one of the following reference genomes:</h3>
+			<table class="summary_table meta_references_table">
+				<thead>
+					<th>
+						Genome
+					</th>
+					<th>
+						# fragments
+					</th>
+					<th>
+						Length, bp
+					</th>
+					<!--- th_assemblies: ---->
+					<th>
+						Mean genome fraction, %
+					</th>
+					<th>
+						# misassembled blocks
+					</th>
+				</thead>
+				<tbody>
+				<!--- references: ---->
+				</tbody>
+			</table>
 		</div>
+	</div>
 <script>
 	$(document).ready(function(){
 		$('[data-toggle="tooltip"]').tooltip({delay: {show: 200, hide: 100}});

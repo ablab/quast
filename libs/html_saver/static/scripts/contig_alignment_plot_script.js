@@ -1103,7 +1103,7 @@ THE SOFTWARE.
 
     function addClickContigText(info) {
         p = info.append('p');
-        p.text('<click a contig to get details>');
+        p.text('<click on a contig to get details>');
         p.attr('class', 'click_a_contig_text');
     }
 
@@ -1165,9 +1165,9 @@ THE SOFTWARE.
     }
 
     function addCovTrackButtons() {
-        hideBtnCoverageMini = document.getElementById('hideBtnCovMini');
+        var hideBtnCoverageMini = document.getElementById('hideBtnCovMini');
         setTrackBtnPos(hideBtnCoverageMini, hideBtnCoverageMiniOffsetY, 'cov', 'mini', true);
-        hideBtnCoverageMain = document.getElementById('hideBtnCovMain');
+        var hideBtnCoverageMain = document.getElementById('hideBtnCovMain');
         setTrackBtnPos(hideBtnCoverageMain, hideBtnCoverageMainOffsetY, 'cov', 'main', false);
     }
 
@@ -1177,7 +1177,7 @@ THE SOFTWARE.
         hideBtnAnnotationsMain = document.getElementById('hideBtnAnnoMain');
         if (!featuresMainHidden)
             hideBtnAnnotationsMain.innerHTML = "Hide";
-        setTrackBtnPos(hideBtnAnnotationsMain, hideBtnAnnotationsMainOffsetY, 'features', 'main', !featuresMainHidden);
+        setTrackBtnPos(hideBtnAnnotationsMain, hideBtnAnnotationsMainOffsetY + 12, 'features', 'main', !featuresMainHidden);
     }
 
     function setTrackBtnPos(hideBtn, offsetY, track, pane, doHide) {

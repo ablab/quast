@@ -10,7 +10,7 @@
 #to_main_menu_button {
     float: left;
     margin-left: -120px;
-    margin-top: 0px;
+    margin-top: 10px;
 }
 
 #legend {
@@ -44,18 +44,44 @@
     height: 0px;
 }
 
+.icarus_summary_content {
+    margin-top: 40px;
+}
+
+.icarus_summary_content h3 {
+    font-size: 1em;
+    /*font-weight: bold;*/
+    line-height: 3em;
+}
+
+.icarus_summary_content .assemblies_table td, .icarus_summary_content .assemblies_table th {
+    padding-top: 10px;
+}
+
+.icarus_summary_content .contig_alignment_viewer_panel {
+    margin-top: -4px;
+}
+.icarus_summary_content .contig_alignment_viewer_panel .reference_details {
+    margin-left: 20px;
+}
+.icarus_summary_content .contig_alignment_viewer_panel p {
+    line-height: 0.8em;
+}
+
 .summary_table {
-    padding-left: 5px;
     border-collapse: collapse;
-    font-size: 16px;
     color: black;
     margin-right: auto;
 }
 
+.summary_table th {
+    border-bottom: 1px solid #bcbcbc;
+}
+
 .summary_table th, .summary_table td {
-    padding: 5px;
-    padding-left: 10px;
+    padding-right: 15px;
     text-align: left;
+    padding-top: 5px;
 }
 
 .block {
@@ -453,11 +479,6 @@ path {
     fill-opacity: .165;
 }
 
-.back_button {
-    float: left;
-    text-align: center;
-}
-
 .itemLabel {
     font-size: 12px;
 }
@@ -468,6 +489,7 @@ path {
     /*text-align: center;*/
     padding: 10px;
     margin-left: 137px;
+    margin-top: 5px;
 }
 
 .warning {
@@ -492,18 +514,18 @@ path {
 
 .click_a_contig_text {
     text-align: center;
-    /*text-shadow: -0.5px -0.5px 2px rgba(137, 137, 137, 0.78);*/
+    color: #cdcdcd;
 }
 
-.layout-table {
-    max-width: 940px;
-}
+/*.layout-table {*/
+    /*max-width: 940px;*/
+/*}*/
 
 #contols_panel {
     float: left;
-    margin-top: 10px;
     font-size: 13px;
     margin-left: 30px;
+    margin-top: 7px;
 }
 
 /*#contols_panel button {*/
@@ -512,14 +534,16 @@ path {
 #contols_panel * {
     vertical-align: baseline;
 }
-
-#misassemblies_selector_panel {
-    margin-top: 10px;
+#contols_panel span {
+    line-height: 250%;
 }
 
-#misassemblies_selector_panel {
-}
+/*#contols_panel span {*/
+    /*margin-left: 7px;*/
+/*}*/
 
 #misassemblies_selector_panel label {
     margin-right: 10px;
+    white-space: nowrap;
 }
+

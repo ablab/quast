@@ -1025,18 +1025,19 @@ def save_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, chr_length
                         factor = 1 if ms_type == 'i/s translocation' else 2
                         ms_counts_by_type[ms_type] = sum(ms_types[assembly][ms_type] / factor for assembly in chr_to_aligned_blocks.keys())
                     total_ms_count = sum(ms_counts_by_type.values()) - ms_counts_by_type['local']
-                    result.write('Show misassemblies ({total_ms_count}): '.format(**locals()))
+                    result.write('Show misassemblies: '.format(**locals()))
                     for ms_type, ms_count in ms_counts_by_type.items():
-                        is_checked = 'checked="checked"' if ms_count > 0 else ''
+                        is_checked = 'checked="checked"'  #if ms_count > 0 else ''
                         ms_name = ms_type
+                        ms_name = ms_name.replace('i/s', 'interspecies')
                         if ms_type != 'local':
                             if ms_count != 1:
                                 ms_name += 's'
                             result.write('<label><input type="checkbox" id="{ms_type}" name="misassemblies_select" '
                                  '{is_checked}/>{ms_name} ({ms_count})</label>'.format(**locals()))
                         else:
-                            result.write('+ <label><input type="checkbox" id="{ms_type}" name="misassemblies_select" '
-                                 '{is_checked}/><i>{ms_name} ({ms_count})</i></label>'.format(**locals()))
+                            result.write('<label><input type="checkbox" id="{ms_type}" name="misassemblies_select" '
+                                 '{is_checked}/>{ms_name} ({ms_count})</label>'.format(**locals()))
                 elif line.find('<!--- css: ---->') != -1:
                     result.write(html_saver.css_html(os.path.join('static', 'contig_alignment_plot.css')))
                     result.write(html_saver.css_html(os.path.join('static', 'common.css')))
@@ -1048,7 +1049,7 @@ def save_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, chr_length
                     chr_name = chr.replace('_', ' ')
                     # if len(chr_name) > 120:
                     #     chr_name = chr_name[:90] + '...'
-                    result.write(chr_name)
+                    result.write('Contig alignment viewer. Contigs aligned to "' + chr_name + '"')
                 elif line.find('<!--- menu: ---->') != -1:
                     result.write(main_menu_link)
                 else:
@@ -1157,8 +1158,8 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
                     result.write(contigs_sizes_str)
                     result.write(assemblies_contig_size_data)
                 elif line.find('<!--- Contig size threshold: ---->') != -1:
-                    result.write('<div align="center" style="margin-top: 7px;">Hide contigs < '
-                                 '<input class="textBox" id="input_contig_threshold" type="text" size="5" /> bp </div>')
+                    result.write('Hide contigs shorter than <input class="textBox" '
+                                 'id="input_contig_threshold" type="text" size="5" /> bp </span>')
                 elif line.find('<!--- css: ---->') != -1:
                     result.write(html_saver.css_html(os.path.join('static', 'contig_alignment_plot.css')))
                     result.write(html_saver.css_html(os.path.join('static', 'common.css')))
@@ -1173,6 +1174,8 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
                     result.write('Warning: total number of contigs is too large! ONLY first %s contigs were loaded.' %
                                  str(qconfig.max_contigs_num_for_size_viewer))
                     result.write('</div>')
+                elif line.find('<!--- reference: ---->') != -1:
+                    result.write('Contig size viewer')
                 else:
                     result.write(line)
 
@@ -1196,7 +1199,7 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
                     result.write(html_saver.js_html(os.path.join('static', 'scripts', 'contig_alignment_plot_script.js')))
                 elif line.find('<!--- assemblies: ---->') != -1:
                     labels = [qconfig.assembly_labels_by_fpath[contigs_fpath] for contigs_fpath in contigs_fpaths]
-                    result.write('Assemblies: ' + ', '.join(labels))
+                    result.write('<b>Assemblies: </b>' + ', '.join(labels))
                 elif line.find('<!--- div_references: ---->') != -1:
                     if chr_full_names and len(chr_full_names) > 1:
                         result.write('<div>')
@@ -1207,13 +1210,15 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
                                                                                        contigs_fpaths, one_chromosome=True)
                             viewer_name = qconfig.contig_alignment_viewer_name
                             viewer_link = '<a href="{chr_link}">{viewer_name}</a>'.format(**locals())
-                            viewer_info = viewer_link + ' (aligned to sequences from ' + os.path.basename(ref_fpath) + ').<br>' \
-                                    '<b>Fragments:</b> ' + str(num_contigs[chr]) + ', <b>length:</b> ' + format_long_numbers(chr_size) + \
-                                    ('bp, <b>mean genome fraction:</b> %.3f' % chr_genome) + '%, <b>misassembled blocks:</b> ' + \
-                                    str(num_misassemblies[chr])
+                            viewer_info = viewer_link + \
+                                  '<div class="reference_details">' \
+                                      '<p>Aligned to sequences from  ' + os.path.basename(ref_fpath) + ')</p>' \
+                                      '<p>Fragments: ' + str(num_contigs[chr]) + ', length: ' + format_long_numbers(chr_size) + \
+                                        ('bp, mean genome fraction: %.3f' % chr_genome) + '%, misassembled blocks: ' + str(num_misassemblies[chr]) + '</p>' + \
+                                  '</div>'
                             icarus_links["links"].append(chr_link)
                             icarus_links["links_names"].append(qconfig.icarus_link)
-                            result.write('<div class="subtitle">')
+                            result.write('<div class="contig_alignment_viewer_panel">')
                             result.write(viewer_info)
                             result.write('</div>')
                         result.write('<div style="display:none;">')

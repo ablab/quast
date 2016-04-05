@@ -1024,18 +1024,19 @@ def save_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, chr_length
                     for ms_type in misassemblies_types:
                         factor = 1 if ms_type == 'i/s translocation' else 2
                         ms_counts_by_type[ms_type] = sum(ms_types[assembly][ms_type] / factor for assembly in chr_to_aligned_blocks.keys())
-                    total_ms_count = sum(ms_counts_by_type.values())
+                    total_ms_count = sum(ms_counts_by_type.values()) - ms_counts_by_type['local']
                     result.write('Show misassemblies ({total_ms_count}): '.format(**locals()))
                     for ms_type, ms_count in ms_counts_by_type.items():
-                        is_checked = 'checked="checked"'  #if ms_count > 0 else ''
+                        is_checked = 'checked="checked"' if ms_count > 0 else ''
+                        ms_name = ms_type
                         if ms_type != 'local':
                             if ms_count != 1:
-                                ms_type += 's'
+                                ms_name += 's'
                             result.write('<label><input type="checkbox" id="{ms_type}" name="misassemblies_select" '
-                                 '{is_checked}/>{ms_type} ({ms_count})</label>'.format(**locals()))
+                                 '{is_checked}/>{ms_name} ({ms_count})</label>'.format(**locals()))
                         else:
                             result.write('+ <label><input type="checkbox" id="{ms_type}" name="misassemblies_select" '
-                                 '{is_checked}/><i>{ms_type} ({ms_count})</i></label>'.format(**locals()))
+                                 '{is_checked}/><i>{ms_name} ({ms_count})</i></label>'.format(**locals()))
                 elif line.find('<!--- css: ---->') != -1:
                     result.write(html_saver.css_html(os.path.join('static', 'contig_alignment_plot.css')))
                     result.write(html_saver.css_html(os.path.join('static', 'common.css')))

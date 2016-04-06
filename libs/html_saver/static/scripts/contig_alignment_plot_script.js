@@ -1242,6 +1242,8 @@ THE SOFTWARE.
         }
     }
 
+    var timerAnimationSetCoords;
+
     function setCoords(coords, animation) {
         var ext = brush.extent();
         var startCoord = ext[0], endCoord = ext[1];
@@ -1257,6 +1259,7 @@ THE SOFTWARE.
         startCoord = Math.max(0, startCoord);
         endCoord = Math.min(endCoord, x_mini.domain()[1]);
         startCoord = Math.min(startCoord, endCoord - minBrushExtent);
+        clearInterval(timerAnimationSetCoords);
         if (animation) {
             var distance = Math.abs(startCoord - ext[0]);
             var distRange = distance / (ext[1] - ext[0]);
@@ -1270,10 +1273,10 @@ THE SOFTWARE.
             var numSteps = Math.max(1, parseInt(distance / delta));
             if (ext[0] > startCoord) delta = -delta;
             delta = (startCoord - ext[0]) / numSteps;
-            timerId = setInterval(function() {
+            timerAnimationSetCoords = setInterval(function() {
                 ext = [ext[0] + delta, ext[1] + delta];
                 if ((delta > 0 && ext[0] >= startCoord) || (delta < 0 && ext[0] <= startCoord)) {
-                    clearInterval(timerId);
+                    clearInterval(timerAnimationSetCoords);
                     brush.extent([startCoord, endCoord]);
                     display();
                     return;
@@ -1845,10 +1848,7 @@ THE SOFTWARE.
                         if (items[i].assembly == assembly && items[i].corr_start == e.corr_start && items[i].corr_end == e.corr_end) {
                             selected_id = items[i].groupId;
                             showArrows(items[i]);
-                            whereAppend.selectAll('.block_circle')
-                              .classed('selected', function() {
-                                return (this.id ==  'circle' + items[i].corr_start + '_' + items[i].corr_end);
-                              });
+                            changeInfo(items[i]);
                             display();
                             break;
                         }

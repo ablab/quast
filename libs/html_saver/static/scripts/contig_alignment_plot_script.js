@@ -229,12 +229,13 @@ THE SOFTWARE.
     var annotationsMiniOffsetY = miniOffsetY + miniHeight + (featuresHidden ? 0 : spaceAfterTrack);
     var covMiniOffsetY = annotationsMiniOffsetY + annotationsMiniHeight + spaceAfterTrack;
 
-    var chartHeight = covMiniOffsetY + coverageHeight * 2 + annotationsHeight + margin.top + margin.bottom + 100;
+    var baseChartHeight = covMiniOffsetY + coverageHeight * 2 + annotationsHeight + margin.top + margin.bottom + 100;
+    var curChartHeight = baseChartHeight;
 
     var chart = d3.select('body').append('div').attr('id', 'chart')
             .append('svg:svg')
             .attr('width', width + margin.right + margin.left)
-            .attr('height', chartHeight)
+            .attr('height', curChartHeight)
             .attr('class', 'chart');
 
     chart.append('defs').append('clipPath')
@@ -1102,6 +1103,7 @@ THE SOFTWARE.
                 info.selectAll('span')
                     .remove();
                 addClickContigText(info);
+                setBaseChartHeight();
                 arrows = [];
                 mini.selectAll('.arrow').remove();
                 mini.selectAll('.arrow_selected').remove();
@@ -1112,6 +1114,11 @@ THE SOFTWARE.
         }
         itemNonRects.select('.glow').remove();
         display();
+    }
+
+    function setBaseChartHeight() {
+        curChartHeight = baseChartHeight;
+        chart.attr('height', curChartHeight);
     }
 
     function addClickContigText(info) {
@@ -1766,7 +1773,7 @@ THE SOFTWARE.
 
         info.selectAll('span')
                 .remove();
-
+        setBaseChartHeight();
         info.append('p')
                 .style({'display': 'block', 'word-break': 'break-all', 'word-wrap': 'break-word'})
                 .text('Name: ' + d.name, 280);
@@ -1889,6 +1896,9 @@ THE SOFTWARE.
                         '(' + format(Math.abs(e.end_in_contig - e.start_in_contig) + 1) + ')', 'bp'].join(' '));
             d.append('p')
                     .text(['IDY:', e.IDY, '%'].join(' '));
+            var blockHeight = d[0][0].offsetHeight;
+            curChartHeight += blockHeight;
+            chart.attr('height', curChartHeight);
         };
         appendPositionElement(d.structure, d.corr_start, d.corr_end, d.assembly, info);
 
@@ -1967,12 +1977,17 @@ THE SOFTWARE.
         if (c.attr('class') == 'head_plus expanded' || c.attr('class') == 'head_plus collapsed' ){
             c.attr('class', c.attr('class') == 'head_plus expanded' ? 'head_plus collapsed' : 'head_plus expanded');
             p = c.select('span').select('p');
-            p.attr('class', p.attr('class') == 'open' ? 'close' : 'open');
-            if (p.attr('class') == 'open') {
+            if (p.attr('class') == 'close') {
+                p.attr('class', 'open');
                 var blockHeight = c[0][0].offsetHeight;
-                chart.attr('height', chartHeight + blockHeight);
+                curChartHeight += blockHeight;
             }
-            else chart.attr('height', chartHeight);
+            else {
+                var blockHeight = c[0][0].offsetHeight;
+                curChartHeight -= blockHeight;
+                p.attr('class', 'close');
+            }
+            chart.attr('height', curChartHeight);
         }
         d3.event.stopPropagation();
     }

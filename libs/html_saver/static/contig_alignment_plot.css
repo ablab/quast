@@ -275,7 +275,7 @@ path {
 }
 
 .mainItem.legend {
-    stroke-width: 1;
+    stroke-width: 0;
     stroke: black;
 }
 

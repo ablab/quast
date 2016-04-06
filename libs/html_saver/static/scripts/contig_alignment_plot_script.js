@@ -1190,7 +1190,7 @@ THE SOFTWARE.
         hideBtnAnnotationsMain = document.getElementById('hideBtnAnnoMain');
         if (!featuresMainHidden)
             hideBtnAnnotationsMain.innerHTML = "Hide";
-        setTrackBtnPos(hideBtnAnnotationsMain, hideBtnAnnotationsMainOffsetY + 12, 'features', 'main', !featuresMainHidden);
+        setTrackBtnPos(hideBtnAnnotationsMain, hideBtnAnnotationsMainOffsetY + 6, 'features', 'main', !featuresMainHidden);
     }
 
     function setTrackBtnPos(hideBtn, offsetY, track, pane, doHide) {

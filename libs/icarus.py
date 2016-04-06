@@ -911,6 +911,8 @@ def save_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, chr_length
     aligned_assemblies = set()
     contig_names_by_refs = contigs_analyzer.ref_labels_by_chromosomes or None
 
+    is_one_html = len(chr_full_names) == 1
+    data_str.append('var oneHtml = "{is_one_html}";'.format(**locals()))
     # adding assembly data
     data_str.append('var contig_data = {};')
     data_str.append('contig_data["{chr}"] = {{}};'.format(**locals()))

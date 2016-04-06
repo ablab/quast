@@ -646,6 +646,7 @@ def do(contigs_fpaths, contig_report_fpath_pattern, output_dirpath,
                 return None
             for block in aligned_blocks:
                 block.label = label
+            aligned_blocks = check_misassembled_blocks(aligned_blocks, misassembled_id_to_structure)
             lists_of_aligned_blocks.append(aligned_blocks)
             structures_by_labels[label] = misassembled_id_to_structure
         contigs_by_assemblies[label] = contigs
@@ -664,6 +665,28 @@ def do(contigs_fpaths, contig_report_fpath_pattern, output_dirpath,
         icarus_html_fpath = None
 
     return icarus_html_fpath, plot_fpath
+
+
+def check_misassembled_blocks(aligned_blocks, misassembled_id_to_structure):
+    for alignment in aligned_blocks:
+        contig_structure = misassembled_id_to_structure[alignment.name]
+        for num_alignment, el in enumerate(contig_structure):
+            if isinstance(el, Alignment):
+                if el.start == alignment.start and el.end == alignment.end:
+                    break
+        misassembled = False
+        if type(contig_structure[num_alignment - 1]) == str:
+            misassembly_type = contig_structure[num_alignment - 1].split(',')[0].strip()
+            if not 'fake' in misassembly_type:
+                misassembled = True
+        if num_alignment + 1 < len(contig_structure) and \
+                        type(contig_structure[num_alignment + 1]) == str:
+            misassembly_type = contig_structure[num_alignment + 1].split(',')[0].strip()
+            if not 'fake' in misassembly_type:
+                misassembled = True
+        alignment.misassembled = misassembled
+    return aligned_blocks
+
 
 def parse_nucmer_contig_report(report_fpath, ref_names, cumulative_ref_lengths):
     aligned_blocks = []
@@ -905,6 +928,8 @@ def save_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, chr_length
             if ref_contig in chr_to_aligned_blocks[assembly]:
                 prev_end = None
                 for alignment in sorted(chr_to_aligned_blocks[assembly][ref_contig], key=lambda x: x.start):
+                    if alignment.misassembled:
+                        num_misassemblies += 1
                     assemblies_len[assembly] += abs(alignment.end_in_contig - alignment.start_in_contig) + 1
                     assemblies_contigs[assembly].add(alignment.name)
                     contig_structure = structures_by_labels[alignment.label]
@@ -939,19 +964,13 @@ def save_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, chr_length
                             else:
                                 misassembled_ends.append('L')
                     else: misassembled_ends.append('')
-                    if alignment.misassemblies:
-                        alignment.misassembled = True
-                        num_misassemblies += 1
-                    else:
-                        alignment.misassembled = False
-                        alignment.misassemblies = ''
 
                     if misassembled_ends: misassembled_ends = ';'.join(misassembled_ends)
                     else: misassembled_ends = ''
                     data_str.append('{name: "' + alignment.name + '",corr_start:' + str(alignment.start) +
                                     ', corr_end: ' + str(alignment.end) + ',start:' + str(alignment.unshifted_start) +
                                     ',end:' + str(alignment.unshifted_end) + ',similar:"' + ('True' if alignment.similar else 'False') +
-                                    '", misassemblies:"'  + alignment.misassemblies + '",mis_ends:"' + misassembled_ends + '"')
+                                    '", misassemblies:"' + alignment.misassemblies + '",mis_ends:"' + misassembled_ends + '"')
 
                     aligned_assemblies.add(alignment.label)
                     data_str.append(', structure: [ ')

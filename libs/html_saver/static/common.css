@@ -19,13 +19,6 @@ body {
     color: black;
     padding-bottom: 30px;
 }
-.page_title {
-    padding-top: 3px;
-    margin-bottom: -3px;
-}
-.page_subtitle {
-    line-height: 100%;
-}
 a {
     text-decoration: none;
     /*color: #0c4f72;*/
@@ -231,8 +224,8 @@ ul.mdash li:before {
 }
 .layout-table {
     width: 99%;
-    margin-left: -3px;
-    margin-top: -3px;
+    /*margin-left: -3px;*/
+    /*margin-top: -3px;*/
     border-spacing: 0;
     color: white;
     font-size: medium;
@@ -240,6 +233,7 @@ ul.mdash li:before {
 
 .layout-table td.layout-table-td {
     vertical-align: top;
+    padding: 0;
 }
 .layout-table td.layout-table-fst-td {
     min-width: 400px;
@@ -256,22 +250,27 @@ ul.mdash li:before {
     background-color: #444;
     color: white;
     min-width: 650px;
-    padding: 5px 10px 5px 150px;
-    height: 70px;
+    padding: 8px 10px 0 147px;
+    min-height: 70px;
+    text-shadow: -1px -1px 0 #111;
 }
-.top-panel {
-    text-shadow: -1px -1px 0px #111;
+.page_title {
+    margin-top: -3px;
+    margin-bottom: -3px;
+}
+.page_subtitle {
+    line-height: 100%;
 }
 .content {
-    margin-left: 150px;
+    margin-left: 147px;
     width: 90%;
     /*padding-top: 20px;*/
-    margin-bottom: 0px;
+    margin-bottom: 0;
     padding-bottom: 50px;
 /*{#        padding-right: 20px;#}*/
 }
 .p_after_content {
-    margin-left: 150px;
+    margin-left: 147px;
 }
 .links_after_content{
     font-size: 14px;

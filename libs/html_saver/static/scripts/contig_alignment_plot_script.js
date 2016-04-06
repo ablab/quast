@@ -318,9 +318,23 @@ THE SOFTWARE.
             .attr('text-anchor', 'end')
             .attr('class', 'laneText')
             .text(function(d) { return d.description; })
-            .call(wrap, 90, !isContigSizePlot, -10, /\n/);
+            .call(wrap, 100, true, !isContigSizePlot, -10, /\n/);
 
-    function wrap(text, width, addStdoutLink, offsetX, separator) {
+    function addTooltipTspan(displayedText, tspan, width) {
+        if (width / letterSize < displayedText.length) {
+            var fullName = displayedText;
+            tspan.on('mouseover',function(d) {
+                addTooltip(d, '<span class="assembly_name">' + fullName + '</span>');
+            });
+            tspan.on('mouseout',function(d) {
+                removeTooltip();
+            });
+            displayedText = fullName.substring(0, width / letterSize) + '...';
+        }
+        return displayedText
+    }
+
+    function wrap(text, width, cutText, addStdoutLink, offsetX, separator) {
       text.each(function() {
           var text = d3.select(this),
               words = text.text().split(separator).reverse(),
@@ -336,20 +350,12 @@ THE SOFTWARE.
           var firstLine = true;
           while (word = words.pop()) {
             line.push(word);
-            tspan.text(line.join(' '));
+            var displayedText = line.join(' ');
+            tspan.text(displayedText);
             if (tspan.node().getComputedTextLength() > width && line.length > 1) {
                 line.pop();
-                var displayedText = line.join(' ');
-                if (displayedText.length * letterSize > width && firstLine) {
-                    var fullName = displayedText;
-                    tspan.on('mouseover',function(d) {
-                        addTooltip(d, '<span class="assembly_name">' + fullName + '</span>');
-                    });
-                    tspan.on('mouseout',function(d) {
-                        removeTooltip();
-                    });
-                    displayedText = fullName.substring(0, width / letterSize) + '...';
-                }
+                displayedText = line.join(' ');
+                displayedText = (cutText && firstLine) ? addTooltipTspan(line[0], tspan, width) : displayedText;
                 tspan.text(displayedText);
                 line = [word];
                 if (firstLine && addStdoutLink) {
@@ -391,6 +397,10 @@ THE SOFTWARE.
                                 .text(word);
                 }
             }
+            else if (cutText && firstLine) {
+                displayedText = (cutText && firstLine) ? addTooltipTspan(line[0], tspan, width) : displayedText;
+                tspan.text(displayedText);
+            }
           }
       });
     }
@@ -414,16 +424,15 @@ THE SOFTWARE.
     mini.append('g').selectAll('.laneText')
             .data(lanes)
             .enter().append('text')
-            .text(function (d) {
-                return d.label;
-            })
             .attr('x', -10)
             .attr('y', function (d) {
                 return y_mini(d.id + .5);
             })
             .attr('dy', '.5ex')
             .attr('text-anchor', 'end')
-            .attr('class', 'laneText');
+            .attr('class', 'laneText')
+            .text(function(d) { return d.label; })
+            .call(wrap, 140, true, false, -10, /\n/);
 
     // draw the lanes for the annotations chart
     if (!featuresHidden) {
@@ -2125,7 +2134,7 @@ THE SOFTWARE.
                 .attr('dy', '.5ex')
                 .style('fill', 'white')
                 .text(description)
-                .call(wrap, 125, false, legendTextOffsetX, ' ');
+                .call(wrap, 125, false, false, legendTextOffsetX, ' ');
         offsetY += legendItemHeight;
         offsetY += legendItemYSpace;
         offsetY += 10 * Math.max(0, Math.ceil(description.length / 13 - 3));

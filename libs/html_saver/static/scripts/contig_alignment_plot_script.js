@@ -592,14 +592,14 @@ THE SOFTWARE.
 
     var separatedLines = [];
     var currentLen = 0;
-    if (CHROMOSOME) {
-        var commonChrName = CHROMOSOME.length + 1;
+    if (!isContigSizePlot) {
         if (chrContigs.length > 1) {
-            for (var chr = 0; chr < chromosomes_len; ) {
-                var shortName = chr.slice(commonChrName, chr.length);
-                separatedLines.push({name: shortName, corr_start: currentLen, corr_end: currentLen + chromosomes_len[chr],
-                               y1: 0, y2: mainHeight, len: chromosomes_len[chr]});
-                currentLen += chromosomes_len[chr];
+            for (var i = 0; i < chrContigs.length; i++) {
+                chrName = chrContigs[i];
+                chrLen = chromosomes_len[chrName];
+                separatedLines.push({name: chrName, corr_start: currentLen, corr_end: currentLen + chrLen,
+                               y1: 0, y2: mainHeight, len: chrLen});
+                currentLen += chrLen;
             }
         }
     }
@@ -1896,9 +1896,6 @@ THE SOFTWARE.
                         '(' + format(Math.abs(e.end_in_contig - e.start_in_contig) + 1) + ')', 'bp'].join(' '));
             d.append('p')
                     .text(['IDY:', e.IDY, '%'].join(' '));
-            var blockHeight = d[0][0].offsetHeight;
-            curChartHeight += blockHeight;
-            chart.attr('height', curChartHeight);
         };
         appendPositionElement(d.structure, d.corr_start, d.corr_end, d.assembly, info);
 
@@ -1919,6 +1916,9 @@ THE SOFTWARE.
                 }
             }
         }
+        var blockHeight = info[0][0].offsetHeight;
+        curChartHeight += blockHeight;
+        chart.attr('height', curChartHeight);
     }
 
 
@@ -2174,7 +2174,7 @@ THE SOFTWARE.
 
       for (var numContainer = 0; numContainer < features_data.length; numContainer++) {
         for (var i = 0; i < features_data[numContainer].length; i++) {
-          if (chr != "Main plot" && features_data[numContainer][i].chr != references_id[chr]) continue;
+          if (!oneHtml && features_data[numContainer][i].chr != references_id[chr]) continue;
           if (!data[numContainer])
               data[numContainer] = [];
           data[numContainer].push(features_data[numContainer][i]);

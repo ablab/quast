@@ -1819,7 +1819,8 @@ THE SOFTWARE.
                 var whereAppendBlock = whereAppend.append('p')
                         .attr('class', 'head_plus collapsed')
                         .on('click', function(d, i) {
-                            if (d3.event.x < whereAppendBlock[0][0].offsetLeft + 15)
+                            var eventX = d3.event.x || d3.event.clientX;
+                            if (eventX < whereAppendBlock[0][0].offsetLeft + 15)
                                 openClose(whereAppendBlock[0][0]);
                         });
             else var whereAppendBlock = whereAppend;

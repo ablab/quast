@@ -229,12 +229,12 @@ THE SOFTWARE.
     var annotationsMiniOffsetY = miniOffsetY + miniHeight + (featuresHidden ? 0 : spaceAfterTrack);
     var covMiniOffsetY = annotationsMiniOffsetY + annotationsMiniHeight + spaceAfterTrack;
 
-    height = covMiniOffsetY + coverageHeight * 2 + annotationsHeight + 100;
+    var chartHeight = covMiniOffsetY + coverageHeight * 2 + annotationsHeight + margin.top + margin.bottom + 100;
 
     var chart = d3.select('body').append('div').attr('id', 'chart')
             .append('svg:svg')
             .attr('width', width + margin.right + margin.left)
-            .attr('height', height + margin.top + margin.bottom)
+            .attr('height', chartHeight)
             .attr('class', 'chart');
 
     chart.append('defs').append('clipPath')
@@ -1968,6 +1968,11 @@ THE SOFTWARE.
             c.attr('class', c.attr('class') == 'head_plus expanded' ? 'head_plus collapsed' : 'head_plus expanded');
             p = c.select('span').select('p');
             p.attr('class', p.attr('class') == 'open' ? 'close' : 'open');
+            if (p.attr('class') == 'open') {
+                var blockHeight = c[0][0].offsetHeight;
+                chart.attr('height', chartHeight + blockHeight);
+            }
+            else chart.attr('height', chartHeight);
         }
         d3.event.stopPropagation();
     }

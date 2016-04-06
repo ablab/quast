@@ -957,8 +957,10 @@ THE SOFTWARE.
         var visTexts = rectItems.filter(function (d) {
             var textStart = x_main(Math.max(minExtent, d.corr_start));
             if (textStart - prevX > 20 || d.lane != prevLane) {
-                if (x_main(Math.max(minExtent, d.corr_end)) - textStart > 20) {
-                    prevX = textStart;
+                var visWidth = x_main(Math.min(maxExtent, d.corr_end)) - textStart;
+                if (visWidth > 20) {
+                    textLen = d.name.length * letterSize;
+                    prevX = textStart + Math.min(textLen, visWidth) - 30;
                     prevLane = d.lane;
                     return d;
                 }

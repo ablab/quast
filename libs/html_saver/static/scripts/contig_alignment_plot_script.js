@@ -325,7 +325,7 @@ THE SOFTWARE.
         if (maxLetters < displayedText.length) {
             var fullName = displayedText;
             tspan.on('mouseover',function(d) {
-                addTooltip(d, '<span class="assembly_name">' + fullName + '</span>');
+                addTooltip(d, '<span class="lane_tooltip">' + fullName + '</span>');
             });
             tspan.on('mouseout',function(d) {
                 removeTooltip();
@@ -376,19 +376,22 @@ THE SOFTWARE.
                 }
                 firstLine = false;
                 if (word.search("\\+") != -1) {
-                    word = word.split('+');
-                    msOffset = -word[1].length * letterSize;
                     tspan = text.append('tspan')
-                            .attr('x', offsetX + msOffset - 5)
-                            .attr('y', y)
-                            .attr('dy', ++lineNumber * lineHeight + dy + 'em')
-                            .text(word[0]);
-                    tspan = text.append('tspan')
-                            .attr('x', -10)
-                            .attr('y', y)
-                            .attr('dy', lineNumber * lineHeight + dy + 'em')
-                            .style('font-style', 'italic')
-                            .text('\+' + word[1]);
+                                .attr('x', offsetX)
+                                .attr('y', y)
+                                .attr('dy', ++lineNumber * lineHeight + dy + 'em')
+                                .text(word);
+                    var msWords = word.split('+');
+                    var misassemblies = msWords[0];
+                    var extMisassemblies = misassemblies.split(' ')[1];
+                    var localMisassemblies = msWords[1];
+                    var msTooltip = extMisassemblies + ' extensive + ' + localMisassemblies + ' local misassemblies';
+                    tspan.on('mouseover',function(d) {
+                        addTooltip(d, '<span class="lane_tooltip">' + msTooltip + '</span>');
+                    });
+                    tspan.on('mouseout',function(d) {
+                        removeTooltip();
+                    });
                 }
                 else {
                     tspan = text.append('tspan')

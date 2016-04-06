@@ -74,7 +74,7 @@ THE SOFTWARE.
                 itemId++;
                 numItems++;
                 if (item.mis_ends && misassembled_ends) {
-                    for (num in misassembled_ends) {
+                    for (var num = 0; num < misassembled_ends.length; num++) {
                         if (!misassembled_ends[num]) continue;
                         var suppItem = {};
                         suppItem.name = item.name;
@@ -594,7 +594,7 @@ THE SOFTWARE.
     if (CHROMOSOME) {
         var commonChrName = CHROMOSOME.length + 1;
         if (chrContigs.length > 1) {
-            for (var chr in chromosomes_len) {
+            for (var chr = 0; chr < chromosomes_len; ) {
                 var shortName = chr.slice(commonChrName, chr.length);
                 separatedLines.push({name: shortName, corr_start: currentLen, corr_end: currentLen + chromosomes_len[chr],
                                y1: 0, y2: mainHeight, len: chromosomes_len[chr]});
@@ -603,13 +603,13 @@ THE SOFTWARE.
         }
     }
     else {
-        for (line in contigLines) {
-            for (lane in lanes)
+        for (var line = 0; line < contigLines.length; line++) {
+            for (var lane = 0; lane < lanes.length; lane++)
                 if (lanes[lane].label == contigLines[line].assembly)
                     contigLines[line].lane = lanes[lane].id;
         }
         separatedLines = contigLines;
-        for (i in items) addGradient(items[i], items[i].marks, false);
+        for (var i = 0; i < items.length; i++) addGradient(items[i], items[i].marks, false);
         mini.append('g').selectAll('miniItems')
             .data(separatedLines)
             .enter().append('text')
@@ -786,7 +786,7 @@ THE SOFTWARE.
         // update the item rects
         rectItems = [];
         nonRectItems = [];
-        for (item in visItems) {
+        for (var item = 0; item < visItems.length; item++) {
           if (visItems[item].supp ) {
             var w = x_main(visItems[item].corr_end) - x_main(visItems[item].corr_start);
             var triangle_width = Math.sqrt(0.5) * mainLanesHeight / 2;
@@ -1303,7 +1303,7 @@ THE SOFTWARE.
     function getNumberOfContigs(x) {
         lineCountContigs.selectAll('g')
                 .remove();
-        for (item in rectItems) {
+        for (var item = 0; item < rectItems.length; item++) {
             if (x_main(rectItems[item].corr_start) <= x && x <= x_main(rectItems[item].corr_end)) {
                 d = rectItems[item];
                 order = (d.order + 1).toString();
@@ -1384,7 +1384,7 @@ THE SOFTWARE.
       }
       gradientSteps = ["50%", "50%"];
 
-      for (m in marks)
+      for (var m = 0; m < marks.length; m++)
         gradient.append("svg:stop")
           .attr("offset", gradientSteps[m])
           .attr("stop-color", contigsColors[marks[m]])
@@ -1686,7 +1686,7 @@ THE SOFTWARE.
               var marks = d.marks;
               text = marks;
               marks = marks.split(', ');
-              for (m in marks)
+              for (var m = 0; m < marks.length; m++)
                 c += " " + marks[m].toLowerCase();
             }
 
@@ -1840,7 +1840,7 @@ THE SOFTWARE.
                     if (prev_start && prev_start > e.corr_start) point = e.corr_end;
                     else if (prev_start) point = e.corr_start;
                     setCoords([point - brushSize / 2, point + brushSize / 2], true);
-                    for (i in items) {
+                    for (var i = 0; i < items.length; i++) {
                         if (items[i].assembly == assembly && items[i].corr_start == e.corr_start && items[i].corr_end == e.corr_end) {
                             selected_id = items[i].groupId;
                             showArrows(items[i]);
@@ -2062,7 +2062,7 @@ THE SOFTWARE.
             'misassembled blocks similar among >= 50% assemblies', 'unchecked misassembled blocks (see checkboxes)', 'genome features (e.g. genes)'];
         var prevOffsetY = 0;
         var offsetY = 0;
-        for (numClass in classes) {
+        for (var numClass = 0; numClass < classes.length; numClass++) {
             offsetY = addLegendItemWithText(legend, prevOffsetY, classes[numClass], classDescriptions[numClass], true);
             if (classes[numClass] == 'misassembled light_color') {
                 legend.append('path')
@@ -2105,7 +2105,7 @@ THE SOFTWARE.
         var classDescriptions = ['contigs', 'contig of length = Nx statistic (x is 50 or 75)',
         'contig of length = NGx statistic (x is 50 or 75)', 'contig of length = Nx and NGx simultaneously'];
         var offsetY = 0;
-        for (numClass in classes) {
+        for (var numClass = 0; numClass < classes.length; numClass++) {
             offsetY = addLegendItemWithText(legend, offsetY, classes[numClass], classDescriptions[numClass],
                 numClass == 0, classMarks[numClass])
         }
@@ -2148,20 +2148,20 @@ THE SOFTWARE.
     function parseFeaturesData(chr) {
       var lanes = [];
       var features = [];
-      var data = {};
+      var data = [];
       var laneId = 0, itemId = 0;
 
-      for (container in features_data) {
-        for (var i = 0; i < features_data[container].length; i++) {
-          if (chr != "Main plot" && features_data[container][i].chr != references_id[chr]) continue;
-          if (!data[container])
-              data[container] = [];
-          data[container].push(features_data[container][i]);
+      for (var numContainer = 0; numContainer < features_data.length; numContainer++) {
+        for (var i = 0; i < features_data[numContainer].length; i++) {
+          if (chr != "Main plot" && features_data[numContainer][i].chr != references_id[chr]) continue;
+          if (!data[numContainer])
+              data[numContainer] = [];
+          data[numContainer].push(features_data[numContainer][i]);
         }
       }
 
-      for (container in data) {
-        var lane = data[container];
+      for (var numContainer = 0; numContainer < data.length; numContainer++) {
+        var lane = data[numContainer];
         var numItems = 0;
         for (var i = 0; i < lane.length; i++) {
             var item = lane[i];

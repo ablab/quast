@@ -834,8 +834,8 @@ def main(args):
                 ### VISUALIZE CONTIG ALIGNMENT
                 ########################################################################
                 logger.main_info('  1 of %d: Creating Icarus viewers...' % number_of_steps)
-                from libs import contig_alignment_plotter
-                icarus_html_fpath, contig_alignment_plot_fpath = contig_alignment_plotter.do(
+                from libs import icarus
+                icarus_html_fpath, contig_alignment_plot_fpath = icarus.do(
                     contigs_fpaths, report_for_icarus_fpath_pattern,
                     output_dirpath, ref_fpath, stdout_pattern=stdout_pattern, similar=True, features=features_containers, cov_fpath=cov_fpath)
 

@@ -26,10 +26,6 @@ MAX_REF_NAME = 20
 summary_fname = qconfig.icarus_html_fname
 main_menu_link = '<a href="../{summary_fname}" style="color: white; text-decoration: none;">Main menu</a>'.format(**locals())
 
-misassemblies_types = ['relocation', 'translocation', 'inversion', 'local']
-if qconfig.is_combined_ref:
-    misassemblies_types = ['relocation', 'translocation', 'inversion', 'i/s translocation', 'local']
-
 from libs import plotter  # Do not remove this line! It would lead to a warning in matplotlib.
 if not plotter.matplotlib_error:
     import matplotlib
@@ -1026,6 +1022,9 @@ def save_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, chr_length
         data_str[-1] += '];'
     data_str = '\n'.join(data_str)
 
+    misassemblies_types = ['relocation', 'translocation', 'inversion', 'i/s translocation', 'local']
+    if not qconfig.is_combined_ref:
+        misassemblies_types.remove('i/s translocation')
     with open(html_saver.get_real_path('_chr_templ.html'), 'r') as template:
         with open(os.path.join(output_dir_path, '{short_chr}.html'.format(**locals())), 'w') as result:
             for line in template:
@@ -1231,7 +1230,7 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
                             viewer_link = '<a href="{chr_link}">{viewer_name}</a>'.format(**locals())
                             viewer_info = viewer_link + \
                                   '<div class="reference_details">' \
-                                      '<p>Aligned to sequences from  ' + os.path.basename(ref_fpath) + ')</p>' \
+                                      '<p>Aligned to sequences from  ' + os.path.basename(ref_fpath) + '</p>' \
                                       '<p>Fragments: ' + str(num_contigs[chr]) + ', length: ' + format_long_numbers(chr_size) + \
                                         ('bp, mean genome fraction: %.3f' % chr_genome) + '%, misassembled blocks: ' + str(num_misassemblies[chr]) + '</p>' + \
                                   '</div>'

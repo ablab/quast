@@ -318,10 +318,11 @@ THE SOFTWARE.
             .attr('text-anchor', 'end')
             .attr('class', 'laneText')
             .text(function(d) { return d.description; })
-            .call(wrap, 100, true, !isContigSizePlot, -10, /\n/);
+            .call(wrap, 110, true, !isContigSizePlot, -10, /\n/);
 
     function addTooltipTspan(displayedText, tspan, width) {
-        if (width / letterSize < displayedText.length) {
+        var maxLetters = Math.ceil(width / letterSize);
+        if (maxLetters < displayedText.length) {
             var fullName = displayedText;
             tspan.on('mouseover',function(d) {
                 addTooltip(d, '<span class="assembly_name">' + fullName + '</span>');
@@ -329,7 +330,7 @@ THE SOFTWARE.
             tspan.on('mouseout',function(d) {
                 removeTooltip();
             });
-            displayedText = fullName.substring(0, width / letterSize) + '...';
+            displayedText = fullName.substring(0, maxLetters) + '...';
         }
         return displayedText
     }

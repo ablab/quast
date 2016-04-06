@@ -354,7 +354,7 @@ THE SOFTWARE.
             line.push(word);
             var displayedText = line.join(' ');
             tspan.text(displayedText);
-            if (tspan.node().getComputedTextLength() > width && line.length > 1) {
+            if ((tspan.node().getComputedTextLength() > width || firstLine) && line.length > 1) {
                 line.pop();
                 displayedText = line.join(' ');
                 displayedText = (cutText && firstLine) ? addTooltipTspan(line[0], tspan, width) : displayedText;

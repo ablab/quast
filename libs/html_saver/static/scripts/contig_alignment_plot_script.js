@@ -1782,7 +1782,7 @@ THE SOFTWARE.
 
         if (d.structure) {
             var contig_type = d.misassemblies ? 'misassembled' : 'correct';
-            if (d.similar == "True" && !d.misassemblies) contig_type += ' (similar in >= 50% of the assemblies)';
+            if (d.similar == "True" && !d.misassemblies) contig_type += ' (similar in > 50% of the assemblies)';
             if (d.misassemblies) {
                 var misassemblies = d.misassemblies.split(';');
                 if (misassemblies[0] && misassemblies[1])
@@ -1792,7 +1792,7 @@ THE SOFTWARE.
                 else
                     contig_type += ' (right side';
 
-                if (d.similar == "True") contig_type += ', similar in >= 50% of the assemblies';
+                if (d.similar == "True") contig_type += ', similar in > 50% of the assemblies';
                 contig_type += ')'
             }
             info.append('p')
@@ -2080,9 +2080,9 @@ THE SOFTWARE.
 
     function appendLegendAlignmentViewer(legend) {
         var classes = ['', 'similar', 'misassembled light_color', 'misassembled', 'misassembled similar', 'disabled', 'annotation'];
-        var classDescriptions = ['correct contigs', 'correct contigs similar among >= 50% assemblies', 'misassembled blocks ' +
+        var classDescriptions = ['correct contigs', 'correct contigs similar among > 50% assemblies', 'misassembled blocks ' +
         '(misassembly event on the left side, on the right side)', 'misassembled blocks (zoom in to get details about misassembly event side)',
-            'misassembled blocks similar among >= 50% assemblies', 'unchecked misassembled blocks (see checkboxes)', 'genome features (e.g. genes)'];
+            'misassembled blocks similar among > 50% assemblies', 'unchecked misassembled blocks (see checkboxes)', 'genome features (e.g. genes)'];
         var prevOffsetY = 0;
         var offsetY = 0;
         for (var numClass = 0; numClass < classes.length; numClass++) {

@@ -1199,7 +1199,7 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
                     result.write('<div class="reftitle">')
                     result.write('<b>Contig size viewer. </b>')
                     if too_many_contigs:
-                        result.write('For better performance, only largest %s contigs of each assembly were loaded.' %
+                        result.write('For better performance, only largest %s contigs of each assembly were loaded' %
                                  str(qconfig.max_contigs_num_for_size_viewer))
                     result.write('</div>')
                 else:

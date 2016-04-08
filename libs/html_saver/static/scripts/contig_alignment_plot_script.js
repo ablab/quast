@@ -305,6 +305,7 @@ THE SOFTWARE.
                 return d.label === '' ? 'white' : 'lightgray'
             });
 
+    var laneLabelOffsetX = 80 + (isContigSizePlot ? 20 : 0);
     main.append('g').selectAll('.laneText')
             .data(lanes)
             .enter().append('text')
@@ -319,11 +320,11 @@ THE SOFTWARE.
             .attr('text-anchor', 'end')
             .attr('class', 'laneText')
             .text(function(d) { return d.description; })
-            .call(wrap, 110, true, !isContigSizePlot, -10, /\n/);
+            .call(wrap, laneLabelOffsetX, true, !isContigSizePlot, -10, /\n/);
 
     function addTooltipTspan(displayedText, tspan, width) {
-        var maxLetters = Math.ceil(width / letterSize);
-        if (maxLetters < displayedText.length) {
+        var visibleLabel = getVisibleText(displayedText, width);
+        if (visibleLabel.length < displayedText.length) {
             var fullName = displayedText;
             tspan.on('mouseover',function(d) {
                 addTooltip(d, '<span class="lane_tooltip">' + fullName + '</span>');
@@ -331,7 +332,7 @@ THE SOFTWARE.
             tspan.on('mouseout',function(d) {
                 removeTooltip();
             });
-            displayedText = fullName.substring(0, maxLetters) + '...';
+            displayedText = visibleLabel;
         }
         return displayedText
     }
@@ -354,10 +355,11 @@ THE SOFTWARE.
             line.push(word);
             var displayedText = line.join(' ');
             tspan.text(displayedText);
-            if ((tspan.node().getComputedTextLength() > width || firstLine) && line.length > 1) {
+            var doCut = firstLine && cutText;
+            if ((tspan.node().getComputedTextLength() > width || doCut) && line.length > 1) {
                 line.pop();
                 displayedText = line.join(' ');
-                displayedText = (cutText && firstLine) ? addTooltipTspan(line[0], tspan, width) : displayedText;
+                displayedText = doCut ? addTooltipTspan(line[0], tspan, width) : displayedText;
                 tspan.text(displayedText);
                 line = [word];
                 if (firstLine && addStdoutLink) {
@@ -402,8 +404,8 @@ THE SOFTWARE.
                                 .text(word);
                 }
             }
-            else if (cutText && firstLine) {
-                displayedText = (cutText && firstLine) ? addTooltipTspan(line[0], tspan, width) : displayedText;
+            else if (doCut) {
+                displayedText = addTooltipTspan(line[0], tspan, width);
                 tspan.text(displayedText);
             }
           }
@@ -437,7 +439,7 @@ THE SOFTWARE.
             .attr('text-anchor', 'end')
             .attr('class', 'laneText')
             .text(function(d) { return d.label; })
-            .call(wrap, 140, true, false, -10, /\n/);
+            .call(wrap, 100, true, false, -10, /\n/);
 
     // draw the lanes for the annotations chart
     if (!featuresHidden) {

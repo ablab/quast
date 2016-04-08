@@ -1018,7 +1018,6 @@ THE SOFTWARE.
                 line += ['M', cov_line[0], y_cov_main_S(cov_line[1]), 'H', cov_line[2]].join(' ');
             }
 
-            y_cov_main_A.tickValues(y_cov_main_S.ticks().filter(y_cov_vals));
             main_cov.select('.y').call(y_cov_main_A);
 
             var not_covered_line = '',
@@ -1558,8 +1557,8 @@ THE SOFTWARE.
     }
 
     function getNextMaxCovValue(maxY) {
-        var factor = Math.max(1, Math.ceil(Math.log(maxY) * Math.LOG10E));
-        return Math.pow(10, factor) * 1.1
+        maxY = Math.max(10, Math.ceil(maxY / 10) * 10);
+        return maxY;
     }
 
     function setupCoverage() {
@@ -1567,7 +1566,7 @@ THE SOFTWARE.
         x_cov_mini_S = x_mini,      // x coverage scale
         y_max = Math.max.apply(null, coverage_data[CHROMOSOME]);
 
-        y_cov_mini_S = d3.scale.log()
+        y_cov_mini_S = d3.scale.linear()
                 .domain([getNextMaxCovValue(y_max), .1])
                 .range([0, coverageHeight]),
         y_cov_main_S = y_cov_mini_S;
@@ -1581,11 +1580,11 @@ THE SOFTWARE.
         y_cov_mini_A = d3.svg.axis()
                 .scale(y_cov_mini_S)
                 .orient('left')
-                .tickValues(y_cov_mini_S.ticks().filter(y_cov_vals))
                 .tickFormat(function(tickValue) {
                     return tickValue;
                 })
-                .tickSize(2, 0);
+                .tickSize(2, 0)
+                .ticks(7);
         mini_cov = chart.append('g')
                 .attr('class', 'coverage')
                 .attr('transform', 'translate(' + margin.left + ', ' + covMiniOffsetY + ')');
@@ -1632,11 +1631,11 @@ THE SOFTWARE.
         y_cov_main_A = y_cov_mini_A = d3.svg.axis()
                 .scale(y_cov_main_S)
                 .orient('left')
-                .tickValues(y_cov_main_S.ticks().filter(y_cov_vals))
                 .tickFormat(function(tickValue) {
                     return tickValue;
                 })
-                .tickSize(2, 0);
+                .tickSize(2, 0)
+                .ticks(7);
 
         var x_cov_main_A = xMainAxis;
 

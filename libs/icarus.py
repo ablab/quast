@@ -188,6 +188,8 @@ class Alignment:
         return (self.end + self.start) / 2
 
     def compare_inexact(self, alignment, settings):
+        if alignment.ref_name != self.ref_name:
+            return False
         contig_len = abs(self.end - self.start)
         return abs(alignment.start - self.start) <= (settings.contigEdgeDelta * contig_len) and \
                abs(alignment.end - self.end) <= (settings.contigEdgeDelta * contig_len)
@@ -850,7 +852,9 @@ def get_contigs_data(contigs_by_assemblies, nx_marks, assemblies_n50):
             assembly_len = cum_length
             remained_len = sum(alignment.size for alignment in contigs[last_contig_num:])
             cum_length += remained_len
-            contigs_sizes_str.append(('{{name: "", size: ' + str(remained_len) +
+            remained_contigs_name = str(len(contigs) - last_contig_num) + ' hidden contigs shorter than ' + str(contig_threshold) + \
+                                    ' bp (total length: ' + format_long_numbers(remained_len) + ' bp)'
+            contigs_sizes_str.append(('{{name: "' + remained_contigs_name + '", size: ' + str(remained_len) +
                                      ', type:"small_contigs"}},').format(**locals()))
         if not_used_nx and last_contig_num < len(contigs):
             for i, alignment in enumerate(contigs[last_contig_num:]):
@@ -1069,7 +1073,9 @@ def save_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, chr_length
                     chr_name = chr.replace('_', ' ')
                     # if len(chr_name) > 120:
                     #     chr_name = chr_name[:90] + '...'
-                    result.write('Contig alignment viewer. Contigs aligned to "' + chr_name + '"')
+                    result.write('<div class="reftitle">')
+                    result.write('<b>Contig alignment viewer.</b> Contigs aligned to "' + chr_name + '"')
+                    result.write('</div>')
                 elif line.find('<!--- menu: ---->') != -1:
                     result.write(main_menu_link)
                 else:
@@ -1178,7 +1184,7 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
                     result.write(contigs_sizes_str)
                     result.write(assemblies_contig_size_data)
                 elif line.find('<!--- Contig size threshold: ---->') != -1:
-                    result.write('Hide contigs shorter than <input class="textBox" '
+                    result.write('Tone down contigs shorter than <input class="textBox" '
                                  'id="input_contig_threshold" type="text" size="5" /> bp </span>')
                 elif line.find('<!--- css: ---->') != -1:
                     result.write(html_saver.css_html(os.path.join('static', 'contig_alignment_plot.css')))
@@ -1189,13 +1195,13 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
                     result.write(html_saver.js_html(os.path.join('static', 'scripts', 'contig_alignment_plot_script.js')))
                 elif line.find('<!--- menu: ---->') != -1:
                     result.write(main_menu_link)
-                elif line.find('<!--- warning: ---->') != -1 and too_many_contigs:
-                    result.write('<div class="warning">')
-                    result.write('Warning: total number of contigs is too large! ONLY first %s contigs were loaded.' %
+                elif line.find('<!--- reference: ---->') != -1:
+                    result.write('<div class="reftitle">')
+                    result.write('<b>Contig size viewer. </b>')
+                    if too_many_contigs:
+                        result.write('For better performance, only largest %s contigs of each assembly were loaded.' %
                                  str(qconfig.max_contigs_num_for_size_viewer))
                     result.write('</div>')
-                elif line.find('<!--- reference: ---->') != -1:
-                    result.write('Contig size viewer')
                 else:
                     result.write(line)
 

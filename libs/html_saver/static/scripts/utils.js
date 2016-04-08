@@ -51,6 +51,8 @@ function toPrettyString(num, unit) {
                     str = num.toFixed(2);
                 } else {
                     str = num.toFixed(3);
+                    if (str.slice(-1) == '0')
+                        str = str.slice(0, -1);
                 }
             } else {
                 str = num.toFixed(0);
@@ -64,6 +66,22 @@ function toPrettyString(num, unit) {
         return num;
     }
 }
+
+        //elif isinstance(value, float):
+        //    if value == 0.0:
+        //        return '0'
+        //    if human_readable:
+        //        if unit == '%':
+        //            value *= 100
+        //        precision = 2
+        //        for i in range(10, 1, -1):
+        //            if abs(value) < 1./(10**i):
+        //                precision = i + 1
+        //                break
+        //        return '{value:.{precision}f}{unit_str}'.format(**locals())
+        //    else:
+        //        return str(value)
+
 
 function refToPrettyString(num, refs) {
     return refs[Math.round(num)-1];

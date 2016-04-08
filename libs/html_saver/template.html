@@ -55,12 +55,13 @@
         <p id='krona'></p>
 
         <p id="data_set_p">
-                <span style="display: none;" id="reference_length">
-                    Reference size:
+                <span style="display: none;" id="reference_name"><span class='val'></span></span>
+
+                <span style="display: none;" id="reference_length">| size:
                     <span class='val'></span><span class='rhs'>&nbsp;</span>bp
                 </span>
 
-                <span style="display: none;" id="reference_gc">, G+C content:
+                <span style="display: none;" id="reference_gc">| G+C content:
                     <span class='val'></span><span class='rhs'>&nbsp;</span>%
                 </span>
                 
@@ -84,9 +85,6 @@
                 </span>
             </span>
         </p>
-        <p>
-        <span id="main_ref_genome"></span>
-        </p>
     </div>
 
     <noscript>
@@ -99,7 +97,7 @@
 
     <div class='report-and-plots'>
         <div class='report' id='main_report'>
-                <div id="heatmap_header" style='display: none;'>
+            <div id="heatmap_header" style='display: none; float: left;'>
                 <div style="padding-right: 10px; display: inline-block; vertical-align:top;">
                     <canvas id="gradientHeatmap" width="150" height="6"></canvas>
                     <div style="margin-left: 0; text-align: justify;">
@@ -111,6 +109,11 @@
                 </div>
                 <label for="heatmaps_chbox"><input type="checkbox" checked="checked" id="heatmaps_chbox">Show heatmap</label>
             </div>
+            <div style="display: none;" id="combined_reference_length">
+                Combined reference size:
+                <span class='val'></span><span class='rhs'>&nbsp;</span>bp
+            </div>
+            <div style="clear: both;"></div>
         </div>
         <div class='plots'>
             <table style='margin: -3px;'>
@@ -139,6 +142,10 @@
                 </tr>
             </table>
         </div>
+
+        <p>
+            <span id="main_ref_genome"></span>
+        </p>
 
         <div style="clear: left"></div>
         <div style="clear: right"></div>

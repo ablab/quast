@@ -107,6 +107,8 @@ function buildGenomeTable(reports, group_n, numColumns) {
             '<span class="assembly_name">' + columnName + '</span>' +
         '</td>';
     }
+
+    var combined_reference_size = 0;
     for (var report_n = 0; report_n < reports.length; report_n++ ) {
         var trClass = 'content-row';
         var refName = reports[report_n].name;
@@ -125,12 +127,15 @@ function buildGenomeTable(reports, group_n, numColumns) {
 
             var value = metric.values[0];
 
+            if (metric.metricName == 'Reference length')
+                combined_reference_size += value;
+
             if (value === null || value === '') {
                 tableGenome += '<td><span>-</span></td>';
             } else {
                 if (typeof value === 'number') {
                     tableGenome +=
-                        '<td number="' + value + '"><span>'
+                        '<td number="' + value + '" class="number"><span>'
                         + toPrettyString(value) + '</span></td>';
                 } else {
                     var result = /([0-9\.]+)(.*)/.exec(value);
@@ -141,22 +146,33 @@ function buildGenomeTable(reports, group_n, numColumns) {
 //                        var num = parseFloat(value);
 
                     if (num !== null) {
-                        tableGenome += '<td number="' + num + '"><span>' + toPrettyString(num) + rest + '</span></td>';
+                        tableGenome += '<td number="' + num + '" class="number"><span>' + toPrettyString(num) + rest + '</span></td>';
                     } else {
                         tableGenome += '<td><span>' + value + '</span></td>';
                     }
                 }
+                //if (metric.metricName == 'Reference size'
             }
         }
+        tableGenome += '</tr>';
+
     }
+
+    tableGenome += '<tr><td></td><td class="second_through_last_col_headers_td last_row">' + toPrettyString(combined_reference_size) + '</td>';
+    for (metric_n = 1; metric_n < metrics.length; metric_n++) {
+        tableGenome += '<td class="second_through_last_col_headers_td"></td>';
+    }
+    tableGenome += '</tr>';
+
+    //tableGenome += '<hr>';
 
     tableGenome += '</table>';
     tableGenome += '<br>';
-    tableGenome += '<hr>';
+    tableGenome += '<br>';
     tableGenome +=
-            '<span class="metric-name">' +
-                '<a href="not_aligned/report.html">' + 'Not aligned contigs' + '</a>' +
-            '</span>';
+        '<span class="metric-name">' +
+            '<a href="not_aligned/report.html">' + 'Not aligned contigs' + '</a>' +
+        '</span>';
 
     tableGenome += '</div>';
     return tableGenome;
@@ -198,8 +214,8 @@ function buildTotalReport(assembliesNames, report, order, date, minContig, gloss
     table += '<table cellspacing="0" class="report_table draggable" id="main_report_table">';
     var refNames = [];
     for (var report_n = 0; report_n < reports.length; report_n++) {
-        var refName = reports[report_n].referenceName;
-        refNames.push(refName);
+        var _refName = reports[report_n].referenceName;
+        refNames.push(_refName);
     }
     reports = refNames.map(function (name, report_n) {
     return {
@@ -253,7 +269,6 @@ function buildTotalReport(assembliesNames, report, order, date, minContig, gloss
                 var value = metric.values[0];
                 referenceValues[metricName] = value;
             }
-            var refName = referenceValues['Reference name'];
             var refLen = referenceValues['Reference length'];
             var refGC = referenceValues['Reference GC (%)'];
             var refGenes = referenceValues['Reference genes'];
@@ -261,13 +276,8 @@ function buildTotalReport(assembliesNames, report, order, date, minContig, gloss
 
             var numColumns = 1; // no GC in combined reference
 
-            if (refName) {
-                $('#reference_name').find('.val').html(refName);
-            }
-            $('#reference_name').show();
-
             if (refLen) {
-                $('#reference_length').show().find('.val').html(toPrettyString(refLen));
+                $('#combined_reference_length').show().find('.val').html(toPrettyString(refLen));
                 numColumns++;
             }
             if (refGC) {

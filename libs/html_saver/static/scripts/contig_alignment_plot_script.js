@@ -983,12 +983,6 @@ THE SOFTWARE.
             .text(function(d) {
                 if (!d.size || d.size > minContigSize) return visibleText(d);
             });
-        //only for contig size plot
-        mini.selectAll('path')
-            .attr('opacity', function (d) {
-              if (!d || !d.size) return 1;
-              return d.size > minContigSize ? 1 : paleContigsOpacity;
-            });
         if (isContigSizePlot)
             getNumberOfContigs(d3.transform(d3.select('#countLine').attr("transform")).translate[0]);
 
@@ -1308,6 +1302,12 @@ THE SOFTWARE.
         else {
             if (parseInt(textBox.value)) minContigSize = parseInt(textBox.value);
             else if (key == 13) minContigSize = 0;
+            //only for contig size plot
+            mini.selectAll('path')
+                .attr('opacity', function (d) {
+                  if (!d || !d.size) return 1;
+                  return d.size > minContigSize ? 1 : paleContigsOpacity;
+            });
             display();
         }
     }
@@ -1506,12 +1506,13 @@ THE SOFTWARE.
     }
 
     function mainAxisUpdate() {
-        var domain = x_main.domain()[1] - x_main.domain()[0];
-        var start = x_main.domain()[0];
-        mainTickValue = getTickValue(domain);
+        var startPos = x_main.domain()[0];
+        var endPos = x_main.domain()[1];
+        var domain = endPos - startPos;
+        mainTickValue = getTickValue(endPos);
 
-        xMainAxis.tickFormat(function(d) {
-                              return formatValue(start + d * domain, mainTickValue);
+        xMainAxis.tickFormat(function(tickValue) {
+                              return formatValue(startPos + tickValue * domain, mainTickValue);
                             });
         updateTrack(main);
         if (!featuresMainHidden) updateTrack(annotationsMain);

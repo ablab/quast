@@ -828,8 +828,9 @@ def main(args):
             else:
                 report_for_icarus_fpath_pattern = None
                 stdout_pattern = None
-            number_of_steps = sum([int(bool(value)) for value in [report_for_icarus_fpath_pattern, all_pdf_file]])
-            if qconfig.draw_svg or qconfig.create_icarus_html:
+            draw_alignment_plots = qconfig.draw_svg or qconfig.create_icarus_html
+            number_of_steps = sum([int(bool(value)) for value in [draw_alignment_plots, all_pdf_file]])
+            if draw_alignment_plots:
                 ########################################################################
                 ### VISUALIZE CONTIG ALIGNMENT
                 ########################################################################

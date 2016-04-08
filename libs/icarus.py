@@ -16,6 +16,7 @@ from libs import qconfig, qutils, fastaparser, genome_analyzer, contigs_analyzer
 import os
 import math
 import libs.html_saver.html_saver as html_saver
+import libs.html_saver.json_saver as json_saver
 from shutil import copyfile
 
 from libs import reporting
@@ -591,7 +592,8 @@ def make_output_dir(output_dir_path):
 
 
 def do(contigs_fpaths, contig_report_fpath_pattern, output_dirpath,
-       ref_fpath, cov_fpath=None, arcs=False, stdout_pattern=None, similar=False, features=None, coverage_hist=None):
+       ref_fpath, cov_fpath=None, arcs=False, stdout_pattern=None, similar=False, features=None, coverage_hist=None,
+       json_output_dir=None):
     make_output_dir(output_dirpath)
 
     lists_of_aligned_blocks = []
@@ -657,8 +659,9 @@ def do(contigs_fpaths, contig_report_fpath_pattern, output_dirpath,
             lists_of_aligned_blocks, arcs, similar, coverage_hist)
     if (assemblies or contigs_by_assemblies) and qconfig.create_icarus_html:
         icarus_html_fpath = js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, reference_chromosomes,
-                    output_dirpath, structures_by_labels, ref_fpath=ref_fpath, stdout_pattern=stdout_pattern, contigs_by_assemblies=contigs_by_assemblies,
-                    features_data=features_data, cov_fpath=cov_fpath)
+                    output_dirpath, structures_by_labels, ref_fpath=ref_fpath, stdout_pattern=stdout_pattern,
+                    contigs_by_assemblies=contigs_by_assemblies, features_data=features_data, cov_fpath=cov_fpath,
+                    json_output_dir=json_output_dir)
     else:
         icarus_html_fpath = None
 
@@ -1103,7 +1106,7 @@ def get_info_by_chr(chr, aligned_bases_by_chr, chr_sizes, contigs_fpaths, one_ch
 
 
 def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromosomes_length, output_dirpath, structures_by_labels,
-                contigs_by_assemblies, ref_fpath=None, stdout_pattern=None, features_data=None, cov_fpath=None):
+                contigs_by_assemblies, ref_fpath=None, stdout_pattern=None, features_data=None, cov_fpath=None, json_output_dir=None):
     chr_full_names = []
     chr_names = []
     if chromosomes_length and assemblies:
@@ -1278,4 +1281,7 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
                     result.write(line)
 
     html_saver.save_icarus_links(output_dirpath, icarus_links)
+    if json_output_dir:
+        json_saver.save_icarus_links(json_output_dir, icarus_links)
+
     return summary_path

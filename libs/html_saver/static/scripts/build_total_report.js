@@ -1,11 +1,15 @@
 function buildTotalReport(assembliesNames, report, order, date, minContig,
-                          glossary, qualities, mainMetrics) {
+                          glossary, qualities, mainMetrics, referenceName) {
     $('#report_date').html('<p>' + date + '</p>');
     $('#mincontig').html('<p>All statistics are based on contigs of size >= ' + minContig +
         '<span class="rhs">&nbsp;</span>bp, unless otherwise noted (e.g., "# contigs (>= 0 bp)" and "Total length (>= 0 bp)" include all contigs.)</p>');
 
     var table = '';
     table += '<table cellspacing="0" class="report_table draggable" id="main_report_table">';
+
+    if (referenceName) {
+        $('#reference_name').show().find('.val').html(referenceName);
+    }
 
     for (var group_n = 0; group_n < report.length; group_n++) {
         var group = report[group_n];
@@ -21,7 +25,6 @@ function buildTotalReport(assembliesNames, report, order, date, minContig,
                 var value = metric.values[0];
                 referenceValues[metricName] = value;
             }
-            var refName = referenceValues['Reference name'];
             var refLen = referenceValues['Reference length'];
             var refGC = referenceValues['Reference GC (%)'];
             var refGenes = referenceValues['Reference genes'];
@@ -30,11 +33,6 @@ function buildTotalReport(assembliesNames, report, order, date, minContig,
             var refTotalreads = referenceValues['Reference reads'];
             var refMappedreads = referenceValues['Reference mapped reads'];
             var refPairedreads = referenceValues['Reference properly paired reads'];
-
-            if (refName) {
-                $('#reference_name').find('.val').html(refName);
-            }
-            $('#reference_name').show();
 
             if (refLen)
                 $('#reference_length').show().find('.val').html(toPrettyString(refLen));

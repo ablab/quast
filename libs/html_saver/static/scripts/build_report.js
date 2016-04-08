@@ -35,7 +35,7 @@ function buildReport() {
     order = recoverOrderFromCookies() || totalReport.order || Range(0, assembliesNames.length);
 
     buildTotalReport(assembliesNames, totalReport.report, order, totalReport.date,
-        totalReport.minContig, glossary, qualities, mainMetrics);
+        totalReport.minContig, glossary, qualities, mainMetrics, totalReport.referenceName);
 
     if (refLen = readJson('reference-length'))
         refLen = refLen.reflen;

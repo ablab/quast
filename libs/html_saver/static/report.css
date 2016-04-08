@@ -1,3 +1,7 @@
+.report-and-plots {
+    margin-top: 25px;
+}
+
 /****************/
 /* REPORT TABLE */
 .report {    
@@ -16,7 +20,7 @@
 
 #ref_report {
     /*min-width: 300px;*/
-    margin-right: 70px;
+    margin-right: 0;
     margin-bottom: 20px;
     /*margin-right: 200px;*/
 }
@@ -27,6 +31,9 @@
     /*min-width: 100px;*/
     max-width: 400px;
     white-space: nowrap;
+}
+.report td.number {
+    text-align: right;
 }
 
 .report tr.top_row_tr td,
@@ -66,6 +73,15 @@
 span.heatmap_legend {
     font-size: 11px;
     display: inline-block;
+}
+
+#heatmap_header {
+    margin-right: 30px;
+}
+
+#combined_reference_length {
+    padding-top: 1px;
+    padding-bottom: 15px;
 }
 
 span.metric-name.expandable {
@@ -195,6 +211,10 @@ table.draggable td.right_to_cell_of_empty_space {
 
 }
 
+table#refgenome td.last_row {
+    border-top: 1px solid #ddd;
+}
+
 /************/
 /* PLOTTING */
 .plot-switch {
@@ -217,8 +237,9 @@ table.draggable td.right_to_cell_of_empty_space {
 }
 
 .plots {
+    margin-right: 70px;
     margin-top: 2px;
-    margin-bottom: 0;
+    margin-bottom: 50px;
     float: left;
 }
 .plots td {

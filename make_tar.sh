@@ -1,14 +1,13 @@
 #!/bin/bash
 
-VERSION=`cat VERSION`
+VERSION=`cat VERSION.txt`
 NOW=$(date +"%d.%m.%Y %H:%M")
 
 ARCHIVE_NAME=quast-$VERSION.tar.gz
 QUAST_FOLDER=quast-$VERSION
 SITE_PACKAGES=libs/site_packages
 
-mkdir release
-mkdir release/$QUAST_FOLDER
+mkdir -p release/$QUAST_FOLDER
 cp -r libs            release/$QUAST_FOLDER
 cp -r test_data       release/$QUAST_FOLDER
 cp quast.py           release/$QUAST_FOLDER
@@ -21,7 +20,7 @@ cp README.txt         release/$QUAST_FOLDER
 cp INSTALL.txt        release/$QUAST_FOLDER
 cp install.sh         release/$QUAST_FOLDER
 cp install_full.sh    release/$QUAST_FOLDER
-echo Build $NOW    >> release/$QUAST_FOLDER/VERSION
+echo Build $NOW    >> release/$QUAST_FOLDER/VERSION.txt
 
 sh clean.sh release/$QUAST_FOLDER
 

@@ -12,9 +12,9 @@
          of short contigs. Explicitly shows contigs of length N50, N75 (and NG50, NG75).
 
       2. Improved misassembly detection algorithm in case of multiple ambiguous mappings of
-         contig fragments. The algorithm identifies best set of mappings of non-overlapping 
-         contig fragments. The set minimises possible number of misassemblies, i.e. this 
-         algorithm reduces false negatives (erroneously detected misassemblies).
+         contig fragments. The algorithm identifies best set of non-overlapping contig fragments
+         mappings. The set minimises possible number of misassemblies, i.e. this algorithm 
+         reduces number of false negatives (erroneously detected misassemblies).
 
       3. Several new options added:
        - "--significant-part-size" for setting threshold on detecting partially unaligned 
@@ -22,10 +22,10 @@
        - "--fragmented" for notifying QUAST about fragmented reference genome (e.g. scaffold
          reference). QUAST will try to detect misassemblies caused by the fragmentation and
          mark them "fake".
-       - "--unique-mapping" for forcing -a=one for the combined reference (MetaQUAST only).
+       - "--unique-mapping" for forcing -a=one in QUAST run on the combined reference (MetaQUAST only).
        - "--sv-bed" for specifying BED file with structural variations. Note that QUAST may
          create such BED automatically using Manta SV caller if reads are specified.
-         However, it is rather slow (includes reads alignment).
+         However, it is rather slow because include reads alignment to the reference.
 
       4. Fixed bug with skipping "broken" scaffolds in per reference runs of MetaQUAST.
 

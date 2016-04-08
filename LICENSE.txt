@@ -49,18 +49,19 @@ QUAST: quality assessment tool for genome assemblies,
 Bioinformatics (2013) 29 (8): 1072-1075. doi: 10.1093/bioinformatics/btt086
 First published online: February 19, 2013
 
-If you use MetaQUAST in your research, please include Mikheenko et al., 2016 into your
-reference list:
+If you use MetaQUAST in your research, please include Mikheenko et al., 2016 into 
+your reference list:
 
 Alla Mikheenko, Vladislav Saveliev, Alexey Gurevich,
 MetaQUAST: evaluation of metagenome assemblies,
 Bioinformatics (2016) 32 (7): 1088-1090. doi: 10.1093/bioinformatics/btv697
 First published online: November 26, 2015
 
-If you use Icarus visualizations in your research, please include Mikheenko et al., 2016 into your reference list:
+If you use Icarus visualizations in your research, please include 
+Mikheenko et al., 2016 into your reference list:
 
 Alla Mikheenko, Gleb Valin, Andrey Prjibelski, Vladislav Saveliev, Alexey Gurevich,
-Icarus: visualizer for assembly quality assessment,
+Icarus: visualizer for de novo assembly evaluation,
 Submitted to Bioinformatics (2016)
 
 Third-party tools incorporated into QUAST:

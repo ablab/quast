@@ -1317,10 +1317,12 @@ THE SOFTWARE.
                 .remove();
         for (var item = 0; item < rectItems.length; item++) {
             if (x_main(rectItems[item].corr_start) <= x && x <= x_main(rectItems[item].corr_end)) {
-                d = rectItems[item];
-                order = (d.order + 1).toString();
-                offsetX = order.length * letterSize + 50;
-                offsetY = y_main(d.lane) + mainLanesHeight / 2;
+                var curItem = rectItems[item];
+                if (curItem.class.search("disabled") != -1)
+                    continue;
+                order = (curItem.order + 1).toString();
+                offsetX = order.length * letterSize + 48;
+                offsetY = y_main(curItem.lane) + mainLanesHeight / 2;
                 var suffix = 'th';
                 var lastNumber = order.slice(-1);
                 if (lastNumber == '1' && order != "11") suffix = 'st';

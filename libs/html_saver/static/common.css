@@ -224,11 +224,7 @@ ul.mdash li:before {
 }
 .layout-table {
     width: 99%;
-    /*margin-left: -3px;*/
-    /*margin-top: -3px;*/
     border-spacing: 0;
-    color: white;
-    font-size: medium;
 }
 
 .layout-table td.layout-table-td {
@@ -242,7 +238,6 @@ ul.mdash li:before {
 .layout-table td.layout-table-snd-td {
     min-width: 200px;
 }
-
 .layout-table td.layout-table-trd-td {
 }
 

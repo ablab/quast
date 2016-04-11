@@ -461,7 +461,7 @@ def do(ref_fpath, contigs_fpaths, reads_fpaths, meta_ref_fpaths, output_dir, int
                     stderr=open(os.path.join(manta_dirpath, 'make.err'), 'a'), logger=logger)
             os.chdir(prev_dir)
             if return_code != 0 or not all_required_binaries_exist(manta_bin_dirpath, 'configManta.py'):
-                logger.error('Failed to compile Manta (' + manta_dirpath + ')! '
+                logger.warning('Failed to compile Manta (' + manta_dirpath + ')! '
                                                                        'Try to compile it manually ' + (
                                  'or download binary distribution from https://github.com/Illumina/manta/releases '
                                  'and unpack it into ' + os.path.join(manta_dirpath, 'build/') if qconfig.platform_name == 'linux_64' else '') + (

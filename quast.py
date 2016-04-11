@@ -877,8 +877,7 @@ def main(args):
         logger.main_info('  Contig alignment plot is saved to %s' % contig_alignment_plot_fpath)
 
     _cleanup(corrected_dirpath)
-    logger.finish_up(check_test=qconfig.test)
-    return 0
+    return logger.finish_up(check_test=qconfig.test)
 
 
 def _cleanup(corrected_dirpath):

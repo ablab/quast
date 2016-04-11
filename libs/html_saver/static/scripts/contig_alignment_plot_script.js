@@ -1323,7 +1323,6 @@ THE SOFTWARE.
                 if (curItem.objClass.search("disabled") != -1)
                     continue;
                 order = (curItem.order + 1).toString();
-                offsetX = order.length * letterSize + 48;
                 offsetY = y_main(curItem.lane) + mainLanesHeight / 2;
                 var suffix = 'th';
                 var lastNumber = order.slice(-1);
@@ -1332,19 +1331,21 @@ THE SOFTWARE.
                 else if (lastNumber == '3' && order != "13") suffix = 'rd';
                 var container = lineCountContigs.append('g')
                         .attr('transform', function (d) {
-                            return 'translate(' + (-offsetX) + ', ' + offsetY + ')';
+                            return 'translate(-2, ' + offsetY + ')';
                         })
                         .attr('width', function (d) {
                         });
-                container.append('rect')
-                        .attr('height', 15)
-                        .attr('width', offsetX)
-                        .attr('fill', '#fff')
-                        .attr('transform', 'translate(-3, -12)');
-                container.append('text')
+                var numberLabel = container.append('text')
                         .text(order + suffix + ' contig')
-                        .attr('text-anchor', 'start')
+                        .attr('text-anchor', 'end')
                         .attr('class', 'itemLabel');
+                var labelRect = numberLabel.node().getBBox();
+                container.insert('rect', 'text')
+                        .attr('x', labelRect.x - 2)
+                        .attr('y', labelRect.y)
+                        .attr('height', labelRect.height + 2)
+                        .attr('width', labelRect.width + 5)
+                        .attr('fill', '#fff');
             }
         }
     }

@@ -18,7 +18,6 @@ from libs import qconfig
 qconfig.check_python_version()
 
 from libs import qutils, fastaparser, reads_analyzer
-from libs import plotter  # Do not remove this line! It would lead to a warning in matplotlib.
 from libs.qutils import assert_file_exists
 
 from libs.log import get_logger
@@ -223,6 +222,7 @@ def _parallel_correct_contigs(file_counter, contigs_fpath, corrected_dirpath, la
 
     corr_fpaths = (contigs_fpath, corr_fpath)
     return corr_fpaths, broken_scaffolds, logs
+
 
 def broke_scaffolds(file_counter, labels, contigs_fpath, corrected_dirpath, logs):
     logger.info('  ' + qutils.index_to_str(file_counter, force=(len(labels) > 1)) + '  breaking scaffolds into contigs:')
@@ -639,10 +639,6 @@ def main(args):
 
     labels = process_labels(contigs_fpaths, labels, all_labels_from_dirs)
 
-    if qconfig.used_colors and qconfig.used_ls:
-        for i, label in enumerate(labels):
-            plotter.dict_color_and_ls[label] = (qconfig.used_colors[i], qconfig.used_ls[i])
-
     output_dirpath, json_output_dirpath, existing_alignments = \
         _set_up_output_dir(output_dirpath, json_output_dirpath, qconfig.make_latest_symlink, qconfig.save_json)
 
@@ -677,6 +673,7 @@ def main(args):
     ########################################################################
     from libs import reporting
     reload(reporting)
+    from libs import plotter  # Do not remove this line! It would lead to a warning in matplotlib.
 
     if qconfig.is_combined_ref:
         corrected_dirpath = os.path.join(output_dirpath, '..', qconfig.corrected_dirname)
@@ -720,6 +717,10 @@ def main(args):
               fake_if_nested_run=True)
         return 4
 
+    if qconfig.used_colors and qconfig.used_ls:
+        for i, label in enumerate(labels):
+            plotter.dict_color_and_ls[label] = (qconfig.used_colors[i], qconfig.used_ls[i])
+
     qconfig.assemblies_fpaths = contigs_fpaths
     if qconfig.with_gage:
         ########################################################################
@@ -735,7 +736,7 @@ def main(args):
     all_pdf_fpath = os.path.join(output_dirpath, qconfig.plots_fname)
     all_pdf_file = None
 
-    if qconfig.draw_plots or qconfig.html_report:
+    if qconfig.draw_plots:
         try:
             from matplotlib.backends.backend_pdf import PdfPages
             all_pdf_file = PdfPages(all_pdf_fpath)
@@ -817,9 +818,9 @@ def main(args):
     ########################################################################
     ### LARGE DRAWING TASKS
     ########################################################################
-    if qconfig.draw_plots:
+    if qconfig.draw_plots or qconfig.create_icarus_html:
         logger.print_timestamp()
-        logger.main_info('Drawing large plots...')
+        logger.main_info('Creating large visual summaries...')
         logger.main_info('This may take a while: press Ctrl-C to skip this step..')
         try:
             if detailed_contigs_reports_dirpath:

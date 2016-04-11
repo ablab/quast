@@ -644,10 +644,10 @@ def main(args):
         reads_fpaths.append(reads_fpath_f)
     if reads_fpath_r:
         reads_fpaths.append(reads_fpath_r)
-    if reads_fpaths and not bed_fpath:
-        bed_fpath = reads_analyzer.do(combined_ref_fpath, contigs_fpaths, reads_fpaths, corrected_ref_fpaths,
+    if reads_fpaths:
+        bed_fpath, cov_fpath = reads_analyzer.do(combined_ref_fpath, contigs_fpaths, reads_fpaths, corrected_ref_fpaths,
                                       os.path.join(combined_output_dirpath, qconfig.variation_dirname),
-                                      external_logger=logger)
+                                      external_logger=logger, bed_fpath=bed_fpath)
     if bed_fpath:
         quast_py_args += ['--sv-bed']
         quast_py_args += [bed_fpath]

@@ -709,7 +709,7 @@ def main(args):
     if reads_fpaths:
         bed_fpath, cov_fpath = reads_analyzer.do(ref_fpath, contigs_fpaths, reads_fpaths, None,
                                       os.path.join(output_dirpath, qconfig.variation_dirname),
-                                      external_logger=logger)
+                                      external_logger=logger, bed_fpath=bed_fpath)
 
     if not contigs_fpaths:
         logger.error("None of the assembly files contains correct contigs. "

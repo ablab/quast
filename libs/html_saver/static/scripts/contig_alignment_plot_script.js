@@ -1266,6 +1266,7 @@ THE SOFTWARE.
         clearInterval(timerAnimationSetCoords);
         if (animation) {
             var distance = Math.abs(startCoord - ext[0]);
+            if (distance < 5) return;
             var distRange = distance / (ext[1] - ext[0]);
             if (distRange > 50) {
                 distRange = distRange * 0.05;
@@ -1844,7 +1845,7 @@ THE SOFTWARE.
             var positionLink = d.append('tspan')
                                 .style('cursor', 'pointer')
                                 .text([posVal(e.start), ndash, posVal(e.end), mainTickValue, ' '].join(' '))
-            if (chrContigs.indexOf(e.chr) != -1)  // chromosome on this screen
+            if (is_expanded && chrContigs.indexOf(e.chr) != -1)  // chromosome on this screen
                 positionLink.style('text-decoration', 'underline')
                             .style('color', '#7ED5F5')
                             .on('click',function(d) {

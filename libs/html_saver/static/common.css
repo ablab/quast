@@ -249,6 +249,9 @@ ul.mdash li:before {
     min-height: 70px;
     text-shadow: -1px -1px 0 #111;
 }
+.top-panel * {
+    color: white;
+}
 .page_title {
     margin-top: -3px;
     margin-bottom: -3px;

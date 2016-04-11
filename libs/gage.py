@@ -10,9 +10,19 @@ import os
 import shutil
 from libs import reporting, qutils
 import qconfig
+from libs.contigs_analyzer import all_required_binaries_exist, mummer_dirpath
 
 from libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
+
+required_java_fnames = ['Utils', 'SizeFasta', 'GetFastaStats']
+
+
+def all_required_java_classes_exist(dirpath):
+    for required_name in required_java_fnames:
+        if not os.path.isfile(os.path.join(dirpath, required_name + '.class')):
+            return False
+    return True
 
 
 def run_gage(i, contigs_fpath, gage_results_dirpath, gage_tool_path, reference, tmp_dir):
@@ -54,7 +64,8 @@ def do(ref_fpath, contigs_fpaths, output_dirpath):
         os.mkdir(gage_results_dirpath)
 
     ########################################################################
-    gage_tool_path = os.path.join(qconfig.LIBS_LOCATION, 'gage', 'getCorrectnessStats.sh')
+    gage_dirpath = os.path.join(qconfig.LIBS_LOCATION, 'gage')
+    gage_tool_path = os.path.join(gage_dirpath, 'getCorrectnessStats.sh')
 
     ########################################################################
     logger.print_timestamp()
@@ -78,6 +89,36 @@ def do(ref_fpath, contigs_fpaths, output_dirpath):
     tmp_dirpath = os.path.join(gage_results_dirpath, 'tmp')
     if not os.path.exists(tmp_dirpath):
         os.makedirs(tmp_dirpath)
+
+    if not all_required_binaries_exist(mummer_dirpath):
+        # making
+        logger.main_info('Compiling MUMmer (details are in ' + os.path.join(mummer_dirpath, 'make.log') + ' and make.err)')
+        return_code = qutils.call_subprocess(
+            ['make', '-C', mummer_dirpath],
+            stdout=open(os.path.join(mummer_dirpath, 'make.log'), 'w'),
+            stderr=open(os.path.join(mummer_dirpath, 'make.err'), 'w'),)
+
+        if return_code != 0 or not all_required_binaries_exist(mummer_dirpath):
+            logger.error('Failed to compile MUMmer (' + mummer_dirpath + ')! '
+                         'Try to compile it manually. ' + ('You can restart Quast with the --debug flag '
+                         'to see the command line.' if not qconfig.debug else ''))
+            return
+    if not all_required_java_classes_exist(gage_dirpath):
+        cur_dir = os.getcwd()
+        os.chdir(gage_dirpath)
+        # making
+        logger.main_info('Compiling JAVA classes (details are in ' + os.path.join(gage_dirpath, 'make.log') + ' and make.err)')
+        return_codes = [qutils.call_subprocess(
+            ['javac', os.path.join(gage_dirpath, java_fname + '.java')],
+            stdout=open(os.path.join(gage_dirpath, 'make.log'), 'w'),
+            stderr=open(os.path.join(gage_dirpath, 'make.err'), 'w'),) for java_fname in required_java_fnames]
+        os.chdir(cur_dir)
+
+        if any(return_code != 0 for return_code in return_codes) or not all_required_java_classes_exist(gage_dirpath):
+            logger.error('Error occurred during compilation of java classes (' + gage_dirpath + '/*.java)! '
+                         'Try to compile it manually. ' + ('You can restart Quast with the --debug flag '
+                         'to see the command line.' if not qconfig.debug else ''))
+            return
 
     n_jobs = min(len(contigs_fpaths), qconfig.max_threads)
     from joblib import Parallel, delayed

@@ -29,28 +29,6 @@ fi
 
 CONTIG_FILE=$OUTPUT_FOLDER/$(basename $CONTIGS)
 
-CUR_DIR=`pwd`
-cd $SCRIPT_PATH
-if [ ! -e GetFastaStats.class -o ! -e SizeFasta.class -o ! -e Utils.class ]; then
-    javac GetFastaStats.java
-    javac SizeFasta.java
-    javac Utils.java
-    if [ ! -e GetFastaStats.class -o ! -e SizeFasta.class -o ! -e Utils.class ]; then
-        echo "Error occurred during compilation of java classes ($SCRIPT_PATH/*.java)! Try to compile them manually!" >&2
-        exit 1       
-    fi
-fi
-cd $MUMMER_PATH
-if [ ! -e nucmer -o ! -e delta-filter -o ! -e dnadiff ]; then    
-    echo "Compiling MUMmer"
-    make >/dev/null 2>/dev/null        
-    if [ ! -e nucmer -o ! -e delta-filter -o ! -e dnadiff ]; then    
-        echo "Error occurred during MUMmer compilation ($MUMMER_PATH)! Try to compile it manually!" >&2
-        exit 2
-    fi
-fi
-cd $CUR_DIR
-
 GENOMESIZE=`java -cp $JAVA_PATH SizeFasta $REF |awk '{SUM+=$NF; print SUM}'|tail -n 1`
 
 echo "Contig Stats"

@@ -32,4 +32,5 @@ if [ $return_code -ne 0 ]; then
    exit 1
 fi
 echo 'QUAST INSTALLED SUCCESSFULLY!'
+echo 'You can install full version of QUAST with ./install_full.sh (see manual.html)'
 exit 0

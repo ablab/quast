@@ -868,13 +868,13 @@ def main(args):
         html_saver.save_total_report(output_dirpath, qconfig.min_contig, ref_fpath)
 
     if os.path.isfile(all_pdf_fpath):
-        logger.main_info('  PDF version (tables and plots) saved to ' + all_pdf_fpath)
+        logger.main_info('  PDF version (tables and plots) is saved to ' + all_pdf_fpath)
 
     if icarus_html_fpath:
-        logger.main_info('  Icarus main menu: %s' % icarus_html_fpath)
+        logger.main_info('  Icarus (contig browser) is saved to %s' % icarus_html_fpath)
 
     if qconfig.draw_svg and contig_alignment_plot_fpath:
-        logger.main_info('  Contig alignment plot: %s' % contig_alignment_plot_fpath)
+        logger.main_info('  Contig alignment plot is saved to %s' % contig_alignment_plot_fpath)
 
     _cleanup(corrected_dirpath)
     logger.finish_up(check_test=qconfig.test)

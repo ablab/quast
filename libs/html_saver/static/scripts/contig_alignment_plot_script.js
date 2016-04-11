@@ -338,6 +338,7 @@ THE SOFTWARE.
     }
 
     function wrap(text, width, cutText, addStdoutLink, offsetX, separator) {
+      var stdoutLinkWidth = getSize('(text)') + 10;
       text.each(function() {
           var text = d3.select(this),
               words = text.text().split(separator).reverse(),
@@ -347,7 +348,7 @@ THE SOFTWARE.
               lineHeight = 1.1,
               y = text.attr('y'),
               dy = parseFloat(text.attr('dy')),
-              tspan = text.text(null).append('tspan').attr('x', addStdoutLink ? -40 : offsetX)
+              tspan = text.text(null).append('tspan').attr('x', addStdoutLink ? -stdoutLinkWidth : offsetX)
                                     .attr('y', y).attr('dy', dy + 'em')
                                     .style('font-weight', 'bold');
           var firstLine = true;

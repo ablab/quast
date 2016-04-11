@@ -178,6 +178,7 @@ class Alignment:
         self.misassembled = False
         self.color = "#000000"
         self.vPositionDelta = 0
+        self.ambiguous = False
 
     def length(self):
         return self.end - self.start
@@ -704,8 +705,9 @@ def parse_nucmer_contig_report(report_fpath, ref_names, cumulative_ref_lengths):
         ref_col = None
         contig_col = None
         idy_col = None
+        ambig_col = None
         for i, line in enumerate(report_file):
-            split_line = line.strip().split('\t')
+            split_line = line.replace('\n', '').split('\t')
             if i == 0:
                 start_col = split_line.index('S1')
                 end_col = split_line.index('E1')
@@ -714,17 +716,17 @@ def parse_nucmer_contig_report(report_fpath, ref_names, cumulative_ref_lengths):
                 ref_col = split_line.index('Reference')
                 contig_col = split_line.index('Contig')
                 idy_col = split_line.index('IDY')
+                ambig_col = split_line.index('Ambiguous')
             elif split_line and split_line[0] == 'CONTIG':
                 _, name, size = split_line
                 contig = Contig(name=name, size=int(size))
                 contigs.append(contig)
             elif split_line and len(split_line) < 5:
-                line.replace('interspecies', 'i/s')
                 misassembled_id_to_structure[contig_id].append(line.strip())
             elif split_line and len(split_line) > 5:
-                unshifted_start, unshifted_end, start_in_contig, end_in_contig, ref_name, contig_id, idy = split_line[start_col], \
-                            split_line[end_col], split_line[start_in_contig_col], split_line[end_in_contig_col], split_line[ref_col], \
-                            split_line[contig_col], split_line[idy_col]
+                unshifted_start, unshifted_end, start_in_contig, end_in_contig, ref_name, contig_id, idy, ambiguity = \
+                    split_line[start_col], split_line[end_col], split_line[start_in_contig_col], split_line[end_in_contig_col], \
+                    split_line[ref_col], split_line[contig_col], split_line[idy_col], split_line[ambig_col]
                 unshifted_start, unshifted_end, start_in_contig, end_in_contig = int(unshifted_start), int(unshifted_end),\
                                                                                  int(start_in_contig), int(end_in_contig)
                 cur_shift = cumulative_ref_lengths[ref_names.index(ref_name)]
@@ -736,6 +738,7 @@ def parse_nucmer_contig_report(report_fpath, ref_names, cumulative_ref_lengths):
                 block = Alignment(
                     name=contig_id, start=start, end=end, unshifted_start=unshifted_start, unshifted_end=unshifted_end, is_rc=is_rc,
                     idy=idy, start_in_contig=start_in_contig, end_in_contig=end_in_contig, position_in_ref=position_in_ref, ref_name=ref_name)
+                block.ambiguous = ambiguity
                 misassembled_id_to_structure[contig_id].append(block)
 
                 aligned_blocks.append(block)
@@ -976,6 +979,8 @@ def save_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, chr_length
                                     ', corr_end: ' + str(alignment.end) + ',start:' + str(alignment.unshifted_start) +
                                     ',end:' + str(alignment.unshifted_end) + ',similar:"' + ('True' if alignment.similar else 'False') +
                                     '", misassemblies:"' + alignment.misassemblies + '",mis_ends:"' + misassembled_ends + '"')
+                    if alignment.ambiguous:
+                        data_str[-1] += ', ambiguous: "True"'
 
                     aligned_assemblies.add(alignment.label)
                     data_str.append(', structure: [ ')
@@ -1004,8 +1009,8 @@ def save_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, chr_length
         assembly_len = assemblies_len[assembly]
         assembly_contigs = len(assemblies_contigs[assembly])
         local_misassemblies = ms_types[assembly]['local'] / 2
-        ext_misassemblies = (sum(ms_types[assembly].values()) - ms_types[assembly]['i/s translocation']) / 2 - \
-                            local_misassemblies + ms_types[assembly]['i/s translocation']
+        ext_misassemblies = (sum(ms_types[assembly].values()) - ms_types[assembly]['interspecies translocation']) / 2 - \
+                            local_misassemblies + ms_types[assembly]['interspecies translocation']
         additional_assemblies_data += 'assemblies_len["{assembly}"] = {assembly_len};\n'.format(**locals())
         additional_assemblies_data += 'assemblies_contigs["{assembly}"] = {assembly_contigs};\n'.format(**locals())
         additional_assemblies_data += 'assemblies_misassemblies["{assembly}"] = "{ext_misassemblies}' \
@@ -1031,9 +1036,9 @@ def save_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, chr_length
         data_str[-1] += '];'
     data_str = '\n'.join(data_str)
 
-    misassemblies_types = ['relocation', 'translocation', 'inversion', 'i/s translocation', 'local']
+    misassemblies_types = ['relocation', 'translocation', 'inversion', 'interspecies translocation', 'local']
     if not qconfig.is_combined_ref:
-        misassemblies_types.remove('i/s translocation')
+        misassemblies_types.remove('interspecies translocation')
     with open(html_saver.get_real_path('_chr_templ.html'), 'r') as template:
         with open(os.path.join(output_dir_path, '{short_chr}.html'.format(**locals())), 'w') as result:
             for line in template:
@@ -1049,14 +1054,13 @@ def save_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, chr_length
                 elif line.find('<!--- misassemblies selector: ---->') != -1:
                     ms_counts_by_type = OrderedDict()
                     for ms_type in misassemblies_types:
-                        factor = 1 if ms_type == 'i/s translocation' else 2
+                        factor = 1 if ms_type == 'interspecies translocation' else 2
                         ms_counts_by_type[ms_type] = sum(ms_types[assembly][ms_type] / factor for assembly in chr_to_aligned_blocks.keys())
                     total_ms_count = sum(ms_counts_by_type.values()) - ms_counts_by_type['local']
                     result.write('Show misassemblies: '.format(**locals()))
                     for ms_type, ms_count in ms_counts_by_type.items():
                         is_checked = 'checked="checked"'  #if ms_count > 0 else ''
                         ms_name = ms_type
-                        ms_name = ms_name.replace('i/s', 'interspecies')
                         if ms_type != 'local':
                             if ms_count != 1:
                                 ms_name += 's'

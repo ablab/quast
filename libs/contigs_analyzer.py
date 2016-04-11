@@ -86,8 +86,8 @@ class Mapping(object):
     def short_str(self):
         return ' '.join(str(x) for x in [self.s1, self.e1, '|', self.s2, self.e2, '|', self.len1, self.len2])
 
-    def icarus_report_str(self):
-        return '\t'.join(str(x) for x in [self.s1, self.e1, self.s2, self.e2, self.ref, self.contig, self.idy])
+    def icarus_report_str(self, ambiguity=''):
+        return '\t'.join(str(x) for x in [self.s1, self.e1, self.s2, self.e2, self.ref, self.contig, self.idy, ambiguity])
 
     def clone(self):
         return Mapping.from_line(str(self))
@@ -190,7 +190,7 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
     planta_out_f = open(log_out_fpath, 'w')
     planta_err_f = open(log_err_fpath, 'w')
     icarus_out_f = open(icarus_out_fpath, 'w')
-    icarus_header_cols = ['S1', 'E1', 'S2', 'E2', 'Reference', 'Contig', 'IDY']
+    icarus_header_cols = ['S1', 'E1', 'S2', 'E2', 'Reference', 'Contig', 'IDY', 'Ambiguous']
     print >> icarus_out_f, '\t'.join(icarus_header_cols)
 
     misassembly_file = open(misassembly_fpath, 'w')
@@ -903,7 +903,7 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
                         first_alignment = True
                         while len(top_aligns):
                             print >> planta_out_f, '\t\tAlignment: %s' % str(top_aligns[0])
-                            print >> icarus_out_f, top_aligns[0].icarus_report_str()
+                            print >> icarus_out_f, top_aligns[0].icarus_report_str(ambiguity=True)
                             ref_aligns.setdefault(top_aligns[0].ref, []).append(top_aligns[0])
                             if first_alignment:
                                 first_alignment = False

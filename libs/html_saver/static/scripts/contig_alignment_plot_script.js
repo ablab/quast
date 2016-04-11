@@ -33,7 +33,7 @@ THE SOFTWARE.
             var alignments = data[assembly];
             if (!chart.assemblies[assembly])
                 chart.assemblies[assembly] = [];
-            for (var numAlign in alignments)
+            for (var numAlign = 0; numAlign < alignments.length; numAlign++)
                 chart.assemblies[assembly].push(alignments[numAlign]);
         }
 
@@ -120,7 +120,7 @@ THE SOFTWARE.
         }
 
         return {lanes: lanes, items: items};
-    };
+    }
 
     var ContigData = function(chromosome) {
         // return parseData(generateRandomWorkItems());
@@ -178,7 +178,7 @@ THE SOFTWARE.
     if (CHROMOSOME) {
       for (var chr in chromosomes_len) {
           total_len += chromosomes_len[chr];
-      };
+      }
     }
     else total_len = contigs_total_len;
     var x_mini = d3.scale.linear()
@@ -448,11 +448,11 @@ THE SOFTWARE.
         addFeatureTrackInfo(annotationsMain, y_anno);
     }
 
-    var mini_cov, main_cov, x_cov_mini_S, y_cov_main_S, y_cov_main_A, y_cov_vals;
+    var mini_cov, main_cov, x_cov_mini_S, y_cov_main_S, y_cov_main_A;
     if (drawCoverage)
         setupCoverage();
     // draw the x axis
-    var xMainAxis, xMiniAxis, scaleTextMain, scaleTextFeatures;
+    var xMainAxis, xMiniAxis;
     setupXAxis();
 
     var current = (x_mini.domain()[1] + x_mini.domain()[0]) / 2;
@@ -519,16 +519,16 @@ THE SOFTWARE.
             .data(miniPaths)
             .enter().append('path')
             .attr('class', function (d) {
-              if (d.text) return '';
-              if (!d.supp) return 'miniItem ' + d.class;
-              else return 'mainItem end ' + d.class;
+              if (d.visText) return '';
+              if (!d.supp) return 'miniItem ' + d.objClass;
+              else return 'mainItem end ' + d.objClass;
             })
             .attr('d', function (d) {
               return d.path;
             })
             .attr('stroke-width', 10)
             .attr('stroke', function (d) {
-              if (d.text) return addGradient(d, d.text, true);
+              if (d.visText) return addGradient(d, d.visText, true);
             });
 
     var div = d3.select('body').append('div')
@@ -712,7 +712,7 @@ THE SOFTWARE.
                     if (visibleLength > drawLimit)
                         return d;
                 }
-            }),
+            });
         mini.select('.brush').call(brush.extent([minExtent, maxExtent]));
         if (drawCoverage)
             mini_cov.select('.brush').call(brush_cov.extent([minExtent, maxExtent]));
@@ -843,7 +843,7 @@ THE SOFTWARE.
 
         var other = rects.enter().append('g')
                 .attr('class', function (d) {
-                    if (!d.marks) return 'mainItem ' + d.class;
+                    if (!d.marks) return 'mainItem ' + d.objClass;
                 })// Define the gradient
                 .attr('fill', function (d) {
                     if (d.marks) return addGradient(d, d.marks, false, true);
@@ -928,7 +928,7 @@ THE SOFTWARE.
 
         var otherNonRects = nonRects.enter().append('g')
                 .attr('class', function (d) {
-                    return 'mainItem end ' + d.class;
+                    return 'mainItem end ' + d.objClass;
                 })
                 .attr('transform', function (d) {
                     var x = d.supp == "L" ? x_main(d.corr_start) : x_main(d.corr_end);
@@ -1319,7 +1319,7 @@ THE SOFTWARE.
         for (var item = 0; item < rectItems.length; item++) {
             if (x_main(rectItems[item].corr_start) <= x && x <= x_main(rectItems[item].corr_end)) {
                 var curItem = rectItems[item];
-                if (curItem.class.search("disabled") != -1)
+                if (curItem.objClass.search("disabled") != -1)
                     continue;
                 order = (curItem.order + 1).toString();
                 offsetX = order.length * letterSize + 48;
@@ -1573,12 +1573,6 @@ THE SOFTWARE.
                 .range([0, coverageHeight]),
         y_cov_main_S = y_cov_mini_S;
 
-        y_cov_vals = function(tickValue) {
-            var i = 0;
-            for (; Math.pow(10, i) < tickValue; ++i);
-            if (tickValue == Math.pow(10, i) && tickValue <= y_cov_main_S.domain()[0]) return tickValue;
-        };
-
         y_cov_mini_A = d3.svg.axis()
                 .scale(y_cov_mini_S)
                 .orient('left')
@@ -1706,7 +1700,7 @@ THE SOFTWARE.
                 c += " " + marks[m].toLowerCase();
             }
 
-            items[i].class = c;
+            items[i].objClass = c;
             items[i].order = numItem - countSupplementary;
 
             if (!paths[c]) paths[c] = '';
@@ -1726,7 +1720,7 @@ THE SOFTWARE.
             isSimilarNow = d.similar;
             curLane = d.lane;
             numItem++;
-            result.push({class: d.class, path: path, misassemblies: misassemblies[d.class], supp: d.supp,
+            result.push({objClass: d.objClass, path: path, misassemblies: misassemblies[d.objClass], supp: d.supp,
                 x: startX, y: startY, size: d.size, text: text, id: d.id});
         }
         return result;
@@ -2019,10 +2013,10 @@ THE SOFTWARE.
                     if (msTypes[i] && document.getElementById(msTypes[i]).checked) isMisassembled = "True";
                 }
                 if (isMisassembled == "True" && items[numItem].misassembled == "False") {
-                    items[numItem].class = items[numItem].class.replace("disabled", "misassembled");
+                    items[numItem].objClass = items[numItem].objClass.replace("disabled", "misassembled");
                 }
                 else if (isMisassembled == "False")
-                    items[numItem].class = items[numItem].class.replace(/\bmisassembled\b/g, "disabled");
+                    items[numItem].objClass = items[numItem].objClass.replace(/\bmisassembled\b/g, "disabled");
                 items[numItem].misassembled = isMisassembled;
             }
         }
@@ -2225,7 +2219,7 @@ THE SOFTWARE.
             .data(featurePaths)
             .enter().append('rect')
             .attr('class', function (d) {
-              return d.class;
+              return d.objClass;
             })
             .attr('transform', function (d) {
               return 'translate(' + d.x + ', ' + d.y + ')';
@@ -2309,15 +2303,15 @@ THE SOFTWARE.
             c = "annotation ";
             if (INTERLACE_BLOCKS_COLOR) c += (numItem % 2 == 0 ? "odd" : "");
 
-            features[i].class = c;
+            features[i].objClass = c;
 
             var x = x_mini(d.start);
             var y = y_anno_mini(d.lane);
             y += .15 * annotationMiniLanesHeight;
-            if (d.class.search("odd") != -1)
+            if (d.objClass.search("odd") != -1)
                 y += .04 * annotationMiniLanesHeight;
 
-            result.push({class: c, name: d.name, start: d.start, end: d.end, id: d.id_, y: y, x: x, lane: d.lane, order: i});
+            result.push({objClass: c, name: d.name, start: d.start, end: d.end, id: d.id_, y: y, x: x, lane: d.lane, order: i});
             curLane = d.lane;
             numItem++;
         }
@@ -2361,7 +2355,7 @@ THE SOFTWARE.
 
         var otherFeatures = featureRects.enter().append('g')
                 .attr('class', function (d) {
-                    return d.class;
+                    return d.objClass;
                 })
                 .attr('transform', function (d) {
                     var x = x_main(Math.max(minExtent, d.start));

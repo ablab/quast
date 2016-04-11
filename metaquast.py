@@ -18,7 +18,6 @@ from libs import qconfig
 qconfig.check_python_version()
 from libs import qutils, fastaparser
 from libs import search_references_meta
-from libs import plotter
 from libs.qutils import assert_file_exists
 
 from libs.log import get_logger
@@ -209,7 +208,8 @@ def _correct_contigs(contigs_fpaths, output_dirpath, labels):
             corr_assemblies.append(Assembly(corr_broken_fpath, broken_label))
     for log in logs:
         logger.main_info(log)
-    if qconfig.draw_plots:
+    if qconfig.draw_plots or qconfig.html_report:
+        from libs import plotter
         corr_fpaths = [asm.fpath for asm in assemblies]
         corr_labels = [asm.label for asm in assemblies]
         plotter.save_colors_and_ls(corr_fpaths, labels=corr_labels)
@@ -570,13 +570,13 @@ def main(args):
 
     from libs import reporting
     reload(reporting)
+    from libs import plotter
 
     if os.path.isdir(corrected_dirpath):
         shutil.rmtree(corrected_dirpath)
     os.mkdir(corrected_dirpath)
 
     # PROCESSING REFERENCES
-
     if ref_fpaths:
         logger.main_info()
         logger.main_info('Reference(s):')
@@ -657,7 +657,7 @@ def main(args):
             quast_py_args.remove(arg)
 
     quast_py_args += ['--combined-ref']
-    if qconfig.draw_plots:
+    if qconfig.draw_plots or qconfig.html_report:
         if plotter.dict_color_and_ls:
             colors_and_ls = [plotter.dict_color_and_ls[asm.label] for asm in assemblies]
             quast_py_args += ['--colors']

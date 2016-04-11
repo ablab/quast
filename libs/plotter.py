@@ -59,15 +59,19 @@ plots_file_ext = '.' + qconfig.plot_extension
 
 # checking if matplotlib is installed
 matplotlib_error = False
-try:
-    import matplotlib
-    matplotlib.use('Agg')  # non-GUI backend
-    if matplotlib.__version__.startswith('0') or matplotlib.__version__.startswith('1.0'):
-        logger.warning('Can\'t draw plots: matplotlib version is old! Please use matplotlib version 1.1 or higher.')
+if qconfig.draw_plots:
+    try:
+        import matplotlib
+        matplotlib.use('Agg')  # non-GUI backend
+        if matplotlib.__version__.startswith('0') or matplotlib.__version__.startswith('1.0'):
+            logger.info('')
+            logger.warning('Can\'t draw plots: matplotlib version is old! Please use matplotlib version 1.1 or higher.')
+            matplotlib_error = True
+    except Exception:
+        logger.info('')
+        logger.warning('Can\'t draw plots: please install python-matplotlib.')
         matplotlib_error = True
-except Exception:
-    print
-    logger.warning('Can\'t draw plots: please install python-matplotlib.')
+else:
     matplotlib_error = True
 
 # for creating PDF file with all plots and tables

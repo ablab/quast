@@ -1187,7 +1187,7 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
                     result.write(contigs_sizes_str)
                     result.write(assemblies_contig_size_data)
                 elif line.find('<!--- Contig size threshold: ---->') != -1:
-                    result.write('Tone down contigs shorter than <input class="textBox" '
+                    result.write('Fade contigs shorter than <input class="textBox" '
                                  'id="input_contig_threshold" type="text" size="5" /> bp </span>')
                 elif line.find('<!--- css: ---->') != -1:
                     result.write(html_saver.css_html(os.path.join('static', 'contig_alignment_plot.css')))

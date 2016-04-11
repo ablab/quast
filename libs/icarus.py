@@ -193,10 +193,8 @@ class Alignment:
         if alignment.ref_name != self.ref_name:
             return False
         contig_len = abs(self.end - self.start)
-        alignment_start, alignment_end = min(alignment.start, alignment.end), max(alignment.start, alignment.end)
-        cur_start, cur_end = min(self.start, self.end), max(self.start, self.end)
-        return abs(alignment_start - cur_start) <= (settings.contigEdgeDelta * contig_len) and \
-               abs(alignment_end - cur_end) <= (settings.contigEdgeDelta * contig_len)
+        return abs(alignment.start - self.start) <= (settings.contigEdgeDelta * contig_len) and \
+               abs(alignment.end - self.end) <= (settings.contigEdgeDelta * contig_len)
 
 
 class Arc:

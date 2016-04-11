@@ -11,6 +11,7 @@ import shutil
 from libs import reporting, qutils
 import qconfig
 from libs.contigs_analyzer import all_required_binaries_exist, mummer_dirpath
+from qutils import get_path_to_program
 
 from libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
@@ -104,6 +105,12 @@ def do(ref_fpath, contigs_fpaths, output_dirpath):
                          'to see the command line.' if not qconfig.debug else ''))
             return
     if not all_required_java_classes_exist(gage_dirpath):
+        javac_path = get_path_to_program('javac')
+        if javac_path is None:
+            logger.error('Java compiler not found (javac)! '
+                         'Please install it or compile GAGE java classes manually (' + gage_dirpath + '/*.java)!')
+            return
+
         cur_dir = os.getcwd()
         os.chdir(gage_dirpath)
         # making

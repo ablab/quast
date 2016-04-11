@@ -1825,7 +1825,8 @@ THE SOFTWARE.
 
             var e = !data ? '' : data.filter(function (d) {
                 if (d.type == 'A') {
-                    if (start_in_contig && d.start_in_contig == start_in_contig && d.end_in_contig == end_in_contig) return d;
+                    if (start_in_contig && d.start_in_contig == start_in_contig && d.end_in_contig == end_in_contig
+                        && d.corr_start == start) return d;
                     else if (!start_in_contig && d.corr_start <= start && end <= d.corr_end) return d;
                 }
             })[0];
@@ -1846,33 +1847,34 @@ THE SOFTWARE.
             d.append('tspan')
                 .attr('x', -50)
                 .text('Position: ');
-            d.append('tspan')
-                .style('text-decoration', 'underline')
-                .style('color', '#7ED5F5')
-                .style('cursor', 'pointer')
-                .text([posVal(e.start), ndash, posVal(e.end), mainTickValue, ' '].join(' '))
-                .on('click',function(d) {
-                    var brushExtent = brush.extent();
-                    var brushSize = brushExtent[1] - brushExtent[0];
-                    if (prev_start && prev_start > e.corr_start) point = e.corr_end;
-                    else if (prev_start) point = e.corr_start;
-                    setCoords([point - brushSize / 2, point + brushSize / 2], true);
-                    for (var i = 0; i < items.length; i++) {
-                        if (items[i].assembly == assembly && items[i].corr_start == e.corr_start && items[i].corr_end == e.corr_end) {
-                            selected_id = items[i].groupId;
-                            showArrows(items[i]);
-                            changeInfo(items[i]);
-                            display();
-                            break;
-                        }
-                    }
-                    d3.event.stopPropagation();
-                });
+            var positionLink = d.append('tspan')
+                                .style('cursor', 'pointer')
+                                .text([posVal(e.start), ndash, posVal(e.end), mainTickValue, ' '].join(' '))
+            if (chrContigs.indexOf(e.chr) != -1)  // chromosome on this screen
+                positionLink.style('text-decoration', 'underline')
+                            .style('color', '#7ED5F5')
+                            .on('click',function(d) {
+                                var brushExtent = brush.extent();
+                                var brushSize = brushExtent[1] - brushExtent[0];
+                                if (prev_start && prev_start > e.corr_start) point = e.corr_end;
+                                else if (prev_start) point = e.corr_start;
+                                setCoords([point - brushSize / 2, point + brushSize / 2], true);
+                                for (var i = 0; i < items.length; i++) {
+                                    if (items[i].assembly == assembly && items[i].corr_start == e.corr_start && items[i].corr_end == e.corr_end) {
+                                        selected_id = items[i].groupId;
+                                        showArrows(items[i]);
+                                        changeInfo(items[i]);
+                                        display();
+                                        break;
+                                    }
+                                }
+                                d3.event.stopPropagation();
+                            });
 
             if (is_expanded) {
                 if (prev_start == start)
                     d.append('div')
-                     .attr('id', 'circle' + start+ '_' + end)
+                     .attr('id', 'circle' + start + '_' + end)
                      .attr('class', 'block_circle selected');
                 else
                     d.append('div')
@@ -1884,6 +1886,8 @@ THE SOFTWARE.
                 d.append('a')
                         .attr('href', (links_to_chromosomes ? links_to_chromosomes[e.chr] : e.chr) + '.html')
                         .attr('target', '_blank')
+                        .style('text-decoration', 'underline')
+                        .style('color', '#7ED5F5')
                         .text('(' + e.chr + ')');
             }
             else if (chrContigs.length > 1) {
@@ -1908,14 +1912,22 @@ THE SOFTWARE.
         showArrows(d);
         if (d.structure) {
             var blocks = info.append('p')
-                    .attr('class', 'head main')
-                    .text('Blocks: ' + d.structure.filter(function(d) { if (d.type == "A") return d;}).length);
+                    .attr('class', 'head main');
+            var blocksText = (d.ambiguous ? 'Alternatives: ' : 'Blocks: ') + d.structure.filter(function(d) { if (d.type == "A") return d;}).length;
+            blocks.text(d.ambiguous ? 'Ambiguously mapped.' : blocksText);
+            if (d.ambiguous)
+                blocks.append('p')
+                      .text(blocksText);
 
             for (var i = 0; i < d.structure.length; ++i) {
                 var e = d.structure[i];
                 if (e.type == "A") {
                     appendPositionElement(d.structure, e.corr_start, e.corr_end, d.assembly, blocks, e.start_in_contig,
                         e.end_in_contig, d.corr_start, true);
+
+                    if (d.ambiguous && i < d.structure.length - 1)
+                        blocks.append('p')
+                              .text('or');
                 } else {
                     blocks.append('p')
                             .text(e.mstype);

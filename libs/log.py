@@ -85,6 +85,7 @@ class QLogger(object):
         self._logger.info('Logging to ' + self._log_fpath)
 
     def finish_up(self, numbers=None, check_test=False):
+        test_result = 0
         if not self._is_metaquast:
             self._logger.info('  Log saved to ' + self._log_fpath)
             if qconfig.save_error:
@@ -100,6 +101,7 @@ class QLogger(object):
             if check_test:
                 if (numbers is not None and numbers[2] > 0) or self._num_nf_errors > 0:
                     self._logger.info('\nTEST FAILED! Please find non-fatal errors in the log and try to fix them!')
+                    test_result = 1
                 elif (numbers is not None and numbers[1] > 0) or self._num_warnings > 0:
                     self._logger.info('\nTEST PASSED with WARNINGS!')
                 else:
@@ -110,6 +112,7 @@ class QLogger(object):
 
         global _loggers
         del _loggers[self._name]
+        return test_result
 
     def debug(self, message='', indent=''):
         self._logger.debug(indent + message)

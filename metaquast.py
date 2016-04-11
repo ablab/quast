@@ -819,7 +819,7 @@ def main(args):
     quast._cleanup(corrected_dirpath)
     logger.main_info('')
     logger.main_info('MetaQUAST finished.')
-    logger.finish_up(numbers=tuple(total_num_notifications), check_test=test_mode)
+    return logger.finish_up(numbers=tuple(total_num_notifications), check_test=test_mode)
 
 
 if __name__ == '__main__':

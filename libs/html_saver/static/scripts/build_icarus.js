@@ -2086,7 +2086,6 @@ THE SOFTWARE.
                 .attr('class', 'expanded');
         var block = menu.append('div')
                 .attr('class', 'block')
-                .style('width', '100%')
                 .style('float', 'left');
         var header = block.append('p')
                 .style('text-align', 'center')

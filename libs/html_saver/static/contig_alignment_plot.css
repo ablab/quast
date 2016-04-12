@@ -200,11 +200,11 @@ span {
 }
 
 .COV .covered path {
-    fill: none;
-    stroke: rgb(240, 10, 10);
-    stroke-width: 3px;
+    fill: #799FCA;
+    opacity: .8;
+    stroke: #BABABA;
+    stroke-width: 1px;
 }
-
 .COV .notCovered path {
     stroke: blue;
     stroke-width: 5px;
@@ -229,9 +229,10 @@ span {
 }
 
 .coverage .covered {
-    stroke: rgb(240, 10, 10);
-    stroke-width: 3px;
-    fill: none;
+    fill: #799FCA;
+    opacity: .8;
+    stroke: #BABABA;
+    stroke-width: 1px;
 }
 
 .coverage .notCovered {

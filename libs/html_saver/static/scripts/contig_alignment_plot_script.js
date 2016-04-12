@@ -210,6 +210,7 @@ THE SOFTWARE.
       var y_anno = d3.scale.linear().domain([ext[0], ext[1] + 1]).range([0, annotationsHeight]);
     }
 
+    var coverageFactor = 10, maxCovDots = 500;
     var featuresHidden = false, drawCoverage = false, coverageMainHidden = true;
     if (!featuresData || featuresData.features.length == 0)
       featuresHidden = true;
@@ -995,31 +996,38 @@ THE SOFTWARE.
             main_cov.select('.notCovered').remove();
 
             var line = '',
-            l = (maxExtent - minExtent) / 100,
-            cov_main_dots_amount = Math.min(500, l),
+            l = (maxExtent - minExtent) / coverageFactor,
+            cov_main_dots_amount = Math.min(maxCovDots, l),
             step = Math.round(l / cov_main_dots_amount);
 
             var y_max = 1;
             var cov_lines = [];
-            for (var s, i = (minExtent / 100);; i += step) {
-                coverage = coverage_data[CHROMOSOME].slice(i, i + step);
+            var nextPos = 0;
+            for (var s, i = (minExtent / coverageFactor);; i += step) {
+                nextPos = Math.min(maxExtent / coverageFactor, i + step);
+                coverage = coverage_data[CHROMOSOME].slice(i, Math.ceil(nextPos));
                 if (coverage.length == 0) break;
                 s = d3.sum(coverage, function (d) {
                             return d
                         }) / coverage.length;
                 y_max = Math.max(y_max, s);
                 if (s >= 1)
-                    cov_lines.push([x_main(i * 100), s, x_main((i + step) * 100)]);
-                if (i + step > (maxExtent / 100)) break;
+                    cov_lines.push([x_main(i * coverageFactor), s, x_main(nextPos * coverageFactor)]);
+                else
+                    cov_lines.push([x_main(i * coverageFactor), 0, x_main(nextPos * coverageFactor)]);
+                if (nextPos >= (maxExtent / coverageFactor)) break;
             }
-
             y_max = getNextMaxCovValue(y_max);
             y_cov_main_S.domain([y_max, .1]);
             y_cov_main_A.scale(y_cov_main_S);
+
+            line += ['M', cov_lines[0][0], y_cov_main_S(0)].join(' ');
             for (i = 0; i < cov_lines.length; i++) {
                 cov_line = cov_lines[i];
-                line += ['M', cov_line[0], y_cov_main_S(cov_line[1]), 'H', cov_line[2]].join(' ');
+                line += ['V', y_cov_main_S(cov_line[1])].join(' ');
+                line += ['H', cov_line[2]].join(' ');
             }
+            line += ['V', y_cov_main_S(0), 'Z'].join(' ');
 
             main_cov.select('.y').call(y_cov_main_A);
 
@@ -1569,7 +1577,7 @@ THE SOFTWARE.
     function setupCoverage() {
         // draw mini coverage
         x_cov_mini_S = x_mini,      // x coverage scale
-        y_max = Math.max.apply(null, coverage_data[CHROMOSOME]);
+        y_max = max_depth[CHROMOSOME];
 
         y_cov_mini_S = d3.scale.linear()
                 .domain([getNextMaxCovValue(y_max), .1])
@@ -1593,18 +1601,27 @@ THE SOFTWARE.
 
         var line = '',
                 l = coverage_data[CHROMOSOME].length,
-                cov_mini_dots_amount = Math.min(500, l),
+                cov_mini_dots_amount = Math.min(maxCovDots, l),
                 pos = 0,
                 step = l / cov_mini_dots_amount;
 
+        line += ['M', x_cov_mini_S(0), y_cov_main_S(0)].join(' ');
         for (var s, i = step; i < l; i += step) {
+            coverage = coverage_data[CHROMOSOME].slice(pos, i);
             s = d3.sum(coverage_data[CHROMOSOME].slice(pos, i), function (d) {
                         return d
-                    }) / step;
-            if (s >= 1)
-                line += ['M', x_cov_mini_S(pos * 100), y_cov_mini_S(s), 'H', x_cov_mini_S(i * 100)].join(' ');
+                    }) / coverage.length;
+            if (s >= 1) {
+                line += ['V', y_cov_mini_S(s)].join(' ');
+                line += ['H', x_cov_mini_S(i * coverageFactor)].join(' ');
+            }
+            else {
+                line += ['V', y_cov_mini_S(0)].join(' ');
+                line += ['M', x_cov_mini_S(i * coverageFactor), y_cov_main_S(0)].join(' ');
+            }
             pos = i;
         }
+        line += ['V', y_cov_main_S(0), 'Z'].join(' ');
 
         var not_covered_line = '',
                 not_covered_width = Math.max(chartWidth / x_cov_mini_S.domain()[1], 1);

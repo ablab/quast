@@ -775,17 +775,14 @@ def add_contig(cum_length, contig, not_used_nx, assemblies_n50, assembly, contig
 def parse_cov_fpath(cov_fpath, chr_names, chr_full_names):
     if not cov_fpath:
         return None, None, None
-    cov_data = dict()
-    not_covered = dict()
-    cur_len = dict()
-    cov_factor = 10
+    cov_data = defaultdict(list)
+    not_covered = defaultdict(list)
+    cur_len = defaultdict(int)
     max_depth = defaultdict(int)
+    cov_factor = 10
     with open(cov_fpath, 'r') as coverage:
         contig_to_chr = {}
         for chr in chr_full_names:
-            cov_data.setdefault(chr, [])
-            not_covered.setdefault(chr, [])
-            cur_len.setdefault(chr, 0)
             if contigs_analyzer.ref_labels_by_chromosomes:
                 contig_names_by_refs = contigs_analyzer.ref_labels_by_chromosomes
                 contigs = [contig for contig in chr_names if contig_names_by_refs[contig] == chr]

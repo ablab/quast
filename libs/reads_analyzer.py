@@ -107,7 +107,7 @@ def process_one_ref(cur_ref_fpath, output_dirpath, err_path, bed_fpath=None):
     ref = qutils.name_from_fpath(cur_ref_fpath)
     ref_sam_fpath = os.path.join(output_dirpath, ref + '.sam')
     ref_bam_fpath = os.path.join(output_dirpath, ref + '.bam')
-    ref_bamsorted_fpath = os.path.join(output_dirpath, ref + '.sorted')
+    ref_bamsorted_fpath = os.path.join(output_dirpath, ref + '.sorted.bam')
     ref_bed_fpath = bed_fpath if bed_fpath else os.path.join(output_dirpath, ref + '.bed')
     if os.path.getsize(ref_sam_fpath) < 1024 * 1024:  # TODO: make it better (small files will cause Manta crush -- "not enough reads...")
         logger.info('  SAM file is too small for Manta (%d Kb), skipping..' % (os.path.getsize(ref_sam_fpath) // 1024))
@@ -115,13 +115,13 @@ def process_one_ref(cur_ref_fpath, output_dirpath, err_path, bed_fpath=None):
     if is_non_empty_file(ref_bed_fpath):
         logger.info('  Using existing Manta BED-file: ' + ref_bed_fpath)
         return ref_bed_fpath
-    if not os.path.exists(ref_bamsorted_fpath + '.bam'):
+    if not os.path.exists(ref_bamsorted_fpath):
         qutils.call_subprocess([samtools_fpath('samtools'), 'view', '-bS', ref_sam_fpath], stdout=open(ref_bam_fpath, 'w'),
                                stderr=open(err_path, 'a'), logger=logger)
-        qutils.call_subprocess([samtools_fpath('samtools'), 'sort', ref_bam_fpath, ref_bamsorted_fpath],
+        qutils.call_subprocess([samtools_fpath('samtools'), 'sort', ref_bam_fpath, '-o', ref_bamsorted_fpath],
                                stderr=open(err_path, 'a'), logger=logger)
-    if not is_non_empty_file(ref_bamsorted_fpath + '.bam.bai'):
-        qutils.call_subprocess([samtools_fpath('samtools'), 'index', ref_bamsorted_fpath + '.bam'],
+    if not is_non_empty_file(ref_bamsorted_fpath + '.bai'):
+        qutils.call_subprocess([samtools_fpath('samtools'), 'index', ref_bamsorted_fpath],
                                stderr=open(err_path, 'a'), logger=logger)
     if not is_non_empty_file(cur_ref_fpath + '.fai'):
         qutils.call_subprocess([samtools_fpath('samtools'), 'faidx', cur_ref_fpath],
@@ -133,7 +133,7 @@ def process_one_ref(cur_ref_fpath, output_dirpath, err_path, bed_fpath=None):
         if os.path.exists(vcfoutput_dirpath):
             shutil.rmtree(vcfoutput_dirpath, ignore_errors=True)
         os.makedirs(vcfoutput_dirpath)
-        qutils.call_subprocess([config_manta_fpath, '--normalBam', ref_bamsorted_fpath + '.bam',
+        qutils.call_subprocess([config_manta_fpath, '--normalBam', ref_bamsorted_fpath,
                                 '--referenceFasta', cur_ref_fpath, '--runDir', vcfoutput_dirpath],
                                stdout=open(err_path, 'a'), stderr=open(err_path, 'a'), logger=logger)
         if not os.path.exists(os.path.join(vcfoutput_dirpath, 'runWorkflow.py')):
@@ -174,7 +174,7 @@ def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpat
     ref_name = qutils.name_from_fpath(main_ref_fpath)
     sam_fpath = os.path.join(output_dirpath, ref_name + '.sam')
     bam_fpath = os.path.join(output_dirpath, ref_name + '.bam')
-    bam_sorted_fpath = os.path.join(output_dirpath, ref_name + '.sorted')
+    bam_sorted_fpath = os.path.join(output_dirpath, ref_name + '.sorted.bam')
     sam_sorted_fpath = os.path.join(output_dirpath, ref_name + '.sorted.sam')
     bed_fpath = bed_fpath or os.path.join(res_path, ref_name + '.bed')
     cov_fpath = os.path.join(res_path, ref_name + '.cov')
@@ -215,9 +215,9 @@ def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpat
     else:
         qutils.call_subprocess([samtools_fpath('samtools'), 'view', '-@', str(qconfig.max_threads), '-bS', sam_fpath], stdout=open(bam_fpath, 'w'),
                                stderr=open(err_path, 'a'), logger=logger)
-        qutils.call_subprocess([samtools_fpath('samtools'), 'sort', '-@', str(qconfig.max_threads), bam_fpath, bam_sorted_fpath],
+        qutils.call_subprocess([samtools_fpath('samtools'), 'sort', '-@', str(qconfig.max_threads), bam_fpath, '-o', bam_sorted_fpath],
                                stderr=open(err_path, 'a'), logger=logger)
-        qutils.call_subprocess([samtools_fpath('samtools'), 'view', '-@', str(qconfig.max_threads), bam_sorted_fpath + '.bam'], stdout=open(sam_sorted_fpath, 'w'),
+        qutils.call_subprocess([samtools_fpath('samtools'), 'view', '-@', str(qconfig.max_threads), bam_sorted_fpath], stdout=open(sam_sorted_fpath, 'w'),
                                stderr=open(err_path, 'a'), logger=logger)
 
     cov_fpath = get_coverage(output_dirpath, ref_name, bam_fpath, err_path, cov_fpath)
@@ -343,11 +343,11 @@ def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpat
 
 def get_coverage(output_dirpath, ref_name, bam_fpath, err_path, cov_fpath):
     if not is_non_empty_file(cov_fpath):
-        bamsorted_fpath = os.path.join(output_dirpath, ref_name + '.sorted')
-        if not is_non_empty_file(bamsorted_fpath + '.bam'):
-            qutils.call_subprocess([samtools_fpath('samtools'), 'sort',  '-@', str(qconfig.max_threads), bam_fpath,
-                                    bamsorted_fpath], stdout=open(err_path, 'w'), stderr=open(err_path, 'a'))
-        qutils.call_subprocess([samtools_fpath('samtools'), 'depth', bamsorted_fpath + '.bam'], stdout=open(cov_fpath, 'w'),
+        bamsorted_fpath = os.path.join(output_dirpath, ref_name + '.sorted.bam')
+        if not is_non_empty_file(bamsorted_fpath):
+            qutils.call_subprocess([samtools_fpath('samtools'), 'sort', '-@', str(qconfig.max_threads), bam_fpath,
+                                    '-o', bamsorted_fpath], stdout=open(err_path, 'w'), stderr=open(err_path, 'a'))
+        qutils.call_subprocess([samtools_fpath('samtools'), 'depth', '-a', bamsorted_fpath], stdout=open(cov_fpath, 'w'),
                                stderr=open(err_path, 'a'))
         qutils.assert_file_exists(cov_fpath, 'coverage file')
     return cov_fpath

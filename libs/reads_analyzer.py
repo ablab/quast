@@ -179,13 +179,14 @@ def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpat
     bed_fpath = bed_fpath or os.path.join(res_path, ref_name + '.bed')
     cov_fpath = os.path.join(res_path, ref_name + '.cov')
 
-    if os.path.exists(bed_fpath):
+    if is_non_empty_file(bed_fpath):
         logger.info('  Using existing BED-file: ' + bed_fpath)
-        if not os.path.isfile(cov_fpath):
-            cov_fpath = get_coverage(output_dirpath, ref_name, bam_fpath, err_path, cov_fpath)
+    if is_non_empty_file(cov_fpath):
+        logger.info('  Using existing reads coverage file: ' + cov_fpath)
+    if is_non_empty_file(bed_fpath) and is_non_empty_file(cov_fpath):
         return bed_fpath, cov_fpath
 
-    logger.info('  ' + 'Pre-processing for searching structural variations...')
+    logger.info('  ' + 'Pre-processing reads...')
     logger.info('  ' + 'Logging to %s...' % err_path)
     if is_non_empty_file(sam_fpath):
         logger.info('  Using existing SAM-file: ' + sam_fpath)
@@ -220,129 +221,137 @@ def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpat
         qutils.call_subprocess([samtools_fpath('samtools'), 'view', '-@', str(qconfig.max_threads), bam_sorted_fpath], stdout=open(sam_sorted_fpath, 'w'),
                                stderr=open(err_path, 'a'), logger=logger)
 
-    cov_fpath = get_coverage(output_dirpath, ref_name, bam_fpath, err_path, cov_fpath)
-    if meta_ref_fpaths:
-        logger.info('  Splitting SAM-file by references...')
-    headers = []
-    seq_name_length = {}
-    with open(sam_fpath) as sam_file:
-        for line in sam_file:
-            if not line.startswith('@'):
-                break
-            if line.startswith('@SQ') and 'SN:' in line and 'LN:' in line:
-                seq_name = line.split('\tSN:')[1].split('\t')[0]
-                seq_length = int(line.split('\tLN:')[1].split('\t')[0])
-                seq_name_length[seq_name] = seq_length
-            headers.append(line.strip())
-    need_ref_splitting = False
-    if meta_ref_fpaths:
-        ref_files = {}
-        for cur_ref_fpath in meta_ref_fpaths:
-            ref = qutils.name_from_fpath(cur_ref_fpath)
-            new_ref_sam_fpath = os.path.join(output_dirpath, ref + '.sam')
-            if is_non_empty_file(new_ref_sam_fpath):
-                logger.info('    Using existing split SAM-file for %s: %s' % (ref, new_ref_sam_fpath))
-                ref_files[ref] = None
-            else:
-                new_ref_sam_file = open(new_ref_sam_fpath, 'w')
-                new_ref_sam_file.write(headers[0] + '\n')
-                chrs = []
-                for h in (h for h in headers if h.startswith('@SQ') and 'SN:' in h):
-                    seq_name = h.split('\tSN:')[1].split('\t')[0]
-                    if seq_name in ref_labels and ref_labels[seq_name] == ref:
-                        new_ref_sam_file.write(h + '\n')
-                        chrs.append(seq_name)
-                new_ref_sam_file.write(headers[-1] + '\n')
-                ref_files[ref] = new_ref_sam_file
-                need_ref_splitting = True
-    deletions = []
-    trivial_deletions_fpath = os.path.join(output_dirpath, qconfig.trivial_deletions_fname)
-    logger.info('  Looking for trivial deletions (long zero-covered fragments)...')
-    need_trivial_deletions = True
-    if os.path.exists(trivial_deletions_fpath):
-        need_trivial_deletions = False
-        logger.info('    Using existing file: ' + trivial_deletions_fpath)
-
-    if need_trivial_deletions or need_ref_splitting:
-        with open(sam_sorted_fpath) as sam_file:
-            cur_deletion = None
+    if not is_non_empty_file(cov_fpath):
+        cov_fpath = get_coverage(output_dirpath, ref_name, bam_fpath, err_path, cov_fpath)
+    if not is_non_empty_file(bed_fpath):
+        if meta_ref_fpaths:
+            logger.info('  Splitting SAM-file by references...')
+        headers = []
+        seq_name_length = {}
+        with open(sam_fpath) as sam_file:
             for line in sam_file:
-                mapping = Mapping.parse(line)
-                if mapping:
-                    # common case: continue current deletion (potential) on the same reference
-                    if cur_deletion and cur_deletion.ref == mapping.ref:
-                        if cur_deletion.next_bad is None:  # previous mapping was in region BEFORE 0-covered fragment
-                            # just passed 0-covered fragment
-                            if mapping.start - cur_deletion.prev_bad > QuastDeletion.MIN_GAP:
-                                cur_deletion.set_next_bad(mapping)
+                if not line.startswith('@'):
+                    break
+                if line.startswith('@SQ') and 'SN:' in line and 'LN:' in line:
+                    seq_name = line.split('\tSN:')[1].split('\t')[0]
+                    seq_length = int(line.split('\tLN:')[1].split('\t')[0])
+                    seq_name_length[seq_name] = seq_length
+                headers.append(line.strip())
+        need_ref_splitting = False
+        if meta_ref_fpaths:
+            ref_files = {}
+            for cur_ref_fpath in meta_ref_fpaths:
+                ref = qutils.name_from_fpath(cur_ref_fpath)
+                new_ref_sam_fpath = os.path.join(output_dirpath, ref + '.sam')
+                if is_non_empty_file(new_ref_sam_fpath):
+                    logger.info('    Using existing split SAM-file for %s: %s' % (ref, new_ref_sam_fpath))
+                    ref_files[ref] = None
+                else:
+                    new_ref_sam_file = open(new_ref_sam_fpath, 'w')
+                    new_ref_sam_file.write(headers[0] + '\n')
+                    chrs = []
+                    for h in (h for h in headers if h.startswith('@SQ') and 'SN:' in h):
+                        seq_name = h.split('\tSN:')[1].split('\t')[0]
+                        if seq_name in ref_labels and ref_labels[seq_name] == ref:
+                            new_ref_sam_file.write(h + '\n')
+                            chrs.append(seq_name)
+                    new_ref_sam_file.write(headers[-1] + '\n')
+                    ref_files[ref] = new_ref_sam_file
+                    need_ref_splitting = True
+        deletions = []
+        trivial_deletions_fpath = os.path.join(output_dirpath, qconfig.trivial_deletions_fname)
+        logger.info('  Looking for trivial deletions (long zero-covered fragments)...')
+        need_trivial_deletions = True
+        if os.path.exists(trivial_deletions_fpath):
+            need_trivial_deletions = False
+            logger.info('    Using existing file: ' + trivial_deletions_fpath)
+
+        if need_trivial_deletions or need_ref_splitting:
+            with open(sam_sorted_fpath) as sam_file:
+                cur_deletion = None
+                for line in sam_file:
+                    mapping = Mapping.parse(line)
+                    if mapping:
+                        # common case: continue current deletion (potential) on the same reference
+                        if cur_deletion and cur_deletion.ref == mapping.ref:
+                            if cur_deletion.next_bad is None:  # previous mapping was in region BEFORE 0-covered fragment
+                                # just passed 0-covered fragment
+                                if mapping.start - cur_deletion.prev_bad > QuastDeletion.MIN_GAP:
+                                    cur_deletion.set_next_bad(mapping)
+                                    if mapping.mapq >= Mapping.MIN_MAP_QUALITY:
+                                        cur_deletion.set_next_good(mapping)
+                                        if cur_deletion.is_valid():
+                                            deletions.append(cur_deletion)
+                                        cur_deletion = QuastDeletion(mapping.ref).set_prev_good(mapping)
+                                # continue region BEFORE 0-covered fragment
+                                elif mapping.mapq >= Mapping.MIN_MAP_QUALITY:
+                                    cur_deletion.set_prev_good(mapping)
+                                else:
+                                    cur_deletion.set_prev_bad(mapping)
+                            else:  # previous mapping was in region AFTER 0-covered fragment
+                                # just passed another 0-cov fragment between end of cur_deletion BAD region and this mapping
+                                if mapping.start - cur_deletion.next_bad_end > QuastDeletion.MIN_GAP:
+                                    if cur_deletion.is_valid():   # add previous fragment's deletion if needed
+                                        deletions.append(cur_deletion)
+                                    cur_deletion = QuastDeletion(mapping.ref).set_prev_bad(position=cur_deletion.next_bad_end)
+                                # continue region AFTER 0-covered fragment (old one or new/another one -- see "if" above)
                                 if mapping.mapq >= Mapping.MIN_MAP_QUALITY:
                                     cur_deletion.set_next_good(mapping)
                                     if cur_deletion.is_valid():
                                         deletions.append(cur_deletion)
                                     cur_deletion = QuastDeletion(mapping.ref).set_prev_good(mapping)
-                            # continue region BEFORE 0-covered fragment
-                            elif mapping.mapq >= Mapping.MIN_MAP_QUALITY:
-                                cur_deletion.set_prev_good(mapping)
-                            else:
-                                cur_deletion.set_prev_bad(mapping)
-                        else:  # previous mapping was in region AFTER 0-covered fragment
-                            # just passed another 0-cov fragment between end of cur_deletion BAD region and this mapping
-                            if mapping.start - cur_deletion.next_bad_end > QuastDeletion.MIN_GAP:
-                                if cur_deletion.is_valid():   # add previous fragment's deletion if needed
-                                    deletions.append(cur_deletion)
-                                cur_deletion = QuastDeletion(mapping.ref).set_prev_bad(position=cur_deletion.next_bad_end)
-                            # continue region AFTER 0-covered fragment (old one or new/another one -- see "if" above)
-                            if mapping.mapq >= Mapping.MIN_MAP_QUALITY:
-                                cur_deletion.set_next_good(mapping)
+                                else:
+                                    cur_deletion.set_next_bad_end(mapping)
+                        # special case: just started or just switched to the next reference
+                        else:
+                            if cur_deletion and cur_deletion.ref in seq_name_length:  # switched to the next ref
+                                cur_deletion.set_next_good(position=seq_name_length[cur_deletion.ref])
                                 if cur_deletion.is_valid():
                                     deletions.append(cur_deletion)
-                                cur_deletion = QuastDeletion(mapping.ref).set_prev_good(mapping)
-                            else:
-                                cur_deletion.set_next_bad_end(mapping)
-                    # special case: just started or just switched to the next reference
-                    else:
-                        if cur_deletion and cur_deletion.ref in seq_name_length:  # switched to the next ref
-                            cur_deletion.set_next_good(position=seq_name_length[cur_deletion.ref])
-                            if cur_deletion.is_valid():
-                                deletions.append(cur_deletion)
-                        cur_deletion = QuastDeletion(mapping.ref).set_prev_good(mapping)
+                            cur_deletion = QuastDeletion(mapping.ref).set_prev_good(mapping)
 
-                    if need_ref_splitting:
-                        cur_ref = ref_labels[mapping.ref]
-                        if mapping.ref_next.strip() == '=' or cur_ref == ref_labels[mapping.ref_next]:
-                            if ref_files[cur_ref] is not None:
-                                ref_files[cur_ref].write(line)
-            if cur_deletion and cur_deletion.ref in seq_name_length:  # switched to the next ref
-                cur_deletion.set_next_good(position=seq_name_length[cur_deletion.ref])
-                if cur_deletion.is_valid():
-                    deletions.append(cur_deletion)
-        if need_ref_splitting:
-            for ref_handler in ref_files.values():
-                if ref_handler is not None:
-                    ref_handler.close()
-        if need_trivial_deletions:
-            logger.info('  Trivial deletions: %d found' % len(deletions))
-            logger.info('    Saving to: ' + trivial_deletions_fpath)
-            with open(trivial_deletions_fpath, 'w') as f:
-                for deletion in deletions:
-                    f.write(str(deletion) + '\n')
+                        if need_ref_splitting:
+                            cur_ref = ref_labels[mapping.ref]
+                            if mapping.ref_next.strip() == '=' or cur_ref == ref_labels[mapping.ref_next]:
+                                if ref_files[cur_ref] is not None:
+                                    ref_files[cur_ref].write(line)
+                if cur_deletion and cur_deletion.ref in seq_name_length:  # switched to the next ref
+                    cur_deletion.set_next_good(position=seq_name_length[cur_deletion.ref])
+                    if cur_deletion.is_valid():
+                        deletions.append(cur_deletion)
+            if need_ref_splitting:
+                for ref_handler in ref_files.values():
+                    if ref_handler is not None:
+                        ref_handler.close()
+            if need_trivial_deletions:
+                logger.info('  Trivial deletions: %d found' % len(deletions))
+                logger.info('    Saving to: ' + trivial_deletions_fpath)
+                with open(trivial_deletions_fpath, 'w') as f:
+                    for deletion in deletions:
+                        f.write(str(deletion) + '\n')
 
-    if os.path.exists(config_manta_fpath):
-        manta_sv_fpath = search_sv_with_manta(main_ref_fpath, meta_ref_fpaths, output_dirpath, err_path)
-        qutils.cat_files([manta_sv_fpath, trivial_deletions_fpath], bed_fpath)
-    elif os.path.exists(trivial_deletions_fpath):
-        shutil.copy(trivial_deletions_fpath, bed_fpath)
+        if os.path.exists(config_manta_fpath):
+            manta_sv_fpath = search_sv_with_manta(main_ref_fpath, meta_ref_fpaths, output_dirpath, err_path)
+            qutils.cat_files([manta_sv_fpath, trivial_deletions_fpath], bed_fpath)
+        elif os.path.exists(trivial_deletions_fpath):
+            shutil.copy(trivial_deletions_fpath, bed_fpath)
 
-    if os.path.exists(bed_fpath):
-        logger.main_info('  Structural variations saved to ' + bed_fpath)
-        return bed_fpath, cov_fpath
+    if is_non_empty_file(bed_fpath):
+        logger.main_info('  Structural variations are in ' + bed_fpath)
     else:
         logger.main_info('  Failed searching structural variations.')
-        return None, cov_fpath
+        bed_fpath = None
+    if is_non_empty_file(cov_fpath):
+        logger.main_info('  Coverage distribution along the reference genome is in ' + cov_fpath)
+    else:
+        logger.main_info('  Failed to calculate coverage distribution')
+        cov_fpath = None
+    return bed_fpath, cov_fpath
 
 
 def get_coverage(output_dirpath, ref_name, bam_fpath, err_path, cov_fpath):
     if not is_non_empty_file(cov_fpath):
+        logger.info('  Preparing reads coverage file...')
         bamsorted_fpath = os.path.join(output_dirpath, ref_name + '.sorted.bam')
         if not is_non_empty_file(bamsorted_fpath):
             qutils.call_subprocess([samtools_fpath('samtools'), 'sort', '-@', str(qconfig.max_threads), bam_fpath,
@@ -372,7 +381,7 @@ def do(ref_fpath, contigs_fpaths, reads_fpaths, meta_ref_fpaths, output_dir, int
         global logger
         logger = external_logger
     logger.print_timestamp()
-    logger.main_info('Running Structural Variants caller...')
+    logger.main_info('Running Reads analyzer...')
 
     if not os.path.isdir(output_dir):
         os.makedirs(output_dir)
@@ -410,7 +419,7 @@ def do(ref_fpath, contigs_fpaths, reads_fpaths, meta_ref_fpaths, output_dir, int
             logger.main_info('Failed searching structural variations')
             return None, None
 
-    if not all_required_binaries_exist(manta_bin_dirpath, 'configManta.py'):
+    if bed_fpath is None and not all_required_binaries_exist(manta_bin_dirpath, 'configManta.py'):
         # making
         if not os.path.exists(manta_build_dirpath):
             os.mkdir(manta_build_dirpath)

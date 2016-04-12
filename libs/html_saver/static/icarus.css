@@ -18,6 +18,10 @@
     width: 240px;
 }
 
+#legend .block {
+    width: 230px;
+}
+
 #legend.collapsed p {
     margin-bottom: 5px;
 }

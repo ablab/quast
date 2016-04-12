@@ -776,7 +776,7 @@ def parse_cov_fpath(cov_fpath, chr_names, chr_full_names):
     if not cov_fpath:
         return None, None, None
     cov_data = defaultdict(list)
-    not_covered = defaultdict(list)
+    #not_covered = defaultdict(list)
     cur_len = defaultdict(int)
     max_depth = defaultdict(int)
     cov_factor = 10
@@ -801,9 +801,9 @@ def parse_cov_fpath(cov_fpath, chr_names, chr_full_names):
                 max_depth[chr] = max(cur_depth, max_depth[chr])
                 cov_data[name].append(cur_depth)
                 cur_len[name] = 0
-            if c[2] == '0':
-                not_covered[name].append(c[1])
-    return cov_data, not_covered, max_depth
+            # if c[2] == '0':
+            #     not_covered[name].append(c[1])
+    return cov_data, None, max_depth
 
 
 def get_assemblies_data(contigs_fpaths, stdout_pattern, nx_marks):
@@ -1033,10 +1033,10 @@ def save_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, chr_length
 
         data_str.append('var not_covered = {};')
         data_str.append('not_covered["{chr}"] = [ '.format(**locals()))
-        if len(not_covered[chr]) > 0:
-            for e in not_covered[chr]:
-                data_str.append('{e},'.format(**locals()))
-            data_str[-1] = data_str[-1][:-1]
+        # if len(not_covered[chr]) > 0:
+        #     for e in not_covered[chr]:
+        #         data_str.append('{e},'.format(**locals()))
+        #     data_str[-1] = data_str[-1][:-1]
         data_str[-1] += '];'
     data_str = '\n'.join(data_str)
 

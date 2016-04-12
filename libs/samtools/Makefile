@@ -68,17 +68,7 @@ MISC_PROGRAMS = \
 	misc/soap2sam.pl \
 	misc/varfilter.py misc/wgsim_eval.pl misc/zoom2sam.pl
 
-BUILT_TEST_PROGRAMS = \
-	test/merge/test_bam_translate \
-	test/merge/test_rtrans_build \
-	test/merge/test_trans_tbl_init \
-	test/split/test_count_rg \
-	test/split/test_expand_format_string \
-	test/split/test_filter_header_rg \
-	test/split/test_parse_args \
-	test/vcf-miniview
-
-all: $(PROGRAMS) $(BUILT_MISC_PROGRAMS) $(BUILT_TEST_PROGRAMS)
+all: $(PROGRAMS) $(BUILT_MISC_PROGRAMS)
 
 # TODO Use configure or htslib.pc to add -rdynamic/-ldl conditionally
 ALL_CPPFLAGS = $(DFLAGS) -I. $(HTSLIB_CPPFLAGS) $(CPPFLAGS)

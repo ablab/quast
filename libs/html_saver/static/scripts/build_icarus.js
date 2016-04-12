@@ -233,6 +233,9 @@ THE SOFTWARE.
     var baseChartHeight = covMiniOffsetY + coverageHeight * 2 + annotationsHeight + margin.top + margin.bottom + 100;
     var curChartHeight = baseChartHeight;
 
+    var manyChromosomes = !isContigSizePlot && chrContigs.length > 1;
+    var chrLabelsOffsetY = manyChromosomes ? 6 : 0;
+
     var chart = d3.select('body').append('div').attr('id', 'chart')
             .append('svg:svg')
             .attr('width', width + margin.right + margin.left)
@@ -243,7 +246,7 @@ THE SOFTWARE.
             .attr('id', 'clip')
             .append('rect')
             .attr('width', width)
-            .attr('height', mainHeight);
+            .attr('height', mainHeight + chrLabelsOffsetY);
 
     var filter = chart.append('defs')
             .append('filter').attr('id', 'shadow');
@@ -602,7 +605,7 @@ THE SOFTWARE.
                 chrName = chrContigs[i];
                 chrLen = chromosomes_len[chrName];
                 separatedLines.push({name: chrName, corr_start: currentLen, corr_end: currentLen + chrLen,
-                               y1: 0, y2: mainHeight, len: chrLen});
+                               y1: 0, y2: mainHeight + chrLabelsOffsetY, len: chrLen});
                 currentLen += chrLen;
             }
         }
@@ -1426,7 +1429,7 @@ THE SOFTWARE.
                 .scale(x_main)
                 .orient('bottom')
                 .tickSize(6, 0, 0);
-        addMainXAxis(main, mainHeight);
+        addMainXAxis(main, mainHeight + chrLabelsOffsetY);
         var miniTickValue = getTickValue(x_mini.domain()[1]);
 
         xMiniAxis = appendXAxis(mini, x_mini, miniHeight, miniTickValue);

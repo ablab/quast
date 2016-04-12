@@ -774,10 +774,12 @@ def add_contig(cum_length, contig, not_used_nx, assemblies_n50, assembly, contig
 
 def parse_cov_fpath(cov_fpath, chr_names, chr_full_names):
     if not cov_fpath:
-        return None, None
+        return None, None, None
     cov_data = dict()
     not_covered = dict()
     cur_len = dict()
+    cov_factor = 10
+    max_depth = defaultdict(int)
     with open(cov_fpath, 'r') as coverage:
         contig_to_chr = {}
         for chr in chr_full_names:
@@ -797,12 +799,14 @@ def parse_cov_fpath(cov_fpath, chr_names, chr_full_names):
             c = list(line.split())
             name = contig_to_chr[qutils.correct_name(c[0])]
             cur_len[name] += int(c[2])
-            if index % 100 == 0 and index > 0:
-                cov_data[name].append(cur_len[name]/100)
+            if (index + 1) % cov_factor == 0 and index > 0:
+                cur_depth = cur_len[name] / cov_factor
+                max_depth[chr] = max(cur_depth, max_depth[chr])
+                cov_data[name].append(cur_depth)
                 cur_len[name] = 0
             if c[2] == '0':
                 not_covered[name].append(c[1])
-    return cov_data, not_covered
+    return cov_data, not_covered, max_depth
 
 
 def get_assemblies_data(contigs_fpaths, stdout_pattern, nx_marks):
@@ -906,7 +910,7 @@ def parse_features_data(features, cumulative_ref_lengths, ref_names):
 
 def save_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, chr_lengths, data_str, chr_to_aligned_blocks,
                                     structures_by_labels, output_dir_path=None, ref_data=None, features_data=None,
-                                    assemblies_data=None, cov_data=None, not_covered=None):
+                                    assemblies_data=None, cov_data=None, not_covered=None, max_depth=None):
     short_chr = chr[:30]
     if len(chr_full_names) == 1:
         short_chr = qconfig.one_alignment_viewer_name
@@ -1021,7 +1025,10 @@ def save_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, chr_length
     if cov_data:
         # adding coverage data
         data_str.append('var coverage_data = {};')
+        data_str.append('var max_depth = {};')
         if cov_data[chr]:
+            chr_max_depth = max_depth[chr]
+            data_str.append('max_depth["{chr}"] = {chr_max_depth};'.format(**locals()))
             data_str.append('coverage_data["{chr}"] = [ '.format(**locals()))
             for e in cov_data[chr]:
                 data_str.append('{e},'.format(**locals()))
@@ -1135,7 +1142,7 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
     else:
         chr_full_names = chr_names
 
-    cov_data, not_covered = parse_cov_fpath(cov_fpath, chr_names, chr_full_names)
+    cov_data, not_covered, max_depth = parse_cov_fpath(cov_fpath, chr_names, chr_full_names)
 
     chr_sizes = {}
     num_contigs = {}
@@ -1180,7 +1187,7 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
         num_misassemblies[chr], aligned_assemblies[chr] = save_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, chr_lengths,
                                                           data_str, chr_to_aligned_blocks, structures_by_labels,
                                                           ref_data=ref_data, features_data=features_data, assemblies_data=assemblies_data,
-                                                          cov_data=cov_data, not_covered=not_covered, output_dir_path=output_all_files_dir_path)
+                                                          cov_data=cov_data, not_covered=not_covered, max_depth=max_depth, output_dir_path=output_all_files_dir_path)
 
     contigs_sizes_str, too_many_contigs = get_contigs_data(contigs_by_assemblies, nx_marks, assemblies_n50)
     with open(html_saver.get_real_path('_chr_templ.html'), 'r') as template:

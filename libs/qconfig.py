@@ -114,6 +114,8 @@ used_ls = None
 # for Icarus
 draw_svg = False
 create_icarus_html = True
+icarus_css_name = 'icarus.css'
+icarus_script_name = 'build_icarus.js'
 icarus_dirname = 'icarus_viewers'
 icarus_html_fname = 'icarus.html'
 icarus_menu_template_fname = 'alignment_summary_templ.html'

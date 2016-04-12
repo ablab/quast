@@ -1077,12 +1077,12 @@ def save_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, chr_length
                             result.write('<label><input type="checkbox" id="{ms_type}" name="misassemblies_select" '
                                  '{is_checked}/>{ms_name} ({ms_count})</label>'.format(**locals()))
                 elif line.find('<!--- css: ---->') != -1:
-                    result.write(html_saver.css_html(os.path.join('static', 'contig_alignment_plot.css')))
+                    result.write(html_saver.css_html(os.path.join('static', qconfig.icarus_css_name)))
                     result.write(html_saver.css_html(os.path.join('static', 'common.css')))
                     result.write(html_saver.css_html(os.path.join('static', 'bootstrap', 'bootstrap.css')))
                 elif line.find('<!--- scripts: ---->') != -1:
                     result.write(html_saver.js_html(os.path.join('static', 'd3.js')))
-                    result.write(html_saver.js_html(os.path.join('static', 'scripts', 'contig_alignment_plot_script.js')))
+                    result.write(html_saver.js_html(os.path.join('static', 'scripts', qconfig.icarus_script_name)))
                 elif line.find('<!--- reference: ---->') != -1:
                     chr_name = chr.replace('_', ' ')
                     # if len(chr_name) > 120:
@@ -1201,12 +1201,12 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
                     result.write('Fade contigs shorter than <input class="textBox" '
                                  'id="input_contig_threshold" type="text" size="5" /> bp </span>')
                 elif line.find('<!--- css: ---->') != -1:
-                    result.write(html_saver.css_html(os.path.join('static', 'contig_alignment_plot.css')))
+                    result.write(html_saver.css_html(os.path.join('static', qconfig.icarus_css_name)))
                     result.write(html_saver.css_html(os.path.join('static', 'common.css')))
                     result.write(html_saver.css_html(os.path.join('static', 'bootstrap', 'bootstrap.css')))
                 elif line.find('<!--- scripts: ---->') != -1:
                     result.write(html_saver.js_html(os.path.join('static', 'd3.js')))
-                    result.write(html_saver.js_html(os.path.join('static', 'scripts', 'contig_alignment_plot_script.js')))
+                    result.write(html_saver.js_html(os.path.join('static', 'scripts', qconfig.icarus_script_name)))
                 elif line.find('<!--- menu: ---->') != -1:
                     result.write(main_menu_link)
                 elif line.find('<!--- reference: ---->') != -1:
@@ -1231,12 +1231,12 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
             is_unaligned_asm_exists = len(set(num_aligned_assemblies)) > 1
             for line in template:
                 if line.find('<!--- css: ---->') != -1:
-                    result.write(html_saver.css_html(os.path.join('static', 'contig_alignment_plot.css')))
+                    result.write(html_saver.css_html(os.path.join('static', qconfig.icarus_css_name)))
                     result.write(html_saver.css_html(os.path.join('static', 'common.css')))
                     result.write(html_saver.css_html(os.path.join('static', 'bootstrap', 'bootstrap.css')))
                 elif line.find('<!--- scripts: ---->') != -1:
                     result.write(html_saver.js_html(os.path.join('static', 'd3.js')))
-                    result.write(html_saver.js_html(os.path.join('static', 'scripts', 'contig_alignment_plot_script.js')))
+                    result.write(html_saver.js_html(os.path.join('static', 'scripts', qconfig.icarus_script_name)))
                 elif line.find('<!--- assemblies: ---->') != -1:
                     labels = [qconfig.assembly_labels_by_fpath[contigs_fpath] for contigs_fpath in contigs_fpaths]
                     result.write('<b>Assemblies: </b>' + ', '.join(labels))

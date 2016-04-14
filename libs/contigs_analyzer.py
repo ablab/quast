@@ -28,7 +28,7 @@ from libs import reporting, qconfig, qutils
 
 from libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
-
+from qutils import correct_name
 
 required_binaries = ['nucmer', 'delta-filter', 'show-coords', 'show-snps', 'mummer', 'mgaps']
 
@@ -461,43 +461,43 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
     def check_sv(align1, align2, inconsistency, region_struct_variations):
         max_error = 100 # smgap / 4  # min(2 * smgap, max(smgap, inconsistency * 0.05))
         max_gap = smgap / 4
+
+        def __match_ci(pos, sv):  # check whether pos matches confidence interval of sv
+            return sv.s1 - max_error <= pos <= sv.e1 + max_error
+
         if align2.s1 < align1.s1:
             align1, align2 = align2, align1
         if align1.ref != align2.ref:  # translocation
             for sv in region_struct_variations.translocations:
                 if sv[0].ref == align1.ref and sv[1].ref == align2.ref and \
-                                (sv[0].s1 - max_error <= align1.e1 <= sv[0].e1 + max_error) and \
-                                (sv[1].s1 - max_error <= align2.s1 <= sv[1].e1 + max_error):
+                        __match_ci(align1.e1, sv[0]) and __match_ci(align2.s1, sv[1]):
                     return True
                 if sv[0].ref == align2.ref and sv[1].ref == align1.ref and \
-                                (sv[0].s1 - max_error <= align2.e1 <= sv[0].e1 + max_error) and \
-                                (sv[1].s1 - max_error <= align1.s1 <= sv[1].e1 + max_error):
+                        __match_ci(align2.e1, sv[0]) and __match_ci(align1.s1, sv[1]):
                     return True
         elif (align1.s2 < align1.e2) != (align2.s2 < align2.e2) and abs(inconsistency) < smgap:
             for sv in region_struct_variations.inversions:
-                if align1.ref == sv[0].ref and align1.ref == sv[1].ref and \
-                                (sv[0].s1 - max_error <= align1.e1 <= sv[0].e1 + max_error) and \
-                                (sv[1].s1 - max_error <= align2.e1 <= sv[1].e1 + max_error):
-                                #                               ^ "e1" is correct here, not "s1", it is an inversion!
+                if align1.ref == sv[0].ref and \
+                        (__match_ci(align1.s1, sv[0]) and __match_ci(align2.s1, sv[1])) or \
+                        (__match_ci(align1.e1, sv[0]) and __match_ci(align2.e1, sv[1])):
                     return True
         else:
             variations = region_struct_variations.relocations
             for index, sv in enumerate(variations):
-                if (sv[0].s1 - max_error <= align1.e1 <= sv[0].e1 + max_error) and sv[0].ref == align1.ref:
-                    if (sv[1].s1 - max_error <= align2.s1 <= sv[1].e1 + max_error) and sv[1].ref == align2.ref:
+                if sv[0].ref == align1.ref and __match_ci(align1.e1, sv[0]):
+                    if __match_ci(align2.s1, sv[1]):
                         return True
                     # unite large deletion (relocations only)
-                    if align1.ref == align2.ref:
+                    prev_end = sv[1].e1
+                    index_variation = index + 1
+                    while index_variation < len(variations) and \
+                                            variations[index_variation][0].s1 - prev_end <= max_gap and \
+                                            variations[index_variation][0].ref == align1.ref:
+                        sv = variations[index_variation]
+                        if __match_ci(align2.s1, sv[1]):
+                            return True
                         prev_end = sv[1].e1
-                        index_variation = index + 1
-                        while index_variation < len(variations) and \
-                                                variations[index_variation][0].s1 - prev_end <= max_gap and \
-                                                variations[index_variation][0].ref == align2.ref:
-                            sv = variations[index_variation]
-                            if (sv[1].s1 - max_error <= align2.s1 <= sv[1].e1 + max_error) and sv[1].ref == align2.ref:
-                                return True
-                            prev_end = sv[1].e1
-                            index_variation += 1
+                        index_variation += 1
         return False
 
     def find_all_sv(bed_fpath):
@@ -506,16 +506,21 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
         region_struct_variations = StructuralVariations()
         f = open(bed_fpath)
         for line in f:
-            l = line.split()
-            if len(l) > 10 and not line.startswith('#'):
-                align1 = Mapping(s1=int(l[1]), e1=int(l[2]), ref=l[0], s2=None, e2=None, len1=None, len2=None, idy=None, contig=None)
-                align2 = Mapping(s1=int(l[4]), e1=int(l[5]),  ref=l[3], s2=None, e2=None, len1=None, len2=None, idy=None, contig=None)
-                if 'INV' in l[8]:
-                    region_struct_variations.inversions.append((align1, align2))
-                elif l[0] != l[3]:  # different chromosomes
-                    region_struct_variations.translocations.append((align1, align2))
-                else:
-                    region_struct_variations.relocations.append((align1, align2))
+            l = line.split('\t')
+            if len(l) > 6 and not line.startswith('#'):
+                try:
+                    align1 = Mapping(s1=int(l[1]), e1=int(l[2]), ref=correct_name(l[0]), s2=None, e2=None, len1=None, len2=None, idy=None, contig=None)
+                    align2 = Mapping(s1=int(l[4]), e1=int(l[5]),  ref=correct_name(l[3]), s2=None, e2=None, len1=None, len2=None, idy=None, contig=None)
+                    if align1.ref != align2.ref:
+                        region_struct_variations.translocations.append((align1, align2))
+                    elif 'INV' in l[6]:
+                        region_struct_variations.inversions.append((align1, align2))
+                    elif 'DEL' in l[6]:
+                        region_struct_variations.relocations.append((align1, align2))
+                    else:
+                        pass # not supported yet
+                except ValueError:
+                    pass  # incorrect line format
         return region_struct_variations
 
     def check_is_scaffold_gap(inconsistency, contig_seq, align1, align2):

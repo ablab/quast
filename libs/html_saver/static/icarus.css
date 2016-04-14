@@ -544,3 +544,10 @@ path {
     white-space: nowrap;
 }
 
+.ie_warning {
+    background-color: yellow;
+    height: 30px;
+    font-size:14px;
+    text-align:center;
+    padding-top:5px;
+}

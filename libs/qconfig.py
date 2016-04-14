@@ -39,7 +39,7 @@ long_options = "test test-no-ref test-sv output-dir= save-json-to= genes= operon
                "ambiguity-usage= scaffolds threads= min-cluster= min-alignment= est-ref-size= use-all-alignments gene-finding "\
                "strict-NA meta labels= help-hidden no-snps fast max-ref-number= extensive-mis-size= plots-format= " \
                "fragmented significant-part-size= unique-mapping " \
-               "references-list= sv-bed= reads1= reads2= memory-efficient silent version colors= ls=".split()
+               "references-list= sv-bedpe= reads1= reads2= memory-efficient silent version colors= ls=".split()
 short_options = "o:G:O:R:t:m:J:jehvda:c:ufl:Lx:i:s1:2:"
 
 # default values for options
@@ -291,7 +291,7 @@ def usage(show_hidden=False, meta=False, short=True):
         print >> sys.stderr, "-1  --reads1  <filename>              File with forward reads (in FASTQ format, may be gzipped). "
         print >> sys.stderr, "-2  --reads2  <filename>              File with reverse reads (in FASTQ format, may be gzipped). "
         print >> sys.stderr, "                                      Reads are used for structural variant detection. "
-        print >> sys.stderr, "    --sv-bed  <filename>              File with structural variations (in BED format)"
+        print >> sys.stderr, "    --sv-bedpe  <filename>            File with structural variations (in BEDPE format)"
         print >> sys.stderr, ""
         print >> sys.stderr, "Speedup options:"
         print >> sys.stderr, "    --no-check                        Do not check and correct input fasta files. Use at your own risk (see manual)"

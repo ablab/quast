@@ -998,7 +998,7 @@ def save_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, chr_length
                                     links_to_chromosomes.append('links_to_chromosomes["{el.ref_name}"] = "{new_chr}";'.format(**locals()))
                             corr_el_start = el.start
                             corr_el_end = el.end
-                            data_str.append('{type: "A",corr_start: ' + str(corr_el_start) + ',corr_end: ' +
+                            data_str.append('{type: "A",contig: "' + alignment.name + '",corr_start: ' + str(corr_el_start) + ',corr_end: ' +
                                             str(corr_el_end) + ',start:' + str(el.start) + ',end:' + str(el.end) +
                                             ',start_in_contig:' + str(el.start_in_contig) + ',end_in_contig:' +
                                             str(el.end_in_contig) + ',IDY:' + el.idy + ',chr: "' + el.ref_name + '"},')

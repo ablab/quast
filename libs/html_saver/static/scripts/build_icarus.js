@@ -1822,7 +1822,7 @@ THE SOFTWARE.
         else info.append('p')
                 .text('Size: ' + d.size + ' bp');
 
-        var appendPositionElement = function(data, start, end, assembly, whereAppend, start_in_contig, end_in_contig, prev_start, is_expanded) {
+        var appendPositionElement = function(data, start, end, contigName, assembly, whereAppend, start_in_contig, end_in_contig, prev_start, is_expanded) {
             var posVal = function (d) {
                 if (mainTickValue == 'Gbp')
                     return d3.round(d / 1000000000, 2);
@@ -1841,7 +1841,7 @@ THE SOFTWARE.
             };
 
             var e = !data ? '' : data.filter(function (d) {
-                if (d.type == 'A') {
+                if (d.type == 'A' && d.contig == contigName) {
                     if (start_in_contig && d.start_in_contig == start_in_contig && d.end_in_contig == end_in_contig
                         && d.corr_start == start) return d;
                     else if (!start_in_contig && d.corr_start <= start && end <= d.corr_end) return d;
@@ -1877,7 +1877,7 @@ THE SOFTWARE.
                                 else if (prev_start) point = e.corr_start;
                                 setCoords([point - brushSize / 2, point + brushSize / 2], true);
                                 for (var i = 0; i < items.length; i++) {
-                                    if (items[i].assembly == assembly && items[i].corr_start == e.corr_start && items[i].corr_end == e.corr_end) {
+                                    if (items[i].assembly == assembly  && items[i].name == contigName && items[i].corr_start == e.corr_start && items[i].corr_end == e.corr_end) {
                                         selected_id = items[i].groupId;
                                         showArrows(items[i]);
                                         changeInfo(items[i]);
@@ -1924,7 +1924,7 @@ THE SOFTWARE.
             d.append('p')
                     .text(['IDY:', e.IDY, '%'].join(' '));
         };
-        appendPositionElement(d.structure, d.corr_start, d.corr_end, d.assembly, info);
+        appendPositionElement(d.structure, d.corr_start, d.corr_end, d.name, d.assembly, info);
 
         showArrows(d);
         if (d.structure) {
@@ -1939,7 +1939,7 @@ THE SOFTWARE.
             for (var i = 0; i < d.structure.length; ++i) {
                 var e = d.structure[i];
                 if (e.type == "A") {
-                    appendPositionElement(d.structure, e.corr_start, e.corr_end, d.assembly, blocks, e.start_in_contig,
+                    appendPositionElement(d.structure, e.corr_start, e.corr_end, d.name, d.assembly, blocks, e.start_in_contig,
                         e.end_in_contig, d.corr_start, true);
 
                     if (d.ambiguous && i < d.structure.length - 1)

@@ -23,8 +23,8 @@
          reference). QUAST will try to detect misassemblies caused by the fragmentation and
          mark them "fake".
        - "--unique-mapping" for forcing -a=one in QUAST run on the combined reference (MetaQUAST only).
-       - "--sv-bed" for specifying BED file with structural variations. Note that QUAST may
-         create such BED automatically using Manta SV caller if reads are specified.
+       - "--sv-bedpe" for specifying BEDPE file with structural variations. Note that QUAST may
+         create such BEDPE automatically using Manta SV caller if reads are specified.
          However, it is rather slow because include reads alignment to the reference.
 
       4. Fixed bug with skipping "broken" scaffolds in per reference runs of MetaQUAST.

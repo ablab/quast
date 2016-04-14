@@ -525,11 +525,9 @@ Found SVs are used for classifying QUAST misassemblies into true ones and fake o
     sequenced organism). Fake misassemblies are excluded from <a href="#misassemblies"><code>#&nbsp;misassemblies</code></a> and reported as <a href="#sv"><code>#&nbsp;structural variants</code></a>.
 
 <div class='option'>
-<code><b>--sv-bed</b></code>
+<a name='sv_bedpe'></a><code><b>--sv-bedpe</b></code>
 </div>
-Use specified <a href="https://genome.ucsc.edu/FAQ/FAQformat.html#format1">BED</a> file as a list of SV. This option disables
-SV detection based on reads.
-
+Use specified file in <a href="http://bedtools.readthedocs.org/en/latest/content/general-usage.html#bedpe-format">BEDPE format</a> as a list of structural variations (SV). This option disables SV detection based on reads. Examples of BEDPE files for various types of SV are in FAQ section, <a href="#faq_q8">question Q8</a>.
 </div>
 
 <br>
@@ -1250,6 +1248,32 @@ Yes, sure! You just need to specify existing QUAST output directory with <code>-
     <br>
     <i>Hint</i>: if you run QUAST without specifying output dir with <code>-o</code> option you can rerun it on the same directory
     with <code>-o quast_results/latest</code>.
+<br>
+</p>
+
+<br>
+<a name="faq_q8"></a>
+<p><b><i>
+Q8. Which types of structural variations (SV) are handled by QUAST? 
+    Can you give examples of correct BEDPE files for <a href='#sv_bedpe'><code>--sv-bedpe</code></a> option?
+</b></i></p>
+<p>
+    QUAST can detect and correctly resolve inversions, deletions, and translocations. We also plan to add support for insertions soon.
+    <br><br>
+    BEDPE format specification is <a href="http://bedtools.readthedocs.org/en/latest/content/general-usage.html#bedpe-format">here</a>. We process first seven columns of the file (<i>chrom1, start1, end1, chrom2, start2, end2, name</i>), the rest are optional and not read by QUAST. Note that columns chould be  <b>tab-separated</b>! <br><b>Chrom1, start1, end1</b> define confidence interval around SV start, <b>chrom2, start2, end2</b> define confidence interval around SV end. <b>Name</b> defines SV type and it should contain 'INV' substring for inversions or 'DEL' for deletions; translocations are automatically indentified if <b>chrom1</b> is not equal to <b>chrom2</b>.
+    <br><br>
+    Example of BEDPE line for inversion on positions 1000-1200 of 'E.coli' chromosome (confidence interval is 11 bp long):
+    <code><pre>
+    E.coli&emsp;995&emsp;1010&emsp;E.coli&emsp;1195&emsp;1205&emsp;This_is_INVersion&emsp;The&emsp;Rest&emsp;Columns&emsp;Are&emsp;Optional
+    </pre></code>
+    Example of BEDPE line for deletion of fragment between 1000 and 1200 of 'S.aureus' chromosome: 
+    <code><pre>
+    S.aureus&emsp;995&emsp;1010&emsp;S.aureus&emsp;1195&emsp;1205&emsp;DEL
+    </pre></code>
+    Example of BEDPE line for translocation from position 500 of 'chr1' chromosome to position 100 of 'chr2' chromosome (confidence interval is different for both ends):
+    <code><pre>
+    chr1&emsp;450&emsp;550&emsp;chr2&emsp;100&emsp;100&emsp;name_does_not_matter_here
+    </pre></code>
 <br>
 </p>
 <br>

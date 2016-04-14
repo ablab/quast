@@ -125,7 +125,7 @@
        - processing of large (> 50 Mbp) multi-chromosome references in parallel (per chromosome);
        - new speed up options: --no-check, --no-gc, --no-snps, --fast (a combination of other).
 
-      3. More reports about misassemlies (in <output_dir>/contigs_reports/): 
+      3. More reports about misassemblies (in <output_dir>/contigs_reports/):
        - misassemblies_plot.pdf with histogram of misassembly types distribution per assembly.
        - contigs_report_<assembly_name>.mis_contig.info with brief details about misassembled 
          contigs only. 
@@ -148,7 +148,7 @@
       6. GeneMark-ES is used for predicting genes in eukaryotic genomes instead of Glimmer-HMM.
       For using Glimmer-HMM, a new option --glimmer added.
 
-      7. GeneMarkS incorporation fixed. Previously it was run on predifined heuristic models based 
+      7. GeneMarkS incorporation fixed. Previously it was run on predefined heuristic models based
       on GC content. Now it uses self-training module for getting the correct model.
       
       8. Fixed several minor bugs.
@@ -159,7 +159,7 @@
 
 
 2.3   1. Changed logic in misassembly computation. Fixed several minor bugs in misassembly
-      detection algorithm and one major bug caused by linear represenation of circular
+      detection algorithm and one major bug caused by linear representation of circular
       references and contigs in fasta format.
 
       2. Added contig alignment plots. See details in manual and in the QUAST paper (Fig. 1)

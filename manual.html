@@ -365,7 +365,7 @@ Take assembly names from their parent directory names.
 <div class='option'>
     <a name='gene_finding'></a><code><b>--gene-finding</b></code> (or <code>-f</code>)
 </div>
-Enables gene finding. Affects perfomance, thus disabled by default.<br>
+Enables gene finding. Affects performance, thus disabled by default.<br>
 <span style='line-height: 50%;'>&nbsp;</span><br>  
 By default, we assume that the genome is prokaryotic, and apply GeneMarkS for gene finding.
 If the genome is eukaryotic, use <a href='#eukaryote'><code>--eukaryote</code></a> to enable option to enable GeneMark-ES instead.
@@ -531,7 +531,7 @@ Use specified file in <a href="http://bedtools.readthedocs.org/en/latest/content
 </div>
 
 <br>
-Speed-up options:
+Speedup options:
 <div class='options'>
 
 <div class='option'>
@@ -571,7 +571,7 @@ Do not compute GC% and do not produce GC-distribution plots (both in HTML report
 <div class='option'>
 <code><b>--fast</b></code>
 </div>
-A shortcut for using all of speed-up options except --no-check.
+A shortcut for using all of speedup options except --no-check.
 </div>
 
 <br>
@@ -1068,7 +1068,7 @@ multiple misassemblies within one contig?
 </b></i></p>
 <p>
 Yes, you are right, QUAST looks for multiple misassembly events within one contig. Thus,
-number of misassemled contigs is always less or equal to number of misassemblies.
+number of misassembled contigs is always less or equal to number of misassemblies.
 </p>
 
 <br>
@@ -1091,7 +1091,7 @@ if your assembly is "ecoli_assembly_1.fasta" then the file is "ecoli_assembly_1.
 Q3. Is it possible to find which misassembly corresponds to each contig and which kind of a misassembly event it is?
 </b></i></p>
 <p>
-Yes, it is possible. QUAST produces report with detailed info about each contig alignments and the short version with only extensive misassemlies records.
+Yes, it is possible. QUAST produces report with detailed info about each contig alignments and the short version with only extensive misassemblies records.
 <br>
 <br>
 Let's start with <i>the short one</i>. It is saved to <code>&lt;quast_output_dir&gt;/contigs_reports/contigs_report_&lt;assembly_name>.mis_contigs.info</code>. E.g. if your assembly is "contigs.fasta" then the file is "contigs_report_contigs.mis_contigs.info", if your assembly is "ecoli_assembly_1.fasta" then the file is "contigs_report_ecoli_assembly_1.stdout".
@@ -1105,7 +1105,7 @@ Extensive misassembly ( inversion ) between 287 575 and 296 1
 Extensive misassembly ( relocation, inconsistency = 2655 ) between 16800 18907 and 18905 20382
 </pre>
 </code>
-In this example, we can see that contig named <b>NODE_601</b> has two extensive misassemblies. The first is an <b>inversion</b>. It occured between fragments 287 575 and 296 1 (coordinates on the contig). The first fragment (287-575 bp) aligned to the forward strand and the second one (1-296 bp) to the reverse strand (coordinates are descenating). The second misassembly is a <b>relocation</b>. It occured between fragments 16800-18907 and 18905-20382. They aligned to the reference with inconsistency of 2655 bp (a gap or an overlap).
+In this example, we can see that contig named <b>NODE_601</b> has two extensive misassemblies. The first is an <b>inversion</b>. It occurred between fragments 287 575 and 296 1 (coordinates on the contig). The first fragment (287-575 bp) aligned to the forward strand and the second one (1-296 bp) to the reverse strand (coordinates are descending). The second misassembly is a <b>relocation</b>. It occurred between fragments 16800-18907 and 18905-20382. They aligned to the reference with inconsistency of 2655 bp (a gap or an overlap).
 <br>
 <br>
 <br>
@@ -1264,7 +1264,7 @@ Q8. Which types of structural variations (SV) are handled by QUAST?
 <p>
     QUAST can detect and correctly resolve inversions, deletions, and translocations. We also plan to add support for insertions soon.
     <br><br>
-    BEDPE format specification is <a href="http://bedtools.readthedocs.org/en/latest/content/general-usage.html#bedpe-format">here</a>. We process first seven columns of the file (<i>chrom1, start1, end1, chrom2, start2, end2, name</i>), the rest are optional and not read by QUAST. Note that columns chould be  <b>tab-separated</b>! <br><b>Chrom1, start1, end1</b> define confidence interval around SV start, <b>chrom2, start2, end2</b> define confidence interval around SV end. <b>Name</b> defines SV type and it should contain 'INV' substring for inversions or 'DEL' for deletions; translocations are automatically indentified if <b>chrom1</b> is not equal to <b>chrom2</b>.
+    BEDPE format specification is <a href="http://bedtools.readthedocs.org/en/latest/content/general-usage.html#bedpe-format">here</a>. We process first seven columns of the file (<i>chrom1, start1, end1, chrom2, start2, end2, name</i>), the rest are optional and not read by QUAST. Note that columns should be  <b>tab-separated</b>! <br><b>Chrom1, start1, end1</b> define confidence interval around SV start, <b>chrom2, start2, end2</b> define confidence interval around SV end. <b>Name</b> defines SV type and it should contain 'INV' substring for inversions or 'DEL' for deletions; translocations are automatically identified if <b>chrom1</b> is not equal to <b>chrom2</b>.
     <br><br>
     Example of BEDPE line for inversion on positions 1000-1200 of 'E.coli' chromosome (confidence interval is 11 bp long):
     <code><pre>

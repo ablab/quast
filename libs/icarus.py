@@ -10,7 +10,11 @@
 
 from __future__ import with_statement
 
-from collections import defaultdict, OrderedDict
+from collections import defaultdict
+try:
+   from collections import OrderedDict
+except ImportError:
+   from site_packages.ordered_dict import OrderedDict
 
 from libs import qconfig, qutils, fastaparser, genome_analyzer, contigs_analyzer
 import os

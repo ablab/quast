@@ -22,6 +22,8 @@ logger = get_logger(qconfig.LOGGER_META_NAME)
 from urllib2 import urlopen
 import xml.etree.ElementTree as ET
 import urllib
+import socket
+socket.setdefaulttimeout(10)
 
 silva_db_path = 'http://www.arb-silva.de/fileadmin/silva_databases/release_119/Exports/'
 silva_fname = 'SILVA_119_SSURef_Nr99_tax_silva.fasta'
@@ -55,7 +57,7 @@ def try_send_request(url):
     attempts = 0
     while attempts < 3:
         try:
-            request = urlopen(url, timeout=10)
+            request = urlopen(url)
             break
         except Exception:
             attempts += 1

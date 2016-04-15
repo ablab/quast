@@ -29,11 +29,14 @@
 
       4. Fixed bug with skipping "broken" scaffolds in per reference runs of MetaQUAST.
 
-      5. Fixed several minor bugs.
- 
-      6. Embedded samtools updated to version 1.3.
+      5. Slightly rearranged MetaQUAST summary HTML report. New order is: statistics,
+         plots, table with links to per reference runs (the table was in beginning previously). 
 
-      7. Citation for MetaQUAST paper updated, citation for Icarus paper added.
+      6. Fixed several minor bugs.
+ 
+      7. Embedded samtools updated to version 1.3.
+
+      8. Citation for MetaQUAST paper updated, citation for Icarus paper added.
 
 
 3.2   1. The tool now accepts raw reads for improving quality assessment (experimental

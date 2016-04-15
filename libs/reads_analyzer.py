@@ -336,7 +336,7 @@ def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpat
                 manta_sv_fpath = search_sv_with_manta(main_ref_fpath, meta_ref_fpaths, output_dirpath, err_path)
                 qutils.cat_files([manta_sv_fpath, trivial_deletions_fpath], bed_fpath)
             except:
-                bed_fpath = None
+                pass
         elif os.path.exists(trivial_deletions_fpath):
             shutil.copy(trivial_deletions_fpath, bed_fpath)
 

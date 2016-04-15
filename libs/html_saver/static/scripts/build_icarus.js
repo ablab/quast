@@ -536,9 +536,9 @@ THE SOFTWARE.
               if (d.visText) return addGradient(d, d.visText, true);
             });
 
-    var div = d3.select('body').append('div')
-                .attr('class', 'feature_tip')
-                .style('opacity', 0);
+    var featureTip = d3.select('body').append('div')
+                        .attr('class', 'feature_tip')
+                        .style('opacity', 0);
     if (!featuresHidden) addFeatureTrackItems(annotationsMini, x_mini);
 
     addSelectionAreas();
@@ -1140,11 +1140,9 @@ THE SOFTWARE.
         if (!tooltipText)
             tooltipText = feature ? '<strong>' + (feature.name ? feature.name + ',' : '') + '</strong> <span>' +
                           (feature.id ? ' ID=' + feature.id + ',' : '') + ' coordinates: ' + feature.start + '-' + feature.end + '</span>' : '';
-        if (div.html() != tooltipText) {
-            div.transition()
-                .duration(200)
-                .style('opacity', 1);
-            div.html(tooltipText)
+        if (tooltipText && featureTip.html() != tooltipText) {
+            featureTip.style('opacity', 1);
+            featureTip.html(tooltipText)
                 .style('left', (d3.event.pageX - 50) + 'px')
                 .style('top', (d3.event.pageY + 5) + 'px');
         }
@@ -1152,9 +1150,8 @@ THE SOFTWARE.
     }
 
     function removeTooltip() {
-        div = d3.select('body').select('.feature_tip');
-        div.style('opacity', 0);
-        div.html('');
+        featureTip.style('opacity', 0);
+        featureTip.html('');
     }
 
     function setupInterface() {
@@ -1212,8 +1209,8 @@ THE SOFTWARE.
     function setTrackBtnPos(hideBtn, offsetY, track, pane, doHide) {
         var hideBtnExpandWidth = 130;
         hideBtn.style.display = "";
-        hideBtn.style.left = margin.left - hideBtnExpandWidth;
-        hideBtn.style.top = offsetY;
+        hideBtn.style.left = (margin.left - hideBtnExpandWidth) + "px";
+        hideBtn.style.top = offsetY + "px";
         hideBtn.onclick = function() {
             hideTrack(track, pane, doHide);
         };

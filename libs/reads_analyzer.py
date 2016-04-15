@@ -11,6 +11,7 @@ import urllib
 import urllib2
 from libs import reporting, qconfig, qutils, contigs_analyzer
 from qutils import is_non_empty_file
+from os.path import isfile
 
 from libs.log import get_logger
 
@@ -342,7 +343,10 @@ def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpat
     if is_non_empty_file(bed_fpath):
         logger.main_info('  Structural variations are in ' + bed_fpath)
     else:
-        logger.main_info('  Failed searching structural variations.')
+        if isfile(bed_fpath):
+            logger.main_info('  No structural variations were found.')
+        else:
+            logger.main_info('  Failed searching structural variations.')
         bed_fpath = None
     if is_non_empty_file(cov_fpath):
         logger.main_info('  Coverage distribution along the reference genome is in ' + cov_fpath)

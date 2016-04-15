@@ -26,115 +26,18 @@ THE SOFTWARE.
     INTERLACE_BLOCKS_COLOR = true;
     BLOCKS_SHADOW = false;
 
-    function parseData (data) {
-        chart = { assemblies: {} };
-
-        for (var assembly in data) {
-            var alignments = data[assembly];
-            if (!chart.assemblies[assembly])
-                chart.assemblies[assembly] = [];
-            for (var numAlign = 0; numAlign < alignments.length; numAlign++)
-                chart.assemblies[assembly].push(alignments[numAlign]);
-        }
-
-        return collapseLanes(chart);
-    }
-
-    function isOverlapping (item, lane) {
-        if (lane)
-            for (var i = 0; i < lane.length; i++)
-                if (item.corr_start <= lane[i].corr_end && lane[i].corr_start <= item.corr_end)
-                    return true;
-
-        return false;
-    }
-
-
-    function collapseLanes (chart) {
-        var lanes = [], items = [], laneId = 0, itemId = 0, groupId = 0;
-
-        for (var assemblyName in chart.assemblies) {
-            var lane = chart.assemblies[assemblyName];
-            var currentLen = 0;
-            var numItems = 0;
-            for (var i = 0; i < lane.length; i++) {
-                var item = lane[i];
-                if (item.mis_ends) var misassembled_ends = item.mis_ends.split(';');
-                item.supp = '';
-                item.lane = laneId;
-                item.id = itemId;
-                item.groupId = groupId;
-                item.assembly = assemblyName;
-                if (isContigSizePlot) {
-                    item.corr_start = currentLen;
-                    currentLen += item.size;
-                    item.corr_end = currentLen;
-                }
-                items.push(item);
-                itemId++;
-                numItems++;
-                if (item.mis_ends && misassembled_ends) {
-                    for (var num = 0; num < misassembled_ends.length; num++) {
-                        if (!misassembled_ends[num]) continue;
-                        var suppItem = {};
-                        suppItem.name = item.name;
-                        suppItem.corr_start = item.corr_start;
-                        suppItem.corr_end = item.corr_end;
-                        suppItem.assembly = item.assembly;
-                        suppItem.id = itemId;
-                        suppItem.lane = laneId;
-                        suppItem.groupId = groupId;
-                        suppItem.supp = misassembled_ends[num];
-                        suppItem.misassemblies = item.misassemblies.split(';')[num];
-                        items.push(suppItem);
-                        itemId++;
-                        numItems++;
-                    }
-                }
-                groupId++;
-            }
-
-            if (numItems > 0){
-                lanes.push({
-                id: laneId,
-                label: assemblyName
-                });
-                laneId++;
-            }
-        }
-
-        for (var laneNum = 0; laneNum < lanes.length; laneNum++) {
-            if (lanes[laneNum].label) {
-                assemblyName = lanes[laneNum].label;
-                var description = assemblyName + '\n';
-                description += 'length: ' + assemblies_len[assemblyName] + '\n';
-                description += 'contigs: ' + assemblies_contigs[assemblyName] + '\n';
-                if (!isContigSizePlot)
-                    description += 'misassemblies: ' + assemblies_misassemblies[assemblyName];
-                else
-                    description += 'N50: ' + assemblies_n50[assemblyName];
-                lanes[laneNum].description = description;
-                if (!isContigSizePlot)
-                    lanes[laneNum].link = assemblies_links[assemblyName];
-            }
-        }
-
-        return {lanes: lanes, items: items};
-    }
-
-    var ContigData = function(chromosome) {
-        // return parseData(generateRandomWorkItems());
-        return parseData(contig_data[chromosome]);
-    };
-
     /**
      * Allow library to be used within both the browser and node.js
      */
+    var ContigData = function(chromosome) {
+        return parseData(contig_data[chromosome]);
+    };
+
     var root = typeof exports !== "undefined" && exports !== null ? exports : window;
     root.contigData = ContigData;
 
-    var isContigSizePlot = !CHROMOSOME;
-    if (CHROMOSOME) var data = contigData(CHROMOSOME);
+    var isContigSizePlot = !chromosome;
+    if (chromosome) var data = contigData(chromosome);
     else var data = parseData(contig_data);
     var lanes = data.lanes, items = data.items;
 
@@ -175,7 +78,7 @@ THE SOFTWARE.
     var legendTextOffsetX = legendItemWidth * 2 + legendItemXSpace;
 
     var total_len = 0;
-    if (CHROMOSOME) {
+    if (!isContigSizePlot) {
       for (var chr in chromosomes_len) {
           total_len += chromosomes_len[chr];
       }
@@ -199,8 +102,8 @@ THE SOFTWARE.
     var numberSize = getSize('0') - 1;
 
     var annotationsHeight = 0, annotationsMiniHeight = 0;
-    if (CHROMOSOME) {
-      var featuresData = parseFeaturesData(CHROMOSOME);
+    if (chromosome) {
+      var featuresData = parseFeaturesData(chromosome);
       annotationsHeight = annotationLanesHeight * featuresData.lanes.length;
       annotationsMiniHeight = annotationMiniLanesHeight * featuresData.lanes.length;
       var ext = d3.extent(featuresData.lanes, function (d) {
@@ -453,7 +356,7 @@ THE SOFTWARE.
         addFeatureTrackInfo(annotationsMain, y_anno);
     }
 
-    var mini_cov, main_cov, x_cov_mini_S, y_cov_main_S, y_cov_main_A;
+    var mini_cov, main_cov, x_cov_mini_S, y_cov_main_S, y_cov_main_A, numYTicks;
     if (drawCoverage)
         setupCoverage();
     // draw the x axis
@@ -1008,7 +911,7 @@ THE SOFTWARE.
             var nextPos = 0;
             for (var s, i = (minExtent / coverageFactor);; i += step) {
                 nextPos = Math.min(maxExtent / coverageFactor, i + step);
-                coverage = coverage_data[CHROMOSOME].slice(i, Math.ceil(nextPos));
+                coverage = coverage_data[chromosome].slice(i, Math.ceil(nextPos));
                 if (coverage.length == 0) break;
                 s = d3.sum(coverage, function (d) {
                             return d
@@ -1020,7 +923,7 @@ THE SOFTWARE.
                     cov_lines.push([x_main(i * coverageFactor), 0, x_main(nextPos * coverageFactor)]);
                 if (nextPos >= (maxExtent / coverageFactor)) break;
             }
-            y_max = getNextMaxCovValue(y_max);
+            y_max = getNextMaxCovValue(y_max, y_cov_main_S.ticks(numYTicks));
             y_cov_main_S.domain([y_max, .1]);
             y_cov_main_A.scale(y_cov_main_S);
 
@@ -1034,25 +937,10 @@ THE SOFTWARE.
 
             main_cov.select('.y').call(y_cov_main_A);
 
-            var not_covered_line = '',
-                    not_covered_width = Math.max(chartWidth / (maxExtent - minExtent + 1), 1);
-
-            var vnc = not_covered[CHROMOSOME].filter(function (d) {
-                if (minExtent <= d && d <= maxExtent) return d;
-            });
-            for (var i = 0; i < vnc.length; ++i) {
-                not_covered_line += ['M', x_main(vnc[i]), y_cov_main_S(.1), 'H', x_main(vnc[i]) + not_covered_width].join(' ');
-            }
-
             main_cov.append('g')
                     .attr('class', 'covered')
                     .append('path')
                     .attr('d', line);
-        if (not_covered_line != '')
-                main_cov.append('g')
-                    .attr('class', 'notCovered')
-                    .append('path')
-                    .attr('d', not_covered_line);
         }
         main.selectAll('.main_labels').remove();
 
@@ -1080,6 +968,106 @@ THE SOFTWARE.
                 .attr('class', 'itemLabel');
     }
 
+
+    function parseData (data) {
+        chart = { assemblies: {} };
+
+        for (var assembly in data) {
+            var alignments = data[assembly];
+            if (!chart.assemblies[assembly])
+                chart.assemblies[assembly] = [];
+            for (var numAlign = 0; numAlign < alignments.length; numAlign++)
+                chart.assemblies[assembly].push(alignments[numAlign]);
+        }
+
+        return collapseLanes(chart);
+    }
+
+    function isOverlapping (item, lane) {
+        if (lane)
+            for (var i = 0; i < lane.length; i++)
+                if (item.corr_start <= lane[i].corr_end && lane[i].corr_start <= item.corr_end)
+                    return true;
+
+        return false;
+    }
+
+    function addAssemblyDescription (lanes) {
+        for (var laneNum = 0; laneNum < lanes.length; laneNum++) {
+            if (lanes[laneNum].label) {
+                assemblyName = lanes[laneNum].label;
+                var description = assemblyName + '\n';
+                description += 'length: ' + assemblies_len[assemblyName] + '\n';
+                description += 'contigs: ' + assemblies_contigs[assemblyName] + '\n';
+                if (!isContigSizePlot)
+                    description += 'misassemblies: ' + assemblies_misassemblies[assemblyName];
+                else
+                    description += 'N50: ' + assemblies_n50[assemblyName];
+                lanes[laneNum].description = description;
+                if (!isContigSizePlot)
+                    lanes[laneNum].link = assemblies_links[assemblyName];
+            }
+        }
+        return lanes;
+    }
+
+    function collapseLanes (chart) {
+        var lanes = [], items = [], laneId = 0, itemId = 0, groupId = 0;
+
+        for (var assemblyName in chart.assemblies) {
+            var lane = chart.assemblies[assemblyName];
+            var currentLen = 0;
+            var numItems = 0;
+            for (var i = 0; i < lane.length; i++) {
+                var item = lane[i];
+                if (item.mis_ends) var misassembled_ends = item.mis_ends.split(';');
+                item.supp = '';
+                item.lane = laneId;
+                item.id = itemId;
+                item.groupId = groupId;
+                item.assembly = assemblyName;
+                if (isContigSizePlot) {
+                    item.corr_start = currentLen;
+                    currentLen += item.size;
+                    item.corr_end = currentLen;
+                }
+                items.push(item);
+                itemId++;
+                numItems++;
+                if (item.mis_ends && misassembled_ends) {
+                    for (var num = 0; num < misassembled_ends.length; num++) {
+                        if (!misassembled_ends[num]) continue;
+                        var suppItem = {};
+                        suppItem.name = item.name;
+                        suppItem.corr_start = item.corr_start;
+                        suppItem.corr_end = item.corr_end;
+                        suppItem.assembly = item.assembly;
+                        suppItem.id = itemId;
+                        suppItem.lane = laneId;
+                        suppItem.groupId = groupId;
+                        suppItem.supp = misassembled_ends[num];
+                        suppItem.misassemblies = item.misassemblies.split(';')[num];
+                        items.push(suppItem);
+                        itemId++;
+                        numItems++;
+                    }
+                }
+                groupId++;
+            }
+
+            if (numItems > 0) {
+                lanes.push({
+                    id: laneId,
+                    label: assemblyName
+                });
+                laneId++;
+            }
+        }
+
+        addAssemblyDescription(lanes);
+        return {lanes: lanes, items: items};
+    }
+
     function addSelectionAreas() {
         brush = drawBrush(mini, miniHeight);
         if (!featuresHidden)
@@ -1087,6 +1075,7 @@ THE SOFTWARE.
         if (drawCoverage)
             brush_cov = drawBrush(mini_cov, coverageHeight, 'coverage');
     }
+
     function keyPress (cmd, deltaCoeff) {
         var ext = brush.extent();
         var delta = .01 * (ext[1] - ext[0]);
@@ -1569,19 +1558,23 @@ THE SOFTWARE.
         return newBrush;
     }
 
-    function getNextMaxCovValue(maxY) {
-        maxY = Math.max(10, Math.ceil(maxY / 10) * 10);
+    function getNextMaxCovValue(maxY, ticksVals) {
+        var factor = ticksVals[1] - ticksVals[0];
+        maxY = Math.max(factor, Math.ceil(maxY / factor) * factor);
         return maxY;
     }
 
     function setupCoverage() {
+        numYTicks = 7;
         // draw mini coverage
         x_cov_mini_S = x_mini,      // x coverage scale
-        y_max = max_depth[CHROMOSOME];
+        y_max = max_depth[chromosome];
 
         y_cov_mini_S = d3.scale.linear()
-                .domain([getNextMaxCovValue(y_max), .1])
-                .range([0, coverageHeight]),
+                .domain([y_max, .1])
+                .range([0, coverageHeight]);
+        y_max = getNextMaxCovValue(y_max, y_cov_mini_S.ticks(numYTicks));
+        y_cov_mini_S.domain([y_max, .1]);
         y_cov_main_S = y_cov_mini_S;
 
         y_cov_mini_A = d3.svg.axis()
@@ -1591,7 +1584,7 @@ THE SOFTWARE.
                     return tickValue;
                 })
                 .tickSize(2, 0)
-                .ticks(7);
+                .ticks(numYTicks);
         mini_cov = chart.append('g')
                 .attr('class', 'coverage')
                 .attr('transform', 'translate(' + margin.left + ', ' + covMiniOffsetY + ')');
@@ -1600,15 +1593,15 @@ THE SOFTWARE.
                 .call(y_cov_mini_A);
 
         var line = '',
-                l = coverage_data[CHROMOSOME].length,
+                l = coverage_data[chromosome].length,
                 cov_mini_dots_amount = Math.min(maxCovDots, l),
                 pos = 0,
                 step = l / cov_mini_dots_amount;
 
         line += ['M', x_cov_mini_S(0), y_cov_main_S(0)].join(' ');
         for (var s, i = step; i < l; i += step) {
-            coverage = coverage_data[CHROMOSOME].slice(pos, i);
-            s = d3.sum(coverage_data[CHROMOSOME].slice(pos, i), function (d) {
+            coverage = coverage_data[chromosome].slice(pos, i);
+            s = d3.sum(coverage_data[chromosome].slice(pos, i), function (d) {
                         return d
                     }) / coverage.length;
             if (s >= 1) {
@@ -1623,21 +1616,10 @@ THE SOFTWARE.
         }
         line += ['V', y_cov_main_S(0), 'Z'].join(' ');
 
-        var not_covered_line = '',
-                not_covered_width = Math.max(chartWidth / x_cov_mini_S.domain()[1], 1);
-
-        for (var i = 0; i < not_covered[CHROMOSOME].length; ++i) {
-            not_covered_line += ['M', x_cov_mini_S(not_covered[CHROMOSOME][i]), y_cov_mini_S(.1), 'H', x_cov_mini_S(not_covered[CHROMOSOME][i]) + not_covered_width].join(' ');
-        }
-
         mini_cov.append('g')
                 .append('path')
                 .attr('class', 'covered')
                 .attr('d', line);
-        mini_cov.append('g')
-                .append('path')
-                .attr('class', 'notCovered')
-                .attr('d', not_covered_line);
         mini_cov.append('text')
                 .text('Coverage')
                 .attr('transform', 'rotate(-90 20, 80)');
@@ -1651,7 +1633,7 @@ THE SOFTWARE.
                     return tickValue;
                 })
                 .tickSize(2, 0)
-                .ticks(7);
+                .ticks(numYTicks);
 
         var x_cov_main_A = xMainAxis;
 
@@ -1748,7 +1730,6 @@ THE SOFTWARE.
 
 
     function getTextSize(text, size) {
-
         return text.length * size;
     }
 
@@ -2120,13 +2101,13 @@ THE SOFTWARE.
             offsetY = addLegendItemWithText(legend, prevOffsetY, classes[numClass], classDescriptions[numClass], true);
             if (classes[numClass] == 'misassembled light_color') {
                 legend.append('path')
-                    .attr('transform',  function (d) {
+                    .attr('transform',  function () {
                         return 'translate(0.5,' + prevOffsetY + ')';
                     })
-                    .attr('class', function (d) {
+                    .attr('class', function () {
                         return 'mainItem end misassembled';
                     })
-                    .attr('d', function (d) {
+                    .attr('d', function () {
                         var startX = 0;
                         var startY = 0;
                         path = ['M', startX, startY, 'L', startX + (Math.sqrt(1) * (legendItemHeight - startY) / 2),
@@ -2134,13 +2115,13 @@ THE SOFTWARE.
                         return path;
                     });
                 legend.append('path')
-                    .attr('transform',  function (d) {
+                    .attr('transform',  function () {
                         return 'translate(' + (legendItemWidth * 2 - 0.5) + ',' + (prevOffsetY + legendItemOddOffset) + ')';
                     })
-                    .attr('class', function (d) {
+                    .attr('class', function () {
                         return 'mainItem end misassembled odd';
                     })
-                    .attr('d', function (d) {
+                    .attr('d', function () {
                         var startX = 0;
                         var startY = 0;
                         path = ['M', startX, startY, 'L', startX - (Math.sqrt(1) * (legendItemHeight - startY) / 2),
@@ -2206,31 +2187,23 @@ THE SOFTWARE.
       var laneId = 0, itemId = 0;
 
       for (var numContainer = 0; numContainer < features_data.length; numContainer++) {
-        for (var i = 0; i < features_data[numContainer].length; i++) {
-          if (!oneHtml && features_data[numContainer][i].chr != references_id[chr]) continue;
-          if (!data[numContainer])
-              data[numContainer] = [];
-          data[numContainer].push(features_data[numContainer][i]);
-        }
-      }
-
-      for (var numContainer = 0; numContainer < data.length; numContainer++) {
-        var lane = data[numContainer];
-        var numItems = 0;
-        for (var i = 0; i < lane.length; i++) {
-            var item = lane[i];
-            item.lane = laneId;
-            item.id = itemId;
-            features.push(item);
-            itemId++;
-            numItems++;
-        }
-        if (numItems > 0) {
-            lanes.push({
-            id: laneId,
-            label: lane[0].kind });
-            laneId++;
-        }
+          var lane = features_data[numContainer];
+          var numItems = 0;
+          for (var i = 0; i < lane.length; i++) {
+              if (!oneHtml && lane[i].chr != references_id[chr]) continue;
+              var item = lane[i];
+              item.lane = laneId;
+              item.id = itemId;
+              features.push(item);
+              itemId++;
+              numItems++;
+          }
+          if (numItems > 0) {
+              lanes.push({
+                  id: laneId,
+                  label: lane[0].kind });
+              laneId++;
+          }
       }
       return {lanes: lanes, features: features}
     }
@@ -2428,155 +2401,68 @@ THE SOFTWARE.
             });
     }
 
-
     function hideTrack(track, pane, doHide) {
         removeTooltip();
         var hideBtnCoverageMain = document.getElementById('hideBtnCovMain');
         var hideBtnCoverageMini = document.getElementById('hideBtnCovMini');
-        var paneToHide, hideBtn, textToShow, offsetY;
+        var animationDuration = 200, transitionDelay = 150;
+        var paneToHide, hideBtn, textToShow, newOffset;
+        var changedTracks = [], changedBtns = [];
+        var mainPane = (pane == 'main');
+
+        function setBtnTopPos(btn) {
+            if (!btn) return;
+            btn.style.top = parseInt(btn.style.top) + newOffset + 'px';
+        }
+
+        function setTrackPos(track) {
+            if (!track) return;
+            var trackY = d3.transform(track.attr("transform")).translate[1];
+            trackY += newOffset;
+            track.transition()
+                 .duration(animationDuration)
+                 .attr('transform', function(d) {
+                    return 'translate(' + margin.left + ',' + trackY + ')'
+                 });
+        }
+
         if (track == 'features') {
             textToShow = 'Show annotation';
-            if (pane == 'main') {
-                paneToHide = annotationsMain;
-                hideBtn = hideBtnAnnotationsMain;
-                if (doHide) {
-                    covMainOffsetY -= annotationsHeight;
-                    miniOffsetY -= annotationsHeight;
-                    annotationsMiniOffsetY -= annotationsHeight;
-                    covMiniOffsetY -= annotationsHeight;
-                    hideBtnAnnotationsMiniOffsetY -= annotationsHeight;
-                    hideBtnCoverageMainOffsetY -= annotationsHeight;
-                    hideBtnCoverageMiniOffsetY -= annotationsHeight;
-                }
-                else {
-                    covMainOffsetY += annotationsHeight;
-                    miniOffsetY += annotationsHeight;
-                    annotationsMiniOffsetY += annotationsHeight;
-                    covMiniOffsetY += annotationsHeight;
-                    hideBtnAnnotationsMiniOffsetY += annotationsHeight;
-                    hideBtnCoverageMainOffsetY += annotationsHeight;
-                    hideBtnCoverageMiniOffsetY += annotationsHeight;
-                }
+            paneToHide = mainPane ? annotationsMain : annotationsMini;
+            hideBtn = mainPane ? hideBtnAnnotationsMain : hideBtnAnnotationsMini;
+            newOffset = mainPane ? annotationsHeight : annotationsMiniHeight;
+            if (mainPane) {
                 featuresMainHidden = doHide;
+                changedTracks = [main_cov, mini, annotationsMini, mini_cov];
+                changedBtns = [hideBtnCoverageMain, hideBtnAnnotationsMini, hideBtnCoverageMini];
             }
             else {
-                paneToHide = annotationsMini;
-                hideBtn = hideBtnAnnotationsMini;
-                if (doHide) {
-                    covMiniOffsetY -= annotationsMiniHeight;
-                    hideBtnCoverageMiniOffsetY -= annotationsMiniHeight;
-                }
-                else {
-                    covMiniOffsetY += annotationsMiniHeight;
-                    hideBtnCoverageMiniOffsetY += annotationsMiniHeight;
-                }
+                changedTracks = [mini_cov];
+                changedBtns = [hideBtnCoverageMini];
             }
         }
         else {
             textToShow = 'Show read coverage';
-            if (pane == 'main') {
-                paneToHide = main_cov;
-                hideBtn = hideBtnCoverageMain;
-                if (doHide) {
-                    miniOffsetY -= coverageHeight;
-                    annotationsMiniOffsetY -= coverageHeight;
-                    covMiniOffsetY -= coverageHeight;
-                    hideBtnAnnotationsMiniOffsetY -= coverageHeight;
-                    hideBtnCoverageMiniOffsetY -= coverageHeight;
-                }
-                else {
-                    miniOffsetY += coverageHeight;
-                    annotationsMiniOffsetY += coverageHeight;
-                    covMiniOffsetY += coverageHeight;
-                    hideBtnAnnotationsMiniOffsetY += coverageHeight;
-                    hideBtnCoverageMiniOffsetY += coverageHeight;
-                }
+            paneToHide = mainPane ? main_cov : mini_cov;
+            hideBtn = mainPane ? hideBtnCoverageMain : hideBtnCoverageMini;
+            newOffset = coverageHeight;
+            if (mainPane) {
                 coverageMainHidden = doHide;
-            }
-            else {
-                paneToHide = mini_cov;
-                hideBtn = hideBtnCoverageMini;
+                changedTracks = [mini, annotationsMini, mini_cov];
+                changedBtns = [hideBtnAnnotationsMini, hideBtnCoverageMini];
             }
         }
-        if (track == 'features') {
-            if (pane == 'main') {
-                if (main_cov)
-                    main_cov.transition()
-                      .duration(200)
-                      .attr('transform', function(d) {
-                        return 'translate(' + margin.left + ',' + covMainOffsetY + ')'
-                        });
-                mini.transition()
-                      .duration(200)
-                      .attr('transform', function(d) {
-                        return 'translate(' + margin.left + ',' + miniOffsetY + ')'
-                        });
-                annotationsMini.transition()
-                      .duration(200)
-                      .attr('transform', function(d) {
-                        return 'translate(' + margin.left + ',' + annotationsMiniOffsetY + ')'
-                        });
-                if (main_cov)
-                    hideBtnCoverageMain.style.top = hideBtnCoverageMainOffsetY;
-                if (mini_cov)
-                    hideBtnCoverageMini.style.top = hideBtnCoverageMiniOffsetY;
-                hideBtnAnnotationsMini.style.top = hideBtnAnnotationsMiniOffsetY;
-                if (mini_cov)
-                    mini_cov.transition()
-                            .duration(200)
-                            .attr('transform', function(d) {
-                                return 'translate(' + margin.left + ',' + covMiniOffsetY + ')'
-                            });
-            }
-            else {
-                if (mini_cov) {
-                    hideBtnCoverageMini.style.top = hideBtnCoverageMiniOffsetY;
-                    mini_cov.transition()
-                            .duration(200)
-                            .attr('transform', function(d) {
-                                return 'translate(' + margin.left + ',' + covMiniOffsetY + ')'
-                            });
-                }
-            }
-        }
-        else {
-            if (pane == 'main') {
-                mini.transition()
-                    .duration(200)
-                    .attr('transform', function(d) {
-                        return 'translate(' + margin.left + ',' + miniOffsetY + ')'
-                    });
-                if (!featuresHidden) {
-                    annotationsMini.transition()
-                                   .duration(200)
-                                   .attr('transform', function(d) {
-                                       return 'translate(' + margin.left + ',' + annotationsMiniOffsetY + ')'
-                                   });
-                    hideBtnAnnotationsMini.style.top = hideBtnAnnotationsMiniOffsetY;
-                }
-                hideBtnCoverageMini.style.top = hideBtnCoverageMiniOffsetY;
-                mini_cov.transition()
-                        .duration(200)
-                        .attr('transform', function(d) {
-                            return 'translate(' + margin.left + ',' + covMiniOffsetY + ')'
-                        });
-            }
-        }
-        if (doHide) {
-            paneToHide.attr('display', 'none');
-            hideBtn.onclick = function() {
-                hideTrack(track, pane, false);
-            };
-            hideBtn.innerHTML = textToShow;
-        }
-        else {
-            paneToHide.transition()
-                      .delay(150)
-                      .attr('display', '');
-            hideBtn.onclick = function() {
-                hideTrack(track, pane, true);
-            };
-            hideBtn.innerHTML = 'Hide';
-            display();
-        }
+        if (doHide) newOffset *= -1;
+        if (!doHide) textToShow = 'Hide';
+        for (var track_n = 0; track_n < changedTracks.length; track_n++)
+            setTrackPos(changedTracks[track_n])
+        for (var btn_n = 0; btn_n < changedBtns.length; btn_n++)
+            setBtnTopPos(changedBtns[btn_n])
+        if (doHide) paneToHide.attr('display', 'none');
+        else paneToHide.transition().delay(transitionDelay).attr('display', '');
+        hideBtn.onclick = function() {
+            hideTrack(track, pane, !doHide);
+        };
+        hideBtn.innerHTML = textToShow;
+        display();
     }

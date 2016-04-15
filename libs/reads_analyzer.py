@@ -337,7 +337,7 @@ def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpat
                 qutils.cat_files([manta_sv_fpath, trivial_deletions_fpath], bed_fpath)
             except:
                 pass
-        elif os.path.exists(trivial_deletions_fpath):
+        if os.path.exists(trivial_deletions_fpath) and not is_non_empty_file(bed_fpath):
             shutil.copy(trivial_deletions_fpath, bed_fpath)
 
     if is_non_empty_file(bed_fpath):

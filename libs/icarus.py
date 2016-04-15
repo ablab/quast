@@ -1033,7 +1033,7 @@ def save_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, chr_length
             data_str.append('max_depth["' + chr + '"] = ' + str(chr_max_depth) + ';')
             data_str.append('coverage_data["' + chr + '"] = [ ')
             for e in cov_data[chr]:
-                data_str.append('' + e + ',')
+                data_str.append(str(e) + ',')
             data_str[-1] = data_str[-1][:-1] + '];'
 
         data_str.append('var not_covered = {};')

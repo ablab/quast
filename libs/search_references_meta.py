@@ -157,10 +157,10 @@ def download_blast_files(blast_filename):
 
 
 def download_blastdb():
-    if os.path.isfile(db_fpath + '.nsq'):
+    if os.path.isfile(db_fpath + '.nsq') and os.path.getsize(db_fpath + '.nsq') >= db_nsq_fsize:
         logger.info()
         logger.info('SILVA 16S rRNA database has already been downloaded, unpacked and BLAST database created. '
-                    'If not, please remove %s and rerun MetaQUAST' % db_fpath + '.nsq')
+                    'If not, please remove %s and rerun MetaQUAST' % (db_fpath + '.nsq'))
         return 0
     log_fpath = os.path.join(blastdb_dirpath, 'blastdb.log')
     db_gz_fpath = os.path.join(blastdb_dirpath, silva_fname + '.gz')
@@ -192,11 +192,13 @@ def download_blastdb():
         cmd = "gunzip -c %s" % db_gz_fpath
         qutils.call_subprocess(shlex.split(cmd), stdout=open(unpacked_fpath, 'w'), stderr=open(log_fpath, 'a'), logger=logger)
 
-        in_file = open(unpacked_fpath).read()
-        out_file = open(unpacked_fpath, 'w')
-        out_file.write(in_file.replace(' ', '_'))
-        out_file.close()
-        shutil.move(unpacked_fpath, silva_fpath)
+        substituted_fpath = silva_fpath + ".substituted"
+        with open(unpacked_fpath) as in_file:
+            with open(substituted_fpath, 'w') as out_file:
+                for line in in_file:
+                    out_file.write(line.replace(' ', '_'))
+        os.remove(unpacked_fpath)
+        shutil.move(substituted_fpath, silva_fpath)
 
     logger.info('Making BLAST database...')
     cmd = blast_fpath('makeblastdb') + (' -in %s -dbtype nucl -out %s' % (silva_fpath, db_fpath))
@@ -300,8 +302,8 @@ def process_blast(blast_assemblies, downloaded_dirpath, contigs_names, labels, b
             os.chmod(blast_file, os.stat(blast_file).st_mode | stat.S_IEXEC)
 
     if not os.path.isfile(db_fpath + '.nsq') or os.path.getsize(db_fpath + '.nsq') < db_nsq_fsize:
-        if os.path.isdir(blastdb_dirpath):
-            shutil.rmtree(blastdb_dirpath)
+        # if os.path.isdir(blastdb_dirpath):
+        #     shutil.rmtree(blastdb_dirpath)
         return_code = download_blastdb()
         logger.info()
         if return_code != 0:

@@ -1819,7 +1819,8 @@ THE SOFTWARE.
         else info.append('p')
                 .text('Size: ' + d.size + ' bp');
 
-        var appendPositionElement = function(data, start, end, contigName, assembly, whereAppend, start_in_contig, end_in_contig, prev_start, is_expanded) {
+        var appendPositionElement = function(data, start, end, contigName, assembly, whereAppend, start_in_contig, end_in_contig,
+                                             prev_start, prev_end, is_expanded) {
             var posVal = function (d) {
                 if (mainTickValue == 'Gbp')
                     return d3.round(d / 1000000000, 2);
@@ -1886,7 +1887,7 @@ THE SOFTWARE.
                             });
 
             if (is_expanded) {
-                if (prev_start == start)
+                if (prev_start == start && prev_end == end)
                     d.append('div')
                      .attr('id', 'circle' + start + '_' + end)
                      .attr('class', 'block_circle selected');
@@ -1937,7 +1938,7 @@ THE SOFTWARE.
                 var e = d.structure[i];
                 if (e.type == "A") {
                     appendPositionElement(d.structure, e.corr_start, e.corr_end, d.name, d.assembly, blocks, e.start_in_contig,
-                        e.end_in_contig, d.corr_start, true);
+                        e.end_in_contig, d.corr_start, d.corr_end, true);
 
                     if (d.ambiguous && i < d.structure.length - 1)
                         blocks.append('p')

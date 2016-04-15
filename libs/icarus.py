@@ -29,7 +29,7 @@ logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 
 MAX_REF_NAME = 20
 summary_fname = qconfig.icarus_html_fname
-main_menu_link = '<a href="../{summary_fname}" style="color: white; text-decoration: none;">Main menu</a>'.format(**locals())
+main_menu_link = '<a href="../' + summary_fname + '" style="color: white; text-decoration: none;">Main menu</a>'
 
 from libs import plotter  # Do not remove this line! It would lead to a warning in matplotlib.
 if not plotter.matplotlib_error:
@@ -768,7 +768,8 @@ def add_contig(cum_length, contig, not_used_nx, assemblies_n50, assembly, contig
             marks.append(nx)
     marks = ', '.join(marks)
     if marks:
-        contig_size_lines.append('{{assembly: "{assembly}", corr_end: {end_contig}, label: "{marks}", size: {contig.size}}}'.format(**locals()))
+        contig_size_lines.append('{assembly: "' + assembly + '", corr_end: ' + str(end_contig) + ', label: "' + marks +
+                                 '", size: ' + str(contig.size) + '}')
         not_used_nx = [nx for nx in not_used_nx if nx not in marks]
     marks = ', marks: "' + marks + '"' if marks else ''
     if not only_nx or marks:
@@ -827,10 +828,10 @@ def get_assemblies_data(contigs_fpaths, stdout_pattern, nx_marks):
         n50 = report.get_field(reporting.Fields.N50)
         if stdout_pattern:
             contig_stdout_fpath = stdout_pattern % qutils.label_from_fpath_for_fname(contigs_fpath) + '.stdout'
-            assemblies_data += 'assemblies_links["{label}"] = "{contig_stdout_fpath}";\n'.format(**locals())
-        assemblies_contig_size_data += 'assemblies_len["{label}"] = {l};\n'.format(**locals())
-        assemblies_contig_size_data += 'assemblies_contigs["{label}"] = {contigs};\n'.format(**locals())
-        assemblies_contig_size_data += 'assemblies_n50["{label}"] = "{n50}";\n'.format(**locals())
+            assemblies_data += 'assemblies_links["' + label + '"] = "' + contig_stdout_fpath + '";\n'
+        assemblies_contig_size_data += 'assemblies_len["' + label + '"] = ' + str(l) + ';\n'
+        assemblies_contig_size_data += 'assemblies_contigs["' + label + '"] = ' + str(contigs) + ';\n'
+        assemblies_contig_size_data += 'assemblies_n50["' + label + '"] = "' + str(n50) + '";\n'
         for nx in nx_marks:
             assemblies_n50[label][nx] = report.get_field(nx)
     return assemblies_data, assemblies_contig_size_data, assemblies_n50
@@ -844,7 +845,7 @@ def get_contigs_data(contigs_by_assemblies, nx_marks, assemblies_n50):
     min_contig_size = qconfig.min_contig
     too_many_contigs = False
     for assembly in contigs_by_assemblies:
-        contigs_sizes_str.append('contig_data["{assembly}"] = [ '.format(**locals()))
+        contigs_sizes_str.append('contig_data["' + assembly + '"] = [ ')
         cum_length = 0
         contigs = sorted(contigs_by_assemblies[assembly], key=lambda x: x.size, reverse=True)
         last_contig_num = min(len(contigs), qconfig.max_contigs_num_for_size_viewer)
@@ -865,8 +866,8 @@ def get_contigs_data(contigs_by_assemblies, nx_marks, assemblies_n50):
             cum_length += remained_len
             remained_contigs_name = str(len(contigs) - last_contig_num) + ' hidden contigs shorter than ' + str(contig_threshold) + \
                                     ' bp (total length: ' + format_long_numbers(remained_len) + ' bp)'
-            contigs_sizes_str.append(('{{name: "' + remained_contigs_name + '", size: ' + str(remained_len) +
-                                     ', type:"small_contigs"}},').format(**locals()))
+            contigs_sizes_str.append(('{name: "' + remained_contigs_name + '", size: ' + str(remained_len) +
+                                     ', type:"small_contigs"},'))
         if not_used_nx and last_contig_num < len(contigs):
             for i, alignment in enumerate(contigs[last_contig_num:]):
                 if not not_used_nx:
@@ -877,8 +878,8 @@ def get_contigs_data(contigs_by_assemblies, nx_marks, assemblies_n50):
         contigs_sizes_str[-1] = contigs_sizes_str[-1][:-1] + '];\n\n'
     contigs_sizes_str = '\n'.join(contigs_sizes_str)
     contigs_sizes_str += 'var contigLines = [' + ','.join(contigs_sizes_lines) + '];\n\n'
-    contigs_sizes_str += 'var contigs_total_len = {total_len};\n'.format(**locals())
-    contigs_sizes_str += 'var minContigSize = {min_contig_size};'.format(**locals())
+    contigs_sizes_str += 'var contigs_total_len = ' + str(total_len) + ';\n'
+    contigs_sizes_str += 'var minContigSize = ' + str(min_contig_size) + ';'
     return contigs_sizes_str, too_many_contigs
 
 
@@ -901,8 +902,8 @@ def parse_features_data(features, cumulative_ref_lengths, ref_names):
                 name = region.name if region.name else ''
                 region.start += cumulative_ref_lengths[ref_id]
                 region.end += cumulative_ref_lengths[ref_id]
-                features_data += '{{name: "{name}", start: {region.start}, end: {region.end}, id_: "{region.id}", ' \
-                                 'kind: "{feature_container.kind}", chr:{ref_id}}},'.format(**locals())
+                features_data += '{name: "' + name + '", start: ' + str(region.start) + ', end: ' + str(region.end) + \
+                                 ', id_: "' + region.id + '",kind: "' + feature_container.kind + '", chr:' + str(ref_id) + '},'
             containers_kind.append(feature_container.kind)
             features_data += '],'
         features_data = features_data[:-1] + '];\n'
@@ -927,15 +928,15 @@ def save_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, chr_length
     contig_names_by_refs = contigs_analyzer.ref_labels_by_chromosomes or None
 
     is_one_html = len(chr_full_names) == 1
-    data_str.append('var oneHtml = "{is_one_html}";'.format(**locals()))
+    data_str.append('var oneHtml = "' + str(is_one_html) + '";')
     # adding assembly data
     data_str.append('var contig_data = {};')
-    data_str.append('contig_data["{chr}"] = {{}};'.format(**locals()))
+    data_str.append('contig_data["' + chr + '"] = {};')
     assemblies_len = defaultdict(int)
     assemblies_contigs = defaultdict(set)
     ms_types = dict()
     for assembly in chr_to_aligned_blocks.keys():
-        data_str.append('contig_data["{chr}"]["{assembly}"] = [ '.format(**locals()))
+        data_str.append('contig_data["' + chr + '"]["' + assembly + '"] = [ ')
         ms_types[assembly] = defaultdict(int)
         for num_contig, ref_contig in enumerate(ref_contigs):
             if ref_contig in chr_to_aligned_blocks[assembly]:
@@ -999,7 +1000,7 @@ def save_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, chr_length
                                 if contigs_analyzer.ref_labels_by_chromosomes and el.ref_name not in used_chromosomes:
                                     used_chromosomes.append(el.ref_name)
                                     new_chr = contig_names_by_refs[el.ref_name]
-                                    links_to_chromosomes.append('links_to_chromosomes["{el.ref_name}"] = "{new_chr}";'.format(**locals()))
+                                    links_to_chromosomes.append('links_to_chromosomes["' + el.ref_name + '"] = "' + new_chr + '";')
                             corr_el_start = el.start
                             corr_el_end = el.end
                             data_str.append('{type: "A",contig: "' + alignment.name + '",corr_start: ' + str(corr_el_start) + ',corr_end: ' +
@@ -1007,7 +1008,7 @@ def save_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, chr_length
                                             ',start_in_contig:' + str(el.start_in_contig) + ',end_in_contig:' +
                                             str(el.end_in_contig) + ',IDY:' + el.idy + ',chr: "' + el.ref_name + '"},')
                         elif type(el) == str:
-                            data_str.append('{{type: "M", mstype: "{el}"}},'.format(**locals()))
+                            data_str.append('{type: "M", mstype: "' + el + '"},')
                     data_str[-1] = data_str[-1][:-1] + ']},'
 
         data_str[-1] = data_str[-1][:-1] + '];'
@@ -1016,10 +1017,10 @@ def save_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, chr_length
         local_misassemblies = ms_types[assembly]['local'] / 2
         ext_misassemblies = (sum(ms_types[assembly].values()) - ms_types[assembly]['interspecies translocation']) / 2 - \
                             local_misassemblies + ms_types[assembly]['interspecies translocation']
-        additional_assemblies_data += 'assemblies_len["{assembly}"] = {assembly_len};\n'.format(**locals())
-        additional_assemblies_data += 'assemblies_contigs["{assembly}"] = {assembly_contigs};\n'.format(**locals())
-        additional_assemblies_data += 'assemblies_misassemblies["{assembly}"] = "{ext_misassemblies}' \
-                           '+{local_misassemblies}";\n'.format(**locals())
+        additional_assemblies_data += 'assemblies_len["' + assembly + '"] = ' + str(assembly_len) + ';\n'
+        additional_assemblies_data += 'assemblies_contigs["' + assembly + '"] = ' + str(assembly_contigs) + ';\n'
+        additional_assemblies_data += 'assemblies_misassemblies["' + assembly + '"] = "' + str(ext_misassemblies) + '' \
+                           '+' + str(local_misassemblies) + '";\n'
 
     if contigs_analyzer.ref_labels_by_chromosomes:
         data_str.append(''.join(links_to_chromosomes))
@@ -1029,17 +1030,17 @@ def save_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, chr_length
         data_str.append('var max_depth = {};')
         if cov_data[chr]:
             chr_max_depth = max_depth[chr]
-            data_str.append('max_depth["{chr}"] = {chr_max_depth};'.format(**locals()))
-            data_str.append('coverage_data["{chr}"] = [ '.format(**locals()))
+            data_str.append('max_depth["' + chr + '"] = ' + str(chr_max_depth) + ';')
+            data_str.append('coverage_data["' + chr + '"] = [ ')
             for e in cov_data[chr]:
-                data_str.append('{e},'.format(**locals()))
+                data_str.append('' + e + ',')
             data_str[-1] = data_str[-1][:-1] + '];'
 
         data_str.append('var not_covered = {};')
-        data_str.append('not_covered["{chr}"] = [ '.format(**locals()))
+        data_str.append('not_covered["' + chr + '"] = [ ')
         # if len(not_covered[chr]) > 0:
         #     for e in not_covered[chr]:
-        #         data_str.append('{e},'.format(**locals()))
+        #         data_str.append('' + e + ','.format(**locals()))
         #     data_str[-1] = data_str[-1][:-1]
         data_str[-1] += '];'
     data_str = '\n'.join(data_str)
@@ -1048,7 +1049,7 @@ def save_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, chr_length
     if not qconfig.is_combined_ref:
         misassemblies_types.remove('interspecies translocation')
     with open(html_saver.get_real_path('_chr_templ.html'), 'r') as template:
-        with open(os.path.join(output_dir_path, '{short_chr}.html'.format(**locals())), 'w') as result:
+        with open(os.path.join(output_dir_path, '' + short_chr + '.html'), 'w') as result:
             for line in template:
                 if line.find('<!--- data: ---->') != -1:
                     result.write(data_str)
@@ -1057,26 +1058,26 @@ def save_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, chr_length
                     result.write(assemblies_data)
                     result.write(additional_assemblies_data)
                     chromosome = '","'.join(ref_contigs)
-                    result.write('var CHROMOSOME = "{chr}";\n'.format(**locals()))
-                    result.write('var chrContigs = ["{chromosome}"];\n'.format(**locals()))
+                    result.write('var CHROMOSOME = "' + chr + '";\n')
+                    result.write('var chrContigs = ["' + chromosome + '"];\n')
                 elif line.find('<!--- misassemblies selector: ---->') != -1:
                     ms_counts_by_type = OrderedDict()
                     for ms_type in misassemblies_types:
                         factor = 1 if ms_type == 'interspecies translocation' else 2
                         ms_counts_by_type[ms_type] = sum(ms_types[assembly][ms_type] / factor for assembly in chr_to_aligned_blocks.keys())
                     total_ms_count = sum(ms_counts_by_type.values()) - ms_counts_by_type['local']
-                    result.write('Show misassemblies: '.format(**locals()))
+                    result.write('Show misassemblies: ')
                     for ms_type, ms_count in ms_counts_by_type.items():
                         is_checked = 'checked="checked"'  #if ms_count > 0 else ''
                         ms_name = ms_type
                         if ms_type != 'local':
                             if ms_count != 1:
                                 ms_name += 's'
-                            result.write('<label><input type="checkbox" id="{ms_type}" name="misassemblies_select" '
-                                 '{is_checked}/>{ms_name} ({ms_count})</label>'.format(**locals()))
+                            result.write('<label><input type="checkbox" id="' + ms_type + '" name="misassemblies_select" '
+                                 '' + is_checked + '/>' + ms_name + ' (' + str(ms_count) + ')</label>')
                         else:
-                            result.write('<label><input type="checkbox" id="{ms_type}" name="misassemblies_select" '
-                                 '{is_checked}/>{ms_name} ({ms_count})</label>'.format(**locals()))
+                            result.write('<label><input type="checkbox" id="' + ms_type + '" name="misassemblies_select" '
+                                 '' + is_checked + '/>' + ms_name + ' (' + str(ms_count) + ')</label>')
                 elif line.find('<!--- css: ---->') != -1:
                     result.write(html_saver.css_html(os.path.join('static', qconfig.icarus_css_name)))
                     result.write(html_saver.css_html(os.path.join('static', 'common.css')))
@@ -1102,15 +1103,15 @@ def get_info_by_chr(chr, aligned_bases_by_chr, chr_sizes, contigs_fpaths, one_ch
     short_chr = chr[:30]
     if one_chromosome:
         html_name = qconfig.one_alignment_viewer_name
-        chr_link = os.path.join(qconfig.icarus_dirname, '{html_name}.html'.format(**locals()))
+        chr_link = os.path.join(qconfig.icarus_dirname, '' + html_name + '.html')
     else:
-        chr_link = os.path.join(qconfig.icarus_dirname, '{short_chr}.html'.format(**locals()))
+        chr_link = os.path.join(qconfig.icarus_dirname, '' + short_chr + '.html')
     chr_name = chr.replace('_', ' ')
     tooltip = ''
     if len(chr_name) > 50:
         short_name = chr[:50]
-        tooltip = 'data-toggle="tooltip" title="{chr_name}">'
-        chr_name = '{short_name}...'.format(**locals())
+        tooltip = 'data-toggle="tooltip" title="' + chr_name + '">'
+        chr_name = '' + short_name + '...'
     aligned_lengths = [aligned_len for aligned_len in aligned_bases_by_chr[chr] if aligned_len is not None]
     chr_genome = sum(aligned_lengths) * 100.0 / (chr_sizes[chr] * len(contigs_fpaths))
     chr_size = chr_sizes[chr]
@@ -1159,7 +1160,7 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
 
     ref_data = 'var references_id = {};\n'
     for i, chr in enumerate(chr_names):
-        ref_data += 'references_id["{chr}"] = {i};\n'.format(**locals())
+        ref_data += 'references_id["' + chr + '"] = ' + str(i) + ';\n'
     for i, chr in enumerate(chr_full_names):
         if contigs_analyzer.ref_labels_by_chromosomes:
             ref_contigs = [contig for contig in chr_names if contig_names_by_refs[contig] == chr]
@@ -1183,7 +1184,7 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
         data_str.append('var chromosomes_len = {};')
         for ref_contig in ref_contigs:
             l = chromosomes_length[ref_contig]
-            data_str.append('chromosomes_len["{ref_contig}"] = {l};'.format(**locals()))
+            data_str.append('chromosomes_len["' + ref_contig + '"] = ' + str(l) + ';')
             aligned_bases_by_chr[chr].extend(aligned_bases[ref_contig])
         num_misassemblies[chr], aligned_assemblies[chr] = save_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, chr_lengths,
                                                           data_str, chr_to_aligned_blocks, structures_by_labels,
@@ -1250,7 +1251,7 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
                             chr_link, chr_name, chr_genome, chr_size = get_info_by_chr(chr, aligned_bases_by_chr, chr_sizes,
                                                                                        contigs_fpaths, one_chromosome=True)
                             viewer_name = qconfig.contig_alignment_viewer_name
-                            viewer_link = '<a href="{chr_link}">{viewer_name}</a>'.format(**locals())
+                            viewer_link = '<a href="' + chr_link + '">' + viewer_name + '</a>'
                             viewer_info = viewer_link + \
                                   '<div class="reference_details">' \
                                       '<p>Aligned to sequences from  ' + os.path.basename(ref_fpath) + '</p>' \
@@ -1271,7 +1272,7 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
                         chr_link, chr_name, chr_genome, chr_size = get_info_by_chr(chr, aligned_bases_by_chr, chr_sizes, contigs_fpaths)
                         result.write('<!--- reference:%s ---->' % chr)
                         result.write('<tr>')
-                        result.write('<td><a href="{chr_link}">{chr_name}</a></td>'.format(**locals()))
+                        result.write('<td><a href="' + chr_link + '">' + chr_name + '</a></td>')
                         result.write('<td>%s</td>' % num_contigs[chr])
                         result.write('<td>%s</td>' % format_long_numbers(chr_size))
                         if is_unaligned_asm_exists:
@@ -1285,7 +1286,7 @@ def js_data_gen(assemblies, contigs_fpaths, contig_report_fpath_pattern, chromos
                     if not chr_names:
                         icarus_links["links"].append(contig_size_browser_fname)
                         icarus_links["links_names"].append(qconfig.icarus_link)
-                    contig_size_browser_link = '<tr><td><a href="{contig_size_browser_fname}">{contig_size_name}</a></td></tr>'.format(**locals())
+                    contig_size_browser_link = '<tr><td><a href="' + contig_size_browser_fname + '">' + contig_size_name + '</a></td></tr>'
                     result.write(contig_size_browser_link)
                     result.write('<tr><td><a href="%s">QUAST report</a></td></tr>' % html_saver.report_fname)
                     result.write('</span>')

@@ -909,9 +909,10 @@ THE SOFTWARE.
             var y_max = 1;
             var cov_lines = [];
             var nextPos = 0;
-            for (var s, i = (minExtent / coverageFactor);; i += step) {
+            var startPos = Math.floor(minExtent / coverageFactor / step) * step;
+            for (var s, i = startPos;; i += step) {
                 nextPos = Math.min(maxExtent / coverageFactor, i + step);
-                coverage = coverage_data[chromosome].slice(i, Math.ceil(nextPos));
+                coverage = coverage_data[chromosome].slice(i, i + step);
                 if (coverage.length == 0) break;
                 s = d3.sum(coverage, function (d) {
                             return d
@@ -1565,7 +1566,7 @@ THE SOFTWARE.
     }
 
     function setupCoverage() {
-        numYTicks = 7;
+        numYTicks = 5;
         // draw mini coverage
         x_cov_mini_S = x_mini,      // x coverage scale
         y_max = max_depth[chromosome];

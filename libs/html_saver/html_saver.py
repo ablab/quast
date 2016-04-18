@@ -72,14 +72,14 @@ aux_meta_files = ['static/flot/jquery.flot.tickrotor.js', 'static/flot/jquery.fl
 
 def js_html(script_rel_path):
     if qconfig.debug:
-        return '<script type="text/javascript" src="' + get_real_path(script_rel_path) + '"></script>'
+        return '<script type="text/javascript" src="' + get_real_path(script_rel_path) + '"/></script>\n'
     else:
         return '<script type="text/javascript">\n' + open(get_real_path(script_rel_path)).read() + '\n</script>\n'
 
 
 def css_html(css_rel_path):
     if qconfig.debug:
-        return '<link rel="stylesheet" href="' + get_real_path(css_rel_path) + '"></link>'
+        return '<link rel="stylesheet" href="' + get_real_path(css_rel_path) + '"/>\n'
     else:
         return '<style rel="stylesheet">\n' + open(get_real_path(css_rel_path)).read() + '\n</style>\n'
 

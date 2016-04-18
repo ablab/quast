@@ -113,7 +113,7 @@ THE SOFTWARE.
       var y_anno = d3.scale.linear().domain([ext[0], ext[1] + 1]).range([0, annotationsHeight]);
     }
 
-    var coverageFactor = 10, maxCovDots = 500;
+    var coverageFactor = 10, maxCovDots = chartWidth;
     var featuresHidden = false, drawCoverage = false, coverageMainHidden = true;
     if (!featuresData || featuresData.features.length == 0)
       featuresHidden = true;
@@ -664,35 +664,9 @@ THE SOFTWARE.
                 })
                 .attr('fill', '#300000');
 
-        var chartArrows = main.selectAll('.arrow')
-                .data(visibleArrows, function (d) {
-                    return d.id;
-                })
-                .attr('transform', function (d) {
-                    var x = x_main((Math.max(minExtent, d.corr_start) + Math.min(maxExtent, d.corr_end)) / 2) - shift;
-                    var y = y_main(d.lane);
-
-                    return 'translate(' + x + ', ' + y + ')';
-                });
-        chartArrows.select('path')
-                .attr('transform', 'scale(0.02)');
-        chartArrows.enter().append('g')
-                .attr('transform', function (d) {
-                    var x = x_main((Math.max(minExtent, d.corr_start) + Math.min(maxExtent, d.corr_end)) / 2) - shift;
-                    var y = y_main(d.lane);
-
-                    return 'translate(' + x + ', ' + y + ')';
-                })
-                .attr('class', 'arrow')
-                .append('path')
-                .attr('d', arrow)
-                .attr('transform', 'scale(0.02)');
-
-        chartArrows.exit().remove();
-
         //update features
-        if (!featuresMainHidden) drawFeaturesMain(minExtent, maxExtent);
         removeTooltip();
+        if (!featuresMainHidden) drawFeaturesMain(minExtent, maxExtent);
 
         // update the item rects
         rectItems = [];
@@ -897,52 +871,8 @@ THE SOFTWARE.
             getNumberOfContigs(d3.transform(d3.select('#countLine').attr("transform")).translate[0]);
 
         // upd coverage
-        if (drawCoverage && !coverageMainHidden) {
-            main_cov.select('.covered').remove();
-            main_cov.select('.notCovered').remove();
+        if (drawCoverage && !coverageMainHidden) updateMainCoverage(minExtent, maxExtent, coverageFactor);
 
-            var line = '',
-            l = (maxExtent - minExtent) / coverageFactor,
-            cov_main_dots_amount = Math.min(maxCovDots, l),
-            step = Math.round(l / cov_main_dots_amount);
-
-            var y_max = 1;
-            var cov_lines = [];
-            var nextPos = 0;
-            var startPos = Math.floor(minExtent / coverageFactor / step) * step;
-            for (var s, i = startPos;; i += step) {
-                nextPos = Math.min(maxExtent / coverageFactor, i + step);
-                coverage = coverage_data[chromosome].slice(i, i + step);
-                if (coverage.length == 0) break;
-                s = d3.sum(coverage, function (d) {
-                            return d
-                        }) / coverage.length;
-                y_max = Math.max(y_max, s);
-                if (s >= 1)
-                    cov_lines.push([x_main(i * coverageFactor), s, x_main(nextPos * coverageFactor)]);
-                else
-                    cov_lines.push([x_main(i * coverageFactor), 0, x_main(nextPos * coverageFactor)]);
-                if (nextPos >= (maxExtent / coverageFactor)) break;
-            }
-            y_max = getNextMaxCovValue(y_max, y_cov_main_S.ticks(numYTicks));
-            y_cov_main_S.domain([y_max, .1]);
-            y_cov_main_A.scale(y_cov_main_S);
-
-            line += ['M', cov_lines[0][0], y_cov_main_S(0)].join(' ');
-            for (i = 0; i < cov_lines.length; i++) {
-                cov_line = cov_lines[i];
-                line += ['V', y_cov_main_S(cov_line[1])].join(' ');
-                line += ['H', cov_line[2]].join(' ');
-            }
-            line += ['V', y_cov_main_S(0), 'Z'].join(' ');
-
-            main_cov.select('.y').call(y_cov_main_A);
-
-            main_cov.append('g')
-                    .attr('class', 'covered')
-                    .append('path')
-                    .attr('d', line);
-        }
         main.selectAll('.main_labels').remove();
 
         var visibleLabels = itemLabels.selectAll('.g')
@@ -1592,41 +1522,11 @@ THE SOFTWARE.
         mini_cov.append('g')
                 .attr('class', 'y')
                 .call(y_cov_mini_A);
-
-        var line = '',
-                l = coverage_data[chromosome].length,
-                cov_mini_dots_amount = Math.min(maxCovDots, l),
-                pos = 0,
-                step = l / cov_mini_dots_amount;
-
-        line += ['M', x_cov_mini_S(0), y_cov_main_S(0)].join(' ');
-        for (var s, i = step; i < l; i += step) {
-            coverage = coverage_data[chromosome].slice(pos, i);
-            s = d3.sum(coverage_data[chromosome].slice(pos, i), function (d) {
-                        return d
-                    }) / coverage.length;
-            if (s >= 1) {
-                line += ['V', y_cov_mini_S(s)].join(' ');
-                line += ['H', x_cov_mini_S(i * coverageFactor)].join(' ');
-            }
-            else {
-                line += ['V', y_cov_mini_S(0)].join(' ');
-                line += ['M', x_cov_mini_S(i * coverageFactor), y_cov_main_S(0)].join(' ');
-            }
-            pos = i;
-        }
-        line += ['V', y_cov_main_S(0), 'Z'].join(' ');
-
-        mini_cov.append('g')
-                .append('path')
-                .attr('class', 'covered')
-                .attr('d', line);
         mini_cov.append('text')
                 .text('Coverage')
                 .attr('transform', 'rotate(-90 20, 80)');
 
         // draw main coverage
-
         y_cov_main_A = y_cov_mini_A = d3.svg.axis()
                 .scale(y_cov_main_S)
                 .orient('left')
@@ -1637,7 +1537,6 @@ THE SOFTWARE.
                 .ticks(numYTicks);
 
         var x_cov_main_A = xMainAxis;
-
         main_cov = chart.append('g')
                 .attr('class', 'COV')
                 .attr('transform', 'translate(' + margin.left + ', ' + covMainOffsetY + ')');
@@ -1645,8 +1544,61 @@ THE SOFTWARE.
         main_cov.attr('display', 'none');
         main_cov.append('g')
                 .attr('class', 'y')
-                .attr('transform', 'translate(0, 0)')
-                .call(y_cov_main_A);
+                .attr('transform', 'translate(0, 0)');
+        main_cov.select('.y').call(y_cov_main_A);
+
+        drawCoverageLine(x_mini.domain()[0], x_mini.domain()[1], coverageFactor, mini_cov, x_mini);
+    }
+
+    function updateMainCoverage(minExtent, maxExtent, coverageFactor) {
+        main_cov.select('.covered').remove();
+        main_cov.select('.notCovered').remove();
+        drawCoverageLine(minExtent, maxExtent, coverageFactor, main_cov, x_main);
+        //main_cov.select('.y').call(y_cov_main_A);
+    }
+
+    function drawCoverageLine(minExtent, maxExtent, coverageFactor, track, scale) {
+        var line = '',
+            l = (maxExtent - minExtent) / coverageFactor,
+            cov_main_dots_amount = Math.min(maxCovDots, l),
+            step = Math.round(l / cov_main_dots_amount);
+
+        var cov_lines = [];
+        var nextPos = 0;
+        var startPos = Math.floor(minExtent / coverageFactor / step) * step;
+        for (var s, i = startPos;; i += step) {
+            nextPos = Math.min(maxExtent / coverageFactor, i + step);
+            coverage = coverage_data[chromosome].slice(i, i + step);
+            if (coverage.length == 0) break;
+            s = d3.sum(coverage, function (d) {
+                        return d
+                    }) / coverage.length;
+            //y_max = Math.max(y_max, s);
+            if (i == startPos) start = minExtent;
+            else start = i * coverageFactor;
+            end = nextPos * coverageFactor;
+            if (s >= 1)
+                cov_lines.push([scale(start), s, scale(end)]);
+            else
+                cov_lines.push([scale(start), 0, scale(end)]);
+            if (nextPos >= (maxExtent / coverageFactor)) break;
+        }
+        //y_max = getNextMaxCovValue(y_max, y_cov_main_S.ticks(numYTicks));
+        //y_cov_main_S.domain([y_max, .1]);
+        //y_cov_main_A.scale(y_cov_main_S);
+
+        line += ['M', cov_lines[0][0], y_cov_main_S(0)].join(' ');
+        for (i = 0; i < cov_lines.length; i++) {
+            cov_line = cov_lines[i];
+            line += ['V', y_cov_main_S(cov_line[1])].join(' ');
+            line += ['H', cov_line[2]].join(' ');
+        }
+        line += ['V', y_cov_main_S(0), 'Z'].join(' ');
+        track.append('g')
+                .attr('class', 'covered')
+                .append('path')
+                .attr('d', line);
+
     }
 
     function getSize(text) {
@@ -1660,7 +1612,6 @@ THE SOFTWARE.
         document.body.removeChild(tmp);
         return size;
     }
-
 
     // generates a single path for each item class in the mini display
     // ugly - but draws mini 2x faster than append lines or line generator
@@ -1729,11 +1680,9 @@ THE SOFTWARE.
         return result;
     }
 
-
     function getTextSize(text, size) {
         return text.length * size;
     }
-
 
     function glow() {
         itemNonRects.append('rect')
@@ -1746,11 +1695,9 @@ THE SOFTWARE.
                 .attr('transform', d3.select(this).attr('transform'));
     }
 
-
     function disglow() {
         itemNonRects.select('.glow').remove();
     }
-
 
     function getVisibleText(fullText, l, lenChromosome) {
         var t = '';
@@ -1767,7 +1714,6 @@ THE SOFTWARE.
         }
         return (t.length < fullText.length && t.length <= 3 ? '' : t + (t.length >= fullText.length ? '' : '...'));
     }
-
 
     function changeInfo(d) {
         info.selectAll('p')

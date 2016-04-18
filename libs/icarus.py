@@ -839,7 +839,7 @@ def get_assemblies_data(contigs_fpaths, stdout_pattern, nx_marks):
 
 def get_contigs_data(contigs_by_assemblies, nx_marks, assemblies_n50):
     contigs_sizes_str = ['var contig_data = {};']
-    contigs_sizes_str.append('var CHROMOSOME;')
+    contigs_sizes_str.append('var chromosome;')
     contigs_sizes_lines = []
     total_len = 0
     min_contig_size = qconfig.min_contig
@@ -1058,7 +1058,7 @@ def save_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, chr_length
                     result.write(assemblies_data)
                     result.write(additional_assemblies_data)
                     chromosome = '","'.join(ref_contigs)
-                    result.write('var chromosome = "' + chr + '";\n')
+                    result.write('chromosome = "' + chr + '";\n')
                     result.write('var chrContigs = ["' + chromosome + '"];\n')
                 elif line.find('<!--- misassemblies selector: ---->') != -1:
                     ms_counts_by_type = OrderedDict()

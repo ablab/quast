@@ -54,9 +54,6 @@ meta_logger = get_logger(qconfig.LOGGER_META_NAME)
 
 import reporting
 
-# Supported plot formats: .emf, .eps, .pdf, .png, .ps, .raw, .rgba, .svg, .svgz
-plots_file_ext = '.' + qconfig.plot_extension
-
 # checking if matplotlib is installed
 matplotlib_error = False
 if qconfig.draw_plots:
@@ -207,7 +204,7 @@ def cumulative_plot(reference, contigs_fpaths, lists_of_lengths, plot_fpath, tit
 
     #matplotlib.pyplot.ylim([0, int(float(max_y) * 1.1)])
 
-    plot_fpath += plots_file_ext
+    plot_fpath += '.' + qconfig.plot_extension
     matplotlib.pyplot.savefig(plot_fpath, bbox_inches='tight')
     logger.info('    saved to ' + plot_fpath)
     pdf_plots_figures.append(figure)
@@ -316,7 +313,7 @@ def Nx_plot(results_dir, reduce_points, contigs_fpaths, lists_of_lengths, plot_f
     ax.yaxis.set_major_locator(yLocator)
     ax.xaxis.set_major_locator(xLocator)
 
-    plot_fpath += plots_file_ext
+    plot_fpath += '.' + qconfig.plot_extension
     matplotlib.pyplot.savefig(plot_fpath, bbox_inches='tight')
     logger.info('    saved to ' + plot_fpath)
     pdf_plots_figures.append(figure)
@@ -396,7 +393,7 @@ def GC_content_plot(ref_fpath, contigs_fpaths, list_of_GC_distributions, plot_fp
     #ax.invert_xaxis()
     #matplotlib.pyplot.ylim(matplotlib.pyplot.ylim()[::-1])
 
-    plot_fpath += plots_file_ext
+    plot_fpath += '.' + qconfig.plot_extension
     matplotlib.pyplot.savefig(plot_fpath, bbox_inches='tight')
     logger.info('    saved to ' + plot_fpath)
     pdf_plots_figures.append(figure)
@@ -469,7 +466,7 @@ def genes_operons_plot(reference_value, contigs_fpaths, files_feature_in_contigs
         ax.set_xscale('log')
     #matplotlib.pyplot.ylim([0, int(float(max_y) * 1.1)])
 
-    plot_fpath += plots_file_ext
+    plot_fpath += '.' + qconfig.plot_extension
     matplotlib.pyplot.savefig(plot_fpath, bbox_inches='tight')
     logger.info('    saved to ' + plot_fpath)
     pdf_plots_figures.append(figure)
@@ -547,7 +544,7 @@ def histogram(contigs_fpaths, values, plot_fpath, title='', yaxis_title='', bott
     yLocator = matplotlib.ticker.MaxNLocator(nbins=6, integer=True, steps=[1,5,10])
     ax.yaxis.set_major_locator(yLocator)
 
-    plot_fpath += plots_file_ext
+    plot_fpath += '.' + qconfig.plot_extension
     matplotlib.pyplot.savefig(plot_fpath, bbox_inches='tight')
     logger.info('    saved to ' + plot_fpath)
     pdf_plots_figures.append(figure)
@@ -730,7 +727,7 @@ def draw_meta_summary_misassembl_plot(results, ref_names, contig_num, plot_fpath
 
         ax.legend(legend, loc='center left', bbox_to_anchor=(1.0, 0.5), numpoints=1)
 
-        plot_fpath += plots_file_ext
+        plot_fpath += '.' + qconfig.plot_extension
         matplotlib.pyplot.tight_layout()
         matplotlib.pyplot.savefig(plot_fpath, bbox_inches='tight')
         logger.info('    saved to ' + plot_fpath)
@@ -824,7 +821,7 @@ def draw_misassembl_plot(reports, plot_fpath, title='', yaxis_title=''):
     except Exception:
         pass
 
-    plot_fpath += plots_file_ext
+    plot_fpath += '.' + qconfig.plot_extension
     matplotlib.pyplot.tight_layout()
     matplotlib.pyplot.savefig(plot_fpath, bbox_inches='tight')
     logger.info('    saved to ' + plot_fpath)

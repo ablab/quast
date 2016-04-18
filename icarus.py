@@ -9,13 +9,14 @@
 
 import sys
 
-print >> sys.stderr, 'Icarus: visualizer for de novo assembly evaluation'
-print >> sys.stderr, ""
-print >> sys.stderr, 'Icarus is embedded into QUAST and MetaQUAST pipelines,'
-print >> sys.stderr, "please run quast.py (for single-genome evaluation) or "
-print >> sys.stderr, "metaquast.py (for metagenomic datasets)."
-print >> sys.stderr, ""
-print >> sys.stderr, "Icarus main menu is in <output_dir>/icarus.html"
-print >> sys.stderr, "Icarus viewers are under <output_dir>/icarus_viewers/"
-print >> sys.stderr, ""
-print >> sys.stderr, "Note: if you use --fast or --no-html options, Icarus is not run."
+sys.stderr.write("\n")
+sys.stderr.write("Icarus: visualizer for de novo assembly evaluation\n")
+sys.stderr.write("\n")
+sys.stderr.write("Icarus is embedded into QUAST and MetaQUAST pipelines,\n")
+sys.stderr.write("please run quast.py (for single-genome evaluation) or \n")
+sys.stderr.write("metaquast.py (for metagenomic datasets).\n")
+sys.stderr.write("\n")
+sys.stderr.write("Icarus main menu will be saved to <output_dir>/icarus.html\n")
+sys.stderr.write("Icarus viewers will be saved to <output_dir>/icarus_viewers/\n")
+sys.stderr.write("\n")
+sys.stderr.write("Note: if you use --fast or --no-html options, Icarus will not run\n")

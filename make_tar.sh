@@ -12,6 +12,7 @@ cp -r libs            release/$QUAST_FOLDER
 cp -r test_data       release/$QUAST_FOLDER
 cp quast.py           release/$QUAST_FOLDER
 cp metaquast.py       release/$QUAST_FOLDER
+cp icarus.py          release/$QUAST_FOLDER
 cp manual.html        release/$QUAST_FOLDER
 cp VERSION.txt        release/$QUAST_FOLDER
 cp LICENSE.txt        release/$QUAST_FOLDER

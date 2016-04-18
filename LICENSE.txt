@@ -62,7 +62,7 @@ Mikheenko et al., 2016 into your reference list:
 
 Alla Mikheenko, Gleb Valin, Andrey Prjibelski, Vladislav Saveliev, Alexey Gurevich,
 Icarus: visualizer for de novo assembly evaluation,
-Submitted to Bioinformatics (2016)
+Submitted (2016)
 
 Third-party tools incorporated into QUAST:
 

@@ -252,6 +252,13 @@ ul.mdash li:before {
 .top-panel span {
     color: white;
 }
+.top-panel a {
+    color: white;
+    border-bottom: 1px solid white;
+}
+#to_main_menu_button a {
+    border-bottom: none;
+}
 .page_title {
     margin-top: -3px;
     margin-bottom: -3px;
@@ -265,7 +272,7 @@ ul.mdash li:before {
     width: 90%;
     /*padding-top: 20px;*/
     margin-bottom: 0;
-    padding-bottom: 50px;
+    /*padding-bottom: 50px;*/
 /*{#        padding-right: 20px;#}*/
 }
 .p_after_content {

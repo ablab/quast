@@ -52,6 +52,13 @@ def save(fpath, what):
     return fpath
 
 
+def save_as_text(fpath, what):
+    json_file = open(fpath, 'w')
+    json_file.write(what)
+    json_file.close()
+    return fpath
+
+
 def save_total_report(output_dirpath, min_contig, ref_fpath):
     from libs import reporting
     asm_names = map(qutils.label_from_fpath, reporting.assembly_fpaths)
@@ -181,6 +188,8 @@ def save_icarus_links(output_dirpath, icarus_links):
         'links_names': icarus_links['links_names'],
     })
 
+def save_icarus_data(output_dirpath, keyword, icarus_data):
+    return save_as_text(output_dirpath + prefix_fn + keyword + suffix_fn, icarus_data)
 
 
 

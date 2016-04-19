@@ -112,6 +112,44 @@ def init(html_fpath, is_meta=False):
             f_html.write(html)
 
 
+def init_icarus(template_f, html_fpath):
+    with open(template_f) as template_file:
+        html = template_file.read()
+
+        html = html.replace('{{ d3 }}', js_html('static/d3.js'))
+        html = html.replace('{{ build_icarus }}', js_html('static/scripts/build_icarus.js'))
+        html = html.replace('{{ bootstrap }}', css_html('static/bootstrap/bootstrap.css'))
+        html = html.replace('{{ common }}', css_html('static/common.css'))
+        html = html.replace('{{ icarus }}', css_html('static/icarus.css'))
+        with open(html_fpath, 'w') as f_html:
+            f_html.write(html)
+
+
+def insert_text_icarus(text_to_insert, keyword, html_fpath):
+    if not os.path.isfile(html_fpath):
+        return None
+
+    # reading html template file
+    with open(html_fpath) as f_html:
+        html_text = f_html.read()
+
+    # substituting template text with json
+    html_text = re.sub('{{ ' + keyword + ' }}', text_to_insert, html_text)
+
+    # writing substituted html to final file
+    with open(html_fpath, 'w') as f_html:
+        f_html.write(html_text)
+    return
+
+
+def clean_html(html_fpath):
+    with open(html_fpath) as f_html:
+        html_text = f_html.read()
+    html_text = re.sub(r'{{(\s+\S+\s+)}}', '', html_text)
+    with open(html_fpath, 'w') as f_html:
+        f_html.write(html_text)
+
+
 def append(results_dirpath, json_fpath, keyword, html_fpath=None):
     if html_fpath is None:
         html_fpath = os.path.join(results_dirpath, report_fname)
@@ -350,3 +388,8 @@ def save_icarus_links(results_dirpath, icarus_links):
     json_fpath = json_saver.save_icarus_links(results_dirpath, icarus_links)
     if json_fpath:
         append(results_dirpath, json_fpath, 'icarus')
+
+def save_icarus_data(results_dirpath, icarus_data, keyword, html_fpath):
+    if results_dirpath:
+        json_fpath = json_saver.save_icarus_data(results_dirpath, keyword, icarus_data)
+    insert_text_icarus(icarus_data, keyword, html_fpath)

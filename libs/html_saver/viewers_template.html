@@ -26,8 +26,9 @@ THE SOFTWARE.
 <head>
 <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
 <meta content="utf-8" http-equiv="encoding">
-<!-- <script type="text/javascript" src="http://mbostock.github.com/d3/d3.v2.js"></script> -->
-<!--- css: ---->
+    {{ icarus }}
+    {{ common }}
+    {{ bootstrap }}
 </head>
 <body>
 <!--[if lt IE 9]>
@@ -40,7 +41,7 @@ THE SOFTWARE.
 		<tr>
 		<td class='layout-table-td'>
             <div class="btn btn-inverse" id="to_main_menu_button">
-                <!--- menu: ---->
+                <a href="../icarus.html">Main menu</a>
             </div>
             <div class="page_title">
                 <h1>
@@ -72,18 +73,18 @@ THE SOFTWARE.
                 </span>
                 <br>
                 <span style="white-space: nowrap;">
-                    <!--- Contig size threshold: ---->
+                    {{ size_threshold }}
                 </span>
                 <span id="misassemblies_selector_panel">
-	    			<!--- misassemblies selector: ---->
+                    {{ ms_selector }}
                 </span>
 			</div>
 		</tr>
 	</table>
 </div>
 <div class="content" style="padding-bottom: 0;">
-    <!--- reference: ---->
-    <!--- warning: ---->
+    {{ reference }}
+    {{ warning }}
 </div>
 
 <button id="hideBtnAnnoMini" class="btn moving_button btn-mini" style="display: none; position: absolute;">Hide</button>
@@ -96,8 +97,10 @@ THE SOFTWARE.
 	}
 </script>
 <script type="text/javascript">
-	<!--- data: ---->
+    {{ contig_alignments }}
+    {{ contig_sizes }}
 </script>
-<!--- scripts: ---->
+    {{ d3 }}
+    {{ build_icarus }}
 </body>
 </html>

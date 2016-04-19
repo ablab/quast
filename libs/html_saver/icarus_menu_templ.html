@@ -1,7 +1,8 @@
 <html>
 <head>
-<!--- css: ---->
-<!--- scripts: ---->
+    {{ icarus }}
+    {{ common }}
+    {{ bootstrap }}
 </head>
 <body>
     <div class="top-panel">
@@ -24,38 +25,39 @@
 		<div class="icarus_summary_content">
 			<table class="summary_table assemblies_table">
 				<thead>
-					<!--- assemblies: ---->
+					{{ assemblies }}
 				</thead>
 				<tbody>
-					<!--- links: ---->
+					{{ links }}
 				</tbody>
 			</table>
 			<br>
-				<!--- div_references: ---->
-			<h3>Select a viewer of contigs aligned to one of the following reference genomes:</h3>
-			<table class="summary_table meta_references_table">
-				<thead>
-					<th>
-						Genome
-					</th>
-					<th>
-						# fragments
-					</th>
-					<th>
-						Length, bp
-					</th>
-					<!--- th_assemblies: ---->
-					<th>
-						Mean genome fraction, %
-					</th>
-					<th>
-						# misassembled blocks
-					</th>
-				</thead>
-				<tbody>
-				<!--- references: ---->
-				</tbody>
-			</table>
+				{{ div_references }}
+				<h3>Select a viewer of contigs aligned to one of the following reference genomes:</h3>
+				<table class="summary_table meta_references_table">
+					<thead>
+						<th>
+							Genome
+						</th>
+						<th>
+							# fragments
+						</th>
+						<th>
+							Length, bp
+						</th>
+						{{ th_assemblies }}
+						<th>
+							Mean genome fraction, %
+						</th>
+						<th>
+							# misassembled blocks
+						</th>
+					</thead>
+					<tbody>
+					{{ references }}
+					</tbody>
+				</table>
+			</div>
 		</div>
 	</div>
 <script>

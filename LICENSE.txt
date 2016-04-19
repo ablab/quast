@@ -36,8 +36,8 @@ Thanks for testing and feedback:
 
 Contact:
     quast.support@bioinf.spbau.ru
+    http://quast.sf.net
     http://quast.bioinf.spbau.ru
-    http://sourceforge.net/p/quast/
 
 -------------------------------------------------------------------------------
 

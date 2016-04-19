@@ -6,6 +6,7 @@ QUAST can be run on Linux or Mac OS.
 
 2. SOFTWARE REQUIREMENTS
 
+For the main pipeline:
 python 2 (2.5 or higher)
 perl 5.6.0 or higher
 g++
@@ -15,6 +16,12 @@ csh
 sed
 awk
 ar
+
+In addition, several submodules require:
+Java JDK (tested with OpenJDK 6) for GAGE
+Time::HiRes perl module for GeneMark-ES
+Boost (tested with v1.56.0) for Manta
+cmake (tested with v2.8.12) for Manta
 
 All those tools are usually preinstalled on Linux.
 Mac OS, however, initially misses make, g++ and ar, 
@@ -41,6 +48,8 @@ QUAST automatically compiles all its sub-parts when needed (on the first use).
 Thus, there is no special installation command for QUAST.
 However, we recommend you to run:
     python quast.py --test (if you plan to use quast.py)
+or/and
+    python quast.py --test-sv  (if you plan to use quast.py or metaquast.py with SV calling)
 or/and 
     python metaquast.py --test  (if you plan to use metaquast.py with references)
 or/and
@@ -48,7 +57,8 @@ or/and
 These commands run all QUAST and metaQUAST modules and check correctness
 of their work on your platform.
 
-We also provide ./install.sh script which runs all three mentioned above commands.
+We also provide ./install.sh and ./install_full.sh scripts. The former runs two simple --test 
+commands, the latter runs all four mentioned above commands.
 
 NOTE: You should place quast-4.0 directory in the final destination before
 the first use (e.g. before run with --test). If you want to move QUAST to 

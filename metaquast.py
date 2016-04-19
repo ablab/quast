@@ -58,7 +58,7 @@ def parallel_partition_contigs(asm, assemblies_by_ref, corrected_dirpath, alignm
                 ref_name = contigs_analyzer.ref_labels_by_chromosomes[values[0]]
                 ref_contigs_names = values[1:]
                 ref_contigs_fpath = os.path.join(
-                    corrected_dirpath, corr_assembly_label + '_to_' + ref_name[:40] + '.fasta')
+                    corrected_dirpath, corr_assembly_label + '_to_' + ref_name + '.fasta')
                 if ref_name not in aligned_contigs_for_each_ref:
                     aligned_contigs_for_each_ref[ref_name] = []
 
@@ -78,7 +78,7 @@ def parallel_partition_contigs(asm, assemblies_by_ref, corrected_dirpath, alignm
                         assemblies_by_ref[ref_name].append(ref_asm)
                         added_ref_asm.append(ref_asm.name)
 
-    # Exctraction not aligned contigs
+    # Extraction not aligned contigs
     all_contigs_names = set(contigs.keys())
     not_aligned_contigs_names = all_contigs_names - aligned_contig_names
     fastaparser.write_fasta(not_aligned_fpath, [(name, contigs[name]) for name in not_aligned_contigs_names])

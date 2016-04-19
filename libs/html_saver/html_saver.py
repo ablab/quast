@@ -246,11 +246,11 @@ def create_meta_icarus(results_dirpath, ref_names):
     contig_size_top_fpath = os.path.join(results_dirpath, qconfig.icarus_dirname, qconfig.contig_size_viewer_fname)
     shutil.copy(contig_size_fpath, contig_size_top_fpath)
     for ref in ref_names:
-        short_name = ref[:30]
+        html_name = ref
         if len(ref_names) == 1:
-            short_name = qconfig.one_alignment_viewer_name
-        icarus_ref_fpath = os.path.join(results_dirpath, qconfig.combined_output_name, qconfig.icarus_dirname, short_name + '.html')
-        icarus_top_ref_fpath = os.path.join(results_dirpath, qconfig.icarus_dirname, short_name + '.html')
+            html_name = qconfig.one_alignment_viewer_name
+        icarus_ref_fpath = os.path.join(results_dirpath, qconfig.combined_output_name, qconfig.icarus_dirname, html_name + '.html')
+        icarus_top_ref_fpath = os.path.join(results_dirpath, qconfig.icarus_dirname, html_name + '.html')
         shutil.copy(icarus_ref_fpath, icarus_top_ref_fpath)
     icarus_menu_fpath = os.path.join(results_dirpath, qconfig.combined_output_name, qconfig.icarus_html_fname)
     icarus_menu_top_fpath = os.path.join(results_dirpath, qconfig.icarus_html_fname)

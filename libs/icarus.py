@@ -913,9 +913,9 @@ def parse_features_data(features, cumulative_ref_lengths, ref_names):
 def save_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, chr_lengths, data_str, chr_to_aligned_blocks,
                                     structures_by_labels, output_dir_path=None, ref_data=None, features_data=None,
                                     assemblies_data=None, cov_data=None, not_covered=None, max_depth=None):
-    short_chr = chr[:30]
+    html_name = chr
     if len(chr_full_names) == 1:
-        short_chr = qconfig.one_alignment_viewer_name
+        html_name = qconfig.one_alignment_viewer_name
 
     additional_assemblies_data = ''
     data_str.append('var links_to_chromosomes;')
@@ -1049,7 +1049,7 @@ def save_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, chr_length
     if not qconfig.is_combined_ref:
         misassemblies_types.remove('interspecies translocation')
     with open(html_saver.get_real_path('_chr_templ.html'), 'r') as template:
-        with open(os.path.join(output_dir_path, '' + short_chr + '.html'), 'w') as result:
+        with open(os.path.join(output_dir_path, html_name + '.html'), 'w') as result:
             for line in template:
                 if line.find('<!--- data: ---->') != -1:
                     result.write(data_str)
@@ -1073,11 +1073,11 @@ def save_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, chr_length
                         if ms_type != 'local':
                             if ms_count != 1:
                                 ms_name += 's'
-                            result.write('<label><input type="checkbox" id="' + ms_type + '" name="misassemblies_select" '
-                                 '' + is_checked + '/>' + ms_name + ' (' + str(ms_count) + ')</label>')
+                            result.write('<label><input type="checkbox" id="' + ms_type + '" name="misassemblies_select" ' +
+                                         is_checked + '/>' + ms_name + ' (' + str(ms_count) + ')</label>')
                         else:
-                            result.write('<label><input type="checkbox" id="' + ms_type + '" name="misassemblies_select" '
-                                 '' + is_checked + '/>' + ms_name + ' (' + str(ms_count) + ')</label>')
+                            result.write('<label><input type="checkbox" id="' + ms_type + '" name="misassemblies_select" ' +
+                                         is_checked + '/>' + ms_name + ' (' + str(ms_count) + ')</label>')
                 elif line.find('<!--- css: ---->') != -1:
                     result.write(html_saver.css_html(os.path.join('static', qconfig.icarus_css_name)))
                     result.write(html_saver.css_html(os.path.join('static', 'common.css')))
@@ -1100,18 +1100,17 @@ def save_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, chr_length
 
 
 def get_info_by_chr(chr, aligned_bases_by_chr, chr_sizes, contigs_fpaths, one_chromosome=False):
-    short_chr = chr[:30]
     if one_chromosome:
         html_name = qconfig.one_alignment_viewer_name
-        chr_link = os.path.join(qconfig.icarus_dirname, '' + html_name + '.html')
+        chr_link = os.path.join(qconfig.icarus_dirname, html_name + '.html')
     else:
-        chr_link = os.path.join(qconfig.icarus_dirname, '' + short_chr + '.html')
+        chr_link = os.path.join(qconfig.icarus_dirname, chr + '.html')
     chr_name = chr.replace('_', ' ')
     tooltip = ''
     if len(chr_name) > 50:
         short_name = chr[:50]
         tooltip = 'data-toggle="tooltip" title="' + chr_name + '">'
-        chr_name = '' + short_name + '...'
+        chr_name = short_name + '...'
     aligned_lengths = [aligned_len for aligned_len in aligned_bases_by_chr[chr] if aligned_len is not None]
     chr_genome = sum(aligned_lengths) * 100.0 / (chr_sizes[chr] * len(contigs_fpaths))
     chr_size = chr_sizes[chr]

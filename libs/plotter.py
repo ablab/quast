@@ -208,6 +208,7 @@ def cumulative_plot(reference, contigs_fpaths, lists_of_lengths, plot_fpath, tit
     matplotlib.pyplot.savefig(plot_fpath, bbox_inches='tight')
     logger.info('    saved to ' + plot_fpath)
     pdf_plots_figures.append(figure)
+    matplotlib.pyplot.close()
 
 
 # common routine for Nx-plot and NGx-plot (and probably for others Nyx-plots in the future)
@@ -307,7 +308,7 @@ def Nx_plot(results_dir, reduce_points, contigs_fpaths, lists_of_lengths, plot_f
     ax.yaxis.set_major_formatter(mkformatter)
     matplotlib.pyplot.xlim([0, 100])
 
-    #ax.invert_xaxis() 
+    #ax.invert_xaxis()
     #matplotlib.pyplot.ylim(matplotlib.pyplot.ylim()[::-1])
     xLocator, yLocator = get_locators()
     ax.yaxis.set_major_locator(yLocator)
@@ -317,9 +318,10 @@ def Nx_plot(results_dir, reduce_points, contigs_fpaths, lists_of_lengths, plot_f
     matplotlib.pyplot.savefig(plot_fpath, bbox_inches='tight')
     logger.info('    saved to ' + plot_fpath)
     pdf_plots_figures.append(figure)
+    matplotlib.pyplot.close()
 
 
-# routine for GC-plot    
+# routine for GC-plot
 def GC_content_plot(ref_fpath, contigs_fpaths, list_of_GC_distributions, plot_fpath):
     if matplotlib_error:
         return
@@ -397,6 +399,7 @@ def GC_content_plot(ref_fpath, contigs_fpaths, list_of_GC_distributions, plot_fp
     matplotlib.pyplot.savefig(plot_fpath, bbox_inches='tight')
     logger.info('    saved to ' + plot_fpath)
     pdf_plots_figures.append(figure)
+    matplotlib.pyplot.close()
 
 
 # common routine for genes and operons cumulative plots
@@ -470,9 +473,10 @@ def genes_operons_plot(reference_value, contigs_fpaths, files_feature_in_contigs
     matplotlib.pyplot.savefig(plot_fpath, bbox_inches='tight')
     logger.info('    saved to ' + plot_fpath)
     pdf_plots_figures.append(figure)
+    matplotlib.pyplot.close()
 
 
-# common routine for Histograms    
+# common routine for Histograms
 def histogram(contigs_fpaths, values, plot_fpath, title='', yaxis_title='', bottom_value=None,
               top_value=None):
     if matplotlib_error:
@@ -548,6 +552,7 @@ def histogram(contigs_fpaths, values, plot_fpath, title='', yaxis_title='', bott
     matplotlib.pyplot.savefig(plot_fpath, bbox_inches='tight')
     logger.info('    saved to ' + plot_fpath)
     pdf_plots_figures.append(figure)
+    matplotlib.pyplot.close()
 
 
 # metaQuast summary plots (per each metric separately)
@@ -649,6 +654,7 @@ def draw_meta_summary_plot(html_fpath, output_dirpath, labels, ref_names, all_ro
         matplotlib.pyplot.tight_layout()
         matplotlib.pyplot.savefig(plot_fpath, bbox_inches='tight')
         logger.info('    saved to ' + plot_fpath)
+        matplotlib.pyplot.close()
 
 
 # metaQuast misassemblies by types plots (all references for 1 assembly)
@@ -731,6 +737,7 @@ def draw_meta_summary_misassembl_plot(results, ref_names, contig_num, plot_fpath
         matplotlib.pyplot.tight_layout()
         matplotlib.pyplot.savefig(plot_fpath, bbox_inches='tight')
         logger.info('    saved to ' + plot_fpath)
+        matplotlib.pyplot.close()
     return json_points_x, json_points_y
 
 
@@ -827,6 +834,7 @@ def draw_misassembl_plot(reports, plot_fpath, title='', yaxis_title=''):
     logger.info('    saved to ' + plot_fpath)
     ax.set_position([box.x0, box.y0 + box.height * 0.2, box.width, box.height * 0.8])
     pdf_plots_figures.append(figure)
+    matplotlib.pyplot.close()
 
 
 def draw_report_table(report_name, extra_info, table_to_draw, column_widths):
@@ -869,6 +877,7 @@ def draw_report_table(report_name, extra_info, table_to_draw, column_widths):
         rowLoc='left', colLoc='center', cellLoc='right', loc='center')
     #matplotlib.pyplot.savefig(all_pdf, format='pdf', bbox_inches='tight')
     pdf_tables_figures.append(figure)
+    matplotlib.pyplot.close()
 
 
 def fill_all_pdf_file(all_pdf):

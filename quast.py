@@ -839,7 +839,7 @@ def main(args):
                 from libs import icarus
                 icarus_html_fpath, contig_alignment_plot_fpath = icarus.do(
                     contigs_fpaths, report_for_icarus_fpath_pattern, output_dirpath, ref_fpath,
-                    stdout_pattern=stdout_pattern, similar=True, features=features_containers, cov_fpath=cov_fpath,
+                    stdout_pattern=stdout_pattern, features=features_containers, cov_fpath=cov_fpath,
                     json_output_dir=json_output_dirpath)
 
             if all_pdf_file:

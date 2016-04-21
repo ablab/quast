@@ -43,7 +43,7 @@ function fillOneRow(metric, mainMetrics, group_n, order, glossary, is_primary, r
     }
 
     table +=
-        '<tr class="' + trClass + '" quality="' + quality + '" onclick="toggleSecondary($(this))">' +
+        '<tr class="' + trClass + '" quality="' + quality + '" onclick="toggleSecondary(event, $(this))">' +
         '<td class="left_column_td ' + tdClass + '">' +
         '<span class="metric-name' +
           (is_primary ? ' primary' : ' secondary') + (not_extend || !is_primary ? '' : ' expandable collapsed') + '">' +
@@ -358,8 +358,8 @@ function buildTotalReport(assembliesNames, report, order, date, minContig, gloss
 }
 
 
-function toggleSecondary(caller) {
-    var event = window.event;
+function toggleSecondary(event, caller) {
+    event = event || window.event;
     if(event.target.nodeName == "IMG") return;
     if (!caller.hasClass('primary') || caller.hasClass('not_extend')) {
         return;

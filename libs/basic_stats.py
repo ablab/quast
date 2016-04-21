@@ -87,8 +87,10 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, json_output_dir, results_dir):
         os.mkdir(output_dirpath)
 
     reference_length = None
+    reference_lengths = []
     if ref_fpath:
-        reference_length = sum(fastaparser.get_lengths_from_fastafile(ref_fpath))
+        reference_lengths = fastaparser.get_lengths_from_fastafile(ref_fpath)
+        reference_length = sum(reference_lengths)
         reference_GC, reference_GC_distribution = GC_content(ref_fpath)
 
         logger.info('  Reference genome:')
@@ -97,15 +99,15 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, json_output_dir, results_dir):
         reference_length = qconfig.estimated_reference_size
         logger.info('  Estimated reference length = ' + str(reference_length))
 
-    if reference_length:
+    if reference_lengths:
         # Saving the reference in JSON
         if json_output_dir:
-            json_saver.save_reference_length(json_output_dir, reference_length)
+            json_saver.save_reference_lengths(json_output_dir, reference_lengths)
 
         # Saving for an HTML report
         if qconfig.html_report:
             from libs.html_saver import html_saver
-            html_saver.save_reference_length(results_dir, reference_length)
+            html_saver.save_reference_lengths(results_dir, reference_lengths)
 
     logger.info('  Contig files: ')
     lists_of_lengths = []

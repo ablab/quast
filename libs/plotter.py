@@ -139,9 +139,9 @@ def cumulative_plot(reference, contigs_fpaths, lists_of_lengths, plot_fpath, tit
     max_x = 0
     max_y = 0
 
-    for (contigs_fpath, lenghts) in itertools.izip(contigs_fpaths, lists_of_lengths):
+    for (contigs_fpath, lengths) in itertools.izip(contigs_fpaths, lists_of_lengths):
         vals_length = [0]
-        for l in sorted(lenghts, reverse=True):
+        for l in sorted(lengths, reverse=True):
             vals_length.append(vals_length[-1] + l)
         vals_contig_index = range(0, len(vals_length))
         if vals_contig_index:
@@ -157,7 +157,7 @@ def cumulative_plot(reference, contigs_fpaths, lists_of_lengths, plot_fpath, tit
                 y_vals.append(y_vals[-1] + l)
             else:
                 y_vals = [l]
-        x_vals = range(1, len(y_vals) + 1) # for reference only: starting from X=1
+        x_vals = range(0, len(y_vals)) # for reference only: starting from X=1
         # extend reference curve to the max X-axis point
         reference_length = y_vals[-1]
         max_x = max(max_x, x_vals[-1])

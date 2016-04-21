@@ -9,10 +9,10 @@ var cumulative = {
     showWithData: null,
     colors: [],
 
-    draw: function(name, title, colors, filenames, listsOfLengths, refLenght, tickX,
+    draw: function(name, title, colors, filenames, listsOfLengths, refLengths, tickX,
                    placeholder, legendPlaceholder, glossary, order, scalePlaceholder) {
 
-        $(scalePlaceholder).empty()
+        $(scalePlaceholder).empty();
 
         if (!this.isInitialized) {
             //    div.html(
@@ -21,33 +21,32 @@ var cumulative = {
             //    );
             cumulative.series = [];
             var plotsN = filenames.length;
-
-            if (refLenght) {
-                cumulative.maxY = refLenght;
+            var refLength = 0;
+            if (refLengths) {
+                for (var i = 0, size = refLengths.length; i < size; i++)
+                    refLength += refLengths[i];
+            }
+            if (refLength) {
+                cumulative.maxY = refLength;
             }
 
             cumulative.colors = colors;
 
-            for (var i = 0; i < plotsN; i++) {
-                var lengths = listsOfLengths[order[i]];
-                var asm_name = filenames[order[i]];
-                var color = colors[order[i]];
-                
+            function addCumulativeLenData(label, index, color, lengths, isRef) {
                 var size = lengths.length;
-
-                cumulative.series[i] = {
-                    data: new Array(size+1),
-                    label: asm_name,
-                    number: i,
-                    color: color,
+                var points = {
+                    data: new Array(size + 1),
+                    label: label,
+                    number: index,
+                    color: color
                 };
 
-                cumulative.series[i].data[0] = [0, 0];
+                points.data[0] = [0, 0];
 
                 var y = 0;
                 for (var j = 0; j < size; j++) {
                     y += lengths[j];
-                    cumulative.series[i].data[j+1] = [j+1, y];
+                    points.data[j+1] = [j+1, y];
                     if (y > cumulative.maxY) {
                         cumulative.maxY = y;
                     }
@@ -56,6 +55,21 @@ var cumulative = {
                 if (size > cumulative.maxX) {
                     cumulative.maxX = size;
                 }
+                if (isRef){
+                    points.isReference = true;
+                    points.dashes = {show: true, lineWidth: 1};
+                    if (size < cumulative.maxX) {
+                        points.data[size + 1] = [cumulative.maxX, y];
+                    }
+                }
+                return points;
+            }
+
+            for (var i = 0; i < plotsN; i++) {
+                var lengths = listsOfLengths[order[i]];
+                var asm_name = filenames[order[i]];
+                var color = colors[order[i]];
+                cumulative.series[i] = addCumulativeLenData(asm_name, i, color, lengths);
             }
 
 //            var lineColors = [];
@@ -67,7 +81,7 @@ var cumulative = {
             for (i = 0; i < plotsN; i++) {
                 cumulative.series[i].lines = {
                     show: true,
-                    lineWidth: 1,
+                    lineWidth: 1
                     //                color: lineColors[i],
                 };
                 //    In order to draw dots instead of lines
@@ -75,7 +89,7 @@ var cumulative = {
                     show: false,
                     radius: 1,
                     fill: 1,
-                    fillColor: false,
+                    fillColor: false
                 };
             }
 
@@ -85,30 +99,11 @@ var cumulative = {
 
             cumulative.maxYTick = getMaxDecimalTick(cumulative.maxY);
 
-            if (refLenght) {
-                cumulative.series.push({
-                    data: [[0, refLenght], [cumulative.maxX, refLenght]],
-                    label: 'reference,&nbsp;' + toPrettyString(refLenght, 'bp'),
-                    isReference: true,
-                    dashes: {
-                        show: true,
-                        lineWidth: 1,
-                    },
-                    yaxis: 1,
-                    number: cumulative.series.length,
-                    color: '#000000',
-                });
-
+            if (refLengths) {
+                size = refLengths.length;
+                var ref_label = 'reference,&nbsp;' + toPrettyString(refLength, 'bp');
+                cumulative.series.push(addCumulativeLenData(ref_label, i, '#000000', refLengths, true));
                 cumulative.colors.push('#000000');
-
-                //        plotsData = [({
-                //            data: [[0, referenceLength], [maxX, referenceLength]],
-                //            dashes: {
-                //                show: true,
-                //                lineWidth: 1,
-                //            },
-                //            number: plotsData.length,
-                //        })].concat(plotsData);
             }
 
 
@@ -156,7 +151,7 @@ var cumulative = {
                         borderWidth: 1,
                         hoverable: true,
                         autoHighlight: false,
-                        mouseActiveRadius: 1000,
+                        mouseActiveRadius: 1000
                     },
                     yaxes: yaxes,
                     xaxis: {
@@ -165,8 +160,8 @@ var cumulative = {
                         lineWidth: 0.5,
                         color: '#000',
                         tickFormatter: getContigNumberTickFormatter(cumulative.maxX, tickX),
-                        minTickSize: tickX,
-                    },
+                        minTickSize: tickX
+                    }
                 });
 
                 bindTip(placeholder, series, plot, ordinalNumberToPrettyString, tickX, 'contig', 'bottom right');

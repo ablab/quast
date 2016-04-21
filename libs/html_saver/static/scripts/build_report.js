@@ -10,7 +10,7 @@ function buildReport() {
     var coordNx = null;
     var contigsLensNx = null;
     var alignedContigsLens = null;
-    var refLen = 0;
+    var refLengths = null;
     var contigs = null;
     var genesInContigs = null;
     var operonsInContigs = null;
@@ -37,8 +37,8 @@ function buildReport() {
     buildTotalReport(assembliesNames, totalReport.report, order, totalReport.date,
         totalReport.minContig, glossary, qualities, mainMetrics, totalReport.referenceName);
 
-    if (refLen = readJson('reference-length'))
-        refLen = refLen.reflen;
+    if (refLengths = readJson('reference-length'))
+        refLengths = refLengths.reflen;
 
     /****************/
     /* Plots        */
@@ -62,7 +62,7 @@ function buildReport() {
         tickX = tickX.tickX;
 
     if (contigsLens = readJson('contigs-lengths')) {
-        makePlot(firstPlot, assembliesNames, order, 'cumulative', 'Cumulative length', cumulative.draw, contigsLens.lists_of_lengths, refLen, tickX);
+        makePlot(firstPlot, assembliesNames, order, 'cumulative', 'Cumulative length', cumulative.draw, contigsLens.lists_of_lengths, refLengths, tickX);
         firstPlot = false;
     }
 

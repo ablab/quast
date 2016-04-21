@@ -114,8 +114,8 @@ def save_contigs_lengths(output_dirpath, contigs_fpaths, lists_of_lengths):
         'lists_of_lengths': lists_of_lengths
     })
 
-def save_reference_length(output_dirpath, reference_length):
-    return save(output_dirpath + ref_length_fn, {'reflen': reference_length})
+def save_reference_lengths(output_dirpath, reference_lengths):
+    return save(output_dirpath + ref_length_fn, {'reflen': reference_lengths})
 
 
 def save_tick_x(output_dirpath, tick_x):

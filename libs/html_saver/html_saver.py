@@ -344,8 +344,8 @@ def save_meta_misassemblies(html_fpath, results_dirpath, coords, labels, refs):
         append(results_dirpath, json_fpath, name_coord, html_fpath)
 
 
-def save_reference_length(results_dirpath, reference_length):
-    json_fpath = json_saver.save_reference_length(results_dirpath, reference_length)
+def save_reference_lengths(results_dirpath, reference_lengths):
+    json_fpath = json_saver.save_reference_lengths(results_dirpath, reference_lengths)
     if json_fpath:
         append(results_dirpath, json_fpath, 'referenceLength')
 

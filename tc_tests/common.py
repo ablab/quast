@@ -233,7 +233,7 @@ def run_quast(name, contigs=None, params='', expected_exit_code=0, meta=False):
     quast_fpath = '../../quast.py'
     if meta:
         quast_fpath = '../../metaquast.py'
-    cmd = quast_fpath + ' -o ../' + results_dirpath + ' ' + ' '.join(contigs) + ' ' + params
+    cmd = sys.executable + ' ' + quast_fpath + ' -o ../' + results_dirpath + ' ' + ' '.join(contigs) + ' ' + params
     print cmd
     print
     exit_code = os.system(cmd) >> 8

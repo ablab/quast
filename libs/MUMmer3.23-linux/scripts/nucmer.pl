@@ -18,6 +18,7 @@
 use lib "__SCRIPT_DIR";
 use Foundation;
 use File::Spec::Functions;
+use File::Basename;
 use strict;
 
 my $AUX_BIN_DIR = "__AUX_BIN_DIR";
@@ -86,6 +87,8 @@ my $HELP_INFO = q~
                     for repeats (default --simplify)
     -V
     --version       Display the version information and exit
+    -t
+    --threads       Number of threads for e-mem program
     ~;
 
 
@@ -96,7 +99,8 @@ my $USAGE_INFO = q~
 
 my @DEPEND_INFO =
     (
-     "$BIN_DIR/mummer",
+#     "$BIN_DIR/mummer",
+     "$BIN_DIR/e-mem",
      "$BIN_DIR/mgaps",
      "$BIN_DIR/show-coords",
      "$AUX_BIN_DIR/postnuc",
@@ -116,6 +120,7 @@ my %DEFAULT_PARAMETERS =
      "DIAG_DIFF"         =>   "5",          # diagonal difference absolute
      "DIAG_FACTOR"       =>   ".12",        # diagonal difference fraction
      "BREAK_LEN"         =>   "200",        # extension break length
+     "NUM_THREADS"       =>   "1",          # default number of threads
      "POST_SWITCHES"     =>   ""            # switches for the post processing
      );
 
@@ -139,6 +144,7 @@ sub main ( )
     my $dfrac = $DEFAULT_PARAMETERS { "DIAG_FACTOR" };
     my $blen = $DEFAULT_PARAMETERS { "BREAK_LEN" };
     my $psw = $DEFAULT_PARAMETERS { "POST_SWITCHES" };
+    my $threads = $DEFAULT_PARAMETERS { "NUM_THREADS" };
 
     my $fwd;              # if true, use forward strand
     my $rev;              # if true, use reverse strand
@@ -187,6 +193,7 @@ sub main ( )
 	 "optimize!" => \$optimize,
 	 "p|prefix=s" => \$pfx,
 	 "r|reverse"   => \$rev,
+	 "t|threads=i" => \$threads,
 	 "simplify!" => \$simplify
 	 );
 
@@ -244,7 +251,8 @@ sub main ( )
     }
 
     #-- Set up the program path names
-    my $algo_path = "$BIN_DIR/mummer";
+#    my $algo_path = "$BIN_DIR/mummer";
+    my $algo_path = "$BIN_DIR/e-mem";
     my $mgaps_path = "$BIN_DIR/mgaps";
     my $prenuc_path = "$AUX_BIN_DIR/prenuc";
     my $postnuc_path = "$AUX_BIN_DIR/postnuc";
@@ -319,36 +327,35 @@ sub main ( )
 	}
     }
     
-
     #-- Run prenuc and assert return value is zero
     print (STDERR "1: PREPARING DATA\n");
     $err[0] = $tigr->runCommand
-	("$prenuc_path $ref_file > $pfx.ntref");
+        ("$prenuc_path $ref_file > $pfx.ntref");
 
     if ( $err[0] != 0 ) {
-	$tigr->bail
-	    ("ERROR: prenuc returned non-zero\n");
+        $tigr->bail
+            ("ERROR: prenuc returned non-zero\n");
     }
 
 
-    #-- Run mummer | mgaps and assert return value is zero
-    print (STDERR "2,3: RUNNING mummer AND CREATING CLUSTERS\n");
-    open(ALGO_PIPE, "$algo_path $algo $mdir -l $size -n $pfx.ntref $qry_file |")
-	or $tigr->bail ("ERROR: could not open $algo_path output pipe $!");
-    open(CLUS_PIPE, "| $mgaps_path -l $clus -s $gap -d $ddiff -f $dfrac > $pfx.mgaps")
-	or $tigr->bail ("ERROR: could not open $mgaps_path input pipe $!");
-    while ( <ALGO_PIPE> ) {
-	print CLUS_PIPE
-	or $tigr->bail ("ERROR: could not write to $mgaps_path pipe $!");
-    }
-    $err[0] = close(ALGO_PIPE);
-    $err[1] = close(CLUS_PIPE);
+    #-- Run e-mem | mgaps and assert return value is zero
+    print (STDERR "2,3: RUNNING e-mem AND CREATING CLUSTERS\n");
+    my $pfx_dir = dirname($pfx);
+    $err[0] = $tigr->runCommand
+        ("$algo_path $algo $mdir -l $size -t $threads -n $pfx.ntref -p $pfx_dir $qry_file > $pfx.mems");
 
-    if ( $err[0] == 0  ||  $err[1] == 0 ) {
-	$tigr->bail ("ERROR: mummer and/or mgaps returned non-zero\n");
+    if ( $err[0] != 0 ) {
+        $tigr->bail ("ERROR: e-mem returned non-zero\n");
     }
 
+    $err[0] = $tigr->runCommand
+        ("$mgaps_path -l $clus -s $gap -d $ddiff -f $dfrac < $pfx.mems > $pfx.mgaps");
 
+    if ( $err[0] != 0 ) {
+        $tigr->bail ("ERROR: mgaps returned non-zero\n");
+    }
+
+       
     #-- Run postnuc and assert return value is zero
     print (STDERR "4: FINISHING DATA\n");
     if ( $banded )
@@ -378,9 +385,9 @@ sub main ( )
     }
 
     #-- Remove the temporary output
-    $err[0] = unlink ("$pfx.ntref", "$pfx.mgaps");
+    $err[0] = unlink ("$pfx.ntref", "$pfx.mgaps", "$pfx.mems");
 
-    if ( $err[0] != 2 ) {
+    if ( $err[0] != 3 ) {
 	$tigr->logError ("WARNING: there was a problem deleting".
 			 " the temporary output files", 1);
     }

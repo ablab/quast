@@ -353,8 +353,8 @@ void FindSNPs (DeltaGraph_t & graph)
       {
         SNP_t * snp;
         int ri, qi;
-        char * R[] = {(*ei)->refnode->seq, NULL, NULL, NULL, NULL, NULL, NULL};
-        char * Q[] = {(*ei)->qrynode->seq, NULL, NULL, NULL, NULL, NULL, NULL};
+        char * R[] = {(*ei)->refnode->seq, (*ei)->refnode->seq, NULL, NULL, NULL, NULL, NULL};
+        char * Q[] = {(*ei)->qrynode->seq, (*ei)->qrynode->seq, NULL, NULL, NULL, NULL, NULL};
 
         long i;
         long lenR = (*ei) -> refnode -> len;
@@ -684,7 +684,7 @@ void FindSNPs (DeltaGraph_t & graph)
           }
 
         //-- Clear up the seq
-        for ( i = 1; i <= 6; i ++ )
+        for ( i = 2; i <= 6; i ++ )
           {
             free (R[i]);
             free (Q[i]);

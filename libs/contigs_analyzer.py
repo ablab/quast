@@ -36,6 +36,7 @@ if platform.system() == 'Darwin':
     mummer_dirpath = os.path.join(qconfig.LIBS_LOCATION, 'MUMmer3.23-osx')
 else:
     mummer_dirpath = os.path.join(qconfig.LIBS_LOCATION, 'MUMmer3.23-linux')
+    required_binaries.append('e-mem')
 
 
 def bin_fpath(fname):
@@ -133,19 +134,15 @@ class NucmerStatus:
     ERROR = 3
 
 
-def run_nucmer(prefix, ref_fpath, contigs_fpath, log_out_fpath, log_err_fpath, index):
+def run_nucmer(prefix, ref_fpath, contigs_fpath, log_out_fpath, log_err_fpath, index, emem_threads=1):
     # additional GAGE params of Nucmer: '-l', '30', '-banded'
-    return_code = qutils.call_subprocess(
-        [bin_fpath('nucmer'),
-         '-c', str(qconfig.min_cluster),
-         '-l', str(qconfig.min_cluster),
-         '--maxmatch',
-         '-p', prefix,
-         ref_fpath,
-         contigs_fpath],
-        stdout=open(log_out_fpath, 'a'),
-        stderr=open(log_err_fpath, 'a'),
-        indent='  ' + qutils.index_to_str(index))
+    nucmer_cmdline = [bin_fpath('nucmer'), '-c', str(qconfig.min_cluster),
+                      '-l', str(qconfig.min_cluster), '--maxmatch',
+                      '-p', prefix, ref_fpath, contigs_fpath]
+    if platform.system() != 'Darwin':
+        nucmer_cmdline += ['-t', str(emem_threads)]
+    return_code = qutils.call_subprocess(nucmer_cmdline, stdout=open(log_out_fpath, 'a'), stderr=open(log_err_fpath, 'a'),
+                                         indent='  ' + qutils.index_to_str(index))
 
     return return_code
 
@@ -177,7 +174,7 @@ def check_nucmer_successful_check(fpath, contigs_fpath, ref_fpath):
     return True
 
 
-def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_fpath, old_contigs_fpath, bed_fpath, parallel_by_chr):
+def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_fpath, old_contigs_fpath, bed_fpath, parallel_by_chr, emem_threads):
     assembly_label = qutils.label_from_fpath_for_fname(contigs_fpath)
 
     logger.info('  ' + qutils.index_to_str(index) + assembly_label)
@@ -232,7 +229,7 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
 
         if not qconfig.splitted_ref:
             nucmer_exit_code = run_nucmer(nucmer_fpath, ref_fpath, contigs_fpath,
-                                          log_out_fpath, log_err_fpath, index)
+                                          log_out_fpath, log_err_fpath, index, emem_threads)
             if nucmer_exit_code != 0:
                 return __fail(contigs_fpath, index)
 
@@ -245,6 +242,8 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
             # (i.e. daemonic) we can't start new daemonic processes
             if parallel_by_chr and not qconfig.memory_efficient:
                 n_jobs = min(qconfig.max_threads, len(prefixes_and_chr_files))
+                if emem_threads == 1:
+                    emem_threads = max(int(qconfig.max_threads / n_jobs), 1)
             else:
                 n_jobs = 1
             if n_jobs > 1:
@@ -254,7 +253,7 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
             # processing each chromosome separately (if we can)
             from joblib import Parallel, delayed
             nucmer_exit_codes = Parallel(n_jobs=n_jobs)(delayed(run_nucmer)(
-                prefix, chr_file, contigs_fpath, log_out_fpath, log_err_fpath + "_part%d" % (i + 1), index)
+                prefix, chr_file, contigs_fpath, log_out_fpath, log_err_fpath + "_part%d" % (i + 1), index, emem_threads)
                 for i, (prefix, chr_file) in enumerate(prefixes_and_chr_files))
 
             print >> planta_err_f, "Stderr outputs for reference parts are in:"
@@ -1617,13 +1616,14 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
         return NucmerStatus.OK, result, aligned_lengths
 
 
-def plantakolya_process(cyclic, nucmer_output_dirpath, contigs_fpath, i, output_dirpath, ref_fpath, bed_fpath, parallel_by_chr=False):
+def plantakolya_process(cyclic, nucmer_output_dirpath, contigs_fpath, i, output_dirpath, ref_fpath, bed_fpath, parallel_by_chr=False,
+                        emem_threads=1):
     contigs_fpath, old_contigs_fpath = contigs_fpath
     assembly_label = qutils.label_from_fpath_for_fname(contigs_fpath)
 
     nucmer_fname = os.path.join(nucmer_output_dirpath, assembly_label)
-    nucmer_is_ok, result, aligned_lengths = plantakolya(cyclic, i, contigs_fpath, nucmer_fname,
-                                                        output_dirpath, ref_fpath, old_contigs_fpath, bed_fpath, parallel_by_chr=parallel_by_chr)
+    nucmer_is_ok, result, aligned_lengths = plantakolya(cyclic, i, contigs_fpath, nucmer_fname, output_dirpath, ref_fpath,
+                                                        old_contigs_fpath, bed_fpath, parallel_by_chr=parallel_by_chr, emem_threads=emem_threads)
 
     clear_files(contigs_fpath, nucmer_fname)
     return nucmer_is_ok, result, aligned_lengths
@@ -1670,15 +1670,18 @@ def do(reference, contigs_fpaths, cyclic, output_dir, old_contigs_fpaths, bed_fp
             if not os.path.isdir(nucmer_output_dir):
                 os.mkdir(nucmer_output_dir)
     n_jobs = min(len(contigs_fpaths), qconfig.max_threads)
+    emem_threads = max(int(qconfig.max_threads / len(contigs_fpaths)), 1)
+    if qconfig.memory_efficient:
+        emem_threads = 1
     from joblib import Parallel, delayed
     if not qconfig.splitted_ref:
         statuses_results_lengths_tuples = Parallel(n_jobs=n_jobs)(delayed(plantakolya_process)(
-        cyclic, nucmer_output_dir, fname, i, output_dir, reference, bed_fpath)
+        cyclic, nucmer_output_dir, fname, i, output_dir, reference, bed_fpath, emem_threads=emem_threads)
              for i, fname in enumerate(zip(contigs_fpaths, old_contigs_fpaths)))
     else:
         if len(contigs_fpaths) >= len(qconfig.splitted_ref) and not qconfig.memory_efficient:
             statuses_results_lengths_tuples = Parallel(n_jobs=n_jobs)(delayed(plantakolya_process)(
-        cyclic, nucmer_output_dir, fname, i, output_dir, reference, bed_fpath)
+        cyclic, nucmer_output_dir, fname, i, output_dir, reference, bed_fpath, emem_threads=emem_threads)
              for i, fname in enumerate(zip(contigs_fpaths, old_contigs_fpaths)))
         else:
             statuses_results_lengths_tuples = []

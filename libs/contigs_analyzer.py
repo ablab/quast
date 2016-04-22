@@ -138,9 +138,10 @@ def run_nucmer(prefix, ref_fpath, contigs_fpath, log_out_fpath, log_err_fpath, i
     # additional GAGE params of Nucmer: '-l', '30', '-banded'
     nucmer_cmdline = [bin_fpath('nucmer'), '-c', str(qconfig.min_cluster),
                       '-l', str(qconfig.min_cluster), '--maxmatch',
-                      '-p', prefix, ref_fpath, contigs_fpath]
+                      '-p', prefix]
     if platform.system() != 'Darwin':
         nucmer_cmdline += ['-t', str(emem_threads)]
+    nucmer_cmdline += [ref_fpath, contigs_fpath]
     return_code = qutils.call_subprocess(nucmer_cmdline, stdout=open(log_out_fpath, 'a'), stderr=open(log_err_fpath, 'a'),
                                          indent='  ' + qutils.index_to_str(index))
 

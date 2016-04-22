@@ -53,7 +53,7 @@ int32_t commonData::fourColOutput=0;
 int32_t commonData::lenInHeader=0;
 int32_t commonData::relQueryPos=0;
 char commonData::nucmer_path[256]={'\0'};
-std::string commonData::pfx_path[256];
+std::string commonData::pfx_path;
 
 
 class seqData {

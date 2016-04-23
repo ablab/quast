@@ -1,5 +1,12 @@
 -- Version history --
 
+4.1   x. Nucmer aligner is replaced with significantly faster E-MEM (Linux only).  
+
+      x. Code refactored (icarus, metaquast).
+
+      x. Fixed several minor bugs.
+
+
 4.0   1. Icarus added! Icarus stands for Interactive Contig Assessment browseR.
          Icarus complements QUAST output with interactive visualisations of assembly
          alignments to the reference genome, and all assembly features detected by 

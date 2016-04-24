@@ -22,8 +22,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-    INTERLACE_BLOCKS_VERT_OFFSET = true;
-    INTERLACE_BLOCKS_COLOR = true;
+    INTERLACE_BLOCKS_VERT_OFFSET = false;
+    INTERLACE_BLOCKS_COLOR = false;
     BLOCKS_SHADOW = false;
 
     /**
@@ -49,6 +49,7 @@ THE SOFTWARE.
             },
             mainLanesHeight = 45,
             miniLanesHeight = 18,
+            miniItemHeight = 10;
             annotationMiniLanesHeight = 18,
             featureMiniHeight = 10,
             annotationLanesHeight = 30,
@@ -380,7 +381,19 @@ THE SOFTWARE.
             .attr('class', 'curSegment');
 
     var visItems = null;
-    main.append('rect')
+
+    // draw the items
+    var itemSvgOffsetY = margin.top + document.getElementById('chart').offsetTop;
+    var itemRects = d3.select('body').append('div').attr('id', 'items')
+                                    .append('svg:svg')
+                                    .style('position', 'absolute')
+                                    .attr('width', width)
+                                    .attr('height', mainHeight)
+                                    .style('top', itemSvgOffsetY)
+                                    .style('left', margin.left)
+                                    .attr('class', 'shadow_svg');
+
+    itemRects.append('rect')
             .attr('pointer-events', 'painted')
             .attr('width', chartWidth)
             .attr('height', mainHeight)
@@ -416,27 +429,40 @@ THE SOFTWARE.
                 }
     });
 
-    // draw the items
-    var itemRects = main.append('g')
-            .attr('clip-path', 'url(#clip)');
-    var itemNonRects = main.append('g')
-            .attr('clip-path', 'url(#clip)');
+    var miniItems = getMiniItems(items);
+    miniRects = miniItems.filter(function (item) {
+        if (!item.path) return item;
+    });
+    miniPaths = miniItems.filter(function (item) {
+        if (item.path) return item;
+    });
 
-    var miniPaths = getPaths(items);
+    mini.append('g').selectAll('miniItems')
+            .data(miniRects)
+            .enter().append('rect')
+            .attr('class', function (item) {
+                if (item.text) return 'item gradient';
+                return 'item miniItem ' + item.objClass;
+            })                
+            .attr('fill', function (item) {
+                if (item.text) return addGradient(item, item.text, false);
+            })
+            .attr('transform', function (item) {
+                return 'translate(' + item.start + ', ' + item.y + ')';
+            })
+            .attr('width', function (item) {
+                itemWidth = item.end - item.start;
+                return itemWidth;
+            })
+            .attr('height', miniItemHeight);
     mini.append('g').selectAll('miniItems')
             .data(miniPaths)
             .enter().append('path')
-            .attr('class', function (d) {
-              if (d.visText) return '';
-              if (!d.supp) return 'miniItem ' + d.objClass;
-              else return 'mainItem end ' + d.objClass;
+            .attr('class', function (item) {
+              return 'mainItem end ' + item.objClass;
             })
-            .attr('d', function (d) {
-              return d.path;
-            })
-            .attr('stroke-width', 10)
-            .attr('stroke', function (d) {
-              if (d.visText) return addGradient(d, d.visText, true);
+            .attr('d', function (item) {
+              return item.path;
             });
 
     var featureTip = d3.select('body').append('div')
@@ -520,7 +546,7 @@ THE SOFTWARE.
                     contigLines[line].lane = lanes[lane].id;
         }
         separatedLines = contigLines;
-        for (var i = 0; i < items.length; i++) addGradient(items[i], items[i].marks, false);
+        for (var i = 0; i < items.length; i++) addGradient(items[i], items[i].marks, true);
         mini.append('g').selectAll('miniItems')
             .data(separatedLines)
             .enter().append('text')
@@ -531,14 +557,22 @@ THE SOFTWARE.
             .style('fill', 'white')
             .attr('transform', function (d) {
                 var x = Math.max(x_mini(d.corr_end) - x_mini(d.size) + 1, (x_mini(d.corr_end) - x_mini(d.size) / 2) - getSize(d.label) / 2);
-                var y = y_mini(d.lane) + miniLanesHeight - 4;
+                var y = y_mini(d.lane) + miniLanesHeight - 5;
                 return 'translate(' + x + ', ' + y + ')';
             });
     }
 
-    var itemLabels = main.append('g');
-    var itemLines = main.append('g')
-            .attr('clip-path', 'url(#clip)');
+    var linesLabelsLayer = d3.select('body').append('div').attr('id', 'lines_labels')
+                                    .append('svg:svg')
+                                    .style('position', 'absolute')
+                                    .attr('width', width)
+                                    .attr('height', mainHeight + 10)
+                                    .style('top', itemSvgOffsetY - 10)
+                                    .style('left', margin.left)
+                                    .attr('pointer-events', 'none');
+    var itemLabels = linesLabelsLayer.append('g');
+    var itemLines = linesLabelsLayer.append('g')
+                                    .attr('pointer-events', 'painted');
     if (!featuresHidden)
       var featurePath = annotationsMain.append('g')
         .attr('clip-path', 'url(#clip)');
@@ -553,8 +587,8 @@ THE SOFTWARE.
             })
              .on('drag', function() {
                 d3.event.sourceEvent.stopPropagation();
-                if (d3.event.x < 5 || d3.event.x > chartWidth) return;
-                lineCountContigs.attr('transform', 'translate(' + d3.event.x + ',0)');
+                if (d3.event.x < 10 || d3.event.x > chartWidth - 10) return;
+                lineCountContigs.attr('transform', 'translate(' + d3.event.x + ',10)');
                 getNumberOfContigs(d3.event.x);
             });
         var startPos = 400;
@@ -562,7 +596,7 @@ THE SOFTWARE.
         var lineCountContigs = itemLines.append('g')
                 .attr('id', 'countLine')
                 .attr('transform', function (d) {
-                    return 'translate(' + startPos + ', 0)';
+                    return 'translate(' + startPos + ', 10)';
                 })
                 .attr('width', function (d) {
                     return 5;
@@ -641,7 +675,7 @@ THE SOFTWARE.
         var shift = 4.03;
 
         //lines between reference contigs
-        main.selectAll('.main_lines').remove();
+        linesLabelsLayer.selectAll('.main_lines').remove();
         var lineContigs = itemLines.selectAll('.g')
                 .data(visibleLines, function (d) {
                     return d.id;
@@ -651,7 +685,7 @@ THE SOFTWARE.
                 .attr('class', 'main_lines')
                 .attr('transform', function (d) {
                     var x = x_main(d.corr_end);
-                    var y = d.assembly ? y_main(d.lane) : 0;
+                    var y = d.assembly ? y_main(d.lane) + 10 : 10;
 
                     return 'translate(' + x + ', ' + y + ')';
                 });
@@ -679,43 +713,23 @@ THE SOFTWARE.
         }
           else rectItems.push(visItems[item]);
         }
-        rects = itemRects.selectAll('g')
+        rects = itemRects.selectAll('.item')
                 .data(rectItems, function (d) {
-                    return d.id;
+                    if (d) return d.id;
                 })
                 .attr('transform', function (d) {
                     var x = x_main(Math.max(minExtent, d.corr_start));
                     var y = y_main(d.lane) + .25 * lanesInterval;
                     if (INTERLACE_BLOCKS_VERT_OFFSET) y += offsetsY[d.order % 3] * lanesInterval;
-
                     return 'translate(' + x + ', ' + y + ')';
                 })
                 .attr('width', function (d) {
-                    return x_main(Math.min(maxExtent, d.corr_end)) - x_main(Math.max(minExtent, d.corr_start));
-                });
-                //.classed('light_color', function (d) {
-                //    return x_main(d.corr_end) - x_main(d.corr_start) > mainLanesHeight;
-                //});
-
-        rects.select('.R')
-                .attr('transform',  function (d) {
-                    if (d.groupId == selected_id) {
-                        return 'translate(1,1)';
-                    }
-                })
-                .attr('width', function (d) {
                     var w = x_main(Math.min(maxExtent, d.corr_end)) - x_main(Math.max(minExtent, d.corr_start));
-                    return (d.groupId == selected_id ? Math.max(w - 2, .5) : w);
-                })
-                .attr('height', function (d) {
-                    return (d.groupId == selected_id ? mainLanesHeight - (d.supp ? 4 : 2) : mainLanesHeight);
+                    return w;
                 })
                 .attr('stroke', 'black')
                 .attr('stroke-width', function (d) {
-                    return (d.groupId == selected_id ? 2 : 0);
-                })
-                .attr('stroke-opacity', function (d) {
-                    return (d.groupId == selected_id ? 1 : 0);
+                    return (d.groupId == selected_id ? 2 : .3);
                 })
                 .attr('opacity', function (d) {
                   if (!d || !d.size) return 1;
@@ -723,12 +737,13 @@ THE SOFTWARE.
                 });
         rects.exit().remove();
 
-        var other = rects.enter().append('g')
+        var newRects = rects.enter().append('rect')
                 .attr('class', function (d) {
-                    if (!d.marks) return 'mainItem ' + d.objClass;
+                    if (!d.marks) return 'item mainItem ' + d.objClass;
+                    else return 'item';
                 })// Define the gradient
                 .attr('fill', function (d) {
-                    if (d.marks) return addGradient(d, d.marks, false, true);
+                    if (d.marks) return addGradient(d, d.marks, true);
                 })
                 .attr('transform', function (d) {
                     var x = x_main(Math.max(minExtent, d.corr_start));
@@ -737,7 +752,19 @@ THE SOFTWARE.
                     return 'translate(' + x + ', ' + y + ')';
                 })
                 .attr('width', function (d) {
-                    return x_main(Math.min(maxExtent, d.corr_end)) - x_main(Math.max(minExtent, d.corr_start));
+                    var w = x_main(Math.min(maxExtent, d.corr_end)) - x_main(Math.max(minExtent, d.corr_start));
+                    return w;
+                })
+                .attr('height', function (d) {
+                    return (d.groupId == selected_id ? mainLanesHeight - 4 : mainLanesHeight);
+                })
+                .attr('stroke', 'black')
+                .attr('stroke-width', function (d) {
+                    return (d.groupId == selected_id ? 2 : .3);
+                })
+                .attr('opacity', function (d) {
+                  if (!d || !d.size) return 1;
+                  return d.size > minContigSize ? 1 : paleContigsOpacity;
                 });
                 //.classed('light_color', function (d) {
                 //    return x_main(d.corr_end) - x_main(d.corr_start) > mainLanesHeight;
@@ -745,43 +772,22 @@ THE SOFTWARE.
 
         if (BLOCKS_SHADOW) other.attr('filter', 'url(#shadow)');
 
-        other.append('rect')
-                .attr('class', 'R')
-                .attr('transform',  function (d) {
-                    if (d.groupId == selected_id) {
-                        return 'translate(1,1)';
-                    }
-                })
-                .attr('width', function (d) {
-                    var w = x_main(Math.min(maxExtent, d.corr_end)) - x_main(Math.max(minExtent, d.corr_start));
-                    return (d.groupId == selected_id ? Math.max(w - 2, .5) : w);
-                })
-                .attr('height', function (d) {
-                    return (d.groupId == selected_id ? mainLanesHeight - 4 : mainLanesHeight);
-                })
-                .attr('stroke', 'black')
-                .attr('stroke-width', function (d) {
-                    return (d.groupId == selected_id ? 2 : 0);
-                })
-                .attr('stroke-opacity', function (d) {
-                    return (d.groupId == selected_id ? 1 : 0);
-                })
-                .attr('opacity', function (d) {
-                  if (!d || !d.size) return 1;
-                  return d.size > minContigSize ? 1 : paleContigsOpacity;
-                });
-
-        var nonRects = itemNonRects.selectAll('g')
-                .data(nonRectItems, function (d) {
-                    return d.id;
-                })
-                .attr('transform', function (d) {
-                    var x = d.supp == "L" ? x_main(d.corr_start) : x_main(d.corr_end);
-                    var y = y_main(d.lane) + .25 * lanesInterval;
-                    if (INTERLACE_BLOCKS_VERT_OFFSET) y += offsetsY[d.order % 3] * lanesInterval;
-
-                    return 'translate(' + x + ', ' + y + ')';
-                });
+        var nonRects = itemRects.selectAll('path')
+                        .data(nonRectItems, function (d) {
+                            return d.id;
+                        })
+                        .attr('transform',  function (d) {
+                            var x = d.supp == "L" ? x_main(d.corr_start) : x_main(d.corr_end);
+                            if (d.supp == "L") x += .3;
+                            else x += -.3;
+                            var y = y_main(d.lane) + .25 * lanesInterval;
+                            if (INTERLACE_BLOCKS_VERT_OFFSET) y += offsetsY[d.order % 3] * lanesInterval;
+                            if (d.groupId == selected_id) {
+                                if (d.supp == "L") x += 1;
+                                else x += -1;
+                            }
+                            return 'translate(' + x + ', ' + y + ')';
+                        });
 
         function make_triangle(d) {
             var startX = 0;
@@ -795,44 +801,30 @@ THE SOFTWARE.
             return path;
         }
 
-        nonRects.selectAll('path')
-                .attr('transform',  function (d) {
-                    if (d.groupId == selected_id) {
-                        if (d.supp == "L") return 'translate(2,0)';
-                        else return 'translate(-2,0)';
-                    }
-                })
-                .attr('d', make_triangle);
-
         nonRects.exit().remove();
-        itemNonRects.selectAll('text')
+        itemRects.selectAll('text')
                 .remove();
 
-        var otherNonRects = nonRects.enter().append('g')
+        var newNonRects = nonRects.enter().append('path')
                 .attr('class', function (d) {
-                    return 'mainItem end ' + d.objClass;
+                    return 'end ' + d.objClass;
                 })
                 .attr('transform', function (d) {
                     var x = d.supp == "L" ? x_main(d.corr_start) : x_main(d.corr_end);
                     var y = y_main(d.lane) + .25 * lanesInterval;
                     if (INTERLACE_BLOCKS_VERT_OFFSET) y += offsetsY[d.order % 3] * lanesInterval;
-
-                    return 'translate(' + x + ', ' + y + ')';                })
-                .attr('pointer-events', 'none');
-
-        otherNonRects.append('path')
-                .attr('class', 'R')
-                .attr('transform',  function (d) {
                     if (d.groupId == selected_id) {
-                        if (d.supp == "L") return 'translate(2,2)';
-                        else return 'translate(0,2)';
+                        if (d.supp == "L") x += 1;
+                        else x += -1;
                     }
+                    return 'translate(' + x + ', ' + y + ')';
                 })
+                .attr('pointer-events', 'none')
                 .attr('d', make_triangle);
 
-        other.on('click', function A(d, i) {
-            selected_id = d.groupId;
-            changeInfo(d);
+        newRects.on('click', function (item) {
+            selected_id = item.groupId;
+            changeInfo(item);
         })
                 .on('mouseenter', glow)
                 .on('mouseleave', disglow);
@@ -850,7 +842,7 @@ THE SOFTWARE.
                 }
             }
         });
-        itemNonRects.selectAll('text')
+        itemRects.selectAll('text')
             .data(visTexts, function (d) {
                 return d.id;
             })
@@ -873,7 +865,7 @@ THE SOFTWARE.
         // upd coverage
         if (drawCoverage && !coverageMainHidden) updateMainCoverage(minExtent, maxExtent, coverageFactor);
 
-        main.selectAll('.main_labels').remove();
+        linesLabelsLayer.selectAll('.main_labels').remove();
 
         var visibleLabels = itemLabels.selectAll('.g')
                             .data(visibleLinesLabels, function (d) {
@@ -885,7 +877,7 @@ THE SOFTWARE.
                         .attr('transform', function (d) {
                             var x = d.label ? x_main(d.corr_end) - d.label.length * letterSize :
                                                    x_main(Math.max(minExtent, d.corr_start)) + 5 ;
-                            var y = d.y2 ? d.y2 - 3 : y_main(d.lane) + 5;
+                            var y = d.y2 ? d.y2 - 3 : y_main(d.lane) + 13;
 
                             return 'translate(' + x + ', ' + y + ')';
                         });
@@ -1041,7 +1033,7 @@ THE SOFTWARE.
                 break
             }
         }
-        itemNonRects.select('.glow').remove();
+        itemRects.select('.glow').remove();
         display();
     }
 
@@ -1260,7 +1252,7 @@ THE SOFTWARE.
                 else if (lastNumber == '3' && order != "13") suffix = 'rd';
                 var container = lineCountContigs.append('g')
                         .attr('transform', function (d) {
-                            return 'translate(-2, ' + offsetY + ')';
+                            return 'translate(-3, ' + offsetY + ')';
                         })
                         .attr('width', function (d) {
                         });
@@ -1306,28 +1298,19 @@ THE SOFTWARE.
         display();
     }
 
-    function addGradient(d, marks, miniItem, gradientExists) {
+    function addGradient(d, marks, gradientExists) {
       if (!marks) return;
-      var gradientId = 'gradient' + d.id + (miniItem ? 'mini' : '');
+      var gradientId = 'gradient' + d.id;
       marks = marks.split(', ');
       if (marks.length == 1) return contigsColors[marks[0]];
       if (gradientExists) return 'url(#' + gradientId + ')';
       var gradient = chart.append("svg:defs")
           .append("svg:linearGradient")
           .attr("id", gradientId);
-      if (miniItem) {
-          gradient.attr("x1", d.x)
-                  .attr("y1", d.y)
-                  .attr("x2", d.x)
-                  .attr("y2", d.y + 1)
-                  .attr("gradientUnits", "userSpaceOnUse");
-      }
-      else {
-          gradient.attr("x1", "0%")
-                  .attr("y1", "0%")
-                  .attr("x2", "0%")
-                  .attr("y2", "100%");
-      }
+      gradient.attr("x1", "0%")
+              .attr("y1", "0%")
+              .attr("x2", "0%")
+              .attr("y2", "100%");
       gradientSteps = ["50%", "50%"];
 
       for (var m = 0; m < marks.length; m++)
@@ -1616,7 +1599,7 @@ THE SOFTWARE.
     // generates a single path for each item class in the mini display
     // ugly - but draws mini 2x faster than append lines or line generator
     // is there a better way to do a bunch of lines as a single path with d3?
-    function getPaths(items) {
+    function getMiniItems(items) {
         var miniPathHeight = 10;
 
         var paths = {}, d, result = [];
@@ -1660,22 +1643,23 @@ THE SOFTWARE.
             if (!paths[c]) paths[c] = '';
 
             var startX = d.supp == "R" ? x_mini(d.corr_end) : x_mini(d.corr_start);
+            var endX = x_mini(d.corr_end);
             var pathEnd = x_mini(d.corr_end);
-            var startY = y_mini(d.lane);
+            var startY = y_mini(d.lane) + .18 * miniLanesHeight;
             if (INTERLACE_BLOCKS_VERT_OFFSET) startY += offsetsMiniY[items[i].order % 3] * miniLanesHeight;
-            if (!d.supp) startY += .45 * miniLanesHeight;
-            if (d.supp) startY += .18 * miniLanesHeight;
-            if (!d.supp || isSmall) path = ['M', startX, startY, 'H', pathEnd].join(' ');
-            else if (d.supp == "L") path = ['M', startX, startY, 'L', startX + (Math.sqrt(3) * miniPathHeight / 2), startY + miniPathHeight / 2,
-              'L', startX, startY + miniPathHeight, 'L',  startX, startY].join(' ');
-            else if (d.supp == "R") path = ['M', startX, startY, 'L', startX - (Math.sqrt(3) * miniPathHeight / 2), startY + miniPathHeight / 2,
-              'L', startX, startY + miniPathHeight, 'L',  startX, startY].join(' ');
+            var path = '';
+            if (!isSmall) {
+                if (d.supp == "L") path = ['M', startX, startY, 'L', startX + (Math.sqrt(3) * miniPathHeight / 2), startY + miniPathHeight / 2,
+                  'L', startX, startY + miniPathHeight, 'L',  startX, startY].join(' ');
+                else if (d.supp == "R") path = ['M', startX, startY, 'L', startX - (Math.sqrt(3) * miniPathHeight / 2), startY + miniPathHeight / 2,
+                  'L', startX, startY + miniPathHeight, 'L',  startX, startY].join(' ');
+            }
             misassemblies[c] = d.misassemblies;
             isSimilarNow = d.similar;
             curLane = d.lane;
             numItem++;
             result.push({objClass: d.objClass, path: path, misassemblies: misassemblies[d.objClass], supp: d.supp,
-                x: startX, y: startY, size: d.size, text: text, id: d.id});
+                start: startX, end: endX, y: startY, size: d.size, text: text, id: d.id});
         }
         return result;
     }
@@ -1685,18 +1669,18 @@ THE SOFTWARE.
     }
 
     function glow() {
-        itemNonRects.append('rect')
+        itemRects.append('rect')
                 .attr('class', 'glow')
                 .attr('pointer-events', 'none')
                 .attr('width', d3.select(this).attr('width'))
-                .attr('height', d3.select(this).select('rect').attr('height'))
+                .attr('height', d3.select(this).attr('height'))
                 .attr('fill', 'white')
                 .attr('opacity', .3)
                 .attr('transform', d3.select(this).attr('transform'));
     }
 
     function disglow() {
-        itemNonRects.select('.glow').remove();
+        itemRects.select('.glow').remove();
     }
 
     function getVisibleText(fullText, l, lenChromosome) {
@@ -1969,41 +1953,41 @@ THE SOFTWARE.
                 items[numItem].misassembled = isMisassembled;
             }
         }
-        chart.selectAll('g')
-            .classed('misassembled', function (d) {
-                if (d && d.misassemblies) {
-                    return d.misassembled == 'True';
+        hideUncheckedMisassemblies(itemRects);
+        hideUncheckedMisassemblies(chart);
+    }
+
+    function hideUncheckedMisassemblies(track) {
+        track.selectAll('.item')
+            .classed('misassembled', function (item) {
+                if (item && item.misassemblies) {
+                    if (item.misassembled) return item.misassembled == 'True';
+                    return checkMsTypeToShow(item);
                 }
             })
-            .classed('disabled', function (d) {
-                if (d && d.misassemblies) {
-                    return d.misassembled != 'True';
-                }
-            })
-            .attr('opacity', function (d) {
-                if (d && d.misassemblies) {
-                  return (d.supp && d.misassembled != 'True' ? 0 : 1);
+            .classed('disabled', function (item) {
+                if (item && item.misassemblies) {
+                    if (item.misassembled) return item.misassembled != 'True';
+                    return !checkMsTypeToShow(item);
                 }
             });
-        chart.selectAll('path')
-            .classed('misassembled', function (d) {
-                if (d && d.misassemblies) {
-                    var msTypes = d.misassemblies.split(';');
-                    for (var i = 0; i < msTypes.length; i++) {
-                        if (msTypes[i] && document.getElementById(msTypes[i]).checked) return true;
-                    }
-                    return false;
-                }
+        track.selectAll('path')
+            .classed('misassembled', function (item) {
+                if (item && item.misassemblies)
+                    return checkMsTypeToShow(item);
             })
-            .classed('disabled', function (d) {
-                if (d && d.misassemblies) {
-                    var msTypes = d.misassemblies.split(';');
-                    for (var i = 0; i < msTypes.length; i++) {
-                        if (msTypes[i] && document.getElementById(msTypes[i]).checked) return false;
-                    }
-                    return true;
-                }
+            .classed('disabled', function (item) {
+                if (item && item.misassemblies)
+                    return !checkMsTypeToShow(item);
             });
+    }
+
+    function checkMsTypeToShow(item) {
+        var msTypes = item.misassemblies.split(';');
+        for (var i = 0; i < msTypes.length; i++) {
+            if (msTypes[i] && document.getElementById(msTypes[i]).checked) return true;
+        }
+        return false;
     }
 
     function appendLegend() {
@@ -2045,11 +2029,11 @@ THE SOFTWARE.
         var prevOffsetY = 0;
         var offsetY = 0;
         for (var numClass = 0; numClass < classes.length; numClass++) {
-            offsetY = addLegendItemWithText(legend, prevOffsetY, classes[numClass], classDescriptions[numClass], true);
+            offsetY = addLegendItemWithText(legend, prevOffsetY, classes[numClass], classDescriptions[numClass]);
             if (classes[numClass] == 'misassembled light_color') {
                 legend.append('path')
                     .attr('transform',  function () {
-                        return 'translate(0.5,' + prevOffsetY + ')';
+                        return 'translate(0,' + prevOffsetY + ')';
                     })
                     .attr('class', function () {
                         return 'mainItem end misassembled';
@@ -2063,7 +2047,7 @@ THE SOFTWARE.
                     });
                 legend.append('path')
                     .attr('transform',  function () {
-                        return 'translate(' + (legendItemWidth * 2 - 0.5) + ',' + (prevOffsetY + legendItemOddOffset) + ')';
+                        return 'translate(' + (legendItemWidth * 2) + ',' + (prevOffsetY + legendItemOddOffset) + ')';
                     })
                     .attr('class', function () {
                         return 'mainItem end misassembled odd';
@@ -2088,15 +2072,15 @@ THE SOFTWARE.
         'contig of length = NGx statistic (x is 50 or 75)', 'contig of length = Nx and NGx simultaneously'];
         var offsetY = 0;
         for (var numClass = 0; numClass < classes.length; numClass++) {
-            offsetY = addLegendItemWithText(legend, offsetY, classes[numClass], classDescriptions[numClass],
-                numClass == 0, classMarks[numClass])
+            offsetY = addLegendItemWithText(legend, offsetY, classes[numClass], classDescriptions[numClass], classMarks[numClass])
         }
         return offsetY;
     }
 
-    function addLegendItemWithText(legend, offsetY, className, description, addOdd, marks) {
+    function addLegendItemWithText(legend, offsetY, className, description, marks) {
+        var addOdd = className == 'misassembled light_color';
         legend.append('g')
-                .attr('class', 'mainItem legend ' + className)
+                .attr('class', 'item mainItem legend ' + className)
                 .append('rect')
                 .attr('width', legendItemWidth)
                 .attr('height', legendItemHeight)
@@ -2104,11 +2088,11 @@ THE SOFTWARE.
                 .attr('y', offsetY)
                 .attr('fill', function (d) {
                     d = {id: className};
-                    if (marks) return addGradient(d, marks, false, false);
+                    if (marks) return addGradient(d, marks, false);
                 });
         if (addOdd)
             legend.append('g')
-                .attr('class', 'mainItem legend ' + className + ' odd')
+                .attr('class', 'item mainItem legend ' + className + ' odd')
                 .append('rect')
                 .attr('width', legendItemWidth)
                 .attr('height', legendItemHeight)

@@ -218,6 +218,67 @@ def assert_values_equal(name, metric=None, fname='report.tsv'):
             return True
 
 
+def assert_metric_less_or_equal_to(name, metric1, metric2=None, value=None, fname='report.tsv'):
+    def __to_number(s):
+        if s is None:
+            return None
+        if '+' in s:  # e.g. '1 + 1 part'
+            full, _, part = s.split()[0:3]
+            return int(full) + int(part)
+        if s.isdigit():
+            return int(s)
+        try:
+            return float(s)
+        except ValueError:
+            return None
+
+    results_dirpath = get_results_dirpath(name)
+
+    fpath = os.path.join(results_dirpath, fname)
+    if not os.path.isfile(fpath):
+        print >> sys.stderr, 'File %s does not exist' % fpath
+        exit(5)
+
+    metric1_values = []
+    metric2_values = []
+    with open(fpath) as report_tsv_f:
+        for line in report_tsv_f:
+            tokens = line.strip().split('\t')
+            if len(tokens) > 1 and tokens[0] == metric1:
+                metric1_values = tokens[1:]
+            if metric2 is not None and len(tokens) > 1 and tokens[0] == metric2:
+                metric2_values = tokens[1:]
+
+    if not metric1_values:
+        print >> sys.stderr, 'Assertion (%s <= %s) in %s failed: no such metric1 in the file' % \
+                             (metric1, metric2 if metric2 else str(value), fname)
+        exit(7)
+    if metric2 and not metric2_values:
+        print >> sys.stderr, 'Assertion (%s <= %s) in %s failed: no such metric2 in the file' % \
+                             (metric1, metric2, fname)
+        exit(7)
+    if metric2 and len(metric2_values) != len(metric1_values):
+        print >> sys.stderr, 'Assertion (%s <= %s) in %s failed: len of metric1 values is not ' \
+                             'equal to len of metric 2 values in the file' % (metric1, metric2, fname)
+        exit(7)
+
+    value = __to_number(value)
+    for idx, v in enumerate(metric1_values):
+        value1 = __to_number(v)
+        if value1 is None:
+            continue
+        if metric2:
+            value2 = __to_number(metric2_values[idx])
+            if value2 is not None and value1 > value2:
+                print >> sys.stderr, 'Assertion ({metric1} <= X) in {fname} failed: {value1} > {value2}'.format(**locals())
+                exit(9)
+        if value is not None and value1 > value:
+            print >> sys.stderr, 'Assertion ({metric1} <= X) in {fname} failed: {value1} > {value}'.format(**locals())
+            exit(9)
+    print '%s <= %s is OK in %s' % (metric1, metric2 if metric2 else str(value), fname)
+    return True
+
+
 def run_quast(name, contigs=None, params='', expected_exit_code=0, meta=False):
     results_dirpath = get_results_dirpath(name)
 

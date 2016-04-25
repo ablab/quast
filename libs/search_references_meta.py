@@ -69,8 +69,9 @@ def try_send_request(url):
 
 def download_refs(organism, ref_fpath):
     ncbi_url = 'http://eutils.ncbi.nlm.nih.gov/entrez/eutils/'
+    quast_fields = '&tool=quast&email=quast.support@bioinf.spbau.ru'
     organism = organism.replace('_', '+')
-    response = try_send_request(ncbi_url + 'esearch.fcgi?db=assembly&term=%s+[Organism]&retmax=100' % organism)
+    response = try_send_request(ncbi_url + 'esearch.fcgi?db=assembly&term=%s+[Organism]&retmax=100' % organism + quast_fields)
     xml_tree = ET.fromstring(response)
 
     if xml_tree.find('Count').text == '0':  # Organism is not found
@@ -80,7 +81,7 @@ def download_refs(organism, ref_fpath):
     best_ref_links = []
     for id in ref_id_list:
         response = try_send_request(
-            ncbi_url + 'elink.fcgi?dbfrom=assembly&db=nuccore&id=%s&linkname="assembly_nuccore_refseq"' % id.text)
+            ncbi_url + 'elink.fcgi?dbfrom=assembly&db=nuccore&id=%s&linkname="assembly_nuccore_refseq"' % id.text + quast_fields)
         xml_tree = ET.fromstring(response)
 
         link_set = xml_tree.find('LinkSet')
@@ -99,23 +100,11 @@ def download_refs(organism, ref_fpath):
     if not best_ref_links:
         return None
 
-    is_first_piece = False
-    fasta_files = []
-    for ref_id in sorted(link.find('Id').text for link in best_ref_links):
-        fasta = try_send_request(ncbi_url + 'efetch.fcgi?db=sequences&id=%s&rettype=fasta&retmode=text' % ref_id)
-        if fasta:
-            fasta_files.append(fasta)
-            if 'complete genome' in fasta[:150]:
-                fasta_files = [fasta]
-                break
-    fasta_names = [f.split('|')[-1] for f in fasta_files]
-    with open(ref_fpath, "w") as fasta_file:
-        for name, fasta in sorted(zip(fasta_names, fasta_files), key=natural_sort_key):
-            if not is_first_piece:
-                is_first_piece = True
-            else:
-                fasta = '\n' + fasta.rstrip()
-            fasta_file.write(fasta.rstrip())
+    ref_ids = sorted(link.find('Id').text for link in best_ref_links)
+    fasta = try_send_request(ncbi_url + 'efetch.fcgi?db=sequences&id=%s&rettype=fasta&retmode=text' % ','.join(ref_ids) + quast_fields)
+    if fasta:
+        with open(ref_fpath, "w") as fasta_file:
+            fasta_file.write(fasta)
 
     if not os.path.isfile(ref_fpath):
         return None

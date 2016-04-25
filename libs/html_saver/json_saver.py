@@ -7,6 +7,7 @@
 
 import datetime
 import os
+from os.path import join
 from libs import qutils, qconfig
 
 from libs.log import get_logger
@@ -22,18 +23,17 @@ except ImportError:
         log.warning('Can\'t build html report - please install python-simplejson')
         simplejson_error = True
 
-total_report_fname    = '/report.json'
-contigs_lengths_fn    = '/contigs_lengths.json'
-ref_length_fn         = '/ref_length.json'
-tick_x_fn             = '/tick_x.json'
-aligned_contigs_fn    = '/aligned_contigs_lengths.json'
-assemblies_lengths_fn = '/assemblies_lengths.json'
+total_report_fname    = 'report.json'
+contigs_lengths_fn    = 'contigs_lengths.json'
+ref_length_fn         = 'ref_length.json'
+tick_x_fn             = 'tick_x.json'
+aligned_contigs_fn    = 'aligned_contigs_lengths.json'
+assemblies_lengths_fn = 'assemblies_lengths.json'
 in_contigs_suffix_fn  = '_in_contigs.json'
-gc_fn                 = '/gc.json'
-krona_fn              = '/krona.json'
-icarus_fn             = '/icarus.json'
+gc_fn                 = 'gc.json'
+krona_fn              = 'krona.json'
+icarus_fn             = 'icarus.json'
 
-prefix_fn             = '/'
 suffix_fn             = '.json'
 
 json_text = ''
@@ -65,7 +65,7 @@ def save_total_report(output_dirpath, min_contig, ref_fpath):
     report = reporting.table(reporting.Fields.grouped_order)
     t = datetime.datetime.now()
 
-    return save(output_dirpath + total_report_fname, {
+    return save(join(output_dirpath, total_report_fname), {
         'date': t.strftime('%d %B %Y, %A, %H:%M:%S'),
         'assembliesNames': asm_names,
         'referenceName': qutils.name_from_fpath(ref_fpath) if ref_fpath else qconfig.not_aligned_name,
@@ -109,22 +109,22 @@ def save_total_report(output_dirpath, min_contig, ref_fpath):
 def save_contigs_lengths(output_dirpath, contigs_fpaths, lists_of_lengths):
     lists_of_lengths = [sorted(list, reverse=True) for list in lists_of_lengths]
 
-    return save(output_dirpath + contigs_lengths_fn, {
+    return save(join(output_dirpath, contigs_lengths_fn), {
         'filenames': map(qutils.label_from_fpath, contigs_fpaths),
         'lists_of_lengths': lists_of_lengths
     })
 
 def save_reference_lengths(output_dirpath, reference_lengths):
-    return save(output_dirpath + ref_length_fn, {'reflen': reference_lengths})
+    return save(join(output_dirpath, ref_length_fn), {'reflen': reference_lengths})
 
 
 def save_tick_x(output_dirpath, tick_x):
-    return save(output_dirpath + tick_x_fn, {'tickX': tick_x})
+    return save(join(output_dirpath, tick_x_fn), {'tickX': tick_x})
 
 
 def save_coord(output_dirpath, coord_x, coord_y, name_coord, contigs_fpaths):
-    coord_fn = prefix_fn + 'coord' + name_coord + suffix_fn
-    return save(output_dirpath + coord_fn, {
+    coord_fn = 'coord' + name_coord + suffix_fn
+    return save(join(output_dirpath, coord_fn), {
         'coord_x': coord_x,
         'coord_y': coord_y,
         'filenames': map(qutils.label_from_fpath, contigs_fpaths)
@@ -132,12 +132,12 @@ def save_coord(output_dirpath, coord_x, coord_y, name_coord, contigs_fpaths):
 
 
 def save_colors(output_dirpath, colors):
-    return save(output_dirpath + prefix_fn + 'colors' + suffix_fn, colors)
+    return save(join(output_dirpath, 'colors' + suffix_fn), colors)
 
 
 def save_meta_summary(output_dirpath, coord_x, coord_y, name_coord, labels, refs_names):
-    coord_fn = prefix_fn + 'coord' + name_coord + suffix_fn
-    return save(output_dirpath + coord_fn, {
+    coord_fn = 'coord' + name_coord + suffix_fn
+    return save(join(output_dirpath, coord_fn), {
         'coord_x': coord_x,
         'coord_y': coord_y,
         'filenames': labels,
@@ -145,8 +145,8 @@ def save_meta_summary(output_dirpath, coord_x, coord_y, name_coord, labels, refs
     })
 
 def save_meta_misassemblies(output_dirpath, coord_x, coord_y, name_coord, labels, refs_names):
-    coord_fn = prefix_fn + 'coord' + name_coord + suffix_fn
-    return save(output_dirpath + coord_fn, {
+    coord_fn = 'coord' + name_coord + suffix_fn
+    return save(join(output_dirpath, coord_fn), {
         'coord_x': coord_x,
         'coord_y': coord_y,
         'filenames': labels,
@@ -154,14 +154,14 @@ def save_meta_misassemblies(output_dirpath, coord_x, coord_y, name_coord, labels
     })
 
 def save_assembly_lengths(output_dirpath, contigs_fpaths, assemblies_lengths):
-    return save(output_dirpath + assemblies_lengths_fn, {
+    return save(join(output_dirpath, assemblies_lengths_fn), {
         'filenames': map(qutils.label_from_fpath, contigs_fpaths),
         'assemblies_lengths': assemblies_lengths
     })
 
 
 def save_features_in_contigs(output_dirpath, contigs_fpaths, feature_name, features_in_contigs, ref_features_num):
-    return save(output_dirpath + prefix_fn + feature_name + in_contigs_suffix_fn, {
+    return save(join(output_dirpath, feature_name + in_contigs_suffix_fn), {
         'filenames': map(qutils.label_from_fpath, contigs_fpaths),
         feature_name + '_in_contigs': dict((qutils.label_from_fpath(contigs_fpath), feature_amounts)
                                            for (contigs_fpath, feature_amounts) in features_in_contigs.items()),
@@ -170,26 +170,26 @@ def save_features_in_contigs(output_dirpath, contigs_fpaths, feature_name, featu
 
 
 def save_GC_info(output_dirpath, contigs_fpaths, list_of_GC_distributions):
-    return save(output_dirpath + gc_fn, {
+    return save(join(output_dirpath, gc_fn), {
         'filenames': map(qutils.label_from_fpath, contigs_fpaths),
         'list_of_GC_distributions': list_of_GC_distributions,
         'lists_of_gc_info': None,
     })
 
 def save_krona_paths(output_dirpath, krona_fpaths, labels):
-    return save(output_dirpath + krona_fn, {
+    return save(join(output_dirpath, krona_fn), {
         'assemblies': labels,
         'paths': krona_fpaths,
     })
 
 def save_icarus_links(output_dirpath, icarus_links):
-    return save(output_dirpath + icarus_fn, {
+    return save(join(output_dirpath, icarus_fn), {
         'links': icarus_links['links'],
         'links_names': icarus_links['links_names'],
     })
 
 def save_icarus_data(output_dirpath, keyword, icarus_data):
-    return save_as_text(output_dirpath + prefix_fn + keyword + suffix_fn, icarus_data)
+    return save_as_text(join(output_dirpath, keyword + suffix_fn), icarus_data)
 
 
 

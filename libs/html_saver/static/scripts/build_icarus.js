@@ -384,7 +384,7 @@ THE SOFTWARE.
 
     // draw the items
     var itemSvgOffsetY = margin.top + document.getElementById('chart').offsetTop;
-    var itemRects = d3.select('body').append('div').attr('id', 'items')
+    var itemsLayer = d3.select('body').append('div').attr('id', 'items')
                                     .append('svg:svg')
                                     .style('position', 'absolute')
                                     .attr('width', width)
@@ -393,7 +393,7 @@ THE SOFTWARE.
                                     .style('left', margin.left)
                                     .attr('class', 'shadow_svg');
 
-    itemRects.append('rect')
+    itemsLayer.append('rect')
             .attr('pointer-events', 'painted')
             .attr('width', chartWidth)
             .attr('height', mainHeight)
@@ -428,6 +428,7 @@ THE SOFTWARE.
                     e.__onclick();
                 }
     });
+    var itemRects = itemsLayer.append('g');
 
     var miniItems = getMiniItems(items);
     miniRects = miniItems.filter(function (item) {
@@ -573,6 +574,7 @@ THE SOFTWARE.
     var itemLabels = linesLabelsLayer.append('g');
     var itemLines = linesLabelsLayer.append('g')
                                     .attr('pointer-events', 'painted');
+    var textLayer = itemsLayer.append('g');
     if (!featuresHidden)
       var featurePath = annotationsMain.append('g')
         .attr('clip-path', 'url(#clip)');
@@ -715,7 +717,7 @@ THE SOFTWARE.
         }
         rects = itemRects.selectAll('.item')
                 .data(rectItems, function (d) {
-                    if (d) return d.id;
+                    return d.id;
                 })
                 .attr('transform', function (d) {
                     var x = x_main(Math.max(minExtent, d.corr_start));
@@ -755,9 +757,7 @@ THE SOFTWARE.
                     var w = x_main(Math.min(maxExtent, d.corr_end)) - x_main(Math.max(minExtent, d.corr_start));
                     return w;
                 })
-                .attr('height', function (d) {
-                    return (d.groupId == selected_id ? mainLanesHeight - 4 : mainLanesHeight);
-                })
+                .attr('height', mainLanesHeight)
                 .attr('stroke', 'black')
                 .attr('stroke-width', function (d) {
                     return (d.groupId == selected_id ? 2 : .3);
@@ -802,8 +802,6 @@ THE SOFTWARE.
         }
 
         nonRects.exit().remove();
-        itemRects.selectAll('text')
-                .remove();
 
         var newNonRects = nonRects.enter().append('path')
                 .attr('class', function (d) {
@@ -842,23 +840,36 @@ THE SOFTWARE.
                 }
             }
         });
-        itemRects.selectAll('text')
-            .data(visTexts, function (d) {
-                return d.id;
-            })
-            .attr('class', 'itemLabel')
-            .enter().append('text')
-            .attr('x', function(d) {
-               return x_main(Math.max(minExtent, d.corr_start)) + 5;
-            })
-            .attr('y', function(d) {
-                var y = y_main(d.lane) + .25 * lanesInterval;
-                if (INTERLACE_BLOCKS_VERT_OFFSET) y += offsetsY[d.order % 3] * lanesInterval;
-                return y + 20;
-            })
-            .text(function(d) {
-                if (!d.size || d.size > minContigSize) return visibleText(d);
-            });
+        var texts = textLayer.selectAll('text')
+                    .data(visTexts, function (d) {
+                        return d.id;
+                    })
+                    .attr('x', function(d) {
+                       return x_main(Math.max(minExtent, d.corr_start)) + 5;
+                    })
+                    .attr('y', function(d) {
+                        var y = y_main(d.lane) + .25 * lanesInterval;
+                        if (INTERLACE_BLOCKS_VERT_OFFSET) y += offsetsY[d.order % 3] * lanesInterval;
+                        return y + 20;
+                    })
+                    .text(function(d) {
+                        if (!d.size || d.size > minContigSize) return visibleText(d);
+                    });
+        texts.exit().remove();
+
+        var newTexts = texts.enter().append('text')
+                            .attr('class', 'itemLabel')
+                                .attr('x', function(d) {
+                                   return x_main(Math.max(minExtent, d.corr_start)) + 5;
+                                })
+                                .attr('y', function(d) {
+                                    var y = y_main(d.lane) + .25 * lanesInterval;
+                                    if (INTERLACE_BLOCKS_VERT_OFFSET) y += offsetsY[d.order % 3] * lanesInterval;
+                                    return y + 20;
+                                })
+                            .text(function(d) {
+                                if (!d.size || d.size > minContigSize) return visibleText(d);
+                            });
         if (isContigSizePlot)
             getNumberOfContigs(d3.transform(d3.select('#countLine').attr("transform")).translate[0]);
 
@@ -877,7 +888,7 @@ THE SOFTWARE.
                         .attr('transform', function (d) {
                             var x = d.label ? x_main(d.corr_end) - d.label.length * letterSize :
                                                    x_main(Math.max(minExtent, d.corr_start)) + 5 ;
-                            var y = d.y2 ? d.y2 - 3 : y_main(d.lane) + 13;
+                            var y = d.y2 ? d.y2 + 6 : y_main(d.lane) + 13;
 
                             return 'translate(' + x + ', ' + y + ')';
                         });

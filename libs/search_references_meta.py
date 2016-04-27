@@ -23,7 +23,7 @@ from urllib2 import urlopen
 import xml.etree.ElementTree as ET
 import urllib
 import socket
-socket.setdefaulttimeout(10)
+socket.setdefaulttimeout(120)
 
 silva_db_path = 'http://www.arb-silva.de/fileadmin/silva_databases/release_119/Exports/'
 silva_fname = 'SILVA_119_SSURef_Nr99_tax_silva.fasta'
@@ -38,6 +38,8 @@ db_nsq_fsize = 194318557
 
 is_quast_first_run = False
 taxons_for_krona = {}
+connection_errors = 0
+
 
 def blast_fpath(fname):
     blast_path = os.path.join(blast_dirpath, fname)
@@ -55,15 +57,20 @@ def natural_sort_key(s, _nsre=re.compile('([0-9]+)')):
 
 def try_send_request(url):
     attempts = 0
+    global connection_errors
     while attempts < 3:
         try:
             request = urlopen(url)
+            connection_errors = 0
             break
         except Exception:
             attempts += 1
             if attempts >= 3:
-                logger.error('Cannot established internet connection to download reference genomes! '
+                connection_errors += 1
+                if connection_errors >= 3:
+                    logger.error('Cannot established internet connection to download reference genomes! '
                          'Check internet connection or run MetaQUAST with option "--max-ref-number 0".', exit_with_code=404)
+            return None
     return request.read()
 
 
@@ -72,6 +79,8 @@ def download_refs(organism, ref_fpath):
     quast_fields = '&tool=quast&email=quast.support@bioinf.spbau.ru'
     organism = organism.replace('_', '+')
     response = try_send_request(ncbi_url + 'esearch.fcgi?db=assembly&term=%s+[Organism]&retmax=100' % organism + quast_fields)
+    if not response:
+        return None
     xml_tree = ET.fromstring(response)
 
     if xml_tree.find('Count').text == '0':  # Organism is not found
@@ -82,6 +91,8 @@ def download_refs(organism, ref_fpath):
     for id in ref_id_list:
         response = try_send_request(
             ncbi_url + 'elink.fcgi?dbfrom=assembly&db=nuccore&id=%s&linkname="assembly_nuccore_refseq"' % id.text + quast_fields)
+        if not response:
+            continue
         xml_tree = ET.fromstring(response)
 
         link_set = xml_tree.find('LinkSet')
@@ -100,11 +111,28 @@ def download_refs(organism, ref_fpath):
     if not best_ref_links:
         return None
 
+    if len(best_ref_links) > 500:
+        logger.info('%s has too fragmented reference genome! It will not be downloaded.' % organism.replace('+', ' '))
+        return None
+
     ref_ids = sorted(link.find('Id').text for link in best_ref_links)
-    fasta = try_send_request(ncbi_url + 'efetch.fcgi?db=sequences&id=%s&rettype=fasta&retmode=text' % ','.join(ref_ids) + quast_fields)
-    if fasta:
-        with open(ref_fpath, "w") as fasta_file:
-            fasta_file.write(fasta)
+    is_first_piece = False
+    fasta_files = []
+    for ref_id in ref_ids:
+        fasta = try_send_request(ncbi_url + 'efetch.fcgi?db=sequences&id=%s&rettype=fasta&retmode=text' % ref_id)
+        if fasta and fasta[0] == '>':
+            fasta_files.append(fasta)
+            if 'complete genome' in fasta[:150]:
+                fasta_files = [fasta]
+                break
+    fasta_names = [f.split('|')[-1] for f in fasta_files]
+    with open(ref_fpath, "w") as fasta_file:
+        for name, fasta in sorted(zip(fasta_names, fasta_files), key=natural_sort_key):
+            if not is_first_piece:
+                is_first_piece = True
+            else:
+                fasta = '\n' + fasta.rstrip()
+            fasta_file.write(fasta.rstrip())
 
     if not os.path.isfile(ref_fpath):
         return None

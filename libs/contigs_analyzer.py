@@ -45,6 +45,7 @@ def bin_fpath(fname):
 ref_labels_by_chromosomes = {}
 COMBINED_REF_FNAME = 'combined_reference.fasta'
 
+
 class Misassembly:
     LOCAL = 0
     RELOCATION = 1
@@ -931,9 +932,92 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
             else:
                 # choose appropriate alignments (to maximize total size of contig alignment and reduce # misassemblies
                 if len(sorted_aligns) > 0:
+                    sorted_aligns = sorted(sorted_aligns, key=lambda x: x.end())
+
                     extensive_penalty = max(50, int(round(min(qconfig.extensive_misassembly_threshold / 4.0, ctg_len * 0.05)))) - 1
                     local_penalty = max(2, int(round(min(qconfig.MAX_INDEL_LENGTH / 2.0, ctg_len * 0.01)))) - 1
                     scaffold_gap_penalty = 5
+
+                    critical_number_of_aligns = 200
+                    # trying to optimise the algorithm if the number of possible alignments is large
+                    if len(sorted_aligns) > critical_number_of_aligns:
+                        print >> planta_out_f, '\t\t\tSkipping redundant alignments which can\'t be in the best set of alignments A PRIORI'
+
+                        # FIRST STEP: find solid aligns (which are present in the best selection for sure)
+                        # they should have unique (not covered by other aligns) region of length > 2 * extensive_penalty
+                        min_unique_len = 2 * extensive_penalty
+
+                        class PSA(object):  # PSA stands for Possibly Solid Alignment
+                            def __init__(self, align):
+                                self.align = align
+                                self.unique_start = align.start()
+                                self.unique_end = align.end()
+
+                            def is_solid(self):
+                                return self.unique_end - self.unique_start + 1 > min_unique_len
+
+                            # intersect PSA with align, which is guaranteed to be inside of after this PSA
+                            # return True if switch to the next PSA is needed and False otherwise
+                            def intersect_and_go_next(self, align, solids):
+                                if self.unique_end - align.end() > min_unique_len:  # if enough len on the right side
+                                    if self.is_solid():
+                                        solids.append(self.align)
+                                        return True
+                                self.unique_end = min(self.unique_end, align.start() - 1)
+                                return not self.is_solid()  # if self is not solid anymore we can switch to the next PSA
+
+                        possible_solids = [PSA(align) for align in sorted_aligns if align.len2 > min_unique_len]
+                        solids = []
+                        try:
+                            cur_PSA = possible_solids.pop()
+                            for align in reversed(sorted_aligns):
+                                if align != cur_PSA.align and cur_PSA.intersect_and_go_next(align, solids):
+                                    next_PSA = possible_solids.pop()
+                                    while next_PSA.intersect_and_go_next(cur_PSA.align, solids):
+                                        next_PSA = possible_solids.pop()
+                                    while align != next_PSA.align and next_PSA.intersect_and_go_next(align, solids):
+                                        next_PSA = possible_solids.pop()
+                                    cur_PSA = next_PSA
+                        except IndexError:  # possible_solids is empty
+                            pass
+
+                        # SECOND STEP: remove all aligns which are inside solid ones
+                        if len(solids):
+                            class SolidRegion(object):
+                                def __init__(self, align):
+                                    self.start = align.start()
+                                    self.end = align.end()
+
+                                def include(self, align):
+                                    return self.start <= align.start() and align.end() <= self.end
+
+                            solid_regions = []  # intersection of all solid aligns
+                            cur_region = SolidRegion(solids[0])
+                            for align in solids[1:]:
+                                if align.end() + 1 < cur_region.start:
+                                    solid_regions.append(cur_region)
+                                    cur_region = SolidRegion(align)
+                                else:  # shift start of the current region
+                                    cur_region.start = align.start()
+                            solid_regions.append(cur_region)
+
+                            filtered_aligns = solids
+                            idx = 0
+                            try:
+                                cur_region = solid_regions.pop()
+                                for idx, align in enumerate(sorted_aligns):
+                                    while not cur_region.include(align):
+                                        if align.start() > cur_region.end:
+                                            cur_region = solid_regions.pop()
+                                            continue
+                                        filtered_aligns.append(align)
+                                        break
+                                    else:
+                                        print >> planta_out_f, '\t\tSkipping redundant alignment %s' % (str(align))
+                            except IndexError:  # solid_regions is empty
+                                filtered_aligns += sorted_aligns[idx:]
+
+                            sorted_aligns = sorted(filtered_aligns, key=lambda x: x.end())
 
                     # auxiliary functions
                     def __get_added_len(set_aligns, cur_align):
@@ -977,7 +1061,6 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
                             self.uncovered = uncovered
                     # end of auxiliary functions
 
-                    sorted_aligns = sorted(sorted_aligns, key=lambda x: x.end())
                     all_scored_sets = [ScoredAlignSet(0, [], ctg_len)]
                     max_score = 0
                     best_set = []

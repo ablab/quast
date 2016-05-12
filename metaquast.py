@@ -514,6 +514,8 @@ def main(args):
             pass
         elif opt == '--no-gc':
             pass
+        elif opt == '--no-sv':
+            pass
         elif opt == '--no-plots':
             pass
         elif opt == '--no-html':

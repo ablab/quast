@@ -230,7 +230,7 @@ def get_path_to_program(program):
 
 
 def is_non_empty_file(fpath):
-    return os.path.exists(fpath) and os.path.getsize(fpath) > 10
+    return fpath and os.path.exists(fpath) and os.path.getsize(fpath) > 10
 
 
 def cat_files(in_fnames, out_fname):

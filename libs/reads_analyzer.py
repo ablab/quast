@@ -180,11 +180,14 @@ def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpat
     bed_fpath = bed_fpath or os.path.join(res_path, ref_name + '.bed')
     cov_fpath = os.path.join(res_path, ref_name + '.cov')
 
-    if is_non_empty_file(bed_fpath):
+    if qconfig.no_sv:
+        logger.info('  Will not search Structural Variations (--fast or --no-sv is specified)')
+        bed_fpath = None
+    elif is_non_empty_file(bed_fpath):
         logger.info('  Using existing BED-file: ' + bed_fpath)
     if is_non_empty_file(cov_fpath):
         logger.info('  Using existing reads coverage file: ' + cov_fpath)
-    if is_non_empty_file(bed_fpath) and is_non_empty_file(cov_fpath):
+    if (is_non_empty_file(bed_fpath) or qconfig.no_sv) and is_non_empty_file(cov_fpath):
         return bed_fpath, cov_fpath
 
     logger.info('  ' + 'Pre-processing reads...')
@@ -224,7 +227,7 @@ def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpat
 
     if not is_non_empty_file(cov_fpath):
         cov_fpath = get_coverage(output_dirpath, ref_name, bam_fpath, err_path, cov_fpath)
-    if not is_non_empty_file(bed_fpath):
+    if not is_non_empty_file(bed_fpath) and not qconfig.no_sv:
         if meta_ref_fpaths:
             logger.info('  Splitting SAM-file by references...')
         headers = []
@@ -340,14 +343,15 @@ def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpat
         if os.path.exists(trivial_deletions_fpath) and not is_non_empty_file(bed_fpath):
             shutil.copy(trivial_deletions_fpath, bed_fpath)
 
-    if is_non_empty_file(bed_fpath):
-        logger.main_info('  Structural variations are in ' + bed_fpath)
-    else:
-        if isfile(bed_fpath):
-            logger.main_info('  No structural variations were found.')
+    if not qconfig.no_sv:
+        if is_non_empty_file(bed_fpath):
+            logger.main_info('  Structural variations are in ' + bed_fpath)
         else:
-            logger.main_info('  Failed searching structural variations.')
-        bed_fpath = None
+            if isfile(bed_fpath):
+                logger.main_info('  No structural variations were found.')
+            else:
+                logger.main_info('  Failed searching structural variations.')
+            bed_fpath = None
     if is_non_empty_file(cov_fpath):
         logger.main_info('  Coverage distribution along the reference genome is in ' + cov_fpath)
     else:
@@ -426,7 +430,7 @@ def do(ref_fpath, contigs_fpaths, reads_fpaths, meta_ref_fpaths, output_dir, int
             logger.main_info('Failed searching structural variations')
             return None, None
 
-    if bed_fpath is None and not all_required_binaries_exist(manta_bin_dirpath, 'configManta.py'):
+    if not qconfig.no_sv and bed_fpath is None and not all_required_binaries_exist(manta_bin_dirpath, 'configManta.py'):
         # making
         if not os.path.exists(manta_build_dirpath):
             os.mkdir(manta_build_dirpath)

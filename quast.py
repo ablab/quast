@@ -575,10 +575,13 @@ def main(args):
 
         elif opt == '--no-gc':
             qconfig.no_gc = True
+        elif opt == '--no-sv':
+            qconfig.no_sv = True
 
         elif opt == '--fast':  # --no-gc, --no-plots, --no-snps
             #qconfig.no_check = True  # too risky to include
             qconfig.no_gc = True
+            qconfig.no_sv = True
             qconfig.show_snps = False
             qconfig.draw_plots = False
             qconfig.html_report = False

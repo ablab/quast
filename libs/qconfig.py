@@ -264,14 +264,14 @@ def usage(show_hidden=False, meta=False, short=True):
         print >> sys.stderr, "                                      [default: %s]" % genes_lengths
         print >> sys.stderr, "-e  --eukaryote                       Genome is eukaryotic"
         if not meta:
-            print >> sys.stderr, "    --meta                            Use MetaGeneMark for gene prediction. "
+            print >> sys.stderr, "    --meta                            Use MetaGeneMark for gene prediction"
             print >> sys.stderr, "    --est-ref-size <int>              Estimated reference size (for computing NGx metrics without a reference)"
         else:
-            print >> sys.stderr, "    --max-ref-number <int>            Maximum number of references (per each assembly) to download after looking in SILVA database."
+            print >> sys.stderr, "    --max-ref-number <int>            Maximum number of references (per each assembly) to download after looking in SILVA database"
             print >> sys.stderr, "                                      Set 0 for not looking in SILVA at all [default: %s]" % max_references
         print >> sys.stderr, "    --gage                            Use GAGE (results are in gage_report.txt)"
         print >> sys.stderr, "    --contig-thresholds <int,int,...> Comma-separated list of contig length thresholds [default: %s]" % contig_thresholds
-        print >> sys.stderr, "-u  --use-all-alignments              Compute genome fraction, # genes, # operons in QUAST v.1.* style."
+        print >> sys.stderr, "-u  --use-all-alignments              Compute genome fraction, # genes, # operons in QUAST v1.* style."
         print >> sys.stderr, "                                      By default, QUAST filters Nucmer\'s alignments to keep only best ones"
         print >> sys.stderr, "-i  --min-alignment <int>             Nucmer's parameter: the minimum alignment length [default: %s]" % min_alignment
         print >> sys.stderr, "-a  --ambiguity-usage <none|one|all>  Use none, one, or all alignments (or aligned fragments internal overlaps) of a contig"
@@ -282,17 +282,17 @@ def usage(show_hidden=False, meta=False, short=True):
         print >> sys.stderr, "    --strict-NA                       Break contigs in any misassembly event when compute NAx and NGAx"
         print >> sys.stderr, "                                      By default, QUAST breaks contigs only by extensive misassemblies (not local ones)"
         print >> sys.stderr, "-x  --extensive-mis-size  <int>       Lower threshold for extensive misassembly size. All relocations with inconsistency"
-        print >> sys.stderr, "                                      less than extensive-mis-size are counted as local misassemblies. [default: %s]" % extensive_misassembly_threshold
+        print >> sys.stderr, "                                      less than extensive-mis-size are counted as local misassemblies [default: %s]" % extensive_misassembly_threshold
         print >> sys.stderr, "    --significant-part-size  <int>    Lower threshold for detecting partially unaligned contigs with both significant "
-        print >> sys.stderr, "                                      aligned and unaligned parts. [default: %s]" % significant_part_size
+        print >> sys.stderr, "                                      aligned and unaligned parts [default: %s]" % significant_part_size
         print >> sys.stderr, "    --fragmented                      Reference genome may be fragmented into small pieces (e.g. scaffolded reference) "
-        print >> sys.stderr, "    --plots-format  <str>             Save plots in specified format. [default: %s]" % plot_extension
-        print >> sys.stderr, "                                      Supported formats: %s." % ', '.join(supported_plot_extensions)
-        print >> sys.stderr, "    --memory-efficient                Run Nucmer using one thread, separately per each assembly and each chromosome. "
-        print >> sys.stderr, "                                      This may significantly reduce memory consumption on large genomes."
-        print >> sys.stderr, "-1  --reads1  <filename>              File with forward reads (in FASTQ format, may be gzipped). "
-        print >> sys.stderr, "-2  --reads2  <filename>              File with reverse reads (in FASTQ format, may be gzipped). "
-        print >> sys.stderr, "                                      Reads are used for structural variation detection and coverage histogram building in Icarus. "
+        print >> sys.stderr, "    --plots-format  <str>             Save plots in specified format [default: %s]" % plot_extension
+        print >> sys.stderr, "                                      Supported formats: %s" % ', '.join(supported_plot_extensions)
+        print >> sys.stderr, "    --memory-efficient                Run Nucmer using one thread, separately per each assembly and each chromosome"
+        print >> sys.stderr, "                                      This may significantly reduce memory consumption on large genomes"
+        print >> sys.stderr, "-1  --reads1  <filename>              File with forward reads (in FASTQ format, may be gzipped)"
+        print >> sys.stderr, "-2  --reads2  <filename>              File with reverse reads (in FASTQ format, may be gzipped)"
+        print >> sys.stderr, "                                      Reads are used for structural variation detection and coverage histogram building in Icarus"
         print >> sys.stderr, "    --sv-bedpe  <filename>            File with structural variations (in BEDPE format)"
         print >> sys.stderr, ""
         print >> sys.stderr, "Speedup options:"
@@ -315,15 +315,15 @@ def usage(show_hidden=False, meta=False, short=True):
 
         print >> sys.stderr, ""
         print >> sys.stderr, "Other:"
-        print >> sys.stderr, "    --silent                          Do not print detailed information about each step to stdout (log file is not affected)."
+        print >> sys.stderr, "    --silent                          Do not print detailed information about each step to stdout (log file is not affected)"
         if meta:
             print >> sys.stderr, "    --test                            Run MetaQUAST on the data from the test_data folder, output to quast_test_output"
-            print >> sys.stderr, "    --test-no-ref                     Run MetaQUAST without references on the data from the test_data folder, output to quast_test_output."
-            print >> sys.stderr, "                                      MetaQUAST will download SILVA 16S rRNA database (~170 Mb) for searching reference genomes."
-            print >> sys.stderr, "                                      Internet connection is required."
+            print >> sys.stderr, "    --test-no-ref                     Run MetaQUAST without references on the data from the test_data folder, output to quast_test_output"
+            print >> sys.stderr, "                                      MetaQUAST will download SILVA 16S rRNA database (~170 Mb) for searching reference genomes"
+            print >> sys.stderr, "                                      Internet connection is required"
         else:
             print >> sys.stderr, "    --test                            Run QUAST on the data from the test_data folder, output to quast_test_output"
-            print >> sys.stderr, "    --test-sv                         Run QUAST with structural variants detection on the data from the test_data folder, output to quast_test_output."
+            print >> sys.stderr, "    --test-sv                         Run QUAST with structural variants detection on the data from the test_data folder, output to quast_test_output"
         print >> sys.stderr, "-h  --help                            Print full usage message"
         print >> sys.stderr, "-v  --version                         Print version"
         if show_hidden:

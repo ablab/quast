@@ -475,11 +475,10 @@ def parse_cov_fpath(cov_fpath, chr_names, chr_full_names):
         return None, None, None
     cov_data = defaultdict(list)
     #not_covered = defaultdict(list)
-    cur_len = defaultdict(int)
     max_depth = defaultdict(int)
-    cov_factor = 10
     with open(cov_fpath, 'r') as coverage:
-        contig_to_chr = {}
+        contig_to_chr = dict()
+        index_to_chr = dict()
         for chr in chr_full_names:
             if contigs_analyzer.ref_labels_by_chromosomes:
                 contig_names_by_refs = contigs_analyzer.ref_labels_by_chromosomes
@@ -491,14 +490,15 @@ def parse_cov_fpath(cov_fpath, chr_names, chr_full_names):
             for contig in contigs:
                 contig_to_chr[contig] = chr
         for index, line in enumerate(coverage):
-            c = list(line.split())
-            name = contig_to_chr[qutils.correct_name(c[0])]
-            cur_len[name] += int(c[2])
-            if (index + 1) % cov_factor == 0 and index > 0:
-                cur_depth = cur_len[name] / cov_factor
-                max_depth[chr] = max(cur_depth, max_depth[chr])
-                cov_data[name].append(cur_depth)
-                cur_len[name] = 0
+            fs = line.split()
+            if line.startswith('#'):
+                chr_name = fs[0][1:]
+                index_to_chr[fs[1]] = chr_name
+            else:
+                name = contig_to_chr[index_to_chr[fs[0]]]
+                depth = int(fs[1])
+                max_depth[chr] = max(depth, max_depth[chr])
+                cov_data[name].append(depth)
             # if c[2] == '0':
             #     not_covered[name].append(c[1])
     return cov_data, None, max_depth

@@ -9,6 +9,8 @@ from __future__ import with_statement
 import shutil
 import urllib
 import urllib2
+from collections import defaultdict
+
 from libs import reporting, qconfig, qutils, contigs_analyzer
 from qutils import is_non_empty_file
 from os.path import isfile
@@ -186,7 +188,9 @@ def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpat
     elif is_non_empty_file(bed_fpath):
         logger.info('  Using existing BED-file: ' + bed_fpath)
     if is_non_empty_file(cov_fpath):
-        logger.info('  Using existing reads coverage file: ' + cov_fpath)
+        is_correct_file = check_cov_file(cov_fpath)
+        if is_correct_file:
+            logger.info('  Using existing reads coverage file: ' + cov_fpath)
     if (is_non_empty_file(bed_fpath) or qconfig.no_sv) and is_non_empty_file(cov_fpath):
         return bed_fpath, cov_fpath
 
@@ -361,16 +365,49 @@ def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpat
 
 
 def get_coverage(output_dirpath, ref_name, bam_fpath, err_path, cov_fpath):
+    raw_cov_fpath = cov_fpath + '_raw'
     if not is_non_empty_file(cov_fpath):
         logger.info('  Preparing reads coverage file...')
-        bamsorted_fpath = os.path.join(output_dirpath, ref_name + '.sorted.bam')
-        if not is_non_empty_file(bamsorted_fpath):
-            qutils.call_subprocess([samtools_fpath('samtools'), 'sort', '-@', str(qconfig.max_threads), bam_fpath,
-                                    '-o', bamsorted_fpath], stdout=open(err_path, 'w'), stderr=open(err_path, 'a'))
-        qutils.call_subprocess([samtools_fpath('samtools'), 'depth', '-a', bamsorted_fpath], stdout=open(cov_fpath, 'w'),
-                               stderr=open(err_path, 'a'))
-        qutils.assert_file_exists(cov_fpath, 'coverage file')
+        if not is_non_empty_file(raw_cov_fpath):
+            bamsorted_fpath = os.path.join(output_dirpath, ref_name + '.sorted.bam')
+            if not is_non_empty_file(bamsorted_fpath):
+                qutils.call_subprocess([samtools_fpath('samtools'), 'sort', '-@', str(qconfig.max_threads), bam_fpath,
+                                        '-o', bamsorted_fpath], stdout=open(err_path, 'w'), stderr=open(err_path, 'a'))
+            qutils.call_subprocess([samtools_fpath('samtools'), 'depth', '-a', bamsorted_fpath], stdout=open(raw_cov_fpath, 'w'),
+                                   stderr=open(err_path, 'a'))
+            qutils.assert_file_exists(raw_cov_fpath, 'coverage file')
+        chr_depth = defaultdict(list)
+        used_chromosomes = dict()
+        chr_index = 0
+        cov_factor = 10
+        with open(raw_cov_fpath, 'r') as in_coverage:
+            with open(cov_fpath, 'w') as out_coverage:
+                for index, line in enumerate(in_coverage):
+                    fs = list(line.split())
+                    name = qutils.correct_name(fs[0])
+                    if name not in used_chromosomes:
+                        chr_index += 1
+                        used_chromosomes[name] = str(chr_index)
+                        out_coverage.write('#' + name + ' ' + used_chromosomes[name] + '\n')
+                    chr_depth[name].append(int(fs[2]))
+                    if (len(chr_depth[name]) + 1) % cov_factor == 0 and index > 0:
+                        cur_depth = sum(chr_depth[name]) / cov_factor
+                        out_coverage.write(' '.join([used_chromosomes[name], str(cur_depth) + '\n']))
+                        chr_depth[name] = []
+                os.remove(raw_cov_fpath)
     return cov_fpath
+
+
+def check_cov_file(cov_fpath):
+    raw_cov_fpath = cov_fpath + '_raw'
+    with open(cov_fpath, 'r') as coverage:
+        for line in coverage:
+            if len(line.split()) != 2:
+                shutil.copy(cov_fpath, raw_cov_fpath)
+                os.remove(cov_fpath)
+                return False
+            else:
+                return True
 
 
 def bin_fpath(fname):

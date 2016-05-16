@@ -33,6 +33,8 @@ var cumulative = {
             cumulative.colors = colors;
 
             function addCumulativeLenData(label, index, color, lengths, isRef) {
+                if (!(lengths instanceof Array))
+                    lengths = [lengths];
                 var size = lengths.length;
                 var points = {
                     data: new Array(size + 1),

@@ -566,7 +566,7 @@ THE SOFTWARE.
                                     .append('svg:svg')
                                     .style('position', 'absolute')
                                     .attr('width', width)
-                                    .attr('height', mainHeight + 10)
+                                    .attr('height', mainHeight + 20)
                                     .style('top', itemSvgOffsetY - 10)
                                     .style('left', margin.left)
                                     .attr('pointer-events', 'none');
@@ -1745,7 +1745,8 @@ THE SOFTWARE.
             info.append('p')
                 .text('Type: ' + contig_type);
         }
-        else info.append('p')
+        if (block.size)
+            info.append('p')
                 .text('Size: ' + block.size + ' bp');
 
         var appendPositionElement = function(data, start, end, contigName, assembly, whereAppend, start_in_contig, end_in_contig,
@@ -1858,7 +1859,7 @@ THE SOFTWARE.
         appendPositionElement(block.structure, block.corr_start, block.corr_end, block.name, block.assembly, info);
 
         if (!isContigSizePlot) showArrows(block);
-        if (block.structure) {
+        if (block.structure.length > 0) {
             var blocks = info.append('p')
                     .attr('class', 'head main');
             var blocksText = (block.ambiguous ? 'Alternatives: ' : 'Blocks: ') + block.structure.filter(function(nextBlock) {

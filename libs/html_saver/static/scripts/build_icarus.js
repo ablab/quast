@@ -1859,7 +1859,7 @@ THE SOFTWARE.
         appendPositionElement(block.structure, block.corr_start, block.corr_end, block.name, block.assembly, info);
 
         if (!isContigSizePlot) showArrows(block);
-        if (block.structure.length > 0) {
+        if (block.structure && block.structure.length > 0) {
             var blocks = info.append('p')
                     .attr('class', 'head main');
             var blocksText = (block.ambiguous ? 'Alternatives: ' : 'Blocks: ') + block.structure.filter(function(nextBlock) {
@@ -2090,7 +2090,7 @@ THE SOFTWARE.
     }
 
     function appendLegendContigSize(legend) {
-        if (items[0].structure.length > 0) {
+        if (items[0].structure && items[0].structure.length > 0) {
             var classes = ['correct', 'misassembled', 'unknown'];
             var classMarks = ['', '', ''];
             var classDescriptions = ['correct contigs', 'misassembled contigs', 'unaligned contigs'];

@@ -390,8 +390,7 @@ THE SOFTWARE.
                                     .attr('width', width)
                                     .attr('height', mainHeight)
                                     .style('top', itemSvgOffsetY)
-                                    .style('left', margin.left)
-                                    .attr('class', 'shadow_svg');
+                                    .style('left', margin.left);
 
     itemsLayer.append('rect')
             .attr('pointer-events', 'painted')
@@ -731,7 +730,7 @@ THE SOFTWARE.
                 })
                 .attr('stroke', 'black')
                 .attr('stroke-width', function (d) {
-                    return (d.groupId == selected_id ? 2 : .3);
+                    return (d.groupId == selected_id ? 2 : .4);
                 })
                 .attr('opacity', function (d) {
                   if (!d || !d.size) return 1;
@@ -760,7 +759,7 @@ THE SOFTWARE.
                 .attr('height', mainLanesHeight)
                 .attr('stroke', 'black')
                 .attr('stroke-width', function (d) {
-                    return (d.groupId == selected_id ? 2 : .3);
+                    return (d.groupId == selected_id ? 2 : .4);
                 })
                 .attr('opacity', function (d) {
                   if (!d || !d.size) return 1;

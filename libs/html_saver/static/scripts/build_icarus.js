@@ -364,7 +364,7 @@ THE SOFTWARE.
     var xMainAxis, xMiniAxis;
     setupXAxis();
 
-    var current = (x_mini.domain()[1] + x_mini.domain()[0]) / 2;
+    var centerPos = (x_mini.domain()[1] + x_mini.domain()[0]) / 2;
 
     // draw a line representing today's date
     main.append('line')
@@ -374,9 +374,9 @@ THE SOFTWARE.
             .attr('clip-path', 'url(#clip)');
 
     mini.append('line')
-            .attr('x1', x_mini(current) + .5)
+            .attr('x1', x_mini(centerPos) + .5)
             .attr('y1', 0)
-            .attr('x2', x_mini(current) + .5)
+            .attr('x2', x_mini(centerPos) + .5)
             .attr('y2', miniHeight)
             .attr('class', 'curSegment');
 
@@ -442,11 +442,11 @@ THE SOFTWARE.
             .data(miniRects)
             .enter().append('rect')
             .attr('class', function (item) {
-                if (item.text) return 'item gradient';
+                if (item.text && !item.type) return 'item gradient';
                 return 'item miniItem ' + item.objClass;
             })                
             .attr('fill', function (item) {
-                if (item.text) return addGradient(item, item.text, false);
+                if (item.text && !item.type) return addGradient(item, item.text, false);
             })
             .attr('transform', function (item) {
                 return 'translate(' + item.start + ', ' + item.y + ')';
@@ -668,8 +668,8 @@ THE SOFTWARE.
 
         // shift the today line
         main.select('.main.curLine')
-                .attr('x1', x_main(current) + .5)
-                .attr('x2', x_main(current) + .5);
+                .attr('x1', x_main(centerPos) + .5)
+                .attr('x2', x_main(centerPos) + .5);
 
         mainAxisUpdate();
 
@@ -741,11 +741,11 @@ THE SOFTWARE.
 
         var newRects = rects.enter().append('rect')
                 .attr('class', function (d) {
-                    if (!d.marks) return 'item mainItem ' + d.objClass;
+                    if (!d.marks || d.type) return 'item mainItem ' + d.objClass;
                     else return 'item';
                 })// Define the gradient
                 .attr('fill', function (d) {
-                    if (d.marks) return addGradient(d, d.marks, true);
+                    if (d.marks && !d.type) return addGradient(d, d.marks, true);
                 })
                 .attr('transform', function (d) {
                     var x = x_main(Math.max(minExtent, d.corr_start));
@@ -1464,10 +1464,11 @@ THE SOFTWARE.
 
         // draw the selection area
         var delta = (x_mini.domain()[1] - x_mini.domain()[0]) / 8;
+        var brushPos = isContigSizePlot ? delta : centerPos;
 
         var newBrush = d3.svg.brush()
                             .x(x_mini)
-                            .extent([current - delta, current + delta])
+                            .extent([brushPos - delta, brushPos + delta])
                             .on("brush", function() {
                                 sync(newBrush, trackName)
                             });
@@ -1637,6 +1638,8 @@ THE SOFTWARE.
             var text = '';
             if (isContigSizePlot) {
                 if (d.type == "small_contigs") c += " disabled";
+                else if (d.type == "misassembled") c += " misassembled";
+                else if (d.type == "correct") c += "";
                 else c += " unknown";
             }
 
@@ -1670,7 +1673,7 @@ THE SOFTWARE.
             curLane = d.lane;
             numItem++;
             result.push({objClass: d.objClass, path: path, misassemblies: misassemblies[d.objClass], supp: d.supp,
-                start: startX, end: endX, y: startY, size: d.size, text: text, id: d.id});
+                start: startX, end: endX, y: startY, size: d.size, text: text, id: d.id, type: d.type});
         }
         return result;
     }
@@ -1710,7 +1713,7 @@ THE SOFTWARE.
         return (t.length < fullText.length && t.length <= 3 ? '' : t + (t.length >= fullText.length ? '' : '...'));
     }
 
-    function changeInfo(d) {
+    function changeInfo(block) {
         info.selectAll('p')
                 .remove();
 
@@ -1719,156 +1722,166 @@ THE SOFTWARE.
         setBaseChartHeight();
         info.append('p')
                 .style({'display': 'block', 'word-break': 'break-all', 'word-wrap': 'break-word'})
-                .text('Name: ' + d.name, 280);
+                .text('Name: ' + block.name, 280);
 
-        if (d.structure) {
-            var contig_type = d.misassemblies ? 'misassembled' : 'correct';
-            if (d.similar == "True" && !d.misassemblies) contig_type += ' (similar in > 50% of the assemblies)';
-            if (d.misassemblies) {
-                var misassemblies = d.misassemblies.split(';');
-                if (misassemblies[0] && misassemblies[1])
-                    contig_type += ' (both sides';
-                else if (misassemblies[0])
-                    contig_type += ' (left side';
-                else
-                    contig_type += ' (right side';
+        if (block.structure) {
+            if (isContigSizePlot)
+                var contig_type = block.type ? block.type : 'unaligned';
+            else {
+                var contig_type = block.misassemblies ? 'misassembled' : 'correct';
+                if (block.similar == "True" && !block.misassemblies) contig_type += ' (similar in > 50% of the assemblies)';
+                if (block.misassemblies) {
+                    var misassemblies = block.misassemblies.split(';');
+                    if (misassemblies[0] && misassemblies[1])
+                        contig_type += ' (both sides';
+                    else if (misassemblies[0])
+                        contig_type += ' (left side';
+                    else
+                        contig_type += ' (right side';
 
-                if (d.similar == "True") contig_type += ', similar in > 50% of the assemblies';
-                contig_type += ')'
-            }
+                    if (block.similar == "True") contig_type += ', similar in > 50% of the assemblies';
+                    contig_type += ')'
+                }
+            }    
             info.append('p')
                 .text('Type: ' + contig_type);
         }
         else info.append('p')
-                .text('Size: ' + d.size + ' bp');
+                .text('Size: ' + block.size + ' bp');
 
         var appendPositionElement = function(data, start, end, contigName, assembly, whereAppend, start_in_contig, end_in_contig,
                                              prev_start, prev_end, is_expanded) {
-            var posVal = function (d) {
+            var posVal = function (val) {
                 if (mainTickValue == 'Gbp')
-                    return d3.round(d / 1000000000, 2);
+                    return d3.round(val / 1000000000, 2);
                 else if (mainTickValue == 'Mbp')
-                    return d3.round(d / 1000000, 2);
+                    return d3.round(val / 1000000, 2);
                 else if (mainTickValue == 'kbp')
-                    return d3.round(d / 1000, 2);
+                    return d3.round(val / 1000, 2);
                 else
-                    return d;
+                    return val;
             };
-            var format = function (d) {
-                d = d.toString();
-                for (var i = 3; i < d.length; i += 4 )
-                    d = d.slice(0 , d.length - i) + ' ' + d.slice(length - i, d.length);
-                return d;
+            var format = function (val) {
+                val = val.toString();
+                for (var i = 3; i < val.length; i += 4 )
+                    val = val.slice(0 , val.length - i) + ' ' + val.slice(length - i, val.length);
+                return val;
             };
 
-            var e = !data ? '' : data.filter(function (d) {
-                if (d.type == 'A' && d.contig == contigName) {
-                    if (start_in_contig && d.start_in_contig == start_in_contig && d.end_in_contig == end_in_contig
-                        && d.corr_start == start) return d;
-                    else if (!start_in_contig && d.corr_start <= start && end <= d.corr_end) return d;
+            var curBlock = !data ? '' : data.filter(function (block) {
+                if (block.type == 'A' && block.contig == contigName) {
+                    if (start_in_contig && block.start_in_contig == start_in_contig && block.end_in_contig == end_in_contig
+                        && block.corr_start == start) return block;
+                    else if (!start_in_contig && block.corr_start <= start && end <= block.corr_end) return block;
                 }
             })[0];
-            if (!e) return;
+            if (!curBlock) return;
             var ndash = String.fromCharCode(8211);
             if (is_expanded)
                 var whereAppendBlock = whereAppend.append('p')
                         .attr('class', 'head_plus collapsed')
-                        .on('click', function(d, i) {
+                        .on('click', function() {
                             var eventX = d3.event.x || d3.event.clientX;
                             if (eventX < whereAppendBlock[0][0].offsetLeft + 15)
                                 openClose(whereAppendBlock[0][0]);
                         });
             else var whereAppendBlock = whereAppend;
-            var d = whereAppendBlock.append('span')
+            if (is_expanded || !isContigSizePlot) {
+                var block = whereAppendBlock.append('span')
                     .attr('class', is_expanded ? 'head' : 'head main')
                     .append('text');
-            d.append('tspan')
-                .attr('x', -50)
-                .text('Position: ');
-            var positionLink = d.append('tspan')
-                                .style('cursor', 'pointer')
-                                .text([posVal(e.start), ndash, posVal(e.end), mainTickValue, ' '].join(' '))
-            if (is_expanded && chrContigs.indexOf(e.chr) != -1)  // chromosome on this screen
-                positionLink.style('text-decoration', 'underline')
-                            .style('color', '#7ED5F5')
-                            .on('click',function(d) {
-                                var brushExtent = brush.extent();
-                                var brushSize = brushExtent[1] - brushExtent[0];
-                                if (prev_start && prev_start > e.corr_start) point = e.corr_end;
-                                else if (prev_start) point = e.corr_start;
-                                setCoords([point - brushSize / 2, point + brushSize / 2], true);
-                                for (var i = 0; i < items.length; i++) {
-                                    if (items[i].assembly == assembly  && items[i].name == contigName && items[i].corr_start == e.corr_start && items[i].corr_end == e.corr_end) {
-                                        selected_id = items[i].groupId;
-                                        showArrows(items[i]);
-                                        changeInfo(items[i]);
-                                        display();
-                                        break;
-                                    }
-                                }
-                                d3.event.stopPropagation();
-                            });
-
-            if (is_expanded) {
-                if (prev_start == start && prev_end == end)
-                    d.append('div')
-                     .attr('id', 'circle' + start + '_' + end)
-                     .attr('class', 'block_circle selected');
-                else
-                    d.append('div')
-                     .attr('id', 'circle' + start + '_' + end)
-                     .attr('class', 'block_circle');
-            }
-
-            if (chrContigs.indexOf(e.chr) == -1) {
-                d.append('a')
-                        .attr('href', (links_to_chromosomes ? links_to_chromosomes[e.chr] : e.chr) + '.html')
-                        .attr('target', '_blank')
-                        .style('text-decoration', 'underline')
+                block.append('tspan')
+                    .attr('x', -50)
+                    .text('Position: ');
+                var positionLink = block.append('tspan')
+                    .style('cursor', 'pointer')
+                    .text([posVal(curBlock.start), ndash, posVal(curBlock.end), mainTickValue, ' '].join(' '));
+                if (is_expanded && !isContigSizePlot && chrContigs.indexOf(curBlock.chr) != -1)  // chromosome on this screen
+                    positionLink.style('text-decoration', 'underline')
                         .style('color', '#7ED5F5')
-                        .text('(' + e.chr + ')');
+                        .on('click', function () {
+                            var brushExtent = brush.extent();
+                            var brushSize = brushExtent[1] - brushExtent[0];
+                            if (prev_start && prev_start > curBlock.corr_start) point = curBlock.corr_end;
+                            else if (prev_start) point = curBlock.corr_start;
+                            setCoords([point - brushSize / 2, point + brushSize / 2], true);
+                            for (var i = 0; i < items.length; i++) {
+                                if (items[i].assembly == assembly && items[i].name == contigName && 
+                                        items[i].corr_start == curBlock.corr_start && items[i].corr_end == curBlock.corr_end) {
+                                    selected_id = items[i].groupId;
+                                    showArrows(items[i]);
+                                    changeInfo(items[i]);
+                                    display();
+                                    break;
+                                }
+                            }
+                            d3.event.stopPropagation();
+                        });
+                if (is_expanded && !isContigSizePlot) {
+                    if (prev_start == start && prev_end == end)
+                        block.append('div')
+                         .attr('id', 'circle' + start + '_' + end)
+                         .attr('class', 'block_circle selected');
+                    else
+                        block.append('div')
+                         .attr('id', 'circle' + start + '_' + end)
+                         .attr('class', 'block_circle');
+                }
+                if (!isContigSizePlot) {
+                    if (chrContigs.indexOf(curBlock.chr) == -1) {
+                        block.append('a')
+                                .attr('href', (links_to_chromosomes ? links_to_chromosomes[curBlock.chr] : curBlock.chr) + '.html')
+                                .attr('target', '_blank')
+                                .style('text-decoration', 'underline')
+                                .style('color', '#7ED5F5')
+                                .text('(' + curBlock.chr + ')');
+                    }
+                    else if (chrContigs.length > 1) {
+                        block.append('span')
+                                .text('(' + curBlock.chr + ')');
+                    }
+                }
+                block = block.append('p')
+                        .attr('class', is_expanded ? 'close' : 'open');
+                block.append('p')
+                        .text(['reference:',
+                            format(curBlock.start), ndash, format(curBlock.end),
+                            '(' + format(Math.abs(curBlock.end - curBlock.start) + 1) + ')', 'bp'].join(' '));
+                block.append('p')
+                        .text(['contig:',
+                            format(curBlock.start_in_contig), ndash,  format(curBlock.end_in_contig),
+                            '(' + format(Math.abs(curBlock.end_in_contig - curBlock.start_in_contig) + 1) + ')', 'bp'].join(' '));
+                block.append('p')
+                        .text(['IDY:', curBlock.IDY, '%'].join(' '));
             }
-            else if (chrContigs.length > 1) {
-                d.append('span')
-                        .text('(' + e.chr + ')');
-            }
-            d = d.append('p')
-                    .attr('class', is_expanded ? 'close' : 'open');
-            d.append('p')
-                    .text(['reference:',
-                        format(e.start), ndash, format(e.end),
-                        '(' + format(Math.abs(e.end - e.start) + 1) + ')', 'bp'].join(' '));
-            d.append('p')
-                    .text(['contig:',
-                        format(e.start_in_contig), ndash,  format(e.end_in_contig),
-                        '(' + format(Math.abs(e.end_in_contig - e.start_in_contig) + 1) + ')', 'bp'].join(' '));
-            d.append('p')
-                    .text(['IDY:', e.IDY, '%'].join(' '));
+            
         };
-        appendPositionElement(d.structure, d.corr_start, d.corr_end, d.name, d.assembly, info);
+        appendPositionElement(block.structure, block.corr_start, block.corr_end, block.name, block.assembly, info);
 
-        showArrows(d);
-        if (d.structure) {
+        if (!isContigSizePlot) showArrows(block);
+        if (block.structure) {
             var blocks = info.append('p')
                     .attr('class', 'head main');
-            var blocksText = (d.ambiguous ? 'Alternatives: ' : 'Blocks: ') + d.structure.filter(function(d) { if (d.type == "A") return d;}).length;
-            blocks.text(d.ambiguous ? 'Ambiguously mapped.' : blocksText);
-            if (d.ambiguous)
+            var blocksText = (block.ambiguous ? 'Alternatives: ' : 'Blocks: ') + block.structure.filter(function(nextBlock) {
+                                    if (nextBlock.type == "A") return nextBlock;
+                                }).length;
+            blocks.text(block.ambiguous ? 'Ambiguously mapped.' : blocksText);
+            if (block.ambiguous)
                 blocks.append('p')
                       .text(blocksText);
 
-            for (var i = 0; i < d.structure.length; ++i) {
-                var e = d.structure[i];
-                if (e.type == "A") {
-                    appendPositionElement(d.structure, e.corr_start, e.corr_end, d.name, d.assembly, blocks, e.start_in_contig,
-                        e.end_in_contig, d.corr_start, d.corr_end, true);
+            for (var i = 0; i < block.structure.length; ++i) {
+                var nextBlock = block.structure[i];
+                if (nextBlock.type == "A") {
+                    appendPositionElement(block.structure, nextBlock.corr_start, nextBlock.corr_end, block.name, block.assembly, blocks, nextBlock.start_in_contig,
+                        nextBlock.end_in_contig, block.corr_start, block.corr_end, true);
 
-                    if (d.ambiguous && i < d.structure.length - 1)
+                    if (block.ambiguous && i < block.structure.length - 1)
                         blocks.append('p')
                               .text('or');
                 } else {
                     blocks.append('p')
-                            .text(e.mstype);
+                            .text(nextBlock.mstype);
                 }
             }
         }
@@ -1878,31 +1891,31 @@ THE SOFTWARE.
     }
 
 
-    function showArrows(d) {
+    function showArrows(block) {
         var verticalShift = -7;
         arrows = [];
         mini.selectAll('.arrow').remove();
         mini.selectAll('.arrow_selected').remove();
-        var y = y_mini(d.lane) - 1;
+        var y = y_mini(block.lane) - 1;
 
-        if (d.structure) {
-            for (var i = 0; i < d.structure.length; ++i) {
-                var e = d.structure[i];
-                if (e.type == "A") {
-                    if (!(e.corr_start <= d.corr_start && d.corr_end <= e.corr_end) && chrContigs.indexOf(e.chr) != -1) {
-                        arrows.push({start: e.corr_start, end: e.corr_end, lane: d.lane, selected: false});
+        if (block.structure) {
+            for (var i = 0; i < block.structure.length; ++i) {
+                var nextBlock = block.structure[i];
+                if (nextBlock.type == "A") {
+                    if (!(nextBlock.corr_start <= block.corr_start && block.corr_end <= nextBlock.corr_end) && chrContigs.indexOf(nextBlock.chr) != -1) {
+                        arrows.push({start: nextBlock.corr_start, end: nextBlock.corr_end, lane: block.lane, selected: false});
                         mini.append('g')
-                                .attr('transform', 'translate(' + x_mini((e.corr_end + e.corr_start) / 2) + ',' + verticalShift +')')
+                                .attr('transform', 'translate(' + x_mini((nextBlock.corr_end + nextBlock.corr_start) / 2) + ',' + verticalShift +')')
                                 .attr('class', 'arrow')
                                 .append("svg:path")
-                                .attr("d", 'M0,0V' + (Math.abs(verticalShift) + 1 + d.lane * miniLanesHeight))
-                                .attr("class", function (d) {
+                                .attr("d", 'M0,0V' + (Math.abs(verticalShift) + 1 + block.lane * miniLanesHeight))
+                                .attr("class", function () {
                                     return "path arrow";
                                 })
-                                .attr("marker-start", function (d) {
+                                .attr("marker-start", function () {
                                     return "url(#start_arrow)";
                                 })
-                                .attr("marker-end", function (d) {
+                                .attr("marker-end", function () {
                                     return "url(#arrow)";
                                 });
                     }
@@ -1910,19 +1923,19 @@ THE SOFTWARE.
             }
         }
 
-        arrows.push({start: d.corr_start, end: d.corr_end, lane: d.lane, selected: true});
+        arrows.push({start: block.corr_start, end: block.corr_end, lane: block.lane, selected: true});
         mini.append('g')
-                .attr('transform', 'translate(' + x_mini((d.corr_end + d.corr_start) / 2) + ',' + verticalShift +')')
+                .attr('transform', 'translate(' + x_mini((block.corr_end + block.corr_start) / 2) + ',' + verticalShift +')')
                 .attr('class', 'arrow_selected')
                 .append("svg:path")
-                .attr("d", 'M0,0V' + (Math.abs(verticalShift) + 1 + d.lane * miniLanesHeight))
-                .attr("class", function (d) {
+                .attr("d", 'M0,0V' + (Math.abs(verticalShift) + 1 + block.lane * miniLanesHeight))
+                .attr("class", function () {
                     return "path arrow_selected";
                 })
-                .attr("marker-start", function (d) {
+                .attr("marker-start", function () {
                     return "url(#start_arrow_selected)";
                 })
-                .attr("marker-end", function (d) {
+                .attr("marker-end", function () {
                     return "url(#arrow_selected)";
                 });
         display();
@@ -2077,10 +2090,17 @@ THE SOFTWARE.
     }
 
     function appendLegendContigSize(legend) {
-        var classes = ['unknown', '', '', ''];
-        var classMarks = ['', 'N50', 'NG50', 'N50, NG50'];
-        var classDescriptions = ['contigs', 'contig of length = Nx statistic (x is 50 or 75)',
-        'contig of length = NGx statistic (x is 50 or 75)', 'contig of length = Nx and NGx simultaneously'];
+        if (items[0].structure.length > 0) {
+            var classes = ['correct', 'misassembled', 'unknown'];
+            var classMarks = ['', '', ''];
+            var classDescriptions = ['correct contigs', 'misassembled contigs', 'unaligned contigs'];
+        }
+        else {
+            var classes = ['unknown', '', '', ''];
+            var classMarks = ['', 'N50', 'NG50', 'N50, NG50'];
+            var classDescriptions = ['contigs', 'contig of length = Nx statistic (x is 50 or 75)',
+                'contig of length = NGx statistic (x is 50 or 75)', 'contig of length = Nx and NGx simultaneously'];
+        }
         var offsetY = 0;
         for (var numClass = 0; numClass < classes.length; numClass++) {
             offsetY = addLegendItemWithText(legend, offsetY, classes[numClass], classDescriptions[numClass], classMarks[numClass])

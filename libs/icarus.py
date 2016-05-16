@@ -85,10 +85,11 @@ class Arc:
 
 
 class Contig:
-    def __init__(self, name, size=None):
+    def __init__(self, name, size=None, contig_type=''):
         self.name = name
         self.size = size
         self.alignments = []
+        self.contig_type = contig_type
         self.arcs = []
 
 
@@ -399,8 +400,8 @@ def parse_nucmer_contig_report(report_fpath, ref_names, cumulative_ref_lengths):
                 idy_col = split_line.index('IDY')
                 ambig_col = split_line.index('Ambiguous')
             elif split_line and split_line[0] == 'CONTIG':
-                _, name, size = split_line
-                contig = Contig(name=name, size=int(size))
+                _, name, size, contig_type = split_line
+                contig = Contig(name=name, size=int(size), contig_type=contig_type)
                 contigs.append(contig)
             elif split_line and len(split_line) < 5:
                 misassembled_id_to_structure[contig_id].append(line.strip())
@@ -435,7 +436,8 @@ def parse_contigs_fpath(contigs_fpath):
     return contigs
 
 
-def add_contig(cum_length, contig, not_used_nx, assemblies_n50, assembly, contigs, contig_size_lines, num, only_nx=False):
+def add_contig(cum_length, contig, not_used_nx, assemblies_n50, assembly, contigs, contig_size_lines, num, structures_by_labels,
+               only_nx=False):
     end_contig = cum_length + contig.size
     marks = []
     align = None
@@ -450,7 +452,21 @@ def add_contig(cum_length, contig, not_used_nx, assemblies_n50, assembly, contig
         not_used_nx = [nx for nx in not_used_nx if nx not in marks]
     marks = ', marks: "' + marks + '"' if marks else ''
     if not only_nx or marks:
-        align = '{name: "' + contig.name + '", size: ' + str(contig.size) + marks + '},'
+        structure = []
+        if structures_by_labels and assembly in structures_by_labels:
+            assembly_structure = structures_by_labels[assembly]
+            for el in assembly_structure[contig.name]:
+                if isinstance(el, Alignment):
+                    corr_el_start = el.start
+                    corr_el_end = el.end
+                    structure.append('{type: "A",contig: "' + contig.name + '",corr_start: ' + str(corr_el_start) + ',corr_end: ' +
+                                    str(corr_el_end) + ',start:' + str(el.start) + ',end:' + str(el.end) +
+                                    ',start_in_contig:' + str(el.start_in_contig) + ',end_in_contig:' +
+                                    str(el.end_in_contig) + ',IDY:' + el.idy + ',chr: "' + el.ref_name + '"},')
+                elif type(el) == str:
+                    structure.append('{type: "M", mstype: "' + el + '"},')
+        align = '{name: "' + contig.name + '",size: ' + str(contig.size) + marks + ',type: "' + contig.contig_type + \
+                '",structure: [' + ''.join(structure) + ']},'
     return end_contig, contig_size_lines, align, not_used_nx
 
 
@@ -514,7 +530,7 @@ def get_assemblies_data(contigs_fpaths, stdout_pattern, nx_marks):
     return assemblies_data, assemblies_contig_size_data, assemblies_n50
 
 
-def get_contigs_data(contigs_by_assemblies, nx_marks, assemblies_n50):
+def get_contigs_data(contigs_by_assemblies, nx_marks, assemblies_n50, structures_by_labels):
     contigs_sizes_str = ['var contig_data = {};']
     contigs_sizes_str.append('var chromosome;')
     contigs_sizes_lines = []
@@ -535,7 +551,7 @@ def get_contigs_data(contigs_by_assemblies, nx_marks, assemblies_n50):
             if i >= last_contig_num:
                 break
             cum_length, contigs_sizes_lines, align, not_used_nx = add_contig(cum_length, alignment, not_used_nx, assemblies_n50,
-                                                                assembly, contigs, contigs_sizes_lines, i)
+                                                                assembly, contigs, contigs_sizes_lines, i, structures_by_labels)
             contigs_sizes_str.append(align)
         if len(contigs) > qconfig.max_contigs_num_for_size_viewer:
             assembly_len = cum_length
@@ -550,7 +566,7 @@ def get_contigs_data(contigs_by_assemblies, nx_marks, assemblies_n50):
                 if not not_used_nx:
                     break
                 assembly_len, contigs_sizes_lines, align, not_used_nx = add_contig(assembly_len, alignment, not_used_nx, assemblies_n50,
-                                                                    assembly, contigs, contigs_sizes_lines, last_contig_num + i, only_nx=True)
+                                                                    assembly, contigs, contigs_sizes_lines, last_contig_num + i, structures_by_labels, only_nx=True)
         total_len = max(total_len, cum_length)
         contigs_sizes_str[-1] = contigs_sizes_str[-1][:-1] + '];\n\n'
     contigs_sizes_str = '\n'.join(contigs_sizes_str)
@@ -675,9 +691,9 @@ def save_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, chr_length
                         if isinstance(el, Alignment):
                             if el.ref_name in ref_contigs:
                                 num_chr = ref_contigs.index(el.ref_name)
-                                corr_len = sum(chr_lengths[:num_chr+1])
+                                # corr_len = sum(chr_lengths[:num_chr+1])
                             else:
-                                corr_len = -int(el.end)
+                                # corr_len = -int(el.end)
                                 if contigs_analyzer.ref_labels_by_chromosomes and el.ref_name not in used_chromosomes:
                                     used_chromosomes.append(el.ref_name)
                                     new_chr = contig_names_by_refs[el.ref_name]
@@ -847,7 +863,7 @@ def js_data_gen(assemblies, contigs_fpaths, chromosomes_length, output_dirpath, 
                                                           ref_data=ref_data, features_data=features_data, assemblies_data=assemblies_data,
                                                           cov_data=cov_data, not_covered=not_covered, max_depth=max_depth, output_dir_path=output_all_files_dir_path)
 
-    contigs_sizes_str, too_many_contigs = get_contigs_data(contigs_by_assemblies, nx_marks, assemblies_n50)
+    contigs_sizes_str, too_many_contigs = get_contigs_data(contigs_by_assemblies, nx_marks, assemblies_n50, structures_by_labels)
     contig_size_template_fpath = html_saver.get_real_path(qconfig.icarus_viewers_template_fname)
     contig_size_viewer_fpath = os.path.join(output_all_files_dir_path, qconfig.contig_size_viewer_fname)
     html_saver.init_icarus(contig_size_template_fpath, contig_size_viewer_fpath)

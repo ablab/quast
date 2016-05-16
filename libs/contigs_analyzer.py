@@ -838,10 +838,11 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
         #Recording contig stats
         ctg_len = len(seq)
         print >> planta_out_f, 'CONTIG: %s (%dbp)' % (contig, ctg_len)
-        print >> icarus_out_f, '\t'.join(['CONTIG', contig, str(ctg_len)])
+        contig_type = ''
 
         #Check if this contig aligned to the reference
         if contig in aligns:
+            contig_type = 'correct'
             #Pull all aligns for this contig
             num_aligns = len(aligns[contig])
 
@@ -1210,6 +1211,7 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
                     total_indels_info += indels_info
                     if is_misassembled:
                         misassembled_contigs[contig] = len(seq)
+                        contig_type = 'misassembled'
                     if qconfig.meta and (ctg_len - aligned_bases_in_contig >= qconfig.significant_part_size):
                         print >> planta_out_f, '\t\tThis contig has significant unaligned parts ' \
                                                '(of length >= %d)!' % (qconfig.significant_part_size) + (' It can contain interspecies translocations' if qconfig.meta else '')
@@ -1224,6 +1226,7 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
             fully_unaligned_bases += ctg_len
             print >> planta_out_f, '\t\tUnaligned bases: %d  total: %d' % (ctg_len, fully_unaligned_bases)
 
+        print >> icarus_out_f, '\t'.join(['CONTIG', contig, str(ctg_len), contig_type])
         print >> planta_out_f
 
     coords_filtered_file.close()

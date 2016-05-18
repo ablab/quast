@@ -463,7 +463,7 @@ def add_contig(cum_length, contig, not_used_nx, assemblies_n50, assembly, contig
                     corr_el_start = el.start
                     corr_el_end = el.end
                     structure.append('{type: "A",contig: "' + contig.name + '",corr_start: ' + str(corr_el_start) + ',corr_end: ' +
-                                    str(corr_el_end) + ',start:' + str(el.start) + ',end:' + str(el.end) +
+                                    str(corr_el_end) + ',start:' + str(el.unshifted_start) + ',end:' + str(el.unshifted_end) +
                                     ',start_in_contig:' + str(el.start_in_contig) + ',end_in_contig:' +
                                     str(el.end_in_contig) + ',chr: "' + el.ref_name + '"},')
                 elif type(el) == str:
@@ -533,10 +533,11 @@ def get_assemblies_data(contigs_fpaths, stdout_pattern, nx_marks):
     return assemblies_data, assemblies_contig_size_data, assemblies_n50
 
 
-def get_contigs_data(contigs_by_assemblies, nx_marks, assemblies_n50, structures_by_labels, contig_names_by_refs, ref_names):
+def get_contigs_data(contigs_by_assemblies, nx_marks, assemblies_n50, structures_by_labels, contig_names_by_refs, ref_names,
+                     one_html=True):
     additional_data = []
     additional_data.append('var links_to_chromosomes;')
-    if len(ref_names) > 1:
+    if not one_html:
         additional_data.append('links_to_chromosomes = {};')
         for ref_name in ref_names:
             chr_name = ref_name
@@ -902,7 +903,7 @@ def js_data_gen(assemblies, contigs_fpaths, chromosomes_length, output_dirpath, 
                                                           cov_data=cov_data, not_covered=not_covered, max_depth=max_depth, output_dir_path=output_all_files_dir_path)
 
     contigs_sizes_str, too_many_contigs = get_contigs_data(contigs_by_assemblies, nx_marks, assemblies_n50, structures_by_labels,
-                                                           contig_names_by_refs, chr_names)
+                                                           contig_names_by_refs, chr_names, one_html=len(chr_full_names) == 1)
     contig_size_template_fpath = html_saver.get_real_path(qconfig.icarus_viewers_template_fname)
     contig_size_viewer_fpath = os.path.join(output_all_files_dir_path, qconfig.contig_size_viewer_fname)
     html_saver.init_icarus(contig_size_template_fpath, contig_size_viewer_fpath)

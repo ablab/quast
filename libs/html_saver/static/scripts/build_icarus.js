@@ -1808,7 +1808,7 @@ THE SOFTWARE.
                     .text('Position: ');
                 if (isContigSizePlot) var positionLink = block.append('a');
                 else positionLink = block.append('tspan');
-                positionLink.attr('id', 'position_link')
+                positionLink.attr('id', 'position_link' + numBlock)
                             .style('cursor', 'pointer')
                             .text([posVal(curBlock.start), ndash, posVal(curBlock.end), mainTickValue, ' '].join(' '));
                 if (is_expanded && !isContigSizePlot && chrContigs.indexOf(curBlock.chr) != -1)  // chromosome on this screen
@@ -1839,7 +1839,7 @@ THE SOFTWARE.
                                 .style('text-decoration', 'underline')
                                 .style('color', '#7ED5F5');
                     if (typeof links_to_chromosomes !== 'undefined' && curBlock.chr)
-                        positionLink.text(document.getElementById('position_link').textContent + '(' + curBlock.chr + ')');
+                        positionLink.text(document.getElementById('position_link' + numBlock).textContent + '(' + curBlock.chr + ')');
                 }
                 if (is_expanded && !isContigSizePlot) {
                     if (prev_start == start && prev_end == end)
@@ -1878,9 +1878,11 @@ THE SOFTWARE.
                             '(' + format(Math.abs(curBlock.end_in_contig - curBlock.start_in_contig) + 1) + ')', 'bp'].join(' '));
                 block.append('p')
                         .text(['IDY:', curBlock.IDY, '%'].join(' '));
+                numBlock++;
             }
             
         };
+        var numBlock = 0;
         appendPositionElement(block.structure, block.corr_start, block.corr_end, block.name, block.assembly, info);
 
         if (!isContigSizePlot) showArrows(block);
@@ -2490,7 +2492,7 @@ THE SOFTWARE.
         }
         if (params && params.assembly && params.contig && params.start && params.end) {
             var delta = 1000;
-            setCoords([params.start - delta, params.end + delta]);
+            setCoords([parseInt(params.start) - delta, parseInt(params.end) + delta]);
             for (var i = 0; i < items.length; i++) {
                 if (items[i].assembly == params.assembly && items[i].name == params.contig &&
                         items[i].corr_start == params.start && items[i].corr_end == params.end) {

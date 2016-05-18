@@ -465,7 +465,7 @@ def add_contig(cum_length, contig, not_used_nx, assemblies_n50, assembly, contig
                     structure.append('{type: "A",contig: "' + contig.name + '",corr_start: ' + str(corr_el_start) + ',corr_end: ' +
                                     str(corr_el_end) + ',start:' + str(el.start) + ',end:' + str(el.end) +
                                     ',start_in_contig:' + str(el.start_in_contig) + ',end_in_contig:' +
-                                    str(el.end_in_contig) + ',IDY:' + el.idy + ',chr: "' + el.ref_name + '"},')
+                                    str(el.end_in_contig) + ',chr: "' + el.ref_name + '"},')
                 elif type(el) == str:
                     structure.append('{type: "M", mstype: "' + el + '"},')
         align = '{name: "' + contig.name + '",size: ' + str(contig.size) + marks + ',type: "' + contig.contig_type + \
@@ -533,7 +533,16 @@ def get_assemblies_data(contigs_fpaths, stdout_pattern, nx_marks):
     return assemblies_data, assemblies_contig_size_data, assemblies_n50
 
 
-def get_contigs_data(contigs_by_assemblies, nx_marks, assemblies_n50, structures_by_labels):
+def get_contigs_data(contigs_by_assemblies, nx_marks, assemblies_n50, structures_by_labels, contig_names_by_refs, ref_names):
+    additional_data = []
+    additional_data.append('var links_to_chromosomes;')
+    if len(ref_names) > 1:
+        additional_data.append('links_to_chromosomes = {};')
+        for ref_name in ref_names:
+            chr_name = ref_name
+            if contig_names_by_refs and ref_name in contig_names_by_refs:
+                chr_name = contig_names_by_refs[ref_name]
+            additional_data.append('links_to_chromosomes["' + ref_name + '"] = "' + chr_name + '";')
     contigs_sizes_str = ['var contig_data = {};']
     contigs_sizes_str.append('var chromosome;')
     contigs_sizes_lines = []
@@ -576,7 +585,8 @@ def get_contigs_data(contigs_by_assemblies, nx_marks, assemblies_n50, structures
     contigs_sizes_str += 'var contigLines = [' + ','.join(contigs_sizes_lines) + '];\n\n'
     contigs_sizes_str += 'var contigs_total_len = ' + str(total_len) + ';\n'
     contigs_sizes_str += 'var minContigSize = ' + str(min_contig_size) + ';'
-    return contigs_sizes_str, too_many_contigs
+    contig_viewer_data = contigs_sizes_str + '\n'.join(additional_data)
+    return contig_viewer_data, too_many_contigs
 
 
 def parse_features_data(features, cumulative_ref_lengths, ref_names):
@@ -833,6 +843,7 @@ def js_data_gen(assemblies, contigs_fpaths, chromosomes_length, output_dirpath, 
     output_all_files_dir_path = os.path.join(output_dirpath, qconfig.icarus_dirname)
     if not os.path.exists(output_all_files_dir_path):
         os.mkdir(output_all_files_dir_path)
+    contig_names_by_refs = None
     if contigs_analyzer.ref_labels_by_chromosomes:
         contig_names_by_refs = contigs_analyzer.ref_labels_by_chromosomes
         added_refs = set()
@@ -890,7 +901,8 @@ def js_data_gen(assemblies, contigs_fpaths, chromosomes_length, output_dirpath, 
                                                           ref_data=ref_data, features_data=features_data, assemblies_data=assemblies_data,
                                                           cov_data=cov_data, not_covered=not_covered, max_depth=max_depth, output_dir_path=output_all_files_dir_path)
 
-    contigs_sizes_str, too_many_contigs = get_contigs_data(contigs_by_assemblies, nx_marks, assemblies_n50, structures_by_labels)
+    contigs_sizes_str, too_many_contigs = get_contigs_data(contigs_by_assemblies, nx_marks, assemblies_n50, structures_by_labels,
+                                                           contig_names_by_refs, chr_names)
     contig_size_template_fpath = html_saver.get_real_path(qconfig.icarus_viewers_template_fname)
     contig_size_viewer_fpath = os.path.join(output_all_files_dir_path, qconfig.contig_size_viewer_fname)
     html_saver.init_icarus(contig_size_template_fpath, contig_size_viewer_fpath)

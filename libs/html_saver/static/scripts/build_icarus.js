@@ -392,7 +392,6 @@ THE SOFTWARE.
                                     .style('top', itemSvgOffsetY)
                                     .style('left', margin.left);
 
-    var itemsContainer = itemsLayer.append('g');
     itemsLayer.append('rect')
             .attr('pointer-events', 'painted')
             .attr('width', chartWidth)
@@ -428,6 +427,7 @@ THE SOFTWARE.
                     e.__onclick();
                 }
     });
+    var itemsContainer = itemsLayer.append('g');
 
     var miniItems = getMiniItems(items);
     miniRects = miniItems.filter(function (item) {
@@ -615,6 +615,8 @@ THE SOFTWARE.
     display();
 
     setupInterface();
+
+    getCoordsFromURL();
 
     function display() {
         x_main = d3.scale.linear()
@@ -1441,7 +1443,7 @@ THE SOFTWARE.
         var startPos = x_main.domain()[0];
         var endPos = x_main.domain()[1];
         var domain = endPos - startPos;
-        mainTickValue = getTickValue(endPos);
+        mainTickValue = getTickValue(domain);
 
         xMainAxis.tickFormat(function(tickValue) {
                               return formatValue(startPos + tickValue * domain, mainTickValue);
@@ -1804,9 +1806,11 @@ THE SOFTWARE.
                 block.append('tspan')
                     .attr('x', -50)
                     .text('Position: ');
-                var positionLink = block.append('tspan')
-                    .style('cursor', 'pointer')
-                    .text([posVal(curBlock.start), ndash, posVal(curBlock.end), mainTickValue, ' '].join(' '));
+                if (isContigSizePlot) var positionLink = block.append('a');
+                else positionLink = block.append('tspan');
+                positionLink.attr('id', 'position_link')
+                            .style('cursor', 'pointer')
+                            .text([posVal(curBlock.start), ndash, posVal(curBlock.end), mainTickValue, ' '].join(' '));
                 if (is_expanded && !isContigSizePlot && chrContigs.indexOf(curBlock.chr) != -1)  // chromosome on this screen
                     positionLink.style('text-decoration', 'underline')
                         .style('color', '#7ED5F5')
@@ -1828,6 +1832,15 @@ THE SOFTWARE.
                             }
                             d3.event.stopPropagation();
                         });
+                if (isContigSizePlot) {
+                    positionLink.attr('href', (typeof links_to_chromosomes !== 'undefined' ? links_to_chromosomes[curBlock.chr] : 'alignment_viewer') +
+                                    '.html?assembly=' + assembly + '&contig=' + contigName  + '&start=' + curBlock.corr_start + '&end=' + curBlock.corr_end)
+                                .attr('target', '_blank')
+                                .style('text-decoration', 'underline')
+                                .style('color', '#7ED5F5');
+                    if (typeof links_to_chromosomes !== 'undefined' && curBlock.chr)
+                        positionLink.text(document.getElementById('position_link').textContent + '(' + curBlock.chr + ')');
+                }
                 if (is_expanded && !isContigSizePlot) {
                     if (prev_start == start && prev_end == end)
                         block.append('div')
@@ -1841,7 +1854,8 @@ THE SOFTWARE.
                 if (!isContigSizePlot) {
                     if (chrContigs.indexOf(curBlock.chr) == -1) {
                         block.append('a')
-                                .attr('href', (links_to_chromosomes ? links_to_chromosomes[curBlock.chr] : curBlock.chr) + '.html')
+                                .attr('href', (typeof links_to_chromosomes !== 'undefined' ? links_to_chromosomes[curBlock.chr] : curBlock.chr) +
+                                      '.html?assembly=' + assembly + '&contig=' + contigName  + '&start=' + curBlock.corr_start + '&end=' + curBlock.corr_end)
                                 .attr('target', '_blank')
                                 .style('text-decoration', 'underline')
                                 .style('color', '#7ED5F5')
@@ -1912,8 +1926,8 @@ THE SOFTWARE.
         var blockHeight = info[0][0].offsetHeight;
         curChartHeight += blockHeight;
         chart.attr('height', curChartHeight);
+        display();
     }
-
 
     function showArrows(block) {
         var verticalShift = -7;
@@ -2461,4 +2475,32 @@ THE SOFTWARE.
         };
         hideBtn.innerHTML = textToShow;
         display();
+    }
+
+    function getCoordsFromURL() {
+        var query = document.location.search;
+        query = query.split('+').join(' ');
+
+        var params = {},
+            tokens,
+            re = /[?&]?([^=]+)=([^&]*)/g;
+
+        while (tokens = re.exec(query)) {
+            params[decodeURIComponent(tokens[1])] = decodeURIComponent(tokens[2]);
+        }
+        if (params && params.assembly && params.contig && params.start && params.end) {
+            var delta = 1000;
+            setCoords([params.start - delta, params.end + delta]);
+            for (var i = 0; i < items.length; i++) {
+                if (items[i].assembly == params.assembly && items[i].name == params.contig &&
+                        items[i].corr_start == params.start && items[i].corr_end == params.end) {
+                    selected_id = items[i].groupId;
+                    showArrows(items[i]);
+                    changeInfo(items[i]);
+                    display();
+                    break;
+                }
+            }
+        }
+        return params;
     }

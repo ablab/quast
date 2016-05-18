@@ -77,6 +77,9 @@ class Alignment:
         return abs(alignment.start - self.start) <= (contigEdgeDelta * contig_len) and \
                abs(alignment.end - self.end) <= (contigEdgeDelta * contig_len)
 
+    def __hash__(self):
+        return hash((self.name, self.start, self.end, self.start_in_contig, self.end_in_contig))
+
 
 class Arc:
     def __init__(self, c1, c2):
@@ -637,8 +640,28 @@ def save_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, chr_length
         ms_types[assembly] = defaultdict(int)
         for num_contig, ref_contig in enumerate(ref_contigs):
             if ref_contig in chr_to_aligned_blocks[assembly]:
-                prev_end = None
-                for alignment in sorted(chr_to_aligned_blocks[assembly][ref_contig], key=lambda x: x.start):
+                overlapped_contigs = defaultdict(list)
+                alignments = sorted(chr_to_aligned_blocks[assembly][ref_contig], key=lambda x: x.start)
+                prev_end = 0
+                prev_alignments = []
+                for alignment in alignments:
+                    if prev_end > alignment.start:
+                        for prev_align in prev_alignments:
+                            if prev_align.end - alignment.start > 100:
+                                overlapped_contigs[prev_align].append('{contig: "' + alignment.name + '",corr_start: ' + str(alignment.start) +
+                                    ',corr_end: ' + str(alignment.end) + ',start:' + str(alignment.unshifted_start) + ',end:' + str(alignment.unshifted_end) +
+                                    ',start_in_contig:' + str(alignment.start_in_contig) + ',end_in_contig:' +
+                                    str(alignment.end_in_contig) + ',chr: "' + alignment.ref_name + '"}')
+                                overlapped_contigs[alignment].append('{contig: "' + prev_align.name + '",corr_start: ' + str(prev_align.start) +
+                                    ',corr_end: ' + str(prev_align.end) + ',start:' + str(prev_align.unshifted_start) + ',end:' + str(prev_align.unshifted_end) +
+                                    ',start_in_contig:' + str(prev_align.start_in_contig) + ',end_in_contig:' +
+                                    str(prev_align.end_in_contig) + ',chr: "' + prev_align.ref_name + '"}')
+                        prev_alignments.append(alignment)
+                    else:
+                        prev_alignments = [alignment]
+                    prev_end = max(prev_end, alignment.end)
+
+                for alignment in alignments:
                     if alignment.misassembled:
                         num_misassemblies += 1
                     assemblies_len[assembly] += abs(alignment.end_in_contig - alignment.start_in_contig) + 1
@@ -686,6 +709,10 @@ def save_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, chr_length
                         data_str[-1] += ', ambiguous: "True"'
 
                     aligned_assemblies.add(alignment.label)
+                    if overlapped_contigs[alignment]:
+                        data_str.append(',overlaps:[ ')
+                        data_str.append(','.join(overlapped_contigs[alignment]))
+                        data_str.append(']')
                     data_str.append(', structure: [ ')
                     for el in contig_structure[alignment.name]:
                         if isinstance(el, Alignment):
@@ -701,7 +728,7 @@ def save_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, chr_length
                             corr_el_start = el.start
                             corr_el_end = el.end
                             data_str.append('{type: "A",contig: "' + alignment.name + '",corr_start: ' + str(corr_el_start) + ',corr_end: ' +
-                                            str(corr_el_end) + ',start:' + str(el.start) + ',end:' + str(el.end) +
+                                            str(corr_el_end) + ',start:' + str(el.unshifted_start) + ',end:' + str(el.unshifted_end) +
                                             ',start_in_contig:' + str(el.start_in_contig) + ',end_in_contig:' +
                                             str(el.end_in_contig) + ',IDY:' + el.idy + ',chr: "' + el.ref_name + '"},')
                         elif type(el) == str:

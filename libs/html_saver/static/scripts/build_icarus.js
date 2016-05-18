@@ -733,8 +733,8 @@ THE SOFTWARE.
                     return (d.groupId == selected_id ? 2 : .4);
                 })
                 .attr('opacity', function (d) {
-                  if (!d || !d.size) return 1;
-                  return d.size > minContigSize ? 1 : paleContigsOpacity;
+                  if (!d || !d.size) return 0.65;
+                  return d.size > minContigSize ? 0.65 : paleContigsOpacity;
                 });
         rects.exit().remove();
 
@@ -762,8 +762,8 @@ THE SOFTWARE.
                     return (d.groupId == selected_id ? 2 : .4);
                 })
                 .attr('opacity', function (d) {
-                  if (!d || !d.size) return 1;
-                  return d.size > minContigSize ? 1 : paleContigsOpacity;
+                  if (!d || !d.size) return 0.65;
+                  return d.size > minContigSize ? 0.65 : paleContigsOpacity;
                 });
                 //.classed('light_color', function (d) {
                 //    return x_main(d.corr_end) - x_main(d.corr_start) > mainLanesHeight;
@@ -1199,6 +1199,11 @@ THE SOFTWARE.
             var distance = Math.abs(startCoord - ext[0]);
             if (distance < 5) return;
             var distRange = distance / (ext[1] - ext[0]);
+            if (distRange < 0.5) {
+                brush.extent([startCoord, endCoord]);
+                display();
+                return
+            }
             if (distRange > 50) {
                 distRange = distRange * 0.05;
                 var zoomDelta = (distRange - 1) * .5 * 100;
@@ -1750,7 +1755,7 @@ THE SOFTWARE.
                 .text('Size: ' + block.size + ' bp');
 
         var appendPositionElement = function(data, start, end, contigName, assembly, whereAppend, start_in_contig, end_in_contig,
-                                             prev_start, prev_end, is_expanded) {
+                                             prev_start, prev_end, is_expanded, overlapped_block) {
             var posVal = function (val) {
                 if (mainTickValue == 'Gbp')
                     return d3.round(val / 1000000000, 2);
@@ -1768,7 +1773,7 @@ THE SOFTWARE.
                 return val;
             };
 
-            var curBlock = !data ? '' : data.filter(function (block) {
+            var curBlock = !data ? (overlapped_block ? overlapped_block : '') : data.filter(function (block) {
                 if (block.type == 'A' && block.contig == contigName) {
                     if (start_in_contig && block.start_in_contig == start_in_contig && block.end_in_contig == end_in_contig
                         && block.corr_start == start) return block;
@@ -1883,6 +1888,19 @@ THE SOFTWARE.
                     blocks.append('p')
                             .text(nextBlock.mstype);
                 }
+            }
+        }
+        if (block.overlaps && block.overlaps.length > 0) {
+            var overlapsInfo = info.append('p')
+                .attr('class', 'head main');
+            var overlapsText = 'Overlaps with other contigs: ' + block.overlaps.length;
+            overlapsInfo.text(overlapsText);
+
+            for (var i = 0; i < block.overlaps.length; ++i) {
+                var nextBlock = block.overlaps[i];
+                appendPositionElement(null, nextBlock.corr_start,
+                    nextBlock.corr_end, nextBlock.contig, block.assembly, overlapsInfo, nextBlock.start_in_contig,
+                    nextBlock.end_in_contig, block.corr_start, block.corr_end, true, nextBlock);
             }
         }
         var blockHeight = info[0][0].offsetHeight;

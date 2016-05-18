@@ -392,6 +392,7 @@ THE SOFTWARE.
                                     .style('top', itemSvgOffsetY)
                                     .style('left', margin.left);
 
+    var itemsContainer = itemsLayer.append('g');
     itemsLayer.append('rect')
             .attr('pointer-events', 'painted')
             .attr('width', chartWidth)
@@ -407,7 +408,7 @@ THE SOFTWARE.
                 var laneCoords2 = laneHeight*(lane+1);
                 var itemToSelect = null;
                 var minX = 10;
-                var e = itemRects.selectAll(".mainItem").filter(function () {
+                var e = itemsContainer.selectAll(".mainItem").filter(function () {
                     var width = this.getBoundingClientRect().width;
                     var curCoords = d3.transform(d3.select(this).attr("transform")).translate;
                     var curY = curCoords[1];
@@ -427,7 +428,6 @@ THE SOFTWARE.
                     e.__onclick();
                 }
     });
-    var itemRects = itemsLayer.append('g');
 
     var miniItems = getMiniItems(items);
     miniRects = miniItems.filter(function (item) {
@@ -578,8 +578,7 @@ THE SOFTWARE.
       var featurePath = annotationsMain.append('g')
         .attr('clip-path', 'url(#clip)');
 
-    var rectItems = [];
-    var nonRectItems = [];
+    var visRectsAndPaths = [];
 
     if (isContigSizePlot) {
         var drag = d3.behavior.drag()
@@ -704,130 +703,132 @@ THE SOFTWARE.
         if (!featuresMainHidden) drawFeaturesMain(minExtent, maxExtent);
 
         // update the item rects
-        rectItems = [];
-        nonRectItems = [];
+        visRectsAndPaths = [];
         for (var item = 0; item < visItems.length; item++) {
-          if (visItems[item].supp ) {
-            var w = x_main(visItems[item].corr_end) - x_main(visItems[item].corr_start);
-            var triangle_width = Math.sqrt(0.5) * mainLanesHeight / 2;
-            if (w > triangle_width * 1.5) nonRectItems.push(visItems[item]);
+            visRectsAndPaths.push(visItems[item]);
+            if (visItems[item].triangles)
+                for (var i = 0; i < visItems[item].triangles.length; i++)
+                {
+                    var triangle = visItems[item].triangles[i];
+                    var w = x_main(triangle.corr_end) - x_main(triangle.corr_start);
+                    var triangle_width = Math.sqrt(0.5) * mainLanesHeight / 2;
+                    if (w > triangle_width * 1.5) visRectsAndPaths.push(triangle);
+                }
         }
-          else rectItems.push(visItems[item]);
-        }
-        rects = itemRects.selectAll('.item')
-                .data(rectItems, function (d) {
-                    return d.id;
+        var oldItems = itemsContainer.selectAll('.item')
+                .data(visRectsAndPaths, function (item) {
+                    return item.id;
                 })
-                .attr('transform', function (d) {
-                    var x = x_main(Math.max(minExtent, d.corr_start));
-                    var y = y_main(d.lane) + .25 * lanesInterval;
-                    if (INTERLACE_BLOCKS_VERT_OFFSET) y += offsetsY[d.order % 3] * lanesInterval;
-                    return 'translate(' + x + ', ' + y + ')';
+                .attr('transform', function (item) {
+                    return getTranslate(item);
                 })
-                .attr('width', function (d) {
-                    var w = x_main(Math.min(maxExtent, d.corr_end)) - x_main(Math.max(minExtent, d.corr_start));
-                    return w;
+                .attr('width', function (item) {
+                    return getItemWidth(item);
                 })
                 .attr('stroke', 'black')
-                .attr('stroke-width', function (d) {
-                    return (d.groupId == selected_id ? 2 : .4);
+                .attr('stroke-width', function (item) {
+                    return getItemStrokeWidth(item);
                 })
-                .attr('opacity', function (d) {
-                  if (!d || !d.size) return 0.65;
-                  return d.size > minContigSize ? 0.65 : paleContigsOpacity;
+                .attr('opacity', function (item) {
+                    return getItemOpacity(item);
                 });
-        rects.exit().remove();
+        oldItems.exit().remove();
 
-        var newRects = rects.enter().append('rect')
-                .attr('class', function (d) {
-                    if (!d.marks || d.type) return 'item mainItem ' + d.objClass;
-                    else return 'item';
-                })// Define the gradient
-                .attr('fill', function (d) {
-                    if (d.marks && !d.type) return addGradient(d, d.marks, true);
-                })
-                .attr('transform', function (d) {
-                    var x = x_main(Math.max(minExtent, d.corr_start));
-                    var y = y_main(d.lane) + .25 * lanesInterval;
-                    if (INTERLACE_BLOCKS_VERT_OFFSET) y += offsetsY[d.order % 3] * lanesInterval;
-                    return 'translate(' + x + ', ' + y + ')';
-                })
-                .attr('width', function (d) {
-                    var w = x_main(Math.min(maxExtent, d.corr_end)) - x_main(Math.max(minExtent, d.corr_start));
-                    return w;
-                })
-                .attr('height', mainLanesHeight)
-                .attr('stroke', 'black')
-                .attr('stroke-width', function (d) {
-                    return (d.groupId == selected_id ? 2 : .4);
-                })
-                .attr('opacity', function (d) {
-                  if (!d || !d.size) return 0.65;
-                  return d.size > minContigSize ? 0.65 : paleContigsOpacity;
-                });
-                //.classed('light_color', function (d) {
-                //    return x_main(d.corr_end) - x_main(d.corr_start) > mainLanesHeight;
-                //});
+        var newItems = oldItems.enter().append('g').each(function(itemData) {
+            var container = d3.select(this);
+            var itemFigure = itemData.misassembledEnds ? container.append('path') : container.append('rect');
+            itemFigure.attr('class', function (item) {
+                            if (item.misassembledEnds) {
+                                if (!item.objClass) item.objClass = 'misassembled';
+                                return 'item end ' + item.objClass;
+                            }
+                            if (!item.marks || item.type)
+                                return 'item mainItem ' + item.objClass;
+                            else return 'item';
+                        })// Define the gradient
+                        .attr('fill', function (item) {
+                            if (item.marks && !item.type)
+                                return addGradient(item, item.marks, true);
+                        })
+                        .attr('transform', function (item) {
+                            return getTranslate(item);
+                        })
+                        .attr('width', function (item) {
+                            return getItemWidth(item);
+                        })
+                        .attr('height', mainLanesHeight)
+                        .attr('stroke', 'black')
+                        .attr('stroke-width', function (item) {
+                            return getItemStrokeWidth(item);
+                        })
+                        .attr('opacity', function (item) {
+                            return getItemOpacity(item);
+                        })
+                        .attr('pointer-events', function (item) {
+                            return item.misassembledEnds ? 'none' : 'painted';
+                        })
+                        .attr('d', function(item) {
+                            if (item.misassembledEnds) return make_triangle(item);
+                        });
+        });
+
+        function getItemWidth(item) {
+            var w = x_main(Math.min(maxExtent, item.corr_end)) - x_main(Math.max(minExtent, item.corr_start));
+            return w;
+        }
+
+        function getItemStrokeWidth(item) {
+            if (item.misassembledEnds) return 0;
+            return (item.groupId == selected_id ? 2 : .4);
+        }
+
+        function getItemOpacity(item) {
+            if (item.misassembledEnds) return 1;
+            if (!item || !item.size) return 0.65;
+            return item.size > minContigSize ? 0.65 : paleContigsOpacity;
+        }
+
+        function getTranslate(item) {
+            if (item.misassembledEnds) {
+                var x = item.misassembledEnds == "L" ? x_main(item.corr_start) : x_main(item.corr_end);
+                var y = y_main(item.lane) + .25 * lanesInterval;
+                if (INTERLACE_BLOCKS_VERT_OFFSET) y += offsetsY[item.order % 3] * lanesInterval;
+                if (item.groupId == selected_id) {
+                    if (item.misassembledEnds == "L") x += 1;
+                    else x += -1;
+                }
+                return 'translate(' + x + ', ' + y + ')';
+            }
+            var x = x_main(Math.max(minExtent, item.corr_start));
+            var y = y_main(item.lane) + .25 * lanesInterval;
+            if (INTERLACE_BLOCKS_VERT_OFFSET) y += offsetsY[item.order % 3] * lanesInterval;
+            return 'translate(' + x + ', ' + y + ')';
+        }
 
         if (BLOCKS_SHADOW) other.attr('filter', 'url(#shadow)');
 
-        var nonRects = itemRects.selectAll('path')
-                        .data(nonRectItems, function (d) {
-                            return d.id;
-                        })
-                        .attr('transform',  function (d) {
-                            var x = d.supp == "L" ? x_main(d.corr_start) : x_main(d.corr_end);
-                            if (d.supp == "L") x += .3;
-                            else x += -.3;
-                            var y = y_main(d.lane) + .25 * lanesInterval;
-                            if (INTERLACE_BLOCKS_VERT_OFFSET) y += offsetsY[d.order % 3] * lanesInterval;
-                            if (d.groupId == selected_id) {
-                                if (d.supp == "L") x += 1;
-                                else x += -1;
-                            }
-                            return 'translate(' + x + ', ' + y + ')';
-                        });
-
-        function make_triangle(d) {
+        function make_triangle(item) {
             var startX = 0;
-            var startY = d.groupId == selected_id ? 2 : 0;
-            if (d.supp == "L")
+            var startY = item.groupId == selected_id ? 2 : 0;
+            if (item.misassembledEnds == "L")
                 path = ['M', startX, startY, 'L', startX + (0.5 * (mainLanesHeight - startY) / 2),
                     (startY + (mainLanesHeight - startY)) / 2, 'L', startX, mainLanesHeight - startY, 'L',  startX, startY].join(' ');
-            if (d.supp == "R")
+            if (item.misassembledEnds == "R")
                 path = ['M', startX, startY, 'L', startX - (0.5 * (mainLanesHeight - startY) / 2),
                     (startY + (mainLanesHeight - startY)) / 2, 'L', startX, mainLanesHeight - startY, 'L',  startX, startY].join(' ');
             return path;
         }
 
-        nonRects.exit().remove();
-
-        var newNonRects = nonRects.enter().append('path')
-                .attr('class', function (d) {
-                    return 'end ' + d.objClass;
-                })
-                .attr('transform', function (d) {
-                    var x = d.supp == "L" ? x_main(d.corr_start) : x_main(d.corr_end);
-                    var y = y_main(d.lane) + .25 * lanesInterval;
-                    if (INTERLACE_BLOCKS_VERT_OFFSET) y += offsetsY[d.order % 3] * lanesInterval;
-                    if (d.groupId == selected_id) {
-                        if (d.supp == "L") x += 1;
-                        else x += -1;
-                    }
-                    return 'translate(' + x + ', ' + y + ')';
-                })
-                .attr('pointer-events', 'none')
-                .attr('d', make_triangle);
-
-        newRects.on('click', function (item) {
-            selected_id = item.groupId;
-            changeInfo(item);
-        })
+        newItems.on('click', function (item) {
+                        selected_id = item.groupId;
+                        changeInfo(item);
+                    })
                 .on('mouseenter', glow)
                 .on('mouseleave', disglow);
         var prevX = 0;
         var prevLane = -1;
-        var visTexts = rectItems.filter(function (d) {
+        var visTexts = visRectsAndPaths.filter(function (d) {
+            if (!d.name) return;
             var textStart = x_main(Math.max(minExtent, d.corr_start));
             if (textStart - prevX > 20 || d.lane != prevLane) {
                 var visWidth = x_main(Math.min(maxExtent, d.corr_end)) - textStart;
@@ -858,14 +859,14 @@ THE SOFTWARE.
 
         var newTexts = texts.enter().append('text')
                             .attr('class', 'itemLabel')
-                                .attr('x', function(d) {
-                                   return x_main(Math.max(minExtent, d.corr_start)) + 5;
-                                })
-                                .attr('y', function(d) {
-                                    var y = y_main(d.lane) + .25 * lanesInterval;
-                                    if (INTERLACE_BLOCKS_VERT_OFFSET) y += offsetsY[d.order % 3] * lanesInterval;
-                                    return y + 20;
-                                })
+                            .attr('x', function(d) {
+                               return x_main(Math.max(minExtent, d.corr_start)) + 5;
+                            })
+                            .attr('y', function(d) {
+                                var y = y_main(d.lane) + .25 * lanesInterval;
+                                if (INTERLACE_BLOCKS_VERT_OFFSET) y += offsetsY[d.order % 3] * lanesInterval;
+                                return y + 20;
+                            })
                             .text(function(d) {
                                 if (!d.size || d.size > minContigSize) return visibleText(d);
                             });
@@ -954,7 +955,7 @@ THE SOFTWARE.
             for (var i = 0; i < lane.length; i++) {
                 var item = lane[i];
                 if (item.mis_ends) var misassembled_ends = item.mis_ends.split(';');
-                item.supp = '';
+                item.misassembledEnds = '';
                 item.lane = laneId;
                 item.id = itemId;
                 item.groupId = groupId;
@@ -964,27 +965,28 @@ THE SOFTWARE.
                     currentLen += item.size;
                     item.corr_end = currentLen;
                 }
-                items.push(item);
+                item.triangles = Array();
                 itemId++;
                 numItems++;
                 if (item.mis_ends && misassembled_ends) {
                     for (var num = 0; num < misassembled_ends.length; num++) {
                         if (!misassembled_ends[num]) continue;
-                        var suppItem = {};
-                        suppItem.name = item.name;
-                        suppItem.corr_start = item.corr_start;
-                        suppItem.corr_end = item.corr_end;
-                        suppItem.assembly = item.assembly;
-                        suppItem.id = itemId;
-                        suppItem.lane = laneId;
-                        suppItem.groupId = groupId;
-                        suppItem.supp = misassembled_ends[num];
-                        suppItem.misassemblies = item.misassemblies.split(';')[num];
-                        items.push(suppItem);
+                        var triangleItem = {};
+                        triangleItem.name = item.name;
+                        triangleItem.corr_start = item.corr_start;
+                        triangleItem.corr_end = item.corr_end;
+                        triangleItem.assembly = item.assembly;
+                        triangleItem.id = itemId;
+                        triangleItem.lane = laneId;
+                        triangleItem.groupId = groupId;
+                        triangleItem.misassembledEnds = misassembled_ends[num];
+                        triangleItem.misassemblies = item.misassemblies.split(';')[num];
+                        item.triangles.push(triangleItem);
                         itemId++;
                         numItems++;
                     }
                 }
+                items.push(item);
                 groupId++;
             }
 
@@ -1043,7 +1045,7 @@ THE SOFTWARE.
                 break
             }
         }
-        itemRects.select('.glow').remove();
+        itemsContainer.select('.glow').remove();
         display();
     }
 
@@ -1253,9 +1255,9 @@ THE SOFTWARE.
     function getNumberOfContigs(x) {
         lineCountContigs.selectAll('g')
                 .remove();
-        for (var item = 0; item < rectItems.length; item++) {
-            if (x_main(rectItems[item].corr_start) <= x && x <= x_main(rectItems[item].corr_end)) {
-                var curItem = rectItems[item];
+        for (var item = 0; item < visRectsAndPaths.length; item++) {
+            if (x_main(visRectsAndPaths[item].corr_start) <= x && x <= x_main(visRectsAndPaths[item].corr_end)) {
+                var curItem = visRectsAndPaths[item];
                 if (curItem.objClass.search("disabled") != -1)
                     continue;
                 order = (curItem.order + 1).toString();
@@ -1616,70 +1618,73 @@ THE SOFTWARE.
     // ugly - but draws mini 2x faster than append lines or line generator
     // is there a better way to do a bunch of lines as a single path with d3?
     function getMiniItems(items) {
-        var miniPathHeight = 10;
-
-        var paths = {}, d, result = [];
+        var result = [];
         var misassemblies = {};
         var curLane = 0;
-        var isSimilarNow = "False";
         var numItem = 0;
 
         var countSupplementary = 0;
         for (var c, i = 0; i < items.length; i++) {
-            d = items[i];
-            if (d.lane != curLane) {
+            item = items[i];
+            if (item.lane != curLane) {
                 numItem = 0;
                 countSupplementary = 0;
             }
-            var isSmall = x_mini(d.corr_end) - x_mini(d.corr_start) < miniPathHeight;
-
-            d.misassembled = d.misassemblies ? "True" : "False";
-            c = (d.misassembled == "False" ? "" : "misassembled");
-            c += (d.similar == "True" ? " similar" : "");
-            //c += ((!d.supp && !isSmall) ? " light_color" : "");
-            if (d.supp) countSupplementary++;
-            if (INTERLACE_BLOCKS_COLOR) c += ((numItem - countSupplementary) % 2 == 0 ? " odd" : "");
-            var text = '';
-            if (isContigSizePlot) {
-                if (d.type == "small_contigs") c += " disabled";
-                else if (d.type == "misassembled") c += " misassembled";
-                else if (d.type == "correct") c += "";
-                else c += " unknown";
-            }
-
-            if (d.marks) {  // NX for contig size plot
-              var marks = d.marks;
-              text = marks;
-              marks = marks.split(', ');
-              for (var m = 0; m < marks.length; m++)
-                c += " " + marks[m].toLowerCase();
-            }
-
-            items[i].objClass = c;
-            items[i].order = numItem - countSupplementary;
-
-            if (!paths[c]) paths[c] = '';
-
-            var startX = d.supp == "R" ? x_mini(d.corr_end) : x_mini(d.corr_start);
-            var endX = x_mini(d.corr_end);
-            var pathEnd = x_mini(d.corr_end);
-            var startY = y_mini(d.lane) + .18 * miniLanesHeight;
-            if (INTERLACE_BLOCKS_VERT_OFFSET) startY += offsetsMiniY[items[i].order % 3] * miniLanesHeight;
-            var path = '';
-            if (!isSmall) {
-                if (d.supp == "L") path = ['M', startX, startY, 'L', startX + (Math.sqrt(3) * miniPathHeight / 2), startY + miniPathHeight / 2,
-                  'L', startX, startY + miniPathHeight, 'L',  startX, startY].join(' ');
-                else if (d.supp == "R") path = ['M', startX, startY, 'L', startX - (Math.sqrt(3) * miniPathHeight / 2), startY + miniPathHeight / 2,
-                  'L', startX, startY + miniPathHeight, 'L',  startX, startY].join(' ');
-            }
-            misassemblies[c] = d.misassemblies;
-            isSimilarNow = d.similar;
-            curLane = d.lane;
+            result.push(createMiniItem(item, curLane, numItem, countSupplementary));
+            curLane = item.lane;
             numItem++;
-            result.push({objClass: d.objClass, path: path, misassemblies: misassemblies[d.objClass], supp: d.supp,
-                start: startX, end: endX, y: startY, size: d.size, text: text, id: d.id, type: d.type});
+            if (item.triangles && item.triangles.length > 0)
+                for (var j = 0; j < item.triangles.length; j++) {
+                    result.push(createMiniItem(item.triangles[j], curLane, numItem, countSupplementary));
+                    numItem++;
+                    countSupplementary++;
+                }
         }
         return result;
+    }
+
+    function createMiniItem(item, curLane, numItem, countSupplementary) {
+        var miniPathHeight = 10;
+        var isSmall = x_mini(item.corr_end) - x_mini(item.corr_start) < miniPathHeight;
+
+        item.misassembled = item.misassemblies ? "True" : "False";
+        c = (item.misassembled == "False" ? "" : "misassembled");
+        c += (item.similar == "True" ? " similar" : "");
+        //c += ((!item.misassembledEnds && !isSmall) ? " light_color" : "");
+        if (INTERLACE_BLOCKS_COLOR) c += ((numItem - countSupplementary) % 2 == 0 ? " odd" : "");
+        var text = '';
+        if (isContigSizePlot) {
+            if (item.type == "small_contigs") c += " disabled";
+            else if (item.type == "misassembled") c += " misassembled";
+            else if (item.type == "correct") c += "";
+            else c += " unknown";
+        }
+
+        if (item.marks) {  // NX for contig size plot
+          var marks = item.marks;
+          text = marks;
+          marks = marks.split(', ');
+          for (var m = 0; m < marks.length; m++)
+            c += " " + marks[m].toLowerCase();
+        }
+
+        item.objClass = c;
+        item.order = numItem - countSupplementary;
+
+        var startX = item.misassembledEnds == "R" ? x_mini(item.corr_end) : x_mini(item.corr_start);
+        var endX = x_mini(item.corr_end);
+        var pathEnd = x_mini(item.corr_end);
+        var startY = y_mini(item.lane) + .18 * miniLanesHeight;
+        if (INTERLACE_BLOCKS_VERT_OFFSET) startY += offsetsMiniY[items[i].order % 3] * miniLanesHeight;
+        var path = '';
+        if (!isSmall) {
+            if (item.misassembledEnds == "L") path = ['M', startX, startY, 'L', startX + (Math.sqrt(3) * miniPathHeight / 2), startY + miniPathHeight / 2,
+              'L', startX, startY + miniPathHeight, 'L',  startX, startY].join(' ');
+            else if (item.misassembledEnds == "R") path = ['M', startX, startY, 'L', startX - (Math.sqrt(3) * miniPathHeight / 2), startY + miniPathHeight / 2,
+              'L', startX, startY + miniPathHeight, 'L',  startX, startY].join(' ');
+        }
+        return {objClass: item.objClass, path: path, misassemblies: item.misassemblies, misassembledEnds: item.misassembledEnds,
+            start: startX, end: endX, y: startY, size: item.size, text: text, id: item.id, type: item.type};
     }
 
     function getTextSize(text, size) {
@@ -1687,18 +1692,19 @@ THE SOFTWARE.
     }
 
     function glow() {
-        itemRects.append('rect')
+        var selectedItem = d3.select(this).select('rect');
+        itemsContainer.append('rect')
                 .attr('class', 'glow')
                 .attr('pointer-events', 'none')
-                .attr('width', d3.select(this).attr('width'))
-                .attr('height', d3.select(this).attr('height'))
+                .attr('width', selectedItem.attr('width'))
+                .attr('height', selectedItem.attr('height'))
                 .attr('fill', 'white')
                 .attr('opacity', .3)
-                .attr('transform', d3.select(this).attr('transform'));
+                .attr('transform', selectedItem.attr('transform'));
     }
 
     function disglow() {
-        itemRects.select('.glow').remove();
+        itemsContainer.select('.glow').remove();
     }
 
     function getVisibleText(fullText, l, lenChromosome) {
@@ -1979,24 +1985,34 @@ THE SOFTWARE.
         d3.event.stopPropagation();
     }
 
-    function showMisassemblies() {
+     function showMisassemblies() {
         for (var numItem = 0; numItem < items.length; numItem++) {
             if (items[numItem].misassemblies) {
-                var msTypes = items[numItem].misassemblies.split(';');
-                var isMisassembled = "False";
-                for (var i = 0; i < msTypes.length; i++) {
-                    if (msTypes[i] && document.getElementById(msTypes[i]).checked) isMisassembled = "True";
-                }
-                if (isMisassembled == "True" && items[numItem].misassembled == "False") {
-                    items[numItem].objClass = items[numItem].objClass.replace("disabled", "misassembled");
-                }
-                else if (isMisassembled == "False")
-                    items[numItem].objClass = items[numItem].objClass.replace(/\bmisassembled\b/g, "disabled");
-                items[numItem].misassembled = isMisassembled;
+                items[numItem] = changeMisassembledStatus(items[numItem]);
+                if (items[numItem].triangles && items[numItem].triangles.length > 0)
+                    for (var i = 0; i < items[numItem].triangles.length; i++) {
+                        if (!items[numItem].triangles[i].objClass) items[numItem].triangles[i].objClass = "misassembled";
+                        items[numItem].triangles[i] = changeMisassembledStatus(items[numItem].triangles[i]);
+                    }
             }
         }
-        hideUncheckedMisassemblies(itemRects);
+        hideUncheckedMisassemblies(itemsContainer);
         hideUncheckedMisassemblies(chart);
+    }
+
+    function changeMisassembledStatus(item) {
+        var msTypes = item.misassemblies.split(';');
+        var isMisassembled = "False";
+        for (var i = 0; i < msTypes.length; i++) {
+            if (msTypes[i] && document.getElementById(msTypes[i]).checked) isMisassembled = "True";
+        }
+        if (isMisassembled == "True" && item.misassembled == "False") {
+            item.objClass = item.objClass.replace("disabled", "misassembled");
+        }
+        else if (isMisassembled == "False")
+            item.objClass = item.objClass.replace(/\bmisassembled\b/g, "disabled");
+        item.misassembled = isMisassembled;
+        return item;
     }
 
     function hideUncheckedMisassemblies(track) {
@@ -2129,7 +2145,7 @@ THE SOFTWARE.
     function addLegendItemWithText(legend, offsetY, className, description, marks) {
         var addOdd = className == 'misassembled light_color';
         legend.append('g')
-                .attr('class', 'item mainItem legend ' + className)
+                .attr('class', 'item miniItem legend ' + className)
                 .append('rect')
                 .attr('width', legendItemWidth)
                 .attr('height', legendItemHeight)
@@ -2141,7 +2157,7 @@ THE SOFTWARE.
                 });
         if (addOdd)
             legend.append('g')
-                .attr('class', 'item mainItem legend ' + className + ' odd')
+                .attr('class', 'item miniItem legend ' + className + ' odd')
                 .append('rect')
                 .attr('width', legendItemWidth)
                 .attr('height', legendItemHeight)

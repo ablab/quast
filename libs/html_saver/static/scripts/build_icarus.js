@@ -1245,7 +1245,7 @@ THE SOFTWARE.
             if (parseInt(textBox.value)) minContigSize = parseInt(textBox.value);
             else if (key == 13) minContigSize = 0;
             //only for contig size plot
-            mini.selectAll('path')
+            mini.selectAll('.item')
                 .attr('opacity', function (d) {
                   if (!d || !d.size) return 1;
                   return d.size > minContigSize ? 1 : paleContigsOpacity;
@@ -1621,7 +1621,6 @@ THE SOFTWARE.
     // is there a better way to do a bunch of lines as a single path with d3?
     function getMiniItems(items) {
         var result = [];
-        var misassemblies = {};
         var curLane = 0;
         var numItem = 0;
 
@@ -1657,6 +1656,7 @@ THE SOFTWARE.
         var text = '';
         if (isContigSizePlot) {
             if (item.type == "small_contigs") c += " disabled";
+            else if (item.type == "unaligned") c += " disabled";
             else if (item.type == "misassembled") c += " misassembled";
             else if (item.type == "correct") c += "";
             else c += " unknown";
@@ -1885,7 +1885,7 @@ THE SOFTWARE.
         var numBlock = 0;
         appendPositionElement(block.structure, block.corr_start, block.corr_end, block.name, block.assembly, info);
 
-        if (!isContigSizePlot) showArrows(block);
+        showArrows(block);
         if (block.structure && block.structure.length > 0) {
             var blocks = info.append('p')
                     .attr('class', 'head main');
@@ -1942,7 +1942,8 @@ THE SOFTWARE.
             for (var i = 0; i < block.structure.length; ++i) {
                 var nextBlock = block.structure[i];
                 if (nextBlock.type == "A") {
-                    if (!(nextBlock.corr_start <= block.corr_start && block.corr_end <= nextBlock.corr_end) && chrContigs.indexOf(nextBlock.chr) != -1) {
+                    if (!(nextBlock.corr_start <= block.corr_start && block.corr_end <= nextBlock.corr_end) &&
+                        (isContigSizePlot || chrContigs.indexOf(nextBlock.chr) != -1)) {
                         arrows.push({start: nextBlock.corr_start, end: nextBlock.corr_end, lane: block.lane, selected: false});
                         mini.append('g')
                                 .attr('transform', 'translate(' + x_mini((nextBlock.corr_end + nextBlock.corr_start) / 2) + ',' + verticalShift +')')
@@ -2141,7 +2142,7 @@ THE SOFTWARE.
 
     function appendLegendContigSize(legend) {
         if (items[0].structure && items[0].structure.length > 0) {
-            var classes = ['correct', 'misassembled', 'unknown'];
+            var classes = ['correct', 'misassembled', 'disabled'];
             var classMarks = ['', '', ''];
             var classDescriptions = ['correct contigs', 'misassembled contigs', 'unaligned contigs'];
         }

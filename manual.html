@@ -66,7 +66,7 @@
     </style>
 </head>
 <body>
-<h1>QUAST 4.0 manual</h1>
+<h1>QUAST 4.1 manual</h1>
 
 <p> QUAST stands for <u>QU</u>ality <u>AS</u>sessment <u>T</u>ool.
     The tool evaluates genome assemblies by computing various metrics. This document provides instructions
@@ -78,7 +78,8 @@
     at <a href="http://quast.sf.net/">http://quast.sf.net/</a>.
     <br>
     <br>
-    QUAST utilizes <a href="http://mummer.sourceforge.net/">MUMmer</a>, <a href="http://exon.gatech.edu/GeneMark/">GeneMarkS</a>,
+    QUAST utilizes <a href="http://www.csd.uwo.ca/%7Eilie/E-MEM/">E-MEM</a> (an improvement over <a href="http://mummer.sourceforge.net/">MUMmer</a>),
+    <a href="http://exon.gatech.edu/GeneMark/">GeneMarkS</a>,
     <a href="http://exon.gatech.edu/GeneMark/gmes_instructions.html">GeneMark-ES</a>, <a href="http://cbcb.umd.edu/software/glimmerhmm/">GlimmerHMM</a>,
     and <a href="http://gage.cbcb.umd.edu/index.html">GAGE</a>.
     In addition, MetaQUAST uses <a href="http://exon.gatech.edu/GeneMark/">MetaGeneMark</a>, <a href="http://sourceforge.net/p/krona/home/krona/">Krona tools</a>,
@@ -93,7 +94,7 @@
     for guidelines on how to complete the licensing process.
     <br>
     <br>
-    Version 4.0 of QUAST was released under GPL v2 on 19 April 2016. Note that some of build-in third-party tools are not under GPL v2. See <a href="LICENSE.txt">LICENSE</a> for details.
+    Version 4.1 of QUAST was released under GPL v2 on XX May 2016. Note that some of build-in third-party tools are not under GPL v2. See <a href="LICENSE.txt">LICENSE</a> for details.
 </p>
 
 <h2>Contents</h2>
@@ -179,11 +180,11 @@ Or on Ubuntu by typing:
     sudo apt-get install python-matplotlib
 </pre>
 <br>
-To download the <a href="https://downloads.sourceforge.net/project/quast/quast-4.0.tar.gz">QUAST source code tarball</a> and extract it, type:
+To download the <a href="https://downloads.sourceforge.net/project/quast/quast-4.1.tar.gz">QUAST source code tarball</a> and extract it, type:
 <pre class="code">
-    wget https://downloads.sourceforge.net/project/quast/quast-4.0.tar.gz
-    tar -xzf quast-4.0.tar.gz
-    cd quast-4.0
+    wget https://downloads.sourceforge.net/project/quast/quast-4.1.tar.gz
+    tar -xzf quast-4.1.tar.gz
+    cd quast-4.1
 </pre>
 
 <p>
@@ -215,9 +216,9 @@ which runs only two simple --test commands.
 </p>
 
 <p>
-Note: you should place quast-4.0 directory in the final destination before
+Note: you should place quast-4.1 directory in the final destination before
 the first use (e.g. before run with --test). If you want to move QUAST to 
-some new place after several usages you should use a clean copy of quast-4.0.
+some new place after several usages you should use a clean copy of quast-4.1.
 This limitation is caused by auto-generation of absolute paths in compiled 
 modules of QUAST.
 </p>

@@ -66,7 +66,24 @@ Submitted (2016)
 
 Third-party tools incorporated into QUAST:
 
-1. GeneMarkS as well as MetaGeneMark and GeneMark-ES gene prediction software 
+1. QUAST aligns contigs to reference genomes using E-MEM aligner which is an
+improvement of a well-known Nucmer aligner from MUMmer package.
+
+For more details about E-MEM please refer to
+http://www.csd.uwo.ca/~ilie/E-MEM/ website and to the following paper:
+
+Nilesh Khiste and Lucian Ilie
+E-MEM: efficient computation of maximal exact matches for very large genomes.
+Bioinformatics (2015), 31(4): 509-14.
+
+For more details about MUMer please refer to
+http://mummer.sourceforge.net/ website and to the following paper:
+
+Kurtz, S, Phillippy, A, Delcher, AL, Smoot, M, Shumway, M, Antonescu, C, Salzberg, SL
+Versatile and open software for comparing large genomes.
+Genome Biol. (2004), 5, 2:R12.
+
+2. GeneMarkS as well as MetaGeneMark and GeneMark-ES gene prediction software
 was provided by Mark Borodovsky and Georgia Institute of Technology. 
 If you are academic, non-profit institution or U.S. Government agency
 please, see License Agreement in the file libs/genemark/linux_64/LICENSE or online at
@@ -101,7 +118,7 @@ John Besemer and Mark Borodovsky
 Heuristic approach to deriving models for gene finding 
 Nucleic Acids Research (1999) 27, pp 3911-3920
 
-2. Dr. Salzberg kindly agreed to include GAGE scripts as a part of QUAST under GPLv2.
+3. Dr. Salzberg kindly agreed to include GAGE scripts as a part of QUAST under GPLv2.
 These scripts was also modified by QUAST team. They can be distributed and used in 
 QUAST pipeline with current remarks and citation. 
 For more details about GAGE please refer to 
@@ -114,7 +131,7 @@ Arthur L. Delcher, Michael Roberts, Guillaume Marçais, Mihai Pop and
 James A. Yorke (2011) GAGE: A critical evaluation of genome assemblies and 
 assembly algorithms. Genome Res. 22(3): doi:10.1101/gr.131383.111
 
-3. QUAST module contigs_analyzer.py is based on assess_assembly.pl script 
+4. QUAST module contigs_analyzer.py is based on assess_assembly.pl script
 which was kindly provided by Plantagora team.
 For more details about assess_assembly.pl please refer to 
 http://www.plantagora.org website and to the following paper:
@@ -123,14 +140,14 @@ Barthelson R, McFarlin AJ, Rounsley SD, Young S (2011) Plantagora: Modeling
 Whole Genome Sequencing and Assembly of Plant Genomes. PLoS ONE 6(12): e28436. 
 doi:10.1371/journal.pone.0028436
 
-4. QUAST Gene Finding module uses GlimmerHMM for predicting genes in eukaryoutes.
+5. QUAST Gene Finding module uses GlimmerHMM for predicting genes in eukaryoutes.
 For more details about GlimmerHMM please refer to
 http://cbcb.umd.edu/software/glimmerhmm/ website and to the following paper:
 
 Majoros, W.H., Pertea, M., and Salzberg, S.L. TigrScan and GlimmerHMM:
 two open-source ab initio eukaryotic gene-finders. Bioinformatics. 20(16): 2878-9.
 
-5. MetaQUAST uses BLAST and SILVA 16S rRNA database for predicting content of de novo
+6. MetaQUAST uses BLAST and SILVA 16S rRNA database for predicting content of de novo
 metagenomic assemblies. 
 Users from NON-ACADEMIC environments can access downloaded SILVA database but only 
 for limited/temporary use (only for test purposes). All downloaded files have 
@@ -152,7 +169,7 @@ Quast C, Pruesse E, Yilmaz P, Gerken J, Schweer T, Yarza P, Peplies J, Glöckner
 The SILVA ribosomal RNA gene database project: improved data processing and web-based tools. 
 Nucl. Acids Res. 41 (D1): D590-D596.
 
-6. MetaQUAST uses Krona tools for visualizing dataset taxonomic profile based on
+7. MetaQUAST uses Krona tools for visualizing dataset taxonomic profile based on
 reference genomes found in SILVA database. Please, see License Agreement in the file
 libs/kronatools/LICENSE.txt or online at
 http://sourceforge.net/p/krona/git/ci/master/tree/KronaTools/LICENSE.txt.
@@ -163,7 +180,7 @@ http://sourceforge.net/p/krona/home/krona/ website and to the following paper:
 Ondov BD, Bergman NH, and Phillippy AM. Interactive metagenomic visualization in a Web
 browser. BMC Bioinformatics. 2011 Sep 30; 12(1):385.
 
-6. QUAST Structural Variation Finding module uses Bowtie2, SAMtools and Manta.
+8. QUAST Structural Variation Finding module uses Bowtie2, SAMtools and Manta.
 For more details about Bowtie2 please refer to
 http://bowtie-bio.sourceforge.net/bowtie2/index.shtml website and to the following paper:
 

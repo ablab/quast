@@ -526,7 +526,7 @@ THE SOFTWARE.
         .attr("d", "M0,-5L10,0L0,5");
     d3.select('#arrow').select('path').style('fill', '#777777');
 
-    var separatedLines = [];
+    var separatedLines = [], breakpointLines = [];
     var currentLen = 0;
     if (!isContigSizePlot) {
         if (chrContigs.length > 1) {
@@ -546,6 +546,7 @@ THE SOFTWARE.
                     contigLines[line].lane = lanes[lane].id;
         }
         separatedLines = contigLines;
+        breakpointLines = getBreakpointLines();
         for (var i = 0; i < items.length; i++) addGradient(items[i], items[i].marks, true);
         mini.append('g').selectAll('miniItems')
             .data(separatedLines)
@@ -642,6 +643,9 @@ THE SOFTWARE.
                 visibleLines = separatedLines.filter(function (d) {
                     if (d.corr_end < maxExtent) return d;
                 }),
+                visibleBreakpointLines = breakpointLines.filter(function (d) {
+                    if (d.pos < maxExtent) return d;
+                }),
                 visibleLinesLabels = separatedLines.filter(function (d) {
                     if (d.name && d.corr_start < maxExtent && d.corr_end > minExtent) return d;
                     if (d.label) {
@@ -700,6 +704,22 @@ THE SOFTWARE.
                 })
                 .attr('fill', '#300000');
 
+        //misassemblies breakpoints lines
+        linesLabelsLayer.selectAll('.dashed_lines').remove();
+
+        lines = itemLines.selectAll('.g')
+                .data(visibleBreakpointLines, function (d) {
+                    return d.id;
+                })
+                .enter().append('g')
+                .attr('class', 'dashed_lines')
+                .attr('transform', function (d) {
+                    return 'translate(' + x_main(d.pos) + ', ' + d.y + ')';
+                });
+        lines.append('path')
+                .attr('d', 'M0,0V' + mainLanesHeight)
+                .attr('fill', '#300000');
+
         //update features
         removeTooltip();
         if (!featuresMainHidden) drawFeaturesMain(minExtent, maxExtent);
@@ -727,11 +747,10 @@ THE SOFTWARE.
                 .attr('width', function (item) {
                     return getItemWidth(item);
                 })
-                .attr('stroke', 'black')
                 .attr('stroke-width', function (item) {
                     return getItemStrokeWidth(item);
                 })
-                .attr('opacity', function (item) {
+                .attr('fill-opacity', function (item) {
                     return getItemOpacity(item);
                 });
         oldItems.exit().remove();
@@ -759,15 +778,14 @@ THE SOFTWARE.
                             return getItemWidth(item);
                         })
                         .attr('height', mainLanesHeight)
-                        .attr('stroke', 'black')
                         .attr('stroke-width', function (item) {
                             return getItemStrokeWidth(item);
                         })
-                        .attr('opacity', function (item) {
+                        .attr('fill-opacity', function (item) {
                             return getItemOpacity(item);
                         })
                         .attr('pointer-events', function (item) {
-                            return item.misassembledEnds ? 'none' : 'painted';
+                            return (item.misassembledEnds || item.notActive) ? 'none' : 'painted';
                         })
                         .attr('d', function(item) {
                             if (item.misassembledEnds) return make_triangle(item);
@@ -781,11 +799,13 @@ THE SOFTWARE.
 
         function getItemStrokeWidth(item) {
             if (item.misassembledEnds) return 0;
+            if (item.notActive) return 0;
             return (item.groupId == selected_id ? 2 : .4);
         }
 
         function getItemOpacity(item) {
             if (item.misassembledEnds) return 1;
+            if (item.fullContig && item.type != 'unaligned') return 0.05;
             if (!item || !item.size) return 0.65;
             return item.size > minContigSize ? 0.65 : paleContigsOpacity;
         }
@@ -919,6 +939,31 @@ THE SOFTWARE.
         return collapseLanes(chart);
     }
 
+    function getBreakpointLines() {
+        var lines = [];
+        contigStart = true;
+        prev_pos = 0;
+        for (var i = 0; i < items.length; i++) {
+        	item = items[i];
+            if (item.notActive) {
+            	y = y_main(item.lane) + .25 * lanesInterval + 10;
+            	if (!contigStart) {
+            		if (Math.abs(prev_pos - item.corr_start) > 2) {
+		            	lines.push({pos:item.corr_start, y: y});
+            		}
+            	}
+            	else contigStart = false;
+            	prev_pos = item.corr_end;
+            	lines.push({pos:item.corr_end, y: y});
+            }
+            else {
+            	contigStart = true;
+            	if (item.type != 'unaligned') lines.pop();
+            }
+        }
+        return lines;
+    }
+
     function isOverlapping (item, lane) {
         if (lane)
             for (var i = 0; i < lane.length; i++)
@@ -950,6 +995,54 @@ THE SOFTWARE.
     function collapseLanes (chart) {
         var lanes = [], items = [], laneId = 0, itemId = 0, groupId = 0;
 
+        function parseItem(item, fullInfo) {
+            item.misassembledEnds = '';
+            item.lane = laneId;
+            item.id = itemId;
+            item.groupId = groupId;
+            item.assembly = assemblyName;
+            if (isContigSizePlot) {
+                if (!fullInfo) {
+                    item.corr_start = currentLen;
+                    currentLen += item.size;
+                    item.corr_end = currentLen;
+                    item.fullContig = true;
+                }
+                else {
+                    item.start_in_ref = item.corr_start;
+                    item.end_in_ref = item.corr_end;
+            	    start_in_contig = Math.min(item.start_in_contig, item.end_in_contig);
+            	    end_in_contig = Math.max(item.start_in_contig, item.end_in_contig);
+                    item.corr_start = currentLen + start_in_contig - 1;
+                    item.corr_end = currentLen + end_in_contig - 1;
+                    item.notActive = true;
+                    item.type = fullInfo.type;
+                }
+            }
+            item.triangles = Array();
+            itemId++;
+            numItems++;
+            if (item.mis_ends && misassembled_ends) {
+                for (var num = 0; num < misassembled_ends.length; num++) {
+                    if (!misassembled_ends[num]) continue;
+                    var triangleItem = {};
+                    triangleItem.name = item.name;
+                    triangleItem.corr_start = item.corr_start;
+                    triangleItem.corr_end = item.corr_end;
+                    triangleItem.assembly = item.assembly;
+                    triangleItem.id = itemId;
+                    triangleItem.lane = laneId;
+                    triangleItem.groupId = groupId;
+                    triangleItem.misassembledEnds = misassembled_ends[num];
+                    triangleItem.misassemblies = item.misassemblies.split(';')[num];
+                    item.triangles.push(triangleItem);
+                    itemId++;
+                    numItems++;
+                }
+            }
+            return item
+        }
+
         for (var assemblyName in chart.assemblies) {
             var lane = chart.assemblies[assemblyName];
             var currentLen = 0;
@@ -957,38 +1050,14 @@ THE SOFTWARE.
             for (var i = 0; i < lane.length; i++) {
                 var item = lane[i];
                 if (item.mis_ends) var misassembled_ends = item.mis_ends.split(';');
-                item.misassembledEnds = '';
-                item.lane = laneId;
-                item.id = itemId;
-                item.groupId = groupId;
-                item.assembly = assemblyName;
                 if (isContigSizePlot) {
-                    item.corr_start = currentLen;
-                    currentLen += item.size;
-                    item.corr_end = currentLen;
-                }
-                item.triangles = Array();
-                itemId++;
-                numItems++;
-                if (item.mis_ends && misassembled_ends) {
-                    for (var num = 0; num < misassembled_ends.length; num++) {
-                        if (!misassembled_ends[num]) continue;
-                        var triangleItem = {};
-                        triangleItem.name = item.name;
-                        triangleItem.corr_start = item.corr_start;
-                        triangleItem.corr_end = item.corr_end;
-                        triangleItem.assembly = item.assembly;
-                        triangleItem.id = itemId;
-                        triangleItem.lane = laneId;
-                        triangleItem.groupId = groupId;
-                        triangleItem.misassembledEnds = misassembled_ends[num];
-                        triangleItem.misassemblies = item.misassemblies.split(';')[num];
-                        item.triangles.push(triangleItem);
-                        itemId++;
-                        numItems++;
+                    var blocks = item.structure;
+                    for (var k = 0; k < blocks.length; k++) {
+                        if (blocks[k].type != 'M')
+                            items.push(parseItem(blocks[k], item));
                     }
                 }
-                items.push(item);
+                items.push(parseItem(item));
                 groupId++;
             }
 
@@ -1633,7 +1702,7 @@ THE SOFTWARE.
             }
             result.push(createMiniItem(item, curLane, numItem, countSupplementary));
             curLane = item.lane;
-            numItem++;
+            if (!item.notActive) numItem++;
             if (item.triangles && item.triangles.length > 0)
                 for (var j = 0; j < item.triangles.length; j++) {
                     result.push(createMiniItem(item.triangles[j], curLane, numItem, countSupplementary));
@@ -1656,7 +1725,7 @@ THE SOFTWARE.
         var text = '';
         if (isContigSizePlot) {
             if (item.type == "small_contigs") c += " disabled";
-            else if (item.type == "unaligned") c += " disabled";
+            else if (item.type == "unaligned") c += " unaligned";
             else if (item.type == "misassembled") c += " misassembled";
             else if (item.type == "correct") c += "";
             else c += " unknown";
@@ -1686,7 +1755,7 @@ THE SOFTWARE.
               'L', startX, startY + miniPathHeight, 'L',  startX, startY].join(' ');
         }
         return {objClass: item.objClass, path: path, misassemblies: item.misassemblies, misassembledEnds: item.misassembledEnds,
-            start: startX, end: endX, y: startY, size: item.size, text: text, id: item.id, type: item.type};
+            start: startX, end: endX, y: startY, size: item.size, text: text, id: item.id, type: item.type, fullContig: item.fullContig};
     }
 
     function getTextSize(text, size) {
@@ -1782,7 +1851,7 @@ THE SOFTWARE.
             };
 
             var curBlock = !data ? (overlapped_block ? overlapped_block : '') : data.filter(function (block) {
-                if (block.type == 'A' && block.contig == contigName) {
+                if (block.type != "M" && block.contig == contigName) {
                     if (start_in_contig && block.start_in_contig == start_in_contig && block.end_in_contig == end_in_contig
                         && block.corr_start == start) return block;
                     else if (!start_in_contig && block.corr_start <= start && end <= block.corr_end) return block;
@@ -1834,7 +1903,7 @@ THE SOFTWARE.
                         });
                 if (isContigSizePlot) {
                     positionLink.attr('href', (typeof links_to_chromosomes !== 'undefined' ? links_to_chromosomes[curBlock.chr] : 'alignment_viewer') +
-                                    '.html?assembly=' + assembly + '&contig=' + contigName  + '&start=' + curBlock.corr_start + '&end=' + curBlock.corr_end)
+                                    '.html?assembly=' + assembly + '&contig=' + contigName  + '&start=' + curBlock.start_in_ref + '&end=' + curBlock.end_in_ref)
                                 .attr('target', '_blank')
                                 .style('text-decoration', 'underline')
                                 .style('color', '#7ED5F5');
@@ -1890,7 +1959,7 @@ THE SOFTWARE.
             var blocks = info.append('p')
                     .attr('class', 'head main');
             var blocksText = (block.ambiguous ? 'Alternatives: ' : 'Blocks: ') + block.structure.filter(function(nextBlock) {
-                                    if (nextBlock.type == "A") return nextBlock;
+                                    if (nextBlock.type != "M") return nextBlock;
                                 }).length;
             blocks.text(block.ambiguous ? 'Ambiguously mapped.' : blocksText);
             if (block.ambiguous)
@@ -1899,7 +1968,7 @@ THE SOFTWARE.
 
             for (var i = 0; i < block.structure.length; ++i) {
                 var nextBlock = block.structure[i];
-                if (nextBlock.type == "A") {
+                if (nextBlock.type != "M") {
                     appendPositionElement(block.structure, nextBlock.corr_start, nextBlock.corr_end, block.name, block.assembly, blocks, nextBlock.start_in_contig,
                         nextBlock.end_in_contig, block.corr_start, block.corr_end, true);
 
@@ -1941,7 +2010,7 @@ THE SOFTWARE.
         if (block.structure) {
             for (var i = 0; i < block.structure.length; ++i) {
                 var nextBlock = block.structure[i];
-                if (nextBlock.type == "A") {
+                if (nextBlock.type != "M" && !nextBlock.notActive) {
                     if (!(nextBlock.corr_start <= block.corr_start && block.corr_end <= nextBlock.corr_end) &&
                         (isContigSizePlot || chrContigs.indexOf(nextBlock.chr) != -1)) {
                         arrows.push({start: nextBlock.corr_start, end: nextBlock.corr_end, lane: block.lane, selected: false});
@@ -2141,8 +2210,8 @@ THE SOFTWARE.
     }
 
     function appendLegendContigSize(legend) {
-        if (items[0].structure && items[0].structure.length > 0) {
-            var classes = ['correct', 'misassembled', 'disabled'];
+        if (items[0].type && items[0].type != 'unknown') {
+            var classes = ['correct', 'misassembled', 'unaligned'];
             var classMarks = ['', '', ''];
             var classDescriptions = ['correct contigs', 'misassembled contigs', 'unaligned contigs'];
         }

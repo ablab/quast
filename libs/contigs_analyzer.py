@@ -18,6 +18,7 @@
 
 from __future__ import with_statement
 import os
+import copy
 import platform
 import datetime
 from itertools import repeat
@@ -602,6 +603,7 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
         contig_is_printed = False
         indels_info = IndelsInfo()
         contig_aligned_length = 0  # for internal debugging purposes
+        next_align = sorted_aligns[0]
 
         for i in range(len(sorted_aligns) - 1):
             is_extensive_misassembly, aux_data = is_misassembly(sorted_aligns[i], sorted_aligns[i+1],
@@ -611,12 +613,13 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
             misassembly_internal_overlap += aux_data["misassembly_internal_overlap"]
             cyclic_moment = aux_data["cyclic_moment"]
             is_translocation = aux_data["is_translocation"]
+            print >> icarus_out_f, next_align.icarus_report_str()
+            next_align = copy.deepcopy(sorted_aligns[i + 1])
             if sorted_aligns[i].ref == sorted_aligns[i+1].ref or (sorted_aligns[i].ref != sorted_aligns[i+1].ref and is_translocation):
                 cur_aligned_length -= exclude_internal_overlaps(sorted_aligns[i], sorted_aligns[i+1], i)
             is_sv = aux_data["is_sv"]
 
             print >> planta_out_f, '\t\t\tReal Alignment %d: %s' % (i+1, str(sorted_aligns[i]))
-            print >> icarus_out_f, sorted_aligns[i].icarus_report_str()
 
             ref_aligns.setdefault(sorted_aligns[i].ref, []).append(sorted_aligns[i])
             print >> coords_filtered_file, str(prev)
@@ -726,7 +729,7 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
         #Record the very last alignment
         i = len(sorted_aligns) - 1
         print >> planta_out_f, '\t\t\tReal Alignment %d: %s' % (i + 1, str(sorted_aligns[i]))
-        print >> icarus_out_f, sorted_aligns[i].icarus_report_str()
+        print >> icarus_out_f, next_align.icarus_report_str()
         ref_aligns.setdefault(sorted_aligns[i].ref, []).append(sorted_aligns[i])
         print >> coords_filtered_file, str(prev)
         aligned_lengths.append(cur_aligned_length)

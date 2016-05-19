@@ -310,6 +310,9 @@ path {
 .mainItem.disabled {
     fill: #757575;
 }
+.mainItem.unaligned {
+    fill: #757575;
+}
 .mainItem.unknown {
     fill: #528CA6;
 }
@@ -324,6 +327,9 @@ path {
     fill: #dd6800;
 }
 .miniItem.disabled {
+    fill: #8e8e8e;
+}
+.miniItem.unaligned {
     fill: #8e8e8e;
 }
 .miniItem.unknown {
@@ -343,6 +349,11 @@ path {
     opacity: 0;
 }
 
+.dashed_lines {
+	stroke: black;
+	stroke-width: 1;
+	stroke-dasharray: 3,2;
+}
 
 .miniItems.text {
     text-shadow: 1px 0 0 #000,

@@ -460,10 +460,8 @@ def add_contig(cum_length, contig, not_used_nx, assemblies_n50, assembly, contig
             assembly_structure = structures_by_labels[assembly]
             for el in assembly_structure[contig.name]:
                 if isinstance(el, Alignment):
-                    corr_el_start = el.start
-                    corr_el_end = el.end
-                    structure.append('{type: "A",contig: "' + contig.name + '",corr_start: ' + str(corr_el_start) + ',corr_end: ' +
-                                    str(corr_el_end) + ',start:' + str(el.unshifted_start) + ',end:' + str(el.unshifted_end) +
+                    structure.append('{type: "A",contig: "' + contig.name + '",corr_start: ' + str(el.start) + ',corr_end: ' +
+                                    str(el.end) + ',start:' + str(el.unshifted_start) + ',end:' + str(el.unshifted_end) +
                                     ',start_in_contig:' + str(el.start_in_contig) + ',end_in_contig:' +
                                     str(el.end_in_contig) + ',chr: "' + el.ref_name + '"},')
                 elif type(el) == str:

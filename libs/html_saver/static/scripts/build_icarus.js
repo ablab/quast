@@ -114,7 +114,7 @@ THE SOFTWARE.
       var y_anno = d3.scale.linear().domain([ext[0], ext[1] + 1]).range([0, annotationsHeight]);
     }
 
-    var coverageFactor = 10, maxCovDots = chartWidth;
+    var coverageFactor = 9, maxCovDots = chartWidth;
     var featuresHidden = false, drawCoverage = false, coverageMainHidden = true;
     if (!featuresData || featuresData.features.length == 0)
       featuresHidden = true;
@@ -1173,12 +1173,12 @@ THE SOFTWARE.
         document.getElementById('zoom_out_5').onclick=function() {
             keyPress('zoom_out', 200) };
 
-        document.getElementById('input_coords').onkeydown=function() {
-            enterCoords(this) };
+        document.getElementById('input_coords').onkeydown=function(event) {
+            enterCoords(event, this) };
         if (document.getElementById('input_contig_threshold')) {
             document.getElementById('input_contig_threshold').value = minContigSize;
-            document.getElementById('input_contig_threshold').onkeyup = function() {
-                setContigSizeThreshold(this) };
+            document.getElementById('input_contig_threshold').onkeyup = function(event) {
+                setContigSizeThreshold(event, this) };
         }
 
         var checkboxes = document.getElementsByName('misassemblies_select');
@@ -1245,8 +1245,8 @@ THE SOFTWARE.
             keyPress('esc');
     }
 
-    function enterCoords(textBox) {
-        var key = this.event.keyCode;
+    function enterCoords(event, textBox) {
+        var key = event.keyCode || this.event.keyCode;
         if (key == 27) {
             document.getElementById('input_coords').blur();
         }
@@ -1312,8 +1312,8 @@ THE SOFTWARE.
         }
     }
 
-    function setContigSizeThreshold(textBox) {
-        var key = this.event.keyCode;
+    function setContigSizeThreshold(event, textBox) {
+        var key = event.keyCode || this.event.keyCode;
         if (key == 27) {
             document.getElementById('input_contig_threshold').blur();
         }

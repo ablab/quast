@@ -8,10 +8,10 @@
 import logging
 import os
 import shutil
-from libs import reporting, qutils
+from libs import reporting, qutils, ca_utils
 import qconfig
-from libs.contigs_analyzer import all_required_binaries_exist, mummer_dirpath
 from qutils import get_path_to_program
+from os.path import join, abspath
 
 from libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
@@ -41,7 +41,8 @@ def run_gage(i, contigs_fpath, gage_results_dirpath, gage_tool_path, reference, 
     log_err_f = open(log_err_fpath, 'w')
 
     return_code = qutils.call_subprocess(
-        ['sh', gage_tool_path, reference, contigs_fpath, tmp_dir, str(qconfig.min_contig)],
+        ['sh', gage_tool_path, abspath(ca_utils.contig_aligner_dirpath), reference,
+         contigs_fpath, tmp_dir, str(qconfig.min_contig)],
         stdout=log_out_f,
         stderr=log_err_f,
         indent='  ' + qutils.index_to_str(i),
@@ -91,19 +92,8 @@ def do(ref_fpath, contigs_fpaths, output_dirpath):
     if not os.path.exists(tmp_dirpath):
         os.makedirs(tmp_dirpath)
 
-    if not all_required_binaries_exist(mummer_dirpath):
-        # making
-        logger.main_info('Compiling MUMmer (details are in ' + os.path.join(mummer_dirpath, 'make.log') + ' and make.err)')
-        return_code = qutils.call_subprocess(
-            ['make', '-C', mummer_dirpath],
-            stdout=open(os.path.join(mummer_dirpath, 'make.log'), 'w'),
-            stderr=open(os.path.join(mummer_dirpath, 'make.err'), 'w'),)
-
-        if return_code != 0 or not all_required_binaries_exist(mummer_dirpath):
-            logger.error('Failed to compile MUMmer (' + mummer_dirpath + ')! '
-                         'Try to compile it manually. ' + ('You can restart Quast with the --debug flag '
-                         'to see the command line.' if not qconfig.debug else ''))
-            return
+    if not ca_utils.compile_aligner(logger):
+        return
     if not all_required_java_classes_exist(gage_dirpath):
         javac_path = get_path_to_program('javac')
         if javac_path is None:

@@ -22,26 +22,19 @@ import copy
 import platform
 import datetime
 from itertools import repeat
+from os.path import isfile, join
 
 import fastaparser
 import shutil
-from libs import reporting, qconfig, qutils
+from libs import reporting, qconfig, qutils, ca_utils
 
 from libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 from qutils import correct_name
 
-required_binaries = ['nucmer', 'delta-filter', 'show-coords', 'show-snps', 'mummer', 'mgaps']
-
-if platform.system() == 'Darwin':
-    mummer_dirpath = os.path.join(qconfig.LIBS_LOCATION, 'MUMmer3.23-osx')
-else:
-    mummer_dirpath = os.path.join(qconfig.LIBS_LOCATION, 'MUMmer3.23-linux')
-    required_binaries.append('e-mem')
-
 
 def bin_fpath(fname):
-    return os.path.join(mummer_dirpath, fname)
+    return join(ca_utils.contig_aligner_dirpath, fname)
 
 ref_labels_by_chromosomes = {}
 COMBINED_REF_FNAME = 'combined_reference.fasta'
@@ -141,7 +134,7 @@ def run_nucmer(prefix, ref_fpath, contigs_fpath, log_out_fpath, log_err_fpath, i
     nucmer_cmdline = [bin_fpath('nucmer'), '-c', str(qconfig.min_cluster),
                       '-l', str(qconfig.min_cluster), '--maxmatch',
                       '-p', prefix]
-    if platform.system() != 'Darwin':
+    if ca_utils.is_emem_aligner():
         nucmer_cmdline += ['-t', str(emem_threads)]
     nucmer_cmdline += [ref_fpath, contigs_fpath]
     return_code = qutils.call_subprocess(nucmer_cmdline, stdout=open(log_out_fpath, 'a'), stderr=open(log_err_fpath, 'a'),
@@ -1719,13 +1712,6 @@ def plantakolya_process(cyclic, nucmer_output_dirpath, contigs_fpath, i, output_
     return nucmer_is_ok, result, aligned_lengths
 
 
-def all_required_binaries_exist(mummer_dirpath):
-    for required_binary in required_binaries:
-        if not os.path.isfile(os.path.join(mummer_dirpath, required_binary)):
-            return False
-    return True
-
-
 def do(reference, contigs_fpaths, cyclic, output_dir, old_contigs_fpaths, bed_fpath=None):
     if not os.path.isdir(output_dir):
         os.mkdir(output_dir)
@@ -1734,20 +1720,9 @@ def do(reference, contigs_fpaths, cyclic, output_dir, old_contigs_fpaths, bed_fp
     logger.main_info('Running Contig analyzer...')
     num_nf_errors = logger._num_nf_errors
 
-    if not all_required_binaries_exist(mummer_dirpath):
-        # making
-        logger.main_info('Compiling MUMmer (details are in ' + os.path.join(mummer_dirpath, 'make.log') + " and make.err)")
-        return_code = qutils.call_subprocess(
-            ['make', '-C', mummer_dirpath],
-            stdout=open(os.path.join(mummer_dirpath, 'make.log'), 'w'),
-            stderr=open(os.path.join(mummer_dirpath, 'make.err'), 'w'),)
-
-        if return_code != 0 or not all_required_binaries_exist(mummer_dirpath):
-            logger.error("Failed to compile MUMmer (" + mummer_dirpath + ")! "
-                         "Try to compile it manually. " + ("You can restart Quast with the --debug flag "
-                         "to see the command line." if not qconfig.debug else ""))
-            logger.main_info('Failed aligning the contigs for all the assemblies. Only basic stats are going to be evaluated.')
-            return dict(zip(contigs_fpaths, [NucmerStatus.FAILED] * len(contigs_fpaths))), None
+    if not ca_utils.compile_aligner(logger):
+        logger.main_info('Failed aligning the contigs for all the assemblies. Only basic stats are going to be evaluated.')
+        return dict(zip(contigs_fpaths, [NucmerStatus.FAILED] * len(contigs_fpaths))), None
 
     nucmer_output_dirname = 'nucmer_output'
     nucmer_output_dir = os.path.join(output_dir, nucmer_output_dirname)

@@ -34,7 +34,6 @@ DOC_DIR       := $(TOP_DIR)/docs
 SCRIPT_DIR    := $(TOP_DIR)/scripts
 TIGR_SRC_DIR  := $(TOP_DIR)/src/tigr
 KURTZ_SRC_DIR := $(TOP_DIR)/src/kurtz
-E-MEM_DIR     := $(TOP_DIR)/e-mem-linux
 
 CC   := $(filter /%,$(shell /bin/sh -c 'type gcc'))
 CXX  := $(filter /%,$(shell /bin/sh -c 'type g++'))
@@ -42,8 +41,8 @@ SED  := $(filter /%,$(shell /bin/sh -c 'type sed'))
 PERL := $(filter /%,$(shell /bin/sh -c 'type perl'))
 AR   := $(filter /%,$(shell /bin/sh -c 'type ar'))
 
-CXXFLAGS = -O3 
-CFLAGS = -O3 
+CXXFLAGS = -O3
+CFLAGS = -O3
 LDFLAGS =
 
 FLATS = ACKNOWLEDGEMENTS COPYRIGHT INSTALL LICENSE Makefile README ChangeLog
@@ -57,10 +56,10 @@ export BIN_DIR AUX_BIN_DIR CXX CC CFLAGS CXXFLAGS LDFLAGS
 
 
 #-- PHONY rules --#
-.PHONY: all check clean dist scripts uninstall e-mem
+.PHONY: all check clean dist scripts uninstall
 
 
-all: kurtz tigr scripts e-mem
+all: kurtz tigr scripts
 
 
 check:
@@ -90,7 +89,6 @@ clean:
 	cd $(KURTZ_SRC_DIR); $(MAKE) clean
 	cd $(TIGR_SRC_DIR); $(MAKE) clean
 	cd $(SCRIPT_DIR); $(MAKE) clean
-	cd $(E-MEM_DIR); $(MAKE) clean
 
 
 dist: DISTDIR = MUMmer$(VERSION)
@@ -121,8 +119,6 @@ scripts:
 tigr:
 	cd $(TIGR_SRC_DIR); $(MAKE) all
 
-e-mem:
-	cd $(E-MEM_DIR); $(MAKE) all
 
 uninstall: clean
 

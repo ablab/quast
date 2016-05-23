@@ -1,6 +1,6 @@
 #
 # Manta - Structural Variant and Indel Caller
-# Copyright (c) 2013-2015 Illumina, Inc.
+# Copyright (c) 2013-2016 Illumina, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,13 +19,13 @@
 
 ################################################################################
 ##
-## Configuration file for the opt subfolder (external tools)
+## Configuration file for external tools
 ##
 ## author Come Raczy
 ##
 ################################################################################
 
-message(STATUS "Creating external tools in subdirectory opt")
+message(STATUS "Building external tools")
 
 include ("${THIS_GLOBALS_CMAKE}")
 include ("${THIS_MACROS_CMAKE}")
@@ -35,6 +35,16 @@ macro(superset symbol value)
     set(${symbol} "${value}")
     set(${symbol} "${value}" PARENT_SCOPE)
 endmacro()
+
+
+set (THIS_CMAKE_PLATFORM "")
+if (WIN32)
+    # Sometimes the platform (x64,win32...) is specified as part of the target name
+    # this captures the cases where it is specified separately:
+    if (CMAKE_GENERATOR_PLATFORM)
+        set (THIS_CMAKE_PLATFORM -A "${CMAKE_GENERATOR_PLATFORM}")
+    endif ()
+endif ()
 
 
 #
@@ -77,17 +87,10 @@ if (NOT WIN32)
         DEPENDS ${ZLIB_DIR}
         COMMENT "Building zlib package")
 else ()
-    # Sometimes the platform (x64,win32...) is specified as part of the target name
-    # this captures the cases where it is specified separately:
-    set (ZLIB_PLATFORM "")
-    if (CMAKE_GENERATOR_PLATFORM)
-        set (ZLIB_PLATFORM -A "${CMAKE_GENERATOR_PLATFORM}")
-    endif ()
-
     add_custom_command(
         OUTPUT ${ZLIB_LIBRARY}
-        COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" ${ZLIB_PLATFORM} -DCMAKE_C_COMPILER="${CMAKE_C_COMPILER}" ${ZLIB_DIR} >zlib.config.log
-        COMMAND ${CMAKE_MAKE_PROGRAM} "${ZLIB_DIR}/zlib.sln" >zlib.build.log
+        COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" ${THIS_CMAKE_PLATFORM} -DCMAKE_C_COMPILER="${CMAKE_C_COMPILER}" ${ZLIB_DIR} >zlib.config.log
+        COMMAND ${CMAKE_MAKE_PROGRAM}  /p:Configuration=${CMAKE_BUILD_TYPE} "${ZLIB_DIR}/zlib.sln" >zlib.build.log
         WORKING_DIRECTORY ${ZLIB_DIR}
         DEPENDS ${ZLIB_DIR}
         COMMENT "Building zlib package")
@@ -143,7 +146,7 @@ endif ()
 # pyflow
 #
 
-set(PYFLOW_PREFIX "pyflow-1.1.10")
+set(PYFLOW_PREFIX "pyflow-1.1.12")
 set(PYFLOW_DIR "${CMAKE_CURRENT_BINARY_DIR}/${PYFLOW_PREFIX}")
 set(PYFLOW_SCRIPT "${PYFLOW_DIR}/src/pyflow.py")
 
@@ -174,22 +177,3 @@ add_custom_target(${THIS_PYFLOW} DEPENDS "${PYFLOW_DEPENDS}")
 #
 add_dependencies(${THIS_OPT} ${THIS_ZLIB} ${THIS_HTSLIB} ${THIS_PYFLOW})
 
-
-#
-# hoedown
-#
-set(HOEDOWN_PREFIX "hoedown-1.0.2_with_allext")
-set(HOEDOWN_DIR "${CMAKE_CURRENT_BINARY_DIR}/${HOEDOWN_PREFIX}")
-superset(HOEDOWN_PROG "${HOEDOWN_DIR}/hoedown_allext")
-
-if (NOT WIN32)
-    add_custom_command(
-        OUTPUT ${HOEDOWN_PROG}
-        COMMAND ${CMAKE_COMMAND} -E remove_directory "${HOEDOWN_DIR}"
-        COMMAND ${CMAKE_COMMAND} -E tar xjf "${THIS_REDIST_DIR}/${HOEDOWN_PREFIX}.tar.bz2"
-        COMMAND $(MAKE) -C "${HOEDOWN_DIR}"
-        COMMENT "Building hoedown markdown parser")
-
-    superset(THIS_MARKDOWN "${THIS_PROJECT_NAME}_markdown")
-    add_custom_target(${THIS_MARKDOWN} DEPENDS "${HOEDOWN_PROG}")
-endif ()

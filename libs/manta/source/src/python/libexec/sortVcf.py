@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Manta - Structural Variant and Indel Caller
-# Copyright (c) 2013-2015 Illumina, Inc.
+# Copyright (c) 2013-2016 Illumina, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -96,26 +96,40 @@ def processFile(isUnique, vcfFile, isFirst, chromOrder, header, recList) :
 
 
 
+def listInputVcfs(vcfListFile,args) :
+    for arg in args :
+        yield arg
+    if vcfListFile is None : return
+    for vcfFile in open(vcfListFile) :
+        yield vcfFile.strip()
+
+
+
 def getOptions() :
 
     from optparse import OptionParser
 
-    usage = "usage: %prog [options] [vcf [vcf...]] > sorted_vcf"
-    parser = OptionParser(usage=usage)
+    parser = OptionParser(usage="%prog [options] [input_vcf [input_vcf..]] > output_vcf")
 
     parser.add_option("-u", dest="isUnique",action="store_true",default=False,
                       help="filter all but one record with the same {CHR,POS,REF,ALT,(INV3|INV5|)}")
+    parser.add_option("-f", dest="vcfListFile",
+                      help="File listing input vcf files, one file per line. These will be used in addition to any provided directly on the command-line")
 
     (options,args) = parser.parse_args()
 
-    if len(args) == 0 :
+    if len(args) == 0 and not options.vcfListFile:
         parser.print_help()
         sys.exit(2)
 
     # validate input:
-    for arg in args :
-        if not os.path.isfile(arg) :
-            raise Exception("Can't find input vcf file: " +arg)
+    if options.vcfListFile is not None :
+        if not os.path.exists(options.vcfListFile) :
+            raise Exception("Can't find vcf list file: " + options.vcfListFile)
+
+    for vcfFile in listInputVcfs(options.vcfListFile,args) :
+        if not os.path.isfile(vcfFile) :
+            raise Exception("Can't find input vcf file: " +vcfFile)
 
     return (options,args)
 
@@ -167,9 +181,9 @@ def main() :
     chromOrder=[]
 
     isFirst=True
-    for arg in args :
-        processFile(options.isUnique, arg, isFirst, chromOrder, header, recList)
-        isFirst-False
+    for vcfFile in listInputVcfs(options.vcfListFile,args) :
+        processFile(options.isUnique, vcfFile, isFirst, chromOrder, header, recList)
+        isFirst = False
 
     def vcfRecSortKey(x) :
         """

@@ -1,6 +1,6 @@
 #
 # Manta - Structural Variant and Indel Caller
-# Copyright (c) 2013-2015 Illumina, Inc.
+# Copyright (c) 2013-2016 Illumina, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -111,6 +111,9 @@ def getNodeHyperthreadCoreCount():
         for line in proc.stdout :
             cpuCount=int(line.strip())
             break
+    elif platform.system().find("Windows") > -1:
+        import multiprocessing
+        cpuCount = multiprocessing.cpu_count()
     else:
         raise EstException("Can't determine total logical cores available on OS: '%s'" (platform.system()))
 
@@ -145,7 +148,7 @@ def getNodeMemMb():
             raise EstException("Unexpected format in %s" % (mname))
 
         try:
-            memMb = 1+(int(splat[1])-1)/1024
+            memMb = 1+((int(splat[1])-1)/1024)
         except:
             raise EstException("Unexpected format in %s" % (mname))
     elif platform.system().find("Darwin") > -1:
@@ -155,6 +158,14 @@ def getNodeMemMb():
         for line in proc.stdout :
             memMb=int(line.strip())/(1024*1024)
             break
+    elif platform.system().find("Windows") > -1:
+        process = os.popen('wmic memorychip get capacity')
+        result = process.read()
+        process.close()
+        totalMem = 0
+        for m in result.split("  \r\n")[1:-1]:
+            totalMem += int(m)
+        memMb = totalMem / (1024**2)
     else:
         raise EstException("Can't determine total memory available on OS: '%s'" (platform.system()))
 

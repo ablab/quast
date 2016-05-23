@@ -1,7 +1,7 @@
 // -*- mode: c++; indent-tabs-mode: nil; -*-
 //
 // Manta - Structural Variant and Indel Caller
-// Copyright (c) 2013-2015 Illumina, Inc.
+// Copyright (c) 2013-2016 Illumina, Inc.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -115,6 +115,7 @@ public:
 class MemoryException: public std::bad_alloc, public ExceptionData
 {
 public:
+    explicit
     MemoryException(const std::string& message);
 };
 
@@ -131,6 +132,7 @@ public:
 class UnsupportedVersionException: public std::logic_error, public ExceptionData
 {
 public:
+    explicit
     UnsupportedVersionException(const std::string& message);
 };
 
@@ -141,6 +143,7 @@ public:
 class FeatureNotAvailable: public std::logic_error, public ExceptionData
 {
 public:
+    explicit
     FeatureNotAvailable(const std::string& message);
 };
 
@@ -151,6 +154,7 @@ public:
 class InvalidParameterException: public std::logic_error, public ExceptionData
 {
 public:
+    explicit
     InvalidParameterException(const std::string& message);
 };
 
@@ -161,6 +165,7 @@ public:
 class InvalidOptionException: public std::logic_error, public ExceptionData
 {
 public:
+    explicit
     InvalidOptionException(const std::string& message);
 };
 
@@ -171,6 +176,7 @@ public:
 class PreConditionException: public std::logic_error, public ExceptionData
 {
 public:
+    explicit
     PreConditionException(const std::string& message);
 };
 
@@ -181,6 +187,7 @@ public:
 class PostConditionException: public std::logic_error, public ExceptionData
 {
 public:
+    explicit
     PostConditionException(const std::string& message);
 };
 
@@ -191,6 +198,7 @@ public:
 class OutOfBoundsException: public std::out_of_range, public ExceptionData
 {
 public:
+    explicit
     OutOfBoundsException(const std::string& message);
 };
 
@@ -198,6 +206,7 @@ public:
 ///
 struct LogicException: public std::logic_error, public ExceptionData
 {
+    explicit
     LogicException(const std::string& message) :
         std::logic_error(message),
         ExceptionData(EPERM, message)
@@ -212,6 +221,7 @@ struct LogicException: public std::logic_error, public ExceptionData
 class VcfException: public IoException
 {
 public:
+    explicit
     VcfException(const std::string& message);
 };
 

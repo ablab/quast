@@ -1,7 +1,7 @@
 // -*- mode: c++; indent-tabs-mode: nil; -*-
 //
 // Manta - Structural Variant and Indel Caller
-// Copyright (c) 2013-2015 Illumina, Inc.
+// Copyright (c) 2013-2016 Illumina, Inc.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -23,13 +23,13 @@
 #include "AlignmentStatsOptions.hh"
 
 #include "blt_util/log.hh"
-#include "manta/ProgramUtil.hh"
 #include "options/AlignmentFileOptionsParser.hh"
 #include "options/optionsUtil.hh"
 
 #include "boost/program_options.hpp"
 
 #include <iostream>
+#include "../../common/ProgramUtil.hh"
 
 
 
@@ -37,7 +37,7 @@ static
 void
 usage(
     std::ostream& os,
-    const manta::Program& prog,
+    const illumina::Program& prog,
     const boost::program_options::options_description& visible,
     const char* msg = nullptr)
 {
@@ -47,7 +47,7 @@ usage(
 
 
 void
-parseAlignmentStatsOptions(const manta::Program& prog,
+parseAlignmentStatsOptions(const illumina::Program& prog,
                            int argc, char* argv[],
                            AlignmentStatsOptions& opt)
 {

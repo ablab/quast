@@ -1,7 +1,7 @@
 // -*- mode: c++; indent-tabs-mode: nil; -*-
 //
 // Manta - Structural Variant and Indel Caller
-// Copyright (c) 2013-2015 Illumina, Inc.
+// Copyright (c) 2013-2016 Illumina, Inc.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -124,6 +124,8 @@ struct SVLocusScanner
     {
         if      (bamRead.is_filter()) return true;
         else if (bamRead.is_dup()) return true;
+        // supplementary reads without SA tag
+        else if (bamRead.is_supplement() && (! bamRead.isSASplit())) return true;
         else
         {
             // hack to work with bwamem '-M' formatting,
@@ -135,6 +137,7 @@ struct SVLocusScanner
         }
         return false;
     }
+
 
     static
     bool

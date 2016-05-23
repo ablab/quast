@@ -1,7 +1,7 @@
 // -*- mode: c++; indent-tabs-mode: nil; -*-
 //
 // Manta - Structural Variant and Indel Caller
-// Copyright (c) 2013-2015 Illumina, Inc.
+// Copyright (c) 2013-2016 Illumina, Inc.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -43,6 +43,7 @@ struct SVFinderStats
         semiMappedFilter += rhs.semiMappedFilter;
         ComplexLowCountFilter += rhs.ComplexLowCountFilter;
         ComplexLowSignalFilter += rhs.ComplexLowSignalFilter;
+        unmatchedReadPairFilter += rhs.unmatchedReadPairFilter;
     }
 
     template<class Archive>
@@ -52,6 +53,7 @@ struct SVFinderStats
         & BOOST_SERIALIZATION_NVP(semiMappedFilter)
         & BOOST_SERIALIZATION_NVP(ComplexLowCountFilter)
         & BOOST_SERIALIZATION_NVP(ComplexLowSignalFilter)
+        & BOOST_SERIALIZATION_NVP(unmatchedReadPairFilter)
         ;
     }
 
@@ -63,6 +65,7 @@ struct SVFinderStats
     uint64_t semiMappedFilter = 0;
     uint64_t ComplexLowCountFilter = 0;
     uint64_t ComplexLowSignalFilter = 0;
+    uint64_t unmatchedReadPairFilter = 0;
 };
 
 BOOST_CLASS_IMPLEMENTATION(SVFinderStats, boost::serialization::object_serializable)

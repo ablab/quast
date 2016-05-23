@@ -1,7 +1,7 @@
 // -*- mode: c++; indent-tabs-mode: nil; -*-
 //
 // Manta - Structural Variant and Indel Caller
-// Copyright (c) 2013-2015 Illumina, Inc.
+// Copyright (c) 2013-2016 Illumina, Inc.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -24,7 +24,7 @@
 
 #pragma once
 
-#include "manta/Program.hh"
+#include "common/Program.hh"
 #include "manta/SVLocusScanner.hh"
 #include "options/AlignmentFileOptions.hh"
 #include "options/ReadScannerOptions.hh"
@@ -56,6 +56,6 @@ struct ESLOptions
 
 
 void
-parseESLOptions(const manta::Program& prog,
+parseESLOptions(const illumina::Program& prog,
                 int argc, char* argv[],
                 ESLOptions& opt);

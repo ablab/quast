@@ -1,6 +1,6 @@
 #
 # Manta - Structural Variant and Indel Caller
-# Copyright (c) 2013-2015 Illumina, Inc.
+# Copyright (c) 2013-2016 Illumina, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -75,6 +75,8 @@ class MantaWorkflowOptionsBase(ConfigureWorkflowOptions) :
         Every local variable in this method becomes part of the default hash
         """
 
+        configCommandLine=sys.argv
+
         alignerMode = "isaac"
 
         libexecDir=os.path.abspath(os.path.join(scriptDir,"@THIS_RELATIVE_LIBEXECDIR@"))
@@ -86,7 +88,7 @@ class MantaWorkflowOptionsBase(ConfigureWorkflowOptions) :
 
         mantaStatsBin=joinFile(libexecDir,exeFile("GetAlignmentStats"))
         mantaMergeStatsBin=joinFile(libexecDir,exeFile("MergeAlignmentStats"))
-        mantaGetChromDepthBin=joinFile(libexecDir,exeFile("GetChromDepth"))
+        getChromDepthBin=joinFile(libexecDir,exeFile("GetChromDepth"))
         mantaGraphBin=joinFile(libexecDir,exeFile("EstimateSVLoci"))
         mantaGraphMergeBin=joinFile(libexecDir,exeFile("MergeSVLoci"))
         mantaStatsMergeBin=joinFile(libexecDir,exeFile("MergeEdgeStats"))
@@ -100,7 +102,8 @@ class MantaWorkflowOptionsBase(ConfigureWorkflowOptions) :
         mantaExtraSmallVcf=joinFile(libexecDir,"extractSmallIndelCandidates.py")
         mantaPloidyFilter=joinFile(libexecDir,"ploidyFilter.py")
         mantaSortEdgeLogs=joinFile(libexecDir,"sortEdgeLogs.py")
-        mantaCat=joinFile(libexecDir,"cat.py")
+        catScript=joinFile(libexecDir,"cat.py")
+        vcfCmdlineSwapper=joinFile(libexecDir,"vcfCmdlineSwapper.py")
 
         # default memory request per process-type
         #

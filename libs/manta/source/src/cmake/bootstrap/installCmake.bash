@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # Manta - Structural Variant and Indel Caller
-# Copyright (c) 2013-2015 Illumina, Inc.
+# Copyright (c) 2013-2016 Illumina, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -52,19 +52,8 @@ TARBALL_COMPRESSION=j
 SOURCE_DIR=${BUILD_DIR}/cmake-$TARBALL_VERSION
 CMAKE_DIR=cmake-$CMAKE_MAJOR.$CMAKE_MINOR
 
-common_options $@
-
-if [[ $CLEAN ]] ; then
-    ilog "removing $SOURCE_DIR"
-    rm -rf $SOURCE_DIR
-    rm -rf ${INSTALL_DIR}/{doc,share}/$CMAKE_DIR
-    rm -f ${BIN_DIR}/{ccmake,cmake,cpack,ctest}
-    rm -f ${INSTALL_DIR}/man/man1/{ccmake,cmake,cmakecommands,cmakecompat,cmakemodules,cmakeprops,cmakevars,cpack,ctest}.1
-    exit 0
-fi
-
 AVAILABLE_CMAKE_VERSION=`cmake --version 2> /dev/null`
-if [[ "${AVAILABLE_CMAKE_VERSION}" =~ ^cmake\ version\ ([0-9]+)\.([0-9]+)\.([0-9]+) && ! $FORCE ]] ; then
+if [[ "${AVAILABLE_CMAKE_VERSION}" =~ ^cmake\ version\ ([0-9]+)\.([0-9]+)\.([0-9]+) ]] ; then
     MAJOR=${BASH_REMATCH[1]}
     MINOR=${BASH_REMATCH[2]}
     PATCH=${BASH_REMATCH[3]}
@@ -76,7 +65,7 @@ if [[ "${AVAILABLE_CMAKE_VERSION}" =~ ^cmake\ version\ ([0-9]+)\.([0-9]+)\.([0-9
 fi
 
 OLD_CMAKE_VERSION=`${BIN_DIR}/cmake --version 2> /dev/null`;
-if [[ $OLD_CMAKE_VERSION == "cmake version $TARBALL_VERSION" && ! $FORCE ]] ; then
+if [[ $OLD_CMAKE_VERSION == "cmake version $TARBALL_VERSION" ]] ; then
     ilog "cmake version \"$TARBALL_VERSION\" is already installed at ${BIN_DIR}/cmake"
     echo "${BIN_DIR}/cmake"
     exit 0

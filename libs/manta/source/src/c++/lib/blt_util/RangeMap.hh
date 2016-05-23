@@ -1,7 +1,7 @@
 // -*- mode: c++; indent-tabs-mode: nil; -*-
 //
 // Manta - Structural Variant and Indel Caller
-// Copyright (c) 2013-2015 Illumina, Inc.
+// Copyright (c) 2013-2016 Illumina, Inc.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -32,6 +32,12 @@
 #include <sstream>
 #include <vector>
 
+//#define DEBUG_RMAP
+
+#ifdef DEBUG_RMAP
+#include <iostream>
+#endif
+
 
 /// two predefined options for the ValClear type parameter to RangeMap:
 template <typename T>
@@ -55,11 +61,11 @@ struct ClearT
 };
 
 
-/// this object provides map-like storage for a set of positions which are
-/// assumed to cluster in a small range
+/// provides map-like storage for a set of positions which are assumed to
+/// cluster in a small range
 ///
-/// in practice this is very similar to an unbounded circular buffer, but heavily customized
-/// for our specific application
+/// in practice this is very similar to an unbounded circular buffer,
+/// but heavily customized for our specific application
 ///
 template <typename KeyType, typename ValType, typename ValClear = ZeroT<ValType>>
 struct RangeMap
@@ -67,7 +73,14 @@ struct RangeMap
     ///\TODO automate this w/ static assert/concepts:
     //Keytype must implement operator < +/-
 
-    RangeMap() :
+    static const unsigned defaultMinChunk = 1024;
+
+    /// \param minChunk the storage buffer operates in units of minChunk, this
+    ///                 setting could impact performance in some specialized
+    ///                 cases but in general shouldn't need to be set
+    explicit
+    RangeMap(const unsigned minChunk = defaultMinChunk) :
+        _minChunk(minChunk),
         _isEmpty(true),
         _minKeyIndex(0),
         _data(_minChunk),
@@ -108,7 +121,7 @@ struct RangeMap
         }
         else if (k < _minKey)
         {
-            expand(_maxKey-k);
+            expand(_maxKey-k+1);
             const unsigned dataSize(_data.size());
             _minKeyIndex = ((_minKeyIndex + dataSize)-(_minKey-k) ) % dataSize;
             _minKey = k;
@@ -116,7 +129,7 @@ struct RangeMap
 
         if ((_isEmpty) || (k > _maxKey))
         {
-            expand(k-_minKey);
+            expand(k-_minKey+1);
             _maxKey = k;
             _isEmpty=false;
         }
@@ -311,7 +324,7 @@ private:
         rotateLeft(a, (s-n));
     }
 
-    static const unsigned _minChunk = 1024;
+    const unsigned _minChunk;
 
     bool _isEmpty;
     unsigned _minKeyIndex;

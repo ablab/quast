@@ -1,5 +1,30 @@
--v0.29.0
-- MANTA-267 Support contig names with colons (for HLA contigs in 1kg hg38)
+v0.29.6
+- MANTA-287 add the unit test of consistency of supporting reads
+- MANTA-287 fix a bug in the small assembler by checking consistency when adding a new supporting read of contig
+v0.29.5
+- [#32] Preserve file path softlinks so that sidecar index files can be found
+- Fix field name in denovo variant search script
+v0.29.4
+- Add a python script to identify de novo calls
+- MANTA-285 add option to keep all temp files to support workflow debug
+- MANTA-276 mv configure to top-level, mv guides to docs dir, add methods docs
+- MANTA-284 improve windows shell support by shortening very long cmdlines
+v0.29.3
+- MANTA-280 filter supplementary reads without SA tags and read pairs with unmatched mate information
+- STARKA-306 fix rare chunk size boundary defect in RangeMap
+v0.29.2
+- MANTA-277 fix invalid genome region requested during insert size estimation
+- Update to pyflow 1.1.12 to improve SGE filesystem delay handling
+and fix issue between SGE and recent bash shellshock fix
+v0.29.1
+- [#22] Add new manta developer guide to source docs
+- [#21] improve fragment size estimation for very short fragments
+- RNA: Improve fusion detection sensitivity
+- MANTA-261 Transfer stable components from Manta windows port
+- MANTA-273 fix support for "csi"-style BAM indices
+- MANTA-273/[#14] allow bam index filenames in single-extension (Picard) style
+v0.29.0
+- MANTA-267/[#12] Support contig names with colons (for HLA contigs in 1kg hg38)
 - MANTA-252 Complete support for CRAM input
 - MANTA-264 Remove samtools from manta dependencies
 - MANTA-252 Change default chrom depth to median estimate from alignments

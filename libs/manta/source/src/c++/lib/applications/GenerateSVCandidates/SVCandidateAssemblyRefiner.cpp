@@ -1,7 +1,7 @@
 // -*- mode: c++; indent-tabs-mode: nil; -*-
 //
 // Manta - Structural Variant and Indel Caller
-// Copyright (c) 2013-2015 Illumina, Inc.
+// Copyright (c) 2013-2016 Illumina, Inc.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -106,6 +106,10 @@ isFilterSpanningAlignment(
     }
 
     ALIGNPATH::path_t apath(input_apath);
+
+#ifdef DEBUG_REFINER
+    log_os << __FUNCTION__ << ": apath: " << apath << " ; maxRefSpan: " << maxQCRefSpan << "\n";
+#endif
 
     // prepare apath by orienting it always going forward from the breakend and limiting the length to
     // the first maxQCRefSpan ref bases covered:
@@ -1057,8 +1061,9 @@ SVCandidateAssemblyRefiner(
     _header(header),
     _smallSVAssembler(opt.scanOpt, opt.refineOpt.smallSVAssembleOpt, opt.alignFileOpt,
                       opt.statsFilename, opt.chromDepthFilename, header, counts, opt.isRNA, edgeTracker.remoteTime),
-    _spanningAssembler(opt.scanOpt, opt.refineOpt.spanningAssembleOpt, opt.alignFileOpt,
-                       opt.statsFilename, opt.chromDepthFilename, header, counts, opt.isRNA, edgeTracker.remoteTime),
+    _spanningAssembler(opt.scanOpt,
+                       !opt.isRNA ? opt.refineOpt.spanningAssembleOpt : opt.refineOpt.RNAspanningAssembleOpt,
+                       opt.alignFileOpt, opt.statsFilename, opt.chromDepthFilename, header, counts, opt.isRNA, edgeTracker.remoteTime),
     _smallSVAligner(opt.refineOpt.smallSVAlignScores),
     _largeSVAligner(opt.refineOpt.largeSVAlignScores,opt.refineOpt.largeGapOpenScore),
     _largeInsertEdgeAligner(opt.refineOpt.largeInsertEdgeAlignScores),
@@ -1668,11 +1673,13 @@ getJumpAssembly(
         static const unsigned spanSet[] = {75, 100, 200};
         for (const unsigned maxQCRefSpan : spanSet)
         {
-            if (! isFilterSpanningAlignment( maxQCRefSpan, _spanningAligner, true, isRNA, hsAlign.align1.apath))
+            const unsigned qcSpan1 = maxQCRefSpan + (isRNA ? apath_spliced_length(hsAlign.align1.apath) : 0);
+            if (! isFilterSpanningAlignment(qcSpan1, _spanningAligner, true, isRNA, hsAlign.align1.apath))
             {
                 isFilterAlign1 = false;
             }
-            if (! isFilterSpanningAlignment( maxQCRefSpan, _spanningAligner, false, isRNA, hsAlign.align2.apath))
+            const unsigned qcSpan2 = maxQCRefSpan + (isRNA ? apath_spliced_length(hsAlign.align2.apath) : 0);
+            if (! isFilterSpanningAlignment(qcSpan2, _spanningAligner, false, isRNA, hsAlign.align2.apath))
             {
                 isFilterAlign2 = false;
             }

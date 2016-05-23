@@ -1,6 +1,6 @@
 #
 # Manta - Structural Variant and Indel Caller
-# Copyright (c) 2013-2015 Illumina, Inc.
+# Copyright (c) 2013-2016 Illumina, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -28,26 +28,6 @@
 # common log definition for bash installation scripts:
 ilog() {
 	echo -e $@ >&2
-}
-
-common_options () {
-    TEMP=`getopt -n $SCRIPT -o fc -- "$@"`
-    if [ $? != 0 ] ; then
-        ilog $SCRIPT: invalid option
-        ilog "Terminating..."
-        exit 2
-    fi
-    eval set -- "$TEMP"
-    FORCE=
-    CLEAN=
-    while true ; do
-        case "$1" in
-            -f) FORCE=true ; shift ;;
-            -c) CLEAN=true ; shift ;;
-            --)              shift ; break ;;
-            *) ilog "Internal error!"; exit 2 ;;
-        esac
-    done
 }
 
 

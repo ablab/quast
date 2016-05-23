@@ -1,7 +1,7 @@
 // -*- mode: c++; indent-tabs-mode: nil; -*-
 //
 // Manta - Structural Variant and Indel Caller
-// Copyright (c) 2013-2015 Illumina, Inc.
+// Copyright (c) 2013-2016 Illumina, Inc.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -121,6 +121,25 @@ struct SVCandidateSetSequenceFragment
     {
         return (read1.isAnchored() || read2.isAnchored());
     }
+
+
+    bool
+    checkReadPair() const
+    {
+        if (read1.isSet() && read2.isSet())
+        {
+            if (read1.bamrec.target_id() != read2.bamrec.mate_target_id()) return false;
+            if (read2.bamrec.target_id() != read1.bamrec.mate_target_id()) return false;
+            if (read1.bamrec.pos() != read2.bamrec.mate_pos()) return false;
+            if (read2.bamrec.pos() != read1.bamrec.mate_pos()) return false;
+            if (read1.bamrec.is_fwd_strand() != read2.bamrec.is_mate_fwd_strand()) return false;
+            if (read2.bamrec.is_fwd_strand() != read1.bamrec.is_mate_fwd_strand()) return false;
+        }
+
+        return true;
+    }
+
+
 
     std::vector<SVSequenceFragmentAssociation> svLink; ///< which SVs from the set are this molecule associated with?
     SVCandidateSetRead read1;

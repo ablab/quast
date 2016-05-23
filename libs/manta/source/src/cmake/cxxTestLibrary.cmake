@@ -1,6 +1,6 @@
 #
 # Manta - Structural Variant and Indel Caller
-# Copyright (c) 2013-2015 Illumina, Inc.
+# Copyright (c) 2013-2016 Illumina, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -25,8 +25,7 @@
 ##
 ################################################################################
 
-set(IS_QUIET true)
-include(${THIS_CXX_EXECUTABLE_CMAKE})
+include (${THIS_CXX_COMMMON_CMAKE})
 
 set(TESTCONFIGNAME "test_config.h")
 set(TESTCONFIGSRC "${CMAKE_CURRENT_SOURCE_DIR}/${TESTCONFIGNAME}.in")
@@ -59,7 +58,7 @@ else ()
     add_dependencies(${TEST_TARGET_NAME} ${THIS_OPT})
 
     target_link_libraries (${TEST_TARGET_NAME} ${ADDITIONAL_UNITTEST_LIB} ${THIS_AVAILABLE_LIBRARIES}
-                           ${HTSLIB_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} ${Boost_LIBRARIES} ${THIS_ADDITIONAL_LIB})
+                           ${HTSLIB_LIBRARY} ${Boost_LIBRARIES} ${THIS_ADDITIONAL_LIB})
 
     set(TEST_BINARY ${CMAKE_CURRENT_BINARY_DIR}/${TEST_TARGET_NAME})
 
@@ -67,7 +66,7 @@ else ()
 endif ()
 
 # make the target project use folders when applying cmake IDE generators like Visual Studio
-file(RELATIVE_PATH THIS_RELATIVE_LIBDIR "${CMAKE_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")
+file(RELATIVE_PATH THIS_RELATIVE_LIBDIR "${THIS_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")
 set_property(TARGET ${TEST_TARGET_NAME} PROPERTY FOLDER "${THIS_RELATIVE_LIBDIR}")
 
 add_dependencies(${THIS_UNITTESTS} ${TEST_TARGET_NAME})

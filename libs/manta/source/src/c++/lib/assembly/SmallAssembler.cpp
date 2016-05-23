@@ -1,7 +1,7 @@
 // -*- mode: c++; indent-tabs-mode: nil; -*-
 //
 // Manta - Structural Variant and Indel Caller
-// Copyright (c) 2013-2015 Illumina, Inc.
+// Copyright (c) 2013-2016 Illumina, Inc.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -182,6 +182,34 @@ walk(const SmallAssemblerOptions& opt,
     contig.supportReads = wordReadsIter->second;
     contig.seq = seed;
 
+    // collecting rejecting reads for the seed from the unselected branches
+    for (const char symbol : opt.alphabet)
+    {
+        // the seed itself
+        if (symbol == seed[wordLength-1]) continue;
+
+        // add rejecting reads from an unselected word/branch
+        const std::string tmpBack = getEnd(seed, wordLength-1, false);
+        const std::string newKey(addBase(tmpBack, symbol, true));
+#ifdef DEBUG_ASBL
+        log_os << "Extending end backwords: base " << symbol << " " << newKey << "\n";
+#endif
+
+        wordReadsIter= wordReads.find(newKey);
+        if (wordReadsIter == wordReadsEnd) continue;
+        const std::set<unsigned>& unselectedReads(wordReadsIter->second);
+#ifdef DEBUG_ASBL
+        log_os << "Supporting reads for the backwards word : ";
+        print_readSet(unselectedReads);
+#endif
+
+        contig.rejectReads.insert(unselectedReads.begin(), unselectedReads.end());
+#ifdef DEBUG_ASBL
+        log_os << "seed's rejecting reads : ";
+        print_readSet(contig.rejectReads);
+#endif
+    }
+
     seenEdgeBefore.clear();
     seenEdgeBefore.insert(seed);
 
@@ -196,38 +224,40 @@ walk(const SmallAssemblerOptions& opt,
 
         while (true)
         {
-            const std::string tmp(getEnd(contig.seq, wordLength-1, isEnd));
+            const std::string previousWord = getEnd(contig.seq, wordLength, isEnd);
+            const std::string trunk(getEnd(contig.seq, wordLength-1, isEnd));
 
 #ifdef DEBUG_ASBL
             log_os << "# current contig : " << contig.seq << " size : " << contig.seq.size() << "\n"
-                   << " getEnd : " << tmp << "\n";
+                   << " getEnd : " << trunk << "\n";
             log_os << "contig rejecting reads : ";
             print_readSet(contig.rejectReads);
             log_os << "contig supporting reads : ";
             print_readSet(contig.supportReads);
 #endif
 
-            if (seenVertexBefore.count(tmp))
+            if (seenVertexBefore.count(trunk))
             {
 #ifdef DEBUG_ASBL
-                log_os << "Seen word " << tmp << " before on this walk, terminating" << "\n";
+                log_os << "Seen word " << trunk << " before on this walk, terminating" << "\n";
 #endif
                 break;
             }
 
-            seenVertexBefore.insert(tmp);
+            seenVertexBefore.insert(trunk);
 
             unsigned maxBaseCount(0);
             unsigned maxSharedReadCount(0);
             char maxBase(opt.alphabet[0]);
+            std::set<unsigned> maxWordReads;
             std::set<unsigned> maxSharedReads;
+            std::set<unsigned> previousWordReads;
             std::set<unsigned> supportReads2Remove;
-            std::set<unsigned> supportReads2Add;
             std::set<unsigned> rejectReads2Add;
 
             for (const char symbol : opt.alphabet)
             {
-                const std::string newKey(addBase(tmp, symbol, isEnd));
+                const std::string newKey(addBase(trunk, symbol, isEnd));
 #ifdef DEBUG_ASBL
                 log_os << "Extending end : base " << symbol << " " << newKey << "\n";
 #endif
@@ -262,11 +292,10 @@ walk(const SmallAssemblerOptions& opt,
                         supportReads2Remove.insert(maxSharedReads.begin(), maxSharedReads.end());
                     // the old supporting reads is for an unselected allele
                     // they become rejecting reads for the currently selected allele
-                    if (!supportReads2Add.empty())
-                        rejectReads2Add.insert(supportReads2Add.begin(), supportReads2Add.end());
+                    if (!maxWordReads.empty())
+                        rejectReads2Add.insert(maxWordReads.begin(), maxWordReads.end());
                     // new supporting reads for the currently selected allele
-                    supportReads2Add = currWordReads;
-
+                    maxWordReads = currWordReads;
                     maxSharedReadCount = sharedReadCount;
                     maxSharedReads = sharedReads;
                     maxBaseCount = currWordCount;
@@ -296,7 +325,7 @@ walk(const SmallAssemblerOptions& opt,
             if (maxBaseCount == 0) break;
 
             {
-                const std::string newEdge(addBase(tmp, maxBase, isEnd));
+                const std::string newEdge(addBase(trunk, maxBase, isEnd));
                 seenEdgeBefore.insert(newEdge);
             }
 
@@ -316,6 +345,36 @@ walk(const SmallAssemblerOptions& opt,
 
             // TODO: can add threshold for the count or percentage of shared reads
             {
+                // walk backwards for one step at a branching point
+                if (maxWordReads != previousWordReads)
+                {
+                    const char tmpSymbol = (isEnd? previousWord[0] : previousWord[wordLength-1]);
+                    for (const char symbol : opt.alphabet)
+                    {
+                        // the selected branch
+                        if (symbol == tmpSymbol) continue;
+
+                        // add rejecting reads from an unselected branch
+                        const std::string newKey(addBase(trunk, symbol, !isEnd));
+#ifdef DEBUG_ASBL
+                        log_os << "Extending end backwords: base " << symbol << " " << newKey << "\n";
+#endif
+                        wordReadsIter= wordReads.find(newKey);
+                        if (wordReadsIter == wordReadsEnd) continue;
+                        const std::set<unsigned>& backWordReads(wordReadsIter->second);
+#ifdef DEBUG_ASBL
+                        log_os << "Supporting reads for the backwards word : ";
+                        print_readSet(backWordReads);
+#endif
+                        rejectReads2Add.insert(backWordReads.begin(), backWordReads.end());
+#ifdef DEBUG_ASBL
+                        log_os << "rejectReads2Add upated : ";
+                        print_readSet(rejectReads2Add);
+#endif
+                    }
+                }
+                previousWordReads = maxWordReads;
+
 #ifdef DEBUG_ASBL
                 log_os << "Adding rejecting reads " << "\n"
                        << " Old : ";
@@ -339,11 +398,11 @@ walk(const SmallAssemblerOptions& opt,
                        << " Old : ";
                 print_readSet(contig.supportReads);
                 log_os << " To be added : ";
-                print_readSet(supportReads2Add);
+                print_readSet(maxWordReads);
 #endif
                 // update supporting reads
                 // add reads that support the selected allel
-                for (const unsigned rd : supportReads2Add)
+                for (const unsigned rd : maxWordReads)
                 {
                     if (contig.rejectReads.find(rd) == contig.rejectReads.end())
                         contig.supportReads.insert(rd);
@@ -483,7 +542,7 @@ buildContigs(
     log_os << logtag << "In SVLocusAssembler::buildContig. word length=" << wordLength << " readCount: " << readCount << "\n";
     for (unsigned readIndex(0); readIndex<readCount; ++readIndex)
     {
-        log_os << reads[readIndex] << " used=" << readInfo[readIndex].isUsed << "\n";
+        log_os << "read #" << readIndex <<": " << reads[readIndex] << " used=" << readInfo[readIndex].isUsed << "\n";
     }
 #endif
 
@@ -545,12 +604,11 @@ buildContigs(
 
         while (! maxWords.empty())
         {
+            maxWord=(*maxWords.begin());
+            maxWords.erase(maxWords.begin());
 #ifdef DEBUG_ASBL
             log_os << logtag << "Seeding kmer : " << maxWord << "\n";
 #endif
-
-            maxWord=(*maxWords.begin());
-            maxWords.erase(maxWords.begin());
 
             AssembledContig newContig;
             walk(opt, maxWord, wordLength, wordCount, wordSupportReads, seenEdgeBefore, newContig);

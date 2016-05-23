@@ -1,6 +1,6 @@
 #
 # Manta - Structural Variant and Indel Caller
-# Copyright (c) 2013-2015 Illumina, Inc.
+# Copyright (c) 2013-2016 Illumina, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -36,68 +36,15 @@ pyflowDir=os.path.join(scriptDir,"pyflow")
 sys.path.append(os.path.abspath(pyflowDir))
 
 from configBuildTimeInfo import workflowVersion
-from pyflow import WorkflowRunner
-from workflowUtil import checkFile, ensureDir, isWindows, preJoin, which, \
-                         getNextGenomeSegment, getFastaChromOrderSize, getRobustChromId, cleanPyEnv
-
 from configureUtil import getIniSections,dumpIniSections
-
+from pyflow import WorkflowRunner
+from sharedWorkflow import getMkdirCmd, getMvCmd, getRmCmd, getRmdirCmd, \
+                           quoteStringList, runDepthFromAlignments
+from workflowUtil import checkFile, ensureDir, isWindows, preJoin, which, \
+                         getNextGenomeSegment, getFastaChromOrderSize, cleanPyEnv
 
 
 __version__ = workflowVersion
-
-
-def isString(x):
-    return isinstance(x, basestring)
-
-
-def isIterable(x):
-    return (getattr(x, '__iter__', False) != False)
-
-
-def lister(x):
-    """
-    Convert input into a list, whether it's already iterable or
-    not. Make an exception for individual strings to be returned
-    as a list of one string, instead of being chopped into letters
-    Also, convert None type to empty list:
-    """
-    # special handling in case a single string is given:
-    if x is None : return []
-    if (isString(x) or (not isIterable(x))) : return [x]
-    return list(x)
-
-
-
-def setzer(x) :
-    """
-    convert user input into a set, handling the pathological case
-    that you have been handed a single string, and you don't want
-    a set of letters:
-    """
-    return set(lister(x))
-
-
-def getMkdirCmd() :
-    if isWindows() :
-        return ["mkdir"]
-    else:
-        return ["mkdir","-p"]
-
-def getRmdirCmd() :
-    if isWindows():
-        return ["rd","/s","/q"]
-    else:
-        return ["rm","-rf"]
-
-def getRmCmd() :
-    if isWindows():
-        return ["del","/f"]
-    else:
-        return ["rm","-f"]
-
-def quoteStringList(strList):
-    return ["\"%s\"" % (x) for x in strList]
 
 
 
@@ -134,8 +81,9 @@ def runStats(self,taskPrefix="",dependencies=None) :
     nextStepWait = set()
     nextStepWait.add(mergeTask)
 
-    rmStatsTmpCmd = getRmdirCmd() + [tmpStatsDir]
-    rmTask=self.addTask(preJoin(taskPrefix,"rmTmpDir"),rmStatsTmpCmd,dependencies=mergeTask, isForceLocal=True)
+    if not self.params.isRetainTempFiles :
+        rmStatsTmpCmd = getRmdirCmd() + [tmpStatsDir]
+        rmTask=self.addTask(preJoin(taskPrefix,"rmTmpDir"),rmStatsTmpCmd,dependencies=mergeTask, isForceLocal=True)
 
     # summarize stats in format that's easier for human review
     cmd = [self.params.mantaStatsSummaryBin]
@@ -147,11 +95,7 @@ def runStats(self,taskPrefix="",dependencies=None) :
 
 
 
-def _runDepthShared(self,taskPrefix,dependencies, depthFunc) :
-    """
-    estimate chrom depth using the specified depthFunc to compute per-sample dpeth
-    """
-
+def mantaRunDepthFromAlignments(self,taskPrefix="getChromDepth",dependencies=None):
     bamList=[]
     if len(self.params.normalBamList) :
         bamList = self.params.normalBamList
@@ -161,94 +105,7 @@ def _runDepthShared(self,taskPrefix,dependencies, depthFunc) :
         return set()
 
     outputPath=self.paths.getChromDepth()
-    outputFilename=os.path.basename(outputPath)
-
-    tmpDir=outputPath+".tmpdir"
-    makeTmpDirCmd = getMkdirCmd() + [tmpDir]
-    dirTask=self.addTask(preJoin(taskPrefix,"makeTmpDir"), makeTmpDirCmd, dependencies=dependencies, isForceLocal=True)
-
-    tmpFiles = []
-    scatterTasks = set()
-
-    for (bamIndex, bamFile) in enumerate(bamList) :
-        indexStr = str(bamIndex).zfill(3)
-        tmpFiles.append(os.path.join(tmpDir,outputFilename+"."+ indexStr +".txt"))
-        scatterTasks |= setzer(depthFunc(self,taskPrefix+"_sample"+indexStr,dirTask,bamFile,tmpFiles[-1]))
-
-    cmd = [ self.params.mergeChromDepth ]
-    cmd.extend(["--out",outputPath])
-    for tmpFile in tmpFiles :
-        cmd.extend(["--in",tmpFile])
-
-    mergeTask = self.addTask(preJoin(taskPrefix,"mergeChromDepth"),cmd,dependencies=scatterTasks,isForceLocal=True)
-
-    nextStepWait = set()
-    nextStepWait.add(mergeTask)
-
-    rmTmpCmd = getRmdirCmd() + [tmpDir]
-    rmTask=self.addTask(preJoin(taskPrefix,"rmTmpDir"),rmTmpCmd,dependencies=mergeTask, isForceLocal=True)
-
-    return nextStepWait
-
-
-def runDepthFromAlignments(self,taskPrefix="",dependencies=None) :
-    """
-    estimate chrom depth directly from BAM/CRAM file
-    """
-
-    def depthFunc(self,taskPrefix,dependencies,bamFile,outFile) :
-        outputPath=outFile
-        outputFilename=os.path.basename(outputPath)
-
-        tmpDir=os.path.join(outputPath+".tmpdir")
-        makeTmpDirCmd = getMkdirCmd() + [tmpDir]
-        dirTask=self.addTask(preJoin(taskPrefix,"makeTmpDir"), makeTmpDirCmd, dependencies=dependencies, isForceLocal=True)
-
-        tmpFiles = []
-        scatterTasks = set()
-
-        def getChromosomeGroups(params) :
-            """
-            Iterate chromosomes/contigs and 'clump' small contigs together
-            """
-            minSize=200000
-            group = []
-            headSize = 0
-
-            chromCount = len(params.chromSizes)
-            assert(len(params.chromOrder) == chromCount)
-            for chromIndex in range(chromCount) :
-                chromLabel = params.chromOrder[chromIndex]
-                chromSize = params.chromSizes[chromLabel]
-                if headSize+chromSize <= minSize :
-                    group.append((chromIndex,chromLabel))
-                    headSize += chromSize
-                else :
-                    if len(group) != 0 : yield(group)
-                    group = [(chromIndex,chromLabel)]
-                    headSize = chromSize
-            if len(group) != 0 : yield(group)
-
-        for chromGroup in getChromosomeGroups(self.params) :
-            assert(len(chromGroup) > 0)
-            cid = getRobustChromId(chromGroup[0][0], chromGroup[0][1])
-            if len(chromGroup) > 1 :
-                cid += "_to_"+getRobustChromId(chromGroup[-1][0], chromGroup[-1][1])
-            tmpFiles.append(os.path.join(tmpDir,outputFilename+"_"+cid))
-            cmd = [self.params.mantaGetChromDepthBin,"--align-file",bamFile,"--output",tmpFiles[-1]]
-            for (chromIndex,chromLabel) in chromGroup :
-                cmd.extend(["--chrom",chromLabel])
-            scatterTasks.add(self.addTask(preJoin(taskPrefix,"estimateChromDepth_"+cid),cmd,dependencies=dirTask))
-
-        catCmd = [self.params.mantaCat,"--output",outputPath]+tmpFiles
-        catTask = self.addTask(preJoin(taskPrefix,"catChromDepth"),catCmd,dependencies=scatterTasks, isForceLocal=True)
-
-        nextStepWait = set()
-        nextStepWait.add(catTask)
-
-        return nextStepWait
-
-    return _runDepthShared(self,taskPrefix,dependencies,depthFunc)
+    return runDepthFromAlignments(self, bamList, outputPath, taskPrefix, dependencies)
 
 
 
@@ -262,10 +119,11 @@ def runLocusGraph(self,taskPrefix="",dependencies=None):
     graphStatsPath=self.paths.getGraphStatsPath()
 
     graphFilename=os.path.basename(graphPath)
-    tmpGraphDir=os.path.join(self.params.workDir,graphFilename+".tmpdir")
 
-    makeTmpDirCmd = getMkdirCmd() + [tmpGraphDir]
-    dirTask=self.addTask(preJoin(taskPrefix,"makeTmpDir"), makeTmpDirCmd, dependencies=dependencies, isForceLocal=True)
+    tmpGraphDir=self.paths.getTmpGraphDir()
+
+    makeTmpGraphDirCmd = getMkdirCmd() + [tmpGraphDir]
+    dirTask = self.addTask(preJoin(taskPrefix,"makeGraphTmpDir"), makeTmpGraphDirCmd, dependencies=dependencies, isForceLocal=True)
 
     tmpGraphFiles = []
     graphTasks = set()
@@ -274,6 +132,7 @@ def runLocusGraph(self,taskPrefix="",dependencies=None):
         """
         Iterate segment groups and 'clump' small contigs together
         """
+
         minSegmentGroupSize=200000
         group = []
         headSize = 0
@@ -292,7 +151,7 @@ def runLocusGraph(self,taskPrefix="",dependencies=None):
         gid=gsegGroup[0].id
         if len(gsegGroup) > 1 :
             gid += "_to_"+gsegGroup[-1].id
-        tmpGraphFiles.append(os.path.join(tmpGraphDir,graphFilename+"."+gid+".bin"))
+        tmpGraphFiles.append(self.paths.getTmpGraphFile(gid))
         graphCmd = [ self.params.mantaGraphBin ]
         graphCmd.extend(["--output-file", tmpGraphFiles[-1]])
         graphCmd.extend(["--align-stats",statsPath])
@@ -314,18 +173,20 @@ def runLocusGraph(self,taskPrefix="",dependencies=None):
         if self.params.isRNA :
             graphCmd.append("--rna")
 
-        graphTaskLabel=preJoin(taskPrefix,"makeLocusGraph_"+gid)
-        graphTasks.add(self.addTask(graphTaskLabel,graphCmd,dependencies=dirTask,memMb=self.params.estimateMemMb))
+        graphTask=preJoin(taskPrefix,"makeLocusGraph_"+gid)
+        graphTasks.add(self.addTask(graphTask,graphCmd,dependencies=dirTask,memMb=self.params.estimateMemMb))
 
     if len(tmpGraphFiles) == 0 :
         raise Exception("No SV Locus graphs to create. Possible target region parse error.")
 
+    tmpGraphFileList = self.paths.getTmpGraphFileListPath()
+    tmpGraphFileListTask = preJoin(taskPrefix,"mergeLocusGraphInputList")
+    self.addWorkflowTask(tmpGraphFileListTask,listFileWorkflow(tmpGraphFileList,tmpGraphFiles),dependencies=graphTasks)
+
     mergeCmd = [ self.params.mantaGraphMergeBin ]
     mergeCmd.extend(["--output-file", graphPath])
-    for gfile in tmpGraphFiles :
-        mergeCmd.extend(["--graph-file", gfile])
-
-    mergeTask = self.addTask(preJoin(taskPrefix,"mergeLocusGraph"),mergeCmd,dependencies=graphTasks,memMb=self.params.mergeMemMb)
+    mergeCmd.extend(["--graph-file-list",tmpGraphFileList])
+    mergeTask = self.addTask(preJoin(taskPrefix,"mergeLocusGraph"),mergeCmd,dependencies=tmpGraphFileListTask,memMb=self.params.mergeMemMb)
 
     # Run a separate process to rigorously check that the final graph is valid, the sv candidate generators will check as well, but
     # this makes the check much more clear:
@@ -334,8 +195,9 @@ def runLocusGraph(self,taskPrefix="",dependencies=None):
     checkCmd.extend(["--graph-file", graphPath])
     checkTask = self.addTask(preJoin(taskPrefix,"checkLocusGraph"),checkCmd,dependencies=mergeTask,memMb=self.params.mergeMemMb)
 
-    rmGraphTmpCmd = getRmdirCmd() + [tmpGraphDir]
-    rmTask=self.addTask(preJoin(taskPrefix,"rmTmpDir"),rmGraphTmpCmd,dependencies=mergeTask)
+    if not self.params.isRetainTempFiles :
+        rmGraphTmpCmd = getRmdirCmd() + [tmpGraphDir]
+        rmTask=self.addTask(preJoin(taskPrefix,"rmTmpDir"),rmGraphTmpCmd,dependencies=mergeTask)
 
     graphStatsCmd  = [self.params.mantaGraphStatsBin,"--global"]
     graphStatsCmd.extend(["--graph-file",graphPath])
@@ -345,6 +207,105 @@ def runLocusGraph(self,taskPrefix="",dependencies=None):
 
     nextStepWait = set()
     nextStepWait.add(checkTask)
+    return nextStepWait
+
+
+
+class listFileWorkflow(WorkflowRunner) :
+    """
+    creates a file which enumerates the values in a list, one line per item
+    """
+
+    def __init__(self2, listFile, listItems) :
+        self2.listFile = listFile
+        self2.listItems = listItems
+
+    def workflow(self2) :
+        fp = open(self2.listFile, "w")
+        for listItem in self2.listItems :
+            fp.write(listItem+"\n")
+
+
+
+def sortAllVcfs(self, taskPrefix="", dependencies=None) :
+    """sort/prep final vcf outputs"""
+
+    nextStepWait = set()
+
+    def getVcfSortCmd(vcfListFile, outPath, isDiploid) :
+        cmd  = "\"%s\" -E \"%s\" -u " % (sys.executable, self.params.mantaSortVcf)
+        cmd += "-f \"%s\"" % (vcfListFile)
+
+        # apply the ploidy filter to diploid variants
+        if isDiploid:
+            tempVcf = self.paths.getTempDiploidPath()
+            cmd += " > \"%s\"" % (tempVcf)
+            cmd += " && \"%s\" -E \"%s\" \"%s\"" % (sys.executable, self.params.mantaPloidyFilter, tempVcf)
+
+        cmd += " | \"%s\" -c > \"%s\"" % (self.params.bgzipBin, outPath)
+
+        if isDiploid:
+            cmd += " && " + " ".join(getRmCmd()) + " \"%s\"" % (self.paths.getTempDiploidPath())
+        return cmd
+
+    def getVcfTabixCmd(vcfPath) :
+        return [self.params.tabixBin,"-f","-p","vcf", vcfPath]
+
+
+    def sortVcfs(pathList, outPath, label, isDiploid=False) :
+        if len(pathList) == 0 : return set()
+
+        # make header modifications to first vcf in list of files to be sorted:
+        headerFixTask=preJoin(taskPrefix,"fixVcfHeader_"+label)
+        def getHeaderFixCmd(fileName) :
+            tmpName=fileName+".reheader.tmp"
+            cmd  = "\"%s\" -E \"%s\"" % (sys.executable, self.params.vcfCmdlineSwapper)
+            cmd += ' "' + " ".join(self.params.configCommandLine) + '"'
+            cmd += " < \"%s\" > \"%s\"" % (fileName,tmpName)
+            cmd += " && " + " ".join(getMvCmd()) +  " \"%s\" \"%s\"" % (tmpName, fileName)
+            return cmd
+
+        self.addTask(headerFixTask, getHeaderFixCmd(pathList[0]), dependencies=dependencies, isForceLocal=True)
+
+        vcfListFile = self.paths.getVcfListPath(label)
+        inputVcfTask = self.addWorkflowTask(preJoin(taskPrefix,label+"InputList"),listFileWorkflow(vcfListFile,pathList),dependencies=headerFixTask)
+
+        sortCmd = getVcfSortCmd(vcfListFile, outPath, isDiploid)
+        sortTask=self.addTask(preJoin(taskPrefix,"sort_"+label),sortCmd,dependencies=inputVcfTask)
+
+        nextStepWait.add(self.addTask(preJoin(taskPrefix,"tabix_"+label),getVcfTabixCmd(outPath),dependencies=sortTask,isForceLocal=True))
+        return sortTask
+
+
+    candSortTask = sortVcfs(self.candidateVcfPaths,
+                            self.paths.getSortedCandidatePath(),
+                            "sortCandidateSV")
+    sortVcfs(self.diploidVcfPaths,
+             self.paths.getSortedDiploidPath(),
+             "sortDiploidSV",
+             isDiploid=True)
+    sortVcfs(self.somaticVcfPaths,
+             self.paths.getSortedSomaticPath(),
+             "sortSomaticSV")
+    sortVcfs(self.tumorVcfPaths,
+             self.paths.getSortedTumorPath(),
+             "sortTumorSV")
+
+    def getExtractSmallCmd(maxSize, inPath, outPath) :
+        cmd  = "\"%s\" -dc \"%s\"" % (self.params.bgzipBin, inPath)
+        cmd += " | \"%s\" -E \"%s\" --maxSize %i" % (sys.executable, self.params.mantaExtraSmallVcf, maxSize)
+        cmd += " | \"%s\" -c > \"%s\"" % (self.params.bgzipBin, outPath)
+        return cmd
+
+    def extractSmall(inPath, outPath) :
+        maxSize = int(self.params.minScoredVariantSize) - 1
+        if maxSize < 1 : return
+        smallCmd = getExtractSmallCmd(maxSize, inPath, outPath)
+        smallTask=self.addTask(preJoin(taskPrefix,"extractSmallIndels"), smallCmd, dependencies=candSortTask, isForceLocal=True)
+        nextStepWait.add(self.addTask(smallTask+"_tabix", getVcfTabixCmd(outPath), dependencies=smallTask, isForceLocal=True))
+
+    extractSmall(self.paths.getSortedCandidatePath(), self.paths.getSortedCandidateSmallIndelsPath())
+
     return nextStepWait
 
 
@@ -371,23 +332,23 @@ def runHyGen(self, taskPrefix="", dependencies=None) :
         hyGenMemMb = self.params.hyGenSGEMemMb
 
     hygenTasks=set()
-    candidateVcfPaths = []
-    diploidVcfPaths = []
-    somaticVcfPaths = []
-    tumorVcfPaths = []
+    self.candidateVcfPaths = []
+    self.diploidVcfPaths = []
+    self.somaticVcfPaths = []
+    self.tumorVcfPaths = []
 
     edgeRuntimeLogPaths = []
     edgeStatsLogPaths = []
 
     for binId in range(self.params.nonlocalWorkBins) :
         binStr = str(binId).zfill(4)
-        candidateVcfPaths.append(self.paths.getHyGenCandidatePath(binStr))
+        self.candidateVcfPaths.append(self.paths.getHyGenCandidatePath(binStr))
         if isTumorOnly :
-            tumorVcfPaths.append(self.paths.getHyGenTumorPath(binStr))
-	else:
-	    diploidVcfPaths.append(self.paths.getHyGenDiploidPath(binStr))
-	    if isSomatic :
-                somaticVcfPaths.append(self.paths.getHyGenSomaticPath(binStr))
+            self.tumorVcfPaths.append(self.paths.getHyGenTumorPath(binStr))
+        else:
+            self.diploidVcfPaths.append(self.paths.getHyGenDiploidPath(binStr))
+            if isSomatic :
+                self.somaticVcfPaths.append(self.paths.getHyGenSomaticPath(binStr))
 
         hygenCmd = [ self.params.mantaHyGenBin ]
         hygenCmd.extend(["--align-stats",statsPath])
@@ -398,19 +359,19 @@ def runHyGen(self, taskPrefix="", dependencies=None) :
         hygenCmd.extend(["--min-candidate-spanning-count", self.params.minCandidateSpanningCount])
         hygenCmd.extend(["--min-scored-sv-size", self.params.minScoredVariantSize])
         hygenCmd.extend(["--ref",self.params.referenceFasta])
-        hygenCmd.extend(["--candidate-output-file", candidateVcfPaths[-1]])
+        hygenCmd.extend(["--candidate-output-file", self.candidateVcfPaths[-1]])
 
-	# tumor-only mode
+        # tumor-only mode
         if isTumorOnly :
-            hygenCmd.extend(["--tumor-output-file", tumorVcfPaths[-1]])
-	else:
-            hygenCmd.extend(["--diploid-output-file", diploidVcfPaths[-1]])
+            hygenCmd.extend(["--tumor-output-file", self.tumorVcfPaths[-1]])
+        else:
+            hygenCmd.extend(["--diploid-output-file", self.diploidVcfPaths[-1]])
             hygenCmd.extend(["--min-qual-score", self.params.minDiploidVariantScore])
             hygenCmd.extend(["--min-pass-qual-score", self.params.minPassDiploidVariantScore])
             hygenCmd.extend(["--min-pass-gt-score", self.params.minPassDiploidGTScore])
-	    # tumor/normal mode
-	    if isSomatic :
-       	        hygenCmd.extend(["--somatic-output-file", somaticVcfPaths[-1]])
+            # tumor/normal mode
+            if isSomatic :
+                hygenCmd.extend(["--somatic-output-file", self.somaticVcfPaths[-1]])
                 hygenCmd.extend(["--min-somatic-score", self.params.minSomaticScore])
                 hygenCmd.extend(["--min-pass-somatic-score", self.params.minPassSomaticScore])
 
@@ -438,85 +399,46 @@ def runHyGen(self, taskPrefix="", dependencies=None) :
         if self.params.isUnstrandedRNA :
             hygenCmd.append("--unstranded")
 
-        hygenTaskLabel=preJoin(taskPrefix,"generateCandidateSV_"+binStr)
-        hygenTasks.add(self.addTask(hygenTaskLabel,hygenCmd,dependencies=dirTask, memMb=hyGenMemMb))
+        hygenTask=preJoin(taskPrefix,"generateCandidateSV_"+binStr)
+        hygenTasks.add(self.addTask(hygenTask,hygenCmd,dependencies=dirTask, memMb=hyGenMemMb))
 
     nextStepWait = copy.deepcopy(hygenTasks)
 
-    def getVcfSortCmd(vcfPaths, outPath, isDiploid) :
-        cmd  = "\"%s\" -E \"%s\" -u " % (sys.executable,self.params.mantaSortVcf)
-        cmd += " ".join(quoteStringList(vcfPaths))
+    sortAllVcfs(self,taskPrefix=taskPrefix,dependencies=hygenTasks)
 
-        # apply the ploidy filter to diploid variants
-        if isDiploid:
-            tempVcf = self.paths.getTempDiploidPath()
-            cmd += " > \"%s\"" % (tempVcf)
-            cmd += " && \"%s\" -E \"%s\" \"%s\"" % (sys.executable, self.params.mantaPloidyFilter, tempVcf)
+    #
+    # sort the edge runtime logs
+    #
+    logListFile = self.paths.getEdgeRuntimeLogListPath()
+    logListTask = preJoin(taskPrefix,"sortEdgeRuntimeLogsInputList")
+    self.addWorkflowTask(logListTask,listFileWorkflow(logListFile,edgeRuntimeLogPaths),dependencies=hygenTasks)
 
-        cmd += " | \"%s\" -c > \"%s\"" % (self.params.bgzipBin, outPath)
-
-        if isDiploid:
-            cmd += " && " + " ".join(getRmCmd()) + " \"%s\"" % (self.paths.getTempDiploidPath())
+    def getEdgeLogSortCmd(logListFile, outPath) :
+        cmd  = [sys.executable,"-E",self.params.mantaSortEdgeLogs,"-f", logListFile,"-o",outPath]
         return cmd
 
-    def getVcfTabixCmd(vcfPath) :
-        return [self.params.tabixBin,"-f","-p","vcf", vcfPath]
+    edgeSortCmd=getEdgeLogSortCmd(logListFile,self.paths.getSortedEdgeRuntimeLogPath())
+    self.addTask(preJoin(taskPrefix,"sortEdgeRuntimeLogs"), edgeSortCmd, dependencies=logListTask, isForceLocal=True)
 
+    #
+    # merge all edge stats
+    #
+    statsFileList = self.paths.getStatsFileListPath()
+    statsListTask = preJoin(taskPrefix,"mergeEdgeStatsInputList")
+    self.addWorkflowTask(statsListTask,listFileWorkflow(statsFileList,edgeStatsLogPaths),dependencies=hygenTasks)
 
-    def sortVcfs(pathList, outPath, label, isDiploid=False) :
-        if len(pathList) == 0 : return set()
-        sortCmd = getVcfSortCmd(pathList, outPath, isDiploid)
-        sortTask=self.addTask(preJoin(taskPrefix,"sort_"+label),sortCmd,dependencies=hygenTasks)
-        nextStepWait.add(self.addTask(preJoin(taskPrefix,"tabix_"+label),getVcfTabixCmd(outPath),dependencies=sortTask,isForceLocal=True))
-        return sortTask
-
-    candSortTask = sortVcfs(candidateVcfPaths,
-                            self.paths.getSortedCandidatePath(),
-                            "sortCandidateSV")
-    sortVcfs(diploidVcfPaths,
-             self.paths.getSortedDiploidPath(),
-             "sortDiploidSV",
-             isDiploid=True)
-    sortVcfs(somaticVcfPaths,
-             self.paths.getSortedSomaticPath(),
-             "sortSomaticSV")
-    sortVcfs(tumorVcfPaths,
-             self.paths.getSortedTumorPath(),
-             "sortTumorSV")
-
-    def getExtractSmallCmd(maxSize, inPath, outPath) :
-        cmd  = "\"%s\" -dc \"%s\"" % (self.params.bgzipBin, inPath)
-        cmd += " | \"%s\" -E \"%s\" --maxSize %i" % (sys.executable, self.params.mantaExtraSmallVcf, maxSize)
-        cmd += " | \"%s\" -c > \"%s\"" % (self.params.bgzipBin, outPath)
-        return cmd
-
-    def extractSmall(inPath, outPath) :
-        maxSize = int(self.params.minScoredVariantSize) - 1
-        if maxSize < 1 : return
-        smallCmd = getExtractSmallCmd(maxSize, inPath, outPath)
-        smallLabel=self.addTask(preJoin(taskPrefix,"extractSmallIndels"), smallCmd, dependencies=candSortTask, isForceLocal=True)
-        nextStepWait.add(self.addTask(smallLabel+"_tabix", getVcfTabixCmd(outPath), dependencies=smallLabel, isForceLocal=True))
-
-    extractSmall(self.paths.getSortedCandidatePath(), self.paths.getSortedCandidateSmallIndelsPath())
-
-    # sort edge logs:
-    def getEdgeLogSortCmd(logPaths, outPath) :
-        cmd  = [sys.executable,"-E",self.params.mantaSortEdgeLogs,"-o",outPath]
-        cmd.extend(logPaths)
-        return cmd
-
-    edgeSortLabel=preJoin(taskPrefix,"sortEdgeRuntimeLogs")
-    edgeSortCmd=getEdgeLogSortCmd(edgeRuntimeLogPaths,self.paths.getSortedEdgeRuntimeLogPath())
-    self.addTask(edgeSortLabel, edgeSortCmd, dependencies=hygenTasks, isForceLocal=True)
-
-    # merge edge stats:
-    edgeStatsMergeLabel=preJoin(taskPrefix,"mergeEdgeStats")
+    edgeStatsMergeTask=preJoin(taskPrefix,"mergeEdgeStats")
     edgeStatsMergeCmd=[self.params.mantaStatsMergeBin]
-    for statsFile in edgeStatsLogPaths :
-        edgeStatsMergeCmd.extend(["--stats-file",statsFile])
+    edgeStatsMergeCmd.extend(["--stats-file-list",statsFileList])
     edgeStatsMergeCmd.extend(["--output-file",self.paths.getFinalEdgeStatsPath()])
     edgeStatsMergeCmd.extend(["--report-file",self.paths.getFinalEdgeStatsReportPath()])
-    self.addTask(edgeStatsMergeLabel, edgeStatsMergeCmd, dependencies=hygenTasks, isForceLocal=True)
+    self.addTask(edgeStatsMergeTask, edgeStatsMergeCmd, dependencies=statsListTask, isForceLocal=True)
+
+    if not self.params.isRetainTempFiles :
+        # we could delete the temp hygenDir directory here, but it is used for debug so frequently it doesn't seem worth it at present.
+        # rmDirCmd = getRmdirCmd() + [hygenDir]
+        # rmDirTask=self.addTask(preJoin(taskPrefix,"rmTmpDir"),rmDirCmd,dependencies=TBD_XXX_MANY)
+        pass
 
     return nextStepWait
 
@@ -541,6 +463,12 @@ class PathInfo:
 
     def getGraphPath(self) :
         return os.path.join(self.params.workDir,"svLocusGraph.bin")
+
+    def getTmpGraphDir(self) :
+        return os.path.join(self.getGraphPath()+".tmpdir")
+
+    def getTmpGraphFile(self, gid) :
+        return os.path.join(self.getTmpGraphDir(),"svLocusGraph.%s.bin" % (gid))
 
     def getHyGenDir(self) :
         return os.path.join(self.params.workDir,"svHyGen")
@@ -593,6 +521,17 @@ class PathInfo:
     def getGraphStatsPath(self) :
         return os.path.join(self.params.statsDir,"svLocusGraphStats.tsv")
 
+    def getTmpGraphFileListPath(self) :
+        return os.path.join(self.getTmpGraphDir(),"list.svLocusGraph.txt")
+
+    def getVcfListPath(self, label) :
+        return os.path.join(self.getHyGenDir(),"list.%s.txt" % (label))
+
+    def getEdgeRuntimeLogListPath(self) :
+        return os.path.join(self.getHyGenDir(),"list.edgeRuntimeLog.txt")
+
+    def getStatsFileListPath(self) :
+        return os.path.join(self.getHyGenDir(),"list.edgeStats.txt")
 
 
 class MantaWorkflow(WorkflowRunner) :
@@ -666,7 +605,7 @@ class MantaWorkflow(WorkflowRunner) :
             graphTaskDependencies |= statsTasks
 
         if not ((not self.params.isHighDepthFilter) or self.params.useExistingChromDepths) :
-            depthTasks = runDepthFromAlignments(self,taskPrefix="getChromDepth")
+            depthTasks = mantaRunDepthFromAlignments(self)
             graphTaskDependencies |= depthTasks
 
         graphTasks = runLocusGraph(self,dependencies=graphTaskDependencies)

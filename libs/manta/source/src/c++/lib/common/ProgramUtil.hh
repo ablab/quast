@@ -1,7 +1,7 @@
 // -*- mode: c++; indent-tabs-mode: nil; -*-
 //
 // Manta - Structural Variant and Indel Caller
-// Copyright (c) 2013-2015 Illumina, Inc.
+// Copyright (c) 2013-2016 Illumina, Inc.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -23,46 +23,18 @@
 
 #pragma once
 
+#include "Program.hh"
+
+#include "boost/program_options.hpp"
+
 #include <iosfwd>
 
-namespace manta
-{
 
-/// base-class for all command-line programs
-///
-/// this is used to standardize bottom-level exception handling
-struct Program
-{
-    virtual
-    ~Program() {}
-
-    int
-    run(int argc, char* argv[]) const;
-
-    virtual
-    const char*
-    name() const = 0;
-
-    const char*
-    version() const;
-
-    const char*
-    compiler() const;
-
-    const char*
-    buildTime() const;
-
-protected:
-    virtual
-    void
-    runInternal(int argc, char* argv[]) const = 0;
-
-private:
-    void
-    post_catch(
-        int argc,
-        char* argv[],
-        std::ostream& os) const;
-};
-
-}
+void
+usage(
+    std::ostream& os,
+    const illumina::Program& prog,
+    const boost::program_options::options_description& visible,
+    const char* desc,
+    const char* afteropts,
+    const char* msg);

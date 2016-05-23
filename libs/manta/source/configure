@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # Manta - Structural Variant and Indel Caller
-# Copyright (c) 2013-2015 Illumina, Inc.
+# Copyright (c) 2013-2016 Illumina, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,7 +20,9 @@
 
 
 #
-# Top level configuration file
+# Top level configuration file for *nix like OS's, note that there
+# is legacy support for both cygwin and minGW in here but neither
+# have been supported for serveral years.
 #
 
 set -o nounset
@@ -52,8 +54,6 @@ Configuration:
                             Release: All portable optimization
                             RelWithDebInfo: Most optimizations, try to keep stack trace info
                             ASan: Light optimization with google addresss sanitizer on
-  --package-type=type     enables generation of deployment package target (make package)
-                          Valid types are: rpm, deb, tgz
 
 Directory and file names:
   --prefix=PREFIX         install files in tree rooted at PREFIX
@@ -117,10 +117,10 @@ create_path ()
 system="`uname`"
 processor="`uname -p`"
 arch="`uname -a`"
-source_dir="`echo $0 | sed -n '/\//{s/\/[^\/]*$//;p;}'`"
-source_dir="$(rel2abs $source_dir)"
-redist_dir="${source_dir}/../redist"
-src_bootstrap_dir="${source_dir}/cmake/bootstrap"
+root_dir="`echo $0 | sed -n '/\//{s/\/[^\/]*$//;p;}'`"
+root_dir="$(rel2abs $root_dir)"
+redist_dir="${root_dir}/redist"
+bootstrap_dir="${root_dir}/src/cmake/bootstrap"
 build_dir="$(pwd -P)"
 
 
@@ -165,7 +165,6 @@ cmake=
 parallel_jobs=1
 cmake_generator="Unix Makefiles"
 is_verbose=false
-package_type=none
 if [ -z "${CMAKE_OPTIONS+xxx}" ]; then CMAKE_OPTIONS=""; fi
 
 # Parse arguments
@@ -188,8 +187,6 @@ for a in "$@"; do
         CMAKE_OPTIONS="$CMAKE_OPTIONS -DECLIPSE_CDT4_GENERATE_SOURCE_PROJECT=TRUE"
     elif echo $a | grep "^--verbose" > /dev/null 2> /dev/null; then
         is_verbose=true
-    elif echo $a | grep "^--package-type=" > /dev/null 2> /dev/null; then
-        package_type=`echo $a | sed "s/^--package-type=//"`
     elif echo $a | grep "^--jobs=" > /dev/null 2> /dev/null; then
         parallel_jobs=`echo $a | sed "s/^--jobs=//"`
     else
@@ -202,16 +199,15 @@ done
 #
 # prevent in-source builds (but allow usage to be triggered first)
 #
-if [ "$source_dir" == "$build_dir" ]; then
+if [ "$root_dir" == "$build_dir" ]; then
     cat <<EOF 1>&2
 
 ERROR: This project cannot be built in the source directory. Please run
        configuration in a separate directory. Example:
 
     """
-    mkdir ../build
-    cd ../build
-    \${MANTA_ROOT_DIR}/src/configure [configure_options]
+    mkdir ../build && cd ../build
+    \${MANTA_ROOT_PATH}/configure [configure_options]
     """
 
 EOF
@@ -229,31 +225,7 @@ if $is_verbose; then
 fi
 
 
-is_package=true
-if   [ "deb" == "${package_type}" ]; then
-    CMAKE_OPTIONS="$CMAKE_OPTIONS \
-        -DCPACK_GENERATOR:STRING=DEB \
-        -DCPACK_SYSTEM_NAME:STRING=${system}-$processor \
-        -DCPACK_DEBIAN_PACKAGE_ARCHITECTURE:STRING='`dpkg --print-architecture`'"
-
-elif [ "rpm" == "${package_type}" ]; then
-    CMAKE_OPTIONS="$CMAKE_OPTIONS \
-        -DCPACK_GENERATOR:STRING=RPM \
-        -DCPACK_SYSTEM_NAME:STRING=${system}-$processor"
-
-elif [ "tgz" == "${package_type}" ]; then
-    CMAKE_OPTIONS="$CMAKE_OPTIONS \
-        -DCPACK_GENERATOR:STRING=TGZ"
-
-elif [ "none" != "${package_type}" ]; then
-	clog "ERROR: unrecognized package option: $package_type"
-	exit 1
-
-else
-    is_package=false
-    if [ "x${prefix_dir}" != "x" ]; then prefix_dir=$(create_path "${prefix_dir}") || exit 1; fi
-
-fi
+if [ "x${prefix_dir}" != "x" ]; then prefix_dir=$(create_path "${prefix_dir}") || exit 1; fi
 
 CMAKE_OPTIONS="-DCMAKE_INSTALL_PREFIX:PATH=\"$prefix_dir\" $CMAKE_OPTIONS"
 
@@ -275,7 +247,7 @@ fi
 #
 cmake_install_dir="${build_dir}/bootstrap/cmake"
 if [ "x${cmake}" == "x" ] ; then
-    cmake=$(bash ${src_bootstrap_dir}/installCmake.bash ${redist_dir} ${cmake_install_dir} ${parallel_jobs})
+    cmake=$(bash ${bootstrap_dir}/installCmake.bash ${redist_dir} ${cmake_install_dir} ${parallel_jobs})
 
     if [ "$?" != "0" ]; then
         clog "ERROR: Failed to verify or install cmake"
@@ -294,7 +266,7 @@ fi
 # display information if required
 if $is_verbose; then
     cat<<EOF
-Source  directory: ${source_dir}
+Source  directory: ${root_dir}
 Prefix  directory: ${prefix_dir}
 Build   directory: ${build_dir}
 Cmake  executable: ${cmake}
@@ -307,9 +279,9 @@ fi
 #
 # finally, invoke cmake
 #
-cmake_command="${cmake} -H\"${source_dir}\" -B\"${build_dir}\" -G\"${cmake_generator}\" ${CMAKE_OPTIONS}"
+cmake_command="${cmake} -H\"${root_dir}\" -B\"${build_dir}\" -G\"${cmake_generator}\" ${CMAKE_OPTIONS}"
 
-if $is_verbose || $is_package ; then
+if $is_verbose ; then
     cat<<EOF
 
 Running on: $arch
@@ -341,7 +313,7 @@ cat<<EOF
 
 The build directory ${build_dir} was configured successfully
 
-Type "make" at the top level of the root directory to build
+Type "make -C ${build_dir}" to build
 
 EOF
 

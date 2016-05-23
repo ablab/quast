@@ -1,7 +1,7 @@
 // -*- mode: c++; indent-tabs-mode: nil; -*-
 //
 // Manta - Structural Variant and Indel Caller
-// Copyright (c) 2013-2015 Illumina, Inc.
+// Copyright (c) 2013-2016 Illumina, Inc.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,10 +21,9 @@
 
 #pragma once
 
-#include "manta/Program.hh"
-
 #include <string>
 #include <vector>
+#include "../../common/Program.hh"
 
 
 struct ChromDepthOptions
@@ -37,6 +36,6 @@ struct ChromDepthOptions
 
 void
 parseChromDepthOptions(
-    const manta::Program& prog,
+    const illumina::Program& prog,
     int argc, char* argv[],
     ChromDepthOptions& opt);

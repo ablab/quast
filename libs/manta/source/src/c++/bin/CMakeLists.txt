@@ -1,6 +1,6 @@
 #
 # Manta - Structural Variant and Indel Caller
-# Copyright (c) 2013-2015 Illumina, Inc.
+# Copyright (c) 2013-2016 Illumina, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -37,7 +37,7 @@ foreach(THIS_PROGRAM_SOURCE ${THIS_PROGRAM_SOURCE_LIST})
     set(THIS_APPLICATION_LIB ${THIS_PROJECT_NAME}_${THIS_PROGRAM})
     add_executable        (${THIS_PROGRAM} ${THIS_PROGRAM_SOURCE})
     target_link_libraries (${THIS_PROGRAM}  ${THIS_APPLICATION_LIB} ${THIS_AVAILABLE_LIBRARIES}
-                           ${HTSLIB_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} ${Boost_LIBRARIES}
+                           ${HTSLIB_LIBRARY} ${Boost_LIBRARIES}
                            ${THIS_ADDITIONAL_LIB})
     install(TARGETS ${THIS_PROGRAM} RUNTIME DESTINATION ${THIS_LIBEXECDIR})
 endforeach()

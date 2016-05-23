@@ -1,7 +1,7 @@
 // -*- mode: c++; indent-tabs-mode: nil; -*-
 //
 // Manta - Structural Variant and Indel Caller
-// Copyright (c) 2013-2015 Illumina, Inc.
+// Copyright (c) 2013-2016 Illumina, Inc.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -142,6 +142,17 @@ apath_matched_length(const path_t& apath)
     {
         if (! is_segment_align_match(ps.type)) continue;
         val += ps.length;
+    }
+    return val;
+}
+
+unsigned
+apath_spliced_length(const path_t& apath)
+{
+    unsigned val(0);
+    for (const path_segment& ps : apath)
+    {
+        if (ps.type == SKIP) val += ps.length;
     }
     return val;
 }

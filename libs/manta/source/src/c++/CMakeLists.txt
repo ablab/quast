@@ -1,6 +1,6 @@
 #
 # Manta - Structural Variant and Indel Caller
-# Copyright (c) 2013-2015 Illumina, Inc.
+# Copyright (c) 2013-2016 Illumina, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -29,10 +29,11 @@ set(CMAKE_SKIP_BUILD_RPATH  FALSE)
 set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
-set (THIS_CXX_EXECUTABLE_CMAKE "${CMAKE_SOURCE_DIR}/cmake/cxxExecutable.cmake")
-set (THIS_CXX_LIBRARY_CMAKE "${CMAKE_SOURCE_DIR}/cmake/cxxLibrary.cmake")
-set (THIS_CXX_CONFIGURE_CMAKE "${CMAKE_SOURCE_DIR}/cmake/cxxConfigure.cmake")
-set (THIS_CXX_TEST_LIBRARY_CMAKE "${CMAKE_SOURCE_DIR}/cmake/cxxTestLibrary.cmake")
+set (THIS_CXX_COMMMON_CMAKE "${THIS_MODULE_DIR}/cxxCommon.cmake")
+set (THIS_CXX_EXECUTABLE_CMAKE "${THIS_MODULE_DIR}/cxxExecutable.cmake")
+set (THIS_CXX_LIBRARY_CMAKE "${THIS_MODULE_DIR}/cxxLibrary.cmake")
+set (THIS_CXX_CONFIGURE_CMAKE "${THIS_MODULE_DIR}/cxxConfigure.cmake")
+set (THIS_CXX_TEST_LIBRARY_CMAKE "${THIS_MODULE_DIR}/cxxTestLibrary.cmake")
 
 include ("${THIS_CXX_CONFIGURE_CMAKE}")
 

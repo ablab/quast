@@ -1,7 +1,7 @@
 // -*- mode: c++; indent-tabs-mode: nil; -*-
 //
 // Manta - Structural Variant and Indel Caller
-// Copyright (c) 2013-2015 Illumina, Inc.
+// Copyright (c) 2013-2016 Illumina, Inc.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -187,7 +187,7 @@ check_header_compatibility(
 
 std::string
 get_bam_header_sample_name(
-    const bam_hdr_t* header,
+    const bam_hdr_t* const header,
     const char* default_sample_name)
 {
     assert(header != nullptr);

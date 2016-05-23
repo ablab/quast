@@ -1,7 +1,7 @@
 // -*- mode: c++; indent-tabs-mode: nil; -*-
 //
 // Manta - Structural Variant and Indel Caller
-// Copyright (c) 2013-2015 Illumina, Inc.
+// Copyright (c) 2013-2016 Illumina, Inc.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -796,7 +796,8 @@ processSequenceFragment(
     const unsigned bamIndex,
     const bool isExpandSVCandidateSet,
     std::vector<FatSVCandidate>& svs,
-    SVCandidateSetSequenceFragment& fragment)
+    SVCandidateSetSequenceFragment& fragment,
+    SVFinderStats& stats)
 {
     SVCandidateSetRead* localReadPtr(&(fragment.read1));
     SVCandidateSetRead* remoteReadPtr(&(fragment.read2));
@@ -813,6 +814,14 @@ processSequenceFragment(
         return;
         //assert(localReadPtr->isSet() && "Neither read in pair is set");
     }
+
+    // sanity check of read pairs
+    if (! fragment.checkReadPair())
+    {
+        stats.unmatchedReadPairFilter++;
+        return;
+    }
+
     const bam_record* remoteBamRecPtr( remoteReadPtr->isSet() ? &(remoteReadPtr->bamrec) : nullptr);
 
     const reference_contig_segment& localRef( localReadPtr->isNode1 ? refSeq1 : refSeq2 );
@@ -1127,7 +1136,7 @@ getCandidatesFromData(
             static const bool isAnchored(true);
             processSequenceFragment(
                 node1, node2, bamHeader, refSeq1, refSeq2, bamIndex, isAnchored,
-                svs, fragment);
+                svs, fragment, stats);
         }
     }
 
@@ -1147,7 +1156,7 @@ getCandidatesFromData(
                 static const bool isAnchored(false);
                 processSequenceFragment(
                     node1, node2, bamHeader, refSeq1, refSeq2, bamIndex, isAnchored,
-                    svs, pair);
+                    svs, pair, stats);
             }
         }
     }

@@ -1,6 +1,6 @@
 #
 # Manta - Structural Variant and Indel Caller
-# Copyright (c) 2013-2015 Illumina, Inc.
+# Copyright (c) 2013-2016 Illumina, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -41,7 +41,7 @@ if (NOT GIT_VERSION)
 else ()
     STRING(REGEX REPLACE "^v" "" GIT_VERSION ${GIT_VERSION})
 endif ()
-set (WORKFLOW_VERSION "0.29.0")
+set (WORKFLOW_VERSION "0.29.6")
 file(WRITE ${CONFIG_FILE} "WORKFLOW_VERSION\t${WORKFLOW_VERSION}\n")
 
 #

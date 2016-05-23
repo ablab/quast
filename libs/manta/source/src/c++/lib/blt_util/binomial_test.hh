@@ -1,7 +1,7 @@
 // -*- mode: c++; indent-tabs-mode: nil; -*-
 //
 // Manta - Structural Variant and Indel Caller
-// Copyright (c) 2013-2015 Illumina, Inc.
+// Copyright (c) 2013-2016 Illumina, Inc.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -32,8 +32,6 @@
 /// prob of n_success or more extreme number of successes and then
 /// double it.
 ///
-/// Caveat emptor: the 'double the pvalue' method for creating
-/// a two-sided test disagrees with R when p is not equal to 0.5
 ///
 double
 get_binomial_twosided_exact_pval(
@@ -43,7 +41,6 @@ get_binomial_twosided_exact_pval(
 
 /// \brief two-sided binomial exact test
 ///
-/// see caveat above for p not equal to 0.5
 bool
 is_reject_binomial_twosided_exact(
     const double alpha,
@@ -98,6 +95,12 @@ is_reject_binomial_gte_n_success_exact(
     const unsigned n_success,
     const unsigned n_trials);
 
-
-
-
+/// returns the minimum number of successes to reject the null hypothesis
+/// with a p-value of at most alpha for a given error rate and number of trials
+///
+/// matches R code qbinom(alpha, n_trials, p, lower.tail = FALSE)
+double
+min_count_binomial_gte_exact(
+    const double alpha,
+    const double p,
+    const unsigned n_trials);

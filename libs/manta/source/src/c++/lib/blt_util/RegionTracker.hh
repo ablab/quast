@@ -1,7 +1,7 @@
 // -*- mode: c++; indent-tabs-mode: nil; -*-
 //
 // Manta - Structural Variant and Indel Caller
-// Copyright (c) 2013-2015 Illumina, Inc.
+// Copyright (c) 2013-2016 Illumina, Inc.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -108,14 +108,13 @@ struct RegionTracker
     dump(
         std::ostream& os) const;
 
-    typedef std::set<known_pos_range2,PosRangeEndSort>  region_t;
-
     unsigned
     size() const
     {
         return _regions.size();
     }
 
+    typedef std::set<known_pos_range2,PosRangeEndSort>  region_t;
 
 private:
 

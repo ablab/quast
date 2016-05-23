@@ -1,7 +1,7 @@
 // -*- mode: c++; indent-tabs-mode: nil; -*-
 //
 // Manta - Structural Variant and Indel Caller
-// Copyright (c) 2013-2015 Illumina, Inc.
+// Copyright (c) 2013-2016 Illumina, Inc.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,16 +21,18 @@
 /// \author Chris Saunders
 ///
 
+#include "Program.hh"
+#include "ProgramConfig.hh"
+#include "Exceptions.hh"
+
 #include "blt_util/blt_exception.hh"
 #include "blt_util/log.hh"
 #include "blt_util/sig_handler.hh"
-#include "common/Exceptions.hh"
-#include "manta/Program.hh"
-#include "manta/version.hh"
 
 #include <cstdlib>
 
 #include <iostream>
+
 
 
 static
@@ -48,7 +50,7 @@ dump_cl(int argc,
 }
 
 
-namespace manta
+namespace illumina
 {
 
 

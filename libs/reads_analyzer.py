@@ -27,7 +27,7 @@ manta_dirpath = os.path.join(qconfig.LIBS_LOCATION, 'manta')
 manta_build_dirpath = os.path.join(qconfig.LIBS_LOCATION, 'manta', 'build')
 manta_bin_dirpath = os.path.join(qconfig.LIBS_LOCATION, 'manta', 'build/bin')
 config_manta_fpath = os.path.join(manta_bin_dirpath, 'configManta.py')
-manta_download_path = 'https://github.com/Illumina/manta/releases/download/v0.29.1/manta-0.29.1.centos5_x86_64.tar.bz2'
+manta_download_path = 'https://github.com/Illumina/manta/releases/download/v0.29.6/manta-0.29.6.centos5_x86_64.tar.bz2'
 
 
 class Mapping(object):
@@ -141,8 +141,10 @@ def process_one_ref(cur_ref_fpath, output_dirpath, err_path, bed_fpath=None):
                                stdout=open(err_path, 'a'), stderr=open(err_path, 'a'), logger=logger)
         if not os.path.exists(os.path.join(vcfoutput_dirpath, 'runWorkflow.py')):
             return None
+        env = os.environ.copy()
+        env['LC_ALL'] = 'C'
         qutils.call_subprocess([os.path.join(vcfoutput_dirpath, 'runWorkflow.py'), '-m', 'local', '-j', str(qconfig.max_threads)],
-                               stderr=open(err_path, 'a'), logger=logger)
+                               stderr=open(err_path, 'a'), logger=logger, env=env)
     if not is_non_empty_file(unpacked_SV_fpath):
         cmd = 'gunzip -c %s' % found_SV_fpath
         qutils.call_subprocess(shlex.split(cmd), stdout=open(unpacked_SV_fpath, 'w'),
@@ -502,7 +504,7 @@ def do(ref_fpath, contigs_fpaths, reads_fpaths, meta_ref_fpaths, output_dir, int
             prev_dir = os.getcwd()
             os.chdir(manta_build_dirpath)
             return_code = qutils.call_subprocess(
-                [os.path.join(manta_dirpath, 'source', 'src', 'configure'), '--prefix=' + os.path.join(manta_dirpath, 'build'),
+                [os.path.join(manta_dirpath, 'source', 'configure'), '--prefix=' + os.path.join(manta_dirpath, 'build'),
                  '--jobs=' + str(qconfig.max_threads)],
                 stdout=open(os.path.join(manta_dirpath, 'make.log'), 'w'),
                 stderr=open(os.path.join(manta_dirpath, 'make.err'), 'w'), logger=logger)

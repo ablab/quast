@@ -1,7 +1,7 @@
 // -*- mode: c++; indent-tabs-mode: nil; -*-
 //
 // Manta - Structural Variant and Indel Caller
-// Copyright (c) 2013-2015 Illumina, Inc.
+// Copyright (c) 2013-2016 Illumina, Inc.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -511,7 +511,7 @@ getBreakendReads(
                     {
 #ifdef DEBUG_ASBL
                         log_os << logtag << "Adding remote bamrec. idx: " << bamIndex << " rec: " << bamRead << '\n'
-                               << "\tmapq: " << bamRead.pe_map_qual() << '\n'
+                               << "\tmapq: " << bamRead.map_qual() << '\n'
                                << "\tread: " << bamRead.get_bam_read() << '\n';
 #endif
 
@@ -623,7 +623,7 @@ getBreakendReads(
             if (isShadowKeeper) ++shadowCount;
 
             log_os << logtag << "Adding bamrec. idx: " << bamIndex << " rec: " << bamRead << '\n'
-                   << "\tmapq: " << bamRead.pe_map_qual() << '\n'
+                   << "\tmapq: " << bamRead.map_qual() << '\n'
                    << "\tread: " << bamRead.get_bam_read() << '\n';
             log_os << "isIndelKeeper: " << isIndelKeeper
                    << " isSemiAlignedKeeper: " << isSemiAlignedKeeper

@@ -1,6 +1,6 @@
 #
 # Manta - Structural Variant and Indel Caller
-# Copyright (c) 2013-2015 Illumina, Inc.
+# Copyright (c) 2013-2016 Illumina, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -25,15 +25,7 @@
 ##
 ################################################################################
 
-include (${THIS_GLOBALS_CMAKE})
+include (${THIS_CXX_COMMMON_CMAKE})
 
-if(NOT DEFINED IS_QUIET)
-    get_filename_component(CURRENT_DIR_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME)
-    message (STATUS "Adding c++ program subdirectory: ${CURRENT_DIR_NAME}")
-endif()
-
-include_directories (BEFORE SYSTEM ${THIS_CXX_BEFORE_SYSTEM_INCLUDES})
-include_directories (${THIS_CXX_ALL_INCLUDES})
-include_directories (${CMAKE_CURRENT_BINARY_DIR})
-include_directories (${CMAKE_CURRENT_SOURCE_DIR})
-include_directories (${THIS_CXX_CONFIG_H_DIR})
+get_filename_component(CURRENT_DIR_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME)
+message (STATUS "Adding c++ program subdirectory: ${CURRENT_DIR_NAME}")

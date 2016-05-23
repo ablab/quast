@@ -1,7 +1,7 @@
 // -*- mode: c++; indent-tabs-mode: nil; -*-
 //
 // Manta - Structural Variant and Indel Caller
-// Copyright (c) 2013-2015 Illumina, Inc.
+// Copyright (c) 2013-2016 Illumina, Inc.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -64,6 +64,9 @@ struct SVRefinerOptions
         RNAIntronOffEdgeScore(-1)
     {
         spanningAssembleOpt.minContigLength=75; ///< For breakend-spanning assemblies we require a larger contig than for small-variant assemblies
+        RNAspanningAssembleOpt.minContigLength = 75; ///< For breakend-spanning assemblies we require a larger contig than for small-variant assemblies
+        RNAspanningAssembleOpt.minWordLength = 31; /// Use smaller kmer for RNA
+
     }
 
     /// parameters for small SV assembly/alignment:
@@ -82,4 +85,6 @@ struct SVRefinerOptions
     const int RNAIntronOpenScore;
     const int RNAIntronOffEdgeScore;
     AssemblerOptions spanningAssembleOpt;
+    AssemblerOptions RNAspanningAssembleOpt;
+
 };

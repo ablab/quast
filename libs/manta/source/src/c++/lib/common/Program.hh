@@ -1,7 +1,7 @@
 // -*- mode: c++; indent-tabs-mode: nil; -*-
 //
 // Manta - Structural Variant and Indel Caller
-// Copyright (c) 2013-2015 Illumina, Inc.
+// Copyright (c) 2013-2016 Illumina, Inc.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,31 +21,48 @@
 /// \author Chris Saunders
 ///
 
-#include "ProgramUtil.hh"
+#pragma once
 
-#include <iostream>
+#include <iosfwd>
 
-
-
-void
-usage(
-    std::ostream& os,
-    const manta::Program& prog,
-    const boost::program_options::options_description& visible,
-    const char* desc,
-    const char* afteropts,
-    const char* msg)
+namespace illumina
 {
-    os << "\n" << prog.name() << ": " << desc << "\n\n";
-    os << "version: " << prog.version() << "\n";
-    os << "compiler: " << prog.compiler() << "\n";
-    os << "build-time: " << prog.buildTime() << "\n\n";
-    os << "usage: " << prog.name() << " [options]" << afteropts << "\n\n";
-    os << visible << "\n\n";
 
-    if (nullptr != msg)
-    {
-        os << msg << "\n\n";
-    }
-    exit(2);
+/// base-class for all command-line programs
+///
+/// this is used to standardize bottom-level exception handling
+struct Program
+{
+    virtual
+    ~Program() {}
+
+    int
+    run(int argc, char* argv[]) const;
+
+    virtual
+    const char*
+    name() const = 0;
+
+    const char*
+    version() const;
+
+    const char*
+    compiler() const;
+
+    const char*
+    buildTime() const;
+
+protected:
+    virtual
+    void
+    runInternal(int argc, char* argv[]) const = 0;
+
+private:
+    void
+    post_catch(
+        int argc,
+        char* argv[],
+        std::ostream& os) const;
+};
+
 }

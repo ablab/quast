@@ -1,7 +1,7 @@
 // -*- mode: c++; indent-tabs-mode: nil; -*-
 //
 // Manta - Structural Variant and Indel Caller
-// Copyright (c) 2013-2015 Illumina, Inc.
+// Copyright (c) 2013-2016 Illumina, Inc.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -474,7 +474,6 @@ getFragProb(
 }
 
 
-
 /// count the read pairs supporting the alternate allele in each sample, using data we already produced during candidate generation:
 ///
 void
@@ -498,6 +497,9 @@ processExistingAltPairInfo(
         {
             // at least one non-supplemental read of the pair must have been found to use this pipeline:
             if (! (fragment.read1.isSet() || fragment.read2.isSet())) continue;
+
+            // sanity check of read pairs
+            if (! fragment.checkReadPair()) continue;
 
             // is this read pair associated with this candidateIndex? (each read fragment can be associated with multiple candidates)
             unsigned linkIndex(0);
@@ -528,7 +530,7 @@ processExistingAltPairInfo(
             const std::string& qname(fragment.qname());
 
 #ifdef DEBUG_PAIR
-            log_os << __FUNCTION__ << ": Finding alt fragment evidence for svIndex: " << sv.candidateIndex << "  isTumor: " << isTumor << " bam-fragment: " << fragment << "\n";
+            log_os << __FUNCTION__ << ": Finding alt fragment evidence for svIndex: " << sv.candidateIndex << " bam-fragment: " << fragment << "\n";
 #endif
 
             SVFragmentEvidence& fragEvidence(evidence.getSampleEvidence(bamIndex)[qname]);

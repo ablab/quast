@@ -1,7 +1,7 @@
 // -*- mode: c++; indent-tabs-mode: nil; -*-
 //
 // Manta - Structural Variant and Indel Caller
-// Copyright (c) 2013-2015 Illumina, Inc.
+// Copyright (c) 2013-2016 Illumina, Inc.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -18,23 +18,41 @@
 //
 //
 
-/// \author Chris Saunders
-///
+/// \brief provide access to cmake project version numbers
 
 #pragma once
 
-#include "Program.hh"
+#include "common/config.h"
 
-#include "boost/program_options.hpp"
+namespace illumina
+{
 
-#include <iosfwd>
+inline
+const char*
+getVersion()
+{
+    return WORKFLOW_VERSION;
+}
 
+inline
+const char*
+getBuildTime()
+{
+    return BUILD_TIME;
+}
 
-void
-usage(
-    std::ostream& os,
-    const manta::Program& prog,
-    const boost::program_options::options_description& visible,
-    const char* desc,
-    const char* afteropts,
-    const char* msg);
+inline
+const char*
+cxxCompilerName()
+{
+    return CXX_COMPILER_NAME;
+}
+
+inline
+const char*
+compilerVersion()
+{
+    return COMPILER_VERSION;
+}
+
+}

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Manta - Structural Variant and Indel Caller
-# Copyright (c) 2013-2015 Illumina, Inc.
+# Copyright (c) 2013-2016 Illumina, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -75,6 +75,9 @@ You must specify a BAM or CRAM file for at least one sample.
         group.add_option("--candidateBins",type="int",dest="nonlocalWorkBins",metavar="candidateBins",
                          help="Provide the total number of tasks which candidate generation "
                             " will be sub-divided into. (default: %default)")
+        group.add_option("--retainTempFiles",
+                         dest="isRetainTempFiles", action="store_true",
+                         help="Keep all temporary files (for workflow debugging)")
 
         MantaWorkflowOptionsBase.addExtendedGroupOptions(self,group)
 
@@ -90,6 +93,7 @@ You must specify a BAM or CRAM file for at least one sample.
             'isUnstrandedRNA' : False,
             'useExistingAlignStats' : False,
             'useExistingChromDepths' : False,
+            'isRetainTempFiles' : False,
             'nonlocalWorkBins' : 256
                           })
         return defaults

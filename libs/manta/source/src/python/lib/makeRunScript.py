@@ -1,6 +1,6 @@
 #
 # Manta - Structural Variant and Indel Caller
-# Copyright (c) 2013-2015 Illumina, Inc.
+# Copyright (c) 2013-2016 Illumina, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -70,7 +70,7 @@ def makeRunScript(scriptFile, workflowModulePath, workflowClassName, primaryConf
     sfp.write(runScript3)
     sfp.write('\n')
 
-    sfp.write('main("%s","%s",%s)\n' % (pickleConfigFile, primaryConfigSection, workflowClassName))
+    sfp.write('main(r"%s","%s",%s)\n' % (pickleConfigFile, primaryConfigSection, workflowClassName))
     sfp.write('\n')
     sfp.close()
     os.chmod(scriptFile,0755)
@@ -121,7 +121,7 @@ runScript1="""#!%s
 import os, sys
 
 scriptDir=os.path.abspath(os.path.dirname(__file__))
-sys.path.append('%s')
+sys.path.append(r'%s')
 
 from %s import %s
 

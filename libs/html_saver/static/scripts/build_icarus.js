@@ -806,7 +806,8 @@ THE SOFTWARE.
         }
 
         function getItemOpacity(item) {
-            var defOpacity = (item.type && item.type != 'unaligned') ? 0.65 : 1;
+            var defOpacity = 0.65;
+            if (isContigSizePlot && (!item.type || item.type == 'unaligned')) defOpacity = 1;
             if (item.misassembledEnds) return 1;
             if (item.fullContig && item.type && item.type != 'unaligned') return 0.05;
             if (!item || !item.size) return defOpacity;
@@ -2195,7 +2196,7 @@ THE SOFTWARE.
                     });
                 legend.append('path')
                     .attr('transform',  function () {
-                        return 'translate(' + (legendItemWidth * 2) + ',' + (prevOffsetY + legendItemOddOffset) + ')';
+                        return 'translate(' + legendItemWidth + ',' + prevOffsetY + ')';
                     })
                     .attr('class', function () {
                         return 'mainItem end misassembled odd';

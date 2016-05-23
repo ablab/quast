@@ -1187,6 +1187,7 @@ THE SOFTWARE.
         }
         if (!featuresHidden) addAnnotationsTrackButtons();
         if (drawCoverage) addCovTrackButtons();
+        window.onresize = function(){ location.reload(); }
     }
 
     function addCovTrackButtons() {

@@ -807,9 +807,9 @@ THE SOFTWARE.
 
         function getItemOpacity(item) {
             var defOpacity = 0.65;
-            if (isContigSizePlot && (!item.type || item.type == 'unaligned')) defOpacity = 1;
+            if (isContigSizePlot && (!item.type || item.type == 'unaligned' || item.type == 'small_contigs')) defOpacity = 1;
             if (item.misassembledEnds) return 1;
-            if (item.fullContig && item.type && item.type != 'unaligned') return 0.05;
+            if (item.fullContig && item.type && item.type != 'unaligned' && item.type != 'small_contigs') return 0.05;
             if (!item || !item.size) return defOpacity;
             return item.size > minContigSize ? defOpacity : paleContigsOpacity;
         }
@@ -1056,9 +1056,11 @@ THE SOFTWARE.
                 if (item.mis_ends) var misassembled_ends = item.mis_ends.split(';');
                 if (isContigSizePlot) {
                     var blocks = item.structure;
-                    for (var k = 0; k < blocks.length; k++) {
-                        if (blocks[k].type != 'M')
-                            items.push(parseItem(blocks[k], item));
+                    if (blocks) {
+                        for (var k = 0; k < blocks.length; k++) {
+                            if (blocks[k].type != 'M')
+                                items.push(parseItem(blocks[k], item));
+                        }
                     }
                 }
                 items.push(parseItem(item));
@@ -2226,7 +2228,7 @@ THE SOFTWARE.
             var classMarks = ['', 'N50'];
             var classDescriptions = ['contigs', 'contig of length = Nx statistic (x is 50 or 75)'];
             for (var i = 0; i < items.length; i++) {
-                if (items[i].marks && items[i].marks.search('ng') != -1) {
+                if (items[i].marks && items[i].marks.search('NG') != -1) {
                     classes = ['unknown', '', '', ''];
                     classMarks = ['', 'N50', 'NG50', 'N50, NG50'];
                     classDescriptions = ['contigs', 'contig of length = Nx statistic (x is 50 or 75)',

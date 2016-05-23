@@ -712,7 +712,7 @@ def main(args):
         reads_fpaths.append(reads_fpath_f)
     if reads_fpath_r:
         reads_fpaths.append(reads_fpath_r)
-    if reads_fpaths:
+    if reads_fpaths and ref_fpath:
         bed_fpath, cov_fpath = reads_analyzer.do(ref_fpath, contigs_fpaths, reads_fpaths, None,
                                       os.path.join(output_dirpath, qconfig.variation_dirname),
                                       external_logger=logger, bed_fpath=bed_fpath)

@@ -75,8 +75,8 @@ THE SOFTWARE.
     var legendItemHeight = 30;
     var legendItemXSpace = 5;
     var legendItemYSpace = 20;
-    var legendItemOddOffset = 5;
-    var legendTextOffsetX = legendItemWidth * 2 + legendItemXSpace;
+    var legendItemOddOffset = 10;
+    var legendTextOffsetX = legendItemWidth + legendItemXSpace * 2;
 
     var total_len = 0;
     if (!isContigSizePlot) {
@@ -431,6 +431,7 @@ THE SOFTWARE.
 
     var miniItems = getMiniItems(items);
     miniRects = miniItems.filter(function (item) {
+        if (isContigSizePlot && !item.fullContig) return;
         if (!item.path) return item;
     });
     miniPaths = miniItems.filter(function (item) {
@@ -778,6 +779,7 @@ THE SOFTWARE.
                             return getItemWidth(item);
                         })
                         .attr('height', mainLanesHeight)
+                        .attr('stroke', 'black')
                         .attr('stroke-width', function (item) {
                             return getItemStrokeWidth(item);
                         })
@@ -804,10 +806,11 @@ THE SOFTWARE.
         }
 
         function getItemOpacity(item) {
+            var defOpacity = (item.type && item.type != 'unaligned') ? 0.65 : 1;
             if (item.misassembledEnds) return 1;
-            if (item.fullContig && item.type != 'unaligned') return 0.05;
-            if (!item || !item.size) return 0.65;
-            return item.size > minContigSize ? 0.65 : paleContigsOpacity;
+            if (item.fullContig && item.type && item.type != 'unaligned') return 0.05;
+            if (!item || !item.size) return defOpacity;
+            return item.size > minContigSize ? defOpacity : paleContigsOpacity;
         }
 
         function getTranslate(item) {
@@ -1807,7 +1810,7 @@ THE SOFTWARE.
 
         if (block.structure) {
             if (isContigSizePlot)
-                var contig_type = block.type ? block.type : 'unaligned';
+                var contig_type = block.type ? block.type : '';
             else {
                 var contig_type = block.misassemblies ? 'misassembled' : 'correct';
                 if (block.similar == "True" && !block.misassemblies) contig_type += ' (similar in > 50% of the assemblies)';
@@ -1823,9 +1826,10 @@ THE SOFTWARE.
                     if (block.similar == "True") contig_type += ', similar in > 50% of the assemblies';
                     contig_type += ')'
                 }
-            }    
-            info.append('p')
-                .text('Type: ' + contig_type);
+            }
+            if (contig_type)
+                info.append('p')
+                    .text('Type: ' + contig_type);
         }
         if (block.size)
             info.append('p')
@@ -2216,10 +2220,18 @@ THE SOFTWARE.
             var classDescriptions = ['correct contigs', 'misassembled contigs', 'unaligned contigs'];
         }
         else {
-            var classes = ['unknown', '', '', ''];
-            var classMarks = ['', 'N50', 'NG50', 'N50, NG50'];
-            var classDescriptions = ['contigs', 'contig of length = Nx statistic (x is 50 or 75)',
-                'contig of length = NGx statistic (x is 50 or 75)', 'contig of length = Nx and NGx simultaneously'];
+            var classes = ['unknown', ''];
+            var classMarks = ['', 'N50'];
+            var classDescriptions = ['contigs', 'contig of length = Nx statistic (x is 50 or 75)'];
+            for (var i = 0; i < items.length; i++) {
+                if (items[i].marks && items[i].marks.search('ng') != -1) {
+                    classes = ['unknown', '', '', ''];
+                    classMarks = ['', 'N50', 'NG50', 'N50, NG50'];
+                    classDescriptions = ['contigs', 'contig of length = Nx statistic (x is 50 or 75)',
+                        'contig of length = NGx statistic (x is 50 or 75)', 'contig of length = Nx and NGx simultaneously'];
+                    break;
+                }
+            }
         }
         var offsetY = 0;
         for (var numClass = 0; numClass < classes.length; numClass++) {
@@ -2229,33 +2241,24 @@ THE SOFTWARE.
     }
 
     function addLegendItemWithText(legend, offsetY, className, description, marks) {
-        var addOdd = className == 'misassembled light_color';
         legend.append('g')
                 .attr('class', 'item miniItem legend ' + className)
                 .append('rect')
                 .attr('width', legendItemWidth)
                 .attr('height', legendItemHeight)
-                .attr('x', addOdd ? 0 : legendItemWidth / 2)
+                .attr('x', 0)
                 .attr('y', offsetY)
                 .attr('fill', function (d) {
                     d = {id: className};
                     if (marks) return addGradient(d, marks, false);
                 });
-        if (addOdd)
-            legend.append('g')
-                .attr('class', 'item miniItem legend ' + className + ' odd')
-                .append('rect')
-                .attr('width', legendItemWidth)
-                .attr('height', legendItemHeight)
-                .attr('x', legendItemWidth)
-                .attr('y', offsetY + legendItemOddOffset);
         legend.append('text')
                 .attr('x', legendTextOffsetX)
-                .attr('y', offsetY + legendItemOddOffset)
+                .attr('y', offsetY + 5)
                 .attr('dy', '.5ex')
                 .style('fill', 'white')
                 .text(description)
-                .call(wrap, 125, false, false, legendTextOffsetX, ' ');
+                .call(wrap, 155, false, false, legendTextOffsetX, ' ');
         offsetY += legendItemHeight;
         offsetY += legendItemYSpace;
         offsetY += 10 * Math.max(0, Math.ceil(description.length / 13 - 3));

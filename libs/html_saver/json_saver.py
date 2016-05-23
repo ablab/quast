@@ -68,7 +68,7 @@ def save_total_report(output_dirpath, min_contig, ref_fpath):
     return save(join(output_dirpath, total_report_fname), {
         'date': t.strftime('%d %B %Y, %A, %H:%M:%S'),
         'assembliesNames': asm_names,
-        'referenceName': qutils.name_from_fpath(ref_fpath) if ref_fpath else qconfig.not_aligned_name,
+        'referenceName': qutils.name_from_fpath(ref_fpath) if ref_fpath else '',
         'order': [i for i, _ in enumerate(asm_names)],
         'report': report,
         'minContig': min_contig,

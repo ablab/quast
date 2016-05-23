@@ -97,8 +97,7 @@ function togglePlots(assembliesNames, order, name, title, drawPlot, data, refPlo
                 '<label for="label_' + assembliesNames.length + '_id" style="color: #000000;">' +
                 '<input type="checkbox" name="' + assembliesNames.length +
                 '" checked="checked" id="label_' + assembliesNames.length +
-                '_id">&nbsp;' + 'reference,&nbsp;' +
-                toPrettyString(refPlotValue) +
+                '_id">&nbsp;' + 'reference' +
                 '</label>' +
                 '</div>'
         );

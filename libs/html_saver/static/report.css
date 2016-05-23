@@ -248,6 +248,7 @@ table#refgenome td.last_row {
 }
 
 #legend-placeholder {
+    min-width: 80px;
     margin-top: -2px;
     margin-left: -5px;
     position: relative;

@@ -463,7 +463,7 @@ def add_contig(cum_length, contig, not_used_nx, assemblies_n50, assembly, contig
                     structure.append('{type: "A",contig: "' + contig.name + '",corr_start: ' + str(el.start) + ',corr_end: ' +
                                     str(el.end) + ',start:' + str(el.unshifted_start) + ',end:' + str(el.unshifted_end) +
                                     ',start_in_contig:' + str(el.start_in_contig) + ',end_in_contig:' +
-                                    str(el.end_in_contig) + ',chr: "' + el.ref_name + '"},')
+                                    str(el.end_in_contig) + ',size: ' + str(contig.size) + ',chr: "' + el.ref_name + '"},')
                 elif type(el) == str:
                     structure.append('{type: "M", mstype: "' + el + '"},')
         align = '{name: "' + contig.name + '",size: ' + str(contig.size) + marks + ',type: "' + contig.contig_type + \
@@ -905,9 +905,9 @@ def js_data_gen(assemblies, contigs_fpaths, chromosomes_length, output_dirpath, 
     contig_size_template_fpath = html_saver.get_real_path(qconfig.icarus_viewers_template_fname)
     contig_size_viewer_fpath = os.path.join(output_all_files_dir_path, qconfig.contig_size_viewer_fname)
     html_saver.init_icarus(contig_size_template_fpath, contig_size_viewer_fpath)
-    warning_contigs = 'For better performance, only largest %s contigs of each assembly were loaded' % str(qconfig.max_contigs_num_for_size_viewer) \
+    warning_contigs = '. For better performance, only largest %s contigs of each assembly were loaded' % str(qconfig.max_contigs_num_for_size_viewer) \
         if too_many_contigs else ''
-    reference_text = '<div class="reftitle"><b>Contig size viewer. </b>' + warning_contigs + '</div>'
+    reference_text = '<div class="reftitle"><b>Contig size viewer</b>' + warning_contigs + '</div>'
     html_saver.save_icarus_data(json_output_dir, reference_text, 'reference', contig_size_viewer_fpath)
     size_threshold_text = 'Fade contigs shorter than <input class="textBox" id="input_contig_threshold" type="text" size="5" /> bp </span>'
     html_saver.save_icarus_data(json_output_dir, size_threshold_text, 'size_threshold', contig_size_viewer_fpath)

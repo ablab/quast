@@ -1,10 +1,33 @@
 -- Version history --
 
-4.1   x. Nucmer aligner is replaced with significantly faster E-MEM (Linux only).  
+4.1   1. Icarus update -- new visualization of contigs in both viewers:
+       - all blocks are drawn with transparency, so overlaps are more visible;
+       - controls for switching between overlapped blocks are added to Contig info panel;
+       - y-coordinates offsets and shades of colors for neighbouring contigs are removed.
 
-      x. Code refactored (icarus, metaquast).
+      2. Icarus update -- integration of Contig Size Viewer with Contig Alignment Viewer
+         (if reference genome is available and thus alignment information is present):
+       - contigs are colored according to their mapping on the reference (correct,
+         misassembled, unaligned);
+       - positions of the breakpoints in the misassembled contigs are shown;
+       - full scale Contig info is now available with links to Contig Alignment Viewer;
 
-      x. Fixed several minor bugs.
+      3. Nucmer aligner is replaced with significantly faster E-MEM (for Linux only).
+
+      4. Significant speed up of misassembly detection algorithm in case of complicated
+         genomes (with many short repeats).
+
+      5. New option added:
+       - "--no-sv" for skipping structural variants calling and processing. Make sense
+         only if reads are specified: in this case they will be used for building Icarus
+         read coverage histograms only.
+
+      6. Embedded Manta updated to version 0.29.6.
+
+      7. Reference line on cumulative plot is redesigned to be more consistent with
+         assemblies lines (starts at 0, depends on number of chromosomes/plasmids).
+
+      8. Fixed several minor bugs.
 
 
 4.0   1. Icarus added! Icarus stands for Interactive Contig Assessment browseR.

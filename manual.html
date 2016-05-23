@@ -1,6 +1,6 @@
 <html>
 <head>
-    <title>QUAST 4.0 manual</title>
+    <title>QUAST 4.1 manual</title>
     <style type="text/css">
         body {
             margin-top: 30px;
@@ -94,7 +94,7 @@
     for guidelines on how to complete the licensing process.
     <br>
     <br>
-    Version 4.1 of QUAST was released under GPL v2 on XX May 2016. Note that some of build-in third-party tools are not under GPL v2. See <a href="LICENSE.txt">LICENSE</a> for details.
+    Version 4.1 of QUAST was released under GPL v2 on 24 May 2016. Note that some of build-in third-party tools are not under GPL v2. See <a href="LICENSE.txt">LICENSE</a> for details.
 </p>
 
 <h2>Contents</h2>
@@ -567,6 +567,11 @@ Do not report SNPs statistics. This may significantly reduce memory consumption 
 <code><b>--no-gc</b></code>
 </div>
 Do not compute GC% and do not produce GC-distribution plots (both in HTML report and in PDF).
+
+<div class='option'>
+<code><b>--no-sv</b></code>
+</div>
+Do not run structural variant calling and processing (make sense only if reads are specified).
 
 <div class='option'>
 <code><b>--fast</b></code>

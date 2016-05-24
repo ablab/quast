@@ -458,14 +458,24 @@ def add_contig(cum_length, contig, not_used_nx, assemblies_n50, assembly, contig
         structure = []
         if structures_by_labels and assembly in structures_by_labels:
             assembly_structure = structures_by_labels[assembly]
+            prev_pos = 0
             for el in assembly_structure[contig.name]:
                 if isinstance(el, Alignment):
+                    alignment_start = min(el.start_in_contig, el.end_in_contig)
+                    if alignment_start - 1 != prev_pos:
+                        structure.append('{type: "unaligned",contig: "' + contig.name + '",start_in_contig:' + str(prev_pos + 1) +
+                                         ',end_in_contig:' + str(alignment_start - 1) + ',size: ' + str(contig.size) + '},')
+                    prev_pos = max(el.start_in_contig, el.end_in_contig)
                     structure.append('{type: "A",contig: "' + contig.name + '",corr_start: ' + str(el.start) + ',corr_end: ' +
                                     str(el.end) + ',start:' + str(el.unshifted_start) + ',end:' + str(el.unshifted_end) +
                                     ',start_in_contig:' + str(el.start_in_contig) + ',end_in_contig:' +
                                     str(el.end_in_contig) + ',size: ' + str(contig.size) + ',chr: "' + el.ref_name + '"},')
                 elif type(el) == str:
                     structure.append('{type: "M", mstype: "' + el + '"},')
+            if prev_pos < contig.size * 0.95:
+                structure.append('{type: "unaligned",contig: "' + contig.name + '",start_in_contig:' + str(prev_pos + 1) +
+                                 ',end_in_contig:' + str(contig.size - 1) + ',size: ' + str(contig.size) + '},')
+
         align = '{name: "' + contig.name + '",size: ' + str(contig.size) + marks + ',type: "' + contig.contig_type + \
                 '",structure: [' + ''.join(structure) + ']},'
     return end_contig, contig_size_lines, align, not_used_nx

@@ -123,7 +123,7 @@ THE SOFTWARE.
     var featuresMainHidden = featuresHidden || lanes.length > 3;
     var brush, brush_cov, brush_anno;
 
-    var spaceAfterMain = 0;
+    var spaceAfterMain = 10;
     var spaceAfterTrack = 40;
     var annotationsMainOffsetY = mainHeight + mainScale + (featuresHidden ? 0 : spaceAfterMain);
     var covMainOffsetY = typeof coverage_data != 'undefined' ? (annotationsMainOffsetY +
@@ -579,7 +579,8 @@ THE SOFTWARE.
     if (!featuresHidden)
       var featurePath = annotationsMain.append('g')
         .attr('clip-path', 'url(#clip)');
-
+    var lineNumberLayer = linesLabelsLayer.append('g')
+                            .attr('pointer-events', 'painted');
     var visRectsAndPaths = [];
 
     if (isContigSizePlot) {
@@ -595,7 +596,7 @@ THE SOFTWARE.
             });
         var startPos = 400;
 
-        var lineCountContigs = itemLines.append('g')
+        var lineCountContigs = lineNumberLayer.append('g')
                 .attr('id', 'countLine')
                 .attr('transform', function (d) {
                     return 'translate(' + startPos + ', 10)';
@@ -1547,7 +1548,7 @@ THE SOFTWARE.
                 .on('mouseup', moveBrush);
 
         // draw the selection area
-        var delta = (x_mini.domain()[1] - x_mini.domain()[0]) / 8;
+        var delta = (x_mini.domain()[1] - x_mini.domain()[0]) / 16;
         var brushPos = isContigSizePlot ? delta : centerPos;
 
         var newBrush = d3.svg.brush()
@@ -1910,13 +1911,20 @@ THE SOFTWARE.
                             d3.event.stopPropagation();
                         });
                 if (isContigSizePlot) {
-                    positionLink.attr('href', (typeof links_to_chromosomes !== 'undefined' ? links_to_chromosomes[curBlock.chr] : 'alignment_viewer') +
-                                    '.html?assembly=' + assembly + '&contig=' + contigName  + '&start=' + curBlock.start_in_ref + '&end=' + curBlock.end_in_ref)
-                                .attr('target', '_blank')
-                                .style('text-decoration', 'underline')
-                                .style('color', '#7ED5F5');
-                    if (typeof links_to_chromosomes !== 'undefined' && curBlock.chr)
-                        positionLink.text(document.getElementById('position_link' + numBlock).textContent + '(' + curBlock.chr + ')');
+                    if (curBlock.start_in_ref) {
+                        positionLink.attr('href', (typeof links_to_chromosomes !== 'undefined' ? links_to_chromosomes[curBlock.chr] : 'alignment_viewer') +
+                                        '.html?assembly=' + assembly + '&contig=' + contigName  + '&start=' + curBlock.start_in_ref + '&end=' + curBlock.end_in_ref)
+                                    .attr('target', '_blank')
+                                    .style('text-decoration', 'underline')
+                                    .style('color', '#7ED5F5');
+                        if (typeof links_to_chromosomes !== 'undefined' && curBlock.chr)
+                            positionLink.text(document.getElementById('position_link' + numBlock).textContent + '(' + curBlock.chr + ')');
+                    }
+                    else {
+                        positionLink.text('unaligned');
+                        positionLink.style('text-decoration', 'none')
+                                    .style('color', 'white');
+                    }
                 }
                 if (is_expanded && !isContigSizePlot) {
                     if (prev_start == start && prev_end == end)
@@ -1945,7 +1953,8 @@ THE SOFTWARE.
                 }
                 block = block.append('p')
                         .attr('class', is_expanded ? 'close' : 'open');
-                block.append('p')
+                if (curBlock.start)
+                    block.append('p')
                         .text(['reference:',
                             format(curBlock.start), ndash, format(curBlock.end),
                             '(' + format(Math.abs(curBlock.end - curBlock.start) + 1) + ')', 'bp'].join(' '));

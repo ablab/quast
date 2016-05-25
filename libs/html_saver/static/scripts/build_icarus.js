@@ -430,40 +430,40 @@ THE SOFTWARE.
     var itemsContainer = itemsLayer.append('g');
 
     var miniItems = getMiniItems(items);
-    miniRects = miniItems.filter(function (item) {
-        if (isContigSizePlot && !item.fullContig) return;
-        if (!item.path) return item;
+    miniRects = miniItems.filter(function (block) {
+        if (isContigSizePlot && !block.fullContig) return;
+        if (!block.path) return block;
     });
-    miniPaths = miniItems.filter(function (item) {
-        if (item.path) return item;
+    miniPaths = miniItems.filter(function (block) {
+        if (block.path) return block;
     });
 
     mini.append('g').selectAll('miniItems')
             .data(miniRects)
             .enter().append('rect')
-            .attr('class', function (item) {
-                if (item.text && !item.type) return 'item gradient';
-                return 'item miniItem ' + item.objClass;
+            .attr('class', function (block) {
+                if (block.text && !block.contig_type) return 'block gradient';
+                return 'block miniItem ' + block.objClass;
             })                
-            .attr('fill', function (item) {
-                if (item.text && !item.type) return addGradient(item, item.text, false);
+            .attr('fill', function (block) {
+                if (block.text && !block.contig_type) return addGradient(block, block.text, false);
             })
-            .attr('transform', function (item) {
-                return 'translate(' + item.start + ', ' + item.y + ')';
+            .attr('transform', function (block) {
+                return 'translate(' + block.start + ', ' + block.y + ')';
             })
-            .attr('width', function (item) {
-                itemWidth = item.end - item.start;
+            .attr('width', function (block) {
+                itemWidth = block.end - block.start;
                 return itemWidth;
             })
             .attr('height', miniItemHeight);
     mini.append('g').selectAll('miniItems')
             .data(miniPaths)
             .enter().append('path')
-            .attr('class', function (item) {
-              return 'mainItem end ' + item.objClass;
+            .attr('class', function (block) {
+              return 'mainItem end ' + block.objClass;
             })
-            .attr('d', function (item) {
-              return item.path;
+            .attr('d', function (block) {
+              return block.path;
             });
 
     var featureTip = d3.select('body').append('div')
@@ -726,129 +726,134 @@ THE SOFTWARE.
         removeTooltip();
         if (!featuresMainHidden) drawFeaturesMain(minExtent, maxExtent);
 
-        // update the item rects
+        // update the block rects
         visRectsAndPaths = [];
-        for (var item = 0; item < visItems.length; item++) {
-            visRectsAndPaths.push(visItems[item]);
-            if (visItems[item].triangles)
-                for (var i = 0; i < visItems[item].triangles.length; i++)
+        for (var block = 0; block < visItems.length; block++) {
+            visRectsAndPaths.push(visItems[block]);
+            if (visItems[block].triangles)
+                for (var i = 0; i < visItems[block].triangles.length; i++)
                 {
-                    var triangle = visItems[item].triangles[i];
-                    var w = x_main(triangle.corr_end) - x_main(triangle.corr_start);
+                    var triangle = visItems[block].triangles[i];
+                    if ((triangle.misassembledEnds == "R" && triangle.corr_end > maxExtent) ||
+                        (triangle.misassembledEnds == "L" && triangle.corr_start < minExtent))
+                        continue
+                    var w = getItemWidth(triangle);
                     var triangle_width = Math.sqrt(0.5) * mainLanesHeight / 2;
                     if (w > triangle_width * 1.5) visRectsAndPaths.push(triangle);
                 }
         }
-        var oldItems = itemsContainer.selectAll('.item')
-                .data(visRectsAndPaths, function (item) {
-                    return item.id;
+        var oldItems = itemsContainer.selectAll('.block')
+                .data(visRectsAndPaths, function (block) {
+                    return block.id;
                 })
-                .attr('transform', function (item) {
-                    return getTranslate(item);
+                .attr('transform', function (block) {
+                    return getTranslate(block);
                 })
-                .attr('width', function (item) {
-                    return getItemWidth(item);
+                .attr('width', function (block) {
+                    return getItemWidth(block);
                 })
-                .attr('stroke-width', function (item) {
-                    return getItemStrokeWidth(item);
+                .attr('stroke-width', function (block) {
+                    return getItemStrokeWidth(block);
                 })
-                .attr('fill-opacity', function (item) {
-                    return getItemOpacity(item);
+                .attr('fill-opacity', function (block) {
+                    return getItemOpacity(block);
                 });
         oldItems.exit().remove();
 
         var newItems = oldItems.enter().append('g').each(function(itemData) {
             var container = d3.select(this);
             var itemFigure = itemData.misassembledEnds ? container.append('path') : container.append('rect');
-            itemFigure.attr('class', function (item) {
-                            if (item.misassembledEnds) {
-                                if (!item.objClass) item.objClass = 'misassembled';
-                                return 'item end ' + item.objClass;
+            itemFigure.attr('class', function (block) {
+                            if (block.misassembledEnds) {
+                                if (!block.objClass) block.objClass = 'misassembled';
+                                return 'block end ' + block.objClass;
                             }
-                            if (!item.marks || item.type)
-                                return 'item mainItem ' + item.objClass;
-                            else return 'item';
+                            if (!block.marks || block.contig_type)
+                                return 'block mainItem ' + block.objClass;
+                            else return 'block';
                         })// Define the gradient
-                        .attr('fill', function (item) {
-                            if (item.marks && !item.type)
-                                return addGradient(item, item.marks, true);
+                        .attr('fill', function (block) {
+                            if (block.marks && !block.contig_type)
+                                return addGradient(block, block.marks, true);
                         })
-                        .attr('transform', function (item) {
-                            return getTranslate(item);
+                        .attr('transform', function (block) {
+                            return getTranslate(block);
                         })
-                        .attr('width', function (item) {
-                            return getItemWidth(item);
+                        .attr('width', function (block) {
+                            return getItemWidth(block);
                         })
                         .attr('height', mainLanesHeight)
                         .attr('stroke', 'black')
-                        .attr('stroke-width', function (item) {
-                            return getItemStrokeWidth(item);
+                        .attr('stroke-width', function (block) {
+                            return getItemStrokeWidth(block);
                         })
-                        .attr('fill-opacity', function (item) {
-                            return getItemOpacity(item);
+                        .attr('fill-opacity', function (block) {
+                            return getItemOpacity(block);
                         })
-                        .attr('pointer-events', function (item) {
-                            return (item.misassembledEnds || item.notActive) ? 'none' : 'painted';
+                        .attr('pointer-events', function (block) {
+                            return (block.misassembledEnds || block.notActive) ? 'none' : 'painted';
                         })
-                        .attr('d', function(item) {
-                            if (item.misassembledEnds) return make_triangle(item);
+                        .attr('d', function(block) {
+                            if (block.misassembledEnds) return make_triangle(block);
                         });
         });
 
-        function getItemWidth(item) {
-            var w = x_main(Math.min(maxExtent, item.corr_end)) - x_main(Math.max(minExtent, item.corr_start));
+        function getItemWidth(block) {
+            var w = x_main(Math.min(maxExtent, block.corr_end)) - x_main(Math.max(minExtent, block.corr_start));
             return w;
         }
 
-        function getItemStrokeWidth(item) {
-            if (item.misassembledEnds) return 0;
-            if (item.notActive) return 0;
-            return (item.groupId == selected_id ? 2 : .4);
+        function getItemStrokeWidth(block) {
+            if (block.misassembledEnds) return 0;
+            if (block.notActive) return 0;
+            return (block.groupId == selected_id ? 2 : .4);
         }
 
-        function getItemOpacity(item) {
+        function getItemOpacity(block) {
             var defOpacity = 0.65;
-            if (isContigSizePlot && (!item.type || item.type == 'unaligned' || item.type == 'small_contigs')) defOpacity = 1;
-            if (item.misassembledEnds) return 1;
-            if (item.fullContig && item.type && item.type != 'unaligned' && item.type != 'small_contigs') return 0.05;
-            if (!item || !item.size) return defOpacity;
-            return item.size > minContigSize ? defOpacity : paleContigsOpacity;
+            if (isContigSizePlot && (!block.contig_type || block.contig_type == 'unaligned' || block.contig_type == 'small_contigs'))
+                defOpacity = 1;
+            if (block.misassembledEnds) return 1;
+            if (block.fullContig && block.contig_type && block.contig_type != 'unaligned' && block.contig_type != 'small_contigs')
+                return 0.05;
+            if (!block || !block.size) return defOpacity;
+            return block.size > minContigSize ? defOpacity : paleContigsOpacity;
         }
 
-        function getTranslate(item) {
-            if (item.misassembledEnds) {
-                var x = item.misassembledEnds == "L" ? x_main(item.corr_start) : x_main(item.corr_end);
-                var y = y_main(item.lane) + .25 * lanesInterval;
-                if (INTERLACE_BLOCKS_VERT_OFFSET) y += offsetsY[item.order % 3] * lanesInterval;
-                if (item.groupId == selected_id) {
-                    if (item.misassembledEnds == "L") x += 1;
+        function getTranslate(block) {
+            if (block.misassembledEnds) {
+                var x = block.misassembledEnds == "L" ? x_main(block.corr_start) : x_main(block.corr_end);
+                var y = y_main(block.lane) + .25 * lanesInterval;
+                if (INTERLACE_BLOCKS_VERT_OFFSET) y += offsetsY[block.order % 3] * lanesInterval;
+                if (block.groupId == selected_id) {
+                    if (block.misassembledEnds == "L") x += 1;
                     else x += -1;
                 }
                 return 'translate(' + x + ', ' + y + ')';
             }
-            var x = x_main(Math.max(minExtent, item.corr_start));
-            var y = y_main(item.lane) + .25 * lanesInterval;
-            if (INTERLACE_BLOCKS_VERT_OFFSET) y += offsetsY[item.order % 3] * lanesInterval;
+            var x = x_main(Math.max(minExtent, block.corr_start));
+            var y = y_main(block.lane) + .25 * lanesInterval;
+            if (INTERLACE_BLOCKS_VERT_OFFSET) y += offsetsY[block.order % 3] * lanesInterval;
             return 'translate(' + x + ', ' + y + ')';
         }
 
         if (BLOCKS_SHADOW) other.attr('filter', 'url(#shadow)');
 
-        function make_triangle(item) {
+        function make_triangle(block) {
             var startX = 0;
-            var startY = item.groupId == selected_id ? 2 : 0;
-            if (item.misassembledEnds == "L")
+            var startY = block.groupId == selected_id ? 2 : 0;
+            if (block.misassembledEnds == "L")
                 path = ['M', startX, startY, 'L', startX + (0.5 * (mainLanesHeight - startY) / 2),
                     (startY + (mainLanesHeight - startY)) / 2, 'L', startX, mainLanesHeight - startY, 'L',  startX, startY].join(' ');
-            if (item.misassembledEnds == "R")
+            if (block.misassembledEnds == "R")
                 path = ['M', startX, startY, 'L', startX - (0.5 * (mainLanesHeight - startY) / 2),
                     (startY + (mainLanesHeight - startY)) / 2, 'L', startX, mainLanesHeight - startY, 'L',  startX, startY].join(' ');
             return path;
         }
 
-        newItems.on('click', function (item) {
-                        selected_id = item.groupId;
-                        changeInfo(item);
+        newItems.on('click', function (block) {
+                        selected_id = block.groupId;
+                        changeInfo(block);
                     })
                 .on('mouseenter', glow)
                 .on('mouseleave', disglow);
@@ -949,30 +954,30 @@ THE SOFTWARE.
         contigStart = true;
         prev_pos = 0;
         for (var i = 0; i < items.length; i++) {
-        	item = items[i];
-            if (item.notActive) {
-            	y = y_main(item.lane) + .25 * lanesInterval + 10;
+        	block = items[i];
+            if (block.notActive) {
+            	y = y_main(block.lane) + .25 * lanesInterval + 10;
             	if (!contigStart) {
-            		if (Math.abs(prev_pos - item.corr_start) > 2) {
-		            	lines.push({pos:item.corr_start, y: y});
+            		if (Math.abs(prev_pos - block.corr_start) > 2) {
+		            	lines.push({pos:block.corr_start, y: y});
             		}
             	}
             	else contigStart = false;
-            	prev_pos = item.corr_end;
-            	lines.push({pos:item.corr_end, y: y});
+            	prev_pos = block.corr_end;
+            	lines.push({pos:block.corr_end, y: y});
             }
             else {
             	contigStart = true;
-            	if (item.type != 'unaligned') lines.pop();
+            	if (block.contig_type != 'unaligned') lines.pop();
             }
         }
         return lines;
     }
 
-    function isOverlapping (item, lane) {
+    function isOverlapping (block, lane) {
         if (lane)
             for (var i = 0; i < lane.length; i++)
-                if (item.corr_start <= lane[i].corr_end && lane[i].corr_start <= item.corr_end)
+                if (block.corr_start <= lane[i].corr_end && lane[i].corr_start <= block.corr_end)
                     return true;
 
         return false;
@@ -1000,52 +1005,52 @@ THE SOFTWARE.
     function collapseLanes (chart) {
         var lanes = [], items = [], laneId = 0, itemId = 0, groupId = 0;
 
-        function parseItem(item, fullInfo) {
-            item.misassembledEnds = '';
-            item.lane = laneId;
-            item.id = itemId;
-            item.groupId = groupId;
-            item.assembly = assemblyName;
+        function parseItem(block, fullInfo) {
+            block.misassembledEnds = '';
+            block.lane = laneId;
+            block.id = itemId;
+            block.groupId = groupId;
+            block.assembly = assemblyName;
             if (isContigSizePlot) {
                 if (!fullInfo) {
-                    item.corr_start = currentLen;
-                    currentLen += item.size;
-                    item.corr_end = currentLen;
-                    item.fullContig = true;
+                    block.corr_start = currentLen;
+                    currentLen += block.size;
+                    block.corr_end = currentLen;
+                    block.fullContig = true;
                 }
                 else {
-                    item.start_in_ref = item.corr_start;
-                    item.end_in_ref = item.corr_end;
-            	    start_in_contig = Math.min(item.start_in_contig, item.end_in_contig);
-            	    end_in_contig = Math.max(item.start_in_contig, item.end_in_contig);
-                    item.corr_start = currentLen + start_in_contig - 1;
-                    item.corr_end = currentLen + end_in_contig - 1;
-                    item.notActive = true;
-                    item.type = fullInfo.type;
+                    block.start_in_ref = block.corr_start;
+                    block.end_in_ref = block.corr_end;
+            	    start_in_contig = Math.min(block.start_in_contig, block.end_in_contig);
+            	    end_in_contig = Math.max(block.start_in_contig, block.end_in_contig);
+                    block.corr_start = currentLen + start_in_contig - 1;
+                    block.corr_end = currentLen + end_in_contig - 1;
+                    block.notActive = true;
+                    block.contig_type = fullInfo.contig_type;
                 }
             }
-            item.triangles = Array();
+            block.triangles = Array();
             itemId++;
             numItems++;
-            if (item.mis_ends && misassembled_ends) {
+            if (block.mis_ends && misassembled_ends) {
                 for (var num = 0; num < misassembled_ends.length; num++) {
                     if (!misassembled_ends[num]) continue;
                     var triangleItem = {};
-                    triangleItem.name = item.name;
-                    triangleItem.corr_start = item.corr_start;
-                    triangleItem.corr_end = item.corr_end;
-                    triangleItem.assembly = item.assembly;
+                    triangleItem.name = block.name;
+                    triangleItem.corr_start = block.corr_start;
+                    triangleItem.corr_end = block.corr_end;
+                    triangleItem.assembly = block.assembly;
                     triangleItem.id = itemId;
                     triangleItem.lane = laneId;
                     triangleItem.groupId = groupId;
                     triangleItem.misassembledEnds = misassembled_ends[num];
-                    triangleItem.misassemblies = item.misassemblies.split(';')[num];
-                    item.triangles.push(triangleItem);
+                    triangleItem.misassemblies = block.misassemblies.split(';')[num];
+                    block.triangles.push(triangleItem);
                     itemId++;
                     numItems++;
                 }
             }
-            return item
+            return block
         }
 
         for (var assemblyName in chart.assemblies) {
@@ -1053,18 +1058,18 @@ THE SOFTWARE.
             var currentLen = 0;
             var numItems = 0;
             for (var i = 0; i < lane.length; i++) {
-                var item = lane[i];
-                if (item.mis_ends) var misassembled_ends = item.mis_ends.split(';');
+                var block = lane[i];
+                if (block.mis_ends) var misassembled_ends = block.mis_ends.split(';');
                 if (isContigSizePlot) {
-                    var blocks = item.structure;
+                    var blocks = block.structure;
                     if (blocks) {
                         for (var k = 0; k < blocks.length; k++) {
-                            if (blocks[k].type != 'M')
-                                items.push(parseItem(blocks[k], item));
+                            if (blocks[k].contig_type != 'M')
+                                items.push(parseItem(blocks[k], block));
                         }
                     }
                 }
-                items.push(parseItem(item));
+                items.push(parseItem(block));
                 groupId++;
             }
 
@@ -1322,7 +1327,7 @@ THE SOFTWARE.
             if (parseInt(textBox.value)) minContigSize = parseInt(textBox.value);
             else if (key == 13) minContigSize = 0;
             //only for contig size plot
-            mini.selectAll('.item')
+            mini.selectAll('.block')
                 .attr('opacity', function (d) {
                   if (!d || !d.size) return 1;
                   return d.size > minContigSize ? 1 : paleContigsOpacity;
@@ -1334,9 +1339,9 @@ THE SOFTWARE.
     function getNumberOfContigs(x) {
         lineCountContigs.selectAll('g')
                 .remove();
-        for (var item = 0; item < visRectsAndPaths.length; item++) {
-            if (x_main(visRectsAndPaths[item].corr_start) <= x && x <= x_main(visRectsAndPaths[item].corr_end)) {
-                var curItem = visRectsAndPaths[item];
+        for (var block = 0; block < visRectsAndPaths.length; block++) {
+            if (x_main(visRectsAndPaths[block].corr_start) <= x && x <= x_main(visRectsAndPaths[block].corr_end)) {
+                var curItem = visRectsAndPaths[block];
                 if (curItem.objClass.search("disabled") != -1)
                     continue;
                 order = (curItem.order + 1).toString();
@@ -1693,7 +1698,7 @@ THE SOFTWARE.
         return size;
     }
 
-    // generates a single path for each item class in the mini display
+    // generates a single path for each block class in the mini display
     // ugly - but draws mini 2x faster than append lines or line generator
     // is there a better way to do a bunch of lines as a single path with d3?
     function getMiniItems(items) {
@@ -1703,17 +1708,17 @@ THE SOFTWARE.
 
         var countSupplementary = 0;
         for (var c, i = 0; i < items.length; i++) {
-            item = items[i];
-            if (item.lane != curLane) {
+            block = items[i];
+            if (block.lane != curLane) {
                 numItem = 0;
                 countSupplementary = 0;
             }
-            result.push(createMiniItem(item, curLane, numItem, countSupplementary));
-            curLane = item.lane;
-            if (!item.notActive) numItem++;
-            if (item.triangles && item.triangles.length > 0)
-                for (var j = 0; j < item.triangles.length; j++) {
-                    result.push(createMiniItem(item.triangles[j], curLane, numItem, countSupplementary));
+            result.push(createMiniItem(block, curLane, numItem, countSupplementary));
+            curLane = block.lane;
+            if (!block.notActive) numItem++;
+            if (block.triangles && block.triangles.length > 0)
+                for (var j = 0; j < block.triangles.length; j++) {
+                    result.push(createMiniItem(block.triangles[j], curLane, numItem, countSupplementary));
                     numItem++;
                     countSupplementary++;
                 }
@@ -1721,49 +1726,49 @@ THE SOFTWARE.
         return result;
     }
 
-    function createMiniItem(item, curLane, numItem, countSupplementary) {
+    function createMiniItem(block, curLane, numItem, countSupplementary) {
         var miniPathHeight = 10;
-        var isSmall = x_mini(item.corr_end) - x_mini(item.corr_start) < miniPathHeight;
+        var isSmall = x_mini(block.corr_end) - x_mini(block.corr_start) < miniPathHeight;
 
-        item.misassembled = item.misassemblies ? "True" : "False";
-        c = (item.misassembled == "False" ? "" : "misassembled");
-        c += (item.similar == "True" ? " similar" : "");
-        //c += ((!item.misassembledEnds && !isSmall) ? " light_color" : "");
+        block.misassembled = block.misassemblies ? "True" : "False";
+        c = (block.misassembled == "False" ? "" : "misassembled");
+        c += (block.similar == "True" ? " similar" : "");
+        //c += ((!block.misassembledEnds && !isSmall) ? " light_color" : "");
         if (INTERLACE_BLOCKS_COLOR) c += ((numItem - countSupplementary) % 2 == 0 ? " odd" : "");
         var text = '';
         if (isContigSizePlot) {
-            if (item.type == "small_contigs") c += " disabled";
-            else if (item.type == "unaligned") c += " unaligned";
-            else if (item.type == "misassembled") c += " misassembled";
-            else if (item.type == "correct") c += "";
+            if (block.contig_type == "small_contigs") c += " disabled";
+            else if (block.contig_type == "unaligned") c += " unaligned";
+            else if (block.contig_type == "misassembled") c += " misassembled";
+            else if (block.contig_type == "correct") c += "";
             else c += " unknown";
         }
 
-        if (item.marks) {  // NX for contig size plot
-          var marks = item.marks;
+        if (block.marks) {  // NX for contig size plot
+          var marks = block.marks;
           text = marks;
           marks = marks.split(', ');
           for (var m = 0; m < marks.length; m++)
             c += " " + marks[m].toLowerCase();
         }
 
-        item.objClass = c;
-        item.order = numItem - countSupplementary;
+        block.objClass = c;
+        block.order = numItem - countSupplementary;
 
-        var startX = item.misassembledEnds == "R" ? x_mini(item.corr_end) : x_mini(item.corr_start);
-        var endX = x_mini(item.corr_end);
-        var pathEnd = x_mini(item.corr_end);
-        var startY = y_mini(item.lane) + .18 * miniLanesHeight;
+        var startX = block.misassembledEnds == "R" ? x_mini(block.corr_end) : x_mini(block.corr_start);
+        var endX = x_mini(block.corr_end);
+        var pathEnd = x_mini(block.corr_end);
+        var startY = y_mini(block.lane) + .18 * miniLanesHeight;
         if (INTERLACE_BLOCKS_VERT_OFFSET) startY += offsetsMiniY[items[i].order % 3] * miniLanesHeight;
         var path = '';
         if (!isSmall) {
-            if (item.misassembledEnds == "L") path = ['M', startX, startY, 'L', startX + (Math.sqrt(3) * miniPathHeight / 2), startY + miniPathHeight / 2,
+            if (block.misassembledEnds == "L") path = ['M', startX, startY, 'L', startX + (Math.sqrt(3) * miniPathHeight / 2), startY + miniPathHeight / 2,
               'L', startX, startY + miniPathHeight, 'L',  startX, startY].join(' ');
-            else if (item.misassembledEnds == "R") path = ['M', startX, startY, 'L', startX - (Math.sqrt(3) * miniPathHeight / 2), startY + miniPathHeight / 2,
+            else if (block.misassembledEnds == "R") path = ['M', startX, startY, 'L', startX - (Math.sqrt(3) * miniPathHeight / 2), startY + miniPathHeight / 2,
               'L', startX, startY + miniPathHeight, 'L',  startX, startY].join(' ');
         }
-        return {objClass: item.objClass, path: path, misassemblies: item.misassemblies, misassembledEnds: item.misassembledEnds,
-            start: startX, end: endX, y: startY, size: item.size, text: text, id: item.id, type: item.type, fullContig: item.fullContig};
+        return {objClass: block.objClass, path: path, misassemblies: block.misassemblies, misassembledEnds: block.misassembledEnds,
+            start: startX, end: endX, y: startY, size: block.size, text: text, id: block.id, contig_type: block.contig_type, fullContig: block.fullContig};
     }
 
     function getTextSize(text, size) {
@@ -1815,7 +1820,7 @@ THE SOFTWARE.
 
         if (block.structure) {
             if (isContigSizePlot)
-                var contig_type = block.type ? block.type : '';
+                var contig_type = block.contig_type ? block.contig_type : '';
             else {
                 var contig_type = block.misassemblies ? 'misassembled' : 'correct';
                 if (block.similar == "True" && !block.misassemblies) contig_type += ' (similar in > 50% of the assemblies)';
@@ -1860,7 +1865,7 @@ THE SOFTWARE.
             };
 
             var curBlock = !data ? (overlapped_block ? overlapped_block : '') : data.filter(function (block) {
-                if (block.type != "M" && block.contig == contigName) {
+                if (block.contig_type != "M" && block.contig == contigName) {
                     if (start_in_contig && block.start_in_contig == start_in_contig && block.end_in_contig == end_in_contig
                         && block.corr_start == start) return block;
                     else if (!start_in_contig && block.corr_start <= start && end <= block.corr_end) return block;
@@ -1976,7 +1981,7 @@ THE SOFTWARE.
             var blocks = info.append('p')
                     .attr('class', 'head main');
             var blocksText = (block.ambiguous ? 'Alternatives: ' : 'Blocks: ') + block.structure.filter(function(nextBlock) {
-                                    if (nextBlock.type != "M") return nextBlock;
+                                    if (nextBlock.contig_type != "M") return nextBlock;
                                 }).length;
             blocks.text(block.ambiguous ? 'Ambiguously mapped.' : blocksText);
             if (block.ambiguous)
@@ -1985,7 +1990,7 @@ THE SOFTWARE.
 
             for (var i = 0; i < block.structure.length; ++i) {
                 var nextBlock = block.structure[i];
-                if (nextBlock.type != "M") {
+                if (nextBlock.contig_type != "M") {
                     appendPositionElement(block.structure, nextBlock.corr_start, nextBlock.corr_end, block.name, block.assembly, blocks, nextBlock.start_in_contig,
                         nextBlock.end_in_contig, block.corr_start, block.corr_end, true);
 
@@ -2027,7 +2032,7 @@ THE SOFTWARE.
         if (block.structure) {
             for (var i = 0; i < block.structure.length; ++i) {
                 var nextBlock = block.structure[i];
-                if (nextBlock.type != "M" && !nextBlock.notActive) {
+                if (nextBlock.contig_type != "M" && !nextBlock.notActive) {
                     if (!(nextBlock.corr_start <= block.corr_start && block.corr_end <= nextBlock.corr_end) &&
                         (isContigSizePlot || chrContigs.indexOf(nextBlock.chr) != -1)) {
                         arrows.push({start: nextBlock.corr_start, end: nextBlock.corr_end, lane: block.lane, selected: false});
@@ -2103,48 +2108,48 @@ THE SOFTWARE.
         hideUncheckedMisassemblies(chart);
     }
 
-    function changeMisassembledStatus(item) {
-        var msTypes = item.misassemblies.split(';');
+    function changeMisassembledStatus(block) {
+        var msTypes = block.misassemblies.split(';');
         var isMisassembled = "False";
         for (var i = 0; i < msTypes.length; i++) {
             if (msTypes[i] && document.getElementById(msTypes[i]).checked) isMisassembled = "True";
         }
-        if (isMisassembled == "True" && item.misassembled == "False") {
-            item.objClass = item.objClass.replace("disabled", "misassembled");
+        if (isMisassembled == "True" && block.misassembled == "False") {
+            block.objClass = block.objClass.replace("disabled", "misassembled");
         }
         else if (isMisassembled == "False")
-            item.objClass = item.objClass.replace(/\bmisassembled\b/g, "disabled");
-        item.misassembled = isMisassembled;
-        return item;
+            block.objClass = block.objClass.replace(/\bmisassembled\b/g, "disabled");
+        block.misassembled = isMisassembled;
+        return block;
     }
 
     function hideUncheckedMisassemblies(track) {
-        track.selectAll('.item')
-            .classed('misassembled', function (item) {
-                if (item && item.misassemblies) {
-                    if (item.misassembled) return item.misassembled == 'True';
-                    return checkMsTypeToShow(item);
+        track.selectAll('.block')
+            .classed('misassembled', function (block) {
+                if (block && block.misassemblies) {
+                    if (block.misassembled) return block.misassembled == 'True';
+                    return checkMsTypeToShow(block);
                 }
             })
-            .classed('disabled', function (item) {
-                if (item && item.misassemblies) {
-                    if (item.misassembled) return item.misassembled != 'True';
-                    return !checkMsTypeToShow(item);
+            .classed('disabled', function (block) {
+                if (block && block.misassemblies) {
+                    if (block.misassembled) return block.misassembled != 'True';
+                    return !checkMsTypeToShow(block);
                 }
             });
         track.selectAll('path')
-            .classed('misassembled', function (item) {
-                if (item && item.misassemblies)
-                    return checkMsTypeToShow(item);
+            .classed('misassembled', function (block) {
+                if (block && block.misassemblies)
+                    return checkMsTypeToShow(block);
             })
-            .classed('disabled', function (item) {
-                if (item && item.misassemblies)
-                    return !checkMsTypeToShow(item);
+            .classed('disabled', function (block) {
+                if (block && block.misassemblies)
+                    return !checkMsTypeToShow(block);
             });
     }
 
-    function checkMsTypeToShow(item) {
-        var msTypes = item.misassemblies.split(';');
+    function checkMsTypeToShow(block) {
+        var msTypes = block.misassemblies.split(';');
         for (var i = 0; i < msTypes.length; i++) {
             if (msTypes[i] && document.getElementById(msTypes[i]).checked) return true;
         }
@@ -2227,7 +2232,7 @@ THE SOFTWARE.
     }
 
     function appendLegendContigSize(legend) {
-        if (items[0].type && items[0].type != 'unknown') {
+        if (items[0].contig_type && items[0].contig_type != 'unknown') {
             var classes = ['correct', 'misassembled', 'unaligned'];
             var classMarks = ['', '', ''];
             var classDescriptions = ['correct contigs', 'misassembled contigs', 'unaligned contigs'];
@@ -2255,7 +2260,7 @@ THE SOFTWARE.
 
     function addLegendItemWithText(legend, offsetY, className, description, marks) {
         legend.append('g')
-                .attr('class', 'item miniItem legend ' + className)
+                .attr('class', 'block miniItem legend ' + className)
                 .append('rect')
                 .attr('width', legendItemWidth)
                 .attr('height', legendItemHeight)
@@ -2289,10 +2294,10 @@ THE SOFTWARE.
           var numItems = 0;
           for (var i = 0; i < lane.length; i++) {
               if (!oneHtml && lane[i].chr != references_id[chr]) continue;
-              var item = lane[i];
-              item.lane = laneId;
-              item.id = itemId;
-              features.push(item);
+              var block = lane[i];
+              block.lane = laneId;
+              block.id = itemId;
+              features.push(block);
               itemId++;
               numItems++;
           }

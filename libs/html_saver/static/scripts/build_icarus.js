@@ -455,7 +455,12 @@ THE SOFTWARE.
                 itemWidth = block.end - block.start;
                 return itemWidth;
             })
-            .attr('height', miniItemHeight);
+            .attr('height', miniItemHeight)
+            .attr('opacity', function (block) {
+                if (block.contig_type == 'small_contigs')
+                    return paleContigsOpacity;
+                return 1;
+            });
     mini.append('g').selectAll('miniItems')
             .data(miniPaths)
             .enter().append('path')
@@ -811,7 +816,9 @@ THE SOFTWARE.
 
         function getItemOpacity(block) {
             var defOpacity = 0.65;
-            if (isContigSizePlot && (!block.contig_type || block.contig_type == 'unaligned' || block.contig_type == 'small_contigs'))
+            if (block.contig_type == 'small_contigs')
+                return paleContigsOpacity;
+            if (isContigSizePlot && (!block.contig_type || block.contig_type == 'unaligned'))
                 defOpacity = 1;
             if (block.misassembledEnds) return 1;
             if (block.fullContig && block.contig_type && block.contig_type != 'unaligned' && block.contig_type != 'small_contigs')

@@ -31,11 +31,12 @@ def is_emem_aligner():
 
 
 def compile_aligner(logger):
+    global contig_aligner
+    global contig_aligner_dirpath
+
     if contig_aligner_dirpath is not None:
         return True
 
-    global contig_aligner
-    global contig_aligner_dirpath
     default_requirements = ['nucmer', 'delta-filter', 'show-coords', 'show-snps', 'mummer', 'mgaps']
 
     aligners_to_try = []

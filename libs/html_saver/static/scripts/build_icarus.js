@@ -817,13 +817,13 @@ THE SOFTWARE.
         function getItemStrokeWidth(block) {
             if (block.misassembledEnds) return 0;
             if (block.notActive) return 0;
-            return (block.groupId == selected_id ? 2 : .4);
+            return (block.groupId == selected_id ? 2 : 1);
         }
 
         function getItemStrokeOpacity(block) {
             if (block.misassembledEnds) return 0;
             if (block.notActive) return 0;
-            return (block.groupId == selected_id ? 1 : .8);
+            return (block.groupId == selected_id ? 1 : .7);
         }
 
         function getItemOpacity(block) {

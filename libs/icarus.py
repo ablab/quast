@@ -581,7 +581,7 @@ def get_contigs_data(contigs_by_assemblies, nx_marks, assemblies_n50, structures
             remained_contigs_name = str(len(contigs) - last_contig_num) + ' hidden contigs shorter than ' + str(contig_threshold) + \
                                     ' bp (total length: ' + format_long_numbers(remained_len) + ' bp)'
             contigs_sizes_str.append(('{name: "' + remained_contigs_name + '", size: ' + str(remained_len) +
-                                     ', type:"small_contigs"},'))
+                                     ', contig_type:"small_contigs"},'))
         if not_used_nx and last_contig_num < len(contigs):
             for i, alignment in enumerate(contigs[last_contig_num:]):
                 if not not_used_nx:
@@ -746,12 +746,12 @@ def save_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, chr_length
                                     links_to_chromosomes.append('links_to_chromosomes["' + el.ref_name + '"] = "' + new_chr + '";')
                             corr_el_start = el.start
                             corr_el_end = el.end
-                            data_str.append('{type: "A",contig: "' + alignment.name + '",corr_start: ' + str(corr_el_start) + ',corr_end: ' +
+                            data_str.append('{contig: "' + alignment.name + '",corr_start: ' + str(corr_el_start) + ',corr_end: ' +
                                             str(corr_el_end) + ',start:' + str(el.unshifted_start) + ',end:' + str(el.unshifted_end) +
                                             ',start_in_contig:' + str(el.start_in_contig) + ',end_in_contig:' +
                                             str(el.end_in_contig) + ',IDY:' + el.idy + ',chr: "' + el.ref_name + '"},')
                         elif type(el) == str:
-                            data_str.append('{type: "M", mstype: "' + el + '"},')
+                            data_str.append('{contig_type: "M", mstype: "' + el + '"},')
                     data_str[-1] = data_str[-1][:-1] + ']},'
 
         data_str[-1] = data_str[-1][:-1] + '];'

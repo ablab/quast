@@ -757,6 +757,9 @@ THE SOFTWARE.
                 .attr('width', function (block) {
                     return getItemWidth(block);
                 })
+                .attr('stroke-opacity', function (block) {
+                    return getItemStrokeOpacity(block);
+                })
                 .attr('stroke-width', function (block) {
                     return getItemStrokeWidth(block);
                 })
@@ -789,6 +792,9 @@ THE SOFTWARE.
                         })
                         .attr('height', mainLanesHeight)
                         .attr('stroke', 'black')
+                        .attr('stroke-opacity', function (block) {
+                            return getItemStrokeOpacity(block);
+                        })
                         .attr('stroke-width', function (block) {
                             return getItemStrokeWidth(block);
                         })
@@ -812,6 +818,12 @@ THE SOFTWARE.
             if (block.misassembledEnds) return 0;
             if (block.notActive) return 0;
             return (block.groupId == selected_id ? 2 : .4);
+        }
+
+        function getItemStrokeOpacity(block) {
+            if (block.misassembledEnds) return 0;
+            if (block.notActive) return 0;
+            return (block.groupId == selected_id ? 1 : .8);
         }
 
         function getItemOpacity(block) {
@@ -975,7 +987,7 @@ THE SOFTWARE.
             }
             else {
             	contigStart = true;
-            	if (block.contig_type != 'unaligned') lines.pop();
+                lines.pop();
             }
         }
         return lines;
@@ -1974,7 +1986,8 @@ THE SOFTWARE.
                         .text(['contig:',
                             format(curBlock.start_in_contig), ndash,  format(curBlock.end_in_contig),
                             '(' + format(Math.abs(curBlock.end_in_contig - curBlock.start_in_contig) + 1) + ')', 'bp'].join(' '));
-                block.append('p')
+                if (curBlock.IDY)
+                    block.append('p')
                         .text(['IDY:', curBlock.IDY, '%'].join(' '));
                 numBlock++;
             }

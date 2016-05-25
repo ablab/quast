@@ -280,7 +280,6 @@ path {
 }
 
 .mainItem {
-    stroke-opacity: 1;
     stroke: black;
     fill: #059B00;
 }

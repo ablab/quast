@@ -469,7 +469,7 @@ def add_contig(cum_length, contig, not_used_nx, assemblies_n50, assembly, contig
                     structure.append('{contig: "' + contig.name + '",corr_start: ' + str(el.start) + ',corr_end: ' +
                                     str(el.end) + ',start:' + str(el.unshifted_start) + ',end:' + str(el.unshifted_end) +
                                     ',start_in_contig:' + str(el.start_in_contig) + ',end_in_contig:' +
-                                    str(el.end_in_contig) + ',size: ' + str(contig.size) + ',chr: "' + el.ref_name + '"},')
+                                    str(el.end_in_contig) + ',size: ' + str(contig.size) + ',IDY:' + el.idy + ',chr: "' + el.ref_name + '"},')
                 elif type(el) == str:
                     structure.append('{contig_type: "M", mstype: "' + el + '"},')
             if prev_pos < contig.size * 0.95:

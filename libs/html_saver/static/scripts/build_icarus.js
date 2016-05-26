@@ -970,11 +970,17 @@ THE SOFTWARE.
 
     function getBreakpointLines() {
         var lines = [];
-        contigStart = true;
-        prev_pos = 0;
+        var contigStart = true;
+        var prev_pos = 0;
+        var fullsizeBlock = false;
         for (var i = 0; i < items.length; i++) {
         	block = items[i];
             if (block.notActive) {
+                if (block.size - (block.corr_end - block.corr_start) < 5) {
+                    fullsizeBlock = true;
+                    continue;
+                }
+                fullsizeBlock = false;
             	y = y_main(block.lane) + .25 * lanesInterval + 10;
             	if (!contigStart) {
             		if (Math.abs(prev_pos - block.corr_start) > 2) {
@@ -987,7 +993,7 @@ THE SOFTWARE.
             }
             else {
             	contigStart = true;
-                lines.pop();
+                if (!fullsizeBlock) lines.pop();
             }
         }
         return lines;
@@ -1865,7 +1871,7 @@ THE SOFTWARE.
             info.append('p')
                 .text('Size: ' + block.size + ' bp');
 
-        var appendPositionElement = function(data, start, end, contigName, assembly, whereAppend, start_in_contig, end_in_contig,
+        var appendPositionElement = function(curBlock, start, end, contigName, assembly, whereAppend,
                                              prev_start, prev_end, is_expanded, overlapped_block) {
             var posVal = function (val) {
                 if (mainTickValue == 'Gbp')
@@ -1884,13 +1890,6 @@ THE SOFTWARE.
                 return val;
             };
 
-            var curBlock = !data ? (overlapped_block ? overlapped_block : '') : data.filter(function (block) {
-                if (block.contig_type != "M" && block.contig == contigName) {
-                    if (start_in_contig && block.start_in_contig == start_in_contig && block.end_in_contig == end_in_contig
-                        && block.corr_start == start) return block;
-                    else if (!start_in_contig && block.corr_start <= start && end <= block.corr_end) return block;
-                }
-            })[0];
             if (!curBlock) return;
             var ndash = String.fromCharCode(8211);
             if (is_expanded)
@@ -1995,7 +1994,7 @@ THE SOFTWARE.
             
         };
         var numBlock = 0;
-        appendPositionElement(block.structure, block.corr_start, block.corr_end, block.name, block.assembly, info);
+        appendPositionElement(block, block.corr_start, block.corr_end, block.name, block.assembly, info);
 
         showArrows(block);
         if (block.structure && block.structure.length > 0) {
@@ -2012,8 +2011,8 @@ THE SOFTWARE.
             for (var i = 0; i < block.structure.length; ++i) {
                 var nextBlock = block.structure[i];
                 if (nextBlock.contig_type != "M") {
-                    appendPositionElement(block.structure, nextBlock.corr_start, nextBlock.corr_end, block.name, block.assembly, blocks, nextBlock.start_in_contig,
-                        nextBlock.end_in_contig, block.corr_start, block.corr_end, true);
+                    appendPositionElement(nextBlock, nextBlock.corr_start, nextBlock.corr_end, block.name, block.assembly,
+                        blocks, block.corr_start, block.corr_end, true);
 
                     if (block.ambiguous && i < block.structure.length - 1)
                         blocks.append('p')
@@ -2032,9 +2031,8 @@ THE SOFTWARE.
 
             for (var i = 0; i < block.overlaps.length; ++i) {
                 var nextBlock = block.overlaps[i];
-                appendPositionElement(null, nextBlock.corr_start,
-                    nextBlock.corr_end, nextBlock.contig, block.assembly, overlapsInfo, nextBlock.start_in_contig,
-                    nextBlock.end_in_contig, block.corr_start, block.corr_end, true, nextBlock);
+                appendPositionElement(nextBlock, nextBlock.corr_start,
+                    nextBlock.corr_end, nextBlock.contig, block.assembly, overlapsInfo, block.corr_start, block.corr_end, true, nextBlock);
             }
         }
         var blockHeight = info[0][0].offsetHeight;

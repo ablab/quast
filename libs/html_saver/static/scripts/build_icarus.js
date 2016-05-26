@@ -1994,7 +1994,12 @@ THE SOFTWARE.
             
         };
         var numBlock = 0;
-        appendPositionElement(block, block.corr_start, block.corr_end, block.name, block.assembly, info);
+        for (var i = 0; i < block.structure.length; i++) {
+            var nextBlock = block.structure[i];
+            if (nextBlock.contig_type != "M" && block.corr_start == nextBlock.corr_start && nextBlock.corr_end == block.corr_end)
+                break;
+        }
+        appendPositionElement(nextBlock, block.corr_start, block.corr_end, block.name, block.assembly, info);
 
         showArrows(block);
         if (block.structure && block.structure.length > 0) {
@@ -2008,7 +2013,7 @@ THE SOFTWARE.
                 blocks.append('p')
                       .text(blocksText);
 
-            for (var i = 0; i < block.structure.length; ++i) {
+            for (var i = 0; i < block.structure.length; i++) {
                 var nextBlock = block.structure[i];
                 if (nextBlock.contig_type != "M") {
                     appendPositionElement(nextBlock, nextBlock.corr_start, nextBlock.corr_end, block.name, block.assembly,
@@ -2029,7 +2034,7 @@ THE SOFTWARE.
             var overlapsText = 'Overlaps with other contigs: ' + block.overlaps.length;
             overlapsInfo.text(overlapsText);
 
-            for (var i = 0; i < block.overlaps.length; ++i) {
+            for (var i = 0; i < block.overlaps.length; i++) {
                 var nextBlock = block.overlaps[i];
                 appendPositionElement(nextBlock, nextBlock.corr_start,
                     nextBlock.corr_end, nextBlock.contig, block.assembly, overlapsInfo, block.corr_start, block.corr_end, true, nextBlock);

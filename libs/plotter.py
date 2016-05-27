@@ -673,6 +673,7 @@ def draw_meta_summary_misassembl_plot(results, ref_names, contig_num, plot_fpath
     if draw_plots:
         fig = matplotlib.pyplot.figure()
         ax = fig.add_subplot(111)
+        title = title[:120] + '...'
         matplotlib.pyplot.title(title)
         box = ax.get_position()
         ax.set_position([box.x0, box.y0, box.width * 0.9, box.height * 1.0])

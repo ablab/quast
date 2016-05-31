@@ -203,8 +203,8 @@ class ParseException(Exception):
 
 
 class Gene():
-    def __init__(self, id=None, seqname=None, start=None, end=None,
-                 number=None, name=None, chromosome=None):
+    def __init__(self, id='', seqname='', start=None, end=None,
+                 number=None, name='', chromosome=None):
         self.id = id
         self.seqname = seqname
         self.start = start

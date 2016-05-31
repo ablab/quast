@@ -38,7 +38,7 @@ long_options = "test test-no-ref test-sv output-dir= save-json-to= genes= operon
                "gene-thresholds= err-fpath= save-json gage eukaryote glimmer no-plots no-html no-check no-check-meta combined-ref no-gc help debug "\
                "ambiguity-usage= scaffolds threads= min-cluster= min-alignment= est-ref-size= use-all-alignments gene-finding "\
                "strict-NA meta labels= help-hidden no-snps fast max-ref-number= extensive-mis-size= plots-format= " \
-               "fragmented significant-part-size= unique-mapping no-sv " \
+               "fragmented significant-part-size= unique-mapping no-sv no-icarus " \
                "references-list= sv-bedpe= reads1= reads2= memory-efficient silent version colors= ls=".split()
 short_options = "o:G:O:R:t:m:J:jehvda:c:ufl:Lx:i:s1:2:"
 
@@ -299,6 +299,7 @@ def usage(show_hidden=False, meta=False, short=True):
         print >> sys.stderr, "    --no-check                        Do not check and correct input fasta files. Use at your own risk (see manual)"
         print >> sys.stderr, "    --no-plots                        Do not draw plots"
         print >> sys.stderr, "    --no-html                         Do not build html reports and Icarus viewers"
+        print >> sys.stderr, "    --no-icarus                       Do not build Icarus viewers"
         print >> sys.stderr, "    --no-snps                         Do not report SNPs (may significantly reduce memory consumption on large genomes)"
         print >> sys.stderr, "    --no-gc                           Do not compute GC% and GC-distribution"
         print >> sys.stderr, "    --no-sv                           Do not run structural variation detection (make sense only if reads are specified)"

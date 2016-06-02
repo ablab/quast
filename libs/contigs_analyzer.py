@@ -214,13 +214,13 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
        os.path.isfile(coords_fpath) and\
        (os.path.isfile(show_snps_fpath) or not qconfig.show_snps):
         if check_nucmer_successful_check(nucmer_successful_check_fpath, old_contigs_fpath, ref_fpath):
-            print >> planta_out_f, '\tUsing existing Nucmer alignments...'
-            logger.info('  ' + qutils.index_to_str(index) + 'Using existing Nucmer alignments... ')
+            print >> planta_out_f, '\tUsing existing alignments...'
+            logger.info('  ' + qutils.index_to_str(index) + 'Using existing alignments... ')
             using_existing_alignments = True
 
     if not using_existing_alignments:
-        print >> planta_out_f, '\tRunning Nucmer'
-        logger.info('  ' + qutils.index_to_str(index) + 'Running Nucmer')
+        print >> planta_out_f, '\tAligning contigs to the reference '
+        logger.info('  ' + qutils.index_to_str(index) + 'Aligning contigs to the reference')
         nucmer_failed = False
 
         if not qconfig.splitted_ref:
@@ -323,12 +323,12 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
         tmp_coords_file.close()
 
         if not os.path.isfile(coords_fpath):
-            print >> planta_err_f, qutils.index_to_str(index) + 'Nucmer failed for', contigs_fpath + ':', coords_fpath, 'doesn\'t exist.'
-            logger.info('  ' + qutils.index_to_str(index) + 'Nucmer failed for ' + '\'' + assembly_label + '\'.')
+            print >> planta_err_f, qutils.index_to_str(index) + 'Alignment failed for', contigs_fpath + ':', coords_fpath, 'doesn\'t exist.'
+            logger.info('  ' + qutils.index_to_str(index) + 'Alignment failed for ' + '\'' + assembly_label + '\'.')
             return NucmerStatus.FAILED, {}, []
         if len(open(coords_fpath).readlines()[-1].split()) < 13:
-            print >> planta_err_f, qutils.index_to_str(index) + 'Nucmer: nothing aligned for', contigs_fpath
-            logger.info('  ' + qutils.index_to_str(index) + 'Nucmer: nothing aligned for ' + '\'' + assembly_label + '\'.')
+            print >> planta_err_f, qutils.index_to_str(index) + 'Nothing aligned for', contigs_fpath
+            logger.info('  ' + qutils.index_to_str(index) + 'Nothing aligned for ' + '\'' + assembly_label + '\'.')
             return NucmerStatus.NOT_ALIGNED, {}, []
 
         if qconfig.show_snps:

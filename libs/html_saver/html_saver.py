@@ -200,7 +200,7 @@ def create_meta_report(results_dirpath, json_texts):
             try:
                 import simplejson as json
             except ImportError:
-                log.warning('Can\'t draw Krona charts - please install python-simplejson')
+                meta_log.warning('Can\'t draw Krona charts - please install python-simplejson')
                 simplejson_error = True
         if not simplejson_error:
             if not os.path.isdir(krona_res_dirpath):
@@ -234,24 +234,36 @@ def create_meta_report(results_dirpath, json_texts):
                 else:
                     krona_common_file.write(str(sum(lengths)) + '\n')
             krona_common_file.close()
-            krona_fpaths=[]
+            krona_fpaths = []
+            krona_log_fpath = os.path.join(krona_res_dirpath, 'krona.log')
+            krona_err_fpath = os.path.join(krona_res_dirpath, 'krona.err')
+            open(krona_log_fpath, 'w').close()
+            open(krona_err_fpath, 'w').close()
             for index, name in enumerate(assemblies):
                 krona_fpath = os.path.join(krona_res_dirpath, name + '_taxonomy_chart.html')
                 krona_txt_fpath = os.path.join(krona_res_dirpath, name + krona_txt_ext)
-                qutils.call_subprocess(
-                ['perl', '-I', krona_dirpath + '/lib', krona_dirpath + '/scripts/ImportText.pl', krona_txt_fpath, '-o', krona_fpath, '-a'],
-                stdout=open(os.devnull, 'w'), stderr=open(os.devnull, 'w'))
-                krona_fpaths.append(os.path.join(qconfig.krona_dirname, name + '_taxonomy_chart.html'))
-                meta_log.main_info('  Krona chart for ' + name + ' is saved to ' + krona_fpath)
+                return_code = qutils.call_subprocess(
+                    ['perl', '-I', krona_dirpath + '/lib', krona_dirpath + '/scripts/ImportText.pl', krona_txt_fpath, '-o', krona_fpath, '-a'],
+                    stdout=open(krona_log_fpath, 'a'), stderr=open(krona_err_fpath, 'a'))
+                if return_code != 0:
+                    meta_log.warning('Error occurred while Krona was processing assembly ' + name +
+                                     '. See Krona error log for details: %s' % krona_err_fpath)
+                else:
+                    krona_fpaths.append(os.path.join(qconfig.krona_dirname, name + '_taxonomy_chart.html'))
+                    meta_log.main_info('  Krona chart for ' + name + ' is saved to ' + krona_fpath)
                 os.remove(krona_txt_fpath)
-            if len(assemblies) > 1:
+            if len(krona_fpaths) > 1:
                 name = 'summary'
                 krona_fpath = os.path.join(krona_res_dirpath, name + '_taxonomy_chart.html')
-                qutils.call_subprocess(
-                    ['perl', '-I', krona_dirpath + '/lib', krona_dirpath + '/scripts/ImportText.pl', krona_common_fpath, '-o', krona_fpath, '-a'],
-                    stdout=open(os.devnull, 'w'), stderr=open(os.devnull, 'w'))
-                meta_log.main_info('  Summary Krona chart is saved to ' + krona_fpath)
-                krona_fpaths.append(os.path.join(qconfig.krona_dirname, name + '_taxonomy_chart.html'))  # extra fpath!
+                return_code = qutils.call_subprocess(
+                                ['perl', '-I', krona_dirpath + '/lib', krona_dirpath + '/scripts/ImportText.pl', krona_common_fpath, '-o', krona_fpath, '-a'],
+                                stdout=open(krona_log_fpath, 'a'), stderr=open(krona_err_fpath, 'a'))
+                if return_code != 0:
+                    meta_log.warning('Error occurred while Krona was building summary chart. '
+                                     'See Krona error log for details: %s' % krona_err_fpath)
+                else:
+                    meta_log.main_info('  Summary Krona chart is saved to ' + krona_fpath)
+                    krona_fpaths.append(os.path.join(qconfig.krona_dirname, name + '_taxonomy_chart.html'))  # extra fpath!
             os.remove(krona_common_fpath)
             save_krona_paths(results_dirpath, krona_fpaths, assemblies)
 

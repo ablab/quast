@@ -243,7 +243,7 @@ def create_meta_report(results_dirpath, json_texts):
                 krona_fpath = os.path.join(krona_res_dirpath, name + '_taxonomy_chart.html')
                 krona_txt_fpath = os.path.join(krona_res_dirpath, name + krona_txt_ext)
                 return_code = qutils.call_subprocess(
-                    ['perl', '-I', krona_dirpath + '/lib', krona_dirpath + '/scripts/ImportText.pl', krona_txt_fpath, '-o', krona_fpath, '-a'],
+                    ['perl', '-I', krona_dirpath + '/lib', krona_dirpath + '/scripts/ImportText.pl', krona_txt_fpath, '-o', krona_fpath],
                     stdout=open(krona_log_fpath, 'a'), stderr=open(krona_err_fpath, 'a'))
                 if return_code != 0:
                     meta_log.warning('Error occurred while Krona was processing assembly ' + name +
@@ -256,7 +256,7 @@ def create_meta_report(results_dirpath, json_texts):
                 name = 'summary'
                 krona_fpath = os.path.join(krona_res_dirpath, name + '_taxonomy_chart.html')
                 return_code = qutils.call_subprocess(
-                                ['perl', '-I', krona_dirpath + '/lib', krona_dirpath + '/scripts/ImportText.pl', krona_common_fpath, '-o', krona_fpath, '-a'],
+                                ['perl', '-I', krona_dirpath + '/lib', krona_dirpath + '/scripts/ImportText.pl', krona_common_fpath, '-o', krona_fpath],
                                 stdout=open(krona_log_fpath, 'a'), stderr=open(krona_err_fpath, 'a'))
                 if return_code != 0:
                     meta_log.warning('Error occurred while Krona was building summary chart. '

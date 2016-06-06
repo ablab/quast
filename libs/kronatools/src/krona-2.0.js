@@ -69,7 +69,7 @@
 // 
 // FOR MORE INFORMATION VISIT
 // 
-// http://krona.sourceforge.net
+// https://github.com/marbl/Krona/wiki/
 // 
 //-----------------------------------------------------------------------------
 }
@@ -489,7 +489,77 @@ function Node()
 			}
 		}
 		
-		if ( this != selectedNode && ! this.getCollapse() )
+		if ( this.radial )
+		{
+			var angleText = (angleStartCurrent + angleEndCurrent) / 2;
+			var radiusText = (gRadius + radiusInner) / 2;
+			
+			context.rotate(angleText);
+			context.beginPath();
+			context.moveTo(radiusText, -fontSize);
+			context.lineTo(radiusText, fontSize);
+			context.lineTo(radiusText + centerX, fontSize);
+			context.lineTo(radiusText + centerX, -fontSize);
+			context.closePath();
+			context.rotate(-angleText);
+			
+			if ( context.isPointInPath(mouseX - centerX, mouseY - centerY) )
+			{
+				var label = String(this.getPercentage()) + '%' + '   ' + this.name;
+				
+				if ( this.searchResultChildren() )
+			    {
+					label += searchResultString(this.searchResultChildren());
+				}
+				
+				if
+				(
+					Math.sqrt((mouseX - centerX) * (mouseX - centerX) + (mouseY - centerY) * (mouseY - centerY)) <
+					radiusText + measureText(label)
+				)
+				{
+					highlighted = true;
+				}
+			}
+		}
+		else
+		{
+		    for ( var i = 0; i < this.hiddenLabels.length; i++ )
+		    {
+		        var hiddenLabel = this.hiddenLabels[i];
+		        
+				context.rotate(hiddenLabel.angle);
+				context.beginPath();
+				context.moveTo(gRadius, -fontSize);
+				context.lineTo(gRadius, fontSize);
+				context.lineTo(gRadius + centerX, fontSize);
+				context.lineTo(gRadius + centerX, -fontSize);
+				context.closePath();
+				context.rotate(-hiddenLabel.angle);
+				
+				if ( context.isPointInPath(mouseX - centerX, mouseY - centerY) )
+				{
+					var label = String(hiddenLabel.value) + ' more';
+					
+					if ( hiddenLabel.search )
+				    {
+						label += searchResultString(hiddenLabel.search);
+					}
+					
+					if
+					(
+						Math.sqrt((mouseX - centerX) * (mouseX - centerX) + (mouseY - centerY) * (mouseY - centerY)) <
+						gRadius + fontSize + measureText(label)
+					)
+					{
+						highlighted = true;
+						break;
+					}
+				}
+			}
+		}
+		
+		if ( ! highlighted && this != selectedNode && ! this.getCollapse() )
 		{
 			context.beginPath();
 			context.arc(0, 0, radiusInner, angleStartCurrent, angleEndCurrent, false);
@@ -965,6 +1035,8 @@ function Node()
 			}
 		}
 		
+		this.hiddenLabels = Array();
+		
 		if ( drawChildren )
 		{
 			// draw children
@@ -1114,6 +1186,14 @@ function Node()
 	{
 		var textAngle = (angleStart + angleEnd) / 2;
 		var labelRadius = gRadius + fontSize;//(radiusInner + radius) / 2;
+		
+		var hiddenLabel = Array();
+		
+		hiddenLabel.value = value;
+		hiddenLabel.angle = textAngle;
+		hiddenLabel.search = hiddenSearchResults;
+		
+		this.hiddenLabels.push(hiddenLabel);
 		
 		drawTick(gRadius - fontSize * .75, fontSize * 1.5, textAngle);
 		drawTextPolar
@@ -2165,7 +2245,7 @@ function Node()
 	{
 		var nameWidthOld = this.nameWidth;
 		
-		if ( ! this.radial )//&& fontSize != fontSizeLast )
+		if ( true || ! this.radial )//&& fontSize != fontSizeLast )
 		{
 			var dim = context.measureText(this.name);
 			this.nameWidth = dim.width;
@@ -3452,14 +3532,14 @@ value="&harr;" title="Expand this wedge to become the new focus of the chart"/><
 	}
 	else
 	{
-		logoImage = 'http://krona.sourceforge.net/img/logo.png';
+		logoImage = 'http://marbl.github.io/Krona/img/logo-small.png';
 	}
 	
 //	document.getElementById('options').style.fontSize = '9pt';
 	position = addOptionElement
 	(
 		position,
-'<a style="margin:2px" target="_blank" href="http://krona.sourceforge.net"><div style="display:inline-block;vertical-align:middle;background-color:#EEEEEE;border:1px solid gray;padding:2px;font-size:18px"><img style="vertical-align:middle;" src="' + logoImage + '"/><span style="vertical-align:middle;color:#555555">Krona</span></div></a><input type="button" id="back" value="&larr;" title="Go back (Shortcut: &larr;)"/>\
+'<a style="margin:2px" target="_blank" href="https://github.com/marbl/Krona/wiki"><img style="vertical-align:middle;" src="' + logoImage + '"/></a><input type="button" id="back" value="&larr;" title="Go back (Shortcut: &larr;)"/>\
 <input type="button" id="forward" value="&rarr;" title="Go forward (Shortcut: &rarr;)"/> \
 &nbsp;Search: <input type="text" id="search"/>\
 <input id="searchClear" type="button" value="x" onclick="clearSearch()"/> \
@@ -3579,7 +3659,7 @@ quality format that can be printed and saved (see Help for browser compatibility
 	(
 		position + 5,
 '<input type="button" id="help" value="?"\
-onclick="window.open(\'https://sourceforge.net/p/krona/wiki/Browsing%20Krona%20charts/\', \'help\')"/>',
+onclick="window.open(\'https://github.com/marbl/Krona/wiki/Browsing%20Krona%20charts\', \'help\')"/>',
 'Help'
 	);
 }
@@ -4746,7 +4826,7 @@ function load()
 	{
 		document.body.innerHTML = '\
 <br/>This browser does not support HTML5 (see \
-<a href="http://sourceforge.net/p/krona/wiki/Browser%20support/">Browser support</a>).\
+<a href="https://github.com/marbl/Krona/wiki/Browser%20support">Browser support</a>).\
 	';
 		return;
 	}
@@ -4755,7 +4835,7 @@ function load()
 	{
 		document.body.innerHTML = '\
 <br/>This browser does not support HTML5 canvas text (see \
-<a href="http://sourceforge.net/p/krona/wiki/Browser%20support/">Browser support</a>).\
+<a href="https://github.com/marbl/Krona/wiki/Browser%20support">Browser support</a>).\
 	';
 		return;
 	}

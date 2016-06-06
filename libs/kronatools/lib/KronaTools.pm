@@ -12,9 +12,15 @@ use Getopt::Long;
 use File::Basename;
 use File::Path;
 
-
 use base 'Exporter';
 use Cwd 'abs_path';
+
+my $libPath = abs_path($0);
+use File::Spec;
+use File::Basename;
+my $libPath = dirname(File::Spec->rel2abs(__FILE__));
+my $taxonomyDir = "$libPath/../taxonomy";
+my $ecFile = "$libPath/../data/ec.tsv";
 
 # public subroutines
 #
@@ -23,6 +29,7 @@ our @EXPORT = qw
 	addByEC
 	addByLineage
 	addByTaxID
+	addXML
 	classifyBlast
 	default
 	getKronaOptions
@@ -69,12 +76,13 @@ my %options =
 	'ecCol' => 2,
 	'hueBad' => 0,
 	'hueGood' => 120,
+	'key' => 1,
 	'queryCol' => 1,
 	'scoreCol' => 3,
-	'key' => 1,
+	'standalone' => 1,
 	'taxCol' => 2,
-	'threshold' => 3,
-	'url' => 'http://krona.sourceforge.net'
+	'taxonomy' => $taxonomyDir,
+	'threshold' => 3
 );
 
 # Option format codes to pass to GetOptions (and to be parsed for display).
@@ -109,8 +117,6 @@ my %optionFormats =
 		'n=s',
 	'out' =>
 		'o=s',
-	'libPath' =>
-		'l=s',
 	'percentIdentity' =>
 		'p',
 	'phymm' =>
@@ -133,6 +139,8 @@ my %optionFormats =
 		't=i',
 	'threshold' =>
 		't=f',
+	'taxonomy' =>
+		'tax=s',
 	'url' =>
 		'u=s',
 	'verbose' =>
@@ -165,7 +173,7 @@ my %optionDescriptions =
 	'hueGood' => 'Hue (0-360) for "good" scores.',
 	'percentIdentity' => 'Use percent identity for average scores instead of log[10] e-value.',
 	'include' => 'Include a wedge for queries with no hits.',
-	'local' => 'Create a local chart, which does not require an Internet connection to view (but will only work on this computer).',
+	'local' => 'Use resources from the local KronaTools installation instead of bundling them with charts (charts will be smaller but will only work on this computer).',
 	'magCol' => 'Column of input files to use as magnitude. If magnitude files are specified, their magnitudes will override those in this column.',
 	'minConfidence' => 'Minimum confidence. Each query sequence will only be added to taxa that were predicted with a confidence score of at least this value.',
 	'name' => 'Name of the highest level.',
@@ -180,8 +188,9 @@ my %optionDescriptions =
 	'standalone' => 'Create a standalone chart, which includes Krona resources and does not require an Internet connection or KronaTools installation to view.',
 	'summarize' => 'Summarize counts and average scores by taxonomy ID.',
 	'taxCol' => 'Column of input files to use as taxonomy ID.',
+	'taxonomy' => 'Taxonomy database to use.',
 	'threshold' => 'Threshold for bit score differences when determining "best" hits. Hits with scores that are within this distance of the highest score will be included when computing the lowest common ancestor (or picking randomly if -r is specified).',
-	'url' => 'URL of Krona resources.',
+	'url' => 'URL of Krona resources to use instead of bundling them with the chart (e.g. "http://krona.sourceforge.net"). Reduces size of charts and allows updates, though charts will not work without access to this URL.',
 	'verbose' => 'Verbose.'
 );
 
@@ -227,20 +236,13 @@ default, the basename of the file will be used.',
 # Global constants #
 ####################
 
-my $libPath = abs_path($0);
-use File::Spec;
-use File::Basename;
-my $libPath = dirname(File::Spec->rel2abs(__FILE__));
-my $taxonomyDir = "$libPath/../taxonomy";
-my $ecFile = "$libPath/../data/ec.tsv";
-
 my $version = '2.5';
 my $javascriptVersion = '2.0';
 my $javascript = "src/krona-$javascriptVersion.js";
 my $hiddenImage = 'img/hidden.png';
 my $favicon = 'img/favicon.ico';
 my $loadingImage = 'img/loading.gif';
-my $logo = 'img/logo.png';
+my $logo = 'img/logo-small.png';
 my $taxonomyHrefBase = 'http://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?mode=info&id=';
 my $ecHrefBase = 'http://www.chem.qmul.ac.uk/iubmb/enzyme/EC';
 my $suppDirSuffix = '.files';
@@ -520,7 +522,7 @@ sub addByTaxID
 	
 	$magnitude = default($magnitude, 1);
 	
-	if ( ! defined $taxDepths[$taxID] )
+	if ( $taxID != 0 && ! defined $taxDepths[$taxID] )
 	{
 		$missingTaxIDs{$taxID} = 1;
 		$taxID = 1; # unknown tax ID; set to root
@@ -632,6 +634,107 @@ sub addByTaxID
 		}
 		
 		return $child;
+	}
+}
+
+sub addXML
+{
+	my # parameters
+	(
+		$node,
+		$xml,
+		$dataset,
+		$file
+	) = @_;
+	
+	while ( (my $line = <$xml>) !~ /<\/node>/ )
+	{
+		if ( $line =~ /<node name="([^"]+)">/ )
+		{
+			my $child = $1;
+			
+			if ( ! defined $node->{'children'}{$child} )
+			{
+				my %newChild = ();
+				$node->{'children'}{$child} = \%newChild;
+			}
+			
+			addXML($node->{'children'}{$child}, $xml, $dataset, $file);
+		}
+		elsif ( $line =~ /<members>/ )
+		{
+			if ( $line =~ /<val>(.*)<\/val>/ )
+			{
+				my @members = split /<\/val><val>/, $1;
+				my $offset = 0;
+				
+				for ( my $i = 0; $i < @members; $i++ )
+				{
+					if ( $members[$i] eq "" )
+					{
+						next;
+					}
+					
+					my $fileMembers = "$file.files/$members[$i]";
+					
+					open MEMBERS, $fileMembers or die "Could not open $fileMembers";
+					
+					while ( <MEMBERS> )
+					{
+						if ( /(data\(')?(.+)\\n\\/ )
+						{
+							push @{$node->{'members'}[$dataset + $i]}, $2;
+						}
+					}
+					
+					close MEMBERS;
+				}
+			}
+			
+			while ( $line !~ /<\/members>/ )
+			{
+				my $offset = 0;
+				
+				if ( $line =~ /<vals><val>(.*)<\/val><\/vals>/ )
+				{
+					my @members = split /<\/val><val>/, $1;
+					
+					for ( my $i = 0; $i < @members; $i++ )
+					{
+						push @{$node->{'members'}[$dataset + $offset]}, $members[$i];
+					}
+					
+					$offset++;
+				}
+				
+				$line = <$xml>;
+			}
+		}
+		elsif ( $line =~ /<(rank|taxon)><val>(.*)<\/val><\/\1>/ )
+		{
+			$node->{$1}[0] = $2;
+		}
+		elsif ( $line =~ /<(count|score|magnitude)><val>(.*)<\/val><\/\1>/ )
+		{
+			my @vals = split /<\/val><val>/, $2;
+			
+			for ( my $i = 0; $i < @vals; $i++ )
+			{
+				if ( $1 eq 'score' )
+				{
+					$node->{'scoreTotal'}[$dataset + $i] = $vals[$i];
+					$node->{'scoreCount'}[$dataset + $i] = 1;
+				}
+				else
+				{
+					$node->{$1}[$dataset + $i] = $vals[$i];
+				}
+			}
+		}
+		elsif ( $line =~ /<\/node>/ )
+		{
+			return;
+		}
 	}
 }
 
@@ -936,7 +1039,7 @@ sub getTaxIDFromGI
 	
 	if ( ! defined $taxIDByGI{$gi} )
 	{
-		if ( ! open GI, "<$taxonomyDir/gi_taxid.dat" )
+		if ( ! open GI, "<$options{'taxonomy'}/gi_taxid.dat" )
 		{
 			print "ERROR: GI to TaxID data not found.  Was updateTaxonomy.sh run?\n";
 			exit 1;
@@ -976,7 +1079,7 @@ sub htmlHeader
 	my $notFound;
 	my $script;
 	
-	if ( $options{'standalone'} )
+	if ( $options{'standalone'} && ! $options{'local'} &&  ! $options{'url'} )
 	{
 		$script =
 			indent(2) . "<script language=\"javascript\" type=\"text/javascript\">\n" .
@@ -986,7 +1089,7 @@ sub htmlHeader
 		$hiddenImage = slurp("$libPath/../img/hidden.uri");
 		$loadingImage = slurp("$libPath/../img/loading.uri");
 		$favicon = slurp("$libPath/../img/favicon.uri");
-		$logo = slurp("$libPath/../img/logo.uri");
+		$logo = slurp("$libPath/../img/logo-small.uri");
 	}
 	else
 	{
@@ -1078,8 +1181,8 @@ sub loadMagnitudes
 
 sub loadTaxonomy
 {
-	open INFO, "<$taxonomyDir/taxonomy.tab" or die
-		"Taxonomy not found in $taxonomyDir. Was updateTaxonomy.sh run?";
+	open INFO, "<$options{'taxonomy'}/taxonomy.tab" or die
+		"Taxonomy not found in $options{'taxonomy'}. Was updateTaxonomy.sh run?";
 	
 	while ( my $line = <INFO> )
 	{
@@ -2009,7 +2112,7 @@ sub toStringXML
 	
 	$$nodeIDRef++;
 	
-	if ( defined $node->{'children'} )
+	if ( defined $node->{'children'} && ( ! $options{'depth'} || $depth < $options{'depth'} ) )
 	{
 		foreach my $child (keys %{$node->{'children'}})
 		{

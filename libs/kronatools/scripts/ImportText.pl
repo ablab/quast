@@ -21,9 +21,7 @@ qw(
 	name
 	noMag
 	combine
-	local
-	standalone
-	libPath
+	url
 );
 
 getKronaOptions(@options);

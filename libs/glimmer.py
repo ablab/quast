@@ -63,10 +63,11 @@ def glimmerHMM(tool_dir, fasta_fpath, out_fpath, gene_lengths, err_path, tmp_dir
     contigs = {}
     gffs = []
     base_dir = tempfile.mkdtemp(dir=tmp_dir)
-    for ind, seq in read_fasta(fasta_fpath):
-        ind = re.sub('[/. ]', '_', ind)
-        contig_path = os.path.join(base_dir, ind + '.fasta')
-        gff_path = os.path.join(base_dir, ind + '.gff')
+    for seq_num, (ind, seq) in enumerate(read_fasta(fasta_fpath)):
+        seq_num = str(seq_num)
+        ind = re.sub('[/. ]', '_', ind)[:298]
+        contig_path = os.path.join(base_dir, seq_num + '.fasta')
+        gff_path = os.path.join(base_dir, seq_num + '.gff')
 
         write_fasta(contig_path, [(ind, seq)])
         if run(contig_path, gff_path) == 0:

@@ -49,12 +49,13 @@ def compile_aligner(logger):
     for name, dirpath, requirements in aligners_to_try:
         make_logs_basepath = join(dirpath, 'make')
         failed_compilation_flag = make_logs_basepath + '.failed'
-        if isfile(failed_compilation_flag):
-            logger.warning('Previous try of ' + name + ' compilation was unsuccessful! ' + \
-                           'For forced retrying, please remove ' + failed_compilation_flag + ' and restart QUAST.')
-            continue
 
         if not __all_required_binaries_exist(dirpath, requirements):
+            if isfile(failed_compilation_flag):
+                logger.warning('Previous try of ' + name + ' compilation was unsuccessful! ' +
+                               'For forced retrying, please remove ' + failed_compilation_flag + ' and restart QUAST.')
+                continue
+
             # making
             logger.main_info('Compiling ' + name + ' (details are in ' + make_logs_basepath +
                              '.log and make.err)')

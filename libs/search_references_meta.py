@@ -64,10 +64,7 @@ def try_send_request(url):
             request = urlopen(url)
             connection_errors = 0
             response = request.read()
-            if response is None:
-                raise Exception
-            xml_tree = ET.fromstring(response)
-            if xml_tree.find('ERROR') is not None:
+            if response is None or 'ERROR' in response:
                 request.close()
                 raise Exception
             break

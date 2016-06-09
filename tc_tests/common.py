@@ -4,6 +4,7 @@ from __future__ import with_statement
 import os
 import shutil
 import sys
+import operator
 
 
 contigs_1k_1 = 'contigs_1k_1.fasta'
@@ -218,7 +219,13 @@ def assert_values_equal(name, metric=None, fname='report.tsv'):
             return True
 
 
-def assert_metric_less_or_equal_to(name, metric1, metric2=None, value=None, fname='report.tsv'):
+def assert_metric_comparison(name, metric1, relate='<=', metric2=None, value=None, fname='report.tsv'):
+    ops = {'>': operator.gt,
+           '<': operator.lt,
+           '>=': operator.ge,
+           '<=': operator.le,
+           '=': operator.eq}
+
     def __to_number(s):
         if s is None:
             return None
@@ -250,16 +257,17 @@ def assert_metric_less_or_equal_to(name, metric1, metric2=None, value=None, fnam
                 metric2_values = tokens[1:]
 
     if not metric1_values:
-        print >> sys.stderr, 'Assertion (%s <= %s) in %s failed: no such metric1 in the file' % \
-                             (metric1, metric2 if metric2 else str(value), fname)
+        print >> sys.stderr, 'Assertion (%s %s %s) in %s failed: no such metric1 in the file' % \
+                             (metric1, relate, metric2 if metric2 else str(value), fname)
         exit(7)
     if metric2 and not metric2_values:
-        print >> sys.stderr, 'Assertion (%s <= %s) in %s failed: no such metric2 in the file' % \
-                             (metric1, metric2, fname)
+        print >> sys.stderr, 'Assertion (%s %s %s) in %s failed: no such metric2 in the file' % \
+                             (metric1, relate, metric2, fname)
         exit(7)
     if metric2 and len(metric2_values) != len(metric1_values):
-        print >> sys.stderr, 'Assertion (%s <= %s) in %s failed: len of metric1 values is not ' \
-                             'equal to len of metric 2 values in the file' % (metric1, metric2, fname)
+        print >> sys.stderr, 'Assertion (%s %s %s) in %s failed: len of metric1 values is not ' \
+                             'equal to len of metric 2 values in the file' % \
+                             (metric1, relate, metric2, fname)
         exit(7)
 
     value = __to_number(value)
@@ -269,13 +277,13 @@ def assert_metric_less_or_equal_to(name, metric1, metric2=None, value=None, fnam
             continue
         if metric2:
             value2 = __to_number(metric2_values[idx])
-            if value2 is not None and value1 > value2:
-                print >> sys.stderr, 'Assertion ({metric1} <= X) in {fname} failed: {value1} > {value2}'.format(**locals())
+            if value2 is not None and not ops[relate](value1, value2):
+                print >> sys.stderr, 'Assertion ({metric1} {relate} X) in {fname} failed: {value1} > {value2}'.format(**locals())
                 exit(9)
-        if value is not None and value1 > value:
-            print >> sys.stderr, 'Assertion ({metric1} <= X) in {fname} failed: {value1} > {value}'.format(**locals())
+        if value is not None and not ops[relate](value1, value):
+            print >> sys.stderr, 'Assertion ({metric1} {relate} X) in {fname} failed: {value1} > {value}'.format(**locals())
             exit(9)
-    print '%s <= %s is OK in %s' % (metric1, metric2 if metric2 else str(value), fname)
+    print '%s %s %s is OK in %s' % (metric1, relate, metric2 if metric2 else str(value), fname)
     return True
 
 

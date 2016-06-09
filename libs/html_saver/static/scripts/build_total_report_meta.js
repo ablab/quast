@@ -215,6 +215,7 @@ function buildTotalReport(assembliesNames, report, order, date, minContig, gloss
     var refNames = [];
     for (var report_n = 0; report_n < reports.length; report_n++) {
         var _refName = reports[report_n].referenceName;
+        if (!_refName) _refName = 'not aligned';
         refNames.push(_refName);
     }
     reports = refNames.map(function (name, report_n) {

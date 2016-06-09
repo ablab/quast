@@ -43,7 +43,7 @@ function buildReport() {
         title_reports = ['Contigs', 'Largest contig', 'Total len', 'Misassemblies', 'Mis. len', 'Mismatches',
             'Indels', "N's per 100 kbp", 'Genome frac.', 'Dup. ratio', 'NGA50'];
         for (var i = 0; i < summaryReports.length; i++) {
-            if (summaryReports[i].refnames != undefined) {
+            if (summaryReports[i].refnames != undefined && summaryReports[i].refnames.length > 0) {
                 if (name_reports[i] == 'misassemblies') {
                     misassembl_coordX = summaryReports[i].coord_x;
                     misassembl_coordY = summaryReports[i].coord_y;

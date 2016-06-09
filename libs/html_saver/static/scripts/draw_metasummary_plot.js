@@ -1,3 +1,5 @@
+var refNames;
+var refTicks;
 
 var summary = {
     largest: {
@@ -78,9 +80,10 @@ var summary = {
 
     draw: function (name, title, colors, filenames, data, refPlotValue, tickX,
                     placeholder, legendPlaceholder, glossary, order, scalePlaceholder) {
+        var sortBtnClass = getSortRefsBtnClass();
 
         $('#legend-placeholder').empty();
-        
+
         filenames.forEach(function(filename, i) {
         var id = 'label_' + i + '_id';
         $('#legend-placeholder').append('<div>' +
@@ -88,19 +91,21 @@ var summary = {
             '<input type="checkbox" name="' + i + '" checked="checked" id="' + id + '">&nbsp;' + filename + '</label>' +
             '</div>');
         });
+        addSortRefsBtn(sortBtnClass);
 
         $(scalePlaceholder).empty();
 
         var coordX = data.coord_x;
         var coordY = data.coord_y;
 
-        var refs = data.refnames;
+        refNames = data.refnames;
         var cur_filenames = data.filenames;
         var info = summary[name];
 
         if (!info.isInitialized) {
             var plotsN = cur_filenames.length;
             info.series = new Array(plotsN);
+            info.references = refNames;
 
             for (var i = 0; i < plotsN; i++) {
                 var index = $.inArray(cur_filenames[order[i]], filenames);
@@ -115,7 +120,7 @@ var summary = {
                     color: colors[index],
                     points: {
                         show: true,
-                        fillColor: colors[index],
+                        fillColor: colors[index]
                     }
                 };
 
@@ -139,10 +144,10 @@ var summary = {
                 yFormatter = getJustNumberTickFormatter;
             else if (name == 'genome')
                 yFormatter = getPercentTickFormatter;
-            var refTicks = [];
-            for (var i = 0; i < refs.length; i++)
+            refTicks = [];
+            for (var i = 0; i < refNames.length; i++)
             {
-                refTicks.push([i+1,refs[i]]);
+                refTicks.push([i + 1, refNames[i]]);
             }
             info.showWithData = function(series, colors) {
                 var plot = $.plot(placeholder, series, {
@@ -155,7 +160,7 @@ var summary = {
                             borderWidth: 1,
                             hoverable: true,
                             autoHighlight: false,
-                            mouseActiveRadius: 1000,
+                            mouseActiveRadius: 1000
                         },
                         yaxis: {
                             min: 0,
@@ -165,17 +170,17 @@ var summary = {
                             lineWidth: 0.5,
                             color: '#000',
                             tickFormatter: yFormatter(info.maxY),
-                            minTickSize: 1,
+                            minTickSize: 1
                         },
                         xaxis: {
                             min: 0,
-                            max: refs.length+1,
+                            max: refNames.length+1,
                             lineWidth: 1,
                             rotateTicks: 90,
                             color: '#000',
                             ticks: refTicks
                         },
-                        minTickSize: 1,
+                        minTickSize: 1
                     }
                 );
 
@@ -183,7 +188,7 @@ var summary = {
                 firstLabel.prepend(title + '<span class="rhs">&nbsp;</span>=<span class="rhs">&nbsp;</span>');
                 if (name == 'genome') firstLabel.html(title);
                 
-                bindTip(placeholder, series, plot, refToPrettyString, 1, refs, 'top right', true);
+                bindTip(placeholder, series, plot, refToPrettyString, 1, refNames, 'top right', true);
 
             };
 
@@ -197,9 +202,55 @@ var summary = {
         });
 
         showPlotWithInfo(info);
+        setSortRefsBtn(info);
 
         $('#gc_info').hide();
     }
 };
 
+function getSortRefsBtnClass() {
+    var sortRefsBtn = $('#sortRefsBtn');
+    if (sortRefsBtn && sortRefsBtn.attr('class'))
+        return sortRefsBtn.attr('class');
+    return '';
+}
 
+function addSortRefsBtn(sortBtnClass) {
+    $('#legend-placeholder').append(
+        '<div>' + '<button id="sortRefsBtn" class="' + sortBtnClass + '"></button>' + '</div>'
+    );
+}
+
+function setSortRefsBtn(info, index) {
+    $('#sortRefsBtn').click(function() {
+        $(this).toggleClass('sorted');
+        showPlotWithInfo(info, index);
+    });
+}
+
+function getSortOrder() {
+    var sortOrder = '';
+    var sortRefsBtn = $('#sortRefsBtn');
+    if (sortRefsBtn[0] && sortRefsBtn.attr('class') == 'sorted') {
+        sortRefsBtn.html('Sort by average value');
+        sortOrder = 'alphabet';
+    }
+    else if (sortRefsBtn) {
+        sortRefsBtn.html('Sort by alphabet');
+        sortOrder = 'value';
+    }
+    return sortOrder;
+}
+
+function sortReferences(sortOrder, info) {
+    if (sortOrder == 'alphabet') {
+        refNames = sortedRefs;
+        for (var i = 0; i < sortedRefs.length; i++)
+            refTicks[i][1] = sortedRefs[i];
+    }
+    else if (sortOrder == 'value') {
+        refNames = info.references;
+        for (var i = 0; i < info.references.length; i++)
+            refTicks[i][1] = info.references[i];
+    }
+}

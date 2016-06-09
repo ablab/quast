@@ -72,11 +72,11 @@ var misassemblies = {
             var misassembl_colors = ['#E31A1C', '#1F78B4', '#33A02C'];
             var misassembl_labels = ['relocations', 'translocations', 'inversions'];
 
-            var refTicks = [];
+            refTicks = [];
             for (var ref_n = 0; ref_n < main_refnames.length; ref_n++) {
                     refTicks.push([ref_n + 1, main_refnames[ref_n]]);
             }
-            misassemblies.refTicks = refTicks;
+            misassemblies.references = main_refnames;
             refs = refs.filter( function(el) {
               return main_refnames.indexOf(el) > -1;
             } );
@@ -141,12 +141,11 @@ function showAllAssemblies(series, colors) {
     if (series == null)
         return;
 
-    var refs = misassemblies.refs;
     misassemblies.plot = $.plot(misassemblies.placeholder, series, {
             shadowSize: 0,
             colors: colors,
             legend: {
-                container: $('useless-invisible-element-that-does-not-even-exist'),
+                container: $('useless-invisible-element-that-does-not-even-exist')
             },
             grid: {
                 borderWidth: 1,
@@ -165,11 +164,11 @@ function showAllAssemblies(series, colors) {
             },
             xaxis: {
                 min: 0,
-                max: refs.length + 1,
+                max: refNames.length + 1,
                 lineWidth: 1,
                 rotateTicks: 90,
                 color: '#000',
-                ticks: misassemblies.refTicks
+                ticks: refTicks
             },
             minTickSize: 1
         }
@@ -177,7 +176,7 @@ function showAllAssemblies(series, colors) {
     var firstLabel = $('.yAxis .tickLabel').last();
     firstLabel.append(' misassemblies');
     unBindTips(misassemblies.placeholder);
-    bindTip(misassemblies.placeholder, series, misassemblies.plot, refToPrettyString, 1, refs, 'top right', true);
+    bindTip(misassemblies.placeholder, series, misassemblies.plot, refToPrettyString, 1, refNames, 'top right', true);
 }
 
 
@@ -185,12 +184,12 @@ function showOneAssembly(series, colors) {
     if (series == null) {
         return;
     }
-    var refs = misassemblies.refs;
+
     misassemblies.plot = $.plot(misassemblies.placeholder, series, {
             shadowSize: 0,
             colors: colors,
             legend: {
-                container: $('useless-invisible-element-that-does-not-even-exist'),
+                container: $('useless-invisible-element-that-does-not-even-exist')
             },
             grid: {
                 hoverable: true,
@@ -209,11 +208,11 @@ function showOneAssembly(series, colors) {
             },
             xaxis: {
                 min: 0,
-                max: refs.length + 1,
+                max: refNames.length + 1,
                 lineWidth: 1,
                 rotateTicks: 90,
                 color: '#000',
-                ticks: misassemblies.refTicks
+                ticks: refTicks
             },
             minTickSize: 1
         }
@@ -222,7 +221,7 @@ function showOneAssembly(series, colors) {
     var firstLabel = $('.yAxis .tickLabel').last();
     firstLabel.append(' misassemblies');
     unBindTips(misassemblies.placeholder);
-    bindTip(misassemblies.placeholder, series, misassemblies.plot, refToPrettyString, 1, refs,  'top right');
+    bindTip(misassemblies.placeholder, series, misassemblies.plot, refToPrettyString, 1, refNames,  'top right');
 }
 
 function showAll() {
@@ -248,6 +247,7 @@ function showPlot(index) {
 }
 
 function createLegend(labels, colors, index){
+    var sortBtnClass = getSortRefsBtnClass();
     $('#legend-placeholder').empty();
     var selectors = "";
     var filenames = misassemblies.filenames;
@@ -266,6 +266,7 @@ function createLegend(labels, colors, index){
                 "class='plot-switch dotted-link'>" +
                 filenames[filenames_n] + "</span>";
         }
+        addSortRefsBtn(sortBtnClass);
         $('#legend-placeholder').append(
             "<br><br><div id='change-assembly' style='margin-right: 3px;'>" +
                 "<span id='show_all_label'>" +
@@ -274,12 +275,14 @@ function createLegend(labels, colors, index){
                 "</div>"
         );
     }
+    else addSortRefsBtn(sortBtnClass);
     addLinksToSwitches(index-1);
     $.each(misassemblies.series[index], function(i, series) {
-            $('#legend-placeholder').find('#label_' + series.number + '_id').click(function() {
-                showPlotWithInfo(misassemblies, index);
-            });
+        $('#legend-placeholder').find('#label_' + series.number + '_id').click(function() {
+            showPlotWithInfo(misassemblies, index);
         });
+    });
+    setSortRefsBtn(misassemblies, index);
 }
 
 function addLinksToSwitches(index) {

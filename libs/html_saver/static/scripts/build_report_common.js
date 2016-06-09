@@ -2,17 +2,34 @@ function showPlotWithInfo(info, index) {
     var newSeries = [];
     var newColors = [];
     var oldSeries = info.series;
-    if (index != undefined) oldSeries = info.series[index];
+    var usingSeries;
+    var sortOrder;
+    if ($('#sortRefsBtn')[0])
+        sortOrder = getSortOrder();
+    if (index != undefined) {
+        oldSeries = info.series[index];
+    }
+    if (sortOrder == 'alphabet') {
+        usingSeries = [];
+        sortedRefs = info.references.slice(0).sort();
+        for(var i = 0; i < oldSeries.length; i++) {
+            usingSeries.push($.extend(true, {}, oldSeries[i]));
+            for(var j = 0; j < info.references.length; j++) {
+                usingSeries[i].data[j][1] = oldSeries[i].data[info.references.indexOf(sortedRefs[j])][1];
+            }
+        }
+    }
+    else usingSeries = oldSeries;
     $('#legend-placeholder').find('input:checked').each(function() {
         var number = $(this).attr('name');
-        if (number && oldSeries && oldSeries.length > 0) {
+        if (number && usingSeries && usingSeries.length > 0) {
             var i = 0;
             do {
-                var series = oldSeries[i];
+                var series = usingSeries[i];
                 i++;
-            } while (i <= oldSeries.length && (series == null || series.number != number));
+            } while (i <= usingSeries.length && (series == null || series.number != number));
             //
-            if (i <= oldSeries.length) {
+            if (i <= usingSeries.length) {
                 newSeries.push(series);
                 newColors.push(series.color);
             } else {
@@ -20,6 +37,7 @@ function showPlotWithInfo(info, index) {
             }
         }
     });
+    if (sortOrder) sortReferences(sortOrder, info);
 
     if (newSeries.length === 0) {
         newSeries.push({

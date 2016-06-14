@@ -207,14 +207,20 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, json_output_dir, results_dir):
             report.add_field(reporting.Fields.ESTREFLEN, int(reference_length))
 
     import math
-    qconfig.min_difference = math.ceil((largest_contig/1000)/600)  # divide on height of plot
+    qconfig.min_difference = math.ceil((largest_contig / 1000) / 600)  # divide on height of plot
+
+    list_of_GC_distributions_with_ref = list_of_GC_distributions
+    reference_index = None
+    if ref_fpath:
+        reference_index = len(list_of_GC_distributions_with_ref)
+        list_of_GC_distributions_with_ref.append(reference_GC_distribution)
 
     if json_output_dir:
-        json_saver.save_GC_info(json_output_dir, contigs_fpaths, list_of_GC_distributions)
+        json_saver.save_GC_info(json_output_dir, contigs_fpaths, list_of_GC_distributions_with_ref, reference_index)
 
     if qconfig.html_report and not qconfig.is_combined_ref:
         from libs.html_saver import html_saver
-        html_saver.save_GC_info(results_dir, contigs_fpaths, list_of_GC_distributions)
+        html_saver.save_GC_info(results_dir, contigs_fpaths, list_of_GC_distributions_with_ref, reference_index)
 
     import plotter
     ########################################################################
@@ -231,9 +237,6 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, json_output_dir, results_dir):
         if not qconfig.is_combined_ref:
             ########################################################################
             # Drawing GC content plot...
-            list_of_GC_distributions_with_ref = list_of_GC_distributions
-            if ref_fpath:
-                list_of_GC_distributions_with_ref.append(reference_GC_distribution)
             plotter.GC_content_plot(ref_fpath, contigs_fpaths, list_of_GC_distributions_with_ref, output_dirpath + '/GC_content_plot')
 
     logger.main_info('Done.')

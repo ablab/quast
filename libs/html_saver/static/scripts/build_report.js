@@ -138,7 +138,7 @@ function buildReport() {
     }
 
     if (gcInfos = readJson('gc')) {
-        makePlot(firstPlot, assembliesNames, order, 'gc', 'GC content', gc.draw, gcInfos, null);
+        makePlot(firstPlot, assembliesNames, order, 'gc', 'GC content', gc.draw, gcInfos, gcInfos.reference_index);
     }
 
     var noReference = true;

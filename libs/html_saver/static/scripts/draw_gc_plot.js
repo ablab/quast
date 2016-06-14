@@ -75,79 +75,100 @@ var gc = {
                     data: [],
                     label: filenames[order[i]],
                     number: i,
-                    color: colors[order[i]],
+                    color: colors[order[i]]
                 };
             }
 
-            function makeSeriesFromDistributions(listOfGcDistributions) {
-                for (var i = 0; i < plotsN; i++) {
-                    var distributionsXandY = listOfGcDistributions[order[i]];
-                    var distributionsX = distributionsXandY[0];
-                    var distributionsY = distributionsXandY[1];
+            function makeSeriesFromDistributions(distributionsXandY, i) {
+                var distributionsX = distributionsXandY[0];
+                var distributionsY = distributionsXandY[1];
 
-                    for (var j = 0; j < distributionsX.length; j++) {
-                        var x = distributionsX[j];
-                        var y = distributionsY[j];
-                        gc.series[i].data.push([x, y]);
-                        updateMinY(y);
-                        updateMaxY(y);
+                for (var j = 0; j < distributionsX.length; j++) {
+                    var x = distributionsX[j];
+                    var y = distributionsY[j];
+                    gc.series[i].data.push([x, y]);
+                    updateMinY(y);
+                    updateMaxY(y);
+                }
+            }
+
+            function makeSeries(listsOfGCInfo, listOfGcDistributions) {
+                for (var i = 0; i < plotsN; i++) {
+                    if (listsOfGCInfo) {
+                        makeSeriesFromInfo(listsOfGCInfo[order[i]], i);
+                    } else {
+                        makeSeriesFromDistributions(listOfGcDistributions[order[i]], i);
                     }
                 }
             }
 
             var listsOfGCInfo = gcInfos.lists_of_gc_info;
-            if (listsOfGCInfo) {
-                makeSeriesFromInfo(listsOfGCInfo);
-            } else {
-                var listOfGcDistributions = gcInfos.list_of_GC_distributions;
-                makeSeriesFromDistributions(listOfGcDistributions);
-            }
+            var listOfGcDistributions = gcInfos.list_of_GC_distributions;
+            makeSeries(listsOfGCInfo, listOfGcDistributions);
 
-            function makeSeriesFromInfo(listsOfGCInfo) {
-                for (var i = 0; i < plotsN; i++) {
-                    var GC_info = listsOfGCInfo[order[i]];
+            function makeSeriesFromInfo(GC_info, i) {
+                var cur_bin = 0.0;
 
-                    var cur_bin = 0.0;
+                var x = cur_bin;
+                var y = filterAndSumGcInfo(GC_info, function(GC_percent) {
+                    return GC_percent == cur_bin;
+                });
+                gc.series[i].data.push([x, y]);
 
-                    var x = cur_bin;
-                    var y = filterAndSumGcInfo(GC_info, function(GC_percent) {
-                        return GC_percent == cur_bin;
-                    });
-                    gc.series[i].data.push([x, y]);
+                updateMinY(y);
+                updateMaxY(y);
 
-                    updateMinY(y);
-                    updateMaxY(y);
+                while (cur_bin < 100.0 - bin_size) {
+                    cur_bin += bin_size;
 
-                    while (cur_bin < 100.0 - bin_size) {
-                        cur_bin += bin_size;
-
-                        x = cur_bin;
-                        y = filterAndSumGcInfo(GC_info, function(GC_percent) {
-                            return GC_percent > (cur_bin - bin_size) && GC_percent <= cur_bin;
-                        });
-                        gc.series[i].data.push([x, y]);
-
-                        updateMinY(y);
-                        updateMaxY(y);
-                    }
-
-                    x = 100.0;
+                    x = cur_bin;
                     y = filterAndSumGcInfo(GC_info, function(GC_percent) {
-                        return GC_percent > cur_bin && GC_percent <= 100.0;
+                        return GC_percent > (cur_bin - bin_size) && GC_percent <= cur_bin;
                     });
-
                     gc.series[i].data.push([x, y]);
 
                     updateMinY(y);
                     updateMaxY(y);
                 }
+
+                x = 100.0;
+                y = filterAndSumGcInfo(GC_info, function(GC_percent) {
+                    return GC_percent > cur_bin && GC_percent <= 100.0;
+                });
+
+                gc.series[i].data.push([x, y]);
+
+                updateMinY(y);
+                updateMaxY(y);
             }
 
             for (i = 0; i < plotsN; i++) {
                 gc.series[i].lines = {
                     show: true,
-                    lineWidth: 1,
+                    lineWidth: 1
                 }
+            }
+
+            var refIndex = gcInfos.reference_index;
+            if (refIndex) {
+                gc.series.push({
+                    data: [],
+                    label: 'reference',
+                    isReference: true,
+                    number: filenames.length,
+                    lines: {},
+                    dashes: {
+                        show: true,
+                        lineWidth: 1
+                    },
+                    color: '#000000'
+                });
+                if (listsOfGCInfo) {
+                    makeSeriesFromInfo(listsOfGCInfo[refIndex], refIndex);
+                } else {
+                    makeSeriesFromDistributions(listOfGcDistributions[refIndex], refIndex);
+                }
+                gc.colors.push('#000000')
             }
 
             // Calculate the minimum possible non-zero Y to clip useless bottoms
@@ -207,7 +228,7 @@ function showInNormalScaleWithData(series, colors) {
                 lineWidth: 0.5,
                 color: '#000',
                 tickFormatter: windowsTickFormatter,
-                minTickSize: 1,
+                minTickSize: 1
             },
             xaxis: {
                 min: 0,
@@ -222,7 +243,7 @@ function showInNormalScaleWithData(series, colors) {
                     }
                 }
             },
-            minTickSize: 1,
+            minTickSize: 1
         }
     );
 
@@ -249,7 +270,7 @@ function showInLogarithmicScaleWithData(series, colors) {
                 hoverable: true,
                 borderWidth: 1,
                 autoHighlight: false,
-                mouseActiveRadius: 1000,
+                mouseActiveRadius: 1000
             },
             yaxis: {
                 min: Math.pow(10, gc.minPow),
@@ -268,7 +289,7 @@ function showInLogarithmicScaleWithData(series, colors) {
                 inverseTransform: function(v) {
                     return Math.pow(v, 10);
                 },
-                tickDecimals: 3,
+                tickDecimals: 3
             },
             xaxis: {
                 min: 0,
@@ -283,7 +304,7 @@ function showInLogarithmicScaleWithData(series, colors) {
                     }
                 }
             },
-            minTickSize: 1,
+            minTickSize: 1
         }
     );
 

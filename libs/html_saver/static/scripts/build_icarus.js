@@ -675,7 +675,8 @@ THE SOFTWARE.
             annotationsMini.select('.brush').call(brush_anno.extent([minExtent, maxExtent]));
 
         x_main.domain([minExtent, maxExtent]);
-        document.getElementById('input_coords').value = Math.round(minExtent) + "-" + Math.round(maxExtent);
+        document.getElementById('input_coords_start').value = getChromCoords(Math.round(minExtent), 0);
+        document.getElementById('input_coords_end').value = getChromCoords(Math.round(maxExtent), 1);
 
         // shift the today line
         main.select('.main.curLine')
@@ -947,10 +948,12 @@ THE SOFTWARE.
                 .attr('class', 'main_labels')
                 .attr('height', 15)
                 .attr('transform', 'translate(0, -12)');
-        labels.append('text')
+        var labelsText = labels.append('text')
                 .text(visibleText)
-                .attr('text-anchor', 'start')
-                .attr('class', 'lineLabelText');
+                .attr('text-anchor', 'start');
+        if (isContigSizePlot)
+           labelsText.attr('class', 'lineLabelText');
+       else labelsText.attr('class', 'itemText');
     }
 
 
@@ -1204,13 +1207,20 @@ THE SOFTWARE.
         document.getElementById('zoom_out_5').onclick=function() {
             keyPress('zoom_out', 200) };
 
-        document.getElementById('input_coords').onkeydown=function(event) {
-            enterCoords(event, this) };
+        document.getElementById('input_coords_start').onkeydown=function(event) {
+            enterCoords(event, this, 0);
+        };
+        document.getElementById('input_coords_end').onkeydown=function(event) {
+            enterCoords(event, this, 1);
+        };
         if (document.getElementById('input_contig_threshold')) {
             document.getElementById('input_contig_threshold').value = minContigSize;
             document.getElementById('input_contig_threshold').onkeyup = function(event) {
                 setContigSizeThreshold(event, this) };
         }
+
+        setupChromosomeSelector(document.getElementById('select_chr_start'), 0);
+        setupChromosomeSelector(document.getElementById('select_chr_end'), 1);
 
         var checkboxes = document.getElementsByName('misassemblies_select');
         for(var i = 0; i < checkboxes.length; i++) {
@@ -1221,6 +1231,53 @@ THE SOFTWARE.
         if (!featuresHidden) addAnnotationsTrackButtons();
         if (drawCoverage) addCovTrackButtons();
         window.onresize = function(){ location.reload(); }
+    }
+
+    function getChromCoords(coord, coordIndex) {
+        if (isContigSizePlot || chrContigs.length <= 1) {
+            return coord;
+        }
+        else {
+            var chrSelector = coordIndex == 0 ? document.getElementById('select_chr_start') : document.getElementById('select_chr_end');
+            var prevLen = 0;
+            for (var i = 0; i < chrContigs.length - 1; i++) {
+                chrName = chrContigs[i];
+                chrLen = chromosomes_len[chrName];
+                if (coord < prevLen + chrLen) {
+                    break;
+                }
+                prevLen += chrLen;
+            }
+            chrSelector.value = i;
+            coord -= prevLen;
+            return coord;
+        }
+    }
+
+    function setupChromosomeSelector(chrSelector, selectorIndex) {
+        if (!isContigSizePlot && chrContigs.length > 1) {
+            chrSelector.style.display = "";
+            for (var i = 0; i < chrContigs.length; i++) {
+                var option = document.createElement('option');
+                var chr = chrContigs[i];
+                if (chr.length > 50) {
+                    chr = chr.slice(0, 3) + '...' + chr.slice(chr.length - 10, chr.length)
+                }
+                option.text = chr;
+                option.value = i;
+                chrSelector.add(option);
+            }
+            chrSelector.onchange = function(event) {
+                var coordsTextBox = selectorIndex == 0 ? document.getElementById('input_coords_start') : document.getElementById('input_coords_end');
+                var coords = [];
+                if (selectorIndex == 1) {
+                    var coordsBoxStart = document.getElementById('input_coords_start');
+                    coords.push(getCoords(coordsBoxStart, 0));
+                }
+                coords.push(getCoords(coordsTextBox, selectorIndex, event.target.value));
+                setCoords(coords);
+            };
+        }
     }
 
     function addCovTrackButtons() {
@@ -1276,17 +1333,41 @@ THE SOFTWARE.
             keyPress('esc');
     }
 
-    function enterCoords(event, textBox) {
+    function enterCoords(event, textBox, coordIndex) {
         var key = event.keyCode || this.event.keyCode;
         if (key == 27) {
-            document.getElementById('input_coords').blur();
+            textBox.blur();
         }
         if (key == 13) {
-            var coordText = textBox.value;
-            var coords = coordText.split('-');
+            var coords = [];
+            if (coordIndex == 1) {
+                var coordsStartBox = document.getElementById('input_coords_start');
+                coords.push(getCoords(coordsStartBox, 0));
+            }
+            coords.push(getCoords(textBox, coordIndex));
             setCoords(coords);
         }
     }
+
+    function getCoords(textBox, coordIndex, selectedIndex) {
+        var coord = textBox.value;
+        if (!isContigSizePlot && chrContigs.length > 1) {
+            var chrSelector = coordIndex == 0 ? document.getElementById('select_chr_start') : document.getElementById('select_chr_end');
+            var selectedContig = selectedIndex ? parseInt(selectedIndex) : chrSelector.options[chrSelector.selectedIndex].value;
+            var selectedName = chrContigs[selectedContig];
+            var prevLen = 0;
+            for (var i = 0; i < selectedContig; i++) {
+                chrName = chrContigs[i];
+                chrLen = chromosomes_len[chrName];
+                prevLen += chrLen;
+            }
+            if (parseInt(coord)) {
+                coord = Math.min(parseInt(coord) + prevLen, chromosomes_len[selectedName] + prevLen - 1);
+            }
+        }
+        return coord;
+    }
+
 
     var timerAnimationSetCoords;
 
@@ -1554,8 +1635,21 @@ THE SOFTWARE.
         mainTickValue = getTickValue(domain);
 
         xMainAxis.tickFormat(function(tickValue) {
-                              return formatValue(startPos + tickValue * domain, mainTickValue);
-                            });
+            var pos = startPos + tickValue * domain;
+            var currentLen = 0;
+            if (!isContigSizePlot && chrContigs.length > 1) { // correct coordinates for chromosomes
+                for (var i = 0; i < chrContigs.length; i++) {
+                    chrName = chrContigs[i];
+                    chrLen = chromosomes_len[chrName];
+                    if (currentLen + chrLen >= pos) {
+                        pos -= currentLen;
+                        break;
+                    }
+                    currentLen += chrLen;
+                }
+            }
+            return formatValue(pos, mainTickValue);
+        });
         updateTrack(main);
         if (!featuresMainHidden) updateTrack(annotationsMain);
         if (!coverageMainHidden) updateTrack(main_cov);
@@ -1565,7 +1659,7 @@ THE SOFTWARE.
         track.select('.main.axis').call(xMainAxis);
         var lastTick = track.select(".axis").selectAll("g")[0].pop();
         var textSize = Math.max(0, (formatValue(x_main.domain()[1], mainTickValue).toString().length - 2) * numberSize);
-        d3.select(lastTick).select('text').text(formatValue(x_main.domain()[1], mainTickValue) + ' ' + mainTickValue)
+        d3.select(lastTick).select('text').text(lastTick.textContent + ' ' + mainTickValue)
                   .attr('transform', 'translate(-' + textSize + ', 0)');
     }
 

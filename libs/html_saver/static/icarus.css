@@ -476,6 +476,7 @@ path {
     float: left;
     font-size: 13px;
     margin-left: 30px;
+    width: 800px;
     /*margin-top: 7px;*/
 }
 
@@ -504,4 +505,20 @@ path {
     font-size: 14px;
     text-align: center;
     padding-top: 15px;
+}
+
+.coords_div {
+    float:left;
+    margin-top:5px;
+    margin-left: 50px;
+}
+
+.coords_span {
+    white-space: nowrap;
+    margin-left: 10px;
+}
+
+.coords_textbox {
+     width:75px;
+     margin-left: 10px;
 }

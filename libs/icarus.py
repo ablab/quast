@@ -783,8 +783,8 @@ def save_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, chr_length
     if not qconfig.is_combined_ref:
         misassemblies_types.remove('interspecies translocation')
     chr_data = 'chromosome = "' + chr + '";\n'
-    chromosome = '","'.join(ref_contigs)
-    chr_data += 'var chrContigs = ["' + chromosome + '"];\n'
+    chromosomes = '","'.join(ref_contigs)
+    chr_data += 'var chrContigs = ["' + chromosomes + '"];\n'
     chr_name = chr.replace('_', ' ')
     reference_text = '<div class="reftitle"><b>Contig alignment viewer.</b> Contigs aligned to "' + chr_name + '"</div>'
     html_saver.save_icarus_data(json_output_dir, reference_text, 'reference', alignment_viewer_fpath)

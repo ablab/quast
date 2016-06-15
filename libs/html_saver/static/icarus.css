@@ -365,6 +365,14 @@ path {
               -1px 1px 0 #000;
 }
 
+.lineLabelText {
+    fill: white;
+    text-shadow: #000 0 0 2px,   #000 0 0 2px,   #000 0 0 2px,
+                 #000 0 0 2px,   #000 0 0 2px,   #000 0 0 2px,
+                 #000 0 0 2px,   #000 0 0 2px,   #000 0 0 2px,
+                 #000 0 0 2px,   #000 0 0 2px,   #000 0 0 2px;
+}
+
 .block_circle {
   width: 16px;
   height: 16px;

@@ -950,7 +950,7 @@ THE SOFTWARE.
         labels.append('text')
                 .text(visibleText)
                 .attr('text-anchor', 'start')
-                .attr('class', 'itemLabel');
+                .attr('class', 'lineLabelText');
     }
 
 

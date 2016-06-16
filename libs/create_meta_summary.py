@@ -6,17 +6,16 @@
 ############################################################################
 
 
-
 import os
-import shutil
+import plotter
 import qconfig
+from libs.ca_utils import print_file
 from libs.log import get_logger
 import reporting
 logger = get_logger(qconfig.LOGGER_META_NAME)
 
 
 def get_results_for_metric(ref_names, metric, contigs_num, labels, output_dirpath, report_fname):
-
     all_rows = []
     cur_ref_names = []
     row = {'metricName': 'References', 'values': cur_ref_names}
@@ -62,8 +61,6 @@ def get_labels(combined_output_dirpath, report_fname):
 
 
 def do(html_fpath, output_dirpath, combined_output_dirpath, output_dirpath_per_ref, metrics, misassembl_metrics, ref_names):
-    import plotter
-
     labels = get_labels(combined_output_dirpath, qconfig.report_prefix + '.tsv')
     contigs_num = len(labels)
     plots_dirname = qconfig.plot_extension.upper()
@@ -81,15 +78,15 @@ def do(html_fpath, output_dirpath, combined_output_dirpath, output_dirpath_per_r
                 continue
             if cur_ref_names:
                 transposed_table = [{'metricName': 'Assemblies',
-                                 'values': [all_rows[i]['metricName'] for i in xrange(1, len(all_rows))],}]
+                                    'values': [all_rows[i]['metricName'] for i in xrange(1, len(all_rows))],}]
                 for i in range(len(all_rows[0]['values'])):
                     values = []
                     for j in range(1, len(all_rows)):
                         values.append(all_rows[j]['values'][i])
                     transposed_table.append({'metricName': all_rows[0]['values'][i], # name of reference
-                                             'values': values,})
+                                             'values': values})
 
-                print_file(transposed_table, len(transposed_table[0]['values']), summary_txt_fpath)
+                print_file(transposed_table, summary_txt_fpath)
                 reporting.save_tsv(summary_tsv_fpath, transposed_table)
                 reporting.save_tex(summary_tex_fpath, transposed_table)
                 reverse = False
@@ -127,20 +124,3 @@ def do(html_fpath, output_dirpath, combined_output_dirpath, output_dirpath_per_r
     logger.main_info('')
     logger.main_info('  Text versions of reports and plots for each metric (for all references and assemblies) are saved to ' + output_dirpath + '/')
 
-
-def print_file(all_rows, ref_num, fpath):
-    colwidths = [0] * (ref_num + 1)
-    for row in all_rows:
-        for i, cell in enumerate([row['metricName']] + map(val_to_str, row['values'])):
-            colwidths[i] = max(colwidths[i], len(cell))
-    txt_file = open(fpath, 'w')
-    for row in all_rows:
-        print >> txt_file, '  '.join('%-*s' % (colwidth, cell) for colwidth, cell
-                                     in zip(colwidths, [row['metricName']] + map(val_to_str, row['values'])))
-
-
-def val_to_str(val):
-    if val is None:
-        return '-'
-    else:
-        return str(val)

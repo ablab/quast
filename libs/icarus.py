@@ -16,8 +16,9 @@ try:
 except ImportError:
    from site_packages.ordered_dict import OrderedDict
 
-from libs import qconfig, qutils, fastaparser, genome_analyzer, contigs_analyzer
 import os
+from libs import qconfig, qutils, fastaparser, genome_analyzer
+from libs.ca_utils import ref_labels_by_chromosomes
 import libs.html_saver.html_saver as html_saver
 import libs.html_saver.json_saver as json_saver
 from libs.svg_alignment_plotter import draw_alignment_plot
@@ -306,8 +307,8 @@ def do(contigs_fpaths, contig_report_fpath_pattern, output_dirpath, ref_fpath, c
         sorted_ref_lengths = sorted(reference_chromosomes.values(), reverse=True)
         cumulative_ref_lengths = [0]
         contig_names_by_refs = None
-        if contigs_analyzer.ref_labels_by_chromosomes:
-            contig_names_by_refs = contigs_analyzer.ref_labels_by_chromosomes
+        if ref_labels_by_chromosomes:
+            contig_names_by_refs = ref_labels_by_chromosomes
 
         for i, chr in enumerate(chr_names):
             chr_length = reference_chromosomes[chr]
@@ -482,8 +483,8 @@ def parse_cov_fpath(cov_fpath, chr_names, chr_full_names):
         contig_to_chr = dict()
         index_to_chr = dict()
         for chr in chr_full_names:
-            if contigs_analyzer.ref_labels_by_chromosomes:
-                contig_names_by_refs = contigs_analyzer.ref_labels_by_chromosomes
+            if ref_labels_by_chromosomes:
+                contig_names_by_refs = ref_labels_by_chromosomes
                 contigs = [contig for contig in chr_names if contig_names_by_refs[contig] == chr]
             elif len(chr_full_names) == 1:
                 contigs = chr_names
@@ -629,13 +630,13 @@ def save_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, chr_length
 
     additional_assemblies_data = ''
     data_str.append('var links_to_chromosomes;')
-    if contigs_analyzer.ref_labels_by_chromosomes:
+    if ref_labels_by_chromosomes:
         data_str.append('links_to_chromosomes = {};')
         links_to_chromosomes = []
         used_chromosomes = []
     num_misassemblies = 0
     aligned_assemblies = set()
-    contig_names_by_refs = contigs_analyzer.ref_labels_by_chromosomes or None
+    contig_names_by_refs = ref_labels_by_chromosomes or None
 
     is_one_html = len(chr_full_names) == 1
     data_str.append('var oneHtml = "' + str(is_one_html) + '";')
@@ -731,7 +732,7 @@ def save_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, chr_length
                                 # corr_len = sum(chr_lengths[:num_chr+1])
                             else:
                                 # corr_len = -int(el.end)
-                                if contigs_analyzer.ref_labels_by_chromosomes and el.ref_name not in used_chromosomes:
+                                if ref_labels_by_chromosomes and el.ref_name not in used_chromosomes:
                                     used_chromosomes.append(el.ref_name)
                                     new_chr = contig_names_by_refs[el.ref_name]
                                     links_to_chromosomes.append('links_to_chromosomes["' + el.ref_name + '"] = "' + new_chr + '";')
@@ -756,7 +757,7 @@ def save_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, chr_length
         additional_assemblies_data += 'assemblies_misassemblies["' + assembly + '"] = "' + str(ext_misassemblies) + '' \
                            '+' + str(local_misassemblies) + '";\n'
 
-    if contigs_analyzer.ref_labels_by_chromosomes:
+    if ref_labels_by_chromosomes:
         data_str.append(''.join(links_to_chromosomes))
     if cov_data:
         # adding coverage data
@@ -844,8 +845,8 @@ def js_data_gen(assemblies, contigs_fpaths, chromosomes_length, output_dirpath, 
     if not os.path.exists(output_all_files_dir_path):
         os.mkdir(output_all_files_dir_path)
     contig_names_by_refs = None
-    if contigs_analyzer.ref_labels_by_chromosomes:
-        contig_names_by_refs = contigs_analyzer.ref_labels_by_chromosomes
+    if ref_labels_by_chromosomes:
+        contig_names_by_refs = ref_labels_by_chromosomes
         added_refs = set()
         chr_full_names = [added_refs.add(ref) or ref for ref in [contig_names_by_refs[contig] for contig in chr_names]
                           if ref not in added_refs]
@@ -872,7 +873,7 @@ def js_data_gen(assemblies, contigs_fpaths, chromosomes_length, output_dirpath, 
     for i, chr in enumerate(chr_names):
         ref_data += 'references_id["' + chr + '"] = ' + str(i) + ';\n'
     for i, chr in enumerate(chr_full_names):
-        if contigs_analyzer.ref_labels_by_chromosomes:
+        if ref_labels_by_chromosomes:
             ref_contigs = [contig for contig in chr_names if contig_names_by_refs[contig] == chr]
         elif len(chr_full_names) == 1:
             ref_contigs = chr_names

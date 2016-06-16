@@ -11,12 +11,14 @@
 
 from __future__ import with_statement
 import platform
+from itertools import repeat
 from os.path import isfile, join
 from libs import qconfig, qutils
 
 # it will be set to actual dirpath after successful compilation
 contig_aligner = None
 contig_aligner_dirpath = None
+ref_labels_by_chromosomes = {}
 
 
 def __all_required_binaries_exist(aligner_dirpath, required_binaries):
@@ -75,3 +77,28 @@ def compile_aligner(logger):
         return True
     logger.error("Compilation of contig aligner software was unsuccessful! QUAST functionality will be limited.")
     return False
+
+
+def check_chr_for_refs(chr1, chr2):
+    return ref_labels_by_chromosomes[chr1] == ref_labels_by_chromosomes[chr2]
+
+
+def get_ref_by_chromosome(chr):
+    return ref_labels_by_chromosomes[chr]
+
+
+def val_to_str(val):
+    if val is None:
+        return '-'
+    else:
+        return str(val)
+
+
+def print_file(all_rows, fpath):
+    colwidths = repeat(0)
+    for row in all_rows:
+        colwidths = [max(len(v), w) for v, w in zip([row['metricName']] + map(val_to_str, row['values']), colwidths)]
+    txt_file = open(fpath, 'a')
+    for row in all_rows:
+        print >> txt_file, '  '.join('%-*s' % (colwidth, cell) for colwidth, cell
+                                     in zip(colwidths, [row['metricName']] + map(val_to_str, row['values'])))

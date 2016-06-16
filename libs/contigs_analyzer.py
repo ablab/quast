@@ -18,98 +18,46 @@
 
 from __future__ import with_statement
 import os
-import copy
-import platform
 import datetime
-from itertools import repeat
 from os.path import isfile, join
 
 import fastaparser
 import shutil
 from libs import reporting, qconfig, qutils, ca_utils
+from libs.ca_analyze_misassemblies import process_misassembled_contig, find_all_sv, IndelsInfo, Misassembly, Mapping
+from libs.ca_best_set_selection import get_best_aligns_set
+from libs.ca_utils import print_file, ref_labels_by_chromosomes
 
 from libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
-from qutils import correct_name
+
+
+class NucmerStatus:
+    FAILED = 0
+    OK = 1
+    NOT_ALIGNED = 2
+    ERROR = 3
+
+
+class CAOutput():
+    def __init__(self, stdout_f=None, misassembly_f=None, coords_filtered_f=None, icarus_out_f=None):
+        self.stdout_f = stdout_f
+        self.misassembly_f = misassembly_f
+        self.coords_filtered_f = coords_filtered_f
+        self.icarus_out_f = icarus_out_f
+
+
+class SNP():
+    def __init__(self, ref=None, ctg=None, ref_pos=None, ctg_pos=None, ref_nucl=None, ctg_nucl=None):
+        self.ref_pos = ref_pos
+        self.ctg_pos = ctg_pos
+        self.ref_nucl = ref_nucl
+        self.ctg_nucl = ctg_nucl
+        self.type = 'I' if self.ref_nucl == '.' else ('D' if ctg_nucl == '.' else 'S')
 
 
 def bin_fpath(fname):
     return join(ca_utils.contig_aligner_dirpath, fname)
-
-ref_labels_by_chromosomes = {}
-COMBINED_REF_FNAME = 'combined_reference.fasta'
-
-
-class Misassembly:
-    LOCAL = 0
-    RELOCATION = 1
-    TRANSLOCATION = 2
-    INVERSION = 3
-    INTERSPECTRANSLOCATION = 4  #for --meta, if translocation occurs between chromosomes of different references
-    SCAFFOLD_GAP = 5
-    FRAGMENTED = 6
-
-
-class StructuralVariations(object):
-    def __init__(self):
-        self.inversions = []
-        self.relocations = []
-        self.translocations = []
-
-    def get_count(self):
-        return len(self.inversions) + len(self.relocations) + len(self.translocations)
-
-
-class Mapping(object):
-    def __init__(self, s1, e1, s2, e2, len1, len2, idy, ref, contig):
-        self.s1, self.e1, self.s2, self.e2, self.len1, self.len2, self.idy, self.ref, self.contig = s1, e1, s2, e2, len1, len2, idy, ref, contig
-
-    @classmethod
-    def from_line(cls, line):
-        # line from coords file,e.g.
-        # 4324128  4496883  |   112426   285180  |   172755   172756  |  99.9900  | gi|48994873|gb|U00096.2|	NODE_333_length_285180_cov_221082
-        line = line.split()
-        assert line[2] == line[5] == line[8] == line[10] == '|', line
-        contig = line[12]
-        ref = line[11]
-        s1, e1, s2, e2, len1, len2 = [int(line[i]) for i in [0, 1, 3, 4, 6, 7]]
-        idy = float(line[9])
-        return Mapping(s1, e1, s2, e2, len1, len2, idy, ref, contig)
-
-    def __str__(self):
-        return ' '.join(str(x) for x in [self.s1, self.e1, '|', self.s2, self.e2, '|', self.len1, self.len2, '|', self.idy, '|', self.ref, self.contig])
-
-    def short_str(self):
-        return ' '.join(str(x) for x in [self.s1, self.e1, '|', self.s2, self.e2, '|', self.len1, self.len2])
-
-    def icarus_report_str(self, ambiguity=''):
-        return '\t'.join(str(x) for x in [self.s1, self.e1, self.s2, self.e2, self.ref, self.contig, self.idy, ambiguity])
-
-    def clone(self):
-        return Mapping.from_line(str(self))
-
-    def start(self):
-        """Return start on contig (alsways <= end)"""
-        return min(self.s2, self.e2)
-
-    def end(self):
-        """Return end on contig (alsways >= start)"""
-        return max(self.s2, self.e2)
-
-
-class IndelsInfo(object):
-    def __init__(self):
-        self.mismatches = 0
-        self.insertions = 0
-        self.deletions = 0
-        self.indels_list = []
-
-    def __add__(self, other):
-        self.mismatches += other.mismatches
-        self.insertions += other.insertions
-        self.deletions += other.deletions
-        self.indels_list += other.indels_list
-        return self
 
 
 def clear_files(fpath, nucmer_fpath):
@@ -120,13 +68,6 @@ def clear_files(fpath, nucmer_fpath):
     for ext in ['.delta', '.coords_tmp', '.coords.headless']:
         if os.path.isfile(nucmer_fpath + ext):
             os.remove(nucmer_fpath + ext)
-
-
-class NucmerStatus:
-    FAILED = 0
-    OK = 1
-    NOT_ALIGNED = 2
-    ERROR = 3
 
 
 def run_nucmer(prefix, ref_fpath, contigs_fpath, log_out_fpath, log_err_fpath, index, emem_threads=1):
@@ -191,13 +132,12 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
     icarus_header_cols = ['S1', 'E1', 'S2', 'E2', 'Reference', 'Contig', 'IDY', 'Ambiguous']
     print >> icarus_out_f, '\t'.join(icarus_header_cols)
 
-    misassembly_file = open(misassembly_fpath, 'w')
+    misassembly_f = open(misassembly_fpath, 'w')
 
     logger.info('  ' + qutils.index_to_str(index) + 'Logging to files ' + log_out_fpath +
                 ' and ' + os.path.basename(log_err_fpath) + '...')
     maxun = 10
     epsilon = 0.99
-    smgap = qconfig.extensive_misassembly_threshold
     umt = 0.5  # threshold for misassembled contigs with aligned less than $umt * 100% (Unaligned Missassembled Threshold)
     ort = 0.9  # threshold for skipping aligns that significantly overlaps with adjacent aligns (Overlap Relative Threshold)
     oat = 25   # threshold for skipping aligns that significantly overlaps with adjacent aligns (Overlap Absolute Threshold)
@@ -379,367 +319,6 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
         aligns.setdefault(mapping.contig, []).append(mapping)
     avg_idy = sum_idy / num_idy if num_idy else 0
 
-    #### auxiliary functions ####
-    def distance_between_alignments(align1, align2, pos_strand1, pos_strand2, cyclic_ref_len=None):
-        # returns distance (in reference) between two alignments
-        if pos_strand1 or pos_strand2:            # alignment 1 should be earlier in reference
-            distance = align2.s1 - align1.e1 - 1
-        else:                     # alignment 2 should be earlier in reference
-            distance = align1.s1 - align2.e1 - 1
-        cyclic_moment = False
-        if cyclic_ref_len is not None:
-            cyclic_distance = distance
-            if align1.e1 < align2.e1 and (cyclic_ref_len - align2.e1 + align1.s1 - 1) < smgap:
-                cyclic_distance += cyclic_ref_len * (-1 if pos_strand1 else 1)
-            elif align1.e1 >= align2.e1 and (cyclic_ref_len - align1.e1 + align2.s1 - 1) < smgap:
-                cyclic_distance += cyclic_ref_len * (1 if pos_strand1 else -1)
-            if abs(cyclic_distance) < abs(distance):
-                distance = cyclic_distance
-                cyclic_moment = True
-        return distance, cyclic_moment
-
-    def is_misassembly(align1, align2, cyclic_ref_lens=None, contig_seq=None):
-        #Calculate inconsistency between distances on the reference and on the contig
-        distance_on_contig = min(align2.e2, align2.s2) - max(align1.e2, align1.s2) - 1
-        if cyclic_ref_lens is not None and align1.ref == align2.ref:
-            distance_on_reference, cyclic_moment = distance_between_alignments(align1, align2, align1.s2 < align1.e2,
-                align2.s2 < align2.e2, cyclic_ref_lens[align1.ref])
-        else:
-            distance_on_reference, cyclic_moment = distance_between_alignments(align1, align2, align1.s2 < align1.e2,
-                                                                               align2.s2 < align2.e2,)
-
-        misassembly_internal_overlap = 0
-        if distance_on_contig < 0:
-            if distance_on_reference >= 0:
-                misassembly_internal_overlap = (-distance_on_contig)
-            elif (-distance_on_reference) < (-distance_on_contig):
-                misassembly_internal_overlap = (distance_on_reference - distance_on_contig)
-
-        strand1 = (align1.s2 < align1.e2)
-        strand2 = (align2.s2 < align2.e2)
-        inconsistency = distance_on_reference - distance_on_contig
-        if qconfig.scaffolds and contig_seq and check_is_scaffold_gap(inconsistency, seq, align1, align2):
-            aux_data = {"inconsistency": inconsistency, "distance_on_contig": distance_on_contig,
-                        "misassembly_internal_overlap": misassembly_internal_overlap, "cyclic_moment": cyclic_moment,
-                        "is_sv": False, "is_translocation": False, "is_scaffold_gap": True}
-            return False, aux_data
-        # check for fake translocations (if reference is fragmented)
-        is_translocation = False
-        if align1.ref != align2.ref:
-            if qconfig.is_combined_ref and \
-                    not check_chr_for_refs(align1.ref, align2.ref):
-                is_translocation = True
-            elif qconfig.check_for_fragmented_ref:
-                distance_on_reference = [min(abs(align.e1 - len(references[align.ref])),  abs(align.s1 - 1))
-                                         for align in [align1, align2]]
-                if all([d <= qconfig.MAX_INDEL_LENGTH for d in distance_on_reference]):
-                    inconsistency = sum(distance_on_reference)
-                    strand1 = strand2
-                else:
-                    is_translocation = True
-            else:
-                is_translocation = True
-        aux_data = {"inconsistency": inconsistency, "distance_on_contig": distance_on_contig,
-                    "misassembly_internal_overlap": misassembly_internal_overlap, "cyclic_moment": cyclic_moment,
-                    "is_sv": False, "is_translocation": is_translocation, "is_scaffold_gap": False}
-        if region_struct_variations:
-            #check if it is structural variation
-            is_sv = check_sv(align1, align2, inconsistency, region_struct_variations)
-            if is_sv:
-                aux_data['is_sv'] = True
-                return False, aux_data
-
-        # different chromosomes or large inconsistency (a gap or an overlap) or different strands
-        if align1.ref != align2.ref and not is_translocation:
-            return False, aux_data
-        if align1.ref != align2.ref or \
-                        abs(inconsistency) > smgap or (strand1 != strand2):
-            return True, aux_data
-        else:
-            return False, aux_data
-
-    def check_sv(align1, align2, inconsistency, region_struct_variations):
-        max_error = 100 # smgap / 4  # min(2 * smgap, max(smgap, inconsistency * 0.05))
-        max_gap = smgap / 4
-
-        def __match_ci(pos, sv):  # check whether pos matches confidence interval of sv
-            return sv.s1 - max_error <= pos <= sv.e1 + max_error
-
-        if align2.s1 < align1.s1:
-            align1, align2 = align2, align1
-        if align1.ref != align2.ref:  # translocation
-            for sv in region_struct_variations.translocations:
-                if sv[0].ref == align1.ref and sv[1].ref == align2.ref and \
-                        __match_ci(align1.e1, sv[0]) and __match_ci(align2.s1, sv[1]):
-                    return True
-                if sv[0].ref == align2.ref and sv[1].ref == align1.ref and \
-                        __match_ci(align2.e1, sv[0]) and __match_ci(align1.s1, sv[1]):
-                    return True
-        elif (align1.s2 < align1.e2) != (align2.s2 < align2.e2) and abs(inconsistency) < smgap:
-            for sv in region_struct_variations.inversions:
-                if align1.ref == sv[0].ref and \
-                        (__match_ci(align1.s1, sv[0]) and __match_ci(align2.s1, sv[1])) or \
-                        (__match_ci(align1.e1, sv[0]) and __match_ci(align2.e1, sv[1])):
-                    return True
-        else:
-            variations = region_struct_variations.relocations
-            for index, sv in enumerate(variations):
-                if sv[0].ref == align1.ref and __match_ci(align1.e1, sv[0]):
-                    if __match_ci(align2.s1, sv[1]):
-                        return True
-                    # unite large deletion (relocations only)
-                    prev_end = sv[1].e1
-                    index_variation = index + 1
-                    while index_variation < len(variations) and \
-                                            variations[index_variation][0].s1 - prev_end <= max_gap and \
-                                            variations[index_variation][0].ref == align1.ref:
-                        sv = variations[index_variation]
-                        if __match_ci(align2.s1, sv[1]):
-                            return True
-                        prev_end = sv[1].e1
-                        index_variation += 1
-        return False
-
-    def find_all_sv(bed_fpath):
-        if not bed_fpath:
-            return None
-        region_struct_variations = StructuralVariations()
-        f = open(bed_fpath)
-        for line in f:
-            l = line.split('\t')
-            if len(l) > 6 and not line.startswith('#'):
-                try:
-                    align1 = Mapping(s1=int(l[1]), e1=int(l[2]), ref=correct_name(l[0]), s2=None, e2=None, len1=None, len2=None, idy=None, contig=None)
-                    align2 = Mapping(s1=int(l[4]), e1=int(l[5]),  ref=correct_name(l[3]), s2=None, e2=None, len1=None, len2=None, idy=None, contig=None)
-                    if align1.ref != align2.ref:
-                        region_struct_variations.translocations.append((align1, align2))
-                    elif 'INV' in l[6]:
-                        region_struct_variations.inversions.append((align1, align2))
-                    elif 'DEL' in l[6]:
-                        region_struct_variations.relocations.append((align1, align2))
-                    else:
-                        pass # not supported yet
-                except ValueError:
-                    pass  # incorrect line format
-        return region_struct_variations
-
-    def check_is_scaffold_gap(inconsistency, contig_seq, align1, align2):
-        if abs(inconsistency) <= qconfig.scaffolds_gap_threshold and align1.ref == align2.ref and \
-                is_gap_filled_ns(contig_seq, align1, align2) and (align1.s2 < align1.e2) == (align2.s2 < align2.e2):
-            return True
-        return False
-
-    def exclude_internal_overlaps(align1, align2, i):
-        # returns size of align1.len2 decrease (or 0 if not changed). It is important for cur_aligned_len calculation
-
-        def __shift_start(align, new_start, indent=''):
-            print >> planta_out_f, indent + '%s' % align.short_str(),
-            if align.s2 < align.e2:
-                align.s1 += (new_start - align.s2)
-                align.s2 = new_start
-                align.len2 = align.e2 - align.s2 + 1
-            else:
-                align.e1 -= (new_start - align.e2)
-                align.e2 = new_start
-                align.len2 = align.s2 - align.e2 + 1
-            align.len1 = align.e1 - align.s1 + 1
-            print >> planta_out_f, '--> %s' % align.short_str()
-
-        def __shift_end(align, new_end, indent=''):
-            print >> planta_out_f, indent + '%s' % align.short_str(),
-            if align.s2 < align.e2:
-                align.e1 -= (align.e2 - new_end)
-                align.e2 = new_end
-                align.len2 = align.e2 - align.s2 + 1
-            else:
-                align.s1 += (align.s2 - new_end)
-                align.s2 = new_end
-                align.len2 = align.s2 - align.e2 + 1
-            align.len1 = align.e1 - align.s1 + 1
-            print >> planta_out_f, '--> %s' % align.short_str()
-
-        if qconfig.ambiguity_usage == 'all':
-            return 0
-
-        distance_on_contig = min(align2.e2, align2.s2) - max(align1.e2, align1.s2) - 1
-        if distance_on_contig >= 0:  # no overlap
-            return 0
-        prev_len2 = align1.len2
-        print >> planta_out_f, '\t\t\tExcluding internal overlap of size %d between Alignment %d and %d: ' \
-                               % (-distance_on_contig, i+1, i+2),
-        if qconfig.ambiguity_usage == 'one':  # left only one of two copies (remove overlap from shorter alignment)
-            if align1.len2 >= align2.len2:
-                __shift_start(align2, max(align1.e2, align1.s2) + 1)
-            else:
-                __shift_end(align1, min(align2.e2, align2.s2) - 1)
-        elif qconfig.ambiguity_usage == 'none':  # removing both copies
-            print >> planta_out_f
-            new_end = min(align2.e2, align2.s2) - 1
-            __shift_start(align2, max(align1.e2, align1.s2) + 1, '\t\t\t  ')
-            __shift_end(align1, new_end, '\t\t\t  ')
-        return prev_len2 - align1.len2
-
-    def check_chr_for_refs(chr1, chr2):
-        return ref_labels_by_chromosomes[chr1] == ref_labels_by_chromosomes[chr2]
-
-    def count_not_ns_between_aligns(contig_seq, align1, align2):
-        gap_in_contig = contig_seq[max(align1.e2, align1.s2): min(align2.e2, align2.s2) - 1]
-        return len(gap_in_contig) - gap_in_contig.count('N')
-
-    def is_gap_filled_ns(contig_seq, align1, align2):
-        gap_in_contig = contig_seq[max(align1.e2, align1.s2): min(align2.e2, align2.s2) - 1]
-        if len(gap_in_contig) < qconfig.Ns_break_threshold:
-            return False
-        return gap_in_contig.count('N')/len(gap_in_contig) > 0.95
-
-    def process_misassembled_contig(sorted_aligns, cyclic, aligned_lengths, region_misassemblies, reg_lens, ref_aligns,
-                                    ref_features, contig_seq, references_misassemblies, region_struct_variations, misassemblies_matched_sv):
-        misassembly_internal_overlap = 0
-        prev = sorted_aligns[0]
-        cur_aligned_length = prev.len2
-        is_misassembled = False
-        contig_is_printed = False
-        indels_info = IndelsInfo()
-        contig_aligned_length = 0  # for internal debugging purposes
-        next_align = sorted_aligns[0]
-
-        for i in range(len(sorted_aligns) - 1):
-            is_extensive_misassembly, aux_data = is_misassembly(sorted_aligns[i], sorted_aligns[i+1],
-                reg_lens if cyclic else None, contig_seq)
-            inconsistency = aux_data["inconsistency"]
-            distance_on_contig = aux_data["distance_on_contig"]
-            misassembly_internal_overlap += aux_data["misassembly_internal_overlap"]
-            cyclic_moment = aux_data["cyclic_moment"]
-            is_translocation = aux_data["is_translocation"]
-            print >> icarus_out_f, next_align.icarus_report_str()
-            next_align = copy.deepcopy(sorted_aligns[i + 1])
-            if sorted_aligns[i].ref == sorted_aligns[i+1].ref or (sorted_aligns[i].ref != sorted_aligns[i+1].ref and is_translocation):
-                cur_aligned_length -= exclude_internal_overlaps(sorted_aligns[i], sorted_aligns[i+1], i)
-            is_sv = aux_data["is_sv"]
-
-            print >> planta_out_f, '\t\t\tReal Alignment %d: %s' % (i+1, str(sorted_aligns[i]))
-
-            ref_aligns.setdefault(sorted_aligns[i].ref, []).append(sorted_aligns[i])
-            print >> coords_filtered_file, str(prev)
-            if is_sv:
-                print >> planta_out_f, '\t\t\t  Fake misassembly (caused by structural variations of genome) between these two alignments'
-                print >> icarus_out_f, 'fake misassembly (structural variations of genome)'
-                misassemblies_matched_sv += 1
-
-            elif qconfig.scaffolds and aux_data["is_scaffold_gap"]:
-                print >> planta_out_f, '\t\t\t  Fake misassembly between these two alignments: scaffold gap size misassembly,',
-                print >> planta_out_f, 'gap length difference =', inconsistency
-                region_misassemblies.append(Misassembly.SCAFFOLD_GAP)
-                print >> icarus_out_f, 'fake misassembly (scaffold gap size misassembly)'
-
-            elif is_extensive_misassembly and not is_sv:
-                is_misassembled = True
-                aligned_lengths.append(cur_aligned_length)
-                contig_aligned_length += cur_aligned_length
-                cur_aligned_length = 0
-                if not contig_is_printed:
-                    print >> misassembly_file, sorted_aligns[i].contig
-                    contig_is_printed = True
-                print >> misassembly_file, 'Extensive misassembly (',
-                print >> planta_out_f, '\t\t\t  Extensive misassembly (',
-                if sorted_aligns[i].ref != sorted_aligns[i+1].ref and is_translocation:
-                    if qconfig.is_combined_ref and \
-                            not check_chr_for_refs(sorted_aligns[i].ref, sorted_aligns[i+1].ref):  # if chromosomes from different references
-                            region_misassemblies.append(Misassembly.INTERSPECTRANSLOCATION)
-                            ref1, ref2 = ref_labels_by_chromosomes[sorted_aligns[i].ref], ref_labels_by_chromosomes[sorted_aligns[i+1].ref]
-                            references_misassemblies[ref1][ref2] += 1
-                            references_misassemblies[ref2][ref1] += 1
-                            print >> planta_out_f, 'interspecies translocation',
-                            print >> misassembly_file, 'interspecies translocation',
-                            print >> icarus_out_f, 'interspecies translocation'
-                    else:
-                        region_misassemblies.append(Misassembly.TRANSLOCATION)
-                        print >> planta_out_f, 'translocation',
-                        print >> misassembly_file, 'translocation',
-                        print >> icarus_out_f, 'translocation'
-                elif abs(inconsistency) > smgap:
-                    region_misassemblies.append(Misassembly.RELOCATION)
-                    print >> planta_out_f, 'relocation, inconsistency =', inconsistency,
-                    print >> misassembly_file, 'relocation, inconsistency =', inconsistency,
-                    print >> icarus_out_f, 'relocation, inconsistency =', inconsistency
-                else: #if strand1 != strand2:
-                    region_misassemblies.append(Misassembly.INVERSION)
-                    print >> planta_out_f, 'inversion',
-                    print >> misassembly_file, 'inversion',
-                    print >> icarus_out_f, 'inversion'
-                print >> planta_out_f, ') between these two alignments'
-                print >> misassembly_file, ') between %s %s and %s %s' % (sorted_aligns[i].s2, sorted_aligns[i].e2,
-                                                                          sorted_aligns[i+1].s2, sorted_aligns[i+1].e2)
-                ref_features.setdefault(sorted_aligns[i].ref, {})[sorted_aligns[i].e1] = 'M'
-                ref_features.setdefault(sorted_aligns[i+1].ref, {})[sorted_aligns[i+1].e1] = 'M'
-
-            elif not is_sv:
-                if inconsistency == 0 and cyclic_moment:
-                    print >> planta_out_f, '\t\t\t  Fake misassembly (caused by linear representation of circular genome) between these two alignments'
-                    print >> icarus_out_f, 'fake misassembly (linear representation of circular genome)'
-                elif qconfig.check_for_fragmented_ref and sorted_aligns[i].ref != sorted_aligns[i+1].ref and not is_translocation:
-                    print >> planta_out_f, '\t\t\t  Fake misassembly (caused by fragmentation of reference genome) between these two alignments'
-                    region_misassemblies.append(Misassembly.FRAGMENTED)
-                    print >> icarus_out_f, 'fake misassembly (fragmentation of reference genome)'
-                elif abs(inconsistency) <= qconfig.MAX_INDEL_LENGTH and \
-                        count_not_ns_between_aligns(contig_seq, sorted_aligns[i], sorted_aligns[i+1]) <= qconfig.MAX_INDEL_LENGTH:
-                    print >> planta_out_f, '\t\t\t  Fake misassembly between these two alignments: inconsistency =', inconsistency,
-                    print >> planta_out_f, ', gap in the contig is small or absent or filled mostly with Ns',
-                    not_ns_number = count_not_ns_between_aligns(contig_seq, sorted_aligns[i], sorted_aligns[i+1])
-                    if inconsistency == 0:
-                        print >> planta_out_f, '(no indel; %d mismatches)' % not_ns_number
-                        indels_info.mismatches += not_ns_number
-                    else:
-                        indel_length = abs(inconsistency)
-                        indel_class = 'short' if indel_length <= qconfig.SHORT_INDEL_THRESHOLD else 'long'
-                        indel_type = 'insertion' if inconsistency < 0 else 'deletion'
-                        mismatches = max(0, not_ns_number - indel_length)
-                        print >> planta_out_f, '(%s indel: %s of length %d; %d mismatches)' % \
-                                               (indel_class, indel_type, indel_length, mismatches)
-                        indels_info.indels_list.append(indel_length)
-                        if indel_type == 'insertion':
-                            indels_info.insertions += indel_length
-                        else:
-                            indels_info.deletions += indel_length
-                        indels_info.mismatches += mismatches
-                    print >> icarus_out_f, 'fake misassembly (gap in the contig is small or filled with Ns)'
-                else:
-                    if qconfig.strict_NA:
-                        aligned_lengths.append(cur_aligned_length)
-                        contig_aligned_length += cur_aligned_length
-                        cur_aligned_length = 0
-
-                    if inconsistency < 0:
-                        #There is an overlap between the two alignments, a local misassembly
-                        print >> planta_out_f, '\t\t\t  Overlap between these two alignments (local misassembly).',
-                    else:
-                        #There is a small gap between the two alignments, a local misassembly
-                        print >> planta_out_f, '\t\t\t  Gap between these two alignments (local misassembly).',
-                        #print >> plantafile_out, 'Distance on contig =', distance_on_contig, ', distance on reference =', distance_on_reference
-                    print >> planta_out_f, 'Inconsistency =', inconsistency, "(linear representation of circular genome)" if cyclic_moment else "",\
-                        "(fragmentation of reference genome)" if sorted_aligns[i].ref != sorted_aligns[i+1].ref else ""
-                    print >> icarus_out_f, 'local misassembly'
-                    region_misassemblies.append(Misassembly.LOCAL)
-
-            prev = sorted_aligns[i+1]
-            cur_aligned_length += prev.len2 - (-distance_on_contig if distance_on_contig < 0 else 0)
-
-        #Record the very last alignment
-        i = len(sorted_aligns) - 1
-        print >> planta_out_f, '\t\t\tReal Alignment %d: %s' % (i + 1, str(sorted_aligns[i]))
-        print >> icarus_out_f, next_align.icarus_report_str()
-        ref_aligns.setdefault(sorted_aligns[i].ref, []).append(sorted_aligns[i])
-        print >> coords_filtered_file, str(prev)
-        aligned_lengths.append(cur_aligned_length)
-        contig_aligned_length += cur_aligned_length
-
-        assert contig_aligned_length <= len(contig_seq), "Internal QUAST bug: contig aligned length is greater than " \
-                                                         "contig length (contig: %s, len: %d, aligned: %d)!" % \
-                                                         (sorted_aligns[0].contig, contig_aligned_length, len(contig_seq))
-
-        return is_misassembled, misassembly_internal_overlap, references_misassemblies, indels_info, misassemblies_matched_sv
-    #### end of aux. functions ###
-
     # Loading the reference sequences
     print >> planta_out_f, 'Loading reference...'  # TODO: move up
     references = {}
@@ -753,14 +332,6 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
     #Loading the SNP calls
     if qconfig.show_snps:
         print >> planta_out_f, 'Loading SNPs...'
-
-    class SNP():
-        def __init__(self, ref=None, ctg=None, ref_pos=None, ctg_pos=None, ref_nucl=None, ctg_nucl=None):
-            self.ref_pos = ref_pos
-            self.ctg_pos = ctg_pos
-            self.ref_nucl = ref_nucl
-            self.ctg_nucl = ctg_nucl
-            self.type = 'I' if self.ref_nucl == '.' else ('D' if ctg_nucl == '.' else 'S')
 
     if qconfig.show_snps:
         snps = {}
@@ -787,7 +358,7 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
 
     # Loading the regions (if any)
     regions = {}
-    reg_lens = {}
+    ref_lens = {}
     total_reg_len = 0
     total_regions = 0
     print >> planta_out_f, 'Loading regions...'
@@ -795,7 +366,7 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
     print >> planta_out_f, '\tNo regions given, using whole reference.'
     for name, seq in references.iteritems():
         regions.setdefault(name, []).append([1, len(seq)])
-        reg_lens[name] = len(seq)
+        ref_lens[name] = len(seq)
         total_regions += 1
         total_reg_len += len(seq)
     print >> planta_out_f, '\tTotal Regions: %d' % total_regions
@@ -830,6 +401,7 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
     total_indels_info = IndelsInfo()
 
     print >> planta_out_f, 'Analyzing contigs...'
+    ca_output = CAOutput(stdout_f=planta_out_f, misassembly_f=misassembly_f, coords_filtered_f=coords_filtered_file, icarus_out_f=icarus_out_f)
 
     unaligned_file = open(unaligned_fpath, 'w')
     for contig, seq in fastaparser.read_fasta(contigs_fpath):
@@ -935,162 +507,8 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
                 # choose appropriate alignments (to maximize total size of contig alignment and reduce # misassemblies
                 if len(sorted_aligns) > 0:
                     sorted_aligns = sorted(sorted_aligns, key=lambda x: x.end())
-
-                    extensive_penalty = max(50, int(round(min(qconfig.extensive_misassembly_threshold / 4.0, ctg_len * 0.05)))) - 1
-                    local_penalty = max(2, int(round(min(qconfig.MAX_INDEL_LENGTH / 2.0, ctg_len * 0.01)))) - 1
-                    scaffold_gap_penalty = 5
-
-                    critical_number_of_aligns = 200
-                    # trying to optimise the algorithm if the number of possible alignments is large
-                    if len(sorted_aligns) > critical_number_of_aligns:
-                        print >> planta_out_f, '\t\t\tSkipping redundant alignments which can\'t be in the best set of alignments A PRIORI'
-
-                        # FIRST STEP: find solid aligns (which are present in the best selection for sure)
-                        # they should have unique (not covered by other aligns) region of length > 2 * extensive_penalty
-                        min_unique_len = 2 * extensive_penalty
-
-                        class PSA(object):  # PSA stands for Possibly Solid Alignment
-                            def __init__(self, align):
-                                self.align = align
-                                self.unique_start = align.start()
-                                self.unique_end = align.end()
-
-                            def is_solid(self):
-                                return self.unique_end - self.unique_start + 1 > min_unique_len
-
-                            # intersect PSA with align, which is guaranteed to be inside of after this PSA
-                            # return True if switch to the next PSA is needed and False otherwise
-                            def intersect_and_go_next(self, align, solids):
-                                if self.unique_end - align.end() > min_unique_len:  # if enough len on the right side
-                                    if self.is_solid():
-                                        solids.append(self.align)
-                                        return True
-                                self.unique_end = min(self.unique_end, align.start() - 1)
-                                return not self.is_solid()  # if self is not solid anymore we can switch to the next PSA
-
-                        possible_solids = [PSA(align) for align in sorted_aligns if align.len2 > min_unique_len]
-                        solids = []
-                        try:
-                            cur_PSA = possible_solids.pop()
-                            for align in reversed(sorted_aligns):
-                                if align != cur_PSA.align and cur_PSA.intersect_and_go_next(align, solids):
-                                    next_PSA = possible_solids.pop()
-                                    while next_PSA.intersect_and_go_next(cur_PSA.align, solids):
-                                        next_PSA = possible_solids.pop()
-                                    while align != next_PSA.align and next_PSA.intersect_and_go_next(align, solids):
-                                        next_PSA = possible_solids.pop()
-                                    cur_PSA = next_PSA
-                        except IndexError:  # possible_solids is empty
-                            pass
-
-                        # SECOND STEP: remove all aligns which are inside solid ones
-                        if len(solids):
-                            class SolidRegion(object):
-                                def __init__(self, align):
-                                    self.start = align.start()
-                                    self.end = align.end()
-
-                                def include(self, align):
-                                    return self.start <= align.start() and align.end() <= self.end
-
-                            solid_regions = []  # intersection of all solid aligns
-                            cur_region = SolidRegion(solids[0])
-                            for align in solids[1:]:
-                                if align.end() + 1 < cur_region.start:
-                                    solid_regions.append(cur_region)
-                                    cur_region = SolidRegion(align)
-                                else:  # shift start of the current region
-                                    cur_region.start = align.start()
-                            solid_regions.append(cur_region)
-
-                            filtered_aligns = solids
-                            idx = 0
-                            try:
-                                cur_region = solid_regions.pop()
-                                for idx, align in enumerate(sorted_aligns):
-                                    while not cur_region.include(align):
-                                        if align.start() > cur_region.end:
-                                            cur_region = solid_regions.pop()
-                                            continue
-                                        filtered_aligns.append(align)
-                                        break
-                                    else:
-                                        print >> planta_out_f, '\t\tSkipping redundant alignment %s' % (str(align))
-                            except IndexError:  # solid_regions is empty
-                                filtered_aligns += sorted_aligns[idx:]
-
-                            sorted_aligns = sorted(filtered_aligns, key=lambda x: x.end())
-
-                    # auxiliary functions
-                    def __get_added_len(set_aligns, cur_align):
-                        last_align_idx = -2
-                        last_align = set_aligns[last_align_idx]
-                        added_right = cur_align.end() - max(cur_align.start(), last_align.end())
-                        added_left = 0
-                        while cur_align.start() < last_align.start():
-                            added_left += last_align.start() - cur_align.start()
-                            last_align_idx -= 1
-                            if -last_align_idx <= len(set_aligns):
-                                prev_start = last_align.start()  # in case of overlapping of old and new last_align
-                                last_align = set_aligns[last_align_idx]
-                                added_left -= max(0, min(prev_start, last_align.end()) - cur_align.start() + 1)
-                            else:
-                                break
-                        return added_right + added_left
-
-                    def __get_score(score, aligns, cyclic_ref_lens, uncovered_len):
-                        if len(aligns) > 1:
-                            added_len = __get_added_len(aligns, aligns[-1])
-                            uncovered_len -= added_len
-                            score += added_len
-                            align1, align2 = aligns[-2], aligns[-1]
-                            is_extensive_misassembly, aux_data = is_misassembly(align1, align2, cyclic_ref_lens, seq)
-                            if is_extensive_misassembly:
-                                score -= extensive_penalty
-                            elif abs(aux_data['inconsistency']) > qconfig.MAX_INDEL_LENGTH and not aux_data['is_scaffold_gap']:
-                                score -= local_penalty
-                            elif aux_data['is_scaffold_gap']:
-                                score -= scaffold_gap_penalty
-                        else:
-                            score += aligns[-1].len2
-                            uncovered_len -= aligns[-1].len2
-                        return score, uncovered_len
-
-                    class ScoredAlignSet(object):
-                        def __init__(self, score, indexes, uncovered):
-                            self.score = score
-                            self.indexes = indexes
-                            self.uncovered = uncovered
-                    # end of auxiliary functions
-
-                    all_scored_sets = [ScoredAlignSet(0, [], ctg_len)]
-                    max_score = 0
-                    best_set = []
-
-                    for idx, align in enumerate(sorted_aligns):
-                        cur_max_score = 0
-                        new_scored_set = None
-                        sets_to_remove = []
-                        for scored_set in all_scored_sets:
-                            if (scored_set.score + align.len2) > cur_max_score:  # otherwise this set can't be the best with current align
-                                cur_set_aligns = [sorted_aligns[i] for i in scored_set.indexes] + [align]
-                                score, uncovered = __get_score(scored_set.score, cur_set_aligns,
-                                                               reg_lens if cyclic else None, scored_set.uncovered)
-                                if score + uncovered < max_score:
-                                    sets_to_remove.append(scored_set)
-                                elif score > cur_max_score:
-                                    cur_max_score = score
-                                    new_scored_set = ScoredAlignSet(score, scored_set.indexes + [idx], uncovered)
-                        for bad_set in sets_to_remove:
-                            all_scored_sets.remove(bad_set)
-                        if new_scored_set:
-                            all_scored_sets.append(new_scored_set)
-                            if cur_max_score > max_score:
-                                max_score = cur_max_score
-                                best_set = new_scored_set.indexes
-
-                    # save best selection to real aligns and skip others (as redundant)
-                    real_aligns = list([sorted_aligns[i] for i in best_set])
+                    real_aligns = get_best_aligns_set(sorted_aligns, ctg_len, planta_out_f, seq,
+                                                      cyclic_ref_lens=ref_lens if cyclic else None, region_struct_variations=region_struct_variations)
                     if len(sorted_aligns) > len(real_aligns):
                         print >> planta_out_f, '\t\t\tSkipping redundant alignments after choosing the best set of alignments'
                         for align in sorted_aligns:
@@ -1135,7 +553,7 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
                     ref_aligns.setdefault(the_only_align.ref, []).append(the_only_align)
                 else:
                     #Sort real alignments by position on the contig
-                    sorted_aligns = sorted(real_aligns, key=lambda x: (min(x.s2, x.e2), max(x.s2, x.e2)))
+                    sorted_aligns = sorted(real_aligns, key=lambda x: (x.start(), x.end()))
 
                     #Extra skipping of redundant alignments (fully or almost fully covered by adjacent alignments)
                     if len(sorted_aligns) >= 3:
@@ -1161,7 +579,7 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
                             else:
                                 prev_end = max(sorted_aligns[i].s2, sorted_aligns[i].e2)
                         if was_extra_skip:
-                            sorted_aligns = sorted(real_aligns, key=lambda x: (min(x.s2, x.e2), max(x.s2, x.e2)))
+                            sorted_aligns = sorted(real_aligns, key=lambda x: (x.start(), x.end()))
 
                     #There is more than one alignment of this contig to the reference
                     print >> planta_out_f, '\t\tThis contig is misassembled. %d total aligns.' % num_aligns
@@ -1171,13 +589,13 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
                     aligned_bases_in_contig = 0
                     last_e2 = 0
                     for cur_align in sorted_aligns:
-                        if max(cur_align.s2, cur_align.e2) <= last_e2:
+                        if cur_align.end() <= last_e2:
                             continue
-                        elif min(cur_align.s2, cur_align.e2) > last_e2:
+                        elif cur_align.start() > last_e2:
                             aligned_bases_in_contig += (abs(cur_align.e2 - cur_align.s2) + 1)
                         else:
-                            aligned_bases_in_contig += (max(cur_align.s2, cur_align.e2) - last_e2)
-                        last_e2 = max(cur_align.s2, cur_align.e2)
+                            aligned_bases_in_contig += (cur_align.end() - last_e2)
+                        last_e2 = cur_align.end()
 
                     #aligned_bases_in_contig = sum(x.len2 for x in sorted_aligns)
                     if aligned_bases_in_contig < umt * ctg_len:
@@ -1206,8 +624,9 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
                         continue
 
                     ### processing misassemblies
-                    is_misassembled, current_mio, references_misassemblies, indels_info, misassemblies_matched_sv = process_misassembled_contig(sorted_aligns, cyclic,
-                        aligned_lengths, region_misassemblies, reg_lens, ref_aligns, ref_features, seq, references_misassemblies, region_struct_variations, misassemblies_matched_sv)
+                    is_misassembled, current_mio, references_misassemblies, indels_info, misassemblies_matched_sv = \
+                        process_misassembled_contig(sorted_aligns, cyclic, aligned_lengths, region_misassemblies, ref_lens,
+                                                    ref_aligns, ref_features, seq, references_misassemblies, region_struct_variations, misassemblies_matched_sv, ca_output)
                     misassembly_internal_overlap += current_mio
                     total_indels_info += indels_info
                     if is_misassembled:
@@ -1765,21 +1184,6 @@ def do(reference, contigs_fpaths, cyclic, output_dir, old_contigs_fpaths, bed_fp
                                          [x[2] for x in statuses_results_lengths_tuples]
     reports = []
 
-    def val_to_str(val):
-        if val is None:
-            return '-'
-        else:
-            return str(val)
-
-    def print_file(all_rows, ref_num, fpath):
-        colwidths = repeat(0)
-        for row in all_rows:
-            colwidths = [max(len(v), w) for v, w in zip([row['metricName']] + map(val_to_str, row['values']), colwidths)]
-        txt_file = open(fpath, 'a')
-        for row in all_rows:
-            print >> txt_file, '  '.join('%-*s' % (colwidth, cell) for colwidth, cell
-                                         in zip(colwidths, [row['metricName']] + map(val_to_str, row['values'])))
-
     if qconfig.is_combined_ref:
         ref_misassemblies = [result['istranslocations_by_refs'] if result else [] for result in results]
         if ref_misassemblies:
@@ -1800,7 +1204,7 @@ def do(reference, contigs_fpaths, cyclic, output_dir, old_contigs_fpaths, bed_fp
                         all_rows.append(row)
                     misassembly_by_ref_fpath = os.path.join(output_dir, 'interspecies_translocations_by_refs_%s.info' % assembly_name)
                     print >> open(misassembly_by_ref_fpath, 'w'), 'Number of interspecies translocations by references: \n'
-                    print_file(all_rows, len(all_refs), misassembly_by_ref_fpath)
+                    print_file(all_rows, misassembly_by_ref_fpath)
 
                     print >> open(misassembly_by_ref_fpath, 'a'), '\nReferences: '
                     for ref_num, ref in enumerate(all_refs):

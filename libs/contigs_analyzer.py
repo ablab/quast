@@ -180,9 +180,14 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
     log_err_fpath = os.path.join(output_dirpath, qconfig.contig_report_fname_pattern % assembly_label + '.stderr')
     icarus_out_fpath = os.path.join(output_dirpath, qconfig.icarus_report_fname_pattern % assembly_label)
     misassembly_fpath = os.path.join(output_dirpath, qconfig.contig_report_fname_pattern % assembly_label + '.mis_contigs.info')
-    planta_out_f = open(log_out_fpath, 'w')
-    planta_err_f = open(log_err_fpath, 'w')
-    icarus_out_f = open(icarus_out_fpath, 'w')
+
+    for out_fpath in [log_out_fpath, log_err_fpath, icarus_out_fpath]:
+        if isfile(out_fpath):
+            os.remove(out_fpath)
+
+    planta_out_f = open(log_out_fpath, 'a')
+    planta_err_f = open(log_err_fpath, 'a')
+    icarus_out_f = open(icarus_out_fpath, 'a')
     icarus_header_cols = ['S1', 'E1', 'S2', 'E2', 'Reference', 'Contig', 'IDY', 'Ambiguous']
     print >> icarus_out_f, '\t'.join(icarus_header_cols)
 

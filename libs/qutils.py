@@ -242,3 +242,13 @@ def cat_files(in_fnames, out_fname):
                 with open(fname) as infile:
                     for line in infile:
                         outfile.write(line)
+
+
+def is_float(value):
+    try:
+        float(value)
+        return True
+    except ValueError:
+        return False
+    except TypeError:
+        return False

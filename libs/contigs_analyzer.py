@@ -572,7 +572,7 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
                 __shift_start(align2, max(align1.e2, align1.s2) + 1)
             else:
                 __shift_end(align1, min(align2.e2, align2.s2) - 1)
-        else:  # ambiguity_usage == 'none':  removing both copies
+        elif qconfig.ambiguity_usage == 'none':  # removing both copies
             print >> planta_out_f
             new_end = min(align2.e2, align2.s2) - 1
             __shift_start(align2, max(align1.e2, align1.s2) + 1, '\t\t\t  ')
@@ -862,15 +862,15 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
 
                 #Continue grabbing alignments while length and identity are identical
                 #while sorted_aligns and top_len == sorted_aligns[0].len2 and top_id == sorted_aligns[0].idy:
-                while sorted_aligns and ((sorted_aligns[0].len2 * sorted_aligns[0].idy) / (top_len * top_id) > epsilon):
+                while sorted_aligns and (sorted_aligns[0].len2 * sorted_aligns[0].idy >= qconfig.ambiguity_score * top_len * top_id):
                     top_aligns.append(sorted_aligns[0])
                     sorted_aligns = sorted_aligns[1:]
 
-                #Mark other alignments as ambiguous
-                while sorted_aligns:
-                    ambig = sorted_aligns.pop()
-                    print >> planta_out_f, '\t\tMarking as insignificant: %s' % str(ambig) # former ambiguous
-                    # Kolya: removed redundant code about $ref (for gff AFAIU)
+                #Mark other alignments as insignificant (former ambiguous)
+                if sorted_aligns:
+                    print >> planta_out_f, '\t\tSkipping these alignments as insignificant (option --ambiguity-score is set to "%s"):' % str(qconfig.ambiguity_score)
+                    for align in sorted_aligns:
+                        print >> planta_out_f, '\t\t\tSkipping alignment ', align
 
                 if len(top_aligns) == 1:
                     #There is only one top align, life is good
@@ -894,23 +894,23 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
                     if qconfig.ambiguity_usage == "none":
                         print >> planta_out_f, '\t\tSkipping these alignments (option --ambiguity-usage is set to "none"):'
                         for align in top_aligns:
-                            print >> planta_out_f, '\t\tSkipping alignment ', align
+                            print >> planta_out_f, '\t\t\tSkipping alignment ', align
                     elif qconfig.ambiguity_usage == "one":
                         print >> planta_out_f, '\t\tUsing only first of these alignment (option --ambiguity-usage is set to "one"):'
-                        print >> planta_out_f, '\t\tAlignment: %s' % str(top_aligns[0])
+                        print >> planta_out_f, '\t\t\tAlignment: %s' % str(top_aligns[0])
                         print >> icarus_out_f, top_aligns[0].icarus_report_str()
                         ref_aligns.setdefault(top_aligns[0].ref, []).append(top_aligns[0])
                         aligned_lengths.append(top_aligns[0].len2)
                         print >> coords_filtered_file, str(top_aligns[0])
                         top_aligns = top_aligns[1:]
                         for align in top_aligns:
-                            print >> planta_out_f, '\t\tSkipping alignment ', align
+                            print >> planta_out_f, '\t\t\tSkipping alignment ', align
                     elif qconfig.ambiguity_usage == "all":
                         print >> planta_out_f, '\t\tUsing all these alignments (option --ambiguity-usage is set to "all"):'
                         # we count only extra bases, so we shouldn't include bases in the first alignment
                         first_alignment = True
                         while len(top_aligns):
-                            print >> planta_out_f, '\t\tAlignment: %s' % str(top_aligns[0])
+                            print >> planta_out_f, '\t\t\tAlignment: %s' % str(top_aligns[0])
                             print >> icarus_out_f, top_aligns[0].icarus_report_str(ambiguity=True)
                             ref_aligns.setdefault(top_aligns[0].ref, []).append(top_aligns[0])
                             if first_alignment:

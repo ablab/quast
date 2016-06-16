@@ -38,7 +38,7 @@ long_options = "test test-no-ref test-sv output-dir= save-json-to= genes= operon
                "gene-thresholds= err-fpath= save-json gage eukaryote glimmer no-plots no-html no-check no-check-meta combined-ref no-gc help debug "\
                "ambiguity-usage= scaffolds threads= min-cluster= min-alignment= est-ref-size= use-all-alignments gene-finding "\
                "strict-NA meta labels= help-hidden no-snps fast max-ref-number= extensive-mis-size= plots-format= " \
-               "fragmented significant-part-size= unique-mapping no-sv no-icarus " \
+               "fragmented significant-part-size= unique-mapping no-sv no-icarus ambiguity-score= " \
                "references-list= sv-bedpe= reads1= reads2= memory-efficient silent version colors= ls=".split()
 short_options = "o:G:O:R:t:m:J:jehvda:c:ufl:Lx:i:s1:2:"
 
@@ -51,6 +51,7 @@ with_gage = False
 prokaryote = True  # former cyclic
 gene_finding = False
 ambiguity_usage = 'one'
+ambiguity_score = 0.99
 use_all_alignments = False
 max_threads = None
 min_cluster = 65
@@ -275,10 +276,13 @@ def usage(show_hidden=False, meta=False, short=True):
         print >> sys.stderr, "                                      By default, QUAST filters Nucmer\'s alignments to keep only best ones"
         print >> sys.stderr, "-i  --min-alignment <int>             Nucmer's parameter: the minimum alignment length [default: %s]" % min_alignment
         print >> sys.stderr, "-a  --ambiguity-usage <none|one|all>  Use none, one, or all alignments (or aligned fragments internal overlaps) of a contig"
-        print >> sys.stderr, "                                      when all of them are equally good. [default: %s]" % ambiguity_usage
+        print >> sys.stderr, "                                      when all of them are almost equally good (see --ambiguity-score) [default: %s]" % ambiguity_usage
+        print >> sys.stderr, "    --ambiguity-score <float>         Score S for defining equally good alignments of a single contig. All alignments are sorted "
+        print >> sys.stderr, "                                      by decreasing LEN * IDY% value. All alignments with LEN * IDY% < S * best(LEN * IDY%%) are "
+        print >> sys.stderr, "                                      discarded. S should be between 0.0 and 1.0 [default: %.2f]" % ambiguity_score
         if meta:
-            print >> sys.stderr, "    --unique-mapping                  Use only one alignment of a contig, when it maps to multiple references (MetaQUAST only),"
-            print >> sys.stderr, "                                      i.e. force --ambiguity-usage=one for the combined reference (default is 'all')"
+            print >> sys.stderr, "    --unique-mapping                  Disable --ambiguity-usage=all for the combined reference run,"
+            print >> sys.stderr, "                                      i.e. use user-specified or default ('%s') value of --ambiguity-usage" % ambiguity_usage
         print >> sys.stderr, "    --strict-NA                       Break contigs in any misassembly event when compute NAx and NGAx"
         print >> sys.stderr, "                                      By default, QUAST breaks contigs only by extensive misassemblies (not local ones)"
         print >> sys.stderr, "-x  --extensive-mis-size  <int>       Lower threshold for extensive misassembly size. All relocations with inconsistency"

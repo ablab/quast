@@ -489,6 +489,8 @@ def main(args):
             pass
         elif opt in ('-a', "--ambiguity-usage"):
             pass
+        elif opt == '--ambiguity-score':
+            pass
         elif opt == '--unique-mapping':
             qconfig.unique_mapping = True
             __remove_from_quast_py_args(quast_py_args, opt, arg)
@@ -679,7 +681,7 @@ def main(args):
     else:
         json_texts = None
     return_code, total_num_notifications, assemblies, labels = \
-        _start_quast_main(run_name, quast_py_args + ["--ambiguity-usage"] + (['one'] if qconfig.unique_mapping else ['all']),
+        _start_quast_main(run_name, quast_py_args + ([] if qconfig.unique_mapping else ["--ambiguity-usage", 'all']),
         assemblies=assemblies,
         reference_fpath=combined_ref_fpath,
         output_dirpath=combined_output_dirpath,
@@ -717,7 +719,7 @@ def main(args):
             logger.main_info()
             logger.main_info('Starting quast.py ' + run_name + '...')
             return_code, total_num_notifications, assemblies, labels = \
-                _start_quast_main(run_name, quast_py_args + ["--ambiguity-usage"] + (['one'] if qconfig.unique_mapping else ['all']),
+                _start_quast_main(run_name, quast_py_args + ([] if qconfig.unique_mapping else ["--ambiguity-usage", 'all']),
                 assemblies=assemblies,
                 reference_fpath=combined_ref_fpath,
                 output_dirpath=combined_output_dirpath,

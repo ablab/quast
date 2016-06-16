@@ -542,6 +542,17 @@ def main(args):
         elif opt in ('-a', "--ambiguity-usage"):
             if arg in ["none", "one", "all"]:
                 qconfig.ambiguity_usage = arg
+            else:
+                logger.error("incorrect value for --ambiguity-usage (%s)! "
+                             "Please specify 'none', 'one', or 'all'." % arg,
+                             to_stderr=True, exit_with_code=2)
+        elif opt == '--ambiguity-score':
+            if qutils.is_float(arg) and 0.0 <= float(arg) <= 1.0:
+                qconfig.ambiguity_score = float(arg)
+            else:
+                logger.error("incorrect value for --ambiguity-score (%s)! "
+                             "Please specify a float number between 0.0 and 1.0." % arg,
+                             to_stderr=True, exit_with_code=2)
 
         elif opt in ('-u', "--use-all-alignments"):
             qconfig.use_all_alignments = True
@@ -552,7 +563,7 @@ def main(args):
         elif opt in ('-x', "--extensive-mis-size"):
             if int(arg) <= qconfig.MAX_INDEL_LENGTH:
                 logger.error("--extensive-mis-size should be greater than maximum indel length (%d)!"
-                             % qconfig.MAX_INDEL_LENGTH, 1, to_stderr=True)
+                             % qconfig.MAX_INDEL_LENGTH, 1, to_stderr=True, exit_with_code=2)
             qconfig.extensive_misassembly_threshold = int(arg)
         elif opt == "--significant-part-size":
             qconfig.significant_part_size = int(arg)

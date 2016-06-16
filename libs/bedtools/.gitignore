@@ -1,0 +1,14 @@
+*.o
+*.ai
+.DS_Store
+testingData
+*.pdf
+bin/*
+obj/*
+docs/_build/
+docs/content/images/
+src/utils/version/version_git.h
+.project
+.cproject
+nbproject
+sandbox

@@ -2091,8 +2091,11 @@ THE SOFTWARE.
                                     .attr('target', '_blank')
                                     .style('text-decoration', 'underline')
                                     .style('color', '#7ED5F5');
-                        if (typeof links_to_chromosomes !== 'undefined' && curBlock.chr)
-                            positionLink.text(document.getElementById('position_link' + numBlock).textContent + '(' + curBlock.chr + ')');
+                        if (curBlock.chr) {
+                            if (typeof links_to_chromosomes !== 'undefined')
+                                positionLink.text(document.getElementById('position_link' + numBlock).textContent + '(' + curBlock.chr + ')');
+                            else block.append('span').text('(' + curBlock.chr + ')');
+                        }
                     }
                     else {
                         positionLink.text('unaligned');

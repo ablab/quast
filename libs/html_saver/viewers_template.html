@@ -37,9 +37,9 @@ THE SOFTWARE.
 </div>
 <![endif]-->
 <div class="top-panel">
-	<table class="layout-table">
-		<tr>
-		<td class='layout-table-td'>
+    <table class="layout-table">
+        <tr>
+        <td class="layout-table-td" style="vertical-align: middle;">
             <div class="btn btn-inverse" id="to_main_menu_button">
                 <a href="../icarus.html">Main menu</a>
             </div>
@@ -51,44 +51,62 @@ THE SOFTWARE.
                     <b>QUAST Contig Browser</b>
                 </p>
             </div>
-		</td>
+        </td>
         <td class="layout-table-td">
             <div id='controls_panel'>
-                <span style="white-space: nowrap;">
-                    Move
-                    <button id="left_shift" class="btn btn-inverse"><<</button>
-                    <button id="left" class="btn btn-inverse"><</button>
-                    <button id="right" class="btn btn-inverse">></button>
-                    <button id="right_shift" class="btn btn-inverse">>></button>
-                </span>
-                <span style="white-space: nowrap; margin-left: 7px">
-                    zoom
-                    <button id="zoom_in_5" class="btn btn-inverse">+<span class="rhs"></span>5x</button>
-                    <button id="zoom_in" class="btn btn-inverse">+<span class="rhs"></span>2x</button>
-                    <button id="zoom_out" class="btn btn-inverse">–<span class="rhs"></span>2x</button>
-                    <button id="zoom_out_5" class="btn btn-inverse">–<span class="rhs"></span>5x</button>
-                </span>
-                <br>
-                <span style="white-space: nowrap;">
+            <table class="controls_table">
+                <tr>
+                    <td rowspan="2" style="vertical-align: middle;">
+                        <span style="white-space: nowrap;">
+                            Move
+                            <button id="left_shift" class="btn btn-inverse"><<</button>
+                            <button id="left" class="btn btn-inverse"><</button>
+                            <button id="right" class="btn btn-inverse">></button>
+                            <button id="right_shift" class="btn btn-inverse">>></button>
+                        </span>
+                        <span style="white-space: nowrap; margin-left: 7px">
+                            zoom
+                            <button id="zoom_in_5" class="btn btn-inverse">+<span class="rhs"></span>5x</button>
+                            <button id="zoom_in" class="btn btn-inverse">+<span class="rhs"></span>2x</button>
+                            <button id="zoom_out" class="btn btn-inverse">–<span class="rhs"></span>2x</button>
+                            <button id="zoom_out_5" class="btn btn-inverse">–<span class="rhs"></span>5x</button>
+                        </span>
+                    </td>
+                    <td>
+                        <div class="coords_text_div">
+                            start:
+                        </div>
+                    </td>
+                    <td>
+                        <div class="coords_div">
+                            <select id="select_chr_start" style="display: none"></select>
+                            <input class="coords_textbox" id="input_coords_start" type="text"/>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <div class="coords_text_div">
+                            end:
+                        </div>
+                    </td>
+                    <td>
+                        <div class="coords_div">
+                            <select id="select_chr_end" style="display: none"></select>
+                            <input class="coords_textbox" id="input_coords_end" type="text"/>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+                <div class="text_div" style="clear: left">
                     {{ size_threshold }}
-                </span>
-                <span id="misassemblies_selector_panel">
+                </div>
+                <div class="text_div">
                     {{ ms_selector }}
-                </span>
-			</div>
-            <div class="coords_div">
-                <span class="coords_span">
-                    start:&nbsp<select id="select_chr_start" style="display: none"/>
-                    <input class="coords_textbox" id="input_coords_start" type="text"/>
-                </span><br><br>
-                <span class="coords_span">
-                    end:&nbsp&nbsp<select id="select_chr_end" style="display: none"/>
-                    <input class="coords_textbox" id="input_coords_end" type="text"/>
-                </span>
-                <br>
+                </div>
             </div>
-		</tr>
-	</table>
+        </tr>
+    </table>
 </div>
 <div class="content" style="padding-bottom: 0;">
     {{ reference }}

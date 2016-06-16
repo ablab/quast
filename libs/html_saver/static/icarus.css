@@ -475,6 +475,16 @@ path {
     color: #cdcdcd;
 }
 
+.controls_table {
+    border-spacing: 0;
+}
+
+.controls_table td {
+    height: 21px;
+    position: relative;
+    min-width: 50px;
+}
+
 /*.layout-table {*/
     /*max-width: 940px;*/
 /*}*/
@@ -514,15 +524,22 @@ path {
     padding-top: 15px;
 }
 
-.coords_div {
-    float:left;
-    margin-top:5px;
-    margin-left: 50px;
+.text_div {
+    color: white;
 }
 
-.coords_span {
-    white-space: nowrap;
-    margin-left: 10px;
+.coords_text_div {
+    top: -5px;
+    left: 0;
+    color: white;
+    margin-left: 20px;
+    overflow-y: hidden;
+}
+
+.coords_div {
+    top: 2px;
+    left: 0;
+    overflow-y: hidden;
 }
 
 .coords_textbox {

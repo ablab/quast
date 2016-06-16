@@ -279,8 +279,8 @@ def make_output_dir(output_dir_path):
         os.makedirs(output_dir_path)
 
 
-def do(contigs_fpaths, contig_report_fpath_pattern, output_dirpath, ref_fpath, cov_fpath=None, stdout_pattern=None,
-       find_similar=True, features=None, json_output_dir=None):
+def do(contigs_fpaths, contig_report_fpath_pattern, output_dirpath, ref_fpath, cov_fpath=None,  physical_cov_fpath=None,
+       stdout_pattern=None, find_similar=True, features=None, json_output_dir=None):
     make_output_dir(output_dirpath)
 
     lists_of_aligned_blocks = []
@@ -348,7 +348,7 @@ def do(contigs_fpaths, contig_report_fpath_pattern, output_dirpath, ref_fpath, c
         icarus_html_fpath = js_data_gen(assemblies, contigs_fpaths, reference_chromosomes,
                     output_dirpath, structures_by_labels, ref_fpath=ref_fpath, stdout_pattern=stdout_pattern,
                     contigs_by_assemblies=contigs_by_assemblies, features_data=features_data, cov_fpath=cov_fpath,
-                    json_output_dir=json_output_dir)
+                    physical_cov_fpath=physical_cov_fpath, json_output_dir=json_output_dir)
     else:
         icarus_html_fpath = None
 
@@ -617,9 +617,23 @@ def parse_features_data(features, cumulative_ref_lengths, ref_names):
     return features_data
 
 
-def save_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, chr_lengths, data_str, chr_to_aligned_blocks,
+def format_cov_data(cov_data, max_depth, chr, cov_data_name, max_depth_name):
+    data = []
+    data.append('var ' + cov_data_name + ' = {};')
+    data.append('var ' + max_depth_name + ' = {};')
+    if cov_data[chr]:
+        chr_max_depth = max_depth[chr]
+        data.append(max_depth_name + '["' + chr + '"] = ' + str(chr_max_depth) + ';')
+        data.append(cov_data_name + '["' + chr + '"] = [ ')
+        for e in cov_data[chr]:
+            data.append(str(e) + ',')
+        data[-1] = data[-1][:-1] + '];'
+    return data
+
+
+def save_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, data_str, chr_to_aligned_blocks,
                                     structures_by_labels, output_dir_path=None, json_output_dir=None, ref_data=None, features_data=None,
-                                    assemblies_data=None, cov_data=None, not_covered=None, max_depth=None):
+                                    assemblies_data=None, cov_data=None, physical_cov_data=None, max_depth=None, physical_max_depth=None):
     html_name = chr
     if len(chr_full_names) == 1:
         html_name = qconfig.one_alignment_viewer_name
@@ -761,23 +775,10 @@ def save_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, chr_length
         data_str.append(''.join(links_to_chromosomes))
     if cov_data:
         # adding coverage data
-        data_str.append('var coverage_data = {};')
-        data_str.append('var max_depth = {};')
-        if cov_data[chr]:
-            chr_max_depth = max_depth[chr]
-            data_str.append('max_depth["' + chr + '"] = ' + str(chr_max_depth) + ';')
-            data_str.append('coverage_data["' + chr + '"] = [ ')
-            for e in cov_data[chr]:
-                data_str.append(str(e) + ',')
-            data_str[-1] = data_str[-1][:-1] + '];'
+        data_str.extend(format_cov_data(cov_data, max_depth, chr, 'coverage_data', 'reads_max_depth'))
+    if physical_cov_data:
+        data_str.extend(format_cov_data(physical_cov_data, physical_max_depth, chr, 'physical_coverage_data', 'physical_max_depth'))
 
-        data_str.append('var not_covered = {};')
-        data_str.append('not_covered["' + chr + '"] = [ ')
-        # if len(not_covered[chr]) > 0:
-        #     for e in not_covered[chr]:
-        #         data_str.append('' + e + ','.format(**locals()))
-        #     data_str[-1] = data_str[-1][:-1]
-        data_str[-1] += '];'
     data_str = '\n'.join(data_str)
 
     misassemblies_types = ['relocation', 'translocation', 'inversion', 'interspecies translocation', 'local']
@@ -829,7 +830,8 @@ def get_info_by_chr(chr, aligned_bases_by_chr, chr_sizes, contigs_fpaths, one_ch
 
 
 def js_data_gen(assemblies, contigs_fpaths, chromosomes_length, output_dirpath, structures_by_labels,
-                contigs_by_assemblies, ref_fpath=None, stdout_pattern=None, features_data=None, cov_fpath=None, json_output_dir=None):
+                contigs_by_assemblies, ref_fpath=None, stdout_pattern=None, features_data=None, cov_fpath=None,
+                physical_cov_fpath=None, json_output_dir=None):
     chr_full_names = []
     chr_names = []
     if chromosomes_length and assemblies:
@@ -856,6 +858,7 @@ def js_data_gen(assemblies, contigs_fpaths, chromosomes_length, output_dirpath, 
         chr_full_names = chr_names
 
     cov_data, not_covered, max_depth = parse_cov_fpath(cov_fpath, chr_names, chr_full_names)
+    physical_cov_data, not_covered, physical_max_depth = parse_cov_fpath(physical_cov_fpath, chr_names, chr_full_names)
 
     chr_sizes = {}
     num_contigs = {}
@@ -897,10 +900,11 @@ def js_data_gen(assemblies, contigs_fpaths, chromosomes_length, output_dirpath, 
             l = chromosomes_length[ref_contig]
             data_str.append('chromosomes_len["' + ref_contig + '"] = ' + str(l) + ';')
             aligned_bases_by_chr[chr].extend(aligned_bases[ref_contig])
-        num_misassemblies[chr], aligned_assemblies[chr] = save_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, chr_lengths,
+        num_misassemblies[chr], aligned_assemblies[chr] = save_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs,
                                                           data_str, chr_to_aligned_blocks, structures_by_labels, json_output_dir=json_output_dir,
                                                           ref_data=ref_data, features_data=features_data, assemblies_data=assemblies_data,
-                                                          cov_data=cov_data, not_covered=not_covered, max_depth=max_depth, output_dir_path=output_all_files_dir_path)
+                                                          cov_data=cov_data, physical_cov_data=physical_cov_data,
+                                                          max_depth=max_depth, physical_max_depth=physical_max_depth, output_dir_path=output_all_files_dir_path)
 
     contigs_sizes_str, too_many_contigs = get_contigs_data(contigs_by_assemblies, nx_marks, assemblies_n50, structures_by_labels,
                                                            contig_names_by_refs, chr_names, one_html=len(chr_full_names) == 1)

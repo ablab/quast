@@ -115,7 +115,8 @@ THE SOFTWARE.
     }
 
     var coverageFactor = 9, maxCovDots = chartWidth;
-    var featuresHidden = false, drawCoverage = false, coverageMainHidden = true;
+    var featuresHidden = false, drawCoverage = false;
+    var coverageMainHidden = true, physicalCoverageHidden = true, physicalMiniCoverageHidden = true;
     if (!featuresData || featuresData.features.length == 0)
       featuresHidden = true;
     if (typeof coverage_data != "undefined")
@@ -126,7 +127,7 @@ THE SOFTWARE.
     var spaceAfterMain = 10;
     var spaceAfterTrack = 40;
     var annotationsMainOffsetY = mainHeight + mainScale + (featuresHidden ? 0 : spaceAfterMain);
-    var covMainOffsetY = typeof coverage_data != 'undefined' ? (annotationsMainOffsetY +
+    var covMainOffsetY = drawCoverage ? (annotationsMainOffsetY +
                             (featuresHidden ? spaceAfterMain : spaceAfterTrack)) : annotationsMainOffsetY;
     if (!featuresMainHidden)
         covMainOffsetY += annotationsHeight;
@@ -165,11 +166,14 @@ THE SOFTWARE.
             .attr('class', 'main');
 
     var mainOffsetY = 120;
+    var physCovBtnOffsetY = 25;
 
     var hideBtnAnnotationsMiniOffsetY = annotationsMiniOffsetY + mainOffsetY;
     var hideBtnAnnotationsMainOffsetY = annotationsMainOffsetY + mainOffsetY;
     var hideBtnCoverageMiniOffsetY = covMiniOffsetY + mainOffsetY;
     var hideBtnCoverageMainOffsetY = covMainOffsetY + mainOffsetY;
+    var hideBtnPhysicalMiniCoverageOffsetY = hideBtnCoverageMiniOffsetY + physCovBtnOffsetY;
+    var hideBtnPhysicalCoverageOffsetY = hideBtnCoverageMainOffsetY + physCovBtnOffsetY;
 
     //annotations track
     if (!featuresHidden) {
@@ -926,7 +930,7 @@ THE SOFTWARE.
             getNumberOfContigs(d3.transform(d3.select('#countLine').attr("transform")).translate[0]);
 
         // upd coverage
-        if (drawCoverage && !coverageMainHidden) updateMainCoverage(minExtent, maxExtent, coverageFactor);
+        if (drawCoverage && (!coverageMainHidden || !physicalCoverageHidden)) updateMainCoverage(minExtent, maxExtent, coverageFactor);
 
         linesLabelsLayer.selectAll('.main_labels').remove();
 
@@ -1171,15 +1175,17 @@ THE SOFTWARE.
         p.attr('class', 'click_a_contig_text');
     }
 
-    function addTooltip(feature, tooltipText) {
+    function addTooltip(feature, tooltipText, event) {
         if (!tooltipText)
             tooltipText = feature ? '<strong>' + (feature.name ? feature.name + ',' : '') + '</strong> <span>' +
                           (feature.id ? ' ID=' + feature.id + ',' : '') + ' coordinates: ' + feature.start + '-' + feature.end + '</span>' : '';
+        var eventX = event ? event.x : d3.event.pageX - 50;
+        var eventY = event ? event.y + 5 : d3.event.pageY + 5;
         if (tooltipText && featureTip.html() != tooltipText) {
             featureTip.style('opacity', 1);
             featureTip.html(tooltipText)
-                .style('left', (d3.event.pageX - 50) + 'px')
-                .style('top', (d3.event.pageY + 5) + 'px');
+                .style('left', eventX + 'px')
+                .style('top', eventY + 'px');
         }
         else removeTooltip();
     }
@@ -1229,7 +1235,10 @@ THE SOFTWARE.
             });
         }
         if (!featuresHidden) addAnnotationsTrackButtons();
-        if (drawCoverage) addCovTrackButtons();
+        if (drawCoverage) {
+            addCovTrackButtons();
+            addPhysicalCovTrackButtons();
+        }
         window.onresize = function(){ location.reload(); }
     }
 
@@ -1282,18 +1291,53 @@ THE SOFTWARE.
 
     function addCovTrackButtons() {
         var hideBtnCoverageMini = document.getElementById('hideBtnCovMini');
-        setTrackBtnPos(hideBtnCoverageMini, hideBtnCoverageMiniOffsetY, 'cov', 'mini', true);
         var hideBtnCoverageMain = document.getElementById('hideBtnCovMain');
+        setTrackBtnPos(hideBtnCoverageMini, hideBtnCoverageMiniOffsetY, 'cov', 'mini', true);
         setTrackBtnPos(hideBtnCoverageMain, hideBtnCoverageMainOffsetY, 'cov', 'main', false);
+    }
+
+    function addPhysicalCovTrackButtons() {
+        var hideBtnPhysicalCoverageMini = document.getElementById('hideBtnPhysCovMini');
+        var hideBtnPhysicalCoverageMain = document.getElementById('hideBtnPhysCovMain');
+        setTrackBtnPos(hideBtnPhysicalCoverageMini, hideBtnPhysicalMiniCoverageOffsetY);
+        setTrackBtnPos(hideBtnPhysicalCoverageMain, hideBtnPhysicalCoverageOffsetY);
+        hideBtnPhysicalCoverageMain.style.display = 'none';
+
+        var showCovText = 'Show physical';
+        var hideCovText = 'Hide physical';
+        addPhysCovTooltip(hideBtnPhysicalCoverageMini);
+        addPhysCovTooltip(hideBtnPhysicalCoverageMain);
+
+        hideBtnPhysicalCoverageMini.onclick = function() {
+            physicalMiniCoverageHidden = !physicalMiniCoverageHidden;
+            hideBtnPhysicalCoverageMini.innerHTML = physicalMiniCoverageHidden ? showCovText : hideCovText;
+            togglePhysCoverageMini();
+        };
+        hideBtnPhysicalCoverageMain.onclick = function() {
+            physicalCoverageHidden = !physicalCoverageHidden;
+            hideBtnPhysicalCoverageMain.innerHTML = physicalCoverageHidden ? showCovText : hideCovText;
+            display();
+        };
+    }
+
+    function addPhysCovTooltip(hideBtn) {
+        var physCovDescription = 'Physical coverage is the coverage of the reference by the paired-end fragments,<br>' +
+            'counting the reads and the gap between the paired-end reads as covered.';
+        hideBtn.onmouseover = function() {
+            addTooltip(null, physCovDescription, event);
+        }
+        hideBtn.onmouseout = function() {
+            removeTooltip();
+        }
     }
 
     function addAnnotationsTrackButtons() {
         hideBtnAnnotationsMini = document.getElementById('hideBtnAnnoMini');
-        setTrackBtnPos(hideBtnAnnotationsMini, hideBtnAnnotationsMiniOffsetY, 'features', 'mini', true);
         hideBtnAnnotationsMain = document.getElementById('hideBtnAnnoMain');
+        setTrackBtnPos(hideBtnAnnotationsMini, hideBtnAnnotationsMiniOffsetY, 'features', 'mini', true);
+        setTrackBtnPos(hideBtnAnnotationsMain, hideBtnAnnotationsMainOffsetY + 6, 'features', 'main', !featuresMainHidden);
         if (!featuresMainHidden)
             hideBtnAnnotationsMain.innerHTML = "Hide";
-        setTrackBtnPos(hideBtnAnnotationsMain, hideBtnAnnotationsMainOffsetY + 6, 'features', 'main', !featuresMainHidden);
     }
 
     function setTrackBtnPos(hideBtn, offsetY, track, pane, doHide) {
@@ -1301,6 +1345,11 @@ THE SOFTWARE.
         hideBtn.style.display = "";
         hideBtn.style.left = (margin.left - hideBtnExpandWidth) + "px";
         hideBtn.style.top = offsetY + "px";
+        if (track && pane)
+            addTrackBtnEvent(hideBtn, track, pane, doHide)
+    }
+
+    function addTrackBtnEvent(hideBtn, track, pane, doHide) {
         hideBtn.onclick = function() {
             hideTrack(track, pane, doHide);
         };
@@ -1684,11 +1733,11 @@ THE SOFTWARE.
                             });
 
         track.append('g')
-                        .attr('class', 'x brush')
-                        .call(newBrush)
-                        .selectAll('rect')
-                        .attr('y', -offsetY)
-                        .attr('height', height + offsetY);
+            .attr('class', 'x brush')
+            .call(newBrush)
+            .selectAll('rect')
+            .attr('y', -offsetY)
+            .attr('height', height + offsetY);
 
         track.selectAll('rect.background').remove();
         return newBrush;
@@ -1704,7 +1753,7 @@ THE SOFTWARE.
         numYTicks = 5;
         // draw mini coverage
         x_cov_mini_S = x_mini,      // x coverage scale
-        y_max = max_depth[chromosome];
+        y_max = Math.max(reads_max_depth[chromosome], physical_max_depth[chromosome]);
 
         y_cov_mini_S = d3.scale.linear()
                 .domain([y_max, .1])
@@ -1729,7 +1778,7 @@ THE SOFTWARE.
                 .call(y_cov_mini_A);
         mini_cov.append('text')
                 .text('Coverage')
-                .attr('transform', 'rotate(-90 20, 80)');
+                .attr('transform', 'rotate(-90 45, 80)');
 
         // draw main coverage
         y_cov_main_A = y_cov_mini_A = d3.svg.axis()
@@ -1752,28 +1801,36 @@ THE SOFTWARE.
                 .attr('transform', 'translate(0, 0)');
         main_cov.select('.y').call(y_cov_main_A);
 
-        drawCoverageLine(x_mini.domain()[0], x_mini.domain()[1], coverageFactor, mini_cov, x_mini);
+        drawCoverageLine(x_mini.domain()[0], x_mini.domain()[1], coverageFactor, mini_cov, x_mini, physical_coverage_data, 'phys_covered');
+        togglePhysCoverageMini();
+        drawCoverageLine(x_mini.domain()[0], x_mini.domain()[1], coverageFactor, mini_cov, x_mini, coverage_data, 'covered');
     }
 
     function updateMainCoverage(minExtent, maxExtent, coverageFactor) {
         main_cov.select('.covered').remove();
-        main_cov.select('.notCovered').remove();
-        drawCoverageLine(minExtent, maxExtent, coverageFactor, main_cov, x_main);
+        main_cov.select('.phys_covered').remove();
+        if (!physicalCoverageHidden)
+            drawCoverageLine(minExtent, maxExtent, coverageFactor, main_cov, x_main, physical_coverage_data, 'phys_covered');
+        if (!coverageMainHidden)
+            drawCoverageLine(minExtent, maxExtent, coverageFactor, main_cov, x_main, coverage_data, 'covered');
         //main_cov.select('.y').call(y_cov_main_A);
     }
 
-    function drawCoverageLine(minExtent, maxExtent, coverageFactor, track, scale) {
+    function togglePhysCoverageMini() {
+         mini_cov.select('.phys_covered').classed('invisible', physicalMiniCoverageHidden);
+    }
+
+    function drawCoverageLine(minExtent, maxExtent, coverageFactor, track, scale, covData, plotClass) {
         var line = '',
             l = (maxExtent - minExtent) / coverageFactor,
             cov_main_dots_amount = Math.min(maxCovDots, l),
             step = Math.round(l / cov_main_dots_amount);
 
         var cov_lines = [];
-        var nextPos = 0;
         var startPos = Math.floor(minExtent / coverageFactor / step) * step;
         for (var s, i = startPos;; i += step) {
             nextPos = Math.min(maxExtent / coverageFactor, i + step);
-            coverage = coverage_data[chromosome].slice(i, i + step);
+            coverage = covData[chromosome].slice(i, i + step);
             if (coverage.length == 0) break;
             s = d3.sum(coverage, function (d) {
                         return d
@@ -1800,10 +1857,9 @@ THE SOFTWARE.
         }
         line += ['V', y_cov_main_S(0), 'Z'].join(' ');
         track.append('g')
-                .attr('class', 'covered')
+                .attr('class', plotClass)
                 .append('path')
                 .attr('d', line);
-
     }
 
     function getSize(text) {
@@ -2626,6 +2682,8 @@ THE SOFTWARE.
         removeTooltip();
         var hideBtnCoverageMain = document.getElementById('hideBtnCovMain');
         var hideBtnCoverageMini = document.getElementById('hideBtnCovMini');
+        var hideBtnPhysicalCoverageMain = document.getElementById('hideBtnPhysCovMain');
+        var hideBtnPhysicalCoverageMini = document.getElementById('hideBtnPhysCovMini');
         var animationDuration = 200, transitionDelay = 150;
         var paneToHide, hideBtn, textToShow, newOffset;
         var changedTracks = [], changedBtns = [];
@@ -2655,23 +2713,26 @@ THE SOFTWARE.
             if (mainPane) {
                 featuresMainHidden = doHide;
                 changedTracks = [main_cov, mini, annotationsMini, mini_cov];
-                changedBtns = [hideBtnCoverageMain, hideBtnAnnotationsMini, hideBtnCoverageMini];
+                changedBtns = [hideBtnCoverageMain, hideBtnPhysicalCoverageMain, hideBtnAnnotationsMini, hideBtnCoverageMini, hideBtnPhysicalCoverageMini];
             }
             else {
                 changedTracks = [mini_cov];
-                changedBtns = [hideBtnCoverageMini];
+                changedBtns = [hideBtnCoverageMini, hideBtnPhysicalCoverageMini];
             }
         }
-        else {
+        else if (track == 'cov') {
             textToShow = 'Show read coverage';
             paneToHide = mainPane ? main_cov : mini_cov;
             hideBtn = mainPane ? hideBtnCoverageMain : hideBtnCoverageMini;
+            hideCovBtn = mainPane ? hideBtnPhysicalCoverageMain : hideBtnPhysicalCoverageMini;
             newOffset = coverageHeight;
             if (mainPane) {
                 coverageMainHidden = doHide;
                 changedTracks = [mini, annotationsMini, mini_cov];
-                changedBtns = [hideBtnAnnotationsMini, hideBtnCoverageMini];
+                changedBtns = [hideBtnAnnotationsMini, hideBtnCoverageMini, hideBtnPhysicalCoverageMini];
             }
+            if (doHide) hideCovBtn.style.display = 'none';
+            else hideCovBtn.style.display = '';
         }
         if (doHide) newOffset *= -1;
         if (!doHide) textToShow = 'Hide';

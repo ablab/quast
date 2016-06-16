@@ -461,6 +461,7 @@ def main(args):
     operons_fpaths = []
     bed_fpath = None
     cov_fpath = None
+    physical_cov_fpath = None
     reads_fpath_f = ''
     reads_fpath_r = ''
     default_ambiguity_score = True
@@ -730,7 +731,7 @@ def main(args):
     if reads_fpath_r:
         reads_fpaths.append(reads_fpath_r)
     if reads_fpaths and ref_fpath:
-        bed_fpath, cov_fpath = reads_analyzer.do(ref_fpath, contigs_fpaths, reads_fpaths, None,
+        bed_fpath, cov_fpath, physical_cov_fpath = reads_analyzer.do(ref_fpath, contigs_fpaths, reads_fpaths, None,
                                       os.path.join(output_dirpath, qconfig.variation_dirname),
                                       external_logger=logger, bed_fpath=bed_fpath)
 
@@ -863,7 +864,7 @@ def main(args):
                 icarus_html_fpath, contig_alignment_plot_fpath = icarus.do(
                     contigs_fpaths, report_for_icarus_fpath_pattern, output_dirpath, ref_fpath,
                     stdout_pattern=stdout_pattern, features=features_containers, cov_fpath=cov_fpath,
-                    json_output_dir=json_output_dirpath)
+                    physical_cov_fpath=physical_cov_fpath, json_output_dir=json_output_dirpath)
 
             if all_pdf_file:
                 # full report in PDF format: all tables and plots

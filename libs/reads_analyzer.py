@@ -6,23 +6,24 @@
 ############################################################################
 
 from __future__ import with_statement
+import os
+from os.path import isfile
 import shutil
+import shlex
 import urllib
 import urllib2
 from collections import defaultdict
 
-from libs import reporting, qconfig, qutils, contigs_analyzer
+from libs import qconfig, qutils, ca_utils
 from qutils import is_non_empty_file
-from os.path import isfile
 
 from libs.log import get_logger
 
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
-import shlex
-import os
-
 bowtie_dirpath = os.path.join(qconfig.LIBS_LOCATION, 'bowtie2')
 samtools_dirpath = os.path.join(qconfig.LIBS_LOCATION, 'samtools')
+bedtools_dirpath = os.path.join(qconfig.LIBS_LOCATION, 'bedtools')
+bedtools_bin_dirpath = os.path.join(qconfig.LIBS_LOCATION, 'bedtools', 'bin')
 manta_dirpath = os.path.join(qconfig.LIBS_LOCATION, 'manta')
 manta_build_dirpath = os.path.join(qconfig.LIBS_LOCATION, 'manta', 'build')
 manta_bin_dirpath = os.path.join(qconfig.LIBS_LOCATION, 'manta', 'build/bin')
@@ -183,6 +184,7 @@ def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpat
     sam_sorted_fpath = os.path.join(output_dirpath, ref_name + '.sorted.sam')
     bed_fpath = bed_fpath or os.path.join(res_path, ref_name + '.bed')
     cov_fpath = os.path.join(res_path, ref_name + '.cov')
+    physical_cov_fpath = os.path.join(res_path, ref_name + '.physical.cov')
 
     if qconfig.no_sv:
         logger.info('  Will not search Structural Variations (--fast or --no-sv is specified)')
@@ -193,8 +195,10 @@ def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpat
         is_correct_file = check_cov_file(cov_fpath)
         if is_correct_file:
             logger.info('  Using existing reads coverage file: ' + cov_fpath)
-    if (is_non_empty_file(bed_fpath) or qconfig.no_sv) and is_non_empty_file(cov_fpath):
-        return bed_fpath, cov_fpath
+    if is_non_empty_file(physical_cov_fpath):
+        logger.info('  Using existing physical coverage file: ' + physical_cov_fpath)
+    if (is_non_empty_file(bed_fpath) or qconfig.no_sv) and is_non_empty_file(cov_fpath) and is_non_empty_file(physical_cov_fpath):
+        return bed_fpath, cov_fpath, physical_cov_fpath
 
     logger.info('  ' + 'Pre-processing reads...')
     logger.info('  ' + 'Logging to %s...' % err_path)
@@ -212,27 +216,31 @@ def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpat
         qutils.call_subprocess(cmd, stdout=open(log_path, 'a'), stderr=open(err_path, 'a'), logger=logger)
 
         cmd = bin_fpath('bowtie2') + ' -x ' + ref_name + ' -1 ' + abs_reads_fpaths[0] + ' -2 ' + abs_reads_fpaths[1] + ' -S ' + \
-              sam_fpath + ' --no-unal -a -p %s' % str(qconfig.max_threads)
+              sam_fpath + ' --no-unal -p %s' % str(qconfig.max_threads)
+        if qconfig.is_combined_ref:  ## report all alignments for each read
+            cmd += ' -a'
+
         qutils.call_subprocess(shlex.split(cmd), stdout=open(log_path, 'a'), stderr=open(err_path, 'a'), logger=logger)
         logger.info('  Done.')
         os.chdir(prev_dir)
         if not os.path.exists(sam_fpath) or os.path.getsize(sam_fpath) == 0:
             logger.error('  Failed running Bowtie2 for the reference. See ' + log_path + ' for information.')
             logger.info('  Failed searching structural variations.')
-            return None, None
+            return None, None, None
     logger.info('  Sorting SAM-file...')
     if is_non_empty_file(sam_sorted_fpath):
         logger.info('  Using existing sorted SAM-file: ' + sam_sorted_fpath)
     else:
-        qutils.call_subprocess([samtools_fpath('samtools'), 'view', '-@', str(qconfig.max_threads), '-bS', sam_fpath], stdout=open(bam_fpath, 'w'),
-                               stderr=open(err_path, 'a'), logger=logger)
+        correct_sam_fpath = clean_read_names(sam_fpath)
+        qutils.call_subprocess([samtools_fpath('samtools'), 'view', '-@', str(qconfig.max_threads), '-bS', correct_sam_fpath],
+                               stdout=open(bam_fpath, 'w'), stderr=open(err_path, 'a'), logger=logger)
         qutils.call_subprocess([samtools_fpath('samtools'), 'sort', '-@', str(qconfig.max_threads), bam_fpath, '-o', bam_sorted_fpath],
                                stderr=open(err_path, 'a'), logger=logger)
-        qutils.call_subprocess([samtools_fpath('samtools'), 'view', '-@', str(qconfig.max_threads), bam_sorted_fpath], stdout=open(sam_sorted_fpath, 'w'),
-                               stderr=open(err_path, 'a'), logger=logger)
+        qutils.call_subprocess([samtools_fpath('samtools'), 'view', '-@', str(qconfig.max_threads), bam_sorted_fpath],
+                               stdout=open(sam_sorted_fpath, 'w'), stderr=open(err_path, 'a'), logger=logger)
 
-    if not is_non_empty_file(cov_fpath):
-        cov_fpath = get_coverage(output_dirpath, ref_name, bam_fpath, err_path, cov_fpath)
+    if not is_non_empty_file(cov_fpath) or not is_non_empty_file(physical_cov_fpath):
+        cov_fpath, physical_cov_fpath = get_coverage(output_dirpath, main_ref_fpath, ref_name, bam_fpath, err_path, cov_fpath, physical_cov_fpath)
     if not is_non_empty_file(bed_fpath) and not qconfig.no_sv:
         if meta_ref_fpaths:
             logger.info('  Splitting SAM-file by references...')
@@ -363,11 +371,47 @@ def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpat
     else:
         logger.main_info('  Failed to calculate coverage distribution')
         cov_fpath = None
-    return bed_fpath, cov_fpath
+    return bed_fpath, cov_fpath, physical_cov_fpath
 
 
-def get_coverage(output_dirpath, ref_name, bam_fpath, err_path, cov_fpath):
+def get_physical_coverage(output_dirpath, ref_fpath, ref_name, bam_fpath, err_path, cov_fpath):
+    if not all_required_binaries_exist(bedtools_bin_dirpath, 'bedtools'):
+        logger.info('  Failed calculating physical coverage...')
+        return None
+    if not is_non_empty_file(cov_fpath):
+        logger.info('  Calculating physical coverage...')
+        ## keep properly mapped, unique, and non-duplicate read pairs only
+        bamfiltered_fpath = os.path.join(output_dirpath, ref_name + '.filtered.bam')
+        qutils.call_subprocess([samtools_fpath('samtools'), 'view', '-@', str(qconfig.max_threads), '-b', '-f', '3',
+                                bam_fpath, '-o', bamfiltered_fpath], stdout=open(err_path, 'w'), stderr=open(err_path, 'a'))
+        ## sort by read names
+        bamfiltered_sorted_fpath = os.path.join(output_dirpath, ref_name + '.filtered.sorted.bam')
+        qutils.call_subprocess([samtools_fpath('samtools'), 'sort', '-n', '-o', bamfiltered_sorted_fpath,
+                                bamfiltered_fpath], stdout=open(err_path, 'w'), stderr=open(err_path, 'a'))
+        bedpe_fpath = os.path.join(output_dirpath, ref_name + '.bedpe')
+        qutils.call_subprocess([bedtools_fpath('bamToBed'), '-i', bamfiltered_sorted_fpath, '-bedpe'], stdout=open(bedpe_fpath, 'w'),
+                               stderr=open(err_path, 'a'))
+        raw_bed_fpath = os.path.join(output_dirpath, ref_name + '.bed')
+        with open(bedpe_fpath, 'r') as bedpe:
+            with open(raw_bed_fpath, 'w') as bed_file:
+                for line in bedpe:
+                    fs = line.split()
+                    bed_file.write('\t'.join([fs[0], fs[1], fs[5] + '\n']))
+        chr_len_fpath = ref_fpath + '.fai'
+        if not is_non_empty_file(chr_len_fpath):
+            qutils.call_subprocess([samtools_fpath('samtools'), 'faidx', ref_fpath],
+                               stderr=open(err_path, 'a'), logger=logger)
+        raw_cov_fpath = cov_fpath + '_raw'
+        qutils.call_subprocess([bedtools_fpath('bedtools'), 'genomecov', '-d', '-i', raw_bed_fpath, '-g', chr_len_fpath],
+                               stdout=open(raw_cov_fpath, 'w'), stderr=open(err_path, 'a'))
+        proceed_cov_file(raw_cov_fpath, cov_fpath)
+    return cov_fpath
+
+
+def get_coverage(output_dirpath, ref_fpath, ref_name, bam_fpath, err_path, cov_fpath, physical_cov_fpath):
     raw_cov_fpath = cov_fpath + '_raw'
+    if not is_non_empty_file(physical_cov_fpath):
+        physical_cov_fpath = get_physical_coverage(output_dirpath, ref_fpath, ref_name, bam_fpath, err_path, physical_cov_fpath)
     if not is_non_empty_file(cov_fpath):
         logger.info('  Preparing reads coverage file...')
         if not is_non_empty_file(raw_cov_fpath):
@@ -378,26 +422,46 @@ def get_coverage(output_dirpath, ref_name, bam_fpath, err_path, cov_fpath):
             qutils.call_subprocess([samtools_fpath('samtools'), 'depth', '-a', bamsorted_fpath], stdout=open(raw_cov_fpath, 'w'),
                                    stderr=open(err_path, 'a'))
             qutils.assert_file_exists(raw_cov_fpath, 'coverage file')
-        chr_depth = defaultdict(list)
-        used_chromosomes = dict()
-        chr_index = 0
-        cov_factor = 10
-        with open(raw_cov_fpath, 'r') as in_coverage:
-            with open(cov_fpath, 'w') as out_coverage:
-                for index, line in enumerate(in_coverage):
-                    fs = list(line.split())
-                    name = qutils.correct_name(fs[0])
-                    if name not in used_chromosomes:
-                        chr_index += 1
-                        used_chromosomes[name] = str(chr_index)
-                        out_coverage.write('#' + name + ' ' + used_chromosomes[name] + '\n')
-                    chr_depth[name].append(int(fs[2]))
-                    if (len(chr_depth[name]) + 1) % cov_factor == 0 and index > 0:
-                        cur_depth = sum(chr_depth[name]) / cov_factor
-                        out_coverage.write(' '.join([used_chromosomes[name], str(cur_depth) + '\n']))
-                        chr_depth[name] = []
-                os.remove(raw_cov_fpath)
-    return cov_fpath
+        proceed_cov_file(raw_cov_fpath, cov_fpath)
+    return cov_fpath, physical_cov_fpath
+
+
+def proceed_cov_file(raw_cov_fpath, cov_fpath):
+    chr_depth = defaultdict(list)
+    used_chromosomes = dict()
+    chr_index = 0
+    cov_factor = 10
+    with open(raw_cov_fpath, 'r') as in_coverage:
+        with open(cov_fpath, 'w') as out_coverage:
+            for index, line in enumerate(in_coverage):
+                fs = list(line.split())
+                name = qutils.correct_name(fs[0])
+                if name not in used_chromosomes:
+                    chr_index += 1
+                    used_chromosomes[name] = str(chr_index)
+                    out_coverage.write('#' + name + ' ' + used_chromosomes[name] + '\n')
+                chr_depth[name].append(int(fs[2]))
+                if (len(chr_depth[name]) + 1) % cov_factor == 0 and index > 0:
+                    cur_depth = sum(chr_depth[name]) / cov_factor
+                    out_coverage.write(' '.join([used_chromosomes[name], str(cur_depth) + '\n']))
+                    chr_depth[name] = []
+            os.remove(raw_cov_fpath)
+
+
+def clean_read_names(sam_fpath):
+    correct_sam_fpath = sam_fpath + '.correct'
+    with open(sam_fpath) as sam_in:
+        with open(correct_sam_fpath, 'w') as sam_out:
+            for l in sam_in:
+                if not l:
+                    continue
+                fs = l.split('\t')
+                read_name = fs[0]
+                if read_name[-2:] == '/1' or read_name[-2:] == '/2':
+                    fs[0] = read_name[:-2]
+                    l = '\t'.join(fs)
+                sam_out.write(l)
+    return correct_sam_fpath
 
 
 def check_cov_file(cov_fpath):
@@ -418,6 +482,10 @@ def bin_fpath(fname):
 
 def samtools_fpath(fname):
     return os.path.join(samtools_dirpath, fname)
+
+
+def bedtools_fpath(fname):
+    return os.path.join(bedtools_bin_dirpath, fname)
 
 
 def all_required_binaries_exist(bin_dirpath, binary):
@@ -450,7 +518,7 @@ def do(ref_fpath, contigs_fpaths, reads_fpaths, meta_ref_fpaths, output_dir, int
                              'You can restart QUAST with the --debug flag '
                              'to see the command line.' if not qconfig.debug else ''))
             logger.main_info('Failed searching structural variations')
-            return None, None
+            return None, None, None
 
     if not all_required_binaries_exist(samtools_dirpath, 'samtools'):
         # making
@@ -467,7 +535,24 @@ def do(ref_fpath, contigs_fpaths, reads_fpaths, meta_ref_fpaths, output_dir, int
                              'You can restart QUAST with the --debug flag '
                              'to see the command line.' if not qconfig.debug else ''))
             logger.main_info('Failed searching structural variations')
-            return None, None
+            return None, None, None
+
+    if not all_required_binaries_exist(bedtools_bin_dirpath, 'bedtools'):
+        # making
+        logger.main_info(
+            'Compiling BedTools (details are in ' + os.path.join(bedtools_dirpath, 'make.log') + ' and make.err)')
+        return_code = qutils.call_subprocess(
+            ['make', '-C', bedtools_dirpath],
+            stdout=open(os.path.join(bedtools_dirpath, 'make.log'), 'w'),
+            stderr=open(os.path.join(bedtools_dirpath, 'make.err'), 'w'), logger=logger)
+
+        if return_code != 0 or not all_required_binaries_exist(bedtools_bin_dirpath, 'bedtools'):
+            logger.error('Failed to compile BedTools (' + bedtools_dirpath + ')! '
+                                                                             'Try to compile it manually. ' + (
+                             'You can restart QUAST with the --debug flag '
+                             'to see the command line.' if not qconfig.debug else ''))
+            logger.main_info('Failed searching structural variations')
+            return None, None, None
 
     if not qconfig.no_sv and bed_fpath is None and not all_required_binaries_exist(manta_bin_dirpath, 'configManta.py'):
         # making
@@ -537,13 +622,13 @@ def do(ref_fpath, contigs_fpaths, reads_fpaths, meta_ref_fpaths, output_dir, int
     err_path = os.path.join(output_dir, 'sv_calling.err')
     logger.info('  ' + 'Logging to files %s and %s...' % (log_path, err_path))
     try:
-        bed_fpath, cov_fpath = run_processing_reads(ref_fpath, meta_ref_fpaths, contigs_analyzer.ref_labels_by_chromosomes,
+        bed_fpath, cov_fpath, physical_cov_fpath = run_processing_reads(ref_fpath, meta_ref_fpaths, ca_utils.ref_labels_by_chromosomes,
                                                     reads_fpaths, temp_output_dir, output_dir, log_path, err_path, bed_fpath=bed_fpath)
     except:
-        bed_fpath, cov_fpath = None, None
+        bed_fpath, cov_fpath, physical_cov_fpath = None, None, None
         logger.error('Failed searching structural variations! This function is experimental and may work improperly. Sorry for the inconvenience.')
     if not qconfig.debug:
         shutil.rmtree(temp_output_dir, ignore_errors=True)
 
     logger.info('Done.')
-    return bed_fpath, cov_fpath
+    return bed_fpath, cov_fpath, physical_cov_fpath

@@ -207,6 +207,10 @@ span {
     fill: #799FCA;
     opacity: .8;
 }
+.COV .phys_covered path {
+    fill: #6BAEBC;
+    opacity: .5;
+}
 .COV .notCovered path {
     stroke: blue;
     stroke-width: 5px;
@@ -234,7 +238,10 @@ span {
     fill: #799FCA;
     opacity: .8;
 }
-
+.coverage .phys_covered path {
+    fill: #6BAEBC;
+    opacity: .5;
+}
 .coverage .notCovered {
     stroke: rgb(10, 10, 240);
     stroke-width: 3px;

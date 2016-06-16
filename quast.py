@@ -463,6 +463,7 @@ def main(args):
     cov_fpath = None
     reads_fpath_f = ''
     reads_fpath_r = ''
+    default_ambiguity_score = True
 
     # Yes, this is a code duplicating. But OptionParser is deprecated since version 2.7.
     for opt, arg in options:
@@ -549,6 +550,7 @@ def main(args):
         elif opt == '--ambiguity-score':
             if qutils.is_float(arg) and 0.0 <= float(arg) <= 1.0:
                 qconfig.ambiguity_score = float(arg)
+                default_ambiguity_score = False
             else:
                 logger.error("incorrect value for --ambiguity-score (%s)! "
                              "Please specify a float number between 0.0 and 1.0." % arg,
@@ -669,8 +671,7 @@ def main(args):
     logger.start()
 
     if existing_alignments:
-        logger.main_info()
-        logger.notice("Output directory already exists. Existing Nucmer alignments can be used.")
+        logger.notice("Output directory already exists. Existing Nucmer alignments can be used")
         qutils.remove_reports(output_dirpath)
 
     if qconfig.contig_thresholds == "None":
@@ -683,6 +684,11 @@ def main(args):
         qconfig.genes_lengths = map(int, qconfig.genes_lengths.split(","))
 
     qconfig.set_max_threads(logger)
+
+    if not default_ambiguity_score:
+        if qconfig.ambiguity_usage != 'all':
+            qconfig.ambiguity_usage = 'all'
+            logger.notice("--ambiguity-usage was set to 'all' because not default --ambiguity-score was specified")
 
     logger.main_info()
     logger.print_params()

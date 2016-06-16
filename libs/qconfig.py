@@ -190,7 +190,6 @@ def set_max_threads(logger):
         except:
             logger.warning('Failed to determine the number of CPUs')
             max_threads = DEFAULT_MAX_THREADS
-        logger.info()
         logger.notice('Maximum number of threads is set to ' + str(max_threads) +
                       ' (use --threads option to set it manually)')
 

@@ -193,7 +193,7 @@ def correct_contigs(contigs_fpaths, corrected_dirpath, reporting, labels):
         for i in range(len(broken_scaffolds)):
             if broken_scaffolds[i]:
                 broken_scaffold_fpath = broken_scaffolds[i]
-                qconfig.assembly_labels_by_fpath[broken_scaffold_fpath] = labels[i] + ' broken'
+                qconfig.assembly_labels_by_fpath[broken_scaffold_fpath] = labels[i] + '_broken'
                 if handle_fasta(broken_scaffold_fpath, broken_scaffold_fpath, reporting):
                     corrected_contigs_fpaths.append(broken_scaffold_fpath)
                     old_contigs_fpaths.append(broken_scaffold_fpath)  # no "old" fpaths for broken scaffolds
@@ -272,7 +272,7 @@ def broke_scaffolds(file_counter, labels, contigs_fpath, corrected_dirpath, logs
                     (scaffold_counter + 1,
                      label,
                      contigs_counter,
-                     label + ' broken'))
+                     label + '_broken'))
         return broken_scaffolds_fpath, logs
 
     logs.append("  " + index_to_str(file_counter, force=(len(labels) > 1)) +

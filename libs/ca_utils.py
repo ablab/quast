@@ -16,16 +16,11 @@ from os.path import isfile, join
 from libs import qconfig, qutils
 
 # it will be set to actual dirpath after successful compilation
+from libs.qutils import compile_tool, val_to_str
+
 contig_aligner = None
 contig_aligner_dirpath = None
 ref_labels_by_chromosomes = {}
-
-
-def __all_required_binaries_exist(aligner_dirpath, required_binaries):
-    for required_binary in required_binaries:
-        if not isfile(join(aligner_dirpath, required_binary)):
-            return False
-    return True
 
 
 def is_emem_aligner():
@@ -49,29 +44,9 @@ def compile_aligner(logger):
         aligners_to_try.append(('MUMmer', join(qconfig.LIBS_LOCATION, 'MUMmer3.23-linux'), default_requirements))
 
     for name, dirpath, requirements in aligners_to_try:
-        make_logs_basepath = join(dirpath, 'make')
-        failed_compilation_flag = make_logs_basepath + '.failed'
-
-        if not __all_required_binaries_exist(dirpath, requirements):
-            if isfile(failed_compilation_flag):
-                logger.warning('Previous try of ' + name + ' compilation was unsuccessful! ' +
-                               'For forced retrying, please remove ' + failed_compilation_flag + ' and restart QUAST.')
-                continue
-
-            # making
-            logger.main_info('Compiling ' + name + ' (details are in ' + make_logs_basepath +
-                             '.log and make.err)')
-            return_code = qutils.call_subprocess(
-                ['make', '-C', dirpath],
-                stdout=open(make_logs_basepath + '.log', 'w'),
-                stderr=open(make_logs_basepath + '.err', 'w'),)
-
-            if return_code != 0 or not __all_required_binaries_exist(dirpath, requirements):
-                logger.warning("Failed to compile " + name + " (" + dirpath + ")! "
-                               "Try to compile it manually. " + ("You can restart Quast with the --debug flag "
-                               "to see the command line." if not qconfig.debug else ""))
-                open(failed_compilation_flag, 'w').close()
-                continue
+        success_compilation = compile_tool(name, dirpath, requirements)
+        if not success_compilation:
+            continue
         contig_aligner = name
         contig_aligner_dirpath = dirpath  # successfully compiled
         return True
@@ -85,13 +60,6 @@ def check_chr_for_refs(chr1, chr2):
 
 def get_ref_by_chromosome(chr):
     return ref_labels_by_chromosomes[chr]
-
-
-def val_to_str(val):
-    if val is None:
-        return '-'
-    else:
-        return str(val)
 
 
 def print_file(all_rows, fpath):

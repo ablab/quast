@@ -10,25 +10,15 @@ import os
 from os.path import isfile
 import shutil
 import shlex
-import urllib
-import urllib2
 from collections import defaultdict
 
 from libs import qconfig, qutils, ca_utils
+from libs.ra_utils import compile_reads_analyzer_tools, config_manta_fpath, samtools_fpath, bowtie_fpath, bedtools_fpath
 from qutils import is_non_empty_file
 
 from libs.log import get_logger
 
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
-bowtie_dirpath = os.path.join(qconfig.LIBS_LOCATION, 'bowtie2')
-samtools_dirpath = os.path.join(qconfig.LIBS_LOCATION, 'samtools')
-bedtools_dirpath = os.path.join(qconfig.LIBS_LOCATION, 'bedtools')
-bedtools_bin_dirpath = os.path.join(qconfig.LIBS_LOCATION, 'bedtools', 'bin')
-manta_dirpath = os.path.join(qconfig.LIBS_LOCATION, 'manta')
-manta_build_dirpath = os.path.join(qconfig.LIBS_LOCATION, 'manta', 'build')
-manta_bin_dirpath = os.path.join(qconfig.LIBS_LOCATION, 'manta', 'build/bin')
-config_manta_fpath = os.path.join(manta_bin_dirpath, 'configManta.py')
-manta_download_path = 'https://github.com/Illumina/manta/releases/download/v0.29.6/manta-0.29.6.centos5_x86_64.tar.bz2'
 
 
 class Mapping(object):
@@ -212,10 +202,10 @@ def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpat
 
         prev_dir = os.getcwd()
         os.chdir(output_dirpath)
-        cmd = [bin_fpath('bowtie2-build'), main_ref_fpath, ref_name]
+        cmd = [bowtie_fpath('bowtie2-build'), main_ref_fpath, ref_name]
         qutils.call_subprocess(cmd, stdout=open(log_path, 'a'), stderr=open(err_path, 'a'), logger=logger)
 
-        cmd = bin_fpath('bowtie2') + ' -x ' + ref_name + ' -1 ' + abs_reads_fpaths[0] + ' -2 ' + abs_reads_fpaths[1] + ' -S ' + \
+        cmd = bowtie_fpath('bowtie2') + ' -x ' + ref_name + ' -1 ' + abs_reads_fpaths[0] + ' -2 ' + abs_reads_fpaths[1] + ' -S ' + \
               sam_fpath + ' --no-unal -p %s' % str(qconfig.max_threads)
         if qconfig.is_combined_ref:  ## report all alignments for each read
             cmd += ' -a'
@@ -375,7 +365,7 @@ def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpat
 
 
 def get_physical_coverage(output_dirpath, ref_fpath, ref_name, bam_fpath, err_path, cov_fpath):
-    if not all_required_binaries_exist(bedtools_bin_dirpath, 'bedtools'):
+    if not os.path.exists(bedtools_fpath('bamToBed')):
         logger.info('  Failed calculating physical coverage...')
         return None
     if not is_non_empty_file(cov_fpath):
@@ -476,25 +466,7 @@ def check_cov_file(cov_fpath):
                 return True
 
 
-def bin_fpath(fname):
-    return os.path.join(bowtie_dirpath, fname)
-
-
-def samtools_fpath(fname):
-    return os.path.join(samtools_dirpath, fname)
-
-
-def bedtools_fpath(fname):
-    return os.path.join(bedtools_bin_dirpath, fname)
-
-
-def all_required_binaries_exist(bin_dirpath, binary):
-    if not os.path.isfile(os.path.join(bin_dirpath, binary)):
-        return False
-    return True
-
-
-def do(ref_fpath, contigs_fpaths, reads_fpaths, meta_ref_fpaths, output_dir, interleaved=False, external_logger=None, bed_fpath=None):
+def do(ref_fpath, contigs_fpaths, reads_fpaths, meta_ref_fpaths, output_dir, external_logger=None, bed_fpath=None):
     if external_logger:
         global logger
         logger = external_logger
@@ -503,115 +475,9 @@ def do(ref_fpath, contigs_fpaths, reads_fpaths, meta_ref_fpaths, output_dir, int
 
     if not os.path.isdir(output_dir):
         os.makedirs(output_dir)
-
-    if not all_required_binaries_exist(bowtie_dirpath, 'bowtie2-align-l'):
-        # making
-        logger.main_info('Compiling Bowtie2 (details are in ' + os.path.join(bowtie_dirpath, 'make.log') + ' and make.err)')
-        return_code = qutils.call_subprocess(
-            ['make', '-C', bowtie_dirpath],
-            stdout=open(os.path.join(bowtie_dirpath, 'make.log'), 'w'),
-            stderr=open(os.path.join(bowtie_dirpath, 'make.err'), 'w'), logger=logger)
-
-        if return_code != 0 or not all_required_binaries_exist(bowtie_dirpath, 'bowtie2-align-l'):
-            logger.error('Failed to compile Bowtie2 (' + bowtie_dirpath + ')! '
-                                                                   'Try to compile it manually. ' + (
-                             'You can restart QUAST with the --debug flag '
-                             'to see the command line.' if not qconfig.debug else ''))
-            logger.main_info('Failed searching structural variations')
-            return None, None, None
-
-    if not all_required_binaries_exist(samtools_dirpath, 'samtools'):
-        # making
-        logger.main_info(
-            'Compiling SAMtools (details are in ' + os.path.join(samtools_dirpath, 'make.log') + ' and make.err)')
-        return_code = qutils.call_subprocess(
-            ['make', '-C', samtools_dirpath],
-            stdout=open(os.path.join(samtools_dirpath, 'make.log'), 'w'),
-            stderr=open(os.path.join(samtools_dirpath, 'make.err'), 'w'), logger=logger)
-
-        if return_code != 0 or not all_required_binaries_exist(samtools_dirpath, 'samtools'):
-            logger.error('Failed to compile SAMtools (' + samtools_dirpath + ')! '
-                                                                             'Try to compile it manually. ' + (
-                             'You can restart QUAST with the --debug flag '
-                             'to see the command line.' if not qconfig.debug else ''))
-            logger.main_info('Failed searching structural variations')
-            return None, None, None
-
-    if not all_required_binaries_exist(bedtools_bin_dirpath, 'bedtools'):
-        # making
-        logger.main_info(
-            'Compiling BedTools (details are in ' + os.path.join(bedtools_dirpath, 'make.log') + ' and make.err)')
-        return_code = qutils.call_subprocess(
-            ['make', '-C', bedtools_dirpath],
-            stdout=open(os.path.join(bedtools_dirpath, 'make.log'), 'w'),
-            stderr=open(os.path.join(bedtools_dirpath, 'make.err'), 'w'), logger=logger)
-
-        if return_code != 0 or not all_required_binaries_exist(bedtools_bin_dirpath, 'bedtools'):
-            logger.error('Failed to compile BedTools (' + bedtools_dirpath + ')! '
-                                                                             'Try to compile it manually. ' + (
-                             'You can restart QUAST with the --debug flag '
-                             'to see the command line.' if not qconfig.debug else ''))
-            logger.main_info('Failed searching structural variations')
-            return None, None, None
-
-    if not qconfig.no_sv and bed_fpath is None and not all_required_binaries_exist(manta_bin_dirpath, 'configManta.py'):
-        # making
-        if not os.path.exists(manta_build_dirpath):
-            os.mkdir(manta_build_dirpath)
-        if qconfig.platform_name == 'linux_64':
-            logger.main_info('  Downloading binary distribution of Manta...')
-            manta_downloaded_fpath = os.path.join(manta_build_dirpath, 'manta.tar.bz2')
-            response = urllib2.urlopen(manta_download_path)
-            content = response.read()
-            if content:
-                logger.main_info('  Manta successfully downloaded!')
-                f = open(manta_downloaded_fpath + '.download', 'w' )
-                f.write(content)
-                f.close()
-                if os.path.exists(manta_downloaded_fpath + '.download'):
-                    logger.info('  Unpacking Manta...')
-                    shutil.move(manta_downloaded_fpath + '.download', manta_downloaded_fpath)
-                    import tarfile
-                    tar = tarfile.open(manta_downloaded_fpath, "r:bz2")
-                    tar.extractall(manta_build_dirpath)
-                    tar.close()
-                    manta_temp_dirpath = os.path.join(manta_build_dirpath, tar.members[0].name)
-                    from distutils.dir_util import copy_tree
-                    copy_tree(manta_temp_dirpath, manta_build_dirpath)
-                    shutil.rmtree(manta_temp_dirpath)
-                    os.remove(manta_downloaded_fpath)
-                    logger.main_info('  Done')
-            else:
-                logger.main_info('  Failed downloading Manta from %s!' % manta_download_path)
-
-        if not all_required_binaries_exist(manta_bin_dirpath, 'configManta.py'):
-            logger.main_info('Compiling Manta (details are in ' + os.path.join(manta_dirpath, 'make.log') + ' and make.err)')
-            prev_dir = os.getcwd()
-            os.chdir(manta_build_dirpath)
-            return_code = qutils.call_subprocess(
-                [os.path.join(manta_dirpath, 'source', 'configure'), '--prefix=' + os.path.join(manta_dirpath, 'build'),
-                 '--jobs=' + str(qconfig.max_threads)],
-                stdout=open(os.path.join(manta_dirpath, 'make.log'), 'w'),
-                stderr=open(os.path.join(manta_dirpath, 'make.err'), 'w'), logger=logger)
-            if return_code == 0:
-                return_code = qutils.call_subprocess(
-                    ['make', '-j' + str(qconfig.max_threads)],
-                    stdout=open(os.path.join(manta_dirpath, 'make.log'), 'a'),
-                    stderr=open(os.path.join(manta_dirpath, 'make.err'), 'a'), logger=logger)
-                if return_code == 0:
-                    return_code = qutils.call_subprocess(
-                    ['make', 'install'],
-                    stdout=open(os.path.join(manta_dirpath, 'make.log'), 'a'),
-                    stderr=open(os.path.join(manta_dirpath, 'make.err'), 'a'), logger=logger)
-            os.chdir(prev_dir)
-            if return_code != 0 or not all_required_binaries_exist(manta_bin_dirpath, 'configManta.py'):
-                logger.warning('Failed to compile Manta (' + manta_dirpath + ')! '
-                                                                       'Try to compile it manually ' + (
-                                 'or download binary distribution from https://github.com/Illumina/manta/releases '
-                                 'and unpack it into ' + os.path.join(manta_dirpath, 'build/') if qconfig.platform_name == 'linux_64' else '') + (
-                                 '. You can restart QUAST with the --debug flag '
-                                 'to see the command line.' if not qconfig.debug else '.'))
-                logger.main_info('Failed searching structural variations. QUAST will search trivial deletions only.')
+    if not compile_reads_analyzer_tools(logger, bed_fpath):
+        logger.main_info('Failed searching structural variations')
+        return None, None, None
 
     temp_output_dir = os.path.join(output_dir, 'temp_output')
 

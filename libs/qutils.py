@@ -12,13 +12,14 @@ import subprocess
 import os
 import re
 import qconfig
-from os.path import basename
+from os.path import basename, isfile
 
 from libs import fastaparser
 from libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 
 MAX_CONTIG_NAME = 1021  # Nucmer's constraint
+
 
 def set_up_output_dir(output_dirpath, json_outputpath,
                        make_latest_symlink, save_json):
@@ -632,3 +633,48 @@ def is_float(value):
         return False
     except TypeError:
         return False
+
+
+def val_to_str(val):
+    if val is None:
+        return '-'
+    else:
+        return str(val)
+
+
+def all_required_binaries_exist(aligner_dirpath, required_binaries):
+    for required_binary in required_binaries:
+        if not isfile(join(aligner_dirpath, required_binary)):
+            return False
+    return True
+
+
+def check_prev_compilation_failed(failed_compilation_flag):
+    if isfile(failed_compilation_flag):
+        logger.warning('Previous try of Manta compilation was unsuccessful! ' +
+                       'For forced retrying, please remove ' + failed_compilation_flag + ' and restart QUAST.')
+        return True
+    return False
+
+def compile_tool(name, dirpath, requirements):
+    make_logs_basepath = join(dirpath, 'make')
+    failed_compilation_flag = make_logs_basepath + '.failed'
+
+    if not all_required_binaries_exist(dirpath, requirements):
+        if check_prev_compilation_failed(failed_compilation_flag):
+            return False
+
+        # making
+        logger.main_info('Compiling ' + name + ' (details are in ' + make_logs_basepath +
+                         '.log and make.err)')
+        return_code = call_subprocess(['make', '-C', dirpath],
+                                      stdout=open(make_logs_basepath + '.log', 'w'),
+                                      stderr=open(make_logs_basepath + '.err', 'w'),)
+
+        if return_code != 0 or not all_required_binaries_exist(dirpath, requirements):
+            logger.warning("Failed to compile " + name + " (" + dirpath + ")! "
+                           "Try to compile it manually. " + ("You can restart Quast with the --debug flag "
+                           "to see the command line." if not qconfig.debug else ""))
+            open(failed_compilation_flag, 'w').close()
+            return False
+    return True

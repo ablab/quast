@@ -8,6 +8,8 @@
 from libs import qconfig, qutils
 
 from libs.log import get_logger
+from libs.qutils import val_to_str
+
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 
 
@@ -379,13 +381,6 @@ def get_all_rows_out_of_table(table):
         all_rows = table
 
     return all_rows
-
-
-def val_to_str(val):
-    if val is None:
-        return '-'
-    else:
-        return str(val)
 
 
 def save_txt(fpath, all_rows):

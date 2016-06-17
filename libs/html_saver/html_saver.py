@@ -118,6 +118,9 @@ def init_icarus(template_f, html_fpath):
 
         html = html.replace('{{ d3 }}', js_html('static/d3.js'))
         html = html.replace('{{ build_icarus }}', js_html('static/scripts/build_icarus.js'))
+        html = html.replace('{{ display_icarus }}', js_html('static/scripts/display_icarus.js'))
+        html = html.replace('{{ icarus_interface }}', js_html('static/scripts/icarus_interface.js'))
+        html = html.replace('{{ icarus_utils }}', js_html('static/scripts/icarus_utils.js'))
         html = html.replace('{{ bootstrap }}', css_html('static/bootstrap/bootstrap.css'))
         html = html.replace('{{ common }}', css_html('static/common.css'))
         html = html.replace('{{ icarus }}', css_html('static/icarus.css'))

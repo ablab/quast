@@ -493,7 +493,7 @@ path {
     float: left;
     font-size: 13px;
     margin-left: 30px;
-    width: 800px;
+    min-width: 800px;
     /*margin-top: 7px;*/
 }
 

@@ -39,7 +39,7 @@ long_options = "test test-no-ref test-sv output-dir= save-json-to= genes= operon
                "ambiguity-usage= scaffolds threads= min-cluster= min-alignment= est-ref-size= use-all-alignments gene-finding "\
                "strict-NA meta labels= help-hidden no-snps fast max-ref-number= extensive-mis-size= plots-format= " \
                "fragmented significant-part-size= unique-mapping no-sv no-icarus ambiguity-score= " \
-               "references-list= sv-bedpe= reads1= reads2= memory-efficient silent version colors= ls=".split()
+               "references-list= sam= bam= sv-bedpe= reads1= reads2= memory-efficient silent version colors= ls=".split()
 short_options = "o:G:O:R:t:m:J:jehvda:c:ufl:Lx:i:s1:2:"
 
 # default values for options
@@ -295,7 +295,9 @@ def usage(show_hidden=False, meta=False, short=True):
         print >> sys.stderr, "                                      This may significantly reduce memory consumption on large genomes"
         print >> sys.stderr, "-1  --reads1  <filename>              File with forward reads (in FASTQ format, may be gzipped)"
         print >> sys.stderr, "-2  --reads2  <filename>              File with reverse reads (in FASTQ format, may be gzipped)"
-        print >> sys.stderr, "                                      Reads are used for structural variation detection and coverage histogram building in Icarus"
+        print >> sys.stderr, "    --sam  <filename>                 SAM alignment file"
+        print >> sys.stderr, "    --bam  <filename>                 BAM alignment file"
+        print >> sys.stderr, "                                      Reads (or SAM/BAM file) are used for structural variation detection and coverage histogram building in Icarus"
         print >> sys.stderr, "    --sv-bedpe  <filename>            File with structural variations (in BEDPE format)"
         print >> sys.stderr, ""
         print >> sys.stderr, "Speedup options:"

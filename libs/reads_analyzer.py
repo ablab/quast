@@ -14,7 +14,7 @@ from collections import defaultdict
 
 from libs import qconfig, qutils, ca_utils
 from libs.ra_utils import compile_reads_analyzer_tools, config_manta_fpath, samtools_fpath, bowtie_fpath, bedtools_fpath
-from qutils import is_non_empty_file
+from qutils import is_non_empty_file, add_suffix
 
 from libs.log import get_logger
 
@@ -165,13 +165,25 @@ def search_sv_with_manta(main_ref_fpath, meta_ref_fpaths, output_dirpath, err_pa
     return final_bed_fpath
 
 
+def get_safe_fpath(output_dirpath, fpath):  # reuse file if it exists; else write in output_dir
+    if not os.path.exists(fpath):
+        return os.path.join(output_dirpath, os.path.basename(fpath))
+    return fpath
+
+
 def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpaths, output_dirpath, res_path, log_path,
-                         err_path, bed_fpath=None):
+                         err_path, sam_fpath=None, bam_fpath=None, bed_fpath=None):
     ref_name = qutils.name_from_fpath(main_ref_fpath)
-    sam_fpath = os.path.join(output_dirpath, ref_name + '.sam')
-    bam_fpath = os.path.join(output_dirpath, ref_name + '.bam')
-    bam_sorted_fpath = os.path.join(output_dirpath, ref_name + '.sorted.bam')
-    sam_sorted_fpath = os.path.join(output_dirpath, ref_name + '.sorted.sam')
+
+    if not sam_fpath and bam_fpath:
+        sam_fpath = bam_fpath[:-4] + '.sam'
+    else:
+        sam_fpath = sam_fpath or os.path.join(output_dirpath, ref_name + '.sam')
+    if not bam_fpath:
+        bam_fpath = get_safe_fpath(output_dirpath, sam_fpath[:-4] + '.bam')
+    sam_sorted_fpath = get_safe_fpath(output_dirpath, add_suffix(sam_fpath, 'sorted'))
+    bam_sorted_fpath = get_safe_fpath(output_dirpath, add_suffix(bam_fpath, 'sorted'))
+
     bed_fpath = bed_fpath or os.path.join(res_path, ref_name + '.bed')
     cov_fpath = os.path.join(res_path, ref_name + '.cov')
     physical_cov_fpath = os.path.join(res_path, ref_name + '.physical.cov')
@@ -200,6 +212,11 @@ def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpat
         for reads_fpath in reads_fpaths:
             abs_reads_fpaths.append(os.path.abspath(reads_fpath))
 
+        if len(abs_reads_fpaths) != 2:
+            logger.error('  You should specify files with forward and reverse reads.')
+            logger.info('  Failed searching structural variations.')
+            return None, None, None
+
         prev_dir = os.getcwd()
         os.chdir(output_dirpath)
         cmd = [bowtie_fpath('bowtie2-build'), main_ref_fpath, ref_name]
@@ -218,10 +235,13 @@ def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpat
             logger.info('  Failed searching structural variations.')
             return None, None, None
     logger.info('  Sorting SAM-file...')
-    if is_non_empty_file(sam_sorted_fpath):
+    if (is_non_empty_file(sam_sorted_fpath) and all_read_names_correct(sam_fpath)) and is_non_empty_file(bam_fpath):
         logger.info('  Using existing sorted SAM-file: ' + sam_sorted_fpath)
     else:
-        correct_sam_fpath = clean_read_names(sam_fpath)
+        correct_sam_fpath = os.path.join(output_dirpath, ref_name + '.sam.correct')  # write in output dir
+        clean_read_names(sam_fpath, correct_sam_fpath)
+        bam_fpath = os.path.join(output_dirpath, ref_name + '.bam')
+        bam_sorted_fpath = add_suffix(bam_fpath, 'sorted')
         qutils.call_subprocess([samtools_fpath('samtools'), 'view', '-@', str(qconfig.max_threads), '-bS', correct_sam_fpath],
                                stdout=open(bam_fpath, 'w'), stderr=open(err_path, 'a'), logger=logger)
         qutils.call_subprocess([samtools_fpath('samtools'), 'sort', '-@', str(qconfig.max_threads), bam_fpath, '-o', bam_sorted_fpath],
@@ -376,7 +396,7 @@ def get_physical_coverage(output_dirpath, ref_fpath, ref_name, bam_fpath, err_pa
                                 bam_fpath, '-o', bamfiltered_fpath], stdout=open(err_path, 'w'), stderr=open(err_path, 'a'))
         ## sort by read names
         bamfiltered_sorted_fpath = os.path.join(output_dirpath, ref_name + '.filtered.sorted.bam')
-        qutils.call_subprocess([samtools_fpath('samtools'), 'sort', '-n', '-o', bamfiltered_sorted_fpath,
+        qutils.call_subprocess([samtools_fpath('samtools'), 'sort', '-@', str(qconfig.max_threads), '-n', '-o', bamfiltered_sorted_fpath,
                                 bamfiltered_fpath], stdout=open(err_path, 'w'), stderr=open(err_path, 'a'))
         bedpe_fpath = os.path.join(output_dirpath, ref_name + '.bedpe')
         qutils.call_subprocess([bedtools_fpath('bamToBed'), '-i', bamfiltered_sorted_fpath, '-bedpe'], stdout=open(bedpe_fpath, 'w'),
@@ -438,8 +458,21 @@ def proceed_cov_file(raw_cov_fpath, cov_fpath):
             os.remove(raw_cov_fpath)
 
 
-def clean_read_names(sam_fpath):
-    correct_sam_fpath = sam_fpath + '.correct'
+def all_read_names_correct(sam_fpath):
+    with open(sam_fpath) as sam_in:
+        for i, l in enumerate(sam_in):
+            if i > 1000000:
+                return True
+            if not l:
+                continue
+            fs = l.split('\t')
+            read_name = fs[0]
+            if read_name[-2:] == '/1' or read_name[-2:] == '/2':
+                return False
+    return True
+
+
+def clean_read_names(sam_fpath, correct_sam_fpath):
     with open(sam_fpath) as sam_in:
         with open(correct_sam_fpath, 'w') as sam_out:
             for l in sam_in:
@@ -466,7 +499,7 @@ def check_cov_file(cov_fpath):
                 return True
 
 
-def do(ref_fpath, contigs_fpaths, reads_fpaths, meta_ref_fpaths, output_dir, external_logger=None, bed_fpath=None):
+def do(ref_fpath, contigs_fpaths, reads_fpaths, meta_ref_fpaths, output_dir, external_logger=None, sam_fpath=None, bam_fpath=None, bed_fpath=None):
     if external_logger:
         global logger
         logger = external_logger
@@ -489,7 +522,8 @@ def do(ref_fpath, contigs_fpaths, reads_fpaths, meta_ref_fpaths, output_dir, ext
     logger.info('  ' + 'Logging to files %s and %s...' % (log_path, err_path))
     try:
         bed_fpath, cov_fpath, physical_cov_fpath = run_processing_reads(ref_fpath, meta_ref_fpaths, ca_utils.ref_labels_by_chromosomes,
-                                                    reads_fpaths, temp_output_dir, output_dir, log_path, err_path, bed_fpath=bed_fpath)
+                                                                        reads_fpaths, temp_output_dir, output_dir, log_path, err_path,
+                                                                        bed_fpath=bed_fpath, sam_fpath=sam_fpath, bam_fpath=bam_fpath)
     except:
         bed_fpath, cov_fpath, physical_cov_fpath = None, None, None
         logger.error('Failed searching structural variations! This function is experimental and may work improperly. Sorry for the inconvenience.')

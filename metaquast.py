@@ -367,6 +367,8 @@ def main(args):
     combined_ref_fpath = ''
     reads_fpath_f = ''
     reads_fpath_r = ''
+    sam_fpath = None
+    bam_fpath = None
     bed_fpath = None
     output_dirpath = None
 
@@ -504,11 +506,15 @@ def main(args):
         elif opt == '--silent':
             qconfig.silent = True
         elif opt in ('-1', '--reads1'):
-            reads_fpath_f = arg
+            reads_fpath_f = assert_file_exists(arg, 'File with forward reads')
             quast_py_args = __remove_from_quast_py_args(quast_py_args, opt, arg)
         elif opt in ('-2', '--reads2'):
-            reads_fpath_r = arg
+            reads_fpath_r = assert_file_exists(arg, 'File with reverse reads')
             quast_py_args = __remove_from_quast_py_args(quast_py_args, opt, arg)
+        elif opt == '--sam':
+            sam_fpath = assert_file_exists(arg, 'SAM file')
+        elif opt == '--bam':
+            bam_fpath = assert_file_exists(arg, 'BAM file')
         elif opt == '--sv-bedpe':
             bed_fpath = assert_file_exists(arg, 'BEDPE file with structural variations')
         else:
@@ -618,12 +624,18 @@ def main(args):
     if reads_fpath_r:
         reads_fpaths.append(reads_fpath_r)
     if reads_fpaths:
-        bed_fpath, cov_fpath = reads_analyzer.do(combined_ref_fpath, contigs_fpaths, reads_fpaths, corrected_ref_fpaths,
+        bed_fpath, cov_fpath, _ = reads_analyzer.do(combined_ref_fpath, contigs_fpaths, reads_fpaths, corrected_ref_fpaths,
                                       os.path.join(combined_output_dirpath, qconfig.variation_dirname),
-                                      external_logger=logger, bed_fpath=bed_fpath)
+                                      external_logger=logger, sam_fpath=sam_fpath, bam_fpath=bam_fpath, bed_fpath=bed_fpath)
     if bed_fpath:
         quast_py_args += ['--sv-bed']
         quast_py_args += [bed_fpath]
+    if sam_fpath:
+        quast_py_args += ['--sam']
+        quast_py_args += [sam_fpath]
+    if bam_fpath:
+        quast_py_args += ['--bam']
+        quast_py_args += [bam_fpath]
 
     for arg in args:
         if arg in ('-s', "--scaffolds"):

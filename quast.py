@@ -92,6 +92,8 @@ def main(args):
     ref_fpath = ''
     genes_fpaths = []
     operons_fpaths = []
+    sam_fpath = None
+    bam_fpath = None
     bed_fpath = None
     cov_fpath = None
     physical_cov_fpath = None
@@ -278,9 +280,13 @@ def main(args):
             qconfig.silent = True
 
         elif opt in ('-1', '--reads1'):
-            reads_fpath_f = arg
+            reads_fpath_f = assert_file_exists(arg, 'File with forward reads')
         elif opt in ('-2', '--reads2'):
-            reads_fpath_r = arg
+            reads_fpath_r = assert_file_exists(arg, 'File with reverse reads')
+        elif opt == '--sam':
+            sam_fpath = assert_file_exists(arg, 'SAM file')
+        elif opt == '--bam':
+            bam_fpath = assert_file_exists(arg, 'BAM file')
         elif opt == '--sv-bedpe':
             bed_fpath = assert_file_exists(arg, 'BEDPE file with structural variations')
 
@@ -366,7 +372,7 @@ def main(args):
     if reads_fpaths and ref_fpath:
         bed_fpath, cov_fpath, physical_cov_fpath = reads_analyzer.do(ref_fpath, contigs_fpaths, reads_fpaths, None,
                                       os.path.join(output_dirpath, qconfig.variation_dirname),
-                                      external_logger=logger, bed_fpath=bed_fpath)
+                                      external_logger=logger, sam_fpath=sam_fpath, bam_fpath=bam_fpath, bed_fpath=bed_fpath)
 
     if not contigs_fpaths:
         logger.error("None of the assembly files contains correct contigs. "

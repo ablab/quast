@@ -642,6 +642,14 @@ def val_to_str(val):
         return str(val)
 
 
+def add_suffix(fname, suffix):
+    base, ext = os.path.splitext(fname)
+    if ext in ['.gz', '.bz2', '.zip']:
+        base, ext2 = os.path.splitext(base)
+        ext = ext2 + ext
+    return base + (('.' + suffix) if suffix else '') + ext
+
+
 def all_required_binaries_exist(aligner_dirpath, required_binaries):
     for required_binary in required_binaries:
         if not isfile(join(aligner_dirpath, required_binary)):
@@ -655,6 +663,7 @@ def check_prev_compilation_failed(failed_compilation_flag):
                        'For forced retrying, please remove ' + failed_compilation_flag + ' and restart QUAST.')
         return True
     return False
+
 
 def compile_tool(name, dirpath, requirements):
     make_logs_basepath = join(dirpath, 'make')

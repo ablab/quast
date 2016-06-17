@@ -17,8 +17,9 @@ import re
 from libs import qconfig
 qconfig.check_python_version()
 from libs import qutils, fastaparser
+from libs import reporting
 from libs import search_references_meta
-from libs.qutils import assert_file_exists
+from libs.qutils import assert_file_exists, correct_seq, cleanup
 
 from libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_META_NAME)
@@ -180,57 +181,28 @@ def _start_quast_main(
     #         logger.error(msg)
 
 
-def _correct_contigs(contigs_fpaths, output_dirpath, labels):
-    assemblies = [Assembly(contigs_fpaths[i], labels[i]) for i in range(len(contigs_fpaths))]
-    corr_assemblies = []
-    logs = []
-    for file_counter, (contigs_fpath, label) in enumerate(zip(contigs_fpaths, labels)):
-        contigs_fname = os.path.basename(contigs_fpath)
-        fname, ctg_fasta_ext = qutils.splitext_for_fasta_file(contigs_fname)
+def _correct_assemblies(contigs_fpaths, output_dirpath, labels):
+    corrected_dirpath = os.path.join(output_dirpath, qconfig.corrected_dirname)
+    corrected_contigs_fpaths, old_contigs_fpaths = qutils.correct_contigs(contigs_fpaths, corrected_dirpath, reporting, labels)
+    assemblies = [Assembly(fpath, qutils.label_from_fpath(fpath)) for fpath in old_contigs_fpaths]
+    corrected_labels = [asm.label for asm in assemblies]
 
-        corr_fpath = qutils.unique_corrected_fpath(
-            os.path.join(output_dirpath, qconfig.corrected_dirname, label + ctg_fasta_ext))
-
-        corr_assemblies.append(Assembly(corr_fpath, label))
-        qconfig.assembly_labels_by_fpath[contigs_fpath] = label
-        logger.main_info('  ' + qutils.index_to_str(file_counter, force=(len(labels) > 1)) + '%s ==> %s' % (contigs_fpath, label))
-        if qconfig.scaffolds:
-            broken_scaffold_fpath, logs = quast.broke_scaffolds(file_counter, labels, contigs_fpath, output_dirpath, logs)
-            if not broken_scaffold_fpath:
-                continue
-            broken_label = labels[file_counter] + ' broken'
-            qconfig.assembly_labels_by_fpath[broken_scaffold_fpath] = broken_label
-            qconfig.dict_of_broken_scaffolds[broken_scaffold_fpath] = contigs_fpath
-            assemblies.append(Assembly(broken_scaffold_fpath, broken_label))
-
-            corr_broken_fpath = qutils.unique_corrected_fpath(
-                os.path.join(output_dirpath, qconfig.corrected_dirname, broken_label + ctg_fasta_ext))
-            corr_assemblies.append(Assembly(corr_broken_fpath, broken_label))
-    for log in logs:
-        logger.main_info(log)
     if qconfig.draw_plots or qconfig.html_report:
         from libs import plotter
         corr_fpaths = [asm.fpath for asm in assemblies]
         corr_labels = [asm.label for asm in assemblies]
         plotter.save_colors_and_ls(corr_fpaths, labels=corr_labels)
-    return assemblies, corr_assemblies
+    return assemblies, corrected_labels
 
 
-def get_label_from_par_dir_and_fname(contigs_fpath):
-    abspath = os.path.abspath(contigs_fpath)
-    name = qutils.rm_extentions_for_fasta_file(os.path.basename(contigs_fpath))
-    label = os.path.basename(os.path.dirname(abspath)) + '_' + name
-    return label
-
-
-def _correct_references(ref_fpaths, corrected_dirpath):
+def _correct_meta_references(ref_fpaths, corrected_dirpath):
     corrected_ref_fpaths = []
 
     combined_ref_fpath = os.path.join(corrected_dirpath, COMBINED_REF_FNAME)
 
     chromosomes_by_refs = {}
 
-    def correct_seq(seq_name, seq, ref_name, ref_fasta_ext, total_references, ref_fpath):
+    def _proceed_seq(seq_name, seq, ref_name, ref_fasta_ext, total_references, ref_fpath):
         seq_fname = ref_name
         seq_fname += ref_fasta_ext
 
@@ -242,13 +214,8 @@ def _correct_references(ref_fpaths, corrected_dirpath):
         corr_seq_name = qutils.name_from_fpath(corr_seq_fpath)
         corr_seq_name += '_' + qutils.correct_name(seq_name[:20])
         if not qconfig.no_check:
-            corr_seq = seq.upper()
-            dic = {'M': 'N', 'K': 'N', 'R': 'N', 'Y': 'N', 'W': 'N', 'S': 'N', 'V': 'N', 'B': 'N', 'H': 'N', 'D': 'N'}
-            pat = "(%s)" % "|".join(map(re.escape, dic.keys()))
-            corr_seq = re.sub(pat, lambda m: dic[m.group()], corr_seq)
-            if re.compile(r'[^ACGTN]').search(corr_seq):
-                logger.warning('Skipping ' + ref_fpath + ' because it contains non-ACGTN characters.',
-                        indent='    ')
+            corr_seq = correct_seq(seq, ref_fpath)
+            if not corr_seq:
                 return None, None
 
         fastaparser.write_fasta(corr_seq_fpath, [(corr_seq_name, seq)], 'a')
@@ -271,16 +238,18 @@ def _correct_references(ref_fpaths, corrected_dirpath):
         ref_fname = os.path.basename(ref_fpath)
         ref_name, ref_fasta_ext = qutils.splitext_for_fasta_file(ref_fname)
         if ref_name in dupl_ref_names:
-            ref_name = get_label_from_par_dir_and_fname(ref_fpath)
+            ref_name = qutils.get_label_from_par_dir_and_fname(ref_fpath)
 
         chromosomes_by_refs[ref_name] = []
 
         corr_seq_fpath = None
         for i, (seq_name, seq) in enumerate(fastaparser.read_fasta(ref_fpath)):
             total_references += 1
-            corr_seq_name, corr_seq_fpath = correct_seq(seq_name, seq, ref_name, ref_fasta_ext, total_references, ref_fpath)
+            corr_seq_name, corr_seq_fpath = _proceed_seq(seq_name, seq, ref_name, ref_fasta_ext, total_references, ref_fpath)
             if not corr_seq_name:
                 break
+            fastaparser.write_fasta(corr_seq_fpath, [(corr_seq_name, seq)], 'a')
+            fastaparser.write_fasta(combined_ref_fpath, [(corr_seq_name, seq)], 'a')
         if corr_seq_fpath:
             logger.main_info('  ' + ref_fpath + ' ==> ' + qutils.name_from_fpath(corr_seq_fpath) + '')
 
@@ -452,7 +421,7 @@ def main(args):
 
         elif opt in ('-l', '--labels'):
             quast_py_args = __remove_from_quast_py_args(quast_py_args, opt, arg)
-            labels = quast.parse_labels(arg, contigs_fpaths)
+            labels = qutils.parse_labels(arg, contigs_fpaths)
 
         elif opt == '-L':
             quast_py_args = __remove_from_quast_py_args(quast_py_args, opt)
@@ -548,14 +517,14 @@ def main(args):
     for c_fpath in contigs_fpaths:
         assert_file_exists(c_fpath, 'contigs')
 
-    labels = quast.process_labels(contigs_fpaths, labels, all_labels_from_dirs)
+    labels = qutils.process_labels(contigs_fpaths, labels, all_labels_from_dirs)
 
     for contigs_fpath in contigs_fpaths:
         if contigs_fpath in quast_py_args:
             quast_py_args.remove(contigs_fpath)
 
     # Directories
-    output_dirpath, _, _ = quast._set_up_output_dir(
+    output_dirpath, _, _ = qutils.set_up_output_dir(
         output_dirpath, None, make_latest_symlink,
         save_json=False)
 
@@ -586,12 +555,12 @@ def main(args):
         logger.main_info('Reference(s):')
 
         corrected_ref_fpaths, combined_ref_fpath, chromosomes_by_refs, ref_names =\
-            _correct_references(ref_fpaths, corrected_dirpath)
+            _correct_meta_references(ref_fpaths, corrected_dirpath)
 
     # PROCESSING CONTIGS
     logger.main_info()
     logger.main_info('Contigs:')
-    assemblies, correct_assemblies = _correct_contigs(contigs_fpaths, output_dirpath, labels)
+    assemblies, labels = _correct_assemblies(contigs_fpaths, output_dirpath, labels)
     if not assemblies:
         logger.error("None of the assembly files contains correct contigs. "
                      "Please, provide different files or decrease --min-contig threshold.")
@@ -623,7 +592,7 @@ def main(args):
                 logger.main_info()
                 logger.main_info('Downloaded reference(s):')
                 corrected_ref_fpaths, combined_ref_fpath, chromosomes_by_refs, ref_names =\
-                    _correct_references(ref_fpaths, corrected_dirpath)
+                    _correct_meta_references(ref_fpaths, corrected_dirpath)
             elif test_mode and ref_fpaths is None:
                 logger.error('Failed to download or setup SILVA 16S rRNA database for working without '
                              'references on metagenome datasets!', to_stderr=True, exit_with_code=4)
@@ -699,7 +668,7 @@ def main(args):
                                                         if not downloaded_refs else 'Try to use option --max-ref-number to change maximum number of references '
                                                                                     '(per each assembly) to download.'))
         logger.main_info('')
-        quast._cleanup(corrected_dirpath)
+        cleanup(corrected_dirpath)
         logger.main_info('MetaQUAST finished.')
         logger.finish_up(numbers=tuple(total_num_notifications), check_test=test_mode)
         return
@@ -714,7 +683,7 @@ def main(args):
             os.remove(combined_ref_fpath)
             contigs_analyzer.ref_labels_by_chromosomes = {}
             corrected_ref_fpaths, combined_ref_fpath, chromosomes_by_refs, ref_names =\
-                    _correct_references(corr_ref_fpaths, corrected_dirpath)
+                    _correct_meta_references(corr_ref_fpaths, corrected_dirpath)
             run_name = 'for the corrected combined reference'
             logger.main_info()
             logger.main_info('Starting quast.py ' + run_name + '...')
@@ -820,7 +789,7 @@ def main(args):
                 logger.main_info('  Icarus (contig browser) is saved to %s' % icarus_html_fpath)
             html_saver.create_meta_report(output_dirpath, json_texts)
 
-    quast._cleanup(corrected_dirpath)
+    cleanup(corrected_dirpath)
     logger.main_info('')
     logger.main_info('MetaQUAST finished.')
     return logger.finish_up(numbers=tuple(total_num_notifications), check_test=test_mode)

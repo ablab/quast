@@ -224,9 +224,9 @@
 
 2.2   1. The tool now supports metagenomic assemblies. It accepts multiple references
       and produces several reports:
-       — for all contigs and all input genomes merged into one,
-       — separate reports for only contigs aligned to a particular genome,
-       — for the contigs not aligned to any reference provided.
+       - for all contigs and all input genomes merged into one,
+       - separate reports for only contigs aligned to a particular genome,
+       - for the contigs not aligned to any reference provided.
 
       Usage:
          metaquast.py contigs_1 contigs_2 ... -R reference_1,reference_2,reference_3,...

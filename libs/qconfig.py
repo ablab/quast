@@ -106,6 +106,8 @@ meta_summary_dir = "summary"
 not_aligned_name = "not_aligned"
 combined_output_name = "combined_reference"
 krona_dirname = "krona_charts"
+downloaded_ref_min_aligned_rate = 0.1
+
 # for reads analyzer
 variation_dirname = 'structural_variations'
 trivial_deletions_fname = 'trivial_deletions.bed'

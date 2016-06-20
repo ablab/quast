@@ -258,7 +258,7 @@ def _correct_meta_references(ref_fpaths, corrected_dirpath):
     return corrected_ref_fpaths, combined_ref_fpath, chromosomes_by_refs, ref_fpaths
 
 
-def remove_unaligned_downloaded_refs(genome_info_fpath, ref_fpaths, chromosomes_by_refs):
+def get_downloaded_refs_with_alignments(genome_info_fpath, ref_fpaths, chromosomes_by_refs):
     refs_len = {}
     with open(genome_info_fpath, 'r') as report_file:
         report_file.readline()
@@ -278,7 +278,9 @@ def remove_unaligned_downloaded_refs(genome_info_fpath, ref_fpaths, chromosomes_
             if chromosome[0] in refs_len:
                 aligned_len += int(refs_len[chromosome[0]][1])
                 all_len += int(refs_len[chromosome[0]][0])
-        if aligned_len > all_len * 0.1 and aligned_len > 0:
+        if not aligned_len:
+            continue
+        if aligned_len > all_len * qconfig.downloaded_ref_min_aligned_rate:
             corr_refs.append(ref_fpath)
     return corr_refs
 
@@ -688,7 +690,7 @@ def main(args):
     if downloaded_refs:
         logger.main_info()
         logger.main_info('Excluding downloaded references with low genome fraction from further analysis..')
-        corr_ref_fpaths = remove_unaligned_downloaded_refs(genome_info_fpath, ref_fpaths, chromosomes_by_refs)
+        corr_ref_fpaths = get_downloaded_refs_with_alignments(genome_info_fpath, ref_fpaths, chromosomes_by_refs)
         if corr_ref_fpaths and corr_ref_fpaths != ref_fpaths:
             logger.main_info()
             logger.main_info('Filtered reference(s):')

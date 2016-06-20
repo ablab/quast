@@ -15,6 +15,12 @@ import logging
 _loggers = {}
 
 
+def get_main_logger():
+    if qconfig.LOGGER_META_NAME in _loggers.keys():
+        return _loggers[qconfig.LOGGER_META_NAME]
+    return _loggers[qconfig.LOGGER_DEFAULT_NAME]
+
+
 def get_logger(name):
     if name in _loggers.keys():
         return _loggers[name]

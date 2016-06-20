@@ -48,7 +48,9 @@ import itertools
 from libs import fastaparser, qutils
 from libs import qconfig
 
-from libs.log import get_logger
+from libs.log import get_logger, get_main_logger
+
+main_logger = get_main_logger()
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 meta_logger = get_logger(qconfig.LOGGER_META_NAME)
 
@@ -61,8 +63,8 @@ if qconfig.draw_plots:
         import matplotlib
         matplotlib.use('Agg')  # non-GUI backend
         if matplotlib.__version__.startswith('0') or matplotlib.__version__.startswith('1.0'):
-            logger.info('')
-            logger.warning('Can\'t draw plots: matplotlib version is old! Please use matplotlib version 1.1 or higher.')
+            main_logger.info('')
+            main_logger.warning('Can\'t draw plots: matplotlib version is old! Please use matplotlib version 1.1 or higher.')
             matplotlib_error = True
     except Exception:
         logger.info('')

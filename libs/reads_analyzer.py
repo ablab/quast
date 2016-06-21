@@ -215,7 +215,7 @@ def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpat
         if len(abs_reads_fpaths) != 2:
             logger.error('  You should specify files with forward and reverse reads.')
             logger.info('  Failed searching structural variations.')
-            return None, None, None
+            return None, None, Noneca
 
         prev_dir = os.getcwd()
         os.chdir(output_dirpath)
@@ -521,7 +521,7 @@ def do(ref_fpath, contigs_fpaths, reads_fpaths, meta_ref_fpaths, output_dir, ext
     err_path = os.path.join(output_dir, 'sv_calling.err')
     logger.info('  ' + 'Logging to files %s and %s...' % (log_path, err_path))
     try:
-        bed_fpath, cov_fpath, physical_cov_fpath = run_processing_reads(ref_fpath, meta_ref_fpaths, ca_utils.ref_labels_by_chromosomes,
+        bed_fpath, cov_fpath, physical_cov_fpath = run_processing_reads(ref_fpath, meta_ref_fpaths, ca_utils.misc.ref_labels_by_chromosomes,
                                                                         reads_fpaths, temp_output_dir, output_dir, log_path, err_path,
                                                                         bed_fpath=bed_fpath, sam_fpath=sam_fpath, bam_fpath=bam_fpath)
     except:

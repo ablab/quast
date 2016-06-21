@@ -12,7 +12,6 @@ import sys
 import os
 import shutil
 import getopt
-import re
 
 from libs import qconfig
 qconfig.check_python_version()
@@ -28,10 +27,7 @@ logger.set_up_console_handler()
 from site import addsitedir
 addsitedir(os.path.join(qconfig.LIBS_LOCATION, 'site_packages'))
 
-import quast
 from libs import contigs_analyzer, reads_analyzer
-
-COMBINED_REF_FNAME = 'combined_reference.fasta'
 
 
 class Assembly:
@@ -127,8 +123,8 @@ def _partition_contigs(assemblies, ref_fpaths, corrected_dirpath, alignments_fpa
 
 
 def _start_quast_main(
-        name, args, assemblies, reference_fpath=None,
-        output_dirpath=None, exit_on_exception=True, num_notifications_tuple=None, is_first_run=None):
+        args, assemblies, reference_fpath=None,
+        output_dirpath=None, num_notifications_tuple=None, is_first_run=None):
     args = args[:]
 
     args.extend([asm.fpath for asm in assemblies])
@@ -198,7 +194,7 @@ def _correct_assemblies(contigs_fpaths, output_dirpath, labels):
 def _correct_meta_references(ref_fpaths, corrected_dirpath):
     corrected_ref_fpaths = []
 
-    combined_ref_fpath = os.path.join(corrected_dirpath, COMBINED_REF_FNAME)
+    combined_ref_fpath = os.path.join(corrected_dirpath, qconfig.combined_ref_name)
 
     chromosomes_by_refs = {}
 
@@ -253,7 +249,7 @@ def _correct_meta_references(ref_fpaths, corrected_dirpath):
         if corr_seq_fpath:
             logger.main_info('  ' + ref_fpath + ' ==> ' + qutils.name_from_fpath(corr_seq_fpath) + '')
 
-    logger.main_info('  All references combined in ' + COMBINED_REF_FNAME)
+    logger.main_info('  All references combined in ' + qconfig.combined_ref_name)
 
     return corrected_ref_fpaths, combined_ref_fpath, chromosomes_by_refs, ref_fpaths
 
@@ -609,12 +605,7 @@ def main(args):
         # No references, running regular quast with MetaGenemark gene finder
         logger.main_info()
         logger.notice('No references are provided, starting regular QUAST with MetaGeneMark gene finder')
-        _start_quast_main(
-            None,
-            quast_py_args,
-            assemblies=assemblies,
-            output_dirpath=output_dirpath,
-            exit_on_exception=True)
+        _start_quast_main(quast_py_args, assemblies=assemblies, output_dirpath=output_dirpath)
         exit(0)
 
     # Running combined reference
@@ -664,7 +655,7 @@ def main(args):
     else:
         json_texts = None
     return_code, total_num_notifications, assemblies, labels = \
-        _start_quast_main(run_name, quast_py_args + ([] if qconfig.unique_mapping else ["--ambiguity-usage", 'all']),
+        _start_quast_main(quast_py_args + ([] if qconfig.unique_mapping else ["--ambiguity-usage", 'all']),
         assemblies=assemblies,
         reference_fpath=combined_ref_fpath,
         output_dirpath=combined_output_dirpath,
@@ -702,7 +693,7 @@ def main(args):
             logger.main_info()
             logger.main_info('Starting quast.py ' + run_name + '...')
             return_code, total_num_notifications, assemblies, labels = \
-                _start_quast_main(run_name, quast_py_args + ([] if qconfig.unique_mapping else ["--ambiguity-usage", 'all']),
+                _start_quast_main(quast_py_args + ([] if qconfig.unique_mapping else ["--ambiguity-usage", 'all']),
                 assemblies=assemblies,
                 reference_fpath=combined_ref_fpath,
                 output_dirpath=combined_output_dirpath,
@@ -743,11 +734,11 @@ def main(args):
             run_name = 'for the contigs aligned to ' + ref_name
             logger.main_info('Starting quast.py ' + run_name)
 
-            return_code, total_num_notifications = _start_quast_main(run_name, quast_py_args,
+            return_code, total_num_notifications = _start_quast_main(quast_py_args,
                 assemblies=ref_assemblies,
                 reference_fpath=ref_fpath,
                 output_dirpath=os.path.join(output_dirpath_per_ref, ref_name),
-                exit_on_exception=False, num_notifications_tuple=total_num_notifications)
+                num_notifications_tuple=total_num_notifications)
             if json_texts is not None:
                 json_texts.append(json_saver.json_text)
 
@@ -765,10 +756,10 @@ def main(args):
     else:
         logger.main_info('Starting quast.py ' + run_name + '...')
 
-        return_code, total_num_notifications = _start_quast_main(run_name, quast_py_args,
+        return_code, total_num_notifications = _start_quast_main(quast_py_args,
             assemblies=not_aligned_assemblies,
             output_dirpath=os.path.join(output_dirpath, qconfig.not_aligned_name),
-            exit_on_exception=False, num_notifications_tuple=total_num_notifications)
+            num_notifications_tuple=total_num_notifications)
 
         if return_code not in [0, 4]:
             logger.error('Error running quast.py for the contigs not aligned anywhere')

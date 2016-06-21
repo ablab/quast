@@ -9,7 +9,7 @@
 import os
 import plotter
 import qconfig
-from libs.ca_utils import print_file
+from libs.ca_utils.misc import print_file
 from libs.log import get_logger
 import reporting
 logger = get_logger(qconfig.LOGGER_META_NAME)

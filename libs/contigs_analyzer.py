@@ -49,7 +49,7 @@ class SNP():
 
 # former plantagora and plantakolya
 def align_and_analyze(cyclic, index, contigs_fpath, output_dirpath, ref_fpath,
-                      old_contigs_fpath, bed_fpath, parallel_by_chr, emem_threads):
+                      old_contigs_fpath, bed_fpath, parallel_by_chr=False, threads=1):
     nucmer_output_dirpath = ca_utils.create_nucmer_output_dir(output_dirpath)
     assembly_label = qutils.label_from_fpath_for_fname(contigs_fpath)
     nucmer_fpath = join(nucmer_output_dirpath, assembly_label)
@@ -79,7 +79,7 @@ def align_and_analyze(cyclic, index, contigs_fpath, output_dirpath, ref_fpath,
         get_nucmer_aux_out_fpaths(nucmer_fpath)
 
     nucmer_status = align_contigs(nucmer_fpath, ref_fpath, contigs_fpath, old_contigs_fpath, index,
-                                  parallel_by_chr, emem_threads, log_out_fpath, log_err_fpath)
+                                  parallel_by_chr, threads, log_out_fpath, log_err_fpath)
     if nucmer_status != NucmerStatus.OK:
         with open(log_err_fpath, 'a') as log_err_f:
             if nucmer_status == NucmerStatus.ERROR:
@@ -893,14 +893,6 @@ def align_and_analyze(cyclic, index, contigs_fpath, output_dirpath, ref_fpath,
         return NucmerStatus.OK, result, aligned_lengths
 
 
-def perform_alignment_and_analysis(cyclic, contigs_fpath, i, output_dirpath, ref_fpath, bed_fpath, parallel_by_chr=False,
-                        emem_threads=1):
-    contigs_fpath, old_contigs_fpath = contigs_fpath
-    nucmer_is_ok, result, aligned_lengths = align_and_analyze(cyclic, i, contigs_fpath, output_dirpath, ref_fpath,
-                                                        old_contigs_fpath, bed_fpath, parallel_by_chr=parallel_by_chr, emem_threads=emem_threads)
-    return nucmer_is_ok, result, aligned_lengths
-
-
 def do(reference, contigs_fpaths, cyclic, output_dir, old_contigs_fpaths, bed_fpath=None):
     if not os.path.isdir(output_dir):
         os.mkdir(output_dir)
@@ -915,24 +907,26 @@ def do(reference, contigs_fpaths, cyclic, output_dir, old_contigs_fpaths, bed_fp
 
     ca_utils.create_nucmer_output_dir(output_dir)
     n_jobs = min(len(contigs_fpaths), qconfig.max_threads)
-    emem_threads = max(int(qconfig.max_threads / len(contigs_fpaths)), 1)
     if qconfig.memory_efficient:
-        emem_threads = 1
+        threads = 1
+    else:
+        threads = max(int(qconfig.max_threads / n_jobs), 1)
     from joblib import Parallel, delayed
     if not qconfig.splitted_ref:
-        statuses_results_lengths_tuples = Parallel(n_jobs=n_jobs)(delayed(perform_alignment_and_analysis)(
-        cyclic, fname, i, output_dir, reference, bed_fpath, emem_threads=emem_threads)
-             for i, fname in enumerate(zip(contigs_fpaths, old_contigs_fpaths)))
+        statuses_results_lengths_tuples = Parallel(n_jobs=n_jobs)(delayed(align_and_analyze)(
+        cyclic, i, contigs_fpath, output_dir, reference, old_contigs_fpath, bed_fpath, threads=threads)
+             for i, (contigs_fpath, old_contigs_fpath) in enumerate(zip(contigs_fpaths, old_contigs_fpaths)))
     else:
         if len(contigs_fpaths) >= len(qconfig.splitted_ref) and not qconfig.memory_efficient:
-            statuses_results_lengths_tuples = Parallel(n_jobs=n_jobs)(delayed(perform_alignment_and_analysis)(
-            cyclic, fname, i, output_dir, reference, bed_fpath, emem_threads=emem_threads)
-                for i, fname in enumerate(zip(contigs_fpaths, old_contigs_fpaths)))
+            statuses_results_lengths_tuples = Parallel(n_jobs=n_jobs)(delayed(align_and_analyze)(
+            cyclic, i, contigs_fpath, output_dir, reference, old_contigs_fpath, bed_fpath, threads=threads)
+                for i, (contigs_fpath, old_contigs_fpath) in enumerate(zip(contigs_fpaths, old_contigs_fpaths)))
         else:
             statuses_results_lengths_tuples = []
-            for i, contigs_fpath in enumerate(zip(contigs_fpaths, old_contigs_fpaths)):
-                statuses_results_lengths_tuples.append(perform_alignment_and_analysis(cyclic, contigs_fpath, i, output_dir,
-                                                       reference, bed_fpath, parallel_by_chr=True))
+            for i, (contigs_fpath, old_contigs_fpath) in enumerate(zip(contigs_fpaths, old_contigs_fpaths)):
+                statuses_results_lengths_tuples.append(align_and_analyze(
+                cyclic, i, contigs_fpath, output_dir, reference, old_contigs_fpath, bed_fpath,
+                parallel_by_chr=True, threads=qconfig.max_threads))
 
     # unzipping
     statuses, results, aligned_lengths = [x[0] for x in statuses_results_lengths_tuples], \

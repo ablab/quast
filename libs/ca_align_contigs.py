@@ -71,7 +71,7 @@ def get_nucmer_aux_out_fpaths(nucmer_fpath):
 
 
 def align_contigs(nucmer_fpath, ref_fpath, contigs_fpath, old_contigs_fpath, index,
-                  parallel_by_chr, emem_threads, log_out_fpath, log_err_fpath):
+                  parallel_by_chr, threads, log_out_fpath, log_err_fpath):
     log_out_f = open(log_out_fpath, 'w')
     log_err_f = open(log_err_fpath, 'w')
 
@@ -100,7 +100,7 @@ def align_contigs(nucmer_fpath, ref_fpath, contigs_fpath, old_contigs_fpath, ind
 
         if not qconfig.splitted_ref:
             nucmer_exit_code = run_nucmer(nucmer_fpath, ref_fpath, contigs_fpath,
-                                          log_out_fpath, log_err_fpath, index, emem_threads)
+                                          log_out_fpath, log_err_fpath, index, threads)
             if nucmer_exit_code != 0:
                 return NucmerStatus.ERROR
         else:
@@ -112,10 +112,10 @@ def align_contigs(nucmer_fpath, ref_fpath, contigs_fpath, old_contigs_fpath, ind
             # (i.e. daemonic) we can't start new daemonic processes
             if parallel_by_chr and not qconfig.memory_efficient:
                 n_jobs = min(qconfig.max_threads, len(prefixes_and_chr_files))
-                if emem_threads == 1:
-                    emem_threads = max(int(qconfig.max_threads / n_jobs), 1)
+                threads = max(int(threads / n_jobs), 1)
             else:
                 n_jobs = 1
+                threads = 1
             if n_jobs > 1:
                 logger.info('    ' + 'Aligning to different chromosomes in parallel'
                                      ' (' + str(n_jobs) + ' threads)')
@@ -123,7 +123,7 @@ def align_contigs(nucmer_fpath, ref_fpath, contigs_fpath, old_contigs_fpath, ind
             # processing each chromosome separately (if we can)
             from joblib import Parallel, delayed
             nucmer_exit_codes = Parallel(n_jobs=n_jobs)(delayed(run_nucmer)(
-                prefix, chr_file, contigs_fpath, log_out_fpath, log_err_fpath + "_part%d" % (i + 1), index, emem_threads)
+                prefix, chr_file, contigs_fpath, log_out_fpath, log_err_fpath + "_part%d" % (i + 1), index, threads)
                 for i, (prefix, chr_file) in enumerate(prefixes_and_chr_files))
 
             print >> log_err_f, "Stderr outputs for reference parts are in:"

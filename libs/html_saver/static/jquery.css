@@ -91,13 +91,13 @@
 	top: 0;
 	left: 0;
 	cursor: default;
+    width: 150px;
 }
 .ui-menu {
 	list-style: none;
 	padding: 0;
 	margin: 0;
-	display: block;
-	outline: none;
+    word-wrap: break-word;
 }
 .ui-menu .ui-menu {
 	position: absolute;

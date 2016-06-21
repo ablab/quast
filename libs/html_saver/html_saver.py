@@ -68,7 +68,8 @@ aux_files = [
 ]
 
 aux_meta_files = ['static/flot/jquery.flot.tickrotor.js', 'static/flot/jquery.flot.stack.js', 'static/scripts/draw_metasummary_plot.js', 'static/scripts/draw_meta_misassembl_plot.js',]
-
+jquery_fpath = 'static/jquery-1.8.2.min.js'
+jquery_ui_fpath = 'static/jquery-ui.js'
 
 def js_html(script_rel_path):
     if qconfig.debug:
@@ -117,11 +118,14 @@ def init_icarus(template_f, html_fpath):
         html = template_file.read()
 
         html = html.replace('{{ d3 }}', js_html('static/d3.js'))
+        html = html.replace('{{ jquery }}', js_html(jquery_fpath))
+        html = html.replace('{{ jquery_ui }}', js_html(jquery_ui_fpath))
         html = html.replace('{{ build_icarus }}', js_html('static/scripts/build_icarus.js'))
         html = html.replace('{{ display_icarus }}', js_html('static/scripts/display_icarus.js'))
         html = html.replace('{{ icarus_interface }}', js_html('static/scripts/icarus_interface.js'))
         html = html.replace('{{ icarus_utils }}', js_html('static/scripts/icarus_utils.js'))
         html = html.replace('{{ bootstrap }}', css_html('static/bootstrap/bootstrap.css'))
+        html = html.replace('{{ jquery_css }}', css_html('static/jquery.css'))
         html = html.replace('{{ common }}', css_html('static/common.css'))
         html = html.replace('{{ icarus }}', css_html('static/icarus.css'))
         with open(html_fpath, 'w') as f_html:

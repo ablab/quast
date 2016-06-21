@@ -936,13 +936,13 @@ THE SOFTWARE.
 
             features[i].objClass = c;
 
-            var x = x_mini(d.start);
+            var x = x_mini(d.corr_start);
             var y = y_anno_mini(d.lane);
             y += .15 * annotationMiniLanesHeight;
             if (d.objClass.search("odd") != -1)
                 y += .04 * annotationMiniLanesHeight;
 
-            result.push({objClass: c, name: d.name, start: d.start, end: d.end, corr_start: d.start, corr_end: d.end,
+            result.push({objClass: c, name: d.name, start: d.start, end: d.end, corr_start: d.corr_start, corr_end: d.corr_end,
                 id: d.id_, y: y, x: x, lane: d.lane, order: i});
             curLane = d.lane;
             numItem++;

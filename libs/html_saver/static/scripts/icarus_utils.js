@@ -163,17 +163,10 @@ function changeInfo(block) {
     display();
 }
 
+var ndash = String.fromCharCode(8211);
+
 function appendBlock(whereAppendBlock, numBlock, curBlock, start, end, contigName, assembly, prev_start, prev_end, is_expanded) {
-    var posVal = function (val) {
-        if (mainTickValue == 'Gbp')
-            return d3.round(val / 1000000000, 2);
-        else if (mainTickValue == 'Mbp')
-            return d3.round(val / 1000000, 2);
-        else if (mainTickValue == 'kbp')
-            return d3.round(val / 1000, 2);
-        else
-            return val;
-    };
+
     var format = function (val) {
         val = val.toString();
         for (var i = 3; i < val.length; i += 4 )
@@ -181,7 +174,6 @@ function appendBlock(whereAppendBlock, numBlock, curBlock, start, end, contigNam
         return val;
     };
 
-    var ndash = String.fromCharCode(8211);
     var hasChromosomeLinks = typeof links_to_chromosomes !== 'undefined';
     var block = whereAppendBlock.append('span')
                 .attr('class', is_expanded ? 'head' : 'head main')
@@ -193,7 +185,7 @@ function appendBlock(whereAppendBlock, numBlock, curBlock, start, end, contigNam
     else positionLink = block.append('tspan');
     positionLink.attr('id', 'position_link' + numBlock)
         .style('cursor', 'pointer')
-        .text([posVal(curBlock.start), ndash, posVal(curBlock.end), mainTickValue, ' '].join(' '));
+        .text([formatValue(curBlock.start, mainTickValue), ndash, formatValue(curBlock.end, mainTickValue), mainTickValue, ' '].join(' '));
     if (is_expanded && !isContigSizePlot && chrContigs.indexOf(curBlock.chr) != -1)  // chromosome on this screen
         positionLink.style('text-decoration', 'underline')
             .style('color', '#7ED5F5')
@@ -273,7 +265,7 @@ function appendBlock(whereAppendBlock, numBlock, curBlock, start, end, contigNam
             .text(referenceText);
     }
     var contigText = ['contig:', format(curBlock.start_in_contig), ndash,  format(curBlock.end_in_contig),
-            '(' + format(Math.abs(curBlock.end_in_contig - curBlock.start_in_contig) + 1) + ')', 'bp'].join(' ')
+            '(' + format(Math.abs(curBlock.end_in_contig - curBlock.start_in_contig) + 1) + ')', 'bp'].join(' ');
     block.append('p')
         .text(contigText);
     if (curBlock.IDY)

@@ -28,6 +28,8 @@ function setupInterface() {
             setContigSizeThreshold(event, this) };
     }
 
+    setupAutocompleteSearch();
+
     setupChromosomeSelector(document.getElementById('select_chr_start'), 0);
     setupChromosomeSelector(document.getElementById('select_chr_end'), 1);
 
@@ -155,6 +157,107 @@ function setupChromosomeSelector(chrSelector, selectorIndex) {
             setCoords(coords);
         };
     }
+}
+
+function setupAutocompleteSearch(){
+    var maxResults = 10;
+    var autocompleteItems = createAutocompleteListItems();
+
+    $( "#live_search" ).autocomplete({
+        minLength: 1,
+        maxHeight: 200,
+        deferRequestBy: 50,
+        source: function(request, response) {
+            var results = $.ui.autocomplete.filter(autocompleteItems, request.term);
+            results = results.slice(0, maxResults);
+
+            var additionalLabel = '';
+            if (results.length == 0) additionalLabel = 'No result';
+            else if (results.length > maxResults) {
+                additionalLabel = results.length - maxResults + ' more results';
+            }
+            if (additionalLabel) {
+                results.push({
+                    desc: additionalLabel
+                });
+            }
+            response(results);
+        },
+        focus: function( event, ui ) {
+            $( "#live_search" ).val( ui.item.label );
+            return false;
+        },
+        select: function( event, ui ) {
+            $( "#live_search" ).val( ui.item.label );
+            var itemType = ui.item.value.split(',')[0];
+            var itemValue = ui.item.value.split(',')[1];
+
+            if (itemType == 'contig') {
+                var selectedItem = items[itemValue];
+                selected_id = selectedItem.groupId;
+                showArrows(selectedItem);
+                changeInfo(selectedItem);
+            }
+            else if (itemType == 'gene') {
+                var selectedItem = featuresData.features[itemValue];
+            }
+            var minSize = 5000;
+            var start = selectedItem.corr_start;
+            var end = Math.max(selectedItem.corr_end, selectedItem.corr_start + minSize);
+            setCoords([start, end], true);
+            display();
+
+            return false;
+        }
+    })
+        .focus(function(){
+            $(this).autocomplete('search');
+        })
+        .autocomplete( "instance" )._renderItem = function( ul, item ) {
+        return $( "<li>" )
+            .append(item.desc)
+            .appendTo(ul);
+    };
+}
+
+function createAutocompleteListItems() {
+    var autocompleteItems = [];
+    for (var i = 0; i < items.length; i++) {
+        if (isContigSizePlot && !items[i].fullContig)
+            continue;
+        var position = [formatValue(items[i].start, mainTickValue), ndash, formatValue(items[i].end, mainTickValue), mainTickValue, ' '].join(' ');
+        var description = '<span style="color:gray"> ' + items[i].assembly + ': </span>' + items[i].name;
+        if (isContigSizePlot){
+            var size = items[i].size;
+            var tickValue = getTickValue(size);
+            size = formatValue(size, tickValue);
+            description +=  ' ' + size + ' ' + tickValue;
+        }
+        else {
+            description +=  ' ' + position;
+        }
+        autocompleteItems.push({
+            label: items[i].name,
+            value: 'contig,' + i,
+            desc: description
+        })
+    }
+    if (featuresData) {
+        for (var i = 0; i < featuresData.features.length; i++) {
+            var feature = featuresData.features[i];
+            var featureKind = feature.kind[0].toUpperCase() + feature.kind.slice(1);
+            var name = (feature.name ? ' ' + feature.name : '') + (feature.id_ ? ' ID=' + feature.id_ : '');
+            var label = featureKind + name + ' ' + chrContigs[feature.chr];
+            var position = [formatValue(feature.start, mainTickValue), ndash, formatValue(feature.end, mainTickValue), mainTickValue, ' '].join(' ');
+            var description = '<span style="color:gray">' + featureKind + ': </span>' + name + ' ' + chrContigs[feature.chr];
+            autocompleteItems.push({
+                label: label + ' ' + chrContigs[feature.chr],
+                value: 'gene,' + i,
+                desc: description
+            })
+        }
+    }
+    return autocompleteItems;
 }
 
 function addCovTrackButtons() {

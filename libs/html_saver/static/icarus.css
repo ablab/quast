@@ -507,6 +507,14 @@ path {
     line-height: 250%;
 }
 
+#live_search {
+    width: 150px;
+}
+
+.last-td {
+    width: 210px;
+}
+
 /*#controls_panel span {*/
     /*margin-left: 7px;*/
 /*}*/

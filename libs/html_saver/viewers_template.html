@@ -28,6 +28,7 @@ THE SOFTWARE.
 <meta content="utf-8" http-equiv="encoding">
     {{ icarus }}
     {{ common }}
+    {{ jquery_css }}
     {{ bootstrap }}
 </head>
 <body>
@@ -105,6 +106,12 @@ THE SOFTWARE.
                     {{ ms_selector }}
                 </div>
             </div>
+        </td>
+        <td class="last-td">
+            <div class="text_div">
+                Search: <input id="live_search" placeholder="Enter contig/gene name"/>
+            </div>
+        </td>
         </tr>
     </table>
 </div>
@@ -129,6 +136,8 @@ THE SOFTWARE.
     {{ contig_sizes }}
 </script>
     {{ d3 }}
+    {{ jquery }}
+    {{ jquery_ui }}
     {{ icarus_interface }}
     {{ icarus_utils }}
     {{ display_icarus }}

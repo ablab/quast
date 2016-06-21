@@ -98,6 +98,7 @@ gage_report_prefix = "gage_"
 html_aux_dir = "report_html_aux"
 contig_report_fname_pattern = 'contigs_report_%s'
 icarus_report_fname_pattern = 'all_alignments_%s.tsv'
+nucmer_output_dirname = 'nucmer_output'
 
 # for MetaQUAST
 downloaded_dirname = "quast_downloaded_references"

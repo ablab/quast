@@ -11,8 +11,9 @@
 
 from __future__ import with_statement
 import platform
+import os
 from itertools import repeat
-from os.path import isfile, join
+from os.path import isfile, isdir, join
 from libs import qconfig, qutils
 
 # it will be set to actual dirpath after successful compilation
@@ -70,3 +71,27 @@ def print_file(all_rows, fpath):
     for row in all_rows:
         print >> txt_file, '  '.join('%-*s' % (colwidth, cell) for colwidth, cell
                                      in zip(colwidths, [row['metricName']] + map(val_to_str, row['values'])))
+
+
+def create_nucmer_output_dir(output_dir):
+    nucmer_output_dirname = qconfig.nucmer_output_dirname
+    nucmer_output_dir = join(output_dir, nucmer_output_dirname)
+    if not isdir(nucmer_output_dir):
+        os.mkdir(nucmer_output_dir)
+    if qconfig.is_combined_ref:
+        from libs import search_references_meta
+        if search_references_meta.is_quast_first_run:
+            nucmer_output_dir = os.path.join(nucmer_output_dir, 'raw')
+            if not os.path.isdir(nucmer_output_dir):
+                os.mkdir(nucmer_output_dir)
+    return nucmer_output_dir
+
+
+def clean_tmp_files(nucmer_fpath):
+    if qconfig.debug:
+        return
+
+    # delete temporary files
+    for ext in ['.delta', '.coords_tmp', '.coords.headless']:
+        if os.path.isfile(nucmer_fpath + ext):
+            os.remove(nucmer_fpath + ext)

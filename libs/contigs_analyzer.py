@@ -20,11 +20,12 @@ from __future__ import with_statement
 import os
 from os.path import join
 
-from libs import reporting, qconfig, qutils, ca_utils, fastaparser
-from libs.ca_analyze_misassemblies import process_misassembled_contig, find_all_sv, IndelsInfo, Misassembly, Mapping
-from libs.ca_best_set_selection import get_best_aligns_set
-from libs.ca_utils import print_file, ref_labels_by_chromosomes, clean_tmp_files
-from libs.ca_align_contigs import align_contigs, get_nucmer_aux_out_fpaths, NucmerStatus
+from libs import reporting, qconfig, qutils, fastaparser
+from libs.ca_utils.analyze_misassemblies import process_misassembled_contig, find_all_sv, IndelsInfo, Misassembly, Mapping
+from libs.ca_utils.best_set_selection import get_best_aligns_set
+from libs.ca_utils.misc import print_file, ref_labels_by_chromosomes, clean_tmp_files, compile_aligner, \
+    create_nucmer_output_dir
+from libs.ca_utils.align_contigs import align_contigs, get_nucmer_aux_out_fpaths, NucmerStatus
 
 from libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
@@ -50,7 +51,7 @@ class SNP():
 # former plantagora and plantakolya
 def align_and_analyze(cyclic, index, contigs_fpath, output_dirpath, ref_fpath,
                       old_contigs_fpath, bed_fpath, parallel_by_chr=False, threads=1):
-    nucmer_output_dirpath = ca_utils.create_nucmer_output_dir(output_dirpath)
+    nucmer_output_dirpath = create_nucmer_output_dir(output_dirpath)
     assembly_label = qutils.label_from_fpath_for_fname(contigs_fpath)
     nucmer_fpath = join(nucmer_output_dirpath, assembly_label)
 
@@ -901,11 +902,11 @@ def do(reference, contigs_fpaths, cyclic, output_dir, old_contigs_fpaths, bed_fp
     logger.main_info('Running Contig analyzer...')
     num_nf_errors = logger._num_nf_errors
 
-    if not ca_utils.compile_aligner(logger):
+    if not compile_aligner(logger):
         logger.main_info('Failed aligning the contigs for all the assemblies. Only basic stats are going to be evaluated.')
         return dict(zip(contigs_fpaths, [NucmerStatus.FAILED] * len(contigs_fpaths))), None
 
-    ca_utils.create_nucmer_output_dir(output_dir)
+    create_nucmer_output_dir(output_dir)
     n_jobs = min(len(contigs_fpaths), qconfig.max_threads)
     if qconfig.memory_efficient:
         threads = 1

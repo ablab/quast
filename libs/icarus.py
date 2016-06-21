@@ -18,7 +18,7 @@ except ImportError:
 
 import os
 from libs import qconfig, qutils, fastaparser, genome_analyzer
-from libs.ca_utils import ref_labels_by_chromosomes
+from libs.ca_utils.misc import ref_labels_by_chromosomes
 import libs.html_saver.html_saver as html_saver
 import libs.html_saver.json_saver as json_saver
 from libs.svg_alignment_plotter import draw_alignment_plot

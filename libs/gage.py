@@ -9,6 +9,7 @@ import logging
 import os
 import shutil
 from libs import reporting, qutils, ca_utils
+from libs.ca_utils.misc import compile_aligner
 import qconfig
 from qutils import get_path_to_program
 from os.path import join, abspath
@@ -41,7 +42,7 @@ def run_gage(i, contigs_fpath, gage_results_dirpath, gage_tool_path, reference, 
     log_err_f = open(log_err_fpath, 'w')
 
     return_code = qutils.call_subprocess(
-        ['sh', gage_tool_path, abspath(ca_utils.contig_aligner_dirpath), reference,
+        ['sh', gage_tool_path, abspath(ca_utils.misc.contig_aligner_dirpath), reference,
          contigs_fpath, tmp_dir, str(qconfig.min_contig)],
         stdout=log_out_f,
         stderr=log_err_f,
@@ -92,7 +93,7 @@ def do(ref_fpath, contigs_fpaths, output_dirpath):
     if not os.path.exists(tmp_dirpath):
         os.makedirs(tmp_dirpath)
 
-    if not ca_utils.compile_aligner(logger):
+    if not compile_aligner(logger):
         return
     if not all_required_java_classes_exist(gage_dirpath):
         javac_path = get_path_to_program('javac')

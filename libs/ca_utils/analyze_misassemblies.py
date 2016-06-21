@@ -9,11 +9,11 @@ from __future__ import with_statement
 import copy
 
 from libs import qconfig
-from libs.ca_utils import check_chr_for_refs, get_ref_by_chromosome
+from libs.ca_utils.misc import check_chr_for_refs, get_ref_by_chromosome
 
 from libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
-from qutils import correct_name
+from libs.qutils import correct_name
 
 
 class Misassembly:

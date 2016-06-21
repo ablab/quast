@@ -92,7 +92,6 @@ class Fields:
     DUPLICATION_RATIO = 'Duplication ratio'
     GENES = '# genes'
     OPERONS = '# operons'
-    AVGIDY = 'Average %IDY'  # Deprecated
     LARGALIGN = 'Largest alignment'
     NG50 = 'NG50'
     NA50 = 'NA50'

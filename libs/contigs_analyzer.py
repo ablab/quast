@@ -305,8 +305,6 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
     coords_filtered_file = open(coords_filtered_fpath, 'w')
     coords_filtered_file.write(coords_file.readline())
     coords_filtered_file.write(coords_file.readline())
-    sum_idy = 0.0
-    num_idy = 0
     for line in coords_file:
         if line.strip() == '':
             break
@@ -314,10 +312,7 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
         #Clear leading spaces from nucmer output
         #Store nucmer lines in an array
         mapping = Mapping.from_line(line)
-        sum_idy += mapping.idy
-        num_idy += 1
         aligns.setdefault(mapping.contig, []).append(mapping)
-    avg_idy = sum_idy / num_idy if num_idy else 0
 
     # Loading the reference sequences
     print >> planta_out_f, 'Loading reference...'  # TODO: move up
@@ -1079,7 +1074,7 @@ def plantakolya(cyclic, index, contigs_fpath, nucmer_fpath, output_dirpath, ref_
         indels_list = None
         total_aligned_bases = None
 
-    result = {'avg_idy': avg_idy, 'region_misassemblies': region_misassemblies,
+    result = {'region_misassemblies': region_misassemblies,
               'region_struct_variations': region_struct_variations.get_count() if region_struct_variations else None,
               'misassemblies_matched_sv': misassemblies_matched_sv,
               'misassembled_contigs': misassembled_contigs, 'misassembled_bases': misassembled_bases,
@@ -1215,7 +1210,6 @@ def do(reference, contigs_fpaths, cyclic, output_dir, old_contigs_fpaths, bed_fp
     def save_result(result):
         report = reporting.get(fname)
 
-        avg_idy = result['avg_idy']
         region_misassemblies = result['region_misassemblies']
         region_struct_variations = result['region_struct_variations']
         misassemblies_matched_sv = result['misassemblies_matched_sv']
@@ -1235,7 +1229,6 @@ def do(reference, contigs_fpaths, cyclic, output_dir, old_contigs_fpaths, bed_fp
         partially_unaligned_with_significant_parts = result['partially_unaligned_with_significant_parts']
         contigs_with_istranslocations = result['contigs_with_istranslocations']
 
-        report.add_field(reporting.Fields.AVGIDY, '%.3f' % avg_idy)
         report.add_field(reporting.Fields.MISLOCAL, region_misassemblies.count(Misassembly.LOCAL))
         report.add_field(reporting.Fields.MISASSEMBL, len(region_misassemblies) - region_misassemblies.count(Misassembly.LOCAL)
                          - region_misassemblies.count(Misassembly.SCAFFOLD_GAP) - region_misassemblies.count(Misassembly.FRAGMENTED))

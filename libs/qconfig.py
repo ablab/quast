@@ -38,7 +38,7 @@ long_options = "test test-no-ref test-sv output-dir= save-json-to= genes= operon
                "gene-thresholds= err-fpath= save-json gage eukaryote glimmer no-plots no-html no-check no-check-meta combined-ref no-gc help debug "\
                "ambiguity-usage= scaffolds threads= min-cluster= min-alignment= est-ref-size= use-all-alignments gene-finding "\
                "strict-NA meta labels= help-hidden no-snps fast max-ref-number= extensive-mis-size= plots-format= " \
-               "fragmented significant-part-size= unique-mapping no-sv no-icarus ambiguity-score= " \
+               "fragmented significant-part-size= unique-mapping no-sv no-icarus ambiguity-score= min-identity= " \
                "references-list= sam= bam= sv-bedpe= reads1= reads2= memory-efficient silent version colors= ls=".split()
 short_options = "o:G:O:R:t:m:J:jehvda:c:ufl:Lx:i:s1:2:"
 
@@ -56,6 +56,7 @@ use_all_alignments = False
 max_threads = None
 min_cluster = 65
 min_alignment = 0
+min_IDY = 95.0
 estimated_reference_size = None
 strict_NA = False
 scaffolds = False
@@ -278,6 +279,7 @@ def usage(show_hidden=False, meta=False, short=True):
         print >> sys.stderr, "-u  --use-all-alignments              Compute genome fraction, # genes, # operons in QUAST v1.* style."
         print >> sys.stderr, "                                      By default, QUAST filters Nucmer\'s alignments to keep only best ones"
         print >> sys.stderr, "-i  --min-alignment <int>             Nucmer's parameter: the minimum alignment length [default: %s]" % min_alignment
+        print >> sys.stderr, "    --min-identity <float>            Nucmer's parameter: the minimum alignment identity (80.0, 100.0) [default: %.1f]" % min_IDY
         print >> sys.stderr, "-a  --ambiguity-usage <none|one|all>  Use none, one, or all alignments (or aligned fragments internal overlaps) of a contig"
         print >> sys.stderr, "                                      when all of them are almost equally good (see --ambiguity-score) [default: %s]" % ambiguity_usage
         print >> sys.stderr, "    --ambiguity-score <float>         Score S for defining equally good alignments of a single contig. All alignments are sorted "

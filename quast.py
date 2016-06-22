@@ -142,6 +142,13 @@ def main(args):
 
         elif opt in ('-i', "--min-alignment"):
             qconfig.min_alignment = int(arg)
+        elif opt == '--min-identity':
+            if qutils.is_float(arg) and 80.0 <= float(arg) <= 100.0:
+                qconfig.min_IDY = float(arg)
+            else:
+                logger.error("incorrect value for --min-identity (%s)! "
+                             "Please specify a float number between 80.0 and 100.0." % arg,
+                             to_stderr=True, exit_with_code=2)
 
         elif opt == "--est-ref-size":
             qconfig.estimated_reference_size = int(arg)

@@ -157,9 +157,9 @@ def align_contigs(nucmer_fpath, ref_fpath, contigs_fpath, old_contigs_fpath, ind
 
                 delta_file.close()
 
-        # Filtering by IDY% = 95 (as GAGE did)
+        # By default: filtering by IDY% = 95 (as GAGE did)
         return_code = qutils.call_subprocess(
-            [bin_fpath('delta-filter'), '-i', '95', '-l', str(qconfig.min_alignment), delta_fpath],
+            [bin_fpath('delta-filter'), '-i', str(qconfig.min_IDY), '-l', str(qconfig.min_alignment), delta_fpath],
             stdout=open(filtered_delta_fpath, 'w'),
             stderr=log_err_f,
             indent='  ' + qutils.index_to_str(index))

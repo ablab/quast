@@ -454,6 +454,8 @@ def main(args):
             pass
         elif opt in ('-i', "--min-alignment"):
             pass
+        elif opt == "--min-identity":
+            pass
         elif opt in ('-c', "--min-cluster"):
             pass
         elif opt in ('-a', "--ambiguity-usage"):

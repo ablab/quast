@@ -149,6 +149,13 @@ def insert_text_icarus(text_to_insert, keyword, html_fpath):
     return
 
 
+def trim_ref_name(ref_name):
+    if len(ref_name) > 50:
+        ref_hash = hash(ref_name) & 0xffffffff
+        ref_name = ref_name[:50] + '_' + str(ref_hash)
+    return ref_name
+
+
 def clean_html(html_fpath):
     with open(html_fpath) as f_html:
         html_text = f_html.read()
@@ -302,8 +309,8 @@ def create_meta_icarus(results_dirpath, ref_names):
     contig_size_fpath = os.path.join(results_dirpath, qconfig.combined_output_name, qconfig.icarus_dirname, qconfig.contig_size_viewer_fname)
     contig_size_top_fpath = os.path.join(results_dirpath, qconfig.icarus_dirname, qconfig.contig_size_viewer_fname)
     shutil.copy(contig_size_fpath, contig_size_top_fpath)
-    for ref in ref_names:
-        html_name = ref
+    for index, ref in enumerate(ref_names):
+        html_name = trim_ref_name(ref)
         if len(ref_names) == 1:
             html_name = qconfig.one_alignment_viewer_name
         icarus_ref_fpath = os.path.join(results_dirpath, qconfig.combined_output_name, qconfig.icarus_dirname, html_name + '.html')
@@ -313,12 +320,17 @@ def create_meta_icarus(results_dirpath, ref_names):
     icarus_menu_top_fpath = os.path.join(results_dirpath, qconfig.icarus_html_fname)
     with open(icarus_menu_fpath, 'r') as template:
         with open(icarus_menu_top_fpath, 'w') as result:
+            skipping_tr = False
             for line in template:
-                if line.find('<!--- reference') != -1:
-                    l = line.split(':')
-                    if len(l) > 1 and l[1].split()[0] not in ref_names:
-                        continue
-                result.write(line)
+                if line.find('</tr>') != -1:
+                    skipping_tr = False
+                if line.find('<a href="icarus_viewers') != -1 and 'QUAST report' not in line:
+                    ref_name = re.findall('<a.*>(.*)<\/a>', line)[0]
+                    ref_name = ref_name.replace(' ', '_')
+                    if ref_name not in ref_names:
+                        skipping_tr = True
+                if not skipping_tr:
+                    result.write(line)
     save_icarus_links(results_dirpath, icarus_links)
     return icarus_menu_top_fpath
 

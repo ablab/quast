@@ -244,8 +244,6 @@ def _correct_meta_references(ref_fpaths, corrected_dirpath):
             corr_seq_name, corr_seq_fpath = _proceed_seq(seq_name, seq, ref_name, ref_fasta_ext, total_references, ref_fpath)
             if not corr_seq_name:
                 break
-            fastaparser.write_fasta(corr_seq_fpath, [(corr_seq_name, seq)], 'a')
-            fastaparser.write_fasta(combined_ref_fpath, [(corr_seq_name, seq)], 'a')
         if corr_seq_fpath:
             logger.main_info('  ' + ref_fpath + ' ==> ' + qutils.name_from_fpath(corr_seq_fpath) + '')
 

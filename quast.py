@@ -20,7 +20,7 @@ from libs.options_parser import parse_options
 qconfig.check_python_version()
 
 from libs import qutils, reads_analyzer
-from libs.qutils import assert_file_exists, set_up_output_dir, cleanup
+from libs.qutils import cleanup
 
 from libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)

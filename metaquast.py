@@ -14,6 +14,9 @@ import shutil
 import getopt
 
 from libs import qconfig
+from libs.metautils import __remove_from_quast_py_args
+from libs.options_parser import parse_options
+
 qconfig.check_python_version()
 from libs import qutils, fastaparser
 from libs import reporting
@@ -279,25 +282,6 @@ def get_downloaded_refs_with_alignments(genome_info_fpath, ref_fpaths, chromosom
     return corr_refs
 
 
-# safe remove from quast_py_args, e.g. removes correctly "--test-no" (full is "--test-no-ref") and corresponding argument
-def __remove_from_quast_py_args(quast_py_args, opt, arg=None):
-    opt_idx = None
-    if opt in quast_py_args:
-        opt_idx = quast_py_args.index(opt)
-    if opt_idx is None:
-        common_length = -1
-        for idx, o in enumerate(quast_py_args):
-            if opt.startswith(o):
-                if len(o) > common_length:
-                    opt_idx = idx
-                    common_length = len(o)
-    if opt_idx is not None:
-        if arg:
-            del quast_py_args[opt_idx + 1]
-        del quast_py_args[opt_idx]
-    return quast_py_args
-
-
 def main(args):
     if ' ' in qconfig.QUAST_HOME:
         logger.error('QUAST does not support spaces in paths. \n'
@@ -310,238 +294,21 @@ def main(args):
         qconfig.usage(meta=True)
         sys.exit(0)
 
-    genes = []
-    operons = []
+    metaquast_path = [os.path.realpath(__file__)]
+    quast_py_args, contigs_fpaths = parse_options(logger, metaquast_path + args, is_metaquast=True)
+    output_dirpath, ref_fpaths, labels = qconfig.output_dirpath, qconfig.reference, qconfig.labels
     html_report = qconfig.html_report
-    make_latest_symlink = True
-    ref_txt_fpath = None
-
-    try:
-        options, contigs_fpaths = getopt.gnu_getopt(args, qconfig.short_options, qconfig.long_options)
-    except getopt.GetoptError:
-        _, exc_value, _ = sys.exc_info()
-        print >> sys.stderr, exc_value
-        print >> sys.stderr
-        qconfig.usage(meta=True)
-        sys.exit(2)
-
-    quast_py_args = args[:]
-    test_mode = False
-
-    for opt, arg in options:
-        if opt in ('-d', '--debug'):
-            options.remove((opt, arg))
-            qconfig.debug = True
-            logger.set_up_console_handler(debug=True)
-
-        elif opt == '--test' or opt == '--test-no-ref':
-            options.remove((opt, arg))
-            quast_py_args = __remove_from_quast_py_args(quast_py_args, opt)
-            options += [('-o', 'quast_test_output')]
-            if opt == '--test':
-                options += [('-R', ','.join([os.path.join(qconfig.QUAST_HOME, 'test_data', 'meta_ref_1.fasta'),
-                            os.path.join(qconfig.QUAST_HOME, 'test_data', 'meta_ref_2.fasta'),
-                            os.path.join(qconfig.QUAST_HOME, 'test_data', 'meta_ref_3.fasta')]))]
-            contigs_fpaths += [os.path.join(qconfig.QUAST_HOME, 'test_data', 'meta_contigs_1.fasta'),
-                               os.path.join(qconfig.QUAST_HOME, 'test_data', 'meta_contigs_2.fasta')]
-            test_mode = True
-
-        elif opt.startswith('--help') or opt == '-h':
-            qconfig.usage(opt == "--help-hidden", meta=True, short=False)
-            sys.exit(0)
-
-        elif opt.startswith('--version') or opt == '-v':
-            qconfig.print_version(meta=True)
-            sys.exit(0)
-
-    if not contigs_fpaths:
-        logger.error("You should specify at least one file with contigs!\n")
-        qconfig.usage(meta=True)
-        sys.exit(2)
-
-    ref_fpaths = []
-    combined_ref_fpath = ''
-    reads_fpath_f = ''
-    reads_fpath_r = ''
-    sam_fpath = None
-    bam_fpath = None
-    bed_fpath = None
-    output_dirpath = None
-
-    labels = None
-    all_labels_from_dirs = False
-
-    for opt, arg in options:
-        if opt in ('-o', "--output-dir"):
-            # Removing output dir arg in order to further
-            # construct other quast calls from this options
-            if opt in quast_py_args and arg in quast_py_args:
-                quast_py_args = __remove_from_quast_py_args(quast_py_args, opt, arg)
-
-            output_dirpath = os.path.abspath(arg)
-            make_latest_symlink = False
-
-        elif opt in ('-G', "--genes"):
-            assert_file_exists(arg, 'genes')
-            genes += arg
-
-        elif opt in ('-O', "--operons"):
-            assert_file_exists(arg, 'operons')
-            operons += arg
-
-        elif opt in ('-R', "--reference"):
-            # Removing reference args in order to further
-            # construct quast calls from this args with other reference options
-            if opt in quast_py_args and arg in quast_py_args:
-                quast_py_args = __remove_from_quast_py_args(quast_py_args, opt, arg)
-            if os.path.isdir(arg):
-                ref_fpaths = [os.path.join(path,file) for (path, dirs, files) in os.walk(arg) for file in files if qutils.check_is_fasta_file(file)]
-                ref_fpaths.sort()
-            else:
-                ref_fpaths = arg.split(',')
-                for i, ref_fpath in enumerate(ref_fpaths):
-                    assert_file_exists(ref_fpath, 'reference')
-                    ref_fpaths[i] = ref_fpath
-
-        elif opt == '--max-ref-number':
-            quast_py_args = __remove_from_quast_py_args(quast_py_args, opt, arg)
-            qconfig.max_references = int(arg)
-            if qconfig.max_references < 0:
-                qconfig.max_references = 0
-
-        elif opt in ('-m', "--min-contig"):
-            qconfig.min_contig = int(arg)
-
-        elif opt in ('-t', "--threads"):
-            qconfig.max_threads = int(arg)
-            if qconfig.max_threads < 1:
-                qconfig.max_threads = 1
-
-        elif opt in ('-l', '--labels'):
-            quast_py_args = __remove_from_quast_py_args(quast_py_args, opt, arg)
-            labels = qutils.parse_labels(arg, contigs_fpaths)
-
-        elif opt == '-L':
-            quast_py_args = __remove_from_quast_py_args(quast_py_args, opt)
-            all_labels_from_dirs = True
-
-        elif opt in ('-j', '--save-json'):
-            pass
-        elif opt in ('-J', '--save-json-to'):
-            pass
-        elif opt == '--err-fpath':  # for web-quast
-            qconfig.save_error = True
-            qconfig.error_log_fpath = arg
-        elif opt == "--contig-thresholds":
-            pass
-        elif opt in ('-c', "--mincluster"):
-            pass
-        elif opt == "--est-ref-size":
-            pass
-        elif opt == "--gene-thresholds":
-            pass
-        elif opt in ('-s', "--scaffolds"):
-            qconfig.scaffolds = True
-        elif opt == "--gage":
-            pass
-        elif opt == "--debug":
-            pass
-        elif opt in ('-e', "--eukaryote"):
-            pass
-        elif opt in ('-f', "--gene-finding"):
-            pass
-        elif opt in ('-i', "--min-alignment"):
-            pass
-        elif opt == "--min-identity":
-            pass
-        elif opt in ('-c', "--min-cluster"):
-            pass
-        elif opt in ('-a', "--ambiguity-usage"):
-            pass
-        elif opt == '--ambiguity-score':
-            pass
-        elif opt == '--unique-mapping':
-            qconfig.unique_mapping = True
-            __remove_from_quast_py_args(quast_py_args, opt, arg)
-        elif opt in ('-u', "--use-all-alignments"):
-            pass
-        elif opt == "--strict-NA":
-            pass
-        elif opt == '--fragmented':
-            pass
-        elif opt in ('-x', "--extensive-mis-size"):
-            pass
-        elif opt == "--significant-part-size":
-            pass
-        elif opt == "--meta":
-            pass
-        elif opt == '--references-list':
-            ref_txt_fpath = arg
-        elif opt == '--glimmer':
-            pass
-        elif opt == '--no-snps':
-            pass
-        elif opt == '--no-check':
-            pass
-        elif opt == '--no-gc':
-            pass
-        elif opt == '--no-sv':
-            pass
-        elif opt == '--no-plots':
-            pass
-        elif opt == '--no-html':
-            html_report = False
-        elif opt == '--no-icarus':
-            qconfig.create_icarus_html = False
-        elif opt == '--svg':
-            pass
-        elif opt == '--fast':  # --no-check, --no-gc, --no-snps will automatically set in QUAST runs
-            html_report = False
-        elif opt == '--plots-format':
-            pass
-        elif opt == '--memory-efficient':
-            pass
-        elif opt == '--silent':
-            qconfig.silent = True
-        elif opt in ('-1', '--reads1'):
-            reads_fpath_f = assert_file_exists(arg, 'File with forward reads')
-            quast_py_args = __remove_from_quast_py_args(quast_py_args, opt, arg)
-        elif opt in ('-2', '--reads2'):
-            reads_fpath_r = assert_file_exists(arg, 'File with reverse reads')
-            quast_py_args = __remove_from_quast_py_args(quast_py_args, opt, arg)
-        elif opt == '--sam':
-            sam_fpath = assert_file_exists(arg, 'SAM file')
-        elif opt == '--bam':
-            bam_fpath = assert_file_exists(arg, 'BAM file')
-        elif opt == '--sv-bedpe':
-            bed_fpath = assert_file_exists(arg, 'BEDPE file with structural variations')
-        else:
-            logger.error('Unknown option: %s. Use -h for help.' % (opt + ' ' + arg), to_stderr=True, exit_with_code=2)
-
-    for c_fpath in contigs_fpaths:
-        assert_file_exists(c_fpath, 'contigs')
-
-    labels = qutils.process_labels(contigs_fpaths, labels, all_labels_from_dirs)
-
-    for contigs_fpath in contigs_fpaths:
-        if contigs_fpath in quast_py_args:
-            quast_py_args.remove(contigs_fpath)
+    test_mode = qconfig.test
 
     # Directories
     output_dirpath, _, _ = qutils.set_up_output_dir(
-        output_dirpath, None, make_latest_symlink,
+        output_dirpath, None, not output_dirpath,
         save_json=False)
 
     corrected_dirpath = os.path.join(output_dirpath, qconfig.corrected_dirname)
 
-    logger.set_up_file_handler(output_dirpath, qconfig.error_log_fpath if qconfig.save_error else None)
-    args = [os.path.realpath(__file__)]
-    for k, v in options: args.extend([k, v])
-    args.extend(contigs_fpaths)
-    logger.print_command_line(args, wrap_after=None)
-    logger.start()
-
     qconfig.set_max_threads(logger)
+    qutils.logger = logger
 
     ########################################################################
 
@@ -580,7 +347,7 @@ def main(args):
         if qconfig.max_references == 0:
             logger.notice("Maximum number of references (--max-ref-number) is set to 0, search in SILVA 16S rRNA database is disabled")
         else:
-            if ref_txt_fpath:
+            if qconfig.references_txt:
                 logger.main_info("List of references was provided, starting to download reference genomes from NCBI...")
             else:
                 logger.main_info("No references are provided, starting to search for reference genomes in SILVA 16S rRNA database "
@@ -588,10 +355,10 @@ def main(args):
             downloaded_dirpath = os.path.join(output_dirpath, qconfig.downloaded_dirname)
             if not os.path.isdir(downloaded_dirpath):
                 os.mkdir(downloaded_dirpath)
-            ref_fpaths = search_references_meta.do(assemblies, labels, downloaded_dirpath, ref_txt_fpath)
+            ref_fpaths = search_references_meta.do(assemblies, labels, downloaded_dirpath, qconfig.references_txt)
             if ref_fpaths:
                 search_references_meta.is_quast_first_run = True
-                if not ref_txt_fpath:
+                if not qconfig.references_txt:
                     downloaded_refs = True
                 logger.main_info()
                 logger.main_info('Downloaded reference(s):')
@@ -612,23 +379,23 @@ def main(args):
     combined_output_dirpath = os.path.join(output_dirpath, qconfig.combined_output_name)
 
     reads_fpaths = []
-    if reads_fpath_f:
-        reads_fpaths.append(reads_fpath_f)
-    if reads_fpath_r:
-        reads_fpaths.append(reads_fpath_r)
-    if reads_fpaths:
+    if qconfig.forward_reads:
+        reads_fpaths.append(qconfig.forward_reads)
+    if qconfig.reverse_reads:
+        reads_fpaths.append(qconfig.reverse_reads)
+    if reads_fpaths and ref_fpaths:
         bed_fpath, cov_fpath, _ = reads_analyzer.do(combined_ref_fpath, contigs_fpaths, reads_fpaths, corrected_ref_fpaths,
                                       os.path.join(combined_output_dirpath, qconfig.variation_dirname),
-                                      external_logger=logger, sam_fpath=sam_fpath, bam_fpath=bam_fpath, bed_fpath=bed_fpath)
-    if bed_fpath:
+                                      external_logger=logger, sam_fpath=qconfig.sam, bam_fpath=qconfig.bam, bed_fpath=qconfig.bed)
+    if qconfig.bed:
         quast_py_args += ['--sv-bed']
-        quast_py_args += [bed_fpath]
-    if sam_fpath:
+        quast_py_args += [qconfig.bed]
+    if qconfig.sam:
         quast_py_args += ['--sam']
-        quast_py_args += [sam_fpath]
-    if bam_fpath:
+        quast_py_args += [qconfig.sam]
+    if qconfig.bam:
         quast_py_args += ['--bam']
-        quast_py_args += [bam_fpath]
+        quast_py_args += [qconfig.bam]
 
     for arg in args:
         if arg in ('-s', "--scaffolds"):

@@ -33,15 +33,6 @@ MAX_REFERENCE_LENGTH = 536870908  # Nucmer's max length of a reference file
 splitted_ref = []
 MAX_REFERENCE_FILE_LENGTH = 50000000  # Max length of one part of reference
 
-# available options
-long_options = "test test-no-ref test-sv output-dir= save-json-to= genes= operons= reference= contig-thresholds= min-contig= "\
-               "gene-thresholds= err-fpath= save-json gage eukaryote glimmer no-plots no-html no-check no-check-meta combined-ref no-gc help debug "\
-               "ambiguity-usage= scaffolds threads= min-cluster= min-alignment= est-ref-size= use-all-alignments gene-finding "\
-               "strict-NA meta labels= help-hidden no-snps fast max-ref-number= extensive-mis-size= plots-format= " \
-               "fragmented significant-part-size= unique-mapping no-sv no-icarus ambiguity-score= min-identity= " \
-               "references-list= sam= bam= sv-bedpe= reads1= reads2= memory-efficient silent version colors= ls=".split()
-short_options = "o:G:O:R:t:m:J:jehvda:c:ufl:Lx:i:s1:2:"
-
 # default values for options
 contig_thresholds = "0,1000,5000,10000,25000,50000"
 min_contig = 500
@@ -66,6 +57,7 @@ save_json = False
 meta = False
 debug = False
 test = False
+test_no_ref = False
 no_check = False
 no_check_meta = False  # for metaQUAST, without checking min-contig
 unique_mapping = False  # for metaQUAST only
@@ -76,6 +68,7 @@ glimmer = False
 is_combined_ref = False
 check_for_fragmented_ref = False
 significant_part_size = 500
+all_labels_from_dirs = False
 
 # print in stdout only main information
 silent = False
@@ -84,6 +77,7 @@ silent = False
 error_log_fpath = 'error.log'
 save_error = False
 
+test_output_dirname = "quast_test_output"
 default_results_root_dirname = "quast_results"
 output_dirname = "results_" + datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
 make_latest_symlink = True
@@ -177,6 +171,20 @@ max_references = 50
 # plot extension
 plot_extension = "pdf"
 supported_plot_extensions = ['emf', 'eps', 'pdf', 'png', 'ps', 'raw', 'rgba', 'svg', 'svgz']
+
+###
+output_dirpath = None
+reference = None
+genes = None
+operons = None
+labels = None
+sam = None
+bam = None
+bed = None
+forward_reads = None
+reverse_reads = None
+references_txt = None
+json_output_dirpath = None
 
 
 def check_python_version():

@@ -34,6 +34,13 @@ def print_manta_warning(logger):
     logger.main_info('Failed searching structural variations. QUAST will search trivial deletions only.')
 
 
+def manta_compilation_failed():
+    failed_compilation_flag = join(manta_dirpath, 'make.failed')
+    if check_prev_compilation_failed(failed_compilation_flag):
+        return True
+    return False
+
+
 def compile_reads_analyzer_tools(logger, bed_fpath=None):
     tools_to_try = []
     tools_to_try.append(('Bowtie2', bowtie_dirpath, ['bowtie2-align-l']))

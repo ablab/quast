@@ -21,21 +21,24 @@ import os
 from os.path import join
 
 from libs import reporting, qconfig, qutils, fastaparser
-from libs.ca_utils.analyze_misassemblies import process_misassembled_contig, find_all_sv, IndelsInfo, Misassembly, Mapping
-from libs.ca_utils.best_set_selection import get_best_aligns_set
+from libs.ca_utils.analyze_contigs import analyze_contigs
+from libs.ca_utils.analyze_coverage import analyze_coverage
+from libs.ca_utils.analyze_misassemblies import Mapping
 from libs.ca_utils.misc import print_file, ref_labels_by_chromosomes, clean_tmp_files, compile_aligner, \
     create_nucmer_output_dir
 from libs.ca_utils.align_contigs import align_contigs, get_nucmer_aux_out_fpaths, NucmerStatus
+from libs.ca_utils.save_results import print_results, save_result, save_result_for_unaligned
 
 from libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 
 
 class CAOutput():
-    def __init__(self, stdout_f=None, misassembly_f=None, coords_filtered_f=None, icarus_out_f=None):
+    def __init__(self, stdout_f, misassembly_f=None, coords_filtered_f=None, used_snps_f=None, icarus_out_f=None):
         self.stdout_f = stdout_f
         self.misassembly_f = misassembly_f
         self.coords_filtered_f = coords_filtered_f
+        self.used_snps_f = used_snps_f
         self.icarus_out_f = icarus_out_f
 
 
@@ -69,12 +72,6 @@ def align_and_analyze(cyclic, index, contigs_fpath, output_dirpath, ref_fpath,
 
     logger.info('  ' + qutils.index_to_str(index) + 'Logging to files ' + log_out_fpath +
                 ' and ' + os.path.basename(log_err_fpath) + '...')
-    maxun = 10
-    epsilon = 0.99
-    umt = 0.5  # threshold for misassembled contigs with aligned less than $umt * 100% (Unaligned Missassembled Threshold)
-    ort = 0.9  # threshold for skipping aligns that significantly overlaps with adjacent aligns (Overlap Relative Threshold)
-    oat = 25   # threshold for skipping aligns that significantly overlaps with adjacent aligns (Overlap Absolute Threshold)
-    odgap = 1000 # threshold for detecting aligns that significantly overlaps with adjacent aligns (Overlap Detecting Gap)
 
     coords_fpath, coords_filtered_fpath, unaligned_fpath, show_snps_fpath, used_snps_fpath = \
         get_nucmer_aux_out_fpaths(nucmer_fpath)
@@ -117,7 +114,6 @@ def align_and_analyze(cyclic, index, contigs_fpath, output_dirpath, ref_fpath,
     # Loading the reference sequences
     print >> log_out_f, 'Loading reference...'  # TODO: move up
     references = {}
-    ref_aligns = {}
     ref_features = {}
     for name, seq in fastaparser.read_fasta(ref_fpath):
         name = name.split()[0]  # no spaces in reference header
@@ -128,8 +124,9 @@ def align_and_analyze(cyclic, index, contigs_fpath, output_dirpath, ref_fpath,
     if qconfig.show_snps:
         print >> log_out_f, 'Loading SNPs...'
 
+    used_snps_file = None
+    snps = {}
     if qconfig.show_snps:
-        snps = {}
         prev_line = None
         for line in open(show_snps_fpath):
             #print "$line";
@@ -167,705 +164,18 @@ def align_and_analyze(cyclic, index, contigs_fpath, output_dirpath, ref_fpath,
     print >> log_out_f, '\tTotal Regions: %d' % total_regions
     print >> log_out_f, '\tTotal Region Length: %d' % total_reg_len
 
-    unaligned = 0
-    partially_unaligned = 0
-    fully_unaligned_bases = 0
-    partially_unaligned_bases = 0
-    ambiguous_contigs = 0
-    ambiguous_contigs_extra_bases = 0
-    uncovered_regions = 0
-    uncovered_region_bases = 0
-    total_redundant = 0
-    partially_unaligned_with_misassembly = 0
-    partially_unaligned_with_significant_parts = 0
-    misassembly_internal_overlap = 0
-    contigs_with_istranslocations = 0
-
-    region_misassemblies = []
-    misassembled_contigs = {}
-    references_misassemblies = {}
-    for ref in ref_labels_by_chromosomes.values():
-        references_misassemblies[ref] = dict((key, 0) for key in ref_labels_by_chromosomes.values())
-
-    aligned_lengths = []
-
-    misassemblies_matched_sv = 0
-    region_struct_variations = find_all_sv(bed_fpath)
-
-    # for counting SNPs and indels (both original (.all_snps) and corrected from Nucmer's local misassemblies)
-    total_indels_info = IndelsInfo()
+    ca_output = CAOutput(stdout_f=log_out_f, misassembly_f=misassembly_f, coords_filtered_f=coords_filtered_file,
+                         used_snps_f=used_snps_file, icarus_out_f=icarus_out_f)
 
     print >> log_out_f, 'Analyzing contigs...'
-    ca_output = CAOutput(stdout_f=log_out_f, misassembly_f=misassembly_f, coords_filtered_f=coords_filtered_file, icarus_out_f=icarus_out_f)
-
-    unaligned_file = open(unaligned_fpath, 'w')
-    for contig, seq in fastaparser.read_fasta(contigs_fpath):
-        contig_ns = None
-        if 'N' in seq:
-            contig_ns = [pos for pos in xrange(len(seq)) if seq[pos] == 'N']
-        #Recording contig stats
-        ctg_len = len(seq)
-        print >> log_out_f, 'CONTIG: %s (%dbp)' % (contig, ctg_len)
-        contig_type = 'unaligned'
-
-        #Check if this contig aligned to the reference
-        if contig in aligns:
-            contig_type = 'correct'
-            #Pull all aligns for this contig
-            num_aligns = len(aligns[contig])
-
-            #Sort aligns by length and identity
-            sorted_aligns = sorted(aligns[contig], key=lambda x: (x.len2 * x.idy, x.len2), reverse=True)
-            top_len = sorted_aligns[0].len2
-            top_id = sorted_aligns[0].idy
-            top_aligns = []
-            print >> log_out_f, 'Top Length: %s  Top ID: %s' % (top_len, top_id)
-
-            #Check that top hit captures most of the contig
-            if top_len > ctg_len * epsilon or ctg_len - top_len < maxun:
-                #Reset top aligns: aligns that share the same value of longest and highest identity
-                top_aligns.append(sorted_aligns[0])
-                sorted_aligns = sorted_aligns[1:]
-
-                #Continue grabbing alignments while length and identity are identical
-                #while sorted_aligns and top_len == sorted_aligns[0].len2 and top_id == sorted_aligns[0].idy:
-                while sorted_aligns and (sorted_aligns[0].len2 * sorted_aligns[0].idy >= qconfig.ambiguity_score * top_len * top_id):
-                    top_aligns.append(sorted_aligns[0])
-                    sorted_aligns = sorted_aligns[1:]
-
-                #Mark other alignments as insignificant (former ambiguous)
-                if sorted_aligns:
-                    print >> log_out_f, '\t\tSkipping these alignments as insignificant (option --ambiguity-score is set to "%s"):' % str(qconfig.ambiguity_score)
-                    for align in sorted_aligns:
-                        print >> log_out_f, '\t\t\tSkipping alignment ', align
-
-                if len(top_aligns) == 1:
-                    #There is only one top align, life is good
-                    print >> log_out_f, '\t\tOne align captures most of this contig: %s' % str(top_aligns[0])
-                    print >> icarus_out_f, top_aligns[0].icarus_report_str()
-                    ref_aligns.setdefault(top_aligns[0].ref, []).append(top_aligns[0])
-                    print >> coords_filtered_file, str(top_aligns[0])
-                    aligned_lengths.append(top_aligns[0].len2)
-                else:
-                    #There is more than one top align
-                    print >> log_out_f, '\t\tThis contig has %d significant alignments. [An ambiguously mapped contig]' % len(
-                        top_aligns)
-
-                    #Increment count of ambiguously mapped contigs and bases in them
-                    ambiguous_contigs += 1
-                    # we count only extra bases, so we shouldn't include bases in the first alignment
-                    # in case --allow-ambiguity is not set the number of extra bases will be negative!
-                    ambiguous_contigs_extra_bases -= top_aligns[0].len2
-
-                    # Alex: skip all alignments or count them as normal (just different aligns of one repeat). Depend on --allow-ambiguity option
-                    if qconfig.ambiguity_usage == "none":
-                        print >> log_out_f, '\t\tSkipping these alignments (option --ambiguity-usage is set to "none"):'
-                        for align in top_aligns:
-                            print >> log_out_f, '\t\t\tSkipping alignment ', align
-                    elif qconfig.ambiguity_usage == "one":
-                        print >> log_out_f, '\t\tUsing only first of these alignment (option --ambiguity-usage is set to "one"):'
-                        print >> log_out_f, '\t\t\tAlignment: %s' % str(top_aligns[0])
-                        print >> icarus_out_f, top_aligns[0].icarus_report_str()
-                        ref_aligns.setdefault(top_aligns[0].ref, []).append(top_aligns[0])
-                        aligned_lengths.append(top_aligns[0].len2)
-                        print >> coords_filtered_file, str(top_aligns[0])
-                        top_aligns = top_aligns[1:]
-                        for align in top_aligns:
-                            print >> log_out_f, '\t\t\tSkipping alignment ', align
-                    elif qconfig.ambiguity_usage == "all":
-                        print >> log_out_f, '\t\tUsing all these alignments (option --ambiguity-usage is set to "all"):'
-                        # we count only extra bases, so we shouldn't include bases in the first alignment
-                        first_alignment = True
-                        while len(top_aligns):
-                            print >> log_out_f, '\t\t\tAlignment: %s' % str(top_aligns[0])
-                            print >> icarus_out_f, top_aligns[0].icarus_report_str(ambiguity=True)
-                            ref_aligns.setdefault(top_aligns[0].ref, []).append(top_aligns[0])
-                            if first_alignment:
-                                first_alignment = False
-                                aligned_lengths.append(top_aligns[0].len2)
-                            ambiguous_contigs_extra_bases += top_aligns[0].len2
-                            print >> coords_filtered_file, str(top_aligns[0]), "ambiguous"
-                            top_aligns = top_aligns[1:]
-            else:
-                # choose appropriate alignments (to maximize total size of contig alignment and reduce # misassemblies
-                if len(sorted_aligns) > 0:
-                    sorted_aligns = sorted(sorted_aligns, key=lambda x: x.end())
-                    real_aligns = get_best_aligns_set(sorted_aligns, ctg_len, log_out_f, seq,
-                                                      cyclic_ref_lens=ref_lens if cyclic else None, region_struct_variations=region_struct_variations)
-                    if len(sorted_aligns) > len(real_aligns):
-                        print >> log_out_f, '\t\t\tSkipping redundant alignments after choosing the best set of alignments'
-                        for align in sorted_aligns:
-                            if align not in real_aligns:
-                                print >> log_out_f, '\t\tSkipping redundant alignment %s' % (str(align))
-
-                if len(real_aligns) == 1:
-                    the_only_align = real_aligns[0]
-
-                    #There is only one alignment of this contig to the reference
-                    print >> coords_filtered_file, str(the_only_align)
-                    aligned_lengths.append(the_only_align.len2)
-
-                    #Is the contig aligned in the reverse compliment?
-                    #Record beginning and end of alignment in contig
-                    if the_only_align.s2 > the_only_align.e2:
-                        end, begin = the_only_align.s2, the_only_align.e2
-                    else:
-                        end, begin = the_only_align.e2, the_only_align.s2
-
-                    if (begin - 1) or (ctg_len - end):
-                        #Increment tally of partially unaligned contigs
-                        partially_unaligned += 1
-
-                        #Increment tally of partially unaligned bases
-                        unaligned_bases = (begin - 1) + (ctg_len - end)
-                        partially_unaligned_bases += unaligned_bases
-                        print >> log_out_f, '\t\tThis contig is partially unaligned. (Aligned %d out of %d bases)' % (top_len, ctg_len)
-                        print >> log_out_f, '\t\tAlignment: %s' % str(the_only_align)
-                        print >> icarus_out_f, the_only_align.icarus_report_str()
-                        if begin - 1:
-                            print >> log_out_f, '\t\tUnaligned bases: 1 to %d (%d)' % (begin - 1, begin - 1)
-                        if ctg_len - end:
-                            print >> log_out_f, '\t\tUnaligned bases: %d to %d (%d)' % (end + 1, ctg_len, ctg_len - end)
-                        # check if both parts (aligned and unaligned) have significant length
-                        if (unaligned_bases >= qconfig.significant_part_size) and (ctg_len - unaligned_bases >= qconfig.significant_part_size):
-                            partially_unaligned_with_significant_parts += 1
-                            print >> log_out_f, '\t\tThis contig has both significant aligned and unaligned parts ' \
-                                                   '(of length >= %d)!' % (qconfig.significant_part_size) + (' It can contain interspecies translocations' if qconfig.meta else '')
-                            if qconfig.meta:
-                                contigs_with_istranslocations += 1
-                    ref_aligns.setdefault(the_only_align.ref, []).append(the_only_align)
-                else:
-                    #Sort real alignments by position on the contig
-                    sorted_aligns = sorted(real_aligns, key=lambda x: (x.start(), x.end()))
-
-                    #Extra skipping of redundant alignments (fully or almost fully covered by adjacent alignments)
-                    if len(sorted_aligns) >= 3:
-                        was_extra_skip = False
-                        prev_end = max(sorted_aligns[0].s2, sorted_aligns[0].e2)
-                        for i in range(1, len(sorted_aligns) - 1):
-                            succ_start = min(sorted_aligns[i + 1].s2, sorted_aligns[i + 1].e2)
-                            gap = succ_start - prev_end - 1
-                            if gap > odgap:
-                                prev_end = max(sorted_aligns[i].s2, sorted_aligns[i].e2)
-                                continue
-                            overlap = 0
-                            if prev_end - min(sorted_aligns[i].s2, sorted_aligns[i].e2) + 1 > 0:
-                                overlap += prev_end - min(sorted_aligns[i].s2, sorted_aligns[i].e2) + 1
-                            if max(sorted_aligns[i].s2, sorted_aligns[i].e2) - succ_start + 1 > 0:
-                                overlap += max(sorted_aligns[i].s2, sorted_aligns[i].e2) - succ_start + 1
-                            if gap < oat or (float(overlap) / sorted_aligns[i].len2) > ort:
-                                if not was_extra_skip:
-                                    was_extra_skip = True
-                                    print >> log_out_f, '\t\t\tSkipping redundant alignments which significantly overlap with adjacent alignments'
-                                print >> log_out_f, '\t\tSkipping redundant alignment %s' % (str(sorted_aligns[i]))
-                                real_aligns.remove(sorted_aligns[i])
-                            else:
-                                prev_end = max(sorted_aligns[i].s2, sorted_aligns[i].e2)
-                        if was_extra_skip:
-                            sorted_aligns = sorted(real_aligns, key=lambda x: (x.start(), x.end()))
-
-                    #There is more than one alignment of this contig to the reference
-                    print >> log_out_f, '\t\tThis contig is misassembled. %d total aligns.' % num_aligns
-
-                    # Counting misassembled contigs which are mostly partially unaligned
-                    # counting aligned and unaligned bases of a contig
-                    aligned_bases_in_contig = 0
-                    last_e2 = 0
-                    for cur_align in sorted_aligns:
-                        if cur_align.end() <= last_e2:
-                            continue
-                        elif cur_align.start() > last_e2:
-                            aligned_bases_in_contig += (abs(cur_align.e2 - cur_align.s2) + 1)
-                        else:
-                            aligned_bases_in_contig += (cur_align.end() - last_e2)
-                        last_e2 = cur_align.end()
-
-                    #aligned_bases_in_contig = sum(x.len2 for x in sorted_aligns)
-                    if aligned_bases_in_contig < umt * ctg_len:
-                        print >> log_out_f, '\t\t\tWarning! This contig is more unaligned than misassembled. ' + \
-                            'Contig length is %d and total length of all aligns is %d' % (ctg_len, aligned_bases_in_contig)
-                        partially_unaligned_with_misassembly += 1
-                        for align in sorted_aligns:
-                            print >> log_out_f, '\t\tAlignment: %s' % str(align)
-                            print >> icarus_out_f, align.icarus_report_str()
-                            print >> coords_filtered_file, str(align)
-                            aligned_lengths.append(align.len2)
-                            ref_aligns.setdefault(align.ref, []).append(align)
-
-                        #Increment tally of partially unaligned contigs
-                        partially_unaligned += 1
-                        #Increment tally of partially unaligned bases
-                        partially_unaligned_bases += ctg_len - aligned_bases_in_contig
-                        print >> log_out_f, '\t\tUnaligned bases: %d' % (ctg_len - aligned_bases_in_contig)
-                        # check if both parts (aligned and unaligned) have significant length
-                        if (aligned_bases_in_contig >= qconfig.significant_part_size) and (ctg_len - aligned_bases_in_contig >= qconfig.significant_part_size):
-                            partially_unaligned_with_significant_parts += 1
-                            print >> log_out_f, '\t\tThis contig has both significant aligned and unaligned parts ' \
-                                                   '(of length >= %d)!' % (qconfig.significant_part_size) + (' It can contain interspecies translocations' if qconfig.meta else '')
-                            if qconfig.meta:
-                                contigs_with_istranslocations += 1
-                        continue
-
-                    ### processing misassemblies
-                    is_misassembled, current_mio, references_misassemblies, indels_info, misassemblies_matched_sv = \
-                        process_misassembled_contig(sorted_aligns, cyclic, aligned_lengths, region_misassemblies, ref_lens,
-                                                    ref_aligns, ref_features, seq, references_misassemblies, region_struct_variations, misassemblies_matched_sv, ca_output)
-                    misassembly_internal_overlap += current_mio
-                    total_indels_info += indels_info
-                    if is_misassembled:
-                        misassembled_contigs[contig] = len(seq)
-                        contig_type = 'misassembled'
-                    if qconfig.meta and (ctg_len - aligned_bases_in_contig >= qconfig.significant_part_size):
-                        print >> log_out_f, '\t\tThis contig has significant unaligned parts ' \
-                                               '(of length >= %d)!' % (qconfig.significant_part_size) + (' It can contain interspecies translocations' if qconfig.meta else '')
-                        contigs_with_istranslocations += 1
-        else:
-            #No aligns to this contig
-            print >> log_out_f, '\t\tThis contig is unaligned. (%d bp)' % ctg_len
-            print >> unaligned_file, contig
-
-            #Increment unaligned contig count and bases
-            unaligned += 1
-            fully_unaligned_bases += ctg_len
-            print >> log_out_f, '\t\tUnaligned bases: %d  total: %d' % (ctg_len, fully_unaligned_bases)
-
-        print >> icarus_out_f, '\t'.join(['CONTIG', contig, str(ctg_len), contig_type])
-        print >> log_out_f
-
-    coords_filtered_file.close()
-    unaligned_file.close()
+    result, ref_aligns, total_indels_info, aligned_lengths, misassembled_contigs = analyze_contigs(ca_output, contigs_fpath,
+                                        unaligned_fpath, aligns, ref_features, ref_lens, cyclic)
 
     print >> log_out_f, 'Analyzing coverage...'
     if qconfig.show_snps:
         print >> log_out_f, 'Writing SNPs into', used_snps_fpath
-
-    region_covered = 0
-    region_ambig = 0
-    gaps = []
-    neg_gaps = []
-    redundant = []
-    snip_left = 0
-    snip_right = 0
-
-    # for counting short and long indels
-    # indels_list = []  # -- defined earlier
-    prev_snp = None
-    cur_indel = 0
-
-    nothing_aligned = True
-    #Go through each header in reference file
-    for ref, value in regions.iteritems():
-        #Check to make sure this reference ID contains aligns.
-        if ref not in ref_aligns:
-            print >> log_out_f, 'ERROR: Reference %s does not have any alignments!  Check that this is the same file used for alignment.' % ref
-            print >> log_out_f, 'ERROR: Alignment Reference Headers: %s' % ref_aligns.keys()
-            continue
-        nothing_aligned = False
-
-        #Sort all alignments in this reference by start location
-        sorted_aligns = sorted(ref_aligns[ref], key=lambda x: x.s1)
-        total_aligns = len(sorted_aligns)
-        print >> log_out_f, '\tReference %s: %d total alignments. %d total regions.' % (ref, total_aligns, len(regions[ref]))
-
-        # the rest is needed for SNPs stats only
-        if not qconfig.show_snps:
-            continue
-
-        #Walk through each region on this reference sequence
-        for region in regions[ref]:
-            end = 0
-            reg_length = region[1] - region[0] + 1
-            print >> log_out_f, '\t\tRegion: %d to %d (%d bp)' % (region[0], region[1], reg_length)
-
-            #Skipping alignments not in the next region
-            while sorted_aligns and sorted_aligns[0].e1 < region[0]:
-                skipped = sorted_aligns[0]
-                sorted_aligns = sorted_aligns[1:] # Kolya: slooow, but should never happens without gff :)
-                print >> log_out_f, '\t\t\tThis align occurs before our region of interest, skipping: %s' % skipped
-
-            if not sorted_aligns:
-                print >> log_out_f, '\t\t\tThere are no more aligns. Skipping this region.'
-                continue
-
-            #If region starts in a contig, ignore portion of contig prior to region start
-            if sorted_aligns and region and sorted_aligns[0].s1 < region[0]:
-                print >> log_out_f, '\t\t\tSTART within alignment : %s' % sorted_aligns[0]
-                #Track number of bases ignored at the start of the alignment
-                snip_left = region[0] - sorted_aligns[0].s1
-                #Modify to account for any insertions or deletions that are present
-                for z in xrange(sorted_aligns[0].s1, region[0] + 1):
-                    if (ref in snps) and (sorted_aligns[0].contig in snps[ref]) and (z in snps[ref][sorted_aligns[0].contig]) and \
-                       (ref in ref_features) and (z in ref_features[ref]) and (ref_features[ref][z] != 'A'): # Kolya: never happened before because of bug: z -> i
-                        for cur_snp in snps[ref][sorted_aligns[0].contig][z]:
-                            if cur_snp.type == 'I':
-                                snip_left += 1
-                            elif cur_snp.type == 'D':
-                                snip_left -= 1
-
-                #Modify alignment to start at region
-                print >> log_out_f, '\t\t\t\tMoving reference start from %d to %d' % (sorted_aligns[0].s1, region[0])
-                sorted_aligns[0].s1 = region[0]
-
-                #Modify start position in contig
-                if sorted_aligns[0].s2 < sorted_aligns[0].e2:
-                    print >> log_out_f, '\t\t\t\tMoving contig start from %d to %d.' % (sorted_aligns[0].s2, sorted_aligns[0].s2 + snip_left)
-                    sorted_aligns[0].s2 += snip_left
-                else:
-                    print >> log_out_f, '\t\t\t\tMoving contig start from %d to %d.' % (sorted_aligns[0].s2, sorted_aligns[0].s2 - snip_left)
-                    sorted_aligns[0].s2 -= snip_left
-
-            #No aligns in this region
-            if sorted_aligns[0].s1 > region[1]:
-                print >> log_out_f, '\t\t\tThere are no aligns within this region.'
-                gaps.append([reg_length, 'START', 'END'])
-                #Increment uncovered region count and bases
-                uncovered_regions += 1
-                uncovered_region_bases += reg_length
-                continue
-
-            #Record first gap, and first ambiguous bases within it
-            if sorted_aligns[0].s1 > region[0]:
-                size = sorted_aligns[0].s1 - region[0]
-                print >> log_out_f, '\t\t\tSTART in gap: %d to %d (%d bp)' % (region[0], sorted_aligns[0].s1, size)
-                gaps.append([size, 'START', sorted_aligns[0].contig])
-                #Increment any ambiguously covered bases in this first gap
-                for i in xrange(region[0], sorted_aligns[0].e1):
-                    if (ref in ref_features) and (i in ref_features[ref]) and (ref_features[ref][i] == 'A'):
-                        region_ambig += 1
-
-            #For counting number of alignments
-            counter = 0
-            negative = False
-            current = None
-            while sorted_aligns and sorted_aligns[0].s1 < region[1] and not end:
-                #Increment alignment count
-                counter += 1
-                if counter % 1000 == 0:
-                    print >> log_out_f, '\t...%d of %d' % (counter, total_aligns)
-                end = False
-                #Check to see if previous gap was negative
-                if negative:
-                    print >> log_out_f, '\t\t\tPrevious gap was negative, modifying coordinates to ignore overlap'
-                    #Ignoring OL part of next contig, no SNPs or N's will be recorded
-                    snip_left = current.e1 + 1 - sorted_aligns[0].s1
-                    #Account for any indels that may be present
-                    for z in xrange(sorted_aligns[0].s1, current.e1 + 2):
-                        if (ref in snps) and (sorted_aligns[0].contig in snps[ref]) and (z in snps[ref][sorted_aligns[0].contig]):
-                            for cur_snp in snps[ref][sorted_aligns[0].contig][z]:
-                                if cur_snp.type == 'I':
-                                    snip_left += 1
-                                elif cur_snp.type == 'D':
-                                    snip_left -= 1
-                    #Modifying position in contig of next alignment
-                    sorted_aligns[0].s1 = current.e1 + 1
-                    if sorted_aligns[0].s2 < sorted_aligns[0].e2:
-                        print >> log_out_f, '\t\t\t\tMoving contig start from %d to %d.' % (sorted_aligns[0].s2, sorted_aligns[0].s2 + snip_left)
-                        sorted_aligns[0].s2 += snip_left
-                    else:
-                        print >> log_out_f, '\t\t\t\tMoving contig start from %d to %d.' % (sorted_aligns[0].s2, sorted_aligns[0].s2 - snip_left)
-                        sorted_aligns[0].s2 -= snip_left
-                    negative = False
-
-                #Pull top alignment
-                current = sorted_aligns[0]
-                sorted_aligns = sorted_aligns[1:]
-                print >>log_out_f, '\t\t\tAlign %d: %s' % (counter, '%d %d %s %d %d' % (current.s1, current.e1, current.contig, current.s2, current.e2))
-
-                #Check if:
-                # A) We have no more aligns to this reference
-                # B) The current alignment extends to or past the end of the region
-                # C) The next alignment starts after the end of the region
-
-                if not sorted_aligns or current.e1 >= region[1] or sorted_aligns[0].s1 > region[1]:
-                    #Check if last alignment ends before the regions does (gap at end of the region)
-                    if current.e1 >= region[1]:
-                        #print "Ends inside current alignment.\n";
-                        print >> log_out_f, '\t\t\tEND in current alignment.  Modifying %d to %d.' % (current.e1, region[1])
-                        #Pushing the rest of the alignment back on the stack
-                        sorted_aligns = [current] + sorted_aligns
-                        #Flag to end loop through alignment
-                        end = True
-                        #Clip off right side of contig alignment
-                        snip_right = current.e1 - region[1]
-                        #End current alignment in region
-                        current.e1 = region[1]
-                    else:
-                        #Region ends in a gap
-                        size = region[1] - current.e1
-                        print >> log_out_f, '\t\t\tEND in gap: %d to %d (%d bp)' % (current.e1, region[1], size)
-
-                        #Record gap
-                        if not sorted_aligns:
-                            #No more alignments, region ends in gap.
-                            gaps.append([size, current.contig, 'END'])
-                        else:
-                            #Gap between end of current and beginning of next alignment.
-                            gaps.append([size, current.contig, sorted_aligns[0].contig])
-                        #Increment any ambiguous bases within this gap
-                        for i in xrange(current.e1, region[1]):
-                            if (ref in ref_features) and (i in ref_features[ref]) and (ref_features[ref][i] == 'A'):
-                                region_ambig += 1
-                else:
-                    #Grab next alignment
-                    next = sorted_aligns[0]
-
-                    if next.e1 <= current.e1:
-                        #The next alignment is redundant to the current alignmentt
-                        while next.e1 <= current.e1 and sorted_aligns:
-                            total_redundant += next.e1 - next.s1 + 1
-                            print >> log_out_f, '\t\t\t\tThe next alignment (%d %d %s %d %d) is redundant. Skipping.' \
-                                                     % (next.s1, next.e1, next.contig, next.s2, next.e2)
-                            redundant.append(current.contig)
-                            sorted_aligns = sorted_aligns[1:]
-                            if sorted_aligns:
-                                next = sorted_aligns[0]
-                                counter += 1
-                            else:
-                                #Flag to end loop through alignment
-                                end = True
-
-                    if not end:
-                        if next.s1 > current.e1 + 1:
-                            #There is a gap beetween this and the next alignment
-                            size = next.s1 - current.e1 - 1
-                            gaps.append([size, current.contig, next.contig])
-                            print >> log_out_f, '\t\t\t\tGap between this and next alignment: %d to %d (%d bp)' % (current.e1, next.s1, size)
-                            #Record ambiguous bases in current gap
-                            for i in xrange(current.e1, next.s1):
-                                if (ref in ref_features) and (i in ref_features[ref]) and (ref_features[ref][i] == 'A'):
-                                    region_ambig += 1
-                        elif next.s1 <= current.e1:
-                            #This alignment overlaps with the next alignment, negative gap
-                            #If contig extends past the region, clip
-                            if current.e1 > region[1]:
-                                current.e1 = region[1]
-                            #Record gap
-                            size = next.s1 - current.e1
-                            neg_gaps.append([size, current.contig, next.contig])
-                            print >>log_out_f, '\t\t\t\tNegative gap (overlap) between this and next alignment: %d to %d (%d bp)' % (current.e1, next.s1, size)
-
-                            #Mark this alignment as negative so overlap region can be ignored
-                            negative = True
-                        print >> log_out_f, '\t\t\t\tNext Alignment: %d %d %s %d %d' % (next.s1, next.e1, next.contig, next.s2, next.e2)
-
-                #Initiate location of SNP on assembly to be first or last base of contig alignment
-                contig_estimate = current.s2
-                enable_SNPs_output = False
-                if enable_SNPs_output:
-                    print >> log_out_f, '\t\t\t\tContig start coord: %d' % contig_estimate
-
-                #Assess each reference base of the current alignment
-                for i in xrange(current.s1, current.e1 + 1):
-                    #Mark as covered
-                    region_covered += 1
-
-                    if current.s2 < current.e2:
-                        pos_strand = True
-                    else:
-                        pos_strand = False
-
-                    #If there is a misassembly, increment count and contig length
-                    #if (exists $ref_features{$ref}[$i] && $ref_features{$ref}[$i] eq "M") {
-                    #	$region_misassemblies++;
-                    #	$misassembled_contigs{$current[2]} = length($assembly{$current[2]});
-                    #}
-
-                    #If there is a SNP, and no alternative alignments over this base, record SNPs
-                    if (ref in snps) and (current.contig in snps[ref]) and (i in snps[ref][current.contig]):
-                        cur_snps = snps[ref][current.contig][i]
-                        # sorting by pos in contig
-                        if pos_strand:
-                            cur_snps = sorted(cur_snps, key=lambda x: x.ctg_pos)
-                        else: # for reverse complement
-                            cur_snps = sorted(cur_snps, key=lambda x: x.ctg_pos, reverse=True)
-
-                        for cur_snp in cur_snps:
-                            if enable_SNPs_output:
-                                print >> log_out_f, '\t\t\t\tSNP: %s, reference coord: %d, contig coord: %d, estimated contig coord: %d' % \
-                                         (cur_snp.type, i, cur_snp.ctg_pos, contig_estimate)
-
-                            #Capture SNP base
-                            snp = cur_snp.type
-
-                            #Check that the position of the SNP in the contig is close to the position of this SNP
-                            if abs(contig_estimate - cur_snp.ctg_pos) > 2:
-                                if enable_SNPs_output:
-                                    print >> log_out_f, '\t\t\t\t\tERROR: SNP position in contig was off by %d bp! (%d vs %d)' \
-                                             % (abs(contig_estimate - cur_snp.ctg_pos), contig_estimate, cur_snp.ctg_pos)
-                                continue
-
-                            print >> used_snps_file, '%s\t%s\t%d\t%s\t%s\t%d' % (ref, current.contig, cur_snp.ref_pos,
-                                                                                 cur_snp.ref_nucl, cur_snp.ctg_nucl, cur_snp.ctg_pos)
-
-                            #If SNP is an insertion, record
-                            if snp == 'I':
-                                total_indels_info.insertions += 1
-                                if pos_strand: contig_estimate += 1
-                                else: contig_estimate -= 1
-                            #If SNP is a deletion, record
-                            if snp == 'D':
-                                total_indels_info.deletions += 1
-                                if pos_strand: contig_estimate -= 1
-                                else: contig_estimate += 1
-                            #If SNP is a mismatch, record
-                            if snp == 'S':
-                                total_indels_info.mismatches += 1
-
-                            if cur_snp.type == 'D' or cur_snp.type == 'I':
-                                if prev_snp and ((cur_snp.type == 'D' and (prev_snp.ref_pos == cur_snp.ref_pos - 1) and (prev_snp.ctg_pos == cur_snp.ctg_pos)) or
-                                     (cur_snp.type == 'I' and ((pos_strand and (prev_snp.ctg_pos == cur_snp.ctg_pos - 1)) or
-                                         (not pos_strand and (prev_snp.ctg_pos == cur_snp.ctg_pos + 1))) and (prev_snp.ref_pos == cur_snp.ref_pos))):
-                                    cur_indel += 1
-                                else:
-                                    if cur_indel:
-                                        total_indels_info.indels_list.append(cur_indel)
-                                    cur_indel = 1
-                                prev_snp = cur_snp
-
-                    if pos_strand: contig_estimate += 1
-                    else: contig_estimate -= 1
-
-                #Record Ns in current alignment
-                if current.s2 < current.e2:
-                    #print "\t\t(forward)Recording Ns from $current[3]+$snip_left to $current[4]-$snip_right...\n";
-                    for i in (current.s2 + snip_left, current.e2 - snip_right + 1):
-                        if contig_ns and (i in contig_ns):
-                            region_ambig += 1
-                else:
-                    #print "\t\t(reverse)Recording Ns from $current[4]+$snip_right to $current[3]-$snip_left...\n";
-                    for i in (current.e2 + snip_left, current.s2 - snip_right + 1):
-                        if contig_ns and (i in contig_ns):
-                            region_ambig += 1
-                snip_left = 0
-                snip_right = 0
-
-                if cur_indel:
-                    total_indels_info.indels_list.append(cur_indel)
-                prev_snp = None
-                cur_indel = 0
-
-                print >> log_out_f
-
-    ##### getting results
-    SNPs = total_indels_info.mismatches
-    indels_list = total_indels_info.indels_list
-    total_aligned_bases = region_covered
-    print >> log_out_f, 'Analysis is finished!'
-    if qconfig.show_snps:
-        print >> log_out_f, 'Founded SNPs were written into', used_snps_fpath
-    print >> log_out_f, '\nResults:'
-
-    print >> log_out_f, '\tLocal Misassemblies: %d' % region_misassemblies.count(Misassembly.LOCAL)
-    print >> log_out_f, '\tMisassemblies: %d' % (len(region_misassemblies) - region_misassemblies.count(Misassembly.LOCAL)
-                                                    - region_misassemblies.count(Misassembly.SCAFFOLD_GAP) - region_misassemblies.count(Misassembly.FRAGMENTED))
-    print >> log_out_f, '\t\tRelocations: %d' % region_misassemblies.count(Misassembly.RELOCATION)
-    print >> log_out_f, '\t\tTranslocations: %d' % region_misassemblies.count(Misassembly.TRANSLOCATION)
-    if qconfig.is_combined_ref:
-        print >> log_out_f, '\t\tInterspecies translocations: %d' % region_misassemblies.count(Misassembly.INTERSPECTRANSLOCATION)
-    print >> log_out_f, '\t\tInversions: %d' % region_misassemblies.count(Misassembly.INVERSION)
-    if qconfig.is_combined_ref:
-        print >> log_out_f, '\tPotentially Misassembled Contigs (i/s translocations): %d' % contigs_with_istranslocations
-    if qconfig.scaffolds and contigs_fpath not in qconfig.dict_of_broken_scaffolds:
-        print >> log_out_f, '\tScaffold gap misassemblies: %d' % region_misassemblies.count(Misassembly.SCAFFOLD_GAP)
-    if bed_fpath:
-        print >> log_out_f, '\tFake misassemblies matched with structural variations: %d' % misassemblies_matched_sv
-
-    if qconfig.check_for_fragmented_ref:
-        print >> log_out_f, '\tMisassemblies caused by fragmented reference: %d' % region_misassemblies.count(Misassembly.FRAGMENTED)
-    print >> log_out_f, '\tMisassembled Contigs: %d' % len(misassembled_contigs)
-    misassembled_bases = sum(misassembled_contigs.itervalues())
-    print >> log_out_f, '\tMisassembled Contig Bases: %d' % misassembled_bases
-    print >> log_out_f, '\tMisassemblies Inter-Contig Overlap: %d' % misassembly_internal_overlap
-    print >> log_out_f, 'Uncovered Regions: %d (%d)' % (uncovered_regions, uncovered_region_bases)
-    print >> log_out_f, 'Unaligned Contigs: %d + %d part' % (unaligned, partially_unaligned)
-    print >> log_out_f, 'Partially Unaligned Contigs with Misassemblies: %d' % partially_unaligned_with_misassembly
-    print >> log_out_f, 'Unaligned Contig Bases: %d' % (fully_unaligned_bases + partially_unaligned_bases)
-
-    print >> log_out_f, ''
-    print >> log_out_f, 'Ambiguously Mapped Contigs: %d' % ambiguous_contigs
-    if qconfig.ambiguity_usage == "all":
-        print >> log_out_f, 'Extra Bases in Ambiguously Mapped Contigs: %d' % ambiguous_contigs_extra_bases
-        print >> log_out_f, 'Note that --allow-ambiguity option was set to "all" and each of these contigs was used several times.'
-    else:
-        print >> log_out_f, 'Total Bases in Ambiguously Mapped Contigs: %d' % (-ambiguous_contigs_extra_bases)
-        if qconfig.ambiguity_usage == "none":
-            print >> log_out_f, 'Note that --allow-ambiguity option was set to "none" and these contigs were skipped.'
-        else:
-            print >> log_out_f, 'Note that --allow-ambiguity option was set to "one" and only first alignment per each of these contigs was used.'
-            ambiguous_contigs_extra_bases = 0 # this variable is used in Duplication ratio but we don't need it in this case
-
-    if qconfig.show_snps:
-        #print >> log_out_f, 'Mismatches: %d' % SNPs
-        #print >> log_out_f, 'Single Nucleotide Indels: %d' % indels
-
-        print >> log_out_f, ''
-        print >> log_out_f, '\tCovered Bases: %d' % region_covered
-        #print >> log_out_f, '\tAmbiguous Bases (e.g. N\'s): %d' % region_ambig
-        print >> log_out_f, ''
-        print >> log_out_f, '\tSNPs: %d' % total_indels_info.mismatches
-        print >> log_out_f, '\tInsertions: %d' % total_indels_info.insertions
-        print >> log_out_f, '\tDeletions: %d' % total_indels_info.deletions
-        #print >> log_out_f, '\tList of indels lengths:', indels_list
-        print >> log_out_f, ''
-        print >> log_out_f, '\tPositive Gaps: %d' % len(gaps)
-        internal = 0
-        external = 0
-        summ = 0
-        for gap in gaps:
-            if gap[1] == gap[2]:
-                internal += 1
-            else:
-                external += 1
-                summ += gap[0]
-        print >> log_out_f, '\t\tInternal Gaps: % d' % internal
-        print >> log_out_f, '\t\tExternal Gaps: % d' % external
-        print >> log_out_f, '\t\tExternal Gap Total: % d' % summ
-        if external:
-            avg = summ * 1.0 / external
-        else:
-            avg = 0.0
-        print >> log_out_f, '\t\tExternal Gap Average: %.0f' % avg
-
-        print >> log_out_f, '\tNegative Gaps: %d' % len(neg_gaps)
-        internal = 0
-        external = 0
-        summ = 0
-        for gap in neg_gaps:
-            if gap[1] == gap[2]:
-                internal += 1
-            else:
-                external += 1
-                summ += gap[0]
-        print >> log_out_f, '\t\tInternal Overlaps: % d' % internal
-        print >> log_out_f, '\t\tExternal Overlaps: % d' % external
-        print >> log_out_f, '\t\tExternal Overlaps Total: % d' % summ
-        if external:
-            avg = summ * 1.0 / external
-        else:
-            avg = 0.0
-        print >> log_out_f, '\t\tExternal Overlaps Average: %.0f' % avg
-
-        redundant = list(set(redundant))
-        print >> log_out_f, '\tContigs with Redundant Alignments: %d (%d)' % (len(redundant), total_redundant)
-
-    if not qconfig.show_snps:
-        SNPs = None
-        indels_list = None
-        total_aligned_bases = None
-
-    result = {'region_misassemblies': region_misassemblies,
-              'region_struct_variations': region_struct_variations.get_count() if region_struct_variations else None,
-              'misassemblies_matched_sv': misassemblies_matched_sv,
-              'misassembled_contigs': misassembled_contigs, 'misassembled_bases': misassembled_bases,
-              'misassembly_internal_overlap': misassembly_internal_overlap,
-              'unaligned': unaligned, 'partially_unaligned': partially_unaligned,
-              'partially_unaligned_bases': partially_unaligned_bases, 'fully_unaligned_bases': fully_unaligned_bases,
-              'ambiguous_contigs': ambiguous_contigs, 'ambiguous_contigs_extra_bases': ambiguous_contigs_extra_bases, 'SNPs': SNPs, 'indels_list': indels_list,
-              'total_aligned_bases': total_aligned_bases,
-              'partially_unaligned_with_misassembly': partially_unaligned_with_misassembly,
-              'partially_unaligned_with_significant_parts': partially_unaligned_with_significant_parts,
-              'contigs_with_istranslocations': contigs_with_istranslocations,
-              'istranslocations_by_refs': references_misassemblies}
+    result.update(analyze_coverage(ca_output, regions, ref_aligns, ref_features, snps, total_indels_info))
+    result = print_results(contigs_fpath, log_out_f, used_snps_fpath, total_indels_info, result)
 
     ## outputting misassembled contigs to separate file
     fasta = [(name, seq) for name, seq in fastaparser.read_fasta(contigs_fpath)
@@ -888,7 +198,7 @@ def align_and_analyze(cyclic, index, contigs_fpath, output_dirpath, ref_fpath,
     logger.info('  ' + qutils.index_to_str(index) + 'Analysis is finished.')
     logger.debug('')
     clean_tmp_files(nucmer_fpath)
-    if nothing_aligned:
+    if not ref_aligns:
         return NucmerStatus.NOT_ALIGNED, result, aligned_lengths
     else:
         return NucmerStatus.OK, result, aligned_lengths
@@ -963,96 +273,12 @@ def do(reference, contigs_fpaths, cyclic, output_dir, old_contigs_fpaths, bed_fp
                     logger.info('  Information about interspecies translocations by references for %s is saved to %s' %
                                 (assembly_name, misassembly_by_ref_fpath))
 
-    def save_result(result):
-        report = reporting.get(fname)
-
-        region_misassemblies = result['region_misassemblies']
-        region_struct_variations = result['region_struct_variations']
-        misassemblies_matched_sv = result['misassemblies_matched_sv']
-        misassembled_contigs = result['misassembled_contigs']
-        misassembled_bases = result['misassembled_bases']
-        misassembly_internal_overlap = result['misassembly_internal_overlap']
-        unaligned = result['unaligned']
-        partially_unaligned = result['partially_unaligned']
-        partially_unaligned_bases = result['partially_unaligned_bases']
-        fully_unaligned_bases = result['fully_unaligned_bases']
-        ambiguous_contigs = result['ambiguous_contigs']
-        ambiguous_contigs_extra_bases = result['ambiguous_contigs_extra_bases']
-        SNPs = result['SNPs']
-        indels_list = result['indels_list']
-        total_aligned_bases = result['total_aligned_bases']
-        partially_unaligned_with_misassembly = result['partially_unaligned_with_misassembly']
-        partially_unaligned_with_significant_parts = result['partially_unaligned_with_significant_parts']
-        contigs_with_istranslocations = result['contigs_with_istranslocations']
-
-        report.add_field(reporting.Fields.MISLOCAL, region_misassemblies.count(Misassembly.LOCAL))
-        report.add_field(reporting.Fields.MISASSEMBL, len(region_misassemblies) - region_misassemblies.count(Misassembly.LOCAL)
-                         - region_misassemblies.count(Misassembly.SCAFFOLD_GAP) - region_misassemblies.count(Misassembly.FRAGMENTED))
-        report.add_field(reporting.Fields.MISCONTIGS, len(misassembled_contigs))
-        report.add_field(reporting.Fields.MISCONTIGSBASES, misassembled_bases)
-        report.add_field(reporting.Fields.MISINTERNALOVERLAP, misassembly_internal_overlap)
-        if bed_fpath:
-            report.add_field(reporting.Fields.STRUCT_VARIATIONS, misassemblies_matched_sv)
-        report.add_field(reporting.Fields.UNALIGNED, '%d + %d part' % (unaligned, partially_unaligned))
-        report.add_field(reporting.Fields.UNALIGNEDBASES, (fully_unaligned_bases + partially_unaligned_bases))
-        report.add_field(reporting.Fields.AMBIGUOUS, ambiguous_contigs)
-        report.add_field(reporting.Fields.AMBIGUOUSEXTRABASES, ambiguous_contigs_extra_bases)
-        report.add_field(reporting.Fields.MISMATCHES, SNPs)
-        # different types of indels:
-        if indels_list is not None:
-            report.add_field(reporting.Fields.INDELS, len(indels_list))
-            report.add_field(reporting.Fields.INDELSBASES, sum(indels_list))
-            report.add_field(reporting.Fields.MIS_SHORT_INDELS, len([i for i in indels_list if i <= qconfig.SHORT_INDEL_THRESHOLD]))
-            report.add_field(reporting.Fields.MIS_LONG_INDELS, len([i for i in indels_list if i > qconfig.SHORT_INDEL_THRESHOLD]))
-
-        if total_aligned_bases:
-            report.add_field(reporting.Fields.SUBSERROR, "%.2f" % (float(SNPs) * 100000.0 / float(total_aligned_bases)))
-            report.add_field(reporting.Fields.INDELSERROR, "%.2f" % (float(report.get_field(reporting.Fields.INDELS))
-                                                                     * 100000.0 / float(total_aligned_bases)))
-
-        # for misassemblies report:
-        report.add_field(reporting.Fields.MIS_ALL_EXTENSIVE, len(region_misassemblies) - region_misassemblies.count(Misassembly.LOCAL)
-                         - region_misassemblies.count(Misassembly.SCAFFOLD_GAP) - region_misassemblies.count(Misassembly.FRAGMENTED))
-        report.add_field(reporting.Fields.MIS_RELOCATION, region_misassemblies.count(Misassembly.RELOCATION))
-        report.add_field(reporting.Fields.MIS_TRANSLOCATION, region_misassemblies.count(Misassembly.TRANSLOCATION))
-        report.add_field(reporting.Fields.MIS_INVERTION, region_misassemblies.count(Misassembly.INVERSION))
-        report.add_field(reporting.Fields.MIS_EXTENSIVE_CONTIGS, len(misassembled_contigs))
-        report.add_field(reporting.Fields.MIS_EXTENSIVE_BASES, misassembled_bases)
-        report.add_field(reporting.Fields.MIS_LOCAL, region_misassemblies.count(Misassembly.LOCAL))
-        if qconfig.is_combined_ref:
-            report.add_field(reporting.Fields.MIS_ISTRANSLOCATIONS, region_misassemblies.count(Misassembly.INTERSPECTRANSLOCATION))
-        if qconfig.meta:
-            report.add_field(reporting.Fields.CONTIGS_WITH_ISTRANSLOCATIONS, contigs_with_istranslocations)
-        if qconfig.scaffolds and fname not in qconfig.dict_of_broken_scaffolds:
-            report.add_field(reporting.Fields.MIS_SCAFFOLDS_GAP, region_misassemblies.count(Misassembly.SCAFFOLD_GAP))
-        if qconfig.check_for_fragmented_ref:
-            report.add_field(reporting.Fields.MIS_FRAGMENTED, region_misassemblies.count(Misassembly.FRAGMENTED))
-
-        # for unaligned report:
-        report.add_field(reporting.Fields.UNALIGNED_FULL_CNTGS, unaligned)
-        report.add_field(reporting.Fields.UNALIGNED_FULL_LENGTH, fully_unaligned_bases)
-        report.add_field(reporting.Fields.UNALIGNED_PART_CNTGS, partially_unaligned)
-        report.add_field(reporting.Fields.UNALIGNED_PART_WITH_MISASSEMBLY, partially_unaligned_with_misassembly)
-        report.add_field(reporting.Fields.UNALIGNED_PART_SIGNIFICANT_PARTS, partially_unaligned_with_significant_parts)
-        report.add_field(reporting.Fields.UNALIGNED_PART_LENGTH, partially_unaligned_bases)
-        reports.append(report)
-
-    def save_result_for_unaligned(result):
-        report = reporting.get(fname)
-
-        unaligned_ctgs = report.get_field(reporting.Fields.CONTIGS)
-        unaligned_length = report.get_field(reporting.Fields.TOTALLEN)
-        report.add_field(reporting.Fields.UNALIGNED, '%d + %d part' % (unaligned_ctgs, 0))
-        report.add_field(reporting.Fields.UNALIGNEDBASES, unaligned_length)
-
-        report.add_field(reporting.Fields.UNALIGNED_FULL_CNTGS, unaligned_ctgs)
-        report.add_field(reporting.Fields.UNALIGNED_FULL_LENGTH, unaligned_length)
-
     for index, fname in enumerate(contigs_fpaths):
+        report = reporting.get(fname)
         if statuses[index] == NucmerStatus.OK:
-            save_result(results[index])
+            reports.append(save_result(results[index], report, fname))
         elif statuses[index] == NucmerStatus.NOT_ALIGNED:
-            save_result_for_unaligned(results[index])
+            save_result_for_unaligned(results[index], report)
 
     nucmer_statuses = dict(zip(contigs_fpaths, statuses))
     aligned_lengths_per_fpath = dict(zip(contigs_fpaths, aligned_lengths))

@@ -126,6 +126,7 @@ contig_size_viewer_fname = 'contig_size_viewer.html'
 contig_size_viewer_name = 'Contig size viewer'
 contig_alignment_viewer_name = 'Contig alignment viewer'
 one_alignment_viewer_name = 'alignment_viewer'
+alignment_viewer_part_name = 'alignment_viewer_part_'
 alignment_viewer_fpath = 'alignment_viewer.html'
 MAX_SIZE_FOR_COMB_PLOT = 50000000
 max_contigs_num_for_size_viewer = 1000

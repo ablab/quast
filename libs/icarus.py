@@ -289,11 +289,13 @@ def do(contigs_fpaths, contig_report_fpath_pattern, output_dirpath, ref_fpath, c
 
     total_genome_size = 0
     reference_chromosomes = OrderedDict()
+    contig_names_by_refs = None
     assemblies = None
     chr_names = []
     features_data = None
 
     plot_fpath = None
+    max_small_chromosomes = 10
 
     if ref_fpath:
         for name, seq in fastaparser.read_fasta(ref_fpath):
@@ -306,9 +308,23 @@ def do(contigs_fpaths, contig_report_fpath_pattern, output_dirpath, ref_fpath, c
         sorted_ref_names = sorted(reference_chromosomes, key=reference_chromosomes.get, reverse=True)
         sorted_ref_lengths = sorted(reference_chromosomes.values(), reverse=True)
         cumulative_ref_lengths = [0]
-        contig_names_by_refs = None
         if ref_labels_by_chromosomes:
             contig_names_by_refs = ref_labels_by_chromosomes
+        elif sum(reference_chromosomes.values()) > qconfig.MAX_SIZE_FOR_COMB_PLOT:
+            if len(chr_names) > max_small_chromosomes:
+                contig_names_by_refs = dict()
+                summary_len = 0
+                num_parts = 1
+                html_name = qconfig.alignment_viewer_part_name + str(num_parts)
+                for chr_name, chr_len in reference_chromosomes.iteritems():
+                    summary_len += chr_len
+                    contig_names_by_refs[chr_name] = html_name
+                    if summary_len >= qconfig.MAX_SIZE_FOR_COMB_PLOT:
+                        summary_len = 0
+                        num_parts += 1
+                        html_name = qconfig.alignment_viewer_part_name + str(num_parts)
+            else:
+                contig_names_by_refs = {chr_name: chr_name for chr_name in chr_names}
 
         for i, chr in enumerate(chr_names):
             chr_length = reference_chromosomes[chr]
@@ -339,14 +355,14 @@ def do(contigs_fpaths, contig_report_fpath_pattern, output_dirpath, ref_fpath, c
         contigs_by_assemblies[label] = contigs
 
     if contigs_fpaths and ref_fpath and features:
-        features_data = parse_features_data(features, cumulative_ref_lengths, reference_chromosomes.keys())
+        features_data = parse_features_data(features, cumulative_ref_lengths, chr_names)
     if reference_chromosomes and lists_of_aligned_blocks:
         assemblies = get_assemblies(contigs_fpaths, virtual_genome_size, lists_of_aligned_blocks, find_similar)
         if qconfig.draw_svg:
             plot_fpath = draw_alignment_plot(assemblies, virtual_genome_size, output_dirpath, sorted_ref_names, sorted_ref_lengths, virtual_genome_shift)
     if (assemblies or contigs_by_assemblies) and qconfig.create_icarus_html:
         icarus_html_fpath = js_data_gen(assemblies, contigs_fpaths, reference_chromosomes,
-                    output_dirpath, structures_by_labels, ref_fpath=ref_fpath, stdout_pattern=stdout_pattern,
+                    output_dirpath, structures_by_labels, contig_names_by_refs=contig_names_by_refs, ref_fpath=ref_fpath, stdout_pattern=stdout_pattern,
                     contigs_by_assemblies=contigs_by_assemblies, features_data=features_data, cov_fpath=cov_fpath,
                     physical_cov_fpath=physical_cov_fpath, json_output_dir=json_output_dir)
     else:
@@ -473,7 +489,7 @@ def add_contig(cum_length, contig, not_used_nx, assemblies_n50, assembly, contig
     return end_contig, contig_size_lines, align, not_used_nx
 
 
-def parse_cov_fpath(cov_fpath, chr_names, chr_full_names):
+def parse_cov_fpath(cov_fpath, chr_names, chr_full_names, contig_names_by_refs):
     if not cov_fpath:
         return None, None, None
     cov_data = defaultdict(list)
@@ -483,8 +499,7 @@ def parse_cov_fpath(cov_fpath, chr_names, chr_full_names):
         contig_to_chr = dict()
         index_to_chr = dict()
         for chr in chr_full_names:
-            if ref_labels_by_chromosomes:
-                contig_names_by_refs = ref_labels_by_chromosomes
+            if contig_names_by_refs:
                 contigs = [contig for contig in chr_names if contig_names_by_refs[contig] == chr]
             elif len(chr_full_names) == 1:
                 contigs = chr_names
@@ -534,16 +549,17 @@ def get_assemblies_data(contigs_fpaths, stdout_pattern, nx_marks):
 
 
 def get_contigs_data(contigs_by_assemblies, nx_marks, assemblies_n50, structures_by_labels, contig_names_by_refs, ref_names,
-                     one_html=True):
+                     chr_full_names):
     additional_data = []
     additional_data.append('var links_to_chromosomes;')
+    one_html = len(chr_full_names) == 1
     if not one_html:
         additional_data.append('links_to_chromosomes = {};')
         for ref_name in ref_names:
             chr_name = ref_name
             if contig_names_by_refs and ref_name in contig_names_by_refs:
                 chr_name = contig_names_by_refs[ref_name]
-            chr_name = html_saver.trim_ref_name(chr_name)
+            chr_name = get_html_name(chr_name, chr_full_names)
             additional_data.append('links_to_chromosomes["' + ref_name + '"] = "' + chr_name + '";')
     contigs_sizes_str = ['var contig_data = {};']
     contigs_sizes_str.append('var chromosome;')
@@ -634,12 +650,16 @@ def format_cov_data(cov_data, max_depth, chr, cov_data_name, max_depth_name):
     return data
 
 
-def save_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, data_str, chr_to_aligned_blocks,
-                                    structures_by_labels, output_dir_path=None, json_output_dir=None, ref_data=None, features_data=None,
-                                    assemblies_data=None, cov_data=None, physical_cov_data=None, max_depth=None, physical_max_depth=None):
-    html_name = html_saver.trim_ref_name(chr)
+def get_html_name(chr, chr_full_names):
     if len(chr_full_names) == 1:
-        html_name = qconfig.one_alignment_viewer_name
+        return qconfig.one_alignment_viewer_name
+    return html_saver.trim_ref_name(chr)
+
+
+def prepare_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, data_str, chr_to_aligned_blocks,
+                                    structures_by_labels, contig_names_by_refs=None, output_dir_path=None,
+                                    cov_data_str=None, physical_cov_data_str=None):
+    html_name = get_html_name(chr, chr_full_names)
 
     alignment_viewer_template_fpath = html_saver.get_real_path(qconfig.icarus_viewers_template_fname)
     alignment_viewer_fpath = os.path.join(output_dir_path, html_name + '.html')
@@ -647,16 +667,15 @@ def save_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, data_str, 
 
     additional_assemblies_data = ''
     data_str.append('var links_to_chromosomes;')
-    if ref_labels_by_chromosomes:
+    links_to_chromosomes = []
+    if contig_names_by_refs:
         data_str.append('links_to_chromosomes = {};')
-        links_to_chromosomes = []
         used_chromosomes = []
     num_misassemblies = 0
     aligned_assemblies = set()
-    contig_names_by_refs = ref_labels_by_chromosomes or None
 
     is_one_html = len(chr_full_names) == 1
-    data_str.append('var oneHtml = "' + str(is_one_html) + '";')
+    data_str.append('var oneHtml = ' + str(is_one_html).lower() + ';')
     # adding assembly data
     data_str.append('var contig_data = {};')
     data_str.append('contig_data["' + chr + '"] = {};')
@@ -752,10 +771,10 @@ def save_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, data_str, 
                                 if el.ref_name not in used_chromosomes:
                                     used_chromosomes.append(el.ref_name)
                                     other_ref_name = el.ref_name
-                                    if ref_labels_by_chromosomes:
+                                    if contig_names_by_refs:
                                         other_ref_name = contig_names_by_refs[el.ref_name]
                                     links_to_chromosomes.append('links_to_chromosomes["' + el.ref_name + '"] = "' +
-                                                                html_saver.trim_ref_name(other_ref_name) + '";')
+                                                                get_html_name(other_ref_name, chr_full_names) + '";')
                             corr_el_start = el.start
                             corr_el_end = el.end
                             data_str.append('{contig: "' + alignment.name + '",corr_start: ' + str(corr_el_start) + ',corr_end: ' +
@@ -777,25 +796,20 @@ def save_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, data_str, 
         additional_assemblies_data += 'assemblies_misassemblies["' + assembly + '"] = "' + str(ext_misassemblies) + '+' + \
                                       str(local_misassemblies) + '";\n'
 
-    if ref_labels_by_chromosomes:
+    if contig_names_by_refs:
         data_str.append(''.join(links_to_chromosomes))
-    if cov_data:
+    if cov_data_str:
         # adding coverage data
-        data_str.extend(format_cov_data(cov_data, max_depth, chr, 'coverage_data', 'reads_max_depth'))
-    if physical_cov_data:
-        data_str.extend(format_cov_data(physical_cov_data, physical_max_depth, chr, 'physical_coverage_data', 'physical_max_depth'))
+        data_str.extend(cov_data_str)
+    if physical_cov_data_str:
+        data_str.extend(physical_cov_data_str)
 
     data_str = '\n'.join(data_str)
 
     misassemblies_types = ['relocation', 'translocation', 'inversion', 'interspecies translocation', 'local']
     if not qconfig.is_combined_ref:
         misassemblies_types.remove('interspecies translocation')
-    chr_data = 'chromosome = "' + chr + '";\n'
-    chromosomes = '","'.join(ref_contigs)
-    chr_data += 'var chrContigs = ["' + chromosomes + '"];\n'
-    chr_name = chr.replace('_', ' ')
-    reference_text = '<div class="reftitle"><b>Contig alignment viewer.</b> Contigs aligned to "' + chr_name + '"</div>'
-    html_saver.save_icarus_data(json_output_dir, reference_text, 'reference', alignment_viewer_fpath)
+
     ms_counts_by_type = OrderedDict()
     for ms_type in misassemblies_types:
         factor = 1 if ms_type == 'interspecies translocation' else 2
@@ -809,15 +823,30 @@ def save_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, data_str, 
             ms_name += 's'
         ms_selector_text += '<label><input type="checkbox" id="' + ms_type + '" name="misassemblies_select" ' + \
                             is_checked + '/>' + ms_name + ' (' + str(ms_count) + ')</label>'
+
+    return alignment_viewer_fpath, data_str, additional_assemblies_data, ms_selector_text, num_misassemblies, aligned_assemblies
+
+
+def save_alignment_data_for_one_ref(chr_name, ref_contigs, ref_name, json_output_dir, alignment_viewer_fpath, data_str, ms_selector_text,
+                                    ref_data='', features_data='', assemblies_data='', additional_assemblies_data=''):
+    chr_data = 'chromosome = "' + chr_name + '";\n'
+    chromosomes = '","'.join(ref_contigs)
+    chr_data += 'var chrContigs = ["' + chromosomes + '"];\n'
+    if qconfig.alignment_viewer_part_name in chr_name:
+        chr_name = ref_name
+        chr_name += ' (' + str(len(ref_contigs)) + (' entries)' if len(ref_contigs) > 1 else ' entry)')
+    chr_name = chr_name.replace('_', ' ')
+    reference_text = '<div class="reftitle"><b>Contig alignment viewer.</b> Contigs aligned to "' + chr_name + '"</div>'
+
+    html_saver.save_icarus_data(json_output_dir, reference_text, 'reference', alignment_viewer_fpath)
     html_saver.save_icarus_data(json_output_dir, ms_selector_text, 'ms_selector', alignment_viewer_fpath)
     all_data = ref_data + assemblies_data + additional_assemblies_data + chr_data + features_data + data_str
     html_saver.save_icarus_data(json_output_dir, all_data, 'contig_alignments', alignment_viewer_fpath)
     html_saver.clean_html(alignment_viewer_fpath)
+    return
 
-    return num_misassemblies, aligned_assemblies
 
-
-def get_info_by_chr(chr, aligned_bases_by_chr, chr_sizes, contigs_fpaths, one_chromosome=False):
+def get_info_by_chr(chr, aligned_bases_by_chr, chr_sizes, contigs_fpaths, contig_names_by_refs, one_chromosome=False):
     if one_chromosome:
         html_name = qconfig.one_alignment_viewer_name
         chr_link = os.path.join(qconfig.icarus_dirname, html_name + '.html')
@@ -835,10 +864,22 @@ def get_info_by_chr(chr, aligned_bases_by_chr, chr_sizes, contigs_fpaths, one_ch
     return chr_link, chr_name, chr_genome, chr_size
 
 
+def group_references(chr_names, contig_names_by_refs, chromosomes_length, ref_fpath):
+    if contig_names_by_refs:
+        added_refs = set()
+        chr_full_names = [added_refs.add(ref) or ref for ref in [contig_names_by_refs[contig] for contig in chr_names]
+                          if ref not in added_refs]
+    elif sum(chromosomes_length.values()) < qconfig.MAX_SIZE_FOR_COMB_PLOT and len(chr_names) > 1:
+        chr_full_names = [qutils.name_from_fpath(ref_fpath)]
+    else:
+        chr_full_names = chr_names
+        contig_names_by_refs = {chr_names[i]: chr_full_names[i] for i in range(len(chr_names))}
+    return chr_full_names, contig_names_by_refs
+
+
 def js_data_gen(assemblies, contigs_fpaths, chromosomes_length, output_dirpath, structures_by_labels,
-                contigs_by_assemblies, ref_fpath=None, stdout_pattern=None, features_data=None, cov_fpath=None,
+                contigs_by_assemblies, contig_names_by_refs=None, ref_fpath=None, stdout_pattern=None, features_data=None, cov_fpath=None,
                 physical_cov_fpath=None, json_output_dir=None):
-    chr_full_names = []
     chr_names = []
     if chromosomes_length and assemblies:
         chr_to_aligned_blocks = OrderedDict()
@@ -852,19 +893,11 @@ def js_data_gen(assemblies, contigs_fpaths, chromosomes_length, output_dirpath, 
     output_all_files_dir_path = os.path.join(output_dirpath, qconfig.icarus_dirname)
     if not os.path.exists(output_all_files_dir_path):
         os.mkdir(output_all_files_dir_path)
-    contig_names_by_refs = None
-    if ref_labels_by_chromosomes:
-        contig_names_by_refs = ref_labels_by_chromosomes
-        added_refs = set()
-        chr_full_names = [added_refs.add(ref) or ref for ref in [contig_names_by_refs[contig] for contig in chr_names]
-                          if ref not in added_refs]
-    elif sum(chromosomes_length.values()) < qconfig.MAX_SIZE_FOR_COMB_PLOT and len(chr_names) > 1:
-        chr_full_names = [qutils.name_from_fpath(ref_fpath)]
-    else:
-        chr_full_names = chr_names
 
-    cov_data, not_covered, max_depth = parse_cov_fpath(cov_fpath, chr_names, chr_full_names)
-    physical_cov_data, not_covered, physical_max_depth = parse_cov_fpath(physical_cov_fpath, chr_names, chr_full_names)
+    chr_full_names, contig_names_by_refs = group_references(chr_names, contig_names_by_refs, chromosomes_length, ref_fpath)
+
+    cov_data, not_covered, max_depth = parse_cov_fpath(cov_fpath, chr_names, chr_full_names, contig_names_by_refs)
+    physical_cov_data, not_covered, physical_max_depth = parse_cov_fpath(physical_cov_fpath, chr_names, chr_full_names, contig_names_by_refs)
 
     chr_sizes = {}
     num_contigs = {}
@@ -878,11 +911,11 @@ def js_data_gen(assemblies, contigs_fpaths, chromosomes_length, output_dirpath, 
     ref_contigs_dict = {}
     chr_lengths_dict = {}
 
-    ref_data = 'var references_id = {};\n'
+    ref_data = 'var references_by_id = {};\n'
     for i, chr in enumerate(chr_names):
-        ref_data += 'references_id["' + chr + '"] = ' + str(i) + ';\n'
+        ref_data += 'references_by_id[' + str(i) + '] = "' + str(chr) + '";\n'
     for i, chr in enumerate(chr_full_names):
-        if ref_labels_by_chromosomes:
+        if contig_names_by_refs:
             ref_contigs = [contig for contig in chr_names if contig_names_by_refs[contig] == chr]
         elif len(chr_full_names) == 1:
             ref_contigs = chr_names
@@ -906,14 +939,22 @@ def js_data_gen(assemblies, contigs_fpaths, chromosomes_length, output_dirpath, 
             l = chromosomes_length[ref_contig]
             data_str.append('chromosomes_len["' + ref_contig + '"] = ' + str(l) + ';')
             aligned_bases_by_chr[chr].extend(aligned_bases[ref_contig])
-        num_misassemblies[chr], aligned_assemblies[chr] = save_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs,
-                                                          data_str, chr_to_aligned_blocks, structures_by_labels, json_output_dir=json_output_dir,
-                                                          ref_data=ref_data, features_data=features_data, assemblies_data=assemblies_data,
-                                                          cov_data=cov_data, physical_cov_data=physical_cov_data,
-                                                          max_depth=max_depth, physical_max_depth=physical_max_depth, output_dir_path=output_all_files_dir_path)
+
+        cov_data = format_cov_data(cov_data, max_depth, chr, 'coverage_data', 'reads_max_depth') if cov_data else None
+        physical_cov_data = format_cov_data(physical_cov_data, physical_max_depth, chr, 'physical_coverage_data', 'physical_max_depth') \
+            if physical_cov_data else None
+
+        alignment_viewer_fpath, ref_data_str, additional_assemblies_data, ms_selector_text, num_misassemblies[chr], aligned_assemblies[chr] = \
+            prepare_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, data_str, chr_to_aligned_blocks, structures_by_labels,
+                                               cov_data_str=cov_data, physical_cov_data_str=physical_cov_data,
+                                               contig_names_by_refs=contig_names_by_refs, output_dir_path=output_all_files_dir_path)
+        ref_name = qutils.name_from_fpath(ref_fpath)
+        save_alignment_data_for_one_ref(chr, ref_contigs, ref_name, json_output_dir, alignment_viewer_fpath, ref_data_str, ms_selector_text,
+                                        ref_data=ref_data, features_data=features_data, assemblies_data=assemblies_data,
+                                        additional_assemblies_data=additional_assemblies_data)
 
     contigs_sizes_str, too_many_contigs = get_contigs_data(contigs_by_assemblies, nx_marks, assemblies_n50, structures_by_labels,
-                                                           contig_names_by_refs, chr_names, one_html=len(chr_full_names) == 1)
+                                                           contig_names_by_refs, chr_names, chr_full_names)
     contig_size_template_fpath = html_saver.get_real_path(qconfig.icarus_viewers_template_fname)
     contig_size_viewer_fpath = os.path.join(output_all_files_dir_path, qconfig.contig_size_viewer_fname)
     html_saver.init_icarus(contig_size_template_fpath, contig_size_viewer_fpath)
@@ -958,7 +999,8 @@ def js_data_gen(assemblies, contigs_fpaths, chromosomes_length, output_dirpath, 
         reference_table = []
         div_references.append('<div>')
         for chr in sorted(chr_full_names):
-            chr_link, chr_name, chr_genome, chr_size = get_info_by_chr(chr, aligned_bases_by_chr, chr_sizes, contigs_fpaths)
+            chr_link, chr_name, chr_genome, chr_size = get_info_by_chr(chr, aligned_bases_by_chr, chr_sizes, contigs_fpaths,
+                                                                       contig_names_by_refs)
             reference_table.append('<tr>')
             reference_table.append('<td><a href="' + chr_link + '">' + chr_name + '</a></td>')
             reference_table.append('<td>%s</td>' % num_contigs[chr])
@@ -972,8 +1014,8 @@ def js_data_gen(assemblies, contigs_fpaths, chromosomes_length, output_dirpath, 
     else:
         if chr_full_names:
             chr = chr_full_names[0]
-            chr_link, chr_name, chr_genome, chr_size = get_info_by_chr(chr, aligned_bases_by_chr, chr_sizes,
-                                                                       contigs_fpaths, one_chromosome=True)
+            chr_link, chr_name, chr_genome, chr_size = get_info_by_chr(chr, aligned_bases_by_chr, chr_sizes, contigs_fpaths,
+                                                                       contig_names_by_refs, one_chromosome=True)
             viewer_name = qconfig.contig_alignment_viewer_name
             viewer_link = '<a href="' + chr_link + '">' + viewer_name + '</a>'
             viewer_info = viewer_link + \

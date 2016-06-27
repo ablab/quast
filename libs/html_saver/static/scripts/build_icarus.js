@@ -836,11 +836,14 @@ THE SOFTWARE.
       for (var numContainer = 0; numContainer < features_data.length; numContainer++) {
           var lane = features_data[numContainer];
           var numItems = 0;
+          var chrIndex = 0;
           for (var i = 0; i < lane.length; i++) {
-              if (!oneHtml && lane[i].chr != references_id[chr]) continue;
+              chrIndex = chrContigs.indexOf(references_by_id[lane[i].chr]);
+              if (!oneHtml && chrIndex == -1) continue;
               var block = lane[i];
               block.lane = laneId;
               block.id = itemId;
+              block.chr = chrIndex;
               features.push(block);
               itemId++;
               numItems++;

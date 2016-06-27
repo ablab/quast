@@ -169,13 +169,12 @@ function setupAutocompleteSearch(){
         deferRequestBy: 50,
         source: function(request, response) {
             var results = $.ui.autocomplete.filter(autocompleteItems, request.term);
-            results = results.slice(0, maxResults);
-
             var additionalLabel = '';
             if (results.length == 0) additionalLabel = 'No result';
             else if (results.length > maxResults) {
                 additionalLabel = results.length - maxResults + ' more results';
             }
+            results = results.slice(0, maxResults);
             if (additionalLabel) {
                 results.push({
                     desc: additionalLabel
@@ -188,6 +187,8 @@ function setupAutocompleteSearch(){
             return false;
         },
         select: function( event, ui ) {
+            if (!ui.item.value)
+                return;
             $( "#live_search" ).val( ui.item.label );
             var itemType = ui.item.value.split(',')[0];
             var itemValue = ui.item.value.split(',')[1];

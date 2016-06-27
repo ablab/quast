@@ -216,7 +216,7 @@ def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpat
         if len(abs_reads_fpaths) != 2:
             logger.error('  You should specify files with forward and reverse reads.')
             logger.info('  Failed searching structural variations.')
-            return None, None, Noneca
+            return None, None, None
 
         prev_dir = os.getcwd()
         os.chdir(output_dirpath)
@@ -413,7 +413,7 @@ def get_physical_coverage(output_dirpath, ref_fpath, ref_name, bam_fpath, err_pa
             qutils.call_subprocess([samtools_fpath('samtools'), 'faidx', ref_fpath],
                                stderr=open(err_path, 'a'), logger=logger)
         raw_cov_fpath = cov_fpath + '_raw'
-        qutils.call_subprocess([bedtools_fpath('bedtools'), 'genomecov', '-d', '-i', raw_bed_fpath, '-g', chr_len_fpath],
+        qutils.call_subprocess([bedtools_fpath('bedtools'), 'genomecov', '-bg', '-i', raw_bed_fpath, '-g', chr_len_fpath],
                                stdout=open(raw_cov_fpath, 'w'), stderr=open(err_path, 'a'))
         proceed_cov_file(raw_cov_fpath, cov_fpath)
     return cov_fpath
@@ -441,7 +441,7 @@ def proceed_cov_file(raw_cov_fpath, cov_fpath):
     chr_depth = defaultdict(list)
     used_chromosomes = dict()
     chr_index = 0
-    cov_factor = 10
+    cov_factor = 9
     with open(raw_cov_fpath, 'r') as in_coverage:
         with open(cov_fpath, 'w') as out_coverage:
             for index, line in enumerate(in_coverage):
@@ -451,11 +451,14 @@ def proceed_cov_file(raw_cov_fpath, cov_fpath):
                     chr_index += 1
                     used_chromosomes[name] = str(chr_index)
                     out_coverage.write('#' + name + ' ' + used_chromosomes[name] + '\n')
-                chr_depth[name].append(int(fs[2]))
-                if (len(chr_depth[name]) + 1) % cov_factor == 0 and index > 0:
-                    cur_depth = sum(chr_depth[name]) / cov_factor
+                if len(fs) > 3:
+                    chr_depth[name].extend([int(fs[-1])] * (int(fs[2]) - int(fs[1])))
+                else:
+                    chr_depth[name].append(int(fs[-1]))
+                while (len(chr_depth[name])) >= cov_factor and index > 0:
+                    cur_depth = sum(chr_depth[name][:cov_factor]) / cov_factor
                     out_coverage.write(' '.join([used_chromosomes[name], str(cur_depth) + '\n']))
-                    chr_depth[name] = []
+                    chr_depth[name] = chr_depth[name][cov_factor:]
             os.remove(raw_cov_fpath)
 
 

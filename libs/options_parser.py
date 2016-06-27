@@ -166,7 +166,7 @@ def parse_options(logger, quast_args, is_metaquast=False):
              callback_args=(logger,))
          ),
         (['-t', '--threads'], dict(
-             dest='threads',
+             dest='max_threads',
              type='int',
              action='callback',
              callback=check_arg_value,

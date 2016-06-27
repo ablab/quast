@@ -111,7 +111,7 @@ def process_one_ref(cur_ref_fpath, output_dirpath, err_path, bed_fpath=None):
         logger.info('  Using existing Manta BED-file: ' + ref_bed_fpath)
         return ref_bed_fpath
     if not os.path.exists(ref_bamsorted_fpath):
-        qutils.call_subprocess([samtools_fpath('samtools'), 'view', '-bS', ref_sam_fpath], stdout=open(ref_bam_fpath, 'w'),
+        qutils.call_subprocess([samtools_fpath('samtools'), 'view', '-h', '-bS', ref_sam_fpath], stdout=open(ref_bam_fpath, 'w'),
                                stderr=open(err_path, 'a'), logger=logger)
         qutils.call_subprocess([samtools_fpath('samtools'), 'sort', ref_bam_fpath, '-o', ref_bamsorted_fpath],
                                stderr=open(err_path, 'a'), logger=logger)
@@ -243,7 +243,7 @@ def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpat
         clean_read_names(sam_fpath, correct_sam_fpath)
         bam_fpath = os.path.join(output_dirpath, ref_name + '.bam')
         bam_sorted_fpath = add_suffix(bam_fpath, 'sorted')
-        qutils.call_subprocess([samtools_fpath('samtools'), 'view', '-@', str(qconfig.max_threads), '-bS', correct_sam_fpath],
+        qutils.call_subprocess([samtools_fpath('samtools'), 'view', '-@', str(qconfig.max_threads), '-h', '-bS', correct_sam_fpath],
                                stdout=open(bam_fpath, 'w'), stderr=open(err_path, 'a'), logger=logger)
         qutils.call_subprocess([samtools_fpath('samtools'), 'sort', '-@', str(qconfig.max_threads), bam_fpath, '-o', bam_sorted_fpath],
                                stderr=open(err_path, 'a'), logger=logger)
@@ -408,12 +408,15 @@ def get_physical_coverage(output_dirpath, ref_fpath, ref_name, bam_fpath, err_pa
                 for line in bedpe:
                     fs = line.split()
                     bed_file.write('\t'.join([fs[0], fs[1], fs[5] + '\n']))
+        sorted_bed_fpath = os.path.join(output_dirpath, ref_name + '.sorted.bed')
+        qutils.call_subprocess([bedtools_fpath('bedtools'), 'sort', '-i', raw_bed_fpath],
+                       stdout=open(sorted_bed_fpath, 'w'), stderr=open(err_path, 'a'))
         chr_len_fpath = ref_fpath + '.fai'
         if not is_non_empty_file(chr_len_fpath):
             qutils.call_subprocess([samtools_fpath('samtools'), 'faidx', ref_fpath],
                                stderr=open(err_path, 'a'), logger=logger)
         raw_cov_fpath = cov_fpath + '_raw'
-        qutils.call_subprocess([bedtools_fpath('bedtools'), 'genomecov', '-bg', '-i', raw_bed_fpath, '-g', chr_len_fpath],
+        qutils.call_subprocess([bedtools_fpath('bedtools'), 'genomecov', '-bga', '-i', sorted_bed_fpath, '-g', chr_len_fpath],
                                stdout=open(raw_cov_fpath, 'w'), stderr=open(err_path, 'a'))
         proceed_cov_file(raw_cov_fpath, cov_fpath)
     return cov_fpath

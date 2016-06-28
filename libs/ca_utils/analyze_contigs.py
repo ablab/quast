@@ -5,10 +5,31 @@
 # See file LICENSE for details.
 ############################################################################
 from libs import fastaparser, qconfig
-from libs.ca_utils.analyze_coverage import analyze_coverage
 from libs.ca_utils.analyze_misassemblies import process_misassembled_contig, IndelsInfo, Misassembly, find_all_sv
 from libs.ca_utils.best_set_selection import get_best_aligns_set
 from libs.ca_utils.misc import ref_labels_by_chromosomes
+
+
+def check_for_potential_translocation(seq, ctg_len, sorted_aligns, log_out_f):
+    count_ns = 0
+    unaligned_len = 0
+    prev_start = 0
+    for align in sorted_aligns:
+        if align.start() > prev_start + 1:
+            unaligned_part = seq[prev_start + 1: align.start()]
+            unaligned_len += len(unaligned_part)
+            count_ns += unaligned_part.count('N')
+        prev_start = align.end()
+    if ctg_len > sorted_aligns[-1].end() + 1:
+        unaligned_part = seq[sorted_aligns[-1].end() + 1: ctg_len]
+        unaligned_len += len(unaligned_part)
+        count_ns += unaligned_part.count('N')
+    # if contig consists mostly of Ns, it cannot contain interspecies translocations
+    if count_ns / float(unaligned_len) >= 0.95 or unaligned_len - count_ns < qconfig.significant_part_size:
+        return 0
+
+    print >> log_out_f, '\t\tIt can contain interspecies translocations.'
+    return 1
 
 
 def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, aligns, ref_features, ref_lens, cyclic=None):
@@ -178,9 +199,10 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, aligns, ref_featu
                         if (unaligned_bases >= qconfig.significant_part_size) and (ctg_len - unaligned_bases >= qconfig.significant_part_size):
                             partially_unaligned_with_significant_parts += 1
                             print >> ca_output.stdout_f, '\t\tThis contig has both significant aligned and unaligned parts ' \
-                                                   '(of length >= %d)!' % (qconfig.significant_part_size) + (' It can contain interspecies translocations' if qconfig.meta else '')
+                                                         '(of length >= %d)!' % (qconfig.significant_part_size)
                             if qconfig.meta:
-                                contigs_with_istranslocations += 1
+                                contigs_with_istranslocations += check_for_potential_translocation(seq, ctg_len, real_aligns,
+                                                                                                   ca_output.stdout_f)
                     ref_aligns.setdefault(the_only_align.ref, []).append(the_only_align)
                 else:
                     #Sort real alignments by position on the contig
@@ -249,9 +271,10 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, aligns, ref_featu
                         if (aligned_bases_in_contig >= qconfig.significant_part_size) and (ctg_len - aligned_bases_in_contig >= qconfig.significant_part_size):
                             partially_unaligned_with_significant_parts += 1
                             print >> ca_output.stdout_f, '\t\tThis contig has both significant aligned and unaligned parts ' \
-                                                   '(of length >= %d)!' % (qconfig.significant_part_size) + (' It can contain interspecies translocations' if qconfig.meta else '')
+                                                         '(of length >= %d)!' % (qconfig.significant_part_size)
                             if qconfig.meta:
-                                contigs_with_istranslocations += 1
+                                contigs_with_istranslocations += check_for_potential_translocation(seq, ctg_len, sorted_aligns,
+                                                                                                   ca_output.stdout_f)
                         continue
 
                     ### processing misassemblies
@@ -263,10 +286,12 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, aligns, ref_featu
                     if is_misassembled:
                         misassembled_contigs[contig] = len(seq)
                         contig_type = 'misassembled'
-                    if qconfig.meta and (ctg_len - aligned_bases_in_contig >= qconfig.significant_part_size):
+                    if ctg_len - aligned_bases_in_contig >= qconfig.significant_part_size:
                         print >> ca_output.stdout_f, '\t\tThis contig has significant unaligned parts ' \
-                                               '(of length >= %d)!' % (qconfig.significant_part_size) + (' It can contain interspecies translocations' if qconfig.meta else '')
-                        contigs_with_istranslocations += 1
+                                                     '(of length >= %d)!' % (qconfig.significant_part_size)
+                        if qconfig.meta:
+                            contigs_with_istranslocations += check_for_potential_translocation(seq, ctg_len, sorted_aligns,
+                                                                                               ca_output.stdout_f)
         else:
             #No aligns to this contig
             print >> ca_output.stdout_f, '\t\tThis contig is unaligned. (%d bp)' % ctg_len

@@ -95,8 +95,13 @@ def do(html_fpath, output_dirpath, combined_output_dirpath, output_dirpath_per_r
                 y_label = None
                 if metric == reporting.Fields.TOTALLEN:
                     y_label = 'Total length '
-                elif metric in [reporting.Fields.LARGCONTIG, reporting.Fields.N50, reporting.Fields.NGA50, reporting.Fields.MIS_EXTENSIVE_BASES]:
+                elif metric == reporting.Fields.TOTAL_ALIGNED_LEN:
+                    y_label = 'Aligned length '
+                elif metric in [reporting.Fields.LARGCONTIG, reporting.Fields.N50, reporting.Fields.NGA50,
+                                reporting.Fields.MIS_EXTENSIVE_BASES]:
                     y_label = 'Contig length '
+                elif metric == reporting.Fields.LARGALIGN:
+                    y_label = 'Alignment length '
                 plotter.draw_meta_summary_plot(html_fpath, output_dirpath, labels, cur_ref_names, all_rows, results,
                                                summary_png_fpath, title=metric, reverse=reverse, yaxis_title=y_label)
                 if metric == reporting.Fields.MISASSEMBL:

@@ -93,6 +93,7 @@ class Fields:
     GENES = '# genes'
     OPERONS = '# operons'
     LARGALIGN = 'Largest alignment'
+    TOTAL_ALIGNED_LEN = 'Total aligned length'
     NG50 = 'NG50'
     NA50 = 'NA50'
     NGA50 = 'NGA50'
@@ -122,7 +123,7 @@ class Fields:
              N50, NG50, N75, NG75, L50, LG50, L75, LG75, MISASSEMBL, MISCONTIGS, MISCONTIGSBASES, MISLOCAL, MIS_SCAFFOLDS_GAP,
              STRUCT_VARIATIONS, UNALIGNED, UNALIGNEDBASES, MAPPEDGENOME, DUPLICATION_RATIO,
              UNCALLED_PERCENT, SUBSERROR, INDELSERROR, GENES, OPERONS, PREDICTED_GENES_UNIQUE, PREDICTED_GENES,
-             LARGALIGN, NA50, NGA50, NA75, NGA75, LA50, LGA50, LA75, LGA75, ]
+             LARGALIGN, TOTAL_ALIGNED_LEN, NA50, NGA50, NA75, NGA75, LA50, LGA50, LA75, LGA75, ]
 
     # content and order of metrics in DETAILED MISASSEMBLIES REPORT (<quast_output_dir>/contigs_reports/misassemblies_report.txt, .tex, .tsv)
     misassemblies_order = [NAME, MIS_ALL_EXTENSIVE, MIS_RELOCATION, MIS_TRANSLOCATION, MIS_INVERTION,
@@ -171,8 +172,8 @@ class Fields:
 
     ### Grouping of metrics and set of main metrics for HTML version of main report
     grouped_order = [
-        ('Statistics without reference', [CONTIGS, CONTIGS__FOR_THRESHOLDS, LARGCONTIG, TOTALLEN, TOTALLENS__FOR_THRESHOLDS,
-                                          N50, N75, L50, L75, GC,]),
+        ('Genome statistics', [MAPPEDGENOME, DUPLICATION_RATIO, GENES, OPERONS, LARGALIGN, TOTAL_ALIGNED_LEN,
+                               NG50, NG75, NA50, NA75, NGA50, NGA75, LG50, LG75, LA50, LA75, LGA50, LGA75,]),
 
         ('Misassemblies', [MIS_ALL_EXTENSIVE,
                            MIS_RELOCATION, MIS_TRANSLOCATION, MIS_INVERTION,
@@ -187,8 +188,8 @@ class Fields:
         ('Mismatches', [MISMATCHES, INDELS, INDELSBASES, SUBSERROR, INDELSERROR,
                         MIS_SHORT_INDELS, MIS_LONG_INDELS, UNCALLED, UNCALLED_PERCENT,]),
 
-        ('Genome statistics', [MAPPEDGENOME, DUPLICATION_RATIO, GENES, OPERONS, LARGALIGN,
-                               NG50, NG75, NA50, NA75, NGA50, NGA75, LG50, LG75, LA50, LA75, LGA50, LGA75,]),
+        ('Statistics without reference', [CONTIGS, CONTIGS__FOR_THRESHOLDS, LARGCONTIG, TOTALLEN, TOTALLENS__FOR_THRESHOLDS,
+                                          N50, N75, L50, L75, GC,]),
 
         ('Predicted genes', [PREDICTED_GENES_UNIQUE, PREDICTED_GENES,]),
         
@@ -196,7 +197,7 @@ class Fields:
     ]
 
     # for "short" version of HTML report
-    main_metrics = [CONTIGS, LARGCONTIG, TOTALLEN,
+    main_metrics = [CONTIGS, LARGCONTIG, TOTALLEN, LARGALIGN, TOTAL_ALIGNED_LEN,
                     TOTALLENS__FOR_1000_THRESHOLD, TOTALLENS__FOR_10000_THRESHOLD, TOTALLENS__FOR_50000_THRESHOLD,
                     MIS_ALL_EXTENSIVE, MIS_EXTENSIVE_BASES,
                     SUBSERROR, INDELSERROR, UNCALLED_PERCENT,
@@ -214,7 +215,8 @@ class Fields:
 
     quality_dict = {
         Quality.MORE_IS_BETTER:
-            [LARGCONTIG, TOTALLEN, TOTALLENS__FOR_THRESHOLDS, TOTALLENS__FOR_10000_THRESHOLD, N50, NG50, N75, NG75, NA50, NGA50, NA75, NGA75, LARGALIGN,
+            [LARGCONTIG, TOTALLEN, TOTALLENS__FOR_THRESHOLDS, TOTALLENS__FOR_10000_THRESHOLD, LARGALIGN, TOTAL_ALIGNED_LEN,
+             N50, NG50, N75, NG75, NA50, NGA50, NA75, NGA75,
              MAPPEDGENOME, GENES, OPERONS, PREDICTED_GENES_UNIQUE, PREDICTED_GENES],
         Quality.LESS_IS_BETTER:
             [CONTIGS, CONTIGS__FOR_THRESHOLDS, L50, LG50, L75, LG75,

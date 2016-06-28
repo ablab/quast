@@ -58,6 +58,7 @@ def do(ref_fpath, aligned_contigs_fpaths, output_dirpath, json_output_dirpath,
                  (', LGA50 = ' + str(lga50) if not qconfig.is_combined_ref and lga50 else ''))
         report = reporting.get(contigs_fpath)
         report.add_field(reporting.Fields.LARGALIGN, max(lens))
+        report.add_field(reporting.Fields.TOTAL_ALIGNED_LEN, sum(lens))
         report.add_field(reporting.Fields.NA50, na50)
         report.add_field(reporting.Fields.NA75, na75)
         report.add_field(reporting.Fields.LA50, la50)

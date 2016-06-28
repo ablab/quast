@@ -155,7 +155,7 @@ function showAllAssemblies(series, colors) {
             },
             yaxis: {
                 min: 0,
-                labelWidth: 120,
+                labelWidth: 125,
                 reserveSpace: true,
                 lineWidth: 0.5,
                 color: '#000',
@@ -199,7 +199,7 @@ function showOneAssembly(series, colors) {
             },
             yaxis: {
                 min: 0,
-                labelWidth: 120,
+                labelWidth: 125,
                 reserveSpace: true,
                 lineWidth: 0.5,
                 color: '#000',

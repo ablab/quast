@@ -13,10 +13,11 @@ function fillOneRow(metric, mainMetrics, group_n, order, glossary, is_primary, r
     var values = metric.values;
 
     var trClass = 'content-row';
-    if (metric.isMain || $.inArray(metricName, mainMetrics) > -1) {
-        if (metricName.indexOf('gt=') == -1) {
+    var iconPlots;
+    if (metric.isMain || $.inArray(metricName, mainMetrics) != -1) {
+        if ($.inArray(metricName, mainMetrics) != -1) {
             var numPlot = $.inArray(metricName, mainMetrics);
-            var iconPlots = '<img id="' + numPlot + '" class="icon_plot" style="vertical-align: bottom" onclick="setPlot($(this))"/>';
+            iconPlots = '<img id="' + numPlot + '" class="icon_plot" style="vertical-align: bottom" onclick="setPlot($(this))"/>';
         }
         (function(group_n) {
             var id_group = '#group_' + group_n;
@@ -48,7 +49,7 @@ function fillOneRow(metric, mainMetrics, group_n, order, glossary, is_primary, r
         '<span class="metric-name' +
           (is_primary ? ' primary' : ' secondary') + (not_extend || !is_primary ? '' : ' expandable collapsed') + '">' +
            initial_spaces_to_nbsp(addTooltipIfDefinitionExists(glossary, rowName.trunc(55)), metricName) +
-        (metric.isMain && is_primary && metricName.indexOf("gt;=") == -1 ? ("&nbsp" + iconPlots) : '') +
+          (iconPlots && is_primary ? ("&nbsp" + iconPlots) : '') +
         '</span></td>';
 
     tooltipForGenomeStatistics = 'Metrics that depend on the reference length are not calculated for the combined reference.';
@@ -215,7 +216,7 @@ function buildTotalReport(assembliesNames, report, order, date, minContig, gloss
     var refNames = [];
     for (var report_n = 0; report_n < reports.length; report_n++) {
         var _refName = reports[report_n].referenceName;
-        if (!_refName) _refName = 'not aligned';
+        if (!_refName) _refName = 'not_aligned';
         refNames.push(_refName);
     }
     reports = refNames.map(function (name, report_n) {
@@ -342,7 +343,8 @@ function buildTotalReport(assembliesNames, report, order, date, minContig, gloss
                 var metrics_ref = reports[report_n].report[group_n][1];
                 for (var metric_ext_n = 0; metric_ext_n < metrics_ref.length; metric_ext_n++){
                     if (metrics_ref[metric_ext_n].metricName == metrics[metric_n].metricName) {
-                        table += fillOneRow(metrics_ref[metric_ext_n], mainMetrics, group_n, order, glossary, false, reports[report_n].name, report_n, assembliesNames, notAlignedContigs, notExtendedMetrics);
+                        table += fillOneRow(metrics_ref[metric_ext_n], mainMetrics, group_n, order, glossary, false,
+                            reports[report_n].name, report_n, assembliesNames, notAlignedContigs, notExtendedMetrics);
                         break;
                     }
                 }

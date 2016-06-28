@@ -523,8 +523,8 @@ function addTooltip(feature, tooltipText, event) {
     if (!tooltipText)
         tooltipText = feature ? '<strong>' + (feature.name ? feature.name + ',' : '') + '</strong> <span>' +
         (feature.id ? ' ID=' + feature.id + ',' : '') + ' coordinates: ' + feature.start + '-' + feature.end + '</span>' : '';
-    var eventX = event ? event.x : d3.event.pageX - 50;
-    var eventY = event ? event.y + 5 : d3.event.pageY + 5;
+    var eventX = event ? event.pageX : d3.event.pageX - 50;
+    var eventY = event ? event.pageY + 5 : d3.event.pageY + 5;
     if (tooltipText && featureTip.html() != tooltipText) {
         featureTip.style('opacity', 1);
         featureTip.html(tooltipText)
@@ -668,10 +668,77 @@ function addGradient(d, marks, gradientExists) {
     return 'url(#' + gradientId + ')';
 }
 
-function getNextMaxCovValue(maxY, ticksVals) {
-    var factor = ticksVals[1] - ticksVals[0];
-    maxY = Math.max(factor, Math.ceil(maxY / factor) * factor);
+function getNextMaxCovValue(maxY, ticksVals, isLogScaleCoverage) {
+    if (isLogScaleCoverage) {
+         factor = Math.max(1, Math.ceil(Math.log(maxY) * Math.LOG10E));
+         maxY = Math.pow(10, factor) * 1.1;
+    }
+    else {
+        factor = ticksVals[1] - ticksVals[0];
+        maxY = Math.max(factor, Math.ceil(maxY / factor) * factor);
+    }
     return maxY;
+}
+
+function getLogScaleYValues(scale) {
+    return function(tickValue) {
+        var i = 0;
+        for (; Math.pow(10, i) < tickValue; ++i);
+        if (tickValue == Math.pow(10, i) && tickValue <= scale.domain()[0]) return tickValue;
+    }
+};
+
+function toggleLogLinearScaleMiniCoverage(isLogScaleCoverage) {
+    var logScaleTogglerMini = document.getElementById('logScaleTogglerMini');
+    if (isLogScaleCoverage)
+        logScaleTogglerMini.innerHTML = getLogTogglerHtml(normal_scale_a_mini, log_scale_span);
+    else
+        logScaleTogglerMini.innerHTML = getLogTogglerHtml(normal_scale_span, log_scale_a_mini);
+    y_cov_mini_S = setYScaleCoverage(isLogScaleCoverage);
+    drawCoverageLine(x_mini.domain()[0], x_mini.domain()[1], coverageFactor, mini_cov, x_mini, y_cov_mini_S,
+        physical_coverage_data, '.phys_covered');
+    drawCoverageLine(x_mini.domain()[0], x_mini.domain()[1], coverageFactor, mini_cov, x_mini, y_cov_mini_S,
+        coverage_data, '.covered');
+    setYScaleLabels(mini_cov, y_cov_mini_A, y_cov_mini_S, isLogScaleCoverage);
+}
+
+function toggleLogLinearScaleMainCoverage(isLogScaleCoverage) {
+    var logScaleTogglerMain = document.getElementById('logScaleTogglerMain');
+    if (isLogScaleCoverage)
+        logScaleTogglerMain.innerHTML = getLogTogglerHtml(normal_scale_a_main, log_scale_span);
+    else logScaleTogglerMain.innerHTML = getLogTogglerHtml(normal_scale_span, log_scale_a_main);
+    y_cov_main_S = setYScaleCoverage(isLogScaleCoverage);
+    setYScaleLabels(main_cov, y_cov_main_A, y_cov_main_S, isLogScaleCoverage);
+    display();
+}
+
+function setYScaleCoverage(isLogScaleCoverage, firstRun) {
+    if (isLogScaleCoverage) {
+        y_cov_scale = d3.scale.log();
+    }
+    else {
+        y_cov_scale = d3.scale.linear();
+    }
+    y_cov_scale.domain([y_max, .1])
+               .range([0, coverageHeight]);
+    if (firstRun) {
+        y_max_log = getNextMaxCovValue(y_max, y_cov_scale.ticks(numYTicks), true);
+        y_max = getNextMaxCovValue(y_max, y_cov_scale.ticks(numYTicks));
+    }
+    if (isLogScaleCoverage)
+        y_cov_scale.domain([y_max_log, .1]);
+    else y_cov_scale.domain([y_max, .1]);
+    return y_cov_scale;
+}
+
+function setYScaleLabels(track, axis, scale, isLogScaleCoverage) {
+    axis.scale(scale);
+    track.select('.y').call(axis);
+    if (isLogScaleCoverage) {
+        axis.tickValues(scale.ticks().filter(getLogScaleYValues(scale)));
+    }
+    else axis.tickValues(null);
+    track.select('.y').call(axis);
 }
 
 function setBaseChartHeight() {

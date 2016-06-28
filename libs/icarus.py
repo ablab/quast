@@ -79,7 +79,8 @@ def do(contigs_fpaths, contig_report_fpath_pattern, output_dirpath, ref_fpath, c
                         num_parts += 1
                         html_name = qconfig.alignment_viewer_part_name + str(num_parts)
             else:
-                contig_names_by_refs = {chr_name: chr_name for chr_name in chr_names}
+                for chr_name in chr_names:
+                    contig_names_by_refs = {chr_name: chr_name}
 
         for i, chr in enumerate(chr_names):
             chr_length = reference_chromosomes[chr]

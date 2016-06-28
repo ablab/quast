@@ -43,8 +43,9 @@ function setupInterface() {
     if (drawCoverage) {
         addCovTrackButtons();
         addPhysicalCovTrackButtons();
+        addLogScaleTogglers();
     }
-    window.onresize = function(){ location.reload(); }
+    window.onresize = function(){ location.reload(); };
     display();
 }
 
@@ -165,53 +166,53 @@ function setupAutocompleteSearch(){
     var autocompleteItems = createAutocompleteListItems();
 
     $( "#live_search" ).autocomplete({
-        minLength: 1,
-        maxHeight: 200,
-        deferRequestBy: 50,
-        source: function(request, response) {
-            var results = $.ui.autocomplete.filter(autocompleteItems, request.term);
-            var additionalLabel = '';
-            if (results.length == 0) additionalLabel = 'No result';
-            else if (results.length > maxResults) {
-                additionalLabel = results.length - maxResults + ' more results';
-            }
-            results = results.slice(0, maxResults);
-            if (additionalLabel) {
-                results.push({
-                    desc: additionalLabel
-                });
-            }
-            response(results);
-        },
-        focus: function( event, ui ) {
-            $( "#live_search" ).val( ui.item.label );
-            return false;
-        },
-        select: function( event, ui ) {
-            if (!ui.item.value)
-                return;
-            $( "#live_search" ).val( ui.item.label );
-            var itemType = ui.item.value.split(',')[0];
-            var itemValue = ui.item.value.split(',')[1];
+            minLength: 1,
+            maxHeight: 200,
+            deferRequestBy: 50,
+            source: function(request, response) {
+                var results = $.ui.autocomplete.filter(autocompleteItems, request.term);
+                var additionalLabel = '';
+                if (results.length == 0) additionalLabel = 'No result';
+                else if (results.length > maxResults) {
+                    additionalLabel = results.length - maxResults + ' more results';
+                }
+                results = results.slice(0, maxResults);
+                if (additionalLabel) {
+                    results.push({
+                        desc: additionalLabel
+                    });
+                }
+                response(results);
+            },
+            focus: function( event, ui ) {
+                $( "#live_search" ).val( ui.item.label );
+                return false;
+            },
+            select: function( event, ui ) {
+                if (!ui.item.value)
+                    return;
+                $( "#live_search" ).val( ui.item.label );
+                var itemType = ui.item.value.split(',')[0];
+                var itemValue = ui.item.value.split(',')[1];
 
-            if (itemType == 'contig') {
-                var selectedItem = items[itemValue];
-                selected_id = selectedItem.groupId;
-                showArrows(selectedItem);
-                changeInfo(selectedItem);
-            }
-            else if (itemType == 'gene') {
-                var selectedItem = featuresData.features[itemValue];
-            }
-            var minSize = 5000;
-            var start = selectedItem.corr_start;
-            var end = Math.max(selectedItem.corr_end, selectedItem.corr_start + minSize);
-            setCoords([start, end], true);
-            display();
+                if (itemType == 'contig') {
+                    var selectedItem = items[itemValue];
+                    selected_id = selectedItem.groupId;
+                    showArrows(selectedItem);
+                    changeInfo(selectedItem);
+                }
+                else if (itemType == 'gene') {
+                    var selectedItem = featuresData.features[itemValue];
+                }
+                var minSize = 5000;
+                var start = selectedItem.corr_start;
+                var end = Math.max(selectedItem.corr_end, selectedItem.corr_start + minSize);
+                setCoords([start, end], true);
+                display();
 
-            return false;
-        }
-    })
+                return false;
+            }
+        })
         .focus(function(){
             $(this).autocomplete('search');
         })
@@ -289,6 +290,7 @@ function addPhysicalCovTrackButtons() {
     hideBtnPhysicalCoverageMain.onclick = function() {
         physicalCoverageHidden = !physicalCoverageHidden;
         hideBtnPhysicalCoverageMain.innerHTML = physicalCoverageHidden ? showCovText : hideCovText;
+        main_cov.select('.phys_covered').classed('invisible', physicalCoverageHidden);
         display();
     };
 }
@@ -566,4 +568,54 @@ function setContigSizeThreshold(event, textBox) {
             });
         display();
     }
+}
+
+var normal_scale_span =
+    "<span class='selected-switch'>" +
+    'Normal' +
+    "</span>";
+var normal_scale_a_mini =
+    "<a class='dotted-link' onClick='toggleLogLinearScaleMiniCoverage(false)'>" +
+    'Normal' +
+    "</a>";
+var normal_scale_a_main =
+    "<a class='dotted-link' onClick='toggleLogLinearScaleMainCoverage(false)'>" +
+    'Normal' +
+    "</a>";
+var log_scale_span =
+    "<span class='selected-switch'>" +
+    'logarithmic' +
+    "</span>";
+var log_scale_a_mini =
+    "<a class='dotted-link' onClick='toggleLogLinearScaleMiniCoverage(true)'>" +
+    'logarithmic' +
+    "</a>";
+var log_scale_a_main =
+    "<a class='dotted-link' onClick='toggleLogLinearScaleMainCoverage(true)'>" +
+    'logarithmic' +
+    "</a>";
+
+
+function getLogTogglerHtml(normal_scale_el, log_scale_el) {
+    var logTogglerHtml = "<span id='normal_scale_label'>" +
+        normal_scale_el +
+        "</span>&nbsp;/&nbsp;" +
+        "<span id='log_scale_label'>" +
+        log_scale_el +
+        "</span> scale" +
+        "</div>";
+    return logTogglerHtml;
+}
+
+function addLogScaleTogglers() {
+    var logScaleTogglerMini = document.getElementById('logScaleTogglerMini');
+    var logScaleTogglerMain = document.getElementById('logScaleTogglerMain');
+    setTrackBtnPos(logScaleTogglerMini, hideBtnCoverageMiniOffsetY - 10);
+    setTrackBtnPos(logScaleTogglerMain, hideBtnCoverageMainOffsetY - 10);
+    logTogglerTextWidth = 160;
+    logScaleTogglerMini.style.left = (margin.left + width - logTogglerTextWidth) + "px";
+    logScaleTogglerMain.style.left = (margin.left + width - logTogglerTextWidth) + "px";
+    logScaleTogglerMain.style.display = 'none';
+    logScaleTogglerMini.innerHTML = getLogTogglerHtml(normal_scale_span, log_scale_a_mini);
+    logScaleTogglerMain.innerHTML = getLogTogglerHtml(normal_scale_span, log_scale_a_main);
 }

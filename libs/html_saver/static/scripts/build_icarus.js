@@ -270,7 +270,7 @@ THE SOFTWARE.
         addFeatureTrackInfo(annotationsMain, y_anno);
     }
 
-    var mini_cov, main_cov, x_cov_mini_S, y_cov_main_S, y_cov_main_A, numYTicks;
+    var mini_cov, main_cov, x_cov_mini_S, y_cov_mini_S, y_cov_mini_A, y_cov_main_S, y_cov_main_A, y_max, y_max_log, numYTicks;
     if (drawCoverage)
         setupCoverage();
 
@@ -703,55 +703,60 @@ THE SOFTWARE.
         x_cov_mini_S = x_mini,      // x coverage scale
         y_max = Math.max(reads_max_depth[chromosome], physical_max_depth[chromosome]);
 
-        y_cov_mini_S = d3.scale.linear()
-                .domain([y_max, .1])
-                .range([0, coverageHeight]);
-        y_max = getNextMaxCovValue(y_max, y_cov_mini_S.ticks(numYTicks));
-        y_cov_mini_S.domain([y_max, .1]);
+        y_cov_mini_S = setYScaleCoverage(false, true);
         y_cov_main_S = y_cov_mini_S;
 
         y_cov_mini_A = d3.svg.axis()
-                .scale(y_cov_mini_S)
-                .orient('left')
-                .tickFormat(function(tickValue) {
-                    return tickValue;
-                })
-                .tickSize(2, 0)
-                .ticks(numYTicks);
+            .orient('left')
+            .tickFormat(function(tickValue) {
+                return tickValue;
+            })
+            .tickSize(2, 0)
+            .ticks(numYTicks);
         mini_cov = chart.append('g')
-                .attr('class', 'coverage')
-                .attr('transform', 'translate(' + margin.left + ', ' + covMiniOffsetY + ')');
+            .attr('class', 'coverage')
+            .attr('transform', 'translate(' + margin.left + ', ' + covMiniOffsetY + ')');
         mini_cov.append('g')
-                .attr('class', 'y')
-                .call(y_cov_mini_A);
-        mini_cov.append('text')
-                .text('Coverage')
-                .attr('transform', 'rotate(-90 45, 80)');
+            .attr('class', 'y');
 
         // draw main coverage
         y_cov_main_A = y_cov_mini_A = d3.svg.axis()
-                .scale(y_cov_main_S)
-                .orient('left')
-                .tickFormat(function(tickValue) {
-                    return tickValue;
-                })
-                .tickSize(2, 0)
-                .ticks(numYTicks);
+            .orient('left')
+            .tickFormat(function(tickValue) {
+                return tickValue;
+            })
+            .tickSize(2, 0)
+            .ticks(numYTicks);
 
         var x_cov_main_A = xMainAxis;
         main_cov = chart.append('g')
-                .attr('class', 'COV')
-                .attr('transform', 'translate(' + margin.left + ', ' + covMainOffsetY + ')');
+            .attr('class', 'COV')
+            .attr('transform', 'translate(' + margin.left + ', ' + covMainOffsetY + ')');
 
         main_cov.attr('display', 'none');
         main_cov.append('g')
-                .attr('class', 'y')
-                .attr('transform', 'translate(0, 0)');
-        main_cov.select('.y').call(y_cov_main_A);
+            .attr('class', 'y')
+            .attr('transform', 'translate(0, 0)');
 
-        drawCoverageLine(x_mini.domain()[0], x_mini.domain()[1], coverageFactor, mini_cov, x_mini, physical_coverage_data, 'phys_covered');
+        setYScaleLabels(mini_cov, y_cov_mini_A, y_cov_mini_S);
+        setYScaleLabels(main_cov, y_cov_main_A, y_cov_main_S);
+        appendPaths(mini_cov);
+        appendPaths(main_cov);
+
+        drawCoverageLine(x_mini.domain()[0], x_mini.domain()[1], coverageFactor, mini_cov, x_mini, y_cov_mini_S,
+            physical_coverage_data, '.phys_covered');
         togglePhysCoverageMini();
-        drawCoverageLine(x_mini.domain()[0], x_mini.domain()[1], coverageFactor, mini_cov, x_mini, coverage_data, 'covered');
+        drawCoverageLine(x_mini.domain()[0], x_mini.domain()[1], coverageFactor, mini_cov, x_mini, y_cov_mini_S,
+            coverage_data, '.covered');
+    }
+
+    function appendPaths(track) {
+        track.append('g')
+            .attr('class', 'phys_covered')
+            .append('path');
+        track.append('g')
+            .attr('class', 'covered')
+            .append('path');
     }
 
     // generates a single path for each block class in the mini display

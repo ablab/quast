@@ -66,8 +66,8 @@ def do(contigs_fpaths, contig_report_fpath_pattern, output_dirpath, ref_fpath, c
         if ref_labels_by_chromosomes:
             contig_names_by_refs = ref_labels_by_chromosomes
         elif sum(reference_chromosomes.values()) > qconfig.MAX_SIZE_FOR_COMB_PLOT:
+            contig_names_by_refs = dict()
             if len(chr_names) > max_small_chromosomes:
-                contig_names_by_refs = dict()
                 summary_len = 0
                 num_parts = 1
                 html_name = qconfig.alignment_viewer_part_name + str(num_parts)

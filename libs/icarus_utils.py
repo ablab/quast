@@ -308,6 +308,7 @@ def group_references(chr_names, contig_names_by_refs, chromosomes_length, ref_fp
     elif sum(chromosomes_length.values()) < qconfig.MAX_SIZE_FOR_COMB_PLOT and len(chr_names) > 1:
         chr_full_names = [qutils.name_from_fpath(ref_fpath)]
     else:
+        contig_names_by_refs = dict()
         chr_full_names = chr_names
         for i in range(len(chr_names)):
             contig_names_by_refs[chr_names[i]] = chr_full_names[i]

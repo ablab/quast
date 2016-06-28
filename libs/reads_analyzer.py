@@ -433,7 +433,7 @@ def get_coverage(output_dirpath, ref_fpath, ref_name, bam_fpath, err_path, cov_f
             if not is_non_empty_file(bamsorted_fpath):
                 qutils.call_subprocess([samtools_fpath('samtools'), 'sort', '-@', str(qconfig.max_threads), bam_fpath,
                                         '-o', bamsorted_fpath], stdout=open(err_path, 'w'), stderr=open(err_path, 'a'))
-            qutils.call_subprocess([samtools_fpath('samtools'), 'depth', '-a', bamsorted_fpath], stdout=open(raw_cov_fpath, 'w'),
+            qutils.call_subprocess([samtools_fpath('samtools'), 'depth', '-d', '100000', '-a', bamsorted_fpath], stdout=open(raw_cov_fpath, 'w'),
                                    stderr=open(err_path, 'a'))
             qutils.assert_file_exists(raw_cov_fpath, 'coverage file')
         proceed_cov_file(raw_cov_fpath, cov_fpath)

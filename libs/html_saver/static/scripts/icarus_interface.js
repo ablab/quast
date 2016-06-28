@@ -45,6 +45,7 @@ function setupInterface() {
         addPhysicalCovTrackButtons();
     }
     window.onresize = function(){ location.reload(); }
+    display();
 }
 
 function keyPress (cmd, deltaCoeff) {

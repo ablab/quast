@@ -141,7 +141,7 @@ def is_misassembly(align1, align2, contig_seq, ref_lens, is_cyclic=False, region
                 not check_chr_for_refs(align1.ref, align2.ref):
             is_translocation = True
         elif qconfig.check_for_fragmented_ref:
-            distance_on_reference = [min(abs(align.e1 - len(ref_lens[align.ref])),  abs(align.s1 - 1))
+            distance_on_reference = [min(abs(align.e1 - ref_lens[align.ref]),  abs(align.s1 - 1))
                                      for align in [align1, align2]]
             if all([d <= qconfig.MAX_INDEL_LENGTH for d in distance_on_reference]):
                 inconsistency = sum(distance_on_reference)

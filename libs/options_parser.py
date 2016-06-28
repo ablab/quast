@@ -175,7 +175,7 @@ def parse_options(logger, quast_args, is_metaquast=False):
          ),
         (['-R', '--reference'], dict(
              dest='reference',
-             type='file',
+             type='string' if is_metaquast else 'file',
              action='callback' if is_metaquast else 'store',
              callback=parse_meta_references if is_metaquast else None)
          ),

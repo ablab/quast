@@ -36,7 +36,7 @@ def print_manta_warning(logger):
 
 def manta_compilation_failed():
     failed_compilation_flag = join(manta_dirpath, 'make.failed')
-    if check_prev_compilation_failed(failed_compilation_flag):
+    if check_prev_compilation_failed('Manta', failed_compilation_flag):
         return True
     return False
 
@@ -54,7 +54,7 @@ def compile_reads_analyzer_tools(logger, bed_fpath=None):
 
     if not qconfig.no_sv and bed_fpath is None and not all_required_binaries_exist(manta_bin_dirpath, 'configManta.py'):
         failed_compilation_flag = join(manta_dirpath, 'make.failed')
-        if check_prev_compilation_failed(failed_compilation_flag):
+        if check_prev_compilation_failed('Manta', failed_compilation_flag):
             print_manta_warning(logger)
             return True
         # making

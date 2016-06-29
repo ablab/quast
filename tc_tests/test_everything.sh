@@ -1,6 +1,10 @@
 #!/bin/bash
 
-python_interpreter=python2.5
+if [ $# -gt 0 ]; then
+    python_interpreter=$1
+else
+    python_interpreter=python2.5
+fi
 
 sh ../clean.sh
 

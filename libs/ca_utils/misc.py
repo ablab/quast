@@ -63,11 +63,11 @@ def get_ref_by_chromosome(chr):
     return ref_labels_by_chromosomes[chr]
 
 
-def print_file(all_rows, fpath):
+def print_file(all_rows, fpath, append_to_existing_file=False):
     colwidths = repeat(0)
     for row in all_rows:
         colwidths = [max(len(v), w) for v, w in zip([row['metricName']] + map(val_to_str, row['values']), colwidths)]
-    txt_file = open(fpath, 'a')
+    txt_file = open(fpath, 'a' if append_to_existing_file else 'w')
     for row in all_rows:
         print >> txt_file, '  '.join('%-*s' % (colwidth, cell) for colwidth, cell
                                      in zip(colwidths, [row['metricName']] + map(val_to_str, row['values'])))

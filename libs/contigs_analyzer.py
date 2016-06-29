@@ -265,7 +265,7 @@ def do(reference, contigs_fpaths, cyclic, output_dir, old_contigs_fpaths, bed_fp
                         all_rows.append(row)
                     misassembly_by_ref_fpath = join(output_dir, 'interspecies_translocations_by_refs_%s.info' % assembly_name)
                     print >> open(misassembly_by_ref_fpath, 'w'), 'Number of interspecies translocations by references: \n'
-                    print_file(all_rows, misassembly_by_ref_fpath)
+                    print_file(all_rows, misassembly_by_ref_fpath, append_to_existing_file=True)
 
                     print >> open(misassembly_by_ref_fpath, 'a'), '\nReferences: '
                     for ref_num, ref in enumerate(all_refs):

@@ -198,7 +198,7 @@ def correct_contigs(contigs_fpaths, corrected_dirpath, reporting, labels):
                 if handle_fasta(broken_scaffold_fpath, broken_scaffold_fpath, reporting):
                     corrected_contigs_fpaths.append(broken_scaffold_fpath)
                     old_contigs_fpaths.append(broken_scaffold_fpath)  # no "old" fpaths for broken scaffolds
-                qconfig.dict_of_broken_scaffolds[broken_scaffold_fpath] = corrected_contigs_fpaths[i]
+                    qconfig.dict_of_broken_scaffolds[broken_scaffold_fpath] = corrected_contigs_fpaths[i]
     if qconfig.draw_plots or qconfig.html_report:
         from libs import plotter
         if not plotter.dict_color_and_ls:

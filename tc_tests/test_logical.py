@@ -15,6 +15,7 @@ assert_metric_comparison(name, '# contigs', '<=', '# contigs (>= 0 bp)')
 assert_metric_comparison(name, 'NA50', '<=', 'N50')
 assert_metric_comparison(name, 'NGA50', '<=', 'NG50')
 assert_metric_comparison(name, 'Largest alignment', '<=', 'Largest contig')
+assert_metric_comparison(name, 'Total aligned length', '<=', 'Total length')
 
 assert_metric_comparison(name, '# misassembled contigs', '<=', '# misassemblies')
 

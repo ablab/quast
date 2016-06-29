@@ -529,6 +529,7 @@ function hideTrack(track, pane, doHide) {
 
     function setBtnTopPos(btn) {
         if (!btn) return;
+        btn.style.transition = 'all 0.2s';
         btn.style.top = parseInt(btn.style.top) + newOffset + 'px';
     }
 
@@ -551,7 +552,8 @@ function hideTrack(track, pane, doHide) {
         if (mainPane) {
             featuresMainHidden = doHide;
             changedTracks = [main_cov, mini, annotationsMini, mini_cov];
-            changedBtns = [hideBtnCoverageMain, hideBtnPhysicalCoverageMain, logScaleTogglerMain, hideBtnAnnotationsMini, hideBtnCoverageMini, hideBtnPhysicalCoverageMini];
+            changedBtns = [hideBtnCoverageMain, hideBtnPhysicalCoverageMain, logScaleTogglerMain, hideBtnAnnotationsMini,
+                hideBtnCoverageMini, hideBtnPhysicalCoverageMini, logScaleTogglerMini];
         }
         else {
             changedTracks = [mini_cov];

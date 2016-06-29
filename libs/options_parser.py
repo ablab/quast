@@ -78,13 +78,15 @@ def set_extensive_mis_size(option, opt_str, value, parser, logger):
 
 
 def set_multiple_variables(option, opt_str, value, parser, store_true_values=None, store_false_values=None):
-    for v in store_true_values:
-        setattr(qconfig, v, value)
-    for v in store_false_values:
-        setattr(qconfig, v, not value)
+    if store_true_values is not None:
+        for v in store_true_values:
+            setattr(qconfig, v, True)
+    if store_false_values is not None:
+        for v in store_false_values:
+            setattr(qconfig, v, False)
 
 
-def check_str_arg_value(option, opt_str, value, parser, logger, available_values=None):
+def check_str_arg_value(option, opt_str, value, parser, logger, available_values):
     if value.lower() in available_values:
         setattr(qconfig, option.dest, value.lower())
     else:
@@ -341,7 +343,7 @@ def parse_options(logger, quast_args, is_metaquast=False):
              dest='no_check_meta',
              action='callback',
              callback=set_multiple_variables,
-             callback_kwargs={'store_true_values': ['no_check', 'no_check_meta'], 'store_false_values': []})
+             callback_kwargs={'store_true_values': ['no_check', 'no_check_meta']})
          ),
         (['--no-snps'], dict(
              dest='show_snps',
@@ -355,7 +357,7 @@ def parse_options(logger, quast_args, is_metaquast=False):
              dest='html_report',
              action='callback',
              callback=set_multiple_variables,
-             callback_kwargs={'store_true_values': [], 'store_false_values': ['html_report', 'create_icarus_html']})
+             callback_kwargs={'store_false_values': ['html_report', 'create_icarus_html']})
          ),
         (['--no-icarus'], dict(
              dest='create_icarus_html',

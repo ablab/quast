@@ -108,6 +108,25 @@ def distance_between_alignments(align1, align2, pos_strand1, pos_strand2, cyclic
     return distance, cyclic_moment
 
 
+def __get_border_gaps(align1, align2, ref_lens):
+    return [min(abs(align.e1 - ref_lens[align.ref]), abs(align.s1 - 1)) for align in [align1, align2]]
+
+
+def is_fragmented_ref_fake_translocation(align1, align2, ref_lens):
+    # Check whether translocation is caused by fragemented reference and thus should be marked Fake misassembly
+    # Return inconsistency value if translocation is fake or None if translocation is real
+    # !!! it is assumed that align1.ref != align2.ref
+    assert align1.ref != align2.ref, "Internal QUAST bug: is_fragmented_ref_fake_translocation() " \
+                                     "should be called only if align1.ref != align2.ref"
+
+    if qconfig.check_for_fragmented_ref:
+        if qconfig.is_combined_ref and not check_chr_for_refs(align1.ref, align2.ref):
+            return False
+        if all([d <= qconfig.MAX_INDEL_LENGTH for d in __get_border_gaps(align1, align2, ref_lens)]):
+            return True
+    return False
+
+
 def is_misassembly(align1, align2, contig_seq, ref_lens, is_cyclic=False, region_struct_variations=None):
     #Calculate inconsistency between distances on the reference and on the contig
     distance_on_contig = align2.start() - align1.end() - 1
@@ -129,45 +148,22 @@ def is_misassembly(align1, align2, contig_seq, ref_lens, is_cyclic=False, region
     strand1 = (align1.s2 < align1.e2)
     strand2 = (align2.s2 < align2.e2)
     inconsistency = distance_on_reference - distance_on_contig
-    if qconfig.scaffolds and contig_seq and check_is_scaffold_gap(inconsistency, contig_seq, align1, align2):
-        aux_data = {"inconsistency": inconsistency, "distance_on_contig": distance_on_contig,
-                    "misassembly_internal_overlap": misassembly_internal_overlap, "cyclic_moment": cyclic_moment,
-                    "is_sv": False, "is_translocation": False, "is_scaffold_gap": True}
-        return False, aux_data
-    # check for fake translocations (if reference is fragmented)
-    is_translocation = False
-    if align1.ref != align2.ref:
-        if qconfig.is_combined_ref and \
-                not check_chr_for_refs(align1.ref, align2.ref):
-            is_translocation = True
-        elif qconfig.check_for_fragmented_ref:
-            distance_on_reference = [min(abs(align.e1 - ref_lens[align.ref]),  abs(align.s1 - 1))
-                                     for align in [align1, align2]]
-            if all([d <= qconfig.MAX_INDEL_LENGTH for d in distance_on_reference]):
-                inconsistency = sum(distance_on_reference)
-                strand1 = strand2
-            else:
-                is_translocation = True
-        else:
-            is_translocation = True
     aux_data = {"inconsistency": inconsistency, "distance_on_contig": distance_on_contig,
                 "misassembly_internal_overlap": misassembly_internal_overlap, "cyclic_moment": cyclic_moment,
-                "is_sv": False, "is_translocation": is_translocation, "is_scaffold_gap": False}
-    if region_struct_variations:
-        #check if it is structural variation
-        is_sv = check_sv(align1, align2, inconsistency, region_struct_variations)
-        if is_sv:
-            aux_data['is_sv'] = True
-            return False, aux_data
+                "is_sv": False, "is_scaffold_gap": False}
 
-    # different chromosomes or large inconsistency (a gap or an overlap) or different strands
-    if align1.ref != align2.ref and not is_translocation:
+    if qconfig.scaffolds and contig_seq and check_is_scaffold_gap(inconsistency, contig_seq, align1, align2):
+        aux_data["is_scaffold_gap"] = True
         return False, aux_data
-    if align1.ref != align2.ref or \
-                    abs(inconsistency) > qconfig.extensive_misassembly_threshold or (strand1 != strand2):
+    if region_struct_variations and check_sv(align1, align2, inconsistency, region_struct_variations):
+        aux_data['is_sv'] = True
+        return False, aux_data
+    if align1.ref != align2.ref and is_fragmented_ref_fake_translocation(align1, align2, ref_lens):
+        aux_data["inconsistency"] = sum(__get_border_gaps(align1, align2, ref_lens))
+        return False, aux_data
+    if align1.ref != align2.ref or abs(inconsistency) > qconfig.extensive_misassembly_threshold or strand1 != strand2:
         return True, aux_data
-    else:
-        return False, aux_data
+    return False, aux_data  # regular local misassembly
 
 
 def check_sv(align1, align2, inconsistency, region_struct_variations):
@@ -310,58 +306,53 @@ def is_gap_filled_ns(contig_seq, align1, align2):
 def process_misassembled_contig(sorted_aligns, cyclic, aligned_lengths, region_misassemblies, ref_lens, ref_aligns,
                                 ref_features, contig_seq, references_misassemblies, region_struct_variations, misassemblies_matched_sv, ca_output):
     misassembly_internal_overlap = 0
-    prev = sorted_aligns[0]
-    cur_aligned_length = prev.len2
+    prev_align = sorted_aligns[0]
+    cur_aligned_length = prev_align.len2
     is_misassembled = False
     contig_is_printed = False
     indels_info = IndelsInfo()
     contig_aligned_length = 0  # for internal debugging purposes
-    next_align = sorted_aligns[0]
 
     for i in range(len(sorted_aligns) - 1):
-        is_extensive_misassembly, aux_data = is_misassembly(sorted_aligns[i], sorted_aligns[i+1],
-            contig_seq, ref_lens, cyclic, region_struct_variations)
+        next_align = sorted_aligns[i + 1]
+
+        if prev_align.ref == next_align.ref or is_fragmented_ref_fake_translocation(prev_align, next_align, ref_lens):
+            cur_aligned_length -= exclude_internal_overlaps(prev_align, next_align, i, ca_output)
+        is_extensive_misassembly, aux_data = is_misassembly(prev_align, next_align, contig_seq, ref_lens,
+                                                            cyclic, region_struct_variations)
         inconsistency = aux_data["inconsistency"]
         distance_on_contig = aux_data["distance_on_contig"]
         misassembly_internal_overlap += aux_data["misassembly_internal_overlap"]
         cyclic_moment = aux_data["cyclic_moment"]
-        is_translocation = aux_data["is_translocation"]
-        print >> ca_output.icarus_out_f, next_align.icarus_report_str()
-        next_align = copy.deepcopy(sorted_aligns[i + 1])
-        if sorted_aligns[i].ref == sorted_aligns[i+1].ref or (sorted_aligns[i].ref != sorted_aligns[i+1].ref and is_translocation):
-            cur_aligned_length -= exclude_internal_overlaps(sorted_aligns[i], sorted_aligns[i+1], i, ca_output)
-        is_sv = aux_data["is_sv"]
+        print >> ca_output.icarus_out_f, prev_align.icarus_report_str()
+        print >> ca_output.stdout_f, '\t\t\tReal Alignment %d: %s' % (i+1, str(prev_align))
 
-        print >> ca_output.stdout_f, '\t\t\tReal Alignment %d: %s' % (i+1, str(sorted_aligns[i]))
-
-        ref_aligns.setdefault(sorted_aligns[i].ref, []).append(sorted_aligns[i])
-        print >> ca_output.coords_filtered_f, str(prev)
-        if is_sv:
+        ref_aligns.setdefault(prev_align.ref, []).append(prev_align)
+        print >> ca_output.coords_filtered_f, str(prev_align)
+        if aux_data["is_sv"]:
             print >> ca_output.stdout_f, '\t\t\t  Fake misassembly (caused by structural variations of genome) between these two alignments'
             print >> ca_output.icarus_out_f, 'fake misassembly (structural variations of genome)'
             misassemblies_matched_sv += 1
-
-        elif qconfig.scaffolds and aux_data["is_scaffold_gap"]:
+        elif aux_data["is_scaffold_gap"]:
             print >> ca_output.stdout_f, '\t\t\t  Fake misassembly between these two alignments: scaffold gap size misassembly,',
             print >> ca_output.stdout_f, 'gap length difference =', inconsistency
             region_misassemblies.append(Misassembly.SCAFFOLD_GAP)
             print >> ca_output.icarus_out_f, 'fake misassembly (scaffold gap size misassembly)'
-
-        elif is_extensive_misassembly and not is_sv:
+        elif is_extensive_misassembly:
             is_misassembled = True
             aligned_lengths.append(cur_aligned_length)
             contig_aligned_length += cur_aligned_length
             cur_aligned_length = 0
             if not contig_is_printed:
-                print >> ca_output.misassembly_f, sorted_aligns[i].contig
+                print >> ca_output.misassembly_f, prev_align.contig
                 contig_is_printed = True
             print >> ca_output.misassembly_f, 'Extensive misassembly (',
             print >> ca_output.stdout_f, '\t\t\t  Extensive misassembly (',
-            if sorted_aligns[i].ref != sorted_aligns[i+1].ref and is_translocation:
+            if prev_align.ref != next_align.ref:  # it is not a Fake translocation, because is_extensive_misassembly is True
                 if qconfig.is_combined_ref and \
-                        not check_chr_for_refs(sorted_aligns[i].ref, sorted_aligns[i+1].ref):  # if chromosomes from different references
+                        not check_chr_for_refs(prev_align.ref, next_align.ref):  # if chromosomes from different references
                         region_misassemblies.append(Misassembly.INTERSPECTRANSLOCATION)
-                        ref1, ref2 = get_ref_by_chromosome(sorted_aligns[i].ref), get_ref_by_chromosome(sorted_aligns[i+1].ref)
+                        ref1, ref2 = get_ref_by_chromosome(prev_align.ref), get_ref_by_chromosome(next_align.ref)
                         references_misassemblies[ref1][ref2] += 1
                         references_misassemblies[ref2][ref1] += 1
                         print >> ca_output.stdout_f, 'interspecies translocation',
@@ -383,24 +374,25 @@ def process_misassembled_contig(sorted_aligns, cyclic, aligned_lengths, region_m
                 print >> ca_output.misassembly_f, 'inversion',
                 print >> ca_output.icarus_out_f, 'inversion'
             print >> ca_output.stdout_f, ') between these two alignments'
-            print >> ca_output.misassembly_f, ') between %s %s and %s %s' % (sorted_aligns[i].s2, sorted_aligns[i].e2,
-                                                                      sorted_aligns[i+1].s2, sorted_aligns[i+1].e2)
-            ref_features.setdefault(sorted_aligns[i].ref, {})[sorted_aligns[i].e1] = 'M'
-            ref_features.setdefault(sorted_aligns[i+1].ref, {})[sorted_aligns[i+1].e1] = 'M'
-
-        elif not is_sv:
+            print >> ca_output.misassembly_f, ') between %s %s and %s %s' % (prev_align.s2, prev_align.e2,
+                                                                      next_align.s2, next_align.e2)
+            ref_features.setdefault(prev_align.ref, {})[prev_align.e1] = 'M'
+            ref_features.setdefault(next_align.ref, {})[next_align.e1] = 'M'
+        else:
+            reason_msg = "" + (" (linear representation of circular genome)" if cyclic_moment else "") + \
+                         (" (fragmentation of reference genome)" if prev_align.ref != next_align.ref else "")
             if inconsistency == 0 and cyclic_moment:
-                print >> ca_output.stdout_f, '\t\t\t  Fake misassembly (caused by linear representation of circular genome) between these two alignments'
-                print >> ca_output.icarus_out_f, 'fake misassembly (linear representation of circular genome)'
-            elif qconfig.check_for_fragmented_ref and sorted_aligns[i].ref != sorted_aligns[i+1].ref and not is_translocation:
-                print >> ca_output.stdout_f, '\t\t\t  Fake misassembly (caused by fragmentation of reference genome) between these two alignments'
+                print >> ca_output.stdout_f, '\t\t\t  Fake misassembly' + reason_msg + ' between these two alignments'
+                print >> ca_output.icarus_out_f, 'fake misassembly' + reason_msg
+            elif inconsistency == 0 and prev_align.ref != next_align.ref:  # is_fragmented_ref_fake_translocation is True, because is_extensive_misassembly is False
+                print >> ca_output.stdout_f, '\t\t\t  Fake misassembly' + reason_msg + ' between these two alignments'
                 region_misassemblies.append(Misassembly.FRAGMENTED)
-                print >> ca_output.icarus_out_f, 'fake misassembly (fragmentation of reference genome)'
+                print >> ca_output.icarus_out_f, 'fake misassembly' + reason_msg
             elif abs(inconsistency) <= qconfig.MAX_INDEL_LENGTH and \
-                    count_not_ns_between_aligns(contig_seq, sorted_aligns[i], sorted_aligns[i+1]) <= qconfig.MAX_INDEL_LENGTH:
+                    count_not_ns_between_aligns(contig_seq, prev_align, next_align) <= qconfig.MAX_INDEL_LENGTH:
                 print >> ca_output.stdout_f, '\t\t\t  Fake misassembly between these two alignments: inconsistency =', inconsistency,
-                print >> ca_output.stdout_f, ', gap in the contig is small or absent or filled mostly with Ns',
-                not_ns_number = count_not_ns_between_aligns(contig_seq, sorted_aligns[i], sorted_aligns[i+1])
+                print >> ca_output.stdout_f, ', gap in the contig is small or absent or filled mostly with Ns' + reason_msg,
+                not_ns_number = count_not_ns_between_aligns(contig_seq, prev_align, next_align)
                 if inconsistency == 0:
                     print >> ca_output.stdout_f, '(no indel; %d mismatches)' % not_ns_number
                     indels_info.mismatches += not_ns_number
@@ -417,7 +409,7 @@ def process_misassembled_contig(sorted_aligns, cyclic, aligned_lengths, region_m
                     else:
                         indels_info.deletions += indel_length
                     indels_info.mismatches += mismatches
-                print >> ca_output.icarus_out_f, 'fake misassembly (gap in the contig is small or filled with Ns)'
+                print >> ca_output.icarus_out_f, 'fake misassembly (gap in the contig is small or filled with Ns)' + reason_msg
             else:
                 if qconfig.strict_NA:
                     aligned_lengths.append(cur_aligned_length)
@@ -431,20 +423,19 @@ def process_misassembled_contig(sorted_aligns, cyclic, aligned_lengths, region_m
                     #There is a small gap between the two alignments, a local misassembly
                     print >> ca_output.stdout_f, '\t\t\t  Gap between these two alignments (local misassembly).',
                     #print >> plantafile_out, 'Distance on contig =', distance_on_contig, ', distance on reference =', distance_on_reference
-                print >> ca_output.stdout_f, 'Inconsistency =', inconsistency, "(linear representation of circular genome)" if cyclic_moment else "",\
-                    "(fragmentation of reference genome)" if sorted_aligns[i].ref != sorted_aligns[i+1].ref else ""
+                print >> ca_output.stdout_f, 'Inconsistency = ' + str(inconsistency) + reason_msg
                 print >> ca_output.icarus_out_f, 'local misassembly'
                 region_misassemblies.append(Misassembly.LOCAL)
 
-        prev = sorted_aligns[i+1]
-        cur_aligned_length += prev.len2 - (-distance_on_contig if distance_on_contig < 0 else 0)
+        prev_align = next_align
+        cur_aligned_length += prev_align.len2 - (-distance_on_contig if distance_on_contig < 0 else 0)
 
     #Record the very last alignment
     i = len(sorted_aligns) - 1
-    print >> ca_output.stdout_f, '\t\t\tReal Alignment %d: %s' % (i + 1, str(sorted_aligns[i]))
+    print >> ca_output.stdout_f, '\t\t\tReal Alignment %d: %s' % (i + 1, str(next_align))
     print >> ca_output.icarus_out_f, next_align.icarus_report_str()
-    ref_aligns.setdefault(sorted_aligns[i].ref, []).append(sorted_aligns[i])
-    print >> ca_output.coords_filtered_f, str(prev)
+    ref_aligns.setdefault(next_align.ref, []).append(next_align)
+    print >> ca_output.coords_filtered_f, str(next_align)
     aligned_lengths.append(cur_aligned_length)
     contig_aligned_length += cur_aligned_length
 

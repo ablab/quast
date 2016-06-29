@@ -51,7 +51,7 @@ var misassemblies = {
                 misassemblies.series[0][i] = {
                     data: [],
                     label: filenames[index],
-                    number: i,
+                    number: index,
                     color: colors[index],
                     points: {
                         show: true,
@@ -276,12 +276,8 @@ function createLegend(labels, colors, index){
         );
     }
     else addSortRefsBtn(sortBtnClass);
-    addLinksToSwitches(index-1);
-    $.each(misassemblies.series[index], function(i, series) {
-        $('#legend-placeholder').find('#label_' + series.number + '_id').click(function() {
-            showPlotWithInfo(misassemblies, index);
-        });
-    });
+    addLinksToSwitches(index - 1);
+    addLegendClickEvents(misassemblies, misassemblies.series.length, showPlotWithInfo, false, index);
     setSortRefsBtn(misassemblies, index);
 }
 

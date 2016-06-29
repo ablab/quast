@@ -249,6 +249,15 @@ function containsObject(obj, list) {
     return false;
 }
 
+function addLegendClickEvents(info, numLegendItems, showPlotWithInfo, showReference, index) {
+    if (showReference) numLegendItems++;
+    for (var i = 0; i < numLegendItems; i++) {
+        $('#legend-placeholder').find('#label_' + i + '_id').click(function() {
+            showPlotWithInfo(info, index);
+        });
+    }
+}
+
 /*********************/
 /* GLOSSARY TOOLTIPS */
 function addTooltipIfDefinitionExists(glossary, metricName) {

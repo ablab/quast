@@ -116,7 +116,7 @@ var summary = {
                 info.series[i] = {
                     data: [],
                     label: filenames[index],
-                    number: i,
+                    number: index,
                     color: colors[index],
                     points: {
                         show: true,
@@ -195,11 +195,7 @@ var summary = {
             info.isInitialized = true;
         }
 
-        $.each(info.series, function(i, series) {
-            $('#legend-placeholder').find('#label_' + series.number + '_id').click(function() {
-                showPlotWithInfo(info);
-            });
-        });
+        addLegendClickEvents(info, filenames.length, showPlotWithInfo);
 
         showPlotWithInfo(info);
         setSortRefsBtn(info);

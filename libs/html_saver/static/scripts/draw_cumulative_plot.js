@@ -172,11 +172,7 @@ var cumulative = {
             cumulative.isInitialized = true;
         }
 
-        $.each(cumulative.series, function(i, series) {
-            $('#legend-placeholder').find('#label_' + series.number + '_id').click(function() {
-                showPlotWithInfo(cumulative);
-            });
-        });
+        addLegendClickEvents(cumulative, filenames.length, showPlotWithInfo, refLengths);
 
         showPlotWithInfo(cumulative);
 

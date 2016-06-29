@@ -47,6 +47,7 @@ var gc = {
                 "</div>"
         );
 
+        var refIndex = gcInfos.reference_index;
         if (!gc.isInitialized) {
             gc.legendPlaceholder = legendPlaceholder;
             gc.placeholder = placeholder;
@@ -74,7 +75,7 @@ var gc = {
                 gc.series[i] = {
                     data: [],
                     label: filenames[order[i]],
-                    number: i,
+                    number: order[i],
                     color: colors[order[i]]
                 };
             }
@@ -149,7 +150,6 @@ var gc = {
                 }
             }
 
-            var refIndex = gcInfos.reference_index;
             if (refIndex) {
                 gc.series.push({
                     data: [],
@@ -186,11 +186,7 @@ var gc = {
             gc.isInitialized = true;
         }
 
-        $.each(gc.series, function(i, series) {
-            $('#legend-placeholder').find('#label_' + series.number + '_id').click(function() {
-                showPlotWithInfo(gc);
-            });
-        });
+        addLegendClickEvents(gc, filenames.length, showPlotWithInfo, refIndex);
 
         showPlotWithInfo(gc);
 

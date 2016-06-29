@@ -5,7 +5,7 @@ var nx = {
         maxY: 0,
         maxYTick: 0,
         series: null,
-        showWithData: null,
+        showWithData: null
     },
 
     nax: {
@@ -13,7 +13,7 @@ var nx = {
         maxY: 0,
         maxYTick: 0,
         series: null,
-        showWithData: null,
+        showWithData: null
     },
 
     ngx: {
@@ -21,7 +21,7 @@ var nx = {
         maxY: 0,
         maxYTick: 0,
         series: null,
-        showWithData: null,
+        showWithData: null
     },
 
     ngax: {
@@ -29,7 +29,7 @@ var nx = {
         maxY: 0,
         maxYTick: 0,
         series: null,
-        showWithData: null,
+        showWithData: null
     },
 
     draw: function (name, title, colors, filenames, data, refPlotValue, tickX,
@@ -56,8 +56,8 @@ var nx = {
                 info.series[i] = {
                     data: [],
                     label: filenames[index],
-                    number: i,
-                    color: colors[index],
+                    number: index,
+                    color: colors[index]
                 };
                 info.series[i].data.push([0.0, plot_coordY[0]]);
                 var currentLen = 0;
@@ -78,7 +78,7 @@ var nx = {
             for (i = 0; i < plotsN; i++) {
                 info.series[i].lines = {
                     show: true,
-                    lineWidth: 1,
+                    lineWidth: 1
                 }
             }
 
@@ -102,7 +102,7 @@ var nx = {
                             borderWidth: 1,
                             hoverable: true,
                             autoHighlight: false,
-                            mouseActiveRadius: 1000,
+                            mouseActiveRadius: 1000
                         },
                         yaxis: {
                             min: 0,
@@ -112,7 +112,7 @@ var nx = {
                             lineWidth: 0.5,
                             color: '#000',
                             tickFormatter: getBpTickFormatter(info.maxY),
-                            minTickSize: 1,
+                            minTickSize: 1
                         },
                         xaxis: {
                             min: 0,
@@ -127,7 +127,7 @@ var nx = {
                                 }
                             }
                         },
-                        minTickSize: tickX,
+                        minTickSize: tickX
                     }
                 );
 
@@ -141,11 +141,7 @@ var nx = {
             info.isInitialized = true;
         }
 
-        $.each(info.series, function(i, series) {
-            $('#legend-placeholder').find('#label_' + series.number + '_id').click(function() {
-                showPlotWithInfo(info);
-            });
-        });
+        addLegendClickEvents(info, filenames.length, showPlotWithInfo);
 
         showPlotWithInfo(info);
 

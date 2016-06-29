@@ -8,7 +8,7 @@ var gns = {
         series: null,
         showWithData: null,
 
-        yAxisLabeled: false,
+        yAxisLabeled: false
     },
 
     operons: {
@@ -19,7 +19,7 @@ var gns = {
         series: null,
         showWithData: null,
 
-        yAxisLabeled: false,
+        yAxisLabeled: false
     },
 
     draw: function (name, title, colors, filenames, data, refGenesNumber, tickX,
@@ -28,7 +28,7 @@ var gns = {
 //        "<span class='plot-header'>" + kind[0].toUpperCase() + kind.slice(1) + "s covered</span>" +
 //        "<div class='plot-placeholder' id='" + kind + "s-plot-placeholder'></div>"
 //    );
-        $(scalePlaceholder).empty()
+        $(scalePlaceholder).empty();
 
         var info = gns[name];
 
@@ -56,7 +56,7 @@ var gns = {
                 info.series[fi] = {
                     data: [[0, 0]],
                     label: filenames[index],
-                    number: fi,
+                    number: index,
                     color: colors[index]
                 };
 
@@ -102,11 +102,11 @@ var gns = {
                     isReference: true,
                     dashes: {
                         show: true,
-                        lineWidth: 1,
+                        lineWidth: 1
                     },
                     yaxis: 1,
-                    number: info.series.length,
-                    color: '#000000',
+                    number: filenames.length,
+                    color: '#000000'
                 });
 
                 colors.push('#000000');
@@ -144,7 +144,7 @@ var gns = {
                             return val;
 //                            }
                         },
-                        minTickSize: 1,
+                        minTickSize: 1
                     },
                     xaxis: {
                         min: 0,
@@ -152,7 +152,7 @@ var gns = {
                         lineWidth: 0.5,
                         color: '#000',
                         tickFormatter: getContigNumberTickFormatter(info.maxX, tickX),
-                        minTickSize: tickX,
+                        minTickSize: tickX
                     },
                 });
 
@@ -165,11 +165,7 @@ var gns = {
             info.isInitialized = true;
         }
 
-        $.each(info.series, function(i, series) {
-            $('#legend-placeholder').find('#label_' + i + '_id').click(function() {
-                showPlotWithInfo(info);
-            });
-        });
+        addLegendClickEvents(info, filenames.length, showPlotWithInfo, refGenesNumber);
 
         showPlotWithInfo(info);
 

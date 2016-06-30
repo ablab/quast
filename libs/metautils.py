@@ -96,7 +96,7 @@ def partition_contigs(assemblies, ref_fpaths, corrected_dirpath, alignments_fpat
 
 
 # safe remove from quast_py_args, e.g. removes correctly "--test-no" (full is "--test-no-ref") and corresponding argument
-def __remove_from_quast_py_args(quast_py_args, opt, arg=None):
+def remove_from_quast_py_args(quast_py_args, opt, arg=None):
     opt_idx = None
     if opt in quast_py_args:
         opt_idx = quast_py_args.index(opt)

@@ -13,7 +13,7 @@ import os
 import shutil
 
 from libs import qconfig
-from libs.metautils import __remove_from_quast_py_args, Assembly, correct_meta_references, correct_assemblies, \
+from libs.metautils import remove_from_quast_py_args, Assembly, correct_meta_references, correct_assemblies, \
     get_downloaded_refs_with_alignments, partition_contigs
 from libs.options_parser import parse_options
 

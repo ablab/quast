@@ -14,7 +14,7 @@ from os.path import join, abspath
 import sys
 
 from libs import qconfig, qutils
-from libs.metautils import __remove_from_quast_py_args
+from libs.metautils import remove_from_quast_py_args
 from libs.qutils import assert_file_exists, set_up_output_dir
 
 
@@ -140,10 +140,10 @@ def clean_metaquast_args(quast_py_args, contigs_fpaths):
         if contigs_fpath in quast_py_args:
             quast_py_args.remove(contigs_fpath)
     for opt in opts_with_args_to_remove:
-        __remove_from_quast_py_args(quast_py_args, opt, arg=True)
+        remove_from_quast_py_args(quast_py_args, opt, arg=True)
 
     for opt in opts_to_remove:
-        __remove_from_quast_py_args(quast_py_args, opt)
+        remove_from_quast_py_args(quast_py_args, opt)
     return quast_py_args
 
 

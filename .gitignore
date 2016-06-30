@@ -1,3 +1,9 @@
+*.egg
+*.egg-info
+dist
+build
+eggs
+
 .idea
 .DS_Store
 *.pyc
@@ -14,6 +20,7 @@ quast_test_output/
 
 make.log
 make.err
+error.log
 
 libs/glimmer/glimmerhmm
 

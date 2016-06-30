@@ -26,7 +26,6 @@ else:
         platform_name = 'linux_64'
     else:
         platform_name = 'linux_32'
-# platform_name = 'linux_64'
 
 # support of large genomes
 MAX_REFERENCE_LENGTH = 536870908  # Nucmer's max length of a reference file

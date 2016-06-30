@@ -657,20 +657,24 @@ def all_required_binaries_exist(aligner_dirpath, required_binaries):
     return True
 
 
-def check_prev_compilation_failed(name, failed_compilation_flag):
+def check_prev_compilation_failed(name, failed_compilation_flag, just_notice=False):
     if isfile(failed_compilation_flag):
-        logger.warning('Previous try of ' + name + ' compilation was unsuccessful! ' +
-                       'For forced retrying, please remove ' + failed_compilation_flag + ' and restart QUAST.')
+        msg = 'Previous try of ' + name + ' compilation was unsuccessful! ' + \
+              'For forced retrying, please remove ' + failed_compilation_flag + ' and restart QUAST.'
+        if just_notice:
+            logger.notice(msg)
+        else:
+            logger.warning(msg)
         return True
     return False
 
 
-def compile_tool(name, dirpath, requirements):
+def compile_tool(name, dirpath, requirements, just_notice=False):
     make_logs_basepath = join(dirpath, 'make')
     failed_compilation_flag = make_logs_basepath + '.failed'
 
     if not all_required_binaries_exist(dirpath, requirements):
-        if check_prev_compilation_failed(name, failed_compilation_flag):
+        if check_prev_compilation_failed(name, failed_compilation_flag, just_notice):
             return False
 
         # making

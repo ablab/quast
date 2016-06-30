@@ -44,8 +44,8 @@ def compile_aligner(logger):
         aligners_to_try.append(('E-MEM', join(qconfig.LIBS_LOCATION, 'E-MEM-linux'), default_requirements + ['e-mem']))
         aligners_to_try.append(('MUMmer', join(qconfig.LIBS_LOCATION, 'MUMmer3.23-linux'), default_requirements))
 
-    for name, dirpath, requirements in aligners_to_try:
-        success_compilation = compile_tool(name, dirpath, requirements)
+    for i, (name, dirpath, requirements) in enumerate(aligners_to_try):
+        success_compilation = compile_tool(name, dirpath, requirements, just_notice=(i < len(aligners_to_try) - 1))
         if not success_compilation:
             continue
         contig_aligner = name

@@ -57,6 +57,7 @@ save_json = False
 meta = False
 debug = False
 test = False
+test_sv = False
 test_no_ref = False
 no_check = False
 no_check_meta = False  # for metaQUAST, without checking min-contig

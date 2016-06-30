@@ -209,7 +209,9 @@ def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpat
         logger.info('  Using existing SAM-file: ' + sam_fpath)
     else:
         logger.info('  Running Bowtie2...')
-        abs_reads_fpaths = []  # use absolute paths because we will change workdir
+        # use absolute paths because we will change workdir
+        sam_fpath = os.path.abspath(sam_fpath)
+        abs_reads_fpaths = []
         for reads_fpath in reads_fpaths:
             abs_reads_fpaths.append(os.path.abspath(reads_fpath))
 

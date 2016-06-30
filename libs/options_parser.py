@@ -9,7 +9,7 @@ from __future__ import with_statement
 import os
 from copy import copy
 from optparse import OptionParser, Option
-from os.path import join
+from os.path import join, abspath
 
 import sys
 
@@ -18,13 +18,17 @@ from libs.metautils import __remove_from_quast_py_args
 from libs.qutils import assert_file_exists, set_up_output_dir
 
 
-test_references          = [join(qconfig.QUAST_HOME, 'test_data', 'reference.fasta.gz')]
+test_reference           = join(qconfig.QUAST_HOME, 'test_data', 'reference.fasta.gz')
+test_forward_reads       = join(qconfig.QUAST_HOME, 'test_data', 'reads1.fastq.gz')
+test_reverse_reads       = join(qconfig.QUAST_HOME, 'test_data', 'reads2.fastq.gz')
+test_genes               = [join(qconfig.QUAST_HOME, 'test_data', 'genes.gff')]
+test_operons             = [join(qconfig.QUAST_HOME, 'test_data', 'operons.gff')]
 test_contigs_fpaths      = [join(qconfig.QUAST_HOME, 'test_data', 'contigs_1.fasta'),
                             join(qconfig.QUAST_HOME, 'test_data', 'contigs_2.fasta')]
 
-meta_test_references     = [','.join([join(qconfig.QUAST_HOME, 'test_data', 'meta_ref_1.fasta'),
-                                      join(qconfig.QUAST_HOME, 'test_data', 'meta_ref_2.fasta'),
-                                      join(qconfig.QUAST_HOME, 'test_data', 'meta_ref_3.fasta')])]
+meta_test_references     = [join(qconfig.QUAST_HOME, 'test_data', 'meta_ref_1.fasta'),
+                            join(qconfig.QUAST_HOME, 'test_data', 'meta_ref_2.fasta'),
+                            join(qconfig.QUAST_HOME, 'test_data', 'meta_ref_3.fasta')]
 meta_test_contigs_fpaths = [join(qconfig.QUAST_HOME, 'test_data', 'meta_contigs_1.fasta'),
                             join(qconfig.QUAST_HOME, 'test_data', 'meta_contigs_2.fasta')]
 
@@ -110,6 +114,7 @@ def check_arg_value(option, opt_str, value, parser, logger, default_value=None, 
                          "Please specify a number greater than " + str(min_value),
                          to_stderr=True, exit_with_code=2)
 
+
 def parse_meta_references(option, opt_str, value, parser):
     if os.path.isdir(value):
         ref_fpaths = [join(path,file) for (path, dirs, files) in os.walk(value) for file in files if qutils.check_is_fasta_file(file)]
@@ -119,6 +124,12 @@ def parse_meta_references(option, opt_str, value, parser):
         for i, ref_fpath in enumerate(ref_fpaths):
             assert_file_exists(ref_fpath, 'reference')
     ensure_value(qconfig, option.dest, []).extend(ref_fpaths)
+
+
+def wrong_test_option(logger, msg, is_metaquast):
+    logger.error(msg)
+    qconfig.usage(meta=is_metaquast)
+    sys.exit(2)
 
 
 def clean_metaquast_args(quast_py_args, contigs_fpaths):
@@ -154,6 +165,10 @@ def parse_options(logger, quast_args, is_metaquast=False):
          ),
         (['--test'], dict(
              dest='test',
+             action='store_true')
+         ),
+        (['--test-sv'], dict(
+             dest='test_sv',
              action='store_true')
          ),
         (['--test-no-ref'], dict(
@@ -426,10 +441,27 @@ def parse_options(logger, quast_args, is_metaquast=False):
         parser.add_option(*args, **kwargs)
     (opts, contigs_fpaths) = parser.parse_args(quast_args[1:])
 
-    if qconfig.test or qconfig.test_no_ref:
-        qconfig.output_dirpath = qconfig.test_output_dirname
-        if qconfig.test:
-            qconfig.reference += meta_test_references if is_metaquast else test_references
+    if qconfig.test_sv and is_metaquast:
+        msg = "Option --test-sv can be used for QUAST only\n"
+        wrong_test_option(logger, msg, is_metaquast)
+    if qconfig.test_no_ref and not is_metaquast:
+        msg = "Option --test-no-ref can be used for MetaQUAST only\n"
+        wrong_test_option(logger, msg, is_metaquast)
+
+    if qconfig.test or qconfig.test_no_ref or qconfig.test_sv:
+        qconfig.output_dirpath = abspath(qconfig.test_output_dirname)
+        if qconfig.test or qconfig.test_sv:
+            qconfig.reference = meta_test_references if is_metaquast else test_reference
+            if not is_metaquast:
+                qconfig.genes = test_genes
+                qconfig.operons = test_operons
+                qconfig.with_gage = True
+                qconfig.glimmer = True
+                qconfig.gene_finding = True
+                qconfig.prokaryote = False
+        if qconfig.test_sv:
+            qconfig.forward_reads = test_forward_reads
+            qconfig.reverse_reads = test_reverse_reads
         contigs_fpaths += meta_test_contigs_fpaths if is_metaquast else test_contigs_fpaths
         qconfig.test = True
 

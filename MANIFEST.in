@@ -1,0 +1,8 @@
+include CHANGES.txt
+include INSTALL.txt
+include LICENSE.txt
+include manual.html
+include quast_ref.bib
+include README.md
+include VERSION.txt
+recursive-include test_data *

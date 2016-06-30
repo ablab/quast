@@ -1,6 +1,10 @@
 QUAST evaluates genome assemblies.  
-It can works both with and without a given reference genome.  
+It works both with and without references genome.  
 The tool accepts multiple assemblies, thus is suitable for comparison.
+
+Installation
+
+    ./setup.py install
 
 Usage
 

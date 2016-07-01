@@ -166,7 +166,7 @@ scaffolds_gap_threshold = 10000
 
 # for searching references in NCBI
 downloaded_refs = False
-identity_threshold = 80 #  min % identity
+identity_threshold = 80  # min % identity
 min_length = 300
 min_bitscore = 300
 max_references = 50

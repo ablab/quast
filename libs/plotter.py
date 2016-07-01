@@ -67,8 +67,8 @@ if qconfig.draw_plots:
             main_logger.warning('Can\'t draw plots: matplotlib version is old! Please use matplotlib version 1.1 or higher.')
             matplotlib_error = True
     except Exception:
-        logger.info('')
-        logger.warning('Can\'t draw plots: please install python-matplotlib.')
+        main_logger.info('')
+        main_logger.warning('Can\'t draw plots: please install python-matplotlib.')
         matplotlib_error = True
 else:
     matplotlib_error = True
@@ -216,7 +216,7 @@ def cumulative_plot(reference, contigs_fpaths, lists_of_lengths, plot_fpath, tit
 # common routine for Nx-plot and NGx-plot (and probably for others Nyx-plots in the future)
 def Nx_plot(results_dir, reduce_points, contigs_fpaths, lists_of_lengths, plot_fpath, title='Nx', reference_lengths=None, json_output_dir=None):
     draw_plots = True
-    if matplotlib_error or not qconfig.draw_plots:
+    if matplotlib_error:
         draw_plots = False
     if draw_plots:
         logger.info('  Drawing ' + title + ' plot...')
@@ -655,7 +655,7 @@ def draw_meta_summary_plot(html_fpath, output_dirpath, labels, ref_names, all_ro
             pass
         matplotlib.pyplot.tight_layout()
         matplotlib.pyplot.savefig(plot_fpath, bbox_inches='tight')
-        logger.info('    saved to ' + plot_fpath)
+        meta_logger.info('    saved to ' + plot_fpath)
         matplotlib.pyplot.close()
 
 
@@ -739,7 +739,7 @@ def draw_meta_summary_misassembl_plot(results, ref_names, contig_num, plot_fpath
         plot_fpath += '.' + qconfig.plot_extension
         matplotlib.pyplot.tight_layout()
         matplotlib.pyplot.savefig(plot_fpath, bbox_inches='tight')
-        logger.info('    saved to ' + plot_fpath)
+        meta_logger.info('    saved to ' + plot_fpath)
         matplotlib.pyplot.close()
     return json_points_x, json_points_y
 

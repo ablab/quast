@@ -14,7 +14,7 @@ import math
 import os
 
 from libs import plotter  # Do not remove this line! It would lead to a warning in matplotlib.
-if not plotter.matplotlib_error:
+if plotter.can_draw_plots:
     import matplotlib
     import matplotlib.patches
     import matplotlib.pyplot
@@ -291,7 +291,7 @@ class Visualizer:
 
 def draw_alignment_plot(assemblies, virtual_genome_size, output_dirpath, sorted_ref_names, sorted_ref_lengths, virtual_genome_shift,
                         coverage_hist=None, arcs=None):
-    if plotter.matplotlib_error:
+    if not plotter.can_draw_plots:
         return None
 
     output_fpath = os.path.join(output_dirpath, 'alignment')

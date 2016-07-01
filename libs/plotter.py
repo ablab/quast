@@ -57,7 +57,7 @@ meta_logger = get_logger(qconfig.LOGGER_META_NAME)
 import reporting
 
 # checking if matplotlib is installed
-matplotlib_error = False
+can_draw_plots = True
 if qconfig.draw_plots:
     try:
         import matplotlib
@@ -65,13 +65,13 @@ if qconfig.draw_plots:
         if matplotlib.__version__.startswith('0') or matplotlib.__version__.startswith('1.0'):
             main_logger.info('')
             main_logger.warning('Can\'t draw plots: matplotlib version is old! Please use matplotlib version 1.1 or higher.')
-            matplotlib_error = True
+            can_draw_plots = False
     except Exception:
         main_logger.info('')
         main_logger.warning('Can\'t draw plots: please install python-matplotlib.')
-        matplotlib_error = True
+        can_draw_plots = False
 else:
-    matplotlib_error = True
+    can_draw_plots = False
 
 # for creating PDF file with all plots and tables
 pdf_plots_figures = []
@@ -129,7 +129,7 @@ def y_formatter(ylabel, max_y):
 
 
 def cumulative_plot(reference, contigs_fpaths, lists_of_lengths, plot_fpath, title):
-    if matplotlib_error:
+    if not can_draw_plots:
         return
 
     logger.info('  Drawing cumulative plot...')
@@ -215,10 +215,7 @@ def cumulative_plot(reference, contigs_fpaths, lists_of_lengths, plot_fpath, tit
 
 # common routine for Nx-plot and NGx-plot (and probably for others Nyx-plots in the future)
 def Nx_plot(results_dir, reduce_points, contigs_fpaths, lists_of_lengths, plot_fpath, title='Nx', reference_lengths=None, json_output_dir=None):
-    draw_plots = True
-    if matplotlib_error:
-        draw_plots = False
-    if draw_plots:
+    if can_draw_plots:
         logger.info('  Drawing ' + title + ' plot...')
         import matplotlib.pyplot
         import matplotlib.ticker
@@ -253,7 +250,7 @@ def Nx_plot(results_dir, reduce_points, contigs_fpaths, lists_of_lengths, plot_f
         for l in lengths:
             lcur += l
             x = lcur * 100.0 / lsum
-            if draw_plots:
+            if can_draw_plots:
                 vals_Nx.append(vals_Nx[-1] + 1e-10) # eps
                 vals_l.append(l)
                 vals_Nx.append(x)
@@ -266,7 +263,7 @@ def Nx_plot(results_dir, reduce_points, contigs_fpaths, lists_of_lengths, plot_f
             # add to plot
         json_vals_x.append(vals_x)
         json_vals_y.append(vals_y)
-        if draw_plots:
+        if can_draw_plots:
             vals_Nx.append(vals_Nx[-1] + 1e-10) # eps
             vals_l.append(0.0)
             vals_x.append(vals_x[-1] + 1e-10) # eps
@@ -282,7 +279,7 @@ def Nx_plot(results_dir, reduce_points, contigs_fpaths, lists_of_lengths, plot_f
         from libs.html_saver import json_saver
         json_saver.save_coord(json_output_dir, json_vals_x, json_vals_y, title, contigs_fpaths)
 
-    if not draw_plots:
+    if not can_draw_plots:
         return
     if with_title:
         matplotlib.pyplot.title(title)
@@ -325,9 +322,7 @@ def Nx_plot(results_dir, reduce_points, contigs_fpaths, lists_of_lengths, plot_f
 
 # routine for GC-plot
 def GC_content_plot(ref_fpath, contigs_fpaths, list_of_GC_distributions, plot_fpath):
-    if matplotlib_error:
-        return
-    if qconfig.no_gc:
+    if not can_draw_plots or qconfig.no_gc:
         return
     title = 'GC content'
 
@@ -406,7 +401,7 @@ def GC_content_plot(ref_fpath, contigs_fpaths, list_of_GC_distributions, plot_fp
 
 # common routine for genes and operons cumulative plots
 def genes_operons_plot(reference_value, contigs_fpaths, files_feature_in_contigs, plot_fpath, title):
-    if matplotlib_error:
+    if not can_draw_plots:
         return
 
     logger.info('  Drawing ' + title + ' cumulative plot...')
@@ -481,7 +476,7 @@ def genes_operons_plot(reference_value, contigs_fpaths, files_feature_in_contigs
 # common routine for Histograms
 def histogram(contigs_fpaths, values, plot_fpath, title='', yaxis_title='', bottom_value=None,
               top_value=None):
-    if matplotlib_error:
+    if not can_draw_plots:
         return
     if len(contigs_fpaths) < 2:  #
         logger.info('  Skipping drawing ' + title + ' histogram... (less than 2 columns histogram makes no sense)')
@@ -559,12 +554,8 @@ def histogram(contigs_fpaths, values, plot_fpath, title='', yaxis_title='', bott
 
 # metaQuast summary plots (per each metric separately)
 def draw_meta_summary_plot(html_fpath, output_dirpath, labels, ref_names, all_rows, results, plot_fpath, title='', reverse=False, yaxis_title=''):
-    draw_plots = True
-    if matplotlib_error or not qconfig.draw_plots:
-        draw_plots = False
-
     import math
-    if draw_plots:
+    if can_draw_plots:
         meta_logger.info('  Drawing ' + title + ' metaQUAST summary plot...')
         import matplotlib.pyplot
         import matplotlib.ticker
@@ -607,14 +598,14 @@ def draw_meta_summary_plot(html_fpath, output_dirpath, labels, ref_names, all_ro
 
     sorted_values = sorted(itertools.izip(values, refs, arr_y_by_refs), reverse=reverse, key=lambda x: x[0])
     values, refs, arr_y_by_refs = [[x[i] for x in sorted_values] for i in range(3)]
-    if draw_plots:
+    if can_draw_plots:
         matplotlib.pyplot.xticks(range(1, len(refs) + 1), refs, size='small', rotation='vertical')
     json_points_x = []
     json_points_y = []
     for j in range(contigs_num):
         points_x = [arr_x[j][i] for i in range(len(arr_y_by_refs))]
         points_y = [arr_y_by_refs[i][j] for i in range(len(arr_y_by_refs))]
-        if draw_plots:
+        if can_draw_plots:
             color, ls = get_color_and_ls(None, labels[j])
             ax.plot(points_x, points_y, 'o:', color=color, ls=ls)
         json_points_x.append(points_x)
@@ -624,7 +615,7 @@ def draw_meta_summary_plot(html_fpath, output_dirpath, labels, ref_names, all_ro
         from libs.html_saver import html_saver
         html_saver.save_meta_summary(html_fpath, output_dirpath, json_points_x, json_points_y,
                                      title.replace(' ', '_'), labels, refs)
-    if draw_plots:
+    if can_draw_plots:
         matplotlib.pyplot.xlim([0, ref_num + 1])
         ymax = 0
         for i in range(ref_num):
@@ -661,18 +652,15 @@ def draw_meta_summary_plot(html_fpath, output_dirpath, labels, ref_names, all_ro
 
 # metaQuast misassemblies by types plots (all references for 1 assembly)
 def draw_meta_summary_misassembl_plot(results, ref_names, contig_num, plot_fpath, title=''):
-    draw_plots = True
-    if matplotlib_error or not qconfig.draw_plots:
-        draw_plots = False
     import math
-    if draw_plots:
+    if can_draw_plots:
         meta_logger.info('  Drawing metaQUAST summary misassemblies plot for ' + title + '...')
         import matplotlib.pyplot
         import matplotlib.ticker
 
     refs_num = len(ref_names)
     refs = []
-    if draw_plots:
+    if can_draw_plots:
         fig = matplotlib.pyplot.figure()
         ax = fig.add_subplot(111)
         title = title[:120] + '...'
@@ -696,7 +684,7 @@ def draw_meta_summary_misassembl_plot(results, ref_names, contig_num, plot_fpath
             result = results[type_misassembly][j][contig_num] if results[type_misassembly][j] else None
             if result and result != '-':
                 to_plot.append(float(result))
-                if draw_plots:
+                if can_draw_plots:
                     ax.bar(arr_x[j], to_plot[0], width=bar_width, color=colors[type_misassembly])
                     legend_n.append(type_misassembly)
                     ymax_j = float(to_plot[0])
@@ -707,7 +695,7 @@ def draw_meta_summary_misassembl_plot(results, ref_names, contig_num, plot_fpath
             result = results[i][j][contig_num]
             if result and result != '-':
                 to_plot.append(float(result))
-                if draw_plots:
+                if can_draw_plots:
                     ax.bar(arr_x[j], to_plot[-1], width=bar_width, color=colors[i], bottom=sum(to_plot[:-1]))
                     legend_n.append(i)
                     ymax_j += float(to_plot[-1])
@@ -720,7 +708,7 @@ def draw_meta_summary_misassembl_plot(results, ref_names, contig_num, plot_fpath
             for i in range(len(misassemblies)):
                 json_points_x.append(arr_x[j])
                 json_points_y.append(0)
-    if draw_plots:
+    if can_draw_plots:
         matplotlib.pyplot.xticks(range(1, len(refs) + 1), refs, size='small', rotation='vertical')
         legend_n = set(legend_n)
         legend = []
@@ -746,7 +734,7 @@ def draw_meta_summary_misassembl_plot(results, ref_names, contig_num, plot_fpath
 
 # Quast misassemblies by types plot (for all assemblies)
 def draw_misassembl_plot(reports, plot_fpath, title='', yaxis_title=''):
-    if matplotlib_error:
+    if not can_draw_plots:
         return
 
     logger.info('  Drawing misassemblies by types plot...')
@@ -841,7 +829,7 @@ def draw_misassembl_plot(reports, plot_fpath, title='', yaxis_title=''):
 
 
 def draw_report_table(report_name, extra_info, table_to_draw, column_widths):
-    if matplotlib_error:
+    if not can_draw_plots:
         return
 
     # some magic constants ..
@@ -884,7 +872,7 @@ def draw_report_table(report_name, extra_info, table_to_draw, column_widths):
 
 
 def fill_all_pdf_file(all_pdf):
-    if matplotlib_error or not all_pdf:
+    if not can_draw_plots or not all_pdf:
         return
 
     # moving main report in the beginning

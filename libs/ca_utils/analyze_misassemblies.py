@@ -240,11 +240,12 @@ def check_is_scaffold_gap(inconsistency, contig_seq, align1, align2):
     return False
 
 
-def exclude_internal_overlaps(align1, align2, i, ca_output):
+def exclude_internal_overlaps(align1, align2, i=None, ca_output=None):
     # returns size of align1.len2 decrease (or 0 if not changed). It is important for cur_aligned_len calculation
 
     def __shift_start(align, new_start, indent=''):
-        print >> ca_output.stdout_f, indent + '%s' % align.short_str(),
+        if ca_output is not None:
+            print >> ca_output.stdout_f, indent + '%s' % align.short_str(),
         if align.s2 < align.e2:
             align.s1 += (new_start - align.s2)
             align.s2 = new_start
@@ -254,10 +255,12 @@ def exclude_internal_overlaps(align1, align2, i, ca_output):
             align.e2 = new_start
             align.len2 = align.s2 - align.e2 + 1
         align.len1 = align.e1 - align.s1 + 1
-        print >> ca_output.stdout_f, '--> %s' % align.short_str()
+        if ca_output is not None:
+            print >> ca_output.stdout_f, '--> %s' % align.short_str()
 
     def __shift_end(align, new_end, indent=''):
-        print >> ca_output.stdout_f, indent + '%s' % align.short_str(),
+        if ca_output is not None:
+            print >> ca_output.stdout_f, indent + '%s' % align.short_str(),
         if align.s2 < align.e2:
             align.e1 -= (align.e2 - new_end)
             align.e2 = new_end
@@ -267,7 +270,8 @@ def exclude_internal_overlaps(align1, align2, i, ca_output):
             align.s2 = new_end
             align.len2 = align.s2 - align.e2 + 1
         align.len1 = align.e1 - align.s1 + 1
-        print >> ca_output.stdout_f, '--> %s' % align.short_str()
+        if ca_output is not None:
+            print >> ca_output.stdout_f, '--> %s' % align.short_str()
 
     if qconfig.ambiguity_usage == 'all':
         return 0
@@ -276,15 +280,17 @@ def exclude_internal_overlaps(align1, align2, i, ca_output):
     if distance_on_contig >= 0:  # no overlap
         return 0
     prev_len2 = align1.len2
-    print >> ca_output.stdout_f, '\t\t\tExcluding internal overlap of size %d between Alignment %d and %d: ' \
-                           % (-distance_on_contig, i+1, i+2),
+    if ca_output is not None:
+        print >> ca_output.stdout_f, '\t\t\tExcluding internal overlap of size %d between Alignment %d and %d: ' \
+                                     % (-distance_on_contig, i+1, i+2),
     if qconfig.ambiguity_usage == 'one':  # left only one of two copies (remove overlap from shorter alignment)
         if align1.len2 >= align2.len2:
             __shift_start(align2, align1.end() + 1)
         else:
             __shift_end(align1, align2.start() - 1)
     elif qconfig.ambiguity_usage == 'none':  # removing both copies
-        print >> ca_output.stdout_f
+        if ca_output is not None:
+            print >> ca_output.stdout_f
         new_end = align2.start() - 1
         __shift_start(align2, align1.end() + 1, '\t\t\t  ')
         __shift_end(align1, new_end, '\t\t\t  ')
@@ -316,8 +322,7 @@ def process_misassembled_contig(sorted_aligns, cyclic, aligned_lengths, region_m
     for i in range(len(sorted_aligns) - 1):
         next_align = sorted_aligns[i + 1]
 
-        if prev_align.ref == next_align.ref or is_fragmented_ref_fake_translocation(prev_align, next_align, ref_lens):
-            cur_aligned_length -= exclude_internal_overlaps(prev_align, next_align, i, ca_output)
+        cur_aligned_length -= exclude_internal_overlaps(prev_align, next_align, i, ca_output)
         is_extensive_misassembly, aux_data = is_misassembly(prev_align, next_align, contig_seq, ref_lens,
                                                             cyclic, region_struct_variations)
         inconsistency = aux_data["inconsistency"]

@@ -156,9 +156,9 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, aligns, ref_featu
                             print >> ca_output.coords_filtered_f, str(top_aligns[0]), "ambiguous"
                             top_aligns = top_aligns[1:]
             else:
-                # choose appropriate alignments (to maximize total size of contig alignment and reduce # misassemblies
+                # choose appropriate alignments (to maximize total size of contig alignment and reduce # misassemblies)
                 if len(sorted_aligns) > 0:
-                    sorted_aligns = sorted(sorted_aligns, key=lambda x: x.end())
+                    sorted_aligns = sorted(sorted_aligns, key=lambda x: (x.end(), x.start()))
                     real_aligns = get_best_aligns_set(sorted_aligns, ctg_len, ca_output.stdout_f, seq,
                                                       cyclic_ref_lens=ref_lens if cyclic else None, region_struct_variations=region_struct_variations)
                     if len(sorted_aligns) > len(real_aligns):
@@ -206,33 +206,34 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, aligns, ref_featu
                     ref_aligns.setdefault(the_only_align.ref, []).append(the_only_align)
                 else:
                     #Sort real alignments by position on the contig
-                    sorted_aligns = sorted(real_aligns, key=lambda x: (x.start(), x.end()))
+                    sorted_aligns = sorted(real_aligns, key=lambda x: (x.end(), x.start()))
 
+                    ## OBSOLETE CODE IS BELOW: now Best Set Selection should do this job more carefully
                     #Extra skipping of redundant alignments (fully or almost fully covered by adjacent alignments)
-                    if len(sorted_aligns) >= 3:
-                        was_extra_skip = False
-                        prev_end = max(sorted_aligns[0].s2, sorted_aligns[0].e2)
-                        for i in range(1, len(sorted_aligns) - 1):
-                            succ_start = min(sorted_aligns[i + 1].s2, sorted_aligns[i + 1].e2)
-                            gap = succ_start - prev_end - 1
-                            if gap > odgap:
-                                prev_end = max(sorted_aligns[i].s2, sorted_aligns[i].e2)
-                                continue
-                            overlap = 0
-                            if prev_end - min(sorted_aligns[i].s2, sorted_aligns[i].e2) + 1 > 0:
-                                overlap += prev_end - min(sorted_aligns[i].s2, sorted_aligns[i].e2) + 1
-                            if max(sorted_aligns[i].s2, sorted_aligns[i].e2) - succ_start + 1 > 0:
-                                overlap += max(sorted_aligns[i].s2, sorted_aligns[i].e2) - succ_start + 1
-                            if gap < oat or (float(overlap) / sorted_aligns[i].len2) > ort:
-                                if not was_extra_skip:
-                                    was_extra_skip = True
-                                    print >> ca_output.stdout_f, '\t\t\tSkipping redundant alignments which significantly overlap with adjacent alignments'
-                                print >> ca_output.stdout_f, '\t\tSkipping redundant alignment %s' % (str(sorted_aligns[i]))
-                                real_aligns.remove(sorted_aligns[i])
-                            else:
-                                prev_end = max(sorted_aligns[i].s2, sorted_aligns[i].e2)
-                        if was_extra_skip:
-                            sorted_aligns = sorted(real_aligns, key=lambda x: (x.start(), x.end()))
+                    # if len(sorted_aligns) >= 3:
+                    #     was_extra_skip = False
+                    #     prev_end = sorted_aligns[0].end()
+                    #     for i in range(1, len(sorted_aligns) - 1):
+                    #         succ_start = sorted_aligns[i + 1].start()
+                    #         gap = succ_start - prev_end - 1
+                    #         if gap > odgap:
+                    #             prev_end = sorted_aligns[i].end()
+                    #             continue
+                    #         overlap = 0
+                    #         if prev_end - sorted_aligns[i].start() + 1 > 0:
+                    #             overlap += prev_end - sorted_aligns[i].start() + 1
+                    #         if sorted_aligns[i].end() - succ_start + 1 > 0:
+                    #             overlap += sorted_aligns[i].end() - succ_start + 1
+                    #         if gap < oat or (float(overlap) / sorted_aligns[i].len2) > ort:
+                    #             if not was_extra_skip:
+                    #                 was_extra_skip = True
+                    #                 print >> ca_output.stdout_f, '\t\t\tSkipping redundant alignments which significantly overlap with adjacent alignments'
+                    #             print >> ca_output.stdout_f, '\t\tSkipping redundant alignment %s' % (str(sorted_aligns[i]))
+                    #             real_aligns.remove(sorted_aligns[i])
+                    #         else:
+                    #             prev_end = sorted_aligns[i].end()
+                    #     if was_extra_skip:
+                    #         sorted_aligns = sorted(real_aligns, key=lambda x: (x.start(), x.end()))
 
                     #There is more than one alignment of this contig to the reference
                     print >> ca_output.stdout_f, '\t\tThis contig is misassembled. %d total aligns.' % num_aligns

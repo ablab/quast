@@ -6,7 +6,7 @@
 ############################################################################
 
 from libs import qconfig
-from libs.ca_utils.analyze_misassemblies import is_misassembly
+from libs.ca_utils.analyze_misassemblies import is_misassembly, exclude_internal_overlaps
 
 
 class ScoredAlignSet(object):
@@ -46,12 +46,12 @@ class SolidRegion(object):
 
 
 def get_best_aligns_set(sorted_aligns, ctg_len, planta_out_f, seq, cyclic_ref_lens=None, region_struct_variations=None):
-    critical_number_of_aligns = 200
+    critical_number_of_aligns = 200  # use additional optimizations for large number of alignments
 
     penalties = dict()
     penalties['extensive'] = max(50, int(round(min(qconfig.extensive_misassembly_threshold / 4.0, ctg_len * 0.05)))) - 1
-    penalties['local']  = max(2, int(round(min(qconfig.MAX_INDEL_LENGTH / 2.0, ctg_len * 0.01)))) - 1
-    penalties['scaffold']  = 5
+    penalties['local'] = max(2, int(round(min(qconfig.MAX_INDEL_LENGTH / 2.0, ctg_len * 0.01)))) - 1
+    penalties['scaffold'] = 5
     # trying to optimise the algorithm if the number of possible alignments is large
     if len(sorted_aligns) > critical_number_of_aligns:
         print >> planta_out_f, '\t\t\tSkipping redundant alignments which can\'t be in the best set of alignments A PRIORI'
@@ -115,9 +115,11 @@ def get_best_aligns_set(sorted_aligns, ctg_len, planta_out_f, seq, cyclic_ref_le
         sets_to_remove = []
         for scored_set in all_scored_sets:
             if (scored_set.score + align.len2) > cur_max_score:  # otherwise this set can't be the best with current align
-                cur_set_aligns = [sorted_aligns[i] for i in scored_set.indexes] + [align]
+                cur_set_aligns = [sorted_aligns[i].clone() for i in scored_set.indexes] + [align.clone()]
                 score, uncovered = get_score(scored_set.score, cur_set_aligns, cyclic_ref_lens, scored_set.uncovered, seq,
                                              region_struct_variations, penalties)
+                if score is None:  # incorrect set, e.g. after excluding internal overlap one alignment is 0 or too small
+                    continue
                 if score + uncovered < max_score:
                     sets_to_remove.append(scored_set)
                 elif score > cur_max_score:
@@ -155,10 +157,15 @@ def get_added_len(set_aligns, cur_align):
 
 def get_score(score, aligns, cyclic_ref_lens, uncovered_len, seq, region_struct_variations, penalties):
     if len(aligns) > 1:
+        align1, align2 = aligns[-2], aligns[-1]
+        exclude_internal_overlaps(align1, align2)
+        # check whether the set is still correct, i.e both alignments are rather large
+        if min(align1.len2, align2.len2) < max(qconfig.min_cluster, qconfig.min_alignment):
+            return None, None
+
         added_len = get_added_len(aligns, aligns[-1])
         uncovered_len -= added_len
         score += added_len
-        align1, align2 = aligns[-2], aligns[-1]
         is_extensive_misassembly, aux_data = is_misassembly(align1, align2, seq, cyclic_ref_lens, region_struct_variations)
         if is_extensive_misassembly:
             score -= penalties['extensive']

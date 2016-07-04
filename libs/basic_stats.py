@@ -8,6 +8,10 @@
 import logging
 import os
 import itertools
+
+import re
+from collections import defaultdict
+
 import fastaparser
 from libs.html_saver import json_saver
 from libs import qconfig, qutils
@@ -79,6 +83,43 @@ def GC_content(contigs_fpath, skip=False):
     return total_GC, (GC_distribution_x, GC_distribution_y)
 
 
+def sum_high_covered_regions(cov_values, cov_90_pcnt):
+    max_index = cov_90_pcnt / qconfig.coverage_bin_size + 1
+    if max_index < len(cov_values):
+        cov_values = cov_values[:max_index] + [sum(cov_values[max_index:])]
+    return cov_values
+
+
+def draw_coverage_histograms(coverage_dict, contigs_fpaths, output_dirpath):
+    import plotter
+    covered_len = defaultdict(int)
+    cov_90_pcnt = dict()
+    common_cov_90_pcnt = 0
+
+    contigs_with_coverage = [contigs_fpath for contigs_fpath in contigs_fpaths if coverage_dict[contigs_fpath]]
+    total_len = {contigs_fpath: reporting.get(contigs_fpath).get_field(reporting.Fields.TOTALLEN) for contigs_fpath in contigs_fpaths}
+    cov_values = [coverage_dict[contigs_fpath] for contigs_fpath in contigs_with_coverage]
+    max_len_values = max(len(v) for v in cov_values)
+    for x in range(max_len_values):
+        coverage = x * qconfig.coverage_bin_size
+        for contigs_fpath in contigs_with_coverage:
+            covered_len[contigs_fpath] += coverage_dict[contigs_fpath][x]
+            if contigs_fpath not in cov_90_pcnt and covered_len[contigs_fpath] >= total_len[contigs_fpath] * 0.9:
+                cov_90_pcnt[contigs_fpath] = coverage
+        if all(contigs_fpath in cov_90_pcnt for contigs_fpath in contigs_with_coverage):
+            common_cov_90_pcnt = coverage
+            break
+    for index, values in enumerate(cov_values):
+        cov_values[index] = sum_high_covered_regions(cov_values[index], common_cov_90_pcnt)
+    plotter.coverage_histogram(contigs_with_coverage, cov_values, output_dirpath + '/coverage_histogram', 'Coverage histogram',
+                               cov_90_pcnt=common_cov_90_pcnt)
+    for contigs_fpath in contigs_with_coverage:
+        cov_values = sum_high_covered_regions(coverage_dict[contigs_fpath], cov_90_pcnt[contigs_fpath])
+        label = qutils.label_from_fpath(contigs_fpath)
+        plotter.coverage_histogram([contigs_fpath], [cov_values], output_dirpath + '/' + label +
+                               '_coverage_histogram', label + ' coverage histogram', draw_bars=True, cov_90_pcnt=cov_90_pcnt[contigs_fpath])
+
+
 def do(ref_fpath, contigs_fpaths, output_dirpath, json_output_dir, results_dir):
     logger.print_timestamp()
     logger.main_info("Running Basic statistics processor...")
@@ -112,7 +153,11 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, json_output_dir, results_dir):
     logger.info('  Contig files: ')
     lists_of_lengths = []
     numbers_of_Ns = []
+    bin_size = qconfig.coverage_bin_size
+    coverage_dict = dict()
+    cov_pattern = re.compile(r'_cov_([\d\.]+)_')
     for id, contigs_fpath in enumerate(contigs_fpaths):
+        coverage_dict[contigs_fpath] = []
         assembly_label = qutils.label_from_fpath(contigs_fpath)
 
         logger.info('    ' + qutils.index_to_str(id) + assembly_label)
@@ -122,6 +167,12 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, json_output_dir, results_dir):
         for (name, seq) in fastaparser.read_fasta(contigs_fpath):
             list_of_length.append(len(seq))
             number_of_Ns += seq.count('N')
+            if cov_pattern.findall(name):
+                cov = float(cov_pattern.findall(name)[0])
+                bin_idx = int(cov) / bin_size
+                if len(coverage_dict[contigs_fpath]) <= bin_idx:
+                     coverage_dict[contigs_fpath] += [0] * (bin_idx - len( coverage_dict[contigs_fpath]) + 1)
+                coverage_dict[contigs_fpath][bin_idx] += len(seq)
 
         lists_of_lengths.append(list_of_length)
         numbers_of_Ns.append(number_of_Ns)
@@ -238,5 +289,11 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, json_output_dir, results_dir):
             ########################################################################
             # Drawing GC content plot...
             plotter.GC_content_plot(ref_fpath, contigs_fpaths, list_of_GC_distributions_with_ref, output_dirpath + '/GC_content_plot')
+
+        if any(coverage_dict[contigs_fpath] for contigs_fpath in contigs_fpaths):
+            try:
+                draw_coverage_histograms(coverage_dict, contigs_fpaths, output_dirpath)
+            except:
+                logger.warning('Failed drawing coverage histogram.')
 
     logger.main_info('Done.')

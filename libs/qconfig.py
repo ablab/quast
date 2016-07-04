@@ -158,6 +158,7 @@ assembly_labels_by_fpath = {}
 assemblies_fpaths = []
 max_points = 1500 # max points on plots (== max number of contigs)
 min_difference = 0
+coverage_bin_size = 5
 
 # for scaffolds
 dict_of_broken_scaffolds = {}

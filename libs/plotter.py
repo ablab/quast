@@ -552,6 +552,70 @@ def histogram(contigs_fpaths, values, plot_fpath, title='', yaxis_title='', bott
     matplotlib.pyplot.close()
 
 
+def coverage_histogram(contigs_fpaths, values, plot_fpath, title='', draw_bars=None, cov_90_pcnt=None):
+    if matplotlib_error:
+        return
+
+    logger.info('  Drawing ' + title + '...')
+    import matplotlib.pyplot
+    import matplotlib.ticker
+
+    figure = matplotlib.pyplot.figure()
+    matplotlib.pyplot.rc('font', **font)
+
+    max_y = 0
+    max_x = max(len(v) for v in values)
+    x_vals = range(0, max_x)
+    for i, (contigs_fpath, y_vals) in enumerate(itertools.izip(contigs_fpaths, values)):
+        max_y = max(max(y_vals), max_y)
+        color, ls = get_color_and_ls(contigs_fpath)
+        if draw_bars:
+            for i, y_val in enumerate(y_vals):
+                matplotlib.pyplot.bar(i, y_val, color=color)
+        else:
+            matplotlib.pyplot.plot(x_vals, y_vals, color=color, ls=ls)
+
+    xlabel = 'Coverage depth (bin size: ' + str(qconfig.coverage_bin_size) + 'x)'
+    ylabel = 'Total length '
+    ylabel, mkfunc = y_formatter(ylabel, max_y)
+    matplotlib.pyplot.ylabel(ylabel, fontsize=axes_fontsize)
+    matplotlib.pyplot.xlabel(xlabel, fontsize=axes_fontsize)
+    if with_title:
+        matplotlib.pyplot.title(title)
+
+    ax = matplotlib.pyplot.gca()
+    # Shink current axis's height by 20% on the bottom
+    box = ax.get_position()
+    ax.set_position([box.x0, box.y0 + box.height * 0.2, box.width, box.height * 0.8])
+    ax.yaxis.grid(with_grid)
+    x_ticks = range(0, len(x_vals), 10)
+    x_ticks_labels = [str(x_vals[i] * qconfig.coverage_bin_size) for i in x_ticks]
+    x_ticks.append(cov_90_pcnt / qconfig.coverage_bin_size)
+    x_ticks_labels.append('>' + str(cov_90_pcnt) + 'x')
+    matplotlib.pyplot.xticks(x_ticks, x_ticks_labels, size='small')
+
+    legend_list = map(qutils.label_from_fpath, contigs_fpaths)
+    # Put a legend below current axis
+    try:  # for matplotlib <= 2009-12-09
+        ax.legend(legend_list, loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True,
+            shadow=True, ncol=n_columns if n_columns<3 else 3)
+    except Exception:
+        pass
+
+    matplotlib.pyplot.xlim([0, max_x - 1])
+    matplotlib.pyplot.ylim([0, max_y * 1.1])
+    yLocator = matplotlib.ticker.MaxNLocator(nbins=6, integer=True, steps=[1,5,10])
+    ax.yaxis.set_major_locator(yLocator)
+    mkformatter = matplotlib.ticker.FuncFormatter(mkfunc)
+    ax.yaxis.set_major_formatter(mkformatter)
+
+    plot_fpath += '.' + qconfig.plot_extension
+    matplotlib.pyplot.savefig(plot_fpath, bbox_inches='tight')
+    logger.info('    saved to ' + plot_fpath)
+    pdf_plots_figures.append(figure)
+    matplotlib.pyplot.close()
+
+
 # metaQuast summary plots (per each metric separately)
 def draw_meta_summary_plot(html_fpath, output_dirpath, labels, ref_names, all_rows, results, plot_fpath, title='', reverse=False, yaxis_title=''):
     import math

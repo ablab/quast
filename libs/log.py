@@ -16,7 +16,7 @@ _loggers = {}
 
 
 def get_main_logger():
-    if qconfig.LOGGER_META_NAME in _loggers.keys():
+    if qconfig.LOGGER_META_NAME in _loggers.keys() and _loggers[qconfig.LOGGER_META_NAME]._logger.handlers:
         return _loggers[qconfig.LOGGER_META_NAME]
     return _loggers[qconfig.LOGGER_DEFAULT_NAME]
 
@@ -134,7 +134,7 @@ class QLogger(object):
         self._logger.info(indent + message)
 
     def info_to_file(self, message='', indent=''):
-        for handler in self._logger.handlers:
+        for handler in list(self._logger.handlers):
             if isinstance(handler, logging.FileHandler):
                 self._logger.removeHandler(handler)
 

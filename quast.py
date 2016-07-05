@@ -121,7 +121,7 @@ def main(args):
     all_pdf_fpath = os.path.join(output_dirpath, qconfig.plots_fname)
     all_pdf_file = None
 
-    if qconfig.draw_plots:
+    if qconfig.draw_plots and plotter.can_draw_plots:
         try:
             from matplotlib.backends.backend_pdf import PdfPages
             all_pdf_file = PdfPages(all_pdf_fpath)

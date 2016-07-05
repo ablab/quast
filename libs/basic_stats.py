@@ -9,6 +9,7 @@ import logging
 import os
 import itertools
 
+import math
 import re
 from collections import defaultdict
 
@@ -83,41 +84,52 @@ def GC_content(contigs_fpath, skip=False):
     return total_GC, (GC_distribution_x, GC_distribution_y)
 
 
-def sum_high_covered_regions(cov_values, cov_90_pcnt):
-    max_index = cov_90_pcnt / qconfig.coverage_bin_size + 1
-    if max_index < len(cov_values):
-        cov_values = cov_values[:max_index] + [sum(cov_values[max_index:])]
-    return cov_values
+def binning_coverage(cov_values, cov_threshold):
+    bin_size = max(1, int(math.ceil((cov_threshold * 1.0/ qconfig.max_coverage_bins))))
+    cov_threshold = bin_size * qconfig.max_coverage_bins
+    cov_by_bins = []
+    max_points = qconfig.max_coverage_bins + 1
+    for index, values in enumerate(cov_values):
+        cov_by_bins.append([0] * max_points)
+        for coverage, bases in enumerate(values):
+            bin_idx = int(coverage) / bin_size
+            if coverage >= cov_threshold:
+                bin_idx = max_points - 1
+            cov_by_bins[index][bin_idx] += bases
+    return cov_by_bins, bin_size, cov_threshold
 
 
 def draw_coverage_histograms(coverage_dict, contigs_fpaths, output_dirpath):
     import plotter
+    total_len = dict()
     covered_len = defaultdict(int)
-    cov_90_pcnt = dict()
-    common_cov_90_pcnt = 0
+    cov_thresholds = defaultdict(int)
+    common_cov_threshold = 0
 
     contigs_with_coverage = [contigs_fpath for contigs_fpath in contigs_fpaths if coverage_dict[contigs_fpath]]
-    total_len = {contigs_fpath: reporting.get(contigs_fpath).get_field(reporting.Fields.TOTALLEN) for contigs_fpath in contigs_fpaths}
+    for contigs_fpath in contigs_fpaths:
+        total_len[contigs_fpath] = reporting.get(contigs_fpath).get_field(reporting.Fields.TOTALLEN)
     cov_values = [coverage_dict[contigs_fpath] for contigs_fpath in contigs_with_coverage]
     max_len_values = max(len(v) for v in cov_values)
     for x in range(max_len_values):
-        coverage = x * qconfig.coverage_bin_size
+        coverage_threshold = x + 1
         for contigs_fpath in contigs_with_coverage:
             covered_len[contigs_fpath] += coverage_dict[contigs_fpath][x]
-            if contigs_fpath not in cov_90_pcnt and covered_len[contigs_fpath] >= total_len[contigs_fpath] * 0.9:
-                cov_90_pcnt[contigs_fpath] = coverage
-        if all(contigs_fpath in cov_90_pcnt for contigs_fpath in contigs_with_coverage):
-            common_cov_90_pcnt = coverage
+            if contigs_fpath not in cov_thresholds and covered_len[contigs_fpath] >= total_len[contigs_fpath] * qconfig.pcnt_covered_for_histogram:
+                cov_thresholds[contigs_fpath] = coverage_threshold
+        if all(contigs_fpath in cov_thresholds for contigs_fpath in contigs_with_coverage):
+            common_cov_threshold = coverage_threshold
             break
-    for index, values in enumerate(cov_values):
-        cov_values[index] = sum_high_covered_regions(cov_values[index], common_cov_90_pcnt)
-    plotter.coverage_histogram(contigs_with_coverage, cov_values, output_dirpath + '/coverage_histogram', 'Coverage histogram',
-                               cov_90_pcnt=common_cov_90_pcnt)
+    common_coverage_values, bin_size, common_cov_threshold = binning_coverage(cov_values, common_cov_threshold)
+    histogram_title = 'Coverage histogram (bin size: ' + str(bin_size) + 'x)'
+    plotter.coverage_histogram(contigs_with_coverage, common_coverage_values, output_dirpath + '/coverage_histogram',
+                               histogram_title, bin_size=bin_size, cov_threshold=common_cov_threshold)
     for contigs_fpath in contigs_with_coverage:
-        cov_values = sum_high_covered_regions(coverage_dict[contigs_fpath], cov_90_pcnt[contigs_fpath])
+        coverage_values, bin_size, cov_threshold = binning_coverage([coverage_dict[contigs_fpath]], cov_thresholds[contigs_fpath])
         label = qutils.label_from_fpath(contigs_fpath)
-        plotter.coverage_histogram([contigs_fpath], [cov_values], output_dirpath + '/' + label +
-                               '_coverage_histogram', label + ' coverage histogram', draw_bars=True, cov_90_pcnt=cov_90_pcnt[contigs_fpath])
+        histogram_title = label + ' coverage histogram (bin size: ' + str(bin_size) + 'x)'
+        plotter.coverage_histogram([contigs_fpath], coverage_values, output_dirpath + '/' + label + '_coverage_histogram',
+                                   histogram_title, draw_bars=True, bin_size=bin_size, cov_threshold=cov_threshold)
 
 
 def do(ref_fpath, contigs_fpaths, output_dirpath, json_output_dir, results_dir):
@@ -153,9 +165,8 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, json_output_dir, results_dir):
     logger.info('  Contig files: ')
     lists_of_lengths = []
     numbers_of_Ns = []
-    bin_size = qconfig.coverage_bin_size
     coverage_dict = dict()
-    cov_pattern = re.compile(r'_cov_([\d\.]+)_')
+    cov_pattern = re.compile(r'_cov_([\d\.]+)')
     for id, contigs_fpath in enumerate(contigs_fpaths):
         coverage_dict[contigs_fpath] = []
         assembly_label = qutils.label_from_fpath(contigs_fpath)
@@ -168,11 +179,10 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, json_output_dir, results_dir):
             list_of_length.append(len(seq))
             number_of_Ns += seq.count('N')
             if cov_pattern.findall(name):
-                cov = float(cov_pattern.findall(name)[0])
-                bin_idx = int(cov) / bin_size
-                if len(coverage_dict[contigs_fpath]) <= bin_idx:
-                     coverage_dict[contigs_fpath] += [0] * (bin_idx - len( coverage_dict[contigs_fpath]) + 1)
-                coverage_dict[contigs_fpath][bin_idx] += len(seq)
+                cov = int(float(cov_pattern.findall(name)[0]))
+                if len(coverage_dict[contigs_fpath]) <= cov:
+                     coverage_dict[contigs_fpath] += [0] * (cov - len(coverage_dict[contigs_fpath]) + 1)
+                coverage_dict[contigs_fpath][cov] += len(seq)
 
         lists_of_lengths.append(list_of_length)
         numbers_of_Ns.append(number_of_Ns)
@@ -180,7 +190,7 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, json_output_dir, results_dir):
     num_contigs = max([len(list_of_length) for list_of_length in lists_of_lengths])
 
     multiplicator = 1
-    if num_contigs >= (qconfig.max_points*2):
+    if num_contigs >= (qconfig.max_points * 2):
         import math
         multiplicator = int(num_contigs/qconfig.max_points)
         max_points = num_contigs/multiplicator

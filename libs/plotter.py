@@ -552,8 +552,8 @@ def histogram(contigs_fpaths, values, plot_fpath, title='', yaxis_title='', bott
     matplotlib.pyplot.close()
 
 
-def coverage_histogram(contigs_fpaths, values, plot_fpath, title='', draw_bars=None, cov_90_pcnt=None):
-    if matplotlib_error:
+def coverage_histogram(contigs_fpaths, values, plot_fpath, title='', bin_size=None, draw_bars=None, cov_threshold=None):
+    if not can_draw_plots:
         return
 
     logger.info('  Drawing ' + title + '...')
@@ -566,6 +566,7 @@ def coverage_histogram(contigs_fpaths, values, plot_fpath, title='', draw_bars=N
     max_y = 0
     max_x = max(len(v) for v in values)
     x_vals = range(0, max_x)
+    x_vals.append(max_x)
     for i, (contigs_fpath, y_vals) in enumerate(itertools.izip(contigs_fpaths, values)):
         max_y = max(max(y_vals), max_y)
         color, ls = get_color_and_ls(contigs_fpath)
@@ -573,9 +574,10 @@ def coverage_histogram(contigs_fpaths, values, plot_fpath, title='', draw_bars=N
             for i, y_val in enumerate(y_vals):
                 matplotlib.pyplot.bar(i, y_val, color=color)
         else:
-            matplotlib.pyplot.plot(x_vals, y_vals, color=color, ls=ls)
+            y_vals.append(y_vals[-1])
+            matplotlib.pyplot.plot(x_vals, y_vals, marker='o', markersize=3, color=color, ls=ls)
 
-    xlabel = 'Coverage depth (bin size: ' + str(qconfig.coverage_bin_size) + 'x)'
+    xlabel = 'Coverage depth (x)'
     ylabel = 'Total length '
     ylabel, mkfunc = y_formatter(ylabel, max_y)
     matplotlib.pyplot.ylabel(ylabel, fontsize=axes_fontsize)
@@ -588,10 +590,16 @@ def coverage_histogram(contigs_fpaths, values, plot_fpath, title='', draw_bars=N
     box = ax.get_position()
     ax.set_position([box.x0, box.y0 + box.height * 0.2, box.width, box.height * 0.8])
     ax.yaxis.grid(with_grid)
-    x_ticks = range(0, len(x_vals), 10)
-    x_ticks_labels = [str(x_vals[i] * qconfig.coverage_bin_size) for i in x_ticks]
-    x_ticks.append(cov_90_pcnt / qconfig.coverage_bin_size)
-    x_ticks_labels.append('>' + str(cov_90_pcnt) + 'x')
+    x_factor = max(1, len(x_vals) / 10)
+    x_ticks = range(0, len(x_vals), x_factor)
+    x_ticks_labels = [str(x_vals[i] * bin_size) for i in x_ticks]
+    if cov_threshold:
+        last_tick = cov_threshold / bin_size
+        if x_ticks[-1] - last_tick < x_factor / 2:
+            x_ticks = x_ticks[:-1]
+            x_ticks_labels = x_ticks_labels[:-1]
+        x_ticks.append(last_tick)
+        x_ticks_labels.append('          >' + str(cov_threshold))
     matplotlib.pyplot.xticks(x_ticks, x_ticks_labels, size='small')
 
     legend_list = map(qutils.label_from_fpath, contigs_fpaths)
@@ -602,7 +610,7 @@ def coverage_histogram(contigs_fpaths, values, plot_fpath, title='', draw_bars=N
     except Exception:
         pass
 
-    matplotlib.pyplot.xlim([0, max_x - 1])
+    matplotlib.pyplot.xlim([0, max_x])
     matplotlib.pyplot.ylim([0, max_y * 1.1])
     yLocator = matplotlib.ticker.MaxNLocator(nbins=6, integer=True, steps=[1,5,10])
     ax.yaxis.set_major_locator(yLocator)

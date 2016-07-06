@@ -165,7 +165,7 @@ def get_score(score, aligns, cyclic_ref_lens, uncovered_len, seq, region_struct_
 
         added_len = get_added_len(aligns, aligns[-1])
         uncovered_len -= added_len - reduced_len
-        score += added_len
+        score += added_len - reduced_len
         is_extensive_misassembly, aux_data = is_misassembly(align1, align2, seq, cyclic_ref_lens, region_struct_variations)
         if is_extensive_misassembly:
             score -= penalties['extensive']

@@ -326,8 +326,19 @@ def js_data_gen(assemblies, contigs_fpaths, chromosomes_length, output_dirpath, 
         chr_names = chromosomes_length.keys()
         for assembly in assemblies.assemblies:
             chr_to_aligned_blocks[assembly.label] = defaultdict(list)
+            similar_correct = 0
+            similar_misassembled = 0
+
             for align in assembly.alignments:
                 chr_to_aligned_blocks[assembly.label][align.ref_name].append(align)
+                if align.similar:
+                    if align.misassembled:
+                        similar_misassembled += 1
+                    else:
+                        similar_correct += 1
+            report = reporting.get(assembly.fpath)
+            report.add_field(reporting.Fields.SIMILAR_CONTIGS, similar_correct)
+            report.add_field(reporting.Fields.SIMILAR_MIS_BLOCKS, similar_misassembled)
 
     main_menu_fpath = os.path.join(output_dirpath, qconfig.icarus_html_fname)
     output_all_files_dir_path = os.path.join(output_dirpath, qconfig.icarus_dirname)
@@ -437,10 +448,10 @@ def js_data_gen(assemblies, contigs_fpaths, chromosomes_length, output_dirpath, 
         reference_table = []
         div_references.append('<div>')
         for chr in sorted(chr_full_names):
-            chr_link, chr_name, chr_genome, chr_size = get_info_by_chr(chr, aligned_bases_by_chr, chr_sizes, contigs_fpaths,
-                                                                       contig_names_by_refs)
+            chr_link, chr_name, chr_genome, chr_size, tooltip = get_info_by_chr(chr, aligned_bases_by_chr, chr_sizes, contigs_fpaths,
+                                                                                contig_names_by_refs)
             reference_table.append('<tr>')
-            reference_table.append('<td><a href="' + chr_link + '">' + chr_name + '</a></td>')
+            reference_table.append('<td><a href="' + chr_link + '" ' + tooltip + '>' + chr_name + '</a></td>')
             reference_table.append('<td>%s</td>' % num_contigs[chr])
             reference_table.append('<td>%s</td>' % format_long_numbers(chr_size))
             if is_unaligned_asm_exists:
@@ -452,10 +463,10 @@ def js_data_gen(assemblies, contigs_fpaths, chromosomes_length, output_dirpath, 
     else:
         if chr_full_names:
             chr = chr_full_names[0]
-            chr_link, chr_name, chr_genome, chr_size = get_info_by_chr(chr, aligned_bases_by_chr, chr_sizes, contigs_fpaths,
-                                                                       contig_names_by_refs, one_chromosome=True)
+            chr_link, chr_name, chr_genome, chr_size, tooltip = get_info_by_chr(chr, aligned_bases_by_chr, chr_sizes, contigs_fpaths,
+                                                                                contig_names_by_refs, one_chromosome=True)
             viewer_name = qconfig.contig_alignment_viewer_name
-            viewer_link = '<a href="' + chr_link + '">' + viewer_name + '</a>'
+            viewer_link = '<a href="' + chr_link + '" ' + tooltip + '>' + viewer_name + '</a>'
             viewer_info = viewer_link + \
                   '<div class="reference_details">' \
                       '<p>Aligned to sequences from  ' + os.path.basename(ref_fpath) + '</p>' \

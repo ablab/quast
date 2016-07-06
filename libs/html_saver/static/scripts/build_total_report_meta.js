@@ -23,6 +23,7 @@ function fillOneRow(metric, mainMetrics, group_n, order, glossary, is_primary, r
             var id_group = '#group_' + group_n;
             $(function() {
                 $(id_group).removeClass('row_hidden');
+                $(id_group).removeClass('row_to_hide');
             });
         })(group_n);
     } else {
@@ -318,7 +319,7 @@ function buildTotalReport(assembliesNames, report, order, date, minContig, gloss
 
         } else {
             table +=
-                '<tr class="group_header row_hidden group_empty" id="group_' + group_n + '">' +
+                '<tr class="group_header row_to_hide row_hidden group_empty" id="group_' + group_n + '">' +
                     '<td class="left_column_td"><span>' + groupName + '</span></td>'; //colspan="' + width + '"
             for (var i = 1; i < width; i++) {
                 table += '<td></td>';

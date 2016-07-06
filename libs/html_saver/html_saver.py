@@ -251,6 +251,8 @@ def create_meta_icarus(results_dirpath, ref_names):
                     skipping_tr = False
                 if line.find('<a href="icarus_viewers') != -1 and 'QUAST report' not in line:
                     ref_name = re.findall('<a.*>(.*)<\/a>', line)[0]
+                    if 'tooltip' in line and re.findall('title="(.+)"', line):
+                        ref_name = re.findall('title="(.+)"', line)[0]
                     ref_name = ref_name.replace(' ', '_')
                     if ref_name not in ref_names:
                         skipping_tr = True

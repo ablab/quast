@@ -118,6 +118,10 @@ class Fields:
     REF_GENES = 'Reference genes'
     REF_OPERONS = 'Reference operons'
 
+    # Icarus statistics
+    SIMILAR_CONTIGS = '# similar correct contigs'
+    SIMILAR_MIS_BLOCKS = '# similar misassembled blocks'
+
     ### content and order of metrics in MAIN REPORT (<quast_output_dir>/report.txt, .tex, .tsv):
     order = [NAME, CONTIGS__FOR_THRESHOLDS, TOTALLENS__FOR_THRESHOLDS, CONTIGS, LARGCONTIG, TOTALLEN, REFLEN, ESTREFLEN, GC, REFGC,
              N50, NG50, N75, NG75, L50, LG50, L75, LG75, MISASSEMBL, MISCONTIGS, MISCONTIGSBASES, MISLOCAL, MIS_SCAFFOLDS_GAP,
@@ -192,6 +196,8 @@ class Fields:
                                           N50, N75, L50, L75, GC,]),
 
         ('Predicted genes', [PREDICTED_GENES_UNIQUE, PREDICTED_GENES,]),
+
+        ('Similarity statistics', [SIMILAR_CONTIGS, SIMILAR_MIS_BLOCKS]),
         
         ('Reference statistics', [REFLEN, ESTREFLEN, REFGC, REF_GENES, REF_OPERONS,])
     ]

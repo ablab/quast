@@ -290,14 +290,14 @@ def get_info_by_chr(chr, aligned_bases_by_chr, chr_sizes, contigs_fpaths, contig
         chr_link = os.path.join(qconfig.icarus_dirname, trim_ref_name(chr) + '.html')
     chr_name = chr.replace('_', ' ')
     tooltip = ''
-    if len(chr_name) > 50:
-        short_name = chr[:50]
-        tooltip = 'data-toggle="tooltip" title="' + chr_name + '">'
+    if len(chr_name) > 70:
+        short_name = chr[:70]
+        tooltip = 'data-toggle="tooltip" title="' + chr_name + '"'
         chr_name = short_name + '...'
     aligned_lengths = [aligned_len for aligned_len in aligned_bases_by_chr[chr] if aligned_len is not None]
     chr_genome = sum(aligned_lengths) * 100.0 / (chr_sizes[chr] * len(contigs_fpaths))
     chr_size = chr_sizes[chr]
-    return chr_link, chr_name, chr_genome, chr_size
+    return chr_link, chr_name, chr_genome, chr_size, tooltip
 
 
 def group_references(chr_names, contig_names_by_refs, chromosomes_length, ref_fpath):

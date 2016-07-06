@@ -80,5 +80,8 @@
     "Total aligned length"          : "<span>is the total number of aligned bases in the assembly.</span>",
 
     "# N's"                         : "<span>is the total number of uncalled bases (N's) in the assembly.</span>",
-    "# N's per 100 kbp"             : "<span>is the average number of uncalled bases (N's) per 100000 assembly bases.</span>"
+    "# N's per 100 kbp"             : "<span>is the average number of uncalled bases (N's) per 100000 assembly bases.</span>",
+
+    "# similar correct contigs"       : "<span>is the number of correct contigs similar among > 50% assemblies (see Icarus for visualization).</span>",
+    "# similar misassembled blocks"   : "<span>is the number of misassembled blocks similar among > 50% assemblies (see Icarus for visualization).</span>"
 }

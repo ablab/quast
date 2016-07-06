@@ -145,8 +145,8 @@ def is_misassembly(align1, align2, contig_seq, ref_lens, is_cyclic=False, region
         elif (-distance_on_reference) < (-distance_on_contig):
             misassembly_internal_overlap = (distance_on_reference - distance_on_contig)
 
-    strand1 = (align1.s2 < align1.e2)
-    strand2 = (align2.s2 < align2.e2)
+    strand1 = (align1.s2 <= align1.e2)
+    strand2 = (align2.s2 <= align2.e2)
     inconsistency = distance_on_reference - distance_on_contig
     aux_data = {"inconsistency": inconsistency, "distance_on_contig": distance_on_contig,
                 "misassembly_internal_overlap": misassembly_internal_overlap, "cyclic_moment": cyclic_moment,

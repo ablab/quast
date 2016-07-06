@@ -187,8 +187,9 @@ def align_and_analyze(cyclic, index, contigs_fpath, output_dirpath, ref_fpath,
     alignment_tsv_f = open(alignment_tsv_fpath, 'w')
     for ref_name, aligns in ref_aligns.iteritems():
         alignment_tsv_f.write(ref_name)
-        for align in aligns:
-            alignment_tsv_f.write('\t' + align.contig)
+        contigs = set([align.contig for align in aligns])
+        for contig in contigs:
+            alignment_tsv_f.write('\t' + contig)
         alignment_tsv_f.write('\n')
     alignment_tsv_f.close()
 

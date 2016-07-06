@@ -166,6 +166,9 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, aligns, ref_featu
                         for align in sorted_aligns:
                             if align not in real_aligns:
                                 print >> ca_output.stdout_f, '\t\tSkipping redundant alignment %s' % (str(align))
+                                if qconfig.ambiguity_usage == 'all':
+                                    align.not_analyze = True
+                                    ref_aligns.setdefault(align.ref, []).append(align)
 
                 if len(real_aligns) == 1:
                     the_only_align = real_aligns[0]

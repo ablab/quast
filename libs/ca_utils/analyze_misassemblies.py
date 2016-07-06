@@ -37,9 +37,10 @@ class StructuralVariations(object):
 
 
 class Mapping(object):
-    def __init__(self, s1, e1, s2, e2, len1, len2, idy, ref, contig, ns_pos=None):
+    def __init__(self, s1, e1, s2, e2, len1, len2, idy, ref, contig, ns_pos=None, not_analyze=False):
         self.s1, self.e1, self.s2, self.e2, self.len1, self.len2, self.idy, self.ref, self.contig = s1, e1, s2, e2, len1, len2, idy, ref, contig
         self.ns_pos = ns_pos
+        self.not_analyze = not_analyze
 
     @classmethod
     def from_line(cls, line):

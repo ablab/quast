@@ -141,7 +141,7 @@ def get_best_aligns_set(sorted_aligns, ctg_len, planta_out_f, seq, cyclic_ref_le
 def get_added_len(set_aligns, cur_align):
     last_align_idx = -2
     last_align = set_aligns[last_align_idx]
-    added_right = cur_align.end() - max(cur_align.start(), last_align.end())
+    added_right = cur_align.end() - max(cur_align.start() - 1, last_align.end())
     added_left = 0
     while cur_align.start() < last_align.start():
         added_left += last_align.start() - cur_align.start()
@@ -158,13 +158,13 @@ def get_added_len(set_aligns, cur_align):
 def get_score(score, aligns, cyclic_ref_lens, uncovered_len, seq, region_struct_variations, penalties):
     if len(aligns) > 1:
         align1, align2 = aligns[-2], aligns[-1]
-        exclude_internal_overlaps(align1, align2)
+        reduced_len = exclude_internal_overlaps(align1, align2)  # reduced_len is for align1 only
         # check whether the set is still correct, i.e both alignments are rather large
         if min(align1.len2, align2.len2) < max(qconfig.min_cluster, qconfig.min_alignment):
             return None, None
 
         added_len = get_added_len(aligns, aligns[-1])
-        uncovered_len -= added_len
+        uncovered_len -= added_len - reduced_len
         score += added_len
         is_extensive_misassembly, aux_data = is_misassembly(align1, align2, seq, cyclic_ref_lens, region_struct_variations)
         if is_extensive_misassembly:

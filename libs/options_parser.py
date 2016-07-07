@@ -69,7 +69,7 @@ def check_output_dir(option, opt_str, value, parser, logger):
     if ' ' in output_dirpath:
         logger.error('QUAST does not support spaces in paths. \n'
                      'You have specified ' + str(output_dirpath) + ' as an output path.\n'
-                     'Please, use a different directory.\n',
+                     'Please, use a different directory.',
                      to_stderr=True,
                      exit_with_code=3)
 
@@ -94,7 +94,7 @@ def check_str_arg_value(option, opt_str, value, parser, logger, available_values
     if value.lower() in available_values:
         setattr(qconfig, option.dest, value.lower())
     else:
-        logger.error("incorrect value for " + option.long_options[0] + " (" + value + ")!"
+        logger.error("incorrect value for " + opt_str + " (" + str(value) + ")! "
                      "Please use one of the following values: " + ', '.join(available_values),
                      to_stderr=True, exit_with_code=2)
 
@@ -102,15 +102,16 @@ def check_str_arg_value(option, opt_str, value, parser, logger, available_values
 def check_arg_value(option, opt_str, value, parser, logger, default_value=None, min_value=0, max_value=float('Inf')):
     if min_value <= float(value) <= max_value:
         setattr(qconfig, option.dest, value)
+        setattr(parser.values, option.dest, value)
     elif default_value:
         setattr(qconfig, option.dest, default_value)
     else:
         if max_value:
-            logger.error("incorrect value for " + option.long_options[0] + " (" + value + ")! "
+            logger.error("incorrect value for " + opt_str + " (" + str(value) + ")! "
                          "Please specify a number between " + str(min_value) + " and " + str(max_value),
                          to_stderr=True, exit_with_code=2)
         else:
-            logger.error("incorrect value for " + option.long_options[0] + " (" + value + ")! "
+            logger.error("incorrect value for " + opt_str + " (" + str(value) + ")! "
                          "Please specify a number greater than " + str(min_value),
                          to_stderr=True, exit_with_code=2)
 
@@ -254,7 +255,7 @@ def parse_options(logger, quast_args, is_metaquast=False):
              dest='check_for_fragmented_ref',
              action='store_true')
          ),
-        (['-a', '--ambiguity-usage"'], dict(
+        (['-a', '--ambiguity-usage'], dict(
              dest='ambiguity_usage',
              type='string',
              default=qconfig.ambiguity_usage,
@@ -263,27 +264,27 @@ def parse_options(logger, quast_args, is_metaquast=False):
              callback_args=(logger,),
              callback_kwargs={'available_values': ['none', 'one', 'all']})
          ),
-        (['--ambiguity-score"'], dict(
+        (['--ambiguity-score'], dict(
              dest='ambiguity_score',
              type='float',
              action='callback',
              callback=check_arg_value,
              callback_args=(logger,),
-             callback_kwargs={'min_value': 0.0, 'max_value': 1.0})
+             callback_kwargs={'min_value': 0.8, 'max_value': 1.0})
          ),
-        (['-u', '--use-all-alignments"'], dict(
+        (['-u', '--use-all-alignments'], dict(
              dest='use_all_alignments',
              action='store_true')
          ),
-        (['--strict-NA"'], dict(
+        (['--strict-NA'], dict(
              dest='strict_NA',
              action='store_true')
          ),
-        (['--significant-part-size"'], dict(
+        (['--significant-part-size'], dict(
              dest='significant_part_size',
              type=int)
          ),
-        (['-x', '--extensive-mis-size"'], dict(
+        (['-x', '--extensive-mis-size'], dict(
              dest='extensive_misassembly_threshold',
              type='int',
              default=qconfig.extensive_misassembly_threshold,

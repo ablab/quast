@@ -205,7 +205,7 @@ def set_max_threads(logger):
         try:
             import multiprocessing
             max_threads = max(1, multiprocessing.cpu_count() / 4)
-        except:
+        except (ImportError, NotImplementedError):
             logger.warning('Failed to determine the number of CPUs')
             max_threads = DEFAULT_MAX_THREADS
         logger.notice('Maximum number of threads is set to ' + str(max_threads) +
@@ -296,8 +296,8 @@ def usage(show_hidden=False, meta=False, short=True):
         print >> sys.stderr, "-a  --ambiguity-usage <none|one|all>  Use none, one, or all alignments (or aligned fragments internal overlaps) of a contig"
         print >> sys.stderr, "                                      when all of them are almost equally good (see --ambiguity-score) [default: %s]" % ambiguity_usage
         print >> sys.stderr, "    --ambiguity-score <float>         Score S for defining equally good alignments of a single contig. All alignments are sorted "
-        print >> sys.stderr, "                                      by decreasing LEN * IDY% value. All alignments with LEN * IDY% < S * best(LEN * IDY%%) are "
-        print >> sys.stderr, "                                      discarded. S should be between 0.0 and 1.0 [default: %.2f]" % ambiguity_score
+        print >> sys.stderr, "                                      by decreasing LEN * IDY% value. All alignments with LEN * IDY% < S * best(LEN * IDY%) are "
+        print >> sys.stderr, "                                      discarded. S should be between 0.8 and 1.0 [default: %.2f]" % ambiguity_score
         if meta:
             print >> sys.stderr, "    --unique-mapping                  Disable --ambiguity-usage=all for the combined reference run,"
             print >> sys.stderr, "                                      i.e. use user-specified or default ('%s') value of --ambiguity-usage" % ambiguity_usage

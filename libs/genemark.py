@@ -35,7 +35,7 @@ def gmhmm_p(tool_exec, fasta_fpath, heu_fpath, out_fpath, err_file, index):
         prompt> gmhmmp -m heu_11_45.mod sequence
         prompt> gm -m heu_11_45.mat sequence"""
     return_code = qutils.call_subprocess(
-        [tool_exec, '-d', '-p', '0', '-m', heu_fpath, '-o', out_fpath, fasta_fpath],
+        [tool_exec, '-d', '-a', '-p', '0', '-m', heu_fpath, '-o', out_fpath, fasta_fpath],
         stdout=err_file,
         stderr=err_file,
         indent='    ' + qutils.index_to_str(index))
@@ -72,23 +72,34 @@ def install_genemark(tool_dirpath):
 # Gene = namedtuple('Gene', ['contig_id', 'strand', 'left_index', 'right_index', 'seq'])
 def parse_gmhmm_out(out_fpath):
     reading_gene = False
+    reading_protein = False
+    protein = ''
     with open(out_fpath) as f:
         for line in f:
             if line.startswith('>gene'):
-                reading_gene = True
                 seq = []
                 seq_id, contig_id = line.strip().split('\t')
                 # >gene_2|GeneMark.hmm|57_nt|+|1|57	>NODE_3_length_713_cov_1.25228
-                _, _, _, strand, left_index, right_index = seq_id.split('|')
+                _, _, seq_len, strand, left_index, right_index = seq_id.split('|')
                 contig_id = contig_id[1:]
-            elif reading_gene:
+                if 'nt' in seq_len:
+                    reading_gene = True
+                elif 'aa' in seq_len:
+                    reading_protein = True
+            elif reading_gene or reading_protein:
                 if line.isspace():
-                    reading_gene = False
-                    seq = ''.join(seq)
                     left_index = int(left_index)
                     right_index = int(right_index)
+                    if reading_gene:
+                        seq = ''.join(seq)
+                        reading_gene = False
+                    elif reading_protein:
+                        protein = ''.join(seq)
+                        seq = []
+                        reading_protein = False
                     #genes.append(Gene(contig_id, strand, left_index, right_index, str_seq))
-                    yield contig_id, strand, left_index, right_index, seq
+                    if seq:
+                        yield contig_id, strand, left_index, right_index, seq, protein
                 else:
                     seq.append(line.strip())
 
@@ -107,15 +118,27 @@ def parse_gtf_out(out_fpath):
 def add_genes_to_gff(genes, gff_fpath, prokaryote):
     gff = open(gff_fpath, 'w')
     if prokaryote:
-        gff.write('##gff out for GeneMarkS PROKARYOTIC\n')
+        if qconfig.meta:
+            gff.write('##gff out for MetaGeneMark\n')
+        else:
+            gff.write('##gff out for GeneMarkS PROKARYOTIC\n')
     else:
         gff.write('##gff out for GeneMark-ES EUKARYOTIC\n')
     gff.write('##gff-version 3\n')
 
     for id, gene in enumerate(genes):
-        contig_id, strand, left_index, right_index, str_seq = gene
+        contig_id, strand, left_index, right_index, str_seq = gene[:5]
         gff.write('%s\tGeneMark\tgene\t%d\t%d\t.\t%s\t.\tID=%d\n' %
             (contig_id, left_index, right_index, strand, id + 1))
+        if prokaryote and len(gene) > 5:
+            prot_seq = gene[5]
+            gff.write('##Nucleotide sequence:\n')
+            for i in xrange(0, len(str_seq), 60):
+                gff.write('##' + str_seq[i:i + 60] + '\n')
+            gff.write('##Protein sequence:\n')
+            for i in xrange(0, len(prot_seq), 60):
+                gff.write('##' + prot_seq[i:i + 60] + '\n')
+            gff.write('\n')
     gff.close()
 
 

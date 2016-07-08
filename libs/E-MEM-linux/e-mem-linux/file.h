@@ -968,7 +968,7 @@ class tmpFilesInfo {
                 if (last_line.size())
                     cout << last_line << endl;
                 last_line = line;
-                if ((*filePtr) == (*forFile)) {
+                if (filePtr == forFile) {
                     filePtr = revFile;
                     if (first) {
                         if(getline((*filePtr), line).good()) 

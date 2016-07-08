@@ -84,52 +84,68 @@ def GC_content(contigs_fpath, skip=False):
     return total_GC, (GC_distribution_x, GC_distribution_y)
 
 
-def binning_coverage(cov_values, cov_threshold):
-    bin_size = max(1, int(math.ceil((cov_threshold * 1.0/ qconfig.max_coverage_bins))))
-    cov_threshold = bin_size * qconfig.max_coverage_bins
+def binning_coverage(cov_values, nums_contigs):
+    bin_sizes = []
+    low_thresholds = []
+    high_thresholds = []
+    for values, num_contigs in zip(cov_values, nums_contigs):
+        assembly_len = sum(values)
+        bases_by_cov = []
+        for coverage, bases in enumerate(values):
+            bases_by_cov.extend([coverage] * bases)
+        q1 = bases_by_cov[assembly_len / 4]
+        q2 = bases_by_cov[assembly_len / 2]
+        q3 = bases_by_cov[assembly_len * 3 / 4]
+        iqr = q3 - q1
+        low_thresholds.append(int(q2 - 1.5 * iqr))
+        high_thresholds.append(int(q2 + 1.5 * iqr))
+        bin_sizes.append(int(2 * iqr / num_contigs ** (1.0 / 3)))
+
+    bin_size = max(min(bin_sizes), 1)
+    low_threshold = min(low_thresholds)
+    low_threshold -= low_threshold % bin_size
+    high_threshold = max(high_thresholds)
+    high_threshold -= high_threshold % bin_size
     cov_by_bins = []
-    max_points = qconfig.max_coverage_bins + 1
+    max_points = (high_threshold / bin_size) + 1  # add last bin
+    offset = 0
+    if low_threshold > 0:  # add first bin
+        offset = low_threshold / bin_size - 1
+        max_points -= offset
     for index, values in enumerate(cov_values):
         cov_by_bins.append([0] * max_points)
         for coverage, bases in enumerate(values):
-            bin_idx = int(coverage) / bin_size
-            if coverage >= cov_threshold:
+            bin_idx = int(coverage) / bin_size - offset
+            if coverage < low_threshold:
+                bin_idx = 0
+            elif coverage >= high_threshold:
                 bin_idx = max_points - 1
             cov_by_bins[index][bin_idx] += bases
-    return cov_by_bins, bin_size, cov_threshold
+    return cov_by_bins, bin_size, low_threshold, high_threshold
 
 
 def draw_coverage_histograms(coverage_dict, contigs_fpaths, output_dirpath):
     import plotter
     total_len = dict()
-    covered_len = defaultdict(int)
-    cov_thresholds = defaultdict(int)
-    common_cov_threshold = 0
+    contigs_dict = dict()
 
     contigs_with_coverage = [contigs_fpath for contigs_fpath in contigs_fpaths if coverage_dict[contigs_fpath]]
     for contigs_fpath in contigs_fpaths:
         total_len[contigs_fpath] = reporting.get(contigs_fpath).get_field(reporting.Fields.TOTALLEN)
+        contigs_dict[contigs_fpath] = reporting.get(contigs_fpath).get_field(reporting.Fields.CONTIGS)
     cov_values = [coverage_dict[contigs_fpath] for contigs_fpath in contigs_with_coverage]
-    max_len_values = max(len(v) for v in cov_values)
-    for x in range(max_len_values):
-        coverage_threshold = x + 1
-        for contigs_fpath in contigs_with_coverage:
-            covered_len[contigs_fpath] += coverage_dict[contigs_fpath][x]
-            if contigs_fpath not in cov_thresholds and covered_len[contigs_fpath] >= total_len[contigs_fpath] * qconfig.pcnt_covered_for_histogram:
-                cov_thresholds[contigs_fpath] = coverage_threshold
-        if all(contigs_fpath in cov_thresholds for contigs_fpath in contigs_with_coverage):
-            common_cov_threshold = coverage_threshold
-            break
-    common_coverage_values, bin_size, common_cov_threshold = binning_coverage(cov_values, common_cov_threshold)
+    num_contigs = [contigs_dict[contigs_fpath] for contigs_fpath in contigs_with_coverage]
+
+    common_coverage_values, bin_size, low_threshold, high_threshold = binning_coverage(cov_values, num_contigs)
     histogram_title = 'Coverage histogram (bin size: ' + str(bin_size) + 'x)'
     plotter.coverage_histogram(contigs_with_coverage, common_coverage_values, output_dirpath + '/coverage_histogram',
-                               histogram_title, bin_size=bin_size, cov_threshold=common_cov_threshold)
+                               histogram_title, bin_size=bin_size, low_threshold=low_threshold, high_threshold=high_threshold)
     for contigs_fpath in contigs_with_coverage:
-        coverage_values, bin_size, cov_threshold = binning_coverage([coverage_dict[contigs_fpath]], cov_thresholds[contigs_fpath])
+        coverage_values, bin_size, low_threshold, high_threshold = binning_coverage([coverage_dict[contigs_fpath]], [contigs_dict[contigs_fpath]])
         label = qutils.label_from_fpath(contigs_fpath)
         histogram_title = label + ' coverage histogram (bin size: ' + str(bin_size) + 'x)'
         plotter.coverage_histogram([contigs_fpath], coverage_values, output_dirpath + '/' + label + '_coverage_histogram',
-                                   histogram_title, draw_bars=True, bin_size=bin_size, cov_threshold=cov_threshold)
+                                   histogram_title, draw_bars=True, bin_size=bin_size, low_threshold=low_threshold, high_threshold=high_threshold)
 
 
 def do(ref_fpath, contigs_fpaths, output_dirpath, json_output_dir, results_dir):
@@ -301,9 +317,6 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, json_output_dir, results_dir):
             plotter.GC_content_plot(ref_fpath, contigs_fpaths, list_of_GC_distributions_with_ref, output_dirpath + '/GC_content_plot')
 
         if any(coverage_dict[contigs_fpath] for contigs_fpath in contigs_fpaths):
-            try:
-                draw_coverage_histograms(coverage_dict, contigs_fpaths, output_dirpath)
-            except:
-                logger.warning('Failed drawing coverage histogram.')
+            draw_coverage_histograms(coverage_dict, contigs_fpaths, output_dirpath)
 
     logger.main_info('Done.')

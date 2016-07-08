@@ -552,7 +552,7 @@ def histogram(contigs_fpaths, values, plot_fpath, title='', yaxis_title='', bott
     matplotlib.pyplot.close()
 
 
-def coverage_histogram(contigs_fpaths, values, plot_fpath, title='', bin_size=None, draw_bars=None, cov_threshold=None):
+def coverage_histogram(contigs_fpaths, values, plot_fpath, title='', bin_size=None, draw_bars=None, low_threshold=None, high_threshold=None):
     if not can_draw_plots:
         return
 
@@ -593,13 +593,13 @@ def coverage_histogram(contigs_fpaths, values, plot_fpath, title='', bin_size=No
     x_factor = max(1, len(x_vals) / 10)
     x_ticks = range(0, len(x_vals), x_factor)
     x_ticks_labels = [str(x_vals[i] * bin_size) for i in x_ticks]
-    if cov_threshold:
-        last_tick = cov_threshold / bin_size
-        if x_ticks[-1] - last_tick < x_factor / 2:
-            x_ticks = x_ticks[:-1]
-            x_ticks_labels = x_ticks_labels[:-1]
+    if high_threshold:
+        last_tick = high_threshold / bin_size
+        x_ticks = [x for x in x_ticks if x < last_tick]
         x_ticks.append(last_tick)
-        x_ticks_labels.append('          >' + str(cov_threshold))
+        x_ticks_labels.append('   >' + str(high_threshold))
+    if low_threshold:
+        x_ticks_labels[0] = '<' + str(low_threshold)
     matplotlib.pyplot.xticks(x_ticks, x_ticks_labels, size='small')
 
     legend_list = map(qutils.label_from_fpath, contigs_fpaths)

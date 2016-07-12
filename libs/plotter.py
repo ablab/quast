@@ -552,7 +552,8 @@ def histogram(contigs_fpaths, values, plot_fpath, title='', yaxis_title='', bott
     matplotlib.pyplot.close()
 
 
-def coverage_histogram(contigs_fpaths, values, plot_fpath, title='', bin_size=None, draw_bars=None, low_threshold=None, high_threshold=None):
+def coverage_histogram(contigs_fpaths, values, plot_fpath, title='', bin_size=None, draw_bars=None, max_cov=None,
+                       low_threshold=None, high_threshold=None):
     if not can_draw_plots:
         return
 
@@ -566,16 +567,32 @@ def coverage_histogram(contigs_fpaths, values, plot_fpath, title='', bin_size=No
     max_y = 0
     max_x = max(len(v) for v in values)
     x_vals = range(0, max_x)
-    x_vals.append(max_x)
+    bar_width = 1.0
+    bar_widths = [bar_width] * max_x
+    if high_threshold and draw_bars:
+        x_vals.append(max_x + 1)
+        bar_widths[-1] = 2.0
+    x_ticks_labels = [str(x_val * bin_size + low_threshold) for x_val in x_vals]
+    if low_threshold:
+        x_vals = [x_val + 1 for x_val in x_vals]
+        x_vals[0] = 0
+        bar_widths[0] = 2.0
+
     for i, (contigs_fpath, y_vals) in enumerate(itertools.izip(contigs_fpaths, values)):
         max_y = max(max(y_vals), max_y)
         color, ls = get_color_and_ls(contigs_fpath)
         if draw_bars:
-            for i, y_val in enumerate(y_vals):
-                matplotlib.pyplot.bar(i, y_val, color=color)
+            for x_val, y_val, bar_width in zip(x_vals, y_vals, bar_widths):
+                if bar_width == 2:
+                    matplotlib.pyplot.bar(x_val, y_val, width=bar_width, color=color, edgecolor='black', hatch='x')
+                else:
+                    matplotlib.pyplot.bar(x_val, y_val, width=bar_width, color=color)
+            matplotlib.pyplot.bar(0, 0, color=color)
         else:
             y_vals.append(y_vals[-1])
-            matplotlib.pyplot.plot(x_vals, y_vals, marker='o', markersize=3, color=color, ls=ls)
+            plot_x_vals = [x_val + 0.5 for x_val in x_vals]
+            plot_x_vals[-1] += 1
+            matplotlib.pyplot.plot(plot_x_vals, y_vals[:-1], marker='o', markersize=3, color=color, ls=ls)
 
     xlabel = 'Coverage depth (x)'
     ylabel = 'Total length '
@@ -591,26 +608,34 @@ def coverage_histogram(contigs_fpaths, values, plot_fpath, title='', bin_size=No
     ax.set_position([box.x0, box.y0 + box.height * 0.2, box.width, box.height * 0.8])
     ax.yaxis.grid(with_grid)
     x_factor = max(1, len(x_vals) / 10)
-    x_ticks = range(0, len(x_vals), x_factor)
-    x_ticks_labels = [str(x_vals[i] * bin_size) for i in x_ticks]
-    if high_threshold:
-        last_tick = high_threshold / bin_size
-        x_ticks = [x for x in x_ticks if x < last_tick]
-        x_ticks.append(last_tick)
-        x_ticks_labels.append('   >' + str(high_threshold))
+    x_ticks = x_vals[::x_factor]
+    x_ticks_labels = x_ticks_labels[::x_factor]
+
     if low_threshold:
-        x_ticks_labels[0] = '<' + str(low_threshold)
+        x_ticks_labels.insert(0, 0)
+    if high_threshold:
+        if low_threshold:
+            last_tick = (high_threshold - low_threshold) / bin_size + 4  # first and last bars have width 2
+        else:
+            last_tick = high_threshold / bin_size + 2
+        x_ticks = [x for x in x_ticks if x < last_tick]
+        x_ticks_labels = x_ticks_labels[:len(x_ticks)]
+        x_ticks.append(last_tick)
+        x_ticks_labels.append(str(max_cov))
+
     matplotlib.pyplot.xticks(x_ticks, x_ticks_labels, size='small')
 
     legend_list = map(qutils.label_from_fpath, contigs_fpaths)
     # Put a legend below current axis
     try:  # for matplotlib <= 2009-12-09
-        ax.legend(legend_list, loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True,
+        legend = ax.legend(legend_list, loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True,
             shadow=True, ncol=n_columns if n_columns<3 else 3)
+        for handle in legend.legendHandles:
+            handle.set_hatch('')
     except Exception:
         pass
 
-    matplotlib.pyplot.xlim([0, max_x])
+    matplotlib.pyplot.xlim([0, max(x_ticks)])
     matplotlib.pyplot.ylim([0, max_y * 1.1])
     yLocator = matplotlib.ticker.MaxNLocator(nbins=6, integer=True, steps=[1,5,10])
     ax.yaxis.set_major_locator(yLocator)

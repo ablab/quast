@@ -102,26 +102,29 @@ def binning_coverage(cov_values, nums_contigs):
         bin_sizes.append(int(2 * iqr / num_contigs ** (1.0 / 3)))
 
     bin_size = max(min(bin_sizes), 1)
-    low_threshold = min(low_thresholds)
+    low_threshold = max(min(low_thresholds), 0)
     low_threshold -= low_threshold % bin_size
     high_threshold = max(high_thresholds)
     high_threshold -= high_threshold % bin_size
+    max_cov = max(len(v) for v in cov_values)
     cov_by_bins = []
     max_points = (high_threshold / bin_size) + 1  # add last bin
     offset = 0
-    if low_threshold > 0:  # add first bin
+    if low_threshold > bin_size:  # add first bin
         offset = low_threshold / bin_size - 1
         max_points -= offset
+    else:
+        low_threshold = 0
     for index, values in enumerate(cov_values):
         cov_by_bins.append([0] * max_points)
         for coverage, bases in enumerate(values):
-            bin_idx = int(coverage) / bin_size - offset
+            bin_idx = coverage / bin_size - offset
             if coverage < low_threshold:
                 bin_idx = 0
             elif coverage >= high_threshold:
                 bin_idx = max_points - 1
             cov_by_bins[index][bin_idx] += bases
-    return cov_by_bins, bin_size, low_threshold, high_threshold
+    return cov_by_bins, bin_size, low_threshold, high_threshold, max_cov
 
 
 def draw_coverage_histograms(coverage_dict, contigs_fpaths, output_dirpath):
@@ -136,16 +139,18 @@ def draw_coverage_histograms(coverage_dict, contigs_fpaths, output_dirpath):
     cov_values = [coverage_dict[contigs_fpath] for contigs_fpath in contigs_with_coverage]
     num_contigs = [contigs_dict[contigs_fpath] for contigs_fpath in contigs_with_coverage]
 
-    common_coverage_values, bin_size, low_threshold, high_threshold = binning_coverage(cov_values, num_contigs)
+    common_coverage_values, bin_size, low_threshold, high_threshold, max_cov = binning_coverage(cov_values, num_contigs)
     histogram_title = 'Coverage histogram (bin size: ' + str(bin_size) + 'x)'
     plotter.coverage_histogram(contigs_with_coverage, common_coverage_values, output_dirpath + '/coverage_histogram',
-                               histogram_title, bin_size=bin_size, low_threshold=low_threshold, high_threshold=high_threshold)
+                               histogram_title, bin_size=bin_size, max_cov=max_cov, low_threshold=low_threshold, high_threshold=high_threshold)
     for contigs_fpath in contigs_with_coverage:
-        coverage_values, bin_size, low_threshold, high_threshold = binning_coverage([coverage_dict[contigs_fpath]], [contigs_dict[contigs_fpath]])
+        coverage_values, bin_size, low_threshold, high_threshold, max_cov = binning_coverage([coverage_dict[contigs_fpath]],
+                                                                                             [contigs_dict[contigs_fpath]])
         label = qutils.label_from_fpath(contigs_fpath)
         histogram_title = label + ' coverage histogram (bin size: ' + str(bin_size) + 'x)'
         plotter.coverage_histogram([contigs_fpath], coverage_values, output_dirpath + '/' + label + '_coverage_histogram',
-                                   histogram_title, draw_bars=True, bin_size=bin_size, low_threshold=low_threshold, high_threshold=high_threshold)
+                                   histogram_title, draw_bars=True, bin_size=bin_size, max_cov=max_cov,
+                                   low_threshold=low_threshold, high_threshold=high_threshold)
 
 
 def do(ref_fpath, contigs_fpaths, output_dirpath, json_output_dir, results_dir):

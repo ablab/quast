@@ -1,4 +1,5 @@
 import os
+import socket
 import urllib2
 from os.path import exists, join
 
@@ -63,8 +64,12 @@ def compile_reads_analyzer_tools(logger, bed_fpath=None):
         if qconfig.platform_name == 'linux_64':
             logger.main_info('  Downloading binary distribution of Manta...')
             manta_downloaded_fpath = join(manta_build_dirpath, 'manta.tar.bz2')
-            response = urllib2.urlopen(manta_download_path)
-            content = response.read()
+            content = None
+            try:
+                response = urllib2.urlopen(manta_download_path)
+                content = response.read()
+            except socket.error:
+                logger.main_info('  Failed to establish connection!')
             if content:
                 logger.main_info('  Manta successfully downloaded!')
                 f = open(manta_downloaded_fpath + '.download', 'w' )
@@ -85,7 +90,6 @@ def compile_reads_analyzer_tools(logger, bed_fpath=None):
                     logger.main_info('  Done')
             else:
                 logger.main_info('  Failed downloading Manta from %s!' % manta_download_path)
-                print_manta_warning(logger)
 
         if not all_required_binaries_exist(manta_bin_dirpath, 'configManta.py'):
             logger.main_info('Compiling Manta (details are in ' + join(manta_dirpath, 'make.log') + ' and make.err)')

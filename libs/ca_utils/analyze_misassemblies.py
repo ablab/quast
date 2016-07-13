@@ -9,7 +9,7 @@ from __future__ import with_statement
 import copy
 
 from libs import qconfig
-from libs.ca_utils.misc import check_chr_for_refs, get_ref_by_chromosome
+from libs.ca_utils.misc import is_same_reference, get_ref_by_chromosome
 
 from libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
@@ -18,9 +18,9 @@ from libs.qutils import correct_name
 
 class Misassembly:
     LOCAL = 0
-    RELOCATION = 1
-    TRANSLOCATION = 2
-    INVERSION = 3
+    INVERSION = 1
+    RELOCATION = 2
+    TRANSLOCATION = 3
     INTERSPECTRANSLOCATION = 4  #for --meta, if translocation occurs between chromosomes of different references
     SCAFFOLD_GAP = 5
     FRAGMENTED = 6
@@ -120,7 +120,7 @@ def is_fragmented_ref_fake_translocation(align1, align2, ref_lens):
                                      "should be called only if align1.ref != align2.ref"
 
     if qconfig.check_for_fragmented_ref:
-        if qconfig.is_combined_ref and not check_chr_for_refs(align1.ref, align2.ref):
+        if qconfig.is_combined_ref and not is_same_reference(align1.ref, align2.ref):
             return False
         if all([d <= qconfig.MAX_INDEL_LENGTH for d in __get_border_gaps(align1, align2, ref_lens)]):
             return True
@@ -356,7 +356,7 @@ def process_misassembled_contig(sorted_aligns, cyclic, aligned_lengths, region_m
             print >> ca_output.stdout_f, '\t\t\t  Extensive misassembly (',
             if prev_align.ref != next_align.ref:  # it is not a Fake translocation, because is_extensive_misassembly is True
                 if qconfig.is_combined_ref and \
-                        not check_chr_for_refs(prev_align.ref, next_align.ref):  # if chromosomes from different references
+                        not is_same_reference(prev_align.ref, next_align.ref):  # if chromosomes from different references
                         region_misassemblies.append(Misassembly.INTERSPECTRANSLOCATION)
                         ref1, ref2 = get_ref_by_chromosome(prev_align.ref), get_ref_by_chromosome(next_align.ref)
                         references_misassemblies[ref1][ref2] += 1

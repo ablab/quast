@@ -55,7 +55,7 @@ def compile_aligner(logger):
     return False
 
 
-def check_chr_for_refs(chr1, chr2):
+def is_same_reference(chr1, chr2):
     return ref_labels_by_chromosomes[chr1] == ref_labels_by_chromosomes[chr2]
 
 

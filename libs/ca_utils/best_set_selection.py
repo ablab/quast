@@ -7,7 +7,8 @@
 
 from heapq import heappush, heappop
 from libs import qconfig
-from libs.ca_utils.analyze_misassemblies import is_misassembly, exclude_internal_overlaps
+from libs.ca_utils.analyze_misassemblies import is_misassembly, exclude_internal_overlaps, Misassembly
+from libs.ca_utils.misc import is_same_reference
 
 
 class ScoredSet(object):
@@ -235,6 +236,16 @@ def get_score(score, aligns, cyclic_ref_lens, uncovered_len, seq, region_struct_
         is_extensive_misassembly, aux_data = is_misassembly(align1, align2, seq, cyclic_ref_lens, region_struct_variations)
         if is_extensive_misassembly:
             score -= penalties['extensive']
+            if align1.ref != align2.ref:
+                if is_same_reference(align1.ref, align2.ref):
+                    misassembly = Misassembly.TRANSLOCATION
+                else:
+                    misassembly = Misassembly.INTERSPECTRANSLOCATION
+            elif abs(aux_data["inconsistency"]) > qconfig.extensive_misassembly_threshold:
+                    misassembly = Misassembly.RELOCATION
+            else:
+                    misassembly = Misassembly.INVERSION
+            score -= misassembly - Misassembly.INVERSION
         elif abs(aux_data['inconsistency']) > qconfig.MAX_INDEL_LENGTH and not aux_data['is_scaffold_gap']:
             score -= penalties['local']
         elif aux_data['is_scaffold_gap']:

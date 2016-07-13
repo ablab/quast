@@ -66,7 +66,7 @@ def align_and_analyze(cyclic, index, contigs_fpath, output_dirpath, ref_fpath,
     misassembly_fpath = join(output_dirpath, qconfig.contig_report_fname_pattern % assembly_label + '.mis_contigs.info')
 
     icarus_out_f = open(icarus_out_fpath, 'w')
-    icarus_header_cols = ['S1', 'E1', 'S2', 'E2', 'Reference', 'Contig', 'IDY', 'Ambiguous']
+    icarus_header_cols = ['S1', 'E1', 'S2', 'E2', 'Reference', 'Contig', 'IDY', 'Ambiguous', 'Best_group']
     print >> icarus_out_f, '\t'.join(icarus_header_cols)
     misassembly_f = open(misassembly_fpath, 'w')
 

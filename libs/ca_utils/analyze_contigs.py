@@ -196,7 +196,7 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, aligns, ref_featu
                                 if idx not in the_best_set.indexes:
                                     align = sorted_aligns[idx]
                                     print >> ca_output.stdout_f, '\t\tAlignment: %s' % str(align)
-                                    print >> ca_output.icarus_out_f, align.icarus_report_str(ambiguity=True)
+                                    print >> ca_output.icarus_out_f, align.icarus_report_str(is_best=False)
                                     ref_aligns.setdefault(align.ref, []).append(align)
                                     ambiguous_contigs_extra_bases += align.len2
                                     print >> ca_output.coords_filtered_f, str(align), "ambiguous"
@@ -220,7 +220,7 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, aligns, ref_featu
                         partially_unaligned_bases += unaligned_bases
                         print >> ca_output.stdout_f, '\t\tThis contig is partially unaligned. (Aligned %d out of %d bases)' % (top_len, ctg_len)
                         print >> ca_output.stdout_f, '\t\tAlignment: %s' % str(the_only_align)
-                        print >> ca_output.icarus_out_f, the_only_align.icarus_report_str(ambiguity=is_ambiguous)
+                        print >> ca_output.icarus_out_f, the_only_align.icarus_report_str()
                         if begin - 1:
                             print >> ca_output.stdout_f, '\t\tUnaligned bases: 1 to %d (%d)' % (begin - 1, begin - 1)
                         if ctg_len - end:
@@ -247,7 +247,7 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, aligns, ref_featu
                             'Contig length is %d and total length of all aligns is %d' % (ctg_len, aligned_bases_in_contig)
                         for align in sorted_aligns:
                             print >> ca_output.stdout_f, '\t\tAlignment: %s' % str(align)
-                            print >> ca_output.icarus_out_f, align.icarus_report_str(ambiguity=is_ambiguous)
+                            print >> ca_output.icarus_out_f, align.icarus_report_str()
                             print >> ca_output.coords_filtered_f, str(align)
                             aligned_lengths.append(align.len2)
                             ref_aligns.setdefault(align.ref, []).append(align)

@@ -59,8 +59,8 @@ class Mapping(object):
     def short_str(self):
         return ' '.join(str(x) for x in [self.s1, self.e1, '|', self.s2, self.e2, '|', self.len1, self.len2])
 
-    def icarus_report_str(self, ambiguity=''):
-        return '\t'.join(str(x) for x in [self.s1, self.e1, self.s2, self.e2, self.ref, self.contig, self.idy, ambiguity])
+    def icarus_report_str(self, ambiguity='', is_best='True'):
+        return '\t'.join(str(x) for x in [self.s1, self.e1, self.s2, self.e2, self.ref, self.contig, self.idy, ambiguity, is_best])
 
     def clone(self):
         return Mapping.from_line(str(self))
@@ -330,7 +330,7 @@ def process_misassembled_contig(sorted_aligns, cyclic, aligned_lengths, region_m
         distance_on_contig = aux_data["distance_on_contig"]
         misassembly_internal_overlap += aux_data["misassembly_internal_overlap"]
         cyclic_moment = aux_data["cyclic_moment"]
-        print >> ca_output.icarus_out_f, prev_align.icarus_report_str(ambiguity=is_ambiguous)
+        print >> ca_output.icarus_out_f, prev_align.icarus_report_str()
         print >> ca_output.stdout_f, '\t\t\tReal Alignment %d: %s' % (i+1, str(prev_align))
 
         ref_aligns.setdefault(prev_align.ref, []).append(prev_align)
@@ -439,7 +439,7 @@ def process_misassembled_contig(sorted_aligns, cyclic, aligned_lengths, region_m
     #Record the very last alignment
     i = len(sorted_aligns) - 1
     print >> ca_output.stdout_f, '\t\t\tReal Alignment %d: %s' % (i + 1, str(next_align))
-    print >> ca_output.icarus_out_f, next_align.icarus_report_str(ambiguity=is_ambiguous)
+    print >> ca_output.icarus_out_f, next_align.icarus_report_str()
     ref_aligns.setdefault(next_align.ref, []).append(next_align)
     print >> ca_output.coords_filtered_f, str(next_align)
     aligned_lengths.append(cur_aligned_length)

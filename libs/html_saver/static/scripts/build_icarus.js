@@ -680,6 +680,21 @@ THE SOFTWARE.
                         }
                     }
                 }
+                else {
+                    var alignments = block.ambiguous_alignments;
+                    if (alignments) {
+                        for (var k = 0; k < alignments.length; k++) {
+                            var newItem = parseItem(alignments[k]);
+                            newItem.ambiguous_alignments = alignments;
+                            newItem.name = block.name;
+                            newItem.best_group = block.structure;
+                            if (chrContigs.indexOf(newItem.chr) != -1) {
+                                items.push(newItem);
+                                groupId++;
+                            }
+                        }
+                    }
+                }
                 items.push(parseItem(block));
                 groupId++;
             }

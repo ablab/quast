@@ -91,7 +91,7 @@ function changeInfo(block) {
             .text('Size: ' + block.size + ' bp');
 
     var appendPositionElement = function(curBlock, start, end, contigName, assembly, whereAppend,
-                                         prev_start, prev_end, is_expanded) {
+                                         prev_start, prev_end, prev_chr, is_expanded) {
         if (!curBlock) return;
         var whereAppendBlock = whereAppend;
         if (is_expanded) {
@@ -105,24 +105,30 @@ function changeInfo(block) {
         }
         if (is_expanded || !isContigSizePlot) {
             appendBlock(whereAppendBlock, numBlock, curBlock, start, end, contigName, assembly,
-                prev_start, prev_end, is_expanded);
+                prev_start, prev_end, prev_chr, is_expanded);
             numBlock++;
         }
 
     };
+
     var numBlock = 0;
-    for (var i = 0; i < block.structure.length; i++) {
-        var nextBlock = block.structure[i];
-        if (nextBlock.contig_type != "M" && block.corr_start == nextBlock.corr_start && nextBlock.corr_end == block.corr_end)
+    var prev_chr = '';
+    var structure = block.structure ? block.structure : block.ambiguous_alignments;
+    for (var i = 0; i < structure.length; i++) {
+        var nextBlock = structure[i];
+        if (nextBlock.contig_type != "M" && block.corr_start == nextBlock.corr_start && nextBlock.corr_end == block.corr_end) {
+            prev_chr = nextBlock.chr;
             break;
+        }
     }
     appendPositionElement(nextBlock, block.corr_start, block.corr_end, block.name, block.assembly, info);
 
     showArrows(block);
-    if (block.structure && block.structure.length > 0) {
+    structure = block.structure ? block.structure : block.best_group;
+    if (structure && structure.length > 0) {
         var blocks = info.append('p')
             .attr('class', 'head main');
-        var blocksText = (block.ambiguous ? 'Alternatives: ' : 'Blocks: ') + block.structure.filter(function(nextBlock) {
+        var blocksText = (block.ambiguous ? 'Alternatives: ' : 'Blocks: ') + structure.filter(function(nextBlock) {
                 if (nextBlock.contig_type != "M") return nextBlock;
             }).length;
         blocks.text(block.ambiguous ? 'Ambiguously mapped.' : blocksText);
@@ -130,18 +136,34 @@ function changeInfo(block) {
             blocks.append('p')
                 .text(blocksText);
 
-        for (var i = 0; i < block.structure.length; i++) {
-            var nextBlock = block.structure[i];
+        for (var i = 0; i < structure.length; i++) {
+            var nextBlock = structure[i];
             if (nextBlock.contig_type != "M") {
                 appendPositionElement(nextBlock, nextBlock.corr_start, nextBlock.corr_end, block.name, block.assembly,
-                    blocks, block.corr_start, block.corr_end, true);
+                    blocks, block.corr_start, block.corr_end, prev_chr, true);
 
-                if (block.ambiguous && i < block.structure.length - 1)
+                if (block.ambiguous && i < structure.length - 1)
                     blocks.append('p')
                         .text('or');
             } else {
                 blocks.append('p')
                     .text(nextBlock.mstype);
+            }
+        }
+    }
+    if (block.ambiguous_alignments && block.ambiguous_alignments.length > 0) {
+        var blocks = info.append('p')
+            .attr('class', 'head main');
+        var blocksText = 'Other alignments: ' + block.ambiguous_alignments.filter(function(nextBlock) {
+                if (nextBlock.contig_type != "M") return nextBlock;
+            }).length;
+        blocks.text(blocksText);
+
+        for (var i = 0; i < block.ambiguous_alignments.length; i++) {
+            var nextBlock = block.ambiguous_alignments[i];
+            if (nextBlock.contig_type != "M") {
+                appendPositionElement(nextBlock, nextBlock.corr_start, nextBlock.corr_end, block.name, block.assembly,
+                    blocks, block.corr_start, block.corr_end, prev_chr, true);
             }
         }
     }
@@ -154,7 +176,7 @@ function changeInfo(block) {
         for (var i = 0; i < block.overlaps.length; i++) {
             var nextBlock = block.overlaps[i];
             appendPositionElement(nextBlock, nextBlock.corr_start,
-                nextBlock.corr_end, nextBlock.contig, block.assembly, overlapsInfo, block.corr_start, block.corr_end, true, nextBlock);
+                nextBlock.corr_end, nextBlock.contig, block.assembly, overlapsInfo, block.corr_start, block.corr_end, prev_chr, true);
         }
     }
     var blockHeight = info[0][0].offsetHeight;
@@ -165,7 +187,7 @@ function changeInfo(block) {
 
 var ndash = String.fromCharCode(8211);
 
-function appendBlock(whereAppendBlock, numBlock, curBlock, start, end, contigName, assembly, prev_start, prev_end, is_expanded) {
+function appendBlock(whereAppendBlock, numBlock, curBlock, start, end, contigName, assembly, prev_start, prev_end, prev_chr, is_expanded) {
 
     var format = function (val) {
         val = val.toString();
@@ -229,7 +251,7 @@ function appendBlock(whereAppendBlock, numBlock, curBlock, start, end, contigNam
         }
     }
     if (is_expanded && !isContigSizePlot) {
-        if (prev_start == start && prev_end == end)
+        if (start == prev_start && end == prev_end && curBlock.chr == prev_chr)
             block.append('div')
                 .attr('id', 'circle' + start + '_' + end)
                 .attr('class', 'block_circle selected');

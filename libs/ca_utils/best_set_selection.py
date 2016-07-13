@@ -5,18 +5,32 @@
 # See file LICENSE for details.
 ############################################################################
 
+from heapq import heappush, heappop
 from libs import qconfig
 from libs.ca_utils.analyze_misassemblies import is_misassembly, exclude_internal_overlaps
 
 
-class ScoredAlignSet(object):
+class ScoredSet(object):
     def __init__(self, score, indexes, uncovered):
         self.score = score
         self.indexes = indexes
         self.uncovered = uncovered
 
 
-class PSA(object):  # PSA stands for Possibly Solid Alignment
+class PutativeBestSet(object):
+    def __init__(self, indexes, score_drop, uncovered):
+        self.indexes = indexes
+        self.score_drop = score_drop
+        self.uncovered = uncovered
+
+    def __eq__(self, other):
+        return not (self < other) and not (self > other)
+
+    def __lt__(self, other):  # "less than" means "better than"
+        return (self.score_drop, self.uncovered) < (other.score_drop, other.uncovered)
+
+
+class PSA(object):  # PSA stands for Possibly Solid Alignment, i.e. alignment definitely present in the best set
     def __init__(self, align):
         self.align = align
         self.unique_start = align.start()
@@ -45,13 +59,16 @@ class SolidRegion(object):
         return self.start <= align.start() and align.end() <= self.end
 
 
-def get_best_aligns_set(sorted_aligns, ctg_len, planta_out_f, seq, cyclic_ref_lens=None, region_struct_variations=None):
+def get_best_aligns_sets(sorted_aligns, ctg_len, planta_out_f, seq, cyclic_ref_lens=None, region_struct_variations=None):
     critical_number_of_aligns = 200  # use additional optimizations for large number of alignments
 
     penalties = dict()
     penalties['extensive'] = max(50, int(round(min(qconfig.extensive_misassembly_threshold / 4.0, ctg_len * 0.05)))) - 1
     penalties['local'] = max(2, int(round(min(qconfig.MAX_INDEL_LENGTH / 2.0, ctg_len * 0.01)))) - 1
     penalties['scaffold'] = 5
+
+    sorted_aligns = sorted(sorted_aligns, key=lambda x: (x.end(), x.start()))
+
     # trying to optimise the algorithm if the number of possible alignments is large
     if len(sorted_aligns) > critical_number_of_aligns:
         print >> planta_out_f, '\t\t\tSkipping redundant alignments which can\'t be in the best set of alignments A PRIORI'
@@ -103,39 +120,86 @@ def get_best_aligns_set(sorted_aligns, ctg_len, planta_out_f, seq, cyclic_ref_le
             except IndexError:  # solid_regions is empty
                 filtered_aligns += sorted_aligns[idx:]
 
-            sorted_aligns = sorted(filtered_aligns, key=lambda x: x.end())
+            sorted_aligns = sorted(filtered_aligns, key=lambda x: (x.end(), x.start()))
 
-    all_scored_sets = [ScoredAlignSet(0, [], ctg_len)]
+    # Stage 1: Dynamic programming for finding the best score
+    all_scored_sets = [ScoredSet(0, [], ctg_len)]
     max_score = 0
-    best_set = []
 
     for idx, align in enumerate(sorted_aligns):
-        cur_max_score = 0
+        local_max_score = 0
         new_scored_set = None
-        sets_to_remove = []
         for scored_set in all_scored_sets:
-            if (scored_set.score + align.len2) > cur_max_score:  # otherwise this set can't be the best with current align
-                cur_set_aligns = [sorted_aligns[i].clone() for i in scored_set.indexes] + [align.clone()]
-                score, uncovered = get_score(scored_set.score, cur_set_aligns, cyclic_ref_lens, scored_set.uncovered, seq,
-                                             region_struct_variations, penalties)
-                if score is None:  # incorrect set, e.g. after excluding internal overlap one alignment is 0 or too small
-                    continue
-                if score + uncovered < max_score:
-                    sets_to_remove.append(scored_set)
-                elif score > cur_max_score:
-                    cur_max_score = score
-                    new_scored_set = ScoredAlignSet(score, scored_set.indexes + [idx], uncovered)
-        for bad_set in sets_to_remove:
-            all_scored_sets.remove(bad_set)
+            cur_set_aligns = [sorted_aligns[i].clone() for i in scored_set.indexes] + [align.clone()]
+            score, uncovered = get_score(scored_set.score, cur_set_aligns, cyclic_ref_lens, scored_set.uncovered, seq,
+                                         region_struct_variations, penalties)
+            if score is None:  # incorrect set, i.e. internal overlap excluding resulted in incorrectly short alignment
+                continue
+            if score > local_max_score:
+                local_max_score = score
+                new_scored_set = ScoredSet(score, scored_set.indexes + [idx], uncovered)
         if new_scored_set:
             all_scored_sets.append(new_scored_set)
-            if cur_max_score > max_score:
-                max_score = cur_max_score
-                best_set = new_scored_set.indexes
+            if local_max_score > max_score:
+                max_score = local_max_score
 
-    # save best selection to real aligns and skip others (as redundant)
-    real_aligns = list([sorted_aligns[i] for i in best_set])
-    return real_aligns
+    # Stage 2: DFS for finding multiple best sets with almost equally good score
+    max_allowed_score_drop = max_score - int(max_score * qconfig.ambiguity_score)
+
+    putative_sets = []  # TODO: use priority queue -- minimal score_drop first
+    best_sets = []
+    for scored_set in all_scored_sets:
+        score_drop = max_score - scored_set.score
+        if score_drop <= max_allowed_score_drop:
+            heappush(putative_sets, PutativeBestSet([scored_set.indexes[-1]], score_drop, scored_set.uncovered))
+
+    ambiguity_check_is_needed = True
+    too_much_best_sets = False
+    while len(putative_sets):
+        putative_set = heappop(putative_sets)
+        align = sorted_aligns[putative_set.indexes[0]]
+        local_max_score = 0
+        local_uncovered = putative_set.uncovered
+        putative_predecessors = {}
+        for scored_set in all_scored_sets:
+            # we can enlarge the set with "earlier" alignments only
+            if scored_set.indexes and scored_set.indexes[-1] >= putative_set.indexes[0]:
+                break
+            cur_set_aligns = [sorted_aligns[i].clone() for i in scored_set.indexes] + [align.clone()]
+            score, uncovered = get_score(scored_set.score, cur_set_aligns, cyclic_ref_lens, scored_set.uncovered, seq,
+                                         region_struct_variations, penalties)
+            if score is not None:
+                putative_predecessors[scored_set] = (score, uncovered)
+                if score > local_max_score:
+                    local_max_score = score
+                    local_uncovered = uncovered
+                elif score == local_max_score and uncovered < local_uncovered:
+                    local_uncovered = uncovered
+        for preceding_set, (score, uncovered) in putative_predecessors.iteritems():
+            score_drop = local_max_score - score + putative_set.score_drop
+            if score_drop > max_allowed_score_drop:
+                continue
+            if not preceding_set.indexes:  # special case -- predecessor is the "empty" alignment set
+                best_sets.append(ScoredSet(max_score - score_drop, putative_set.indexes, putative_set.uncovered))
+            else:
+                new_uncovered = uncovered + (putative_set.uncovered - local_uncovered)
+                heappush(putative_sets, PutativeBestSet([preceding_set.indexes[-1]] + putative_set.indexes,
+                                                        score_drop, new_uncovered))
+        # special case: we added the very best set and we need decide what to do next (based on ambiguity-usage)
+        if ambiguity_check_is_needed and len(best_sets) == 1:
+            if not putative_sets:  # no ambiguity at all, only one good set was there
+                return False, too_much_best_sets, sorted_aligns, best_sets
+            elif not qconfig.ambiguity_usage == 'all':  # several good sets are present (the contig is ambiguous) but we need only the best one
+                return True, too_much_best_sets, sorted_aligns, best_sets
+            ambiguity_check_is_needed = False
+        if len(best_sets) >= qconfig.BSS_MAX_SETS_NUMBER:
+            too_much_best_sets = (len(putative_sets) > 0)
+            break
+    return True, too_much_best_sets, sorted_aligns, best_sets
+
+
+def get_used_indexes(best_sets):
+    return set([index for best_set in best_sets for index in best_set.indexes])
 
 
 def get_added_len(set_aligns, cur_align):

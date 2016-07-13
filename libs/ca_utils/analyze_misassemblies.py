@@ -37,10 +37,9 @@ class StructuralVariations(object):
 
 
 class Mapping(object):
-    def __init__(self, s1, e1, s2, e2, len1, len2, idy, ref, contig, ns_pos=None, not_analyze=False):
+    def __init__(self, s1, e1, s2, e2, len1, len2, idy, ref, contig, ns_pos=None):
         self.s1, self.e1, self.s2, self.e2, self.len1, self.len2, self.idy, self.ref, self.contig = s1, e1, s2, e2, len1, len2, idy, ref, contig
         self.ns_pos = ns_pos
-        self.not_analyze = not_analyze
 
     @classmethod
     def from_line(cls, line):
@@ -311,7 +310,8 @@ def is_gap_filled_ns(contig_seq, align1, align2):
 
 
 def process_misassembled_contig(sorted_aligns, cyclic, aligned_lengths, region_misassemblies, ref_lens, ref_aligns,
-                                ref_features, contig_seq, references_misassemblies, region_struct_variations, misassemblies_matched_sv, ca_output):
+                                ref_features, contig_seq, references_misassemblies, region_struct_variations,
+                                misassemblies_matched_sv, ca_output, is_ambiguous=False):
     misassembly_internal_overlap = 0
     prev_align = sorted_aligns[0]
     cur_aligned_length = prev_align.len2
@@ -330,7 +330,7 @@ def process_misassembled_contig(sorted_aligns, cyclic, aligned_lengths, region_m
         distance_on_contig = aux_data["distance_on_contig"]
         misassembly_internal_overlap += aux_data["misassembly_internal_overlap"]
         cyclic_moment = aux_data["cyclic_moment"]
-        print >> ca_output.icarus_out_f, prev_align.icarus_report_str()
+        print >> ca_output.icarus_out_f, prev_align.icarus_report_str(ambiguity=is_ambiguous)
         print >> ca_output.stdout_f, '\t\t\tReal Alignment %d: %s' % (i+1, str(prev_align))
 
         ref_aligns.setdefault(prev_align.ref, []).append(prev_align)
@@ -439,7 +439,7 @@ def process_misassembled_contig(sorted_aligns, cyclic, aligned_lengths, region_m
     #Record the very last alignment
     i = len(sorted_aligns) - 1
     print >> ca_output.stdout_f, '\t\t\tReal Alignment %d: %s' % (i + 1, str(next_align))
-    print >> ca_output.icarus_out_f, next_align.icarus_report_str()
+    print >> ca_output.icarus_out_f, next_align.icarus_report_str(ambiguity=is_ambiguous)
     ref_aligns.setdefault(next_align.ref, []).append(next_align)
     print >> ca_output.coords_filtered_f, str(next_align)
     aligned_lengths.append(cur_aligned_length)

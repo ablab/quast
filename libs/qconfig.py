@@ -140,6 +140,7 @@ min_similar_contig_size = 10000
 SHORT_INDEL_THRESHOLD = 5 # for separating short and long indels
 MAX_INDEL_LENGTH = 85  # for separating indels and local misassemblies (Nucmer default value)
 extensive_misassembly_threshold = 1000  # for separating local and extensive misassemblies (relocation)
+BSS_MAX_SETS_NUMBER = 10
 
 # for parallelization
 DEFAULT_MAX_THREADS = 4  # this value is used if QUAST fails to determine number of CPUs

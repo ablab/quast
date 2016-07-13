@@ -37,8 +37,7 @@ def analyze_coverage(ca_output, regions, ref_aligns, ref_features, snps, total_i
         nothing_aligned = False
 
         #Sort all alignments in this reference by start location
-        using_aligns = [align for align in ref_aligns[ref] if not align.not_analyze]
-        sorted_aligns = sorted(using_aligns, key=lambda x: x.s1)
+        sorted_aligns = sorted(ref_aligns[ref], key=lambda x: x.s1)
         total_aligns = len(sorted_aligns)
         print >> ca_output.stdout_f, '\tReference %s: %d total alignments. %d total regions.' % (ref, total_aligns, len(regions[ref]))
 

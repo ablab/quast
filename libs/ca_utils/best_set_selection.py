@@ -60,7 +60,7 @@ class SolidRegion(object):
         return self.start <= align.start() and align.end() <= self.end
 
 
-def get_best_aligns_sets(sorted_aligns, ctg_len, planta_out_f, seq, cyclic_ref_lens=None, region_struct_variations=None):
+def get_best_aligns_sets(sorted_aligns, ctg_len, planta_out_f, seq, ref_lens, is_cyclic=False, region_struct_variations=None):
     critical_number_of_aligns = 200  # use additional optimizations for large number of alignments
 
     penalties = dict()
@@ -132,8 +132,8 @@ def get_best_aligns_sets(sorted_aligns, ctg_len, planta_out_f, seq, cyclic_ref_l
         new_scored_set = None
         for scored_set in all_scored_sets:
             cur_set_aligns = [sorted_aligns[i].clone() for i in scored_set.indexes] + [align.clone()]
-            score, uncovered = get_score(scored_set.score, cur_set_aligns, cyclic_ref_lens, scored_set.uncovered, seq,
-                                         region_struct_variations, penalties)
+            score, uncovered = get_score(scored_set.score, cur_set_aligns, ref_lens, is_cyclic, scored_set.uncovered,
+                                         seq, region_struct_variations, penalties)
             if score is None:  # incorrect set, i.e. internal overlap excluding resulted in incorrectly short alignment
                 continue
             if score > local_max_score:
@@ -167,8 +167,8 @@ def get_best_aligns_sets(sorted_aligns, ctg_len, planta_out_f, seq, cyclic_ref_l
             if scored_set.indexes and scored_set.indexes[-1] >= putative_set.indexes[0]:
                 break
             cur_set_aligns = [sorted_aligns[i].clone() for i in scored_set.indexes] + [align.clone()]
-            score, uncovered = get_score(scored_set.score, cur_set_aligns, cyclic_ref_lens, scored_set.uncovered, seq,
-                                         region_struct_variations, penalties)
+            score, uncovered = get_score(scored_set.score, cur_set_aligns, ref_lens, is_cyclic, scored_set.uncovered,
+                                         seq, region_struct_variations, penalties)
             if score is not None:
                 putative_predecessors[scored_set] = (score, uncovered)
                 if score > local_max_score:
@@ -220,7 +220,7 @@ def get_added_len(set_aligns, cur_align):
     return added_right + added_left
 
 
-def get_score(score, aligns, cyclic_ref_lens, uncovered_len, seq, region_struct_variations, penalties):
+def get_score(score, aligns, ref_lens, is_cyclic, uncovered_len, seq, region_struct_variations, penalties):
     if len(aligns) > 1:
         align1, align2 = aligns[-2], aligns[-1]
         if len(aligns) > 2:  # does not affect score and uncovered but it is important for further checking on set correctness
@@ -232,8 +232,8 @@ def get_score(score, aligns, cyclic_ref_lens, uncovered_len, seq, region_struct_
 
         added_len = get_added_len(aligns, aligns[-1])
         uncovered_len -= added_len - reduced_len
-        score += added_len - reduced_len
-        is_extensive_misassembly, aux_data = is_misassembly(align1, align2, seq, cyclic_ref_lens, region_struct_variations)
+        score += added_len * align2.idy / 100.0 - reduced_len * align1.idy / 100.0
+        is_extensive_misassembly, aux_data = is_misassembly(align1, align2, seq, ref_lens, is_cyclic, region_struct_variations)
         if is_extensive_misassembly:
             score -= penalties['extensive']
             if align1.ref != align2.ref:
@@ -243,6 +243,7 @@ def get_score(score, aligns, cyclic_ref_lens, uncovered_len, seq, region_struct_
                     misassembly = Misassembly.INTERSPECTRANSLOCATION
             elif abs(aux_data["inconsistency"]) > qconfig.extensive_misassembly_threshold:
                     misassembly = Misassembly.RELOCATION
+                    score -= float(abs(aux_data["inconsistency"])) / ref_lens[align1.ref]
             else:
                     misassembly = Misassembly.INVERSION
             score -= misassembly - Misassembly.INVERSION

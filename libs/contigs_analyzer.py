@@ -153,14 +153,14 @@ def align_and_analyze(cyclic, index, contigs_fpath, output_dirpath, ref_fpath,
     ref_lens = {}
     total_reg_len = 0
     total_regions = 0
-    print >> log_out_f, 'Loading regions...'
-    # TODO: gff
-    print >> log_out_f, '\tNo regions given, using whole reference.'
+    # # TODO: gff
+    # print >> log_out_f, 'Loading regions...'
+    # print >> log_out_f, '\tNo regions given, using whole reference.'
     for name, seq in references.iteritems():
         regions.setdefault(name, []).append([1, len(seq)])
         ref_lens[name] = len(seq)
         total_regions += 1
-        total_reg_len += len(seq)
+        total_reg_len += ref_lens[name]
     print >> log_out_f, '\tTotal Regions: %d' % total_regions
     print >> log_out_f, '\tTotal Region Length: %d' % total_reg_len
 

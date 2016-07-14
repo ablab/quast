@@ -155,8 +155,7 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, aligns, ref_featu
             else:
                 # choose appropriate alignments (to maximize total size of contig alignment and reduce # misassemblies)
                 is_ambiguous, too_much_best_sets, sorted_aligns, best_sets = get_best_aligns_sets(
-                    sorted_aligns, ctg_len, ca_output.stdout_f, seq, cyclic_ref_lens=ref_lens if cyclic else None,
-                    region_struct_variations=region_struct_variations)
+                    sorted_aligns, ctg_len, ca_output.stdout_f, seq, ref_lens, cyclic, region_struct_variations)
                 the_best_set = best_sets[0]
                 used_indexes = range(len(sorted_aligns)) if too_much_best_sets else get_used_indexes(best_sets)
                 if len(used_indexes) < len(sorted_aligns):
@@ -186,7 +185,7 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, aligns, ref_featu
                         print >> ca_output.stdout_f, '\t\tUsing all alignments in these groups (option --ambiguity-usage is set to "all"):'
                         print >> ca_output.stdout_f, '\t\t\tThe very best group is shown in details below, the rest are:'
                         for idx, cur_set in enumerate(best_sets[1:]):
-                            print >> ca_output.stdout_f, '\t\t\t\tGroup #%d. Score: %d, number of alignments: %d, unaligned bases: %d' % \
+                            print >> ca_output.stdout_f, '\t\t\t\tGroup #%d. Score: %.1f, number of alignments: %d, unaligned bases: %d' % \
                                 (idx + 2, cur_set.score, len(cur_set.indexes), cur_set.uncovered)
                         if too_much_best_sets:
                             print >> ca_output.stdout_f, '\t\t\t\tetc...'
@@ -201,7 +200,7 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, aligns, ref_featu
                                     ambiguous_contigs_extra_bases += align.len2
                                     print >> ca_output.coords_filtered_f, str(align), "ambiguous"
 
-                print >> ca_output.stdout_f, '\t\t\tThe best group is below. Score: %d, number of alignments: %d, unaligned bases: %d' % \
+                print >> ca_output.stdout_f, '\t\t\tThe best group is below. Score: %.1f, number of alignments: %d, unaligned bases: %d' % \
                                              (the_best_set.score, len(the_best_set.indexes), the_best_set.uncovered)
                 real_aligns = [sorted_aligns[i] for i in the_best_set.indexes]
 

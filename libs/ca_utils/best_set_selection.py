@@ -157,7 +157,7 @@ def get_best_aligns_sets(sorted_aligns, ctg_len, planta_out_f, seq, ref_lens, is
                 max_score = local_max_score
 
     # Stage 2: DFS for finding multiple best sets with almost equally good score
-    max_allowed_score_drop = max_score - int(max_score * qconfig.ambiguity_score)
+    max_allowed_score_drop = max_score - max_score * qconfig.ambiguity_score
 
     putative_sets = []  # TODO: use priority queue -- minimal score_drop first
     best_sets = []
@@ -170,6 +170,22 @@ def get_best_aligns_sets(sorted_aligns, ctg_len, planta_out_f, seq, ref_lens, is
     too_much_best_sets = False
     while len(putative_sets):
         putative_set = heappop(putative_sets)
+        # special case: no options to enlarge this set, already at the left most point
+        if putative_set.indexes[0] == -1:
+            best_sets.append(ScoredSet(max_score - putative_set.score_drop, putative_set.indexes[1:],
+                                       putative_set.uncovered))
+            # special case: we added the very best set and we need decide what to do next (based on ambiguity-usage)
+            if ambiguity_check_is_needed and len(best_sets) == 1:
+                if not putative_sets:  # no ambiguity at all, only one good set was there
+                    return False, too_much_best_sets, sorted_aligns, best_sets
+                elif not qconfig.ambiguity_usage == 'all':  # several good sets are present (the contig is ambiguous) but we need only the best one
+                    return True, too_much_best_sets, sorted_aligns, best_sets
+                ambiguity_check_is_needed = False
+            if len(best_sets) >= qconfig.BSS_MAX_SETS_NUMBER:
+                too_much_best_sets = (len(putative_sets) > 0)
+                break
+            continue
+        # the main part: trying to enlarge the set to the left (use "earlier" alignments)
         align = sorted_aligns[putative_set.indexes[0]]
         local_max_score = 0
         local_uncovered = putative_set.uncovered
@@ -192,22 +208,11 @@ def get_best_aligns_sets(sorted_aligns, ctg_len, planta_out_f, seq, ref_lens, is
             score_drop = local_max_score - score + putative_set.score_drop
             if score_drop > max_allowed_score_drop:
                 continue
-            if not preceding_set.indexes:  # special case -- predecessor is the "empty" alignment set
-                best_sets.append(ScoredSet(max_score - score_drop, putative_set.indexes, putative_set.uncovered))
-            else:
-                new_uncovered = uncovered + (putative_set.uncovered - local_uncovered)
-                heappush(putative_sets, PutativeBestSet([preceding_set.indexes[-1]] + putative_set.indexes,
-                                                        score_drop, new_uncovered))
-        # special case: we added the very best set and we need decide what to do next (based on ambiguity-usage)
-        if ambiguity_check_is_needed and len(best_sets) == 1:
-            if not putative_sets:  # no ambiguity at all, only one good set was there
-                return False, too_much_best_sets, sorted_aligns, best_sets
-            elif not qconfig.ambiguity_usage == 'all':  # several good sets are present (the contig is ambiguous) but we need only the best one
-                return True, too_much_best_sets, sorted_aligns, best_sets
-            ambiguity_check_is_needed = False
-        if len(best_sets) >= qconfig.BSS_MAX_SETS_NUMBER:
-            too_much_best_sets = (len(putative_sets) > 0)
-            break
+            new_index = preceding_set.indexes[-1] if preceding_set.indexes else -1
+            new_uncovered = uncovered + (putative_set.uncovered - local_uncovered)
+            heappush(putative_sets, PutativeBestSet([new_index] + putative_set.indexes,
+                                                    score_drop, new_uncovered))
+
     return True, too_much_best_sets, sorted_aligns, best_sets
 
 

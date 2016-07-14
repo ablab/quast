@@ -27,8 +27,20 @@ class PutativeBestSet(object):
     def __eq__(self, other):
         return not (self < other) and not (self > other)
 
+    def __ne__(self, other):
+        return not self == other
+
     def __lt__(self, other):  # "less than" means "better than"
         return (self.score_drop, self.uncovered) < (other.score_drop, other.uncovered)
+
+    def __gt__(self, other):  # "great than" means "worse than"
+        return (self.score_drop, self.uncovered) > (other.score_drop, other.uncovered)
+
+    def __ge__(self, other):
+        return (self > other) or (self == other)
+
+    def __le__(self, other):
+        return (self < other) or (self == other)
 
 
 class PSA(object):  # PSA stands for Possibly Solid Alignment, i.e. alignment definitely present in the best set

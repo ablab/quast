@@ -17,6 +17,7 @@ import gzip
 import time
 from libs import qconfig, qutils
 from libs.log import get_logger
+from libs.qutils import is_non_empty_file
 
 logger = get_logger(qconfig.LOGGER_META_NAME)
 from urllib2 import urlopen
@@ -127,9 +128,6 @@ def download_refs(organism, ref_fpath):
         fasta = try_send_request(ncbi_url + 'efetch.fcgi?db=sequences&id=%s&rettype=fasta&retmode=text' % ref_id)
         if fasta and fasta[0] == '>':
             fasta_files.append(fasta)
-            if 'complete genome' in fasta[:150]:
-                fasta_files = [fasta]
-                break
     fasta_names = [f.split('|')[-1] for f in fasta_files]
     with open(ref_fpath, "w") as fasta_file:
         for name, fasta in sorted(zip(fasta_names, fasta_files), key=natural_sort_key):
@@ -141,7 +139,7 @@ def download_refs(organism, ref_fpath):
 
     if not os.path.isfile(ref_fpath):
         return None
-    if os.path.getsize(ref_fpath) < 0:
+    if not is_non_empty_file(ref_fpath):
         os.remove(ref_fpath)
         return None
 
@@ -248,15 +246,16 @@ def parallel_blast(contigs_fpath, label, blast_res_fpath, err_fpath, blast_check
     return
 
 
-def check_blast(blast_check_fpath, files_sizes, assemblies_fpaths, assemblies, labels):
+def check_blast(blast_check_fpath, blast_res_fpath, files_sizes, assemblies_fpaths, assemblies, labels):
     downloaded_organisms = []
     not_founded_organisms = []
     blast_assemblies = [assembly for assembly in assemblies]
     for i, assembly_fpath in enumerate(assemblies_fpaths):
-        check_fpath = blast_check_fpath  + '_' + labels[i]
+        check_fpath = blast_check_fpath + '_' + labels[i]
+        res_fpath = blast_res_fpath + '_' + labels[i]
         existing_assembly = None
         assembly_info = True
-        if os.path.exists(check_fpath):
+        if os.path.exists(check_fpath) and is_non_empty_file(res_fpath):
             for line in open(check_fpath):
                 if '---' in line:
                     assembly_info = False
@@ -279,26 +278,26 @@ def check_blast(blast_check_fpath, files_sizes, assemblies_fpaths, assemblies, l
 def do(assemblies, labels, downloaded_dirpath, ref_txt_fpath=None):
     logger.print_timestamp()
     err_fpath = os.path.join(downloaded_dirpath, 'blast.err')
-    contigs_names = [qutils.name_from_fpath(assembly.fpath) for assembly in assemblies]
     blast_check_fpath = os.path.join(downloaded_dirpath, 'blast.check')
+    blast_res_fpath = os.path.join(downloaded_dirpath, 'blast.res')
     files_sizes = dict((assembly.fpath, os.path.getsize(assembly.fpath)) for assembly in assemblies)
     assemblies_fpaths = dict((assembly.fpath, assembly) for assembly in assemblies)
     blast_assemblies, downloaded_organisms, not_founded_organisms = \
-        check_blast(blast_check_fpath, files_sizes, assemblies_fpaths, assemblies, labels)
+        check_blast(blast_check_fpath, blast_res_fpath, files_sizes, assemblies_fpaths, assemblies, labels)
     organisms = []
 
     if ref_txt_fpath:
         organisms = parse_refs_list(ref_txt_fpath)
         organisms_assemblies = None
     else:
-        scores_organisms, organisms_assemblies = process_blast(blast_assemblies, downloaded_dirpath, contigs_names, labels, blast_check_fpath, err_fpath)
+        scores_organisms, organisms_assemblies = process_blast(blast_assemblies, downloaded_dirpath, labels, blast_check_fpath, err_fpath)
         if scores_organisms:
             scores_organisms = sorted(scores_organisms, reverse=True)
             organisms = [organism for (score, organism) in scores_organisms]
 
     downloaded_ref_fpaths = [os.path.join(downloaded_dirpath,file) for (path, dirs, files) in os.walk(downloaded_dirpath) for file in files if qutils.check_is_fasta_file(file)]
 
-    ref_fpaths = process_refs(organisms, labels, downloaded_dirpath, not_founded_organisms, contigs_names, downloaded_ref_fpaths,
+    ref_fpaths = process_refs(organisms, assemblies, labels, downloaded_dirpath, not_founded_organisms, downloaded_ref_fpaths,
                  blast_check_fpath, err_fpath, organisms_assemblies)
 
     if not ref_fpaths:
@@ -309,7 +308,7 @@ def do(assemblies, labels, downloaded_dirpath, ref_txt_fpath=None):
     return ref_fpaths
 
 
-def process_blast(blast_assemblies, downloaded_dirpath, contigs_names, labels, blast_check_fpath, err_fpath):
+def process_blast(blast_assemblies, downloaded_dirpath, labels, blast_check_fpath, err_fpath):
     if not os.path.isdir(blastdb_dirpath):
         os.makedirs(blastdb_dirpath)
 
@@ -396,15 +395,13 @@ def process_blast(blast_assemblies, downloaded_dirpath, contigs_names, labels, b
 def parse_refs_list(ref_txt_fpath):
     organisms = []
     with open(ref_txt_fpath) as f:
-        for i, l in enumerate(f.read().split('\n')):
-            if i == 0:
-                continue
+        for l in f.read().split('\n'):
             if l:
                 organism = l.strip().replace(' ', '_')
                 organisms.append(organism)
     return organisms
 
-def process_refs(organisms, labels, downloaded_dirpath, not_founded_organisms, contigs_names, downloaded_ref_fpaths,
+def process_refs(organisms, assemblies, labels, downloaded_dirpath, not_founded_organisms, downloaded_ref_fpaths,
                  blast_check_fpath, err_fpath, organisms_assemblies=None):
     ref_fpaths = []
     downloaded_organisms = []
@@ -455,11 +452,14 @@ def process_refs(organisms, labels, downloaded_dirpath, not_founded_organisms, c
             total_scored_left -= 1
             logger.main_info("  %s%s | not found in the NCBI database" % (organism.replace('+', ' '), spaces))
             not_founded_organisms.add(organism)
-    for label in labels:
+    for assembly, label in zip(assemblies, labels):
         check_fpath = blast_check_fpath + '_' + label
-        with open(check_fpath) as check_file:
-            text = check_file.read()
-            text = text[:text.find('\n')]
+        if os.path.exists(check_fpath):
+            with open(check_fpath) as check_file:
+                text = check_file.read()
+                text = text[:text.find('\n')]
+        else:
+            text = 'Assembly: %s size: %d\n' % (assembly.fpath, os.path.getsize(assembly.fpath))
         with open(check_fpath, 'w') as check_file:
             check_file.writelines(text)
             check_file.writelines('\n---\n')

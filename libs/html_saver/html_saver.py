@@ -225,21 +225,24 @@ def save_total_report(results_dirpath, min_contig, ref_fpath):
 
 
 def create_meta_icarus(results_dirpath, ref_names):
+    combined_ref_icarus_dirpath = os.path.join(results_dirpath, qconfig.combined_output_name, qconfig.icarus_dirname)
     icarus_dirpath = os.path.join(results_dirpath, qconfig.icarus_dirname)
     icarus_links = defaultdict(list)
     if not os.path.isdir(icarus_dirpath):
         os.mkdir(icarus_dirpath)
     icarus_links["links"].append(qconfig.icarus_html_fname)
     icarus_links["links_names"].append(qconfig.icarus_link)
-    contig_size_fpath = os.path.join(results_dirpath, qconfig.combined_output_name, qconfig.icarus_dirname, qconfig.contig_size_viewer_fname)
-    contig_size_top_fpath = os.path.join(results_dirpath, qconfig.icarus_dirname, qconfig.contig_size_viewer_fname)
+    contig_size_fpath = os.path.join(combined_ref_icarus_dirpath, qconfig.contig_size_viewer_fname)
+    contig_size_top_fpath = os.path.join(icarus_dirpath, qconfig.contig_size_viewer_fname)
     shutil.copy(contig_size_fpath, contig_size_top_fpath)
     for index, ref in enumerate(ref_names):
         html_name = trim_ref_name(ref)
         if len(ref_names) == 1:
-            html_name = qconfig.one_alignment_viewer_name
-        icarus_ref_fpath = os.path.join(results_dirpath, qconfig.combined_output_name, qconfig.icarus_dirname, html_name + '.html')
-        icarus_top_ref_fpath = os.path.join(results_dirpath, qconfig.icarus_dirname, html_name + '.html')
+            one_alignment_viewer_fpath = os.path.join(combined_ref_icarus_dirpath, qconfig.one_alignment_viewer_name + '.html')
+            if os.path.exists(one_alignment_viewer_fpath):
+                html_name = qconfig.one_alignment_viewer_name
+        icarus_ref_fpath = os.path.join(combined_ref_icarus_dirpath, html_name + '.html')
+        icarus_top_ref_fpath = os.path.join(icarus_dirpath, html_name + '.html')
         shutil.copy(icarus_ref_fpath, icarus_top_ref_fpath)
     icarus_menu_fpath = os.path.join(results_dirpath, qconfig.combined_output_name, qconfig.icarus_html_fname)
     icarus_menu_top_fpath = os.path.join(results_dirpath, qconfig.icarus_html_fname)

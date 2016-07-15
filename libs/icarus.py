@@ -264,8 +264,9 @@ def prepare_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, data_st
                     data_str.append(', structure: [ ')
                     data_str = add_contig_structure_data(data_str, alignment.name, contig_structure[alignment.name], ref_contigs,
                                                          chr_full_names, contig_names_by_refs, used_chromosomes, links_to_chromosomes)
+                    data_str.append('], ')
                     if ambiguity_alignments_by_labels and qconfig.ambiguity_usage == 'all':
-                        data_str.append('], ambiguous_alignments: [ ')
+                        data_str.append('ambiguous_alignments: [ ')
                         data_str = add_contig_structure_data(data_str, alignment.name, ambiguity_alignments_by_labels[alignment.label][alignment.name],
                                                              ref_contigs, chr_full_names, contig_names_by_refs,
                                                              used_chromosomes, links_to_chromosomes)

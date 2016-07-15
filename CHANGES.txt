@@ -18,6 +18,8 @@
          naming style (i.e. all names are ..._length_X_cov_Y_...).
 
       5. Several new options added:
+       - "--references-list" for specifying list with reference names to be searched 
+         and downloaded from NCBI (MetaQUAST only);
        - "--min-identity" for setting threshold on minimal IDY% of alignments (Nucmer 
          parameter, default is 95%);
        - "--ambiguity-score" for choosing how close good ambiguous aligments should be to

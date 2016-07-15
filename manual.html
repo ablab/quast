@@ -444,8 +444,14 @@ By default, QUAST v.2.0 and higher filters out ambiguous and redundant alignment
 <div class='option'>
     <a name='min_alignment'></a><code><b>--min-alignment</b></code> (or <code>-i</code>) <code>&lt;int&gt;</code>
 </div>
-Minimum length of alignment. It is Nucmer's parameter which filters all alignments shorter than the value. Default is 0 bp.
+Minimum length of alignment. It is a Nucmer's parameter which filters all alignments shorter than the value. Default is 0 bp.
     In any case, Nucmer will not produce alignments shorter than 65 bp (default min cluster size).
+
+<div class='option'>
+    <a name='min_identity'></a><code><b>--min-identity</b></code> <code>&lt;float&gt;</code>
+</div>
+Minimum IDY% considered as proper alignment. It is a Nucmer's parameter which filters all alignments with IDY% worse than the value. Default is 95.0 %.
+    In any case, Nucmer will not produce alignments with IDY% less than 80.0%.
 
 <div class='option'>
     <a name='ambiguity_usage'></a><code><b>--ambiguity-usage</b> (or <code>-a</code>) &lt;<b>none</b>|<b>one</b>|<b>all</b>&gt;</code>
@@ -464,6 +470,12 @@ This option is also used for processing internal overlaps between adjacent align
     <tr><td><code>all</code></td><td>use both blocks unchanged.</td></tr>
 </table>
 The default value is 'one'.
+
+<div class='option'>
+    <code><b>--ambiguity-score</b></code> <code>&lt;float&gt;</code>
+</div>
+Score S for defining equally good alignments of a single contig (see <a href='#ambiguity_usage'><code>--ambiguity-usage</code></a>). All alignments are sorted by decreasing LEN * IDY% value. All alignments with LEN * IDY% &lt; S * best(LEN * IDY%) are discarded. S should be between 0.8 and 1.0. The default value is 0.99.
+
 
 <div class='option'>
     <code><b>--strict-NA</b></code>
@@ -512,17 +524,28 @@ Structural variant (SV) calling and processing (<b>experimental</b>, please use 
 <div class='options'>
 
 <div class='option'>
-<code><b>--reads1</b></code> (or <code>-1</code>)
+<code><b>--reads1</b> &lt;path&gt;</code> (or <code>-1 &lt;path&gt;</code>)
 </div>
 File with forward reads in FASTQ format (may be gzipped).
 
 <div class='option'>
-<code><b>--reads2</b></code> (or <code>-2</code>)
+<code><b>--reads2</b> &lt;path&gt;</code> (or <code>-2 &lt;path&gt;</code>)
 </div>
 File with reverse reads in FASTQ format (may be gzipped).
 <p>Reads are used for SV detection: Reads are aligned to reference genome using bowtie2, then Manta SV calling tool is run on bowtie2 output.
 Found SVs are used for classifying QUAST misassemblies into true ones and fake ones (caused by structural differences between reference sequence and
     sequenced organism). Fake misassemblies are excluded from <a href="#misassemblies"><code>#&nbsp;misassemblies</code></a> and reported as <a href="#sv"><code>#&nbsp;structural variants</code></a>.
+
+<div class='option'>
+<code><b>--bam</b> &lt;path&gt;</code>
+</div>
+File with alignments of both forward and reversed reads to reference genome (in BAM format).
+
+
+<div class='option'>
+<code><b>--sam</b> &lt;path&gt;</code>
+</div>
+File with alignments of both forward and reversed reads to reference genome (in SAM format).
 
 <div class='option'>
 <a name='sv_bedpe'></a><code><b>--sv-bedpe</b></code>
@@ -588,6 +611,11 @@ A shortcut for using all of speedup options except --no-check.
 MetaQUAST only:
 <div class='options'>
 <div class='option'>
+<a name='references_list'></a><code><b>--references-list</b> &lt;path&gt;</code>
+</div>
+Text file with list of reference genomes (each one on a separate line). MetaQUAST will search for these references in NCBI database and will download the found ones.
+
+<div class='option'>
     <code><b>--test-no-ref</b></code>
 </div>
 Run MetaQUAST on a data from the <code>test_data</code> folder, but without reference genomes. The tool will download
@@ -598,7 +626,7 @@ Run MetaQUAST on a data from the <code>test_data</code> folder, but without refe
 <div class='option'>
     <a href='max_ref_num'></a><code><b>--max-ref-num</b></code> <code>&lt;int&gt;</code>
 </div>
-Maximum number of reference genomes (per each assembly) to download after searching in SILVA database. Default value is 30.
+Maximum number of reference genomes (per each assembly) to download after searching in SILVA database. Default value is 50.
 
 <div class='option'>
     <a name='unique_mapping'></a><code><b>--unique-mapping</b></code> <code>&lt;int&gt;</code>
@@ -635,7 +663,7 @@ Print version.
 <a name="sec2.5"></a>
 <h3>2.5 Metagenomic assemblies</h3>
 <p>
-    The <code>metaquast.py</code> script accepts multiple reference genomes. One can provide several files or directory with multiple reference files inside.
+    The <code>metaquast.py</code> script accepts multiple reference genomes. One can provide several files or directories with multiple reference files inside with <code>-R</code> option. Option <code>-R</code> may be specified multiple times or all references may be specified as a comma-separated list (<b>without spaces!</b>) with a single <code>-R</code> option beforehead. Another way is to use <a href='#references_list'><code>--references-list</code></a> option.
     The tool partitions all contigs into groups aligned to each reference genome. Note that a contig may belong to several groups simultaneously if it aligns to several references.
     <br>
     MetaQUAST runs quast.py for each of the following:<br>
@@ -647,7 +675,7 @@ Print version.
 
 <p>If you run MetaQUAST without providing reference genomes, the tool will try to identify genome content of the metagenome.
 MetaQUAST uses BLASTN for aligning contigs to SILVA rRNA database, i.e. FASTA file containing small subunit ribosomal RNA sequences.
-For each assembly, 30 reference genomes with top scores are chosen.
+For each assembly, 50 reference genomes with top scores are chosen.
 Maximum number of references to download can be specified with <a href='#max_ref_num'><code>--max-ref-number</code></a>.
 <p>Reference genomes for the chosen genomes are downloaded from NCBI database to <code>&lt;quast_output_dir&gt;/quast_downloaded_references/</code>.
 After first run of <code>quast.py</code>, MetaQUAST removes reference genomes with low genome fraction (less than 10%) and run <code>quast.py</code> on remaining references.
@@ -742,7 +770,7 @@ Note:
 
 <p><a name='largest_contig'></a><span class='metric-name'>Largest contig</span> is the length of the longest contig in the assembly.</p>
 
-<p><span class='metric-name'>Total length</span> is the total number of bases in the assembly.</p>
+<p><a name='total_length'></a><span class='metric-name'>Total length</span> is the total number of bases in the assembly.</p>
 
 <p><span class='metric-name'>Reference length</span> is the total number of bases in the reference genome.</p>
 
@@ -825,8 +853,10 @@ changed with <a href='#extensive_mis_size'><code>--extensive-mis-size</code></a>
 <p><a name='predicted_genes'><span class='metric-name'># predicted genes</span> is the number of genes in the assembly
     found by GeneMarkS, GeneMark-ES, GlimmerHMM or MetaGeneMark. See the description of <a href='#gene_finding'><code>--gene-finding</code></a> option for details.</p>
 
+<p><span class='metric-name'>Largest alignment</span> is the total number of aligned bases in the assembly. A value is usually smaller than a value of <a href='#total_length'><span class='metric-ref'>total length</span></a> because some of the contigs may be unaligned or partially unaligned.</p>
+
 <p><span class='metric-name'>Largest alignment</span> is the length of the largest continuous alignment in the assembly.
-    A value can be smaller than a value of <a href='largest_contig'><span class='metric-ref'>largest contig</span></a> if the largest contig is misassembled.</p>
+    A value can be smaller than a value of <a href='#largest_contig'><span class='metric-ref'>largest contig</span></a> if the largest contig is misassembled or partially unaligned.</p>
 
 <p><a name='NAx'><a name='NGAx'></a><span class='metric-name'>NA50, NGA50, NA75, NGA75, LA50, LA75, LGA50, LGA75</span> ("A" stands for "aligned") are similar to
     the corresponding metrics without "A", but in this case aligned blocks instead of contigs are considered.<br>
@@ -926,6 +956,9 @@ file consists of several sequences all of them are drawn on the single plot hori
     appears to be a superposition of Gaussian distributions, giving a plot with multiple peaks.
 </p>
 
+<p><span class='metric-name'>Coverage histogram</span> shows distribution of total contig lengths (y-axis) at different read coverage depths (x-axis, grouped in bins). Coverage bin size is automatically selected based on the number of contigs and coverage deviation. 
+    <br>Note: these histograms are only available for assemblies with SPAdes/Velvet-like contig naming style (..._length_X_cov_Y_...).</p>
+
 <p><span class='metric-name'>Cumulative length plot for aligned contigs</span> shows the growth of lengths of aligned blocks.
     If a contig has a misassembly event, QUAST breaks it into smaller pieces called aligned blocks.<br>
     <span style='line-height: 50%;'>&nbsp;</span><br>
@@ -967,7 +1000,7 @@ You can view results separately for each reference genome by clicking on a row p
 </div>
 <p>Note that values for some metrics like # contigs may not sum up, because one contig may be aligned to multiple reference genomes.</p>
 <p><span class='metric-name'>Krona charts</span><br>
-    Krona pie charts show assemblies and dataset taxonomic profiles. Relative species abundance is calculated based on the total length of contigs aligned to corresponding reference genome.
+    Krona pie charts show assemblies and dataset taxonomic profiles. Relative species abundance is calculated based on the <a href="#total_length">total aligned length</a> of contigs aligned to corresponding reference genome.
     Charts are created for each assembly and one additional chart is created for all assemblies altogether.<br>
     Note: these plots are created <b>only</b> in <i>de novo</i> evaluation mode (MetaQUAST without reference genomes).</p>
 

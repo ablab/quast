@@ -256,6 +256,7 @@ def usage(show_hidden=False, meta=False, short=True):
     print >> sys.stderr, "-o  --output-dir  <dirname>   Directory to store all result files [default: quast_results/results_<datetime>]"
     if meta:
         print >> sys.stderr, "-R   <filename,filename,...>  Comma-separated list of reference genomes or directory with reference genomes"
+        print >> sys.stderr, "--references-list <filename>  Text file with list of reference genomes for downloading from NCBI"
         print >> sys.stderr, "-G  --genes       <filename>  File with gene coordinates in the references"
     else:
         print >> sys.stderr, "-R                <filename>  Reference genome file"

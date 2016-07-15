@@ -7,7 +7,7 @@
        - samtools max coverage depth increased, so now even very large coverages are shown.
 
       2. Icarus update -- search window added:
-       - search is performed on reference names, contig names and gene/operon names;
+       - search is performed on contig names and gene/operon names;
        - tooltip shows all possible suggestions in life mode.
 
       3. Icarus update -- Contig Alignment Viewer changes:
@@ -46,7 +46,7 @@
          the bottom; 
        - reference line added to GC content plot.
 
-      9. GeneMark now ouputs nucleotide and protein sequences for all found genes.
+      9. GeneMark now outputs nucleotide and protein sequences for all found genes.
 
       10. Best set selection improved (misassembly detection algorithm in case of 
          multiple ambiguous mappings of contig fragments). Now BSS can find not only

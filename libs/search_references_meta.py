@@ -193,7 +193,7 @@ def download_blastdb():
         logger.info('Downloading SILVA 16S ribosomal RNA gene database...')
         if not os.path.isdir(blastdb_dirpath):
             os.mkdir(blastdb_dirpath)
-        silva_download = urllib.URLopener()
+        silva_download = urllib.FancyURLopener()
         silva_remote_fpath = silva_db_path + silva_fname + '.gz'
         try:
             silva_download.retrieve(silva_remote_fpath, db_gz_fpath + '.download', show_progress)

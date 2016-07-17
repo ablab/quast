@@ -254,10 +254,10 @@ def get_score(score, aligns, ref_lens, is_cyclic, uncovered_len, seq, region_str
         if is_extensive_misassembly:
             score -= penalties['extensive']
             if align1.ref != align2.ref:
-                if is_same_reference(align1.ref, align2.ref):
-                    misassembly = Misassembly.TRANSLOCATION
-                else:
+                if qconfig.is_combined_ref and not is_same_reference(align1.ref, align2.ref):
                     misassembly = Misassembly.INTERSPECTRANSLOCATION
+                else:
+                    misassembly = Misassembly.TRANSLOCATION
             elif abs(aux_data["inconsistency"]) > qconfig.extensive_misassembly_threshold:
                     misassembly = Misassembly.RELOCATION
                     score -= float(abs(aux_data["inconsistency"])) / ref_lens[align1.ref]

@@ -211,14 +211,14 @@ These commands run all QUAST and MetaQUAST modules and check correctness
 of their work on your platform.
 <br><br>
 We also provide <code>./install.sh</code> and <code>./install_full.sh</code> scripts.
-If you plan to use MetaQUAST without reference genomes or use SV calling, you should use <code>./install_full.sh</code>, which runs all four mentioned above commands,
-compiles tools for reads alignment and SV detection (SAMtools, Bowtie2, and Manta), and downloads necessary files (SILVA 16S rRNA gene database and BLAST). Otherwise, it is enough to use <code>./install.sh</code>,
+If you plan to use MetaQUAST's automated reference genomes detection, or use SV calling for misassembly refinment, you should use <code>./install_full.sh</code>, which runs all four mentioned above commands,
+compiles tools for read alignment and SV detection (SAMtools, Bowtie2, and Manta), and downloads necessary files (SILVA 16S rRNA gene database and BLAST). Otherwise, it is enough to use <code>./install.sh</code>,
 which runs only two simple --test commands.
 </p>
 
 <p>
-Note: you should place quast-4.2 directory in the final destination before
-the first use (e.g. before run with --test). If you want to move QUAST to 
+Note: you should place quast-4.2 directory into a final destination before
+the first use (e.g. before the run with --test). If you want to move QUAST to 
 some new place after several usages you should use a clean copy of quast-4.2.
 This limitation is caused by auto-generation of absolute paths in compiled 
 modules of QUAST.
@@ -251,13 +251,10 @@ View the summary of the evaluation results with the <a href="http://www.greenwoo
     <span style='line-height: 50%;'>&nbsp;</span><br>  
     Maximum assembly length is 4.29<span class="rhs">&nbsp;</span>Gbp.<br>
     Maximum length of a reference sequence (e.g. a chromosome) is 536<span class="rhs">&nbsp;</span>Mbp. The number of sequences in a reference file is not limited.<br>
-    <span style='line-height: 50%;'>&nbsp;</span><br>  
-    Those restrictions belongs to Nucmer, a tool that QUAST applies to align contigs to a reference genome. 
-    The metrics that do not require alignment are computed in any case.<br>
     <br>
     <b>Genes and operons</b><br>
     One can also specify files with gene and operon positions in the reference genome. QUAST will count fully and partially aligned regions,
-    and output <a href='#genes'>total values</a> and <a href='#gene_plot'>cumulative plots</a>.<br>
+    and output <a href='#genes'>total values</a> as well as <a href='#gene_plot'>cumulative plots</a>.<br>
     <span style='line-height: 50%;'>&nbsp;</span><br>  
     The following file formats are supported:
     <ul>
@@ -332,7 +329,7 @@ File with operon positions in the reference genome. See details about the file f
 <code><b>--min-contig</b></code> (or <code>-m</code>) <code>&lt;int&gt;</code>
 </div>
 Lower threshold for a contig length. Shorter contigs won't be taken into account
-(except for some metrics, see <a href="#sec3">section 3</a>). The default value is 500.
+(except for specific metrics, see <a href="#sec3">section 3</a>). The default value is 500.
 </div>
 
 <br>
@@ -445,14 +442,12 @@ By default, QUAST v.2.0 and higher filters out ambiguous and redundant alignment
 <div class='option'>
     <a name='min_alignment'></a><code><b>--min-alignment</b></code> (or <code>-i</code>) <code>&lt;int&gt;</code>
 </div>
-Minimum length of alignment. It is a Nucmer's parameter which filters all alignments shorter than the value. Default is 0 bp.
-    In any case, Nucmer will not produce alignments shorter than 65 bp (default min cluster size).
+Minimum length of alignment. Alignments shorter than this value will be filtered. Note that all alignments shorter than 65 bp will be filtered regardless if this threshold.
 
 <div class='option'>
     <a name='min_identity'></a><code><b>--min-identity</b></code> <code>&lt;float&gt;</code>
 </div>
-Minimum IDY% considered as proper alignment. It is a Nucmer's parameter which filters all alignments with IDY% worse than the value. Default is 95.0 %.
-    In any case, Nucmer will not produce alignments with IDY% less than 80.0%.
+Minimum IDY% considered as proper alignment. Alignments with IDY% worse than this value will be filtered. Default is 95.0 %. Note that all alignments with IDY% less than 80.0% will be filtered regardless of this threshold.
 
 <div class='option'>
     <a name='ambiguity_usage'></a><code><b>--ambiguity-usage</b> (or <code>-a</code>) &lt;<b>none</b>|<b>one</b>|<b>all</b>&gt;</code>
@@ -466,17 +461,17 @@ Way of processing equally good alignments of a contig (probably repeats):<br>
 </table>
 This option is also used for processing internal overlaps between adjacent aligned blocks of a misassembled contig:
 <table style="margin-left: 30px; font-size: 1em; vertical-align: bottom;">
-    <tr><td style='width: 40px;'><code>none</code></td><td>exclude (remove) overlapped fragments from both blocks;</td></tr>
-    <tr><td><code>one</code></td><td>remove overlapped fragment from only one block (the shortest one);</td></tr>
+    <tr><td style='width: 40px;'><code>none</code></td><td>exclude (remove) overlapped fragments of all blocks;</td></tr>
+    <tr><td><code>one</code></td><td>remove the overlapped fragment of the shortest block;</td></tr>
     <tr><td><code>all</code></td><td>use both blocks unchanged.</td></tr>
 </table>
-The default value is 'one'.
+The default value is <codd>one</code>.<br>
+<div style='margin-top: 6;'>The value <code>all</code> is useful for metagenomic assemblies where ambigous alignments might represent homologous sequences of different strains. For that reason, <code>--ambiguity-usage</code> is set to <code>all</code> for the "combined reference" evaluation (see <a href='#sec2.5'>section 2.5</a>).</div>
 
 <div class='option'>
     <code><b>--ambiguity-score</b></code> <code>&lt;float&gt;</code>
 </div>
-Score S for defining equally good alignments of a single contig (see <a href='#ambiguity_usage'><code>--ambiguity-usage</code></a>). All alignments are sorted by decreasing LEN * IDY% value. All alignments with LEN * IDY% &lt; S * best(LEN * IDY%) are discarded. S should be between 0.8 and 1.0. The default value is 0.99.
-
+Score S for defining equally good alignments of a single contig (see <a href='#ambiguity_usage'><code>--ambiguity-usage</code></a>). All alignments are sorted by decreasing LEN<span class='rhs'>&nbsp;</span>&times;<span class='rhs'>&nbsp;</span>IDY% value. All alignments with LEN<span class='rhs'>&nbsp;</span>&times;<span class='rhs'>&nbsp;</span>IDY% less than S<span class='rhs'>&nbsp;</span>&times;<span class='rhs'>&nbsp;</span>best(LEN<span class='rhs'>&nbsp;</span>&times;<span class='rhs'>&nbsp;</span>IDY%) are discarded. S should be between 0.8 and 1.0. The default value is 0.99.
 
 <div class='option'>
     <code><b>--strict-NA</b></code>
@@ -488,8 +483,8 @@ Break contigs at every misassembly event (including local ones) to compute <span
     <a name='extensive_mis_size'></a><code><b>--extensive-mis-size</b></code> <code>&lt;int&gt;</code>
 </div>
 Lower threshold for the relocation size (gap or overlap size between left and right flanking sequence, see <a href="#sec3.1.2">section 3.1.2</a> for details).
-Shorter relocations are considered as local misassemblies. Does not affect other types of extensive misassemblies (inversions and translocations).
-The default value is 1000 bp. Note that the threshold should be greater than maximum indel length which is 85 bp (Nucmer default value).
+Shorter relocations are considered as local misassemblies. It does not affect other types of extensive misassemblies (inversions and translocations).
+The default value is 1000 bp. Note that the threshold should be greater than maximum indel length which is 85 bp.
 
 <div class='option'>
     <a name='significant_part_size'></a><code><b>--significant-part-size</b></code> <code>&lt;int&gt;</code>
@@ -512,7 +507,7 @@ The default format is PDF.
 <div class='option'>
 <code><b>--memory-efficient</b></code>
 </div>
-Run Nucmer using one thread, separately per each assembly and each chromosome. This may significantly reduce memory consumption on large genomes.
+Use one thread, separately per each assembly and each chromosome. This may significantly reduce memory consumption for large genomes.
 
 <div class='option'>
 <code><b>--silent</b></code>
@@ -521,18 +516,18 @@ Do not print detailed information about each step in standard output. This optio
 </div>
 
 <br>
-Structural variant (SV) calling and processing (<b>experimental</b>, please use it with care until we finalize the feature):
+Structural variant (SV) calling and processing (<b>experimental</b>, please use it carefully until we finalize the feature):
 <div class='options'>
 
 <div class='option'>
 <code><b>--reads1</b> &lt;path&gt;</code> (or <code>-1 &lt;path&gt;</code>)
 </div>
-File with forward reads in FASTQ format (may be gzipped).
+File with forward reads in FASTQ format (compressed files allowed).
 
 <div class='option'>
 <code><b>--reads2</b> &lt;path&gt;</code> (or <code>-2 &lt;path&gt;</code>)
 </div>
-File with reverse reads in FASTQ format (may be gzipped).
+File with reverse reads in FASTQ format (compressed files allowed).
 <p>Reads are used for SV detection: Reads are aligned to reference genome using bowtie2, then Manta SV calling tool is run on bowtie2 output.
 Found SVs are used for classifying QUAST misassemblies into true ones and fake ones (caused by structural differences between reference sequence and
     sequenced organism). Fake misassemblies are excluded from <a href="#misassemblies"><code>#&nbsp;misassemblies</code></a> and reported as <a href="#sv"><code>#&nbsp;structural variants</code></a>.

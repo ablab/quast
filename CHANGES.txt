@@ -9,6 +9,8 @@
       2. Icarus update -- search window added:
        - search is performed on contig names and gene/operon names;
        - tooltip shows all possible suggestions in life mode.
+       - searching contigs and genes/operons;
+       - tooltip shows possible suggestions as one types.
 
       3. Icarus update -- Contig Alignment Viewer changes:
        - coordinates are counted for each chromosome separately;
@@ -28,7 +30,7 @@
          raw reads. 
 
       6. Several new metrics added:
-       - Total aligned length;
+       - Total aligned length (total size of contig fragments aligned to reference);
        - Icarus similarity statistics (in HTML report only, at least 2 assemblies are
          needed).
 
@@ -39,7 +41,8 @@
        - possibly interspecies translocations are not reported if unaligned parts consist 
          mostly of Ns;
        - Total length and Largest contigs substituted with their "aligned" version in 
-         summary HTML report.
+         summary HTML report (i.e. calculated for contig aligned fragments rather than 
+         original contigs).
 
       8. HTML report updated: 
        - Genome statitics are moved to the top, Statistics without reference are moved to
@@ -54,7 +57,7 @@
          --ambiguity-usage and --ambiguity-score options). Also several minor bugfixes
          were made and BSS became deterministic in case of equivalent scores.
 
-      11. Embedded E-MEM updated to version 2.
+      11. Embedded E-MEM aligner updated to version 2.
 
       12. Significant refactoring of the source code. Most changes are in Icarus, 
           Contigs Analyzer, QUAST and MetaQUAST running scripts.

@@ -90,17 +90,19 @@ def get_results_dirpath(dirname):
     return dirpath
 
 
-def check_report_files(name, report_fnames=None):
+def check_report_files(name, report_fnames=None, fast=False):
     results_dirpath = get_results_dirpath(name)
 
     report_fnames = report_fnames or [
         'report.tex',
-        'report.html',
         'report.tsv',
         'report.txt',
         'transposed_report.tex',
         'transposed_report.tsv',
         'transposed_report.txt']
+    if report_fnames is None and not fast:
+        report_fnames += ['report.html',
+                          'icarus.html']
 
     files_not_exist = []
     for fname in report_fnames:

@@ -1,0 +1,4 @@
+Lactobacillus_plantarum
+Lactobacillus  reuteri DSM 20016
+Lactobacillus_psittaci
+Something strange

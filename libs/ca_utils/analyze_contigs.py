@@ -263,6 +263,9 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, aligns, ref_featu
                             if qconfig.meta:
                                 contigs_with_istranslocations += check_for_potential_translocation(seq, ctg_len, sorted_aligns,
                                                                                                    ca_output.stdout_f)
+                        contig_type = 'misassembled'
+                        print >> ca_output.icarus_out_f, '\t'.join(['CONTIG', contig, str(ctg_len), contig_type])
+                        print >> ca_output.stdout_f
                         continue
 
                     ### processing misassemblies

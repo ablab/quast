@@ -11,6 +11,22 @@ function buildTotalReport(assembliesNames, report, order, date, minContig,
         $('#reference_name').show().find('.val').html(referenceName);
     }
 
+    if (report[0][0] == 'Genome statistics') {  // if first section is empty (no reference), swap it and w/o reference statistics
+        var genomeMetrics = report[0][1];
+        var isSectionEmpty = true;
+        for (var index = 0; index < genomeMetrics.length; index++) {
+            if (genomeMetrics[index].isMain || $.inArray(genomeMetrics[index].metric_name, mainMetrics) > -1)
+                isSectionEmpty = false;
+        }
+        if (isSectionEmpty) {
+            for (var group_n = 0; group_n < report.length; group_n++) {
+                if (report[group_n][0] == 'Statistics without reference') {
+                    report[0] = report.splice(group_n, 1, report[0])[0];
+                }
+            }
+        }
+    }
+
     for (var group_n = 0; group_n < report.length; group_n++) {
         var group = report[group_n];
         var groupName = group[0];

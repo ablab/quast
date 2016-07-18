@@ -171,6 +171,7 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, json_output_dir, results_dir):
         logger.info('    ' + os.path.basename(ref_fpath) + ', Reference length = ' + str(reference_length) + ', Reference GC % = ' + '%.2f' % reference_GC)
     elif qconfig.estimated_reference_size:
         reference_length = qconfig.estimated_reference_size
+        reference_lengths = [reference_length]
         logger.info('  Estimated reference length = ' + str(reference_length))
 
     if reference_lengths:

@@ -121,8 +121,9 @@ def parse_meta_references(option, opt_str, value, parser):
     ref_values = value.split(',')
     for i, ref_value in enumerate(ref_values):
         if os.path.isdir(ref_value):
-            ref_fpaths.extend([join(path, file) for (path, dirs, files) in os.walk(ref_value) for file in files
-                               if qutils.check_is_fasta_file(file)])
+            references = [join(path, file) for (path, dirs, files) in os.walk(ref_value) for file in files
+                               if qutils.check_is_fasta_file(file)]
+            ref_fpaths.extend(sorted(references))
         else:
             assert_file_exists(ref_value, 'reference')
             ref_fpaths.append(ref_value)

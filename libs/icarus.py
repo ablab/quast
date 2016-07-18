@@ -141,10 +141,9 @@ def add_contig_structure_data(data_str, alignment_name, structure, ref_contigs, 
                 # corr_len = -int(el.end)
                 if el.ref_name not in used_chromosomes:
                     used_chromosomes.append(el.ref_name)
-                    other_ref_name = el.ref_name
                     if contig_names_by_refs:
                         other_ref_name = contig_names_by_refs[el.ref_name]
-                    links_to_chromosomes.append('links_to_chromosomes["' + el.ref_name + '"] = "' +
+                        links_to_chromosomes.append('links_to_chromosomes["' + el.ref_name + '"] = "' +
                                                 get_html_name(other_ref_name, chr_full_names) + '";')
             corr_el_start = el.start
             corr_el_end = el.end
@@ -169,9 +168,9 @@ def prepare_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, data_st
     additional_assemblies_data = ''
     data_str.append('var links_to_chromosomes;')
     links_to_chromosomes = []
+    used_chromosomes = []
     if contig_names_by_refs:
         data_str.append('links_to_chromosomes = {};')
-        used_chromosomes = []
     num_misassemblies = 0
     aligned_assemblies = set()
 

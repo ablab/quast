@@ -88,6 +88,7 @@
     Starting from version 3.2, QUAST package also includes reads processing tools for finding structural variants between the reference genome and actual organism.
     These tools are <a href="http://bowtie-bio.sourceforge.net/bowtie2/index.shtml">Bowtie2</a>,
     <a href="https://github.com/samtools/samtools">SAMtools</a>, and <a href="https://github.com/Illumina/manta">Manta</a>.
+    Also we use <a href="http://bedtools.readthedocs.io/">bedtools</a> for calculating raw and physical read coverage, which is shown in Icarus contig alignment viewer.
     <br>
     All tools above are built in into the QUAST package which is ready for use by academic, non-profit institutions and U.S. Government agencies.
     If you are not in one of these categories please refer to <a href="LICENSE.txt">LICENSE</a> section 'Third-party tools incorporated into QUAST'
@@ -550,7 +551,8 @@ File with alignments of both forward and reversed reads to reference genome (in 
 <div class='option'>
 <a name='sv_bedpe'></a><code><b>--sv-bedpe</b></code>
 </div>
-Use specified file in <a href="http://bedtools.readthedocs.org/en/latest/content/general-usage.html#bedpe-format">BEDPE format</a> as a list of structural variations (SV). This option disables SV detection based on reads. Examples of BEDPE files for various types of SV are in FAQ section, <a href="#faq_q8">question Q8</a>.
+Use specified file in <a href="http://bedtools.readthedocs.org/en/latest/content/general-usage.html#bedpe-format">BEDPE format</a> as a list of structural variations (SV). This option disables SV detection based on reads.
+    Examples of BEDPE files for various types of SV are in FAQ section, <a href="#faq_q8">question Q8</a>.
 </div>
 
 <br>
@@ -613,7 +615,9 @@ MetaQUAST only:
 <div class='option'>
 <a name='references_list'></a><code><b>--references-list</b> &lt;path&gt;</code>
 </div>
-Text file with list of reference genomes (each one on a separate line). MetaQUAST will search for these references in NCBI database and will download the found ones.
+Text file with list of reference genomes (each one on a separate line).
+    MetaQUAST will search for these references in NCBI database and will download the found ones.
+    Example of such file is in FAQ section, <a href="#faq_q10">question Q10</a>.
 
 <div class='option'>
     <code><b>--test-no-ref</b></code>
@@ -1334,6 +1338,24 @@ Q9. Which versions of web browsers are suitable for Icarus output?
 </b></i></p>
 <p>
     We recommend to use Icarus in <a href="https://www.google.com/chrome/">Chrome</a> (tested with v49.0.x), however it also works properly in Safari (tested with v8.0.x) and Firefox (tested with v41.0.x and v45.0.x). Most of the functionality works in Internet Explorer 9 and higher, but we do not recommend this browser due to slow animation.
+<br>
+</p>
+
+<a name="faq_q10"></a>
+<p><b><i>
+Q10. Could you show a sample file suitable for <a href='#references_list'><code>--references-list</code></a> MetaQUAST option?
+</b></i></p>
+<p>
+    The file is just a list of reference names (one per line) to be searched in <a href="http://www.ncbi.nlm.nih.gov/">NCBI database</a>.
+    Feel free to use spaces or underscores inside these names. Correct and working example is below: <br><br>
+    <code><pre>
+        Lactobacillus_plantarum
+        Lactobacillus  reuteri DSM 20016
+        Lactobacillus_psittaci
+        Harry Potter
+    </pre></code>
+    Note that the first tree references should normally be found, downloaded and used for your assemblies evaluation.
+    At the same time you will be notified that Harry Potter reference genome is not found in NCBI database yet.
 <br>
 </p>
 

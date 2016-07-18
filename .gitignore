@@ -2,6 +2,7 @@
 *.egg-info
 dist
 build
+eggs
 
 .idea
 .DS_Store

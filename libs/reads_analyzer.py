@@ -411,7 +411,7 @@ def get_physical_coverage(output_dirpath, ref_fpath, ref_name, bam_fpath, err_pa
                     fs = line.split()
                     bed_file.write('\t'.join([fs[0], fs[1], fs[5] + '\n']))
         sorted_bed_fpath = os.path.join(output_dirpath, ref_name + '.sorted.bed')
-        qutils.call_subprocess([bedtools_fpath('bedtools'), 'sort', '-i', raw_bed_fpath],
+        qutils.call_subprocess([bedtools_fpath('bedtools'), 'sort', '-sorted', '-i', raw_bed_fpath],
                        stdout=open(sorted_bed_fpath, 'w'), stderr=open(err_path, 'a'))
         chr_len_fpath = ref_fpath + '.fai'
         if not is_non_empty_file(chr_len_fpath):
@@ -449,21 +449,24 @@ def proceed_cov_file(raw_cov_fpath, cov_fpath):
     cov_factor = 9
     with open(raw_cov_fpath, 'r') as in_coverage:
         with open(cov_fpath, 'w') as out_coverage:
-            for index, line in enumerate(in_coverage):
+            for line in in_coverage:
                 fs = list(line.split())
-                name = qutils.correct_name(fs[0])
+                name = fs[0]
+                depth = int(fs[-1])
                 if name not in used_chromosomes:
                     chr_index += 1
                     used_chromosomes[name] = str(chr_index)
                     out_coverage.write('#' + name + ' ' + used_chromosomes[name] + '\n')
                 if len(fs) > 3:
-                    chr_depth[name].extend([int(fs[-1])] * (int(fs[2]) - int(fs[1])))
+                    start, end = int(fs[1]), int(fs[2])
+                    chr_depth[name].extend([depth] * (end - start))
                 else:
-                    chr_depth[name].append(int(fs[-1]))
-                while (len(chr_depth[name])) >= cov_factor and index > 0:
-                    cur_depth = sum(chr_depth[name][:cov_factor]) / cov_factor
-                    out_coverage.write(' '.join([used_chromosomes[name], str(cur_depth) + '\n']))
-                    chr_depth[name] = chr_depth[name][cov_factor:]
+                    chr_depth[name].append(depth)
+                if len(chr_depth[name]) >= cov_factor:
+                    for index in range(0, len(chr_depth[name]) - 1, cov_factor):
+                        cur_depth = sum(chr_depth[name][index: index + cov_factor]) / cov_factor
+                        out_coverage.write(' '.join([used_chromosomes[name], str(cur_depth) + '\n']))
+                    chr_depth[name] = chr_depth[name][index + cov_factor:]
             os.remove(raw_cov_fpath)
 
 

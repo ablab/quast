@@ -361,7 +361,7 @@ def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpat
                     for deletion in deletions:
                         f.write(str(deletion) + '\n')
 
-        if os.path.exists(config_manta_fpath) and not manta_compilation_failed():
+        if isfile(config_manta_fpath):
             try:
                 manta_sv_fpath = search_sv_with_manta(main_ref_fpath, meta_ref_fpaths, output_dirpath, err_path)
                 qutils.cat_files([manta_sv_fpath, trivial_deletions_fpath], bed_fpath)

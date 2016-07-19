@@ -1,12 +1,12 @@
 import os
 import socket
 import urllib2
-from os.path import exists, join
+from os.path import exists, join, isfile
 
 import shutil
 
 from libs import qconfig, qutils
-from libs.qutils import all_required_binaries_exist, compile_tool, check_prev_compilation_failed
+from libs.qutils import compile_tool, check_prev_compilation_failed
 
 bowtie_dirpath = join(qconfig.LIBS_LOCATION, 'bowtie2')
 samtools_dirpath = join(qconfig.LIBS_LOCATION, 'samtools')
@@ -43,17 +43,16 @@ def manta_compilation_failed():
 
 
 def compile_reads_analyzer_tools(logger, bed_fpath=None):
-    tools_to_try = []
-    tools_to_try.append(('Bowtie2', bowtie_dirpath, ['bowtie2-align-l']))
-    tools_to_try.append(('SAMtools', samtools_dirpath, ['samtools']))
-    tools_to_try.append(('BEDtools', bedtools_dirpath, [join('bin', 'bedtools')]))
+    tools_to_try = [('Bowtie2', bowtie_dirpath, ['bowtie2-align-l']),
+                    ('SAMtools', samtools_dirpath, ['samtools']),
+                    ('BEDtools', bedtools_dirpath, [join('bin', 'bedtools')])]
 
     for name, dirpath, requirements in tools_to_try:
         success_compilation = compile_tool(name, dirpath, requirements)
         if not success_compilation:
             return False
 
-    if not qconfig.no_sv and bed_fpath is None and not all_required_binaries_exist(manta_bin_dirpath, 'configManta.py'):
+    if not qconfig.no_sv and bed_fpath is None and not isfile(config_manta_fpath):
         failed_compilation_flag = join(manta_dirpath, 'make.failed')
         if check_prev_compilation_failed('Manta', failed_compilation_flag):
             print_manta_warning(logger)
@@ -91,7 +90,7 @@ def compile_reads_analyzer_tools(logger, bed_fpath=None):
             else:
                 logger.main_info('  Failed downloading Manta from %s!' % manta_download_path)
 
-        if not all_required_binaries_exist(manta_bin_dirpath, 'configManta.py'):
+        if not isfile(config_manta_fpath):
             logger.main_info('Compiling Manta (details are in ' + join(manta_dirpath, 'make.log') + ' and make.err)')
             prev_dir = os.getcwd()
             os.chdir(manta_build_dirpath)
@@ -102,18 +101,12 @@ def compile_reads_analyzer_tools(logger, bed_fpath=None):
                 stderr=open(join(manta_dirpath, 'make.err'), 'w'), logger=logger)
             if return_code == 0:
                 return_code = qutils.call_subprocess(
-                    ['make', '-j' + str(qconfig.max_threads)],
-                    stdout=open(join(manta_dirpath, 'make.log'), 'a'),
-                    stderr=open(join(manta_dirpath, 'make.err'), 'a'), logger=logger)
-                if return_code == 0:
-                    return_code = qutils.call_subprocess(
-                    ['make', 'install'],
+                    ['make', '-j' + str(qconfig.max_threads), 'install'],
                     stdout=open(join(manta_dirpath, 'make.log'), 'a'),
                     stderr=open(join(manta_dirpath, 'make.err'), 'a'), logger=logger)
             os.chdir(prev_dir)
-            if return_code != 0 or not all_required_binaries_exist(manta_bin_dirpath, 'configManta.py'):
-                logger.warning('Failed to compile Manta (' + manta_dirpath + ')! '
-                                                                       'Try to compile it manually ' + (
+            if return_code != 0 or not isfile(config_manta_fpath):
+                logger.warning('Failed to compile Manta (' + manta_dirpath + ')! Try to compile it manually ' + (
                                  'or download binary distribution from https://github.com/Illumina/manta/releases '
                                  'and unpack it into ' + join(manta_dirpath, 'build/') if qconfig.platform_name == 'linux_64' else '') + (
                                  '. You can restart QUAST with the --debug flag '

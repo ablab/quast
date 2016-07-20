@@ -501,9 +501,9 @@ function appendLegendAlignmentViewer(legend) {
 
 function appendLegendContigSize(legend) {
     if (items[0].contig_type && items[0].contig_type != 'unknown') {
-        var classes = ['correct', 'misassembled', 'unaligned'];
+        var classes = ['correct', 'misassembled', 'unaligned', 'unaligned_part'];
         var classMarks = ['', '', ''];
-        var classDescriptions = ['correct contigs', 'misassembled contigs', 'unaligned contigs'];
+        var classDescriptions = ['correct contigs', 'misassembled contigs', 'unaligned contigs', 'unaligned parts of correct contigs'];
     }
     else {
         var classes = ['unknown', ''];

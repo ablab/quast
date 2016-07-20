@@ -342,6 +342,9 @@ path {
     fill: #7DA6B9;
 }
 
+.unaligned_part {
+    fill: #FFFFFF;
+}
 
 .end {
     stroke-width: 0;

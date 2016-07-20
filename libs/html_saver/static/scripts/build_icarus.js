@@ -699,13 +699,11 @@ THE SOFTWARE.
                 groupId++;
             }
 
-            if (numItems > 0) {
-                lanes.push({
-                    id: laneId,
-                    label: assemblyName
-                });
-                laneId++;
-            }
+            lanes.push({
+                id: laneId,
+                label: assemblyName
+            });
+            laneId++;
         }
 
         addAssemblyDescription(lanes);

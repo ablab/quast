@@ -7,8 +7,6 @@
        - samtools max coverage depth increased, so now even very large coverages are shown.
 
       2. Icarus update -- search window added:
-       - search is performed on contig names and gene/operon names;
-       - tooltip shows all possible suggestions in life mode.
        - searching contigs and genes/operons;
        - tooltip shows possible suggestions as one types.
 
@@ -24,7 +22,7 @@
          and downloaded from NCBI (MetaQUAST only);
        - "--min-identity" for setting threshold on minimal IDY% of alignments (Nucmer 
          parameter, default is 95%);
-       - "--ambiguity-score" for choosing how close good ambiguous aligments should be to
+       - "--ambiguity-score" for choosing how close good ambiguous alignments should be to
          the best one (default is 0.99);
        - "--sam" and "--bam" for specifying SAM and BAM files instead of/in addition to 
          raw reads. 
@@ -45,7 +43,7 @@
          original contigs).
 
       8. HTML report updated: 
-       - Genome statitics are moved to the top, Statistics without reference are moved to
+       - Genome statistics are moved to the top, Statistics without reference are moved to
          the bottom; 
        - reference line added to GC content plot.
 
@@ -53,7 +51,7 @@
 
       10. Best set selection improved (misassembly detection algorithm in case of 
          multiple ambiguous mappings of contig fragments). Now BSS can find not only
-         the very best set but all sets with scores close to the best one (controled by 
+         the very best set but all sets with scores close to the best one (controlled by 
          --ambiguity-usage and --ambiguity-score options). Also several minor bugfixes
          were made and BSS became deterministic in case of equivalent scores.
 

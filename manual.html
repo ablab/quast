@@ -159,7 +159,7 @@
     <li>Boost (tested with v1.56.0) for Manta and E-MEM</li>
     <li>cmake (tested with v2.8.12) for Manta</li>
 </ul>
-All those tools are usually preinstalled on Linux.<br>
+All those tools are usually pre installed on Linux.<br>
 Mac OS, however, initially misses <code>make</code>, <code>g++</code> and <code>ar</code>, so you will have to install 
 <a href='https://developer.apple.com/xcode/'>Xcode</a> (or only
 <a href='https://developer.apple.com/downloads/index.action?name=Command%20Line%20Tools'>Command Line Tools for Xcode</a>) to make them available.
@@ -211,7 +211,7 @@ These commands run all QUAST and MetaQUAST modules and check correctness
 of their work on your platform.
 <br><br>
 We also provide <code>./install.sh</code> and <code>./install_full.sh</code> scripts.
-If you plan to use MetaQUAST's automated reference genomes detection, or use SV calling for misassembly refinment, you should use <code>./install_full.sh</code>, which runs all four mentioned above commands,
+If you plan to use MetaQUAST's automated reference genomes detection, or use SV calling for misassembly refinement, you should use <code>./install_full.sh</code>, which runs all four mentioned above commands,
 compiles tools for read alignment and SV detection (SAMtools, Bowtie2, and Manta), and downloads necessary files (SILVA 16S rRNA gene database and BLAST). Otherwise, it is enough to use <code>./install.sh</code>,
 which runs only two simple --test commands.
 </p>
@@ -277,7 +277,7 @@ View the summary of the evaluation results with the <a href="http://www.greenwoo
         <li>Only one assembly per run, which complicates assembly comparison.
         <li>Fixed threshold for a minimum contig length (200<span class="rhs">&nbsp;</span>bp).
     </ul>
-    These issues are solved by QUAST in GAGE mode (run with <code>--gage</code>). QUAST filters contigs according to a specified threshold and runs GAGE on eachgrou assembly.
+    These issues are solved by QUAST in GAGE mode (run with <code>--gage</code>). QUAST filters contigs according to a specified threshold and runs GAGE on each assembly.
     GAGE statistics (see <a href="http://gage.cbcb.umd.edu/index.html">GAGE website</a> and <a href="http://genome.cshlp.org/content/early/2012/01/12/gr.131383.111">GAGE paper</a> for the descriptions)
     are reported in addition to standard QUAST report.<br>
     <span style='line-height: 50%;'>&nbsp;</span><br>  
@@ -304,8 +304,8 @@ Options:
 Output directory. The default value is <code>quast_results/results_&lt;date_time&gt;</code>.<br>
 Also, a symlink <code>quast_results/latest</code> is created.<br>
 <br>
-Note: QUAST reuses Nucmer alignments if run repeatedly with the same output directory.
-Thus, you can efficiently reuse already computed results when running QUAST with different parameters, or adding more assemblies to an existing comparison.
+Note: QUAST reuses existing alignments if run repeatedly with the same output directory.
+Thus, you can efficiently reuse already computed results when running QUAST with different parameters, or adding more assemblies to the existing comparison.
 
 <div class='option'>
 <code><b>-R</b> &lt;path&gt;</code>
@@ -466,7 +466,7 @@ This option is also used for processing internal overlaps between adjacent align
     <tr><td><code>all</code></td><td>use both blocks unchanged.</td></tr>
 </table>
 The default value is <codd>one</code>.<br>
-<div style='margin-top: 6;'>The value <code>all</code> is useful for metagenomic assemblies where ambigous alignments might represent homologous sequences of different strains. For that reason, <code>--ambiguity-usage</code> is set to <code>all</code> for the "combined reference" evaluation (see <a href='#sec2.5'>section 2.5</a>).</div>
+<div style='margin-top: 6;'>The value <code>all</code> is useful for metagenomic assemblies where ambiguous alignments might represent homologous sequences of different strains. For that reason, <code>--ambiguity-usage</code> is set to <code>all</code> for the "combined reference" evaluation (see <a href='#sec2.5'>section 2.5</a>).</div>
 
 <div class='option'>
     <code><b>--ambiguity-score</b></code> <code>&lt;float&gt;</code>
@@ -535,13 +535,13 @@ Found SVs are used for classifying QUAST misassemblies into true ones and fake o
 <div class='option'>
 <code><b>--bam</b> &lt;path&gt;</code>
 </div>
-File with alignments of both forward and reversed reads to reference genome (in BAM format).
+File with alignments of both forward and reverse reads to reference genome (in BAM format).
 
 
 <div class='option'>
 <code><b>--sam</b> &lt;path&gt;</code>
 </div>
-File with alignments of both forward and reversed reads to reference genome (in SAM format).
+File with alignments of both forward and reverse reads to reference genome (in SAM format).
 
 <div class='option'>
 <a name='sv_bedpe'></a><code><b>--sv-bedpe</b></code>
@@ -662,7 +662,7 @@ Print version.
 <a name="sec2.5"></a>
 <h3>2.5 Metagenomic assemblies</h3>
 <p>
-    The <code>metaquast.py</code> script accepts multiple reference genomes. One can provide several files or directories with multiple reference files inside with <code>-R</code> option. Option <code>-R</code> may be specified multiple times or all references may be specified as a comma-separated list (<b>without spaces!</b>) with a single <code>-R</code> option beforehead. Another way is to use <a href='#references_list'><code>--references-list</code></a> option.
+    The <code>metaquast.py</code> script accepts multiple reference genomes. One can provide several files or directories with multiple reference files inside with <code>-R</code> option. Option <code>-R</code> may be specified multiple times or all references may be specified as a comma-separated list (<b>without spaces!</b>) with a single <code>-R</code> option beforehand. Another way is to use <a href='#references_list'><code>--references-list</code></a> option.
     The tool partitions all contigs into groups aligned to each reference genome. Note that a contig may belong to several groups simultaneously if it aligns to several references.
     <br>
     MetaQUAST runs quast.py for each of the following:<br>
@@ -905,7 +905,7 @@ opposite strands of the same chromosome. </p>
 
 <p><span class='metric-name'>Indels length</span> is the total number of bases contained in all indels.</p>
 
-<p> Note: Nucmer's default maximum length of indel is 85 bp. All indels larger than 85 bp are considered as local misassemblies.
+<p> Note: default maximum length of indel is 85 bp. All indels larger than 85 bp are considered as local misassemblies.
 </p>
 
 
@@ -1223,7 +1223,7 @@ The next two numbers (in this case: 718 718) mean "the number of aligned bases o
 They are usually equal to each other but they can be slightly different because of short insertions and deletions. Actually, these numbers are excessive because they can be easily 
 calculated based on the first two pairs of numbers (positions on the target and positions on the query). However, sometimes it is convenient to look at these numbers.
 <br><br>
-The last number (in this case: 100.0) is the Nucmer aligner quality metric. It is called "identity %" (IDY %) and it describes the quality of the alignment 
+The last number (in this case: 100.0) is the aligner quality metric. It is called "identity %" (IDY %) and it describes the quality of the alignment
 (the number of mismatches and indels between the target and the query). If IDY% = 100.0 then the alignment is perfect, 
 i.e. all bases on the target and on the query are equal to each other. If IDY% is less than 100.0 
 then the target and the query are slightly different. Quast has a threshold on IDY% which is 95%. 
@@ -1238,7 +1238,7 @@ Q5. Where does QUAST save information about SNPs?
 <p>
 There are two output files containing SNP information. Both of them are saved in <code>&lt;quast_output_dir&gt;/contigs_reports/nucmer_output/</code> directory.
 <br>
-The first one has extension ".all_snps" and it is raw Nucmer aligner output. Its format is:
+The first one has extension ".all_snps" and it is raw aligner output. Its format is:
 <br>
 <code>
 <pre>
@@ -1293,8 +1293,8 @@ Q7. Can I add new assemblies to existing QUAST report without need to realign al
 </b></i></p>
 <p>
 Yes, sure! You just need to specify existing QUAST output directory with <code>-o</code> option. Our tool
-    will reuse already generated Nucmer alignments and will run alignment process only for new assemblies.
-    Note that all of QUAST options except <code>--min-contig</code> do not affect Nucmer alignment process,
+    will reuse already generated alignments and will run alignment process only for new assemblies.
+    Note that all of QUAST options except <code>--min-contig</code> do not affect alignment process,
     so you can rerun previous QUAST command with modified options and QUAST will reuse existing alignments also.
     <br>
     <i>Hint</i>: if you did not specify QUAST output dir with <code>-o</code> option you can rerun QUAST on the same directory
@@ -1349,7 +1349,7 @@ Q10. Could you show a sample file suitable for <a href='#references_list'><code>
         Lactobacillus_psittaci
         Harry Potter
     </pre></code>
-    Note that the first tree references should normally be found, downloaded and used for your assemblies evaluation.
+    Note that the first three references should normally be found, downloaded and used for your assemblies evaluation.
     At the same time you will be notified that Harry Potter reference genome is not found in NCBI database yet.
 <br>
 </p>

@@ -238,7 +238,7 @@ def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpat
             logger.info('  Failed searching structural variations.')
             return None, None, None
     logger.info('  Sorting SAM-file...')
-    if (is_non_empty_file(sam_sorted_fpath) and all_read_names_correct(sam_fpath)) and is_non_empty_file(bam_fpath):
+    if (is_non_empty_file(sam_sorted_fpath) and all_read_names_correct(sam_sorted_fpath)) and is_non_empty_file(bam_fpath):
         logger.info('  Using existing sorted SAM-file: ' + sam_sorted_fpath)
     else:
         correct_sam_fpath = os.path.join(output_dirpath, ref_name + '.sam.correct')  # write in output dir
@@ -429,9 +429,9 @@ def get_coverage(output_dirpath, ref_fpath, ref_name, bam_fpath, err_path, cov_f
     if not is_non_empty_file(physical_cov_fpath):
         physical_cov_fpath = get_physical_coverage(output_dirpath, ref_fpath, ref_name, bam_fpath, err_path, physical_cov_fpath)
     if not is_non_empty_file(cov_fpath):
-        logger.info('  Preparing reads coverage file...')
+        logger.info('  Calculating reads coverage...')
         if not is_non_empty_file(raw_cov_fpath):
-            bamsorted_fpath = os.path.join(output_dirpath, ref_name + '.sorted.bam')
+            bamsorted_fpath = add_suffix(bam_fpath, 'sorted')
             if not is_non_empty_file(bamsorted_fpath):
                 qutils.call_subprocess([samtools_fpath('samtools'), 'sort', '-@', str(qconfig.max_threads), bam_fpath,
                                         '-o', bamsorted_fpath], stdout=open(err_path, 'w'), stderr=open(err_path, 'a'))

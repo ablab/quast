@@ -175,10 +175,10 @@ def main(args):
         reads_fpaths.append(qconfig.forward_reads)
     if qconfig.reverse_reads:
         reads_fpaths.append(qconfig.reverse_reads)
-    if reads_fpaths and ref_fpaths:
+    if (reads_fpaths or qconfig.sam or qconfig.bam) and ref_fpaths:
         bed_fpath, cov_fpath, _ = reads_analyzer.do(combined_ref_fpath, contigs_fpaths, reads_fpaths, corrected_ref_fpaths,
-                                      os.path.join(combined_output_dirpath, qconfig.variation_dirname),
-                                      external_logger=logger, sam_fpath=qconfig.sam, bam_fpath=qconfig.bam, bed_fpath=qconfig.bed)
+                                                    os.path.join(combined_output_dirpath, qconfig.variation_dirname),
+                                                    external_logger=logger, sam_fpath=qconfig.sam, bam_fpath=qconfig.bam, bed_fpath=qconfig.bed)
         qconfig.bed = bed_fpath
 
     if qconfig.bed:

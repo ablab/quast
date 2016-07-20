@@ -156,7 +156,7 @@ def main(args):
                 logger.main_info('Downloaded reference(s):')
                 corrected_ref_fpaths, combined_ref_fpath, chromosomes_by_refs, ref_names =\
                     correct_meta_references(ref_fpaths, corrected_dirpath)
-            elif test_mode and ref_fpaths is None:
+            elif test_mode and not ref_fpaths:
                 logger.error('Failed to download or setup SILVA 16S rRNA database for working without '
                              'references on metagenome datasets!', to_stderr=True, exit_with_code=4)
 

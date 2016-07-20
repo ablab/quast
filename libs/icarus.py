@@ -369,7 +369,7 @@ def js_data_gen(assemblies, contigs_fpaths, chromosomes_length, output_dirpath, 
     chr_sizes = {}
     num_contigs = {}
     aligned_bases = genome_analyzer.get_ref_aligned_lengths()
-    nx_marks = [reporting.Fields.N50, reporting.Fields.N75, reporting.Fields.NG50,reporting.Fields.NG75]
+    nx_marks = [reporting.Fields.N50, reporting.Fields.N75, reporting.Fields.NG50, reporting.Fields.NG75]
 
     assemblies_data, assemblies_contig_size_data, assemblies_n50 = get_assemblies_data(contigs_fpaths, stdout_pattern, nx_marks)
 
@@ -460,12 +460,12 @@ def js_data_gen(assemblies, contigs_fpaths, chromosomes_length, output_dirpath, 
     quast_report_link = '<tr><td><a href="%s">QUAST report</a></td></tr>' % html_saver.report_fname
     html_saver.save_icarus_data(json_output_dir, contig_size_browser_link + quast_report_link, 'links', main_menu_fpath)
     div_references = []
-    if chr_full_names and len(chr_full_names) > 1:
+    if chr_full_names and (len(chr_full_names) > 1 or qconfig.is_combined_ref):
         reference_table = []
         div_references.append('<div>')
         for chr in sorted(chr_full_names):
             chr_link, chr_name, chr_genome, chr_size, tooltip = get_info_by_chr(chr, aligned_bases_by_chr, chr_sizes, contigs_fpaths,
-                                                                                contig_names_by_refs)
+                                                                                contig_names_by_refs, one_chromosome=len(chr_full_names) == 1)
             reference_table.append('<tr>')
             reference_table.append('<td><a href="' + chr_link + '" ' + tooltip + '>' + chr_name + '</a></td>')
             reference_table.append('<td>%s</td>' % num_contigs[chr])

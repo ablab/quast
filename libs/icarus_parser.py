@@ -86,7 +86,7 @@ def parse_contigs_fpath(contigs_fpath):
 
 
 def add_contig(cum_length, contig, not_used_nx, assemblies_n50, assembly, contigs, contig_size_lines, num, structures_by_labels,
-               only_nx=False):
+               only_nx=False, has_aligned_contigs=True):
     end_contig = cum_length + contig.size
     marks = []
     align = None
@@ -112,7 +112,8 @@ def add_contig(cum_length, contig, not_used_nx, assemblies_n50, assembly, contig
                                     str(el.end_in_contig) + ',size: ' + str(contig.size) + ',IDY:' + el.idy + ',chr: "' + el.ref_name + '"},')
                 elif type(el) == str:
                     structure.append('{contig_type: "M", mstype: "' + el + '"},')
-
+        if has_aligned_contigs and not contig.contig_type:
+            contig.contig_type = 'unaligned'
         align = '{name: "' + contig.name + '",size: ' + str(contig.size) + marks + ',contig_type: "' + contig.contig_type + \
                 '",structure: [' + ''.join(structure) + ']},'
     return end_contig, contig_size_lines, align, not_used_nx
@@ -196,6 +197,7 @@ def get_contigs_data(contigs_by_assemblies, nx_marks, assemblies_n50, structures
     total_len = 0
     min_contig_size = qconfig.min_contig
     too_many_contigs = False
+    has_aligned_contigs = structures_by_labels.values()
     for assembly in contigs_by_assemblies:
         contigs_sizes_str.append('contig_data["' + assembly + '"] = [ ')
         cum_length = 0
@@ -210,7 +212,8 @@ def get_contigs_data(contigs_by_assemblies, nx_marks, assemblies_n50, structures
             if i >= last_contig_num:
                 break
             cum_length, contigs_sizes_lines, align, not_used_nx = add_contig(cum_length, alignment, not_used_nx, assemblies_n50,
-                                                                assembly, contigs, contigs_sizes_lines, i, structures_by_labels)
+                                                                assembly, contigs, contigs_sizes_lines, i, structures_by_labels,
+                                                                             has_aligned_contigs=has_aligned_contigs)
             contigs_sizes_str.append(align)
         if len(contigs) > qconfig.max_contigs_num_for_size_viewer:
             assembly_len = cum_length

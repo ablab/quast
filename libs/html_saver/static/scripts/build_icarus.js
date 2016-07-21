@@ -635,7 +635,7 @@ THE SOFTWARE.
             	    start_in_contig = Math.min(block.start_in_contig, block.end_in_contig);
             	    end_in_contig = Math.max(block.start_in_contig, block.end_in_contig);
                     block.corr_start = currentLen + start_in_contig - 1;
-                    block.corr_end = currentLen + end_in_contig - 1;
+                    block.corr_end = currentLen + end_in_contig;
                     block.notActive = true;
                     block.contig_type = fullInfo.contig_type;
                 }

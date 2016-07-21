@@ -252,7 +252,7 @@ def create_meta_icarus(results_dirpath, ref_names):
             for line in template:
                 if line.find('</tr>') != -1:
                     skipping_tr = False
-                if line.find('<a href="icarus_viewers') != -1 and 'QUAST report' not in line:
+                if line.find('<a href="icarus_viewers') != -1 and 'QUAST report' not in line and 'Contig size' not in line and 'Contig alignment' not in line:
                     ref_name = re.findall('<a.*>(.*)<\/a>', line)[0]
                     if 'tooltip' in line and re.findall('title="(.+)"', line):
                         ref_name = re.findall('title="(.+)"', line)[0]

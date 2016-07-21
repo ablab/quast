@@ -124,11 +124,11 @@ THE SOFTWARE.
     var featuresMainHidden = featuresHidden || lanes.length > 3;
     var brush, brush_cov, brush_anno;
 
-    var spaceAfterMain = 10;
+    var spaceAfterMain = 15;
     var spaceAfterTrack = 40;
-    var annotationsMainOffsetY = mainHeight + mainScale + (featuresHidden ? 0 : spaceAfterMain);
+    var annotationsMainOffsetY = mainHeight + mainScale + spaceAfterMain;
     var covMainOffsetY = drawCoverage ? (annotationsMainOffsetY +
-                            (featuresHidden ? spaceAfterMain : spaceAfterTrack)) : annotationsMainOffsetY;
+                            (featuresHidden ? 0 : spaceAfterTrack)) : annotationsMainOffsetY;
     if (!featuresMainHidden)
         covMainOffsetY += annotationsHeight;
     var miniOffsetY = covMainOffsetY + spaceAfterTrack;

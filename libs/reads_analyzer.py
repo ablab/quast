@@ -177,11 +177,10 @@ def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpat
     ref_name = qutils.name_from_fpath(main_ref_fpath)
 
     if not sam_fpath and bam_fpath:
-        sam_fpath = bam_fpath[:-4] + '.sam'
+        sam_fpath = get_safe_fpath(output_dirpath, bam_fpath[:-4] + '.sam')
     else:
         sam_fpath = sam_fpath or os.path.join(output_dirpath, ref_name + '.sam')
-    if not bam_fpath:
-        bam_fpath = get_safe_fpath(output_dirpath, sam_fpath[:-4] + '.bam')
+    bam_fpath = bam_fpath or get_safe_fpath(output_dirpath, sam_fpath[:-4] + '.bam')
     sam_sorted_fpath = get_safe_fpath(output_dirpath, add_suffix(sam_fpath, 'sorted'))
     bam_sorted_fpath = get_safe_fpath(output_dirpath, add_suffix(bam_fpath, 'sorted'))
 
@@ -207,6 +206,10 @@ def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpat
     logger.info('  ' + 'Logging to %s...' % err_path)
     if is_non_empty_file(sam_fpath):
         logger.info('  Using existing SAM-file: ' + sam_fpath)
+    elif is_non_empty_file(bam_fpath):
+        logger.info('  Using existing BAM-file: ' + bam_fpath)
+        qutils.call_subprocess([samtools_fpath('samtools'), 'view', '-@', str(qconfig.max_threads), '-h', bam_fpath],
+                               stdout=open(sam_fpath, 'w'), stderr=open(err_path, 'a'), logger=logger)
     else:
         logger.info('  Running Bowtie2...')
         # use absolute paths because we will change workdir
@@ -253,7 +256,7 @@ def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpat
                                stdout=open(sam_sorted_fpath, 'w'), stderr=open(err_path, 'a'), logger=logger)
 
     if not is_non_empty_file(cov_fpath) or not is_non_empty_file(physical_cov_fpath):
-        cov_fpath, physical_cov_fpath = get_coverage(output_dirpath, main_ref_fpath, ref_name, bam_fpath, err_path, cov_fpath, physical_cov_fpath)
+        cov_fpath, physical_cov_fpath = get_coverage(output_dirpath, main_ref_fpath, ref_name, bam_fpath, bam_sorted_fpath, err_path, cov_fpath, physical_cov_fpath)
     if not is_non_empty_file(bed_fpath) and not qconfig.no_sv:
         if meta_ref_fpaths:
             logger.info('  Splitting SAM-file by references...')
@@ -411,7 +414,7 @@ def get_physical_coverage(output_dirpath, ref_fpath, ref_name, bam_fpath, err_pa
                     fs = line.split()
                     bed_file.write('\t'.join([fs[0], fs[1], fs[5] + '\n']))
         sorted_bed_fpath = os.path.join(output_dirpath, ref_name + '.sorted.bed')
-        qutils.call_subprocess([bedtools_fpath('bedtools'), 'sort', '-sorted', '-i', raw_bed_fpath],
+        qutils.call_subprocess([bedtools_fpath('bedtools'), 'sort', '-i', raw_bed_fpath],
                        stdout=open(sorted_bed_fpath, 'w'), stderr=open(err_path, 'a'))
         chr_len_fpath = ref_fpath + '.fai'
         if not is_non_empty_file(chr_len_fpath):
@@ -424,21 +427,20 @@ def get_physical_coverage(output_dirpath, ref_fpath, ref_name, bam_fpath, err_pa
     return cov_fpath
 
 
-def get_coverage(output_dirpath, ref_fpath, ref_name, bam_fpath, err_path, cov_fpath, physical_cov_fpath):
+def get_coverage(output_dirpath, ref_fpath, ref_name, bam_fpath, bam_sorted_fpath, err_path, cov_fpath, physical_cov_fpath):
     raw_cov_fpath = cov_fpath + '_raw'
-    if not is_non_empty_file(physical_cov_fpath):
-        physical_cov_fpath = get_physical_coverage(output_dirpath, ref_fpath, ref_name, bam_fpath, err_path, physical_cov_fpath)
     if not is_non_empty_file(cov_fpath):
         logger.info('  Calculating reads coverage...')
         if not is_non_empty_file(raw_cov_fpath):
-            bamsorted_fpath = add_suffix(bam_fpath, 'sorted')
-            if not is_non_empty_file(bamsorted_fpath):
+            if not is_non_empty_file(bam_sorted_fpath):
                 qutils.call_subprocess([samtools_fpath('samtools'), 'sort', '-@', str(qconfig.max_threads), bam_fpath,
-                                        '-o', bamsorted_fpath], stdout=open(err_path, 'w'), stderr=open(err_path, 'a'))
-            qutils.call_subprocess([samtools_fpath('samtools'), 'depth', '-d', '100000', '-a', bamsorted_fpath], stdout=open(raw_cov_fpath, 'w'),
+                                        '-o', bam_sorted_fpath], stdout=open(err_path, 'w'), stderr=open(err_path, 'a'))
+            qutils.call_subprocess([samtools_fpath('samtools'), 'depth', '-d', '100000', '-a', bam_sorted_fpath], stdout=open(raw_cov_fpath, 'w'),
                                    stderr=open(err_path, 'a'))
             qutils.assert_file_exists(raw_cov_fpath, 'coverage file')
         proceed_cov_file(raw_cov_fpath, cov_fpath)
+    if not is_non_empty_file(physical_cov_fpath):
+        physical_cov_fpath = get_physical_coverage(output_dirpath, ref_fpath, ref_name, bam_fpath, err_path, physical_cov_fpath)
     return cov_fpath, physical_cov_fpath
 
 
@@ -463,7 +465,8 @@ def proceed_cov_file(raw_cov_fpath, cov_fpath):
                 else:
                     chr_depth[name].append(depth)
                 if len(chr_depth[name]) >= cov_factor:
-                    for index in range(0, len(chr_depth[name]) - 1, cov_factor):
+                    max_index = len(chr_depth[name]) - (len(chr_depth[name]) % cov_factor)
+                    for index in range(0, max_index, cov_factor):
                         cur_depth = sum(chr_depth[name][index: index + cov_factor]) / cov_factor
                         out_coverage.write(' '.join([used_chromosomes[name], str(cur_depth) + '\n']))
                     chr_depth[name] = chr_depth[name][index + cov_factor:]

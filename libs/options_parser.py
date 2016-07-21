@@ -479,6 +479,9 @@ def parse_options(logger, quast_args, is_metaquast=False):
     for c_fpath in contigs_fpaths:
         assert_file_exists(c_fpath, 'contigs')
 
+    if qconfig.json_output_dirpath:
+        qconfig.save_json = True
+
     qconfig.output_dirpath, qconfig.json_output_dirpath, existing_alignments = \
         set_up_output_dir(qconfig.output_dirpath, qconfig.json_output_dirpath, not qconfig.output_dirpath,
                           qconfig.save_json if not is_metaquast else None)

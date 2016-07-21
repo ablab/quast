@@ -124,6 +124,12 @@ THE SOFTWARE.
     var featuresMainHidden = featuresHidden || lanes.length > 3;
     var brush, brush_cov, brush_anno;
 
+    var chart = d3.select('body').append('div').attr('id', 'chart')
+            .append('svg:svg')
+            .attr('width', width + margin.right + margin.left)
+            .attr('class', 'chart');
+    var extraOffsetY = chart[0][0].getBoundingClientRect().top - 120;
+
     var spaceAfterMain = 15;
     var spaceAfterTrack = 40;
     var annotationsMainOffsetY = mainHeight + mainScale + spaceAfterMain;
@@ -141,12 +147,7 @@ THE SOFTWARE.
     var manyChromosomes = !isContigSizePlot && chrContigs.length > 1;
     var chrLabelsOffsetY = manyChromosomes ? 6 : 0;
 
-    var chart = d3.select('body').append('div').attr('id', 'chart')
-            .append('svg:svg')
-            .attr('width', width + margin.right + margin.left)
-            .attr('height', curChartHeight)
-            .attr('class', 'chart');
-
+    chart.attr('height', curChartHeight);
     chart.append('defs').append('clipPath')
             .attr('id', 'clip')
             .append('rect')
@@ -165,7 +166,7 @@ THE SOFTWARE.
             .attr('height', mainHeight + mainScale)
             .attr('class', 'main');
 
-    var mainOffsetY = 120;
+    var mainOffsetY = 120 + extraOffsetY;
     var physCovBtnOffsetY = 25;
 
     var hideBtnAnnotationsMiniOffsetY = annotationsMiniOffsetY + mainOffsetY;

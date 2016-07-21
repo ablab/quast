@@ -415,7 +415,7 @@ def parse_options(logger, quast_args, is_metaquast=False):
              action='store_true')
          ),
         (['-J', '--save-json-to'], dict(
-             dest='json_output_fpath')
+             dest='json_output_dirpath')
          ),
         (['--err-fpath'], dict(
              dest='error_log_fpath')

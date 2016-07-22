@@ -141,12 +141,12 @@ def save_icarus_html(template_fpath, html_fpath, data_dict):
 
 
 def _embed_css_and_scripts(html, debug=False):
-    js_line_tmpl = '<script type="text/javascript" src="{file_rel_path}"></script>'
-    js_l_tag = '<script type="text/javascript" name="{name}">'
+    js_line_tmpl = '<script type="text/javascript" src="%s"></script>'
+    js_l_tag = '<script type="text/javascript" name="%s">'
     js_r_tag = '    </script>'
 
-    css_line_tmpl = '<link rel="stylesheet" type="text/css" href="{file_rel_path}" />'
-    css_l_tag = '<style type="text/css" rel="stylesheet" name="{name}">'
+    css_line_tmpl = '<link rel="stylesheet" type="text/css" href="%s" />'
+    css_l_tag = '<style type="text/css" rel="stylesheet" name="%s">'
     css_r_tag = '    </style>'
 
     for line_tmpl, files, l_tag, r_tag in [
@@ -162,8 +162,8 @@ def _embed_css_and_scripts(html, debug=False):
                 if not exists(fpath):
                     continue
 
-            line = line_tmpl.format(file_rel_path=rel_fpath)
-            l_tag_formatted = l_tag.format(name=rel_fpath)
+            line = line_tmpl % rel_fpath
+            l_tag_formatted = l_tag % rel_fpath
 
             if debug:
                 line_formatted = line.replace(rel_fpath, fpath)

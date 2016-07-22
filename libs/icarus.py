@@ -160,10 +160,7 @@ def prepare_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, data_st
                                     structures_by_labels, ambiguity_alignments_by_labels=None, contig_names_by_refs=None, output_dir_path=None,
                                     cov_data_str=None, physical_cov_data_str=None):
     html_name = get_html_name(chr, chr_full_names)
-
-    alignment_viewer_template_fpath = html_saver.get_real_path(qconfig.icarus_viewers_template_fname)
     alignment_viewer_fpath = os.path.join(output_dir_path, html_name + '.html')
-    html_saver.init_icarus(alignment_viewer_template_fpath, alignment_viewer_fpath)
 
     additional_assemblies_data = ''
     data_str.append('var links_to_chromosomes;')
@@ -302,20 +299,20 @@ def prepare_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, data_st
         factor = 1 if ms_type == 'interspecies translocation' else 2
         ms_counts_by_type[ms_type] = sum(ms_types[assembly][ms_type] / factor for assembly in chr_to_aligned_blocks.keys())
     total_ms_count = sum(ms_counts_by_type.values()) - ms_counts_by_type['local']
-    ms_selector_text = 'Show misassemblies: '
+    ms_selectors = []
     for ms_type, ms_count in ms_counts_by_type.items():
-        is_checked = 'checked="checked"'  #if ms_count > 0 else ''
         ms_name = ms_type
         if ms_count != 1 and ms_type != 'local':
             ms_name += 's'
-        ms_selector_text += '<label><input type="checkbox" id="' + ms_type + '" name="misassemblies_select" ' + \
-                            is_checked + '/>' + ms_name + ' (' + str(ms_count) + ')</label>'
+        ms_selectors.append((ms_type, ms_name, str(ms_count)))
 
-    return alignment_viewer_fpath, data_str, additional_assemblies_data, ms_selector_text, num_misassemblies, aligned_assemblies
+    return alignment_viewer_fpath, data_str, additional_assemblies_data, ms_selectors, num_misassemblies, aligned_assemblies
 
 
-def save_alignment_data_for_one_ref(chr_name, ref_contigs, ref_name, json_output_dir, alignment_viewer_fpath, data_str, ms_selector_text,
+def save_alignment_data_for_one_ref(chr_name, ref_contigs, ref_name, json_output_dir, alignment_viewer_fpath, data_str, ms_selectors,
                                     ref_data='', features_data='', assemblies_data='', additional_assemblies_data=''):
+    alignment_viewer_template_fpath = html_saver.get_real_path(qconfig.icarus_viewers_template_fname)
+    data_dict = dict()
     chr_data = 'chromosome = "' + chr_name + '";\n'
     chromosomes = '","'.join(ref_contigs)
     chr_data += 'var chrContigs = ["' + chromosomes + '"];\n'
@@ -323,14 +320,34 @@ def save_alignment_data_for_one_ref(chr_name, ref_contigs, ref_name, json_output
         chr_name = ref_name
         chr_name += ' (' + str(len(ref_contigs)) + (' entries)' if len(ref_contigs) > 1 else ' entry)')
     chr_name = chr_name.replace('_', ' ')
-    reference_text = '<div class="reftitle"><b>Contig alignment viewer.</b> Contigs aligned to "' + chr_name + '"</div>'
-
-    html_saver.save_icarus_data(json_output_dir, reference_text, 'reference', alignment_viewer_fpath)
-    html_saver.save_icarus_data(json_output_dir, ms_selector_text, 'ms_selector', alignment_viewer_fpath)
     all_data = ref_data + assemblies_data + additional_assemblies_data + chr_data + features_data + data_str
-    html_saver.save_icarus_data(json_output_dir, all_data, 'contig_alignments', alignment_viewer_fpath)
-    html_saver.clean_html(alignment_viewer_fpath)
-    return
+    data_dict['title'] = 'Contig alignment viewer'
+    data_dict['reference'] = chr_name
+    data_dict['data'] = '<script type="text/javascript">' + all_data + '</script>'
+    data_dict['misassemblies_checkboxes'] = []
+    for (ms_type, ms_name, ms_count) in ms_selectors:
+        checkbox = {'ms_type': ms_type, 'ms_name': ms_name, 'ms_count': ms_count}
+        data_dict['misassemblies_checkboxes'].append(checkbox)
+    html_saver.save_icarus_html(alignment_viewer_template_fpath, alignment_viewer_fpath, data_dict)
+    html_saver.save_icarus_data(json_output_dir, chr_name, 'ref_name')
+    html_saver.save_icarus_data(json_output_dir, data_dict['data'], 'data_alignments')
+    html_saver.save_icarus_data(json_output_dir, data_dict['reference'], 'reference')
+    html_saver.save_icarus_data(json_output_dir, data_dict['misassemblies_checkboxes'], 'ms_selector', as_text=False)
+
+
+def save_contig_size_html(output_all_files_dir_path, json_output_dir, too_many_contigs, all_data):
+    contig_size_template_fpath = html_saver.get_real_path(qconfig.icarus_viewers_template_fname)
+    contig_size_viewer_fpath = os.path.join(output_all_files_dir_path, qconfig.contig_size_viewer_fname)
+    data_dict = dict()
+    data_dict['title'] = 'Contig size viewer'
+    data_dict['size_viewer'] = True
+    if too_many_contigs:
+        data_dict['num_contigs_warning'] = str(qconfig.max_contigs_num_for_size_viewer)
+        html_saver.save_icarus_data(json_output_dir, data_dict['num_contigs_warning'], 'num_contigs_warning')
+
+    data_dict['data'] = '<script type="text/javascript">' + all_data + '</script>'
+    html_saver.save_icarus_data(json_output_dir, data_dict['data'], 'data_sizes')
+    html_saver.save_icarus_html(contig_size_template_fpath, contig_size_viewer_fpath, data_dict)
 
 
 def js_data_gen(assemblies, contigs_fpaths, chromosomes_length, output_dirpath, structures_by_labels,
@@ -409,29 +426,19 @@ def js_data_gen(assemblies, contigs_fpaths, chromosomes_length, output_dirpath, 
         physical_cov_data = format_cov_data(physical_cov_data, physical_max_depth, chr, 'physical_coverage_data', 'physical_max_depth') \
             if physical_cov_data else None
 
-        alignment_viewer_fpath, ref_data_str, additional_assemblies_data, ms_selector_text, num_misassemblies[chr], aligned_assemblies[chr] = \
+        alignment_viewer_fpath, ref_data_str, additional_assemblies_data, ms_selectors, num_misassemblies[chr], aligned_assemblies[chr] = \
             prepare_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, data_str, chr_to_aligned_blocks, structures_by_labels,
                                                ambiguity_alignments_by_labels=ambiguity_alignments_by_labels, cov_data_str=cov_data,
                                                physical_cov_data_str=physical_cov_data, contig_names_by_refs=contig_names_by_refs, output_dir_path=output_all_files_dir_path)
         ref_name = qutils.name_from_fpath(ref_fpath)
-        save_alignment_data_for_one_ref(chr, ref_contigs, ref_name, json_output_dir, alignment_viewer_fpath, ref_data_str, ms_selector_text,
+        save_alignment_data_for_one_ref(chr, ref_contigs, ref_name, json_output_dir, alignment_viewer_fpath, ref_data_str, ms_selectors,
                                         ref_data=ref_data, features_data=features_data, assemblies_data=assemblies_data,
                                         additional_assemblies_data=additional_assemblies_data)
 
     contigs_sizes_str, too_many_contigs = get_contigs_data(contigs_by_assemblies, nx_marks, assemblies_n50, structures_by_labels,
                                                            contig_names_by_refs, chr_names, chr_full_names)
-    contig_size_template_fpath = html_saver.get_real_path(qconfig.icarus_viewers_template_fname)
-    contig_size_viewer_fpath = os.path.join(output_all_files_dir_path, qconfig.contig_size_viewer_fname)
-    html_saver.init_icarus(contig_size_template_fpath, contig_size_viewer_fpath)
-    warning_contigs = '. For better performance, only largest %s contigs of each assembly were loaded' % str(qconfig.max_contigs_num_for_size_viewer) \
-        if too_many_contigs else ''
-    reference_text = '<div class="reftitle"><b>Contig size viewer</b>' + warning_contigs + '</div>'
-    html_saver.save_icarus_data(json_output_dir, reference_text, 'reference', contig_size_viewer_fpath)
-    size_threshold_text = 'Fade contigs shorter than <input class="textBox" id="input_contig_threshold" type="text" size="5" /> bp </span>'
-    html_saver.save_icarus_data(json_output_dir, size_threshold_text, 'size_threshold', contig_size_viewer_fpath)
     all_data = assemblies_data + assemblies_contig_size_data + contigs_sizes_str
-    html_saver.save_icarus_data(json_output_dir, all_data, 'contig_sizes', contig_size_viewer_fpath)
-    html_saver.clean_html(contig_size_viewer_fpath)
+    save_contig_size_html(output_all_files_dir_path, json_output_dir, too_many_contigs, all_data)
 
     icarus_links = defaultdict(list)
     if len(chr_full_names) > 1:
@@ -440,63 +447,56 @@ def js_data_gen(assemblies, contigs_fpaths, chromosomes_length, output_dirpath, 
         icarus_links["links_names"].append(qconfig.icarus_link)
 
     main_menu_template_fpath = html_saver.get_real_path(qconfig.icarus_menu_template_fname)
-    html_saver.init_icarus(main_menu_template_fpath, main_menu_fpath)
+    main_data_dict = dict()
 
     labels = [qconfig.assembly_labels_by_fpath[contigs_fpath] for contigs_fpath in contigs_fpaths]
-    assemblies = '<b>Assemblies: </b>' + ', '.join(labels)
-    html_saver.save_icarus_data(json_output_dir, assemblies, 'assemblies', main_menu_fpath)
+    main_data_dict['assemblies'] = labels
+    html_saver.save_icarus_data(json_output_dir, ', '.join(labels), 'assemblies')
 
-    num_aligned_assemblies = [len(aligned_assemblies[chr]) for chr in chr_full_names]
-    is_unaligned_asm_exists = len(set(num_aligned_assemblies)) > 1
-    if is_unaligned_asm_exists:
-        html_saver.save_icarus_data(json_output_dir, '<th># assemblies</th>', 'th_assemblies', main_menu_fpath)
-
-    contig_size_name = qconfig.contig_size_viewer_name
-    contig_size_browser_fname = os.path.join(qconfig.icarus_dirname, qconfig.contig_size_viewer_fname)
+    contig_size_browser_fpath = os.path.join(qconfig.icarus_dirname, qconfig.contig_size_viewer_fname)
+    main_data_dict['contig_size_html'] = contig_size_browser_fpath
+    html_saver.save_icarus_data(json_output_dir, contig_size_browser_fpath, 'contig_size_html')
     if not chr_names:
-        icarus_links["links"].append(contig_size_browser_fname)
+        icarus_links["links"].append(contig_size_browser_fpath)
         icarus_links["links_names"].append(qconfig.icarus_link)
-    contig_size_browser_link = '<tr><td><a href="' + contig_size_browser_fname + '">' + contig_size_name + '</a></td></tr>'
-    quast_report_link = '<tr><td><a href="%s">QUAST report</a></td></tr>' % html_saver.report_fname
-    html_saver.save_icarus_data(json_output_dir, contig_size_browser_link + quast_report_link, 'links', main_menu_fpath)
-    div_references = []
+
     if chr_full_names and (len(chr_full_names) > 1 or qconfig.is_combined_ref):
-        reference_table = []
-        div_references.append('<div>')
+        main_data_dict['table_references'] = {'references': []}
+        num_aligned_assemblies = [len(aligned_assemblies[chr]) for chr in chr_full_names]
+        is_unaligned_asm_exists = len(set(num_aligned_assemblies)) > 1
+        if is_unaligned_asm_exists:
+            main_data_dict['table_references']['th_assemblies'] = True
         for chr in sorted(chr_full_names):
             chr_link, chr_name, chr_genome, chr_size, tooltip = get_info_by_chr(chr, aligned_bases_by_chr, chr_sizes, contigs_fpaths,
                                                                                 contig_names_by_refs, one_chromosome=len(chr_full_names) == 1)
-            reference_table.append('<tr>')
-            reference_table.append('<td><a href="' + chr_link + '" ' + tooltip + '>' + chr_name + '</a></td>')
-            reference_table.append('<td>%s</td>' % num_contigs[chr])
-            reference_table.append('<td>%s</td>' % format_long_numbers(chr_size))
+            reference_dict = dict()
+            reference_dict['chr_link'] = chr_link
+            reference_dict['tooltip'] = tooltip
+            reference_dict['chr_name'] = os.path.basename(chr_name)
+            reference_dict['num_contigs'] = str(num_contigs[chr])
+            reference_dict['chr_size'] = format_long_numbers(chr_size)
             if is_unaligned_asm_exists:
-                reference_table.append('<td>%s</td>' % len(aligned_assemblies[chr]))
-            reference_table.append('<td>%.3f</td>' % chr_genome)
-            reference_table.append('<td>%s</td>' % num_misassemblies[chr])
-            reference_table.append('</tr>')
-        html_saver.save_icarus_data(json_output_dir, '\n'.join(reference_table), 'references', main_menu_fpath)
+                reference_dict['num_assemblies'] = str(len(aligned_assemblies[chr]))
+            reference_dict['chr_gf'] = '%.3f' % chr_genome
+            reference_dict['num_misassemblies'] = str(num_misassemblies[chr])
+            main_data_dict['table_references']['references'].append(reference_dict)
+        html_saver.save_icarus_data(json_output_dir, main_data_dict['table_references'], 'table_references', as_text=False)
     else:
         if chr_full_names:
             chr = chr_full_names[0]
             chr_link, chr_name, chr_genome, chr_size, tooltip = get_info_by_chr(chr, aligned_bases_by_chr, chr_sizes, contigs_fpaths,
                                                                                 contig_names_by_refs, one_chromosome=True)
-            viewer_name = qconfig.contig_alignment_viewer_name
-            viewer_link = '<a href="' + chr_link + '" ' + tooltip + '>' + viewer_name + '</a>'
-            viewer_info = viewer_link + \
-                  '<div class="reference_details">' \
-                      '<p>Aligned to sequences from  ' + os.path.basename(ref_fpath) + '</p>' \
-                      '<p>Fragments: ' + str(num_contigs[chr]) + ', length: ' + format_long_numbers(chr_size) + \
-                        ('bp, mean genome fraction: %.3f' % chr_genome) + '%, misassembled blocks: ' + str(num_misassemblies[chr]) + '</p>' + \
-                  '</div>'
+            main_data_dict['one_reference'] = dict()
+            main_data_dict['one_reference']['alignment_link'] = chr_link
+            main_data_dict['one_reference']['ref_fpath'] = os.path.basename(ref_fpath)
+            main_data_dict['one_reference']['ref_fragments'] = str(num_contigs[chr])
+            main_data_dict['one_reference']['ref_size'] = format_long_numbers(chr_size)
+            main_data_dict['one_reference']['ref_gf'] = '%.3f' % chr_genome
+            main_data_dict['one_reference']['num_misassemblies'] = str(num_misassemblies[chr])
             icarus_links["links"].append(chr_link)
             icarus_links["links_names"].append(qconfig.icarus_link)
-            div_references.append('<div class="contig_alignment_viewer_panel">')
-            div_references.append(viewer_info)
-            div_references.append('</div>')
-        div_references.append('<div style="display:none;">')
-    html_saver.save_icarus_data(json_output_dir, '\n'.join(div_references), 'div_references', main_menu_fpath)
-    html_saver.clean_html(main_menu_fpath)
+            html_saver.save_icarus_data(json_output_dir, main_data_dict['one_reference'], 'menu_reference', as_text=False)
+    html_saver.save_icarus_html(main_menu_template_fpath, main_menu_fpath, main_data_dict)
 
     html_saver.save_icarus_links(output_dirpath, icarus_links)
     if json_output_dir:

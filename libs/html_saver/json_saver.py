@@ -189,8 +189,12 @@ def save_icarus_links(output_dirpath, icarus_links):
         'links_names': icarus_links['links_names'],
     })
 
-def save_icarus_data(output_dirpath, keyword, icarus_data):
-    return save_as_text(join(output_dirpath, keyword + suffix_fn), icarus_data)
+def save_icarus_data(output_dirpath, keyword, icarus_data, as_text):
+    if as_text:
+        return save_as_text(join(output_dirpath, keyword + suffix_fn), icarus_data)
+    return save(join(output_dirpath, keyword + suffix_fn), {
+        keyword: icarus_data
+    })
 
 
 

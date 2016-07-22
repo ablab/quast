@@ -1,8 +1,8 @@
 <html>
 <head>
-    {{ icarus }}
-    {{ common }}
-    {{ bootstrap }}
+    <link rel="stylesheet" type="text/css" href="icarus.css" />
+    <link rel="stylesheet" type="text/css" href="common.css" />
+    <link rel="stylesheet" type="text/css" href="bootstrap/bootstrap.css" />
 </head>
 <body>
     <div class="top-panel">
@@ -25,45 +25,64 @@
 		<div class="icarus_summary_content">
 			<table class="summary_table assemblies_table">
 				<thead>
-					{{ assemblies }}
+					<b>Assemblies:</b> {assemblies|join}
 				</thead>
 				<tbody>
-					{{ links }}
+					<tr><td><a href="{contig_size_html}">Contig size viewer</a></td></tr>
+					<tr><td><a href="report.html">QUAST report</a></td></tr>
 				</tbody>
 			</table>
 			<br>
-				{{ div_references }}
-				<h3>Select a viewer of contigs aligned to one of the following reference genomes:</h3>
-				<table class="summary_table meta_references_table">
-					<thead>
-						<th>
-							Genome
-						</th>
-						<th>
-							# fragments
-						</th>
-						<th>
-							Length, bp
-						</th>
-						{{ th_assemblies }}
-						<th>
-							Mean genome fraction, %
-						</th>
-						<th>
-							# misassembled blocks
-						</th>
-					</thead>
-					<tbody>
-					{{ references }}
-					</tbody>
-				</table>
-			</div>
+			{.section one_reference}
+				<div class="contig_alignment_viewer_panel">
+				<a href="{alignment_link}">Contig alignment viewer</a>
+				  <div class="reference_details">
+					  <p>Aligned to sequences from {ref_fpath}</p>
+					  <p>Fragments: {ref_fragments}, length: {ref_size} bp, mean genome fraction: {ref_gf}%,
+						  misassembled blocks: {num_misassemblies}</p>
+				  </div>
+				</div>
+			{.end}
+			{.section table_references}
+			<h3>Select a viewer of contigs aligned to one of the following reference genomes:</h3>
+			<table class="summary_table meta_references_table">
+				<thead>
+					<th>
+						Genome
+					</th>
+					<th>
+						# fragments
+					</th>
+					<th>
+						Length, bp
+					</th>
+					{.section th_assemblies}
+					<th># assemblies</th>
+					{.end}
+					<th>
+						Mean genome fraction, %
+					</th>
+					<th>
+						# misassembled blocks
+					</th>
+				</thead>
+				<tbody>
+					{.repeated section references}
+						<tr>
+							<td><a href="{chr_link}" data-toggle="tooltip" title="{tooltip}">{chr_name}</a></td>
+							<td>{num_contigs}</td>
+							<td>{chr_size}</td>
+							{.section num_assemblies}
+							<td>{@}</td>
+							{.end}
+							<td>{chr_gf}</td>
+							<td>{num_misassemblies}</td>
+						</tr>
+					{.end}
+				</tbody>
+			</table>
+			{.end}
 		</div>
 	</div>
-<script>
-	$(document).ready(function(){
-		$('[data-toggle="tooltip"]').tooltip({delay: {show: 200, hide: 100}});
-	});
-</script>
 </body>
 </html>

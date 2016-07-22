@@ -26,10 +26,10 @@ THE SOFTWARE.
 <head>
 <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
 <meta content="utf-8" http-equiv="encoding">
-    {{ icarus }}
-    {{ common }}
-    {{ jquery_css }}
-    {{ bootstrap }}
+    <link rel="stylesheet" type="text/css" href="icarus.css" />
+    <link rel="stylesheet" type="text/css" href="common.css" />
+    <link rel="stylesheet" type="text/css" href="jquery.css" />
+    <link rel="stylesheet" type="text/css" href="bootstrap/bootstrap.css" />
 </head>
 <body>
 <!--[if lt IE 9]>
@@ -99,12 +99,22 @@ THE SOFTWARE.
                     </td>
                 </tr>
             </table>
-                <div class="text_div" style="clear: left">
-                    {{ size_threshold }}
-                </div>
-                <div class="text_div">
-                    {{ ms_selector }}
-                </div>
+                {.section size_viewer}
+                <span style="white-space: nowrap;">
+                    <div class="text_div" style="clear: left" id="contig_threshold_div">
+                        Fade contigs shorter than <input class="textBox" id="input_contig_threshold" type="text" size="5" /> bp
+                    </div>
+                </span>
+                {.or}
+                <span id="misassemblies_selector_panel">
+                    <div class="text_div" id="misassemblies_checkboxes_div">
+                        Show misassemblies:
+                        {.repeated section misassemblies_checkboxes}
+                        <label><input type="checkbox" id="{ms_type}" name="misassemblies_select" checked="checked"/>{ms_name} ({ms_count})</label>
+                        {.end}
+                    </div>
+                </span>
+                {.end}
             </div>
         </td>
         <td class="last-td">
@@ -116,8 +126,9 @@ THE SOFTWARE.
     </table>
 </div>
 <div class="content" style="padding-bottom: 0;">
-    {{ reference }}
-    {{ warning }}
+    <div class="reftitle"><b>{title}</b>{.section num_contigs_warning }. For better performance, only largest {@} contigs of each assembly were loaded
+    {.end}{.section reference}. Contigs aligned to {@}{.end}
+    </div>
 </div>
 
 <button id="hideBtnAnnoMini" class="btn moving_button btn-mini" style="display: none; position: absolute;">Hide</button>
@@ -134,16 +145,14 @@ THE SOFTWARE.
 		window.scrollTo(0,0);
 	}
 </script>
-<script type="text/javascript">
-    {{ contig_alignments }}
-    {{ contig_sizes }}
-</script>
-    {{ d3 }}
-    {{ jquery }}
-    {{ jquery_ui }}
-    {{ icarus_interface }}
-    {{ icarus_utils }}
-    {{ display_icarus }}
-    {{ build_icarus }}
+    {.section data}{@}
+    {.end}
+    <script type="text/javascript" src="d3.js"></script>
+    <script type="text/javascript" src="jquery-1.8.2.min.js"></script>
+    <script type="text/javascript" src="jquery-ui.js"></script>
+    <script type="text/javascript" src="scripts/icarus_interface.js"></script>
+    <script type="text/javascript" src="scripts/icarus_utils.js"></script>
+    <script type="text/javascript" src="scripts/display_icarus.js"></script>
+    <script type="text/javascript" src="scripts/build_icarus.js"></script>
 </body>
 </html>

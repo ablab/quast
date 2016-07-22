@@ -9,10 +9,12 @@ from __future__ import with_statement
 import os
 import shutil
 import re
+from os.path import exists, abspath, basename, join
 from collections import defaultdict
 
 from libs import reporting, qconfig, qutils
 from libs.html_saver import json_saver
+from libs.site_packages.jsontemplate import jsontemplate
 
 from libs.log import get_logger
 log = get_logger(qconfig.LOGGER_DEFAULT_NAME)
@@ -68,8 +70,22 @@ aux_files = [
 ]
 
 aux_meta_files = ['static/flot/jquery.flot.tickrotor.js', 'static/flot/jquery.flot.stack.js', 'static/scripts/draw_metasummary_plot.js', 'static/scripts/draw_meta_misassembl_plot.js',]
-jquery_fpath = 'static/jquery-1.8.2.min.js'
-jquery_ui_fpath = 'static/jquery-ui.js'
+
+icarus_css_files = [
+    'bootstrap/bootstrap.css',
+    'common.css',
+    'icarus.css',
+    'jquery.css'
+]
+icarus_js_files = [
+    'd3.js',
+    'jquery-1.8.2.min.js',
+    'jquery-ui.js',
+    'scripts/build_icarus.js',
+    'scripts/display_icarus.js',
+    'scripts/icarus_interface.js',
+    'scripts/icarus_utils.js',
+]
 
 def js_html(script_rel_path):
     if qconfig.debug:
@@ -113,23 +129,52 @@ def init(html_fpath, is_meta=False):
             f_html.write(html)
 
 
-def init_icarus(template_f, html_fpath):
-    with open(template_f) as template_file:
-        html = template_file.read()
+def save_icarus_html(template_fpath, html_fpath, data_dict):
+    with open(template_fpath) as f: html = f.read()
+    html = jsontemplate.expand(html, data_dict, more_formatters={
+        'join': lambda v: ', '.join(v),
+    })
 
-        html = html.replace('{{ d3 }}', js_html('static/d3.js'))
-        html = html.replace('{{ jquery }}', js_html(jquery_fpath))
-        html = html.replace('{{ jquery_ui }}', js_html(jquery_ui_fpath))
-        html = html.replace('{{ build_icarus }}', js_html('static/scripts/build_icarus.js'))
-        html = html.replace('{{ display_icarus }}', js_html('static/scripts/display_icarus.js'))
-        html = html.replace('{{ icarus_interface }}', js_html('static/scripts/icarus_interface.js'))
-        html = html.replace('{{ icarus_utils }}', js_html('static/scripts/icarus_utils.js'))
-        html = html.replace('{{ bootstrap }}', css_html('static/bootstrap/bootstrap.css'))
-        html = html.replace('{{ jquery_css }}', css_html('static/jquery.css'))
-        html = html.replace('{{ common }}', css_html('static/common.css'))
-        html = html.replace('{{ icarus }}', css_html('static/icarus.css'))
-        with open(html_fpath, 'w') as f_html:
-            f_html.write(html)
+    html = _embed_css_and_scripts(html, debug=qconfig.debug)
+    with open(html_fpath, 'w') as f_html:
+        f_html.write(html)
+
+
+def _embed_css_and_scripts(html, debug=False):
+    js_line_tmpl = '<script type="text/javascript" src="{file_rel_path}"></script>'
+    js_l_tag = '<script type="text/javascript" name="{name}">'
+    js_r_tag = '    </script>'
+
+    css_line_tmpl = '<link rel="stylesheet" type="text/css" href="{file_rel_path}" />'
+    css_l_tag = '<style type="text/css" rel="stylesheet" name="{name}">'
+    css_r_tag = '    </style>'
+
+    for line_tmpl, files, l_tag, r_tag in [
+            (js_line_tmpl, icarus_js_files, js_l_tag, js_r_tag),
+            (css_line_tmpl, icarus_css_files, css_l_tag, css_r_tag),
+        ]:
+        for rel_fpath in files:
+            if exists(rel_fpath):
+                fpath = abspath(rel_fpath)
+                rel_fpath = basename(fpath)
+            else:
+                fpath = join(static_dirpath, join(*rel_fpath.split('/')))
+                if not exists(fpath):
+                    continue
+
+            line = line_tmpl.format(file_rel_path=rel_fpath)
+            l_tag_formatted = l_tag.format(name=rel_fpath)
+
+            if debug:
+                line_formatted = line.replace(rel_fpath, fpath)
+                html = html.replace(line, line_formatted)
+            else:
+                with open(fpath) as f:
+                    contents = f.read()
+                    contents = '\n'.join(' ' * 8 + l for l in contents.split('\n'))
+                    html = html.replace(line, l_tag_formatted + '\n' + contents + '\n' + r_tag)
+
+    return html
 
 
 def insert_text_icarus(text_to_insert, keyword, html_fpath):
@@ -438,7 +483,6 @@ def save_icarus_links(results_dirpath, icarus_links):
         append(results_dirpath, json_fpath, 'icarus')
 
 
-def save_icarus_data(results_dirpath, icarus_data, keyword, html_fpath):
+def save_icarus_data(results_dirpath, icarus_data, keyword, as_text=True):
     if results_dirpath:
-        json_fpath = json_saver.save_icarus_data(results_dirpath, keyword, icarus_data)
-    insert_text_icarus(icarus_data, keyword, html_fpath)
+        json_saver.save_icarus_data(results_dirpath, keyword, icarus_data, as_text)

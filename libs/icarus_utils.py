@@ -292,7 +292,7 @@ def get_info_by_chr(chr, aligned_bases_by_chr, chr_sizes, contigs_fpaths, contig
     tooltip = ''
     if len(chr_name) > 70:
         short_name = chr[:70]
-        tooltip = 'data-toggle="tooltip" title="' + chr_name + '"'
+        tooltip = chr_name
         chr_name = short_name + '...'
     aligned_lengths = [aligned_len for aligned_len in aligned_bases_by_chr[chr] if aligned_len is not None]
     chr_genome = sum(aligned_lengths) * 100.0 / (chr_sizes[chr] * len(contigs_fpaths))

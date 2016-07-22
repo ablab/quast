@@ -717,8 +717,9 @@ function toggleLogLinearScaleMiniCoverage(isLogScaleCoverage) {
     else
         logScaleTogglerMini.innerHTML = getLogTogglerHtml(normal_scale_span, log_scale_a_mini);
     y_cov_mini_S = setYScaleCoverage(isLogScaleCoverage);
-    drawCoverageLine(x_mini.domain()[0], x_mini.domain()[1], coverageFactor, mini_cov, x_mini, y_cov_mini_S,
-        physical_coverage_data, '.phys_covered');
+    if (typeof physical_coverage_data !== 'undefined')
+        drawCoverageLine(x_mini.domain()[0], x_mini.domain()[1], coverageFactor, mini_cov, x_mini, y_cov_mini_S,
+            physical_coverage_data, '.phys_covered');
     drawCoverageLine(x_mini.domain()[0], x_mini.domain()[1], coverageFactor, mini_cov, x_mini, y_cov_mini_S,
         coverage_data, '.covered');
     setYScaleLabels(mini_cov, y_cov_mini_A, y_cov_mini_S, isLogScaleCoverage);

@@ -42,7 +42,8 @@ function setupInterface() {
     if (!featuresHidden) addAnnotationsTrackButtons();
     if (drawCoverage) {
         addCovTrackButtons();
-        addPhysicalCovTrackButtons();
+        if (typeof physical_coverage_data !== 'undefined')
+            addPhysicalCovTrackButtons();
         addLogScaleTogglers();
     }
     window.onresize = function(){ location.reload(); };

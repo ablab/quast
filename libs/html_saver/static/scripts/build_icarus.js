@@ -359,7 +359,7 @@ THE SOFTWARE.
             .attr('class', function (block) {
                 if (block.text && !block.contig_type) return 'block gradient';
                 return 'block miniItem ' + block.objClass;
-            })                
+            })
             .attr('fill', function (block) {
                 if (block.text && !block.contig_type) return addGradient(block, block.text, false);
             })
@@ -715,7 +715,8 @@ THE SOFTWARE.
         numYTicks = 5;
         // draw mini coverage
         x_cov_mini_S = x_mini,      // x coverage scale
-        y_max = Math.max(reads_max_depth[chromosome], physical_max_depth[chromosome]);
+        y_max = typeof reads_max_depth !== 'undefined' ? Math.max(reads_max_depth[chromosome], physical_max_depth[chromosome]) :
+            max_depth[chromosome];
 
         y_cov_mini_S = setYScaleCoverage(false, true);
         y_cov_main_S = y_cov_mini_S;
@@ -756,10 +757,11 @@ THE SOFTWARE.
         setYScaleLabels(main_cov, y_cov_main_A, y_cov_main_S);
         appendPaths(mini_cov);
         appendPaths(main_cov);
-
-        drawCoverageLine(x_mini.domain()[0], x_mini.domain()[1], coverageFactor, mini_cov, x_mini, y_cov_mini_S,
-            physical_coverage_data, '.phys_covered');
-        togglePhysCoverageMini();
+        if (typeof physical_coverage_data !== 'undefined') {
+            drawCoverageLine(x_mini.domain()[0], x_mini.domain()[1], coverageFactor, mini_cov, x_mini, y_cov_mini_S,
+                physical_coverage_data, '.phys_covered');
+            togglePhysCoverageMini();
+        }
         drawCoverageLine(x_mini.domain()[0], x_mini.domain()[1], coverageFactor, mini_cov, x_mini, y_cov_mini_S,
             coverage_data, '.covered');
     }
@@ -857,12 +859,14 @@ THE SOFTWARE.
           var numItems = 0;
           var chrIndex = 0;
           for (var i = 0; i < lane.length; i++) {
-              chrIndex = chrContigs.indexOf(references_by_id[lane[i].chr]);
+              chrIndex = typeof references_by_id !== 'undefined' ? chrContigs.indexOf(references_by_id[lane[i].chr]) : lane[i].chr;
               if (!oneHtml && chrIndex == -1) continue;
               var block = lane[i];
               block.lane = laneId;
               block.id = itemId;
               block.chr = chrIndex;
+              block.corr_start = block.corr_start ? block.corr_start : block.start;
+              block.corr_end = block.corr_end ? block.corr_end : block.end;
               features.push(block);
               itemId++;
               numItems++;

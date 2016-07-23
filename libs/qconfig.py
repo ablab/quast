@@ -74,7 +74,7 @@ all_labels_from_dirs = False
 silent = False
 
 # the following 2 are for web-quast:
-error_log_fpath = 'error.log'
+error_log_fpath = None
 save_error = False
 
 test_output_dirname = "quast_test_output"

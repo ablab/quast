@@ -486,7 +486,7 @@ def parse_options(logger, quast_args, is_metaquast=False):
         set_up_output_dir(qconfig.output_dirpath, qconfig.json_output_dirpath, not qconfig.output_dirpath,
                           qconfig.save_json if not is_metaquast else None)
 
-    logger.set_up_file_handler(qconfig.output_dirpath, qconfig.error_log_fpath if qconfig.error_log_fpath else None)
+    logger.set_up_file_handler(qconfig.output_dirpath, qconfig.error_log_fpath)
     logger.print_command_line(quast_args, wrap_after=None, is_main=True)
     logger.start()
 

@@ -1,5 +1,5 @@
 .report-and-plots {
-    margin-top: 25px;
+    margin-top: 15px;
 }
 
 /****************/
@@ -237,6 +237,7 @@ table#refgenome td.last_row {
 }
 
 .plots {
+    margin-left: -30px;
     margin-right: 70px;
     margin-top: 2px;
     margin-bottom: 50px;
@@ -245,6 +246,10 @@ table#refgenome td.last_row {
 .plots td {
     vertical-align: top;
     white-space: nowrap;
+}
+
+.plots div#plots-switches, tr#plots-into-tr p {
+    padding-left: 30px;
 }
 
 #legend-placeholder {
@@ -326,4 +331,8 @@ img.icon_plot {
 
 #sortRefsBtn {
     margin-top: 15px;
+}
+
+#mincontig {
+    margin-bottom: 0;
 }

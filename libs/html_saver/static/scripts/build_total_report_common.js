@@ -167,7 +167,8 @@ function appendIcarusLinks() {
         if (icarusLinks.links != undefined) {
             var links = '';
             for (var link_n = 0; link_n < icarusLinks.links.length; link_n++) {
-                links += '<a href="' + icarusLinks.links[link_n] + '">' + icarusLinks.links_names[link_n] + '</a><br>'
+                //links += '<a href="' + icarusLinks.links[link_n] + '">' + icarusLinks.links_names[link_n] + '</a><br>'
+                links += '<a class="btn btn-default btn-xs" role="button" href="' + icarusLinks.links[link_n] + '">' + icarusLinks.links_names[link_n] + '</a><br>'
             }
             $('#icarus').html(links);
         }

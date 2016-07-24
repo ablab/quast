@@ -496,7 +496,7 @@ path {
     float: left;
     font-size: 13px;
     margin-left: 30px;
-    min-width: 800px;
+    white-space: nowrap;
     /*margin-top: 7px;*/
 }
 
@@ -511,11 +511,15 @@ path {
 }
 
 #live_search {
-    width: 150px;
+    width: 160px;
+}
+#search_label {
+    line-height: 20px;
 }
 
 .last-td {
-    width: 210px;
+    padding-left: 20px;
+    width: 213px;
 }
 
 /*#controls_panel span {*/
@@ -539,21 +543,12 @@ path {
     color: white;
 }
 
-.coords_text_div {
-    top: -5px;
-    left: 0;
-    color: white;
-    margin-left: 20px;
-    overflow-y: hidden;
-}
-
 .coords_div {
-    top: 2px;
-    left: 0;
+    color: white;
     overflow-y: hidden;
 }
 
 .coords_textbox {
-     width:75px;
-     margin-left: 10px;
+     width: 75px;
+     margin-left: 0;
 }

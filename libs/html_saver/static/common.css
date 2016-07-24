@@ -266,6 +266,7 @@ ul.mdash li:before {
 }
 .page_subtitle {
     line-height: 100%;
+    white-space: nowrap;
 }
 .content {
     margin-left: 147px;

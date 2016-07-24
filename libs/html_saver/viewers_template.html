@@ -72,30 +72,16 @@ THE SOFTWARE.
                             <button id="zoom_out" class="btn btn-inverse">–<span class="rhs"></span>2x</button>
                             <button id="zoom_out_5" class="btn btn-inverse">–<span class="rhs"></span>5x</button>
                         </span>
-                    </td>
-                    <td>
-                        <div class="coords_text_div">
-                            start:
-                        </div>
-                    </td>
-                    <td>
-                        <div class="coords_div">
+                        <span class="coords_div" style="margin-left: 7px">
+                            start
                             <select id="select_chr_start" style="display: none"></select>
                             <input class="coords_textbox" id="input_coords_start" type="text"/>
-                        </div>
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <div class="coords_text_div">
-                            end:
-                        </div>
-                    </td>
-                    <td>
-                        <div class="coords_div">
+                        </span>
+                        <span class="coords_div" style="margin-left: 4px">
+                            end
                             <select id="select_chr_end" style="display: none"></select>
                             <input class="coords_textbox" id="input_coords_end" type="text"/>
-                        </div>
+                        </span>
                     </td>
                 </tr>
             </table>
@@ -119,7 +105,7 @@ THE SOFTWARE.
         </td>
         <td class="last-td">
             <div class="text_div">
-                Search: <input id="live_search" placeholder="Enter contig/gene name"/>
+                <span id="search_label">Search contig or gene:</span><input id="live_search" placeholder="Enter contig/gene name"/>
             </div>
         </td>
         </tr>

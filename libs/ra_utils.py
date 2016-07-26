@@ -9,7 +9,7 @@ from libs import qconfig, qutils
 from libs.qutils import compile_tool, check_prev_compilation_failed
 
 bowtie_dirpath = join(qconfig.LIBS_LOCATION, 'bowtie2')
-samtools_dirpath = join(qconfig.LIBS_LOCATION, 'samtools')
+sambamba_dirpath = join(qconfig.LIBS_LOCATION, 'sambamba')
 bedtools_dirpath = join(qconfig.LIBS_LOCATION, 'bedtools')
 bedtools_bin_dirpath = join(qconfig.LIBS_LOCATION, 'bedtools', 'bin')
 manta_dirpath = join(qconfig.LIBS_LOCATION, 'manta')
@@ -23,8 +23,9 @@ def bowtie_fpath(fname):
     return join(bowtie_dirpath, fname)
 
 
-def samtools_fpath(fname):
-    return join(samtools_dirpath, fname)
+def sambamba_fpath(fname):
+    platform_suffix = '_osx' if qconfig.platform_name == 'macosx' else '_linux'
+    return join(sambamba_dirpath, fname + platform_suffix)
 
 
 def bedtools_fpath(fname):
@@ -44,7 +45,6 @@ def manta_compilation_failed():
 
 def compile_reads_analyzer_tools(logger, bed_fpath=None):
     tools_to_try = [('Bowtie2', bowtie_dirpath, ['bowtie2-align-l']),
-                    ('SAMtools', samtools_dirpath, ['samtools']),
                     ('BEDtools', bedtools_dirpath, [join('bin', 'bedtools')])]
 
     for name, dirpath, requirements in tools_to_try:

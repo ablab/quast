@@ -30,10 +30,11 @@ def do(ref_fpath, aligned_contigs_fpaths, output_dirpath, json_output_dirpath,
     logger.print_timestamp()
     logger.main_info('Running NA-NGA calculation...')
 
-    reference_length = sum(fastaparser.get_lengths_from_fastafile(ref_fpath))
+    ref_chr_lengths = fastaparser.get_chr_lengths_from_fastafile(ref_fpath)
+    reference_length = sum(ref_chr_lengths.values())
     assembly_lengths = []
     for contigs_fpath in aligned_contigs_fpaths:
-        assembly_lengths.append(sum(fastaparser.get_lengths_from_fastafile(contigs_fpath)))
+        assembly_lengths.append(sum(fastaparser.get_chr_lengths_from_fastafile(contigs_fpath).values()))
 
     import N50
     for i, (contigs_fpath, lens, assembly_len) in enumerate(

@@ -142,7 +142,7 @@ def correct_fasta(original_fpath, corrected_fpath, min_contig,
 
 # Correcting fasta and reporting stats
 def handle_fasta(contigs_fpath, corr_fpath, reporting):
-    lengths = fastaparser.get_lengths_from_fastafile(contigs_fpath)
+    lengths = fastaparser.get_chr_lengths_from_fastafile(contigs_fpath).values()
 
     if not sum(l for l in lengths if l >= qconfig.min_contig):
         logger.warning("Skipping %s because it doesn't contain contigs >= %d bp."
@@ -571,6 +571,16 @@ def call_subprocess(args, stdin=None, stdout=None, stderr=None,
         # raise SubprocessException(printed_args, return_code)
 
     return return_code
+
+
+def get_chr_len_fpath(ref_fpath):
+    chr_len_fpath = ref_fpath + '.fai'
+    if not is_non_empty_file(chr_len_fpath):
+        chr_lengths = fastaparser.get_chr_lengths_from_fastafile(ref_fpath)
+        with open(chr_len_fpath, 'w') as out_f:
+            for chr_name, chr_len in chr_lengths.iteritems():
+                out_f.write(chr_name + '\t' + str(chr_len) + '\n')
+    return chr_len_fpath
 
 
 # class SubprocessException(Exception):

@@ -154,7 +154,7 @@ def cumulative_plot(reference, contigs_fpaths, lists_of_lengths, plot_fpath, tit
 
     if reference:
         y_vals = []
-        for l in sorted(fastaparser.get_lengths_from_fastafile(reference), reverse=True):
+        for l in sorted(fastaparser.get_chr_lengths_from_fastafile(reference).values(), reverse=True):
             if y_vals:
                 y_vals.append(y_vals[-1] + l)
             else:

@@ -163,7 +163,7 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, json_output_dir, results_dir):
     reference_length = None
     reference_lengths = []
     if ref_fpath:
-        reference_lengths = fastaparser.get_lengths_from_fastafile(ref_fpath)
+        reference_lengths = fastaparser.get_chr_lengths_from_fastafile(ref_fpath).values()
         reference_length = sum(reference_lengths)
         reference_GC, reference_GC_distribution = GC_content(ref_fpath)
 

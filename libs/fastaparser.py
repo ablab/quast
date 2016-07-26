@@ -55,13 +55,14 @@ def _get_fasta_file_handler(fpath):
     return fasta_file
 
 
-def get_lengths_from_fastafile(fpath):
+def get_chr_lengths_from_fastafile(fpath):
     """
         Takes filename of FASTA-file
         Returns list of lengths of sequences in FASTA-file
     """
-    lengths = []
+    chr_lengths = dict()
     l = 0
+    chr_name = None
     fasta_file = _get_fasta_file_handler(fpath)
     for raw_line in fasta_file:
         if raw_line.find('\r') != -1:
@@ -73,14 +74,15 @@ def get_lengths_from_fastafile(fpath):
                 continue
             if line[0] == '>':
                 if l:  # not the first sequence in FASTA
-                    lengths.append(l)
+                    chr_lengths[chr_name] = l
                     l = 0
+                chr_name = line[1:].strip()
             else:
                 l += len(line.strip())
 
-    lengths.append(l)
+    chr_lengths[chr_name] = l
     fasta_file.close()
-    return lengths
+    return chr_lengths
 
 
 def split_fasta(fpath, output_dirpath):

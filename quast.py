@@ -54,7 +54,10 @@ def main(args):
 
     ########################################################################
     from libs import reporting
+    reports = reporting.reports
     reload(reporting)
+    reporting.reports = reports
+    reporting.assembly_fpaths = []
     from libs import plotter  # Do not remove this line! It would lead to a warning in matplotlib.
 
     if qconfig.is_combined_ref:
@@ -76,7 +79,7 @@ def main(args):
     logger.main_info()
     logger.main_info('Contigs:')
 
-    contigs_fpaths, old_contigs_fpaths = qutils.correct_contigs(contigs_fpaths, corrected_dirpath, reporting, labels)
+    contigs_fpaths, old_contigs_fpaths = qutils.correct_contigs(contigs_fpaths, corrected_dirpath, labels, reporting)
     for contigs_fpath in contigs_fpaths:
         report = reporting.get(contigs_fpath)
         report.add_field(reporting.Fields.NAME, qutils.label_from_fpath(contigs_fpath))

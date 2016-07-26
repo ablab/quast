@@ -14,7 +14,7 @@ import shutil
 
 from libs import qconfig
 from libs.metautils import remove_from_quast_py_args, Assembly, correct_meta_references, correct_assemblies, \
-    get_downloaded_refs_with_alignments, partition_contigs
+    get_downloaded_refs_with_alignments, partition_contigs, calculate_ave_read_support
 from libs.options_parser import parse_options
 
 qconfig.check_python_version()
@@ -266,6 +266,8 @@ def main(args):
             logger.main_info('All downloaded references have genome fraction more than 10%. Nothing was excluded.')
         else:
             logger.main_info('All downloaded references have low genome fraction. Nothing was excluded for now.')
+
+    calculate_ave_read_support(combined_output_dirpath, assemblies)
 
     quast_py_args += ['--no-check-meta']
     qconfig.contig_thresholds = ','.join([str(threshold) for threshold in qconfig.contig_thresholds if threshold > qconfig.min_contig])

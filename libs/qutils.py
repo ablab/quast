@@ -153,21 +153,22 @@ def handle_fasta(contigs_fpath, corr_fpath, reporting):
     if not qconfig.no_check_meta:
         if not correct_fasta(contigs_fpath, corr_fpath, qconfig.min_contig):
             return False
-    
-    ## filling column "Assembly" with names of assemblies
-    report = reporting.get(corr_fpath)
 
-    ## filling columns "Number of contigs >=110 bp", ">=200 bp", ">=500 bp"
-    report.add_field(reporting.Fields.CONTIGS__FOR_THRESHOLDS,
-                     [sum(1 for l in lengths if l >= threshold)
-                      for threshold in qconfig.contig_thresholds])
-    report.add_field(reporting.Fields.TOTALLENS__FOR_THRESHOLDS,
-                     [sum(l for l in lengths if l >= threshold)
-                      for threshold in qconfig.contig_thresholds])
+    if reporting:
+        ## filling column "Assembly" with names of assemblies
+        report = reporting.get(corr_fpath)
+
+        ## filling columns "Number of contigs >=110 bp", ">=200 bp", ">=500 bp"
+        report.add_field(reporting.Fields.CONTIGS__FOR_THRESHOLDS,
+                         [sum(1 for l in lengths if l >= threshold)
+                          for threshold in qconfig.contig_thresholds])
+        report.add_field(reporting.Fields.TOTALLENS__FOR_THRESHOLDS,
+                         [sum(l for l in lengths if l >= threshold)
+                          for threshold in qconfig.contig_thresholds])
     return True
 
 
-def correct_contigs(contigs_fpaths, corrected_dirpath, reporting, labels):
+def correct_contigs(contigs_fpaths, corrected_dirpath, labels, reporting):
     ## removing from contigs' names special characters because:
     ## 1) Some embedded tools can fail on some strings with "...", "+", "-", etc
     ## 2) Nucmer fails on names like "contig 1_bla_bla", "contig 2_bla_bla" (it interprets as a contig's name only the first word of caption and gets ambiguous contigs names)

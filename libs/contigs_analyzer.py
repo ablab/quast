@@ -18,6 +18,8 @@
 
 from __future__ import with_statement
 import os
+import re
+from collections import defaultdict
 from os.path import join
 
 from libs import reporting, qconfig, qutils, fastaparser
@@ -185,11 +187,33 @@ def align_and_analyze(cyclic, index, contigs_fpath, output_dirpath, ref_fpath,
     alignment_tsv_fpath = join(output_dirpath, "alignments_" + assembly_label + '.tsv')
     logger.debug('  ' + qutils.index_to_str(index) + 'Alignments: ' + qutils.relpath(alignment_tsv_fpath))
     alignment_tsv_f = open(alignment_tsv_fpath, 'w')
-    for ref_name, aligns in ref_aligns.iteritems():
-        alignment_tsv_f.write(ref_name)
+
+    if qconfig.is_combined_ref:
+        unique_contigs_fpath = join(output_dirpath, qconfig.unique_contigs_fname_pattern % assembly_label)
+        unique_contigs_f = open(unique_contigs_fpath, 'w')
+        used_contigs = set()
+
+    for chr_name, aligns in ref_aligns.iteritems():
+        alignment_tsv_f.write(chr_name)
         contigs = set([align.contig for align in aligns])
         for contig in contigs:
             alignment_tsv_f.write('\t' + contig)
+
+        if qconfig.is_combined_ref:
+            ref_name = ref_labels_by_chromosomes[chr_name]
+            align_by_contigs = defaultdict(int)
+            for align in aligns:
+                align_by_contigs[align.contig] += align.len2
+            for contig, aligned_len in align_by_contigs.iteritems():
+                if contig in used_contigs:
+                    continue
+                used_contigs.add(contig)
+                len_cov_pattern = re.compile(r'_length_([\d\.]+)_cov_([\d\.]+)')
+                if len_cov_pattern.findall(contig):
+                    contig_len, contig_cov = len_cov_pattern.findall(contig)[0][0], len_cov_pattern.findall(contig)[0][1]
+                    if aligned_len / float(contig_len) > 0.9:
+                        unique_contigs_f.write(ref_name + '\t' + contig_len + '\t' + contig_cov + '\n')
+
         alignment_tsv_f.write('\n')
     alignment_tsv_f.close()
 

@@ -248,7 +248,8 @@ function buildTotalReport(assembliesNames, report, order, date, minContig, gloss
         var metricsNames = [];
         for (var metric_n = 0; metric_n < metrics.length; metric_n++)
             metricsNames.push(metrics[metric_n].metricName);
-        var metricsNotForCombinedReference = ['GC (%)', 'NG50', 'NGA50', 'NG75', 'NGA75', 'LG50', 'LGA50', 'LG75', 'LGA75'];
+        var metricsNotForCombinedReference = ['GC (%)', 'NG50', 'NGA50', 'NG75', 'NGA75', 'LG50', 'LGA50', 'LG75', 'LGA75',
+                'Ave contig read support'];
         for (var report_n = 0; report_n < reports.length; report_n++) {
             var metrics_by_refs = reports[report_n].report[group_n][1];
             for (var metric_n = 0; metric_n < metrics_by_refs.length; metric_n++) {

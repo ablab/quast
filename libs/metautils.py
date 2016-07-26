@@ -115,7 +115,7 @@ def remove_from_quast_py_args(quast_py_args, opt, arg=None):
 
 def correct_assemblies(contigs_fpaths, output_dirpath, labels):
     corrected_dirpath = os.path.join(output_dirpath, qconfig.corrected_dirname)
-    corrected_contigs_fpaths, old_contigs_fpaths = qutils.correct_contigs(contigs_fpaths, corrected_dirpath, reporting, labels)
+    corrected_contigs_fpaths, old_contigs_fpaths = qutils.correct_contigs(contigs_fpaths, corrected_dirpath, labels, reporting=None)
     assemblies = [Assembly(fpath, qutils.label_from_fpath(fpath)) for fpath in old_contigs_fpaths]
     corrected_labels = [asm.label for asm in assemblies]
 
@@ -213,4 +213,23 @@ def get_downloaded_refs_with_alignments(genome_info_fpath, ref_fpaths, chromosom
         if aligned_len > all_len * qconfig.downloaded_ref_min_aligned_rate:
             corr_refs.append(ref_fpath)
     return corr_refs
+
+
+def calculate_ave_read_support(combined_output_dirpath, assemblies):
+    unique_contigs_fpath = os.path.join(combined_output_dirpath, 'contigs_reports', qconfig.unique_contigs_fname_pattern)
+    for assembly in assemblies:
+        aligned_contigs_by_ref = dict()
+        with open(unique_contigs_fpath % assembly.label) as in_f:
+            for line in in_f:
+                ref_name, contig_len, contig_cov = line.strip().split('\t')
+                aligned_contigs_by_ref.setdefault(ref_name, []).append((float(contig_len), float(contig_cov)))
+        for ref_name, contigs in aligned_contigs_by_ref.iteritems():
+            ref_cov = sum(contig_cov * aligned_len for (aligned_len, contig_cov) in contigs)
+            ref_cov /= sum(aligned_len for (aligned_len, contig_cov) in contigs)
+            corr_assembly_label = qutils.label_from_fpath(assembly.fpath).replace(' ', '_')
+            ref_contigs_fpath = os.path.join(
+                        os.path.dirname(assembly.fpath), corr_assembly_label + '_to_' + ref_name + '.fasta')
+            qconfig.assembly_labels_by_fpath[ref_contigs_fpath] = assembly.label
+            report = reporting.get(ref_contigs_fpath, ref_name=ref_name)
+            report.add_field(reporting.Fields.AVE_READ_SUPPORT, '%.2f' % ref_cov)
 

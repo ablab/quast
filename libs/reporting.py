@@ -90,6 +90,7 @@ class Fields:
     # Genome statistics
     MAPPEDGENOME = 'Genome fraction (%)'
     DUPLICATION_RATIO = 'Duplication ratio'
+    AVE_READ_SUPPORT = 'Ave contig read support'
     GENES = '# genes'
     OPERONS = '# operons'
     LARGALIGN = 'Largest alignment'
@@ -125,7 +126,7 @@ class Fields:
     ### content and order of metrics in MAIN REPORT (<quast_output_dir>/report.txt, .tex, .tsv):
     order = [NAME, CONTIGS__FOR_THRESHOLDS, TOTALLENS__FOR_THRESHOLDS, CONTIGS, LARGCONTIG, TOTALLEN, REFLEN, ESTREFLEN, GC, REFGC,
              N50, NG50, N75, NG75, L50, LG50, L75, LG75, MISASSEMBL, MISCONTIGS, MISCONTIGSBASES, MISLOCAL, MIS_SCAFFOLDS_GAP,
-             STRUCT_VARIATIONS, UNALIGNED, UNALIGNEDBASES, MAPPEDGENOME, DUPLICATION_RATIO,
+             STRUCT_VARIATIONS, UNALIGNED, UNALIGNEDBASES, MAPPEDGENOME, DUPLICATION_RATIO, AVE_READ_SUPPORT,
              UNCALLED_PERCENT, SUBSERROR, INDELSERROR, GENES, OPERONS, PREDICTED_GENES_UNIQUE, PREDICTED_GENES,
              LARGALIGN, TOTAL_ALIGNED_LEN, NA50, NGA50, NA75, NGA75, LA50, LGA50, LA75, LGA75, ]
 
@@ -176,7 +177,7 @@ class Fields:
 
     ### Grouping of metrics and set of main metrics for HTML version of main report
     grouped_order = [
-        ('Genome statistics', [MAPPEDGENOME, DUPLICATION_RATIO, GENES, OPERONS, LARGALIGN, TOTAL_ALIGNED_LEN,
+        ('Genome statistics', [MAPPEDGENOME, DUPLICATION_RATIO, AVE_READ_SUPPORT, GENES, OPERONS, LARGALIGN, TOTAL_ALIGNED_LEN,
                                NG50, NG75, NA50, NA75, NGA50, NGA75, LG50, LG75, LA50, LA75, LGA50, LGA75,]),
 
         ('Misassemblies', [MIS_ALL_EXTENSIVE,
@@ -207,7 +208,7 @@ class Fields:
                     TOTALLENS__FOR_1000_THRESHOLD, TOTALLENS__FOR_10000_THRESHOLD, TOTALLENS__FOR_50000_THRESHOLD,
                     MIS_ALL_EXTENSIVE, MIS_EXTENSIVE_BASES,
                     SUBSERROR, INDELSERROR, UNCALLED_PERCENT,
-                    MAPPEDGENOME, DUPLICATION_RATIO, GENES, OPERONS, NGA50,
+                    MAPPEDGENOME, DUPLICATION_RATIO, AVE_READ_SUPPORT, GENES, OPERONS, NGA50,
                     PREDICTED_GENES_UNIQUE, PREDICTED_GENES,]
 
 ####################################################################################
@@ -223,7 +224,7 @@ class Fields:
         Quality.MORE_IS_BETTER:
             [LARGCONTIG, TOTALLEN, TOTALLENS__FOR_THRESHOLDS, TOTALLENS__FOR_10000_THRESHOLD, LARGALIGN, TOTAL_ALIGNED_LEN,
              N50, NG50, N75, NG75, NA50, NGA50, NA75, NGA75,
-             MAPPEDGENOME, GENES, OPERONS, PREDICTED_GENES_UNIQUE, PREDICTED_GENES],
+             MAPPEDGENOME, AVE_READ_SUPPORT, GENES, OPERONS, PREDICTED_GENES_UNIQUE, PREDICTED_GENES],
         Quality.LESS_IS_BETTER:
             [CONTIGS, CONTIGS__FOR_THRESHOLDS, L50, LG50, L75, LG75,
              MISLOCAL, MISASSEMBL, MISCONTIGS, MISCONTIGSBASES, MISINTERNALOVERLAP,
@@ -314,10 +315,12 @@ class Report(object):
         return self.d.get(field, None)
 
 
-def get(assembly_fpath):
+def get(assembly_fpath, ref_name=None):
+    if not ref_name and qconfig.reference:
+        ref_name = qutils.name_from_fpath(qconfig.reference)
     if assembly_fpath not in assembly_fpaths:
         assembly_fpaths.append(assembly_fpath)
-    return reports.setdefault(assembly_fpath, Report(qutils.label_from_fpath(assembly_fpath)))
+    return reports.setdefault((os.path.abspath(assembly_fpath), ref_name), Report(qutils.label_from_fpath(assembly_fpath)))
 
 
 def delete(assembly_fpath):

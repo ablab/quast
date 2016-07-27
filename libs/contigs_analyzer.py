@@ -212,7 +212,7 @@ def align_and_analyze(cyclic, index, contigs_fpath, output_dirpath, ref_fpath,
                 if len_cov_pattern.findall(contig):
                     contig_len, contig_cov = len_cov_pattern.findall(contig)[0][0], len_cov_pattern.findall(contig)[0][1]
                     if aligned_len / float(contig_len) > 0.9:
-                        unique_contigs_f.write(ref_name + '\t' + contig_len + '\t' + contig_cov + '\n')
+                        unique_contigs_f.write(ref_name + '\t' + aligned_len + '\t' + contig_cov + '\n')
 
         alignment_tsv_f.write('\n')
     alignment_tsv_f.close()

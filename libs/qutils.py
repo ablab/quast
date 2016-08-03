@@ -12,7 +12,7 @@ import subprocess
 import os
 import re
 import qconfig
-from os.path import basename, isfile
+from os.path import basename, isfile, realpath
 
 from libs import fastaparser
 from libs.log import get_logger
@@ -680,11 +680,25 @@ def check_prev_compilation_failed(name, failed_compilation_flag, just_notice=Fal
     return False
 
 
-def compile_tool(name, dirpath, requirements, just_notice=False):
+def check_tool_path_changed(name, dirpath, succeeded_compilation_flag, make_logs_basepath):
+    if isfile(succeeded_compilation_flag):
+        with open(succeeded_compilation_flag) as in_f:
+            old_dirpath = in_f.read().strip()
+            if old_dirpath == dirpath:
+                return True
+    logger.info('QUAST was moved or ' + succeeded_compilation_flag + ' was deleted. ' + name + ' will be recompiled.')
+    call_subprocess(['make', 'clean', '-C', dirpath], stdout=open(make_logs_basepath + '.log', 'w'),
+                    stderr=open(make_logs_basepath + '.err', 'w'))
+    return False
+
+
+def compile_tool(name, dirpath, requirements, just_notice=False, recompile_if_moved=False):
     make_logs_basepath = join(dirpath, 'make')
     failed_compilation_flag = make_logs_basepath + '.failed'
+    succeeded_compilation_flag = make_logs_basepath + '.succeeded'
 
-    if not all_required_binaries_exist(dirpath, requirements):
+    if not all_required_binaries_exist(dirpath, requirements) or \
+            (recompile_if_moved and not check_tool_path_changed(name, dirpath, succeeded_compilation_flag, make_logs_basepath)):
         if check_prev_compilation_failed(name, failed_compilation_flag, just_notice):
             return False
 
@@ -701,4 +715,6 @@ def compile_tool(name, dirpath, requirements, just_notice=False):
                            "to see the command line." if not qconfig.debug else ""))
             open(failed_compilation_flag, 'w').close()
             return False
+        with open(succeeded_compilation_flag, 'w') as out_f:
+            out_f.write(abspath(realpath(dirpath)))
     return True

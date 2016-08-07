@@ -49,6 +49,8 @@ THE SOFTWARE.
             },
             mainLanesHeight = 45,
             miniLanesHeight = 18,
+            mainGenesHeight = 2,
+            mainGenesSelectedHeight = 8,
             miniItemHeight = 10;
             annotationMiniLanesHeight = 18,
             featureMiniHeight = 10,
@@ -644,6 +646,19 @@ THE SOFTWARE.
             block.triangles = Array();
             itemId++;
             numItems++;
+            if (block.genes) {
+                var corr_start = block.structure[0].corr_start;
+                for (var gene_n = 0; gene_n < block.genes.length; gene_n++) {
+                    if (!block.genes[gene_n].corr_start) {
+                        block.genes[gene_n].corr_start = Math.max(block.genes[gene_n].start + corr_start, block.corr_start);
+                        block.genes[gene_n].corr_end = Math.min(block.genes[gene_n].end + corr_start, block.corr_end);
+                    }
+                    block.genes[gene_n].groupId = block.groupId;
+                    block.genes[gene_n].lane = block.lane;
+                    block.genes[gene_n].objClass = 'gene';
+                    block.genes[gene_n].notActive = true;
+                }
+            }
             if (block.mis_ends && misassembled_ends) {
                 for (var num = 0; num < misassembled_ends.length; num++) {
                     if (!misassembled_ends[num]) continue;

@@ -231,6 +231,7 @@ class Contig:
         self.alignments = []
         self.contig_type = contig_type
         self.arcs = []
+        self.genes = []
 
 
 def get_similar_threshold(total):

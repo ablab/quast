@@ -304,6 +304,10 @@ path {
     stroke-width: 0;
 }
 
+.mainItem.gene {
+    fill: #BDBDBD;
+}
+
 .mainItem.similar {
     fill: #00817F;
 }

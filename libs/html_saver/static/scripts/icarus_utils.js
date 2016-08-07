@@ -7,12 +7,23 @@ function getItemEnd(block, maxExtent) {
 }
 
 function getItemWidth(block, minExtent, maxExtent) {
-    return getItemEnd(block, maxExtent) - getItemStart(block, minExtent);
+    var widthOffset = 0;
+    if (block.objClass.search('gene') != -1) {
+        widthOffset = block.groupId == selected_id ? 2 : 1;
+    }
+    return getItemEnd(block, maxExtent) - getItemStart(block, minExtent) - widthOffset;
+}
+
+function getItemHeight(block) {
+    if (block.objClass.search('gene') != -1) {
+        return block.groupId == selected_id ? mainGenesSelectedHeight : mainGenesHeight;
+    }
+    return mainLanesHeight;
 }
 
 function getItemStrokeWidth(block, selected_id) {
     if (block.misassembledEnds) return 0;
-    if (block.notActive) return 0;
+    if (block.notActive) return .1;
     return (block.groupId == selected_id ? 2 : 1);
 }
 
@@ -49,6 +60,10 @@ function getTranslate(block, selected_id, minExtent) {
     var x = x_main(Math.max(minExtent, block.corr_start));
     var y = y_main(block.lane) + .25 * lanesInterval;
     if (INTERLACE_BLOCKS_VERT_OFFSET) y += offsetsY[block.order % 3] * lanesInterval;
+    if (block.objClass.search('gene') != -1) {
+        x += block.groupId == selected_id ? 1 : .5;
+        y = y_main(block.lane) + mainLanesHeight * 0.6;
+    }
     return 'translate(' + x + ', ' + y + ')';
 }
 
@@ -179,6 +194,22 @@ function changeInfo(block) {
                 nextBlock.corr_end, nextBlock.contig, block.assembly, overlapsInfo, block.corr_start, block.corr_end, prev_chr, true);
         }
     }
+    if (block.genes && block.genes.length > 0) {
+        var genesMenu = info.append('p').attr('class', 'head_plus collapsed')
+            .on('click', function() {
+                var eventX = d3.event.x || d3.event.clientX;
+                if (eventX < genesMenu[0][0].offsetLeft + 15)
+                    openClose(genesMenu[0][0]);
+            });
+        var genesText = 'Predicted genes: ' + block.genes.length;
+        var genesInfo = genesMenu.append('span').attr('class', 'head').text(genesText);
+
+        var genesCoordinatesInfo = genesInfo.append('p').attr('class', 'close');
+        for (var i = 0; i < block.genes.length; i++) {
+            genesCoordinatesInfo.append('p').text('Position: ')
+                .append('tspan').text(formatPosition(block.genes[i].start, block.genes[i].end, 'bp'));
+        }
+    }
     var blockHeight = info[0][0].offsetHeight;
     curChartHeight += blockHeight;
     chart.attr('height', curChartHeight);
@@ -207,7 +238,7 @@ function appendBlock(whereAppendBlock, numBlock, curBlock, start, end, contigNam
     else positionLink = block.append('tspan');
     positionLink.attr('id', 'position_link' + numBlock)
         .style('cursor', 'pointer')
-        .text([formatValue(curBlock.start, mainTickValue), ndash, formatValue(curBlock.end, mainTickValue), mainTickValue, ' '].join(' '));
+        .text(formatPosition(curBlock.start, curBlock.end, mainTickValue));
     if (is_expanded && !isContigSizePlot && chrContigs.indexOf(curBlock.chr) != -1)  // chromosome on this screen
         positionLink.style('text-decoration', 'underline')
             .style('color', '#7ED5F5')
@@ -293,6 +324,11 @@ function appendBlock(whereAppendBlock, numBlock, curBlock, start, end, contigNam
     if (curBlock.IDY)
         block.append('p')
             .text(['IDY:', curBlock.IDY, '%'].join(' '));
+}
+
+function formatPosition(start, end, tickValue){
+    return [formatValue(start, tickValue), ndash, formatValue(end, tickValue),
+        tickValue, ' '].join(' ');
 }
 
 function showArrows(block) {
@@ -617,7 +653,7 @@ function getSize(text) {
 }
 
 function glow() {
-    var selectedItem = d3.select(this).select('rect');
+    var selectedItem = d3.select(this);
     itemsContainer.append('rect')
         .attr('class', 'glow')
         .attr('pointer-events', 'none')
@@ -789,7 +825,7 @@ function getNumberOfContigs(x) {
     for (var block = 0; block < visRectsAndPaths.length; block++) {
         if (x_main(visRectsAndPaths[block].corr_start) <= x && x <= x_main(visRectsAndPaths[block].corr_end)) {
             var curItem = visRectsAndPaths[block];
-            if (curItem.objClass.search("disabled") != -1)
+            if (curItem.objClass.search("disabled") != -1 || curItem.notActive)
                 continue;
             order = (curItem.order + 1).toString();
             offsetY = y_main(curItem.lane) + mainLanesHeight / 2;

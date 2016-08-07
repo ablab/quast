@@ -95,9 +95,10 @@ def add_contig(cum_length, contig, not_used_nx, assemblies_n50, assembly, contig
                 (num + 1 >= len(contigs) or contigs[num + 1].size != contig.size):
             marks.append(nx)
     marks = ', '.join(marks)
+    genes = ['{start: ' + str(gene.start) + ', end: ' + str(gene.end) + '}' for gene in contig.genes]
     if marks:
         contig_size_lines.append('{assembly: "' + assembly + '", corr_end: ' + str(end_contig) + ', label: "' + marks +
-                                 '", size: ' + str(contig.size) + '}')
+                                 '", size: ' + str(contig.size) + ', genes: [' + ','.join(genes) + ']}')
         not_used_nx = [nx for nx in not_used_nx if nx not in marks]
     marks = ', marks: "' + marks + '"' if marks else ''
     if not only_nx or marks:
@@ -115,7 +116,7 @@ def add_contig(cum_length, contig, not_used_nx, assemblies_n50, assembly, contig
         if has_aligned_contigs and not contig.contig_type:
             contig.contig_type = 'unaligned'
         align = '{name: "' + contig.name + '",size: ' + str(contig.size) + marks + ',contig_type: "' + contig.contig_type + \
-                '",structure: [' + ''.join(structure) + ']},'
+                '",structure: [' + ''.join(structure) + '], genes: [' + ','.join(genes) + ']},'
     return end_contig, contig_size_lines, align, not_used_nx
 
 
@@ -266,3 +267,13 @@ def parse_features_data(features, cumulative_ref_lengths, ref_names):
             features_data += '],'
         features_data = features_data[:-1] + '];\n'
     return features_data
+
+
+def parse_genes_data(contigs_by_assemblies, genes_by_labels):
+    if not genes_by_labels:
+        return
+    for label, genes in genes_by_labels.iteritems():
+        contigs = dict((contig.name, contig) for contig in contigs_by_assemblies[label])
+        for gene in genes:
+            contig = contigs[gene.contig]
+            contig.genes.append(gene)

@@ -12,7 +12,7 @@ from __future__ import with_statement
 from collections import defaultdict
 
 from libs.icarus_parser import parse_contigs_fpath, parse_features_data, parse_cov_fpath, get_assemblies_data, \
-    get_contigs_data
+    get_contigs_data, parse_genes_data
 from libs.icarus_parser import parse_nucmer_contig_report
 from libs.icarus_utils import make_output_dir, group_references, format_cov_data, format_long_numbers, get_info_by_chr, \
     get_html_name, get_assemblies, check_misassembled_blocks, Alignment
@@ -35,7 +35,7 @@ logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 
 
 def do(contigs_fpaths, contig_report_fpath_pattern, output_dirpath, ref_fpath, cov_fpath=None,  physical_cov_fpath=None,
-       stdout_pattern=None, find_similar=True, features=None, json_output_dir=None):
+       stdout_pattern=None, find_similar=True, features=None, json_output_dir=None, genes_by_labels=None):
     make_output_dir(output_dirpath)
 
     lists_of_aligned_blocks = []
@@ -115,6 +115,8 @@ def do(contigs_fpaths, contig_report_fpath_pattern, output_dirpath, ref_fpath, c
 
     if contigs_fpaths and ref_fpath and features:
         features_data = parse_features_data(features, cumulative_ref_lengths, chr_names)
+    if contigs_fpath and (qconfig.gene_finding or qconfig.glimmer):
+        parse_genes_data(contigs_by_assemblies, genes_by_labels)
     if reference_chromosomes and lists_of_aligned_blocks:
         assemblies = get_assemblies(contigs_fpaths, virtual_genome_size, lists_of_aligned_blocks, find_similar)
         if qconfig.draw_svg:
@@ -157,8 +159,8 @@ def add_contig_structure_data(data_str, alignment_name, structure, ref_contigs, 
 
 
 def prepare_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, data_str, chr_to_aligned_blocks,
-                                    structures_by_labels, ambiguity_alignments_by_labels=None, contig_names_by_refs=None, output_dir_path=None,
-                                    cov_data_str=None, physical_cov_data_str=None):
+                                       structures_by_labels, contigs_by_assemblies, ambiguity_alignments_by_labels=None,
+                                       contig_names_by_refs=None, output_dir_path=None, cov_data_str=None, physical_cov_data_str=None):
     html_name = get_html_name(chr, chr_full_names)
     alignment_viewer_fpath = os.path.join(output_dir_path, html_name + '.html')
 
@@ -182,6 +184,7 @@ def prepare_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, data_st
     for assembly in chr_to_aligned_blocks.keys():
         data_str.append('contig_data["' + chr + '"]["' + assembly + '"] = [ ')
         ms_types[assembly] = defaultdict(int)
+        contigs = dict((contig.name, contig) for contig in contigs_by_assemblies[assembly])
         for num_contig, ref_contig in enumerate(ref_contigs):
             if ref_contig in chr_to_aligned_blocks[assembly]:
                 overlapped_contigs = defaultdict(list)
@@ -245,6 +248,16 @@ def prepare_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, data_st
 
                     if misassembled_ends: misassembled_ends = ';'.join(misassembled_ends)
                     else: misassembled_ends = ''
+
+                    genes = []
+                    for gene in contigs[alignment.name].genes:
+                        if alignment.start_in_contig < gene.start < alignment.end_in_contig or \
+                                                alignment.start_in_contig < gene.end < alignment.end_in_contig:
+                            corr_start = max(alignment.start, alignment.start + (gene.start - alignment.start_in_contig))
+                            corr_end = min(alignment.end, alignment.end + (gene.end - alignment.end_in_contig))
+                            gene_info = '{start: ' + str(gene.start) + ', end: ' + str(gene.end) + ', corr_start: ' + \
+                                        str(corr_start) + ', corr_end: ' + str(corr_end) + '}'
+                            genes.append(gene_info)
                     data_str.append('{name: "' + alignment.name + '",corr_start:' + str(alignment.start) +
                                     ', corr_end: ' + str(alignment.end) + ',start:' + str(alignment.unshifted_start) +
                                     ',end:' + str(alignment.unshifted_end) + ',similar:"' + ('True' if alignment.similar else 'False') +
@@ -257,6 +270,7 @@ def prepare_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, data_st
                         data_str.append(',overlaps:[ ')
                         data_str.append(','.join(overlapped_contigs[alignment]))
                         data_str.append(']')
+                    data_str.append(', genes: [' + ','.join(genes) + ']')
                     data_str.append(', structure: [ ')
                     data_str = add_contig_structure_data(data_str, alignment.name, contig_structure[alignment.name], ref_contigs,
                                                          chr_full_names, contig_names_by_refs, used_chromosomes, links_to_chromosomes)
@@ -428,8 +442,9 @@ def js_data_gen(assemblies, contigs_fpaths, chromosomes_length, output_dirpath, 
 
         alignment_viewer_fpath, ref_data_str, additional_assemblies_data, ms_selectors, num_misassemblies[chr], aligned_assemblies[chr] = \
             prepare_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, data_str, chr_to_aligned_blocks, structures_by_labels,
-                                               ambiguity_alignments_by_labels=ambiguity_alignments_by_labels, cov_data_str=cov_data,
-                                               physical_cov_data_str=physical_cov_data, contig_names_by_refs=contig_names_by_refs, output_dir_path=output_all_files_dir_path)
+                                               contigs_by_assemblies, ambiguity_alignments_by_labels=ambiguity_alignments_by_labels,
+                                               cov_data_str=cov_data, physical_cov_data_str=physical_cov_data,
+                                               contig_names_by_refs=contig_names_by_refs, output_dir_path=output_all_files_dir_path)
         ref_name = qutils.name_from_fpath(ref_fpath)
         save_alignment_data_for_one_ref(chr, ref_contigs, ref_name, json_output_dir, alignment_viewer_fpath, ref_data_str, ms_selectors,
                                         ref_data=ref_data, features_data=features_data, assemblies_data=assemblies_data,

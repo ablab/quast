@@ -184,19 +184,20 @@ def main(args):
             qconfig.genes, qconfig.operons, detailed_contigs_reports_dirpath,
             os.path.join(output_dirpath, 'genome_stats'))
 
+    genes_by_labels = None
     if qconfig.gene_finding or qconfig.glimmer:
         if qconfig.glimmer:
             ########################################################################
             ### Glimmer
             ########################################################################
             from libs import glimmer
-            glimmer.do(contigs_fpaths, qconfig.genes_lengths, os.path.join(output_dirpath, 'predicted_genes'))
+            genes_by_labels = glimmer.do(contigs_fpaths, qconfig.genes_lengths, os.path.join(output_dirpath, 'predicted_genes'))
         else:
             ########################################################################
             ### GeneMark
             ########################################################################
             from libs import genemark
-            genemark.do(contigs_fpaths, qconfig.genes_lengths, os.path.join(output_dirpath, 'predicted_genes'),
+            genes_by_labels = genemark.do(contigs_fpaths, qconfig.genes_lengths, os.path.join(output_dirpath, 'predicted_genes'),
                         qconfig.prokaryote, qconfig.meta)
 
     else:
@@ -230,7 +231,8 @@ def main(args):
                 icarus_html_fpath, contig_alignment_plot_fpath = icarus.do(
                     contigs_fpaths, report_for_icarus_fpath_pattern, output_dirpath, ref_fpath,
                     stdout_pattern=stdout_pattern, features=features_containers, cov_fpath=cov_fpath,
-                    physical_cov_fpath=physical_cov_fpath, json_output_dir=qconfig.json_output_dirpath)
+                    physical_cov_fpath=physical_cov_fpath, json_output_dir=qconfig.json_output_dirpath,
+                    genes_by_labels=genes_by_labels)
 
             if all_pdf_file:
                 # full report in PDF format: all tables and plots

@@ -15,6 +15,8 @@ import re
 
 from libs import reporting, qconfig, qutils
 from libs.fastaparser import read_fasta, write_fasta, rev_comp
+from libs.genemark import add_genes_to_fasta
+from libs.genes_parser import Gene
 
 from libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
@@ -89,18 +91,18 @@ def glimmerHMM(tool_dir, fasta_fpath, out_fpath, gene_lengths, err_path, tmp_dir
             gene_seq = rev_comp(contigs[contig][start:end + 1])
         if gene_seq not in unique:
             unique.add(gene_seq)
-        genes.append((gene_id, gene_seq))
+        genes.append(Gene(contig=contig, start=start, end=end, strand=strand, seq=gene_seq))
         for idx, gene_length in enumerate(gene_lengths):
             cnt[idx] += end - start > gene_length
 
     if OUTPUT_FASTA:
-        out_fasta_path = out_fpath + '_genes.fasta'
-        write_fasta(out_fasta_path, genes)
+        out_fasta_fpath = out_fpath + '_genes.fasta'
+        add_genes_to_fasta(genes, out_fasta_fpath)
     if not qconfig.debug:
         shutil.rmtree(base_dir)
 
     #return out_gff_path, out_fasta_path, len(unique), total, cnt
-    return out_gff_path, len(unique), total, cnt
+    return out_gff_path, genes, len(unique), total, cnt
 
 
 def predict_genes(index, contigs_fpath, gene_lengths, out_dirpath, tool_dirpath, tmp_dirpath):
@@ -114,14 +116,14 @@ def predict_genes(index, contigs_fpath, gene_lengths, out_dirpath, tool_dirpath,
     #out_gff_path, out_fasta_path, unique, total, cnt = glimmerHMM(tool_dir,
     #    fasta_path, out_path, gene_lengths, err_path)
 
-    out_gff_path, unique, total, cnt = glimmerHMM(tool_dirpath,
+    out_gff_path, genes, unique, total, cnt = glimmerHMM(tool_dirpath,
         contigs_fpath, out_fpath, gene_lengths, err_fpath, tmp_dirpath, index)
 
     if out_gff_path:
         logger.info('  ' + qutils.index_to_str(index) + '  Genes = ' + str(unique) + ' unique, ' + str(total) + ' total')
         logger.info('  ' + qutils.index_to_str(index) + '  Predicted genes (GFF): ' + out_gff_path)
 
-    return unique, cnt
+    return genes, unique, cnt
 
 
 def do(contigs_fpaths, gene_lengths, out_dirpath):
@@ -158,10 +160,12 @@ def do(contigs_fpaths, gene_lengths, out_dirpath):
         index, contigs_fpath, gene_lengths, out_dirpath, tool_dirpath, tmp_dirpath)
         for index, contigs_fpath in enumerate(contigs_fpaths))
 
+    genes_by_labels = dict()
     # saving results
     for i, contigs_fpath in enumerate(contigs_fpaths):
         report = reporting.get(contigs_fpath)
-        unique, cnt = results[i]
+        label = qutils.label_from_fpath(contigs_fpath)
+        genes_by_labels[label], unique, cnt = results[i]
         if unique is not None:
             report.add_field(reporting.Fields.PREDICTED_GENES_UNIQUE, unique)
         if cnt is not None:
@@ -169,9 +173,10 @@ def do(contigs_fpaths, gene_lengths, out_dirpath):
         if unique is None and cnt is None:
             logger.error(
                 'Glimmer failed running Glimmer for %s. ' + ('Run with the --debug option'
-                ' to see the command line.' if not qconfig.debug else '') % qutils.label_from_fpath(contigs_fpath))
+                ' to see the command line.' if not qconfig.debug else '') % label)
 
     if not qconfig.debug:
         shutil.rmtree(tmp_dirpath)
 
     logger.main_info('Done.')
+    return genes_by_labels

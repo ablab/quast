@@ -13,6 +13,7 @@ import tempfile
 
 from libs import reporting, qconfig, qutils
 from libs.fastaparser import write_fasta
+from libs.genes_parser import Gene
 
 from libs.log import get_logger
 
@@ -99,7 +100,8 @@ def parse_gmhmm_out(out_fpath):
                         reading_protein = False
                     #genes.append(Gene(contig_id, strand, left_index, right_index, str_seq))
                     if seq:
-                        yield contig_id, strand, left_index, right_index, seq, protein
+                        gene = Gene(contig=contig_id, start=left_index, end=right_index, strand=strand, seq=seq, protein=protein)
+                        yield gene
                 else:
                     seq.append(line.strip())
 
@@ -127,17 +129,16 @@ def add_genes_to_gff(genes, gff_fpath, prokaryote):
     gff.write('##gff-version 3\n')
 
     for id, gene in enumerate(genes):
-        contig_id, strand, left_index, right_index, str_seq = gene[:5]
         gff.write('%s\tGeneMark\tgene\t%d\t%d\t.\t%s\t.\tID=%d\n' %
-            (contig_id, left_index, right_index, strand, id + 1))
-        if prokaryote and len(gene) > 5:
-            prot_seq = gene[5]
+            (gene.contig, gene.start, gene.end, gene.strand, id + 1))
+        if gene.seq:
             gff.write('##Nucleotide sequence:\n')
-            for i in xrange(0, len(str_seq), 60):
-                gff.write('##' + str_seq[i:i + 60] + '\n')
+            for i in xrange(0, len(gene.seq), 60):
+                gff.write('##' + gene.seq[i:i + 60] + '\n')
+        if gene.protein:
             gff.write('##Protein sequence:\n')
-            for i in xrange(0, len(prot_seq), 60):
-                gff.write('##' + prot_seq[i:i + 60] + '\n')
+            for i in xrange(0, len(gene.protein), 60):
+                gff.write('##' + gene.protein[i:i + 60] + '\n')
             gff.write('\n')
     gff.close()
 
@@ -145,12 +146,11 @@ def add_genes_to_gff(genes, gff_fpath, prokaryote):
 def add_genes_to_fasta(genes, fasta_fpath):
     def inner():
         for i, gene in enumerate(genes):
-            contig_id, strand, left_index, right_index, gene_fasta = gene
-            length = right_index - left_index
+            length = gene.end - gene.start
             gene_id = '>gene_%d|GeneMark.hmm|%d_nt|%s|%d|%d|%s' % (
-                i + 1, length, strand, left_index, right_index, contig_id
+                i + 1, length, gene.strand, gene.start, gene.end, gene.contig_id
             )
-            yield gene_id, gene_fasta
+            yield gene_id, gene.seq
 
     write_fasta(fasta_fpath, inner())
 
@@ -243,14 +243,14 @@ def predict_genes(index, contigs_fpath, gene_lengths, out_dirpath, tool_dirpath,
             out_fasta_fpath = os.path.join(out_dirpath, assembly_label + '_' + tool_name + '_genes.fasta')
             add_genes_to_fasta(genes, out_fasta_fpath)
 
-        count = [sum([gene[3] - gene[2] > x for gene in genes]) for x in gene_lengths]
-        unique_count = len(set([gene[4] for gene in genes]))
+        count = [sum([gene.end - gene.start > x for gene in genes]) for x in gene_lengths]
+        unique_count = len(set([gene.seq for gene in genes]))
         total_count = len(genes)
 
         logger.info('  ' + qutils.index_to_str(index) + '  Genes = ' + str(unique_count) + ' unique, ' + str(total_count) + ' total')
         logger.info('  ' + qutils.index_to_str(index) + '  Predicted genes (GFF): ' + out_gff_fpath)
 
-    return unique_count, count
+    return genes, unique_count, count
 
 
 def do(fasta_fpaths, gene_lengths, out_dirpath, prokaryote, meta):
@@ -295,17 +295,19 @@ def do(fasta_fpaths, gene_lengths, out_dirpath, prokaryote, meta):
             index, fasta_fpath, gene_lengths, out_dirpath, tool_dirpath, tmp_dirpath, gmhmm_p_function, prokaryote, num_threads)
             for index, fasta_fpath in enumerate(fasta_fpaths))
 
+        genes_by_labels = dict()
         # saving results
         for i, fasta_path in enumerate(fasta_fpaths):
             report = reporting.get(fasta_path)
-            unique_count, count = results[i]
+            label = qutils.label_from_fpath(fasta_path)
+            genes_by_labels[label], unique_count, count = results[i]
             if unique_count is not None:
                 report.add_field(reporting.Fields.PREDICTED_GENES_UNIQUE, unique_count)
             if count is not None:
                 report.add_field(reporting.Fields.PREDICTED_GENES, count)
             if unique_count is None and count is None:
                 logger.error('  ' + qutils.index_to_str(i) +
-                     'Failed predicting genes in ' + qutils.label_from_fpath(fasta_path) + '. ' +
+                     'Failed predicting genes in ' + label + '. ' +
                      ('File may be too small for GeneMark-ES. Try to use GeneMarkS instead (remove --eukaryote option).'
                          if tool_name == 'GeneMark-ES' and os.path.getsize(fasta_path) < 2000000 else ''))
 
@@ -315,3 +317,4 @@ def do(fasta_fpaths, gene_lengths, out_dirpath, prokaryote, meta):
                     shutil.rmtree(dirpath)
 
         logger.main_info('Done.')
+        return genes_by_labels

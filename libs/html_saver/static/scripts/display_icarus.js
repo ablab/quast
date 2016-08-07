@@ -83,36 +83,53 @@ function display() {
     removeTooltip();
     if (!featuresMainHidden) drawFeaturesMain(minExtent, maxExtent);
 
-    function make_triangle(block) {
-        var startX = 0;
-        var startY = block.groupId == selected_id ? 2 : 0;
-        if (block.misassembledEnds == "L")
-            path = ['M', startX, startY, 'L', startX + (0.5 * (mainLanesHeight - startY) / 2),
-                (startY + (mainLanesHeight - startY)) / 2, 'L', startX, mainLanesHeight - startY, 'L',  startX, startY].join(' ');
-        if (block.misassembledEnds == "R")
-            path = ['M', startX, startY, 'L', startX - (0.5 * (mainLanesHeight - startY) / 2),
-                (startY + (mainLanesHeight - startY)) / 2, 'L', startX, mainLanesHeight - startY, 'L',  startX, startY].join(' ');
-        return path;
-    }
-
     // update the block rects
-    visRectsAndPaths = [];
+    visPaths = [];
+    visRects = [];
+    visGenesRects = [];
     for (var item_n = 0; item_n < visItems.length; item_n++) {
-        visRectsAndPaths.push(visItems[item_n]);
-        if (visItems[item_n].triangles)
-            for (var i = 0; i < visItems[item_n].triangles.length; i++)
-            {
+        visRects.push(visItems[item_n]);
+        if (visItems[item_n].triangles) {
+            for (var i = 0; i < visItems[item_n].triangles.length; i++) {
                 var triangle = visItems[item_n].triangles[i];
                 if ((triangle.misassembledEnds == "R" && triangle.corr_end > maxExtent) ||
                     (triangle.misassembledEnds == "L" && triangle.corr_start < minExtent))
                     continue;
                 var w = getItemWidth(triangle, minExtent, maxExtent);
                 var triangle_width = Math.sqrt(0.5) * mainLanesHeight / 2;
-                if (w > triangle_width * 1.5) visRectsAndPaths.push(triangle);
+                if (w > triangle_width * 1.5) visPaths.push(triangle);
             }
+        }
+        if (visItems[item_n].genes) {
+            for (var i = 0; i < visItems[item_n].genes.length; i++) {
+                var gene = visItems[item_n].genes[i];
+                if (gene.corr_start >= maxExtent || gene.corr_end <= minExtent)
+                    continue;
+                visGenesRects.push(gene);
+            }
+        }
     }
-    var oldItems = itemsContainer.selectAll('.block')
-        .data(visRectsAndPaths, function (block) {
+
+    var newItems = createItems(visRects, 'rect', minExtent, maxExtent, '.block');
+    createItems(visPaths, 'path', minExtent, maxExtent, '.block');
+    createItems(visGenesRects, 'rect', minExtent, maxExtent, '.gene');
+
+    newItems.on('click', function (block) {
+            selected_id = block.groupId;
+            changeInfo(block);
+        })
+        .on('mouseenter', glow)
+        .on('mouseleave', disglow);
+
+    addLabels(visRects, minExtent, maxExtent);
+    // upd coverage
+    if (drawCoverage && (!coverageMainHidden || !physicalCoverageHidden))
+        updateMainCoverage(minExtent, maxExtent, coverageFactor);
+}
+
+function createItems(visData, itemFigure, minExtent, maxExtent, class_) {
+    var oldItems = itemsContainer.selectAll(itemFigure + class_)
+        .data(visData, function (block) {
             return block.id;
         })
         .attr('transform', function (block) {
@@ -120,6 +137,9 @@ function display() {
         })
         .attr('width', function (block) {
             return getItemWidth(block, minExtent, maxExtent);
+        })
+        .attr('height', function (block) {
+            return getItemHeight(block);
         })
         .attr('stroke-opacity', function (block) {
             return getItemStrokeOpacity(block, selected_id);
@@ -132,64 +152,63 @@ function display() {
         });
     oldItems.exit().remove();
 
-    var newItems = oldItems.enter().append('g').each(function(itemData) {
-        var container = d3.select(this);
-        var itemFigure = itemData.misassembledEnds ? container.append('path') : container.append('rect');
-        itemFigure.attr('class', function (block) {
-                if (block.misassembledEnds) {
-                    if (!block.objClass) block.objClass = 'misassembled';
-                    return 'block end ' + block.objClass;
-                }
-                if (!block.marks || block.contig_type)
-                    return 'block mainItem ' + block.objClass;
-                else return 'block';
-            })// Define the gradient
-            .attr('fill', function (block) {
-                if (block.marks && !block.contig_type)
-                    return addGradient(block, block.marks, true);
-            })
-            .attr('transform', function (block) {
-                return getTranslate(block, selected_id, minExtent);
-            })
-            .attr('width', function (block) {
-                return getItemWidth(block, minExtent, maxExtent);
-            })
-            .attr('height', mainLanesHeight)
-            .attr('stroke', 'black')
-            .attr('stroke-opacity', function (block) {
-                return getItemStrokeOpacity(block, selected_id);
-            })
-            .attr('stroke-width', function (block) {
-                return getItemStrokeWidth(block, selected_id);
-            })
-            .attr('fill-opacity', function (block) {
-                return getItemOpacity(block);
-            })
-            .attr('pointer-events', function (block) {
-                return (block.misassembledEnds || block.notActive) ? 'none' : 'painted';
-            })
-            .attr('d', function(block) {
-                if (block.misassembledEnds) return make_triangle(block);
-            });
-    });
-
-    newItems.on('click', function (block) {
-            selected_id = block.groupId;
-            changeInfo(block);
+    function make_triangle(block) {
+        var startX = 0;
+        var startY = block.groupId == selected_id ? 2 : 0;
+        if (block.misassembledEnds == "L")
+            path = ['M', startX, startY, 'L', startX + (0.5 * (mainLanesHeight - startY) / 2),
+                (startY + (mainLanesHeight - startY)) / 2, 'L', startX, mainLanesHeight - startY, 'L',  startX, startY].join(' ');
+        if (block.misassembledEnds == "R")
+            path = ['M', startX, startY, 'L', startX - (0.5 * (mainLanesHeight - startY) / 2),
+                (startY + (mainLanesHeight - startY)) / 2, 'L', startX, mainLanesHeight - startY, 'L',  startX, startY].join(' ');
+        return path;
+    }
+    var newItems = oldItems.enter().append(itemFigure)
+        .attr('class', function (block) {
+            if (block.misassembledEnds) {
+                if (!block.objClass) block.objClass = 'misassembled';
+                return 'block end ' + block.objClass;
+            }
+            if (!block.marks || block.contig_type)
+                return 'block mainItem ' + block.objClass;
+            else return 'block';
+        })// Define the gradient
+        .attr('fill', function (block) {
+            if (block.marks && !block.contig_type)
+                return addGradient(block, block.marks, true);
         })
-        .on('mouseenter', glow)
-        .on('mouseleave', disglow);
-
-    addLabels(visRectsAndPaths, minExtent, maxExtent);
-    // upd coverage
-    if (drawCoverage && (!coverageMainHidden || !physicalCoverageHidden))
-        updateMainCoverage(minExtent, maxExtent, coverageFactor);
+        .attr('transform', function (block) {
+            return getTranslate(block, selected_id, minExtent);
+        })
+        .attr('width', function (block) {
+            return getItemWidth(block, minExtent, maxExtent);
+        })
+        .attr('height', function (block) {
+            return getItemHeight(block);
+        })
+        .attr('stroke', 'black')
+        .attr('stroke-opacity', function (block) {
+            return getItemStrokeOpacity(block, selected_id);
+        })
+        .attr('stroke-width', function (block) {
+            return getItemStrokeWidth(block, selected_id);
+        })
+        .attr('fill-opacity', function (block) {
+            return getItemOpacity(block);
+        })
+        .attr('pointer-events', function (block) {
+            return (block.misassembledEnds || block.notActive) ? 'none' : 'painted';
+        })
+        .attr('d', function(block) {
+            if (block.misassembledEnds) return make_triangle(block);
+        });
+    return newItems;
 }
 
-function addLabels(visRectsAndPaths, minExtent, maxExtent) {
+function addLabels(visRects, minExtent, maxExtent) {
     var prevX = 0;
     var prevLane = -1;
-    var visTexts = visRectsAndPaths.filter(function (block) {
+    var visTexts = visRects.filter(function (block) {
         if (!block.name) return;
         var textStart = getItemStart(block, minExtent);
         if (textStart - prevX > 20 || block.lane != prevLane) {

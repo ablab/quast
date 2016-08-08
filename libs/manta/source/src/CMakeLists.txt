@@ -37,5 +37,4 @@ add_custom_target(${THIS_UNITTESTS}
 
 add_subdirectory (c++)
 add_subdirectory (python)
-add_subdirectory (demo)
 add_subdirectory (cmake/postInstall)

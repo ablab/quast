@@ -212,7 +212,7 @@ of their work on your platform.
 <br><br>
 We also provide <code>./install.sh</code> and <code>./install_full.sh</code> scripts.
 If you plan to use MetaQUAST's automated reference genomes detection, or use SV calling for misassembly refinement, you should use <code>./install_full.sh</code>, which runs all four mentioned above commands,
-compiles tools for read alignment and SV detection (SAMtools, Bowtie2, and Manta), and downloads necessary files (SILVA 16S rRNA gene database and BLAST). Otherwise, it is enough to use <code>./install.sh</code>,
+compiles tools for read alignment and SV detection (BEDtools, Bowtie2, and Manta), and downloads necessary files (SILVA 16S rRNA gene database and BLAST). Otherwise, it is enough to use <code>./install.sh</code>,
 which runs only two simple --test commands.
 </p>
 
@@ -599,6 +599,12 @@ Do not compute GC% and do not produce GC-distribution plots (both in HTML report
 Do not run structural variant calling and processing (make sense only if reads are specified).
 
 <div class='option'>
+<code><b>--no-gzip</b></code>
+</div>
+Do not compress large output files (files containing SNP information and predicted genes).
+    This may speed up computation, but more disk space is required.
+
+<div class='option'>
 <code><b>--fast</b></code>
 </div>
 A shortcut for using all of speedup options except --no-check.
@@ -646,7 +652,7 @@ Run the tool on a data from the <code>test_data</code> folder and check correctn
     <code><b>--test-sv</b></code>
 </div>
 Run the tool on a data from the <code>test_data</code> folder using the reads for SV detection. The tool will compile the required programs
-    (SAMtools, Bowtie2, and Manta Structural Variant Caller).
+    (BEDtools, Bowtie2, and Manta Structural Variant Caller).
 
 <div class='option'>
     <code><b>-h</b></code> (or <code>--help</code>)

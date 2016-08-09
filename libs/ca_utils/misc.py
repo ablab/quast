@@ -103,8 +103,9 @@ def compress_nucmer_output(logger, nucmer_fpath):
         fpath = nucmer_fpath + ext
         if os.path.isfile(fpath):
             logger.info('  Gzipping ' + fpath + ' to reduce disk space usage...')
-            with open(fpath, 'rb') as f_in, gzip.open(fpath + '.gz', 'wb') as f_out:
-                shutil.copyfileobj(f_in, f_out)
+            with open(fpath, 'rb') as f_in:
+                with gzip.open(fpath + '.gz', 'wb') as f_out:
+                    shutil.copyfileobj(f_in, f_out)
             os.remove(fpath)
             logger.info('    saved to ' + fpath + '.gz')
 

@@ -10,13 +10,14 @@
 ############################################################################
 
 from __future__ import with_statement
+import gzip
 import platform
 import os
+import shutil
 from itertools import repeat
 from os.path import isfile, isdir, join
-from libs import qconfig, qutils
 
-# it will be set to actual dirpath after successful compilation
+from libs import qconfig
 from libs.qutils import compile_tool, val_to_str
 
 contig_aligner = None
@@ -95,3 +96,41 @@ def clean_tmp_files(nucmer_fpath):
     for ext in ['.delta', '.coords_tmp', '.coords.headless']:
         if os.path.isfile(nucmer_fpath + ext):
             os.remove(nucmer_fpath + ext)
+
+
+def compress_nucmer_output(logger, nucmer_fpath):
+    for ext in ['.all_snps', '.used_snps']:
+        fpath = nucmer_fpath + ext
+        if os.path.isfile(fpath):
+            logger.info('  Gzipping ' + fpath + ' to reduce disk space usage...')
+            with open(fpath, 'rb') as f_in, gzip.open(fpath + '.gz', 'wb') as f_out:
+                shutil.copyfileobj(f_in, f_out)
+            os.remove(fpath)
+            logger.info('    saved to ' + fpath + '.gz')
+
+
+def open_gzipsafe(f, mode='rb'):
+    if not os.path.exists(f) and 'r' in mode:
+        f += '.gz'
+    if f.endswith('.gz') or f.endswith('.gzip'):
+        if 'b' not in mode:
+            mode += 'b'
+        try:
+            h = gzip.open(f, mode=mode)
+        except IOError:
+            return open(f, mode=mode)
+        else:
+            if 'w' in mode:
+                return h
+            else:
+                try:
+                    h.read(1)
+                except IOError:
+                    h.close()
+                    return open(f, mode=mode)
+                else:
+                    h.close()
+                    h = gzip.open(f, mode=mode)
+                    return h
+    else:
+        return open(f, mode=mode)

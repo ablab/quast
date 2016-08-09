@@ -12,6 +12,7 @@ import shutil
 import tempfile
 
 from libs import reporting, qconfig, qutils
+from libs.ca_utils.misc import open_gzipsafe
 from libs.fastaparser import write_fasta
 from libs.genes_parser import Gene
 
@@ -116,7 +117,7 @@ def parse_gtf_out(out_fpath):
 
 
 def add_genes_to_gff(genes, gff_fpath, prokaryote):
-    gff = open(gff_fpath, 'w')
+    gff = open_gzipsafe(gff_fpath, 'w')
     if prokaryote:
         if qconfig.meta:
             gff.write('##gff out for MetaGeneMark\n')
@@ -235,7 +236,7 @@ def predict_genes(index, contigs_fpath, gene_lengths, out_dirpath, tool_dirpath,
         count = None  # [None] * len(gene_lengths)
     else:
         tool_name = "genemark"
-        out_gff_fpath = os.path.join(out_dirpath, assembly_label + '_' + tool_name + '_genes.gff')
+        out_gff_fpath = os.path.join(out_dirpath, assembly_label + '_' + tool_name + '_genes.gff' + ('.gz' if not qconfig.no_gzip else ''))
         add_genes_to_gff(genes, out_gff_fpath, prokaryote)
         if OUTPUT_FASTA:
             out_fasta_fpath = os.path.join(out_dirpath, assembly_label + '_' + tool_name + '_genes.fasta')

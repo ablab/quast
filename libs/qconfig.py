@@ -63,6 +63,7 @@ no_check_meta = False  # for metaQUAST, without checking min-contig
 unique_mapping = False  # for metaQUAST only
 no_gc = False
 no_sv = False
+no_gzip = False
 show_snps = True
 glimmer = False
 is_combined_ref = False
@@ -330,6 +331,7 @@ def usage(show_hidden=False, meta=False, short=True):
         print >> sys.stderr, "    --no-snps                         Do not report SNPs (may significantly reduce memory consumption on large genomes)"
         print >> sys.stderr, "    --no-gc                           Do not compute GC% and GC-distribution"
         print >> sys.stderr, "    --no-sv                           Do not run structural variation detection (make sense only if reads are specified)"
+        print >> sys.stderr, "    --no-gzip                         Do not compress large output files"
         print >> sys.stderr, "    --fast                            A combination of all speedup options except --no-check"
         if show_hidden:
             print >> sys.stderr, ""

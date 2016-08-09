@@ -350,9 +350,13 @@ def parse_options(logger, quast_args, is_metaquast=False):
              dest='fast',
              action='callback',
              callback=set_multiple_variables,
-             callback_kwargs={'store_true_values': ['no_gc', 'no_sv'],
+             callback_kwargs={'store_true_values': ['no_gc', 'no_sv', 'no_gzip'],
                               'store_false_values': ['show_snps', 'draw_plots', 'html_report', 'create_icarus_html']},
              default=False)
+         ),
+        (['--no-gzip'], dict(
+             dest='no_gzip',
+             action='store_true')
          ),
         (['--no-check'], dict(
              dest='no_check',

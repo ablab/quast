@@ -67,7 +67,7 @@ def get_nucmer_aux_out_fpaths(nucmer_fpath):
     coords_filtered_fpath = nucmer_fpath + '.coords.filtered'
     unaligned_fpath = nucmer_fpath + '.unaligned'
     show_snps_fpath = nucmer_fpath + '.all_snps'
-    used_snps_fpath = nucmer_fpath + '.used_snps'
+    used_snps_fpath = nucmer_fpath + '.used_snps' + ('.gz' if not qconfig.no_gzip else '')
     return coords_fpath, coords_filtered_fpath, unaligned_fpath, show_snps_fpath, used_snps_fpath
 
 
@@ -89,7 +89,7 @@ def align_contigs(nucmer_fpath, ref_fpath, contigs_fpath, old_contigs_fpath, ind
     # If they exist, using them to save time.
     using_existing_alignments = False
     if isfile(nucmer_successful_check_fpath) and isfile(coords_fpath) and \
-       (isfile(show_snps_fpath) or not qconfig.show_snps):
+       (isfile(show_snps_fpath) or isfile(show_snps_fpath + '.gz') or not qconfig.show_snps):
         if check_nucmer_successful_check(nucmer_successful_check_fpath, old_contigs_fpath, ref_fpath):
             print >> log_out_f, '\tUsing existing alignments...'
             logger.info('  ' + qutils.index_to_str(index) + 'Using existing alignments... ')

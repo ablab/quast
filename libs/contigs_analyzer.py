@@ -27,7 +27,7 @@ from libs.ca_utils.analyze_contigs import analyze_contigs
 from libs.ca_utils.analyze_coverage import analyze_coverage
 from libs.ca_utils.analyze_misassemblies import Mapping
 from libs.ca_utils.misc import print_file, ref_labels_by_chromosomes, clean_tmp_files, compile_aligner, \
-    create_nucmer_output_dir
+    create_nucmer_output_dir, open_gzipsafe, compress_nucmer_output
 from libs.ca_utils.align_contigs import align_contigs, get_nucmer_aux_out_fpaths, NucmerStatus
 from libs.ca_utils.save_results import print_results, save_result, save_result_for_unaligned
 
@@ -130,7 +130,7 @@ def align_and_analyze(cyclic, index, contigs_fpath, output_dirpath, ref_fpath,
     snps = {}
     if qconfig.show_snps:
         prev_line = None
-        for line in open(show_snps_fpath):
+        for line in open_gzipsafe(show_snps_fpath):
             #print "$line";
             line = line.split()
             if not line[0].isdigit():
@@ -148,7 +148,7 @@ def align_and_analyze(cyclic, index, contigs_fpath, output_dirpath, ref_fpath,
             else:
                 snps.setdefault(ref, {}).setdefault(ctg, {})[pos] = [SNP(ref_pos=pos, ctg_pos=loc, ref_nucl=line[1], ctg_nucl=line[2])]
             prev_line = line
-        used_snps_file = open(used_snps_fpath, 'w')
+        used_snps_file = open_gzipsafe(used_snps_fpath, 'w')
 
     # Loading the regions (if any)
     regions = {}
@@ -223,6 +223,8 @@ def align_and_analyze(cyclic, index, contigs_fpath, output_dirpath, ref_fpath,
     logger.info('  ' + qutils.index_to_str(index) + 'Analysis is finished.')
     logger.debug('')
     clean_tmp_files(nucmer_fpath)
+    if not qconfig.no_gzip:
+        compress_nucmer_output(logger, nucmer_fpath)
     if not ref_aligns:
         return NucmerStatus.NOT_ALIGNED, result, aligned_lengths
     else:

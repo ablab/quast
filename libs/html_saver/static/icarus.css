@@ -304,10 +304,6 @@ path {
     stroke-width: 0;
 }
 
-.mainItem.gene {
-    fill: #BDBDBD;
-}
-
 .mainItem.similar {
     fill: #00817F;
 }
@@ -403,11 +399,11 @@ path {
   display: block;
 }
 
-.annotation {
+.gene {
     fill: #612B1C;
 }
 
-.annotation.odd {
+.gene.odd {
     fill: #49190C;
 }
 

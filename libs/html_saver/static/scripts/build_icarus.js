@@ -647,7 +647,7 @@ THE SOFTWARE.
             itemId++;
             numItems++;
             if (block.genes) {
-                var corr_start = block.structure[0].corr_start;
+                var corr_start = (block.structure && block.structure.length > 0) ? block.structure[0].corr_start : block.corr_start;
                 for (var gene_n = 0; gene_n < block.genes.length; gene_n++) {
                     if (!block.genes[gene_n].corr_start) {
                         block.genes[gene_n].corr_start = Math.max(block.genes[gene_n].start + corr_start, block.corr_start);
@@ -972,7 +972,7 @@ THE SOFTWARE.
         for (var c, i = 0; i < features.length; i++) {
             d = features[i];
             if (d.lane != curLane) numItem = 0;
-            c = "annotation ";
+            c = "gene ";
             if (INTERLACE_BLOCKS_COLOR) c += (numItem % 2 == 0 ? "odd" : "");
 
             features[i].objClass = c;

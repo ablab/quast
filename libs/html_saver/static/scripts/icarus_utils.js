@@ -29,7 +29,6 @@ function getItemStrokeWidth(block, selected_id) {
 
 function getItemStrokeOpacity(block, selected_id) {
     if (block.misassembledEnds) return 0;
-    if (block.notActive) return 0;
     return (block.groupId == selected_id ? 1 : .7);
 }
 
@@ -129,14 +128,16 @@ function changeInfo(block) {
     var numBlock = 0;
     var prev_chr = '';
     var structure = block.structure ? block.structure : block.ambiguous_alignments;
-    for (var i = 0; i < structure.length; i++) {
-        var nextBlock = structure[i];
-        if (nextBlock.contig_type != "M" && block.corr_start == nextBlock.corr_start && nextBlock.corr_end == block.corr_end) {
-            prev_chr = nextBlock.chr;
-            break;
+    if (structure) {
+        for (var i = 0; i < structure.length; i++) {
+            var nextBlock = structure[i];
+            if (nextBlock.contig_type != "M" && block.corr_start == nextBlock.corr_start && nextBlock.corr_end == block.corr_end) {
+                prev_chr = nextBlock.chr;
+                break;
+            }
         }
+        appendPositionElement(nextBlock, block.corr_start, block.corr_end, block.name, block.assembly, info);
     }
-    appendPositionElement(nextBlock, block.corr_start, block.corr_end, block.name, block.assembly, info);
 
     showArrows(block);
     structure = block.structure ? block.structure : block.best_group;
@@ -194,20 +195,27 @@ function changeInfo(block) {
                 nextBlock.corr_end, nextBlock.contig, block.assembly, overlapsInfo, block.corr_start, block.corr_end, prev_chr, true);
         }
     }
-    if (block.genes && block.genes.length > 0) {
-        var genesMenu = info.append('p').attr('class', 'head_plus collapsed')
-            .on('click', function() {
-                var eventX = d3.event.x || d3.event.clientX;
-                if (eventX < genesMenu[0][0].offsetLeft + 15)
-                    openClose(genesMenu[0][0]);
-            });
+    if (block.genes) {
+        var genesMenu = info.append('p');
         var genesText = 'Predicted genes: ' + block.genes.length;
-        var genesInfo = genesMenu.append('span').attr('class', 'head').text(genesText);
+        var genesInfo = genesMenu.append('span').text(genesText);
 
-        var genesCoordinatesInfo = genesInfo.append('p').attr('class', 'close');
-        for (var i = 0; i < block.genes.length; i++) {
-            genesCoordinatesInfo.append('p').text('Position: ')
-                .append('tspan').text(formatPosition(block.genes[i].start, block.genes[i].end, 'bp'));
+        if (block.contig_type == 'small_contigs' || block.genes.length == 0) {
+            genesMenu.attr('class', 'head main');
+        }
+        else {
+            genesInfo.attr('class', 'head');
+            genesMenu.attr('class', 'head_plus collapsed')
+                     .on('click', function() {
+                        var eventX = d3.event.x || d3.event.clientX;
+                        if (eventX < genesMenu[0][0].offsetLeft + 15)
+                            openClose(genesMenu[0][0]);
+                     });
+            var genesCoordinatesInfo = genesInfo.append('p').attr('class', 'close');
+            for (var i = 0; i < block.genes.length; i++) {
+                genesCoordinatesInfo.append('p').text('Position: ')
+                    .append('tspan').text(formatPosition(block.genes[i].start, block.genes[i].end, 'bp'));
+            }
         }
     }
     var blockHeight = info[0][0].offsetHeight;
@@ -822,9 +830,9 @@ function addSelectionAreas() {
 function getNumberOfContigs(x) {
     lineCountContigs.selectAll('g')
         .remove();
-    for (var block = 0; block < visRectsAndPaths.length; block++) {
-        if (x_main(visRectsAndPaths[block].corr_start) <= x && x <= x_main(visRectsAndPaths[block].corr_end)) {
-            var curItem = visRectsAndPaths[block];
+    for (var block = 0; block < visRects.length; block++) {
+        if (x_main(visRects[block].corr_start) <= x && x <= x_main(visRects[block].corr_end)) {
+            var curItem = visRects[block];
             if (curItem.objClass.search("disabled") != -1 || curItem.notActive)
                 continue;
             order = (curItem.order + 1).toString();

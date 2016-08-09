@@ -457,7 +457,7 @@ function appendLegend() {
 }
 
 function appendLegendAlignmentViewer(legend) {
-    var classes = ['', 'similar', 'misassembled light_color', 'misassembled', 'misassembled similar', 'disabled', 'annotation'];
+    var classes = ['', 'similar', 'misassembled light_color', 'misassembled', 'misassembled similar', 'disabled', 'gene'];
     var classDescriptions = ['correct contigs', 'correct contigs similar among > 50% assemblies', 'misassembled blocks ' +
     '(misassembly event on the left side, on the right side)', 'misassembled blocks (zoom in to get details about misassembly event side)',
         'misassembled blocks similar among > 50% assemblies', 'unchecked misassembled blocks (see checkboxes)', 'genome features (e.g. genes)'];

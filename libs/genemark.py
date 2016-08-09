@@ -111,10 +111,8 @@ def parse_gtf_out(out_fpath):
         for line in f:
             if 'CDS' in line:
                 l = line.strip().split()
-                contig_id, strand, left_index, right_index, gene = l[0], l[6], l[3], l[4], l[9]
-                left_index = int(left_index)
-                right_index = int(right_index)
-                yield contig_id, strand, left_index, right_index, gene
+                gene = Gene(contig=l[0], strand=l[6], start=int(l[3]), end=int(l[4]), seq=l[9])
+                yield gene
 
 
 def add_genes_to_gff(genes, gff_fpath, prokaryote):
@@ -148,7 +146,7 @@ def add_genes_to_fasta(genes, fasta_fpath):
         for i, gene in enumerate(genes):
             length = gene.end - gene.start
             gene_id = '>gene_%d|GeneMark.hmm|%d_nt|%s|%d|%d|%s' % (
-                i + 1, length, gene.strand, gene.start, gene.end, gene.contig_id
+                i + 1, length, gene.strand, gene.start, gene.end, gene.contig
             )
             yield gene_id, gene.seq
 
@@ -244,7 +242,8 @@ def predict_genes(index, contigs_fpath, gene_lengths, out_dirpath, tool_dirpath,
             add_genes_to_fasta(genes, out_fasta_fpath)
 
         count = [sum([gene.end - gene.start > x for gene in genes]) for x in gene_lengths]
-        unique_count = len(set([gene.seq for gene in genes]))
+        gene_ids = [gene.seq if gene.seq else gene.name for gene in genes]
+        unique_count = len(set(gene_ids))
         total_count = len(genes)
 
         logger.info('  ' + qutils.index_to_str(index) + '  Genes = ' + str(unique_count) + ' unique, ' + str(total_count) + ' total')

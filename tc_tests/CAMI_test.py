@@ -18,6 +18,6 @@ check_report_files(name, ['icarus.html',
                           'runs_per_reference/Brevibacterium_casei_S18/report.tsv'])
 
 assert_metric(name, 'N50', ['24752', '16577'], 'combined_reference/report.tsv')
-assert_metric_comparison(name, 'Reference length', '>=', value='65000000', fname='combined_reference/report.tsv')
-assert_metric_comparison(name, 'Rhodobacter_sphaeroides', '>=', value='1.00', fname='summary/TSV/Duplication_ratio.tsv')
-assert_metric_comparison(name, 'Rhodobacter_sphaeroides', '<=', value='1.01', fname='summary/TSV/Duplication_ratio.tsv')
+assert_metric_comparison(name, 'Reference length', '>=', value='70000000', fname='combined_reference/report.tsv')
+assert_metric_comparison(name, 'gamma_proteobacterium_SCGC_AAA076-D02', '>=', value='1.05', fname='summary/TSV/Duplication_ratio.tsv')
+assert_metric_comparison(name, 'gamma_proteobacterium_SCGC_AAA076-D02', '<=', value='1.2', fname='summary/TSV/Duplication_ratio.tsv')

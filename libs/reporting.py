@@ -90,7 +90,7 @@ class Fields:
     # Genome statistics
     MAPPEDGENOME = 'Genome fraction (%)'
     DUPLICATION_RATIO = 'Duplication ratio'
-    AVE_READ_SUPPORT = 'Ave contig read support'
+    AVE_READ_SUPPORT = 'Avg contig read support'
     GENES = '# genes'
     OPERONS = '# operons'
     LARGALIGN = 'Largest alignment'

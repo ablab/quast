@@ -341,6 +341,8 @@ def usage(show_hidden=False, meta=False, short=True):
             print >> sys.stderr, "-c  --min-cluster   <int>   Nucmer's parameter: the minimum length of a cluster of matches [default: %s]" % min_cluster
             print >> sys.stderr, "-j  --save-json             Save the output also in the JSON format"
             print >> sys.stderr, "-J  --save-json-to <path>   Save the JSON output to a particular path"
+            if meta:
+                print >> sys.stderr, "--read-support              Use read coverage specified in contig names (SPAdes/Velvet style) for calculating Avg contig read support"
             print >> sys.stderr, "--no-icarus                 Do not create Icarus files"
             print >> sys.stderr, "--svg                       Draw contig alignment plot (in SVG format)"
 

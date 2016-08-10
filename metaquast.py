@@ -267,7 +267,8 @@ def main(args):
         else:
             logger.main_info('All downloaded references have low genome fraction. Nothing was excluded for now.')
 
-    calculate_ave_read_support(combined_output_dirpath, assemblies)
+    if qconfig.calculate_read_support:
+        calculate_ave_read_support(combined_output_dirpath, assemblies)
 
     quast_py_args += ['--no-check-meta']
     qconfig.contig_thresholds = ','.join([str(threshold) for threshold in qconfig.contig_thresholds if threshold > qconfig.min_contig])

@@ -423,6 +423,10 @@ def parse_options(logger, quast_args, is_metaquast=False):
          ),
         (['--err-fpath'], dict(
              dest='error_log_fpath')
+         ),
+        (['--read-support'], dict(
+             dest='calculate_read_support',
+             action='store_true')
          )
     ]
     if is_metaquast:

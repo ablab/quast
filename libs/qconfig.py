@@ -106,6 +106,7 @@ krona_dirname = "krona_charts"
 combined_ref_name = 'combined_reference.fasta'
 downloaded_ref_min_aligned_rate = 0.1
 unique_contigs_fname_pattern = 'unique_contigs_%s.tsv'
+calculate_read_support = False
 
 # for reads analyzer
 variation_dirname = 'structural_variations'

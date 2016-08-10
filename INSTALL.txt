@@ -59,9 +59,3 @@ of their work on your platform.
 
 We also provide ./install.sh and ./install_full.sh scripts. The former runs two simple --test 
 commands, the latter runs all four mentioned above commands.
-
-NOTE: You should place quast-4.2 directory in the final destination before
-the first use (e.g. before run with --test). If you want to move QUAST to 
-some new place after several usages you should use a clean copy of quast-4.2.
-This limitation is caused by auto-generation of absolute paths in compiled 
-modules of QUAST.

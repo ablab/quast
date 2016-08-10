@@ -1,5 +1,24 @@
 -- Version history --
 
+4.3   1. Icarus update:
+       - predicted genes (see --gene-finding option) are now displayed in contigs (on both
+         Contig Size and Contig Alignment Viewers);
+       - small fixes for better performance on low resolution screens.
+
+      2. setup.py added for simplifying QUAST installation process.
+
+      3. Heavy output files (lists of SNPs, GFF with predicted genes) are now compressed
+         with gzip. This default behaviour may be cancelled by using --no-gzip option.
+
+      4. Embedded samtools replaced with sambamba which is significantly faster.
+
+      5. Removed limitation of not moving QUAST installation dir after the first use.
+
+      6. Fixed bug causing creation of error.log file in current working directory.
+
+      7. Fixed several minor bugs.
+
+
 4.2   1. Icarus update -- improved read coverage panel: 
        - physical coverage added (the coverage of the reference by the paired-end fragments,
          counting the reads and the gap between the paired-end reads as covered);

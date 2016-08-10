@@ -95,7 +95,7 @@
     for guidelines on how to complete the licensing process.
     <br>
     <br>
-    Version 4.2 of QUAST was released under GPL v2 on XX July 2016. Note that some of build-in third-party tools are not under GPL v2. See <a href="LICENSE.txt">LICENSE</a> for details.
+    Version 4.3 of QUAST was released under GPL v2 on XX August 2016. Note that some of build-in third-party tools are not under GPL v2. See <a href="LICENSE.txt">LICENSE</a> for details.
 </p>
 
 <h2>Contents</h2>
@@ -214,14 +214,6 @@ We also provide <code>./install.sh</code> and <code>./install_full.sh</code> scr
 If you plan to use MetaQUAST's automated reference genomes detection, or use SV calling for misassembly refinement, you should use <code>./install_full.sh</code>, which runs all four mentioned above commands,
 compiles tools for read alignment and SV detection (BEDtools, Bowtie2, and Manta), and downloads necessary files (SILVA 16S rRNA gene database and BLAST). Otherwise, it is enough to use <code>./install.sh</code>,
 which runs only two simple --test commands.
-</p>
-
-<p>
-Note: you should place quast-4.2 directory into a final destination before
-the first use (e.g. before the run with --test). If you want to move QUAST to 
-some new place after several usages you should use a clean copy of quast-4.2.
-This limitation is caused by auto-generation of absolute paths in compiled 
-modules of QUAST.
 </p>
 
 <a name="sec2"></a>

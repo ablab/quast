@@ -95,22 +95,26 @@ def download_refs(organism, ref_fpath):
     ref_id_list = xml_tree.find('IdList').findall('Id')
     best_ref_links = []
     for id in ref_id_list:
-        response = try_send_request(
-            ncbi_url + 'elink.fcgi?dbfrom=assembly&db=nuccore&id=%s&linkname="assembly_nuccore_refseq"' % id.text + quast_fields)
-        if not response:
-            continue
-        xml_tree = ET.fromstring(response)
+        databases = ['assembly_nuccore_refseq', 'assembly_nuccore_insdc']
+        for db in databases:
+            response = try_send_request(
+                ncbi_url + 'elink.fcgi?dbfrom=assembly&db=nuccore&id=%s&linkname="%s"' % (id.text, db) + quast_fields)
+            if not response:
+                continue
+            xml_tree = ET.fromstring(response)
 
-        link_set = xml_tree.find('LinkSet')
-        if link_set is None:
-            continue
-        link_db = xml_tree.find('LinkSet').find('LinkSetDb')
-        if link_db is None:
-            continue
-        ref_links = link_db.findall('Link')
-        if best_ref_links and len(ref_links) > len(best_ref_links):
-            continue
-        best_ref_links = ref_links
+            link_set = xml_tree.find('LinkSet')
+            if link_set is None:
+                continue
+            link_db = xml_tree.find('LinkSet').find('LinkSetDb')
+            if link_db is None:
+                continue
+            ref_links = link_db.findall('Link')
+            if best_ref_links and len(ref_links) > len(best_ref_links):
+                continue
+            best_ref_links = ref_links
+            if best_ref_links:
+                break
         if best_ref_links and len(best_ref_links) < 3:
             break
 

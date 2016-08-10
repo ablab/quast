@@ -710,9 +710,13 @@ def compile_tool(name, dirpath, requirements, just_notice=False, recompile_if_mo
                                       stderr=open(make_logs_basepath + '.err', 'w'),)
 
         if return_code != 0 or not all_required_binaries_exist(dirpath, requirements):
-            logger.warning("Failed to compile " + name + " (" + dirpath + ")! "
-                           "Try to compile it manually. " + ("You can restart Quast with the --debug flag "
-                           "to see the command line." if not qconfig.debug else ""))
+            msg = "Failed to compile " + name + " (" + dirpath + ")! " \
+                  "Try to compile it manually. " + ("You can restart Quast with the --debug flag "
+                                                    "to see the compilation command." if not qconfig.debug else "")
+            if just_notice:
+                logger.notice(msg)
+            else:
+                logger.warning(msg)
             open(failed_compilation_flag, 'w').close()
             return False
         with open(succeeded_compilation_flag, 'w') as out_f:

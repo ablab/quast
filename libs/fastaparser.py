@@ -85,6 +85,41 @@ def get_chr_lengths_from_fastafile(fpath):
     return chr_lengths
 
 
+def create_fai_file(fasta_fpath):
+    l = 0
+    total_offset = 0
+    chr_offset = 0
+    chr_name = None
+    fai_fpath = fasta_fpath + '.fai'
+    fai_fields = []
+    with open(fasta_fpath) as in_f:
+        for raw_line in in_f:
+            if raw_line.find('\r') != -1:
+                lines = raw_line.split('\r')
+            else:
+                lines = [raw_line]
+            for line in lines:
+                if not line:
+                    continue
+                if line[0] == '>':
+                    if l:  # not the first sequence in FASTA
+                        fai_fields.append([chr_name, l, total_offset, len(chr_line.strip()), len(chr_line)])
+                        total_offset += chr_offset
+                        l = 0
+                        chr_offset = 0
+                    chr_name = line[1:].strip()
+                    total_offset += len(line)
+                else:
+                    if not l:
+                        chr_line = line
+                    l += len(line.strip())
+                    chr_offset += len(line)
+    fai_fields.append([chr_name, l, total_offset, len(chr_line.strip()), len(chr_line)])
+    with open(fai_fpath, 'w') as out_f:
+        for fields in fai_fields:
+            out_f.write('\t'.join([str(fs) for fs in fields]) + '\n')
+
+
 def split_fasta(fpath, output_dirpath):
     """
         Takes filename of FASTA-file and directory to output

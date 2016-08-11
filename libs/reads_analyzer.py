@@ -13,6 +13,7 @@ import shlex
 from collections import defaultdict
 
 from libs import qconfig, qutils, ca_utils
+from libs.fastaparser import create_fai_file
 from libs.ra_utils import compile_reads_analyzer_tools, config_manta_fpath, sambamba_fpath, bowtie_fpath, bedtools_fpath
 from qutils import is_non_empty_file, add_suffix, get_chr_len_fpath
 
@@ -117,7 +118,7 @@ def process_one_ref(cur_ref_fpath, output_dirpath, err_path, bed_fpath=None):
     if not is_non_empty_file(ref_bamsorted_fpath + '.bai'):
         qutils.call_subprocess([sambamba_fpath('sambamba'), 'index', ref_bamsorted_fpath],
                                stderr=open(err_path, 'a'), logger=logger)
-    chr_len_fpath = get_chr_len_fpath(cur_ref_fpath)
+    create_fai_file(cur_ref_fpath)
     vcfoutput_dirpath = os.path.join(output_dirpath, ref + '_manta')
     found_SV_fpath = os.path.join(vcfoutput_dirpath, 'results/variants/diploidSV.vcf.gz')
     unpacked_SV_fpath = found_SV_fpath + '.unpacked'

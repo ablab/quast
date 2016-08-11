@@ -5,6 +5,7 @@
 # See file LICENSE for details.
 ############################################################################
 
+from __future__ import with_statement
 import os
 import gzip
 import zipfile

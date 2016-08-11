@@ -30,7 +30,7 @@ silva_db_path = 'http://www.arb-silva.de/fileadmin/silva_databases/release_119/E
 silva_fname = 'SILVA_119_SSURef_Nr99_tax_silva.fasta'
 
 blast_filenames = ['makeblastdb', 'blastn']
-blast_common_path = 'http://quast.bioinf.spbau.ru/static/blast/' + qconfig.platform_name
+blast_common_path = 'https://raw.githubusercontent.com/ablab/quast/master/external_tools/blast/' + qconfig.platform_name
 blast_dirpath = os.path.join(qconfig.LIBS_LOCATION, 'blast')
 
 blastdb_dirpath = os.path.join(qconfig.LIBS_LOCATION, 'blast', '16S_RNA_blastdb')

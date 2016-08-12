@@ -116,7 +116,7 @@ def add_contig(cum_length, contig, not_used_nx, assemblies_n50, assembly, contig
         if has_aligned_contigs and not contig.contig_type:
             contig.contig_type = 'unaligned'
         align = '{name: "' + contig.name + '",size: ' + str(contig.size) + marks + ',contig_type: "' + contig.contig_type + \
-                '",structure: [' + ''.join(structure) + '], genes: [' + ','.join(genes) + ']},'
+                '",structure: [' + ''.join(structure) + ']' + (', genes: [' + ','.join(genes) + ']' if qconfig.gene_finding else '') + '},'
     return end_contig, contig_size_lines, align, not_used_nx
 
 
@@ -274,7 +274,10 @@ def parse_genes_data(contigs_by_assemblies, genes_by_labels):
     if not genes_by_labels:
         return
     for label, genes in genes_by_labels.iteritems():
-        contigs = dict((contig.name, contig) for contig in contigs_by_assemblies[label])
+        if qconfig.glimmer:
+            contigs = dict((contig.name[:qutils.MAX_CONTIG_NAME_GLIMMER], contig) for contig in contigs_by_assemblies[label])
+        else:
+            contigs = dict((contig.name, contig) for contig in contigs_by_assemblies[label])
         for gene in genes:
             contig = contigs[gene.contig]
             contig.genes.append(gene)

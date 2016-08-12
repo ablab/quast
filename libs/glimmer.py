@@ -67,7 +67,7 @@ def glimmerHMM(tool_dir, fasta_fpath, out_fpath, gene_lengths, err_path, tmp_dir
     base_dir = tempfile.mkdtemp(dir=tmp_dir)
     for seq_num, (ind, seq) in enumerate(read_fasta(fasta_fpath)):
         seq_num = str(seq_num)
-        ind = re.sub('[/. ]', '_', ind)[:298]
+        ind = ind[:qutils.MAX_CONTIG_NAME_GLIMMER]
         contig_path = os.path.join(base_dir, seq_num + '.fasta')
         gff_path = os.path.join(base_dir, seq_num + '.gff')
 

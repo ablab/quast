@@ -8,14 +8,14 @@ function getItemEnd(block, maxExtent) {
 
 function getItemWidth(block, minExtent, maxExtent) {
     var widthOffset = 0;
-    if (block.objClass.search('gene') != -1) {
+    if (block.objClass && block.objClass.search('gene') != -1) {
         widthOffset = block.groupId == selected_id ? 2 : 1;
     }
     return getItemEnd(block, maxExtent) - getItemStart(block, minExtent) - widthOffset;
 }
 
 function getItemHeight(block) {
-    if (block.objClass.search('gene') != -1) {
+    if (block.objClass && block.objClass.search('gene') != -1) {
         return block.groupId == selected_id ? mainGenesSelectedHeight : mainGenesHeight;
     }
     return mainLanesHeight;
@@ -59,7 +59,7 @@ function getTranslate(block, selected_id, minExtent) {
     var x = x_main(Math.max(minExtent, block.corr_start));
     var y = y_main(block.lane) + .25 * lanesInterval;
     if (INTERLACE_BLOCKS_VERT_OFFSET) y += offsetsY[block.order % 3] * lanesInterval;
-    if (block.objClass.search('gene') != -1) {
+    if (block.objClass && block.objClass.search('gene') != -1) {
         x += block.groupId == selected_id ? 1 : .5;
         y = y_main(block.lane) + mainLanesHeight * 0.6;
     }
@@ -833,7 +833,7 @@ function getNumberOfContigs(x) {
     for (var block = 0; block < visRects.length; block++) {
         if (x_main(visRects[block].corr_start) <= x && x <= x_main(visRects[block].corr_end)) {
             var curItem = visRects[block];
-            if (curItem.objClass.search("disabled") != -1 || curItem.notActive)
+            if (curItem.objClass && curItem.objClass.search("disabled") != -1 || curItem.notActive)
                 continue;
             order = (curItem.order + 1).toString();
             offsetY = y_main(curItem.lane) + mainLanesHeight / 2;

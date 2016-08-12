@@ -115,7 +115,7 @@ def do(contigs_fpaths, contig_report_fpath_pattern, output_dirpath, ref_fpath, c
 
     if contigs_fpaths and ref_fpath and features:
         features_data = parse_features_data(features, cumulative_ref_lengths, chr_names)
-    if contigs_fpath and (qconfig.gene_finding or qconfig.glimmer):
+    if contigs_fpath and qconfig.gene_finding:
         parse_genes_data(contigs_by_assemblies, genes_by_labels)
     if reference_chromosomes and lists_of_aligned_blocks:
         assemblies = get_assemblies(contigs_fpaths, virtual_genome_size, lists_of_aligned_blocks, find_similar)
@@ -270,7 +270,8 @@ def prepare_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, data_st
                         data_str.append(',overlaps:[ ')
                         data_str.append(','.join(overlapped_contigs[alignment]))
                         data_str.append(']')
-                    data_str.append(', genes: [' + ','.join(genes) + ']')
+                    if qconfig.gene_finding:
+                        data_str.append(', genes: [' + ','.join(genes) + ']')
                     data_str.append(', structure: [ ')
                     data_str = add_contig_structure_data(data_str, alignment.name, contig_structure[alignment.name], ref_contigs,
                                                          chr_full_names, contig_names_by_refs, used_chromosomes, links_to_chromosomes)

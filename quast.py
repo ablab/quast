@@ -185,7 +185,7 @@ def main(args):
             os.path.join(output_dirpath, 'genome_stats'))
 
     genes_by_labels = None
-    if qconfig.gene_finding or qconfig.glimmer:
+    if qconfig.gene_finding:
         if qconfig.glimmer:
             ########################################################################
             ### Glimmer

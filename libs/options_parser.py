@@ -332,7 +332,10 @@ def parse_options(logger, quast_args, is_metaquast=False):
          ),
         (['--glimmer'], dict(
              dest='glimmer',
-             action='store_true')
+             action='callback',
+             callback=set_multiple_variables,
+             callback_kwargs={'store_true_values': ['gene_finding', 'glimmer']},
+             default=False)
          ),
         (['--plots-format'], dict(
              dest='plot_extension',

@@ -19,6 +19,7 @@ from libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 
 MAX_CONTIG_NAME = 1021  # Nucmer's constraint
+MAX_CONTIG_NAME_GLIMMER = 298   # Glimmer's constraint
 
 
 def set_up_output_dir(output_dirpath, json_outputpath,

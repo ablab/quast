@@ -36,20 +36,19 @@ def compile_aligner(logger):
     if contig_aligner_dirpath is not None:
         return True
 
+    if qconfig.platform_name == 'macosx':
+        contig_aligner = 'E-MEM'
+        contig_aligner_dirpath = join(qconfig.LIBS_LOCATION, 'E-MEM-osx')
+        return True
+
     default_requirements = ['nucmer', 'delta-filter', 'show-coords', 'show-snps', 'mummer', 'mgaps']
 
-    aligners_to_try = []
-    if platform.system() == 'Darwin':
-        aligners_to_try.append(('E-MEM', join(qconfig.LIBS_LOCATION, 'E-MEM-osx'), default_requirements + ['e-mem']))
-        aligners_to_try.append(('MUMmer', join(qconfig.LIBS_LOCATION, 'MUMmer3.23-osx'), default_requirements))
-    else:
-        aligners_to_try.append(('E-MEM', join(qconfig.LIBS_LOCATION, 'E-MEM-linux'), default_requirements + ['e-mem']))
-        aligners_to_try.append(('MUMmer', join(qconfig.LIBS_LOCATION, 'MUMmer3.23-linux'), default_requirements))
+    aligners_to_try = [
+        ('E-MEM', join(qconfig.LIBS_LOCATION, 'E-MEM-linux'), default_requirements + ['e-mem']),
+        ('MUMmer', join(qconfig.LIBS_LOCATION, 'MUMmer3.23-linux'), default_requirements)]
 
     for i, (name, dirpath, requirements) in enumerate(aligners_to_try):
-        recompile_if_moved = True if name != 'E-MEM' or platform.system() != 'Darwin' else False
-        success_compilation = compile_tool(name, dirpath, requirements, just_notice=(i < len(aligners_to_try) - 1),
-                                           recompile_if_moved=recompile_if_moved)
+        success_compilation = compile_tool(name, dirpath, requirements, just_notice=(i < len(aligners_to_try) - 1))
         if not success_compilation:
             continue
         contig_aligner = name

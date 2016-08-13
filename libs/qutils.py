@@ -669,7 +669,7 @@ def all_required_binaries_exist(aligner_dirpath, required_binaries):
     return True
 
 
-def check_prev_compilation_failed(name, failed_compilation_flag, just_notice=False):
+def check_prev_compilation_failed(name, failed_compilation_flag, just_notice=False, logger=logger):
     if isfile(failed_compilation_flag):
         msg = 'Previous try of ' + name + ' compilation was unsuccessful! ' + \
               'For forced retrying, please remove ' + failed_compilation_flag + ' and restart QUAST.'
@@ -681,26 +681,28 @@ def check_prev_compilation_failed(name, failed_compilation_flag, just_notice=Fal
     return False
 
 
-def check_tool_path_changed(name, dirpath, succeeded_compilation_flag, make_logs_basepath):
-    if isfile(succeeded_compilation_flag):
-        with open(succeeded_compilation_flag) as in_f:
-            old_dirpath = in_f.read().strip()
-            if old_dirpath == dirpath:
-                return True
-    logger.info('QUAST was moved or ' + succeeded_compilation_flag + ' was deleted. ' + name + ' will be recompiled.')
-    call_subprocess(['make', 'clean', '-C', dirpath], stdout=open(make_logs_basepath + '.log', 'w'),
-                    stderr=open(make_logs_basepath + '.err', 'w'))
-    return False
+def safe_rm(fpath):
+    if isfile(fpath):
+        try:
+            os.remove(fpath)
+        except OSError:
+            pass
 
 
-def compile_tool(name, dirpath, requirements, just_notice=False, recompile_if_moved=False):
+def compile_tool(name, dirpath, requirements, just_notice=False, logger=logger, only_clean=False):
     make_logs_basepath = join(dirpath, 'make')
     failed_compilation_flag = make_logs_basepath + '.failed'
     succeeded_compilation_flag = make_logs_basepath + '.succeeded'
 
-    if not all_required_binaries_exist(dirpath, requirements) or \
-            (recompile_if_moved and not check_tool_path_changed(name, dirpath, succeeded_compilation_flag, make_logs_basepath)):
-        if check_prev_compilation_failed(name, failed_compilation_flag, just_notice):
+    if only_clean:
+        for required_binary in requirements:
+            safe_rm(join(dirpath, required_binary))
+        safe_rm(failed_compilation_flag)
+        safe_rm(succeeded_compilation_flag)
+        return True
+
+    if not all_required_binaries_exist(dirpath, requirements):
+        if check_prev_compilation_failed(name, failed_compilation_flag, just_notice, logger=logger):
             return False
 
         # making
@@ -708,7 +710,7 @@ def compile_tool(name, dirpath, requirements, just_notice=False, recompile_if_mo
                          '.log and make.err)')
         return_code = call_subprocess(['make', '-C', dirpath],
                                       stdout=open(make_logs_basepath + '.log', 'w'),
-                                      stderr=open(make_logs_basepath + '.err', 'w'),)
+                                      stderr=open(make_logs_basepath + '.err', 'w'), logger=logger)
 
         if return_code != 0 or not all_required_binaries_exist(dirpath, requirements):
             msg = "Failed to compile " + name + " (" + dirpath + ")! " \

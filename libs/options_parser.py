@@ -18,19 +18,21 @@ from libs.metautils import remove_from_quast_py_args
 from libs.qutils import assert_file_exists, set_up_output_dir
 
 
-test_reference           = join(qconfig.QUAST_HOME, 'test_data', 'reference.fasta.gz')
-test_forward_reads       = join(qconfig.QUAST_HOME, 'test_data', 'reads1.fastq.gz')
-test_reverse_reads       = join(qconfig.QUAST_HOME, 'test_data', 'reads2.fastq.gz')
-test_genes               = [join(qconfig.QUAST_HOME, 'test_data', 'genes.gff')]
-test_operons             = [join(qconfig.QUAST_HOME, 'test_data', 'operons.gff')]
-test_contigs_fpaths      = [join(qconfig.QUAST_HOME, 'test_data', 'contigs_1.fasta'),
-                            join(qconfig.QUAST_HOME, 'test_data', 'contigs_2.fasta')]
+test_data_dir = join(qconfig.QUAST_HOME, 'test_data')
 
-meta_test_references     = [join(qconfig.QUAST_HOME, 'test_data', 'meta_ref_1.fasta'),
-                            join(qconfig.QUAST_HOME, 'test_data', 'meta_ref_2.fasta'),
-                            join(qconfig.QUAST_HOME, 'test_data', 'meta_ref_3.fasta')]
-meta_test_contigs_fpaths = [join(qconfig.QUAST_HOME, 'test_data', 'meta_contigs_1.fasta'),
-                            join(qconfig.QUAST_HOME, 'test_data', 'meta_contigs_2.fasta')]
+test_reference           = join(test_data_dir, 'reference.fasta.gz')
+test_forward_reads       = join(test_data_dir, 'reads1.fastq.gz')
+test_reverse_reads       = join(test_data_dir, 'reads2.fastq.gz')
+test_genes               = [join(test_data_dir, 'genes.gff')]
+test_operons             = [join(test_data_dir, 'operons.gff')]
+test_contigs_fpaths      = [join(test_data_dir, 'contigs_1.fasta'),
+                            join(test_data_dir, 'contigs_2.fasta')]
+
+meta_test_references     = [join(test_data_dir, 'meta_ref_1.fasta'),
+                            join(test_data_dir, 'meta_ref_2.fasta'),
+                            join(test_data_dir, 'meta_ref_3.fasta')]
+meta_test_contigs_fpaths = [join(test_data_dir, 'meta_contigs_1.fasta'),
+                            join(test_data_dir, 'meta_contigs_2.fasta')]
 
 
 class QuastOption(Option):

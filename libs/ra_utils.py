@@ -34,7 +34,7 @@ def bedtools_fpath(fname):
 
 
 def print_manta_warning(logger):
-    logger.main_info('Failed searching structural variations. QUAST will search trivial deletions only.')
+    logger.main_info('Manta failed to compile, and QUAST SV module will be able to search trivial deletions only.')
 
 
 def manta_compilation_failed():
@@ -75,14 +75,16 @@ def download_unpack_tar_bz(name, download_path, downloaded_fpath, final_dirpath,
             return False
 
 
-def compile_reads_analyzer_tools(logger, bed_fpath=None):
-    tools_to_try = [('Bowtie2', bowtie_dirpath, ['bowtie2-align-l']),
-                    ('BEDtools', bedtools_dirpath, [join('bin', 'bedtools')])]
-
-    for name, dirpath, requirements in tools_to_try:
-        success_compilation = compile_tool(name, dirpath, requirements)
+def compile_reads_analyzer_tools(logger, bed_fpath=None, only_clean=False):
+    for name, dirpath, requirements in [
+            ('Bowtie2', bowtie_dirpath, ['bowtie2-align-l']),
+            ('BEDtools', bedtools_dirpath, [join('bin', 'bedtools')])]:
+        success_compilation = compile_tool(name, dirpath, requirements, only_clean=only_clean)
         if not success_compilation:
             return False
+
+    if only_clean:
+        return True
 
     if not qconfig.no_sv and bed_fpath is None and not isfile(config_manta_fpath):
         failed_compilation_flag = join(manta_dirpath, 'make.failed')

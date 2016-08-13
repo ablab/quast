@@ -217,23 +217,38 @@ def set_max_threads(logger):
 
 
 def quast_version():
-    version_fpath = os.path.join(QUAST_HOME, 'VERSION.txt')
-    version = None
-    build = None
-    if os.path.isfile(version_fpath):
-        version_file = open(version_fpath)
-        version = version_file.readline()
-        if version:
-            version = version.strip()
-        else:
-            version = "unknown"
-        build = version_file.readline()
-        if build:
-            build = build.strip().lower()
-    if build:
-        return version + ", " + build
+    revision = None
+    try:
+        from libs import version
+        vers = version.__version__
+        revision = version.__git_revision__
+    except ImportError:
+        with open(os.path.join(QUAST_HOME, 'VERSION.txt')) as f:
+            lines = f.read().strip().split('\n')
+        vers = lines[0]
+        if len(lines) > 1:
+            revision = lines[1]
+    if revision:
+        return vers + ', ' + revision
     else:
-        return version
+        return vers
+
+    # version = None
+    # build = None
+    # if os.path.isfile(version_fpath):
+    #     version_file = open(version_fpath)
+    #     version = version_file.readline()
+    #     if version:
+    #         version = version.strip()
+    #     else:
+    #         version = "unknown"
+    #     build = version_file.readline()
+    #     if build:
+    #         build = build.strip().lower()
+    # if build:
+    #     return version + ", " + build
+    # else:
+    #     return version
 
 
 def print_version(meta=False):

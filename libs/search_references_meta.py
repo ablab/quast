@@ -15,6 +15,9 @@ import platform
 import re
 import gzip
 import time
+
+from os.path import isfile
+
 from libs import qconfig, qutils
 from libs.log import get_logger
 from libs.qutils import is_non_empty_file
@@ -156,7 +159,24 @@ def show_progress(a, b, c):
         sys.stdout.flush()
 
 
-def download_blast_files(blast_filename):
+def download_all_blast_files(logger=logger, only_clean=False):
+    for i, cmd in enumerate(blast_filenames):
+        blast_file = blast_fpath(cmd)
+        if only_clean:
+            if blast_file and isfile(blast_file):
+                os.remove(blast_file)
+            continue
+
+        if not blast_file:
+            return_code = download_blast_files(cmd, logger=logger)
+            logger.info()
+            if return_code != 0:
+                return None, None
+            blast_file = blast_fpath(cmd)
+            os.chmod(blast_file, os.stat(blast_file).st_mode | stat.S_IEXEC)
+
+
+def download_blast_files(blast_filename, logger=logger):
     logger.info()
     if not os.path.isdir(blast_dirpath):
         os.mkdir(blast_dirpath)
@@ -316,15 +336,7 @@ def process_blast(blast_assemblies, downloaded_dirpath, labels, blast_check_fpat
     if not os.path.isdir(blastdb_dirpath):
         os.makedirs(blastdb_dirpath)
 
-    for i, cmd in enumerate(blast_filenames):
-        blast_file = blast_fpath(cmd)
-        if not blast_file:
-            return_code = download_blast_files(cmd)
-            logger.info()
-            if return_code != 0:
-                return None, None
-            blast_file = blast_fpath(cmd)
-            os.chmod(blast_file, os.stat(blast_file).st_mode | stat.S_IEXEC)
+    download_all_blast_files()
 
     if not os.path.isfile(db_fpath + '.nsq') or os.path.getsize(db_fpath + '.nsq') < db_nsq_fsize:
         # if os.path.isdir(blastdb_dirpath):

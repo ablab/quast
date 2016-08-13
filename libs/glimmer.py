@@ -126,17 +126,17 @@ def predict_genes(index, contigs_fpath, gene_lengths, out_dirpath, tool_dirpath,
     return genes, unique, cnt
 
 
-def do(contigs_fpaths, gene_lengths, out_dirpath):
-    logger.print_timestamp()
-    logger.main_info('Running GlimmerHMM...')
-
+def compile_glimmer(only_clean=False):
     tool_dirpath = os.path.join(qconfig.LIBS_LOCATION, 'glimmer')
     tool_src_dirpath = os.path.join(tool_dirpath, 'src')
     tool_exec_fpath = os.path.join(tool_dirpath, 'glimmerhmm')
-    tmp_dirpath = os.path.join(out_dirpath, 'tmp')
+
+    if only_clean:
+        if os.path.isfile(tool_exec_fpath):
+            os.remove(tool_exec_fpath)
+        return True
 
     if not os.path.isfile(tool_exec_fpath):
-        # making
         logger.main_info("Compiling GlimmerHMM...")
         return_code = qutils.call_subprocess(
             ['make', '-C', tool_src_dirpath],
@@ -147,7 +147,19 @@ def do(contigs_fpaths, gene_lengths, out_dirpath):
             logger.error("Failed to compile GlimmerHMM (" + tool_src_dirpath +
                          ")!\nTry to compile it manually or do not use --gene-finding "
                          "option with --eukaryote.\nUse --debug option to see the command lines.")
-            return
+            return None
+    return tool_exec_fpath
+
+
+def do(contigs_fpaths, gene_lengths, out_dirpath):
+    logger.print_timestamp()
+    logger.main_info('Running GlimmerHMM...')
+
+    tool_dirpath = os.path.join(qconfig.LIBS_LOCATION, 'glimmer')
+    tmp_dirpath = os.path.join(out_dirpath, 'tmp')
+    tool_exec_fpath = compile_glimmer()
+    if not tool_exec_fpath:
+        return
 
     if not os.path.isdir(out_dirpath):
         os.makedirs(out_dirpath)

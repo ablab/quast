@@ -106,7 +106,7 @@ class QLogger(object):
             self._logger.info('\nThank you for using QUAST!')
             if check_test:
                 if (numbers is not None and numbers[2] > 0) or self._num_nf_errors > 0:
-                    self._logger.info('\nTEST FAILED! Please find non-fatal errors in the log and try to fix them!')
+                    self._logger.info('\nTEST FAILED! Please find non-fatal errors in the log and try to fix them.')
                     test_result = 1
                 elif (numbers is not None and numbers[1] > 0) or self._num_warnings > 0:
                     self._logger.info('\nTEST PASSED with WARNINGS!')
@@ -191,6 +191,13 @@ class QLogger(object):
 
     def print_command_line(self, args, indent='',
                            wrap_after=80, only_if_debug=False, is_main=False):
+        if only_if_debug:
+            out = self.debug
+        elif is_main:
+            out = self.main_info
+        else:
+            out = self.info
+
         text = ''
         line = indent
 
@@ -210,12 +217,7 @@ class QLogger(object):
             else:
                 line += ' '
 
-        if only_if_debug:
-            self.debug(text)
-        elif is_main:
-            self.main_info(text)
-        else:
-            self.info(text)
+        out(text)
 
     def print_params(self, indent='',
                            wrap_after=80, only_if_debug=False):
@@ -275,3 +277,4 @@ class QLogger(object):
 
     def get_numbers_of_notifications(self):
         return (self._num_notices, self._num_warnings, self._num_nf_errors)
+

@@ -59,6 +59,40 @@ def run_gage(i, contigs_fpath, gage_results_dirpath, gage_tool_path, reference, 
     return return_code
 
 
+gage_dirpath = os.path.join(qconfig.LIBS_LOCATION, 'gage')
+
+
+def compile_gage(only_clean=True):
+    if only_clean:
+        for required_name in required_java_fnames:
+            fpath = os.path.join(gage_dirpath, required_name + '.class')
+            if os.path.isfile(fpath):
+                os.remove(fpath)
+        return True
+
+    javac_path = get_path_to_program('javac')
+    if javac_path is None:
+        logger.error('Java compiler not found (javac)! '
+                     'Please install it or compile GAGE java classes manually (' + gage_dirpath + '/*.java)!')
+        return
+
+    cur_dir = os.getcwd()
+    os.chdir(gage_dirpath)
+    # making
+    logger.main_info('Compiling JAVA classes (details are in ' + os.path.join(gage_dirpath, 'make.log') + ' and make.err)')
+    return_codes = [qutils.call_subprocess(
+        ['javac', os.path.join(gage_dirpath, java_fname + '.java')],
+        stdout=open(os.path.join(gage_dirpath, 'make.log'), 'w'),
+        stderr=open(os.path.join(gage_dirpath, 'make.err'), 'w'),) for java_fname in required_java_fnames]
+    os.chdir(cur_dir)
+
+    if any(return_code != 0 for return_code in return_codes) or not all_required_java_classes_exist(gage_dirpath):
+        logger.error('Error occurred during compilation of java classes (' + gage_dirpath + '/*.java)! '
+                     'Try to compile it manually. ' + ('You can restart Quast with the --debug flag '
+                     'to see the command line.' if not qconfig.debug else ''))
+        return
+
+
 def do(ref_fpath, contigs_fpaths, output_dirpath):
     gage_results_dirpath = os.path.join(output_dirpath, 'gage')
 
@@ -67,7 +101,6 @@ def do(ref_fpath, contigs_fpaths, output_dirpath):
         os.mkdir(gage_results_dirpath)
 
     ########################################################################
-    gage_dirpath = os.path.join(qconfig.LIBS_LOCATION, 'gage')
     gage_tool_path = os.path.join(gage_dirpath, 'getCorrectnessStats.sh')
 
     ########################################################################
@@ -96,27 +129,7 @@ def do(ref_fpath, contigs_fpaths, output_dirpath):
     if not compile_aligner(logger):
         return
     if not all_required_java_classes_exist(gage_dirpath):
-        javac_path = get_path_to_program('javac')
-        if javac_path is None:
-            logger.error('Java compiler not found (javac)! '
-                         'Please install it or compile GAGE java classes manually (' + gage_dirpath + '/*.java)!')
-            return
-
-        cur_dir = os.getcwd()
-        os.chdir(gage_dirpath)
-        # making
-        logger.main_info('Compiling JAVA classes (details are in ' + os.path.join(gage_dirpath, 'make.log') + ' and make.err)')
-        return_codes = [qutils.call_subprocess(
-            ['javac', os.path.join(gage_dirpath, java_fname + '.java')],
-            stdout=open(os.path.join(gage_dirpath, 'make.log'), 'w'),
-            stderr=open(os.path.join(gage_dirpath, 'make.err'), 'w'),) for java_fname in required_java_fnames]
-        os.chdir(cur_dir)
-
-        if any(return_code != 0 for return_code in return_codes) or not all_required_java_classes_exist(gage_dirpath):
-            logger.error('Error occurred during compilation of java classes (' + gage_dirpath + '/*.java)! '
-                         'Try to compile it manually. ' + ('You can restart Quast with the --debug flag '
-                         'to see the command line.' if not qconfig.debug else ''))
-            return
+        compile_gage()
 
     n_jobs = min(len(contigs_fpaths), qconfig.max_threads)
     from joblib import Parallel, delayed

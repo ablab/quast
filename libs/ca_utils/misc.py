@@ -29,10 +29,9 @@ def is_emem_aligner():
     return contig_aligner == 'E-MEM'
 
 
-def compile_aligner(logger):
+def compile_aligner(logger, only_clean=False):
     global contig_aligner
     global contig_aligner_dirpath
-
     if contig_aligner_dirpath is not None:
         return True
 
@@ -48,7 +47,8 @@ def compile_aligner(logger):
         ('MUMmer', join(qconfig.LIBS_LOCATION, 'MUMmer3.23-linux'), default_requirements)]
 
     for i, (name, dirpath, requirements) in enumerate(aligners_to_try):
-        success_compilation = compile_tool(name, dirpath, requirements, just_notice=(i < len(aligners_to_try) - 1))
+        success_compilation = compile_tool(name, dirpath, requirements, just_notice=(i < len(aligners_to_try) - 1),
+                                           logger=logger, only_clean=only_clean)
         if not success_compilation:
             continue
         contig_aligner = name

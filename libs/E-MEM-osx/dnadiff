@@ -9,7 +9,9 @@
 #
 #-------------------------------------------------------------------------------
 
+use Cwd 'abs_path';
 use File::Spec::Functions;
+use File::Basename;
 use strict;
 
 my $BIN_DIR, my $AUX_BIN_DIR, my $SCRIPT_DIR;

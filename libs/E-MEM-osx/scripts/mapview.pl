@@ -1,6 +1,7 @@
 #!__PERL_PATH
 
 use Cwd 'abs_path';
+use File::Basename;
 
 my $BIN_DIR, my $SCRIPT_DIR;
 BEGIN {

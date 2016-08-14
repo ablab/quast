@@ -16,13 +16,19 @@
 # 
 ################################################################################
 
-use lib "__SCRIPT_DIR";
-use Foundation;
+use Cwd 'abs_path';
+use File::Basename;
 use strict;
 use IO::Socket;
 
-my $BIN_DIR = "__BIN_DIR";
-my $SCRIPT_DIR = "__SCRIPT_DIR";
+my $BIN_DIR, my $AUX_BIN_DIR, my $SCRIPT_DIR;
+BEGIN {
+    $BIN_DIR = abs_path(dirname($0));
+    $AUX_BIN_DIR = "$BIN_DIR/aux_bin";
+    $SCRIPT_DIR = "$BIN_DIR/scripts";
+}
+use lib $SCRIPT_DIR;
+use Foundation;
 
 
 #================================================================= Globals ====#

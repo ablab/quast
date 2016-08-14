@@ -5,6 +5,7 @@
 # See file LICENSE for details.
 ############################################################################
 
+from __future__ import with_statement
 import datetime
 import os
 import platform

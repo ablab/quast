@@ -89,22 +89,27 @@ class IndelsInfo(object):
         return self
 
 
-def distance_between_alignments(align1, align2, cyclic_ref_len=None):
+def distance_between_alignments(align1, align2, pos_strand1, pos_strand2, cyclic_ref_len=None):
     # returns distance (in reference) between two alignments
-    distance1 = align1.s1 - align2.e1 - 1
-    distance2 = align2.s1 - align1.e1 - 1
-    if abs(distance1) < abs(distance2):
-        distance = distance1
+    distance_align1_align2 = align2.s1 - align1.e1 - 1
+    distance_align2_align1 = align1.s1 - align2.e1 - 1
+    if pos_strand1 and pos_strand2:            # alignment 1 should be earlier in reference
+        distance = distance_align1_align2
+    elif not pos_strand1 and not pos_strand2:  # alignment 2 should be earlier in reference
+        distance = distance_align2_align1
     else:
-        distance = distance2
+        if align2.s1 > align1.s1:
+            distance = distance_align1_align2
+        else:
+            distance = distance_align2_align1
 
     cyclic_moment = False
     if cyclic_ref_len is not None:
         cyclic_distance = distance
-        if align1.e1 < align2.e1 and (cyclic_ref_len + distance1) < qconfig.extensive_misassembly_threshold:
-            cyclic_distance = cyclic_ref_len + distance1
-        elif align1.e1 >= align2.e1 and (cyclic_ref_len + distance2) < qconfig.extensive_misassembly_threshold:
-            cyclic_distance = cyclic_ref_len + distance2
+        if align1.e1 < align2.e1 and (cyclic_ref_len + distance_align2_align1) < qconfig.extensive_misassembly_threshold:
+            cyclic_distance = cyclic_ref_len + distance_align2_align1
+        elif align1.e1 >= align2.e1 and (cyclic_ref_len + distance_align1_align2) < qconfig.extensive_misassembly_threshold:
+            cyclic_distance = cyclic_ref_len + distance_align1_align2
         if abs(cyclic_distance) < abs(distance):
             distance = cyclic_distance
             cyclic_moment = True
@@ -135,9 +140,11 @@ def is_misassembly(align1, align2, contig_seq, ref_lens, is_cyclic=False, region
     distance_on_contig = align2.start() - align1.end() - 1
     cyclic_ref_lens = ref_lens if is_cyclic else None
     if cyclic_ref_lens is not None and align1.ref == align2.ref:
-        distance_on_reference, cyclic_moment = distance_between_alignments(align1, align2, cyclic_ref_lens[align1.ref])
+        distance_on_reference, cyclic_moment = distance_between_alignments(align1, align2, align1.s2 < align1.e2,
+            align2.s2 < align2.e2, cyclic_ref_lens[align1.ref])
     else:
-        distance_on_reference, cyclic_moment = distance_between_alignments(align1, align2)
+        distance_on_reference, cyclic_moment = distance_between_alignments(align1, align2, align1.s2 < align1.e2,
+                                                                           align2.s2 < align2.e2)
 
     misassembly_internal_overlap = 0
     if distance_on_contig < 0:

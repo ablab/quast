@@ -11,8 +11,8 @@ run_quast(name, contigs=['/acestorage/data/contigs/C.elegans/PROBABLE_CONTIGS/ab
                          '/acestorage/data/contigs/C.elegans/PROBABLE_CONTIGS/soapdenovo.fa',
                          '/acestorage/data/contigs/C.elegans/PROBABLE_CONTIGS/velvet.fa',
                          '/acestorage/data/contigs/C.elegans/SPAdes2.4.scaffolds.fasta'],
-                         params=' -R /acestorage/data/contigs/C.elegans/REF_FILES/reference.fasta '
-                                '-t 2 --memory-efficient --no-plots')
+                 params=' -R /acestorage/data/contigs/C.elegans/REF_FILES/reference.fasta '
+                        '-t 8 --no-plots')
 
 check_report_files(name, ['icarus.html',
                           'genome_stats/genome_info.txt'])

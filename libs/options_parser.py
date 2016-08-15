@@ -200,7 +200,7 @@ def parse_options(logger, quast_args, is_metaquast=False):
              dest='reference',
              type='string' if is_metaquast else 'file',
              action='callback' if is_metaquast else 'store',
-             callback_args=(logger,),
+             callback_args=(logger,) if is_metaquast else None,
              callback=parse_meta_references if is_metaquast else None)
          ),
         (['-G', '--genes'], dict(

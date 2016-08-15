@@ -218,20 +218,20 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, aligns, ref_featu
                         unaligned_bases = (begin - 1) + (ctg_len - end)
                         partially_unaligned_bases += unaligned_bases
                         print >> ca_output.stdout_f, '\t\tThis contig is partially unaligned. (Aligned %d out of %d bases)' % (top_len, ctg_len)
-                        print >> ca_output.stdout_f, '\t\tAlignment: %s' % str(the_only_align)
-                        print >> ca_output.icarus_out_f, the_only_align.icarus_report_str()
-                        if begin - 1:
-                            print >> ca_output.stdout_f, '\t\tUnaligned bases: 1 to %d (%d)' % (begin - 1, begin - 1)
-                        if ctg_len - end:
-                            print >> ca_output.stdout_f, '\t\tUnaligned bases: %d to %d (%d)' % (end + 1, ctg_len, ctg_len - end)
-                        # check if both parts (aligned and unaligned) have significant length
-                        if (unaligned_bases >= qconfig.significant_part_size) and (ctg_len - unaligned_bases >= qconfig.significant_part_size):
-                            print >> ca_output.stdout_f, '\t\tThis contig has both significant aligned and unaligned parts ' \
-                                                         '(of length >= %d)!' % (qconfig.significant_part_size)
-                            partially_unaligned_with_significant_parts += 1
-                            if qconfig.meta:
-                                contigs_with_istranslocations += check_for_potential_translocation(seq, ctg_len, real_aligns,
-                                                                                                   ca_output.stdout_f)
+                    print >> ca_output.stdout_f, '\t\tAlignment: %s' % str(the_only_align)
+                    print >> ca_output.icarus_out_f, the_only_align.icarus_report_str()
+                    if begin - 1:
+                        print >> ca_output.stdout_f, '\t\tUnaligned bases: 1 to %d (%d)' % (begin - 1, begin - 1)
+                    if ctg_len - end:
+                        print >> ca_output.stdout_f, '\t\tUnaligned bases: %d to %d (%d)' % (end + 1, ctg_len, ctg_len - end)
+                    # check if both parts (aligned and unaligned) have significant length
+                    if (unaligned_bases >= qconfig.significant_part_size) and (ctg_len - unaligned_bases >= qconfig.significant_part_size):
+                        print >> ca_output.stdout_f, '\t\tThis contig has both significant aligned and unaligned parts ' \
+                                                     '(of length >= %d)!' % (qconfig.significant_part_size)
+                        partially_unaligned_with_significant_parts += 1
+                        if qconfig.meta:
+                            contigs_with_istranslocations += check_for_potential_translocation(seq, ctg_len, real_aligns,
+                                                                                               ca_output.stdout_f)
                     ref_aligns.setdefault(the_only_align.ref, []).append(the_only_align)
                 else:
                     #Sort real alignments by position on the contig

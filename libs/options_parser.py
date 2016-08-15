@@ -118,13 +118,13 @@ def check_arg_value(option, opt_str, value, parser, logger, default_value=None, 
                          to_stderr=True, exit_with_code=2)
 
 
-def parse_meta_references(option, opt_str, value, parser):
+def parse_meta_references(option, opt_str, value, parser, logger):
     ref_fpaths = []
     ref_values = value.split(',')
     for i, ref_value in enumerate(ref_values):
         if os.path.isdir(ref_value):
             references = [join(path, file) for (path, dirs, files) in os.walk(ref_value) for file in files
-                               if qutils.check_is_fasta_file(file)]
+                               if qutils.check_is_fasta_file(file, logger=logger)]
             ref_fpaths.extend(sorted(references))
         else:
             assert_file_exists(ref_value, 'reference')
@@ -200,6 +200,7 @@ def parse_options(logger, quast_args, is_metaquast=False):
              dest='reference',
              type='string' if is_metaquast else 'file',
              action='callback' if is_metaquast else 'store',
+             callback_args=(logger,),
              callback=parse_meta_references if is_metaquast else None)
          ),
         (['-G', '--genes'], dict(

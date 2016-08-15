@@ -8,15 +8,67 @@
 ############################################################################
 
 import sys
+from os.path import isdir
+from optparse import OptionParser, BadOptionError, AmbiguousOptionError
 
-sys.stderr.write("\n")
-sys.stderr.write("Icarus: visualizer for de novo assembly evaluation\n")
-sys.stderr.write("\n")
-sys.stderr.write("Icarus is embedded into QUAST and MetaQUAST pipelines,\n")
-sys.stderr.write("please run quast.py (for single-genome evaluation) or \n")
-sys.stderr.write("metaquast.py (for metagenomic datasets)\n")
-sys.stderr.write("\n")
-sys.stderr.write("Icarus main menu will be saved to <output_dir>/icarus.html\n")
-sys.stderr.write("Icarus viewers will be saved to <output_dir>/icarus_viewers/\n")
-sys.stderr.write("\n")
-sys.stderr.write("Note: if you use --fast or --no-html options, Icarus will not run\n")
+
+class PassThroughOptionParser(OptionParser):
+    """
+    An unknown option pass-through implementation of OptionParser.
+    """
+    def _process_args(self, largs, rargs, values):
+        while rargs:
+            try:
+                OptionParser._process_args(self,largs,rargs,values)
+            except (BadOptionError, AmbiguousOptionError), e:
+                largs.append(e.opt_str)
+
+
+def main(args):
+    sys.stderr.write("\n")
+    sys.stderr.write("Icarus: visualizer for de novo assembly evaluation\n")
+    sys.stderr.write("\n")
+    sys.stderr.write("Icarus is embedded into QUAST and MetaQUAST pipelines\n")
+    sys.stderr.write("\n")
+    if not args:
+        import quast
+        quast.main(args)
+
+    parser = PassThroughOptionParser()
+    parser.add_option('-R', '--reference', dest='reference', action='append')
+    parser.add_option('--fast', dest='no_icarus', action='store_true')
+    parser.add_option('--no-html', dest='no_icarus', action='store_true')
+    parser.add_option('--unique-mapping', dest='use_metaquast', action='store_true')
+    parser.add_option('--max-ref-number', dest='use_metaquast', action='store_true')
+    parser.add_option('--references-list', dest='use_metaquast', action='store_true')
+    parser.add_option('--test-no-ref', dest='use_metaquast', action='store_true')
+    parser.add_option('--test-sv', dest='use_quast', action='store_true')
+    (opts, l_args) = parser.parse_args(args[1:])
+
+    if opts.no_icarus:
+        sys.stderr.write("Please remove --fast and --no-html from options and restart Icarus\n")
+        sys.exit(0)
+
+    if len(opts.reference) > 1:
+        opts.use_metaquast = True
+    elif len(opts.reference) == 1:
+        if ',' in opts.reference[0] or isdir(opts.reference[0]):
+            opts.use_metaquast = True
+
+    if opts.use_metaquast:
+        import metaquast
+        quast_fn = metaquast.main
+        sys.stderr.write("Icarus will run metaquast.py (for metagenomic dataset)\n")
+    else:
+        import quast
+        quast_fn = quast.main
+        sys.stderr.write("Icarus will run quast.py (for single-genome evaluation)\n")
+
+    sys.stderr.write("Icarus main menu will be saved to <output_dir>/icarus.html\n")
+    sys.stderr.write("Icarus viewers will be saved to <output_dir>/icarus_viewers/\n")
+    sys.stderr.write("\n")
+    quast_fn(args)
+
+
+if __name__ == '__main__':
+    main(sys.argv[1:])

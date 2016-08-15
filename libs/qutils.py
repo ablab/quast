@@ -514,7 +514,7 @@ def splitext_for_fasta_file(fname):
     return basename, fasta_ext
 
 
-def check_is_fasta_file(fname):
+def check_is_fasta_file(fname, logger=logger):
     if 'blast.res' in fname or 'blast.check' in fname or fname == 'blast.err':
         return False
 

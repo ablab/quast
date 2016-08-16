@@ -1,3 +1,29 @@
+$(function () {
+    setInterfaceCoordinates();
+    setupInterface();
+});
+
+function setInterfaceCoordinates() {
+    var mainOffsetY = chart[0][0].getBoundingClientRect().top;
+    annotationsMainOffsetY = mainHeight + mainScale + spaceAfterMain;
+    covMainOffsetY = drawCoverage ? (annotationsMainOffsetY +
+                            (featuresHidden ? 0 : spaceAfterTrack)) : annotationsMainOffsetY;
+    if (!featuresMainHidden)
+        covMainOffsetY += annotationsHeight;
+    miniOffsetY = covMainOffsetY + spaceAfterTrack;
+    annotationsMiniOffsetY = miniOffsetY + miniHeight + (featuresHidden ? 0 : spaceAfterTrack);
+    covMiniOffsetY = annotationsMiniOffsetY + annotationsMiniHeight + spaceAfterTrack;
+
+    var physCovBtnOffsetY = 25;
+
+    hideBtnAnnotationsMiniOffsetY = annotationsMiniOffsetY + mainOffsetY;
+    hideBtnAnnotationsMainOffsetY = annotationsMainOffsetY + mainOffsetY;
+    hideBtnCoverageMiniOffsetY = covMiniOffsetY + mainOffsetY;
+    hideBtnCoverageMainOffsetY = covMainOffsetY + mainOffsetY;
+    hideBtnPhysicalMiniCoverageOffsetY = hideBtnCoverageMiniOffsetY + physCovBtnOffsetY;
+    hideBtnPhysicalCoverageOffsetY = hideBtnCoverageMainOffsetY + physCovBtnOffsetY;
+}
+
 function setupInterface() {
     document.getElementById('left').onclick=function() {
         keyPress('left', 1) };

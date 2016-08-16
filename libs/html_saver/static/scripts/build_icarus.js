@@ -130,18 +130,21 @@ THE SOFTWARE.
             .append('svg:svg')
             .attr('width', width + margin.right + margin.left)
             .attr('class', 'chart');
-    var extraOffsetY = chart[0][0].getBoundingClientRect().top - 120;
+
+    var main = chart.append('g')
+            .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')')
+            .attr('width', chartWidth)
+            .attr('height', mainHeight + mainScale)
+            .attr('class', 'main');
 
     var spaceAfterMain = 15;
     var spaceAfterTrack = 40;
-    var annotationsMainOffsetY = mainHeight + mainScale + spaceAfterMain;
-    var covMainOffsetY = drawCoverage ? (annotationsMainOffsetY +
-                            (featuresHidden ? 0 : spaceAfterTrack)) : annotationsMainOffsetY;
-    if (!featuresMainHidden)
-        covMainOffsetY += annotationsHeight;
-    var miniOffsetY = covMainOffsetY + spaceAfterTrack;
-    var annotationsMiniOffsetY = miniOffsetY + miniHeight + (featuresHidden ? 0 : spaceAfterTrack);
-    var covMiniOffsetY = annotationsMiniOffsetY + annotationsMiniHeight + spaceAfterTrack;
+
+    var annotationsMiniOffsetY, annotationsMainOffsetY, covMiniOffsetY, covMainOffsetY;
+    var hideBtnAnnotationsMiniOffsetY,hideBtnAnnotationsMainOffsetY,hideBtnCoverageMiniOffsetY,
+        hideBtnCoverageMainOffsetY,hideBtnPhysicalMiniCoverageOffsetY,hideBtnPhysicalCoverageOffsetY;
+
+    setInterfaceCoordinates();
 
     var baseChartHeight = covMiniOffsetY + coverageHeight * 2 + annotationsHeight + margin.top + margin.bottom + 100;
     var curChartHeight = baseChartHeight;
@@ -155,28 +158,6 @@ THE SOFTWARE.
             .append('rect')
             .attr('width', width)
             .attr('height', mainHeight + chrLabelsOffsetY);
-
-    var filter = chart.append('defs')
-            .append('filter').attr('id', 'shadow');
-    filter.append('feOffset').attr('result', 'offOut').attr('in', 'SourceAlpha').attr('dx', '2');
-    filter.append('feGaussianBlur').attr('result', 'blurOut').attr('in', 'offOut').attr('stdDeviation', '2');
-    filter.append('feBlend').attr('in', 'SourceGraphic').attr('in2', 'blurOut').attr('mode', 'normal');
-
-    var main = chart.append('g')
-            .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')')
-            .attr('width', chartWidth)
-            .attr('height', mainHeight + mainScale)
-            .attr('class', 'main');
-
-    var mainOffsetY = 120 + extraOffsetY;
-    var physCovBtnOffsetY = 25;
-
-    var hideBtnAnnotationsMiniOffsetY = annotationsMiniOffsetY + mainOffsetY;
-    var hideBtnAnnotationsMainOffsetY = annotationsMainOffsetY + mainOffsetY;
-    var hideBtnCoverageMiniOffsetY = covMiniOffsetY + mainOffsetY;
-    var hideBtnCoverageMainOffsetY = covMainOffsetY + mainOffsetY;
-    var hideBtnPhysicalMiniCoverageOffsetY = hideBtnCoverageMiniOffsetY + physCovBtnOffsetY;
-    var hideBtnPhysicalCoverageOffsetY = hideBtnCoverageMainOffsetY + physCovBtnOffsetY;
 
     //annotations track
     if (!featuresHidden) {

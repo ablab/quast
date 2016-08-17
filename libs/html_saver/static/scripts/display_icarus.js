@@ -59,7 +59,7 @@ function display() {
             return 1;
         })
         .attr('height', function (line) {
-            return line.assembly ? mainLanesHeight + lanesInterval : line.y2;
+            return line.assembly ? mainLanesHeight + lanesInterval + extraOffsetY : line.y2 + extraOffsetY;
         })
         .attr('fill', '#300000');
 
@@ -125,7 +125,7 @@ function display() {
     addLabels(visRects, minExtent, maxExtent);
     // upd coverage
     if (drawCoverage && (!coverageMainHidden || !physicalCoverageHidden))
-        updateMainCoverage(minExtent, maxExtent, coverageFactor);
+        updateMainCoverage(minExtent, maxExtent);
 }
 
 function createItems(visData, itemFigure, minExtent, maxExtent, class_) {
@@ -279,11 +279,12 @@ function addLabels(visRects, minExtent, maxExtent) {
             return labelItem.id;
         });
 
+    var labelOffset = Math.max(0, extraOffsetY - 3);
     var labels = visibleItemLabels.enter().append('g')
         .attr('class', 'main_labels')
         .attr('transform', function (labelItem) {
             var x = labelItem.label ? x_main(labelItem.corr_end) - labelItem.label.length * letterSize : getItemStart(labelItem, minExtent) + 5 ;
-            var y = labelItem.y2 ? labelItem.y2 + 6 : y_main(labelItem.lane) + 13;
+            var y = labelItem.y2 ? labelItem.y2 + 6 + labelOffset : y_main(labelItem.lane) - 3 + labelOffset;
 
             return 'translate(' + x + ', ' + y + ')';
         });
@@ -302,19 +303,35 @@ function addLabels(visRects, minExtent, maxExtent) {
     else labelsText.attr('class', 'itemText');
 }
 
-function updateMainCoverage(minExtent, maxExtent, coverageFactor) {
+function updateMainCoverage(minExtent, maxExtent) {
+    if (!minExtent)
+        minExtent = Math.max(brush.extent()[0], x_mini.domain()[0]);
+    if (!maxExtent)
+        maxExtent = Math.min(brush.extent()[1], x_mini.domain()[1]);
     if (!physicalCoverageHidden)
-        drawCoverageLine(minExtent, maxExtent, coverageFactor, main_cov, x_main, y_cov_main_S, physical_coverage_data, '.phys_covered');
+        drawCoverageLine(minExtent, maxExtent, true, physical_coverage_data, '.phys_covered');
     if (!coverageMainHidden)
-        drawCoverageLine(minExtent, maxExtent, coverageFactor, main_cov, x_main, y_cov_main_S, coverage_data, '.covered');
+        drawCoverageLine(minExtent, maxExtent, true, coverage_data, '.covered');
     //main_cov.select('.y').call(y_cov_main_A);
 }
 
-function drawCoverageLine(minExtent, maxExtent, coverageFactor, track, xScale, yScale, covData, plotClass) {
+function drawCoverageLine(minExtent, maxExtent, useMainCov, covData, plotClass) {
     var line = '',
         l = (maxExtent - minExtent) / coverageFactor,
         cov_main_dots_amount = Math.min(maxCovDots, l),
         step = Math.round(l / cov_main_dots_amount);
+    if (useMainCov) {
+        track = main_cov;
+        xScale = x_main;
+        yScale = y_cov_main_S;
+        maxValue = totalMaxYMain;
+    }
+    else {
+        track = mini_cov;
+        xScale = x_mini;
+        yScale = y_cov_mini_S;
+        maxValue = totalMaxYMini;
+    }
 
     var cov_lines = [];
     var startPos = Math.floor(minExtent / coverageFactor / step) * step;
@@ -324,12 +341,13 @@ function drawCoverageLine(minExtent, maxExtent, coverageFactor, track, xScale, y
         if (coverage.length == 0) break;
         var coverageSum = coverage.reduce(function(pv, cv) { return pv + cv; }, 0);
         var avgCoverage = coverageSum / coverage.length;
+        var yValue = Math.min(avgCoverage, maxValue);
         //y_max = Math.max(y_max, s);
         if (i == startPos) start = minExtent;
         else start = i * coverageFactor;
         end = nextPos * coverageFactor;
         if (avgCoverage >= 1)
-            cov_lines.push([xScale(start), yScale(avgCoverage), xScale(end)]);
+            cov_lines.push([xScale(start), yScale(yValue), xScale(end)]);
         else
             cov_lines.push([xScale(start), yScale(0.1), xScale(end)]);
         if (nextPos >= (maxExtent / coverageFactor)) break;
@@ -540,8 +558,8 @@ function hideTrack(track, pane, doHide) {
     var hideBtnCoverageMini = document.getElementById('hideBtnCovMini');
     var hideBtnPhysicalCoverageMain = document.getElementById('hideBtnPhysCovMain');
     var hideBtnPhysicalCoverageMini = document.getElementById('hideBtnPhysCovMini');
-    var logScaleTogglerMini = document.getElementById('logScaleTogglerMini');
-    var logScaleTogglerMain = document.getElementById('logScaleTogglerMain');
+    var covMiniControls = document.getElementById('covMiniControls');
+    var covMainControls = document.getElementById('covMainControls');
     var animationDuration = 200, transitionDelay = 150;
     var paneToHide, hideBtn, textToShow, newOffset;
     var changedTracks = [], changedBtns = [];
@@ -572,12 +590,12 @@ function hideTrack(track, pane, doHide) {
         if (mainPane) {
             featuresMainHidden = doHide;
             changedTracks = [main_cov, mini, annotationsMini, mini_cov];
-            changedBtns = [hideBtnCoverageMain, hideBtnPhysicalCoverageMain, logScaleTogglerMain, hideBtnAnnotationsMini,
-                hideBtnCoverageMini, hideBtnPhysicalCoverageMini, logScaleTogglerMini];
+            changedBtns = [hideBtnCoverageMain, hideBtnPhysicalCoverageMain, covMainControls, hideBtnAnnotationsMini,
+                hideBtnCoverageMini, hideBtnPhysicalCoverageMini, covMiniControls];
         }
         else {
             changedTracks = [mini_cov];
-            changedBtns = [hideBtnCoverageMini, hideBtnPhysicalCoverageMini, logScaleTogglerMini];
+            changedBtns = [hideBtnCoverageMini, hideBtnPhysicalCoverageMini, covMiniControls];
         }
     }
     else if (track == 'cov') {
@@ -585,20 +603,20 @@ function hideTrack(track, pane, doHide) {
         paneToHide = mainPane ? main_cov : mini_cov;
         hideBtn = mainPane ? hideBtnCoverageMain : hideBtnCoverageMini;
         hideCovBtn = mainPane ? hideBtnPhysicalCoverageMain : hideBtnPhysicalCoverageMini;
-        logToggler = mainPane ? logScaleTogglerMain : logScaleTogglerMini;
+        coverageBtns = mainPane ? covMainControls : covMiniControls;
         newOffset = coverageHeight;
         if (mainPane) {
             coverageMainHidden = doHide;
             changedTracks = [mini, annotationsMini, mini_cov];
-            changedBtns = [hideBtnAnnotationsMini, hideBtnCoverageMini, hideBtnPhysicalCoverageMini, logScaleTogglerMini];
+            changedBtns = [hideBtnAnnotationsMini, hideBtnCoverageMini, hideBtnPhysicalCoverageMini, covMiniControls];
         }
         if (doHide) {
             hideCovBtn.style.display = 'none';
-            logToggler.style.display = 'none';
+            coverageBtns.style.display = 'none';
         }
         else {
             hideCovBtn.style.display = '';
-            logToggler.style.display = '';
+            coverageBtns.style.display = '';
         }
     }
     if (doHide) newOffset *= -1;

@@ -4,7 +4,9 @@ $(function () {
 });
 
 function setInterfaceCoordinates() {
-    var mainOffsetY = chart[0][0].getBoundingClientRect().top;
+    var scrollPos = $(document).scrollTop();
+    var mainOffsetY = chart[0][0].getBoundingClientRect().top + scrollPos;
+    extraOffsetY = mainOffsetY - 120;
     annotationsMainOffsetY = mainHeight + mainScale + spaceAfterMain;
     covMainOffsetY = drawCoverage ? (annotationsMainOffsetY +
                             (featuresHidden ? 0 : spaceAfterTrack)) : annotationsMainOffsetY;
@@ -70,7 +72,7 @@ function setupInterface() {
         addCovTrackButtons();
         if (typeof physical_coverage_data !== 'undefined')
             addPhysicalCovTrackButtons();
-        addLogScaleTogglers();
+        addCoverageButtons();
     }
     window.onresize = function(){ location.reload(); };
     display();
@@ -597,52 +599,13 @@ function setContigSizeThreshold(event, textBox) {
     }
 }
 
-var normal_scale_span =
-    "<span class='selected-switch'>" +
-    'Normal' +
-    "</span>";
-var normal_scale_a_mini =
-    "<a class='dotted-link' onClick='toggleLogLinearScaleMiniCoverage(false)'>" +
-    'Normal' +
-    "</a>";
-var normal_scale_a_main =
-    "<a class='dotted-link' onClick='toggleLogLinearScaleMainCoverage(false)'>" +
-    'Normal' +
-    "</a>";
-var log_scale_span =
-    "<span class='selected-switch'>" +
-    'logarithmic' +
-    "</span>";
-var log_scale_a_mini =
-    "<a class='dotted-link' onClick='toggleLogLinearScaleMiniCoverage(true)'>" +
-    'logarithmic' +
-    "</a>";
-var log_scale_a_main =
-    "<a class='dotted-link' onClick='toggleLogLinearScaleMainCoverage(true)'>" +
-    'logarithmic' +
-    "</a>";
-
-
-function getLogTogglerHtml(normal_scale_el, log_scale_el) {
-    var logTogglerHtml = "<span id='normal_scale_label'>" +
-        normal_scale_el +
-        "</span>&nbsp;/&nbsp;" +
-        "<span id='log_scale_label'>" +
-        log_scale_el +
-        "</span> scale" +
-        "</div>";
-    return logTogglerHtml;
-}
-
-function addLogScaleTogglers() {
-    var logScaleTogglerMini = document.getElementById('logScaleTogglerMini');
-    var logScaleTogglerMain = document.getElementById('logScaleTogglerMain');
-    setTrackBtnPos(logScaleTogglerMini, hideBtnCoverageMiniOffsetY - 10);
-    setTrackBtnPos(logScaleTogglerMain, hideBtnCoverageMainOffsetY - 10);
-    logTogglerTextWidth = 160;
-    logScaleTogglerMini.style.left = (margin.left + width - logTogglerTextWidth) + "px";
-    logScaleTogglerMain.style.left = (margin.left + width - logTogglerTextWidth) + "px";
-    logScaleTogglerMain.style.display = 'none';
-    logScaleTogglerMini.innerHTML = getLogTogglerHtml(normal_scale_span, log_scale_a_mini);
-    logScaleTogglerMain.innerHTML = getLogTogglerHtml(normal_scale_span, log_scale_a_main);
+function addCoverageButtons() {
+    var covMiniControls = document.getElementById('covMiniControls');
+    var covMainControls = document.getElementById('covMainControls');
+    setTrackBtnPos(covMiniControls, hideBtnCoverageMiniOffsetY - 10);
+    setTrackBtnPos(covMainControls, hideBtnCoverageMainOffsetY - 10);
+    btnsWidth = 100;
+    covMiniControls.style.left = (margin.left + width - btnsWidth) + "px";
+    covMainControls.style.left = (margin.left + width - btnsWidth) + "px";
+    covMainControls.style.display = 'none';
 }

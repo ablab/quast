@@ -140,7 +140,7 @@ THE SOFTWARE.
     var spaceAfterMain = 15;
     var spaceAfterTrack = 40;
 
-    var annotationsMiniOffsetY, annotationsMainOffsetY, covMiniOffsetY, covMainOffsetY;
+    var annotationsMiniOffsetY, annotationsMainOffsetY, covMiniOffsetY, covMainOffsetY, extraOffsetY;
     var hideBtnAnnotationsMiniOffsetY,hideBtnAnnotationsMainOffsetY,hideBtnCoverageMiniOffsetY,
         hideBtnCoverageMainOffsetY,hideBtnPhysicalMiniCoverageOffsetY,hideBtnPhysicalCoverageOffsetY;
 
@@ -467,11 +467,12 @@ THE SOFTWARE.
             });
     }
 
+    var linesOffset = 20 + Math.max(0, extraOffsetY + 23);
     var linesLabelsLayer = d3.select('body').append('div').attr('id', 'lines_labels')
                                     .append('svg:svg')
                                     .style('position', 'absolute')
                                     .attr('width', width)
-                                    .attr('height', mainHeight + 20)
+                                    .attr('height', mainHeight + linesOffset)
                                     .style('top', itemSvgOffsetY - 10)
                                     .style('left', margin.left)
                                     .attr('pointer-events', 'none');
@@ -714,7 +715,7 @@ THE SOFTWARE.
         y_max = typeof reads_max_depth !== 'undefined' ? Math.max(reads_max_depth[chromosome], physical_max_depth[chromosome]) :
             max_depth[chromosome];
 
-        y_cov_mini_S = setYScaleCoverage(false, true);
+        y_cov_mini_S = setYScaleCoverage();
         y_cov_main_S = y_cov_mini_S;
 
         y_cov_mini_A = d3.svg.axis()
@@ -753,13 +754,13 @@ THE SOFTWARE.
         setYScaleLabels(main_cov, y_cov_main_A, y_cov_main_S);
         appendPaths(mini_cov);
         appendPaths(main_cov);
+        totalMaxYMini = y_max;
+        totalMaxYMain = y_max;
         if (typeof physical_coverage_data !== 'undefined') {
-            drawCoverageLine(x_mini.domain()[0], x_mini.domain()[1], coverageFactor, mini_cov, x_mini, y_cov_mini_S,
-                physical_coverage_data, '.phys_covered');
+            drawCoverageLine(x_mini.domain()[0], x_mini.domain()[1], false, physical_coverage_data, '.phys_covered');
             togglePhysCoverageMini();
         }
-        drawCoverageLine(x_mini.domain()[0], x_mini.domain()[1], coverageFactor, mini_cov, x_mini, y_cov_mini_S,
-            coverage_data, '.covered');
+        drawCoverageLine(x_mini.domain()[0], x_mini.domain()[1], false, coverage_data, '.covered');
     }
 
     function appendPaths(track) {

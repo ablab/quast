@@ -123,8 +123,16 @@ THE SOFTWARE.
 <button id="hideBtnCovMain" class="btn moving_button btn-mini" style="display: none; position: absolute;">Show read coverage</button>
 <button id="hideBtnPhysCovMain" class="btn moving_button btn-mini" style="display: none; position: absolute;">Show physical</button>
 <button id="hideBtnPhysCovMini" class="btn moving_button btn-mini" style="display: none; position: absolute;">Show physical</button>
-<div id="logScaleTogglerMain" style="display: none; position: absolute;"></div>
-<div id="logScaleTogglerMini" style="display: none; position: absolute;"></div>
+<div id="covMainControls" style="display: none; position: absolute;">
+<button id="zoomInCoverageMain" class="btn moving_button btn-mini" onclick="changeMaxMainCoverage(true)">+</button>
+<button id="zoomOutCoverageMain" class="btn moving_button btn-mini" onclick="changeMaxMainCoverage()" disabled="true">-</button>
+<button id="resetCoverageMain" class="btn moving_button btn-mini" onclick="resetMaxMainCoverage()">Reset</button>
+</div>
+<div id="covMiniControls" style="display: none; position: absolute;">
+<button id="zoomInCoverageMini" class="btn moving_button btn-mini" onclick="changeMaxMiniCoverage(true)">+</button>
+<button id="zoomOutCoverageMini" class="btn moving_button btn-mini" onclick="changeMaxMiniCoverage()" disabled="true">-</button>
+<button id="resetCoverageMini" class="btn moving_button btn-mini" onclick="resetMaxMiniCoverage()">Reset</button>
+</div>
 
 <script type="text/javascript">
 	window.onbeforeunload = function(){

@@ -12,11 +12,15 @@
 
       4. Embedded samtools replaced with sambamba which is significantly faster.
 
-      5. Removed limitation of not moving QUAST installation dir after the first use.
+      5. E-MEM is also working under OS X (in addition to Linux).
 
-      6. Fixed bug causing creation of error.log file in current working directory.
+      6. Removed limitation of not moving QUAST installation dir after the first use.
 
-      7. Fixed several minor bugs.
+      7. Fixed bug causing creation of error.log file in current working directory.
+
+      8. Requests to NCBI switched to HTTPS which will be mandatory after September 30, 2016.
+
+      9. Fixed several minor bugs.
 
 
 4.2   1. Icarus update -- improved read coverage panel: 

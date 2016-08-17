@@ -34,6 +34,9 @@ Thanks for testing and feedback:
     Irina Vasilinetc
     Dmitry Antipov
 
+Logo design:
+    Elena Strelnikova
+
 Contact:
     quast.support@bioinf.spbau.ru
     http://quast.sf.net

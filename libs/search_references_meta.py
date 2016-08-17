@@ -84,7 +84,7 @@ def try_send_request(url):
 
 
 def download_refs(organism, ref_fpath):
-    ncbi_url = 'http://eutils.ncbi.nlm.nih.gov/entrez/eutils/'
+    ncbi_url = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/'
     quast_fields = '&tool=quast&email=quast.support@bioinf.spbau.ru'
     organism = organism.replace('_', '+')
     response = try_send_request(ncbi_url + 'esearch.fcgi?db=assembly&term=%s+[Organism]&retmax=100' % organism + quast_fields)

@@ -123,6 +123,7 @@ def main(args):
     # PROCESSING CONTIGS
     logger.main_info()
     logger.main_info('Contigs:')
+    qconfig.no_check_meta = True
     assemblies, labels = correct_assemblies(contigs_fpaths, output_dirpath, labels)
     if not assemblies:
         logger.error("None of the assembly files contains correct contigs. "

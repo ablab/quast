@@ -1,6 +1,7 @@
 $(function () {
     setInterfaceCoordinates();
-    setupInterface();
+    setupBtns();
+    display();
 });
 
 function setInterfaceCoordinates() {
@@ -24,6 +25,16 @@ function setInterfaceCoordinates() {
     hideBtnCoverageMainOffsetY = covMainOffsetY + mainOffsetY;
     hideBtnPhysicalMiniCoverageOffsetY = hideBtnCoverageMiniOffsetY + physCovBtnOffsetY;
     hideBtnPhysicalCoverageOffsetY = hideBtnCoverageMainOffsetY + physCovBtnOffsetY;
+}
+
+function setupBtns() {
+    if (!featuresHidden) addAnnotationsTrackButtons();
+    if (drawCoverage) {
+        addCovTrackButtons();
+        if (typeof physical_coverage_data !== 'undefined')
+            addPhysicalCovTrackButtons();
+        addCoverageButtons();
+    }
 }
 
 function setupInterface() {
@@ -66,13 +77,6 @@ function setupInterface() {
         checkboxes[i].addEventListener('change', function(){
             showMisassemblies();
         });
-    }
-    if (!featuresHidden) addAnnotationsTrackButtons();
-    if (drawCoverage) {
-        addCovTrackButtons();
-        if (typeof physical_coverage_data !== 'undefined')
-            addPhysicalCovTrackButtons();
-        addCoverageButtons();
     }
     window.onresize = function(){ location.reload(); };
     display();

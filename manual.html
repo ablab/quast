@@ -1352,6 +1352,33 @@ Q10. Could you show a sample file suitable for <a href='#references_list'><code>
 <br>
 </p>
 
+<a name="faq_q11"></a>
+<p><b><i>
+Q11. Sometimes the "<span class='metric-ref'># contigs</span>" and the "<span class='metric-ref'># contigs &ge; 0 bp</span>"
+    do not agree. Should not these be equal? What is different here?
+</b></i></p>
+<p>
+    <span class='metric-ref'># contigs</span> reports number of contigs above specified threshold.
+    Default threshold is 500 bp and it can be changed with <code>--min-contig</code> option.
+    Most of the other statistics are also based on all contigs larger than this threshold
+    (we actually remove all shorts contigs in the beginning of the pipeline).
+    <br>
+    However, there are few exceptions in reports: all metrics containing length specification in parenthesis are not affected by <code>--min-contig</code>,
+    so <span class='metric-ref'># contigs &ge; 0 bp</span> is the number of contigs <i>before</i> any filtration.
+    However, let's say <span class='metric-ref'># misassemblies</span> is essentially
+    <span class='metric-ref'># misassemblies in contigs <b>&ge; min-contig threshold</b></span>.
+    <br>
+    The value of the threshold is written in the very first line of the text report
+    (like "All statistics are based on contigs of size &ge; 500 bp, unless otherwise noted" ).
+    It is also present in the header section of HTML report.
+    <br><br>
+    To sum up, by default, <span class='metric-ref'># contigs</span> is the same to <span class='metric-ref'># contigs >= 500 bp</span>,
+    so there will be difference between <span class='metric-ref'># contigs</span> and <span class='metric-ref'># contigs &ge; 0 bp</span>
+    if your assembly has contigs shorter than 500 bp.
+<br>
+</p>
+
+
 <br>
 <br>
 </body>

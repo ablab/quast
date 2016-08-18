@@ -123,9 +123,9 @@ else:
     nucmer_files = find_package_files('MUMmer3.23-linux') + find_package_files('E-MEM-linux')
     sambamba_files = [join('sambamba', 'sambamba_linux')]
 
-bowtie2_files = [
-    join('bowtie2', fp) for fp in os.listdir(join(quast_package, 'bowtie2'))
-    if isfile(join(quast_package, 'bowtie2', fp)) and fp.startswith('bowtie2')]
+bwa_files = [
+    join('bwa', fp) for fp in os.listdir(join(quast_package, 'bwa'))
+    if isfile(join(quast_package, 'bwa', fp)) and fp.startswith('bwa')]
 
 setup(
     name=name,
@@ -143,7 +143,7 @@ setup(
         quast_package:
             find_package_files('html_saver') +
             nucmer_files +
-            bowtie2_files +
+            bwa_files +
             find_package_files('manta') +
             ['bedtools/bin/*'] +
             sambamba_files +

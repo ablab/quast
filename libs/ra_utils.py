@@ -8,7 +8,7 @@ import shutil
 from libs import qconfig, qutils
 from libs.qutils import compile_tool, check_prev_compilation_failed
 
-bowtie_dirpath = join(qconfig.LIBS_LOCATION, 'bowtie2')
+bwa_dirpath = join(qconfig.LIBS_LOCATION, 'bwa')
 sambamba_dirpath = join(qconfig.LIBS_LOCATION, 'sambamba')
 bedtools_dirpath = join(qconfig.LIBS_LOCATION, 'bedtools')
 bedtools_bin_dirpath = join(qconfig.LIBS_LOCATION, 'bedtools', 'bin')
@@ -20,8 +20,8 @@ manta_linux_download_path = 'https://raw.githubusercontent.com/ablab/quast/maste
 manta_osx_download_path = 'https://raw.githubusercontent.com/ablab/quast/master/external_tools/manta/manta_osx.tar.bz2'
 
 
-def bowtie_fpath(fname):
-    return join(bowtie_dirpath, fname)
+def bwa_fpath(fname):
+    return join(bwa_dirpath, fname)
 
 
 def sambamba_fpath(fname):
@@ -77,7 +77,7 @@ def download_unpack_tar_bz(name, download_path, downloaded_fpath, final_dirpath,
 
 def compile_reads_analyzer_tools(logger, bed_fpath=None, only_clean=False):
     for name, dirpath, requirements in [
-            ('Bowtie2', bowtie_dirpath, ['bowtie2-align-l']),
+            ('BWA', bwa_dirpath, ['bwa']),
             ('BEDtools', bedtools_dirpath, [join('bin', 'bedtools')])]:
         success_compilation = compile_tool(name, dirpath, requirements, only_clean=only_clean)
         if not success_compilation:

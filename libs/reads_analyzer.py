@@ -14,7 +14,7 @@ from collections import defaultdict
 
 from libs import qconfig, qutils, ca_utils
 from libs.fastaparser import create_fai_file
-from libs.ra_utils import compile_reads_analyzer_tools, config_manta_fpath, sambamba_fpath, bowtie_fpath, bedtools_fpath
+from libs.ra_utils import compile_reads_analyzer_tools, config_manta_fpath, sambamba_fpath, bwa_fpath, bedtools_fpath
 from qutils import is_non_empty_file, add_suffix, get_chr_len_fpath
 
 from libs.log import get_logger
@@ -209,7 +209,7 @@ def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpat
         qutils.call_subprocess([sambamba_fpath('sambamba'), 'view', '-t', str(qconfig.max_threads), '-h', bam_fpath],
                                stdout=open(sam_fpath, 'w'), stderr=open(err_path, 'a'), logger=logger)
     else:
-        logger.info('  Running Bowtie2...')
+        logger.info('  Running BWA...')
         # use absolute paths because we will change workdir
         sam_fpath = os.path.abspath(sam_fpath)
         abs_reads_fpaths = []
@@ -223,19 +223,18 @@ def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpat
 
         prev_dir = os.getcwd()
         os.chdir(output_dirpath)
-        cmd = [bowtie_fpath('bowtie2-build'), main_ref_fpath, ref_name]
+        cmd = [bwa_fpath('bwa'), 'index', '-p', ref_name, main_ref_fpath]
+        if os.path.getsize(main_ref_fpath) > 2 * 1024 ** 3:  # if reference size bigger than 2GB
+            cmd += ['-a', 'bwtsw']
         qutils.call_subprocess(cmd, stdout=open(log_path, 'a'), stderr=open(err_path, 'a'), logger=logger)
 
-        cmd = bowtie_fpath('bowtie2') + ' -x ' + ref_name + ' -1 ' + abs_reads_fpaths[0] + ' -2 ' + abs_reads_fpaths[1] + ' -S ' + \
-              sam_fpath + ' --no-unal -p %s' % str(qconfig.max_threads)
-        if qconfig.is_combined_ref:  ## report all alignments for each read
-            cmd += ' -a'
+        cmd = bwa_fpath('bwa') + ' mem -t ' + str(qconfig.max_threads) + ' ' + ref_name + ' ' + abs_reads_fpaths[0] + ' ' + abs_reads_fpaths[1]
 
-        qutils.call_subprocess(shlex.split(cmd), stdout=open(log_path, 'a'), stderr=open(err_path, 'a'), logger=logger)
+        qutils.call_subprocess(shlex.split(cmd), stdout=open(sam_fpath, 'w'), stderr=open(err_path, 'a'), logger=logger)
         logger.info('  Done.')
         os.chdir(prev_dir)
         if not os.path.exists(sam_fpath) or os.path.getsize(sam_fpath) == 0:
-            logger.error('  Failed running Bowtie2 for the reference. See ' + log_path + ' for information.')
+            logger.error('  Failed running BWA for the reference. See ' + log_path + ' for information.')
             logger.info('  Failed searching structural variations.')
             return None, None, None
     logger.info('  Sorting SAM-file...')

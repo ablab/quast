@@ -18,7 +18,7 @@ rm -f   $QUAST_FOLDER/libs/*.pyc
 rm -f   $QUAST_FOLDER/libs/html_saver/*.pyc
 rm -f   $QUAST_FOLDER/libs/site_packages/*/*.pyc
 
-make -C $QUAST_FOLDER/libs/bowtie2 clean >/dev/null 2>/dev/null
+make -C $QUAST_FOLDER/libs/bwa clean >/dev/null 2>/dev/null
 
 rm -rf  $QUAST_FOLDER/libs/manta/build
 rm -rf  $QUAST_FOLDER/libs/blast

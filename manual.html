@@ -86,7 +86,7 @@
     <a href="http://blast.ncbi.nlm.nih.gov/Blast.cgi">BLAST</a>, and
     <a href="http://www.arb-silva.de/">SILVA</a> 16S rRNA database.
     Starting from version 3.2, QUAST package also includes reads processing tools for finding structural variants between the reference genome and actual organism.
-    These tools are <a href="http://bowtie-bio.sourceforge.net/bowtie2/index.shtml">Bowtie2</a>,
+    These tools are <a href="https://github.com/lh3/bwa">BWA</a>,
     <a href="https://github.com/lomereiter/sambamba">Sambamba</a>, and <a href="https://github.com/Illumina/manta">Manta</a>.
     Also we use <a href="http://bedtools.readthedocs.io/">bedtools</a> for calculating raw and physical read coverage, which is shown in Icarus contig alignment viewer.
     <br>
@@ -212,7 +212,7 @@ of their work on your platform.
 <br><br>
 We also provide <code>./install.sh</code> and <code>./install_full.sh</code> scripts.
 If you plan to use MetaQUAST's automated reference genomes detection, or use SV calling for misassembly refinement, you should use <code>./install_full.sh</code>, which runs all four mentioned above commands,
-compiles tools for read alignment and SV detection (BEDtools, Bowtie2, and Manta), and downloads necessary files (SILVA 16S rRNA gene database and BLAST). Otherwise, it is enough to use <code>./install.sh</code>,
+compiles tools for read alignment and SV detection (BEDtools, BWA, and Manta), and downloads necessary files (SILVA 16S rRNA gene database and BLAST). Otherwise, it is enough to use <code>./install.sh</code>,
 which runs only two simple --test commands.
 </p>
 
@@ -520,7 +520,7 @@ File with forward reads in FASTQ format (compressed files allowed).
 <code><b>--reads2</b> &lt;path&gt;</code> (or <code>-2 &lt;path&gt;</code>)
 </div>
 File with reverse reads in FASTQ format (compressed files allowed).
-<p>Reads are used for SV detection: Reads are aligned to reference genome using bowtie2, then Manta SV calling tool is run on bowtie2 output.
+<p>Reads are used for SV detection: Reads are aligned to reference genome using BWA, then Manta SV calling tool is run on BWA output.
 Found SVs are used for classifying QUAST misassemblies into true ones and fake ones (caused by structural differences between reference sequence and
     sequenced organism). Fake misassemblies are excluded from <a href="#misassemblies"><code>#&nbsp;misassemblies</code></a> and reported as <a href="#sv"><code>#&nbsp;structural variants</code></a>.
 
@@ -644,7 +644,7 @@ Run the tool on a data from the <code>test_data</code> folder and check correctn
     <code><b>--test-sv</b></code>
 </div>
 Run the tool on a data from the <code>test_data</code> folder using the reads for SV detection. The tool will compile the required programs
-    (BEDtools, Bowtie2, and Manta Structural Variant Caller).
+    (BEDtools, BWA, and Manta Structural Variant Caller).
 
 <div class='option'>
     <code><b>-h</b></code> (or <code>--help</code>)

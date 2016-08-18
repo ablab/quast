@@ -32,7 +32,7 @@ libs/gage/*.class
 
 libs/Busco/augustus-3.0.3/src/LICENCE.TXT
 libs/Busco/hmmer-3.1b2-mac/
-libs/bwa-master/make.*
+libs/bwa/make.*
 
 libs/blast/
 libs/blast/16S_RNA_blastdb/
@@ -49,9 +49,8 @@ libs/samtools/misc/md5fa
 libs/samtools/misc/md5sum-lite
 libs/samtools/misc/wgsim
 
-libs/bowtie2/bowtie2-align-*
-libs/bowtie2/bowtie2-build-*
-libs/bowtie2/bowtie2-inspect-*
+libs/bwa/bwa
+libs/bwa/bwa.dSYM
 
 libs/manta/build
 libs/manta/make.*

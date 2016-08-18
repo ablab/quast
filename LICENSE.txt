@@ -185,11 +185,11 @@ http://sourceforge.net/p/krona/home/krona/ website and to the following paper:
 Ondov BD, Bergman NH, and Phillippy AM. Interactive metagenomic visualization in a Web
 browser. BMC Bioinformatics. 2011 Sep 30; 12(1):385.
 
-8. QUAST Structural Variation Finding module uses Bowtie2, Sambamba, and Manta.
-For more details about Bowtie2 please refer to
-http://bowtie-bio.sourceforge.net/bowtie2/index.shtml website and to the following paper:
+8. QUAST Structural Variation Finding module uses BWA, Sambamba, and Manta.
+For more details about BWA please refer to
+https://github.com/lh3/bwa website and to the following preprint:
 
-Langmead B, Salzberg S. Fast gapped-read alignment with Bowtie 2. Nature Methods. 2012, 9:357-359.
+Li H. (2013) Aligning sequence reads, clone sequences and assembly contigs with BWA-MEM.
 
 For more details about Sambamba please refer to
 https://github.com/lomereiter/sambamba website and to the following paper:

@@ -315,6 +315,21 @@ function updateMainCoverage(minExtent, maxExtent) {
     //main_cov.select('.y').call(y_cov_main_A);
 }
 
+function getNextCovValue(covData, startIdx, endIdx, maxValue, xScale, yScale, minExtent, startPos) {
+    var coverage = covData[chromosome].slice(startIdx, endIdx);
+    var covDots = coverage.length;
+    if (covDots == 0) return;
+    var coverageSum = coverage.reduce(function(pv, cv) { return pv + cv; }, 0);
+    var avgCoverage = coverageSum / covDots;
+    var yValue = Math.min(avgCoverage, maxValue);
+
+    if (startIdx == startPos) start = minExtent;
+    else start = startIdx * coverageFactor;
+    end = endIdx * coverageFactor;
+    if (avgCoverage < 1) yValue = 0.1;
+    return [xScale(start), yScale(yValue), xScale(end)];
+}
+
 function drawCoverageLine(minExtent, maxExtent, useMainCov, covData, plotClass) {
     var line = '',
         l = (maxExtent - minExtent) / coverageFactor,
@@ -335,32 +350,24 @@ function drawCoverageLine(minExtent, maxExtent, useMainCov, covData, plotClass) 
 
     var cov_lines = [];
     var startPos = Math.floor(minExtent / coverageFactor / step) * step;
-    for (var i = startPos;; i += step) {
-        nextPos = Math.min(maxExtent / coverageFactor, i + step);
-        coverage = covData[chromosome].slice(i, i + step);
-        if (coverage.length == 0) break;
-        var coverageSum = coverage.reduce(function(pv, cv) { return pv + cv; }, 0);
-        var avgCoverage = coverageSum / coverage.length;
-        var yValue = Math.min(avgCoverage, maxValue);
-        //y_max = Math.max(y_max, s);
-        if (i == startPos) start = minExtent;
-        else start = i * coverageFactor;
-        end = nextPos * coverageFactor;
-        if (avgCoverage >= 1)
-            cov_lines.push([xScale(start), yScale(yValue), xScale(end)]);
-        else
-            cov_lines.push([xScale(start), yScale(0.1), xScale(end)]);
-        if (nextPos >= (maxExtent / coverageFactor)) break;
+    var nextPos;
+    var lastPos = maxExtent / coverageFactor;
+    for (var i = startPos; i < lastPos; i += step) {
+        nextPos = i + step;
+        cov_line = getNextCovValue(covData, i, nextPos, maxValue, xScale, yScale, minExtent, startPos);
+        if (!cov_line) break;
+        cov_lines.push(cov_line);
     }
-    //y_max = getNextMaxCovValue(y_max, y_cov_main_S.ticks(numYTicks));
-    //y_cov_main_S.domain([y_max, .1]);
-    //y_cov_main_A.scale(y_cov_main_S);
+    if (nextPos < lastPos) {
+        cov_line = getNextCovValue(covData, nextPos, lastPos, maxValue, xScale, yScale, minExtent);
+        cov_lines.push(cov_line);
+    }
 
+    var cov_line;
     line += ['M', cov_lines[0][0], yScale(0.1)].join(' ');
     for (i = 0; i < cov_lines.length; i++) {
         cov_line = cov_lines[i];
-        line += ['V', cov_line[1]].join(' ');
-        line += ['H', cov_line[2]].join(' ');
+        line += 'V' + ' ' + cov_line[1] + 'H' + ' ' + cov_line[2];
     }
     line += ['V', yScale(0.1), 'Z'].join(' ');
     track.select(plotClass).select('path').attr('d', line);

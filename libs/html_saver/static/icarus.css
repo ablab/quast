@@ -209,7 +209,7 @@ span {
 }
 .COV .phys_covered path {
     fill: #6BAEBC;
-    opacity: .5;
+    opacity: .6;
 }
 .COV .notCovered path {
     stroke: blue;

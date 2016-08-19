@@ -397,7 +397,8 @@ def get_physical_coverage(output_dirpath, ref_fpath, ref_name, bam_fpath, log_pa
         ## keep properly mapped, unique, and non-duplicate read pairs only
         bam_filtered_fpath = os.path.join(output_dirpath, ref_name + '.filtered.bam')
         qutils.call_subprocess([sambamba_fpath('sambamba'), 'view', '-t', str(qconfig.max_threads), '-h', '-f', 'bam',
-                                '-F', 'proper_pair and not duplicate', bam_fpath], stdout=open(bam_filtered_fpath, 'w'), stderr=open(err_path, 'a'))
+                                '-F', 'proper_pair and not supplementary and not duplicate', bam_fpath],
+                                stdout=open(bam_filtered_fpath, 'w'), stderr=open(err_path, 'a'))
         ## sort by read names
         bam_filtered_sorted_fpath = os.path.join(output_dirpath, ref_name + '.filtered.sorted.bam')
         qutils.call_subprocess([sambamba_fpath('sambamba'), 'sort', '-t', str(qconfig.max_threads), '-n',

@@ -29,15 +29,15 @@ import urllib
 import socket
 socket.setdefaulttimeout(120)
 
-silva_db_path = 'http://www.arb-silva.de/fileadmin/silva_databases/release_119/Exports/'
-silva_fname = 'SILVA_119_SSURef_Nr99_tax_silva.fasta'
+silva_db_path = 'http://www.arb-silva.de/fileadmin/silva_databases/release_123/Exports/'
+silva_fname = 'SILVA_123_SSURef_Nr99_tax_silva.fasta'
 
 blast_filenames = ['makeblastdb', 'blastn']
 blast_common_path = 'https://raw.githubusercontent.com/ablab/quast/master/external_tools/blast/' + qconfig.platform_name
 blast_dirpath = os.path.join(qconfig.LIBS_LOCATION, 'blast')
 
 blastdb_dirpath = os.path.join(qconfig.LIBS_LOCATION, 'blast', '16S_RNA_blastdb')
-db_fpath = os.path.join(blastdb_dirpath, 'silva_119.db')
+db_fpath = os.path.join(blastdb_dirpath, 'silva.db')
 db_nsq_fsize = 194318557
 
 is_quast_first_run = False

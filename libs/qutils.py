@@ -11,6 +11,8 @@ import shutil
 import subprocess
 import os
 import re
+from collections import defaultdict
+
 import qconfig
 from os.path import basename, isfile, realpath
 
@@ -90,9 +92,12 @@ def correct_seq(seq, original_fpath):
 def correct_fasta(original_fpath, corrected_fpath, min_contig,
                   is_reference=False):
     modified_fasta_entries = []
+    used_seq_names = defaultdict(int)
     for first_line, seq in fastaparser.read_fasta(original_fpath):
         if (len(seq) >= min_contig) or is_reference:
             corr_name = correct_name(first_line)
+            uniq_name = get_uniq_name(corr_name, used_seq_names)
+            used_seq_names[corr_name] += 1
 
             if not qconfig.no_check:
                 # seq to uppercase, because we later looking only uppercase letters
@@ -101,7 +106,7 @@ def correct_fasta(original_fpath, corrected_fpath, min_contig,
                     return False
             else:
                 corr_seq = seq
-            modified_fasta_entries.append((corr_name, corr_seq))
+            modified_fasta_entries.append((uniq_name, corr_seq))
 
     fastaparser.write_fasta(corrected_fpath, modified_fasta_entries)
 
@@ -498,9 +503,15 @@ def remove_reports(output_dirpath):
         shutil.rmtree(html_report_aux_dir)
 
 
-def correct_name(name):
-    name = re.sub(r'[^\w\._\-+|]', '_', name.strip())[:MAX_CONTIG_NAME]
-    return re.sub(r"[\|+=/]", '_', name.strip())[:MAX_CONTIG_NAME]
+def correct_name(name, max_name_len=MAX_CONTIG_NAME):
+    name = re.sub(r'[^\w\._\-+|]', '_', name.strip())[:max_name_len]
+    return re.sub(r"[\|+=/]", '_', name.strip())[:max_name_len]
+
+
+def get_uniq_name(name, used_names):
+    if name in used_names:
+        name += '_' + str(used_names[name])
+    return name
 
 
 def unique_corrected_fpath(fpath):

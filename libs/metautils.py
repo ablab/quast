@@ -6,13 +6,14 @@
 ############################################################################
 from __future__ import with_statement
 import os
+from collections import defaultdict
 
 from libs import qconfig
 
 qconfig.check_python_version()
 from libs import contigs_analyzer, fastaparser, reporting
 from libs import qutils
-from libs.qutils import correct_seq
+from libs.qutils import correct_seq, correct_name, get_uniq_name
 
 from libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_META_NAME)
@@ -143,8 +144,7 @@ def correct_meta_references(ref_fpaths, corrected_dirpath):
         else:
             corr_seq_fpath = qutils.unique_corrected_fpath(os.path.join(corrected_dirpath, seq_fname))
             corrected_ref_fpaths.append(corr_seq_fpath)
-        corr_seq_name = qutils.name_from_fpath(corr_seq_fpath)
-        corr_seq_name += '_' + qutils.correct_name(seq_name[:20])
+        corr_seq_name = qutils.name_from_fpath(corr_seq_fpath) + '_' + seq_name
         if not qconfig.no_check:
             corr_seq = correct_seq(seq, ref_fpath)
             if not corr_seq:
@@ -173,11 +173,15 @@ def correct_meta_references(ref_fpaths, corrected_dirpath):
             ref_name = qutils.get_label_from_par_dir_and_fname(ref_fpath)
 
         chromosomes_by_refs[ref_name] = []
+        used_seq_names = defaultdict(int)
 
         corr_seq_fpath = None
         for i, (seq_name, seq) in enumerate(fastaparser.read_fasta(ref_fpath)):
             total_references += 1
-            corr_seq_name, corr_seq_fpath = _proceed_seq(seq_name, seq, ref_name, ref_fasta_ext, total_references, ref_fpath)
+            seq_name = correct_name(seq_name, qutils.MAX_CONTIG_NAME - len(ref_name) - 1)
+            uniq_seq_name = get_uniq_name(seq_name, used_seq_names)
+            used_seq_names[seq_name] += 1
+            corr_seq_name, corr_seq_fpath = _proceed_seq(uniq_seq_name, seq, ref_name, ref_fasta_ext, total_references, ref_fpath)
             if not corr_seq_name:
                 break
         if corr_seq_fpath:

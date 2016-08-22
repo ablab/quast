@@ -176,7 +176,7 @@ function trimChrNames(contigNames){
     var trimmedNames = [];
     for (i = 0; i < contigNames.length; i++) {
         found = contigNames[i].match(ncbiPattern);
-        if (found.length > 1)
+        if (found && found.length > 1)
             trimmedNames.push(found[1]);
         else trimmedNames.push(contigNames[i]);
     }

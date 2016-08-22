@@ -182,10 +182,19 @@ function buildGenomeTable(reports, group_n, numColumns) {
 
 
 function buildTotalReport(assembliesNames, report, order, date, minContig, glossary,
-                          qualities, mainMetrics, reports) {
+                          qualities, mainMetrics, reports, assembliesWithNs) {
     $('#report_date').html('<p>' + date + '</p>');
-    $('#mincontig').html('<p>All statistics are based on contigs of size &ge; ' + minContig +
-        '<span class="rhs">&nbsp;</span>bp, unless otherwise noted (e.g., "# contigs (>= 0 bp)" and "Total length (>= 0 bp)" include all contigs.)</p>');
+    var extraInfo = '<p>All statistics are based on contigs of size &ge; ' + minContig +
+        '<span class="rhs">&nbsp;</span>bp, unless otherwise noted (e.g., "# contigs (>= 0 bp)" and "Total length (>= 0 bp)" include all contigs.)</p>';
+    if (assembliesWithNs) {
+        if (assembliesWithNs.length > 1)
+            potential_scaffolds_assemblies_info = 'assemblies ' + assembliesWithNs.join(', ') + ' contain';
+        else
+            potential_scaffolds_assemblies_info = 'assembly ' + assembliesWithNs[0] + ' contains';
+        extraInfo += '<p>Suggestion: ' + potential_scaffolds_assemblies_info + ' continuous fragments of N\'s of length >= 10 bp. ' +
+            'You may consider rerunning QUAST using --scaffolds (-s) option!</p>';
+    }
+    $('#extrainfo').html(extraInfo);
     $('#per_ref_msg').html('<p>Rows show values for the whole assembly (column name) vs. combined reference (concatenation of input references).<br>' +
         'Clicking on a row with <span style="color: #CCC">+</span> sign will expand values for contigs aligned to each of input references separately.<br>' +
         'Note that some metrics (e.g. # contigs) may not sum up, because one contig may be aligned to several references and thus, counted several times.<br>' +

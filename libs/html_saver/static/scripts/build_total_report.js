@@ -1,8 +1,17 @@
 function buildTotalReport(assembliesNames, report, order, date, minContig,
-                          glossary, qualities, mainMetrics, referenceName) {
+                          glossary, qualities, mainMetrics, referenceName, assembliesWithNs) {
     $('#report_date').html('<p>' + date + '</p>');
-    $('#mincontig').html('<p>All statistics are based on contigs of size >= ' + minContig +
-        '<span class="rhs">&nbsp;</span>bp, unless otherwise noted (e.g., "# contigs (>= 0 bp)" and "Total length (>= 0 bp)" include all contigs.)</p>');
+    var extraInfo = '<p>All statistics are based on contigs of size >= ' + minContig +
+        '<span class="rhs">&nbsp;</span>bp, unless otherwise noted (e.g., "# contigs (>= 0 bp)" and "Total length (>= 0 bp)" include all contigs.)</p>';
+    if (assembliesWithNs) {
+        if (assembliesWithNs.length > 1)
+            potential_scaffolds_assemblies_info = 'assemblies ' + assembliesWithNs.join(', ') + ' contain';
+        else
+            potential_scaffolds_assemblies_info = 'assembly ' + assembliesWithNs[0] + ' contains';
+        extraInfo += '<p>Suggestion: ' + potential_scaffolds_assemblies_info + ' continuous fragments of N\'s of length >= 10 bp. ' +
+            'You may consider rerunning QUAST using --scaffolds (-s) option!</p>';
+    }
+    $('#extrainfo').html(extraInfo);
 
     var table = '';
     table += '<table cellspacing="0" class="report_table draggable" id="main_report_table">';

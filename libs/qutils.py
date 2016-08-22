@@ -173,7 +173,7 @@ def correct_contigs(contigs_fpaths, corrected_dirpath, labels, reporting):
     ## 2) Nucmer fails on names like "contig 1_bla_bla", "contig 2_bla_bla" (it interprets as a contig's name only the first word of caption and gets ambiguous contigs names)
     n_jobs = min(len(contigs_fpaths), qconfig.max_threads)
     from joblib import Parallel, delayed
-    logger.main_info('  Preprocessing...')
+    logger.main_info('  Pre-processing...')
     corrected_info = Parallel(n_jobs=n_jobs)(delayed(parallel_correct_contigs)(i, contigs_fpath,
             corrected_dirpath, labels) for i, contigs_fpath in enumerate(contigs_fpaths))
     corrected_contigs_fpaths = []
@@ -224,7 +224,7 @@ def parallel_correct_contigs(file_counter, contigs_fpath, corrected_dirpath, lab
         logs.append('  ' + index_to_str(file_counter, force=(len(labels) > 1)) + '%s ==> %s' % (contigs_fpath, label))
 
     # if option --scaffolds is specified QUAST adds split version of assemblies to the comparison
-    if qconfig.scaffolds:
+    if qconfig.scaffolds and not qconfig.is_combined_ref:
         broken_scaffold_fpath, logs = broke_scaffolds(file_counter, labels, contigs_fpath, corrected_dirpath, logs)
         if broken_scaffold_fpath:
             lengths = get_lengths_from_fasta(broken_scaffold_fpath, label + '_broken')
@@ -289,6 +289,23 @@ def broke_scaffolds(file_counter, labels, contigs_fpath, corrected_dirpath, logs
     logs.append("  " + index_to_str(file_counter, force=(len(labels) > 1)) +
             "    WARNING: nothing was broken, skipping '%s broken' from further analysis" % label)
     return None, logs
+
+
+def is_scaffold(seq):
+    if qconfig.no_check:
+        return False
+    cumul_contig_length = 0
+    seq_len = len(seq)
+    while cumul_contig_length < seq_len and seq.find('N', cumul_contig_length) != -1:
+        start = seq.find('N', cumul_contig_length)
+        end = start + 1
+        while end != seq_len and seq[end] == 'N':
+            end += 1
+
+        cumul_contig_length = end + 1
+        if end - start >= qconfig.Ns_break_threshold:
+            return True
+    return False
 
 
 def correct_reference(ref_fpath, corrected_dirpath):

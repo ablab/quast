@@ -192,10 +192,6 @@ def main(args):
         quast_py_args += ['--bam']
         quast_py_args += [qconfig.bam]
 
-    for arg in args:
-        if arg in ('-s', "--scaffolds"):
-            quast_py_args.remove(arg)
-
     quast_py_args += ['--combined-ref']
     if qconfig.draw_plots or qconfig.html_report:
         if plotter.dict_color_and_ls:
@@ -271,6 +267,9 @@ def main(args):
     if qconfig.calculate_read_support:
         calculate_ave_read_support(combined_output_dirpath, assemblies)
 
+    for arg in args:
+        if arg in ('-s', "--scaffolds"):
+            quast_py_args.remove(arg)
     quast_py_args += ['--no-check-meta']
     qconfig.contig_thresholds = ','.join([str(threshold) for threshold in qconfig.contig_thresholds if threshold > qconfig.min_contig])
     if not qconfig.contig_thresholds:

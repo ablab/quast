@@ -250,11 +250,12 @@ def prepare_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, data_st
                     else: misassembled_ends = ''
 
                     genes = []
+                    start_in_contig, end_in_contig = min(alignment.start_in_contig, alignment.end_in_contig), \
+                                                     max(alignment.start_in_contig, alignment.end_in_contig)
                     for gene in contigs[alignment.name].genes:
-                        if alignment.start_in_contig < gene.start < alignment.end_in_contig or \
-                                                alignment.start_in_contig < gene.end < alignment.end_in_contig:
-                            corr_start = max(alignment.start, alignment.start + (gene.start - alignment.start_in_contig))
-                            corr_end = min(alignment.end, alignment.end + (gene.end - alignment.end_in_contig))
+                        if start_in_contig < gene.start < end_in_contig or start_in_contig < gene.end < end_in_contig:
+                            corr_start = max(alignment.start, alignment.start + (gene.start - start_in_contig))
+                            corr_end = min(alignment.end, alignment.end + (gene.end - end_in_contig))
                             gene_info = '{start: ' + str(gene.start) + ', end: ' + str(gene.end) + ', corr_start: ' + \
                                         str(corr_start) + ', corr_end: ' + str(corr_end) + '}'
                             genes.append(gene_info)

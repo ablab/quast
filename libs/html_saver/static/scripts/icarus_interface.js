@@ -168,14 +168,57 @@ function getChromCoords(coord, coordIndex) {
     }
 }
 
+function trimChrNames(contigNames){
+    //gi_77461965_ref_NC_007493.1__Rhodobacter_sphaeroides_2.4.1_chromosome_1__complete_sequence
+    if (contigNames.length == 1)
+        return contigNames;
+    var ncbiPattern = /gi_.+__(.+__.+)/i;
+    var trimmedNames = [];
+    for (i = 0; i < contigNames.length; i++) {
+        found = contigNames[i].match(ncbiPattern);
+        if (found.length > 1)
+            trimmedNames.push(found[1]);
+        else trimmedNames.push(contigNames[i]);
+    }
+    var sortedNames = trimmedNames.concat().sort();
+    var s1 = sortedNames[0], s2 = sortedNames[sortedNames.length - 1];
+    var maxIndex = s1.length;
+    var commonStrings = [];
+    var chrIndexInName = s1.indexOf('chromosome');
+    if (chrIndexInName > -1)
+        maxIndex = chrIndexInName;
+    for (i = 0; i < s1.length; i++) {
+        var j = i;
+        while(j < maxIndex && s1.charAt(j)=== s2.charAt(j))
+            j++;
+        commonStrings.push(s1.substring(i, j))
+    }
+    if (!commonStrings)
+        return trimmedNames;
+    var commonString = commonStrings.sort(function (a, b) { return b.length - a.length; })[0];
+    var shortNames = [];
+    for (i = 0; i < trimmedNames.length; i++) {
+        splittedName = trimmedNames[i].split(commonString);
+        if (splittedName.length == 1)
+            shortNames.push(splittedName[0]);
+        else if ((splittedName[0] + splittedName[1]).length < 30)
+            shortNames.push(splittedName[0] + '...' + splittedName[1]);
+        else if (splittedName[1].length < 10)
+            shortNames.push(splittedName[0] + '...');
+        else
+            shortNames.push('...' + splittedName[1]);
+    }
+    return shortNames;
+}
+
 function setupChromosomeSelector(chrSelector, selectorIndex) {
-    if (!isContigSizePlot && chrContigs.length > 1) {
+    if (!isContigSizePlot && shortRefNames.length > 1) {
         chrSelector.style.display = "";
-        for (var i = 0; i < chrContigs.length; i++) {
+        for (var i = 0; i < shortRefNames.length; i++) {
             var option = document.createElement('option');
-            var chr = chrContigs[i];
-            if (chr.length > 50) {
-                chr = chr.slice(0, 3) + '...' + chr.slice(chr.length - 10, chr.length)
+            var chr = shortRefNames[i];
+            if (chr.length > 35) {
+                chr = chr.slice(0, 30) + '...'
             }
             option.text = chr;
             option.value = i;

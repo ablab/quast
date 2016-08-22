@@ -40,6 +40,7 @@ THE SOFTWARE.
     if (chromosome) var data = contigData(chromosome);
     else var data = parseData(contig_data);
     var lanes = data.lanes, items = data.items;
+    var shortRefNames = trimChrNames(chrContigs);
 
     var w = 0.9 * (window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth) - 300;
     var margin = {

@@ -62,7 +62,7 @@ def run_gage(i, contigs_fpath, gage_results_dirpath, gage_tool_path, reference, 
 gage_dirpath = os.path.join(qconfig.LIBS_LOCATION, 'gage')
 
 
-def compile_gage(only_clean=True):
+def compile_gage(only_clean=False):
     if only_clean:
         for required_name in required_java_fnames:
             fpath = os.path.join(gage_dirpath, required_name + '.class')

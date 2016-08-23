@@ -10,6 +10,7 @@ SITE_PACKAGES=libs/site_packages
 mkdir -p release/$QUAST_FOLDER
 cp -r libs            release/$QUAST_FOLDER
 cp -r test_data       release/$QUAST_FOLDER
+cp setup.py           release/$QUAST_FOLDER
 cp quast.py           release/$QUAST_FOLDER
 cp metaquast.py       release/$QUAST_FOLDER
 cp icarus.py          release/$QUAST_FOLDER

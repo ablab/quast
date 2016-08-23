@@ -7,21 +7,25 @@
 # See file LICENSE for details.
 ############################################################################
 
-import glob
 import os
-import subprocess
 import sys
 from os.path import join, isfile, abspath, dirname, relpath, isdir
 
 import shutil
-from setuptools import setup, find_packages
 
 from libs import qconfig
+
+qconfig.check_python_version()
+
 from libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 logger.set_up_console_handler(debug=True)
 
-from libs.search_references_meta import download_blast_files, download_all_blast_files
+from site import addsitedir
+addsitedir(os.path.join(qconfig.LIBS_LOCATION, 'site_packages'))
+from setuptools import setup, find_packages
+
+from libs.search_references_meta import download_all_blast_files
 from libs.glimmer import compile_glimmer
 from libs.gage import compile_gage
 from libs.ca_utils.misc import compile_aligner

@@ -221,6 +221,7 @@ class QLogger(object):
 
     def print_params(self, indent='',
                            wrap_after=80, only_if_debug=False):
+        self._logger.info("CWD: " + os.getcwd())
         self._logger.info("Main parameters: ")
         text = '  '
         line = indent

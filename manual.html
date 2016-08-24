@@ -796,7 +796,8 @@ Note:
     <li>flanking sequences align on different reference genomes (MetaQUAST only).
     </ul>
     This metric requires a reference genome. Note that default threshold of 1<span class="rhs">&nbsp;</span>kbp can be
-changed with <a href='#extensive_mis_size'><code>--extensive-mis-size</code></a>.</p>
+changed with <a href='#extensive_mis_size'><code>--extensive-mis-size</code></a>.
+See more details about misassemblies in <a href="#sec3.1.2">section 3.1.2</a>.</p>
 
 <p><span class='metric-name'># misassembled contigs</span> is the number of contigs that contain misassembly events.</p>
 
@@ -804,9 +805,12 @@ changed with <a href='#extensive_mis_size'><code>--extensive-mis-size</code></a>
 
 <p><span class='metric-name'># local misassemblies</span> is the number of breakpoints that satisfy the following conditions: 
 <ol class='my_ol' style='margin-top: -24px;'>
-<li>The gap between left and right flanking sequences is less than 1<span class="rhs">&nbsp;</span>kbp, and larger than the maximum indel length (85 bp).</li>
+<li>The gap or overlap between left and right flanking sequences is less than 1<span class="rhs">&nbsp;</span>kbp, and larger than the maximum indel length (85 bp).</li>
 <li>The left and right flanking sequences both are on the same strand of the same chromosome of the reference genome.</li>
-</ol> </p>
+</ol>
+Note that default threshold of 1<span class="rhs">&nbsp;</span>kbp can be
+changed with <a href='#extensive_mis_size'><code>--extensive-mis-size</code></a>.
+</p>
 
 <p><span class='metric-name'># unaligned contigs</span> is the number of contigs that have no alignment to the
     reference sequence. The value "X<span class='rhs'>&nbsp;</span>+<span class='rhs'>&nbsp;</span>Y part" means X totally unaligned contigs plus Y partially unaligned contigs. </p>

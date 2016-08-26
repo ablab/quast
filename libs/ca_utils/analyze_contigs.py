@@ -80,8 +80,8 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, aligns, ref_featu
             #Pull all aligns for this contig
             num_aligns = len(aligns[contig])
 
-            #Sort aligns by length and identity
-            sorted_aligns = sorted(aligns[contig], key=lambda x: (x.len2 * x.idy, x.len2), reverse=True)
+            #Sort aligns by aligned_length * identity - unaligned_length (as we do in BSS)
+            sorted_aligns = sorted(aligns[contig], key=lambda x: (x.len2 * x.idy - (ctg_len - x.len2), x.len2), reverse=True)
             top_len = sorted_aligns[0].len2
             top_id = sorted_aligns[0].idy
             top_aligns = []

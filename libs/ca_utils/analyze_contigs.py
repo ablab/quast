@@ -213,6 +213,7 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, aligns, ref_featu
                     aligned_lengths.append(the_only_align.len2)
 
                     begin, end = the_only_align.start(), the_only_align.end()
+                    unaligned_bases = 0
                     if (begin - 1) or (ctg_len - end):
                         partially_unaligned += 1
                         unaligned_bases = (begin - 1) + (ctg_len - end)

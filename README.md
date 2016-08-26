@@ -26,7 +26,7 @@ Output
 
 
 <br>
-**Metrics based only on contigs:**  
+**Metrics based only on contigs:**
 
 * Number of large contigs (i.e., longer than 500 bp) and total length of them.  
 * Length of the largest contig.  

@@ -1,0 +1,18 @@
+recursive-include libs *
+recursive-include test_data *
+
+include *.py
+include *.html
+include *.txt
+include quast_ref.bib
+
+exclude libs/libs/.gitignore
+exclude libs/quast_results
+exclude libs/quast_test_output
+exclude libs/site_packages/*/test
+exclude libs/site_packages/*/tests
+exclude quast.egg-info
+exclude setup.cfg
+
+global-exclude *.pyc
+global-exclude make.*

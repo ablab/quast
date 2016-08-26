@@ -1,7 +1,6 @@
-QUAST README
+Genome assembly evaluation tool
 
-QUAST stands for QUality ASsessment Tool.
-The tool evaluates genome assemblies by computing various metrics. 
+The tool evaluates genome assemblies by computing various metrics.
 You can find all project news and the latest version of the tool at 
 http://quast.sf.net 
 

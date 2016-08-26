@@ -160,6 +160,10 @@ def show_progress(a, b, c):
 
 
 def download_all_blast_files(logger=logger, only_clean=False):
+    if only_clean:
+        if os.path.isdir(blastdb_dirpath):
+            shutil.rmtree(blastdb_dirpath)
+
     for i, cmd in enumerate(blast_filenames):
         blast_file = blast_fpath(cmd)
         if only_clean:

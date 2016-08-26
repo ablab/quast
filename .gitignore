@@ -55,6 +55,8 @@ libs/bwa/bwa.dSYM
 libs/manta/build
 libs/manta/make.*
 
+libs/bowtie2/
+
 libs/version.py
 
 venv_quast

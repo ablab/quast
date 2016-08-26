@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 if [ $1 ]
 then QUAST_FOLDER=$1
 else QUAST_FOLDER=.

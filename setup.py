@@ -10,26 +10,30 @@
 import os
 import sys
 from os.path import join, isfile, abspath, dirname, relpath, isdir
-
 import shutil
 
 from libs import qconfig
-
 qconfig.check_python_version()
 
 from libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 logger.set_up_console_handler(debug=True)
 
-from site import addsitedir
-addsitedir(os.path.join(qconfig.LIBS_LOCATION, 'site_packages'))
-from setuptools import setup, find_packages
+try:
+    from setuptools import setup, find_packages
+except:
+    logger.warn('Possibly outdated setuptool. Using setuptools built into '
+                'the QUAST package instead.')
+    from site import addsitedir
+    addsitedir(os.path.join(qconfig.LIBS_LOCATION, 'site_packages'))
+    from setuptools import setup, find_packages
 
 from libs.search_references_meta import download_all_blast_files
 from libs.glimmer import compile_glimmer
 from libs.gage import compile_gage
 from libs.ca_utils.misc import compile_aligner
 from libs.ra_utils import compile_reads_analyzer_tools
+
 
 name = 'quast'
 quast_package = 'libs'
@@ -40,7 +44,7 @@ if abspath(dirname(__file__)) != abspath(os.getcwd()):
     sys.exit()
 
 
-if sys.argv[-1] == 'clean':
+if sys.argv[-1] in ['clean', 'sdist']:
     logger.info('Cleaning up binary files...')
     compile_aligner(logger, only_clean=True)
     compile_reads_analyzer_tools(logger, only_clean=True)
@@ -51,9 +55,16 @@ if sys.argv[-1] == 'clean':
         shutil.rmtree('build')
     if isdir('dist'):
         shutil.rmtree('dist')
-    if isdir(name + '.egg-info'):
+    if isdir('quast.egg-info'):
         shutil.rmtree(name + '.egg-info')
     logger.info('Done.')
+
+    if sys.argv[-1] == 'clean':
+        sys.exit()
+
+
+if sys.argv[-1] == 'test':
+    os.system('quast.py --test')
     sys.exit()
 
 
@@ -85,30 +96,9 @@ if sys.argv[-1] == 'tag':
 
 
 if sys.argv[-1] == 'publish':
-    # not working for now; need to correctly make sdist using source files only
-    cmdl = 'python setup.py sdist upload'
+    cmdl = 'python setup.py sdist && python setup.py sdist upload'
     os.system(cmdl)
     sys.exit()
-
-
-logger.info("""------------------------------------------
- Installing QUAST version {}
-------------------------------------------
-""".format(version))
-
-
-if sys.argv[-1] in ['install', 'develop', 'build', 'build_ext']:
-    logger.info('* Compiling aligner *')
-    compile_aligner(logger)
-    logger.info('* Compiling read analisis tools *')
-    compile_reads_analyzer_tools(logger)
-    logger.info('* Compiling Blast *')
-    download_all_blast_files(logger)
-    logger.info('* Compiling Glimmer *')
-    compile_glimmer()
-    logger.info('* Compiling GAGE *')
-    compile_gage()
-    logger.info('')
 
 
 def find_package_files(dirpath, package=quast_package):
@@ -118,6 +108,33 @@ def find_package_files(dirpath, package=quast_package):
             fpath = join(path, fname)
             paths.append(relpath(fpath, package))
     return paths
+
+
+install_full = False
+if sys.argv[-1] == 'install_full':
+    install_full = True
+    sys.argv[-1] = 'install'
+
+
+if sys.argv[-1] in ['install', 'develop', 'build', 'build_ext']:
+    logger.info('* Compiling aligner *')
+    compile_aligner(logger)
+    logger.info('* Compiling Glimmer *')
+    compile_glimmer()
+    logger.info('* Compiling GAGE *')
+    compile_gage()
+    if install_full:
+        # TODO: if isdir('external_tools'), copy from it. if not, then download
+        # ('external_tools', [
+        #     'external_tools/blast/' + qconfig.platform_name + '/blastn',
+        #     'external_tools/blast/' + qconfig.platform_name + '/makeblastdb',
+        # ])
+        logger.info('* Compiling read analisis tools *')
+        compile_reads_analyzer_tools(logger)
+        logger.info('* Downloading SILVA 16S rRNA gene database and BLAST *')
+        download_all_blast_files(logger)
+
+    logger.info('')
 
 
 if qconfig.platform_name == 'macosx':
@@ -130,14 +147,23 @@ else:
 bwa_files = [
     join('bwa', fp) for fp in os.listdir(join(quast_package, 'bwa'))
     if isfile(join(quast_package, 'bwa', fp)) and fp.startswith('bwa')]
+full_install_tools = (
+    bwa_files +
+    find_package_files('manta') +
+    find_package_files('blast') +
+    ['bedtools/bin/*'] +
+    sambamba_files
+)
 
 setup(
     name=name,
     version=version,
     author='Alexei Gurevich',
     author_email='alexeigurevich@gmail.com',
-    description="Genome assembly evaluation toolkit",
-    long_description=__doc__,
+    description='Genome assembly evaluation tool',
+    long_description='''QUAST evaluates genome assemblies.
+It works both with and without references genome.
+The tool accepts multiple assemblies, thus is suitable for comparison.''',
     keywords=['bioinformatics', 'genome assembly', 'metagenome assembly', 'visualization'],
     url='quast.sf.net',
     license='GPLv2',
@@ -147,16 +173,12 @@ setup(
         quast_package:
             find_package_files('html_saver') +
             nucmer_files +
-            bwa_files +
-            find_package_files('manta') +
-            ['bedtools/bin/*'] +
-            sambamba_files +
             find_package_files('genemark/' + qconfig.platform_name) +
             find_package_files('genemark-es/' + qconfig.platform_name) +
             find_package_files('genemark-es/lib') +
             find_package_files('glimmer') +
-            find_package_files('blast') +
-            find_package_files('gage')
+            find_package_files('gage') +
+           (full_install_tools if install_full else [])
     },
     include_package_data=True,
     zip_safe=False,
@@ -170,10 +192,6 @@ setup(
             'manual.html',
         ]),
         ('test_data', find_package_files('test_data', package='')),
-        ('external_tools', [
-            'external_tools/blast/' + qconfig.platform_name + '/blastn',
-            'external_tools/blast/' + qconfig.platform_name + '/makeblastdb',
-        ]),
     ],
     install_requires=[
         'matplotlib',
@@ -197,10 +215,41 @@ setup(
     ],
 )
 
-logger.info("""
---------------------------------
- QUAST installation complete!
---------------------------------
+
+if sys.argv[-1] == 'install':
+    if not install_full:
+        logger.info('''
+----------------------------------------------
+QUAST version {} installation complete.
+
 For help in running QUAST, please see the documentation available
-at quast.bioinf.spbau.ru/manual.html or run: quast --help
-""")
+at quast.bioinf.spbau.ru/manual.html, or run quast.py --help
+
+Usage:
+$ quast.py test_data/contigs_1.fasta \\
+           test_data/contigs_2.fasta \\
+        -R test_data/reference.fasta.gz \\
+        -G test_data/genes.txt \\
+        -o output_directory
+----------------------------------------------'''.format(version))
+
+    else:
+        logger.info('''
+----------------------------------------------
+QUAST version {} installation complete.
+
+The full package is installed, with the features for reference
+sequence detection in MetaQUAST, and structural variant detection
+for misassembly events refinement.
+
+For help in running QUAST, please see the documentation available
+at quast.bioinf.spbau.ru/manual.html, or run quast.py --help
+
+Usage:
+$ quast.py test_data/contigs_1.fasta \\
+           test_data/contigs_2.fasta \\
+        -R test_data/reference.fasta.gz \\
+        -G test_data/genes.txt \\
+        -1 test_data/reads1.fastq.gz -2 test_data/reads2.fastq.gz
+        -o output_directory
+----------------------------------------------'''.format(version))

@@ -84,6 +84,8 @@ def compile_reads_analyzer_tools(logger, bed_fpath=None, only_clean=False):
             return False
 
     if only_clean:
+        if os.path.isdir(manta_build_dirpath):
+            shutil.rmtree(manta_build_dirpath)
         return True
 
     if not qconfig.no_sv and bed_fpath is None and not isfile(config_manta_fpath):

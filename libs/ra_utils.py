@@ -1,7 +1,7 @@
 import os
 import socket
 import urllib2
-from os.path import exists, join, isfile
+from os.path import exists, join, isfile, relpath
 
 import shutil
 
@@ -16,8 +16,13 @@ manta_dirpath = join(qconfig.LIBS_LOCATION, 'manta')
 manta_build_dirpath = join(qconfig.LIBS_LOCATION, 'manta', 'build')
 manta_bin_dirpath = join(qconfig.LIBS_LOCATION, 'manta', 'build/bin')
 config_manta_fpath = join(manta_bin_dirpath, 'configManta.py')
-manta_linux_download_path = 'https://raw.githubusercontent.com/ablab/quast/master/external_tools/manta/manta_linux.tar.bz2'
-manta_osx_download_path = 'https://raw.githubusercontent.com/ablab/quast/master/external_tools/manta/manta_osx.tar.bz2'
+
+manta_external_dirpath = join(qconfig.QUAST_HOME, 'external_tools/manta')
+manta_ext_linux_fpath = join(manta_external_dirpath, 'manta_linux.tar.bz2')
+manta_ext_osx_fpath = join(manta_external_dirpath, 'manta_osx.tar.bz2')
+
+manta_linux_url = qconfig.GIT_ROOT_URL + relpath(manta_ext_linux_fpath, qconfig.QUAST_HOME)
+manta_osx_url = qconfig.GIT_ROOT_URL + relpath(manta_ext_osx_fpath, qconfig.QUAST_HOME)
 
 
 def bwa_fpath(fname):
@@ -58,55 +63,81 @@ def download_unpack_tar_bz(name, download_path, downloaded_fpath, final_dirpath,
         f.close()
         if exists(downloaded_fpath + '.download'):
             logger.info('  Unpacking ' + name + '...')
-            shutil.move(downloaded_fpath + '.download', downloaded_fpath)
-            import tarfile
-            tar = tarfile.open(downloaded_fpath, "r:bz2")
-            tar.extractall(final_dirpath)
-            tar.close()
-            temp_dirpath = join(final_dirpath, tar.members[0].name)
-            from distutils.dir_util import copy_tree
-            copy_tree(temp_dirpath, final_dirpath)
-            shutil.rmtree(temp_dirpath)
-            os.remove(downloaded_fpath)
+            unpack_tar(downloaded_fpath + '.download', final_dirpath)
             logger.main_info('  Done')
-            return True
         else:
             logger.main_info('  Failed downloading %s from %s!' % (name, download_path))
             return False
 
 
-def compile_reads_analyzer_tools(logger, bed_fpath=None, only_clean=False):
-    for name, dirpath, requirements in [
-            ('BWA', bwa_dirpath, ['bwa']),
-            ('BEDtools', bedtools_dirpath, [join('bin', 'bedtools')])]:
-        success_compilation = compile_tool(name, dirpath, requirements, only_clean=only_clean)
-        if not success_compilation:
-            return False
+def unpack_tar(fpath, dst_dirpath):
+    shutil.move(fpath, fpath)
+    import tarfile
+    tar = tarfile.open(fpath, "r:bz2")
+    tar.extractall(dst_dirpath)
+    tar.close()
+    temp_dirpath = join(dst_dirpath, tar.members[0].name)
+    from distutils.dir_util import copy_tree
+    copy_tree(temp_dirpath, dst_dirpath)
+    shutil.rmtree(temp_dirpath)
+    os.remove(fpath)
+    return True
 
+
+def compile_bwa(only_clean=False):
+    return compile_tool('BWA', bwa_dirpath, ['bwa'], only_clean=only_clean)
+
+
+def compile_bedtools(only_clean=False):
+    return compile_tool('BEDtools', bedtools_dirpath, [join('bin', 'bedtools')], only_clean=only_clean)
+
+
+def download_manta(logger, bed_fpath=None, only_clean=False):
     if only_clean:
         if os.path.isdir(manta_build_dirpath):
             shutil.rmtree(manta_build_dirpath)
         return True
 
     if not qconfig.no_sv and bed_fpath is None and not isfile(config_manta_fpath):
-        failed_compilation_flag = join(manta_dirpath, 'make.failed')
-        if check_prev_compilation_failed('Manta', failed_compilation_flag):
-            print_manta_warning(logger)
-            return True
-        # making
+        if qconfig.platform_name == 'linux_64':
+            url = manta_linux_url
+            fpath = manta_ext_linux_fpath
+        elif qconfig.platform_name == 'macosx':
+            url = manta_osx_url
+            fpath = manta_ext_osx_fpath
+        else:
+            logger.warning('Manta is not available for your platform.')
+            return False
+
         if not exists(manta_build_dirpath):
             os.mkdir(manta_build_dirpath)
         manta_downloaded_fpath = join(manta_build_dirpath, 'manta.tar.bz2')
-        logger.main_info('  Downloading binary distribution of Manta...')
-        if qconfig.platform_name == 'linux_64':
-            download_unpack_tar_bz('Manta', manta_linux_download_path, manta_downloaded_fpath, manta_build_dirpath, logger)
-        elif qconfig.platform_name == 'macosx':
-            download_unpack_tar_bz('Manta', manta_osx_download_path, manta_downloaded_fpath, manta_build_dirpath, logger)
+
+        if isfile(fpath):
+            logger.info('Copying manta from ' + fpath)
+            shutil.copy(fpath, manta_downloaded_fpath)
+            logger.info('Unpacking ' + manta_downloaded_fpath + ' into ' + manta_build_dirpath)
+            unpack_tar(manta_downloaded_fpath, manta_build_dirpath)
+
         else:
-            logger.warning('Manta is not available for your platform.')
+            failed_compilation_flag = join(manta_dirpath, 'make.failed')
+            if check_prev_compilation_failed('Manta', failed_compilation_flag):
+                print_manta_warning(logger)
+                return True
+
+            logger.main_info('  Downloading binary distribution of Manta...')
+            download_unpack_tar_bz('Manta', url, manta_downloaded_fpath, manta_build_dirpath, logger)
 
         if not isfile(config_manta_fpath):
             logger.warning('Failed to download binary distribution from https://github.com/ablab/quast/external_tools/manta '
-                             'and unpack it into ' + join(manta_dirpath, 'build/'))
+                           'and unpack it into ' + join(manta_dirpath, 'build/'))
             print_manta_warning(logger)
     return True
+
+
+def compile_reads_analyzer_tools(logger, bed_fpath=None, only_clean=False):
+    return all([
+        compile_bwa(only_clean),
+        compile_bedtools(only_clean),
+        download_manta(logger, bed_fpath, only_clean),
+    ])

@@ -13,6 +13,7 @@ import sys
 
 QUAST_HOME = os.path.abspath(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 LIBS_LOCATION = os.path.join(QUAST_HOME, 'libs')
+GIT_ROOT_URL = 'https://raw.githubusercontent.com/ablab/quast/master/'
 
 SUPPORTED_PYTHON_VERSIONS = ['2.5', '2.6', '2.7']
 

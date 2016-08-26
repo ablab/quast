@@ -16,7 +16,7 @@ import re
 import gzip
 import time
 
-from os.path import isfile
+from os.path import isfile, relpath, join
 
 from libs import qconfig, qutils
 from libs.log import get_logger
@@ -29,15 +29,17 @@ import urllib
 import socket
 socket.setdefaulttimeout(120)
 
-silva_db_path = 'http://www.arb-silva.de/fileadmin/silva_databases/release_123/Exports/'
+silva_db_url = 'http://www.arb-silva.de/fileadmin/silva_databases/release_123/Exports/'
 silva_fname = 'SILVA_123_SSURef_Nr99_tax_silva.fasta'
 
+external_tools_dirpath = join(qconfig.QUAST_HOME, 'external_tools')
+blast_external_tools_dirpath = join(external_tools_dirpath, 'blast', qconfig.platform_name)
 blast_filenames = ['makeblastdb', 'blastn']
-blast_common_path = 'https://raw.githubusercontent.com/ablab/quast/master/external_tools/blast/' + qconfig.platform_name
-blast_dirpath = os.path.join(qconfig.LIBS_LOCATION, 'blast')
+blast_dirpath_url = qconfig.GIT_ROOT_URL + relpath(blast_external_tools_dirpath, qconfig.QUAST_HOME)
 
-blastdb_dirpath = os.path.join(qconfig.LIBS_LOCATION, 'blast', '16S_RNA_blastdb')
-db_fpath = os.path.join(blastdb_dirpath, 'silva.db')
+blast_dirpath = join(qconfig.LIBS_LOCATION, 'blast')
+blastdb_dirpath = join(qconfig.LIBS_LOCATION, 'blast', '16S_RNA_blastdb')
+db_fpath = join(blastdb_dirpath, 'silva.db')
 db_nsq_fsize = 194318557
 
 is_quast_first_run = False
@@ -45,7 +47,7 @@ taxons_for_krona = {}
 connection_errors = 0
 
 
-def blast_fpath(fname):
+def get_blast_fpath(fname):
     blast_path = os.path.join(blast_dirpath, fname)
     if os.path.exists(blast_path):
         return blast_path
@@ -159,52 +161,64 @@ def show_progress(a, b, c):
         sys.stdout.flush()
 
 
-def download_all_blast_files(logger=logger, only_clean=False):
+def download_all_blast_binaries(logger=logger, only_clean=False):
     if only_clean:
         if os.path.isdir(blastdb_dirpath):
             shutil.rmtree(blastdb_dirpath)
 
     for i, cmd in enumerate(blast_filenames):
-        blast_file = blast_fpath(cmd)
+        blast_file = get_blast_fpath(cmd)
         if only_clean:
             if blast_file and isfile(blast_file):
                 os.remove(blast_file)
             continue
 
         if not blast_file:
-            return_code = download_blast_files(cmd, logger=logger)
+            return_code = download_blast_binary(cmd, logger=logger)
             logger.info()
             if return_code != 0:
                 return None, None
-            blast_file = blast_fpath(cmd)
+            blast_file = get_blast_fpath(cmd)
             os.chmod(blast_file, os.stat(blast_file).st_mode | stat.S_IEXEC)
 
 
-def download_blast_files(blast_filename, logger=logger):
+def download_blast_binary(blast_filename, logger=logger):
     logger.info()
     if not os.path.isdir(blast_dirpath):
         os.mkdir(blast_dirpath)
     if not os.path.isdir(blastdb_dirpath):
         os.mkdir(blastdb_dirpath)
-    blast_download = urllib.URLopener()
-    blast_webpath = os.path.join(blast_common_path, blast_filename)
-    blast_fpath = os.path.join(blast_dirpath, blast_filename)
-    if not os.path.exists(blast_fpath):
-        logger.info('Downloading %s...' % blast_filename)
-        try:
-            blast_download.retrieve(blast_webpath, blast_fpath + '.download', show_progress)
-        except Exception:
-            logger.error(
-                'Failed downloading %s! The search for reference genomes cannot be performed. '
-                'Please install it and ensure it is in your PATH, then restart MetaQUAST.' % blast_filename)
-            return 1
-        shutil.move(blast_fpath + '.download', blast_fpath)
-        logger.info('%s successfully downloaded!' % blast_filename)
 
-    return 0
+    blast_libs_fpath = os.path.join(blast_dirpath, blast_filename)
+    blast_external_fpath = os.path.join(blast_external_tools_dirpath, blast_filename)
+    if not os.path.exists(blast_libs_fpath):
+        if os.path.isfile(blast_external_fpath):
+            logger.info('Copying blast files from ' + blast_external_fpath)
+            shutil.copy(blast_external_fpath, blast_dirpath)
+        else:
+            blast_download = urllib.URLopener()
+            blast_webpath = os.path.join(blast_dirpath_url, blast_filename)
+            if not os.path.exists(blast_libs_fpath):
+                logger.info('Downloading %s...' % blast_filename)
+                try:
+                    blast_download.retrieve(blast_webpath, blast_libs_fpath + '.download', show_progress)
+                except Exception:
+                    logger.error(
+                        'Failed downloading %s! The search for reference genomes cannot be performed. '
+                        'Please install it and ensure it is in your PATH, then restart MetaQUAST.' % blast_filename)
+                    return 1
+                shutil.move(blast_libs_fpath + '.download', blast_libs_fpath)
+                logger.info('%s successfully downloaded!' % blast_filename)
+        return 0
 
 
-def download_blastdb():
+def download_blastdb(logger=logger, only_clean=False):
+    if only_clean:
+        if os.path.isdir(blastdb_dirpath):
+            logger.info('Removing ' + blastdb_dirpath)
+            shutil.rmtree(blastdb_dirpath)
+        return 0
+
     if os.path.isfile(db_fpath + '.nsq') and os.path.getsize(db_fpath + '.nsq') >= db_nsq_fsize:
         logger.info()
         logger.info('SILVA 16S rRNA database has already been downloaded, unpacked and BLAST database created. '
@@ -215,6 +229,7 @@ def download_blastdb():
     silva_fpath = os.path.join(blastdb_dirpath, silva_fname)
 
     logger.info()
+
     if os.path.isfile(db_gz_fpath):
         logger.info('SILVA 16S ribosomal RNA gene database has already been downloaded.')
     else:
@@ -222,7 +237,7 @@ def download_blastdb():
         if not os.path.isdir(blastdb_dirpath):
             os.mkdir(blastdb_dirpath)
         silva_download = urllib.FancyURLopener()
-        silva_remote_fpath = silva_db_path + silva_fname + '.gz'
+        silva_remote_fpath = silva_db_url + silva_fname + '.gz'
         try:
             silva_download.retrieve(silva_remote_fpath, db_gz_fpath + '.download', show_progress)
         except Exception:
@@ -249,7 +264,7 @@ def download_blastdb():
         shutil.move(substituted_fpath, silva_fpath)
 
     logger.info('Making BLAST database...')
-    cmd = blast_fpath('makeblastdb') + (' -in %s -dbtype nucl -out %s' % (silva_fpath, db_fpath))
+    cmd = get_blast_fpath('makeblastdb') + (' -in %s -dbtype nucl -out %s' % (silva_fpath, db_fpath))
     qutils.call_subprocess(shlex.split(cmd), stdout=open(log_fpath, 'a'), stderr=open(log_fpath, 'a'), logger=logger)
     if not os.path.exists(db_fpath + '.nsq') or os.path.getsize(db_fpath + '.nsq') < db_nsq_fsize:
         logger.error('Failed to make BLAST database ("' + blastdb_dirpath +
@@ -262,7 +277,7 @@ def download_blastdb():
 
 
 def parallel_blast(contigs_fpath, label, blast_res_fpath, err_fpath, blast_check_fpath, blast_threads):
-    cmd = blast_fpath('blastn') + (' -query %s -db %s -outfmt 7 -num_threads %s' % (
+    cmd = get_blast_fpath('blastn') + (' -query %s -db %s -outfmt 7 -num_threads %s' % (
             contigs_fpath, db_fpath, blast_threads))
     res_fpath = blast_res_fpath + '_' + label
     check_fpath = blast_check_fpath + '_' + label
@@ -340,7 +355,7 @@ def process_blast(blast_assemblies, downloaded_dirpath, labels, blast_check_fpat
     if not os.path.isdir(blastdb_dirpath):
         os.makedirs(blastdb_dirpath)
 
-    download_all_blast_files()
+    download_all_blast_binaries()
 
     if not os.path.isfile(db_fpath + '.nsq') or os.path.getsize(db_fpath + '.nsq') < db_nsq_fsize:
         # if os.path.isdir(blastdb_dirpath):

@@ -9,6 +9,7 @@
 
 import os
 import sys
+from glob import glob
 from os.path import join, isfile, abspath, dirname, relpath, isdir
 import shutil
 
@@ -28,12 +29,11 @@ except:
     addsitedir(os.path.join(qconfig.LIBS_LOCATION, 'site_packages'))
     from setuptools import setup, find_packages
 
-from libs.search_references_meta import download_all_blast_files
+from libs.search_references_meta import download_all_blast_binaries, download_blastdb
 from libs.glimmer import compile_glimmer
 from libs.gage import compile_gage
 from libs.ca_utils.misc import compile_aligner
-from libs.ra_utils import compile_reads_analyzer_tools
-
+from libs.ra_utils import compile_reads_analyzer_tools, download_manta, compile_bwa, compile_bedtools
 
 name = 'quast'
 quast_package = 'libs'
@@ -47,19 +47,25 @@ if abspath(dirname(__file__)) != abspath(os.getcwd()):
 if sys.argv[-1] in ['clean', 'sdist']:
     logger.info('Cleaning up binary files...')
     compile_aligner(logger, only_clean=True)
-    compile_reads_analyzer_tools(logger, only_clean=True)
-    download_all_blast_files(logger, only_clean=True)
     compile_glimmer(only_clean=True)
     compile_gage(only_clean=True)
-    if isdir('build'):
-        shutil.rmtree('build')
-    if isdir('dist'):
-        shutil.rmtree('dist')
-    if isdir('quast.egg-info'):
-        shutil.rmtree(name + '.egg-info')
-    logger.info('Done.')
+    compile_bwa(only_clean=True)
+    compile_bedtools(only_clean=True)
+    for fpath in [fn for fn in glob(join('libs', '*.pyc'))]: os.remove(fpath)
+    for fpath in [fn for fn in glob(join('libs', 'html_saver', '*.pyc'))]: os.remove(fpath)
+    for fpath in [fn for fn in glob(join('libs', 'site_packages', '*', '*.pyc'))]: os.remove(fpath)
 
     if sys.argv[-1] == 'clean':
+        if isdir('build'):
+            shutil.rmtree('build')
+        if isdir('dist'):
+            shutil.rmtree('dist')
+        if isdir('quast.egg-info'):
+            shutil.rmtree(name + '.egg-info')
+        download_manta(logger, only_clean=False)
+        download_all_blast_binaries(logger, only_clean=True)
+        download_blastdb(logger, only_clean=True)
+        logger.info('Done.')
         sys.exit()
 
 
@@ -105,8 +111,7 @@ def find_package_files(dirpath, package=quast_package):
     paths = []
     for (path, dirs, fnames) in os.walk(join(package, dirpath)):
         for fname in fnames:
-            fpath = join(path, fname)
-            paths.append(relpath(fpath, package))
+            paths.append(relpath(join(path, fname), package))
     return paths
 
 
@@ -124,15 +129,11 @@ if sys.argv[-1] in ['install', 'develop', 'build', 'build_ext']:
     logger.info('* Compiling GAGE *')
     compile_gage()
     if install_full:
-        # TODO: if isdir('external_tools'), copy from it. if not, then download
-        # ('external_tools', [
-        #     'external_tools/blast/' + qconfig.platform_name + '/blastn',
-        #     'external_tools/blast/' + qconfig.platform_name + '/makeblastdb',
-        # ])
         logger.info('* Compiling read analisis tools *')
         compile_reads_analyzer_tools(logger)
         logger.info('* Downloading SILVA 16S rRNA gene database and BLAST *')
-        download_all_blast_files(logger)
+        download_all_blast_binaries(logger)
+        download_blastdb(logger)
 
     logger.info('')
 

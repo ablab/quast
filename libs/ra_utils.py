@@ -1,7 +1,7 @@
 import os
 import socket
 import urllib2
-from os.path import exists, join, isfile, relpath
+from os.path import exists, join, isfile
 
 import shutil
 
@@ -21,8 +21,8 @@ manta_external_dirpath = join(qconfig.QUAST_HOME, 'external_tools/manta')
 manta_ext_linux_fpath = join(manta_external_dirpath, 'manta_linux.tar.bz2')
 manta_ext_osx_fpath = join(manta_external_dirpath, 'manta_osx.tar.bz2')
 
-manta_linux_url = qconfig.GIT_ROOT_URL + relpath(manta_ext_linux_fpath, qconfig.QUAST_HOME)
-manta_osx_url = qconfig.GIT_ROOT_URL + relpath(manta_ext_osx_fpath, qconfig.QUAST_HOME)
+manta_linux_url = qconfig.GIT_ROOT_URL + qutils.relpath(manta_ext_linux_fpath, qconfig.QUAST_HOME)
+manta_osx_url = qconfig.GIT_ROOT_URL + qutils.relpath(manta_ext_osx_fpath, qconfig.QUAST_HOME)
 
 
 def bwa_fpath(fname):

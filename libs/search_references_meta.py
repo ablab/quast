@@ -16,7 +16,7 @@ import re
 import gzip
 import time
 
-from os.path import isfile, relpath, join
+from os.path import isfile, join
 
 from libs import qconfig, qutils
 from libs.log import get_logger
@@ -35,7 +35,7 @@ silva_fname = 'SILVA_123_SSURef_Nr99_tax_silva.fasta'
 external_tools_dirpath = join(qconfig.QUAST_HOME, 'external_tools')
 blast_external_tools_dirpath = join(external_tools_dirpath, 'blast', qconfig.platform_name)
 blast_filenames = ['makeblastdb', 'blastn']
-blast_dirpath_url = qconfig.GIT_ROOT_URL + relpath(blast_external_tools_dirpath, qconfig.QUAST_HOME)
+blast_dirpath_url = qconfig.GIT_ROOT_URL + qutils.relpath(blast_external_tools_dirpath, qconfig.QUAST_HOME)
 
 blast_dirpath = join(qconfig.LIBS_LOCATION, 'blast')
 blastdb_dirpath = join(qconfig.LIBS_LOCATION, 'blast', '16S_RNA_blastdb')

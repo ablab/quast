@@ -10,10 +10,10 @@
 import os
 import sys
 from glob import glob
-from os.path import join, isfile, abspath, dirname, relpath, isdir
+from os.path import join, isfile, abspath, dirname, isdir
 import shutil
 
-from libs import qconfig
+from libs import qconfig, qutils
 qconfig.check_python_version()
 
 from libs.log import get_logger
@@ -111,7 +111,7 @@ def find_package_files(dirpath, package=quast_package):
     paths = []
     for (path, dirs, fnames) in os.walk(join(package, dirpath)):
         for fname in fnames:
-            paths.append(relpath(join(path, fname), package))
+            paths.append(qutils.relpath(join(path, fname), package))
     return paths
 
 

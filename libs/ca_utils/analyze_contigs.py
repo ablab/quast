@@ -43,6 +43,7 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, aligns, ref_featu
     partially_unaligned_bases = 0
     ambiguous_contigs = 0
     ambiguous_contigs_extra_bases = 0
+    ambiguous_contigs_len = 0
     partially_unaligned_with_misassembly = 0
     partially_unaligned_with_significant_parts = 0
     misassembly_internal_overlap = 0
@@ -121,14 +122,16 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, aligns, ref_featu
                     ambiguous_contigs += 1
                     # we count only extra bases, so we shouldn't include bases in the first alignment
                     # if --ambiguity-usage is 'none', the number of extra bases will be negative!
-                    ambiguous_contigs_extra_bases -= top_aligns[0].len2
+                    ambiguous_contigs_len += ctg_len
 
                     # Alex: skip all alignments or count them as normal (just different aligns of one repeat). Depend on --allow-ambiguity option
                     if qconfig.ambiguity_usage == "none":
+                        ambiguous_contigs_extra_bases -= top_aligns[0].len2
                         print >> ca_output.stdout_f, '\t\tSkipping these alignments (option --ambiguity-usage is set to "none"):'
                         for align in top_aligns:
                             print >> ca_output.stdout_f, '\t\t\tSkipping alignment ', align
                     elif qconfig.ambiguity_usage == "one":
+                        ambiguous_contigs_extra_bases += 0
                         print >> ca_output.stdout_f, '\t\tUsing only first of these alignment (option --ambiguity-usage is set to "one"):'
                         print >> ca_output.stdout_f, '\t\t\tAlignment: %s' % str(top_aligns[0])
                         print >> ca_output.icarus_out_f, top_aligns[0].icarus_report_str()
@@ -139,6 +142,7 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, aligns, ref_featu
                         for align in top_aligns:
                             print >> ca_output.stdout_f, '\t\t\tSkipping alignment ', align
                     elif qconfig.ambiguity_usage == "all":
+                        ambiguous_contigs_extra_bases -= top_aligns[0].len2
                         print >> ca_output.stdout_f, '\t\tUsing all these alignments (option --ambiguity-usage is set to "all"):'
                         # we count only extra bases, so we shouldn't include bases in the first alignment
                         first_alignment = True
@@ -167,14 +171,16 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, aligns, ref_featu
                     print >> ca_output.stdout_f, '\t\tThis contig has several significant groups of alignments. [An ambiguously mapped contig]'
                     # similar to regular ambiguous contigs, see above
                     ambiguous_contigs += 1
-                    ambiguous_contigs_extra_bases -= (ctg_len - the_best_set.uncovered)
+                    ambiguous_contigs_len += ctg_len
 
                     if qconfig.ambiguity_usage == "none":
+                        ambiguous_contigs_extra_bases -= (ctg_len - the_best_set.uncovered)
                         print >> ca_output.stdout_f, '\t\tSkipping all alignments in these groups (option --ambiguity-usage is set to "none"):'
                         for idx in used_indexes:
                             print >> ca_output.stdout_f, '\t\t\tSkipping alignment ', sorted_aligns[idx]
                         continue
                     elif qconfig.ambiguity_usage == "one":
+                        ambiguous_contigs_extra_bases += 0
                         print >> ca_output.stdout_f, '\t\tUsing only the very best group (option --ambiguity-usage is set to "one").'
                         if len(the_best_set.indexes) < len(used_indexes):
                             print >> ca_output.stdout_f, '\t\tSo, skipping alignments from other groups:'
@@ -190,15 +196,15 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, aligns, ref_featu
                         if too_much_best_sets:
                             print >> ca_output.stdout_f, '\t\t\t\tetc...'
                         if len(the_best_set.indexes) < len(used_indexes):
+                            ambiguous_contigs_extra_bases -= (ctg_len - the_best_set.uncovered)
                             print >> ca_output.stdout_f, '\t\t\tList of alignments used in the groups above:'
                             for idx in used_indexes:
-                                if idx not in the_best_set.indexes:
-                                    align = sorted_aligns[idx]
-                                    print >> ca_output.stdout_f, '\t\tAlignment: %s' % str(align)
-                                    print >> ca_output.icarus_out_f, align.icarus_report_str(is_best=False)
-                                    ref_aligns.setdefault(align.ref, []).append(align)
-                                    ambiguous_contigs_extra_bases += align.len2
-                                    print >> ca_output.coords_filtered_f, str(align), "ambiguous"
+                                align = sorted_aligns[idx]
+                                print >> ca_output.stdout_f, '\t\tAlignment: %s' % str(align)
+                                print >> ca_output.icarus_out_f, align.icarus_report_str(is_best=False)
+                                ref_aligns.setdefault(align.ref, []).append(align)
+                                ambiguous_contigs_extra_bases += align.len2
+                                print >> ca_output.coords_filtered_f, str(align), "ambiguous"
 
                 print >> ca_output.stdout_f, '\t\t\tThe best group is below. Score: %.1f, number of alignments: %d, unaligned bases: %d' % \
                                              (the_best_set.score, len(the_best_set.indexes), the_best_set.uncovered)
@@ -311,6 +317,7 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, aligns, ref_featu
               'unaligned': unaligned, 'partially_unaligned': partially_unaligned,
               'partially_unaligned_bases': partially_unaligned_bases, 'fully_unaligned_bases': fully_unaligned_bases,
               'ambiguous_contigs': ambiguous_contigs, 'ambiguous_contigs_extra_bases': ambiguous_contigs_extra_bases,
+              'ambiguous_contigs_len': ambiguous_contigs_len,
               'partially_unaligned_with_misassembly': partially_unaligned_with_misassembly,
               'partially_unaligned_with_significant_parts': partially_unaligned_with_significant_parts,
               'contigs_with_istranslocations': contigs_with_istranslocations,

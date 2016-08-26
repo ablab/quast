@@ -39,16 +39,14 @@ def print_results(contigs_fpath, log_out_f, used_snps_fpath, total_indels_info, 
 
     print >> log_out_f, ''
     print >> log_out_f, 'Ambiguously Mapped Contigs: %d' % result['ambiguous_contigs']
+    print >> log_out_f, 'Total Bases in Ambiguously Mapped Contigs: %d' % (result['ambiguous_contigs_len'])
+    print >> log_out_f, 'Extra Bases in Ambiguously Mapped Contigs: %d' % result['ambiguous_contigs_extra_bases']
     if qconfig.ambiguity_usage == "all":
-        print >> log_out_f, 'Extra Bases in Ambiguously Mapped Contigs: %d' % result['ambiguous_contigs_extra_bases']
         print >> log_out_f, 'Note that --allow-ambiguity option was set to "all" and each of these contigs was used several times.'
-    else:
-        print >> log_out_f, 'Total Bases in Ambiguously Mapped Contigs: %d' % (-result['ambiguous_contigs_extra_bases'])
-        if qconfig.ambiguity_usage == "none":
-            print >> log_out_f, 'Note that --allow-ambiguity option was set to "none" and these contigs were skipped.'
-        else:
-            print >> log_out_f, 'Note that --allow-ambiguity option was set to "one" and only first alignment per each of these contigs was used.'
-            result['ambiguous_contigs_extra_bases'] = 0 # this variable is used in Duplication ratio but we don't need it in this case
+    elif qconfig.ambiguity_usage == "none":
+        print >> log_out_f, 'Note that --allow-ambiguity option was set to "none" and these contigs were skipped.'
+    elif qconfig.ambiguity_usage == "one":
+        print >> log_out_f, 'Note that --allow-ambiguity option was set to "one" and only first alignment per each of these contigs was used.'
 
     if qconfig.show_snps:
         #print >> log_out_f, 'Mismatches: %d' % result['SNPs']

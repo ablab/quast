@@ -194,7 +194,7 @@ def prepare_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, data_st
                 for alignment in alignments:
                     if prev_end > alignment.start:
                         for prev_align in prev_alignments:
-                            if prev_align.end - alignment.start > 100:
+                            if alignment.name != prev_align.name and prev_align.end - alignment.start > 100:
                                 overlapped_contigs[prev_align].append('{contig: "' + alignment.name + '",corr_start: ' + str(alignment.start) +
                                     ',corr_end: ' + str(alignment.end) + ',start:' + str(alignment.unshifted_start) + ',end:' + str(alignment.unshifted_end) +
                                     ',start_in_contig:' + str(alignment.start_in_contig) + ',end_in_contig:' +

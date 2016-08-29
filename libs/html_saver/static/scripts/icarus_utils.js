@@ -108,11 +108,10 @@ function changeInfo(block) {
         info.append('p')
             .text('Size: ' + block.size + ' bp');
 
-    var appendPositionElement = function(curBlock, start, end, contigName, assembly, whereAppend,
-                                         prev_start, prev_end, prev_chr, is_expanded) {
+    var appendPositionElement = function(curBlock, selectedBlock, whereAppend, prevBlock, prevChr, isExpanded) {
         if (!curBlock) return;
         var whereAppendBlock = whereAppend;
-        if (is_expanded) {
+        if (isExpanded) {
             whereAppendBlock = whereAppend.append('p')
                 .attr('class', 'head_plus collapsed')
                 .on('click', function() {
@@ -121,82 +120,65 @@ function changeInfo(block) {
                         openClose(whereAppendBlock[0][0]);
                 });
         }
-        if (is_expanded || !isContigSizePlot) {
-            appendBlock(whereAppendBlock, numBlock, curBlock, start, end, contigName, assembly,
-                prev_start, prev_end, prev_chr, is_expanded);
+        if (isExpanded || !isContigSizePlot) {
+            appendBlock(whereAppendBlock, numBlock, curBlock, selectedBlock, prevBlock, prevChr, isExpanded);
             numBlock++;
         }
 
     };
 
     var numBlock = 0;
-    var prev_chr = '';
+    var prevChr = '';
     var structure = block.structure ? block.structure : block.ambiguous_alignments;
     if (structure) {
         for (var i = 0; i < structure.length; i++) {
             var nextBlock = structure[i];
             if (nextBlock.contig_type != "M" && block.corr_start == nextBlock.corr_start && nextBlock.corr_end == block.corr_end) {
-                prev_chr = nextBlock.chr;
+                prevChr = nextBlock.chr;
                 break;
             }
         }
-        appendPositionElement(nextBlock, block.corr_start, block.corr_end, block.name, block.assembly, info);
+        appendPositionElement(nextBlock, block, info);
     }
 
     showArrows(block);
     structure = block.structure ? block.structure : block.best_group;
     if (structure && structure.length > 0) {
-        var blocks = info.append('p')
-            .attr('class', 'head main');
-        var blocksText = (block.ambiguous ? 'Alternatives: ' : 'Blocks: ') + structure.filter(function(nextBlock) {
+        var blocksMenu = info.append('p');
+        var blocksCount = structure.filter(function(nextBlock) {
                 if (nextBlock.contig_type != "M") return nextBlock;
             }).length;
-        blocks.text(block.ambiguous ? 'Ambiguously mapped.' : blocksText);
+        var blocksText = (block.ambiguous ? ' Alternatives: ' : 'Blocks: ') + blocksCount;
+        var blocksMenuInfo = blocksMenu.append('span').text(block.ambiguous ? 'Ambiguously mapped.' : blocksText);
         if (block.ambiguous)
-            blocks.append('p')
-                .text(blocksText);
+            blocksMenuInfo.append('span').text(blocksText);
+        blocksMenuInfo.attr('class', 'head');
+        blocksMenu.on('click', function() {
+                        var eventX = d3.event.x || d3.event.clientX;
+                        if (eventX < blocksMenu[0][0].offsetLeft + 15)
+                            openClose(blocksMenu[0][0]);
+                     });
+
+        var blocksInfo = blocksMenuInfo.append('p');
+        if (blocksCount > 5) {
+            blocksMenu.attr('class', 'head_plus collapsed');
+            blocksInfo.attr('class', 'close');
+        }
+        else {
+            blocksMenu.attr('class', 'head_plus expanded');
+            blocksInfo.attr('class', 'open');
+        }
 
         for (var i = 0; i < structure.length; i++) {
             var nextBlock = structure[i];
             if (nextBlock.contig_type != "M") {
-                appendPositionElement(nextBlock, nextBlock.corr_start, nextBlock.corr_end, block.name, block.assembly,
-                    blocks, block.corr_start, block.corr_end, prev_chr, true);
+                appendPositionElement(nextBlock, nextBlock, blocksInfo, block, prevChr, true);
 
                 if (block.ambiguous && i < structure.length - 1)
-                    blocks.append('p')
-                        .text('or');
+                    blocksInfo.append('p').text('or');
             } else {
-                blocks.append('p')
-                    .text(nextBlock.mstype);
+                blocksInfo.append('p').text(nextBlock.mstype);
             }
-        }
-    }
-    if (block.ambiguous_alignments && block.ambiguous_alignments.length > 0) {
-        var blocks = info.append('p')
-            .attr('class', 'head main');
-        var blocksText = 'Other alignments: ' + block.ambiguous_alignments.filter(function(nextBlock) {
-                if (nextBlock.contig_type != "M") return nextBlock;
-            }).length;
-        blocks.text(blocksText);
-
-        for (var i = 0; i < block.ambiguous_alignments.length; i++) {
-            var nextBlock = block.ambiguous_alignments[i];
-            if (nextBlock.contig_type != "M") {
-                appendPositionElement(nextBlock, nextBlock.corr_start, nextBlock.corr_end, block.name, block.assembly,
-                    blocks, block.corr_start, block.corr_end, prev_chr, true);
-            }
-        }
-    }
-    if (block.overlaps && block.overlaps.length > 0) {
-        var overlapsInfo = info.append('p')
-            .attr('class', 'head main');
-        var overlapsText = 'Overlaps with other contigs: ' + block.overlaps.length;
-        overlapsInfo.text(overlapsText);
-
-        for (var i = 0; i < block.overlaps.length; i++) {
-            var nextBlock = block.overlaps[i];
-            appendPositionElement(nextBlock, nextBlock.corr_start,
-                nextBlock.corr_end, nextBlock.contig, block.assembly, overlapsInfo, block.corr_start, block.corr_end, prev_chr, true);
         }
     }
     if (block.genes) {
@@ -222,6 +204,44 @@ function changeInfo(block) {
             }
         }
     }
+    if (block.overlaps && block.overlaps.length > 0) {
+        var overlapsMenu = info.append('p').attr('class', 'head_plus collapsed');
+        var overlapsText = 'Overlaps with other contigs: ' + block.overlaps.length;
+        var overlapsMenuInfo = overlapsMenu.append('span').text(overlapsText);
+        overlapsMenuInfo.attr('class', 'head');
+        overlapsMenu.on('click', function() {
+            var eventX = d3.event.x || d3.event.clientX;
+            if (eventX < overlapsMenu[0][0].offsetLeft + 15)
+                openClose(overlapsMenu[0][0]);
+         });
+
+        var overlapsInfo = overlapsMenuInfo.append('p').attr('class', 'close');
+        for (var i = 0; i < block.overlaps.length; i++) {
+            var nextBlock = block.overlaps[i];
+            appendPositionElement(nextBlock, nextBlock, overlapsInfo, block, prevChr, true);
+        }
+    }
+    if (block.ambiguous_alignments && block.ambiguous_alignments.length > 0) {
+        var ambiguousMenu = info.append('p').attr('class', 'head_plus collapsed');
+        var ambiguousText = 'Other alignments: ' + block.ambiguous_alignments.filter(function(nextBlock) {
+                if (nextBlock.contig_type != "M") return nextBlock;
+            }).length;
+        var ambiguousMenuInfo = ambiguousMenu.append('span').text(ambiguousText);
+        ambiguousMenuInfo.attr('class', 'head');
+        ambiguousMenu.on('click', function() {
+                        var eventX = d3.event.x || d3.event.clientX;
+                        if (eventX < ambiguousMenu[0][0].offsetLeft + 15)
+                            openClose(ambiguousMenu[0][0]);
+                     });
+
+        var ambiguousInfo = ambiguousMenuInfo.append('p').attr('class', 'close');
+        for (var i = 0; i < block.ambiguous_alignments.length; i++) {
+            var nextBlock = block.ambiguous_alignments[i];
+            if (nextBlock.contig_type != "M") {
+                appendPositionElement(nextBlock, nextBlock, ambiguousInfo, block, prevChr, true);
+            }
+        }
+    }
     var blockHeight = info[0][0].offsetHeight;
     curChartHeight += blockHeight;
     chart.attr('height', curChartHeight);
@@ -230,7 +250,7 @@ function changeInfo(block) {
 
 var ndash = String.fromCharCode(8211);
 
-function appendBlock(whereAppendBlock, numBlock, curBlock, start, end, contigName, assembly, prev_start, prev_end, prev_chr, is_expanded) {
+function appendBlock(whereAppendBlock, numBlock, curBlock, selectedBlock, prevBlock, prevChr, isExpanded) {
 
     var format = function (val) {
         val = val.toString();
@@ -240,28 +260,29 @@ function appendBlock(whereAppendBlock, numBlock, curBlock, start, end, contigNam
     };
 
     var hasChromosomeLinks = typeof links_to_chromosomes !== 'undefined';
-    var block = whereAppendBlock.append('span')
-                .attr('class', is_expanded ? 'head' : 'head main')
+    var blockInfo = whereAppendBlock.append('span')
+                .attr('class', isExpanded ? 'head' : 'head main')
                 .append('text');
-    block.append('tspan')
-        .attr('x', -50)
-        .text('Position: ');
-    if (isContigSizePlot) var positionLink = block.append('a');
-    else positionLink = block.append('tspan');
+    blockInfo.append('tspan')
+            .attr('x', -50)
+            .text('Position: ');
+    if (isContigSizePlot) var positionLink = blockInfo.append('a');
+    else positionLink = blockInfo.append('tspan');
     positionLink.attr('id', 'position_link' + numBlock)
         .style('cursor', 'pointer')
         .text(formatPosition(curBlock.start, curBlock.end, mainTickValue));
-    if (is_expanded && !isContigSizePlot && chrContigs.indexOf(curBlock.chr) != -1)  // chromosome on this screen
+    var assembly = selectedBlock.assembly ? selectedBlock.assembly : prevBlock.assembly;
+    if (isExpanded && !isContigSizePlot && chrContigs.indexOf(curBlock.chr) != -1)  // chromosome on this screen
         positionLink.style('text-decoration', 'underline')
             .style('color', '#7ED5F5')
             .on('click', function () {
                 var brushExtent = brush.extent();
                 var brushSize = brushExtent[1] - brushExtent[0];
-                if (prev_start && prev_start > curBlock.corr_start) point = curBlock.corr_end;
-                else if (prev_start) point = curBlock.corr_start;
+                if (prevBlock && prevBlock.start > curBlock.corr_start) point = curBlock.corr_end;
+                else if (prevBlock) point = curBlock.corr_start;
                 setCoords([point - brushSize / 2, point + brushSize / 2], true);
                 for (var i = 0; i < items.length; i++) {
-                    if (items[i].assembly == assembly && items[i].name == contigName &&
+                    if (items[i].assembly == assembly && items[i].name == selectedBlock.contig &&
                         items[i].corr_start == curBlock.corr_start && items[i].corr_end == curBlock.corr_end) {
                         selected_id = items[i].groupId;
                         showArrows(items[i]);
@@ -272,11 +293,15 @@ function appendBlock(whereAppendBlock, numBlock, curBlock, start, end, contigNam
                 }
                 d3.event.stopPropagation();
             });
+    if (!isContigSizePlot && prevBlock) {
+        if (curBlock.contig != prevBlock.name)
+            blockInfo.append('span').text('(' + curBlock.contig + ')');
+    }
     if (isContigSizePlot) {
         if (curBlock.start_in_ref) {
             var link = hasChromosomeLinks ? links_to_chromosomes[curBlock.chr] : 'alignment_viewer';
             link += '.html';
-            link += '?assembly=' + assembly + '&contig=' + contigName  + '&start=' + curBlock.start_in_ref + '&end=' + curBlock.end_in_ref;
+            link += '?assembly=' + assembly + '&contig=' + curBlock.contig  + '&start=' + curBlock.start_in_ref + '&end=' + curBlock.end_in_ref;
             positionLink.attr('href', link)
                 .attr('target', '_blank')
                 .style('text-decoration', 'underline')
@@ -284,7 +309,7 @@ function appendBlock(whereAppendBlock, numBlock, curBlock, start, end, contigNam
             if (curBlock.chr) {
                 if (hasChromosomeLinks)
                     positionLink.append('span').text('(' + curBlock.chr + ')');
-                else block.append('span').text('(' + curBlock.chr + ')');
+                else blockInfo.append('span').text('(' + curBlock.chr + ')');
             }
         }
         else {
@@ -293,22 +318,20 @@ function appendBlock(whereAppendBlock, numBlock, curBlock, start, end, contigNam
                 .style('color', 'white');
         }
     }
-    if (is_expanded && !isContigSizePlot) {
-        if (start == prev_start && end == prev_end && curBlock.chr == prev_chr)
-            block.append('div')
-                .attr('id', 'circle' + start + '_' + end)
-                .attr('class', 'block_circle selected');
+    if (isExpanded && !isContigSizePlot) {
+        blockMark = blockInfo.append('div')
+                          .attr('id', 'circle' + selectedBlock.corr_start + '_' + selectedBlock.corr_end);
+        if (selectedBlock.corr_start == prevBlock.corr_start && selectedBlock.corr_end == prevBlock.corr_end && curBlock.chr == prevChr)
+            blockMark.attr('class', 'block_circle selected');
         else
-            block.append('div')
-                .attr('id', 'circle' + start + '_' + end)
-                .attr('class', 'block_circle');
+            blockMark.attr('class', 'block_circle');
     }
     if (!isContigSizePlot) {
         if (chrContigs.indexOf(curBlock.chr) == -1) {
             var link = hasChromosomeLinks ? links_to_chromosomes[curBlock.chr] : curBlock.chr;
             link += '.html';
-            link += '?assembly=' + assembly + '&contig=' + contigName  + '&start=' + curBlock.corr_start + '&end=' + curBlock.corr_end;
-            block.append('a')
+            link += '?assembly=' + assembly + '&contig=' + selectedBlock.contig  + '&start=' + curBlock.corr_start + '&end=' + curBlock.corr_end;
+            blockInfo.append('a')
                 .attr('href', link)
                 .attr('target', '_blank')
                 .style('text-decoration', 'underline')
@@ -316,26 +339,21 @@ function appendBlock(whereAppendBlock, numBlock, curBlock, start, end, contigNam
                 .text('(' + curBlock.chr + ')');
         }
         else if (chrContigs.length > 1) {
-            block.append('span')
-                .text('(' + curBlock.chr + ')');
+            blockInfo.append('span').text('(' + curBlock.chr + ')');
         }
     }
-    block = block.append('p')
-        .attr('class', is_expanded ? 'close' : 'open');
+    blockInfo = blockInfo.append('p').attr('class', isExpanded ? 'close' : 'open');
 
     if (curBlock.start) {
         var referenceText = ['reference:', format(curBlock.start), ndash, format(curBlock.end),
                     '(' + format(Math.abs(curBlock.end - curBlock.start) + 1) + ')', 'bp'].join(' ');
-        block.append('p')
-            .text(referenceText);
+        blockInfo.append('p').text(referenceText);
     }
     var contigText = ['contig:', format(curBlock.start_in_contig), ndash,  format(curBlock.end_in_contig),
             '(' + format(Math.abs(curBlock.end_in_contig - curBlock.start_in_contig) + 1) + ')', 'bp'].join(' ');
-    block.append('p')
-        .text(contigText);
+    blockInfo.append('p').text(contigText);
     if (curBlock.IDY)
-        block.append('p')
-            .text(['IDY:', curBlock.IDY, '%'].join(' '));
+        blockInfo.append('p').text(['IDY:', curBlock.IDY, '%'].join(' '));
 }
 
 function formatPosition(start, end, tickValue){

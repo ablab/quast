@@ -77,7 +77,8 @@ function display() {
         });
     lines.append('path')
         .attr('d', 'M0,0V' + mainLanesHeight)
-        .attr('fill', '#300000');
+        .attr('stroke', '#FF0000')
+        .attr('stroke-width', '1');
 
     //update features
     removeTooltip();
@@ -367,7 +368,7 @@ function drawCoverageLine(minExtent, maxExtent, useMainCov, covData, plotClass) 
     line += ['M', cov_lines[0][0], yScale(0.1)].join(' ');
     for (i = 0; i < cov_lines.length; i++) {
         cov_line = cov_lines[i];
-        line += 'V' + ' ' + cov_line[1] + 'H' + ' ' + cov_line[2];
+        if (cov_line) line += 'V' + ' ' + cov_line[1] + 'H' + ' ' + cov_line[2];
     }
     line += ['V', yScale(0.1), 'Z'].join(' ');
     track.select(plotClass).select('path').attr('d', line);

@@ -249,7 +249,7 @@ def get_score(score, aligns, ref_lens, is_cyclic, uncovered_len, seq, region_str
 
         added_len = get_added_len(aligns, aligns[-1])
         uncovered_len -= added_len - reduced_len
-        score += added_len * align2.idy / 100.0 - reduced_len * align1.idy / 100.0
+        score += score_single_align(align2, ctg_len=added_len) - score_single_align(align1, ctg_len=reduced_len)
         is_extensive_misassembly, aux_data = is_misassembly(align1, align2, seq, ref_lens, is_cyclic, region_struct_variations)
         if is_extensive_misassembly:
             score -= penalties['extensive']
@@ -269,6 +269,12 @@ def get_score(score, aligns, ref_lens, is_cyclic, uncovered_len, seq, region_str
         elif aux_data['is_scaffold_gap']:
             score -= penalties['scaffold']
     else:
-        score += aligns[-1].len2
+        score += score_single_align(aligns[-1])
         uncovered_len -= aligns[-1].len2
     return score, uncovered_len
+
+
+def score_single_align(align, ctg_len=None):
+    if ctg_len is None:
+        ctg_len = align.len2
+    return ctg_len * align.idy / 100.0

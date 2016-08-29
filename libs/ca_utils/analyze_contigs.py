@@ -6,7 +6,7 @@
 ############################################################################
 from libs import fastaparser, qconfig
 from libs.ca_utils.analyze_misassemblies import process_misassembled_contig, IndelsInfo, find_all_sv
-from libs.ca_utils.best_set_selection import get_best_aligns_sets, get_used_indexes
+from libs.ca_utils.best_set_selection import get_best_aligns_sets, get_used_indexes, score_single_align
 from libs.ca_utils.misc import ref_labels_by_chromosomes
 
 
@@ -82,11 +82,12 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, aligns, ref_featu
             num_aligns = len(aligns[contig])
 
             #Sort aligns by aligned_length * identity - unaligned_length (as we do in BSS)
-            sorted_aligns = sorted(aligns[contig], key=lambda x: (x.len2 * x.idy - (ctg_len - x.len2), x.len2), reverse=True)
+            sorted_aligns = sorted(aligns[contig], key=lambda x: (score_single_align(x), x.len2), reverse=True)
             top_len = sorted_aligns[0].len2
             top_id = sorted_aligns[0].idy
+            top_score = score_single_align(sorted_aligns[0])
             top_aligns = []
-            print >> ca_output.stdout_f, 'Top Length: %s  Top ID: %s' % (top_len, top_id)
+            print >> ca_output.stdout_f, 'Top Length: %d  Top ID: %.2f (Score: %.1f)' % (top_len, top_id, top_score)
 
             #Check that top hit captures most of the contig
             if top_len > ctg_len * epsilon or ctg_len - top_len < maxun:
@@ -96,7 +97,7 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, aligns, ref_featu
 
                 #Continue grabbing alignments while length and identity are identical
                 #while sorted_aligns and top_len == sorted_aligns[0].len2 and top_id == sorted_aligns[0].idy:
-                while sorted_aligns and (sorted_aligns[0].len2 * sorted_aligns[0].idy >= qconfig.ambiguity_score * top_len * top_id):
+                while sorted_aligns and (score_single_align(sorted_aligns[0]) >= qconfig.ambiguity_score * top_score):
                     top_aligns.append(sorted_aligns[0])
                     sorted_aligns = sorted_aligns[1:]
 

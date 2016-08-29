@@ -561,7 +561,7 @@ THE SOFTWARE.
             	}
             	else contigStart = false;
             	prev_pos = block.corr_end;
-            	lines.push({pos:block.corr_end, y: y});
+            	lines.push({pos: block.corr_end, y: y, misassembled: block.misassembled});
             }
             else {
             	contigStart = true;

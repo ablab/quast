@@ -24,11 +24,13 @@
 
       9. Fixed bug causing creation of error.log file in current working directory.
 
-      10. Requests to NCBI switched to HTTPS which will be mandatory after September 30, 2016.
+      10. Fixed improper Duplication ratio calculation in some MetaQUAST runs.
 
-      11. SILVA database release updated from 119 to 123 (downloaded on the first use).
+      11. Requests to NCBI switched to HTTPS which will be mandatory after September 30, 2016.
 
-      12. Fixed several minor bugs.
+      12. SILVA database release updated from 119 to 123 (downloaded on the first use).
+
+      13. Fixed several minor bugs.
 
 
 4.2   1. Icarus update -- improved read coverage panel: 

@@ -12,12 +12,12 @@ run_quast(name, contigs=['/acestorage/data/contigs/PAPERS/MetaQUAST/CAMI/CAMI/Go
 
 check_report_files(name, ['icarus.html',
                           'icarus_viewers/contig_size_viewer.html',
-                          'icarus_viewers/alpha_proteobacterium_LLX12A.html',
+                          'icarus_viewers/Thermus_sp_CCB_US3_UF1.html',
                           'krona_charts/summary_taxonomy_chart.html',
                           'report.html',
-                          'runs_per_reference/Brevibacterium_casei_S18/report.tsv'])
+                          'runs_per_reference/Brevibacterium_casei/report.tsv'])
 
 assert_metric(name, 'N50', ['24752', '16577'], 'combined_reference/report.tsv')
 assert_metric_comparison(name, 'Reference length', '>=', value='70000000', fname='combined_reference/report.tsv')
-assert_metric_comparison(name, 'gamma_proteobacterium_SCGC_AAA076-D02', '>=', value='1.05', fname='summary/TSV/Duplication_ratio.tsv')
-assert_metric_comparison(name, 'gamma_proteobacterium_SCGC_AAA076-D02', '<=', value='1.2', fname='summary/TSV/Duplication_ratio.tsv')
+assert_metric_comparison(name, 'Weissella_koreensis_KACC_15510', '>=', value='1.0', fname='summary/TSV/Duplication_ratio.tsv')
+assert_metric_comparison(name, 'Weissella_koreensis_KACC_15510', '<=', value='1.1', fname='summary/TSV/Duplication_ratio.tsv')

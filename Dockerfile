@@ -15,10 +15,9 @@ RUN apt-get update && \
 RUN apt-get update && apt-get install -y pkg-config libfreetype6-dev \
     libpng-dev python-matplotlib
 
-# TargQC installation
+# QUAST installation
 COPY . quast
 RUN pip install --upgrade setuptools pip && \
     cd quast && \
     python setup.py develop && \
     cd ..
-

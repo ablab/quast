@@ -196,6 +196,8 @@ function trimChrNames(contigNames){
     if (!commonStrings)
         return trimmedNames;
     var commonString = commonStrings.sort(function (a, b) { return b.length - a.length; })[0];
+    if (commonString.length < 7)
+        return trimmedNames;
     var shortNames = [];
     for (i = 0; i < trimmedNames.length; i++) {
         splittedName = trimmedNames[i].split(commonString);

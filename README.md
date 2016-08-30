@@ -1,7 +1,11 @@
+<img src="libs/html_saver/static/img/quast_logo_black.png" width="300" title="QUAST">
+
 ### Genome assembly evaluation tool
 
 QUAST evaluates genome assemblies by computing various metrics.
-It works both with and without reference genomes.  
+
+It works both with and without reference genomes.
+
 The tool accepts multiple assemblies, thus is suitable for comparison.
 
 #### Installation
@@ -52,7 +56,7 @@ When a reference is given:
 * NGA50, a reference-aware version of N50 metric. It is calculated using aligned blocks instead of contigs. Such blocks are obtained after removing unaligned regions, and then splitting contigs at misassembly breakpoints. Thus, NGA50 is the length of a block, such that all the blocks of at least the same length together cover at least 50% of the reference.  
 
 <br>
-For the full documentation, see the [manual.html](manual.html).
+For the full documentation, see the [manual.html](http://quast.bioinf.spbau.ru/manual.html).
 
 You can also check out the web interface: [http://quast.bioinf.spbau.ru](http://quast.bioinf.spbau.ru)
 

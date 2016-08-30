@@ -13,8 +13,9 @@ from glob import glob
 from os.path import join, isfile, abspath, dirname, isdir
 import shutil
 
-from libs import qconfig, qutils
+from libs import qconfig
 qconfig.check_python_version()
+from libs import qutils
 
 from libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
@@ -159,14 +160,15 @@ full_install_tools = (
 setup(
     name=name,
     version=version,
-    author='Alexei Gurevich',
-    author_email='alexeigurevich@gmail.com',
+    author='Alexey Gurevich, Vladislav Saveliev, Alla Mikheenko, and others',
+    author_email='quast.support@bioinf.spbau.ru',
     description='Genome assembly evaluation tool',
     long_description='''QUAST evaluates genome assemblies.
 It works both with and without references genome.
 The tool accepts multiple assemblies, thus is suitable for comparison.''',
     keywords=['bioinformatics', 'genome assembly', 'metagenome assembly', 'visualization'],
     url='quast.sf.net',
+    platforms=['Linux', 'OS X'],
     license='GPLv2',
 
     packages=find_packages(),

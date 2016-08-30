@@ -8,9 +8,6 @@ RUN apt-get update && \
         python-virtualenv zlib1g-dev default-jre perl && \
     apt-get upgrade -y libstdc++6
 
-# Perl packages
-#RUN Rscript -e "install.packages('Time::HiRes')"
-
 # Matplotlib dependencies
 RUN apt-get update && apt-get install -y pkg-config libfreetype6-dev \
     libpng-dev python-matplotlib

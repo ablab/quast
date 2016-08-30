@@ -24,7 +24,7 @@ logger.set_up_console_handler(debug=True)
 try:
     from setuptools import setup, find_packages
 except:
-    logger.warning('setuptools module is not installed or outdated. Using setuptools built into '
+    logger.warning('setuptools is not installed or outdated; using setuptools supplied with '
                    'the QUAST package.')
     from site import addsitedir
     addsitedir(os.path.join(qconfig.LIBS_LOCATION, 'site_packages'))
@@ -41,7 +41,7 @@ quast_package = 'libs'
 
 
 if abspath(dirname(__file__)) != abspath(os.getcwd()):
-    logger.error('Please, change to ' + dirname(__file__) + ' before running setup.py')
+    logger.error('Please change to ' + dirname(__file__) + ' before running setup.py')
     sys.exit()
 
 
@@ -61,7 +61,7 @@ if sys.argv[-1] in ['clean', 'sdist']:
             shutil.rmtree('build')
         if isdir('dist'):
             shutil.rmtree('dist')
-        if isdir('quast.egg-info'):
+        if isdir(name + '.egg-info'):
             shutil.rmtree(name + '.egg-info')
         download_manta(logger, only_clean=False)
         download_all_blast_binaries(logger, only_clean=True)
@@ -164,7 +164,7 @@ setup(
     author_email='quast.support@bioinf.spbau.ru',
     description='Genome assembly evaluation tool',
     long_description='''QUAST evaluates genome assemblies.
-It works both with and without references genome.
+It works both with and without reference genomes.
 The tool accepts multiple assemblies, thus is suitable for comparison.''',
     keywords=['bioinformatics', 'genome assembly', 'metagenome assembly', 'visualization'],
     url='quast.sf.net',
@@ -233,7 +233,7 @@ $ quast.py test_data/contigs_1.fasta \\
            test_data/contigs_2.fasta \\
         -R test_data/reference.fasta.gz \\
         -G test_data/genes.txt \\
-        -o output_directory
+        -o quast_test_output
 ----------------------------------------------'''.format(version))
 
     else:
@@ -253,6 +253,6 @@ $ quast.py test_data/contigs_1.fasta \\
            test_data/contigs_2.fasta \\
         -R test_data/reference.fasta.gz \\
         -G test_data/genes.txt \\
-        -1 test_data/reads1.fastq.gz -2 test_data/reads2.fastq.gz
-        -o output_directory
+        -1 test_data/reads1.fastq.gz -2 test_data/reads2.fastq.gz \\
+        -o quast_test_output
 ----------------------------------------------'''.format(version))

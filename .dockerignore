@@ -1,0 +1,14 @@
+.idea
+.git
+venv_*
+tests
+
+*.py[cod]
+*.so
+
+dist
+build
+.eggs
+eggs
+*.egg
+*.egg-info

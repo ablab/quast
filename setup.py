@@ -24,8 +24,8 @@ logger.set_up_console_handler(debug=True)
 try:
     from setuptools import setup, find_packages
 except:
-    logger.warn('Possibly outdated setuptool. Using setuptools built into '
-                'the QUAST package instead.')
+    logger.warning('setuptools module is not installed or outdated. Using setuptools built into '
+                   'the QUAST package.')
     from site import addsitedir
     addsitedir(os.path.join(qconfig.LIBS_LOCATION, 'site_packages'))
     from setuptools import setup, find_packages
@@ -226,7 +226,7 @@ if sys.argv[-1] == 'install':
 QUAST version {} installation complete.
 
 For help in running QUAST, please see the documentation available
-at quast.bioinf.spbau.ru/manual.html, or run quast.py --help
+at quast.sf.net/manual.html, or run quast.py --help
 
 Usage:
 $ quast.py test_data/contigs_1.fasta \\
@@ -246,7 +246,7 @@ sequence detection in MetaQUAST, and structural variant detection
 for misassembly events refinement.
 
 For help in running QUAST, please see the documentation available
-at quast.bioinf.spbau.ru/manual.html, or run quast.py --help
+at quast.sf.net/manual.html, or run quast.py --help
 
 Usage:
 $ quast.py test_data/contigs_1.fasta \\

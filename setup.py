@@ -71,8 +71,8 @@ if sys.argv[-1] in ['clean', 'sdist']:
 
 
 if sys.argv[-1] == 'test':
-    os.system('quast.py --test')
-    sys.exit()
+    ret_code = os.system('quast.py --test')
+    sys.exit(ret_code)
 
 
 def write_version_py():

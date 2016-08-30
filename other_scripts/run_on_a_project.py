@@ -13,7 +13,7 @@ import re
 import shutil
 import sys
 import quast
-from libs import qconfig
+from quast_libs import qconfig
 
 
 def main(args):

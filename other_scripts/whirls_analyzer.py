@@ -10,8 +10,8 @@
 
 import sys
 sys.path.append(os.path.join(os.path.abspath(sys.path[0]), '../'))
-import libs
-from libs import fastaparser
+import quast_libs
+from quast_libs import fastaparser
 
 KMER_SIZE   = 5
 KMERS_FNAME = "kmers.fa"

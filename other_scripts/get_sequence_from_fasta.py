@@ -3,8 +3,8 @@
 import sys
 import os
 sys.path.append(os.path.join(os.path.abspath(sys.path[0]), '../'))
-import libs
-from libs import fastaparser
+import quast_libs
+from quast_libs import fastaparser
 
 if len(sys.argv) <= 3 or len(sys.argv) >= 6:
     print("Returns [reverse-complement] sequence from START to END position from each entry of input fasta")

@@ -13,11 +13,11 @@ from glob import glob
 from os.path import join, isfile, abspath, dirname, isdir
 import shutil
 
-from libs import qconfig
+from quast_libs import qconfig
 qconfig.check_python_version()
-from libs import qutils
+from quast_libs import qutils
 
-from libs.log import get_logger
+from quast_libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 logger.set_up_console_handler(debug=True)
 
@@ -30,14 +30,14 @@ except:
     addsitedir(os.path.join(qconfig.LIBS_LOCATION, 'site_packages'))
     from setuptools import setup, find_packages
 
-from libs.search_references_meta import download_all_blast_binaries, download_blastdb
-from libs.glimmer import compile_glimmer
-from libs.gage import compile_gage
-from libs.ca_utils.misc import compile_aligner
-from libs.ra_utils import compile_reads_analyzer_tools, download_manta, compile_bwa, compile_bedtools
+from quast_libs.search_references_meta import download_all_blast_binaries, download_blastdb
+from quast_libs.glimmer import compile_glimmer
+from quast_libs.gage import compile_gage
+from quast_libs.ca_utils.misc import compile_aligner
+from quast_libs.ra_utils import compile_reads_analyzer_tools, download_manta, compile_bwa, compile_bedtools
 
 name = 'quast'
-quast_package = 'libs'
+quast_package = qconfig.PACKAGE_NAME
 
 
 if abspath(dirname(__file__)) != abspath(os.getcwd()):
@@ -52,9 +52,9 @@ if sys.argv[-1] in ['clean', 'sdist']:
     compile_gage(only_clean=True)
     compile_bwa(only_clean=True)
     compile_bedtools(only_clean=True)
-    for fpath in [fn for fn in glob(join('libs', '*.pyc'))]: os.remove(fpath)
-    for fpath in [fn for fn in glob(join('libs', 'html_saver', '*.pyc'))]: os.remove(fpath)
-    for fpath in [fn for fn in glob(join('libs', 'site_packages', '*', '*.pyc'))]: os.remove(fpath)
+    for fpath in [fn for fn in glob(join(quast_package, '*.pyc'))]: os.remove(fpath)
+    for fpath in [fn for fn in glob(join(quast_package, 'html_saver', '*.pyc'))]: os.remove(fpath)
+    for fpath in [fn for fn in glob(join(quast_package, 'site_packages', '*', '*.pyc'))]: os.remove(fpath)
 
     if sys.argv[-1] == 'clean':
         if isdir('build'):
@@ -188,7 +188,7 @@ The tool accepts multiple assemblies, thus is suitable for comparison.''',
     scripts=['quast.py', 'metaquast.py', 'icarus.py'],
     data_files=[
         ('', [
-            'README.txt',
+            'README.md',
             'CHANGES.txt',
             'VERSION.txt',
             'LICENSE.txt',

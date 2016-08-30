@@ -1,9 +1,10 @@
-recursive-include libs *
+recursive-include quast_libs *
 recursive-include test_data *
 
 include *.py
 include *.html
 include *.txt
+include *.md
 include quast_ref.bib
 include install.sh
 include install_full.sh
@@ -18,8 +19,8 @@ exclude setup.cfg
 global-exclude *.pyc
 global-exclude make.*
 
-recursive-exclude libs/blast *
-recursive-exclude libs/manta/build *
+recursive-exclude quast_libs/blast *
+recursive-exclude quast_libs/manta/build *
 
 # include this file, to ensure we can recreate source distributions
 include MANIFEST.in

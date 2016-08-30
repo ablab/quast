@@ -23,40 +23,40 @@ make.failed
 make.succeeded
 error.log
 
-libs/glimmer/glimmerhmm
+quast_libs/glimmer/glimmerhmm
 
-libs/MUMmer3.23-linux/
-libs/MUMmer3.23-osx/
+quast_libs/MUMmer3.23-linux/
+quast_libs/MUMmer3.23-osx/
 
-libs/gage/*.class
+quast_libs/gage/*.class
 
-libs/Busco/augustus-3.0.3/src/LICENCE.TXT
-libs/Busco/hmmer-3.1b2-mac/
-libs/bwa/make.*
+quast_libs/Busco/augustus-3.0.3/src/LICENCE.TXT
+quast_libs/Busco/hmmer-3.1b2-mac/
+quast_libs/bwa/make.*
 
-libs/blast/
-libs/blast/16S_RNA_blastdb/
+quast_libs/blast/
+quast_libs/blast/16S_RNA_blastdb/
 
-libs/samtools/version.h
-libs/samtools/samtools
-libs/samtools/libbam.a
-libs/samtools/htslib-1.2.1/libhts.a
-libs/samtools/htslib-1.2.1/version.h
-libs/samtools/misc/ace2sam
-libs/samtools/misc/maq2sam-long
-libs/samtools/misc/maq2sam-short
-libs/samtools/misc/md5fa
-libs/samtools/misc/md5sum-lite
-libs/samtools/misc/wgsim
+quast_libs/samtools/version.h
+quast_libs/samtools/samtools
+quast_libs/samtools/libbam.a
+quast_libs/samtools/htslib-1.2.1/libhts.a
+quast_libs/samtools/htslib-1.2.1/version.h
+quast_libs/samtools/misc/ace2sam
+quast_libs/samtools/misc/maq2sam-long
+quast_libs/samtools/misc/maq2sam-short
+quast_libs/samtools/misc/md5fa
+quast_libs/samtools/misc/md5sum-lite
+quast_libs/samtools/misc/wgsim
 
-libs/bwa/bwa
-libs/bwa/bwa.dSYM
+quast_libs/bwa/bwa
+quast_libs/bwa/bwa.dSYM
 
-libs/manta/build
-libs/manta/make.*
+quast_libs/manta/build
+quast_libs/manta/make.*
 
-libs/bowtie2/
+quast_libs/bowtie2/
 
-libs/version.py
+quast_libs/version.py
 
 venv_quast

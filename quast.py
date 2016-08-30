@@ -14,15 +14,15 @@ import shutil
 import getopt
 import re
 
-from libs import qconfig
-from libs.options_parser import parse_options
+from quast_libs import qconfig
+from quast_libs.options_parser import parse_options
 
 qconfig.check_python_version()
 
-from libs import qutils, reads_analyzer
-from libs.qutils import cleanup
+from quast_libs import qutils, reads_analyzer
+from quast_libs.qutils import cleanup
 
-from libs.log import get_logger
+from quast_libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 logger.set_up_console_handler()
 
@@ -53,12 +53,12 @@ def main(args):
     logger.print_params()
 
     ########################################################################
-    from libs import reporting
+    from quast_libs import reporting
     reports = reporting.reports
     reload(reporting)
     reporting.reports = reports
     reporting.assembly_fpaths = []
-    from libs import plotter  # Do not remove this line! It would lead to a warning in matplotlib.
+    from quast_libs import plotter  # Do not remove this line! It would lead to a warning in matplotlib.
 
     if qconfig.is_combined_ref:
         corrected_dirpath = os.path.join(output_dirpath, '..', qconfig.corrected_dirname)
@@ -117,7 +117,7 @@ def main(args):
         if not ref_fpath:
             logger.warning("GAGE can't be run without a reference and will be skipped.")
         else:
-            from libs import gage
+            from quast_libs import gage
             gage.do(ref_fpath, contigs_fpaths, output_dirpath)
 
     # Where all pdfs will be saved
@@ -132,7 +132,7 @@ def main(args):
             all_pdf_file = None
 
     if qconfig.json_output_dirpath:
-        from libs.html_saver import json_saver
+        from quast_libs.html_saver import json_saver
         if json_saver.simplejson_error:
             json_output_dirpath = None
 
@@ -140,7 +140,7 @@ def main(args):
     ########################################################################
     ### Stats and plots
     ########################################################################
-    from libs import basic_stats
+    from quast_libs import basic_stats
     basic_stats.do(ref_fpath, contigs_fpaths, os.path.join(output_dirpath, 'basic_stats'),
                    qconfig.json_output_dirpath, output_dirpath)
 
@@ -152,7 +152,7 @@ def main(args):
         ########################################################################
         ### former PLANTAKOLYA, PLANTAGORA
         ########################################################################
-        from libs import contigs_analyzer
+        from quast_libs import contigs_analyzer
         nucmer_statuses, aligned_lengths_per_fpath = contigs_analyzer.do(
             ref_fpath, contigs_fpaths, qconfig.prokaryote, os.path.join(output_dirpath, 'contigs_reports'),
             old_contigs_fpaths, qconfig.bed)
@@ -170,7 +170,7 @@ def main(args):
         ########################################################################
         ### NAx and NGAx ("aligned Nx and NGx")
         ########################################################################
-        from libs import aligned_stats
+        from quast_libs import aligned_stats
         aligned_stats.do(
             ref_fpath, aligned_contigs_fpaths, output_dirpath, qconfig.json_output_dirpath,
             aligned_lengths_lists, os.path.join(output_dirpath, 'aligned_stats'))
@@ -178,7 +178,7 @@ def main(args):
         ########################################################################
         ### GENOME_ANALYZER
         ########################################################################
-        from libs import genome_analyzer
+        from quast_libs import genome_analyzer
         features_containers = genome_analyzer.do(
             ref_fpath, aligned_contigs_fpaths, output_dirpath, qconfig.json_output_dirpath,
             qconfig.genes, qconfig.operons, detailed_contigs_reports_dirpath,
@@ -190,13 +190,13 @@ def main(args):
             ########################################################################
             ### Glimmer
             ########################################################################
-            from libs import glimmer
+            from quast_libs import glimmer
             genes_by_labels = glimmer.do(contigs_fpaths, qconfig.genes_lengths, os.path.join(output_dirpath, 'predicted_genes'))
         else:
             ########################################################################
             ### GeneMark
             ########################################################################
-            from libs import genemark
+            from quast_libs import genemark
             genes_by_labels = genemark.do(contigs_fpaths, qconfig.genes_lengths, os.path.join(output_dirpath, 'predicted_genes'),
                         qconfig.prokaryote, qconfig.meta)
 
@@ -227,7 +227,7 @@ def main(args):
                 ### VISUALIZE CONTIG ALIGNMENT
                 ########################################################################
                 logger.main_info('  1 of %d: Creating Icarus viewers...' % number_of_steps)
-                from libs import icarus
+                from quast_libs import icarus
                 icarus_html_fpath, contig_alignment_plot_fpath = icarus.do(
                     contigs_fpaths, report_for_icarus_fpath_pattern, output_dirpath, ref_fpath,
                     stdout_pattern=stdout_pattern, features=features_containers, cov_fpath=cov_fpath,
@@ -255,7 +255,7 @@ def main(args):
         json_saver.save_total_report(qconfig.json_output_dirpath, qconfig.min_contig, ref_fpath)
 
     if qconfig.html_report:
-        from libs.html_saver import html_saver
+        from quast_libs.html_saver import html_saver
         html_saver.save_colors(output_dirpath, contigs_fpaths, plotter.dict_color_and_ls)
         html_saver.save_total_report(output_dirpath, qconfig.min_contig, ref_fpath)
 

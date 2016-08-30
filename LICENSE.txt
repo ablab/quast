@@ -91,7 +91,7 @@ Genome Biol. (2004), 5, 2:R12.
 2. GeneMarkS as well as MetaGeneMark and GeneMark-ES gene prediction software
 was provided by Mark Borodovsky and Georgia Institute of Technology. 
 If you are academic, non-profit institution or U.S. Government agency
-please, see License Agreement in the file libs/genemark/linux_64/LICENSE or online at
+please, see License Agreement in the file quast_libs/genemark/linux_64/LICENSE or online at
 http://exon.gatech.edu/GeneMark/license_download.cgi. 
 If you are not academic, not non-profit institution and not U.S. Government agency, 
 you must receive an appropriate license to use GeneMarkS, MetaGeneMark and GeneMark-ES 
@@ -176,7 +176,7 @@ Nucl. Acids Res. 41 (D1): D590-D596.
 
 7. MetaQUAST uses Krona tools for visualizing dataset taxonomic profile based on
 reference genomes found in SILVA database. Please, see License Agreement in the file
-libs/kronatools/LICENSE.txt or online at
+quast_libs/kronatools/LICENSE.txt or online at
 http://sourceforge.net/p/krona/git/ci/master/tree/KronaTools/LICENSE.txt.
 
 For more details about Krona tools please refer to

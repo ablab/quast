@@ -12,17 +12,17 @@ import sys
 import os
 import shutil
 
-from libs import qconfig
-from libs.metautils import remove_from_quast_py_args, Assembly, correct_meta_references, correct_assemblies, \
+from quast_libs import qconfig
+from quast_libs.metautils import remove_from_quast_py_args, Assembly, correct_meta_references, correct_assemblies, \
     get_downloaded_refs_with_alignments, partition_contigs, calculate_ave_read_support
-from libs.options_parser import parse_options
+from quast_libs.options_parser import parse_options
 
 qconfig.check_python_version()
-from libs import contigs_analyzer, reads_analyzer, search_references_meta
-from libs import qutils
-from libs.qutils import cleanup
+from quast_libs import contigs_analyzer, reads_analyzer, search_references_meta
+from quast_libs import qutils
+from quast_libs.qutils import cleanup
 
-from libs.log import get_logger
+from quast_libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_META_NAME)
 logger.set_up_console_handler()
 
@@ -104,9 +104,9 @@ def main(args):
 
     ########################################################################
 
-    from libs import reporting
+    from quast_libs import reporting
     reload(reporting)
-    from libs import plotter
+    from quast_libs import plotter
 
     if os.path.isdir(corrected_dirpath):
         shutil.rmtree(corrected_dirpath)
@@ -208,7 +208,7 @@ def main(args):
     total_num_nf_errors = 0
     total_num_notifications = (total_num_notices, total_num_warnings, total_num_nf_errors)
     if qconfig.html_report:
-        from libs.html_saver import json_saver
+        from quast_libs.html_saver import json_saver
         json_texts = []
     else:
         json_texts = None
@@ -341,11 +341,11 @@ def main(args):
         if not os.path.isdir(summary_output_dirpath):
             os.makedirs(summary_output_dirpath)
         if html_report and json_texts:
-            from libs.html_saver import html_saver
+            from quast_libs.html_saver import html_saver
             html_summary_report_fpath = html_saver.init_meta_report(output_dirpath)
         else:
             html_summary_report_fpath = None
-        from libs import create_meta_summary
+        from quast_libs import create_meta_summary
         metrics_for_plots = reporting.Fields.main_metrics
         misassembl_metrics = [reporting.Fields.MIS_RELOCATION, reporting.Fields.MIS_TRANSLOCATION, reporting.Fields.MIS_INVERTION,
                            reporting.Fields.MIS_ISTRANSLOCATIONS]

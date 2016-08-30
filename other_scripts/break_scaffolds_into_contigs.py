@@ -7,8 +7,8 @@ import sys
 import os
 
 sys.path.append(os.path.join(os.path.abspath(sys.path[0]), '../'))
-import libs
-from libs import fastaparser
+import quast_libs
+from quast_libs import fastaparser
 
 # MAIN
 if (len(sys.argv) != 4) and (len(sys.argv) != 2):

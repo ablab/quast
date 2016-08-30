@@ -1,4 +1,4 @@
-<img src="libs/html_saver/static/img/quast_logo_black.png" width="300" title="QUAST">
+<img src="quast_libs/html_saver/static/img/quast_logo_black.png" width="300" title="QUAST">
 
 ### Genome assembly evaluation tool
 

@@ -305,9 +305,10 @@ def exclude_internal_overlaps(align1, align2, i=None, ca_output=None):
     return prev_len2 - align1.len2
 
 
-def count_not_ns_between_aligns(contig_seq, align1, align2):
+def count_ns_and_not_ns_between_aligns(contig_seq, align1, align2):
     gap_in_contig = contig_seq[align1.end(): align2.start() - 1]
-    return len(gap_in_contig) - gap_in_contig.count('N')
+    ns_count = gap_in_contig.count('N')
+    return ns_count, len(gap_in_contig) - ns_count
 
 
 def is_gap_filled_ns(contig_seq, align1, align2):
@@ -344,14 +345,14 @@ def process_misassembled_contig(sorted_aligns, cyclic, aligned_lengths, region_m
         ref_aligns.setdefault(prev_align.ref, []).append(prev_align)
         print >> ca_output.coords_filtered_f, str(prev_align)
         if aux_data["is_sv"]:
-            print >> ca_output.stdout_f, '\t\t\t  Fake misassembly (caused by structural variations of genome) between these two alignments'
-            print >> ca_output.icarus_out_f, 'fake misassembly (structural variations of genome)'
+            print >> ca_output.stdout_f, '\t\t\t  Not a misassembly (structural variation of the genome) between these two alignments'
+            print >> ca_output.icarus_out_f, 'not a misassembly (structural variation of the genome)'
             misassemblies_matched_sv += 1
         elif aux_data["is_scaffold_gap"]:
-            print >> ca_output.stdout_f, '\t\t\t  Fake misassembly between these two alignments: scaffold gap size misassembly,',
+            print >> ca_output.stdout_f, '\t\t\t  Incorrectly estimated size of scaffold gap between these two alignments:',
             print >> ca_output.stdout_f, 'gap length difference =', inconsistency
             region_misassemblies.append(Misassembly.SCAFFOLD_GAP)
-            print >> ca_output.icarus_out_f, 'fake misassembly (scaffold gap size misassembly)'
+            print >> ca_output.icarus_out_f, 'scaffold gap size wrong estimation'
         elif is_extensive_misassembly:
             is_misassembled = True
             aligned_lengths.append(cur_aligned_length)
@@ -396,34 +397,34 @@ def process_misassembled_contig(sorted_aligns, cyclic, aligned_lengths, region_m
             reason_msg = "" + (" (linear representation of circular genome)" if cyclic_moment else "") + \
                          (" (fragmentation of reference genome)" if prev_align.ref != next_align.ref else "")
             if inconsistency == 0 and cyclic_moment:
-                print >> ca_output.stdout_f, '\t\t\t  Fake misassembly' + reason_msg + ' between these two alignments'
-                print >> ca_output.icarus_out_f, 'fake misassembly' + reason_msg
+                print >> ca_output.stdout_f, '\t\t\t  Not a misassembly' + reason_msg + ' between these two alignments'
+                print >> ca_output.icarus_out_f, 'not a misassembly' + reason_msg
             elif inconsistency == 0 and prev_align.ref != next_align.ref:  # is_fragmented_ref_fake_translocation is True, because is_extensive_misassembly is False
-                print >> ca_output.stdout_f, '\t\t\t  Fake misassembly' + reason_msg + ' between these two alignments'
+                print >> ca_output.stdout_f, '\t\t\t  Not a misassembly' + reason_msg + ' between these two alignments'
                 region_misassemblies.append(Misassembly.FRAGMENTED)
-                print >> ca_output.icarus_out_f, 'fake misassembly' + reason_msg
+                print >> ca_output.icarus_out_f, 'not a misassembly' + reason_msg
             elif abs(inconsistency) <= qconfig.MAX_INDEL_LENGTH and \
-                    count_not_ns_between_aligns(contig_seq, prev_align, next_align) <= qconfig.MAX_INDEL_LENGTH:
-                print >> ca_output.stdout_f, '\t\t\t  Fake misassembly between these two alignments: inconsistency =', inconsistency,
-                print >> ca_output.stdout_f, ', gap in the contig is small or absent or filled mostly with Ns' + reason_msg,
-                not_ns_number = count_not_ns_between_aligns(contig_seq, prev_align, next_align)
+                    count_ns_and_not_ns_between_aligns(contig_seq, prev_align, next_align)[1] <= qconfig.MAX_INDEL_LENGTH:
+                ns_number, not_ns_number = count_ns_and_not_ns_between_aligns(contig_seq, prev_align, next_align)
+
                 if inconsistency == 0:
-                    print >> ca_output.stdout_f, '(no indel; %d mismatches)' % not_ns_number
+                    print >> ca_output.stdout_f, ('\t\t\t  Short stretch of %d mismatches and %d Ns between these two alignments' % (not_ns_number, ns_number)) + reason_msg
                     indels_info.mismatches += not_ns_number
+                    print >> ca_output.icarus_out_f, 'stretch of mismatches and Ns' + reason_msg
                 else:
                     indel_length = abs(inconsistency)
-                    indel_class = 'short' if indel_length <= qconfig.SHORT_INDEL_THRESHOLD else 'long'
+                    indel_class = 'Indel (<= 5bp)' if indel_length <= qconfig.SHORT_INDEL_THRESHOLD else 'Indel (> 5bp)'
                     indel_type = 'insertion' if inconsistency < 0 else 'deletion'
                     mismatches = max(0, not_ns_number - indel_length)
-                    print >> ca_output.stdout_f, '(%s indel: %s of length %d; %d mismatches)' % \
-                                           (indel_class, indel_type, indel_length, mismatches)
+                    print >> ca_output.stdout_f, ('\t\t\t  %s between these two alignments: %s of length %d; %d mismatches'
+                                                 % (indel_class, indel_type, indel_length, mismatches)) + reason_msg
                     indels_info.indels_list.append(indel_length)
                     if indel_type == 'insertion':
                         indels_info.insertions += indel_length
                     else:
                         indels_info.deletions += indel_length
                     indels_info.mismatches += mismatches
-                print >> ca_output.icarus_out_f, 'fake misassembly (gap in the contig is small or filled with Ns)' + reason_msg
+                    print >> ca_output.icarus_out_f, indel_class.lower() + reason_msg
             else:
                 if qconfig.strict_NA:
                     aligned_lengths.append(cur_aligned_length)

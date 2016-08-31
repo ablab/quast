@@ -82,8 +82,8 @@ class Fields:
     INDELSBASES = 'Indels length'
     SUBSERROR = '# mismatches per 100 kbp'
     INDELSERROR = '# indels per 100 kbp'
-    MIS_SHORT_INDELS = TAB + '# short indels'
-    MIS_LONG_INDELS = TAB + '# long indels'
+    MIS_SHORT_INDELS = TAB + '# indels (<= 5 bp)'
+    MIS_LONG_INDELS = TAB + '# indels (> 5 bp)'
     UNCALLED = "# N's"
     UNCALLED_PERCENT = "# N's per 100 kbp"
 

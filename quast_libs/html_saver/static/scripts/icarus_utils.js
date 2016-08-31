@@ -598,9 +598,7 @@ function getText(textItem, minExtent, maxExtent) {
     if (!textItem.name && !textItem.label) return;
     var drawLimit = letterSize * 3;
     if (textItem.label) {
-        visibleLength = (x_main(textItem.corr_end) - x_main(minExtent))  + (x_main(maxExtent) - x_main(textItem.corr_end));
-        if (visibleLength > drawLimit)
-            return getVisibleText(textItem.label, visibleLength);
+        return getVisibleText(textItem.label, visibleLength);
     }
     var visibleLength = getItemWidth(textItem, minExtent, maxExtent) - 20;
     if (visibleLength > drawLimit)

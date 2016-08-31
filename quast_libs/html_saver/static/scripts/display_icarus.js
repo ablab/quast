@@ -50,7 +50,7 @@ function display() {
         .attr('class', 'main_lines')
         .attr('transform', function (line) {
             var x = x_main(line.corr_end);
-            var y = line.assembly ? y_main(line.lane) + 10 : 10;
+            var y = line.assembly ? y_main(line.lane) + 10 + extraOffsetY : 10 + extraOffsetY;
 
             return 'translate(' + x + ', ' + y + ')';
         });
@@ -59,7 +59,7 @@ function display() {
             return 1;
         })
         .attr('height', function (line) {
-            return line.assembly ? mainLanesHeight + lanesInterval + extraOffsetY : line.y2 + extraOffsetY;
+            return line.assembly ? mainLanesHeight + lanesInterval : line.y2;
         })
         .attr('fill', '#300000');
 
@@ -211,6 +211,13 @@ function createItems(visData, itemFigure, minExtent, maxExtent, class_) {
 }
 
 function addLabels(visRects, minExtent, maxExtent) {
+    var visibleLinesLabels = separatedLines.filter(function (line) {
+        if (line.name && line.corr_start < maxExtent && line.corr_end > minExtent) return line;
+        if (line.label) {
+            var textSize = line.label.length * letterSize / 2;
+            if (line.label && line.corr_end - textSize > minExtent && line.corr_end + textSize < maxExtent) return line;
+        }
+    });
     var prevX = 0;
     var prevLane = -1;
     var visTexts = visRects.filter(function (block) {
@@ -222,15 +229,11 @@ function addLabels(visRects, minExtent, maxExtent) {
                 textLen = block.name.length * letterSize;
                 prevX = textStart + Math.min(textLen, visWidth) - 30;
                 prevLane = block.lane;
+                if (block.marks) {
+                    visibleLinesLabels.push({label: block.marks, lane: block.lane, corr_start: block.corr_start})
+                }
                 return block;
             }
-        }
-    });
-    var visibleLinesLabels = separatedLines.filter(function (line) {
-        if (line.name && line.corr_start < maxExtent && line.corr_end > minExtent) return line;
-        if (line.label) {
-            var textSize = line.label.length * letterSize / 2;
-            if (line.label && line.corr_end - textSize > minExtent && line.corr_end + textSize < maxExtent) return line;
         }
     });
 
@@ -287,8 +290,8 @@ function addLabels(visRects, minExtent, maxExtent) {
     var labels = visibleItemLabels.enter().append('g')
         .attr('class', 'main_labels')
         .attr('transform', function (labelItem) {
-            var x = labelItem.label ? x_main(labelItem.corr_end) - labelItem.label.length * letterSize : getItemStart(labelItem, minExtent) + 5 ;
-            var y = labelItem.y2 ? labelItem.y2 + 6 + labelOffset : y_main(labelItem.lane) - 3 + labelOffset;
+            var x = getItemStart(labelItem, minExtent) + 5 ;
+            var y = labelItem.y2 ? labelItem.y2 + 7 + labelOffset : y_main(labelItem.lane) + mainLanesHeight + 8 + labelOffset;
 
             return 'translate(' + x + ', ' + y + ')';
         });

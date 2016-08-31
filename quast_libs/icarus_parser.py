@@ -97,8 +97,6 @@ def add_contig(cum_length, contig, not_used_nx, assemblies_n50, assembly, contig
     marks = ', '.join(marks)
     genes = ['{start: ' + str(gene.start) + ', end: ' + str(gene.end) + '}' for gene in contig.genes]
     if marks:
-        contig_size_lines.append('{assembly: "' + assembly + '", corr_end: ' + str(end_contig) + ', label: "' + marks +
-                                 '", size: ' + str(contig.size) + '}')
         not_used_nx = [nx for nx in not_used_nx if nx not in marks]
     marks = ', marks: "' + marks + '"' if marks else ''
     if not only_nx or marks:

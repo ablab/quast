@@ -477,9 +477,9 @@ THE SOFTWARE.
                                     .style('top', itemSvgOffsetY - 10)
                                     .style('left', margin.left)
                                     .attr('pointer-events', 'none');
-    var itemLabels = linesLabelsLayer.append('g');
     var itemLines = linesLabelsLayer.append('g')
                                     .attr('pointer-events', 'painted');
+    var itemLabels = linesLabelsLayer.append('g');
     var textLayer = itemsLayer.append('g');
     if (!featuresHidden)
       var featurePath = annotationsMain.append('g')

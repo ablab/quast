@@ -141,7 +141,7 @@ THE SOFTWARE.
     var spaceAfterMain = 15;
     var spaceAfterTrack = 40;
 
-    var annotationsMiniOffsetY, annotationsMainOffsetY, covMiniOffsetY, covMainOffsetY, extraOffsetY;
+    var baseOffsetY, annotationsMiniOffsetY, annotationsMainOffsetY, covMiniOffsetY, covMainOffsetY, extraOffsetY;
     var hideBtnAnnotationsMiniOffsetY,hideBtnAnnotationsMainOffsetY,hideBtnCoverageMiniOffsetY,
         hideBtnCoverageMainOffsetY,hideBtnPhysicalMiniCoverageOffsetY,hideBtnPhysicalCoverageOffsetY;
 
@@ -452,18 +452,24 @@ THE SOFTWARE.
         }
         separatedLines = contigLines;
         breakpointLines = getBreakpointLines();
-        for (var i = 0; i < items.length; i++) addGradient(items[i], items[i].marks, true);
+        var blocksN50 = [];
+        for (var i = 0; i < items.length; i++) {
+            addGradient(items[i], items[i].marks, true);
+            if (items[i].marks)
+                blocksN50.push(items[i]);
+        }
         mini.append('g').selectAll('miniItems')
-            .data(separatedLines)
+            .data(blocksN50)
             .enter().append('text')
             .attr('class', 'miniItems text')
-            .text(function (d) {
-                return d.label;
+            .text(function (block) {
+                return block.marks;
             })
             .style('fill', 'white')
-            .attr('transform', function (d) {
-                var x = Math.max(x_mini(d.corr_end) - x_mini(d.size) + 1, (x_mini(d.corr_end) - x_mini(d.size) / 2) - getSize(d.label) / 2);
-                var y = y_mini(d.lane) + miniLanesHeight - 5;
+            .attr('transform', function (block) {
+                var x = Math.max(x_mini(block.corr_end) - x_mini(block.size) + 1,
+                    (x_mini(block.corr_end) - x_mini(block.size) / 2) - getSize(block.marks) / 2);
+                var y = y_mini(block.lane) + miniLanesHeight - 5;
                 return 'translate(' + x + ', ' + y + ')';
             });
     }
@@ -640,7 +646,7 @@ THE SOFTWARE.
                     }
                     block.genes[gene_n].groupId = block.groupId;
                     block.genes[gene_n].lane = block.lane;
-                    block.genes[gene_n].objClass = 'gene';
+                    block.genes[gene_n].objClass = 'gene predicted_gene';
                     block.genes[gene_n].notActive = true;
                 }
             }

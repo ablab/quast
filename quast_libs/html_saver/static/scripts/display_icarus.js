@@ -117,7 +117,7 @@ function display() {
 
     var newItems = createItems(visRects, 'rect', minExtent, maxExtent, '.block');
     createItems(visPaths, 'path', minExtent, maxExtent, '.block');
-    createItems(visGenesRects, 'rect', minExtent, maxExtent, '.gene');
+    createItems(visGenesRects, 'rect', minExtent, maxExtent, '.gene.predicted_gene');
 
     newItems.on('click', function (block) {
             selected_id = block.groupId;
@@ -286,12 +286,12 @@ function addLabels(visRects, minExtent, maxExtent) {
             return labelItem.id;
         });
 
-    var labelOffset = Math.max(0, extraOffsetY - 3);
+    var labelOffset = Math.max(0, extraOffsetY - 3) + 8;
     var labels = visibleItemLabels.enter().append('g')
         .attr('class', 'main_labels')
         .attr('transform', function (labelItem) {
             var x = getItemStart(labelItem, minExtent) + 5 ;
-            var y = labelItem.y2 ? labelItem.y2 + 7 + labelOffset : y_main(labelItem.lane) + mainLanesHeight + 8 + labelOffset;
+            var y = labelItem.y2 ? labelItem.y2 + labelOffset : y_main(labelItem.lane) + mainLanesHeight + labelOffset;
 
             return 'translate(' + x + ', ' + y + ')';
         });

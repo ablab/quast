@@ -346,13 +346,13 @@ def process_misassembled_contig(sorted_aligns, cyclic, aligned_lengths, region_m
         print >> ca_output.coords_filtered_f, str(prev_align)
         if aux_data["is_sv"]:
             print >> ca_output.stdout_f, '\t\t\t  Not a misassembly (structural variation of the genome) between these two alignments'
-            print >> ca_output.icarus_out_f, 'not a misassembly (structural variation of the genome)'
+            print >> ca_output.icarus_out_f, 'fake: not a misassembly (structural variation of the genome)'
             misassemblies_matched_sv += 1
         elif aux_data["is_scaffold_gap"]:
             print >> ca_output.stdout_f, '\t\t\t  Incorrectly estimated size of scaffold gap between these two alignments:',
             print >> ca_output.stdout_f, 'gap length difference =', inconsistency
             region_misassemblies.append(Misassembly.SCAFFOLD_GAP)
-            print >> ca_output.icarus_out_f, 'scaffold gap size wrong estimation'
+            print >> ca_output.icarus_out_f, 'fake: scaffold gap size wrong estimation'
         elif is_extensive_misassembly:
             is_misassembled = True
             aligned_lengths.append(cur_aligned_length)
@@ -398,11 +398,11 @@ def process_misassembled_contig(sorted_aligns, cyclic, aligned_lengths, region_m
                          (" (fragmentation of reference genome)" if prev_align.ref != next_align.ref else "")
             if inconsistency == 0 and cyclic_moment:
                 print >> ca_output.stdout_f, '\t\t\t  Not a misassembly' + reason_msg + ' between these two alignments'
-                print >> ca_output.icarus_out_f, 'not a misassembly' + reason_msg
+                print >> ca_output.icarus_out_f, 'fake: not a misassembly' + reason_msg
             elif inconsistency == 0 and prev_align.ref != next_align.ref:  # is_fragmented_ref_fake_translocation is True, because is_extensive_misassembly is False
                 print >> ca_output.stdout_f, '\t\t\t  Not a misassembly' + reason_msg + ' between these two alignments'
                 region_misassemblies.append(Misassembly.FRAGMENTED)
-                print >> ca_output.icarus_out_f, 'not a misassembly' + reason_msg
+                print >> ca_output.icarus_out_f, 'fake: not a misassembly' + reason_msg
             elif abs(inconsistency) <= qconfig.MAX_INDEL_LENGTH and \
                     count_ns_and_not_ns_between_aligns(contig_seq, prev_align, next_align)[1] <= qconfig.MAX_INDEL_LENGTH:
                 ns_number, not_ns_number = count_ns_and_not_ns_between_aligns(contig_seq, prev_align, next_align)
@@ -410,7 +410,7 @@ def process_misassembled_contig(sorted_aligns, cyclic, aligned_lengths, region_m
                 if inconsistency == 0:
                     print >> ca_output.stdout_f, ('\t\t\t  Short stretch of %d mismatches and %d Ns between these two alignments' % (not_ns_number, ns_number)) + reason_msg
                     indels_info.mismatches += not_ns_number
-                    print >> ca_output.icarus_out_f, 'stretch of mismatches and Ns' + reason_msg
+                    print >> ca_output.icarus_out_f, 'indel: stretch of mismatches and Ns' + reason_msg
                 else:
                     indel_length = abs(inconsistency)
                     indel_class = 'Indel (<= 5bp)' if indel_length <= qconfig.SHORT_INDEL_THRESHOLD else 'Indel (> 5bp)'
@@ -424,7 +424,7 @@ def process_misassembled_contig(sorted_aligns, cyclic, aligned_lengths, region_m
                     else:
                         indels_info.deletions += indel_length
                     indels_info.mismatches += mismatches
-                    print >> ca_output.icarus_out_f, indel_class.lower() + reason_msg
+                    print >> ca_output.icarus_out_f, 'indel: ' + indel_class.lower() + reason_msg
             else:
                 if qconfig.strict_NA:
                     aligned_lengths.append(cur_aligned_length)

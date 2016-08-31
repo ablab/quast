@@ -561,7 +561,8 @@ THE SOFTWARE.
             	}
             	else contigStart = false;
             	prev_pos = block.corr_end;
-            	lines.push({pos: block.corr_end, y: y, misassembled: block.contig_type == 'misassembled'});
+                if (block.mstype != "indel")
+            	    lines.push({pos: block.corr_end, y: y, type: block.mstype});
             }
             else {
             	contigStart = true;
@@ -602,7 +603,7 @@ THE SOFTWARE.
     function collapseLanes (chart) {
         var lanes = [], items = [], laneId = 0, itemId = 0, groupId = 0;
 
-        function parseItem(block, fullInfo) {
+        function parseItem(block, fullInfo, misassembly) {
             block.misassembledEnds = '';
             block.lane = laneId;
             block.id = itemId;
@@ -624,6 +625,7 @@ THE SOFTWARE.
                     block.corr_end = currentLen + end_in_contig;
                     block.notActive = true;
                     block.contig_type = fullInfo.contig_type;
+                    block.mstype = misassembly ? misassembly.mstype : null;
                 }
             }
             block.triangles = Array();
@@ -674,8 +676,9 @@ THE SOFTWARE.
                     var blocks = block.structure;
                     if (blocks) {
                         for (var k = 0; k < blocks.length; k++) {
+                            var misassembly = (k < blocks.length - 1 && blocks[k + 1].contig_type == 'M') ? blocks[k + 1] : null;
                             if (blocks[k].contig_type != 'M')
-                                items.push(parseItem(blocks[k], block));
+                                items.push(parseItem(blocks[k], block, misassembly));
                         }
                     }
                 }

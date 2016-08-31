@@ -15,7 +15,7 @@ from quast_libs.icarus_parser import parse_contigs_fpath, parse_features_data, p
     get_contigs_data, parse_genes_data
 from quast_libs.icarus_parser import parse_nucmer_contig_report
 from quast_libs.icarus_utils import make_output_dir, group_references, format_cov_data, format_long_numbers, get_info_by_chr, \
-    get_html_name, get_assemblies, check_misassembled_blocks, Alignment
+    get_html_name, get_assemblies, check_misassembled_blocks, Alignment, is_misassembly_real, parse_misassembly_info
 
 try:
    from collections import OrderedDict
@@ -154,7 +154,8 @@ def add_contig_structure_data(data_str, alignment_name, structure, ref_contigs, 
                             ',start_in_contig:' + str(el.start_in_contig) + ',end_in_contig:' +
                             str(el.end_in_contig) + ',IDY:' + el.idy + ',chr: "' + el.ref_name + '"},')
         elif type(el) == str:
-            data_str.append('{contig_type: "M", mstype: "' + el + '"},')
+            ms_description, ms_type = parse_misassembly_info(el)
+            data_str.append('{contig_type: "M", mstype: "' + ms_type + '", msg: "' + ms_description + '"},')
     return data_str
 
 
@@ -222,7 +223,7 @@ def prepare_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, data_st
                     alignment.misassemblies = ''
                     if type(contig_structure[alignment.name][num_alignment - 1]) == str:
                         misassembly_type = contig_structure[alignment.name][num_alignment - 1].split(',')[0].strip()
-                        if not 'fake' in misassembly_type:
+                        if is_misassembly_real(misassembly_type):
                             if 'local' in misassembly_type:
                                 misassembly_type = 'local'
                             alignment.misassemblies += misassembly_type
@@ -235,7 +236,7 @@ def prepare_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, data_st
                     if num_alignment + 1 < len(contig_structure[alignment.name]) and \
                                     type(contig_structure[alignment.name][num_alignment + 1]) == str:
                         misassembly_type = contig_structure[alignment.name][num_alignment + 1].split(',')[0].strip()
-                        if not 'fake' in misassembly_type:
+                        if is_misassembly_real(misassembly_type):
                             if 'local' in misassembly_type:
                                 misassembly_type = 'local'
                             alignment.misassemblies += ';' + misassembly_type

@@ -78,8 +78,8 @@ function display() {
     lines.append('path')
         .attr('d', 'M0,0V' + mainLanesHeight)
         .attr('stroke', function(line) {
-            if (line.misassembled) return '#000000';
-            return '#FF0000';
+            if (line.type == 'fake') return '#000000';
+            else return '#8A0808';
         })
         .attr('stroke-width', '1');
 

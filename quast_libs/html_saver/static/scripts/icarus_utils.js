@@ -177,7 +177,7 @@ function changeInfo(block) {
                 if (block.ambiguous && i < structure.length - 1)
                     blocksInfo.append('p').text('or');
             } else {
-                blocksInfo.append('p').text(nextBlock.mstype);
+                blocksInfo.append('p').text(nextBlock.msg);
             }
         }
     }

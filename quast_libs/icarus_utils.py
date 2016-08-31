@@ -326,12 +326,28 @@ def check_misassembled_blocks(aligned_blocks, misassembled_id_to_structure):
         misassembled = False
         if type(contig_structure[num_alignment - 1]) == str:
             misassembly_type = contig_structure[num_alignment - 1].split(',')[0].strip()
-            if not 'fake' in misassembly_type:
+            if is_misassembly_real(misassembly_type):
                 misassembled = True
         if num_alignment + 1 < len(contig_structure) and \
                         type(contig_structure[num_alignment + 1]) == str:
             misassembly_type = contig_structure[num_alignment + 1].split(',')[0].strip()
-            if not 'fake' in misassembly_type:
+            if is_misassembly_real(misassembly_type):
                 misassembled = True
         alignment.misassembled = misassembled
     return aligned_blocks
+
+
+def parse_misassembly_info(misassembly):
+    ms_description = misassembly
+    ms_type = 'real'
+    if not is_misassembly_real(ms_description):
+        if 'fake' in ms_description:
+            ms_type = 'fake'
+        elif 'indel' in ms_description:
+            ms_type = 'indel'
+        ms_description = ms_description.split(':')[1]
+    return ms_description, ms_type
+
+
+def is_misassembly_real(misassembly_type):
+    return 'fake' not in misassembly_type and 'indel' not in misassembly_type

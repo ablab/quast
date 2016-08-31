@@ -12,7 +12,7 @@ from __future__ import with_statement
 from collections import defaultdict
 
 from quast_libs import fastaparser, reporting, qconfig, qutils
-from quast_libs.icarus_utils import Alignment, get_html_name, format_long_numbers, Contig
+from quast_libs.icarus_utils import Alignment, get_html_name, format_long_numbers, Contig, parse_misassembly_info
 
 
 def parse_nucmer_contig_report(report_fpath, ref_names, cumulative_ref_lengths):
@@ -110,7 +110,8 @@ def add_contig(cum_length, contig, not_used_nx, assemblies_n50, assembly, contig
                                     ',start_in_contig:' + str(el.start_in_contig) + ',end_in_contig:' +
                                     str(el.end_in_contig) + ',size: ' + str(contig.size) + ',IDY:' + el.idy + ',chr: "' + el.ref_name + '"},')
                 elif type(el) == str:
-                    structure.append('{contig_type: "M", mstype: "' + el + '"},')
+                    ms_description, ms_type = parse_misassembly_info(el)
+                    structure.append('{contig_type: "M", mstype: "' + ms_type + '", msg: "' + ms_description + '"},')
         if has_aligned_contigs and not contig.contig_type:
             contig.contig_type = 'unaligned'
         align = '{name: "' + contig.name + '",size: ' + str(contig.size) + marks + ',contig_type: "' + contig.contig_type + \

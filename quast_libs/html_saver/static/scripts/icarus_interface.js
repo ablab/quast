@@ -8,7 +8,7 @@ function setInterfaceCoordinates() {
     var scrollPos = $(document).scrollTop();
     baseOffsetY = baseOffsetY ? baseOffsetY : chart[0][0].getBoundingClientRect().top;
     var mainOffsetY = chart[0][0].getBoundingClientRect().top + scrollPos;
-    extraOffsetY = mainOffsetY - baseOffsetY + 1;
+    extraOffsetY = mainOffsetY - baseOffsetY;
     if (itemsLayer)
         itemsLayer.style('top', itemSvgOffsetY + extraOffsetY);
     annotationsMainOffsetY = mainHeight + mainScale + spaceAfterMain;

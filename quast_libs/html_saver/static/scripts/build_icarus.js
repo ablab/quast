@@ -561,8 +561,10 @@ THE SOFTWARE.
                 fullsizeBlock = false;
             	y = y_main(block.lane) + .25 * lanesInterval + 10;
             	if (!contigStart) {
-            		if (Math.abs(prev_pos - block.corr_start) > 2) {
-		            	lines.push({pos:block.corr_start, y: y});
+                    var linePos = block.start_in_contig < block.end_in_contig ? block.corr_start : block.corr_end;
+            		if (Math.abs(prev_pos - linePos) > 2) {
+                        if (block.mstype != "indel")
+                            lines.push({pos: linePos, y: y, type: block.mstype});
             		}
             	}
             	else contigStart = false;

@@ -111,6 +111,7 @@
     border: 1px rgb(200, 200, 200) solid;
     display: block;
     word-wrap: break-word;
+    overflow:auto;
 }
 
 .head.main {

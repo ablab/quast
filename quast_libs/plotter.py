@@ -12,6 +12,8 @@
 # Feel free to add more colors
 #colors = ['#E41A1C', '#377EB8', '#4DAF4A', '#984EA3', '#FF7F00', '#A65628', '#F781BF', '#FFFF33']  ## 8-color palette
 #red, blue, green, magenta, orange, maroon, aqua, light green, light purple, olive, navy, team, lime
+from quast_libs.qutils import parseStrToNum
+
 colors = ['#E31A1C', '#1F78B4', '#33A02C', '#6A3D9A', '#FF7F00', '#800000', '#A6CEE3', '#B2DF8A','#333300', '#CCCC00',
           '#000080', '#008080', '#00FF00'] # 14-color palette
 
@@ -678,7 +680,7 @@ def draw_meta_summary_plot(html_fpath, output_dirpath, labels, ref_names, all_ro
             arr[i] += 0.07 * (j - (contigs_num - 1) * 0.5)
             to_plot_x.append(arr[i])
             if results[i][j] and results[i][j] != '-':
-                to_plot_y.append(float(results[i][j]))
+                to_plot_y.append(parseStrToNum(results[i][j]))
             else:
                 to_plot_y.append(None)
         arr_x.append(to_plot_x)
@@ -718,8 +720,8 @@ def draw_meta_summary_plot(html_fpath, output_dirpath, labels, ref_names, all_ro
         for i in range(ref_num):
             for j in range(contigs_num):
                 if all_rows[j + 1]['values'][i] is not None and all_rows[j + 1]['values'][i] != '-':
-                    ymax = max(ymax, float(all_rows[j + 1]['values'][i]))
-        if ymax == 0:
+                    ymax = max(ymax, parseStrToNum(all_rows[j + 1]['values'][i]))
+        if ymax < 5:
             matplotlib.pyplot.ylim([0, 5])
         else:
             matplotlib.pyplot.ylim([0, math.ceil(ymax * 1.05)])

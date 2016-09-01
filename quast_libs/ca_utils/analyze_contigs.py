@@ -202,10 +202,11 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, aligns, ref_featu
                             for idx in used_indexes:
                                 align = sorted_aligns[idx]
                                 print >> ca_output.stdout_f, '\t\tAlignment: %s' % str(align)
-                                print >> ca_output.icarus_out_f, align.icarus_report_str(is_best=False)
                                 ref_aligns.setdefault(align.ref, []).append(align)
                                 ambiguous_contigs_extra_bases += align.len2
                                 print >> ca_output.coords_filtered_f, str(align), "ambiguous"
+                                if idx not in the_best_set.indexes:
+                                    print >> ca_output.icarus_out_f, align.icarus_report_str(is_best=False)
 
                 print >> ca_output.stdout_f, '\t\t\tThe best group is below. Score: %.1f, number of alignments: %d, unaligned bases: %d' % \
                                              (the_best_set.score, len(the_best_set.indexes), the_best_set.uncovered)

@@ -260,9 +260,16 @@ function appendBlock(whereAppendBlock, numBlock, curBlock, selectedBlock, prevBl
     };
 
     var hasChromosomeLinks = typeof links_to_chromosomes !== 'undefined';
-    var blockInfo = whereAppendBlock.append('span')
-                .attr('class', isExpanded ? 'head' : 'head main')
-                .append('text');
+    var blockDiv = whereAppendBlock.append('span').attr('class', isExpanded ? 'head' : 'head main');
+    if (isExpanded && !isContigSizePlot) {
+        blockMark = blockDiv.append('div')
+                            .attr('id', 'circle' + selectedBlock.corr_start + '_' + selectedBlock.corr_end);
+        if (selectedBlock.corr_start == prevBlock.corr_start && selectedBlock.corr_end == prevBlock.corr_end && curBlock.chr == prevChr)
+            blockMark.attr('class', 'block_circle selected');
+        else
+            blockMark.attr('class', 'block_circle');
+    }
+    var blockInfo = blockDiv.append('text');
     blockInfo.append('tspan')
             .attr('x', -50)
             .text('Position: ');
@@ -317,14 +324,6 @@ function appendBlock(whereAppendBlock, numBlock, curBlock, selectedBlock, prevBl
             positionLink.style('text-decoration', 'none')
                 .style('color', 'white');
         }
-    }
-    if (isExpanded && !isContigSizePlot) {
-        blockMark = blockInfo.append('div')
-                          .attr('id', 'circle' + selectedBlock.corr_start + '_' + selectedBlock.corr_end);
-        if (selectedBlock.corr_start == prevBlock.corr_start && selectedBlock.corr_end == prevBlock.corr_end && curBlock.chr == prevChr)
-            blockMark.attr('class', 'block_circle selected');
-        else
-            blockMark.attr('class', 'block_circle');
     }
     if (!isContigSizePlot) {
         if (chrContigs.indexOf(curBlock.chr) == -1) {

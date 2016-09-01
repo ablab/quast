@@ -683,6 +683,13 @@ def is_float(value):
         return False
 
 
+def parseStrToNum(s):
+    try:
+        return int(s)
+    except ValueError:
+        return float(s)
+
+
 def val_to_str(val):
     if val is None:
         return '-'

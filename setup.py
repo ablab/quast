@@ -24,11 +24,14 @@ logger.set_up_console_handler(debug=True)
 try:
     from setuptools import setup, find_packages
 except:
-    logger.warning('setuptools is not installed or outdated; using setuptools supplied with '
-                   'the QUAST package.')
-    from site import addsitedir
-    addsitedir(os.path.join(qconfig.LIBS_LOCATION, 'site_packages'))
-    from setuptools import setup, find_packages
+    logger.error('setuptools is not installed or outdated!\n\n'
+                 'You can install or update setuptools using\n'
+                 'pip install --upgrade setuptools (if you have pip)\n'
+                 'or\n'
+                 'sudo apt-get install python-setuptools (on Ubuntu)\n'
+                 '\n'
+                 'You may also use old-style installation scripts: ./install.sh or ./install_full.sh',
+                 exit_with_code=1)
 
 from quast_libs.search_references_meta import download_all_blast_binaries, download_blastdb
 from quast_libs.glimmer import compile_glimmer

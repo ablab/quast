@@ -14,8 +14,32 @@ results_json/*
 show-snps.err
 tc_tests/results/
 test/
-test_data/
 quast_test_output/
+
+quast_libs/MUMmer3.23-*/annotate
+quast_libs/MUMmer3.23-*/aux_bin/
+quast_libs/MUMmer3.23-*/combineMUMs
+quast_libs/MUMmer3.23-*/delta-filter
+quast_libs/MUMmer3.23-*/dnadiff
+quast_libs/MUMmer3.23-*/exact-tandems
+quast_libs/MUMmer3.23-*/gaps
+quast_libs/MUMmer3.23-*/mapview
+quast_libs/MUMmer3.23-*/mgaps
+quast_libs/MUMmer3.23-*/mummer
+quast_libs/MUMmer3.23-*/mummerplot
+quast_libs/MUMmer3.23-*/nucmer
+quast_libs/MUMmer3.23-*/nucmer2xfig
+quast_libs/MUMmer3.23-*/promer
+quast_libs/MUMmer3.23-*/repeat-match
+quast_libs/MUMmer3.23-*/run-mummer1
+quast_libs/MUMmer3.23-*/run-mummer3
+quast_libs/MUMmer3.23-*/show-aligns
+quast_libs/MUMmer3.23-*/show-coords
+quast_libs/MUMmer3.23-*/show-diff
+quast_libs/MUMmer3.23-*/show-snps
+quast_libs/MUMmer3.23-*/show-tiling
+quast_libs/MUMmer3.23-*/src/kurtz/libbasedir/libbase.a
+quast_libs/MUMmer3.23-*/src/kurtz/streesrc/libstree.a
 
 make.log
 make.err
@@ -24,9 +48,6 @@ make.succeeded
 error.log
 
 quast_libs/glimmer/glimmerhmm
-
-quast_libs/MUMmer3.23-linux/
-quast_libs/MUMmer3.23-osx/
 
 quast_libs/gage/*.class
 

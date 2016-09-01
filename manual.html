@@ -1,6 +1,6 @@
 <html>
 <head>
-    <title>QUAST 4.2 manual</title>
+    <title>QUAST 4.3 manual</title>
     <style type="text/css">
         body {
             margin-top: 30px;
@@ -66,7 +66,7 @@
     </style>
 </head>
 <body>
-<h1>QUAST 4.2 manual</h1>
+<h1>QUAST 4.3 manual</h1>
 
 <p> QUAST stands for <u>QU</u>ality <u>AS</u>sessment <u>T</u>ool.
     The tool evaluates genome assemblies by computing various metrics. This document provides instructions
@@ -95,7 +95,7 @@
     for guidelines on how to complete the licensing process.
     <br>
     <br>
-    Version 4.3 of QUAST was released under GPL v2 on XX August 2016. Note that some of build-in third-party tools are not under GPL v2. See <a href="LICENSE.txt">LICENSE</a> for details.
+    Version 4.3 of QUAST was released under GPL v2 on XX September 2016. Note that some of build-in third-party tools are not under GPL v2. See <a href="LICENSE.txt">LICENSE</a> for details.
 </p>
 
 <h2>Contents</h2>
@@ -134,7 +134,7 @@
 <h2>1. Installation</h2>
 
 <p>
-    QUAST can be run on Linux or Mac OS.
+    QUAST can be run on Linux or Mac OS X.
 </p>
 <p>
     Its default pipeline requires:
@@ -143,12 +143,7 @@
     <li>python 2 (2.5 or higher)</li>
     <li>perl 5.6.0 or higher</li>
     <li>gcc 4.7 or higher</li>
-    <li>make</li>
-    <li>sh</li>
-    <li>csh</li>
-    <li>sed</li>
-    <li>awk</li>
-    <li>ar</li>    
+    <li>basic UNIX tools (g++, make, sh, csh, sed, awk, ar)</li>
 </ul>
 <p>
     In addition, QUAST submodules require:
@@ -159,60 +154,42 @@
     <li>Boost (tested with v1.56.0) for E-MEM</li>
 </ul>
 All those tools are usually pre installed on Linux.<br>
-Mac OS, however, initially misses <code>make</code>, <code>g++</code> and <code>ar</code>, so you will have to install 
+Mac OS X, however, initially misses <code>make</code>, <code>g++</code> and <code>ar</code>, so you will have to install 
 <a href='https://developer.apple.com/xcode/'>Xcode</a> (or only
 <a href='https://developer.apple.com/downloads/index.action?name=Command%20Line%20Tools'>Command Line Tools for Xcode</a>) to make them available.
 <br>
 <br>
-It is also highly recommended to install the <a href="http://matplotlib.sourceforge.net/">Matplotlib</a> Python library for drawing plots. 
-We recommend to use Matplotlib version 1.1 or higher. Tested with Matplotlib v.1.3.1.
-<br>
-Installation can be done with Python <a href="http://www.pip-installer.org/">pip-installer</a>:
+QUAST draws plots in two formats: HTML and PDF. If you need the PDF versions, make sure that you have installed <a href="http://matplotlib.sourceforge.net/">Matplotlib</a> Python library. We recommend to use Matplotlib version 1.1 or higher. QUAST is fully tested with Matplotlib v.1.3.1.
+Installation on Ubuntu:
 <pre class="code">
-    pip install matplotlib
-</pre>
-Or with the <a href="http://peak.telecommunity.com/DevCenter/EasyInstall">Easy Install</a> Python module:
-<pre class="code">
-    easy_install matplotlib
-</pre>
-Or on Ubuntu by typing:
-<pre class="code">
-    sudo apt-get install python-matplotlib
+    sudo apt-get install -y pkg-config libfreetype6-dev libpng-dev python-matplotlib
 </pre>
 <br>
-To download the <a href="https://downloads.sourceforge.net/project/quast/quast-4.2.tar.gz">QUAST source code tarball</a> and extract it, type:
+To download the <a href="https://downloads.sourceforge.net/project/quast/quast-4.3.tar.gz">QUAST source code tarball</a> and extract it, type:
 <pre class="code">
-    wget https://downloads.sourceforge.net/project/quast/quast-4.2.tar.gz
-    tar -xzf quast-4.2.tar.gz
-    cd quast-4.2
+    wget https://downloads.sourceforge.net/project/quast/quast-4.3.tar.gz
+    tar -xzf quast-4.3.tar.gz
+    cd quast-4.3
 </pre>
 
+<br>
 <p>
 QUAST automatically compiles all its sub-parts when needed (on the first use). 
-Thus, there is no special installation command for QUAST.
-However, we recommend you to run:
+Thus, installation is not required. However, if you want to precompile everything before the use, you may choose either:
+<p>
+Basic installation (about 40 MB):
 <pre class="code">
-    python quast.py --test (if you plan to use quast.py)
+    ./setup.py install
 </pre>
-or/and
+</p>
+or
+<p>
+Full installation (about 800 MB, includes (1) tools for SV detection based on read pairs, which is used for more precise misassembly detection, (2) and tools/data for reference genome detection in metagenomic datasets):
 <pre class="code">
-    python quast.py --test-sv  (if you plan to use quast.py or metaquast.py with SV calling)
+    ./setup.py install_full
 </pre>
-or/and
-<pre class="code">
-    python metaquast.py --test  (if you plan to use metaquast.py with reference genomes)
-</pre>
-or/and 
-<pre class="code">
-    python metaquast.py --test-no-ref  (if you plan to use metaquast.py without reference genomes)
-</pre>
-These commands run all QUAST and MetaQUAST modules and check correctness
-of their work on your platform.
-<br><br>
-We also provide <code>./install.sh</code> and <code>./install_full.sh</code> scripts.
-If you plan to use MetaQUAST's automated reference genomes detection, or use SV calling for misassembly refinement, you should use <code>./install_full.sh</code>, which runs all four mentioned above commands,
-compiles tools for read alignment and SV detection (BEDtools, Sambamba, BWA, and Manta), and downloads necessary files (SILVA 16S rRNA gene database and BLAST). Otherwise, it is enough to use <code>./install.sh</code>,
-which runs only two simple --test commands.
+</p>
+In both cases <code>--prefix</code> may be used for specifying installation location. Default value is <code>/usr/local/bin/</code> for the executable scripts and <code>/usr/local/lib/</code> for python modules and auxiliary files.
 </p>
 
 <a name="sec2"></a>

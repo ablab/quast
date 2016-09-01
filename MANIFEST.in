@@ -5,7 +5,6 @@ include *.py
 include *.html
 include *.txt
 include *.md
-include quast_ref.bib
 include install.sh
 include install_full.sh
 include Dockerfile

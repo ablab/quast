@@ -14,6 +14,7 @@ import shutil
 import re
 
 from quast_libs import reporting, qconfig, qutils
+from quast_libs.ca_utils.misc import open_gzipsafe
 from quast_libs.fastaparser import read_fasta, write_fasta, rev_comp
 from quast_libs.genemark import add_genes_to_fasta
 from quast_libs.genes_parser import Gene
@@ -23,9 +24,10 @@ logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 
 OUTPUT_FASTA = False # whether output only .gff or with corresponding .fasta files
 
+
 def merge_gffs(gffs, out_path):
     '''Merges all GFF files into a single one, dropping GFF header.'''
-    with open(out_path, 'w') as out_file:
+    with open_gzipsafe(out_path, 'w') as out_file:
         out_file.write('##gff-version 3\n')
         for gff_path in gffs:
             with open(gff_path, 'r') as gff_file:
@@ -35,7 +37,7 @@ def merge_gffs(gffs, out_path):
 
 
 def parse_gff(gff_path):
-    with open(gff_path) as gff_file:
+    with open_gzipsafe(gff_path) as gff_file:
         r = csv.reader(
             itertools.ifilter(lambda l: not l.startswith("#"), gff_file),
             delimiter='\t')
@@ -79,7 +81,8 @@ def glimmerHMM(tool_dir, fasta_fpath, out_fpath, gene_lengths, err_path, tmp_dir
     if not gffs:
         return None, None, None, None
 
-    out_gff_path = merge_gffs(gffs, out_fpath + '_genes.gff')
+    out_gff_fpath = out_fpath + '_genes.gff' + ('.gz' if not qconfig.no_gzip else '')
+    out_gff_path = merge_gffs(gffs, out_gff_fpath)
     unique, total = set(), 0
     genes = []
     cnt = [0] * len(gene_lengths)

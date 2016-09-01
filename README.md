@@ -10,6 +10,9 @@ The tool accepts multiple assemblies, thus is suitable for comparison.
 
 #### Installation
 
+QUAST automatically compiles all its sub-parts when needed (on the first use). 
+Thus, installation is not required. However, if you want to precompile everything and add quast.py to your `PATH`, you may choose either:
+
 Basic installation (about 40 MB):
 
     ./setup.py install
@@ -18,7 +21,7 @@ Full installation (about 800 MB, includes (1) tools for SV detection based on re
 
     ./setup.py install_full
 
-In both cases `--prefix` may be used for specifying installation location. Default value is `/usr/local/bin/` for the executable scripts and `/usr/local/lib/` for python modules and auxiliary files.
+In both cases `--prefix` may be used for specifying installation location. Default value is `/usr/local/bin/` for the executable scripts and `/usr/local/lib/` for python modules and auxiliary files. Note: if you get a permission error you may want to try these commands with `sudo` or to install QUAST into virtual environment/another location.
 
 #### Usage
 

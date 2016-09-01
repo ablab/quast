@@ -175,7 +175,7 @@ To download the <a href="https://downloads.sourceforge.net/project/quast/quast-4
 <br>
 <p>
 QUAST automatically compiles all its sub-parts when needed (on the first use). 
-Thus, installation is not required. However, if you want to precompile everything before the use, you may choose either:
+Thus, installation is not required. However, if you want to precompile everything and add quast.py to your <code>PATH</code>, you may choose either:
 <p>
 Basic installation (about 40 MB):
 <pre class="code">
@@ -189,7 +189,7 @@ Full installation (about 800 MB, includes (1) tools for SV detection based on re
     ./setup.py install_full
 </pre>
 </p>
-In both cases <code>--prefix</code> may be used for specifying installation location. Default value is <code>/usr/local/bin/</code> for the executable scripts and <code>/usr/local/lib/</code> for python modules and auxiliary files.
+In both cases <code>--prefix</code> may be used for specifying installation location. Default value is <code>/usr/local/bin/</code> for the executable scripts and <code>/usr/local/lib/</code> for python modules and auxiliary files. Note: if you get a permission error you may want to try these commands with <code>sudo</code> or to install QUAST into virtual environment/another location.
 </p>
 
 <a name="sec2"></a>

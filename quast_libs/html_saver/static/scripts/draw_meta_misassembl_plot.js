@@ -247,7 +247,7 @@ function showPlot(index) {
 }
 
 function createLegend(labels, colors, index){
-    var sortBtnClass = getSortRefsBtnClass();
+    var sortBtnClass = getSortRefsRule();
     $('#legend-placeholder').empty();
     var selectors = "";
     var filenames = misassemblies.filenames;
@@ -278,7 +278,7 @@ function createLegend(labels, colors, index){
     else addSortRefsBtn(sortBtnClass);
     addLinksToSwitches(index - 1);
     addLegendClickEvents(misassemblies, misassemblies.series.length, showPlotWithInfo, false, index);
-    setSortRefsBtn(misassemblies, index);
+    setSortRefsBtns(misassemblies, index);
 }
 
 function addLinksToSwitches(index) {

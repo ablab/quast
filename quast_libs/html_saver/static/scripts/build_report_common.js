@@ -4,8 +4,7 @@ function showPlotWithInfo(info, index) {
     var oldSeries = info.series;
     var usingSeries;
     var sortOrder;
-    if ($('#sortRefsBtn')[0])
-        sortOrder = getSortOrder();
+    sortOrder = getSortOrder();
     if (index != undefined) {
         oldSeries = info.series[index];
     }
@@ -20,7 +19,7 @@ function showPlotWithInfo(info, index) {
         }
     }
     else usingSeries = oldSeries;
-    $('#legend-placeholder').find('input:checked').each(function() {
+    $('#legend-placeholder').find('input[type="checkbox"]:checked').each(function() {
         var number = $(this).attr('name');
         if (number && usingSeries && usingSeries.length > 0) {
             var i = 0;

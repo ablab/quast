@@ -80,7 +80,7 @@ var summary = {
 
     draw: function (name, title, colors, filenames, data, refPlotValue, tickX,
                     placeholder, legendPlaceholder, glossary, order, scalePlaceholder) {
-        var sortBtnClass = getSortRefsBtnClass();
+        var sortBtnClass = getSortRefsRule();
 
         $('#legend-placeholder').empty();
 
@@ -133,7 +133,6 @@ var summary = {
                 if (info.series[i].data[0][1] > info.maxY) {
                     info.maxY = info.series[i].data[0][1];
                 }
-
             }
 
             for (i = 0; i < plotsN; i++) {
@@ -187,7 +186,7 @@ var summary = {
                 var firstLabel = $('.yAxis .tickLabel').last();
                 firstLabel.prepend(title + '<span class="rhs">&nbsp;</span>=<span class="rhs">&nbsp;</span>');
                 if (name == 'genome') firstLabel.html(title);
-                
+
                 bindTip(placeholder, series, plot, refToPrettyString, 1, refNames, 'top right', true);
 
             };
@@ -198,41 +197,43 @@ var summary = {
         addLegendClickEvents(info, filenames.length, showPlotWithInfo);
 
         showPlotWithInfo(info);
-        setSortRefsBtn(info);
+        setSortRefsBtns(info);
 
         $('#gc_info').hide();
     }
 };
 
-function getSortRefsBtnClass() {
-    var sortRefsBtn = $('#sortRefsBtn');
-    if (sortRefsBtn && sortRefsBtn.attr('class'))
-        return sortRefsBtn.attr('class');
-    return '';
+function getSortRefsRule() {
+    if ($("input[name=sortRefs]")[0])
+        return $("input[name=sortRefs]:checked").val();
 }
 
 function addSortRefsBtn(sortBtnClass) {
+    $('#legend-placeholder').append('<p>Sort references by: ');
     $('#legend-placeholder').append(
-        '<div>' + '<button id="sortRefsBtn" class="' + sortBtnClass + '"></button>' + '</div>'
+        '<input type="radio" id="sortByName" name="sortRefs" value="name"><label for="sortByName">name</label><br>'
     );
+    $('#legend-placeholder').append(
+        '<input type="radio" id="sortByValue" name="sortRefs" value="value" checked="checked"><label for="sortByValue">the best average value among all assemblies</label>'
+    );
+    if (sortBtnClass)
+       $("input[name=sortRefs][value=" + sortBtnClass + "]").prop('checked', true);
 }
 
-function setSortRefsBtn(info, index) {
-    $('#sortRefsBtn').click(function() {
-        $(this).toggleClass('sorted');
+function setSortRefsBtns(info, index) {
+    $("#legend-placeholder input[name='sortRefs']").click(function(){
         showPlotWithInfo(info, index);
     });
 }
 
 function getSortOrder() {
-    var sortOrder = '';
-    var sortRefsBtn = $('#sortRefsBtn');
-    if (sortRefsBtn[0] && sortRefsBtn.attr('class') == 'sorted') {
-        sortRefsBtn.html('Sort by average value');
+    var sortOrder = getSortRefsRule();
+    if (!sortOrder)
+        return;
+    if (sortOrder == 'name') {
         sortOrder = 'alphabet';
     }
-    else if (sortRefsBtn) {
-        sortRefsBtn.html('Sort by alphabet');
+    else if (sortOrder) {
         sortOrder = 'value';
     }
     return sortOrder;

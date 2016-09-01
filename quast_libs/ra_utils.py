@@ -54,7 +54,7 @@ def download_unpack_tar_bz(name, download_path, downloaded_fpath, final_dirpath,
     try:
         response = urllib2.urlopen(download_path)
         content = response.read()
-    except socket.error:
+    except:
         logger.main_info('  Failed to establish connection!')
     if content:
         logger.main_info('  ' + name + ' successfully downloaded!')

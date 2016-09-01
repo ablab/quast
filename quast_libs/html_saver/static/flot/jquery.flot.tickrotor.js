@@ -54,9 +54,6 @@
 
                 font = opts.rotateTicksFont;
                 if (!font) {
-                    font = $('.tickLabel').css('font');
-                }
-                if (!font) {
                     font = 'smaller sans-serif';
                 }
 
@@ -81,7 +78,7 @@
                   elem = $('<span style="font:' + font + '">' + ticks[i].label + '</span>');
                   plot.getPlaceholder().append(elem);
                   ticks[i].height = elem.outerHeight(true);
-                  ticks[i].width = elem.outerWidth(true);
+                  ticks[i].width = elem.outerWidth(true) + 10;
                   elem.remove();
                   if (ticks[i].height > maxLabelHeight) {
                       maxLabelHeight = ticks[i].height;

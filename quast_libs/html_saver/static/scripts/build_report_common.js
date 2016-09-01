@@ -4,7 +4,8 @@ function showPlotWithInfo(info, index) {
     var oldSeries = info.series;
     var usingSeries;
     var sortOrder;
-    sortOrder = getSortOrder();
+    if ($("input[name=sortRefs]")[0])
+        sortOrder = getSortOrder();
     if (index != undefined) {
         oldSeries = info.series[index];
     }

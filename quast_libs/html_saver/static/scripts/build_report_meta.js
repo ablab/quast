@@ -81,6 +81,7 @@ function buildReport() {
     }
 
     if (firstPlot) $('.plots').hide();
+    $('#contigs_are_ordered').hide();
     appendIcarusLinks();
     return 0;
 }

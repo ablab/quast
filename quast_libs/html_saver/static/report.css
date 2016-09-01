@@ -280,7 +280,7 @@ table#refgenome td.last_row {
     min-height: 400px;
     height: 50%;    */
 
-    margin-left: -95px;
+    margin-left: -55px;
     margin-right: 20px;
     float: left;
 
@@ -330,7 +330,7 @@ img.icon_plot {
 }
 
 #sortRefsBtn {
-    margin-top: 15px;
+    margin-top: 50px;
 }
 
 #mincontig {

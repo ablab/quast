@@ -148,7 +148,7 @@ function getBpTickFormatter(maxY, additionalText) {
         } else if (val >= 1000000) {
             res = val / 1000000;
 
-            if (val > maxY + 1 || val + axis.tickSize >= 1000000000) {
+            if (val > axis.max + 1 || val + axis.tickSize >= 1000000000) {
                 res = additionalText + toPrettyString(res, 'Mbp');
             } else {
                 res = toPrettyString(res);
@@ -156,7 +156,7 @@ function getBpTickFormatter(maxY, additionalText) {
         } else if (val >= 1000) {
             res = val / 1000;
 
-            if (val > maxY + 1 || val + axis.tickSize >= 1000000) {
+            if (val > axis.max + 1 || val + axis.tickSize >= 1000000) {
                 res = additionalText + toPrettyString(res, 'kbp');
             } else {
                 res = toPrettyString(res);
@@ -164,7 +164,7 @@ function getBpTickFormatter(maxY, additionalText) {
         } else if (val >= 1) {
             res = val;
 
-            if (val > maxY + 1 || val + axis.tickSize >= 1000) {
+            if (val > axis.max + 1 || val + axis.tickSize >= 1000) {
                 res = additionalText + toPrettyString(res, 'bp');
             } else {
                 res = toPrettyString(res);
@@ -206,7 +206,7 @@ function getContigNumberTickFormatter(maxX, tickX) {
 function getJustNumberTickFormatter(maxY, additionalText) {
     return function (val, axis) {
         additionalText = additionalText || '';
-        if (val > maxY + 1) {
+        if (val > axis.max + 1) {
                 res = additionalText + toPrettyString(val);
             } else {
                 res = toPrettyString(val);

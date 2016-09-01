@@ -185,7 +185,8 @@ var summary = {
 
                 var firstLabel = $('.yAxis .tickLabel').last();
                 firstLabel.prepend(title + '<span class="rhs">&nbsp;</span>=<span class="rhs">&nbsp;</span>');
-                if (name == 'genome') firstLabel.html(title);
+                if (name == 'genome')
+                    firstLabel.append('%');
 
                 bindTip(placeholder, series, plot, refToPrettyString, 1, refNames, 'top right', true);
 
@@ -209,7 +210,7 @@ function getSortRefsRule() {
 }
 
 function addSortRefsBtn(sortBtnClass) {
-    $('#legend-placeholder').append('<p>Sort references by: ');
+    $('#legend-placeholder').append('<p id="sortRefsBtn">Sort references by: ');
     $('#legend-placeholder').append(
         '<input type="radio" id="sortByName" name="sortRefs" value="name"><label for="sortByName">name</label><br>'
     );

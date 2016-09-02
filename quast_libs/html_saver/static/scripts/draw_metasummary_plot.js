@@ -1,6 +1,9 @@
 var refNames;
 var refTicks;
 
+var plotHeight = 0;
+var sortRefsBtnHeight = 85;
+
 var summary = {
     largest: {
         isInitialized: false,
@@ -91,7 +94,6 @@ var summary = {
             '<input type="checkbox" name="' + i + '" checked="checked" id="' + id + '">&nbsp;' + filename + '</label>' +
             '</div>');
         });
-        addSortRefsBtn(sortBtnClass);
 
         $(scalePlaceholder).empty();
 
@@ -153,7 +155,7 @@ var summary = {
                         shadowSize: 0,
                         colors: colors,
                         legend: {
-                            container: $('useless-invisible-element-that-does-not-even-exist'),
+                            container: $('useless-invisible-element-that-does-not-even-exist')
                         },
                         grid: {
                             borderWidth: 1,
@@ -182,6 +184,7 @@ var summary = {
                         minTickSize: 1
                     }
                 );
+                plotHeight = plot.height();
 
                 var firstLabel = $('.yAxis .tickLabel').last();
                 firstLabel.prepend(title + '<span class="rhs">&nbsp;</span>=<span class="rhs">&nbsp;</span>');
@@ -198,6 +201,7 @@ var summary = {
         addLegendClickEvents(info, filenames.length, showPlotWithInfo);
 
         showPlotWithInfo(info);
+        addSortRefsBtn(sortBtnClass);
         setSortRefsBtns(info);
 
         $('#gc_info').hide();
@@ -210,12 +214,16 @@ function getSortRefsRule() {
 }
 
 function addSortRefsBtn(sortBtnClass) {
-    $('#legend-placeholder').append('<p id="sortRefsBtn">Sort references by: ');
+    var spaceAfterHeight = Math.max(50, plotHeight - $('#legend-placeholder').height() - sortRefsBtnHeight);
+    $('#legend-placeholder').append('<div id="sortRefsBtnSpace"></div>');
+    $('#sortRefsBtnSpace').height(spaceAfterHeight);
+    $('#legend-placeholder').append('<p>Sort references by: ');
     $('#legend-placeholder').append(
-        '<input type="radio" id="sortByName" name="sortRefs" value="name"><label for="sortByName">name</label><br>'
+        '<label><input type="radio" id="sortByName" name="sortRefs" value="name">&nbspname</label><br>'
     );
     $('#legend-placeholder').append(
-        '<input type="radio" id="sortByValue" name="sortRefs" value="value" checked="checked"><label for="sortByValue">the best average value among all assemblies</label>'
+        '<label><input type="radio" id="sortByValue" name="sortRefs" value="value" checked="checked">' +
+        '&nbspthe best average value<br>among all assemblies</label>'
     );
     if (sortBtnClass)
        $("input[name=sortRefs][value=" + sortBtnClass + "]").prop('checked', true);

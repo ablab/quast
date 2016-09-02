@@ -266,7 +266,6 @@ function createLegend(labels, colors, index){
                 "class='plot-switch dotted-link'>" +
                 filenames[filenames_n] + "</span>";
         }
-        addSortRefsBtn(sortBtnClass);
         $('#legend-placeholder').append(
             "<br><br><div id='change-assembly' style='margin-right: 3px;'>" +
                 "<span id='show_all_label'>" +
@@ -274,6 +273,7 @@ function createLegend(labels, colors, index){
                 "</span><br>" + selectors +
                 "</div>"
         );
+        addSortRefsBtn(sortBtnClass);
     }
     else addSortRefsBtn(sortBtnClass);
     addLinksToSwitches(index - 1);

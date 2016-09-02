@@ -27,26 +27,27 @@ OUTPUT_FASTA = False # whether output only .gff or with corresponding .fasta fil
 
 def merge_gffs(gffs, out_path):
     '''Merges all GFF files into a single one, dropping GFF header.'''
-    with open_gzipsafe(out_path, 'w') as out_file:
-        out_file.write('##gff-version 3\n')
-        for gff_path in gffs:
-            with open(gff_path, 'r') as gff_file:
-                out_file.writelines(itertools.islice(gff_file, 2, None))
-
+    out_file = open_gzipsafe(out_path, 'w')
+    out_file.write('##gff-version 3\n')
+    for gff_path in gffs:
+        with open(gff_path, 'r') as gff_file:
+            out_file.writelines(itertools.islice(gff_file, 2, None))
+    out_file.close()
     return out_path
 
 
 def parse_gff(gff_path):
-    with open_gzipsafe(gff_path) as gff_file:
-        r = csv.reader(
-            itertools.ifilter(lambda l: not l.startswith("#"), gff_file),
-            delimiter='\t')
-        for index, _source, type, start, end, score, strand, phase, extra in r:
-            if type != 'mRNA':
-                continue  # We're only interested in genes here.
+    gff_file = open_gzipsafe(gff_path)
+    r = csv.reader(
+        itertools.ifilter(lambda l: not l.startswith("#"), gff_file),
+        delimiter='\t')
+    for index, _source, type, start, end, score, strand, phase, extra in r:
+        if type != 'mRNA':
+            continue  # We're only interested in genes here.
 
-            attrs = dict(kv.split("=") for kv in extra.split(";"))
-            yield index, attrs.get('Name'), int(start), int(end), strand
+        attrs = dict(kv.split("=") for kv in extra.split(";"))
+        yield index, attrs.get('Name'), int(start), int(end), strand
+    gff_file.close()
 
 
 def glimmerHMM(tool_dir, fasta_fpath, out_fpath, gene_lengths, err_path, tmp_dir, index):

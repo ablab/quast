@@ -229,8 +229,8 @@ def parallel_correct_contigs(file_counter, contigs_fpath, corrected_dirpath, lab
         logs.append('  ' + index_to_str(file_counter, force=(len(labels) > 1)) + '%s ==> %s' % (contigs_fpath, label))
 
     # if option --scaffolds is specified QUAST adds split version of assemblies to the comparison
-    if qconfig.scaffolds and not qconfig.is_combined_ref:
-        broken_scaffold_fpath, logs = broke_scaffolds(file_counter, labels, contigs_fpath, corrected_dirpath, logs)
+    if qconfig.scaffolds and not qconfig.is_combined_ref and corr_fpath:
+        broken_scaffold_fpath, logs = broke_scaffolds(file_counter, labels, corr_fpath, corrected_dirpath, logs)
         if broken_scaffold_fpath:
             lengths = get_lengths_from_fasta(broken_scaffold_fpath, label + '_broken')
             if lengths and (qconfig.no_check_meta or correct_fasta(contigs_fpath, corr_fpath, qconfig.min_contig)):
@@ -241,7 +241,7 @@ def parallel_correct_contigs(file_counter, contigs_fpath, corrected_dirpath, lab
 
 
 def broke_scaffolds(file_counter, labels, contigs_fpath, corrected_dirpath, logs):
-    logger.info('  ' + index_to_str(file_counter, force=(len(labels) > 1)) + '  breaking scaffolds into contigs:')
+    logs.append('  ' + index_to_str(file_counter, force=(len(labels) > 1)) + '  breaking scaffolds into contigs:')
     contigs_fname = os.path.basename(contigs_fpath)
     fname, fasta_ext = splitext_for_fasta_file(contigs_fname)
     label = labels[file_counter]

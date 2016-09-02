@@ -164,33 +164,33 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, aligns, ref_featu
                 the_best_set = best_sets[0]
                 used_indexes = range(len(sorted_aligns)) if too_much_best_sets else get_used_indexes(best_sets)
                 if len(used_indexes) < len(sorted_aligns):
-                    print >> ca_output.stdout_f, '\t\t\tSkipping redundant alignments after choosing the best group of alignments'
+                    print >> ca_output.stdout_f, '\t\t\tSkipping redundant alignments after choosing the best set of alignments'
                     for idx in set(range(len(sorted_aligns))) - used_indexes:
                         print >> ca_output.stdout_f, '\t\tSkipping redundant alignment', sorted_aligns[idx]
 
                 if is_ambiguous:
-                    print >> ca_output.stdout_f, '\t\tThis contig has several significant groups of alignments. [An ambiguously mapped contig]'
+                    print >> ca_output.stdout_f, '\t\tThis contig has several significant sets of alignments. [An ambiguously mapped contig]'
                     # similar to regular ambiguous contigs, see above
                     ambiguous_contigs += 1
                     ambiguous_contigs_len += ctg_len
 
                     if qconfig.ambiguity_usage == "none":
                         ambiguous_contigs_extra_bases -= (ctg_len - the_best_set.uncovered)
-                        print >> ca_output.stdout_f, '\t\tSkipping all alignments in these groups (option --ambiguity-usage is set to "none"):'
+                        print >> ca_output.stdout_f, '\t\tSkipping all alignments in these sets (option --ambiguity-usage is set to "none"):'
                         for idx in used_indexes:
                             print >> ca_output.stdout_f, '\t\t\tSkipping alignment ', sorted_aligns[idx]
                         continue
                     elif qconfig.ambiguity_usage == "one":
                         ambiguous_contigs_extra_bases += 0
-                        print >> ca_output.stdout_f, '\t\tUsing only the very best group (option --ambiguity-usage is set to "one").'
+                        print >> ca_output.stdout_f, '\t\tUsing only the very best set (option --ambiguity-usage is set to "one").'
                         if len(the_best_set.indexes) < len(used_indexes):
-                            print >> ca_output.stdout_f, '\t\tSo, skipping alignments from other groups:'
+                            print >> ca_output.stdout_f, '\t\tSo, skipping alignments from other sets:'
                             for idx in used_indexes:
                                 if idx not in the_best_set.indexes:
                                     print >> ca_output.stdout_f, '\t\t\tSkipping alignment ', sorted_aligns[idx]
                     elif qconfig.ambiguity_usage == "all":
-                        print >> ca_output.stdout_f, '\t\tUsing all alignments in these groups (option --ambiguity-usage is set to "all"):'
-                        print >> ca_output.stdout_f, '\t\t\tThe very best group is shown in details below, the rest are:'
+                        print >> ca_output.stdout_f, '\t\tUsing all alignments in these sets (option --ambiguity-usage is set to "all"):'
+                        print >> ca_output.stdout_f, '\t\t\tThe very best set is shown in details below, the rest are:'
                         for idx, cur_set in enumerate(best_sets[1:]):
                             print >> ca_output.stdout_f, '\t\t\t\tGroup #%d. Score: %.1f, number of alignments: %d, unaligned bases: %d' % \
                                 (idx + 2, cur_set.score, len(cur_set.indexes), cur_set.uncovered)
@@ -198,7 +198,7 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, aligns, ref_featu
                             print >> ca_output.stdout_f, '\t\t\t\tetc...'
                         if len(the_best_set.indexes) < len(used_indexes):
                             ambiguous_contigs_extra_bases -= (ctg_len - the_best_set.uncovered)
-                            print >> ca_output.stdout_f, '\t\t\tList of alignments used in the groups above:'
+                            print >> ca_output.stdout_f, '\t\t\tList of alignments used in the sets above:'
                             for idx in used_indexes:
                                 align = sorted_aligns[idx]
                                 print >> ca_output.stdout_f, '\t\tAlignment: %s' % str(align)
@@ -208,7 +208,7 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, aligns, ref_featu
                                 if idx not in the_best_set.indexes:
                                     print >> ca_output.icarus_out_f, align.icarus_report_str(is_best=False)
 
-                print >> ca_output.stdout_f, '\t\t\tThe best group is below. Score: %.1f, number of alignments: %d, unaligned bases: %d' % \
+                print >> ca_output.stdout_f, '\t\t\tThe best set is below. Score: %.1f, number of alignments: %d, unaligned bases: %d' % \
                                              (the_best_set.score, len(the_best_set.indexes), the_best_set.uncovered)
                 real_aligns = [sorted_aligns[i] for i in the_best_set.indexes]
 

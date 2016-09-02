@@ -158,7 +158,7 @@ function createItems(visData, itemFigure, minExtent, maxExtent, class_) {
     oldItems.exit().remove();
 
     function make_triangle(block) {
-        var startX = 0;
+        var startX = block.misassembledEnds == "L" ? 1 : -1;
         var startY = block.groupId == selected_id ? 2 : 0;
         if (block.misassembledEnds == "L")
             path = ['M', startX, startY, 'L', startX + (0.5 * (mainLanesHeight - startY) / 2),

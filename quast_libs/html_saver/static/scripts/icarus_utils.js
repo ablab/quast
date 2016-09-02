@@ -28,7 +28,7 @@ function getItemHeight(block) {
 function getItemStrokeWidth(block, selected_id) {
     if (block.misassembledEnds) return 0;
     if (block.notActive) return .1;
-    return (block.groupId == selected_id ? 2 : 1);
+    return (block.groupId == selected_id ? 3 : 1);
 }
 
 function getItemStrokeOpacity(block, selected_id) {
@@ -80,12 +80,13 @@ function changeInfo(block) {
     info.append('p')
         .style({'display': 'block', 'word-break': 'break-all', 'word-wrap': 'break-word'})
         .text('Name: ' + block.name, 280);
+    var contig_type;
 
     if (block.structure) {
         if (isContigSizePlot)
-            var contig_type = block.contig_type ? block.contig_type : '';
+            contig_type = block.contig_type ? block.contig_type : '';
         else {
-            var contig_type = block.misassemblies ? 'misassembled' : 'correct';
+            contig_type = block.misassemblies ? 'misassembled' : 'correct';
             if (block.similar == "True" && !block.misassemblies) contig_type += ' (similar in > 50% of the assemblies)';
             if (block.misassemblies) {
                 var misassemblies = block.misassemblies.split(';');
@@ -100,10 +101,13 @@ function changeInfo(block) {
                 contig_type += ')'
             }
         }
-        if (contig_type)
-            info.append('p')
-                .text('Type: ' + contig_type);
     }
+    else if (block.best_group) {
+        contig_type = 'alternative block (not from the best set)';
+    }
+    if (contig_type)
+        info.append('p')
+            .text('Type: ' + contig_type);
     if (block.size)
         info.append('p')
             .text('Size: ' + block.size + ' bp');
@@ -148,7 +152,13 @@ function changeInfo(block) {
         var blocksCount = structure.filter(function(nextBlock) {
                 if (nextBlock.contig_type != "M") return nextBlock;
             }).length;
-        var blocksText = (block.ambiguous ? ' Alternatives: ' : 'Blocks: ') + blocksCount;
+        var blocksName = 'Blocks: ';
+        if (block.ambiguous)
+            blocksName = ' Alternatives: ';
+        else if (block.ambiguous_alignments && block.ambiguous_alignments.length > 0)
+            blocksName = 'Blocks of the best set: ';
+
+        var blocksText = blocksName + blocksCount;
         var blocksMenuInfo = blocksMenu.append('span').text(block.ambiguous ? 'Ambiguously mapped.' : blocksText);
         if (block.ambiguous)
             blocksMenuInfo.append('span').text(blocksText);
@@ -223,7 +233,7 @@ function changeInfo(block) {
     }
     if (block.ambiguous_alignments && block.ambiguous_alignments.length > 0) {
         var ambiguousMenu = info.append('p').attr('class', 'head_plus collapsed');
-        var ambiguousText = 'Other alignments: ' + block.ambiguous_alignments.filter(function(nextBlock) {
+        var ambiguousText = 'Blocks of alternative sets: ' + block.ambiguous_alignments.filter(function(nextBlock) {
                 if (nextBlock.contig_type != "M") return nextBlock;
             }).length;
         var ambiguousMenuInfo = ambiguousMenu.append('span').text(ambiguousText);

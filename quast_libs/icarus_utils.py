@@ -16,7 +16,8 @@ from quast_libs.html_saver.html_saver import trim_ref_name
 
 
 class Alignment:
-    def __init__(self, name, start, end, unshifted_start, unshifted_end, is_rc, idy, start_in_contig,end_in_contig, position_in_ref, ref_name):
+    def __init__(self, name, start, end, unshifted_start, unshifted_end, is_rc, start_in_contig, end_in_contig,
+                 position_in_ref, ref_name, idy, is_best_set):
         self.name = name
         self.start = start
         self.end = end
@@ -28,10 +29,12 @@ class Alignment:
         self.end_in_contig = end_in_contig
         self.position_in_ref = position_in_ref
         self.ref_name = ref_name
+        self.is_best_set = is_best_set
 
         self.order = 0
         self.similar = False
         self.misassembled = False
+        self.misassemblies = ''
         self.color = "#000000"
         self.vPositionDelta = 0
         self.ambiguous = False
@@ -175,6 +178,8 @@ class Assemblies:
             order = 0
             for block_num in range(0, len(self.assemblies[i].alignments)):
                 block = self.assemblies[i].alignments[block_num]
+                if not block.is_best_set:
+                    continue
                 if block.similar:
                     order = (block.order + 1) % 2
                     continue
@@ -318,6 +323,8 @@ def group_references(chr_names, contig_names_by_refs, chromosomes_length, ref_fp
 
 def check_misassembled_blocks(aligned_blocks, misassembled_id_to_structure):
     for alignment in aligned_blocks:
+        if not alignment.is_best_set:  # alignment is not in the best set
+            continue
         contig_structure = misassembled_id_to_structure[alignment.name]
         for num_alignment, el in enumerate(contig_structure):
             if isinstance(el, Alignment):
@@ -347,6 +354,41 @@ def parse_misassembly_info(misassembly):
             ms_type = 'indel'
         ms_description = ms_description.split(':')[1]
     return ms_description, ms_type
+
+
+def get_misassembly_for_alignment(contig_structure, alignment):
+    misassembled_ends = ''
+    misassemblies = []
+    for num_alignment, el in enumerate(contig_structure):
+        if isinstance(el, Alignment):
+            if el.start == alignment.start and el.end == alignment.end:
+                break
+    if type(contig_structure[num_alignment - 1]) == str:
+        misassembly_type = contig_structure[num_alignment - 1].split(',')[0].strip()
+        if is_misassembly_real(misassembly_type):
+            if 'local' in misassembly_type:
+                misassembly_type = 'local'
+            misassemblies.append(misassembly_type)
+            if alignment.start_in_contig < alignment.end_in_contig:
+                misassembled_ends += 'L'
+            else:
+                misassembled_ends += 'R'
+        else:
+            misassemblies.append('')
+    if num_alignment + 1 < len(contig_structure) and \
+                    type(contig_structure[num_alignment + 1]) == str:
+        misassembly_type = contig_structure[num_alignment + 1].split(',')[0].strip()
+        if is_misassembly_real(misassembly_type):
+            if 'local' in misassembly_type:
+                misassembly_type = 'local'
+            misassemblies.append(misassembly_type)
+            if alignment.start_in_contig < alignment.end_in_contig:
+                misassembled_ends += ';' + 'R'
+            else:
+                misassembled_ends += ';' + 'L'
+        else:
+            misassemblies.append('')
+    return misassemblies, misassembled_ends
 
 
 def is_misassembly_real(misassembly_type):

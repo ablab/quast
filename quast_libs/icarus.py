@@ -15,7 +15,7 @@ from quast_libs.icarus_parser import parse_contigs_fpath, parse_features_data, p
     get_contigs_data, parse_genes_data
 from quast_libs.icarus_parser import parse_nucmer_contig_report
 from quast_libs.icarus_utils import make_output_dir, group_references, format_cov_data, format_long_numbers, get_info_by_chr, \
-    get_html_name, get_assemblies, check_misassembled_blocks, Alignment, is_misassembly_real, parse_misassembly_info
+    get_html_name, get_assemblies, check_misassembled_blocks, Alignment, parse_misassembly_info, get_misassembly_for_alignment
 
 try:
    from collections import OrderedDict
@@ -210,40 +210,18 @@ def prepare_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, data_st
                     prev_end = max(prev_end, alignment.end)
 
                 for alignment in alignments:
-                    if alignment.misassembled:
-                        num_misassemblies += 1
                     assemblies_len[assembly] += abs(alignment.end_in_contig - alignment.start_in_contig) + 1
                     assemblies_contigs[assembly].add(alignment.name)
                     contig_structure = structures_by_labels[alignment.label]
-                    misassembled_ends = ''
-                    for num_alignment, el in enumerate(contig_structure[alignment.name]):
-                        if isinstance(el, Alignment):
-                            if el.start == alignment.start and el.end == alignment.end:
-                                break
-                    alignment.misassemblies = ''
-                    if type(contig_structure[alignment.name][num_alignment - 1]) == str:
-                        misassembly_type = contig_structure[alignment.name][num_alignment - 1].split(',')[0].strip()
-                        if is_misassembly_real(misassembly_type):
-                            if 'local' in misassembly_type:
-                                misassembly_type = 'local'
-                            alignment.misassemblies += misassembly_type
-                            ms_types[assembly][misassembly_type] += 1
-                            if alignment.start_in_contig < alignment.end_in_contig:
-                                misassembled_ends += 'L'
-                            else:
-                                misassembled_ends += 'R'
-                    if num_alignment + 1 < len(contig_structure[alignment.name]) and \
-                                    type(contig_structure[alignment.name][num_alignment + 1]) == str:
-                        misassembly_type = contig_structure[alignment.name][num_alignment + 1].split(',')[0].strip()
-                        if is_misassembly_real(misassembly_type):
-                            if 'local' in misassembly_type:
-                                misassembly_type = 'local'
-                            alignment.misassemblies += ';' + misassembly_type
-                            ms_types[assembly][misassembly_type] += 1
-                            if alignment.start_in_contig < alignment.end_in_contig:
-                                misassembled_ends += ';' + 'R'
-                            else:
-                                misassembled_ends += ';' + 'L'
+                    if alignment.misassembled:
+                        num_misassemblies += 1
+                        misassemblies, misassembled_ends = get_misassembly_for_alignment(contig_structure[alignment.name], alignment)
+                        for misassembly in misassemblies:
+                            if misassembly:
+                                ms_types[assembly][misassembly] += 1
+                        alignment.misassemblies = ';'.join(misassemblies)
+                    else:
+                        misassembled_ends = ''
 
                     genes = []
                     start_in_contig, end_in_contig = min(alignment.start_in_contig, alignment.end_in_contig), \
@@ -261,6 +239,8 @@ def prepare_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, data_st
                                     '", misassemblies:"' + alignment.misassemblies + '",mis_ends:"' + misassembled_ends + '"')
                     if alignment.ambiguous:
                         data_str[-1] += ', ambiguous: "True"'
+                    if alignment.is_best_set:
+                        data_str[-1] += ', is_best: "True"'
 
                     aligned_assemblies.add(alignment.label)
                     if overlapped_contigs[alignment]:

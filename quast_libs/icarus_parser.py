@@ -64,10 +64,11 @@ def parse_nucmer_contig_report(report_fpath, ref_names, cumulative_ref_lengths):
                 is_rc = ((start - end) * (start_in_contig - end_in_contig)) < 0
                 position_in_ref = unshifted_start
                 block = Alignment(
-                    name=contig_id, start=start, end=end, unshifted_start=unshifted_start, unshifted_end=unshifted_end, is_rc=is_rc,
-                    idy=idy, start_in_contig=start_in_contig, end_in_contig=end_in_contig, position_in_ref=position_in_ref, ref_name=ref_name)
+                    name=contig_id, start=start, end=end, unshifted_start=unshifted_start, unshifted_end=unshifted_end,
+                    is_rc=is_rc, start_in_contig=start_in_contig, end_in_contig=end_in_contig, position_in_ref=position_in_ref, ref_name=ref_name,
+                    idy=idy, is_best_set=is_best == 'True')
                 block.ambiguous = ambiguity
-                if is_best == 'True':
+                if block.is_best_set:
                     misassembled_id_to_structure[contig_id].append(block)
                 else:
                     ambiguity_alignments[contig_id].append(block)

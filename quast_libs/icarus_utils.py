@@ -363,9 +363,11 @@ def get_misassembly_for_alignment(contig_structure, alignment):
         if isinstance(el, Alignment):
             if el.start == alignment.start and el.end == alignment.end:
                 break
+    is_misassembly = False
     if type(contig_structure[num_alignment - 1]) == str:
         misassembly_type = contig_structure[num_alignment - 1].split(',')[0].strip()
-        if is_misassembly_real(misassembly_type):
+        is_misassembly = is_misassembly_real(misassembly_type)
+        if is_misassembly:
             if 'local' in misassembly_type:
                 misassembly_type = 'local'
             misassemblies.append(misassembly_type)
@@ -373,12 +375,14 @@ def get_misassembly_for_alignment(contig_structure, alignment):
                 misassembled_ends += 'L'
             else:
                 misassembled_ends += 'R'
-        else:
-            misassemblies.append('')
+    if not is_misassembly:
+        misassemblies.append('')
+    is_misassembly = False
     if num_alignment + 1 < len(contig_structure) and \
                     type(contig_structure[num_alignment + 1]) == str:
         misassembly_type = contig_structure[num_alignment + 1].split(',')[0].strip()
-        if is_misassembly_real(misassembly_type):
+        is_misassembly = is_misassembly_real(misassembly_type)
+        if is_misassembly:
             if 'local' in misassembly_type:
                 misassembly_type = 'local'
             misassemblies.append(misassembly_type)
@@ -386,8 +390,8 @@ def get_misassembly_for_alignment(contig_structure, alignment):
                 misassembled_ends += ';' + 'R'
             else:
                 misassembled_ends += ';' + 'L'
-        else:
-            misassemblies.append('')
+    if not is_misassembly:
+        misassemblies.append('')
     return misassemblies, misassembled_ends
 
 

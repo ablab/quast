@@ -154,12 +154,16 @@ function createItems(visData, itemFigure, minExtent, maxExtent, class_) {
         })
         .attr('fill-opacity', function (block) {
             return getItemOpacity(block);
+        })
+        .attr('d', function(block) {
+            if (block.misassembledEnds) return make_triangle(block);
         });
     oldItems.exit().remove();
 
     function make_triangle(block) {
-        var startX = block.misassembledEnds == "L" ? 1 : -1;
-        var startY = block.groupId == selected_id ? 2 : 0;
+        var isSelected = block.groupId == selected_id;
+        var startX = isSelected ? (block.misassembledEnds == "L" ? 0.5 : -0.5) : 0;
+        var startY = isSelected ? 1.5 : 0;
         if (block.misassembledEnds == "L")
             path = ['M', startX, startY, 'L', startX + (0.5 * (mainLanesHeight - startY) / 2),
                 (startY + (mainLanesHeight - startY)) / 2, 'L', startX, mainLanesHeight - startY, 'L',  startX, startY].join(' ');
@@ -168,6 +172,7 @@ function createItems(visData, itemFigure, minExtent, maxExtent, class_) {
                 (startY + (mainLanesHeight - startY)) / 2, 'L', startX, mainLanesHeight - startY, 'L',  startX, startY].join(' ');
         return path;
     }
+
     var newItems = oldItems.enter().append(itemFigure)
         .attr('class', function (block) {
             if (block.misassembledEnds) {

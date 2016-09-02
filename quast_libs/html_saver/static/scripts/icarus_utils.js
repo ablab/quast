@@ -81,25 +81,22 @@ function changeInfo(block) {
         .style({'display': 'block', 'word-break': 'break-all', 'word-wrap': 'break-word'})
         .text('Name: ' + block.name, 280);
     var contig_type;
+    if (isContigSizePlot)
+        contig_type = block.contig_type ? block.contig_type : '';
+    else if (block.structure) {
+        contig_type = block.misassemblies ? 'misassembled' : 'correct';
+        if (block.similar == "True" && !block.misassemblies) contig_type += ' (similar in > 50% of the assemblies)';
+        if (block.misassemblies) {
+            var misassemblies = block.misassemblies.split(';');
+            if (misassemblies[0] && misassemblies[1])
+                contig_type += ' (both sides';
+            else if (misassemblies[0])
+                contig_type += ' (left side';
+            else
+                contig_type += ' (right side';
 
-    if (block.structure) {
-        if (isContigSizePlot)
-            contig_type = block.contig_type ? block.contig_type : '';
-        else {
-            contig_type = block.misassemblies ? 'misassembled' : 'correct';
-            if (block.similar == "True" && !block.misassemblies) contig_type += ' (similar in > 50% of the assemblies)';
-            if (block.misassemblies) {
-                var misassemblies = block.misassemblies.split(';');
-                if (misassemblies[0] && misassemblies[1])
-                    contig_type += ' (both sides';
-                else if (misassemblies[0])
-                    contig_type += ' (left side';
-                else
-                    contig_type += ' (right side';
-
-                if (block.similar == "True") contig_type += ', similar in > 50% of the assemblies';
-                contig_type += ')'
-            }
+            if (block.similar == "True") contig_type += ', similar in > 50% of the assemblies';
+            contig_type += ')'
         }
     }
     else if (block.best_group) {

@@ -278,6 +278,7 @@ function createLegend(labels, colors, index){
     else addSortRefsBtn(sortBtnClass);
     addLinksToSwitches(index - 1);
     addLegendClickEvents(misassemblies, misassemblies.series.length, showPlotWithInfo, false, index);
+    moveSortRefsBtns();
     setSortRefsBtns(misassemblies, index);
 }
 

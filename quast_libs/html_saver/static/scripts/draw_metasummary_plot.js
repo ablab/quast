@@ -96,6 +96,7 @@ var summary = {
         });
 
         $(scalePlaceholder).empty();
+        addSortRefsBtn(sortBtnClass);
 
         var coordX = data.coord_x;
         var coordY = data.coord_y;
@@ -201,7 +202,7 @@ var summary = {
         addLegendClickEvents(info, filenames.length, showPlotWithInfo);
 
         showPlotWithInfo(info);
-        addSortRefsBtn(sortBtnClass);
+        moveSortRefsBtns();
         setSortRefsBtns(info);
 
         $('#gc_info').hide();
@@ -213,11 +214,14 @@ function getSortRefsRule() {
         return $("input[name=sortRefs]:checked").val();
 }
 
-function addSortRefsBtn(sortBtnClass) {
-    var spaceAfterHeight = Math.max(50, plotHeight - $('#legend-placeholder').height() - sortRefsBtnHeight);
-    $('#legend-placeholder').append('<div id="sortRefsBtnSpace"></div>');
+function moveSortRefsBtns() {
+    var spaceAfterHeight = Math.max(50, plotHeight - $('#legend-placeholder').height() + 5);
     $('#sortRefsBtnSpace').height(spaceAfterHeight);
-    $('#legend-placeholder').append('<p>Sort references by: ');
+}
+
+function addSortRefsBtn(sortBtnClass) {
+    $('#legend-placeholder').append('<div id="sortRefsBtnSpace"></div>');
+    $('#legend-placeholder').append('<span>Sort references by: <br></span>');
     $('#legend-placeholder').append(
         '<label><input type="radio" id="sortByName" name="sortRefs" value="name">&nbspname</label><br>'
     );

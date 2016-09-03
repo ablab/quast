@@ -116,7 +116,11 @@ def remove_from_quast_py_args(quast_py_args, opt, arg=None):
 
 def correct_assemblies(contigs_fpaths, output_dirpath, labels):
     corrected_dirpath = os.path.join(output_dirpath, qconfig.corrected_dirname)
+    # we need correction but do not need min-contig filtration
+    min_contig = qconfig.min_contig
+    qconfig.min_contig = 0
     corrected_contigs_fpaths, old_contigs_fpaths = qutils.correct_contigs(contigs_fpaths, corrected_dirpath, labels, reporting=None)
+    qconfig.min_contig = min_contig
     assemblies = [Assembly(fpath, qutils.label_from_fpath(fpath)) for fpath in old_contigs_fpaths]
     corrected_labels = [asm.label for asm in assemblies]
 

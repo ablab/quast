@@ -111,10 +111,14 @@ function buildGenomeTable(reports, group_n, numColumns) {
     }
 
     var combined_reference_size = 0;
+    var notAlignedReport;
     for (var report_n = 0; report_n < reports.length; report_n++ ) {
         var trClass = 'content-row';
         var refName = reports[report_n].name;
-        if (refName == 'not_aligned') continue;
+        if (refName == 'not_aligned') {
+            notAlignedReport = reports[report_n];
+            continue;
+        }
         tableGenome +=
             '<tr class="' + trClass + '">' +
             '<td class="left_column_td">' +
@@ -171,10 +175,12 @@ function buildGenomeTable(reports, group_n, numColumns) {
     tableGenome += '</table>';
     tableGenome += '<br>';
     tableGenome += '<br>';
-    tableGenome +=
-        '<span class="metric-name">' +
-            '<a href="not_aligned/report.html">' + 'Not aligned contigs' + '</a>' +
-        '</span>';
+    if (notAlignedReport) {
+        tableGenome +=
+            '<span class="metric-name">' +
+                '<a href="not_aligned/report.html">' + 'Not aligned contigs' + '</a>' +
+            '</span>';
+    }
 
     tableGenome += '</div>';
     return tableGenome;

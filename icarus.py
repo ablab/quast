@@ -31,19 +31,20 @@ def main(args):
     sys.stderr.write("Icarus is embedded into QUAST and MetaQUAST pipelines\n")
     sys.stderr.write("\n")
     if not args:
-        import quast
-        quast.main(args)
+        sys.stderr.write("Please run ./quast.py -h or ./metaquast.py -h to see the full list of options\n")
+        sys.stderr.write("\n")
+        sys.exit(0)
 
     parser = PassThroughOptionParser()
-    parser.add_option('-R', '--reference', dest='reference', action='append')
-    parser.add_option('--fast', dest='no_icarus', action='store_true')
+    parser.add_option('-R', '--reference', dest='reference', action='append', default=[])
+    parser.add_option('--fast', dest='no_icarus', action='store_true', default=False)
     parser.add_option('--no-html', dest='no_icarus', action='store_true')
-    parser.add_option('--unique-mapping', dest='use_metaquast', action='store_true')
+    parser.add_option('--unique-mapping', dest='use_metaquast', action='store_true', default=False)
     parser.add_option('--max-ref-number', dest='use_metaquast', action='store_true')
     parser.add_option('--references-list', dest='use_metaquast', action='store_true')
     parser.add_option('--test-no-ref', dest='use_metaquast', action='store_true')
-    parser.add_option('--test-sv', dest='use_quast', action='store_true')
-    (opts, l_args) = parser.parse_args(args[1:])
+    parser.add_option('--test-sv', dest='use_metaquast', action='store_false')
+    (opts, l_args) = parser.parse_args(args)
 
     if opts.no_icarus:
         sys.stderr.write("Please remove --fast and --no-html from options and restart Icarus\n")

@@ -185,9 +185,9 @@ def download_all_blast_binaries(logger=logger, only_clean=False):
 def download_blast_binary(blast_filename, logger=logger):
     logger.info()
     if not os.path.isdir(blast_dirpath):
-        os.mkdir(blast_dirpath)
+        os.makedirs(blast_dirpath)
     if not os.path.isdir(blastdb_dirpath):
-        os.mkdir(blastdb_dirpath)
+        os.makedirs(blastdb_dirpath)
 
     blast_libs_fpath = os.path.join(blast_dirpath, blast_filename)
     blast_external_fpath = os.path.join(blast_external_tools_dirpath, blast_filename)
@@ -235,7 +235,7 @@ def download_blastdb(logger=logger, only_clean=False):
     else:
         logger.info('Downloading SILVA 16S ribosomal RNA gene database...')
         if not os.path.isdir(blastdb_dirpath):
-            os.mkdir(blastdb_dirpath)
+            os.makedirs(blastdb_dirpath)
         silva_download = urllib.FancyURLopener()
         silva_remote_fpath = silva_db_url + silva_fname + '.gz'
         try:

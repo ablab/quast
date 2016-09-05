@@ -14,7 +14,7 @@ bedtools_dirpath = join(qconfig.LIBS_LOCATION, 'bedtools')
 bedtools_bin_dirpath = join(qconfig.LIBS_LOCATION, 'bedtools', 'bin')
 manta_dirpath = join(qconfig.LIBS_LOCATION, 'manta')
 manta_build_dirpath = join(qconfig.LIBS_LOCATION, 'manta', 'build')
-manta_bin_dirpath = join(qconfig.LIBS_LOCATION, 'manta', 'build/bin')
+manta_bin_dirpath = join(qconfig.LIBS_LOCATION, 'manta', 'build', 'bin')
 config_manta_fpath = join(manta_bin_dirpath, 'configManta.py')
 
 manta_external_dirpath = join(qconfig.QUAST_HOME, 'external_tools/manta')
@@ -110,7 +110,7 @@ def download_manta(logger, bed_fpath=None, only_clean=False):
             return False
 
         if not exists(manta_build_dirpath):
-            os.mkdir(manta_build_dirpath)
+            os.makedirs(manta_build_dirpath)
         manta_downloaded_fpath = join(manta_build_dirpath, 'manta.tar.bz2')
 
         if isfile(fpath):

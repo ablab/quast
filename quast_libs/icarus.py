@@ -115,7 +115,7 @@ def do(contigs_fpaths, contig_report_fpath_pattern, output_dirpath, ref_fpath, c
 
     if contigs_fpaths and ref_fpath and features:
         features_data = parse_features_data(features, cumulative_ref_lengths, chr_names)
-    if contigs_fpath and qconfig.gene_finding:
+    if contigs_fpaths and qconfig.gene_finding:
         parse_genes_data(contigs_by_assemblies, genes_by_labels)
     if reference_chromosomes and lists_of_aligned_blocks:
         assemblies = get_assemblies(contigs_fpaths, virtual_genome_size, lists_of_aligned_blocks, find_similar)

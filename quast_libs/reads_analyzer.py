@@ -14,7 +14,8 @@ from collections import defaultdict
 
 from quast_libs import qconfig, qutils, ca_utils
 from quast_libs.fastaparser import create_fai_file
-from quast_libs.ra_utils import compile_reads_analyzer_tools, config_manta_fpath, sambamba_fpath, bwa_fpath, bedtools_fpath
+from quast_libs.ra_utils import compile_reads_analyzer_tools, config_manta_fpath, sambamba_fpath, \
+    bwa_fpath, bedtools_fpath, paired_reads_names_are_equal
 from qutils import is_non_empty_file, add_suffix, get_chr_len_fpath
 
 from quast_libs.log import get_logger
@@ -220,6 +221,11 @@ def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpat
             logger.error('  You should specify files with forward and reverse reads.')
             logger.info('  Failed searching structural variations.')
             return None, None, None
+
+        if not qconfig.no_check:
+            if not paired_reads_names_are_equal(reads_fpaths, logger):
+                logger.info('  Read names are discordant, skipping reads analysis!')
+                return None, None, None
 
         prev_dir = os.getcwd()
         os.chdir(output_dirpath)

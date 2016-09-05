@@ -1,4 +1,5 @@
 import os
+import gzip
 import socket
 import urllib2
 from os.path import exists, join, isfile
@@ -141,3 +142,40 @@ def compile_reads_analyzer_tools(logger, bed_fpath=None, only_clean=False):
         compile_bedtools(only_clean),
         download_manta(logger, bed_fpath, only_clean),
     ])
+
+
+def paired_reads_names_are_equal(reads_fpaths, logger):
+    first_read_names = []
+
+    for idx, fpath in enumerate(reads_fpaths):  # Note: will work properly only with exactly two files
+        name_ending = '/%d' % (idx + 1)
+        reads_type = 'forward'
+        if idx:
+            reads_type = 'reverse'
+
+        _, ext = os.path.splitext(fpath)
+        handler = None
+        try:
+            if ext in ['.gz', '.gzip']:
+                handler = gzip.open(fpath)
+            else:
+                handler = open(fpath)
+        except IOError, e:
+            logger.notice('Cannot check equivalence of paired reads names, BWA will fail if reads are discordant')
+            return True
+        first_line = handler.readline()
+        full_read_name = first_line.strip().split()[0]
+        if len(full_read_name) < 3 or not full_read_name.endswith(name_ending):
+            logger.warning('Improper read names in {fpath} ({reads_type} reads)! '
+                           'Names should end with /1 (for forward reads) or /2 (for reverse reads) '
+                           'but {full_read_name} was found!'.format(**locals()))
+            return False
+        first_read_names.append(full_read_name[1:-2])  # truncate trailing /1 or /2 and @/> prefix (Fastq/Fasta)
+        handler.close()
+    if len(first_read_names) != 2:  # should not happen actually
+        logger.warning('Something bad happened and we failed to check paired reads names!')
+        return False
+    if first_read_names[0] != first_read_names[1]:
+        logger.warning('Paired read names do not match! Check %s and %s!' % (first_read_names[0], first_read_names[1]))
+        return False
+    return True

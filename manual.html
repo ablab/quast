@@ -490,12 +490,23 @@ Structural variant (SV) calling and processing (<b>experimental</b>, please use 
 <div class='option'>
 <code><b>--reads1</b> &lt;path&gt;</code> (or <code>-1 &lt;path&gt;</code>)
 </div>
-File with forward reads in FASTQ format (compressed files allowed).
+File with forward reads in FASTQ format (files compressed with gzip are allowed).
 
 <div class='option'>
 <code><b>--reads2</b> &lt;path&gt;</code> (or <code>-2 &lt;path&gt;</code>)
 </div>
-File with reverse reads in FASTQ format (compressed files allowed).
+File with reverse reads in FASTQ format (files compressed with gzip are allowed).
+
+<p>
+    <b>Important notes:</b><br>
+    <ul>
+        <li>You should specify exactly ONE file with forward reads and ONE file with the reverse ones. If you have multiple forward or reverse files,
+            please concatenate them.</li>
+        <li>Number of reads in both files should be exactly the same.</li>
+        <li>Forward and reverse reads of the same pair should have exactly the same names except trailing /1 and /2 respectively.</li>
+    </ul>
+</p>
+
 <p>Reads are used for SV detection: Reads are aligned to reference genome using BWA, then Manta SV calling tool is run on BWA output.
 Found SVs are used for classifying QUAST misassemblies into true ones and fake ones (caused by structural differences between reference sequence and
     sequenced organism). Fake misassemblies are excluded from <a href="#misassemblies"><code>#&nbsp;misassemblies</code></a> and reported as <a href="#sv"><code>#&nbsp;structural variants</code></a>.

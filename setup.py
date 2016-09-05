@@ -43,12 +43,19 @@ name = 'quast'
 quast_package = qconfig.PACKAGE_NAME
 
 
+args = sys.argv[1:]
+
+
+def cmd_in(cmds):
+    return any(c in args for c in cmds)
+
+
 if abspath(dirname(__file__)) != abspath(os.getcwd()):
     logger.error('Please change to ' + dirname(__file__) + ' before running setup.py')
     sys.exit()
 
 
-if sys.argv[-1] in ['clean', 'sdist']:
+if cmd_in(['clean', 'sdist']):
     logger.info('Cleaning up binary files...')
     compile_aligner(logger, only_clean=True)
     compile_glimmer(only_clean=True)
@@ -59,7 +66,7 @@ if sys.argv[-1] in ['clean', 'sdist']:
     for fpath in [fn for fn in glob(join(quast_package, 'html_saver', '*.pyc'))]: os.remove(fpath)
     for fpath in [fn for fn in glob(join(quast_package, 'site_packages', '*', '*.pyc'))]: os.remove(fpath)
 
-    if sys.argv[-1] == 'clean':
+    if cmd_in(['clean']):
         if isdir('build'):
             shutil.rmtree('build')
         if isdir('dist'):
@@ -73,7 +80,7 @@ if sys.argv[-1] in ['clean', 'sdist']:
         sys.exit()
 
 
-if sys.argv[-1] == 'test':
+if cmd_in(['test']):
     ret_code = os.system('quast.py --test')
     sys.exit(ret_code)
 
@@ -99,13 +106,13 @@ def write_version_py():
 version = write_version_py()
 
 
-if sys.argv[-1] == 'tag':
+if cmd_in(['tag']):
     cmdl = 'git tag -a %s -m "Version %s" && git push --tags' % (version, version)
     os.system(cmdl)
     sys.exit()
 
 
-if sys.argv[-1] == 'publish':
+if cmd_in(['publish']):
     cmdl = 'python setup.py sdist && python setup.py sdist upload'
     os.system(cmdl)
     sys.exit()
@@ -120,12 +127,18 @@ def find_package_files(dirpath, package=quast_package):
 
 
 install_full = False
-if sys.argv[-1] == 'install_full':
+if cmd_in(['install_full']):
     install_full = True
-    sys.argv[-1] = 'install'
+    args2 = []
+    for a_ in args:
+        if a_ == 'install_full':
+            args2.append('install')
+        else:
+            args2.append(a_)
+    args = args2
 
 
-if sys.argv[-1] in ['install', 'develop', 'build', 'build_ext']:
+if cmd_in(['install', 'develop', 'build', 'build_ext']):
     logger.info('* Compiling aligner *')
     compile_aligner(logger)
     logger.info('* Compiling Glimmer *')
@@ -219,10 +232,11 @@ The tool accepts multiple assemblies, thus is suitable for comparison.''',
         'Topic :: Scientific/Engineering :: Bio-Informatics',
         'Topic :: Scientific/Engineering :: Visualization',
     ],
+    script_args=args,
 )
 
 
-if sys.argv[-1] == 'install':
+if cmd_in(['install']):
     if not install_full:
         logger.info('''
 ----------------------------------------------

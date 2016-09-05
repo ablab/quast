@@ -80,4 +80,4 @@ quast_libs/bowtie2/
 
 quast_libs/version.py
 
-venv_quast
+venv_*

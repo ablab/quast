@@ -274,6 +274,8 @@ def parse_genes_data(contigs_by_assemblies, genes_by_labels):
     if not genes_by_labels:
         return
     for label, genes in genes_by_labels.iteritems():
+        if not genes:
+            continue
         if qconfig.glimmer:
             contigs = dict((contig.name[:qutils.MAX_CONTIG_NAME_GLIMMER], contig) for contig in contigs_by_assemblies[label])
         else:

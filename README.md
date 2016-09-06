@@ -25,8 +25,7 @@ Full installation (about 800 MB, includes (1) tools for SV detection based on re
 The default installation location is `/usr/local/bin/` for the executable scripts, and `/usr/local/lib/` for 
 the python modules and auxiliary files. If you are getting a permission error during the installation, consider running setup.py with
 `sudo`, or create a virtual python environment and [install into it](http://docs.python-guide.org/en/latest/dev/virtualenvs/). 
-Alternatively, you may use the `--prefix` option for setup.py to provide a specific installation location 
-(follow the on-screen instructions about creating intermediate directories and modifying PYTHONPATH variable).
+Alternatively, you may use old-style installation scripts (`./install.sh` or ./install_full.sh`), which build QUAST package inplace.
 
 #### Usage
 

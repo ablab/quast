@@ -8,7 +8,7 @@ name = os.path.basename(__file__)[:-3]
 
 run_quast(name, contigs=['/acestorage/data/contigs/PAPERS/MetaQUAST/CAMI/CAMI/Gold_Assembly.fasta',
                          '/acestorage/data/contigs/PAPERS/MetaQUAST/CAMI/CAMI/SPAdes.fasta'],
-                         params=' -t 4 --no-plots ', meta=True)
+                         params=' -t 4 --no-plots ', utility='metaquast')
 
 check_report_files(name, ['icarus.html',
                           'icarus_viewers/contig_size_viewer.html',

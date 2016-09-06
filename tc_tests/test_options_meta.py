@@ -9,7 +9,7 @@ name = os.path.basename(__file__)[5:-3]
 
 run_quast(name, contigs=[meta_contigs_1, meta_contigs_2, 'meta_contigs_2_with_ns.fasta'], params=''
           '-R meta_ref_1.fasta,meta_ref_2.fasta --glimmer -l "lab1,lab2,lab3"  '
-          '--scaffolds --unique-mapping --fragmented --memory-efficient --no-html --no-gzip --silent --max-ref-numb 3', meta=True)
+          '--scaffolds --unique-mapping --fragmented --memory-efficient --no-html --no-gzip --silent --max-ref-numb 3', utility='metaquast')
 
 check_report_files(name, ['summary/TXT/NGA50.txt',
                           'combined_reference/report.pdf',

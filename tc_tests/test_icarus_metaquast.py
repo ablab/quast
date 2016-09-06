@@ -7,7 +7,7 @@ name = os.path.basename(__file__)[5:-3]
 contigs = [meta_contigs_1, meta_contigs_2]
 
 
-run_quast(name, contigs=contigs, params='-R ' + ','.join(meta_references), utility='metaquast')
+run_quast(name, contigs=contigs, params='-R ' + ','.join(meta_references), utility='icarus')
 meta_res_dirpath = os.path.join(name, 'combined_reference')
 check_report_files(meta_res_dirpath)
 assert_report_header(meta_res_dirpath, contigs=contigs)

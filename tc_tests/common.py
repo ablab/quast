@@ -289,7 +289,7 @@ def assert_metric_comparison(name, metric1, relate='<=', metric2=None, value=Non
     return True
 
 
-def run_quast(name, contigs=None, params='', expected_exit_code=0, meta=False):
+def run_quast(name, contigs=None, params='', expected_exit_code=0, utility='quast'):
     results_dirpath = get_results_dirpath(name)
 
     if os.path.exists(results_dirpath):
@@ -301,9 +301,7 @@ def run_quast(name, contigs=None, params='', expected_exit_code=0, meta=False):
         contigs = [contigs_10k_1, contigs_10k_2]
 
     os.chdir('data')
-    quast_fpath = '../../quast.py'
-    if meta:
-        quast_fpath = '../../metaquast.py'
+    quast_fpath = '../../' + utility + '.py'
     cmd = sys.executable + ' ' + quast_fpath + ' -o ../' + results_dirpath + ' ' + ' '.join(contigs) + ' ' + params
     print cmd
     print

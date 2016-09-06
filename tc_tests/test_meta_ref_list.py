@@ -7,7 +7,7 @@ name = os.path.basename(__file__)[5:-3]
 contigs = [meta_contigs_1, meta_contigs_2]
 
 
-run_quast(name, contigs=contigs, params='--fast --references-list ' + 'example_ref_list.txt', meta=True)
+run_quast(name, contigs=contigs, params='--fast --references-list ' + 'example_ref_list.txt', utility='metaquast')
 
 meta_res_dirpath = os.path.join(name, 'combined_reference')
 plantanarum_dirpath = os.path.join(name, 'runs_per_reference', 'Lactobacillus_plantarum')

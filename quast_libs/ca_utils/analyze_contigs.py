@@ -25,7 +25,8 @@ def check_for_potential_translocation(seq, ctg_len, sorted_aligns, log_out_f):
         unaligned_len += len(unaligned_part)
         count_ns += unaligned_part.count('N')
     # if contig consists mostly of Ns, it cannot contain interspecies translocations
-    if count_ns / float(unaligned_len) >= 0.95 or unaligned_len - count_ns < qconfig.significant_part_size:
+    if unaligned_len == 0 or count_ns / float(unaligned_len) >= 0.95 or \
+                            unaligned_len - count_ns < qconfig.significant_part_size:
         return 0
 
     print >> log_out_f, '\t\tIt can contain interspecies translocations.'

@@ -215,7 +215,7 @@ def read_fasta_one_time(fpath):
 def print_fasta(fasta):
     for name, seq in fasta:
         print('>%s' % name)
-        for i in xrange(0, len(seq), 60):
+        for i in range(0, len(seq), 60):
             print(seq[i:i + 60])
 
 
@@ -224,7 +224,7 @@ def write_fasta(fpath, fasta, mode='w'):
 
     for name, seq in fasta:
         outfile.write('>%s\n' % name)
-        for i in xrange(0, len(seq), 60):
+        for i in range(0, len(seq), 60):
             outfile.write(seq[i:i + 60] + '\n')
     outfile.close()
 

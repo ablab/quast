@@ -55,7 +55,11 @@ def _start_quast_main(
     args.append(quote(', '.join([asm.label for asm in assemblies])))
 
     import quast
-    reload(quast)
+    try:
+        import imp
+        imp.reload(quast)
+    except:    
+        reload(quast)
     quast.logger.set_up_console_handler(indent_val=1, debug=qconfig.debug)
     quast.logger.set_up_metaquast()
     logger.info_to_file('(logging to ' +

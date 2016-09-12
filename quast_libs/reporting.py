@@ -237,9 +237,13 @@ class Fields:
             [REFLEN, ESTREFLEN, GC, REFGC, STRUCT_VARIATIONS],
         }
 
-    #for name, metrics in filter(lambda (name, metrics): name in ['Misassemblies', 'Unaligned', 'Ambiguous'], grouped_order):
-    for name, metrics in filter(lambda (name, metrics): name in ['Misassemblies', 'Unaligned'], grouped_order):
+    # Old Python2 only version
+    #for name, metrics in filter(lambda (name, metrics): name in ['Misassemblies', 'Unaligned'], grouped_order):
+    #    quality_dict['Less is better'].extend(metrics)
+    # Python3 version
+    for metrics in [v for name,v in grouped_order if name in ["Misassemblies", "Unaligned"]]:
         quality_dict['Less is better'].extend(metrics)
+
 
 
 #################################################

@@ -56,7 +56,7 @@ main_logger = get_main_logger()
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 meta_logger = get_logger(qconfig.LOGGER_META_NAME)
 
-import reporting
+from . import reporting
 
 # checking if matplotlib is installed
 can_draw_plots = True
@@ -143,7 +143,7 @@ def cumulative_plot(reference, contigs_fpaths, lists_of_lengths, plot_fpath, tit
     max_x = 0
     max_y = 0
 
-    for (contigs_fpath, lengths) in itertools.izip(contigs_fpaths, lists_of_lengths):
+    for (contigs_fpath, lengths) in zip(contigs_fpaths, lists_of_lengths):
         vals_length = [0]
         for l in sorted(lengths, reverse=True):
             vals_length.append(vals_length[-1] + l)
@@ -230,7 +230,7 @@ def Nx_plot(results_dir, reduce_points, contigs_fpaths, lists_of_lengths, plot_f
     json_vals_x = []  # coordinates for Nx-like plots in HTML-report
     json_vals_y = []
 
-    for id, (contigs_fpath, lengths) in enumerate(itertools.izip(contigs_fpaths, lists_of_lengths)):
+    for id, (contigs_fpath, lengths) in enumerate(zip(contigs_fpaths, lists_of_lengths)):
         if not lengths:
             json_vals_x.append([])
             json_vals_y.append([])
@@ -515,7 +515,7 @@ def histogram(contigs_fpaths, values, plot_fpath, title='', yaxis_title='', bott
     start_pos = interval / 2
 
     color_id = 0
-    for i, (contigs_fpath, val) in enumerate(itertools.izip(contigs_fpaths, values)):
+    for i, (contigs_fpath, val) in enumerate(zip(contigs_fpaths, values)):
         color, ls = get_color_and_ls(contigs_fpath)
         if ls == primary_line_style:
             hatch = ''
@@ -568,7 +568,7 @@ def coverage_histogram(contigs_fpaths, values, plot_fpath, title='', bin_size=No
 
     max_y = 0
     max_x = max(len(v) for v in values)
-    x_vals = range(0, max_x)
+    x_vals = list(range(0, max_x))
     bar_width = 1.0
     bar_widths = [bar_width] * max_x
     if high_threshold and draw_bars:
@@ -580,7 +580,7 @@ def coverage_histogram(contigs_fpaths, values, plot_fpath, title='', bin_size=No
         x_vals[0] = 0
         bar_widths[0] = 2.0
 
-    for i, (contigs_fpath, y_vals) in enumerate(itertools.izip(contigs_fpaths, values)):
+    for i, (contigs_fpath, y_vals) in enumerate(zip(contigs_fpaths, values)):
         max_y = max(max(y_vals), max_y)
         color, ls = get_color_and_ls(contigs_fpath)
         if draw_bars:
@@ -695,7 +695,7 @@ def draw_meta_summary_plot(html_fpath, output_dirpath, labels, ref_names, all_ro
             values.append(sum(filter(None, points_y))/len(points_y))
             refs.append(ref_names[i])
 
-    sorted_values = sorted(itertools.izip(values, refs, arr_y_by_refs), reverse=reverse, key=lambda x: x[0])
+    sorted_values = sorted(zip(values, refs, arr_y_by_refs), reverse=reverse, key=lambda x: x[0])
     values, refs, arr_y_by_refs = [[x[i] for x in sorted_values] for i in range(3)]
     if can_draw_plots:
         matplotlib.pyplot.xticks(range(1, len(refs) + 1), refs, size='small', rotation='vertical')

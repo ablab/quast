@@ -280,6 +280,7 @@ assembly_fpaths = []  # for printing in appropriate order
 def _mapme(func, data):
     return [func(this) for this in data]
 
+
 def get_main_metrics():
     lists = _mapme(take_tuple_metric_apart, Fields.main_metrics)
     m_metrics = []
@@ -576,7 +577,7 @@ def save_pdf(report_name, table):
         extra_info = ''
     table_to_draw = []
     for row in all_rows:
-        table_to_draw.append(['{}'.format(cell) for cell
+        table_to_draw.append(['%s' % cell for cell
             in [row['metricName']] + _mapme(val_to_str, row['values'])])
     from quast_libs import plotter
     plotter.draw_report_table(report_name, extra_info, table_to_draw, column_widths)

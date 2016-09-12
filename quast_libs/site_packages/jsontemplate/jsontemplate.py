@@ -1183,7 +1183,7 @@ def _DoSubstitute(args, context, callback):
   else:
     try:
       value = context.Lookup(name)
-    except TypeError as err:
+    except TypeError:
       exc_type, exc_value, _ = sys.exc_info()
       raise EvaluationError(
           'Error evaluating %r in context %r: %r' % (name, context, exc_value))

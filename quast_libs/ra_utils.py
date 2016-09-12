@@ -163,7 +163,7 @@ def paired_reads_names_are_equal(reads_fpaths, logger):
                 handler = gzip.open(fpath)
             else:
                 handler = open(fpath)
-        except IOError as  e:
+        except IOError:
             logger.notice('Cannot check equivalence of paired reads names, BWA will fail if reads are discordant')
             return True
         first_line = handler.readline()

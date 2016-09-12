@@ -515,11 +515,11 @@ def parse_options(logger, quast_args, is_metaquast=False):
     if qconfig.contig_thresholds == "None":
         qconfig.contig_thresholds = []
     else:
-        qconfig.contig_thresholds = map(int, qconfig.contig_thresholds.split(","))
+        qconfig.contig_thresholds = [int(x) for x in qconfig.contig_thresholds.split(",")]
     if qconfig.genes_lengths == "None":
         qconfig.genes_lengths = []
     else:
-        qconfig.genes_lengths = map(int, qconfig.genes_lengths.split(","))
+        qconfig.genes_lengths = [int(x) for x in qconfig.genes_lengths.split(",")]
 
     qconfig.set_max_threads(logger)
 

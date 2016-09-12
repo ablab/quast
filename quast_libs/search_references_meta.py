@@ -23,7 +23,11 @@ from quast_libs.log import get_logger
 from quast_libs.qutils import is_non_empty_file
 
 logger = get_logger(qconfig.LOGGER_META_NAME)
-from urllib2 import urlopen
+try:
+    from urllib2 import urlopen
+except:
+    from urllib.request import urlopen
+
 import xml.etree.ElementTree as ET
 import urllib
 import socket

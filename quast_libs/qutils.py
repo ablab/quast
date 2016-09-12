@@ -13,8 +13,13 @@ import os
 import re
 from collections import defaultdict
 
-import qconfig
+from . import qconfig
 from os.path import basename, isfile, realpath
+
+try:
+    basestring
+except:
+    basestring = (str, bytes)
 
 from quast_libs import fastaparser
 from quast_libs.log import get_logger
@@ -164,18 +169,27 @@ def add_lengths_to_report(lengths, reporting, contigs_fpath):
         report = reporting.get(contigs_fpath)
 
         ## filling columns "Number of contigs >=110 bp", ">=200 bp", ">=500 bp"
+        if isinstance(qconfig.contig_thresholds, basestring):
+            contig_thresholds = [int(this) for this in qconfig.contig_thresholds.split(",")]
+        else:
+            contig_thresholds = qconfig.contig_thresholds
+
         report.add_field(reporting.Fields.CONTIGS__FOR_THRESHOLDS,
                          [sum(1 for l in lengths if l >= threshold)
-                          for threshold in qconfig.contig_thresholds])
+                          for threshold in contig_thresholds])
         report.add_field(reporting.Fields.TOTALLENS__FOR_THRESHOLDS,
                          [sum(l for l in lengths if l >= threshold)
-                          for threshold in qconfig.contig_thresholds])
+                          for threshold in contig_thresholds])
 
 
 def correct_contigs(contigs_fpaths, corrected_dirpath, labels, reporting):
     ## removing from contigs' names special characters because:
     ## 1) Some embedded tools can fail on some strings with "...", "+", "-", etc
     ## 2) Nucmer fails on names like "contig 1_bla_bla", "contig 2_bla_bla" (it interprets as a contig's name only the first word of caption and gets ambiguous contigs names)
+
+    if qconfig.max_threads is None:
+        qconfig.max_threads = 1
+
     n_jobs = min(len(contigs_fpaths), qconfig.max_threads)
     from joblib import Parallel, delayed
     logger.main_info('  Pre-processing...')

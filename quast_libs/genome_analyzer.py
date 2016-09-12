@@ -7,8 +7,8 @@
 
 import logging
 import os
-import fastaparser
-import genes_parser
+from . import fastaparser
+from . import genes_parser
 from quast_libs import reporting, qconfig, qutils
 from quast_libs.html_saver import json_saver
 

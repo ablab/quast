@@ -16,7 +16,7 @@ from quast_libs import qconfig, qutils, ca_utils
 from quast_libs.fastaparser import create_fai_file
 from quast_libs.ra_utils import compile_reads_analyzer_tools, config_manta_fpath, sambamba_fpath, \
     bwa_fpath, bedtools_fpath, paired_reads_names_are_equal
-from qutils import is_non_empty_file, add_suffix, get_chr_len_fpath
+from .qutils import is_non_empty_file, add_suffix, get_chr_len_fpath
 
 from quast_libs.log import get_logger
 

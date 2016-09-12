@@ -102,7 +102,7 @@ class PrintTime(object):
             mkdirp(os.path.dirname(logfile))
             if os.path.exists(logfile):
                 # Rotate the logs
-                for i in xrange(1, 9):
+                for i in range(1, 9):
                     try:
                         shutil.move(logfile + '.%i' % i,
                                     logfile + '.%i' % (i + 1))

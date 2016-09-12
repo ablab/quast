@@ -1,7 +1,10 @@
 import os
 import gzip
 import socket
-import urllib2
+try:
+    from urllib2 import urlopen
+except:
+    from urllib.request import urlopen
 from os.path import exists, join, isfile
 
 import shutil
@@ -53,7 +56,7 @@ def manta_compilation_failed():
 def download_unpack_tar_bz(name, download_path, downloaded_fpath, final_dirpath, logger):
     content = None
     try:
-        response = urllib2.urlopen(download_path)
+        response = urlopen(download_path)
         content = response.read()
     except:
         logger.main_info('  Failed to establish connection!')
@@ -160,7 +163,7 @@ def paired_reads_names_are_equal(reads_fpaths, logger):
                 handler = gzip.open(fpath)
             else:
                 handler = open(fpath)
-        except IOError, e:
+        except IOError:
             logger.notice('Cannot check equivalence of paired reads names, BWA will fail if reads are discordant')
             return True
         first_line = handler.readline()

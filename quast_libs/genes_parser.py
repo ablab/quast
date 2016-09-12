@@ -46,8 +46,9 @@ def get_genes_from_file(fpath, feature):
     elif ncbi_start_pattern.match(line):
         try:
             genes = parse_ncbi(genes_file)
-        except ParseException, e:
-            logger.warning('Parsing exception ' + e)
+        except ParseException:
+            exc_type, exc_value, _ = sys.exc_info()
+            logger.warning('Parsing exception ' + exc_value)
             logger.warning(fpath + ' was skipped')
             genes = []
     else:

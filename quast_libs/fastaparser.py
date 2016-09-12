@@ -33,8 +33,9 @@ def _get_fasta_file_handler(fpath):
     elif ext in ['.zip']:
         try:
             zfile = zipfile.ZipFile(fpath)
-        except Exception, e:
-            logger.error('Can\'t open zip file: ' + str(e.message))
+        except Exception:
+            exc_type, exc_value, _ = sys.exc_info()
+            logger.error('Can\'t open zip file: ' + str(exc_value))
         else:
             names = zfile.namelist()
             if len(names) == 0:
@@ -50,8 +51,9 @@ def _get_fasta_file_handler(fpath):
     else:
         try:
             fasta_file = open(fpath)
-        except IOError, e:
-            logger.exception(e)
+        except IOError:
+            exc_type, exc_value, _ = sys.exc_info()
+            logger.exception(exc_value)
 
     return fasta_file
 
@@ -214,9 +216,9 @@ def read_fasta_one_time(fpath):
 
 def print_fasta(fasta):
     for name, seq in fasta:
-        print '>%s' % name
-        for i in xrange(0, len(seq), 60):
-            print seq[i:i + 60]
+        print('>%s' % name)
+        for i in range(0, len(seq), 60):
+            print(seq[i:i + 60])
 
 
 def write_fasta(fpath, fasta, mode='w'):
@@ -224,7 +226,7 @@ def write_fasta(fpath, fasta, mode='w'):
 
     for name, seq in fasta:
         outfile.write('>%s\n' % name)
-        for i in xrange(0, len(seq), 60):
+        for i in range(0, len(seq), 60):
             outfile.write(seq[i:i + 60] + '\n')
     outfile.close()
 

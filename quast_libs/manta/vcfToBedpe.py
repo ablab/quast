@@ -153,12 +153,12 @@ class Variant(object):
         self.active_formats = list()
         self.gts = dict()
         # make a genotype for each sample at variant
-        for i in xrange(len(self.sample_list)):
+        for i in range(len(self.sample_list)):
             s_gt = var_list[9+i].split(':')[0]
             s = self.sample_list[i]
             self.gts[s] = Genotype(self, s, s_gt)
         # import the existing fmt fields
-        for i in xrange(len(self.sample_list)):
+        for i in range(len(self.sample_list)):
             s = self.sample_list[i]
             for j in zip(var_list[8].split(':'), var_list[9+i].split(':')):
                 self.gts[s].set_format(j[0], j[1])

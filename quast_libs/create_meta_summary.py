@@ -78,7 +78,7 @@ def do(html_fpath, output_dirpath, combined_output_dirpath, output_dirpath_per_r
                 continue
             if cur_ref_names:
                 transposed_table = [{'metricName': 'Assemblies',
-                                    'values': [all_rows[i]['metricName'] for i in xrange(1, len(all_rows))],}]
+                                    'values': [all_rows[i]['metricName'] for i in range(1, len(all_rows))],}]
                 for i in range(len(all_rows[0]['values'])):
                     values = []
                     for j in range(1, len(all_rows)):
@@ -87,6 +87,7 @@ def do(html_fpath, output_dirpath, combined_output_dirpath, output_dirpath_per_r
                                              'values': values})
 
                 print_file(transposed_table, summary_txt_fpath)
+
                 reporting.save_tsv(summary_tsv_fpath, transposed_table)
                 reporting.save_tex(summary_tex_fpath, transposed_table)
                 reverse = False

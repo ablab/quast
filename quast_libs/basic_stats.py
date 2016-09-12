@@ -11,10 +11,11 @@ import itertools
 
 import re
 
-import fastaparser
+from . import fastaparser
 from quast_libs.html_saver import json_saver
 from quast_libs import qconfig, qutils
-import reporting
+from . import reporting
+from . import plotter
 
 from quast_libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
@@ -90,9 +91,9 @@ def binning_coverage(cov_values, nums_contigs):
         bases_by_cov = []
         for coverage, bases in enumerate(values):
             bases_by_cov.extend([coverage] * bases)
-        q1 = bases_by_cov[assembly_len / 4]
-        q2 = bases_by_cov[assembly_len / 2]
-        q3 = bases_by_cov[assembly_len * 3 / 4]
+        q1 = bases_by_cov[assembly_len // 4]
+        q2 = bases_by_cov[assembly_len // 2]
+        q3 = bases_by_cov[assembly_len * 3 // 4]
         iqr = q3 - q1
         low_thresholds.append(int(q2 - 1.5 * iqr))
         high_thresholds.append(int(q2 + 1.5 * iqr))
@@ -113,19 +114,18 @@ def binning_coverage(cov_values, nums_contigs):
     else:
         low_threshold = 0
     for index, values in enumerate(cov_values):
-        cov_by_bins.append([0] * max_points)
+        cov_by_bins.append([0] * int(max_points))
         for coverage, bases in enumerate(values):
             bin_idx = coverage / bin_size - offset
             if coverage < low_threshold:
                 bin_idx = 0
             elif coverage >= high_threshold:
                 bin_idx = max_points - 1
-            cov_by_bins[index][bin_idx] += bases
+            cov_by_bins[int(index)][int(bin_idx)] += bases
     return cov_by_bins, bin_size, low_threshold, high_threshold, max_cov
 
 
 def draw_coverage_histograms(coverage_dict, contigs_fpaths, output_dirpath):
-    import plotter
     total_len = dict()
     contigs_dict = dict()
 
@@ -242,8 +242,8 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, json_output_dir, results_dir):
 
     list_of_GC_distributions = []
     largest_contig = 0
-    import N50
-    for id, (contigs_fpath, lengths_list, number_of_Ns) in enumerate(itertools.izip(contigs_fpaths, lists_of_lengths, numbers_of_Ns)):
+    from . import N50
+    for id, (contigs_fpath, lengths_list, number_of_Ns) in enumerate(zip(contigs_fpaths, lists_of_lengths, numbers_of_Ns)):
         report = reporting.get(contigs_fpath)
         n50, l50 = N50.N50_and_L50(lengths_list)
         ng50, lg50 = None, None
@@ -306,7 +306,6 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, json_output_dir, results_dir):
         from quast_libs.html_saver import html_saver
         html_saver.save_GC_info(results_dir, contigs_fpaths, list_of_GC_distributions_with_ref, reference_index)
 
-    import plotter
     ########################################################################
     # Drawing Nx and NGx plots...
     plotter.Nx_plot(results_dir, num_contigs > qconfig.max_points, contigs_fpaths, lists_of_lengths, output_dirpath + '/Nx_plot', 'Nx', [], json_output_dir=json_output_dir)

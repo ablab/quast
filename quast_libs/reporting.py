@@ -4,6 +4,7 @@
 # All Rights Reserved
 # See file LICENSE for details.
 ############################################################################
+import os
 
 from quast_libs import qconfig, qutils
 
@@ -11,6 +12,11 @@ from quast_libs.log import get_logger
 from quast_libs.qutils import val_to_str
 
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
+
+try:
+    basestring
+except:
+    basestring = (str, bytes)
 
 
 # Here you can modify content and order of metrics in QUAST reports and names of metrcis as well
@@ -29,10 +35,12 @@ class Fields:
 
     # Basic statistics
     CONTIGS = '# contigs'
-    CONTIGS__FOR_THRESHOLDS = ('# contigs (>= %d bp)', tuple(qconfig.contig_thresholds))
+    CONTIGS__FOR_THRESHOLDS = ('# contigs (>= %d bp)', 
+        tuple([int(x) for x in qconfig.contig_thresholds.split(",")]))
     LARGCONTIG = 'Largest contig'
     TOTALLEN = 'Total length'
-    TOTALLENS__FOR_THRESHOLDS = ('Total length (>= %d bp)', tuple(qconfig.contig_thresholds))
+    TOTALLENS__FOR_THRESHOLDS = ('Total length (>= %d bp)', 
+        tuple([int(x) for x in qconfig.contig_thresholds.split(",")]))
     TOTALLENS__FOR_1000_THRESHOLD = 'Total length (>= 1000 bp)'
     TOTALLENS__FOR_10000_THRESHOLD = 'Total length (>= 10000 bp)'
     TOTALLENS__FOR_50000_THRESHOLD = 'Total length (>= 50000 bp)'
@@ -110,7 +118,8 @@ class Fields:
 
     # Predicted genes
     PREDICTED_GENES_UNIQUE = '# predicted genes (unique)'
-    PREDICTED_GENES = ('# predicted genes (>= %d bp)', tuple(qconfig.genes_lengths))
+    PREDICTED_GENES = ('# predicted genes (>= %d bp)', 
+        tuple([int(x) for x in qconfig.genes_lengths.split(",")]))
 
     # Reference statistics
     REFLEN = 'Reference length'
@@ -248,7 +257,6 @@ class Fields:
 
 #################################################
 
-import os
 
 from quast_libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
@@ -271,8 +279,12 @@ assembly_fpaths = []  # for printing in appropriate order
 
 #################################################
 
+
+def _mapme(func, data):
+    return [func(this) for this in data]
+
 def get_main_metrics():
-    lists = map(take_tuple_metric_apart, Fields.main_metrics)
+    lists = _mapme(take_tuple_metric_apart, Fields.main_metrics)
     m_metrics = []
     for l in lists:
         for m in l:
@@ -284,7 +296,7 @@ def take_tuple_metric_apart(field):
     metrics = []
 
     if isinstance(field, tuple): # TODO: rewrite it nicer
-        thresholds = map(int, ''.join(field[1]).split(','))
+        thresholds = _mapme(int, ''.join(field[1]).split(','))
         for i, feature in enumerate(thresholds):
             metrics.append(field[0] % feature)
     else:
@@ -294,7 +306,7 @@ def take_tuple_metric_apart(field):
 
 
 def get_quality(metric):
-    for quality, metrics in Fields.quality_dict.iteritems():
+    for quality, metrics in Fields.quality_dict.items():
         if metric in Fields.quality_dict[quality]:
             return quality
     return Fields.Quality.EQUAL
@@ -307,15 +319,25 @@ class Report(object):
         self.add_field(Fields.NAME, name)
 
     def add_field(self, field, value):
-        assert field in Fields.__dict__.itervalues(), 'Unknown field: %s' % field
+        try:
+            assert field in Fields.__dict__.itervalues(), 'Unknown field: %s' % field
+        except:
+            assert field in Fields.__dict__.values(), 'Unknown field: %s' % field
+
         self.d[field] = value
 
     def append_field(self, field, value):
-        assert field in Fields.__dict__.itervalues(), 'Unknown field: %s' % field
+        try:
+            assert field in Fields.__dict__.itervalues(), 'Unknown field: %s' % field
+        except:
+            assert field in Fields.__dict__.values(), 'Unknown field: %s' % field
         self.d.setdefault(field, []).append(value)
 
     def get_field(self, field):
-        assert field in Fields.__dict__.itervalues(), 'Unknown field: %s' % field
+        try:
+            assert field in Fields.__dict__.itervalues(), 'Unknown field: %s' % field
+        except:
+            assert field in Fields.__dict__.values(), 'Unknown field: %s' % field
         return self.d.get(field, None)
 
 
@@ -355,7 +377,8 @@ def table(order=Fields.order):
                 values.append(value)
 
         if filter(lambda v: v is not None, values) or (field == 'NGA50' and not qconfig.is_combined_ref and report.get_field(Fields.REFLEN)):
-            metric_name = field if (feature is None) else pattern % feature
+
+            metric_name = field if (feature is None) else pattern % int(feature)
             # ATTENTION! Contents numeric values, needed to be converted to strings.
             rows.append({
                 'metricName': metric_name,
@@ -401,22 +424,23 @@ def save_txt(fpath, all_rows, potential_scaffolds_assemblies_info=None):
     # determine width of columns for nice spaces
     colwidths = [0] * (len(all_rows[0]['values']) + 1)
     for row in all_rows:
-        for i, cell in enumerate([row['metricName']] + map(val_to_str, row['values'])):
+        for i, cell in enumerate([row['metricName']] + [val_to_str(this) for
+this in row['values']]):
             colwidths[i] = max(colwidths[i], len(cell))
             # output it
 
     txt_file = open(fpath, 'w')
 
     if qconfig.min_contig:
-        print >>txt_file, 'All statistics are based on contigs of size >= %d bp, unless otherwise noted ' % qconfig.min_contig + \
-                          '(e.g., "# contigs (>= 0 bp)" and "Total length (>= 0 bp)" include all contigs).'
+        txt_file.write('All statistics are based on contigs of size >= %d bp, unless otherwise noted ' % qconfig.min_contig + \
+                          '(e.g., "# contigs (>= 0 bp)" and "Total length (>= 0 bp)" include all contigs).\n')
+
         if potential_scaffolds_assemblies_info:
-            print >>txt_file, "Suggestion: " + potential_scaffolds_assemblies_info + " continuous fragments of N's of " \
-                          "length >= 10 bp. You may consider rerunning QUAST using --scaffolds (-s) option!"
-        print >>txt_file
+            txt_file.write("Suggestion: " + potential_scaffolds_assemblies_info + " continuous fragments of N's of " \
+                          "length >= 10 bp. You may consider rerunning QUAST using --scaffolds (-s) option!\n")
     for row in all_rows:
-        print >>txt_file, '  '.join('%-*s' % (colwidth, cell) for colwidth, cell
-            in zip(colwidths, [row['metricName']] + map(val_to_str, row['values'])))
+        txt_file.write('  '.join('%-*s' % (colwidth, cell) for colwidth, cell
+            in zip(colwidths, [row['metricName']] + [val_to_str(this) for this in row['values']])) + "\n")
 
     txt_file.close()
 
@@ -424,9 +448,10 @@ def save_txt(fpath, all_rows, potential_scaffolds_assemblies_info=None):
 def save_tsv(fpath, all_rows):
     tsv_file = open(fpath, 'w')
 
-    for row in all_rows:
-        print >>tsv_file, '\t'.join([row['metricName']] + map(val_to_str, row['values']))
 
+    for row in all_rows:
+        tsv_file.write('\t'.join([row['metricName']] + [val_to_str(this) for
+                this in row['values']]) + "\n")
     tsv_file.close()
 
 
@@ -468,31 +493,32 @@ def get_num_from_table_value(val):
 def save_tex(fpath, all_rows, is_transposed=False):
     tex_file = open(fpath, 'w')
     # Header
-    print >>tex_file, '\\documentclass[12pt,a4paper]{article}'
-    print >>tex_file, '\\begin{document}'
-    print >>tex_file, '\\begin{table}[ht]'
-    print >>tex_file, '\\begin{center}'
-    print >>tex_file, '\\caption{All statistics are based on contigs of size $\geq$ %d bp, unless otherwise noted ' % qconfig.min_contig + \
-                      '(e.g., "\# contigs ($\geq$ 0 bp)" and "Total length ($\geq$ 0 bp)" include all contigs).}'
+    tex_file.write('\\documentclass[12pt,a4paper]{article}\n')
+    tex_file.write('\\begin{document}\n')
+    tex_file.write('\\begin{table}[ht]\n')
+    tex_file.write('\\begin{center}\n')
+    tex_file.write('\\caption{All statistics are based on contigs of size $\geq$ %d bp, unless otherwise noted ' % qconfig.min_contig + \
+                      '(e.g., "\# contigs ($\geq$ 0 bp)" and "Total length ($\geq$ 0 bp)" include all contigs).}\n')
 
     rows_n = len(all_rows[0]['values'])
-    print >>tex_file, '\\begin{tabular}{|l*{' + val_to_str(rows_n) + '}{|r}|}'
-    print >>tex_file, '\\hline'
+    tex_file.write('\\begin{tabular}{|l*{' + val_to_str(rows_n) + '}{|r}|}\n')
+    tex_file.write('\\hline\n')
 
     # Body
     for row in all_rows:
         values = row['values']
         quality = row['quality'] if ('quality' in row) else Fields.Quality.EQUAL
 
-        if is_transposed or quality not in [Fields.Quality.MORE_IS_BETTER, Fields.Quality.LESS_IS_BETTER]:
-            cells = map(val_to_str, values)
+        if is_transposed or quality not in [Fields.Quality.MORE_IS_BETTER, 
+                Fields.Quality.LESS_IS_BETTER]:
+            cells = _mapme(val_to_str, values)
         else:
             # Checking the first value, assuming the others are the same type and format
             num = get_num_from_table_value(values[0])
             if num is None:  # Not a number
-                cells = map(val_to_str, values)
+                cells = _mapme(val_to_str, values)
             else:
-                nums = map(get_num_from_table_value, values)
+                nums = _mapme(get_num_from_table_value, values)
                 best = None
                 if quality == Fields.Quality.MORE_IS_BETTER:
                     best = max(nums)
@@ -500,7 +526,7 @@ def save_tex(fpath, all_rows, is_transposed=False):
                     best = min(nums)
 
                 if len([num for num in nums if num != best]) == 0:
-                    cells = map(val_to_str, values)
+                    cells = _mapme(val_to_str, values)
                 else:
                     cells = ['HIGHLIGHTEDSTART' + val_to_str(v) + 'HIGHLIGHTEDEND'
                              if get_num_from_table_value(v) == best
@@ -522,13 +548,13 @@ def save_tex(fpath, all_rows, is_transposed=False):
         row = row.replace('HIGHLIGHTEDSTART', '{\\bf ')
         row = row.replace('HIGHLIGHTEDEND', '}')
         row += ' \\\\ \\hline'
-        print >>tex_file, row
+        tex_file.write(row +"\n")
 
     # Footer
-    print >>tex_file, '\\end{tabular}'
-    print >>tex_file, '\\end{center}'
-    print >>tex_file, '\\end{table}'
-    print >>tex_file, '\\end{document}'
+    tex_file.write('\\end{tabular}\n')
+    tex_file.write('\\end{center}\n')
+    tex_file.write('\\end{table}\n')
+    tex_file.write('\\end{document}\n')
     tex_file.close()
 
     if os.path.basename(fpath) == 'report.tex':
@@ -543,7 +569,7 @@ def save_pdf(report_name, table):
 
     column_widths = [0] * (len(all_rows[0]['values']) + 1)
     for row in all_rows:
-        for i, cell in enumerate([row['metricName']] + map(val_to_str, row['values'])):
+        for i, cell in enumerate([row['metricName']] + _mapme(val_to_str, row['values'])):
             column_widths[i] = max(column_widths[i], len(cell))
 
     if qconfig.min_contig:
@@ -553,8 +579,8 @@ def save_pdf(report_name, table):
         extra_info = ''
     table_to_draw = []
     for row in all_rows:
-        table_to_draw.append(['%s' % cell for cell
-            in [row['metricName']] + map(val_to_str, row['values'])])
+        table_to_draw.append(['{}'.format(cell) for cell
+            in [row['metricName']] + _mapme(val_to_str, row['values'])])
     from quast_libs import plotter
     plotter.draw_report_table(report_name, extra_info, table_to_draw, column_widths)
 
@@ -568,6 +594,7 @@ def save(output_dirpath, report_name, transposed_report_name, order, silent=Fals
     report_txt_fpath = os.path.join(output_dirpath, report_name) + '.txt'
     report_tsv_fpath = os.path.join(output_dirpath, report_name) + '.tsv'
     report_tex_fpath = os.path.join(output_dirpath, report_name) + '.tex'
+
     all_rows = get_all_rows_out_of_table(tab)
     potential_scaffolds_assemblies_info = ''
     if qconfig.potential_scaffolds_assemblies:
@@ -595,7 +622,7 @@ def save(output_dirpath, report_name, transposed_report_name, order, silent=Fals
         else:
             # Transposing table
             transposed_table = [{'metricName': all_rows[0]['metricName'],
-                                 'values': [all_rows[i]['metricName'] for i in xrange(1, len(all_rows))],}]
+                                 'values': [all_rows[i]['metricName'] for i in range(1, len(all_rows))],}]
             for i in range(len(all_rows[0]['values'])):
                 values = []
                 for j in range(1, len(all_rows)):

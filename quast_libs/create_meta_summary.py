@@ -87,6 +87,7 @@ def do(html_fpath, output_dirpath, combined_output_dirpath, output_dirpath_per_r
                                              'values': values})
 
                 print_file(transposed_table, summary_txt_fpath)
+
                 reporting.save_tsv(summary_tsv_fpath, transposed_table)
                 reporting.save_tex(summary_tex_fpath, transposed_table)
                 reverse = False

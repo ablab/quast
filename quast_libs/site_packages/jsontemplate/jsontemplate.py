@@ -1194,10 +1194,11 @@ def _DoSubstitute(args, context, callback):
         value = func(value)
     except KeyboardInterrupt:
       raise
-    except Exception as err:
+    except Exception:
+      exc_type, exc_value, _ = sys.exc_info()
       raise EvaluationError(
           'Formatting value %r with formatter %s raised exception: %r' %
-          (value, formatters, err), original_exception=err)
+          (value, formatters, exc_value), original_exception=exc_value)
 
   # TODO: Require a string/unicode instance here?
   if value is None:
@@ -1223,11 +1224,12 @@ def _Execute(statements, context, callback):
       try:
         func, args = statement
         func(args, context, callback)
-      except UndefinedVariable as err:
+      except UndefinedVariable:
+        exc_type, exc_value, _ = sys.exc_info()
         # Show context for statements
         start = max(0, i-3)
         end = i+3
-        err.near = statements[start:end]
+        exc_value.near = statements[start:end]
         raise
 
 

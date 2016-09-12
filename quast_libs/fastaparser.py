@@ -33,8 +33,9 @@ def _get_fasta_file_handler(fpath):
     elif ext in ['.zip']:
         try:
             zfile = zipfile.ZipFile(fpath)
-        except Exception as err:
-            logger.error('Can\'t open zip file: ' + str(err))
+        except Exception:
+            exc_type, exc_value, _ = sys.exc_info()
+            logger.error('Can\'t open zip file: ' + str(exc_value))
         else:
             names = zfile.namelist()
             if len(names) == 0:

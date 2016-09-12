@@ -61,7 +61,7 @@ def save_as_text(fpath, what):
 
 def save_total_report(output_dirpath, min_contig, ref_fpath):
     from quast_libs import reporting
-    asm_names = map(qutils.label_from_fpath, reporting.assembly_fpaths)
+    asm_names = [qutils.label_from_fpath(this) for this in reporting.assembly_fpaths]
     report = reporting.table(reporting.Fields.grouped_order)
     t = datetime.datetime.now()
 
@@ -111,7 +111,7 @@ def save_contigs_lengths(output_dirpath, contigs_fpaths, lists_of_lengths):
     lists_of_lengths = [sorted(list, reverse=True) for list in lists_of_lengths]
 
     return save(join(output_dirpath, contigs_lengths_fn), {
-        'filenames': map(qutils.label_from_fpath, contigs_fpaths),
+        'filenames': [qutils.label_from_fpath(label) for label in contigs_fpaths],
         'lists_of_lengths': lists_of_lengths
     })
 
@@ -128,7 +128,7 @@ def save_coord(output_dirpath, coord_x, coord_y, name_coord, contigs_fpaths):
     return save(join(output_dirpath, coord_fn), {
         'coord_x': coord_x,
         'coord_y': coord_y,
-        'filenames': map(qutils.label_from_fpath, contigs_fpaths)
+        'filenames': [qutils.label_from_fpath(label) for label in contigs_fpaths]
     })
 
 
@@ -156,14 +156,14 @@ def save_meta_misassemblies(output_dirpath, coord_x, coord_y, name_coord, labels
 
 def save_assembly_lengths(output_dirpath, contigs_fpaths, assemblies_lengths):
     return save(join(output_dirpath, assemblies_lengths_fn), {
-        'filenames': map(qutils.label_from_fpath, contigs_fpaths),
+        'filenames': [qutils.label_from_fpath[label] for label in contigs_fpaths],
         'assemblies_lengths': assemblies_lengths
     })
 
 
 def save_features_in_contigs(output_dirpath, contigs_fpaths, feature_name, features_in_contigs, ref_features_num):
     return save(join(output_dirpath, feature_name + in_contigs_suffix_fn), {
-        'filenames': map(qutils.label_from_fpath, contigs_fpaths),
+        'filenames': [qutils.label_from_fpath(label) for label in contigs_fpaths],
         feature_name + '_in_contigs': dict((qutils.label_from_fpath(contigs_fpath), feature_amounts)
                                            for (contigs_fpath, feature_amounts) in features_in_contigs.items()),
         'ref_' + feature_name + '_number': ref_features_num,
@@ -172,7 +172,7 @@ def save_features_in_contigs(output_dirpath, contigs_fpaths, feature_name, featu
 
 def save_GC_info(output_dirpath, contigs_fpaths, list_of_GC_distributions, reference_index):
     return save(join(output_dirpath, gc_fn), {
-        'filenames': map(qutils.label_from_fpath, contigs_fpaths),
+        'filenames': [qutils.label_from_fpath(label) for label in  contigs_fpaths],
         'reference_index': reference_index,
         'list_of_GC_distributions': list_of_GC_distributions,
         'lists_of_gc_info': None,

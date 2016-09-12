@@ -81,6 +81,7 @@ icarus_js_files = [
     'd3.js',
     'jquery-1.8.2.min.js',
     'jquery-ui.js',
+    'bootstrap/bootstrap.min.js',
     'scripts/build_icarus.js',
     'scripts/display_icarus.js',
     'scripts/icarus_interface.js',

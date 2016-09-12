@@ -2,13 +2,15 @@ $(function () {
     setInterfaceCoordinates();
     setupBtns();
     display();
+   $('[data-toggle="tooltip"]').tooltip()
 });
 
 function setInterfaceCoordinates() {
     var scrollPos = $(document).scrollTop();
     baseOffsetY = baseOffsetY ? baseOffsetY : chart[0][0].getBoundingClientRect().top;
-    var mainOffsetY = chart[0][0].getBoundingClientRect().top + scrollPos;
-    extraOffsetY = mainOffsetY - baseOffsetY;
+    var chartOffsetY = chart[0][0].getBoundingClientRect().top + scrollPos;
+    mainOffsetY = main[0][0].getBoundingClientRect().top + scrollPos;
+    extraOffsetY = chartOffsetY - baseOffsetY;
     if (itemsLayer)
         itemsLayer.style('top', itemSvgOffsetY + extraOffsetY);
     annotationsMainOffsetY = mainHeight + mainScale + spaceAfterMain;
@@ -22,10 +24,10 @@ function setInterfaceCoordinates() {
 
     var physCovBtnOffsetY = 25;
 
-    hideBtnAnnotationsMiniOffsetY = annotationsMiniOffsetY + mainOffsetY;
-    hideBtnAnnotationsMainOffsetY = annotationsMainOffsetY + mainOffsetY;
-    hideBtnCoverageMiniOffsetY = covMiniOffsetY + mainOffsetY;
-    hideBtnCoverageMainOffsetY = covMainOffsetY + mainOffsetY;
+    hideBtnAnnotationsMiniOffsetY = annotationsMiniOffsetY + chartOffsetY;
+    hideBtnAnnotationsMainOffsetY = annotationsMainOffsetY + chartOffsetY;
+    hideBtnCoverageMiniOffsetY = covMiniOffsetY + chartOffsetY;
+    hideBtnCoverageMainOffsetY = covMainOffsetY + chartOffsetY;
     hideBtnPhysicalMiniCoverageOffsetY = hideBtnCoverageMiniOffsetY + physCovBtnOffsetY;
     hideBtnPhysicalCoverageOffsetY = hideBtnCoverageMainOffsetY + physCovBtnOffsetY;
 }
@@ -38,6 +40,7 @@ function setupBtns() {
             addPhysicalCovTrackButtons();
         addCoverageButtons();
     }
+    moveExpandBtns();
 }
 
 function setupInterface() {
@@ -345,15 +348,15 @@ function createAutocompleteListItems() {
 }
 
 function addCovTrackButtons() {
-    var hideBtnCoverageMini = document.getElementById('hideBtnCovMini');
-    var hideBtnCoverageMain = document.getElementById('hideBtnCovMain');
+    hideBtnCoverageMini = document.getElementById('hideBtnCovMini');
+    hideBtnCoverageMain = document.getElementById('hideBtnCovMain');
     setTrackBtnPos(hideBtnCoverageMini, hideBtnCoverageMiniOffsetY, 'cov', 'mini', true);
     setTrackBtnPos(hideBtnCoverageMain, hideBtnCoverageMainOffsetY, 'cov', 'main', false);
 }
 
 function addPhysicalCovTrackButtons() {
-    var hideBtnPhysicalCoverageMini = document.getElementById('hideBtnPhysCovMini');
-    var hideBtnPhysicalCoverageMain = document.getElementById('hideBtnPhysCovMain');
+    hideBtnPhysicalCoverageMini = document.getElementById('hideBtnPhysCovMini');
+    hideBtnPhysicalCoverageMain = document.getElementById('hideBtnPhysCovMain');
     setTrackBtnPos(hideBtnPhysicalCoverageMini, hideBtnPhysicalMiniCoverageOffsetY);
     setTrackBtnPos(hideBtnPhysicalCoverageMain, hideBtnPhysicalCoverageOffsetY);
     hideBtnPhysicalCoverageMain.style.display = 'none';
@@ -652,12 +655,69 @@ function setContigSizeThreshold(event, textBox) {
 }
 
 function addCoverageButtons() {
-    var covMiniControls = document.getElementById('covMiniControls');
-    var covMainControls = document.getElementById('covMainControls');
+    covMiniControls = document.getElementById('covMiniControls');
+    covMainControls = document.getElementById('covMainControls');
     setTrackBtnPos(covMiniControls, hideBtnCoverageMiniOffsetY - 10);
     setTrackBtnPos(covMainControls, hideBtnCoverageMainOffsetY - 10);
     btnsWidth = 100;
     covMiniControls.style.left = (margin.left + width - btnsWidth) + "px";
     covMainControls.style.left = (margin.left + width - btnsWidth) + "px";
     covMainControls.style.display = 'none';
+}
+
+function expandLane(laneId, isCollapsed) {
+    function setBtnTopPos(btn) {
+        if (!btn) return;
+        btn.style.transition = 'all 0.2s';
+        btn.style.top = parseInt(btn.style.top) + newOffset + 'px';
+    }
+
+    function setTrackPos(track) {
+        if (!track) return;
+        var trackY = d3.transform(track.attr("transform")).translate[1];
+        trackY += newOffset;
+        track.transition()
+            .duration(200)
+            .attr('transform', function(d) {
+                return 'translate(' + margin.left + ',' + trackY + ')'
+            });
+    }
+
+    if (isCollapsed) {
+        expandedLanes.push(laneId);
+    }
+    else {
+        expandedLanes.splice(expandedLanes.indexOf(laneId), 1);
+    }
+    lanesHeight = getExpandedLanesHeight();
+    var newOffset = lanesHeight - (itemsLayer.attr('height') - chrLabelsOffsetY);
+    var changedTracks = [annotationsMain, main_cov, mini, annotationsMini, mini_cov];
+    var changedBtns = [hideBtnAnnotationsMain, hideBtnCoverageMain, hideBtnPhysicalCoverageMain, covMainControls, hideBtnAnnotationsMini,
+        hideBtnCoverageMini, hideBtnPhysicalCoverageMini, covMiniControls];
+    for (var track_n = 0; track_n < changedTracks.length; track_n++)
+        setTrackPos(changedTracks[track_n])
+    for (var btn_n = 0; btn_n < changedBtns.length; btn_n++)
+        setBtnTopPos(changedBtns[btn_n])
+
+    main.selectAll('.lane_bg')
+            .attr('display', function(lane) {
+                return expandedLanes.indexOf(lane.id) != -1 ? '' : 'none';
+            })
+            .attr('y', function (lane) {
+                var y = getExpandedLanesCount(lane.id);
+                return y_main(y) - 1;
+            })
+            .attr('height',  function (lane) {
+                return lane.maxLines * (mainLanesHeight) + (lane.maxLines - 1) * lanesInterval + 10;
+            });
+
+    var linesOffset = 20 + Math.max(0, extraOffsetY + 23);
+    linesLabelsLayer.attr('height', lanesHeight + linesOffset);
+    main.select('.main.axis')
+        .attr('transform', 'translate(0,' + (lanesHeight + chrLabelsOffsetY) + ')');
+    itemsLayer.attr('height', lanesHeight + chrLabelsOffsetY);
+    var laneLabelOffsetX = 80 + (isContigSizePlot ? 20 : 0);
+    addLanesText(main, y_main, lanes, laneLabelOffsetX, true, !isContigSizePlot);
+    moveExpandBtns();
+    display();
 }

@@ -55,11 +55,9 @@ function display() {
             return 'translate(' + x + ', ' + y + ')';
         });
     lines.append('rect')
-        .attr('width', function (line) {
-            return 1;
-        })
+        .attr('width', 1)
         .attr('height', function (line) {
-            return line.assembly ? mainLanesHeight + lanesInterval : line.y2;
+            return line.assembly ? mainLanesHeight + lanesInterval : getExpandedLanesHeight() + chrLabelsOffsetY;
         })
         .attr('fill', '#300000');
 
@@ -247,7 +245,7 @@ function addLabels(visRects, minExtent, maxExtent) {
     }
 
     function getItemY(textItem) {
-        var y = y_main(textItem.lane) + .25 * lanesInterval;
+        var y = getYForExpandedLanes(textItem);
         //if (INTERLACE_BLOCKS_VERT_OFFSET) y += offsetsY[textItem.order % 3] * lanesInterval;
         return y + 20;
     }
@@ -296,7 +294,11 @@ function addLabels(visRects, minExtent, maxExtent) {
         .attr('class', 'main_labels')
         .attr('transform', function (labelItem) {
             var x = getItemStart(labelItem, minExtent) + 5 ;
-            var y = labelItem.y2 ? labelItem.y2 + labelOffset : y_main(labelItem.lane) + mainLanesHeight + labelOffset;
+            if (labelItem.lane) {
+                y = y_main(labelItem.lane) + mainLanesHeight;
+            }
+            else y = getExpandedLanesHeight() + chrLabelsOffsetY;
+            y += labelOffset;
 
             return 'translate(' + x + ', ' + y + ')';
         });
@@ -573,12 +575,6 @@ function updateTrack(track) {
 
 function hideTrack(track, pane, doHide) {
     removeTooltip();
-    var hideBtnCoverageMain = document.getElementById('hideBtnCovMain');
-    var hideBtnCoverageMini = document.getElementById('hideBtnCovMini');
-    var hideBtnPhysicalCoverageMain = document.getElementById('hideBtnPhysCovMain');
-    var hideBtnPhysicalCoverageMini = document.getElementById('hideBtnPhysCovMini');
-    var covMiniControls = document.getElementById('covMiniControls');
-    var covMainControls = document.getElementById('covMainControls');
     var animationDuration = 200, transitionDelay = 150;
     var paneToHide, hideBtn, textToShow, newOffset;
     var changedTracks = [], changedBtns = [];

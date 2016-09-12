@@ -1,6 +1,7 @@
 var totalMaxYMain;
 var totalMaxYMini;
 var minCoverage = 10;
+var expandedLanes = [];
 
 function getItemStart(block, minExtent) {
     return x_main(Math.max(minExtent, block.corr_start));
@@ -52,7 +53,7 @@ function getItemOpacity(block) {
 function getTranslate(block, selected_id, minExtent) {
     if (block.misassembledEnds) {
         var x = block.misassembledEnds == "L" ? x_main(block.corr_start) : x_main(block.corr_end);
-        var y = y_main(block.lane) + .25 * lanesInterval;
+        y = getYForExpandedLanes(block);
         //if (INTERLACE_BLOCKS_VERT_OFFSET) y += offsetsY[block.order % 3] * lanesInterval;
         if (block.groupId == selected_id) {
             if (block.misassembledEnds == "L") x += 1;
@@ -61,13 +62,39 @@ function getTranslate(block, selected_id, minExtent) {
         return 'translate(' + x + ', ' + y + ')';
     }
     var x = x_main(Math.max(minExtent, block.corr_start));
-    var y = y_main(block.lane) + .25 * lanesInterval;
+    var y = getYForExpandedLanes(block);
     if (INTERLACE_BLOCKS_VERT_OFFSET) y += offsetsY[block.order % 3] * lanesInterval;
     if (block.objClass && block.objClass.search('predicted_gene') != -1) {
         x += block.groupId == selected_id ? 1 : .5;
-        y = y_main(block.lane) + mainLanesHeight * 0.6;
+        y += mainLanesHeight * 0.5;
     }
     return 'translate(' + x + ', ' + y + ')';
+}
+
+function getYForExpandedLanes(block) {
+    lane = getExpandedLanesCount(block.lane);
+    if (expandedLanes.indexOf(block.lane) != -1 && typeof(block.nonOverlappingLane) != 'undefined') {
+        lane += block.nonOverlappingLane;
+    }
+    y = y_main(lane) + .25 * lanesInterval;
+    return y;
+}
+
+function getExpandedLanesHeight() {
+    lanesHeight = getExpandedLanesCount() * (mainLanesHeight + lanesInterval);
+    return lanesHeight;
+}
+
+function getExpandedLanesCount(currentLane) {
+    var maxLane = currentLane != null ? currentLane : lanes.length;
+    var lanesCount = maxLane;
+    for (var i = 0; i < expandedLanes.length; i++) {
+        if (currentLane == null || expandedLanes[i] < currentLane) {
+            additionalLinesNumber = lanes[expandedLanes[i]].maxLines - 1;
+            lanesCount += additionalLinesNumber;
+        }
+    }
+    return lanesCount;
 }
 
 function changeInfo(block) {

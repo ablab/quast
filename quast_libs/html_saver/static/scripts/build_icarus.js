@@ -100,7 +100,8 @@ THE SOFTWARE.
     var minBrushExtent = 10;
     var y_main = d3.scale.linear().domain([ext[0], ext[1] + 1]).range([0, mainHeight]);
     var y_mini = d3.scale.linear().domain([ext[0], ext[1] + 1]).range([0, miniHeight]);
-    var hideBtnAnnotationsMini, hideBtnAnnotationsMain;
+    var hideBtnAnnotationsMini, hideBtnAnnotationsMain, hideBtnCoverageMini, hideBtnCoverageMain,
+        hideBtnPhysicalCoverageMini, hideBtnPhysicalCoverageMain, covMiniControls, covMainControls;
 
     var letterSize = getSize('w') - 1;
     var numberSize = getSize('0') - 1;
@@ -137,6 +138,7 @@ THE SOFTWARE.
             .attr('width', chartWidth)
             .attr('height', mainHeight + mainScale)
             .attr('class', 'main');
+    addLanesBackgrounds();
 
     var spaceAfterMain = 15;
     var spaceAfterTrack = 40;
@@ -186,67 +188,7 @@ THE SOFTWARE.
             .attr('id', 'annotationsMini');
     }
 
-    // draw the lanes for the main chart
-    main.append('g').selectAll('.laneLines')
-            .data(lanes)
-            //.enter().append('line')
-            .attr('x1', 0)
-            .attr('y1', function (d) {
-                return d3.round(y_main(d.id)) + .5;
-            })
-            .attr('x2', chartWidth)
-            .attr('y2', function (d) {
-                return d3.round(y_main(d.id)) + .5;
-            })
-            .attr('stroke', function (d) {
-                return d.label === '' ? 'white' : 'lightgray'
-            });
-
-    var laneLabelOffsetX = 80 + (isContigSizePlot ? 20 : 0);
-    main.append('g').selectAll('.laneText')
-            .data(lanes)
-            .enter().append('text')
-            .text(function (d) {
-                return getVisibleText(d.label, 180);
-            })
-            .attr('x', -10)
-            .attr('y', function (d) {
-                return y_main(d.id + .1);
-            })
-            .attr('dy', '.5ex')
-            .attr('text-anchor', 'end')
-            .attr('class', 'laneText')
-            .text(function(d) { return d.description; })
-            .call(wrap, laneLabelOffsetX, true, !isContigSizePlot, -10, /\n/);
-
-    // draw the lanes for the mini chart
-    mini.append('g').selectAll('.laneLines')
-            .data(lanes)
-            //.enter().append('line')
-            .attr('x1', 0)
-            .attr('y1', function (d) {
-                return d3.round(y_mini(d.id)) + .5;
-            })
-            .attr('x2', chartWidth)
-            .attr('y2', function (d) {
-                return d3.round(y_mini(d.id)) + .5;
-            })
-            .attr('stroke', function (d) {
-                return d.label === '' ? 'white' : 'lightgray'
-            });
-
-    mini.append('g').selectAll('.laneText')
-            .data(lanes)
-            .enter().append('text')
-            .attr('x', -10)
-            .attr('y', function (d) {
-                return y_mini(d.id + .5);
-            })
-            .attr('dy', '.5ex')
-            .attr('text-anchor', 'end')
-            .attr('class', 'laneText')
-            .text(function(d) { return d.label; })
-            .call(wrap, 100, true, false, -10, /\n/);
+    drawChartLanes();
 
     // draw the lanes for the annotations chart
     if (!featuresHidden) {
@@ -439,7 +381,7 @@ THE SOFTWARE.
                 chrName = chrContigs[i];
                 chrLen = chromosomes_len[chrName];
                 separatedLines.push({name: chrName, corr_start: currentLen, corr_end: currentLen + chrLen,
-                               y1: 0, y2: mainHeight + chrLabelsOffsetY, len: chrLen});
+                               y1: 0, len: chrLen});
                 currentLen += chrLen;
             }
         }
@@ -636,6 +578,18 @@ THE SOFTWARE.
                     block.mstype = misassembly ? misassembly.mstype : null;
                 }
             }
+            var nonOverlappingLaneId = 0;
+            if (!isContigSizePlot) {
+                for (var nonOverlappingLaneId = 0; nonOverlappingLaneId < lastPosInLanes.length; nonOverlappingLaneId++){
+                    if (lastPosInLanes[nonOverlappingLaneId] - block.corr_start < 500)
+                        break;
+                }
+                block.nonOverlappingLane = nonOverlappingLaneId;
+                if (nonOverlappingLaneId >= lastPosInLanes.length)
+                    lastPosInLanes.push(block.corr_end);
+                else
+                    lastPosInLanes[nonOverlappingLaneId] = Math.max(block.corr_end, lastPosInLanes[nonOverlappingLaneId]);
+            }
             block.triangles = Array();
             itemId++;
             numItems++;
@@ -662,6 +616,7 @@ THE SOFTWARE.
                     triangleItem.assembly = block.assembly;
                     triangleItem.id = itemId;
                     triangleItem.lane = laneId;
+                    triangleItem.nonOverlappingLane = nonOverlappingLaneId;
                     triangleItem.groupId = groupId;
                     triangleItem.misassembledEnds = misassembled_ends[num];
                     triangleItem.misassemblies = block.misassemblies.split(';')[num];
@@ -677,6 +632,8 @@ THE SOFTWARE.
             var lane = chart.assemblies[assemblyName];
             var currentLen = 0;
             var numItems = 0;
+            var lastPosInLanes = [];
+            var laneItems = [];
             for (var i = 0; i < lane.length; i++) {
                 var block = lane[i];
                 if (block.mis_ends) var misassembled_ends = block.mis_ends.split(';');
@@ -686,7 +643,7 @@ THE SOFTWARE.
                         for (var k = 0; k < blocks.length; k++) {
                             var misassembly = (k < blocks.length - 1 && blocks[k + 1].contig_type == 'M') ? blocks[k + 1] : null;
                             if (blocks[k].contig_type != 'M')
-                                items.push(parseItem(blocks[k], block, misassembly));
+                                laneItems.push(parseItem(blocks[k], block, misassembly));
                         }
                     }
                 }
@@ -695,13 +652,27 @@ THE SOFTWARE.
                     newItem.best_group = block.structure;
                     newItem.structure = null;
                 }
-                items.push(newItem);
+                laneItems.push(newItem);
                 groupId++;
+            }
+            for (var i = 0; i < laneItems.length; i++) {
+                item = laneItems[i];
+                if (!isContigSizePlot) {
+                    item.nonOverlappingLane = lastPosInLanes.length - item.nonOverlappingLane - 1;
+                    if (item.triangles) {
+                        for (var j = 0; j < item.triangles.length; j++) {
+                            item.triangles[j].nonOverlappingLane = lastPosInLanes.length - item.triangles[j].nonOverlappingLane - 1;
+                        }
+                    }
+                }
+                items.push(item);
             }
 
             lanes.push({
                 id: laneId,
-                label: assemblyName
+                label: assemblyName,
+                maxLines: lastPosInLanes.length,
+                isExpanded: false,
             });
             laneId++;
         }
@@ -973,4 +944,122 @@ THE SOFTWARE.
             numItem++;
         }
         return result;
+    }
+
+    function drawChartLanes() {
+        // draw the lanes for the main chart
+        main.append('g').selectAll('.laneLines')
+            .data(lanes)
+            //.enter().append('line')
+            .attr('x1', 0)
+            .attr('y1', function (d) {
+                return d3.round(y_main(d.id)) + .5;
+            })
+            .attr('x2', chartWidth)
+            .attr('y2', function (d) {
+                return d3.round(y_main(d.id)) + .5;
+            })
+            .attr('stroke', function (d) {
+                return d.label === '' ? 'white' : 'lightgray'
+            });
+
+        var laneLabelOffsetX = 80 + (isContigSizePlot ? 20 : 0);
+        addLanesText(main, y_main, lanes, laneLabelOffsetX, true, !isContigSizePlot);
+        if (!isContigSizePlot)
+            addExpandBtns();
+
+        // draw the lanes for the mini chart
+        laneLabelOffsetX = 100;
+        mini.append('g').selectAll('.laneLines')
+            .data(lanes)
+            //.enter().append('line')
+            .attr('x1', 0)
+            .attr('y1', function (lane) {
+                return d3.round(y_mini(lane.id)) + .5;
+            })
+            .attr('x2', chartWidth)
+            .attr('y2', function (lane) {
+                return d3.round(y_mini(lane.id)) + .5;
+            })
+            .attr('stroke', function (lane) {
+                return lane.label === '' ? 'white' : 'lightgray'
+            });
+        addLanesText(mini, y_mini, lanes, laneLabelOffsetX, false, false);
+    }
+
+    function addLanesText(track, scale, lanes, laneLabelOffsetX, isMain, addStdoutLink) {
+        track.selectAll('.laneText').remove();
+        track.selectAll('.laneText')
+                .data(lanes)
+                .enter().append('text')
+                .attr('x', -10)
+                .attr('y', function (lane) {
+                    var y = getExpandedLanesCount(lane.id);
+                    return scale(y + (isMain ? .1 :.5));
+                })
+                .attr('dy', '.5ex')
+                .attr('text-anchor', 'end')
+                .attr('class', 'laneText')
+                .text(function(lane) { return isMain ? lane.description : lane.label; })
+                .call(wrap, laneLabelOffsetX, true, addStdoutLink, -10, /\n/);
+    }
+
+    function addLanesBackgrounds() {
+        main.selectAll('.lane_bg')
+                .data(lanes)
+                .enter().append('rect')
+                .attr('x', 0)
+                .attr('y', function (lane) {
+                    return y_main(lane.id) - 1;
+                })
+                .attr('width', chartWidth)
+                .attr('height', mainLanesHeight + 10)
+                .attr('display', 'none')
+                .attr('class', 'lane_bg');
+    }
+
+    function addExpandBtns() {
+        var expandableLanes = [];
+        for (var lanes_n = 0; lanes_n < lanes.length; lanes_n++) {
+            lane = lanes[lanes_n];
+            if (lane.maxLines > 1)
+                expandableLanes.push(lane);
+        }
+        d3.select('body').selectAll('.expandBtn')
+                .data(expandableLanes)
+                .enter().append('div')
+                .style('position', 'absolute')
+                .style('left', margin.left + chartWidth + 5)
+                .style('width', '10px')
+                .style('height', '15px')
+                .attr('class', 'expandBtn collapsedBtn btn btn-mini btn-inverse')
+                .attr('data-toggle', 'tooltip')
+                .attr('title', 'Expand overlapping blocks')
+                .html('+')
+                .on('click', function (lane) {
+                    var isCollapsed = $(this).attr('class').search("collapsed") != -1;
+                    //$(this).attr('collapsed', function(_, attr){ return !attr});
+                    if (isCollapsed)
+                        $(this).html('&minus;');
+                    else $(this).html('&plus;');
+                    expandLane(lane.id, isCollapsed);
+                    d3.select(this).classed('collapsedBtn', !isCollapsed);
+                })
+                .on('hover', function (lane) {
+                    var isCollapsed = $(this).attr('class').search("collapsed") != -1;
+                    //$(this).attr('collapsed', function(_, attr){ return !attr});
+                    if (isCollapsed)
+                        $(this).html('&minus;');
+                    else $(this).html('&plus;');
+                    expandLane(lane.id, isCollapsed);
+                    d3.select(this).classed('collapsedBtn', !isCollapsed);
+                });
+    }
+
+    function moveExpandBtns() {
+        d3.select('body').selectAll('.expandBtn')
+                         .style('top', function (lane) {
+                            var y = getExpandedLanesCount(lane.id);
+                            return y_main(y) + mainOffsetY + extraOffsetY + 3;
+                         });
     }

@@ -553,3 +553,8 @@ path {
      width: 75px;
      margin-left: 0;
 }
+
+.lane_bg {
+    fill: #FFFFC6;
+    stroke-width: 0;
+}

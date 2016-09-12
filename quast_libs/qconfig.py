@@ -16,7 +16,7 @@ PACKAGE_NAME = 'quast_libs'
 LIBS_LOCATION = os.path.join(QUAST_HOME, PACKAGE_NAME)
 GIT_ROOT_URL = 'https://raw.githubusercontent.com/ablab/quast/master/'
 
-SUPPORTED_PYTHON_VERSIONS = ['2.5', '2.6', '2.7']
+SUPPORTED_PYTHON_VERSIONS = ['2.5', '2.6', '2.7', '3.5']
 
 LOGGER_DEFAULT_NAME = 'quast'
 LOGGER_META_NAME = 'metaquast'

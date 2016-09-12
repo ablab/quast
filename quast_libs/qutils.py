@@ -13,7 +13,7 @@ import os
 import re
 from collections import defaultdict
 
-import qconfig
+from . import qconfig
 from os.path import basename, isfile, realpath
 
 from quast_libs import fastaparser

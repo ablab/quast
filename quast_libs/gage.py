@@ -10,8 +10,8 @@ import os
 import shutil
 from quast_libs import reporting, qutils, ca_utils
 from quast_libs.ca_utils.misc import compile_aligner
-import qconfig
-from qutils import get_path_to_program
+from . import qconfig
+from .qutils import get_path_to_program
 from os.path import join, abspath
 
 from quast_libs.log import get_logger

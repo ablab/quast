@@ -16,11 +16,6 @@ from collections import defaultdict
 from . import qconfig
 from os.path import basename, isfile, realpath
 
-try:
-    basestring
-except:
-    basestring = (str, bytes)
-
 from quast_libs import fastaparser
 from quast_libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
@@ -169,17 +164,12 @@ def add_lengths_to_report(lengths, reporting, contigs_fpath):
         report = reporting.get(contigs_fpath)
 
         ## filling columns "Number of contigs >=110 bp", ">=200 bp", ">=500 bp"
-        if isinstance(qconfig.contig_thresholds, basestring):
-            contig_thresholds = [int(this) for this in qconfig.contig_thresholds.split(",")]
-        else:
-            contig_thresholds = qconfig.contig_thresholds
-
         report.add_field(reporting.Fields.CONTIGS__FOR_THRESHOLDS,
                          [sum(1 for l in lengths if l >= threshold)
-                          for threshold in contig_thresholds])
+                          for threshold in qconfig.contig_thresholds])
         report.add_field(reporting.Fields.TOTALLENS__FOR_THRESHOLDS,
                          [sum(l for l in lengths if l >= threshold)
-                          for threshold in contig_thresholds])
+                          for threshold in qconfig.contig_thresholds])
 
 
 def correct_contigs(contigs_fpaths, corrected_dirpath, labels, reporting):

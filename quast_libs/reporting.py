@@ -35,12 +35,10 @@ class Fields:
 
     # Basic statistics
     CONTIGS = '# contigs'
-    CONTIGS__FOR_THRESHOLDS = ('# contigs (>= %d bp)', 
-        tuple([int(x) for x in qconfig.contig_thresholds.split(",")]))
+    CONTIGS__FOR_THRESHOLDS = ('# contigs (>= %d bp)', tuple(qconfig.contig_thresholds))
     LARGCONTIG = 'Largest contig'
     TOTALLEN = 'Total length'
-    TOTALLENS__FOR_THRESHOLDS = ('Total length (>= %d bp)', 
-        tuple([int(x) for x in qconfig.contig_thresholds.split(",")]))
+    TOTALLENS__FOR_THRESHOLDS = ('Total length (>= %d bp)', tuple(qconfig.contig_thresholds))
     TOTALLENS__FOR_1000_THRESHOLD = 'Total length (>= 1000 bp)'
     TOTALLENS__FOR_10000_THRESHOLD = 'Total length (>= 10000 bp)'
     TOTALLENS__FOR_50000_THRESHOLD = 'Total length (>= 50000 bp)'
@@ -118,8 +116,7 @@ class Fields:
 
     # Predicted genes
     PREDICTED_GENES_UNIQUE = '# predicted genes (unique)'
-    PREDICTED_GENES = ('# predicted genes (>= %d bp)', 
-        tuple([int(x) for x in qconfig.genes_lengths.split(",")]))
+    PREDICTED_GENES = ('# predicted genes (>= %d bp)', tuple(qconfig.genes_lengths))
 
     # Reference statistics
     REFLEN = 'Reference length'

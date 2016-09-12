@@ -61,7 +61,7 @@ def main(args):
     reports = reporting.reports
     try:
         import imp
-        imp.reload(qconfig)
+        imp.reload(reporting)
     except:
         reload(reporting)
     reporting.reports = reports

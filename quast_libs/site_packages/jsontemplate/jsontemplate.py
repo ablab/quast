@@ -44,6 +44,7 @@ except:
 
 import pprint
 import re
+import sys
 
 # For formatters
 import cgi  # cgi.escape
@@ -1183,8 +1184,9 @@ def _DoSubstitute(args, context, callback):
     try:
       value = context.Lookup(name)
     except TypeError as err:
+      exc_type, exc_value, _ = sys.exc_info()
       raise EvaluationError(
-          'Error evaluating %r in context %r: %r' % (name, context, err))
+          'Error evaluating %r in context %r: %r' % (name, context, exc_value))
 
   for func, args, func_type in formatters:
     try:

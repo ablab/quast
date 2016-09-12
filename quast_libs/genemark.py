@@ -132,11 +132,11 @@ def add_genes_to_gff(genes, gff_fpath, prokaryote):
             (gene.contig, gene.start, gene.end, gene.strand, id + 1))
         if gene.seq:
             gff.write('##Nucleotide sequence:\n')
-            for i in xrange(0, len(gene.seq), 60):
+            for i in range(0, len(gene.seq), 60):
                 gff.write('##' + gene.seq[i:i + 60] + '\n')
         if gene.protein:
             gff.write('##Protein sequence:\n')
-            for i in xrange(0, len(gene.protein), 60):
+            for i in range(0, len(gene.protein), 60):
                 gff.write('##' + gene.protein[i:i + 60] + '\n')
             gff.write('\n')
     gff.close()

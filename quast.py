@@ -43,7 +43,11 @@ def main(args):
         qconfig.usage()
         sys.exit(0)
 
-    reload(qconfig)
+    try:
+        import imp
+        imp.reload(qconfig)
+    except:
+        reload(qconfig)
 
     quast_path = [os.path.realpath(__file__)]
     quast_py_args, contigs_fpaths = parse_options(logger, quast_path + args)
@@ -55,7 +59,11 @@ def main(args):
     ########################################################################
     from quast_libs import reporting
     reports = reporting.reports
-    reload(reporting)
+    try:
+        import imp
+        imp.reload(qconfig)
+    except:
+        reload(reporting)
     reporting.reports = reports
     reporting.assembly_fpaths = []
     from quast_libs import plotter  # Do not remove this line! It would lead to a warning in matplotlib.

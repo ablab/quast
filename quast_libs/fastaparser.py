@@ -51,8 +51,9 @@ def _get_fasta_file_handler(fpath):
     else:
         try:
             fasta_file = open(fpath)
-        except IOError as e:
-            logger.exception(e)
+        except IOError:
+            exc_type, exc_value, _ = sys.exc_info()
+            logger.exception(exc_value)
 
     return fasta_file
 

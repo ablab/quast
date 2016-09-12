@@ -33,14 +33,28 @@ __all__ = [
     'TemplateSyntaxError', 'UndefinedVariable', 'CompileTemplate', 'FromString',
     'FromFile', 'Template', 'expand']
 
-import StringIO
+try:
+    import StringIO
+except:
+    from io import StringIO
+try:
+    basestring
+except:
+    basestring = (str, bytes)
+
 import pprint
 import re
 
 # For formatters
 import cgi  # cgi.escape
-import urllib  # for urllib.encode
-import urlparse  # for urljoin
+try:
+    from urllib  import urlencode, quote_plus
+except:
+    from urllib.parse import urlencode, quote_plus
+try:
+    import urlparse  # for urljoin
+except:
+    from urllib.parse import urlparse
 
 
 class Error(Exception):
@@ -580,10 +594,10 @@ _DEFAULT_FORMATTERS = {
     'size': lambda value: str(len(value)),
 
     # The argument is a dictionary, and we get a a=1&b=2 string back.
-    'url-params': urllib.urlencode,
+    'url-params': urlencode,
 
     # The argument is an atom, and it takes 'Search query?' -> 'Search+query%3F'
-    'url-param-value': urllib.quote_plus,  # param is an atom
+    'url-param-value': quote_plus,  # param is an atom
 
     # The default formatter, when no other default is specifier.  For debugging,
     # this could be lambda x: json.dumps(x, indent=2), but here we want to be
@@ -657,10 +671,11 @@ def SplitMeta(meta):
   This is public so the syntax highlighter and other tools can use it.
   """
   n = len(meta)
+
   if n % 2 == 1:
     raise ConfigurationError(
         '%r has an odd number of metacharacters' % meta)
-  return meta[:n/2], meta[n/2:]
+  return meta[:n//2], meta[n//2:]
 
 
 _token_re_cache = {}
@@ -1167,9 +1182,9 @@ def _DoSubstitute(args, context, callback):
   else:
     try:
       value = context.Lookup(name)
-    except TypeError, e:
+    except TypeError as err:
       raise EvaluationError(
-          'Error evaluating %r in context %r: %r' % (name, context, e))
+          'Error evaluating %r in context %r: %r' % (name, context, err))
 
   for func, args, func_type in formatters:
     try:
@@ -1179,10 +1194,10 @@ def _DoSubstitute(args, context, callback):
         value = func(value)
     except KeyboardInterrupt:
       raise
-    except Exception, e:
+    except Exception as err:
       raise EvaluationError(
           'Formatting value %r with formatter %s raised exception: %r' %
-          (value, formatters, e), original_exception=e)
+          (value, formatters, err), original_exception=err)
 
   # TODO: Require a string/unicode instance here?
   if value is None:
@@ -1208,11 +1223,11 @@ def _Execute(statements, context, callback):
       try:
         func, args = statement
         func(args, context, callback)
-      except UndefinedVariable, e:
+      except UndefinedVariable as err:
         # Show context for statements
         start = max(0, i-3)
         end = i+3
-        e.near = statements[start:end]
+        err.near = statements[start:end]
         raise
 
 

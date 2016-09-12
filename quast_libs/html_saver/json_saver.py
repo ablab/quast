@@ -156,7 +156,7 @@ def save_meta_misassemblies(output_dirpath, coord_x, coord_y, name_coord, labels
 
 def save_assembly_lengths(output_dirpath, contigs_fpaths, assemblies_lengths):
     return save(join(output_dirpath, assemblies_lengths_fn), {
-        'filenames': [qutils.label_from_fpath[label] for label in contigs_fpaths],
+        'filenames': [qutils.label_from_fpath(label) for label in contigs_fpaths],
         'assemblies_lengths': assemblies_lengths
     })
 

@@ -67,7 +67,7 @@ def analyze_coverage(ca_output, regions, ref_aligns, ref_features, snps, total_i
                 #Track number of bases ignored at the start of the alignment
                 snip_left = region[0] - sorted_aligns[0].s1
                 #Modify to account for any insertions or deletions that are present
-                for z in xrange(sorted_aligns[0].s1, region[0] + 1):
+                for z in range(sorted_aligns[0].s1, region[0] + 1):
                     if (ref in snps) and (sorted_aligns[0].contig in snps[ref]) and (z in snps[ref][sorted_aligns[0].contig]) and \
                        (ref in ref_features) and (z in ref_features[ref]) and (ref_features[ref][z] != 'A'): # Kolya: never happened before because of bug: z -> i
                         for cur_snp in snps[ref][sorted_aligns[0].contig][z]:
@@ -105,7 +105,7 @@ def analyze_coverage(ca_output, regions, ref_aligns, ref_features, snps, total_i
                 print >> ca_output.stdout_f, '\t\t\tSTART in gap: %d to %d (%d bp)' % (region[0], sorted_aligns[0].s1, size)
                 gaps.append([size, 'START', sorted_aligns[0].contig])
                 #Increment any ambiguously covered bases in this first gap
-                for i in xrange(region[0], sorted_aligns[0].e1):
+                for i in range(region[0], sorted_aligns[0].e1):
                     if (ref in ref_features) and (i in ref_features[ref]) and (ref_features[ref][i] == 'A'):
                         region_ambig += 1
 
@@ -125,7 +125,7 @@ def analyze_coverage(ca_output, regions, ref_aligns, ref_features, snps, total_i
                     #Ignoring OL part of next contig, no SNPs or N's will be recorded
                     snip_left = current.e1 + 1 - sorted_aligns[0].s1
                     #Account for any indels that may be present
-                    for z in xrange(sorted_aligns[0].s1, current.e1 + 2):
+                    for z in range(sorted_aligns[0].s1, current.e1 + 2):
                         if (ref in snps) and (sorted_aligns[0].contig in snps[ref]) and (z in snps[ref][sorted_aligns[0].contig]):
                             for cur_snp in snps[ref][sorted_aligns[0].contig][z]:
                                 if cur_snp.type == 'I':
@@ -181,7 +181,7 @@ def analyze_coverage(ca_output, regions, ref_aligns, ref_features, snps, total_i
                             #Gap between end of current and beginning of next alignment.
                             gaps.append([size, current.contig, sorted_aligns[0].contig])
                         #Increment any ambiguous bases within this gap
-                        for i in xrange(current.e1, region[1]):
+                        for i in range(current.e1, region[1]):
                             if (ref in ref_features) and (i in ref_features[ref]) and (ref_features[ref][i] == 'A'):
                                 region_ambig += 1
                 else:
@@ -211,7 +211,7 @@ def analyze_coverage(ca_output, regions, ref_aligns, ref_features, snps, total_i
                             print >> ca_output.stdout_f, '\t\t\t\tGap between this and next alignment: %d to %d (%d bp)' % \
                                                           (current.e1, next.s1, size)
                             #Record ambiguous bases in current gap
-                            for i in xrange(current.e1, next.s1):
+                            for i in range(current.e1, next.s1):
                                 if (ref in ref_features) and (i in ref_features[ref]) and (ref_features[ref][i] == 'A'):
                                     region_ambig += 1
                         elif next.s1 <= current.e1:
@@ -237,7 +237,7 @@ def analyze_coverage(ca_output, regions, ref_aligns, ref_features, snps, total_i
                     print >> ca_output.stdout_f, '\t\t\t\tContig start coord: %d' % contig_estimate
 
                 #Assess each reference base of the current alignment
-                for i in xrange(current.s1, current.e1 + 1):
+                for i in range(current.s1, current.e1 + 1):
                     #Mark as covered
                     region_covered += 1
 

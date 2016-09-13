@@ -160,7 +160,7 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, json_output_dir, results_dir):
     reference_length = None
     reference_lengths = []
     if ref_fpath:
-        reference_lengths = fastaparser.get_chr_lengths_from_fastafile(ref_fpath).values()
+        reference_lengths = sorted(fastaparser.get_chr_lengths_from_fastafile(ref_fpath).values(), reverse=True)
         reference_length = sum(reference_lengths)
         reference_GC, reference_GC_distribution = GC_content(ref_fpath)
 
@@ -170,16 +170,6 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, json_output_dir, results_dir):
         reference_length = qconfig.estimated_reference_size
         reference_lengths = [reference_length]
         logger.info('  Estimated reference length = ' + str(reference_length))
-
-    if reference_lengths:
-        # Saving the reference in JSON
-        if json_output_dir:
-            json_saver.save_reference_lengths(json_output_dir, reference_lengths)
-
-        # Saving for an HTML report
-        if qconfig.html_report:
-            from quast_libs.html_saver import html_saver
-            html_saver.save_reference_lengths(results_dir, reference_lengths)
 
     logger.info('  Contig files: ')
     lists_of_lengths = []
@@ -218,18 +208,31 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, json_output_dir, results_dir):
         multiplicator = int(num_contigs/qconfig.max_points)
         max_points = num_contigs/multiplicator
         lists_of_lengths = [sorted(list, reverse=True) for list in lists_of_lengths]
-        corr_lists_of_lengths = [[sum(list_of_length[((i-1)*multiplicator):(i*multiplicator)]) for i in range(1, max_points)
-                                  if (i*multiplicator) < len(list_of_length)] for list_of_length in lists_of_lengths]
+        corr_lists_of_lengths = [[sum(list_of_length[((i - 1) * multiplicator):(i * multiplicator)]) for i in range(1, max_points)
+                                  if (i * multiplicator) < len(list_of_length)] for list_of_length in lists_of_lengths]
+        reference_lengths = [sum(reference_lengths[((i - 1) * multiplicator):(i * multiplicator)]) for i in range(1, max_points)
+                                  if (i * multiplicator) < len(reference_lengths)]
         for num_list in range(len(corr_lists_of_lengths)):
             last_index = len(corr_lists_of_lengths[num_list])
-            corr_lists_of_lengths[num_list].append(sum(lists_of_lengths[num_list][last_index*multiplicator:]))
+            corr_lists_of_lengths[num_list].append(sum(lists_of_lengths[num_list][last_index * multiplicator:]))
+            last_ref_index = len(reference_lengths)
+            reference_lengths.append(sum(reference_lengths[last_ref_index * multiplicator:]))
     else:
-        corr_lists_of_lengths = lists_of_lengths
+        corr_lists_of_lengths = [sorted(list, reverse=True) for list in lists_of_lengths]
 
     # saving lengths to JSON
     if json_output_dir:
         json_saver.save_contigs_lengths(json_output_dir, contigs_fpaths, corr_lists_of_lengths)
         json_saver.save_tick_x(json_output_dir, multiplicator)
+
+    if reference_lengths:
+        # Saving the reference in JSON
+        if json_output_dir:
+            json_saver.save_reference_lengths(json_output_dir, reference_lengths)
+        # Saving for an HTML report
+        if qconfig.html_report:
+            from quast_libs.html_saver import html_saver
+            html_saver.save_reference_lengths(results_dir, reference_lengths)
 
     if qconfig.html_report:
         from quast_libs.html_saver import html_saver

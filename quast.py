@@ -75,6 +75,7 @@ def main(args):
             shutil.rmtree(corrected_dirpath)
         os.mkdir(corrected_dirpath)
 
+    qconfig.set_max_threads(logger)
     # PROCESSING REFERENCE
     if ref_fpath:
         logger.main_info()

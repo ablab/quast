@@ -88,11 +88,12 @@ THE SOFTWARE.
       }
     }
     else total_len = contigs_total_len;
+    var genomeStartPos = isContigSizePlot ? 0 : 1;
     var x_mini = d3.scale.linear()
-            .domain([0, total_len])
-            .range([0, chartWidth]);
+            .domain([genomeStartPos, total_len])
+            .range([genomeStartPos, chartWidth]);
     var x_main = d3.scale.linear()
-            .range([0, chartWidth]);
+            .range([genomeStartPos, chartWidth]);
 
     var ext = d3.extent(lanes, function (d) {
         return d.id;

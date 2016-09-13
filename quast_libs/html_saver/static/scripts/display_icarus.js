@@ -1,6 +1,6 @@
 function display() {
     x_main = d3.scale.linear()
-        .range([0, chartWidth]);
+        .range([genomeStartPos, chartWidth]);
     var rects
         , minExtent = Math.max(brush.extent()[0], x_mini.domain()[0])
         , maxExtent = Math.min(brush.extent()[1], x_mini.domain()[1])

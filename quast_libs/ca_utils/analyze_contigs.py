@@ -13,15 +13,15 @@ from quast_libs.ca_utils.misc import ref_labels_by_chromosomes
 def check_for_potential_translocation(seq, ctg_len, sorted_aligns, log_out_f):
     count_ns = 0
     unaligned_len = 0
-    prev_start = 0
+    prev_pos = 1
     for align in sorted_aligns:
-        if align.start() > prev_start + 1:
-            unaligned_part = seq[prev_start + 1: align.start()]
+        if align.start() > prev_pos:
+            unaligned_part = seq[prev_pos: align.start()]
             unaligned_len += len(unaligned_part)
             count_ns += unaligned_part.count('N')
-        prev_start = align.end()
-    if ctg_len > sorted_aligns[-1].end() + 1:
-        unaligned_part = seq[sorted_aligns[-1].end() + 1: ctg_len]
+        prev_pos = align.end()
+    if ctg_len > sorted_aligns[-1].end():
+        unaligned_part = seq[sorted_aligns[-1].end(): ctg_len]
         unaligned_len += len(unaligned_part)
         count_ns += unaligned_part.count('N')
     # if contig consists mostly of Ns, it cannot contain interspecies translocations

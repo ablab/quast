@@ -691,6 +691,9 @@ function expandLane(laneId, isCollapsed) {
     }
     lanesHeight = getExpandedLanesHeight();
     var newOffset = lanesHeight - (itemsLayer.attr('height') - chrLabelsOffsetY);
+    curChartHeight += newOffset;
+    chart.attr('height', curChartHeight);
+
     var changedTracks = [annotationsMain, main_cov, mini, annotationsMini, mini_cov];
     var changedBtns = [hideBtnAnnotationsMain, hideBtnCoverageMain, hideBtnPhysicalCoverageMain, covMainControls, hideBtnAnnotationsMini,
         hideBtnCoverageMini, hideBtnPhysicalCoverageMini, covMiniControls];

@@ -159,8 +159,10 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, json_output_dir, results_dir):
 
     reference_length = None
     reference_lengths = []
+    reference_fragments = None
     if ref_fpath:
         reference_lengths = sorted(fastaparser.get_chr_lengths_from_fastafile(ref_fpath).values(), reverse=True)
+        reference_fragments = len(reference_lengths)
         reference_length = sum(reference_lengths)
         reference_GC, reference_GC_distribution = GC_content(ref_fpath)
 
@@ -288,6 +290,7 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, json_output_dir, results_dir):
             report.add_field(reporting.Fields.UNCALLED_PERCENT, ('%.2f' % (float(number_of_Ns) * 100000.0 / float(total_length))))
         if ref_fpath:
             report.add_field(reporting.Fields.REFLEN, int(reference_length))
+            report.add_field(reporting.Fields.REF_FRAGMENTS, reference_fragments)
             if not qconfig.is_combined_ref:
                 report.add_field(reporting.Fields.REFGC, '%.2f' % reference_GC)
         elif reference_length:

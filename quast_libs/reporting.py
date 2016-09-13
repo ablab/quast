@@ -121,6 +121,7 @@ class Fields:
     # Reference statistics
     REFLEN = 'Reference length'
     ESTREFLEN = 'Estimated reference length'
+    REF_FRAGMENTS = 'Reference fragments'
     REFGC = 'Reference GC (%)'
     REF_GENES = 'Reference genes'
     REF_OPERONS = 'Reference operons'
@@ -206,7 +207,7 @@ class Fields:
 
         ('Similarity statistics', [SIMILAR_CONTIGS, SIMILAR_MIS_BLOCKS]),
         
-        ('Reference statistics', [REFLEN, ESTREFLEN, REFGC, REF_GENES, REF_OPERONS,])
+        ('Reference statistics', [REFLEN, ESTREFLEN, REF_FRAGMENTS, REFGC, REF_GENES, REF_OPERONS,])
     ]
 
     # for "short" version of HTML report

@@ -51,6 +51,7 @@ function buildTotalReport(assembliesNames, report, order, date, minContig,
                 referenceValues[metricName] = value;
             }
             var refLen = referenceValues['Reference length'];
+            var refFragments = referenceValues['Reference fragments'];
             var refGC = referenceValues['Reference GC (%)'];
             var refGenes = referenceValues['Reference genes'];
             var refOperons = referenceValues['Reference operons'];
@@ -61,14 +62,22 @@ function buildTotalReport(assembliesNames, report, order, date, minContig,
 
             if (refLen)
                 $('#reference_length').show().find('.val').html(toPrettyString(refLen));
+            if (refFragments) {
+                $('#reference_fragments').show().find('.val').html(refFragments);
+                if (refFragments > 1)
+                    $('#reference_fragments').find('.plural_ending').show();
+            }
             if (refGC)
                 $('#reference_gc').show().find('.val').html(toPrettyString(refGC));
             if (refGenes)
                 $('#reference_genes').show().find('.val').html(toPrettyString(refGenes));
             if (refOperons)
                 $('#reference_operons').show().find('.val').html(toPrettyString(refOperons));
-            if (refChr)
-                $('#reference_chr').show().find('.val').html(toPrettyString(refChr));
+            if (refChr) {
+                $('#reference_chr').show().find('.val').html(refChr);
+                if (refChr > 1)
+                    $('#reference_chr').find('.plural_ending').show();
+            }
             if (refTotalreads)
                 $('#reference_reads').show().find('.val').html(toPrettyString(refTotalreads));
             if (refMappedreads)

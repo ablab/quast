@@ -66,7 +66,7 @@ function getTranslate(block, selected_id, minExtent) {
     if (INTERLACE_BLOCKS_VERT_OFFSET) y += offsetsY[block.order % 3] * lanesInterval;
     if (block.objClass && block.objClass.search('predicted_gene') != -1) {
         x += block.groupId == selected_id ? 1 : .5;
-        y += mainLanesHeight * 0.5;
+        y += mainLanesHeight * 0.55;
     }
     return 'translate(' + x + ', ' + y + ')';
 }

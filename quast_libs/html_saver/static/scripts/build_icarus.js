@@ -1061,6 +1061,6 @@ THE SOFTWARE.
         d3.select('body').selectAll('.expandBtn')
                          .style('top', function (lane) {
                             var y = getExpandedLanesCount(lane.id);
-                            return y_main(y) + mainOffsetY + extraOffsetY + 3;
+                            return y_main(y) + mainOffsetY + 3;
                          });
     }

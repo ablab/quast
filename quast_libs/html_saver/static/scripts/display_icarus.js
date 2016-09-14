@@ -293,8 +293,8 @@ function addLabels(visRects, minExtent, maxExtent) {
     var labels = visibleItemLabels.enter().append('g')
         .attr('class', 'main_labels')
         .attr('transform', function (labelItem) {
-            var x = getItemStart(labelItem, minExtent) + 5 ;
-            if (labelItem.lane) {
+            var x = getItemStart(labelItem, minExtent) + 5;
+            if (labelItem.lane != null) {
                 y = y_main(labelItem.lane) + mainLanesHeight;
             }
             else y = getExpandedLanesHeight() + chrLabelsOffsetY;

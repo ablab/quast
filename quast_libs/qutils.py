@@ -613,12 +613,15 @@ def call_subprocess(args, stdin=None, stdout=None, stderr=None,
     return return_code
 
 
-def get_chr_len_fpath(ref_fpath):
+def get_chr_len_fpath(ref_fpath, correct_chr_names=None):
     chr_len_fpath = ref_fpath + '.fai'
+    raw_chr_names = dict((raw_name, correct_name) for correct_name, raw_name in correct_chr_names.iteritems()) \
+        if correct_chr_names else None
     if not is_non_empty_file(chr_len_fpath):
         chr_lengths = fastaparser.get_chr_lengths_from_fastafile(ref_fpath)
         with open(chr_len_fpath, 'w') as out_f:
             for chr_name, chr_len in chr_lengths.iteritems():
+                chr_name = raw_chr_names[chr_name] if correct_chr_names else chr_name
                 out_f.write(chr_name + '\t' + str(chr_len) + '\n')
     return chr_len_fpath
 

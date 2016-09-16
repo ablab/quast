@@ -8,15 +8,16 @@
 from __future__ import with_statement
 import os
 from os.path import isfile
+import re
 import shutil
 import shlex
 from collections import defaultdict
 
 from quast_libs import qconfig, qutils, ca_utils
-from quast_libs.fastaparser import create_fai_file
+from quast_libs.fastaparser import create_fai_file, get_chr_lengths_from_fastafile
 from quast_libs.ra_utils import compile_reads_analyzer_tools, config_manta_fpath, sambamba_fpath, \
     bwa_fpath, bedtools_fpath, paired_reads_names_are_equal
-from .qutils import is_non_empty_file, add_suffix, get_chr_len_fpath
+from .qutils import is_non_empty_file, add_suffix, get_chr_len_fpath, correct_name
 
 from quast_libs.log import get_logger
 
@@ -203,13 +204,16 @@ def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpat
 
     logger.info('  ' + 'Pre-processing reads...')
     logger.info('  ' + 'Logging to %s...' % err_path)
+    correct_chr_names = None
     if is_non_empty_file(sam_fpath):
         logger.info('  Using existing SAM-file: ' + sam_fpath)
+        correct_chr_names = get_correct_names_for_chroms(output_dirpath, main_ref_fpath, sam_fpath, err_path, reads_fpaths)
     elif is_non_empty_file(bam_fpath):
         logger.info('  Using existing BAM-file: ' + bam_fpath)
         qutils.call_subprocess([sambamba_fpath('sambamba'), 'view', '-t', str(qconfig.max_threads), '-h', bam_fpath],
                                stdout=open(sam_fpath, 'w'), stderr=open(err_path, 'a'), logger=logger)
-    else:
+        correct_chr_names = get_correct_names_for_chroms(output_dirpath, main_ref_fpath, sam_fpath, err_path, reads_fpaths)
+    if not correct_chr_names and reads_fpaths:
         logger.info('  Running BWA...')
         # use absolute paths because we will change workdir
         sam_fpath = os.path.abspath(sam_fpath)
@@ -243,6 +247,9 @@ def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpat
             logger.error('  Failed running BWA for the reference. See ' + log_path + ' for information.')
             logger.info('  Failed searching structural variations.')
             return None, None, None
+    elif not correct_chr_names:
+        logger.info('  Failed searching structural variations.')
+        return None, None, None
     logger.info('  Sorting SAM-file...')
     if (is_non_empty_file(sam_sorted_fpath) and all_read_names_correct(sam_sorted_fpath)) and is_non_empty_file(bam_fpath):
         logger.info('  Using existing sorted SAM-file: ' + sam_sorted_fpath)
@@ -260,7 +267,7 @@ def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpat
 
     if not is_non_empty_file(cov_fpath) or not is_non_empty_file(physical_cov_fpath):
         cov_fpath, physical_cov_fpath = get_coverage(output_dirpath, main_ref_fpath, ref_name, bam_fpath, bam_sorted_fpath,
-                                                     log_path, err_path, cov_fpath, physical_cov_fpath)
+                                                     log_path, err_path, cov_fpath, physical_cov_fpath, correct_chr_names)
     if not is_non_empty_file(bed_fpath) and not qconfig.no_sv:
         if meta_ref_fpaths:
             logger.info('  Splitting SAM-file by references...')
@@ -394,11 +401,12 @@ def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpat
     return bed_fpath, cov_fpath, physical_cov_fpath
 
 
-def get_physical_coverage(output_dirpath, ref_fpath, ref_name, bam_fpath, log_path, err_path, cov_fpath):
+def get_physical_coverage(output_dirpath, ref_fpath, ref_name, bam_fpath, log_path, err_path, cov_fpath, chr_len_fpath):
     if not os.path.exists(bedtools_fpath('bamToBed')):
         logger.info('  Failed calculating physical coverage...')
         return None
-    if not is_non_empty_file(cov_fpath):
+    raw_cov_fpath = cov_fpath + '_raw'
+    if not is_non_empty_file(raw_cov_fpath):
         logger.info('  Calculating physical coverage...')
         ## keep properly mapped, unique, and non-duplicate read pairs only
         bam_filtered_fpath = os.path.join(output_dirpath, ref_name + '.filtered.bam')
@@ -421,33 +429,32 @@ def get_physical_coverage(output_dirpath, ref_fpath, ref_name, bam_fpath, log_pa
         sorted_bed_fpath = os.path.join(output_dirpath, ref_name + '.sorted.bed')
         qutils.call_subprocess([bedtools_fpath('bedtools'), 'sort', '-i', raw_bed_fpath],
                                stdout=open(sorted_bed_fpath, 'w'), stderr=open(err_path, 'a'))
-        chr_len_fpath = get_chr_len_fpath(ref_fpath)
-        raw_cov_fpath = cov_fpath + '_raw'
         qutils.call_subprocess([bedtools_fpath('bedtools'), 'genomecov', '-bga', '-i', sorted_bed_fpath, '-g', chr_len_fpath],
                                stdout=open(raw_cov_fpath, 'w'), stderr=open(err_path, 'a'))
-        proceed_cov_file(raw_cov_fpath, cov_fpath)
-    return cov_fpath
+    return raw_cov_fpath
 
 
-def get_coverage(output_dirpath, ref_fpath, ref_name, bam_fpath, bam_sorted_fpath, log_path, err_path, cov_fpath, physical_cov_fpath):
+def get_coverage(output_dirpath, ref_fpath, ref_name, bam_fpath, bam_sorted_fpath, log_path, err_path, cov_fpath, physical_cov_fpath, correct_chr_names):
     raw_cov_fpath = cov_fpath + '_raw'
+    chr_len_fpath = get_chr_len_fpath(ref_fpath, correct_chr_names)
     if not is_non_empty_file(cov_fpath):
         logger.info('  Calculating reads coverage...')
         if not is_non_empty_file(raw_cov_fpath):
             if not is_non_empty_file(bam_sorted_fpath):
                 qutils.call_subprocess([sambamba_fpath('sambamba'), 'sort', '-t', str(qconfig.max_threads), '-o', bam_sorted_fpath,
                                         bam_fpath], stdout=open(log_path, 'a'), stderr=open(err_path, 'a'))
-            chr_len_fpath = get_chr_len_fpath(ref_fpath)
             qutils.call_subprocess([bedtools_fpath('bedtools'), 'genomecov', '-bga', '-ibam', bam_sorted_fpath, '-g', chr_len_fpath],
                                    stdout=open(raw_cov_fpath, 'w'), stderr=open(err_path, 'a'))
             qutils.assert_file_exists(raw_cov_fpath, 'coverage file')
-        proceed_cov_file(raw_cov_fpath, cov_fpath)
+        proceed_cov_file(raw_cov_fpath, cov_fpath, correct_chr_names)
     if not is_non_empty_file(physical_cov_fpath):
-        physical_cov_fpath = get_physical_coverage(output_dirpath, ref_fpath, ref_name, bam_fpath, log_path, err_path, physical_cov_fpath)
+        raw_cov_fpath = get_physical_coverage(output_dirpath, ref_fpath, ref_name, bam_fpath, log_path, err_path,
+                                              physical_cov_fpath, chr_len_fpath)
+        proceed_cov_file(raw_cov_fpath, physical_cov_fpath, correct_chr_names)
     return cov_fpath, physical_cov_fpath
 
 
-def proceed_cov_file(raw_cov_fpath, cov_fpath):
+def proceed_cov_file(raw_cov_fpath, cov_fpath, correct_chr_names):
     chr_depth = defaultdict(list)
     used_chromosomes = dict()
     chr_index = 0
@@ -461,7 +468,8 @@ def proceed_cov_file(raw_cov_fpath, cov_fpath):
                 if name not in used_chromosomes:
                     chr_index += 1
                     used_chromosomes[name] = str(chr_index)
-                    out_coverage.write('#' + name + ' ' + used_chromosomes[name] + '\n')
+                    correct_name = correct_chr_names[name] if correct_chr_names else name
+                    out_coverage.write('#' + correct_name + ' ' + used_chromosomes[name] + '\n')
                 if len(fs) > 3:
                     start, end = int(fs[1]), int(fs[2])
                     chr_depth[name].extend([depth] * (end - start))
@@ -474,6 +482,39 @@ def proceed_cov_file(raw_cov_fpath, cov_fpath):
                         out_coverage.write(' '.join([used_chromosomes[name], str(cur_depth) + '\n']))
                     chr_depth[name] = chr_depth[name][index + cov_factor:]
             os.remove(raw_cov_fpath)
+
+
+def get_correct_names_for_chroms(output_dirpath, ref_fpath, sam_fpath, err_path, reads_fpaths):
+    correct_chr_names = dict()
+    ref_chr_lengths = get_chr_lengths_from_fastafile(ref_fpath)
+    sam_chr_lengths = dict()
+    sam_header_fpath = os.path.join(output_dirpath, os.path.basename(sam_fpath) + '.header')
+    qutils.call_subprocess([sambamba_fpath('sambamba'), 'view', '-H', '-S', sam_fpath],
+                           stdout=open(sam_header_fpath, 'w'), stderr=open(err_path, 'w'), logger=logger)
+    chr_name_pattern = 'SN:(\S+)'
+    chr_len_pattern = 'LN:(\d+)'
+
+    with open(sam_header_fpath) as sam_in:
+        for l in sam_in:
+            if l.startswith('@SQ'):
+                chr_name = re.findall(chr_name_pattern, l)[0]
+                chr_len = re.findall(chr_len_pattern, l)[0]
+                sam_chr_lengths[chr_name] = int(chr_len)
+
+    for ref_chr, sam_chr in zip(ref_chr_lengths.keys(), sam_chr_lengths.keys()):
+        if correct_name(sam_chr) == ref_chr[:len(sam_chr)] and sam_chr_lengths[sam_chr] == ref_chr_lengths[ref_chr]:
+            correct_chr_names[sam_chr] = ref_chr
+        elif sam_chr_lengths[sam_chr] != ref_chr_lengths[ref_chr]:
+            logger.error('Chromosome lengths in reference and SAM file do not match. ' +
+                         'QUAST will try to realign reads to the reference genome. ' if reads_fpaths else
+                         'Use SAM file obtained by aligning reads to the reference genome.')
+            return None
+        else:
+            logger.error('Chromosome names in reference and SAM file do not match. ' +
+                         'QUAST will try to realign reads to the reference genome.' if reads_fpaths else
+                         'Use SAM file obtained by aligning reads to the reference genome.')
+            return None
+    return correct_chr_names
 
 
 def all_read_names_correct(sam_fpath):

@@ -121,11 +121,13 @@ def __get_border_gaps(align1, align2, ref_lens):
 
 
 def is_fragmented_ref_fake_translocation(align1, align2, ref_lens):
-    # Check whether translocation is caused by fragemented reference and thus should be marked Fake misassembly
+    # Check whether translocation is caused by fragmented reference and thus should be marked Fake misassembly
     # Return inconsistency value if translocation is fake or None if translocation is real
     # !!! it is assumed that align1.ref != align2.ref
-    assert align1.ref != align2.ref, "Internal QUAST bug: is_fragmented_ref_fake_translocation() " \
-                                     "should be called only if align1.ref != align2.ref"
+    # assert align1.ref != align2.ref, "Internal QUAST bug: is_fragmented_ref_fake_translocation() " \
+    #                                 "should be called only if align1.ref != align2.ref"
+    if align1.ref == align2.ref:
+        return False
 
     if qconfig.check_for_fragmented_ref:
         if qconfig.is_combined_ref and not is_same_reference(align1.ref, align2.ref):
@@ -135,7 +137,7 @@ def is_fragmented_ref_fake_translocation(align1, align2, ref_lens):
     return False
 
 
-def is_misassembly(align1, align2, contig_seq, ref_lens, is_cyclic=False, region_struct_variations=None):
+def is_misassembly(align1, align2, contig_seq, ref_lens, is_cyclic=False, region_struct_variations=None, is_fake_translocation=False):
     #Calculate inconsistency between distances on the reference and on the contig
     distance_on_contig = align2.start() - align1.end() - 1
     cyclic_ref_lens = ref_lens if is_cyclic else None
@@ -166,7 +168,7 @@ def is_misassembly(align1, align2, contig_seq, ref_lens, is_cyclic=False, region
     if region_struct_variations and check_sv(align1, align2, inconsistency, region_struct_variations):
         aux_data['is_sv'] = True
         return False, aux_data
-    if align1.ref != align2.ref and is_fragmented_ref_fake_translocation(align1, align2, ref_lens):
+    if is_fake_translocation:
         aux_data["inconsistency"] = sum(__get_border_gaps(align1, align2, ref_lens))
         return False, aux_data
     if align1.ref != align2.ref or abs(inconsistency) > qconfig.extensive_misassembly_threshold or strand1 != strand2:
@@ -332,9 +334,11 @@ def process_misassembled_contig(sorted_aligns, cyclic, aligned_lengths, region_m
     for i in range(len(sorted_aligns) - 1):
         next_align = sorted_aligns[i + 1]
 
-        cur_aligned_length -= exclude_internal_overlaps(prev_align, next_align, i, ca_output)
+        is_fake_translocation = is_fragmented_ref_fake_translocation(prev_align, next_align, ref_lens)
+        if not is_fake_translocation:
+            cur_aligned_length -= exclude_internal_overlaps(prev_align, next_align, i, ca_output)
         is_extensive_misassembly, aux_data = is_misassembly(prev_align, next_align, contig_seq, ref_lens,
-                                                            cyclic, region_struct_variations)
+                                                            cyclic, region_struct_variations, is_fake_translocation)
         inconsistency = aux_data["inconsistency"]
         distance_on_contig = aux_data["distance_on_contig"]
         misassembly_internal_overlap += aux_data["misassembly_internal_overlap"]
@@ -403,7 +407,7 @@ def process_misassembled_contig(sorted_aligns, cyclic, aligned_lengths, region_m
                 print >> ca_output.stdout_f, '\t\t\t  Not a misassembly' + reason_msg + ' between these two alignments'
                 region_misassemblies.append(Misassembly.FRAGMENTED)
                 print >> ca_output.icarus_out_f, 'fake: not a misassembly' + reason_msg
-            elif abs(inconsistency) <= qconfig.MAX_INDEL_LENGTH and \
+            elif abs(inconsistency) <= qconfig.MAX_INDEL_LENGTH and prev_align.ref == next_align.ref and \
                     count_ns_and_not_ns_between_aligns(contig_seq, prev_align, next_align)[1] <= qconfig.MAX_INDEL_LENGTH:
                 ns_number, not_ns_number = count_ns_and_not_ns_between_aligns(contig_seq, prev_align, next_align)
 

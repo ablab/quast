@@ -7,7 +7,8 @@
 
 from heapq import heappush, heappop
 from quast_libs import qconfig
-from quast_libs.ca_utils.analyze_misassemblies import is_misassembly, exclude_internal_overlaps, Misassembly
+from quast_libs.ca_utils.analyze_misassemblies import is_misassembly, exclude_internal_overlaps, Misassembly, \
+    is_fragmented_ref_fake_translocation
 from quast_libs.ca_utils.misc import is_same_reference
 
 
@@ -240,7 +241,8 @@ def get_added_len(set_aligns, cur_align):
 def get_score(score, aligns, ref_lens, is_cyclic, uncovered_len, seq, region_struct_variations, penalties):
     if len(aligns) > 1:
         align1, align2 = aligns[-2], aligns[-1]
-        if len(aligns) > 2:  # does not affect score and uncovered but it is important for further checking on set correctness
+        is_fake_translocation = is_fragmented_ref_fake_translocation(align1, align2, ref_lens)
+        if len(aligns) > 2 and not is_fake_translocation:  # does not affect score and uncovered but it is important for further checking on set correctness
             exclude_internal_overlaps(aligns[-3], align1)
         reduced_len = exclude_internal_overlaps(align1, align2)  # reduced_len is for align1 only
         # check whether the set is still correct, i.e both alignments are rather large
@@ -250,7 +252,8 @@ def get_score(score, aligns, ref_lens, is_cyclic, uncovered_len, seq, region_str
         added_len = get_added_len(aligns, aligns[-1])
         uncovered_len -= added_len - reduced_len
         score += score_single_align(align2, ctg_len=added_len) - score_single_align(align1, ctg_len=reduced_len)
-        is_extensive_misassembly, aux_data = is_misassembly(align1, align2, seq, ref_lens, is_cyclic, region_struct_variations)
+        is_extensive_misassembly, aux_data = is_misassembly(align1, align2, seq, ref_lens, is_cyclic, region_struct_variations,
+                                                            is_fake_translocation)
         if is_extensive_misassembly:
             score -= penalties['extensive']
             if align1.ref != align2.ref:

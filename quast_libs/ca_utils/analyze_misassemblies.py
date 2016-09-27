@@ -335,8 +335,7 @@ def process_misassembled_contig(sorted_aligns, cyclic, aligned_lengths, region_m
         next_align = sorted_aligns[i + 1]
 
         is_fake_translocation = is_fragmented_ref_fake_translocation(prev_align, next_align, ref_lens)
-        if not is_fake_translocation:
-            cur_aligned_length -= exclude_internal_overlaps(prev_align, next_align, i, ca_output)
+        cur_aligned_length -= exclude_internal_overlaps(prev_align, next_align, i, ca_output)
         is_extensive_misassembly, aux_data = is_misassembly(prev_align, next_align, contig_seq, ref_lens,
                                                             cyclic, region_struct_variations, is_fake_translocation)
         inconsistency = aux_data["inconsistency"]

@@ -242,7 +242,7 @@ def get_score(score, aligns, ref_lens, is_cyclic, uncovered_len, seq, region_str
     if len(aligns) > 1:
         align1, align2 = aligns[-2], aligns[-1]
         is_fake_translocation = is_fragmented_ref_fake_translocation(align1, align2, ref_lens)
-        if len(aligns) > 2 and not is_fake_translocation:  # does not affect score and uncovered but it is important for further checking on set correctness
+        if len(aligns) > 2:  # does not affect score and uncovered but it is important for further checking on set correctness
             exclude_internal_overlaps(aligns[-3], align1)
         reduced_len = exclude_internal_overlaps(align1, align2)  # reduced_len is for align1 only
         # check whether the set is still correct, i.e both alignments are rather large

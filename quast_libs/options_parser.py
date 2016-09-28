@@ -79,7 +79,7 @@ def check_output_dir(option, opt_str, value, parser, logger):
 def set_extensive_mis_size(option, opt_str, value, parser, logger):
     if value <= qconfig.MAX_INDEL_LENGTH:
         logger.error("--extensive-mis-size should be greater than maximum indel length (%d)!"
-                     % qconfig.MAX_INDEL_LENGTH, 1, to_stderr=True, exit_with_code=2)
+                     % qconfig.MAX_INDEL_LENGTH, to_stderr=True, exit_with_code=2)
     setattr(qconfig, option.dest, value)
 
 

@@ -16,6 +16,7 @@ import re
 from os.path import isfile, join
 
 from quast_libs import qconfig, qutils
+from quast_libs.fastaparser import _get_fasta_file_handler
 from quast_libs.log import get_logger
 from quast_libs.qutils import is_non_empty_file
 
@@ -281,12 +282,21 @@ def download_blastdb(logger=logger, only_clean=False):
     return 0
 
 
-def parallel_blast(contigs_fpath, label, blast_res_fpath, err_fpath, blast_check_fpath, blast_threads):
-    cmd = get_blast_fpath('blastn') + (' -query %s -db %s -outfmt 7 -num_threads %s' % (
-            contigs_fpath, db_fpath, blast_threads))
+def parallel_blast(contigs_fpath, label, corrected_dirpath, err_fpath, blast_res_fpath, blast_check_fpath, blast_threads):
+    logger.info('  ' + 'processing ' + label)
+    blast_query_fpath = contigs_fpath
+    if contigs_fpath.endswith('.gz') or contigs_fpath.endswith('.bz2'):
+        logger.info('  ' + 'unpacking ' + label)
+        unpacked_fpath = os.path.join(corrected_dirpath, os.path.basename(contigs_fpath) + '.unpacked')
+        with _get_fasta_file_handler(contigs_fpath) as f_in:
+            with open(unpacked_fpath, 'w') as f_out:
+                for l in f_in:
+                    f_out.write(l)
+        blast_query_fpath = unpacked_fpath
     res_fpath = blast_res_fpath + '_' + label
     check_fpath = blast_check_fpath + '_' + label
-    logger.info('  ' + 'processing ' + label)
+    cmd = get_blast_fpath('blastn') + (' -query %s -db %s -outfmt 7 -num_threads %s' % (
+        blast_query_fpath, db_fpath, blast_threads))
     qutils.call_subprocess(shlex.split(cmd), stdout=open(res_fpath, 'w'), stderr=open(err_fpath, 'a'), logger=logger)
     logger.info('  ' + 'BLAST results for %s are saved to %s...' % (label, res_fpath))
     with open(check_fpath, 'w') as check_file:
@@ -323,7 +333,7 @@ def check_blast(blast_check_fpath, blast_res_fpath, files_sizes, assemblies_fpat
     return blast_assemblies, set(downloaded_organisms), set(not_founded_organisms)
 
 
-def do(assemblies, labels, downloaded_dirpath, ref_txt_fpath=None):
+def do(assemblies, labels, downloaded_dirpath, corrected_dirpath, ref_txt_fpath=None):
     logger.print_timestamp()
     err_fpath = os.path.join(downloaded_dirpath, 'blast.err')
     blast_check_fpath = os.path.join(downloaded_dirpath, 'blast.check')
@@ -338,7 +348,8 @@ def do(assemblies, labels, downloaded_dirpath, ref_txt_fpath=None):
         organisms = parse_refs_list(ref_txt_fpath)
         organisms_assemblies = None
     else:
-        scores_organisms, organisms_assemblies = process_blast(blast_assemblies, downloaded_dirpath, labels, blast_check_fpath, err_fpath)
+        scores_organisms, organisms_assemblies = process_blast(blast_assemblies, downloaded_dirpath, corrected_dirpath,
+                                                               labels, blast_check_fpath, err_fpath)
         if scores_organisms:
             scores_organisms = sorted(scores_organisms, reverse=True)
             organisms = [organism for (score, organism) in scores_organisms]
@@ -356,7 +367,7 @@ def do(assemblies, labels, downloaded_dirpath, ref_txt_fpath=None):
     return ref_fpaths
 
 
-def process_blast(blast_assemblies, downloaded_dirpath, labels, blast_check_fpath, err_fpath):
+def process_blast(blast_assemblies, downloaded_dirpath, corrected_dirpath, labels, blast_check_fpath, err_fpath):
     if not os.path.isdir(blastdb_dirpath):
         os.makedirs(blastdb_dirpath)
 
@@ -380,8 +391,9 @@ def process_blast(blast_assemblies, downloaded_dirpath, labels, blast_check_fpat
             from joblib import Parallel, delayed
         else:
             from joblib3 import Parallel, delayed
-        Parallel(n_jobs=n_jobs)(delayed(parallel_blast)(
-                    assembly.fpath, assembly.label, blast_res_fpath, err_fpath, blast_check_fpath, blast_threads) for i, assembly in enumerate(blast_assemblies))
+        Parallel(n_jobs=n_jobs)(delayed(parallel_blast)(assembly.fpath, assembly.label, corrected_dirpath,
+                                                        err_fpath, blast_res_fpath, blast_check_fpath, blast_threads)
+                                for i, assembly in enumerate(blast_assemblies))
 
     logger.main_info('')
     scores_organisms = []

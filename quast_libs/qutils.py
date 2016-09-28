@@ -93,6 +93,10 @@ def correct_fasta(original_fpath, corrected_fpath, min_contig,
     modified_fasta_entries = []
     used_seq_names = defaultdict(int)
     for first_line, seq in fastaparser.read_fasta(original_fpath):
+        if not first_line:
+            logger.warning('Skipping ' + original_fpath + ' because >sequence_name field is empty.',
+                    indent='    ')
+            return False
         if (len(seq) >= min_contig) or is_reference:
             corr_name = correct_name(first_line)
             uniq_name = get_uniq_name(corr_name, used_seq_names)

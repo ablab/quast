@@ -156,7 +156,8 @@ def main(args):
             downloaded_dirpath = os.path.join(output_dirpath, qconfig.downloaded_dirname)
             if not os.path.isdir(downloaded_dirpath):
                 os.mkdir(downloaded_dirpath)
-            ref_fpaths = search_references_meta.do(assemblies, labels, downloaded_dirpath, qconfig.references_txt)
+            corrected_dirpath = os.path.join(output_dirpath, qconfig.corrected_dirname)
+            ref_fpaths = search_references_meta.do(assemblies, labels, downloaded_dirpath, corrected_dirpath, qconfig.references_txt)
             if ref_fpaths:
                 search_references_meta.is_quast_first_run = True
                 if not qconfig.references_txt:

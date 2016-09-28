@@ -20,8 +20,9 @@ class PassThroughOptionParser(OptionParser):
         while rargs:
             try:
                 OptionParser._process_args(self,largs,rargs,values)
-            except (BadOptionError, AmbiguousOptionError), e:
-                largs.append(e.opt_str)
+            except (BadOptionError, AmbiguousOptionError):
+                exc_value = sys.exc_info()[1]
+                largs.append(exc_value.opt_str)
 
 
 def main(args):

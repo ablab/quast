@@ -6,6 +6,7 @@
 ############################################################################
 from __future__ import with_statement
 import os
+import sys
 from collections import defaultdict
 
 from quast_libs import qconfig
@@ -77,7 +78,10 @@ def partition_contigs(assemblies, ref_fpaths, corrected_dirpath, alignments_fpat
     # array of assemblies for each reference
     assemblies_by_ref = dict([(qutils.name_from_fpath(ref_fpath), []) for ref_fpath in ref_fpaths])
     n_jobs = min(qconfig.max_threads, len(assemblies))
-    from joblib import Parallel, delayed
+    if sys.version_info[0] < 3:
+        from joblib import Parallel, delayed
+    else:
+        from joblib3 import Parallel, delayed
     assemblies = Parallel(n_jobs=n_jobs)(delayed(parallel_partition_contigs)(asm,
                                 assemblies_by_ref, corrected_dirpath, alignments_fpath_template) for asm in assemblies)
     assemblies_dicts = [assembly[0] for assembly in assemblies]
@@ -231,7 +235,7 @@ def calculate_ave_read_support(combined_output_dirpath, assemblies):
             for line in in_f:
                 ref_name, contig_len, contig_cov = line.strip().split('\t')
                 aligned_contigs_by_ref.setdefault(ref_name, []).append((float(contig_len), float(contig_cov)))
-        for ref_name, contigs in aligned_contigs_by_ref.iteritems():
+        for ref_name, contigs in aligned_contigs_by_ref.items():
             ref_cov = sum(contig_cov * aligned_len for (aligned_len, contig_cov) in contigs)
             ref_cov /= sum(aligned_len for (aligned_len, contig_cov) in contigs)
             corr_assembly_label = qutils.label_from_fpath(assembly.fpath).replace(' ', '_')

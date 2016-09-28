@@ -520,9 +520,9 @@ def save_tex(fpath, all_rows, is_transposed=False):
                 nums = _mapme(get_num_from_table_value, values)
                 best = None
                 if quality == Fields.Quality.MORE_IS_BETTER:
-                    best = max(nums)
+                    best = max(n for n in nums if n is not None)
                 if quality == Fields.Quality.LESS_IS_BETTER:
-                    best = min(nums)
+                    best = min(n for n in nums if n is not None)
 
                 if len([num for num in nums if num != best]) == 0:
                     cells = _mapme(val_to_str, values)

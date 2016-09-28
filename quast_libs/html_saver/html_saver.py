@@ -337,7 +337,7 @@ def create_krona_charts(taxons_for_krona, meta_log, results_dirpath, json_texts)
             krona_file.close()
         for json_text in json_texts[1:]:
             json_data = json.loads(json_text)
-            ref = json_data['referenceName']
+            ref_name = json_data['referenceName']
             lengths = []
             report = json_data['report']
             for section in report:
@@ -347,18 +347,18 @@ def create_krona_charts(taxons_for_krona, meta_log, results_dirpath, json_texts)
                     elif metric['metricName'] == reporting.Fields.TOTAL_ALIGNED_LEN:
                         lengths = metric['values']
                         break
-            if not lengths:
+            if not lengths or not ref_name:
                 continue
             cur_assemblies = json_data['assembliesNames']
             for index, name in enumerate(cur_assemblies):
                 krona_fpath = os.path.join(krona_res_dirpath, name + krona_txt_ext)
                 with open(krona_fpath, 'a') as f_krona:
-                    if ref in taxons_for_krona:
-                        f_krona.write(str(lengths[index]) + '\t' + taxons_for_krona[ref] + '\n')
+                    if ref_name in taxons_for_krona:
+                        f_krona.write(str(lengths[index]) + '\t' + taxons_for_krona[ref_name] + '\n')
                     else:
                         f_krona.write(str(lengths[index]) + '\n')
-            if ref in taxons_for_krona:
-                krona_common_file.write(str(sum(lengths)) + '\t' + taxons_for_krona[ref] + '\n')
+            if ref_name in taxons_for_krona:
+                krona_common_file.write(str(sum(lengths)) + '\t' + taxons_for_krona[ref_name] + '\n')
             else:
                 krona_common_file.write(str(sum(lengths)) + '\n')
         krona_common_file.close()

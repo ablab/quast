@@ -160,7 +160,7 @@ def paired_reads_names_are_equal(reads_fpaths, logger):
         handler = None
         try:
             if ext in ['.gz', '.gzip']:
-                handler = gzip.open(fpath)
+                handler = gzip.open(fpath, mode='rt')
             else:
                 handler = open(fpath)
         except IOError:
@@ -169,9 +169,9 @@ def paired_reads_names_are_equal(reads_fpaths, logger):
         first_line = handler.readline()
         full_read_name = first_line.strip().split()[0]
         if len(full_read_name) < 3 or not full_read_name.endswith(name_ending):
-            logger.warning('Improper read names in {fpath} ({reads_type} reads)! '
+            logger.warning('Improper read names in ' + fpath + ' (' + reads_type + ' reads)! '
                            'Names should end with /1 (for forward reads) or /2 (for reverse reads) '
-                           'but {full_read_name} was found!'.format(**locals()))
+                           'but ' + full_read_name + ' was found!')
             return False
         first_read_names.append(full_read_name[1:-2])  # truncate trailing /1 or /2 and @/> prefix (Fastq/Fasta)
         handler.close()

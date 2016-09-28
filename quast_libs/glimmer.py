@@ -7,6 +7,7 @@
 
 from __future__ import with_statement
 import os
+import sys
 import tempfile
 import itertools
 import csv
@@ -30,7 +31,7 @@ def merge_gffs(gffs, out_path):
     out_file = open_gzipsafe(out_path, 'w')
     out_file.write('##gff-version 3\n')
     for gff_path in gffs:
-        with open(gff_path, 'r') as gff_file:
+        with open(gff_path) as gff_file:
             out_file.writelines(itertools.islice(gff_file, 2, None))
     out_file.close()
     return out_path
@@ -38,8 +39,7 @@ def merge_gffs(gffs, out_path):
 
 def parse_gff(gff_path):
     gff_file = open_gzipsafe(gff_path)
-    r = csv.reader(
-        itertools.ifilter(lambda l: not l.startswith("#"), gff_file),
+    r = csv.reader(filter(lambda l: not l.startswith("#"), gff_file),
         delimiter='\t')
     for index, _source, type, start, end, score, strand, phase, extra in r:
         if type != 'mRNA':
@@ -171,7 +171,10 @@ def do(contigs_fpaths, gene_lengths, out_dirpath):
         os.makedirs(tmp_dirpath)
 
     n_jobs = min(len(contigs_fpaths), qconfig.max_threads)
-    from joblib import Parallel, delayed
+    if sys.version_info[0] < 3:
+        from joblib import Parallel, delayed
+    else:
+        from joblib3 import Parallel, delayed
     results = Parallel(n_jobs=n_jobs)(delayed(predict_genes)(
         index, contigs_fpath, gene_lengths, out_dirpath, tool_dirpath, tmp_dirpath)
         for index, contigs_fpath in enumerate(contigs_fpaths))

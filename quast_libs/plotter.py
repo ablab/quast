@@ -147,7 +147,7 @@ def cumulative_plot(reference, contigs_fpaths, lists_of_lengths, plot_fpath, tit
         vals_length = [0]
         for l in sorted(lengths, reverse=True):
             vals_length.append(vals_length[-1] + l)
-        vals_contig_index = range(0, len(vals_length))
+        vals_contig_index = list(range(0, len(vals_length)))
         if vals_contig_index:
             max_x = max(vals_contig_index[-1], max_x)
             max_y = max(max_y, vals_length[-1])
@@ -161,7 +161,7 @@ def cumulative_plot(reference, contigs_fpaths, lists_of_lengths, plot_fpath, tit
                 y_vals.append(y_vals[-1] + l)
             else:
                 y_vals = [l]
-        x_vals = range(0, len(y_vals)) # for reference only: starting from X=1
+        x_vals = list(range(0, len(y_vals))) # for reference only: starting from X=1)
         # extend reference curve to the max X-axis point
         reference_length = y_vals[-1]
         max_x = max(max_x, x_vals[-1])
@@ -179,7 +179,7 @@ def cumulative_plot(reference, contigs_fpaths, lists_of_lengths, plot_fpath, tit
     box = ax.get_position()
     ax.set_position([box.x0, box.y0 + box.height * 0.2, box.width, box.height * 0.8])
 
-    legend_list = map(qutils.label_from_fpath, contigs_fpaths)
+    legend_list = [qutils.label_from_fpath(fpath) for fpath in contigs_fpaths]
     if reference:
         legend_list += ['Reference']
 
@@ -291,7 +291,7 @@ def Nx_plot(results_dir, reduce_points, contigs_fpaths, lists_of_lengths, plot_f
     box = ax.get_position()
     ax.set_position([box.x0, box.y0 + box.height * 0.2, box.width, box.height * 0.8])
 
-    legend_list = map(qutils.label_from_fpath, contigs_fpaths)
+    legend_list = [qutils.label_from_fpath(fpath) for fpath in contigs_fpaths]
 
     # Put a legend below current axis
     try: # for matplotlib <= 2009-12-09
@@ -367,7 +367,7 @@ def GC_content_plot(ref_fpath, contigs_fpaths, list_of_GC_distributions, plot_fp
     ax.set_position([box.x0, box.y0 + box.height * 0.2, box.width, box.height * 0.8])
     # Put a legend below current axis bx
 
-    legend_list = map(qutils.label_from_fpath, contigs_fpaths)
+    legend_list = [qutils.label_from_fpath(fpath) for fpath in contigs_fpaths]
     if ref_fpath:
         legend_list += ['Reference']
 
@@ -420,7 +420,7 @@ def genes_operons_plot(reference_value, contigs_fpaths, files_feature_in_contigs
         # calculate values for the plot
         feature_in_contigs = files_feature_in_contigs[contigs_fpath]
 
-        x_vals = range(len(feature_in_contigs) + 1)
+        x_vals = list(range(len(feature_in_contigs) + 1))
         y_vals = [0]
         total_full = 0
         for feature_amount in feature_in_contigs:
@@ -450,7 +450,7 @@ def genes_operons_plot(reference_value, contigs_fpaths, files_feature_in_contigs
     ax.set_position([box.x0, box.y0 + box.height * 0.2, box.width, box.height * 0.8])
 
 
-    legend_list = map(qutils.label_from_fpath, contigs_fpaths)
+    legend_list = [qutils.label_from_fpath(fpath) for fpath in contigs_fpaths]
     if reference_value:
         legend_list += ['Reference']
 
@@ -533,7 +533,7 @@ def histogram(contigs_fpaths, values, plot_fpath, title='', yaxis_title='', bott
     ax.set_position([box.x0, box.y0 + box.height * 0.2, box.width, box.height * 0.8])
     ax.yaxis.grid(with_grid)
 
-    legend_list = map(qutils.label_from_fpath, contigs_fpaths)
+    legend_list = [qutils.label_from_fpath(fpath) for fpath in contigs_fpaths]
     # Put a legend below current axis
     try:  # for matplotlib <= 2009-12-09
         ax.legend(legend_list, loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True,
@@ -627,7 +627,7 @@ def coverage_histogram(contigs_fpaths, values, plot_fpath, title='', bin_size=No
 
     matplotlib.pyplot.xticks(x_ticks, x_ticks_labels, size='small')
 
-    legend_list = map(qutils.label_from_fpath, contigs_fpaths)
+    legend_list = [qutils.label_from_fpath(fpath) for fpath in contigs_fpaths]
     # Put a legend below current axis
     try:  # for matplotlib <= 2009-12-09
         legend = ax.legend(legend_list, loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True,
@@ -675,7 +675,7 @@ def draw_meta_summary_plot(html_fpath, output_dirpath, labels, ref_names, all_ro
     for j in range(contigs_num):
         to_plot_x = []
         to_plot_y = []
-        arr = range(1, ref_num + 1)
+        arr = list(range(1, ref_num + 1))
         for i in range(ref_num):
             arr[i] += 0.07 * (j - (contigs_num - 1) * 0.5)
             to_plot_x.append(arr[i])
@@ -770,7 +770,7 @@ def draw_meta_summary_misassembl_plot(results, ref_names, contig_num, plot_fpath
     misassemblies = [reporting.Fields.MIS_RELOCATION, reporting.Fields.MIS_TRANSLOCATION, reporting.Fields.MIS_INVERTION]
     legend_n = []
     ymax = 0
-    arr_x = range(1, refs_num + 1)
+    arr_x = list(range(1, refs_num + 1))
     bar_width = 0.3
     json_points_x = []
     json_points_y = []
@@ -857,7 +857,7 @@ def draw_misassembl_plot(reports, plot_fpath, title='', yaxis_title=''):
                            reporting.Fields.MIS_ISTRANSLOCATIONS]
     legend_n = []
     ymax = 0
-    main_arr_x = range(1, len(reports) + 1)
+    main_arr_x = list(range(1, len(reports) + 1))
     arr_x = []
     arr_y = []
     for j in range(len(reports)):

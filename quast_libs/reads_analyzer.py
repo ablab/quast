@@ -7,6 +7,7 @@
 
 from __future__ import with_statement
 import os
+import sys
 from os.path import isfile
 import re
 import shutil
@@ -36,7 +37,7 @@ class Mapping(object):
     def parse(line):
         if line.startswith('@'):  # comment
             return None
-        if line.split('\t') < 11:  # not valid line
+        if len(line.split('\t')) < 11:  # not valid line
             return None
         mapping = Mapping(line.split('\t'))
         return mapping
@@ -141,7 +142,7 @@ def process_one_ref(cur_ref_fpath, output_dirpath, err_path, bed_fpath=None):
         cmd = 'gunzip -c %s' % found_SV_fpath
         qutils.call_subprocess(shlex.split(cmd), stdout=open(unpacked_SV_fpath, 'w'),
                                stderr=open(err_path, 'a'), logger=logger)
-    from manta import vcfToBedpe
+    from quast_libs.manta import vcfToBedpe
     vcfToBedpe.vcfToBedpe(open(unpacked_SV_fpath), open(ref_bed_fpath, 'w'))
     return ref_bed_fpath
 
@@ -154,7 +155,10 @@ def search_sv_with_manta(main_ref_fpath, meta_ref_fpaths, output_dirpath, err_pa
         return final_bed_fpath
 
     if meta_ref_fpaths:
-        from joblib import Parallel, delayed
+        if sys.version_info[0] < 3:
+            from joblib import Parallel, delayed
+        else:
+            from joblib3 import Parallel, delayed
         n_jobs = min(len(meta_ref_fpaths), qconfig.max_threads)
         bed_fpaths = Parallel(n_jobs=n_jobs)(delayed(process_one_ref)(cur_ref_fpath, output_dirpath, err_path) for cur_ref_fpath in meta_ref_fpaths)
         bed_fpaths = [f for f in bed_fpaths if f is not None]
@@ -581,13 +585,11 @@ def do(ref_fpath, contigs_fpaths, reads_fpaths, meta_ref_fpaths, output_dir, ext
     open(log_path, 'w').close()
     open(err_path, 'w').close()
     logger.info('  ' + 'Logging to files %s and %s...' % (log_path, err_path))
-    try:
-        bed_fpath, cov_fpath, physical_cov_fpath = run_processing_reads(ref_fpath, meta_ref_fpaths, ca_utils.misc.ref_labels_by_chromosomes,
+    #try:
+    bed_fpath, cov_fpath, physical_cov_fpath = run_processing_reads(ref_fpath, meta_ref_fpaths, ca_utils.misc.ref_labels_by_chromosomes,
                                                                         reads_fpaths, temp_output_dir, output_dir, log_path, err_path,
                                                                         bed_fpath=bed_fpath, sam_fpath=sam_fpath, bam_fpath=bam_fpath)
-    except:
-        bed_fpath, cov_fpath, physical_cov_fpath = None, None, None
-        logger.error('Failed searching structural variations! This function is experimental and may work improperly. Sorry for the inconvenience.')
+    #except:
     if not qconfig.debug:
         shutil.rmtree(temp_output_dir, ignore_errors=True)
 

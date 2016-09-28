@@ -7,9 +7,9 @@
 
 import logging
 import os
-from . import fastaparser
-from . import genes_parser
-from quast_libs import reporting, qconfig, qutils
+import sys
+
+from quast_libs import fastaparser, genes_parser, reporting, qconfig, qutils
 from quast_libs.html_saver import json_saver
 
 from quast_libs.log import get_logger
@@ -111,7 +111,7 @@ def process_single_file(contigs_fpath, index, nucmer_path_dirpath, genome_stats_
     #  374145   374355  |     2306     2097  |      211      210  |    85.45  | gi|48994873|gb|U00096.2|	NODE_0_length_6088
 
     genome_mapping = {}
-    for chr_name, chr_len in reference_chromosomes.iteritems():
+    for chr_name, chr_len in reference_chromosomes.items():
         genome_mapping[chr_name] = [0] * (chr_len + 1)
 
     contig_tuples = fastaparser.read_fasta(contigs_fpath)  # list of FASTA entries (in tuples: name, seq)
@@ -155,15 +155,15 @@ def process_single_file(contigs_fpath, index, nucmer_path_dirpath, genome_stats_
     gaps_count = 0
     gaps_fpath = os.path.join(genome_stats_dirpath, assembly_label + '_gaps.txt')
     gaps_file = open(gaps_fpath, 'w')
-    for chr_name, chr_len in reference_chromosomes.iteritems():
-        print >>gaps_file, chr_name
+    for chr_name, chr_len in reference_chromosomes.items():
+        gaps_file.write(chr_name)
         cur_gap_size = 0
         aligned_len = 0
         for i in range(1, chr_len + 1):
             if genome_mapping[chr_name][i] == 1:
                 if cur_gap_size >= qconfig.min_gap_size:
                     gaps_count += 1
-                    print >>gaps_file, i - cur_gap_size, i - 1
+                    gaps_file.write(' ' + str(i - cur_gap_size) + ' ' + str(i - 1))
                 aligned_len += 1
                 covered_bp += 1
                 cur_gap_size = 0
@@ -172,7 +172,8 @@ def process_single_file(contigs_fpath, index, nucmer_path_dirpath, genome_stats_
         ref_lengths[chr_name] = aligned_len
         if cur_gap_size >= qconfig.min_gap_size:
             gaps_count += 1
-            print >>gaps_file, chr_len - cur_gap_size + 1, chr_len
+            gaps_file.write(' ' + str(chr_len - cur_gap_size + 1) + ' ' + str(chr_len))
+        gaps_file.write('\n')
     gaps_file.close()
 
     results["covered_bp"] = covered_bp
@@ -199,8 +200,8 @@ def process_single_file(contigs_fpath, index, nucmer_path_dirpath, genome_stats_
         total_partial = 0
         found_fpath = os.path.join(genome_stats_dirpath, assembly_label + suffix)
         found_file = open(found_fpath, 'w')
-        print >>found_file, '%s\t\t%s\t%s\t%s' % ('ID or #', 'Start', 'End', 'Type')
-        print >>found_file, '========================================='
+        found_file.write('%s\t\t%s\t%s\t%s\n' % ('ID or #', 'Start', 'End', 'Type'))
+        found_file.write('=========================================\n')
 
         # 0 - gene is not found,
         # 1 - gene is found,
@@ -232,7 +233,7 @@ def process_single_file(contigs_fpath, index, nucmer_path_dirpath, genome_stats_
                             region_id = str(region.id)
                             if region_id == 'None':
                                 region_id = '# ' + str(region.number + 1)
-                            print >>found_file, '%s\t\t%d\t%d\tcomplete' % (region_id, region.start, region.end)
+                            found_file.write('%s\t\t%d\t%d\tcomplete\n' % (region_id, region.start, region.end))
                             feature_in_contigs[contig_id] += 1  # inc number of found genes/operons in id-th contig
 
                             cur_feature_is_found = True
@@ -249,7 +250,7 @@ def process_single_file(contigs_fpath, index, nucmer_path_dirpath, genome_stats_
                 region_id = str(region.id)
                 if region_id == 'None':
                     region_id = '# ' + str(region.number + 1)
-                print >>found_file, '%s\t\t%d\t%d\tpartial' % (region_id, region.start, region.end)
+                found_file.write('%s\t\t%d\t%d\tpartial\n' % (region_id, region.start, region.end))
 
         results[field + "_full"] = total_full
         results[field + "_partial"] = total_partial
@@ -312,7 +313,7 @@ def do(ref_fpath, aligned_contigs_fpaths, output_dirpath, json_output_dirpath,
         else:
             logger.info('  Loaded ' + str(len(container.region_list)) + ' ' + container.kind + 's')
             res_file.write(container.kind + 's loaded: ' + str(len(container.region_list)) + '\n')
-            container.chr_names_dict = chromosomes_names_dict(container.kind, container.region_list, reference_chromosomes.keys())
+            container.chr_names_dict = chromosomes_names_dict(container.kind, container.region_list, list(reference_chromosomes.keys()))
 
     for contigs_fpath in aligned_contigs_fpaths:
         report = reporting.get(contigs_fpath)
@@ -333,7 +334,10 @@ def do(ref_fpath, aligned_contigs_fpaths, output_dirpath, json_output_dirpath,
     # process all contig files
     num_nf_errors = logger._num_nf_errors
     n_jobs = min(len(aligned_contigs_fpaths), qconfig.max_threads)
-    from joblib import Parallel, delayed
+    if sys.version_info[0] < 3:
+        from joblib import Parallel, delayed
+    else:
+        from joblib3 import Parallel, delayed
     process_results = Parallel(n_jobs=n_jobs)(delayed(process_single_file)(
         contigs_fpath, index, nucmer_path_dirpath, genome_stats_dirpath,
         reference_chromosomes, genes_container, operons_container)
@@ -351,7 +355,7 @@ def do(ref_fpath, aligned_contigs_fpaths, output_dirpath, json_output_dirpath,
     for ref in reference_chromosomes:
         ref_lengths_by_contigs[ref] = [ref_lengths[i][ref] for i in range(len(ref_lengths))]
     res_file.write('reference chromosomes:\n')
-    for chr_name, chr_len in reference_chromosomes.iteritems():
+    for chr_name, chr_len in reference_chromosomes.items():
         aligned_len = max(ref_lengths_by_contigs[chr_name])
         res_file.write('\t' + chr_name + ' (total length: ' + str(chr_len) + ' bp, maximal covered length: ' + str(aligned_len) + ' bp)\n')
     res_file.write('\n')
@@ -433,7 +437,7 @@ def do(ref_fpath, aligned_contigs_fpaths, output_dirpath, json_output_dirpath,
 
     if qconfig.draw_plots:
         # cumulative plots:
-        import plotter
+        from . import plotter
         if genes_container.region_list:
             plotter.genes_operons_plot(len(genes_container.region_list), aligned_contigs_fpaths, files_genes_in_contigs,
                 genome_stats_dirpath + '/genes_cumulative_plot', 'genes')

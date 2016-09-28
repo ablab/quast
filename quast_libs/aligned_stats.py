@@ -7,8 +7,7 @@
 
 import os
 import itertools
-import fastaparser
-from quast_libs import reporting, qconfig, qutils
+from quast_libs import fastaparser, N50, plotter, reporting, qconfig, qutils
 
 from quast_libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
@@ -36,7 +35,6 @@ def do(ref_fpath, aligned_contigs_fpaths, output_dirpath, json_output_dirpath,
     for contigs_fpath in aligned_contigs_fpaths:
         assembly_lengths.append(sum(fastaparser.get_chr_lengths_from_fastafile(contigs_fpath).values()))
 
-    import N50
     for i, (contigs_fpath, lens, assembly_len) in enumerate(
             zip(aligned_contigs_fpaths, aligned_lengths_lists, assembly_lengths)):
         na50 = N50.NG50(lens, assembly_len)
@@ -82,7 +80,6 @@ def do(ref_fpath, aligned_contigs_fpaths, output_dirpath, json_output_dirpath,
         from quast_libs.html_saver import html_saver
         html_saver.save_assembly_lengths(output_dirpath, aligned_contigs_fpaths, assembly_lengths)
 
-    import plotter
     if qconfig.draw_plots:
         # Drawing cumulative plot (aligned contigs)...
         plotter.cumulative_plot(ref_fpath, aligned_contigs_fpaths, aligned_lengths_lists,

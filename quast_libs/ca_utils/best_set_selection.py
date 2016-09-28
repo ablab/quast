@@ -73,7 +73,7 @@ class SolidRegion(object):
         return self.start <= align.start() and align.end() <= self.end
 
 
-def get_best_aligns_sets(sorted_aligns, ctg_len, planta_out_f, seq, ref_lens, is_cyclic=False, region_struct_variations=None):
+def get_best_aligns_sets(sorted_aligns, ctg_len, stdout_f, seq, ref_lens, is_cyclic=False, region_struct_variations=None):
     critical_number_of_aligns = 200  # use additional optimizations for large number of alignments
 
     penalties = dict()
@@ -85,7 +85,7 @@ def get_best_aligns_sets(sorted_aligns, ctg_len, planta_out_f, seq, ref_lens, is
 
     # trying to optimise the algorithm if the number of possible alignments is large
     if len(sorted_aligns) > critical_number_of_aligns:
-        print >> planta_out_f, '\t\t\tSkipping redundant alignments which can\'t be in the best set of alignments A PRIORI'
+        stdout_f.write('\t\t\tSkipping redundant alignments which can\'t be in the best set of alignments A PRIORI\n')
 
         # FIRST STEP: find solid aligns (which are present in the best selection for sure)
         # they should have unique (not covered by other aligns) region of length > 2 * extensive_penalty
@@ -130,7 +130,7 @@ def get_best_aligns_sets(sorted_aligns, ctg_len, planta_out_f, seq, ref_lens, is
                         filtered_aligns.append(align)
                         break
                     else:
-                        print >> planta_out_f, '\t\tSkipping redundant alignment %s' % (str(align))
+                        stdout_f.write('\t\tSkipping redundant alignment %s\n' % (str(align)))
             except IndexError:  # solid_regions is empty
                 filtered_aligns += sorted_aligns[idx:]
 
@@ -205,7 +205,7 @@ def get_best_aligns_sets(sorted_aligns, ctg_len, planta_out_f, seq, ref_lens, is
                     local_uncovered = uncovered
                 elif score == local_max_score and uncovered < local_uncovered:
                     local_uncovered = uncovered
-        for preceding_set, (score, uncovered) in putative_predecessors.iteritems():
+        for preceding_set, (score, uncovered) in putative_predecessors.items():
             score_drop = local_max_score - score + putative_set.score_drop
             if score_drop > max_allowed_score_drop:
                 continue

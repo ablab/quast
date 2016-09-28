@@ -9,6 +9,7 @@ from __future__ import with_statement
 from os.path import isfile, join, getsize, basename
 import datetime
 import shutil
+import sys
 
 from quast_libs import qconfig, qutils, ca_utils
 from quast_libs.ca_utils.misc import is_emem_aligner
@@ -83,7 +84,7 @@ def align_contigs(nucmer_fpath, ref_fpath, contigs_fpath, old_contigs_fpath, ind
     coords_fpath, _, _, show_snps_fpath, _ = \
         get_nucmer_aux_out_fpaths(nucmer_fpath)
 
-    print >> log_out_f, 'Aligning contigs to reference...'
+    log_out_f.write('Aligning contigs to reference...\n')
 
     # Checking if there are existing previous nucmer alignments.
     # If they exist, using them to save time.
@@ -91,12 +92,12 @@ def align_contigs(nucmer_fpath, ref_fpath, contigs_fpath, old_contigs_fpath, ind
     if isfile(nucmer_successful_check_fpath) and isfile(coords_fpath) and \
        (isfile(show_snps_fpath) or isfile(show_snps_fpath + '.gz') or not qconfig.show_snps):
         if check_nucmer_successful_check(nucmer_successful_check_fpath, old_contigs_fpath, ref_fpath):
-            print >> log_out_f, '\tUsing existing alignments...'
+            log_out_f.write('\tUsing existing alignments...\n')
             logger.info('  ' + qutils.index_to_str(index) + 'Using existing alignments... ')
             using_existing_alignments = True
 
     if not using_existing_alignments:
-        print >> log_out_f, '\tAligning contigs to the reference '
+        log_out_f.write('\tAligning contigs to the reference\n')
         logger.info('  ' + qutils.index_to_str(index) + 'Aligning contigs to the reference')
 
         if not qconfig.splitted_ref:
@@ -122,15 +123,18 @@ def align_contigs(nucmer_fpath, ref_fpath, contigs_fpath, old_contigs_fpath, ind
                                      ' (' + str(n_jobs) + ' threads)')
 
             # processing each chromosome separately (if we can)
-            from joblib import Parallel, delayed
+            if sys.version_info[0] < 3:
+                from joblib import Parallel, delayed
+            else:
+                from joblib3 import Parallel, delayed
             nucmer_exit_codes = Parallel(n_jobs=n_jobs)(delayed(run_nucmer)(
                 prefix, chr_file, contigs_fpath, log_out_fpath, log_err_fpath + "_part%d" % (i + 1), index, threads)
                 for i, (prefix, chr_file) in enumerate(prefixes_and_chr_files))
 
-            print >> log_err_f, "Stderr outputs for reference parts are in:"
+            log_err_f.write("Stderr outputs for reference parts are in:\n")
             for i in range(len(prefixes_and_chr_files)):
-                print >> log_err_f, log_err_fpath + "_part%d" % (i + 1)
-            print >> log_err_f, ""
+                log_err_f.write(log_err_fpath + "_part%d" % (i + 1) + '\n')
+            log_err_f.write("\n")
 
             if 0 not in nucmer_exit_codes:
                 return NucmerStatus.ERROR
@@ -165,7 +169,7 @@ def align_contigs(nucmer_fpath, ref_fpath, contigs_fpath, old_contigs_fpath, ind
             indent='  ' + qutils.index_to_str(index))
 
         if return_code != 0:
-            print >> log_err_f, qutils.index_to_str(index) + 'Delta filter failed for', contigs_fpath, '\n'
+            log_err_f.write(qutils.index_to_str(index) + ' Delta filter failed for ' + contigs_fpath + '\n')
             return NucmerStatus.ERROR
 
         shutil.move(filtered_delta_fpath, delta_fpath)
@@ -178,7 +182,7 @@ def align_contigs(nucmer_fpath, ref_fpath, contigs_fpath, old_contigs_fpath, ind
             stderr=log_err_f,
             indent='  ' + qutils.index_to_str(index))
         if return_code != 0:
-            print >> log_err_f, qutils.index_to_str(index) + 'Show-coords failed for', contigs_fpath, '\n'
+            log_err_f.write(qutils.index_to_str(index) + ' Show-coords failed for ' + contigs_fpath + '\n')
             return NucmerStatus.ERROR
 
         # removing waste lines from coords file
@@ -218,7 +222,7 @@ def align_contigs(nucmer_fpath, ref_fpath, contigs_fpath, old_contigs_fpath, ind
                     stderr=log_err_f,
                     indent='  ' + qutils.index_to_str(index))
                 if return_code != 0:
-                    print >> log_err_f, qutils.index_to_str(index) + 'Show-snps failed for', contigs_fpath, '\n'
+                    log_err_f.write(qutils.index_to_str(index) + ' Show-snps failed for ' + contigs_fpath + '\n')
                     return NucmerStatus.ERROR
 
         create_nucmer_successful_check(nucmer_successful_check_fpath, old_contigs_fpath, ref_fpath)

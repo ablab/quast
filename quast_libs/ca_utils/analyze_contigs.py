@@ -29,7 +29,7 @@ def check_for_potential_translocation(seq, ctg_len, sorted_aligns, log_out_f):
                             unaligned_len - count_ns < qconfig.significant_part_size:
         return 0
 
-    print >> log_out_f, '\t\tIt can contain interspecies translocations.'
+    log_out_f.write('\t\tIt can contain interspecies translocations.\n')
     return 1
 
 
@@ -69,7 +69,7 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, aligns, ref_featu
     for contig, seq in fastaparser.read_fasta(contigs_fpath):
         #Recording contig stats
         ctg_len = len(seq)
-        print >> ca_output.stdout_f, 'CONTIG: %s (%dbp)' % (contig, ctg_len)
+        ca_output.stdout_f.write('CONTIG: %s (%dbp)\n' % (contig, ctg_len))
         contig_type = 'unaligned'
 
         #Check if this contig aligned to the reference
@@ -77,7 +77,7 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, aligns, ref_featu
             for align in aligns[contig]:
                 sub_seq = seq[align.start(): align.end()]
                 if 'N' in sub_seq:
-                    ns_pos = [pos for pos in xrange(align.start(), align.end()) if seq[pos] == 'N']
+                    ns_pos = [pos for pos in range(align.start(), align.end()) if seq[pos] == 'N']
             contig_type = 'correct'
             #Pull all aligns for this contig
             num_aligns = len(aligns[contig])
@@ -88,7 +88,7 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, aligns, ref_featu
             top_id = sorted_aligns[0].idy
             top_score = score_single_align(sorted_aligns[0])
             top_aligns = []
-            print >> ca_output.stdout_f, 'Top Length: %d  Top ID: %.2f (Score: %.1f)' % (top_len, top_id, top_score)
+            ca_output.stdout_f.write('Top Length: %d  Top ID: %.2f (Score: %.1f)\n' % (top_len, top_id, top_score))
 
             #Check that top hit captures most of the contig
             if top_len > ctg_len * epsilon or ctg_len - top_len < maxun:
@@ -104,21 +104,21 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, aligns, ref_featu
 
                 #Mark other alignments as insignificant (former ambiguous)
                 if sorted_aligns:
-                    print >> ca_output.stdout_f, '\t\tSkipping these alignments as insignificant (option --ambiguity-score is set to "%s"):' % str(qconfig.ambiguity_score)
+                    ca_output.stdout_f.write('\t\tSkipping these alignments as insignificant (option --ambiguity-score is set to "%s"):\n' % str(qconfig.ambiguity_score))
                     for align in sorted_aligns:
-                        print >> ca_output.stdout_f, '\t\t\tSkipping alignment ', align
+                        ca_output.stdout_f.write('\t\t\tSkipping alignment ' + str(align) + '\n')
 
                 if len(top_aligns) == 1:
                     #There is only one top align, life is good
-                    print >> ca_output.stdout_f, '\t\tOne align captures most of this contig: %s' % str(top_aligns[0])
-                    print >> ca_output.icarus_out_f, top_aligns[0].icarus_report_str()
+                    ca_output.stdout_f.write('\t\tOne align captures most of this contig: %s\n' % str(top_aligns[0]))
+                    ca_output.icarus_out_f.write(top_aligns[0].icarus_report_str() + '\n')
                     ref_aligns.setdefault(top_aligns[0].ref, []).append(top_aligns[0])
-                    print >> ca_output.coords_filtered_f, str(top_aligns[0])
+                    ca_output.coords_filtered_f.write(str(top_aligns[0]) + '\n')
                     aligned_lengths.append(top_aligns[0].len2)
                 else:
                     #There is more than one top align
-                    print >> ca_output.stdout_f, '\t\tThis contig has %d significant alignments. [An ambiguously mapped contig]' % len(
-                        top_aligns)
+                    ca_output.stdout_f.write('\t\tThis contig has %d significant alignments. [An ambiguously mapped contig]\n' %
+                                             len(top_aligns))
 
                     #Increment count of ambiguously mapped contigs and bases in them
                     ambiguous_contigs += 1
@@ -129,88 +129,88 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, aligns, ref_featu
                     # Alex: skip all alignments or count them as normal (just different aligns of one repeat). Depend on --allow-ambiguity option
                     if qconfig.ambiguity_usage == "none":
                         ambiguous_contigs_extra_bases -= top_aligns[0].len2
-                        print >> ca_output.stdout_f, '\t\tSkipping these alignments (option --ambiguity-usage is set to "none"):'
+                        ca_output.stdout_f.write('\t\tSkipping these alignments (option --ambiguity-usage is set to "none"):\n')
                         for align in top_aligns:
-                            print >> ca_output.stdout_f, '\t\t\tSkipping alignment ', align
+                            ca_output.stdout_f.write('\t\t\tSkipping alignment ' + str(align) + '\n')
                     elif qconfig.ambiguity_usage == "one":
                         ambiguous_contigs_extra_bases += 0
-                        print >> ca_output.stdout_f, '\t\tUsing only first of these alignment (option --ambiguity-usage is set to "one"):'
-                        print >> ca_output.stdout_f, '\t\t\tAlignment: %s' % str(top_aligns[0])
-                        print >> ca_output.icarus_out_f, top_aligns[0].icarus_report_str()
+                        ca_output.stdout_f.write('\t\tUsing only first of these alignment (option --ambiguity-usage is set to "one"):\n')
+                        ca_output.stdout_f.write('\t\t\tAlignment: %s\n' % str(top_aligns[0]))
+                        ca_output.icarus_out_f.write(top_aligns[0].icarus_report_str() + '\n')
                         ref_aligns.setdefault(top_aligns[0].ref, []).append(top_aligns[0])
                         aligned_lengths.append(top_aligns[0].len2)
-                        print >> ca_output.coords_filtered_f, str(top_aligns[0])
+                        ca_output.coords_filtered_f.write(str(top_aligns[0]) + '\n')
                         top_aligns = top_aligns[1:]
                         for align in top_aligns:
-                            print >> ca_output.stdout_f, '\t\t\tSkipping alignment ', align
+                            ca_output.stdout_f.write('\t\t\tSkipping alignment ' + str(align) + '\n')
                     elif qconfig.ambiguity_usage == "all":
                         ambiguous_contigs_extra_bases -= top_aligns[0].len2
-                        print >> ca_output.stdout_f, '\t\tUsing all these alignments (option --ambiguity-usage is set to "all"):'
+                        ca_output.stdout_f.write('\t\tUsing all these alignments (option --ambiguity-usage is set to "all"):\n')
                         # we count only extra bases, so we shouldn't include bases in the first alignment
                         first_alignment = True
                         while len(top_aligns):
-                            print >> ca_output.stdout_f, '\t\t\tAlignment: %s' % str(top_aligns[0])
-                            print >> ca_output.icarus_out_f, top_aligns[0].icarus_report_str(ambiguity=True)
+                            ca_output.stdout_f.write('\t\t\tAlignment: %s\n' % str(top_aligns[0]))
+                            ca_output.icarus_out_f.write(top_aligns[0].icarus_report_str(ambiguity=True) + '\n')
                             ref_aligns.setdefault(top_aligns[0].ref, []).append(top_aligns[0])
                             if first_alignment:
                                 first_alignment = False
                                 aligned_lengths.append(top_aligns[0].len2)
                             ambiguous_contigs_extra_bases += top_aligns[0].len2
-                            print >> ca_output.coords_filtered_f, str(top_aligns[0]), "ambiguous"
+                            ca_output.coords_filtered_f.write(str(top_aligns[0]) + ' ambiguous\n')
                             top_aligns = top_aligns[1:]
             else:
                 # choose appropriate alignments (to maximize total size of contig alignment and reduce # misassemblies)
                 is_ambiguous, too_much_best_sets, sorted_aligns, best_sets = get_best_aligns_sets(
                     sorted_aligns, ctg_len, ca_output.stdout_f, seq, ref_lens, cyclic, region_struct_variations)
                 the_best_set = best_sets[0]
-                used_indexes = range(len(sorted_aligns)) if too_much_best_sets else get_used_indexes(best_sets)
+                used_indexes = list(range(len(sorted_aligns)) if too_much_best_sets else get_used_indexes(best_sets))
                 if len(used_indexes) < len(sorted_aligns):
-                    print >> ca_output.stdout_f, '\t\t\tSkipping redundant alignments after choosing the best set of alignments'
-                    for idx in set(range(len(sorted_aligns))) - used_indexes:
-                        print >> ca_output.stdout_f, '\t\tSkipping redundant alignment', sorted_aligns[idx]
+                    ca_output.stdout_f.write('\t\t\tSkipping redundant alignments after choosing the best set of alignments\n')
+                    for idx in set([idx for idx in range(len(sorted_aligns)) if idx not in used_indexes]):
+                        ca_output.stdout_f.write('\t\tSkipping redundant alignment ' + str(sorted_aligns[idx]) + '\n')
 
                 if is_ambiguous:
-                    print >> ca_output.stdout_f, '\t\tThis contig has several significant sets of alignments. [An ambiguously mapped contig]'
+                    ca_output.stdout_f.write('\t\tThis contig has several significant sets of alignments. [An ambiguously mapped contig]\n')
                     # similar to regular ambiguous contigs, see above
                     ambiguous_contigs += 1
                     ambiguous_contigs_len += ctg_len
 
                     if qconfig.ambiguity_usage == "none":
                         ambiguous_contigs_extra_bases -= (ctg_len - the_best_set.uncovered)
-                        print >> ca_output.stdout_f, '\t\tSkipping all alignments in these sets (option --ambiguity-usage is set to "none"):'
+                        ca_output.stdout_f.write('\t\tSkipping all alignments in these sets (option --ambiguity-usage is set to "none"):\n')
                         for idx in used_indexes:
-                            print >> ca_output.stdout_f, '\t\t\tSkipping alignment ', sorted_aligns[idx]
+                            ca_output.stdout_f.write('\t\t\tSkipping alignment ' + str(sorted_aligns[idx]) + '\n')
                         continue
                     elif qconfig.ambiguity_usage == "one":
                         ambiguous_contigs_extra_bases += 0
-                        print >> ca_output.stdout_f, '\t\tUsing only the very best set (option --ambiguity-usage is set to "one").'
+                        ca_output.stdout_f.write('\t\tUsing only the very best set (option --ambiguity-usage is set to "one").\n')
                         if len(the_best_set.indexes) < len(used_indexes):
-                            print >> ca_output.stdout_f, '\t\tSo, skipping alignments from other sets:'
+                            ca_output.stdout_f.write('\t\tSo, skipping alignments from other sets:\n')
                             for idx in used_indexes:
                                 if idx not in the_best_set.indexes:
-                                    print >> ca_output.stdout_f, '\t\t\tSkipping alignment ', sorted_aligns[idx]
+                                    ca_output.stdout_f.write('\t\t\tSkipping alignment ' + str(sorted_aligns[idx]) + '\n')
                     elif qconfig.ambiguity_usage == "all":
-                        print >> ca_output.stdout_f, '\t\tUsing all alignments in these sets (option --ambiguity-usage is set to "all"):'
-                        print >> ca_output.stdout_f, '\t\t\tThe very best set is shown in details below, the rest are:'
+                        ca_output.stdout_f.write('\t\tUsing all alignments in these sets (option --ambiguity-usage is set to "all"):\n')
+                        ca_output.stdout_f.write('\t\t\tThe very best set is shown in details below, the rest are:\n')
                         for idx, cur_set in enumerate(best_sets[1:]):
-                            print >> ca_output.stdout_f, '\t\t\t\tGroup #%d. Score: %.1f, number of alignments: %d, unaligned bases: %d' % \
-                                (idx + 2, cur_set.score, len(cur_set.indexes), cur_set.uncovered)
+                            ca_output.stdout_f.write('\t\t\t\tGroup #%d. Score: %.1f, number of alignments: %d, unaligned bases: %d\n' % \
+                                (idx + 2, cur_set.score, len(cur_set.indexes), cur_set.uncovered))
                         if too_much_best_sets:
-                            print >> ca_output.stdout_f, '\t\t\t\tetc...'
+                            ca_output.stdout_f.write('\t\t\t\tetc...\n')
                         if len(the_best_set.indexes) < len(used_indexes):
                             ambiguous_contigs_extra_bases -= (ctg_len - the_best_set.uncovered)
-                            print >> ca_output.stdout_f, '\t\t\tList of alignments used in the sets above:'
+                            ca_output.stdout_f.write('\t\t\tList of alignments used in the sets above:\n')
                             for idx in used_indexes:
                                 align = sorted_aligns[idx]
-                                print >> ca_output.stdout_f, '\t\tAlignment: %s' % str(align)
+                                ca_output.stdout_f.write('\t\tAlignment: %s\n' % str(align))
                                 ref_aligns.setdefault(align.ref, []).append(align)
                                 ambiguous_contigs_extra_bases += align.len2
-                                print >> ca_output.coords_filtered_f, str(align), "ambiguous"
+                                ca_output.coords_filtered_f.write(str(align) + " ambiguous\n")
                                 if idx not in the_best_set.indexes:
-                                    print >> ca_output.icarus_out_f, align.icarus_report_str(is_best=False)
+                                    ca_output.icarus_out_f.write(align.icarus_report_str(is_best=False) + '\n')
 
-                print >> ca_output.stdout_f, '\t\t\tThe best set is below. Score: %.1f, number of alignments: %d, unaligned bases: %d' % \
-                                             (the_best_set.score, len(the_best_set.indexes), the_best_set.uncovered)
+                ca_output.stdout_f.write('\t\t\tThe best set is below. Score: %.1f, number of alignments: %d, unaligned bases: %d\n' % \
+                                             (the_best_set.score, len(the_best_set.indexes), the_best_set.uncovered))
                 real_aligns = [sorted_aligns[i] for i in the_best_set.indexes]
 
                 # main processing part
@@ -218,7 +218,7 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, aligns, ref_featu
                     the_only_align = real_aligns[0]
 
                     #There is only one alignment of this contig to the reference
-                    print >> ca_output.coords_filtered_f, str(the_only_align)
+                    ca_output.coords_filtered_f.write(str(the_only_align) + '\n')
                     aligned_lengths.append(the_only_align.len2)
 
                     begin, end = the_only_align.start(), the_only_align.end()
@@ -227,17 +227,17 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, aligns, ref_featu
                         partially_unaligned += 1
                         unaligned_bases = (begin - 1) + (ctg_len - end)
                         partially_unaligned_bases += unaligned_bases
-                        print >> ca_output.stdout_f, '\t\tThis contig is partially unaligned. (Aligned %d out of %d bases)' % (top_len, ctg_len)
-                    print >> ca_output.stdout_f, '\t\tAlignment: %s' % str(the_only_align)
-                    print >> ca_output.icarus_out_f, the_only_align.icarus_report_str()
+                        ca_output.stdout_f.write('\t\tThis contig is partially unaligned. (Aligned %d out of %d bases)\n' % (top_len, ctg_len))
+                    ca_output.stdout_f.write('\t\tAlignment: %s\n' % str(the_only_align))
+                    ca_output.icarus_out_f.write(the_only_align.icarus_report_str() + '\n')
                     if begin - 1:
-                        print >> ca_output.stdout_f, '\t\tUnaligned bases: 1 to %d (%d)' % (begin - 1, begin - 1)
+                        ca_output.stdout_f.write('\t\tUnaligned bases: 1 to %d (%d)\n' % (begin - 1, begin - 1))
                     if ctg_len - end:
-                        print >> ca_output.stdout_f, '\t\tUnaligned bases: %d to %d (%d)' % (end + 1, ctg_len, ctg_len - end)
+                        ca_output.stdout_f.write('\t\tUnaligned bases: %d to %d (%d)\n' % (end + 1, ctg_len, ctg_len - end))
                     # check if both parts (aligned and unaligned) have significant length
                     if (unaligned_bases >= qconfig.significant_part_size) and (ctg_len - unaligned_bases >= qconfig.significant_part_size):
-                        print >> ca_output.stdout_f, '\t\tThis contig has both significant aligned and unaligned parts ' \
-                                                     '(of length >= %d)!' % (qconfig.significant_part_size)
+                        ca_output.stdout_f.write('\t\tThis contig has both significant aligned and unaligned parts ' \
+                                                     '(of length >= %d)!\n' % (qconfig.significant_part_size))
                         partially_unaligned_with_significant_parts += 1
                         if qconfig.meta:
                             contigs_with_istranslocations += check_for_potential_translocation(seq, ctg_len, real_aligns,
@@ -248,34 +248,34 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, aligns, ref_featu
                     sorted_aligns = sorted(real_aligns, key=lambda x: (x.end(), x.start()))
 
                     #There is more than one alignment of this contig to the reference
-                    print >> ca_output.stdout_f, '\t\tThis contig is misassembled. %d total aligns.' % num_aligns
+                    ca_output.stdout_f.write('\t\tThis contig is misassembled. %d total aligns.\n' % num_aligns)
                     aligned_bases_in_contig = ctg_len - the_best_set.uncovered
 
                     if aligned_bases_in_contig < umt * ctg_len:
-                        print >> ca_output.stdout_f, '\t\t\tWarning! This contig is more unaligned than misassembled. ' + \
-                            'Contig length is %d and total length of all aligns is %d' % (ctg_len, aligned_bases_in_contig)
+                        ca_output.stdout_f.write('\t\t\tWarning! This contig is more unaligned than misassembled. ' + \
+                            'Contig length is %d and total length of all aligns is %d\n' % (ctg_len, aligned_bases_in_contig))
                         for align in sorted_aligns:
-                            print >> ca_output.stdout_f, '\t\tAlignment: %s' % str(align)
-                            print >> ca_output.icarus_out_f, align.icarus_report_str()
-                            print >> ca_output.coords_filtered_f, str(align)
+                            ca_output.stdout_f.write('\t\tAlignment: %s\n' % str(align))
+                            ca_output.icarus_out_f.write(align.icarus_report_str() + '\n')
+                            ca_output.coords_filtered_f.write(str(align) + '\n')
                             aligned_lengths.append(align.len2)
                             ref_aligns.setdefault(align.ref, []).append(align)
 
                         partially_unaligned_with_misassembly += 1
                         partially_unaligned += 1
                         partially_unaligned_bases += ctg_len - aligned_bases_in_contig
-                        print >> ca_output.stdout_f, '\t\tUnaligned bases: %d' % (ctg_len - aligned_bases_in_contig)
+                        ca_output.stdout_f.write('\t\tUnaligned bases: %d\n' % (ctg_len - aligned_bases_in_contig))
                         # check if both parts (aligned and unaligned) have significant length
                         if (aligned_bases_in_contig >= qconfig.significant_part_size) and (ctg_len - aligned_bases_in_contig >= qconfig.significant_part_size):
-                            print >> ca_output.stdout_f, '\t\tThis contig has both significant aligned and unaligned parts ' \
-                                                         '(of length >= %d)!' % (qconfig.significant_part_size)
+                            ca_output.stdout_f.write('\t\tThis contig has both significant aligned and unaligned parts ' \
+                                                         '(of length >= %d)!\n' % (qconfig.significant_part_size))
                             partially_unaligned_with_significant_parts += 1
                             if qconfig.meta:
                                 contigs_with_istranslocations += check_for_potential_translocation(seq, ctg_len, sorted_aligns,
                                                                                                    ca_output.stdout_f)
                         contig_type = 'misassembled'
-                        print >> ca_output.icarus_out_f, '\t'.join(['CONTIG', contig, str(ctg_len), contig_type])
-                        print >> ca_output.stdout_f
+                        ca_output.icarus_out_f.write('\t'.join(['CONTIG', contig, str(ctg_len), contig_type + '\n']))
+                        ca_output.stdout_f.write('\n')
                         continue
 
                     ### processing misassemblies
@@ -290,27 +290,27 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, aligns, ref_featu
                         misassembled_contigs[contig] = ctg_len
                         contig_type = 'misassembled'
                     if ctg_len - aligned_bases_in_contig >= qconfig.significant_part_size:
-                        print >> ca_output.stdout_f, '\t\tThis contig has significant unaligned parts ' \
-                                                     '(of length >= %d)!' % (qconfig.significant_part_size)
+                        ca_output.stdout_f.write('\t\tThis contig has significant unaligned parts ' \
+                                                     '(of length >= %d)!\n' % (qconfig.significant_part_size))
                         if qconfig.meta:
                             contigs_with_istranslocations += check_for_potential_translocation(seq, ctg_len, sorted_aligns,
                                                                                                ca_output.stdout_f)
         else:
             #No aligns to this contig
-            print >> ca_output.stdout_f, '\t\tThis contig is unaligned. (%d bp)' % ctg_len
-            print >> unaligned_file, contig
+            ca_output.stdout_f.write('\t\tThis contig is unaligned. (%d bp)\n' % ctg_len)
+            unaligned_file.write(contig)
 
             #Increment unaligned contig count and bases
             unaligned += 1
             fully_unaligned_bases += ctg_len
-            print >> ca_output.stdout_f, '\t\tUnaligned bases: %d  total: %d' % (ctg_len, fully_unaligned_bases)
+            ca_output.stdout_f.write('\t\tUnaligned bases: %d  total: %d\n' % (ctg_len, fully_unaligned_bases))
 
-        print >> ca_output.icarus_out_f, '\t'.join(['CONTIG', contig, str(ctg_len), contig_type])
-        print >> ca_output.stdout_f
+        ca_output.icarus_out_f.write('\t'.join(['CONTIG', contig, str(ctg_len), contig_type]) + '\n')
+        ca_output.stdout_f.write('\n')
 
     ca_output.coords_filtered_f.close()
     unaligned_file.close()
-    misassembled_bases = sum(misassembled_contigs.itervalues())
+    misassembled_bases = sum(misassembled_contigs.values())
 
     result = {'region_misassemblies': region_misassemblies,
               'region_struct_variations': region_struct_variations.get_count() if region_struct_variations else None,

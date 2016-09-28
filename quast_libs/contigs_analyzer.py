@@ -18,6 +18,7 @@
 
 from __future__ import with_statement
 import os
+import sys
 import re
 from collections import defaultdict
 from os.path import join
@@ -69,7 +70,7 @@ def align_and_analyze(cyclic, index, contigs_fpath, output_dirpath, ref_fpath,
 
     icarus_out_f = open(icarus_out_fpath, 'w')
     icarus_header_cols = ['S1', 'E1', 'S2', 'E2', 'Reference', 'Contig', 'IDY', 'Ambiguous', 'Best_group']
-    print >> icarus_out_f, '\t'.join(icarus_header_cols)
+    icarus_out_f.write('\t'.join(icarus_header_cols) + '\n')
     misassembly_f = open(misassembly_fpath, 'w')
 
     logger.info('  ' + qutils.index_to_str(index) + 'Logging to files ' + log_out_fpath +
@@ -88,17 +89,17 @@ def align_and_analyze(cyclic, index, contigs_fpath, output_dirpath, ref_fpath,
                          ' to the reference (non-zero exit code). ' +
                          ('Run with the --debug flag to see additional information.' if not qconfig.debug else ''))
             elif nucmer_status == NucmerStatus.FAILED:
-                print >> log_err_f, qutils.index_to_str(index) + 'Alignment failed for', contigs_fpath + ':', coords_fpath, 'doesn\'t exist.'
+                log_err_f.write(qutils.index_to_str(index) + 'Alignment failed for ' + contigs_fpath + ':' + coords_fpath + 'doesn\'t exist.\n')
                 logger.info('  ' + qutils.index_to_str(index) + 'Alignment failed for ' + '\'' + assembly_label + '\'.')
             elif nucmer_status == NucmerStatus.NOT_ALIGNED:
-                print >> log_err_f, qutils.index_to_str(index) + 'Nothing aligned for', contigs_fpath
+                log_err_f.write(qutils.index_to_str(index) + 'Nothing aligned for ' + contigs_fpath + '\n')
                 logger.info('  ' + qutils.index_to_str(index) + 'Nothing aligned for ' + '\'' + assembly_label + '\'.')
         clean_tmp_files(nucmer_fpath)
         return nucmer_status, {}, []
 
     log_out_f = open(log_out_fpath, 'a')
     # Loading the alignment files
-    print >> log_out_f, 'Parsing coords...'
+    log_out_f.write('Parsing coords...\n')
     aligns = {}
     coords_file = open(coords_fpath)
     coords_filtered_file = open(coords_filtered_fpath, 'w')
@@ -114,17 +115,17 @@ def align_and_analyze(cyclic, index, contigs_fpath, output_dirpath, ref_fpath,
         aligns.setdefault(mapping.contig, []).append(mapping)
 
     # Loading the reference sequences
-    print >> log_out_f, 'Loading reference...'  # TODO: move up
+    log_out_f.write('Loading reference...\n') # TODO: move up
     references = {}
     ref_features = {}
     for name, seq in fastaparser.read_fasta(ref_fpath):
         name = name.split()[0]  # no spaces in reference header
         references[name] = seq
-        print >> log_out_f, '\tLoaded [%s]' % name
+        log_out_f.write('\tLoaded [%s]\n' % name)
 
     #Loading the SNP calls
     if qconfig.show_snps:
-        print >> log_out_f, 'Loading SNPs...'
+        log_out_f.write('Loading SNPs...\n')
 
     used_snps_file = None
     snps = {}
@@ -156,26 +157,26 @@ def align_and_analyze(cyclic, index, contigs_fpath, output_dirpath, ref_fpath,
     total_reg_len = 0
     total_regions = 0
     # # TODO: gff
-    # print >> log_out_f, 'Loading regions...'
-    # print >> log_out_f, '\tNo regions given, using whole reference.'
-    for name, seq in references.iteritems():
+    # log_out_f.write('Loading regions...\n')
+    # log_out_f.write('\tNo regions given, using whole reference.\n')
+    for name, seq in references.items():
         regions.setdefault(name, []).append([1, len(seq)])
         ref_lens[name] = len(seq)
         total_regions += 1
         total_reg_len += ref_lens[name]
-    print >> log_out_f, '\tTotal Regions: %d' % total_regions
-    print >> log_out_f, '\tTotal Region Length: %d' % total_reg_len
+    log_out_f.write('\tTotal Regions: %d\n' % total_regions)
+    log_out_f.write('\tTotal Region Length: %d\n' % total_reg_len)
 
     ca_output = CAOutput(stdout_f=log_out_f, misassembly_f=misassembly_f, coords_filtered_f=coords_filtered_file,
                          used_snps_f=used_snps_file, icarus_out_f=icarus_out_f)
 
-    print >> log_out_f, 'Analyzing contigs...'
+    log_out_f.write('Analyzing contigs...\n')
     result, ref_aligns, total_indels_info, aligned_lengths, misassembled_contigs = analyze_contigs(ca_output, contigs_fpath,
                                         unaligned_fpath, aligns, ref_features, ref_lens, cyclic)
 
-    print >> log_out_f, 'Analyzing coverage...'
+    log_out_f.write('Analyzing coverage...\n')
     if qconfig.show_snps:
-        print >> log_out_f, 'Writing SNPs into', used_snps_fpath
+        log_out_f.write('Writing SNPs into ' + used_snps_fpath + '\n')
     result.update(analyze_coverage(ca_output, regions, ref_aligns, ref_features, snps, total_indels_info))
     result = print_results(contigs_fpath, log_out_f, used_snps_fpath, total_indels_info, result)
 
@@ -193,7 +194,7 @@ def align_and_analyze(cyclic, index, contigs_fpath, output_dirpath, ref_fpath,
         unique_contigs_f = open(unique_contigs_fpath, 'w')
         used_contigs = set()
 
-    for chr_name, aligns in ref_aligns.iteritems():
+    for chr_name, aligns in ref_aligns.items():
         alignment_tsv_f.write(chr_name)
         contigs = set([align.contig for align in aligns])
         for contig in contigs:
@@ -204,7 +205,7 @@ def align_and_analyze(cyclic, index, contigs_fpath, output_dirpath, ref_fpath,
             align_by_contigs = defaultdict(int)
             for align in aligns:
                 align_by_contigs[align.contig] += align.len2
-            for contig, aligned_len in align_by_contigs.iteritems():
+            for contig, aligned_len in align_by_contigs.items():
                 if contig in used_contigs:
                     continue
                 used_contigs.add(contig)
@@ -249,7 +250,10 @@ def do(reference, contigs_fpaths, cyclic, output_dir, old_contigs_fpaths, bed_fp
         threads = 1
     else:
         threads = max(int(qconfig.max_threads / n_jobs), 1)
-    from joblib import Parallel, delayed
+    if sys.version_info[0] < 3:
+        from joblib import Parallel, delayed
+    else:
+        from joblib3 import Parallel, delayed
     if not qconfig.splitted_ref:
         statuses_results_lengths_tuples = Parallel(n_jobs=n_jobs)(delayed(align_and_analyze)(
         cyclic, i, contigs_fpath, output_dir, reference, old_contigs_fpath, bed_fpath, threads=threads)
@@ -280,7 +284,7 @@ def do(reference, contigs_fpaths, cyclic, output_dir, old_contigs_fpaths, bed_fp
                     assembly_name = qutils.name_from_fpath(fpath)
                     all_rows = []
                     all_refs = sorted(list(set([ref for ref in ref_labels_by_chromosomes.values()])))
-                    row = {'metricName': 'References', 'values': [ref_num+1 for ref_num in range(len(all_refs))]}
+                    row = {'metricName': 'References', 'values': [ref_num + 1 for ref_num in range(len(all_refs))]}
                     all_rows.append(row)
                     for k in all_refs:
                         row = {'metricName': k, 'values': []}
@@ -291,12 +295,13 @@ def do(reference, contigs_fpaths, cyclic, output_dir, old_contigs_fpaths, bed_fp
                                 row['values'].append(ref_misassemblies[i][ref][k])
                         all_rows.append(row)
                     misassembly_by_ref_fpath = join(output_dir, 'interspecies_translocations_by_refs_%s.info' % assembly_name)
-                    print >> open(misassembly_by_ref_fpath, 'w'), 'Number of interspecies translocations by references: \n'
+                    misassembly_by_ref_file = open(misassembly_by_ref_fpath, 'w')
+                    misassembly_by_ref_file.write('Number of interspecies translocations by references: \n')
                     print_file(all_rows, misassembly_by_ref_fpath, append_to_existing_file=True)
 
-                    print >> open(misassembly_by_ref_fpath, 'a'), '\nReferences: '
+                    misassembly_by_ref_file.write( 'References:\n')
                     for ref_num, ref in enumerate(all_refs):
-                        print >> open(misassembly_by_ref_fpath, 'a'), str(ref_num+1) + ' - ' + ref
+                        misassembly_by_ref_file.write(str(ref_num + 1) + ' - ' + ref + '\n')
                     logger.info('  Information about interspecies translocations by references for %s is saved to %s' %
                                 (assembly_name, misassembly_by_ref_fpath))
 
@@ -314,13 +319,13 @@ def do(reference, contigs_fpaths, cyclic, output_dir, old_contigs_fpaths, bed_fp
         reporting.save_misassemblies(output_dir)
         reporting.save_unaligned(output_dir)
     if qconfig.draw_plots:
-        import plotter
+        from . import plotter
         plotter.draw_misassembl_plot(reports, join(output_dir, 'misassemblies_plot'), 'Misassemblies')
 
-    oks = nucmer_statuses.values().count(NucmerStatus.OK)
-    not_aligned = nucmer_statuses.values().count(NucmerStatus.NOT_ALIGNED)
-    failed = nucmer_statuses.values().count(NucmerStatus.FAILED)
-    errors = nucmer_statuses.values().count(NucmerStatus.ERROR)
+    oks = list(nucmer_statuses.values()).count(NucmerStatus.OK)
+    not_aligned = list(nucmer_statuses.values()).count(NucmerStatus.NOT_ALIGNED)
+    failed = list(nucmer_statuses.values()).count(NucmerStatus.FAILED)
+    errors = list(nucmer_statuses.values()).count(NucmerStatus.ERROR)
     problems = not_aligned + failed + errors
     all = len(nucmer_statuses)
 

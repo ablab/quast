@@ -72,7 +72,7 @@ def do(contigs_fpaths, contig_report_fpath_pattern, output_dirpath, ref_fpath, c
                 summary_len = 0
                 num_parts = 1
                 html_name = qconfig.alignment_viewer_part_name + str(num_parts)
-                for chr_name, chr_len in reference_chromosomes.iteritems():
+                for chr_name, chr_len in reference_chromosomes.items():
                     summary_len += chr_len
                     contig_names_by_refs[chr_name] = html_name
                     if summary_len >= qconfig.MAX_SIZE_FOR_COMB_PLOT:
@@ -99,7 +99,7 @@ def do(contigs_fpaths, contig_report_fpath_pattern, output_dirpath, ref_fpath, c
         else:
             report_fpath = contig_report_fpath_pattern % qutils.label_from_fpath_for_fname(contigs_fpath)
             aligned_blocks, misassembled_id_to_structure, contigs, ambiguity_alignments = parse_nucmer_contig_report(report_fpath,
-                                                                        reference_chromosomes.keys(), cumulative_ref_lengths)
+                                                                        list(reference_chromosomes.keys()), cumulative_ref_lengths)
             if not contigs:
                 contigs = parse_contigs_fpath(contigs_fpath)
             if aligned_blocks is None:
@@ -348,7 +348,7 @@ def js_data_gen(assemblies, contigs_fpaths, chromosomes_length, output_dirpath, 
     chr_names = []
     if chromosomes_length and assemblies:
         chr_to_aligned_blocks = OrderedDict()
-        chr_names = chromosomes_length.keys()
+        chr_names = list(chromosomes_length.keys())
         for assembly in assemblies.assemblies:
             chr_to_aligned_blocks[assembly.label] = defaultdict(list)
             similar_correct = 0

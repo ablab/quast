@@ -714,7 +714,7 @@ def MakeTokenRegex(meta_left, meta_right):
   ALTERNATES_TOKEN,  # {.or}
   OR_TOKEN,  # {.or}
   END_TOKEN,  # {.end}
-  ) = range(8)
+  ) = list(range(8))
 
 
 def _MatchDirective(token):

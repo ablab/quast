@@ -110,16 +110,16 @@ def check_report_files(name, report_fnames=None, fast=False):
             files_not_exist.append(fname)
 
     if files_not_exist:
-        print >> sys.stderr, 'Test failed:',
+        sys.stderr.write('Test failed:',)
         if len(files_not_exist) == 1:
-            print >> sys.stderr, 'file', files_not_exist[0], 'does not exist in', results_dirpath
+            sys.stderr.write('file ' + files_not_exist[0] + ' does not exist in ' + results_dirpath)
         else:
-            print >> sys.stderr, 'the followning files does not exist in', results_dirpath + ':'
+            sys.stderr.write('the following files does not exist in ' + results_dirpath + ':')
         for fname in files_not_exist:
-            print >> sys.stderr, '  ' + fname
+            sys.stderr.write('  ' + fname)
         exit(5)
     else:
-        print 'All nesessary files exist'
+        print('All necessary files exist')
 
 
 def assert_report_header(name, contigs, fname='report.tsv'):
@@ -128,14 +128,14 @@ def assert_report_header(name, contigs, fname='report.tsv'):
     with open(os.path.join(results_dirpath, fname)) as report_tsv_f:
         header = report_tsv_f.readline()
         if not header:
-            print >> sys.stderr, 'Empty %s' % fname
+            sys.stderr.write('Empty %s' % fname)
             exit(6)
 
         if len(header.split('\t')) != len(contigs) + 1:
-            print >> sys.stderr, 'Incorrect %s header: %s' % (fname, header)
+            sys.stderr.write('Incorrect %s header: %s' % (fname, header))
             exit(6)
 
-    print 'Report header in %s is OK' % fname
+    print('Report header in %s is OK' % fname)
 
 
 def assert_metric(name, metric, values=None, fname='report.tsv'):
@@ -143,7 +143,7 @@ def assert_metric(name, metric, values=None, fname='report.tsv'):
 
     fpath = os.path.join(results_dirpath, fname)
     if not os.path.isfile(fpath):
-        print >> sys.stderr, 'File %s does not exist' % fpath
+        sys.stderr.write('File %s does not exist' % fpath)
         exit(5)
 
     with open(fpath) as report_tsv_f:
@@ -151,14 +151,14 @@ def assert_metric(name, metric, values=None, fname='report.tsv'):
             tokens = line[:-1].split('\t')
             if len(tokens) > 1 and tokens[0] == metric:
                 if values is None or tokens[1:] == values:
-                    print 'Metric %s is OK' % metric
+                    print('Metric %s is OK' % metric)
                     return True
                 else:
-                    print >> sys.stderr, 'Assertion of "%s" in %s failed: "%s" expected, got "%s" instead' \
-                                         % (metric, fname, ' '.join(values), ' '.join(tokens[1:]))
+                    sys.stderr.write('Assertion of "%s" in %s failed: "%s" expected, got "%s" instead' \
+                                         % (metric, fname, ' '.join(values), ' '.join(tokens[1:])))
                     exit(7)
 
-    print >> sys.stderr, 'Assertion of "%s" in %s failed: no such metric in the file' % (metric, fname)
+    sys.stderr.write('Assertion of "%s" in %s failed: no such metric in the file' % (metric, fname))
     exit(7)
 
 
@@ -167,7 +167,7 @@ def get_metric_values(name, metric, fname='report.tsv'):
 
     fpath = os.path.join(results_dirpath, fname)
     if not os.path.isfile(fpath):
-        print >> sys.stderr, 'File %s does not exist' % fpath
+        sys.stderr.write('File %s does not exist' % fpath)
         exit(5)
 
     with open(fpath) as report_tsv_f:
@@ -182,7 +182,7 @@ def assert_values_equal(name, metric=None, fname='report.tsv'):
 
     fpath = os.path.join(results_dirpath, fname)
     if not os.path.isfile(fpath):
-        print >> sys.stderr, 'File %s does not exist' % fpath
+        sys.stderr.write('File %s does not exist' % fpath)
         exit(5)
 
     def check_values_equal(tokens):
@@ -191,10 +191,10 @@ def assert_values_equal(name, metric=None, fname='report.tsv'):
         # assert all equal
         variants = set(values)
         if len(variants) == 1 or len(variants) == 0:
-            print 'OK:', '\t'.join(tokens)
+            print('OK:', '\t'.join(tokens))
             return True
         else:
-            print 'FAIL: Values differ:', '\t'.join(tokens)
+            print('FAIL: Values differ:', '\t'.join(tokens))
             return False
 
     with open(fpath) as report_tsv_f:
@@ -245,7 +245,7 @@ def assert_metric_comparison(name, metric1, relate='<=', metric2=None, value=Non
 
     fpath = os.path.join(results_dirpath, fname)
     if not os.path.isfile(fpath):
-        print >> sys.stderr, 'File %s does not exist' % fpath
+        sys.stderr.write('File %s does not exist' % fpath)
         exit(5)
 
     metric1_values = []
@@ -259,17 +259,17 @@ def assert_metric_comparison(name, metric1, relate='<=', metric2=None, value=Non
                 metric2_values = tokens[1:]
 
     if not metric1_values:
-        print >> sys.stderr, 'Assertion (%s %s %s) in %s failed: no such metric1 in the file' % \
-                             (metric1, relate, metric2 if metric2 else str(value), fname)
+        sys.stderr.write('Assertion (%s %s %s) in %s failed: no such metric1 in the file' % \
+                             (metric1, relate, metric2 if metric2 else str(value), fname))
         exit(7)
     if metric2 and not metric2_values:
-        print >> sys.stderr, 'Assertion (%s %s %s) in %s failed: no such metric2 in the file' % \
-                             (metric1, relate, metric2, fname)
+        sys.stderr.write('Assertion (%s %s %s) in %s failed: no such metric2 in the file' % \
+                             (metric1, relate, metric2, fname))
         exit(7)
     if metric2 and len(metric2_values) != len(metric1_values):
-        print >> sys.stderr, 'Assertion (%s %s %s) in %s failed: len of metric1 values is not ' \
+        sys.stderr.write('Assertion (%s %s %s) in %s failed: len of metric1 values is not ' \
                              'equal to len of metric 2 values in the file' % \
-                             (metric1, relate, metric2, fname)
+                             (metric1, relate, metric2, fname))
         exit(7)
 
     value = __to_number(value)
@@ -280,12 +280,12 @@ def assert_metric_comparison(name, metric1, relate='<=', metric2=None, value=Non
         if metric2:
             value2 = __to_number(metric2_values[idx])
             if value2 is not None and not ops[relate](value1, value2):
-                print >> sys.stderr, 'Assertion ({metric1} {relate} X) in {fname} failed: {value1} > {value2}'.format(**locals())
+                sys.stderr.write('Assertion ({metric1} {relate} X) in {fname} failed: {value1} > {value2}'.format(**locals()))
                 exit(9)
         if value is not None and not ops[relate](value1, value):
-            print >> sys.stderr, 'Assertion ({metric1} {relate} X) in {fname} failed: {value1} > {value}'.format(**locals())
+            sys.stderr.write('Assertion ({metric1} {relate} X) in {fname} failed: {value1} > {value}'.format(**locals()))
             exit(9)
-    print '%s %s %s is OK in %s' % (metric1, relate, metric2 if metric2 else str(value), fname)
+    print('%s %s %s is OK in %s' % (metric1, relate, metric2 if metric2 else str(value), fname))
     return True
 
 
@@ -303,10 +303,10 @@ def run_quast(name, contigs=None, params='', expected_exit_code=0, utility='quas
     os.chdir('data')
     quast_fpath = '../../' + utility + '.py'
     cmd = sys.executable + ' ' + quast_fpath + ' -o ../' + results_dirpath + ' ' + ' '.join(contigs) + ' ' + params
-    print cmd
-    print
+    print(cmd)
+    print('')
     exit_code = os.system(cmd) >> 8
-    print
+    print('')
     os.chdir('..')
 
     if expected_exit_code is None:
@@ -314,10 +314,10 @@ def run_quast(name, contigs=None, params='', expected_exit_code=0, utility='quas
 
     if exit_code != expected_exit_code:
         if expected_exit_code == 0:
-            print >> sys.stderr, 'Quast finished abnormally with exit code %d' % exit_code
+            sys.stderr.write('Quast finished abnormally with exit code %d' % exit_code)
             exit(1)
         else:
-            print >> sys.stderr, 'Expected exit code %d, got %d instead' % (expected_exit_code, exit_code)
+            sys.stderr.write('Expected exit code %d, got %d instead' % (expected_exit_code, exit_code))
             exit(4)
 
-    print 'QUAST worked as expected with exit code %s' % exit_code
+    print('QUAST worked as expected with exit code %s' % exit_code)

@@ -311,7 +311,7 @@ def vcfToBedpe(vcf_file, bedpe_out):
             score = v[5]
 
             if 'CIPOS' in var.info:
-                span = map(int, var.info['CIPOS'].split(','))
+                span = [int(v) for v in var.info['CIPOS'].split(',')]
                 s1 = b1 + span[0] - 1
                 e1 = b1 + span[1]
             else:
@@ -319,7 +319,7 @@ def vcfToBedpe(vcf_file, bedpe_out):
                 e1 = b1
 
             if 'CIEND' in var.info:
-                span = map(int, var.info['CIEND'].split(','))
+                span = [int(v) for v in var.info['CIEND'].split(',')]
                 s2 = b2 + span[0] - 1
                 e2 = b2 + span[1]
             else:
@@ -357,7 +357,7 @@ def vcfToBedpe(vcf_file, bedpe_out):
 
             score = v[5]
             if 'CIPOS' in var.info:
-                span = map(int, var.info['CIPOS'].split(','))
+                span = [int(v) for v in var.info['CIPOS'].split(',')]
                 s1 = b1 + span[0] - 1
                 e1 = b1 + span[1]
             else:
@@ -365,7 +365,7 @@ def vcfToBedpe(vcf_file, bedpe_out):
                 e1 = b1
 
             if 'CIEND' in var.info:
-                span = map(int, var.info['CIEND'].split(','))
+                span = [int(v) for v in var.info['CIEND'].split(',')]
                 s2 = b2 + span[0] - 1
                 e2 = b2 + span[1]
             else:
@@ -411,6 +411,6 @@ def main():
 if __name__ == '__main__':
     try:
         sys.exit(main())
-    except IOError, e:
-        if e.errno != 32:  # ignore SIGPIPE
+    except IOError:
+        if sys.exc_info()[0] != BrokenPipeError:  # ignore SIGPIPE
             raise 

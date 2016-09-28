@@ -7,6 +7,7 @@
 
 from __future__ import with_statement
 import os
+import sys
 import glob
 import shutil
 import tempfile
@@ -62,10 +63,12 @@ def install_genemark(tool_dirpath):
     proc = subprocess.Popen([tool_exec_fpath], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     while not proc.poll():
         line = proc.stdout.readline()
+        if not isinstance(line, str):
+            line = line.decode("utf-8")
         if line.find('license period has ended') != -1:
-            logger.warning('License period for GeneMark has ended! \n' \
-                           'To update license, please visit http://exon.gatech.edu/GeneMark/license_download.cgi page and fill in the form.\n' \
-                           'You should choose GeneMarkS tool and your operating system (note that GeneMark is free for non-commercial use).\n' \
+            logger.warning('License period for GeneMark has ended! \n'
+                           'To update license, please visit http://exon.gatech.edu/GeneMark/license_download.cgi page and fill in the form.\n'
+                           'You should choose GeneMarkS tool and your operating system (note that GeneMark is free for non-commercial use).\n'
                            'Download the license key and replace your ~/.gm_key with the updated version. After that you can restart QUAST.\n')
             return False
     return True
@@ -214,7 +217,7 @@ def gm_es(tool_dirpath, fasta_fpath, err_fpath, index, tmp_dirpath, num_threads)
     if return_code != 0:
         return
     genes = []
-    _, _, fnames = os.walk(tmp_dirpath).next()
+    fnames = [fname for (path, dirs, files) in os.walk(tmp_dirpath) for fname in files]
     for fname in fnames:
         if fname.endswith('gtf'):
             genes.extend(parse_gtf_out(os.path.join(tmp_dirpath, fname)))
@@ -290,7 +293,10 @@ def do(fasta_fpaths, gene_lengths, out_dirpath, prokaryote, meta):
 
         n_jobs = min(len(fasta_fpaths), qconfig.max_threads)
         num_threads = max(1, qconfig.max_threads // n_jobs)
-        from joblib import Parallel, delayed
+        if sys.version_info[0] < 3:
+            from joblib import Parallel, delayed
+        else:
+            from joblib3 import Parallel, delayed
         results = Parallel(n_jobs=n_jobs)(delayed(predict_genes)(
             index, fasta_fpath, gene_lengths, out_dirpath, tool_dirpath, tmp_dirpath, gmhmm_p_function, prokaryote, num_threads)
             for index, fasta_fpath in enumerate(fasta_fpaths))

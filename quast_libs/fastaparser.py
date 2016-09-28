@@ -7,6 +7,7 @@
 
 from __future__ import with_statement
 import os
+import sys
 import gzip
 import zipfile
 import bz2
@@ -25,14 +26,14 @@ def _get_fasta_file_handler(fpath):
     _, ext = os.path.splitext(fpath)
 
     if ext in ['.gz', '.gzip']:
-        fasta_file = gzip.open(fpath)
+        fasta_file = gzip.open(fpath, mode="rt")
 
     elif ext in ['.bz2', '.bzip2']:
-        fasta_file = bz2.BZ2File(fpath)
+        fasta_file = bz2.BZ2File(fpath, mode="rt")
 
     elif ext in ['.zip']:
         try:
-            zfile = zipfile.ZipFile(fpath)
+            zfile = zipfile.ZipFile(fpath, mode="rt")
         except Exception:
             exc_type, exc_value, _ = sys.exc_info()
             logger.error('Can\'t open zip file: ' + str(exc_value))

@@ -7,10 +7,10 @@
 
 import logging
 import os
+import sys
 import shutil
-from quast_libs import reporting, qutils, ca_utils
+from quast_libs import reporting, qconfig, qutils, ca_utils
 from quast_libs.ca_utils.misc import compile_aligner
-from . import qconfig
 from .qutils import get_path_to_program
 from os.path import join, abspath
 
@@ -132,7 +132,10 @@ def do(ref_fpath, contigs_fpaths, output_dirpath):
         compile_gage()
 
     n_jobs = min(len(contigs_fpaths), qconfig.max_threads)
-    from joblib import Parallel, delayed
+    if sys.version_info[0] < 3:
+        from joblib import Parallel, delayed
+    else:
+        from joblib3 import Parallel, delayed
     return_codes = Parallel(n_jobs=n_jobs)(delayed(run_gage)(i, contigs_fpath, gage_results_dirpath, gage_tool_path, ref_fpath, tmp_dirpath)
         for i, contigs_fpath in enumerate(contigs_fpaths))
 

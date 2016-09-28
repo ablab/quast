@@ -69,11 +69,11 @@ def get_ref_by_chromosome(chr):
 def print_file(all_rows, fpath, append_to_existing_file=False):
     colwidths = repeat(0)
     for row in all_rows:
-        colwidths = [max(len(v), w) for v, w in zip([row['metricName']] + map(val_to_str, row['values']), colwidths)]
+        colwidths = [max(len(v), w) for v, w in zip([row['metricName']] + [val_to_str(v) for v in row['values']], colwidths)]
     txt_file = open(fpath, 'a' if append_to_existing_file else 'w')
     for row in all_rows:
-        print >> txt_file, '  '.join('%-*s' % (colwidth, cell) for colwidth, cell
-                                     in zip(colwidths, [row['metricName']] + map(val_to_str, row['values'])))
+        txt_file.write('  '.join('%-*s' % (colwidth, cell) for colwidth, cell
+                                     in zip(colwidths, [row['metricName']] + [val_to_str(v) for v in row['values']])))
 
 
 def create_nucmer_output_dir(output_dir):
@@ -113,12 +113,12 @@ def compress_nucmer_output(logger, nucmer_fpath):
             logger.info('    saved to ' + fpath + '.gz')
 
 
-def open_gzipsafe(f, mode='rb'):
+def open_gzipsafe(f, mode='rt'):
     if not os.path.exists(f) and 'r' in mode:
         f += '.gz'
     if f.endswith('.gz') or f.endswith('.gzip'):
-        if 'b' not in mode:
-            mode += 'b'
+        if 't' not in mode:
+            mode += 't'
         try:
             h = gzip.open(f, mode=mode)
         except IOError:

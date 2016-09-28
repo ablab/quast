@@ -11,10 +11,7 @@ import shlex
 import shutil
 import stat
 import sys
-import platform
 import re
-import gzip
-import time
 
 from os.path import isfile, join
 
@@ -74,11 +71,15 @@ def try_send_request(url):
             request = urlopen(url)
             connection_errors = 0
             response = request.read()
+            if not isinstance(response, str):
+                response = response.decode('utf-8')
             if response is None or 'ERROR' in response:
                 request.close()
                 raise Exception
             break
         except Exception:
+            _, exc_value, _ = sys.exc_info()
+            logger.exception(exc_value)
             attempts += 1
             if attempts >= 3:
                 connection_errors += 1
@@ -375,7 +376,10 @@ def process_blast(blast_assemblies, downloaded_dirpath, labels, blast_check_fpat
         logger.main_info('Running BlastN..')
         n_jobs = min(qconfig.max_threads, len(blast_assemblies))
         blast_threads = max(1, qconfig.max_threads // n_jobs)
-        from joblib import Parallel, delayed
+        if sys.version_info[0] < 3:
+            from joblib import Parallel, delayed
+        else:
+            from joblib3 import Parallel, delayed
         Parallel(n_jobs=n_jobs)(delayed(parallel_blast)(
                     assembly.fpath, assembly.label, blast_res_fpath, err_fpath, blast_check_fpath, blast_threads) for i, assembly in enumerate(blast_assemblies))
 

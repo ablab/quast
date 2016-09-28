@@ -145,7 +145,7 @@ def parse_cov_fpath(cov_fpath, chr_names, chr_full_names, contig_names_by_refs):
                 index_to_chr[fs[1]] = chr_name
             else:
                 name = contig_to_chr[index_to_chr[fs[0]]]
-                depth = int(fs[1])
+                depth = int(float(fs[1]))
                 max_depth[chr] = max(depth, max_depth[chr])
                 cov_data[name].append(depth)
             # if c[2] == '0':
@@ -273,7 +273,7 @@ def parse_features_data(features, cumulative_ref_lengths, ref_names):
 def parse_genes_data(contigs_by_assemblies, genes_by_labels):
     if not genes_by_labels:
         return
-    for label, genes in genes_by_labels.iteritems():
+    for label, genes in genes_by_labels.items():
         if not genes:
             continue
         if qconfig.glimmer:

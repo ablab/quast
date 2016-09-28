@@ -10,13 +10,12 @@ import glob
 import shutil
 import subprocess
 import os
+import sys
 import re
 from collections import defaultdict
-
-from . import qconfig
 from os.path import basename, isfile, realpath
 
-from quast_libs import fastaparser
+from quast_libs import fastaparser, qconfig
 from quast_libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 
@@ -155,7 +154,7 @@ def get_lengths_from_fasta(contigs_fpath, label):
                        % (label, qconfig.min_contig))
         return None
 
-    return lengths
+    return list(lengths)
 
 
 def add_lengths_to_report(lengths, reporting, contigs_fpath):
@@ -181,7 +180,10 @@ def correct_contigs(contigs_fpaths, corrected_dirpath, labels, reporting):
         qconfig.max_threads = 1
 
     n_jobs = min(len(contigs_fpaths), qconfig.max_threads)
-    from joblib import Parallel, delayed
+    if sys.version_info[0] < 3:
+        from joblib import Parallel, delayed
+    else:
+        from joblib3 import Parallel, delayed
     logger.main_info('  Pre-processing...')
     corrected_info = Parallel(n_jobs=n_jobs)(delayed(parallel_correct_contigs)(i, contigs_fpath,
             corrected_dirpath, labels) for i, contigs_fpath in enumerate(contigs_fpaths))
@@ -615,12 +617,12 @@ def call_subprocess(args, stdin=None, stdout=None, stderr=None,
 
 def get_chr_len_fpath(ref_fpath, correct_chr_names=None):
     chr_len_fpath = ref_fpath + '.fai'
-    raw_chr_names = dict((raw_name, correct_name) for correct_name, raw_name in correct_chr_names.iteritems()) \
+    raw_chr_names = dict((raw_name, correct_name) for correct_name, raw_name in correct_chr_names.items()) \
         if correct_chr_names else None
     if not is_non_empty_file(chr_len_fpath):
         chr_lengths = fastaparser.get_chr_lengths_from_fastafile(ref_fpath)
         with open(chr_len_fpath, 'w') as out_f:
-            for chr_name, chr_len in chr_lengths.iteritems():
+            for chr_name, chr_len in chr_lengths.items():
                 chr_name = raw_chr_names[chr_name] if correct_chr_names else chr_name
                 out_f.write(chr_name + '\t' + str(chr_len) + '\n')
     return chr_len_fpath

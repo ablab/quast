@@ -68,7 +68,7 @@ def _start_quast_main(
     return_code = quast.main(args)
     if num_notifications_tuple:
         cur_num_notifications = quast.logger.get_numbers_of_notifications()
-        num_notifications_tuple = map(sum, zip(num_notifications_tuple,cur_num_notifications))
+        num_notifications_tuple = list(map(sum, zip(num_notifications_tuple, cur_num_notifications)))
 
     if is_first_run:
         labels = [qconfig.assembly_labels_by_fpath[fpath] for fpath in qconfig.assemblies_fpaths]
@@ -109,7 +109,11 @@ def main(args):
     ########################################################################
 
     from quast_libs import reporting
-    reload(reporting)
+    try:
+        import imp
+        imp.reload(reporting)
+    except:
+        reload(reporting)
     from quast_libs import plotter
 
     if os.path.isdir(corrected_dirpath):

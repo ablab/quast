@@ -7,11 +7,9 @@
 
 
 import os
-import plotter
-import qconfig
+from quast_libs import plotter, reporting, qconfig
 from quast_libs.ca_utils.misc import print_file
 from quast_libs.log import get_logger
-import reporting
 logger = get_logger(qconfig.LOGGER_META_NAME)
 
 
@@ -30,19 +28,19 @@ def get_results_for_metric(ref_names, metric, contigs_num, labels, output_dirpat
             all_rows[0]['values'] = cur_ref_names
             continue
         results_file = open(results_fpath, 'r')
-        columns = map(lambda s: s.strip(), results_file.readline().split('\t'))
+        columns = [s.strip() for s in results_file.readline().split('\t')]
         if metric not in columns:
             all_rows[0]['values'] = cur_ref_names
             continue
         results.append([])
         cur_ref_names.append(ref_name)
-        next_values = map(lambda s: s.strip(), results_file.readline().split('\t'))
+        next_values = [s.strip() for s in results_file.readline().split('\t')]
         cur_results = [None] * len(labels)
         for j in range(contigs_num):
             values = next_values
             if values[0]:
                 metr_res = values[columns.index(metric)].split()[0]
-                next_values = map(lambda s: s.strip(), results_file.readline().split('\t'))
+                next_values = [s.strip() for s in results_file.readline().split('\t')]
                 index_contig = labels.index(values[0])
                 cur_results[index_contig] = metr_res
         for j in range(contigs_num):
@@ -56,7 +54,7 @@ def get_results_for_metric(ref_names, metric, contigs_num, labels, output_dirpat
 def get_labels(combined_output_dirpath, report_fname):
     results_fpath = os.path.join(combined_output_dirpath, report_fname)
     results_file = open(results_fpath, 'r')
-    values = map(lambda s: s.strip(), results_file.readline().split('\t'))
+    values = [s.strip() for s in results_file.readline().split('\t')]
     return values[1:]
 
 

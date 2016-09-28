@@ -6,6 +6,7 @@
 ############################################################################
 
 import os
+import sys
 import re
 from quast_libs import qutils, qconfig
 

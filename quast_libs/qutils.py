@@ -229,7 +229,11 @@ def parallel_correct_contigs(file_counter, contigs_fpath, corrected_dirpath, lab
 
     corr_fpath = unique_corrected_fpath(os.path.join(corrected_dirpath, label + fasta_ext))
     lengths = get_lengths_from_fasta(contigs_fpath, label)
-    if not lengths or not correct_fasta(contigs_fpath, corr_fpath, qconfig.min_contig):
+    if not lengths:
+        corr_fpath = None
+    elif qconfig.no_check_meta:
+        corr_fpath = contigs_fpath
+    elif not correct_fasta(contigs_fpath, corr_fpath, qconfig.min_contig):
         corr_fpath = None
     if corr_fpath:
         corr_fpaths.append((corr_fpath, lengths))

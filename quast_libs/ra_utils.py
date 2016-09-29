@@ -140,11 +140,9 @@ def download_manta(logger, bed_fpath=None, only_clean=False):
 
 
 def compile_reads_analyzer_tools(logger, bed_fpath=None, only_clean=False):
-    return all([
-        compile_bwa(only_clean),
-        compile_bedtools(only_clean),
-        download_manta(logger, bed_fpath, only_clean),
-    ])
+    if compile_bwa(only_clean) and compile_bedtools(only_clean) and download_manta(logger, bed_fpath, only_clean):
+        return True
+    return False
 
 
 def paired_reads_names_are_equal(reads_fpaths, logger):

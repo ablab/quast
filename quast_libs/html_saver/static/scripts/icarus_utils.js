@@ -44,7 +44,8 @@ function getItemOpacity(block) {
     if (isContigSizePlot && (!block.contig_type || block.contig_type == 'unaligned'))
         defOpacity = 1;
     if (block.misassembledEnds) return 1;
-    if (block.fullContig && block.contig_type && block.contig_type != 'unaligned' && block.contig_type != 'small_contigs')
+    if (block.fullContig && block.contig_type && block.contig_type != 'unaligned' && block.contig_type != 'small_contigs' &&
+        block.contig_type != 'ambiguous')
         return 0.05;
     if (!block || !block.size) return defOpacity;
     return block.size > minContigSize ? defOpacity : paleContigsOpacity;
@@ -177,14 +178,15 @@ function changeInfo(block) {
                 if (nextBlock.contig_type != "M") return nextBlock;
             }).length;
         var blocksName = 'Blocks: ';
-        if (block.ambiguous)
+        var isAmbiguous = (block.ambiguous || block.contig_type == 'ambiguous');
+        if (isAmbiguous)
             blocksName = ' Alternatives: ';
         else if (block.ambiguous_alignments && block.ambiguous_alignments.length > 0)
             blocksName = 'Blocks of the best set: ';
 
         var blocksText = blocksName + blocksCount;
-        var blocksMenuInfo = blocksMenu.append('span').text(block.ambiguous ? 'Ambiguously mapped.' : blocksText);
-        if (block.ambiguous)
+        var blocksMenuInfo = blocksMenu.append('span').text(isAmbiguous ? 'Ambiguously mapped.' : blocksText);
+        if (isAmbiguous)
             blocksMenuInfo.append('span').text(blocksText);
         blocksMenuInfo.attr('class', 'head');
         blocksMenu.on('click', function() {
@@ -208,7 +210,7 @@ function changeInfo(block) {
             if (nextBlock.contig_type != "M") {
                 appendPositionElement(nextBlock, nextBlock, blocksInfo, block, prevChr, true);
 
-                if (block.ambiguous && i < structure.length - 1)
+                if (isAmbiguous && i < structure.length - 1)
                     blocksInfo.append('p').text('or');
             } else {
                 blocksInfo.append('p').text(nextBlock.msg);

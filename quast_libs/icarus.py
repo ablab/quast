@@ -11,16 +11,17 @@ from __future__ import with_statement
 
 from collections import defaultdict
 
-from quast_libs.icarus_parser import parse_contigs_fpath, parse_features_data, parse_cov_fpath, get_assemblies_data, \
-    get_contigs_data, parse_genes_data
+from quast_libs.icarus_builder import prepare_alignment_data_for_one_ref, save_alignment_data_for_one_ref, save_contig_size_html, \
+    get_assemblies_data, get_contigs_data
+from quast_libs.icarus_parser import parse_contigs_fpath, parse_features_data, parse_cov_fpath, parse_genes_data
 from quast_libs.icarus_parser import parse_nucmer_contig_report
 from quast_libs.icarus_utils import make_output_dir, group_references, format_cov_data, format_long_numbers, get_info_by_chr, \
-    get_html_name, get_assemblies, check_misassembled_blocks, Alignment, parse_misassembly_info, get_misassembly_for_alignment
+    get_assemblies, check_misassembled_blocks
 
 try:
    from collections import OrderedDict
 except ImportError:
-   from site_packages.ordered_dict import OrderedDict
+   from quast_libs.site_packages.ordered_dict import OrderedDict
 
 import os
 from quast_libs import qconfig, qutils, fastaparser, genome_analyzer
@@ -130,216 +131,6 @@ def do(contigs_fpaths, contig_report_fpath_pattern, output_dirpath, ref_fpath, c
         icarus_html_fpath = None
 
     return icarus_html_fpath, plot_fpath
-
-
-def add_contig_structure_data(data_str, alignment_name, structure, ref_contigs, chr_full_names, contig_names_by_refs,
-                              used_chromosomes, links_to_chromosomes):
-    for el in structure:
-        if isinstance(el, Alignment):
-            if el.ref_name in ref_contigs:
-                num_chr = ref_contigs.index(el.ref_name)
-                # corr_len = sum(chr_lengths[:num_chr+1])
-            else:
-                # corr_len = -int(el.end)
-                if el.ref_name not in used_chromosomes:
-                    used_chromosomes.append(el.ref_name)
-                    if contig_names_by_refs:
-                        other_ref_name = contig_names_by_refs[el.ref_name]
-                        links_to_chromosomes.append('links_to_chromosomes["' + el.ref_name + '"] = "' +
-                                                get_html_name(other_ref_name, chr_full_names) + '";')
-            corr_el_start = el.start
-            corr_el_end = el.end
-            data_str.append('{contig: "' + alignment_name + '",corr_start: ' + str(corr_el_start) + ',corr_end: ' +
-                            str(corr_el_end) + ',start:' + str(el.unshifted_start) + ',end:' + str(el.unshifted_end) +
-                            ',start_in_contig:' + str(el.start_in_contig) + ',end_in_contig:' +
-                            str(el.end_in_contig) + ',IDY:' + el.idy + ',chr: "' + el.ref_name + '"},')
-        elif type(el) == str:
-            ms_description, ms_type = parse_misassembly_info(el)
-            data_str.append('{contig_type: "M", mstype: "' + ms_type + '", msg: "' + ms_description + '"},')
-    return data_str
-
-
-def prepare_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, data_str, chr_to_aligned_blocks,
-                                       structures_by_labels, contigs_by_assemblies, ambiguity_alignments_by_labels=None,
-                                       contig_names_by_refs=None, output_dir_path=None, cov_data_str=None, physical_cov_data_str=None):
-    html_name = get_html_name(chr, chr_full_names)
-    alignment_viewer_fpath = os.path.join(output_dir_path, html_name + '.html')
-
-    additional_assemblies_data = ''
-    data_str.append('var links_to_chromosomes;')
-    links_to_chromosomes = []
-    used_chromosomes = []
-    if contig_names_by_refs:
-        data_str.append('links_to_chromosomes = {};')
-    num_misassemblies = 0
-    aligned_assemblies = set()
-
-    is_one_html = len(chr_full_names) == 1
-    data_str.append('var oneHtml = ' + str(is_one_html).lower() + ';')
-    # adding assembly data
-    data_str.append('var contig_data = {};')
-    data_str.append('contig_data["' + chr + '"] = {};')
-    assemblies_len = defaultdict(int)
-    assemblies_contigs = defaultdict(set)
-    ms_types = dict()
-    for assembly in chr_to_aligned_blocks.keys():
-        data_str.append('contig_data["' + chr + '"]["' + assembly + '"] = [ ')
-        ms_types[assembly] = defaultdict(int)
-        contigs = dict((contig.name, contig) for contig in contigs_by_assemblies[assembly])
-        for num_contig, ref_contig in enumerate(ref_contigs):
-            if ref_contig in chr_to_aligned_blocks[assembly]:
-                overlapped_contigs = defaultdict(list)
-                alignments = sorted(chr_to_aligned_blocks[assembly][ref_contig], key=lambda x: x.start)
-                prev_end = 0
-                prev_alignments = []
-                for alignment in alignments:
-                    if prev_end > alignment.start:
-                        for prev_align in prev_alignments:
-                            if alignment.name != prev_align.name and prev_align.end - alignment.start > 100:
-                                overlapped_contigs[prev_align].append('{contig: "' + alignment.name + '",corr_start: ' + str(alignment.start) +
-                                    ',corr_end: ' + str(alignment.end) + ',start:' + str(alignment.unshifted_start) + ',end:' + str(alignment.unshifted_end) +
-                                    ',start_in_contig:' + str(alignment.start_in_contig) + ',end_in_contig:' +
-                                    str(alignment.end_in_contig) + ',chr: "' + alignment.ref_name + '"}')
-                                overlapped_contigs[alignment].append('{contig: "' + prev_align.name + '",corr_start: ' + str(prev_align.start) +
-                                    ',corr_end: ' + str(prev_align.end) + ',start:' + str(prev_align.unshifted_start) + ',end:' + str(prev_align.unshifted_end) +
-                                    ',start_in_contig:' + str(prev_align.start_in_contig) + ',end_in_contig:' +
-                                    str(prev_align.end_in_contig) + ',chr: "' + prev_align.ref_name + '"}')
-                        prev_alignments.append(alignment)
-                    else:
-                        prev_alignments = [alignment]
-                    prev_end = max(prev_end, alignment.end)
-
-                for alignment in alignments:
-                    assemblies_len[assembly] += abs(alignment.end_in_contig - alignment.start_in_contig) + 1
-                    assemblies_contigs[assembly].add(alignment.name)
-                    contig_structure = structures_by_labels[alignment.label]
-                    if alignment.misassembled:
-                        num_misassemblies += 1
-                        misassemblies, misassembled_ends = get_misassembly_for_alignment(contig_structure[alignment.name], alignment)
-                        for misassembly in misassemblies:
-                            if misassembly:
-                                ms_types[assembly][misassembly] += 1
-                        alignment.misassemblies = ';'.join(misassemblies)
-                    else:
-                        misassembled_ends = ''
-
-                    genes = []
-                    start_in_contig, end_in_contig = min(alignment.start_in_contig, alignment.end_in_contig), \
-                                                     max(alignment.start_in_contig, alignment.end_in_contig)
-                    for gene in contigs[alignment.name].genes:
-                        if start_in_contig < gene.start < end_in_contig or start_in_contig < gene.end < end_in_contig:
-                            corr_start = max(alignment.start, alignment.start + (gene.start - start_in_contig))
-                            corr_end = min(alignment.end, alignment.end + (gene.end - end_in_contig))
-                            gene_info = '{start: ' + str(gene.start) + ', end: ' + str(gene.end) + ', corr_start: ' + \
-                                        str(corr_start) + ', corr_end: ' + str(corr_end) + '}'
-                            genes.append(gene_info)
-                    data_str.append('{name: "' + alignment.name + '",corr_start:' + str(alignment.start) +
-                                    ', corr_end: ' + str(alignment.end) + ',start:' + str(alignment.unshifted_start) +
-                                    ',end:' + str(alignment.unshifted_end) + ',similar:"' + ('True' if alignment.similar else 'False') +
-                                    '", misassemblies:"' + alignment.misassemblies + '",mis_ends:"' + misassembled_ends + '"')
-                    if alignment.ambiguous:
-                        data_str[-1] += ', ambiguous: "True"'
-                    if alignment.is_best_set:
-                        data_str[-1] += ', is_best: "True"'
-
-                    aligned_assemblies.add(alignment.label)
-                    if overlapped_contigs[alignment]:
-                        data_str.append(',overlaps:[ ')
-                        data_str.append(','.join(overlapped_contigs[alignment]))
-                        data_str.append(']')
-                    if qconfig.gene_finding:
-                        data_str.append(', genes: [' + ','.join(genes) + ']')
-                    data_str.append(', structure: [ ')
-                    data_str = add_contig_structure_data(data_str, alignment.name, contig_structure[alignment.name], ref_contigs,
-                                                         chr_full_names, contig_names_by_refs, used_chromosomes, links_to_chromosomes)
-                    data_str.append('], ')
-                    if ambiguity_alignments_by_labels and qconfig.ambiguity_usage == 'all':
-                        data_str.append('ambiguous_alignments: [ ')
-                        data_str = add_contig_structure_data(data_str, alignment.name, ambiguity_alignments_by_labels[alignment.label][alignment.name],
-                                                             ref_contigs, chr_full_names, contig_names_by_refs,
-                                                             used_chromosomes, links_to_chromosomes)
-                        data_str[-1] = data_str[-1][:-1] + '],'
-                    data_str[-1] = data_str[-1][:-1] + '},'
-
-        data_str[-1] = data_str[-1][:-1] + '];'
-        assembly_len = assemblies_len[assembly]
-        assembly_contigs = len(assemblies_contigs[assembly])
-        local_misassemblies = ms_types[assembly]['local'] // 2
-        ext_misassemblies = (sum(ms_types[assembly].values()) - ms_types[assembly]['interspecies translocation']) // 2 - \
-                            local_misassemblies + ms_types[assembly]['interspecies translocation']
-        additional_assemblies_data += 'assemblies_len["' + assembly + '"] = ' + str(assembly_len) + ';\n'
-        additional_assemblies_data += 'assemblies_contigs["' + assembly + '"] = ' + str(assembly_contigs) + ';\n'
-        additional_assemblies_data += 'assemblies_misassemblies["' + assembly + '"] = "' + str(ext_misassemblies) + '+' + \
-                                      str(local_misassemblies) + '";\n'
-
-    if contig_names_by_refs:
-        data_str.append(''.join(links_to_chromosomes))
-    if cov_data_str:
-        # adding coverage data
-        data_str.extend(cov_data_str)
-    if physical_cov_data_str:
-        data_str.extend(physical_cov_data_str)
-
-    data_str = '\n'.join(data_str)
-
-    misassemblies_types = ['relocation', 'translocation', 'inversion', 'interspecies translocation', 'local']
-    if not qconfig.is_combined_ref:
-        misassemblies_types.remove('interspecies translocation')
-
-    ms_counts_by_type = OrderedDict()
-    for ms_type in misassemblies_types:
-        factor = 1 if ms_type == 'interspecies translocation' else 2
-        ms_counts_by_type[ms_type] = sum(ms_types[assembly][ms_type] // factor for assembly in chr_to_aligned_blocks.keys())
-    total_ms_count = sum(ms_counts_by_type.values()) - ms_counts_by_type['local']
-    ms_selectors = []
-    for ms_type, ms_count in ms_counts_by_type.items():
-        ms_name = ms_type
-        if ms_count != 1 and ms_type != 'local':
-            ms_name += 's'
-        ms_selectors.append((ms_type, ms_name, str(ms_count)))
-
-    return alignment_viewer_fpath, data_str, additional_assemblies_data, ms_selectors, num_misassemblies, aligned_assemblies
-
-
-def save_alignment_data_for_one_ref(chr_name, ref_contigs, ref_name, json_output_dir, alignment_viewer_fpath, data_str, ms_selectors,
-                                    ref_data='', features_data='', assemblies_data='', additional_assemblies_data=''):
-    alignment_viewer_template_fpath = html_saver.get_real_path(qconfig.icarus_viewers_template_fname)
-    data_dict = dict()
-    chr_data = 'chromosome = "' + chr_name + '";\n'
-    chromosomes = '","'.join(ref_contigs)
-    chr_data += 'var chrContigs = ["' + chromosomes + '"];\n'
-    if qconfig.alignment_viewer_part_name in chr_name:
-        chr_name = ref_name
-        chr_name += ' (' + str(len(ref_contigs)) + (' entries)' if len(ref_contigs) > 1 else ' entry)')
-    chr_name = chr_name.replace('_', ' ')
-    all_data = ref_data + assemblies_data + additional_assemblies_data + chr_data + features_data + data_str
-    data_dict['title'] = 'Contig alignment viewer'
-    data_dict['reference'] = chr_name
-    data_dict['data'] = '<script type="text/javascript">' + all_data + '</script>'
-    data_dict['misassemblies_checkboxes'] = []
-    for (ms_type, ms_name, ms_count) in ms_selectors:
-        checkbox = {'ms_type': ms_type, 'ms_name': ms_name, 'ms_count': ms_count}
-        data_dict['misassemblies_checkboxes'].append(checkbox)
-    html_saver.save_icarus_html(alignment_viewer_template_fpath, alignment_viewer_fpath, data_dict)
-    html_saver.save_icarus_data(json_output_dir, chr_name, 'ref_name')
-    html_saver.save_icarus_data(json_output_dir, data_dict['data'], 'data_alignments')
-    html_saver.save_icarus_data(json_output_dir, data_dict['reference'], 'reference')
-    html_saver.save_icarus_data(json_output_dir, data_dict['misassemblies_checkboxes'], 'ms_selector', as_text=False)
-
-
-def save_contig_size_html(output_all_files_dir_path, json_output_dir, too_many_contigs, all_data):
-    contig_size_template_fpath = html_saver.get_real_path(qconfig.icarus_viewers_template_fname)
-    contig_size_viewer_fpath = os.path.join(output_all_files_dir_path, qconfig.contig_size_viewer_fname)
-    data_dict = dict()
-    data_dict['title'] = 'Contig size viewer'
-    data_dict['size_viewer'] = True
-    if too_many_contigs:
-        data_dict['num_contigs_warning'] = str(qconfig.max_contigs_num_for_size_viewer)
-        html_saver.save_icarus_data(json_output_dir, data_dict['num_contigs_warning'], 'num_contigs_warning')
-
-    data_dict['data'] = '<script type="text/javascript">' + all_data + '</script>'
-    html_saver.save_icarus_data(json_output_dir, data_dict['data'], 'data_sizes')
-    html_saver.save_icarus_html(contig_size_template_fpath, contig_size_viewer_fpath, data_dict)
 
 
 def js_data_gen(assemblies, contigs_fpaths, chromosomes_length, output_dirpath, structures_by_labels,

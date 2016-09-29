@@ -314,6 +314,12 @@ path {
 .mainItem.misassembled.similar {
     fill: #D26200;
 }
+.mainItem.ambiguous {
+    fill: #8352be;
+}
+.mainItem.alternative {
+    fill: #FF65B5;
+}
 .mainItem.disabled {
     fill: #757575;
 }
@@ -332,6 +338,12 @@ path {
 }
 .miniItem.misassembled.similar {
     fill: #dd6800;
+}
+.miniItem.ambiguous {
+    fill: #9C75BE;
+}
+.miniItem.alternative {
+    fill: #FF65B5;
 }
 .miniItem.disabled {
     fill: #8e8e8e;

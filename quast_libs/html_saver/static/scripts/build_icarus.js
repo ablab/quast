@@ -643,8 +643,12 @@ THE SOFTWARE.
                     if (blocks) {
                         for (var k = 0; k < blocks.length; k++) {
                             var misassembly = (k < blocks.length - 1 && blocks[k + 1].contig_type == 'M') ? blocks[k + 1] : null;
-                            if (blocks[k].contig_type != 'M')
+                            if (blocks[k].contig_type != 'M' && block.contig_type != 'ambiguous')
                                 laneItems.push(parseItem(blocks[k], block, misassembly));
+                            if (block.contig_type == 'ambiguous') {
+                                blocks[k].start_in_ref = blocks[k].corr_start;
+                                blocks[k].end_in_ref = blocks[k].corr_end;
+                            }
                         }
                     }
                 }
@@ -781,6 +785,9 @@ THE SOFTWARE.
         block.misassembled = block.misassemblies ? "True" : "False";
         c = (block.misassembled == "False" ? "" : "misassembled");
         c += (block.similar == "True" ? " similar" : "");
+        c += (block.ambiguous ? " ambiguous" : "");
+        c += (!block.is_best && block.ambiguous_alignments && block.ambiguous_alignments.length > 0 ? " alternative" : "");
+
         //c += ((!block.misassembledEnds && !isSmall) ? " light_color" : "");
         if (INTERLACE_BLOCKS_COLOR) c += ((numItem - countSupplementary) % 2 == 0 ? " odd" : "");
         var text = '';
@@ -788,6 +795,7 @@ THE SOFTWARE.
             if (block.contig_type == "small_contigs") c += " disabled";
             else if (block.contig_type == "unaligned") c += " unaligned";
             else if (block.contig_type == "misassembled") c += " misassembled";
+            else if (block.contig_type == "ambiguous") c += " ambiguous";
             else if (block.contig_type == "correct") c += "";
             else c += " unknown";
         }

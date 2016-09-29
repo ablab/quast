@@ -55,7 +55,7 @@ class SNP():
 
 
 # former plantagora and plantakolya
-def align_and_analyze(cyclic, index, contigs_fpath, output_dirpath, ref_fpath,
+def align_and_analyze(is_cyclic, index, contigs_fpath, output_dirpath, ref_fpath,
                       old_contigs_fpath, bed_fpath, parallel_by_chr=False, threads=1):
     nucmer_output_dirpath = create_nucmer_output_dir(output_dirpath)
     assembly_label = qutils.label_from_fpath_for_fname(contigs_fpath)
@@ -172,7 +172,7 @@ def align_and_analyze(cyclic, index, contigs_fpath, output_dirpath, ref_fpath,
 
     log_out_f.write('Analyzing contigs...\n')
     result, ref_aligns, total_indels_info, aligned_lengths, misassembled_contigs = analyze_contigs(ca_output, contigs_fpath,
-                                        unaligned_fpath, aligns, ref_features, ref_lens, cyclic)
+                                        unaligned_fpath, aligns, ref_features, ref_lens, is_cyclic)
 
     log_out_f.write('Analyzing coverage...\n')
     if qconfig.show_snps:
@@ -232,7 +232,7 @@ def align_and_analyze(cyclic, index, contigs_fpath, output_dirpath, ref_fpath,
         return NucmerStatus.OK, result, aligned_lengths
 
 
-def do(reference, contigs_fpaths, cyclic, output_dir, old_contigs_fpaths, bed_fpath=None):
+def do(reference, contigs_fpaths, is_cyclic, output_dir, old_contigs_fpaths, bed_fpath=None):
     if not os.path.isdir(output_dir):
         os.mkdir(output_dir)
 
@@ -256,18 +256,18 @@ def do(reference, contigs_fpaths, cyclic, output_dir, old_contigs_fpaths, bed_fp
         from joblib3 import Parallel, delayed
     if not qconfig.splitted_ref:
         statuses_results_lengths_tuples = Parallel(n_jobs=n_jobs)(delayed(align_and_analyze)(
-        cyclic, i, contigs_fpath, output_dir, reference, old_contigs_fpath, bed_fpath, threads=threads)
+        is_cyclic, i, contigs_fpath, output_dir, reference, old_contigs_fpath, bed_fpath, threads=threads)
              for i, (contigs_fpath, old_contigs_fpath) in enumerate(zip(contigs_fpaths, old_contigs_fpaths)))
     else:
         if len(contigs_fpaths) >= len(qconfig.splitted_ref) and not qconfig.memory_efficient:
             statuses_results_lengths_tuples = Parallel(n_jobs=n_jobs)(delayed(align_and_analyze)(
-            cyclic, i, contigs_fpath, output_dir, reference, old_contigs_fpath, bed_fpath, threads=threads)
+            is_cyclic, i, contigs_fpath, output_dir, reference, old_contigs_fpath, bed_fpath, threads=threads)
                 for i, (contigs_fpath, old_contigs_fpath) in enumerate(zip(contigs_fpaths, old_contigs_fpaths)))
         else:
             statuses_results_lengths_tuples = []
             for i, (contigs_fpath, old_contigs_fpath) in enumerate(zip(contigs_fpaths, old_contigs_fpaths)):
                 statuses_results_lengths_tuples.append(align_and_analyze(
-                cyclic, i, contigs_fpath, output_dir, reference, old_contigs_fpath, bed_fpath,
+                is_cyclic, i, contigs_fpath, output_dir, reference, old_contigs_fpath, bed_fpath,
                 parallel_by_chr=True, threads=qconfig.max_threads))
 
     # unzipping

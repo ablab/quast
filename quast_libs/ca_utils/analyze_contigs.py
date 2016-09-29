@@ -33,7 +33,7 @@ def check_for_potential_translocation(seq, ctg_len, sorted_aligns, log_out_f):
     return 1
 
 
-def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, aligns, ref_features, ref_lens, cyclic=None):
+def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, aligns, ref_features, ref_lens, is_cyclic=None):
     maxun = 10
     epsilon = 0.99
     umt = 0.5  # threshold for misassembled contigs with aligned less than $umt * 100% (Unaligned Missassembled Threshold)
@@ -148,6 +148,7 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, aligns, ref_featu
                         ca_output.stdout_f.write('\t\tUsing all these alignments (option --ambiguity-usage is set to "all"):\n')
                         # we count only extra bases, so we shouldn't include bases in the first alignment
                         first_alignment = True
+                        contig_type = 'ambiguous'
                         while len(top_aligns):
                             ca_output.stdout_f.write('\t\t\tAlignment: %s\n' % str(top_aligns[0]))
                             ca_output.icarus_out_f.write(top_aligns[0].icarus_report_str(ambiguity=True) + '\n')
@@ -161,7 +162,7 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, aligns, ref_featu
             else:
                 # choose appropriate alignments (to maximize total size of contig alignment and reduce # misassemblies)
                 is_ambiguous, too_much_best_sets, sorted_aligns, best_sets = get_best_aligns_sets(
-                    sorted_aligns, ctg_len, ca_output.stdout_f, seq, ref_lens, cyclic, region_struct_variations)
+                    sorted_aligns, ctg_len, ca_output.stdout_f, seq, ref_lens, is_cyclic, region_struct_variations)
                 the_best_set = best_sets[0]
                 used_indexes = list(range(len(sorted_aligns)) if too_much_best_sets else get_used_indexes(best_sets))
                 if len(used_indexes) < len(sorted_aligns):
@@ -280,7 +281,7 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, aligns, ref_featu
 
                     ### processing misassemblies
                     is_misassembled, current_mio, references_misassemblies, indels_info, misassemblies_matched_sv = \
-                        process_misassembled_contig(sorted_aligns, cyclic, aligned_lengths, region_misassemblies,
+                        process_misassembled_contig(sorted_aligns, is_cyclic, aligned_lengths, region_misassemblies,
                                                     ref_lens, ref_aligns, ref_features, seq, references_misassemblies,
                                                     region_struct_variations, misassemblies_matched_sv, ca_output,
                                                     is_ambiguous)

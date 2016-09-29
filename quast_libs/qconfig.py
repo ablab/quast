@@ -212,7 +212,7 @@ def set_max_threads(logger):
     if max_threads is None:
         try:
             import multiprocessing
-            max_threads = max(1, multiprocessing.cpu_count() / 4)
+            max_threads = max(1, multiprocessing.cpu_count() // 4)
         except (ImportError, NotImplementedError):
             logger.warning('Failed to determine the number of CPUs')
             max_threads = DEFAULT_MAX_THREADS

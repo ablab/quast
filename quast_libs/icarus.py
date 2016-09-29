@@ -264,8 +264,8 @@ def prepare_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, data_st
         data_str[-1] = data_str[-1][:-1] + '];'
         assembly_len = assemblies_len[assembly]
         assembly_contigs = len(assemblies_contigs[assembly])
-        local_misassemblies = ms_types[assembly]['local'] / 2
-        ext_misassemblies = (sum(ms_types[assembly].values()) - ms_types[assembly]['interspecies translocation']) / 2 - \
+        local_misassemblies = ms_types[assembly]['local'] // 2
+        ext_misassemblies = (sum(ms_types[assembly].values()) - ms_types[assembly]['interspecies translocation']) // 2 - \
                             local_misassemblies + ms_types[assembly]['interspecies translocation']
         additional_assemblies_data += 'assemblies_len["' + assembly + '"] = ' + str(assembly_len) + ';\n'
         additional_assemblies_data += 'assemblies_contigs["' + assembly + '"] = ' + str(assembly_contigs) + ';\n'
@@ -289,7 +289,7 @@ def prepare_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, data_st
     ms_counts_by_type = OrderedDict()
     for ms_type in misassemblies_types:
         factor = 1 if ms_type == 'interspecies translocation' else 2
-        ms_counts_by_type[ms_type] = sum(ms_types[assembly][ms_type] / factor for assembly in chr_to_aligned_blocks.keys())
+        ms_counts_by_type[ms_type] = sum(ms_types[assembly][ms_type] // factor for assembly in chr_to_aligned_blocks.keys())
     total_ms_count = sum(ms_counts_by_type.values()) - ms_counts_by_type['local']
     ms_selectors = []
     for ms_type, ms_count in ms_counts_by_type.items():

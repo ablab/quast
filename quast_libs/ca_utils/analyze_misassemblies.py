@@ -178,7 +178,7 @@ def is_misassembly(align1, align2, contig_seq, ref_lens, is_cyclic=False, region
 
 def check_sv(align1, align2, inconsistency, region_struct_variations):
     max_error = 100 # qconfig.smgap / 4  # min(2 * qconfig.smgap, max(qconfig.smgap, inconsistency * 0.05))
-    max_gap = qconfig.extensive_misassembly_threshold / 4
+    max_gap = qconfig.extensive_misassembly_threshold // 4
 
     def __match_ci(pos, sv):  # check whether pos matches confidence interval of sv
         return sv.s1 - max_error <= pos <= sv.e1 + max_error

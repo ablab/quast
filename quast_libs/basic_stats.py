@@ -106,17 +106,17 @@ def binning_coverage(cov_values, nums_contigs):
     high_threshold -= high_threshold % bin_size
     max_cov = max(len(v) for v in cov_values)
     cov_by_bins = []
-    max_points = (high_threshold / bin_size) + 1  # add last bin
+    max_points = (high_threshold // bin_size) + 1  # add last bin
     offset = 0
     if low_threshold > bin_size:  # add first bin
-        offset = low_threshold / bin_size - 1
+        offset = low_threshold // bin_size - 1
         max_points -= offset
     else:
         low_threshold = 0
     for index, values in enumerate(cov_values):
         cov_by_bins.append([0] * int(max_points))
         for coverage, bases in enumerate(values):
-            bin_idx = coverage / bin_size - offset
+            bin_idx = coverage // bin_size - offset
             if coverage < low_threshold:
                 bin_idx = 0
             elif coverage >= high_threshold:

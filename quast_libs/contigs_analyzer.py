@@ -249,7 +249,7 @@ def do(reference, contigs_fpaths, cyclic, output_dir, old_contigs_fpaths, bed_fp
     if qconfig.memory_efficient:
         threads = 1
     else:
-        threads = max(int(qconfig.max_threads / n_jobs), 1)
+        threads = max(1, qconfig.max_threads // n_jobs)
     if sys.version_info[0] < 3:
         from joblib import Parallel, delayed
     else:

@@ -114,7 +114,7 @@ def align_contigs(nucmer_fpath, ref_fpath, contigs_fpath, old_contigs_fpath, ind
             # (i.e. daemonic) we can't start new daemonic processes
             if parallel_by_chr and not qconfig.memory_efficient:
                 n_jobs = min(qconfig.max_threads, len(prefixes_and_chr_files))
-                threads = max(int(threads / n_jobs), 1)
+                threads = max(1, threads // n_jobs)
             else:
                 n_jobs = 1
                 threads = 1

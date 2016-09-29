@@ -511,8 +511,8 @@ def histogram(contigs_fpaths, values, plot_fpath, title='', yaxis_title='', bott
 
     #bars' params
     width = 0.3
-    interval = width / 3
-    start_pos = interval / 2
+    interval = width // 3
+    start_pos = interval // 2
 
     color_id = 0
     for i, (contigs_fpath, val) in enumerate(zip(contigs_fpaths, values)):
@@ -609,7 +609,7 @@ def coverage_histogram(contigs_fpaths, values, plot_fpath, title='', bin_size=No
     box = ax.get_position()
     ax.set_position([box.x0, box.y0 + box.height * 0.2, box.width, box.height * 0.8])
     ax.yaxis.grid(with_grid)
-    x_factor = max(1, len(x_vals) / 10)
+    x_factor = max(1, len(x_vals) // 10)
     x_ticks = x_vals[::x_factor]
     x_ticks_labels = x_ticks_labels[::x_factor]
 
@@ -617,9 +617,9 @@ def coverage_histogram(contigs_fpaths, values, plot_fpath, title='', bin_size=No
         x_ticks_labels.insert(0, 0)
     if high_threshold:
         if low_threshold:
-            last_tick = (high_threshold - low_threshold) / bin_size + 4  # first and last bars have width 2
+            last_tick = (high_threshold - low_threshold) // bin_size + 4  # first and last bars have width 2
         else:
-            last_tick = high_threshold / bin_size + 2
+            last_tick = high_threshold // bin_size + 2
         x_ticks = [x for x in x_ticks if x < last_tick]
         x_ticks_labels = x_ticks_labels[:len(x_ticks)]
         x_ticks.append(last_tick)
@@ -942,7 +942,7 @@ def draw_report_table(report_name, extra_info, table_to_draw, column_widths):
     #font_scale = 2 * float(font["size"]) / font_size
     row_height = letter_height_coeff * font_scale
     nrows = len(table_to_draw)
-    external_text_height = float(font["size"] * letter_height_coeff * external_font_scale) / font_size
+    external_text_height = float(font["size"] * letter_height_coeff * external_font_scale) // font_size
     total_height = nrows * row_height + 2 * external_text_height
     total_width = letter_width_coeff * font_scale * sum(column_widths)
 
@@ -963,7 +963,7 @@ def draw_report_table(report_name, extra_info, table_to_draw, column_widths):
     rowLabels=[item[0] for item in table_to_draw[1:]]
     restValues=[item[1:] for item in table_to_draw[1:]]
     matplotlib.pyplot.table(cellText=restValues, rowLabels=rowLabels, colLabels=colLabels,
-        colWidths=[float(column_width) / sum(column_widths) for column_width in column_widths[1:]],
+        colWidths=[float(column_width) // sum(column_widths) for column_width in column_widths[1:]],
         rowLoc='left', colLoc='center', cellLoc='right', loc='center')
     #matplotlib.pyplot.savefig(all_pdf, format='pdf', bbox_inches='tight')
     pdf_tables_figures.append(figure)

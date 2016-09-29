@@ -7,20 +7,15 @@
 # See file LICENSE for details.
 ############################################################################
 
-from os.path import basename
-import sys
+import locale
 import os
+import sys
 import shutil
-import getopt
-import re
 
-from quast_libs import qconfig
-from quast_libs.options_parser import parse_options
-
+from quast_libs import qconfig, qutils, reads_analyzer
 qconfig.check_python_version()
-
-from quast_libs import qutils, reads_analyzer
 from quast_libs.qutils import cleanup
+from quast_libs.options_parser import parse_options
 
 from quast_libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
@@ -49,6 +44,13 @@ def main(args):
     except:
         reload(qconfig)
 
+    try:
+        locale.setlocale(locale.LC_ALL, 'en_US.utf8')
+    except Exception:
+        try:
+            locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
+        except Exception:
+            logger.warn('Python locale settings can\'t be changed')
     quast_path = [os.path.realpath(__file__)]
     quast_py_args, contigs_fpaths = parse_options(logger, quast_path + args)
     output_dirpath, ref_fpath, labels = qconfig.output_dirpath, qconfig.reference, qconfig.labels

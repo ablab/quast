@@ -6,13 +6,14 @@
 ############################################################################
 
 import os
-import sys
 import re
+import sys
+
 from quast_libs import qutils, qconfig
+from quast_libs.ca_utils.misc import open_gzipsafe
 
 from quast_libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
-
 
 txt_pattern_gi = re.compile(r'gi\|(?P<id>\d+)\|\w+\|(?P<seqname>\S+)\|\s+(?P<gene_id>.+)\s+(?P<start>\d+)\s+(?P<end>\d+)$', re.I)
 
@@ -29,7 +30,7 @@ def get_genes_from_file(fpath, feature):
         #print '  Warning! ' + feature + '\'s file not specified or doesn\'t exist!'
         return []
 
-    genes_file = open(fpath, 'r')
+    genes_file = open_gzipsafe(fpath, 'r')
     genes = []
 
     line = genes_file.readline().rstrip()
@@ -38,7 +39,10 @@ def get_genes_from_file(fpath, feature):
 
     genes_file.seek(0)
 
-    if txt_pattern_gi.match(line) or txt_pattern.match(line):
+    if fpath.endswith('bed') or fpath.endswith('bed.gz'):
+        genes = parse_bed(genes_file)
+
+    elif txt_pattern_gi.match(line) or txt_pattern.match(line):
         genes = parse_txt(genes_file)
 
     elif gff_pattern.match(line):
@@ -189,6 +193,32 @@ def parse_gff(file, feature):
                         gene.name = val
 
             gene.number = number
+            number += 1
+
+            genes.append(gene)
+
+    return genes
+
+
+def parse_bed(file):
+    genes = []
+
+    number = 0
+
+    for line in file:
+        fs = line.split()
+        if fs:
+            seqname = fs[0]
+            s = int(fs[1])
+            e = int(fs[2])
+            gene = Gene(number=number, seqname=qutils.correct_name(seqname))
+            gene.start = min(s, e)
+            gene.end = max(s, e)
+            gene.id = fs[3] if len(fs) > 3 else None
+            if s < e:
+                gene.strand = '+'
+            else:
+                gene.strand = '-'
             number += 1
 
             genes.append(gene)

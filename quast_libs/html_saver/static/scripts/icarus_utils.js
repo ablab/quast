@@ -112,9 +112,13 @@ function changeInfo(block) {
     info.selectAll('span')
         .remove();
     setBaseChartHeight();
+    var contigInfo = 'Contig: ' + block.name;
+    if (!isContigSizePlot && typeof(contig_lengths) !== 'undefined') {
+        contigInfo += ' (' + contig_lengths[block.assembly][block.name] + ' bp)';
+    }
     info.append('p')
         .style({'display': 'block', 'word-break': 'break-all', 'word-wrap': 'break-word'})
-        .text('Name: ' + block.name, 280);
+        .text(contigInfo, 280);
     var contigType;
     var blockStructure = getBlockStructure(block);
     if (isContigSizePlot) {

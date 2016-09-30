@@ -74,6 +74,11 @@ def add_contig_structure_data(data_str, alignment_name, structure, ref_contigs, 
 def get_contigs_structure(chr_to_aligned_blocks, contigs_by_assemblies, ref_contigs, chr_full_names, contig_names_by_refs,
                            structures_by_labels, used_chromosomes, links_to_chromosomes):
     contigs_data_str = []
+    contigs_data_str.append('var contig_lengths = {};')
+    for assembly in chr_to_aligned_blocks.keys():
+        contigs_data_str.append('contig_lengths["' + assembly + '"] = {};')
+        for contig in contigs_by_assemblies[assembly]:
+            contigs_data_str.append('contig_lengths["' + assembly + '"]["' + contig.name + '"] = ' + str(contig.size) + ';')
     contigs_data_str.append('var contig_structures = {};')
     for assembly in chr_to_aligned_blocks.keys():
         contigs_data_str.append('contig_structures["' + assembly + '"] = {};')

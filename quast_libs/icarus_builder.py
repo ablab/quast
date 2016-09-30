@@ -71,22 +71,22 @@ def add_contig_structure_data(data_str, alignment_name, structure, ref_contigs, 
     return data_str
 
 
-def get_contigs_structure(chr_to_aligned_blocks, contigs_by_assemblies, ref_contigs, chr_full_names, contig_names_by_refs,
-                           structures_by_labels, used_chromosomes, links_to_chromosomes):
+def get_contigs_structure(assemblies_contigs, chr_to_aligned_blocks, contigs_by_assemblies, ref_contigs, chr_full_names,
+                          contig_names_by_refs, structures_by_labels, used_chromosomes, links_to_chromosomes):
     contigs_data_str = []
     contigs_data_str.append('var contig_lengths = {};')
-    for assembly in chr_to_aligned_blocks.keys():
-        contigs_data_str.append('contig_lengths["' + assembly + '"] = {};')
-        for contig in contigs_by_assemblies[assembly]:
-            contigs_data_str.append('contig_lengths["' + assembly + '"]["' + contig.name + '"] = ' + str(contig.size) + ';')
     contigs_data_str.append('var contig_structures = {};')
     for assembly in chr_to_aligned_blocks.keys():
+        contigs_data_str.append('contig_lengths["' + assembly + '"] = {};')
         contigs_data_str.append('contig_structures["' + assembly + '"] = {};')
-        contigs = dict((contig.name, contig) for contig in contigs_by_assemblies[assembly])
-        for contig in contigs:
-            data_str = ['contig_structures["' + assembly + '"]["' + contig + '"] = [ ']
-            contig_structure = structures_by_labels[assembly][contig]
-            data_str = add_contig_structure_data(data_str, contig, contig_structure, ref_contigs,
+        used_contigs = assemblies_contigs[assembly]
+        for contig in contigs_by_assemblies[assembly]:
+            if contig.name not in used_contigs:
+                continue
+            contigs_data_str.append('contig_lengths["' + assembly + '"]["' + contig.name + '"] = ' + str(contig.size) + ';')
+            data_str = ['contig_structures["' + assembly + '"]["' + contig.name + '"] = [ ']
+            contig_structure = structures_by_labels[assembly][contig.name]
+            data_str = add_contig_structure_data(data_str, contig.name, contig_structure, ref_contigs,
                                                  chr_full_names, contig_names_by_refs, used_chromosomes, links_to_chromosomes)
             data_str.append('];')
             contigs_data_str.extend(data_str)
@@ -230,7 +230,7 @@ def prepare_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, data_st
             ms_name += 's'
         ms_selectors.append((ms_type, ms_name, str(ms_count)))
 
-    contigs_structure_str = get_contigs_structure(chr_to_aligned_blocks, contigs_by_assemblies, ref_contigs, chr_full_names,
+    contigs_structure_str = get_contigs_structure(assemblies_contigs, chr_to_aligned_blocks, contigs_by_assemblies, ref_contigs, chr_full_names,
                                                    contig_names_by_refs, structures_by_labels, used_chromosomes, links_to_chromosomes)
     return alignment_viewer_fpath, data_str, contigs_structure_str, additional_assemblies_data, ms_selectors, num_misassemblies, aligned_assemblies
 

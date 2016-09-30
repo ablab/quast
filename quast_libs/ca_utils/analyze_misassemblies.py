@@ -406,12 +406,12 @@ def process_misassembled_contig(sorted_aligns, cyclic, aligned_lengths, region_m
                 ca_output.stdout_f.write('\t\t\t  Not a misassembly' + reason_msg + ' between these two alignments\n')
                 region_misassemblies.append(Misassembly.FRAGMENTED)
                 ca_output.icarus_out_f.write('fake: not a misassembly' + reason_msg + '\n')
-            elif abs(inconsistency) <= qconfig.MAX_INDEL_LENGTH and prev_align.ref == next_align.ref and \
-                    count_ns_and_not_ns_between_aligns(contig_seq, prev_align, next_align)[1] <= qconfig.MAX_INDEL_LENGTH:
+            elif abs(inconsistency) <= qconfig.MAX_INDEL_LENGTH and \
+                            count_ns_and_not_ns_between_aligns(contig_seq, prev_align, next_align)[1] <= qconfig.MAX_INDEL_LENGTH:
                 ns_number, not_ns_number = count_ns_and_not_ns_between_aligns(contig_seq, prev_align, next_align)
 
                 if inconsistency == 0:
-                    ca_output.stdout_f.write(('\t\t\t  Short stretch of %d mismatches and %d Ns between these two alignments\n' %
+                    ca_output.stdout_f.write(('\t\t\t  Short stretch of %d mismatches and %d Ns between these two alignments' %
                                               (not_ns_number, ns_number)) + reason_msg + '\n')
                     indels_info.mismatches += not_ns_number
                     ca_output.icarus_out_f.write('indel: stretch of mismatches and Ns' + reason_msg + '\n')
@@ -442,7 +442,7 @@ def process_misassembled_contig(sorted_aligns, cyclic, aligned_lengths, region_m
                     #There is a small gap between the two alignments, a local misassembly
                     ca_output.stdout_f.write('\t\t\t  Gap between these two alignments (local misassembly).')
                     #plantafile_out.write('Distance on contig =', distance_on_contig, ', distance on reference =', distance_on_reference)
-                ca_output.stdout_f.write('Inconsistency = ' + str(inconsistency) + reason_msg + '\n')
+                ca_output.stdout_f.write(' Inconsistency = ' + str(inconsistency) + reason_msg + '\n')
                 ca_output.icarus_out_f.write('local misassembly' + '\n')
                 region_misassemblies.append(Misassembly.LOCAL)
 

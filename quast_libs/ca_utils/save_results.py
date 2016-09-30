@@ -10,6 +10,7 @@ def print_results(contigs_fpath, log_out_f, used_snps_fpath, total_indels_info, 
     log_out_f.write('Analysis is finished!\n')
     if qconfig.show_snps:
         log_out_f.write('Founded SNPs were written into ' + used_snps_fpath + '\n')
+    log_out_f.write('\n')
     log_out_f.write('Results:\n')
 
     log_out_f.write('\tLocal Misassemblies: %d\n' % region_misassemblies.count(Misassembly.LOCAL))
@@ -37,7 +38,7 @@ def print_results(contigs_fpath, log_out_f, used_snps_fpath, total_indels_info, 
     log_out_f.write('Partially Unaligned Contigs with Misassemblies: %d\n' % result['partially_unaligned_with_misassembly'])
     log_out_f.write('Unaligned Contig Bases: %d\n' % (result['fully_unaligned_bases'] + result['partially_unaligned_bases']))
 
-    log_out_f.write('')
+    log_out_f.write('\n')
     log_out_f.write('Ambiguously Mapped Contigs: %d\n' % result['ambiguous_contigs'])
     log_out_f.write('Total Bases in Ambiguously Mapped Contigs: %d\n' % (result['ambiguous_contigs_len']))
     log_out_f.write('Extra Bases in Ambiguously Mapped Contigs: %d\n' % result['ambiguous_contigs_extra_bases'])
@@ -52,10 +53,10 @@ def print_results(contigs_fpath, log_out_f, used_snps_fpath, total_indels_info, 
         #log_out_f.write('Mismatches: %d\n' % result['SNPs'])
         #log_out_f.write('Single Nucleotide Indels: %d\n' % result['indels'])
 
-        log_out_f.write('')
+        log_out_f.write('\n')
         log_out_f.write('\tCovered Bases: %d\n' % result['region_covered'])
         #log_out_f.write('\tAmbiguous Bases (e.g. N\'s): %d\n' % result['region_ambig'])
-        log_out_f.write('')
+        log_out_f.write('\n')
         log_out_f.write('\tSNPs: %d\n' % total_indels_info.mismatches)
         log_out_f.write('\tInsertions: %d\n' % total_indels_info.insertions)
         log_out_f.write('\tDeletions: %d\n' % total_indels_info.deletions)

@@ -209,7 +209,7 @@ def js_data_gen(assemblies, contigs_fpaths, chromosomes_length, output_dirpath, 
         physical_cov_data = format_cov_data(physical_cov_data, physical_max_depth, chr, 'physical_coverage_data', 'physical_max_depth') \
             if physical_cov_data else None
 
-        alignment_viewer_fpath, ref_data_str, additional_assemblies_data, ms_selectors, num_misassemblies[chr], aligned_assemblies[chr] = \
+        alignment_viewer_fpath, ref_data_str, contigs_structure_str, additional_assemblies_data, ms_selectors, num_misassemblies[chr], aligned_assemblies[chr] = \
             prepare_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, data_str, chr_to_aligned_blocks, structures_by_labels,
                                                contigs_by_assemblies, ambiguity_alignments_by_labels=ambiguity_alignments_by_labels,
                                                cov_data_str=cov_data, physical_cov_data_str=physical_cov_data,
@@ -217,7 +217,7 @@ def js_data_gen(assemblies, contigs_fpaths, chromosomes_length, output_dirpath, 
         ref_name = qutils.name_from_fpath(ref_fpath)
         save_alignment_data_for_one_ref(chr, ref_contigs, ref_name, json_output_dir, alignment_viewer_fpath, ref_data_str, ms_selectors,
                                         ref_data=ref_data, features_data=features_data, assemblies_data=assemblies_data,
-                                        additional_assemblies_data=additional_assemblies_data)
+                                        contigs_structure_str=contigs_structure_str, additional_assemblies_data=additional_assemblies_data)
 
     contigs_sizes_str, too_many_contigs = get_contigs_data(contigs_by_assemblies, nx_marks, assemblies_n50, structures_by_labels,
                                                            contig_names_by_refs, chr_names, chr_full_names)

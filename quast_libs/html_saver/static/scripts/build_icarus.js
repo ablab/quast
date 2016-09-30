@@ -594,8 +594,9 @@ THE SOFTWARE.
             block.triangles = Array();
             itemId++;
             numItems++;
+            var structure = getBlockStructure(block);
             if (block.genes) {
-                var corr_start = (block.structure && block.structure.length > 0) ? block.structure[0].corr_start : block.corr_start;
+                var corr_start = (structure && structure.length > 0) ? structure.corr_start : block.corr_start;
                 for (var gene_n = 0; gene_n < block.genes.length; gene_n++) {
                     if (!block.genes[gene_n].corr_start) {
                         block.genes[gene_n].corr_start = Math.max(block.genes[gene_n].start + corr_start, block.corr_start);
@@ -639,7 +640,7 @@ THE SOFTWARE.
                 var block = lane[i];
                 if (block.mis_ends) var misassembled_ends = block.mis_ends.split(';');
                 if (isContigSizePlot) {
-                    var blocks = block.structure;
+                    var blocks = getBlockStructure(block);
                     if (blocks) {
                         for (var k = 0; k < blocks.length; k++) {
                             var misassembly = (k < blocks.length - 1 && blocks[k + 1].contig_type == 'M') ? blocks[k + 1] : null;
@@ -654,7 +655,7 @@ THE SOFTWARE.
                 }
                 var newItem = parseItem(block);
                 if (!block.is_best) {
-                    newItem.best_group = block.structure;
+                    newItem.best_group = getBlockStructure(block);
                     newItem.structure = null;
                 }
                 laneItems.push(newItem);
@@ -784,7 +785,7 @@ THE SOFTWARE.
 
         block.misassembled = block.misassemblies ? "True" : "False";
         c = (block.misassembled == "False" ? "" : "misassembled");
-        c += (block.similar == "True" ? " similar" : "");
+        c += (block.similar && block.similar == "True" ? " similar" : "");
         c += (block.ambiguous ? " ambiguous" : "");
         c += (!block.is_best && block.ambiguous_alignments && block.ambiguous_alignments.length > 0 ? " alternative" : "");
 

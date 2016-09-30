@@ -276,8 +276,13 @@ def format_cov_data(cov_data, max_depth, chr, cov_data_name, max_depth_name):
         chr_max_depth = max_depth[chr]
         data.append(max_depth_name + '["' + chr + '"] = ' + str(chr_max_depth) + ';')
         data.append(cov_data_name + '["' + chr + '"] = [ ')
-        for e in cov_data[chr]:
-            data.append(str(e) + ',')
+        line = ''
+        for i, e in enumerate(cov_data[chr]):
+            if i % 100 == 0:
+                data.append(line)
+                line = ''
+            line += str(e) + ','
+        data.append(line)
         data[-1] = data[-1][:-1] + '];'
     return data
 

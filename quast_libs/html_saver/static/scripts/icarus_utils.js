@@ -3,6 +3,13 @@ var totalMaxYMini;
 var minCoverage = 10;
 var expandedLanes = [];
 
+function getBlockStructure(block) {
+    if (typeof(contig_structures) !== 'undefined')
+        return contig_structures[block.assembly][block.name];
+    else
+        return block.structure;
+}
+
 function getItemStart(block, minExtent) {
     return x_main(Math.max(minExtent, block.corr_start));
 }
@@ -108,31 +115,37 @@ function changeInfo(block) {
     info.append('p')
         .style({'display': 'block', 'word-break': 'break-all', 'word-wrap': 'break-word'})
         .text('Name: ' + block.name, 280);
-    var contig_type;
-    if (isContigSizePlot)
-        contig_type = block.contig_type ? block.contig_type : '';
-    else if (block.structure) {
-        contig_type = block.misassemblies ? 'misassembled' : 'correct';
-        if (block.similar == "True" && !block.misassemblies) contig_type += ' (similar in > 50% of the assemblies)';
+    var contigType;
+    var blockStructure = getBlockStructure(block);
+    if (isContigSizePlot) {
+        contigType = block.contig_type ? block.contig_type : '';
+    }
+    else if (block.best_group) {
+        contigType = 'alternative block (not from the best set)';
+    }
+    else if (block.ambiguous) {
+        contigType = 'ambiguous';
+    }
+    else if (blockStructure) {
+        contigType = block.misassemblies ? 'misassembled' : 'correct';
+        if (block.similar && block.similar == "True" && !block.misassemblies)
+            contigType += ' (similar in > 50% of the assemblies)';
         if (block.misassemblies) {
             var misassemblies = block.misassemblies.split(';');
             if (misassemblies[0] && misassemblies[1])
-                contig_type += ' (both sides';
+                contigType += ' (both sides';
             else if (misassemblies[0])
-                contig_type += ' (left side';
+                contigType += ' (left side';
             else
-                contig_type += ' (right side';
+                contigType += ' (right side';
 
-            if (block.similar == "True") contig_type += ', similar in > 50% of the assemblies';
-            contig_type += ')'
+            if (block.similar && block.similar == "True") contigType += ', similar in > 50% of the assemblies';
+            contigType += ')'
         }
     }
-    else if (block.best_group) {
-        contig_type = 'alternative block (not from the best set)';
-    }
-    if (contig_type)
+    if (contigType)
         info.append('p')
-            .text('Type: ' + contig_type);
+            .text('Type: ' + contigType);
     if (block.size)
         info.append('p')
             .text('Size: ' + block.size + ' bp');
@@ -158,10 +171,10 @@ function changeInfo(block) {
 
     var numBlock = 0;
     var prevChr = '';
-    var structure = block.structure ? block.structure : block.ambiguous_alignments;
-    if (structure) {
-        for (var i = 0; i < structure.length; i++) {
-            var nextBlock = structure[i];
+    var currentAlignmentSet = block.best_group ? block.ambiguous_alignments : blockStructure;  // if block has best_group, it is not from the best set
+    if (currentAlignmentSet) {
+        for (var i = 0; i < currentAlignmentSet.length; i++) {
+            var nextBlock = currentAlignmentSet[i];
             if (nextBlock.contig_type != "M" && block.corr_start == nextBlock.corr_start && nextBlock.corr_end == block.corr_end) {
                 prevChr = nextBlock.chr;
                 break;
@@ -171,7 +184,7 @@ function changeInfo(block) {
     }
 
     showArrows(block);
-    structure = block.structure ? block.structure : block.best_group;
+    var structure = blockStructure ? blockStructure : block.best_group;
     if (structure && structure.length > 0) {
         var blocksMenu = info.append('p');
         var blocksCount = structure.filter(function(nextBlock) {
@@ -402,10 +415,10 @@ function showArrows(block) {
     mini.selectAll('.arrow').remove();
     mini.selectAll('.arrow_selected').remove();
     var y = y_mini(block.lane) - 1;
-
-    if (block.structure) {
-        for (var i = 0; i < block.structure.length; ++i) {
-            var nextBlock = block.structure[i];
+    var structure = getBlockStructure(block);
+    if (structure) {
+        for (var i = 0; i < structure.length; ++i) {
+            var nextBlock = structure[i];
             if (nextBlock.contig_type != "M" && !nextBlock.notActive) {
                 if (!(nextBlock.corr_start <= block.corr_start && block.corr_end <= nextBlock.corr_end) &&
                     (isContigSizePlot || chrContigs.indexOf(nextBlock.chr) != -1)) {

@@ -41,7 +41,7 @@ def compile_aligner(logger, only_clean=False):
                                                                                 just_notice=True, logger=logger):
         return check_aligner_functionality(logger)
 
-    if qconfig.platform_name == 'macosx' and not check_prev_compilation_failed('E-MEM', join(qconfig.LIBS_LOCATION, 'E-MEM-osx',
+    if not contig_aligner_dirpath and qconfig.platform_name == 'macosx' and not check_prev_compilation_failed('E-MEM', join(qconfig.LIBS_LOCATION, 'E-MEM-osx',
                                                                                              'make.failed'), just_notice=True, logger=logger):
         contig_aligner = 'E-MEM'
         contig_aligner_dirpath = join(qconfig.LIBS_LOCATION, 'E-MEM-osx')

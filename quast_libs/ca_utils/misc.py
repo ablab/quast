@@ -17,12 +17,16 @@ import shutil
 from itertools import repeat
 from os.path import isfile, isdir, join
 
-from quast_libs import qconfig
-from quast_libs.qutils import compile_tool, val_to_str
+from quast_libs import qconfig, qutils
+from quast_libs.qutils import compile_tool, val_to_str, check_prev_compilation_failed
 
 contig_aligner = None
 contig_aligner_dirpath = None
 ref_labels_by_chromosomes = {}
+
+
+def bin_fpath(fname):
+    return join(contig_aligner_dirpath, fname)
 
 
 def is_emem_aligner():
@@ -32,19 +36,26 @@ def is_emem_aligner():
 def compile_aligner(logger, only_clean=False):
     global contig_aligner
     global contig_aligner_dirpath
-    if contig_aligner_dirpath is not None:
-        return True
 
-    if qconfig.platform_name == 'macosx':
+    if contig_aligner_dirpath is not None and not check_prev_compilation_failed(contig_aligner, join(contig_aligner_dirpath, 'make.failed'),
+                                                                                just_notice=True, logger=logger):
+        return check_aligner_functionality(logger)
+
+    if qconfig.platform_name == 'macosx' and not check_prev_compilation_failed('E-MEM', join(qconfig.LIBS_LOCATION, 'E-MEM-osx',
+                                                                                             'make.failed'), just_notice=True, logger=logger):
         contig_aligner = 'E-MEM'
         contig_aligner_dirpath = join(qconfig.LIBS_LOCATION, 'E-MEM-osx')
-        return True
+        return check_aligner_functionality(logger)
 
     default_requirements = ['nucmer', 'delta-filter', 'show-coords', 'show-snps', 'mummer', 'mgaps']
 
-    aligners_to_try = [
-        ('E-MEM', join(qconfig.LIBS_LOCATION, 'E-MEM-linux'), default_requirements + ['e-mem']),
-        ('MUMmer', join(qconfig.LIBS_LOCATION, 'MUMmer3.23-linux'), default_requirements)]
+    if qconfig.platform_name == 'macosx':
+        aligners_to_try = [
+            ('MUMmer', join(qconfig.LIBS_LOCATION, 'MUMmer3.23-osx'), default_requirements)]
+    else:
+        aligners_to_try = [
+            ('E-MEM', join(qconfig.LIBS_LOCATION, 'E-MEM-linux'), default_requirements + ['e-mem']),
+            ('MUMmer', join(qconfig.LIBS_LOCATION, 'MUMmer3.23-linux'), default_requirements)]
 
     for i, (name, dirpath, requirements) in enumerate(aligners_to_try):
         success_compilation = compile_tool(name, dirpath, requirements, just_notice=(i < len(aligners_to_try) - 1),
@@ -53,9 +64,29 @@ def compile_aligner(logger, only_clean=False):
             continue
         contig_aligner = name
         contig_aligner_dirpath = dirpath  # successfully compiled
-        return True
+        return check_aligner_functionality(logger)
     logger.error("Compilation of contig aligner software was unsuccessful! QUAST functionality will be limited.")
     return False
+
+
+def check_aligner_functionality(logger):
+    if not contig_aligner:
+        return False
+    cmdline = [bin_fpath('delta-filter'), '-h']
+    make_logs_basepath = join(contig_aligner_dirpath, 'make')
+    log_out_fpath = make_logs_basepath + '.log'
+    log_err_fpath = make_logs_basepath + '.err'
+    logger.debug('Checking correctness of ' + contig_aligner + ' compilation...')
+    return_code = qutils.call_subprocess(cmdline, stdout=open(log_out_fpath, 'a'),
+                                         stderr=open(log_err_fpath, 'a'))
+    if return_code == 0:
+        return True
+    failed_compilation_flag = make_logs_basepath + '.failed'
+    open(failed_compilation_flag, 'w').close()
+
+    logger.main_info(contig_aligner + ' does not work properly (details are in ' + make_logs_basepath +
+                     '.log and make.err). QUAST will try to recompile contig aligner software.')
+    return compile_aligner(logger)
 
 
 def is_same_reference(chr1, chr2):

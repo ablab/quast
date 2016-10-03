@@ -11,8 +11,8 @@ import datetime
 import shutil
 import sys
 
-from quast_libs import qconfig, qutils, ca_utils
-from quast_libs.ca_utils.misc import is_emem_aligner
+from quast_libs import qconfig, qutils
+from quast_libs.ca_utils.misc import is_emem_aligner, bin_fpath
 
 from quast_libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
@@ -23,10 +23,6 @@ class NucmerStatus:
     OK = 1
     NOT_ALIGNED = 2
     ERROR = 3
-
-
-def bin_fpath(fname):
-    return join(ca_utils.misc.contig_aligner_dirpath, fname)
 
 
 def create_nucmer_successful_check(fpath, contigs_fpath, ref_fpath):

@@ -6,7 +6,6 @@
 ############################################################################
 
 from __future__ import with_statement
-from __future__ import print_function
 import os
 import shlex
 import shutil
@@ -165,11 +164,8 @@ def download_refs(organism, ref_fpath):
 
 def show_progress(a, b, c):
     if a > 0 and a % int(c/(b*100)) == 0:
-        if is_python_2():
-            print("% 3.1f%% of %d bytes" % (min(100, int(float(a * b) / c * 100)), c)),
-            sys.stdout.flush()
-        else:
-            print("% 3.1f%% of %d bytes\r" % (min(100, int(float(a * b) / c * 100)), c), flush=True)
+        print("% 3.1f%% of %d bytes" % (min(100, int(float(a * b) / c * 100)), c)),
+        sys.stdout.flush()
 
 
 def download_all_blast_binaries(logger=logger, only_clean=False):

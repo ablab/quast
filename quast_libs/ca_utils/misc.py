@@ -74,18 +74,14 @@ def check_aligner_functionality(logger):
         return False
     cmdline = [bin_fpath('delta-filter'), '-h']
     make_logs_basepath = join(contig_aligner_dirpath, 'make')
-    log_out_fpath = make_logs_basepath + '.log'
-    log_err_fpath = make_logs_basepath + '.err'
     logger.debug('Checking correctness of ' + contig_aligner + ' compilation...')
-    return_code = qutils.call_subprocess(cmdline, stdout=open(log_out_fpath, 'a'),
-                                         stderr=open(log_err_fpath, 'a'))
+    return_code = qutils.call_subprocess(cmdline, stdout=open(os.devnull, 'w'), stderr=open(os.devnull, 'w'))
     if return_code == 0:
         return True
     failed_compilation_flag = make_logs_basepath + '.failed'
     open(failed_compilation_flag, 'w').close()
 
-    logger.main_info(contig_aligner + ' does not work properly (details are in ' + make_logs_basepath +
-                     '.log and make.err). QUAST will try to recompile contig aligner software.')
+    logger.main_info(contig_aligner + ' does not work properly. QUAST will try to recompile contig aligner software.')
     return compile_aligner(logger)
 
 

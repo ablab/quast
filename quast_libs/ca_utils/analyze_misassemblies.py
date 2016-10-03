@@ -351,7 +351,7 @@ def process_misassembled_contig(sorted_aligns, cyclic, aligned_lengths, region_m
             ca_output.stdout_f.write('\t\t\t  Not a misassembly (structural variation of the genome) between these two alignments\n')
             ca_output.icarus_out_f.write('fake: not a misassembly (structural variation of the genome)\n')
             misassemblies_matched_sv += 1
-        elif aux_data["is_scaffold_gap"]:
+        elif aux_data["is_scaffold_gap"] and abs(inconsistency) > qconfig.extensive_misassembly_threshold:
             ca_output.stdout_f.write('\t\t\t  Incorrectly estimated size of scaffold gap between these two alignments: ')
             ca_output.stdout_f.write('gap length difference = ' + inconsistency + '\n')
             region_misassemblies.append(Misassembly.SCAFFOLD_GAP)
@@ -411,17 +411,17 @@ def process_misassembled_contig(sorted_aligns, cyclic, aligned_lengths, region_m
                 ns_number, not_ns_number = count_ns_and_not_ns_between_aligns(contig_seq, prev_align, next_align)
 
                 if inconsistency == 0:
-                    ca_output.stdout_f.write(('\t\t\t  Short stretch of %d mismatches and %d Ns between these two alignments' %
+                    ca_output.stdout_f.write(('\t\t\t  Stretch of %d mismatches between these two alignments (number of Ns: %d)' %
                                               (not_ns_number, ns_number)) + reason_msg + '\n')
                     indels_info.mismatches += not_ns_number
-                    ca_output.icarus_out_f.write('indel: stretch of mismatches and Ns' + reason_msg + '\n')
+                    ca_output.icarus_out_f.write('indel: stretch of mismatches' + reason_msg + '\n')
                 else:
                     indel_length = abs(inconsistency)
                     indel_class = 'Indel (<= 5bp)' if indel_length <= qconfig.SHORT_INDEL_THRESHOLD else 'Indel (> 5bp)'
                     indel_type = 'insertion' if inconsistency < 0 else 'deletion'
                     mismatches = max(0, not_ns_number - indel_length)
-                    ca_output.stdout_f.write(('\t\t\t  %s between these two alignments: %s of length %d; %d mismatches')
-                                                 % (indel_class, indel_type, indel_length, mismatches) + reason_msg + '\n')
+                    ca_output.stdout_f.write(('\t\t\t  %s between these two alignments: %s of length %d; %d mismatches (number of Ns: %d)')
+                                                 % (indel_class, indel_type, indel_length, mismatches, ns_number) + reason_msg + '\n')
                     indels_info.indels_list.append(indel_length)
                     if indel_type == 'insertion':
                         indels_info.insertions += indel_length

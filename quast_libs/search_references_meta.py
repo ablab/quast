@@ -23,8 +23,10 @@ from quast_libs.qutils import is_non_empty_file
 logger = get_logger(qconfig.LOGGER_META_NAME)
 try:
     from urllib2 import urlopen
+    import urllib
 except:
     from urllib.request import urlopen
+    import urllib.request as urllib
 
 import xml.etree.ElementTree as ET
 import urllib

@@ -259,125 +259,125 @@ def print_version(meta=False):
     full_version = 'QUAST v' + quast_version()
     if meta:
         full_version += ' (MetaQUAST mode)'
-    print >> sys.stderr, full_version
+    sys.stderr.write(full_version + '\n')
 
 
 def usage(show_hidden=False, meta=False, short=True):
-    print >> sys.stderr, ""
+    sys.stderr.write("")
     if meta:
-        print >> sys.stderr, 'MetaQUAST: QUality ASsessment Tool for Metagenome Assemblies'
+        sys.stderr.write('MetaQUAST: QUality ASsessment Tool for Metagenome Assemblies\n')
     else:
-        print >> sys.stderr, 'QUAST: QUality ASsessment Tool for Genome Assemblies'
-    print >> sys.stderr, "Version:", quast_version(),
+        sys.stderr.write('QUAST: QUality ASsessment Tool for Genome Assemblies\n')
+    sys.stderr.write("Version: " + quast_version() + '\n')
 
-    print >> sys.stderr, "\n"
-    print >> sys.stderr, 'Usage: python', sys.argv[0], '[options] <files_with_contigs>'
-    print >> sys.stderr, ""
+    sys.stderr.write("\n")
+    sys.stderr.write('Usage: python ' + sys.argv[0] + ' [options] <files_with_contigs>\n')
+    sys.stderr.write("\n")
 
-    print >> sys.stderr, "Options:"
-    print >> sys.stderr, "-o  --output-dir  <dirname>   Directory to store all result files [default: quast_results/results_<datetime>]"
+    sys.stderr.write("Options:\n")
+    sys.stderr.write("-o  --output-dir  <dirname>   Directory to store all result files [default: quast_results/results_<datetime>]\n")
     if meta:
-        print >> sys.stderr, "-R   <filename,filename,...>  Comma-separated list of reference genomes or directory with reference genomes"
-        print >> sys.stderr, "--references-list <filename>  Text file with list of reference genomes for downloading from NCBI"
-        print >> sys.stderr, "-G  --genes       <filename>  File with gene coordinates in the references"
+        sys.stderr.write("-R   <filename,filename,...>  Comma-separated list of reference genomes or directory with reference genomes\n")
+        sys.stderr.write("--references-list <filename>  Text file with list of reference genomes for downloading from NCBI\n")
+        sys.stderr.write("-G  --genes       <filename>  File with gene coordinates in the references\n")
     else:
-        print >> sys.stderr, "-R                <filename>  Reference genome file"
-        print >> sys.stderr, "-G  --genes       <filename>  File with gene coordinates in the reference"
+        sys.stderr.write("-R                <filename>  Reference genome file\n")
+        sys.stderr.write("-G  --genes       <filename>  File with gene coordinates in the reference\n")
     if not short:
-        print >> sys.stderr, "-O  --operons     <filename>  File with operon coordinates in the reference"
-    print >> sys.stderr, "-m  --min-contig  <int>       Lower threshold for contig length [default: %s]" % min_contig
-    print >> sys.stderr, "-t  --threads     <int>       Maximum number of threads [default: 25% of CPUs]"
+        sys.stderr.write("-O  --operons     <filename>  File with operon coordinates in the reference\n")
+    sys.stderr.write("-m  --min-contig  <int>       Lower threshold for contig length [default: %s]\n" % min_contig)
+    sys.stderr.write("-t  --threads     <int>       Maximum number of threads [default: 25% of CPUs]\n")
 
-    print >> sys.stderr, ""
+    sys.stderr.write("\n")
     if short:
-        print >> sys.stderr, "These are basic options. To see the full list, use --help"
+        sys.stderr.write("These are basic options. To see the full list, use --help\n")
     else:
-        print >> sys.stderr, "Advanced options:"
-        print >> sys.stderr, "-s  --scaffolds                       Assemblies are scaffolds, split them and add contigs to the comparison"
-        print >> sys.stderr, "-l  --labels \"label, label, ...\"      Names of assemblies to use in reports, comma-separated. If contain spaces, use quotes"
-        print >> sys.stderr, "-L                                    Take assembly names from their parent directory names"
+        sys.stderr.write("Advanced options:\n")
+        sys.stderr.write("-s  --scaffolds                       Assemblies are scaffolds, split them and add contigs to the comparison\n")
+        sys.stderr.write("-l  --labels \"label, label, ...\"      Names of assemblies to use in reports, comma-separated. If contain spaces, use quotes\n")
+        sys.stderr.write("-L                                    Take assembly names from their parent directory names\n")
         if meta:
-            print >> sys.stderr, "-f  --gene-finding                    Predict genes using MetaGeneMark"
+            sys.stderr.write("-f  --gene-finding                    Predict genes using MetaGeneMark\n")
         else:
-            print >> sys.stderr, "-f  --gene-finding                    Predict genes (with GeneMark.hmm for prokaryotes (default), GeneMark-ES"
-            print >> sys.stderr, "                                      for eukaryotes (--eukaryote), or MetaGeneMark for metagenomes (--meta)"
-        print >> sys.stderr, "    --glimmer                         Predict genes with GlimmerHMM instead of GeneMark-ES"
-        print >> sys.stderr, "    --gene-thresholds <int,int,...>   Comma-separated list of threshold lengths of genes to search with Gene Finding module"
-        print >> sys.stderr, "                                      [default: %s]" % genes_lengths
-        print >> sys.stderr, "-e  --eukaryote                       Genome is eukaryotic"
+            sys.stderr.write("-f  --gene-finding                    Predict genes (with GeneMark.hmm for prokaryotes (default), GeneMark-ES\n")
+            sys.stderr.write("                                      for eukaryotes (--eukaryote), or MetaGeneMark for metagenomes (--meta)\n")
+        sys.stderr.write("    --glimmer                         Predict genes with GlimmerHMM instead of GeneMark-ES\n")
+        sys.stderr.write("    --gene-thresholds <int,int,...>   Comma-separated list of threshold lengths of genes to search with Gene Finding module\n")
+        sys.stderr.write("                                      [default: %s]\n" % genes_lengths)
+        sys.stderr.write("-e  --eukaryote                       Genome is eukaryotic\n")
         if not meta:
-            print >> sys.stderr, "    --meta                            Use MetaGeneMark for gene prediction"
-            print >> sys.stderr, "    --est-ref-size <int>              Estimated reference size (for computing NGx metrics without a reference)"
+            sys.stderr.write("    --meta                            Use MetaGeneMark for gene prediction\n")
+            sys.stderr.write("    --est-ref-size <int>              Estimated reference size (for computing NGx metrics without a reference)\n")
         else:
-            print >> sys.stderr, "    --max-ref-number <int>            Maximum number of references (per each assembly) to download after looking in SILVA database"
-            print >> sys.stderr, "                                      Set 0 for not looking in SILVA at all [default: %s]" % max_references
-        print >> sys.stderr, "    --gage                            Use GAGE (results are in gage_report.txt)"
-        print >> sys.stderr, "    --contig-thresholds <int,int,...> Comma-separated list of contig length thresholds [default: %s]" % contig_thresholds
-        print >> sys.stderr, "-u  --use-all-alignments              Compute genome fraction, # genes, # operons in QUAST v1.* style."
-        print >> sys.stderr, "                                      By default, QUAST filters Nucmer\'s alignments to keep only best ones"
-        print >> sys.stderr, "-i  --min-alignment <int>             Nucmer's parameter: the minimum alignment length [default: %s]" % min_alignment
-        print >> sys.stderr, "    --min-identity <float>            Nucmer's parameter: the minimum alignment identity (80.0, 100.0) [default: %.1f]" % min_IDY
-        print >> sys.stderr, "-a  --ambiguity-usage <none|one|all>  Use none, one, or all alignments (or aligned fragments internal overlaps) of a contig"
-        print >> sys.stderr, "                                      when all of them are almost equally good (see --ambiguity-score) [default: %s]" % ambiguity_usage
-        print >> sys.stderr, "    --ambiguity-score <float>         Score S for defining equally good alignments of a single contig. All alignments are sorted "
-        print >> sys.stderr, "                                      by decreasing LEN * IDY% value. All alignments with LEN * IDY% < S * best(LEN * IDY%) are "
-        print >> sys.stderr, "                                      discarded. S should be between 0.8 and 1.0 [default: %.2f]" % ambiguity_score
+            sys.stderr.write("    --max-ref-number <int>            Maximum number of references (per each assembly) to download after looking in SILVA database\n")
+            sys.stderr.write("                                      Set 0 for not looking in SILVA at all [default: %s]\n" % max_references)
+        sys.stderr.write("    --gage                            Use GAGE (results are in gage_report.txt)\n")
+        sys.stderr.write("    --contig-thresholds <int,int,...> Comma-separated list of contig length thresholds [default: %s]\n" % contig_thresholds)
+        sys.stderr.write("-u  --use-all-alignments              Compute genome fraction, # genes, # operons in QUAST v1.* style.\n")
+        sys.stderr.write("                                      By default, QUAST filters Nucmer\'s alignments to keep only best ones\n")
+        sys.stderr.write("-i  --min-alignment <int>             Nucmer's parameter: the minimum alignment length [default: %s]\n" % min_alignment)
+        sys.stderr.write("    --min-identity <float>            Nucmer's parameter: the minimum alignment identity (80.0, 100.0) [default: %.1f]\n" % min_IDY)
+        sys.stderr.write("-a  --ambiguity-usage <none|one|all>  Use none, one, or all alignments (or aligned fragments internal overlaps) of a contig\n")
+        sys.stderr.write("                                      when all of them are almost equally good (see --ambiguity-score) [default: %s]\n" % ambiguity_usage)
+        sys.stderr.write("    --ambiguity-score <float>         Score S for defining equally good alignments of a single contig. All alignments are sorted \n")
+        sys.stderr.write("                                      by decreasing LEN * IDY% value. All alignments with LEN * IDY% < S * best(LEN * IDY%) are \n")
+        sys.stderr.write("                                      discarded. S should be between 0.8 and 1.0 [default: %.2f]\n" % ambiguity_score)
         if meta:
-            print >> sys.stderr, "    --unique-mapping                  Disable --ambiguity-usage=all for the combined reference run,"
-            print >> sys.stderr, "                                      i.e. use user-specified or default ('%s') value of --ambiguity-usage" % ambiguity_usage
-        print >> sys.stderr, "    --strict-NA                       Break contigs in any misassembly event when compute NAx and NGAx"
-        print >> sys.stderr, "                                      By default, QUAST breaks contigs only by extensive misassemblies (not local ones)"
-        print >> sys.stderr, "-x  --extensive-mis-size  <int>       Lower threshold for extensive misassembly size. All relocations with inconsistency"
-        print >> sys.stderr, "                                      less than extensive-mis-size are counted as local misassemblies [default: %s]" % extensive_misassembly_threshold
-        print >> sys.stderr, "    --significant-part-size  <int>    Lower threshold for detecting partially unaligned contigs with both significant "
-        print >> sys.stderr, "                                      aligned and unaligned parts [default: %s]" % significant_part_size
-        print >> sys.stderr, "    --fragmented                      Reference genome may be fragmented into small pieces (e.g. scaffolded reference) "
-        print >> sys.stderr, "    --plots-format  <str>             Save plots in specified format [default: %s]" % plot_extension
-        print >> sys.stderr, "                                      Supported formats: %s" % ', '.join(supported_plot_extensions)
-        print >> sys.stderr, "    --memory-efficient                Run Nucmer using one thread, separately per each assembly and each chromosome"
-        print >> sys.stderr, "                                      This may significantly reduce memory consumption on large genomes"
-        print >> sys.stderr, "-1  --reads1  <filename>              File with forward reads (in FASTQ format, may be gzipped)"
-        print >> sys.stderr, "-2  --reads2  <filename>              File with reverse reads (in FASTQ format, may be gzipped)"
-        print >> sys.stderr, "    --sam  <filename>                 SAM alignment file"
-        print >> sys.stderr, "    --bam  <filename>                 BAM alignment file"
-        print >> sys.stderr, "                                      Reads (or SAM/BAM file) are used for structural variation detection and coverage histogram building in Icarus"
-        print >> sys.stderr, "    --sv-bedpe  <filename>            File with structural variations (in BEDPE format)"
-        print >> sys.stderr, ""
-        print >> sys.stderr, "Speedup options:"
-        print >> sys.stderr, "    --no-check                        Do not check and correct input fasta files. Use at your own risk (see manual)"
-        print >> sys.stderr, "    --no-plots                        Do not draw plots"
-        print >> sys.stderr, "    --no-html                         Do not build html reports and Icarus viewers"
-        print >> sys.stderr, "    --no-icarus                       Do not build Icarus viewers"
-        print >> sys.stderr, "    --no-snps                         Do not report SNPs (may significantly reduce memory consumption on large genomes)"
-        print >> sys.stderr, "    --no-gc                           Do not compute GC% and GC-distribution"
-        print >> sys.stderr, "    --no-sv                           Do not run structural variation detection (make sense only if reads are specified)"
-        print >> sys.stderr, "    --no-gzip                         Do not compress large output files"
-        print >> sys.stderr, "    --fast                            A combination of all speedup options except --no-check"
+            sys.stderr.write("    --unique-mapping                  Disable --ambiguity-usage=all for the combined reference run,\n")
+            sys.stderr.write("                                      i.e. use user-specified or default ('%s') value of --ambiguity-usage\n" % ambiguity_usage)
+        sys.stderr.write("    --strict-NA                       Break contigs in any misassembly event when compute NAx and NGAx\n")
+        sys.stderr.write("                                      By default, QUAST breaks contigs only by extensive misassemblies (not local ones)\n")
+        sys.stderr.write("-x  --extensive-mis-size  <int>       Lower threshold for extensive misassembly size. All relocations with inconsistency\n")
+        sys.stderr.write("                                      less than extensive-mis-size are counted as local misassemblies [default: %s]\n" % extensive_misassembly_threshold)
+        sys.stderr.write("    --significant-part-size  <int>    Lower threshold for detecting partially unaligned contigs with both significant \n")
+        sys.stderr.write("                                      aligned and unaligned parts [default: %s]\n" % significant_part_size)
+        sys.stderr.write("    --fragmented                      Reference genome may be fragmented into small pieces (e.g. scaffolded reference) \n")
+        sys.stderr.write("    --plots-format  <str>             Save plots in specified format [default: %s]\n" % plot_extension)
+        sys.stderr.write("                                      Supported formats: %s\n" % ', '.join(supported_plot_extensions))
+        sys.stderr.write("    --memory-efficient                Run Nucmer using one thread, separately per each assembly and each chromosome\n")
+        sys.stderr.write("                                      This may significantly reduce memory consumption on large genomes\n")
+        sys.stderr.write("-1  --reads1  <filename>              File with forward reads (in FASTQ format, may be gzipped)\n")
+        sys.stderr.write("-2  --reads2  <filename>              File with reverse reads (in FASTQ format, may be gzipped)\n")
+        sys.stderr.write("    --sam  <filename>                 SAM alignment file\n")
+        sys.stderr.write("    --bam  <filename>                 BAM alignment file\n")
+        sys.stderr.write("                                      Reads (or SAM/BAM file) are used for structural variation detection and coverage histogram building in Icarus\n")
+        sys.stderr.write("    --sv-bedpe  <filename>            File with structural variations (in BEDPE format)\n")
+        sys.stderr.write("\n")
+        sys.stderr.write("Speedup options:\n")
+        sys.stderr.write("    --no-check                        Do not check and correct input fasta files. Use at your own risk (see manual)\n")
+        sys.stderr.write("    --no-plots                        Do not draw plots\n")
+        sys.stderr.write("    --no-html                         Do not build html reports and Icarus viewers\n")
+        sys.stderr.write("    --no-icarus                       Do not build Icarus viewers\n")
+        sys.stderr.write("    --no-snps                         Do not report SNPs (may significantly reduce memory consumption on large genomes)\n")
+        sys.stderr.write("    --no-gc                           Do not compute GC% and GC-distribution\n")
+        sys.stderr.write("    --no-sv                           Do not run structural variation detection (make sense only if reads are specified)\n")
+        sys.stderr.write("    --no-gzip                         Do not compress large output files\n")
+        sys.stderr.write("    --fast                            A combination of all speedup options except --no-check\n")
         if show_hidden:
-            print >> sys.stderr, ""
-            print >> sys.stderr, "Hidden options:"
-            print >> sys.stderr, "-d  --debug                 Run in a debug mode"
-            print >> sys.stderr, "-c  --min-cluster   <int>   Nucmer's parameter: the minimum length of a cluster of matches [default: %s]" % min_cluster
-            print >> sys.stderr, "-j  --save-json             Save the output also in the JSON format"
-            print >> sys.stderr, "-J  --save-json-to <path>   Save the JSON output to a particular path"
+            sys.stderr.write("\n")
+            sys.stderr.write("Hidden options:\n")
+            sys.stderr.write("-d  --debug                 Run in a debug mode\n")
+            sys.stderr.write("-c  --min-cluster   <int>   Nucmer's parameter: the minimum length of a cluster of matches [default: %s]\n" % min_cluster)
+            sys.stderr.write("-j  --save-json             Save the output also in the JSON format\n")
+            sys.stderr.write("-J  --save-json-to <path>   Save the JSON output to a particular path\n")
             if meta:
-                print >> sys.stderr, "--read-support              Use read coverage specified in contig names (SPAdes/Velvet style) for calculating Avg contig read support"
-            print >> sys.stderr, "--no-icarus                 Do not create Icarus files"
-            print >> sys.stderr, "--svg                       Draw contig alignment plot (in SVG format)"
+                sys.stderr.write("--read-support              Use read coverage specified in contig names (SPAdes/Velvet style) for calculating Avg contig read support\n")
+            sys.stderr.write("--no-icarus                 Do not create Icarus files\n")
+            sys.stderr.write("--svg                       Draw contig alignment plot (in SVG format)\n")
 
-        print >> sys.stderr, ""
-        print >> sys.stderr, "Other:"
-        print >> sys.stderr, "    --silent                          Do not print detailed information about each step to stdout (log file is not affected)"
+        sys.stderr.write("\n")
+        sys.stderr.write("Other:\n")
+        sys.stderr.write("    --silent                          Do not print detailed information about each step to stdout (log file is not affected)\n")
         if meta:
-            print >> sys.stderr, "    --test                            Run MetaQUAST on the data from the test_data folder, output to quast_test_output"
-            print >> sys.stderr, "    --test-no-ref                     Run MetaQUAST without references on the data from the test_data folder, output to quast_test_output"
-            print >> sys.stderr, "                                      MetaQUAST will download SILVA 16S rRNA database (~170 Mb) for searching reference genomes"
-            print >> sys.stderr, "                                      Internet connection is required"
+            sys.stderr.write("    --test                            Run MetaQUAST on the data from the test_data folder, output to quast_test_output\n")
+            sys.stderr.write("    --test-no-ref                     Run MetaQUAST without references on the data from the test_data folder, output to quast_test_output\n")
+            sys.stderr.write("                                      MetaQUAST will download SILVA 16S rRNA database (~170 Mb) for searching reference genomes\n")
+            sys.stderr.write("                                      Internet connection is required\n")
         else:
-            print >> sys.stderr, "    --test                            Run QUAST on the data from the test_data folder, output to quast_test_output"
-            print >> sys.stderr, "    --test-sv                         Run QUAST with structural variants detection on the data from the test_data folder, output to quast_test_output"
-        print >> sys.stderr, "-h  --help                            Print full usage message"
-        print >> sys.stderr, "-v  --version                         Print version"
+            sys.stderr.write("    --test                            Run QUAST on the data from the test_data folder, output to quast_test_output\n")
+            sys.stderr.write("    --test-sv                         Run QUAST with structural variants detection on the data from the test_data folder, output to quast_test_output\n")
+        sys.stderr.write("-h  --help                            Print full usage message\n")
+        sys.stderr.write("-v  --version                         Print version\n")
         if show_hidden:
-            print >> sys.stderr, "    --help-hidden                     Print this usage message with all hidden options"
-    print >> sys.stderr, ""
+            sys.stderr.write("    --help-hidden                     Print this usage message with all hidden options\n")
+    sys.stderr.write("\n")

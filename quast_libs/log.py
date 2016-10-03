@@ -184,7 +184,7 @@ class QLogger(object):
             self._logger.error('')
             self._logger.exception(e)
         else:
-            print >> sys.stderr, str(e)
+            sys.stderr.write(str(e) + '\n')
 
         if exit_code:
             exit(exit_code)
@@ -254,7 +254,7 @@ class QLogger(object):
 
     def print_version(self, to_stderr=False):
         if to_stderr:
-            print >> sys.stderr, "Version: " + qconfig.quast_version()
+            sys.stderr.write("Version: " + qconfig.quast_version() + '\n')
         else:
             self.info("Version: " + qconfig.quast_version())
 

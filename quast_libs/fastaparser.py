@@ -10,7 +10,10 @@ import os
 import sys
 import gzip
 import zipfile
-import bz2
+try:
+    import bz2
+except:
+    from quast_libs.site_packages import bz2
 from quast_libs import qconfig
 import itertools
 # There is a pyfasta package -- http://pypi.python.org/pypi/pyfasta/

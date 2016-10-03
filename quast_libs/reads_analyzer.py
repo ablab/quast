@@ -7,7 +7,6 @@
 
 from __future__ import with_statement
 import os
-import sys
 from os.path import isfile
 import re
 import shutil
@@ -18,7 +17,7 @@ from quast_libs import qconfig, qutils, ca_utils
 from quast_libs.fastaparser import create_fai_file, get_chr_lengths_from_fastafile
 from quast_libs.ra_utils import compile_reads_analyzer_tools, config_manta_fpath, sambamba_fpath, \
     bwa_fpath, bedtools_fpath, paired_reads_names_are_equal
-from .qutils import is_non_empty_file, add_suffix, get_chr_len_fpath, correct_name
+from .qutils import is_non_empty_file, add_suffix, get_chr_len_fpath, correct_name, is_python_2
 
 from quast_libs.log import get_logger
 
@@ -155,7 +154,7 @@ def search_sv_with_manta(main_ref_fpath, meta_ref_fpaths, output_dirpath, err_pa
         return final_bed_fpath
 
     if meta_ref_fpaths:
-        if sys.version_info[0] < 3:
+        if is_python_2():
             from joblib import Parallel, delayed
         else:
             from joblib3 import Parallel, delayed

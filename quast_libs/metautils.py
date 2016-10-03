@@ -14,7 +14,7 @@ from quast_libs import qconfig
 qconfig.check_python_version()
 from quast_libs import contigs_analyzer, fastaparser, reporting
 from quast_libs import qutils
-from quast_libs.qutils import correct_seq, correct_name, get_uniq_name
+from quast_libs.qutils import correct_seq, correct_name, get_uniq_name, is_python_2
 
 from quast_libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_META_NAME)
@@ -78,7 +78,7 @@ def partition_contigs(assemblies, ref_fpaths, corrected_dirpath, alignments_fpat
     # array of assemblies for each reference
     assemblies_by_ref = dict([(qutils.name_from_fpath(ref_fpath), []) for ref_fpath in ref_fpaths])
     n_jobs = min(qconfig.max_threads, len(assemblies))
-    if sys.version_info[0] < 3:
+    if is_python_2():
         from joblib import Parallel, delayed
     else:
         from joblib3 import Parallel, delayed

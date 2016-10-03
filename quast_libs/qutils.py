@@ -184,7 +184,7 @@ def correct_contigs(contigs_fpaths, corrected_dirpath, labels, reporting):
         qconfig.max_threads = 1
 
     n_jobs = min(len(contigs_fpaths), qconfig.max_threads)
-    if sys.version_info[0] < 3:
+    if is_python_2():
         from joblib import Parallel, delayed
     else:
         from joblib3 import Parallel, delayed
@@ -745,6 +745,10 @@ def safe_rm(fpath):
             os.remove(fpath)
         except OSError:
             pass
+
+
+def is_python_2():
+    return sys.version_info[0] < 3
 
 
 def compile_tool(name, dirpath, requirements, just_notice=False, logger=logger, only_clean=False):

@@ -33,6 +33,8 @@ from quast_libs.ca_utils.align_contigs import align_contigs, get_nucmer_aux_out_
 from quast_libs.ca_utils.save_results import print_results, save_result, save_result_for_unaligned
 
 from quast_libs.log import get_logger
+from quast_libs.qutils import is_python_2
+
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 
 
@@ -250,7 +252,7 @@ def do(reference, contigs_fpaths, is_cyclic, output_dir, old_contigs_fpaths, bed
         threads = 1
     else:
         threads = max(1, qconfig.max_threads // n_jobs)
-    if sys.version_info[0] < 3:
+    if is_python_2():
         from joblib import Parallel, delayed
     else:
         from joblib3 import Parallel, delayed

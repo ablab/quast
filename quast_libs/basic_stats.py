@@ -207,8 +207,8 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, json_output_dir, results_dir):
     multiplicator = 1
     if num_contigs >= (qconfig.max_points * 2):
         import math
-        multiplicator = int(num_contigs/qconfig.max_points)
-        max_points = num_contigs/multiplicator
+        multiplicator = int(num_contigs / qconfig.max_points)
+        max_points = num_contigs // multiplicator
         lists_of_lengths = [sorted(list, reverse=True) for list in lists_of_lengths]
         corr_lists_of_lengths = [[sum(list_of_length[((i - 1) * multiplicator):(i * multiplicator)]) for i in range(1, max_points)
                                   if (i * multiplicator) < len(list_of_length)] for list_of_length in lists_of_lengths]

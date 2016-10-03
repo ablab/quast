@@ -6,6 +6,7 @@
 ############################################################################
 
 from __future__ import with_statement
+from __future__ import print_function
 import os
 import shlex
 import shutil
@@ -18,7 +19,7 @@ from os.path import isfile, join
 from quast_libs import qconfig, qutils
 from quast_libs.fastaparser import _get_fasta_file_handler
 from quast_libs.log import get_logger
-from quast_libs.qutils import is_non_empty_file
+from quast_libs.qutils import is_non_empty_file, is_python_2
 
 logger = get_logger(qconfig.LOGGER_META_NAME)
 try:
@@ -29,7 +30,6 @@ except:
     import urllib.request as urllib
 
 import xml.etree.ElementTree as ET
-import urllib
 import socket
 socket.setdefaulttimeout(120)
 
@@ -165,8 +165,11 @@ def download_refs(organism, ref_fpath):
 
 def show_progress(a, b, c):
     if a > 0 and a % int(c/(b*100)) == 0:
-        print("% 3.1f%% of %d bytes\r" % (min(100, int(float(a * b) / c * 100)), c)),
-        sys.stdout.flush()
+        if is_python_2():
+            print("% 3.1f%% of %d bytes" % (min(100, int(float(a * b) / c * 100)), c)),
+            sys.stdout.flush()
+        else:
+            print("% 3.1f%% of %d bytes\r" % (min(100, int(float(a * b) / c * 100)), c), flush=True)
 
 
 def download_all_blast_binaries(logger=logger, only_clean=False):
@@ -389,7 +392,7 @@ def process_blast(blast_assemblies, downloaded_dirpath, corrected_dirpath, label
         logger.main_info('Running BlastN..')
         n_jobs = min(qconfig.max_threads, len(blast_assemblies))
         blast_threads = max(1, qconfig.max_threads // n_jobs)
-        if sys.version_info[0] < 3:
+        if is_python_2():
             from joblib import Parallel, delayed
         else:
             from joblib3 import Parallel, delayed

@@ -7,12 +7,10 @@
 
 from __future__ import with_statement
 import os
-import sys
 import tempfile
 import itertools
 import csv
 import shutil
-import re
 
 from quast_libs import reporting, qconfig, qutils
 from quast_libs.ca_utils.misc import open_gzipsafe
@@ -21,6 +19,8 @@ from quast_libs.genemark import add_genes_to_fasta
 from quast_libs.genes_parser import Gene
 
 from quast_libs.log import get_logger
+from quast_libs.qutils import is_python_2
+
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 
 OUTPUT_FASTA = False # whether output only .gff or with corresponding .fasta files
@@ -171,7 +171,7 @@ def do(contigs_fpaths, gene_lengths, out_dirpath):
         os.makedirs(tmp_dirpath)
 
     n_jobs = min(len(contigs_fpaths), qconfig.max_threads)
-    if sys.version_info[0] < 3:
+    if is_python_2():
         from joblib import Parallel, delayed
     else:
         from joblib3 import Parallel, delayed

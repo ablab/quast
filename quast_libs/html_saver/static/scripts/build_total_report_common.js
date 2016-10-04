@@ -64,6 +64,8 @@ function toggleHeatMap(state){
 }
 
 function heatMapOneRow (cells, quality) {
+    if (quality == 'Equal')
+        return;
     var BLUE_HUE = 240;
     var BLUE_OUTER_BRT = 55;
     var BLUE_INNER_BRT = 65;

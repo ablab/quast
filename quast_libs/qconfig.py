@@ -279,12 +279,12 @@ def usage(show_hidden=False, meta=False, short=True):
     if meta:
         sys.stderr.write("-R   <filename,filename,...>  Comma-separated list of reference genomes or directory with reference genomes\n")
         sys.stderr.write("--references-list <filename>  Text file with list of reference genomes for downloading from NCBI\n")
-        sys.stderr.write("-G  --genes       <filename>  File with gene coordinates in the references\n")
+        sys.stderr.write("-G  --genes       <filename>  File with gene coordinates in the references (GFF, BED, NCBI or TXT)\n")
     else:
         sys.stderr.write("-R                <filename>  Reference genome file\n")
-        sys.stderr.write("-G  --genes       <filename>  File with gene coordinates in the reference\n")
+        sys.stderr.write("-G  --genes       <filename>  File with gene coordinates in the reference (GFF, BED, NCBI or TXT)\n")
     if not short:
-        sys.stderr.write("-O  --operons     <filename>  File with operon coordinates in the reference\n")
+        sys.stderr.write("-O  --operons     <filename>  File with operon coordinates in the reference (GFF, BED, NCBI or TXT)\n")
     sys.stderr.write("-m  --min-contig  <int>       Lower threshold for contig length [default: %s]\n" % min_contig)
     sys.stderr.write("-t  --threads     <int>       Maximum number of threads [default: 25% of CPUs]\n")
 

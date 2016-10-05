@@ -132,6 +132,10 @@ def save_coord(output_dirpath, coord_x, coord_y, name_coord, contigs_fpaths):
     })
 
 
+def save_broken_scaffolds(output_dirpath, contig_names):
+    return save(join(output_dirpath, 'broken_scaffolds' + suffix_fn), contig_names)
+
+
 def save_colors(output_dirpath, colors):
     return save(join(output_dirpath, 'colors' + suffix_fn), colors)
 

@@ -9,7 +9,10 @@
 
     {{ allscripts }}
 
-    <script type="text/javascript">var colors = {{ colors }}</script>
+    <script type="text/javascript">
+        var colors = {{ colors }};
+        var broken_scaffolds_labels = {{ broken_scaffolds }};
+    </script>
     {{ buildtotalreport }}
     {{ metascripts }}
     {{ buildreport }}

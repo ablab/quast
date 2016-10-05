@@ -14,6 +14,7 @@ from collections import defaultdict
 
 from quast_libs import reporting, qconfig, qutils
 from quast_libs.html_saver import json_saver
+from quast_libs.plotter import secondary_line_style
 from quast_libs.site_packages.jsontemplate import jsontemplate
 
 from quast_libs.log import get_logger
@@ -409,14 +410,19 @@ def save_colors(results_dirpath, contigs_fpaths, dict_colors, meta=False):  # co
         with open(html_fpath) as f_html:
             html_text = f_html.read()
         html_text = re.sub('{{ ' + 'colors' + ' }}', 'standard_colors', html_text)
+        html_text = re.sub('{{ ' + 'broken_scaffolds' + ' }}', '[]', html_text)
         with open(html_fpath, 'w') as f_html:
             f_html.write(html_text)
     else:
-        colors_and_ls = [dict_colors[qutils.label_from_fpath(contigs_fpath)] for contigs_fpath in contigs_fpaths]
+        contig_labels = [qutils.label_from_fpath(contigs_fpath) for contigs_fpath in contigs_fpaths]
+        colors_and_ls = [dict_colors[contig_label] for contig_label in contig_labels]
         colors = [color_and_ls[0] for color_and_ls in colors_and_ls]
         colors_for_html = [html_colors[plotter.colors.index(color)] for color in colors]
         json_fpath = json_saver.save_colors(results_dirpath, colors_for_html)
         append(results_dirpath, json_fpath, 'colors')
+        broken_contig_names = [label for i, label in enumerate(contig_labels) if colors_and_ls[i][1] == secondary_line_style]
+        json_fpath = json_saver.save_broken_scaffolds(results_dirpath, broken_contig_names)
+        append(results_dirpath, json_fpath, 'broken_scaffolds')
 
 
 def save_meta_summary(html_fpath, results_dirpath, coord_x, coord_y, name_coord, labels, refs):

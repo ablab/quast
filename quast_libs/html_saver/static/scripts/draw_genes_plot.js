@@ -80,9 +80,17 @@ var gns = {
             }
 
             for (i = 0; i < plotsN; i++) {
-                info.series[i].lines = {
-                    show: true,
-                    lineWidth: 1,
+                if (typeof broken_scaffolds_labels !== undefined && $.inArray(filenames[order[i]], broken_scaffolds_labels) != -1) {
+                    info.series[i].dashes = {
+                        show: true,
+                        lineWidth: 1
+                    };
+                }
+                else {
+                    info.series[i].lines = {
+                        show: true,
+                        lineWidth: 1
+                    };
                 }
             }
 

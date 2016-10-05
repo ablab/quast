@@ -81,18 +81,18 @@ var cumulative = {
 //            }
 
             for (i = 0; i < plotsN; i++) {
-                cumulative.series[i].lines = {
-                    show: true,
-                    lineWidth: 1
-                    //                color: lineColors[i],
-                };
-                //    In order to draw dots instead of lines
-                cumulative.series[i].points = {
-                    show: false,
-                    radius: 1,
-                    fill: 1,
-                    fillColor: false
-                };
+                if (typeof broken_scaffolds_labels !== undefined && $.inArray(filenames[order[i]], broken_scaffolds_labels) != -1) {
+                    cumulative.series[i].dashes = {
+                        show: true,
+                        lineWidth: 1
+                    };
+                }
+                else {
+                    cumulative.series[i].lines = {
+                        show: true,
+                        lineWidth: 1
+                    };
+                }
             }
 
             for (i = 0; i < plotsN; i++) {

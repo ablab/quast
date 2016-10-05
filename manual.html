@@ -399,7 +399,9 @@ Comma-separated list of contig length thresholds (in bp). Used in <span class='m
 The assemblies are scaffolds (rather than contigs). QUAST will add split versions
 of assemblies to the comparison (named &lt;assembly_name&gt;_broken).
 Assemblies are split by continuous fragments of N's of length &ge; 10.
-If broken version is equal to the original assembly (i.e. nothing was split) it is not included in the comparison. Scaffold gap size misassemblies are enabled in this case (see <a href="#sec3.1.2">section 3.1.2</a> for details).
+If broken version is equal to the original assembly (i.e. nothing was split) it is not included in the comparison.
+Scaffold gap size misassemblies are enabled in this case (see <a href="#sec3.1.2">section 3.1.2</a> for details and
+<a href='#scaffold_gap_size'><code>--scaffold-gap-max-size</code></a> for setting maximum gap length).
 
 <div class='option'>
     <code><b>--use-all-alignments</b></code> (or <code>-u</code>)
@@ -449,11 +451,22 @@ Break contigs at every misassembly event (including local ones) to compute <span
 <span class='metric-ref'>NGAx</span> statistics. By default, QUAST breaks contigs <i>only at extensive</i> misassemblies (not local ones).
 
 <div class='option'>
-    <a name='extensive_mis_size'></a><code><b>--extensive-mis-size</b></code> <code>&lt;int&gt;</code>
+    <a name='extensive_mis_size'></a><code><b>--extensive-mis-size</b></code> (or <code>-x</code>) <code>&lt;int&gt;</code>
 </div>
 Lower threshold for the relocation size (gap or overlap size between left and right flanking sequence, see <a href="#sec3.1.2">section 3.1.2</a> for details).
 Shorter relocations are considered as local misassemblies. It does not affect other types of extensive misassemblies (inversions and translocations).
 The default value is 1000 bp. Note that the threshold should be greater than maximum indel length which is 85 bp.
+
+<div class='option'>
+    <a name='scaffold_gap_size'></a><code><b>--scaffold-gap-max-size</b></code> <code>&lt;int&gt;</code>
+</div>
+Max allowed scaffold gap length difference for detecting corresponding type of misassemblies (see <a href="#sec3.1.2">section 3.1.2</a>
+for details).
+Longer inconsistencies are considered as relocations and thus, counted as extensive misassemblies. The default value is 10000 bp.
+Note that the threshold make sense only if it is greater than extensive misassembly size
+(see <a href='#extensive_mis_size'><code>--extensive-mis-size</code></a>, its default value is 1000 bp).
+Also note that scaffold gap size misassemblies are counted for <b>scaffold assemblies only</b> (use <a href='#scaffolds'><code>--scaffolds</code></a>
+if your assemblies are scaffolds rather than contigs).
 
 <div class='option'>
     <a name='significant_part_size'></a><code><b>--significant-part-size</b></code> <code>&lt;int&gt;</code>

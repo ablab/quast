@@ -298,6 +298,10 @@ def parse_options(logger, quast_args, is_metaquast=False):
              callback=set_extensive_mis_size,
              callback_args=(logger,))
          ),
+        (['--scaffold-gap-max-size'], dict(
+             dest='scaffolds_gap_threshold',
+             type=int)
+         ),
         (['-m', '--min-contig'], dict(
              dest='min_contig',
              type='int')

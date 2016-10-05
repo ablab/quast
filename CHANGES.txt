@@ -11,18 +11,25 @@
 
       3. BED format is accepted for genes/operons annotations.
 
-      4. Heatmap coloring in HTML reports is removed for metrics which do not have
-         best/worst values (e.g. GC %, # similar blocks, etc).
+      4. Minor changes in HTML reports:
+       - heatmap coloring is removed for metrics where best/worst values are not defined
+         (GC %, # similar blocks, # contigs, etc);
+       - split versions of scaffold assemblies are drawn with dashed lines (--scaffolds
+         option only).
 
-      5. Fixed issue of crashing E-MEM on OS X without gcc installed.
+      5. New option added:
+       - "--scaffold-gap-max-size" for controlling maximum allowed size of scaffold gap
+         inconsistency in the corresponding type of misassembly (--scaffolds only).
 
-      6. User-provided SAM/BAM files are now checked for correct chromosome names and
+      6. Fixed issue of crashing E-MEM on OS X without gcc installed.
+
+      7. User-provided SAM/BAM files are now checked for correct chromosome names and
          automatically corrected if needed.
 
-      7. Fixed incorrect behaviour of MetaQUAST on compressed assemblies in "without
+      8. Fixed incorrect behaviour of MetaQUAST on compressed assemblies in "without
          references" mode.
 
-      8. Fixed several minor bugs.
+      9. Fixed several minor bugs.
 
 
 4.3   1. Icarus updates:

@@ -932,9 +932,9 @@ def draw_report_table(report_name, extra_info, table_to_draw, column_widths):
         return
 
     # some magic constants ..
-    font_size = 12
-    font_scale = 2
-    external_font_scale = 10
+    font_size = 12.0
+    font_scale = 2.0
+    external_font_scale = 10.0
     letter_height_coeff = 0.10
     letter_width_coeff = 0.04
 
@@ -942,7 +942,7 @@ def draw_report_table(report_name, extra_info, table_to_draw, column_widths):
     #font_scale = 2 * float(font["size"]) / font_size
     row_height = letter_height_coeff * font_scale
     nrows = len(table_to_draw)
-    external_text_height = float(font["size"] * letter_height_coeff * external_font_scale) // font_size
+    external_text_height = float(font["size"] * letter_height_coeff * external_font_scale) / font_size
     total_height = nrows * row_height + 2 * external_text_height
     total_width = letter_width_coeff * font_scale * sum(column_widths)
 
@@ -963,7 +963,7 @@ def draw_report_table(report_name, extra_info, table_to_draw, column_widths):
     rowLabels=[item[0] for item in table_to_draw[1:]]
     restValues=[item[1:] for item in table_to_draw[1:]]
     matplotlib.pyplot.table(cellText=restValues, rowLabels=rowLabels, colLabels=colLabels,
-        colWidths=[float(column_width) // sum(column_widths) for column_width in column_widths[1:]],
+        colWidths=[float(column_width) / sum(column_widths) for column_width in column_widths[1:]],
         rowLoc='left', colLoc='center', cellLoc='right', loc='center')
     #matplotlib.pyplot.savefig(all_pdf, format='pdf', bbox_inches='tight')
     pdf_tables_figures.append(figure)

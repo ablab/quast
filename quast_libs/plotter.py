@@ -692,7 +692,7 @@ def draw_meta_summary_plot(html_fpath, output_dirpath, labels, ref_names, all_ro
         significant_points_y = [points_y[k] for k in range(len(points_y)) if points_y[k] is not None]
         if significant_points_y:
             arr_y_by_refs.append(points_y)
-            values.append(sum(filter(None, points_y))/len(points_y))
+            values.append(sum(list(filter(None, points_y))) / len(points_y))
             refs.append(ref_names[i])
 
     sorted_values = sorted(zip(values, refs, arr_y_by_refs), reverse=reverse, key=lambda x: x[0])

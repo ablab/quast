@@ -39,7 +39,7 @@ def merge_gffs(gffs, out_path):
 
 def parse_gff(gff_path):
     gff_file = open_gzipsafe(gff_path)
-    r = csv.reader(filter(lambda l: not l.startswith("#"), gff_file),
+    r = csv.reader(list(filter(lambda l: not l.startswith("#"), gff_file)),
         delimiter='\t')
     for index, _source, type, start, end, score, strand, phase, extra in r:
         if type != 'mRNA':

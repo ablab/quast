@@ -375,7 +375,8 @@ def table(order=Fields.order):
             else:
                 values.append(value)
 
-        if filter(lambda v: v is not None, values) or (field == 'NGA50' and not qconfig.is_combined_ref and report.get_field(Fields.REFLEN)):
+        if list(filter(lambda v: v is not None, values)) or \
+                (field == 'NGA50' and not qconfig.is_combined_ref and report.get_field(Fields.REFLEN)):
 
             metric_name = field if (feature is None) else pattern % int(feature)
             # ATTENTION! Contents numeric values, needed to be converted to strings.
@@ -424,7 +425,7 @@ def save_txt(fpath, all_rows, potential_scaffolds_assemblies_info=None):
     colwidths = [0] * (len(all_rows[0]['values']) + 1)
     for row in all_rows:
         for i, cell in enumerate([row['metricName']] + [val_to_str(this) for
-this in row['values']]):
+                                                        this in row['values']]):
             colwidths[i] = max(colwidths[i], len(cell))
             # output it
 

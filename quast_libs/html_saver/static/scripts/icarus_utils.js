@@ -116,6 +116,9 @@ function changeInfo(block) {
     if (!isContigSizePlot && typeof(contig_lengths) !== 'undefined') {
         contigInfo += ' (' + contig_lengths[block.assembly][block.name] + ' bp)';
     }
+    else if (block.size) {
+        contigInfo += ' (' + block.size + ' bp)';
+    }
     info.append('p')
         .style({'display': 'block', 'word-break': 'break-all', 'word-wrap': 'break-word'})
         .text(contigInfo, 280);
@@ -150,9 +153,6 @@ function changeInfo(block) {
     if (contigType)
         info.append('p')
             .text('Type: ' + contigType);
-    if (block.size)
-        info.append('p')
-            .text('Size: ' + block.size + ' bp');
 
     var appendPositionElement = function(curBlock, selectedBlock, whereAppend, prevBlock, prevChr, isExpanded) {
         if (!curBlock) return;

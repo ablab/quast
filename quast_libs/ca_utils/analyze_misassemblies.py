@@ -353,7 +353,7 @@ def process_misassembled_contig(sorted_aligns, cyclic, aligned_lengths, region_m
             misassemblies_matched_sv += 1
         elif aux_data["is_scaffold_gap"] and abs(inconsistency) > qconfig.extensive_misassembly_threshold:
             ca_output.stdout_f.write('\t\t\t  Incorrectly estimated size of scaffold gap between these two alignments: ')
-            ca_output.stdout_f.write('gap length difference = ' + inconsistency + '\n')
+            ca_output.stdout_f.write('gap length difference = ' + str(inconsistency) + '\n')
             region_misassemblies.append(Misassembly.SCAFFOLD_GAP)
             ca_output.icarus_out_f.write('fake: scaffold gap size wrong estimation' + '\n')
         elif is_extensive_misassembly:

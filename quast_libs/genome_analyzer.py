@@ -157,14 +157,14 @@ def process_single_file(contigs_fpath, index, nucmer_path_dirpath, genome_stats_
     gaps_fpath = os.path.join(genome_stats_dirpath, assembly_label + '_gaps.txt')
     gaps_file = open(gaps_fpath, 'w')
     for chr_name, chr_len in reference_chromosomes.items():
-        gaps_file.write(chr_name)
+        gaps_file.write(chr_name + '\n')
         cur_gap_size = 0
         aligned_len = 0
         for i in range(1, chr_len + 1):
             if genome_mapping[chr_name][i] == 1:
                 if cur_gap_size >= qconfig.min_gap_size:
                     gaps_count += 1
-                    gaps_file.write(' ' + str(i - cur_gap_size) + ' ' + str(i - 1))
+                    gaps_file.write(str(i - cur_gap_size) + ' ' + str(i - 1) + '\n')
                 aligned_len += 1
                 covered_bp += 1
                 cur_gap_size = 0
@@ -173,8 +173,7 @@ def process_single_file(contigs_fpath, index, nucmer_path_dirpath, genome_stats_
         ref_lengths[chr_name] = aligned_len
         if cur_gap_size >= qconfig.min_gap_size:
             gaps_count += 1
-            gaps_file.write(' ' + str(chr_len - cur_gap_size + 1) + ' ' + str(chr_len))
-        gaps_file.write('\n')
+            gaps_file.write(str(chr_len - cur_gap_size + 1) + ' ' + str(chr_len) + '\n')
     gaps_file.close()
 
     results["covered_bp"] = covered_bp

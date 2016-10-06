@@ -910,7 +910,10 @@ def draw_misassembl_plot(reports, plot_fpath, title='', yaxis_title=''):
     if ymax == 0:
         matplotlib.pyplot.ylim([0, 5])
     else:
-        matplotlib.pyplot.ylim([0, math.ceil(ymax * 1.1)])
+        ymax = int(math.ceil(ymax * 1.1))
+        matplotlib.pyplot.ylim([0, ymax])
+        yint = range(0, ymax)
+        matplotlib.pyplot.yticks(yint)
 
     try:  # for matplotlib <= 2009-12-09
         ax.legend(legend, loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True,

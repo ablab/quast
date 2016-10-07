@@ -310,11 +310,13 @@ def get_contigs_data(contigs_by_assemblies, nx_marks, assemblies_n50, structures
             assembly_len = cum_length
             remained_len = sum(alignment.size for alignment in contigs[last_contig_num:])
             cum_length += remained_len
-            remained_genes = ['{start:' + str(gene.start) + ',end:' + str(gene.end) + '}' for contig in contigs[last_contig_num:] for gene in contig.genes]
+            remained_genes = ['{start:' + str(gene.start) + ',end:' + str(gene.end) + '}' for contig in contigs[last_contig_num:]
+                              for gene in contig.genes]
             remained_contigs_name = str(len(contigs) - last_contig_num) + ' hidden contigs shorter than ' + str(contig_threshold) + \
                                     ' bp (total length: ' + format_long_numbers(remained_len) + ' bp)'
             contigs_sizes_str.append(('{name:"' + remained_contigs_name + '", size:' + str(remained_len) +
-                                     ', contig_type:"small_contigs",genes:[' + ','.join(remained_genes) + ']},'))
+                                     ', contig_type:"small_contigs"' + (',genes:[' + ','.join(remained_genes) + ']},'
+                                      if qconfig.gene_finding else '},')))
         if not_used_nx and last_contig_num < len(contigs):
             for i, alignment in enumerate(contigs[last_contig_num:]):
                 if not not_used_nx:

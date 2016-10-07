@@ -85,7 +85,7 @@ Please refer to the LICENSE.txt file for copyrights and citing instructions.
 Linux and Mac OS X are supported.
 
 For the main pipeline:
-- python 2 (2.5 or higher)
+- python 2.5, 2.6, 2.7, 3.3, 3.4 or 3.5
 - perl 5.6.0 or higher
 - gcc 4.7 or higher
 - basic UNIX tools (g++, make, sh, csh, sed, awk, ar)

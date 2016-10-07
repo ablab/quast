@@ -59,9 +59,12 @@ function buildTotalReport(assembliesNames, report, order, date, minContig,
             var refTotalreads = referenceValues['Reference reads'];
             var refMappedreads = referenceValues['Reference mapped reads'];
             var refPairedreads = referenceValues['Reference properly paired reads'];
+            var estRefLen = referenceValues['Estimated reference length'];
 
             if (refLen)
                 $('#reference_length').show().find('.val').html(toPrettyString(refLen));
+            else if (estRefLen)
+                $('#est_reference_length').show().find('.val').html(toPrettyString(estRefLen));
             if (refFragments) {
                 $('#reference_fragments').show().find('.val').html(refFragments);
                 if (refFragments > 1)

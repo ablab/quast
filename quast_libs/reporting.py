@@ -438,6 +438,7 @@ def save_txt(fpath, all_rows, potential_scaffolds_assemblies_info=None):
         if potential_scaffolds_assemblies_info:
             txt_file.write("Suggestion: " + potential_scaffolds_assemblies_info + " continuous fragments of N's of " \
                           "length >= 10 bp. You may consider rerunning QUAST using --scaffolds (-s) option!\n")
+        txt_file.write('\n')
     for row in all_rows:
         txt_file.write('  '.join('%-*s' % (colwidth, cell) for colwidth, cell
             in zip(colwidths, [row['metricName']] + [val_to_str(this) for this in row['values']])) + "\n")

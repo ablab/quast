@@ -100,7 +100,7 @@ def print_file(all_rows, fpath, append_to_existing_file=False):
     txt_file = open(fpath, 'a' if append_to_existing_file else 'w')
     for row in all_rows:
         txt_file.write('  '.join('%-*s' % (colwidth, cell) for colwidth, cell
-                                     in zip(colwidths, [row['metricName']] + [val_to_str(v) for v in row['values']])))
+                                     in zip(colwidths, [row['metricName']] + [val_to_str(v) for v in row['values']])) + '\n')
 
 
 def create_nucmer_output_dir(output_dir):

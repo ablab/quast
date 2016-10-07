@@ -584,11 +584,14 @@ def do(ref_fpath, contigs_fpaths, reads_fpaths, meta_ref_fpaths, output_dir, ext
     open(log_path, 'w').close()
     open(err_path, 'w').close()
     logger.info('  ' + 'Logging to files %s and %s...' % (log_path, err_path))
-    #try:
-    bed_fpath, cov_fpath, physical_cov_fpath = run_processing_reads(ref_fpath, meta_ref_fpaths, ca_utils.misc.ref_labels_by_chromosomes,
+    try:
+        bed_fpath, cov_fpath, physical_cov_fpath = run_processing_reads(ref_fpath, meta_ref_fpaths, ca_utils.misc.ref_labels_by_chromosomes,
                                                                         reads_fpaths, temp_output_dir, output_dir, log_path, err_path,
                                                                         bed_fpath=bed_fpath, sam_fpath=sam_fpath, bam_fpath=bam_fpath)
-    #except:
+    except:
+        bed_fpath, cov_fpath, physical_cov_fpath = None, None, None
+        logger.error('Failed searching structural variations! This function is experimental and may work improperly. Sorry for the inconvenience.')
+
     if not qconfig.debug:
         shutil.rmtree(temp_output_dir, ignore_errors=True)
 

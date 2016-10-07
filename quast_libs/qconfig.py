@@ -227,8 +227,8 @@ def quast_version():
         vers = version.__version__
         revision = version.__git_revision__
     except ImportError:
-        with open(os.path.join(QUAST_HOME, 'VERSION.txt')) as f:
-            lines = f.read().strip().split('\n')
+        version_file = open(os.path.join(QUAST_HOME, 'VERSION.txt'))
+        lines = version_file.read().strip().split('\n')
         vers = lines[0]
         if len(lines) > 1:
             revision = lines[1]

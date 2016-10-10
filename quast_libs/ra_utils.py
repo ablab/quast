@@ -1,3 +1,4 @@
+from __future__ import with_statement
 import os
 import gzip
 import socket
@@ -62,9 +63,8 @@ def download_unpack_tar_bz(name, download_path, downloaded_fpath, final_dirpath,
         logger.main_info('  Failed to establish connection!')
     if content:
         logger.main_info('  ' + name + ' successfully downloaded!')
-        f = open(downloaded_fpath + '.download', 'w')
-        f.write(content)
-        f.close()
+        with open(downloaded_fpath + '.download', 'wb') as f:
+            f.write(content)
         if exists(downloaded_fpath + '.download'):
             logger.info('  Unpacking ' + name + '...')
             unpack_tar(downloaded_fpath + '.download', final_dirpath)

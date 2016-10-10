@@ -7,17 +7,17 @@
 # See file LICENSE for details.
 ############################################################################
 
-from __future__ import with_statement
 import sys
 import os
 import shutil
 
 from quast_libs import qconfig
+qconfig.check_python_version()
+
 from quast_libs.metautils import remove_from_quast_py_args, Assembly, correct_meta_references, correct_assemblies, \
     get_downloaded_refs_with_alignments, partition_contigs, calculate_ave_read_support
 from quast_libs.options_parser import parse_options
 
-qconfig.check_python_version()
 from quast_libs import contigs_analyzer, reads_analyzer, search_references_meta
 from quast_libs import qutils
 from quast_libs.qutils import cleanup
@@ -221,8 +221,12 @@ def main(args):
         json_texts = []
     else:
         json_texts = None
+    if qconfig.unique_mapping:
+        ambiguity_opts = []
+    else:
+        ambiguity_opts = ["--ambiguity-usage", 'all']
     return_code, total_num_notifications, assemblies, labels = \
-        _start_quast_main(quast_py_args + ([] if qconfig.unique_mapping else ["--ambiguity-usage", 'all']),
+        _start_quast_main(quast_py_args + ambiguity_opts,
         assemblies=assemblies,
         reference_fpath=combined_ref_fpath,
         output_dirpath=combined_output_dirpath,
@@ -236,9 +240,11 @@ def main(args):
     genome_info_fpath = os.path.join(genome_info_dirpath, 'genome_info.txt')
     if not os.path.exists(genome_info_fpath):
         logger.main_info('')
-        logger.main_info('Failed aligning the contigs for all the references. ' + ('Try to restart MetaQUAST with another references.'
-                                                        if not downloaded_refs else 'Try to use option --max-ref-number to change maximum number of references '
-                                                                                    '(per each assembly) to download.'))
+        if not downloaded_refs:
+            msg = 'Try to restart MetaQUAST with another references.'
+        else:
+            msg = 'Try to use option --max-ref-number to change maximum number of references (per each assembly) to download.'
+        logger.main_info('Failed aligning the contigs for all the references. ' + msg)
         logger.main_info('')
         cleanup(corrected_dirpath)
         logger.main_info('MetaQUAST finished.')
@@ -260,7 +266,7 @@ def main(args):
             logger.main_info()
             logger.main_info('Starting quast.py ' + run_name + '...')
             return_code, total_num_notifications, assemblies, labels = \
-                _start_quast_main(quast_py_args + ([] if qconfig.unique_mapping else ["--ambiguity-usage", 'all']),
+                _start_quast_main(quast_py_args + ambiguity_opts,
                 assemblies=assemblies,
                 reference_fpath=combined_ref_fpath,
                 output_dirpath=combined_output_dirpath,
@@ -358,8 +364,12 @@ def main(args):
         metrics_for_plots = reporting.Fields.main_metrics
         misassembl_metrics = [reporting.Fields.MIS_RELOCATION, reporting.Fields.MIS_TRANSLOCATION, reporting.Fields.MIS_INVERTION,
                            reporting.Fields.MIS_ISTRANSLOCATIONS]
-        create_meta_summary.do(html_summary_report_fpath, summary_output_dirpath, combined_output_dirpath, output_dirpath_per_ref, metrics_for_plots, misassembl_metrics,
-                               ref_names if no_unaligned_contigs else ref_names + [qconfig.not_aligned_name])
+        if no_unaligned_contigs:
+            full_ref_names = ref_names
+        else:
+            full_ref_names = ref_names + [qconfig.not_aligned_name]
+        create_meta_summary.do(html_summary_report_fpath, summary_output_dirpath, combined_output_dirpath,
+                               output_dirpath_per_ref, metrics_for_plots, misassembl_metrics, full_ref_names)
         if html_report and json_texts:
             html_saver.save_colors(output_dirpath, contigs_fpaths, plotter.dict_color_and_ls, meta=True)
             if qconfig.create_icarus_html:
@@ -381,21 +391,3 @@ if __name__ == '__main__':
         _, exc_value, _ = sys.exc_info()
         logger.exception(exc_value)
         logger.error('exception caught!', exit_with_code=1, to_stderr=True)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

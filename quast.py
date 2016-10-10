@@ -14,6 +14,7 @@ import shutil
 
 from quast_libs import qconfig
 qconfig.check_python_version()
+
 from quast_libs import qutils, reads_analyzer
 from quast_libs.qutils import cleanup
 from quast_libs.options_parser import parse_options

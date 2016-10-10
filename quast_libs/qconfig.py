@@ -5,7 +5,6 @@
 # See file LICENSE for details.
 ############################################################################
 
-from __future__ import with_statement
 import datetime
 import os
 import platform
@@ -229,6 +228,7 @@ def quast_version():
     except ImportError:
         version_file = open(os.path.join(QUAST_HOME, 'VERSION.txt'))
         lines = version_file.read().strip().split('\n')
+        version_file.close()
         vers = lines[0]
         if len(lines) > 1:
             revision = lines[1]

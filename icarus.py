@@ -8,6 +8,9 @@
 ############################################################################
 
 import sys
+from quast_libs import qconfig
+qconfig.check_python_version()
+
 from os.path import isdir
 from optparse import OptionParser, BadOptionError, AmbiguousOptionError
 

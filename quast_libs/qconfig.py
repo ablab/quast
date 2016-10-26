@@ -57,6 +57,7 @@ html_report = True
 save_json = False
 meta = False
 debug = False
+portable_html = True
 test = False
 test_sv = False
 test_no_ref = False
@@ -361,6 +362,7 @@ def usage(show_hidden=False, meta=False, short=True):
             sys.stderr.write("\n")
             sys.stderr.write("Hidden options:\n")
             sys.stderr.write("-d  --debug                 Run in a debug mode\n")
+            sys.stderr.write("--no-portable-html          Do not embed CSS and JS files in HTML report\n")
             sys.stderr.write("-c  --min-cluster   <int>   Nucmer's parameter: the minimum length of a cluster of matches [default: %s]\n" % min_cluster)
             sys.stderr.write("-j  --save-json             Save the output also in the JSON format\n")
             sys.stderr.write("-J  --save-json-to <path>   Save the JSON output to a particular path\n")

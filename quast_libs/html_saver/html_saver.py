@@ -90,17 +90,17 @@ icarus_js_files = [
 ]
 
 def js_html(script_rel_path):
-    if qconfig.debug:
-        return '<script type="text/javascript" src="' + get_real_path(script_rel_path) + '"/></script>\n'
-    else:
+    if qconfig.portable_html:
         return '<script type="text/javascript">\n' + open(get_real_path(script_rel_path)).read() + '\n</script>\n'
+    else:
+        return '<script type="text/javascript" src="' + get_real_path(script_rel_path) + '"/></script>\n'
 
 
 def css_html(css_rel_path):
-    if qconfig.debug:
-        return '<link rel="stylesheet" href="' + get_real_path(css_rel_path) + '"/>\n'
-    else:
+    if qconfig.portable_html:
         return '<style rel="stylesheet">\n' + open(get_real_path(css_rel_path)).read() + '\n</style>\n'
+    else:
+        return '<link rel="stylesheet" href="' + get_real_path(css_rel_path) + '"/>\n'
 
 
 def init(html_fpath, is_meta=False):
@@ -137,12 +137,12 @@ def save_icarus_html(template_fpath, html_fpath, data_dict):
         'join': lambda v: ', '.join(v),
     })
 
-    html = _embed_css_and_scripts(html, debug=qconfig.debug)
+    html = _embed_css_and_scripts(html)
     with open(html_fpath, 'w') as f_html:
         f_html.write(html)
 
 
-def _embed_css_and_scripts(html, debug=False):
+def _embed_css_and_scripts(html):
     js_line_tmpl = '<script type="text/javascript" src="%s"></script>'
     js_l_tag = '<script type="text/javascript" name="%s">'
     js_r_tag = '    </script>'
@@ -167,14 +167,14 @@ def _embed_css_and_scripts(html, debug=False):
             line = line_tmpl % rel_fpath
             l_tag_formatted = l_tag % rel_fpath
 
-            if debug:
-                line_formatted = line.replace(rel_fpath, fpath)
-                html = html.replace(line, line_formatted)
-            else:
+            if qconfig.portable_html:
                 with open(fpath) as f:
                     contents = f.read()
                     contents = '\n'.join(' ' * 8 + l for l in contents.split('\n'))
                     html = html.replace(line, l_tag_formatted + '\n' + contents + '\n' + r_tag)
+            else:
+                line_formatted = line.replace(rel_fpath, fpath)
+                html = html.replace(line, line_formatted)
 
     return html
 

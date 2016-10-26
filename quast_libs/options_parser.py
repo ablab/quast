@@ -169,6 +169,10 @@ def parse_options(logger, quast_args, is_metaquast=False):
              dest='debug',
              action='store_true')
          ),
+        (['--no-portable-html'], dict(
+             dest='portable_html',
+             action='store_false')
+         ),
         (['--test'], dict(
              dest='test',
              action='store_true')

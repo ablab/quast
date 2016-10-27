@@ -24,6 +24,7 @@ class Misassembly:
     INTERSPECTRANSLOCATION = 4  #for --meta, if translocation occurs between chromosomes of different references
     SCAFFOLD_GAP = 5
     FRAGMENTED = 6
+    POTENTIALLY_MIS_CONTIGS = 7
 
 
 class StructuralVariations(object):

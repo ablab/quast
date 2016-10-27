@@ -652,7 +652,8 @@ def coverage_histogram(contigs_fpaths, values, plot_fpath, title='', bin_size=No
 
 
 # metaQuast summary plots (per each metric separately)
-def draw_meta_summary_plot(html_fpath, output_dirpath, labels, ref_names, all_rows, results, plot_fpath, title='', reverse=False, yaxis_title=''):
+def draw_meta_summary_plot(html_fpath, output_dirpath, labels, ref_names, all_rows, results, plot_fpath, title='', reverse=False,
+                           yaxis_title='', print_all_refs=False):
     import math
     if can_draw_plots:
         meta_logger.info('  Drawing ' + title + ' metaQUAST summary plot...')
@@ -681,6 +682,8 @@ def draw_meta_summary_plot(html_fpath, output_dirpath, labels, ref_names, all_ro
             to_plot_x.append(arr[i])
             if results[i][j] and results[i][j] != '-':
                 to_plot_y.append(parseStrToNum(results[i][j]))
+            elif print_all_refs and results[i][j] != '-':
+                to_plot_y.append(0)
             else:
                 to_plot_y.append(None)
         arr_x.append(to_plot_x)
@@ -690,7 +693,7 @@ def draw_meta_summary_plot(html_fpath, output_dirpath, labels, ref_names, all_ro
     for i in range(ref_num):
         points_y = [arr_y[j][i] for j in range(contigs_num) if i < len(arr_y[j])]
         significant_points_y = [points_y[k] for k in range(len(points_y)) if points_y[k] is not None]
-        if significant_points_y:
+        if significant_points_y or print_all_refs:
             arr_y_by_refs.append(points_y)
             values.append(sum(list(filter(None, points_y))) / len(points_y))
             refs.append(ref_names[i])
@@ -710,7 +713,7 @@ def draw_meta_summary_plot(html_fpath, output_dirpath, labels, ref_names, all_ro
         json_points_x.append(points_x)
         json_points_y.append(points_y)
 
-    if qconfig.html_report:
+    if qconfig.html_report and html_fpath:
         from quast_libs.html_saver import html_saver
         html_saver.save_meta_summary(html_fpath, output_dirpath, json_points_x, json_points_y,
                                      title.replace(' ', '_'), labels, refs)

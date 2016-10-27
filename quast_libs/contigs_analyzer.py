@@ -30,7 +30,8 @@ from quast_libs.ca_utils.analyze_misassemblies import Mapping
 from quast_libs.ca_utils.misc import print_file, ref_labels_by_chromosomes, clean_tmp_files, compile_aligner, \
     create_nucmer_output_dir, open_gzipsafe, compress_nucmer_output
 from quast_libs.ca_utils.align_contigs import align_contigs, get_nucmer_aux_out_fpaths, NucmerStatus
-from quast_libs.ca_utils.save_results import print_results, save_result, save_result_for_unaligned
+from quast_libs.ca_utils.save_results import print_results, save_result, save_result_for_unaligned, \
+    save_combined_ref_stats
 
 from quast_libs.log import get_logger
 from quast_libs.qutils import is_python_2
@@ -279,34 +280,7 @@ def do(reference, contigs_fpaths, is_cyclic, output_dir, old_contigs_fpaths, bed
     reports = []
 
     if qconfig.is_combined_ref:
-        ref_misassemblies = [result['istranslocations_by_refs'] if result else [] for result in results]
-        if ref_misassemblies:
-            for i, fpath in enumerate(contigs_fpaths):
-                if ref_misassemblies[i]:
-                    assembly_name = qutils.name_from_fpath(fpath)
-                    all_rows = []
-                    all_refs = sorted(list(set([ref for ref in ref_labels_by_chromosomes.values()])))
-                    row = {'metricName': 'References', 'values': [ref_num + 1 for ref_num in range(len(all_refs))]}
-                    all_rows.append(row)
-                    for k in all_refs:
-                        row = {'metricName': k, 'values': []}
-                        for ref in all_refs:
-                            if ref == k or ref not in ref_misassemblies[i]:
-                                row['values'].append(None)
-                            else:
-                                row['values'].append(ref_misassemblies[i][ref][k])
-                        all_rows.append(row)
-                    misassembly_by_ref_fpath = join(output_dir, 'interspecies_translocations_by_refs_%s.info' % assembly_name)
-                    misassembly_by_ref_file = open(misassembly_by_ref_fpath, 'w')
-                    misassembly_by_ref_file.write('Number of interspecies translocations by references: \n')
-                    print_file(all_rows, misassembly_by_ref_fpath, append_to_existing_file=True)
-
-                    misassembly_by_ref_file.write( 'References:\n')
-                    for ref_num, ref in enumerate(all_refs):
-                        misassembly_by_ref_file.write(str(ref_num + 1) + ' - ' + ref + '\n')
-                    logger.info('  Information about interspecies translocations by references for %s is saved to %s' %
-                                (assembly_name, misassembly_by_ref_fpath))
-
+        save_combined_ref_stats(results, contigs_fpaths, ref_labels_by_chromosomes, output_dir, logger)
     for index, fname in enumerate(contigs_fpaths):
         report = reporting.get(fname)
         if statuses[index] == NucmerStatus.OK:

@@ -1,5 +1,8 @@
-from quast_libs import qconfig, reporting
+import os
+
+from quast_libs import qconfig, qutils, reporting
 from quast_libs.ca_utils.analyze_misassemblies import Misassembly
+from quast_libs.ca_utils.misc import print_file
 
 
 def print_results(contigs_fpath, log_out_f, used_snps_fpath, total_indels_info, result):
@@ -14,15 +17,16 @@ def print_results(contigs_fpath, log_out_f, used_snps_fpath, total_indels_info, 
     log_out_f.write('Results:\n')
 
     log_out_f.write('\tLocal Misassemblies: %d\n' % region_misassemblies.count(Misassembly.LOCAL))
-    log_out_f.write('\tMisassemblies: %d\n' % (len(region_misassemblies) - region_misassemblies.count(Misassembly.LOCAL)
-                                                    - region_misassemblies.count(Misassembly.SCAFFOLD_GAP) - region_misassemblies.count(Misassembly.FRAGMENTED)))
+    log_out_f.write('\tMisassemblies: %d\n' % (region_misassemblies.count(Misassembly.RELOCATION) +
+                     region_misassemblies.count(Misassembly.INVERSION) + region_misassemblies.count(Misassembly.TRANSLOCATION) +
+                     region_misassemblies.count(Misassembly.INTERSPECTRANSLOCATION)))
     log_out_f.write('\t\tRelocations: %d\n' % region_misassemblies.count(Misassembly.RELOCATION))
     log_out_f.write('\t\tTranslocations: %d\n' % region_misassemblies.count(Misassembly.TRANSLOCATION))
     if qconfig.is_combined_ref:
         log_out_f.write('\t\tInterspecies translocations: %d\n' % region_misassemblies.count(Misassembly.INTERSPECTRANSLOCATION))
     log_out_f.write('\t\tInversions: %d\n' % region_misassemblies.count(Misassembly.INVERSION))
     if qconfig.is_combined_ref:
-        log_out_f.write('\tPotentially Misassembled Contigs (i/s translocations): %d\n' % result['contigs_with_istranslocations'])
+        log_out_f.write('\tPotentially Misassembled Contigs (i/s translocations): %d\n' % region_misassemblies.count(Misassembly.POTENTIALLY_MIS_CONTIGS))
     if qconfig.scaffolds and contigs_fpath not in qconfig.dict_of_broken_scaffolds:
         log_out_f.write('\tScaffold gap misassemblies: %d\n' % region_misassemblies.count(Misassembly.SCAFFOLD_GAP))
     if qconfig.bed:
@@ -123,11 +127,11 @@ def save_result(result, report, fname):
     total_aligned_bases = result['total_aligned_bases']
     partially_unaligned_with_misassembly = result['partially_unaligned_with_misassembly']
     partially_unaligned_with_significant_parts = result['partially_unaligned_with_significant_parts']
-    contigs_with_istranslocations = result['contigs_with_istranslocations']
 
     report.add_field(reporting.Fields.MISLOCAL, region_misassemblies.count(Misassembly.LOCAL))
-    report.add_field(reporting.Fields.MISASSEMBL, len(region_misassemblies) - region_misassemblies.count(Misassembly.LOCAL)
-                     - region_misassemblies.count(Misassembly.SCAFFOLD_GAP) - region_misassemblies.count(Misassembly.FRAGMENTED))
+    report.add_field(reporting.Fields.MISASSEMBL, region_misassemblies.count(Misassembly.RELOCATION) +
+                     region_misassemblies.count(Misassembly.INVERSION) + region_misassemblies.count(Misassembly.TRANSLOCATION) +
+                     region_misassemblies.count(Misassembly.INTERSPECTRANSLOCATION))
     report.add_field(reporting.Fields.MISCONTIGS, len(misassembled_contigs))
     report.add_field(reporting.Fields.MISCONTIGSBASES, misassembled_bases)
     report.add_field(reporting.Fields.MISINTERNALOVERLAP, misassembly_internal_overlap)
@@ -151,8 +155,9 @@ def save_result(result, report, fname):
                                                                  * 100000.0 / float(total_aligned_bases)))
 
     # for misassemblies report:
-    report.add_field(reporting.Fields.MIS_ALL_EXTENSIVE, len(region_misassemblies) - region_misassemblies.count(Misassembly.LOCAL)
-                     - region_misassemblies.count(Misassembly.SCAFFOLD_GAP) - region_misassemblies.count(Misassembly.FRAGMENTED))
+    report.add_field(reporting.Fields.MIS_ALL_EXTENSIVE, region_misassemblies.count(Misassembly.RELOCATION) +
+                     region_misassemblies.count(Misassembly.INVERSION) + region_misassemblies.count(Misassembly.TRANSLOCATION) +
+                     region_misassemblies.count(Misassembly.INTERSPECTRANSLOCATION))
     report.add_field(reporting.Fields.MIS_RELOCATION, region_misassemblies.count(Misassembly.RELOCATION))
     report.add_field(reporting.Fields.MIS_TRANSLOCATION, region_misassemblies.count(Misassembly.TRANSLOCATION))
     report.add_field(reporting.Fields.MIS_INVERTION, region_misassemblies.count(Misassembly.INVERSION))
@@ -162,7 +167,7 @@ def save_result(result, report, fname):
     if qconfig.is_combined_ref:
         report.add_field(reporting.Fields.MIS_ISTRANSLOCATIONS, region_misassemblies.count(Misassembly.INTERSPECTRANSLOCATION))
     if qconfig.meta:
-        report.add_field(reporting.Fields.CONTIGS_WITH_ISTRANSLOCATIONS, contigs_with_istranslocations)
+        report.add_field(reporting.Fields.CONTIGS_WITH_ISTRANSLOCATIONS, region_misassemblies.count(Misassembly.POTENTIALLY_MIS_CONTIGS))
     if qconfig.scaffolds and fname not in qconfig.dict_of_broken_scaffolds:
         report.add_field(reporting.Fields.MIS_SCAFFOLDS_GAP, region_misassemblies.count(Misassembly.SCAFFOLD_GAP))
     if qconfig.check_for_fragmented_ref:
@@ -186,4 +191,66 @@ def save_result_for_unaligned(result, report):
 
     report.add_field(reporting.Fields.UNALIGNED_FULL_CNTGS, unaligned_ctgs)
     report.add_field(reporting.Fields.UNALIGNED_FULL_LENGTH, unaligned_length)
+
+
+def save_combined_ref_stats(results, contigs_fpaths, ref_labels_by_chromosomes, output_dir, logger):
+    ref_misassemblies = [result['istranslocations_by_refs'] if result else [] for result in results]
+    potential_misassemblies_by_refs = [result['potential_misassemblies_by_refs'] if result else [] for result in results]
+    all_refs = sorted(list(set([ref for ref in ref_labels_by_chromosomes.values()])))
+    misassemblies_by_refs_rows = []
+    row = {'metricName': 'References', 'values': all_refs}
+    misassemblies_by_refs_rows.append(row)
+    if ref_misassemblies:
+        for i, fpath in enumerate(contigs_fpaths):
+            row = {'metricName': qutils.label_from_fpath(fpath), 'values': []}
+            misassemblies_by_refs_rows.append(row)
+            if ref_misassemblies[i]:
+                assembly_name = qutils.name_from_fpath(fpath)
+                all_rows = []
+                row = {'metricName': 'References', 'values': [ref_num + 1 for ref_num in range(len(all_refs))]}
+                all_rows.append(row)
+                for k in all_refs:
+                    row = {'metricName': k, 'values': []}
+                    for ref in all_refs:
+                        if ref == k or ref not in ref_misassemblies[i]:
+                            row['values'].append(None)
+                        else:
+                            row['values'].append(ref_misassemblies[i][ref][k])
+                    misassemblies_by_refs_rows[-1]['values'].append(max(0, sum([r for r in row['values'] if r]) +
+                                                                        potential_misassemblies_by_refs[i][k]))
+                    all_rows.append(row)
+                misassembly_by_ref_fpath = os.path.join(output_dir, 'interspecies_translocations_by_refs_%s.info' % assembly_name)
+                misassembly_by_ref_file = open(misassembly_by_ref_fpath, 'w')
+                misassembly_by_ref_file.write('Number of interspecies translocations by references: \n')
+                misassembly_by_ref_file.close()
+                print_file(all_rows, misassembly_by_ref_fpath, append_to_existing_file=True)
+
+                misassembly_by_ref_file = open(misassembly_by_ref_fpath, 'a')
+                misassembly_by_ref_file.write('References:\n')
+                for ref_num, ref in enumerate(all_refs):
+                    misassembly_by_ref_file.write(str(ref_num + 1) + ' - ' + ref + '\n')
+                logger.info('  Information about interspecies translocations by references for %s is saved to %s' %
+                            (assembly_name, misassembly_by_ref_fpath))
+    misassemblies = []
+    if qconfig.draw_plots:
+        from quast_libs import plotter
+
+        aligned_contigs_labels = []
+        for row in misassemblies_by_refs_rows[1:]:
+            if row['values']:
+                aligned_contigs_labels.append(row['metricName'])
+            else:
+                misassemblies_by_refs_rows.remove(row)
+        for i in range(len(all_refs)):
+            cur_results = []
+            for row in misassemblies_by_refs_rows[1:]:
+                if row['values']:
+                    cur_results.append(row['values'][i])
+            misassemblies.append(cur_results)
+        is_translocations_plot_fpath = os.path.join(output_dir, 'interspecies_translocations.' + qconfig.plot_extension)
+        plotter.draw_meta_summary_plot('', output_dir, aligned_contigs_labels, all_refs, misassemblies_by_refs_rows,
+                                       misassemblies,
+                                       is_translocations_plot_fpath, title='Intergenomic misassemblies', reverse=False,
+                                       yaxis_title=None, print_all_refs=True)
+
 

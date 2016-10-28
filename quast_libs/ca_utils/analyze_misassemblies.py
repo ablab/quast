@@ -25,6 +25,7 @@ class Misassembly:
     SCAFFOLD_GAP = 5
     FRAGMENTED = 6
     POTENTIALLY_MIS_CONTIGS = 7
+    POSSIBLE_MISASSEMBLIES = 8
 
 
 class StructuralVariations(object):
@@ -318,7 +319,7 @@ def is_gap_filled_ns(contig_seq, align1, align2):
     gap_in_contig = contig_seq[align1.end(): align2.start() - 1]
     if len(gap_in_contig) < qconfig.Ns_break_threshold:
         return False
-    return gap_in_contig.count('N')/len(gap_in_contig) > 0.95
+    return gap_in_contig.count('N') / len(gap_in_contig) >= qconfig.gap_filled_ns_threshold
 
 
 def process_misassembled_contig(sorted_aligns, cyclic, aligned_lengths, region_misassemblies, ref_lens, ref_aligns,

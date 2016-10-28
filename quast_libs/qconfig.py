@@ -148,6 +148,8 @@ MAX_INDEL_LENGTH = 85  # for separating indels and local misassemblies (Nucmer d
 extensive_misassembly_threshold = 1000  # for separating local and extensive misassemblies (relocation)
 BSS_MAX_SETS_NUMBER = 10
 
+gap_filled_ns_threshold = 0.95
+
 # for parallelization
 DEFAULT_MAX_THREADS = 4  # this value is used if QUAST fails to determine number of CPUs
 assemblies_num = 1

@@ -27,6 +27,7 @@ def print_results(contigs_fpath, log_out_f, used_snps_fpath, total_indels_info, 
     log_out_f.write('\t\tInversions: %d\n' % region_misassemblies.count(Misassembly.INVERSION))
     if qconfig.is_combined_ref:
         log_out_f.write('\tPotentially Misassembled Contigs (i/s translocations): %d\n' % region_misassemblies.count(Misassembly.POTENTIALLY_MIS_CONTIGS))
+        log_out_f.write('\t\tPossible Misassemblies: %d\n' % region_misassemblies.count(Misassembly.POSSIBLE_MISASSEMBLIES))
     if qconfig.scaffolds and contigs_fpath not in qconfig.dict_of_broken_scaffolds:
         log_out_f.write('\tScaffold gap misassemblies: %d\n' % region_misassemblies.count(Misassembly.SCAFFOLD_GAP))
     if qconfig.bed:
@@ -166,8 +167,8 @@ def save_result(result, report, fname):
     report.add_field(reporting.Fields.MIS_LOCAL, region_misassemblies.count(Misassembly.LOCAL))
     if qconfig.is_combined_ref:
         report.add_field(reporting.Fields.MIS_ISTRANSLOCATIONS, region_misassemblies.count(Misassembly.INTERSPECTRANSLOCATION))
-    if qconfig.meta:
         report.add_field(reporting.Fields.CONTIGS_WITH_ISTRANSLOCATIONS, region_misassemblies.count(Misassembly.POTENTIALLY_MIS_CONTIGS))
+        report.add_field(reporting.Fields.POSSIBLE_MISASSEMBLIES, region_misassemblies.count(Misassembly.POSSIBLE_MISASSEMBLIES))
     if qconfig.scaffolds and fname not in qconfig.dict_of_broken_scaffolds:
         report.add_field(reporting.Fields.MIS_SCAFFOLDS_GAP, region_misassemblies.count(Misassembly.SCAFFOLD_GAP))
     if qconfig.check_for_fragmented_ref:

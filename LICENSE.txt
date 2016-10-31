@@ -65,7 +65,7 @@ Mikheenko et al., 2016 into your reference list:
 
 Alla Mikheenko, Gleb Valin, Andrey Prjibelski, Vladislav Saveliev, Alexey Gurevich,
 Icarus: visualizer for de novo assembly evaluation,
-Bioinformatics (2016). doi: 10.1093/bioinformatics/btw379
+Bioinformatics (2016) 32 (21): 3321-3323. doi: 10.1093/bioinformatics/btw379
 First published online: July 4, 2016
 
 

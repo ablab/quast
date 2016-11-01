@@ -66,18 +66,27 @@ def align_and_analyze(is_cyclic, index, contigs_fpath, output_dirpath, ref_fpath
 
     logger.info('  ' + qutils.index_to_str(index) + assembly_label)
 
-    log_out_fpath = join(output_dirpath, qconfig.contig_report_fname_pattern % assembly_label + '.stdout')
-    log_err_fpath = join(output_dirpath, qconfig.contig_report_fname_pattern % assembly_label + '.stderr')
-    icarus_out_fpath = join(output_dirpath, qconfig.icarus_report_fname_pattern % assembly_label)
-    misassembly_fpath = join(output_dirpath, qconfig.contig_report_fname_pattern % assembly_label + '.mis_contigs.info')
+    if not qconfig.space_efficient:
+        log_out_fpath = join(output_dirpath, qconfig.contig_report_fname_pattern % assembly_label + '.stdout')
+        log_err_fpath = join(output_dirpath, qconfig.contig_report_fname_pattern % assembly_label + '.stderr')
+        icarus_out_fpath = join(output_dirpath, qconfig.icarus_report_fname_pattern % assembly_label)
+        misassembly_fpath = join(output_dirpath, qconfig.contig_report_fname_pattern % assembly_label + '.mis_contigs.info')
+    else:
+        log_out_fpath = '/dev/null'
+        log_err_fpath = '/dev/null'
+        icarus_out_fpath = '/dev/null'
+        misassembly_fpath = '/dev/null'
 
     icarus_out_f = open(icarus_out_fpath, 'w')
     icarus_header_cols = ['S1', 'E1', 'S2', 'E2', 'Reference', 'Contig', 'IDY', 'Ambiguous', 'Best_group']
     icarus_out_f.write('\t'.join(icarus_header_cols) + '\n')
     misassembly_f = open(misassembly_fpath, 'w')
 
-    logger.info('  ' + qutils.index_to_str(index) + 'Logging to files ' + log_out_fpath +
+    if not qconfig.space_efficient:
+        logger.info('  ' + qutils.index_to_str(index) + 'Logging to files ' + log_out_fpath +
                 ' and ' + os.path.basename(log_err_fpath) + '...')
+    else:
+        logger.info('  ' + qutils.index_to_str(index) + 'Logging is disabled.')
 
     coords_fpath, coords_filtered_fpath, unaligned_fpath, show_snps_fpath, used_snps_fpath = \
         get_nucmer_aux_out_fpaths(nucmer_fpath)
@@ -183,10 +192,11 @@ def align_and_analyze(is_cyclic, index, contigs_fpath, output_dirpath, ref_fpath
     result.update(analyze_coverage(ca_output, regions, ref_aligns, ref_features, snps, total_indels_info))
     result = print_results(contigs_fpath, log_out_f, used_snps_fpath, total_indels_info, result)
 
-    ## outputting misassembled contigs to separate file
-    fasta = [(name, seq) for name, seq in fastaparser.read_fasta(contigs_fpath)
-             if name in misassembled_contigs.keys()]
-    fastaparser.write_fasta(join(output_dirpath, qutils.name_from_fpath(contigs_fpath) + '.mis_contigs.fa'), fasta)
+    if not qconfig.space_efficient:
+        ## outputting misassembled contigs to separate file
+        fasta = [(name, seq) for name, seq in fastaparser.read_fasta(contigs_fpath)
+                 if name in misassembled_contigs.keys()]
+        fastaparser.write_fasta(join(output_dirpath, qutils.name_from_fpath(contigs_fpath) + '.mis_contigs.fa'), fasta)
 
     alignment_tsv_fpath = join(output_dirpath, "alignments_" + assembly_label + '.tsv')
     logger.debug('  ' + qutils.index_to_str(index) + 'Alignments: ' + qutils.relpath(alignment_tsv_fpath))

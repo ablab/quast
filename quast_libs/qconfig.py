@@ -154,6 +154,7 @@ gap_filled_ns_threshold = 0.95
 DEFAULT_MAX_THREADS = 4  # this value is used if QUAST fails to determine number of CPUs
 assemblies_num = 1
 memory_efficient = False
+space_efficient = False
 
 # genome analyzer
 min_gap_size = 50  # for calculating number or gaps in genome coverage
@@ -342,6 +343,8 @@ def usage(show_hidden=False, meta=False, short=True):
         sys.stderr.write("                                      Supported formats: %s\n" % ', '.join(supported_plot_extensions))
         sys.stderr.write("    --memory-efficient                Run Nucmer using one thread, separately per each assembly and each chromosome\n")
         sys.stderr.write("                                      This may significantly reduce memory consumption on large genomes\n")
+        sys.stderr.write("    --space-efficient                 Create only reports and plots files. .stdout, .stderr, coords and other aux files will not be created\n")
+        sys.stderr.write("                                      This may significantly reduce space consumption on large genomes. Icarus viewers also will not be built\n")
         sys.stderr.write("-1  --reads1  <filename>              File with forward reads (in FASTQ format, may be gzipped)\n")
         sys.stderr.write("-2  --reads2  <filename>              File with reverse reads (in FASTQ format, may be gzipped)\n")
         sys.stderr.write("    --sam  <filename>                 SAM alignment file\n")

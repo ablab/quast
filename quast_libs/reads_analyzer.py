@@ -196,13 +196,19 @@ def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpat
         bed_fpath = None
     elif is_non_empty_file(bed_fpath):
         logger.info('  Using existing BED-file: ' + bed_fpath)
-    if is_non_empty_file(cov_fpath):
-        is_correct_file = check_cov_file(cov_fpath)
-        if is_correct_file:
-            logger.info('  Using existing reads coverage file: ' + cov_fpath)
-    if is_non_empty_file(physical_cov_fpath):
-        logger.info('  Using existing physical coverage file: ' + physical_cov_fpath)
-    if (is_non_empty_file(bed_fpath) or qconfig.no_sv) and is_non_empty_file(cov_fpath) and is_non_empty_file(physical_cov_fpath):
+    if qconfig.create_icarus_html:
+        if is_non_empty_file(cov_fpath):
+            is_correct_file = check_cov_file(cov_fpath)
+            if is_correct_file:
+                logger.info('  Using existing reads coverage file: ' + cov_fpath)
+        if is_non_empty_file(physical_cov_fpath):
+            logger.info('  Using existing physical coverage file: ' + physical_cov_fpath)
+    else:
+        logger.info('  Will not calculate coverage (--no-icarus or --space-efficient is specified)')
+        cov_fpath = None
+        physical_cov_fpath = None
+    if (is_non_empty_file(bed_fpath) or qconfig.no_sv) and \
+            (qconfig.space_efficient or (is_non_empty_file(cov_fpath) and is_non_empty_file(physical_cov_fpath))):
         return bed_fpath, cov_fpath, physical_cov_fpath
 
     logger.info('  ' + 'Pre-processing reads...')
@@ -268,7 +274,7 @@ def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpat
         qutils.call_subprocess([sambamba_fpath('sambamba'), 'view', '-t', str(qconfig.max_threads), '-h', bam_sorted_fpath],
                                stdout=open(sam_sorted_fpath, 'w'), stderr=open(err_path, 'a'), logger=logger)
 
-    if not is_non_empty_file(cov_fpath) or not is_non_empty_file(physical_cov_fpath):
+    if qconfig.create_icarus_html and (not is_non_empty_file(cov_fpath) or not is_non_empty_file(physical_cov_fpath)):
         cov_fpath, physical_cov_fpath = get_coverage(output_dirpath, main_ref_fpath, ref_name, bam_fpath, bam_sorted_fpath,
                                                      log_path, err_path, cov_fpath, physical_cov_fpath, correct_chr_names)
     if not is_non_empty_file(bed_fpath) and not qconfig.no_sv:
@@ -399,7 +405,8 @@ def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpat
     if is_non_empty_file(cov_fpath):
         logger.main_info('  Coverage distribution along the reference genome is in ' + cov_fpath)
     else:
-        logger.main_info('  Failed to calculate coverage distribution')
+        if not qconfig.space_efficient:
+            logger.main_info('  Failed to calculate coverage distribution')
         cov_fpath = None
     return bed_fpath, cov_fpath, physical_cov_fpath
 

@@ -154,7 +154,7 @@ def process_single_file(contigs_fpath, index, nucmer_path_dirpath, genome_stats_
     # counting genome coverage and gaps number
     covered_bp = 0
     gaps_count = 0
-    gaps_fpath = os.path.join(genome_stats_dirpath, assembly_label + '_gaps.txt')
+    gaps_fpath = os.path.join(genome_stats_dirpath, assembly_label + '_gaps.txt') if not qconfig.space_efficient else '/dev/null'
     gaps_file = open(gaps_fpath, 'w')
     for chr_name, chr_len in reference_chromosomes.items():
         gaps_file.write(chr_name + '\n')

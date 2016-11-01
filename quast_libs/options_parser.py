@@ -412,6 +412,13 @@ def parse_options(logger, quast_args, is_metaquast=False):
              dest='memory_efficient',
              action='store_true')
          ),
+        (['--space-efficient'], dict(
+             dest='space_efficient',
+             action='callback',
+             callback=set_multiple_variables,
+             callback_kwargs={'store_true_values': ['space_efficient'],
+                              'store_false_values': ['create_icarus_html']},)
+         ),
         (['--silent'], dict(
              dest='silent',
              action='store_true')

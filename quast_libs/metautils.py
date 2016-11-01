@@ -38,8 +38,9 @@ def parallel_partition_contigs(asm, assemblies_by_ref, corrected_dirpath, alignm
     aligned_contig_names = set()
     aligned_contigs_for_each_ref = {}
     contigs_seq = fastaparser.read_fasta_one_time(asm.fpath)
-    if os.path.exists(alignments_fpath_template % corr_assembly_label):
-        for line in open(alignments_fpath_template % corr_assembly_label):
+    alignments_fpath = alignments_fpath_template % corr_assembly_label
+    if os.path.exists(alignments_fpath):
+        for line in open(alignments_fpath):
             values = line.split()
             if values[0] in contigs_analyzer.ref_labels_by_chromosomes.keys():
                 ref_name = contigs_analyzer.ref_labels_by_chromosomes[values[0]]
@@ -64,6 +65,8 @@ def parallel_partition_contigs(asm, assemblies_by_ref, corrected_dirpath, alignm
                     if ref_name in assemblies_by_ref:
                         assemblies_by_ref[ref_name].append(ref_asm)
                         added_ref_asm.append(ref_asm.name)
+        if qconfig.space_efficient:
+            os.remove(alignments_fpath)
 
     # Extraction not aligned contigs
     all_contigs_names = set(contigs.keys())

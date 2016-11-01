@@ -64,9 +64,9 @@ def run_nucmer(prefix, ref_fpath, contigs_fpath, log_out_fpath, log_err_fpath, i
 def get_nucmer_aux_out_fpaths(nucmer_fpath):
     coords_fpath = nucmer_fpath + '.coords'
     coords_filtered_fpath = nucmer_fpath + '.coords.filtered'
-    unaligned_fpath = nucmer_fpath + '.unaligned'
+    unaligned_fpath = nucmer_fpath + '.unaligned' if not qconfig.space_efficient else '/dev/null'
     show_snps_fpath = nucmer_fpath + '.all_snps'
-    used_snps_fpath = nucmer_fpath + '.used_snps' + ('.gz' if not qconfig.no_gzip else '')
+    used_snps_fpath = nucmer_fpath + '.used_snps' + ('.gz' if not qconfig.no_gzip else '') if not qconfig.space_efficient else '/dev/null'
     return coords_fpath, coords_filtered_fpath, unaligned_fpath, show_snps_fpath, used_snps_fpath
 
 

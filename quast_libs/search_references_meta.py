@@ -13,7 +13,7 @@ import stat
 import sys
 import re
 
-from os.path import isfile, join
+from os.path import isdir, isfile, join
 
 from quast_libs import qconfig, qutils
 from quast_libs.fastaparser import _get_fasta_file_handler
@@ -31,6 +31,9 @@ except:
 import xml.etree.ElementTree as ET
 import socket
 socket.setdefaulttimeout(120)
+
+silva_pattern = re.compile(r'\S+\_(?P<taxons>\S+);(?P<seqname>\S+)', re.I)
+ncbi_pattern = re.compile(r'(?P<id>\S+\_[0-9.]+)[_ |](?P<seqname>\S+)', re.I)
 
 silva_db_url = 'http://www.arb-silva.de/fileadmin/silva_databases/release_123/Exports/'
 silva_fname = 'SILVA_123_SSURef_Nr99_tax_silva.fasta'
@@ -368,13 +371,49 @@ def do(assemblies, labels, downloaded_dirpath, corrected_dirpath, ref_txt_fpath=
     return ref_fpaths
 
 
+def parse_organism_id(organism_id):
+    seqname = None
+    taxons = None
+    if silva_pattern.match(organism_id):
+        m = silva_pattern.match(organism_id)
+        if m:
+            taxons = m.group('taxons')
+            taxons = taxons.replace(';', '\t')
+            domain = taxons.split()[0]
+            if domain and domain in ['Bacteria',
+                                     'Archaea'] and 'Chloroplast' not in taxons and 'mitochondria' not in taxons:
+                seqname = m.group('seqname')
+                taxons += '\t' + seqname
+    elif ncbi_pattern.match(organism_id):
+        m = ncbi_pattern.match(organism_id)
+        if m:
+            seqname = m.group('seqname')
+    else:
+        seqname = organism_id.replace(' ', '_')
+    seqname = re.sub('[\[,/\]]', ';', seqname)
+    seqname = seqname.split(';')[0]
+    return seqname, taxons
+
+
 def process_blast(blast_assemblies, downloaded_dirpath, corrected_dirpath, labels, blast_check_fpath, err_fpath):
     if not os.path.isdir(blastdb_dirpath):
         os.makedirs(blastdb_dirpath)
 
     download_all_blast_binaries()
 
-    if not os.path.isfile(db_fpath + '.nsq') or os.path.getsize(db_fpath + '.nsq') < db_nsq_fsize:
+    if qconfig.custom_blast_db_fpath:
+        global db_fpath
+        db_fpath = qconfig.custom_blast_db_fpath
+        if isdir(qconfig.custom_blast_db_fpath):
+            db_aux_files = [f for f in os.listdir(db_fpath) if f.endswith('.nsq')]
+            if db_aux_files:
+                db_fpath = join(qconfig.custom_blast_db_fpath, db_aux_files[0].replace('.nsq', ''))
+        if not os.path.isfile(db_fpath + '.nsq'):
+            logger.error('You should specify path to BLAST database obtained by running makeblastdb command.'
+                         ' Also you can rerun MetaQUAST without --blast-db option. MetaQUAST uses SILVA 16S RNA database by default.',
+                         exit_with_code=2)
+
+    elif not os.path.isfile(db_fpath + '.nsq') or os.path.getsize(db_fpath + '.nsq') < db_nsq_fsize:
         # if os.path.isdir(blastdb_dirpath):
         #     shutil.rmtree(blastdb_dirpath)
         return_code = download_blastdb()
@@ -411,31 +450,31 @@ def process_blast(blast_assemblies, downloaded_dirpath, corrected_dirpath, label
                     # Fields: query id, subject id, % identity, alignment length, mismatches, gap opens, q. start, q. end, s. start, s. end, evalue, bit score
                     # We need: identity, legnth, score, query and subject id.
                     line = line.split()
+                    organism_id = line[1]
                     idy = float(line[2])
                     length = int(line[3])
                     score = float(line[11])
                     if idy >= qconfig.identity_threshold and length >= qconfig.min_length and score >= qconfig.min_bitscore:  # and (not scores or min(scores) - score < max_identity_difference):
-                        taxons = line[1][line[1].find('_')+1:].replace('_', " ")
-                        domain = taxons.split(';')[0]
-                        if domain in ['Bacteria', 'Archaea'] and 'Chloroplast' not in taxons and 'mitochondria' not in taxons:
-                            taxons = taxons.replace(';', '\t')
-                            organism = line[1].split(';')[-1]
-                            organism = re.sub('[\[\]]', '', organism)
-                            specie = organism.split('_')
-                            if len(specie) > 1 and 'uncultured' not in organism:
-                                specie = specie[0] + '_' + specie[1]
-                                if specie not in organisms:
-                                    all_scores.append((score, organism))
-                                    taxons_for_krona[re.sub('[/.=]', '', organism)] = taxons
-                                    organisms.append(specie)
+                        seqname, taxons = parse_organism_id(organism_id)
+                        if not seqname:
+                            continue
+                        specie = seqname.split('_')
+                        if len(specie) > 1 and 'uncultured' not in seqname:
+                            specie = specie[0] + '_' + specie[1]
+                            if specie not in organisms:
+                                all_scores.append((score, seqname))
+                                if taxons:
+                                    taxons_for_krona[re.sub('[/.=]', '', seqname)] = taxons
+                                organisms.append(specie)
+                                refs_for_query += 1
+                            else:
+                                tuple_scores = [x for x in all_scores if specie in x[1]]
+                                if tuple_scores and score > tuple_scores[0][0]:
+                                    all_scores.remove((tuple_scores[0][0], tuple_scores[0][1]))
+                                    all_scores.append((score, seqname))
+                                    if taxons:
+                                        taxons_for_krona[re.sub('[/.=]', '', seqname)] = taxons
                                     refs_for_query += 1
-                                else:
-                                    tuple_scores = [x for x in all_scores if specie in x[1]]
-                                    if tuple_scores and score > tuple_scores[0][0]:
-                                        all_scores.remove((tuple_scores[0][0], tuple_scores[0][1]))
-                                        all_scores.append((score, organism))
-                                        taxons_for_krona[re.sub('[/.=]', '', organism)] = taxons
-                                        refs_for_query += 1
                 elif line.startswith('#'):
                     refs_for_query = 0
         all_scores = sorted(all_scores, reverse=True)
@@ -448,6 +487,7 @@ def process_blast(blast_assemblies, downloaded_dirpath, corrected_dirpath, label
         return None, None
     return scores_organisms, organisms_assemblies
 
+
 def parse_refs_list(ref_txt_fpath):
     organisms = []
     with open(ref_txt_fpath) as f:
@@ -456,6 +496,7 @@ def parse_refs_list(ref_txt_fpath):
                 organism = l.strip().replace(' ', '_')
                 organisms.append(organism)
     return organisms
+
 
 def process_refs(organisms, assemblies, labels, downloaded_dirpath, not_founded_organisms, downloaded_ref_fpaths,
                  blast_check_fpath, err_fpath, organisms_assemblies=None):

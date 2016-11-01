@@ -178,6 +178,7 @@ Ns_break_threshold = 10
 scaffolds_gap_threshold = 10000
 
 # for searching references in NCBI
+custom_blast_db_fpath = None
 downloaded_refs = False
 identity_threshold = 80  # min % identity
 min_length = 300
@@ -315,6 +316,7 @@ def usage(show_hidden=False, meta=False, short=True):
         else:
             sys.stderr.write("    --max-ref-number <int>            Maximum number of references (per each assembly) to download after looking in SILVA database\n")
             sys.stderr.write("                                      Set 0 for not looking in SILVA at all [default: %s]\n" % max_references)
+            sys.stderr.write("    --blast-db <filename>             Custom BLAST database. By default, MetaQUAST searches references in SILVA 16S RNA database\n")
         sys.stderr.write("    --gage                            Use GAGE (results are in gage_report.txt)\n")
         sys.stderr.write("    --contig-thresholds <int,int,...> Comma-separated list of contig length thresholds [default: %s]\n" % contig_thresholds)
         sys.stderr.write("-u  --use-all-alignments              Compute genome fraction, # genes, # operons in QUAST v1.* style.\n")

@@ -46,6 +46,7 @@ def main(args):
     parser.add_option('--unique-mapping', dest='use_metaquast', action='store_true', default=False)
     parser.add_option('--max-ref-number', dest='use_metaquast', action='store_true')
     parser.add_option('--references-list', dest='use_metaquast', action='store_true')
+    parser.add_option('--blast-db', dest='use_metaquast', action='store_true')
     parser.add_option('--test-no-ref', dest='use_metaquast', action='store_true')
     parser.add_option('--test-sv', dest='use_metaquast', action='store_false')
     (opts, l_args) = parser.parse_args(args)

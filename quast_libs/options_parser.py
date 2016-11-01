@@ -140,7 +140,7 @@ def wrong_test_option(logger, msg, is_metaquast):
 
 def clean_metaquast_args(quast_py_args, contigs_fpaths):
     opts_with_args_to_remove = ['-o', '--output-dir', '-R', '--reference', '--max-ref-number', '-l', '--labels',
-                                '-1', '--reads1', '-2', '--reads2', '--references-list']
+                                '-1', '--reads1', '-2', '--reads2', '--references-list', '--blast-db']
     opts_to_remove = ['-L', '--test', '--test-no-ref', '--unique-mapping']
     for contigs_fpath in contigs_fpaths:
         if contigs_fpath in quast_py_args:
@@ -466,6 +466,9 @@ def parse_options(logger, quast_args, is_metaquast=False):
              ),
             (['--references-list'], dict(
                  dest='references_txt')
+             ),
+            (['--blast-db'], dict(
+                 dest='custom_blast_db_fpath')
              )
         ]
 

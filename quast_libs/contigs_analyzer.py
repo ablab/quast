@@ -71,11 +71,13 @@ def align_and_analyze(is_cyclic, index, contigs_fpath, output_dirpath, ref_fpath
         log_err_fpath = join(output_dirpath, qconfig.contig_report_fname_pattern % assembly_label + '.stderr')
         icarus_out_fpath = join(output_dirpath, qconfig.icarus_report_fname_pattern % assembly_label)
         misassembly_fpath = join(output_dirpath, qconfig.contig_report_fname_pattern % assembly_label + '.mis_contigs.info')
+        unaligned_info_fpath =  join(output_dirpath, qconfig.contig_report_fname_pattern % assembly_label + '.unaligned.info')
     else:
         log_out_fpath = '/dev/null'
         log_err_fpath = '/dev/null'
         icarus_out_fpath = '/dev/null'
         misassembly_fpath = '/dev/null'
+        unaligned_info_fpath = '/dev/null'
 
     icarus_out_f = open(icarus_out_fpath, 'w')
     icarus_header_cols = ['S1', 'E1', 'S2', 'E2', 'Reference', 'Contig', 'IDY', 'Ambiguous', 'Best_group']
@@ -184,7 +186,7 @@ def align_and_analyze(is_cyclic, index, contigs_fpath, output_dirpath, ref_fpath
 
     log_out_f.write('Analyzing contigs...\n')
     result, ref_aligns, total_indels_info, aligned_lengths, misassembled_contigs = analyze_contigs(ca_output, contigs_fpath,
-                                        unaligned_fpath, aligns, ref_features, ref_lens, is_cyclic)
+                                        unaligned_fpath, unaligned_info_fpath, aligns, ref_features, ref_lens, is_cyclic)
 
     log_out_f.write('Analyzing coverage...\n')
     if qconfig.show_snps:

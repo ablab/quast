@@ -60,7 +60,23 @@ def check_for_potential_translocation(seq, ctg_len, sorted_aligns, region_misass
     log_out_f.write('\t\tIt can contain interspecies translocations.\n')
 
 
-def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, aligns, ref_features, ref_lens, is_cyclic=None):
+def save_unaligned_info(sorted_aligns, contig, ctg_len, unaligned_len, unaligned_info_file):
+    unaligned_parts = []
+    if sorted_aligns[0].start() - 1:
+        unaligned_parts.append('%d-%d' % (1, sorted_aligns[0].start() - 1))
+    prev_end = sorted_aligns[0].end()
+    if len(sorted_aligns) > 1:
+        for align in sorted_aligns[1:]:
+            if align.start() - prev_end - 1 > 0:
+                unaligned_parts.append('%d-%d' % (prev_end + 1, align.start() - 1))
+            prev_end = align.end()
+    if ctg_len - sorted_aligns[-1].end():
+        unaligned_parts.append('%d-%d' % (sorted_aligns[-1].end() + 1, ctg_len))
+    unaligned_parts_str = ','.join((unaligned_parts))
+    unaligned_info_file.write('\t'.join([contig, str(ctg_len), str(unaligned_len), unaligned_parts_str]) + '\n')
+
+
+def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fpath, aligns, ref_features, ref_lens, is_cyclic=None):
     maxun = 10
     epsilon = 0.99
     umt = 0.5  # threshold for misassembled contigs with aligned less than $umt * 100% (Unaligned Missassembled Threshold)
@@ -93,6 +109,8 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, aligns, ref_featu
     total_indels_info = IndelsInfo()
 
     unaligned_file = open(unaligned_fpath, 'w')
+    unaligned_info_file = open(unaligned_info_fpath, 'w')
+    unaligned_info_file.write('\t'.join(['Contig', 'Total length', 'Unaligned length', 'Unaligned parts']))
     for contig, seq in fastaparser.read_fasta(contigs_fpath):
         #Recording contig stats
         ctg_len = len(seq)
@@ -263,10 +281,11 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, aligns, ref_featu
                     if ctg_len - end:
                         ca_output.stdout_f.write('\t\tUnaligned bases: %d to %d (%d)\n' % (end + 1, ctg_len, ctg_len - end))
                     # check if both parts (aligned and unaligned) have significant length
-                    if (unaligned_bases >= qconfig.significant_part_size) and (ctg_len - unaligned_bases >= qconfig.significant_part_size):
+                    if unaligned_bases >= qconfig.significant_part_size and ctg_len - unaligned_bases >= qconfig.significant_part_size:
                         ca_output.stdout_f.write('\t\tThis contig has both significant aligned and unaligned parts ' \
                                                      '(of length >= %d)!\n' % (qconfig.significant_part_size))
                         partially_unaligned_with_significant_parts += 1
+                        save_unaligned_info(sorted_aligns, contig, ctg_len, unaligned_bases, unaligned_info_file)
                         if qconfig.meta:
                             check_for_potential_translocation(seq, ctg_len, sorted_aligns, region_misassemblies,
                                                               potential_misassemblies_by_refs, ca_output.stdout_f)
@@ -277,7 +296,10 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, aligns, ref_featu
 
                     #There is more than one alignment of this contig to the reference
                     ca_output.stdout_f.write('\t\tThis contig is misassembled. %d total aligns.\n' % num_aligns)
-                    aligned_bases_in_contig = ctg_len - the_best_set.uncovered
+                    unaligned_bases = the_best_set.uncovered
+                    aligned_bases_in_contig = ctg_len - unaligned_bases
+                    if unaligned_bases >= qconfig.significant_part_size and aligned_bases_in_contig >= qconfig.significant_part_size:
+                        save_unaligned_info(sorted_aligns, contig, ctg_len, unaligned_bases, unaligned_info_file)
 
                     if aligned_bases_in_contig < umt * ctg_len:
                         ca_output.stdout_f.write('\t\t\tWarning! This contig is more unaligned than misassembled. ' + \

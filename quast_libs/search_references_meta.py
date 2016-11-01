@@ -390,8 +390,9 @@ def parse_organism_id(organism_id):
             seqname = m.group('seqname')
     else:
         seqname = organism_id.replace(' ', '_')
-    seqname = re.sub('[\[,/\]]', ';', seqname)
-    seqname = seqname.split(';')[0]
+    if seqname:
+        seqname = re.sub('[\[,/\]]', ';', seqname)
+        seqname = seqname.split(';')[0]
     return seqname, taxons
 
 

@@ -80,6 +80,8 @@ def get_best_aligns_sets(sorted_aligns, ctg_len, stdout_f, seq, ref_lens, is_cyc
     penalties['extensive'] = max(50, int(round(min(qconfig.extensive_misassembly_threshold / 4.0, ctg_len * 0.05)))) - 1
     penalties['local'] = max(2, int(round(min(qconfig.MAX_INDEL_LENGTH / 2.0, ctg_len * 0.01)))) - 1
     penalties['scaffold'] = 5
+    # internal overlap penalty (in any case should be less or equal to corresponding misassembly penalty
+    penalties['overlap_multiplier'] = 0.5  # score -= overlap_multiplier * overlap_length
 
     sorted_aligns = sorted(sorted_aligns, key=lambda x: (x.end(), x.start()))
 
@@ -160,7 +162,7 @@ def get_best_aligns_sets(sorted_aligns, ctg_len, stdout_f, seq, ref_lens, is_cyc
     # Stage 2: DFS for finding multiple best sets with almost equally good score
     max_allowed_score_drop = max_score - max_score * qconfig.ambiguity_score
 
-    putative_sets = []  # TODO: use priority queue -- minimal score_drop first
+    putative_sets = []
     best_sets = []
     for scored_set in all_scored_sets:
         score_drop = max_score - scored_set.score
@@ -242,6 +244,7 @@ def get_score(score, aligns, ref_lens, is_cyclic, uncovered_len, seq, region_str
     if len(aligns) > 1:
         align1, align2 = aligns[-2], aligns[-1]
         is_fake_translocation = is_fragmented_ref_fake_translocation(align1, align2, ref_lens)
+        overlaped_len = max(0, align1.end() - align2.start() + 1)
         if len(aligns) > 2:  # does not affect score and uncovered but it is important for further checking on set correctness
             exclude_internal_overlaps(aligns[-3], align1)
         reduced_len = exclude_internal_overlaps(align1, align2)  # reduced_len is for align1 only
@@ -250,12 +253,12 @@ def get_score(score, aligns, ref_lens, is_cyclic, uncovered_len, seq, region_str
             return None, None
 
         added_len = get_added_len(aligns, aligns[-1])
-        uncovered_len -= added_len - reduced_len
+        uncovered_len -= (added_len - reduced_len)
         score += score_single_align(align2, ctg_len=added_len) - score_single_align(align1, ctg_len=reduced_len)
         is_extensive_misassembly, aux_data = is_misassembly(align1, align2, seq, ref_lens, is_cyclic, region_struct_variations,
                                                             is_fake_translocation)
         if is_extensive_misassembly:
-            score -= penalties['extensive']
+            misassembly_penalty = penalties['extensive']
             if align1.ref != align2.ref:
                 if qconfig.is_combined_ref and not is_same_reference(align1.ref, align2.ref):
                     misassembly = Misassembly.INTERSPECTRANSLOCATION
@@ -268,9 +271,13 @@ def get_score(score, aligns, ref_lens, is_cyclic, uncovered_len, seq, region_str
                     misassembly = Misassembly.INVERSION
             score -= misassembly - Misassembly.INVERSION
         elif abs(aux_data['inconsistency']) > qconfig.MAX_INDEL_LENGTH and not aux_data['is_scaffold_gap']:
-            score -= penalties['local']
+            misassembly_penalty = penalties['local']
         elif aux_data['is_scaffold_gap']:
-            score -= penalties['scaffold']
+            misassembly_penalty = penalties['scaffold']
+        else:
+            misassembly_penalty = 0
+        overlap_penalty = min(overlaped_len * penalties['overlap_multiplier'], misassembly_penalty)
+        score -= (misassembly_penalty + overlap_penalty)
     else:
         score += score_single_align(aligns[-1])
         uncovered_len -= aligns[-1].len2

@@ -133,7 +133,7 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fp
             top_id = sorted_aligns[0].idy
             top_score = score_single_align(sorted_aligns[0])
             top_aligns = []
-            ca_output.stdout_f.write('Top Length: %d  Top ID: %.2f (Score: %.1f)\n' % (top_len, top_id, top_score))
+            ca_output.stdout_f.write('Best alignment score: %.1f (LEN: %d, IDY: %.2f)\n' % (top_score, top_len, top_id))
 
             #Check that top hit captures most of the contig
             if top_len > ctg_len * epsilon or ctg_len - top_len < maxun:

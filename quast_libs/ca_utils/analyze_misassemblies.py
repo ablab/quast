@@ -118,6 +118,17 @@ def distance_between_alignments(align1, align2, pos_strand1, pos_strand2, cyclic
     return distance, cyclic_moment
 
 
+def cyclic_back_ends_overlap(align1, align2):
+    # returns overlap (in reference) between two alignments considered as having "cyclic moment"
+    distance_align1_align2 = align2.s1 - align1.e1 - 1
+    distance_align2_align1 = align1.s1 - align2.e1 - 1
+    if align2.s1 > align1.s1:  # align1 is closer to ref start while align2 is closer to ref end
+        overlap = max(0, -distance_align1_align2)  # negative distance means overlap
+    else:  # otherwise
+        overlap = max(0, -distance_align2_align1)  # negative distance means overlap
+    return overlap
+
+
 def __get_border_gaps(align1, align2, ref_lens):
     return [min(abs(align.e1 - ref_lens[align.ref]), abs(align.s1 - 1)) for align in [align1, align2]]
 
@@ -173,7 +184,12 @@ def is_misassembly(align1, align2, contig_seq, ref_lens, is_cyclic=False, region
     if is_fake_translocation:
         aux_data["inconsistency"] = sum(__get_border_gaps(align1, align2, ref_lens))
         return False, aux_data
-    if align1.ref != align2.ref or abs(inconsistency) > qconfig.extensive_misassembly_threshold or strand1 != strand2:
+    # we should check special case when two "cyclic" alignments have also overlap on back ends
+    # (it indicates a local or an extensive misassembly)
+    if cyclic_moment and cyclic_back_ends_overlap(align1, align2) > abs(inconsistency):
+        aux_data["inconsistency"] = -cyclic_back_ends_overlap(align1, align2)  # overlap is a negative inconsistency
+    if align1.ref != align2.ref or abs(aux_data["inconsistency"]) > qconfig.extensive_misassembly_threshold \
+            or strand1 != strand2:
         return True, aux_data
     return False, aux_data  # regular local misassembly
 
@@ -385,9 +401,11 @@ def process_misassembled_contig(sorted_aligns, cyclic, aligned_lengths, region_m
                     ca_output.icarus_out_f.write('translocation')
             elif abs(inconsistency) > qconfig.extensive_misassembly_threshold:
                 region_misassemblies.append(Misassembly.RELOCATION)
-                ca_output.stdout_f.write('relocation, inconsistency = ' + str(inconsistency))
-                ca_output.misassembly_f.write('relocation, inconsistency = ' + str(inconsistency))
-                ca_output.icarus_out_f.write('relocation, inconsistency = ' + str(inconsistency))
+                msg = 'relocation, inconsistency = ' + str(inconsistency) + \
+                      (' [linear representation of circular genome]' if cyclic_moment else '')
+                ca_output.stdout_f.write(msg)
+                ca_output.misassembly_f.write(msg)
+                ca_output.icarus_out_f.write(msg)
             else: #if strand1 != strand2:
                 region_misassemblies.append(Misassembly.INVERSION)
                 ca_output.stdout_f.write('inversion')
@@ -399,8 +417,8 @@ def process_misassembled_contig(sorted_aligns, cyclic, aligned_lengths, region_m
             ref_features.setdefault(prev_align.ref, {})[prev_align.e1] = 'M'
             ref_features.setdefault(next_align.ref, {})[next_align.e1] = 'M'
         else:
-            reason_msg = "" + (" (linear representation of circular genome)" if cyclic_moment else "") + \
-                         (" (fragmentation of reference genome)" if prev_align.ref != next_align.ref else "")
+            reason_msg = "" + (" [linear representation of circular genome]" if cyclic_moment else "") + \
+                         (" [fragmentation of reference genome]" if prev_align.ref != next_align.ref else "")
             if inconsistency == 0 and cyclic_moment:
                 ca_output.stdout_f.write('\t\t\t  Not a misassembly' + reason_msg + ' between these two alignments\n')
                 ca_output.icarus_out_f.write('fake: not a misassembly' + reason_msg + '\n')
@@ -443,9 +461,8 @@ def process_misassembled_contig(sorted_aligns, cyclic, aligned_lengths, region_m
                 else:
                     #There is a small gap between the two alignments, a local misassembly
                     ca_output.stdout_f.write('\t\t\t  Gap between these two alignments (local misassembly).')
-                    #plantafile_out.write('Distance on contig =', distance_on_contig, ', distance on reference =', distance_on_reference)
                 ca_output.stdout_f.write(' Inconsistency = ' + str(inconsistency) + reason_msg + '\n')
-                ca_output.icarus_out_f.write('local misassembly' + '\n')
+                ca_output.icarus_out_f.write('local misassembly' + reason_msg + '\n')
                 region_misassemblies.append(Misassembly.LOCAL)
 
         prev_align = next_align

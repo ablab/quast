@@ -600,10 +600,12 @@ def save(output_dirpath, report_name, transposed_report_name, order, silent=Fals
     all_rows = get_all_rows_out_of_table(tab)
     potential_scaffolds_assemblies_info = ''
     if qconfig.potential_scaffolds_assemblies:
-        if len(qconfig.potential_scaffolds_assemblies) > 1:
-            potential_scaffolds_assemblies_info = 'assemblies ' + ', '.join(qconfig.potential_scaffolds_assemblies) + ' contain'
-        else:
+        if len(qconfig.potential_scaffolds_assemblies) == 1:
             potential_scaffolds_assemblies_info = 'assembly ' + qconfig.potential_scaffolds_assemblies[0] + ' contains'
+        elif len(qconfig.potential_scaffolds_assemblies) == len(all_rows[0]['values']):
+            potential_scaffolds_assemblies_info = 'all assemblies contain'
+        else:
+            potential_scaffolds_assemblies_info = 'assemblies ' + ', '.join(qconfig.potential_scaffolds_assemblies) + ' contain'
     save_txt(report_txt_fpath, all_rows, potential_scaffolds_assemblies_info)
     save_tsv(report_tsv_fpath, all_rows)
     save_tex(report_tex_fpath, all_rows)

@@ -122,9 +122,13 @@ def process_single_file(contigs_fpath, index, nucmer_path_dirpath, genome_stats_
     genes_in_contigs = [0] * len(sorted_contigs_names) # for cumulative plots: i-th element is the number of genes in i-th contig
     operons_in_contigs = [0] * len(sorted_contigs_names)
     aligned_blocks_by_contig_name = {} # for gene finding: contig_name --> list of AlignedBlock
-    for name in sorted_contigs_names:
-        aligned_blocks_by_contig_name[name] = []
 
+    gene_searching_enabled = len(genes_container.region_list) or len(operons_container.region_list)
+    if qconfig.memory_efficient and gene_searching_enabled:
+        logger.warning('Run QUAST without genes and operons files to reduce memory consumption.')
+    if gene_searching_enabled:
+        for name in sorted_contigs_names:
+            aligned_blocks_by_contig_name[name] = []
     for line in coordfile:
         if line.strip() == '':
             break
@@ -140,7 +144,8 @@ def process_single_file(contigs_fpath, index, nucmer_path_dirpath, genome_stats_
                          "differ from the names in the reference. Try to remove the file and restart QUAST.")
             return None
 
-        aligned_blocks_by_contig_name[contig_name].append(AlignedBlock(seqname=chr_name, start=s1, end=e1))
+        if gene_searching_enabled:
+            aligned_blocks_by_contig_name[contig_name].append(AlignedBlock(seqname=chr_name, start=s1, end=e1))
         if s2 == 0 and e2 == 0:  # special case: circular genome, contig starts on the end of a chromosome and ends in the beginning
             for i in range(s1, len(genome_mapping[chr_name])):
                 genome_mapping[chr_name][i] = 1

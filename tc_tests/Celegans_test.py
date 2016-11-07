@@ -18,5 +18,5 @@ check_report_files(name, ['icarus.html',
                           'genome_stats/genome_info.txt'])
 
 assert_metric(name, '# contigs (>= 50000 bp)', ['274', '219', '263', '148', '243'], 'report.tsv')
-assert_metric(name, '# misassemblies', ['156', '55', '78', '214', '325'], 'report.tsv')
+assert_metric(name, '# misassemblies', ['147', '48', '76', '192', '301'], 'report.tsv')
 assert_metric(name, 'Largest alignment', ['202579', '187587', '147763', '168091', '172159'], 'report.tsv')

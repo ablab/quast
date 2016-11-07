@@ -103,24 +103,6 @@ def partition_contigs(assemblies, ref_fpaths, corrected_dirpath, alignments_fpat
     return assemblies_by_ref, not_aligned_assemblies
 
 
-# safe remove from quast_py_args, e.g. removes correctly "--test-no" (full is "--test-no-ref") and corresponding argument
-def remove_from_quast_py_args(quast_py_args, opt, arg=None):
-    opt_idxs = []
-    common_length = -1
-    for idx, o in enumerate(quast_py_args):
-        if o == opt:
-            opt_idxs.append(idx)
-        elif opt.startswith(o):
-            if len(o) > common_length:
-                opt_idxs.append(idx)
-                common_length = len(o)
-    for opt_idx in sorted(opt_idxs, reverse=True):
-        if arg:
-            del quast_py_args[opt_idx + 1]
-        del quast_py_args[opt_idx]
-    return quast_py_args
-
-
 def correct_assemblies(contigs_fpaths, output_dirpath, labels):
     corrected_dirpath = os.path.join(output_dirpath, qconfig.corrected_dirname)
     # we need correction but do not need min-contig filtration

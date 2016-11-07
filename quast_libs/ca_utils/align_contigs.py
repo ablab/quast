@@ -11,8 +11,9 @@ import datetime
 import shutil
 import sys
 
+from quast_libs import options_parser
 from quast_libs import qconfig, qutils
-from quast_libs.ca_utils.misc import is_emem_aligner, bin_fpath
+from quast_libs.ca_utils.misc import bin_fpath, is_emem_aligner, compile_aligner, e_mem_failed_compilation_flag
 
 from quast_libs.log import get_logger
 from quast_libs.qutils import is_python_2
@@ -45,6 +46,18 @@ def check_nucmer_successful_check(fpath, contigs_fpath, ref_fpath):
     if not successful_check_content[1].strip().endswith(str(getsize(ref_fpath))):
         return False
     return True
+
+
+def check_emem_functionality(logger):
+    if not is_emem_aligner():
+        return True
+    logger.debug('Checking correctness of E-MEM compilation...')
+    return_code = run_nucmer(qconfig.output_dirpath, options_parser.test_reference, options_parser.test_contigs_fpaths[0],
+                             '/dev/null', '/dev/null', 0, emem_threads=1)
+    if return_code != 0:
+        logger.main_info('E-MEM does not work properly. QUAST will try to recompile contig aligner software.')
+        open(e_mem_failed_compilation_flag, 'w').close()
+    return compile_aligner(logger)
 
 
 def run_nucmer(prefix, ref_fpath, contigs_fpath, log_out_fpath, log_err_fpath, index, emem_threads=1):

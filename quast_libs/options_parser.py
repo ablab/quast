@@ -14,7 +14,6 @@ from os.path import join, abspath
 import sys
 
 from quast_libs import qconfig, qutils
-from quast_libs.metautils import remove_from_quast_py_args
 from quast_libs.qutils import assert_file_exists, set_up_output_dir
 
 
@@ -123,6 +122,24 @@ def check_arg_value(option, opt_str, value, parser, logger, default_value=None, 
             logger.error("incorrect value for " + opt_str + " (" + str(value) + ")! "
                          "Please specify a number greater than " + str(min_value),
                          to_stderr=True, exit_with_code=2)
+
+
+# safe remove from quast_py_args, e.g. removes correctly "--test-no" (full is "--test-no-ref") and corresponding argument
+def remove_from_quast_py_args(quast_py_args, opt, arg=None):
+    opt_idxs = []
+    common_length = -1
+    for idx, o in enumerate(quast_py_args):
+        if o == opt:
+            opt_idxs.append(idx)
+        elif opt.startswith(o):
+            if len(o) > common_length:
+                opt_idxs.append(idx)
+                common_length = len(o)
+    for opt_idx in sorted(opt_idxs, reverse=True):
+        if arg:
+            del quast_py_args[opt_idx + 1]
+        del quast_py_args[opt_idx]
+    return quast_py_args
 
 
 def parse_meta_references(option, opt_str, value, parser, logger):

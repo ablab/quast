@@ -37,6 +37,7 @@ from quast_libs.search_references_meta import download_all_blast_binaries, downl
 from quast_libs.glimmer import compile_glimmer
 from quast_libs.gage import compile_gage
 from quast_libs.ca_utils.misc import compile_aligner
+from quast_libs.ca_utils.align_contigs import check_emem_functionality
 from quast_libs.ra_utils import compile_reads_analyzer_tools, download_manta, compile_bwa, compile_bedtools
 
 name = 'quast'
@@ -142,6 +143,7 @@ if cmd_in(['install_full']):
 if cmd_in(['install', 'develop', 'build', 'build_ext']):
     logger.info('* Compiling aligner *')
     compile_aligner(logger)
+    check_emem_functionality(logger)
     logger.info('* Compiling Glimmer *')
     compile_glimmer()
     logger.info('* Compiling GAGE *')

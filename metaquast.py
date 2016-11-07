@@ -14,9 +14,9 @@ import shutil
 from quast_libs import qconfig
 qconfig.check_python_version()
 
-from quast_libs.metautils import remove_from_quast_py_args, Assembly, correct_meta_references, correct_assemblies, \
+from quast_libs.metautils import Assembly, correct_meta_references, correct_assemblies, \
     get_downloaded_refs_with_alignments, partition_contigs, calculate_ave_read_support
-from quast_libs.options_parser import parse_options
+from quast_libs.options_parser import parse_options, remove_from_quast_py_args
 
 from quast_libs import contigs_analyzer, reads_analyzer, search_references_meta
 from quast_libs import qutils

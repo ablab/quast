@@ -23,6 +23,7 @@ from quast_libs.qutils import compile_tool, val_to_str, check_prev_compilation_f
 contig_aligner = None
 contig_aligner_dirpath = None
 ref_labels_by_chromosomes = {}
+e_mem_failed_compilation_flag = join(qconfig.LIBS_LOCATION, 'E-MEM-osx', 'make.failed')
 
 
 def bin_fpath(fname):
@@ -39,13 +40,13 @@ def compile_aligner(logger, only_clean=False):
 
     if contig_aligner_dirpath is not None and not check_prev_compilation_failed(contig_aligner, join(contig_aligner_dirpath, 'make.failed'),
                                                                                 just_notice=True, logger=logger):
-        return check_aligner_functionality(logger)
+        return True
 
-    if not contig_aligner_dirpath and qconfig.platform_name == 'macosx' and not check_prev_compilation_failed('E-MEM', join(qconfig.LIBS_LOCATION, 'E-MEM-osx',
-                                                                                             'make.failed'), just_notice=True, logger=logger):
+    if not contig_aligner_dirpath and qconfig.platform_name == 'macosx' and not \
+            check_prev_compilation_failed('E-MEM', e_mem_failed_compilation_flag, just_notice=True, logger=logger):
         contig_aligner = 'E-MEM'
         contig_aligner_dirpath = join(qconfig.LIBS_LOCATION, 'E-MEM-osx')
-        return check_aligner_functionality(logger)
+        return True
 
     default_requirements = ['nucmer', 'delta-filter', 'show-coords', 'show-snps', 'mummer', 'mgaps']
 
@@ -64,25 +65,9 @@ def compile_aligner(logger, only_clean=False):
             continue
         contig_aligner = name
         contig_aligner_dirpath = dirpath  # successfully compiled
-        return check_aligner_functionality(logger)
+        return True
     logger.error("Compilation of contig aligner software was unsuccessful! QUAST functionality will be limited.")
     return False
-
-
-def check_aligner_functionality(logger):
-    if not contig_aligner:
-        return False
-    cmdline = [bin_fpath('delta-filter'), '-h']
-    make_logs_basepath = join(contig_aligner_dirpath, 'make')
-    logger.debug('Checking correctness of ' + contig_aligner + ' compilation...')
-    return_code = qutils.call_subprocess(cmdline, stdout=open(os.devnull, 'w'), stderr=open(os.devnull, 'w'))
-    if return_code == 0:
-        return True
-    failed_compilation_flag = make_logs_basepath + '.failed'
-    open(failed_compilation_flag, 'w').close()
-
-    logger.main_info(contig_aligner + ' does not work properly. QUAST will try to recompile contig aligner software.')
-    return compile_aligner(logger)
 
 
 def is_same_reference(chr1, chr2):

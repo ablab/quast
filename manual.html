@@ -623,6 +623,11 @@ Run MetaQUAST on a data from the <code>test_data</code> folder, but without refe
     See <a href="#sec2.5">section 2.5</a> for details about reference search algorithm.
 
 <div class='option'>
+    <a href='blast_db'></a><code><b>--blast-db</b></code> <code>&lt;int&gt;</code>
+</div>
+Use custom BLAST database instead of embedded SILVA 16S rRNA database. See FAQ section, <a href="#faq_q12">question Q12</a> for details.
+
+<div class='option'>
     <a href='max_ref_num'></a><code><b>--max-ref-num</b></code> <code>&lt;int&gt;</code>
 </div>
 Maximum number of reference genomes (per each assembly) to download after searching in SILVA database. Default value is 50.
@@ -1375,6 +1380,30 @@ Q11. Sometimes the "<span class='metric-ref'># contigs</span>" and the "<span cl
 <br>
 </p>
 
+<a name="faq_q12"></a>
+<br>
+<p><b><i>
+Q12. Can I use custom BLAST database instead of SILVA 16S rRNA for reference searching?
+</b></i></p>
+<p>
+    Yes. If you want to blast your contigs against a local BLAST database, you can specify path to the database with <code>--blast-db</code> option.
+    <br>
+    To create a BLAST database, you need <code>makeblastdb</code> from <a href="https://www.ncbi.nlm.nih.gov/books/NBK52640/">BLAST+ package</a>.
+    You can also use <code>makeblastdb</code> from &lt;quast_dir&gt;/external_tools/blast/&lt;platform&gt;/makeblastdb.
+    MetaQUAST automatically downloads it when you run <a href="#sec1">full QUAST installation</a> or <code>./metaquast.py</code> without reference.
+    <br>
+    You can create a BLAST database from your FASTA file by running <code>makeblastdb -in &lt;path_to_fasta_file&gt; -dbtype nucl</code>.
+    If you have multiple FASTA files, you should previously combine them into one file.
+    <br><br>
+    Note: MetaQUAST will try to search references in NCBI database based on headers from your FASTA files.
+    Ensure that headers contain species names in simple parsable format without spaces, for example:
+    <br>
+    <code><pre>
+        >Escherichia_coli, complete genome
+        >NZ_CP015308.1|Lactobacillus_plantarum_strain_LY-78, complete genome
+    </pre></code>
+<br>
+</p>
 
 <br>
 <br>

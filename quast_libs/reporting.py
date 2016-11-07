@@ -79,9 +79,8 @@ class Fields:
     UNALIGNED_FULL_CNTGS = '# fully unaligned contigs'
     UNALIGNED_FULL_LENGTH = 'Fully unaligned length'
     UNALIGNED_PART_CNTGS = '# partially unaligned contigs'
-    UNALIGNED_PART_WITH_MISASSEMBLY = TAB + '# with misassembly'
-    UNALIGNED_PART_SIGNIFICANT_PARTS = TAB + '# both parts are significant'
     UNALIGNED_PART_LENGTH = 'Partially unaligned length'
+    UNALIGNED_HALF_WITH_MISASSEMBLY = '# half-unaligned with misassembly'
 
     # Indels and mismatches
     MISMATCHES = '# mismatches'
@@ -147,7 +146,7 @@ class Fields:
 
     # content and order of metrics in DETAILED UNALIGNED REPORT (<quast_output_dir>/contigs_reports/unaligned_report.txt, .tex, .tsv)
     unaligned_order = [NAME, UNALIGNED_FULL_CNTGS, UNALIGNED_FULL_LENGTH, UNALIGNED_PART_CNTGS,
-                       UNALIGNED_PART_WITH_MISASSEMBLY, UNALIGNED_PART_SIGNIFICANT_PARTS, UNALIGNED_PART_LENGTH, UNCALLED]
+                       UNALIGNED_PART_LENGTH, UNALIGNED_HALF_WITH_MISASSEMBLY, UNCALLED]
 
     ### list of GAGE metrics (--gage option)
     GAGE_NUMCONTIGS = 'Contigs #'
@@ -195,8 +194,7 @@ class Fields:
                            MIS_LOCAL, MIS_SCAFFOLDS_GAP, STRUCT_VARIATIONS]),
 
         ('Unaligned', [UNALIGNED_FULL_CNTGS, UNALIGNED_FULL_LENGTH, UNALIGNED_PART_CNTGS,
-                       UNALIGNED_PART_WITH_MISASSEMBLY, UNALIGNED_PART_SIGNIFICANT_PARTS,
-                       UNALIGNED_PART_LENGTH,]),
+                       UNALIGNED_PART_LENGTH, UNALIGNED_HALF_WITH_MISASSEMBLY,]),
 
         ('Mismatches', [MISMATCHES, INDELS, INDELSBASES, SUBSERROR, INDELSERROR,
                         MIS_SHORT_INDELS, MIS_LONG_INDELS, UNCALLED, UNCALLED_PERCENT,]),

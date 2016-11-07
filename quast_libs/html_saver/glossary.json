@@ -44,10 +44,9 @@
 
     "# fully unaligned contigs"     : "<span>is the number of contigs that have no alignment to the reference sequence.</span>",
     "Fully unaligned length"        : "<span>is the total number of bases contained in all fully unaligned contigs.</span>",
-    "# partially unaligned contigs" : "<span>is the number of contigs that are not fully unaligned ones but have fragments with no alignment to the reference.</span>",
-    "# with misassembly"            : "<span>is the number of partially unaligned contigs that contain misassembly events in their aligned fragment. Note that such misassemblies are not counted in <i># misassemblies</i> and other <i>misassemblies</i> statistics.</span>",
-    "# both parts are significant"  : "<span>is the number of partially unaligned contigs that contain both aligned and unaligned fragments of length &ge; <i>min-contig threshold</i>.</span>",
+    "# partially unaligned contigs" : "<span>is the number of contigs that are not fully unaligned ones but have fragments of length &ge; <i>significant-part-size threshold</i> with no alignment to the reference.</span>",
     "Partially unaligned length"    : "<span>is the total number of unaligned bases in all partially unaligned contigs.</span>",
+    "# half-unaligned with misassembly" : "<span>is the number of contigs that have the number of unaligned bases more than 50% of contig length. Note that such misassemblies are not counted in <i># misassemblies</i> and other <i>misassemblies</i> statistics.</span>",
 
     "# ambiguous contigs"           : "<span>is the number of contigs that have reference alignments of equal quality in multiple locations on the reference.</span>",
     "Ambiguous contigs length"      : "<span>is the total number of bases contained in all ambiguous contigs.</span>",

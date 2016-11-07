@@ -40,7 +40,7 @@ def print_results(contigs_fpath, log_out_f, used_snps_fpath, total_indels_info, 
     log_out_f.write('\tMisassemblies Inter-Contig Overlap: %d\n' % result['misassembly_internal_overlap'])
     log_out_f.write('Uncovered Regions: %d (%d)\n' % (result['uncovered_regions'], result['uncovered_region_bases']))
     log_out_f.write('Unaligned Contigs: %d + %d part\n' % (result['unaligned'], result['partially_unaligned']))
-    log_out_f.write('Partially Unaligned Contigs with Misassemblies: %d\n' % result['partially_unaligned_with_misassembly'])
+    log_out_f.write('Half Unaligned Contigs with Misassemblies: %d\n' % result['half_unaligned_with_misassembly'])
     log_out_f.write('Unaligned Contig Bases: %d\n' % (result['fully_unaligned_bases'] + result['partially_unaligned_bases']))
 
     log_out_f.write('\n')
@@ -126,8 +126,7 @@ def save_result(result, report, fname):
     SNPs = result['SNPs']
     indels_list = result['indels_list']
     total_aligned_bases = result['total_aligned_bases']
-    partially_unaligned_with_misassembly = result['partially_unaligned_with_misassembly']
-    partially_unaligned_with_significant_parts = result['partially_unaligned_with_significant_parts']
+    half_unaligned_with_misassembly = result['half_unaligned_with_misassembly']
 
     report.add_field(reporting.Fields.MISLOCAL, region_misassemblies.count(Misassembly.LOCAL))
     report.add_field(reporting.Fields.MISASSEMBL, region_misassemblies.count(Misassembly.RELOCATION) +
@@ -178,9 +177,8 @@ def save_result(result, report, fname):
     report.add_field(reporting.Fields.UNALIGNED_FULL_CNTGS, unaligned)
     report.add_field(reporting.Fields.UNALIGNED_FULL_LENGTH, fully_unaligned_bases)
     report.add_field(reporting.Fields.UNALIGNED_PART_CNTGS, partially_unaligned)
-    report.add_field(reporting.Fields.UNALIGNED_PART_WITH_MISASSEMBLY, partially_unaligned_with_misassembly)
-    report.add_field(reporting.Fields.UNALIGNED_PART_SIGNIFICANT_PARTS, partially_unaligned_with_significant_parts)
     report.add_field(reporting.Fields.UNALIGNED_PART_LENGTH, partially_unaligned_bases)
+    report.add_field(reporting.Fields.UNALIGNED_HALF_WITH_MISASSEMBLY, half_unaligned_with_misassembly)
     return report
 
 

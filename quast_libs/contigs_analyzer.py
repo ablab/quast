@@ -71,7 +71,7 @@ def align_and_analyze(is_cyclic, index, contigs_fpath, output_dirpath, ref_fpath
         log_err_fpath = join(output_dirpath, qconfig.contig_report_fname_pattern % assembly_label + '.stderr')
         icarus_out_fpath = join(output_dirpath, qconfig.icarus_report_fname_pattern % assembly_label)
         misassembly_fpath = join(output_dirpath, qconfig.contig_report_fname_pattern % assembly_label + '.mis_contigs.info')
-        unaligned_info_fpath =  join(output_dirpath, qconfig.contig_report_fname_pattern % assembly_label + '.unaligned.info')
+        unaligned_info_fpath = join(output_dirpath, qconfig.contig_report_fname_pattern % assembly_label + '.unaligned.info')
     else:
         log_out_fpath = '/dev/null'
         log_err_fpath = '/dev/null'

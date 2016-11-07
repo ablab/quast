@@ -146,6 +146,7 @@ min_similar_contig_size = 10000
 SHORT_INDEL_THRESHOLD = 5 # for separating short and long indels
 MAX_INDEL_LENGTH = 85  # for separating indels and local misassemblies (Nucmer default value)
 extensive_misassembly_threshold = 1000  # for separating local and extensive misassemblies (relocation)
+fragmented_max_indent = MAX_INDEL_LENGTH # for fake translocation in fragmented reference
 BSS_MAX_SETS_NUMBER = 10
 
 gap_filled_ns_threshold = 0.95
@@ -374,9 +375,11 @@ def usage(show_hidden=False, meta=False, short=True):
             sys.stderr.write("-j  --save-json             Save the output also in the JSON format\n")
             sys.stderr.write("-J  --save-json-to <path>   Save the JSON output to a particular path\n")
             if meta:
-                sys.stderr.write("--read-support              Use read coverage specified in contig names (SPAdes/Velvet style) for calculating Avg contig read support\n")
-            sys.stderr.write("--no-icarus                 Do not create Icarus files\n")
-            sys.stderr.write("--svg                       Draw contig alignment plot (in SVG format)\n")
+                sys.stderr.write("--read-support                   Use read coverage specified in contig names (SPAdes/Velvet style) for calculating Avg contig read support\n")
+            sys.stderr.write("--no-icarus                      Do not create Icarus files\n")
+            sys.stderr.write("--svg                            Draw contig alignment plot (in SVG format)\n")
+            sys.stderr.write("--fragmented-max-indent   <int>  Mark translocation as fake if both alignments are located no further than N bases from the ends of the reference fragments [default: %s]\n" % MAX_INDEL_LENGTH)
+            sys.stderr.write("                                 Requires --fragmented option.\n")
 
         sys.stderr.write("\n")
         sys.stderr.write("Other:\n")

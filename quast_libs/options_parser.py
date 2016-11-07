@@ -83,6 +83,13 @@ def set_extensive_mis_size(option, opt_str, value, parser, logger):
     setattr(qconfig, option.dest, value)
 
 
+def set_fragmented_max_indent(option, opt_str, value, parser, logger):
+    if value < 0 or value > qconfig.extensive_misassembly_threshold:
+        logger.error("--fragmented-max-indent should be between 0 and --extensive-mis-size (%d)!"
+                     % qconfig.extensive_misassembly_threshold, to_stderr=True, exit_with_code=2)
+    setattr(qconfig, option.dest, value)
+
+
 def set_multiple_variables(option, opt_str, value, parser, store_true_values=None, store_false_values=None):
     if store_true_values is not None:
         for v in store_true_values:
@@ -264,6 +271,14 @@ def parse_options(logger, quast_args, is_metaquast=False):
         (['--fragmented'], dict(
              dest='check_for_fragmented_ref',
              action='store_true')
+         ),
+        (['--fragmented-max-indent'], dict(
+             dest='fragmented_max_indent',
+             type='int',
+             default=qconfig.MAX_INDEL_LENGTH,
+             action='callback',
+             callback=set_fragmented_max_indent,
+             callback_args=(logger,))
          ),
         (['-a', '--ambiguity-usage'], dict(
              dest='ambiguity_usage',

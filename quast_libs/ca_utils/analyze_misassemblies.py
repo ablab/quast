@@ -145,7 +145,7 @@ def is_fragmented_ref_fake_translocation(align1, align2, ref_lens):
     if qconfig.check_for_fragmented_ref:
         if qconfig.is_combined_ref and not is_same_reference(align1.ref, align2.ref):
             return False
-        if all([d <= qconfig.MAX_INDEL_LENGTH for d in __get_border_gaps(align1, align2, ref_lens)]):
+        if all([d <= qconfig.fragmented_max_indent for d in __get_border_gaps(align1, align2, ref_lens)]):
             return True
     return False
 

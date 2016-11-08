@@ -34,19 +34,20 @@ def is_emem_aligner():
     return contig_aligner == 'E-MEM'
 
 
-def compile_aligner(logger, only_clean=False):
+def compile_aligner(logger, only_clean=False, compile_all_aligners=False):
     global contig_aligner
     global contig_aligner_dirpath
 
-    if contig_aligner_dirpath is not None and not check_prev_compilation_failed(contig_aligner, join(contig_aligner_dirpath, 'make.failed'),
-                                                                                just_notice=True, logger=logger):
-        return True
+    if not compile_all_aligners:
+        if contig_aligner_dirpath is not None and not \
+                check_prev_compilation_failed(contig_aligner, join(contig_aligner_dirpath, 'make.failed'), just_notice=True, logger=logger):
+            return True
 
-    if not contig_aligner_dirpath and qconfig.platform_name == 'macosx' and not \
-            check_prev_compilation_failed('E-MEM', e_mem_failed_compilation_flag, just_notice=True, logger=logger):
-        contig_aligner = 'E-MEM'
-        contig_aligner_dirpath = join(qconfig.LIBS_LOCATION, 'E-MEM-osx')
-        return True
+        if not contig_aligner_dirpath and qconfig.platform_name == 'macosx' and not \
+                check_prev_compilation_failed('E-MEM', e_mem_failed_compilation_flag, just_notice=True, logger=logger):
+            contig_aligner = 'E-MEM'
+            contig_aligner_dirpath = join(qconfig.LIBS_LOCATION, 'E-MEM-osx')
+            return True
 
     default_requirements = ['nucmer', 'delta-filter', 'show-coords', 'show-snps', 'mummer', 'mgaps']
 
@@ -65,6 +66,10 @@ def compile_aligner(logger, only_clean=False):
             continue
         contig_aligner = name
         contig_aligner_dirpath = dirpath  # successfully compiled
+        if not compile_all_aligners:
+            return True
+
+    if compile_all_aligners and contig_aligner and contig_aligner_dirpath:
         return True
     logger.error("Compilation of contig aligner software was unsuccessful! QUAST functionality will be limited.")
     return False

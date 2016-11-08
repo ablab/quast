@@ -142,8 +142,7 @@ if cmd_in(['install_full']):
 
 if cmd_in(['install', 'develop', 'build', 'build_ext']):
     logger.info('* Compiling aligner *')
-    compile_aligner(logger)
-    check_emem_functionality(logger)
+    compile_aligner(logger, compile_all_aligners=True)
     logger.info('* Compiling Glimmer *')
     compile_glimmer()
     logger.info('* Compiling GAGE *')

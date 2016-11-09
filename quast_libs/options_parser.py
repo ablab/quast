@@ -451,6 +451,10 @@ def parse_options(logger, quast_args, is_metaquast=False):
              callback_kwargs={'store_true_values': ['space_efficient'],
                               'store_false_values': ['create_icarus_html']},)
          ),
+        (['--force-nucmer'], dict(
+             dest='force_nucmer',
+             action='store_true')
+         ),
         (['--silent'], dict(
              dest='silent',
              action='store_true')

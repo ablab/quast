@@ -43,7 +43,7 @@ def compile_aligner(logger, only_clean=False, compile_all_aligners=False):
                 check_prev_compilation_failed(contig_aligner, join(contig_aligner_dirpath, 'make.failed'), just_notice=True, logger=logger):
             return True
 
-        if not contig_aligner_dirpath and qconfig.platform_name == 'macosx' and not \
+        if not qconfig.force_nucmer and not contig_aligner_dirpath and qconfig.platform_name == 'macosx' and not \
                 check_prev_compilation_failed('E-MEM', e_mem_failed_compilation_flag, just_notice=True, logger=logger):
             contig_aligner = 'E-MEM'
             contig_aligner_dirpath = join(qconfig.LIBS_LOCATION, 'E-MEM-osx')
@@ -55,9 +55,13 @@ def compile_aligner(logger, only_clean=False, compile_all_aligners=False):
         aligners_to_try = [
             ('MUMmer', join(qconfig.LIBS_LOCATION, 'MUMmer3.23-osx'), default_requirements)]
     else:
-        aligners_to_try = [
-            ('E-MEM', join(qconfig.LIBS_LOCATION, 'E-MEM-linux'), default_requirements + ['e-mem']),
-            ('MUMmer', join(qconfig.LIBS_LOCATION, 'MUMmer3.23-linux'), default_requirements)]
+        if not qconfig.force_nucmer:
+            aligners_to_try = [
+                ('E-MEM', join(qconfig.LIBS_LOCATION, 'E-MEM-linux'), default_requirements + ['e-mem']),
+                ('MUMmer', join(qconfig.LIBS_LOCATION, 'MUMmer3.23-linux'), default_requirements)]
+        else:
+            aligners_to_try = [
+                ('MUMmer', join(qconfig.LIBS_LOCATION, 'MUMmer3.23-linux'), default_requirements)]
 
     for i, (name, dirpath, requirements) in enumerate(aligners_to_try):
         success_compilation = compile_tool(name, dirpath, requirements, just_notice=(i < len(aligners_to_try) - 1),

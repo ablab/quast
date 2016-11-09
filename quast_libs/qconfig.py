@@ -73,6 +73,7 @@ is_combined_ref = False
 check_for_fragmented_ref = False
 significant_part_size = 500
 all_labels_from_dirs = False
+force_nucmer = False
 
 # print in stdout only main information
 silent = False
@@ -381,6 +382,7 @@ def usage(show_hidden=False, meta=False, short=True):
                 sys.stderr.write("--read-support                   Use read coverage specified in contig names (SPAdes/Velvet style) for calculating Avg contig read support\n")
             sys.stderr.write("--no-icarus                      Do not create Icarus files\n")
             sys.stderr.write("--svg                            Draw contig alignment plot (in SVG format)\n")
+            sys.stderr.write("--force-nucmer                   Use nucmer instead of E-MEM for aligning contigs. \n")
 
         sys.stderr.write("\n")
         sys.stderr.write("Other:\n")

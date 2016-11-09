@@ -482,6 +482,14 @@ mark them fake (will be excluded from <a href="#misassemblies"><code>#&nbsp;misa
 Note: QUAST will not detect misassemblies caused by the linear representation of circular genome.
 
 <div class='option'>
+    <a name='fragmented_indent'></a><code><b>--fragmented-max-indent</b></code>  <code>&lt;int&gt;</code>
+</div>
+Mark translocation as fake if both alignments are located no further than N bases from the ends of the reference fragments.
+The value should be less than extensive misassembly size
+(see <a href='#extensive_mis_size'><code>--extensive-mis-size</code></a>, its default value is 1000 bp). Default value is 85.
+Note: requires <a name='fragmented'><code>--fragmented</code></a> option.
+
+<div class='option'>
 <code><b>--plots-format</b></code>  <code>&lt;format&gt;</code>
 </div>
 File format for plots. Supported formats: emf, eps, pdf, png, ps, raw, rgba, svg, svgz.
@@ -491,6 +499,12 @@ The default format is PDF.
 <code><b>--memory-efficient</b></code>
 </div>
 Use one thread, separately per each assembly and each chromosome. This may significantly reduce memory consumption for large genomes. Note: this option will significantly slow down the processing as well. 
+
+<div class='option'>
+<code><b>--space-efficient</b></code>
+</div>
+Create only reports and plots files. .stdout, .stderr, .coords and other aux files will not be created.
+This may significantly reduce disk space usage on large genomes. Note: Icarus viewers also will not be built.
 
 <div class='option'>
 <code><b>--silent</b></code>
@@ -926,13 +940,10 @@ opposite strands of the same chromosome. </p>
 <p><span class='metric-name'>Fully unaligned length</span> is the total number of bases in all unaligned contigs.</p>
 
 <p><span class='metric-name'># partially unaligned contigs</span> is the number of contigs that are not fully unaligned, but have fragments
-    longer than the value of <a href='#significant_part_size'><code>--significant-part-size</code></a> with no alignment to the reference sequence.</p>
+    with the total length longer than the value of <a href='#significant_part_size'><code>--significant-part-size</code></a> with no alignment to the reference sequence.</p>
 
-<p><span class='metric-name'># with misassembly</span> is the number of partially unaligned contigs that have a misassembly event in their aligned fragment.
+<p><span class='metric-name'># half-unaligned with misassembly</span> is the number of contigs that have the number of unaligned bases more than 50% of contig length and a misassembly event in their aligned fragment.
     Note that such misassembly events are not counted in <span class='metric_ref'># misassemblies</span> and other <span class='metric_ref'>misassemblies</span> statistics.</p>
-
-<p><span class='metric-name'># both parts are significant</span> is the number of partially unaligned contigs that have both aligned and unaligned fragments
-    longer than the value of <a href='#significant_part_size'><code>--significant-part-size</code></a>.
 
 <p><span class='metric-name'>Partially unaligned length</span> is the total number of unaligned bases in all partially unaligned contigs.</p>
 

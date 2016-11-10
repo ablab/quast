@@ -6,7 +6,7 @@
 # All Rights Reserved
 # See file LICENSE for details.
 ############################################################################
-from os.path import join
+from os.path import join, relpath
 from collections import defaultdict
 try:
    from collections import OrderedDict
@@ -18,7 +18,7 @@ from quast_libs.html_saver import html_saver
 from quast_libs.icarus_utils import Alignment, get_html_name, format_long_numbers, get_misassembly_for_alignment, parse_misassembly_info
 
 
-def get_assemblies_data(contigs_fpaths, stdout_pattern, nx_marks):
+def get_assemblies_data(contigs_fpaths, icarus_dirpath, stdout_pattern, nx_marks):
     assemblies_n50 = defaultdict(dict)
     assemblies_data = ''
     assemblies_data += 'var assemblies_links = {};\n'
@@ -35,6 +35,7 @@ def get_assemblies_data(contigs_fpaths, stdout_pattern, nx_marks):
         n50 = report.get_field(reporting.Fields.N50)
         if stdout_pattern:
             contig_stdout_fpath = stdout_pattern % qutils.label_from_fpath_for_fname(contigs_fpath) + '.stdout'
+            contig_stdout_fpath = relpath(contig_stdout_fpath, icarus_dirpath)
             assemblies_data += 'assemblies_links["' + label + '"] = "' + contig_stdout_fpath + '";\n'
         assemblies_contig_size_data += 'assemblies_len["' + label + '"] = ' + str(l) + ';\n'
         assemblies_contig_size_data += 'assemblies_contigs["' + label + '"] = ' + str(contigs) + ';\n'

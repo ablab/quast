@@ -171,7 +171,7 @@ def js_data_gen(assemblies, contigs_fpaths, chromosomes_length, output_dirpath, 
     aligned_bases = genome_analyzer.get_ref_aligned_lengths()
     nx_marks = [reporting.Fields.N50, reporting.Fields.N75, reporting.Fields.NG50, reporting.Fields.NG75]
 
-    assemblies_data, assemblies_contig_size_data, assemblies_n50 = get_assemblies_data(contigs_fpaths, stdout_pattern, nx_marks)
+    assemblies_data, assemblies_contig_size_data, assemblies_n50 = get_assemblies_data(contigs_fpaths, output_all_files_dir_path, stdout_pattern, nx_marks)
 
     ref_contigs_dict = {}
     chr_lengths_dict = {}

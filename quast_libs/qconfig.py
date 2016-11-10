@@ -306,7 +306,7 @@ def usage(show_hidden=False, meta=False, short=True):
         if meta:
             sys.stderr.write("-f  --gene-finding                    Predict genes using MetaGeneMark\n")
         else:
-            sys.stderr.write("-f  --gene-finding                    Predict genes (with GeneMark.hmm for prokaryotes (default), GeneMark-ES\n")
+            sys.stderr.write("-f  --gene-finding                    Predict genes (with GeneMarkS for prokaryotes (default), GeneMark-ES\n")
             sys.stderr.write("                                      for eukaryotes (--eukaryote), or MetaGeneMark for metagenomes (--meta)\n")
         sys.stderr.write("    --glimmer                         Predict genes with GlimmerHMM instead of GeneMark-ES\n")
         sys.stderr.write("    --gene-thresholds <int,int,...>   Comma-separated list of threshold lengths of genes to search with Gene Finding module\n")

@@ -255,7 +255,7 @@ if cmd_in(['install']):
 ----------------------------------------------
 QUAST version %s installation complete.
 
-%sPlease run ./setup.py --test to verify installation.
+%sPlease run  ./setup.py test   to verify installation.
 
 For help in running QUAST, please see the documentation available
 at quast.sf.net/manual.html, or run quast.py --help
@@ -277,7 +277,7 @@ The full package is installed, with the features for reference
 sequence detection in MetaQUAST, and structural variant detection
 for misassembly events refinement.
 
-%sPlease run ./setup.py --test to verify installation.
+%sPlease run  ./setup.py test   to verify installation.
 
 For help in running QUAST, please see the documentation available
 at quast.sf.net/manual.html, or run quast.py --help

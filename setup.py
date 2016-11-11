@@ -139,21 +139,24 @@ if cmd_in(['install_full']):
             args2.append(a_)
     args = args2
 
-
+modules_failed_to_install = []
 if cmd_in(['install', 'develop', 'build', 'build_ext']):
     logger.info('* Compiling aligner *')
-    compile_aligner(logger, compile_all_aligners=True)
+    if not compile_aligner(logger, compile_all_aligners=True):
+        modules_failed_to_install.append('Contigs aligners for reference-based evaluation (affects -R and many other options)')
     logger.info('* Compiling Glimmer *')
-    compile_glimmer()
-    logger.info('* Compiling GAGE *')
-    compile_gage()
+    if not compile_glimmer(logger):
+        modules_failed_to_install.append('Glimmer gene-finding tool (affects --glimmer option)')
     if install_full:
-        logger.info('* Compiling read analisis tools *')
-        compile_reads_analyzer_tools(logger)
+        logger.info('* Compiling read analysis tools *')
+        if not compile_reads_analyzer_tools(logger):
+            modules_failed_to_install.append('Read analysis tools (affects -1/--reads1 and -2/--reads2 options)')
         logger.info('* Downloading SILVA 16S rRNA gene database and BLAST *')
-        download_all_blast_binaries(logger)
-        download_blastdb(logger)
-
+        if not download_all_blast_binaries(logger) or not download_blastdb(logger):
+            modules_failed_to_install.append('SILVA 16S rRNA gene database and BLAST (affects metaquast.py in without references mode)')
+        logger.info('* Compiling GAGE *')
+        if not compile_gage():
+            modules_failed_to_install.append('GAGE scripts (affects --gage option [will be deprecated soon])')
     logger.info('')
 
 
@@ -239,12 +242,20 @@ The tool accepts multiple assemblies, thus is suitable for comparison.''',
 
 
 if cmd_in(['install']):
+    not_installed_message = ''
+    if modules_failed_to_install:
+        not_installed_message = 'WARNING: some modules were not installed properly and\n' \
+                                'QUAST functionality will be restricted!\n' \
+                                'The full list of malformed modules and affected options:\n'
+        not_installed_message += "\n".join(map(lambda x: " * " + x, modules_failed_to_install))
+        not_installed_message += "\n\n"
+
     if not install_full:
         logger.info('''
 ----------------------------------------------
 QUAST version %s installation complete.
 
-Please run quast.py --test to verify that QUAST has been installed successfully.
+%sPlease run ./setup.py --test to verify installation.
 
 For help in running QUAST, please see the documentation available
 at quast.sf.net/manual.html, or run quast.py --help
@@ -255,7 +266,7 @@ $ quast.py test_data/contigs_1.fasta \\
         -R test_data/reference.fasta.gz \\
         -G test_data/genes.txt \\
         -o quast_test_output
-----------------------------------------------''' % str(version))
+----------------------------------------------''' % (str(version), not_installed_message))
 
     else:
         logger.info('''
@@ -266,7 +277,7 @@ The full package is installed, with the features for reference
 sequence detection in MetaQUAST, and structural variant detection
 for misassembly events refinement.
 
-Please run quast.py --test to verify that QUAST has been installed successfully.
+%sPlease run ./setup.py --test to verify installation.
 
 For help in running QUAST, please see the documentation available
 at quast.sf.net/manual.html, or run quast.py --help
@@ -278,4 +289,4 @@ $ quast.py test_data/contigs_1.fasta \\
         -G test_data/genes.txt \\
         -1 test_data/reads1.fastq.gz -2 test_data/reads2.fastq.gz \\
         -o quast_test_output
-----------------------------------------------''' % str(version))
+----------------------------------------------''' % (str(version), not_installed_message))

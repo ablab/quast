@@ -130,7 +130,7 @@ def predict_genes(index, contigs_fpath, gene_lengths, out_dirpath, tool_dirpath,
     return genes, unique, cnt
 
 
-def compile_glimmer(only_clean=False):
+def compile_glimmer(logger, only_clean=False):
     tool_dirpath = os.path.join(qconfig.LIBS_LOCATION, 'glimmer')
     tool_src_dirpath = os.path.join(tool_dirpath, 'src')
     tool_exec_fpath = os.path.join(tool_dirpath, 'glimmerhmm')
@@ -161,7 +161,7 @@ def do(contigs_fpaths, gene_lengths, out_dirpath):
 
     tool_dirpath = os.path.join(qconfig.LIBS_LOCATION, 'glimmer')
     tmp_dirpath = os.path.join(out_dirpath, 'tmp')
-    tool_exec_fpath = compile_glimmer()
+    tool_exec_fpath = compile_glimmer(logger)
     if not tool_exec_fpath:
         return
 

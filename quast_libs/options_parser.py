@@ -527,7 +527,6 @@ def parse_options(logger, quast_args, is_metaquast=False):
             if not is_metaquast:
                 qconfig.genes = test_genes
                 qconfig.operons = test_operons
-                qconfig.with_gage = True
                 qconfig.glimmer = True
                 qconfig.gene_finding = True
                 qconfig.prokaryote = False

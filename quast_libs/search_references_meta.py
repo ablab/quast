@@ -175,6 +175,7 @@ def download_all_blast_binaries(logger=logger, only_clean=False):
     if only_clean:
         if os.path.isdir(blastdb_dirpath):
             shutil.rmtree(blastdb_dirpath)
+        return True
 
     for i, cmd in enumerate(blast_filenames):
         blast_file = get_blast_fpath(cmd)
@@ -187,9 +188,10 @@ def download_all_blast_binaries(logger=logger, only_clean=False):
             return_code = download_blast_binary(cmd, logger=logger)
             logger.info()
             if return_code != 0:
-                return None, None
+                return False
             blast_file = get_blast_fpath(cmd)
             os.chmod(blast_file, os.stat(blast_file).st_mode | stat.S_IEXEC)
+    return True
 
 
 def download_blast_binary(blast_filename, logger=logger):
@@ -215,7 +217,7 @@ def download_blast_binary(blast_filename, logger=logger):
                 except Exception:
                     logger.error(
                         'Failed downloading %s! The search for reference genomes cannot be performed. '
-                        'Please install it and ensure it is in your PATH, then restart MetaQUAST.' % blast_filename)
+                        'Please install it and ensure it is in your PATH, then restart your command.' % blast_filename)
                     return 1
                 shutil.move(blast_libs_fpath + '.download', blast_libs_fpath)
                 logger.info('%s successfully downloaded!' % blast_filename)
@@ -227,13 +229,13 @@ def download_blastdb(logger=logger, only_clean=False):
         if os.path.isdir(blastdb_dirpath):
             logger.info('Removing ' + blastdb_dirpath)
             shutil.rmtree(blastdb_dirpath)
-        return 0
+        return True
 
     if os.path.isfile(db_fpath + '.nsq') and os.path.getsize(db_fpath + '.nsq') >= db_nsq_fsize:
         logger.info()
         logger.info('SILVA 16S rRNA database has already been downloaded, unpacked and BLAST database created. '
-                    'If not, please remove %s and rerun MetaQUAST' % (db_fpath + '.nsq'))
-        return 0
+                    'If not, please remove %s and restart your command.' % (db_fpath + '.nsq'))
+        return True
     log_fpath = os.path.join(blastdb_dirpath, 'blastdb.log')
     db_gz_fpath = os.path.join(blastdb_dirpath, silva_fname + '.gz')
     silva_fpath = os.path.join(blastdb_dirpath, silva_fname)
@@ -253,8 +255,8 @@ def download_blastdb(logger=logger, only_clean=False):
         except Exception:
             logger.error(
                 'Failed downloading SILVA 16S rRNA gene database (%s)! The search for reference genomes cannot be performed. '
-                'Try to download it manually in %s and restart MetaQUAST.' % (silva_remote_fpath, blastdb_dirpath))
-            return 1
+                'Try to download it manually in %s and restart your command.' % (silva_remote_fpath, blastdb_dirpath))
+            return False
         shutil.move(db_gz_fpath + '.download', db_gz_fpath)
 
     logger.info('Processing downloaded file. Logging to %s...' % log_fpath)
@@ -279,11 +281,11 @@ def download_blastdb(logger=logger, only_clean=False):
     if not os.path.exists(db_fpath + '.nsq') or os.path.getsize(db_fpath + '.nsq') < db_nsq_fsize:
         logger.error('Failed to make BLAST database ("' + blastdb_dirpath +
                      '"). See details in log. Try to make it manually: %s' % cmd)
-        return 1
+        return False
     elif not qconfig.debug:
         os.remove(db_gz_fpath)
         os.remove(silva_fpath)
-    return 0
+    return True
 
 
 def parallel_blast(contigs_fpath, label, corrected_dirpath, err_fpath, blast_res_fpath, blast_check_fpath, blast_threads):
@@ -305,7 +307,6 @@ def parallel_blast(contigs_fpath, label, corrected_dirpath, err_fpath, blast_res
     logger.info('  ' + 'BLAST results for %s are saved to %s...' % (label, res_fpath))
     with open(check_fpath, 'w') as check_file:
         check_file.writelines('Assembly: %s size: %d\n' % (contigs_fpath, os.path.getsize(contigs_fpath)))
-    return
 
 
 def check_blast(blast_check_fpath, blast_res_fpath, files_sizes, assemblies_fpaths, assemblies, labels):
@@ -400,7 +401,8 @@ def process_blast(blast_assemblies, downloaded_dirpath, corrected_dirpath, label
     if not os.path.isdir(blastdb_dirpath):
         os.makedirs(blastdb_dirpath)
 
-    download_all_blast_binaries()
+    if not download_all_blast_binaries():
+        return None, None
 
     if qconfig.custom_blast_db_fpath:
         global db_fpath
@@ -417,10 +419,9 @@ def process_blast(blast_assemblies, downloaded_dirpath, corrected_dirpath, label
     elif not os.path.isfile(db_fpath + '.nsq') or os.path.getsize(db_fpath + '.nsq') < db_nsq_fsize:
         # if os.path.isdir(blastdb_dirpath):
         #     shutil.rmtree(blastdb_dirpath)
-        return_code = download_blastdb()
-        logger.info()
-        if return_code != 0:
+        if not download_blastdb():
             return None, None
+        logger.info()
 
     blast_res_fpath = os.path.join(downloaded_dirpath, 'blast.res')
 

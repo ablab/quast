@@ -1157,7 +1157,9 @@ Q3. Is it possible to find which misassembly corresponds to each contig and whic
 Yes, it is possible. QUAST produces report with detailed info about each contig alignments and the short version with only extensive misassemblies records.
 <br>
 <br>
-Let's start with <i>the short one</i>. It is saved to <code>&lt;quast_output_dir&gt;/contigs_reports/contigs_report_&lt;assembly_name>.mis_contigs.info</code>. E.g. if your assembly is "contigs.fasta" then the file is "contigs_report_contigs.mis_contigs.info", if your assembly is "ecoli_assembly_1.fasta" then the file is "contigs_report_ecoli_assembly_1.stdout".
+Let's start with <i>the short one</i>. It is saved to <code>&lt;quast_output_dir&gt;/contigs_reports/contigs_report_&lt;assembly_name>.mis_contigs.info</code>.
+E.g. if your assembly is "contigs.fasta" then the file is "contigs_report_contigs.mis_contigs.info",
+if your assembly is "ecoli_assembly_1.fasta" then the file is "contigs_report_ecoli_assembly_1.mis_contigs.info".
 <br>
 The content of this file looks like this:
 <br>
@@ -1395,11 +1397,9 @@ Q11. Sometimes the "<span class='metric-ref'># contigs</span>" and the "<span cl
     To sum up, by default, <span class='metric-ref'># contigs</span> is the same to <span class='metric-ref'># contigs >= 500 bp</span>,
     so there will be difference between <span class='metric-ref'># contigs</span> and <span class='metric-ref'># contigs &ge; 0 bp</span>
     if your assembly has contigs shorter than 500 bp.
-<br>
 </p>
 
 <a name="faq_q12"></a>
-<br>
 <p><b><i>
 Q12. Can I use custom BLAST database instead of SILVA 16S rRNA for reference searching?
 </b></i></p>
@@ -1420,7 +1420,52 @@ Q12. Can I use custom BLAST database instead of SILVA 16S rRNA for reference sea
         >Escherichia_coli, complete genome
         >NZ_CP015308.1|Lactobacillus_plantarum_strain_LY-78, complete genome
     </pre></code>
-<br>
+</p>
+
+<a name="faq_q13"></a>
+<p><b><i>
+Q13. Where can I find details about unaligned fragments of my assembly?
+</b></i></p>
+<p>
+    Starting from v.4.4 we added detailed reports with this information. These reports are generated for all assemblies and saved to
+    <code>&lt;quast_output_dir&gt;/contigs_reports/contigs_report_&lt;assembly_name>.unaligned.info</code>.
+    E.g. if your assembly is "contigs.fasta" then the file is "contigs_report_contigs.unaligned.info",
+    if your assembly is "ecoli_assembly_1.fasta" then the file is "contigs_report_ecoli_assembly_1.unaligned.info".
+<br><br>
+    The report include all fully unaligned and partially unaligned contigs, i.e. contigs that have at least
+    500 unaligned bases by default, the threshold is controlled by <code>--significant-part-size</code> option.
+    The following values are reported for each contig:
+    <ol>
+        <li>contig name,</li>
+        <li>total length,</li>
+        <li>unaligned length (it is equal to total length for fully unaligned contigs),</li>
+        <li>type (full or partial),</li>
+        <li>list of all unaligned fragments.</li>
+    </ol>
+</p>
+
+<a name="faq_q14"></a>
+<p><b><i>
+Q14. I have very large assemblies and reference genome but my computational resources are limited.
+    Could you recommend an optimal set of QUAST options to use?
+</b></i></p>
+<p>
+    Current QUAST version is not optimised for large genomes yet. However, we have some useful suggestions.
+    You may be interested in adding the following options to your command line to reduce RAM consumption,
+    disk space usage, and running time. Note that each of them have some negative effect,
+    so you should chose what is more important for you and may be try them one by one until you find
+    the optimal set for your particular case.
+    <ul>
+        <li>for <b>less memory (RAM)</b>: <code>--memory-efficient</code> (drawback: increased running time);
+            set lower number of threads (<code>-t</code>, drawback: increased running time),
+        <li>for <b>less disk space usage</b>: <code>--space-efficient</code> (drawback: removed aux files with some details for advanced analysis),</li>
+        <li>for <b>less running time</b>: <code>--fast</code> (drawback: missed plots, HTML reports, some metrics);
+            set greater number of threads (<code>-t</code>, drawback: increased memory consumption) </li>
+        <li>for <b>all above</b>: <code>--no-snps</code> (drawback: missed SNP-related metrics in reports);
+            set greater minimal contig length threshold (<code>--min-contig</code>, drawback: not analysed short contigs);
+            set greater minimal alignment length and quality thresholds (<code>--min-alignment</code> and <code>--min-identity</code> respectively,
+            drawback: not analysed contigs with relatively bad alignments)</li>
+    </ul>
 </p>
 
 <br>

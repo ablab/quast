@@ -155,6 +155,8 @@ def process_single_file(contigs_fpath, index, nucmer_path_dirpath, genome_stats_
             for i in range(s1, e1 + 1):
                 genome_mapping[chr_name][i] = 1
     coordfile.close()
+    if qconfig.space_efficient and nucmer_fpath.endswith('.filtered'):
+        os.remove(nucmer_fpath)
 
     # counting genome coverage and gaps number
     covered_bp = 0

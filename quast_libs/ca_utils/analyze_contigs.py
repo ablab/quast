@@ -277,7 +277,7 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fp
                     if unaligned_bases >= qconfig.significant_part_size:
                         partially_unaligned += 1
                         partially_unaligned_bases += unaligned_bases
-                        ca_output.stdout_f.write('\t\tThis contig is partially unaligned. (Aligned %d out of %d bases)\n' % (top_len, ctg_len))
+                        ca_output.stdout_f.write('\t\tThis contig is partially unaligned. (Aligned %d out of %d bases)\n' % (aligned_bases_in_contig, ctg_len))
                         save_unaligned_info(sorted_aligns, contig, ctg_len, unaligned_bases, unaligned_info_file)
                     ca_output.stdout_f.write('\t\tAlignment: %s\n' % str(the_only_align))
                     ca_output.icarus_out_f.write(the_only_align.icarus_report_str() + '\n')
@@ -306,7 +306,7 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fp
                         partially_unaligned += 1
                         partially_unaligned_bases += unaligned_bases
                         if aligned_bases_in_contig >= umt * ctg_len:
-                            ca_output.stdout_f.write('\t\tThis contig is partially unaligned. (Aligned %d out of %d bases)\n' % (top_len, ctg_len))
+                            ca_output.stdout_f.write('\t\tThis contig is partially unaligned. (Aligned %d out of %d bases)\n' % (aligned_bases_in_contig, ctg_len))
                         save_unaligned_info(sorted_aligns, contig, ctg_len, unaligned_bases, unaligned_info_file)
 
                     if aligned_bases_in_contig < umt * ctg_len:
@@ -320,7 +320,7 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fp
                             ref_aligns.setdefault(align.ref, []).append(align)
 
                         half_unaligned_with_misassembly += 1
-                        ca_output.stdout_f.write('\t\tUnaligned bases: %d\n' % (ctg_len - aligned_bases_in_contig))
+                        ca_output.stdout_f.write('\t\tUnaligned bases: %d\n' % unaligned_bases)
                         # check if both parts (aligned and unaligned) have significant length
                         if aligned_bases_in_contig >= qconfig.significant_part_size and \
                                         unaligned_bases >= qconfig.significant_part_size:

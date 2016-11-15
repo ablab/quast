@@ -293,8 +293,6 @@ def do(reference, contigs_fpaths, is_cyclic, output_dir, old_contigs_fpaths, bed
                                          [x[2] for x in statuses_results_lengths_tuples]
     reports = []
 
-    if qconfig.is_combined_ref:
-        save_combined_ref_stats(results, contigs_fpaths, ref_labels_by_chromosomes, output_dir, logger)
     for index, fname in enumerate(contigs_fpaths):
         report = reporting.get(fname)
         if statuses[index] == NucmerStatus.OK:
@@ -308,9 +306,11 @@ def do(reference, contigs_fpaths, is_cyclic, output_dir, old_contigs_fpaths, bed
     if NucmerStatus.OK in nucmer_statuses.values():
         reporting.save_misassemblies(output_dir)
         reporting.save_unaligned(output_dir)
-    if qconfig.draw_plots:
-        from . import plotter
-        plotter.draw_misassembl_plot(reports, join(output_dir, 'misassemblies_plot'), 'Misassemblies')
+        if qconfig.draw_plots:
+            from . import plotter
+            plotter.draw_misassembl_plot(reports, join(output_dir, 'misassemblies_plot'), 'Misassemblies')
+        if qconfig.is_combined_ref:
+            save_combined_ref_stats(results, contigs_fpaths, ref_labels_by_chromosomes, output_dir, logger)
 
     oks = list(nucmer_statuses.values()).count(NucmerStatus.OK)
     not_aligned = list(nucmer_statuses.values()).count(NucmerStatus.NOT_ALIGNED)

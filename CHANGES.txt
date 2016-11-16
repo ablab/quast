@@ -18,7 +18,9 @@
        - "--blast-db" for specifying custom BLAST database instead of SILVA 16S rRNA for
          searching probable references in MetaQUAST "without references" mode;
        - "--space-efficient" for removing or even not creating space consuming auxiliary
-         files; all reports and plots (except Icarus viewers) are generated as usual.
+         files; all reports and plots (except Icarus viewers) are generated as usual;
+       - "--significant-part-size" renamed to "--unaligned-part-size", see details below
+         (item #6).
 
       4. New metric and plot added (MetaQUAST only, combined reference only):
        - # possible misassemblies (number of putative interspecies translocations
@@ -31,34 +33,38 @@
        - all fully and partially unaligned contigs, their length, and unaligned parts are
          listed in contigs_reports/contigs_report_<assembly_name>.unaligned.info
 
-      6. BED format is accepted for genes/operons annotations.
+      6. Partially unaligned contigs are redefined in simpler and more logical way. Now
+         all contigs having at least one unaligned fragment of length greater or equal to
+         unaligned_part_threshold are considered as partially unaligned. The threshold is
+         controlled by --unaligned-part-size option (default value is 500 bp).
 
-      7. Minor changes in HTML reports:
+      7. BED format is accepted for genes/operons annotations.
+
+      8. Minor changes in HTML reports:
        - heatmap coloring is removed for metrics where best/worst values are not defined
          (GC %, # similar blocks, # contigs, etc);
        - split versions of scaffold assemblies are drawn with dashed lines (--scaffolds
          option only).
 
-      8. Fixed issue of crashing E-MEM on OS X without gcc installed.
+      9. Fixed issue of crashing E-MEM on OS X without gcc installed.
 
-      9. User-provided SAM/BAM files are now checked for correct chromosome names and
-         automatically corrected if needed.
+      10. User-provided SAM/BAM files are now checked for correct chromosome names and
+          automatically corrected if needed.
 
-      10. Fixed incorrect behaviour of MetaQUAST on compressed assemblies in "without
+      11. Fixed incorrect behaviour of MetaQUAST on compressed assemblies in "without
           references" mode.
 
-      11. Best set selection improved (misassembly detection algorithm in case of multiple
+      12. Best set selection improved (misassembly detection algorithm in case of multiple
           ambiguous mappings of contig fragments). Now BSS takes internal overlaps into
           account, so alignments with a short gap (in contig) are preferred over alignments
           having large internal overlap if all other things are equal.
 
-      12. Fixed several minor bugs.
+      13. Fixed several minor bugs.
 
-      13. Icarus citation updated.
+      14. Icarus citation updated.
 
-      14. Useful tips on running QUAST on large genome assemblies are added to FAQ section
+      15. Useful tips on running QUAST on large genome assemblies are added to FAQ section
           of the manual (see Q14).
-
 
 
 4.3   1. Icarus updates:

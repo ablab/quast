@@ -472,10 +472,10 @@ Also note that scaffold gap size misassemblies are counted for <b>scaffold assem
 if your assemblies are scaffolds rather than contigs).
 
 <div class='option'>
-    <a name='significant_part_size'></a><code><b>--significant-part-size</b></code> <code>&lt;int&gt;</code>
+    <a name='unaligned_part_size'></a><code><b>--unaligned-part-size</b></code> <code>&lt;int&gt;</code>
 </div>
-Lower threshold for detecting partially unaligned contigs with both significant aligned and unaligned parts,
-see <a href="#sec3.1.3">section 3.1.3</a> for details. The default value is 500 bp.
+Lower threshold for detecting partially unaligned contigs, see <a href="#sec3.1.3">section 3.1.3</a> for details.
+The default value is 500 bp.
 
 <div class='option'>
     <a name='fragmented'></a><code><b>--fragmented</b></code>
@@ -946,8 +946,8 @@ opposite strands of the same chromosome. </p>
 
 <p><span class='metric-name'>Fully unaligned length</span> is the total number of bases in all unaligned contigs.</p>
 
-<p><span class='metric-name'># partially unaligned contigs</span> is the number of contigs that are not fully unaligned, but have fragments
-    with the total length longer than the value of <a href='#significant_part_size'><code>--significant-part-size</code></a> with no alignment to the reference sequence.</p>
+<p><span class='metric-name'># partially unaligned contigs</span> is the number of contigs that are not fully unaligned (i.e. have at least one alignment), but have at least one unaligned fragment
+    &ge; the threshold defined by <a href='#unaligned_part_size'><code>--unaligned-part-size</code></a> (default value is 500 bp).</p>
 
 <p><span class='metric-name'># half-unaligned with misassembly</span> is the number of contigs that have the number of unaligned bases more than 50% of contig length and a misassembly event in their aligned fragment.
     Note that such misassembly events are not counted in <span class='metric_ref'># misassemblies</span> and other <span class='metric_ref'>misassemblies</span> statistics.</p>
@@ -1432,8 +1432,8 @@ Q13. Where can I find details about unaligned fragments of my assembly?
     E.g. if your assembly is "contigs.fasta" then the file is "contigs_report_contigs.unaligned.info",
     if your assembly is "ecoli_assembly_1.fasta" then the file is "contigs_report_ecoli_assembly_1.unaligned.info".
 <br><br>
-    The report include all fully unaligned and partially unaligned contigs, i.e. contigs that have at least
-    500 unaligned bases by default, the threshold is controlled by <code>--significant-part-size</code> option.
+    The report include all fully unaligned and partially unaligned contigs, i.e. contigs that have at least one unaligned
+    fragment &ge; 500 bp. This is the default threshold and it can be changed with <code>--unaligned-part-size</code> option.
     The following values are reported for each contig:
     <ol>
         <li>contig name,</li>

@@ -22,7 +22,7 @@ def process_unaligned_part(seq, align, potential_misassemblies_by_refs, prev_ali
     unaligned_len = len(unaligned_part)
     count_ns = unaligned_part.count('N')
     possible_misassemblies = 0
-    if count_ns / float(unaligned_len) < qconfig.gap_filled_ns_threshold and unaligned_len - count_ns >= qconfig.significant_part_size:
+    if count_ns / float(unaligned_len) < qconfig.gap_filled_ns_threshold and unaligned_len - count_ns >= qconfig.unaligned_part_size:
         possible_misassemblies = 1
         add_potential_misassembly(align.ref, potential_misassemblies_by_refs)
         if prev_align:
@@ -58,6 +58,17 @@ def check_for_potential_translocation(seq, ctg_len, sorted_aligns, region_misass
     region_misassemblies.append(Misassembly.POTENTIALLY_MIS_CONTIGS)
     region_misassemblies.extend([Misassembly.POSSIBLE_MISASSEMBLIES] * total_misassemblies_count)
     log_out_f.write('\t\tIt can contain interspecies translocations.\n')
+
+
+def check_partially_unaligned(sorted_aligns, ctg_len):
+    prev_end = 0
+    for align in sorted_aligns:
+        if align.start() - prev_end - 1 >= qconfig.unaligned_part_size:
+            return True
+        prev_end = align.end()
+    if ctg_len - prev_end - 1 >= qconfig.unaligned_part_size:
+        return True
+    return False
 
 
 def save_unaligned_info(sorted_aligns, contig, ctg_len, unaligned_len, unaligned_info_file):
@@ -274,23 +285,20 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fp
                     begin, end = the_only_align.start(), the_only_align.end()
                     unaligned_bases = (begin - 1) + (ctg_len - end)
                     aligned_bases_in_contig = ctg_len - unaligned_bases
-                    if unaligned_bases >= qconfig.significant_part_size:
+                    is_partially_unaligned = check_partially_unaligned(real_aligns, ctg_len)
+                    if is_partially_unaligned:
                         partially_unaligned += 1
                         partially_unaligned_bases += unaligned_bases
                         ca_output.stdout_f.write('\t\tThis contig is partially unaligned. (Aligned %d out of %d bases)\n' % (aligned_bases_in_contig, ctg_len))
                         save_unaligned_info(sorted_aligns, contig, ctg_len, unaligned_bases, unaligned_info_file)
                     ca_output.stdout_f.write('\t\tAlignment: %s\n' % str(the_only_align))
                     ca_output.icarus_out_f.write(the_only_align.icarus_report_str() + '\n')
-                    if unaligned_bases >= qconfig.significant_part_size:
+                    if is_partially_unaligned:
                         if begin - 1:
                             ca_output.stdout_f.write('\t\tUnaligned bases: 1 to %d (%d)\n' % (begin - 1, begin - 1))
                         if ctg_len - end:
                             ca_output.stdout_f.write('\t\tUnaligned bases: %d to %d (%d)\n' % (end + 1, ctg_len, ctg_len - end))
-                        # check if both parts (aligned and unaligned) have significant length
-                        if aligned_bases_in_contig >= qconfig.significant_part_size:
-                            ca_output.stdout_f.write('\t\tThis contig has both significant aligned and unaligned parts ' \
-                                                         '(of length >= %d)!\n' % (qconfig.significant_part_size))
-                            if qconfig.meta:
+                        if qconfig.is_combined_ref and aligned_bases_in_contig >= umt * ctg_len:
                                 check_for_potential_translocation(seq, ctg_len, sorted_aligns, region_misassemblies,
                                                                   potential_misassemblies_by_refs, ca_output.stdout_f)
                     ref_aligns.setdefault(the_only_align.ref, []).append(the_only_align)
@@ -302,7 +310,8 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fp
                     ca_output.stdout_f.write('\t\tThis contig is misassembled. %d total aligns.\n' % num_aligns)
                     unaligned_bases = the_best_set.uncovered
                     aligned_bases_in_contig = ctg_len - unaligned_bases
-                    if unaligned_bases >= qconfig.significant_part_size:
+                    is_partially_unaligned = check_partially_unaligned(sorted_aligns, ctg_len)
+                    if is_partially_unaligned:
                         partially_unaligned += 1
                         partially_unaligned_bases += unaligned_bases
                         if aligned_bases_in_contig >= umt * ctg_len:
@@ -321,14 +330,6 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fp
 
                         half_unaligned_with_misassembly += 1
                         ca_output.stdout_f.write('\t\tUnaligned bases: %d\n' % unaligned_bases)
-                        # check if both parts (aligned and unaligned) have significant length
-                        if aligned_bases_in_contig >= qconfig.significant_part_size and \
-                                        unaligned_bases >= qconfig.significant_part_size:
-                            ca_output.stdout_f.write('\t\tThis contig has both significant aligned and unaligned parts ' \
-                                                         '(of length >= %d)!\n' % (qconfig.significant_part_size))
-                            if qconfig.meta:
-                                check_for_potential_translocation(seq, ctg_len, sorted_aligns, region_misassemblies,
-                                                                  potential_misassemblies_by_refs, ca_output.stdout_f)
                         contig_type = 'misassembled'
                         ca_output.icarus_out_f.write('\t'.join(['CONTIG', contig, str(ctg_len), contig_type + '\n']))
                         ca_output.stdout_f.write('\n')
@@ -345,11 +346,9 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fp
                     if is_misassembled:
                         misassembled_contigs[contig] = ctg_len
                         contig_type = 'misassembled'
-                    if unaligned_bases >= qconfig.significant_part_size:
-                        ca_output.stdout_f.write('\t\tUnaligned bases: %d\n' % (ctg_len - aligned_bases_in_contig))
-                        ca_output.stdout_f.write('\t\tThis contig has significant unaligned parts ' \
-                                                     '(of length >= %d)!\n' % (qconfig.significant_part_size))
-                        if qconfig.meta:
+                    if is_partially_unaligned:
+                        ca_output.stdout_f.write('\t\tUnaligned bases: %d\n' % unaligned_bases)
+                        if qconfig.is_combined_ref:
                             check_for_potential_translocation(seq, ctg_len, sorted_aligns, region_misassemblies,
                                                               potential_misassemblies_by_refs, ca_output.stdout_f)
         else:

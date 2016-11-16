@@ -71,7 +71,7 @@ show_snps = True
 glimmer = False
 is_combined_ref = False
 check_for_fragmented_ref = False
-significant_part_size = 500
+unaligned_part_size = 500
 all_labels_from_dirs = False
 force_nucmer = False
 

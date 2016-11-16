@@ -322,8 +322,8 @@ def parse_options(logger, quast_args, is_metaquast=False):
              dest='strict_NA',
              action='store_true')
          ),
-        (['--significant-part-size'], dict(
-             dest='significant_part_size',
+        (['--unaligned-part-size'], dict(
+             dest='unaligned_part_size',
              type=int)
          ),
         (['-x', '--extensive-mis-size'], dict(

@@ -308,7 +308,7 @@ Lower threshold for a contig length (in bp). Shorter contigs won't be taken into
 Advanced options:
 <div class='options'>
 <div class='option'>
-<code><b>--threads</b></code> (or <code>-t</code>) <code>&lt;int&gt;</code>
+<a name='threads_opt'></a><code><b>--threads</b></code> (or <code>-t</code>) <code>&lt;int&gt;</code>
 </div>
 Maximum number of threads. The default value is 25% of all available CPUs but not less than 1. If QUAST fails to determine the number of CPUs, maximum threads number is set to 4.
 
@@ -490,7 +490,7 @@ Note: QUAST will not detect misassemblies caused by the linear representation of
 Mark translocation as fake if both alignments are located no further than N bases from the ends of the reference fragments.
 The value should be less than extensive misassembly size
 (see <a href='#extensive_mis_size'><code>--extensive-mis-size</code></a>, its default value is 1000 bp). Default value is 85.
-Note: requires <a name='fragmented'><code>--fragmented</code></a> option.
+Note: requires <a href='#fragmented'><code>--fragmented</code></a> option.
 
 <div class='option'>
 <code><b>--plots-format</b></code>  <code>&lt;format&gt;</code>
@@ -499,12 +499,12 @@ File format for plots. Supported formats: emf, eps, pdf, png, ps, raw, rgba, svg
 The default format is PDF.
 
 <div class='option'>
-<code><b>--memory-efficient</b></code>
+    <a name='memory_eff'></a><code><b>--memory-efficient</b></code>
 </div>
 Use one thread, separately per each assembly and each chromosome. This may significantly reduce memory consumption for large genomes. Note: this option will significantly slow down the processing as well. 
 
 <div class='option'>
-<code><b>--space-efficient</b></code>
+    <a name='space_eff'></a><code><b>--space-efficient</b></code>
 </div>
 Create only primary output items (reports, plots, quast.log, etc). All auxiliary files (.stdout, .stderr, etc) will not be created.
 This may significantly reduce disk space usage on large assemblies (more than 100k contigs).
@@ -597,7 +597,7 @@ Do not build HTML reports and <a href="#sec3.4">Icarus viewers</a>.
 Do not build <a href="#sec3.4">Icarus viewers</a>.
 
 <div class='option'>
-<code><b>--no-snps</b></code>
+ <a name='no_snps'></a><code><b>--no-snps</b></code>
 </div>
 Do not report SNPs statistics. This may significantly reduce memory consumption on large genomes and speed up computation. However, all SNP-related metrics will not be reported (e.g. <code># mismatches per 100 kbp</code>).
 
@@ -618,7 +618,7 @@ Do not compress large output files (files containing SNP information and predict
     This may speed up computation, but more disk space is required.
 
 <div class='option'>
-<code><b>--fast</b></code>
+    <a name='fast'></a><code><b>--fast</b></code>
 </div>
 A shortcut for using all of speedup options except --no-check.
 </div>
@@ -908,7 +908,7 @@ changed by <a href='#extensive_mis_size'><code>--extensive-mis-size</code></a>.<
 <p><span class='metric-name'>Inversion</span> is a misassembly event (breakpoint) where the flanking sequences align on
 opposite strands of the same chromosome. </p>
 
-<p><span class='metric-name'>Scaffold gap size misassemblies</span> is a misassembly event (breakpoint) where the flanking sequences combined in scaffold on the wrong distance (<a href='#scaffolds'><code>--scaffolds</code></a> only). These misassemblies are not included in the total number of misassemblies. </p>
+<p><a name='scaffold_misassembly'><span class='metric-name'>Scaffold gap size misassemblies</span> is a misassembly event (breakpoint) where the flanking sequences combined in scaffold on the wrong distance (<a href='#scaffolds'><code>--scaffolds</code></a> only). These misassemblies are not included in the total number of misassemblies. </p>
 
 <p><span class='metric-name'># misassembled contigs</span> and <span class='metric-name'>misassembled contigs length</span> are the same as the metrics from
     <a href="#sec3.1.1">section 3.1.1</a> and are counted among all contigs with any type of a misassembly event
@@ -1295,16 +1295,18 @@ where the columns are: reference genome name, contig name, position on the refer
 
 <br>
 <p><b><i>
-Q6. What does "broken" version of an assembly refer to while assessing scaffolds' quality (--scaffolds option)?
+Q6. What does "broken" version of an assembly refer to while assessing scaffolds' quality (<a href='#scaffolds'><code>--scaffolds</code></a> option)?
 </b></i></p>
 <p>
 Actually, the difference between "broken" and original assembly (scaffolds) is very simple. QUAST splits input fasta by continuous fragments of N's of length &ge; 10 and call this a "_broken" assembly. By doing this we try to reconstruct "contigs" which were used for construction of the scaffolds. After that, user can compare results for real scaffolds and "reconstructed contigs" and find out whether scaffolding step was useful or not.
 <br>
 <br>
-If you have both contigs.fasta and scaffolds.fasta it is better to specify both files to QUAST and don't set "--scaffolds" option. The comparison of real contigs vs real scaffolds is more honest and informative than scaffolds vs scaffolds_broken. 
+If you have both contigs.fasta and scaffolds.fasta it is better to specify both files to QUAST and don't set <code>--scaffolds</code> option.
+The comparison of real contigs vs real scaffolds is more honest and informative than scaffolds vs scaffolds_broken.
 <br>
 <br>
-To sum up, you should use "--scaffolds" option if you don't have original file with contigs but want to compare your scaffolds with it.
+To sum up, you should use <code>--scaffolds</code> option if you don't have original file with contigs but want to compare your scaffolds with it.
+Also note, that <code>--scaffolds</code> option implies QUAST to search for <a href='#scaffold_misassembly'>scaffold gap size misassemblies</a>.
 <br>
 </p>
 
@@ -1383,7 +1385,7 @@ Q11. Sometimes the "<span class='metric-ref'># contigs</span>" and the "<span cl
 </b></i></p>
 <p>
     <span class='metric-ref'># contigs</span> reports number of contigs above specified threshold.
-    Default threshold is 500 bp and it can be changed with <code>--min-contig</code> option.
+    Default threshold is 500 bp and it can be changed with <a href='#min_contig'><code>--min-contig</code></a> option.
     Most of the other statistics are also based on all contigs larger than this threshold
     (we actually remove all shorts contigs in the beginning of the pipeline). For example, <span class='metric-ref'># misassemblies</span> is essentially
     <span class='metric-ref'># misassemblies in contigs <b>&ge; min-contig threshold</b></span>.
@@ -1433,7 +1435,8 @@ Q13. Where can I find details about unaligned fragments of my assembly?
     if your assembly is "ecoli_assembly_1.fasta" then the file is "contigs_report_ecoli_assembly_1.unaligned.info".
 <br><br>
     The report include all fully unaligned and partially unaligned contigs, i.e. contigs that have at least one unaligned
-    fragment &ge; 500 bp. This is the default threshold and it can be changed with <code>--unaligned-part-size</code> option.
+    fragment &ge; 500 bp. This is the default threshold and it can be changed with
+    <a href='#unaligned_part_size'><code>--unaligned-part-size</code></a> option.
     The following values are reported for each contig:
     <ol>
         <li>contig name,</li>
@@ -1456,14 +1459,16 @@ Q14. I have very large assemblies and reference genome but my computational reso
     so you should chose what is more important for you and may be try them one by one until you find
     the optimal set for your particular case.
     <ul>
-        <li>for <b>less memory (RAM)</b>: <code>--memory-efficient</code> (drawback: increased running time);
+        <li>for <b>less memory (RAM)</b>: <a href='#memory_eff'><code>--memory-efficient</code></a> (drawback: increased running time);
             set lower number of threads (<code>-t</code>, drawback: increased running time),
-        <li>for <b>less disk space usage</b>: <code>--space-efficient</code> (drawback: removed aux files with some details for advanced analysis),</li>
-        <li>for <b>less running time</b>: <code>--fast</code> (drawback: missed plots, HTML reports, some metrics);
+        <li>for <b>less disk space usage</b>: <a href='#space_eff'><code>--space-efficient</code></a>
+            (drawback: removed aux files with some details for advanced analysis),</li>
+        <li>for <b>less running time</b>: <a href='#fast'><code>--fast</code></a> (drawback: missed plots, HTML reports, some metrics);
             set greater number of threads (<code>-t</code>, drawback: increased memory consumption) </li>
-        <li>for <b>all above</b>: <code>--no-snps</code> (drawback: missed SNP-related metrics in reports);
-            set greater minimal contig length threshold (<code>--min-contig</code>, drawback: not analysed short contigs);
-            set greater minimal alignment length and quality thresholds (<code>--min-alignment</code> and <code>--min-identity</code> respectively,
+        <li>for <b>all above</b>: <a href='#no_snps'><code>--no-snps</code></a> (drawback: missed SNP-related metrics in reports);
+            set greater minimal contig length threshold (<a href='#min_contig'><code>--min-contig</code></a>, drawback: not analysed short contigs);
+            set greater minimal alignment length and quality thresholds (<a href='#min_alignment'><code>--min-alignment</code></a> and
+            <a href='#min_identity'><code>--min-identity</code></a> respectively,
             drawback: not analysed contigs with relatively bad alignments)</li>
     </ul>
 </p>

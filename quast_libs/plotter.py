@@ -68,9 +68,12 @@ if qconfig.draw_plots:
             main_logger.info('')
             main_logger.warning('Can\'t draw plots: matplotlib version is old! Please use matplotlib version 1.1 or higher.')
             can_draw_plots = False
+        # additionally check other imports
+        import matplotlib.pyplot
+        import matplotlib.ticker
     except Exception:
         main_logger.info('')
-        main_logger.warning('Can\'t draw plots: please install python-matplotlib.')
+        main_logger.warning('Can\'t draw plots: python-matplotlib is missing or corrupted.')
         can_draw_plots = False
 else:
     can_draw_plots = False

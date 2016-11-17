@@ -13,7 +13,8 @@ import shutil
 import shlex
 from collections import defaultdict
 
-from quast_libs import qconfig, qutils, ca_utils
+from quast_libs import qconfig, qutils
+from quast_libs.ca_utils.misc import ref_labels_by_chromosomes
 from quast_libs.fastaparser import create_fai_file, get_chr_lengths_from_fastafile
 from quast_libs.ra_utils import compile_reads_analyzer_tools, config_manta_fpath, sambamba_fpath, \
     bwa_fpath, bedtools_fpath, paired_reads_names_are_equal
@@ -592,7 +593,7 @@ def do(ref_fpath, contigs_fpaths, reads_fpaths, meta_ref_fpaths, output_dir, ext
     open(err_path, 'w').close()
     logger.info('  ' + 'Logging to files %s and %s...' % (log_path, err_path))
     try:
-        bed_fpath, cov_fpath, physical_cov_fpath = run_processing_reads(ref_fpath, meta_ref_fpaths, ca_utils.misc.ref_labels_by_chromosomes,
+        bed_fpath, cov_fpath, physical_cov_fpath = run_processing_reads(ref_fpath, meta_ref_fpaths, ref_labels_by_chromosomes,
                                                                         reads_fpaths, temp_output_dir, output_dir, log_path, err_path,
                                                                         bed_fpath=bed_fpath, sam_fpath=sam_fpath, bam_fpath=bam_fpath)
     except:

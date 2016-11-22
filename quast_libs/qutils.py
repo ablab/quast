@@ -217,6 +217,18 @@ def correct_contigs(contigs_fpaths, corrected_dirpath, labels, reporting):
     return corrected_contigs_fpaths, old_contigs_fpaths
 
 
+def slugify(value):
+    """
+    Prepare string to use in file names: normalizes string, converts to lowercase, 
+    removes non-alpha characters, and converts spaces to hyphens.
+    """
+    import unicodedata
+    value = unicodedata.normalize('NFKD', unicode(value)).encode('ascii', 'ignore')
+    value = unicode(re.sub('[^\w\s-]', '-', value).strip().lower())
+    value = unicode(re.sub('[-\s]+', '-', value))
+    return value
+
+
 def parallel_correct_contigs(file_counter, contigs_fpath, corrected_dirpath, labels):
     contigs_fname = os.path.basename(contigs_fpath)
     fname, fasta_ext = splitext_for_fasta_file(contigs_fname)
@@ -227,7 +239,7 @@ def parallel_correct_contigs(file_counter, contigs_fpath, corrected_dirpath, lab
     old_contigs_fpaths = []
     broken_scaffold_fpaths = []
 
-    corr_fpath = unique_corrected_fpath(os.path.join(corrected_dirpath, label + fasta_ext))
+    corr_fpath = unique_corrected_fpath(os.path.join(corrected_dirpath, slugify(label) + fasta_ext))
     lengths = get_lengths_from_fasta(contigs_fpath, label)
     if not lengths:
         corr_fpath = None
@@ -257,7 +269,7 @@ def broke_scaffolds(file_counter, labels, contigs_fpath, corrected_dirpath, logs
     contigs_fname = os.path.basename(contigs_fpath)
     fname, fasta_ext = splitext_for_fasta_file(contigs_fname)
     label = labels[file_counter]
-    corr_fpath = unique_corrected_fpath(os.path.join(corrected_dirpath, label + fasta_ext))
+    corr_fpath = unique_corrected_fpath(os.path.join(corrected_dirpath, slugify(label) + fasta_ext))
     corr_fpath_wo_ext = os.path.join(corrected_dirpath, name_from_fpath(corr_fpath))
     broken_scaffolds_fpath = corr_fpath_wo_ext + '_broken' + fasta_ext
     broken_scaffolds_fasta = []

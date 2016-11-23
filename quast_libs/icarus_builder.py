@@ -28,7 +28,7 @@ def get_assemblies_data(contigs_fpaths, icarus_dirpath, stdout_pattern, nx_marks
     assemblies_data += 'var assemblies_n50 = {};\n'
     assemblies_contig_size_data = ''
     for contigs_fpath in contigs_fpaths:
-        label = qconfig.assembly_labels_by_fpath[contigs_fpath]
+        assembly_label = qutils.label_from_fpath(contigs_fpath)
         report = reporting.get(contigs_fpath)
         l = report.get_field(reporting.Fields.TOTALLEN)
         contigs = report.get_field(reporting.Fields.CONTIGS)
@@ -36,12 +36,12 @@ def get_assemblies_data(contigs_fpaths, icarus_dirpath, stdout_pattern, nx_marks
         if stdout_pattern:
             contig_stdout_fpath = stdout_pattern % qutils.label_from_fpath_for_fname(contigs_fpath) + '.stdout'
             contig_stdout_fpath = qutils.relpath(contig_stdout_fpath, icarus_dirpath)
-            assemblies_data += 'assemblies_links["' + label + '"] = "' + contig_stdout_fpath + '";\n'
-        assemblies_contig_size_data += 'assemblies_len["' + label + '"] = ' + str(l) + ';\n'
-        assemblies_contig_size_data += 'assemblies_contigs["' + label + '"] = ' + str(contigs) + ';\n'
-        assemblies_contig_size_data += 'assemblies_n50["' + label + '"] = "' + str(n50) + '";\n'
+            assemblies_data += 'assemblies_links["' + assembly_label + '"] = "' + contig_stdout_fpath + '";\n'
+        assemblies_contig_size_data += 'assemblies_len["' + assembly_label + '"] = ' + str(l) + ';\n'
+        assemblies_contig_size_data += 'assemblies_contigs["' + assembly_label + '"] = ' + str(contigs) + ';\n'
+        assemblies_contig_size_data += 'assemblies_n50["' + assembly_label + '"] = "' + str(n50) + '";\n'
         for nx in nx_marks:
-            assemblies_n50[label][nx] = report.get_field(nx)
+            assemblies_n50[assembly_label][nx] = report.get_field(nx)
     return assemblies_data, assemblies_contig_size_data, assemblies_n50
 
 

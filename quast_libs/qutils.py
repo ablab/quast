@@ -217,16 +217,23 @@ def correct_contigs(contigs_fpaths, corrected_dirpath, labels, reporting):
     return corrected_contigs_fpaths, old_contigs_fpaths
 
 
+def convert_to_unicode(value):
+    if is_python_2():
+        return unicode(value)
+    else:
+        return str(value)
+
+
 def slugify(value):
     """
     Prepare string to use in file names: normalizes string, converts to lowercase, 
     removes non-alpha characters, and converts spaces to hyphens.
     """
     import unicodedata
-    value = unicodedata.normalize('NFKD', unicode(value)).encode('ascii', 'ignore')
-    value = unicode(re.sub('[^\w\s-]', '-', value).strip().lower())
-    value = unicode(re.sub('[-\s]+', '-', value))
-    return value
+    value = unicodedata.normalize('NFKD', convert_to_unicode(value)).encode('ascii', 'ignore').decode('utf-8')
+    value = convert_to_unicode(re.sub('[^\w\s-]', '-', value).strip().lower())
+    value = convert_to_unicode(re.sub('[-\s]+', '-', value))
+    return str(value)
 
 
 def parallel_correct_contigs(file_counter, contigs_fpath, corrected_dirpath, labels):
@@ -605,7 +612,7 @@ def label_from_fpath(fpath):
 
 
 def label_from_fpath_for_fname(fpath):
-    return re.sub('[/= ]', '_', qconfig.assembly_labels_by_fpath[fpath])
+    return slugify(qconfig.assembly_labels_by_fpath[fpath])
 
 
 def call_subprocess(args, stdin=None, stdout=None, stderr=None,

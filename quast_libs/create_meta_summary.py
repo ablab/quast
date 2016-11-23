@@ -7,7 +7,7 @@
 
 
 import os
-from quast_libs import plotter, reporting, qconfig
+from quast_libs import plotter, reporting, qconfig, qutils
 from quast_libs.ca_utils.misc import print_file
 from quast_libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_META_NAME)
@@ -115,7 +115,7 @@ def do(html_fpath, output_dirpath, combined_output_dirpath, output_dirpath_per_r
                     if mis_results:
                         json_points = []
                         for contig_num in range(contigs_num):
-                            plot_fpath = os.path.join(output_dirpath, plots_dirname, labels[contig_num] + '_misassemblies')
+                            plot_fpath = os.path.join(output_dirpath, plots_dirname, qutils.slugify(labels[contig_num]) + '_misassemblies')
                             json_points.append(plotter.draw_meta_summary_misassembl_plot(mis_results, cur_ref_names,
                                                                                          contig_num, plot_fpath,
                                                                                          title=labels[contig_num]))

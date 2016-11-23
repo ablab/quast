@@ -84,12 +84,13 @@ def chromosomes_names_dict(feature, regions, chr_names):
 
 def process_single_file(contigs_fpath, index, nucmer_path_dirpath, genome_stats_dirpath,
                         reference_chromosomes, genes_container, operons_container):
-    assembly_label = qutils.label_from_fpath_for_fname(contigs_fpath)
+    assembly_label = qutils.label_from_fpath(contigs_fpath)
+    corr_assembly_label = qutils.label_from_fpath_for_fname(contigs_fpath)
     results = dict()
     ref_lengths = {}
     logger.info('  ' + qutils.index_to_str(index) + assembly_label)
 
-    nucmer_base_fpath = os.path.join(nucmer_path_dirpath, assembly_label + '.coords')
+    nucmer_base_fpath = os.path.join(nucmer_path_dirpath, corr_assembly_label + '.coords')
     if qconfig.use_all_alignments:
         nucmer_fpath = nucmer_base_fpath
     else:
@@ -161,7 +162,7 @@ def process_single_file(contigs_fpath, index, nucmer_path_dirpath, genome_stats_
     # counting genome coverage and gaps number
     covered_bp = 0
     gaps_count = 0
-    gaps_fpath = os.path.join(genome_stats_dirpath, assembly_label + '_gaps.txt') if not qconfig.space_efficient else '/dev/null'
+    gaps_fpath = os.path.join(genome_stats_dirpath, corr_assembly_label + '_gaps.txt') if not qconfig.space_efficient else '/dev/null'
     gaps_file = open(gaps_fpath, 'w')
     for chr_name, chr_len in reference_chromosomes.items():
         gaps_file.write(chr_name + '\n')
@@ -205,7 +206,7 @@ def process_single_file(contigs_fpath, index, nucmer_path_dirpath, genome_stats_
 
         total_full = 0
         total_partial = 0
-        found_fpath = os.path.join(genome_stats_dirpath, assembly_label + suffix)
+        found_fpath = os.path.join(genome_stats_dirpath, corr_assembly_label + suffix)
         found_file = open(found_fpath, 'w')
         found_file.write('%s\t\t%s\t%s\t%s\n' % ('ID or #', 'Start', 'End', 'Type'))
         found_file.write('=========================================\n')

@@ -18,7 +18,7 @@ from os.path import isdir, isfile, join
 from quast_libs import qconfig, qutils
 from quast_libs.fastaparser import _get_fasta_file_handler
 from quast_libs.log import get_logger
-from quast_libs.qutils import is_non_empty_file, is_python_2
+from quast_libs.qutils import is_non_empty_file, is_python_2, slugify
 
 logger = get_logger(qconfig.LOGGER_META_NAME)
 try:
@@ -299,8 +299,8 @@ def parallel_blast(contigs_fpath, label, corrected_dirpath, err_fpath, blast_res
                 for l in f_in:
                     f_out.write(l)
         blast_query_fpath = unpacked_fpath
-    res_fpath = blast_res_fpath + '_' + label
-    check_fpath = blast_check_fpath + '_' + label
+    res_fpath = get_blast_output_fpath(blast_res_fpath, label)
+    check_fpath = get_blast_output_fpath(blast_check_fpath, label)
     cmd = get_blast_fpath('blastn') + (' -query %s -db %s -outfmt 7 -num_threads %s' % (
         blast_query_fpath, db_fpath, blast_threads))
     qutils.call_subprocess(shlex.split(cmd), stdout=open(res_fpath, 'w'), stderr=open(err_fpath, 'a'), logger=logger)
@@ -309,13 +309,17 @@ def parallel_blast(contigs_fpath, label, corrected_dirpath, err_fpath, blast_res
         check_file.writelines('Assembly: %s size: %d\n' % (contigs_fpath, os.path.getsize(contigs_fpath)))
 
 
+def get_blast_output_fpath(blast_output_fpath, label):
+    return blast_output_fpath + '_' + slugify(label)
+
+
 def check_blast(blast_check_fpath, blast_res_fpath, files_sizes, assemblies_fpaths, assemblies, labels):
     downloaded_organisms = []
     not_founded_organisms = []
     blast_assemblies = [assembly for assembly in assemblies]
     for i, assembly_fpath in enumerate(assemblies_fpaths):
-        check_fpath = blast_check_fpath + '_' + labels[i]
-        res_fpath = blast_res_fpath + '_' + labels[i]
+        check_fpath = get_blast_output_fpath(blast_check_fpath, labels[i])
+        res_fpath = get_blast_output_fpath(blast_res_fpath, labels[i])
         existing_assembly = None
         assembly_info = True
         if os.path.exists(check_fpath) and is_non_empty_file(res_fpath):
@@ -443,7 +447,7 @@ def process_blast(blast_assemblies, downloaded_dirpath, corrected_dirpath, label
     for label in labels:
         all_scores = []
         organisms = []
-        res_fpath = blast_res_fpath + '_' + label
+        res_fpath = get_blast_output_fpath(blast_res_fpath, label)
         if os.path.exists(res_fpath):
             refs_for_query = 0
             for line in open(res_fpath):
@@ -552,7 +556,7 @@ def process_refs(organisms, assemblies, labels, downloaded_dirpath, not_founded_
             logger.main_info("  %s%s | not found in the NCBI database" % (organism.replace('+', ' '), spaces))
             not_founded_organisms.add(organism)
     for assembly, label in zip(assemblies, labels):
-        check_fpath = blast_check_fpath + '_' + label
+        check_fpath = get_blast_output_fpath(blast_check_fpath, label)
         if os.path.exists(check_fpath):
             with open(check_fpath) as check_file:
                 text = check_file.read()

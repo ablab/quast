@@ -144,8 +144,10 @@ def draw_coverage_histograms(coverage_dict, contigs_fpaths, output_dirpath):
         coverage_values, bin_size, low_threshold, high_threshold, max_cov = binning_coverage([coverage_dict[contigs_fpath]],
                                                                                              [contigs_dict[contigs_fpath]])
         label = qutils.label_from_fpath(contigs_fpath)
+        corr_label = qutils.label_from_fpath_for_fname(contigs_fpath)
         histogram_title = label + ' coverage histogram (bin size: ' + str(bin_size) + 'x)'
-        plotter.coverage_histogram([contigs_fpath], coverage_values, output_dirpath + '/' + label + '_coverage_histogram',
+        histogram_fpath = os.path.join(output_dirpath, corr_label + '_coverage_histogram')
+        plotter.coverage_histogram([contigs_fpath], coverage_values, histogram_fpath,
                                    histogram_title, draw_bars=True, bin_size=bin_size, max_cov=max_cov,
                                    low_threshold=low_threshold, high_threshold=high_threshold)
 

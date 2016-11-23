@@ -29,7 +29,7 @@ class Assembly:
 
 def parallel_partition_contigs(asm, assemblies_by_ref, corrected_dirpath, alignments_fpath_template):
     assembly_label = qutils.label_from_fpath(asm.fpath)
-    corr_assembly_label = assembly_label.replace(' ', '_')
+    corr_assembly_label = qutils.label_from_fpath_for_fname(asm.fpath)
     logger.info('  ' + 'processing ' + assembly_label)
     added_ref_asm = []
     not_aligned_fname = corr_assembly_label + '_not_aligned_anywhere.fasta'
@@ -216,17 +216,19 @@ def calculate_ave_read_support(combined_output_dirpath, assemblies):
     unique_contigs_fpath = os.path.join(combined_output_dirpath, 'contigs_reports', qconfig.unique_contigs_fname_pattern)
     for assembly in assemblies:
         aligned_contigs_by_ref = dict()
-        with open(unique_contigs_fpath % assembly.label) as in_f:
+        assembly_label = qutils.label_from_fpath(assembly.fpath)
+        corr_assembly_label = qutils.label_from_fpath_for_fname(assembly.fpath)
+        with open(unique_contigs_fpath % corr_assembly_label) as in_f:
             for line in in_f:
                 ref_name, contig_len, contig_cov = line.strip().split('\t')
                 aligned_contigs_by_ref.setdefault(ref_name, []).append((float(contig_len), float(contig_cov)))
         for ref_name, contigs in aligned_contigs_by_ref.items():
             ref_cov = sum(contig_cov * aligned_len for (aligned_len, contig_cov) in contigs)
             ref_cov /= sum(aligned_len for (aligned_len, contig_cov) in contigs)
-            corr_assembly_label = qutils.label_from_fpath(assembly.fpath).replace(' ', '_')
+            corr_assembly_label = qutils.label_from_fpath_for_fname(assembly.fpath)
             ref_contigs_fpath = os.path.join(
                         os.path.dirname(assembly.fpath), corr_assembly_label + '_to_' + ref_name + '.fasta')
-            qconfig.assembly_labels_by_fpath[ref_contigs_fpath] = assembly.label
+            qconfig.assembly_labels_by_fpath[ref_contigs_fpath] = assembly_label
             report = reporting.get(ref_contigs_fpath, ref_name=ref_name)
             report.add_field(reporting.Fields.AVE_READ_SUPPORT, '%.2f' % ref_cov)
 

@@ -34,6 +34,10 @@ def is_emem_aligner():
     return contig_aligner == 'E-MEM'
 
 
+def get_installed_emem():
+    return qutils.get_path_to_program('e-mem')
+
+
 def compile_aligner(logger, only_clean=False, compile_all_aligners=False):
     global contig_aligner
     global contig_aligner_dirpath
@@ -56,8 +60,12 @@ def compile_aligner(logger, only_clean=False, compile_all_aligners=False):
             ('MUMmer', join(qconfig.LIBS_LOCATION, 'MUMmer3.23-osx'), default_requirements)]
     else:
         if not qconfig.force_nucmer:
+            if get_installed_emem():
+                emem_requirements = default_requirements
+            else:
+                emem_requirements = default_requirements + ['e-mem']
             aligners_to_try = [
-                ('E-MEM', join(qconfig.LIBS_LOCATION, 'E-MEM-linux'), default_requirements + ['e-mem']),
+                ('E-MEM', join(qconfig.LIBS_LOCATION, 'E-MEM-linux'), emem_requirements),
                 ('MUMmer', join(qconfig.LIBS_LOCATION, 'MUMmer3.23-linux'), default_requirements)]
         else:
             aligners_to_try = [

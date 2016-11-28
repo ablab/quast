@@ -650,9 +650,6 @@ int main (int argc, char *argv[])
         }else if (boost::equals(argv[n],"-h")){
             print_help_msg();
             exit(EXIT_SUCCESS);
-        }else if (boost::equals(argv[n],"-p")){
-            commonData::pfx_path = argv[n+1];
-            n+=2;
         }else {
             cout << "ERROR: Invalid option." << endl << flush;
             print_help_msg();
@@ -665,7 +662,7 @@ int main (int argc, char *argv[])
     /*
      * Check if e-mem if being run from QUAST 
      */
-    sprintf(commonData::nucmer_path, "%s/%d_tmp", commonData::pfx_path.c_str(), getpid());
+    sprintf(commonData::nucmer_path, "%s/%d_tmp", getenv("NUCMER_E_MEM_OUTPUT_DIRPATH")?getenv("NUCMER_E_MEM_OUTPUT_DIRPATH"):".",getpid());
 
     tmpFilesInfo arrayTmpFile(IS_MATCH_BOTH_DEF(options)?(2*NUM_TMP_FILES+2):NUM_TMP_FILES+2);
     arrayTmpFile.openFiles(ios::out|ios::binary, IS_MATCH_BOTH_DEF(options)?(2*NUM_TMP_FILES+2):NUM_TMP_FILES+2);

@@ -136,6 +136,8 @@ sub main ( )
     my $ref_file;         # path of the reference input file
     my $qry_file;         # path of the query input file
 
+    my $emem_path;        # path to installed e-mem
+
     #-- The command line options for the various programs
     my $pfx = $DEFAULT_PARAMETERS { "OUTPUT_PREFIX" };
     my $algo = $DEFAULT_PARAMETERS { "MATCH_ALGORITHM" };
@@ -197,7 +199,8 @@ sub main ( )
 	 "p|prefix=s" => \$pfx,
 	 "r|reverse"   => \$rev,
 	 "t|threads=i" => \$threads,
-	 "simplify!" => \$simplify
+	 "simplify!" => \$simplify,
+	 "emem" => \$emem_path
 	 );
 
 
@@ -255,7 +258,7 @@ sub main ( )
 
     #-- Set up the program path names
 #    my $algo_path = "$BIN_DIR/mummer";
-    my $algo_path = "$BIN_DIR/e-mem";
+    my $algo_path = $emem_path ? $emem_path : "$BIN_DIR/e-mem";
     my $mgaps_path = "$BIN_DIR/mgaps";
     my $prenuc_path = "$AUX_BIN_DIR/prenuc";
     my $postnuc_path = "$AUX_BIN_DIR/postnuc";
@@ -345,7 +348,7 @@ sub main ( )
     print (STDERR "2,3: RUNNING e-mem AND CREATING CLUSTERS\n");
     my $pfx_dir = dirname($pfx);
     $err[0] = $tigr->runCommand
-        ("$algo_path $algo $mdir -l $size -t $threads -n $pfx.ntref -p $pfx_dir $qry_file > $pfx.mems");
+        ("$algo_path $algo $mdir -l $size -t $threads -n $pfx.ntref $qry_file > $pfx.mems");
 
     if ( $err[0] != 0 ) {
         $tigr->bail ("ERROR: e-mem returned non-zero\n");

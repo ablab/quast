@@ -132,9 +132,11 @@ sub main ( )
 {
     my $tigr;             # TIGR::Foundation object
     my @err;              # Error variable
-    
+
     my $ref_file;         # path of the reference input file
     my $qry_file;         # path of the query input file
+
+    my $emem_path;        # path to installed e-mem
 
     #-- The command line options for the various programs
     my $pfx = $DEFAULT_PARAMETERS { "OUTPUT_PREFIX" };
@@ -168,7 +170,7 @@ sub main ( )
 	print (STDERR "ERROR: TIGR::Foundation could not be initialized");
 	exit (1);
     }
-    
+
     #-- Set help and usage information
     $tigr->setHelpInfo ($HELP_INFO);
     $tigr->setUsageInfo ($USAGE_INFO);
@@ -197,7 +199,8 @@ sub main ( )
 	 "p|prefix=s" => \$pfx,
 	 "r|reverse"   => \$rev,
 	 "t|threads=i" => \$threads,
-	 "simplify!" => \$simplify
+	 "simplify!" => \$simplify,
+	 "emem" => \$emem_path
 	 );
 
 
@@ -255,7 +258,7 @@ sub main ( )
 
     #-- Set up the program path names
 #    my $algo_path = "$BIN_DIR/mummer";
-    my $algo_path = "$BIN_DIR/e-mem";
+    my $algo_path = $emem_path ? $emem_path : "$BIN_DIR/e-mem";
     my $mgaps_path = "$BIN_DIR/mgaps";
     my $prenuc_path = "$AUX_BIN_DIR/prenuc";
     my $postnuc_path = "$AUX_BIN_DIR/postnuc";

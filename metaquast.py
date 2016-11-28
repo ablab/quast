@@ -20,7 +20,7 @@ from quast_libs.options_parser import parse_options, remove_from_quast_py_args
 
 from quast_libs import contigs_analyzer, reads_analyzer, search_references_meta
 from quast_libs import qutils
-from quast_libs.qutils import cleanup
+from quast_libs.qutils import cleanup, check_dirpath
 
 from quast_libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_META_NAME)
@@ -79,12 +79,8 @@ def _start_quast_main(
 
 
 def main(args):
-    if ' ' in qconfig.QUAST_HOME:
-        logger.error('QUAST does not support spaces in paths. \n'
-                     'You are trying to run it from ' + str(qconfig.QUAST_HOME) + '\n'
-                     'Please, put QUAST in a different directory, then try again.\n',
-                     to_stderr=True,
-                     exit_with_code=3)
+    check_dirpath(qconfig.QUAST_HOME, 'You are trying to run it from ' + str(qconfig.QUAST_HOME) + '.\n' +
+                  'Please, put QUAST in a different directory, then try again.\n', exit_code=3)
 
     if not args:
         qconfig.usage(meta=True)

@@ -806,3 +806,23 @@ def compile_tool(name, dirpath, requirements, just_notice=False, logger=logger, 
         with open(succeeded_compilation_flag, 'w') as out_f:
             out_f.write(abspath(realpath(dirpath)))
     return True
+
+
+def check_dirpath(path, message="", exit_code=3):
+    if not is_ascii_string(path):
+        logger.error('QUAST does not support non-ASCII characters in path.\n' + message, to_stderr=True, exit_with_code=exit_code)
+    if ' ' in path:
+        logger.error('QUAST does not support spaces in paths.\n' + message, to_stderr=True, exit_with_code=exit_code)
+    return True
+
+
+# based on http://stackoverflow.com/questions/196345/how-to-check-if-a-string-in-python-is-in-ascii
+def is_ascii_string(line):
+    try:
+        line.encode('ascii')
+    except UnicodeDecodeError:  # python2
+        return False
+    except UnicodeEncodeError:  # python3
+        return False
+    else:
+        return True

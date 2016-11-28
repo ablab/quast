@@ -62,6 +62,7 @@ export BIN_DIR AUX_BIN_DIR CXX CC CFLAGS CXXFLAGS LDFLAGS
 
 all: kurtz tigr scripts e-mem
 
+no-emem: kurtz tigr scripts
 
 check:
 ifndef TOP_DIR

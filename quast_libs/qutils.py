@@ -770,7 +770,7 @@ def is_python_2():
     return sys.version_info[0] < 3
 
 
-def compile_tool(name, dirpath, requirements, just_notice=False, logger=logger, only_clean=False):
+def compile_tool(name, dirpath, requirements, just_notice=False, logger=logger, only_clean=False, make_cmd=None):
     make_logs_basepath = join(dirpath, 'make')
     failed_compilation_flag = make_logs_basepath + '.failed'
     succeeded_compilation_flag = make_logs_basepath + '.succeeded'
@@ -789,7 +789,7 @@ def compile_tool(name, dirpath, requirements, just_notice=False, logger=logger, 
         # making
         logger.main_info('Compiling ' + name + ' (details are in ' + make_logs_basepath +
                          '.log and make.err)')
-        return_code = call_subprocess(['make', '-C', dirpath],
+        return_code = call_subprocess((['make', make_cmd] if make_cmd else ['make']) + ['-C', dirpath],
                                       stdout=open(make_logs_basepath + '.log', 'w'),
                                       stderr=open(make_logs_basepath + '.err', 'w'), logger=logger)
 

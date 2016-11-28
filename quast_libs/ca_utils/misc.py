@@ -73,7 +73,7 @@ def compile_aligner(logger, only_clean=False, compile_all_aligners=False):
 
     for i, (name, dirpath, requirements) in enumerate(aligners_to_try):
         success_compilation = compile_tool(name, dirpath, requirements, just_notice=(i < len(aligners_to_try) - 1),
-                                           logger=logger, only_clean=only_clean)
+                                           logger=logger, only_clean=only_clean, make_cmd='no-emem' if 'E-MEM' in name and get_installed_emem() else None)
         if not success_compilation:
             continue
         contig_aligner = name

@@ -201,7 +201,7 @@ sub main ( )
 	 "r|reverse"   => \$rev,
 	 "t|threads=i" => \$threads,
 	 "simplify!" => \$simplify,
-	 "emem" => \$emem_path
+	 "emem=s" => \$emem_path
 	 );
 
 

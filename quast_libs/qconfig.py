@@ -341,7 +341,7 @@ def usage(show_hidden=False, meta=False, short=True):
         sys.stderr.write("                                      less than scaffold-gap-size are counted as scaffold gap misassemblies [default: %s]\n" % scaffolds_gap_threshold)
         sys.stderr.write("                                      Only scaffold assemblies are affected (use -s/--scaffolds)!\n")
         sys.stderr.write("    --unaligned-part-size  <int>      Lower threshold for detecting partially unaligned contigs. Such contig should have\n")
-        sys.stderr.write("                                      at least one unaligned fragment >= the threshold [default: %s]\n" % significant_part_size)
+        sys.stderr.write("                                      at least one unaligned fragment >= the threshold [default: %s]\n" % unaligned_part_size)
         sys.stderr.write("    --fragmented                      Reference genome may be fragmented into small pieces (e.g. scaffolded reference) \n")
         sys.stderr.write("    --fragmented-max-indent  <int>    Mark translocation as fake if both alignments are located no further than N bases \n")
         sys.stderr.write("                                      from the ends of the reference fragments [default: %s]\n" % MAX_INDEL_LENGTH)

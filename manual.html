@@ -95,7 +95,7 @@
     for guidelines on how to complete the licensing process.
     <br>
     <br>
-    Version 4.4 of QUAST was released under GPL v2 on XX October 2016. Note that some of build-in third-party tools are not under GPL v2. See <a href="LICENSE.txt">LICENSE</a> for details.
+    Version 4.4 of QUAST was released under GPL v2 on XX December 2016. Note that some of build-in third-party tools are not under GPL v2. See <a href="LICENSE.txt">LICENSE</a> for details.
 </p>
 
 <h2>Contents</h2>
@@ -154,7 +154,7 @@
     <li>Boost (tested with v1.56.0) for E-MEM</li>
 </ul>
 All those tools are usually pre installed on Linux.<br>
-Mac OS X, however, initially misses <code>make</code>, <code>g++</code> and <code>ar</code>, so you will have to install 
+Mac OS X, however, initially misses <code>make</code>, <code>gcc</code> and <code>ar</code>, so you will have to install
 <a href='https://developer.apple.com/xcode/'>Xcode</a> (or only
 <a href='https://developer.apple.com/downloads/index.action?name=Command%20Line%20Tools'>Command Line Tools for Xcode</a>) to make them available.
 <br>
@@ -184,7 +184,7 @@ Basic installation (about 40 MB):
 </p>
 or
 <p>
-Full installation (about 800 MB, includes (1) tools for SV detection based on read pairs, which is used for more precise misassembly detection, (2) and tools/data for reference genome detection in metagenomic datasets):
+Full installation (about 800 MB, additionally includes (1) tools for SV detection based on read pairs, which is used for more precise misassembly detection, and (2) tools/data for reference genome detection in metagenomic datasets):
 <pre class="code">
     ./setup.py install_full
 </pre>

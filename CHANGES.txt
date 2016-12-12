@@ -46,7 +46,8 @@
        - split versions of scaffold assemblies are drawn with dashed lines (--scaffolds
          option only).
 
-      9. Fixed issue of crashing E-MEM on OS X without gcc installed.
+      9. Fixed issue of crashing E-MEM on OS X without gcc installed. Also, if E-MEM is
+         already installed on the system, it will be used instead of embedded E-MEM.
 
       10. User-provided SAM/BAM files are now checked for correct chromosome names and
           automatically corrected if needed.

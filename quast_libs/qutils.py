@@ -226,12 +226,12 @@ def convert_to_unicode(value):
 
 def slugify(value):
     """
-    Prepare string to use in file names: normalizes string, converts to lowercase, 
+    Prepare string to use in file names: normalizes string,
     removes non-alpha characters, and converts spaces to hyphens.
     """
     import unicodedata
     value = unicodedata.normalize('NFKD', convert_to_unicode(value)).encode('ascii', 'ignore').decode('utf-8')
-    value = convert_to_unicode(re.sub('[^\w\s-]', '-', value).strip().lower())
+    value = convert_to_unicode(re.sub('[^\w\s-]', '-', value).strip())
     value = convert_to_unicode(re.sub('[-\s]+', '-', value))
     return str(value)
 
@@ -400,15 +400,9 @@ def get_label_from_par_dir_and_fname(contigs_fpath):
 
 def get_duplicated(labels):
     # check duplicates
-    occurences = {}
-    for label in labels:
-        if label in occurences:
-            occurences[label] += 1
-        else:
-            occurences[label] = 1
-
-    dupls = [dup_label for dup_label, occurs_num in occurences.items() if occurs_num > 1]
-    return dupls
+    lowercase_labels = [label.lower() for label in labels]
+    dup_labels = [label for label in labels if lowercase_labels.count(label.lower()) > 1]
+    return dup_labels
 
 
 def get_labels_from_par_dirs(contigs_fpaths):
@@ -441,10 +435,10 @@ def process_labels(contigs_fpaths, labels, all_labels_from_dirs):
         # labels from fname
         labels = [rm_extentions_for_fasta_file(os.path.basename(fpath)) for fpath in contigs_fpaths]
 
-        for duplicated_label in get_duplicated(labels):
-            for i, (label, fpath) in enumerate(zip(labels, contigs_fpaths)):
-                if label == duplicated_label:
-                    labels[i] = get_label_from_par_dir_and_fname(contigs_fpaths[i])
+        duplicated_labels = set(get_duplicated(labels))
+        for i, (label, fpath) in enumerate(zip(labels, contigs_fpaths)):
+            if label in duplicated_labels:
+                labels[i] = get_label_from_par_dir_and_fname(contigs_fpaths[i])
 
     # fixing remaining duplicates by adding index
     for duplicated_label in get_duplicated(labels):

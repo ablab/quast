@@ -380,7 +380,7 @@ def process_misassembled_contig(sorted_aligns, cyclic, aligned_lengths, region_m
             contig_aligned_length += cur_aligned_length
             cur_aligned_length = 0
             if not contig_is_printed:
-                ca_output.misassembly_f.write(prev_align.contig)
+                ca_output.misassembly_f.write(prev_align.contig + '\n')
                 contig_is_printed = True
             ca_output.misassembly_f.write('Extensive misassembly (')
             ca_output.stdout_f.write('\t\t\t  Extensive misassembly (')
@@ -455,11 +455,15 @@ def process_misassembled_contig(sorted_aligns, cyclic, aligned_lengths, region_m
                     contig_aligned_length += cur_aligned_length
                     cur_aligned_length = 0
 
-                if inconsistency < 0:
+                if distance_on_contig < 0:
                     #There is an overlap between the two alignments, a local misassembly
                     ca_output.stdout_f.write('\t\t\t  Overlap between these two alignments (local misassembly).')
-                else:
+                elif distance_on_contig > 0:
                     #There is a small gap between the two alignments, a local misassembly
+                    ca_output.stdout_f.write('\t\t\t  Gap between these two alignments (local misassembly).')
+                elif inconsistency < 0:
+                    ca_output.stdout_f.write('\t\t\t  Overlap between these two alignments (local misassembly).')
+                else:
                     ca_output.stdout_f.write('\t\t\t  Gap between these two alignments (local misassembly).')
                 ca_output.stdout_f.write(' Inconsistency = ' + str(inconsistency) + reason_msg + '\n')
                 ca_output.icarus_out_f.write('local misassembly' + reason_msg + '\n')

@@ -37,7 +37,6 @@ from quast_libs.search_references_meta import download_all_blast_binaries, downl
 from quast_libs.glimmer import compile_glimmer
 from quast_libs.gage import compile_gage
 from quast_libs.ca_utils.misc import compile_aligner
-from quast_libs.ca_utils.align_contigs import check_emem_functionality
 from quast_libs.ra_utils import compile_reads_analyzer_tools, download_manta, compile_bwa, compile_bedtools
 
 name = 'quast'
@@ -59,7 +58,7 @@ if abspath(dirname(__file__)) != abspath(os.getcwd()):
 if cmd_in(['clean', 'sdist']):
     logger.info('Cleaning up binary files...')
     compile_aligner(logger, only_clean=True)
-    compile_glimmer(only_clean=True)
+    compile_glimmer(logger, only_clean=True)
     compile_gage(only_clean=True)
     compile_bwa(only_clean=True)
     compile_bedtools(only_clean=True)
@@ -93,7 +92,8 @@ def write_version_py():
         v = f.read().strip().split('\n')[0]
     try:
         import subprocess
-        git_revision = subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD']).rstrip()
+        git_revision = subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD'],
+                                               stderr=open(os.devnull, 'w')).rstrip()
     except:
         git_revision = ''
         pass

@@ -12,7 +12,7 @@ from quast_libs import fastaparser, genes_parser, reporting, qconfig, qutils
 from quast_libs.html_saver import json_saver
 
 from quast_libs.log import get_logger
-from quast_libs.qutils import is_python_2
+from quast_libs.qutils import is_python2
 
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 ref_lengths_by_contigs = {}
@@ -342,7 +342,7 @@ def do(ref_fpath, aligned_contigs_fpaths, output_dirpath, json_output_dirpath,
     # process all contig files
     num_nf_errors = logger._num_nf_errors
     n_jobs = min(len(aligned_contigs_fpaths), qconfig.max_threads)
-    if is_python_2():
+    if is_python2():
         from joblib import Parallel, delayed
     else:
         from joblib3 import Parallel, delayed

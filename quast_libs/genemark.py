@@ -17,7 +17,7 @@ from quast_libs.fastaparser import write_fasta
 from quast_libs.genes_parser import Gene
 
 from quast_libs.log import get_logger
-from quast_libs.qutils import is_python_2
+from quast_libs.qutils import is_python2
 
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 
@@ -294,7 +294,7 @@ def do(fasta_fpaths, gene_lengths, out_dirpath, prokaryote, meta):
 
         n_jobs = min(len(fasta_fpaths), qconfig.max_threads)
         num_threads = max(1, qconfig.max_threads // n_jobs)
-        if is_python_2():
+        if is_python2():
             from joblib import Parallel, delayed
         else:
             from joblib3 import Parallel, delayed

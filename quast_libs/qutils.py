@@ -184,7 +184,7 @@ def correct_contigs(contigs_fpaths, corrected_dirpath, labels, reporting):
         qconfig.max_threads = 1
 
     n_jobs = min(len(contigs_fpaths), qconfig.max_threads)
-    if is_python_2():
+    if is_python2():
         from joblib import Parallel, delayed
     else:
         from joblib3 import Parallel, delayed
@@ -218,7 +218,7 @@ def correct_contigs(contigs_fpaths, corrected_dirpath, labels, reporting):
 
 
 def convert_to_unicode(value):
-    if is_python_2():
+    if is_python2():
         return unicode(value)
     else:
         return str(value)
@@ -760,7 +760,7 @@ def safe_rm(fpath):
             pass
 
 
-def is_python_2():
+def is_python2():
     return sys.version_info[0] < 3
 
 

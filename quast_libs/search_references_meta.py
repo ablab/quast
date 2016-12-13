@@ -18,7 +18,7 @@ from os.path import isdir, isfile, join
 from quast_libs import qconfig, qutils
 from quast_libs.fastaparser import _get_fasta_file_handler
 from quast_libs.log import get_logger
-from quast_libs.qutils import is_non_empty_file, is_python_2, slugify
+from quast_libs.qutils import is_non_empty_file, is_python2, slugify
 
 logger = get_logger(qconfig.LOGGER_META_NAME)
 try:
@@ -436,7 +436,7 @@ def process_blast(blast_assemblies, downloaded_dirpath, corrected_dirpath, label
         logger.main_info('Running BlastN..')
         n_jobs = min(qconfig.max_threads, len(blast_assemblies))
         blast_threads = max(1, qconfig.max_threads // n_jobs)
-        if is_python_2():
+        if is_python2():
             from joblib import Parallel, delayed
         else:
             from joblib3 import Parallel, delayed

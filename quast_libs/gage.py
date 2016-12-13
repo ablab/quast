@@ -10,7 +10,7 @@ import os
 import shutil
 from quast_libs import reporting, qconfig, qutils, ca_utils
 from quast_libs.ca_utils.misc import compile_aligner
-from .qutils import get_path_to_program, is_python_2
+from .qutils import get_path_to_program, is_python2
 from os.path import join, abspath
 
 from quast_libs.log import get_logger
@@ -132,7 +132,7 @@ def do(ref_fpath, contigs_fpaths, output_dirpath):
         return
 
     n_jobs = min(len(contigs_fpaths), qconfig.max_threads)
-    if is_python_2():
+    if is_python2():
         from joblib import Parallel, delayed
     else:
         from joblib3 import Parallel, delayed

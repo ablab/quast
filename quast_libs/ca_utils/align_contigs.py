@@ -17,7 +17,7 @@ from quast_libs.ca_utils.misc import bin_fpath, is_emem_aligner, compile_aligner
     create_nucmer_output_dir, clean_tmp_files, get_installed_emem
 
 from quast_libs.log import get_logger
-from quast_libs.qutils import is_python_2
+from quast_libs.qutils import is_python2
 
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 
@@ -142,7 +142,7 @@ def align_contigs(nucmer_fpath, ref_fpath, contigs_fpath, old_contigs_fpath, ind
                                      ' (' + str(n_jobs) + ' threads)')
 
             # processing each chromosome separately (if we can)
-            if is_python_2():
+            if is_python2():
                 from joblib import Parallel, delayed
             else:
                 from joblib3 import Parallel, delayed

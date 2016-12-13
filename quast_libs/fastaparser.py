@@ -14,6 +14,8 @@ try:
     import bz2
 except ImportError:
     from quast_libs.site_packages import bz2
+if sys.version_info[0] == 3:
+    import io
 from quast_libs import qconfig
 # There is a pyfasta package -- http://pypi.python.org/pypi/pyfasta/
 # Use it!
@@ -32,6 +34,7 @@ def _get_fasta_file_handler(fpath):
 
     elif ext in ['.bz2', '.bzip2']:
         fasta_file = bz2.BZ2File(fpath, mode="r")
+        fasta_file = _read_compressed_file(fasta_file)
 
     elif ext in ['.zip']:
         try:
@@ -49,6 +52,7 @@ def _get_fasta_file_handler(fpath):
 
             try:
                 fasta_file = zfile.open(names[0])
+                fasta_file = _read_compressed_file(fasta_file)
             except AttributeError:
                 logger.error('Use python 2.6 or newer to work with contigs directly in zip.', exit_with_code=20)
     else:
@@ -59,6 +63,12 @@ def _get_fasta_file_handler(fpath):
             logger.exception(exc_value, exit_with_code=1)
 
     return fasta_file
+
+
+def _read_compressed_file(compressed_file):
+    if sys.version_info[0] == 3:
+        return io.TextIOWrapper(io.BytesIO(compressed_file.read()))  # return string instead of binary data
+    return compressed_file
 
 
 def get_chr_lengths_from_fastafile(fpath):

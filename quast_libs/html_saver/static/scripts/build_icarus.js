@@ -607,7 +607,9 @@ THE SOFTWARE.
             numItems++;
             var structure = getBlockStructure(block);
             if (block.genes) {
-                var corr_start = (structure && structure.length > 0) ? structure[0].corr_start : block.corr_start;
+                var corr_start = block.corr_start;
+                if (block.contig_type != 'ambiguous' && structure && structure.length > 0)
+                    corr_start =  structure[0].corr_start;
                 for (var gene_n = 0; gene_n < block.genes.length; gene_n++) {
                     if (!block.genes[gene_n].corr_start) {
                         block.genes[gene_n].corr_start = Math.max(block.genes[gene_n].start + corr_start, block.corr_start);

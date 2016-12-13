@@ -127,7 +127,7 @@ def do(ref_fpath, contigs_fpaths, output_dirpath):
     if not os.path.exists(tmp_dirpath):
         os.makedirs(tmp_dirpath)
 
-    if not compile_aligner(logger) or not all_required_java_classes_exist(gage_dirpath) or not compile_gage():
+    if not compile_aligner(logger) or (not all_required_java_classes_exist(gage_dirpath) and not compile_gage()):
         logger.error('GAGE module was not installed properly, so it is disabled and you cannot use --gage.')
         return
 

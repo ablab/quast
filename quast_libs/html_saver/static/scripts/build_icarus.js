@@ -580,16 +580,27 @@ THE SOFTWARE.
                 }
             }
             var nonOverlappingLaneId = 0;
+            var blockSize = block.corr_end - block.corr_start;
+            var minOverlap = Math.min(500, blockSize * 0.1);
             if (!isContigSizePlot) {
                 for (var nonOverlappingLaneId = 0; nonOverlappingLaneId < lastPosInLanes.length; nonOverlappingLaneId++){
-                    if (lastPosInLanes[nonOverlappingLaneId] - block.corr_start < 500)
+                    if (lastPosInLanes[nonOverlappingLaneId] - block.corr_start < Math.min(minOverlap, lastBlockSizesInLanes[nonOverlappingLaneId] * 0.1))
                         break;
                 }
                 block.nonOverlappingLane = nonOverlappingLaneId;
-                if (nonOverlappingLaneId >= lastPosInLanes.length)
+                if (nonOverlappingLaneId >= lastPosInLanes.length) {
                     lastPosInLanes.push(block.corr_end);
-                else
-                    lastPosInLanes[nonOverlappingLaneId] = Math.max(block.corr_end, lastPosInLanes[nonOverlappingLaneId]);
+                    lastBlockSizesInLanes.push(blockSize);
+                }
+                else {
+                    if (block.corr_end > lastPosInLanes[nonOverlappingLaneId]) {
+                        lastPosInLanes[nonOverlappingLaneId] = block.corr_end;
+                        lastBlockSizesInLanes[nonOverlappingLaneId] = blockSize;
+                    }
+                    else {
+                        lastPosInLanes[nonOverlappingLaneId] = lastPosInLanes[nonOverlappingLaneId];
+                    }
+                }
             }
             block.triangles = Array();
             itemId++;
@@ -635,6 +646,7 @@ THE SOFTWARE.
             var currentLen = 0;
             var numItems = 0;
             var lastPosInLanes = [];
+            var lastBlockSizesInLanes = [];
             var laneItems = [];
             for (var i = 0; i < lane.length; i++) {
                 var block = lane[i];

@@ -4,7 +4,7 @@
        - buttons for expanding overlapped contig added to detailed assembly tracks
          on Contig Alignment Viewers;
        - additional colors for ambiguous contigs and alternative blocks of misassembled
-         contigs on Contig Alignment Viewers;
+         contigs on on both Contig Size and Contig Alignment Viewers;
        - few more fixes for better performance on low resolution screens.
 
       2. Python3 is now supported (versions 3.3, 3.4 and 3.5).
@@ -41,9 +41,9 @@
       7. BED format is accepted for genes/operons annotations.
 
       8. Minor changes in HTML reports:
-       - heatmap coloring is removed for metrics where best/worst values are not defined
+       - heatmap coloring is removed for metrics where best/worst values are undefined
          (GC %, # similar blocks, # contigs, etc);
-       - split versions of scaffold assemblies are drawn with dashed lines (--scaffolds
+       - split versions of scaffold assemblies are plotted with dashed lines (--scaffolds
          option only).
 
       9. Fixed issue of crashing E-MEM on OS X without gcc installed. Also, if E-MEM is

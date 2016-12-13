@@ -30,9 +30,8 @@ from site import addsitedir
 addsitedir(os.path.join(qconfig.LIBS_LOCATION, 'site_packages'))
 
 
-def _start_quast_main(
-        args, assemblies, reference_fpath=None,
-        output_dirpath=None, num_notifications_tuple=None, is_first_run=None):
+def _start_quast_main(args, assemblies, reference_fpath=None, output_dirpath=None,
+                      num_notifications_tuple=None, is_first_run=None, run_regular_quast=False):
     args = args[:]
 
     args.extend([asm.fpath for asm in assemblies])
@@ -61,7 +60,8 @@ def _start_quast_main(
     except:    
         reload(quast)
     quast.logger.set_up_console_handler(indent_val=1, debug=qconfig.debug)
-    quast.logger.set_up_metaquast()
+    if not run_regular_quast:
+        quast.logger.set_up_metaquast()
     logger.info_to_file('(logging to ' +
                         os.path.join(output_dirpath,
                                      qconfig.LOGGER_DEFAULT_NAME + '.log)'))
@@ -170,7 +170,7 @@ def main(args):
         # No references, running regular quast with MetaGenemark gene finder
         logger.main_info()
         logger.notice('No references are provided, starting regular QUAST with MetaGeneMark gene finder')
-        _start_quast_main(quast_py_args, assemblies=assemblies, output_dirpath=output_dirpath)
+        _start_quast_main(quast_py_args, assemblies=assemblies, output_dirpath=output_dirpath, run_regular_quast=True)
         exit(0)
 
     # Running combined reference

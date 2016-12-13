@@ -174,7 +174,7 @@ function showAllAssemblies(series, colors) {
         }
     );
     var firstLabel = $('.yAxis .tickLabel').last();
-    firstLabel.append(' misassemblies');
+    firstLabel.prepend('Misassemblies<span class="rhs">&nbsp;</span>=<span class="rhs">&nbsp;</span>');
     unBindTips(misassemblies.placeholder);
     bindTip(misassemblies.placeholder, series, misassemblies.plot, refToPrettyString, 1, refNames, 'top right', true);
 }

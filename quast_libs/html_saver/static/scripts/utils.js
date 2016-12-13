@@ -141,30 +141,29 @@ function getBpTickFormatter(maxY, additionalText) {
 
     return function(val, axis) {
         var res;
-
         if (val == 0) {
             res = 0;
 
-        } else if (val >= 1000000) {
+        } else if (axis.max >= 1000000) {
             res = val / 1000000;
 
-            if (val > axis.max + 1 || val + axis.tickSize >= 1000000000) {
+            if (val > axis.max - 1 || val + axis.tickSize >= 1000000000) {
                 res = additionalText + toPrettyString(res, 'Mbp');
             } else {
                 res = toPrettyString(res);
             }
-        } else if (val >= 1000) {
+        } else if (axis.max >= 1000) {
             res = val / 1000;
 
-            if (val > axis.max + 1 || val + axis.tickSize >= 1000000) {
+            if (val > axis.max - 1 || val + axis.tickSize >= 1000000) {
                 res = additionalText + toPrettyString(res, 'kbp');
             } else {
                 res = toPrettyString(res);
             }
-        } else if (val >= 1) {
+        } else if (axis.max >= 1) {
             res = val;
 
-            if (val > axis.max + 1 || val + axis.tickSize >= 1000) {
+            if (val > axis.max - 1 || val + axis.tickSize >= 1000) {
                 res = additionalText + toPrettyString(res, 'bp');
             } else {
                 res = toPrettyString(res);

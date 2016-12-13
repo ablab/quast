@@ -132,7 +132,7 @@ var cumulative = {
                 lineWidth: 0.5,
                 color: '#000000',
                 tickFormatter: getBpTickFormatter(cumulative.maxY),
-                minTickSize: 1,
+                minTickSize: 1
             };
             var yaxes = [yaxis];
 

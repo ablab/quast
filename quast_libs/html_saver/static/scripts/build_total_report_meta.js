@@ -102,7 +102,7 @@ function buildGenomeTable(reports, group_n, numColumns) {
     tableGenome += '<div class="report" id="ref_report">';
     tableGenome += '<table cellspacing="0" id="refgenome">';
     tableGenome += '<tr class="top_row_tr"><td class="left_column_td"><span>' + 'Reference' + '</span></td>';
-    var colNames = ['Size, bp', 'GC, %', 'Genes', 'Operons'];
+    var colNames = ['Size, bp', 'Fragments', 'GC, %', 'Genes', 'Operons'];
     for (var col_n = 0; col_n < numColumns; col_n++) {
         var columnName = colNames[col_n];
         tableGenome += '<td class="second_through_last_col_headers_td">' +
@@ -289,6 +289,7 @@ function buildTotalReport(assembliesNames, report, order, date, minContig, gloss
                 referenceValues[metricName] = value;
             }
             var refLen = referenceValues['Reference length'];
+            var refFragments = referenceValues['Reference fragments'];
             var refGC = referenceValues['Reference GC (%)'];
             var refGenes = referenceValues['Reference genes'];
             var refOperons = referenceValues['Reference operons'];
@@ -297,6 +298,9 @@ function buildTotalReport(assembliesNames, report, order, date, minContig, gloss
 
             if (refLen) {
                 $('#combined_reference_length').show().find('.val').html(toPrettyString(refLen));
+                numColumns++;
+            }
+            if (refFragments) {
                 numColumns++;
             }
             if (refGC) {

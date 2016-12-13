@@ -12,10 +12,9 @@ import gzip
 import zipfile
 try:
     import bz2
-except:
+except ImportError:
     from quast_libs.site_packages import bz2
 from quast_libs import qconfig
-import itertools
 # There is a pyfasta package -- http://pypi.python.org/pypi/pyfasta/
 # Use it!
 
@@ -32,18 +31,18 @@ def _get_fasta_file_handler(fpath):
         fasta_file = gzip.open(fpath, mode="rt")
 
     elif ext in ['.bz2', '.bzip2']:
-        fasta_file = bz2.BZ2File(fpath, mode="rt")
+        fasta_file = bz2.BZ2File(fpath, mode="r")
 
     elif ext in ['.zip']:
         try:
-            zfile = zipfile.ZipFile(fpath, mode="rt")
+            zfile = zipfile.ZipFile(fpath, mode="r")
         except Exception:
             exc_type, exc_value, _ = sys.exc_info()
-            logger.error('Can\'t open zip file: ' + str(exc_value))
+            logger.error('Can\'t open zip file: ' + str(exc_value), exit_with_code=1)
         else:
             names = zfile.namelist()
             if len(names) == 0:
-                logger.error('Reading %s: zip archive is empty' % fpath)
+                logger.error('Reading %s: zip archive is empty' % fpath, exit_with_code=1)
 
             if len(names) > 1:
                 logger.warning('Zip archive must contain exactly one file. Using %s' % names[0])
@@ -57,7 +56,7 @@ def _get_fasta_file_handler(fpath):
             fasta_file = open(fpath)
         except IOError:
             exc_type, exc_value, _ = sys.exc_info()
-            logger.exception(exc_value)
+            logger.exception(exc_value, exit_with_code=1)
 
     return fasta_file
 

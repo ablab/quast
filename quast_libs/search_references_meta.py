@@ -411,12 +411,15 @@ def process_blast(blast_assemblies, downloaded_dirpath, corrected_dirpath, label
     if qconfig.custom_blast_db_fpath:
         global db_fpath
         db_fpath = qconfig.custom_blast_db_fpath
-        if isdir(qconfig.custom_blast_db_fpath):
+        if isdir(db_fpath):
             db_aux_files = [f for f in os.listdir(db_fpath) if f.endswith('.nsq')]
             if db_aux_files:
                 db_fpath = join(qconfig.custom_blast_db_fpath, db_aux_files[0].replace('.nsq', ''))
+        elif isfile(db_fpath) and db_fpath.endswith('.nsq'):
+            db_fpath = db_fpath[:-len('.nsq')]
         if not os.path.isfile(db_fpath + '.nsq'):
-            logger.error('You should specify path to BLAST database obtained by running makeblastdb command.'
+            logger.error('You should specify path to BLAST database obtained by running makeblastdb command: '
+                         'either path to directory containing <dbname>.nsq file or path to <dbname>.nsq file itself.'
                          ' Also you can rerun MetaQUAST without --blast-db option. MetaQUAST uses SILVA 16S RNA database by default.',
                          exit_with_code=2)
 

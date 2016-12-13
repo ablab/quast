@@ -67,6 +67,7 @@ def align_and_analyze(is_cyclic, index, contigs_fpath, output_dirpath, ref_fpath
 
     logger.info('  ' + qutils.index_to_str(index) + assembly_label)
 
+    alignment_tsv_fpath = join(output_dirpath, "alignments_" + corr_assembly_label + '.tsv')
     if not qconfig.space_efficient:
         log_out_fpath = join(output_dirpath, qconfig.contig_report_fname_pattern % corr_assembly_label + '.stdout')
         log_err_fpath = join(output_dirpath, qconfig.contig_report_fname_pattern % corr_assembly_label + '.stderr')
@@ -79,8 +80,9 @@ def align_and_analyze(is_cyclic, index, contigs_fpath, output_dirpath, ref_fpath
         icarus_out_fpath = '/dev/null'
         misassembly_fpath = '/dev/null'
         unaligned_info_fpath = '/dev/null'
+        if not qconfig.is_combined_ref:
+            alignment_tsv_fpath = '/dev/null'
 
-    alignment_tsv_fpath = join(output_dirpath, "alignments_" + corr_assembly_label + '.tsv')
     unique_contigs_fpath = join(output_dirpath, qconfig.unique_contigs_fname_pattern % corr_assembly_label)
     icarus_out_f = open(icarus_out_fpath, 'w')
     icarus_header_cols = ['S1', 'E1', 'S2', 'E2', 'Reference', 'Contig', 'IDY', 'Ambiguous', 'Best_group']
@@ -203,7 +205,8 @@ def align_and_analyze(is_cyclic, index, contigs_fpath, output_dirpath, ref_fpath
                  if name in misassembled_contigs.keys()]
         fastaparser.write_fasta(join(output_dirpath, qutils.name_from_fpath(contigs_fpath) + '.mis_contigs.fa'), fasta)
 
-    logger.debug('  ' + qutils.index_to_str(index) + 'Alignments: ' + qutils.relpath(alignment_tsv_fpath))
+    if alignment_tsv_fpath != '/dev/null':
+        logger.debug('  ' + qutils.index_to_str(index) + 'Alignments: ' + qutils.relpath(alignment_tsv_fpath))
     alignment_tsv_f = open(alignment_tsv_fpath, 'w')
 
     if qconfig.is_combined_ref:

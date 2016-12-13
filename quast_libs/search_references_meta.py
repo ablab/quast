@@ -83,8 +83,8 @@ def try_send_request(url):
                 raise Exception
             break
         except Exception:
-            _, exc_value, _ = sys.exc_info()
-            logger.exception(exc_value)
+            # _, exc_value, _ = sys.exc_info()
+            # logger.exception(exc_value)
             attempts += 1
             if attempts >= 3:
                 connection_errors += 1

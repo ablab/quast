@@ -152,7 +152,7 @@ class Fields:
     GAGE_NUMCONTIGS = 'Contigs #'
     GAGE_MINCONTIG = 'Min contig'
     GAGE_MAXCONTIG = 'Max contig'
-    GAGE_N50 = 'N50'
+    GAGE_N50 = 'Not corrected N50'
     GAGE_GENOMESIZE = 'Genome size'
     GAGE_ASSEMBLY_SIZE = 'Assembly size'
     GAGE_CHAFFBASES = 'Chaff bases'

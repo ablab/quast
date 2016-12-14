@@ -291,7 +291,8 @@ def download_blastdb(logger=logger, only_clean=False):
 def parallel_blast(contigs_fpath, label, corrected_dirpath, err_fpath, blast_res_fpath, blast_check_fpath, blast_threads):
     logger.info('  ' + 'processing ' + label)
     blast_query_fpath = contigs_fpath
-    if contigs_fpath.endswith('.gz') or contigs_fpath.endswith('.bz2'):
+    compress_ext = ['.gz', '.gzip', '.bz2', '.bzip2', '.zip']
+    if any(contigs_fpath.endswith(ext) for ext in compress_ext):
         logger.info('  ' + 'unpacking ' + label)
         unpacked_fpath = os.path.join(corrected_dirpath, os.path.basename(contigs_fpath) + '.unpacked')
         with _get_fasta_file_handler(contigs_fpath) as f_in:

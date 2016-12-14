@@ -238,7 +238,8 @@ def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpat
 
         if not qconfig.no_check:
             if not paired_reads_names_are_equal(reads_fpaths, logger):
-                logger.info('  Read names are discordant, skipping reads analysis!')
+                logger.error('  Read names are discordant, skipping reads analysis!')
+                logger.info('  Failed searching structural variations.')
                 return None, None, None
 
         prev_dir = os.getcwd()
@@ -512,19 +513,27 @@ def get_correct_names_for_chroms(output_dirpath, ref_fpath, sam_fpath, err_path,
                 chr_len = re.findall(chr_len_pattern, l)[0]
                 sam_chr_lengths[chr_name] = int(chr_len)
 
-    for ref_chr, sam_chr in zip(ref_chr_lengths.keys(), sam_chr_lengths.keys()):
-        if correct_name(sam_chr) == ref_chr[:len(sam_chr)] and sam_chr_lengths[sam_chr] == ref_chr_lengths[ref_chr]:
-            correct_chr_names[sam_chr] = ref_chr
-        elif sam_chr_lengths[sam_chr] != ref_chr_lengths[ref_chr]:
-            logger.error('Chromosome lengths in reference and SAM file do not match. ' +
-                         'QUAST will try to realign reads to the reference genome. ' if reads_fpaths else
-                         'Use SAM file obtained by aligning reads to the reference genome.')
-            return None
+    inconsistency = ''
+    if len(ref_chr_lengths) != len(sam_chr_lengths):
+        inconsistency = 'Number of chromosomes'
+    else:
+        for ref_chr, sam_chr in zip(ref_chr_lengths.keys(), sam_chr_lengths.keys()):
+            if correct_name(sam_chr) == ref_chr[:len(sam_chr)] and sam_chr_lengths[sam_chr] == ref_chr_lengths[ref_chr]:
+                correct_chr_names[sam_chr] = ref_chr
+            elif sam_chr_lengths[sam_chr] != ref_chr_lengths[ref_chr]:
+                inconsistency = 'Chromosome lengths'
+                break
+            else:
+                inconsistency = 'Chromosome names'
+                break
+    if inconsistency:
+        if reads_fpaths:
+            logger.warning(inconsistency + ' in reference and SAM file do not match. ' +
+                           'QUAST will try to realign reads to the reference genome.')
         else:
-            logger.error('Chromosome names in reference and SAM file do not match. ' +
-                         'QUAST will try to realign reads to the reference genome.' if reads_fpaths else
+            logger.error(inconsistency + ' in reference and SAM file do not match. ' +
                          'Use SAM file obtained by aligning reads to the reference genome.')
-            return None
+        return None
     return correct_chr_names
 
 

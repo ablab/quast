@@ -206,10 +206,10 @@ function getJustNumberTickFormatter(maxY, additionalText) {
     return function (val, axis) {
         additionalText = additionalText || '';
         if (val > axis.max + 1) {
-                res = additionalText + toPrettyString(val);
-            } else {
-                res = toPrettyString(val);
-            }
+            res = additionalText + toPrettyString(val);
+        } else {
+            res = toPrettyString(val);
+        }
         return res;
     }
 }
@@ -217,11 +217,11 @@ function getJustNumberTickFormatter(maxY, additionalText) {
 function getPercentTickFormatter(maxY, additionalText) {
     return function (val, axis) {
         additionalText = additionalText || '';
-            if (val > maxY + 1 || val + axis.tickSize >= 100) {
-                res = additionalText + toPrettyString(val, '%');
-            } else {
-                res = toPrettyString(val);
-            }
+        if (val > maxY + 1 || val == 100) {
+            res = additionalText + toPrettyString(val, '%');
+        } else {
+            res = toPrettyString(val);
+        }
         return res;
     }
 }

@@ -22,16 +22,19 @@
        - "--significant-part-size" renamed to "--unaligned-part-size", see details below
          (item #6).
 
-      4. New metric and plot added (MetaQUAST only, combined reference only):
+      4. New metric, report and plot added (MetaQUAST only, combined reference only):
        - # possible misassemblies (number of putative interspecies translocations
          in possibly misassembled contigs if each large unaligned fragment is supposed
-         to be a fragment of unknown reference).
+         to be a fragment of unknown reference);
+       - report of interspecies translocations number per each reference, saved to
+         interspecies_translocations_by_refs_<assembly_name>.info under
+         <output_dir>/combined_reference/contigs_reports/;
        - plot of all found and supposed (see above) interspecies translocations, saved to
-         combined_reference/contigs_reports/interspecies_translocations.pdf
+         intergenomic_misassemblies.pdf under the same folder as above report.
 
       5. New detailed report added:
        - all fully and partially unaligned contigs, their length, and unaligned parts are
-         listed in contigs_reports/contigs_report_<assembly_name>.unaligned.info
+         listed in <output_dir>/contigs_reports/contigs_report_<assembly_name>.unaligned.info
 
       6. Partially unaligned contigs are redefined in simpler and more logical way. Now
          all contigs having at least one unaligned fragment of length greater or equal to

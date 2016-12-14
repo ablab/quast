@@ -365,8 +365,8 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fp
         ca_output.icarus_out_f.write('\t'.join(['CONTIG', contig, str(ctg_len), contig_type]) + '\n')
         ca_output.stdout_f.write('\n')
 
-    ca_output.coords_filtered_f.close()
     unaligned_file.close()
+    unaligned_info_file.close()
     misassembled_bases = sum(misassembled_contigs.values())
 
     result = {'region_misassemblies': region_misassemblies,

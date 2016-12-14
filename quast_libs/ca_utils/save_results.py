@@ -1,3 +1,10 @@
+############################################################################
+# Copyright (c) 2015-2016 Saint Petersburg State University
+# Copyright (c) 2011-2015 Saint Petersburg Academic University
+# All Rights Reserved
+# See file LICENSE for details.
+############################################################################
+from __future__ import with_statement
 import os
 
 from quast_libs import qconfig, qutils, reporting
@@ -219,15 +226,14 @@ def save_combined_ref_stats(results, contigs_fpaths, ref_labels_by_chromosomes, 
                                                                         potential_misassemblies_by_refs[i][k]))
                     all_rows.append(row)
                 misassembly_by_ref_fpath = os.path.join(output_dir, 'interspecies_translocations_by_refs_%s.info' % assembly_name)
-                misassembly_by_ref_file = open(misassembly_by_ref_fpath, 'w')
-                misassembly_by_ref_file.write('Number of interspecies translocations by references: \n')
-                misassembly_by_ref_file.close()
+                with open(misassembly_by_ref_fpath, 'w') as misassembly_by_ref_file:
+                    misassembly_by_ref_file.write('Number of interspecies translocations by references: \n')
                 print_file(all_rows, misassembly_by_ref_fpath, append_to_existing_file=True)
 
-                misassembly_by_ref_file = open(misassembly_by_ref_fpath, 'a')
-                misassembly_by_ref_file.write('References:\n')
-                for ref_num, ref in enumerate(all_refs):
-                    misassembly_by_ref_file.write(str(ref_num + 1) + ' - ' + ref + '\n')
+                with open(misassembly_by_ref_fpath, 'a') as misassembly_by_ref_file:
+                    misassembly_by_ref_file.write('References:\n')
+                    for ref_num, ref in enumerate(all_refs):
+                        misassembly_by_ref_file.write(str(ref_num + 1) + ' - ' + ref + '\n')
                 logger.info('  Information about interspecies translocations by references for %s is saved to %s' %
                             (assembly_name, misassembly_by_ref_fpath))
     misassemblies = []

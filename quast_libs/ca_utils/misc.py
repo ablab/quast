@@ -129,6 +129,12 @@ def clean_tmp_files(nucmer_fpath):
             os.remove(nucmer_fpath + ext)
 
 
+def close_handlers(ca_output):
+    for handler in vars(ca_output).values():  # assume that ca_output does not have methods (fields only)
+        if handler:
+            handler.close()
+
+
 def compress_nucmer_output(logger, nucmer_fpath):
     for ext in ['.all_snps', '.used_snps']:
         fpath = nucmer_fpath + ext

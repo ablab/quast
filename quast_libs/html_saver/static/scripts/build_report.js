@@ -137,7 +137,7 @@ function buildReport() {
         firstPlot = false;
     }
     gcInfos = readJson('gc');
-    if (gcInfos && gcInfos.lists_of_gc_info) {
+    if (gcInfos && (gcInfos.lists_of_gc_info || gcInfos.list_of_GC_distributions)) {
         makePlot(firstPlot, assembliesNames, order, 'gc', 'GC content', gc.draw, gcInfos, gcInfos.reference_index);
     }
 

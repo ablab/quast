@@ -296,11 +296,15 @@ function buildTotalReport(assembliesNames, report, order, date, minContig, gloss
 
             var numColumns = 1; // no GC in combined reference
 
+            $('#combined_reference_name').show();
             if (refLen) {
-                $('#combined_reference_length').show().find('.val').html(toPrettyString(refLen));
+                $('#reference_length').show().find('.val').html(toPrettyString(refLen));
                 numColumns++;
             }
             if (refFragments) {
+                $('#combined_reference_files').show().find('.val').html(toPrettyString(refFragments));
+                if (refFragments > 1)
+                    $('#combined_reference_files').find('.plural_ending').show();
                 numColumns++;
             }
             if (refGC) {

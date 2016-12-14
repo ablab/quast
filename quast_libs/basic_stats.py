@@ -218,13 +218,14 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, json_output_dir, results_dir):
         lists_of_lengths = [sorted(list, reverse=True) for list in lists_of_lengths]
         corr_lists_of_lengths = [[sum(list_of_length[((i - 1) * multiplicator):(i * multiplicator)]) for i in range(1, max_points)
                                   if (i * multiplicator) < len(list_of_length)] for list_of_length in lists_of_lengths]
-        reference_lengths = [sum(reference_lengths[((i - 1) * multiplicator):(i * multiplicator)]) for i in range(1, max_points)
-                                  if (i * multiplicator) < len(reference_lengths)]
+        if len(reference_lengths) > 1:
+            reference_lengths = [sum(reference_lengths[((i - 1) * multiplicator):(i * multiplicator)])
+                                 if (i * multiplicator) < len(reference_lengths) else
+                                 sum(reference_lengths[((i - 1) * multiplicator):])
+                                 for i in range(1, max_points)] + [sum(reference_lengths[(max_points - 1) * multiplicator:])]
         for num_list in range(len(corr_lists_of_lengths)):
             last_index = len(corr_lists_of_lengths[num_list])
             corr_lists_of_lengths[num_list].append(sum(lists_of_lengths[num_list][last_index * multiplicator:]))
-            last_ref_index = len(reference_lengths)
-            reference_lengths.append(sum(reference_lengths[last_ref_index * multiplicator:]))
     else:
         corr_lists_of_lengths = [sorted(list, reverse=True) for list in lists_of_lengths]
 
@@ -311,10 +312,10 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, json_output_dir, results_dir):
         reference_index = len(list_of_GC_distributions_with_ref)
         list_of_GC_distributions_with_ref.append(reference_GC_distribution)
 
-    if json_output_dir:
+    if json_output_dir and not qconfig.no_gc:
         json_saver.save_GC_info(json_output_dir, contigs_fpaths, list_of_GC_distributions_with_ref, reference_index)
 
-    if qconfig.html_report and not qconfig.is_combined_ref:
+    if qconfig.html_report and not qconfig.is_combined_ref and not qconfig.no_gc:
         from quast_libs.html_saver import html_saver
         html_saver.save_GC_info(results_dir, contigs_fpaths, list_of_GC_distributions_with_ref, reference_index)
 
@@ -329,7 +330,7 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, json_output_dir, results_dir):
         ########################################################################import plotter
         # Drawing cumulative plot...
         plotter.cumulative_plot(ref_fpath, contigs_fpaths, lists_of_lengths, output_dirpath + '/cumulative_plot', 'Cumulative length')
-        if not qconfig.is_combined_ref:
+        if not qconfig.is_combined_ref and not qconfig.no_gc:
             ########################################################################
             # Drawing GC content plot...
             plotter.GC_content_plot(ref_fpath, contigs_fpaths, list_of_GC_distributions_with_ref, output_dirpath + '/GC_content_plot')

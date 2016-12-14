@@ -67,7 +67,6 @@ def align_and_analyze(is_cyclic, index, contigs_fpath, output_dirpath, ref_fpath
 
     logger.info('  ' + qutils.index_to_str(index) + assembly_label)
 
-    alignment_tsv_fpath = join(output_dirpath, "alignments_" + corr_assembly_label + '.tsv')
     if not qconfig.space_efficient:
         log_out_fpath = join(output_dirpath, qconfig.contig_report_fname_pattern % corr_assembly_label + '.stdout')
         log_err_fpath = join(output_dirpath, qconfig.contig_report_fname_pattern % corr_assembly_label + '.stderr')
@@ -80,10 +79,7 @@ def align_and_analyze(is_cyclic, index, contigs_fpath, output_dirpath, ref_fpath
         icarus_out_fpath = '/dev/null'
         misassembly_fpath = '/dev/null'
         unaligned_info_fpath = '/dev/null'
-        if not qconfig.is_combined_ref:
-            alignment_tsv_fpath = '/dev/null'
 
-    unique_contigs_fpath = join(output_dirpath, qconfig.unique_contigs_fname_pattern % corr_assembly_label)
     icarus_out_f = open(icarus_out_fpath, 'w')
     icarus_header_cols = ['S1', 'E1', 'S2', 'E2', 'Reference', 'Contig', 'IDY', 'Ambiguous', 'Best_group']
     icarus_out_f.write('\t'.join(icarus_header_cols) + '\n')
@@ -205,37 +201,35 @@ def align_and_analyze(is_cyclic, index, contigs_fpath, output_dirpath, ref_fpath
                  if name in misassembled_contigs.keys()]
         fastaparser.write_fasta(join(output_dirpath, qutils.name_from_fpath(contigs_fpath) + '.mis_contigs.fa'), fasta)
 
-    if alignment_tsv_fpath != '/dev/null':
-        logger.debug('  ' + qutils.index_to_str(index) + 'Alignments: ' + qutils.relpath(alignment_tsv_fpath))
-    alignment_tsv_f = open(alignment_tsv_fpath, 'w')
-
     if qconfig.is_combined_ref:
-        unique_contigs_f = open(unique_contigs_fpath, 'w')
+        alignment_tsv_fpath = join(output_dirpath, "alignments_" + corr_assembly_label + '.tsv')
+        unique_contigs_fpath = join(output_dirpath, qconfig.unique_contigs_fname_pattern % corr_assembly_label)
+        logger.debug('  ' + qutils.index_to_str(index) + 'Alignments: ' + qutils.relpath(alignment_tsv_fpath))
         used_contigs = set()
+        with open(unique_contigs_fpath, 'w') as unique_contigs_f:
+            with open(alignment_tsv_fpath, 'w') as alignment_tsv_f:
+                for chr_name, aligns in ref_aligns.items():
+                    alignment_tsv_f.write(chr_name)
+                    contigs = set([align.contig for align in aligns])
+                    for contig in contigs:
+                        alignment_tsv_f.write('\t' + contig)
 
-    for chr_name, aligns in ref_aligns.items():
-        alignment_tsv_f.write(chr_name)
-        contigs = set([align.contig for align in aligns])
-        for contig in contigs:
-            alignment_tsv_f.write('\t' + contig)
-
-        if qconfig.is_combined_ref:
-            ref_name = ref_labels_by_chromosomes[chr_name]
-            align_by_contigs = defaultdict(int)
-            for align in aligns:
-                align_by_contigs[align.contig] += align.len2
-            for contig, aligned_len in align_by_contigs.items():
-                if contig in used_contigs:
-                    continue
-                used_contigs.add(contig)
-                len_cov_pattern = re.compile(r'_length_([\d\.]+)_cov_([\d\.]+)')
-                if len_cov_pattern.findall(contig):
-                    contig_len, contig_cov = len_cov_pattern.findall(contig)[0][0], len_cov_pattern.findall(contig)[0][1]
-                    if aligned_len / float(contig_len) > 0.9:
-                        unique_contigs_f.write(ref_name + '\t' + str(aligned_len) + '\t' + contig_cov + '\n')
-
-        alignment_tsv_f.write('\n')
-    alignment_tsv_f.close()
+                    if qconfig.is_combined_ref:
+                        ref_name = ref_labels_by_chromosomes[chr_name]
+                        align_by_contigs = defaultdict(int)
+                        for align in aligns:
+                            align_by_contigs[align.contig] += align.len2
+                        for contig, aligned_len in align_by_contigs.items():
+                            if contig in used_contigs:
+                                continue
+                            used_contigs.add(contig)
+                            len_cov_pattern = re.compile(r'_length_([\d\.]+)_cov_([\d\.]+)')
+                            if len_cov_pattern.findall(contig):
+                                contig_len = len_cov_pattern.findall(contig)[0][0]
+                                contig_cov = len_cov_pattern.findall(contig)[0][1]
+                                if aligned_len / float(contig_len) > 0.9:
+                                    unique_contigs_f.write(ref_name + '\t' + str(aligned_len) + '\t' + contig_cov + '\n')
+                    alignment_tsv_f.write('\n')
 
     log_out_f.close()
     if qconfig.show_snps:

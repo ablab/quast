@@ -47,11 +47,12 @@ def compile_aligner(logger, only_clean=False, compile_all_aligners=False):
                 check_prev_compilation_failed(contig_aligner, join(contig_aligner_dirpath, 'make.failed'), just_notice=True, logger=logger):
             return True
 
-        if not qconfig.force_nucmer and not contig_aligner_dirpath and qconfig.platform_name == 'macosx' and not \
-                check_prev_compilation_failed('E-MEM', e_mem_failed_compilation_flag, just_notice=True, logger=logger):
-            contig_aligner = 'E-MEM'
-            contig_aligner_dirpath = join(qconfig.LIBS_LOCATION, 'E-MEM-osx')
-            return True
+        if not qconfig.force_nucmer and not contig_aligner_dirpath and qconfig.platform_name == 'macosx':
+            if get_installed_emem() or \
+                    not check_prev_compilation_failed('E-MEM', e_mem_failed_compilation_flag, just_notice=True, logger=logger):
+                contig_aligner = 'E-MEM'
+                contig_aligner_dirpath = join(qconfig.LIBS_LOCATION, 'E-MEM-osx')
+                return True
 
     default_requirements = ['nucmer', 'delta-filter', 'show-coords', 'show-snps', 'mummer', 'mgaps']
 

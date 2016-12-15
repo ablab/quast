@@ -57,9 +57,9 @@ def parse_nucmer_contig_report(report_fpath, ref_names, cumulative_ref_lengths):
                     split_line[ref_col], split_line[contig_col], split_line[idy_col], split_line[ambig_col], split_line[best_col]
                 unshifted_start, unshifted_end, start_in_contig, end_in_contig = int(unshifted_start), int(unshifted_end),\
                                                                                  int(start_in_contig), int(end_in_contig)
-                cur_shift = cumulative_ref_lengths[ref_names.index(ref_name)]
-                start = unshifted_start + cur_shift
-                end = unshifted_end + cur_shift
+                cur_shift = cumulative_ref_lengths[ref_names.index(ref_name)] or 1
+                start = unshifted_start + cur_shift - 1
+                end = unshifted_end + cur_shift - 1
 
                 is_rc = ((start - end) * (start_in_contig - end_in_contig)) < 0
                 position_in_ref = unshifted_start

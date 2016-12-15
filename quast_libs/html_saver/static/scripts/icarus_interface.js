@@ -102,7 +102,7 @@ function keyPress (cmd, deltaCoeff) {
             brush.extent([ext[0] - delta, ext[1] + delta]);
             break;
         case 'left':
-            if (ext[0] > 0) brush.extent([ext[0] - delta, ext[1] - delta]);
+            if (ext[0] > genomeStartPos) brush.extent([ext[0] - delta, ext[1] - delta]);
             break;
         case 'right':
             if (ext[1] < x_mini.domain()[1]) brush.extent([ext[0] + delta, ext[1] + delta]);

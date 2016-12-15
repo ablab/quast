@@ -380,6 +380,13 @@ function findNearestPoint(points, x) {
     return points[points.length-1][1]
 }
 
+function getSelectedAssemblies() {
+    var selectedAssemblies = [];
+    $('#legend-placeholder input:checked').each(function() {
+        selectedAssemblies.push($(this).attr('name'));
+    });
+    return selectedAssemblies;
+}
 
 // Cookie functions based on http://www.quirksmode.org/js/cookies.html
 // Cookies won't work for local files.

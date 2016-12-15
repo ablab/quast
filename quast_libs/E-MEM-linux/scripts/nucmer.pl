@@ -348,8 +348,9 @@ sub main ( )
     #-- Run e-mem | mgaps and assert return value is zero
     print (STDERR "2,3: RUNNING e-mem AND CREATING CLUSTERS\n");
     my $pfx_dir = dirname($pfx);
+    my $pfx_opt = $emem_path ? "" : " -p $pfx_dir ";
     $err[0] = $tigr->runCommand
-        ("$algo_path $algo $mdir -l $size -t $threads -n $pfx.ntref $qry_file > $pfx.mems");
+        ("$algo_path $algo $mdir -l $size -t $threads -n $pfx.ntref $pfx_opt $qry_file > $pfx.mems");
 
     if ( $err[0] != 0 ) {
         $tigr->bail ("ERROR: e-mem returned non-zero\n");

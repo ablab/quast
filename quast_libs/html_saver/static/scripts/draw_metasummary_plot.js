@@ -85,13 +85,15 @@ var summary = {
                     placeholder, legendPlaceholder, glossary, order, scalePlaceholder) {
         var sortBtnClass = getSortRefsRule();
 
+        var selectedAssemblies = getSelectedAssemblies();
         $('#legend-placeholder').empty();
 
         filenames.forEach(function(filename, i) {
         var id = 'label_' + i + '_id';
+        var isChecked = (selectedAssemblies.length > 0 && selectedAssemblies.indexOf(i.toString())) != -1 ? 'checked="checked"' : "";
         $('#legend-placeholder').append('<div>' +
             '<label for="' + id + '" style="color: ' + colors[i] + '">' +
-            '<input type="checkbox" name="' + i + '" checked="checked" id="' + id + '">&nbsp;' + filename + '</label>' +
+            '<input type="checkbox" name="' + i + '" ' + isChecked + '" id="' + id + '">&nbsp;' + filename + '</label>' +
             '</div>');
         });
 

@@ -248,6 +248,8 @@ function showPlot(index) {
 
 function createLegend(labels, colors, index){
     var sortBtnClass = getSortRefsRule();
+
+    var selectedAssemblies = getSelectedAssemblies();
     $('#legend-placeholder').empty();
     var selectors = "";
     var filenames = misassemblies.filenames;
@@ -255,9 +257,10 @@ function createLegend(labels, colors, index){
     labels.forEach(function(label, i) {
     var id = 'label_' + i + '_id'; 
     var link = '<span id="' + filenames[i] + '-switch"' + "class='plot-mis-type-switch dotted-link'>by type<br></span><br>";
+    var isChecked = (selectedAssemblies.length > 0 && selectedAssemblies.indexOf(i.toString())) != -1 ? 'checked="checked"' : "";
     $('#legend-placeholder').append('<div>' +
         '<label for="' + id + '" style="color: ' + colors[i] + '">' +
-        '<input type="checkbox" name="' + i + '" checked="checked" id="' + id + '">&nbsp;' + label +'</label>' + 
+        '<input type="checkbox" name="' + i + '" ' + isChecked + ' id="' + id + '">&nbsp;' + label +'</label>' +
         (index == 0 ? '<br>' + link : '') + '</div>');
     });
     if (index > 0) {

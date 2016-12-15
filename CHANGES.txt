@@ -1,11 +1,11 @@
 -- Version history --
 
 4.4   1. Icarus updates:
-       - buttons for expanding overlapped contig added to detailed assembly tracks
+       - buttons for expanding overlapped alignments added to detailed assembly tracks
          on Contig Alignment Viewers;
        - additional colors for ambiguous contigs and alternative blocks of misassembled
-         contigs on on both Contig Size and Contig Alignment Viewers;
-       - few more fixes for better performance on low resolution screens.
+         contigs on both Contig Size and Contig Alignment Viewers;
+       - better performance on low resolution screens.
 
       2. Python3 is now supported (versions 3.3, 3.4 and 3.5).
 
@@ -29,7 +29,7 @@
        - report of interspecies translocations number per each reference, saved to
          interspecies_translocations_by_refs_<assembly_name>.info under
          <output_dir>/combined_reference/contigs_reports/;
-       - plot of all found and supposed (see above) interspecies translocations, saved to
+       - plot of all found and supposed (possible) interspecies translocations, saved to
          intergenomic_misassemblies.pdf under the same folder as above report.
 
       5. New detailed report added:
@@ -53,7 +53,7 @@
          already installed on the system, it will be used instead of embedded E-MEM.
 
       10. User-provided SAM/BAM files are now checked for correct chromosome names and
-          automatically corrected if needed.
+          automatically corrected if needed and correction is possible.
 
       11. Fixed incorrect behaviour of MetaQUAST on compressed assemblies in "without
           references" mode.

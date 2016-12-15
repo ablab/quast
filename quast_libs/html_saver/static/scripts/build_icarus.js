@@ -382,7 +382,7 @@ THE SOFTWARE.
                 chrName = chrContigs[i];
                 chrLen = chromosomes_len[chrName];
                 separatedLines.push({name: chrName, corr_start: currentLen, corr_end: currentLen + chrLen,
-                               y1: 0, len: chrLen});
+                               y1: 1, len: chrLen});
                 currentLen += chrLen;
             }
         }

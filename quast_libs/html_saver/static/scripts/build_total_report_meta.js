@@ -302,10 +302,22 @@ function buildTotalReport(assembliesNames, report, order, date, minContig, gloss
                 numColumns++;
             }
             if (refFragments) {
-                $('#combined_reference_files').show().find('.val').html(toPrettyString(refFragments));
+                $('#reference_fragments').show().find('.val').html(toPrettyString(refFragments));
                 if (refFragments > 1)
-                    $('#combined_reference_files').find('.plural_ending').show();
+                    $('#reference_fragments').find('.plural_ending').show();
                 numColumns++;
+            }
+            var refFiles = 0;
+            for (var report_n = 0; report_n < reports.length; report_n++ ) {
+                var refName = reports[report_n].name;
+                if (refName != 'not_aligned') {
+                    refFiles += 1;
+                }
+            }
+            if (refFiles) {
+                $('#combined_reference_files').show().find('.val').html(toPrettyString(refFiles));
+                if (refFiles > 1)
+                    $('#combined_reference_files').find('.plural_ending').show();
             }
             if (refGC) {
                 $('#reference_gc').show().find('.val').html(toPrettyString(refGC));

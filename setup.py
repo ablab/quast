@@ -143,6 +143,14 @@ if cmd_in(['install_full']):
 
 modules_failed_to_install = []
 if cmd_in(['install', 'develop', 'build', 'build_ext']):
+    try:
+        import matplotlib
+    except ImportError:
+        try:
+            pip.main(['install', 'matplotlib'])
+        except:
+            logger.warning('Cannot install matplotlib. Static plots will not be drawn (however, HTML will be)')
+
     logger.info('* Compiling aligner *')
     if not compile_aligner(logger, compile_all_aligners=True):
         modules_failed_to_install.append('Contigs aligners for reference-based evaluation (affects -R and many other options)')
@@ -220,7 +228,6 @@ The tool accepts multiple assemblies, thus is suitable for comparison.''',
         ('test_data', find_package_files('test_data', package='')),
     ],
     install_requires=[
-        'matplotlib',
         'joblib',
         'simplejson',
     ],

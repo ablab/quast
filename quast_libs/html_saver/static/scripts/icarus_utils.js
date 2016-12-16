@@ -287,7 +287,6 @@ function changeInfo(block) {
         var overlapsInfo = overlapsMenuInfo.append('p').attr('class', 'close');
         for (var i = 0; i < block.overlaps.length; i++) {
             var nextBlock = block.overlaps[i];
-            nextBlock.contig = block.name;
             nextBlock.chr = getBlockChrom(nextBlock);
             appendPositionElement(nextBlock, nextBlock, overlapsInfo, block, prevChr, true);
         }

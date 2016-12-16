@@ -132,14 +132,14 @@ def prepare_alignment_data_for_one_ref(chr, chr_full_names, chr_names_by_id, ref
                     if prev_end > alignment.start:
                         for prev_align in prev_alignments:
                             if alignment.name != prev_align.name and prev_align.end - alignment.start > 100:
-                                overlapped_contigs[prev_align].append('{corr_start: ' + str(alignment.start) +
-                                    ',corr_end: ' + str(alignment.end) + ',start:' + str(alignment.unshifted_start) + ',end:' + str(alignment.unshifted_end) +
-                                    ',start_in_contig:' + str(alignment.start_in_contig) + ',end_in_contig:' +
-                                    str(alignment.end_in_contig) + ',chr: "' + chr_names_by_id[alignment.ref_name] + '"}')
-                                overlapped_contigs[alignment].append('{corr_start: ' + str(prev_align.start) +
-                                    ',corr_end: ' + str(prev_align.end) + ',start:' + str(prev_align.unshifted_start) + ',end:' + str(prev_align.unshifted_end) +
-                                    ',start_in_contig:' + str(prev_align.start_in_contig) + ',end_in_contig:' +
-                                    str(prev_align.end_in_contig) + ',chr: "' + chr_names_by_id[prev_align.ref_name] + '"}')
+                                overlapped_contigs[prev_align].append('{contig:"' + alignment.name + '",corr_start: ' + str(alignment.start) +
+                                    ',corr_end: ' + str(alignment.end) + ',start:' + str(alignment.unshifted_start) +
+                                    ',end:' + str(alignment.unshifted_end) + ',start_in_contig:' + str(alignment.start_in_contig) +
+                                    ',end_in_contig:' + str(alignment.end_in_contig) + ',chr: "' + chr_names_by_id[alignment.ref_name] + '"}')
+                                overlapped_contigs[alignment].append('{contig:"' + prev_align.name + '",corr_start: ' + str(prev_align.start) +
+                                    ',corr_end: ' + str(prev_align.end) + ',start:' + str(prev_align.unshifted_start) +
+                                    ',end:' + str(prev_align.unshifted_end) + ',start_in_contig:' + str(prev_align.start_in_contig) +
+                                    ',end_in_contig:' + str(prev_align.end_in_contig) + ',chr: "' + chr_names_by_id[prev_align.ref_name] + '"}')
                         prev_alignments.append(alignment)
                     else:
                         prev_alignments = [alignment]

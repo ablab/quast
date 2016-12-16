@@ -7,13 +7,22 @@ function getBlockStructure(block) {
     if (typeof(contig_structures) !== 'undefined') {
         var structure = contig_structures[block.assembly][block.name];
         for (var i = 0; i < structure.length; i++) {
-            structure[i].contig = block.name;
+            if (structure[i].chr) {
+                structure[i].contig = block.name;
+                structure[i].chr = getBlockChrom(structure[i]);
+            }
         }
         return structure;
     }
     else {
         return block.structure;
     }
+}
+
+function getBlockChrom(block) {
+    if (chrom_str = references_by_id[block.chr])
+        return chrom_str;
+    else return block.chr;
 }
 
 function getItemStart(block, minExtent) {
@@ -185,6 +194,7 @@ function changeInfo(block) {
     if (currentAlignmentSet) {
         for (var i = 0; i < currentAlignmentSet.length; i++) {
             var nextBlock = currentAlignmentSet[i];
+            nextBlock.chr = getBlockChrom(nextBlock);
             if (nextBlock.contig_type != "M" && block.corr_start == nextBlock.corr_start && nextBlock.corr_end == block.corr_end) {
                 prevChr = nextBlock.chr;
                 break;
@@ -278,6 +288,7 @@ function changeInfo(block) {
         for (var i = 0; i < block.overlaps.length; i++) {
             var nextBlock = block.overlaps[i];
             nextBlock.contig = block.name;
+            nextBlock.chr = getBlockChrom(nextBlock);
             appendPositionElement(nextBlock, nextBlock, overlapsInfo, block, prevChr, true);
         }
     }
@@ -298,6 +309,7 @@ function changeInfo(block) {
         for (var i = 0; i < block.ambiguous_alignments.length; i++) {
             var nextBlock = block.ambiguous_alignments[i];
             nextBlock.contig = block.name;
+            nextBlock.chr = getBlockChrom(nextBlock);
             if (nextBlock.contig_type != "M") {
                 appendPositionElement(nextBlock, nextBlock, ambiguousInfo, block, prevChr, true);
             }

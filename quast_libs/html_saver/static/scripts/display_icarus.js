@@ -102,7 +102,7 @@ function display() {
                 if (w > triangle_width * 1.5) visPaths.push(triangle);
             }
         }
-        if (visItems[item_n].genes && visItems[item_n].contig_type != "small_contigs") {
+        if (visItems[item_n].genes && visItems[item_n].contig_type != "short_contigs") {
             for (var i = 0; i < visItems[item_n].genes.length; i++) {
                 var gene = visItems[item_n].genes[i];
                 if (gene.corr_start >= maxExtent || gene.corr_end <= minExtent)

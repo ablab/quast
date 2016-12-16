@@ -299,7 +299,7 @@ THE SOFTWARE.
             })
             .attr('height', miniItemHeight)
             .attr('opacity', function (block) {
-                if (block.contig_type == 'small_contigs')
+                if (block.contig_type == 'short_contigs')
                     return paleContigsOpacity;
                 return 1;
             });
@@ -807,7 +807,7 @@ THE SOFTWARE.
         if (INTERLACE_BLOCKS_COLOR) c += ((numItem - countSupplementary) % 2 == 0 ? " odd" : "");
         var text = '';
         if (isContigSizePlot) {
-            if (block.contig_type == "small_contigs") c += " disabled";
+            if (block.contig_type == "short_contigs") c += " disabled";
             else if (block.contig_type == "unaligned") c += " unaligned";
             else if (block.contig_type == "misassembled") c += " misassembled";
             else if (block.contig_type == "ambiguous") c += " ambiguous";

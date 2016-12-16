@@ -177,8 +177,9 @@ def js_data_gen(assemblies, contigs_fpaths, chromosomes_length, output_dirpath, 
     chr_lengths_dict = {}
 
     ref_data = 'var references_by_id = {};\n'
-    for i, chr in enumerate(chr_names):
-        ref_data += 'references_by_id[' + str(i) + '] = "' + str(chr) + '";\n'
+    chr_names_by_id = dict((chrom, str(i)) for i, chrom in enumerate(chr_names))
+    for chrom, i in chr_names_by_id.items():
+        ref_data += 'references_by_id["' + str(i) + '"] = "' + chrom + '";\n'
     for i, chr in enumerate(chr_full_names):
         if contig_names_by_refs:
             ref_contigs = [contig for contig in chr_names if contig_names_by_refs[contig] == chr]
@@ -210,7 +211,7 @@ def js_data_gen(assemblies, contigs_fpaths, chromosomes_length, output_dirpath, 
             if physical_cov_data else None
 
         alignment_viewer_fpath, ref_data_str, contigs_structure_str, additional_assemblies_data, ms_selectors, num_misassemblies[chr], aligned_assemblies[chr] = \
-            prepare_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, data_str, chr_to_aligned_blocks, structures_by_labels,
+            prepare_alignment_data_for_one_ref(chr, chr_full_names, chr_names_by_id, ref_contigs, data_str, chr_to_aligned_blocks, structures_by_labels,
                                                contigs_by_assemblies, ambiguity_alignments_by_labels=ambiguity_alignments_by_labels,
                                                cov_data_str=cov_data_str, physical_cov_data_str=physical_cov_data_str,
                                                contig_names_by_refs=contig_names_by_refs, output_dir_path=output_all_files_dir_path)

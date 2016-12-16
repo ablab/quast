@@ -46,7 +46,7 @@ def get_assemblies_data(contigs_fpaths, icarus_dirpath, stdout_pattern, nx_marks
 
 
 def add_contig_structure_data(data_str, structure, ref_contigs, chr_full_names, contig_names_by_refs,
-                              used_chromosomes, links_to_chromosomes):
+                              used_chromosomes, links_to_chromosomes, chr_names_by_id):
     for el in structure:
         if isinstance(el, Alignment):
             if el.ref_name in ref_contigs:
@@ -65,7 +65,7 @@ def add_contig_structure_data(data_str, structure, ref_contigs, chr_full_names, 
             data_str.append('{corr_start: ' + str(corr_el_start) + ',corr_end: ' +
                             str(corr_el_end) + ',start:' + str(el.unshifted_start) + ',end:' + str(el.unshifted_end) +
                             ',start_in_contig:' + str(el.start_in_contig) + ',end_in_contig:' +
-                            str(el.end_in_contig) + ',IDY:' + el.idy + ',chr: "' + el.ref_name + '"},')
+                            str(el.end_in_contig) + ',IDY:' + el.idy + ',chr: "' + chr_names_by_id[el.ref_name] + '"},')
         elif type(el) == str:
             ms_description, ms_type = parse_misassembly_info(el)
             data_str.append('{contig_type: "M", mstype: "' + ms_type + '", msg: "' + ms_description + '"},')
@@ -73,7 +73,7 @@ def add_contig_structure_data(data_str, structure, ref_contigs, chr_full_names, 
 
 
 def get_contigs_structure(assemblies_contigs, chr_to_aligned_blocks, contigs_by_assemblies, ref_contigs, chr_full_names,
-                          contig_names_by_refs, structures_by_labels, used_chromosomes, links_to_chromosomes):
+                          contig_names_by_refs, structures_by_labels, used_chromosomes, links_to_chromosomes, chr_names_by_id):
     contigs_data_str = []
     contigs_data_str.append('var contig_lengths = {};')
     contigs_data_str.append('var contig_structures = {};')
@@ -88,14 +88,14 @@ def get_contigs_structure(assemblies_contigs, chr_to_aligned_blocks, contigs_by_
             data_str = ['contig_structures["' + assembly + '"]["' + contig.name + '"] = [ ']
             contig_structure = structures_by_labels[assembly][contig.name]
             data_str = add_contig_structure_data(data_str, contig_structure, ref_contigs, chr_full_names,
-                                                 contig_names_by_refs, used_chromosomes, links_to_chromosomes)
+                                                 contig_names_by_refs, used_chromosomes, links_to_chromosomes, chr_names_by_id)
             data_str.append('];')
             contigs_data_str.extend(data_str)
     contigs_data_str = '\n'.join(contigs_data_str)
     return contigs_data_str
 
 
-def prepare_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, data_str, chr_to_aligned_blocks,
+def prepare_alignment_data_for_one_ref(chr, chr_full_names, chr_names_by_id, ref_contigs, data_str, chr_to_aligned_blocks,
                                        structures_by_labels, contigs_by_assemblies, ambiguity_alignments_by_labels=None,
                                        contig_names_by_refs=None, output_dir_path=None, cov_data_str=None, physical_cov_data_str=None):
     html_name = get_html_name(chr, chr_full_names)
@@ -135,11 +135,11 @@ def prepare_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, data_st
                                 overlapped_contigs[prev_align].append('{corr_start: ' + str(alignment.start) +
                                     ',corr_end: ' + str(alignment.end) + ',start:' + str(alignment.unshifted_start) + ',end:' + str(alignment.unshifted_end) +
                                     ',start_in_contig:' + str(alignment.start_in_contig) + ',end_in_contig:' +
-                                    str(alignment.end_in_contig) + ',chr: "' + alignment.ref_name + '"}')
+                                    str(alignment.end_in_contig) + ',chr: "' + chr_names_by_id[alignment.ref_name] + '"}')
                                 overlapped_contigs[alignment].append('{corr_start: ' + str(prev_align.start) +
                                     ',corr_end: ' + str(prev_align.end) + ',start:' + str(prev_align.unshifted_start) + ',end:' + str(prev_align.unshifted_end) +
                                     ',start_in_contig:' + str(prev_align.start_in_contig) + ',end_in_contig:' +
-                                    str(prev_align.end_in_contig) + ',chr: "' + prev_align.ref_name + '"}')
+                                    str(prev_align.end_in_contig) + ',chr: "' + chr_names_by_id[prev_align.ref_name] + '"}')
                         prev_alignments.append(alignment)
                     else:
                         prev_alignments = [alignment]
@@ -190,7 +190,7 @@ def prepare_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, data_st
                         data_str.append(',ambiguous_alignments:[ ')
                         data_str = add_contig_structure_data(data_str, ambiguity_alignments_by_labels[alignment.label][alignment.name],
                                                              ref_contigs, chr_full_names, contig_names_by_refs,
-                                                             used_chromosomes, links_to_chromosomes)
+                                                             used_chromosomes, links_to_chromosomes, chr_names_by_id)
                         data_str[-1] = data_str[-1][:-1] + '],'
                     data_str[-1] = data_str[-1] + '},'
 
@@ -229,7 +229,7 @@ def prepare_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, data_st
         ms_selectors.append((ms_type, ms_name, str(ms_count)))
 
     contigs_structure_str = get_contigs_structure(assemblies_contigs, chr_to_aligned_blocks, contigs_by_assemblies, ref_contigs, chr_full_names,
-                                                   contig_names_by_refs, structures_by_labels, used_chromosomes, links_to_chromosomes)
+                                                   contig_names_by_refs, structures_by_labels, used_chromosomes, links_to_chromosomes, chr_names_by_id)
 
     if contig_names_by_refs:
         data_str.append(''.join(links_to_chromosomes))

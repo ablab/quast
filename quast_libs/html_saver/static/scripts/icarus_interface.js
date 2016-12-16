@@ -664,7 +664,7 @@ function setContigSizeThreshold(event, textBox) {
         mini.selectAll('.block')
             .attr('opacity', function (d) {
                 if (!d || !d.size) return 1;
-                if (d.contig_type == "small_contigs") return paleContigsOpacity;
+                if (d.contig_type == "short_contigs") return paleContigsOpacity;
                 return d.size > minContigSize ? 1 : paleContigsOpacity;
             });
         display();

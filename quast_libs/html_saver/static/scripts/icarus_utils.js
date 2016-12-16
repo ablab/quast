@@ -4,10 +4,16 @@ var minCoverage = 10;
 var expandedLanes = [];
 
 function getBlockStructure(block) {
-    if (typeof(contig_structures) !== 'undefined')
-        return contig_structures[block.assembly][block.name];
-    else
+    if (typeof(contig_structures) !== 'undefined') {
+        var structure = contig_structures[block.assembly][block.name];
+        for (var i = 0; i < structure.length; i++) {
+            structure[i].contig = block.name;
+        }
+        return structure;
+    }
+    else {
         return block.structure;
+    }
 }
 
 function getItemStart(block, minExtent) {
@@ -271,6 +277,7 @@ function changeInfo(block) {
         var overlapsInfo = overlapsMenuInfo.append('p').attr('class', 'close');
         for (var i = 0; i < block.overlaps.length; i++) {
             var nextBlock = block.overlaps[i];
+            nextBlock.contig = block.name;
             appendPositionElement(nextBlock, nextBlock, overlapsInfo, block, prevChr, true);
         }
     }
@@ -290,6 +297,7 @@ function changeInfo(block) {
         var ambiguousInfo = ambiguousMenuInfo.append('p').attr('class', 'close');
         for (var i = 0; i < block.ambiguous_alignments.length; i++) {
             var nextBlock = block.ambiguous_alignments[i];
+            nextBlock.contig = block.name;
             if (nextBlock.contig_type != "M") {
                 appendPositionElement(nextBlock, nextBlock, ambiguousInfo, block, prevChr, true);
             }

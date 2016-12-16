@@ -205,15 +205,12 @@ def prepare_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, data_st
         additional_assemblies_data += 'assemblies_misassemblies["' + assembly + '"] = "' + str(ext_misassemblies) + '+' + \
                                       str(local_misassemblies) + '";\n'
 
-    if contig_names_by_refs:
-        data_str.append(''.join(links_to_chromosomes))
     if cov_data_str:
         # adding coverage data
         data_str.extend(cov_data_str)
     if physical_cov_data_str:
         data_str.extend(physical_cov_data_str)
 
-    data_str = '\n'.join(data_str)
 
     misassemblies_types = ['relocation', 'translocation', 'inversion', 'interspecies translocation', 'local']
     if not qconfig.is_combined_ref:
@@ -233,6 +230,10 @@ def prepare_alignment_data_for_one_ref(chr, chr_full_names, ref_contigs, data_st
 
     contigs_structure_str = get_contigs_structure(assemblies_contigs, chr_to_aligned_blocks, contigs_by_assemblies, ref_contigs, chr_full_names,
                                                    contig_names_by_refs, structures_by_labels, used_chromosomes, links_to_chromosomes)
+
+    if contig_names_by_refs:
+        data_str.append(''.join(links_to_chromosomes))
+    data_str = '\n'.join(data_str)
     return alignment_viewer_fpath, data_str, contigs_structure_str, additional_assemblies_data, ms_selectors, num_misassemblies, aligned_assemblies
 
 

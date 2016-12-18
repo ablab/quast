@@ -88,12 +88,12 @@ def unpack_tar(fpath, dst_dirpath):
     return True
 
 
-def compile_bwa(only_clean=False):
-    return compile_tool('BWA', bwa_dirpath, ['bwa'], only_clean=only_clean)
+def compile_bwa(logger, only_clean=False):
+    return compile_tool('BWA', bwa_dirpath, ['bwa'], only_clean=only_clean, logger=logger)
 
 
-def compile_bedtools(only_clean=False):
-    return compile_tool('BEDtools', bedtools_dirpath, [join('bin', 'bedtools')], only_clean=only_clean)
+def compile_bedtools(logger, only_clean=False):
+    return compile_tool('BEDtools', bedtools_dirpath, [join('bin', 'bedtools')], only_clean=only_clean, logger=logger)
 
 
 def download_manta(logger, bed_fpath=None, only_clean=False):
@@ -140,7 +140,7 @@ def download_manta(logger, bed_fpath=None, only_clean=False):
 
 
 def compile_reads_analyzer_tools(logger, bed_fpath=None, only_clean=False):
-    if compile_bwa(only_clean) and compile_bedtools(only_clean) and download_manta(logger, bed_fpath, only_clean):
+    if compile_bwa(logger, only_clean) and compile_bedtools(logger, only_clean) and download_manta(logger, bed_fpath, only_clean):
         return True
     return False
 

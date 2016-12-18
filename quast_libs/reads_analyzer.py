@@ -424,14 +424,14 @@ def get_physical_coverage(output_dirpath, ref_fpath, ref_name, bam_fpath, log_pa
         bam_filtered_fpath = os.path.join(output_dirpath, ref_name + '.filtered.bam')
         qutils.call_subprocess([sambamba_fpath('sambamba'), 'view', '-t', str(qconfig.max_threads), '-h', '-f', 'bam',
                                 '-F', 'proper_pair and not supplementary and not duplicate', bam_fpath],
-                                stdout=open(bam_filtered_fpath, 'w'), stderr=open(err_path, 'a'))
+                                stdout=open(bam_filtered_fpath, 'w'), stderr=open(err_path, 'a'), logger=logger)
         ## sort by read names
         bam_filtered_sorted_fpath = os.path.join(output_dirpath, ref_name + '.filtered.sorted.bam')
-        qutils.call_subprocess([sambamba_fpath('sambamba'), 'sort', '-t', str(qconfig.max_threads), '-n',
-                                '-o', bam_filtered_sorted_fpath, bam_filtered_fpath], stdout=open(log_path, 'a'), stderr=open(err_path, 'a'))
+        qutils.call_subprocess([sambamba_fpath('sambamba'), 'sort', '-t', str(qconfig.max_threads), '-o', bam_filtered_sorted_fpath,
+                                '-n', bam_filtered_fpath], stdout=open(log_path, 'a'), stderr=open(err_path, 'a'), logger=logger)
         bedpe_fpath = os.path.join(output_dirpath, ref_name + '.bedpe')
         qutils.call_subprocess([bedtools_fpath('bamToBed'), '-i', bam_filtered_sorted_fpath, '-bedpe'], stdout=open(bedpe_fpath, 'w'),
-                               stderr=open(err_path, 'a'))
+                               stderr=open(err_path, 'a'), logger=logger)
         raw_bed_fpath = os.path.join(output_dirpath, ref_name + '.bed')
         with open(bedpe_fpath, 'r') as bedpe:
             with open(raw_bed_fpath, 'w') as bed_file:
@@ -440,9 +440,9 @@ def get_physical_coverage(output_dirpath, ref_fpath, ref_name, bam_fpath, log_pa
                     bed_file.write('\t'.join([fs[0], fs[1], fs[5] + '\n']))
         sorted_bed_fpath = os.path.join(output_dirpath, ref_name + '.sorted.bed')
         qutils.call_subprocess([bedtools_fpath('bedtools'), 'sort', '-i', raw_bed_fpath],
-                               stdout=open(sorted_bed_fpath, 'w'), stderr=open(err_path, 'a'))
+                               stdout=open(sorted_bed_fpath, 'w'), stderr=open(err_path, 'a'), logger=logger)
         qutils.call_subprocess([bedtools_fpath('bedtools'), 'genomecov', '-bga', '-i', sorted_bed_fpath, '-g', chr_len_fpath],
-                               stdout=open(raw_cov_fpath, 'w'), stderr=open(err_path, 'a'))
+                               stdout=open(raw_cov_fpath, 'w'), stderr=open(err_path, 'a'), logger=logger)
     return raw_cov_fpath
 
 
@@ -454,9 +454,9 @@ def get_coverage(output_dirpath, ref_fpath, ref_name, bam_fpath, bam_sorted_fpat
         if not is_non_empty_file(raw_cov_fpath):
             if not is_non_empty_file(bam_sorted_fpath):
                 qutils.call_subprocess([sambamba_fpath('sambamba'), 'sort', '-t', str(qconfig.max_threads), '-o', bam_sorted_fpath,
-                                        bam_fpath], stdout=open(log_path, 'a'), stderr=open(err_path, 'a'))
+                                        bam_fpath], stdout=open(log_path, 'a'), stderr=open(err_path, 'a'), logger=logger)
             qutils.call_subprocess([bedtools_fpath('bedtools'), 'genomecov', '-bga', '-ibam', bam_sorted_fpath, '-g', chr_len_fpath],
-                                   stdout=open(raw_cov_fpath, 'w'), stderr=open(err_path, 'a'))
+                                   stdout=open(raw_cov_fpath, 'w'), stderr=open(err_path, 'a'), logger=logger)
             qutils.assert_file_exists(raw_cov_fpath, 'coverage file')
         proceed_cov_file(raw_cov_fpath, cov_fpath, correct_chr_names)
     if not is_non_empty_file(physical_cov_fpath):

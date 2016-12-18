@@ -269,12 +269,13 @@ def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpat
         clean_read_names(sam_fpath, correct_sam_fpath)
         bam_fpath = os.path.join(output_dirpath, ref_name + '.bam')
         bam_sorted_fpath = add_suffix(bam_fpath, 'sorted')
-        qutils.call_subprocess([sambamba_fpath('sambamba'), 'view', '-t', str(qconfig.max_threads), '-h', '-f', 'bam', '-S', correct_sam_fpath],
-                               stdout=open(bam_fpath, 'w'), stderr=open(err_path, 'a'), logger=logger)
+        qutils.call_subprocess([sambamba_fpath('sambamba'), 'view', '-t', str(qconfig.max_threads), '-h', '-f', 'bam',
+                                '-F', 'not unmapped',  '-S', correct_sam_fpath],
+                                stdout=open(bam_fpath, 'w'), stderr=open(err_path, 'a'), logger=logger)
         qutils.call_subprocess([sambamba_fpath('sambamba'), 'sort', '-t', str(qconfig.max_threads), '-o', bam_sorted_fpath,
                                 bam_fpath], stderr=open(err_path, 'a'), logger=logger)
         qutils.call_subprocess([sambamba_fpath('sambamba'), 'view', '-t', str(qconfig.max_threads), '-h', bam_sorted_fpath],
-                               stdout=open(sam_sorted_fpath, 'w'), stderr=open(err_path, 'a'), logger=logger)
+                                stdout=open(sam_sorted_fpath, 'w'), stderr=open(err_path, 'a'), logger=logger)
 
     if qconfig.create_icarus_html and (not is_non_empty_file(cov_fpath) or not is_non_empty_file(physical_cov_fpath)):
         cov_fpath, physical_cov_fpath = get_coverage(output_dirpath, main_ref_fpath, ref_name, bam_fpath, bam_sorted_fpath,
@@ -304,7 +305,8 @@ def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpat
                     ref_files[ref] = None
                 else:
                     new_ref_sam_file = open(new_ref_sam_fpath, 'w')
-                    new_ref_sam_file.write(headers[0] + '\n')
+                    if not headers[0].startswith('@SQ'):
+                        new_ref_sam_file.write(headers[0] + '\n')
                     chrs = []
                     for h in (h for h in headers if h.startswith('@SQ') and 'SN:' in h):
                         seq_name = h.split('\tSN:')[1].split('\t')[0]
@@ -328,6 +330,8 @@ def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpat
                 for line in sam_file:
                     mapping = Mapping.parse(line)
                     if mapping:
+                        if mapping.ref == '*':
+                            continue
                         # common case: continue current deletion (potential) on the same reference
                         if cur_deletion and cur_deletion.ref == mapping.ref:
                             if cur_deletion.next_bad is None:  # previous mapping was in region BEFORE 0-covered fragment
@@ -407,7 +411,7 @@ def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpat
     if is_non_empty_file(cov_fpath):
         logger.main_info('  Coverage distribution along the reference genome is in ' + cov_fpath)
     else:
-        if not qconfig.space_efficient:
+        if not qconfig.create_icarus_html:
             logger.main_info('  Failed to calculate coverage distribution')
         cov_fpath = None
     return bed_fpath, cov_fpath, physical_cov_fpath

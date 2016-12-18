@@ -92,6 +92,7 @@ def parse_cov_fpath(cov_fpath, chr_names, chr_full_names, contig_names_by_refs):
     cov_data = defaultdict(list)
     #not_covered = defaultdict(list)
     max_depth = defaultdict(int)
+    chr_contigs = []
     with open(cov_fpath, 'r') as coverage:
         contig_to_chr = dict()
         index_to_chr = dict()
@@ -104,16 +105,18 @@ def parse_cov_fpath(cov_fpath, chr_names, chr_full_names, contig_names_by_refs):
                 contigs = [chr]
             for contig in contigs:
                 contig_to_chr[contig] = chr
+            chr_contigs.extend(contigs)
+        chr_name = None
         for index, line in enumerate(coverage):
             fs = line.split()
             if line.startswith('#'):
                 chr_name = fs[0][1:]
                 index_to_chr[fs[1]] = chr_name
-            else:
-                name = contig_to_chr[index_to_chr[fs[0]]]
+            elif chr_name in chr_contigs:
+                chrom = contig_to_chr[index_to_chr[fs[0]]]
                 depth = int(float(fs[1]))
-                max_depth[chr] = max(depth, max_depth[chr])
-                cov_data[name].append(depth)
+                max_depth[chrom] = max(depth, max_depth[chrom])
+                cov_data[chrom].append(depth)
             # if c[2] == '0':
             #     not_covered[name].append(c[1])
     return cov_data, None, max_depth

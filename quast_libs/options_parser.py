@@ -256,6 +256,14 @@ def parse_options(logger, quast_args, is_metaquast=False):
              dest='bed',
              type='file')
          ),
+        (['--cov'], dict(
+             dest='cov_fpath',
+             type='file')
+         ),
+        (['--phys-cov'], dict(
+             dest='phys_cov_fpath',
+             type='file')
+         ),
         (['-l', '--labels'], dict(
              dest='labels',
              type='string')

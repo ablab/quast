@@ -140,6 +140,8 @@ max_contigs_num_for_size_viewer = 1000
 min_contig_for_size_viewer = 10000
 contig_len_delta = 0.05
 min_similar_contig_size = 10000
+cov_fpath = None
+phys_cov_fpath = None
 
 # other settings (mostly constants). Can't be changed by command-line options
 
@@ -380,6 +382,8 @@ def usage(show_hidden=False, meta=False, short=True):
             sys.stderr.write("-J  --save-json-to <path>   Save the JSON output to a particular path\n")
             if meta:
                 sys.stderr.write("--read-support                   Use read coverage specified in contig names (SPAdes/Velvet style) for calculating Avg contig read support\n")
+            sys.stderr.write("--cov  <filename>                File with read coverage (for Icarus alignment viewer)\n")
+            sys.stderr.write("--phys-cov  <filename>           File with physical coverage (for Icarus alignment viewer)\n")
             sys.stderr.write("--no-icarus                      Do not create Icarus files\n")
             sys.stderr.write("--svg                            Draw contig alignment plot (in SVG format)\n")
             sys.stderr.write("--force-nucmer                   Use nucmer instead of E-MEM for aligning contigs. \n")

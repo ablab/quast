@@ -181,15 +181,23 @@ def main(args):
         reads_fpaths.append(qconfig.forward_reads)
     if qconfig.reverse_reads:
         reads_fpaths.append(qconfig.reverse_reads)
+    cov_fpath = qconfig.cov_fpath
+    physical_cov_fpath = qconfig.phys_cov_fpath
     if (reads_fpaths or qconfig.sam or qconfig.bam) and ref_fpaths:
-        bed_fpath, cov_fpath, _ = reads_analyzer.do(combined_ref_fpath, contigs_fpaths, reads_fpaths, corrected_ref_fpaths,
-                                                    os.path.join(combined_output_dirpath, qconfig.variation_dirname),
-                                                    external_logger=logger, sam_fpath=qconfig.sam, bam_fpath=qconfig.bam, bed_fpath=qconfig.bed)
+        bed_fpath, cov_fpath, physical_cov_fpath = reads_analyzer.do(combined_ref_fpath, contigs_fpaths, reads_fpaths, corrected_ref_fpaths,
+                                                   os.path.join(combined_output_dirpath, qconfig.variation_dirname),
+                                                   external_logger=logger, sam_fpath=qconfig.sam, bam_fpath=qconfig.bam, bed_fpath=qconfig.bed)
         qconfig.bed = bed_fpath
 
     if qconfig.bed:
         quast_py_args += ['--sv-bed']
         quast_py_args += [qconfig.bed]
+    if cov_fpath:
+        quast_py_args += ['--cov']
+        quast_py_args += [cov_fpath]
+    if physical_cov_fpath:
+        quast_py_args += ['--phys-cov']
+        quast_py_args += [physical_cov_fpath]
     if qconfig.sam:
         quast_py_args += ['--sam']
         quast_py_args += [qconfig.sam]

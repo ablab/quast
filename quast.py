@@ -96,8 +96,8 @@ def main(args):
     qconfig.assemblies_num = len(contigs_fpaths)
 
     reads_fpaths = []
-    cov_fpath = []
-    physical_cov_fpath = []
+    cov_fpath = qconfig.cov_fpath
+    physical_cov_fpath = qconfig.phys_cov_fpath
     if qconfig.forward_reads:
         reads_fpaths.append(qconfig.forward_reads)
     if qconfig.reverse_reads:

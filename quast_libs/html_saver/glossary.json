@@ -41,12 +41,12 @@
     "# possibly misassembled contigs": "<span>is the number of contigs that contain large unaligned fragment and thus could possibly contain interspecies translocation with unknown reference.</span>",
     "# possible misassemblies"      : "<span>is the number of putative interspecies translocations in possibly misassembled contigs if each large unaligned fragment is supposed to be a fragment of unknown reference.</span>",
     "# structural variations"       : "<span>is the number of misassemblies matched with structural variations.</span>",
+    "# unaligned mis. contigs"      : "<span>is the number of contigs that have the number of unaligned bases more than 50% of contig length and a misassembly event in their aligned fragment. Note that such misassemblies are not counted in <i># misassemblies</i> and other <i>misassemblies</i> statistics.</span>",
 
     "# fully unaligned contigs"     : "<span>is the number of contigs that have no alignment to the reference sequence.</span>",
     "Fully unaligned length"        : "<span>is the total number of bases contained in all fully unaligned contigs.</span>",
     "# partially unaligned contigs" : "<span>is the number of contigs that have at least one alignment to the reference sequence but also have at least one unaligned fragment of length &ge; <i>unaligned-part-size threshold</i>.</span>",
     "Partially unaligned length"    : "<span>is the total number of unaligned bases in all partially unaligned contigs.</span>",
-    "# half-unaligned with misassembly" : "<span>is the number of contigs that have the number of unaligned bases more than 50% of contig length and a misassembly event in their aligned fragment. Note that such misassemblies are not counted in <i># misassemblies</i> and other <i>misassemblies</i> statistics.</span>",
 
     "# ambiguous contigs"           : "<span>is the number of contigs that have reference alignments of equal quality in multiple locations on the reference.</span>",
     "Ambiguous contigs length"      : "<span>is the total number of bases contained in all ambiguous contigs.</span>",

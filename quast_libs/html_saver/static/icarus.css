@@ -329,6 +329,9 @@ path {
 .mainItem.unknown {
     fill: #528CA6;
 }
+.mainItem.mis_unaligned {
+    fill: #9E6D6D;
+}
 
 .miniItem.similar {
     fill: #4b9493;
@@ -353,6 +356,9 @@ path {
 }
 .miniItem.unknown {
     fill: #7DA6B9;
+}
+.miniItem.mis_unaligned {
+    fill: #9E6D6D;
 }
 
 .unaligned_part {

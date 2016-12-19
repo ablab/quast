@@ -353,6 +353,8 @@ def parse_misassembly_info(misassembly):
     ms_description = misassembly
     ms_type = 'real'
     if not is_misassembly_real(ms_description):
+        if 'unknown' in ms_description:
+            return 'unknown', 'unknown'
         if 'fake' in ms_description:
             ms_type = 'fake'
         elif 'indel' in ms_description:

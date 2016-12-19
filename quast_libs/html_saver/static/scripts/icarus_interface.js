@@ -546,10 +546,10 @@ function removeClassFromLegend(className, classes, classDescriptions) {
 }
 
 function appendLegendAlignmentViewer(legend) {
-    var classes = ['', 'similar', 'misassembled light_color', 'misassembled', 'misassembled similar', 'disabled', 'ambiguous', 'alternative', 'gene'];
+    var classes = ['', 'similar', 'misassembled light_color', 'misassembled', 'misassembled similar', 'mis_unaligned', 'disabled', 'ambiguous', 'alternative', 'gene'];
     var classDescriptions = ['correct contigs', 'correct contigs similar among > 50% assemblies', 'misassembled blocks ' +
     '(misassembly event on the left side, on the right side)', 'misassembled blocks (zoom in to get details about misassembly event side)',
-        'misassembled blocks similar among > 50% assemblies', 'unchecked misassembled blocks (see checkboxes)',
+        'misassembled blocks similar among > 50% assemblies', 'misassembled blocks (> 50% of the contig is unaligned)', 'unchecked misassembled blocks (see checkboxes)',
         'ambiguously mapped contigs', 'alternative blocks of misassembled contigs (not from the best set)', 'genome features (e.g. genes)'];
     if(!$('.ambiguous').length)
         removeClassFromLegend('ambiguous', classes, classDescriptions);
@@ -599,10 +599,10 @@ function appendLegendAlignmentViewer(legend) {
 
 function appendLegendContigSize(legend) {
     if (items[0].contig_type && items[0].contig_type != 'unknown') {
-        var classes = ['correct', 'misassembled', 'ambiguous', 'unaligned', 'unaligned_part'];
-        var classMarks = ['', '', ''];
+        var classes = ['correct', 'misassembled', 'ambiguous', 'mis_unaligned', 'unaligned', 'unaligned_part'];
+        var classMarks = ['', '', '', '', '', ''];
         var classDescriptions = ['correct contigs', 'misassembled contigs', 'ambiguously mapped contigs',
-            'unaligned contigs', 'unaligned parts of contigs with alignments'];
+            'misassembled blocks (> 50% of the contig is unaligned)', 'unaligned contigs', 'unaligned parts of contigs with alignments'];
         if(!$('.ambiguous').length)
             removeClassFromLegend('ambiguous', classes, classDescriptions);
     }

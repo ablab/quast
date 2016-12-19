@@ -139,7 +139,10 @@ function changeInfo(block) {
         .text(contigInfo, 280);
     var contigType;
     var blockStructure = getBlockStructure(block);
-    if (isContigSizePlot) {
+    if (block.contig_type == "mis_unaligned" || block.objClass == 'mis_unaligned') {
+        contigType = 'misassembled (> 50% of the contig is unaligned)';
+    }
+    else if (isContigSizePlot) {
         contigType = block.contig_type ? block.contig_type : '';
     }
     else if (block.best_group) {
@@ -246,7 +249,8 @@ function changeInfo(block) {
                 if (isAmbiguous && i < structure.length - 1)
                     blocksInfo.append('p').text('or');
             } else {
-                blocksInfo.append('p').text(nextBlock.msg);
+                if (nextBlock.msg != 'unknown')
+                    blocksInfo.append('p').text(nextBlock.msg);
             }
         }
     }

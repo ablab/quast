@@ -149,6 +149,7 @@ def prepare_alignment_data_for_one_ref(chr, chr_full_names, chr_names_by_id, ref
                     assemblies_len[assembly] += abs(alignment.end_in_contig - alignment.start_in_contig) + 1
                     assemblies_contigs[assembly].add(alignment.name)
                     contig_structure = structures_by_labels[alignment.label]
+                    contig_more_unaligned = False
                     if alignment.misassembled:
                         num_misassemblies += 1
                         misassemblies, misassembled_ends = get_misassembly_for_alignment(contig_structure[alignment.name], alignment)
@@ -156,6 +157,10 @@ def prepare_alignment_data_for_one_ref(chr, chr_full_names, chr_names_by_id, ref
                             if misassembly:
                                 ms_types[assembly][misassembly] += 1
                         alignment.misassemblies = ';'.join(misassemblies)
+                        if 'unknown' in alignment.misassemblies:
+                            alignment.misassemblies = ''
+                            misassembled_ends = ''
+                            contig_more_unaligned = True
                     else:
                         misassembled_ends = ''
 
@@ -178,6 +183,8 @@ def prepare_alignment_data_for_one_ref(chr, chr_full_names, chr_names_by_id, ref
                         data_str[-1] += ',ambiguous:"True"'
                     if alignment.is_best_set:
                         data_str[-1] += ',is_best:"True"'
+                    if contig_more_unaligned:
+                        data_str[-1] += ',more_unaligned:"True"'
 
                     aligned_assemblies.add(alignment.label)
                     if overlapped_contigs[alignment]:

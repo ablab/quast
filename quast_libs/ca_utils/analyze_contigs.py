@@ -324,13 +324,14 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fp
                         for align in sorted_aligns:
                             ca_output.stdout_f.write('\t\tAlignment: %s\n' % str(align))
                             ca_output.icarus_out_f.write(align.icarus_report_str() + '\n')
+                            ca_output.icarus_out_f.write('unknown\n')
                             ca_output.coords_filtered_f.write(str(align) + '\n')
                             aligned_lengths.append(align.len2)
                             ref_aligns.setdefault(align.ref, []).append(align)
 
                         half_unaligned_with_misassembly += 1
                         ca_output.stdout_f.write('\t\tUnaligned bases: %d\n' % unaligned_bases)
-                        contig_type = 'misassembled'
+                        contig_type = 'mis_unaligned'
                         ca_output.icarus_out_f.write('\t'.join(['CONTIG', contig, str(ctg_len), contig_type + '\n']))
                         ca_output.stdout_f.write('\n')
                         continue

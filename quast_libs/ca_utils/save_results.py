@@ -185,7 +185,7 @@ def save_result(result, report, fname):
     report.add_field(reporting.Fields.UNALIGNED_FULL_LENGTH, fully_unaligned_bases)
     report.add_field(reporting.Fields.UNALIGNED_PART_CNTGS, partially_unaligned)
     report.add_field(reporting.Fields.UNALIGNED_PART_LENGTH, partially_unaligned_bases)
-    report.add_field(reporting.Fields.UNALIGNED_HALF_WITH_MISASSEMBLY, half_unaligned_with_misassembly)
+    report.add_field(reporting.Fields.UNALIGNED_MISASSEMBLED_CTGS, half_unaligned_with_misassembly)
     return report
 
 

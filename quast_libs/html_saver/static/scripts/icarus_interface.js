@@ -545,18 +545,26 @@ function removeClassFromLegend(className, classes, classDescriptions) {
     classDescriptions.splice(index, 1);
 }
 
+function removeClassesFromLegend(additionalClasses, classes, classDescriptions) {
+    for (var numClass = 0; numClass < additionalClasses.length; numClass++) {
+        additionalClass = additionalClasses[numClass];
+        if(!$('.' + additionalClass).length)
+            removeClassFromLegend(additionalClass, classes, classDescriptions);
+    }
+    if(!$('.misassembled.similar').length)
+        removeClassFromLegend('misassembled similar', classes, classDescriptions);
+}
+
 function appendLegendAlignmentViewer(legend) {
     var classes = ['', 'similar', 'misassembled light_color', 'misassembled', 'misassembled similar', 'mis_unaligned', 'disabled', 'ambiguous', 'alternative', 'gene'];
     var classDescriptions = ['correct contigs', 'correct contigs similar among > 50% assemblies', 'misassembled blocks ' +
     '(misassembly event on the left side, on the right side)', 'misassembled blocks (zoom in to get details about misassembly event side)',
         'misassembled blocks similar among > 50% assemblies', 'misassembled blocks (> 50% of the contig is unaligned)', 'unchecked misassembled blocks (see checkboxes)',
         'ambiguously mapped contigs', 'alternative blocks of misassembled contigs (not from the best set)', 'genome features (e.g. genes)'];
-    if(!$('.ambiguous').length)
-        removeClassFromLegend('ambiguous', classes, classDescriptions);
-    if(!$('.alternative').length)
-        removeClassFromLegend('alternative', classes, classDescriptions);
-    if(!$('.gene').length)
-        removeClassFromLegend('gene', classes, classDescriptions);
+    var additionalClasses = ['ambiguous', 'alternative', 'gene', 'mis_unaligned', 'similar'];
+    removeClassesFromLegend(additionalClasses, classes, classDescriptions);
+    if(!$('.misassembled.similar').length)
+        removeClassFromLegend('misassembled similar', classes, classDescriptions);
 
     var prevOffsetY = 0;
     var offsetY = 0;
@@ -603,8 +611,8 @@ function appendLegendContigSize(legend) {
         var classMarks = ['', '', '', '', '', ''];
         var classDescriptions = ['correct contigs', 'misassembled contigs', 'ambiguously mapped contigs',
             'misassembled blocks (> 50% of the contig is unaligned)', 'unaligned contigs', 'unaligned parts of contigs with alignments'];
-        if(!$('.ambiguous').length)
-            removeClassFromLegend('ambiguous', classes, classDescriptions);
+            var additionalClasses = ['ambiguous', 'mis_unaligned'];
+            removeClassesFromLegend(additionalClasses, classes, classDescriptions);
     }
     else {
         var classes = ['unknown', ''];

@@ -126,7 +126,7 @@ function changeInfo(block) {
 
     info.selectAll('span')
         .remove();
-    setBaseChartHeight();
+
     var contigInfo = 'Contig: ' + block.name;
     if (!isContigSizePlot && typeof(contig_lengths) !== 'undefined') {
         contigInfo += ' (' + contig_lengths[block.assembly][block.name] + ' bp)';

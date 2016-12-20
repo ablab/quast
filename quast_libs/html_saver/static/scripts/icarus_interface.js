@@ -551,8 +551,6 @@ function removeClassesFromLegend(additionalClasses, classes, classDescriptions) 
         if(!$('.' + additionalClass).length)
             removeClassFromLegend(additionalClass, classes, classDescriptions);
     }
-    if(!$('.misassembled.similar').length)
-        removeClassFromLegend('misassembled similar', classes, classDescriptions);
 }
 
 function appendLegendAlignmentViewer(legend) {
@@ -610,9 +608,9 @@ function appendLegendContigSize(legend) {
         var classes = ['correct', 'misassembled', 'ambiguous', 'mis_unaligned', 'unaligned', 'unaligned_part'];
         var classMarks = ['', '', '', '', '', ''];
         var classDescriptions = ['correct contigs', 'misassembled contigs', 'ambiguously mapped contigs',
-            'misassembled blocks (> 50% of the contig is unaligned)', 'unaligned contigs', 'unaligned parts of contigs with alignments'];
-            var additionalClasses = ['ambiguous', 'mis_unaligned'];
-            removeClassesFromLegend(additionalClasses, classes, classDescriptions);
+            'misassembled contigs (> 50% of the contig is unaligned)', 'unaligned contigs', 'unaligned parts of contigs with alignments'];
+        var additionalClasses = ['ambiguous', 'mis_unaligned'];
+        removeClassesFromLegend(additionalClasses, classes, classDescriptions);
     }
     else {
         var classes = ['unknown', ''];

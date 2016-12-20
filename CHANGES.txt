@@ -1,7 +1,7 @@
 -- Version history --
 
 4.4   1. Icarus updates:
-       - buttons for expanding overlapped alignments added to detailed assembly tracks
+       - buttons for expanding overlapped alignments are added to detailed assembly tracks
          on Contig Alignment Viewers;
        - additional colors (available in all viewers) for:
            * ambiguous contigs,
@@ -11,7 +11,7 @@
 
       2. Python3 is now supported (versions 3.3, 3.4 and 3.5).
 
-      3. Several new options added:
+      3. Several new options are added:
        - "--scaffold-gap-max-size" for controlling maximum allowed size of scaffold gap
          inconsistency in the corresponding type of misassembly (--scaffolds only);
        - "--fragmented-max-indent" for controlling maximum allowed indent on each side
@@ -24,7 +24,7 @@
        - "--significant-part-size" renamed to "--unaligned-part-size", see details below
          (see item #6 below).
 
-      4. New metric, report and plot added (MetaQUAST only, combined reference only):
+      4. New metric, report and plot are added (MetaQUAST only, combined reference only):
        - # possible misassemblies (number of putative interspecies translocations
          in possibly misassembled contigs if each large unaligned fragment is supposed
          to be a fragment of unknown reference);
@@ -34,7 +34,7 @@
        - plot of all found and supposed (possible) interspecies translocations, saved to
          intergenomic_misassemblies.pdf under the same folder as above report.
 
-      5. New detailed report added:
+      5. New detailed report is added:
        - all fully and partially unaligned contigs, their length, and unaligned parts are
          listed in <output_dir>/contigs_reports/contigs_report_<assembly_name>.unaligned.info
 
@@ -66,14 +66,14 @@
       12. Fixed incorrect behaviour of MetaQUAST on compressed assemblies in "without
           references" mode.
 
-      13. Best set selection improved (misassembly detection algorithm in case of multiple
+      13. Best set selection is improved (misassembly detection algorithm in case of multiple
           ambiguous mappings of contig fragments). Now BSS takes internal overlaps into
           account, so alignments with a short gap (in contig) are preferred over alignments
           having large internal overlap if all other things are equal.
 
       14. Fixed several minor bugs.
 
-      15. Icarus citation updated.
+      15. Icarus citation is updated.
 
       16. Useful tips on running QUAST on large genome assemblies are added to FAQ section
           of the manual (see Q14).
@@ -85,7 +85,7 @@
        - zoom buttons added to read coverage panels insteads of log/normal scale switch;
        - small fixes for better performance on low resolution screens.
 
-      2. setup.py added for simplifying QUAST installation process.
+      2. setup.py is added for simplifying QUAST installation process.
 
       3. Heavy output files (lists of SNPs, GFF with predicted genes) are now compressed
          with gzip. This default behaviour may be cancelled by using --no-gzip option.
@@ -93,9 +93,9 @@
       4. Automatic suggestion to use --scaffolds option if assembly contains long continuous
          fragments of N's.
 
-      5. Embedded samtools replaced with sambamba which is significantly faster.
+      5. Embedded samtools is replaced with sambamba which is significantly faster.
 
-      6. Embedded bowtie2 replaced with BWA-MEM which is more accurate.
+      6. Embedded bowtie2 is replaced with BWA-MEM which is more accurate.
 
       7. E-MEM is also working under OS X now (in addition to Linux).
 
@@ -105,20 +105,20 @@
 
       10. Fixed improper Duplication ratio calculation in some MetaQUAST runs.
 
-      11. Requests to NCBI switched to HTTPS which will be mandatory after September 30, 2016.
+      11. Requests to NCBI are switched to HTTPS which will be mandatory after September 30, 2016.
 
-      12. SILVA database release updated from 119 to 123 (downloaded on the first use).
+      12. SILVA database release is updated from 119 to 123 (it is downloaded on the first use).
 
       13. Fixed several minor bugs.
 
 
 4.2   1. Icarus update -- improved read coverage panel: 
-       - physical coverage added (the coverage of the reference by the paired-end fragments,
+       - physical coverage is added (the coverage of the reference by the paired-end fragments,
          counting the reads and the gap between the paired-end reads as covered);
-       - normal/log scale switcher added;
-       - samtools max coverage depth increased, so now even very large coverages are shown.
+       - normal/log scale switcher is added;
+       - samtools max coverage depth is increased, so now even very large coverages are shown.
 
-      2. Icarus update -- search window added:
+      2. Icarus update -- search window is added:
        - searching contigs and genes/operons;
        - tooltip shows possible suggestions as one types.
 
@@ -126,10 +126,10 @@
        - coordinates are counted for each chromosome separately;
        - all good alignments of ambiguous contigs are shown if --ambiguity-usage=all.
 
-      4. Read coverage histograms added for assemblies with SPAdes/Velvet-like contig 
+      4. Read coverage histograms are added for assemblies with SPAdes/Velvet-like contig
          naming style (i.e. all names are ..._length_X_cov_Y_...).
 
-      5. Several new options added:
+      5. Several new optionsa are added:
        - "--references-list" for specifying list with reference names to be searched 
          and downloaded from NCBI (MetaQUAST only);
        - "--min-identity" for setting threshold on minimal IDY% of alignments (Nucmer 
@@ -139,7 +139,7 @@
        - "--sam" and "--bam" for specifying SAM and BAM files instead of/in addition to 
          raw reads. 
 
-      6. Several new metrics added:
+      6. Several new metrics are added:
        - Total aligned length (total size of contig fragments aligned to reference);
        - Icarus similarity statistics (in HTML report only, at least 2 assemblies are
          needed).
@@ -150,31 +150,31 @@
          (instead of Total length in previous versions);
        - possibly interspecies translocations are not reported if unaligned parts consist 
          mostly of Ns;
-       - Total length and Largest contigs substituted with their "aligned" version in 
+       - Total length and Largest contigs are substituted with their "aligned" version in
          summary HTML report (i.e. calculated for contig aligned fragments rather than 
          original contigs).
 
-      8. HTML report updated: 
+      8. HTML report is updated:
        - Genome statistics are moved to the top, Statistics without reference are moved to
          the bottom; 
-       - reference line added to GC content plot.
+       - reference line is added to GC content plot.
 
       9. GeneMark now outputs nucleotide and protein sequences for all found genes.
 
-      10. Best set selection improved (misassembly detection algorithm in case of 
-         multiple ambiguous mappings of contig fragments). Now BSS can find not only
-         the very best set but all sets with scores close to the best one (controlled by 
-         --ambiguity-usage and --ambiguity-score options). Also several minor bugfixes
-         were made and BSS became deterministic in case of equivalent scores.
+      10. Best set selection is improved (misassembly detection algorithm in case of
+          multiple ambiguous mappings of contig fragments). Now BSS can find not only
+          the very best set but all sets with scores close to the best one (controlled by
+          --ambiguity-usage and --ambiguity-score options). Also several minor bugfixes
+          are made and BSS become deterministic in case of equivalent scores.
 
-      11. Embedded E-MEM aligner updated to version 2.
+      11. Embedded E-MEM aligner is updated to version 2.
 
       12. Significant refactoring of the source code. Most changes are in Icarus, 
           Contigs Analyzer, QUAST and MetaQUAST running scripts.
 
       13. Fixed several minor bugs.
 
-      14. Icarus citation updated.
+      14. Icarus citation is updated.
 
 
 4.1   1. Icarus update -- new visualization of contigs in both viewers:
@@ -194,12 +194,12 @@
       4. Significant speed up of misassembly detection algorithm in case of complicated
          genomes (with many short repeats).
 
-      5. New option added:
+      5. New option is added:
        - "--no-sv" for skipping structural variants calling and processing. Make sense
          only if reads are specified: in this case they will be used for building Icarus
          read coverage histograms only.
 
-      6. Embedded Manta updated to version 0.29.6.
+      6. Embedded Manta is updated to version 0.29.6.
 
       7. Reference line on cumulative plot is redesigned to be more consistent with
          assemblies lines (starts at 0, depends on number of chromosomes/plasmids).
@@ -207,10 +207,10 @@
       8. Fixed several minor bugs.
 
 
-4.0   1. Icarus added! Icarus stands for Interactive Contig Assessment browseR.
+4.0   1. Icarus is added! Icarus stands for Interactive Contig Assessment browseR.
          Icarus complements QUAST output with interactive visualisations of assembly
          alignments to the reference genome, and all assembly features detected by 
-         QUAST (e.g. misassemblies, genes). Icarus generate two types of viewers:
+         QUAST (e.g. misassemblies, genes). Icarus generates two types of viewers:
        - Contig alignment viewer (available if a reference genome is provided). Shows
          contig alignments to the reference, misassemblies, similarities between assemblies,
          genome annotations (if genes/operons are provided), read coverage along the genome
@@ -223,9 +223,9 @@
          mappings. The set minimises possible number of misassemblies, i.e. this algorithm 
          reduces number of false negatives (erroneously detected misassemblies).
 
-      3. Several new options added:
+      3. Several new options are added:
        - "--significant-part-size" for setting threshold on detecting partially unaligned 
-         contigs with both significant aligned and unaligned parts (default: 500bp as earlier).
+         contigs with both significant aligned and unaligned parts (default: 500 bp as earlier).
        - "--fragmented" for notifying QUAST about fragmented reference genome (e.g. scaffold
          reference). QUAST will try to detect misassemblies caused by the fragmentation and
          mark them "fake".
@@ -243,7 +243,7 @@
  
       7. Embedded samtools updated to version 1.3.
 
-      8. Citation for MetaQUAST paper updated, citation for Icarus paper added.
+      8. Citation for MetaQUAST paper is updated, citation for Icarus paper is added.
 
 
 3.2   1. The tool now accepts raw reads for improving quality assessment (experimental
@@ -256,7 +256,7 @@
          sequenced organism). Fake misassemblies are excluded from "# misassemblies" metric
          and reported in novel "# structural variants" metric.
 
-      2. HTML reports content reformatted, especially in MetaQUAST reports:
+      2. HTML reports content is reformatted, especially in MetaQUAST reports:
        - GC % and all metrics based on genome length (NG50, NGA50, LGA75, etc) are excluded
          from the combined reference statistics (they don't make sense there);
        - N50 is replaced with more fair and comparable metrics such as "Total length >= 1000 bp",
@@ -266,7 +266,7 @@
       3. Scaffold gap size misassemblies are introduced. They are reported only when --scaffolds
          is used.
 
-      4. Several new options added:
+      4. Several new options are added:
        - "--memory-efficient" for running QUAST with minimal memory consumption (but significantly slower)
        - "--test-sv" for testing structural variants mode (see 1.)
        - "--silent" for minimal output to stdout (full verbose output is saved in the logs anyway)
@@ -296,7 +296,7 @@
          BLAST binaries which are needed only for MetaQUAST run without references. On the
          first such run, BLAST binary for target OS will be automatically downloaded.
 
-      3. Heatmaps added to HTML reports.
+      3. Heatmaps are added to HTML reports.
 
       4. Separate install.sh and more complex install_full.sh scripts for installing regular
          versions of QUAST and MetaQUAST or extended one (with ability to run MetaQUAST without
@@ -304,7 +304,7 @@
 
       5. New option "--plots-format" for selecting output format for plots (PDF by default).
 
-      6. Default number of threads changed from 100% CPUs to 25% of CPUs.
+      6. Default number of threads is changed from 100% of CPUs to 25% of CPUs.
 
       7. Changes in one-letter options, including replacing confusing -T to -t for --threads
          and -M to -m for --min-contig.
@@ -358,12 +358,12 @@
       6. GeneMark-ES is used for predicting genes in eukaryotic genomes instead of Glimmer-HMM.
       For using Glimmer-HMM, a new option --glimmer added.
 
-      7. GeneMarkS incorporation fixed. Previously it was run on predefined heuristic models based
+      7. GeneMarkS incorporation is fixed. Previously it was run on predefined heuristic models based
       on GC content. Now it uses self-training module for getting the correct model.
       
       8. Fixed several minor bugs.
 
-      9. GeneMark licenses updated.
+      9. GeneMark licenses is updated.
 
       10. Updated LICENSE (third-party tools details) and Manual.
 
@@ -377,26 +377,26 @@
       3. Genome analyzer module (computation of genome fraction, duplication ratio,
       number of genes and operons) is parallelized.
 
-      4. Option --test became an installation util analogue. It compiles all required binaries and 
+      4. Option --test become an installation util analogue. It compiles all required binaries and
       checks correctness of QUAST and MetaQUAST execution on test datasets.
 
-      5. Former plots.pdf upgraded with report tables and renamed to report.pdf. Now it is 
+      5. Former plots.pdf is upgraded with report tables and renamed to report.pdf. Now it is
       a file with all tables and plots generated by QUAST.
 
-      6. A new option --no-plots added for speeding up computation if plots are not needed.
+      6. New option "--no-plots" for speeding up computation if plots are not needed.
     
-      7. GeneMark license updated, instructions for manual updating added.
+      7. GeneMark license is updated, instructions for manual updating are added.
 
-      8. Generation of misleading single-columns histograms removed (when only single assembly
+      8. Generation of misleading single-columns histograms is removed (when only single assembly
       file was specified).
 
-      9. More error and exception handlers added.
+      9. More error and exception handlers are added.
 
       10. Fixed bug with indel counting (caused slightly overestimated indels rate in some cases).
       
       11. Fixed several minor bugs.
        
-      12. Code refactored.
+      12. Code is refactored.
 
 
 2.2   1. The tool now supports metagenomic assemblies. It accepts multiple references
@@ -413,7 +413,7 @@
       2. MetaGeneMark is used to find genes in metagenomic assemblies.
       In metaquast.py by default, in quast.py with --meta option.
 
-      3. In place of --allow-ambiguity, a new option --ambiguity-usage (-a) introduced.
+      3. In place of --allow-ambiguity, a new option --ambiguity-usage (-a) is introduced.
       The new option lets specify a way to process ambiguous regions:
       -a one, -a all or -a none.
 
@@ -432,7 +432,7 @@
       6. Fixed bugs in misassemblies detection algorithm.
 
 
-2.1   Option --strict-NA added to control computation of NAx/NGAx metrics. 
+2.1   Option --strict-NA is added to control computation of NAx/NGAx metrics.
       This option forces QUAST to break contigs by any misassembly event, 
       including local misassemblies (like in v.2.0). By default, QUAST v.2.1
       breaks contigs only by extensive misassemblies to compute NAx/NGAx 
@@ -443,7 +443,7 @@
       # indels metric evaluated with previous versions). Short (<= 5 bp) and long (>5 bp)
       indels are reported.
 
-      Option --est-ref-size added to set estimated reference size for computing NGx 
+      Option --est-ref-size is added to set estimated reference size for computing NGx
       metrics in case a reference genome is not available.
 
       GAGE mode is parallelized.
@@ -480,6 +480,7 @@
 
       Fixed several bugs.
 
+
 1.3   QUAST is now a multi-threaded tool: the most time-consuming step (alignment to
       a reference genome) is computed in parallel.
 
@@ -507,13 +508,13 @@
 
       More detailed statistics on partially unaligned contigs.
 
-      Text reports now also available in LaTeX format.
+      Text reports are now available in LaTeX format.
 
-      Python 2.5 now supported.
+      Python 2.5 is now supported.
 
       Fixed bug in reading genes annotations in GFF and NCBI formats.
 
-      QUAST now can be rerun on existing Nucmer alignments files.
+      QUAST can be rerun on existing Nucmer alignments files.
 
 
 1.1   Mismatches counting.
@@ -522,10 +523,10 @@
 
       GC content plot is logarithmically scaled.
 
-      ORFs are not counted, GeneMark added instead (for gene finding, only on Linux).
+      ORFs are not counted, GeneMark is added instead (for gene finding, only on Linux).
 
-      Nucmer aligner setting changed (from IDY% = 80 to 95,
-      i.e. now all alignments are more robust).
+      Nucmer aligner parameters are changed (from IDY% = 80 to 95,
+      i.e. all alignments become more robust).
 
 
 1.0   Initial open source release!

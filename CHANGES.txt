@@ -3,8 +3,10 @@
 4.4   1. Icarus updates:
        - buttons for expanding overlapped alignments added to detailed assembly tracks
          on Contig Alignment Viewers;
-       - additional colors for ambiguous contigs and alternative blocks of misassembled
-         contigs on both Contig Size and Contig Alignment Viewers;
+       - additional colors (available in all viewers) for:
+           * ambiguous contigs,
+           * alternative blocks of misassembled contigs,
+           * misassembled contigs with >50% unaligned bases (see item #7 below).
        - better performance on low resolution screens.
 
       2. Python3 is now supported (versions 3.3, 3.4 and 3.5).
@@ -20,7 +22,7 @@
        - "--space-efficient" for removing or even not creating space consuming auxiliary
          files; all reports and plots (except Icarus viewers) are generated as usual;
        - "--significant-part-size" renamed to "--unaligned-part-size", see details below
-         (item #6).
+         (see item #6 below).
 
       4. New metric, report and plot added (MetaQUAST only, combined reference only):
        - # possible misassemblies (number of putative interspecies translocations
@@ -41,33 +43,39 @@
          unaligned_part_threshold are considered as partially unaligned. The threshold is
          controlled by --unaligned-part-size option (default value is 500 bp).
 
-      7. BED format is accepted for genes/operons annotations.
+      7. New processing of misassembled contigs which are mostly unaligned (> 50%):
+       - "# half-unaligned with misassembly" metric is renamed to "# unaligned mis. contigs"
+         and moved from detailed unaligned_report to detailed misassemblies_report
+         (stored under <output_dir>/contigs_reports/);
+       - "# unaligned mis. contigs" metric is added to all main reports (TXT, HTML, PDF).
 
-      8. Minor changes in HTML reports:
+      8. BED format is accepted for genes/operons annotations.
+
+      9. Minor changes in HTML reports:
        - heatmap coloring is removed for metrics where best/worst values are undefined
          (GC %, # similar blocks, # contigs, etc);
        - split versions of scaffold assemblies are plotted with dashed lines (--scaffolds
          option only).
 
-      9. Fixed issue of crashing E-MEM on OS X without gcc installed. Also, if E-MEM is
-         already installed on the system, it will be used instead of embedded E-MEM.
+      10. Fixed issue of crashing E-MEM on OS X without gcc installed. Also, if E-MEM is
+          already installed on the system, it will be used instead of embedded E-MEM.
 
-      10. User-provided SAM/BAM files are now checked for correct chromosome names and
+      11. User-provided SAM/BAM files are now checked for correct chromosome names and
           automatically corrected if needed and correction is possible.
 
-      11. Fixed incorrect behaviour of MetaQUAST on compressed assemblies in "without
+      12. Fixed incorrect behaviour of MetaQUAST on compressed assemblies in "without
           references" mode.
 
-      12. Best set selection improved (misassembly detection algorithm in case of multiple
+      13. Best set selection improved (misassembly detection algorithm in case of multiple
           ambiguous mappings of contig fragments). Now BSS takes internal overlaps into
           account, so alignments with a short gap (in contig) are preferred over alignments
           having large internal overlap if all other things are equal.
 
-      13. Fixed several minor bugs.
+      14. Fixed several minor bugs.
 
-      14. Icarus citation updated.
+      15. Icarus citation updated.
 
-      15. Useful tips on running QUAST on large genome assemblies are added to FAQ section
+      16. Useful tips on running QUAST on large genome assemblies are added to FAQ section
           of the manual (see Q14).
 
 

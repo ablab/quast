@@ -522,7 +522,7 @@ Structural variant (SV) calling and processing (<b>experimental</b>, please use 
 <div class='options'>
 
 <div class='option'>
-<code><b>--reads1</b> &lt;path&gt;</code> (or <code>-1 &lt;path&gt;</code>)
+<a name='reads_opt'></a><code><b>--reads1</b> &lt;path&gt;</code> (or <code>-1 &lt;path&gt;</code>)
 </div>
 File with forward reads in FASTQ format (files compressed with gzip are allowed).
 
@@ -824,9 +824,12 @@ Note:
     </ul>
     This metric requires a reference genome. Note that default threshold of 1<span class="rhs">&nbsp;</span>kbp can be
 changed with <a href='#extensive_mis_size'><code>--extensive-mis-size</code></a>.
-See more details about misassemblies in <a href="#sec3.1.2">section 3.1.2</a>.</p>
+See more details about misassemblies in <a href="#sec3.1.2">section 3.1.2</a>.
+Important note: this metric does <b>not</b> sum up <code># local misassemblies, # scaffold gap size misassemblies,
+# structural variants</code>, and <code># unaligned mis. contigs</code> described below.</p>
 
-<p><span class='metric-name'># misassembled contigs</span> is the number of contigs that contain misassembly events.</p>
+<p><span class='metric-name'># misassembled contigs</span> is the number of contigs that contain misassembly events
+    (see <a href="#misassemblies"><code>#&nbsp;misassemblies</code></a> above).</p>
 
 <p><span class='metric-name'>Misassembled contigs length</span> is the total number of bases in misassembled contigs.</p>
 
@@ -839,8 +842,24 @@ Note that default threshold of 1<span class="rhs">&nbsp;</span>kbp can be
 changed with <a href='#extensive_mis_size'><code>--extensive-mis-size</code></a>.
 </p>
 
+<p><a name='scaff_mis'></a><span class='metric-name'># scaffold gap size misassemblies</span> is the number of positions in the scaffolds (breakpoints)
+    where the flanking sequences are combined in scaffold on the wrong distance (<a href='#scaffolds'><code>--scaffolds</code></a> only).
+    Max allowed distance inconsistency is controlled by <a href='#scaffold_gap_size'><code>--scaffold-gap-max-size</code></a> option (default is 10<span class="rhs">&nbsp;</span>kbp).</p>
+
+<p><a name='sv'></a><span class='metric-name'># structural variants</span> is the number of misassemblies matched with structural variations of genome
+    (if reads or BEDPE file with SV are provided, see <a href='#reads_opt'><code>--reads1/reads2</code></a> and <a href='#sv_bedpe'><code>--sv-bedpe</code></a>).
+</p>
+
+<p><a name='unaligned_mis_contigs'><span class='metric-name'># unaligned mis. contigs</span> is the number of contigs that
+    have the number of unaligned bases more than 50% of contig length
+    and at least one misassembly event in their aligned fragment.
+    Such contigs are probably not related to the reference genome, thus their misassemblies may be not real errors but
+    differences between the assembled organism and the reference.
+</p>
+
 <p><span class='metric-name'># unaligned contigs</span> is the number of contigs that have no alignment to the
-    reference sequence. The value "X<span class='rhs'>&nbsp;</span>+<span class='rhs'>&nbsp;</span>Y part" means X totally unaligned contigs plus Y partially unaligned contigs. </p>
+    reference sequence. The value "X<span class='rhs'>&nbsp;</span>+<span class='rhs'>&nbsp;</span>Y part" means X totally unaligned contigs plus Y partially unaligned contigs.
+This metric sums up <code># unaligned mis. contigs</code> described above.</p>
 
 <p><span class='metric-name'>Unaligned length</span> is the total length of all unaligned regions in the assembly
     (sum of lengths of fully unaligned contigs and unaligned parts of partially unaligned ones). </p>
@@ -910,35 +929,37 @@ changed by <a href='#extensive_mis_size'><code>--extensive-mis-size</code></a>.<
 <p><span class='metric-name'>Inversion</span> is a misassembly event (breakpoint) where the flanking sequences align on
 opposite strands of the same chromosome. </p>
 
-<p><a name='scaffold_misassembly'><span class='metric-name'>Scaffold gap size misassemblies</span> is a misassembly event (breakpoint) where the flanking sequences combined in scaffold on the wrong distance (<a href='#scaffolds'><code>--scaffolds</code></a> only). These misassemblies are not included in the total number of misassemblies. </p>
-
 <p><span class='metric-name'># misassembled contigs</span> and <span class='metric-name'>misassembled contigs length</span> are the same as the metrics from
-    <a href="#sec3.1.1">section 3.1.1</a> and are counted among all contigs with any type of a misassembly event
+    <a href="#sec3.1.1">section 3.1.1</a> and are counted among all contigs with any type of a misassembly event described above
     (relocation, translocation, interspecies translocation or inversion). </p>
 
-<p><span class='metric-name'># possibly misassembled contigs</span> is the number of contigs that contain large unaligned fragment and thus could possibly contain interspecies translocation with unknown reference (MetaQUAST only). </p>
+<p><span class='metric-name'># possibly misassembled contigs</span> is the number of contigs that contain large unaligned fragment and thus could possibly contain interspecies translocation
+    with unknown reference (MetaQUAST only, combined reference only). Minimal length of the consecutive unaligned fragment (excluding N's) is controlled by
+    <a href='#unaligned_part_size'><code>--unaligned-part-size</code></a>, default value is 500 bp. </p>
 
-<p><span class='metric-name'># possible misassemblies</span> is the number of putative interspecies translocations in possibly misassembled contigs if each large unaligned fragment is supposed to be a fragment of unknown reference (MetaQUAST only). </p>
+<p><span class='metric-name'># possible misassemblies</span> is the number of putative interspecies translocations in possibly misassembled contigs if each large unaligned fragment
+    is supposed to be a fragment of unknown reference (MetaQUAST only, combined reference only). </p>
 
-<p><span class='metric-name'># local misassemblies</span> is the same as <span class='metric-ref'># local misassemblies</span> from
-<a href="#sec3.1.1">section 3.1.1</a>.
-</p>
-
-<p><a name='sv'></a><span class='metric-name'># structural variants</span> is the number of misassemblies matched with structural variations of genome. These misassemblies are not included in the total number of misassemblies.
+<p>
+The next metrics are the same to homonymous metrics from <a href="#sec3.1.1">section 3.1.1</a>. Note that all of them are excluded from <code>#&nbsp;misassemblies</code> and related metrics:
+    <ul>
+        <li><span class='metric-name'># local misassemblies</span>,</li>
+        <li><span class='metric-name'># scaffold gap size misassemblies</span>,</li>
+        <li><span class='metric-name'># structural variants</span>,</li>
+        <li><span class='metric-name'># unaligned mis. contigs</span>.</li>
+    </ul>
 </p>
 
 <p><span class='metric-name'># mismatches</span> is the number of mismatches in all aligned bases.</p>
 
-<p><span class='metric-name'># indels</span> is the number of indels in all aligned bases. Several consecutive single nucleotide indels are counted as one indel.</p>
+<p><span class='metric-name'># indels</span> is the number of indels in all aligned bases. Several consecutive single nucleotide indels are counted as one indel.
+    Note: default maximum length of indel is 85 bp. All indels larger than 85 bp are considered as local misassemblies.</p>
 
 <p><span class='metric-name'># indels (&le;<span class="rhs">&nbsp;</span>5<span class="rhs">&nbsp;</span>bp)</span> is the number of indels of length <code>&le;<span class="rhs">&nbsp;</span>5<span class="rhs">&nbsp;</span>bp</code>.</p>
 
 <p><span class='metric-name'># indels (&gt;<span class="rhs">&nbsp;</span>5<span class="rhs">&nbsp;</span>bp)</span> is the number of indels of length <code>&gt;<span class="rhs">&nbsp;</span>5<span class="rhs">&nbsp;</span>bp</code>.</p>
 
 <p><span class='metric-name'>Indels length</span> is the total number of bases contained in all indels.</p>
-
-<p> Note: default maximum length of indel is 85 bp. All indels larger than 85 bp are considered as local misassemblies.
-</p>
 
 
 <a name="sec3.1.3"></a>
@@ -950,9 +971,6 @@ opposite strands of the same chromosome. </p>
 
 <p><span class='metric-name'># partially unaligned contigs</span> is the number of contigs that are not fully unaligned (i.e. have at least one alignment), but have at least one unaligned fragment
     &ge; the threshold defined by <a href='#unaligned_part_size'><code>--unaligned-part-size</code></a> (default value is 500 bp).</p>
-
-<p><span class='metric-name'># half-unaligned with misassembly</span> is the number of contigs that have the number of unaligned bases more than 50% of contig length and a misassembly event in their aligned fragment.
-    Note that such misassembly events are not counted in <span class='metric_ref'># misassemblies</span> and other <span class='metric_ref'>misassemblies</span> statistics.</p>
 
 <p><span class='metric-name'>Partially unaligned length</span> is the total number of unaligned bases in all partially unaligned contigs.</p>
 
@@ -1473,6 +1491,32 @@ Q14. I have very large assemblies and reference genome but my computational reso
             <a href='#min_identity'><code>--min-identity</code></a> respectively,
             drawback: not analysed contigs with relatively bad alignments)</li>
     </ul>
+</p>
+
+<a name="faq_q15"></a>
+<p><b><i>
+Q15. I evaluated my assembly using <a href='#scaffolds'><code>--scaffolds</code></a> option but got counter-intuitive results.
+    The <a href='#misassemblies'><code>number of misassemblies</code></a> in "broken" version of the assembly is higher than in the original one while
+    I expected vice versa or at max the similar numbers of misassemblies. Could you explain this?
+</b></i></p>
+<p>
+    You are absolutely right that normally a broken version of an assembly should have smaller (or the same) number of misassemblies
+    comparing to the scaffolded version. Scaffolding is an additional step and it could introduce new errors
+    by connecting not related contigs into a single scaffold. At the same time it could <b>not</b> fix misassemblies already present in contigs.
+    Thus, the number of misassemblies may only increase in comparing to contigs, i.e. the broken version.
+    <br>
+    However, your case is probably a little bit more complicated. If your reference genome is not very close to the sequenced
+    organism, you usually get many partially unaligned contigs (scaffolds). If such scaffold has more than 50% of unaligned bases,
+    its misassemblies are excluded from <a href='#misassemblies'><code># misassemblies</code></a> as untrustworthy ones and counted in
+    <a href='#unaligned_mis_contigs'><code># unaligned mis. contigs</code></a> metric. At the same time, the broken version
+    may include this scaffold as a set of short contigs split by continues fragments of N's. Some of these contings
+    may be fully unaligned while some of them may be considered as normal (less than 50% is unaligned).
+    The misassemblies in normal contigs will be counted in <code># misassemblies</code>.
+    <br>
+    To sum up, please take a look at <a href='#unaligned_mis_contigs'><code># unaligned mis. contigs</code></a> values.
+    We suggest that the number of such contigs is higher for the scaffolded version and
+    this is the probable source of the higher number of misassemblies in the broken assembly.    You may also be interested in
+    <a href='#sec3.4'>Icarus visualization</a> where all <code>unaligned mis. contigs</code> are highlighted with grey-red color.
 </p>
 
 <br>

@@ -619,6 +619,7 @@ THE SOFTWARE.
                     }
                     block.genes[gene_n].groupId = block.groupId;
                     block.genes[gene_n].lane = block.lane;
+                    block.genes[gene_n].nonOverlappingLane = block.nonOverlappingLane;
                     block.genes[gene_n].objClass = 'gene predicted_gene';
                     block.genes[gene_n].notActive = true;
                 }
@@ -633,7 +634,7 @@ THE SOFTWARE.
                     triangleItem.assembly = block.assembly;
                     triangleItem.id = itemId;
                     triangleItem.lane = laneId;
-                    triangleItem.nonOverlappingLane = nonOverlappingLaneId;
+                    triangleItem.nonOverlappingLane = block.nonOverlappingLane;
                     triangleItem.groupId = groupId;
                     triangleItem.misassembledEnds = misassembled_ends[num];
                     triangleItem.misassemblies = block.misassemblies.split(';')[num];
@@ -684,6 +685,11 @@ THE SOFTWARE.
                     if (item.triangles) {
                         for (var j = 0; j < item.triangles.length; j++) {
                             item.triangles[j].nonOverlappingLane = lastPosInLanes.length - item.triangles[j].nonOverlappingLane - 1;
+                        }
+                    }
+                    if (item.genes) {
+                        for (var j = 0; j < item.genes.length; j++) {
+                            item.genes[j].nonOverlappingLane = lastPosInLanes.length - item.genes[j].nonOverlappingLane - 1;
                         }
                     }
                 }

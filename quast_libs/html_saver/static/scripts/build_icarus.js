@@ -29,6 +29,7 @@ THE SOFTWARE.
     /**
      * Allow library to be used within both the browser and node.js
      */
+    var genePrediction = false;
     var ContigData = function(chromosome) {
         return parseData(contig_data[chromosome]);
     };
@@ -607,6 +608,7 @@ THE SOFTWARE.
             numItems++;
             var structure = getBlockStructure(block);
             if (block.genes) {
+                genePrediction = true;
                 var corr_start = block.corr_start;
                 if (block.contig_type != 'ambiguous' && structure && structure.length > 0)
                     corr_start =  structure[0].corr_start;

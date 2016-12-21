@@ -554,68 +554,97 @@ function removeClassesFromLegend(additionalClasses, classes, classDescriptions) 
 }
 
 function appendLegendAlignmentViewer(legend) {
-    var classes = ['', 'similar', 'misassembled light_color', 'misassembled', 'misassembled similar', 'mis_unaligned', 'disabled', 'ambiguous', 'alternative', 'gene'];
+    var classes = ['', 'similar', 'misassembled light_color', 'misassembled', 'misassembled similar', 'mis_unaligned',
+        'disabled', 'ambiguous', 'alternative', 'gene', 'predicted_gene'];
     var classDescriptions = ['correct contigs', 'correct contigs similar among > 50% assemblies', 'misassembled blocks ' +
     '(misassembly event on the left side, on the right side)', 'misassembled blocks (zoom in to get details about misassembly event side)',
         'misassembled blocks similar among > 50% assemblies', 'misassembled blocks (> 50% of the contig is unaligned)', 'unchecked misassembled blocks (see checkboxes)',
-        'ambiguously mapped contigs', 'alternative blocks of misassembled contigs (not from the best set)', 'genome features (e.g. genes)'];
+        'ambiguously mapped contigs', 'alternative blocks of misassembled contigs (not from the best set)', 'genome features (e.g. genes)', 'predicted genes'];
     var additionalClasses = ['ambiguous', 'alternative', 'gene', 'mis_unaligned', 'similar'];
     removeClassesFromLegend(additionalClasses, classes, classDescriptions);
     if(!$('.misassembled.similar').length)
         removeClassFromLegend('misassembled similar', classes, classDescriptions);
+    if (!genePrediction)
+        removeClassFromLegend('predicted_gene', classes, classDescriptions);
 
     var prevOffsetY = 0;
     var offsetY = 0;
     for (var numClass = 0; numClass < classes.length; numClass++) {
         offsetY = addLegendItemWithText(legend, prevOffsetY, classes[numClass], classDescriptions[numClass]);
         if (classes[numClass] == 'misassembled light_color') {
-            legend.append('path')
-                .attr('transform',  function () {
-                    return 'translate(0,' + prevOffsetY + ')';
-                })
-                .attr('class', function () {
-                    return 'mainItem end misassembled';
-                })
-                .attr('d', function () {
-                    var startX = 0;
-                    var startY = 0;
-                    path = ['M', startX, startY, 'L', startX + (Math.sqrt(1) * (legendItemHeight - startY) / 2),
-                        (startY + (legendItemHeight - startY)) / 2, 'L', startX, legendItemHeight - startY, 'L',  startX, startY].join(' ');
-                    return path;
-                });
-            legend.append('path')
-                .attr('transform',  function () {
-                    return 'translate(' + legendItemWidth + ',' + prevOffsetY + ')';
-                })
-                .attr('class', function () {
-                    return 'mainItem end misassembled odd';
-                })
-                .attr('d', function () {
-                    var startX = 0;
-                    var startY = 0;
-                    path = ['M', startX, startY, 'L', startX - (Math.sqrt(1) * (legendItemHeight - startY) / 2),
-                        (startY + (legendItemHeight - startY)) / 2, 'L', startX, legendItemHeight - startY, 'L',  startX, startY].join(' ');
-                    return path;
-                });
+            addMisassembledContigToLegend(legend, prevOffsetY);
+        }
+        if (classes[numClass] == 'predicted_gene') {
+            addPredictedGeneToLegend(legend, prevOffsetY);
         }
         prevOffsetY = offsetY;
     }
     return offsetY;
 }
 
+function addMisassembledContigToLegend(legend, offsetY) {
+    legend.append('path')
+        .attr('transform',  function () {
+            return 'translate(0,' + offsetY + ')';
+    })
+    .attr('class', function () {
+        return 'mainItem end misassembled';
+    })
+    .attr('d', function () {
+        var startX = 0;
+        var startY = 0;
+        path = ['M', startX, startY, 'L', startX + (Math.sqrt(1) * (legendItemHeight - startY) / 2),
+            (startY + (legendItemHeight - startY)) / 2, 'L', startX, legendItemHeight - startY, 'L',  startX, startY].join(' ');
+        return path;
+    });
+    legend.append('path')
+        .attr('transform',  function () {
+            return 'translate(' + legendItemWidth + ',' + offsetY + ')';
+        })
+        .attr('class', function () {
+            return 'mainItem end misassembled odd';
+        })
+        .attr('d', function () {
+            var startX = 0;
+            var startY = 0;
+            path = ['M', startX, startY, 'L', startX - (Math.sqrt(1) * (legendItemHeight - startY) / 2),
+                (startY + (legendItemHeight - startY)) / 2, 'L', startX, legendItemHeight - startY, 'L',  startX, startY].join(' ');
+            return path;
+        });
+}
+
+function addPredictedGeneToLegend(legend, offsetY) {
+    var geneGroup = legend.append('g');
+    geneGroup.append('rect')
+        .attr('class', 'predicted_gene')
+        .attr('width', legendItemWidth)
+        .attr('height', legendItemHeight)
+        .attr('x', 0)
+        .attr('y', offsetY)
+        .attr('stroke', 'black')
+        .attr('stroke-width', .3);
+    geneGroup.append('rect')
+        .attr('class', 'gene predicted_gene')
+        .attr('width', legendItemWidth)
+        .attr('height', legendItemHeight * 0.2)
+        .attr('x', 0)
+        .attr('y', offsetY + legendItemHeight * 0.4);
+}
+
 function appendLegendContigSize(legend) {
     if (items[0].contig_type && items[0].contig_type != 'unknown') {
-        var classes = ['correct', 'misassembled', 'ambiguous', 'mis_unaligned', 'unaligned', 'unaligned_part'];
+        var classes = ['correct', 'misassembled', 'ambiguous', 'mis_unaligned', 'unaligned', 'unaligned_part', 'predicted_gene'];
         var classMarks = ['', '', '', '', '', ''];
         var classDescriptions = ['correct contigs', 'misassembled contigs', 'ambiguously mapped contigs',
-            'misassembled contigs (> 50% of the contig is unaligned)', 'unaligned contigs', 'unaligned parts of contigs with alignments'];
+            'misassembled contigs (> 50% of the contig is unaligned)', 'unaligned contigs', 'unaligned parts of contigs with alignments',
+            'predicted genes'];
         var additionalClasses = ['ambiguous', 'mis_unaligned'];
         removeClassesFromLegend(additionalClasses, classes, classDescriptions);
     }
     else {
-        var classes = ['unknown', ''];
+        var classes = ['unknown', '', 'predicted_gene'];
         var classMarks = ['', 'N50'];
-        var classDescriptions = ['contigs', 'contig of length = Nx statistic (x is 50 or 75)'];
+        var classDescriptions = ['contigs', 'contig of length = Nx statistic (x is 50 or 75)', 'predicted genes'];
         for (var i = 0; i < items.length; i++) {
             if (items[i].marks && items[i].marks.search('NG') != -1) {
                 classes = ['unknown', '', '', ''];
@@ -626,9 +655,16 @@ function appendLegendContigSize(legend) {
             }
         }
     }
+    if (!genePrediction)
+        removeClassFromLegend('predicted_gene', classes, classDescriptions);
+    var prevOffsetY = 0;
     var offsetY = 0;
     for (var numClass = 0; numClass < classes.length; numClass++) {
-        offsetY = addLegendItemWithText(legend, offsetY, classes[numClass], classDescriptions[numClass], classMarks[numClass])
+        offsetY = addLegendItemWithText(legend, prevOffsetY, classes[numClass], classDescriptions[numClass], classMarks[numClass]);
+        if (classes[numClass] == 'predicted_gene') {
+            addPredictedGeneToLegend(legend, prevOffsetY);
+        }
+        prevOffsetY = offsetY;
     }
     return offsetY;
 }

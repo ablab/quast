@@ -332,6 +332,9 @@ path {
 .mainItem.mis_unaligned {
     fill: #9E6D6D;
 }
+.predicted_gene {
+    fill: none;
+}
 
 .miniItem.similar {
     fill: #4b9493;

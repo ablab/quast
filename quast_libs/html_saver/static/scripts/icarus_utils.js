@@ -805,7 +805,7 @@ function openClose(d) {
     d3.event.stopPropagation();
 }
 
-function addGradient(d, marks, gradientExists) {
+function addGradient(d, marks, gradientExists, smoothGradient) {
     if (!marks) return;
     var gradientId = 'gradient' + d.id;
     marks = marks.split(', ');
@@ -814,17 +814,33 @@ function addGradient(d, marks, gradientExists) {
     var gradient = chart.append("svg:defs")
         .append("svg:linearGradient")
         .attr("id", gradientId);
-    gradient.attr("x1", "0%")
-        .attr("y1", "0%")
-        .attr("x2", "0%")
-        .attr("y2", "100%");
-    gradientSteps = ["50%", "50%"];
-
-    for (var m = 0; m < marks.length; m++)
-        gradient.append("svg:stop")
-            .attr("offset", gradientSteps[m])
-            .attr("stop-color", contigsColors[marks[m]])
-            .attr("stop-opacity", 1);
+    if (!smoothGradient){
+        gradient.attr("x1", "0%")
+            .attr("y1", "0%")
+            .attr("x2", "0%")
+            .attr("y2", "100%");
+        gradientSteps = ["50%", "50%"];
+        for (var m = 0; m < marks.length; m++)
+            gradient.append("svg:stop")
+                .attr("offset", gradientSteps[m])
+                .attr("stop-color", contigsColors[marks[m]])
+                .attr("stop-opacity", 1);
+    }
+    else {
+        gradient.attr("x1", "0%")
+                .attr("y1", "0%")
+                .attr("x2", "100%")
+                .attr("y2", "100%");
+        var colors = [];
+        for (var m = 0; m < marks.length; m++)
+            colors.push(contigsColors[marks[m]])
+        var colorScale = d3.scale.linear().range(colors);
+        gradient.selectAll("stop")
+                .data(colorScale.range())
+                .enter().append("stop")
+                .attr("offset", function(d,i) { return i / (colorScale.range().length - 1); })
+                .attr("stop-color", function(d) { return d; });
+    }
 
     return 'url(#' + gradientId + ')';
 }

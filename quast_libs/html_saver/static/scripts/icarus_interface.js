@@ -575,7 +575,8 @@ function appendLegendAlignmentViewer(legend) {
             addMisassembledContigToLegend(legend, prevOffsetY);
         }
         if (classes[numClass] == 'predicted_gene') {
-            addPredictedGeneToLegend(legend, prevOffsetY);
+            blockTypes = 'correct, unaligned, misassembled';
+            addPredictedGeneToLegend(legend, prevOffsetY, blockTypes);
         }
         prevOffsetY = offsetY;
     }
@@ -613,26 +614,28 @@ function addMisassembledContigToLegend(legend, offsetY) {
         });
 }
 
-function addPredictedGeneToLegend(legend, offsetY) {
+function addPredictedGeneToLegend(legend, offsetY, blockTypes) {
     var geneGroup = legend.append('g');
     geneGroup.append('rect')
-        .attr('class', 'predicted_gene')
         .attr('width', legendItemWidth)
         .attr('height', legendItemHeight)
         .attr('x', 0)
         .attr('y', offsetY)
-        .attr('stroke', 'black')
-        .attr('stroke-width', .3);
+        .attr('fill', function (d) {
+            d = {id: 'predicted_gene'};
+            return addGradient(d, blockTypes, false, true);
+        });
     geneGroup.append('rect')
         .attr('class', 'gene predicted_gene')
-        .attr('width', legendItemWidth)
-        .attr('height', legendItemHeight * 0.2)
-        .attr('x', 0)
-        .attr('y', offsetY + legendItemHeight * 0.4);
+        .attr('width', legendItemWidth * 0.85)
+        .attr('height', legendItemHeight * 0.15)
+        .attr('x', legendItemWidth * 0.075)
+        .attr('y', offsetY + legendItemHeight * 0.5);
 }
 
 function appendLegendContigSize(legend) {
     if (items[0].contig_type && items[0].contig_type != 'unknown') {
+        blockTypes = 'correct, unaligned, misassembled';
         var classes = ['correct', 'misassembled', 'ambiguous', 'mis_unaligned', 'unaligned', 'unaligned_part', 'predicted_gene'];
         var classMarks = ['', '', '', '', '', ''];
         var classDescriptions = ['correct contigs', 'misassembled contigs', 'ambiguously mapped contigs',
@@ -645,12 +648,15 @@ function appendLegendContigSize(legend) {
         var classes = ['unknown', '', 'predicted_gene'];
         var classMarks = ['', 'N50'];
         var classDescriptions = ['contigs', 'contig of length = Nx statistic (x is 50 or 75)', 'predicted genes'];
+        blockTypes = 'unknown, N50';
         for (var i = 0; i < items.length; i++) {
             if (items[i].marks && items[i].marks.search('NG') != -1) {
-                classes = ['unknown', '', '', ''];
+                classes = ['unknown', '', '', '', 'predicted_gene'];
                 classMarks = ['', 'N50', 'NG50', 'N50, NG50'];
                 classDescriptions = ['contigs', 'contig of length = Nx statistic (x is 50 or 75)',
-                    'contig of length = NGx statistic (x is 50 or 75)', 'contig of length = Nx and NGx simultaneously'];
+                    'contig of length = NGx statistic (x is 50 or 75)', 'contig of length = Nx and NGx simultaneously',
+                    'predicted genes'];
+                blockTypes = 'unknown, N50, NG50';
                 break;
             }
         }
@@ -662,7 +668,7 @@ function appendLegendContigSize(legend) {
     for (var numClass = 0; numClass < classes.length; numClass++) {
         offsetY = addLegendItemWithText(legend, prevOffsetY, classes[numClass], classDescriptions[numClass], classMarks[numClass]);
         if (classes[numClass] == 'predicted_gene') {
-            addPredictedGeneToLegend(legend, prevOffsetY);
+            addPredictedGeneToLegend(legend, prevOffsetY, blockTypes);
         }
         prevOffsetY = offsetY;
     }

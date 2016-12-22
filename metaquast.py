@@ -252,8 +252,7 @@ def main(args):
         logger.main_info('')
         cleanup(corrected_dirpath)
         logger.main_info('MetaQUAST finished.')
-        logger.finish_up(numbers=tuple(total_num_notifications), check_test=test_mode)
-        return
+        return logger.finish_up(numbers=tuple(total_num_notifications), check_test=test_mode)
 
     if downloaded_refs:
         logger.main_info()

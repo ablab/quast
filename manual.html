@@ -1143,7 +1143,41 @@ If you use <a href="http://quast.bioinf.spbau.ru/">http://quast.bioinf.spbau.ru/
 decompress result and go to <code>"full_report"</code> subdirectory.
 </p>
 
+<a name="faq_toc"></a>
+<h3>FAQ Table of Contents</h3>
+<p>
+<ul style="list-style-type: none;">
+    <li><a href="#faq_q1">Q1. It seems that QUAST is giving me a differing number of misassemblies
+and misassembled contigs. Does this imply that QUAST looks for
+multiple misassemblies within one contig?</a></li>
+    <li><a href="#faq_q2">Q2. Is there a way to get only misassembled contigs of the assembly?</a></li>
+    <li><a href="#faq_q3">Q3. Is it possible to find which misassembly corresponds to each contig and which kind of a misassembly event it is?</a></li>
+    <li><a href="#faq_q4">Q4. Could you explain the format of Real Alignments in contigs report files (see the answer for Q3)?</a></li>
+    <li><a href="#faq_q5">Q5. Where does QUAST save information about SNPs?</a></li>
+    <li><a href="#faq_q6">Q6. What does "broken" version of an assembly refer to while assessing scaffolds' quality (<code>--scaffolds</code> option)?</a></li>
+    <li><a href="#faq_q7">Q7. Can I add new assemblies to existing QUAST report without need to realign already processed assemblies?
+    Or can I at least rerun existing QUAST report with slightly modified options set?</a></li>
+    <li><a href="#faq_q8">Q8. Which types of structural variations (SV) are handled by QUAST?
+    Can you give examples of correct BEDPE files for <code>--sv-bedpe</code> option?</a></li>
+    <li><a href="#faq_q9">Q9. Which versions of web browsers are suitable for Icarus output?</a></li>
+    <li><a href="#faq_q10">Q10. Could you show a sample file suitable for <code>--references-list</code> MetaQUAST option?</a></li>
+    <li><a href="#faq_q11">Q11. Sometimes the "# contigs" and the "# contigs &ge; 0 bp"
+    do not agree. Should not these be equal? What is the difference?</a></li>
+    <li><a href="#faq_q12">Q12. Can I use custom BLAST database instead of SILVA 16S rRNA for reference searching?</a></li>
+    <li><a href="#faq_q13">Q13. Where can I find details about unaligned fragments of my assembly?</a></li>
+    <li><a href="#faq_q14">Q14. I have very large assemblies and reference genome but my computational resources are limited.
+    Could you recommend an optimal set of QUAST options to use?</a></li>
+    <li><a href="#faq_q15">Q15. I evaluated my assembly using <code>--scaffolds</code> option but got counter-intuitive results.
+    The <code>number of misassemblies</code> in "broken" version of the assembly is higher than in the original one while
+    I expected vice versa or at max the similar numbers of misassemblies. Could you explain this?</a></li>
+    <li><a href="#faq_q16">Q16. I evaluated multiple assemblies against the reference genome and opened Icarus Contig Alignment Viewer.
+    Color scheme is almost self explanatory but could you explain the meaning of "similar correct contigs" (colored blue)
+    and "similar misassembled blocks" (colored orange)? How do you define the similarity?</a></li>
+</ul>
+</p>
+
 <br>
+<a name="faq_q1"></a>
 <p><b><i>
 Q1. It seems that QUAST is giving me a differing number of misassemblies
 and misassembled contigs. Does this imply that QUAST looks for
@@ -1155,6 +1189,7 @@ number of misassembled contigs is always less or equal to number of misassemblie
 </p>
 
 <br>
+<a name="faq_q2"></a>
 <p><b><i>
 Q2. Is there a way to get only misassembled contigs of the assembly?
 </b></i></p>
@@ -1170,6 +1205,7 @@ if your assembly is "ecoli_assembly_1.fa.gz" then the file is "ecoli_assembly_1.
 </p>
 
 <br>
+<a name="faq_q3"></a>
 <p><b><i>
 Q3. Is it possible to find which misassembly corresponds to each contig and which kind of a misassembly event it is?
 </b></i></p>
@@ -1246,6 +1282,7 @@ Top Length: 121089  Top ID: 99.98
 This contig is <b>Contigs_753</b> of length <b>140518 bp</b>. It has <b>3 extensive misassemblies</b> (all three are <b>relocations</b>) and one local misassembly.
 </p>
 <br>
+<a name="faq_q4"></a>
 <p><b><i>
 Q4. Could you explain the format of Real Alignments in contigs report files (see the answer for Q3)?
 </b></i></p>
@@ -1274,6 +1311,7 @@ Thus we don't use alignments with IDY% less than 95% (they are considered to be 
 And finally, the last two columns are the name of the target sequence (i.e. reference genome name) and the name of the query (i.e. contig name).
 </p>
 <br>
+<a name="faq_q5"></a>
 <p><b><i>
 Q5. Where does QUAST save information about SNPs?
 </b></i></p>
@@ -1314,6 +1352,7 @@ where the columns are: reference genome name, contig name, position on the refer
 </p>
 
 <br>
+<a name="faq_q6"></a>
 <p><b><i>
 Q6. What does "broken" version of an assembly refer to while assessing scaffolds' quality (<a href='#scaffolds'><code>--scaffolds</code></a> option)?
 </b></i></p>
@@ -1331,6 +1370,7 @@ Also note, that <code>--scaffolds</code> option implies QUAST to search for <a h
 </p>
 
 <br>
+<a name="faq_q7"></a>
 <p><b><i>
 Q7. Can I add new assemblies to existing QUAST report without need to realign already processed assemblies?
     Or can I at least rerun existing QUAST report with slightly modified options set?
@@ -1548,6 +1588,8 @@ Q16. I evaluated multiple assemblies against the reference genome and opened Ica
 </p>
 
 <br>
-<br>
+<a href="#faq_toc">Go to FAQ Table of Contents</a>
+<br><br>
+<a href="#">Go to the top</a>
 </body>
 </html>

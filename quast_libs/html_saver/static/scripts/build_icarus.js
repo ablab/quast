@@ -72,7 +72,8 @@ THE SOFTWARE.
             coverageHeight = typeof coverage_data != 'undefined' ? 125 : 0;
             coverageSpace = typeof coverage_data != 'undefined' ? 50 : 0;
 
-    var contigsColors = {'N50': '#7437BA', 'N75': '#7437BA', 'NG50': '#B53778', 'NG75': '#B53778'};
+    var contigsColors = {'N50': '#7437BA', 'N75': '#7437BA', 'NG50': '#B53778', 'NG75': '#B53778',
+        'correct': '#059B00', 'misassembled': '#DD4343', 'unaligned': '#8e8e8e', 'unknown': '#7DA6B9'};
 
     // legend items
     var legendItemWidth = 50;

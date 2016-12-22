@@ -73,8 +73,15 @@ def main(args):
     sys.stderr.write("Icarus main menu will be saved to <output_dir>/icarus.html\n")
     sys.stderr.write("Icarus viewers will be saved to <output_dir>/icarus_viewers/\n")
     sys.stderr.write("\n")
-    quast_fn(args)
+    return quast_fn(args)
 
 
 if __name__ == '__main__':
-    main(sys.argv[1:])
+    try:
+        return_code = main(sys.argv[1:])
+        exit(return_code)
+    except Exception:
+        _, exc_value, _ = sys.exc_info()
+        sys.stderr.write(str(exc_value) + '\n')
+        sys.stderr.write('exception caught!' + '\n')
+        exit(1)

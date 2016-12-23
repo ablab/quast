@@ -7,6 +7,7 @@
 # See file LICENSE for details.
 ############################################################################
 
+from __future__ import with_statement
 import os
 import sys
 from glob import glob

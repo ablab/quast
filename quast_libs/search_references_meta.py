@@ -18,7 +18,7 @@ from os.path import isdir, isfile, join
 from quast_libs import qconfig, qutils
 from quast_libs.fastaparser import _get_fasta_file_handler
 from quast_libs.log import get_logger
-from quast_libs.qutils import is_non_empty_file, is_python2, slugify
+from quast_libs.qutils import is_non_empty_file, is_python2, slugify, correct_name
 
 logger = get_logger(qconfig.LOGGER_META_NAME)
 try:
@@ -364,7 +364,8 @@ def do(assemblies, labels, downloaded_dirpath, corrected_dirpath, ref_txt_fpath=
             scores_organisms = sorted(scores_organisms, reverse=True)
             organisms = [organism for (score, organism) in scores_organisms]
 
-    downloaded_ref_fpaths = [os.path.join(downloaded_dirpath,file) for (path, dirs, files) in os.walk(downloaded_dirpath) for file in files if qutils.check_is_fasta_file(file)]
+    downloaded_ref_fpaths = [os.path.join(downloaded_dirpath, file) for (path, dirs, files) in os.walk(downloaded_dirpath)
+                             for file in files if qutils.check_is_fasta_file(file)]
 
     ref_fpaths = process_refs(organisms, assemblies, labels, downloaded_dirpath, not_founded_organisms, downloaded_ref_fpaths,
                  blast_check_fpath, err_fpath, organisms_assemblies)
@@ -474,7 +475,7 @@ def process_blast(blast_assemblies, downloaded_dirpath, corrected_dirpath, label
                             if specie not in organisms:
                                 all_scores.append((score, seqname))
                                 if taxons:
-                                    taxons_for_krona[re.sub('[/.=]', '', seqname)] = taxons
+                                    taxons_for_krona[correct_name(seqname)] = taxons
                                 organisms.append(specie)
                                 refs_for_query += 1
                             else:
@@ -483,7 +484,7 @@ def process_blast(blast_assemblies, downloaded_dirpath, corrected_dirpath, label
                                     all_scores.remove((tuple_scores[0][0], tuple_scores[0][1]))
                                     all_scores.append((score, seqname))
                                     if taxons:
-                                        taxons_for_krona[re.sub('[/.=]', '', seqname)] = taxons
+                                        taxons_for_krona[correct_name(seqname)] = taxons
                                     refs_for_query += 1
                 elif line.startswith('#'):
                     refs_for_query = 0
@@ -533,7 +534,7 @@ def process_refs(organisms, assemblies, labels, downloaded_dirpath, not_founded_
         logger.main_info('MetaQUAST will attempt to use previously downloaded references...')
 
     for organism in organisms:
-        ref_fpath = os.path.join(downloaded_dirpath, re.sub('[/.=]', '', organism) + '.fasta')
+        ref_fpath = os.path.join(downloaded_dirpath, correct_name(organism) + '.fasta')
         spaces = (max_organism_name_len - len(organism)) * ' '
         new_ref_fpath = None
         was_downloaded = False

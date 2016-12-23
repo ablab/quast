@@ -4,8 +4,8 @@
     "Total length"                  : "<span>is the total number of bases in the assembly.</span>",
     "Reference length"              : "<span>is the total number of bases in the reference.</span>",
 
-    "# contigs (>= 0 bp)"           : "<span>is the total number of contigs in the assembly that have size greater or equal to 0 bp.</span>",
-    "Total length (>= 0 bp)"        : "<span>is the total number of bases in the contigs having size greater or equal to 0 bp.</span>",
+    "# contigs (>= 0 bp)"           : "<span>is the total number of contigs in the assembly that have size greater than or equal to 0 bp.</span>",
+    "Total length (>= 0 bp)"        : "<span>is the total number of bases in the contigs having size greater than or equal to 0 bp.</span>",
 
     "N50"                           : "<span>is the contig length such that using longer or equal length contigs produces half (50%) of the bases of the assembly. Usually there is no value that produces exactly 50%, so the technical definition is the maximum length x such that using contigs of length at least x accounts for at least 50% of the total assembly length.</span>",
     "NG50"                          : "<span>is the contig length such that using longer or equal length contigs produces half (50%) of the bases of the reference genome. This metric is computed only if a reference genome is provided.</span>",
@@ -59,14 +59,14 @@
     "# mismatches"                  : "<span>is the number of mismatches in all aligned bases.</span>",
     "# indels per 100 kbp"          : "<span>is the average number of indels per 100000 aligned bases.</span>",
     "# indels"                      : "<span>is the number of indels in all aligned bases</span>",
-    "# indels (<= 5 bp)"            : "<span>is the number of indels of length less or equal to 5 bp</span>",
+    "# indels (<= 5 bp)"            : "<span>is the number of indels of length less than or equal to 5 bp</span>",
     "# indels (> 5 bp)"             : "<span>is the number of indels of length greater than 5 bp</span>",
     "Indels length"                 : "<span>is the number of total bases contained in all indels</span>",
 
     "# genes"                       : "<span>is the number of genes in the assembly (complete and partial), based on a user-provided annotated list of gene positions in the reference genome. A gene counts as 'partially covered' if the assembly contains at least 100 bp of this gene but not the whole gene.</span>",
     "# operons"                     : "<span>is the number of operons in the assembly (complete and partial), based on a user-provided annotated list of operon positions in the reference genome. An operon counts as 'partially covered' if the assembly contains at least 100 bp of this operon but not the whole operon.</span>",
     "# predicted genes (unique)"    : "<span>is the number of unique genes in the assembly found by a gene prediction tool.</span>",
-    "# predicted genes (>= 0 bp)"   : "<span>is the number of found genes having length greater or equal to 0 bp.</span>",
+    "# predicted genes (>= 0 bp)"   : "<span>is the number of found genes having length greater than or equal to 0 bp.</span>",
 
     "Cumulative length"             : "<span>plot shows the growth of assembly contig lengths. On the x-axis, contigs are ordered from largest (contig #1) to smallest. The y-axis gives the size of the x largest contigs in the assembly.</span>",
     "Nx"                            : "<span>plot shows the Nx metric value as x varies from 0 to 100.</span>  <span>Nx is the minimum contig length <b>y</b> such that using contigs of length at least <b>y</b> accounts for at least x% of the total assembly length.</span>",

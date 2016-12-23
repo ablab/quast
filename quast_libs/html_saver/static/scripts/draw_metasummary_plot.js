@@ -133,10 +133,7 @@ var summary = {
 
                 for (var k = 0; k < size; k++) {
                     info.series[i].data.push([plot_coordX[k], plot_coordY[k]]);
-                }
-
-                if (info.series[i].data[0][1] > info.maxY) {
-                    info.maxY = info.series[i].data[0][1];
+                    info.maxY = Math.max(info.maxY, plot_coordY[k]);
                 }
             }
 

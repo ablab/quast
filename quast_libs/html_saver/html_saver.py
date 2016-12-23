@@ -271,6 +271,15 @@ def save_total_report(results_dirpath, min_contig, ref_fpath):
         log.info('  HTML version (interactive tables and plots) saved to ' + os.path.join(results_dirpath, report_fname))
 
 
+def copy_meta_alignment_viewers(html_fpath, html_top_fpath):
+    with open(html_fpath, 'r') as template:
+        with open(html_top_fpath, 'w') as result:
+            for line in template:
+                if line.find('assemblies_links') != -1:  # change stdout links
+                    line = re.sub(r'../contigs_reports/', '../' + qconfig.combined_output_name + '/contigs_reports/', line)
+                result.write(line)
+
+
 def create_meta_icarus(results_dirpath, ref_names):
     combined_ref_icarus_dirpath = os.path.join(results_dirpath, qconfig.combined_output_name, qconfig.icarus_dirname)
     icarus_dirpath = os.path.join(results_dirpath, qconfig.icarus_dirname)
@@ -290,7 +299,7 @@ def create_meta_icarus(results_dirpath, ref_names):
                 html_name = qconfig.one_alignment_viewer_name
         icarus_ref_fpath = os.path.join(combined_ref_icarus_dirpath, html_name + '.html')
         icarus_top_ref_fpath = os.path.join(icarus_dirpath, html_name + '.html')
-        shutil.copy(icarus_ref_fpath, icarus_top_ref_fpath)
+        copy_meta_alignment_viewers(icarus_ref_fpath, icarus_top_ref_fpath)
     icarus_menu_fpath = os.path.join(results_dirpath, qconfig.combined_output_name, qconfig.icarus_html_fname)
     icarus_menu_top_fpath = os.path.join(results_dirpath, qconfig.icarus_html_fname)
     with open(icarus_menu_fpath, 'r') as template:

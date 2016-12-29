@@ -58,8 +58,12 @@ def check_emem_functionality(logger):
     return_code = run_nucmer(nucmer_fpath, options_parser.test_contigs_fpaths[0], options_parser.test_contigs_fpaths[1],
                              '/dev/null', '/dev/null', 0, emem_threads=1)
     if return_code != 0:
-        logger.main_info('E-MEM does not work properly. QUAST will try to recompile contig aligner software.')
-        open(e_mem_failed_compilation_flag, 'w').close()
+        if get_installed_emem():
+            logger.main_info('Preinstalled E-MEM does not work properly.')
+            qconfig.force_nucmer = True
+        else:
+            logger.main_info('E-MEM does not work properly. QUAST will try to recompile contig aligner software.')
+            open(e_mem_failed_compilation_flag, 'w').close()
     clean_tmp_files(nucmer_fpath)
     return compile_aligner(logger)
 

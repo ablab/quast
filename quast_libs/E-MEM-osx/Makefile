@@ -34,10 +34,10 @@ DOC_DIR       := $(TOP_DIR)/docs
 SCRIPT_DIR    := $(TOP_DIR)/scripts
 TIGR_SRC_DIR  := $(TOP_DIR)/src/tigr
 KURTZ_SRC_DIR := $(TOP_DIR)/src/kurtz
-E-MEM_DIR     := $(TOP_DIR)/e-mem-linux
+E-MEM_DIR     := $(TOP_DIR)/e-mem-osx
 
-CC   = /usr/local/bin/gcc-5
-CXX   = /usr/local/bin/g++-5
+CC   := $(filter /%,$(shell /bin/sh -c 'type gcc'))
+CXX  := $(filter /%,$(shell /bin/sh -c 'type g++'))
 SED  := $(filter /%,$(shell /bin/sh -c 'type sed'))
 PERL := $(filter /%,$(shell /bin/sh -c 'type perl'))
 AR   := $(filter /%,$(shell /bin/sh -c 'type ar'))
@@ -62,6 +62,7 @@ export BIN_DIR AUX_BIN_DIR CXX CC CFLAGS CXXFLAGS LDFLAGS
 
 all: kurtz tigr scripts e-mem
 
+no-emem: kurtz tigr scripts
 
 check:
 ifndef TOP_DIR

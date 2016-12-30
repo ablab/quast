@@ -26,6 +26,13 @@ ref_labels_by_chromosomes = {}
 e_mem_failed_compilation_flag = join(qconfig.LIBS_LOCATION, 'E-MEM-osx', 'make.failed')
 
 
+def reset_aligner_selection():
+    global contig_aligner
+    global contig_aligner_dirpath
+    contig_aligner = None
+    contig_aligner_dirpath = None
+
+
 def bin_fpath(fname):
     return join(contig_aligner_dirpath, fname)
 

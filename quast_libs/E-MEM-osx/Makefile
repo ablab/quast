@@ -91,7 +91,6 @@ clean:
 	cd $(KURTZ_SRC_DIR); $(MAKE) clean
 	cd $(TIGR_SRC_DIR); $(MAKE) clean
 	cd $(SCRIPT_DIR); $(MAKE) clean
-	cd $(E-MEM_DIR); $(MAKE) clean
 
 
 dist: DISTDIR = MUMmer$(VERSION)
@@ -121,9 +120,6 @@ scripts:
 
 tigr:
 	cd $(TIGR_SRC_DIR); $(MAKE) all
-
-e-mem:
-	cd $(E-MEM_DIR); $(MAKE) all
 
 uninstall: clean
 

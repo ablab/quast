@@ -6,7 +6,9 @@
 ############################################################################
 
 from __future__ import with_statement
-from os.path import isfile, join, getsize, basename
+
+import os
+from os.path import isfile, join, getsize, basename, dirname
 import datetime
 import shutil
 import sys
@@ -74,15 +76,17 @@ def run_nucmer(prefix, ref_fpath, contigs_fpath, log_out_fpath, log_err_fpath, i
     nucmer_cmdline = [bin_fpath('nucmer'), '-c', str(qconfig.min_cluster),
                       '-l', str(qconfig.min_cluster), '--maxmatch',
                       '-p', prefix]
+    env = os.environ.copy()
     if is_emem_aligner():
         nucmer_cmdline += ['-t', str(emem_threads)]
         installed_emem_fpath = get_installed_emem()
         if installed_emem_fpath:
+            env['NUCMER_E_MEM_OUTPUT_DIRPATH'] = dirname(prefix)
             nucmer_cmdline += ['--emem', installed_emem_fpath]
 
     nucmer_cmdline += [ref_fpath, contigs_fpath]
     return_code = qutils.call_subprocess(nucmer_cmdline, stdout=open(log_out_fpath, 'a'), stderr=open(log_err_fpath, 'a'),
-                                         indent='  ' + qutils.index_to_str(index))
+                                         indent='  ' + qutils.index_to_str(index), env=env)
 
     return return_code
 

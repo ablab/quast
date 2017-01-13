@@ -199,7 +199,8 @@ setup(
 It works both with and without reference genomes.
 The tool accepts multiple assemblies, thus is suitable for comparison.''',
     keywords=['bioinformatics', 'genome assembly', 'metagenome assembly', 'visualization'],
-    url='quast.sf.net',
+    url='https://quast.sf.net',
+    download_url='https://github.com/ablab/quast/releases/tag/quast_4.4',
     platforms=['Linux', 'OS X'],
     license='GPLv2',
 

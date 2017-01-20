@@ -39,8 +39,10 @@ def main(args):
     try:
         import imp
         imp.reload(qconfig)
+        imp.reload(qutils)
     except:
         reload(qconfig)
+        reload(qutils)
 
     try:
         locale.setlocale(locale.LC_ALL, 'en_US.utf8')

@@ -138,8 +138,6 @@ def cumulative_plot(reference, contigs_fpaths, lists_of_lengths, plot_fpath, tit
         return
 
     logger.info('  Drawing cumulative plot...')
-    import matplotlib.pyplot
-    import matplotlib.ticker
 
     figure = matplotlib.pyplot.figure()
     matplotlib.pyplot.rc('font', **font)
@@ -222,8 +220,6 @@ def cumulative_plot(reference, contigs_fpaths, lists_of_lengths, plot_fpath, tit
 def Nx_plot(results_dir, reduce_points, contigs_fpaths, lists_of_lengths, plot_fpath, title='Nx', reference_lengths=None, json_output_dir=None):
     if can_draw_plots:
         logger.info('  Drawing ' + title + ' plot...')
-        import matplotlib.pyplot
-        import matplotlib.ticker
 
         figure = matplotlib.pyplot.figure()
         matplotlib.pyplot.rc('font', **font)
@@ -332,8 +328,6 @@ def GC_content_plot(ref_fpath, contigs_fpaths, list_of_GC_distributions, plot_fp
     title = 'GC content'
 
     logger.info('  Drawing ' + title + ' plot...')
-    import matplotlib.pyplot
-    import matplotlib.ticker
 
     figure = matplotlib.pyplot.figure()
     matplotlib.pyplot.rc('font', **font)
@@ -410,8 +404,6 @@ def genes_operons_plot(reference_value, contigs_fpaths, files_feature_in_contigs
         return
 
     logger.info('  Drawing ' + title + ' cumulative plot...')
-    import matplotlib.pyplot
-    import matplotlib.ticker
 
     figure = matplotlib.pyplot.figure()
     matplotlib.pyplot.rc('font', **font)
@@ -506,8 +498,6 @@ def histogram(contigs_fpaths, values, plot_fpath, title='', yaxis_title='', bott
         top_value = (math.ceil(max_value / exponent) + 1) * exponent
 
     logger.info('  Drawing ' + title + ' histogram...')
-    import matplotlib.pyplot
-    import matplotlib.ticker
 
     figure = matplotlib.pyplot.figure()
     matplotlib.pyplot.rc('font', **font)
@@ -563,8 +553,6 @@ def coverage_histogram(contigs_fpaths, values, plot_fpath, title='', bin_size=No
         return
 
     logger.info('  Drawing ' + title + '...')
-    import matplotlib.pyplot
-    import matplotlib.ticker
 
     figure = matplotlib.pyplot.figure()
     matplotlib.pyplot.rc('font', **font)
@@ -660,8 +648,6 @@ def draw_meta_summary_plot(html_fpath, output_dirpath, labels, ref_names, all_ro
     import math
     if can_draw_plots:
         meta_logger.info('  Drawing ' + title + ' metaQUAST summary plot...')
-        import matplotlib.pyplot
-        import matplotlib.ticker
         figure = matplotlib.pyplot.figure()
         ax = figure.add_subplot(111)
         matplotlib.pyplot.title(title)
@@ -761,8 +747,6 @@ def draw_meta_summary_misassembl_plot(results, ref_names, contig_num, plot_fpath
     import math
     if can_draw_plots:
         meta_logger.info('  Drawing metaQUAST summary misassemblies plot for ' + title + '...')
-        import matplotlib.pyplot
-        import matplotlib.ticker
 
     refs_num = len(ref_names)
     refs = []
@@ -845,8 +829,6 @@ def draw_misassembl_plot(reports, plot_fpath, title='', yaxis_title=''):
         return
 
     logger.info('  Drawing misassemblies by types plot...')
-    import matplotlib.pyplot
-    import matplotlib.ticker
     import math
 
     contigs_num = len(reports)
@@ -955,7 +937,6 @@ def draw_report_table(report_name, extra_info, table_to_draw, column_widths):
     total_height = nrows * row_height + 2 * external_text_height
     total_width = letter_width_coeff * font_scale * sum(column_widths)
 
-    import matplotlib.pyplot
     figure = matplotlib.pyplot.figure(figsize=(total_width, total_height))
     matplotlib.pyplot.rc('font', **font)
     matplotlib.pyplot.axis('off')
@@ -1006,7 +987,6 @@ def fill_all_pdf_file(all_pdf):
     all_pdf.close()
     pdf_tables_figures = []
     pdf_plots_figures = []
-    import matplotlib.pyplot
     matplotlib.pyplot.close('all')  # closing all open figures
 
 

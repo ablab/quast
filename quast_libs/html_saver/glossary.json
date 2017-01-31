@@ -40,6 +40,7 @@
     "# scaffold gap size misassemblies" : "<span>is the number of scaffold gap size misassemblies. We define scaffold gap size misassembly as a breakpoint where the flanking sequences combined in scaffold on the wrong distance. These misassemblies are not included in the total number of misassemblies. </span>",
     "# possibly misassembled contigs": "<span>is the number of contigs that contain large unaligned fragment (default min length is 500 bp) and thus could possibly contain interspecies translocation with unknown reference.</span>",
     "# possible misassemblies"      : "<span>is the number of putative interspecies translocations in possibly misassembled contigs if each large unaligned fragment is supposed to be a fragment of unknown reference.</span>",
+    "# intergenomic misassemblies"  : "<span>is the number of all found and putative (possible) interspecies translocations.</span>",
     "# structural variations"       : "<span>is the number of misassemblies matched with structural variations.</span>",
     "# unaligned mis. contigs"      : "<span>is the number of contigs that have the number of unaligned bases more than 50% of contig length and a misassembly event in their aligned fragment. Note that such misassemblies are not counted in <i># misassemblies</i> and other <i>misassemblies</i> statistics.</span>",
 

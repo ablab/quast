@@ -6,10 +6,11 @@
 ############################################################################
 from __future__ import with_statement
 import os
+from collections import defaultdict
 
 from quast_libs import qconfig, qutils, reporting
 from quast_libs.ca_utils.analyze_misassemblies import Misassembly
-from quast_libs.ca_utils.misc import print_file
+from quast_libs.ca_utils.misc import print_file, intergenomic_misassemblies_by_asm, possible_misassemblies_by_asm
 
 
 def print_results(contigs_fpath, log_out_f, used_snps_fpath, total_indels_info, result):
@@ -117,7 +118,7 @@ def print_results(contigs_fpath, log_out_f, used_snps_fpath, total_indels_info, 
     return result
 
 
-def save_result(result, report, fname):
+def save_result(result, report, fname, ref_fpath):
     region_misassemblies = result['region_misassemblies']
     region_struct_variations = result['region_struct_variations']
     misassemblies_matched_sv = result['misassemblies_matched_sv']
@@ -175,6 +176,13 @@ def save_result(result, report, fname):
         report.add_field(reporting.Fields.MIS_ISTRANSLOCATIONS, region_misassemblies.count(Misassembly.INTERSPECTRANSLOCATION))
         report.add_field(reporting.Fields.CONTIGS_WITH_ISTRANSLOCATIONS, region_misassemblies.count(Misassembly.POTENTIALLY_MIS_CONTIGS))
         report.add_field(reporting.Fields.POSSIBLE_MISASSEMBLIES, region_misassemblies.count(Misassembly.POSSIBLE_MISASSEMBLIES))
+        report.add_field(reporting.Fields.INTERGENOMIC_MISASSEMBLIES,
+                         region_misassemblies.count(Misassembly.POSSIBLE_MISASSEMBLIES) + region_misassemblies.count(Misassembly.INTERSPECTRANSLOCATION))
+    elif intergenomic_misassemblies_by_asm:
+        asm_name = qutils.label_from_fpath(fname)
+        ref_name = qutils.name_from_fpath(ref_fpath)
+        report.add_field(reporting.Fields.POSSIBLE_MISASSEMBLIES, possible_misassemblies_by_asm[asm_name][ref_name])
+        report.add_field(reporting.Fields.INTERGENOMIC_MISASSEMBLIES, intergenomic_misassemblies_by_asm[asm_name][ref_name])
     if qconfig.scaffolds and fname not in qconfig.dict_of_broken_scaffolds:
         report.add_field(reporting.Fields.MIS_SCAFFOLDS_GAP, region_misassemblies.count(Misassembly.SCAFFOLD_GAP))
     if qconfig.check_for_fragmented_ref:
@@ -203,6 +211,14 @@ def save_combined_ref_stats(results, contigs_fpaths, ref_labels_by_chromosomes, 
     ref_misassemblies = [result['istranslocations_by_refs'] if result else [] for result in results]
     potential_misassemblies_by_refs = [result['potential_misassemblies_by_refs'] if result else [] for result in results]
     all_refs = sorted(list(set([ref for ref in ref_labels_by_chromosomes.values()])))
+    for i, fpath in enumerate(contigs_fpaths):
+        label = qutils.label_from_fpath(fpath)
+        intergenomic_misassemblies_by_asm[label] = defaultdict(int)
+        possible_misassemblies_by_asm[label] = defaultdict(int)
+        for ref in all_refs:
+            intergenomic_misassemblies_by_asm[label][ref] = sum(m for m in ref_misassemblies[i][ref].values() if m) + \
+                                                            potential_misassemblies_by_refs[i][ref]
+            possible_misassemblies_by_asm[label][ref] = potential_misassemblies_by_refs[i][ref]
     misassemblies_by_refs_rows = []
     row = {'metricName': 'References', 'values': all_refs}
     misassemblies_by_refs_rows.append(row)
@@ -215,15 +231,15 @@ def save_combined_ref_stats(results, contigs_fpaths, ref_labels_by_chromosomes, 
                 all_rows = []
                 row = {'metricName': 'References', 'values': [ref_num + 1 for ref_num in range(len(all_refs))]}
                 all_rows.append(row)
-                for k in all_refs:
-                    row = {'metricName': k, 'values': []}
+                for cur_ref in all_refs:
+                    row = {'metricName': cur_ref, 'values': []}
                     for ref in all_refs:
-                        if ref == k or ref not in ref_misassemblies[i]:
+                        if ref == cur_ref or ref not in ref_misassemblies[i]:
                             row['values'].append(None)
                         else:
-                            row['values'].append(ref_misassemblies[i][ref][k])
+                            row['values'].append(ref_misassemblies[i][ref][cur_ref])
                     misassemblies_by_refs_rows[-1]['values'].append(max(0, sum([r for r in row['values'] if r]) +
-                                                                        potential_misassemblies_by_refs[i][k]))
+                                                                        potential_misassemblies_by_refs[i][cur_ref]))
                     all_rows.append(row)
                 misassembly_by_ref_fpath = os.path.join(output_dir, 'interspecies_translocations_by_refs_%s.info' % assembly_name)
                 with open(misassembly_by_ref_fpath, 'w') as misassembly_by_ref_file:

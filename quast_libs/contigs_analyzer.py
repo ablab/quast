@@ -27,7 +27,7 @@ from quast_libs import reporting, qconfig, qutils, fastaparser
 from quast_libs.ca_utils.analyze_contigs import analyze_contigs
 from quast_libs.ca_utils.analyze_coverage import analyze_coverage
 from quast_libs.ca_utils.analyze_misassemblies import Mapping
-from quast_libs.ca_utils.misc import print_file, ref_labels_by_chromosomes, clean_tmp_files, compile_aligner, \
+from quast_libs.ca_utils.misc import ref_labels_by_chromosomes, clean_tmp_files, compile_aligner, \
     create_nucmer_output_dir, open_gzipsafe, compress_nucmer_output, is_emem_aligner, close_handlers
 from quast_libs.ca_utils.align_contigs import align_contigs, get_nucmer_aux_out_fpaths, NucmerStatus, check_emem_functionality
 from quast_libs.ca_utils.save_results import print_results, save_result, save_result_for_unaligned, \
@@ -292,7 +292,7 @@ def do(reference, contigs_fpaths, is_cyclic, output_dir, old_contigs_fpaths, bed
     for index, fname in enumerate(contigs_fpaths):
         report = reporting.get(fname)
         if statuses[index] == NucmerStatus.OK:
-            reports.append(save_result(results[index], report, fname))
+            reports.append(save_result(results[index], report, fname, reference))
         elif statuses[index] == NucmerStatus.NOT_ALIGNED:
             save_result_for_unaligned(results[index], report)
 

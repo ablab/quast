@@ -101,7 +101,8 @@ def do(html_fpath, output_dirpath, combined_output_dirpath, output_dirpath_per_r
                     y_label = 'Contig length '
                 elif metric == reporting.Fields.LARGALIGN:
                     y_label = 'Alignment length '
-                plotter.draw_meta_summary_plot(html_fpath, output_dirpath, labels, cur_ref_names, all_rows, results,
+                if qconfig.draw_plots:
+                    plotter.draw_meta_summary_plot(html_fpath, output_dirpath, labels, cur_ref_names, all_rows, results,
                                                summary_png_fpath, title=metric, reverse=reverse, yaxis_title=y_label)
                 if metric == reporting.Fields.MISASSEMBL:
                     mis_results = []

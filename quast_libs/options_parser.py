@@ -546,8 +546,6 @@ def parse_options(logger, quast_args, is_metaquast=False):
         qconfig.usage(meta=is_metaquast)
         sys.exit(2)
 
-    logger.set_up_console_handler(debug=qconfig.debug)
-
     for c_fpath in contigs_fpaths:
         assert_file_exists(c_fpath, 'contigs')
 
@@ -562,6 +560,7 @@ def parse_options(logger, quast_args, is_metaquast=False):
                           qconfig.save_json if not is_metaquast else None)
 
     logger.set_up_file_handler(qconfig.output_dirpath, qconfig.error_log_fpath)
+    logger.set_up_console_handler(debug=qconfig.debug)
     logger.print_command_line(quast_args, wrap_after=None, is_main=True)
     logger.start()
 

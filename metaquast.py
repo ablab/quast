@@ -18,9 +18,8 @@ from quast_libs.metautils import Assembly, correct_meta_references, correct_asse
     get_downloaded_refs_with_alignments, partition_contigs, calculate_ave_read_support
 from quast_libs.options_parser import parse_options, remove_from_quast_py_args
 
-from quast_libs import contigs_analyzer, reads_analyzer, search_references_meta
-from quast_libs import qutils
-from quast_libs.qutils import cleanup, check_dirpath
+from quast_libs import contigs_analyzer, reads_analyzer, search_references_meta, qutils
+from quast_libs.qutils import cleanup, check_dirpath, is_python2
 
 from quast_libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_META_NAME)
@@ -31,7 +30,7 @@ addsitedir(os.path.join(qconfig.LIBS_LOCATION, 'site_packages'))
 
 
 def _start_quast_main(args, assemblies, reference_fpath=None, output_dirpath=None,
-                      num_notifications_tuple=None, is_first_run=None, run_regular_quast=False):
+                      num_notifications_tuple=None, is_first_run=None, run_regular_quast=False, is_parallel_run=False):
     args = args[:]
 
     args.extend([asm.fpath for asm in assemblies])
@@ -61,7 +60,8 @@ def _start_quast_main(args, assemblies, reference_fpath=None, output_dirpath=Non
         reload(quast)
     quast.logger.set_up_console_handler(indent_val=1, debug=qconfig.debug)
     if not run_regular_quast:
-        quast.logger.set_up_metaquast()
+        reference_name = os.path.basename(qutils.name_from_fpath(reference_fpath)) if reference_fpath else None
+        quast.logger.set_up_metaquast(is_parallel_run=is_parallel_run, ref_name=reference_name)
     logger.info_to_file('(logging to ' +
                         os.path.join(output_dirpath,
                                      qconfig.LOGGER_DEFAULT_NAME + '.log)'))
@@ -76,6 +76,30 @@ def _start_quast_main(args, assemblies, reference_fpath=None, output_dirpath=Non
         return return_code, num_notifications_tuple, assemblies, labels
     else:
         return return_code, num_notifications_tuple
+
+
+def _run_quast_per_ref(quast_py_args, output_dirpath_per_ref, ref_fpath, ref_assemblies, total_num_notifications, is_parallel_run=False):
+    ref_name = qutils.name_from_fpath(ref_fpath)
+    if not ref_assemblies:
+        logger.main_info('\nNo contigs were aligned to the reference ' + ref_name + ', skipping..')
+        return None, None, None
+    else:
+        output_dirpath = os.path.join(output_dirpath_per_ref, ref_name)
+        run_name = 'for the contigs aligned to ' + ref_name
+        logger.main_info('\nStarting quast.py ' + run_name +
+                         ' (logging to ' + os.path.join(output_dirpath, qconfig.LOGGER_DEFAULT_NAME) + '.log)')
+
+        return_code, total_num_notifications = _start_quast_main(quast_py_args,
+                                                                 assemblies=ref_assemblies,
+                                                                 reference_fpath=ref_fpath,
+                                                                 output_dirpath=output_dirpath,
+                                                                 num_notifications_tuple=total_num_notifications,
+                                                                 is_parallel_run=is_parallel_run)
+        json_text = None
+        if qconfig.html_report:
+            from quast_libs.html_saver import json_saver
+            json_text = json_saver.json_text
+        return ref_name, json_text, total_num_notifications
 
 
 def main(args):
@@ -304,25 +328,39 @@ def main(args):
         assemblies, corrected_ref_fpaths, corrected_dirpath,
         os.path.join(combined_output_dirpath, 'contigs_reports', 'alignments_%s.tsv'), labels)
 
-    ref_names = []
     output_dirpath_per_ref = os.path.join(output_dirpath, qconfig.per_ref_dirname)
-    for ref_fpath, ref_assemblies in assemblies_by_reference:
-        ref_name = qutils.name_from_fpath(ref_fpath)
-        logger.main_info('')
-        if not ref_assemblies:
-            logger.main_info('No contigs were aligned to the reference ' + ref_name + ', skipping..')
+    if len(assemblies_by_reference) > len(assemblies) and len(assemblies) < qconfig.max_threads  and \
+            not qconfig.memory_efficient:
+        logger.main_info()
+        logger.main_info('Run QUAST on different references in parallel..')
+        if is_python2():
+            from joblib import Parallel, delayed
         else:
-            ref_names.append(ref_name)
-            run_name = 'for the contigs aligned to ' + ref_name
-            logger.main_info('Starting quast.py ' + run_name)
+            from joblib3 import Parallel, delayed
+        threads_per_ref = max(1, qconfig.max_threads // len(assemblies_by_reference))
+        quast_py_args += ['--memory-efficient']
+        quast_py_args += ['-t', str(threads_per_ref)]
 
-            return_code, total_num_notifications = _start_quast_main(quast_py_args,
-                assemblies=ref_assemblies,
-                reference_fpath=ref_fpath,
-                output_dirpath=os.path.join(output_dirpath_per_ref, ref_name),
-                num_notifications_tuple=total_num_notifications)
+        num_notifications = (0, 0, 0)
+        results_tuples = Parallel(n_jobs=qconfig.max_threads)(
+            delayed(_run_quast_per_ref)(quast_py_args,output_dirpath_per_ref, ref_fpath, ref_assemblies, num_notifications, is_parallel_run=True)
+            for ref_fpath, ref_assemblies in assemblies_by_reference)
+        ref_names, ref_json_texts, ref_notifications = [x[0] for x in results_tuples if x[0]], \
+                                                       [x[1] for x in results_tuples if x[1]], \
+                                                       [x[2] for x in results_tuples if x[2]]
+        per_ref_num_notifications = map(sum, zip(*ref_notifications))
+        total_num_notifications = map(sum, zip(total_num_notifications, per_ref_num_notifications))
+        if json_texts is not None:
+            json_texts.extend(ref_json_texts)
+    else:
+        ref_names = []
+        for ref_fpath, ref_assemblies in assemblies_by_reference:
+            ref_name, json_text, total_num_notifications = \
+                _run_quast_per_ref(quast_py_args, output_dirpath_per_ref, ref_fpath, ref_assemblies, total_num_notifications)
+            if ref_name:
+                ref_names.append(ref_name)
             if json_texts is not None:
-                json_texts.append(json_saver.json_text)
+                json_texts.append(json_text)
 
     # Finally running for the contigs that has not been aligned to any reference
     no_unaligned_contigs = True

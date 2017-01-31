@@ -298,9 +298,14 @@ def do(fasta_fpaths, gene_lengths, out_dirpath, prokaryote, meta):
             from joblib import Parallel, delayed
         else:
             from joblib3 import Parallel, delayed
-        results = Parallel(n_jobs=n_jobs)(delayed(predict_genes)(
-            index, fasta_fpath, gene_lengths, out_dirpath, tool_dirpath, tmp_dirpath, gmhmm_p_function, prokaryote, num_threads)
-            for index, fasta_fpath in enumerate(fasta_fpaths))
+        if not qconfig.memory_efficient:
+            results = Parallel(n_jobs=n_jobs)(delayed(predict_genes)(
+                index, fasta_fpath, gene_lengths, out_dirpath, tool_dirpath, tmp_dirpath, gmhmm_p_function, prokaryote, num_threads)
+                for index, fasta_fpath in enumerate(fasta_fpaths))
+        else:
+            results = [predict_genes(index, fasta_fpath, gene_lengths, out_dirpath, tool_dirpath, tmp_dirpath,
+                                     gmhmm_p_function, prokaryote, num_threads)
+                       for index, fasta_fpath in enumerate(fasta_fpaths)]
 
         genes_by_labels = dict()
         # saving results

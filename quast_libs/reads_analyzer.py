@@ -160,7 +160,10 @@ def search_sv_with_manta(main_ref_fpath, meta_ref_fpaths, output_dirpath, err_pa
         else:
             from joblib3 import Parallel, delayed
         n_jobs = min(len(meta_ref_fpaths), qconfig.max_threads)
-        bed_fpaths = Parallel(n_jobs=n_jobs)(delayed(process_one_ref)(cur_ref_fpath, output_dirpath, err_path) for cur_ref_fpath in meta_ref_fpaths)
+        if not qconfig.memory_efficient:
+            bed_fpaths = Parallel(n_jobs=n_jobs)(delayed(process_one_ref)(cur_ref_fpath, output_dirpath, err_path) for cur_ref_fpath in meta_ref_fpaths)
+        else:
+            bed_fpaths = [process_one_ref(cur_ref_fpath, output_dirpath, err_path) for cur_ref_fpath in meta_ref_fpaths]
         bed_fpaths = [f for f in bed_fpaths if f is not None]
         if bed_fpaths:
             qutils.cat_files(bed_fpaths, final_bed_fpath)

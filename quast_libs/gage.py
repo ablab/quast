@@ -136,8 +136,12 @@ def do(ref_fpath, contigs_fpaths, output_dirpath):
         from joblib import Parallel, delayed
     else:
         from joblib3 import Parallel, delayed
-    return_codes = Parallel(n_jobs=n_jobs)(delayed(run_gage)(i, contigs_fpath, gage_results_dirpath, gage_tool_path, ref_fpath, tmp_dirpath)
-        for i, contigs_fpath in enumerate(contigs_fpaths))
+    if not qconfig.memory_efficient:
+        return_codes = Parallel(n_jobs=n_jobs)(delayed(run_gage)(i, contigs_fpath, gage_results_dirpath, gage_tool_path, ref_fpath, tmp_dirpath)
+            for i, contigs_fpath in enumerate(contigs_fpaths))
+    else:
+        return_codes = [run_gage(i, contigs_fpath, gage_results_dirpath, gage_tool_path, ref_fpath, tmp_dirpath)
+            for i, contigs_fpath in enumerate(contigs_fpaths)]
 
     if 0 not in return_codes:
         logger.error('Error occurred while GAGE was processing assemblies.'

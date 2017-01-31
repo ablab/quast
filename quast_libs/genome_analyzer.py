@@ -346,10 +346,15 @@ def do(ref_fpath, aligned_contigs_fpaths, output_dirpath, json_output_dirpath,
         from joblib import Parallel, delayed
     else:
         from joblib3 import Parallel, delayed
-    process_results = Parallel(n_jobs=n_jobs)(delayed(process_single_file)(
-        contigs_fpath, index, nucmer_path_dirpath, genome_stats_dirpath,
-        reference_chromosomes, genes_container, operons_container)
-        for index, contigs_fpath in enumerate(aligned_contigs_fpaths))
+    if not qconfig.memory_efficient:
+        process_results = Parallel(n_jobs=n_jobs)(delayed(process_single_file)(
+            contigs_fpath, index, nucmer_path_dirpath, genome_stats_dirpath,
+            reference_chromosomes, genes_container, operons_container)
+            for index, contigs_fpath in enumerate(aligned_contigs_fpaths))
+    else:
+        process_results = [process_single_file(contigs_fpath, index, nucmer_path_dirpath, genome_stats_dirpath,
+                                               reference_chromosomes, genes_container, operons_container)
+                           for index, contigs_fpath in enumerate(aligned_contigs_fpaths)]
     num_nf_errors += len([res for res in process_results if res is None])
     logger._num_nf_errors = num_nf_errors
     process_results = [res for res in process_results if res]

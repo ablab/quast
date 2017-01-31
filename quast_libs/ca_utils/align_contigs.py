@@ -155,9 +155,13 @@ def align_contigs(nucmer_fpath, ref_fpath, contigs_fpath, old_contigs_fpath, ind
                 from joblib import Parallel, delayed
             else:
                 from joblib3 import Parallel, delayed
-            nucmer_exit_codes = Parallel(n_jobs=n_jobs)(delayed(run_nucmer)(
-                prefix, chr_file, contigs_fpath, log_out_fpath, log_err_fpath + "_part%d" % (i + 1), index, threads)
-                for i, (prefix, chr_file) in enumerate(prefixes_and_chr_files))
+            if not qconfig.memory_efficient:
+                nucmer_exit_codes = Parallel(n_jobs=n_jobs)(delayed(run_nucmer)(
+                    prefix, chr_file, contigs_fpath, log_out_fpath, log_err_fpath + "_part%d" % (i + 1), index, threads)
+                    for i, (prefix, chr_file) in enumerate(prefixes_and_chr_files))
+            else:
+                nucmer_exit_codes = [run_nucmer(prefix, chr_file, contigs_fpath, log_out_fpath, log_err_fpath + "_part%d" % (i + 1), index, threads)
+                                     for i, (prefix, chr_file) in enumerate(prefixes_and_chr_files)]
 
             log_err_f.write("Stderr outputs for reference parts are in:\n")
             for i in range(len(prefixes_and_chr_files)):

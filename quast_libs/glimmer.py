@@ -176,9 +176,13 @@ def do(contigs_fpaths, gene_lengths, out_dirpath):
         from joblib import Parallel, delayed
     else:
         from joblib3 import Parallel, delayed
-    results = Parallel(n_jobs=n_jobs)(delayed(predict_genes)(
-        index, contigs_fpath, gene_lengths, out_dirpath, tool_dirpath, tmp_dirpath)
-        for index, contigs_fpath in enumerate(contigs_fpaths))
+    if qconfig.memory_efficient:
+        results = Parallel(n_jobs=n_jobs)(delayed(predict_genes)(
+            index, contigs_fpath, gene_lengths, out_dirpath, tool_dirpath, tmp_dirpath)
+            for index, contigs_fpath in enumerate(contigs_fpaths))
+    else:
+        results = [predict_genes(index, contigs_fpath, gene_lengths, out_dirpath, tool_dirpath, tmp_dirpath)
+                   for index, contigs_fpath in enumerate(contigs_fpaths)]
 
     genes_by_labels = dict()
     # saving results

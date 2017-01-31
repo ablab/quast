@@ -29,6 +29,20 @@ def get_logger(name):
         return _loggers[name]
 
 
+class MetaQErrorFormatter(logging.Formatter):
+    def __init__(self, indent_val=None, ref_name=None, log_fpath=None):
+        self._indent_val = indent_val
+        self._ref_name = ref_name
+        self._log_fpath = log_fpath
+
+        super(logging.Formatter, self).__init__()
+
+    def format(self, record):
+        if record.msg:
+            record.msg = self._indent_val * '  ' + self._ref_name + ': ' + record.msg + '(details are in ' + self._log_fpath + ')'
+        return record.msg
+
+
 class QLogger(object):
     _logger = None  # logging.getLogger('quast')
     _name = ''
@@ -39,14 +53,17 @@ class QLogger(object):
     _num_warnings = 0
     _num_nf_errors = 0
     _is_metaquast = False
+    _is_parallel_run = False
 
     def __init__(self, name):
         self._name = name
         self._logger = logging.getLogger(name)
         self._logger.setLevel(logging.DEBUG)
 
-    def set_up_metaquast(self):
+    def set_up_metaquast(self, is_parallel_run=False, ref_name=None):
         self._is_metaquast = True
+        self._is_parallel_run = is_parallel_run
+        self._ref_name = ref_name
 
     def set_up_console_handler(self, indent_val=0, debug=False):
         self._indent_val = indent_val
@@ -58,6 +75,9 @@ class QLogger(object):
         console_handler = logging.StreamHandler(sys.stdout, )
         console_handler.setFormatter(logging.Formatter(indent_val * '  ' + '%(message)s'))
         console_handler.setLevel(logging.DEBUG if debug else logging.INFO)
+        if self._is_parallel_run:
+            console_handler.setFormatter(MetaQErrorFormatter(indent_val, self._ref_name, self._log_fpath))
+            console_handler.setLevel(logging.ERROR)
         self._logger.addHandler(console_handler)
 
     def set_up_debug_level(self):

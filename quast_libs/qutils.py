@@ -189,8 +189,13 @@ def correct_contigs(contigs_fpaths, corrected_dirpath, labels, reporting):
     else:
         from joblib3 import Parallel, delayed
     logger.main_info('  Pre-processing...')
-    corrected_info = Parallel(n_jobs=n_jobs)(delayed(parallel_correct_contigs)(i, contigs_fpath,
-            corrected_dirpath, labels) for i, contigs_fpath in enumerate(contigs_fpaths))
+    if not qconfig.memory_efficient:
+        corrected_info = Parallel(n_jobs=n_jobs)(delayed(parallel_correct_contigs)(i, contigs_fpath,
+                corrected_dirpath, labels) for i, contigs_fpath in enumerate(contigs_fpaths))
+    else:
+        corrected_info = [parallel_correct_contigs(i, contigs_fpath, corrected_dirpath, labels)
+                          for i, contigs_fpath in enumerate(contigs_fpaths)]
+
     corrected_contigs_fpaths = []
     old_contigs_fpaths = []
     for contig_idx, (old_fpaths, corr_fpaths, broken_scaffold_fpaths, logs) in enumerate(corrected_info):

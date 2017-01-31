@@ -12,7 +12,7 @@ run_quast(name, contigs=['/acestorage/data/contigs/PAPERS/MetaQUAST/CAMI/CAMI/Go
 
 check_report_files(name, ['icarus.html',
                           'icarus_viewers/contig_size_viewer.html',
-                          'icarus_viewers/Thermus_sp_CCB_US3_UF1.html',
+                          'icarus_viewers/Thermus_sp._CCB_US3_UF1.html',
                           'krona_charts/summary_taxonomy_chart.html',
                           'report.html',
                           'runs_per_reference/Brevibacterium_casei/report.tsv'])

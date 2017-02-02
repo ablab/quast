@@ -16,6 +16,22 @@ function getMedian (x) {
     else return (x[(x.length / 2) - 1] + x[(x.length / 2)]) / 2;
 }
 
+function toggleSecondary(event, caller) {
+    event = event || window.event;
+    if(event.target.nodeName == "IMG") return;
+    if (!caller.hasClass('primary') || caller.hasClass('not_extend')) {
+        return;
+    }
+    var nextRow = caller.next('.content-row');
+    $(caller).find('.metric-name').toggleClass('collapsed').toggleClass('expanded');
+
+    while (!nextRow.hasClass('primary') && (nextRow.length > 0)) {
+        nextRow.toggleClass('secondary_hidden');
+        nextRow.find('.left_column_td').css('background-color', '#E8E8E8');
+        nextRow = nextRow.next('.content-row');
+    }
+}
+
 function setUpHeatMap(table) {
     
     (function () {

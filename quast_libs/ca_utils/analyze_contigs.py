@@ -115,10 +115,11 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fp
 
     region_struct_variations = find_all_sv(qconfig.bed)
 
-    references_misassemblies = dict()
+    istranslocations_by_ref = dict()
+    misassemblies_by_ref = defaultdict(list)
     potential_misassemblies_by_refs = defaultdict(int)
     for ref in ref_labels_by_chromosomes.values():
-        references_misassemblies[ref] = dict((key, 0) for key in ref_labels_by_chromosomes.values())
+        istranslocations_by_ref[ref] = dict((key, 0) for key in ref_labels_by_chromosomes.values())
 
     # for counting SNPs and indels (both original (.all_snps) and corrected from Nucmer's local misassemblies)
     total_indels_info = IndelsInfo()
@@ -337,11 +338,11 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fp
                         continue
 
                     ### processing misassemblies
-                    is_misassembled, current_mio, references_misassemblies, indels_info, misassemblies_matched_sv = \
+                    is_misassembled, current_mio, indels_info, misassemblies_matched_sv = \
                         process_misassembled_contig(sorted_aligns, is_cyclic, aligned_lengths, region_misassemblies,
-                                                    ref_lens, ref_aligns, ref_features, seq, references_misassemblies,
-                                                    region_struct_variations, misassemblies_matched_sv, ca_output,
-                                                    is_ambiguous)
+                                                    ref_lens, ref_aligns, ref_features, seq, misassemblies_by_ref,
+                                                    istranslocations_by_ref, region_struct_variations, misassemblies_matched_sv,
+                                                    ca_output, is_ambiguous)
                     misassembly_internal_overlap += current_mio
                     total_indels_info += indels_info
                     if is_misassembled:
@@ -380,7 +381,8 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fp
               'ambiguous_contigs': ambiguous_contigs, 'ambiguous_contigs_extra_bases': ambiguous_contigs_extra_bases,
               'ambiguous_contigs_len': ambiguous_contigs_len,
               'half_unaligned_with_misassembly': half_unaligned_with_misassembly,
-              'istranslocations_by_refs': references_misassemblies,
+              'misassemblies_by_ref': misassemblies_by_ref,
+              'istranslocations_by_refs': istranslocations_by_ref,
               'potential_misassemblies_by_refs': potential_misassemblies_by_refs}
 
     return result, ref_aligns, total_indels_info, aligned_lengths, misassembled_contigs

@@ -19,7 +19,7 @@ from quast_libs.metautils import Assembly, correct_meta_references, correct_asse
 from quast_libs.options_parser import parse_options, remove_from_quast_py_args
 
 from quast_libs import contigs_analyzer, reads_analyzer, search_references_meta, qutils
-from quast_libs.qutils import cleanup, check_dirpath, is_python2
+from quast_libs.qutils import cleanup, check_dirpath, is_python2, run_parallel
 
 from quast_libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_META_NAME)
@@ -329,25 +329,19 @@ def main(args):
         os.path.join(combined_output_dirpath, 'contigs_reports', 'alignments_%s.tsv'), labels)
 
     output_dirpath_per_ref = os.path.join(output_dirpath, qconfig.per_ref_dirname)
-    if not qconfig.draw_plots and not qconfig.memory_efficient and \
+    if not qconfig.memory_efficient and \
                     len(assemblies_by_reference) > len(assemblies) and len(assemblies) < qconfig.max_threads:
         logger.main_info()
         logger.main_info('Run QUAST on different references in parallel..')
-        if is_python2():
-            from joblib import Parallel, delayed
-        else:
-            from joblib3 import Parallel, delayed
         threads_per_ref = max(1, qconfig.max_threads // len(assemblies_by_reference))
         quast_py_args += ['--memory-efficient']
         quast_py_args += ['-t', str(threads_per_ref)]
 
         num_notifications = (0, 0, 0)
-        results_tuples = Parallel(n_jobs=qconfig.max_threads)(
-            delayed(_run_quast_per_ref)(quast_py_args,output_dirpath_per_ref, ref_fpath, ref_assemblies, num_notifications, is_parallel_run=True)
-            for ref_fpath, ref_assemblies in assemblies_by_reference)
-        ref_names, ref_json_texts, ref_notifications = [x[0] for x in results_tuples if x[0]], \
-                                                       [x[1] for x in results_tuples if x[1]], \
-                                                       [x[2] for x in results_tuples if x[2]]
+        parallel_run_args = [(quast_py_args,output_dirpath_per_ref, ref_fpath, ref_assemblies, num_notifications, True)
+                             for ref_fpath, ref_assemblies in assemblies_by_reference]
+        ref_names, ref_json_texts, ref_notifications = \
+            run_parallel(_run_quast_per_ref, parallel_run_args, qconfig.max_threads, filter_results=True)
         per_ref_num_notifications = map(sum, zip(*ref_notifications))
         total_num_notifications = map(sum, zip(total_num_notifications, per_ref_num_notifications))
         if json_texts is not None:

@@ -357,18 +357,18 @@ def delete(assembly_fpath):
 
 
 # ATTENTION! Contents numeric values, needed to be converted into strings
-def table(order=Fields.order):
+def table(order=Fields.order, ref_name=None):
     if not isinstance(order[0], tuple):  # is not a groupped metrics order
         order = [('', order)]
 
     table = []
 
-    def append_line(rows, field, are_multiple_thresholds=False, pattern=None, feature=None, i=None):
+    def append_line(rows, field, are_multiple_thresholds=False, pattern=None, feature=None, i=None, ref_name=None):
         quality = get_quality(field)
         values = []
 
         for assembly_fpath in assembly_fpaths:
-            report = get(assembly_fpath)
+            report = get(assembly_fpath, ref_name=ref_name)
             value = report.get_field(field)
 
             if are_multiple_thresholds:
@@ -395,9 +395,10 @@ def table(order=Fields.order):
         for field in metrics:
             if isinstance(field, tuple):  # TODO: rewrite it nicer
                 for i, feature in enumerate(field[1]):
-                    append_line(rows, field, True, field[0], feature, i)
+                    append_line(rows, field, are_multiple_thresholds=True, pattern=field[0], feature=feature, i=i,
+                                ref_name=ref_name)
             else:
-                append_line(rows, field)
+                append_line(rows, field, ref_name=ref_name)
 
     if not isinstance(order[0], tuple):  # is not a groupped metrics order
         group_name, rows = table[0]

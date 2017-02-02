@@ -1,5 +1,108 @@
-function buildTotalReport(assembliesNames, report, order, date, minContig,
-                          glossary, qualities, mainMetrics, referenceName, assembliesWithNs) {
+function addRow(metric, mainMetrics, rowName, group_n, order, glossary, isExpandable, isPrimary) {
+    (function(group_n) {
+        var id_group = '#group_' + group_n;
+        $(function() {
+            $(id_group).removeClass('group_empty');
+        });
+    })(group_n);
+
+    var table = '';
+    metricName = metric.metricName;
+    var quality = metric.quality;
+    var values = metric.values;
+
+    var trClass = 'content-row';
+    if (metric.isMain || $.inArray(metricName, mainMetrics) > -1) {
+        (function(group_n) {
+            var id_group = '#group_' + group_n;
+            $(function() {
+                $(id_group).removeClass('row_hidden');
+                $(id_group).removeClass('row_to_hide');
+            });
+        })(group_n);
+    } else {
+        trClass = 'content-row row_hidden row_to_hide';
+    }
+    var tdClass = '';
+    if (!isPrimary) {
+        trClass += ' secondary_hidden';
+        tdClass = 'secondary_td';
+    }
+    else {
+        trClass += ' primary';
+    }
+    if (isExpandable) {
+        table +=
+            '<tr class="' + trClass + '" quality="' + quality + '" onclick="toggleSecondary(event, $(this))">' +
+            '<td class="left_column_td ' + tdClass + '">' +
+            '<span class="metric-name expandable collapsed">' +
+               initial_spaces_to_nbsp(addTooltipIfDefinitionExists(glossary, rowName.trunc(55)), metricName) +
+            '</span></td>';
+    }
+    else {
+        table +=
+            '<tr class="' + trClass + '" quality="' + quality + '">' +
+            '<td class="left_column_td"><span class="metric-name">' +
+            initial_spaces_to_nbsp(addTooltipIfDefinitionExists(glossary, rowName.trunc(55)), metricName) +
+            '</span>' +
+            '</td>';
+    }
+    for (var val_n = 0; val_n < values.length; val_n++) {
+        value = values[order[val_n]];
+
+        if (value === null || value === '') {
+            table += '<td><span>-</span></td>';
+        } else {
+            if (typeof value === 'number') {
+                table +=
+                    '<td number="' + value + '"><span>'
+                        + toPrettyString(value) + '</span></td>';
+            } else {
+                var result = /([0-9\.]+)(.*)/.exec(value);
+                var num = parseFloat(result[1]);
+                var rest = result[2];
+    //                        alert('value = ' + value + ' result = ' + result);
+
+    //                        var num = parseFloat(value);
+
+                if (num !== null) {
+                    table += '<td number="' + num + '"><span>' + toPrettyString(num) + rest + '</span></td>';
+                } else {
+                    table += '<td><span>' + value + '</span></td>';
+                }
+            }
+        }
+    }
+    return table;
+}
+
+function getSubRows(subReports, groupName, metricName) {
+    rows = [];
+    if (subReports) {
+        for (var report_n = 0; report_n < subReports.length; report_n++) {
+            subReport = subReports[report_n];
+            for (var group_n = 0; group_n < subReport.length; group_n++) {
+                if (subReport[group_n][0] != groupName)
+                    continue;
+                metrics = subReport[group_n][1];
+                for (var metric_n = 0; metric_n < metrics.length; metric_n++) {
+                    if (metrics[metric_n].metricName == metricName)
+                        rows.push(metrics[metric_n])
+                }
+            }
+        }
+    }
+    return rows;
+}
+
+function buildTotalReport(assembliesNames, totalReport, order, glossary, qualities, mainMetrics) {
+    var report = totalReport.report,
+        date = totalReport.date,
+        minContig = totalReport.minContig,
+        referenceName = totalReport.referenceName,
+        assembliesWithNs = totalReport.assembliesWithNs,
+        subReports = totalReport.subreports,
+        subReferences = totalReport.subreferences;
     $('#report_date').html('<p>' + date + '</p>');
     var extraInfo = '<p>All statistics are based on contigs of size >= ' + minContig +
         '<span class="rhs">&nbsp;</span>bp, unless otherwise noted (e.g., "# contigs (>= 0 bp)" and "Total length (>= 0 bp)" include all contigs.)</p>';
@@ -119,64 +222,20 @@ function buildTotalReport(assembliesNames, report, order, date, minContig,
         }
 
         for (metric_n = 0; metric_n < metrics.length; metric_n++) {
-            (function(group_n) {
-                var id_group = '#group_' + group_n;
-                $(function() {
-                    $(id_group).removeClass('group_empty');
-                });
-            })(group_n);
-
-            metric = metrics[metric_n];
-            metricName = metric.metricName;
-            var quality = metric.quality;
-            var values = metric.values;
-
-            var trClass = 'content-row';
-            if (metric.isMain || $.inArray(metricName, mainMetrics) > -1) {
-                (function(group_n) {
-                    var id_group = '#group_' + group_n;
-                    $(function() {
-                        $(id_group).removeClass('row_hidden');
-                        $(id_group).removeClass('row_to_hide');
-                    });
-                })(group_n);
-            } else {
-                trClass = 'content-row row_hidden row_to_hide';
-            }
-
-            table +=
-                '<tr class="' + trClass + '" quality="' + quality + '">' +
-                    '<td class="left_column_td"><span class="metric-name">' +
-                        initial_spaces_to_nbsp(addTooltipIfDefinitionExists(glossary, metricName), metricName) +
-                    '</span>' +
-                '</td>';
-
-            for (var val_n = 0; val_n < values.length; val_n++) {
-                value = values[order[val_n]];
-
-                if (value === null || value === '') {
-                    table += '<td><span>-</span></td>';
-                } else {
-                    if (typeof value === 'number') {
-                        table +=
-                            '<td number="' + value + '"><span>'
-                                + toPrettyString(value) + '</span></td>';
-                    } else {
-                        var result = /([0-9\.]+)(.*)/.exec(value);
-                        var num = parseFloat(result[1]);
-                        var rest = result[2];
-//                        alert('value = ' + value + ' result = ' + result);
-
-//                        var num = parseFloat(value);
-
-                        if (num !== null) {
-                            table += '<td number="' + num + '"><span>' + toPrettyString(num) + rest + '</span></td>';
-                        } else {
-                            table += '<td><span>' + value + '</span></td>';
-                        }
-                    }
+            isExpandable = false;
+            isPrimary = true;
+            metricName = metrics[metric_n].metricName;
+            subRows = getSubRows(subReports, groupName, metricName);
+            if (subRows && subRows.length > 0) {
+                isExpandable = true;
+                table += addRow(metrics[metric_n], mainMetrics, metricName, group_n, order, glossary, isExpandable, isPrimary);
+                for (var rows_n = 0; rows_n < subRows.length; rows_n++) {
+                    isExpandable = false;
+                    isPrimary = false;
+                    table += addRow(subRows[rows_n], mainMetrics, subReferences[rows_n], group_n, order, glossary, isExpandable, isPrimary);
                 }
             }
+            else table += addRow(metrics[metric_n], mainMetrics, metricName, group_n, order, glossary, isExpandable, isPrimary);
         }
         table += '</tr>';
     }

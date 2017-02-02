@@ -815,6 +815,20 @@ def check_dirpath(path, message="", exit_code=3):
     return True
 
 
+def run_parallel(_fn, fn_args, n_jobs, filter_results=False):
+    if is_python2():
+        from joblib import Parallel, delayed
+    else:
+        from joblib3 import Parallel, delayed
+    results_tuples = Parallel(n_jobs=n_jobs)(delayed(_fn)(*args) for args in fn_args)
+    results_cnt = len(results_tuples[0]) if results_tuples else 0
+    if filter_results:
+        results = [[result_list[i] for result_list in results_tuples if result_list[i]] for i in range(results_cnt)]
+    else:
+        results = [[result_list[i] for result_list in results_tuples] for i in range(results_cnt)]
+    return results
+
+
 # based on http://stackoverflow.com/questions/196345/how-to-check-if-a-string-in-python-is-in-ascii
 def is_ascii_string(line):
     try:

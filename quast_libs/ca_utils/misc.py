@@ -93,8 +93,8 @@ def is_same_reference(chr1, chr2):
     return ref_labels_by_chromosomes[chr1] == ref_labels_by_chromosomes[chr2]
 
 
-def get_ref_by_chromosome(chr):
-    return ref_labels_by_chromosomes[chr]
+def get_ref_by_chromosome(chrom):
+    return ref_labels_by_chromosomes[chrom] if chrom in ref_labels_by_chromosomes else ''
 
 
 def print_file(all_rows, fpath, append_to_existing_file=False):

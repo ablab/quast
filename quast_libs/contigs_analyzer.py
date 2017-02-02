@@ -267,7 +267,7 @@ def do(reference, contigs_fpaths, is_cyclic, output_dir, old_contigs_fpaths, bed
         from joblib import Parallel, delayed
     else:
         from joblib3 import Parallel, delayed
-    if not qconfig.splitted_ref:
+    if not qconfig.splitted_ref and not qconfig.memory_efficient:
         statuses_results_lengths_tuples = Parallel(n_jobs=n_jobs)(delayed(align_and_analyze)(
         is_cyclic, i, contigs_fpath, output_dir, reference, old_contigs_fpath, bed_fpath, threads=threads)
              for i, (contigs_fpath, old_contigs_fpath) in enumerate(zip(contigs_fpaths, old_contigs_fpaths)))
@@ -289,15 +289,19 @@ def do(reference, contigs_fpaths, is_cyclic, output_dir, old_contigs_fpaths, bed
                                          [x[2] for x in statuses_results_lengths_tuples]
     reports = []
 
+    nucmer_statuses = dict(zip(contigs_fpaths, statuses))
+    aligned_lengths_per_fpath = dict(zip(contigs_fpaths, aligned_lengths))
+
+    if NucmerStatus.OK in nucmer_statuses.values():
+        if qconfig.is_combined_ref:
+            save_combined_ref_stats(results, contigs_fpaths, ref_labels_by_chromosomes, output_dir, logger)
+
     for index, fname in enumerate(contigs_fpaths):
         report = reporting.get(fname)
         if statuses[index] == NucmerStatus.OK:
             reports.append(save_result(results[index], report, fname, reference))
         elif statuses[index] == NucmerStatus.NOT_ALIGNED:
             save_result_for_unaligned(results[index], report)
-
-    nucmer_statuses = dict(zip(contigs_fpaths, statuses))
-    aligned_lengths_per_fpath = dict(zip(contigs_fpaths, aligned_lengths))
 
     if NucmerStatus.OK in nucmer_statuses.values():
         reporting.save_misassemblies(output_dir)

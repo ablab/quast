@@ -9,6 +9,7 @@ import datetime
 import os
 from os.path import join
 from quast_libs import qutils, qconfig
+from quast_libs.ca_utils.misc import ref_labels_by_chromosomes
 
 from quast_libs.log import get_logger
 log = get_logger(qconfig.LOGGER_DEFAULT_NAME)
@@ -63,6 +64,11 @@ def save_total_report(output_dirpath, min_contig, ref_fpath):
     from quast_libs import reporting
     asm_names = [qutils.label_from_fpath(this) for this in reporting.assembly_fpaths]
     report = reporting.table(reporting.Fields.grouped_order)
+    subreports = []
+    ref_names = []
+    if qconfig.is_combined_ref and ref_labels_by_chromosomes:
+        ref_names = sorted(list(set([ref for ref in ref_labels_by_chromosomes.values()])))
+        subreports = [reporting.table(reporting.Fields.grouped_order, ref_name=ref_name) for ref_name in ref_names]
     t = datetime.datetime.now()
 
     return save(join(output_dirpath, total_report_fname), {
@@ -71,6 +77,8 @@ def save_total_report(output_dirpath, min_contig, ref_fpath):
         'referenceName': qutils.name_from_fpath(ref_fpath) if ref_fpath else '',
         'order': [i for i, _ in enumerate(asm_names)],
         'report': report,
+        'subreferences': ref_names,
+        'subreports': subreports,
         'minContig': min_contig,
         'assembliesWithNs': qconfig.potential_scaffolds_assemblies if qconfig.potential_scaffolds_assemblies else None
     })

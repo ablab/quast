@@ -10,7 +10,8 @@ from collections import defaultdict
 
 from quast_libs import qconfig, qutils, reporting
 from quast_libs.ca_utils.analyze_misassemblies import Misassembly
-from quast_libs.ca_utils.misc import print_file, intergenomic_misassemblies_by_asm, possible_misassemblies_by_asm
+from quast_libs.ca_utils.misc import print_file, intergenomic_misassemblies_by_asm, possible_misassemblies_by_asm, \
+    ref_labels_by_chromosomes
 
 
 def print_results(contigs_fpath, log_out_f, used_snps_fpath, total_indels_info, result):
@@ -120,6 +121,7 @@ def print_results(contigs_fpath, log_out_f, used_snps_fpath, total_indels_info, 
 
 def save_result(result, report, fname, ref_fpath):
     region_misassemblies = result['region_misassemblies']
+    misassemblies_by_ref = result['misassemblies_by_ref']
     region_struct_variations = result['region_struct_variations']
     misassemblies_matched_sv = result['misassemblies_matched_sv']
     misassembled_contigs = result['misassembled_contigs']
@@ -178,6 +180,21 @@ def save_result(result, report, fname, ref_fpath):
         report.add_field(reporting.Fields.POSSIBLE_MISASSEMBLIES, region_misassemblies.count(Misassembly.POSSIBLE_MISASSEMBLIES))
         report.add_field(reporting.Fields.INTERGENOMIC_MISASSEMBLIES,
                          region_misassemblies.count(Misassembly.POSSIBLE_MISASSEMBLIES) + region_misassemblies.count(Misassembly.INTERSPECTRANSLOCATION))
+        all_references = sorted(list(set([ref for ref in ref_labels_by_chromosomes.values()])))
+        for ref_name in all_references:
+            asm_name = qutils.label_from_fpath(fname)
+            subreport = reporting.get(fname, ref_name=ref_name)
+            ref_misassemblies = misassemblies_by_ref[ref_name]
+            subreport.add_field(reporting.Fields.MIS_ALL_EXTENSIVE, ref_misassemblies.count(Misassembly.RELOCATION) +
+                                ref_misassemblies.count(Misassembly.INVERSION) + ref_misassemblies.count(Misassembly.TRANSLOCATION) +
+                                ref_misassemblies.count(Misassembly.INTERSPECTRANSLOCATION))
+            subreport.add_field(reporting.Fields.MIS_RELOCATION, ref_misassemblies.count(Misassembly.RELOCATION))
+            subreport.add_field(reporting.Fields.MIS_TRANSLOCATION, ref_misassemblies.count(Misassembly.TRANSLOCATION))
+            subreport.add_field(reporting.Fields.MIS_INVERTION, ref_misassemblies.count(Misassembly.INVERSION))
+            subreport.add_field(reporting.Fields.MIS_ISTRANSLOCATIONS, ref_misassemblies.count(Misassembly.INTERSPECTRANSLOCATION))
+            subreport.add_field(reporting.Fields.MIS_LOCAL, ref_misassemblies.count(Misassembly.LOCAL))
+            subreport.add_field(reporting.Fields.POSSIBLE_MISASSEMBLIES, possible_misassemblies_by_asm[asm_name][ref_name])
+            subreport.add_field(reporting.Fields.INTERGENOMIC_MISASSEMBLIES, intergenomic_misassemblies_by_asm[asm_name][ref_name])
     elif intergenomic_misassemblies_by_asm:
         asm_name = qutils.label_from_fpath(fname)
         ref_name = qutils.name_from_fpath(ref_fpath)

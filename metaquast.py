@@ -289,6 +289,7 @@ def main(args):
             contigs_analyzer.ref_labels_by_chromosomes = {}
             corrected_ref_fpaths, combined_ref_fpath, chromosomes_by_refs, ref_names = \
                 correct_meta_references(corr_ref_fpaths, corrected_dirpath)
+            assemblies, labels = correct_assemblies(contigs_fpaths, output_dirpath, labels)
             run_name = 'for the corrected combined reference'
             logger.main_info()
             logger.main_info('Starting quast.py ' + run_name + '...')
@@ -313,7 +314,7 @@ def main(args):
         if arg in ('-s', "--scaffolds"):
             quast_py_args.remove(arg)
     quast_py_args += ['--no-check-meta']
-    qconfig.contig_thresholds = ','.join([str(threshold) for threshold in qconfig.contig_thresholds if threshold > qconfig.min_contig])
+    qconfig.contig_thresholds = ','.join([str(threshold) for threshold in qconfig.contig_thresholds if threshold >= qconfig.min_contig])
     if not qconfig.contig_thresholds:
         qconfig.contig_thresholds = 'None'
     quast_py_args = remove_from_quast_py_args(quast_py_args, '--contig-thresholds', qconfig.contig_thresholds)

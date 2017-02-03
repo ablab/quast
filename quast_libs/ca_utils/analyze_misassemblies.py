@@ -340,7 +340,7 @@ def is_gap_filled_ns(contig_seq, align1, align2):
 
 def process_misassembled_contig(sorted_aligns, cyclic, aligned_lengths, region_misassemblies, ref_lens, ref_aligns,
                                 ref_features, contig_seq, misassemblies_by_ref, istranslocations_by_ref, region_struct_variations,
-                                misassemblies_matched_sv, ca_output, is_ambiguous=False):
+                                misassemblies_matched_sv, ca_output):
     misassembly_internal_overlap = 0
     prev_align = sorted_aligns[0]
     cur_aligned_length = prev_align.len2
@@ -374,7 +374,7 @@ def process_misassembled_contig(sorted_aligns, cyclic, aligned_lengths, region_m
             ca_output.stdout_f.write('\t\t\t  Incorrectly estimated size of scaffold gap between these two alignments: ')
             ca_output.stdout_f.write('gap length difference = ' + str(inconsistency) + '\n')
             region_misassemblies.append(Misassembly.SCAFFOLD_GAP)
-            misassemblies_by_ref[prev_ref].append(Misassembly.INTERSPECTRANSLOCATION)
+            misassemblies_by_ref[prev_ref].append(Misassembly.SCAFFOLD_GAP)
             ca_output.icarus_out_f.write('fake: scaffold gap size wrong estimation' + '\n')
         elif is_extensive_misassembly:
             is_misassembled = True

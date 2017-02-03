@@ -195,6 +195,10 @@ def save_result(result, report, fname, ref_fpath):
             subreport.add_field(reporting.Fields.MIS_LOCAL, ref_misassemblies.count(Misassembly.LOCAL))
             subreport.add_field(reporting.Fields.POSSIBLE_MISASSEMBLIES, possible_misassemblies_by_asm[asm_name][ref_name])
             subreport.add_field(reporting.Fields.INTERGENOMIC_MISASSEMBLIES, intergenomic_misassemblies_by_asm[asm_name][ref_name])
+            if qconfig.scaffolds and fname not in qconfig.dict_of_broken_scaffolds:
+                subreport.add_field(reporting.Fields.MIS_SCAFFOLDS_GAP, ref_misassemblies.count(Misassembly.SCAFFOLD_GAP))
+            if qconfig.check_for_fragmented_ref:
+                subreport.add_field(reporting.Fields.MIS_FRAGMENTED, ref_misassemblies.count(Misassembly.FRAGMENTED))
     elif intergenomic_misassemblies_by_asm:
         asm_name = qutils.label_from_fpath(fname)
         ref_name = qutils.name_from_fpath(ref_fpath)

@@ -326,8 +326,12 @@ THE SOFTWARE.
     d3.select('body').on("keydown", keyDownAnswer);
 
     // draw contig info menu
-    var menu = d3.select('body').append('div')
-            .attr('id', 'menu');
+    var menuContainer = d3.select('body').append('div')
+                            .attr('class', 'menu_div');
+    var menu = menuContainer.append('div')
+                            .attr('class', 'menu_div')
+                            .attr('id', 'menu')
+                            .style('position', 'fixed');
     menu.append('div')
             .attr('class', ' block title')
             .text('Contig info');

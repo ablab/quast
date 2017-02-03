@@ -509,10 +509,10 @@ function setCoords(coords, animation) {
 }
 
 function appendLegend() {
-    var menu = d3.select('body').append('div')
-        .attr('id', 'legend')
-        .attr('class', 'expanded');
-    var block = menu.append('div')
+    var legendContainer = d3.select('#menu').append('div')
+                            .attr('id', 'legend')
+                            .attr('class', 'expanded');
+    var block = legendContainer.append('div')
         .attr('class', 'block')
         .style('float', 'left');
     var header = block.append('p')

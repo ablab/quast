@@ -35,7 +35,7 @@ class MetaQErrorFormatter(logging.Formatter):
         self._ref_name = ref_name
         self._log_fpath = log_fpath
 
-        super(logging.Formatter, self).__init__()
+        logging.Formatter.__init__(self)
 
     def format(self, record):
         if record.msg:

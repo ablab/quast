@@ -330,7 +330,7 @@ def main(args):
         os.path.join(combined_output_dirpath, 'contigs_reports', 'alignments_%s.tsv'), labels)
 
     output_dirpath_per_ref = os.path.join(output_dirpath, qconfig.per_ref_dirname)
-    if not qconfig.memory_efficient and \
+    if not qconfig.memory_efficient and not qconfig.draw_plots and \
                     len(assemblies_by_reference) > len(assemblies) and len(assemblies) < qconfig.max_threads:
         logger.main_info()
         logger.main_info('Run QUAST on different references in parallel..')

@@ -82,7 +82,7 @@ def _run_quast_per_ref(quast_py_args, output_dirpath_per_ref, ref_fpath, ref_ass
     ref_name = qutils.name_from_fpath(ref_fpath)
     if not ref_assemblies:
         logger.main_info('\nNo contigs were aligned to the reference ' + ref_name + ', skipping..')
-        return None, None, None
+        return None, None, total_num_notifications
     else:
         output_dirpath = os.path.join(output_dirpath_per_ref, ref_name)
         run_name = 'for the contigs aligned to ' + ref_name
@@ -352,8 +352,9 @@ def main(args):
         for ref_fpath, ref_assemblies in assemblies_by_reference:
             ref_name, json_text, total_num_notifications = \
                 _run_quast_per_ref(quast_py_args, output_dirpath_per_ref, ref_fpath, ref_assemblies, total_num_notifications)
-            if ref_name:
-                ref_names.append(ref_name)
+            if not ref_name:
+                continue
+            ref_names.append(ref_name)
             if json_texts is not None:
                 json_texts.append(json_text)
 

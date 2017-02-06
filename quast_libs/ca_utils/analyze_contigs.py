@@ -342,7 +342,7 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fp
                         process_misassembled_contig(sorted_aligns, is_cyclic, aligned_lengths, region_misassemblies,
                                                     ref_lens, ref_aligns, ref_features, seq, misassemblies_by_ref,
                                                     istranslocations_by_ref, region_struct_variations, misassemblies_matched_sv,
-                                                    ca_output, is_ambiguous)
+                                                    ca_output)
                     misassembly_internal_overlap += current_mio
                     total_indels_info += indels_info
                     if is_misassembled:

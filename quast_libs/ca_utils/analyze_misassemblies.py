@@ -338,7 +338,7 @@ def is_gap_filled_ns(contig_seq, align1, align2):
     return gap_in_contig.count('N') / len(gap_in_contig) >= qconfig.gap_filled_ns_threshold
 
 
-def process_misassembled_contig(sorted_aligns, cyclic, aligned_lengths, region_misassemblies, ref_lens, ref_aligns,
+def process_misassembled_contig(sorted_aligns, is_cyclic, aligned_lengths, region_misassemblies, ref_lens, ref_aligns,
                                 ref_features, contig_seq, misassemblies_by_ref, istranslocations_by_ref, region_struct_variations,
                                 misassemblies_matched_sv, ca_output):
     misassembly_internal_overlap = 0
@@ -355,7 +355,7 @@ def process_misassembled_contig(sorted_aligns, cyclic, aligned_lengths, region_m
         is_fake_translocation = is_fragmented_ref_fake_translocation(prev_align, next_align, ref_lens)
         cur_aligned_length -= exclude_internal_overlaps(prev_align, next_align, i, ca_output)
         is_extensive_misassembly, aux_data = is_misassembly(prev_align, next_align, contig_seq, ref_lens,
-                                                            cyclic, region_struct_variations, is_fake_translocation)
+                                                            is_cyclic, region_struct_variations, is_fake_translocation)
         inconsistency = aux_data["inconsistency"]
         distance_on_contig = aux_data["distance_on_contig"]
         misassembly_internal_overlap += aux_data["misassembly_internal_overlap"]

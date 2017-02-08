@@ -25,16 +25,12 @@ def analyze_coverage(ca_output, regions, ref_aligns, ref_features, snps, total_i
     prev_snp = None
     cur_indel = 0
 
-    nothing_aligned = True
     #Go through each header in reference file
     for ref, value in regions.items():
         #Check to make sure this reference ID contains aligns.
         if ref not in ref_aligns:
-            ca_output.stdout_f.write('ERROR: Reference %s does not have any alignments!  ' \
-                                          'Check that this is the same file used for alignment.' % ref + '\n')
-            ca_output.stdout_f.write('ERROR: Alignment Reference Headers: %s' % ref_aligns.keys() + '\n')
+            ca_output.stdout_f.write('WARNING: Reference %s does not have any alignments! ' % ref + '\n')
             continue
-        nothing_aligned = False
 
         #Sort all alignments in this reference by start location
         sorted_aligns = sorted(ref_aligns[ref], key=lambda x: x.s1)

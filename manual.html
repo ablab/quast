@@ -433,12 +433,6 @@ Way of processing equally good alignments of a contig (probably repeats):<br>
     <tr><td><code>all</code></td><td>use all alignments. Can cause a significant increase of <span class='metric-ref'># mismatches</span>
     (repeats are almost always inexact due to accumulated SNPs, indels, etc.).</td></tr>
 </table>
-This option is also used for processing internal overlaps between adjacent aligned blocks of a misassembled contig:
-<table style="margin-left: 30px; font-size: 1em; vertical-align: bottom;">
-    <tr><td style='width: 40px;'><code>none</code></td><td>exclude (remove) overlapped fragments of all blocks;</td></tr>
-    <tr><td><code>one</code></td><td>remove the overlapped fragment of the shortest block;</td></tr>
-    <tr><td><code>all</code></td><td>use both blocks unchanged.</td></tr>
-</table>
 The default value is <code>one</code>.<br>
 <div style='margin-top: 6;'>The value <code>all</code> is useful for metagenomic assemblies where ambiguous alignments might represent homologous sequences of different strains. For that reason, <code>--ambiguity-usage</code> is set to <code>all</code> for the "combined reference" evaluation (see <a href='#sec2.5'>section 2.5</a>). You may still modify this behaviour with <a href='#unique_mapping'><code>--unique-mapping</code></a>.</div>
 

@@ -301,27 +301,19 @@ def exclude_internal_overlaps(align1, align2, i=None, ca_output=None):
         if ca_output is not None:
             ca_output.stdout_f.write(' --> %s' % align.short_str() + '\n')
 
-    if qconfig.ambiguity_usage == 'all':
-        return 0
-
     distance_on_contig = align2.start() - align1.end() - 1
     if distance_on_contig >= 0:  # no overlap
         return 0
     prev_len2 = align1.len2
     if ca_output is not None:
-        ca_output.stdout_f.write('\t\t\tExcluding internal overlap of size %d between Alignment %d and %d: ' \
-                                     % (-distance_on_contig, i+1, i+2))
-    if qconfig.ambiguity_usage == 'one':  # left only one of two copies (remove overlap from shorter alignment)
-        if align1.len2 >= align2.len2:
-            __shift_start(align2, align1.end() + 1)
-        else:
-            __shift_end(align1, align2.start() - 1)
-    elif qconfig.ambiguity_usage == 'none':  # removing both copies
-        if ca_output is not None:
-            ca_output.stdout_f.write('\n')
-        new_end = align2.start() - 1
-        __shift_start(align2, align1.end() + 1, '\t\t\t  ')
-        __shift_end(align1, new_end, '\t\t\t  ')
+        ca_output.stdout_f.write('\t\t\tExcluding internal overlap of size %d between Alignment %d and %d: '
+                                 % (-distance_on_contig, i+1, i+2))
+
+    # left only one of two copies (remove overlap from shorter alignment)
+    if align1.len2 >= align2.len2:
+        __shift_start(align2, align1.end() + 1)
+    else:
+        __shift_end(align1, align2.start() - 1)
     return prev_len2 - align1.len2
 
 

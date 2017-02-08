@@ -17,7 +17,7 @@ def add_potential_misassembly(ref, potential_misassemblies_by_refs):
     potential_misassemblies_by_refs[cur_ref] += 1
 
 
-def process_unaligned_part(seq, align, potential_misassemblies_by_refs, prev_align=None):
+def process_unaligned_part(seq, align, potential_misassemblies_by_refs, second_align=None):
     unaligned_part = seq
     unaligned_len = len(unaligned_part)
     count_ns = unaligned_part.count('N')
@@ -25,39 +25,33 @@ def process_unaligned_part(seq, align, potential_misassemblies_by_refs, prev_ali
     if count_ns / float(unaligned_len) < qconfig.gap_filled_ns_threshold and unaligned_len - count_ns >= qconfig.unaligned_part_size:
         possible_misassemblies = 1
         add_potential_misassembly(align.ref, potential_misassemblies_by_refs)
-        if prev_align:
+        if second_align:
             possible_misassemblies += 1
-            add_potential_misassembly(prev_align.ref, potential_misassemblies_by_refs)
-    return possible_misassemblies, unaligned_len, count_ns
+            add_potential_misassembly(second_align.ref, potential_misassemblies_by_refs)
+    return possible_misassemblies
 
 
 def check_for_potential_translocation(seq, ctg_len, sorted_aligns, region_misassemblies, potential_misassemblies_by_refs, log_out_f):
-    total_count_ns = 0
-    total_unaligned_len = 0
-    prev_end = 1
+    prev_end = 0
     total_misassemblies_count = 0
     for i, align in enumerate(sorted_aligns):
         if align.start() > prev_end + 1:
             prev_align = sorted_aligns[i - 1] if i > 0 else None
-            possible_misassemblies, unaligned_len, count_ns = \
-                process_unaligned_part(seq[prev_end: align.start()], align, potential_misassemblies_by_refs,
-                                         prev_align=prev_align)
+            possible_misassemblies = process_unaligned_part(seq[prev_end: align.start()], align,
+                                                            potential_misassemblies_by_refs, second_align=prev_align)
             total_misassemblies_count += possible_misassemblies
-            total_unaligned_len += unaligned_len
-            total_count_ns += count_ns
         prev_end = align.end()
     if ctg_len > prev_end:
-        possible_misassemblies, unaligned_len, count_ns = \
-            process_unaligned_part(seq[prev_end: ctg_len], sorted_aligns[-1], potential_misassemblies_by_refs)
+        possible_misassemblies = process_unaligned_part(seq[prev_end: ctg_len], sorted_aligns[-1],
+                                                        potential_misassemblies_by_refs)
         total_misassemblies_count += possible_misassemblies
-        total_unaligned_len += unaligned_len
-        total_count_ns += count_ns
     if not total_misassemblies_count:
         return
 
     region_misassemblies.append(Misassembly.POTENTIALLY_MIS_CONTIGS)
     region_misassemblies.extend([Misassembly.POSSIBLE_MISASSEMBLIES] * total_misassemblies_count)
-    log_out_f.write('\t\tIt can contain interspecies translocations.\n')
+    log_out_f.write('\t\tIt can contain up to %d interspecies translocations '
+                    '(will be reported as Possible Misassemblies).\n' % total_misassemblies_count)
 
 
 def check_partially_unaligned(sorted_aligns, ctg_len):

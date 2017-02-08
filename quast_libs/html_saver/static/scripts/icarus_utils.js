@@ -179,9 +179,7 @@ function changeInfo(block) {
             whereAppendBlock = whereAppend.append('p')
                 .attr('class', 'head_plus collapsed')
                 .on('click', function() {
-                    var eventX = d3.event.x || d3.event.clientX;
-                    if (eventX < whereAppendBlock[0][0].offsetLeft + 15)
-                        openClose(whereAppendBlock[0][0]);
+                    openClose(whereAppendBlock[0][0]);
                 });
         }
         if (isExpanded || !isContigSizePlot) {
@@ -226,10 +224,11 @@ function changeInfo(block) {
             blocksMenuInfo.append('span').text(blocksText);
         blocksMenuInfo.attr('class', 'head');
         blocksMenu.on('click', function() {
-                        var eventX = d3.event.x || d3.event.clientX;
-                        if (eventX < blocksMenu[0][0].offsetLeft + 15)
-                            openClose(blocksMenu[0][0]);
-                     });
+            openClose(blocksMenu[0][0]);
+        });
+        blocksMenuInfo.on('click', function () {
+            d3.event.stopPropagation();
+        });
 
         var blocksInfo = blocksMenuInfo.append('p');
         if (blocksCount > 5) {
@@ -266,10 +265,11 @@ function changeInfo(block) {
             genesInfo.attr('class', 'head');
             genesMenu.attr('class', 'head_plus collapsed')
                      .on('click', function() {
-                        var eventX = d3.event.x || d3.event.clientX;
-                        if (eventX < genesMenu[0][0].offsetLeft + 15)
-                            openClose(genesMenu[0][0]);
+                         openClose(genesMenu[0][0]);
                      });
+            genesInfo.on('click', function () {
+                d3.event.stopPropagation();
+            });
             var genesCoordinatesInfo = genesInfo.append('p').attr('class', 'close');
             for (var i = 0; i < block.genes.length; i++) {
                 genesCoordinatesInfo.append('p').text('Position: ')
@@ -283,10 +283,11 @@ function changeInfo(block) {
         var overlapsMenuInfo = overlapsMenu.append('span').text(overlapsText);
         overlapsMenuInfo.attr('class', 'head');
         overlapsMenu.on('click', function() {
-            var eventX = d3.event.x || d3.event.clientX;
-            if (eventX < overlapsMenu[0][0].offsetLeft + 15)
-                openClose(overlapsMenu[0][0]);
+            openClose(overlapsMenu[0][0]);
          });
+        overlapsMenuInfo.on('click', function () {
+            d3.event.stopPropagation();
+        });
 
         var overlapsInfo = overlapsMenuInfo.append('p').attr('class', 'close');
         for (var i = 0; i < block.overlaps.length; i++) {
@@ -303,10 +304,11 @@ function changeInfo(block) {
         var ambiguousMenuInfo = ambiguousMenu.append('span').text(ambiguousText);
         ambiguousMenuInfo.attr('class', 'head');
         ambiguousMenu.on('click', function() {
-                        var eventX = d3.event.x || d3.event.clientX;
-                        if (eventX < ambiguousMenu[0][0].offsetLeft + 15)
-                            openClose(ambiguousMenu[0][0]);
-                     });
+            openClose(ambiguousMenu[0][0]);
+        });
+        ambiguousMenuInfo.on('click', function() {
+                d3.event.stopPropagation();
+        });
 
         var ambiguousInfo = ambiguousMenuInfo.append('p').attr('class', 'close');
         for (var i = 0; i < block.ambiguous_alignments.length; i++) {
@@ -318,8 +320,6 @@ function changeInfo(block) {
             }
         }
     }
-    var blockHeight = info[0][0].offsetHeight;
-    curChartHeight += blockHeight;
     chart.attr('height', curChartHeight);
     display();
 }
@@ -336,7 +336,11 @@ function appendBlock(whereAppendBlock, numBlock, curBlock, selectedBlock, prevBl
     };
 
     var hasChromosomeLinks = typeof links_to_chromosomes !== 'undefined';
-    var blockDiv = whereAppendBlock.append('span').attr('class', isExpanded ? 'head' : 'head main');
+    var blockDiv = whereAppendBlock.append('span')
+        .attr('class', isExpanded ? 'head' : 'head main');
+    blockDiv.on('click', function () {
+        d3.event.stopPropagation();
+    });
     if (isExpanded && !isContigSizePlot) {
         blockMark = blockDiv.append('div')
                             .attr('id', 'circle' + selectedBlock.corr_start + '_' + selectedBlock.corr_end);
@@ -792,15 +796,10 @@ function openClose(d) {
         p = c.select('span').select('p');
         if (p.attr('class') == 'close') {
             p.attr('class', 'open');
-            var blockHeight = c[0][0].offsetHeight;
-            curChartHeight += blockHeight;
         }
         else {
-            var blockHeight = c[0][0].offsetHeight;
-            curChartHeight -= blockHeight;
             p.attr('class', 'close');
         }
-        chart.attr('height', curChartHeight);
     }
     d3.event.stopPropagation();
 }

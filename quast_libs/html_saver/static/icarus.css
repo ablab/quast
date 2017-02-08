@@ -7,6 +7,13 @@
     width: 240px;
 }
 
+#menu {
+    position: fixed;
+    height: 800px;
+    overflow-y: scroll;
+    overflow-x: hidden;
+}
+
 #to_main_menu_button {
     float: left;
     margin-left: -134px;
@@ -15,11 +22,11 @@
 
 #legend {
     float: right;
-    width: 240px;
+    width: 225px;
 }
 
 #legend .block {
-    width: 230px;
+    width: 225px;
 }
 
 #legend.collapsed p {
@@ -111,7 +118,7 @@
     border: 1px rgb(200, 200, 200) solid;
     display: block;
     word-wrap: break-word;
-    overflow:auto;
+    overflow: auto;
 }
 
 .head.main {
@@ -125,6 +132,7 @@
     content: '+ ';
     color: #DDD;
     cursor: pointer;
+    pointer-events: all;
 }
 
 .head_plus.expanded::before {
@@ -134,6 +142,7 @@
     content: '\2212\a0';  /* &minus&nbsp */
     color: #DDD;
     cursor: pointer;
+    pointer-events: all;
 }
 
 .open {

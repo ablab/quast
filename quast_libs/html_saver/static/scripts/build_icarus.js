@@ -330,8 +330,7 @@ THE SOFTWARE.
                             .attr('class', 'menu_div');
     var menu = menuContainer.append('div')
                             .attr('class', 'menu_div')
-                            .attr('id', 'menu')
-                            .style('position', 'fixed');
+                            .attr('id', 'menu');
     menu.append('div')
             .attr('class', ' block title')
             .text('Contig info');

@@ -533,8 +533,8 @@ function appendLegend() {
         menu.attr('class', function() {
             return menu.attr('class') == 'collapsed' ? 'expanded' : 'collapsed';
         });
-        legend.attr('class', function() {
-            return legend.attr('class') == 'collapsed' ? 'expanded' : 'collapsed';
+        legendContainer.attr('class', function() {
+            return legendContainer.attr('class') == 'collapsed' ? 'expanded' : 'collapsed';
         })
     });
 }

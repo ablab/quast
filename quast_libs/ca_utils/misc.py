@@ -24,7 +24,6 @@ contig_aligner = None
 contig_aligner_dirpath = None
 ref_labels_by_chromosomes = {}
 intergenomic_misassemblies_by_asm = {}
-possible_misassemblies_by_asm = {}
 e_mem_failed_compilation_flag = join(qconfig.LIBS_LOCATION, 'E-MEM-osx', 'make.failed')
 
 
@@ -59,7 +58,7 @@ def compile_aligner(logger, only_clean=False, compile_all_aligners=False):
     default_requirements = ['nucmer', 'delta-filter', 'show-coords', 'show-snps', 'mummer', 'mgaps']
 
     e_mem_dirpath = 'E-MEM-osx' if qconfig.platform_name == 'macosx' else 'E-MEM-linux'
-    mummer_dirpath = 'MUMmer3.23-osx' if qconfig.platform_name == 'macosx' else 'MUMmer3.23-linux'
+    mummer_dirpath = 'MUMmer3.23-osx' if qconfig.platform_name == 'macosx' else 'MUMmer3.23-osx'
     if not qconfig.force_nucmer:
         if get_installed_emem() or isfile(join(e_mem_dirpath, 'e-mem')):
             emem_requirements = default_requirements

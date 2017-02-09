@@ -12,44 +12,48 @@ from quast_libs.ca_utils.best_set_selection import get_best_aligns_sets, get_use
 from quast_libs.ca_utils.misc import ref_labels_by_chromosomes
 
 
-def add_potential_misassembly(ref, potential_misassemblies_by_refs):
+def add_potential_misassembly(ref, misassemblies_by_ref, refs_with_translocations):
     cur_ref = ref_labels_by_chromosomes[ref]
-    potential_misassemblies_by_refs[cur_ref] += 1
+    misassemblies_by_ref[cur_ref].append(Misassembly.POSSIBLE_MISASSEMBLIES)
+    refs_with_translocations.add(cur_ref)
 
 
-def process_unaligned_part(seq, align, potential_misassemblies_by_refs, second_align=None):
+def process_unaligned_part(seq, align, misassemblies_by_ref, refs_with_translocations, second_align=None):
     unaligned_part = seq
     unaligned_len = len(unaligned_part)
     count_ns = unaligned_part.count('N')
     possible_misassemblies = 0
     if count_ns / float(unaligned_len) < qconfig.gap_filled_ns_threshold and unaligned_len - count_ns >= qconfig.unaligned_part_size:
         possible_misassemblies = 1
-        add_potential_misassembly(align.ref, potential_misassemblies_by_refs)
+        add_potential_misassembly(align.ref, misassemblies_by_ref, refs_with_translocations)
         if second_align:
             possible_misassemblies += 1
-            add_potential_misassembly(second_align.ref, potential_misassemblies_by_refs)
+            add_potential_misassembly(second_align.ref, misassemblies_by_ref, refs_with_translocations)
     return possible_misassemblies
 
 
-def check_for_potential_translocation(seq, ctg_len, sorted_aligns, region_misassemblies, potential_misassemblies_by_refs, log_out_f):
+def check_for_potential_translocation(seq, ctg_len, sorted_aligns, region_misassemblies, misassemblies_by_ref, log_out_f):
     prev_end = 0
     total_misassemblies_count = 0
+    refs_with_translocations = set()
     for i, align in enumerate(sorted_aligns):
         if align.start() > prev_end + 1:
             prev_align = sorted_aligns[i - 1] if i > 0 else None
-            possible_misassemblies = process_unaligned_part(seq[prev_end: align.start()], align,
-                                                            potential_misassemblies_by_refs, second_align=prev_align)
+            possible_misassemblies = process_unaligned_part(seq[prev_end: align.start()], align, misassemblies_by_ref,
+                                                            refs_with_translocations, second_align=prev_align)
             total_misassemblies_count += possible_misassemblies
         prev_end = align.end()
     if ctg_len > prev_end:
         possible_misassemblies = process_unaligned_part(seq[prev_end: ctg_len], sorted_aligns[-1],
-                                                        potential_misassemblies_by_refs)
+                                                        misassemblies_by_ref, refs_with_translocations)
         total_misassemblies_count += possible_misassemblies
     if not total_misassemblies_count:
         return
 
     region_misassemblies.append(Misassembly.POTENTIALLY_MIS_CONTIGS)
     region_misassemblies.extend([Misassembly.POSSIBLE_MISASSEMBLIES] * total_misassemblies_count)
+    for ref in refs_with_translocations:
+        misassemblies_by_ref[ref].append(Misassembly.POTENTIALLY_MIS_CONTIGS)
     log_out_f.write('\t\tIt can contain up to %d interspecies translocations '
                     '(will be reported as Possible Misassemblies).\n' % total_misassemblies_count)
 
@@ -111,7 +115,6 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fp
 
     istranslocations_by_ref = dict()
     misassemblies_by_ref = defaultdict(list)
-    potential_misassemblies_by_refs = defaultdict(int)
     for ref in ref_labels_by_chromosomes.values():
         istranslocations_by_ref[ref] = dict((key, 0) for key in ref_labels_by_chromosomes.values())
 
@@ -285,7 +288,7 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fp
                         partially_unaligned += 1
                         partially_unaligned_bases += unaligned_bases
                         ca_output.stdout_f.write('\t\tThis contig is partially unaligned. (Aligned %d out of %d bases)\n' % (aligned_bases_in_contig, ctg_len))
-                        save_unaligned_info(sorted_aligns, contig, ctg_len, unaligned_bases, unaligned_info_file)
+                        save_unaligned_info(real_aligns, contig, ctg_len, unaligned_bases, unaligned_info_file)
                     ca_output.stdout_f.write('\t\tAlignment: %s\n' % str(the_only_align))
                     ca_output.icarus_out_f.write(the_only_align.icarus_report_str() + '\n')
                     if is_partially_unaligned:
@@ -294,8 +297,8 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fp
                         if ctg_len - end:
                             ca_output.stdout_f.write('\t\tUnaligned bases: %d to %d (%d)\n' % (end + 1, ctg_len, ctg_len - end))
                         if qconfig.is_combined_ref and aligned_bases_in_contig >= umt * ctg_len:
-                                check_for_potential_translocation(seq, ctg_len, sorted_aligns, region_misassemblies,
-                                                                  potential_misassemblies_by_refs, ca_output.stdout_f)
+                                check_for_potential_translocation(seq, ctg_len, real_aligns, region_misassemblies,
+                                                                  misassemblies_by_ref, ca_output.stdout_f)
                     ref_aligns.setdefault(the_only_align.ref, []).append(the_only_align)
                 else:
                     #Sort real alignments by position on the contig
@@ -346,7 +349,7 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fp
                         ca_output.stdout_f.write('\t\tUnaligned bases: %d\n' % unaligned_bases)
                         if qconfig.is_combined_ref:
                             check_for_potential_translocation(seq, ctg_len, sorted_aligns, region_misassemblies,
-                                                              potential_misassemblies_by_refs, ca_output.stdout_f)
+                                                              misassemblies_by_ref, ca_output.stdout_f)
         else:
             #No aligns to this contig
             ca_output.stdout_f.write('\t\tThis contig is unaligned. (%d bp)\n' % ctg_len)
@@ -376,7 +379,6 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fp
               'ambiguous_contigs_len': ambiguous_contigs_len,
               'half_unaligned_with_misassembly': half_unaligned_with_misassembly,
               'misassemblies_by_ref': misassemblies_by_ref,
-              'istranslocations_by_refs': istranslocations_by_ref,
-              'potential_misassemblies_by_refs': potential_misassemblies_by_refs}
+              'istranslocations_by_refs': istranslocations_by_ref}
 
     return result, ref_aligns, total_indels_info, aligned_lengths, misassembled_contigs

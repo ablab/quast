@@ -10,8 +10,7 @@ from collections import defaultdict
 
 from quast_libs import qconfig, qutils, reporting
 from quast_libs.ca_utils.analyze_misassemblies import Misassembly
-from quast_libs.ca_utils.misc import print_file, intergenomic_misassemblies_by_asm, possible_misassemblies_by_asm, \
-    ref_labels_by_chromosomes
+from quast_libs.ca_utils.misc import print_file, intergenomic_misassemblies_by_asm, ref_labels_by_chromosomes
 
 
 def print_results(contigs_fpath, log_out_f, used_snps_fpath, total_indels_info, result):
@@ -178,11 +177,8 @@ def save_result(result, report, fname, ref_fpath):
         report.add_field(reporting.Fields.MIS_ISTRANSLOCATIONS, region_misassemblies.count(Misassembly.INTERSPECTRANSLOCATION))
         report.add_field(reporting.Fields.CONTIGS_WITH_ISTRANSLOCATIONS, region_misassemblies.count(Misassembly.POTENTIALLY_MIS_CONTIGS))
         report.add_field(reporting.Fields.POSSIBLE_MISASSEMBLIES, region_misassemblies.count(Misassembly.POSSIBLE_MISASSEMBLIES))
-        report.add_field(reporting.Fields.INTERGENOMIC_MISASSEMBLIES,
-                         region_misassemblies.count(Misassembly.POSSIBLE_MISASSEMBLIES) + region_misassemblies.count(Misassembly.INTERSPECTRANSLOCATION))
         all_references = sorted(list(set([ref for ref in ref_labels_by_chromosomes.values()])))
         for ref_name in all_references:
-            asm_name = qutils.label_from_fpath(fname)
             subreport = reporting.get(fname, ref_name=ref_name)
             ref_misassemblies = misassemblies_by_ref[ref_name]
             subreport.add_field(reporting.Fields.MIS_ALL_EXTENSIVE, ref_misassemblies.count(Misassembly.RELOCATION) +
@@ -193,17 +189,19 @@ def save_result(result, report, fname, ref_fpath):
             subreport.add_field(reporting.Fields.MIS_INVERTION, ref_misassemblies.count(Misassembly.INVERSION))
             subreport.add_field(reporting.Fields.MIS_ISTRANSLOCATIONS, ref_misassemblies.count(Misassembly.INTERSPECTRANSLOCATION))
             subreport.add_field(reporting.Fields.MIS_LOCAL, ref_misassemblies.count(Misassembly.LOCAL))
-            subreport.add_field(reporting.Fields.POSSIBLE_MISASSEMBLIES, possible_misassemblies_by_asm[asm_name][ref_name])
-            subreport.add_field(reporting.Fields.INTERGENOMIC_MISASSEMBLIES, intergenomic_misassemblies_by_asm[asm_name][ref_name])
+            subreport.add_field(reporting.Fields.POSSIBLE_MISASSEMBLIES, ref_misassemblies.count(Misassembly.POSSIBLE_MISASSEMBLIES))
+            subreport.add_field(reporting.Fields.CONTIGS_WITH_ISTRANSLOCATIONS, ref_misassemblies.count(Misassembly.POTENTIALLY_MIS_CONTIGS))
             if qconfig.scaffolds and fname not in qconfig.dict_of_broken_scaffolds:
                 subreport.add_field(reporting.Fields.MIS_SCAFFOLDS_GAP, ref_misassemblies.count(Misassembly.SCAFFOLD_GAP))
             if qconfig.check_for_fragmented_ref:
                 subreport.add_field(reporting.Fields.MIS_FRAGMENTED, ref_misassemblies.count(Misassembly.FRAGMENTED))
     elif intergenomic_misassemblies_by_asm:
-        asm_name = qutils.label_from_fpath(fname)
+        label = qutils.label_from_fpath(fname)
         ref_name = qutils.name_from_fpath(ref_fpath)
-        report.add_field(reporting.Fields.POSSIBLE_MISASSEMBLIES, possible_misassemblies_by_asm[asm_name][ref_name])
-        report.add_field(reporting.Fields.INTERGENOMIC_MISASSEMBLIES, intergenomic_misassemblies_by_asm[asm_name][ref_name])
+        ref_misassemblies = intergenomic_misassemblies_by_asm[label][ref_name]
+        report.add_field(reporting.Fields.MIS_ISTRANSLOCATIONS, ref_misassemblies.count(Misassembly.INTERSPECTRANSLOCATION))
+        report.add_field(reporting.Fields.POSSIBLE_MISASSEMBLIES, ref_misassemblies.count(Misassembly.POSSIBLE_MISASSEMBLIES))
+        report.add_field(reporting.Fields.CONTIGS_WITH_ISTRANSLOCATIONS, ref_misassemblies.count(Misassembly.POTENTIALLY_MIS_CONTIGS))
     if qconfig.scaffolds and fname not in qconfig.dict_of_broken_scaffolds:
         report.add_field(reporting.Fields.MIS_SCAFFOLDS_GAP, region_misassemblies.count(Misassembly.SCAFFOLD_GAP))
     if qconfig.check_for_fragmented_ref:
@@ -229,50 +227,52 @@ def save_result_for_unaligned(result, report):
 
 
 def save_combined_ref_stats(results, contigs_fpaths, ref_labels_by_chromosomes, output_dir, logger):
-    ref_misassemblies = [result['istranslocations_by_refs'] if result else [] for result in results]
-    potential_misassemblies_by_refs = [result['potential_misassemblies_by_refs'] if result else [] for result in results]
+    istranslocations_by_asm = [result['istranslocations_by_refs'] if result else None for result in results]
+    misassemblies_by_asm = [result['misassemblies_by_ref'] if result else None for result in results]
     all_refs = sorted(list(set([ref for ref in ref_labels_by_chromosomes.values()])))
-    for i, fpath in enumerate(contigs_fpaths):
-        label = qutils.label_from_fpath(fpath)
-        intergenomic_misassemblies_by_asm[label] = defaultdict(int)
-        possible_misassemblies_by_asm[label] = defaultdict(int)
-        for ref in all_refs:
-            intergenomic_misassemblies_by_asm[label][ref] = sum(m for m in ref_misassemblies[i][ref].values() if m) + \
-                                                            potential_misassemblies_by_refs[i][ref]
-            possible_misassemblies_by_asm[label][ref] = potential_misassemblies_by_refs[i][ref]
     misassemblies_by_refs_rows = []
     row = {'metricName': 'References', 'values': all_refs}
     misassemblies_by_refs_rows.append(row)
-    if ref_misassemblies:
-        for i, fpath in enumerate(contigs_fpaths):
-            row = {'metricName': qutils.label_from_fpath(fpath), 'values': []}
-            misassemblies_by_refs_rows.append(row)
-            if ref_misassemblies[i]:
-                assembly_name = qutils.name_from_fpath(fpath)
-                all_rows = []
-                row = {'metricName': 'References', 'values': [ref_num + 1 for ref_num in range(len(all_refs))]}
+    if not istranslocations_by_asm:
+        return
+    for i, fpath in enumerate(contigs_fpaths):
+        label = qutils.label_from_fpath(fpath)
+        row = {'metricName': label, 'values': []}
+        misassemblies_by_refs_rows.append(row)
+        istranslocations_by_ref = istranslocations_by_asm[i]
+        intergenomic_misassemblies_by_asm[label] = defaultdict(list)
+        for ref in all_refs:
+            intergenomic_misassemblies_by_asm[label][ref] = misassemblies_by_asm[i][ref] if misassemblies_by_asm[i] else []
+        if istranslocations_by_ref:
+            assembly_name = qutils.name_from_fpath(fpath)
+            all_rows = []
+            row = {'metricName': 'References', 'values': [ref_num + 1 for ref_num in range(len(all_refs))]}
+            all_rows.append(row)
+            for ref in all_refs:
+                row = {'metricName': ref, 'values': []}
+                for second_ref in all_refs:
+                    if ref == second_ref or second_ref not in istranslocations_by_ref:
+                        row['values'].append(None)
+                    else:
+                        row['values'].append(istranslocations_by_ref[ref][second_ref])
+                possible_misassemblies = 0
+                misassemblies_by_ref = misassemblies_by_asm[i]
+                if misassemblies_by_ref:
+                    possible_misassemblies = misassemblies_by_ref[ref].count(Misassembly.POSSIBLE_MISASSEMBLIES)
+                istranslocations = max(0, sum([r for r in row['values'] if r]))
+                misassemblies_by_refs_rows[-1]['values'].append(istranslocations + possible_misassemblies)
                 all_rows.append(row)
-                for cur_ref in all_refs:
-                    row = {'metricName': cur_ref, 'values': []}
-                    for ref in all_refs:
-                        if ref == cur_ref or ref not in ref_misassemblies[i]:
-                            row['values'].append(None)
-                        else:
-                            row['values'].append(ref_misassemblies[i][ref][cur_ref])
-                    misassemblies_by_refs_rows[-1]['values'].append(max(0, sum([r for r in row['values'] if r]) +
-                                                                        potential_misassemblies_by_refs[i][cur_ref]))
-                    all_rows.append(row)
-                misassembly_by_ref_fpath = os.path.join(output_dir, 'interspecies_translocations_by_refs_%s.info' % assembly_name)
-                with open(misassembly_by_ref_fpath, 'w') as misassembly_by_ref_file:
-                    misassembly_by_ref_file.write('Number of interspecies translocations by references: \n')
-                print_file(all_rows, misassembly_by_ref_fpath, append_to_existing_file=True)
+            misassembly_by_ref_fpath = os.path.join(output_dir, 'interspecies_translocations_by_refs_%s.info' % assembly_name)
+            with open(misassembly_by_ref_fpath, 'w') as misassembly_by_ref_file:
+                misassembly_by_ref_file.write('Number of interspecies translocations by references: \n')
+            print_file(all_rows, misassembly_by_ref_fpath, append_to_existing_file=True)
 
-                with open(misassembly_by_ref_fpath, 'a') as misassembly_by_ref_file:
-                    misassembly_by_ref_file.write('References:\n')
-                    for ref_num, ref in enumerate(all_refs):
-                        misassembly_by_ref_file.write(str(ref_num + 1) + ' - ' + ref + '\n')
-                logger.info('  Information about interspecies translocations by references for %s is saved to %s' %
-                            (assembly_name, misassembly_by_ref_fpath))
+            with open(misassembly_by_ref_fpath, 'a') as misassembly_by_ref_file:
+                misassembly_by_ref_file.write('References:\n')
+                for ref_num, ref in enumerate(all_refs):
+                    misassembly_by_ref_file.write(str(ref_num + 1) + ' - ' + ref + '\n')
+            logger.info('  Information about interspecies translocations by references for %s is saved to %s' %
+                        (assembly_name, misassembly_by_ref_fpath))
     misassemblies = []
     if qconfig.draw_plots:
         from quast_libs import plotter

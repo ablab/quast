@@ -8,10 +8,13 @@
 }
 
 #menu {
-    position: fixed;
-    height: 800px;
     overflow-y: scroll;
     overflow-x: hidden;
+}
+
+.fixed {
+    position: fixed;
+    top: 0;
 }
 
 #to_main_menu_button {
@@ -22,11 +25,12 @@
 
 #legend {
     float: right;
-    width: 225px;
+    width: 240px;
 }
 
 #legend .block {
-    width: 225px;
+    float: right;
+    width: 230px;
 }
 
 #legend.collapsed p {
@@ -52,7 +56,7 @@
 }
 
 .collapsed svg {
-    height: 0px;
+    display: none;
 }
 
 .icarus_summary_content {

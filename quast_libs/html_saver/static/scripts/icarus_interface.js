@@ -2,7 +2,15 @@ $(function () {
     setInterfaceCoordinates();
     setupBtns();
     display();
-   $('[data-toggle="tooltip"]').tooltip()
+    $('[data-toggle="tooltip"]').tooltip();
+    menuOffsetY = $('#menu').offset().top;
+    $(window).scroll(function(){
+      if ($(this).scrollTop() > menuOffsetY) {
+          $('#menu').addClass('fixed');
+      } else {
+          $('#menu').removeClass('fixed');
+      }
+    });
 });
 
 function setInterfaceCoordinates() {
@@ -513,26 +521,30 @@ function appendLegend() {
                             .attr('id', 'legend')
                             .attr('class', 'expanded');
     var block = legendContainer.append('div')
-        .attr('class', 'block')
-        .style('float', 'left');
+        .attr('class', 'block');
     var header = block.append('p')
         .style('text-align', 'center')
         .style('font-size', '16px')
         .style('margin-top', '5px')
         .text('Legend');
     var legend = block.append('svg:svg')
-        .attr('width', "100%")
-        .attr('class', 'legend');
+        .attr('class', 'legend')
+        .style('width', "100%");
 
     var legendHeight = 0;
     if (isContigSizePlot) legendHeight = appendLegendContigSize(legend);
     else legendHeight = appendLegendAlignmentViewer(legend);
-    legend.attr('height', legendHeight);
+    var legendWidth = legend.style('width').replace('px', '');
+    var scrollbarWidth = getScrollBarWidth();
+    legend.style('height', legendHeight);
+    legend.style('width', legendWidth - scrollbarWidth);
+    block.style('width', legendWidth - scrollbarWidth);
+    d3.select('#menu')
+        .style('height', window.innerHeight - 180);
+
+    $('#menu').noScrollParent();
 
     header.on('click', function() {
-        menu.attr('class', function() {
-            return menu.attr('class') == 'collapsed' ? 'expanded' : 'collapsed';
-        });
         legendContainer.attr('class', function() {
             return legendContainer.attr('class') == 'collapsed' ? 'expanded' : 'collapsed';
         })

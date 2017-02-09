@@ -991,3 +991,24 @@ function getNumberOfContigs(x) {
         }
     }
 }
+
+function getScrollBarWidth() {
+    var $outer = $('<div>').css({visibility: 'hidden', width: 100, overflow: 'scroll'}).appendTo('body'),
+        widthWithScroll = $('<div>').css({width: '100%'}).appendTo($outer).outerWidth();
+    $outer.remove();
+    return 100 - widthWithScroll;
+}
+
+$.fn.noScrollParent = function()
+{
+    this.bind('mousewheel DOMMouseScroll',function(e)
+    {
+        var delta = e.originalEvent.wheelDelta || -e.originalEvent.detail;
+        if (delta > 0 && $(this).scrollTop() <= 0)
+            return false;
+        if (delta < 0 && $(this).scrollTop() >= this.scrollHeight - $(this).height())
+            return false;
+
+        return true;
+    });
+};

@@ -221,8 +221,9 @@ def append(results_dirpath, json_fpath, keyword, html_fpath=None):
     # reading JSON file
     with open(json_fpath) as f_json:
         json_text = f_json.read()
-    if not qconfig.save_json:
-        os.remove(json_fpath)
+    if qconfig.save_json:
+        shutil.copy(json_fpath, qconfig.json_output_dirpath)
+    os.remove(json_fpath)
 
     # reading html template file
     with open(html_fpath) as f_html:

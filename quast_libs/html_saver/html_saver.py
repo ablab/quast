@@ -221,7 +221,8 @@ def append(results_dirpath, json_fpath, keyword, html_fpath=None):
     # reading JSON file
     with open(json_fpath) as f_json:
         json_text = f_json.read()
-    os.remove(json_fpath)
+    if not qconfig.save_json:
+        os.remove(json_fpath)
 
     # reading html template file
     with open(html_fpath) as f_html:
@@ -427,11 +428,9 @@ def save_colors(results_dirpath, contigs_fpaths, dict_colors, meta=False):  # co
         colors_and_ls = [dict_colors[contig_label] for contig_label in contig_labels]
         colors = [color_and_ls[0] for color_and_ls in colors_and_ls]
         colors_for_html = [html_colors[plotter.colors.index(color)] for color in colors]
-        json_fpath = json_saver.save_colors(results_dirpath, colors_for_html)
-        append(results_dirpath, json_fpath, 'colors')
+        save_record(results_dirpath, 'colors', colors_for_html)
         broken_contig_names = [label for i, label in enumerate(contig_labels) if colors_and_ls[i][1] == secondary_line_style]
-        json_fpath = json_saver.save_broken_scaffolds(results_dirpath, broken_contig_names)
-        append(results_dirpath, json_fpath, 'broken_scaffolds')
+        save_record(results_dirpath, 'broken_scaffolds', broken_contig_names)
 
 
 def save_meta_summary(html_fpath, results_dirpath, coord_x, coord_y, name_coord, labels, refs):
@@ -449,6 +448,12 @@ def save_meta_misassemblies(html_fpath, results_dirpath, coords, labels, refs):
     json_fpath = json_saver.save_meta_misassemblies(results_dirpath, coords_x, coords_y, name_coord, labels, refs)
     if json_fpath:
         append(results_dirpath, json_fpath, name_coord, html_fpath)
+
+
+def save_record(results_dirpath, filename, record):
+    json_fpath = json_saver.save_record(results_dirpath, filename, record)
+    if json_fpath:
+        append(results_dirpath, json_fpath, filename)
 
 
 def save_reference_lengths(results_dirpath, reference_lengths):

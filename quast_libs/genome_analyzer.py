@@ -269,8 +269,8 @@ def process_single_file(contigs_fpath, index, nucmer_path_dirpath, genome_stats_
     return ref_lengths, (results, genes_in_contigs, operons_in_contigs)
 
 
-def do(ref_fpath, aligned_contigs_fpaths, output_dirpath, json_output_dirpath,
-       genes_fpaths, operons_fpaths, detailed_contigs_reports_dirpath, genome_stats_dirpath):
+def do(ref_fpath, aligned_contigs_fpaths, output_dirpath, genes_fpaths, operons_fpaths,
+       detailed_contigs_reports_dirpath, genome_stats_dirpath):
 
     nucmer_path_dirpath = os.path.join(detailed_contigs_reports_dirpath, 'nucmer_output')
     from quast_libs import search_references_meta
@@ -428,13 +428,6 @@ def do(ref_fpath, aligned_contigs_fpaths, output_dirpath, json_output_dirpath,
         ref_operons_num = len(operons_container.region_list)
     else:
         ref_operons_num = None
-
-    # saving json
-    if json_output_dirpath:
-        if genes_container.region_list:
-            json_saver.save_features_in_contigs(json_output_dirpath, aligned_contigs_fpaths, 'genes', files_genes_in_contigs, ref_genes_num)
-        if operons_container.region_list:
-            json_saver.save_features_in_contigs(json_output_dirpath, aligned_contigs_fpaths, 'operons', files_operons_in_contigs, ref_operons_num)
 
     if qconfig.html_report:
         from quast_libs.html_saver import html_saver

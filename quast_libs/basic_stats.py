@@ -152,7 +152,7 @@ def draw_coverage_histograms(coverage_dict, contigs_fpaths, output_dirpath):
                                    low_threshold=low_threshold, high_threshold=high_threshold)
 
 
-def do(ref_fpath, contigs_fpaths, output_dirpath, json_output_dir, results_dir):
+def do(ref_fpath, contigs_fpaths, output_dirpath, results_dir):
     logger.print_timestamp()
     logger.main_info("Running Basic statistics processor...")
     
@@ -229,15 +229,7 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, json_output_dir, results_dir):
     else:
         corr_lists_of_lengths = [sorted(list, reverse=True) for list in lists_of_lengths]
 
-    # saving lengths to JSON
-    if json_output_dir:
-        json_saver.save_contigs_lengths(json_output_dir, contigs_fpaths, corr_lists_of_lengths)
-        json_saver.save_tick_x(json_output_dir, multiplicator)
-
     if reference_lengths:
-        # Saving the reference in JSON
-        if json_output_dir:
-            json_saver.save_reference_lengths(json_output_dir, reference_lengths)
         # Saving for an HTML report
         if qconfig.html_report:
             from quast_libs.html_saver import html_saver
@@ -312,19 +304,16 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, json_output_dir, results_dir):
         reference_index = len(list_of_GC_distributions_with_ref)
         list_of_GC_distributions_with_ref.append(reference_GC_distribution)
 
-    if json_output_dir and not qconfig.no_gc:
-        json_saver.save_GC_info(json_output_dir, contigs_fpaths, list_of_GC_distributions_with_ref, reference_index)
-
     if qconfig.html_report and not qconfig.is_combined_ref and not qconfig.no_gc:
         from quast_libs.html_saver import html_saver
         html_saver.save_GC_info(results_dir, contigs_fpaths, list_of_GC_distributions_with_ref, reference_index)
 
     ########################################################################
     # Drawing Nx and NGx plots...
-    plotter.Nx_plot(results_dir, num_contigs > qconfig.max_points, contigs_fpaths, lists_of_lengths, output_dirpath + '/Nx_plot', 'Nx', [], json_output_dir=json_output_dir)
+    plotter.Nx_plot(results_dir, num_contigs > qconfig.max_points, contigs_fpaths, lists_of_lengths, output_dirpath + '/Nx_plot', 'Nx', [])
     if reference_length and not qconfig.is_combined_ref:
         plotter.Nx_plot(results_dir, num_contigs > qconfig.max_points, contigs_fpaths, lists_of_lengths, output_dirpath + '/NGx_plot', 'NGx',
-                        [reference_length for i in range(len(contigs_fpaths))], json_output_dir=json_output_dir)
+                        [reference_length for i in range(len(contigs_fpaths))])
 
     if qconfig.draw_plots:
         ########################################################################import plotter

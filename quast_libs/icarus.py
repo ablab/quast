@@ -282,9 +282,6 @@ def js_data_gen(assemblies, contigs_fpaths, chromosomes_length, output_dirpath, 
             icarus_links["links_names"].append(qconfig.icarus_link)
             html_saver.save_icarus_data(json_output_dir, main_data_dict['one_reference'], 'menu_reference', as_text=False)
     html_saver.save_icarus_html(main_menu_template_fpath, main_menu_fpath, main_data_dict)
-
     html_saver.save_icarus_links(output_dirpath, icarus_links)
-    if json_output_dir:
-        json_saver.save_icarus_links(json_output_dir, icarus_links)
 
     return main_menu_fpath

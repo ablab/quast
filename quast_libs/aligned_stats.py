@@ -14,7 +14,7 @@ logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 
 
 ######## MAIN ############
-def do(ref_fpath, aligned_contigs_fpaths, output_dirpath, json_output_dirpath,
+def do(ref_fpath, aligned_contigs_fpaths, output_dirpath,
        aligned_lengths_lists, aligned_stats_dirpath):
 
     if not os.path.isdir(aligned_stats_dirpath):
@@ -71,10 +71,6 @@ def do(ref_fpath, aligned_contigs_fpaths, output_dirpath, json_output_dirpath,
     ########################################################################
     num_contigs = max([len(aligned_lengths_lists[i]) for i in range(len(aligned_lengths_lists))])
 
-    if json_output_dirpath:
-        from quast_libs.html_saver import json_saver
-        json_saver.save_assembly_lengths(json_output_dirpath, aligned_contigs_fpaths, assembly_lengths)
-
     # saving to html
     if qconfig.html_report:
         from quast_libs.html_saver import html_saver
@@ -88,10 +84,10 @@ def do(ref_fpath, aligned_contigs_fpaths, output_dirpath, json_output_dirpath,
 
         # Drawing NAx and NGAx plots...
     plotter.Nx_plot(output_dirpath, num_contigs > qconfig.max_points, aligned_contigs_fpaths, aligned_lengths_lists, aligned_stats_dirpath + '/NAx_plot', 'NAx',
-                    assembly_lengths, json_output_dir=json_output_dirpath)
+                    assembly_lengths)
     if not qconfig.is_combined_ref:
         plotter.Nx_plot(output_dirpath, num_contigs > qconfig.max_points, aligned_contigs_fpaths, aligned_lengths_lists,
-                        aligned_stats_dirpath + '/NGAx_plot', 'NGAx', [reference_length for i in range(len(aligned_contigs_fpaths))], json_output_dir=json_output_dirpath)
+                        aligned_stats_dirpath + '/NGAx_plot', 'NGAx', [reference_length for i in range(len(aligned_contigs_fpaths))])
 
     logger.main_info('Done.')
     return report_dict

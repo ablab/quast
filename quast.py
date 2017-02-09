@@ -138,13 +138,12 @@ def main(args):
         if json_saver.simplejson_error:
             json_output_dirpath = None
 
-
     ########################################################################
     ### Stats and plots
     ########################################################################
     from quast_libs import basic_stats
     basic_stats.do(ref_fpath, contigs_fpaths, os.path.join(output_dirpath, 'basic_stats'),
-                   qconfig.json_output_dirpath, output_dirpath)
+                   output_dirpath)
 
     aligned_contigs_fpaths = []
     aligned_lengths_lists = []
@@ -175,7 +174,7 @@ def main(args):
         ########################################################################
         from quast_libs import aligned_stats
         aligned_stats.do(
-            ref_fpath, aligned_contigs_fpaths, output_dirpath, qconfig.json_output_dirpath,
+            ref_fpath, aligned_contigs_fpaths, output_dirpath,
             aligned_lengths_lists, os.path.join(output_dirpath, 'aligned_stats'))
 
         ########################################################################
@@ -183,7 +182,7 @@ def main(args):
         ########################################################################
         from quast_libs import genome_analyzer
         features_containers = genome_analyzer.do(
-            ref_fpath, aligned_contigs_fpaths, output_dirpath, qconfig.json_output_dirpath,
+            ref_fpath, aligned_contigs_fpaths, output_dirpath,
             qconfig.genes, qconfig.operons, detailed_contigs_reports_dirpath,
             os.path.join(output_dirpath, 'genome_stats'))
 
@@ -263,9 +262,6 @@ def main(args):
     logger.main_info('RESULTS:')
     logger.main_info('  Text versions of total report are saved to ' + reports_fpaths)
     logger.main_info('  Text versions of transposed total report are saved to ' + transposed_reports_fpaths)
-
-    if qconfig.json_output_dirpath:
-        json_saver.save_total_report(qconfig.json_output_dirpath, qconfig.min_contig, ref_fpath)
 
     if qconfig.html_report:
         from quast_libs.html_saver import html_saver

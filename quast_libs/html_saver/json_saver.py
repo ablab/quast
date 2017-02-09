@@ -123,6 +123,7 @@ def save_contigs_lengths(output_dirpath, contigs_fpaths, lists_of_lengths):
         'lists_of_lengths': lists_of_lengths
     })
 
+
 def save_reference_lengths(output_dirpath, reference_lengths):
     return save(join(output_dirpath, ref_length_fn), {'reflen': reference_lengths})
 
@@ -132,7 +133,7 @@ def save_tick_x(output_dirpath, tick_x):
 
 
 def save_coord(output_dirpath, coord_x, coord_y, name_coord, contigs_fpaths):
-    coord_fn = 'coord' + name_coord + suffix_fn
+    coord_fn = name_coord + suffix_fn
     return save(join(output_dirpath, coord_fn), {
         'coord_x': coord_x,
         'coord_y': coord_y,
@@ -140,12 +141,8 @@ def save_coord(output_dirpath, coord_x, coord_y, name_coord, contigs_fpaths):
     })
 
 
-def save_broken_scaffolds(output_dirpath, contig_names):
-    return save(join(output_dirpath, 'broken_scaffolds' + suffix_fn), contig_names)
-
-
-def save_colors(output_dirpath, colors):
-    return save(join(output_dirpath, 'colors' + suffix_fn), colors)
+def save_record(output_dirpath, filename, record):
+    return save(join(output_dirpath, filename + suffix_fn), record)
 
 
 def save_meta_summary(output_dirpath, coord_x, coord_y, name_coord, labels, refs_names):

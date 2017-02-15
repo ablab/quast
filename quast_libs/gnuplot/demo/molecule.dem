@@ -1,0 +1,19 @@
+set title "GM1 pentasaccharide ball-and-stick representation"
+
+set hidden3d
+set border 0
+unset xtics
+unset ytics
+unset ztics
+set view equal xyz
+
+splot 'GM1_sugar.pdb' using 6:7:8 with points lt 3 pt 7 ps 3 notitle, \
+      'GM1_bonds.r3d' using 1:2:3:($5-$1):($6-$2):($7-$3) with vectors nohead lw 3 lt 1 \
+      title "GM1 pentasaccharide"
+
+pause -1 "Hit return to continue"
+set title "Hidden3d mode with a mixture of surfaces, points, and lines"
+replot 18 notitle
+
+pause -1 "Hit return to continue"
+

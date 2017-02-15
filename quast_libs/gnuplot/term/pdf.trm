@@ -1,0 +1,1764 @@
+/* Hello, Emacs, this is -*-C-*-
+ * $Id: pdf.trm,v 1.94 2014/05/07 04:37:28 sfeam Exp $
+ */
+
+/*------------------------------
+	GNUPLOT - pdf.trm
+
+	This file is included by ../term.c.
+
+	This driver uses PDFlib from www.pdflib.com
+
+	Author:
+
+		Hans-Bernhard Br"oker
+		broeker@physik.rwth-aachen.de
+
+	Licence: see the gnuplot copyright (to be merged into here...)
+
+	Options: can #define PDF_DONT_COMPRESS to avoid PDF output
+	generated being compressed (by the 'deflate' algorithm as used
+	in 'zip' or 'gzip'). That helps in debugging.
+
+------------------------------*/
+
+/* CODEME: Add patterned lines (?). */
+
+/* PM3D support by Johannes Zellner <johannes@zellner.org>, May-15-2002 */
+/* set_color fixes by Petr Mikulik <mikulik@physics.muni.cz>, June-10-2002 */
+/* image support by Ethan A Merritt <merritt@u.washington.edu>, March 2003 */
+
+/* Text rotation 24-Jul-2002 Ethan A Merritt <merritt@u.washington.edu> */
+/* Revised fill patterns 02-Apr-2003 Ethan A Merritt */
+/* Enhanced text mode support November 2003 Ethan A Merritt */
+
+#include "driver.h"
+
+#ifdef TERM_REGISTER
+register_term(pdf)
+#endif
+
+#ifdef TERM_PROTO
+TERM_PUBLIC void PDF_options __PROTO ((void));
+TERM_PUBLIC void PDF_init __PROTO ((void));
+TERM_PUBLIC void PDF_graphics __PROTO ((void));
+TERM_PUBLIC void PDF_text __PROTO ((void));
+TERM_PUBLIC void PDF_linetype __PROTO ((int linetype));
+TERM_PUBLIC void PDF_move __PROTO ((unsigned int x, unsigned int y));
+TERM_PUBLIC void PDF_vector __PROTO ((unsigned int x, unsigned int y));
+TERM_PUBLIC void PDF_put_text __PROTO ((unsigned int x, unsigned int y, const char *str));
+TERM_PUBLIC void PDF_reset __PROTO ((void));
+TERM_PUBLIC int PDF_justify_text __PROTO ((enum JUSTIFY mode));
+TERM_PUBLIC int PDF_text_angle __PROTO ((int ang));
+TERM_PUBLIC void PDF_point __PROTO ((unsigned int x, unsigned int y, int pointstyle));
+TERM_PUBLIC int PDF_set_font __PROTO ((const char *font));
+TERM_PUBLIC void PDF_boxfill __PROTO((int style, unsigned int x1, unsigned int y1, unsigned int width, unsigned int height));
+TERM_PUBLIC void PDF_linewidth __PROTO ((double linewidth));
+TERM_PUBLIC int PDF_make_palette __PROTO((t_sm_palette *));
+TERM_PUBLIC void PDF_previous_palette __PROTO((void));
+TERM_PUBLIC void PDF_set_color __PROTO((t_colorspec *));
+TERM_PUBLIC void PDF_image __PROTO((unsigned int, unsigned int, coordval *, gpiPoint *, t_imagecolor));
+
+TERM_PUBLIC void PDF_filled_polygon __PROTO((int, gpiPoint *));
+
+/* To support "set term png enhanced" */
+TERM_PUBLIC void ENHPDF_put_text __PROTO((unsigned int x, unsigned int y, const char *str));
+TERM_PUBLIC void ENHPDF_OPEN __PROTO((char * fontname, double fontsize,
+			double base, TBOOLEAN widthflag, TBOOLEAN showflag,
+			int overprint));
+TERM_PUBLIC void ENHPDF_FLUSH __PROTO((void));
+
+#define PDF_NUM_POINTTYPES 75	/* number of point symbol types not counting the dot */
+
+#define PDF_RESOLUTION  (20)	/* number of terminal pixels per pt */
+#define PDF_XMAX	(5*72*PDF_RESOLUTION) /* 5 inches, 72 pt/inch */
+#define PDF_YMAX	(3*72*PDF_RESOLUTION) /* 3 inches, 72 pt/inch */
+
+static TBOOLEAN pdf_explicit_size = FALSE;
+static size_units pdf_explicit_units = INCHES;
+
+#endif /* TERM_PROTO */
+
+#ifndef TERM_PROTO_ONLY
+#ifdef TERM_BODY
+
+#include <pdflib.h>
+
+static PDF *myPDF = NULL;
+
+static unsigned int PDF_xLast = UINT_MAX; /* current pen horizontal position*/
+static unsigned int PDF_yLast = UINT_MAX; /* current pen vertical position*/
+
+static int PDF_LineType = LT_UNDEFINED;		/* current line type*/
+static int PDF_LineCap = 0;			/* Butt ends */
+static double PDF_LineWidth = 1.0;		/* current line width*/
+static int PDF_TextAngle = 0;			/* current text orientation*/
+static enum JUSTIFY PDF_TextJust = LEFT;	/* current text justification*/
+static double PDF_linewidth_factor = 1.0;	/* multiplier for line width */
+static double PDF_dashlength_factor = 1.0;	/* multiplier for dash length */
+static TBOOLEAN PDF_monochrome = FALSE;		/* default all linetypes to black */
+static rgb_color PDF_current_rgb = {0.,0.,0.};	/* Last color set */
+static double PDF_current_gray = 0.0;		/* Last color set (mono version) */
+
+#ifdef HAVE_NODASH_LIBPDF
+static TBOOLEAN PDF_dashedlines = FALSE;	/* solid or dashed? */
+#else
+static TBOOLEAN PDF_dashedlines = TRUE;		/* solid or dashed? */
+#endif
+
+/* default text font family: */
+static char PDF_fontNameDef[MAX_ID_LEN + 1] = "Helvetica";
+static double PDF_fontSizeDef = 6;	/* default text size*/
+/* current text font family: */
+static char PDF_fontNameCur[MAX_ID_LEN + 1] = "Helvetica";
+static double PDF_fontSizeCur = 6; /* current text size*/
+static double PDF_fontscale = 1.0;
+
+static TBOOLEAN PDF_pageIsOpen = FALSE; /* already started a page ?? */
+static TBOOLEAN PDF_pathIsOpen = FALSE; /* open path flag*/
+
+static int PDF_fontAscent = 0;	/* estimated current font ascent*/
+static int PDF_fontDescent = 0;	/* estimated current font descent*/
+static int PDF_fontLeading = 0;	/* estimated current font leading*/
+static int PDF_fontAvWidth = 0;	/* estimated current font char average width*/
+static int PDF_currentFontHandle; /* Needed for exhanced text mode */
+
+static short PDF_Pen_RealID __PROTO ((int));
+static void PDF_PathOpen __PROTO ((void));
+static void PDF_PathClose __PROTO ((void));
+static void PDF_SetFont __PROTO ((void));
+static void PDF_DefinePatterns __PROTO((void));
+enum { PDF_patterns = 7 };
+static int PDF_patternHandles[PDF_patterns];
+
+#ifndef HAVE_NODASH_LIBPDF
+/* Description of dash patterns (same as those in post.trm) */
+static int dash1[] = {8, 8};
+static int dash2[] = {4, 6};
+static int dash3[] = {2, 3};
+static int dash4[] = {12, 4, 2, 4};
+static int dash5[] = {6, 6, 2, 6};
+static int dash6[] = {4, 4, 4, 12};
+static int dash7[] = {1, 4, 12, 4, 1, 4};
+#endif
+
+/*------------------------ helper functions -------------------*/
+
+static short
+PDF_Pen_RealID (int inPenCode)
+{
+    if (inPenCode >= 12)
+	inPenCode %= 12;	/* normalize pen code*/
+    if (inPenCode <= LT_NODRAW)
+	inPenCode = LT_NODRAW;
+
+    return (inPenCode + 2);
+}
+
+/* Functions to ensure that as many move() and vector() calls as
+ * possible get converted into a single long 'path', before closing it
+ * with a stroke or similar command. */
+static void
+PDF_PathOpen ()
+{
+    PDF_pathIsOpen = TRUE;
+}
+
+static void
+PDF_PathClose ()
+{
+    if (PDF_pathIsOpen) {
+	PDF_stroke(myPDF);
+
+	PDF_pathIsOpen = FALSE;
+    }
+}
+
+/* Helper function to deal with switching over to a newly selected font.
+ * For now, this does not try to embed fonts into the PDF file.
+ * We would like to allow UTF-8 fonts via
+	font_handle = PDF_findfont(myPDF, PDF_fontNameCur, "unicode", 0);
+ * but this is not supported by the free-as-in-beer PDFlib Lite.
+ */
+static void
+PDF_SetFont ()
+{
+    int font_handle;
+    const char *pdfenc = "host";
+
+    /* Allow graceful failure */
+    PDF_set_parameter(myPDF, "fontwarning", "false");
+
+    /* LCB : Symbol and ZapfDingbats should use "builtin" encoding */
+    if ( (strcmp(PDF_fontNameCur,"Symbol") == 0) ||
+	 (strcmp(PDF_fontNameCur,"ZapfDingbats") == 0) ) {
+	pdfenc = "builtin";
+    } else if (encoding == S_ENC_ISO8859_1) {
+        pdfenc = "iso8859-1";
+    } else if (encoding == S_ENC_ISO8859_2) {
+        pdfenc = "iso8859-2";
+    } else if (encoding == S_ENC_ISO8859_9) {
+        pdfenc = "iso8859-9";
+    } else if (encoding == S_ENC_ISO8859_15) {
+        pdfenc = "iso8859-15";
+    } else if (encoding == S_ENC_CP1250) {
+        pdfenc = "cp1250";
+    } else if (encoding == S_ENC_CP1252) {
+        pdfenc = "cp1252";
+    }
+        
+    font_handle = PDF_findfont(myPDF, PDF_fontNameCur, pdfenc, 0);
+    
+    if (font_handle == -1 && strcmp(pdfenc, "host")) {
+        fprintf(stderr,"Couldn't find font %s in encoding %s, trying \"host\"\n", 
+	        PDF_fontNameCur, pdfenc);
+	font_handle = PDF_findfont(myPDF, PDF_fontNameCur, "host", 0);
+    }
+
+    if (font_handle == -1) {
+	font_handle = PDF_findfont(myPDF, "Times-Roman", "host", 0);
+	fprintf(stderr,"Couldn't find font %s, falling back to Times-Roman\n", PDF_fontNameCur);
+    }
+
+    PDF_setfont(myPDF, font_handle, PDF_fontSizeCur * PDF_RESOLUTION * PDF_fontscale);
+
+    /* Ask PDFlib for the actual numbers */
+    PDF_fontAscent = (int) (PDF_RESOLUTION * PDF_fontSizeCur * PDF_fontscale * PDF_get_value(myPDF, "ascender", 0));
+    PDF_fontDescent = (int) (- PDF_RESOLUTION * PDF_fontSizeCur * PDF_fontscale * PDF_get_value(myPDF, "descender", 0));
+    PDF_fontLeading = (int) (PDF_RESOLUTION * PDF_fontSizeCur * PDF_fontscale * 0.25);
+
+    /* Assume this particular string is a somewhat reasonable typical
+     * output, for getting at the average character width */
+    PDF_fontAvWidth = (int)
+	(PDF_RESOLUTION * PDF_stringwidth(myPDF, "01234567890123456789",
+					  font_handle, PDF_fontSizeCur * PDF_fontscale )
+	 / 20.0);
+    PDF_currentFontHandle = font_handle;
+
+}
+
+#if !HAVE_OLD_LIBPDF
+static void
+PDF_DefinePatterns()
+{
+    int i;
+
+    /* EAM April 2003 - Rearrange patterns to maximize contrast in mono.
+     * Because of the finite linewidth, each pattern must include line
+     * fragments at the "empty" corners.
+     */
+    for (i=0; i<PDF_patterns; i++) {
+	PDF_patternHandles[i] = PDF_begin_pattern(myPDF, 8, 8, 8, 8, 2);
+	PDF_setlinewidth(myPDF, 0.25);
+	PDF_setlinecap(myPDF, 2); /* square ends */
+	switch (i) {
+	case 0:	PDF_moveto(myPDF, 0, 8);
+		PDF_lineto(myPDF, 8, 0);
+		PDF_moveto(myPDF, 0, 0);
+		PDF_lineto(myPDF, 8, 8);
+		PDF_stroke(myPDF);
+		break;
+	case 1:	PDF_moveto(myPDF, 0, 8);
+		PDF_lineto(myPDF, 8, 0);
+		PDF_moveto(myPDF, 0, 0);
+		PDF_lineto(myPDF, 8, 8);
+		PDF_moveto(myPDF, 4, 0);
+		PDF_lineto(myPDF, 8, 4);
+		PDF_lineto(myPDF, 4, 8);
+		PDF_lineto(myPDF, 0, 4);
+		PDF_lineto(myPDF, 4, 0);
+		PDF_stroke(myPDF);
+		break;
+	case 2:	PDF_moveto(myPDF, 0, 0);
+		PDF_lineto(myPDF, 0, 8);
+		PDF_lineto(myPDF, 8, 8);
+		PDF_lineto(myPDF, 8, 0);
+		PDF_lineto(myPDF, 0, 0);
+		PDF_fill(myPDF);
+		break;
+	case 3:	PDF_moveto(myPDF, 0, 4);
+		PDF_lineto(myPDF, 4, 0);
+		PDF_moveto(myPDF, 4, 8);
+		PDF_lineto(myPDF, 8, 4);
+		PDF_stroke(myPDF);
+		break;
+	case 4:	PDF_moveto(myPDF, 0, 4);
+		PDF_lineto(myPDF, 4, 8);
+		PDF_moveto(myPDF, 4, 0);
+		PDF_lineto(myPDF, 8, 4);
+		PDF_stroke(myPDF);
+		break;
+	case 5:	PDF_moveto(myPDF, 0, 4);
+		PDF_lineto(myPDF, 2, 0);
+		PDF_moveto(myPDF, 2, 8);
+		PDF_lineto(myPDF, 6, 0);
+		PDF_moveto(myPDF, 6, 8);
+		PDF_lineto(myPDF, 8, 4);
+		PDF_stroke(myPDF);
+		break;
+	case 6:	PDF_moveto(myPDF, 0, 4);
+		PDF_lineto(myPDF, 2, 8);
+		PDF_moveto(myPDF, 2, 0);
+		PDF_lineto(myPDF, 6, 8);
+		PDF_moveto(myPDF, 6, 0);
+		PDF_lineto(myPDF, 8, 4);
+		PDF_stroke(myPDF);
+		break;
+	case 7:	/* not used */
+		PDF_moveto(myPDF, 4, 0);
+		PDF_lineto(myPDF, 0, 2);
+		PDF_moveto(myPDF, 8, 2);
+		PDF_lineto(myPDF, 0, 6);
+		PDF_moveto(myPDF, 8, 6);
+		PDF_lineto(myPDF, 4, 8);
+		PDF_stroke(myPDF);
+		break;
+	case 8:	/* not used */
+		PDF_moveto(myPDF, 4, 0);
+		PDF_lineto(myPDF, 8, 2);
+		PDF_moveto(myPDF, 0, 2);
+		PDF_lineto(myPDF, 8, 6);
+		PDF_moveto(myPDF, 0, 6);
+		PDF_lineto(myPDF, 4, 8);
+		PDF_stroke(myPDF);
+		break;
+	}
+	PDF_end_pattern(myPDF);
+    }
+}
+#endif
+
+/*------------------- the terminal entry functions --------------------*/
+
+
+TERM_PUBLIC void
+PDF_options ()
+{
+    /* Annoying hack to handle the case of 'set termoption' after */
+    /* we have already initialized the terminal.                  */
+    if (!almost_equals(c_token-1, "termopt$ion")) {
+	pdf_explicit_size = FALSE;
+	/* Default to enhanced text */
+	term->put_text = ENHPDF_put_text;
+	term->flags |= TERM_ENHANCED_TEXT;
+    }
+
+    while (!END_OF_COMMAND) {
+
+	if (almost_equals(c_token, "enh$anced")) {
+	    c_token++;
+	    term->put_text = ENHPDF_put_text;
+	    term->flags |= TERM_ENHANCED_TEXT;
+	    continue;
+	} else if (almost_equals(c_token, "noenh$anced")) {
+	    c_token++;
+	    term->put_text = PDF_put_text;
+	    term->flags &= ~TERM_ENHANCED_TEXT;
+	    continue;
+	}
+
+	if (almost_equals(c_token, "fn$ame") || almost_equals(c_token, "font"))  {
+	    char *s, *comma;
+	    c_token++;
+
+	    if (!(s = try_to_get_string()))
+		int_error(c_token,"fname: expecting font name");
+	    comma = strrchr(s,',');
+	    if (comma && (1 == sscanf(comma+1,"%lf",&PDF_fontSizeDef)))
+		*comma = '\0';
+	    if (*s)
+		strncpy(PDF_fontNameDef, s, sizeof(PDF_fontNameDef));
+	    free(s);
+	    continue;
+	}
+
+	if (almost_equals(c_token, "fs$ize")) {
+	    c_token++;
+
+	    if (END_OF_COMMAND)
+		int_error(c_token,"fsize: expecting font size");
+	    PDF_fontSizeDef = real_expression();
+	    continue;
+	}
+
+	if (equals(c_token, "lw") || almost_equals(c_token, "linew$idth")) {
+	    c_token++;
+
+	    if (END_OF_COMMAND)
+		int_error(c_token, "expecting line width");
+	    PDF_linewidth_factor = real_expression();
+	    if (PDF_linewidth_factor <= 0)
+		PDF_linewidth_factor = 0.1;
+	    continue;
+	}
+
+	if (almost_equals(c_token, "rou$nded")) {
+	    c_token++;
+	    PDF_LineCap = 1;
+	    continue;
+	}
+
+	if (equals(c_token, "butt")) {
+	    PDF_LineCap = 0;
+	    continue;
+	}
+
+	if (equals(c_token, "color") || almost_equals(c_token, "col$our")) {
+	    c_token++;
+	    PDF_monochrome = FALSE;
+	    term->flags &= ~TERM_MONOCHROME;
+	    continue;
+	}   
+
+	if (almost_equals(c_token, "mono$chrome")) {
+	    c_token++;
+	    PDF_monochrome = TRUE;
+	    term->flags |= TERM_MONOCHROME;
+	    continue;
+	}   
+
+	if (equals(c_token, "dl") || almost_equals(c_token, "dashl$ength")) {
+	    c_token++;
+	    if (END_OF_COMMAND)
+		int_error(c_token, "expecting dashlength multiplier");
+	    PDF_dashlength_factor = real_expression();
+	    if (PDF_dashlength_factor < 0.0)
+		PDF_dashlength_factor = 1.0;
+	    continue;
+	}
+
+	if (almost_equals(c_token, "dash$ed") || equals(c_token, "solid")) {
+	    /* Version 5 always enables dashed lines */
+	    c_token++;
+	    continue;
+	}
+
+	if (equals(c_token, "size")) {
+	    float xmax_t, ymax_t;
+	    c_token++;
+	    pdf_explicit_size = TRUE;
+	    pdf_explicit_units = parse_term_size(&xmax_t, &ymax_t, INCHES);
+	    term->xmax = xmax_t*PDF_RESOLUTION*72./gp_resolution;
+	    term->ymax = ymax_t*PDF_RESOLUTION*72./gp_resolution;
+	    continue;
+	}
+
+	if (equals(c_token, "fontscale")) {
+	    c_token++;
+	    PDF_fontscale = END_OF_COMMAND ? -1 : real_expression();
+	    if (PDF_fontscale < 0)
+		PDF_fontscale = 1.0;
+	    continue;
+	}
+
+	int_error(c_token, "unexpected text at end of command");
+    }
+
+    /* Save options back into options string in normalized format */
+    sprintf(term_options, "%s%s fname '%s'  fsize %g fontscale %3.1f linewidth %3.1f %s ",
+	    PDF_monochrome ? "monochrome " : " ",
+	    term->put_text == ENHPDF_put_text ? "enhanced" : "noenhanced",
+	    PDF_fontNameDef, PDF_fontSizeDef, PDF_fontscale, PDF_linewidth_factor,
+	    PDF_LineCap == 1 ? "rounded" : "");
+    if (PDF_dashedlines)
+	sprintf(&(term_options[strlen(term_options)]), "dl %3.1f",
+		PDF_dashlength_factor);
+    if (pdf_explicit_size) {
+	if (pdf_explicit_units == CM)
+	    sprintf(&(term_options[strlen(term_options)]), "size %.2fcm, %.2fcm ", 
+		2.54*(float)term->xmax/(72.*PDF_RESOLUTION),
+		2.54*(float)term->ymax/(72.*PDF_RESOLUTION));
+	else
+	    sprintf(&(term_options[strlen(term_options)]), "size %.2fin, %.2fin ", 
+		(float)term->xmax/(72.*PDF_RESOLUTION),
+		(float)term->ymax/(72.*PDF_RESOLUTION));
+    }
+}
+
+
+TERM_PUBLIC void
+PDF_init ()
+{
+    static TBOOLEAN PDFlib_booted = FALSE;
+    char *gpversionstring;
+    char *username;
+    char *timedate;
+    time_t now;
+
+    if (!PDFlib_booted) {
+	PDF_boot();
+	PDFlib_booted = TRUE;
+    }
+
+    if (!myPDF)
+	myPDF = PDF_new();
+
+    /*open new PDF file */
+#ifdef HAVE_LIBPDF_OPEN_FILE
+    if (PDF_open_file(myPDF, outstr) == -1)
+#else
+    if (PDF_begin_document(myPDF, outstr?outstr:"-", 0,
+			   "compatibility=1.4") == -1)
+#endif /* HAVE_LIBPDF_OPEN_FILE */
+	int_error(NO_CARET, "Error:cannot open PDF file .\n");
+
+#ifdef PDF_DONT_COMPRESS
+    /* for easier debugging of the output, turn off PDF stream
+     * compression */
+    PDF_set_value(myPDF, "compress", 0);
+#endif
+
+    gpversionstring = gp_alloc(20 + strlen(gnuplot_version) + 
+			       strlen(gnuplot_patchlevel) + 1, "PDF_init");
+    sprintf(gpversionstring,"gnuplot %s patchlevel %s",
+	    gnuplot_version, gnuplot_patchlevel);
+
+    time(&now);
+    timedate=asctime(localtime(&now));
+    timedate[strlen(timedate)-1]='\0';
+
+    PDF_set_info(myPDF,"Creator",gpversionstring);
+
+    username=getusername();
+    if (username) {
+	PDF_set_info(myPDF,"Author",username);
+	free(username);
+    }
+
+    if (outstr)
+	PDF_set_info(myPDF,"Title",outstr); /* FIXME: use 'set title', if any? */
+    PDF_set_info(myPDF,"Subject","gnuplot plot");
+
+    if (gpversionstring)
+	free(gpversionstring);
+
+    PDF_LineType = LT_UNDEFINED;
+
+    /* set current font to default */
+    strcpy(PDF_fontNameCur, PDF_fontNameDef);
+    PDF_fontSizeCur = PDF_fontSizeDef;
+
+#if !HAVE_OLD_LIBPDF
+    PDF_DefinePatterns();
+#endif
+
+    /* Have to start the first page now, in order to know the actual
+     * size of the selected font */
+    PDF_graphics();
+
+    /* set h_char, v_char*/
+    term->h_char = PDF_fontAvWidth;
+    term->v_char = (PDF_fontAscent + PDF_fontDescent + PDF_fontLeading);
+
+    /* set h_tic, v_tic*/
+    term->h_tic = term->v_tic = 3 * PDF_RESOLUTION;
+
+    /* initialize terminal's pointsize from "set pointsize" value */
+    term_pointsize = pointsize;
+
+    /* Initialize other default settings */
+    PDF_setlinecap(myPDF, PDF_LineCap);
+    PDF_setlinejoin(myPDF, PDF_LineCap);	/* round+round or butt+mitre */
+}
+
+
+TERM_PUBLIC void
+PDF_graphics ()
+{
+    if (PDF_pageIsOpen)
+	return;			/* already open --> nothing to do */
+
+    PDF_pathIsOpen = FALSE;
+    PDF_xLast = PDF_yLast = UINT_MAX;
+
+    /* set size of canvas */
+    if (!pdf_explicit_size) {
+	term->xmax = PDF_XMAX;
+	term->ymax = PDF_YMAX;
+    }
+
+    PDF_begin_page(myPDF, (double)term->xmax / PDF_RESOLUTION,
+		   (double)term->ymax / PDF_RESOLUTION);
+    PDF_scale(myPDF, 1.0/PDF_RESOLUTION, 1.0/PDF_RESOLUTION);
+    if (title.text && title.text[0])
+	/* a title has been set --> use it as the bookmark name, too */
+	PDF_add_bookmark(myPDF, title.text, 0, 1);
+    PDF_pageIsOpen = TRUE;
+
+    PDF_SetFont();
+}
+
+
+TERM_PUBLIC void
+PDF_text ()
+{
+    PDF_PathClose();
+    PDF_end_page(myPDF);
+    PDF_pageIsOpen = FALSE;
+}
+
+
+TERM_PUBLIC void
+PDF_reset ()
+{
+    assert(PDF_pageIsOpen == FALSE);
+#ifdef HAVE_LIBPDF_OPEN_FILE
+    PDF_close(myPDF);
+#else
+    PDF_end_document(myPDF, "");
+#endif /* HAVE_LIBPDF_OPEN_FILE */
+    PDF_delete(myPDF);
+    myPDF = NULL;
+}
+
+
+TERM_PUBLIC void
+PDF_linetype (int linetype)
+{
+    int dash = linetype % 8;
+
+    linetype = PDF_Pen_RealID(linetype);
+    if (linetype == PDF_LineType)
+	return;
+	
+    PDF_PathClose ();
+    PDF_LineType = linetype;
+
+    if (PDF_monochrome) {
+	PDF_current_gray = 0.0;
+	PDF_setgray(myPDF, PDF_current_gray);
+    } else {
+	unsigned int irgb = pm3d_color_names_tbl[1+linetype].value;
+	PDF_current_rgb.r = (double)((irgb >> 16) & 0xff) / 255.;
+	PDF_current_rgb.g = (double)((irgb >>  8) & 0xff) / 255.;
+	PDF_current_rgb.b = (double)((irgb      ) & 0xff) / 255.;
+	PDF_setrgbcolor(myPDF, PDF_current_rgb.r, PDF_current_rgb.g, PDF_current_rgb.b);
+    }
+
+#ifndef HAVE_NODASH_LIBPDF
+	if (PDF_dashedlines) {
+	    char dashtype[64];
+	    float dl = 8.0 * PDF_dashlength_factor;
+
+	    switch (dash) {
+	    default:
+	    case 0:	PDF_setdash(myPDF, 0.0, 0.0);
+			return;
+	    case 1:	sprintf(dashtype,"dasharray={%4.1f %4.1f}",
+			dl*dash1[0],dl*dash1[1]);
+			break;
+	    case 2:	sprintf(dashtype,"dasharray={%4.1f %4.1f}",
+			dl*dash2[0],dl*dash2[1]);
+			break;
+	    case 3:	sprintf(dashtype,"dasharray={%4.1f %4.1f}",
+			dl*dash3[0],dl*dash3[1]);
+			break;
+	    case 4:	sprintf(dashtype,"dasharray={%4.1f %4.1f %4.1f %4.1f}",
+			dl*dash4[0],dl*dash4[1],dl*dash4[2],dl*dash4[3]);
+			break;
+	    case 5:	sprintf(dashtype,"dasharray={%4.1f %4.1f %4.1f %4.1f}",
+			dl*dash5[0],dl*dash5[1],dl*dash5[2],dl*dash5[3]);
+			break;
+	    case 6:	sprintf(dashtype,"dasharray={%4.1f %4.1f %4.1f %4.1f}",
+			dl*dash6[0],dl*dash6[1],dl*dash6[2],dl*dash6[3]);
+			break;
+	    case 7:	sprintf(dashtype,"dasharray={%4.1f %4.1f %4.1f %4.1f %4.1f %4.1f}",
+			dl*dash7[0],dl*dash7[1],dl*dash7[2],dl*dash7[3],dl*dash7[4],dl*dash7[5]);
+			break;
+	    }
+	    PDF_setdashpattern(myPDF,dashtype);
+	}
+#endif
+	
+}
+
+
+TERM_PUBLIC void
+PDF_linewidth (double linewidth)
+{
+    PDF_PathClose();
+    PDF_LineWidth = PDF_RESOLUTION * PDF_linewidth_factor * linewidth / 4.0;
+    if (PDF_LineWidth < 0.1)
+	PDF_LineWidth = 0.1;
+    PDF_setlinewidth(myPDF, PDF_LineWidth);
+}
+
+
+TERM_PUBLIC void
+PDF_move (unsigned int x, unsigned int y)
+{
+    if (PDF_pathIsOpen && x == PDF_xLast && y == PDF_yLast)
+	return;
+
+    PDF_PathOpen ();
+    PDF_moveto(myPDF, x, y);
+
+    PDF_xLast = x;
+    PDF_yLast = y;
+}
+
+
+TERM_PUBLIC void
+PDF_vector (unsigned int x, unsigned int y)
+{
+    if (PDF_pathIsOpen && x == PDF_xLast && y == PDF_yLast)
+	return;
+
+    if (!PDF_pathIsOpen) {
+	PDF_PathOpen ();
+	PDF_moveto(myPDF, PDF_xLast, PDF_yLast);
+    }
+
+    PDF_lineto(myPDF, x, y);
+
+    PDF_xLast = x;
+    PDF_yLast = y;
+}
+
+/* Helper function. Many symbols have an additional dot in their
+ * center, so isolate its drawing into a separate function. */
+static GP_INLINE void
+PDF_dot (unsigned int x, unsigned int y)
+{
+    /* Imitate PS's way of creating a small dot by a zero-length line
+     * segment with rounded endpoints */
+    PDF_setlinecap(myPDF, 1); /* rounded ends */
+    PDF_moveto(myPDF, x, y);
+    PDF_lineto(myPDF, x, y);
+    PDF_stroke(myPDF);
+    PDF_setlinecap(myPDF, PDF_LineCap); /* restore ends */
+}
+
+
+TERM_PUBLIC void
+PDF_point (unsigned int x, unsigned int y, int number)
+{
+    PDF_PathClose ();
+    PDF_save(myPDF);
+
+    if (number < 0 || term_pointsize <= 0) {
+	/* Treat all negative point sizes as  dots */
+	PDF_dot(x, y);
+    } else {
+	/* Change coordinate system so the point symbols themselves
+	 * can be drawn without depending on position or size (-->
+	 * better compression and less coding for gnuplot) */
+	/* NB: I use the do_pointsize() default implementation, which
+	 * just stores the last set pointsize into `term_pointsize',
+	 * to avoid introducing another static driver-local variable
+	 * */
+	PDF_translate(myPDF, x, y);
+	PDF_scale(myPDF, term->h_tic / 2.0 * term_pointsize,
+		  term->v_tic / 2.0 * term_pointsize);
+	/* Correct linewidth to counter the scaling effect --- assume
+	 * h_tic is usable, to avoid having to average h_ and v_tic */
+	PDF_setlinewidth(myPDF,
+			 PDF_LineWidth / (term->h_tic / 2.0 * term_pointsize));
+	switch (number %= PDF_NUM_POINTTYPES) {
+	case 0:			/* Plus */
+	    PDF_moveto(myPDF, -1, 0);
+	    PDF_lineto(myPDF, 1, 0);
+	    PDF_moveto(myPDF, 0, -1);
+	    PDF_lineto(myPDF, 0, 1);
+	    PDF_stroke(myPDF);
+	    break;
+	case 2:			/* Star */
+	    PDF_moveto(myPDF, -1, 0);
+	    PDF_lineto(myPDF, 1, 0);
+	    PDF_moveto(myPDF, 0, -1);
+	    PDF_lineto(myPDF, 0, 1);
+	    /* FALLTHROUGH */
+	case 1:			/* Cross */
+	    PDF_moveto(myPDF, -1, -1);
+	    PDF_lineto(myPDF, 1, 1);
+	    PDF_moveto(myPDF, 1, -1);
+	    PDF_lineto(myPDF, -1, 1);
+	    PDF_stroke(myPDF);
+	    break;
+
+/* For each x = 0..5, 4 shapes are defined:
+ * 3 + 2*x --> hollow symbol with a dot at its center
+ * 4 + 2*x --> solid symbol filled in linetype's color
+ * 63 + x  --> hollow symbol without the center dot
+ * 69 + x  --> symbol filled with white --> opaque symbol */
+
+	case 63+0:		/* BoxEmpty */
+	case 3+2*0:		/* Box */
+	    PDF_moveto(myPDF, -1, -1);
+	    PDF_lineto(myPDF, 1, -1);
+	    PDF_lineto(myPDF, 1, 1);
+	    PDF_lineto(myPDF, -1, 1);
+	    PDF_closepath_stroke(myPDF);
+	    if (number == 3) PDF_dot(0,0);
+	    break;
+	case 69+0:		/* BoxWhitefilled */
+	    PDF_setgray_fill(myPDF, 1);
+	    /* FALLTHROUGH */
+	case 4+2*0:		/* BoxFilled */
+	    PDF_moveto(myPDF, -1, -1);
+	    PDF_lineto(myPDF, 1, -1);
+	    PDF_lineto(myPDF, 1, 1);
+	    PDF_lineto(myPDF, -1, 1);
+	    PDF_closepath_fill_stroke(myPDF);
+	    break;
+
+	case 63+1:		/* CircleEmpty */
+	case 3+2*1:		/* Circle */
+	    PDF_circle(myPDF, 0, 0, 1);
+	    PDF_stroke(myPDF);
+	    if (number == 5) PDF_dot(0,0);
+	    break;
+	case 69+1:		/* CircleWhitefilled */
+	    PDF_setgray_fill(myPDF, 1);
+	    /* FALLTHROUGH */
+	case 4+2*1:		/* CircleFilled */
+	    PDF_circle(myPDF, 0, 0, 1);
+	    PDF_fill_stroke(myPDF);
+	    break;
+
+	case 63+2:		/* TriangleUpEmpty */
+	case 3+2*2:		/* TriangleUp */
+	    PDF_moveto(myPDF, 0, 1.12);
+	    PDF_lineto(myPDF, -1, -0.5);
+	    PDF_lineto(myPDF, 1, -0.5);
+	    PDF_closepath_stroke(myPDF);
+	    if (number == 7) PDF_dot(0,0);
+	    break;
+	case 69+2:		/* TriangleUpWhitefilled */
+	    PDF_setgray_fill(myPDF, 1);
+	    /* FALLTHROUGH */
+	case 4+2*2:			/* TriangleUpFilled */
+	    PDF_moveto(myPDF, 0, 1.12);
+	    PDF_lineto(myPDF, -1, -0.5);
+	    PDF_lineto(myPDF, 1, -0.5);
+	    PDF_closepath_fill_stroke(myPDF);
+	    break;
+
+	case 63+3:		/* TriangleDownEmpty */
+	case 3+2*3:		/* TriangleDown */
+	    PDF_moveto(myPDF, 0, -1.12);
+	    PDF_lineto(myPDF, -1, 0.5);
+	    PDF_lineto(myPDF, 1, 0.5);
+	    PDF_closepath_stroke(myPDF);
+	    if (number == 9) PDF_dot(0,0);
+	    break;
+	case 69+3:		/* TriangleDownWhitefilled */
+	    PDF_setgray_fill(myPDF, 1);
+	    /* FALLTHROUGH */
+	case 4+2*3:		/* TriangleDownFilled */
+	    PDF_moveto(myPDF, 0, -1.12);
+	    PDF_lineto(myPDF, -1, 0.5);
+	    PDF_lineto(myPDF, 1, 0.5);
+	    PDF_closepath_fill_stroke(myPDF);
+	    break;
+
+	case 63+4:		/* DiamondEmpty */
+	case 3+2*4:		/* Diamond */
+	    PDF_moveto(myPDF, 0, -1);
+	    PDF_lineto(myPDF, 1, 0);
+	    PDF_lineto(myPDF, 0, 1);
+	    PDF_lineto(myPDF, -1, 0);
+	    PDF_closepath_stroke(myPDF);
+	    if (number == 11) PDF_dot(0,0);
+	    break;
+	case 69+4:		/* DiamondWhitefilled */
+	    PDF_setgray_fill(myPDF, 1);
+	    /* FALLTHROUGH */
+	case 4+2*4:		/* DiamondFilled */
+	    PDF_moveto(myPDF, 0, -1);
+	    PDF_lineto(myPDF, 1, 0);
+	    PDF_lineto(myPDF, 0, 1);
+	    PDF_lineto(myPDF, -1, 0);
+	    PDF_closepath_fill_stroke(myPDF);
+	    break;
+
+	case 63+5:		/* PentagonEmpty */
+	case 3+2*5:		/* Pentagon */
+	    PDF_moveto(myPDF, 0, 1);
+	    PDF_lineto(myPDF, -0.95, 0.31);
+	    PDF_lineto(myPDF, -0.58, -0.81);
+	    PDF_lineto(myPDF, +0.58, -0.81);
+	    PDF_lineto(myPDF, +0.95, 0.31);
+	    PDF_closepath_stroke(myPDF);
+	    if (number == 13) PDF_dot(0,0);
+	    break;
+	case 69+5:		/* PentagonWhitefilled */
+	    PDF_setgray_fill(myPDF, 1);
+	    /* FALLTHROUGH */
+	case 4+2*5:		/* PentagonFilled */
+	    PDF_moveto(myPDF, 0, 1);
+	    PDF_lineto(myPDF, -0.95, 0.31);
+	    PDF_lineto(myPDF, -0.58, -0.81);
+	    PDF_lineto(myPDF, +0.58, -0.81);
+	    PDF_lineto(myPDF, +0.95, 0.31);
+	    PDF_closepath_fill_stroke(myPDF);
+	    break;
+
+/* 15 + (0..15): circles with varying parts of'em filled. The added
+ * number is a bit-pattern of the 4 quadrants: 1 signals a quadrant
+ * filled */
+	case 15+0:
+	    PDF_moveto(myPDF, 0, 0);
+	    PDF_lineto(myPDF, 0, 1);
+	    PDF_arc(myPDF, 0, 0, 1, 90, 360+90);
+	    PDF_closepath_stroke(myPDF);
+	    break;
+
+/* Generalize common code into a macro... */
+#define CIRCLE_SINGLE_PIESLICE(x, y, angle1, angle2)		\
+	    PDF_moveto(myPDF, 0, 0);				\
+	    PDF_lineto(myPDF, (x), (y));			\
+	    PDF_arc(myPDF, 0, 0, 1, (angle1), (angle2));	\
+	    PDF_lineto(myPDF, 0, 0);				\
+	    PDF_closepath(myPDF);				\
+	    PDF_fill_stroke(myPDF);				\
+	    PDF_arc(myPDF, 0, 0, 1, (angle2), (angle1) + 360);	\
+	    PDF_stroke(myPDF);					\
+	    break;
+
+#define CIRCLE_SINGLE_QUADRANT(x, y, angle)			\
+	    CIRCLE_SINGLE_PIESLICE(x, y, angle, angle+90);
+	case 15+1:
+	    CIRCLE_SINGLE_QUADRANT(1, 0, 0);
+	case 15+2:
+	    CIRCLE_SINGLE_QUADRANT(0, 1, 90);
+	case 15+4:
+	    CIRCLE_SINGLE_QUADRANT(-1, 0, 180);
+	case 15+8:
+	    CIRCLE_SINGLE_QUADRANT(0, -1, 270);
+#undef CIRCLE_SINGLE_QUADRANT
+
+#define CIRCLE_TWO_NEIGHBOR_QUADRANTS(x, y, angle)		\
+	    CIRCLE_SINGLE_PIESLICE(x, y, angle, angle+180)
+	case 15+3:
+	    CIRCLE_TWO_NEIGHBOR_QUADRANTS(1, 0, 0);
+	case 15+6:
+	    CIRCLE_TWO_NEIGHBOR_QUADRANTS(0, 1, 90);
+	case 15+12:
+	    CIRCLE_TWO_NEIGHBOR_QUADRANTS(-1, 0, 180);
+	case 15+9:
+	    CIRCLE_TWO_NEIGHBOR_QUADRANTS(0, -1, 270);
+#undef CIRCLE_TWO_NEIGHBOR_QUADRANTS
+
+#define CIRCLE_TWO_OPPOSING_QUADRANTS(x, y, angle)		\
+	    PDF_moveto(myPDF, 0, 0);				\
+	    PDF_lineto(myPDF, x, y);				\
+	    PDF_arc(myPDF, 0, 0, 1, angle, angle + 90);		\
+	    PDF_lineto(myPDF, 0, 0);				\
+	    PDF_fill_stroke(myPDF);				\
+	    PDF_moveto(myPDF, 0, 0);				\
+	    PDF_lineto(myPDF, -x, -y);				\
+	    PDF_arc(myPDF, 0, 0, 1, angle + 180, angle + 270);	\
+	    PDF_lineto(myPDF, 0, 0);				\
+	    PDF_fill_stroke(myPDF);				\
+	    PDF_arc(myPDF, 0, 0, 1, angle + 90, angle + 360);	\
+	    PDF_stroke(myPDF);					\
+	    break;
+	case 15+5:
+	    CIRCLE_TWO_OPPOSING_QUADRANTS(1, 0, 0);
+	case 15+10:
+	    CIRCLE_TWO_OPPOSING_QUADRANTS(0, 1, 90);
+#undef CIRCLE_TWO_OPPOSING_QUADRANTS
+
+#define CIRCLE_THREE_QUADRANTS(x, y, angle)			\
+	    CIRCLE_SINGLE_PIESLICE(x, y, angle, angle+270)
+	case 15+7:
+	    CIRCLE_THREE_QUADRANTS(1, 0, 0);
+	case 15+14:
+	    CIRCLE_THREE_QUADRANTS(0, 1, 90);
+	case 15+13:
+	    CIRCLE_THREE_QUADRANTS(-1, 0, 180);
+	case 15+11:
+	    CIRCLE_THREE_QUADRANTS(0, -1, 270);
+#undef CIRCLE_THREE_QUADRANTS
+#undef CIRCLE_SINGLE_PIESLICE
+
+	case 15+15:
+	    PDF_circle(myPDF, 0, 0, 1);
+	    PDF_closepath_fill_stroke(myPDF);
+	    break;
+
+
+/*************************************************************************/
+/* 31 + (0..15): squares with different quadrants of them filled in. */
+/*************************************************************************/
+/*************************************************************************/
+/* 47 + (0..15): diamonds with filled quadrants as given by bit pattern  */
+/*   Diamonds are drawn as squares rotated by 45 degrees, so can use
+ * fall-through from diamond to squares, and re-use some macros. */
+/*************************************************************************/
+	case 47+0:
+	    PDF_rotate(myPDF, 45);
+	    /* FALLTHROUGH */
+	case 31+0:
+	    PDF_moveto(myPDF, 0, 0);
+	    PDF_lineto(myPDF, 0, 1);
+	    PDF_lineto(myPDF, -1, 1);
+	    PDF_lineto(myPDF, -1, -1);
+	    PDF_lineto(myPDF, 1, -1);
+	    PDF_lineto(myPDF, 1, 1);
+	    PDF_lineto(myPDF, 0, 1);
+	    PDF_stroke(myPDF);
+	    break;
+
+	case 47+15:
+	    PDF_rotate(myPDF, 45);
+	    /* FALLTHROUGH */
+	case 31+15:
+	    PDF_moveto(myPDF, -1, 1);
+	    PDF_lineto(myPDF, -1, -1);
+	    PDF_lineto(myPDF, 1, -1);
+	    PDF_lineto(myPDF, 1, 1);
+	    PDF_closepath_fill_stroke(myPDF);
+	    break;
+
+/* macros defining shapes of the partly filled symbols. Done by
+ * rotating the starting point (x0, y0) by 90 degrees or 45 degrees
+ * (with length adjustment).  The rotations can be done without
+ * trigonometric function calls, since their values are known:
+ * cos(90)=0, sin(90)=1, cos(45)=sin(45)=1/sqrt(2).  A good compiler
+ * should be able to optimize away all the local variables and
+ * loops...  */
+
+#define SQUARE_SINGLE_PIESLICE(x0, y0, quadrants)			\
+	    {								\
+		int quadrant = 0;					\
+		int x= x0, y=y0;					\
+		PDF_moveto(myPDF, 0, 0);				\
+		PDF_lineto(myPDF, x, y);				\
+		/* poor man's rotation by 45 and 90 degrees around the	\
+		 * square's outline. */					\
+		while (quadrant++ < quadrants) {			\
+		    int dummy;						\
+		    PDF_lineto(myPDF, x-y, x+y);			\
+		    dummy = x; x = -y; y = dummy;			\
+		}							\
+		PDF_lineto(myPDF, x, y);				\
+		PDF_closepath_fill_stroke(myPDF);			\
+		PDF_moveto(myPDF, x, y);				\
+		while (quadrant++ <= 4) {				\
+		    int dummy;						\
+		    PDF_lineto(myPDF, x-y, x+y);			\
+		    dummy = x; x = -y; y = dummy;			\
+		}							\
+		PDF_lineto(myPDF, x, y);				\
+		PDF_stroke(myPDF);					\
+	    }								\
+	    break;
+
+#define SQUARE_TWO_OPPOSING_QUADRANTS(x0, y0, angle)	\
+	    {						\
+		int x = x0, y = y0, dummy;		\
+		int counter = 0;			\
+							\
+		while (counter++ < 2) {			\
+		    PDF_moveto(myPDF, 0, 0);		\
+		    PDF_lineto(myPDF, x, y);		\
+		    PDF_lineto(myPDF, x-y, x+y);	\
+		    dummy = x; x = -y; y = dummy;	\
+		    PDF_lineto(myPDF, x, y);		\
+		    PDF_closepath_fill_stroke(myPDF);	\
+							\
+		    PDF_moveto(myPDF, x, y);		\
+		    PDF_lineto(myPDF, x-y, x+y);	\
+		    dummy = x; x = -y; y = dummy;	\
+		    PDF_lineto(myPDF, x, y);		\
+		    PDF_stroke(myPDF);			\
+		}					\
+		break;					\
+	    }
+
+/* Macros for diamonds just prepend the rotation and then call those
+ * for squares: */
+#define DIAMOND_SINGLE_PIESLICE(x, y, quadrants)	\
+	    PDF_rotate(myPDF, 45);			\
+	    SQUARE_SINGLE_PIESLICE(x, y, quadrants);
+#define DIAMOND_TWO_OPPOSING_QUADRANTS(x, y, angle)	\
+	    PDF_rotate(myPDF, 45);			\
+	    SQUARE_TWO_OPPOSING_QUADRANTS(x, y, angle);
+
+/* ... and now all the individual cases. The 'angle' arguments' are
+ * purely for the sake of easing cut'n'paste with the circle case */
+#define SQUARE_SINGLE_QUADRANT(x, y, angle)			\
+	    SQUARE_SINGLE_PIESLICE(x, y, 1);
+	case 31+1:
+	    SQUARE_SINGLE_QUADRANT(1, 0, 0);
+	case 31+2:
+	    SQUARE_SINGLE_QUADRANT(0, 1, 90);
+	case 31+4:
+	    SQUARE_SINGLE_QUADRANT(-1, 0, 180);
+	case 31+8:
+	    SQUARE_SINGLE_QUADRANT(0, -1, 270);
+#undef SQUARE_SINGLE_QUADRANT
+
+#define SQUARE_TWO_NEIGHBOR_QUADRANTS(x, y, angle)		\
+	    SQUARE_SINGLE_PIESLICE(x, y, 2)
+	case 31+3:
+	    SQUARE_TWO_NEIGHBOR_QUADRANTS(1, 0, 0);
+	case 31+6:
+	    SQUARE_TWO_NEIGHBOR_QUADRANTS(0, 1, 90);
+	case 31+12:
+	    SQUARE_TWO_NEIGHBOR_QUADRANTS(-1, 0, 180);
+	case 31+9:
+	    SQUARE_TWO_NEIGHBOR_QUADRANTS(0, -1, 270);
+#undef SQUARE_TWO_NEIGHBOR_QUADRANTS
+
+	case 31+5:
+	    SQUARE_TWO_OPPOSING_QUADRANTS(1, 0, 0);
+	case 31+10:
+	    SQUARE_TWO_OPPOSING_QUADRANTS(0, 1, 90);
+
+#define SQUARE_THREE_QUADRANTS(x, y, angle)			\
+	    SQUARE_SINGLE_PIESLICE(x, y, 3)
+	case 31+7:
+	    SQUARE_THREE_QUADRANTS(1, 0, 0);
+	case 31+14:
+	    SQUARE_THREE_QUADRANTS(0, 1, 90);
+	case 31+13:
+	    SQUARE_THREE_QUADRANTS(-1, 0, 180);
+	case 31+11:
+	    SQUARE_THREE_QUADRANTS(0, -1, 270);
+#undef SQUARE_THREE_QUADRANTS
+
+#define DIAMOND_SINGLE_QUADRANT(x, y, angle)			\
+	    DIAMOND_SINGLE_PIESLICE(x, y, 1)
+	case 47+1:
+	    DIAMOND_SINGLE_QUADRANT(1, 0, 0);
+	case 47+2:
+	    DIAMOND_SINGLE_QUADRANT(0, 1, 90);
+	case 47+4:
+	    DIAMOND_SINGLE_QUADRANT(-1, 0, 180);
+	case 47+8:
+	    DIAMOND_SINGLE_QUADRANT(0, -1, 270);
+#undef DIAMOND_SINGLE_QUADRANT
+
+#define DIAMOND_TWO_NEIGHBOR_QUADRANTS(x, y, angle)		\
+	    DIAMOND_SINGLE_PIESLICE(x, y, 2)
+	case 47+3:
+	    DIAMOND_TWO_NEIGHBOR_QUADRANTS(1, 0, 0);
+	case 47+6:
+	    DIAMOND_TWO_NEIGHBOR_QUADRANTS(0, 1, 90);
+	case 47+12:
+	    DIAMOND_TWO_NEIGHBOR_QUADRANTS(-1, 0, 180);
+	case 47+9:
+	    DIAMOND_TWO_NEIGHBOR_QUADRANTS(0, -1, 270);
+#undef DIAMOND_TWO_NEIGHBOR_QUADRANTS
+
+
+	case 47+5:
+	    DIAMOND_TWO_OPPOSING_QUADRANTS(1, 0, 0);
+	case 47+10:
+	    DIAMOND_TWO_OPPOSING_QUADRANTS(0, 1, 90);
+#undef DIAMOND_TWO_OPPOSING_QUADRANTS
+#undef SQUARE_TWO_OPPOSING_QUADRANTS
+
+#define DIAMOND_THREE_QUADRANTS(x, y, angle)			\
+	    DIAMOND_SINGLE_PIESLICE(x, y, 3)
+	case 47+7:
+	    DIAMOND_THREE_QUADRANTS(1, 0, 0);
+	case 47+14:
+	    DIAMOND_THREE_QUADRANTS(0, 1, 90);
+	case 47+13:
+	    DIAMOND_THREE_QUADRANTS(-1, 0, 180);
+	case 47+11:
+	    DIAMOND_THREE_QUADRANTS(0, -1, 270);
+#undef DIAMOND_THREE_QUADRANTS
+#undef DIAMOND_SINGLE_PIESLICE
+#undef SQUARE_SINGLE_PIESLICE
+
+	default:
+	    int_warn(NO_CARET, "PDF: unknown point type number %d", number);
+	}
+    }
+
+    PDF_restore(myPDF);
+    PDF_xLast = x;
+    PDF_yLast = y;
+}
+
+
+TERM_PUBLIC int
+PDF_justify_text (enum JUSTIFY mode)
+{
+    PDF_TextJust = mode;
+    return (TRUE);
+}
+
+
+TERM_PUBLIC int
+PDF_text_angle (int ang)
+{
+    PDF_TextAngle = ang;
+    return (TRUE);
+}
+
+
+TERM_PUBLIC void
+PDF_put_text (unsigned int x, unsigned int y, const char *str)
+{
+    char *alignment = NULL;
+    double h = x, v = y;
+
+    PDF_PathClose ();
+
+    /* horizontal justification*/
+    switch (PDF_TextJust) {
+    case LEFT:
+	alignment = "left";
+	break;
+    case CENTRE:
+	alignment = "center";
+	break;
+    case RIGHT:
+	alignment = "right";
+	break;
+    }
+
+    if (PDF_TextAngle) {
+	PDF_save(myPDF);
+	PDF_translate(myPDF, h, v);
+	PDF_rotate(myPDF, PDF_TextAngle);
+	/* vertical justification*/
+	PDF_translate(myPDF, 0, -(PDF_fontAscent-PDF_fontDescent)/2);
+	PDF_show_boxed(myPDF, str, 0,0, 0, 0, alignment, NULL);
+	PDF_restore(myPDF);
+    } else {
+	/* vertical justification*/
+	v -= (PDF_fontAscent - PDF_fontDescent) / 2;
+	PDF_show_boxed(myPDF, str, h , v, 0, 0, alignment, NULL);
+    }
+
+}
+
+
+TERM_PUBLIC int
+PDF_set_font (const char *font)
+{
+    /* FIXME: This condition is somehow triggered by enhanced_recursion */
+    if (font == PDF_fontNameCur)
+	;
+
+    else if (!font || !(*font)) {
+	strcpy (PDF_fontNameCur, PDF_fontNameDef);
+	PDF_fontSizeCur = PDF_fontSizeDef;
+    } else {
+	int sep = strcspn(font,",");
+	if (sep > 0) {
+	    strncpy(PDF_fontNameCur,font,sep);
+	    PDF_fontNameCur[sep] = NUL;
+	}
+	if (font[sep] == ',')
+	    sscanf(&(font[sep+1]), "%lf", &PDF_fontSizeCur);
+    }
+
+    PDF_PathClose();
+    PDF_SetFont();
+
+    term->h_char = PDF_fontAvWidth;
+    term->v_char = (PDF_fontAscent + PDF_fontDescent + PDF_fontLeading);
+
+    return (TRUE);
+}
+
+TERM_PUBLIC void
+PDF_boxfill(int style, unsigned int x1, unsigned int y1,
+	    unsigned int width, unsigned int height)
+{
+    gpiPoint corner[4];
+
+	corner[0].x = x1;        corner[0].y = y1;
+	corner[1].x = x1+width;  corner[1].y = y1;
+	corner[2].x = x1+width;  corner[2].y = y1+height;
+	corner[3].x = x1;        corner[3].y = y1+height;
+
+	corner->style = style;
+	PDF_filled_polygon(4, corner);
+}
+
+TERM_PUBLIC void
+PDF_filled_polygon(int points, gpiPoint* corners)
+{
+    int i;
+    int fillpar = corners->style >> 4;
+    int style = corners->style &= 0xf;
+
+    PDF_PathClose();
+    PDF_save(myPDF);
+
+    switch (style) {
+	case FS_EMPTY: /* fill with white */
+	    PDF_setgray(myPDF, 1);
+	    break;
+	case FS_TRANSPARENT_SOLID:
+#if !HAVE_OLD_LIBPDF
+	    {
+		/* FIXME: This attribute will be in effect until the end of   */
+		/* the current page. We should explicitly reset it to restore */
+		/* opaque fill areas as the default. But when should it be?   */
+		char density[18];
+		double red   = PDF_current_rgb.r;
+		double green = PDF_current_rgb.g;
+		double blue  = PDF_current_rgb.b;
+		sprintf(density,"opacityfill=%4.2f", (double)fillpar*0.01);
+		i = PDF_create_gstate(myPDF, density);
+		PDF_set_gstate(myPDF, i);
+		if (PDF_monochrome)
+		    PDF_setgray_fill(myPDF, PDF_current_gray);
+		else
+		    PDF_setrgbcolor_fill(myPDF, red, green, blue);
+		break;
+	    }
+#endif
+	case FS_SOLID:
+	    {
+		double fact = (double)fillpar * 0.01;
+		double _fact = (double)(100-fillpar) * 0.01;
+		double red   = PDF_current_rgb.r * fact + _fact;
+		double green = PDF_current_rgb.g * fact + _fact;
+		double blue  = PDF_current_rgb.b * fact + _fact;
+		if (PDF_monochrome)
+		    PDF_setgray_fill(myPDF, PDF_current_gray);
+		else
+		    PDF_setrgbcolor_fill(myPDF, red, green, blue);
+	    }
+	    break;
+
+#if !HAVE_OLD_LIBPDF
+	case FS_PATTERN:
+	    fillpar = fillpar % (PDF_patterns + 1) /* 0 == white */;
+	    /* Fill in solid background before drawing pattern */
+	    /* NOTE:  kpdf/xpdf would accept this as part of the pattern definition */
+	    /*        but acroread does not. So for compatibility we do the fill in */
+	    /*        a separate step, despite its inefficiency.                    */
+	    if (fillpar != 0) {
+		PDF_setcolor(myPDF, "fill", "rgb", 1, 1, 1, 0 /* unused */);
+		PDF_moveto(myPDF, corners[0].x, corners[0].y);
+		for (i=1; i<points; i++)
+		    PDF_lineto(myPDF, corners[i].x, corners[i].y);
+		PDF_lineto(myPDF, corners[0].x, corners[0].y);
+		PDF_fill(myPDF);
+		PDF_restore(myPDF);
+		PDF_save(myPDF);
+	    }
+	    /* NOTE: Fall through to the actual pattern code */
+	case FS_TRANSPARENT_PATTERN:
+	    fillpar = fillpar % (PDF_patterns + 1) /* 0 == white */;
+	    switch (fillpar) {
+		case 0:
+		    /* fill with white */
+		    PDF_setcolor(myPDF, "fill", "rgb", 1, 1, 1, 0 /* unused */);
+		    break;
+		default:
+		    PDF_setcolor(myPDF, "fill", "pattern", PDF_patternHandles[fillpar - 1], 0, 0, 0);
+	    }
+	    break;
+#endif
+
+	default:
+	    break;
+    }
+
+    PDF_moveto(myPDF, corners[0].x, corners[0].y);
+    for (i=1; i<points; i++)
+	PDF_lineto(myPDF, corners[i].x, corners[i].y);
+    PDF_lineto(myPDF, corners[0].x, corners[0].y);
+    PDF_fill(myPDF);
+    PDF_restore(myPDF);
+}
+
+TERM_PUBLIC int
+PDF_make_palette(t_sm_palette *palette)
+{
+    if (palette == NULL) {
+	/* pdf can do continuous colors */
+	return 0;
+    }
+
+    return 0;
+}
+
+TERM_PUBLIC void
+PDF_set_color(t_colorspec *colorspec)
+{
+    if (colorspec->type == TC_LT) {
+	unsigned int irgb = pm3d_color_names_tbl[ 1 + PDF_Pen_RealID(colorspec->lt) ].value;
+	PDF_current_rgb.r = (double)((irgb >> 16) & 0xff) / 255.;
+	PDF_current_rgb.g = (double)((irgb >>  8) & 0xff) / 255.;
+	PDF_current_rgb.b = (double)((irgb      ) & 0xff) / 255.;
+	PDF_current_gray = 0.0; /* monochrome mode only */
+    } else if (colorspec->type == TC_FRAC) {
+	rgb1maxcolors_from_gray( colorspec->value, &PDF_current_rgb);
+	PDF_current_gray = colorspec->value; /* monochrome mode only */
+    } else if (colorspec->type == TC_RGB) {
+	PDF_current_rgb.r = (double)((colorspec->lt >> 16 ) & 255) / 255.;
+	PDF_current_rgb.g = (double)((colorspec->lt >> 8 ) & 255) / 255.;
+	PDF_current_rgb.b = (double)(colorspec->lt & 255) / 255.;
+    } else
+	return;
+
+    /* make sure that the path is stroked with the current color
+     * before changing the color */
+    PDF_PathClose();
+
+    if (PDF_monochrome && colorspec->type != TC_RGB)
+	PDF_setgray(myPDF, PDF_current_gray);  /* FIXME - Should this be NTSC(current_rgb)? */
+    else
+	PDF_setrgbcolor(myPDF, PDF_current_rgb.r, PDF_current_rgb.g, PDF_current_rgb.b);
+
+    /* mark linetype invalid so that the color will be
+     * set when PDF_linetype() is called next */
+    PDF_LineType = LT_UNDEFINED;
+}
+
+TERM_PUBLIC void
+PDF_previous_palette()
+{
+}
+ 
+TERM_PUBLIC void
+PDF_image (unsigned int M, unsigned int N, coordval * image, gpiPoint * corner, t_imagecolor color_mode)
+{
+    unsigned char *pixel;
+    float xscale, yscale;
+    int i, im;
+
+    /* Allocate memory to hold a copy of the entire image in raw RGB format */
+    unsigned char *rawrgb = gp_alloc( M*N*3, "Raw RGB image");
+
+    /* Convert the input image into raw RGB 24-bit color representation */
+    if (color_mode == IC_RGB) {
+	for (i=0, pixel=rawrgb; i<N*M*3;) {
+	    rgb_color rgb1;
+	    rgb255_color rgb255;
+	    rgb1.r = image[i++];
+	    rgb1.g = image[i++];
+	    rgb1.b = image[i++];
+	    rgb255_from_rgb1( rgb1, &rgb255 );
+	    *pixel++ = rgb255.r;
+	    *pixel++ = rgb255.g;
+	    *pixel++ = rgb255.b;
+	}
+    } else {
+        for (i=0, pixel=rawrgb; i< N*M; i++) {
+	    if (isnan(image[i])) {
+		/* Transparent would be better! */
+		*pixel++ = 255;
+		*pixel++ = 255;
+		*pixel++ = 255;
+	    } else {
+		rgb255_color rgb;
+		rgb255maxcolors_from_gray(image[i], &rgb);
+		*pixel++ = rgb.r;
+		*pixel++ = rgb.g;
+		*pixel++ = rgb.b;
+	    }
+	}
+    }
+      
+    /* Describe this image to PDF library */
+    im = PDF_open_image( myPDF, "raw", "memory", (char *)rawrgb,
+			 (long)(M*N*3), (int)M, (int)N,
+			 3, 8,				/* 3 colors, 8 bits each */
+			 "");
+
+    /* Clip to bounding box requested */
+	PDF_save(myPDF);
+	PDF_moveto(myPDF, corner[2].x, corner[2].y);
+	PDF_lineto(myPDF, corner[2].x, corner[3].y);
+	PDF_lineto(myPDF, corner[3].x, corner[3].y);
+	PDF_lineto(myPDF, corner[3].x, corner[2].y);
+	PDF_closepath(myPDF);
+	PDF_clip(myPDF);
+
+/* Scale and copy into the main PDF image */
+	xscale = fabs((float)corner[1].x - (float)corner[0].x) / (float)M;
+	yscale = fabs((float)corner[1].y - (float)corner[0].y) / (float)N;
+	PDF_translate(myPDF, corner[0].x, corner[0].y);
+	PDF_scale(myPDF, xscale, yscale);
+	PDF_translate(myPDF, 0, -(float)N);
+	PDF_place_image(myPDF, im, 0.0, 0.0, 1.0 );
+	PDF_restore(myPDF);
+
+    /* Clean up */
+	PDF_close_image(myPDF, im);
+	free(rawrgb);
+
+}
+
+/*
+ * Ethan A Merritt November 2003
+ *	- support for enhanced text mode
+ * BUGS:
+ *	- The baseline is not consistent if font size changes within a string.
+ *	- Placement of overprinted characters is not correct.
+ *	- libpdf exits if the requested font is not recognized.
+ *	- I implement text-rotation by hand, but it may be possible to use
+ *	  a gsave/translate/rotate/.../grestore sequence instead.
+ */
+
+static TBOOLEAN ENHpdf_opened_string;
+
+/* used in determining height of processed text */
+static float ENHpdf_base;
+
+/* use these so that we don't over-write the current font settings in pdf_state */
+static double  ENHpdf_fontsize;
+static char   *ENHpdf_font;
+
+/* A global flag that tells us this run is just to determine text size */
+static TBOOLEAN ENHpdf_sizeonly = FALSE;
+
+static TBOOLEAN ENHpdf_show = TRUE;
+static int ENHpdf_overprint = 0;
+static TBOOLEAN ENHpdf_widthflag = FALSE;
+static unsigned int ENHpdf_xsave, ENHpdf_ysave;
+
+/* Start a new string fragment */
+TERM_PUBLIC void
+ENHPDF_OPEN(
+    char *fontname,
+    double fontsize, double base,
+    TBOOLEAN widthflag, TBOOLEAN showflag,
+    int overprint)
+{
+    /* If the overprint code requests a save or request, that's all we do */
+    if (overprint == 3) {
+	ENHpdf_xsave = PDF_xLast;
+	ENHpdf_ysave = PDF_yLast;
+	return;
+    } else if (overprint == 4) {
+	PDF_move(ENHpdf_xsave, ENHpdf_ysave);
+	return;
+    }
+
+    if (!ENHpdf_opened_string) {
+	ENHpdf_opened_string = TRUE;
+	enhanced_cur_text = &enhanced_text[0];
+	ENHpdf_font = fontname;
+	ENHpdf_fontsize = fontsize;
+	ENHpdf_base = base * PDF_RESOLUTION;
+	ENHpdf_show = showflag;
+	ENHpdf_overprint = overprint;
+	ENHpdf_widthflag = widthflag;
+    }
+}
+
+/* Write a string fragment and update the current position */
+TERM_PUBLIC void
+ENHPDF_FLUSH()
+{
+    int x, y;
+    float stringlength;
+
+	if (ENHpdf_opened_string) {
+	    ENHpdf_opened_string = FALSE;
+	    *enhanced_cur_text = '\0';
+	    x = PDF_xLast;
+	    y = PDF_yLast;
+	    x -= sin((double)PDF_TextAngle * M_PI_2/90.) * ENHpdf_base;
+	    y += cos((double)PDF_TextAngle * M_PI_2/90.) * ENHpdf_base;
+	    x += sin((double)PDF_TextAngle * M_PI_2/90.) * (double)PDF_fontAvWidth/2.;
+	    y -= cos((double)PDF_TextAngle * M_PI_2/90.) * (double)PDF_fontAvWidth/2.;
+
+	    /* Select current font for enhanced text fragment, then restore context */
+	    if (1) {
+		char save_fontname[MAX_ID_LEN + 1];
+		double save_fontsize = PDF_fontSizeCur;
+		    strcpy(save_fontname,PDF_fontNameCur);
+		    PDF_fontSizeCur = ENHpdf_fontsize / PDF_fontscale;
+		    PDF_set_font(ENHpdf_font);
+		    strcpy(PDF_fontNameCur,save_fontname);
+		    PDF_fontSizeCur = save_fontsize;
+	    }
+
+	    /* Find length of string in current font */
+	    stringlength = PDF_stringwidth(myPDF, enhanced_text,
+		PDF_currentFontHandle, ENHpdf_fontsize);
+	    stringlength *= PDF_RESOLUTION;
+
+	    if (ENHpdf_show && !ENHpdf_sizeonly) {
+		if (PDF_TextAngle == 0 ) {
+		    /* PDF_show(myPDF, enhanced_text); */
+		    PDF_show_boxed(myPDF, enhanced_text, x, y, 0, 0, "left", NULL);
+		} else {
+		    PDF_save(myPDF);
+		    PDF_translate(myPDF, x, y);
+		    PDF_rotate(myPDF, PDF_TextAngle);
+		    /* vertical justification*/
+		    PDF_translate(myPDF, 0, -(PDF_fontAscent-PDF_fontDescent)/2);
+		    PDF_show_boxed(myPDF, enhanced_text, 0, 0, 0, 0, "left", NULL);
+		    PDF_restore(myPDF);
+		}
+	    }
+	    if (ENHpdf_overprint == 1) {
+		PDF_xLast += stringlength * cos((double)PDF_TextAngle * M_PI_2/90.) / 2.;
+		PDF_yLast += stringlength * sin((double)PDF_TextAngle * M_PI_2/90.);
+	    } else if (ENHpdf_widthflag) {
+		PDF_xLast += stringlength * cos((double)PDF_TextAngle * M_PI_2/90.);
+		PDF_yLast += stringlength * sin((double)PDF_TextAngle * M_PI_2/90.);
+	    }
+	}
+}
+
+TERM_PUBLIC void
+ENHPDF_put_text(unsigned int x, unsigned int y, const char *str)
+{
+    char *original_string = (char *)str;
+
+    if (ignore_enhanced_text) {
+	PDF_put_text(x,y,str);
+	return;
+    }
+
+    if (!str || !strlen(str))
+	return;
+
+    /* if there are no magic characters, we should just be able
+     * punt the string to PDF_put_text()
+     */
+    if (!strpbrk(str, "{}^_@&~")) {
+	/* do something to ensure default font is selected */
+	PDF_put_text(x,y,str);
+	return;
+    }
+
+    PDF_move(x, y);
+    PDF_PathClose();
+    PDF_save(myPDF);
+
+    /* FIXME - Is this the way to do it?????
+    if (PDF_TextAngle != 0)
+	ENHPDF_DEBUG(("currentpoint gsave translate %d rotate 0 0 moveto\n", PDF_TextAngle));
+     */
+
+    /* set up the global variables needed by enhanced_recursion() */
+    enhanced_fontscale = PDF_fontscale;
+    strncpy(enhanced_escape_format,"%c",sizeof(enhanced_escape_format));
+
+    ENHpdf_opened_string = FALSE;
+
+    /* EAM - Software text justification requires two passes */
+    if (PDF_TextJust == RIGHT || PDF_TextJust == CENTRE)
+	ENHpdf_sizeonly = TRUE;
+
+    /* Set the recursion going. We say to keep going until a
+     * closing brace, but we don't really expect to find one.
+     * If the return value is not the nul-terminator of the
+     * string, that can only mean that we did find an unmatched
+     * closing brace in the string. We increment past it (else
+     * we get stuck in an infinite loop) and try again.
+     */
+    while (*(str = enhanced_recursion((char *)str, TRUE,
+			PDF_fontNameCur, PDF_fontSizeCur * PDF_fontscale,
+			0.0, TRUE, TRUE, 0))) {
+	(term->enhanced_flush)();
+
+	/* I think we can only get here if *str == '}' */
+	    enh_err_check(str);
+
+	if (!*++str)
+	    break; /* end of string */
+
+	/* else carry on and process the rest of the string */
+    }
+
+    PDF_restore(myPDF);
+
+    /* We can do text justification by running the entire top level string */
+    /* through 2 times, with the ENHpdf_sizeonly flag set the first time.   */
+    /* After seeing where the final position is, we then offset the start  */
+    /* point accordingly and run it again.                                 */
+    if (PDF_TextJust == RIGHT || PDF_TextJust == CENTRE) {
+	int justification = PDF_TextJust;
+	int x_offset = PDF_xLast - x;
+	int y_offset = 0;
+
+	if (PDF_TextAngle != 0)
+	    y_offset = PDF_yLast - y;
+	PDF_TextJust = LEFT;
+	ENHpdf_sizeonly = FALSE;
+
+	if (justification == RIGHT) {
+	    ENHPDF_put_text(x - x_offset, y - y_offset, original_string);
+	} else if (justification == CENTRE) {
+	    ENHPDF_put_text(x - x_offset/2, y - y_offset/2, original_string);
+	}
+	PDF_TextJust = justification;
+    }
+
+}
+
+#endif /* TERM_BODY */
+
+#ifdef TERM_TABLE
+TERM_TABLE_START (pdf_driver)
+    "pdf", "PDF (Portable Document File) file driver",
+    0 /* xmax */ , 0 /* ymax */ , 0 /* vchar */ , 0 /* hchar */ ,
+    0 /* vtic */ , 0 /* htic */ ,
+    PDF_options, PDF_init, PDF_reset, PDF_text, null_scale, PDF_graphics,
+    PDF_move, PDF_vector, PDF_linetype, PDF_put_text, PDF_text_angle,
+    PDF_justify_text, PDF_point, do_arrow, PDF_set_font, do_pointsize,
+    TERM_BINARY|TERM_CAN_DASH|TERM_LINEWIDTH|TERM_FONTSCALE,
+    0 /* suspend */, 0 /* resume */ , PDF_boxfill, PDF_linewidth
+#   ifdef USE_MOUSE
+   , 0, 0, 0, 0, 0 /* no mouse support for pdf */
+#   endif
+   , PDF_make_palette,
+   PDF_previous_palette,
+   PDF_set_color,
+   PDF_filled_polygon
+   , PDF_image
+   , ENHPDF_OPEN, ENHPDF_FLUSH, do_enh_writec
+TERM_TABLE_END (pdf_driver)
+#undef LAST_TERM
+#define LAST_TERM pdf_driver
+#endif /* TERM_TABLE */
+
+#endif /* TERM_PROTO_ONLY */
+
+#ifdef TERM_HELP
+START_HELP(pdf)
+"1 pdf",
+"?commands set terminal pdf",
+"?set terminal pdf",
+"?set term pdf",
+"?terminal pdf",
+"?term pdf",
+"?pdf",
+" This terminal produces files in the Adobe Portable Document Format",
+" (PDF), useable for printing or display with tools like Acrobat Reader",
+"",
+" Syntax:",
+"       set terminal pdf {monochrome|color|colour}",
+"                        {{no}enhanced}",
+"                        {fname \"<font>\"} {fsize <fontsize>}",
+"                        {font \"<fontname>{,<fontsize>}\"} {fontscale <scale>}",
+"                        {linewidth <lw>} {rounded|butt}",
+"                        {dl <dashlength>}}",
+"                        {size <XX>{unit},<YY>{unit}}",
+"",
+" The default is to use a different color for each line type. Selecting",
+" `monochome` will use black for all linetypes, Even in in mono mode",
+" you can still use explicit colors for filled areas or linestyles.",
+"",
+" where <font> is the name of the default font to use (default Helvetica)",
+" and <fontsize> is the font size (in points, default 12).",
+" For help on which fonts are available or how to install new ones, please",
+" see the documentation for your local installation of pdflib.",
+"",
+" The `enhanced` option enables enhanced text processing features",
+" (subscripts, superscripts and mixed fonts). See `enhanced`.",
+"",
+" The width of all lines in the plot can be increased by the factor <n>",
+" specified in `linewidth`. Similarly `dashlength` is a multiplier for the",
+" default dash spacing.",
+"",
+" `rounded` sets line caps and line joins to be rounded; `butt` is the",
+" default, butt caps and mitered joins.",
+"",
+" The default size for PDF output is 5 inches by 3 inches. The `size` option",
+" changes this to whatever the user requests. By default the X and Y sizes",
+" are taken to be in inches, but other units are possible (currently only cm).",
+""
+END_HELP(pdf)
+#endif

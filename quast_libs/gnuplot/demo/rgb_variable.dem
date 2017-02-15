@@ -1,0 +1,125 @@
+#
+# Demo of reading color information from the data file itself
+#
+
+#
+rgb(r,g,b) = int(r)*65536 + int(g)*256 + int(b)
+
+#
+set border 0
+unset xtics; unset ytics; unset ztics
+set rmargin 5; set lmargin 5; set bmargin 2
+
+set angle degrees
+xrgb(r,g,b) = (g-b)/255. * cos(30.)  
+yrgb(r,g,b) = r/255. - (g+b)/255. * sin(30.)
+set arrow 1 from 0,0 to 0,1 nohead lw 3 lc rgb "red" back
+set arrow 2 from 0,0 to cos(-30), sin(-30) nohead lw 3 lc rgb "green" back
+set arrow 3 from 0,0 to cos(210), sin(210) nohead lw 3 lc rgb "blue" back
+
+set title "RGB color information read from data file"
+plot 'rgb_variable.dat' using (xrgb($1,$2,$3)):(yrgb($1,$2,$3)):(rgb($1,$2,$3)) \
+     with points pt 7 ps 4 lc rgb variable notitle
+pause -1 "Hit return to continue"
+
+#
+set title "Both RGB color information\n and point size controlled by input"
+plot 'rgb_variable.dat' using (xrgb($1,$2,$3)):(yrgb($1,$2,$3)):(1.+2.*rand(0)):(rgb($1,$2,$3)) \
+     with points pt 7 ps var lc rgb variable notitle
+pause -1 "Hit return to continue"
+
+#
+set border -1 front linetype -1 linewidth 1.000
+set ticslevel 0
+set xtics border
+set ytics border
+set ztics border
+#
+unset arrow 1
+unset arrow 2
+unset arrow 3
+#
+set xlabel "Red" tc rgb "red"
+set xrange [0:255]
+set ylabel "Green" tc rgb "green"
+set yrange [0:255]
+set zlabel "Blue" tc rgb "blue"
+set zrange [0:255]
+
+#
+splot 'rgb_variable.dat' using 1:2:3:(rgb($1,$2,$3)) with points pt 7 ps 4 lc rgb variable, \
+      '' using 1:2:3:(sprintf("0x%x",rgb($1,$2,$3))) with labels left offset 1 notitle
+pause -1 "Hit return to continue"
+#
+#
+# Unfortunately, not all platforms allow us to read hexadecimal constants
+# from a data file. Warn the user if that is the case.
+#
+if (0 == int('0x01')) \
+   set label 99 at screen .05, screen .15 "If you see only black dots,\nthis means your platform does not \nsupport reading hexadecimal constants\nfrom a data file. Get a newer libc."
+
+splot 'rgb_variable.dat' using 1:2:3:(5*rand(0)):4 with points pt 7 ps variable lc rgb variable \
+      title "variable pointsize and rgb color read as hexidecimal"
+
+pause -1 "Hit return to continue"
+set label 99 ""
+#
+set border 0
+set xtics axis nomirror
+set ytics axis nomirror
+set ztics axis nomirror
+set xzeroaxis lt -1 lc rgb "red" lw 2
+set yzeroaxis lt -1 lc rgb "green" lw 2
+set zzeroaxis lt -1 lc rgb "blue" lw 2
+set xyplane at 0.0
+
+splot 'rgb_variable.dat' using 1:2:3:(5*rand(0)):(rgb($1,$2,$3)) with points pt 7 ps variable lc rgb variable \
+      title "variable pointsize and rgb color computed from coords"
+pause -1 "Hit return to continue"
+
+set title "Demo of hidden3d with points only (no surface)"
+set hidden3d
+replot
+pause -1 "Hit return to continue"
+reset
+#
+
+RGB(R,G,B) =  int(255.*R) * 2**16 + int(255.*G) * 2**8  + int(255.*B)
+
+set xr [0.01:1]
+set yr [0.01:1]
+set zr [0:1]
+set xtics ("R=1" 1)
+set ytics ("G=1" 1)
+set ztics ("0" 0, "B=1" 1)
+unset colorbox
+set isosamples 40,40
+set xyplane at 0.0
+set view 63,58,1.,1.4
+
+set title "RGB coloring of pm3d surface"
+unset key
+
+# Just some function that is well-defined in this range
+# (except at the origin)
+f(x,y) = 0.4 + sin(sqrt(100.*x**2+100.*y**2)) \
+       / (1.5*sqrt(100.*x**2+100.*y**2))
+
+splot '++' using 1:2:(f($1,$2)):(RGB($1,$2,f($1,$2))) \
+       with pm3d lc rgb variable
+
+pause -1 "Hit return to continue"
+
+set title "HSV coloring of pm3d surface\n(V=1)"
+unset xtics
+unset ytics
+set ztics ("0" 0)
+set xlabel "H"
+set ylabel "S"
+
+splot '++' using 1:2:(f($1,$2)):(hsv2rgb($1,$2,1.0)) \
+       with pm3d lc rgb variable
+
+pause -1 "Hit return to continue"
+
+reset

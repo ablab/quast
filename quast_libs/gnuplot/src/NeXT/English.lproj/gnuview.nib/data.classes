@@ -1,0 +1,45 @@
+GnuView = {
+    ACTIONS = {
+    };
+    OUTLETS = {
+	prInfo;
+    };
+    SUPERCLASS = View;
+};
+gnuviewController = {
+    ACTIONS = {
+	largerPushed:;
+	GVactivate:;
+	deactivate:;
+	smallerPushed:;
+	windowDidBecomeMain:;
+	windowWillClose:;
+	activatePushed:;
+    };
+    OUTLETS = {
+	gnuView;
+	window;
+	activateButton;
+	controller;
+    };
+    SUPERCLASS = Object;
+};
+FirstResponder = {
+    ACTIONS = {
+    };
+    SUPERCLASS = Object;
+};
+Controller = {
+    ACTIONS = {
+	setKeyTitle:;
+	appDidInit:;
+	printPScodeInKey:;
+	newGnuView:;
+    };
+    OUTLETS = {
+	NameField;
+	activeTerm;
+	keyTerm;
+    };
+    SUPERCLASS = Object;
+};

@@ -1,0 +1,26 @@
+INSTALLDIR = "$(HOME)/Apps";
+APPICON = GnuTerm.tiff;
+GENERATEMAIN = YES;
+DOCICONFILES = ();
+FILESTABLE = {
+    OTHER_LIBS = (Media_s, NeXT_s);
+    CLASSES = (Controller.m, GnuView.m, gnuviewController.m);
+    OTHER_SOURCES = (Makefile.preamble, Makefile, Makefile.postamble);
+    INTERFACES = (GnuTerm.nib, gnuview.nib);
+    H_FILES = (Controller.h, GnuView.h, gnuviewController.h);
+    IMAGES = ();
+    OTHER_LINKED = ();
+    M_FILES = (GnuTerm_main.m);
+};
+APPCLASS = Application;
+MAINNIB = GnuTerm;
+DOCEXTENSIONS = ();
+PROJECTTYPE = Application;
+PROJECTVERSION = 1.1;
+LOCALIZABLE_FILES = {
+    GnuTerm.nib;
+    gnuview.nib;
+};
+PROJECTNAME = GnuTerm;
+SYSTEMEXTENSIONS = ();
+LANGUAGE = English;

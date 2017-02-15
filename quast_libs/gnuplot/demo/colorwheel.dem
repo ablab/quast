@@ -1,0 +1,18 @@
+#
+# Set palette to HSV color wheel and define common colors as macros
+# This allows commands like
+#	plot sin(x) with lines @orange
+#
+set palette mode HSV
+set palette defined ( 0 0 1 1, 1 1 1 1 )
+set cbrange [0:1]
+red = "lt pal frac 0"
+orange = "lt pal frac 0.10"
+yellow = "lt pal frac 0.16"
+green = "lt pal frac 0.33"
+cyan = "lt pal frac 0.5"
+blue = "lt pal frac 0.66"
+violet = "lt pal frac 0.79"
+magenta = "lt pal frac 0.83"
+black = "lt -1"
+set macros

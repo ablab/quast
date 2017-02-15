@@ -1,0 +1,72 @@
+# Demo to illustrate the ellipses style
+
+set title "Demonstration of the 'ellipses' plotting style\nTwo-column form: x  y  (default size)"
+
+plot 'ellipses.dat' u 1:2 with ellipses
+
+pause -1 'Hit <cr> to continue'
+
+set title "Three-column form: x  y  major_diameter  (minor diameter is the same)" noenh
+
+plot 'ellipses.dat' u 1:2:3 with ellipses
+
+pause -1 'Hit <cr> to continue'
+
+set title "Four-column form: x  y  major_diameter  minor_diameter" noenh
+
+plot 'ellipses.dat' u 1:2:3:4 with ellipses
+
+pause -1 'Hit <cr> to continue'
+
+set title "Five-column form: x  y  major_diameter  minor_diameter angle" noenh
+
+plot 'ellipses.dat' u 1:2:3:4:5 with ellipses
+
+pause -1 'Hit <cr> to continue'
+
+set title "Six-column form: 6th column variable color (lc variable)"
+
+plot 'ellipses.dat' u 1:2:3:4:5:6 with ellipses lc var
+
+pause -1 'Hit <cr> to continue'
+
+set title "Six-column form: 6th column variable color (lc palette)"
+
+plot 'ellipses.dat' u 1:2:3:4:5:6 with ellipses lc pal
+
+pause -1 'Hit <cr> to continue'
+
+set title "Six-column form: 6th column variable color (lc rgb variable)"
+
+plot 'ellipses.dat' u 1:2:3:4:5:7 with ellipses lc rgb var
+
+pause -1 'Hit <cr> to continue'
+
+set title "Scaling of axes: units xy"
+set yr [-15:30]
+set xr [-5:15]
+
+plot 'ellipses.dat' u 1:2:3:4:5 with ellipses units xy
+
+pause -1 'Hit <cr> to continue'
+
+set title "Scaling of axes: units xx"
+
+plot 'ellipses.dat' u 1:2:3:4:5 with ellipses units xx
+
+pause -1 'Hit <cr> to continue'
+
+set title "Scaling of axes: units yy"
+
+plot 'ellipses.dat' u 1:2:3:4:5 with ellipses units yy
+
+pause -1 'Hit <cr> to continue'
+
+set title "Now see all three together"
+
+plot 'ellipses.dat' u 1:2:3:4:5 with ellipses units xy title "units xy",\
+     '' u 1:2:3:4:5 with ellipses units xx title "units xx",\
+     '' u 1:2:3:4:5 with ellipses units yy title "units yy"
+
+pause -1 'Hit <cr> to continue'
+

@@ -1,0 +1,215 @@
+# Hello, emacs: this is a -*- Makefile -*-
+# $Id: makefile.dj2,v 1.22.2.1 2014/10/01 02:40:28 sfeam Exp $
+#
+# GNUPLOT Makefile for DJGPP version 2 on DOS
+#
+# Usage:
+#       from the main gnuplot directory, do:
+#       make -C src -f ../config/makefile.dj2
+#
+#
+# AUTHORS : several ... including Edzer Pebesma <pebesma@metoor.frw.uva.nl>
+#           last mod. by Hans-Bernhard Broeker <broeker@physik.rwth-aachen.de>
+# DATE of last mod: $Date: 2014/10/01 02:40:28 $
+#
+# 
+# removed atari reference and added binary demo bf_test
+# cleaned up the building of doc and binary test files
+# gnuplot.gih will be built now inside the docs directory like under
+# UNIX. The problem is that DOS does not recognize sub-shells like 
+#  (cd dir ; do things) inside the makefile. 
+# solution -> assume everything is done inside gnuplot main dir, under
+# a single DOS command process
+#
+# install target added : will copy the executable + helpfile in a given
+# directory ; customize it, see FINALDEST
+#
+#
+# here customize where you put gnuplot executable for make install
+# for simplicity the helpfile will be copied in the same dir.
+# convention used here : no trailing \ for directory names
+FINALDEST=c:\bin
+
+# here customize the name of the executable
+# exe file will be  gnuplot.exe:
+EXENAME = gnuplot
+
+# where to place gnuplot.gih helpfile upon MAKE
+# note it will be built inside gnuplot\$(HELPDEST)
+# and eventually copied to FINALDEST when install
+HELPDEST =.
+
+# name of the helpfile
+HELPFILE =gnuplot.gih
+
+# Where to install the PostScript prologue files, relatively to the executable
+# gnuplot.exe
+GNUPLOT_PS_DIR = share/PostScript
+
+# Similarly for javascript files for the canvas terminal:
+GNUPLOT_JS_DIR = share/js
+
+# Similarly for lua scripts used by the lua terminal
+GNUPLOT_LUA_DIR = share/lua
+
+# compiler
+CC = gcc
+
+# include directory
+INCLUDE = -I.
+
+# for svga term driver
+# HBB NEW 20050715: you can disable the DJSVGA driver by -DDJSVGA=0
+TERMFLAGS = -DDJSVGA=1 -Ic:/djgpp/contrib/grx246/include \
+	-DGNUPLOT_PS_DIR=\"$(GNUPLOT_PS_DIR)\" \
+        -DGNUPLOT_LUA_DIR=\"$(GNUPLOT_LUA_DIR)\"
+
+TERMLIBS = -Lc:/djgpp/contrib/grx246/lib/dj2 -lgrx20 # -lgd
+
+# HBB : added $(OPTS) so user can
+#   change CFLAGS easily, without having to change makefile
+CFLAGS = -DHAVE_CONFIG_H \
+	-O2 -g $(OPTS)
+
+LINKOPT = $(LDFLAGS) $(TERMLIBS) -lm -lpc
+
+# abbreviations for relative directory names (NB: target 'clean' will
+#   still need manual change if this is changed...)
+T=../term/
+D=../docs/
+M=../demo/
+O=o
+
+CSOURCE5 = $(T)ai.trm \
+	$(T)djsvga.trm $(T)dumb.trm \
+	$(T)dxf.trm $(T)dxy.trm \
+	$(T)debug.trm $(T)eepic.trm $(T)epson.trm $(T)fig.trm  \
+	$(T)hp26.trm $(T)hp2648.trm $(T)hpgl.trm  \
+	$(T)hpljii.trm $(T)metafont.trm\
+	$(T)hppj.trm
+CSOURCE6 = $(T)impcodes.h $(T)imagen.trm $(T)next.trm $(T)object.h \
+	$(T)kyo.trm $(T)latex.trm $(T)mif.trm \
+	$(T)pbm.trm $(T)pc.trm 
+CSOURCE7 = $(T)post.trm $(T)qms.trm $(T)regis.trm $(T)sun.trm \
+	$(T)t410x.trm $(T)tek.trm $(T)texdraw.trm \
+	$(T)vws.trm $(T)x11.trm $(T)xlib.trm
+#OBJ1 =  bitmap.o command.o contour.o eval.o graphics.o graph3d.o hidden3d.o util3d.o
+#OBJ2 =  help.o internal.o misc.o parse.o plot.o plot2d.o plot3d.o readline.o
+#OBJ3 =  scanner.o set.o show.o specfun.o standard.o stdfn.o term.o time.o util.o
+#OBJ4 =  version.o interpol.o fit.o matrix.o datafile.o alloc.o variable.o
+
+CSOURCES = $(CSOURCE5) $(CSOURCE6) $(CSOURCE7)
+#OBJS =  $(OBJ1) $(OBJ2) $(OBJ3) $(OBJ4)
+# use makefile.all, instead:
+include makefile.all
+
+OBJS = $(COREOBJS) version.$(O)
+
+.c.o:  
+	$(CC) -c $(CFLAGS) $(INCLUDE) $<
+
+%:: RCS/%
+	$(patsubst $@-noexist,$(CO) $(COFLAGS) $< $@, \
+		$(filter-out $@,$(firstword $(wildcard $@) $@-noexist)))
+
+all: $(EXENAME).exe  $(HELPDEST)/$(HELPFILE)  $(M)binary?
+
+# -s performs the coff2exe step implicitly (?)
+# HBB: that's plain wrong: -s means 'strip executable',
+#   and stubify (formerly called stubify) is now always done
+#   automatically in the link step. I changed this so you
+#   get a debuggable gnuplot, but a stripped gnuplot.exe
+$(EXENAME).exe : $(OBJS)
+	$(CC) -o $(EXENAME) $(OBJS) $(LINKOPT)
+	objcopy --strip-all $(EXENAME) $(EXENAME).exe
+	stubify $(EXENAME).exe
+
+config.h: ../config/config.dj2
+	copy ..\config\config.dj2 config.h
+
+command.o: command.c plot.h setshow.h help.h
+	$(CC) -c $(CFLAGS) $(INCLUDE) -DHELPFILE=\"$(HELPFILE)\" command.c
+
+show.o: show.c plot.h setshow.h
+	$(CC) -c $(CFLAGS) $(INCLUDE) -DHELPFILE=\"$(HELPFILE)\" $<
+
+term.o: term.c term.h plot.h set.c show.c bitmap.h $(CSOURCES)
+	$(CC) -c $(CFLAGS) $(INCLUDE) $(TERMFLAGS) -I$(T) term.c
+
+$(OBJS): plot.h config.h
+
+command.o help.o misc.o: help.h
+
+command.o graphics.o graph3d.o hidden3d.o util3d.o misc.o plot.o set.o show.o term.o interpol.o: setshow.h
+
+command.o fit.o matrix.o: fit.h
+
+fit.o matrix.o: matrix.h
+
+bitmap.o term.o: bitmap.h
+
+variable.o: variable.c plot.h variable.h
+
+EMAIL=gnuplot-info@lists.sourceforge.net
+version.o: version.c
+	$(CC) -c -DCONTACT=\"$(EMAIL)\" $(CFLAGS) $(INCLUDE) version.c
+
+# convert gnuplot.doc to gnuplot.gih
+$(HELPDEST)/$(HELPFILE): doc2gih.exe $(D)gnuplot.doc
+	./doc2gih.exe  $(D)gnuplot.doc > $@
+
+doc2gih.exe: $(D)doc2gih.c $(D)termdoc.c $(CSOURCES)
+	$(CC) $(CFLAGS) $(INCLUDE) $(TERMFLAGS) -I$(T) -o $@ $(D)doc2gih.c $(D)termdoc.c
+
+# now for the demo bin
+$(M)binary?: bf_test.exe
+	./bf_test.exe
+	copy binary? ..\demo
+	del binary?
+
+bf_test.o:
+	$(CC) $(CFLAGS) -c bf_test.c
+
+bf_test.exe: bf_test.o alloc.o
+	$(CC) $(CFLAGS) bf_test.o alloc.o -lm -o $@
+
+# now install things and create a .bat file to make things easier
+install: all
+	copy $(EXENAME).exe $(FINALDEST)
+	copy $(HELPDEST)\$(HELPFILE) $(FINALDEST)
+#HBB: if at all, this batch-file should only be generated by a
+#separate target, like 'install-bat'. Besides, it doesn't work,
+#as is, because DOS always executes foo.exe before even looking for
+#a foo.bat
+#	del  $(EXENAME).bat
+#	echo @echo off > $(EXENAME).bat
+#	echo SET GNUHELP= $(FINALDEST)\$(HELPFILE) >> $(EXENAME).bat
+#	echo SET GNUPLOT= $(FINALDEST) >> $(EXENAME).bat
+#	echo $(FINALDEST)\$(EXENAME).exe %1 %2 %3 %4 %5 %6 >> $(EXENAME).bat
+#	echo SET GNUHELP= >> $(EXENAME).bat
+#	echo SET GNUPLOT= >> $(EXENAME).bat
+#	copy $(EXENAME).bat $(FINALDEST)
+
+
+# clean target - remove all temp files, but leave executable intact
+clean:
+	del *.o
+	rem del config.h
+	del $(EXENAME)
+	del doc2gih
+	del doc2gih.exe
+	del bf_test
+	del bf_test.exe
+
+# realclean target - remove all files created by the makefile
+realclean: clean
+	del $(EXENAME).exe
+	del $(HELPDEST)\$(HELPFILE)
+	del ..\demo\binary1
+	del ..\demo\binary2
+	del ..\demo\binary3
+	del ..\demo\fit.log
+	del ..\demo\soundfit.par
+#####
+##     END OF GNUPLOT MAKEFILE FOR DJGPP V2
+#####

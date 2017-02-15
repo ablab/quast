@@ -1,0 +1,41 @@
+--- linkedaxes.1.js.raw	2012-09-13 11:50:55.000000000 -0700
++++ linkedaxes.1.js	2012-09-13 11:51:16.000000000 -0700
+@@ -812,7 +812,7 @@
+ gnuplot.plot_axis_ymax = 15;
+ gnuplot.plot_axis_x2min = 1.37756;
+ gnuplot.plot_axis_x2max = 0.860972;
+-gnuplot.x2_mapping = function(x) { return x; };  // replace returned value with 12398./x
++gnuplot.x2_mapping = function(x) { return 12398./x; };
+ gnuplot.plot_axis_y2min = "none"
+ gnuplot.plot_logaxis_x = 0;
+ gnuplot.plot_logaxis_y = 0;
+--- linkedaxes.html.raw	2012-09-13 11:50:58.000000000 -0700
++++ linkedaxes.html	2012-09-13 11:55:45.000000000 -0700
+@@ -40,8 +40,8 @@
+ <table class="mbright" tabindex=0>
+ <tr>
+ 
+- <td class="mb0">x&nbsp;</td> <td class="mb1"><span id="linkedaxes_1_x">&nbsp;&nbsp;&nbsp;&nbsp;</span></td>
+- <td class="mb0">y&nbsp;</td> <td class="mb1"><span id="linkedaxes_1_y">&nbsp;&nbsp;&nbsp;&nbsp;</span></td>
++ <td class="mb0">eV&nbsp;</td> <td class="mb1"><span id="linkedaxes_1_x">&nbsp;&nbsp;&nbsp;&nbsp;</span></td>
++ <td class="mb0">λ&nbsp;</td> <td class="mb1"><span id="linkedaxes_1_x2">&nbsp;&nbsp;&nbsp;&nbsp;</span></td>
+ 
+   <td class="icon"></td>
+   <td class="icon" onclick="gnuplot.toggle_grid();"><img src="grid.png" id="gnuplot_grid_icon" class="icon-image" alt="#" title="toggle grid"></td>
+@@ -52,7 +52,7 @@
+ 
+ </tr>
+ <tr>
+-  <td class="blank">&nbsp;</td>
++  <td class="mb0">f&nbsp;</td> <td class="mb1"><span id="linkedaxes_1_y">&nbsp;&nbsp;&nbsp;&nbsp;</span></td>
+   <td class="blank">&nbsp;</td>
+   <td class="icon">&nbsp;</td>
+   <td class="icon" onclick='gnuplot.toggle_plot("linkedaxes_1_plot_1")'>&#9312;</td>
+@@ -61,7 +61,6 @@
+   <td class="icon" onclick='gnuplot.toggle_plot("linkedaxes_1_plot_4")'>&#9315;</td>
+   <td class="icon" onclick='gnuplot.toggle_plot("linkedaxes_1_plot_5")'>&#9316;</td>
+   <td class="icon" onclick='gnuplot.toggle_plot("linkedaxes_1_plot_6")'>&#9317;</td>
+-  <td class="icon" onclick='gnuplot.toggle_plot("linkedaxes_1_plot_7")'>&#9318;</td>
+ </tr>
+ 
+ </table>

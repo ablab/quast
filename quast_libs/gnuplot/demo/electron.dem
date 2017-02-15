@@ -1,0 +1,94 @@
+#
+# $Id: electron.dem,v 1.10 2010/01/01 02:06:35 sfeam Exp $
+#
+# Electronics demo
+#
+# Bipolar Transistor (NPN) Mutual Characteristic
+Ie(Vbe)=Ies*exp(Vbe/kT_q)
+Ic(Vbe)=alpha*Ie(Vbe)+Ico
+alpha = 0.99
+Ies = 4e-14
+Ico = 1e-09
+kT_q = 0.025
+set dummy Vbe
+set grid
+set offsets
+unset log
+unset polar
+set samples 160
+set title "Mutual Characteristic of a Transistor"
+set xlabel "Vbe (base emmitter voltage)"
+set xrange [0 : 0.75]
+set ylabel "Ic (collector current)"
+set yrange [0 : 0.005]
+set key box
+set key at .2,.0045
+set format y "%.4f"
+plot Ic(Vbe)
+set format "%g"
+
+pause -1 "Hit return to continue"
+
+# Junction Field Effect Transistor (JFET) Mutual Characteristic
+# drain current above pinch off
+Ida(Vd)=Ido*(1-Vg/Vp)**2
+# drain current below pinch off
+Idb(Vd)=Ido*(2*Vd*(Vg-Vp)-Vd*Vd)/(Vp*Vp)
+# drain current
+Id(Vd)= (Vd>Vg-Vp) ? Ida(Vd) : Idb(Vd)
+# drain current at zero gate voltage
+Ido = 2.5
+# pinch off voltage
+Vp = -1.25
+# gate voltage
+Vg = 0
+set dummy Vd
+unset grid
+unset key
+#set offsets 0, 1, 0, 0
+set title "JFET Mutual Characteristic"
+set xlabel "Drain voltage Vd (V)"
+set xrange [0 : 4]
+set ylabel "Drain current Id (mA)"
+set yrange [0 : 5]
+set rmargin 12
+set label 1 "-0.5 Vp" at 4.1,0.625
+set label 2 "-0.25 Vp" at 4.1,1.4
+set label 3 "0" at 4.1,2.5
+set label 4 "Vg = 0.5 Vp" at 4.1,3.9
+plot Vg=0.5*Vp,Id(Vd),Vg=0.25*Vp,Id(Vd),Vg=0,Id(Vd),Vg=-0.25*Vp,Id(Vd)
+
+pause -1 "Hit return to continue"
+unset label
+unset rmargin
+
+# show off double axes
+
+# amplitude frequency response
+A(jw) = ({0,1}*jw/({0,1}*jw+p1)) * (1/(1+{0,1}*jw/p2))
+p1 = 10
+p2 = 10000
+set dummy jw
+set grid x y2
+set logscale xy
+set log x2
+unset log y2
+set key default
+set key bottom center box
+set title "Amplitude and Phase Frequency Response"
+set xlabel "jw (radians)"
+set xrange [1.1 : 90000.0]
+set ylabel "magnitude of A(jw)"
+set y2label "Phase of A(jw) (degrees)"
+set ytics nomirror tc lt 1
+set y2tics nomirror tc lt 3
+set xtics mirror
+set tics out
+set autoscale  y
+set autoscale y2
+plot abs(A(jw)) lt 1, 180/pi*arg(A(jw)) axes x1y2 lt 3
+
+pause -1 "Hit return to continue"
+
+# undo what we've done
+reset

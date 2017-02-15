@@ -1,0 +1,373 @@
+/* Hello, Emacs, this is -*-C-*-
+ * $Id: sun.trm,v 1.14 2008/04/19 04:07:51 sfeam Exp $
+ *
+ */
+
+/* GNUPLOT - sun.trm */
+
+/*[
+ * Copyright 1990 - 1993, 1998, 2004
+ *
+ * Permission to use, copy, and distribute this software and its
+ * documentation for any purpose with or without fee is hereby granted,
+ * provided that the above copyright notice appear in all copies and
+ * that both that copyright notice and this permission notice appear
+ * in supporting documentation.
+ *
+ * Permission to modify the software is granted, but not the right to
+ * distribute the complete modified source code.  Modifications are to
+ * be distributed as patches to the released version.  Permission to
+ * distribute binaries produced by compiling modified sources is granted,
+ * provided you
+ *   1. distribute the corresponding source modifications from the
+ *    released version in the form of a patch file along with the binaries,
+ *   2. add special version identification to distinguish your version
+ *    in addition to the base release version number,
+ *   3. provide your name and address as the primary contact for the
+ *    support of your modified version, and
+ *   4. retain our contact information in regard to use of the base
+ *    software.
+ * Permission to distribute the released version of the source code along
+ * with corresponding source modifications in the form of a patch file is
+ * granted with same provisions 2 through 4 for binary distributions.
+ *
+ * This software is provided "as is" without express or implied warranty
+ * to the extent permitted by applicable law.
+]*/
+
+/*
+ * This file is included by ../term.c.
+ *
+ * This terminal driver supports:
+ *   SUNview windowing system
+ *
+ * AUTHORS
+ *  Maurice Castro
+ *
+ * send your comments or suggestions to (gnuplot-info@lists.sourceforge.net).
+ *
+ */
+/*
+ * adapted to the new terminal layout by Stefan Bodewig (Dec. 1995)
+ */
+
+#include "driver.h"
+
+#ifdef TERM_REGISTER
+register_term(sun)
+#endif
+
+#ifdef TERM_PROTO
+TERM_PUBLIC void SUN_init __PROTO((void));
+TERM_PUBLIC void SUN_graphics __PROTO((void));
+TERM_PUBLIC void SUN_text __PROTO((void));
+TERM_PUBLIC void SUN_linetype __PROTO((int linetype));
+TERM_PUBLIC void SUN_move __PROTO((unsigned int x, unsigned int y));
+TERM_PUBLIC void SUN_vector __PROTO((unsigned int x, unsigned int y));
+TERM_PUBLIC void SUN_put_text __PROTO((unsigned int x, unsigned int y, const char *str));
+TERM_PUBLIC int SUN_justify_text __PROTO((enum JUSTIFY mode));
+TERM_PUBLIC void SUN_reset __PROTO((void));
+#define SUN_XMAX 600
+#define SUN_YMAX 512
+
+#define SUN_VCHAR (12)		/* default, will be changed */
+#define SUN_HCHAR (8)		/* default, will be changed */
+#define SUN_VTIC (SUN_YMAX/80)
+#define SUN_HTIC (SUN_XMAX/80)
+#endif /* TERM_PROTO */
+
+#ifndef TERM_PROTO_ONLY
+#ifdef TERM_BODY
+#include <suntool/sunview.h>
+#include <suntool/canvas.h>
+#include <suntool/scrollbar.h>
+#include <suntool/panel.h>
+#include <pixrect/pixrect_hs.h>
+
+void sun_setmaskpixel __PROTO((unsigned int x, unsigned int y, unsigned int value));
+void sun_line __PROTO((unsigned int x1, unsigned int x2, unsigned int y1, unsigned int y2));
+static Notify_value local_notice_destroy __PROTO((Frame frame, Destroy_status status));
+
+#define MARGIN 5
+#define MINWIN 128
+
+static Frame frame;
+static Canvas SUN_canvas;
+static Pixwin *pw;
+static struct pixfont *sun_font = NULL;
+
+static enum JUSTIFY sun_justify = LEFT;
+
+static Notify_value local_notice_destroy();
+
+extern Notify_error notify_dispatch();
+
+/* dotted line generator */
+unsigned int sun_value = 1;	/* this can be used for colour */
+unsigned int sun_line_mask = 0xffff;	/* 16 bit mask for dotted lines */
+static unsigned int sun_pattern[] =
+{0xffff, 0x1111,
+ 0xffff, 0x5555, 0x3333, 0x7777, 0x3f3f, 0x0f0f, 0x5f5f};
+int sun_mask_count = 0;
+unsigned int sun_lastx, sun_lasty;	/* last pixel set - used by sun_line */
+
+
+TERM_PUBLIC void
+SUN_init()
+{
+    struct termentry *t = term;
+    struct pr_subregion bound;
+
+    frame = window_create(NULL, FRAME,
+			  FRAME_LABEL, "Gnuplot",
+			  0);
+    notify_interpose_destroy_func(frame, local_notice_destroy);
+    SUN_canvas = window_create(frame, CANVAS,
+			   CANVAS_AUTO_EXPAND, TRUE,
+			   CANVAS_AUTO_SHRINK, TRUE,
+			   CANVAS_MARGIN, MARGIN,
+			   0);
+    notify_do_dispatch();
+    pw = canvas_pixwin(SUN_canvas);
+    window_set(frame, WIN_SHOW, TRUE, 0);
+
+    /* figure out font and rough size */
+    sun_font = pf_default();
+    pf_textbound(&bound, 1, sun_font, "M");
+    t->v_char = bound.size.y;
+    t->h_char = bound.size.x;
+
+    return;
+}
+
+TERM_PUBLIC void
+SUN_graphics()
+{
+    term->xmax = (int) window_get(SUN_canvas, CANVAS_WIDTH);
+    term->ymax = (int) window_get(SUN_canvas, CANVAS_HEIGHT);
+    pw_writebackground(pw, 0, 0, term->xmax, term->ymax, PIX_SRC);
+    notify_dispatch();
+    /* do not let the user make the window too small */
+    if ((term->xmax) < MINWIN) {
+	window_set(frame,
+		   WIN_WIDTH, MINWIN + 2 * MARGIN + 24,
+		   0);
+	notify_dispatch();
+	SUN_graphics();
+    }
+    if ((term->ymax) < MINWIN) {
+	window_set(frame,
+		   WIN_HEIGHT, MINWIN + 2 * MARGIN + 24,
+		   0);
+	notify_dispatch();
+	SUN_graphics();
+    }
+    notify_dispatch();
+    return;
+}
+
+TERM_PUBLIC void
+SUN_text()
+{
+    notify_dispatch();
+    return;			/* enter text from another window!!! */
+}
+
+TERM_PUBLIC void
+SUN_linetype(int linetype)
+{
+    if (linetype < -2)
+	linetype = LT_BLACK;
+    if (linetype >= 7)
+	linetype %= 7;
+    sun_line_mask = sun_pattern[linetype + 2];
+    sun_mask_count = 0;
+}
+
+
+TERM_PUBLIC void
+SUN_move(unsigned int x, unsigned int y)
+{
+    sun_lastx = x;
+    sun_lasty = y;
+    notify_dispatch();
+    return;
+}
+
+TERM_PUBLIC void
+SUN_vector(unsigned int x, unsigned int y)
+{
+    if ((x >= term->xmax) || (y >= term->ymax))
+	return;
+    sun_line(sun_lastx, x, sun_lasty, y);
+    canvas_pixwin(SUN_canvas);
+    notify_dispatch();
+    return;
+}
+
+TERM_PUBLIC void
+SUN_put_text(unsigned int x, unsigned int y, const char *str)
+{
+    struct pr_subregion bound;
+
+    if ((x >= term->xmax) || (y >= term->ymax))
+	return;
+
+    pf_textbound(&bound, strlen(str), sun_font, str);
+    y = term->ymax - 1 - y + bound.size.y / 3;	/* vertical centering */
+
+    switch (sun_justify) {
+    case LEFT:
+	break;
+    case CENTRE:
+	x -= bound.size.x / 2;
+	break;
+    case RIGHT:
+	x -= bound.size.x;
+	break;
+    }
+    pw_text(pw, x, y, PIX_SRC | PIX_DST, 0, str);
+    canvas_pixwin(SUN_canvas);
+    notify_dispatch();
+    return;
+}
+
+
+TERM_PUBLIC int
+SUN_justify_text(enum JUSTIFY mode)
+{
+    sun_justify = mode;
+    return (TRUE);
+}
+
+
+
+
+TERM_PUBLIC void
+SUN_reset()
+{
+
+    term->xmax = SUN_XMAX;
+    term->ymax = SUN_YMAX;
+    window_set(frame, WIN_SHOW, FALSE, 0);
+    return;
+}
+
+
+
+void
+sun_setmaskpixel(unsigned int x, unsigned int y, unsigned int value)
+{
+    /* dotted line generator */
+    if ((sun_line_mask >> sun_mask_count) & (unsigned int) (1)) {
+	pw_put(pw, x, term->ymax - 1 - y, sun_value);
+    }
+    sun_mask_count = (sun_mask_count + 1) % 16;
+    sun_lastx = x;		/* last pixel set with mask */
+    sun_lasty = y;
+}
+
+
+
+
+void
+sun_line(unsigned int x1, unsigned int x2, unsigned int y1, unsigned int y2)
+{
+    int runcount;
+    int dx, dy;
+    int xinc, yinc;
+    unsigned int xplot, yplot;
+
+    runcount = 0;
+    dx = ABS((int) (x1) - (int) (x2));
+    if (x2 > x1)
+	xinc = 1;
+    if (x2 == x1)
+	xinc = 0;
+    if (x2 < x1)
+	xinc = -1;
+    dy = ABS((int) (y1) - (int) (y2));
+    if (y2 > y1)
+	yinc = 1;
+    if (y2 == y1)
+	yinc = 0;
+    if (y2 < y1)
+	yinc = -1;
+    xplot = x1;
+    yplot = y1;
+    if (dx > dy) {
+	/* iterate x */
+	if ((sun_line_mask == 0xffff) ||
+	    ((xplot != sun_lastx) && (yplot != sun_lasty)))
+	    sun_setmaskpixel(xplot, yplot, sun_value);
+	while (xplot != x2) {
+	    xplot += xinc;
+	    runcount += dy;
+	    if (runcount >= (dx - runcount)) {
+		yplot += yinc;
+		runcount -= dx;
+	    }
+	    sun_setmaskpixel(xplot, yplot, sun_value);
+	}
+    } else {
+	/* iterate y */
+	if ((sun_line_mask == 0xffff) ||
+	    ((xplot != sun_lastx) && (yplot != sun_lasty)))
+	    sun_setmaskpixel(xplot, yplot, sun_value);
+	while (yplot != y2) {
+	    yplot += yinc;
+	    runcount += dx;
+	    if (runcount >= (dy - runcount)) {
+		xplot += xinc;
+		runcount -= dy;
+	    }
+	    sun_setmaskpixel(xplot, yplot, sun_value);
+	}
+    }
+}
+
+
+static Notify_value
+local_notice_destroy(Frame frame, Destroy_status status)
+{
+    if (status != DESTROY_CHECKING) {
+	SUN_reset();
+	/* extern TBOOLEAN term_init is gone; is it sufficient just */
+	/* to comment it out? -lh */
+	/* term_init = FALSE; */
+    }
+    return (NOTIFY_DONE);
+}
+
+#endif /* TERM_BODY */
+
+#ifdef TERM_TABLE
+
+TERM_TABLE_START(sun_driver)
+    "sun", "SunView window system",
+    SUN_XMAX, SUN_YMAX, SUN_VCHAR, SUN_HCHAR,
+    SUN_VTIC, SUN_HTIC, options_null, SUN_init, SUN_reset,
+    SUN_text, null_scale, SUN_graphics, SUN_move, SUN_vector,
+    SUN_linetype, SUN_put_text, null_text_angle,
+    SUN_justify_text, line_and_point, do_arrow, set_font_null
+TERM_TABLE_END(sun_driver)
+
+#undef LAST_TERM
+#define LAST_TERM sun_driver
+
+#endif /* TERM_TABLE */
+#endif /* TERM_PROTO_ONLY */
+
+#ifdef TERM_HELP
+START_HELP(sun)
+"1 sun",
+"?commands set terminal sun",
+"?set terminal sun",
+"?set term sun",
+"?terminal sun",
+"?term sun",
+"?sun",
+" The `sun` terminal driver supports the SunView window system.  It has no",
+" options."
+END_HELP(sun)
+#endif

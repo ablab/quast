@@ -1,0 +1,79 @@
+set view 60,75
+unset key
+set hidden3d
+
+# Raw data
+set title "The Valley of the Gnu"
+splot "gnu-valley" u 1:2:3 w linesp
+pause -1 "Hit return to continue"
+
+# Splines
+set title "dgrid3d splines"
+set dgrid3d splines
+splot "gnu-valley" u 1:2:3 w lines
+pause -1 "Hit return to continue"
+
+# QNorm
+set title "dgrid3d 30,30 qnorm 1"
+set dgrid3d 30,30 qnorm 1
+splot "gnu-valley" u 1:2:3 w l
+pause -1 "Hit return to continue"
+
+set title "dgrid3d 30,30 qnorm 2"
+set dgrid3d 30,30 qnorm 2
+splot "gnu-valley" u 1:2:3 w l
+pause -1 "Hit return to continue"
+
+set title "dgrid3d 30,30 qnorm 3"
+set dgrid3d 30,30 qnorm 3
+splot "gnu-valley" u 1:2:3 w l
+pause -1 "Hit return to continue"
+
+set title "dgrid3d 30,30 qnorm 4"
+set dgrid3d 30,30 qnorm 4
+splot "gnu-valley" u 1:2:3 w l
+pause -1 "Hit return to continue"
+
+set title "dgrid3d 30,30 qnorm 5"
+set dgrid3d 30,30 qnorm 5
+splot "gnu-valley" u 1:2:3 w l
+pause -1 "Hit return to continue"
+
+
+# Gauss
+set title "dgrid3d 30,30 gauss 1"
+set dgrid3d 30,30 gauss 1
+splot "gnu-valley" u 1:2:3 w l
+pause -1 "Hit return to continue"
+
+set title "dgrid3d 30,30 gauss .75"
+set dgrid3d 30,30 gauss .75
+splot "gnu-valley" u 1:2:3 w l
+pause -1 "Hit return to continue"
+
+set title "dgrid3d 30,30 gauss .5"
+set dgrid3d 30,30 gauss .5
+splot "gnu-valley" u 1:2:3 w l
+pause -1 "Hit return to continue"
+
+set title "dgrid3d 30,30 gauss .35"
+set dgrid3d 30,30 gauss .35
+splot "gnu-valley" u 1:2:3 w l
+pause -1 "Hit return to continue"
+
+set title "dgrid3d 30,30 gauss .25"
+set dgrid3d 30,30 gauss .25
+splot "gnu-valley" u 1:2:3 w l
+pause -1 "Hit return to continue"
+
+set title "dgrid3d 30,30 gauss .5,.35"
+set dgrid3d 30,30 gauss 0.5,0.35
+splot "gnu-valley" u 1:2:3 w l
+pause -1 "Hit return to continue"
+
+set title "dgrid3d 30,30 gauss .35,.5"
+set dgrid3d 30,30 gauss 0.35,0.5
+splot "gnu-valley" u 1:2:3 w l
+pause -1 "Hit return to continue"
+
+reset

@@ -1,0 +1,548 @@
+/* Hello, Emacs, this is -*-C-*-
+ * $Id: ai.trm,v 1.23 2013/01/26 00:19:21 sfeam Exp $
+ *
+ */
+
+/* GNUPLOT - ai.trm */
+
+/*[
+ * Copyright 1991, 1992, 1993, 1998, 2004
+ *
+ * Permission to use, copy, and distribute this software and its
+ * documentation for any purpose with or without fee is hereby granted,
+ * provided that the above copyright notice appear in all copies and
+ * that both that copyright notice and this permission notice appear
+ * in supporting documentation.
+ *
+ * Permission to modify the software is granted, but not the right to
+ * distribute the complete modified source code.  Modifications are to
+ * be distributed as patches to the released version.  Permission to
+ * distribute binaries produced by compiling modified sources is granted,
+ * provided you
+ *   1. distribute the corresponding source modifications from the
+ *    released version in the form of a patch file along with the binaries,
+ *   2. add special version identification to distinguish your version
+ *    in addition to the base release version number,
+ *   3. provide your name and address as the primary contact for the
+ *    support of your modified version, and
+ *   4. retain our contact information in regard to use of the base
+ *    software.
+ * Permission to distribute the released version of the source code along
+ * with corresponding source modifications in the form of a patch file is
+ * granted with same provisions 2 through 4 for binary distributions.
+ *
+ * This software is provided "as is" without express or implied warranty
+ * to the extent permitted by applicable law.
+]*/
+
+/*
+ * This file is included by ../term.c.
+ *
+ * This terminal driver supports:
+ *     aifm
+ *
+ * AUTHORS
+ *  Ray Ghanbari
+ *
+ * send your comments or suggestions to (gnuplot-info@lists.sourceforge.net).
+ *
+ * The 'aifm' driver produces files editable by Adobe Illustrator 3.0
+ * To change font to Courier and font size to 20pts use
+ * 'set term aifm "Courier" 20'.
+ * To switch to color output use
+ * 'set term aifm color'.
+ */
+
+ /* AIFM driver by Ray Ghanbari, ray@mtl.mit.edu,
+  *   based on PostScript driver by Russell Lang, rjl@monu1.cc.monash.edu.au */
+
+/* Changed to 3.6 terminal format, David C. Schooley, 9/29/95 */
+/* Improved multiple plot support, David C. Schooley, 6/5/95 */
+/* Compatiblity with Illustrator 7.0, David C. Schooley, 6/5/95 */
+/* Font and size support for labels, David C. Schooley, 6/5/95 */
+
+#include "driver.h"
+
+#ifdef TERM_REGISTER
+register_term(aifm)
+#endif
+
+#ifdef TERM_PROTO
+TERM_PUBLIC void AI_init __PROTO((void));
+TERM_PUBLIC void AI_graphics __PROTO((void));
+TERM_PUBLIC void AI_text __PROTO((void));
+TERM_PUBLIC void AI_linetype __PROTO((int linetype));
+TERM_PUBLIC void AI_move __PROTO((unsigned int x, unsigned int y));
+TERM_PUBLIC void AI_vector __PROTO((unsigned int x, unsigned int y));
+TERM_PUBLIC void AI_put_text __PROTO((unsigned int x, unsigned int y, const char *str));
+TERM_PUBLIC int AI_text_angle __PROTO((int ang));
+TERM_PUBLIC void AI_reset __PROTO((void));
+TERM_PUBLIC void AI_options __PROTO((void));
+TERM_PUBLIC int AI_justify_text __PROTO((enum JUSTIFY mode));
+TERM_PUBLIC void AI_suspend __PROTO((void));
+TERM_PUBLIC void AI_resume __PROTO((void));
+TERM_PUBLIC int AI_set_font __PROTO((const char *font));
+
+#define AI_XOFF	50		/* page offset in pts */
+#define AI_YOFF	50
+
+#define AI_XMAX 5000
+#define AI_YMAX 3500
+
+#define AI_XLAST (AI_XMAX - 1)
+#define AI_YLAST (AI_YMAX - 1)
+
+#define AI_VTIC (AI_YMAX/80)
+#define AI_HTIC (AI_YMAX/80)
+
+#define AI_SC (10.0)		/* scale is 1pt = 10 units */
+#define AI_LW (0.5*AI_SC)	/* linewidth = 0.5 pts */
+
+#define AI_VCHAR (14*AI_SC)	/* default is 14 point characters */
+#define AI_HCHAR (14*AI_SC*6/10)
+
+#endif /* TERM_PROTO */
+
+
+#ifndef TERM_PROTO_ONLY
+#ifdef TERM_BODY
+
+enum AI_id { AI_DEFAULT, AI_MONOCHROME, AI_COLOUR, AI_OTHER };
+
+static struct gen_table AI_opts[] =
+{
+    { "d$efault", AI_DEFAULT },
+    { "m$onochrome", AI_MONOCHROME },
+    { "c$olor", AI_COLOUR },
+    { "c$olour", AI_COLOUR },
+    { NULL, AI_OTHER }
+};
+
+#define DEFAULT_FONT "Times-Roman"
+
+/* name of font */
+static char ai_font[MAX_ID_LEN + 1] = DEFAULT_FONT;
+
+/* size of font in pts */
+static int ai_fontsize = 14;
+
+/* name of font */
+static char ai_oldfont[MAX_ID_LEN + 1] = DEFAULT_FONT;
+
+/* size of font in pts */
+static int ai_oldfontsize = 14;
+
+static TBOOLEAN ai_color = FALSE;
+static TBOOLEAN ai_stroke = FALSE;
+static int ai_page = 0;		/* page count */
+static int ai_path_count = 0;		/* count of lines in path */
+static int ai_ang = 0;			/* text angle */
+static int ai_subgroup_level = 0;	/* depth of sub-groups */
+static int ai_multiplot_group = 0;	/* group for multiplot */
+static enum JUSTIFY ai_justify = LEFT;	/* text is flush left */
+
+
+TERM_PUBLIC void
+AI_options()
+{
+    while (!END_OF_COMMAND) {
+        switch(lookup_table(&AI_opts[0],c_token)) {
+	case AI_DEFAULT:
+	    c_token++;
+	    ai_color = FALSE;
+	    strncpy(ai_font,DEFAULT_FONT,sizeof(ai_font));
+	    ai_fontsize = 14;
+	    strncpy(ai_oldfont,DEFAULT_FONT,sizeof(ai_oldfont));
+	    ai_oldfontsize = 14;
+	    break;
+	case AI_MONOCHROME:
+	    c_token++;
+	    ai_color = FALSE;
+	    break;
+	case AI_COLOUR:
+	    c_token++;
+	    ai_color = TRUE;
+	    break;
+	case AI_OTHER:
+	default:
+	    if (isstring(c_token)) {
+		char *font = try_to_get_string();
+		strcpy(ai_font, font);
+		strcpy(ai_oldfont, font);
+		free(font);
+	    } else { /* is a number */
+		/* We have font size specified */
+		struct value a;
+		ai_fontsize = (int) real(const_express(&a));
+		ai_oldfontsize = ai_fontsize;
+		term->v_char = (unsigned int) (ai_fontsize * AI_SC);
+		term->h_char = (unsigned int) (ai_fontsize * AI_SC * 6 / 10);
+ 	    }
+	    break;
+        }
+    }
+
+    sprintf(term_options, "%s \"%s\" %d",
+	    ai_color ? "color" : "monochrome", ai_font, ai_fontsize);
+}
+
+
+TERM_PUBLIC
+void AI_init()
+{
+    ai_page = 0;
+
+    fprintf(gpoutfile, "%%!PS-Adobe-2.0 EPSF-1.2\n\
+%%%%Creator: Adobe Illustrator(TM) 3.2\n\
+%%%%TrueCreator: gnuplot %s patchlevel %s ai terminal\n\
+%%%%BoundingBox: %d %d %d %d\n\
+%%%%Template:\n\
+%%%%EndComments\n\
+%%%%EndProlog\n",
+	    gnuplot_version, gnuplot_patchlevel,
+	    AI_XOFF, AI_YOFF,
+	    (int) ((AI_XMAX) / AI_SC + 0.5 + AI_XOFF),
+	    (int) ((AI_YMAX) / AI_SC + 0.5 + AI_YOFF));
+}
+
+
+TERM_PUBLIC void
+AI_graphics()
+{
+    ai_page++;
+/*	fprintf(gpoutfile,"%%%%Page: %d %d\n",ai_page,ai_page);*/
+    fputs("\
+0 G\n\
+1 j\n\
+1 J\n\
+u\n", gpoutfile);
+    ai_path_count = 0;
+    ai_stroke = FALSE;
+}
+
+
+TERM_PUBLIC void
+AI_text()
+{
+    if (ai_stroke) {
+	fputs("S\n", gpoutfile);
+	ai_stroke = FALSE;
+    }
+    while (ai_subgroup_level) {
+	fputs("U\n", gpoutfile);
+	ai_subgroup_level--;
+    }
+    fputs("U\n", gpoutfile);
+    ai_path_count = 0;
+    ai_multiplot_group = 0;
+}
+
+
+TERM_PUBLIC void
+AI_reset()
+{
+    fputs("%%Trailer\n", gpoutfile);
+/*	fprintf(gpoutfile,"%%%%Pages: %d\n",ai_page);*/
+}
+
+
+TERM_PUBLIC void
+AI_linetype(int linetype)
+{
+    if (ai_stroke) {
+	fputs("S\n", gpoutfile);
+	ai_stroke = FALSE;
+    }
+    if (ai_subgroup_level) {
+	fputs("U\n", gpoutfile);
+	ai_subgroup_level--;
+    }
+    if (linetype == LT_BLACK && multiplot) {
+	/* for each new plot, line_type gets called twice with a value of LT_BLACK.
+	   It gets called once for the border and again for the tics.
+	   This code will need to be changed if gnuplot's behavior changes.
+	 */
+	switch (ai_multiplot_group) {
+	case 0:
+	    fputs("u\n", gpoutfile);
+	    ai_subgroup_level++;
+	    ai_multiplot_group = 1;
+	    break;
+	case 1:
+	    ai_multiplot_group = 2;
+	    break;
+	case 2:
+	    ai_multiplot_group = 1;
+	    fputs("U\nu\n", gpoutfile);
+	    break;
+	}
+    }
+    if (linetype == LT_BLACK && !multiplot) {
+	if (ai_multiplot_group) {
+	    fputs("U\n", gpoutfile);
+	    ai_subgroup_level--;
+	    ai_multiplot_group = 0;
+	}
+    }
+    fputs("u\n", gpoutfile);
+    ai_subgroup_level++;
+
+    switch (linetype) {
+    case LT_BLACK:
+	fprintf(gpoutfile, "%.2f w\n", AI_LW / AI_SC * 2.0);
+	if (ai_color) {
+	    fputs("0 0 0 1 K\n", gpoutfile);
+	} else {
+	    fputs("[] 0 d\n", gpoutfile);
+	}
+	break;
+
+    case LT_AXIS:
+	fprintf(gpoutfile, "%.2f w\n", AI_LW / AI_SC / 2.0);
+	if (ai_color) {
+	    fputs("0 0 0 1 K\n", gpoutfile);
+	} else {
+	    fputs("[1 2] 0 d\n", gpoutfile);
+	}
+	break;
+
+    case 0:
+	fprintf(gpoutfile, "%.2f w\n", AI_LW / AI_SC);
+	if (ai_color) {
+	    fputs("1 0 1 0 K\n", gpoutfile);
+	} else {
+	    fputs("[] 0 d\n", gpoutfile);
+	}
+	break;
+
+    case 1:
+	fprintf(gpoutfile, "%.2f w\n", AI_LW / AI_SC);
+	if (ai_color) {
+	    fputs("1 1 0 0 K\n", gpoutfile);
+	} else {
+	    fputs("[4 2] 0 d\n", gpoutfile);
+	}
+	break;
+
+    case 2:
+	fprintf(gpoutfile, "%.2f w\n", AI_LW / AI_SC);
+	if (ai_color) {
+	    fputs("0 1 1 0 K\n", gpoutfile);
+	} else {
+	    fputs("[2 3] 0 d\n", gpoutfile);
+	}
+	break;
+
+    case 3:
+	fprintf(gpoutfile, "%.2f w\n", AI_LW / AI_SC);
+	if (ai_color) {
+	    fputs("0 1 0 0 K\n", gpoutfile);
+	} else {
+	    fputs("[1 1.5] 0 d\n", gpoutfile);
+	}
+	break;
+
+    case 4:
+	fprintf(gpoutfile, "%f w\n", AI_LW / AI_SC);
+	if (ai_color) {
+	    fputs("1 0 0 0 K\n", gpoutfile);
+	} else {
+	    fputs("[5 2 1 2] 0 d\n", gpoutfile);
+	}
+	break;
+
+    case 5:
+	fprintf(gpoutfile, "%.2f w\n", AI_LW / AI_SC);
+	if (ai_color) {
+	    fputs("0 0 1 0 K\n", gpoutfile);
+	} else {
+	    fputs("[4 3 1 3] 0 d\n", gpoutfile);
+	}
+	break;
+
+    case 6:
+	fprintf(gpoutfile, "%.2f w\n", AI_LW / AI_SC);
+	if (ai_color) {
+	    fputs("0 0 0 1 K\n", gpoutfile);
+	} else {
+	    fputs("[2 2 2 4] 0 d\n", gpoutfile);
+	}
+	break;
+
+    case 7:
+	fprintf(gpoutfile, "%.2f w\n", AI_LW / AI_SC);
+	if (ai_color) {
+	    fputs("0 0.7 1 0 K\n", gpoutfile);
+	} else {
+	    fputs("[2 2 2 2 2 4] 0 d\n", gpoutfile);
+	}
+	break;
+
+    case 8:
+	fprintf(gpoutfile, "%.2f w\n", AI_LW / AI_SC);
+	if (ai_color) {
+	    fputs("0.5 0.5 0.5 0 K\n", gpoutfile);
+	} else {
+	    fputs("[2 2 2 2 2 2 2 4] 0 d\n", gpoutfile);
+	}
+	break;
+    }
+
+    ai_path_count = 0;
+}
+
+
+TERM_PUBLIC void
+AI_move(unsigned int x, unsigned int y)
+{
+    if (ai_stroke)
+	fputs("S\n", gpoutfile);
+    fprintf(gpoutfile, "%.2f %.2f m\n", x / AI_SC, y / AI_SC);
+    ai_path_count += 1;
+    ai_stroke = TRUE;
+}
+
+
+TERM_PUBLIC void
+AI_vector(unsigned int x, unsigned int y)
+{
+    fprintf(gpoutfile, "%.2f %.2f l\n", x / AI_SC, y / AI_SC);
+    ai_path_count += 1;
+    ai_stroke = TRUE;
+    if (ai_path_count >= 400) {
+	fprintf(gpoutfile, "S\n%.2f %.2f m\n", x / AI_SC, y / AI_SC);
+	ai_path_count = 0;
+    }
+}
+
+
+TERM_PUBLIC void
+AI_put_text(unsigned int x, unsigned int y, const char *str)
+{
+    char ch;
+    if (ai_stroke) {
+	fputs("S\n", gpoutfile);
+	ai_stroke = FALSE;
+    }
+    switch (ai_justify) {
+    case LEFT:
+	fprintf(gpoutfile, "/_%s %d 0 0 0 z\n", ai_font, ai_fontsize);
+	break;
+    case CENTRE:
+	fprintf(gpoutfile, "/_%s %d 0 0 1 z\n", ai_font, ai_fontsize);
+	break;
+    case RIGHT:
+	fprintf(gpoutfile, "/_%s %d 0 0 2 z\n", ai_font, ai_fontsize);
+	break;
+    }
+    if (ai_ang == 0) {
+	fprintf(gpoutfile, "[ 1 0 0 1 %.2f %.2f] e\n",
+		x / AI_SC, y / AI_SC - ai_fontsize / 3.0);
+    } else {
+	fprintf(gpoutfile, "[ 0 1 -1 0 %.2f %.2f] e\n",
+		x / AI_SC - ai_fontsize / 3.0, y / AI_SC);
+    }
+
+    putc('(', gpoutfile);
+    ch = *str++;
+    while (ch != '\0') {
+	if ((ch == '(') || (ch == ')') || (ch == '\\'))
+	    putc('\\', gpoutfile);
+	putc(ch, gpoutfile);
+	ch = *str++;
+    }
+    fputs(") t\nT\n", gpoutfile);
+    ai_path_count = 0;
+}
+
+TERM_PUBLIC int
+AI_text_angle(int ang)
+{
+    ai_ang = ang;
+    return TRUE;
+}
+
+TERM_PUBLIC int
+AI_justify_text(enum JUSTIFY mode)
+{
+    ai_justify = mode;
+    return TRUE;
+}
+
+TERM_PUBLIC int
+AI_set_font(const char *font)
+{
+    char name[32];
+    size_t sep;
+    int size;
+
+    if (font && *font) {
+	sep = strcspn(font, ",");
+	assert(sep < sizeof(name));
+	strncpy(name, font, sep);
+	name[sep] = '\0';
+	size = ai_fontsize;
+	sscanf(&(font[sep + 1]), "%d", &size);
+	if (*name)
+	    strcpy(ai_font, name);
+	if (size)
+	    ai_fontsize = size;
+    } else {
+	ai_fontsize = ai_oldfontsize;
+	strcpy(ai_font, ai_oldfont);
+    }
+    return TRUE;
+}
+
+
+TERM_PUBLIC void
+AI_suspend()
+{
+}
+
+TERM_PUBLIC void
+AI_resume()
+{
+}
+
+
+#endif
+
+
+#ifdef TERM_TABLE
+
+TERM_TABLE_START(aifm_driver)
+    "aifm", "Adobe Illustrator 3.0 Format",
+    AI_XMAX, AI_YMAX, AI_VCHAR, AI_HCHAR,
+    AI_VTIC, AI_HTIC, AI_options, AI_init, AI_reset,
+    AI_text, null_scale, AI_graphics, AI_move, AI_vector,
+    AI_linetype, AI_put_text, AI_text_angle,
+    AI_justify_text, do_point, do_arrow, AI_set_font,
+    NULL, 0, AI_suspend, AI_resume
+TERM_TABLE_END(aifm_driver)
+
+#undef LAST_TERM
+#define LAST_TERM aifm_driver
+
+#endif /* TERM_TABLE */
+#endif /* TERM_PROTO_ONLY */
+
+#ifdef TERM_HELP
+START_HELP(aifm)
+"1 aifm",
+"?commands set terminal aifm",
+"?set terminal aifm",
+"?set term aifm",
+"?terminal aifm",
+"?term aifm",
+"?aifm",
+"",
+" `NOTE: Outdated terminal`, originally written for Adobe Illustrator 3.0+.",
+" Since Adobe Illustrator understands PostScript level 1 commands directly,",
+" you should use `set terminal post level1` instead.",
+"",
+" Syntax:",
+"       set terminal aifm {color|monochrome} {\"<fontname>\"} {<fontsize>}",
+""
+END_HELP(ai)
+#endif /* TERM_HELP */

@@ -1,0 +1,25 @@
+#
+# Demo of color usage for principle plot elements
+#
+
+# Set canvas to a parchment color
+set obj 1 rectangle from screen 0,0 to screen 1,1 behind fc rgb "#e7dfcf"
+
+# Set plot area to light gray
+set obj 2 rectangle from graph 0,0 to graph 1,1 behind fc rgb "#dfdfdf"
+
+# border and tics in blue
+set border linetype 3 linewidth 3
+
+# key box and title in magenta, 
+set key box lt 4 title "Key Box"
+
+# Apply the plot linetype color to the corresponding key entry title
+set key textcolor rgb variable
+set key left
+
+set title "Set new colors for principle plot elements"
+plot sin(x)/x lw 2, sin(x/2)/(x/2) lw 2 lt 4
+
+pause -1 "Hit return to continue"
+reset

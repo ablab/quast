@@ -1,0 +1,333 @@
+#
+# $Id: all.dem,v 1.60.2.1 2016/08/04 04:27:44 sfeam Exp $
+#
+# Executes all demos (OK, MOST demos) in this directory.
+# This serves as a series of unit tests for non-interactive capabilities.
+#
+
+print "******************** file simple.dem ********************"
+load "simple.dem"
+reset
+
+print "******************** file controls.dem ********************"
+load "controls.dem"
+reset
+
+print "******************** file electron.dem ********************"
+load "electron.dem"
+reset
+
+print "******************** file using.dem ********************"
+load "using.dem"
+reset
+
+print "******************** file fillstyle.dem ********************"
+load "fillstyle.dem"
+reset
+
+print "******************** file fillcvrs.dem ********************"
+load "fillcrvs.dem"
+load "fillbetween.dem"
+reset
+
+print "******************** file candlesticks.dem ********************"
+load "candlesticks.dem"
+reset
+
+print "******************** file autoscale.dem ********************"
+load "autoscale.dem"
+reset
+
+print "******************** file mgr.dem ********************"
+load "mgr.dem"
+reset
+
+print "******************** file fit.dem ********************"
+set fit quiet
+load "fit.dem"
+reset
+
+print "******************** file named_var.dem ********************"
+load "named_var.dem"
+reset
+
+print "******************** file param.dem ********************"
+load "param.dem"
+reset
+
+print "******************** file piecewise.dem ********************"
+load "piecewise.dem"
+reset
+
+print "******************** file polar.dem ********************"
+load "polar.dem"
+reset
+
+print "******************** file poldat.dem ********************"
+load "poldat.dem"
+reset
+
+print "******************** file boxplot.dem ********************"
+load "boxplot.dem"
+reset
+
+print "******************** file multiplt.dem ********************"
+load "multiplt.dem"
+load "layout.dem"
+reset
+
+print "******************** file surface1.dem ********************"
+load "surface1.dem"
+reset
+
+print "******************** file discrete.dem ********************"
+load "discrete.dem"
+reset
+
+print "******************** file hidden.dem ********************"
+load "hidden.dem"
+reset
+
+print "******************** file dgrid3d.dem ********************"
+load "dgrid3d.dem"
+reset
+
+print "******************** file world.dem ********************"
+load "world.dem"
+load "world2.dem"
+reset
+
+print "******************** file prob.dem ********************"
+load "prob.dem"
+reset
+
+print "******************** file prob2.dem ********************"
+load "prob2.dem"
+reset
+
+print "******************** file random.dem ********************"
+load "random.dem"
+reset
+
+print "******************** file rugplot.dem ********************"
+load "rugplot.dem"
+reset
+
+print "******************** file smooth.dem ********************"
+load "smooth.dem"
+reset
+
+print "******************** file spline.dem ********************"
+load "spline.dem"
+reset
+
+print "******************** file binary.dem ********************"
+load "binary.dem"
+reset
+
+print "******************** file steps.dem ********************"
+load "steps.dem"
+reset
+
+print "******************** file scatter.dem ********************"
+load "scatter.dem"
+reset
+
+print "******************** file singulr.dem ********************"
+load "singulr.dem"
+reset
+
+print "******************** file airfoil.dem ********************"
+load "airfoil.dem"
+reset
+
+print "******************** file surface2.dem ********************"
+load "surface2.dem"
+reset
+
+print "******************** file contours.dem ********************"
+load "contours.dem"
+reset
+
+print "******************** file multimsh.dem ********************"
+load "multimsh.dem"
+reset
+
+print "******************** file bivariat.dem ********************"
+load "bivariat.dem"
+reset
+
+print "******************** Time/Date data ********************"
+load "timedat.dem"
+load "gantt.dem"
+reset
+
+print "******************** file animate.dem ********************"
+load "animate.dem"
+reset
+
+print "********************** file rainbow.dem *********************"
+load "rainbow.dem"
+reset
+
+print "********************** file rgb_variable.dem *********************"
+load "rgb_variable.dem"
+reset
+
+print "********************** file varcolor.dem *********************"
+load "varcolor.dem"
+reset
+
+print "********************** file pm3d.dem *********************"
+load "pm3d.dem"
+reset
+
+print "********************** file pm3dcolors.dem *********************"
+load "pm3dcolors.dem"
+reset
+
+print "********************** file complex_trig.dem *********************"
+load "complex_trig.dem"
+reset
+
+print "********************** file heatmaps.dem *********************"
+load "heatmaps.dem"
+reset
+
+print "********************** file pm3dgamma.dem *********************"
+load "pm3dgamma.dem"
+reset
+
+print "********************** file hidden2.dem ***********************"
+load "hidden2.dem"
+reset
+
+print "********************** file textcolor.dem *********************"
+load "textcolor.dem"
+reset
+
+print "********************** file textrotate.dem *********************"
+load "textrotate.dem"
+reset
+
+print "********************** enhanced text *********************"
+if (GPVAL_TERM eq "postscript") {
+    load "enhancedtext.dem"
+} else {
+    load "enhanced_utf8.dem"
+}
+reset
+
+print "********************** file arrowstyle.dem *********************"
+load "arrowstyle.dem"
+reset
+
+print "********************** file dashtypes.dem *********************"
+load "dashtypes.dem"
+reset
+
+print "********************** file vector.dem *********************"
+load "vector.dem"
+reset
+
+print "********************** file tics.dem *********************"
+load "tics.dem"
+reset
+
+print "********************** file callargs.dem *********************"
+load "callargs.dem"
+reset
+
+print "********************** file datastrings.dem *********************"
+load "datastrings.dem"
+reset
+
+print "********************** file hypertext.dem *********************"
+load "hypertext.dem"
+reset
+
+print "********************** file rotate_labels.dem *****************"
+load "rotate_labels.dem"
+reset
+
+print "********************** file stats.dem *********************"
+load "stats.dem"
+reset
+
+print "********************** file iterate.dem *********************"
+load "iterate.dem"
+reset
+
+print "********************** file histograms.dem *********************"
+load "histograms.dem"
+load "histograms2.dem"
+reset
+
+print "**********************    Image formats    *********************"
+load "image.dem"
+load "image2.dem"
+load "rgbalpha.dem"
+load "imageNaN.dem"
+load "barchart_art.dem"
+reset
+
+print "********************** file stringvar.dem *********************"
+load "stringvar.dem"
+reset
+
+print "********************** file running_avg.dem *********************"
+load "running_avg.dem"
+reset
+
+print "********************** file pointsize.dem *********************"
+load "pointsize.dem"
+reset
+
+print "********************** file circles.dem *********************"
+load "circles.dem"
+reset
+
+print "********************** file ellipses_style.dem *********************"
+load "ellipses_style.dem"
+reset
+
+print "********************** file key.dem *********************"
+load "key.dem"
+reset
+
+print "********************** file nokey.dem *********************"
+load "nokey.dem"
+reset
+
+print "********************** file borders.dem *********************"
+load "borders.dem"
+reset
+
+print "********************** file margins.dem *********************"
+load "margins.dem"
+reset
+
+print "********************** file rectangle.dem *********************"
+load "rectangle.dem"
+reset
+
+print "********************** file clipobject.dem *********************"
+load "clipobject.dem"
+reset
+
+print "********************** file approximate.dem *********************"
+load "approximate.dem"
+reset
+
+print "********************** file parallel.dem *********************"
+load "parallel.dem"
+reset
+
+print "********************** file transparent.dem *********************"
+load "transparent.dem"
+reset
+
+print "********************** file transparent_solids.dem *********************"
+load "transparent_solids.dem"
+pause 5
+reset

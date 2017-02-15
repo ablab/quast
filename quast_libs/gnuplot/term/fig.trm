@@ -1,0 +1,1998 @@
+/* Hello, Emacs, this is -*-C-*-
+ * $Id: fig.trm,v 1.69.4.2 2015/03/28 16:52:19 sfeam Exp $
+ */
+
+/* GNUPLOT - fig.trm */
+
+/*[
+ * Copyright 1990 - 1993, 1998, 2004
+ *
+ * Permission to use, copy, and distribute this software and its
+ * documentation for any purpose with or without fee is hereby granted,
+ * provided that the above copyright notice appear in all copies and
+ * that both that copyright notice and this permission notice appear
+ * in supporting documentation.
+ *
+ * Permission to modify the software is granted, but not the right to
+ * distribute the complete modified source code.  Modifications are to
+ * be distributed as patches to the released version.  Permission to
+ * distribute binaries produced by compiling modified sources is granted,
+ * provided you
+ *   1. distribute the corresponding source modifications from the
+ *    released version in the form of a patch file along with the binaries,
+ *   2. add special version identification to distinguish your version
+ *    in addition to the base release version number,
+ *   3. provide your name and address as the primary contact for the
+ *    support of your modified version, and
+ *   4. retain our contact information in regard to use of the base
+ *    software.
+ * Permission to distribute the released version of the source code along
+ * with corresponding source modifications in the form of a patch file is
+ * granted with same provisions 2 through 4 for binary distributions.
+ *
+ * This software is provided "as is" without express or implied warranty
+ * to the extent permitted by applicable law.
+]*/
+
+/*
+ * This file is included by ../term.c.
+ *
+ * This terminal driver supports:
+ *  Fig graphics language
+ *
+ * AUTHORS
+ *  Micah Beck, David Kotz
+ *
+ * send your comments or suggestions to (gnuplot-info@lists.sourceforge.net).
+ *
+ */
+
+/*
+ * Original for Fig code output by Micah Beck, 1989
+ * Department of Computer Science, Cornell University
+ * Updated by David Kotz for gnuplot 2.0
+ * More efficient output by Ian Dall
+ * Updated to FIG 2.1 (with color) format by Vivek Khera
+ * Updated to FIG 3.1 (higher resolution) format by Ian MacPhedran, Jan 1995
+ * Updated to conform to newterm format Ian MacPhedran, Apr 1995
+ * Point-count option joachim.selinger@ins.uni-stuttgart.de (JFS) Feb  9 1996
+ * More options (portrait/landscape, metric/inches, size, fontsize, thickness)
+ * plus symbols and depth/thickness by bernlohr@eu1.mpi-hd.mpg.de (KB) Aug 15 1996
+ * Added PM3D functionality Ian MacPhedran, April 15 1999
+ * Take into account 'set palette maxcolors' Petr Mikulik, June 11 2002
+ * Don't reset options when 'set term fig <new options>', Petr Mikulik, Aug 24 2002
+ * Ethan A Merritt - May 2008:
+ *   Bring into line with other terminals for point types, size syntax, font spec
+ * Ethan A Merritt - Mar 2015:
+ *   Load user-defined RGB linetype colors and gnuplot's set of named RGB colors
+ */
+
+#include "driver.h"
+
+#ifdef TERM_REGISTER
+register_term(fig)
+#endif /* TERM_REGISTER */
+
+#ifdef TERM_PROTO
+TERM_PUBLIC void FIG_options __PROTO((void));
+TERM_PUBLIC void FIG_init __PROTO((void));
+TERM_PUBLIC void FIG_graphics __PROTO((void));
+TERM_PUBLIC void FIG_text __PROTO((void));
+TERM_PUBLIC void FIG_linetype __PROTO((int linetype));
+TERM_PUBLIC void FIG_move __PROTO((unsigned int x, unsigned int y));
+TERM_PUBLIC void FIG_vector __PROTO((unsigned int ux, unsigned int uy));
+TERM_PUBLIC void FIG_arrow __PROTO((unsigned int sx, unsigned int sy, unsigned int ex, unsigned int ey, int head));
+TERM_PUBLIC void FIG_put_text __PROTO((unsigned int x, unsigned int y, const char *str));
+TERM_PUBLIC int FIG_justify_text __PROTO((enum JUSTIFY mode));
+TERM_PUBLIC int FIG_text_angle __PROTO((int ang));
+TERM_PUBLIC void FIG_pointsize __PROTO((double arg_pointsize));
+TERM_PUBLIC void FIG_linewidth __PROTO((double linewidth));
+TERM_PUBLIC void FIG_reset __PROTO((void));
+TERM_PUBLIC void FIG_lpoint __PROTO((unsigned int x, unsigned int y, int number));
+TERM_PUBLIC void FIG_boxfill __PROTO((int style, unsigned int x, unsigned int y, unsigned int w, unsigned int h));
+TERM_PUBLIC int FIG_make_palette (t_sm_palette *);
+/* TERM_PUBLIC void FIG_previous_palette (void); */
+TERM_PUBLIC void FIG_set_color (t_colorspec *);
+TERM_PUBLIC void FIG_filled_polygon (int, gpiPoint *);
+TERM_PUBLIC void FIG_layer __PROTO((t_termlayer syncpoint));
+
+#define GOT_FIG_PROTO
+#endif /* TERM_PROTO */
+
+#ifndef TERM_PROTO_ONLY
+#ifdef TERM_BODY
+
+#include "object.h"		/* modified from the XFig distribution */
+#define FIG_DEFAULT DEFAULT
+#define FIG_ROMAN_FONT (0)	/* actually, the default font */
+
+#if METRIC
+# define INCH FALSE
+#else
+# define INCH TRUE
+#endif
+
+/* These should not be defined elsewhere - ACZ */
+/* This is now 1200 per inch */
+#define FIG_IRES        (1200)
+/* This is now 450 per cm */
+#define FIG_MRES        (450)
+
+#define FIG_COORD_SYS   2
+#define FIG_ORIENT (FIG_portrait?"Portrait":"Landscape")
+/* Could be "Portrait" */
+#define FIG_JUST        "Center"
+/* Could be "Flush Left" */
+#define FIG_UNIT (FIG_inches?"Inches":"Metric")
+/* Could be "Inches" */
+#define FIG_PAPER       (FIG_inches ? "Letter" : "A4")
+#define FIG_MAGNIFICATION  100.0
+#define FIG_MULTIPAGE   "Single"
+/* Could be "Multiple" */
+#define FIG_TRANSCOLOR  -2
+/* none: -2; background: -1; 0..31: foreground colors */
+/* This could probably be dropped with the support of GIFs. */
+#define FIG_TRUERES (FIG_inches ? FIG_IRES : FIG_MRES) /* ACZ */
+#define FIG_DEFAULTVERSION "3.2"
+
+#define FIG_HTIC(inch)  ((inch) ? (5*FIG_IRES)/80 : (15*FIG_MRES)/100)
+#define FIG_VTIC(inch)  ((inch) ? (5*FIG_IRES)/80 : (15*FIG_MRES)/100)
+#define FIG_FONT_S      (10)	/* size in points */
+#define FIG_MAX_POINTS  99999L	/* almost infinite ;-) */
+
+/* height of font in pixels: */
+#define FIG_to_pixel_v(inch,s) (((inch) ? (s)*FIG_IRES : (s)*FIG_MRES*2.54) / 72 * 3/4)
+/* This is fudged to enlarge the drawing area, but gives fairly good results */
+/* this is a guess at the width: */
+#define FIG_to_pixel_h(inch,s) (FIG_to_pixel_v(inch,s)*6/10)
+
+#define FIG_VCHAR       FIG_to_pixel_v(INCH,FIG_FONT_S)	/* just for default, */
+#define FIG_HCHAR       FIG_to_pixel_h(INCH,FIG_FONT_S)	/* not really used   */
+
+/* Text flags (ULIG) */
+enum FIG_TEXT_STYLEBITS {
+    FIG_TEXT_RIGID      = 1<<0,
+    FIG_TEXT_SPECIAL    = 1<<1,
+    FIG_TEXT_POSTSCRIPT = 1<<2,
+    FIG_TEXT_HIDDEN     = 1<<3
+};
+#define FIG_TEXT_NORMAL      FIG_TEXT_POSTSCRIPT
+
+enum FIG_poly_stat {
+    FIG_poly_new, FIG_poly_part
+};
+
+static int FIG_posx;
+static int FIG_posy;
+static long FIG_poly_vec_cnt;
+static int FIG_depth = 10;
+static int FIG_linedepth = 10;
+static int FIG_thickness = 1;
+static int FIG_default_thickness = 1;
+static double FIG_current_pointsize = 1.;
+static double FIG_current_linewidth = 1.;
+
+/* Maximum number of points per POLYLINE.
+   Default 1000 (hardcoded in help section as well) */
+static int FIG_poly_vec_max = 999;	/* JFS */
+
+static enum FIG_poly_stat FIG_polyvec_stat;
+
+/* up to 128 slots used for user-defined RGB colors gnuplot's named colors */
+/* 128 slots for a palette */
+static unsigned int FIG_RGB_colors[256];
+
+/* 5 inches wide by 3 inches high */
+#define FIG_XMAX(inch) ((inch) ? 5*FIG_IRES : 12*FIG_MRES)
+#define FIG_YMAX(inch) ((inch) ? 3*FIG_IRES :  8*FIG_MRES)
+
+#define FIG_XOFF(inch) ((inch) ? FIG_IRES : 2*FIG_MRES)
+#define FIG_YOFF(inch) ((inch) ? FIG_IRES : 2*FIG_MRES)
+
+
+#define BFIG_HTIC(inch) ((inch) ? (7*FIG_IRES)/80 : (20*FIG_MRES)/100)
+#define BFIG_VTIC(inch) ((inch) ? (7*FIG_IRES)/80 : (20*FIG_MRES)/100)
+#define BFIG_FONT_S     (16)	/* size in points */
+#define BFIG_VCHAR      FIG_to_pixel_v(INCH,BFIG_FONT_S)  /* height in pixels of font */
+#define BFIG_HCHAR      FIG_to_pixel_h(INCH,BFIG_FONT_S)  /* this is a guess at the width */
+
+static F_point *FIG_points = NULL;	/* Array for the collection of points for
+					   POLYLINE, allocated on demand. */
+static F_line FIG_line;
+
+/* 8 inches wide by 5 inches high */
+#define BFIG_XMAX(inch) ((inch) ? 8*FIG_IRES : 20*FIG_MRES)
+#define BFIG_YMAX(inch) ((inch) ? 5*FIG_IRES : 15*FIG_MRES)
+
+#define BFIG_XOFF(inch) ((inch) ? FIG_IRES : 2*FIG_MRES)
+#define BFIG_YOFF(inch) ((inch) ? FIG_IRES : 2*FIG_MRES)
+
+
+static int FIG_type;		/* negative types use real lines */
+static float FIG_spacing;	/* length of dash or dot spacing */
+static int FIG_justify;		/* Fig justification T_*_JUSTIFIED */
+static float FIG_angle;		/* Fig text angle (in radians) */
+static int FIG_use_color = FALSE;	/* do we use color or not? */
+static int FIG_is_big = FALSE;	/* big plot ? */
+static int FIG_color = DEFAULT;	/* which color to use */
+static int FIG_xoff = FIG_XOFF(INCH);
+static int FIG_yoff = FIG_YOFF(INCH);
+static int FIG_font_id = FIG_ROMAN_FONT;
+static int FIG_font_s = FIG_FONT_S;
+static int FIG_portrait = FALSE;
+static int FIG_inches = INCH;
+static int FIG_text_flags = FIG_TEXT_NORMAL;    /* whether text is special or hidden etc. */
+static char FIG_version[MAX_ID_LEN+1] = FIG_DEFAULTVERSION;  /* file format version */
+static int FIG_solid = FALSE;                   /* dashed lines or not */
+static int FIG_palette_set = FALSE;	/* PM3D Palette Set ? */
+static int FIG_palette_size = 128;	/* Number of colours in palette */
+static int FIG_palette_offst = 32;	/* Offset from zero for palette colours */
+static int FIG_rgb_color_offset = 32;	/* First user-defined RGB color */
+static int FIG_fill_style = 20;		/* Full saturation */
+
+static void FIG_poly_clean __PROTO((enum FIG_poly_stat fig_stat));
+
+enum FIG_id {
+    FIG_MONOCHROME, FIG_COLOR,
+    FIG_SMALL, FIG_BIG,
+    FIG_INCHES, FIG_METRIC,
+    FIG_PORTRAIT, FIG_LANDSCAPE,
+    FIG_SIZE, FIG_FONT, FIG_FONTSIZE,
+    FIG_THICKNESS, FIG_DEPTH, FIG_POINTSMAX,
+    FIG_SOLID, FIG_DASHED,
+    FIG_NORMALTEXT, FIG_SPECIALTEXT, FIG_HIDDENTEXT, FIG_RIGIDTEXT,
+    FIG_VERSION, FIG_OTHER
+};
+
+static struct gen_table FIG_opts[] =
+{
+    { "b$ig", FIG_BIG },
+    { "c$olor", FIG_COLOR },
+    { "c$olour", FIG_COLOR },
+    { "da$shed", FIG_DASHED },
+    { "de$pth", FIG_DEPTH },
+    { "font", FIG_FONT },
+    { "f$ontsize", FIG_FONTSIZE },
+    { "in$ches", FIG_INCHES },
+    { "l$andscape", FIG_LANDSCAPE },
+    { "me$tric", FIG_METRIC },
+    { "mo$nochrome", FIG_MONOCHROME },
+    { "poi$ntsmax", FIG_POINTSMAX },
+    { "por$trait", FIG_PORTRAIT },
+    { "si$ze", FIG_SIZE },
+    { "sm$all", FIG_SMALL },
+    { "so$lid", FIG_SOLID },
+    { "linew$idth", FIG_THICKNESS },
+    { "t$hickness", FIG_THICKNESS },
+    { "texth$idden", FIG_HIDDENTEXT },
+    { "textn$ormal", FIG_NORMALTEXT },
+    { "textr$igid", FIG_RIGIDTEXT },
+    { "texts$pecial", FIG_SPECIALTEXT },
+    { "v$ersion", FIG_VERSION },
+    { NULL, FIG_OTHER }
+};
+
+const struct gen_table FIG_fonts[] =
+{
+    { "Times Roman",  0 },
+    { "Times Italic",  1 },
+    { "Times Bold",  2 },
+    { "Times Bold Italic",  3 },
+    { "AvantGarde Book",  4 },
+    { "AvantGarde Book Oblique",  5 },
+    { "AvantGarde Demi",  6 },
+    { "AvantGarde Demi Oblique",  7 },
+    { "Bookman Light",  8 },
+    { "Bookman Light Italic",  9 },
+    { "Bookman Demi", 10 },
+    { "Bookman Demi Italic", 11 },
+    { "Courier", 12 },
+    { "Courier Oblique", 13 },
+    { "Courier Bold", 14 },
+    { "Courier Bold Oblique", 15 },
+    { "Helvetica", 16 },
+    { "Helvetica Oblique", 17 },
+    { "Helvetica Bold", 18 },
+    { "Helvetica Bold Oblique", 19 },
+    { "Helvetica Narrow", 20 },
+    { "Helvetica Narrow Oblique", 21 },
+    { "Helvetica Narrow Bold", 22 },
+    { "Helvetica Narrow Bold Oblique", 23 },
+    { "New Century Schoolbook Roman", 24 },
+    { "New Century Schoolbook Italic", 25 },
+    { "New Century Schoolbook Bold", 26 },
+    { "New Century Schoolbook Bold Italic", 27 },
+    { "Palatino Roman", 28 },
+    { "Palatino Italic", 29 },
+    { "Palatino Bold", 30 },
+    { "Palatino Bold Italic", 31 },
+    { "Symbol", 32 },
+    { "Zapf Chancery Medium Italic", 33 },
+    { "Zapf Dingbats", 34 },
+    { NULL, -1}
+};
+
+TERM_PUBLIC void
+FIG_options()
+{
+    int parse_error = FALSE;
+    long temp_max;
+    unsigned int tmax_t;
+    double xsize_t = 0, ysize_t = 0;
+    char text_flags[256]; /* for description only */
+
+#if 0
+    /* Terminals should not reset options to defaults. */
+    FIG_use_color = FALSE;	/* default */
+    FIG_is_big = FALSE;		/* default */
+    FIG_portrait = FALSE;
+    FIG_font_id = FIG_ROMAN_FONT;
+    FIG_font_s = 0;
+    FIG_default_thickness = 1;
+    xsize_t = ysize_t = 0.;
+    FIG_inches = INCH;
+    FIG_text_flags = FIG_TEXT_NORMAL;
+    FIG_solid = FALSE;
+    strcpy( FIG_version, FIG_DEFAULTVERSION );
+#endif
+
+    while (!END_OF_COMMAND) {
+	switch(lookup_table(&FIG_opts[0],c_token)) {
+	case FIG_MONOCHROME:
+	    FIG_use_color = FALSE;
+	    c_token++;
+	    break;
+	case FIG_COLOR:
+	    FIG_use_color = TRUE;
+	    c_token++;
+	    break;
+	case FIG_SMALL:
+	    FIG_is_big = FALSE;
+	    c_token++;
+	    break;
+	case FIG_BIG:
+	    FIG_is_big = TRUE;
+	    c_token++;
+	    break;
+	case FIG_INCHES:
+	    FIG_inches = TRUE;
+	    c_token++;
+	    break;
+	case FIG_METRIC:
+	    FIG_inches = FALSE;
+	    c_token++;
+	    break;
+	case FIG_SOLID:
+	    FIG_solid = TRUE;
+	    c_token++;
+	    break;
+	case FIG_DASHED:
+	    FIG_solid = FALSE;
+	    c_token++;
+	    break;
+	case FIG_NORMALTEXT:
+	    FIG_text_flags = FIG_TEXT_NORMAL;
+	    c_token++;
+	    break;
+	case FIG_SPECIALTEXT:
+	    FIG_text_flags |= FIG_TEXT_SPECIAL;
+            FIG_text_flags &= ~FIG_TEXT_POSTSCRIPT;
+	    FIG_font_id = 0;
+	    c_token++;
+	    break;
+	case FIG_HIDDENTEXT:
+	    FIG_text_flags |= FIG_TEXT_HIDDEN;
+	    c_token++;
+	    break;
+	case FIG_RIGIDTEXT:
+	    FIG_text_flags |= FIG_TEXT_RIGID;
+	    c_token++;
+	    break;
+	case FIG_PORTRAIT:
+	    FIG_portrait = TRUE;
+	    c_token++;
+	    break;
+	case FIG_LANDSCAPE:
+	    FIG_portrait = FALSE;
+	    c_token++;
+	    break;
+	case FIG_SIZE:
+	    c_token++;
+	    if (END_OF_COMMAND) {
+		int_error(c_token, "size: 2 numbers expected");
+	    } else {
+		xsize_t = real_expression();
+		if (equals(c_token,","))
+		    c_token++;
+		if (END_OF_COMMAND) {
+		    int_error(c_token, "size: 2 numbers expected");
+		    xsize_t = 0.;
+		} else {
+		    ysize_t = real_expression();
+		}
+		if (xsize_t < 2. || ysize_t < 2. || xsize_t > 99. || ysize_t > 99.) {
+		    if (xsize_t != 0. || ysize_t != 0.)
+			int_error(c_token, "size: out of range");
+		    xsize_t = ysize_t = 0.;
+		}
+	    }
+	    break;
+	case FIG_FONT:
+	    {
+	    char *fontname;
+	    int sep;
+	    c_token++;
+	    if (END_OF_COMMAND || !((fontname = try_to_get_string())))
+		int_error(c_token, "expecting font name");
+	    sep = strcspn(fontname,",");
+	    sscanf (&(fontname[sep+1]),"%d",&FIG_font_s);
+	    fontname[sep] = '\0';
+	    FIG_font_id = lookup_table_entry(FIG_fonts, fontname);
+	    if (FIG_font_id < 0)
+		FIG_font_id = FIG_ROMAN_FONT;
+	    free(fontname);
+	    break;
+	    }
+	case FIG_FONTSIZE:
+	    c_token++;
+	    FIG_font_s = int_expression();
+	    break;
+	case FIG_THICKNESS:
+	    c_token++;
+	    if (END_OF_COMMAND) {
+		int_error(c_token, "thickness: number expected");
+	    } else {
+		FIG_default_thickness = int_expression();
+		if (FIG_default_thickness < 1 || FIG_default_thickness > 10) {
+		    int_error(c_token - 1, "thickness out of range");
+		    FIG_default_thickness = 1;
+		}
+	    }
+	    break;
+	case FIG_DEPTH:
+	    c_token++;
+	    if (END_OF_COMMAND) {
+		int_error(c_token, "depth: number expected");
+	    } else {
+		FIG_depth = int_expression();
+		if (FIG_depth < 0 || FIG_depth > 99) {
+		    int_error(c_token - 1, "depth out of range");
+		    FIG_depth = 10;
+		}
+		FIG_linedepth = FIG_depth;
+	    }
+	    break;
+	case FIG_POINTSMAX:
+	    /* Skip the word and then expect the number ! */
+	    c_token++;
+	    if (END_OF_COMMAND) {
+		int_error(c_token,
+			  "max. points per polyline: number expected");
+	    } else {
+		temp_max = (long) real_expression();
+		/* Now check the range for the number */
+		if ((temp_max > 1) && (temp_max < (FIG_MAX_POINTS + 2))) {
+		    /* OK. subtract one to the right number! See other numbers... */
+		    FIG_poly_vec_max = temp_max - 1;
+		} else {
+		    int_error(c_token,
+			      "pointsmax: number out of range (2,%ld)",
+			      (FIG_MAX_POINTS + 1));
+		}
+	    }
+	    break;
+	case FIG_VERSION:
+	    c_token++;
+	    if (END_OF_COMMAND) {
+		int_error(c_token, "version: 3.1 or 3.2 expected");
+	    } else {
+                copy_str( FIG_version, c_token, MAX_ID_LEN );
+                c_token++;
+                if( strcmp( FIG_version, "3.1" ) != 0 &&
+                    strcmp( FIG_version, "3.2" ) != 0 ) {
+                    int_error(c_token, "wrong version number, must be 3.1 or 3.2");
+                }
+	    }
+	    break;
+	case FIG_OTHER:
+	default:
+	    parse_error = TRUE;
+	    int_error(c_token, "unrecognized option");
+	    break;
+	}
+    }
+
+    if( FIG_text_flags == FIG_TEXT_NORMAL ) {
+        strcpy( text_flags, " textnormal" );
+    } else {
+        sprintf( text_flags, "%s%s%s",
+                 (FIG_text_flags & FIG_TEXT_SPECIAL) ? " textspecial" : "",
+                 (FIG_text_flags & FIG_TEXT_HIDDEN) ? " texthidden" : "",
+                 (FIG_text_flags & FIG_TEXT_RIGID) ? " textrigid" : ""
+               );
+    }
+
+    sprintf(term_options, "%s %s %s %d %s %s %s%s %s \"%s,%d\" %s %d %s %d %s %s",
+	    FIG_use_color ? "color" : "monochrome",
+	    FIG_is_big ? "big" : "small",
+	    "pointsmax",
+	    FIG_poly_vec_max + 1,
+	    FIG_portrait ? "portrait" : "landscape",
+	    FIG_inches ? "inches" : "metric",
+            FIG_solid ? "solid" : "dashed",
+	    text_flags,
+	    "font", FIG_fonts[FIG_font_id].key,
+	    /* fontsize */ (FIG_font_s > 0 ? FIG_font_s :
+			 (FIG_is_big ? BFIG_FONT_S : FIG_FONT_S)),
+	    "linewidth", FIG_default_thickness, "depth", FIG_depth,
+            "version", FIG_version );	/* JFS, KB, ULIG */
+    if (xsize_t > 0. && ysize_t > 0.) {
+	if (xsize_t - (int) xsize_t == 0. && ysize_t - (int) ysize_t == 0.)
+	    sprintf(term_options + strlen(term_options),
+		    " size %d %d", (int) xsize_t, (int) ysize_t);
+	else
+	    sprintf(term_options + strlen(term_options),
+		    " size %f %f", xsize_t, ysize_t);
+    }
+    if (!FIG_is_big) {
+	if (FIG_font_s <= 0)	/* KB */
+	    FIG_font_s = FIG_FONT_S;
+	term->xmax = FIG_XMAX(FIG_inches);
+	term->ymax = FIG_YMAX(FIG_inches);
+	term->v_tic = FIG_VTIC(FIG_inches);
+	term->h_tic = FIG_HTIC(FIG_inches);
+	FIG_xoff = FIG_XOFF(FIG_inches);
+	FIG_yoff = FIG_YOFF(FIG_inches);
+    } else {
+	if (FIG_font_s <= 0)	/* KB */
+	    FIG_font_s = BFIG_FONT_S;
+	term->xmax = BFIG_XMAX(FIG_inches);
+	term->ymax = BFIG_YMAX(FIG_inches);
+	term->v_tic = BFIG_VTIC(FIG_inches);
+	term->h_tic = BFIG_HTIC(FIG_inches);
+	FIG_xoff = BFIG_XOFF(FIG_inches);
+	FIG_yoff = BFIG_YOFF(FIG_inches);
+    }
+    if (FIG_portrait) {		/* KB */
+	tmax_t = term->xmax;
+	term->xmax = term->ymax;
+	term->ymax = tmax_t;
+    }
+    if (xsize_t > 0. && ysize_t > 0.) {
+	term->xmax = (unsigned int) (xsize_t * FIG_TRUERES);
+	term->ymax = (unsigned int) (ysize_t * FIG_TRUERES);
+    }
+    term->v_char = FIG_to_pixel_v(FIG_inches, FIG_font_s);
+    term->h_char = FIG_to_pixel_h(FIG_inches, FIG_font_s);
+    FIG_thickness = FIG_default_thickness;
+    if (parse_error) {		/* JFS, KB */
+	int_error(c_token, "unrecognized option");
+    }
+}
+
+
+static void
+FIG_poly_clean(enum FIG_poly_stat fig_stat)
+{
+    int i, j;
+    int cap_style;
+
+    if (fig_stat == FIG_poly_part) {
+	cap_style = (FIG_line.style==DOTTED_LINE)
+	    ? CAP_ROUND : FIG_line.cap_style;
+	fprintf(gpoutfile,
+		"%d %d %d %d %d %d %d %d %d %9.3f %d %d %d %d %d %ld\n\t",
+		O_POLYLINE, FIG_line.type, FIG_line.style, FIG_line.thickness,
+		FIG_line.pen_color, FIG_line.fill_color, FIG_line.depth,
+		FIG_line.pen_style, FIG_line.fill_style, FIG_line.style_val,
+		FIG_line.join_style, cap_style, FIG_line.radius,
+		0, 0, FIG_poly_vec_cnt);
+
+	j = 0;
+	for (i = 0; i < FIG_poly_vec_cnt; i++) {
+	    fprintf(gpoutfile, " %d %d", FIG_points[i].x, FIG_points[i].y);
+	    if (j++ > 4 && i != FIG_poly_vec_cnt - 1) {
+		fputs("\n\t", gpoutfile);
+		j = 0;		/* JFS */
+	    }
+	}
+	if (j != 0) {
+	    putc('\n', gpoutfile);
+	}
+	/* Give the memory back to the system because we are done with this
+	 * polyline. Make sure FIG_points contains NULL afterwards!
+	 */
+	free(FIG_points);
+	FIG_points = NULL;
+    }
+    FIG_polyvec_stat = FIG_poly_new;
+}
+
+
+TERM_PUBLIC void
+FIG_init()
+{
+    FIG_posx = FIG_posy = 0;
+    FIG_polyvec_stat = FIG_poly_new;
+    FIG_linetype(-1);
+    FIG_justify_text(LEFT);
+    FIG_text_angle(0);
+
+    FIG_palette_set = FALSE;    /* PM3D Palette Set ? */
+    FIG_line.tagged = FIG_DEFAULT;
+    FIG_line.distrib = FIG_DEFAULT;
+    FIG_line.type = T_POLYLINE;
+    FIG_line.style = 0;
+    FIG_line.thickness = FIG_thickness;
+    FIG_line.fill_style = -1;
+    FIG_line.depth = FIG_linedepth;
+    FIG_line.pen_style = 0;
+    FIG_line.for_arrow = NULL;
+    FIG_line.back_arrow = NULL;
+    FIG_line.cap_style = 0;
+    FIG_line.join_style = 0;
+    FIG_line.style_val = 0.0;
+    FIG_line.radius = 0;
+    FIG_line.pic = NULL;
+    FIG_line.next = NULL;
+
+    /* Add further versions headers below (ULIG). There is probably more work to be done */
+    /* than only changing the header in future xfig versions */
+
+    if( strcmp(FIG_version, "3.1") == 0 ) {
+        fprintf( gpoutfile,
+                 "#FIG 3.1\n%s\n%s\n%s\n%d %d\n",
+                 FIG_ORIENT,
+                 FIG_JUST,
+                 FIG_UNIT,
+                 FIG_IRES, FIG_COORD_SYS
+               );
+    } else if( strcmp(FIG_version, "3.2") == 0 ) {
+        fprintf( gpoutfile,
+                 "#FIG 3.2\n%s\n%s\n%s\n%s\n%6.2f\n%s\n%d\n%d %d\n",
+                 FIG_ORIENT,
+                 FIG_JUST,
+                 FIG_UNIT,
+                 FIG_PAPER,
+                 FIG_MAGNIFICATION,
+                 FIG_MULTIPAGE,
+                 FIG_TRANSCOLOR,
+                 FIG_IRES, FIG_COORD_SYS
+               );
+    }
+}
+
+
+TERM_PUBLIC void
+FIG_graphics()
+{
+    int i, ncolors;
+    struct linestyle_def *this;
+    extern struct gen_table default_color_names_tbl[];
+
+    FIG_posx = FIG_posy = 0;
+    FIG_polyvec_stat = FIG_poly_new;
+
+    if (!FIG_use_color)
+	return;
+
+    /* Dump current set of user-defined RGB linetype colors */
+    ncolors = 0;
+    memset(FIG_RGB_colors, 0, sizeof(FIG_RGB_colors));
+    for (this = first_perm_linestyle; this != NULL; this = this->next) {
+	if (this->lp_properties.pm3d_color.type == TC_RGB) {
+	    /* Load color into FIG_RGB_colors */
+	    FIG_RGB_colors[ncolors] = this->lp_properties.pm3d_color.lt;
+	    FIG_RGB_colors[ncolors] &= 0xffffff;	/* No alpha channel */
+	    /* Write it to the output file */
+	    fprintf(gpoutfile, "%d %d #%2.2x%2.2x%2.2x\n",
+		    O_COLOR_DEF, FIG_rgb_color_offset + ncolors,
+		    (FIG_RGB_colors[ncolors] >> 16) & 0xff,
+		    (FIG_RGB_colors[ncolors] >> 8)  & 0xff,
+		    (FIG_RGB_colors[ncolors]) & 0xff );
+	    ncolors++;
+	}
+	if (ncolors >= 128)
+	    break;
+    }
+
+    /* Now dump gnuplot's set of named RGB colors */
+    for (i=0; i<96; i++) {
+	int colorval = default_color_names_tbl[i].value;
+	if (FIG_rgb_color_offset + ncolors >= 128)
+	    break;
+	fprintf(gpoutfile, "%d %d #%2.2x%2.2x%2.2x\n",
+		    O_COLOR_DEF, FIG_rgb_color_offset + ncolors,
+		    (colorval >> 16) & 0xff,
+		    (colorval >> 8)  & 0xff,
+		    (colorval) & 0xff );
+	FIG_RGB_colors[ncolors] = colorval;
+	ncolors++;
+    }
+
+    /* This should leave space in the header for a 128-entry color palette */
+    FIG_palette_offst = 32 + ncolors;
+
+}
+
+
+TERM_PUBLIC void
+FIG_text()
+{
+    /* there is no way to have separate pictures in a FIG file */
+    FIG_poly_clean(FIG_polyvec_stat);
+    FIG_posx = FIG_posy = 0;
+    fflush(gpoutfile);
+}
+
+
+/* Line types for FIG work like this:
+ *  for monochrome:
+ *  -2 : solid (border)
+ *  -1 : dotted 4 (axes)
+ *   0 : solid (first curve)
+ *   1 : dotted 3
+ *   2 : dashed 3
+ *   3 : dotted 6
+ *   4 : dashed 6
+ *   ... ...
+ *  for color, cycle through colors. once colors are used up, repeat colors
+ *   but start using dashed lines of different dash length. don't use white
+ *   as a color.
+ */
+
+TERM_PUBLIC void
+FIG_linetype(int linetype)		/* expect linetype >= -2 */
+{
+    int last_FIG_type = FIG_type;
+    int last_FIG_spacing = FIG_spacing;
+    int last_FIG_color = FIG_color;
+    int last_FIG_depth = FIG_linedepth;
+    int last_FIG_thickness = FIG_thickness;
+
+    /* mapping of fig color codes to color sequence as in the postscript terminal */
+#define npscolors 9
+    int fig2pscolors[npscolors] = {
+	4 /*red*/, 2 /*green*/, 1 /*blue*/,
+	5 /*magenta*/, 3 /*cyan*/, 6 /*yellow*/,
+	0 /*black*/, 26 /*brown*/,
+	11 /*use LtBlue instead of light gray*/
+	/* note: black=1, white=8 */
+    };
+
+    FIG_linedepth = FIG_depth;
+    FIG_thickness = FIG_current_linewidth * FIG_default_thickness;
+    if (FIG_thickness < 1)
+	FIG_thickness = 1;
+    FIG_color = DEFAULT;
+
+    if (linetype <= LT_NODRAW)
+	linetype = LT_BLACK;
+
+    switch (linetype) {
+    case 0:
+    case LT_BLACK:{
+	    FIG_type = SOLID_LINE;
+	    FIG_spacing = 0.0;
+	    if (FIG_use_color)
+#if 0 /* fig's old color sequence */
+		FIG_color = BLACK;
+#else /* color sequence compatible to the postscript terminal */
+		if (linetype==0) FIG_color = fig2pscolors[0]; /* red */
+#endif
+	    break;
+	}
+    case LT_AXIS:{
+	    FIG_type = DOTTED_LINE;
+            if( FIG_solid )
+                FIG_type = SOLID_LINE;
+	    FIG_spacing = 4.0;	/* gap */
+	    if (FIG_use_color)
+		FIG_color = BLACK;
+	    break;
+	}
+    default:{
+	    /* now linetype >= 1 --- shouldn't be negative anyway */
+	    FIG_linedepth = FIG_depth + linetype / 1000;
+	    linetype %= 1000;
+	    /* Thickness of lines is either included in the linetype */
+	    /* (in Fig units) or the default is scaled with the */
+	    /* current 'linewidth'. */
+	    if ((FIG_thickness = linetype / 100) == 0)
+		FIG_thickness = FIG_current_linewidth * FIG_default_thickness;
+	    if (FIG_thickness < 1)	/* Less than 1 would be invisible */
+		FIG_thickness = 1;
+	    linetype %= 100;
+	    if (FIG_use_color) {
+#if 0 /* fig's old color sequence */
+		FIG_type = (linetype >= WHITE);		/* dashed line */
+		FIG_color = linetype % WHITE;
+		FIG_spacing = (linetype / WHITE) * 3;
+#else /* color sequence compatible to the postscript terminal */
+		FIG_type = (linetype >= npscolors);		/* dashed line */
+		FIG_color = fig2pscolors[linetype % npscolors];
+		FIG_spacing = (linetype / npscolors) * 3;
+#endif
+	    } else {		/* monochrome */
+		FIG_type = (linetype)? linetype%2 + 1 : SOLID_LINE; /* dotted, dashed, ... */
+		FIG_spacing = (linetype + 1) / 2 * 3;
+	    }
+            if( FIG_solid )
+                FIG_type = SOLID_LINE;
+	    break;
+	}
+    }
+    if (FIG_type != last_FIG_type || FIG_spacing != last_FIG_spacing ||
+	FIG_color != last_FIG_color || FIG_linedepth != last_FIG_depth ||
+	FIG_thickness != last_FIG_thickness)
+	FIG_poly_clean(FIG_polyvec_stat);
+}
+
+TERM_PUBLIC void
+FIG_move(unsigned int x, unsigned int y)
+{
+    int last_FIG_posx = FIG_posx;
+    int last_FIG_posy = FIG_posy;
+
+    FIG_posx = x;
+    FIG_posy = y;
+    if (FIG_posx != last_FIG_posx || FIG_posy != last_FIG_posy)
+	FIG_poly_clean(FIG_polyvec_stat);
+}
+
+
+TERM_PUBLIC void
+FIG_vector(unsigned int ux, unsigned int uy)
+{
+    int x = ux, y = uy;
+
+    if (FIG_polyvec_stat != FIG_poly_part) {
+	FIG_line.pen_color = FIG_color;
+	FIG_line.fill_color = FIG_color;
+	FIG_line.style = FIG_type;
+	FIG_line.style_val = FIG_spacing;
+	FIG_line.depth = FIG_linedepth;
+	FIG_line.thickness = FIG_thickness;
+	FIG_poly_vec_cnt = 0;
+	/* allocate memory for the first point */
+	FIG_points = (F_point *) gp_realloc(FIG_points, sizeof(F_point), "FIG_points");		/* JFS */
+	FIG_points[FIG_poly_vec_cnt].x = FIG_xoff + FIG_posx;
+	FIG_points[FIG_poly_vec_cnt].y = term->ymax + FIG_yoff - FIG_posy;
+
+	FIG_poly_vec_cnt = 1;
+	FIG_polyvec_stat = FIG_poly_part;
+    }
+    /* allocate memory for the next point */
+    FIG_points = (F_point *) gp_realloc(FIG_points, (FIG_poly_vec_cnt + 1) *
+					sizeof(F_point), "FIG_points");		/* JFS */
+    FIG_points[FIG_poly_vec_cnt].x = FIG_xoff + x;
+    FIG_points[FIG_poly_vec_cnt].y = term->ymax + FIG_yoff - y;
+
+    FIG_poly_vec_cnt++;
+    if (FIG_poly_vec_cnt > FIG_poly_vec_max)
+	FIG_poly_clean(FIG_polyvec_stat);
+
+    FIG_posx = x;
+    FIG_posy = y;
+}
+
+
+TERM_PUBLIC void
+FIG_arrow(
+    unsigned int sx, unsigned int sy, /* start coord */
+    unsigned int ex, unsigned int ey, /* end coord */
+    int head)
+{
+    int cap_style;
+    double awidth, aheight;	/* arrow head sizes */
+
+    FIG_poly_clean(FIG_polyvec_stat);
+    cap_style = (FIG_line.style==DOTTED_LINE)? CAP_ROUND : FIG_line.cap_style;
+    fprintf(gpoutfile, "%d %d %d %d %d %d %d %d %d %9.3f %d %d %d %d %d %d\n",
+	    O_POLYLINE, FIG_line.type, FIG_type, FIG_thickness,
+	    FIG_color, FIG_color, FIG_linedepth,
+	    FIG_line.pen_style, FIG_line.fill_style, FIG_spacing,
+	    FIG_line.join_style, cap_style, FIG_line.radius,
+	    head ? 1 : 0, head==2 ? 1 : 0, 2);
+
+    /* arrow head(s) */
+    if (head) {
+	unsigned int headbackangleparameter = 0;
+	unsigned int headfillparameter = 0;
+
+	/* arrow head size */
+	if (curr_arrow_headlength==0) {
+	    awidth  = (double) (term->h_tic / 2 + 1);
+	    aheight = (double) term->h_tic;
+	} else {
+	    awidth  = (double) curr_arrow_headlength * 2*sin(curr_arrow_headangle*M_PI/180);
+	    aheight = (double) curr_arrow_headlength * cos(curr_arrow_headangle*M_PI/180);
+	}
+
+	/* arrow head geometry */
+	if ( curr_arrow_headbackangle < 70 )
+	    headbackangleparameter = 2;
+	else if ( curr_arrow_headbackangle > 110 )
+	    headbackangleparameter = 3;
+	else
+	    headbackangleparameter = 1;
+
+	if (curr_arrow_headfilled==2)
+	    headfillparameter = 1;
+	else
+	    headfillparameter = 0;
+
+	/* forward head */
+	fprintf(gpoutfile, "%d %d %.3f %.3f %.3f\n",
+		headbackangleparameter, headfillparameter,
+		1.0, awidth, aheight);
+	/* backward head */
+	if (head==2)
+	    fprintf(gpoutfile, "%d %d %.3f %.3f %.3f\n",
+		    headbackangleparameter,  headfillparameter,
+		    1.0, awidth, aheight);
+    }
+
+    /* arrow line */
+    fprintf(gpoutfile, "%d %d %d %d\n",
+	    FIG_xoff + sx, FIG_yoff + term->ymax - sy,
+	    FIG_yoff + ex, FIG_yoff + term->ymax - ey);
+
+    FIG_posx = ex;
+    FIG_posy = ey;
+}
+
+
+TERM_PUBLIC void
+FIG_put_text(unsigned int x, unsigned int y, const char *str)
+{
+    char *s1, *s2, *output_string;
+
+    if (strlen(str) == 0)
+	return;
+
+    output_string = (char *) gp_alloc(2*strlen(str)+1, "FIG text");
+    s1 = (char *)str;
+    s2 = output_string;
+    do {
+	if (*s1 == '\\') *(s2++) = *s1;
+	*(s2++) = *s1;
+    } while ( *(s1++) );
+    FIG_poly_clean(FIG_polyvec_stat);
+    if (FIG_angle == 0.)
+	y -= term->v_char / 2;	/* assuming vertical center justified */
+    else {
+	x += (int)(term->v_char*sin(FIG_angle)/4.);
+	y -= (int)(term->v_char*cos(FIG_angle)/4.);
+    }
+
+    fprintf(gpoutfile, "%d %d %d %d %d %d %6.3f %6.3f %d %6.3f %6.3f %d %d %s\\001\n",
+	    OBJ_TEXT, FIG_justify, FIG_color, 0, FIG_DEFAULT,
+	    FIG_font_id, (float) FIG_font_s,
+	    FIG_angle, FIG_text_flags, (float) term->v_char,
+	    (float) term->h_char * strlen(str),
+	    FIG_xoff + x, term->ymax + FIG_yoff - y, output_string);
+
+    free(output_string);
+}
+
+TERM_PUBLIC int
+FIG_justify_text(enum JUSTIFY mode)
+{
+    switch (mode) {
+    case LEFT:
+	FIG_justify = T_LEFT_JUSTIFIED;
+	break;
+    case CENTRE:
+	FIG_justify = T_CENTER_JUSTIFIED;
+	break;
+    case RIGHT:
+	FIG_justify = T_RIGHT_JUSTIFIED;
+	break;
+	/* shouldn't happen */
+    default:
+	FIG_justify = T_LEFT_JUSTIFIED;
+	return (FALSE);
+	break;
+    }
+    return (TRUE);
+}
+
+TERM_PUBLIC int
+FIG_text_angle(int ang)
+{
+    FIG_angle = ang * M_PI_2 / 90. ;
+    return (TRUE);
+}
+
+TERM_PUBLIC void
+FIG_lpoint(unsigned int x, unsigned int y, int number)
+{
+    FIG_type = 0;		/* Solid lines for marker outline */
+    if (number % 100 >= 49 && number % 100 < 99) {	/* circles, squares, triangles */
+	int r, d, h, xpc, ypc;
+	int line_color, fill_color, fill_style;
+	int cnum, tnum, color, depth;
+
+	FIG_poly_clean(FIG_polyvec_stat);
+	depth = FIG_linedepth - 1;	/* Above error bars */
+	if (number > 1000)
+	    depth = FIG_depth + number / 1000 - 1;
+	number %= 1000;
+	if (depth < 0)
+	    depth = 0;
+	if (number < 100)
+	    color = FIG_color;
+	else if (FIG_use_color)
+	    color = number / 100 - 1;
+	else if (number / 100 >= WHITE)
+	    color = WHITE;
+	else
+	    color = DEFAULT;
+	number %= 100;
+	cnum = (number + 1) % 10;
+	tnum = (number - 49) / 10;
+	if (cnum < 5)
+	    line_color = (FIG_use_color ? BLACK : DEFAULT);
+	else
+	    line_color = FIG_color;
+	fill_color = color;
+	if (cnum == 0 || cnum == 5)
+	    fill_style = -1;
+	else
+	    fill_style = (cnum % 5) * 5;
+
+	xpc = FIG_xoff + x;
+	ypc = term->ymax + FIG_yoff - y;
+
+	if (tnum == 0) {	/* circle */
+	    r = FIG_current_pointsize * term->v_char / 4 + 1;
+	    fprintf(gpoutfile,
+		    "1 3 %d %d %d %d %d %d %d %6.3f 1 0.000 %d %d %d %d %d %d %d %d\n",
+		    FIG_type, FIG_thickness, line_color,
+		    fill_color, depth, 0, fill_style, FIG_spacing,
+		    xpc, ypc, r, r, xpc, ypc, xpc, ypc - r);
+	} else {
+	    fprintf(gpoutfile, "2 3 %d %d %d %d %d %d %d %6.3f 0 0 0 0 0 ",
+		    FIG_type, FIG_thickness, line_color,
+		    fill_color, depth, 0, fill_style, FIG_spacing);
+
+	    if (tnum == 1) {	/* square */
+		d = FIG_current_pointsize * term->v_char / 4 + 1;
+		fprintf(gpoutfile, "5\n\t%d %d %d %d %d %d %d %d %d %d\n",
+			xpc - d, ypc - d, xpc - d, ypc + d, xpc + d, ypc + d, xpc + d, ypc - d,
+			xpc - d, ypc - d);
+	    } else if (tnum == 2) {	/* diamond */
+		d = FIG_current_pointsize * term->v_char / 3 + 1;
+		fprintf(gpoutfile, "5\n\t%d %d %d %d %d %d %d %d %d %d\n",
+			xpc - d, ypc, xpc, ypc + d, xpc + d, ypc, xpc, ypc - d, xpc - d, ypc);
+	    } else if (tnum == 3) {	/* triangle up */
+		d = FIG_current_pointsize * term->v_char / 3 + 1;
+		h = d * 4 / 7;	/* About d times one 3rd of sqrt(3) */
+		fprintf(gpoutfile, "4\n\t%d %d %d %d %d %d %d %d\n",
+			xpc - d, ypc + h, xpc, ypc - 2 * h, xpc + d, ypc + h, xpc - d, ypc + h);
+	    } else if (tnum == 4) {	/* triangle down */
+		d = FIG_current_pointsize * term->v_char / 3 + 1;
+		h = d * 4 / 7;
+		fprintf(gpoutfile, "4\n\t%d %d %d %d %d %d %d %d\n",
+			xpc - d, ypc - h, xpc, ypc + 2 * h, xpc + d, ypc - h, xpc - d, ypc - h);
+	    }
+	}
+    } else {
+	int pt = number % 13;
+	switch (pt) {
+	default:	do_point(x, y, pt); break;
+	case 3: 	FIG_lpoint(x, y, 64); break;
+	case 4: 	FIG_lpoint(x, y, 68); break;
+	case 5: 	FIG_lpoint(x, y, 54); break;
+	case 6: 	FIG_lpoint(x, y, 58); break;
+	case 7: 	FIG_lpoint(x, y, 84); break;
+	case 8: 	FIG_lpoint(x, y, 88); break;
+	case 9: 	FIG_lpoint(x, y, 94); break;
+	case 10:	FIG_lpoint(x, y, 98); break;
+	case 11: 	FIG_lpoint(x, y, 74); break;
+	case 12:	FIG_lpoint(x, y, 78); break;
+	}
+    }
+}
+
+TERM_PUBLIC void
+FIG_pointsize(double arg_pointsize)
+{
+    FIG_current_pointsize = arg_pointsize < 0. ? 1. : arg_pointsize;
+    /* Bug-fix by hkeller@gwdg.de and K.B.: set pointsize for do_point() */
+    do_pointsize(arg_pointsize * FIG_font_s / (double) FIG_FONT_S);
+}
+
+TERM_PUBLIC void
+FIG_linewidth(double linewidth)
+{
+    FIG_current_linewidth = linewidth;
+}
+
+TERM_PUBLIC void
+FIG_reset()
+{
+    FIG_poly_clean(FIG_polyvec_stat);
+    FIG_posx = FIG_posy = 0;
+    fflush(gpoutfile);
+}
+
+TERM_PUBLIC void
+FIG_boxfill(
+    int style,
+    unsigned int x, unsigned int y,
+    unsigned int w, unsigned int h)
+{
+    int pen_color, fill_color, fill_style, fill_dens;
+
+    FIG_poly_clean(FIG_polyvec_stat);
+
+    FIG_line.pen_color = FIG_color;
+
+    switch( style & 0xf ) {
+    case FS_SOLID:
+    case FS_TRANSPARENT_SOLID:
+	/* style == 1 --> filled with intensity according to filldensity */
+        pen_color = FIG_line.pen_color;
+        fill_color = FIG_line.pen_color;
+        fill_dens = style >> 4;
+        if( fill_dens < 0 ) fill_dens = 0;
+        if( fill_dens > 100 ) fill_dens = 100;
+        if( FIG_color == -1 || FIG_color == 0 )
+            /* default color or black: solid 0%...100% -> 0...20 */
+            fill_style = fill_dens / 5;
+        else
+            /* all other colors: solid 0%...100% -> 40...20 */
+            fill_style = 40 - fill_dens / 5;
+        break;
+    case FS_PATTERN:
+    case FS_TRANSPARENT_PATTERN:
+	/* style == 2 --> filled with pattern according to fillpattern */
+        pen_color = FIG_line.pen_color;
+        fill_color = WHITE;
+        fill_style = 41 + ( ( (style>>4) < 0 ) ? 0 : style>>4 );
+        break;
+    case FS_EMPTY:
+    default:
+	/* style == 0 or unknown --> filled with background color */
+        pen_color = FIG_line.pen_color;
+        fill_color = WHITE;
+        fill_style = 20;
+    }
+
+    x = FIG_xoff + x;
+    y = term->ymax + FIG_yoff - y;
+
+    fprintf(gpoutfile, "%d %d %d %d %d %d %d %d %d %6.3f %d %d %d %d %d %d\n"
+            "  %d %d %d %d %d %d %d %d %d %d\n",
+            O_POLYLINE, FIG_line.type, FIG_line.style, FIG_line.thickness,
+            pen_color, fill_color, FIG_line.depth, FIG_line.pen_style,
+            fill_style, FIG_line.style_val, FIG_line.join_style,
+            FIG_line.cap_style, FIG_line.radius, 0, 0, 5,
+            x, y, x+w, y, x+w, y-h, x, y-h, x, y );
+}
+
+TERM_PUBLIC int FIG_make_palette(t_sm_palette *palette)
+{
+    int i;
+
+    /* Query to determine palette size */
+    if (palette==NULL) {
+	return FIG_palette_size; /* How big is palette ? */
+    }
+
+    FIG_poly_clean(FIG_polyvec_stat); /* Clean up current data */
+
+    if (FIG_palette_set == FALSE) {
+	/* Create new palette */
+	FIG_palette_set = TRUE;
+	if (FIG_use_color == FALSE || sm_palette.colorMode == SMPAL_COLOR_MODE_GRAY) {
+	    /* Gray palette */
+	    if (FIG_use_color == FALSE && sm_palette.colorMode == SMPAL_COLOR_MODE_RGB)
+		fprintf(stderr,	"Monochrome fig file: using gray palette instead of color\n");
+	    for (i = 0; i < sm_palette.colors; i++) {
+		int j = (int)(i * 255.0 / (sm_palette.colors-1) + 0.5);
+		fprintf(gpoutfile, "%d %d #%2.2x%2.2x%2.2x\n",
+		O_COLOR_DEF, (i + FIG_palette_offst), j, j, j);
+	    }
+	} else {
+	    /* Create colour/normal palette */
+	    for (i = 0; i < sm_palette.colors; i++) {
+		fprintf(gpoutfile, "%d %d #%2.2x%2.2x%2.2x\n",
+		O_COLOR_DEF, (i + FIG_palette_offst),
+		(int)( palette->color[i].r * 255 + 0.5 ),
+		(int)( palette->color[i].g * 255 + 0.5 ),
+		(int)( palette->color[i].b * 255 + 0.5 ) );
+
+		FIG_RGB_colors[FIG_palette_offst - FIG_rgb_color_offset + i] =
+		    (int)( palette->color[i].r * 255 + 0.5 ) << 16 |
+		    (int)( palette->color[i].g * 255 + 0.5 ) << 8  |
+		    (int)( palette->color[i].b * 255 + 0.5 );
+	    }
+	}
+    } else {
+	fprintf(stderr, "fig: Attempt to set palette twice\n");
+    }
+    return 0;
+}
+
+/* This doesn't apply for FIG format files
+TERM_PUBLIC void FIG_previous_palette()
+{
+}
+*/
+
+TERM_PUBLIC void FIG_set_color(t_colorspec *colorspec)
+{
+    double gray = colorspec->value;
+    int new_color = FIG_color;
+    int i;
+    unsigned rgbval;
+
+    switch (colorspec->type) {
+    case TC_LT:
+	    FIG_linetype(colorspec->lt);
+	    return;
+
+    case TC_FRAC:
+	    new_color = (gray <= 0) ? 0 : (int)(gray * sm_palette.colors);
+	    if (new_color >= FIG_palette_size)
+		new_color = FIG_palette_size - 1;
+	    if (FIG_palette_set == FALSE)
+		int_warn(NO_CARET,"fig: Palette used before set\n");
+	    new_color += FIG_palette_offst;
+	    break;
+
+    case TC_RGB:
+	    /* Look through all of user colors, named colors, and palette colors */
+	    rgbval = colorspec->lt & 0xffffff;
+	    if (rgbval == 0) {
+		new_color = BLACK;
+		break;
+	    }
+	    for (i = 0; i < 256; i++) {
+		if (rgbval == FIG_RGB_colors[i]) {
+		    new_color = FIG_rgb_color_offset + i;
+		    break;
+		}
+	    }
+	    break;
+
+    default:
+	    break;
+    }
+
+    if (FIG_color != new_color) {
+	FIG_poly_clean(FIG_polyvec_stat);
+	FIG_color = new_color;
+    }
+}
+
+TERM_PUBLIC void FIG_filled_polygon(int points, gpiPoint *corners)
+{
+    int i,j;
+
+    FIG_poly_clean(FIG_polyvec_stat); /* Clean up current data */
+
+    fprintf(gpoutfile, "%d %d %d %d %d %d %d %d %d %9.3f %d %d %d %d %d %ld\n\t",
+	O_POLYLINE, T_POLYGON, FIG_line.style, 0,
+	FIG_color, FIG_color, FIG_line.depth,
+	FIG_line.pen_style, FIG_fill_style, FIG_line.style_val,
+	FIG_line.join_style, FIG_line.cap_style, FIG_line.radius,
+	0, 0, (long)(points+1));
+/* set thickness (arg 4) to 0 */
+
+    j = 0;
+    for (i = 0; i < points; i++) {
+	fprintf(gpoutfile, " %d %d", FIG_xoff + corners[i].x,
+	    term->ymax + FIG_yoff - corners[i].y);
+	if (j++ > 4 && i != points - 1) {
+		fputs("\n\t", gpoutfile);
+		j = 0;		/* JFS */
+	}
+    }
+    fprintf(gpoutfile, " %d %d", FIG_xoff + corners[0].x,
+	term->ymax + FIG_yoff - corners[0].y);
+    j++;
+    if (j != 0) {
+	putc('\n', gpoutfile);
+    }
+}
+
+TERM_PUBLIC void
+FIG_layer(t_termlayer syncpoint)
+{
+    static int plotno = 0;
+
+    /* We must ignore all syncpoints that we don't recognize */
+    switch (syncpoint) {
+
+	default:
+		break;
+	
+	case TERM_LAYER_BEFORE_PLOT:
+		FIG_poly_clean(FIG_polyvec_stat);
+		fputs("6", gpoutfile);
+		/* Bounding box?  Give it the entire plot area */
+		fprintf(gpoutfile, " %d %d %d %d\n",
+			FIG_xoff + plot_bounds.xleft, 
+			term->ymax + FIG_yoff - plot_bounds.ytop,
+			FIG_xoff + plot_bounds.xright, 
+			term->ymax + FIG_yoff - plot_bounds.ybot);
+		fprintf(gpoutfile, "# Begin plot #%d\n", ++plotno);
+		break;
+	
+	case TERM_LAYER_AFTER_PLOT:
+		FIG_poly_clean(FIG_polyvec_stat);
+		fprintf(gpoutfile, "# End plot #%d\n", plotno);
+		fputs("-6\n", gpoutfile);
+		break;
+	
+	case TERM_LAYER_RESET:
+		plotno = 0;
+		break;
+
+    }
+}
+
+#endif /* TERM_BODY */
+
+#ifdef TERM_TABLE
+
+TERM_TABLE_START(fig_driver)
+    "fig", "FIG graphics language for XFIG graphics editor",
+    FIG_XMAX(INCH), FIG_YMAX(INCH), FIG_VCHAR, FIG_HCHAR,
+    FIG_VTIC(INCH), FIG_HTIC(INCH), FIG_options, FIG_init, FIG_reset,
+    FIG_text, null_scale, FIG_graphics, FIG_move, FIG_vector,
+    FIG_linetype, FIG_put_text, FIG_text_angle, FIG_justify_text,
+    FIG_lpoint, FIG_arrow, set_font_null, FIG_pointsize,
+    TERM_BINARY|TERM_CAN_DASH /*flags */ ,
+    0 /*suspend */ , 0 /*resume */ ,
+    FIG_boxfill, FIG_linewidth
+#ifdef USE_MOUSE
+    ,0, 0, 0, 0, 0 /* no mouse support for the fig terminal */
+#endif
+    , FIG_make_palette, 0 /*previous_palette*/, FIG_set_color, FIG_filled_polygon
+    , 0
+    , 0, 0, 0	/* no enhanced text support */
+    , FIG_layer
+TERM_TABLE_END(fig_driver)
+
+#undef LAST_TERM
+#define LAST_TERM fig_driver
+#endif /* TERM_TABLE */
+#endif /* TERM_PROTO_ONLY */
+
+#ifdef TERM_HELP
+START_HELP(fig)
+"1 fig",
+"?commands set terminal fig",
+"?set terminal fig",
+"?set term fig",
+"?terminal fig",
+"?term fig",
+"?fig",
+"?xfig",
+" The `fig` terminal device generates output in the Fig graphics language.",
+"",
+" Syntax:",
+"       set terminal fig {monochrome | color}",
+"                        {landscape | portrait}",
+"                        {small | big | size <xsize> <ysize>}",
+"                        {metric | inches}",
+"                        {pointsmax <max_points>}",
+"                        {solid | dashed}",
+"                        {font \"<fontname>{,<fontsize>}\"}",
+"                        {textnormal | {textspecial texthidden textrigid}}",
+"                        {{thickness|linewidth} <units>}",
+"                        {depth <layer>}",
+"                        {version <number>}",
+"",
+" `monochrome` and `color` determine whether the picture is black-and-white or",
+" `color`.  `small` and `big` produce a 5x3 or 8x5 inch graph in the default",
+" `landscape` mode and 3x5 or 5x8 inches in `portrait` mode.",
+" `size` sets (overrides) the size of the drawing",
+" area to <xsize>*<ysize> in units of inches or centimeters depending on the",
+" `inches` or `metric` setting in effect.",
+" The latter settings is also used as default units for editing with \"xfig\".",
+"",
+" `pointsmax <max_points>` sets the maximum number of points per polyline.",
+"",
+" `solid` inhibits automatic usage of `dash`ed lines when solid linestyles are",
+" used up, which otherwise occurs.",
+"",
+" `font` sets the text font face to <fontname> and its size to <fontsize>",
+" points. `textnormal` resets the text flags and selects postscript fonts,",
+" `textspecial` sets the text flags for LaTeX specials, `texthidden` sets the",
+" hidden flag and `textrigid` the rigid flag.",
+"",
+" `depth` sets the default depth layer for all lines and text.  The default",
+" depth is 10 to leave room for adding material with \"xfig\" on top of the",
+" plot.",
+"",
+" `version` sets the format version of the generated fig output. Currently",
+" only versions 3.1 and 3.2 are supported.",
+"",
+" `thickness` sets the default line thickness, which is 1 if not specified.",
+" Overriding the thickness can be achieved by adding a multiple of 100 to the",
+" `linetype` value for a `plot` command.  In a similar way the `depth`",
+" of plot elements (with respect to the default depth) can be controlled by",
+" adding a multiple of 1000 to <linetype>.  The depth is then <layer> +",
+" <linetype>/1000 and the thickness is (<linetype>%1000)/100 or, if that is",
+" zero, the default line thickness. `linewidth` is a synonym for `thickness`.",
+"",
+" Additional point-plot symbols are also available with the `fig` driver. The",
+" symbols can be used through `pointtype` values % 100 above 50, with different",
+" fill intensities controlled by <pointtype> % 5 and outlines in black (for",
+" <pointtype> % 10 < 5) or in the current color.  Available symbols are",
+"         50 - 59:  circles",
+"         60 - 69:  squares",
+"         70 - 79:  diamonds",
+"         80 - 89:  upwards triangles",
+"         90 - 99:  downwards triangles",
+" The size of these symbols is linked to the font size.  The depth of symbols",
+" is by default one less than the depth for lines to achieve nice error bars.",
+" If <pointtype> is above 1000, the depth is <layer> + <pointtype>/1000-1.  If",
+" <pointtype>%1000 is above 100, the fill color is (<pointtype>%1000)/100-1.",
+"",
+" Available fill colors are (from 1 to 9): black, blue, green, cyan, red,",
+" magenta, yellow, white and dark blue (in monochrome mode: black for 1 to 6",
+" and white for 7 to 9).",
+"",
+" See `plot with` for details of <linetype> and <pointtype>.",
+"",
+" The `big` option is a substitute for the `bfig` terminal in earlier versions,",
+" which is no longer supported.",
+"",
+" Examples:",
+"       set terminal fig monochrome small pointsmax 1000  # defaults",
+"",
+"       plot 'file.dat' with points linetype 102 pointtype 759",
+" would produce circles with a blue outline of width 1 and yellow fill color.",
+"",
+"       plot 'file.dat' using 1:2:3 with err linetype 1 pointtype 554",
+" would produce errorbars with black lines and circles filled red.  These",
+" circles are one layer above the lines (at depth 9 by default).",
+"",
+" To plot the error bars on top of the circles use",
+"       plot 'file.dat' using 1:2:3 with err linetype 1 pointtype 2554"
+END_HELP(fig)
+#endif /* TERM_HELP */
+
+
+
+
+#if 0
+
+/* I hope this is enough to stop compilers looking in here
+ * (I think that anything inside #if 0 is still strictly
+ *  required to be valid C, rather than just any old junk
+ *  like this.)
+ */
+
+/*
+ * FIG : Facility for Interactive Generation of figures
+ * Copyright (c) 1985 by Supoj Sutanthavibul
+ * Parts Copyright (c) 1994 by Brian V. Smith
+ * Parts Copyright (c) 1991 by Paul King
+ *
+ * The X Consortium, and any party obtaining a copy of these files from
+ * the X Consortium, directly or indirectly, is granted, free of charge, a
+ * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
+ * nonexclusive right and license to deal in this software and
+ * documentation files (the "Software"), including without limitation the
+ * rights to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the Software, and to permit persons who receive
+ * copies from any such party to do so, with the only requirement being
+ * that this copyright notice remain intact.  This license includes without
+ * limitation a license to do the foregoing actions under any patents of
+ * the party supplying this software to the X Consortium.
+ */
+
+/*
+The only difference from version 3.0 to version 3.1 is that the position
+of the "magnet" has been shifted by 14 Fig units.
+In the 2.1 and older versions of xfig the grid was in multiples of 5 Fig
+units, but they were on intervals 4, 9, 14, 19, etc.
+When version 3.0 was created, coordinates were simply multiplied by the
+ratio of the resolutions (1200/80 = 15) so values like 4 became 60 instead
+of 74 ((4+1)*15 - 1).
+
+This means that figures converted from 2.1 and older files are offset by
+14 Fig units but new objects entered with version 3.0 are correct.
+
+In version 3.1 the magnet grid is at intervals 0, 75, 150, etc instead of
+-1, 74, 149, etc.
+Figures from 2.1 and older are correctly converted now and a warning is popped
+up when you read in a version 3.0 file that says you may have to offset the
+figure when you load it, using the x and y offsets in the file panel.
+
+--------------------------------------------------------------------------------
+Description of the Fig Format Follows
+--------------------------------------------------------------------------------
+
+ (1) The very first line is a comment line containing the name and version:
+	#FIG 3.1
+
+    The character # at the first column of a line indicates that the line
+    is a comment line which will be ignored.
+
+ (2) The first non-comment line consists of two numbers and two strings:
+
+	int	fig_resolution		(Fig units/inch)
+	string	orientation		("Landscape" or "Portrait")
+	string	justification		("Center" or "Flush Left")
+	string	units			("Metric" or "Inches")
+	int	coordinate_system	(1: origin is the lower left corner (NOT USED)
+					 2: upper left)
+
+    Fig_resolution is the resolution of the figure in the file.
+    Xfig will always write the file with a resolution of 1200ppi so it
+    will scale the figure upon reading it in if its resolution is different
+    from 1200ppi.  Pixels are assumed to be square.
+
+    Xfig will read the orientation string and change the canvas to match
+    either the Landscape or Portrait mode of the figure file.
+
+    The units specification is self-explanatory.
+
+    The coordinate_system variable is ignored - the origin is ALWAYS the
+    upper-left corner.
+
+    ** Coordinates are given in "fig_resolution" units.
+    ** Line thicknesses are given in 1/80 of an inch ("display units").  The
+       minimum line thickness is 0 (no line is drawn) and the maximum is 500.
+    ** dash-lengths/dot-gaps are given in 1/80 of an inch.
+
+
+ (3) The rest of the file contains various objects.  An object can be one
+    of six classes (or types).
+
+	0)	Color pseudo-object.
+	1)	Arc.
+	2)	Ellipse which is a generalization of circle.
+	3)	Polyline which includes polygon and box.
+	4)	Spline which includes closed/open control/interpolated spline.
+	5)	Text.
+	6)	Compound object which is composed of one or more objects.
+
+    In the following elaboration on object formats, every value of Fig
+    output are separated by blank characters or new line ('\n').  The
+    value of the unused parameters will be -1.
+
+    Some fields are described as "enumeration type" or "bit vector"; the
+    values which these fields can take are defined in the header file object.h.
+    The pen_style field is unused.
+    These values may be defined in some future version of Fig.
+
+    The two color fields (pen and fill; pen only, for texts) are
+    defined as follows:
+
+	    -1 = Default
+	     0 = Black
+	     1 = Blue
+	     2 = Green
+	     3 = Cyan
+	     4 = Red
+	     5 = Magenta
+	     6 = Yellow
+	     7 = White
+	  8-11 = four shades of blue (dark to lighter)
+	 12-14 = three shades of green (dark to lighter)
+	 15-17 = three shades of cyan (dark to lighter)
+	 18-20 = three shades of red (dark to lighter)
+	 21-23 = three shades of magenta (dark to lighter)
+	 24-26 = three shades of brown (dark to lighter)
+	 27-30 = four shades of pink (dark to lighter)
+	    31 = Gold
+
+	 values from 32 to 543 (512 total) are user colors and
+	 are defined in color pseudo-objects (type 0)
+
+    For WHITE color, the area fill field is defined as follows:
+
+	-1 = not filled
+	 0 = black
+	...  values from 1 to 19 are shades of grey, from darker to lighter
+	20 = white
+	21-40 not used
+	41-56 see patterns for colors, below
+
+    For BLACK or DEFAULT color, the area fill field is defined as follows:
+
+	-1 = not filled
+	 0 = white
+	...  values from 1 to 19 are shades of grey, from lighter to darker
+	20 = black
+	21-40 not used
+	41-56 see patterns for colors, below
+
+    For all other colors, the area fill field is defined as follows:
+
+	-1 = not filled
+	 0 = black
+	...  values from 1 to 19 are "shades" of the color, from darker to lighter.
+		A shade is defined as the color mixed with black
+	20 = full saturation of the color
+	...  values from 21 to 39 are "tints" of the color from the color to white.
+		A tint is defined as the color mixed with white
+	40 = white
+	41 = 30 degree left diagonal pattern
+	42 = 30 degree right diagonal pattern
+	43 = 30 degree crosshatch
+	44 = 45 degree left diagonal pattern
+	45 = 45 degree right diagonal pattern
+	46 = 45 degree crosshatch
+	47 = bricks
+	48 = circles
+	49 = horizontal lines
+	50 = vertical lines
+	51 = crosshatch
+	52 = fish scales
+	53 = small fish scales
+	54 = octagons
+	55 = horizontal "tire treads"
+	56 = vertical "tire treads"
+
+    The depth field is defined as follows:
+
+	 0 ... 999 where larger value means object is deeper than (under)
+		   objects with smaller depth
+
+    The line_style field is defined as follows:
+
+	-1 = Default
+	 0 = Solid
+	 1 = Dashed
+	 2 = Dotted
+
+    The style_val field is defined as the length, in 1/80 inches, of the on/off
+    dashes for dashed lines, and the distance between the dots, in 1/80 inches,
+    for dotted lines.
+
+    The join_style field is defined FOR LINES only as follows:
+
+	 0 = Miter (the default in xfig 2.1 and earlier)
+	 1 = Bevel
+	 2 = Round
+
+    The cap_style field is defined FOR LINES, OPEN SPLINES and ARCS only as follows:
+
+	 0 = Butt (the default in xfig 2.1 and earlier)
+	 1 = Round
+	 2 = Projecting
+
+    The arrow_type field is defined for LINES, ARCS and OPEN SPLINES
+    only as follows:
+
+	 0 = Stick-type (the default in xfig 2.1 and earlier)
+	 1 = Closed triangle:
+		|\
+		|  \
+		|    \
+		|    /
+		|  /
+		|/
+	 2 = Closed with "indented" butt:
+		|\
+		\  \
+		 \   \
+		  \    \
+		  /    /
+		 /   /
+		/  /
+		|/
+	 3 = Closed with "pointed" butt:
+		   |\
+		  /   \
+		 /      \
+		/         \
+		\         /
+		 \      /
+		  \   /
+		   |/
+
+    The arrow_style field is defined for LINES, ARCS and OPEN SPLINES
+    only as follows:
+
+	 0 = Hollow (actually filled with white)
+	 1 = Filled with pen_color
+
+ (3.0) OBJECT DEFINITION:
+
+    (3.1) Color Pseudo-objects (user-defined colors)
+	  This is used to define arbitrary colors beyond the 32 standard colors.
+	  The color objects must be defined before any other Fig objects.
+
+    First line:
+	type	name			(brief description)
+	----	----			-------------------
+	int	object_code		(always 0)
+	int	color_number		(color number, from 32-543 (512 total))
+     hex string	rgb values		(hexadecimal string describing red,
+					 green and blue values (e.g. #330099) )
+
+    (3.2) ARC
+
+    First line:
+	type	name			(brief description)
+	----	----			-------------------
+	int	object_code		(always 5)
+	int	sub_type		(0: pie-wedge (closed)
+					 1: open ended arc)
+	int	line_style		(enumeration type)
+	int	line_thickness		(1/80 inch)
+	int	pen_color		(enumeration type, pen color)
+	int	fill_color		(enumeration type, fill color)
+	int	depth			(enumeration type)
+	int	pen_style		(pen style, not used)
+	int	area_fill		(enumeration type, -1 = no fill)
+	float	style_val		(1/80 inch)
+	int	cap_style		(enumeration type)
+	int	direction		(0: clockwise, 1: counterclockwise)
+	int	forward_arrow		(0: no forward arrow, 1: on)
+	int	backward_arrow		(0: no forward arrow, 1: on)
+	float	center_x, center_y	(center of the arc)
+	int	x1, y1			(Fig units, the 1st point the user entered)
+	int	x2, y2			(Fig units, the 2nd point)
+	int	x3, y3			(Fig units, the last point)
+
+    Forward arrow line (Optional; absent if forward_arrow is 0):
+	type	name			(brief description)
+	----	----			-------------------
+	int	arrow_type		(enumeration type)
+	int	arrow_style		(enumeration type)
+	float	arrow_thickness		(1/80 inch)
+	float 	arrow_width		(Fig units)
+	float	arrow_height		(Fig units)
+
+    Backward arrow line (Optional; absent if backward_arrow is 0):
+	type	name			(brief description)
+	----	----			-------------------
+	int	arrow_type		(enumeration type)
+	int	arrow_style		(enumeration type)
+	float	arrow_thickness		(1/80 inch)
+	float	arrow_width		(Fig units)
+	float	arrow_height		(Fig units)
+
+    (3.3) COMPOUND
+
+    A line with object code 6 signifies the start of a compound.
+    There are four more numbers on this line which indicate the
+    upper right corner and the lower left corner of the bounding
+    box of this compound.  A line with object code -6 signifies
+    the end of the compound.  Compound may be nested.
+
+    First line:
+	type	name			(brief description)
+	----	----			-------------------
+	int	object_code		(always 6)
+	int	upperright_corner_x	(Fig units)
+	int	upperright_corner_y	(Fig units)
+	int	lowerleft_corner_x	(Fig units)
+	int	lowerleft_corner_y	(Fig units)
+
+    Subsequent lines:
+	objects
+	.
+	.
+
+    Last line:
+	-6
+
+    (3.4) ELLIPSE
+
+    First line:
+	type	name			(brief description)
+	----	----			-------------------
+	int	object_code		(always 1)
+	int	sub_type		(1: ellipse defined by radiuses
+					 2: ellipse defined by diameters
+					 3: circle defined by radius
+					 4: circle defined by diameter)
+	int	line_style		(enumeration type)
+	int	thickness		(1/80 inch)
+	int	pen_color		(enumeration type, pen color)
+	int	fill_color		(enumeration type, fill color)
+	int	depth			(enumeration type)
+	int	pen_style		(pen style, not used)
+	int	area_fill		(enumeration type, -1 = no fill)
+	float	style_val		(1/80 inch)
+	int	direction		(always 1)
+	float	angle			(radians, the angle of the x-axis)
+	int	center_x, center_y	(Fig units)
+	int	radius_x, radius_y	(Fig units)
+	int	start_x, start_y	(Fig units; the 1st point entered)
+	int	end_x, end_y		(Fig units; the last point entered)
+
+    (3.5) POLYLINE
+
+    First line:
+	type	name			(brief description)
+	----	----			-------------------
+	int	object_code		(always 2)
+	int	sub_type		(1: polyline
+					 2: box
+					 3: polygon
+					 4: arc-box)
+					 5: imported-picture bounding-box)
+	int	line_style		(enumeration type)
+	int	thickness		(1/80 inch)
+	int	pen_color		(enumeration type, pen color)
+	int	fill_color		(enumeration type, fill color)
+	int	depth			(enumeration type)
+	int	pen_style		(pen style, not used)
+	int	area_fill		(enumeration type, -1 = no fill)
+	float	style_val		(1/80 inch)
+	int	join_style		(enumeration type)
+	int	cap_style		(enumeration type, only used for POLYLINE)
+	int	radius			(1/80 inch, radius of arc-boxes)
+	int	forward_arrow		(0: off, 1: on)
+	int	backward_arrow		(0: off, 1: on)
+	int	npoints			(number of points in line)
+
+    Forward arrow line: same as ARC object
+
+    Backward arrow line: same as ARC object
+
+    Points line:
+	type	name			(brief description)
+	----	----			-------------------
+	int	x1, y1			(Fig units)
+	int	x2, y2			(Fig units)
+	  .
+	  .
+	int	xnpoints ynpoints	(this will be the same as the 1st
+					point for polygon and box)
+
+    PIC line:
+	type	name			(brief description)
+	----	----			-------------------
+	boolean	flipped			orientation = normal (0) or flipped (1)
+	char	file[]			name of picture file to import
+
+    (3.6) SPLINE
+
+    First line:
+	type	name			(brief description)
+	----	----			-------------------
+	int	object_code		(always 3)
+	int	sub_type		(0: open spline
+					 1: closed spline
+					 2: open interpolated spline
+					 3: closed interpolated spline)
+	int	line_style		(See the end of this section)
+	int	thickness		(1/80 inch)
+	int	pen_color		(enumeration type, pen color)
+	int	fill_color		(enumeration type, fill color)
+	int	depth			(enumeration type)
+	int	pen_style		(pen style, not used)
+	int	area_fill		(enumeration type, -1 = no fill)
+	float	style_val		(1/80 inch)
+	int	cap_style		(enumeration type, only used for open splines)
+	int	forward_arrow		(0: off, 1: on)
+	int	backward_arrow		(0: off, 1: on)
+	int	npoints			(number of control points in spline)
+
+    Forward arrow line: same as ARC object
+
+    Backward arrow line: same as ARC object
+
+    Points line: same as POLYLINE object
+
+    Control points line (absent if sub_type is 0 or 1):
+	Control points of interpolated spline.  There are two control
+	points for each knots.  A section i, of the spline is drawn
+	using Bezier cubic with the following four points:
+		(x ,y ), (rx ,ry ), (lx	  , ly   ), (x   , y   ).
+		  i  i	    i	i      i+1    i+1     i+1   i+1
+	For closed interpolated spline the last pair of control points,
+	(lxnpoints,lynpoints) and (rxnpoints,rynpoints) (which can be ignored),
+	are the same as (lx1,ly1) and (rx1,ry1) respectively.
+
+	type	name			(brief description)
+	----	----			-------------------
+	float	lx1, ly1		(Fig units)
+	float	rx1, ry1		(Fig units)
+	float	lx2, ly2		(Fig units)
+	float	rx2, ry2		(Fig units)
+	  .
+	  .
+	float	lxnpoints, lynpoints	(Fig units)
+	float	rxnpoints, rynpoints	(Fig units)
+
+    (3.7) TEXT
+	type	name			(brief description)
+	----	----			-------------------
+	int	object 			(always 4)
+	int	sub_type		(0: Left justified
+					 1: Center justified
+					 2: Right justified)
+	int	color			(enumeration type)
+	int	depth			(enumeration type)
+	int	pen_style		(enumeration , not used)
+	int	font 			(enumeration type)
+	float	font_size 		(font size in points)
+	float	angle			(radians, the angle of the text)
+	int	font_flags		(bit vector)
+	float	height			(Fig units)
+	float	length			(Fig units)
+	int	x, y			(Fig units, coordinate of the origin
+					 of the string.  If sub_type = 0, it is
+					 the lower left corner of the string.
+					 If sub_type = 1, it is the lower
+					 center.  Otherwise it is the lower
+					 right corner of the string.)
+	char	string[]		(ASCII characters; starts after a blank
+					 character following the last number and
+					 ends before the sequence '\001'.  This
+					 sequence is not part of the string.
+					 Characters above octal 177 are
+					 represented by \xxx where xxx is the
+					 octal value.  This permits Fig files to
+					 be edited with 7-bit editors and sent
+					 by e-mail without data loss.
+					 Note that the string may contain '\n'.)
+
+    The font_flags field is defined as follows:
+
+	 Bit	Description
+
+	  0	Rigid text (text doesn't scale when scaling compound objects)
+	  1	Special text (for LaTeX)
+	  2	PostScript font (otherwise LaTeX font is used)
+	  3	Hidden text
+
+    The font field is defined as follows:
+
+	For font_flags bit 2 = 0 (LaTeX fonts):
+
+	 0	Default font
+	 1	Roman
+	 2	Bold
+	 3	Italic
+	 4	Sans Serif
+	 5	Typewriter
+
+	For font_flags bit 3 = 1 (PostScript fonts):
+
+	-1	Default font
+	 0	Times Roman
+	 1	Times Italic
+	 2	Times Bold
+	 3	Times Bold Italic
+	 4	AvantGarde Book
+	 5	AvantGarde Book Oblique
+	 6	AvantGarde Demi
+	 7	AvantGarde Demi Oblique
+	 8	Bookman Light
+	 9	Bookman Light Italic
+	10	Bookman Demi
+	11	Bookman Demi Italic
+	12	Courier
+	13	Courier Oblique
+	14	Courier Bold
+	15	Courier Bold Oblique
+	16	Helvetica
+	17	Helvetica Oblique
+	18	Helvetica Bold
+	19	Helvetica Bold Oblique
+	20	Helvetica Narrow
+	21	Helvetica Narrow Oblique
+	22	Helvetica Narrow Bold
+	23	Helvetica Narrow Bold Oblique
+	24	New Century Schoolbook Roman
+	25	New Century Schoolbook Italic
+	26	New Century Schoolbook Bold
+	27	New Century Schoolbook Bold Italic
+	28	Palatino Roman
+	29	Palatino Italic
+	30	Palatino Bold
+	31	Palatino Bold Italic
+	32	Symbol
+	33	Zapf Chancery Medium Italic
+	34	Zapf Dingbats
+*/
+
+#endif

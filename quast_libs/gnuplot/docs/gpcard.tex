@@ -1,0 +1,1111 @@
+% Quick Reference Card for gnuplot 2004
+%
+% $Id: gpcard.tex,v 1.9 2014/03/08 07:30:11 sfeam Exp $
+%
+% Format stolen shamelessly from the GNU Emacs reference card
+%**start of header
+\special{landscape}
+\newcount\columnsperpage
+
+% This file can be printed with 1, 2, or 3 columns per page (see below).
+% Specify how many you want here.  Nothing else needs to be changed.
+% For gnuplot refcard, entries are too wide for 3 columns.  Print
+% 2 columns landscape
+
+\columnsperpage=2
+
+% Copyright (c) 1987 Free Software Foundation, Inc.
+
+% This file is part of GNU Emacs, but was adapted for the gnuplot
+% reference card because it was so nicely set up.
+
+% This file is intended to be processed by plain TeX (TeX82).
+%
+% The final reference card has six columns, three on each side.
+% This file can be used to produce it in any of three ways:
+% 1 column per page
+%    produces six separate pages, each of which needs to be reduced to 80%.
+%    This gives the best resolution.
+% 2 columns per page
+%    produces three already-reduced pages.
+%    You will still need to cut and paste.
+% 3 columns per page
+%    produces two pages which must be printed sideways to make a
+%    ready-to-use 8.5 x 11 inch reference card.
+%    For this you need a dvi device driver that can print sideways.
+% Which mode to use is controlled by setting \columnsperpage above.
+%
+% Author of GNU Emacs Refcard:
+%  Stephen Gildea
+%  UUCP: mit-erl!gildea
+%  Internet: gildea@erl.mit.edu
+%
+% Thanks to Paul Rubin, Bob Chassell, Len Tower, and Richard Mlynarik
+% for their many good ideas.
+%
+% Person who ripped off the formatter:
+%  Alex Woo
+%  NASA Ames Research Center
+%  Internet: woo@ames.arc.nasa.gov
+%
+% Modified on 9 Dec 1992 by:
+%  Daniel S. Lewart
+%  University of Illinois
+%  Internet: d-lewart@uiuc.edu
+
+% make \bye not \outer so that the \def\bye in the \else clause below
+% can be scanned without complaint.
+\def\bye{\par\vfill\supereject\end}
+
+\def\copyrightnotice{
+\vskip 1ex plus 2 fill\begingroup\small
+Layout adapted from the \TeX\ source for Stephen Gildea's GNU Emacs
+Reference Card (version 1.8).
+
+PostScript is a registered trademark of Adobe Systems Incorporated.
+GNU, Versatec, Imagen, Printronix, Canon, GraphOn, Visual, MicroVAX,
+UIS, Tektronix, Unix, VAX, VMS, NeWS, SunView, and em4010 are all
+trademarks of various companies.  We endorse none of them.
+
+\endgroup}
+
+\newdimen\intercolumnskip
+\newbox\columna
+\newbox\columnb
+
+\def\ncolumns{\the\columnsperpage}
+
+\message{[\ncolumns\space
+  column\if 1\ncolumns\else s\fi\space per page]}
+
+\def\scaledmag#1{ scaled \magstep #1}
+
+% This multi-way format was designed by Stephen Gildea
+% October 1986.
+% modified for gnuplot refcard by Alex Woo
+
+\if 1\ncolumns
+%  \hsize 4in
+  \hsize 6in
+  \vsize 10in
+  \voffset -.7in
+  \font\titlefont=\fontname\tenbf \scaledmag3
+  \font\headingfont=\fontname\tenbf \scaledmag2
+  \font\smallfont=\fontname\sevenrm
+  \font\smallsy=\fontname\sevensy
+
+  \footline{\hss\folio}
+  \def\makefootline{\baselineskip10pt\hsize6.5in\line{\the\footline}}
+\else
+%  \hsize 3.2in
+  \hsize 5in
+  \vsize 7.95in
+  \hoffset -.75in
+  \voffset -.745in
+  \font\titlefont=cmbx10 \scaledmag2
+  \font\headingfont=cmbx10 \scaledmag1
+  \font\smallfont=cmr6
+  \font\smallsy=cmsy6
+  \font\eightrm=cmr8
+  \font\eightbf=cmbx8
+  \font\eightit=cmti8
+  \font\eighttt=cmtt8
+  \font\eightsy=cmsy8
+  \textfont0=\eightrm
+  \textfont2=\eightsy
+  \def\rm{\eightrm}
+  \def\bf{\eightbf}
+  \def\it{\eightit}
+  \def\tt{\eighttt}
+  \normalbaselineskip=.8\normalbaselineskip
+  \normallineskip=.8\normallineskip
+  \normallineskiplimit=.8\normallineskiplimit
+  \normalbaselines\rm           %make definitions take effect
+
+  \if 2\ncolumns
+    \let\maxcolumn=b
+    \footline{\hss\rm\folio\hss}
+    \def\makefootline{\vskip 2in \hsize=6.86in\line{\the\footline}}
+  \else \if 3\ncolumns
+    \let\maxcolumn=c
+    \nopagenumbers
+  \else
+    \errhelp{You must set \columnsperpage equal to 1, 2, or 3.}
+    \errmessage{Illegal number of columns per page}
+  \fi\fi
+
+  \intercolumnskip=.46in
+  \def\abc{a}
+  \output={%
+      % This next line is useful when designing the layout.
+      %\immediate\write16{Column \folio\abc\space starts with \firstmark}
+      \if \maxcolumn\abc \multicolumnformat \global\def\abc{a}
+      \else\if a\abc
+        \global\setbox\columna\columnbox \global\def\abc{b}
+        %% in case we never use \columnb (two-column mode)
+        \global\setbox\columnb\hbox to -\intercolumnskip{}
+      \else
+        \global\setbox\columnb\columnbox \global\def\abc{c}\fi\fi}
+  \def\multicolumnformat{\shipout\vbox{\makeheadline
+      \hbox{\box\columna\hskip\intercolumnskip
+        \box\columnb\hskip\intercolumnskip\columnbox}
+      \makefootline}\advancepageno}
+  \def\columnbox{\leftline{\pagebody}}
+
+  \def\bye{\par\vfill\supereject
+    \if a\abc \else\null\vfill\eject\fi
+    \if a\abc \else\null\vfill\eject\fi
+    \end}
+\fi
+
+% we won't be using math mode much, so redefine some of the characters
+% we might want to talk about
+\catcode`\^=12
+\catcode`\_=12
+
+\chardef\\=`\\
+\chardef\{=`\{
+\chardef\}=`\}
+
+\hyphenation{mini-buf-fer}
+
+\parindent 0pt
+\parskip 1ex plus .5ex minus .5ex
+
+\def\small{\smallfont\textfont2=\smallsy\baselineskip=.8\baselineskip}
+
+\outer\def\newcolumn{\vfill\eject}
+
+\outer\def\title#1{{\titlefont\centerline{#1}}\vskip 1ex plus .5ex}
+
+\outer\def\section#1{\par\filbreak
+  \vskip 3ex plus 2ex minus 2ex {\headingfont #1}\mark{#1}%
+  \vskip 2ex plus 1ex minus 1.5ex}
+
+\newdimen\keyindent
+
+\def\beginindentedkeys{\keyindent=1em}
+\def\endindentedkeys{\keyindent=0em}
+\endindentedkeys
+
+\def\paralign{\vskip\parskip\halign}
+
+\def\<#1>{$\langle${\rm #1}$\rangle$}
+
+\def\kbd#1{{\tt#1}\null}        %\null so not an abbrev even if period follows
+
+\def\beginexample{\par\leavevmode\begingroup
+  \obeylines\obeyspaces\parskip0pt\tt}
+{\obeyspaces\global\let =\ }
+\def\endexample{\endgroup}
+
+
+\def\key#1#2{\leavevmode\hbox to \hsize{\vtop
+%  {\hsize=.75\hsize\rightskip=1em
+  {\hsize=.5\hsize\rightskip=1em
+  \hskip\keyindent\relax#1}\kbd{#2}\hfil}}
+
+\newbox\metaxbox
+\setbox\metaxbox\hbox{\kbd{M-x }}
+\newdimen\metaxwidth
+\metaxwidth=\wd\metaxbox
+
+\def\metax#1#2{\leavevmode\hbox to \hsize{\hbox to .75\hsize
+  {\hskip\keyindent\relax#1\hfil}%
+  \hskip -\metaxwidth minus 1fil
+  \kbd{#2}\hfil}}
+
+\def\threecol#1#2#3{\hskip\keyindent\relax#1\hfil&\kbd{#2}\quad
+  &\kbd{#3}\quad\cr}
+
+%**end of header
+
+
+\title{gnuplot Quick Reference}
+
+\centerline{(Copyright(c) Alex Woo 1992 June 1)}
+\centerline{Updated by Hans-Bernhard Br\"o{}ker, April 2004}
+
+\section{Starting gnuplot}
+
+\key{to enter gnuplot}{gnuplot}
+\key{to enter batch gnuplot}{gnuplot macro_file}
+\key{to pipe commands to gnuplot}{application | gnuplot}
+
+see below for  environment variables you might want to change
+before entering gnuplot.
+
+\section{Exiting gnuplot}
+
+\key{exit gnuplot}{quit}
+
+All gnuplot commands can be abbreviated to the first few
+unique letters, usually three characters.  This reference uses
+the complete name for clarity.
+
+\section{Getting Help}
+
+\key{introductory help} {help plot}
+\key{help on a topic}{help <topic>}
+\key{list of all help available}{help or ?}
+\key{show current environment}{show all}
+\section{Command-line Editing}
+
+The UNIX, MS-DOS and VMS versions of gnuplot support command-line
+editing and a command history.  EMACS style editing is supported.
+
+\beginindentedkeys
+
+Line Editing:
+
+\key{move back a single character}{^ B}
+\key{move forward a single character}{^ F}
+\key{moves to the beginning of the line}{^ A}
+\key{moves to the end of the line}{^ E}
+\key{delete the previous character} {^ H and DEL }
+\key{deletes the current character}  {^ D}
+\key{deletes to the end of line}{^ K}
+\key{redraws line in case it gets trashed}{ ^ L,^ R}
+\key{deletes the entire line}{ ^ U}
+\key{deletes the last word}{ ^ W}
+\endindentedkeys
+\beginindentedkeys
+
+History:
+
+\key{moves back through history}{ ^ P }
+\key{moves forward through history}{ ^ N }
+\endindentedkeys
+
+The following arrow keys may be used on most PC versions if READLINE
+is used.
+
+\beginindentedkeys
+IBM PC Arrow Keys:
+
+\key{Left  Arrow}{same as ^ B}
+\key{Right Arrow}{same as ^ F}
+\key{Ctrl Left  Arrow}{same as ^ A}
+\key{Ctrl Right Arrow}{same as ^ E}
+\key{Up    Arrow}{same as ^ P}
+\key{Down  Arrow}{same as ^ N}
+\endindentedkeys
+
+
+
+\section{Graphics Devices}
+
+All screen graphics devices are specified by names and options.  This
+information can be read from a startup file (.gnuplot in UNIX).  If
+you change the graphics device, you must replot with the \kbd{replot}
+command or recreate it repeating the \kbd{load} of the script that
+created it.
+
+\key{get a list of valid devices }{set terminal [options]}
+
+\beginindentedkeys
+
+Graphics Terminals:
+
+\key{Mac OS X}                                  {set term aqua}
+\key{AED 512 Terminal}                          {set term aed512}
+\key{AED 767 Terminal}                          {set term aed767}
+\key{BBN Bitgraph Terminal}                     {set term bitgraph}
+\key{MS-DOS Kermit Tek4010 term - color}        {set term kc_tek40xx}
+\key{MS-DOS Kermit Tek4010 term - mono}         {set term km_tek40xx}
+\key{NeXTstep window system}                    {set term next}
+\key{OS/2 Presentation Manager}                 {set term pm}
+\key{REGIS graphics language}                   {set term regis}
+\key{Selanar Tek Terminal}                      {set term selanar}
+\key{SunView window system}                     {set term sun}
+\key{Tektronix 4106, 4107, 4109 \& 420X }       {set term tek4OD10x}
+\key{Tektronix 4010; most TEK emulators}        {set term tek40xx}
+\key{VAX UIS window system}                     {set term VMS}
+\key{VT-like tek40xx terminal emulator}         {set term vttek}
+\key{UNIX plotting (not always supplied)}       {set term unixplot}
+\key{AT\&T 3b1 or 7300 UNIXPC}                  {set term unixpc}
+\key{MS Windows}                                {set term windows}
+\key{X11 display terminal}                      {set term x11}
+
+\endindentedkeys
+
+\beginindentedkeys
+
+Turbo C PC Graphics Modes:
+
+\key{Hercules}{set term hercules}
+\key{Color Graphics Adaptor}{set term cga}
+\key{Monochrome CGA}{set term mcga}
+\key{Extended Graphics Adaptor}{set term ega}
+\key{VGA} {set term vga}
+\key{Monochrome VGA} {set term vgamono}
+\key{Super VGA - requires SVGA driver}{set term svga}
+\key{AT\&T 6300 Micro}{set term att}
+
+\endindentedkeys
+
+\beginindentedkeys
+
+Hardcopy Devices:
+
+\key{Unknown - not a plotting device} {set term unknown}
+\key{Dump ASCII table of X Y [Z] values}{set term table}
+\key{printer or glass dumb terminal}                    {set term dumb}
+\key{Roland DXY800A plotter}                            {set term dxy800a}
+
+Dot Matrix Printers
+
+\key{Epson-style 60-dot per inch printers}              {set term epson_60dpi}
+\key{Epson LX-800, Star NL-10 }{set term epson_lx800}
+\key{NX-1000, PROPRINTER }{set term epson_lx800}
+\key{NEC printer CP6, Epson LQ-800 }
+                        {set term nec_cp6 [monochrome color draft]}
+\key{Star Color Printer}                                {set term starc}
+\key{Tandy DMP-130  60-dot per inch }   {set term tandy_60dpi}
+\key{Vectrix 384 \& Tandy color printer}                {set term vx384}
+
+Laser Printers
+
+\key{Talaris EXCL language}{set term excl}
+\key{Imagen laser printer}                              {set term imagen}
+\key{LN03-Plus in EGM mode}                     {set term ln03}
+\key{PostScript graphics language }
+                {set term post [mode color `font' size]}
+\key{CorelDraw EPS}
+                {set term corel [mode color `font' size]}
+\key{Prescribe - for the Kyocera Laser Printer} {set term prescribe}
+\key{Kyocera Laser Printer with Courier font}           {set term kyo}
+\key{QMS/QUIC Laser  (also Talaris 1200 )}{set term qms}
+
+Metafiles
+
+\key{AutoCAD DXF (120x80 default)}                      {set term dxf}
+\key{FIG graphics language: SunView or X }{set term fig}
+\key{FIG graphics language:  Large Graph}{set term bfig}
+\key{Frame Maker MIF 3.0}
+                {set term mif [pentype curvetype help]}
+\key{Portable bitmap}                                   {set term pbm [fontsize color]}
+\key{TGIF language}                             {set term tgif}
+
+HP Devices
+
+\key{HP2623A and maybe others}                  {set term hp2623A}
+\key{HP2648 and HP2647}                         {set term hp2648}
+\key{HP7580, \& probably other HPs (4 pens)}            {set term hp7580B}
+\key{HP7475 \&  lots of others (6 pens)}        {set term hpgl}
+\key{HP Laserjet series II \& clones}   {set term hpljii [75 100 150 300]}
+\key{HP DeskJet 500} {set term hpdj [75 100 150 300]}
+\key{HP PaintJet \& HP3630 }
+                                {set term hppj [FNT5X9 FNT9X17 FNT13x25]}
+\key{HP laserjet III ( HPGL plot vectors)}
+                {set term pcl5 [mode font fontsize ]}
+
+TeX picture environments
+
+\key{LaTeX picture environment}                 {set term latex}
+\key{EEPIC -- extended LaTeX picture }  {set term eepic}
+\key{LaTeX picture  with emTeX specials}        {set term emtex}
+\key{PSTricks macros for TeX or LaTeX}  {set term pstricks}
+\key{TPIC specials for TeX or LaTeX}    {set term tpic}
+\key{MetaFont font generation input}                    {set term mf}
+
+Saving and restoring terminal
+
+\key{restore default or pushed terminal}  {set term pop}
+\key{save (push) current terminal}        {set term push}
+
+Commands associated to interactive terminals
+
+\key{change mouse settings}     {set mouse}
+\key{change hotkey bindings}    {bind}
+
+\endindentedkeys
+
+
+\section{Files}
+
+\key{{\bf plot} a data file}{plot `fspec'}
+\key{{\bf load} in a macro file}{load `fspec'}
+\key{{\bf save} command buffer to a macro file}{save `fspec'}
+\key{{\bf save settings} for later reuse}{save set `fpec'}
+
+\section{PLOT \& SPLOT commands}
+
+
+{\bf plot} and {\bf splot} are the primary commands
+{\bf plot} is used to plot 2-d
+functions and data, while {\bf splot} plots 3-d surfaces and data.
+
+Syntax:
+
+        plot $\{$ranges$\}$ $<$function$> \{$title$\} \{$style$\}$
+                    $\{, <$function$> \{$title$\} \{$style$\}...\}$
+
+        splot $\{$ranges$\} <$function$> \{$title$\} \{$style$\}$
+                    $\{, <$function$> \{$title$\} \{$style$\}...\}$
+
+where $<$function$>$ is either a mathematical expression, the name of a
+data file enclosed in quotes, or a pair ({\bf plot}) or triple ({\bf splot})
+of mathematical expressions in the case of parametric functions.
+User-defined functions and variables may also be defined here.
+Examples will be given below.
+
+\section{Plotting Data}
+Discrete data contained in a file can displayed by specifying the
+name of the data file (enclosed in quotes) on the {\bf plot} or {\bf splot}
+command line. Data files should contain one data point per line.
+Lines beginning with \# (or ! on VMS) will be treated as comments
+and ignored. For {\bf plot}s, each data point represents an (x,y)
+pair. For {\bf splot}s, each point is an (x,y,z) triple. For {\bf plot}s with
+error bars (see {\bf plot errorbars}), each data point is either
+(x,y,ydelta), (x,y,ylow,yhigh), (x,y,xlow,xhigh), (x,y,xdelta,ydelta), or
+(x,y,xlow,xhigh,ylow,yhigh). In all cases, the numbers on each
+line of a data file must be separated by blank space. This blank
+space divides each line into columns.
+
+For {\bf plot}s the x value may be omitted, and for {\bf splot}s the x
+and y values may be omitted. In either case the omitted values are
+assigned the current coordinate number. Coordinate numbers start at 0
+and are incremented for each data point read.
+
+\section{Surface Plotting}
+Implicitly, there are two types of 3-d datafiles. If all the isolines
+are of the same length, the data is assumed to be a grid data, i.e.,
+the data has a grid topology. Cross isolines in the other parametric
+direction (the ith cross isoline passes thru the ith point of all the
+provided isolines) will also be drawn for grid data. (Note contouring
+is available for grid data only.) If all the isolines are not of the
+same length, no cross isolines will be drawn and contouring that data
+is impossible.
+
+\section{Using Pipes}
+
+On some computer systems with a popen function (Unix, plus some
+others), the datafile can be piped through a shell command by starting
+the file name with a '$<$'.  For example:
+
+        pop(x) = 103*exp(x/10)
+        plot "$<$ awk '$\{$ print \$1-1965 \$2 $\}$' population.dat", pop(x)
+
+would plot the same information as the first population example
+but with years since 1965 as the x axis.  Simple manipulations
+of this kind can also be done using the extended capabilties of {\bf using}
+
+Similarly, output can be piped to another application, e.g.
+
+        set out "$|$lpr -Pmy\_laser\_printer"
+
+\section{Plot Data Using}
+The format of data within a file can be selected with the {\bf using}
+option. An explicit scanf string can be used, or simpler column
+choices can be made.
+
+\key{plot "datafile"}{ $\{$ using $\{ <$ycol$> |$}
+\key{}{$<$xcol$>:<$ycol$> |$}
+\key{}{$<$xcol$>:<$ycol$>:<$ydelta$> |$}
+\key{}{$<$xcol$>:<$ycol$>:<$width$> |$}
+\key{}{$<$xcol$>:<$ycol$>:<$xdelta$> |$}
+\key{}{$<$xcol$>:<$ycol$>:<$ylo$>:<$yhi$> |$}
+\key{}{$<$xcol$>:<$ycol$>:<$xlo$>:<$xhi$> |$}
+\key{}{$<$xcol$>:<$ycol$>:<$xdelta$>:<$ydelta$> |$}
+\key{}{$<$xcol$>:<$ycol$>:<$ydelta$>:<$width$> |$}
+\key{}{$<$xcol$>:<$ycol$>:<$ylo$>:<$yhi$>:<$width$> |$}
+\key{}{$<$xc$>:<$yc$>:<$xlo$>:<$xhi$>:<$ylo$>:<$yhi$> \}$}
+\key{}{$\{$"<scanf string>"$\} \} ...$}
+
+\key{splot "datafile"}
+{$\{$ using $\{ <$xcol$>:<$ycol$>:<$zcol$> \}$}
+\key{}{$\{"<$scanf string$>"\} \} ...$}
+
+$<$xcol$>$, $<$ycol$>$, and $<$zcol$>$ explicitly select the columns
+to plot from a space or tab separated multicolumn data file. If only
+$<$ycol$>$ is selected for {\bf plot}, $<$xcol$>$ defaults to 1. If
+only $<$zcol$>$ is selected for {\bf splot}, then only that column is
+read from the file. An $<$xcol$>$ of 0 forces $<$ycol$>$ to be plotted
+versus its coordinate number. $<$xcol$>$, $<$ycol$>$, and $<$zcol$>$
+can be entered as constants or expressions.  Expressions enclosed in
+parentheses can be used to compute a column data value from all
+numbers in the input record.
+
+If errorbars (see also {\bf plot errorbars}) are used for {\bf plot}s,
+xdelta or ydelta (for example, a +/- error) should be provided as the
+third column, or (x,y)low and (x,y)high as third and fourth columns.
+These columns must follow the x and y columns. If errorbars in both
+directions are wanted then xdelta and ydelta should be in the third
+and fourth columns, respectively, or xlow, xhigh, ylow, yhigh should
+be in the third, fourth, fifth, and sixth columns, respectively.
+
+Scanf strings override any $<$xcol$>$:$<$ycol$>$(:$<$zcol$>$) choices,
+except for ordering of input, e.g.,
+
+\key{plot "datafile"}{ using 2:1 "\%f\%*f\%f"}
+
+causes the first column to be y and the third column to be x.
+
+If the scanf string is omitted, the default is generated based on the
+$<$xcol$>$:$<$ycol$>$(:$<$zcol$>$) choices. If the {\bf using} option
+is omitted, ''\%f\%f'' is used for {\bf plot} (''\%f\%f\%f\%f'' or
+''\%f\%f\%f\%f\%f\%f'' for {\bf errorbar} {\bf plot}s) and
+''\%f\%f\%f'' is used for {\bf splot}.
+
+\key{plot "MyData"} {using "\%*f\%f\%*20[^$\backslash$n]\%f" w lines}
+
+Data are read from the file ``MyData'' using the format
+''\%*f\%f\%*20[^$\backslash$n]\%f''. The meaning of this format is:
+''\%*f'' ignore the first number, ''\%f'' then read in the second and
+assign to x, ''\%*20[^$\backslash$n]'' then ignore 20 non-newline
+characters, ''\%f'' then read in the y value.
+
+\section{Plot With Errorbars}
+Error bars are supported for 2-d data file plots by reading one to
+four additional columns specifying ydelta, ylow and yhigh, xdelta,
+xlow and xhigh, xdelta and ydelta, or xlow, xhigh, ylow, and yhigh
+respectively. No support exists for error bars for {\bf splot}s.
+
+In the default situation, gnuplot expects to see three to six
+numbers on each line of the data file, either (x, y, ydelta),
+(x, y, ylow, yhigh), (x, y, xdelta), (x, y, xlow, xhigh), 
+(x, y, xdelta, ydelta), or (x, y, xlow, xhigh, ylow, yhigh). The x 
+coordinate must be specified. The order of the numbers must be exactly 
+as given above. Data files in this format can easily be plotted with error 
+bars:
+
+        plot "data.dat" with errorbars (or yerrorbars)
+
+        plot "data.dat" with xerrorbars
+
+        plot "data.dat" with xyerrorbars
+
+The error bar is a line plotted from (x, ylow) to (x,
+yhigh) or (xlow, y) to (xhigh, y). If ydelta is specified instead 
+of ylow and yhigh, ylow=y-ydelta and yhigh=y+ydelta are derived. The
+values for xlow and xhigh are derived similarly from xdelta. If there
+are only two numbers on the line, yhigh and ylow are both set to
+y and xhigh and xlow are both set to x. To get lines plotted between 
+the data points, {\bf plot} the data file twice, once with errorbars and 
+once with lines.
+
+If x or y autoscaling is on, the x or y range will be adjusted to fit the
+error bars.
+
+Boxes may be drawn with y error bars using the {\bf boxerrorbars} style. The
+width of the box may be either set with the "set boxwidth" command, given in 
+one of the data columns, or calculated automatically so each box touches the 
+adjacent boxes.
+Boxes may be drawn instead of the cross drawn for the {\bf xyerrorbars} style 
+by using the {\bf boxxyerrorbars} style. 
+
+\key{x,y,ylow \& yhigh from columns 1,2,3,4}{plot "data.dat" us 1:2:3:4 w errorbars}
+\key{x from third, y from second, xdelta from 6}{plot "data.dat" using 3:2:6 w xerrorbars}
+\key{x,y,xdelta \& ydelta from columns 1,2,3,4}{plot "data.dat" us 1:2:3:4 w
+xyerrorbars}
+
+\section{Plot Ranges}
+The optional range specifies the region of the plot that will be
+displayed.
+
+Ranges may be provided on the {\bf plot} and {\bf splot} command line and
+affect only that plot, or in the {\bf set xrange}, {\bf set yrange}, etc.,
+commands, to change the default ranges for future plots.
+
+\key{[$\{<$dummy-var$> =\} \{<$xmin$> : <$xmax$>\}$]} { $\{$ [$\{<$ymin$> : <$ymax$>\}$] $\}$}
+
+where $<$dummy-var$>$ is the independent variable (the defaults are x and
+y, but this may be changed with {\bf set dummy}) and the min and max
+terms can be constant expressions.
+
+Both the min and max terms are optional. The ':' is also optional
+if neither a min nor a max term is specified. This allows '[ ]' to
+be used as a null range specification.
+
+Specifying a range in the {\bf plot} command line turns autoscaling for
+that axis off for that plot. Using one of the {\bf set} range commands
+turns autoscaling off for that axis for future plots, unless changed
+later. (See {\bf set autoscale}).
+
+\key{This uses the current ranges}{plot cos(x)}
+\key{This sets the x range only}{plot [-10:30] sin(pi*x)/(pi*x)}
+\key{This sets both the x and y ranges}{plot [-pi:pi] [-3:3]  tan(x), 1/x}
+\key{sets only y range, \&} {plot [ ] [-2:sin(5)*-8] sin(x)**besj0(x)}
+\key{turns off autoscaling on both axes}{}
+\key{This sets xmax and ymin only}{plot [:200] [-pi:]  exp(sin(x))}
+\key{This sets the x, y, and z ranges}{splot [0:3] [1:4] [-1:1] x*y}
+
+\section{Plot With Style}
+Plots may be displayed in one of twelve styles: {\bf lines}, {\bf points},
+{\bf linespoints}, {\bf impulses}, {\bf dots}, {\bf steps},
+{\bf errorbars} (or {\bf yerrorbars}), {\bf xerrorbars}, {\bf xyerrorbars},
+{\bf boxes}, {\bf boxerrorbars}, or {\bf boxxyerrorbars}. The {\bf lines} style
+connects adjacent points with lines. The {\bf points} style displays a
+small symbol at each point. The {\bf linespoints} style does both
+{\bf lines} and {\bf points}. The {\bf impulses} style displays a vertical line
+from the x axis (or from the grid base for {\bf splot}) to each point. The
+{\bf dots} style plots a tiny dot at each point; this is useful for
+scatter plots with many points. The {\bf steps} style is used for drawing 
+stairstep-like functions. The {\bf boxes} style may be used for barcharts.
+
+The {\bf errorbars} style is only relevant to 2-d data file plotting. It
+is treated like {\bf points} for {\bf splot}s and function {\bf plot}s. For 
+data
+{\bf plot}s, {\bf errorbars} is like {\bf points}, except that a vertical error
+bar is also drawn: for each point (x,y), a line is drawn from
+(x,ylow) to (x,yhigh). A tic mark is placed at the ends of the error
+bar. The ylow and yhigh values are read from the data file's columns,
+as specified with the {\bf using} option to plot. The {\bf xerrorbars}
+style is similar except that it draws a horizontal error bar from xlow to
+xhigh. The {\bf xyerrorbars} or {\bf boxxyerrorbars} style is used for data 
+with errors in both x and y. A barchart style may be used in conjunction with y 
+error bars through the use of {\bf boxerrorbars}. The See {\bf plot errorbars} 
+for more information.
+
+Default styles are chosen with the {\bf set function style} and
+{\bf set data style} commands.
+
+By default, each function and data file will use a different
+line type and point type, up to the maximum number of available
+types. All terminal drivers support at least six different point
+types, and re-use them, in order, if more than six are required.
+The LaTeX driver supplies an additional six point types (all variants
+of a circle), and thus will only repeat after twelve curves are
+plotted with points.
+
+If desired, the style and (optionally) the line type and point type
+used for a curve can be specified.
+
+\key{with $<$style$>$}{$ \{<$linetype$> \{<$pointtype$>\}\}$}
+
+where $<$style$>$ is either {\bf lines}, {\bf points}, {\bf linespoints}, {\bf impulses},
+{\bf dots}, {\bf steps}, {\bf errorbars} (or {\bf yerrorbars}), 
+{\bf xerrorbars}, {\bf xyerrorbars}, {\bf boxes}, {\bf boxerrorbars},
+{\bf boxxyerrorbars}.
+
+The $<$linetype$>$ \& $<$pointtype$>$ are positive
+integer constants or expressions and specify the line type and point
+type to be used for the plot. Line type 1 is the first line type used
+by default, line type 2 is the second line type used by default, etc.
+
+\key{plots sin(x) with impulses}{plot sin(x) with impulses}
+\key{plots x*y with points, x**2 + y**2 default}{splot x*y w points, x**2 + y**2}
+\key{plots tan(x) with default function style}
+        {plot [ ] [-2:5] tan(x)}
+\key{plots ``data.1'' with lines}{plot "data.1" with l}
+\key{plots ``leastsq.dat'' with impulses} {plot 'leastsq.dat' w i}
+\key{plots ``exper.dat'' with errorbars \& }
+{plot 'exper.dat' w l, 'exper.dat' w err}
+\key{ lines connecting points}{}
+
+Here 'exper.dat' should have three or four data columns.
+
+\key{plots x**2 + y**2 and x**2 - y**2 with the same line type}
+{splot x**2 + y**2 w l 1, x**2 - y**2 w l 1}
+\key{plots sin(x) and cos(x) with linespoints, using}
+    {plot sin(x) w linesp 1 3, \\}
+\key{ the same line type but different point types}{ cos(x) w linesp 1 4}
+\key{plots file ``data'' with points style 3}
+{plot "data" with points 1 3}
+
+Note that the line style must be specified when specifying the point
+style, even when it is irrelevant. Here the line style is 1 and the
+point style is 3, and the line style is irrelevant.
+
+See {\bf set style} to change the default styles.
+
+\section{Plot Title}
+
+A title of each plot appears in the key. By default the title is
+the function or file name as it appears on the plot command line.
+The title can be changed by using the {\bf title} option. This option
+should precede any {\bf with} option.
+
+\key{        title "$<$title$>$"}{}
+
+where $<$title$>$ is the new title of the plot and must be enclosed in
+quotes. The quotes will not be shown in the key.
+
+\key{plots y=x with the title 'x'} {plot x}
+\key{plots the ``glass.dat'' file}
+{splot "glass.dat" tit 'revolution surface'}
+\key{with the title 'revolution surface'}{}
+\key{plots x squared with title ``x^2'' and ``data.1''}
+    {plot x**2 t "x^2", \\}
+\key{ with title 'measured data'}{ "data.1" t 'measured data'}
+
+\section{Set-Show Commands}
+
+All commands below begin with either {\bf set} or {\bf unset}, and
+usually their state can be shown by passing their name to the {\bf
+  show} command.
+
+\beginindentedkeys
+\key{unit any angles are given in}{angles [degrees|radians]}
+\key{arrows from point to}{arrow [<tag>][from <sx>,<sy>,<sz>]}
+\key{}{ [to <ex>,<ey>,<ez>][head|nohead|heads]}
+\key{force autoscaling of an axis}{autoscale [<axes>]}
+\key{enter/exit parametric mode} {parametric}
+\key{display border}{border [<choice>] [<style>]}
+\key{clip points/line near boundaries}{clip <clip-type>}
+\key{specify parameters for contour plots}{cntrparam
+[spline][points][order][levels]}
+\key{enable splot contour plots}{contour [base|surface|both]}
+\key{default plotting style for data}{data style <style-choice>}
+\key{specify dummy variable}{dummy <dummy1>,<dummy2>...}
+\key{tic-mark label format specification}{format
+[<axes>]["format-string"]}
+\key{function plotting style}{function style <style-choice>}
+\key{draw a grid at tick positions}{grid [<which tics>...] [<linestyle>]}
+\key{enables hiddenline removal}{hidden3d [\dots]}
+\key{specify number of isolines}{isosamples <n1>[,<n2>]}
+\key{enables key of curves in plot}{key [\dots]}
+\key{logscaling of axes (optionally giving base)}{logscale <axes> [<base>]}
+\key{mapping 3D coordinates}{mapping [cartesian|spherical|cylindrical]}
+\key{offsets from center of graph}{offsets <left>,<right>,<top>,<bottom>}
+\key{color-mapped plotting modes}{pm3d [\dots]}
+\key{mapping 2D coordinates}{polar}
+\key{set radial range}{rrange [<rmin>:<rmax>]}
+\key{set sampling rate of functions}{samples <expression>}
+\key{set scaling factors of plot}{size <xsize>,<ysize>}
+\key{control display of isolines of surface}{surface}
+\key{control graphics device}{terminal <device>}
+\key{change direction of tics}{tics <direction>}
+\key{adjust relative height of vertical axis}{ticslevel <level>}
+\key{adjust size of tick marks}{ticscale [<size>]}
+\key{turn on time/date stamp}{time}
+\key{set centered plot title}{title "title-text" <xoff>,<yoff>}
+\key{set parametric range}{trange [<tmin>:<tmax>]}
+\key{set surface parametric ranges}{urange or vrange}
+\key{sets the view point for {\bf splot}}{view
+<rot_x>,<rot_z>,<scale>,<scale_z>}
+\key{sets the top view (map) for {\bf splot}}{view map}
+\key{sets x-axis label}{xlabel "<label>" <xoff>,<yoff>}
+\key{set horizontal range}{xrange [<xmin>:<xmax>]}
+\key{change horizontal tics}{xtics <start>,<incr>,<end>,}
+\key{}{"<label>" <pos> }
+\key{adjust number of minor tick marks}{mxtics OR mytics [<freq>]}
+\key{draw x-axis}{xzeroaxis}
+\key{sets y-axis label}{ylabel "<label>" <xoff>,<yoff>}
+\key{set vertical range}{yrange [<ymin>:<ymax>]}
+\key{change vertical tics}{ytics <start>,<incr>,<end>,}
+\key{}{"<label>" <pos> }
+\key{draw y-axis}{yzeroaxis}
+\key{set default threshold for values near 0}{zero <expression>}
+\key{draw axes}{zeroaxis}
+\key{sets z-axis label}{zlabel "<label>" <xoff>,<yoff>}
+\key{set vertical range}{zrange [<zmin>:<zmax>]}
+\key{change vertical tics}{ztics <start>,<incr>,<end>,}
+\key{}{"<label>" <pos> }
+\key{draw z-axis}{zzeroaxis}
+\endindentedkeys
+
+\section{Contour Plots}
+Enable contour drawing for surfaces. This option is available for {\bf splot}
+only.
+
+Syntax:
+        set contour $\{$ base $|$ surface $|$ both $\}$
+        unset contour
+
+If no option is provided to {\bf set contour}, the default is {\bf base}.
+The three options specify where to draw the contours: {\bf base} draws
+the contours on the grid base where the x/ytics are placed, {\bf surface}
+draws the contours on the surfaces themselves, and {\bf both} draws the
+contours on both the base and the surface.
+
+See also {\bf set cntrparam} for the parameters that affect the drawing of
+contours.
+
+\section{Contour Parameters}
+Sets the different parameters for the contouring plot (see also {\bf contour}).
+
+ \key{set cntrparam}{ $\{ \{$ linear $|$ cubicspline $|$ bspline $\} |$}
+\key{}{points $<$n$>$ $|$ }
+\key{}{order $<$n$>$  $|$ }
+\key{}{levels \{ [ auto ] $<$n$>$ $|$ }
+\key{}{discrete $<$z1$>$ $<$z2$>$ ... $|$ }
+\key{}{incr $<$start$>$ $<$increment$>$ [ $<$n$>$ ] $\} \}$ }
+
+\key{5 automatic levels}{set cntrparam levels auto 5}
+\key{3 discrete levels at 10\%, 37\% and 90\%}
+        {set cntrp levels discrete .1 1/exp(1) .9}
+\key{5 incremental levels at 0, .1, .2, .3 and .4}
+        {set cntrparam levels incremental  0 .1 5 }
+\key{sets n = 10 retaining current setting of auto, incr., or discr.}
+        {set cntrparam levels 10 }
+\key{set start = 100 and increment = 50, retaining old n}
+        {set cntrparam levels incremental 100 50}
+
+This command controls the way contours are plotted. $<$n$>$ should be an
+integral constant expression and $<$z1$>$, $<$z2$>$ any constant expressions.
+The parameters are:
+
+{\bf linear}, {\bf cubicspline}, {\bf bspline} - Controls type of approximation or
+interpolation. If {\bf linear}, then the contours are drawn piecewise
+linear, as extracted from the surface directly. If {\bf cubicspline}, then
+piecewise linear contours are interpolated to form a somewhat smoother
+contours, but which may undulate. The third option is the uniform
+{\bf bspline}, which only approximates the piecewise linear data but is
+guaranteed to be smoother.
+
+{\bf points} - Eventually all drawings are done with piecewise linear
+strokes.  This number controls the number of points used to
+approximate a curve.  Relevant for {\bf cubicspline} and {\bf bspline} modes
+only.
+
+{\bf order}  - Order of the bspline approximation to be used. The bigger this
+order is, the smoother the resulting contour.  (Of course, higher order
+bspline curves will move further away from the original piecewise linear
+data.)  This option is relevant for {\bf bspline} mode only. Allowed values are
+integers in the range from 2 (linear) to 10.
+
+{\bf levels} - Number of contour levels, 'n'.  Selection of the levels is
+controlled by 'auto' (default), 'discrete', and 'incremental'. For 'auto',
+if the surface is bounded by zmin and zmax then contours will be
+generated from zmin+dz to zmax-dz in steps of size dz, where
+dz = (zmax - zmin) / (levels + 1).  For 'discrete', contours will be
+generated at z = z1, z2 ... as specified.  The number of discrete levels
+is limited to MAX\_DISCRETE\_LEVELS, defined in plot.h to be 30.  If
+'incremental', contours are generated at $<$n$>$ values of z beginning at
+$<$start$>$ and increasing by $<$increment$>$.
+
+\section{Specifying Labels}
+Arbitrary labels can be placed on the plot using the {\bf set label}
+command.  If the z coordinate is given on a {\bf plot} it is ignored; if
+it is missing on a {\bf splot} it is assumed to be 0.
+
+\key{set label $\{<$tag$>\} \{"<$label_text$>"\}$}
+{$\{$at $<$x$>,<$y$>\{,<$z$>\}\}$}
+\key{}{$\{<$justification$>\}$}
+\key{unset label $\{<$tag$>\}$}{}
+\key{show label}{}
+
+The text defaults to '''', and the position to 0,0,0.  The $<$x$>$, $<$y$>$, and
+$<$z$>$ values are in the graph's coordinate system.  The tag is an
+integer that is used to identify the label. If no $<$tag$>$ is given, the
+lowest unused tag value is assigned automatically. The tag can be used
+to delete or change a specific label. To change any attribute of an
+existing label, use the {\bf set label} command with the appropriate tag,
+and specify the parts of the label to be changed.
+
+By default, the text is placed flush left against the point x,y,z.
+To adjust the way the label is positioned with respect to the point
+x,y,z, add the parameter $<$justification$>$, which may be {\bf left}, {\bf right}
+or {\bf center}, indicating that the point is to be at the left, right or
+center of the text. Labels outside the plotted boundaries are
+permitted but may interfere with axes labels or other text.
+
+\key{label at (1,2) to ``y=x'' }{set label "y=x" at 1,2}
+\key{label ``y=x^2'' w right of the text at (2,3,4), }
+{set label 3 "y=x^2" at 2,3,4 right}
+\key{\& tag the label number 3 }{}
+\key{change preceding label to center justification}{set label 3 center}
+\key{delete label number 2 }{unset label 2}
+\key{delete all labels}{unset label}
+\key{show all labels (in tag order)}{show label}
+
+(The EEPIC, Imagen, LaTeX, and TPIC drivers allow $\backslash$$\backslash$
+in a string to specify a newline.)
+
+\section{Miscellaneous Commands}
+
+For further information on these commands, print out a copy
+of the gnuplot manual.
+
+\key{change working directory}{cd}
+\key{erase current screen or device}{clear}
+\key{exit gnuplot}{exit or quit or EOF}
+\key{display text and wait}{pause <time> ["<string>"]}
+\key{print the value of $<$expression$>$}{print <expression>}
+\key{print working directory}{pwd}
+\key{repeat last {\bf plot} or {\bf splot}}{replot}
+\key{spawn an interactive shell}{! (UNIX) or \$ (VMS)}
+
+\section{Environment Variables}
+
+A number of shell environment variables are understood by gnuplot.
+None of these are required, but may be useful.
+See 'help environment' for the complete description.
+
+If GNUTERM is defined, it is used as the name of the terminal type to
+be used. This overrides any terminal type sensed by gnuplot on start
+up, but is itself overridden by the .gnuplot (or equivalent) start-up
+file (see {\bf start-up}), and of course by later explicit changes.
+
+On Unix, OS/2, and MS-DOS, GNUHELP may be defined to be the pathname
+of the HELP file (gnuplot.gih).
+
+On VMS, the symbol GNUPLOT\$HELP should be defined as the name of
+the help library for gnuplot.
+
+On Unix, HOME is used as the name of a directory to search for
+a .gnuplot file if none is found in the current directory.
+On OS/2 and MS-DOS, GNUPLOT is used to search for gnuplot.ini file.
+On VMS, SYS\$LOGIN: is used. See 'help start-up'.
+
+GNUPLOT\_LIB may be used to define additional search directories for
+data and command (script) files.
+
+On Unix, PAGER is used as an output filter for help messages.
+
+GDFONTPATH is the directory where png terminal searches TrueType fonts, 
+i.e.~files like arial.ttf.
+GNUPLOT\_FONTPATH is that for the postscript terminal.
+
+On Unix, SHELL is used for the {\bf shell} command. On MS-DOS,
+COMSPEC is used for the {\bf shell} command.
+
+On MS-DOS, if the BGI interface is used, the variable {\bf BGI} is used to point
+to the full path to the BGI drivers directory. Furthermore SVGA is used to
+name the Super VGA BGI driver in 800x600 res., and its mode of operation
+as 'Name.Mode'.
+For example, if the Super VGA driver is 
+C:$\backslash$TC$\backslash$BGI$\backslash$SVGADRV.BGI
+and mode 3 is used for 800x600 res., then: 
+'set BGI=C:$\backslash$TC$\backslash$BGI' and 'set SVGA=SVGADRV.3'.
+
+GNUFITLOG holds the name of a directory or a file that saves fit results.
+
+
+\section{Expressions}
+In general, any mathematical expression accepted by C, FORTRAN,
+Pascal, or BASIC is valid. The precedence of these operators is
+determined by the specifications of the C programming language.
+White space (spaces and tabs) is ignored inside expressions.
+
+Complex constants may be expressed as $\{<$real$>,<$imag$>\}$, where
+$<$real$>$ and $<$imag$>$ must be numerical constants.  For example,
+$\{3,2\}$ represents 3 + 2{\bf i} and $\{0,1\}$ represents {\bf i}
+itself.  The curly braces are explicitly required here.
+\section{Functions}
+The functions in gnuplot are the same as the corresponding functions
+in the Unix math library, except that all functions accept integer,
+real, and complex arguments, unless otherwise noted. The {\bf sgn}
+function is also supported, as in BASIC.
+
+%\begin{center}
+%\begin{tabular}{|ccl|} \hline
+{
+\catcode`\^=7
+\catcode`\_=8
+\def\ff#1{\hbox{\rm #1}\,}
+\def\fff#1{\hbox{\rm #1}\,}
+\def\sin{\ff{sin}}
+\def\cos{\ff{cos}}
+\def\tan{\ff{tan}}
+\def\sinh{\ff{sinh}}
+\def\cosh{\ff{cosh}}
+\def\tanh{\ff{tanh}}
+\def\log{\fff{log}}
+
+\settabs 5\columns
+\+Function & Arguments & Returns \cr
+\hrule%\hline
+\+ abs(x) & any  &  absolute value of {\tt x}, $|x|$; same type \cr
+\+ abs(x) & complex &  length of {\tt x}, $\sqrt{{\hbox{real}(x)^{2} +
+\hbox{imag}(x)^{2}}}$ \cr
+\+ acos(x) & any  & $\cos^{-1} x$ (inverse cosine) in radians \cr
+\+ arg(x) & complex & the phase of $x$ in radians\cr
+\+ asin(x) & any  & $\sin^{-1} x$ (inverse sin) in radians \cr
+\+ atan(x) & any  & $\tan^{-1} x$ (inverse tangent) in radians \cr
+\+ besj0(x) & radians &  $j_{0}$ Bessel function of $x$ \cr
+\+ besj1(x) & radians & $j_{1}$ Bessel function of $x$ \cr
+\+ besy0(x) & radians & $y_{0}$ Bessel function of $x$ \cr
+\+ besy1(x) & radians & $y_{1}$ Bessel function of $x$ \cr
+\+ ceil(x) & any & $\lceil x \rceil$, smallest integer not less than $x$
+(real part) \cr
+\+ cos(x) & radians & $\cos x$, cosine of $x$ \cr
+\+ cosh(x) & radians & $\cosh x$, hyperbolic cosine of $x$ \cr
+\+ erf(x) & any & $\hbox{Erf}(\hbox{real}(x))$,  error function of real($x$) \cr
+\+ erfc(x) & any & $\hbox{Erfc}(\hbox{real}(x))$,  1.0 $-$ error function of real($x$) \cr
+\+ exp(x) & any & $e^{x}$,  exponential function of $x$ \cr
+\+ floor(x) & any & $\lfloor x \rfloor$,  largest integer not greater
+than $x$ (real part) \cr
+\+ gamma(x) & any & $\hbox{Gamma}(\hbox{real}(x))$,  gamma function of real($x$) \cr
+\+ ibeta(p,q,x) & any & $\hbox{Ibeta}(\hbox{real}(p,q,x))$,  ibeta function of real($p$,$q$,$x$) \cr
+\+ igamma(a,x) & any & $\hbox{Igamma}(\hbox{real}(a,x))$,  igamma function of real($a$,$x$) \cr
+\+ imag(x) & complex &  imaginary part of $x$ as a real number \cr
+\+ int(x) & real &  integer part of $x$, truncated toward zero \cr
+\+ lgamma(x) & any & $\hbox{Lgamma}(\hbox{real}(x))$,  lgamma function of real($x$) \cr
+\+ log(x) & any & $\log_{e} x$,  natural logarithm (base $e$) of $x$ \cr
+\+ log10(x) & any & $\log_{10} x$,  logarithm (base $10$) of $x$ \cr
+\+ rand(x) & any & $\hbox{Rand}(\hbox{real}(x))$,  pseudo random number generator \cr
+\+ real(x) & any &  real part of $x$ \cr
+\+ sgn(x) & any & 1 if $x>0$, -1 if $x<0$, 0 if $x=0$. imag($x$) ignored \cr
+\+ sin(x) & radians & $\sin x$, sine of $x$ \cr
+\+ sinh(x) & radians & $\sinh x$, hyperbolic sine $x$ \cr
+\+ sqrt(x) & any & $\sqrt{x}$,  square root of $x$ \cr
+\+ tan(x) & radians & $\tan x$,  tangent of $x$ \cr
+\+ tanh(x) & radians & $\tanh x$, hyperbolic tangent of $x$\cr
+\hrule % \hline
+}
+
+%\end{tabular}
+%\end{center}
+
+\section{Operators}
+The operators in gnuplot are the same as the corresponding operators
+in the C programming language, except that all operators accept
+integer, real, and complex arguments, unless otherwise noted.
+The ** operator (exponentiation) is supported, as in FORTRAN.
+
+Parentheses may be used to change order of evaluation.
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\bye
+\subsubsection{Binary}
+The following is a list of all the binary operators and their
+usages:
+
+
+\begin{center}
+\begin{tabular}{|ccl|} \hline
+\multicolumn{3}{|c|}{Binary Operators} \\
+Symbol & Example & Explanation \\ \hline
+\verb~**~ & \verb~a**b~ & exponentiation\\
+\verb~*~ & \verb~a*b~ & multiplication\\
+\verb~/~ & \verb~a/b~ & division\\
+\verb~%~ & \verb~a%b~ & * modulo\\
+\verb~+~ & \verb~a+b~ & addition\\
+\verb~-~ & \verb~a-b~ & subtraction\\
+\verb~==~ & \verb~a==b~ & equality\\
+\verb~!=~ & \verb~a!=b~ & inequality\\
+\verb~&~ & \verb~a&b~ & * bitwise AND\\
+\verb~^~ & \verb~a^b~ & * bitwise exclusive OR\\
+\verb~|~ & \verb~a|b~ & * bitwise inclusive OR\\
+\verb~&&~ & \verb~a&&b~ & * logical AND\\
+\verb~||~ & \verb~a||b~ & * logical OR\\
+\verb~?:~ & \verb~a?b:c~ & * ternary operation\\
+\hline
+\end{tabular}
+\end{center}
+(*) Starred explanations indicate that the operator requires
+integer arguments.
+
+Logical AND (\&\&) and OR ($|$$|$) short-circuit the way they do in C.
+That is, the second \&\& operand is not evaluated if the first is
+false; the second $|$$|$ operand is not evaluated if the first is true.
+
+The ternary operator evaluates its first argument (a). If it is
+true (non-zero) the second argument (b) is evaluated and returned,
+otherwise the third argument (c) is evaluated and returned.
+\subsubsection{Unary}
+The following is a list of all the unary operators and their
+usages:
+
+
+\begin{center}
+\begin{tabular}{|ccl|} \hline
+\multicolumn{3}{|c|}{Unary Operators}\\
+Symbol & Example & Explanation \\ \hline
+\verb@-@ & \verb@-a@ & unary minus \\
+\verb@~@ & \verb@~a@ & * one's complement \\
+\verb@!@ & \verb@!a@ & * logical negation \\
+\verb@!@ & \verb@a!@ & * factorial \\
+\hline
+\end{tabular}
+\end{center}
+(*) Starred explanations indicate that the operator requires an
+integer argument.
+
+The factorial operator returns a real number to allow a greater range.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5

@@ -1,0 +1,247 @@
+.\" dummy line
+.\" $Id: gnuplot-ja.1,v 1.8 2014-07-24 16:43:46+09 shige Exp $
+.\" 日本語訳: Shigeharu TAKENO <shige@iee.niit.ac.jp>
+.\"
+.\" .TH GNUPLOT 1 " 11 June 2014"
+.TH GNUPLOT 1 " 2014 年 6 月 11 日"
+.UC 4
+.\" .SH NAME
+.SH 名前
+.\" gnuplot \- an interactive plotting program
+gnuplot \- 対話型グラフ描画プログラム
+.\" .SH SYNOPSIS
+.SH 形式
+.B gnuplot
+[X11 options] [options] [file ...]
+.br
+.\" .SH DESCRIPTION
+.SH 機能説明
+.\" .B Gnuplot
+.\" is a command-driven interactive plotting program.
+.B gnuplot
+は、コマンド入力方式の対話的な描画プログラムです。
+.PP
+.\" If file names are given on the command line,
+.\" gnuplot loads and executes each file in the order specified,
+.\" and exits after the last file is processed.
+.\" If no files are given, \fBgnuplot\fP prompts for interactive commands.
+コマンドラインから複数のファイル名を与えると、
+gnuplot は各ファイルを指定した順番に読み込み、実行し、
+そして最後のファイルを処理したら終了します。
+ファイルを指定しなかった場合は、
+\fBgnuplot\fP は対話型でコマンドの入力を促します。
+.PP
+.\" Here are some of its features:
+gnuplot は以下のような特徴を持ちます:
+.PP
+.\" Plots any number of functions, built up of C operators, C math library
+.\" functions, and some things C doesn't have like **, sgn(), etc.  
+C の演算子や C の数学ライブラリ関数、
+そして ** や sgn() などのように C にはないようなものを用いて表現された
+任意個数の関数の描画。
+.PP
+.\" User-defined constants and functions.
+ユーザ定義定数、ユーザ定義関数。
+.PP
+.\" All computations performed in the complex domain.  Just the real part is
+.\" plotted by default, but functions like imag() and abs() and arg() are
+.\" available to override this.
+複素数の範囲でのすべての計算。デフォルトでは実数部分のみが描画されますが、
+これを変更するために imag() や abs(), arg() のような関数が用意されています。
+.PP
+.\" Many presentation styles for plotting user data from files, including
+.\" surface-fitting, error bars, boxplots, histograms, heat maps, and simple
+.\" manipulation of image data.  There is an on-line demo collection at
+ファイルのユーザデータの描画用の多くの表示スタイル形式。回帰曲面、
+誤差線 (errorbars)、箱ひげ四分位 (boxplots)、ヒストグラム (histograms)、
+温度分布、画像データの簡単な処理機能なども持っています。
+以下の Web 上に、デモを集めたものが置いてあります:
+.br
+.I http://gnuplot.info/demo
+.PP
+.\" Nonlinear least-squares fitting.
+非線形の最小二乗法。
+.PP
+.\" 2D and 3D plots with mouse-controlled zooming, rotation, and hypertext.
+2 次元、3 次元描画とマウスによる拡大、回転制御、ハイパーテキスト。
+.PP
+.\" Shell escapes and command line substitution.
+シェルコマンドの実行とコマンドライン置換。
+.PP
+.\" Load and save capability.
+load と save。
+.PP
+.\" Support for a huge variety of output devices and file formats.
+極めて多くの種類の出力デバイス、出力ファイル形式のサポート。
+.\" .SH OPTIONS
+.SH オプション
+.PP
+.\" \fB\-p, \-\-persist\fP lets plot windows survive after main gnuplot program exits.
+\fB\-p, \-\-persist\fP は、
+gnuplot プログラムが終了した後も描画ウィンドウを残します。
+.PP
+.\" \fB\-c scriptname ARG1 ARG2 ..., load script using gnuplot's "call" mechanism and pass it the remainder of the command line as arguments
+\fB\-c scriptname ARG1 ARG2 ... は、
+gnuplot の "call" の仕組みでスクリプト scriptname を読み込み、
+コマンドラインの残りはそれへの引数として渡します。
+.PP
+.\" \fB\-d, \-\-default\fP settings.  Do not read from gnuplotrc or ~/.gnuplot on entry.
+\fB\-d, \-\-default\fP は、
+デフォルトの設定で起動します。
+これは、gnuplotrc や ~/.gnuplot を起動時には読み込みません。
+.PP
+.\" \fB\-e "command list"\fP executes the requested commands before loading the next input file.
+\fB\-e "command list"\fP は、
+次の入力ファイルを読み込む前に指定したコマンドを実行します。
+.PP
+.\" \fB\-h, \-\-help\fP print summary of usage
+\fB\-h, \-\-help\fP は、使用法の要約を表示します。
+.PP
+.\" \fB\-V\fP show current version
+\fB\-V\fP は、現在のバージョンを表示します。
+.\" .SH X11 OPTIONS
+.SH X11 オプション
+.\" For terminal type x11, \fIgnuplot\fP
+.\" accepts the standard X Toolkit options and resources such as geometry, font,
+.\" and background. See the X(1) man page for a description of common options.
+x11 出力形式に関しては、\fIgnuplot\fP は geometry やフォント、
+背景色などの通常の X Toolkit オプションやリソースの指定を受けつけます。
+それら通常のオプションについては、X(1) のマニュアルページを参照してください。
+.\" For additional X options specific to gnuplot, type \fIhelp x11\fP on the
+.\" gnuplot command line. These options have no effect on other terminal types.
+gnuplot 特有の追加の X のオプションについては、
+gnuplot のコマンドライン上で \fIhelp x11\fP として確認してください。
+これらのオプションは、他の出力形式では何もしません。
+.\" .SH ENVIRONMENT
+.SH 環境変数
+.\" A number of shell environment variables are understood by
+.\" gnuplot.  None of these are required.
+gnuplot は多くのシェル環境変数を認識します。必須のものはありません。
+.TP
+.B GNUTERM
+.\" The name of the terminal type to be used by default.  This can be
+.\" overridden by the gnuplotrc or .gnuplot start-up files and,
+.\" of course, by later explicit "set terminal" commands.
+デフォルトで使用される出力形式 (terminal) の名前。
+これは、gnuplotrc や .gnuplot 等の初期化ファイルや、
+そしてもちろんその後にコマンド "set terminal" で
+明示的に指定したものの方が優先されます。
+.TP
+.B GNUHELP 
+.\" The pathname of the HELP file (gnuplot.gih).
+ヘルプファイル (gnuplot.gih) のパス名。
+.TP
+.B HOME
+.\" The name of a directory to search for a .gnuplot file.
+ファイル .gnuplot を検索するディレクトリ。
+.TP
+.B PAGER
+.\" An output filter for help messages.
+ヘルプメッセージの出力用のフィルタ。
+.TP
+.B SHELL
+.\" The program used for the "shell" command.
+"shell" コマンドの際に使われるプログラム。
+.TP
+.B FIT_SCRIPT
+.\" Specifies a gnuplot command to be executed when a
+.\" fit is interrupted---see "help fit".  
+当てはめ (fit) が中断されたときに実行する gnuplot コマンドの指定
+("help fit" 参照)。
+.TP
+.B FIT_LOG
+.\" The name of the logfile maintained by fit.
+当てはめ (fit) の使用するログファイルの名前。
+.TP
+.B GNUPLOT_LIB
+.\" Additional search directories for data and command files. The variable
+.\" may contain a single directory name, or a list of directories
+.\" separated by ':'. The contents of GNUPLOT_LIB are appended to the
+.\" "loadpath" variable, but not saved with the "save" and "save set"
+.\" commands.
+データやコマンドファイルの検索ディレクトリの追加定義。その変数は、
+一つのディレクトリ名か、または ':' 区切りで複数のディレクトリ名を
+つなげて書いたものです。GNUPLOT_LIB の値は変数 "loadpath" に追加されますが、
+それは "save" や "save set" コマンドでは保存されません。
+.TP
+.B GDFONTPATH
+.\" Several gnuplot terminal drivers access TrueType fonts via the gd library.
+.\" This variable gives the font search path for these drivers.
+出力形式の中には gd ライブラリ経由で TrueType フォントを扱えるものが
+いくつかあります。この変数はそれらの出力形式に対するフォントの
+検索パスを与えます。
+.TP
+.B GNUPLOT_DEFAULT_GDFONT
+.\" The default font for the terminal drivers that access TrueType fonts
+.\" via the gd library.
+gd ライブラリ経由で TrueType フォントを扱う出力形式のデフォルトフォント。
+.TP
+.B GNUPLOT_FONTPATH
+.\" The font search path used by the postscript terminal. The format is
+.\" the same as for GNUPLOT_LIB. The contents of GNUPLOT_FONTPATH are
+.\" appended to the "fontpath" variable, but not saved with the "save" and
+.\" "save set" commands.
+postscript 出力形式が使用するフォント検索パス。
+書式は GNUPLOT_LIB と同じです。
+GNUPLOT_FONTPATH の値は変数 "fontpath" に追加されますが、
+それは "save" や "save set" コマンドでは保存されません。
+.TP
+.B GNUPLOT_PS_DIR
+.\" Used by the postscript driver to locate external prologue
+.\" files. Depending on the build process, gnuplot contains either a
+.\" builtin copy of those files or simply a default hardcoded path. Use
+.\" this variable to test the postscript terminal with custom prologue
+.\" files. See "help postscript prologue".
+postscript 出力形式が探す外部 (prologue) 定義ファイルの置き場所。
+インストール時の作業により、gnuplot にはそれらのファイルのコピーが
+組み込まれているか、または単にそれらのファイルのあるデフォルトのパスが
+埋め込まれるかが変わります。カスタマイズした定義ファイルで postscript 出力を
+テストする場合は、この環境変数を使ってください。"help postscript prologue" 
+参照。
+.\" .SH FILES
+.SH ファイル
+.TP
+.I gnuplotrc
+.\" When gnuplot is run, it first looks for a system-wide initialization
+.\" file named gnuplotrc.  The standard location of this file expected by
+.\" the program is reported by the "show loadpath" command.
+gnuplot は、起動時に gnuplotrc というシステム全体用の
+初期化ファイルを探します。
+このファイルの、gnuplot が探そうとする標準的な置き場所は、
+コマンド "show loadpath" で見ることができます。
+.TP
+.I .gnuplot
+.\" After loading the system-wide initialization file, if any,
+.\" Gnuplot looks for a private initialization file in the HOME directory.
+.\" It may contain any legal gnuplot commands, but typically they are
+.\" limited to setting the preferred terminal and line types
+.\" and defining frequently-used functions or variables.
+システム全体用の初期化ファイルを読み込んだ後で、
+gnuplot は個人用の初期化ファイルを
+そのホームディレクトリ (HOME) 上で探します。
+ここには、正しい gnuplot コマンドなら何を書いてもいいのですが、
+一般的には、よく使う出力形式の指定や、線種の設定、
+よく使う関数や変数の定義を設定する程度に抑えておきます。
+.TP 
+.I fit.log
+.\" The default name of the logfile output by the "fit" command.
+コマンド "fit" によって出力されるログファイルのデフォルトの名前。
+.\" .SH AUTHORS
+.SH 作者
+.\" Original authors: Thomas Williams and Colin Kelley.
+.\" Starting with gnuplot version 3.8, the project source is cooperatively
+.\" maintained on SourceForge by a large number of contributors.
+元々の作者: Thomas Williams, Colin Kelley
+gnuplot バージョン 3.8 以降、ソース一式は、SourceForge 上で、
+とても多くの寄与者によって共同で保守されています。
+.\" .SH BUGS
+.SH バグ
+.\" Please report bugs using the project bug tracker on SourceForge.
+バグがあれば、SouceForge 上の bug tracker プロジェクトを使って報告してください。
+.\" .SH SEE ALSO
+.SH 参照
+.\" See the printed manual or the on-line help for details on specific commands.
+個々のコマンドの詳細については、印刷されたマニュアルやオンラインヘルプを参照。
+.br
+.\" Project web site at http://gnuplot.info
+プロジェクト Web サイト: http://gnuplot.info

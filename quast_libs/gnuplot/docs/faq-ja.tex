@@ -1,0 +1,2555 @@
+%% Don't forget to change the paper format in the next line
+%
+% $Id: faq-ja.tex,v 1.6.2.1 2014/09/08 17:24:49 sfeam Exp $
+% translated to Japanese by Shigeharu TAKENO
+% Original: Id: faq.tex,v 1.53 2014/08/21 15:05:33 sfeam Exp
+%
+%%% \documentclass[a4paper,11pt]{article}
+\documentclass[a4paper,11pt]{jarticle}
+%% end Japanese
+\usepackage[margin=2cm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[hyphens]{url}
+\urlstyle{sf}
+
+\ifx\pdfoutput\undefined
+    % latex or latex2html output
+    \usepackage{times,mathptmx}
+    \usepackage[
+        hypertex,
+        hyperindex,
+        bookmarks,
+        bookmarksnumbered=true,
+        pdftitle={gnuplot faq},
+        pdfauthor={gnuplot},
+        pdfsubject={see www.gnuplot.info}
+        % , pdfcreator={}
+        % , pdfkeywords={...}
+    ]{hyperref}
+\else % *** pdflatex output
+    \usepackage{times,mathptmx}
+    \usepackage[
+%       pdftex,
+        hyperindex,
+        bookmarks,
+        bookmarksnumbered=true,
+        pdftitle={gnuplot faq},
+        pdfauthor={gnuplot},
+        pdfsubject={see www.gnuplot.info}
+        % , pdfcreator={}
+        % , pdfkeywords={...}
+    ]{hyperref}
+\fi
+
+\usepackage{color}
+\definecolor{darkblue}{rgb}{0,0,0.5}
+\hypersetup{
+  colorlinks   = true, %Colours links instead of ugly boxes
+  linkcolor    = darkblue, %Colour of internal links
+  urlcolor     = blue %Colour for external hyperlinks
+}
+
+% There may be incompatibilities between different versions of
+% url.sty, html.sty and hyperref.sty -- it seems there are machines which
+% cannot combine them together with simultaneous output to dvi, pdf, html.
+% Thus do it this way:
+\ifx\html\undefined
+    % Not running this file by latex2html:
+    \def\http#1{{\small\href{http://#1}{\url{#1}}}}
+    \def\mailto#1{{\small\href{mailto://#1}{\url{#1}}}}
+    \def\news#1{\href{news://#1}{\url{#1}}}
+%%%  \def\ftp#1#2{\href{ftp://#1#2}{\url{#1} in \url{#2}}}
+    \def\ftp#1#2{\href{ftp://#1#2}{\url{#1} の \url{#2}}}
+%% end Japanese
+\else
+    % Running this file by latex2html:
+    \usepackage{html}
+%    \html{
+        \newcommand{\news}[1]%
+            {\def~{\~{}}\htmladdnormallink{\latex{\url{#1}}\html{\textit{#1}}}%
+                {news:#1}%
+            }
+        \newcommand{\ftp}[2]%
+%%%          {\htmladdnormallink{\latex{\url{#1}{} in \url{#2}}%
+%%%                  \html{\textit{#1} in \textit{#2}}}%
+            {\htmladdnormallink{\latex{\url{#1}{} の \url{#2}}%
+                    \html{\textit{#1} の \textit{#2}}}%
+%% end Japanese
+                {ftp://#1#2}%
+            }
+        \newcommand{\mailto}[1]%
+            {\htmladdnormallink{\latex{\url{<#1>}}\html{\textit{#1}}}%
+                {mailto:#1}%
+            }
+        \newcommand{\http}[1]%
+            {\htmladdnormallink{\latex{\url{http://#1}}%
+                    \html{\textit{http://#1}}}%
+                {http://#1}%
+            }
+%   }
+\fi
+
+
+% comments and discussions:
+% version 1.4 dated 99/10/07
+% am: comment out obviously outdated stuff and wait for complaints
+% jvh: re: I accept
+% hbb: need expires and posting-frequency headers
+% jvh: re: expires is ok, but I still post it manually so
+%       I've got to see how I could get the posting frequency header
+% am: shouldn't we have document release and date in the title
+% jvh: re: I guess it would overload the title. I would
+%       accept the inclusion into 0.1. I still hope that
+%       the FAQ will experience a slightly lower release
+%       cycle in the near future :)
+
+%
+\newcommand{\gnuplot}{\textbf{gnuplot}}
+\newcommand{\Gnuplot}{\textbf{Gnuplot}}
+
+
+\begin{document}
+\title{\gnuplot{} FAQ}
+\author{}
+\date{}
+\maketitle
+
+\noindent
+%%% This document refers both to \gnuplot{} version 4 (latest release 4.6.5)
+%%% and version 5 (planned release Fall 2014).
+この文書は、\gnuplot{} バージョン 4 (最終リリースは 4.6.5) と
+バージョン 5 (2014 秋にリリース予定) の両方を対象としています。
+%% end Japanese
+        \\
+%%% FAQ version
+%%% \verb+Revision: 1.53 +, dated
+%%% \verb+Date: 2014/08/21 15:05:33 +.
+% <== 本当は \verb++ の内側に $ がついている
+この FAQ のバージョンは %
+\verb+$+\verb+Revision: 1.53 $+,
+\verb+$+\verb+Date: 2014/08/21 15:05:33 $+ です。
+% 少し細工をしないと RCS に書き換えられてしまう。
+
+\tableofcontents
+
+
+\setcounter{section}{-1}
+%%% \section{Meta -- Questions}
+\section{メタな質問}
+
+%%% \subsection{Where do I get this document?}
+\subsection{このドキュメントはどこで手に入れられますか}
+
+%%% The newest version of this document is on the web at
+%%% \http{www.gnuplot.info/faq/}.
+このドキュメントの最新版は %
+\http{www.gnuplot.info/faq/} %
+の Web 上にあります。
+
+%%% %This document was/is posted sometimes to the newsgroups
+%%% %\news{comp.graphics.apps.gnuplot}.
+%この文書は、ニュースグループ %
+%\news{comp.graphics.apps.gnuplot} にも時々投稿されていました/います。
+
+%%% \subsection{Where do I send comments about this document?}
+\subsection{このドキュメントに関するコメントはどこに送れば良いですか}
+
+%%% Send comments, suggestions etc via email to the developer mailing list
+%%% \mailto{gnuplot-beta@lists.sourceforge.net}.
+%%% Please contribute your suggestions with respect to the file \verb+faq.tex+ 
+%%% available from
+%%% \http{gnuplot.cvs.sourceforge.net/viewvc/gnuplot/faq/}.
+コメント、提案等は電子メールで開発者向けメーリングリスト %
+\mailto{gnuplot-beta@lists.sourceforge.net} に送ってください。
+\verb+faq.tex+ に関する提案をお寄せください。このファイルは %
+\http{gnuplot.cvs.sourceforge.net/viewvc/gnuplot/faq/} %
+にあります。
+
+%%% \section{General Information}
+\section{一般的な質問}
+
+
+%%% \subsection{What is \gnuplot?}
+\subsection{\gnuplot{} とは何ですか}
+
+%%% \gnuplot{} is a command-driven interactive function plotting
+%%% program. It can be used to plot functions and data points in
+%%% both two- and three-dimensional plots in many different
+%%% formats. It is designed primarily for the visual display of
+%%% scientific data.
+\gnuplot{} はコマンド駆動型の対話型関数描画プログラムです。関数の描画、
+およびデータ点の描画を 2 次元、3 次元の両方で、
+様々な異なる書式で行うことができます。
+これは主に科学的なデータを画面表示するものとして設計されています。
+%% end Japanese
+%%% \gnuplot{} is copyrighted, but freely distributable;
+%%% you don't have to pay for it.
+\gnuplot{} の著作権は保護されていますが、自由に配布でき、
+代金を払う必要はありません。
+
+
+%%% \subsection{How did it come about and why is it called \gnuplot?}
+\subsection{それはどこから来て、そしてなぜ \gnuplot{} と呼ばれているのですか}
+
+%%% The authors of \gnuplot{} are:
+%%% Thomas Williams, Colin Kelley, Russell Lang, Dave Kotz, John
+%%% Campbell, Gershon Elber, Alexander Woo and many others.
+\gnuplot{} の作者は Thomas Williams, Colin Kelley, Russell Lang,
+Dave Kotz, John Campbell, Gershon Elber, Alexander Woo、
+そして多くの協力者です。
+
+%%% The following quote comes from Thomas Williams:
+以下は Thomas Williams によります:
+%% end Japanese
+\begin{quote}
+%%%      I was taking a differential equation class and Colin was taking
+%%%      Electromagnetics, we both thought it'd be helpful to visualize the
+%%%      mathematics behind them. We were both working as sys admin for an
+%%%      EE VLSI lab, so we had the graphics terminals and the time to do
+%%%      some coding. The posting was better received than we expected, and
+%%%      prompted us to add some, albeit lame, support for file data.
+     私は微分方程式の講義を、そして Colin は電磁気学の講義を取っていて、
+     2 人ともそれらに関する数学が視覚化できればなあと考えていました。
+     私達はある EE (Engineering Electronics) VLSI 研の
+     システム管理者として働いていて、そして、
+     グラフィック端末とコーディングを行なう時間がありました。
+     その投稿は我々の期待以上に良く受け入れられ、そして、不完全でしたが、
+     ファイルデータに関するいくつかのサポートに我々を駆り立てました。
+
+%%%      Any reference to GNUplot is incorrect. The real name of the program
+%%%      is "\gnuplot". You see people use "\Gnuplot" quite a bit because many
+%%%      of us have an aversion to starting a sentence with a lower case
+%%%      letter, even in the case of proper nouns and titles. \gnuplot{} is not
+%%%      related to the GNU project or the FSF in any but the most
+%%%      peripheral sense. Our software was designed completely
+%%%      independently and the name "\gnuplot" was actually a compromise. I
+%%%      wanted to call it "llamaplot" and Colin wanted to call it "nplot."
+%%%      We agreed that "newplot" was acceptable but, we then discovered
+%%%      that there was an absolutely ghastly pascal program of that name
+%%%      that the Computer Science Dept.\ occasionally used. I decided that
+%%%      "\gnuplot" would make a nice pun and after a fashion Colin agreed.
+     GNUplot という紹介はどんなものも正しくはありません。
+     このプログラムの本当の名前は "\gnuplot" です。
+     ずいぶんと "\Gnuplot" と書かれているのを見るでしょうが、
+     それは我々の大半が、固有名詞やタイトルであっても、
+     文章を小文字で開始することに嫌悪を持っているからです。
+     \gnuplot{} は GNU プロジェクトや FSF とは、
+     極わずかの意味を除けば少しも関係ありません。
+     我々のソフトウェアは完全に独立にデザインされたもので、
+     そして "\gnuplot" という名前は実は妥協によるものです。
+     私は "llamaplot" と呼びたかったし、
+     Colin は "nplot" と呼びたかったのです。
+     そして、我々は "newplot" がいいだろうということで合意しましたが、
+     しかしそのときその名前を持つ、絶対的におぞましい Pascal のプログラムを
+     計算機科学部でたまに使っていることを知りました。
+     それで私は "\gnuplot" がいいごろ合わせになるとして、
+     後で Colin もそれに同意したのです。
+%% end Japanese
+\end{quote}
+
+ 
+%%% \subsection{What does \gnuplot{} offer?}
+\subsection{\gnuplot{} は何を提供してくれますか}
+
+\begin{itemize}
+%%% \item Plotting two-dimensional functions and data points in many
+%%% different styles (points, lines, error bars)
+%%% \item Plotting three-dimensional data points and surfaces in
+%%% many different styles (contour plot, mesh)
+%%% \item Algebraic computation in integer, float and complex arithmetic
+%%% \item Data-driven model fitting using Marquardt-Levenberg minimization
+%%% \item Support for a large number of operating systems, graphics
+%%% file formats and output devices
+%%% \item Extensive on-line help
+%%% \item \TeX{}-like text formatting for labels, titles, axes, data points
+%%% \item Interactive command line editing and history (most platforms)
+\item 2 次元での関数やデータの、たくさんのスタイル (点、折れ線、誤差表示) %
+による描画
+\item 3 次元でのデータや曲面のたくさんのスタイル (等高線描画、網かけ) %
+による描画
+\item 整数、実数、複素数での代数演算
+\item Marquardt-Levenberg 最適法を用いたデータ駆動型の曲線回帰
+\item 多くのオペレーティングシステム、多くのグラフィックファイル形式出力、
+そして多くの出力装置のサポート
+\item 広範囲にわたるオンラインヘルプ
+\item ラベル、タイトル、軸、データ点への \TeX{} ライクな書式による見出し付け
+\item 対話型入力形式のエディット機能とヒストリ (履歴) 機能のサポート %
+(多くのプラットホーム上で)
+%% end Japanese
+\end{itemize}
+
+
+%%% \subsection{Is \gnuplot{} suitable for scripting?}
+\subsection{\gnuplot{} はスクリプトに適していますか}
+
+%%% Yes. Gnuplot can read in files containing additional commands during
+%%% an interactive session, or it can be run in batch mode by piping a
+%%% pre-existing file or a stream of commands to stdin. Gnuplot is used
+%%% as a back-end graphics driver by such higher-level mathematical 
+%%% packages as Octave, and can easily be wrapped in a cgi script for
+%%% use as a web-driven plot generator.
+ええ。gnuplot は対話型実行中に
+追加コマンドを含むファイルを読み込むことができますし、
+既に存在するファイルや標準入力からのコマンド列を
+パイプを使ってバッチモードでそれを処理することもできます。
+gnuplot は、Octave のような高水準な数学パッケージの背後で実行する
+グラフィックドライバとして使われていますし、
+cgi スクリプトでラップすることで
+容易に Web 起動型の描画生成ツールとして使うこともできます。
+
+
+%%% \subsection{Can I run \gnuplot{} on my computer?}
+\subsection{\gnuplot{} は私のコンピュータで動かすことができますか}
+
+%%% \Gnuplot{} is in widespread use on many platforms, including
+%%% MS Windows, linux, unix, and OSX.  The current source code retains
+%%% supports for older systems as well, including VMS, Ultrix, OS/2,
+%%% MS-DOS, BeOS, and Macintosh. 
+%%% Versions since 4.0 have not been extensively tested on legacy platforms.
+\gnuplot{} は、MS Windows, linux, unix, OSX などの
+多くのプラットホーム上で、広く利用できます。
+現在のソースコードは、VMS, Ultrix, OS/2, %
+MS-DOS, BeOS, Macintosh などの 
+古いシステムのサポートも保持していますが、
+バージョン 4.0 以降では古いプラットホームでは
+徹底的なテストは行われていません。
+
+%%% You should be able to compile the \gnuplot{} source more or
+%%% less out of the box in any reasonably standard (ANSI/ISO C, POSIX)
+%%% environment.
+\gnuplot{} のソースは、それなりに標準的 (ANSI/ISO C, POSIX 等) な環境から
+多少外れたものの上でもコンパイルできるでしょう。
+
+%%% \subsection{Legalities}
+\subsection{ライセンスについて}
+
+%%% \Gnuplot{} is authored by a collection of volunteers, who cannot
+%%% make any legal statement about the compliance or non-compliance of
+%%% \gnuplot{} or its uses. There is no warranty whatsoever. Use at your
+%%% own risk.
+%%% Citing from the README of a mathematical subroutine package by R. Freund:
+\gnuplot{} はボランティアの集団によって作られたものです。
+彼らは \gnuplot、およびその使用の許可、
+不許可に関する法的な文書を作成できません。また何の保証もありません。
+自分自身の責任で使用してください。
+以下は、R. Freund による数学関数のサブルーチンパッケージの README %
+からの引用です:
+
+\begin{quote}
+%%% For all intent and purpose, any description of what the codes are doing
+%%% should be construed as being a note of what we thought the codes did on
+%%% our machine on a particular Tuesday of last year.  If you're really
+%%% lucky, they might do the same for you someday.  Then again, do you
+%%% really feel *that* lucky?
+全ての意図、目的に関して、そのコードがやることに対する任意の記述は
+そのコードが我々のマシンの上で昨年のある火曜日にたまたま行なったこ
+とに対して我々が考えたこと、と解釈されるべきです。もしついていれば
+そのコードは貴方に対してもある日同じことをするでしょう。繰り返しま
+すが「それ」をついているだけだと本当に思えますか ?
+%% end Japanese
+\end{quote}
+
+
+%%% \subsection{Does \gnuplot{} have anything to do with the FSF and the GNU
+%%% project?}
+\subsection{\gnuplot{} は FSF や GNU プロジェクトと何か関係があるのですか}
+
+%%% \Gnuplot{} is neither written nor maintained by the FSF\@. At one 
+%%% time it
+%%% was distributed by the FSF but this is no longer true. \Gnuplot{} 
+%%% as a whole
+%%% is not covered by the GNU General Public License (GPL).
+\gnuplot{} は FSF が作ったのでも FSF がメンテナンスしているのでもありません。
+一時期 FSF から配布されていたこともありますが、
+しかし現在はこれは正しくありません。
+\gnuplot{} は、GNU General Public License (GPL) に全く保護されていません。
+
+%%% \Gnuplot{} is freeware in the sense that you don't have to pay
+%%% for it. However it is not freeware in the sense that you would be
+%%% allowed to distribute a modified version of your \gnuplot{} freely.
+%%% Please read and accept the modification and redistribution terms in
+%%% the \textit{Copyright} file.
+\gnuplot{} は、無償であると言う意味でフリーウェアです。
+しかし、あなたが改変したものを自由に配布することが認められるか、
+ということに関してはフリーウェアではありません。
+\textit{Copyright} というファイルの modification (改変) と
+redistribution (再配布) の項目を読んでそれを承認してください。
+
+
+%%% \subsection{Where do I get further information?}
+\subsection{更なる情報はどこで手に入りますか}
+
+%%% See the main gnuplot web page \http{www.gnuplot.info}.
+gnuplot Web ページ \http{www.gnuplot.info} を見てください。
+
+%%% Some documentation and tutorials are available in other languages 
+%%% than English.
+%%% See \http{gnuplot.sourceforge.net/help.html}, section "Localized 
+%%% learning pages
+%%% about gnuplot", for the most up-to-date list.
+英語以外の他の言語での文書や入門書もあります。
+最新のリストについては、\http{gnuplot.sourceforge.net/help.html} の %
+"Localized learning pages about gnuplot" の節をご覧ください。
+
+
+%%% \section{Setting it up}
+\section{インストール}
+
+%%% \subsection{What is the current version of \gnuplot?}
+\subsection{\gnuplot{} の最新バージョンは ?}
+
+%%% The current released version of \gnuplot{} is 4.6, released in 
+%%% March 2012.
+%%% Incremental versions (patchlevel 1, 2, ...) are typically released 
+%%% every six months.
+%%% The development version of \gnuplot{} is currently 5.0.
+\gnuplot{} の最新の正式リリース版は、2012 年 3 月リリースの 4.6 です。
+更新バージョン (パッチレベル 1, 2, ...) は、だいたい 6 ヶ月毎に
+リリースされます。
+\gnuplot{} の開発版は、現在は 5.0 となっています。
+
+%%% \subsection{Where can I get \gnuplot?}
+\subsection{\gnuplot{} はどこで手に入れられますか}
+%% end Japanese
+\label{where-get-gnuplot}
+
+%%% The best place to start is \http{www.gnuplot.info}. From there
+%%% you find various pointers to other sites, including the project
+%%% development site on SourceForge \http{sourceforge.net/projects/gnuplot}.
+始めに最も適切な場所は \http{www.gnuplot.info} です。
+ここから、例えば SourceForge 上の開発プロジェクトサイト %
+\http{sourceforge.net/projects/gnuplot} などの、
+色々なサイトの場所を見つけられるでしょう。
+
+%%% The source distribution ("gnuplot-4.6.0.tar.gz" or a similar name) is
+%%% available from the official distribution site 
+%%% \http{sourceforge.net/projects/gnuplot}.
+ソース配布物 ("gnuplot-4.6.0.tar.gz" または同様の名前) %
+は公式の配布サイト \http{sourceforge.net/projects/gnuplot} にあります。
+
+%%%% % Older versions of the \gnuplot{} distribution is mirrored
+%%%% % at the Comprehensive TeX Archive Network (CTAN) in the
+%%%% % \textit{graphics/gnuplot} directory. See
+% 古い版の \gnuplot{} の配布物は CTAN 
+% (the Comprehensive TeX Archive Network) の \\
+% \textit{graphics/gnuplot} %
+% ディレクトリでミラーリングされています。
+% 以下を参照してください。
+% %% end Japanese
+% \begin{itemize}
+%%% % \item \http{www.ctan.org/}.
+% \item \http{www.ctan.org/}
+% %% end Japanese
+% \end{itemize}
+
+
+
+%%% \subsection{Where can I get current development version of \gnuplot?}
+\subsection{\gnuplot{} の最新の開発版はどこで手に入れられますか}
+
+%%% The development version of gnuplot is availble as a cvs source 
+%%% tree online for
+%%% direct browsing from \http{sourceforge.net/projects/gnuplot/}, section
+%%% "CVS". You can download all current sources according to the documentation
+%%% therein; for example by a sequence of commands like
+gnuplot の開発版は、cvs ソースツリーの形で、オンラインで直接 %
+\http{sourceforge.net/projects/gnuplot/} %
+の "CVS" セクションから参照できます。
+そこに含まれているドキュメントに従って、
+例えば、以下のようなコマンド列によって
+最新のソースをすべてダウンロードすることもできます。
+%% end Japanese
+\small
+\begin{verbatim}
+  cvs -d:pserver:anonymous@gnuplot.cvs.sourceforge.net:/cvsroot/gnuplot login
+  cvs -z3 -d:pserver:anonymous@gnuplot.cvs.sourceforge.net:/cvsroot/gnuplot co -P gnuplot
+\end{verbatim}
+\normalsize
+%%% or (in bash)
+または (bash では)
+%% end Japanese
+\small
+\begin{verbatim}
+  export CVSROOT=:pserver:anonymous@gnuplot.cvs.sourceforge.net:/cvsroot/gnuplot
+  cvs login
+  cvs -z3 checkout gnuplot
+\end{verbatim}
+\normalsize
+
+%%% Hit \verb+<return>+ when asked for a password.
+パスワードを聞かれたら \verb+<return>+ を打ちます。
+
+%%% Further, before the \textit{./configure} command of gnuplot 
+%%% compilation phase,
+%%% you have to execute \textit{./prepare} to create the up-to-date 
+%%% configure files.
+その後、gnuplot のコンパイルの段階の \textit{./configure} の前に、
+\textit{./prepare} を実行して
+最新の configure 用のファイルを作成する必要があります。
+
+%%% There are no official preliminary binary releases of gnuplot: you have to
+%%% compile it yourself. However, you may find unofficial binary 
+%%% releases for some
+%%% platforms, like OS/2, Windows or Macintosh. 
+公式の gnuplot の開発版の暫定的なバイナリリリースはありませんので、
+自分自身でコンパイルする必要があります。
+しかし、OS/2, Windows, Macintosh などのいくつかのプラットフォーム用の
+非公式なバイナリ版はどこかに見つかるかも知れません。
+
+%%% Important note: questions related to the development version should go to
+%%% \mailto{gnuplot-beta@lists.sourceforge.net}.
+重要な注意: 開発版に対する質問は必ず %
+\mailto{gnuplot-beta@lists.sourceforge.net} に送ってください。
+
+
+%%% \subsection{How do I get \gnuplot{} to compile on my system?}
+\subsection{\gnuplot{} は私のシステムではどうコンパイルすれば良いですか}
+
+%%% As you would any other installation. Read the files \textit{README.1ST},
+%%% \textit{README}, and \textit{INSTALL}.
+他のソフトのインストールと同様です。\textit{README.1ST}, \textit{README}, 
+\textit{INSTALL} ファイルを読んでください。
+
+\begin{itemize}
+\item
+%%% For Unix, use \textit{./configure} (or \textit{./configure 
+%%% {-}{-}prefix=\$HOME/usr}
+%%% for an installation for a single user), \textit{make} and finally
+%%% \textit{make install} or \textit{make install-strip}, the latter for smaller
+%%% executables without debugging information. If you want to make a RPM package,
+%%% then replace the latest step by \textit{checkinstall} or \textit{checkinstall
+%%% make install-strip}, supposing the package \textit{checkinstall} on your
+%%% machine.
+Unix では、\textit{./configure} 
+(単一ユーザのインストールならば \\
+\textit{./configure {-}{-}prefix=\$HOME/usr}) %
+を使い、\textit{make} を実行し、
+最後に \textit{make install} または \textit{make install-strip} とします。
+後者はデバッグ情報を除いた、より小さな実行ファイルをインストールします。
+RPM パッケージを作りたいなら、最後のステップを %
+\textit{checkinstall} かまたは \textit{checkinstall make install-strip} % 
+で置き換えますが、
+あなたのマシンで \textit{checkinstall} パッケージを
+サポートしている必要があります。
+%% end Japanese
+\item
+%%% On Windows, makefiles can be found in \textit{config/mingw}, 
+%%% \textit{config/msvc},
+%%% \textit{config/watcom}, and \textit{config/cygwin}. Update the options 
+%%% in the 
+%%% makefile's header and run the appropriate \textit{make} tool in the same 
+%%% directory
+%%% as the makefile. Additional instructions can be found in the makefiles.
+Windows では、makefile は \textit{config/mingw}, \textit{config/msvc},
+\textit{config/watcom}, \textit{config/cygwin} 内にあります。
+makefile の先頭に書かれているオプションを修正し、
+その makefile が置かれているのと同じディレクトリ内で
+適当な \textit{make} ツールを実行してください。
+追加説明も、makefile に書かれています。
+%% end Japanese
+\item
+%%% For DOS, if you are using bash and DJGPP, you can just run 
+%%% \textit{djconfig.sh}.
+DOS では、bash か DJGPP を使っているなら \textit{djconfig.sh} %
+を実行するだけです。
+%% end Japanese
+\item
+%%% For other platforms, copy the relevant makefile (e.g. 
+%%% \textit{makefile.os2} for 
+%%% OS/2) from \textit{config/} to \textit{src/}, optionally update options 
+%%% in the 
+%%% makefile's header, then change directory to \textit{src} and run 
+%%% \textit{make}.
+他のプラットフォームでは、適切な makefile 
+(例えば OS/2 なら \textit{makefile.os2}) %
+を \textit{config/} ディレクトリから \textit{src/} にコピーして、
+makefile のヘッダにあるオプションを必要なら更新して、
+\textit{src} にディレクトリを移動して、
+\textit{make} を実行してください。
+%% end Japanese
+\end{itemize}
+
+
+%%% \subsection{What documentation is there, and how do I get it?}
+\subsection{ドキュメントはどこですか、そしてそれをどう手に入れられますか}
+
+%%% Full documentation is included in the source distribution.
+%%% Individual sections can be browsed from inside a gnuplot session
+%%% by typing \textit{help {\em keyword}}.
+%%% Look in the docs and tutorial subdirectories, where you'll find 
+%%% files to produce
+%%% PDF or HTML versions of the User Manual.
+ドキュメントはすべてソース配布物に含まれています。
+個々のセクションは、gnuplot の作業中に \textit{help {\em キーワード}} を
+打つことで見ることができます。
+サブディレクトリ docs と tutorial の中を見てください。
+そこには、PDF や HTML 版のユーザマニュアルを生成するファイルがあります。
+
+%%% Online copies are available at
+%%% \http{gnuplot.sourceforge.net/documentation.html}.
+\http{gnuplot.sourceforge.net/documentation.html} に、
+そのコピーが置いてあります。
+
+%%% \subsection{Worked examples}
+\subsection{動作するサンプル}
+
+%%% There is a directory of worked examples in the the source distribution.
+%%% These examples, and the resulting plots, may also be found at
+%%% \http{gnuplot.sourceforge.net/demo/}.
+ソース配布物には動作するサンプルのディレクトリが含まれています。
+これらサンプル、およびその結果の描画グラフは %
+\http{gnuplot.sourceforge.net/demo/} でも見ることができます。
+
+
+%%% \subsection{How do I modify \gnuplot, and apply patches?}
+\subsection{どうしたら \gnuplot{} を修正、またはパッチを当てられますか}
+
+%%% For this, you will need to recompile \gnuplot.
+このためには \gnuplot{} をコンパイルし直す必要があります。
+
+%%% Modifications people make are either done by replacing files,
+%%% such as terminal drivers, or by patching. If a file is a
+%%% replacement, it will probably tell you in its README or in the
+%%% lines at the beginning.
+様々な人々が作った修正は、
+出力ドライバのようなファイルを置き換えることで行なうか、
+またはパッチ当てで行ないます。
+ファイルの置き換えの場合、それ用の README ファイル、
+またはそのファイルの最初の行に何か情報があるかも知れません。
+
+%%% To patch a file, you need the \textit{patch} utility, and possibly
+%%% also the \textit{automake} and \textit{autoconf} tools.
+%%% A typical command for applying a patch is 
+%%% \verb+patch -p0 <newfunctionality.diff+.
+パッチを当てる場合は、\textit{patch} ユーティリティが必要で、
+もしかしたら \textit{automake}, \textit{autoconf} というツールも
+必要かもしれません。パッチを適用する場合の典型的なやり方は \\
+\verb+patch -p0 <newfunctionality.diff+ です。
+
+%%% There is repository of contributed patches in the "Patches" section 
+%%% on gnuplot's
+%%% sourceforge site \http{sourceforge.net/tracker/?group_id=2055&atid=302055}.
+寄稿されたパッチの置き場所は gnuplot の sourceforge サイト 
+\http{sourceforge.net/tracker/?group_id=2055&atid=302055} %
+の "Patches" セクションにあります。
+
+%%% \subsection{How do I determine which options are compiled into \gnuplot?}
+\subsection{どのオプションが \gnuplot にコンパイルされているかを知るには}
+
+%%% Given that you have a compiled version of \gnuplot, you can use the
+%%% \verb+show+ command to display the list of compile options (a.k.a.
+%%% compilation options, or build options) that were used to build your
+%%% copy.
+コンパイル済みの \gnuplot が与えられている場合、\verb+show+ コマンドで、
+それがコンパイルされたときに使用されたコンパイルオプション %
+(別名コンパイレイションオプション、ビルドオプション) の一覧を表示できます。
+
+\small
+\begin{verbatim}
+gnuplot> show version long
+\end{verbatim}
+\normalsize
+
+
+%%% \section{Working with it.}
+\section{動作 (Working with it)}
+
+%%% \subsection{How do I get help?}
+\subsection{ヘルプはどうやって手に入れられますか}
+
+%%% Read this document.
+このドキュメントを読んでください。
+
+%%% Give the \verb+help+ command at the initial prompt. After that, keep
+%%% looking through the keywords. Good starting points are \verb+plot+
+%%% and \verb+set+.
+初期プロンプトで \verb+help+ コマンドを実行してください。
+その後キーワードをたどっていってください。
+\verb+plot+ や \verb+set+ から始めるのがいいでしょう。
+
+%%% Read the manual, if you have it.
+もし、持っているならマニュアルを読んでください
+
+%%% Look through the demo subdirectory; it should give you some ideas.
+demo サブディレクトリを見てください。ヒントを与えてくれるでしょう。
+
+%%% Ask your colleagues, the system administrator or the person who
+%%% set up \gnuplot.
+システム管理者、または \gnuplot{} を設定した同僚に尋ねてください。
+
+%%% If all these fail, please upgrade to the newest version of \gnuplot{}
+%%% or urge your system-administrator to do so. Then
+%%% post a question to \news{comp.graphics.apps.gnuplot} or send mail
+%%% to the gatewayed mailing list \mailto{gnuplot-info@lists.sourceforge.net}.
+%%% Please note that, due to the overwhelming amount of spam it would 
+%%% otherwise receive,
+%%% you have to subscribe before you can post to it. Subscription 
+%%% instructions are in
+%%% the main gnuplot manual.
+%%% Do not forget to cite the version number and the operating system.
+%%% If you want to subscribe to the mailing list, visit the URL 
+%%% \http{lists.sourceforge.net/lists/listinfo/gnuplot-info}.
+%%% But please don't use the mailing list if you can read
+%%% \news{comp.graphics.apps.gnuplot} directly. If you post a
+%%% question there, it is considered good form to solicit e-mail
+%%% replies and post a summary.
+それら全てに失敗したら、\gnuplot{} の最新版に更新する、
+あるいは更新するようシステム管理者に圧力をかけてください。
+そして質問をニュースグループ \news{comp.graphics.apps.gnuplot} %
+に投書するか、またはメーリングリスト %
+\mailto{gnuplot-info@lists.sourceforge.net} にメールを送ってください。
+そのメーリングリストが別に受けてしまう圧倒的な量 spam を避けるため、
+投稿の前にそのメーリングリストに参加 (subscribe) しなければいけません。
+参加の方法は、gnuplot のマニュアル本文にあります。
+メールを送る際は、バージョン番号とオペレーティングシステムを併記することを
+忘れないでください。
+そのメーリングリストを購読したいならば、URL %
+\http{lists.sourceforge.net/lists/listinfo/gnuplot-info}
+を参照してください。
+しかしニュースグループ \news{comp.graphics.apps.gnuplot} %
+が直接読めるならば、そうしないでください。
+質問をそのニュースグループに投稿すれば、
+それはメールでの返事を請求する、
+あるいは要約を投稿する良い形式と見なされます。
+
+
+%%% \subsection{How do I print out my graphs?}
+\subsection{どうやったらグラフをプリントアウトできますか}
+
+%%% The kind of output produced is determined by the \verb+set terminal+
+%%% command; for example, \verb+set terminal postscript+ will produce
+%%% the graph in PostScript format. Output can be redirected using
+%%% the \verb+set output+ command.
+生成される出力の種類は \verb+set terminal+ コマンドで定義します。
+例えば \\
+\verb+set terminal postscript+ は
+グラフを PostScript 形式で出力します。
+出力は \verb+set output+ コマンドでリダイレクトできます。
+
+%%% As an example, the following first plots a graph of sin(x) to the
+%%% screen and then redraws that same plot as a PostScript output file.
+以下の例は、まず sin(x) のグラフをスクリーン上に描画し、
+同じグラフを PostScript 出力ファイルとして再描画します。
+
+%%% \small
+%%% \begin{verbatim}
+%%% gnuplot> plot [-6:6] sin(x)
+%%% gnuplot> set terminal postscript
+%%% Terminal type set to 'postscript'
+%%% Options are 'landscape monochrome "Courier" 14'
+%%% gnuplot> set output "sin.ps"
+%%% gnuplot> replot
+%%% gnuplot> unset output            # set output back to default
+%%% gnuplot> unset terminal          # ditto for terminal type
+%%% gnuplot> system("print sin.ps")  # print PS File (site dependent)
+%%% gnuplot>
+%%% \end{verbatim}
+%%% \normalsize
+\small
+\begin{verbatim}
+gnuplot> plot [-6:6] sin(x)
+gnuplot> set terminal postscript
+Terminal type set to 'postscript'
+Options are 'landscape monochrome "Courier" 14'
+gnuplot> set output "sin.ps"
+gnuplot> replot
+gnuplot> unset output            # 出力先をデフォルトに戻す
+gnuplot> unset terminal          # 出力形式をデフォルトに戻す
+gnuplot> system("print sin.ps")  # PS ファイルをプリントアウト (環境依存)
+gnuplot>
+\end{verbatim}
+\normalsize
+
+%%% Using the platform-independent way of restoring terminal by \textit{set term
+%%% push/pop} commands, do it by
+プラットフォームに依存しない出力形式の復帰は、
+コマンド \textit{set term push/pop} によって以下のように行なえます。
+%% end Japanese
+\small
+\begin{verbatim}
+gnuplot> set terminal postscript eps color lw 15 "Helvetica" 20
+gnuplot> set out 'a.eps'
+gnuplot> replot
+gnuplot> set term pop
+\end{verbatim}
+\normalsize
+%%% The command \textit{set term pop} without a previous 
+%%% corresponding \textit{set
+%%% term push} switches the terminal back to the startup terminal.
+%%% The same thing happens if you say \textit{unset terminal}.
+\textit{set term pop} コマンドは、
+その前に対応する \textit{set term push} を実行していない場合は、
+起動時の出力形式復帰します。
+\textit{unset terminal} を実行した場合も同じです。
+
+%%% Some interactive terminal types (\textit{win, wxt, qt}) 
+%%% provide a printer icon
+%%% on the terminal's toolbar. This tool prints the current plot
+%%% or saves it to file
+%%% using generic system tools rather than by using a different 
+%%% gnuplot terminal type.
+%%% That is, the file you get by selecting "save to png" 
+%%% in the print menu will be
+%%% different than the file you get from \textit{set term png; replot;}.
+対話型出力形式の中にはそのツールバー上にプリンタアイコンを提供する
+ものもあります (\textit{win, wxt, qt} 等)。
+それは、他の出力形式を使用するのではなく、
+システムに用意されている一般的なシステムツールを使い、
+現在のグラフを印刷するか、またはファイルに保存します。
+すなわち、印刷メニューで "save to png" を選択して得られるファイルは、
+\textit{set term png; replot;} によって得られるファイルとは
+違うものになります。
+
+%%% \subsection{How do I include my graphs in <word processor>?}
+\subsection{どうやったらグラフをワープロソフトに取り込めますか}
+
+%%% Basically, you save your plot to a file in a format your word
+%%% processor can understand (using \verb+set term+ and \verb+set output+,
+%%% see above), and then you read in the plot from your word processor. Vector
+%%% formats (PostScript, emf, svg, pdf, \TeX{}, \LaTeX{}, etc) 
+%%% should be preferred,
+%%% as you can scale your graph later to the right size.
+基本的に、グラフをそのワープロソフトが理解できる形式のファイルに保存すれば %
+(\verb+set term+ と \verb+set output+ を使います。上を見てください) %
+そのワープロソフトで読み込むことができるでしょう。
+後で正しいサイズに変換もできるという点で
+ベクトル形式のフォーマット %
+(PostScript, emf, svg, pdf, \TeX{}, \LaTeX{} など) の方がいいでしょう。
+
+%%% Details depend on which word processor you use; use \verb+set term+ to get a
+%%% list of available file formats.
+細かいことはそのワープロソフトに依存します。
+\verb+set term+ として使用できるファイル形式のリストを見てください。
+
+%%% Many word processors can use Encapsulated PostScript (*.eps) for graphs. 
+%%% You can select eps output in \gnuplot{} using the
+%%% \verb+set terminal postscript eps+
+多くのワープロソフトは Encapsulated PostScript (*.eps) のグラフを取り込めます。
+\gnuplot{} では、\\
+\verb+set terminal postscript eps+ %
+を使うことで eps 出力を選択できます。
+%% end Japanese
+%%% Note that it is a good idea to check and correct the bounding box of the
+%%% graphs in the eps files (manually or by the fixbb script from gnuplot
+%%% webpage), as you have to correct this box for any eps figure produced by
+%%% whichever program.
+注意しておきますが、EPS ファイルのグラフの bounding box を調べ、
+修正するといいでしょう %
+(手動、あるいは gnuplot Web ページにある fixbb スクリプトによって)。
+%% end Japanese
+%%% Some (most?) word processors do not preview the actual image in the eps
+%%% file, and you have to add the preview image yourself. You can use the 
+%%% GSView
+%%% viewer for this (available for OS/2, Windows and X11), or some Unix ps
+%%% tool. 
+いくつかの (大抵の ?) ワープロソフトは、
+EPS ファイルに含まれる実際の画像を表示しませんので、
+表示イメージをあなた自身で追加する必要があります。
+その目的のためには、GSView ビューワ %
+(OS/2, Windows, X11 用があります)、
+あるいはいくつかの Unix 上の ps ツールが使えます。
+
+%%% Some Windows office applications, including OpenOffice.org, can handle
+%%% vector images in EMF format. These can be either produced by the emf 
+%%% terminal, or by selecting 'Save as EMF...' from the toolbar of the graph
+%%% window of the windows terminal.
+OpenOffice.org 等の Windows のオフィスアプリケーションには、
+EMF 形式のベクトル画像を処理できるものがあります。
+そのような画像ファイルは emf 出力形式でも作れますし、
+windows 出力形式のグラフウィンドウのツールバーから %
+'Save as EMF...' を選択することでも作れます。
+
+%%% OpenOffice.org can also read SVG, as well as AutoCAD's dxf format.
+OpenOffice.org は SVG 形式も、AutoCAD の dxf 形式も読みこむことができます。
+
+%%% There are many ways to use gnuplot to produce graphs for inclusion in a
+%%% \TeX\ or \LaTeX\ document.  
+%%% Some terminals produce *.tex fragments for direct inclusion; others 
+%%% produce *.eps, *.pdf, *.png output to be included using the 
+%%% \textbackslash{}includgraphics command.
+%%% The epslatex and cairolatex terminals produce both a graphics
+%%% file (*.eps or *.pdf) and a *.tex document file that refers to it.
+%%% Gnuplot version 4.6 has a tikz terminal type that produces full text and
+%%% graphics when the output is processed with pdflatex.
+gnuplot を使って \TeX\ や \LaTeX\ 文書に取り込むためのグラフを作る方法は
+何通りもあります。
+取り込む *.tex ファイルの断片を直接生成する出力形式もありますし、
+\textbackslash{}includegraphics コマンドを使って取り込むための %
+*.eps, *.pdf, *.png 出力を生成するものもあります。
+epslatex と cairolatex 出力形式は、画像ファイル (*.eps か *.pdf) と
+それを参照する *.tex 文書ファイルの両方を生成します。
+gnuplot 4.6 には tikz 出力形式があり、出力を pdflatex で処理する場合は
+これでテキストとグラフ全部を生成できます。
+
+%%% Most word processors can import bitmap images (png, pbm, etc).
+%%% The disadvantage of this approach is that the resolution of your
+%%% plot is limited by the size of the plot at the time it is generated
+%%% by gnuplot, which is generally a much lower resolution than the
+%%% document will eventually be printed in.
+大抵のワープロソフトはビットマップ画像 (png, pbm 等) %
+を取り込むことができますが、
+この方法の短所は、
+そのグラフが gnuplot によって生成されたときのサイズによって
+その解像度が制限されてしまうことです。
+一般に、文書が最終的にプリントアウトされる解像度よりも
+その解像度はかなり低くなります。
+
+%%% The mif terminal type produces output for FrameMaker.
+mif 出力形式は FrameMaker 用の出力を生成します。
+
+
+%%% \subsection{How do I edit or post-process a \gnuplot{} graph?}
+\subsection{どうやったら \gnuplot{} のグラフを編集や後処理できますか}
+
+%%% This depends on the terminal type you use.
+これはあなたが使う出力形式に依存します。
+
+\begin{itemize}
+
+%%% \item \textbf{svg} terminal (scalable vector graphics) output can
+%%% be further edited by a svg editor, e.g. 
+%%% \textbf{Inkscape} (\http{www.inkscape.org}),
+%%% \textbf{Skencil} (\http{www.skencil.org}) or
+%%% \textbf{Dia} (\http{projects.gnome.org/dia/}), or loaded
+%%% into \textbf{OpenOffice.org} with an on-fly conversion into OO.o Draw
+%%% primitives.
+\item \textbf{svg} 出力形式 (scalable vector graphics) の出力は %
+\textbf{Inkscape} (\http{www.inkscape.org}),
+\textbf{Skencil} (\http{www.skencil.org}), 
+\textbf{Dia} (\http{projects.gnome.org/dia/}), %
+のような svg エディタで更なる編集も行なえますし、
+\textbf{OpenOffice.org} (OO.o Draw プリミティブへの変換によって) %
+の中に取り込むこともできます。
+
+%%% \item PostScript or PDF output can be edited directly by tools such
+%%% as Adobe Illustrator or Acrobat, or can be converted to a variety
+%%% of other editable vector formats by the \textbf{pstoedit} package.
+%%% Pstoedit is available at \http{www.pstoedit.net}.
+\item PostScript や PDF 出力は、Adobe Illustrator や Acrobat %
+のようなツールで直接編集できますし、
+\textbf{pstoedit} パッケージで他の色々な編集可能なベクトル形式に
+変換することも可能です。
+pstoedit は \http{www.pstoedit.net} にあります。
+
+%%% \item The mif terminal type produces an editable FrameMaker document.
+\item mif 出力形式は FrameMaker で編集できる文書を生成します。
+
+%%% \item The DXF format is the AutoCAD's format, editable by several
+%%% other applications.
+\item DXF 出力形式は AutoCAD の書式で、他のいくつかのアプリケーションでも
+編集できます。
+
+%%% \item Bitmapped graphics (e.g. png, jpeg, pbm) can be edited using
+%%% tools such as ImageMagick or Gimp.  
+\item ビットマップ形式の画像 (png, jpeg, pbm 等) は ImageMagick や %
+Gimp の様なツールで編集することができます。
+%% end Japanese
+%%% In general, you should use a vector graphics program to post-process
+%%% vector graphic formats, and a pixel-based editing program 
+%%% to post-process pixel graphics.
+一般に、ベクトルグラフィック形式の後処理を行なうには
+ベクトルグラフィックプログラム (ドロー系ツール) を、
+ピクセル画像にはピクセル画像系のプログラム (ペイント系ツール) %
+を使う必要があります。
+
+\end{itemize}
+
+
+%%% \subsection{How do I change symbol size, line thickness and the like?}
+\subsection{どうやったら記号の大きさや線の太さなどを変更できますか}
+
+%%% Gnuplot offers a variety of commands to set line and point properties,
+%%% including color, thickness, point shape, etc.  The command \verb+test+ will
+%%% display a test page for the currently selected terminal type showing
+%%% the available pre-defined combinations of color, size, shape, etc.
+%%% You can use the command \textit{set linetype} to change this or 
+%%% define additional combinations.
+gnuplot は、例えば色や太さや点の形などの、
+線や点の色々な属性を設定するための様々なコマンドを提供しています。
+コマンド \verb+test+ は、現在選択されている出力形式用の、
+利用可能な定義済みの色、サイズ、形などの組合せを示す
+テストページを出力します。
+コマンド \textit{set linetype} を使うことで
+これを変更したり、あらたな組を追加定義できます。
+
+%%% \subsection{Can I animate my graphs?}
+\subsection{グラフをアニメーション化できますか}
+
+%%% Only \gnuplot{} terminal type directly outputs an animated file:
+\gnuplot{} 出力形式で直接アニメーションファイルを出力できるのは
+以下のものだけです:
+%% end Japanese
+\begin{verbatim}
+set terminal gif animate {delay <time>} {loop <N>} {optimize}
+\end{verbatim}
+
+%%% Have a look at
+%%% \http{http://gnuplot.sourceforge.net/demo/animate.html}
+%%% in the demo collection.
+デモの中の
+\http{http://gnuplot.sourceforge.net/demo/animate.html}
+も参照してください。
+
+%%% \subsection{How do I plot implicit defined graphs?}
+\subsection{どうやったら陰関数のグラフが書けますか}
+
+%%% Implicit graphs or curves cannot be plotted directly in \gnuplot.
+%%% However there is a workaround. 
+\gnuplot{} では陰関数のグラフや曲線は直接は描画できません。
+しかし、次善の策はあります。
+%% end Japanese
+%%% \small
+%%% \begin{verbatim}
+%%% gnuplot> # An example. Place your definition in the following line:
+%%% gnuplot> f(x,y) = y - x**2 / tan(y)
+%%% gnuplot> set contour base
+%%% gnuplot> set cntrparam levels discrete 0.0
+%%% gnuplot> unset surface
+%%% gnuplot> set table 'curve.dat'
+%%% gnuplot> splot f(x,y)
+%%% gnuplot> unset table
+%%% gnuplot> plot 'curve.dat' w l
+%%% \end{verbatim}
+%%% \normalsize
+\small
+\begin{verbatim}
+gnuplot> # 例: 次の行を適当な定義に置き換えてください。
+gnuplot> f(x,y) = y - x**2 / tan(y)
+gnuplot> set contour base
+gnuplot> set cntrparam levels discrete 0.0
+gnuplot> unset surface
+gnuplot> set table 'curve.dat'
+gnuplot> splot f(x,y)
+gnuplot> unset table
+gnuplot> plot 'curve.dat' w l
+\end{verbatim}
+\normalsize
+%% end Japanese
+%%% The trick is to draw the single contour line z=0 of the surface
+%%% z=f(x,y), and store the resulting contour curve to a \gnuplot{} datafile.
+その仕掛けは、曲面 z=f(x,y) の 1 本の等高線 z=0 を描き、
+その等高線のデータをファイルにセーブすることにあります。
+ 
+
+%%% \subsection{How to fill an area between two curves}
+\subsection{2 つの曲線間の領域を塗りつぶすには}
+
+%%% A plot with filled area between two given curves can be easily obtained using
+%%% the pseudo file '+' with \textit{filledcurves closed}. The example below
+%%% demonstrates this for two curves f(x) and g(x):
+2 つの与えられた曲線の間を塗りつぶす描画は、
+疑似ファイル '+' と \textit{filledcurves closed} を使えば簡単にできます。
+以下の例は、2 つの曲線 f(x) と g(x) に対するデモです:
+%% end Japanese
+\small
+\begin{verbatim}
+f(x)=cos(x)
+g(x)=sin(x)
+xmax=pi/4
+set xrange [0:xmax]
+plot '+' using 1:(f($1)):(g($1)) with filledcurves closed
+\end{verbatim}
+\normalsize
+
+%%% Note that the above code fills area between the two curves, not 
+%%% area satisfying
+%%% inequality g(x)<f(x). If you want the latter, you should use the ternary
+%%% operator in \textit{using} statement to return an undefined value (0/0) 
+%%% if the
+%%% inequality is not satisfied.
+注意してもらいたいのですが、
+上の例は 2 つの曲線の間の領域を塗りつぶすものであって、
+不等式 g(x)<f(x) を満たす領域を塗りつぶすものではありません。
+もし、後者を行ないたいなら、
+\textit{using} 部分で 3 項演算子を使って、
+その不等式が満たされない場合は未定義値 (0/0) %
+を返すようにする必要があります。
+
+%%% See the documentation for \textit{help filledcurves}, 
+%%% \textit{help special-filenames}, and \textit{help ternary} and see
+%%% \textit{fillbetween.dem} in the \textit{demos} directory.
+textit{help filledcurves}, \textit{help special-filenames}, 
+\textit{help ternary} に関するドキュメントを参照してください。
+\textit{demos} ディレクトリ内の \textit{fillbetween.dem} も参照してください。
+
+%%% \subsection{Pm3d splot from a datafile does not draw anything}
+\subsection{pm3d によるデータファイルの splot で何も表示されません}
+%% end Japanese
+\label{blank1}
+
+%%% You do \verb+set pm3d; splot 'a.dat'+ and no plot but colorbox appears.
+%%% Perhaps there is no blank line in between two subsequent 
+%%% scans (isolines) in
+%%% the data file? Add blank lines! If you are curious what this means, 
+%%% then don't
+%%% hesitate to look to files like \verb+demo/glass.dat+ or 
+%%% \verb+demo/triangle.dat+
+%%% in the gnuplot demo directory.
+\verb+set pm3d; splot 'a.dat'+ とやっても、
+カラーボックスは表示されるもののグラフは表示されないとしたら、
+もしかしたら 2 つのつながっている線 (孤立線) を分離する空行が
+ないのでは ? 空行を入れなさい ! %
+これが何を意味するのかに興味があるなら、
+gnuplot の demo ディレクトリにある \verb+demo/glass.dat+ や %
+\verb+demo/triangle.dat+ などのファイルをじっくり見てください。
+
+%%% You can find useful the following awk script (call it e.g. 
+%%% \verb+addblanks.awk+)
+%%% which adds blank lines to a data file whenever number in the first column
+%%% changes:
+以下の awk スクリプト %
+(例えば \verb+addblanks.awk+ と呼ぶことにします) %
+は有用で、データファイルに、
+第 1 列目の数が変更したときに空行を追加してくれます。
+%% end Japanese
+%%% \small
+%%% \begin{verbatim}
+%%% /^[[:blank:]]*#/ {next} # ignore comments (lines starting with #)
+%%% NF < 3 {next} # ignore lines which don't have at least 3 columns
+%%% $1 != prev {printf "\n"; prev=$1} # print blank line
+%%% {print} # print the line
+%%% \end{verbatim}
+%%% \normalsize
+\small
+\begin{verbatim}
+/^[[:blank:]]*#/ {next} # コメント行 (# で始まる行) は無視
+NF < 3 {next} # 3 列未満しかない行も無視
+$1 != prev {printf "\n"; prev=$1} # 空行を出力
+{print} # その行自体を出力
+\end{verbatim}
+\normalsize
+%% end Japanese
+%%% Then, either preprocess your data file by command
+%%% \verb+awk -f addblanks.awk <a.dat+ or plot the datafile under a 
+%%% unixish platform
+%%% by \verb+gnuplot> splot "<awk -f addblanks.awk a.dat"+.
+これにより、データファイルをコマンド \verb+awk -f addblanks.awk <a.dat+ %
+によって前処理するか、
+unix 互換のプラットフォーム上でデータファイルを \\
+\verb+gnuplot> splot "<awk -f addblanks.awk a.dat"+ のように描画するか、
+のどちらかを行ってください。
+
+%%% \subsection{Drawing 2D projection of 3D data}
+\subsection{3 次元データの 2 次元射影を描画するには}
+
+%%% Use \textit{set view map}
+%%% There are also plotting styles \verb+with image+ and \verb+with rgbimage+
+%%% for plotting 2D color images.
+\textit{set view map} を使用してください。
+2 次元のカラー画像の描画用には、描画スタイル \verb+with image+ や %
+\verb+with rgbimage+ なども用意されています。
+
+%%% \subsection{How to overlay dots/points scatter plot onto a pm3d map/surface}
+\subsection{pm3d 色地図/曲面上に dots/points の散布図を重ねるには}
+
+%%% Use the explicit (see also implicit) switch of the pm3d style:
+pm3d スタイルの explicit スイッチ (implicit も参照のこと) を使ってください:
+%% end Japanese
+\small
+\begin{verbatim}
+gnuplot> set pm3d explicit
+gnuplot> splot x with pm3d, x*y with points
+\end{verbatim}
+\normalsize
+
+%%% \subsection{How to produce labeled contours}
+\subsection{ラベルつきの等高線を描画するには}
+
+%%% Labeling individual contous in a contour plot required special
+%%% tricks and extra processing steps in \gnuplot{} version 4.
+%%% See
+%%% \http{gnuplot.sourceforge.net/scripts/index.html\#tricks-here}.
+個々の等高線にラベルをつけたグラフは、\gnuplot{} バージョン 4 では
+ある種の裏技と余分な処理手順が必要です。以下を参照してください:
+\http{gnuplot.sourceforge.net/scripts/index.html\#tricks-here}
+
+%%% In version 5 the procedure is much simpler.  Plot the contours twice,
+%%% once "with lines" and once "with labels".  To make the labels stand out
+%%% it may help set use 
+バージョン 5 では、その手順はとても簡単です。
+等高線を、1 回目は "with lines" で、2 回目は "with labels" で %
+2 回描画するだけです。
+目立つラベルを作成したい場合は、以下のような設定を使用するといいでしょう。
+%% end Japanese
+\begin{verbatim}
+set style textbox opaque noborder
+set contours
+splot 'DATA' with line, 'DATA' with labels boxed
+\end{verbatim}
+
+
+%%% \subsection{How to overlay contour plot over pm3d map/surface}
+\subsection{pm3d 色地図/曲面グラフに等高線を重ねるには}
+
+%%% [Not needed any more?]
+%%% This requires you to write contours into a temporary file 
+%%% using the table
+%%% terminal, and then use this file in the final drawing without set contours.
+%%% The following example demonstrates this for a map; for surface, remove 
+%%% \verb+set pm3d map+ and put \verb+set ticslevel 0+.
+[既に不要?]
+これは、等高線を table 出力形式を利用して一時ファイルに書き出し、
+そしてそれを set contours を使わずに描画する必要があります。
+次の例は色地図グラフのデモですが、
+曲面グラフの場合は %
+\verb+set pm3d map+ を削除して \verb+set ticslevel 0+ を入れます。
+%% end Japanese
+%%% \small
+%%% \begin{verbatim}
+%%% # Write contours of function  x*x-y*y  to a (temporary) file
+%%% set contour base; set cntrparam level 20
+%%% unset surface
+%%% set table 'contour.dat'
+%%% splot x*x-y*y
+%%% unset table
+%%% 
+%%% # Change single blank lines to double blank lines
+%%% !awk "NF<2{printf\"\n\"}{print}" <contour.dat >contour1.dat
+%%% 
+%%% # Draw the plot
+%%% reset
+%%% set palette gray
+%%% set palette gamma 2.5
+%%% set pm3d map
+%%% set pm3d explicit
+%%% splot x*x+y*y with pm3d, 'contour1.dat' with line lt -1
+%%% !rm contour.dat contour1.dat
+%%% \end{verbatim}
+%%% \normalsize
+%% begin Japanese
+\small
+\begin{verbatim}
+# 関数 x*x-y*y の等高線を一時ファイルに書き出す
+set contour base; set cntrparam level 20
+unset surface
+set table 'contour.dat'
+splot x*x-y*y
+unset table
+
+# 1 行の空行を 2 行の空行に変換
+!awk "NF<2{printf\"\n\"}{print}" <contour.dat >contour1.dat
+
+# グラフの描画
+reset
+set palette gray
+set palette gamma 2.5
+set pm3d map
+set pm3d explicit
+splot x*x+y*y with pm3d, 'contour1.dat' with line lt -1
+!rm contour.dat contour1.dat
+\end{verbatim}
+\normalsize
+%% end Japanese
+%%% The last command deletes the two temporary files.
+最後のコマンドは 2 つの一時ファイルを削除します。
+
+
+%%% \subsection{Color facets with pm3d}
+\subsection{pm3d による色つきの多面体描画は}
+
+%%% It is possible to draw colors facets of a 3D objects, organized in 
+%%% such a file:
+3 次元物体の面に色をつけて描画するには、
+ファイルを以下のような形式で作成すれば可能です。
+
+%%% \small
+%%% \begin{verbatim}
+%%% # triangle 1
+%%% x0 y0 z0 <c0>
+%%% x1 y1 z1 <c1>
+%%% 
+%%% x2 y2 z2 <c2>
+%%% x2 y2 z2 <c2>
+%%% 
+%%% 
+%%% # triangle 2
+%%% x y z
+%%% ...
+%%% \end{verbatim}
+%%% \normalsize
+%% begin Japanese
+\small
+\begin{verbatim}
+# 三角形 1
+x0 y0 z0 <c0>
+x1 y1 z1 <c1>
+
+x2 y2 z2 <c2>
+x2 y2 z2 <c2>
+
+
+# 三角形 2
+x y z
+...
+\end{verbatim}
+\normalsize
+%% end Japanese
+
+%%% Notice the positioning single and double blank line. \textit{<c>} 
+%%% is an optional
+%%% color.
+1 行の空行と 2 行の空行の位置に注意してください。
+\textit{<c>} はオプションの色指定です。
+
+%%% Then plot it by (either of splot's):
+これを以下のようにして描画します (どちらかの splot で):
+%% end Japanese
+\small
+\begin{verbatim}
+set pm3d
+set style data pm3d
+splot 'facets.dat'
+splot 'facets_with_color.dat' using 1:2:3:4
+\end{verbatim}
+\normalsize
+
+%%% Note that you avoid surface lines by \textit{set style data pm3d} or 
+%%% \textit{splot ... with pm3d}.
+曲面の線は、
+\textit{set style data pm3d} か、\textit{splot ... with pm3d} %
+で無効にできることに注意してください。
+
+%%% In the above example, pm3d displays triangles as independent surfaces.
+%%% They are plotted one surface after another, as found in the data file.
+%%% Parts overlapping in 2D projection are overdrawn.
+上の例では、pm3d は三角形をそれぞれ独立な曲面として描画します。
+それらは、データファイル中に他のものが見つかったときに
+その後で一つの曲面に描かれます。
+重なる部分は 2 次元射影では重なって描画されてしまいます
+
+%%% Gnuplot is not 3D modeling program. Its hidden routines apply for points and
+%%% lines, but not for faces. 
+%%% Without handling the data as a collection of faces, there would be no surface
+%%% anything could be hidden behind.  The 'hidden3d' algorithm works by using the
+%%% input data in two ways: first, to set up a collection of triangles 
+%%% (made from a
+%%% mesh of quadrangles) that form the surface, second as a collection of 
+%%% edges.  It
+%%% then goes through all those edges, checking what parts of them are not hidden
+%%% behind any faces, and draws those.
+gnuplot は 3 次元モデリングプログラムではなく、
+隠線処理ルーチンは点、線には適用されますが、面には適用されません。
+面の集まりとしてのデータの処理なしには、
+影に隠れる面を作ることはできません。
+'hidden3d' アルゴリズムは、入力データを 2 つの方法で使って実行されています: %
+一つは、曲面を構成する三角形 (格子点の四角形から作られる) %
+の集まりをセットアップすること、
+もう一つは端の集まりです。
+そしてそのすべての端に対して、
+どの部分が他の面の後ろに隠れないのかをチェックし、
+そしてそれらを描画しています。
+
+%%% Consequently, gnuplot won't draw your surface or 3D object as 
+%%% a virtual reality.
+%%% It works OK for \textit{set pm3d map} but for true 3D you would 
+%%% be probably more
+%%% happy writing a convertor of your facets into a VRML file.
+結果として、
+gnuplot は曲面や 3 次元の物体を仮想現実としては描画しません。
+これは \textit{set pm3d map} に対してはちゃんと働きますが、
+本当の 3 次元にしたいなら、
+多面体データを VRML ファイルに変換するソフトを書く方がいいかもしれません。
+
+
+%%% \subsection{Palette for printing my color map on color as well 
+%%% as black\&white
+%%% printer?}
+\subsection{色地図をモノクロのプリンタでもちゃんと印字するようなパレットは}
+
+%%% Try \textit{set palette cubehelix}.
+\textit{set palette cubehelix} を試してください。
+
+
+%%% \section{Wanted features}
+\section{欲しい機能 (Wanted features)}
+
+%%% \subsection{What's new in \gnuplot{} 4.6, 5.0 etc?}
+\subsection{\gnuplot{} 4.6, 5.0 等で新しくなったことは}
+
+%%% Too many things to list here.
+%%% Please refer to the \textit{NEWS} file in the source distribution, or the
+%%% "New features" section in the gnuplot documentation.
+ここにあげるには多すぎます。
+ソース配布物に含まれるファイル \textit{NEWS}、
+あるいは gnuplot のヘルプドキュメントの "New features" のセクションを
+参照してください。
+
+
+%%% \subsection{Does \gnuplot{} support a driver for <graphics format>?}
+\subsection{\gnuplot{} は画像フォーマット用のドライバをサポートしていますか}
+
+%%% To see a list of the available graphic drivers for your installation of
+%%% \gnuplot{}, type \verb+set term+.
+インストール済の \gnuplot{} が使用できるグラフィックドライバの一覧を見るには、
+\verb+set term+ とタイプしてください。
+
+%%% Some graphics drivers are included in the normal distribution
+%%% but are not built by default. If you want to use them, you'll
+%%% have to change file \verb+gnuplot/src/term.h+, and recompile.
+通常の配布物には含まれていても、
+デフォルトでは使えないようになっているグラフィックドライバもあります。
+それらが使いたければ、\verb+gnuplot/src/term.h+ を修正して
+コンパイルし直す必要があります。
+
+
+%%% \subsection{Does \gnuplot{} have hidden line removal?}
+\subsection{\gnuplot{} は隠線処理できますか}
+
+%%% Yes.
+ええ。
+
+%%% \subsection{Does \gnuplot{} support bar-charts/histograms/boxes?}
+\subsection{\gnuplot{} は棒グラフ/ヒストグラム/箱型グラフが書けますか}
+
+%%% \Gnuplot{} supports various clustered and stacked histogram styles 
+%%% to display
+%%% pretabulated data.  It also offers a few options for accummulating 
+%%% raw data
+%%% into bins, which can in turn be displayed as a bar chart.  See the 
+%%% documentation
+%%% for \textit{smooth frequency}.
+\gnuplot{} は、あらかじめ表形式にされたデータを表示するための、
+さまざまな横並び型 (clustered) と積み上げ型 (stacked) の
+ヒストグラムスタイルをサポートしています。
+また、生のデータを場所毎に累積するためのいくつかのオプションも提供していて、
+それを切り替えて棒グラフとして表示させることも可能です。
+マニュアルの \textit{smooth frequency} の部分を参照してください。
+
+%%% \subsection{Does \gnuplot{} support pie charts? quarterly time charts?}
+\subsection{\gnuplot{} は円グラフが書けますか、四半期グラフはどうですか}
+
+%%% Pie charts are sort of difficult in \gnuplot, but see
+%%% \http{http://gnuplot.sourceforge.net/demo/circles.html}, 
+%%%  or have a look at
+%%% \http{http://gnuplot-tricks.blogspot.com/2009/08/pie-charts-entirely-in-gnuplot.html}.
+円グラフは \gnuplot{} ではちょっと面倒ですが、以下を見てください。
+\http{http://gnuplot.sourceforge.net/demo/circles.html} 
+または、以下を参照してください。
+\http{http://gnuplot-tricks.blogspot.com/2009/08/pie-charts-entirely-in-gnuplot.html}
+
+%%% The demo collection contains an example of a simple Gantt chart.  
+%%% This capability
+%%% is new in \gnuplot{} version 5.
+デモの中には単純なガントチャートの例があります。
+これは、\gnuplot{} バージョン 5 の新しい機能です。
+
+%%% \subsection{Can I put multiple pages on one page?}
+\subsection{一つのページに複数のグラフが書けますか}
+
+%%% Yes. \verb+set multiplot+.
+はい。\verb+set multiplot+ としてください。
+
+%%% \subsection{Does \gnuplot{} support multiple y-axes on a single plot?}
+\subsection{\gnuplot{} は一つのグラフで複数の y 軸を使えますか}
+
+%%% Yes. 2D plots can have separate x axes at the bottom (x1) and top (x2),
+%%% and separate y axes at the left (y1) and right (y2).  Version 5 offers a
+%%% plot mode \textit{with parallelaxes} that allows additional y axes to be
+%%% defined.
+はい。2 次元グラフでは別々に x 軸を下 (x1) と上 (x2) に
+持つことができますし、別々に y 軸を左 (y1) と右 (y2) に持つことができます。
+バージョン 5 では、\textit{with parallelaxes} という描画モードで
+y 軸をさらに追加することもできます。
+
+
+%%% \subsection{Can I put both commands and data into a single file?}
+\subsection{一つのファイルに gnuplot のコマンドとデータの両方を書けますか}
+
+%%% Version 5 supports named blocks of data in "here document" format:
+バージョン 5 では、「ヒアドキュメント」形式での名前付きデータブロックを
+サポートしています:
+%% end Japanese
+\small
+\begin{verbatim}
+gnuplot> $DATABLOCK << EOD
+cats 4 2
+dogs 1 4
+EOD
+gnuplot> plot $DATABLOCK using 2:3:1 with labels
+\end{verbatim}
+\normalsize
+%%% Once the named block has been defined, it can be used as many times
+%%% as you like.
+名前付きデータブロックは一度定義すれば、それを何度でも使うことができます。
+
+%%% Data can also be provided in-line as part of a plot command using the
+%%% pseudo-file \verb+plot "-"+.  In this case the data can only be used
+%%% once.
+データは、plot コマンド上で疑似ファイル指定 \verb+plot "-"+ を
+行ってインライン形式で与えることもできます。
+この場合は、データは一度しか使えません。
+
+\small
+\begin{verbatim}
+gnuplot> plot "-"
+1 1
+2 4
+3 9
+e
+\end{verbatim}
+\normalsize
+
+
+%%% \subsection{Can I put Greek letters and super/subscripts into my labels?}
+\subsection{ラベルにギリシャ文字や上/下付きの文字を使えますか}
+
+%%% Most terminal types (output device drivers) support an "enhanced text" mode.
+%%% This lets you use sub- and superscripts.  It also allows to use Greek
+%%% letters and math symbols to the extent that these are supported by the 
+%%% fonts
+%%% installed on your system.  The simplest way to enter special characters of
+%%% any sort, if your system supports it, is to select UTF-8 encoding.  This
+%%% obviates the need to change fonts.
+多くの出力形式 (出力デバイスドライバ) で、「拡張文字処理」モード %
+("enhanced text" モード) がサポートされていて、
+これで上付き下付きの文字が扱えます。
+その場合、あなたのシステムにインストールされているフォントの
+サポートする範囲内で、ギリシャ文字や、数学記号文字も扱えます。
+色んな特殊文字を入力する最も簡単な方法は、
+あなたのシステムがサポートしていればですが、
+UTF-8 エンコーディングを利用することです。
+これにより、フォントの変更の必要がなくなります。
+
+%%% The various \LaTeX{} terminal types (\textit{latex, epslatex, tikz, 
+%%% context, cairolatex})
+%%% hand off text generation to \LaTeX{}. In this case you can 
+%%% use normal \LaTeX{}
+%%% markup like \verb+"\\alpha_{3}"+ or \verb+'\alpha_{3}'+ .
+いくつかの \LaTeX{} 系出力形式 (\textit{latex, epslatex, tikz, 
+context, cairolatex}) は、生成した文字列を \LaTeX{} に渡します。
+この場合は、\verb+"\\alpha_{3}"+ や \verb+'\alpha_{3}'+ のような
+通常の \LaTeX{} 風の記述が利用できます。
+
+%%% \subsection{How do I include accented characters}
+\subsection{どうしたらアクセント付きの文字を出力できますか}
+%% end Japanese
+% \subsection{Can I type labels in Czech, French, Hungarian, Russian...}
+
+%%% To obtain accented characters like \"u or \^n in your labels you should use
+%%% 8bit character codes together with the appropriate encoding option.
+%%% See the following example:
+\"u (u ウムラウト; u の上に点 2 つのアクセント) や %
+\^n のような文字をラベルに含めるには、
+適切なエンコードオプションを設定し、
+8bit 文字コードを使用しなければいけません。
+例えば次のようにします。
+
+\small
+\begin{verbatim}
+gnuplot> set encoding iso_8859_1
+gnuplot> set title "M\374nchner Bierverbrauch \374ber die Jahre"
+gnuplot> plot "bier.dat" u 1:2
+\end{verbatim}
+\normalsize
+
+%%% Consequently, you can type labels in Czech, French, Hungarian, Russian... by
+%%% means of an appropriate \textit{set encoding}. However, you cannot mix two
+%%% encodings in one file (e.g. accents for west and east latin encodings). 
+これにより、適切な \textit{set encoding} により、
+チェコ語、仏語、ハンガリー語、露語などのラベルを打ち出すことができます。
+しかし、2 種類のエンコード (例えば西ラテンエンコードと東ラテンエンコード) %
+を一つのファイルに混ぜることはできません。
+
+%%% A more general solution is to use UTF-8 encoded fonts, and type the 
+%%% UTF-8 characters directly into gnuplot. This works for many terminal types
+%%% but is very cumbersome for PostScript.
+UTF-8 エンコーディングフォントを使うためのより一般的なやり方は、
+\gnuplot{} 内で直接 UTF-8 の文字を入力することです。
+これは多くの出力形式で動作しますが、
+しかし PostScript ではとても厄介です。
+
+
+%%% \subsection{Can I do 1:1 scaling of axes?}
+\subsection{縦と横の軸を 1:1 にできますか}
+
+%%% Try \verb+set size square+
+%%% or \verb+set view equal xy+.
+\verb+set size square+ か %
+\verb+set view equal xy+ としてみてください。
+
+%%% \subsection{Can I put different text sizes into my plots?}
+\subsection{異なるサイズのテキストを一つのグラフで出力できますか}
+
+%%% Most terminal types allow you to specify a starting font face and size.
+%%% The "enhanced text" mode allows you to change fonts, text sizes, bold and
+%%% italic styles within a plot.
+たいていの出力形式では、デフォルトフォントの名前とサイズを指定できます。
+「拡張文字処理」モード ("enhanced text") では、フォント、
+および文字サイズやボールド、イタリックの書体を一つのグラフ内で
+変更できます。
+
+%%% \subsection{How do I skip data points?}
+\subsection{どうしたらデータ点をスキップできますか}
+
+%%% By specifying \textit{?} as a data value, as in
+以下のようにデータ値として \textit{?} を指定すればできます。
+%% end Japanese
+\small
+\begin{verbatim}
+        1 2
+        2 3
+        3 ?
+        4 5
+\end{verbatim}
+\normalsize
+
+%%% See also \textit{set missing}.
+%%% See also \textit{set datafile commentschars} for specifying comment 
+%%% characters in
+%%% data files.
+\textit{set missing} も参照してください。
+データファイルのコメント文字を指定するには、
+\textit{set datafile commentschars} を参照してください。
+
+
+%%% \subsection{How do I plot every nth point?}
+\subsection{どうしたら n 点毎にデータを扱えますか}
+
+%%% This can be specified with various options for the command \verb+plot+,
+%%% for example \verb+plot 'a.dat' every 2+.  If you want to draw a line 
+%%% through every point but only draw a point symbol at every nth point,
+%%% then try \verb+plot 'a.dat' with linespoints pointinterval n+.
+これは、例えば \verb+plot 'a.dat' every 2+ のように、
+\verb+plot+ コマンドに色々なオプションを指定することでできます。
+すべての点を通る線を引き、しかし点の記号は n 点毎に書きたい場合は、\\
+\verb+plot 'a.dat' with linespoints pointinterval n+ としてみてください。
+
+
+%%% \subsection{How do I plot a vertical line?}
+\subsection{どうしたら鉛直線を書けますか}
+
+%%% Depending on context, the main methods are:
+状況によりますが、主な方法は以下の通りです:
+%% end Japanese
+\begin{itemize}
+%%% \item \verb+set arrow .... .... nohead+ where you have to compute
+%%% explicitly the start and the end of the arrow.
+%%% \item generate (inlined) datapoints and plot them
+\item \verb+set arrow .... .... nohead+  この場合、
+矢の正確な開始点と終了点の位置を計算しておく必要があります。 
+\item データ点を作って (インラインでの指定も可) それを描画
+%% end Japanese
+\end{itemize}
+
+
+%%% \subsection{How do I plot data files}
+\subsection{どうしたらデータファイルを描画できますか}
+
+%%% Easily: by a command \textit{plot 'a.dat'}. In 3D, use 
+%%% \textit{splot 'a.dat'} --
+%%% but don't forget to put a blank line in between two subsequent 
+%%% scans (isolines),
+%%% otherwise you will get an error that the data is not gridded; 
+%%% see also question 
+%%% \ref{blank1}. If your data are not gridded, then use 
+%%% \textit{set dgrid3d \{many
+%%% options\}}.
+簡単です。コマンド \textit{plot 'a.dat'} でできます。
+3 次元描画の場合は \textit{splot 'a.dat'} です。
+ただし、2 つのつながっている線 (孤立線) を分離するのに
+空行を出力するのを忘れないでください。
+さもないと、データが格子状 (grid) でないというエラーが出るかも知れません。
+質問 \ref{blank1} も参照してください。
+データが格子状でない場合は、
+\textit{set dgrid3d \{色んなオプション\}} を使用してください。
+
+
+%%% \subsection{How do I replot multiplot drawing}
+\subsection{どうしたら multiplot の描画を replot できますか}
+
+%%% You cannot directly: gnuplot supports \verb+replot+ command, not
+%%% \verb+remultiplot+. You have to write the complete sequence of commands since
+%%% \verb+set multiplot+ till \verb+unset multiplot+ into a script file. Then
+%%% you can \verb+load+ the script into gnuplot as many times as you need for
+%%% replotting the drawing to different terminals or output files.
+直接はできません: 
+gnuplot は \verb+replot+ コマンドはサポートしてますが、
+\verb+remultiplot+ コマンドはありません。
+よって、スクリプトファイル内に %
+\verb+set multiplot+ から \verb+unset multiplot+ %
+までのすべてのコマンド列を書く必要があります。
+そのスクリプトを gnuplot に \verb+load+ してやれば、
+必要な回数だけ、異なる出力形式、異なる出力ファイルに replot できます。
+
+
+%%% \section{Miscellaneous}
+\section{その他}
+
+%%% \subsection{I've found a bug, what do I do?}
+\subsection{バグを見つけたのですがどうしたら良いですか}
+
+%%% First, try to see whether it actually is a bug, or whether it
+%%% is a feature which may be turned off by some obscure set--command.
+最初に、それが本当にバグなのか、
+それともある set--command で翻すことができる特徴なのかを見極めてください。
+
+%%% Next, see whether you have an old version of \gnuplot{}; if you do,
+%%% chances are the bug has been fixed in a newer release.
+次に、あなたが使っている \gnuplot{} が古い版ではないか確かめてください。
+もしそうなら、
+より新しい版ではその新しいバグは取り除かれている可能性があります。
+
+%%% The {CVS} development version may already contain fixes for bugs reported
+%%% since the release of the current version.
+%%% Before submitting a bug report, please check whether the bug in question
+%%% has already been fixed.
+{CVS} 開発版は、現在のリリース版以後に報告されたバグの修正を
+既に持っている可能性があります。レポートを送る前に、
+質問のバグが既に修正されていないかチェックしてみてください。
+
+%%% If, after checking these things, you still are convinced that there is a
+%%% bug, proceed as follows. If you have a fairly general sort of bug
+%%% report, posting to \news{comp.graphics.apps.gnuplot} is probably
+%%% the way to go. If you have investigated a problem in detail, especially
+%%% if you can provide a simple script that reproduces the error, please
+%%% upload it to the bug-tracker at
+%%% \http{sourceforge.net/tracker/?group_id=2055&atid=102055}.
+これらをチェックした後でなおそれがバグであると確信したなら、
+以下に進んでください。
+もしあなたが公正で普遍的な種類のバグレポートを作ったならば、
+多分ニュースグループ \news{comp.graphics.apps.gnuplot} %
+への投稿が取るべき道でしょう。
+もし問題の詳細な調査結果があるならば、
+特にそのエラーを際限する簡単なスクリプトを提供できるならば、
+それを \http{sourceforge.net/tracker/?group_id=2055&atid=102055} の
+bug-tracker にアップロードしてください。
+
+%%% The tracker on sourceforge is for reporting bugs and collecting bug fixes
+%%% that will appear in a subsequent release.
+%%% The \news{comp.graphics.apps.gnuplot} newsgroup will be more help for
+%%% finding work arounds or actually solving \gnuplot{} related problems. If
+%%% you do send in a bug report, be sure and include the version of \gnuplot{}
+%%% (including patchlevel) as shown by the command \verb+show version long+,
+%%% terminal driver, operating system, an exact description of the bug and
+%%% input which can reproduce the bug. Failure to indicate these details can
+%%% render a solution to your problem almost impossible. Also, any context
+%%% diffs should be referenced against the latest official version of
+%%% \gnuplot{} if at all possible.
+souceforge の tracker は、バグのレポート、および
+後のリリースに反映するためのバグの修正の収集のためのものです。
+ニュースグループ \news{comp.graphics.apps.gnuplot} は %
+\gnuplot{} に関する問題に対する回避策を見つける、
+あるいはそれを実際に解決する手助けのためのものです。
+もしバグリポートを送るときは、\verb+show version long+ コマンドで見れる %
+\gnuplot{} のバージョン (パッチレベルも含めて)、
+出力形式のドライバ名 (terminal driver)、オペレーティングシステム、
+バグの正確な記述とバグを再現するための入力、
+これらを確認しレポートに入れてください。
+これらの詳細が示されていなければ、
+その問題の解を与えることはほとんど不可能です。
+そして、最新の公式版の \gnuplot{} に対して当てた差分 (context diff) も、
+可能ならばすべて引用すべきです。
+
+
+%%% \subsection{Can I use \gnuplot{} routines for my own programs?}
+\subsection{私のプログラムで \gnuplot{} のルーチンを利用できますか}
+
+%%% On systems supporting pipes, you can pipe commands to \gnuplot{} from other
+%%% programs. Many applications with gnuplot as the graphics engine, like Octave
+%%% (\http{www.octave.org}), uses this method. This also works from a 
+%%% cgi script to
+%%% drive \gnuplot{} from a forms-based web page.
+パイプをサポートしているシステムでは、
+他のプログラムからパイプ経由で \gnuplot{} にコマンドを渡すことができます。
+Octave (\http{www.octave.org}) のように、
+gnuplot をグラフィックエンジンとして使用している多くのアプリケーションが
+この方法を使用しています。
+これは、form ベースの Web ページから \gnuplot{} を起動する cgi スクリプトでも
+利用できます。
+
+%%% John Campbell (\mailto{jdc@nauvax.ucc.nau.edu}) modified a much earlier
+%%% version of \gnuplot{} (3.5) to be a library of C subroutines callable 
+%%% from a C program.  Gnuplot itself has changed radically since then,
+%%% and we are not aware of any plans to create a similar library based on
+%%% the current version.
+John Campbell (\mailto{jdc@nauvax.ucc.nau.edu}) は、
+かなり前の版 (3.5) の \gnuplot{} を改良して、
+C プログラムから呼び出せる C のサブルーチンライブラリに作り上げました。
+gnuplot はその後劇的に変化しましたが、
+現在の版に基づく同様のライブラリを作成するような計画は我々は知りません。
+
+
+%%% \subsection{What extensions have people made to \gnuplot? Where can I get
+%%% them?}
+\subsection{どう追加や拡張がなされていますか、それはどう手に入れられますか}
+
+%%% Extensions or patches are available on the "Patches" page of the
+%%% gnuplot development site
+%%% \http{sourceforge.net/tracker/?group_id=2055&atid=302055}.
+%%% The current development version will generally include features that are
+%%% not yet part of the most recent official release of gnuplot.
+拡張やパッチは、gnuplot の開発サイト %
+\http{sourceforge.net/tracker/?group_id=2055&atid=302055} %
+の "Patches" ページにあります。
+一般的に、現在の開発版は、最終公式リリース版の gnuplot には
+まだ入っていない機能も入っています。
+
+%%% \subsection{I need an integration, fft, iir-filter,...!}
+\subsection{積分や FFT や IIR フィルタなどが欲しいのですが}
+
+%%% \Gnuplot{} has been and is a plotting program, not a data
+%%% processing or mathematical program suite. Therefore \gnuplot{}
+%%% can't do that. Look into the demo file "bivariat.dem" for a basic
+%%% implementation of an integration.  However \gnuplot{} version 5 does
+%%% support calling functions from a dynamically loaded external shared
+%%% object, i.e. a plugin.  So if you want to code up some complicated
+%%% function in C or another language with compatible calling conventions,
+%%% you can compile it into a plugin for \gnuplot{} to import.
+\gnuplot{} は今までも、そして現在も描画プログラムであり、データ処理や数式
+処理プログラムではありません。よってそのようなことはできません。積分の
+基本的な実装については demo の "bivariat.dem" を見てください。
+しかし、\gnuplot{} バージョン 5 は、動的外部共有オブジェクトの関数の
+呼び出し、いわゆる「プラグイン」をサポートしています。
+よって、C あるいは他の言語による複雑な関数を、
+決められた呼び出し様式に従って書けば、
+\gnuplot{} がインポートできるプラグインとなるよう
+コンパイルすることができます。
+
+%%% \subsection{Can I do heavy-duty data processing with \gnuplot? or
+%%% What is beyond \gnuplot?}
+\subsection{"heavy-duty" データを \gnuplot{} で使えますか、
+または \gnuplot{} に変わるものはないですか}
+
+%%% \gnuplot{} by itself is not suited very well for heavy 
+%%% numerical computation. 
+%%% On the other hand it can handle very large data sets.
+\gnuplot{} それ自身は、しんどい数値計算にはあまり向いていません。
+しかし、かなり大きなデータ集合の処理は可能です。
+
+%%% One thing you might try is \textit{fudgit}, an interactive multi-purpose
+%%% fitting program written by Martin-D. Lacasse.
+%%% It can use \gnuplot{} as its graphics back end.
+Martin-D. Lacasse が書いた、対話型の多目的曲線回帰プログラム %
+\textit{fudgit} を試してみてください。
+これは、グラフ出力用に内部で \gnuplot{} を使います。
+
+%%% You might also want to look at the applications developed by
+%%% the Software Tools Group (STG) at the National Center for
+%%% Supercomputing Applications \http{ncsa.uiuc.edu}.
+NCSA (National Center for Supercomputing Applications)
+の STG (Software Tools Group) によって開発されたアプリケーション
+もあります: \http{ncsa.uiuc.edu}。
+
+%%% You can also try pgperl, an integration of the PGPLOT plotting
+%%% package with Perl 5. Information can be found at
+%%% \http{www.ast.cam.ac.uk/AAO/local/www/kgb/pgperl}, the source is
+%%% available from \ftp{ftp.ast.cam.ac.uk}{/pub/kgb/pgperl/} or
+%%% \ftp{linux.nrao.edu}{/pub/packages/pgperl/}.
+pgperl を試してもいいでしょう。
+これは Perl 5 によって PGPLOT プロットパッケージを統合したものです。
+これに関する情報は %
+\http{www.ast.cam.ac.uk/AAO/local/www/kgb/pgperl} で見つかりますし、
+ソースは \ftp{ftp.ast.cam.ac.uk}{/pub/kgb/pgperl/}、
+または \ftp{linux.nrao.edu}{/pub/packages/pgperl/} にあります。
+
+%%% Another possibility is \textbf{Octave}. To quote from its README: Octave is a
+%%% high-level language, primarily intended for numerical computations. Octave is
+%%% licensed under GPL, and in principle, it is a free Matlab clone. 
+%%% It provides a
+%%% convenient command line interface for solving linear and nonlinear problems
+%%% numerically. The latest released version of Octave is always available from
+%%% \http{www.octave.org}. By the way, octave uses \gnuplot{} as its plotting
+%%% engine, so you get a data-processing program on top of \gnuplot{}.
+他の方法として Octave があります。README を引用します: 
+Octave は高水準言語で、主に数値計算用です。
+Octave は GPL ライセンスに従い、原則的にフリーな Matlab クローンです。
+線形や非線形の問題を数値的に解くのに便利な
+コマンドラインインターフェースを備えています。
+Octave の最新版は常に \http{www.octave.org} にあります。
+ところで、octave は \gnuplot{} を描画エンジンとして使いますので、
+\gnuplot{} に追加するデータ処理プログラムを手に入れることになります。
+
+%%% Finally there is \textit{scilab} (\http{www.scilab.org}), an open source
+%%% alternative to \textit{matlab}.
+最後に、\textit{matlab} の代わりとして、オープンソースの \textit{scilab} %
+(\http{www.scilab.org}) もあります。
+
+%%% \subsection{How to use hotkeys in my interactive terminals}
+\subsection{私の対話型ターミナルでどのようにホットキーを使えばいいですか}
+
+%%% Most of the interactive terminals support both pre-defined and user-defined
+%%% hotkeys to replot, toggle plot elements, change axis scaling, and so on.
+%%% Hit \textit{h} in an active gnuplot plot window to get list of hotkeys. 
+%%% Read \textit{help mouse} and \textit{help bind} for more information.
+ほとんどの対話型出力形式では、再描画、各要素の描画のトグル、
+軸のスケールの変更などを行うために、あらかじめ設定された、
+およびユーザ定義可能なホットキーの両方をサポートしています。
+現在有効な gnuplot の描画ウインドウ上で \textit{h} を打つと、
+ホットキーの一覧が表示されます。
+さらなる情報については、\textit{help mouse} と \textit{help bind} を
+参照してください。
+
+%%% \subsection{I have ported \gnuplot{} to another system, or patched it. What
+%%% do I do?}
+\subsection{\gnuplot{} を他のシステムに移植、またはパッチを作りました。
+どうしたらいいですか}
+
+%%% The preferred way of submitting, commenting and upgrading patches is
+%%% via 'Patches' section on 
+%%% \http{sourceforge.net/tracker/?group_id=2055&atid=302055}.
+%%% You may want to send a note to \mailto{gnuplot-beta@lists.sourceforge.net}
+%%% for
+%%% more lively discussion.
+投稿よりもむしろ、
+\http{sourceforge.net/tracker/?group_id=2055&atid=302055} %
+の 'Patches' セクションを通してコメントするか
+パッチを更新する方が望ましいです。
+\mailto{gnuplot-beta@lists.sourceforge.net} は、
+より活発な議論のための論点を送って頂けるとありがたいです。
+
+
+%%% \subsection{I want to help in developing the next version of \gnuplot.
+%%% What can I do?}
+\subsection{\gnuplot{} の次期バージョンの開発について知りたいのですが
+どうしたらいいですか}
+
+%%% Join the \gnuplot{} beta test mailing list by sending a mail
+%%% containing the line
+%%% \verb+subscribe gnuplot-beta+
+%%% in the body (not the subject) of the mail to
+%%% \mailto{Majordomo@lists.sourceforge.net}.
+\gnuplot{} のベータテストメーリングリストに入ってください。
+メール本文 (メールタイトルではなく) に \verb+subscribe gnuplot-beta+ %
+と書いてメールを %
+\mailto{Majordomo@lists.sourceforge.net} に送ってください。
+
+
+%%% \subsection{Open questions for inclusion into the FAQ?}
+\subsection{FAQ に含まれるような未解決の質問は ?}
+
+
+% \mailto{gnuplot-beta@lists.sourceforge.net}.
+
+%%% Please submit your questions (along with the answer) to 
+%%% \mailto{gnuplot-beta@lists.sourceforge.net}.
+その質問を (回答と一緒に) 
+\mailto{gnuplot-beta@lists.sourceforge.net} へ送ってください。
+
+
+%%% \section{Making life easier}
+\section{うまく扱うには (Making life easier)}
+
+%%% \subsection{How do I plot two functions in non-overlapping regions?}
+\subsection{どうしたら 2 つの関数を重ならないように書けますか}
+
+%%% This used to be complicated.  In version 5 it is easy - place the
+%%% desired range immediately before each function being plotted.
+%%% For example, to plot experimental data and two different functional
+%%% models f1 and f2 covering two different portions of the domain:
+これは、以前は複雑でしたが、バージョン 5 ではこれは簡単です。
+描画する各関数の直前に必要な範囲を置きます。
+例えば、実験データと、領域の 2 つの異なる部分をカバーする
+異なる 2 つの異なる関数モデル f1, f2 を描画するには:
+%% end Japanese
+%%% \small
+%%% \begin{verbatim}
+%%% gnuplot> set autoscale x  # get x range from the data
+%%% gnuplot> plot "data", [-100:0] f1(x), [0:100] f2(x)
+%%% \end{verbatim}
+%%% \normalsize
+%% begin Japanese
+%%% \small
+\begin{verbatim}
+gnuplot> set autoscale x  # x の範囲をデータから取得
+gnuplot> plot "data", [-100:0] f1(x), [0:100] f2(x)
+\end{verbatim}
+\normalsize
+
+
+%%% \subsection{How do I run my data through a filter before plotting?}
+\subsection{どうしたら描画前にデータにフィルタをかけられますか}
+
+%%% If your system supports the popen() function, as Unix does, you
+%%% should be able to run the output through another process, for
+%%% example a short awk program, such as
+そのシステムが、Unix のように popen() 関数をサポートしているなら、
+他のプロセスの出力を使って実行することが可能です。
+例えば、次のような awk の短いプログラムが使えます:
+
+\small
+\begin{verbatim}
+gnuplot> plot "< awk ' { print $1, $3/$2 } ' file.in"
+\end{verbatim}
+%$
+\normalsize
+
+%%% The plot command is very powerful and is able to do some
+%%% arithmetic on datafiles. See \verb+help plot+.
+plot コマンドはとても強力で、
+データファイルに対するある種の代数処理も可能です。
+\verb+help plot+ を参照してください。
+
+%%% The above filtering works seamlessly under Unixes and OS/2. On Windows, this
+%% is only supported by default in \textit{gnuplot} version 5, but required a 
+%% separate program \textit{wgnuplot\_pipes} in some earlier versions.
+上のフィルタは、Unix やその互換 OS、OS/2 では問題なく動作します。
+Windows では、これはデフォルトでは \textit{gnuplot} バージョン 5 のみが
+サポートしますが、その前のバージョンでは、別のプログラム %
+\textit{wgnuplot\_pipes} が必要になります。
+
+%%% \subsection{How do I save and restore my current settings?}
+\subsection{どうしたら現在の設定を保存/再利用できますか}
+
+%%% Use the \verb+save+ and \verb+load+ commands for this; see \verb+help save+
+%%% and \verb+help load+ for details.
+それには\verb+save+ と\verb+load+ のコマンドを使ってください。
+詳細は\verb+help save+ と\verb+help load+ を参照してください。
+
+%%% You can save the current terminal and restore it later without touching the
+%%% filesystem by \textit{set term push} and \textit{set term pop}, respectively.
+\textit{set term push} と \textit{set term pop} を使えば、
+ファイルシステムを触ることなく
+それぞれ現在の出力形式の保存とその後の復帰ができます。
+
+
+%%% \subsection{How do I plot lines (not grids) using splot?}
+\subsection{どうしたら splot で曲線 (格子でない) を書けますか}
+
+%%% If the data input to splot is arranged such that each line contains
+%%% the same number of data points (using blank lines as delimiters, as usual),
+%%% splot will by default treat the data as describing a surface.
+%%% If you want to draw individual lines instead, try some combination of
+%%% \textit{unset surface}, \textit{set surface explicit}, 
+%%% \textit{plot ... nosurface}.
+splot への入力データが、各行が同じデータ点数 (通常は空行で分離されている) %
+を持つように揃っていれば、splot はデフォルトではそのデータを
+曲面を記述するものとして扱います。
+そうでなく個々の曲線を描画したければ、
+\textit{unset surface}, \textit{set surface explicit}, 
+\textit{plot ... nosurface} などを組み合わせてみてください。
+
+
+%%% \subsection{How do I plot a function f(x,y) that is bounded by other
+%%%           functions in the x-y plane?}
+\subsection{どうしたら x-y 平面上で他の関数に制限されている f(x,y) の
+          グラフを書けますか}
+
+%%% Here is one way:
+以下は一つの方法です:
+%% end Japanese
+\small
+\begin{verbatim}
+gnuplot> f(x,y) = x**2 + y **2
+gnuplot> x(u) = 3*u
+gnuplot> yu(x) = x**2
+gnuplot> yl(x) = -x**2
+gnuplot> set parametric
+gnuplot> set cont
+gnuplot> splot [0:1] [0:1] u,yl(x(u))+(yu(x(u)) - yl(x(u)))*v,\
+> f(x(u), (yu(x(u)) - yl(x(u)))*v)
+\end{verbatim}
+\normalsize
+
+
+%%% \subsection{How do I call \gnuplot{} from my own programs?}
+\subsection{どうしたらプログラムから \gnuplot{} を呼び出せますか}
+
+%%% On unix-like systems, commands to gnuplot can be piped via stdin.
+%%% Output from \gnuplot{}'s \verb+print+ command can be read via a named pipe.
+unix 互換システム上ならば、gnuplot へのコマンドを標準入力 (stdin) %
+からパイプで渡せます。
+\gnuplot{} からの \verb+print+ コマンドは、
+名前つきパイプで読み出すことができます。
+%% end Japanese
+%%% On Windows, due to the lacking standard input (stdin) in GUI programs,
+%%% you either need to use the console version \textit{gnuplot} (recommended),
+%%% or use \textit{wgnuplot\_pipes}, which has an additional console window
+%%% attached. The old helper program \textit{pgnuplot} is still included
+%%% in the distribution package.
+Windows では、GUI プログラムで標準入力 (stdin) が使えないため、
+コンソール版の \textit{gnuplot} (推奨) か、
+テキストコンソールが追加された GUI 版の \textit{wgnuplot\_pipes} %
+のいずれかを使う必要があります。
+古い \textit{pgnuplot} というヘルパープログラムも
+まだ配付ッケージに含まれています。
+
+
+%%% \subsection{What if I need h-bar (Planck's constant)?}
+\subsection{Planck 定数 (h に横線) が必要なときはどうしたらいいですか}
+
+%%% The most straightforward way is to use a UTF-8 font, and type in the
+%%% $\hbar$ character (Unicode code point \#x210F) directly. 
+最も自然な方法は、UTF-8 フォントを使い、文字 $\hbar$ (Unicode コード
+ポイント \#x210F) を直接入力することです。
+
+%%% This does not work in PostScript, however, so you must use approximations
+%%% like
+%%% \verb+ @{/=56 -} {/=24 h}+ or
+%%% \verb+ {/=8 @{/Symbol=24 -} _{/=14 h}}+
+%%% In the latter, the "-" (a long one in /Symbol) is non-spacing and 24-pt.
+%%% The 14-pt "h" is offset by an 8-pt space (which is the space preceding
+%%% the "\_") but smaller, since it's written as a subscript.
+%%% But these don't look too much like the hbar we're used to, since the bar
+%%% is horizontal instead of sloped.  I don't see a way to get that.  I
+%%% tried using an accent (character 264 in iso-latin-1 encoding), 
+%%% but I haven't found a
+%%% way to scale and position the pieces correctly.
+%%% One more possibility would be \verb+{/=14 @^{/Symbol=10 -}{/=14 h}}+.
+しかし、これは PostScript ではうまくいきませんので、例えば次のような
+次善の策を用いる必要があります:
+\verb+ @{/=56 -} {/=24 h}+ または \verb+{/=8 @{/Symbol=24 -} _{/=14 h}}+ %
+後者では 24pt (ポイント) の "-" 
+(/Symbol フォントの中の長いハイフン) がスペースなしで使われます。
+14pt の "h" は 8pt のスペース ("\_" の前にあるスペース) %
+だけずらされて置かれますが、
+それは下付き文字として書かれるので小さい文字になります。
+しかしそれらは通常我々が使用するプランク定数の記号とは違っていて、
+横線は斜線ではなく水平線になります。
+アクセント記号なども使ってみましたが %
+(iso-latin-1 エンコーディングの文字 264 など)、
+その大きさと位置を正しくする方法を見つけることはできませんでした。
+もう一つの方法は \verb+{/=14 @^{/Symbol=10 -}{/=14 h}}+ とすることです。
+
+%%% The reduced Planck's constant can be set very easily by using the
+%%% AMS-LaTeX PostScript fonts which are available from
+%%% \http{www.ams.org/tex/amsfonts.html} (also included in many LaTeX
+%%% distributions). \Gnuplot{} (see \verb+help fontpath+) and the
+%%% PostScript interpreter (usually Ghostscript) have to know where the
+%%% file \verb+ msbm10.pfb+ (or \verb+ msbm10.pfa+) resides. Use
+%%% \verb+ {/MSBM10 \175}+ to produce \verb+ \hslash+ which is a "h"
+%%% superimposed by a sloped bar. The standard \verb+ \hbar+ (horizontal
+%%% bar) has the octal code 176. Please note that h-bar exists only as an
+%%% italic type.
+AMS-LaTeX の PostScript フォント%
+(\http{www.ams.org/tex/amsfonts.html} にあり、
+そして多くの LaTeX 配布にも含まれています) を使えば、
+とても簡単に小さい Planck 定数をセットすることができますが、%
+\gnuplot{} (\verb+help fontpath+ を参照) と、
+PostScript インタープリタ (通常 Ghostscript) が
+ファイル \verb+ msbm10.pfb+ (または \verb+ msbm10.pfa+) が
+どこにあるかを知る必要があります。%
+"h" に傾斜のついた横棒を重ねた \verb+ \hslash+ を生成するには%
+\verb+ {/MSBM10 \175}+ を使ってください。
+通常の \verb+ \hbar+ (水平の横棒) は 8 進数の 176 です。
+ただし、水平の横棒はイタリック体としてしか存在しないことに注意してください。
+
+%%% \subsection{What if I need the Solar math symbol?}
+\subsection{太陽のような数学記号 (丸に点) が必要なときはどうしたらいいですか}
+
+%%% As with Planck's constant, the most straightforward way is to use a 
+%%% UTF-8 font, and type in the $\odot$ character (Unicode code point 
+%%% \#x2299 ; "circled dot operator") directly. 
+%%% The very similar glyph at code point \#x2609 ; "sun" may be even 
+%%% better, but not many fonts have it.
+Planck 定数と同様、最も自然な方法は UTF-8 フォントを使い、文字 $\odot$ %
+(Unicode コードポイント \#2299; "circled dot operator") %
+を直接入力することです。
+非常によく似たグリフがコードポイント \#x2609 にもあります。
+これは "sun" で、よりいいかもしれませんが、
+それを持つフォントは多くはありません。
+
+
+%%% \subsection{How do I produce blank output page?}
+\subsection{全く何もないページを出力するには}
+
+%%% Well, you probably don't want a blank page, but page with a just a title 
+%%% (overprinting title in another graph in multiplot page):
+うーん、多分それは全く何も出力したくないわけではなくて、
+タイトルだけのものを出力したいじゃないでしょうか %
+(multiplot のページの他のグラフに重ねるような):
+
+\small
+\begin{verbatim}
+reset; unset xtics; unset ytics
+unset border; unset key
+set title 'Title on an empty page'
+plot [][0:1] 2
+\end{verbatim}
+\normalsize
+
+
+%%% \subsection{How do I give exact positions for the graph borders 
+%%% on the page?}
+\subsection{境界の位置を丁度ある場所に合わせてグラフを作るには}
+
+%%% Specify the position of the top, bottom, left, and right borders in
+%%% terms of their fractional position within the page:
+上、下、左、右の境界位置を、ページ内の位置として小数単位で指定してください:
+
+\small
+\begin{verbatim}
+set lmargin at screen 0.05
+set bmargin at screen 0.05
+set rmargin at screen 0.95
+set tmargin at screen 0.95
+\end{verbatim}
+\normalsize
+
+
+%%% \section{Common problems}
+\section{共通の問題}
+
+
+%%% \subsection{Help! None of my fonts work.}
+\subsection{助けて! 私のフォントが使えない。}
+
+%%% Gnuplot does not do font handling by itself; it must necessarily leave
+%%% that to the individual device support libraries. Unfortunately, this
+%%% means that different terminal types need different help in finding
+%%% fonts. Here are some quick hints. For more detailed information please
+%%% see the gnuplot documentation for the specific terminal type you are
+%%% having problems with.
+gnuplot は、それ自身ではフォント処理を行いませんので、
+それは必然的に個々のデバイスをサポートするライブラリに任せることになります。
+残念ながらこれは、フォントの検出においては、異なる出力形式には
+異なる説明が必要だということを意味しますので、
+ここでは、簡単なヒントをいくつか上げておきます。
+詳しい情報については、あなたが問題にしている出力形式用の %
+gnuplot のドキュメントを参照してください。
+
+\begin{description}
+%%% \item [{png/jpeg/gif}] These terminal types use the libgd support 
+%%% library, which
+%%% searches for fonts in the directories given in the environmental variable
+%%% GDFONTPATH. Once you get libgd fontpaths sorted out, you will probably
+%%% want to set a default font for gnuplot.
+%%% For example: \verb+setenv GNUPLOT_DEFAULT_GDFONT verdana+
+\item [{png/jpeg/gif}] 
+これらの出力形式は、libgd というサポートライブラリを使用し、
+これは環境変数 GDFONTPATH で与えられるディレクトリ内にフォントを探します。
+そのように libgd のフォントパスを設定すると、
+今度は gnuplot のデフォルトフォントを設定したいかもしれません。
+例: \\
+\verb+setenv GNUPLOT_DEFAULT_GDFONT verdana+
+%% end Japanese
+%%% \item [{pdf}] The libpdf support library should have come with an associated
+%%% font configuration file, usually installed as /usr/local/share/pdflib.upr.
+%%% The environmental variable PDFLIBRESOURCE should point to this file.
+\item [{pdf}] 
+このサポートライブラリ libpdf は、関連するフォント設定ファイルを参照します。
+通常それは \\
+/usr/local/share/pdflib.upr としてインストールされます。
+環境変数 PDFLIBRESOURCE は、このファイルの位置を示します。
+%% end Japanese
+%%% \item [{post}] PostScript font names are not resolved until the document
+%%% is printed. Gnuplot does not know what fonts are available to your
+%%% printer, so it will accept any font name you give it. However, it
+%%% is possible to bundle a font with the gnuplot output; please see the
+%%% instructions given by gnuplot's internal command {}``help set term
+%%% post fontfile''.
+\item [{post}]
+PostScript フォント名は、その文書が印刷されるまで参照されませんから、
+あなたのプリンタでどのフォントが有効であるかを gnuplot は知りません。
+よって、どんなフォント名でも指定することができます。
+しかし、gnuplot の出力にフォントを埋め込むことは可能です。それについては、
+gnuplot の内部コマンド ``help set term post fontfile'' で得られる
+指示を参照してください。
+%% end Japanese
+%%% \item [{svg}] Font handling is viewer-dependent. 
+\item [{svg}] フォント処理は、ビューワ依存です。
+%% end Japanese
+%%% \item [{x11}] The x11 terminal uses the normal x11 font server mechanism.
+%%% The only tricky bit is that in order to use multi-byte fonts you must
+%%% explicitly say so:
+\item [{x11}]
+x11 出力形式は、通常の x11 フォントサーバ機構を使用しますが、
+少しだけトリッキーな点があり、マルチバイトフォントを使用するためには、
+明示的に以下のように指定する必要があります:
+%% end Japanese
+\small
+\begin{verbatim}
+set term x11 font "mbfont:sazanami mincho,vera,20"
+\end{verbatim}
+\normalsize
+%%% \item [{win}] Select "Choose font..." from the "Options" pull-down menu 
+%%% in the toolbar.
+\item [{win}] 
+ツールバーの "Options" のプルダウンメニューから "Choose font..." を選択します。
+%% end Japanese
+%%% \item [{wxt, qt}] On linux systems these terminals rely on fonts provided
+%%% by the system's \textit{fontconfig} utility.
+\item [{wxt, qt}] 
+Linux システムでは、これらの出力形式はシステムの fontconfig ユーティリティが
+提供するフォントを使用します。
+%% end Japanese
+\end{description}
+
+%%% \subsection{\Gnuplot{} does not open a plot windoe for x11 or qt. Why?}
+\subsection{x11 または qt で \gnuplot{} が描画ウィンドウを開きません。なぜですか}
+%% end Japanese
+%%% On VMS, you need to make several symbols:
+VMS 上ではいくつかの記号を作らなければいけません:
+
+\small
+\begin{verbatim}
+        $ gnuplot_x11 :== $disk:[directory]gnuplot_x11
+        $ gnuplot :== $disk:[directory]gnuplot.exe
+        $ def/job GNUPLOT$HELP disk:[directory]gnuplot.hlb
+\end{verbatim}
+\normalsize
+
+%%% Then run \gnuplot{} from your command line, and use
+%%% \verb+set term x11+.
+そして \gnuplot{} をコマンドラインから起動し、
+\verb+set term x11+ としてください。
+
+%%% On Unix systems the x11 and qt terminals require installation of
+%%% separate helper programs \textit{gnuplot\_x11} and \textit{gnuplot\_qt}.
+%%% These are usually installed in a directory 
+%%% \textit{/usr/libexec/gnuplot/5.0/}
+%%% and \gnuplot{} knows to look for them there.  
+%%% If they are installed somewhere
+%%% else or gnuplot is having trouble finding them, 
+%%% try setting the environmental
+%%% variable \verb+GNUPLOT_DRIVER_DIR+.
+Unix 上では、x11 と qt 出力形式は、分離されたヘルパープログラム %
+\textit{gnuplot\_x11}, \textit{gnuplot\_qt} のインストールが必要です。
+これらは通常は \textit{/usr/libexec/gnuplot/5.0/} というディレクトリに
+インストールされ、\gnuplot{} はその場所を探すことを知っています。
+しかし、それ以外の場所にインストールしたり、
+それらを見つける際に問題が起きる場合は、
+環境変数 \verb+GNUPLOT_DRIVER_DIR+ を設定してみてください。
+
+
+%%% \subsection{Why does \gnuplot{} ignore my very small numbers?}
+\subsection{なぜ \gnuplot{} はとても小さい数字のデータを無視するのですか}
+
+
+%%% For some purposes \Gnuplot{} treats numbers less than 1e-08 as being zero.
+%%% Thus, if you are trying to plot a collection of very small
+%%% numbers, they may be plotted as zero. Worse, if you're plotting
+%%% on a log scale, they will be off scale. Or, if the whole set of
+%%% numbers is "zero", your range may be considered empty:
+\gnuplot{} は、ある目的のため 1e-08 より小さい数を 0 として扱います。
+よってとても小さい数の集まりを描画しようとすると
+それらは 0 として描画されてしまいます。
+対数軸で描画する場合は、
+もっとひどいことにそれらは目盛りからはずれてしまいます。
+また、全ての数が "0" である場合、
+範囲は空であるとみなされます (訳注: \gnuplot{} 3.6 以前の仕様):
+
+\small
+\begin{verbatim}
+gnuplot> plot 'test1'
+Warning: empty y range [4.047e-19:3e-11], adjusting to [-1:1]
+gnuplot> set yrange [4e-19:3e-11]
+gnuplot> plot 'test1'
+              ^
+y range is less than `zero`
+\end{verbatim}
+\normalsize
+
+%%% The solution is to change \gnuplot's idea of "zero":
+その対策は \gnuplot{} の "zero" の概念を変更することです。
+%% end Japanese
+\small
+\begin{verbatim}
+gnuplot> set zero 1e-20
+\end{verbatim}
+\normalsize
+
+%%% For more information, type \verb+help set zero+.
+より詳しい情報については \verb+help set zero+ を参照してください。
+
+
+%%% \subsection{When I run \gnuplot{} from the shell or a script, 
+%%%     the resulting plot flashes by on the screen and then disappears}
+\subsection{シェルやスクリプトから \gnuplot{} を実行しても
+   結果のグラフはスクリーン上で一瞬出るだけでそのあと出てきません}
+
+%%% \begin{enumerate}
+%%% \item Put a \verb+pause -1+ after the plot command in the file, 
+%%%    or at the file end.
+\begin{enumerate}
+\item ファイル内の plot コマンドの後、またはファイルの最後に %
+   \verb+pause -1+ を入れる方法があります。
+
+%%% \item Use command \verb+gnuplot filename.gp -+ (yes, dash is the last
+%%% parameter) to stay in the interactive regime when the script completes.
+\item スクリプトの終了時に対話型部分にいるようにするには %
+\verb+gnuplot filename.gp -+ (最後のパラメータはマイナス) を使用します。
+
+%%% \item Run \gnuplot{} as \textit{gnuplot -persist}
+\item \gnuplot{} を \textit{gnuplot -persist} と実行する方法があります。
+
+%%% \item On Windows you can also use either \verb+-persist+ or \verb+/noend+.
+\item Windows 上なら、\verb+-persist+ か \verb+/noend+ のどちらでも
+  結構です。
+
+%%% \item Give the \textit{persist} option as part of the 
+%%% \textit{set terminal} command.
+\item コマンド \textit{set terminal} の一部分として
+  オプション \textit{persist} を与えても結構です。
+%% end Japanese
+\end{enumerate}
+
+
+%%% \subsection{My formulas (like 1/3) are giving me nonsense results! 
+%%% What's going on?}
+\subsection{書いた式 (1/3 など) が意味のない結果を出力してしまいます}
+
+%%% \Gnuplot{} does integer, and not floating point, arithmetic on
+%%% integer expressions. For example, the expression 1/3 evaluates
+%%% to zero. If you want floating point expressions, supply
+%%% trailing dots for your floating point numbers. Example:
+\gnuplot{} は整数の式の場合、実数演算ではなく整数演算を行ないます。
+例えば式 1/3 は 0 と評価されます。
+もし実数の値が欲しいならば、その数の後にドット "." をつけてください。
+例:
+
+
+\small
+\begin{verbatim}
+gnuplot> print 1/3
+                0
+gnuplot> print 1./3.
+                0.333333
+\end{verbatim}
+\normalsize
+
+%%% This way of evaluating integer expressions is shared by both C and Fortran.
+整数の式をこのようにして評価するやり方は %
+C や Fortran でも行なわれています。
+
+
+%%% \subsection{My output files are incomplete!}
+\subsection{私の出力が不完全です!}
+
+%%% You may need to flush the output with a closing \verb+set output+.
+%%% Some output formats (postscript, pdf, latex, svg, ...) can include several
+%%% pages of plots in a single output file.  For these output modes, gnuplot
+%%% leaves the file open after each plot so that you can add additional plots
+%%% to it.  The file is not completed and made available to external applications
+%%% until you explicitly close it (\verb+set output+ or \verb+unset output+),
+%%% or select a different terminal type (\verb+set term+) or exit gnuplot.
+%%% Output formats that contain only a single 'page' (png, svg, emf, ...)
+%%% should not suffer from this problem.
+\verb+set output+ によって出力をクローズして、
+たまっている出力を吐き出させる必要があるかも知れません。
+出力形式によっては、一つの出力ファイルに複数のページが含まれています %
+(postscript, pdf, latex, svg, ...)。
+これらの出力モードでは、gnuplot はあなたが描画の追加ができるように
+各描画後にファイルをオープンしたままにしています。
+よってあなたが明示的にそれをクローズする (\verb+set output+ または %
+\verb+unset output+) か、異なる出力形式を選択する (\verb+set term+) か、
+または gnuplot を終了するまでは、そのファイルは完全ではなく、
+外部のアプリケーションでは使用できるようにはなっていません。
+単一 'ページ' のみを持つ出力形式 (png, emf, ...) では
+このような問題に悩まされることはないでしょう。
+
+%%% \subsection{When using the \LaTeX--terminal, there is an error during
+%%% the \LaTeX--run!}
+\subsection{\LaTeX--terminal の出力は \LaTeX{} の実行でエラーが出ます}
+
+%%% The \LaTeX 2e-core no longer includes the commands
+%%% "$\backslash$Diamond" and "$\backslash$Box"; they are included in 
+%%% the latexsym package.
+%%% Other symbols are taken from the amssymb package.
+%%% Both of these are part of the base distribution and thus part of any LaTeX
+%%% implementation.  Please remember to include these packages in your 
+%%% LaTeX document.
+%% for LaTeX, html (but make image)
+%裸の \LaTeX 2$\epsilon$ は今はコマンド %
+%"$\backslash$Diamond" も "$\backslash$Box" も持っておらず、
+%% for latex2html
+裸の \LaTeXe{} は今はコマンド %
+"\textbackslash{}Diamond" も "\textbackslash{}Box" も持っておらず、
+それらは今は latexsym パッケージに入っています。
+また、amssymb パッケージの他の記号も使います。
+これらはいずれも \LaTeX{} の基本配布物には含まれていて、
+よって任意の \LaTeX{} システムには含まれています。
+これらのパッケージをあなたの文書に入れることを忘れないでください。
+
+
+%%% \subsection{Calling \gnuplot{} in a pipe or with a \gnuplot-script
+%%% doesn't produce a plot!}
+\subsection{パイプで \gnuplot{} を呼び出したり \gnuplot{} スクリプトを使って
+グラフが書けません}
+
+%%% You can call \gnuplot{} by using a short Perl-script like the
+%%% following:
+次のような短い Perl スクリプトを使って \gnuplot{} を呼び出せます:
+%% end Japanese
+\small
+\begin{verbatim}
+#!/usr/local/bin/perl -w
+open (GP, "|/usr/local/bin/gnuplot -persist") or die "no gnuplot";
+# force buffer to flush after each write
+use FileHandle;
+GP->autoflush(1);
+print GP,"set term x11;plot '/tmp/data.dat' with lines\n";
+close GP
+\end{verbatim}
+\normalsize
+
+%%% \Gnuplot{} closes its plot window on exit. The \verb+close GP+
+%%% command is executed, and the plot window is closed even before you have
+%%% a chance to look at it.
+\gnuplot{} は終了時にその描画ウィンドウを閉じます。
+\verb+close GP+ コマンドが実行されると、
+描画ウインドウを目にする前でさえも閉じられてしまいます。
+
+%%% There are three solutions to this: first, use the \verb+pause -1+
+%%% command in \gnuplot{} before closing the pipe. Second, close the pipe
+%%% only if you are sure that you don't need \gnuplot{} and its plot window
+%%% anymore. Last, you can use the command line option \verb+-persist+: this
+%%% option leaves the X-Window System plot window open.
+それに対する対処は 3 つあります: 
+1 つ目は、gnuplot 内で \verb+pause -1+ コマンドを、
+パイプを閉じる前に使用すること、
+2 つ目は、\gnuplot{} と描画ウィンドウが不要になったときにのみ
+パイプを閉じるようにすること、
+3 つ目はコマンドラインオプション \verb+-persist+ を使うことです。
+このオプションは X-Window System に描画ウィンドウを開いたまま残します。
+
+
+%%% \section{Credits}
+\section{帰属}
+
+%%% \Gnuplot{} 3.7's main contributors are (in alphabetical order)
+\gnuplot{} 3.7 の主な寄与者は (アルファベット順で)、
+%% end Japanese
+Hans-Bernhard Broeker, John Campbell, Robert Cunningham, David Denholm,
+Gershon Elber, Roger Fearick, Carsten Grammes, Lucas Hart, Lars Hecking,
+Thomas Koenig, David Kotz, Ed Kubaitis, Russell Lang, Alexander Lehmann,
+Alexander Mai, Carsten Steger, Tom Tkacik, Jos Van der Woude, James R.
+%%% Van Zandt, and Alex Woo.  Additional substantial contributors to version 4.0
+%%% include Ethan Merritt, Petr Mikul\'{\i}k and Johannes Zellner.
+%%% Version 4.2, 4.4, 4.6 and 5.0 releases were coordinated by Ethan Merritt.
+Van Zandt, Alex Woo です。
+さらに version 4.0 への重要な寄与者として、
+include Ethan Merritt, Petr Mikul\'{\i}k, Johannes Zellner がいます。
+version 4.2, 4.4, 4.6, 5.0 のリリースは Ethan Merritt が取りまとめました。
+
+%%% This list was initially compiled by John Fletcher with contributions
+%%% from Russell Lang, John Campbell, David Kotz, Rob Cunningham, Daniel
+%%% Lewart and Alex Woo. Reworked by Thomas Koenig from a draft
+%%% by Alex Woo, with corrections and additions from Alex Woo, John
+%%% Campbell, Russell Lang, David Kotz and many corrections from Daniel
+%%% Lewart.
+このリストは %
+Russell Lang, John Campbell, David Kotz, Rob Cunningham, Daniel Lewart,
+Alex Woo %
+の寄与を John Fletcher が最初にまとめたものです。
+そして、Alex Woo の草案により、
+Alex Woo, John Campbell, Russell Lang, David Kotz らの修正と追加、
+Daniel Lewart による多くの修正が Thomas Koenig によりまとめ直されました。
+%% end Japanese
+%%% Again reworked for \gnuplot{} 3.7 by Alexander Mai and Juergen v.Hagen
+%%% with corrections by Lars Hecking, Hans-Bernhard Broecker and other
+%%% people.
+そして、\gnuplot{} 3.7 用に再び %
+Lars Hecking, Hans-Bernhard Broecker およびその他の人々による修正が %
+Alexander Mai と Juergen v.Hagen によりまとめ直されました。
+%% end Japanese
+%%% Revised for \gnuplot{} 4.0 release by Petr Mikul\'{\i}k and Ethan Merritt.
+\gnuplot{} 4.0 用の修正は、
+Petr Mikul\'{\i}k と Ethan Merritt により行なわれました。
+%% end Japanese
+%%% Revised for \gnuplot{} 4.2 release by Petr Mikul\'{\i}k and Ethan Merritt.
+\gnuplot{} 4.2 用の修正は、
+Petr Mikul\'{\i}k と Ethan Merritt により行なわれました。
+%% end Japanese
+%%% Revised for \gnuplot{} 4.4 and 4.6 releases by Ethan Merritt.
+\gnuplot{} 4.4 と 4.6 用の修正は、
+Ethan Merritt により行なわれました。
+%% end Japanese
+%%% Revised for \gnuplot{} 5.0 by Ethan Merritt.
+\gnuplot{} 5.0 用の修正は、
+Ethan Merritt により行なわれました。
+
+%%% 
+(訳注: 日本語訳は Shigeharu TAKENO (\mailto{shige@iee.niit.ac.jp}) により
+行なわれました。)
+%% end Japanese
+\end{document}

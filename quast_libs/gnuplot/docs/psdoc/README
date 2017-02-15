@@ -1,0 +1,25 @@
+This set of files contains information about the gnuplot-PostScript interface.
+
+ps_file.doc
+  is a discussion of a PostScript file as written by gnuplot.
+
+ps_guide.ps
+  is a PostScript file that has two pages.  The first is a summary of the
+  enhanced syntax (available via "set terminal postscript enhanced".  The
+  second is a table of the character codes.  The table has the standard
+  encoding (shown in Times-Roman), the Symbol and Zapf-Dingbats fonts, and
+  the ISO-Latin1 (also known as ISO-8859-1) encoding.  The last entry may
+  be changed to ISO-Latin2 (also called as ISO-8859-2), CP850 or CP852 
+  (for OS/2) or CP437 (for MS-DOS) by editing line #14 in the file.  These
+  encodings are selected via the "set encoding" command.
+
+ps_symbols.gpi
+  is a gnuplot command file that generates ps_symbols. ps.ps_symbols.ps
+  is a PostScript file that shows a simple display of the 76 symbol types
+  available to the "postscript" terminal and selectable via the "pt" option
+  on the "plot" command.
+
+ps_fontfile_doc.tex
+  is a LaTeX file that generates the file ps_fontfile_doc.ps. It contains
+  a table containing the glyphs of the most important TeX math fonts
+  (Computer Modern Fonts).

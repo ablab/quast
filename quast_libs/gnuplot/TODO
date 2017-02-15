@@ -1,0 +1,133 @@
+[========================================================================]
+[========= List of things to be done.  Plans, ideas, whatever... ========]
+[========================================================================]
+
+COMMANDS:
+=========
+
+
+DOCUMENTATION:
+==============
+
+ -- Improve the documentation on fonts
+ -- More figures in the manual
+ -- We no longer have a working build path for HTML documentation.
+    Is there a suitable replacement?
+
+PLATFORMS:
+==========
+
+ -- Configuration/installation on OSX remains problematic
+
+ -- We've seen a proof-of-principle build of gnuplot into javascript
+    running in a browser.  If the tool chain is simple enough, we could
+    make this a build target for autoconf/make.
+
+ -- autoconf handling of TBOOLEAN on Solaris also remains problematic.
+    The definition apparently needs to be different for C and C++.
+
+ -- update wgnuplot menus for Windows
+
+GNUPLOT TOOLS LIBRARY:
+======================
+
+Make a library (e.g. usr/local/gnuplot/scripts/, .../gnuplot/bin) of 
+(a) gnuplot scripts, and (b) shell scripts relevant for gnuplot:
+
+-- enclose script "gpsavediff" that diff's output of gnuplot's "save" command 
+and default setup after "reset" 
+
+-- move pm3d/contrib/* files into the proposed gnuplot library, then remove
+pm3d/contrib and pm3d/ from cvs
+
+I.e., the last point is the main question: where to put pm3d/contrib/* files?
+
+Or put them to gnuplot web page?
+
+
+INSTALLATION --- LINUX:
+=======================
+
+-- add .spec file and a 'make' target to create RPM file?
+   [HBB: no.]
+-- the installation paths for TeX-related files are a mess
+
+
+[========================================================================]
+[========================================================================]
+[========================================================================]
+
+Note: use
+	www.sourceforge.net/projects/gnuplot
+=> "Feature request" for feature requests.
+
+
+Projects, in no particular order:
+
+- revise border command to use keywords
+- put minor tics into demo file
+
+longer term
+
+- break it into four layers:
+  : low level graphics  (some of term.c)
+  : plotting code, reading the setshow.h global variables
+  : parsing code - read a string, and parse and execute it
+  : front end, interact with terminal / gui
+  basically, gplotlib is layer 2, and the traditional gnuplot is
+  layer 4, which is little more than a small client of layer 3.
+  Terminal option lines are table driven,
+  so that even though the options are defined by layer 1, the
+  actual parsing is implemented in level 3
+
+Lars' list
+
+- provide library of replacement functions instead of stdfn.c
+- completely rewrite the parser. Use yacc/bison if possible.
+- maybe rewrite the scanner in lex? The benefits are not so obvious,
+  because the current scanner is extremely simple. This is probably
+  only worthwhile if the parser is rewritten at the same time.
+- maybe use PD hash code for table-lookup (SNIPPETS code). Tables for
+  builtin and user functions, variables, commands. What else? aliases
+- standardise float/double comparisons around the suggestion in the
+  comp.lang.c FAQ (What's a good way to check for "close enough"
+  floating-point equality?) and symbolic constants from standard header files.
+  LOADS of errors throughout the code, especially in graphics.c
+- autogenerate term.h from config file in text format and/or configure?
+- write or organise a portable version of snprintf(3) with a copyright
+  compatible with the gnuplot copyright (ie. no GPL) (Apache?)
+- add more maintainer checks (eg. file permissions)
+- better documentation format; get rid of the doc2xxx utils
+  [SGML. SGML. SGML]
+- tilde and variable expansion to be done by 
+  gp_fopen() - to be implemented
+- fix bug which prints "DI,1DI,0" in the upper left corner of the plot when
+  in pcl5 mode and printing to an HP Laserjet 4+ (J. Breeding, bug-gnuplot)
+  [HBB: reason known, but proper workaround path unclear]
+
+HBB:
+
+[Optional:] See if 16-bit compilations can be made to work again.
+
+Ethan's List (2012):
+
+- the qt terminal should support OpenGL as a back-end rendering path
+- rewrite javascript support files for the canvas terminal to use
+  browser's font support.  Maintain more per-plot context, e.g. zoom state.
+- isosurfaces (3D contour of 4D data)
+- more demos and more comprehensible descriptions in the user manual
+- support mousing in multiplot output, at least for selected terminals
+- add additional tic levels, possibly to appear only when zoomed
+- violin plots
+- enhanced text mode support for italic, boldface
+
+- Changes for 5.0 (syntax or behavior is not 100% backward compatible)
+  + revise the keywords for matrix handling so that the binary and ascii
+    versions are consistent
+  + apply in-line plot ranges only to the immediately following plot clause
+
+Remove obsolete files.  But are they truly obsolete?
+  term/pc.trm src/*.asm src/corplot.c
+  term/openstep.trm term/next.trm src/OpenStep/ src/NeXT/
+  config/makefile.emx config/makefile.unx 
+

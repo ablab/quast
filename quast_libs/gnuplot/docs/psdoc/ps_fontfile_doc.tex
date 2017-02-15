@@ -1,0 +1,311 @@
+\documentclass[a4paper,10pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{graphicx}
+\usepackage{array}
+\usepackage{calc}
+%\usepackage[width=18cm,height=24cm]{geometry}
+\addtolength{\textwidth}{40mm}
+\addtolength{\oddsidemargin}{-15mm}
+
+\let\orgcaption\caption
+\newlength\tmplength
+\newcommand{\captionabove}{%
+  \setlength{\tmplength}{\abovecaptionskip}%
+  \setlength{\abovecaptionskip}{\belowcaptionskip}%
+  \setlength{\belowcaptionskip}{\tmplength}%
+  \orgcaption}
+
+\font\cmmi=cmmi10
+\font\cmr=cmr10
+\font\cmti=cmti10
+\font\cmtt=cmtt10
+\font\cmu=cmu10
+\font\cmsy=cmsy10
+\font\cmex=cmex10
+\font\cmss=cmss10
+\font\cmff=cmff10
+\font\cmtex=cmtex10
+\font\lasy=lasy10
+
+\newcount\rownum
+\newcounter{dezcnt}
+
+\def\dez#1#2#3\empty{\setcounter{dezcnt}{64*#1+8*#2+#3}\thedezcnt}
+
+\newcommand*\row[1]{%
+  \global\let\zus=\empty
+  \ifnum#1=000
+    \gdef\zus{241}%
+  \else\ifnum#1=001
+    \gdef\zus{242}%
+  \else\ifnum#1=002
+    \gdef\zus{243}%
+  \else\ifnum#1=003
+    \gdef\zus{244}%
+  \else\ifnum#1=004
+    \gdef\zus{245}%
+  \else\ifnum#1=005
+    \gdef\zus{246}%
+  \else\ifnum#1=006
+    \gdef\zus{247}%
+  \else\ifnum#1=007
+    \gdef\zus{250}%
+  \else\ifnum#1=010
+    \gdef\zus{251}%
+  \else\ifnum#1=011
+    \gdef\zus{252}%
+  \else\ifnum#1=012
+    \gdef\zus{255}%
+  \else\ifnum#1=013
+    \gdef\zus{256}%
+  \else\ifnum#1=014
+    \gdef\zus{257}%
+  \else\ifnum#1=015
+    \gdef\zus{260}%
+  \else\ifnum#1=016
+    \gdef\zus{261}%
+  \else\ifnum#1=017
+    \gdef\zus{262}%
+  \else\ifnum#1=020
+    \gdef\zus{263}%
+  \else\ifnum#1=021
+    \gdef\zus{264}%
+  \else\ifnum#1=022
+    \gdef\zus{265}%
+  \else\ifnum#1=023
+    \gdef\zus{266}%
+  \else\ifnum#1=024
+    \gdef\zus{267}%
+  \else\ifnum#1=025
+    \gdef\zus{270}%
+  \else\ifnum#1=026
+    \gdef\zus{271}%
+  \else\ifnum#1=027
+    \gdef\zus{272}%
+  \else\ifnum#1=030
+    \gdef\zus{273}%
+  \else\ifnum#1=031
+    \gdef\zus{274}%
+  \else\ifnum#1=032
+    \gdef\zus{275}%
+  \else\ifnum#1=033
+    \gdef\zus{276}%
+  \else\ifnum#1=034
+    \gdef\zus{277}%
+  \else\ifnum#1=035
+    \gdef\zus{300}%
+  \else\ifnum#1=036
+    \gdef\zus{301}%
+  \else\ifnum#1=037
+    \gdef\zus{302}%
+  \else\ifnum#1=040
+    \gdef\zus{303}% and \200
+  \else\ifnum#1=177
+    \gdef\zus{304}%
+  \fi\fi\fi\fi\fi\fi\fi
+  \fi\fi\fi\fi\fi\fi\fi
+  \fi\fi\fi\fi\fi\fi\fi
+  \fi\fi\fi\fi\fi\fi\fi
+  \fi\fi\fi\fi\fi\fi
+  \textbackslash #1%
+  \ifx\zus\empty
+  \else
+    , \textbackslash\zus
+  \fi & 
+  {\cmr\char'#1} & 
+  {\cmti\char'#1} & 
+  {\cmtt\char'#1} & 
+  {\cmmi\char'#1} &
+  {\cmu\char'#1} &
+  {\cmss\char'#1} &
+  {\cmtex\char'#1} &
+  {\cmff\char'#1} &
+  {\cmsy\char'#1} &
+  {\lasy\char'#1} &
+  \ifodd\rownum \else\qquad\fi
+  \global\advance\rownum 1
+  {\raisebox{1.7ex}[0mm][1ex]{\cmex\char'#1}} &
+  \textbackslash #1%
+  \ifx\zus\empty
+  \else
+    , \textbackslash\zus
+  \fi & 
+  \expandafter\dez#1\empty
+  \ifx\zus\empty
+  \else
+    , \expandafter\dez\zus\empty
+  \fi \\
+}
+
+\begin{document}
+\title{Using \TeX\ Fonts in the Gnuplot Postscript Terminal}
+\author{Harald Harders, {\ttfamily h.harders@tu-bs.de}}
+\date{2003-03-03}
+\maketitle
+
+\noindent
+The Postscript terminal can embed Postscript Type\,1 fonts (with
+extensions \verb|.pfa| and \verb|.pfb|) and TrueType fonts (extension
+\verb|.ttf|)\footnote{If \texttt{.pfb} and \texttt{.ttf} fonts really
+  can be embedded depends on your gnuplot installation: It needs to be
+  able to handle pipes.} using the command
+\begin{verbatim}
+set terminal postscript fontfile '<filename>'
+\end{verbatim}
+The \verb|fontfile| option can be used multiple times.
+See the sections \emph{set terminal postscript} and \emph{set
+  fontpath} in the Gnuplot documentation for further description.
+
+The embedded font can be used by 
+\begin{verbatim}
+set terminal postscript '<fontname>' <size>
+\end{verbatim}
+or in postscript enhanced terminal as following example:
+\begin{verbatim}
+set xlabel '{/CMMI10 x}'
+\end{verbatim}
+
+Among other things, the font embedding is useful for generating plots
+to be included in \LaTeX\ documents. 
+For normal text, the \emph{cm-super} Postscript Type\,1 fonts are a
+good choice. 
+They are available from CTAN servers, e.g.
+\begin{verbatim}
+ftp://ftp.dante.de/tex-archive/fonts/ps-type1/cm-super/
+\end{verbatim}
+The normal upright font with serifes is defined in
+\verb|sfrm1000.pfb|, and the font name is \verb|SFRM1000|\footnote{If you
+  have an old version of the cm-super font, prior 2001-10-14, the font
+  name is in lowercase letters: \texttt{sfrm1000}. You should update
+  to a new version.} (The \verb|1000| means that this font is designed
+for 10\,pt).
+Replace the \verb|rm| by \verb|it|, \verb|bx| or other combinations in
+both the file name and the font name (here, in uppercase letters) in order 
+to get other font shapes.
+The encoding of these fonts is ordinary and thus is not described
+here.
+Table~\ref{tab:fontnames} shows some examples of fonts contained in
+the cm-super font bundle.
+%
+\begin{table}
+  \centering
+  \captionabove{Some fonts in the cm-super font bundle (for a
+    designsize of 10\,pt)}%
+  \label{tab:fontnames}%
+  \begin{tabular}{>{\ttfamily}l>{\ttfamily}ll}
+    \toprule
+    \multicolumn{1}{l}{File name}&
+    \multicolumn{1}{l}{Full font name} &
+    Example \\
+    & \multicolumn{1}{l}{(all preceded by \texttt{Computer Modern})} & \\
+    \midrule
+    sfrm1000.pfb& Roman &
+    {\rmfamily\upshape Example} \\
+    sfbx1000.pfb& Bold Extended &
+    {\rmfamily\bfseries\upshape Example} \\
+    sfti1000.pfb& Italic &
+    {\rmfamily\itshape Example} \\
+    sfbi1000.pfb& Bold Extended Italic &
+    {\rmfamily\bfseries\itshape Example} \\
+    sfsl1000.pfb& Slanted &
+    {\rmfamily\slshape Example} \\
+    sfbl1000.pfb& Bold Extended Slanted &
+    {\rmfamily\bfseries\slshape Example} \\
+    sfcc1000.pfb& Caps and Small Caps &
+    {\rmfamily\bfseries\scshape Example} \\
+    \midrule
+    sfss1000.pfb& Sans Serif &
+    {\sffamily\upshape Example} \\
+    sfsi1000.pfb& Sans Serif Slanted &
+    {\sffamily\slshape Example} \\
+    sfsx1000.pfb& Sans Serif Bold Extended &
+    {\sffamily\bfseries\upshape Example} \\
+    sfso1000.pfb& Sans Serif Bold Extended Slanted &
+    {\sffamily\bfseries\slshape Example} \\
+    \midrule
+    sftt1000.pfb& Typewriter &
+    {\ttfamily\upshape Example} \\
+    sfit1000.pfb& Typewriter Italic &
+    {\ttfamily\itshape Example} \\
+    sfst1000.pfb& Typewriter Slanted &
+    {\ttfamily\slshape Example} \\
+    sftc1000.pfb& Typewriter Caps and Small Caps &
+    {\ttfamily\scshape Example} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+For mathematics the Type\,1 versions of the Computer Modern fonts are
+useful.
+They should be installed in most \TeX\ implementations and are also
+available from CTAN servers, e.g.
+\begin{verbatim}
+ftp://ftp.dante.de/tex-archive/fonts/cm/ps-type1/bluesky/pfb/
+\end{verbatim}
+Here, the font name is the base of the file name in uppercase letters,
+e.g.\ the file \verb|cmmi10.pfb| contains the font \verb|CMMI10|.
+Since the encoding of these fonts is strange, a table containing all
+characters for some fonts follows.
+The font \verb|CMEX10| contains large symbols for mathematics. They
+overlap sometimes in the table. Since the baseline of the
+\verb|CMEX10| font is at the top of the signs, Gnuplot defines a font
+\verb|CMEX10-Baseline| with a different baseline if \verb|CMEX10| is
+embedded (normally by using \verb|fontfile 'cmex10.pfb'|.
+In contrast to the other fonts, \verb|CMEX10| is only available in the
+design size 10\,pt.
+
+You can access all characters of the fonts by typing their octal code.
+To get a $\heartsuit$ symbol, you may type:
+\begin{verbatim}
+set label '{/CMSY10 \176}' at graph 0.5,0.5
+\end{verbatim}
+Since characters with an octal number below \textbackslash 040 can't
+be displayed by some postscript interpreters, these characters are
+repeated in the Computer Modern Fonts with a larger code.
+Thus, you should use the larger number, where two octal numbers are
+given (e.g.\ \textbackslash 000, \textbackslash 241).
+For example, you better use
+\begin{verbatim}
+set xlabel '{/CMR10 \242}'
+\end{verbatim}
+than
+\begin{verbatim}
+set xlabel '{/CMR10 \001}'
+\end{verbatim}
+to get an upright uppercase Delta $\Delta$. 
+
+\begin{longtable}{lllllllllllllr}
+  \toprule
+  Oct& \rotatebox{90}{CMR10}& \rotatebox{90}{CMTI10}&
+  \rotatebox{90}{CMTT10}& \rotatebox{90}{CMMI10}&
+  \rotatebox{90}{CMU10}& \rotatebox{90}{CMSS10}&
+  \rotatebox{90}{CMTEX10}& \rotatebox{90}{CMFF10}&
+  \rotatebox{90}{CMSY10}& \rotatebox{90}{LASY10}&
+  \rotatebox{90}{CMEX10-Baseline}& Oct& Dec\\
+  \midrule
+  \endhead
+  \bottomrule
+  \endfoot
+  \row{000}\row{001}\row{002}\row{003}\row{004}\row{005}\row{006}\row{007}
+  \row{010}\row{011}\row{012}\row{013}\row{014}\row{015}\row{016}\row{017}
+  \row{020}\row{021}\row{022}\row{023}\row{024}\row{025}\row{026}\row{027}
+  \row{030}\row{031}\row{032}\row{033}\row{034}\row{035}\row{036}\row{037}
+  \row{040}\row{041}\row{042}\row{043}\row{044}\row{045}\row{046}\row{047}
+  \row{050}\row{051}\row{052}\row{053}\row{054}\row{055}\row{056}\row{057}
+  \row{060}\row{061}\row{062}\row{063}\row{064}\row{065}\row{066}\row{067}
+  \row{070}\row{071}\row{072}\row{073}\row{074}\row{075}\row{076}\row{077}
+  %
+  \row{100}\row{101}\row{102}\row{103}\row{104}\row{105}\row{106}\row{107}
+  \row{110}\row{111}\row{112}\row{113}\row{114}\row{115}\row{116}\row{117}
+  \row{120}\row{121}\row{122}\row{123}\row{124}\row{125}\row{126}\row{127}
+  \row{130}\row{131}\row{132}\row{133}\row{134}\row{135}\row{136}\row{137}
+  \row{140}\row{141}\row{142}\row{143}\row{144}\row{145}\row{146}\row{147}
+  \row{150}\row{151}\row{152}\row{153}\row{154}\row{155}\row{156}\row{157}
+  \row{160}\row{161}\row{162}\row{163}\row{164}\row{165}\row{166}\row{167}
+  \row{170}\row{171}\row{172}\row{173}\row{174}\row{175}\row{176}\row{177}
+  %
+\end{longtable}
+
+\end{document}

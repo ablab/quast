@@ -1,0 +1,28 @@
+"Controller" = {
+    ACTIONS = {
+        "appDidInit:" = id; 
+        "newGnuView:" = id; 
+        "printPScodeInKey:" = id; 
+        "setKeyTitle:" = id; 
+    }; 
+    OUTLETS = {NameField = id; activeTerm = id; keyTerm = id; }; 
+    SUPERCLASS = Object; 
+};
+"FirstResponder" = {ACTIONS = {}; OUTLETS = {}; SUPERCLASS = NSObject; };
+"GnuView" = {ACTIONS = {}; OUTLETS = {prInfo = id; }; SUPERCLASS = NSView; };
+"GnuViewController" = {
+    ACTIONS = {"activatePushed:" = id; "deactivate:" = id; }; 
+    OUTLETS = {activateButton = id; controller = id; gnuView = id; window = id; }; 
+    SUPERCLASS = NSObject; 
+};
+"gnuviewController" = {
+    ACTIONS = {
+        "activate:" = id; 
+        "activatePushed:" = id; 
+        "deactivate:" = id; 
+        "windowDidBecomeMain:" = id; 
+        "windowWillClose:" = id; 
+    }; 
+    OUTLETS = {activateButton = id; controller = id; gnuView = id; window = id; }; 
+    SUPERCLASS = Object; 
+};

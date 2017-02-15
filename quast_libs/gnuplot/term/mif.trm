@@ -1,0 +1,1000 @@
+/* Hello, Emacs, this is -*-C-*-
+ * $Id: mif.trm,v 1.33 2006/07/21 02:35:47 sfeam Exp $
+ */
+
+/* GNUPLOT -- mif.trm */
+
+/*[
+ * Copyright 1992, 1993, 1998, 2004
+ *
+ * Permission to use, copy, and distribute this software and its
+ * documentation for any purpose with or without fee is hereby granted,
+ * provided that the above copyright notice appear in all copies and
+ * that both that copyright notice and this permission notice appear
+ * in supporting documentation.
+ *
+ * Permission to modify the software is granted, but not the right to
+ * distribute the complete modified source code.  Modifications are to
+ * be distributed as patches to the released version.  Permission to
+ * distribute binaries produced by compiling modified sources is granted,
+ * provided you
+ *   1. distribute the corresponding source modifications from the
+ *    released version in the form of a patch file along with the binaries,
+ *   2. add special version identification to distinguish your version
+ *    in addition to the base release version number,
+ *   3. provide your name and address as the primary contact for the
+ *    support of your modified version, and
+ *   4. retain our contact information in regard to use of the base
+ *    software.
+ * Permission to distribute the released version of the source code along
+ * with corresponding source modifications in the form of a patch file is
+ * granted with same provisions 2 through 4 for binary distributions.
+ *
+ * This software is provided "as is" without express or implied warranty
+ * to the extent permitted by applicable law.
+]*/
+
+/*
+ * This file is included by ../term.c.
+ *
+ * This terminal driver was developed for
+ *      gnuplot for unix version 3.0 (patchlevel 1)
+ *      gnuplot for unix version 3.2 (patchlevel 2)
+ *
+ * This terminal driver supports:
+ *      Frame Maker MIF format version 3.00
+ *
+ * Options for this terminal driver (set terminal mif [options]):
+ *      colour /        Draw primitives with line types >= 0 in colour (sep. 2-7)
+ *      monochrome      Draw primitives in black (sep. 0)
+ *
+ *      polyline /      Draw lines as continuous curves
+ *      vectors         Draw lines as collections of vectors
+ *
+ *      help / ?        Print short usage description on stderr
+ *
+ * Properties for this terminal driver:
+ *     -Gnuplot size of worksheet:              MIF_XMAX * MIF_YMAX
+ *     -Unit in MIF output:                     cm
+ *     -Plot primitives with the same pen will
+ *      be grouped in the same MIF group.
+ *     -Plot primitives with line types >= 0
+ *      will as default be drawn in colour.
+ *     -Lines are plotted as collections of
+ *      vectors, or as continuous lines (default)
+ *     -Plot primitives in a plot will be in a
+ *      Frame in MIF. Several plot Frames will
+ *      be collected in one large Frame.
+ *     -Point size of MIF output characters:    MIF_PSIZE
+ *     -Used font for MIF output characters:    Times
+ *     -Supports vertical text
+ *     -points and dots as characters
+ *     -character formats for TextLines
+ *
+ * AUTHORS:
+ *      Olof Franksson, Physics IV, KTH, S-100 44 Stockholm, Sweden
+ *
+ * NEW TERMINAL FORMAT:  David C. Schooley
+
+ * COMMENTS:
+ *      Send comments and/or suggestions to olof@fysik4.kth.se
+ *
+ * CHANGES:
+ *	Changed to new terminal format 9/29/95		schooley@ee.gatech.edu
+ *      Changed order of routine declarations.          olof@fysik4.kth.se
+ *      Changed mechanism for pen pattern selection.    kssingvo@immd4.informatik.uni-erlangen.de
+ *      Support for vertical text.                      kssingvo@immd4.informatik.uni-erlangen.de
+ *      Fixed plot bug for "set size XS,YS", XS/YS > 1. olof@fysik4.kth.se
+ *	Support colored text				merritt@u.washington.edu
+ *	Support box fill and pattern fill		merritt@u.washington.edu
+ *
+ */
+
+#include "driver.h"
+
+#ifdef TERM_REGISTER
+register_term(mif)
+#endif
+
+
+
+#ifdef TERM_PROTO
+TERM_PUBLIC void MIF_init __PROTO((void));
+TERM_PUBLIC void MIF_graphics __PROTO((void));
+TERM_PUBLIC void MIF_text __PROTO((void));
+TERM_PUBLIC void MIF_linetype __PROTO((int linetype));
+TERM_PUBLIC void MIF_move __PROTO((unsigned int x, unsigned int y));
+TERM_PUBLIC void MIF_vector __PROTO((unsigned int x, unsigned int y));
+TERM_PUBLIC void MIF_put_text __PROTO((unsigned int x, unsigned int y, const char *str));
+TERM_PUBLIC int MIF_text_angle __PROTO((int ang));
+TERM_PUBLIC void MIF_reset __PROTO((void));
+TERM_PUBLIC void MIF_options __PROTO((void));
+TERM_PUBLIC int MIF_justify_text __PROTO((enum JUSTIFY mode));
+TERM_PUBLIC void MIF_point __PROTO((unsigned int x, unsigned int y, int number));
+TERM_PUBLIC void MIF_boxfill __PROTO((int style, unsigned int x1, unsigned int y1,
+	    unsigned int width, unsigned int height));
+TERM_PUBLIC void MIF_filled_polygon __PROTO((int points, gpiPoint* corners));
+
+/** Coordinates **/
+/* The cast to float is not necessary because we are dividing by a float */
+/* On OSK the cast to a float is not allowed in a constant expression wich */
+/* is used by the declaration and initialization of mif_line */
+/* Converts gnuplot units to MIF units */
+#define GNP_TO_MIF(P)   ((P) / 1000.0)
+/* Basic unit: 0.01 mm (15cm -> 15*10*100=15000) */
+#define MIF_XMAX 15000
+/* Basic unit: 0.01 mm (10cm -> 10*10*100=10000) */
+#define MIF_YMAX 10000
+
+#define MIF_XLAST (MIF_XMAX - 1)
+#define MIF_YLAST (MIF_YMAX - 1)
+
+static int insert_mif_line __PROTO((double fx, double fy));
+static int proc_group_id __PROTO((int group_id));
+static void free_mif_line __PROTO((void));
+static void put_mif_line __PROTO((void));
+static void MIF_set_font __PROTO((const char *));
+static void mif_put_point __PROTO((unsigned int x, unsigned int y, int np));
+
+#endif
+
+#ifndef TERM_PROTO_ONLY
+#ifdef TERM_BODY
+
+#ifndef cfree
+# define cfree free
+#endif
+
+static struct mif_line {	/* Line point structure specification */
+    float fpos_x;		/* Line point X coordinate */
+    float fpos_y;		/*            Y coordinate */
+    struct mif_line *next;	/* Pointer to next line point */
+    struct mif_line *prev;	/* Pointer to previous line point */
+} mif_line =
+{				/* Current position structure. Adjust for orign. Local for this file. */
+    GNP_TO_MIF(0),
+	GNP_TO_MIF(MIF_YLAST),
+	&mif_line,
+	&mif_line
+};
+
+/** Characters **/
+#define MIF_PSIZE 9		/* Point size of used characters */
+
+#define MIF_VCHAR (MIF_YMAX/31)	/* Distance between rows (a guess) */
+#define MIF_HCHAR (MIF_XMAX/95)	/* Distance between characters (a guess) */
+
+/** Scale marks **/
+#define MIF_VTIC  (MIF_YMAX/150)	/* Size of scale mark (vert) */
+#define MIF_HTIC  (MIF_XMAX/225)	/* Size of scale mark (hor) */
+
+/** Drawing properties **/
+static char mif_justify[64];	/* How to justify the used text */
+static char mif_pen[64], mif_pen_width[64], mif_separation[64];		/* How to plot */
+static char mif_textcolor[64];	/* EAM parallels separation */
+
+static int mif_text_ang = 0;		/* Rotation angle of text */
+
+static int mif_fill_patterns[] = {7,12,3,0,9,8,14,13};
+#define MIF_FILL_SOLID  0
+#define MIF_FILL_NONE  15
+
+#define MIF_NPENS 16		/* Number of MIF pen types */
+static int mif_pentype = 0;	/* Pen type to use. Also used to create groups for graphics */
+#define MIF_PEN_TO_GROUP(P)     ( 1 + (P) )	/* Map pen type to group number. Must be >= 1 */
+
+static int mif_pattern_table[MIF_NPENS] =
+{ /* Table, which pattern should be used for drawing */
+    0,				/* border  */
+    1,				/* not used */
+    2, 3, 4, 8, 12, 13,		/* other lines: functions, data, ... (5 is used for grid; 6,7 is (nearly) invisible) */
+    5,				/* grid */
+    9, 10, 11, 12, 13, 14, 15	/* not used */
+};
+
+/** MIF groups administration **/
+#define MIF_NGROUP_ID           20
+static struct mif_group_id {
+    int group_existance;
+/* This group id should generate a MIF group */
+#define MIF_GROUP_EXISTS        1
+/* This group id should not generate a MIF group */
+#define MIF_GROUP_NOT_EXISTS    0
+
+    int group_id;
+#define MIF_INVALID_GROUP_ID    0	/* An invalid MIF group ID */
+
+} mif_group_id[MIF_NGROUP_ID];	/* List of used group ID:s and corresponding MIF groups existance */
+
+/** Semaphores **/
+static int mif_initialized = 0;	/* != 0 when output is active */
+static int mif_in_frame = 0;	/* != 0 when inside a plot frame */
+static int mif_frameno = -1;	/* Current frame number */
+static int mif_colour = TRUE;	/* == TRUE when colour should be used */
+static int mif_polyline = TRUE;	/* == TRUE when lines are drawn as continuous curves */
+
+struct mpt {			/* point definition structure */
+    int chr;			/* character for point */
+    float x_offset, y_offset;	/* offset for vertical positioning */
+    char *font;			/* font */
+};
+
+static char zgnuplot[] = "ZGnuplot"; /* character formats */
+static char zgnuplotp[] = "ZGnuplotP";
+static char zgnuplotd[] = "ZGnuplotD";
+static const char *mif_font = NULL; /* actual character format */
+
+static struct mpt mpt[POINT_TYPES + 1] =
+{				/* point definition data */
+    {'.', 0.000, 0.005, zgnuplotd, /* dot */ },
+
+    {'G', 0.002, 0.084, zgnuplotp, /* diamond */ },
+    {';', 0.002, 0.084, zgnuplotp, /* plus */ },
+    {'n', 0.002, 0.084, zgnuplotp, /* box */ },
+    {'5', 0.002, 0.084, zgnuplotp, /* X */ },
+    {'s', 0.002, 0.062, zgnuplotp, /* triangle */ },
+    {'K', 0.005, 0.075, zgnuplotp, /* star */ },
+};
+
+/* diamond is offset 0, dot is offset -1 */
+static struct mpt *mif_point = &(mpt[1]);
+
+
+/** Declaration of routine/s for internal use **/
+static int insert_mif_line __PROTO((double fx, double fy));
+static int proc_group_id __PROTO((int group_id));
+
+enum MIF_id {
+    MIF_MONOCHROME, MIF_COLOR, MIF_VECTORS, MIF_POLYLINE, MIF_HELP,
+    MIF_OTHER
+};
+
+static struct gen_table MIF_opts[] =
+{
+    { "m$onochrome", MIF_MONOCHROME },
+    { "c$olor", MIF_COLOR },
+    { "c$olour", MIF_COLOR },
+    { "v$ectors", MIF_VECTORS },
+    { "p$olyline", MIF_POLYLINE },
+    { "h$elp", MIF_HELP },
+    { "?$", MIF_HELP },
+    { NULL, MIF_OTHER }
+};
+
+/** Routine/s **/
+
+/* Called when this terminal type is set in order to parse options */
+TERM_PUBLIC void
+MIF_options()
+{
+    while (!END_OF_COMMAND) {
+	switch(lookup_table(&MIF_opts[0],c_token)) {
+	/* Colour options */
+	case MIF_MONOCHROME:
+	    mif_colour = FALSE;
+	    c_token++;
+	    break;
+	case MIF_COLOR:
+	    mif_colour = TRUE;
+	    c_token++;
+	    break;
+	/* Curve options */
+	case MIF_VECTORS:
+	    mif_polyline = FALSE;
+	    c_token++;
+	    break;
+	case MIF_POLYLINE:
+	    mif_polyline = TRUE;
+	    c_token++;
+	    break;
+	/* Short help */
+	case MIF_HELP:
+	case MIF_OTHER:
+	default:
+	    fprintf(stderr, "\
+Usage: set terminal mif [options]\n\
+\toptions:\n\
+\t\tcolour /        Draw primitives with line types >= 0 in colour (sep. 2-7)\n\
+\t\tmonochrome      Draw primitives in black (sep. 0)\n\n\
+\t\tpolyline /      Draw lines as continuous curves\n\
+\t\tvectors         Draw lines as collections of vectors\n\n\
+\t\thelp / ?        Print short usage description on stderr\n");
+	    c_token++;
+	    break;
+	}
+    }
+    sprintf(term_options, "%s %s",
+	    (mif_colour == TRUE) ? "colour" : "monochrome",
+	    (mif_polyline == TRUE) ? "polyline" : "vectors");
+}
+
+/* Deallocate the used line structure elements */
+static void
+free_mif_line()
+{
+    struct mif_line *tline;
+
+    while (mif_line.prev != &mif_line) {
+	/* Unlink */
+	tline = mif_line.prev;
+	mif_line.prev = mif_line.prev->prev;
+	mif_line.prev->next = &mif_line;
+
+	/* Deallocate */
+	free(tline);
+    }
+
+    /* Make sure that the list will be empty */
+    mif_line.prev = &mif_line;
+    mif_line.next = &mif_line;
+}
+
+/* Draw the pending line. Change current position. */
+static void
+put_mif_line()
+{
+    int np, i;
+    struct mif_line *tline;
+
+    /* Process if inside a Frame */
+    if (mif_initialized != 0 && mif_in_frame != 0) {
+
+	/* Count the number of available points */
+	for (tline = mif_line.next, np = 1; tline != &mif_line; tline = tline->next, np++);
+
+	/* Draw line (at least two points) */
+	if (np >= 2) {
+
+	    /* Line preamble */
+	    fprintf(gpoutfile, "\t<PolyLine <GroupID %d> %s %s %s <Fill 15>\n",
+		    MIF_PEN_TO_GROUP(mif_pentype), mif_pen, mif_pen_width, mif_separation);
+
+	    /* Draw the line elements */
+	    fprintf(gpoutfile, "\t\t<NumPoints %d> ", np);
+	    for (i = 0, tline = &mif_line; i < np; i++, tline = tline->next) {
+		if (i % 4 == 0)
+		    fputs("\n\t\t", gpoutfile);
+		fprintf(gpoutfile, "<Point  %.3f %.3f> ",
+			tline->fpos_x, tline->fpos_y);
+	    }
+
+	    /* Line post amble */
+	    fputs("\n\t>\n", gpoutfile);
+
+	    /* Register the used group ID */
+	    proc_group_id(MIF_PEN_TO_GROUP(mif_pentype));
+
+	    /* Avoid to redraw this. The MIF system should remember it. */
+	    mif_pen[0] = '\0';
+	    mif_pen_width[0] = '\0';
+	    mif_separation[0] = '\0';
+
+	    /* Move current position to end of line */
+	    mif_line.fpos_x = mif_line.prev->fpos_x;
+	    mif_line.fpos_y = mif_line.prev->fpos_y;
+
+	    /* Restore the line */
+	    free_mif_line();
+	}
+    }				/* Line processed */
+}
+
+/* Filled box support - Ethan Merritt <merritt@u.washington.edu> */
+TERM_PUBLIC void
+MIF_boxfill(int style, unsigned int x1, unsigned int y1,
+	    unsigned int width, unsigned int height)
+{
+    int fill_pattern;
+
+    int fillpar = style >> 4;
+    style &= 0xf;
+    switch (style) {
+	default:
+	case FS_EMPTY:	fill_pattern = 7;
+			break;
+	case FS_SOLID:	fill_pattern = MIF_FILL_SOLID;
+			break;
+	case FS_PATTERN:fill_pattern = mif_fill_patterns[fillpar % 8];
+			break;
+    }
+
+    /* Object preamble */
+    fprintf(gpoutfile, "\t<Rectangle <GroupID %d> %s\n",
+	    MIF_PEN_TO_GROUP(mif_pentype), mif_separation);
+
+    /* Set fill type */
+    fprintf(gpoutfile, "\t\t<Fill %d>\n", fill_pattern);
+
+    /* Draw the box */
+    fprintf(gpoutfile, "\t\t<ShapeRect %.3f %.3f %.3f %.3f>\n",
+	GNP_TO_MIF(x1), GNP_TO_MIF(MIF_YLAST - (y1+height)),
+	GNP_TO_MIF(width), GNP_TO_MIF(height));
+
+    /* End of object */
+    fputs("\n\t>\n", gpoutfile);
+
+    /* Register the used group ID */
+    proc_group_id(MIF_PEN_TO_GROUP(mif_pentype));
+
+}
+
+/* Filled polygon. Ethan Merritt <merritt@u.washington.edu> */
+TERM_PUBLIC void
+MIF_filled_polygon(int points, gpiPoint* corners)
+{
+    int i;
+
+    /* Object preamble */
+    fprintf(gpoutfile, "\t<Polygon <GroupID %d>\n",
+	    MIF_PEN_TO_GROUP(mif_pentype));
+
+    /* Set fill type */
+    fprintf(gpoutfile, "\t\t<Fill %d>\n", MIF_FILL_SOLID);
+
+    /* Draw the line elements */
+    fprintf(gpoutfile, "\t\t<NumPoints %d> ", points);
+    for (i=0; i<points; i++) {
+	fprintf(gpoutfile, "<Point  %.3f %.3f> ",
+		GNP_TO_MIF(corners[i].x),
+		GNP_TO_MIF(MIF_YLAST - corners[i].y));
+    }
+
+    /* End of object */
+    fputs("\n\t>\n", gpoutfile);
+
+    /* Register the used group ID */
+    proc_group_id(MIF_PEN_TO_GROUP(mif_pentype));
+
+}
+
+/* Draw a point */
+static void
+mif_put_point(unsigned int x, unsigned int y, int np)
+{
+    /* Process if inside a Frame */
+    if (mif_initialized != 0 && mif_in_frame != 0) {
+
+	/* Draw pending line */
+	if (mif_polyline == TRUE)
+	    put_mif_line();
+
+	/* Adjust current position for text-graphics alignment */
+	MIF_move(x, y);
+
+	/* center text */
+	MIF_justify_text(CENTRE);
+
+	/* Draw the point */
+	fprintf(gpoutfile, "\t<TextLine <GroupID %d> %s\n",
+		MIF_PEN_TO_GROUP(mif_pentype),
+		mif_textcolor);
+
+	MIF_set_font(mif_point[np].font);
+
+	fprintf(gpoutfile, "\t\t<TLOrigin  %.3f %.3f> %s <String `%c'>\n",
+		mif_line.fpos_x + mif_point[np].x_offset,
+		mif_line.fpos_y + mif_point[np].y_offset,
+		mif_justify,
+		mif_point[np].chr);
+	fputs("\t>\n", gpoutfile);
+
+	/* Register the used group ID */
+	proc_group_id(MIF_PEN_TO_GROUP(mif_pentype));
+
+	/* Avoid to redraw this. The MIF system should remember it. */
+	mif_justify[0] = '\0';
+
+    }				/* Point processed */
+}
+
+
+/*
+ *  draw points
+ */
+TERM_PUBLIC void
+MIF_point(unsigned int x, unsigned int y, int number)
+{
+    if (number < 0) {		/* dot */
+	number = -1;
+    } else {			/* point */
+	number %= POINT_TYPES;
+    }
+    mif_put_point(x, y, number);
+}
+
+
+/* Set up a MIF output file */
+TERM_PUBLIC void
+MIF_init()
+{
+    int i;
+
+    /* Process if not inside a MIF file and Frame */
+    if (mif_initialized == 0 && mif_in_frame == 0) {
+	/* Tell this terminal driver that the output is initialized and
+	 * no current frames are processed */
+	mif_initialized = 1;
+	mif_in_frame = 0;
+
+	/* Reset internal position */
+	free_mif_line();
+	mif_line.fpos_x = GNP_TO_MIF(0);
+	mif_line.fpos_y = GNP_TO_MIF(MIF_YLAST);
+
+	/* Reset drawing properties strings */
+	mif_pen[0] = '\0';
+	mif_pen_width[0] = '\0';
+	mif_separation[0] = '\0';
+
+	MIF_justify_text(LEFT);
+
+	/* Reset group ID generator */
+	for (i = 0; i < MIF_NGROUP_ID; i++) {
+	    mif_group_id[i].group_id = MIF_INVALID_GROUP_ID;
+	    mif_group_id[i].group_existance = MIF_GROUP_NOT_EXISTS;
+	}
+
+	/* Identify ourselves */
+	/*bs show borders */
+	/* Setup a default environment to use */
+	fprintf(gpoutfile, "\
+<MIFFile 3.00> # Generated by gnuplot version %s patchlevel %s; identifies this as a MIF file\n\
+#\n\
+# show borders\n\
+<Document\n<DBordersOn Yes>\n>\n\
+# Set a default pen pattern, pen width, unit and font for subsequent objects\n\
+<Pen 0>\n\
+<Fill 15>\n\
+<PenWidth 0.5 pt>\n\
+<Separation 0>\n\
+<Units Ucm>\n\
+<FontCatalog\n\
+\t<Font <FTag `%s'><FFamily `Times'><FSize %d><FPlain Yes>>\n\
+\t<Font <FTag `%s'><FFamily `ZapfDingbats'><FSize 7.0 pt><FPlain Yes>>\n\
+\t<Font <FTag `%s'><FFamily `Symbol'><FSize 5.0 pt><FPlain Yes>>\n\
+>\n\
+#\n",
+		gnuplot_version, gnuplot_patchlevel,
+		zgnuplot, MIF_PSIZE,
+		zgnuplotp,
+		zgnuplotd);
+    }				/* MIF file created */
+}
+
+/* Finish of a MIF output file */
+TERM_PUBLIC void
+MIF_reset()
+{
+    /* Process if inside a MIF file and not inside a Frame */
+    if (mif_initialized != 0 && mif_in_frame == 0) {
+	/* Finish off the MIF file */
+	fputs("\
+#\n\
+# End of MIFFile\n", gpoutfile);
+
+	/* Tell this terminal driver that the output is finished */
+	mif_initialized = 0;
+
+	/* bs: reset frame number */
+	mif_frameno = -1;
+
+    }				/* MIF file finished */
+}
+
+/* Start plotting a Frame (-> graphics mode) */
+TERM_PUBLIC void
+MIF_graphics()
+{
+    int i;
+
+    /* Process if not inside a Frame */
+    if (mif_initialized != 0 && mif_in_frame == 0) {
+	/* Tell that this terminal driver is working with a plot frame */
+	mif_in_frame = 1;
+
+	/* Update frame number */
+	mif_frameno++;
+
+	/* Set current position */
+	free_mif_line();
+	mif_line.fpos_x = GNP_TO_MIF(0);
+	mif_line.fpos_y = GNP_TO_MIF(MIF_YLAST);
+
+	/* Set drawing properties */
+	mif_pen[0] = '\0';
+	mif_pen_width[0] = '\0';
+	mif_separation[0] = '\0';
+
+	MIF_justify_text(LEFT);
+
+	/* Reset group ID generator */
+	for (i = 0; i < MIF_NGROUP_ID; i++) {
+	    mif_group_id[i].group_id = MIF_INVALID_GROUP_ID;
+	    mif_group_id[i].group_existance = MIF_GROUP_NOT_EXISTS;
+	}
+
+	/* Frame preamble */
+	fprintf(gpoutfile, "\
+#\n\
+# Frame number %d with plot of graphics\n\
+<Frame\n\
+\t<Pen 15>\n\
+\t<Fill 15>\n\
+\t<PenWidth  0.5 pt>\n\
+\t<Separation 0>\n\
+\t<BRect 2.000 %.3f %.3f %.3f>\n\
+\t<NSOffset  0.000>\n\
+\t<BLOffset  0.000>\n",
+	    mif_frameno,
+	    ((float) mif_frameno) * GNP_TO_MIF(MIF_YMAX + 100),
+	    GNP_TO_MIF(MIF_XMAX), GNP_TO_MIF(MIF_YMAX));
+    }				/* Frame created */
+}
+
+/* Stop plotting a Frame (-> text mode) */
+TERM_PUBLIC void
+MIF_text()
+{
+    int i;
+
+    /* Process if inside a Frame */
+    if (mif_initialized != 0 && mif_in_frame != 0) {
+
+	/* Draw pending line */
+	if (mif_polyline == TRUE)
+	    put_mif_line();
+
+	/* Group the used plot primitives */
+	fputs("\
+\t#\n\
+\t# Group the the objects in groups to make the chart easier to manipulate\n\
+\t# after it's imported into FrameMaker.\n", gpoutfile);
+
+	for (i = 0; i < MIF_NGROUP_ID; i++) {
+	    if (mif_group_id[i].group_id != MIF_INVALID_GROUP_ID &&
+		mif_group_id[i].group_existance == MIF_GROUP_EXISTS) {
+		fprintf(gpoutfile, "\
+\t<Group\n\
+\t\t<ID %d>\n\
+\t>\n", mif_group_id[i].group_id);
+	    }
+	}
+
+	/* Frame post amble */
+	fprintf(gpoutfile, "\
+>\n\
+# End of Frame number %d\n\
+#\n",
+		mif_frameno);
+
+	/* Tell that this terminal driver is not working with a plot frame */
+	mif_in_frame = 0;
+    }				/* Frame finshed */
+}
+
+/* Select type of line in grapics */
+/* NOTE: actually written to output the first time a primitive
+ * is drawn AFTER this call */
+/* -2=border, -1=X/Y-axis, 0-13=lines, and 14-=mapped back */
+TERM_PUBLIC void
+MIF_linetype(int linetype)
+{
+    /* Process if inside a Frame */
+    if (mif_initialized != 0 && mif_in_frame != 0) {
+
+	/* Draw pending line */
+	if (mif_polyline == TRUE)
+	    put_mif_line();
+
+	/* Translate gnuplot pen types to MIF pen types */
+	if (linetype < 0) {	/* Special lines */
+	    if (linetype == LT_AXIS) {
+		mif_pentype = 8 + MIF_NPENS;	/* -1 */
+		if (mif_colour == TRUE)
+		    sprintf(mif_separation, " <Separation 0> ");
+	    } else {
+		mif_pentype = 0 + MIF_NPENS;	/* -2 or less */
+		if (mif_colour == TRUE)
+		    sprintf(mif_separation, " <Separation 0> ");
+	    }
+	    sprintf(mif_pen_width, " <PenWidth 1.0 pt> ");
+	    /* EAM - set text color to black */
+	    sprintf(mif_textcolor, " <Font <FSeparation 0>> ");
+	} else {		/* Normal lines */
+	    mif_pentype = (linetype) % MIF_NPENS;	/* 0-(MIF_NPENS-1) */
+	    sprintf(mif_pen_width, " <PenWidth 0.1 pt> ");
+	    if (mif_colour == TRUE)
+		sprintf(mif_separation, " <Separation %d> ",
+			2 + (mif_pentype % 6));	/* 2-7 */
+	    /* EAM - set text color also */
+	    if (mif_colour == TRUE)
+		sprintf(mif_textcolor, " <Font <FSeparation %d>> ",
+			2 + (mif_pentype % 6));	/* 2-7 */
+	}
+
+	/* Set pen type */
+	sprintf(mif_pen, " <Pen %d> ",
+		mif_pattern_table[mif_pentype % MIF_NPENS]);
+
+    }				/* Primitive processed */
+}
+
+/* Allow arbitrary text rotation */
+TERM_PUBLIC int
+MIF_text_angle(int ang)
+{
+    mif_text_ang = ang;
+    return (TRUE);
+}
+
+/* Justify following text lines (MIF_put_text()) relative to the
+ * insertion point
+ * NOTE: actually written to output in text primitives which are
+ * drawn AFTER this call */
+TERM_PUBLIC int
+MIF_justify_text(enum JUSTIFY mode)
+{
+    int rval = TRUE;
+
+    /* Process if inside a Frame */
+    if (mif_initialized != 0 && mif_in_frame != 0) {
+	switch (mode) {
+	case LEFT:
+	    sprintf(mif_justify, " <TLAlignment Left> ");
+	    break;
+	case CENTRE:
+	    sprintf(mif_justify, " <TLAlignment Center> ");
+	    break;
+	case RIGHT:
+	    sprintf(mif_justify, " <TLAlignment Right> ");
+	    break;
+	default:
+	    rval = FALSE;
+	    break;
+	}
+
+    }
+    /* Primitive processed */
+    else {
+	rval = FALSE;
+    }
+
+    return (rval);
+}
+
+/* Draw a vector from current position to (x, y) and change current position.
+ * NOTE: actually written to output the first time another primitive
+ * is called AFTER this call */
+TERM_PUBLIC void
+MIF_vector(unsigned int x, unsigned int y)
+{
+    /* Process if inside a Frame */
+    if (mif_initialized != 0 && mif_in_frame != 0) {
+
+	/* Setup the vector as a part of the line */
+	insert_mif_line(GNP_TO_MIF(x), GNP_TO_MIF(MIF_YLAST - (int) y));
+
+	/* Draw pending line -> vector */
+	if (mif_polyline == FALSE)
+	    put_mif_line();
+
+    }				/* Vector processed */
+}
+
+/* Move current position */
+TERM_PUBLIC void
+MIF_move(unsigned int x, unsigned int y)
+{
+    /* Process if inside a Frame */
+    if (mif_initialized != 0 && mif_in_frame != 0) {
+
+	/* Draw pending line */
+	if (mif_polyline == TRUE)
+	    put_mif_line();
+
+	mif_line.fpos_x = GNP_TO_MIF(x);
+	mif_line.fpos_y = GNP_TO_MIF(MIF_YLAST - (int) y);
+    }
+}
+
+
+/* set font */
+static void
+MIF_set_font(const char *font)
+{
+    if (font != mif_font) {
+	fprintf(gpoutfile, "\t\t<Font\n\t\t\t<FTag `%s'>\n\t\t>\n", font);
+	mif_font = font;
+    }
+}
+
+
+/* Draw the text string str at (x, y). Adjust according to MIF_justify_text().
+ * Change current position. */
+TERM_PUBLIC void
+MIF_put_text(unsigned int x, unsigned int y, const char str[])
+{
+    /* Process if inside a Frame */
+    if (mif_initialized != 0 && mif_in_frame != 0) {
+
+	/* Draw pending line */
+	if (mif_polyline == TRUE)
+	    put_mif_line();
+
+	/* Adjust current position for text-graphics alignment */
+	MIF_move(x, y - MIF_VCHAR / 5);
+
+	if (strlen(str) > 0) {
+
+	    /* Draw the text */
+	    fprintf(gpoutfile, "\t<TextLine <GroupID %d> %s %s %s %s\n",
+		    MIF_PEN_TO_GROUP(mif_pentype), mif_pen,
+		    mif_pen_width, mif_separation, mif_textcolor);
+
+	    MIF_set_font(zgnuplot);
+
+	    fprintf(gpoutfile, "\
+\t\t<TLOrigin  %.3f %.3f> %s <Angle %d> <String `%s'>\n\
+\t>\n",
+		    mif_line.fpos_x, mif_line.fpos_y, mif_justify,
+		    mif_text_ang, str);
+
+	    /* Register the used group ID */
+	    proc_group_id(MIF_PEN_TO_GROUP(mif_pentype));
+
+	    /* Avoid to redraw this. The MIF system should remember it. */
+	    mif_pen[0] = '\0';
+	    mif_pen_width[0] = '\0';
+	    mif_separation[0] = '\0';
+
+	    mif_justify[0] = '\0';	/* Independent of linetype */
+	}
+    }				/* Text processed */
+}
+
+
+/* Insert one point in the line */
+static int
+insert_mif_line(double fx, double fy)
+{
+    int rval = TRUE;
+
+    if ((mif_line.prev->next = (struct mif_line *) gp_alloc(sizeof(struct mif_line),
+	"MIF driver")) != (struct mif_line *) NULL) {
+	/* Link */
+	mif_line.prev->next->next = &mif_line;
+	mif_line.prev->next->prev = mif_line.prev;
+	mif_line.prev = mif_line.prev->next;
+
+	/* Fill */
+	mif_line.prev->fpos_x = fx;
+	mif_line.prev->fpos_y = fy;
+
+	rval = TRUE;
+    } else {			/* Failed to allocate */
+	/* Relink */
+	mif_line.prev->next = &mif_line;
+
+	rval = FALSE;
+    }
+
+    return (rval);
+}
+
+/* Register group ID. Update group ID existance. */
+/* Returns:     1       group_id belongs to a MIF group
+		0       group_id does not belong to a MIF group
+	       -1       not inside a Frame
+	       -2       group ID list is full
+ */
+static int
+proc_group_id(int group_id)
+{
+    int i, rval = 0;
+
+    /* Process if inside a Frame */
+    if (mif_initialized != 0 && mif_in_frame != 0) {
+
+	/* Find out the group ID, or a free group ID slot index. */
+	for (i = 0; i < MIF_NGROUP_ID &&
+	     mif_group_id[i].group_id != MIF_INVALID_GROUP_ID &&
+	     mif_group_id[i].group_id != group_id;
+	     i++) {
+	    /* Don't check the group_existance variable */
+	}
+
+	if (i < MIF_NGROUP_ID) {
+	    if (mif_group_id[i].group_id == MIF_INVALID_GROUP_ID) {
+		/* Register as new group ID for eventual use as MIF group */
+		mif_group_id[i].group_id = group_id;
+		mif_group_id[i].group_existance = MIF_GROUP_NOT_EXISTS;
+	    } else {
+		/* If second use of this group ID -> create a new MIF group */
+		if (mif_group_id[i].group_id == group_id) {
+		    mif_group_id[i].group_existance = MIF_GROUP_EXISTS;
+		    /* NOTE: a group MUST have at least two members. */
+		    rval = 1;
+		}
+	    }
+	} else {
+	    rval = -2;		/* No place for this group ID in the list */
+	}
+
+    }
+    /* Group ID processed */
+    else {
+	rval = -1;		/* Not inside a Frame */
+    }
+
+    /* Return MIF group status */
+    return (rval);
+}
+
+
+#endif
+
+
+#ifdef TERM_TABLE
+
+TERM_TABLE_START(mif_driver)
+    "mif", "Frame maker MIF 3.00 format",
+    MIF_XMAX, MIF_YMAX, MIF_VCHAR, MIF_HCHAR,
+    MIF_VTIC, MIF_HTIC, MIF_options, MIF_init, MIF_reset,
+    MIF_text, null_scale, MIF_graphics, MIF_move, MIF_vector,
+    MIF_linetype, MIF_put_text, MIF_text_angle,
+    MIF_justify_text, MIF_point, do_arrow, set_font_null,
+    0, /* pointsize */
+    0, /* flags */
+    0, 0, /* suspend, resume */
+    MIF_boxfill,
+    0  /* linewidth */
+#ifdef USE_MOUSE
+    , 0, 0, 0, 0, 0
+#endif
+    ,0 /* make_palette */
+    ,0 /* previous_palette */
+    ,0 /* set_color */
+    ,MIF_filled_polygon /* filled_polygon */
+TERM_TABLE_END(mif_driver)
+
+#undef LAST_TERM
+#define LAST_TERM mif_driver
+
+#endif
+#endif /* TERM_PROTO_ONLY */
+
+#ifdef TERM_HELP
+START_HELP(mif)
+"1 mif",
+"?commands set terminal mif",
+"?set terminal mif",
+"?set term mif",
+"?terminal mif",
+"?term mif",
+"?mif",
+" The `mif` terminal driver produces Frame Maker MIF format version 3.00.  It",
+" plots in MIF Frames with the size 15*10 cm, and plot primitives with the same",
+" pen will be grouped in the same MIF group.  Plot primitives in a `gnuplot`",
+" page will be plotted in a MIF Frame, and several MIF Frames are collected in",
+" one large MIF Frame.  The MIF font used for text is \"Times\".",
+"",
+" Several options may be set in the MIF 3.00 driver.",
+"",
+" Syntax:",
+"       set terminal mif {color | colour | monochrome} {polyline | vectors}",
+"                        {help | ?}",
+"",
+" `colour` plots lines with line types >= 0 in colour (MIF sep. 2--7) and",
+" `monochrome` plots all line types in black (MIF sep. 0).",
+" `polyline` plots curves as continuous curves and `vectors` plots curves as",
+" collections of vectors.",
+" `help` and `?` print online help on standard error output---both print a",
+" short description of the usage; `help` also lists the options.",
+"",
+" Examples:",
+"       set term mif colour polylines    # defaults",
+"       set term mif                     # defaults",
+"       set term mif vectors",
+"       set term mif help"
+END_HELP(mif)
+#endif /* TERM_HELP */

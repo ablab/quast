@@ -1,0 +1,14 @@
+#define WINVER 0x0410
+#include <windows.h>
+#include "wgnuplib.rc"
+
+#ifndef NO_MANIFEST
+#ifdef _WIN64
+CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST "wgnuplot.exe.manifest64"
+#else
+CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST "wgnuplot.exe.manifest"
+#endif
+#endif
+
+GRPICON ICON "grpicon.ico"
+TEXTICON ICON "texticon.ico"

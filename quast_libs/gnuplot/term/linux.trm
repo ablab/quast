@@ -1,0 +1,466 @@
+/* Hello, Emacs, this is -*-C-*-
+ * $Id: linux.trm,v 1.31 2012/01/30 19:31:01 sfeam Exp $
+ *
+ */
+
+/* GNUPLOT - linux.trm */
+
+/*[
+ * Copyright 1993, 1998, 2004
+ *
+ * Permission to use, copy, and distribute this software and its
+ * documentation for any purpose with or without fee is hereby granted,
+ * provided that the above copyright notice appear in all copies and
+ * that both that copyright notice and this permission notice appear
+ * in supporting documentation.
+ *
+ * Permission to modify the software is granted, but not the right to
+ * distribute the complete modified source code.  Modifications are to
+ * be distributed as patches to the released version.  Permission to
+ * distribute binaries produced by compiling modified sources is granted,
+ * provided you
+ *   1. distribute the corresponding source modifications from the
+ *    released version in the form of a patch file along with the binaries,
+ *   2. add special version identification to distinguish your version
+ *    in addition to the base release version number,
+ *   3. provide your name and address as the primary contact for the
+ *    support of your modified version, and
+ *   4. retain our contact information in regard to use of the base
+ *    software.
+ * Permission to distribute the released version of the source code along
+ * with corresponding source modifications in the form of a patch file is
+ * granted with same provisions 2 through 4 for binary distributions.
+ *
+ * This software is provided "as is" without express or implied warranty
+ * to the extent permitted by applicable law.
+]*/
+
+/*
+ * This file is included by ../term.c.
+ *
+ * This terminal driver supports:
+ *  SVGA up to 1024x768x256 for PC's running the Linux Operating System
+ *  (also VGA 640x480x16, and SVGA 800x600x256)
+ *
+ * AUTHOR
+ *  Scott Heavner (sdh@po.cwru.edu)
+ *  based on original linux.trm by Tommy Frandsen (frandsen@diku.dk)
+ *  patched by David J. Liu (liu@molecule.phri.nyu.edu)
+ *  to increase perfomance and safety based on the features of SVGALib/GL.
+ *  send your comments or suggestions to (pixar!info-gnuplot@sun.com).
+ */
+
+/*
+ * Compile with Linux SVGAlib 0.95 currently maintained by
+ * Harm Hanemaayer (hhanemaa@cs.ruu.nl).
+ * supports Trident, Tseng, Cirrus, Oak and generic vga.
+ */
+
+#include "driver.h"
+
+/*
+ * January 2012 (Gnuplot version 4.6)
+ * This font used to be imported from bitmap.c, which is no longer built
+ * by default.
+ */
+#ifndef FNT5X9
+#define FNT5X9 0
+#define FNT5X9_VCHAR 11		/* vertical spacing between characters */
+#define FNT5X9_VBITS 9		/* actual number of rows of bits per char */
+#define FNT5X9_HCHAR 7		/* horizontal spacing between characters */
+#define FNT5X9_HBITS 5		/* actual number of bits per row per char */
+#ifndef TERM_HELP
+/* 5x9 font, bottom row first, left pixel in lsb */
+const unsigned int fnt5x9[96][FNT5X9_VBITS] = {
+  /* */  {000000,000000,000000,000000,000000,000000,000000,000000,000000},
+  /*!*/  {000000,000000,0x0004,000000,0x0004,0x0004,0x0004,0x0004,0x0004},
+  /*"*/  {000000,000000,000000,000000,000000,000000,0x000a,0x000a,0x000a},
+  /*#*/  {000000,000000,0x000a,0x000a,0x001f,0x000a,0x001f,0x000a,0x000a},
+  /*$*/  {000000,000000,0x0004,0x000f,0x0014,0x000e,0x0005,0x001e,0x0004},
+  /*%*/  {000000,000000,0x0018,0x0019,0x0002,0x0004,0x0008,0x0013,0x0003},
+  /*&*/  {000000,000000,0x0016,0x0009,0x0015,0x0002,0x0005,0x0005,0x0002},
+  /*'*/  {000000,000000,000000,000000,000000,0x0002,0x0004,0x0006,0x0006},
+  /*(*/  {000000,000000,0x0008,0x0004,0x0002,0x0002,0x0002,0x0004,0x0008},
+  /*)*/  {000000,000000,0x0002,0x0004,0x0008,0x0008,0x0008,0x0004,0x0002},
+  /***/  {000000,000000,0x0004,0x0015,0x000e,0x001f,0x000e,0x0015,0x0004},
+  /*+*/  {000000,000000,000000,0x0004,0x0004,0x001f,0x0004,0x0004,000000},
+  /*,*/  {000000,0x0002,0x0004,0x0006,0x0006,000000,000000,000000,000000},
+  /*-*/  {000000,000000,000000,000000,000000,0x001f,000000,000000,000000},
+  /*.*/  {000000,000000,0x0006,0x0006,000000,000000,000000,000000,000000},
+  /*-/-*/{000000,000000,000000,0x0001,0x0002,0x0004,0x0008,0x0010,000000},
+  /*0*/  {000000,000000,0x000e,0x0011,0x0013,0x0015,0x0019,0x0011,0x000e},
+  /*1*/  {000000,000000,0x000e,0x0004,0x0004,0x0004,0x0004,0x0006,0x0004},
+  /*2*/  {000000,000000,0x001f,0x0001,0x0001,0x000e,0x0010,0x0011,0x000e},
+  /*3*/  {000000,000000,0x000e,0x0011,0x0010,0x000c,0x0010,0x0011,0x000e},
+  /*4*/  {000000,000000,0x0008,0x0008,0x001f,0x0009,0x000a,0x000c,0x0008},
+  /*5*/  {000000,000000,0x000e,0x0011,0x0010,0x0010,0x000f,0x0001,0x001f},
+  /*6*/  {000000,000000,0x000e,0x0011,0x0011,0x000f,0x0001,0x0002,0x000c},
+  /*7*/  {000000,000000,0x0001,0x0001,0x0002,0x0004,0x0008,0x0010,0x001f},
+  /*8*/  {000000,000000,0x000e,0x0011,0x0011,0x000e,0x0011,0x0011,0x000e},
+  /*9*/  {000000,000000,0x0006,0x0008,0x0010,0x001e,0x0011,0x0011,0x000e},
+  /*:*/  {000000,000000,000000,0x0006,0x0006,000000,0x0006,0x0006,000000},
+  /*;*/  {000000,0x0001,0x0002,0x0006,0x0006,000000,0x0006,0x0006,000000},
+  /*<*/  {000000,000000,0x0008,0x0004,0x0002,0x0001,0x0002,0x0004,0x0008},
+  /*=*/  {000000,000000,000000,000000,0x001f,000000,0x001f,000000,000000},
+  /*>*/  {000000,000000,0x0002,0x0004,0x0008,0x0010,0x0008,0x0004,0x0002},
+  /*?*/  {000000,000000,0x0004,000000,0x0004,0x0008,0x0010,0x0011,0x000e},
+  /*@*/  {000000,000000,0x000e,0x0015,0x0015,0x0016,0x0010,0x0011,0x000e},
+  /*A*/  {000000,000000,0x0011,0x0011,0x001f,0x0011,0x0011,0x000a,0x0004},
+  /*B*/  {000000,000000,0x000f,0x0012,0x0012,0x000e,0x0012,0x0012,0x000f},
+  /*C*/  {000000,000000,0x000e,0x0011,0x0001,0x0001,0x0001,0x0011,0x000e},
+  /*D*/  {000000,000000,0x000f,0x0012,0x0012,0x0012,0x0012,0x0012,0x000f},
+  /*E*/  {000000,000000,0x001f,0x0001,0x0001,0x0007,0x0001,0x0001,0x001f},
+  /*F*/  {000000,000000,0x0001,0x0001,0x0001,0x0007,0x0001,0x0001,0x001f},
+  /*G*/  {000000,000000,0x001e,0x0011,0x0011,0x0019,0x0001,0x0001,0x001e},
+  /*H*/  {000000,000000,0x0011,0x0011,0x0011,0x001f,0x0011,0x0011,0x0011},
+  /*I*/  {000000,000000,0x000e,0x0004,0x0004,0x0004,0x0004,0x0004,0x000e},
+  /*J*/  {000000,000000,0x000e,0x0011,0x0010,0x0010,0x0010,0x0010,0x0010},
+  /*K*/  {000000,000000,0x0011,0x0009,0x0005,0x0003,0x0005,0x0009,0x0011},
+  /*L*/  {000000,000000,0x001f,0x0001,0x0001,0x0001,0x0001,0x0001,0x0001},
+  /*M*/  {000000,000000,0x0011,0x0011,0x0011,0x0015,0x0015,0x001b,0x0011},
+  /*N*/  {000000,000000,0x0011,0x0011,0x0011,0x0019,0x0015,0x0013,0x0011},
+  /*O*/  {000000,000000,0x000e,0x0011,0x0011,0x0011,0x0011,0x0011,0x000e},
+  /*P*/  {000000,000000,0x0001,0x0001,0x0001,0x000f,0x0011,0x0011,0x000f},
+  /*Q*/  {000000,0x0018,0x000e,0x0015,0x0011,0x0011,0x0011,0x0011,0x000e},
+  /*R*/  {000000,000000,0x0011,0x0009,0x0005,0x000f,0x0011,0x0011,0x000f},
+  /*S*/  {000000,000000,0x000e,0x0011,0x0010,0x000e,0x0001,0x0011,0x000e},
+  /*T*/  {000000,000000,0x0004,0x0004,0x0004,0x0004,0x0004,0x0004,0x001f},
+  /*U*/  {000000,000000,0x000e,0x0011,0x0011,0x0011,0x0011,0x0011,0x0011},
+  /*V*/  {000000,000000,0x0004,0x0004,0x000a,0x000a,0x0011,0x0011,0x0011},
+  /*W*/  {000000,000000,0x0011,0x001b,0x0015,0x0011,0x0011,0x0011,0x0011},
+  /*X*/  {000000,000000,0x0011,0x0011,0x000a,0x0004,0x000a,0x0011,0x0011},
+  /*Y*/  {000000,000000,0x0004,0x0004,0x0004,0x0004,0x000a,0x0011,0x0011},
+  /*Z*/  {000000,000000,0x001f,0x0001,0x0002,0x0004,0x0008,0x0010,0x001f},
+  /*[*/  {000000,000000,0x000e,0x0002,0x0002,0x0002,0x0002,0x0002,0x000e},
+  /*\ */ {000000,000000,000000,0x0010,0x0008,0x0004,0x0002,0x0001,000000},
+  /*]*/  {000000,000000,0x000e,0x0008,0x0008,0x0008,0x0008,0x0008,0x000e},
+  /*^*/  {000000,000000,000000,000000,000000,000000,0x0011,0x000a,0x0004},
+  /*_*/  {000000,000000,0x001f,000000,000000,000000,000000,000000,000000},
+  /*`*/  {000000,000000,000000,000000,000000,0x0008,0x0004,0x000c,0x000c},
+  /*a*/  {000000,000000,0x001e,0x0011,0x001e,0x0010,0x000e,000000,000000},
+  /*b*/  {000000,000000,0x000d,0x0013,0x0011,0x0013,0x000d,0x0001,0x0001},
+  /*c*/  {000000,000000,0x000e,0x0011,0x0001,0x0011,0x000e,000000,000000},
+  /*d*/  {000000,000000,0x0016,0x0019,0x0011,0x0019,0x0016,0x0010,0x0010},
+  /*e*/  {000000,000000,0x000e,0x0001,0x001f,0x0011,0x000e,000000,000000},
+  /*f*/  {000000,000000,0x0004,0x0004,0x0004,0x000e,0x0004,0x0014,0x0008},
+  /*g*/  {0x000e,0x0011,0x0016,0x0019,0x0011,0x0019,0x0016,000000,000000},
+  /*h*/  {000000,000000,0x0011,0x0011,0x0011,0x0013,0x000d,0x0001,0x0001},
+  /*i*/  {000000,000000,0x000e,0x0004,0x0004,0x0004,0x0006,000000,0x0004},
+  /*j*/  {0x0006,0x0009,0x0008,0x0008,0x0008,0x0008,0x000c,000000,0x0008},
+  /*k*/  {000000,000000,0x0009,0x0005,0x0003,0x0005,0x0009,0x0001,0x0001},
+  /*l*/  {000000,000000,0x000e,0x0004,0x0004,0x0004,0x0004,0x0004,0x0006},
+  /*m*/  {000000,000000,0x0015,0x0015,0x0015,0x0015,0x000b,000000,000000},
+  /*n*/  {000000,000000,0x0011,0x0011,0x0011,0x0013,0x000d,000000,000000},
+  /*o*/  {000000,000000,0x000e,0x0011,0x0011,0x0011,0x000e,000000,000000},
+  /*p*/  {0x0001,0x0001,0x000d,0x0013,0x0011,0x0013,0x000d,000000,000000},
+  /*q*/  {0x0010,0x0010,0x0016,0x0019,0x0011,0x0019,0x0016,000000,000000},
+  /*r*/  {000000,000000,0x0001,0x0001,0x0001,0x0013,0x000d,000000,000000},
+  /*s*/  {000000,000000,0x000f,0x0010,0x000e,0x0001,0x001e,000000,000000},
+  /*t*/  {000000,000000,0x0008,0x0014,0x0004,0x0004,0x001f,0x0004,0x0004},
+  /*u*/  {000000,000000,0x0016,0x0019,0x0011,0x0011,0x0011,000000,000000},
+  /*v*/  {000000,000000,0x0004,0x000a,0x0011,0x0011,0x0011,000000,000000},
+  /*w*/  {000000,000000,0x000a,0x0015,0x0015,0x0011,0x0011,000000,000000},
+  /*x*/  {000000,000000,0x0011,0x000a,0x0004,0x000a,0x0011,000000,000000},
+  /*y*/  {0x000e,0x0010,0x001e,0x0011,0x0011,0x0011,0x0011,000000,000000},
+  /*z*/  {000000,000000,0x001f,0x0002,0x0004,0x0008,0x001f,000000,000000},
+  /*{*/  {000000,000000,0x0008,0x0004,0x0004,0x0002,0x0004,0x0004,0x0008},
+  /*|*/  {000000,000000,0x0004,0x0004,0x0004,000000,0x0004,0x0004,0x0004},
+  /*}*/  {000000,000000,0x0002,0x0004,0x0004,0x0008,0x0004,0x0004,0x0002},
+  /*~*/  {000000,000000,000000,000000,000000,000000,0x0008,0x0015,0x0002},
+  /*DEL*/{000000,000000,0x001f,0x001f,0x001f,0x001f,0x001f,0x001f,0x001f},
+};
+#endif /* TERM_HELP */
+#endif /* local copy of 5x9 font */
+
+
+#ifdef TERM_REGISTER
+register_term(linux)
+#endif
+
+#ifdef TERM_PROTO
+
+#define LINUX_VCHAR FNT5X9_VCHAR
+#define LINUX_HCHAR FNT5X9_HCHAR
+#define LINUX_VTIC 5
+#define LINUX_HTIC 5
+#define LINUX_XMAX 0		/* These two entries are just place holders. */
+#define LINUX_YMAX 0		/* The actual values will be filled in init. */
+
+TERM_PUBLIC void LINUX_options __PROTO((void));
+TERM_PUBLIC void LINUX_init __PROTO((void));
+TERM_PUBLIC void LINUX_reset __PROTO((void));
+TERM_PUBLIC void LINUX_text __PROTO((void));
+TERM_PUBLIC void LINUX_graphics __PROTO((void));
+TERM_PUBLIC void LINUX_linetype __PROTO((int linetype));
+TERM_PUBLIC void LINUX_move __PROTO((unsigned int x, unsigned int y));
+TERM_PUBLIC void LINUX_vector __PROTO((unsigned int x, unsigned int y));
+TERM_PUBLIC int LINUX_text_angle __PROTO((int ang));
+TERM_PUBLIC void LINUX_put_text __PROTO((unsigned int x, unsigned int y, const char *str));
+TERM_PUBLIC void LINUX_suspend __PROTO((void));
+TERM_PUBLIC void LINUX_resume __PROTO((void));
+
+/* also used in vgagl.trm, so export it: */
+TERM_PUBLIC int LINUX_graphics_allowed;
+
+#endif
+
+#ifdef TERM_BODY
+
+#define _STRING_H_
+#include <vga.h>
+
+static int linux_vmode = G1024x768x256;		/* default mode */
+static int vgacolor[] = { 7, 8, 2, 3, 4, 5, 9, 14, 12, 15, 13, 10, 11, 1, 6 };
+static int graphics_on = FALSE;
+static vga_modeinfo *modeinfo;
+static int linux_startx, linux_starty, linux_lasty;
+static int linux_angle;
+TERM_PUBLIC int LINUX_graphics_allowed = FALSE; /* also used in vgagl.trm */
+extern void drop_privilege __PROTO((void));
+extern void take_privilege __PROTO((void));
+
+typedef int (*linux_line_func_ptr) __PROTO((int x1, int y1, int x2, int y2));
+
+static void LINUX_putc __PROTO((unsigned int x, unsigned int y, int c, int ang,
+				linux_line_func_ptr line_func));
+
+/* this function is called at the very beginning of main() to initialize
+ *  the vgalib and to revoke suid privileges.
+ * /dev/console and /dev/tty\d and /dev/vc/\d are considered graphic terminals, all other
+ * don't support the linux terminal */
+
+void
+LINUX_setup()
+{
+    char line[256];
+    FILE *pipe;
+
+    LINUX_graphics_allowed = FALSE;
+
+    if (geteuid() != 0)
+	return;			/* if we aren't root, we cannot init graphics */
+
+    if ((pipe = popen("/usr/bin/tty", "r")) != NULL) {
+	line[0] = 0;
+	fgets(line, 256, pipe);
+	pclose(pipe);
+	line[strlen(line) - 1] = '\0';
+	if (
+	    strcmp(line, "/dev/console") == 0 ||
+
+	    ( ( strncmp(line, "/dev/tty", 8) == 0 || strncmp(line, "/dev/vc/", 8) == 0 )
+	     && isdigit((unsigned char) line[8]))
+
+	     ) {
+	    LINUX_graphics_allowed = TRUE;
+	} else {
+	    /* check for socket name as set for example by `screen' */
+	    char* sty = getenv("STY");
+	    if (sty) {
+		int n1, n2;
+		if (3 == sscanf(sty, "%d.tty%d.%s", &n1, &n2, line)) {
+		    /* we could check here, if host is the
+		     * same as gethostname() returns. */
+		    LINUX_graphics_allowed = TRUE;
+		}
+	    }
+	}
+    }
+    if (LINUX_graphics_allowed) {
+	take_privilege();
+	vga_init();
+	drop_privilege();
+    } else {
+	/* err - shouldn't we give up root uid whatever happens ?
+	 * or perhaps vga_init() does it ?
+	 */
+	setuid(getuid());
+    }
+}
+
+TERM_PUBLIC
+void LINUX_options()
+{
+    if (!LINUX_graphics_allowed) {
+	int_error(NO_CARET, "Linux terminal driver not available");
+    }
+    fprintf(stderr, "%s\n", vga_getmodename(linux_vmode));
+}
+
+TERM_PUBLIC
+void LINUX_init()
+{
+    /* vga_init () has been moved to immediately after main () for security */
+    if (vga_getdefaultmode() != -1)
+	linux_vmode = vga_getdefaultmode();
+    /* get the default mode from GSVGAMODE, if available */
+    if (!vga_hasmode(linux_vmode))
+	linux_vmode = G640x480x16;
+    /* test default mode first */
+    if (!vga_hasmode(linux_vmode)) {
+	fputs("Error, unable to initiate graphics.\n", stderr);
+	return;
+    }				/* this mode is the bottom line */
+    modeinfo = vga_getmodeinfo(linux_vmode);
+    term->xmax = modeinfo->width;
+    term->ymax = modeinfo->height;
+    linux_lasty = modeinfo->height - 1;
+}
+
+TERM_PUBLIC void
+LINUX_reset()
+{
+    if (graphics_on) {
+	vga_setmode(TEXT);
+	graphics_on = FALSE;
+    }
+}
+
+TERM_PUBLIC void
+LINUX_text()
+{
+    if (graphics_on) {
+	vga_getch();
+	vga_setmode(TEXT);
+	graphics_on = FALSE;
+    }
+}
+
+TERM_PUBLIC void
+LINUX_graphics()
+{
+    if (!graphics_on) {
+	vga_setmode(linux_vmode);
+	graphics_on = TRUE;
+    }
+}
+
+TERM_PUBLIC void
+LINUX_suspend()
+{
+    vga_flip();
+}
+
+TERM_PUBLIC void
+LINUX_resume()
+{
+    vga_flip();
+}
+
+TERM_PUBLIC void
+LINUX_linetype(int linetype)
+{
+    if (linetype < -2)
+	linetype = LT_BLACK;
+    if (linetype >= 13)
+	linetype %= 13;
+    vga_setegacolor(vgacolor[linetype + 2]);
+}
+
+TERM_PUBLIC void
+LINUX_move(unsigned int x, unsigned int y)
+{
+    linux_startx = x;
+    linux_starty = y;
+}
+
+TERM_PUBLIC void
+LINUX_vector(unsigned int x, unsigned int y)
+{
+    vga_drawline(linux_startx, linux_lasty - linux_starty, x, linux_lasty - y);
+    linux_startx = x;
+    linux_starty = y;
+}
+
+TERM_PUBLIC int
+LINUX_text_angle(int ang)
+{
+    linux_angle = (ang ? 1 : 0);
+    return TRUE;
+}
+
+static void
+LINUX_putc(
+    unsigned int x, unsigned int y,
+    int c,
+    int ang,
+    linux_line_func_ptr line_func)
+{
+    int i, j, k;
+    unsigned int pixelon;
+
+    i = (int) (c) - 32;
+    for (j = 0; j < FNT5X9_VBITS; j++) {
+	for (k = 0; k < FNT5X9_HBITS; k++) {
+	    pixelon = (((unsigned int) (fnt5x9[i][j])) >> k & 1);
+	    if (pixelon) {
+		switch (ang) {
+		case 0:
+		    (*line_func) (x + k + 1, y - j, x + k + 1, y - j);
+		    break;
+		case 1:
+		    (*line_func) (x - j, y - k - 1, x - j, y - k - 1);
+		    break;
+		}
+	    }
+	}
+    }
+}
+
+TERM_PUBLIC void
+LINUX_put_text(unsigned int x, unsigned int y, const char *str)
+{
+    int i;
+    switch (linux_angle) {
+    case 0:
+	y -= LINUX_VCHAR / 2;
+	break;
+    case 1:
+	x += LINUX_VCHAR / 2;
+	break;
+    }
+    for (i = 0; str[i]; i++) {
+	LINUX_putc(x, linux_lasty - y, str[i], linux_angle, vga_drawline);
+	switch (linux_angle) {
+	case 0:
+	    x += LINUX_HCHAR;
+	    break;
+	case 1:
+	    y += LINUX_HCHAR;
+	    break;
+	}
+    }
+}
+
+#endif
+
+#ifdef TERM_TABLE
+TERM_TABLE_START(linux_driver)
+    "linux", "Linux PC with (s)vgalib",
+    LINUX_XMAX, LINUX_YMAX, LINUX_VCHAR, LINUX_HCHAR,
+    LINUX_VTIC, LINUX_HTIC, LINUX_options, LINUX_init, LINUX_reset,
+    LINUX_text, null_scale, LINUX_graphics, LINUX_move, LINUX_vector,
+    LINUX_linetype, LINUX_put_text, LINUX_text_angle,
+    null_justify_text, do_point, do_arrow, set_font_null,
+    0,				/* pointsize */
+    TERM_CAN_MULTIPLOT, LINUX_suspend, LINUX_resume
+TERM_TABLE_END(linux_driver)
+#undef LAST_TERM
+#define LAST_TERM linux_driver
+#endif
+
+#ifdef TERM_HELP
+START_HELP(linux)
+"1 linux",
+"?commands set terminal linux",
+"?set terminal linux",
+"?set term linux",
+"?terminal linux",
+"?term linux",
+"?linux",
+" The `linux` driver has no additional options to specify.  It looks at the",
+" environment variable GSVGAMODE for the default mode; if not set, it uses",
+" 1024x768x256 as default mode or, if that is not possible, 640x480x16",
+" (standard VGA)."
+END_HELP(linux)
+#endif

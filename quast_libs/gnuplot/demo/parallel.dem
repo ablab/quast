@@ -1,0 +1,49 @@
+#
+# Parallel axis plot
+# shows plot layout but would better use some real data set
+#
+set title "Parallel Axis Plot" font ",15"
+
+set border 0
+unset key
+set xrange [] noextend
+unset ytics
+
+# Use x-axis tic positions to label the axes
+set xtics 1 format "axis %g" scale 0,0
+
+# Turn on axis tics for the parallel axes
+set for [i=1:5] paxis i tics
+
+# Use the range commands to create an "interesting" plot.
+# For suitable input data this is the sort of result you
+# might get without axis range manipulation.
+
+set paxis 2 range  [0:30]
+set paxis 4 range  [-10:50]
+set paxis 5 range  [50:*] reverse
+set paxis 5 tics left offset 4
+
+plot 'silver.dat' using 2:3:1:($3/2):2:(int($0/25)) with parallel lt 1 lc variable
+
+pause -1 "Hit return to continue"
+
+reset
+
+set title "Parallel Axis Plot" font ",15"
+
+set border 0
+unset ytics
+set xtics ("X" 1, "Y" 2, "Z" 3, "B" 4) nomirror 
+set xrange [] noextend
+unset key
+
+set paxis 1 tics format '%.0f Å' offset -1
+set paxis 4 tics left offset 4 format '%.0f Å^2'
+set paxis 4 range [0:40]
+
+plot 'GM1_sugar.pdb' using 6:7:8:10:5 with parallel lc var lw 2
+
+pause -1 "Hit return to continue"
+
+reset

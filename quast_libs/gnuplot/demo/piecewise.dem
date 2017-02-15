@@ -1,0 +1,73 @@
+#
+# Demo of plotting piecewise functions
+#
+unset border
+set key center top reverse Left
+set xzeroaxis
+set yzeroaxis
+set xtics axis out scale 1,8
+set xtics add  (1.00000 1, 6.28319 1)
+set ytics axis
+set title "Piecewise function sampling" font ",15"
+set xrange [ -2 : 10 ] noreverse nowriteback
+
+plot sample [*:1] x, [1:2.*pi] cos(x), [2.*pi:10] (x-8)**2
+
+pause -1 "Hit <cr> to continue"
+reset
+#
+# This example taken from 
+# http://amca01.wordpress.com/2012/05/29/a-piecewise-polynomial-approximation-to-the-normal-cdf/
+# Original approximation from John Hoyt (1962), The American Statistician 22:25-26.
+#
+set termopt enhanced
+set termopt dash
+save_encoding = GPVAL_ENCODING; set encoding utf8
+
+set title "Piecewise approximation to the\nNormal Cumulative Distribution Function"
+
+set format "%.1f"
+set key left Left reverse invert
+set style data lines
+set xtics nomirror
+set xrange [ 0   : 4 ]
+set yrange [ 0.5 : 1.1 ]
+set style line 1 lt 0 lw 3
+set style line 2 lt 0 lw 3 lc rgb "red"
+
+part1(x) = 0.5 + (9.*x-x**3)/ 24.
+part2(x) = 1.0 + (x-3.0)**3 / 48.
+
+part1 = "part1: for x < 1  norm(x) ≈  ½ + (9x-x^3) / 24"
+part2 = "part2: for x > 1  norm(x) ≈   1 +  (x-3)^3 / 48"
+
+set label 1 at 1.0, 0.62
+set label 1 "plot norm(x),  [0:1] part1(x),  [1:4] part2(x)"
+set arrow 1 from 1.,.7 to 1.,.9 nohead
+
+plot norm(x) lt -1, \
+     [1:4] part2(x) ls 2 title part2, \
+     [0:1] part1(x) ls 1 title part1
+
+pause -1 "Hit <cr> to continue"
+
+set termopt solid
+reset
+
+set border 16
+unset xtics
+unset ytics
+set style data lines
+set key center at screen 0.5, screen 0.15
+set title font ",15"
+set title "Piecewise function of one parameter in 3D"
+
+splot [-2:2][-2:2] sample \
+   [h=1:5]   '+' using (cos(h)):(sin(h)):(h), \
+   [h=5:10]  '+' using (cos(h)):(sin(h)):(h), \
+   [h=10:15] '+' using (cos(h)):(sin(h)):(h)
+
+pause -1 "Hit <cr> to continue"
+
+set encoding save_encoding
+reset

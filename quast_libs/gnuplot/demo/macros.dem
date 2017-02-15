@@ -1,0 +1,34 @@
+#
+# Exercise use of macro substitution
+#
+set macros
+
+title = "Test of command line macro substitution"
+style1 = "points"
+style2 = "lines lw 2"
+plot1 = "'1.dat' using 1:2 with @style1"
+plot2 = "'1.dat' using 1:($2+1) with @style2"
+plot3 = '@plot2'
+plot4 = '@plot3'
+plot5 = '@plot4'
+plot6 = '@plot5'
+#
+set title title
+plot @plot1 title 'plot1', \
+     @plot2 title 'plot2'
+show var
+#
+pause -1 "<cr> to test limit on recursion depth"
+#
+print "testing depth 3"
+plot @plot1 title 'plot1', @plot3 lt 3 title 'Recursion depth 3'
+pause 1
+print "testing depth 4"
+plot @plot1 title 'plot1', @plot4 lt 4 title 'Recursion depth 4'
+pause 1
+print "testing depth 5"
+plot @plot1 title 'plot1', @plot5 lt 5 title 'Recursion depth 5'
+pause 1
+#
+pause -1
+

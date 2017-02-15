@@ -1,0 +1,66 @@
+#
+# $Id: epslatex.dem,v 1.3 2012/06/23 07:48:00 markisch Exp $
+#
+# This file demonstrates new features in gnuplot 4.1
+print "\n This file demonstrates how to use the epslatex terminal."
+print " It will generate two files: epslatex-inc.eps and epslatex.tex."
+print " \nIf the file gnuplot.cfg is found by LaTeX it will be loaded"
+print " and can be used for further settings, e.g., here it provides"
+print " the package exscale.sty which enlargens the integral sign.\n"
+pause -1 "Hit return to continue"
+#
+xmin=-270.
+xmax=270.
+ymin=-1.1
+ymax=1.2
+#
+reset
+set terminal push
+set terminal epslatex standalone linewidth 2 rounded \
+  dashlen 4 color '' 12
+set output 'epslatex.tex'
+unset autoscale
+set xr [xmin:xmax]
+set yr [ymin:ymax]
+#
+save_encoding = GPVAL_ENCODING
+set encoding iso_8859_1
+set format x '$%g$'
+set format y '$%.1f$'
+set xtics 90
+set xlabel '$x$ / °'
+set ylabel '$y$'
+set arrow from -120,0.8 to -60,0.8 lt 1 lw 2 nohead
+set arrow from -120,0.7 to -60,0.7 lt 2 lw 2 nohead
+set arrow from -120,0.6 to -60,0.6 lt 3 lw 2 nohead
+set arrow from -120,0.5 to -60,0.5 lt 4 lw 2 nohead
+set arrow from -120,0.4 to -60,0.4 lt 5 lw 2 nohead
+set arrow from -120,0.3 to -60,0.3 lt 6 lw 2 nohead
+set arrow from -120,0.2 to -60,0.2 lt 7 lw 2 nohead
+set arrow from -120,0.1 to -60,0.1 lt 8 lw 2 nohead
+set label '$\displaystyle\tan\alpha = \frac{\sin\alpha}{\cos\alpha}$' \
+  at 90,0 centre textcolor lt 3
+set label '$\displaystyle\int x\mathrm{d}x = \frac12 x^2 + C_1$' \
+  at 90,-0.5 centre textcolor lt 4
+plot sin(pi/180.*x) title '$y = \sin x$' w l lt 1 lw 4
+set output
+#
+set terminal epslatex standalone oldstyle linewidth 2 rounded \
+  dashlen 1 color '' 12
+set output 'epslatex-oldstyle.tex'
+set tics scale 2
+replot
+set output
+#
+print "\n Now, either run"
+print "   latex epslatex"
+print "   dvips epslatex"
+print " and have a look at epslatex.ps; or run"
+print "   epstopdf epslatex-inc.eps"
+print "   pdflatex epslatex"
+print " and have a look at epslatex.pdf."
+print " Do the same with epslatex-oldstyle.tex."
+#
+set terminal pop
+set encoding save_encoding
+reset

@@ -1,0 +1,41 @@
+%
+% encoding for code page 852 (MSDOS Central European)
+/reencodeCP852 {
+dup dup findfont dup length dict begin
+{ 1 index /FID ne { def }{ pop pop } ifelse } forall
+currentdict /CharStrings known {
+	CharStrings /Idieresis known {
+		/Encoding CP852Encoding def } if
+} if
+currentdict end definefont
+} def
+/CP852Encoding [
+/.notdef/.notdef/.notdef/.notdef/.notdef/.notdef/.notdef/.notdef
+/.notdef/.notdef/.notdef/.notdef/.notdef/.notdef/.notdef/.notdef
+/.notdef/.notdef/.notdef/.notdef/paragraph/.notdef/.notdef/.notdef
+/.notdef/.notdef/.notdef/.notdef/.notdef/.notdef/.notdef/.notdef
+/space/exclam/quotedbl/numbersign/dollar/percent/ampersand/quotesingle
+/parenleft/parenright/asterisk/plus/comma/hyphen/period/slash
+/zero/one/two/three/four/five/six/seven/eight/nine
+/colon/semicolon/less/equal/greater/question
+/at/A/B/C/D/E/F/G/H/I/J/K/L/M/N/O/P/Q/R/S/T/U/V/W/X/Y/Z
+/bracketleft/backslash/bracketright/asciicircum/underscore
+/grave/a/b/c/d/e/f/g/h/i/j/k/l/m/n/o/p/q/r/s/t/u/v/w
+/x/y/z/braceleft/bar/braceright/asciitilde/.notdef
+/Ccedilla/udieresis/eacute/acircumflex/adieresis/uring/cacute/ccedilla
+/lslash/edieresis/Ohungarumlaut/ohungarumlaut/icircumflex/Zacute/Adieresis
+/Cacute/Eacute/Lacute/lacute/ocircumflex/odieresis/Lcaron/lcaron/Sacute
+/sacute/Odieresis/Udieresis/Tcaron/tcaron/Lslash/multiply/ccaron
+/aacute/iacute/oacute/uacute/Aogonek/aogonek/Zcaron/zcaron
+/Eogonek/eogonek/.notdef/zacute/Ccaron/scedilla/guillemotleft/guillemotright
+/.notdef/.notdef/.notdef/.notdef/.notdef/Aacute/Acircumflex/Ecaron
+/Scedilla/.notdef/.notdef/.notdef/.notdef/Zdotaccent/zdotaccent/.notdef
+/.notdef/.notdef/.notdef/.notdef/.notdef/.notdef/Abreve/abreve
+/.notdef/.notdef/.notdef/.notdef/.notdef/.notdef/.notdef/currency
+/eth/Eth/Dcaron/Edieresis/dcaron/Ncaron/Iacute/Icircumflex
+/ecaron/.notdef/.notdef/.notdef/.notdef/Tcedilla/Uring/.notdef
+/Oacute/germandbls/Ocircumflex/Nacute/nacute/ncaron/Scaron/scaron
+/Racute/Uacute/racute/Uhungarumlaut/yacute/Yacute/tcedilla/acute
+/hyphen/hungarumlaut/ogonek/caron/breve/section/divide/cedilla
+/degree/dieresis/dotaccent/uhungarumlaut/Rcaron/rcaron/.notdef/.notdef
+] def

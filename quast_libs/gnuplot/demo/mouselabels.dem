@@ -1,0 +1,40 @@
+#
+# $Id: mouselabels.dem,v 1.2 2006/07/10 21:06:11 sfeam Exp $
+#
+# Demonstrate screen interaction using mouse variables
+#
+#     MOUSE_X MOUSE_Y MOUSE_KEY MOUSE_CHAR
+#
+
+set termoption enhanced
+
+set title "Demo interactive placement of labels using mouse feedback"
+set label 1 at graph 0.02, graph 0.9
+set label 1 "Position mouse at desired start of label and start typing\nEnhanced text syntax may be used\nArrow keys will reposition label as you go\n   <del> or <bs> allows editing\n   <tab> to terminate this label\n   <esc> to terminate demo"
+
+set border 0
+unset xtics
+unset ytics
+set key box
+
+plot sin(13*besj0(x))/x
+
+#
+# Initialize label identifier
+#
+LID = 100
+
+#
+# Loop over interactive placement of new labels
+#
+load "mouselab_1.dem"
+show label
+
+#
+# All done with demo
+#
+unset label 1
+set label 2 "DONE"
+replot
+pause -1 "Hit <cr> to continue"
+reset

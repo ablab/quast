@@ -1,0 +1,1021 @@
+/* -*- objc -*-
+ * $Id: aquaterm.trm,v 1.51.2.5 2016/07/20 01:16:08 sfeam Exp $
+ *
+ */
+
+/* GNUPLOT - aquaTerm.trm */
+
+
+/*
+ * This file is included by ../term.c via ../term.h.
+ *
+ * This terminal driver supports:
+ *     Aqua (Mac OS X/Cocoa)
+ *
+ * AUTHORS
+ *  Per Persson from openstep.trm by Robert Lutwak
+ *
+ * Homepage: http://aquaterm.sourceforge.net
+ * send your comments or suggestions to (persquare@users.sourceforge.net).
+ *
+ * This terminal attempts to connect, via the Mac OS X Distributed
+ * Objects system, to the "aquatermServer."  If there is no such
+ * service registered with the OS, the terminal attempts to fire
+ * up AquaTerm.app.  If the user has not set the environment variable
+ * AQUATERM_PATH, the terminal searches for AquaTerm.app in standard
+ * locations like /Applications, ~/Applications, etc.
+ * In order to use this filter, you MUST have AquaTerm.app installed
+ * on your system.
+ *
+ * Once connected to the server, all gnuplot graphs are sent,
+ * via the D.O. system, to AquaTerm.app, which produces renders graphs,
+ * manages the windows, takes care of printing etc.
+ *
+ */
+
+#include "driver.h"
+
+#ifdef TERM_REGISTER
+register_term(aqua)
+#endif
+
+#ifdef TERM_PROTO
+/* Required entries */
+TERM_PUBLIC void AQUA_options __PROTO((void));
+TERM_PUBLIC void AQUA_init __PROTO((void));
+TERM_PUBLIC void AQUA_reset __PROTO((void));
+TERM_PUBLIC void AQUA_text __PROTO((void));
+TERM_PUBLIC void AQUA_graphics __PROTO((void));
+TERM_PUBLIC void AQUA_move __PROTO((unsigned int x, unsigned int y));
+TERM_PUBLIC void AQUA_vector __PROTO((unsigned int x, unsigned int y));
+TERM_PUBLIC void AQUA_linetype __PROTO((int linetype));
+TERM_PUBLIC void AQUA_dashtype(int type, t_dashtype *custom_dash_type);
+TERM_PUBLIC void AQUA_put_text __PROTO((unsigned int x, unsigned int y,const char *str));
+/* Optional entries */
+TERM_PUBLIC int AQUA_text_angle __PROTO((int));
+TERM_PUBLIC int AQUA_justify_text __PROTO((enum JUSTIFY));
+TERM_PUBLIC int AQUA_set_font __PROTO((const char *font));  /* "font,size" */
+TERM_PUBLIC void AQUA_set_pointsize __PROTO((double size)); /* notification of set pointsize */
+TERM_PUBLIC void AQUA_point __PROTO((unsigned int, unsigned int, int));
+TERM_PUBLIC int flags; /* various flags */
+TERM_PUBLIC void AQUA_suspend __PROTO((void)); /* after one plot of multiplot */
+TERM_PUBLIC void AQUA_resume __PROTO((void));  /* before subsequent plot of multiplot */
+TERM_PUBLIC void AQUA_boxfill __PROTO((int style, unsigned int x1, unsigned int y1, unsigned int width, unsigned int height)); /* clear part of multiplot */
+TERM_PUBLIC void AQUA_linewidth __PROTO((double linewidth));
+TERM_PUBLIC void AQUA_pointsize __PROTO((double pointsize));
+TERM_PUBLIC int AQUA_make_palette __PROTO((t_sm_palette *palette));
+TERM_PUBLIC void AQUA_previous_palette __PROTO((void));
+TERM_PUBLIC void AQUA_set_color __PROTO((t_colorspec *));
+TERM_PUBLIC void AQUA_filled_polygon __PROTO((int points, gpiPoint *corners));
+TERM_PUBLIC void AQUA_image __PROTO((unsigned, unsigned, coordval *, gpiPoint *, t_imagecolor));
+TERM_PUBLIC void ENHAQUA_put_text __PROTO((unsigned int x, unsigned int y, const char str[]));
+TERM_PUBLIC void ENHAQUA_open __PROTO((char * fontname, double fontsize,
+				       double base, TBOOLEAN widthflag, TBOOLEAN showflag,
+				       int overprint));
+TERM_PUBLIC void ENHAQUA_flush __PROTO((void));
+TERM_PUBLIC void ENHAQUA_writec __PROTO((int c));
+/* End of entries */
+
+#define AQUA_RESOLUTION (20.0)                    /* Increase resolution */
+#define AQUA_XMAX (11.75 * 72 * AQUA_RESOLUTION)  /* = paper width (in) times screen resolution */
+#define AQUA_YMAX (8.25 * 72 * AQUA_RESOLUTION)	  /* = paper height (in) times screen resolution */
+#define AQUA_VTIC (8.0*AQUA_RESOLUTION)
+#define AQUA_HTIC (8.0*AQUA_RESOLUTION)
+#define AQUA_VCHAR (16.0*AQUA_RESOLUTION)         /* default font is Times at 14 points */
+#define AQUA_HCHAR (AQUA_VCHAR*6.0/10.0)
+#define AQUA_DASH_PATTERNS 8
+#define AQUA_DEFAULT_DASHLENGTH_FACTOR 0.5
+
+#define SPECIAL_COLORS 4
+#define CYCLIC_COLORS 9
+
+#define GOT_AQUA_PROTO
+#endif /* TERM_PROTO */
+
+#ifndef TERM_PROTO_ONLY
+
+#ifdef TERM_BODY
+#import <AquaTerm/AQTAdapter.h>
+
+#import <Foundation/NSAutoreleasePool.h>
+#import <Foundation/NSArray.h>
+#import <Foundation/NSDictionary.h>
+#import <Foundation/NSAttributedString.h>
+#import <stdarg.h>
+
+/* Debugging extras */
+static inline void NOOP_(id x, ...) {;}
+
+#ifdef LOGGING
+#define LOG  NSLog
+#else
+#define LOG  NOOP_
+#endif	/* LOGGING */
+
+/* AquaTerm specific */
+static NSAutoreleasePool *arpool;
+static NSAutoreleasePool *loopPool;
+static AQTAdapter *adapter;
+
+/* Supported features */
+static TBOOLEAN AQUA_hasAlphaSupport = FALSE;
+
+/* Internal state */
+static int AQUA_plotRef = 0; /* A ref to the current plot */
+static char AQUA_title[MAX_LINE_LEN + 1] = "Figure 0"; /* Plot title (in windowbar) */
+
+static unsigned int AQUA_xSize = AQUA_XMAX; /* plot horizontal size */
+static unsigned int AQUA_ySize = AQUA_YMAX; /* plot vertical size*/
+
+static int AQUA_LineType = LT_UNDEFINED; /* current line type*/
+static float AQUA_LineWidth = 1.0; /* current line width*/
+static float AQUA_TextAngle = 0.0; /* current text orientation*/
+static enum JUSTIFY AQUA_TextJust = LEFT; /* current text justification*/
+
+/* default text font family: */
+static char AQUA_fontNameDef[MAX_ID_LEN + 1] = "Times-Roman";
+static double AQUA_fontSizeDef = 14; /* default text size*/
+/* current text font family: */
+static char AQUA_fontNameCur[MAX_ID_LEN + 1] = "Times-Roman";
+static double AQUA_fontSizeCur = 14; /* current text size*/
+
+/* dash patterns */
+static TBOOLEAN AQUA_dashedlines = FALSE;
+static float AQUA_dashlength_factor = AQUA_DEFAULT_DASHLENGTH_FACTOR;
+static int AQUA_dashPatternLengths[AQUA_DASH_PATTERNS] = {0, 2, 2, 2, 4, 4, 4, 6};
+static int AQUA_dashPatterns[AQUA_DASH_PATTERNS][6] = {
+        {0, 0, 0, 0, 0, 0},
+        {8, 8, 0, 0, 0, 0},
+        {4, 6, 0, 0, 0, 0},
+        {2, 3, 0, 0, 0, 0},
+        {12, 4, 2, 4, 0, 0},
+        {6, 6, 2, 6, 0, 0},
+        {4, 4, 4, 12, 0, 0},
+        {1, 4, 12, 4, 1, 4}
+    };
+
+/* Helper functions */
+static NSString* AQUA_convert_using_encoding __PROTO((const char *string));
+
+/*
+ * ----------------------------------------------------------------
+ * Aquaterm driver implementation
+ * ----------------------------------------------------------------
+ *
+ *   Current options are:
+ *   <n> title "theTitle" size <x> <y> fname "fontface" fsize <fontsize>
+ */
+TERM_PUBLIC void
+AQUA_options()
+{
+  char *s;
+  TBOOLEAN set_number = FALSE;
+  
+  AQUA_title[0] = '\0'; /* Force re-interpretation of title string */
+
+  /* Default to enhanced text mode */
+    if (!almost_equals(c_token-1, "termopt$ion")) {
+	term->put_text = ENHAQUA_put_text;
+	term->flags |= TERM_ENHANCED_TEXT;
+    }
+
+  while (!END_OF_COMMAND) {
+  
+    if (almost_equals(c_token, "ti$tle"))  {
+	c_token++;
+
+	if (!(s = try_to_get_string()))
+	    int_error(c_token,"fname: expecting plot title");
+	strncpy(AQUA_title,s,sizeof(AQUA_title));
+	free(s);
+	continue;
+    }
+
+    if (almost_equals(c_token, "s$ize")) {
+	double value;
+
+	c_token++;
+
+	if (END_OF_COMMAND)
+	    int_error(c_token,"expecting x size");
+	value = real_expression();
+	if (value < 2 || value > 2048)
+	    int_error(c_token,"x size out of range");
+	AQUA_xSize = (unsigned int) value * AQUA_RESOLUTION;
+
+	if (END_OF_COMMAND)
+	    int_error(c_token,"expecting y size");
+	if (equals(c_token, ","))
+	    c_token++;
+	value = real_expression();
+	if (value < 2 || value > 2048)
+	    int_error(c_token,"y size out of range");
+	AQUA_ySize = (unsigned int) value * AQUA_RESOLUTION;
+	continue;
+    }
+
+    if (almost_equals(c_token, "fn$ame") || almost_equals(c_token, "font"))  {
+        char *comma;
+        c_token++;
+    
+	if (!(s = try_to_get_string()))
+	    int_error(c_token,"expecting font specifier");
+        comma = strrchr(s, ',');
+	if (comma && (1 == sscanf(comma+1, "%lf", &AQUA_fontSizeCur)))
+	    *comma = '\0';
+	if (*s)
+	    strncpy(AQUA_fontNameCur, s, sizeof(AQUA_fontNameCur));
+	free(s);
+	continue;
+    }
+
+    if (almost_equals(c_token, "fs$ize")) {
+	c_token++;
+
+	if (END_OF_COMMAND)
+	    int_error(c_token,"expecting font size");
+	AQUA_fontSizeCur = real_expression();
+	continue;
+    }
+
+	if (equals(c_token, "solid")) {
+	    c_token++;
+	    AQUA_dashedlines = FALSE;
+	    continue;
+	}
+	
+	if (almost_equals(c_token, "dash$ed")) {
+	    c_token++;
+	    AQUA_dashedlines = TRUE;
+	    continue;
+	}
+
+	if (equals(c_token, "dl") || almost_equals(c_token, "dashl$ength")) {
+	    c_token++;
+	    if (END_OF_COMMAND)
+		int_error(c_token, "expecting dashlength multiplier");
+	    AQUA_dashlength_factor = real_expression();
+	    if (AQUA_dashlength_factor < 0.0)
+		AQUA_dashlength_factor = AQUA_DEFAULT_DASHLENGTH_FACTOR;
+	    continue;
+	}
+
+    if (almost_equals(c_token, "enh$anced")) {
+      term->put_text = ENHAQUA_put_text;
+      c_token++;
+      term->flags |= TERM_ENHANCED_TEXT;
+      continue;
+    }
+
+    if (almost_equals(c_token, "noenh$anced")) {
+      term->put_text = AQUA_put_text;
+      c_token++;
+      term->flags &= ~TERM_ENHANCED_TEXT;
+      continue;
+    }
+
+    if (!set_number) { /* plot ref number*/
+	AQUA_plotRef = int_expression();
+	set_number = TRUE;
+	continue;
+    }
+
+    int_error(c_token, "unexpected text at end of command");
+  }
+
+  if (AQUA_title[0]=='\0') /* always set title */
+    sprintf(AQUA_title, "Figure %d", AQUA_plotRef);
+  /* Save options back into options string in normalized format */
+  sprintf(term_options, "%d title \"%s\" size %d,%d font \"%s,%g\" %s %s",
+	  AQUA_plotRef,
+	  AQUA_title,
+	  (unsigned int) (AQUA_xSize/AQUA_RESOLUTION), (unsigned int) (AQUA_ySize/AQUA_RESOLUTION),
+	  AQUA_fontNameCur, AQUA_fontSizeCur,
+	  term->put_text == ENHAQUA_put_text?"enhanced":"noenhanced", 
+	  AQUA_dashedlines?"dashed":"solid");
+  if (AQUA_dashedlines)
+    sprintf(&(term_options[strlen(term_options)]), " dl %3.1f", AQUA_dashlength_factor);
+}
+
+static NSString* 
+AQUA_convert_using_encoding(const char *string)
+{
+  static bool didCheckEncodingSupport = false;
+  static bool hasStringEncodingSupport = false;
+  NSStringEncoding currentEncoding;
+  NSString *translatedString;
+
+  /* Check encoding support in system on first call */
+  if(!didCheckEncodingSupport) {
+    didCheckEncodingSupport = true;
+    hasStringEncodingSupport = [NSString respondsToSelector:@selector(stringWithCString:encoding:)];
+  }
+  /* Set encoding as requested by user via "set encoding" */
+  switch(encoding){
+  case S_ENC_ISO8859_1:
+    currentEncoding = NSISOLatin1StringEncoding;
+    break;
+  case S_ENC_ISO8859_2:
+    currentEncoding = NSISOLatin2StringEncoding;
+    break;
+  case S_ENC_ISO8859_9:
+    currentEncoding = NSWindowsCP1254StringEncoding;
+    break;
+  case S_ENC_CP1250:
+    currentEncoding = NSWindowsCP1250StringEncoding;
+    break;
+  case S_ENC_CP1252:
+    currentEncoding = NSWindowsCP1252StringEncoding;
+    break;
+    /* FIXME: Add more encodings... */
+  case S_ENC_DEFAULT:  /* Fallthrough */
+  default :
+    /* UTF8 is 'default' */
+    currentEncoding = NSUTF8StringEncoding;
+    break;
+  }
+  /* Perform translation (into UTF8 encoding used by Mac OS X) */
+  if (hasStringEncodingSupport) {
+    translatedString = [NSString stringWithCString:string encoding:currentEncoding];
+  } else {
+    translatedString = [NSString stringWithCString:string];
+  }
+  /* Check for nil result before returning */
+  return translatedString?translatedString:@"";
+}
+
+TERM_PUBLIC void
+AQUA_init()
+{
+  float fontSize, fontWHRatio;
+  NSString *title;
+
+  LOG(@"Aqua Init (open plot)");
+  if (arpool == NULL) {
+    /* FIXME: This should be removed when pools are handled in gnuplot proper */
+    arpool = [[NSAutoreleasePool alloc] init];
+  }
+  if (adapter == NULL) {
+    adapter = [[AQTAdapter alloc] init];
+    if (!adapter) { /* server could be invalid (=nil) for several reasons */
+      /* FIXME: Issue warning here? */
+    }
+  }
+
+  /* Must open plot before all other commands */
+  [adapter openPlotWithIndex:AQUA_plotRef];
+
+  /* Check for support of version-dependent features */
+   AQUA_hasAlphaSupport = [AQTAdapter instancesRespondToSelector:@selector(setColorRed:green:blue:alpha:)];
+
+  /* set xmax, ymax*/
+  term->xmax = AQUA_xSize;
+  term->ymax = AQUA_ySize;
+  /* set current font*/
+  [adapter setFontname:AQUA_convert_using_encoding(AQUA_fontNameCur)];
+  [adapter setFontsize:AQUA_fontSizeCur];
+  /* set h_char, v_char*/
+  term->h_char = (int) (AQUA_fontSizeCur * 0.6 * AQUA_RESOLUTION);
+  term->v_char = (int) (AQUA_fontSizeCur * 1.5 * AQUA_RESOLUTION);
+  /* set h_tic, v_tic*/
+  term->h_tic = term->v_char / 3;
+  term->v_tic = term->v_char / 3;
+
+  [adapter setPlotSize:NSMakeSize(AQUA_xSize/AQUA_RESOLUTION, AQUA_ySize/AQUA_RESOLUTION)];
+  [adapter setPlotTitle:AQUA_convert_using_encoding(AQUA_title)];
+
+  /*
+   * Set up the basic indexed colormap for gnuplot
+   */
+  /*  Special colors */
+  [adapter setColormapEntry:0 red:1.0 green:1.0 blue:1.0]; /* linetype -4 */
+  [adapter setColormapEntry:1 red:0.9 green:0.9 blue:0.9]; /* linetype -3 (xor;interactive) light gray */
+  [adapter setColormapEntry:2 red:0.0 green:0.0 blue:0.0]; /* linetype -2 (border) black */
+  [adapter setColormapEntry:3 red:0.8 green:0.8 blue:0.8]; /* linetype -1 (gridlines) light grey */
+  /*  Cyclic colors */
+  [adapter setColormapEntry:4 red:1.0 green:0.0 blue:0.0]; /* red */
+  [adapter setColormapEntry:5 red:0.0 green:1.0 blue:0.0]; /* green */
+  [adapter setColormapEntry:6 red:0.0 green:0.0 blue:1.0]; /* blue */
+  [adapter setColormapEntry:7 red:1.0 green:0.0 blue:1.0]; /* magenta */
+  [adapter setColormapEntry:8 red:0.0 green:1.0 blue:1.0]; /* cyan */
+  [adapter setColormapEntry:9 red:0.6275 green:0.3216 blue:0.1765]; /* sienna */
+  [adapter setColormapEntry:10 red:1.0 green:0.6471 blue:0.0]; /* orange */
+  [adapter setColormapEntry:11 red:0.5 green:0.4980 blue:0.3137]; /* coral */
+  [adapter setColormapEntry:12 red:0.25 green:0.25 blue:0.25]; /* grey */
+
+}
+
+TERM_PUBLIC void
+AQUA_reset()
+{
+  LOG(@"Aqua reset");
+}
+
+TERM_PUBLIC void
+AQUA_text()
+{
+  LOG(@"Aqua text (render)");
+  [adapter renderPlot];
+}
+
+TERM_PUBLIC void
+AQUA_graphics()
+{
+#ifdef LOGGING
+  /* Keep the compiler quiet when not debugging */
+  LOG(@"Pre:  (arpool + loopPool, loopPool) =(%d, %d)", [NSAutoreleasePool autoreleasedObjectCount],
+      [NSAutoreleasePool topAutoreleasePoolCount]);
+#endif
+  /* Avoid buildup of objects in the autoreleasepools */
+  [loopPool release];
+  loopPool = [[NSAutoreleasePool alloc] init];
+#ifdef LOGGING
+  /* Keep the compiler quiet when not debugging */
+  LOG(@"Post: (arpool + loopPool, loopPool) =(%d, %d)",[NSAutoreleasePool autoreleasedObjectCount],
+      [NSAutoreleasePool topAutoreleasePoolCount]);
+#endif
+  [adapter eraseRect:NSMakeRect(0.0, 0.0, AQUA_xSize/AQUA_RESOLUTION, AQUA_ySize/AQUA_RESOLUTION)];
+
+  AQUA_LineType = LT_UNDEFINED;
+}
+
+TERM_PUBLIC void
+AQUA_move(unsigned int x, unsigned int y)
+{
+  [adapter moveToPoint:NSMakePoint(x/AQUA_RESOLUTION, y/AQUA_RESOLUTION)];
+}
+
+TERM_PUBLIC void
+AQUA_vector(unsigned int x, unsigned int y)
+{
+  [adapter addLineToPoint:NSMakePoint(x/AQUA_RESOLUTION, y/AQUA_RESOLUTION)];
+}
+
+TERM_PUBLIC void
+AQUA_linetype(int linetype)
+{
+  float dash[8];
+  int i, style;
+  LOG(@"AQUA_linetype(%d) ---> entry: %d", linetype, (linetype%CYCLIC_COLORS)+SPECIAL_COLORS);
+  if (linetype != AQUA_LineType) {
+    /* Note: this operation maps linestyle -4 to -1 onto colormap entries 0 to 3 */
+    AQUA_LineType = linetype;
+    [adapter takeColorFromColormapEntry:(linetype%CYCLIC_COLORS)+SPECIAL_COLORS];
+  }
+  if (AQUA_dashedlines) {
+    style = linetype%AQUA_DASH_PATTERNS;
+    if (style <= 0) {
+       [adapter setLinestyleSolid];
+    } else {      
+       // Set up a dash array
+	   for(i = 0; i<AQUA_dashPatternLengths[style]; i++) {
+	      dash[i] = AQUA_dashPatterns[style][i] * AQUA_dashlength_factor;
+	   }
+       [adapter setLinestylePattern:dash count:AQUA_dashPatternLengths[style] phase:0.0];
+    }
+  }
+}
+
+TERM_PUBLIC void
+AQUA_dashtype(int type, t_dashtype *custom_dash_type)
+{
+  float dash[DASHPATTERN_LENGTH];
+  int i;
+  LOG(@"AQUA_dashtype(%d)", type);
+
+  if(!AQUA_dashedlines) {
+    return;
+  }
+  switch(type) {
+  case DASHTYPE_SOLID:
+    [adapter setLinestyleSolid];
+    break;
+  case DASHTYPE_AXIS:
+    break;
+  case DASHTYPE_CUSTOM:
+    if (custom_dash_type) {
+      for(i = 0; i < DASHPATTERN_LENGTH && custom_dash_type->pattern[i] > 0; i++) {
+	dash[i] = custom_dash_type->pattern[i] * AQUA_dashlength_factor;
+      }
+      [adapter setLinestylePattern:dash count:i phase:0.0];
+    }
+    break;
+  default:
+    if(type > 0) {
+      type %= AQUA_DASH_PATTERNS;
+      for(i = 0; i<AQUA_dashPatternLengths[type]; i++) {
+	dash[i] = AQUA_dashPatterns[type][i] * AQUA_dashlength_factor;
+      }
+      [adapter setLinestylePattern:dash count:AQUA_dashPatternLengths[type] phase:0.0];
+    }
+    else {
+      [adapter setLinestyleSolid];
+    }
+  }
+}
+
+TERM_PUBLIC void
+AQUA_put_text(unsigned int x, unsigned int y, const char *str)
+{
+  if (!strlen(str))
+    return;
+  [adapter  addLabel:AQUA_convert_using_encoding(str)
+	     atPoint:NSMakePoint(x/AQUA_RESOLUTION, y/AQUA_RESOLUTION)
+	       angle:AQUA_TextAngle
+	       align:(AQUA_TextJust | AQTAlignMiddle)];
+}
+
+TERM_PUBLIC int
+AQUA_justify_text (enum JUSTIFY mode)
+{
+  AQUA_TextJust = mode;
+  return (TRUE);
+}
+
+TERM_PUBLIC int
+AQUA_text_angle (int angle)
+{
+  AQUA_TextAngle = (float)angle;
+  return (TRUE);
+}
+
+TERM_PUBLIC int
+AQUA_set_font(const char *font) /* "font,size" */
+{
+  /* Obtain default fontname and fontsize. If these are invalid, AquaTerm will handle it. */
+  NSString *fontFace = AQUA_convert_using_encoding(AQUA_fontNameCur);
+  float fontSize = AQUA_fontSizeCur;
+  
+  if (strlen(font) > 0) {
+    /* Try to split the non-empty string into array parts (as string objects) */
+    NSArray *parts = [AQUA_convert_using_encoding(font) componentsSeparatedByString:@","];
+    /* Check that we have both non-empty name and size, otherwise stay with defaults */
+    if ([parts count] > 0 && ![[parts objectAtIndex:0] isEqualToString:@""] ) {
+      fontFace = [parts objectAtIndex:0]; /* fontname */
+      if ([parts count] > 1 && ![[parts objectAtIndex:1] isEqualToString:@""] ) {
+        fontSize = [[parts objectAtIndex:1] floatValue]; /* Convert (optional) 2nd string object (fontsize) to float */ 
+      }   
+    }
+  }
+
+  LOG(@"Setting:(%@,%f)", fontFace, fontSize);
+  [adapter setFontname:fontFace];
+  [adapter setFontsize:fontSize];
+
+  term->h_char = (int) (fontSize * 0.6 * AQUA_RESOLUTION);
+  term->v_char = (int) (fontSize * 1.5 * AQUA_RESOLUTION);
+
+  return (TRUE);
+}
+
+TERM_PUBLIC void
+AQUA_set_pointsize(double size) /* notification of set pointsize */
+{
+  LOG(@"AQUA_set_pointsize(%f)", size);
+}
+
+TERM_PUBLIC void
+AQUA_point(unsigned int x, unsigned int y, int number)
+{
+  /* The default dot-routine doesn't work with AQT */
+  [adapter setLinestyleSolid]; /* Symbols should never be dashed */
+  [adapter setLinewidth:1.0];  
+  [adapter setLineCapStyle:AQTRoundLineCapStyle]; /* Set line cap style to round to create a dot */
+  [adapter moveToPoint:NSMakePoint(x/AQUA_RESOLUTION-0.005, y/AQUA_RESOLUTION)];
+  [adapter addLineToPoint:NSMakePoint(x/AQUA_RESOLUTION+0.005, y/AQUA_RESOLUTION)];
+  [adapter moveToPoint:NSMakePoint(0,0)]; /* Force a path end  to work around a bug in AquaTerm 1.0.0 */
+  /* Round caps results in nicer symbols too */  
+  if (number>=0) {
+    do_point(x, y, number);
+  }
+  [adapter moveToPoint:NSMakePoint(0,0)]; /* Force a path end to work around a bug in AquaTerm 1.0.0 */
+  [adapter setLineCapStyle:AQTButtLineCapStyle]; /* Reset line capstyle */
+}
+
+/* after one plot of multiplot */
+TERM_PUBLIC void
+AQUA_suspend()
+{
+  [adapter renderPlot];
+}
+
+/* before subsequent plot of multiplot */
+TERM_PUBLIC void
+AQUA_resume()
+{
+}
+
+/* clear part of multiplot */
+TERM_PUBLIC void
+AQUA_boxfill(int style, unsigned int x1, unsigned int y1, unsigned int width, unsigned int height)
+{
+  float r,g,b,a;
+
+  LOG(@"\nstyle=%d\nstyle & 0xf = %d\nfillpar=%d\n", style, style & 0xf, style >> 4);
+
+  /* Save current color */
+  if (AQUA_hasAlphaSupport)
+    [adapter getColorRed:&r green:&g blue:&b alpha:&a];
+  else
+    [adapter getColorRed:&r green:&g blue:&b];
+
+  /* fillpar:
+   * - solid   : 0 - 100
+   * - pattern : 0 - 100
+   */
+  int fillpar = style >> 4;
+  style &= 0xf;
+
+  switch (style) {
+  case 0: /* fill with background color */
+    {
+      float rb, gb, bb;
+      [adapter getBackgroundColorRed:&rb green:&gb blue:&bb];
+      [adapter setColorRed:rb green:gb blue:bb];
+    }
+    break;
+  case FS_TRANSPARENT_SOLID:
+    if (AQUA_hasAlphaSupport) {
+      float alpha = fillpar * 0.01;
+      [adapter setColorRed:r green:g blue:b alpha:alpha];
+      break;
+    } else
+      /* fall through */
+  case FS_SOLID: /* solid fill */
+    if (fillpar < 100) {
+      float density = (100 - fillpar)*0.01;
+      [adapter setColorRed:r*(1-density) + density
+	             green:g*(1-density) + density
+	              blue:b*(1-density) + density];
+    }
+    break;
+  case FS_PATTERN: /* pattern fill */
+  case FS_TRANSPARENT_PATTERN:
+    /* Can't do pattern easily, using colors. */
+    [adapter takeColorFromColormapEntry:(fillpar%CYCLIC_COLORS)+SPECIAL_COLORS];
+    break;
+  default:
+    break;
+  }
+
+  NSRect scaledRect = NSMakeRect(x1/AQUA_RESOLUTION, y1/AQUA_RESOLUTION, width/AQUA_RESOLUTION, height/AQUA_RESOLUTION);
+  /* FIXME: Aquaterm eraseRect scales very badly with the total number of rectangles.
+   *        It is probably fixable, but is the erase operation necessary at all?
+   */
+  [adapter eraseRect:scaledRect];
+  [adapter addFilledRect:scaledRect];
+  
+  /* Restore color */
+  if (AQUA_hasAlphaSupport)
+    [adapter setColorRed:r green:g blue:b alpha:a];
+  else
+    [adapter setColorRed:r green:g blue:b];
+}
+
+TERM_PUBLIC void
+AQUA_linewidth(double linewidth)
+{
+  [adapter setLinewidth:linewidth];
+}
+
+TERM_PUBLIC void
+AQUA_pointsize(double pointsize)
+{
+  LOG(@"AQUA_pointsize(%f)", pointsize);
+  term_pointsize = pointsize;
+}
+
+TERM_PUBLIC int
+AQUA_make_palette(t_sm_palette *palette)
+{
+  if (palette == NULL) {
+    /* AquaTerm can do continuous colors */
+    return 0;
+  }
+  return 0;
+}
+
+TERM_PUBLIC void
+AQUA_set_color(t_colorspec *colorspec)
+{
+  rgb_color color;
+  double alpha;
+  
+  switch (colorspec->type) {
+  case TC_FRAC:
+    rgb1maxcolors_from_gray(colorspec->value, &color);
+    [adapter setColorRed:color.r green:color.g blue:color.b];
+    break;
+  case TC_RGB:
+    color.r = (double)((colorspec->lt >> 16) & 255) / 255.;
+    color.g = (double)((colorspec->lt >> 8 ) & 255) / 255.;
+    color.b = (double)(colorspec->lt & 255) / 255.;
+    alpha   = (double)((colorspec->lt >> 24) & 255) / 255.;
+    if (AQUA_hasAlphaSupport && (alpha > 0)) {
+      alpha = 1.0 - alpha;
+      [adapter setColorRed:color.r green:color.g blue:color.b alpha:alpha];
+    } else {
+      [adapter setColorRed:color.r green:color.g blue:color.b];
+    }
+    break;
+  case TC_LT:
+    [adapter takeColorFromColormapEntry:((colorspec->lt)%CYCLIC_COLORS)+SPECIAL_COLORS];
+    break;
+  default:
+    break;
+  }
+  AQUA_LineType = LT_UNDEFINED;
+}
+
+TERM_PUBLIC void
+AQUA_filled_polygon(int pc, gpiPoint *corners)
+{
+  int i;
+  int fillpar = corners->style >> 4;
+  float r,g,b,a;
+
+  /* Save current color */
+  if (AQUA_hasAlphaSupport)
+    [adapter getColorRed:&r green:&g blue:&b alpha:&a];
+  else
+    [adapter getColorRed:&r green:&g blue:&b];
+ 
+  /* This switch is a clone of the one in AQUA_boxfill() */
+  switch (corners->style & 0xf) {
+  case 0: /* fill with background color */
+    {
+      float rb, gb, bb;
+      [adapter getBackgroundColorRed:&rb green:&gb blue:&bb];
+      [adapter setColorRed:rb green:gb blue:bb];
+    }
+    break;
+  case FS_TRANSPARENT_SOLID:
+    if (AQUA_hasAlphaSupport) {
+      float alpha = fillpar * 0.01;
+      [adapter setColorRed:r green:g blue:b alpha:alpha];
+      break;
+    } else
+      /* fall through */
+  case FS_SOLID: /* solid fill */
+    if (fillpar < 100) {
+      float density = (100 - fillpar)*0.01;
+      [adapter setColorRed:r*(1-density) + density
+	             green:g*(1-density) + density
+	              blue:b*(1-density) + density];
+    }
+    break;
+  case FS_PATTERN: /* pattern fill */
+  case FS_TRANSPARENT_PATTERN:
+    /* Can't do pattern easily, using colors. */
+    [adapter takeColorFromColormapEntry:(fillpar%CYCLIC_COLORS)+SPECIAL_COLORS];
+    break;
+  default:
+    break;
+  }
+
+  [adapter moveToVertexPoint:NSMakePoint(corners[0].x/AQUA_RESOLUTION,
+					 corners[0].y/AQUA_RESOLUTION)];
+  for (i=1; i<pc; i++) {
+    [adapter addEdgeToVertexPoint:NSMakePoint(corners[i].x/AQUA_RESOLUTION,
+					      corners[i].y/AQUA_RESOLUTION)];
+  }
+
+  /* Restore color */
+  if (AQUA_hasAlphaSupport)
+    [adapter setColorRed:r green:g blue:b alpha:a];
+  else
+    [adapter setColorRed:r green:g blue:b];
+}
+
+TERM_PUBLIC void
+AQUA_previous_palette()
+{
+}
+
+TERM_PUBLIC void
+AQUA_image (unsigned int M, unsigned int N, coordval *image, gpiPoint *corner, t_imagecolor color_mode)
+{
+  float width = (corner[1].x - corner[0].x)/AQUA_RESOLUTION;   
+  float height = (corner[0].y - corner[1].y)/AQUA_RESOLUTION;
+  float xPos = corner[0].x/AQUA_RESOLUTION;
+  float yPos = corner[1].y/AQUA_RESOLUTION;  
+  int bitmapSize = M*N;
+  int targetSize = 3 * bitmapSize;
+  int srcSize;
+  unsigned char *bitmap;
+  int i;
+
+  bitmap = malloc(targetSize*sizeof(unsigned char));
+  if (bitmap != nil) {
+    if (color_mode == IC_RGB) {
+      srcSize = targetSize;
+      for (i=0;i<srcSize;i++) {
+	bitmap[i] = (unsigned char)(255*image[i]);
+      }
+    } else if (color_mode == IC_PALETTE) {
+      rgb_color color;
+      unsigned char *bitmapPtr = bitmap;
+      srcSize = bitmapSize;
+      for (i=0;i<srcSize;i++) {
+	rgb1maxcolors_from_gray(image[i], &color);
+	*bitmapPtr = (unsigned char)(255*color.r);
+	bitmapPtr++;
+	*bitmapPtr = (unsigned char)(255*color.g);
+	bitmapPtr++;
+	*bitmapPtr = (unsigned char)(255*color.b);
+	bitmapPtr++;
+      }
+    } else {
+      NSLog(@"Unknown bitmap format");
+    }
+    [adapter addImageWithBitmap:bitmap 
+	     size:NSMakeSize(M, N)
+	     bounds:NSMakeRect(xPos, yPos, width, height)];
+    free(bitmap);
+  }
+  return;
+}
+
+/*
+ * Per Persson 20041019
+ * Support for enhanced text mode
+ * 
+ * Known issues:
+ *   - Overprinting not implemented 
+ *   - The sub/superscript level is determined from relative fontsize,
+ *     it may break if fontsize is changed for individual characters.
+ */
+
+static NSMutableAttributedString *enhString;
+static NSMutableDictionary *attributes;
+
+TERM_PUBLIC void 
+ENHAQUA_put_text(unsigned int x, unsigned int y, const char str[])
+{
+  if (!strpbrk(str, "{}^_@&~"))
+    {
+      AQUA_put_text(x,y,str);
+      return;
+    }
+  /* set up the global variables needed by enhanced_recursion() */
+  enhanced_fontscale = 1;
+  strncpy(enhanced_escape_format,"\\%o",sizeof(enhanced_escape_format));
+  
+  /* Clear the attributed string */
+  [enhString release];
+  enhString = [[NSMutableAttributedString alloc] init];
+  [enhString setAttributedString:[[NSAttributedString alloc] initWithString:@""]];
+
+  while (*(str = enhanced_recursion((char *)str, TRUE, AQUA_fontNameCur,
+				    (double)(AQUA_fontSizeCur), 0.0, TRUE, TRUE, 0))) {
+    /* I think we can only get here if *str == '}' */
+    enh_err_check(str);
+
+    if (!*++str)
+      break; /* end of string */
+    /* else carry on and process the rest of the string */
+  }
+
+  /* Now, send the attributed string to the adapter */
+  [adapter  addLabel:enhString
+	    atPoint:NSMakePoint(x/AQUA_RESOLUTION, y/AQUA_RESOLUTION)
+	    angle:AQUA_TextAngle
+	    align:(AQUA_TextJust | AQTAlignMiddle)];
+
+}
+
+TERM_PUBLIC void 
+ENHAQUA_open(char * fontname, double fontsize,
+	     double base, TBOOLEAN widthflag, TBOOLEAN showflag,
+	     int overprint)
+{
+  LOG(@"%s %.1f %.1f %s %s %d", fontname, fontsize, base,
+      widthflag ? "true" : "false",
+      showflag ? "true" : "false",
+      overprint);
+  
+  if (overprint != 0)
+    return;
+  
+  [attributes release];
+  attributes = [[NSMutableDictionary alloc] initWithCapacity:16]; 
+  [attributes setObject:AQUA_convert_using_encoding(fontname) forKey:@"AQTFontname"];
+
+  if (fabs(base)>0.01) { 
+    /* consider this as super/subscript, and compute subscript level */
+    int n = (int)round(log(fontsize/AQUA_fontSizeCur)/log(0.8)); 
+    [attributes setObject:[NSNumber numberWithInt:(base > 0)?n:-n] 
+		   forKey:@"NSSuperScript"];
+  } else if (fabs(fontsize - AQUA_fontSizeCur)>0.01) {
+    /* Fontsize was set explicitly */
+    [attributes setObject:[NSNumber numberWithFloat:fontsize] forKey:@"AQTFontsize"];
+  }
+
+  if (!showflag)
+    [attributes setObject:[NSNumber numberWithInt:1] 
+		   forKey:@"AQTNonPrintingChar"];
+}
+
+/* Local buffer used in encoding conversion */
+#define ENHAQUA_CSTRBUFLEN 1023
+static char cStrBuf[ENHAQUA_CSTRBUFLEN + 1]; 
+static unsigned int cStrBufIndex = 0;
+
+TERM_PUBLIC void 
+ENHAQUA_flush(void)
+{
+  /* Convert cStrBuf UTF8 according to encoding, use convert_using_encoding()
+     and apply attributes before adding to enhString 
+  */
+  NSAttributedString *aStr;
+  cStrBuf[cStrBufIndex] = '\0';
+  cStrBufIndex = 0; 
+  aStr = [[NSAttributedString alloc] initWithString:AQUA_convert_using_encoding(cStrBuf) attributes:attributes];
+  [enhString appendAttributedString:aStr];
+  [aStr release];
+}
+
+TERM_PUBLIC void 
+ENHAQUA_writec(int c)
+{ 
+  /* Buffer byte sequence into cStrBuf */
+  LOG(@"int c = 0x%04x", c);
+  cStrBuf[cStrBufIndex] = (char)(c+0x100) & 0xFF; /* FIXME: Sometimes c is overflowed */
+  if (cStrBufIndex < ENHAQUA_CSTRBUFLEN) 
+    cStrBufIndex++;
+}
+#endif /* TERM_BODY */
+
+#ifdef TERM_TABLE
+
+TERM_TABLE_START(aqua_driver)
+  "aqua",
+  "Interface to graphics terminal server for Mac OS X",
+  0 /* xmax */ , 0 /* ymax */ , 0 /* vchar */ , 0 /* hchar */ ,
+  0 /* vtic */ , 0 /* htic */ ,
+  AQUA_options, AQUA_init, AQUA_reset,
+  AQUA_text, null_scale, AQUA_graphics, AQUA_move, AQUA_vector,
+  AQUA_linetype, AQUA_put_text,
+  /* optionals */
+  AQUA_text_angle,
+  AQUA_justify_text, AQUA_point, do_arrow, AQUA_set_font,
+  AQUA_pointsize,
+  TERM_CAN_MULTIPLOT|TERM_NO_OUTPUTFILE|TERM_CAN_DASH|TERM_POLYGON_PIXELS,
+  AQUA_suspend, AQUA_resume,
+  AQUA_boxfill, AQUA_linewidth
+#ifdef USE_MOUSE
+  , 0, 0, 0, 0, 0
+#endif /* USE_MOUSE */
+  , AQUA_make_palette,
+  AQUA_previous_palette,
+  AQUA_set_color,
+  AQUA_filled_polygon,
+  AQUA_image,
+  ENHAQUA_open, ENHAQUA_flush, ENHAQUA_writec,
+  0 /* layer */ , 0 /* path */ , 0.0 /* tscale */ , 0 /* hypertext */,
+  0 /* boxed_text */ , 0 /* modify_plots */,
+  AQUA_dashtype
+TERM_TABLE_END(aqua_driver)
+
+#undef LAST_TERM
+#define LAST_TERM aqua_driver
+
+#endif /* TERM_TABLE */
+#endif /* TERM_PROTO_ONLY */
+
+#ifdef TERM_HELP
+START_HELP(aqua)
+"1 aqua",
+"?commands set terminal aqua",
+"?set terminal aqua",
+"?set term aqua",
+"?terminal aqua",
+"?term aqua",
+"?aqua",
+"?Aqua",
+" This terminal relies on AquaTerm.app for display on Mac OS X.",
+"",
+" Syntax:",
+"       set terminal aqua {<n>} {title \"<wintitle>\"} {size <x> <y>}",
+"                         {font \"<fontname>{,<fontsize>}\"}",
+"                         {{no}enhanced} {solid|dashed} {dl <dashlength>}}",
+"",
+" where <n> is the number of the window to draw in (default is 0),",
+" <wintitle> is the name shown in the title bar (default \"Figure <n>\"),",
+" <x> <y> is the size of the plot (default is 846x594 pt = 11.75x8.25 in).",
+"",
+" Use <fontname> to specify the font (default is \"Times-Roman\"),",
+" and <fontsize> to specify the font size (default is 14.0 pt).",
+"",
+" The aqua terminal supports enhanced text mode (see `enhanced`), except for",
+" overprint. Font support is limited to the fonts available on the system.",
+" Character encoding can be selected by `set encoding` and currently supports",
+" iso_latin_1, iso_latin_2, cp1250, and UTF8 (default).",
+"",
+" Lines can be drawn either solid or dashed, (default is solid) and the dash",
+" spacing can be modified by <dashlength> which is a multiplier > 0.",
+""
+END_HELP(aqua)
+#endif /* TERM_HELP */
+
+

@@ -1,0 +1,42 @@
+{
+    APPCLASS = NSApplication; 
+    FILESTABLE = {
+        CLASSES = (Controller.m, GnuView.m, GnuViewController.m); 
+        English_INTERFACES = (GnuTerm.nib, gnuview.nib); 
+        FRAMEWORKS = (AppKit.framework, Foundation.framework); 
+        FRAMEWORKSEARCH = (/System/Library/Frameworks); 
+        HEADERSEARCH = (); 
+        H_FILES = (Controller.h, GnuView.h, GnuViewController.h); 
+        IMAGES = (); 
+        INTERFACES = (); 
+        M_FILES = (); 
+        OTHER_LIBS = (); 
+        OTHER_LINKED = (GnuTerm_main.m); 
+        OTHER_SOURCES = (Makefile.preamble, Makefile, Makefile.postamble); 
+        PRECOMPILED_HEADERS = (); 
+        PROJECT_HEADERS = (); 
+        PUBLIC_HEADERS = (); 
+    }; 
+    GENERATEMAIN = YES; 
+    LANGUAGE = English; 
+    MAKEFILEDIR = "$(MAKEFILEPATH)/pb_makefiles"; 
+    NEXTSTEP_APPICON = GnuTerm.tiff; 
+    NEXTSTEP_BUILDTOOL = /bin/gnumake; 
+    NEXTSTEP_DOCUMENTEXTENSIONS = (); 
+    NEXTSTEP_INSTALLDIR = "$(HOME)/Apps"; 
+    NEXTSTEP_JAVA_COMPILER = /usr/bin/javac; 
+    NEXTSTEP_MAINNIB = GnuTerm; 
+    NEXTSTEP_OBJCPLUS_COMPILER = /usr/bin/cc; 
+    PDO_UNIX_INSTALLDIR = "$(HOME)/Apps"; 
+    PDO_UNIX_JAVA_COMPILER = "$(JDKBINDIR)/javac"; 
+    PDO_UNIX_MAINNIB = GnuTerm; 
+    PDO_UNIX_OBJCPLUS_COMPILER = "$(NEXTDEV_BIN)/gcc"; 
+    PROJECTNAME = GnuTerm; 
+    PROJECTTYPE = Application; 
+    PROJECTVERSION = 2.8; 
+    SYSTEMEXTENSIONS = (); 
+    WINDOWS_INSTALLDIR = "$(HOME)/Apps"; 
+    WINDOWS_JAVA_COMPILER = "$(JDKBINDIR)/javac.exe"; 
+    WINDOWS_MAINNIB = GnuTerm; 
+    WINDOWS_OBJCPLUS_COMPILER = "$(DEVDIR)/gcc"; 
+}

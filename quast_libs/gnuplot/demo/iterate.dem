@@ -1,0 +1,22 @@
+set title "Iteration within plot command"
+set xrange [0:3]
+set label 1 "plot for [n=2:10] sin(x*n)/n" at graph .95, graph .92 right
+plot for [n=2:10] sin(x*n)/n notitle lw (13-n)/2
+pause -1 "Hit return to continue"
+reset
+
+set title "Iteration over all available data in a file"
+set view 38., 341.
+unset xtics
+unset ytics
+unset ztics
+set border 0
+set lmargin at screen 0.09
+set rmargin at screen 0.90
+set key outside below samplen 0.6
+set key title "splot for [scan=1:*] 'whale.dat' index scan"
+set key maxrows 6
+splot for [i=1:*] "whale.dat" index i title sprintf("scan %d",i) with lines
+pause -1 "Hit return to continue"
+reset
+

@@ -1,0 +1,3 @@
+#! /bin/sh
+install-info --info-dir=$2/info $2/info/gnuplot.info
+exit 0

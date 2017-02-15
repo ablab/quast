@@ -1,0 +1,13 @@
+set polar
+unset xtics
+unset ytics
+unset key
+set border 0
+
+set title "{/:Bold Enhanced text style markup}"
+set x2label "Default  {/Times:Bold=15 Bold ^{/:Italic Italic}} Default" offset 0,-2
+set xlabel 'Default  {/Times=18:Italic Italic _{/:Bold Bold} ^{/:Normal Normal}} Default'
+
+plot [t=0:4*pi] t with lines
+pause -1 "Hit return to continue"
+reset

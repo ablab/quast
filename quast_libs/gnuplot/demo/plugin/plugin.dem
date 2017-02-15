@@ -1,0 +1,43 @@
+#
+# demo for the use of external functions
+#
+if (!strstrt(GPVAL_COMPILE_OPTIONS,"+EXTERNAL_FUNCTIONS")) {
+    print ">>> Skipping demo <<<\n" ;
+    print "This copy of gnuplot does not support import of external functions"
+    exit
+}
+
+# This will look for an exported routined named divisors
+# in shared object example.so
+set title "import divisors from 'sharedobject'"
+import divisors(x) from "demo_plugin"
+set samples 10001, 10001
+plot [0:10000] divisors(x) w his
+
+pause -1 "<cr> to continue"
+
+# This will cause future invocations of g(x) to call the
+# routine sinc(x) contained in shared object example.so
+# I.e. g(x) is an alias for an external function sinc(x)
+set title "import g(x) from 'sharedobject:sinc'"
+import g(x) from "demo_plugin:sinc"
+plot [-20:20] g(x)
+
+pause -1 "<cr> to continue"
+
+# compare internal and external implementations of sinc(x)
+set title "Compare internal and external implementations of sinc"
+set samples 250 
+sinc(x) = sin(x) / x
+plot sinc(x) - g(x)
+
+pause -1 "<cr> to continue"
+
+# Similar to above but using a 2-parameter function
+set title "Import a 2-parameter function"
+import nsinc(N,x) from "demo_plugin:nsinc"
+plot for [N=1:5] nsinc(N,x) lw 2 title sprintf("nsinc(%d,x)",N)
+
+pause -1 "<cr> to continue"
+
+reset

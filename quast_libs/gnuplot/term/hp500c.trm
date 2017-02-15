@@ -1,0 +1,548 @@
+/* Hello, Emacs, this is -*-C-*-
+ * $Id: hp500c.trm,v 1.17 2006/07/21 02:35:47 sfeam Exp $
+ *
+ */
+
+/* GNUPLOT - hp500c.trm */
+
+/*[
+ * Copyright 1990 - 1993, 1998, 2004
+ *
+ * Permission to use, copy, and distribute this software and its
+ * documentation for any purpose with or without fee is hereby granted,
+ * provided that the above copyright notice appear in all copies and
+ * that both that copyright notice and this permission notice appear
+ * in supporting documentation.
+ *
+ * Permission to modify the software is granted, but not the right to
+ * distribute the complete modified source code.  Modifications are to
+ * be distributed as patches to the released version.  Permission to
+ * distribute binaries produced by compiling modified sources is granted,
+ * provided you
+ *   1. distribute the corresponding source modifications from the
+ *    released version in the form of a patch file along with the binaries,
+ *   2. add special version identification to distinguish your version
+ *    in addition to the base release version number,
+ *   3. provide your name and address as the primary contact for the
+ *    support of your modified version, and
+ *   4. retain our contact information in regard to use of the base
+ *    software.
+ * Permission to distribute the released version of the source code along
+ * with corresponding source modifications in the form of a patch file is
+ * granted with same provisions 2 through 4 for binary distributions.
+ *
+ * This software is provided "as is" without express or implied warranty
+ * to the extent permitted by applicable law.
+]*/
+
+/*
+ * This file is included by ../term.c.
+ *
+ * This terminal driver supports:
+ *  hpdj 500c
+ *
+ * AUTHORS
+ *  John Engels      -- \
+ *  Russell Lang     ----> HPLJII.trm
+ *  Maurice Castro   -- /
+ *  UdoHessenauer    ----> derived this version from the above one
+ *
+ * send your comments or suggestions to (gnuplot-info@lists.sourceforge.net).
+ *
+ */
+
+/* The following HP Deskjet500c  driver uses generic bit mapped graphics
+   routines from bitmap.c to build up a bit map in memory.  The driver
+   interchanges colomns and lines in order to access entire lines
+   easily and returns the lines to get bits in the right order :
+   (x,y) -> (y,XMAX-1-x). */
+/* This interchange is done by calling b_makebitmap() with reversed
+   xmax and ymax, and then setting b_rastermode to TRUE.  b_setpixel()
+   will then perform the interchange before each pixel is plotted */
+/* by John Engels JENGELS@BNANDP51.BITNET, inspired by the hpljet driver
+   of Jyrki Yli-Nokari */
+
+/*
+ * adapted to the new terminal layout by Stefan Bodewig (Dec. 1995)
+ */
+
+#include "driver.h"
+
+#ifdef TERM_REGISTER
+register_term(hp500c)
+#endif
+
+#ifdef TERM_PROTO
+TERM_PUBLIC void HP500C_options __PROTO((void));
+TERM_PUBLIC void HP500C_init __PROTO((void));
+TERM_PUBLIC void HP500C_reset __PROTO((void));
+TERM_PUBLIC void HP500C_linetype __PROTO((int linetype));
+TERM_PUBLIC void HP500C_graphics __PROTO((void));
+TERM_PUBLIC void HP500C_text __PROTO((void));
+/* default values for term_tbl */
+#define HP500C_75PPI_XMAX (1920/4)
+#define HP500C_75PPI_YMAX (1920/4)
+#define HP500C_75PPI_HCHAR (1920/4/6)
+#define HP500C_75PPI_VCHAR (1920/4/10)
+#define HP500C_75PPI_VTIC 5
+#define HP500C_75PPI_HTIC 5
+
+#define GOT_HP500C_PROTO
+#endif
+
+#ifndef TERM_PROTO_ONLY
+#ifdef TERM_BODY
+
+
+/* We define 4 different print qualities : 300ppi, 150ppi, 100ppi and
+   75ppi.  (Pixel size = 1, 2, 3, 4 dots) */
+
+#define HP500C_DPP (hpdj_dpp)	/* dots per pixel */
+#define HP500C_PPI (300/HP500C_DPP)	/* pixel per inch */
+/* make XMAX and YMAX a multiple of 8 */
+#define HP500C_XMAX (8*(unsigned int)(xsize*1920/HP500C_DPP/8.0+0.9))
+#define HP500C_YMAX (8*(unsigned int)(ysize*1920/HP500C_DPP/8.0+0.9))
+
+/* Courier font with 6 lines per inch */
+#define HP500C_VCHAR (HP500C_PPI/6)
+/* Courier font with 10 caracters per inch */
+#define HP500C_HCHAR (HP500C_PPI/10)
+
+
+/* Save current cursor position */
+#define HP500C_PUSH_CURSOR fputs("\033&f0S",gpoutfile)
+/* Restore cursor position */
+#define HP500C_POP_CURSOR fputs("\033&f1S",gpoutfile)
+
+/* be sure to use courier font with 6lpi and 10cpi */
+#define HP500C_COURIER fputs("\033(0N\033(s0p10.0h12.0v0s0b3T\033&l6D",gpoutfile)
+
+
+static int HP_compress __PROTO((unsigned char *op, unsigned char *oe,
+			       unsigned char *cp));
+static unsigned char HP_complement __PROTO((int c));
+static int HP_compress_to_TIFF __PROTO((unsigned char *op, unsigned char *oe,
+				       unsigned char *cp));
+static int HP_nocompress __PROTO((unsigned char *op, unsigned char *oe,
+				 unsigned char *cp));
+
+static int hpdj_dpp = 4;
+static int HP_COMP_MODE = 0;
+
+/* bm_pattern not appropriate for 300ppi graphics */
+#ifndef GOT_300_PATTERN
+#define GOT_300_PATTERN
+static unsigned int b_300ppi_pattern[] =
+{
+    0xffff, 0x1111,
+    0xffff, 0x3333, 0x0f0f, 0x3f3f, 0x0fff, 0x00ff, 0x33ff
+};
+#endif
+
+
+TERM_PUBLIC void
+HP500C_options()
+{
+    char opt[6];
+
+#define HPDJCERROR "expecting dots per inch size 75, 100, 150 or 300 and/or compression method"
+    while (!END_OF_COMMAND) {
+	if (token[c_token].length > 4)
+	    int_error(c_token, HPDJCERROR);
+
+	/* almost_equals() won't accept numbers - use strcmp() instead */
+	capture(opt, c_token, c_token, 6);
+	if (!strcmp(opt, "75")) {
+	    hpdj_dpp = 4;
+	    HP_COMP_MODE = 0;
+
+	} else if (!strcmp(opt, "100")) {
+	    hpdj_dpp = 3;
+	    HP_COMP_MODE = 0;
+	} else if (!strcmp(opt, "150")) {
+	    hpdj_dpp = 2;
+	    HP_COMP_MODE = 0;
+	} else if (!strcmp(opt, "300")) {
+	    hpdj_dpp = 1;
+	    HP_COMP_MODE = 0;
+	} else if (!strcmp(opt, "rle")) {
+	    HP_COMP_MODE = 1;
+	} else if (!strcmp(opt, "tiff")) {
+	    HP_COMP_MODE = 2;
+	}
+	c_token++;
+    }
+
+    term->xmax = HP500C_XMAX;
+    term->ymax = HP500C_YMAX;
+    switch (hpdj_dpp) {
+    case 1:
+	strcpy(term_options, "300");
+	term->v_tic = 15;
+	term->h_tic = 15;
+	break;
+    case 2:
+	strcpy(term_options, "150");
+	term->v_tic = 8;
+	term->h_tic = 8;
+	break;
+    case 3:
+	strcpy(term_options, "100");
+	term->v_tic = 6;
+	term->h_tic = 6;
+	break;
+    case 4:
+	strcpy(term_options, "75");
+	term->v_tic = 5;
+	term->h_tic = 5;
+	break;
+    }
+    switch (HP_COMP_MODE) {
+    case 0:
+	strcat(term_options, " no comp");
+	break;
+    case 1:
+	strcat(term_options, " RLE");
+	break;
+    case 2:
+	strcat(term_options, " TIFF");
+	break;
+    case 3:			/* not implemented yet */
+	strcat(term_options, " Delta Row");
+	break;
+    }
+}
+
+TERM_PUBLIC void
+HP500C_init()
+{
+    /* HBB 980226: all changes to term-> fields *must* happen here, not
+     * in graphics() !*/
+    switch (hpdj_dpp) {
+    case 1:
+	b_charsize(FNT13X25);
+	term->v_char = FNT13X25_VCHAR;
+	term->h_char = FNT13X25_HCHAR;
+	break;
+    case 2:
+	b_charsize(FNT13X25);
+	term->v_char = FNT13X25_VCHAR;
+	term->h_char = FNT13X25_HCHAR;
+	break;
+    case 3:
+	b_charsize(FNT9X17);
+	term->v_char = FNT9X17_VCHAR;
+	term->h_char = FNT9X17_HCHAR;
+	break;
+    case 4:
+	b_charsize(FNT5X9);
+	term->v_char = FNT5X9_VCHAR;
+	term->h_char = FNT5X9_HCHAR;
+	break;
+    }
+}
+
+TERM_PUBLIC void
+HP500C_reset()
+{
+#ifdef VMS
+    fflush_binary();
+#endif
+}
+
+
+
+/* HP DeskJet 500c routines */
+
+TERM_PUBLIC void
+HP500C_linetype(int linetype)
+{
+    if (linetype < 0)
+	linetype = 7;
+    else if (linetype >= 8) {
+	linetype %= 8;
+    }
+    switch (linetype) {
+    case 0:
+	linetype = 6;
+	break;
+    case 1:
+	linetype = 5;
+	break;
+    case 2:
+	linetype = 3;
+	break;
+    case 3:
+	linetype = 2;
+	break;
+    case 4:
+	linetype = 1;
+	break;
+    case 5:
+	linetype = 4;
+	break;
+    case 6:
+	linetype = 7;
+    }
+    b_setvalue(linetype);
+
+}
+
+#if 0
+void
+HP500C_point(unsigned int x, unsigned int y, int value)
+{
+    HP500C_linetype(value);
+    do_point(x,y,value);
+}
+#endif
+
+TERM_PUBLIC void
+HP500C_graphics()
+{
+    /* HBB 980226: moved block of code from here to init() */
+    /* rotate plot -90 degrees by reversing XMAX and YMAX and by
+       setting b_rastermode to TRUE */
+    b_makebitmap(HP500C_YMAX, HP500C_XMAX, 3);
+    b_rastermode = TRUE;
+}
+
+/*
+ * Run-length encoding for the DeskJet. We have pairs of <count>
+ * <what>, where count goes from 0 (meaning one count) to 255
+ * this might double the size of the image.
+ */
+
+static int
+HP_compress(unsigned char *op, unsigned char *oe, unsigned char *cp)
+{
+    unsigned char *ce = cp;
+
+    while (op < oe) {
+	unsigned char prevchar;
+	unsigned char count;
+
+	prevchar = *op;		/* remember char */
+	count = 1;		/* its read the first time */
+
+	while (++op < oe && *op == prevchar && count < 255) {
+            /* set op to the next char */
+	    count++;		/* and count it  */
+	}
+	*ce++ = --count;	/* were ready, so correct the count */
+	*ce++ = prevchar;	/* and store <what> */
+    }
+    *ce = 0;			/* just to be safe   */
+    return ce - cp;		/* length of  cbufs */
+}
+
+static unsigned char
+HP_complement(int c)
+{
+    return (unsigned char) (256 - c);
+}
+
+
+static int
+HP_compress_to_TIFF(
+    unsigned char *op,		/* original pointer */
+    unsigned char *oe,		/* end of orig string */
+    unsigned char *cp)		/* pointer for compressed data */
+{
+    unsigned char *countposition;
+    unsigned char *ce = cp;
+
+    while (op < oe) {
+	unsigned char prevchar;
+	unsigned char count;
+
+	prevchar = *op;		/* gelesenes Zeichen aufbewaren */
+	count = 1;		/* bisher wurde es einmal gelesen */
+
+	while (++op < oe && *op == prevchar && count < 128) {
+	    count++;
+	}
+	*ce = HP_complement(count - 1);
+        /* remember count for building blocks of literal bytes */
+	countposition = ce++;
+	*ce++ = prevchar;
+
+	if (count < 2) {
+	    while (op < oe && (prevchar != *op || *op != *(op + 1))) {
+                /* only use rle for at leat 3 equal bytes */
+		*ce++ = *op;
+		count++;
+		prevchar = *op++;
+		if (op > oe)
+		    puts("FATAL op> oe!!\n");
+	    }
+	    if (op < oe && prevchar == *op) {
+		op--;
+		count--;
+		ce--;
+	    }
+	    *countposition = count - 1;
+	}
+    }
+    return ce - cp;
+
+}
+
+static int
+HP_nocompress(
+    unsigned char *op,
+    unsigned char *oe,
+    unsigned char *cp)
+{
+    unsigned char *ce = cp;
+
+    while (op < oe)
+	*ce++ = *op++;
+    return ce - cp;
+}
+
+/* 0 compression raster bitmap dump. Compatible with HP DeskJet 500
+   hopefully compatible with other HP Deskjet printers */
+
+TERM_PUBLIC void
+HP500C_text()
+{
+    register int x, j, row, count = 0;
+    unsigned char *obuf, *oe, *cbuf, *ce;
+
+    if ((obuf = (unsigned char *) malloc(100 * b_psize)) == 0)
+	puts("FATAL!-- couldn't get enough memory for obuf");
+    if ((cbuf = (unsigned char *) malloc(400 * b_psize)) == 0)
+	puts("FATAL!-- couldn't get enough memory for cbuf");
+
+    oe = obuf;
+
+    fprintf(gpoutfile, "\
+\033*t%dR\
+\033*r1A\
+\033*b%1dM\
+\033*r%dS\
+\033*r-3U",
+	    HP500C_PPI,
+	    HP_COMP_MODE,
+	    b_ysize);
+
+    /* dump bitmap in raster mode */
+    for (x = b_xsize - 1; x >= 0; x--) {
+	row = (b_ysize / 8) - 1;
+	for (j = row; j >= 0; j--) {
+	    *oe++ = (char) (*((*b_p)[j] + x));
+	}
+	switch (HP_COMP_MODE) {
+	case 2:
+	    count = HP_compress_to_TIFF(obuf, oe, cbuf);
+	    break;
+	case 1:
+	    count = HP_compress(obuf, oe, cbuf);
+	    break;
+	case 0:
+	    count = HP_nocompress(obuf, oe, cbuf);
+	    break;
+	}
+	fprintf(gpoutfile, "\033*b%dV", count);
+	ce = cbuf;
+	while (count--)
+	    fputc(*ce++, gpoutfile);
+	oe = obuf;
+
+	for (j = row; j >= 0; j--) {
+	    *oe++ = (char) (*((*b_p)[j + b_psize] + x));
+	}
+	switch (HP_COMP_MODE) {
+	case 2:
+	    count = HP_compress_to_TIFF(obuf, oe, cbuf);
+	    break;
+	case 1:
+	    count = HP_compress(obuf, oe, cbuf);
+	    break;
+	case 0:
+	    count = HP_nocompress(obuf, oe, cbuf);
+	    break;
+
+	}
+
+	fprintf(gpoutfile, "\033*b%dV", count);
+	ce = cbuf;
+	while (count--)
+	    fputc(*ce++, gpoutfile);
+	oe = obuf;
+
+	for (j = row; j >= 0; j--) {
+	    *oe++ = (char) (*((*b_p)[j + (2 * b_psize)] + x));
+	}
+	switch (HP_COMP_MODE) {
+	case 2:
+	    count = HP_compress_to_TIFF(obuf, oe, cbuf);
+	    break;
+	case 1:
+	    count = HP_compress(obuf, oe, cbuf);
+	    break;
+	case 0:
+	    count = HP_nocompress(obuf, oe, cbuf);
+	    break;
+	}
+	fprintf(gpoutfile, "\033*b%dW", count);
+	ce = cbuf;
+	while (count--)
+	    fputc(*ce++, gpoutfile);
+	oe = obuf;
+
+    }
+    fputs("\033*rbC", gpoutfile);
+    free(cbuf);
+    free(obuf);
+    b_freebitmap();
+
+#ifndef VMS
+    /* most vms spoolers add a formfeed character */
+    putc('\f', gpoutfile);
+#endif /* !VMS */
+}
+
+#endif /* TERM_BODY */
+
+#ifdef TERM_TABLE
+
+TERM_TABLE_START(hp500c_driver)
+    "hp500c", "HP DeskJet 500c, [75 100 150 300] [rle tiff]",
+    HP500C_75PPI_XMAX, HP500C_75PPI_YMAX, HP500C_75PPI_VCHAR,
+    HP500C_75PPI_HCHAR, HP500C_75PPI_VTIC, HP500C_75PPI_HTIC, HP500C_options,
+    HP500C_init, HP500C_reset, HP500C_text, null_scale,
+    HP500C_graphics, b_move, b_vector, HP500C_linetype,
+    b_put_text, b_text_angle, null_justify_text, do_point,
+    do_arrow, set_font_null, 0, TERM_BINARY,
+    0, 0, b_boxfill
+TERM_TABLE_END(hp500c_driver)
+
+#undef LAST_TERM
+#define LAST_TERM hp500c_driver
+
+#endif /* TERM_TABLE */
+#endif /* TERM_PROTO_ONLY */
+
+#ifdef TERM_HELP
+START_HELP(hp500c)
+"1 hp500c",
+"?commands set terminal hp500c",
+"?set terminal hp500c",
+"?set term hp500c",
+"?terminal hp500c",
+"?term hp500c",
+"?hp500c",
+" The `hp500c` terminal driver supports the Hewlett Packard HP DeskJet 500c.",
+" It has options for resolution and compression.",
+"",
+" Syntax:",
+"       set terminal hp500c {<res>} {<comp>}",
+"",
+" where `res` can be 75, 100, 150 or 300 dots per inch and `comp` can be \"rle\",",
+" or \"tiff\".  Any other inputs are replaced by the defaults, which are 75 dpi",
+" and no compression.  Rasterization at the higher resolutions may require a",
+" large amount of memory."
+END_HELP(hp500c)
+#endif /* TERM_HELP */

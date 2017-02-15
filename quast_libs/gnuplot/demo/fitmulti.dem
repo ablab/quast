@@ -1,0 +1,179 @@
+# fitmulti.dem
+#
+# Use up to 5D fitting to determine coefficients in linear combinations
+# of arbitrarily chosen, but linearly independent basis functions.
+# The fit should reproduce these coefficients with high precision.
+# Hanno Hoffstadt	August 2007
+#
+# Increase to 6 dimensions to test revised fit code.
+# Replace a recursive call statement with a while <expr> { ... } loop.
+# Use "set dummy x, y, x2, x3" to specify dummy parameter names used
+# by the fit functions.
+# Ethan A Merritt	June 2013
+#
+
+
+# the basis functions
+f1(x) = sin(x)
+f2(x) = exp(-x)
+f3(x) = sqrt(x)
+f4(x) = cos(x)
+f5(x) = x*x
+f6(x) = sin(x+3.)/(x+3.)
+
+# the coefficients for linear combinations
+k1=   2.5
+k2=  -1.8
+k3=  70.0
+k4=  -3.2
+k5=   0.4
+k6=  -0.25
+
+# generate data table containing functions f1(x) to f6(x),
+# and linear combinations k1*f1(x) to k1*f1(x)+...+k6*f6(x)
+# in increments of dx, up to a value xmax
+#
+set print $fitmulti
+#
+x=0
+dx=0.5
+xmax=10
+while (x <= xmax) {
+
+    lc1 = k1 * f1(x)
+    lc2 = lc1 + k2 * f2(x)
+    lc3 = lc2 + k3 * f3(x)
+    lc4 = lc3 + k4 * f4(x)
+    lc5 = lc4 + k5 * f5(x)
+    lc6 = lc5 + k6 * f6(x)
+
+    # columns 1-5,11 contain the "tabulated basis functions"
+    # columns 6-10,12 contain linear combinations with given coefficients
+    # and increasing number of components
+
+    print f1(x), f2(x), f3(x), f4(x), f5(x), lc1, lc2, lc3, lc4, lc5, f6(x), lc6
+
+    x = x + dx
+
+}  # End of while loop
+
+unset print
+
+# fitting models
+m1(f1) = c1*f1
+m2(f1,f2) = c1*f1 + c2*f2
+m3(f1,f2,f3) = c1*f1 + c2*f2 + c3*f3
+m4(f1,f2,f3,f4) = c1*f1 + c2*f2 + c3*f3 + c4*f4
+m5(f1,f2,f3,f4,f5) = c1*f1 + c2*f2 + c3*f3 + c4*f4 + c5*f5
+m6(f1,f2,f3,f4,f5,f6) = c1*f1 + c2*f2 + c3*f3 + c4*f4 + c5*f5 + c6*f6
+
+# 1D fit:
+# basis function in column 1,
+# combination with one component in column 6
+#
+# since column 6 contains k1 * f1(x), i.e. k1 times column 1,
+# the fit is expected to find c1 == k1.
+#
+# for all fits, the assumed error is 1, and is given last in the using spec.
+
+c1=1
+fit m1(x) $fitmulti u 1:6:(1) via c1
+print "---------------------------------------------------------"
+print "1D fit: expected ", k1, " c1 = ", c1
+print "---------------------------------------------------------"
+pause -1 "Hit return to try for a 2D fit"
+
+# 2D fit:
+# basis functions in columns 1 and 2,
+# combination with two components in column 7
+#
+# do not forget to reset the c values so that the fit needs to search anew.
+# Check the functioning of preset axis range limit on y
+
+c1=1
+c2=1
+set yrange [0:.99]
+fit m2(x,y) $fitmulti u 1:2:7:(1) via c1,c2
+print "---------------------------------------------------------"
+print "2D fit: expected ", k1, " c1 = ", c1
+print "2D fit: expected ", k2, " c2 = ", c2
+print "---------------------------------------------------------"
+set yrange [*:*]
+pause -1 "Hit return to try for a 3D fit"
+
+# 3D fit:
+# basis functions in columns 1, 2, 3,
+# combination with three components in column 8
+
+c1=1
+c2=1
+c3=1
+set dummy x, y, x2, x3, x4, x5
+fit m3(x,y,x2) $fitmulti u 1:2:3:8:(1) via c1,c2,c3
+print "---------------------------------------------------------"
+print "3D fit: expected ", k1, " c1 = ", c1
+print "3D fit: expected ", k2, " c2 = ", c2
+print "3D fit: expected ", k3, " c3 = ", c3
+print "---------------------------------------------------------"
+pause -1 "Hit return to try for a 4D fit"
+
+# 4D fit:
+# basis functions in columns 1, 2, 3, 4,
+# combination with four components in column 9
+
+c1=1
+c2=1
+c3=1
+c4=1
+fit m4(x,y,x2,x3) $fitmulti u 1:2:3:4:9:(1) via c1,c2,c3,c4
+print "---------------------------------------------------------"
+print "4D fit: expected ", k1, " c1 = ", c1
+print "4D fit: expected ", k2, " c2 = ", c2
+print "4D fit: expected ", k3, " c3 = ", c3
+print "4D fit: expected ", k4, " c4 = ", c4
+print "---------------------------------------------------------"
+pause -1 "Hit return to try for a 5D fit"
+
+# 5D fit:
+# basis functions in columns 1, 2, 3, 4, 5,
+# combination with five components in column 10
+
+c1=1
+c2=1
+c3=1
+c4=1
+c5=1
+fit m5(x,y,x2,x3,x4) $fitmulti u 1:2:3:4:5:10:(1) via c1,c2,c3,c4,c5
+print "---------------------------------------------------------"
+print "5D fit: expected ", k1, " c1 = ", c1
+print "5D fit: expected ", k2, " c2 = ", c2
+print "5D fit: expected ", k3, " c3 = ", c3
+print "5D fit: expected ", k4, " c4 = ", c4
+print "5D fit: expected ", k5, " c5 = ", c5
+print "---------------------------------------------------------"
+pause -1 "Hit return to try for a 6D fit"
+
+print "This 6D fit will fail in 4.6 but 4.7 can handle more parameters"
+# 6D fit:
+# basis functions in columns 1, 2, 3, 4, 5, 11
+# combination with five components in column 12
+# test inline range spec
+
+c1=1
+c2=1
+c3=1
+c4=1
+c5=1
+c6=1
+fit [][][][][][-0.2:*] m6(x,y,x2,x3,x4,x5) $fitmulti u 1:2:3:4:5:11:12:(1) via c1,c2,c3,c4,c5,c6
+print "---------------------------------------------------------"
+print "6D fit: expected ", k1, " c1 = ", c1
+print "6D fit: expected ", k2, " c2 = ", c2
+print "6D fit: expected ", k3, " c3 = ", c3
+print "6D fit: expected ", k4, " c4 = ", c4
+print "6D fit: expected ", k5, " c5 = ", c5
+print "6D fit: expected ", k6, " c6 = ", c6
+print "FIT_NDF = ",FIT_NDF," after range filters (expected 14)"
+print "---------------------------------------------------------"
+pause -1 "Hit return to end multidimension fit demo"
+reset

@@ -1,0 +1,219 @@
+*******************************************************************************
+*** NB: This file is horribly out of date.
+***     View everything in it as historical perspective;
+***	the broad outline may be useful but the details are not current
+*******************************************************************************
+
+ The following information is mainly geared towards people who want
+to port gnuplot to new platforms not covered by the installation
+instructions in 0INSTALL and INSTALL.gnu. Please do also read the
+file CodeStyle.
+
+ We have tried to isolate most operating system dependent definitions
+in the file syscfg.h. If you add a new platform, some definitions must
+probably be added to syscfg.h as well.
+
+Preprocessor Defines
+********************
+
+ These #defines should be checked before compilation. There are many
+makefiles provided as templates. You probably need these only if porting
+to a new machine. The HAVE_XXX defines should be taken care of by configure
+if your platform supports GNU autoconf generated configure shell scripts.
+If your platform/environment does not support configure, see Codestyle and
+syscfg.h.
+
+THIS LIST IS SOMEWHAT OUT OF DATE NOW - CHECK configure.in and
+acconfig.h.
+
+define      file            note
+------      ----            --------
+HAVE_BCOPY  Makefile        define if you have bcopy() and no memcpy()
+HAVE_LGAMMA Makefile        define if you've got lgamma(3)
+HAVE_GAMMA  Makefile        define if you've got gamma(3)
+PC          Makefile        define if compiling on a PClone
+MSDOS       Makefile        define if compiling under MSDOS;
+                              automatically defined by Microsoft C 5.10
+DOS32       Makefile        define for a 32-bit DOS extender (djgpp/emx)
+WIN32       Makefile        define for a 32-bit MS-Windows version
+HELPFILE    Makefile        name including path of gnuplot.gih file.
+VERYLARGE   plot.h          define to be largest coordinate number.
+SHELL       plot.h          default shell to spawn if SHELL environment
+                              variable not found at run-time
+NOCWDRC     Makefile        define to inhibit check of ./.gnuplot
+READLINE    Makefile        define if you want command-line editing
+HAVE_LIBREADLINE Makefile   define if you are linking with GNU readline
+
+Header File Availability
+========================
+
+ It is generally assumed that standard ANSI/ISO header files are available.
+
+Function Availability
+=====================
+
+ It is generally assumed that standard ANSI/ISO functions are available.
+
+ If certain standard ANSI/ISO C functions are not available, two alternatives
+come to mind: either try to achieve the same functionality without the
+missing function, or provide a portable implementation. Examples for this
+are in stdfn.c. See also stdfn.h. 
+
+ The following defines are used to ensure availability of certain
+non-standard functions.
+
+ #define          function       see file        comments
+-------------------------------------------------------------------
+HAVE_ERF          erf()          specfun.c
+HAVE_GAMMA        gamma()        specfun.c
+HAVE_GETCWD       getcwd()       stdfn.h
+HAVE_GETWD        getwd()        stdfn.h
+HAVE_INDEX        index()        stdfn.h         pre-ANSI version of strchr()
+HAVE_LGAMMA       lgamma()       specfun.c       prefered over gamma()
+HAVE_ON_EXIT      on_exit()      term/x11.trm    atexit() substitute on SunOS
+HAVE_RINDEX       rindex()       stdfn.h         pre-ANSI version of strrchr()
+HAVE_SLEEP        sleep()        command.c
+HAVE_SYSINFO      sysinfo()      gplt_x11.c      SysV function to get and set
+                                                 system information. Used
+                                                 instead of gethostname().
+HAVE_STRNCASECMP  strncasecmp()  stdfn.c         non-case sensitive string
+                                                 comparison
+HAVE_STRNICMP     strnicmp()     stdfn.c         dto.
+HAVE_TCGETATTR    tcgetattr()    readline.c
+
+Terminal Selection Options
+==========================
+
+   These defines are used to include the drivers for various plotting 
+terminals, printers, and protocols that a given version of gnuplot can 
+access and the description of such for the help file.
+
+
+define      file               note
+------      ----               --------
+TERMFLAGS   Various makefiles  (obsolete under Unix; use configure instead)
+                               the set of terminals you want, from below or
+                               term.h
+SHORT_TERMLIST  term.h         edit term.h to specify desired devices at
+                               the beginning (instead of commenting out, 
+                               throughout the file, devices not desired.) 
+
+ALL_TERM_DOC   docs/termdoc.c  on-line help documentation for all devices
+                               rather than only for the drivers selected
+                               in term.h.
+
+
+   The following, non-authoritative, list serves as a guide to the range 
+of devices that may be selected/deselected by editing term.h.
+
+   AED         AED 512 and AED 767
+   AIFM        Adobe Illustrator Format
+   ATT6300     PC with AT&T 6300 graphics
+   BITGRAPH    BBN BitGraph
+   COREL       COREL! Draw Format
+   CORONA      PC with Corona graphics 325
+   DEBUG       Voluminous output for debugging to terminal
+   DJSVGA      MSDOS SVGA with DJGPP compiler
+   DXY800A     Roland DXY800A plotter
+   DUMB        Printer or glass dumb terminal
+   DXF         AutoCad (Release 10.x) dxf file format
+   EEPIC       EEPIC-extended LaTeX driver, for EEPIC users
+   EGALIB      PC with EGA/VGA graphics.
+   EMTEX       LaTeX picture environment with emTeX specials
+   EMXVGA      PC with VGA running DOS or OS/2
+   EPS180      Epson-LQ style 24-pin 180-dot per inch printers
+   EPS60       Epson-style 60-dot per inch printers
+   EPSONP      Epson LX-800, Star NL-10, NX-1000 and lots of others
+   EXCL        Talaris EXCL laser printer format
+   FIG         Fig graphics language (requires object.h from TransFig)
+   GIF         Gif output, requires special library
+   GPIC        Gpic for groff
+   HERCULES    IBM PC/Clone with Hercules graphics board
+   HP2648      HP2648, HP2647
+   HP26        HP2623A and maybe others
+   HP500C      HP Deskjet 500 C and maybe other Color Deskjets
+   HP75        HP7580, and probably other HPs
+   HPGL        HP7475 and (hopefully) lots of others
+   HPLJII      HP Laserjet II
+   HPPJ        HP PaintJet
+   IMAGEN      Imagen laser printers (300dpi) (requires -Iterm also)
+   KERMIT      MS-DOS Kermit Tektronix 4010 emulator
+   LATEX       LaTeX picture environment
+   LINUXVGA    Linux PC with (s)vgalib
+   MF          Metafont Format
+   MIF         FrameMaker MIF 3.00 Format
+   NEC         NEC CP6 pinwriter printer
+   NEXT        NeXTStep Window System (only grey scale)
+   OS2PM       OS/2 Presentation Manager
+   PBM         PBMPLUS pbm, pgm, ppm formats
+   PCL         HP PCL5 (actually  HPGL/2)
+   PNG         Portable Network Graphics, requires separate library
+   POSTSCRIPT  PostScript
+   PSLATEX     Postscript graphics, LaTeX labels and titles
+   PSTRICKS    PSTRICKS 0.91 format
+   QMS         QMS/QUIC laserprinter (Talaris 1200 and others)
+   REGIS       ReGis graphics (vt125, vt220, vt240, Gigis...)
+   SELANAR     Selanar
+   SUN         Sun Microsystems Workstation
+   T410X       Tektronix 4106, 4107, 4109 and 420x terminals
+   TABLE       Text output
+   TANDY60     Tandy DMP-130 series 60-dot per inch graphics
+   TEK         Tektronix 4010, and probably others
+   TEXDRAW     TeXDraw format (for LaTeX)
+   TGIF        TGIF X11 Drawing Tool
+   TPIC        Tpic specials for TeX
+   UNIXPC      unixpc (ATT 3b1 or ATT 7300)
+   V384        Vectrix 384 and tandy color printer
+   VTTEK       VT like Tektronix 4010 emulator
+   VWS         VAX Windowing System  (UIS libraries)
+   X11         X11R4 window system
+
+
+Platform Related Defines
+========================
+
+ These #defines are defined automatically by various compilers or
+makefiles, some gnuplot routines check these defines to implement
+features found in the various environments. This list is certainly
+incomplete.
+
+define        note
+------        --------
+_CRAY         defined by CRAY's C compiler.
+__DECC        defined by DEC C compiler under VMS (?)
+__TURBOC__    defined automatically by  Borland C++ 3.x.
+unix          defined by most unix C compilers.
+vms           (and VMS) defined by VMS C compilers.
+__ZTC__       Zortech C compiler under MSDOS.
+_Windows      defined by Borland C++ 3.0 compiling for MS-Windows.
+__WATCOMC__   defined automatically by  Watcom C
+__EMX__       defined by EMX gcc (available on DOS & OS/2).
+OS2           to be defined by compilers under OS/2.
+
+Defines Used in Gnuplot
+=======================
+
+ The following defines are used to achieve better portability. Most of
+them are wrappers.
+
+ #define          wraps/redefines            see file    comments
+------------------------------------------------------------------
+GP_GETCWD         getwd()/getcwd() alikes    stdfn.h
+GP_FARMALLOC      faralloc()/malloc()        alloc.c     Windows environment
+GP_FARREALLOC     farrealloc()/realloc()     alloc.c     Windows environment
+GP_SLEEP          sleep()                    command.c
+GP_SYSTEMINFO     sysinfo()/gethostname()    gplt_x11.c
+GPFAR             `far' compiler directive   plot.h      MSDOS and Win16
+GPHUGE            `huge' compiler directive  plot.h      MSDOS and Win16
+GP_INLINE         `__inline' directive       plot.h
+GPMAX             max (a,b)                  plot.h
+GPMIN             min (a,b)                  plot.h
+
+ The following symbols are defined when using DEBUG:
+
+DEBUG_WHERE       prints filename and line number to stderr *without* linefeed
+FPRINTF(a)        uses DEBUG_WHERE, passes a to fprintf
+
+ Usage example: FPRINTF((stderr, "function foo returned %d\n", bar));
+ Result:        readline.c:620 function foo returned -1
+

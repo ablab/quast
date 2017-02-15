@@ -1,0 +1,41 @@
+#
+# $Id: mouselab_2.dem,v 1.1 2006/07/10 19:49:54 sfeam Exp $
+#
+# Wait for keystroke in plot window
+#
+pause mouse key
+#
+# Add new printable character to label
+#
+if (31 < MOUSE_KEY && MOUSE_KEY < 127) \
+    LABEL = LABEL.MOUSE_CHAR
+#
+# Add newline to label if input character was <cr>
+#
+if (MOUSE_KEY == 13) \
+    LABEL = LABEL."\n"
+#
+# Delete previous character from label on <backspace> or <delete>
+#
+if (MOUSE_KEY == 8 || MOUSE_KEY == 127) \
+    LABEL = LABEL[1:strlen(LABEL)-1]
+#
+# Allow arrow keys to tweak label position
+# The GP_Up GP_Right GP_Down GP_Left (1008-1011) are defined in mousecmn.h
+#
+if (MOUSE_KEY == 1009) LABEL_Y = LABEL_Y + (GPVAL_Y_MAX-GPVAL_Y_MIN)/100.
+if (MOUSE_KEY == 1010) LABEL_X = LABEL_X + (GPVAL_X_MAX-GPVAL_X_MIN)/100.
+if (MOUSE_KEY == 1011) LABEL_Y = LABEL_Y - (GPVAL_Y_MAX-GPVAL_Y_MIN)/100.
+if (MOUSE_KEY == 1008) LABEL_X = LABEL_X - (GPVAL_X_MAX-GPVAL_X_MIN)/100.
+#
+# Update label
+#
+set label LID LABEL at LABEL_X, LABEL_Y
+replot
+#
+# DEBUG feedback 
+#       print "<",MOUSE_KEY,">"
+#
+# Return to caller on <esc> or <tab>, otherwise loop
+#
+if (MOUSE_KEY != 27 && MOUSE_CHAR ne "	") reread

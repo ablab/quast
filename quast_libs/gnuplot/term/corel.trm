@@ -1,0 +1,452 @@
+/* Hello, Emacs, this is -*-C-*-
+ * $Id: corel.trm,v 1.18 2013/01/26 00:19:22 sfeam Exp $
+ */
+
+/*
+   corel.trm
+
+   A modified ai.trm for CorelDraw import filters
+   by Chris Parks, parks@physics.purdue.edu
+   Import from CorelDraw with the CorelTrace filter
+
+   syntax: set terminal default
+           set terminal mode "fontname" fontsize,xsize,ysize,linewidth
+
+           mode= color or monochrome             (default=mono)
+           "fontname"= postscript font name      (default="SwitzerlandLight")
+           fontsize  = size of font in points    (default=22pt)
+           xsize     = width of page in inches   (default=8.2in)
+           ysize     = height of page in inches  (default=10in)
+           linewidth = width of lines in points  (default=1.2pt)
+
+*/
+
+/*
+ * adapted to the new terminal layout by Stefan Bodewig (Dec. 1995)
+ */
+
+#include "driver.h"
+
+#ifdef TERM_REGISTER
+register_term(corel)
+#endif
+
+#ifdef TERM_PROTO
+TERM_PUBLIC void COREL_options __PROTO((void));
+TERM_PUBLIC void COREL_init __PROTO((void));
+TERM_PUBLIC void COREL_graphics __PROTO((void));
+TERM_PUBLIC void COREL_text __PROTO((void));
+TERM_PUBLIC void COREL_reset __PROTO((void));
+TERM_PUBLIC void COREL_linetype __PROTO((int linetype));
+TERM_PUBLIC void COREL_move __PROTO((unsigned int x, unsigned int y));
+TERM_PUBLIC void COREL_vector __PROTO((unsigned int x, unsigned int y));
+TERM_PUBLIC void COREL_put_text __PROTO((unsigned int x, unsigned int y,
+					 const char *str));
+TERM_PUBLIC int COREL_text_angle __PROTO((int ang));
+TERM_PUBLIC int COREL_justify_text __PROTO((enum JUSTIFY mode));
+#define CORELD_XMAX  5960	/* 8.2 inches wide */
+#define CORELD_YMAX  7200	/* 10 inches high  */
+#define CORELD_VTIC  (CORELD_YMAX/80)
+#define CORELD_HTIC  (CORELD_YMAX/80)
+#define CORELD_VCHAR (22*COREL_SC)	/* default is 22 point characters */
+#define CORELD_HCHAR (22*COREL_SC*6/10)
+#endif
+
+#ifndef TERM_PROTO_ONLY
+#ifdef TERM_BODY
+
+#define DEFAULT_CORELFONT "SwitzerlandLight"
+
+/* plots for publication should be sans-serif (don't use TimesRoman) */
+static char corel_font[MAX_ID_LEN + 1] = DEFAULT_CORELFONT;	/* name of font */
+static int corel_fontsize = 22;	/* size of font in pts */
+static TBOOLEAN corel_color = FALSE;
+static TBOOLEAN corel_stroke = FALSE;
+static int corel_path_count = 0;	/* count of lines in path */
+static int corel_ang = 0;		/* text angle */
+static enum JUSTIFY corel_justify = LEFT;	/* text is flush left */
+
+
+/* default mode constants */
+#define CORELD_XOFF  0		/* page offset in pts */
+#define CORELD_YOFF  0
+#define COREL_SC     (10.0)	/* scale is 1pt = 10 units */
+#define CORELD_LW    (1.2*COREL_SC)	/* linewidth = 1.2 pts */
+
+static unsigned int corel_xmax = CORELD_XMAX;
+static unsigned int corel_ymax = CORELD_YMAX;
+static float corel_lw = CORELD_LW;
+
+enum COREL_id {COREL_DEFAULT, COREL_MONOCHROME, COREL_COLOR, COREL_OTHER };
+
+static struct gen_table COREL_opts[] =
+{
+    { "def$ault", COREL_DEFAULT},
+    { "mono$chrome", COREL_MONOCHROME },
+    { "color$", COREL_COLOR },
+    { "colour$", COREL_COLOR },
+    { NULL, COREL_OTHER }
+};
+
+TERM_PUBLIC void
+COREL_options()
+{
+    struct value a;
+
+    while (!END_OF_COMMAND) {
+	switch(lookup_table(&COREL_opts[0],c_token)) {
+	case COREL_DEFAULT:
+	    corel_color = FALSE;
+	    strcpy(corel_font, DEFAULT_CORELFONT);
+	    corel_fontsize = 22;
+	    corel_lw = CORELD_LW;
+	    corel_xmax = CORELD_XMAX;
+	    corel_ymax = CORELD_YMAX;
+	    c_token++;
+	    break;
+	case COREL_MONOCHROME:
+	    corel_color = FALSE;
+	    c_token++;
+	    break;
+	case COREL_COLOR:
+	    corel_color = TRUE;
+	    c_token++;
+	    break;
+	case COREL_OTHER:
+	default:
+	    /* font name */
+	    if (isstringvalue(c_token)) {
+		char *font = try_to_get_string();
+		strncpy(corel_font, font, MAX_ID_LEN);
+	    } else {
+		/* We have font size specified */
+		corel_fontsize = (int) real(const_express(&a));
+		c_token++;
+		term->v_char = (unsigned int) (corel_fontsize * COREL_SC);
+		term->h_char = (unsigned int) (corel_fontsize * COREL_SC * 6 / 10);
+	    }
+	    break;
+	}
+    }
+
+    /* FIXME - argh. Stupid syntax alert here */
+    if (!END_OF_COMMAND) {
+	corel_xmax = (unsigned int) (real(const_express(&a)) * 720);
+	c_token++;
+	if (!END_OF_COMMAND) {
+	    corel_ymax = (unsigned int) (real(const_express(&a)) * 720);
+	    c_token++;
+	}
+	term->xmax = corel_xmax;
+	term->ymax = corel_ymax;
+	term->v_tic = corel_ymax / 80;
+	term->h_tic = corel_ymax / 80;
+    }
+    if (!END_OF_COMMAND) {
+	corel_lw = real(const_express(&a)) * COREL_SC;
+	c_token++;
+    }
+    sprintf(term_options, "%s \"%s\" %d,%0.1f,%0.1f,%0.1f",
+	    corel_color ? "color" : "monochrome", corel_font,
+	    corel_fontsize, corel_xmax / 720.0, corel_ymax / 720.0,
+	    corel_lw / COREL_SC);
+}
+
+TERM_PUBLIC void
+COREL_init()
+{
+    fprintf(gpoutfile, "\
+%%!PS-Adobe-2.0 EPSF-1.2\n\
+%%%%BoundingBox: %d %d %d %d\n\
+%%%%TemplateBox: %d %d %d %d\n\
+%%%%EndComments\n\
+%%%%EndProlog\n\
+%%%%BeginSetup\n%%%%EndSetup\n",
+	    CORELD_XOFF, CORELD_YOFF,
+	    (int) ((corel_xmax) / COREL_SC + 0.5 + CORELD_XOFF),
+	    (int) ((corel_ymax) / COREL_SC + 0.5 + CORELD_YOFF),
+	    CORELD_XOFF, CORELD_YOFF,
+	    (int) ((corel_xmax) / COREL_SC + 0.5 + CORELD_XOFF),
+	    (int) ((corel_ymax) / COREL_SC + 0.5 + CORELD_YOFF));
+}
+
+
+TERM_PUBLIC void
+COREL_graphics()
+{
+    corel_path_count = 0;
+    corel_stroke = FALSE;
+}
+
+
+TERM_PUBLIC void
+COREL_text()
+{
+    if (corel_stroke) {
+	fputs("S\n", gpoutfile);
+	corel_stroke = FALSE;
+    }
+    corel_path_count = 0;
+}
+
+
+TERM_PUBLIC void
+COREL_reset()
+{
+    fputs("%%Trailer\n", gpoutfile);
+}
+
+
+TERM_PUBLIC void
+COREL_linetype(int linetype)
+{
+    if (corel_stroke) {
+	fputs("S\n", gpoutfile);
+	corel_stroke = FALSE;
+    }
+    switch (linetype) {
+    case LT_BLACK:
+	fprintf(gpoutfile, "%.2f w\n", corel_lw / COREL_SC);
+	if (corel_color) {
+	    fputs("0 0 0 1 K\n", gpoutfile);
+	} else {
+	    fputs("\
+[] 0 d\n\
+0 j\n0 G\n", gpoutfile);
+	}
+	break;
+
+    case LT_AXIS:
+	fprintf(gpoutfile, "%.2f w\n", corel_lw / COREL_SC);
+	if (corel_color) {
+	    fputs("0 0 0 1 K\n", gpoutfile);
+	} else {
+	    fputs("\
+[1 2] 0 d\n\
+0 j\n0 G\n", gpoutfile);
+	}
+	break;
+
+    case 0:
+	fprintf(gpoutfile, "%.2f w\n", corel_lw / COREL_SC);
+	if (corel_color) {
+	    fputs("1 0 1 0 K\n", gpoutfile);
+	} else {
+	    fputs("\
+[] 0 d\n\
+2 j\n0 G\n", gpoutfile);
+	}
+	break;
+
+    case 1:
+	fprintf(gpoutfile, "%.2f w\n", corel_lw / COREL_SC);
+	if (corel_color) {
+	    fputs("1 1 0 0 K\n", gpoutfile);
+	} else {
+	    fputs("\
+[4 2] 0 d\n\
+2 j\n0 G\n", gpoutfile);
+	}
+	break;
+
+    case 2:
+	fprintf(gpoutfile, "%.2f w\n", corel_lw / COREL_SC);
+	if (corel_color) {
+	    fputs("0 1 1 0 K\n", gpoutfile);
+	} else {
+	    fputs("\
+[2 3] 0 d\n\
+2 j\n0 G\n", gpoutfile);
+	}
+	break;
+
+    case 3:
+	fprintf(gpoutfile, "%.2f w\n", corel_lw / COREL_SC);
+	if (corel_color) {
+	    fputs("0 1 0 0 K\n", gpoutfile);
+	} else {
+	    fputs("\
+[1 1.5] 0 d\n\
+2 j\n0 G\n", gpoutfile);
+	}
+	break;
+
+    case 4:
+	fprintf(gpoutfile, "%f w\n", corel_lw / COREL_SC);
+	if (corel_color) {
+	    fputs("1 0 0 0 K\n", gpoutfile);
+	} else {
+	    fputs("\
+[5 2 1 2] 0 d\n\
+2 j\n0 G\n", gpoutfile);
+	}
+	break;
+
+    case 5:
+	fprintf(gpoutfile, "%.2f w\n", corel_lw / COREL_SC);
+	if (corel_color) {
+	    fputs("0 0 1 0 K\n", gpoutfile);
+	} else {
+	    fputs("\
+[4 3 1 3] 0 d\n\
+2 j\n0 G\n", gpoutfile);
+	}
+	break;
+
+    case 6:
+	fprintf(gpoutfile, "%.2f w\n", corel_lw / COREL_SC);
+	if (corel_color) {
+	    fputs("0 0 0 1 K\n", gpoutfile);
+	} else {
+	    fputs("\
+[2 2 2 4] 0 d\n\
+2 j\n0 G\n", gpoutfile);
+	}
+	break;
+
+    case 7:
+	fprintf(gpoutfile, "%.2f w\n", corel_lw / COREL_SC);
+	if (corel_color) {
+	    fputs("0 0.7 1 0 K\n", gpoutfile);
+	} else {
+	    fputs("\
+[2 2 2 2 2 4] 0 d\n\
+2 j\n0 G\n", gpoutfile);
+	}
+	break;
+
+    case 8:
+	fprintf(gpoutfile, "%.2f w\n", corel_lw / COREL_SC);
+	if (corel_color) {
+	    fputs("0.5 0.5 0.5 0 K\n", gpoutfile);
+	} else {
+	    fputs("\
+[2 2 2 2 2 2 2 4] 0 d\n\
+2 j\n0 G\n", gpoutfile);
+	}
+	break;
+    }
+    corel_path_count = 0;
+}
+
+
+TERM_PUBLIC void
+COREL_move(unsigned int x, unsigned int y)
+{
+    if (corel_stroke)
+	fputs("S\n", gpoutfile);
+    fprintf(gpoutfile, "%0.2f %0.2f m\n", x / COREL_SC, y / COREL_SC);
+    corel_path_count += 1;
+    corel_stroke = TRUE;
+}
+
+
+TERM_PUBLIC void
+COREL_vector(unsigned int x, unsigned int y)
+{
+    fprintf(gpoutfile, "%.2f %.2f l\n", x / COREL_SC, y / COREL_SC);
+    corel_path_count += 1;
+    corel_stroke = TRUE;
+    if (corel_path_count >= 400) {
+	fprintf(gpoutfile, "S\n%.2f %.2f m\n", x / COREL_SC, y / COREL_SC);
+	corel_path_count = 0;
+    }
+}
+
+
+TERM_PUBLIC void
+COREL_put_text(unsigned int x, unsigned int y, const char *str)
+{
+    char ch;
+    if (corel_stroke) {
+	fputs("S\n", gpoutfile);
+	corel_stroke = FALSE;
+    }
+    switch (corel_justify) {
+    case LEFT:
+	fprintf(gpoutfile, "/_%s %d %d 0 0 z\n",
+		corel_font, corel_fontsize, corel_fontsize);
+	break;
+    case CENTRE:
+	fprintf(gpoutfile, "/_%s %d %d 0 1 z\n",
+		corel_font, corel_fontsize, corel_fontsize);
+	break;
+    case RIGHT:
+	fprintf(gpoutfile, "/_%s %d %d 0 2 z\n",
+		corel_font, corel_fontsize, corel_fontsize);
+	break;
+    }
+    if (corel_ang == 0) {
+	fprintf(gpoutfile, "[1 0 0 1 %.2f %.2f]e\n0 g\n",
+		x / COREL_SC, y / COREL_SC - corel_fontsize / 3.0);
+    } else {
+	fprintf(gpoutfile, "[0 1 -1 0 %.2f %.2f]e\n0 g\n",
+		x / COREL_SC - corel_fontsize / 3.0, y / COREL_SC);
+    }
+
+    putc('(', gpoutfile);
+    ch = *str++;
+    while (ch != NUL) {
+	if ((ch == '(') || (ch == ')') || (ch == '\\'))
+	    putc('\\', gpoutfile);
+	putc(ch, gpoutfile);
+	ch = *str++;
+    }
+    fputs(")t\nT\n", gpoutfile);
+    corel_path_count = 0;
+}
+
+TERM_PUBLIC int
+COREL_text_angle(int ang)
+{
+    corel_ang = ang;
+    return TRUE;
+}
+
+TERM_PUBLIC int
+COREL_justify_text(enum JUSTIFY mode)
+{
+    corel_justify = mode;
+    return TRUE;
+}
+
+#endif /* TERM_BODY */
+
+#ifdef TERM_TABLE
+
+TERM_TABLE_START(corel_driver)
+    "corel", "EPS format for CorelDRAW",
+    CORELD_XMAX, CORELD_YMAX, CORELD_VCHAR, CORELD_HCHAR,
+    CORELD_VTIC, CORELD_HTIC, COREL_options, COREL_init, COREL_reset,
+    COREL_text, null_scale, COREL_graphics, COREL_move, COREL_vector,
+    COREL_linetype, COREL_put_text, COREL_text_angle,
+    COREL_justify_text, do_point, do_arrow, set_font_null
+TERM_TABLE_END(corel_driver)
+
+#undef LAST_TERM
+#define LAST_TERM corel_driver
+
+#endif /* TERM_TABLE */
+#endif /* TERM_PROTO_ONLY */
+
+#ifdef TERM_HELP
+START_HELP(corel)
+"1 corel",
+"?commands set terminal corel",
+"?set terminal corel",
+"?set term corel",
+"?terminal corel",
+"?term corel",
+"?corel",
+" The `corel` terminal driver supports CorelDraw.",
+"",
+" Syntax:",
+"       set terminal corel {  default",
+"                           | {monochrome | color",
+"                                {\"<font>\" {<fontsize> ",
+"                                   {<xsize> <ysize> {<linewidth> }}}}}",
+"",
+" where the fontsize and linewidth are specified in points and the sizes in",
+" inches.  The defaults are monochrome, \"SwitzerlandLight\", 22, 8.2, 10 and 1.2."
+END_HELP(corel)
+#endif /* TERM_HELP */

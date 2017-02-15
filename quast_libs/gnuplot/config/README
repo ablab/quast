@@ -1,0 +1,18 @@
+Notes:
+- EAM Oct 2007: give up on Atari platforms
+- EAM Mar 2010: give up on Amiga and 16-bit DOS, WIN
+
+List of files:
+cygwin/Makefile: Makefile for Cygwin on Windows
+mingw/Makefile:  Makefile for MinGW/MSYS and GNU make on Windows
+msvc/Makefile:   Makefile for Microsoft Visual C++ 2005 or later and nmake on Windows
+watcom/Makefile: Makefile for OpenWatcom C++ on Windows
+buildvms.com: Shell script on VMS
+make_vms.com: Shell script on VMS
+makefile.unx: Generic makefile for unixes
+makefile.dj2: Makefile for DJGPP version 2 on DOS
+makefile.emx: Makefile for use with emx-0.8f/gcc and ndmake 4.5 on DOS
+makefile.g:   Makefile on GRASS (a geographic information system)
+makefile.os2: Makefile for gcc/emx on OS/2
+makefile.vms: Makefile on VMS
+makefile.wc:  Makefile for Watcom C 9.5a on DOS

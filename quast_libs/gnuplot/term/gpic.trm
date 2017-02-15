@@ -1,0 +1,354 @@
+/* Hello, Emacs, this is -*-C-*-
+ * $Id: gpic.trm,v 1.20 2014/03/19 20:42:44 sfeam Exp $
+ */
+
+/* GNUPLOT - gpic.trm */
+
+/*[
+ * Copyright 1993, 1998, 2004
+ *
+ * Permission to use, copy, and distribute this software and its
+ * documentation for any purpose with or without fee is hereby granted,
+ * provided that the above copyright notice appear in all copies and
+ * that both that copyright notice and this permission notice appear
+ * in supporting documentation.
+ *
+ * Permission to modify the software is granted, but not the right to
+ * distribute the complete modified source code.  Modifications are to
+ * be distributed as patches to the released version.  Permission to
+ * distribute binaries produced by compiling modified sources is granted,
+ * provided you
+ *   1. distribute the corresponding source modifications from the
+ *    released version in the form of a patch file along with the binaries,
+ *   2. add special version identification to distinguish your version
+ *    in addition to the base release version number,
+ *   3. provide your name and address as the primary contact for the
+ *    support of your modified version, and
+ *   4. retain our contact information in regard to use of the base
+ *    software.
+ * Permission to distribute the released version of the source code along
+ * with corresponding source modifications in the form of a patch file is
+ * granted with same provisions 2 through 4 for binary distributions.
+ *
+ * This software is provided "as is" without express or implied warranty
+ * to the extent permitted by applicable law.
+]*/
+
+/*
+ * This file is included by ../term.c.
+ */
+
+/*
+ * This terminal driver supports:
+ *   The GPIC graphics language for groff
+ *
+ * AUTHOR
+ *  Sigfrid Lundberg
+ *
+ * send your comments or suggestions to (siglun@volterra.teorekol.lu.se).
+ *
+ */
+
+/*
+ * adapted to the new terminal layout by Stefan Bodewig (Dec. 1995)
+ */
+
+#include "driver.h"
+
+#ifdef TERM_REGISTER
+register_term(gpic)
+#endif
+
+#ifdef TERM_PROTO
+TERM_PUBLIC void GPIC_options __PROTO((void));
+TERM_PUBLIC void GPIC_init __PROTO((void));
+TERM_PUBLIC void GPIC_graphics __PROTO((void));
+TERM_PUBLIC void GPIC_text __PROTO((void));
+TERM_PUBLIC void GPIC_linetype __PROTO((int linetype));
+TERM_PUBLIC void GPIC_move __PROTO((unsigned int x, unsigned int y));
+TERM_PUBLIC void GPIC_vector __PROTO((unsigned int ux, unsigned int uy));
+TERM_PUBLIC void GPIC_arrow __PROTO((unsigned int sx, unsigned int sy,
+				     unsigned int ex, unsigned int ey,
+				     int head));
+TERM_PUBLIC void GPIC_put_text __PROTO((unsigned int x, unsigned int y,
+					const char str[]));
+TERM_PUBLIC int GPIC_justify_text __PROTO((enum JUSTIFY mode));
+TERM_PUBLIC int GPIC_text_angle __PROTO((int ang));
+TERM_PUBLIC void GPIC_reset __PROTO((void));
+#define GPIC_DOTS_PER_INCH (300)
+
+/* 5 inches wide by 3 inches high (default) */
+#define GPIC_XMAX (5*GPIC_DOTS_PER_INCH)
+#define GPIC_YMAX (3*GPIC_DOTS_PER_INCH)
+
+#define GPIC_HTIC (5*GPIC_DOTS_PER_INCH/72)
+#define GPIC_VTIC (5*GPIC_DOTS_PER_INCH/72)
+#define GPIC_HCHAR (GPIC_DOTS_PER_INCH*53/10/72)
+#define GPIC_VCHAR (GPIC_DOTS_PER_INCH*11/72)
+#endif /* TERM_PROTO */
+
+#ifndef TERM_PROTO_ONLY
+#ifdef TERM_BODY
+
+#define GPIC_PTS_PER_INCH (72.27)
+/* dot size in pt */
+#define GPIC_UNIT (GPIC_PTS_PER_INCH/GPIC_DOTS_PER_INCH)
+#define GPIC_coord(x) ((float)x)/((float)GPIC_DOTS_PER_INCH)
+
+static void GPIC_close_line __PROTO((void));
+static float GPIC_x, GPIC_y;
+static unsigned int GPIC_ltype;
+static enum JUSTIFY GPIC_justify = LEFT;
+
+/* for DOTS point style */
+
+static const char *GPIC_lines[] =
+{
+    "thickness 1.0",		/* -2 border */
+    "dotted",			/* -1 axes */
+    "",				/*  0 solid thin  */
+    "dotted",
+    "dashed 0.05",		/*  1 solid thick */
+    "dashed 0.075",		/*  2 solid Thick */
+};
+
+/* number of linetypes above */
+#define GPIC_NUMLINES 6
+
+
+static int GPIC_linecount = 0;	/* number of points in line so far */
+
+
+TERM_PUBLIC void
+GPIC_options()
+{
+    float x, y;
+    struct value a;
+
+    GPIC_x = 0;
+    GPIC_y = 0;
+
+    if (!END_OF_COMMAND) {
+	x = real(const_express(&a));
+	if (!END_OF_COMMAND) {
+	    y = real(const_express(&a));
+	    GPIC_x = x;
+	    GPIC_y = y;
+	}
+    }
+    sprintf(term_options, "Origin is at (%f,%f)", GPIC_x, GPIC_y);
+
+}
+
+TERM_PUBLIC void
+GPIC_init()
+{
+    GPIC_linetype(-1);
+    fputs(".\\\"GNUPLOT: GROFF picture using the gpic preprocessor\n", gpoutfile);
+}
+
+
+
+TERM_PUBLIC void
+GPIC_graphics()
+{
+    register struct termentry *t = term;
+
+    fprintf(gpoutfile, ".PS %f %f\n", GPIC_coord(t->xmax),
+	    GPIC_coord(t->ymax));
+    fprintf(gpoutfile, "x=%f; y=%f\n", GPIC_x, GPIC_y);
+}
+
+
+TERM_PUBLIC void
+GPIC_text()
+{
+    GPIC_close_line();
+    fputs(".PE\n", gpoutfile);
+}
+
+TERM_PUBLIC void
+GPIC_linetype(int linetype)
+{
+    if (linetype < -2)
+	linetype = LT_BLACK;
+    if (linetype >= GPIC_NUMLINES - 2)
+	linetype %= (GPIC_NUMLINES - 2);
+    GPIC_ltype = linetype;
+}
+
+static void
+GPIC_close_line()
+{
+    if (GPIC_linecount > 0) {
+	fputs("; reset linewid\n", gpoutfile);
+	GPIC_linecount = 0;
+    }
+}
+
+TERM_PUBLIC void
+GPIC_move(unsigned int x, unsigned int y)
+{
+    GPIC_close_line();
+    fprintf(gpoutfile, "move to (x+%f,y+%f)\n", GPIC_coord(x), GPIC_coord(y));
+    GPIC_linecount = 1;
+}
+
+
+TERM_PUBLIC void
+GPIC_vector(unsigned int ux, unsigned int uy)
+{
+    if (GPIC_linecount == 1) {
+	fprintf(gpoutfile, "line %s to (x+%f,y+%f)",
+		GPIC_lines[GPIC_ltype + 2],
+		GPIC_coord(ux), GPIC_coord(uy));
+    } else {
+	fprintf(gpoutfile, "\
+ \\\n\
+   then to (x+%f,y+%f)",
+		GPIC_coord(ux), GPIC_coord(uy));
+    }
+    GPIC_linecount++;
+}
+
+
+TERM_PUBLIC void
+GPIC_arrow(
+    unsigned int sx, unsigned int sy,
+    unsigned int ex, unsigned int ey,
+    int head)
+{
+    GPIC_close_line();
+    if (head) {
+	fprintf(gpoutfile, "arrowhead=7; arrow from x+%f,y+%f to x+%f,y+%f\n",
+		GPIC_coord(sx), GPIC_coord(sy), GPIC_coord(ex), GPIC_coord(ey));
+    } else {
+	fprintf(gpoutfile, "line from x+%f,y+%f to x+%f,y+%f\n",
+		GPIC_coord(sx), GPIC_coord(sy), GPIC_coord(ex), GPIC_coord(ey));
+    }
+}
+
+
+TERM_PUBLIC void
+GPIC_put_text(unsigned int x, unsigned int y, const char str[])
+{
+    GPIC_close_line();
+    fprintf(gpoutfile, "\"%s\" ", str);
+    switch (GPIC_justify) {
+    case LEFT:{
+	    fputs("ljust ", gpoutfile);
+	    break;
+	}
+    case CENTRE:{
+	    fputs(" ", gpoutfile);
+	    break;
+	}
+    case RIGHT:{
+	    fputs("rjust ", gpoutfile);
+	    break;
+	}
+    }
+    fprintf(gpoutfile, "at x+%f,y+%f\n", GPIC_coord(x), GPIC_coord(y));
+}
+
+
+
+TERM_PUBLIC int
+GPIC_justify_text(enum JUSTIFY mode)
+{
+    GPIC_justify = mode;
+    return (TRUE);
+}
+
+TERM_PUBLIC int
+GPIC_text_angle(int ang)
+{
+    (void) ang;
+    GPIC_close_line();
+    return (FALSE);
+}
+
+TERM_PUBLIC void
+GPIC_reset()
+{
+    fflush(gpoutfile);
+}
+
+#endif /* TERM_BODY */
+
+#ifdef TERM_TABLE
+
+TERM_TABLE_START(gpic_driver)
+    "gpic", "GPIC -- Produce graphs in groff using the gpic preprocessor",
+    GPIC_XMAX, GPIC_YMAX, GPIC_VCHAR, GPIC_HCHAR,
+    GPIC_VTIC, GPIC_HTIC, GPIC_options, GPIC_init, GPIC_reset,
+    GPIC_text, null_scale, GPIC_graphics, GPIC_move, GPIC_vector,
+    GPIC_linetype, GPIC_put_text, GPIC_text_angle,
+    GPIC_justify_text, line_and_point, GPIC_arrow, set_font_null
+TERM_TABLE_END(gpic_driver)
+#undef LAST_TERM
+#define LAST_TERM gpic_driver
+
+#endif /* TERM_TABLE */
+#endif /* TERM_PROTO_ONLY */
+
+#ifdef TERM_HELP
+START_HELP(gpic)
+"1 gpic",
+"?commands set terminal gpic",
+"?set terminal gpic",
+"?set term gpic",
+"?terminal gpic",
+"?term gpic",
+"?gpic",
+" The `gpic` terminal driver generates GPIC graphs in the Free Software",
+" Foundations's \"groff\" package.  The default size is 5 x 3 inches.  The only",
+" option is the origin, which defaults to (0,0).",
+"",
+" Syntax:",
+"       set terminal gpic {<x> <y>}",
+"",
+" where `x` and `y` are in inches.",
+"",
+" A simple graph can be formatted using",
+"",
+"       groff -p -mpic -Tps file.pic > file.ps.",
+"",
+" The output from pic can be pipe-lined into eqn, so it is possible to put",
+" complex functions in a graph with the `set label` and `set {x/y}label`",
+" commands.  For instance,",
+"",
+"       set ylab '@space 0 int from 0 to x alpha ( t ) roman d t@'",
+"",
+" will label the y axis with a nice integral if formatted with the command:",
+"",
+"       gpic filename.pic | geqn -d@@ -Tps | groff -m[macro-package] -Tps",
+"           > filename.ps",
+"",
+" Figures made this way can be scaled to fit into a document.  The pic language",
+" is easy to understand, so the graphs can be edited by hand if need be.  All",
+" co-ordinates in the pic-file produced by `gnuplot` are given as x+gnuplotx",
+" and y+gnuploty.  By default x and y are given the value 0.  If this line is",
+" removed with an editor in a number of files, one can put several graphs in",
+" one figure like this (default size is 5.0x3.0 inches):",
+"",
+"       .PS 8.0",
+"       x=0;y=3",
+"       copy \"figa.pic\"",
+"       x=5;y=3",
+"       copy \"figb.pic\"",
+"       x=0;y=0",
+"       copy \"figc.pic\"",
+"       x=5;y=0",
+"       copy \"figd.pic\"",
+"       .PE",
+"",
+" This will produce an 8-inch-wide figure with four graphs in two rows on top",
+" of each other.",
+"",
+" One can also achieve the same thing by specifying x and y in the command",
+"",
+"       set terminal gpic x y",
+""
+END_HELP(gpic)
+#endif /* TERM_HELP */

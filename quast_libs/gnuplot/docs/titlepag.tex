@@ -1,0 +1,187 @@
+%
+% $Id: titlepag.tex,v 1.39.2.9 2016/10/09 17:23:56 sfeam Exp $
+%
+
+\ifx\LaTeXe\undefined
+
+% old LaTeX version
+% add `,a4' to `toc_entry' to load settings for A4-paper
+% see below if you add 11pt or 12pt
+   \documentstyle[toc_entr]{article}
+
+\else
+
+% LaTeX2e version
+% add `[a4paper]' before `{article}' to load settings for A4-paper
+% see below if you add 11pt or 12pt
+   \documentclass[twoside]{article}
+   \usepackage{toc_entr}
+   \usepackage{latexsym}
+   \usepackage[utf8x]{inputenc}
+
+  \usepackage[
+% We've given up trying to understand pdftex vs. normal latex.
+% It'll just have to sort itself out.  If it doesn't, add your
+% own local hyperref options HERE.
+        hyperindex,
+        bookmarks,
+        bookmarksnumbered=true,
+        pdftitle={gnuplot documentation},
+        pdfauthor={gnuplot},
+        pdfsubject={see www.gnuplot.info}
+  %     ,pdfcreator={}
+  %     ,pdfkeywords={...}
+  ]{hyperref}
+
+% This replaces the default ugly red boxes around hyperlinks
+   \hypersetup{
+     colorlinks   = true, %Colours links instead of ugly boxes
+     linkcolor    = blue, %Colour of internal links
+     urlcolor     = blue %Colour for external hyperlinks
+   }
+
+  \usepackage{fancyhdr}
+
+  \usepackage{makeidx}
+  \makeindex
+
+  \usepackage{longtable}
+
+  % This is only needed if you want to embed figures
+  \include{pdffigures}
+
+\fi
+
+% The following statements should adjust the default values for
+% different papersizes, mainly required for verbatim output
+% 30pt are a bit more than really needed
+%\addtolength{\textwidth}{30pt}
+%\addtolength{\oddsidemargin}{-15pt}
+%\addtolength{\evensidemargin}{-15pt}
+% Approximately keep the same ratio of width/height
+%\addtolength{\textheight}{48pt}
+%\addtolength{\topmargin}{-24pt}
+
+% \setlength{\oddsidemargin}{0.5cm}
+\setlength{\oddsidemargin}{0.0cm}
+\setlength{\evensidemargin}{0.0cm}
+\setlength{\topmargin}{-0.5in}
+\setlength{\textwidth}{6.50in}
+\setlength{\textheight}{9.5in}
+
+\setlength{\parskip}{1ex}
+\setlength{\parindent}{0pt}
+
+% For 11pt/12pt options change `\normalsize' to `\small' in
+% preverbatim
+% every verbatim environment is surrounded by the commands
+\newcommand{\preverbatim}{\normalsize\vspace{-2.2ex}}
+\newcommand{\postverbatim}{\normalsize\vspace{-0.5ex}}
+
+\adjustarticle
+
+\setcounter{secnumdepth}{5}
+\setcounter{tocdepth}{5}
+
+
+% Read the gnuplot version into macro \gnuplotVersion 
+\newread\fileGpVersion
+\openin\fileGpVersion VERSION
+\ifeof\fileGpVersion\openin\fileGpVersion VERSION.
+\ifeof\fileGpVersion\error FATAL: Cannot read file "VERSION"
+\fi\fi
+\read\fileGpVersion to \gpVersion
+\closein\fileGpVersion
+\newbox\GpVersion \setbox\GpVersion=\hbox{\gpVersion}
+\def\gnuplotVersion{\usebox\GpVersion}
+
+
+% Layout setup of fancy headings:
+\pagestyle{fancy} \headsep=5.5mm \addtolength{\headheight}{7mm}
+%\setlength{\headrulewidth}{0.4pt}
+\chead{\hyperlink{TableOfContents}{gnuplot \usebox\GpVersion}}
+\cfoot{}
+\rhead[\leftmark]{\thepage}
+\lhead[\thepage]{\leftmark}
+
+\begin{document}
+
+\sloppy
+\thispagestyle{empty}
+\rule{0in}{1.0in}
+
+  \begin{center}
+
+  {\huge\bf {gnuplot \gpVersion}}\\
+  \vspace{3ex}
+  {\Large An Interactive Plotting Program}\\
+
+  \vspace{2ex}
+
+  \large
+  Thomas Williams \& Colin Kelley\\
+
+  \vspace{2ex}
+
+  Version
+    \gnuplotVersion
+  organized by: Ethan A Merritt and many others\\
+
+   \vspace{2ex}
+
+  Major contributors (alphabetic order):\\
+
+  Christoph Bersch,
+  Hans-Bernhard Bröker,\\
+  John Campbell,
+  Robert Cunningham,\\
+  David Denholm,
+  Gershon Elber,\\
+  Roger Fearick,
+  Carsten Grammes,\\
+  Lucas Hart,
+  Lars Hecking,
+  Péter Juhász,\\
+  Thomas Koenig,
+  David Kotz,\\
+  Ed Kubaitis,
+  Russell Lang,
+  Timothée Lecomte,\\
+  Alexander Lehmann,
+  Jérôme Lodewyck,\\
+  Alexander Mai,
+  Bastian Märkisch, \\
+  Ethan A Merritt,
+  Petr Mikulík,\\
+  Carsten Steger,
+  Shigeharu Takeno,\\
+  Tom Tkacik,
+  Jos Van der Woude,\\
+  James R. Van Zandt,
+  Alex Woo,
+  Johannes Zellner\\
+  Copyright {\copyright} 1986 - 1993, 1998, 2004   Thomas Williams, Colin Kelley\\
+  Copyright {\copyright} 2004 - 2015  various authors\\
+
+  \vspace{2ex}
+
+  Mailing list for comments: \verb+gnuplot-info@lists.sourceforge.net+\\
+  Mailing list for bug reports: \verb+gnuplot-bugs@lists.sourceforge.net+\\
+  Web access (preferred): \verb+http://sourceforge.net/projects/gnuplot+
+
+  \vfill
+  This manual was originally prepared by Dick Crawford. \\
+
+  \vspace{2ex}
+
+%  25 Dec 2014  Version 5.0
+   Version 5.0.5 (October 2016)
+
+   \end{center}
+\newpage
+
+
+\hypertarget{TableOfContents}{}
+\tableofcontents
+
+\newpage

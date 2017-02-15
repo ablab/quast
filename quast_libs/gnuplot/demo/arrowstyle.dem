@@ -1,0 +1,53 @@
+#
+# $Id: arrowstyle.dem,v 1.5 2014/03/09 20:14:17 markisch Exp $
+#
+#
+set xrange [-1000:1000]
+set yrange [-178:86]
+set tics scale 0
+
+set style line 1 lt 1 lw 2
+set style line 2 lt 3 lw 2
+
+set style arrow 1 head filled size screen 0.025,30,45 ls 1
+set style arrow 2 head nofilled size screen 0.03,15 ls 2
+set style arrow 3 head filled size screen 0.03,15,45 ls 1
+set style arrow 4 head filled size screen 0.03,15 ls 2
+set style arrow 5 heads noborder size screen 0.03,15,135 ls 1
+set style arrow 6 head empty size screen 0.03,15,135 ls 2
+set style arrow 7 nohead ls 1
+set style arrow 8 heads size screen 0.008,90 ls 2
+
+print ' We have defined the following arrowstyles:'
+show style arrow
+
+set for [i=1:8] arrow from -500, (-90 - i * 10) to 500, (-90 - i * 10) as i
+set for [i=1:8] label sprintf('arrowstyle %i:', i) at -520, (-90 - i * 10) right
+
+set samples 50
+set angles rad
+pos(x) = 69 * sin(0.01 * x)
+len(x) = 49 * sin(0.01 * x + pi/2)
+
+do for [i=1:8] {
+    set title sprintf('Top: plot with vectors arrowstyle %i,  Bottom: explicit arrows', i)
+    plot '+' using 1:(pos(x)):(0):(len(x)) notitle with vectors arrowstyle i
+    pause -1 "Hit return to continue"
+}
+#reset
+
+#
+# Show plot with data style vectors
+#
+set title "Plot 'file' with vectors <arrowstyle>"
+set key box opaque
+set xrange [*:*]
+set yrange [*:10]
+set for [i=1:8] style arrow i lc i
+plot '1.dat' using 1:2:(+1):(+1) with vectors lt 4 filled title 'filled', \
+     '2.dat' using 1:2:(+1):(+1) with vectors lt 1 heads title 'double-headed', \
+     '2.dat' using ($1):(2-$2/3):(+1):(+2.5):(int($0)%8 + 1) with vectors as var ti 'arrowstyle variable'
+#
+pause -1 "Hi return to continue"
+#
+reset

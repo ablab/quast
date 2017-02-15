@@ -1,0 +1,18 @@
+#
+# Plot a function of a named variable
+# i.e. f(gamma) rather than f(x)
+#
+set title "Plot a function of a named variable"
+set xlabel "gamma"
+
+plot [gamma=0.6:1.2] \
+     [0:20] \
+     fdivm=1.2, \
+     omega = 0.8, \
+     lambda=0.051, \
+     f(gamma)=fdivm/sqrt((omega**2 - gamma**2)**2 + 4 * lambda**2 * gamma**2), \
+     f(gamma) title "f(gamma)" with lines linewidth 6
+
+pause -1 "Hit return to continue"
+
+reset

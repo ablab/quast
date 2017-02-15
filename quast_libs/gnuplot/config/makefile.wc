@@ -1,0 +1,145 @@
+#
+# $Id: makefile.wc,v 1.9 2014/08/18 03:51:49 sfeam Exp $
+#
+# GNUPLOT Makefile for Watcom C
+#
+# Modified from the TurboC makefile by Aurel Gabris
+# Heavily modified and updated for OpenWatcom 1.2 by HBB
+#
+# the makefile does longer depends on a linker options file.
+# this file will be created as needed.                          (AL 07/17/92)
+
+# where to place gnuplot.gih helpfile
+HELPFILE = gnuplot.gih
+
+# names of C compiler & tools
+CC = wcc386
+CL = wcl386
+LINK = wlink
+
+!ifdef __LOADDLL__
+!  loaddll wcc      wccd
+!  loaddll wccaxp   wccdaxp
+!  loaddll wcc386   wccd386
+!  loaddll wpp      wppdi86
+!  loaddll wppaxp   wppdaxp
+!  loaddll wpp386   wppd386
+!  loaddll wlink    wlink
+!  loaddll wlib     wlibd
+!endif
+
+# the memory model to use (f = flat)
+MODEL = f
+
+# definitions used by makefile.all (and elsewhere)
+T=..\term\
+D=..\docs\
+O=obj
+M=..\demo\
+
+!include makefile.awc
+
+# -DHAVE_CONFIG_H: do the configuration #defines the (now) usual way
+# -DREADLINE to use the history/line editing capability. If you want this
+#    capability add -DREADLINE to CFLAGS
+CPPFLAGS=-DHAVE_CONFIG_H -UMSDOS -DDOS386 -DDOS386 -DDOS32 -DPC
+
+# -w0 means ignore warnings and do not report them
+# -d1{+} means include line numbers for debugger
+# -d2 means full symbolic debug info
+# -fpi means inline 80x87 instructions with emulation
+# -fpi87 means inline 80x87 instructions
+# -zq avoids all the version banners being printed
+# -zm puts each function in a separate section to allow dead code elimination
+# -o{x} controls optimization
+#      a           -> relax aliasing constraints
+#      f           -> generate traceable stack frames as needed
+#           The selection of the optimization flags include some wizardry.
+#           Thus omiting any flags from the above two, may result in run-time
+#           errors.
+#      m           -> generate inline 80x87 code for math functions
+#      d           -> disable all optimizations (Watch out!)
+# option {stack=n} sets stack size to n
+CFLAGS = -zq -m$(MODEL) -d2 -zm -omaf -fpi -fp3 -I. $(CPPFLAGS)
+DOC2XXX_FLAGS = -I$(D) -I$(T) $(CFLAGS) 
+TERMFLAGS =
+
+OBJS = $(COREOBJS) version.$(O)
+
+BINFILES = $(M)binary1 $(M)binary2 $(M)binary3
+
+all: gnuplot.exe $(HELPFILE) $(BINFILES) .SYMBOLIC
+	@%null
+
+# use linkopt.wc to avoid command-line overflow
+
+gnuplot.exe: config.h $(OBJS) .PRECIOUS
+	$(LINK) @<<linkopt.wc
+system dos4g 
+OPTION stack=100000
+DEBUG WATCOM ALL
+OPTION SYMFILE
+OPTION MAP
+OPTION ELIMINATE
+OPTION QUIET
+NAME gnuplot 
+file {
+$(OBJS)
+}
+<<
+
+# default rules
+
+.c.obj: .AUTODEPEND
+	$(CC) $^& $(CFLAGS)
+
+$(OBJS): config.h .AUTODEPEND
+
+config.h: ..\config\config.wc
+	copy $< $^@
+
+makefile.wc: ..\config\makefile.wc
+	copy $< $^@
+
+term.obj: term.c term.h plot.h bitmap.h $(CORETERM) .AUTODEPEND
+	$(CC) $(CFLAGS) $(TERMFLAGS) -DDEFAULTTERM="dospc" -I$(T) term.c
+
+# convert gnuplot.doc to gnuplot.gih
+$(HELPFILE): doc2gih.exe $(D)gnuplot.doc
+	doc2gih $(D)gnuplot.doc $(HELPFILE)
+
+doc2gih.exe: $(D)doc2gih.c $(D)termdoc.c .AUTODEPEND
+	$(CL) $(DOC2XXX_FLAGS) -fe=$^@ $<
+
+doc2tex.exe: $(D)doc2tex.c $(D)termdoc.c .AUTODEPEND
+	$(CL) -w0 -m$(MODEL) $(DOC2XXX_FLAGS) -DALL_TERM_DOC -fe=$^@ $<
+
+bf_test.exe: bf_test.c .AUTODEPEND
+	$(CC) $(CPPFLAGS) -m$(MODEL) bf_test.c
+	$(LINK) system dos4g name bf_test file {bf_test}
+
+$(BINFILES): bf_test.exe
+	.\bf_test
+	move binary? ..\demo
+
+# clean target - remove all temp files, but leave executable intact
+# needed when changing configuration (model or overlaying)
+
+clean: .SYMBOLIC
+	if exist *.obj del *.obj
+	if exist *.err del *.err
+	if exist linkopt.wc del linkopt.wc
+	if exist doc2gih.exe del doc2gih.exe
+	if exist doc2tex.exe del doc2tex.exe
+	if exist bf_test.exe del bf_test.exe
+	if exist gnuplot.map del gnuplot.map
+	if exist gnuplot.sym del gnuplot.sym
+
+# realclean target - remove all files created by the makefile
+
+realclean: clean .SYMBOLIC
+	if exist gnuplot.exe del gnuplot.exe
+	if exist gnuplot.gih del gnuplot.gih
+	if exist $(M)binary? del $(M)binary?
+	if exist config.h del config.h
+	if exist makefile.wc del makefile.wc

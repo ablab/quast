@@ -1,0 +1,30 @@
+# Makefile for gnuplot LaTeX tutorial
+# To make the manual from scratch, we run latex two times
+all: tutorial.dvi done
+
+done:
+	latex tutorial
+	echo > done
+
+# To touch it up after changes:
+remake: tutorial.dvi
+
+# Always runs latex, e.g., to get labels right
+force:
+	latex tutorial
+
+tutorial.dvi: eg1.tex eg2.tex eg3.tex eg4.tex eg5.tex eg6.tex eg7.tex test.tex \
+	tutorial.tex header.tex
+	latex tutorial
+	rm -f done
+
+.SUFFIXES: .tex .plt
+
+.plt.tex:
+	gnuplot $<
+
+clean:
+	rm -f *~ *.log eg?.tex test.tex
+
+spotless:
+	rm -f *~ *.log *.aux *.dvi eg?.tex test.tex done

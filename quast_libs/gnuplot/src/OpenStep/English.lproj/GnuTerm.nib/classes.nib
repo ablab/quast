@@ -1,0 +1,32 @@
+{
+    IBClasses = (
+        {
+            ACTIONS = {appDidInit = id; newGnuTerm = id; printPScodeInKey = id; setKeyTitle = id; }; 
+            CLASS = Controller; 
+            LANGUAGE = ObjC; 
+            OUTLETS = {NameField = id; activeTerm = id; keyTerm = id; }; 
+            SUPERCLASS = Object; 
+        }, 
+        {CLASS = FirstResponder; LANGUAGE = ObjC; SUPERCLASS = NSObject; }, 
+        {
+            ACTIONS = {resize = id; }; 
+            CLASS = GnuView; 
+            LANGUAGE = ObjC; 
+            SUPERCLASS = NSView; 
+        }, 
+        {
+            ACTIONS = {
+                activate = id; 
+                activatePushed = id; 
+                deactivate = id; 
+                windowDidBecomeMain = id; 
+                windowWillClose = id; 
+            }; 
+            CLASS = gnuviewController; 
+            LANGUAGE = ObjC; 
+            OUTLETS = {activateButton = id; controller = id; gnuView = id; window = id; }; 
+            SUPERCLASS = Object; 
+        }
+    ); 
+    IBVersion = 1; 
+}

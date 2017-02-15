@@ -1,0 +1,19 @@
+#
+# $Id: borders.dem,v 1.11 2012/01/09 05:05:28 sfeam Exp $
+#
+unset grid
+set xrange [0:10]
+set yrange [0:10]
+set format ""
+#
+set multiplot layout 4, 4 title "Demonstration of different border settings"
+do for [bb = 0:15] {
+    set border bb
+    show border
+    set label 1 sprintf("Border = %.0f",bb)  at 5,5 center
+    plot 1/0 notitle
+}
+unset multiplot
+
+pause -1 "Hit return to continue"
+

@@ -1,0 +1,544 @@
+# $Id: README.ja,v 1.6 2013/07/04 17:31:18 markisch Exp $
+# The Japanese translations of gnuplot manuals
+# Shigeharu TAKENO <shige@iee.niit.ac.jp>
+#
+gnuplot 付属マニュアル等の日本語訳について
+Shigeharu TAKENO <shige@iee.niit.ac.jp>
+
+1. はじめに
+-----------
+
+ここには、gnuplot に付属するマニュアル等の日本語訳が置かれていま
+す。このファイルでは、ここに置かれている以下のファイルに関する説
+明を行います。
+
+[a] gnuplot-ja.doc: docs/gnuplot.doc の日本語訳
+[b] term-ja.diff:   term/*.trm のドキュメント等の日本語訳への差分
+[c] faq-ja.tex:     faq.tex (FAQ の元; LaTeX ファイル) の日本語訳
+[d] gnuplot-ja.1:   man/gnuplot.1 の日本語訳
+[e] README.ja:      このファイル (主に Unix ユーザへの説明書)
+
+なお、これらのファイルは日本語テキストファイルですが、その漢字コ
+ードはいずれも EUC_JP (日本語 EUC) になっています。必要ならば適当
+に変換してご利用ください。
+
+他のファイル (wgnuplot 用のファイル) に関しては、README.win-ja を
+ご覧ください。
+
+いくつか問題点等もあります。それに関しては 「3. 注意」を参照して
+下さい。
+
+この日本語訳の最新版やこの訳に関する注意等は以下の WWW ページに掲
+載していく予定ですのでそちらも参照して下さい。
+
+ http://takeno.iee.niit.ac.jp/~foo/gp-jman/
+
+この日本語訳を PDF や PS、LaTeX などの他のフォーマットの形式に変
+換したファイルもそこに置いてあります。
+
+
+2. 利用法
+---------
+2.1. 日本語オンラインヘルプ (.gih) の作成
+-----------------------------------------
+
+まず、gnuplot-ja.doc を元に日本語オンラインヘルプファイルを作成す
+る手順を説明します。なお、ここでいう「オンラインヘルプ」とは、対
+話型 gnuplot コンソール上で help として参照できるもののこと 
+(.gih 形式のファイル) を指します。
+
+[1] 普通に gnuplot を make & install
+
+最初から日本語オンラインヘルプしか作らないようにすることも可能で
+すが、英語版を作った後でやる方が無難です。
+
+[2] term/ 等にパッチを当てる
+
+現在 gnuplot を展開したディレクトリにいるとします。
+
+% patch -p0 < docs/term-ja.diff
+
+これで、terminal ドライバのマニュアル部分が日本語訳が追加され、
+docs/doc2rtf.c に日本語化パッチが適用され、docs/sjisenc.c, 
+docs/tex2ja.awk が追加されます。
+
+[3] docs/Makefile の修正
+
+docs/Makefile の CFLAGS に、その日本語訳を有効にするために、
+-DJAPANESE_DOC を追加します。適当なエディタで docs/Makefile を修
+正してください。
+
+[4] docs ディレクトリのツールを作り直す
+
+% cd docs
+% make clean
+% make doc2gih
+
+オリジナルの gnuplot をコンパイルした後に作られる docs/ ディレク
+トリのツールには、既に terminal ドライバのヘルプ部分が組み込まれ
+ていますので、日本語マニュアルを作る場合はツールの作り直しが必要
+です。
+
+[5] gnuplot のオンラインヘルプファイル (.gih) を作成する
+
+% ./doc2gih gnuplot-ja.doc gnuplot-ja.gih
+
+[6] できたヘルプファイルを適当なところに置く
+
+できあがったファイルを適当な場所に置いて、そのパスを GNUHELP で設
+定すれば、gnuplot はそのファイルをオンラインヘルプとして使用する
+ようになります。
+
+# cp gnuplot-ja.gih /usr/local/share/gnuplot/gnuplot-ja.gih
+% setenv GNUHELP /usr/local/share/gnuplot/gnuplot-ja.gih
+
+もちろん、gnuplot.gih を上書きしてインストールすることもできます。
+その場合は、[5],[6] は、
+
+% cp gnuplot-ja.doc gnuplot.doc
+% make install-gih
+
+とすれば済みます。
+
+
+2.2. 他の形式のドキュメントの作成
+---------------------------------
+
+他の形式のドキュメントの作成は、docs/ の Makefile の通りに行うだ
+けでは済まない場合もかなりあります。以下で、いくつか代表的なもの
+を紹介します。
+
+[a] LaTeX 形式, dvi 形式の作成
+
+LaTeX 形式のファイルは以下のように作成します。
+
+% cd docs
+% make doc2tex 
+% ./doc2tex gnuplot-ja.doc tmpf
+% awk -f tex2ja.awk tmpf > gnuplot-ja.tex
+
+この tex2ja.awk は、\pageref や \index を適切につけるための awk 
+スクリプトで、multibyte 対応の GNU awk など (Solaris の nawk でも
+いいよう) の日本語の通る awk が必要です。
+
+こうやって作った LaTeX ファイルは platex でほぼコンパイルできるの
+ですが、platex だと
+
+ \subsection{New plot style {\bf pm3d}}
+
+のような行でよく分からないエラーがでることがありますので、その場
+合はこの \bf の命令を取るとうまくいきます。手動でとるか、sed で次
+のようにしてください。
+
+% sed '/subsection.*\\bf/s/\\bf //' gnuplot-ja.tex > tmpf
+% mv tmpf gnuplot-ja.tex
+
+コンパイルは、以下のようにします。
+
+% setenv TEXINPUTS .:..::
+% touch gnuplot-ja.idx
+% platex gnuplot-ja.tex
+% platex gnuplot-ja.tex
+% platex gnuplot-ja.tex
+% makeindex gnuplot-ja.idx
+% platex gnuplot-ja.tex
+
+英語版の gnuplot.doc を、日本語訳で上書きしている場合は、
+
+% cd docs
+% make 'LATEX=platex' tex
+% sed '/subsection.*\\bf/s/\\bf //' gnuplot.tex > tmpf
+% mv tmpf gnuplot.tex
+% make 'LATEX=platex' dvi
+
+で O.K. です。
+
+
+[b] PS 形式の作成 
+
+PS 形式は、[a] で作った dvi ファイルを dvips にかければ OK です。
+
+% dvips gnuplot-ja.dvi
+
+
+英語版の gnuplot.doc を、日本語訳で上書きしている場合は、
+
+% make gnuplot.ps
+
+でもできます。
+
+[c] PDF 形式の作成
+
+PDF 形式は、Makefile と同じよう (pdflatex を使う) には作れません
+が、ps2pdf か dvipdfmx を使って作ることができます。
+
+ps2pdf (ghostscript 付属) を使う場合は、[b] の PS ファイルをそれ
+にかければ OK です。
+
+% ps2pdf gnuplot-ja.ps
+
+しかし、dvipdfmx を使う場合は注意が必要で、[a] の dvi ファイルを
+そのまま dvipdfmx にかけてはうまくいかず、titlepag.tex を修正して
+一度コンパイルをし直す必要があります。
+
+titlepag.tex の 20 行目位から始まる \usepackage[ の行の次 
+(hyperref パッケージのオプション) に
+
+   dvipdfm,
+
+という行を入れ、12 行目位の \else の後に、
+
+  \AtBeginDvi{\special{pdf:tounicode EUC-UCS2}}
+
+のような行を入れてからコンパイルします。後者は、しおりの文字化け
+を修正するためのものです。
+
+% setenv TEXINPUTS .:..::
+% platex gnuplot-ja.tex
+% dvipdfmx gnuplot-ja.dvi
+
+なお、xdvi で参照する場合も、[a] の dvi ファイルよりも、このよう
+にして作った dvi ファイルの方がいい場合があるようです。
+
+デフォルトの Makefile では PDF ファイルの作成は [a] を pdflatex 
+にかけるようになっているのですが、pdflatex は日本語には対応してい
+ないので、英語の gnuplot.doc を日本語訳で上書きしている場合でも、
+日本語の PDF ファイルを
+
+% make pdf
+
+で作成することはできません。
+
+
+[d] HTML 形式の作成
+
+HTML 形式は、デフォルトの Makefile では [a] の LaTeX ファイルから
+latex2html で作るようになっているようですが、latex2html がない場
+合は、texinfo 形式を経由して makeinfo で作るといいでしょう。
+
+% sed -e 's/gnuplot.doc/gnuplot-ja.doc/g' \
+   -e 's/gnuplot.texi/gnuplot-ja.texi/g' \
+   -e 's/Commands/コマンド (Commands)/' \
+   -e 's/Bugs\("\)/バグ\1/' doc2texi.el > doc2texi-ja.el
+% emacs -batch -l ./doc2texi-ja.el -f d2t-doc-to-texi
+
+これで gnuplot-ja.texi ができます。
+
+% makeinfo --html -I. ./gnuplot-ja.texi --no-split --output=gnuplot-ja.html
+
+これで gnuplot-ja.html ができます。
+
+latex2html を使う場合は、Makefile に書かれているのと同様に
+
+% mkdir -p htmldocs
+% latex2html -dir htmldocs -local_icons gnuplot-ja.tex
+
+のようにします。ただ、どちらの方法でも、あまり完璧なものはできな
+いようです。
+
+英語版の gnuplot.doc を、日本語訳で上書きしている場合、latex2html
+を使う方は
+
+% make html
+
+でもできます。
+
+
+[e] info 形式の作成
+
+info 形式は、[d] で作成した texinfo 形式から makeinfo で作成しま
+す。
+
+% makeinfo -I. ./gnuplot-ja.texi --no-split --output=gnuplot-ja.info
+
+
+英語版の gnuplot.doc を、日本語訳で上書きしている場合は、
+
+% rm gnuplot.texi
+% make info
+
+でもできます (先に、デフォルトでついてくる英語版の gnuplot.texi 
+を削除しておく必要があります)。
+
+
+[f] hlp 形式 (MS-Windows 用オンラインヘルプ) の作成
+
+hlp 形式は、RTF 形式のドキュメントを作成して、それを MS-Windows 
+上のヘルプコンパイラを用いて hlp 形式に変換します。RTF (Rich Text
+Format) 形式は、docs/ にあるツール doc2rtf を使えばいいのですが、
+日本語の RTF 形式のファイルは、これだけではうまく作れませんので、
+注意が必要です。
+
+term-ja.diff には、doc2rtf.c に対する日本語用のパッチも含まれてお
+り、「2.1. 日本語オンラインヘルプの作成」[2] の作業で、それも適用
+されていて、さらに sjisenc.c というファイルも作られていると思いま
+す。
+
+まず doc2rtf を作り直し、sjisenc.c もコンパイルしておきます。
+
+% make clean
+% make 'CFLAGS=-g -O2 -DALL_TERM_DOC' doc2rtf
+% gcc -o sjisenc sjisenc.c
+
+なお、-DALL_TERM_DOC をつけないと、MS-Windows に関連するドライバ
+のヘルプが組み込まれませんので注意してください。
+
+次に、この doc2rtf を用いて RTF 形式のファイル (中途半端なもの) 
+を作成し、nkf 等で漢字コード変換して、さらに sjisenc で 8bit を 
+RTF 用にエンコードします。
+
+% ./doc2rtf gnuplot-ja.doc tmpf
+% nkf --windows tmpf | ./sjisenc > gnuplot-ja.rtf
+
+漢字コード変換ツールとして nkf 以外、または改行コード変換をサポー
+トしていない古い nkf を使用している場合は、最初のコマンド 
+
+ nkf --windows
+ = EUC-JP を Shift_JIS に、改行コードを LF から CR+LF に変換する
+
+という部分を適切なツールに適宜読みかえてください。この RTF ファイ
+ルを MS-Windows 上のヘルプコンパイラにかければ hlp 形式のファイル
+が作られます。
+
+MS-Windows 上のヘルプコンパイラは、MS-Windows 上の C 開発環境につ
+いている場合もありますし、以下のサイトからもダウンロードできるよ
+うです。
+
+ ftp://ftp.microsoft.com/Softlib/MSLFILES/
+ HC505.exe : Microsoft Help Compiler (version 3.10.505)
+
+
+[g] chm 形式 (MS-Windows 用オンラインヘルプ) の作成
+
+chm (HTML ヘルプ) 形式の MS-Windows 用のオンラインヘルプもサポー
+トされました。この形式は、docs/windows/doc2html を利用して作成し
+ます。作成方法については、次の版以降に紹介したいと思います。
+
+
+2.3. faq-ja.tex
+---------------
+
+これは、gnuplot に付属する FAQ の元になっている LaTeX ファイルで
+オリジナルは以下にあります。
+
+ gnuplot/faq/faq.tex CVS Repository
+ http://gnuplot.cvs.sourceforge.net/gnuplot/faq/faq.tex 
+
+元は、comp.graphics.apps.gnuplot に流れたもので、配布物に含まれて
+いるものは、この faq.tex を latex2html にかけて、それを lynx でテ
+キスト化してそれを多少加工したものです。
+
+日本語版の FAQ テキストファイルも同様にして作成でき、以下でいくつ
+かの形式のものを作成して公開しています。
+
+ gnuplot-FAQ (日本語訳)
+ http://takeno.iee.niit.ac.jp/~shige/unix/gnuplot/gnuplot.html
+
+HTML ファイルは、以下のようなオプションで latex2html にかけていま
+す。
+
+% latex2html -image_type gif -split 0 -show_section_numbers \
+   -html_version 4.0 -nonavigation faq-ja.tex
+
+テキストファイルは、それを w3m にかけて作っています。
+
+% w3m -dump faq-ja/index.thml > faq-ja.txt
+
+LaTeX のコンパイルは platex で普通にコンパイルでき、それを dvips 
+にかけることも問題はないのですが、PDF ファイルにかけるときは、以
+下の 2 つを行っています。
+
+1) 先頭の \usepackage[...]{hyperref} のオプション ([...] の部分)
+  の hypertex, を dvipdfm, に変える
+2) \documentclass の次の行に、以下を入れる:
+   \AtBeginDvi{\special{pdf:tounicode EUC-UCS2}}
+
+この 2) は文字化けしないしおりを作るためのものです。
+
+
+2.4. gnuplot-ja.1
+-----------------
+
+gnuplot-ja.1 は、Unix 用のオンラインマニュアル (nroff ファイル) 
+で、元々 man/gnuplot.1 として入っているものを訳したものです。
+なお、これは「2.1. 日本語オンラインヘルプ (.gih) の作成」のオン
+ラインヘルプとは違い、gnuplot コマンドの中からではなく、Unix の
+man コマンドで参照します。
+
+Unix 用のオンラインマニュアルなので、基本的に X11 terminal に関す
+るマニュアルになっています。
+
+日本語訳は対訳形式で書いていますが、man コマンドで参照するには、
+日本語に対応している nroff (groff) が必要です。
+
+自動的にはこの日本語オンラインマニュアルがうまく変換されない場合
+は、手動で日本語対応の nroff (groff) で整形化テキストファイルを作
+成して、man/cat1 にインストールしてください。
+
+日本語対応の nroff の場合は、
+
+% nroff -man gnuplot-ja.1 > gnuplot.1
+
+日本語対応の groff の場合は、
+
+% groff -Tnippon -man gnuplot-ja.1 > gnuplot.1
+
+で整形化されたテキストファイルが作られると思います。うまくいかな
+い場合は、インストールされている nroff, groff のマニュアル等を参
+照してください。
+
+
+3. 注意
+-------
+
+いくつか注意を述べます。
+
+[1] 訳の開始からかなり年月が経ったこともあり訳に一貫性がない
+
+[2] gnuplot 3.5 とあまり変更がない部分に関しても
+  ・3.5 の日本語訳をそのまま使っている
+  ・3.5 の日本語訳を多少改変、流用している
+  ・3.5 の日本語訳とは無関係に訳している
+  のようにバラバラな扱いをしている
+
+色々問題もあると思いますが、ご意見や誤植、誤訳等がありましたら、
+「4. 訳者とライセンス」の連絡先へ連絡してくだい。
+
+
+4. 訳者とライセンス
+-------------------
+
+この日本語訳は無保証です。しかし誤訳、誤植等の修正は、対応できる
+ものは行う予定ですので、それらの報告、意見などは歓迎します。報告
+等は下記メールアドレスへお願い致します。また、各種情報は、順次下
+記 WWW page に掲載する予定です。
+
+e-mail: shige@iee.niit.ac.jp
+WWW page: http://takeno.iee.niit.ac.jp/~foo/gp-jman/
+
+配付ライセンスは、オリジナルの gnuplot のライセンスに従います。そ
+ちらを参照してください。
+
+訳者は以下の通りです。
+
+[a] gnuplot.doc-ja, [b] term-ja.diff, [d] gnuplot-ja.1:
+ 
+ gnuplot 3.2 用: 田丸博晴
+ gnuplot 3.5 用: 升谷保博
+ gnuplot 3.7 用: 井上直大、鈴木義利、船橋崇将、渡邉伸征、
+   藤井学、石田大輔、唐澤洋介、佐々木徹也、東海林隼人、
+   柴信一郎、松本賢一、宮入洋介、山岡薫、山岸寛、竹野茂治
+ gnuplot 3.8 用: 田村大輔、竹野茂治
+ gnuplot 4.0 以降: 竹野茂治
+
+[c] faq-ja.tex:
+
+ 竹野茂治 
+
+なお、[d] の内容は、ほぼ [a],[b] に含まれていて、その訳を再利用し
+ています。
+
+gnuplot 3.2 の gnuplot.doc の日本語訳の作者の田丸博晴さん、
+gnuplot 3.5 用の日本語訳の作者の升谷保博さんからは、それらを元に
+したこの訳の公開に快く応じて頂きました。
+
+以下に gnuplot 3.2, gnuplot 3.5 の gnuplot.doc 日本語訳に付属する
+文書を引用します。
+
+----- ここから (gnuplot 3.2 用) -----
+GNUPLOT 3.2 patchlevel 2 の配布アーカイブにある、docs/gnuplot.doc の日
+本語訳である gnuplotj.doc です。扱いはオリジナルに準ずるものとします。
+漢字コードは EUC で書かれています。オリジナルに含まれている doc2gih 及
+び doc2tex での整形を確認してあります。但し doc2tex を通す場合は、EUC 
+のまま通して、.tex に変換した後に TeX の処理系に合った漢字コードに変換
+して下さい。また、titlepage.tex を必要に応じて修正して下さい。
+
+守備一貫とした訳ではありませんが、少しでも便利に感じて頂ければ幸いです。
+
+                                          田丸 博晴
+                                tamaru@keisu-s.t.u-tokyo.ac.jp
+----- ここまで (gnuplot 3.2 用) -----
+
+----- ここから (gnuplot 3.5 用) -----
+2 日本語訳について
+?japanese
+
+ この日本語訳は，東京大学の田丸 博晴さんが，fj.sources に投稿された
+ gnuplot 3.2 の gnuplot.doc の日本語訳
+
+  From: tamaru@keisu-s.t.u-tokyo.ac.jp (Hiroharu Tamaru)
+  Newsgroups: fj.sources
+  Subject: gnuplot 3.2.2 Japanese document (1/2)
+  Message-ID: <TAMARU.92Sep16174046@meipserv.keisu-s.t.u-tokyo.ac.jp>
+  Date: 16 Sep 92 08:40:46 GMT
+  Distribution: fj
+
+ を，大阪大学の升谷 保博が gnuplot 3.5 用に変更したものです．
+ 3.2 と 3.5 の間で原文に変化のない部分は(約3/4)は，原則として
+ 田丸さんの訳をそのまま使っています．
+
+ この日本語訳の公開に先だって，鈴木 紀夫さん，伊藤 希さんに
+ 内容のチェックをしていただきました．ありがとうございます．
+
+ なお，この文章の翻訳自体に関するバグを見つけた方は，
+ masutani@me.es.osaka-u.ac.jp までご連絡下さい．
+----- ここまで (gnuplot 3.5 用) -----
+
+
+5. 謝辞
+-------
+
+これまで gnuplot 3.5 用のマニュアルの日本語訳はありがたく使わせて
+頂いていて色々お世話になっていました。この日本語訳の公開に当たり、
+gnuplot 3.2 用マニュアルの日本語訳の作者の田丸博晴さん、3.5 用マ
+ニュアルの日本語訳作者の升谷保博さんにはこの公開に快く応じて頂き、
+また色々な助言を頂きました。この場を借りてお礼申し上げます。どう
+もありがとうございました。
+
+gnuplot plus パッチ (http://www.yama-ga.com/gnuplot/) に含まれる
+マニュアルの訳に関しても作者の山賀正人さんには公開に快く応じて頂
+きました。どうもありがとうございました。
+
+高橋良雄＠山形大学理学部 (yosio@quanta.kj.yamagata-u.ac.jp) さん
+から cgm-font のセクションの bug の報告、上記サポートページの 
+QandA の Q1,Q2 に関する情報、および set size に関する訳の改良を頂
+きました。どうもありがとうございました。
+
+尾田晃 (oden924@moon.e-com.ne.jp) さんから、set grid セクションの
+bug の報告を頂きました。どうもありがとうございました。
+
+gnuplot 開発チームの Hans-Bernhard Broeker さん、Ethan Merritt さ
+んには、この訳のライセンスや gnuplot 本体へのマージについて色々な
+助言を頂きました。どうもありがとうございました。
+
+この訳は 2000 年から 2003 年度までの竹野研究室メンバーで訳を行っ
+たものを元にしていて、私 (竹野) も訳と取りまとめ役を行って来まし
+た。その活動のおかげで色々な gnuplot に対する知識も得られ、オリジ
+ナルの誤植を本家に報告することでそちらへの寄与も行うことができま
+した。頭を悩ませながら訳を担当してくれた彼らにも感謝致します。
+
+また、作業の途中で出版された以下の書物も色々と参考にさせて頂きま
+した。不明な点は併せてご覧下さい。
+
+・「gnuplot パーフェクト・マニュアル」川原稔、ソフトバンク
+・「使いこなす GNUPLOT 改訂新版」大竹敢 (矢吹道郎監修)、テクノプ
+  レス
+
+
+6. 目次
+-------
+1. はじめに
+2. 利用法
+ 2.1. 日本語オンラインヘルプ (.gih) の作成
+ 2.2. 他の形式のドキュメントの作成
+ 2.3. faq-ja.tex
+ 2.4. gnuplot-ja.1
+3. 注意
+4. 訳者とライセンス
+5. 謝辞
+6. 目次
+
++=================================================+
+ 竹野茂治   〒945-1195 新潟工科大学 情報電子工学科 
+ shige@iee.niit.ac.jp      TEL(&FAX): 0257-22-8161 
++=================================================+

@@ -1,0 +1,620 @@
+/*
+ * $Id: wxt.trm,v 1.42.2.4 2016/01/26 17:24:39 sfeam Exp $
+ */
+
+/* GNUPLOT - wxt.trm */
+
+/*[
+ * Copyright 2005,2006   Timothee Lecomte
+ *
+ * Permission to use, copy, and distribute this software and its
+ * documentation for any purpose with or without fee is hereby granted,
+ * provided that the above copyright notice appear in all copies and
+ * that both that copyright notice and this permission notice appear
+ * in supporting documentation.
+ *
+ * Permission to modify the software is granted, but not the right to
+ * distribute the complete modified source code.  Modifications are to
+ * be distributed as patches to the released version.  Permission to
+ * distribute binaries produced by compiling modified sources is granted,
+ * provided you
+ *   1. distribute the corresponding source modifications from the
+ *    released version in the form of a patch file along with the binaries,
+ *   2. add special version identification to distinguish your version
+ *    in addition to the base release version number,
+ *   3. provide your name and address as the primary contact for the
+ *    support of your modified version, and
+ *   4. retain our contact information in regard to use of the base
+ *    software.
+ * Permission to distribute the released version of the source code along
+ * with corresponding source modifications in the form of a patch file is
+ * granted with same provisions 2 through 4 for binary distributions.
+ *
+ * This software is provided "as is" without express or implied warranty
+ * to the extent permitted by applicable law.
+]*/
+
+/* ------------------------------------------------------
+ * Here you will find the terminal table, filled
+ * with C++ functions defined in wxt_gui.cpp,
+ * where the wxWidgets terminal is mainly implemented.
+ * See wxt_gui.cpp for details about this terminal.
+ * ------------------------------------------------------*/
+
+#ifdef TERM_REGISTER
+register_term (wxt)
+#endif
+
+#ifdef TERM_PROTO
+TERM_PUBLIC void wxt_options __PROTO ((void));
+TERM_PUBLIC void wxt_text_wrapper __PROTO ((void));
+#endif /* TERM_PROTO */
+
+#ifndef TERM_PROTO_ONLY
+
+#ifdef TERM_BODY
+
+#include "wxterminal/wxt_term.h"
+
+/* terminal state, defined extern in wxt_term.h */
+int wxt_window_number = 0;
+TBOOLEAN wxt_enhanced_enabled = TRUE;
+TBOOLEAN wxt_dashed = TRUE;
+double wxt_dashlength = 1.0;
+double wxt_lw = 1.0;
+int wxt_background = 0xffffff;
+rgb_color wxt_rgb_background = {1.,1.,1.};
+int wxt_persist = UNSET;
+int wxt_raise = UNSET;
+int wxt_ctrl = UNSET;
+int wxt_toggle = UNSET;
+int wxt_redraw = UNSET;
+t_linecap wxt_linecap = SQUARE;
+/* default text font family: */
+char *wxt_set_fontname = NULL;
+/* default text size*/
+int wxt_set_fontsize = 0;
+double wxt_set_fontscale = 1.0;
+/* window title */
+char wxt_title[MAX_ID_LEN + 1] = "";
+/* size of the plot area, in pixels
+ * (window is bigger, includes toolbar and status bar) */
+int wxt_width = 640;
+int wxt_height = 384;
+/* initial position of the plot window. wxPoint(-1, -1) is equivalent to wxDefaultPosition */
+int wxt_posx = -1;
+int wxt_posy = -1;
+
+/* These are used to pass axis scaling information at the end of each plot */
+int wxt_axis_mask;
+wxt_axis_state_t wxt_axis_state[4];
+
+enum WXT_id {
+    WXT_FONT,
+    WXT_FONTSCALE,
+    WXT_ENHANCED,
+    WXT_NOENHANCED,
+    WXT_SIZE,
+    WXT_POSITION,
+    WXT_PERSIST,
+    WXT_NOPERSIST,
+    WXT_RAISE,
+    WXT_NORAISE,
+    WXT_CTRL,
+    WXT_NOCTRL,
+    WXT_TITLE,
+    WXT_CLOSE,
+    WXT_ROUNDED,
+    WXT_BUTT,
+    WXT_SQUARE,
+    WXT_SOLID,
+    WXT_DASHED,
+    WXT_DASHLENGTH,
+    WXT_LINEWIDTH,
+    WXT_BACKGROUND,
+    WXT_OTHER
+};
+
+static struct gen_table wxt_opts[] = {
+    {"fontscale",   WXT_FONTSCALE},
+    {"font",   WXT_FONT},
+    {"enh$anced", WXT_ENHANCED},
+    {"noenh$anced", WXT_NOENHANCED},
+    {"s$ize", WXT_SIZE},
+    {"pos$ition", WXT_POSITION},
+    {"per$sist", WXT_PERSIST},
+    {"noper$sist", WXT_NOPERSIST},
+    {"rai$se", WXT_RAISE},
+    {"norai$se", WXT_NORAISE},
+    {"ct$rlq", WXT_CTRL},
+    {"noct$rlq", WXT_NOCTRL},
+    {"ti$tle", WXT_TITLE},
+    {"cl$ose", WXT_CLOSE},
+    {"round$ed", WXT_ROUNDED},
+    {"butt", WXT_BUTT},
+    {"square", WXT_SQUARE},
+    {"solid", WXT_SOLID},
+    {"dash$ed", WXT_DASHED},
+    {"dashl$ength", WXT_DASHLENGTH},
+    {"dl", WXT_DASHLENGTH},
+    {"line$width", WXT_LINEWIDTH},
+    {"lw", WXT_LINEWIDTH},
+    {"backg$round", WXT_BACKGROUND},
+    {NULL, WXT_OTHER}
+};
+
+
+/* "Called when terminal type is selected. This procedure should parse options on the command line.
+* A list of the currently selected options should be stored in term_options[],
+* in a form suitable for use with the set term command.
+* term_options[] is used by the save command.  Use options_null() if no options are available." */
+TERM_PUBLIC void wxt_options()
+{
+	char *s = NULL;
+	char *font_setting = NULL;
+	TBOOLEAN duplication = FALSE;
+	TBOOLEAN set_font = FALSE;
+	TBOOLEAN set_persist = FALSE, set_number = FALSE;
+	TBOOLEAN set_raise = FALSE, set_ctrl = FALSE;
+	TBOOLEAN set_title = FALSE, set_close = FALSE;
+	TBOOLEAN set_capjoin = FALSE, set_size = FALSE;
+	TBOOLEAN set_position = FALSE;
+
+#ifndef WIN32
+	if (term_interlock != NULL && term_interlock != (void *)wxt_init) {
+		term = NULL;
+		int_error(NO_CARET, "The wxt terminal cannot be used in a qt session");
+	}
+#endif
+
+	while (!END_OF_COMMAND) {
+		switch (lookup_table(&wxt_opts[0], c_token)) {
+		case WXT_FONT:
+			c_token++;
+			if (!(s = try_to_get_string()))
+				int_error(c_token,"font: expecting string");
+			font_setting = gp_strdup(s);
+			if (*s) {
+				char *sep = strchr(s,',');
+				if (sep) {
+					sscanf(sep+1, "%d", &wxt_set_fontsize);
+					*sep = '\0';
+				}
+				free(wxt_set_fontname);
+				wxt_set_fontname = gp_strdup(s);
+			}
+			free(s);
+			if (set_font) duplication=TRUE;
+			set_font = TRUE;
+			break;
+		case WXT_FONTSCALE:
+			c_token++;
+			wxt_set_fontscale = END_OF_COMMAND ? -1 : real_expression();
+			if (wxt_set_fontscale <= 0)
+			    wxt_set_fontscale = 1.;
+			break;
+		case WXT_ENHANCED:
+			c_token++;
+			wxt_enhanced_enabled = TRUE;
+			term->flags |= TERM_ENHANCED_TEXT;
+			break;
+		case WXT_NOENHANCED:
+			c_token++;
+			wxt_enhanced_enabled = FALSE;
+			term->flags &= ~TERM_ENHANCED_TEXT;
+			break;
+		case WXT_SIZE:
+			c_token++;
+			if (END_OF_COMMAND)
+				int_error(c_token,"size requires 'width,heigth'");
+			wxt_width = real_expression();
+			if (!equals(c_token++,","))
+				int_error(c_token,"size requires 'width,heigth'");
+			wxt_height = real_expression();
+			if (wxt_width < 1 || wxt_height < 1)
+				int_error(c_token, "size is out of range");
+			if (set_size) duplication=TRUE;
+			set_size = TRUE;
+			break;
+		case WXT_POSITION:
+			c_token++;
+			if (END_OF_COMMAND)
+				int_error(c_token,"position requires 'x,y'");
+			wxt_posx = real_expression();
+			if (!equals(c_token++,","))
+				int_error(c_token,"position requires 'x,y'");
+			wxt_posy = real_expression();
+			if (set_position) duplication = TRUE;
+			set_position = TRUE;
+			break;
+		case WXT_PERSIST:
+			c_token++;
+			wxt_persist = yes;
+			if (set_persist) duplication=TRUE;
+			set_persist = TRUE;
+			break;
+		case WXT_NOPERSIST:
+			c_token++;
+			wxt_persist = no;
+			if (set_persist) duplication=TRUE;
+			set_persist = TRUE;
+			break;
+		case WXT_RAISE:
+			c_token++;
+			wxt_raise = yes;
+			if (set_raise) duplication=TRUE;
+			set_raise = TRUE;
+			break;
+		case WXT_NORAISE:
+			c_token++;
+			wxt_raise = no;
+			if (set_raise) duplication=TRUE;
+			set_raise = TRUE;
+			break;
+		case WXT_CTRL:
+			c_token++;
+			wxt_ctrl = yes;
+			if (set_ctrl) duplication=TRUE;
+			set_ctrl = TRUE;
+			break;
+		case WXT_NOCTRL:
+			c_token++;
+			wxt_ctrl = no;
+			if (set_ctrl) duplication=TRUE;
+			set_ctrl = TRUE;
+			break;
+		case WXT_TITLE:
+			c_token++;
+			if (!(s = try_to_get_string()))
+				int_error(c_token,"title: expecting string");
+			if (*s)
+				strncpy(wxt_title, s, sizeof(wxt_title));
+			free(s);
+			if (set_title) duplication=TRUE;
+			set_title = TRUE;
+			break;
+		case WXT_CLOSE:
+			c_token++;
+			if (set_close) duplication=TRUE;
+			set_close = TRUE;
+			break;
+		case WXT_ROUNDED:
+			c_token++;
+			if (set_capjoin) duplication=TRUE;
+			wxt_linecap = ROUNDED;
+			set_capjoin = TRUE;
+			break;
+		case WXT_BUTT:
+			c_token++;
+			if (set_capjoin) duplication=TRUE;
+			wxt_linecap = BUTT;
+			set_capjoin = TRUE;
+			break;
+		case WXT_SQUARE:
+			c_token++;
+			if (set_capjoin) duplication=TRUE;
+			wxt_linecap = SQUARE;
+			set_capjoin = TRUE;
+			break;
+		case WXT_DASHED:
+		case WXT_SOLID:
+			/* dashes always enabled in version 5 */
+			c_token++;
+			wxt_dashed = TRUE;
+			break;
+		case WXT_DASHLENGTH:
+			c_token++;
+			wxt_dashlength = real_expression();
+			if (wxt_dashlength <= 0)
+			    wxt_dashlength = 1.0;
+			break;
+		case WXT_LINEWIDTH:
+			c_token++;
+			wxt_lw = real_expression();
+			if (wxt_lw <= 0)
+			    wxt_lw = 1.0;
+			break;
+		case WXT_BACKGROUND:
+			{
+			c_token++;
+			wxt_background = parse_color_name();
+			wxt_rgb_background.r = (double)((wxt_background >> 16) & 0xff) / 255.;
+			wxt_rgb_background.g = (double)((wxt_background >>  8) & 0xff) / 255.;
+			wxt_rgb_background.b = (double)( wxt_background        & 0xff) / 255.;
+			break;
+			}
+		case WXT_OTHER:
+		default:
+			wxt_window_number = int_expression();
+			if (set_number) duplication=TRUE;
+			set_number = TRUE;
+			/*int_error(c_token, "unrecognized terminal option");*/
+			break;
+		}
+
+		if (duplication)
+			int_error(c_token-1, "Duplicated or contradicting arguments in wxt term options.");
+	}
+
+	/* Save options back into options string in normalized format */
+	snprintf(term_options, sizeof(term_options)-strlen(term_options),
+		"%d", wxt_window_number);
+
+	if (set_title) {
+		strncat(term_options, " title \"", sizeof(term_options)-strlen(term_options)-1);
+		strncat(term_options, wxt_title, sizeof(term_options)-strlen(term_options)-1);
+		strncat(term_options, "\"", sizeof(term_options)-strlen(term_options)-1);
+		wxt_update_title(wxt_window_number);
+	}
+
+	if (wxt_dashlength != 1.0) {
+		char tmp_term_options[MAX_LINE_LEN+1] = "";
+		snprintf(tmp_term_options,sizeof(tmp_term_options), " dashlength %g", wxt_dashlength);
+		strncat(term_options, tmp_term_options, sizeof(term_options)-strlen(term_options)-1);
+	}
+
+	if (wxt_lw != 1.0) {
+		char tmp_term_options[MAX_LINE_LEN+1] = "";
+		snprintf(tmp_term_options,sizeof(tmp_term_options), " lw %g", wxt_lw);
+		strncat(term_options, tmp_term_options, sizeof(term_options)-strlen(term_options)-1);
+	}
+
+	if (wxt_background != 0xffffff) {
+		char tmp_term_options[MAX_LINE_LEN+1] = "";
+		snprintf(tmp_term_options,sizeof(tmp_term_options), " background '#%06x'", wxt_background);
+		strncat(term_options, tmp_term_options, sizeof(term_options)-strlen(term_options)-1);
+	}
+
+	if (set_size) {
+		char tmp_term_options[MAX_LINE_LEN+1] = "";
+		snprintf(tmp_term_options, sizeof(tmp_term_options),
+			  " size %d, %d", wxt_width, wxt_height);
+		strncat(term_options, tmp_term_options, sizeof(term_options)-strlen(term_options)-1);
+		wxt_update_size(wxt_window_number);
+	}
+
+	if (set_position) {
+		char tmp_term_options[MAX_LINE_LEN+1] = "";
+		snprintf(tmp_term_options, sizeof(tmp_term_options),
+			  " position %d, %d", wxt_posx, wxt_posy);
+		strncat(term_options, tmp_term_options, sizeof(term_options)-strlen(term_options)-1);
+		wxt_update_position(wxt_window_number);
+	}
+
+	strncat(term_options,
+		wxt_enhanced_enabled ? " enhanced" : " noenhanced",
+		sizeof(term_options)-strlen(term_options)-1);
+
+	if (set_font) {
+		strncat(term_options, " font \"", sizeof(term_options)-strlen(term_options)-1);
+		strncat(term_options, font_setting, sizeof(term_options)-strlen(term_options)-1);
+		strncat(term_options, "\"", sizeof(term_options)-strlen(term_options)-1);
+		free(font_setting);
+	}
+
+	if (!wxt_set_fontname)
+		wxt_set_fontname = gp_strdup("");
+
+	if (wxt_set_fontscale != 1.0) {
+		char tmp_term_options[MAX_LINE_LEN+1] = "";
+		snprintf(tmp_term_options,sizeof(tmp_term_options), " fontscale %.1f", wxt_set_fontscale);
+		strncat(term_options, tmp_term_options, sizeof(term_options)-strlen(term_options)-1);
+	}
+
+	if (set_capjoin)
+		strncat(term_options, 
+			wxt_linecap == ROUNDED ? " rounded"
+			: wxt_linecap == SQUARE ? " square"
+			: " butt",
+			sizeof(term_options)-strlen(term_options)-1);
+
+	if (set_persist)
+		strncat(term_options,
+			(wxt_persist==yes) ? " persist" : " nopersist",
+			sizeof(term_options)-strlen(term_options)-1);
+
+	if (set_raise)
+		strncat(term_options,
+			(wxt_raise==yes) ? " raise" : " noraise",
+			sizeof(term_options)-strlen(term_options)-1);
+
+	if (set_ctrl)
+		strncat(term_options,
+			(wxt_ctrl==yes) ? " ctrl" : " noctrl",
+			sizeof(term_options)-strlen(term_options)-1);
+
+	if (set_close)
+		wxt_close_terminal_window(wxt_window_number);
+}
+
+/* wxt_text() will do most of the work, but we have to pass it axis scaling
+ * info via a global structure that is loaded here.  The axis scaling is
+ * so that subsequent mouse events can be transformed into plot
+ * coordinates even though the plot is no longer active.
+ */
+TERM_PUBLIC void wxt_text_wrapper()
+{
+    int i;
+
+#ifdef USE_MOUSE
+	int axis_order[4] = {FIRST_X_AXIS, FIRST_Y_AXIS, SECOND_X_AXIS, SECOND_Y_AXIS};
+	wxt_axis_mask = 0;
+
+	for (i=0; i<4; i++) {
+		if (axis_array[axis_order[i]].ticmode != NO_TICS)
+		    wxt_axis_mask |= (1 << i);
+	}
+
+	for (i=0; i<4; i++) {
+		wxt_axis_state[i].min = axis_array[axis_order[i]].min;
+		wxt_axis_state[i].term_lower = axis_array[axis_order[i]].term_lower;
+		wxt_axis_state[i].term_scale = axis_array[axis_order[i]].term_scale;
+		wxt_axis_state[i].logbase = axis_array[axis_order[i]].log
+			? axis_array[axis_order[i]].log_base : 0;
+	}
+#endif
+
+    wxt_text();
+}
+
+#endif /* TERM_BODY */
+
+#ifdef TERM_TABLE
+TERM_TABLE_START (wxt_driver)
+    "wxt", "wxWidgets cross-platform windowed terminal",
+    /* the following values are overriden by wxt_graphics */
+    1 /* xmax */ , 1 /* ymax */ , 1 /* vchar */ , 1 /* hchar */ ,
+    1 /* vtic */ , 1 /* htic */ ,
+    wxt_options, wxt_init, wxt_reset, wxt_text_wrapper, null_scale, wxt_graphics,
+    wxt_move, wxt_vector, wxt_linetype, wxt_put_text,
+    wxt_text_angle, wxt_justify_text,
+    wxt_point, do_arrow, wxt_set_font,
+    wxt_pointsize,
+    TERM_CAN_MULTIPLOT|TERM_NO_OUTPUTFILE|TERM_ALPHA_CHANNEL|TERM_CAN_DASH|TERM_FONTSCALE|TERM_ENHANCED_TEXT,
+    wxt_text /* suspend */, 0 /* resume */, wxt_fillbox, wxt_linewidth
+#ifdef USE_MOUSE
+    , wxt_waitforinput, wxt_put_tmptext, wxt_set_ruler, wxt_set_cursor, wxt_set_clipboard
+#endif
+    , wxt_make_palette, 0 /* wxt_previous_palette */, wxt_set_color, wxt_filled_polygon
+    , wxt_image
+    , wxt_enhanced_open, wxt_enhanced_flush, wxt_enhanced_writec
+    , wxt_layer
+    , NULL /* no term->path */
+    , 0.0 /* Scale (unused) */
+    , wxt_hypertext
+#ifdef EAM_BOXED_TEXT
+    , wxt_boxed_text
+#endif
+    , wxt_modify_plots
+    , wxt_dashtype
+TERM_TABLE_END (wxt_driver)
+
+#undef LAST_TERM
+#define LAST_TERM wxt_driver
+
+#endif /* TERM_TABLE */
+#endif /* TERM_PROTO_ONLY */
+
+#ifdef TERM_HELP
+START_HELP(wxt)
+"1 wxt",
+"?set terminal wxt",
+"?terminal wxt",
+"?set term wxt",
+"?term wxt",
+"?wxt",
+" The `wxt` terminal device generates output in a separate window. The window",
+" is created by the wxWidgets library, where the 'wxt' comes from. The actual",
+" drawing is done via cairo, a 2D graphics library, and pango, a library for",
+" laying out and rendering text.",
+"",
+" Syntax:",
+"         set term wxt {<n>}",
+"                      {size <width>,<height>} {position <x>,<y>}",
+"                      {background <rgb_color>}",
+"                      {{no}enhanced}",
+"                      {font <font>} {fontscale <scale>}",
+"                      {title \"title\"}",
+"                      {linewidth <lw>}",
+"                      {dashlength <dl>}",
+"                      {{no}persist}",
+"                      {{no}raise}",
+"                      {{no}ctrl}",
+"                      {close}",
+"",
+" Multiple plot windows are supported: `set terminal wxt <n>` directs the",
+" output to plot window number n.",
+"",
+" The default window title is based on the window number. This title can also",
+" be specified with the keyword \"title\".",
+"",
+" Plot windows remain open even when the `gnuplot` driver is changed to a",
+" different device.  A plot window can be closed by pressing the letter 'q'",
+" while that window has input focus, by choosing `close` from a window",
+" manager menu, or with `set term wxt <n> close`.",
+"",
+" The size of the plot area is given in pixels, it defaults to 640x384.",
+" In addition to that, the actual size of the window also includes the space",
+" reserved for the toolbar and the status bar.",
+" When you resize a window, the plot is immediately scaled to fit in the",
+" new size of the window. Unlike other interactive terminals, the `wxt`",
+" terminal scales the whole plot, including fonts and linewidths, and keeps",
+" its global aspect ratio constant, leaving an empty space painted in gray.",
+" If you type `replot`, click the `replot` icon in the terminal toolbar or",
+" type a new `plot` command, the new plot will completely fit in the window",
+" and the font size and the linewidths will be reset to their defaults.",
+"",
+" The position option can be used to set the position of the plot window.",
+" The position option only applies to the first plot after the `set term`",
+" command.",
+"",
+" The active plot window (the one selected by `set term wxt <n>`) is",
+" interactive. Its behaviour is shared with other terminal types. See `mouse`",
+" for details. It also has some extra icons, which are supposed to be",
+" self-explanatory.",
+"",
+" This terminal supports an enhanced text mode, which allows font and other",
+" formatting commands (subscripts, superscripts, etc.) to be embedded in labels",
+" and other text strings. The enhanced text mode syntax is shared with other",
+" gnuplot terminal types. See `enhanced` for more details.",
+"",
+" <font> is in the format \"FontFace,FontSize\", i.e. the face and the size",
+" comma-separated in a single string. FontFace is a usual font face name, such",
+" as \'Arial\'. If you do not provide FontFace, the wxt terminal will use",
+" \'Sans\'. FontSize is the font size, in points. If you do not provide it,",
+" the wxt terminal will use a size of 10 points.",
+"    For example :",
+"       set term wxt font \"Arial,12\"",
+"       set term wxt font \"Arial\" # to change the font face only",
+"       set term wxt font \",12\" # to change the font size only",
+"       set term wxt font \"\" # to reset the font name and size",
+"",
+" The fonts are retrieved from the usual fonts subsystems. Under Windows,",
+" those fonts are to be found and configured in the entry \"Fonts\" of the",
+" control panel. Under UNIX, they are handled by \"fontconfig\".",
+"",
+" Pango, the library used to layout the text, is based on utf-8. Thus, the wxt",
+" terminal has to convert from your encoding to utf-8. The default input",
+" encoding is based on your \'locale\'. If you want to use another encoding,",
+" make sure gnuplot knows which one you are using. See `encoding` for more",
+" details.",
+"",
+" Pango may give unexpected results with fonts that do not respect the unicode",
+" mapping. With the Symbol font, for example, the wxt terminal will use the map",
+" provided by http://www.unicode.org/ to translate character codes to unicode.",
+" Pango will do its best to find a font containing this character, looking for",
+" your Symbol font, or other fonts with a broad unicode coverage, like the",
+" DejaVu fonts. Note that \"the Symbol font\" is to be understood as the Adobe",
+" Symbol font, distributed with Acrobat Reader as \"SY______.PFB\".",
+" Alternatively, the OpenSymbol font, distributed with OpenOffice.org as",
+" \"opens___.ttf\", offers the same characters. Microsoft has distributed a",
+" Symbol font (\"symbol.ttf\"), but it has a different character set with",
+" several missing or moved mathematic characters. If you experience problems",
+" with your default setup (if the demo enhancedtext.dem is not displayed",
+" properly for example), you probably have to install one of the Adobe or",
+" OpenOffice Symbol fonts, and remove the Microsoft one.",
+" Other non-conform fonts, such as \"wingdings\" have been observed working.",
+"",
+" The rendering of the plot can be altered with a dialog available from the",
+" toolbar. To obtain the best output possible, the rendering involves three",
+" mechanisms : antialiasing, oversampling and hinting.",
+" Antialiasing allows to display non-horizontal and non-vertical lines",
+" smoother.",
+" Oversampling combined with antialiasing provides subpixel accuracy,",
+" so that gnuplot can draw a line from non-integer coordinates. This avoids",
+" wobbling effects on diagonal lines ('plot x' for example).",
+" Hinting avoids the blur on horizontal and vertical lines caused by",
+" oversampling. The terminal will snap these lines to integer coordinates so",
+" that a one-pixel-wide line will actually be drawn on one and only one pixel.",
+"",
+" By default, the window is raised to the top of your desktop when a plot is",
+" drawn. This can be controlled with the keyword \"raise\".",
+" The keyword \"persist\" will prevent gnuplot from exiting before you",
+" explicitely close all the plot windows.",
+" Finally, by default the key <space> raises the gnuplot console window, and",
+" 'q' closes the plot window. The keyword \"ctrl\" allows you to replace those",
+" bindings by <ctrl>+<space> and <ctrl>+'q', respectively.",
+" These three keywords (raise, persist and ctrl) can also be set and remembered",
+" between sessions through the configuration dialog."
+END_HELP(wxt)
+#endif /* TERM_HELP */

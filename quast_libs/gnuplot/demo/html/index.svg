@@ -1,0 +1,202 @@
+<!DOCTYPE HTML>
+<html>
+<head><title>Gnuplot Version 5 SVG terminal demos</title>
+<link type="text/css" href="gnuplot_demo.css" rel="stylesheet">
+<meta charset="UTF-8">
+</head>
+
+<body>
+
+<h2 align=center>
+    Gnuplot Version 5 SVG terminal demos<br>
+    See also the demo output for the 
+       <a href="../demo_5.0/">PNG</a> and
+       <a href="../demo_canvas_5.0/">canvas</a> terminals.
+</h2>
+
+<p>
+Here are samples of SVG output from demos included with the gnuplot
+distribution. They were generated using a pre-release copy of
+gnuplot version 5.
+Note that individual plots can be toggled on/off by clicking on
+the corresponding key entry.  Clicking in the plot area should turn
+on mouse-coordinate tracking.
+</p>
+
+<table width="100%">
+<tbody><tr valign="top">
+
+<td rowspan=2>
+    <h4>Basic 2D plot styles</h4>
+    <ul>
+    <li><a href="simple.html">simple&nbsp;functions</a></li>
+    <li><a href="fillcrvs.html">filled&nbsp;curves</a></li>
+    <li><a href="fillbetween.html">fill&nbsp;between&nbsp;curves</a></li>
+    <li><a href="candlesticks.html">candlesticks</a></li>
+    <li><a href="mgr.html">error bars</a></li>
+    <li><a href="histograms.html">histograms</a> (<a href="histograms2.html">more</a>)</li>
+    <li><a href="steps.html">step functions</a></li>
+    <li><a href="multiaxis.html">multiple axis scales</a></li>
+    <li><a href="using.html">mixing styles</a></li>
+    <li><a href="pointsize.html">variable size points</a></li>
+    <li><a href="parallel.html">parallel axis plots</a></li>
+    <li><a href="param.html">parametric&nbsp;functions</a></li>
+    <li><a href="piecewise.html">piecewise&nbsp;functions</a></li>
+    <li><a href="vector.html">vector fields</a></li>
+    <li><a href="circles.html">circles</a></li>
+    <li><a href="boxplot.html">boxplot</a></li>
+    <li><a href="rugplot.html">rug plot</a></li>
+    </ul>
+
+    <h4>Math functions</h4>
+    <ul>
+    <li><a href="approximate.html">approximation</a></li>
+    <li><a href="spline.html">B-splines</a></li>
+    <li><a href="airfoil.html">Bezier splines</a></li>
+    <li><font color=gray>complex trig functions</font></li>
+    <li><a href="cerf.html">complex error function</font></li>
+    <li><a href="prob2.html">probability</a></li>
+    <li><a href="prob.html">probability (more)</a></li>
+    <li><a href="random.html">random numbers</a></li>
+    <li><a href="bivariat.html">recursion, etc...</a></li>
+    <li><a href="stats.html">data statistics</a></li>
+    </ul>
+
+</td>
+
+<td rowspan=2>
+    <h4>3D plots and surfaces</h4>
+    <ul>
+    <li><a href="surface1.html">surfaces 1</a></li>
+    <li><a href="surface2.html">surfaces 2</a></li>
+    <li><a href="contours.html">contours</a></li>
+    <li><a href="singulr.html">singularities</a></li>
+    <li><a href="hidden.html">hidden surfaces</a></li>
+    <li><a href="pm3d.html">pm3d coloring</a></li>
+    <li><a href="hidden2.html">pm3d hidden surfaces</a></li>
+    <li><a href="world2.html">3D mapping</a></li>
+    </ul>
+
+    <h4>Coordinate and<br> axis transforms</h4>
+    <ul>
+    <li><a href="linkedaxes.html">linked axes</a></li>
+    <li><a href="polar.html">polar coords</a></li>
+    <li><a href="poldat.html">polar data</a></li>
+    <li><a href="world.html">cylindrical/spherical</a></li>
+    <li><a href="timedat.html">time/date coords</a></li>
+    </ul>
+
+    <h4>Binary and Image data </h4>
+    <ul>
+    <li><a href="binary.html">binary data</a></li>
+    <li><a href="rgbalpha.html">RGB + alpha channel</a></li>
+    <li><a href="barchart_art.html">rescaled images</a></li>
+    </ul>
+
+    <h4>Colors</h4>
+    <ul>
+    <li><a href="varcolor.html">data-dependent coloring</a></li>
+    <li><a href="rgb_variable.html">RGB and HSV coloring</a></li>
+    <li><a href="rgba_lines.html">RGB + Alpha</a></li>
+    <li><a href="pm3dcolors.html">pm3d colors</a></li>
+    </ul>
+</td>
+
+<td rowspan=2>
+    <h4>Sample Applications</h4>
+    <ul>
+    <li><a href="controls.html">control models</a></li>
+    <li><a href="discrete.html">discrete&nbsp;contours</a></li>
+    <li><a href="finance.html">financial data</a></li>
+    <li><a href="iterate.html">iteration</a></li>
+    <li><a href="scatter.html">non-gridded data</a></li>
+    <li><a href="running_avg.html">running averages</a></li>
+    <li><a href="smooth.html">cummulative smoothing</a></li>
+    <li><a href="gantt.html">Gantt chart</a></li>
+    <li><a href="heatmaps.html">2D and 3D heat maps</a></li>
+    </ul>
+
+    <h4>Text options</h4>
+    <ul>
+    <li><a href="enhanced_utf8.html">enhanced text</a></li>
+    <li><a href="datastrings.html">string data</a></li>
+    <li><a href="stringvar.html">string variables</a></li>
+    <li><a href="cities.html">variable font size</a></li>
+    <li><a href="hypertext.html">hypertext</a></li>
+    </ul>
+
+    <h4>Page Layout</h4>
+    <ul>
+    <li><a href="layout.html">multiplot&nbsp;layout</a></li>
+    <li><a href="multiplt.html">multiple plots</a></li>
+    <li><a href="margins.html">aligned plots</a></li>
+    <li><a href="ellipse.html">axis location</a></li>
+    <li><a href="rectangle.html">rectangles</a></li>
+    <li><a href="nokey.html">end-labeled plots</a></li>
+    </ul>
+
+    <h4>Styles</h4>
+    <ul>
+    <li><a href="lines_arrows.html">line and arrow styles</a></li>
+    <li><a href="fillstyle.html">fill styles</a></li>
+    <li><a href="dashtypes.html">dashed lines</a></li>
+    <li><a href="transparent.html">transparency</a></li>
+    <li><a href="transparent_solids.html">transparent solids</a></li>
+    </ul>
+
+    <h4>Animation</h4>
+    <ul>
+    <li><font color=gray>not supported</font></li>
+    </ul>
+</td>
+
+<td align=center valign=bot>
+	<h4></h4>
+	These plots were generated using
+	<pre><font size="-1">set term svg enhanced mouse size 600,400</font></pre>
+</td>
+</tr>
+
+<tr valign=top><td align=center>
+	<table width=500><tr><td colspan=3>
+	    	<embed src="showcase_plot.svg" type="image/svg+xml" width=500 height=350 class="float-right">
+	    </td></tr>
+	    <tr> <td width=50></td><td>
+		Click on the plot to enable mouse tracking.
+	    	Click on the figure legend to toggle plot elements on/off.
+	    </td><td>
+		<a href="http://validator.w3.org/check?uri=referer"><img
+		src="http://www.w3.org/Icons/valid-svg11"
+		alt="Valid SVG 1.1"   /></a>
+	    </td></tr>
+	</table>
+</td></tr>
+
+</tbody></table>
+<hr>
+
+
+<table width="100%">
+<tbody><tr valign="top">
+
+    <td>
+    <i>This page created by Ethan Merritt<br>April 2014</i>
+    </td>
+
+    <td>
+    <ul>
+    <li><a href="http://sourceforge.net/projects/gnuplot/">
+	Gnuplot development pages on SourceForge</a></li>
+    <li>On-line documentation in
+	<a href="http://gnuplot.sourceforge.net/docs_cvs/gnuplot.pdf">PDF</a></li>
+    </ul>
+    </td>
+    
+    <td>
+    <ul>
+    </ul>
+    </td>
+    
+</tr>
+</tbody></table>
+</body></html>

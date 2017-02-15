@@ -1,0 +1,30 @@
+The Gnuplot Qt terminal comprises the following components:
+
+- QtGnuplotApplication : a QApplication that manages Gnuplot windows
+- QtGnuplotWindow      : a QMainWindow that embeds a tool bar, a status bar
+                         and a Gnuplot widget
+- QtGnuplotWidget      : a QWidget comprising a QGraphicsView that displays
+                         a plot rendered by a QGraphicsScene
+- QtGnuplotScene       : a QGraphicsScene that does the actual rendering
+- QtGnuplotItem        : most of the plot is rendered using standard items,
+                         except for points and enhanced text which have their
+                         custom items.
+
+qt_term.cpp defines the interface between Gnuplot and the GUI. It starts the
+QApplication in a separate process and communicates with it through a QLocalSocket
+
+Translation howto
+=================
+
+1/ Edit QtGnuplot.pro and add a TRANSLATION entry corresponding to your language
+2/ run 'lupdate QtGnuplot.pro'. This will generate a .ts file in the po directory
+3/ run linguist to edit the .ts file
+4/ add an entry for a qm file in src/Makefile.am, section TRANSLATIONS
+
+Known issues
+============
+
+- export to EPS
+- mouse coordinate readout is not handling UTF-8 correctly
+- "opengl" not accepted as a rendering mode (at least under linux)
+- wxt/Qt terminals must not be active within the same gnuplot session

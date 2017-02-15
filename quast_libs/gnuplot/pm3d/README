@@ -1,0 +1,7 @@
+Subdirectories:
+    contrib/scripts - contributions using pm3d (colour points, 
+		      compress pm3d postscript file, ...);
+		      see README therein
+
+Note: other useful gnuplot scripts can be found on gnuplot.sourceforge.net.
+

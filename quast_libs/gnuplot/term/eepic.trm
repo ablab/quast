@@ -1,0 +1,662 @@
+/* Hello, Emacs! This is -*-C-*- !*/
+/*
+ * $Id: eepic.trm,v 1.32 2014/01/30 05:50:53 sfeam Exp $
+ *
+ */
+
+/* GNUPLOT - eepic.trm */
+
+/*[
+ * Copyright 1990 - 1993, 1998, 2004
+ *
+ * Permission to use, copy, and distribute this software and its
+ * documentation for any purpose with or without fee is hereby granted,
+ * provided that the above copyright notice appear in all copies and
+ * that both that copyright notice and this permission notice appear
+ * in supporting documentation.
+ *
+ * Permission to modify the software is granted, but not the right to
+ * distribute the complete modified source code.  Modifications are to
+ * be distributed as patches to the released version.  Permission to
+ * distribute binaries produced by compiling modified sources is granted,
+ * provided you
+ *   1. distribute the corresponding source modifications from the
+ *    released version in the form of a patch file along with the binaries,
+ *   2. add special version identification to distinguish your version
+ *    in addition to the base release version number,
+ *   3. provide your name and address as the primary contact for the
+ *    support of your modified version, and
+ *   4. retain our contact information in regard to use of the base
+ *    software.
+ * Permission to distribute the released version of the source code along
+ * with corresponding source modifications in the form of a patch file is
+ * granted with same provisions 2 through 4 for binary distributions.
+ *
+ * This software is provided "as is" without express or implied warranty
+ * to the extent permitted by applicable law.
+]*/
+
+/*
+ * This file is included by ../term.c.
+ *
+ * This terminal driver supports:
+ *   The EEPIC macros for LaTeX.
+ *
+ * AUTHORS
+ *   David Kotz
+ *
+ * send your comments or suggestions to (gnuplot-info@lists.sourceforge.net).
+ *
+ */
+/*
+ *  This file contains the eepic terminal driver, intended for use with the
+ *  eepic.sty macro package for LaTeX. This is an alternative to the
+ *  latex driver. You need eepic.sty, epic.sty, and a printer driver that
+ *  supports the tpic \specials.
+ *
+ * Although dotted and dashed lines are possible with EEPIC, and are
+ * tempting, they do not work well for high-sample-rate curves, mushing
+ * the dashes all together into a solid line. For now anyway, the EEPIC
+ * driver will have only solid lines. Anyone got a solution?
+ *
+ * LATEX must also be defined.
+ */
+/*
+ * adapted to the new terminal layout by Stefan Bodewig (Dec. 1995)
+ */
+/* Additions by Gabriel Zachmann (Gabriel.Zachmann@gmx.net), Nov 2000:
+ * - little bug fix in stacked (faked rotated) text
+ * - color support
+ * - true rotated text
+ * - augmented line types set with dashed lines
+ * - optionally small or tiny point symbols
+ * - font size
+ */
+
+
+#include "driver.h"
+
+#ifdef TERM_REGISTER
+register_term(eepic)
+#endif
+
+#ifdef TERM_PROTO
+
+#include <ctype.h>
+
+TERM_PUBLIC void EEPIC_init __PROTO((void));
+TERM_PUBLIC void EEPIC_graphics __PROTO((void));
+TERM_PUBLIC void EEPIC_text __PROTO((void));
+TERM_PUBLIC void EEPIC_linetype __PROTO((int linetype));
+TERM_PUBLIC void EEPIC_move __PROTO((unsigned int x, unsigned int y));
+TERM_PUBLIC void EEPIC_point __PROTO((unsigned int x, unsigned int y,
+				      int number));
+TERM_PUBLIC void EEPIC_vector __PROTO((unsigned int ux, unsigned int uy));
+TERM_PUBLIC void EEPIC_arrow __PROTO((unsigned int sx, unsigned int sy,
+				      unsigned int ex, unsigned int ey,
+				      int head));
+TERM_PUBLIC void EEPIC_put_text __PROTO((unsigned int x, unsigned int y,
+					 const char str[]));
+TERM_PUBLIC int EEPIC_justify_text __PROTO((enum JUSTIFY mode));
+TERM_PUBLIC int EEPIC_text_angle __PROTO((int ang));
+TERM_PUBLIC void EEPIC_reset __PROTO((void));
+TERM_PUBLIC void EEPIC_options __PROTO((void));
+
+#define EEPIC_PTS_PER_INCH 72.
+/* resolution of printer we expect to use */
+#define EEPIC_DOTS_PER_INCH 600
+/* dot size in pt */
+#define EEPIC_UNIT (EEPIC_PTS_PER_INCH/EEPIC_DOTS_PER_INCH)
+
+/* 5 inches wide by 3 inches high (default) */
+#define EEPIC_XMAX (5.0*EEPIC_PTS_PER_INCH/EEPIC_UNIT)
+#define EEPIC_YMAX (3.0*EEPIC_PTS_PER_INCH/EEPIC_UNIT)
+#define EEPIC_HTIC (5.0/EEPIC_UNIT)
+#define EEPIC_VTIC (5.0/EEPIC_UNIT)
+#define EEPIC_VCHAR (10.0/EEPIC_UNIT)	/* 10 pt font */
+#define EEPIC_HCHAR (EEPIC_VCHAR/2.0)
+#endif /* TERM_PROTO */
+
+#ifndef TERM_PROTO_ONLY
+#ifdef TERM_BODY
+
+static unsigned int EEPIC_posx;
+static unsigned int EEPIC_posy;
+static enum JUSTIFY eepic_justify = LEFT;
+static int eepic_angle = 0;
+static int eepic_color_on = FALSE;		/* use \color */
+static int eepic_true_rotate = FALSE;		/* use \rotatebox */
+static int eepic_fontsize_set = FALSE;
+static float eepic_xsize = 5.0;
+static float eepic_ysize = 3.0;
+
+/* for DOTS point style */
+#define EEPIC_TINY_DOT "\\rule{.1pt}{.1pt}"
+
+/* POINTS */
+static int eepic_num_point_types[] = { 12, 10, 8 };
+static int eepic_pointsize = 0;
+static const char GPFAR *GPFAR EEPIC_points[][12] =
+{
+	{
+		"\\makebox(0,0){$\\Diamond$}",
+		"\\makebox(0,0){$+$}",
+		"\\makebox(0,0){$\\Box$}",
+		"\\makebox(0,0){$\\times$}",
+		"\\makebox(0,0){$\\triangle$}",
+		"\\makebox(0,0){$\\star$}",
+		"\\circle{12}", "\\circle{18}", "\\circle{24}",
+		"\\circle*{12}", "\\circle*{18}", "\\circle*{24}"
+	},
+	{
+		"\\makebox(0,0){$\\scriptstyle\\Diamond$}",
+		"\\makebox(0,0){$\\scriptstyle +$}",
+		"\\makebox(0,0){$\\scriptstyle\\Box$}",
+		"\\makebox(0,0){$\\scriptstyle\\times$}",
+		"\\makebox(0,0){$\\scriptstyle\\triangle$}",
+		"\\makebox(0,0){$\\scriptstyle\\star$}",
+		"\\circle{12}", "\\circle{18}",
+		"\\circle*{12}", "\\circle*{18}",
+	},
+	{
+		"\\makebox(0,0){$\\scriptscriptstyle\\Diamond$}",
+		"\\makebox(0,0){$\\scriptscriptstyle +$}",
+		"\\makebox(0,0){$\\scriptscriptstyle\\Box$}",
+		"\\makebox(0,0){$\\scriptscriptstyle\\times$}",
+		"\\makebox(0,0){$\\scriptscriptstyle\\triangle$}",
+		"\\makebox(0,0){$\\scriptscriptstyle\\star$}",
+		"\\circle{12}",
+		"\\circle*{12}",
+	}
+};
+
+/* LINES */
+static int eepic_numlines[] = { 5, 7, 8 };	/* number of linetypes below */
+#define EEPIC_MAX_NUMLINES 8				/* max of eepic_numlines[] */
+static int eepic_lineset = 0;
+static char GPFAR *GPFAR EEPIC_lines[][EEPIC_MAX_NUMLINES] =
+{
+	{
+		"\\thicklines \\path",	/* -2 border */
+		"\\thinlines \\drawline[-50]",	/* -1 axes */
+		"\\thinlines \\path",	/*  0 solid thin  */
+		"\\thicklines \\path",	/*  1 solid thick */
+		"\\Thicklines \\path"	/*  2 solid Thick */
+	},
+	{
+		"\\thicklines \\path",	/* -2 border */
+		"\\thinlines \\drawline[-50]",	/* -1 axes */
+		"\\thinlines \\path",	/*  0 solid thin  */
+		"\\thinlines \\dashline[90]{10}",
+		"\\thinlines \\dottedline{10}",
+		"\\thinlines \\dashline[60]{20}",
+		"\\thinlines \\dottedline{20}"
+	},
+	{
+		"\\thicklines \\path",	/* -2 border */
+		"\\thinlines \\drawline[-50]",	/* -1 axes */
+		"\\thinlines \\path",
+		"\\thinlines \\path",
+		"\\thinlines \\path",
+		"\\thinlines \\path",
+		"\\thinlines \\path",
+		"\\thinlines \\path"
+	}
+};
+static int EEPIC_type;		/* current line type */
+static TBOOLEAN EEPIC_inline = FALSE;	/* are we in the middle of a line */
+static void EEPIC_endline __PROTO((void)); /* terminate any line in progress */
+static int EEPIC_linecount = 0;	/* number of points in line so far */
+#define EEPIC_LINEMAX 50	/* max value for linecount */
+
+#define EEPIC_NUM_COLORS 7
+static int eepic_color = 0;
+static char GPFAR *GPFAR eepic_colors[EEPIC_NUM_COLORS] =
+{
+	"\\color{black}\n",	/* border and axes (must be black!) */
+	"\\color{red}\n",
+	"\\color{blue}\n",
+	"\\color{green}\n",
+	"\\color{magenta}\n",
+	"\\color{cyan}\n",
+	"\\color{yellow}\n"
+};
+
+/* ARROWS */
+/* we use the same code as for LATEX */
+/* figure out the best arrow */
+static void best_latex_arrow __PROTO((int sx, int sy, int ex, int ey, int who, int head));
+
+TERM_PUBLIC void
+EEPIC_init()
+{
+    EEPIC_posx = EEPIC_posy = 0;
+	EEPIC_type = 0;
+	EEPIC_linecount = 0;
+	EEPIC_inline = FALSE;
+	eepic_color = 0;
+    fprintf(gpoutfile, "\
+%% GNUPLOT: LaTeX picture using EEPIC macros\n\
+\\setlength{\\unitlength}{%fpt}\n",
+	    EEPIC_UNIT);
+}
+
+
+TERM_PUBLIC void
+EEPIC_graphics()
+{
+    register struct termentry *t = term;
+
+    /* HBB 20001027: respect 'size' and 'offset' settings to modify
+     * picture box size and position */
+    fprintf(gpoutfile, "\\begin{picture}(%d,%d)(%d,%d)\n",
+	    (int) (t->xmax * xsize),
+	    (int) (t->ymax * ysize),
+	    (int) (t->xmax * xoffset),
+	    (int) (t->ymax * xoffset));
+    if (eepic_fontsize_set) {
+	float x = t->v_char * EEPIC_UNIT + 0.5;
+
+	fprintf(gpoutfile, "\\fontsize{%d}{%g}\\selectfont\n",
+		(int) x,  1.2 * x );
+    } else
+	fprintf(gpoutfile,"\\footnotesize\n" );
+
+}
+
+
+TERM_PUBLIC void
+EEPIC_text()
+{
+    EEPIC_endline();
+    fputs("\\end{picture}\n", gpoutfile);
+}
+
+
+TERM_PUBLIC void
+EEPIC_linetype(int linetype)
+{
+    EEPIC_endline();
+
+    EEPIC_type = linetype % (eepic_numlines[eepic_lineset] - 2);
+
+	if ( eepic_color_on )
+	{
+		eepic_color = linetype;
+		if ( eepic_color < 0 )
+			eepic_color = 0;
+		else
+		{
+			eepic_color %= EEPIC_NUM_COLORS - 1;
+			eepic_color += 1;
+		}
+		fputs( eepic_colors[eepic_color], gpoutfile );
+	}
+}
+
+
+
+TERM_PUBLIC void
+EEPIC_move(unsigned int x, unsigned int y)
+{
+    EEPIC_endline();
+
+    EEPIC_posx = x;
+    EEPIC_posy = y;
+}
+
+
+TERM_PUBLIC void
+EEPIC_point(unsigned int x, unsigned int y, int number)
+{
+    EEPIC_move(x, y);
+
+    /* Print the character defined by 'number'; number < 0 means
+       to use a dot, otherwise one of the defined points. */
+    fprintf(gpoutfile, "\\put(%d,%d){%s}\n", x, y,
+	    (number < 0 ? EEPIC_TINY_DOT
+	     : EEPIC_points[eepic_pointsize][number % eepic_num_point_types[eepic_pointsize]]));
+}
+
+
+TERM_PUBLIC void
+EEPIC_vector(unsigned int ux, unsigned int uy)
+{
+    if (!EEPIC_inline) {
+	EEPIC_inline = TRUE;
+
+	/* Start a new line. This depends on line type */
+	fprintf(gpoutfile, "%s(%u,%u)",
+		EEPIC_lines[eepic_lineset][EEPIC_type + 2],
+		EEPIC_posx, EEPIC_posy);
+	EEPIC_linecount = 1;
+    } else {
+	/* Even though we are in middle of a path,
+	 * we may want to start a new path command.
+	 * If they are too long then latex will choke.
+	 */
+	if (EEPIC_linecount++ >= EEPIC_LINEMAX) {
+	    fprintf(gpoutfile, "\n%s(%u,%u)",
+		    EEPIC_lines[eepic_lineset][EEPIC_type + 2],
+		    EEPIC_posx, EEPIC_posy);
+	    EEPIC_linecount = 1;
+	}
+    }
+    fprintf(gpoutfile, "(%u,%u)", ux, uy);
+    EEPIC_posx = ux;
+    EEPIC_posy = uy;
+}
+
+static void
+EEPIC_endline()
+{
+    if (EEPIC_inline) {
+	putc('\n', gpoutfile);
+	EEPIC_inline = FALSE;
+    }
+}
+
+
+TERM_PUBLIC void
+EEPIC_arrow(
+    unsigned int sx, unsigned int sy,
+    unsigned int ex, unsigned int ey,
+    int head)
+{
+    best_latex_arrow(sx, sy, ex, ey, 2, head);	/* call latex routine */
+
+    EEPIC_posx = ex;
+    EEPIC_posy = ey;
+}
+
+
+TERM_PUBLIC void
+EEPIC_put_text(unsigned int x, unsigned int y, const char str[])
+{
+    int i, l;
+
+    EEPIC_endline();
+
+    fprintf(gpoutfile, "\\put(%d,%d)", x, y);
+    if ((str[0] == '{') || (str[0] == '[')) {
+	fprintf(gpoutfile, "{\\makebox(0,0)%s}\n", str);
+    }
+    else
+    switch (eepic_angle)
+    {
+	case 0:
+	{
+	   switch (eepic_justify) {
+	       case LEFT:
+		   fputs("{\\makebox(0,0)[l]{",gpoutfile);
+		   break;
+	       case CENTRE:
+		   fputs("{\\makebox(0,0){",gpoutfile);
+		   break;
+	       case RIGHT:
+		   fputs("{\\makebox(0,0)[r]{",gpoutfile);
+		   break;
+	   }
+	   fprintf(gpoutfile,"%s}}\n", str);
+	   break;
+	}
+	case 1:
+	{
+	   if ( eepic_true_rotate )
+	   {
+	       /* use \rotatebox */
+	       switch (eepic_justify) {
+		   case LEFT:
+		       fputs("{\\makebox(0,0)[lb]{\\rotatebox[origin=c]{90}{",
+			     gpoutfile);
+		       break;
+		   case CENTRE:
+		       fputs("{\\makebox(0,0)[l]{\\rotatebox[origin=c]{90}{",
+			     gpoutfile);
+		       break;
+		   case RIGHT:
+		       fputs("{\\makebox(0,0)[lt]{\\rotatebox[origin=c]{90}{",
+			     gpoutfile);
+		       break;
+	       }
+	       fprintf(gpoutfile,"%s}}}\n", str);
+	   }
+	   else
+	   {
+	       /* put text in a short stack */
+	       switch (eepic_justify) {
+		   case LEFT:
+		       fputs("{\\makebox(0,0)[lb]{\\shortstack{",gpoutfile);
+		       break;
+		   case CENTRE:
+		       fputs("{\\makebox(0,0)[l]{\\shortstack{",gpoutfile);
+		       break;
+		   case RIGHT:
+		       fputs("{\\makebox(0,0)[lt]{\\shortstack{",gpoutfile);
+		       break;
+	       }
+	       l = strlen(str)-1;
+	       for ( i = 0; i < l; i ++ )
+		   fprintf(gpoutfile, "%c\\\\", str[i] );
+	       fputc(str[l],gpoutfile);
+	       fputs("}}}\n",gpoutfile);
+	   }
+	   break;
+       }
+    }
+}
+
+
+
+TERM_PUBLIC int
+EEPIC_justify_text(enum JUSTIFY mode)
+{
+    eepic_justify = mode;
+    return (TRUE);
+}
+
+TERM_PUBLIC int
+EEPIC_text_angle(int ang)
+{
+    eepic_angle = (ang ? 1 : 0);
+    return (TRUE);
+}
+
+TERM_PUBLIC void
+EEPIC_reset()
+{
+    EEPIC_endline();
+    EEPIC_posx = EEPIC_posy = 0;
+}
+
+TERM_PUBLIC void
+EEPIC_options()
+{
+    float fontsize = 0;
+
+    int eepic_explicit_units = INCH;
+    static TBOOLEAN size_set = FALSE;
+    eepic_color_on =
+    eepic_true_rotate = FALSE;
+    eepic_lineset = 0;
+    eepic_pointsize = 0;
+
+    while (!END_OF_COMMAND) {
+	if (almost_equals(c_token, "def$ault")) {
+	    eepic_fontsize_set = FALSE;
+	    eepic_color_on = FALSE;
+	    eepic_true_rotate = FALSE;
+	    eepic_lineset = 0;
+	    eepic_pointsize = 0;
+	    eepic_explicit_units = INCH;
+	    term->xmax = EEPIC_XMAX;
+	    term->ymax = EEPIC_YMAX;
+	    size_set = FALSE;
+	    c_token++;
+	} else if (almost_equals(c_token, "c$olor") ||
+		   almost_equals(c_token, "c$olour")) {
+	    eepic_color_on = TRUE;
+	    eepic_lineset = 2;
+	    c_token++;
+	} else if (almost_equals(c_token, "r$otate")) {
+	    eepic_true_rotate = TRUE;
+	    c_token++;
+	} else if (almost_equals(c_token, "da$shed")) {
+	    if (! eepic_color_on)
+		eepic_lineset = 1;	/* ignore when color is on */
+	    c_token++;
+	} else if (equals(c_token, "size")) {
+	    c_token++;
+	    eepic_explicit_units = parse_term_size(&eepic_xsize, &eepic_ysize, INCHES);
+	    term->xmax = eepic_xsize / EEPIC_UNIT;
+	    term->ymax = eepic_ysize / EEPIC_UNIT;
+	    size_set = TRUE;
+	} else if (almost_equals(c_token, "s$mall")) {
+	    eepic_pointsize = 1;
+	    c_token++;
+	} else if (almost_equals(c_token, "t$iny")) {
+	    eepic_pointsize = 2;
+	    c_token++;
+	} else if (isdigit((unsigned char)
+			   gp_input_line[token[c_token].start_index])) {
+	    struct value a;
+	    fontsize = real(const_express(&a));
+
+	    if (fontsize < 1 || fontsize > 100)
+		int_error(c_token, "font size out of bounds [1..100]");
+	    else {
+		eepic_fontsize_set = TRUE;
+		term->v_char = (unsigned int)(fontsize/EEPIC_UNIT);
+		term->h_char = (unsigned int)((fontsize/EEPIC_UNIT)/2);
+	    }
+	} else
+	    int_error(c_token, "unrecognized option");
+    } /* while(command) */
+
+    sprintf(term_options, "%s%s%s%s",
+	    eepic_color_on ? " color" : "",
+	    eepic_lineset == 1 ? " dashed" : "",
+	    eepic_true_rotate ? " rotate" : "",
+	    eepic_pointsize == 1 ? " small"
+	    : eepic_pointsize == 2 ? " tiny" : "" );
+    if (eepic_fontsize_set)
+	sprintf( term_options+strlen(term_options), " %d", (int) fontsize );
+    if (size_set) {
+	if (eepic_explicit_units == CM)
+	    sprintf(term_options+strlen(term_options)," size %.2fcm, %.2fcm ",
+		2.54*(float)term->xmax/(EEPIC_DOTS_PER_INCH), 2.54*(float)term->ymax/(EEPIC_DOTS_PER_INCH));
+	else
+	    sprintf(term_options+strlen(term_options)," size %.2fin, %.2fin ",
+		(float)term->xmax/(EEPIC_DOTS_PER_INCH), (float)term->ymax/(EEPIC_DOTS_PER_INCH));
+    }
+}
+
+#endif
+
+#ifdef TERM_TABLE
+
+TERM_TABLE_START(eepic_driver)
+    "eepic", "EEPIC -- extended LaTeX picture environment",
+    EEPIC_XMAX, EEPIC_YMAX, EEPIC_VCHAR, EEPIC_HCHAR,
+    EEPIC_VTIC, EEPIC_HTIC, EEPIC_options, EEPIC_init, EEPIC_reset,
+    EEPIC_text, null_scale, EEPIC_graphics, EEPIC_move, EEPIC_vector,
+    EEPIC_linetype, EEPIC_put_text, EEPIC_text_angle,
+    EEPIC_justify_text, EEPIC_point, EEPIC_arrow, set_font_null,
+    0, /* pointsize */
+    0, /* flags */
+    0, 0, /* suspend, resume */
+    0, /* fillbox */
+    0  /* linewidth */
+TERM_TABLE_END(eepic_driver)
+
+#undef LAST_TERM
+#define LAST_TERM eepic_driver
+
+#endif
+#endif
+
+#ifdef TERM_HELP
+START_HELP(eepic)
+"1 eepic",
+"?commands set terminal eepic",
+"?set terminal eepic",
+"?set term eepic",
+"?terminal eepic",
+"?term eepic",
+"?eepic",
+" The `eepic` terminal driver supports the extended LaTeX picture environment.",
+" It is an alternative to the `latex` driver.",
+"",
+" The output of this terminal is intended for use with the \"eepic.sty\" macro",
+" package for LaTeX.  To use it, you need \"eepic.sty\", \"epic.sty\" and a",
+" printer driver that supports the \"tpic\" \\specials.  If your printer driver",
+" doesn't support those \\specials, \"eepicemu.sty\" will enable you to use some",
+" of them.",
+" dvips and dvipdfm do support the \"tpic\" \\specials.",
+"",
+" Syntax:",
+"    set terminal eepic {default} {color|dashed} {rotate} {size XX,YY}",
+"                       {small|tiny|<fontsize>}",
+"",
+" Options:",
+" You can give options in any order you wish.",
+" 'color' causes gnuplot to produce \\color{...} commands so that the graphs are",
+" colored. Using this option, you must include \\usepackage{color} in the preamble",
+" of your latex document.",
+" 'dashed' will allow dashed line types; without this option, only solid lines",
+" with varying thickness will be used.",
+" 'dashed' and 'color' are mutually exclusive; if 'color' is specified, then",
+" 'dashed' will be ignored.",
+" 'rotate' will enable true rotated text (by 90 degrees). Otherwise, rotated text",
+" will be typeset with letters stacked above each other. If you use this option",
+" you must include \\usepackage{graphicx} in the preamble.",
+" 'small' will use \\scriptsize symbols as point markers (Probably does not work",
+" with TeX, only LaTeX2e). Default is to use the default math size.",
+" 'tiny' uses \\scriptscriptstyle symbols.",
+" 'default' resets all options to their defaults = no color, no dashed lines,",
+" pseudo-rotated (stacked) text, large point symbols.",
+" <fontsize> is a number which specifies the font size inside the picture",
+" environment; the unit is pt (points), i.e., 10 pt equals approx. 3.5 mm.",
+" If fontsize is not specified, then all text inside the picture will be set",
+" in \\footnotesize.",
+"",
+" Notes:",
+" Remember to escape the # character (or other chars meaningful to (La-)TeX)",
+" by \\\\ (2 backslashes).",
+" It seems that dashed lines become solid lines when the vertices of a plot",
+" are too close. (I do not know if that is a general problem with the tpic",
+" specials, or if it is caused by a bug in eepic.sty or dvips/dvipdfm.)",
+" The default size of an eepic plot is 5x3 inches. You can change this using ",
+" the `size` terminal option.",
+" Points, among other things, are drawn using the LaTeX commands \"\\Diamond\",",
+" \"\\Box\", etc.  These commands no longer belong to the LaTeX2e core; they are",
+" included in the latexsym package, which is part of the base distribution and",
+" thus part of any LaTeX implementation. Please do not forget to use this package.",
+" Instead of latexsym, you can also include the amssymb package.",
+" All drivers for LaTeX offer a special way of controlling text positioning:",
+" If any text string begins with '{', you also need to include a '}' at the",
+" end of the text, and the whole text will be centered both horizontally and",
+" vertically.  If the text string begins with '[', you need to follow this with",
+" a position specification (up to two out of t,b,l,r), ']{', the text itself,",
+" and finally '}'.  The text itself may be anything LaTeX can typeset as an",
+" LR-box.  '\\rule{}{}'s may help for best positioning.",
+"",
+" Examples:",
+" set term eepic",
+"   output graphs as eepic macros inside a picture environment;",
+"   \\input the resulting file in your LaTeX document.",
+" set term eepic color tiny rotate 8",
+"   eepic macros with \\color macros, \\scripscriptsize point markers,",
+"   true rotated text, and all text set with 8pt.",
+"",
+" About label positioning:",
+" Use gnuplot defaults (mostly sensible, but sometimes not really best):",
+"        set title '\\LaTeX\\ -- $ \\gamma $'",
+" Force centering both horizontally and vertically:",
+"        set label '{\\LaTeX\\ -- $ \\gamma $}' at 0,0",
+" Specify own positioning (top here):",
+"        set xlabel '[t]{\\LaTeX\\ -- $ \\gamma $}'",
+" The other label -- account for long ticlabels:",
+"        set ylabel '[r]{\\LaTeX\\ -- $ \\gamma $\\rule{7mm}{0pt}}'"
+END_HELP(eepic)
+#endif /* TERM_HELP */

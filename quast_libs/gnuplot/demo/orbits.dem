@@ -1,0 +1,59 @@
+# Ellipse demo - 2D Solar System viewer
+
+reset
+
+set zeroaxis
+set xtics axis
+set ytics axis
+set size ratio 1
+set xrange [-40:40]
+set yrange [-40:40]
+unset border 
+set key right out
+set title "Orbits of selected Solar System objects"
+set angles degrees
+set datafile separator "\t"
+if (strstrt(GNUTERM,"wxt")) \
+    set label 1 "Use Ctrl+mousewheel to zoom!" at graph 0.5,0.05 center 
+
+fn = 'orbital_elements.dat'
+
+# functions to calculate the parameters of the ellipses from orbital elements
+# the actual 3D orbits are projected onto the ecliptic plane
+f1(w,W,i) = cos(w)*cos(W)-sin(w)*sin(W)*cos(i)
+f2(w,W,i) = cos(w)*sin(W)+sin(w)*cos(W)*cos(i)
+
+angle(w,W,i) = atan2(f2(w,W,i), f1(w,W,i))
+# center coordinates
+cx(a,e,i,w,W) = -a*e*f1(w,W,i)
+cy(a,e,i,w,W) = -a*e*f2(w,W,i)
+# axes
+fa(a,e,i,w,W) = 2*a*sqrt(1-sin(w)**2*sin(i)**2)
+fb(a,e,i,w,W) = 2*a*sqrt(1-e**2)*sqrt(1-cos(w)**2*sin(i)**2)
+afromq(q,e) = q/(1-e)
+
+# the ellipse style needs five columns:
+# center x, center y, major axis, minor axis, orientation 
+
+plot fn using (cx($2,$3,$4,$5,$6)):\
+              (cy($2,$3,$4,$5,$6)):\
+              (fa($2,$3,$4,$5,$6)):\
+              (fb($2,$3,$4,$5,$6)):\
+              (angle($5,$6,$4)) index 0 with ellipses lw 3 title "Planets",\
+     fn using (cx($2,$3,$4,$5,$6)):\
+              (cy($2,$3,$4,$5,$6)):\
+              (fa($2,$3,$4,$5,$6)):\
+              (fb($2,$3,$4,$5,$6)):\
+              (angle($5,$6,$4)) index 1 every ::0::20 with ellipses lw 1 title "Minor planets",\
+     fn using (cx($2,$3,$4,$5,$6)):\
+              (cy($2,$3,$4,$5,$6)):\
+              (fa($2,$3,$4,$5,$6)):\
+              (fb($2,$3,$4,$5,$6)):\
+              (angle($5,$6,$4)) index 2 every ::0::10 with ellipses lw 1 title "Comets",\
+     fn using (cx($2,$3,$4,$5,$6)):\
+              (cy($2,$3,$4,$5,$6)):\
+              (fa($2,$3,$4,$5,$6)):\
+              (fb($2,$3,$4,$5,$6)):\
+              (angle($5,$6,$4)) index 3 every ::0::10 with ellipses lw 1 title "Distant objects"
+              
+pause -1

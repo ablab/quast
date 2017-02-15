@@ -1,0 +1,1547 @@
+/* Hello, Emacs, this is -*-C-*-
+ * $Id: ggi.trm,v 1.29 2013/08/24 03:33:35 sfeam Exp $
+ */
+
+/* GNUPLOT - ggi.trm */
+
+/*[
+ * Copyright 2000, 2004
+ *
+ * Permission to use, copy, and distribute this software and its
+ * documentation for any purpose with or without fee is hereby granted,
+ * provided that the above copyright notice appear in all copies and
+ * that both that copyright notice and this permission notice appear
+ * in supporting documentation.
+ *
+ * Permission to modify the software is granted, but not the right to
+ * distribute the complete modified source code.  Modifications are to
+ * be distributed as patches to the released version.  Permission to
+ * distribute binaries produced by compiling modified sources is granted,
+ * provided you
+ *   1. distribute the corresponding source modifications from the
+ *    released version in the form of a patch file along with the binaries,
+ *   2. add special version identification to distinguish your version
+ *    in addition to the base release version number,
+ *   3. provide your name and address as the primary contact for the
+ *    support of your modified version, and
+ *   4. retain our contact information in regard to use of the base
+ *    software.
+ * Permission to distribute the released version of the source code along
+ * with corresponding source modifications in the form of a patch file is
+ * granted with same provisions 2 through 4 for binary distributions.
+ *
+ * This software is provided "as is" without express or implied warranty
+ * to the extent permitted by applicable law.
+ ]*/
+
+/*
+ * AUTHOR:
+ *   Cesar Crusius <crusius@leland.stanford.edu>
+ *   event / mouse processing & double-buffering
+ *   by Johannes Zellner <johannes@zellner.org>
+ *   pm3d support by Johannes Zellner <johannes@zellner.org> (Oct. 2000)
+ *
+ *   TODO:
+ *
+ *   	- reimplement wmh (if it's available)
+ *   	- implement window title using wmh (if it's available)
+ *   	- check for availability of two frames, and if not
+ *   	  do it with one frame. (will eventually not do
+ *   	  with mouse/event reporting)
+ *   	- check if libxmi is available and if so, use
+ *   	  it to draw filled polygons.
+ *   	- enable cursors using blits.
+ */
+
+#include "driver.h"
+
+#ifdef TERM_REGISTER
+register_term(ggi)
+#endif
+
+#ifdef TERM_PROTO
+
+#include <ggi/ggi.h>
+#ifdef USE_MOUSE
+#  include <ggi/ggi-unix.h>
+#endif
+
+#ifdef HAVE_GGI_WMH_H
+#   include <ggi/wmh.h>
+static TBOOLEAN GGI_use_whm = 0;
+#endif
+
+#if 1
+#if defined(HAVE_GGI_XMI_H)
+#   define ENABLE_XMI 1
+#endif
+#endif
+
+#ifdef ENABLE_XMI
+#   include <ggi/xmi.h>
+#endif
+
+static void GGI_line_colors __PROTO((void));
+TERM_PUBLIC void GGI_graphics __PROTO((void));
+TERM_PUBLIC void GGI_set_size __PROTO((void));
+TERM_PUBLIC void GGI_init __PROTO((void));
+TERM_PUBLIC void GGI_linetype __PROTO((int));
+TERM_PUBLIC void GGI_move __PROTO((unsigned int,unsigned int));
+TERM_PUBLIC void GGI_options __PROTO((void));
+TERM_PUBLIC void GGI_put_text __PROTO((unsigned int,unsigned int, const char*));
+TERM_PUBLIC void GGI_suspend __PROTO((void));
+TERM_PUBLIC void GGI_resume __PROTO((void));
+TERM_PUBLIC void GGI_fillbox __PROTO((int style, unsigned int x, unsigned int y,
+	unsigned int w, unsigned int h));
+TERM_PUBLIC void GGI_close __PROTO((void));
+TERM_PUBLIC void GGI_reset __PROTO((void));
+TERM_PUBLIC void GGI_text __PROTO((void));
+TERM_PUBLIC void GGI_vector __PROTO((unsigned int,unsigned int));
+
+#ifdef USE_MOUSE
+
+/* zoom box information */
+
+typedef struct  {
+    int x;
+    int y;
+} GGI_point_t;
+
+typedef struct {
+    int x;
+    int y;
+    int width;
+    int height;
+    char str[0xff];
+} GGI_vertex_t;
+
+TERM_PUBLIC long int GGI_SetTime(const struct timeval* current);
+TERM_PUBLIC int GGI_from_keysym __PROTO((uint32_t keysym));
+TERM_PUBLIC int GGI_from_button __PROTO((uint32_t button));
+TERM_PUBLIC int GGI_y __PROTO((int32_t y));
+TERM_PUBLIC int GGI_dispatch_event __PROTO((const ggi_event* event));
+TERM_PUBLIC int GGI_eventually_update_modifiers __PROTO((const ggi_event* event, const int add));
+TERM_PUBLIC int GGI_waitforinput __PROTO((int));
+TERM_PUBLIC void GGI_draw_ruler __PROTO((void));
+TERM_PUBLIC void GGI_clear_zoombox __PROTO((void));
+TERM_PUBLIC void GGI_draw_zoombox __PROTO((void));
+TERM_PUBLIC void GGI_set_ruler __PROTO((int, int));
+TERM_PUBLIC void GGI_set_cursor __PROTO((int, int, int));
+TERM_PUBLIC void GGI_save_frame_canvas __PROTO((void));
+TERM_PUBLIC void GGI_save_frame_stl __PROTO((void));
+TERM_PUBLIC void GGI_replot __PROTO((void));
+TERM_PUBLIC void GGI_clear __PROTO((const GGI_vertex_t* v, const int tag));
+TERM_PUBLIC void GGI_save_puts __PROTO((GGI_vertex_t* v, const int tag));
+TERM_PUBLIC void GGI_set_vertex __PROTO((GGI_vertex_t* v, const int x, const int y, const char* str, const int tag));
+TERM_PUBLIC void GGI_abort_zooming __PROTO((void));
+TERM_PUBLIC void GGI_put_tmptext __PROTO((int, const char str[]));
+TERM_PUBLIC void GGI_relative __PROTO((int r[2]));
+TERM_PUBLIC void GGI_clear_hline __PROTO((int x1, int x2, int y));
+TERM_PUBLIC void GGI_clear_vline __PROTO((int y1, int y2, int x));
+TERM_PUBLIC void GGI_draw_hline __PROTO((int x1, int x2, int y));
+TERM_PUBLIC void GGI_draw_vline __PROTO((int y1, int y2, int x));
+TERM_PUBLIC void GGI_set_clipboard __PROTO((const char[]));
+#endif /* USE_MOUSE */
+
+TERM_PUBLIC int GGI_make_palette __PROTO((t_sm_palette*));
+TERM_PUBLIC void GGI_previous_palette __PROTO((void));
+TERM_PUBLIC void GGI_set_color __PROTO((struct t_colorspec *colorspec));
+#ifdef ENABLE_XMI
+TERM_PUBLIC void GGI_filled_polygon __PROTO((int, gpiPoint*));
+#endif
+
+#define GOT_GGI_PROTO
+#endif
+
+#ifndef TERM_PROTO_ONLY
+#ifdef TERM_BODY
+
+#define GGI_XMAX 800
+#define GGI_YMAX 600
+#define GGI_VCHAR 8
+#define GGI_HCHAR 8
+#define GGI_VTIC 8
+#define GGI_HTIC 8
+
+
+#ifdef USE_MOUSE
+static GGI_vertex_t GGI_zoom[2][2];
+static GGI_vertex_t GGI_stl_vertex;
+static GGI_point_t GGI_ruler = {-1, -1};
+static GGI_point_t GGI_zoombox[2] = {{-1, -1}, {-1, -1}};
+
+static struct timeval GGI_timestamp;
+static int GGI_mouse_x = 0;
+static int GGI_mouse_y = 0;
+static int GGI_modifiers = 0;
+static int GGI_use_mouse = 1; /* mouse is on by default */
+static unsigned int GGIcanvas_height = 0;
+static int GGI_font_width = 0;
+static int GGI_font_height = 0;
+static int GGI_saved_canvas = 0;
+static int GGI_saved_stl = 0;
+static int GGI_needs_update = 1;
+#endif
+
+static t_sm_palette GGI_save_pal = {
+    -1, -1, -1, -1, -1, -1, -1, -1,
+    (rgb_color*) 0, -1, -1
+};
+
+/* First to some global variables
+ *
+ * GGIvisual is our 'piece of paper.'
+ * GGIborderColor and axixColor have the obvious meanings.
+ * GGIcolors are the colors for linestyles 0 and up.
+ * GGImap is for initializing colors.
+ * GGIx,GGIy are the current coordinates.
+ * GGIwidth, GGIheight are the extensions in the visual.
+ * GGIymax = term->ymax
+ */
+static ggi_visual_t GGIvisual = (ggi_visual_t)0;
+static ggi_pixel GGIborderColor;
+static ggi_pixel GGIaxisColor;
+static ggi_pixel GGIblack;
+static ggi_pixel GGIcolors[7];
+#define GGI_PM3D_COLORS 240
+static const int ggi_pm3d_colors = GGI_PM3D_COLORS;
+static ggi_pixel GGI_smooth_colors[GGI_PM3D_COLORS];
+static unsigned int GGIx,GGIy;
+static unsigned int GGIwidth, GGIheight, GGIymax;
+#if 0
+static unsigned int Xenv;
+#endif
+static int GGI_frames =
+#ifdef USE_MOUSE
+2
+#else
+1
+#endif
+;
+
+#ifdef ENABLE_XMI
+static miGC* GGI_miGC = (miGC*)0;
+static miPaintedSet* GGI_miPaintedSet = (miPaintedSet*)0;
+static miPixel GGI_miPixels[2]; /* only GGI_miPixels[1] is used */
+static int GGI_numblendstages = 0;
+static miBlendStage GGI_blendstages[4];
+#endif
+
+static TBOOLEAN GGI_mode_changed = 1;
+static char GGI_mode_spec[0xff] = "";
+static int GGI_acceleration = 7; /* arbitrary */
+
+enum GGI_id {
+    GGI_MODE,
+    GGI_ACCELERATION,
+    GGI_OTHER
+};
+
+static struct gen_table GGI_opts[] =
+{
+    { "mo$de", GGI_MODE },
+    { "ac$celeration", GGI_ACCELERATION },
+    { NULL, GGI_OTHER }
+};
+
+static void
+GGI_line_colors()
+{
+    ggi_pixel GGIwhite,GGIred,GGIgreen,GGIblue,GGIcyan,GGImagenta,GGIgray;
+    ggi_pixel GGIyellow;
+    ggi_color color;
+
+    color.r = 0xFFFF; color.g = 0xFFFF; color.b = 0xFFFF; GGIwhite   = ggiMapColor(GGIvisual,&color);
+    color.r = 0x0000; color.g = 0x0000; color.b = 0x0000; GGIblack   = ggiMapColor(GGIvisual,&color);
+    color.r = 0xFFFF; color.g = 0x0000; color.b = 0x0000; GGIred     = ggiMapColor(GGIvisual,&color);
+    color.r = 0x0000; color.g = 0xFFFF; color.b = 0x0000; GGIgreen   = ggiMapColor(GGIvisual,&color);
+    color.r = 0x0000; color.g = 0x0000; color.b = 0xFFFF; GGIblue    = ggiMapColor(GGIvisual,&color);
+    color.r = 0x0000; color.g = 0xFFFF; color.b = 0xFFFF; GGIcyan    = ggiMapColor(GGIvisual,&color);
+    color.r = 0xFFFF; color.g = 0x0000; color.b = 0xFFFF; GGImagenta = ggiMapColor(GGIvisual,&color);
+    color.r = 0xFFFF; color.g = 0xFFFF; color.b = 0x0000; GGIyellow  = ggiMapColor(GGIvisual,&color);
+    color.r = 0x8888; color.g = 0x8888; color.b = 0x8888; GGIgray    = ggiMapColor(GGIvisual,&color);
+
+    GGIborderColor = GGIwhite;
+    GGIaxisColor   = GGIgray;
+    GGIcolors[0]   = GGIred;
+    GGIcolors[1]   = GGIgreen;
+    GGIcolors[2]   = GGIblue;
+    GGIcolors[3]   = GGImagenta;
+    GGIcolors[4]   = GGIcyan;
+    GGIcolors[5]   = GGIyellow;
+    GGIcolors[6]   = GGIgray;
+}
+
+/* Called bevore a graphic is displayed */
+TERM_PUBLIC void GGI_graphics()
+{
+#ifdef USE_MOUSE
+    int i, j;
+    int display_frame = ggiGetDisplayFrame(GGIvisual);
+#endif
+#if 0
+    if(!Xenv)
+    {
+	GGI_line_colors();
+	return;
+    }
+#endif
+    ggiSetGCForeground(GGIvisual,GGIblack);
+#ifdef USE_MOUSE
+    /* write to the currently not displayed buffer */
+    ggiSetWriteFrame(GGIvisual, !display_frame);
+
+    /* mark the contents of the alternate frame as invalid */
+    GGI_saved_canvas = 0;
+    GGI_saved_stl = 0;
+    GGI_needs_update = 1;
+
+    /* reset the stl vertex */
+    GGI_stl_vertex.width = 0;
+
+    /* reset the zoom box coordinates */
+    for (i = 0; i < 2; i++) {
+	for (j = 0; j < 2; j++) {
+	    GGI_zoom[i][j].width = 0;
+	}
+	GGI_zoombox[i].x = -1;
+	GGI_zoombox[i].y = -1;
+    }
+#endif /* USE_MOUSE */
+
+    /* clear *write* buffer. */
+    ggiDrawBox(GGIvisual, 0, 0, GGIwidth, GGIheight);
+
+#ifdef USE_MOUSE
+    if (GGI_use_mouse) {
+	/* copy the contents of the currently
+	 * displayed stl to the write frame.
+	 * This way the stl won't jitter. */
+	ggiSetReadFrame(GGIvisual, display_frame);
+	ggiCopyBox(GGIvisual, 0, GGIcanvas_height,
+	    GGIwidth, GGI_font_height, 0, GGIcanvas_height);
+    }
+#endif
+}
+
+TERM_PUBLIC void
+GGI_set_size()
+{
+    ggi_mode mode;
+    ggiGetMode(GGIvisual,&mode);
+
+    GGIwidth  = mode.virt.x;
+    GGIheight = mode.virt.y;
+
+    term->xmax = mode.virt.x - 1;
+
+#ifdef USE_MOUSE
+    GGIcanvas_height = mode.virt.y - (GGI_use_mouse ? GGI_font_height : 0);
+    term->ymax = GGIcanvas_height - 1;
+#else
+    term->ymax = mode.virt.y - 1;
+#endif
+    GGIymax = term->ymax;
+}
+
+/*
+ * init
+ * -----------------------
+ * Called only once, when the terminal is initialized. We have to open the visual here because it
+ * is during 'init' that we have to change the terminal dimensions (xmax, ymax).
+ */
+TERM_PUBLIC void GGI_init()
+{
+    int success = 0;
+    ggi_mode mode;
+
+#if 0
+    if (0 != giiInit()) {
+	ggiPanic("*** giiInit() failed *** \n");
+    }
+#endif
+
+    if (0 != ggiInit()) {
+	ggiPanic("*** ggiInit() failed *** \n");
+    }
+
+    if (NULL == (GGIvisual = ggiOpen(NULL))) {
+	/* TODO: abort a bit more gracefully */
+	ggiPanic("(GGI_init() unable to open default\n");
+    }
+
+    if (strlen(GGI_mode_spec)) {
+	/* user specified mode */
+	if (!ggiParseMode(GGI_mode_spec, &mode)) {
+	    mode.frames = GGI_frames;
+	    if (!ggiSetMode(GGIvisual, &mode)) {
+		success = 1;
+	    }
+	}
+    }
+
+    if (!success) {
+	/* try the default mode */
+	if(ggiSetSimpleMode(GGIvisual,GGI_AUTO,GGI_AUTO,GGI_frames,GT_AUTO)) {
+	    ggiPanic("(GGI_init() unable to set default mode\n");
+	    GGIvisual = (ggi_visual_t)0;
+	}
+    }
+
+    ggiGetMode(GGIvisual, &mode);
+
+    /* print the mode only once if it has changed */
+    if (GGI_mode_changed) {
+	GGI_mode_changed = 0;
+	ggiFPrintMode(stderr, &mode);
+	fprintf(stderr, "\n");
+    }
+
+#ifdef USE_MOUSE
+    /* must come before GGI_set_size() */
+    ggiGetCharSize(GGIvisual, &GGI_font_width, &GGI_font_height);
+#endif
+
+    GGI_set_size();
+
+
+#ifdef USE_MOUSE
+    ggiSetReadFrame(GGIvisual, 0);
+    ggiSetWriteFrame(GGIvisual, 0);
+    ggiSetDisplayFrame(GGIvisual, 0);
+#endif
+
+#ifdef HAVE_GGI_WMH_H
+    /* Initialize WMH extension */
+    if (ggiWmhInit() != 0 || ggiWmhAttach(GGIvisual) < 0) {
+	GGI_use_whm = 0;
+    } else {
+	GGI_use_whm = 1;
+	ggiWmhAllowResize(GGIvisual, 100, 50, 2000, 2000, 10, 10);
+	ggiWmhSetTitle(GGIvisual, "GGI Gnuplot Driver");
+	ggiWmhSetIconTitle(GGIvisual, "Gnuplot");
+    }
+#endif
+
+    /*
+     * if(!(Xenv=!ggiWmhAttach(GGIvisual))) ggiWmhDetach(GGIvisual);
+     * else Xenv=!ggiWmhSetTitle(GGIvisual,"GGI Gnuplot Driver");
+     */
+#if 0
+    if(!Xenv)
+    {
+	/*
+	 * ggiWmhDetach(GGIvisual);
+	 * ggiWmhExit();
+	 */
+	ggiClose(GGIvisual);
+	ggiExit();
+	GGIvisual=NULL;
+    }
+#endif
+    GGI_line_colors();
+    ggiSetFlags(GGIvisual, GGIFLAG_ASYNC);
+#ifdef USE_MOUSE
+    GGI_mouse_x = 0;
+    GGI_mouse_y = 0;
+    GGI_modifiers = 0;
+    {
+	struct timeval tv;
+	struct timezone tz;
+	gettimeofday(&tv, &tz);
+	GGI_SetTime(&tv); /* initialize time */
+    }
+#endif
+
+#ifdef ENABLE_XMI
+    if (0 != xmiInit()) {
+	/* TODO: abort a bit more gracefully */
+	ggiPanic("(GGI_init() unable to initialize xmi\n");
+    }
+
+    if (xmiAttach(GGIvisual) < 0) {
+	ggiPanic("(GGI_init) Unable to attach XMI extension to visual\n");
+    }
+
+    /* miPaintedSet */
+    if (GGI_miPaintedSet) {
+	miDeletePaintedSet(GGIvisual, GGI_miPaintedSet);
+	GGI_miPaintedSet = (miPaintedSet*)0;
+    }
+    GGI_miPaintedSet = miNewPaintedSet(GGIvisual);
+    miClearPaintedSet(GGIvisual, GGI_miPaintedSet);
+
+    /* miGC */
+    if (GGI_miGC) {
+	miDeleteGC(GGIvisual, GGI_miGC);
+	GGI_miGC = (miGC*)0;
+    }
+    GGI_miGC = miNewGC(GGIvisual, 2,
+	GGI_miPixels, GGI_numblendstages, GGI_blendstages);
+#endif
+    setvbuf(stdin, (char*)0, _IONBF, 0);
+}
+
+TERM_PUBLIC void GGI_linetype(int linetype)
+{
+    if(linetype == LT_BLACK)
+	ggiSetGCForeground(GGIvisual,GGIborderColor);
+    if(linetype == LT_AXIS)
+	ggiSetGCForeground(GGIvisual,GGIaxisColor);
+    if(linetype < 0)
+	return;
+    if(linetype >= 6)
+	linetype%=6;
+    ggiSetGCForeground(GGIvisual,GGIcolors[linetype]);
+}
+
+TERM_PUBLIC void GGI_move(unsigned int x, unsigned int y)
+{
+    GGIx=x;
+    GGIy=GGI_y(y);
+}
+
+TERM_PUBLIC void
+GGI_options()
+{
+    while (!END_OF_COMMAND) {
+	switch(lookup_table(&GGI_opts[0], c_token)) {
+	case GGI_ACCELERATION:
+	{
+	    int itmp;
+	    struct value a;
+
+	    c_token++;
+	    itmp = (int) real(const_express(&a));
+	    if (itmp < 1) {
+		fprintf(stderr, "acceleration must be strictly positive!\n");
+	    } else {
+		GGI_acceleration = itmp;
+	    }
+	    break;
+	}
+	case GGI_MODE:
+	    c_token++;
+	    /* fallthru */
+	default:
+	    if (!END_OF_COMMAND) {
+		copy_str(GGI_mode_spec, c_token, 0xfe);
+		GGI_mode_changed = 1;
+	    }
+	    break;
+	}
+	c_token++;
+    } /* while(command) */
+
+    if (*GGI_mode_spec) {
+	sprintf(term_options, "mode %s acceleration %d",
+		GGI_mode_spec, GGI_acceleration);
+    } else {
+	sprintf(term_options, "acceleration %d", GGI_acceleration);
+    }
+}
+
+TERM_PUBLIC void
+GGI_close()
+{
+    ggiFlush(GGIvisual);
+    /* DETACH EXTENSIONS */
+#if HAVE_WMH_H
+    if(GGI_use_whm) {
+	ggiWmhDetach(GGIvisual);
+    }
+#endif
+#ifdef ENABLE_XMI
+    xmiDetach(GGIvisual);
+#endif
+
+    ggiClose(GGIvisual);
+    GGIvisual = (ggi_visual_t)0;
+
+    /* EXIT EXTENSIONS */
+#if HAVE_WMH_H
+    if(GGI_use_whm) {
+	ggiWmhExit();
+	GGI_use_whm = 0;
+    }
+#endif
+#ifdef ENABLE_XMI
+    xmiExit();
+#endif
+}
+
+/* Called when terminal is terminated i.e.
+ * when switching to another terminal. */
+TERM_PUBLIC void
+GGI_reset()
+{
+    if(GGIvisual!=NULL) {
+	GGI_close();
+    }
+# if 0 /* not needed */
+    GGI_save_pal.colorFormulae = -1; /* force later reallocation of palette */
+# endif
+}
+
+TERM_PUBLIC void
+GGI_put_text(unsigned int x, unsigned int y, const char *str)
+{
+    ggi_pixel current_foreground;
+    ggiGetGCForeground(GGIvisual,&current_foreground);
+    ggiSetGCForeground(GGIvisual,GGIborderColor);
+    ggiPuts(GGIvisual,x,GGI_y(y) - 4 /* ? (joze ? */,str);
+    ggiSetGCForeground(GGIvisual,current_foreground);
+}
+
+TERM_PUBLIC void
+GGI_suspend()
+{
+    /* this fails on the console */
+    GGI_text();
+}
+
+TERM_PUBLIC void
+GGI_resume()
+{
+    /* do nothing */
+}
+
+TERM_PUBLIC void
+GGI_fillbox(
+    int style,
+    unsigned int x, unsigned int y,
+    unsigned int w, unsigned int h)
+{
+    ggiDrawBox(GGIvisual, x, GGI_y((int)(y+h)), w, h);
+}
+
+TERM_PUBLIC void
+GGI_text()
+{
+    ggiFlush(GGIvisual);
+#ifdef USE_MOUSE
+    /* now display the buffer which was just written */
+    ggiSetDisplayFrame(GGIvisual, ggiGetWriteFrame(GGIvisual));
+    return;
+#else
+    /* Wait for a key to be pressed and exit graphics mode if
+     * running in console mode. */
+    /* TODO: return immediately, if in X */
+    ggiGetc(GGIvisual);
+    GGI_close();
+#endif
+}
+
+TERM_PUBLIC void
+GGI_vector(unsigned int x, unsigned int y)
+{
+    y = GGI_y(y);
+    ggiDrawLine(GGIvisual,GGIx,GGIy,x,y);
+    GGIx=x;
+    GGIy=y;
+}
+
+#ifdef USE_MOUSE
+
+/* translate ggi keysym to gnuplot keysym */
+TERM_PUBLIC int
+GGI_from_keysym(uint32_t keysym)
+{
+    switch (keysym) {
+	case GIIUC_BackSpace:
+	    return GP_BackSpace;
+	case GIIUC_Tab:
+	    return GP_Tab;
+	case GIIUC_Linefeed:
+	    return GP_Linefeed;
+	case GIIK_Clear:
+	    return GP_Clear;
+	case GIIUC_Return:
+	    return GP_Return;
+	case GIIK_Pause:
+	    return GP_Pause;
+	case GIIK_ScrollLock:
+	    return GP_Scroll_Lock;
+	case GIIK_SysRq:
+	    return GP_Sys_Req;
+	case GIIUC_Escape:
+	    return GP_Escape;
+	case GIIK_Insert:
+	    return GP_Insert;
+	case GIIUC_Delete:
+	    return GP_Delete;
+	case GIIK_Home:
+	    return GP_Home;
+	case GIIK_Left:
+	    return GP_Left;
+	case GIIK_Up:
+	    return GP_Up;
+	case GIIK_Right:
+	    return GP_Right;
+	case GIIK_Down:
+	    return GP_Down;
+	case GIIK_PageUp:
+	    return GP_PageUp;
+	case GIIK_PageDown:
+	    return GP_PageDown;
+	case GIIK_End:
+	    return GP_End;
+	case GIIK_Begin:
+	    return GP_Begin;
+	case GIIK_PSpace:
+	    return GP_KP_Space;
+	case GIIK_PTab:
+	    return GP_KP_Tab;
+	case GIIK_PEnter:
+	    return GP_KP_Enter;
+
+	case GIIK_PF1:
+	    return GP_KP_F1;
+	case GIIK_PF2:
+	    return GP_KP_F2;
+	case GIIK_PF3:
+	    return GP_KP_F3;
+	case GIIK_PF4:
+	    return GP_KP_F4;
+
+#if 0
+	case 1:
+	    return GP_KP_Insert;    /* ~ KP_0 */
+	case 1:
+	    return GP_KP_End;       /* ~ KP_1 */
+	case 1:
+	    return GP_KP_Down;      /* ~ KP_2 */
+	case 1:
+	    return GP_KP_Page_Down; /* ~ KP_3 */
+	case 1:
+	    return GP_KP_Left;      /* ~ KP_4 */
+	case 1:
+	    return GP_KP_Begin;     /* ~ KP_5 */
+	case 1:
+	    return GP_KP_Right;     /* ~ KP_6 */
+	case 1:
+	    return GP_KP_Home;      /* ~ KP_7 */
+	case 1:
+	    return GP_KP_Up;        /* ~ KP_8 */
+	case 1:
+	    return GP_KP_Page_Up;   /* ~ KP_9 */
+#endif
+
+#if 0
+	case GIIK_PDelete:
+	    return GP_KP_Delete;
+#endif
+	case GIIK_PEqual:
+	    return GP_KP_Equal;
+	case GIIK_PAsterisk:
+	    return GP_KP_Multiply;
+	case GIIK_PPlus:
+	    return GP_KP_Add;
+	case GIIK_PSeparator:
+	    return GP_KP_Separator;
+	case GIIK_PMinus:
+	    return GP_KP_Subtract;
+	case GIIK_PDecimal:
+	    return GP_KP_Decimal;
+	case GIIK_PSlash:
+	    return GP_KP_Divide;
+
+	case GIIK_P0:
+	    return GP_KP_0;
+	case GIIK_P1:
+	    return GP_KP_1;
+	case GIIK_P2:
+	    return GP_KP_2;
+	case GIIK_P3:
+	    return GP_KP_3;
+	case GIIK_P4:
+	    return GP_KP_4;
+	case GIIK_P5:
+	    return GP_KP_5;
+	case GIIK_P6:
+	    return GP_KP_6;
+	case GIIK_P7:
+	    return GP_KP_7;
+	case GIIK_P8:
+	    return GP_KP_8;
+	case GIIK_P9:
+	    return GP_KP_9;
+
+	case GIIK_F1:
+	    return GP_F1;
+	case GIIK_F2:
+	    return GP_F2;
+	case GIIK_F3:
+	    return GP_F3;
+	case GIIK_F4:
+	    return GP_F4;
+	case GIIK_F5:
+	    return GP_F5;
+	case GIIK_F6:
+	    return GP_F6;
+	case GIIK_F7:
+	    return GP_F7;
+	case GIIK_F8:
+	    return GP_F8;
+	case GIIK_F9:
+	    return GP_F9;
+	case GIIK_F10:
+	    return GP_F10;
+	case GIIK_F11:
+	    return GP_F11;
+	case GIIK_F12:
+	    return GP_F12;
+
+	default:
+	    /* return it untranslated */
+	    return keysym;
+    }
+}
+
+TERM_PUBLIC long int
+GGI_SetTime(const struct timeval* current)
+{
+    /* --> dsec in musec */
+    int dsec = (current->tv_sec - GGI_timestamp.tv_sec) * 1000000;
+    /* --> dmu in millisec */
+    int dmu = (current->tv_usec - GGI_timestamp.tv_usec + dsec) / 1000;
+
+    GGI_timestamp = *current;
+    return dmu;
+}
+
+TERM_PUBLIC int
+GGI_from_button(uint32_t button)
+{
+    switch (button) {
+    case GII_PBUTTON_LEFT:
+	return 1;
+    case GII_PBUTTON_MIDDLE:
+	return 2;
+    case GII_PBUTTON_RIGHT:
+	return 3;
+    default:
+	/* should not happen */
+	return 0;
+    }
+}
+
+TERM_PUBLIC int
+GGI_y(int32_t y)
+{
+    return GGIymax - y;
+}
+
+TERM_PUBLIC int
+GGI_eventually_update_modifiers(const ggi_event* event, const int add)
+{
+    int mod = 0;
+    int old_modifiers = GGI_modifiers;
+
+    switch (event->key.sym) {
+    case GIIK_Shift:
+	mod = Mod_Shift;
+	break;
+    case GIIK_Ctrl:
+	mod = Mod_Ctrl;
+	break;
+    case GIIK_Alt:
+    case GIIK_Meta:
+	mod = Mod_Alt;
+	break;
+    default:
+	return 0;
+    }
+
+    if (add) {
+	GGI_modifiers |= mod;
+    } else {
+	GGI_modifiers &= ~mod;
+    }
+
+    if (GGI_modifiers != old_modifiers) {
+
+	struct gp_event_t gp_ev;
+
+	gp_ev.type = GE_modifier;
+	gp_ev.mx   = GGI_mouse_x;
+	gp_ev.my   = GGI_y(GGI_mouse_y);
+	gp_ev.par1 = 0;
+	gp_ev.par2 = 0;
+	gp_ev.par1 = GGI_modifiers;
+
+	do_event(&gp_ev);
+    }
+
+    return 1;
+}
+
+TERM_PUBLIC int
+GGI_dispatch_event(const ggi_event* event)
+{
+    struct gp_event_t gp_ev;
+
+    gp_ev.type = 0;
+    gp_ev.mx   = GGI_mouse_x;
+    gp_ev.my   = GGI_y(GGI_mouse_y);
+    gp_ev.par1 = 0;
+    gp_ev.par2 = 0;
+
+    switch (event->any.type) {
+
+	/* [-- KEY EVENTS --] */
+    case evKeyPress:
+    case evKeyRepeat:
+	if (GGI_eventually_update_modifiers(event, 1)) {
+	    /* was just a modifier pressed */
+	    return 0;
+	}
+	gp_ev.type = GE_keypress;
+	gp_ev.par1 = GGI_from_keysym(event->key.sym);
+	if ('q' == gp_ev.par1) {
+	    return 'q';
+	}
+	break;
+    case evKeyRelease:
+	if (GGI_eventually_update_modifiers(event, 0)) {
+	    /* was just a modifier pressed */
+	    return 0;
+	}
+	break;
+
+	/* [-- POINTER EVENTS --] */
+    case evPtrRelative:
+	/* relative motion is not implemented. Should it ? */
+	/*
+	 * fprintf(stderr, "%s:%d report this to <johannes@zellner.org> %d %d\n",
+	 *     __FILE__, __LINE__, event->pmove.x, event->pmove.y);
+	 */
+	gp_ev.type  = GE_motion;
+	GGI_mouse_x += GGI_acceleration * event->pmove.x;
+	GGI_mouse_y += GGI_acceleration * event->pmove.y;
+	break;
+    case evPtrAbsolute:
+	gp_ev.type  = GE_motion;
+	GGI_mouse_x = event->pmove.x;
+	GGI_mouse_y = event->pmove.y;
+	break;
+    case evPtrButtonPress:
+	gp_ev.type = GE_buttonpress;
+	gp_ev.par1 = GGI_from_button(event->pbutton.button);
+	break;
+    case evPtrButtonRelease:
+	gp_ev.type = GE_buttonrelease;
+	gp_ev.par1 = GGI_from_button(event->pbutton.button);
+	gp_ev.par2 = GGI_SetTime(&(event->pbutton.time));
+	break;
+#ifdef HAVE_GGI_WMH_H
+    case evCommand:
+	/* [-- resizing --] */
+	if (GGI_use_whm) {
+	    /* fprintf(stderr, "(GGI_dispatch_event) \n"); */
+	    if (event->cmd.code==GGICMD_REQUEST_SWITCH) {
+		/*
+		 * ggi_cmddata_switchrequest *req;
+		 * req = &(event->cmd.data);
+		 * ggi_resize(GGIvisual, &(req->mode));
+		 */
+		/*
+		 * while( ggiEventPoll(GGIvisual, emAll, &tv) ) {
+		 *     ggiEventRead(GGIvisual, event, emAll);
+		 * }
+		 */
+	    }
+	}
+	break;
+#endif
+    default:
+	/* fprintf(stderr, "(GGI_dispatch_event) unhandled event\n"); */
+	break;
+    }
+    do_event(&gp_ev);
+    gp_ev.type = GE_plotdone;
+    do_event(&gp_ev);
+    return 0;
+}
+
+/* save currently displayed frame to alternate buffer */
+TERM_PUBLIC void
+GGI_save_frame_canvas()
+{
+    if (!GGI_saved_canvas && GGIvisual) {
+	int display_frame = ggiGetDisplayFrame(GGIvisual);
+
+	/* save the currently displayed frame to alternate frame */
+	ggiSetReadFrame(GGIvisual, display_frame);
+	ggiSetWriteFrame(GGIvisual, !display_frame);
+	ggiCopyBox(GGIvisual, 0, 0, GGIwidth, GGIcanvas_height, 0, 0);
+
+	/* write again directly to the display frame */
+	ggiSetWriteFrame(GGIvisual, display_frame);
+
+	/* remember that the alternate frame is valid */
+	GGI_saved_canvas = 1;
+    }
+}
+
+TERM_PUBLIC void
+GGI_save_frame_stl()
+{
+    if (!GGI_saved_stl) {
+	int display_frame = ggiGetDisplayFrame(GGIvisual);
+
+	/* clear the stl part of the alternate buffer */
+	ggiSetGCForeground(GGIvisual, GGIblack);
+	ggiSetWriteFrame(GGIvisual, !display_frame);
+	ggiDrawBox(GGIvisual, 0, GGIcanvas_height, GGIwidth, GGI_font_height);
+	ggiSetWriteFrame(GGIvisual, display_frame);
+
+	/* clear the currently displayed area, which is left
+	 * from a previous plot (see above, where the stl of
+	 * the previous plot is copied to the current frame) */
+	ggiSetReadFrame(GGIvisual, !display_frame);
+	ggiCopyBox(GGIvisual, 0, GGIcanvas_height,
+		   GGIwidth, GGI_font_height, 0, GGIcanvas_height);
+
+	GGI_saved_stl = 1;
+    }
+}
+
+TERM_PUBLIC void
+GGI_replot()
+{
+    struct gp_event_t ev = {
+	GE_replot,
+	0, 0, 0, 0
+    };
+
+    do_event(&ev);
+}
+
+TERM_PUBLIC void
+GGI_clear(const GGI_vertex_t* v, const int tag)
+{
+    if (tag && v->width) {
+	/* turn off current */
+	ggiSetReadFrame(GGIvisual, !ggiGetDisplayFrame(GGIvisual));
+	ggiCopyBox(GGIvisual, v->x, v->y, v->width, v->height, v->x, v->y);
+    }
+}
+
+TERM_PUBLIC void
+GGI_save_puts(GGI_vertex_t* v, const int tag)
+{
+    GGI_clear(v, tag);
+
+    if (v->width) {
+
+	/* draw the text in the axis color (gray) */
+	ggiSetGCForeground(GGIvisual, GGIaxisColor);
+
+	/* write the string directly to the display */
+	ggiPuts(GGIvisual, v->x, v->y, v->str);
+
+    }
+}
+
+TERM_PUBLIC void
+GGI_set_vertex(
+    GGI_vertex_t* v,
+    const int x,
+    const int y,
+    const char* str,
+    const int tag)
+{
+    GGI_clear(v, tag);
+
+    v->x = x;
+    v->y = y;
+    v->height = GGI_font_height;
+
+    if (str && *str) {
+	v->width = strlen(str) * GGI_font_width;
+	strcpy(v->str, str);
+    } else {
+	/* turn string off */
+	v->width = 0;
+	*(v->str) = '\0';
+    }
+}
+
+TERM_PUBLIC void
+GGI_relative(int r[2])
+{
+    int diff = r[1] - r[0];
+    if (diff < 0) {
+	r[0] = r[1];
+	r[1] = -diff;
+    } else {
+	r[1] = diff;
+    }
+}
+
+TERM_PUBLIC void
+GGI_clear_hline(int x1, int x2, int y)
+{
+    if (GGI_saved_canvas && x1 >= 0 && x2 >= 0 && y >= 0) {
+	int r[2];
+	ggiSetReadFrame(GGIvisual, !ggiGetDisplayFrame(GGIvisual));
+
+	r[0] = x1;
+	r[1] = x2;
+	GGI_relative(r);
+	/* horizontal line */
+	ggiCopyBox(GGIvisual, r[0], y, r[1], 1, r[0], y);
+    }
+}
+
+TERM_PUBLIC void
+GGI_clear_vline(int y1, int y2, int x)
+{
+    if (GGI_saved_canvas && y1 >= 0 && y2 >= 0 && x >= 0) {
+	int r[2];
+	ggiSetReadFrame(GGIvisual, !ggiGetDisplayFrame(GGIvisual));
+
+	r[0] = y1;
+	r[1] = y2;
+	GGI_relative(r);
+	/* vertical line */
+	ggiCopyBox(GGIvisual, x, r[0], 1, r[1], x, r[0]);
+    }
+}
+
+TERM_PUBLIC void
+GGI_draw_hline(int x1, int x2, int y)
+{
+    if (x1 >= 0 && x2 >= 0 && y >= 0) {
+	int r[2];
+
+	r[0] = x1;
+	r[1] = x2;
+	GGI_relative(r);
+	/* horizontal line */
+	ggiDrawHLine(GGIvisual, r[0], y, r[1]);
+    }
+}
+
+TERM_PUBLIC void
+GGI_draw_vline(int y1, int y2, int x)
+{
+    if (y1 >= 0 && y2 >= 0 && x >= 0) {
+	int r[2];
+
+	r[0] = y1;
+	r[1] = y2;
+	GGI_relative(r);
+	/* vertical line */
+	ggiDrawVLine(GGIvisual, x, r[0], r[1]);
+    }
+}
+
+TERM_PUBLIC void
+GGI_draw_ruler()
+{
+    if (GGI_ruler.x >= 0 && GGI_ruler.y >= 0) {
+	ggi_pixel current_foreground;
+
+	GGI_save_frame_canvas();
+
+	/* TODO: we could choose a nicer color here */
+	ggiGetGCForeground(GGIvisual, &current_foreground);
+	ggiSetGCForeground(GGIvisual, GGIaxisColor);
+
+	ggiDrawHLine(GGIvisual, 0, GGI_ruler.y, GGIwidth);
+	ggiDrawVLine(GGIvisual, GGI_ruler.x, 0, GGIcanvas_height);
+
+	/* restore old foreground color */
+	/* XXX need this ? */
+	ggiSetGCForeground(GGIvisual, current_foreground);
+    }
+}
+
+TERM_PUBLIC void
+GGI_clear_zoombox()
+{
+    GGI_clear_hline(GGI_zoombox[0].x, GGI_zoombox[1].x, GGI_zoombox[0].y);
+    GGI_clear_hline(GGI_zoombox[0].x, GGI_zoombox[1].x, GGI_zoombox[1].y);
+    GGI_clear_vline(GGI_zoombox[0].y, GGI_zoombox[1].y, GGI_zoombox[0].x);
+    GGI_clear_vline(GGI_zoombox[0].y, GGI_zoombox[1].y, GGI_zoombox[1].x);
+}
+
+TERM_PUBLIC void
+GGI_draw_zoombox()
+{
+    if (GGI_zoombox[0].x >= 0 && GGI_zoombox[0].y >= 0
+	&& GGI_zoombox[0].x >= 0 && GGI_zoombox[0].y >= 0) {
+	ggi_pixel current_foreground;
+
+	GGI_save_frame_canvas();
+
+	/* TODO: we could choose a nicer color here */
+	ggiGetGCForeground(GGIvisual, &current_foreground);
+	ggiSetGCForeground(GGIvisual, GGIaxisColor);
+
+	GGI_draw_hline(GGI_zoombox[0].x, GGI_zoombox[1].x, GGI_zoombox[0].y);
+	GGI_draw_hline(GGI_zoombox[0].x, GGI_zoombox[1].x, GGI_zoombox[1].y);
+	GGI_draw_vline(GGI_zoombox[0].y, GGI_zoombox[1].y, GGI_zoombox[0].x);
+	GGI_draw_vline(GGI_zoombox[0].y, GGI_zoombox[1].y, GGI_zoombox[1].x);
+
+	/* restore old foreground color */
+	/* XXX need this ? */
+	ggiSetGCForeground(GGIvisual, current_foreground);
+    }
+}
+
+TERM_PUBLIC void
+GGI_abort_zooming()
+{
+    /* empty string: finish zooming */
+    int i, j;
+    GGI_clear_zoombox();
+    for (i = 0; i < 2; i++) {
+	for (j = 0; j < 2; j++) {
+	    GGI_set_vertex(&(GGI_zoom[i][j]), 0, 0, (char*)0, GGI_saved_canvas);
+	}
+	GGI_zoombox[i].x = -1;
+    }
+}
+
+TERM_PUBLIC int
+GGI_waitforinput(int options)
+{
+    char c;
+
+    /* XXX:  if the input device it not a tty (e.g. /dev/null)
+     *       mouse events are not processed. This is necessary
+     *       as on some systems /dev/null is not selectable.
+     */
+    /* FIXME: Not implemented yet */
+    if (options == TERM_ONLY_CHECK_MOUSING) return '\0';
+
+    if (GGIvisual) {
+	fd_set fds;
+	int fd = fileno(stdin);
+	int i, j;
+	do {
+	    int n;
+
+	    ggi_event_mask mask = emAll; /* TODO: choose a more selective mask */
+	    ggiSetEventMask(GGIvisual, mask);
+
+	    FD_ZERO(&fds);
+	    FD_SET(fd, &fds); /* listen to stdin */
+
+	    if (GGI_needs_update) {
+		/* draw the ruler below the other items */
+		GGI_draw_ruler();
+
+		/* update the zoombox */
+		GGI_draw_zoombox();
+		for (i = 0; i < 2; i++) {
+		    for (j = 0; j < 2; j++) {
+			GGI_save_puts(&(GGI_zoom[i][j]), GGI_saved_canvas);
+		    }
+		}
+
+		/* update the status line */
+		GGI_save_puts(&GGI_stl_vertex, GGI_saved_stl);
+
+		ggiFlush(GGIvisual);
+
+		GGI_needs_update = 0;
+	    }
+
+	    n = ggiEventSelect(GGIvisual, &mask, fd + 1,
+		SELECT_TYPE_ARG234 &fds, 0, 0, (struct timeval*)0);
+
+	    if (mask) {
+		ggi_event event;
+		/* mask pointer motions and key repeat events,
+		 * to they don't pile up */
+		ggiEventRead(GGIvisual, &event, mask);
+		ggiRemoveEventMask(GGIvisual, emPtrMove | emKeyRepeat);
+		if ('q' == GGI_dispatch_event(&event)) {
+		    term_reset();
+		    break;
+		} else {
+		    ggiAddEventMask(GGIvisual, emPtrMove | emKeyRepeat);
+		}
+	    }
+
+	} while (!FD_ISSET(fd, &fds) && GGIvisual);
+    }
+
+    if (read(0, &c, 1)!=1) return EOF;
+    else return c;
+}
+
+TERM_PUBLIC void
+GGI_put_tmptext(int i, const char str[])
+{
+    char* second;
+
+    if (GGIvisual == NULL)
+	return;
+
+    switch (i) {
+	case 0: /* statusline text */
+
+	    if (!str || !(*str)) {
+		/* statusline is empty. This is the case,
+		 * if the mouse was just turned off. */
+		if (GGI_use_mouse) {
+		    /* The user just toggled of the mouse. */
+		    GGI_use_mouse = 0;
+		    GGI_set_size();
+		    GGI_replot();
+		}
+	    } else {
+		/* statusline is non-empty */
+		if (!GGI_use_mouse) {
+		    /* The mouse was off before and was just turned on. */
+		    GGI_use_mouse = 1;
+		    GGI_set_size();
+		    GGI_replot();
+		}
+		GGI_save_frame_stl();
+		GGI_set_vertex(&GGI_stl_vertex, 0, GGIcanvas_height, str, GGI_saved_stl);
+	    }
+	    break;
+
+	case 1: /* coordinate text for first  corner of zoombox */
+	case 2: /* coordinate text for second corner of zoombox */
+	    GGI_save_frame_canvas();
+	    second = (char*) strchr(str, '\r');
+	    --i; /* transform to [0, 1] */
+	    GGI_clear_zoombox();
+	    if (second == NULL) {
+		/* remove box and / or coordinates */
+		GGI_set_vertex(&(GGI_zoom[i][0]), 0, 0, (char*)0, GGI_saved_canvas);
+		GGI_set_vertex(&(GGI_zoom[i][1]), 0, 0, (char*)0, GGI_saved_canvas);
+		break;
+	    } else {
+		*second = '\0'; /* XXX this assumes that str is writable XXX */
+		second++;
+		GGI_set_vertex(&(GGI_zoom[i][0]), GGI_mouse_x, GGI_mouse_y - GGI_font_height - 1, str, GGI_saved_canvas);
+		GGI_set_vertex(&(GGI_zoom[i][1]), GGI_mouse_x, GGI_mouse_y + 1, second, GGI_saved_canvas);
+		GGI_zoombox[i].x = GGI_mouse_x;
+		GGI_zoombox[i].y = GGI_mouse_y;
+	    }
+	    break;
+    }
+    GGI_needs_update++;
+}
+
+TERM_PUBLIC void
+GGI_set_ruler(int x, int y)
+{
+    if (x < 0) {
+
+	/* turn ruler off */
+	GGI_clear_hline(0, GGIwidth, GGI_ruler.y);
+	GGI_clear_vline(0, GGIcanvas_height, GGI_ruler.x);
+	GGI_ruler.x = -1;
+	GGI_ruler.y = -1;
+
+    } else {
+	GGI_ruler.x = x;
+	GGI_ruler.y = GGI_y(y);
+    }
+    GGI_needs_update++;
+}
+
+TERM_PUBLIC void
+GGI_set_cursor(int c, int x, int y)
+{
+    /* TODO */
+    switch (c) {
+	case 0:
+	    GGI_abort_zooming();
+	    break;
+	case 1:
+	case 2:
+	case 3:
+	default:
+	    /* XXX not implemented */
+	    break;
+    }
+    GGI_needs_update++;
+}
+
+TERM_PUBLIC void
+GGI_set_clipboard(const char s[])
+{
+    /* XXX: not implemented */
+    (void) s;			/* avoid -Wunused */
+}
+
+#endif
+
+TERM_PUBLIC int
+GGI_make_palette(t_sm_palette *palette)
+{
+    /* reallocate only, if it has changed */
+    if (palette && (GGI_save_pal.colorFormulae < 0
+	    || palette->colorFormulae != GGI_save_pal.colorFormulae
+	    || palette->colorMode != GGI_save_pal.colorMode
+	    || palette->formulaR != GGI_save_pal.formulaR
+	    || palette->formulaG != GGI_save_pal.formulaG
+	    || palette->formulaB != GGI_save_pal.formulaB
+	    || palette->positive != GGI_save_pal.positive)) {
+	int i;
+	ggi_color color;
+	for (i = 0; i < ggi_pm3d_colors; i++) {
+	    color.r = (short)floor(palette->color[i].r * 0xffff),
+	    color.g = (short)floor(palette->color[i].g * 0xffff),
+	    color.b = (short)floor(palette->color[i].b * 0xffff),
+	    GGI_smooth_colors[i] = ggiMapColor(GGIvisual, &color);
+	}
+	GGI_save_pal = *palette;
+    } else {
+	return ggi_pm3d_colors;
+    }
+    return 0;
+}
+
+TERM_PUBLIC void
+GGI_previous_palette()
+{
+#if 0
+#ifdef ENABLE_XMI
+    fprintf(stderr, "(GGI_previous_palette) \n");
+    if (GGI_miPaintedSet) {
+	miPoint offset;
+	offset.x = 0; offset.y = 0;
+	miCopyPaintedSetToVisual(GGIvisual, GGI_miGC, GGI_miPaintedSet, offset);
+	miClearPaintedSet(GGIvisual, GGI_miPaintedSet);
+    }
+#endif
+#endif
+}
+
+TERM_PUBLIC void
+GGI_set_color(struct t_colorspec *colorspec)
+{
+    ggi_color rgb;
+    double gray = colorspec->value;
+
+    if (colorspec->type == TC_RGB) {
+	rgb.r = ((colorspec->lt >> 16) & 0xff) * (65535./255.);
+	rgb.g = ((colorspec->lt >> 8) & 0xff) * (65535./255.);
+	rgb.b = ((colorspec->lt) & 0xff) * (65535./255.);
+	ggiSetGCForeground(GGIvisual, ggiMapColor(GGIvisual,&rgb));
+    }
+    
+    if (colorspec->type != TC_FRAC)
+	return;
+
+    if (GGIvisual) {
+	int idx = (gray <= 0) ? 0 : (int)(gray * ggi_pm3d_colors);
+	if (idx >= ggi_pm3d_colors)
+	    idx = ggi_pm3d_colors - 1;
+	ggiSetGCForeground(GGIvisual, GGI_smooth_colors[idx]);
+#ifdef ENABLE_XMI
+	GGI_miGC->pixels[1] = GGI_smooth_colors[idx];
+#endif
+    }
+}
+
+#ifdef ENABLE_XMI
+TERM_PUBLIC void
+GGI_filled_polygon(int points, gpiPoint *corners)
+{
+    static miPoint offset = {0, 0};
+    if (GGI_miPaintedSet) {
+#define MI_POINTS 4
+	miPoint mi_corners[MI_POINTS];
+	unsigned int i;
+	if (MI_POINTS != points) {
+	    fprintf(stderr, "(GGI_filled_polygon) internal error %s:%d\n", __FILE__, __LINE__);
+	    return;
+	}
+	for (i = 0; i < MI_POINTS; i++) {
+	    mi_corners[i].x = corners[i].x;
+	    mi_corners[i].y = GGI_y(corners[i].y);
+	}
+	miFillPolygon(GGIvisual, GGI_miPaintedSet, GGI_miGC,
+	    MI_SHAPE_GENERAL, MI_COORD_MODE_ORIGIN, MI_POINTS, mi_corners);
+	miCopyPaintedSetToVisual(GGIvisual, GGI_miGC, GGI_miPaintedSet, offset);
+	miClearPaintedSet(GGIvisual, GGI_miPaintedSet);
+    }
+}
+#endif
+
+#endif /* TERM_BODY */
+
+#ifdef TERM_TABLE
+
+TERM_TABLE_START(ggi_driver)
+    "ggi", "GGI target",
+    GGI_XMAX, GGI_YMAX, GGI_VCHAR, GGI_HCHAR, GGI_VTIC, GGI_HTIC,
+    GGI_options, GGI_init, GGI_reset, GGI_text,
+    null_scale, GGI_graphics, GGI_move, GGI_vector,
+    GGI_linetype, GGI_put_text,
+    0, /* angle */
+    0, /* justify text */
+    0, /* point */
+    0, /* arrow */
+    0, /* set_font */
+    0, /* set_pointsize */
+    TERM_CAN_MULTIPLOT,
+    GGI_suspend,
+    GGI_resume,
+    GGI_fillbox,
+    0 /* linewidth */
+#ifdef USE_MOUSE
+    , GGI_waitforinput, GGI_put_tmptext, GGI_set_ruler, GGI_set_cursor, GGI_set_clipboard
+#endif
+    , GGI_make_palette,
+    GGI_previous_palette,
+    GGI_set_color,
+#ifdef ENABLE_XMI
+    GGI_filled_polygon
+#else
+    0 /* GGI_filled_polygon */
+#endif
+TERM_TABLE_END(ggi_driver)
+
+#endif /* TERM_TABLE */
+#endif /* TERM_PROTO_ONLY */
+
+#ifdef TERM_HELP
+START_HELP(ggi)
+"1 ggi",
+"?commands set terminal ggi",
+"?set terminal ggi",
+"?set term ggi",
+"?terminal ggi",
+"?term ggi",
+"?ggi",
+" The `ggi` driver can run on different targets as X or svgalib.",
+"",
+" Syntax:",
+"    set terminal ggi [acceleration <integer>] [[mode] {mode}]",
+"",
+" In X the window cannot be resized using window manager handles, but the",
+" mode can be given with the mode option, e.g.:",
+"  - V1024x768",
+"  - V800x600",
+"  - V640x480",
+"  - V320x200",
+" Please refer to the ggi documentation for other modes. The 'mode' keyword",
+" is optional. It is recommended to select the target by environment variables",
+" as explained in the libggi manual page. To get DGA on X, you should for",
+" example",
+"    bash> export GGI_DISPLAY=DGA",
+"    csh>  setenv GGI_DISPLAY DGA",
+"",
+" 'acceleration' is only used for targets which report relative pointer",
+" motion events (e.g. DGA) and is a strictly positive integer multiplication",
+" factor for the relative distances.  The default for acceleration is 7.",
+"",
+" Examples:",
+"    set term ggi acc 10",
+"    set term ggi acc 1 mode V1024x768",
+"    set term ggi V1024x768"
+END_HELP(ggi)
+#endif

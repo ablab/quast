@@ -1,0 +1,274 @@
+/* Hello, Emacs, this is -*-C-*-
+ * $Id: regis.trm,v 1.15 2006/07/21 02:35:48 sfeam Exp $
+ *
+ */
+
+/* GNUPLOT - regis.trm */
+
+/*[
+ * Copyright 1990 - 1993, 1998, 2004
+ *
+ * Permission to use, copy, and distribute this software and its
+ * documentation for any purpose with or without fee is hereby granted,
+ * provided that the above copyright notice appear in all copies and
+ * that both that copyright notice and this permission notice appear
+ * in supporting documentation.
+ *
+ * Permission to modify the software is granted, but not the right to
+ * distribute the complete modified source code.  Modifications are to
+ * be distributed as patches to the released version.  Permission to
+ * distribute binaries produced by compiling modified sources is granted,
+ * provided you
+ *   1. distribute the corresponding source modifications from the
+ *    released version in the form of a patch file along with the binaries,
+ *   2. add special version identification to distinguish your version
+ *    in addition to the base release version number,
+ *   3. provide your name and address as the primary contact for the
+ *    support of your modified version, and
+ *   4. retain our contact information in regard to use of the base
+ *    software.
+ * Permission to distribute the released version of the source code along
+ * with corresponding source modifications in the form of a patch file is
+ * granted with same provisions 2 through 4 for binary distributions.
+ *
+ * This software is provided "as is" without express or implied warranty
+ * to the extent permitted by applicable law.
+]*/
+
+/*
+ * This file is included by ../term.c.
+ *
+ * This terminal driver supports:
+ *  REGIS devices
+ *
+ * AUTHORS
+ *  Colin Kelley, Thomas Williams
+ *
+ * send your comments or suggestions to (gnuplot-info@lists.sourceforge.net).
+ *
+ */
+
+#include "driver.h"
+
+#ifdef TERM_REGISTER
+register_term(regis)
+#endif
+
+
+#ifdef TERM_PROTO
+TERM_PUBLIC void REGIS_init __PROTO((void));
+TERM_PUBLIC void REGIS_graphics __PROTO((void));
+TERM_PUBLIC void REGIS_init __PROTO((void));
+TERM_PUBLIC void REGIS_graphics __PROTO((void));
+TERM_PUBLIC void REGIS_text __PROTO((void));
+TERM_PUBLIC void REGIS_linetype __PROTO((int linetype));
+TERM_PUBLIC void REGIS_move __PROTO((unsigned int x, unsigned int y));
+TERM_PUBLIC void REGIS_vector __PROTO((unsigned int x, unsigned int y));
+TERM_PUBLIC void REGIS_put_text __PROTO((unsigned int x, unsigned int y, const char *str));
+TERM_PUBLIC int REGIS_text_angle __PROTO((int ang));
+TERM_PUBLIC void REGIS_reset __PROTO((void));
+TERM_PUBLIC void REGIS_options __PROTO((void));
+
+#define REGISXMAX 800
+#define REGISYMAX 440
+
+#define REGISXLAST (REGISXMAX - 1)
+#define REGISYLAST (REGISYMAX - 1)
+
+#define REGISVCHAR		20
+#define REGISHCHAR		9
+#define REGISVTIC		8
+#define REGISHTIC		6
+
+/* is defined in plot.h
+#define TRUE 1
+#define FALSE 0
+*/
+#endif
+
+
+
+#ifndef TERM_PROTO_ONLY
+#ifdef TERM_BODY
+
+static int REGIS16color = FALSE;
+
+static int REGISang = 0;
+
+TERM_PUBLIC void
+REGIS_init()
+{
+    fputs("\033[r\033[24;1H", gpoutfile);
+    /*     1     2
+     * 1. reset scrolling region
+     * 2. locate cursor on bottom line
+     */
+}
+
+
+/* thanks to calmasd!dko (Dan O'Neill) for adding S(E) for vt125s */
+TERM_PUBLIC void
+REGIS_graphics()
+{
+    fputs("\033[2J\033P1pS(C0)S(E)T(A0)\n", gpoutfile);
+    /*     1      2      3    4   5
+     * 1. clear screen
+     * 2. enter ReGIS graphics
+     * 3. turn off graphics diamond cursor
+     * 4. clear graphics screen
+     * 5. character set option.
+     */
+    (void) REGIS_text_angle(0);	/* select text size and angle */
+}
+
+
+TERM_PUBLIC void
+REGIS_text()
+{
+    fputs("\033\\\033[24;1H", gpoutfile);
+    /*     1    2
+     * 1. Leave ReGIS graphics mode
+     * 2. locate cursor on last line of screen
+     */
+}
+
+
+TERM_PUBLIC void
+REGIS_linetype(int linetype)
+{
+    /* This will change color in order G,R,B,G-dot,R-dot,B-dot */
+
+    static int in_16_map[15 + 2] = { 7, 7, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 };
+    static int lt_16_map[15 + 2] = { 1, 4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
+    static int in_map[9 + 2] = { 2, 2, 3, 2, 1, 3, 2, 1, 3, 2, 1 };
+    static int lt_map[9 + 2] = { 1, 4, 1, 1, 1, 4, 4, 4, 6, 6, 6 };
+
+    if (linetype < -2)
+	linetype = LT_BLACK;
+
+    if (!REGIS16color) {
+	if (linetype >= 9)
+	    linetype %= 9;
+	fprintf(gpoutfile, "W(I%d)\n", in_map[linetype + 2]);
+	fprintf(gpoutfile, "W(P%d)\n", lt_map[linetype + 2]);
+    } else {
+	if (linetype >= 15)
+	    linetype %= 15;
+	fprintf(gpoutfile, "W(I%d)\n", in_16_map[linetype + 2]);
+	fprintf(gpoutfile, "W(P%d)\n", lt_16_map[linetype + 2]);
+    }
+}
+
+
+
+/*
+** The \n was added in the functions below (and above) in order to not cause
+** a buffer overflow in devices that can't deal with long line lengths.
+** The DEC vt-340 doesn't need this, but Reflection 4, a vt-340 emulator
+** for PC's under MS-DOS and Microsoft Windows does need it.
+** Also needed for DECterm, a vt-340 emulator for use with Motif 1.0
+** on Open/VMS.
+** NGB 9/13/93
+*/
+
+TERM_PUBLIC void
+REGIS_move(unsigned int x, unsigned int y)
+{
+    fprintf(gpoutfile, "P[%d,%d]\n", x, REGISYLAST - y);
+}
+
+
+TERM_PUBLIC void
+REGIS_vector(unsigned int x, unsigned int y)
+{
+    fprintf(gpoutfile, "v[]v[%d,%d]\n", x, REGISYLAST - y);
+    /* the initial v[] is needed to get the first pixel plotted */
+}
+
+
+/* put_text and text_angle by rjl */
+TERM_PUBLIC void
+REGIS_put_text(unsigned int x, unsigned int y, const char *str)
+{
+    if (REGISang == 1)
+	REGIS_move(x - REGISVCHAR / 2 - 1, y);
+    else
+	REGIS_move(x, y + REGISVCHAR / 2 - 1);
+    (void) putc('T', gpoutfile);
+    (void) putc('\'', gpoutfile);
+    while (*str) {
+	(void) putc(*str, gpoutfile);
+	if (*str == '\'')
+	    (void) putc('\'', gpoutfile);	/* send out another one */
+	str++;
+    }
+    (void) putc('\'', gpoutfile);
+    (void) putc('\n', gpoutfile);
+}
+
+
+TERM_PUBLIC int
+REGIS_text_angle(int ang)
+{
+    REGISang = (ang ? 1 : 0);
+    if (REGISang == 1)
+	fputs("T(D90,S1)\n", gpoutfile);
+    else
+	fputs("T(D0,S1)\n", gpoutfile);
+    return TRUE;
+}
+
+
+TERM_PUBLIC void
+REGIS_reset()
+{
+    fputs("\033[2J\033[24;1H", gpoutfile);
+}
+
+TERM_PUBLIC void
+REGIS_options()
+{
+    int i = 0;
+    struct value a;
+
+    if (!END_OF_COMMAND) {
+	i = (int) real(const_express(&a));
+    }
+    REGIS16color = (i == 16);
+    sprintf(term_options, "%s", REGIS16color ? "16" : "4");
+}
+
+#endif
+
+
+#ifdef TERM_TABLE
+TERM_TABLE_START(regis_driver)
+    "regis", "REGIS graphics language",
+    REGISXMAX, REGISYMAX, REGISVCHAR, REGISHCHAR,
+    REGISVTIC, REGISHTIC, REGIS_options, REGIS_init, REGIS_reset,
+    REGIS_text, null_scale, REGIS_graphics, REGIS_move, REGIS_vector,
+    REGIS_linetype, REGIS_put_text, REGIS_text_angle,
+    null_justify_text, line_and_point, do_arrow, set_font_null
+TERM_TABLE_END(regis_driver)
+
+#undef LAST_TERM
+#define LAST_TERM regis_driver
+#endif
+#endif /* TERM_PROTO_ONLY */
+
+#ifdef TERM_HELP
+START_HELP(regis)
+"1 regis",
+"?commands set terminal regis",
+"?set terminal regis",
+"?set term regis",
+"?terminal regis",
+"?term regis",
+"?regis",
+" The `regis` terminal device generates output in the REGIS graphics language.",
+" It has the option of using 4 (the default) or 16 colors.",
+"",
+" Syntax:",
+"       set terminal regis {4 | 16}"
+END_HELP(regis)
+#endif

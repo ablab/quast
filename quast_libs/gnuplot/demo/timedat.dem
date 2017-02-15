@@ -1,0 +1,64 @@
+#
+# $Id: timedat.dem,v 1.11.2.2 2015/10/23 21:23:51 sfeam Exp $
+#
+
+set title "Fsteps plot\nwith date and time as x-values"
+set style data fsteps
+set xlabel "Date\nTime"
+set timefmt "%d/%m/%y\t%H%M"
+set yrange [ 0 : ]
+set xdata time
+set xrange [ "1/6/93":"1/11/93" ]
+set ylabel "Concentration\nmg/l"
+set format x "%d/%m\n%H:%M"
+set grid
+set key left
+plot 'timedat.dat' using 1:3 t '', \
+     'timedat.dat' using 1:3 t 'Total P' with points, \
+     'timedat.dat' using 1:4 t '', \
+     'timedat.dat' using 1:4 t 'PO4' with points 
+pause -1 "Hit return to continue"
+
+reset
+
+set title "Time data on Y, millisecond precision" font ",14"
+set ydata time
+set timefmt "%s"
+set offset 0.5,1.5,.2,.2
+unset key
+
+fulltime(col) = strftime("%d %b %Y\n%H:%M:%.3S",column(col))
+parttime(col) = strftime("%H:%M:%.3S",column(col))
+
+plot '-' using 0:1:(fulltime(1)):xticlabels(2):yticlabels(parttime(1)) \
+         with labels point pt 7 left offset 1,1 font ",7"
+1390852607.1	A
+1390852607.2	B
+1390852607.4	C
+1390852607.8	D
+1390852608.4	E
+1390852610.001	F
+e
+
+pause -1 "Hit return to continue"
+
+reset
+set title "Date format (top) vs Time format (bottom)" font "/:Bold,14"
+set xrange [-7000:3000]
+set link x2
+set tics font ",8"
+set x2tics format "%D\n%R" time offset 0,-1
+set xtics format "%tH:%tM:%tS" time
+set xlabel 'set xtics format "%tH:%tM:%.2tS"'
+set arrow 1 from 0, graph 0 to 0, graph 1 heads filled
+
+set yzeroaxis
+unset ytics
+set bmargin at screen .55
+set tmargin at screen .6
+
+plot x notitle
+
+pause -1 "Hit return to continue"
+
+reset

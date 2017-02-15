@@ -1,0 +1,751 @@
+DOCUMENTATION FOR GNUPLOT TERMINAL DRIVER WRITERS
+By Russell Lang 1/90
+Updated for new file layout by drd 4/95
+Paragraphs about inclusion of TERM_HELP added by rcc 1/96
+
+No change to the interface between gnuplot and the terminal drivers,
+but we would like to make the terminal drivers standalone
+
+1) in order move the support for the terminal drivers outside of the
+   support for the main program, thereby encouraging a library of
+   contributed drivers
+2) To make it easy for users to add contributed drivers, by adding
+   a single #include line to term.h
+
+Whole of terminal driver should be contained in one <driver>.trm file,
+with a fairly strict layout as detailed below - this allows the
+gnuplot maintainers to change the way the terminal drivers are
+compiled without having to change the drivers themselves.
+A few routines shared by multiple terminal drivers are given their
+own C file, for example .../term/write_png_image.c.
+
+term.h, and therefore each file.trm file, may be loaded more than once,
+with different sections selected by macros.
+
+Each driver provides all the functions it needs, and a table of
+function pointers and other data to interface to gnuplot.
+The table entry is currently defined as follows in term_api.h:
+
+struct TERMENTRY {
+
+/* required entries */
+
+    const char *name;
+    const char *description;
+    unsigned int xmax,ymax,v_char,h_char,v_tic,h_tic;
+
+    void (*options) __PROTO((void));
+    void (*init) __PROTO((void));
+    void (*reset) __PROTO((void));
+    void (*text) __PROTO((void));
+    int (*scale) __PROTO((double, double));
+    void (*graphics) __PROTO((void));
+    void (*move) __PROTO((unsigned int, unsigned int));
+    void (*vector) __PROTO((unsigned int, unsigned int));
+    void (*linetype) __PROTO((int));
+    void (*put_text) __PROTO((unsigned int, unsigned int, const char*));
+
+/* optional entries */
+
+    int (*text_angle) __PROTO((int));
+    int (*justify_text) __PROTO((enum JUSTIFY));
+    void (*point) __PROTO((unsigned int, unsigned int,int));
+    void (*arrow) __PROTO((unsigned int, unsigned int, unsigned int,
+                           unsigned int, TBOOLEAN));
+   int (*set_font) __PROTO((const char *font));  /* "font,size" */
+   void (*pointsize) __PROTO((double pointsize));
+   int flags;                       /* various flags */
+   void (*suspend) __PROTO((void)); /* after one plot of multiplot */
+   void (*resume) __PROTO((void));  /* before subsequent plot of multiplot */
+   void (*fillbox) __PROTO((int style, unsigned int x1, unsigned int y1, unsigned int width, unsigned int height)); /* clear part of multiplot */
+   void (*linewidth) __PROTO((double linewidth));
+#ifdef USE_MOUSE
+   int (*waitforinput) __PROTO((int));
+   void (*put_tmptext) __PROTO((int i, const char str[]));
+   void (*set_ruler) __PROTO((int x, int y));
+   void (*set_cursor) __PROTO((int c, int x, int y));
+   void (*set_clipboard) __PROTO((const char s[]));
+#endif
+   int (*make_palette)__PROTO((t_sm_palette *palette));
+   void (*previous_palette) __PROTO(());
+   void (*set_color) __PROTO((t_colorspec *colorspec));
+   void (*filled_polygon) __PROTO((int points, gpiPoint *corners));
+   void (*image) __PROTO((unsigned, unsigned, coordval *, gpiPoint *, t_imagecolor));
+/* Enhanced text mode driver call-backs */
+    void (*enhanced_open) __PROTO((char * fontname, double fontsize,
+               double base, TBOOLEAN widthflag, TBOOLEAN showflag,
+               int overprint));
+    void (*enhanced_flush) __PROTO((void));
+    void (*enhanced_writec) __PROTO((int c));
+/* Driver-specific synchronization or other layering commands */
+    void (*layer) __PROTO((t_termlayer syncpoint));
+/* Path control for end-joins of closed polygons on PostScript-like devices */
+    void (*path) __PROTO((int p));
+/* Hypertext support */
+    void (*hypertext) __PROTO((int type, const char *text));
+#ifdef EAM_BOXED_TEXT
+    void (*boxed_text)__PROTO((unsigned int x, unsigned int y, int option));
+#endif
+   void (*modify_plots) __PROTO((unsigned int operations, int plotno));
+   
+   void (*dashtype) __PROTO((int type, t_dashtype *custom_dash_pattern));
+};
+
+One consequence of (1) is that we would like drivers to be backwards
+compatible - drivers in the correct form below should work in future
+versions of gnuplot without change. ISO C guarantees to fill uninitialised
+members of a static structure to zero, so gnuplot can detect old drivers,
+in which fields have not been initialised, and can point new interface entry
+pointers to dummy functions.
+
+We can add fields to the terminal structure, but only at the end of the list.
+If you design a terminal that can't work without a new interface being defined,
+and consequent changes to the main gnuplot source, please contact
+gnuplot-beta@lists.sourceforge.net simply to ensure that you have the most
+up to date definition of the terminal structure. Also, please ensure that
+the 'set term' command checks for 0 values in added fields when an
+old driver is selected, and a pointer to a suitable 'can't do' function
+is provided. It is therefore not required (and in fact not possible)
+to add padding fields to the end of all drivers.
+
+Similarly, if you add an optional field to an old driver, take care
+to ensure that all intervening fields are padded with zeros.
+
+Some of the above fields are required - this should not be a problem,
+since they were all required in earlier releases of gnuplot.
+The later fields are interfaces to capabilities that not all devices
+can do, or for which the generic routines provided should be adequate.
+There are several null ('can't do') functions provided by term.c which
+a driver can reference in the table. Similarly, for bitmap devices, there
+are generic routines for lines and text provided by bitmap.c
+
+
+
+Here's a brief description of each variable:
+
+The char *name is a pointer to a string containing the name
+of the terminal.  This name is used by the 'set terminal' and 
+'show terminal' commands.  
+The name must be unique and must not be confused with an abbreviation 
+of another name.  For example if the name "postscript" exists, it is not
+possible to have another name "postscript2".
+Keep the name under 15 characters.
+
+The char *description is a pointer to a string containing a
+description of the terminal, which is displayed in response
+to the 'set terminal' command.  
+Keep the description under 60 characters.
+
+xmax is the maximum number of points in the x direction.  
+The range of points used by gnuplot is 0 to xmax-1.
+
+ymax is the maximum number of points in the y direction.  
+The range of points used by gnuplot is 0 to ymax-1.
+
+v_char is the height of characters, in the same units as xmax and ymax.
+v_char is used as the vertical line spacing for characters.
+v_char and h_char should be updated by set_font() since they are 
+needed for the core routines to estimate how much space will be
+required for a text element.
+
+h_char is the width of characters, in the same units as xmax and ymax.
+The border for labelling at the left and right of the plot is 
+calculated using h_char, for example.
+If the _justify_text function returns FALSE, h_char is used to justify 
+text right or centre.  If characters are not fixed width, then the 
+_justify_text function must correctly justify the text.
+
+v_tic is the vertical size of tics along the x axis, 
+in the same units as ymax.
+
+h_tic is the horizontal size of tics along the y axis, 
+in the same units as xmax.
+
+v_tic and h_tic should give tics of the same physical size on the
+output. The ratio of these two quantities is used by gnuplot to set the
+aspect ratio to 1 so that circles appear circular when 'set size square'
+is active.
+
+All the above values need not be static - values can be substituted
+into the table during terminal initialisation, based on options for
+example.
+
+
+
+Here's a brief description of what each term.c function does:
+
+_options()  Called when terminal type is selected.  Also called by
+'set termoption'. The two cases can be distinguished because on entry
+the value of c_token is either 3 or 2, respectively.
+This procedure should parse options on the command line.  A list of the 
+currently selected options should be stored in term_options[] in a form 
+suitable for use with the set term command.  term_options[] is used by 
+the save command.  Use options_null() if no options are available.
+_options() and _waitforinput() are the only terminal functions that may
+be called prior to _init(), so they must take not to perform actions
+that require previous initialisation.
+
+_init()  Called once, when the device is first selected.  This procedure
+should set up things that only need to be set once, like handshaking and
+character sets etc...
+There is a global variable 'pointsize' which you might want to use here.
+If set pointsize is issued after init has been called, the pointsize()
+function is called.
+
+_reset()  Called when gnuplot is exited, the output device changed or
+the terminal type changed.  This procedure should reset the device, 
+possibly flushing a buffer somewhere or generating a form feed.
+
+_scale(xs,ys) Called just before _graphics(). This takes the x and y
+scaling factors as information. If the terminal would like to do its
+own scaling, it returns TRUE. Otherwise, it can ignore the information
+and return FALSE: do_plot will do the scaling for you. null_scale is
+provided to do just this, so most drivers can ignore this function.
+PLEASE DO NOT USE THIS INTERFACE - IT IS NOT COMPATIBLE WITH MULTIPLOT.
+
+_graphics()  Called just before a plot is going to be displayed.  This
+procedure should set the device into graphics mode.  Devices which can't
+be used as terminals (like plotters) will probably be in graphics mode 
+always and therefore won't need this.
+
+_text()  Called immediately after a plot is displayed.  This procedure 
+should set the device back into text mode if it is also a terminal, so
+that commands can be seen as they're typed.  Again, this will probably
+do nothing if the device can't be used as a terminal. This call can
+be used to trigger conversion and output for bitmap devices.
+
+_move(x,y)  Called at the start of a line.  The cursor should move to the
+(x,y) position without drawing.
+
+_vector(x,y)  Called when a line is to be drawn.  This should display a line
+from the last (x,y) position given by _move() or _vector() to this new (x,y)
+position.
+
+_linetype(lt)  Called to set the line type before text is displayed or
+line(s) plotted.  This procedure should select a pen color or line
+style if the device has these capabilities.  
+Non-negative lt values correspond to a "real" linetype.
+Negative lt values correspond to special values as defined in term_api.h
+#define LT_AXIS       (-1)		/* Used to draw X and Y axes */
+#define LT_BLACK      (-2)
+#define LT_NODRAW     (-3)
+#define LT_BACKGROUND (-4)
+#define LT_UNDEFINED  (-5)
+#define LT_COLORFROMCOLUMN  (-6)	/* Used by hidden3d code */
+#define LT_DEFAULT    (-7)
+#define LT_SINGLECOLOR  (-8)		/* Used by hidden3d code */
+If _linetype() is called with lt greater than the available line types, 
+it should map it to one of the available line types.
+
+_put_text(x,y,str)  Called to display text at the (x,y) position, 
+while in graphics mode.   The text should be vertically (with respect 
+to the text) justified about (x,y).  The text is rotated according 
+to _text_angle and then horizontally (with respect to the text)
+justified according to _justify_text.
+
+
+The following are optional
+
+
+_text_angle(ang)  Called to rotate the text angle when placing the y label.
+Ang is the rotation angle in degrees. If ang = 0 then text is horizontal.  
+Returns TRUE if text can be rotated, FALSE otherwise.
+[But you must return TRUE if called with ang=0]
+
+_justify_text(mode)  Called to justify text left, right or centre.
+If mode = LEFT then text placed by _put_text is flushed left against (x,y).
+If mode = CENTRE then centre of text is at (x,y).  
+If mode = RIGHT then text is placed flushed right against (x,y).
+Returns TRUE if text can be justified
+Returns FALSE otherwise and then _put_text assumes text is flushed left;
+justification of text is then performed by calculating the text width
+using strlen(text) * h_char.
+
+_point(x,y,point)  Called to place a point at position (x,y).
+point is -1 or an integer from 0 upwards.  
+At least 6 point types (numbered 0 to 5) are normally provided.  
+Point type -1 is a dot. 'point' corresponds to (pointtype - 1),
+e.g. 'plot x with points pointtype 2' will call _point(x, y, 1).
+If possible, the driver should support the following 13 point types
+in the given order:
+
+    point  pointtype
+	0          1  plus
+	1          2  X
+	2          3  star
+	3          4  box
+	4          5  box                   filled
+	5          6  circle
+	6          7  circle (disk)         filled
+	7          8  triangle
+	8          9  triangle              filled
+	9         10  upside down triangle
+       10         11  upside down triangle  filled
+       11         12  diamond
+       12         13  diamond               filled
+
+If point is more than the available point types then it should 
+be mapped back to one of the available points.
+Two _point() functions called do_point() and line_and_point() are 
+provided in term.c and should be suitable for most drivers.  
+do_point() draws the points in the current line type.
+If your driver uses dotted line types (generally because it is
+monochrome), you should use line_and_point() which changes to 
+line type 0 before drawing the point.  line type 0 should be solid.
+
+There is a global variable 'pointsize' which is controlled by the
+set pointsize command. If possible, use that. pointsize should be
+examined at terminal init. If it is subsequently changed, the
+pointsize() function will be called.
+
+
+_arrow(sx,sy,ex,ey,head)  Called to draw an arrow from (sx,sy) to (ex,ey).
+A head is drawn on the arrow if head = TRUE.
+An _arrow() function called do_arrow() is provided in term.c which will
+draw arrows using the _move() and _vector() functions.  
+Drivers should use do_arrow unless it causes problems.
+
+_set_font() is called to set the font of labels, etc.
+  - fonts are selected as strings "name,size".
+  - _set_font("") restores the terminal's default font.
+  - FIXME >> Return value is never used! << 
+  - FIXME >> Should tolerate being passed a NULL font <<
+
+_pointsize() is used to set the pointsize for subsequent points
+
+_flags stores various flags describing driver capabilities.
+  - TERM_CAN_MULTIPLOT - driver can do multiplot in interactive mode,
+  - TERM_CANNOT_MULTIPLOT - driver cannot multiplot, even if output
+    is redirected. (not used by any current driver)
+  - TERM_BINARY - output file must be opened in binary mode
+  - TERM_ENHANCED_TEXT - terminal is currently in enhanced text mode
+  - TERM_NO_OUTPUTFILE - terminal does not use gpoutfile
+  See other flags defined in term_api.h
+
+_suspend() - Called before gnuplot issues a prompt in multiplot mode.
+   Called only in interactive mode, and only for drivers that have set the
+   flag TERM_CAN_MULTIPLOT.  Some of these must flip between text/graphics
+   mode (e.g. linuxvga).  X11 driver will take this opportunity to paint
+   the window on the display.
+
+_resume() - called after suspend(), before subsequent plots of a multiplot.
+   Called only in interactive mode, and only for drivers that have set the
+   flag TERM_CAN_MULTIPLOT.
+
+_fillbox() - draws a filled axis-aligned rectangular box. The first
+   argument controls the type of fill-in: either a solid color at some
+   percentage of full intensity, or a hatch pattern.  Used by plot style
+   "with filledboxes" and by the "clear" command (with background as
+   fill colour) to do inset plots via multiplot.
+
+_linewidth() - sets the linewidth
+
+The next five functions are used for mouse support, and should be
+conditioned on USE_MOUSE:
+
+_waitforinput(int options) - multiplexes mouse and hotkey input with
+   reading from the terminal. Returns the next character read from stdin.
+   In the mean time, process any mouse events. If the terminal has not yet
+   been initialised, this routine should return getc(stdin).
+
+_put_tmptext(int i, const char str[]) - Display temporary text, after
+   erasing any temporary text displayed previously at this location.
+   The int determines where: 0=statusline, 1,2: at corners of zoom
+   box, with \r separating text above and below the point.
+
+_set_ruler(int x, int y) - Draw a ruler (crosshairs) centered at the
+   indicated screen coordinates.  If x<0, switch ruler off.
+
+_set_cursor(int c, int x, int y) - Set cursor style and corner of
+   rubber band rectangle.  c selects the action: -2=warp the cursor to
+   the given point, -1=start zooming, 0=standard cross-hair cursor,
+   1=cursor during rotation, 2=cursor during scaling, 3=cursor during
+   zooming, -3=draw line between ruler and current mouse position,
+   -4=don't draw (erase) line between ruler and current mouse position.
+
+_set_clipboard(const char s[]) - Write a string to the clipboard.
+
+
+The following four functions support PM3D and RGB colors.
+
+_make_palette(t_sm_palette *palette) - If argument is NULL, return
+   number of colors available.  If the number of colors is not limited
+   (continuously shaded colors can be generated), return 0.
+   Otherwise, allocate the palette.  (t_sm_palette is defined in
+   src/color.h.)
+
+_set_color(t_colorspec *colorspec) - EAM November 2004 ***CHANGED***
+   This routine used to accept a single double value, which was 
+   interpreted as a fractional index into the current color palette.
+   Changing the parameter to a colorspec allows terminals to support
+   other methods of specifying a color. If a given driver can not
+   support a particular color request mechanism, it ignores it.
+   If (colorspec->type == TC_FRAC)  (this was the old behavior):
+   Set current color according to colorspec->value, where 0 <= value <= 1.
+   If using a palette, first map value to an integer i in the interval
+   [0...num_colors-1], then set to the ith color in the palette.
+   If (colorspec->type == TC_RGB):
+   Set current color to the rgb triple given in colorspec->lt.
+
+_filled_polygon(int points, gpiPoint *corners) - Draw a polygon with
+   the fill color set by set_color, and no border.  (gpiPoint is
+   defined in src/color.h.)
+
+_previous_palette() - Release the palette that the above routine
+   allocated and get back the palette that was active before.  Some
+   terminals, like displays, may draw parts of the figure using their
+   own palette. Terminals that use only one palette for the whole plot
+   don't need this routine.
+
+The following 3 functions are required for drivers that support enhanced
+text mode. They are called only by the term.c routine enhanced_recursion().
+
+_enhanced_open()   - initialize state variables to process an enhanced text
+		     fragment
+_enhanced_writec() - write (or buffer) a single character of the text fragment
+                     being constructed
+_enhanced_flush()  - finish processing of previous fragment and write it to
+                     the output stream
+
+_image(unsigned M, unsigned N, coordval *image, gpiPoint *corner, t_imagecolor color_mode)
+   Plot a pixel-based image on the display device.
+   'M' is the number of pixels along the y-dimension of the image and
+   'N' is the number of pixels along the x-dimension of the image.  The
+   coordval pointer 'image' is the pixel values normalized to the range
+   [0:1].  These values should be scaled appropriately for the output
+   device.  The 'image' data starts in the upper left corner and scans
+   along rows finishing in the lower right corner.  If 'color_mode' is
+   IC_PALETTE, the terminal is to use palette lookup to generate color
+   information.  In this scenario the size of 'image' is M*N.  If
+   'color_mode' is IC_RGB, successive bytes of the data structure are 
+   interpreted as RGB components of a single pixel.  In this scenario
+   the size of 'image' is 3*M*N.  The data appears in RGB triples, i.e.,
+   image[0] = R(1,1), image[1] = G(1,1), image[2] = B(1,1), 
+   image[3] = R(1,2), image[4] = G(1,2), ..., image[3*M*N-1] = B(M,N).
+   The mode IC_RGBA is similar except that four values red, green, blue,
+   alpha per pixel are passed to the terminal in the image structure.
+   The 'image' is actually an "input" image in the sense that
+   it must also be properly resampled for the output device.  Many output
+   media, e.g., PostScript, do this work via various driver functions.
+   To determine the appropriate rescaling, the 'corner' information
+   should be used.  There are four entries in the gpiPoint data array.
+   'corner[0]' is the upper left corner (in terms of plot location) of
+   the outer edge of the image.  Similarly, 'corner[1]' is the lower
+   right corner of the outer edge of the image.  (Outer edge means the
+   outer extent of the corner pixels, not the middle of the corner
+   pixels.)  'corner[2]' is the upper left corner of the visible part
+   of the image, and 'corner[3]' is the lower right corner of the visible
+   part of the image.  The information is provided in this way because
+   often it is necessary to clip a portion of the outer pixels of the
+   image.
+
+There is a single entry point associated with support for boxed text.
+This option is independent of enhanced text mode.  
+
+_boxed_text() - Called first with option==0 (TEXTBOX_INIT) to initiate
+a new text box; subsequent calls to put_text() and/or internal enhanced text
+routines including enhanced_flush() accumulate bounding-box limits for this box;
+then boxed_text() is called again with option>0 to actually draw
+the text box. The option parameter values are
+  TEXTBOX_INIT:		 initialize a new text box
+  TEXTBOX_OUTLINE:	 stroke the bounding box of the text box
+  TEXTBOX_BACKGROUNDFILL: fill the text box with background color
+  TEXTBOX_MARGINS:	 adjust whitespace around text to x,y percent of default
+It is the responsibility of the term->put_text and term->enhanced_XXX routines
+to update the text box if one is active.
+
+_layer(t_termlayer syncpoint)
+   Driver-specific synchronization or other layering commands.
+   For example, the BEGIN_KEY_SAMPLE/END_KEY_SAMPLE sync points allow
+   a driver to respond differently to mouse-clicks on the key sample
+   than to mouse clicks elsewhere.
+   See term_api.h for defined synchronization points. Any driver that 
+   implements term->layer() must silently ignore unrecognized syncpoints.
+
+_path(int p)
+   PostScript-like devices make a distinction between the end of a 
+   line segment that is internal to a polyline and one that has no
+   line-join to another segment.  In order to treat the endpoints of
+   a closed polygon as "internal" line-joins, one must bracket the
+   polygon segments with "newpath ... closepath". 
+   term->path(0) triggers a "newpath"
+   term->path(1) triggers a "closepath"
+   These calls are optional, and only required by a few drivers.
+
+_hypertext(int type, const char *text)
+   Associates a text string with a subsequent graphics object.
+   The effect of this association is controlled by type.
+   Currently the only type supported is a tooltips-like text popup
+   triggered by mousing over the object. Possible future extensions
+   include treating the text as a URL activated by mouse click.
+
+_modify_plots(unsigned int operations, int plotno) - used for interactive terminals.
+   Apply operations to a single plot or to every plot in the graph.
+   Bit definitions in the operations bitmask are given in term_api.h
+   and include SET_VISIBLE and SET_INVISIBLE.
+
+_dashtype(int type, t_dashtype *custom_dash_pattern) - set dash/dot 
+   pattern independently from linetype. The integer parameter, 
+   if non-negative, may refer to the Nth dash/dot pattern pre-defined by
+   the specific terminal. The terminal must handle values larger than
+   the number pre-defined patterns (e.g. by wrapping around).
+   Negative values have special meaning, as defined in term_api.h.
+   The t_dashtype parameter can be used to set explicitly defined patterns.
+   Alternating numbers in the pattern field of this parameter specify
+   dash lengths and spaces between them, in units of the terminal's
+   dashlength.
+
+
+The following should illustrate the order in which calls to these
+routines are made:
+
+ _options()
+  _waitforinput()	/* If present, may be called before init() */
+  _init()
+    _scale(xs,ys)
+    _graphics()
+      _linewidth(lw)
+      _linetype(lt)
+      _dashtype(dt)
+      _path(0)
+         _move(x,y)
+         _vector(x,y)
+      _path(1)
+      _pointsize(size)
+      _point(x,y,point)
+      _text_angle(angle)
+      _justify_text(mode)
+      _set_font(font)
+      _put_text(x,y,text)
+         _enhanced_open(fontname,fontsize,base,width,show,overprint)
+	 _enhanced_writec(char)
+	 _enhanced_flush()
+      _arrow(sx,sy,ex,ey)
+      _image(M,N,image,corner,color_mode)
+    _text()
+    _graphics()
+      .
+    _suspend()
+    _set_pointsize()
+    _resume()
+      .
+    _text()
+  _reset()
+
+
+------------------------------------
+
+BITMAP DEVICES
+
+A file bitmap.c is provided, implementing a generic set of bitmap
+routines. It provides all the routines required to generate a
+bitmap in memory, drawing lines and writing text. A simple driver
+need provide only a text() entry point, which converts and outputs
+the stored bitmap in the format required by the device.
+
+As of version 4.5, inclusion of bitmap.c and the terminal drivers
+that depend on it is controlled by ./configure --with-bitmap-terminals.
+This may be desirable because the license for bitmap.c is more
+restrictive than the gnuplot license itself, and because the terminals
+it supports are mostly obsolete.
+
+Internally, the bitmap is built of one or more planes of 1
+bit per pixel. In fact, I think the library would be easier to
+use if it offered one or more planes of pixels with 1,2,4 or 8
+bits per pixel, since not all bitmap devices are based on planes,
+and the planes have to be recombined at the end at present.
+In general, a device would use either planes or bits-per-pixel,
+though I guess a 24-bit bitmap could use 3 planes of 8 bits
+per pixel..?
+
+
+The pixels are currently organised horizontally packed into bytes.
+
+i.e.
+
+********%%%%%%%%$$$$$$$$!!!!!!!! etc
+^^^^^^^^@@@@@@@@########++++++++ etc
+
+where like symbols are stored in one byte. Vertical packing can be
+arranged by reversing x and y dimensions and setting the global
+b_rastermode to TRUE.  (e.g. Epson 8-pin dot-matrix printer)
+
+
+Functions provided are
+
+(internal functions ? - should probably be static, not external ?)
+b_setpixel(x,y,value)     
+b_setmaskpixel(x,y,value)
+b_putc(x,y,char,angle)
+b_setvalue(size)
+
+setting up stuff
+
+b_makebitmap(x,y,planes)  - make a bitmap of size x * y
+b_freebitmap()            - free bitmap
+b_charsize(size)
+
+
+gnuplot driver interface functions  (can go straight into gnuplot structure)
+
+b_setlinetype(linetype)
+b_move(x,y)
+b_vector(x,y)
+b_put_text(x,y,*str)
+b_text_angle(ang)
+
+
+
+I think that the library could be made easier to use if we defined
+a structure which described the bitmap (raster mode, planes, bits-per-pixel,
+colours, etc) and then added to the gnuplot term struct a pointer to
+this structure. Then we could have b_graphics() routine which did all
+the initialisation that presently has to be done by the driver graphics()
+entry point.  Also, one day I would like to have parsing, including
+terminal driver options, table-driven, but I'm getting ahead of myself
+here.
+
+------------------------------------
+
+FILE LAYOUT
+-----------
+
+I think a file layout like the following will leave most flexibility
+to the gnuplot maintainers. I use REGIS for example.
+
+
+#include "driver.h"
+
+
+#ifdef TERM_REGISTER
+register_term(regis) /* no ; */
+#endif
+
+
+#ifdef TERM_PROTO
+TERM_PUBLIC void REGISinit __PROTO((void));
+TERM_PUBLIC void REGISgraphics __PROTO((void));
+/* etc */
+#define GOT_REGIS_PROTO
+#endif
+
+
+#ifndef TERM_PROTO_ONLY
+#ifdef TERM_BODY
+
+TERM_PUBLIC void REGISinit()
+{
+  /* etc */
+}
+
+/* etc */
+
+#endif
+
+
+#ifdef TERM_TABLE
+
+TERM_TABLE_START(regis_driver)
+  /* no { */
+  "regis", "REGIS graphics language",
+  REGISXMAX, /* etc */
+  /* no } */
+TERM_TABLE_END(regis_driver)
+
+#undef LAST_TERM
+#define LAST_TERM regis_driver
+
+#endif /* TERM_TABLE */
+#endif /* TERM_PROTO_ONLY */
+
+
+
+
+#ifdef TERM_HELP
+START_HELP(regis)
+"1 regis",
+"?set terminal regis",
+"?regis",
+" The `regis` terminal device generates output in the REGIS graphics language.",
+" It has the option of using 4 (the default) or 16 colors.",
+"",
+" Syntax:",
+"         set term regis {4 | 16}"
+END_HELP(regis)
+#endif
+
+
+--------------
+
+The first three lines in the TERM_HELP section must contain the same
+name as that specified by register_term, since this is the name that
+will be entered into the list of available terminals.  If more than
+one name is registered, the additional names should have their own
+two "?" lines, but not the "1" line.
+
+Each record is enclosed in double-quotes and (except for the last
+record) followed by a comma.  The text is copied as a single string
+into gnuplot.doc, so the syntax must obey the rules of that entity.
+If the text includes double-quotes or backslashes, these must be
+escaped by preceding each occurrence with a backslash.
+
+--------------
+
+Rationale:
+
+We may want to compile all drivers into term.c or one driver at a time
+this layout should support both
+TERM_PUBLIC will be static  if all modules are in term.c, or blank
+otherwise.
+Please make private support functions static if possible.
+
+
+We may include term.h, and therefore all these files, one or more times.
+If just once (all modules compiled into term.c) putting the four
+parts in this order should make it work.
+
+We may compile the table entries into either an array or a linked list.
+This organisation should support both.
+
+For separate compilation, we may write a program which
+defines TERM_REGISTER and #include term.h to find out which drivers are
+selected in term.h and thereby generate a makefile.
+
+
+
+For a driver which depends on another (e.g. enhpost and pslatex on post)
+the driver can do something like
+
+#ifndef GOT_POST_PROTO
+#define TERM_PROTO_ONLY
+#include "post.trm"
+#undef TERM_PROTO_ONLY
+#endif
+
+this is probably needed only in the TERM_TABLE section, but may
+also be used in the body. The TERM_PROTO_ONLY means that we pick up
+only the prototypes from post.trm, even if current driver is being compiled
+with TERM_BODY or TERM_TABLE
+
+If we do it the linked-list way, the argument to TERM_TABLE_START will be
+the name of the variable, so any valid, unique name is fine.
+The TERM_TABLE_START macro will do all the work of linking the entries
+together, probably using LAST_TERM
+
+The inclusion of the TERM_HELP section (and removal of terminal documentation
+from the master gnuplot.doc file) means that the online help will include
+discussions of only those terminals available to the user.  For generation
+of the printed manual, all can be included.
+
+
+Please make as many things as possible static, but do still try to use unique
+names since all drivers may be compiled into term.o
+
+The bit in the PROTO section is basically what you would put into a .h
+file if we had them - everything that is needed by the TABLE_ENTRY
+should be defined in this part. In particular, don't forget all the maxes
+and character sizes and things for the table entry.
+
+Don't forget to put TERM_PUBLIC in the definitions of the functions as
+well as the prototypes. It will probably always expand to 'static'
+except for PCs.

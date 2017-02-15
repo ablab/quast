@@ -1,0 +1,286 @@
+/* Hello, Emacs, this is -*-C-*-
+ * $Id: excl.trm,v 1.16 2006/07/21 02:35:46 sfeam Exp $
+ *
+ */
+
+/* GNUPLOT - excl.trm */
+
+/* Copyright 1992, 1998, 2004 by P. Klosowski at NIST.  All Rights Reserved
+ *
+ * Permission to use, copy, and distribute this software and its
+ * documentation for any purpose with or without fee is hereby granted,
+ * provided that the above copyright notice appear in all copies and
+ * that both that copyright notice and this permission notice appear
+ * in supporting documentation.
+ *
+ * Permission to modify the software is granted, but not the right to
+ * distribute the complete modified source code.  Modifications are to
+ * be distributed as patches to the released version.  Permission to
+ * distribute binaries produced by compiling modified sources is granted,
+ * provided you
+ *   1. distribute the corresponding source modifications from the
+ *    released version in the form of a patch file along with the binaries,
+ *   2. add special version identification to distinguish your version
+ *    in addition to the base release version number,
+ *   3. provide your name and address as the primary contact for the
+ *    support of your modified version, and
+ *   4. retain our contact information in regard to use of the base
+ *    software.
+ * Permission to distribute the released version of the source code along
+ * with corresponding source modifications in the form of a patch file is
+ * granted with same provisions 2 through 4 for binary distributions.
+ *
+ * This software is provided "as is" without express or implied warranty
+ * to the extent permitted by applicable law.
+ *
+ * This file is included by ../term.c.
+ *
+ *
+ * send your comments or suggestions to (gnuplot-info@lists.sourceforge.net).
+ *
+ */
+
+/***
+  NAME
+     quic
+   PURPOSE
+     QUIC driver for GNUPLOT
+   NOTES
+
+   HISTORY
+     przemek - Aug 16, 1992: Created.
+     lars - Nov 30, 1998: Updated to new gnuplot copyright by
+                          permission from Przemek
+***/
+/*
+c               *****************************************
+c               *****************************************
+c               ******                              *****
+c               ******   EXCL command definitions   *****
+c               ******                              *****
+c               *****************************************
+c               *****************************************
+*/
+
+/*
+ * adapted to the new terminal layout by Stefan Bodewig (Dec. 1995)
+ */
+
+#include "driver.h"
+
+#ifdef TERM_REGISTER
+register_term(excl)
+#endif
+
+#ifdef TERM_PROTO
+TERM_PUBLIC void EXCL_init __PROTO((void));
+TERM_PUBLIC void EXCL_graphics __PROTO((void));
+TERM_PUBLIC void EXCL_text __PROTO((void));
+TERM_PUBLIC void EXCL_linetype __PROTO((int linetype));
+TERM_PUBLIC void EXCL_move __PROTO((unsigned int x, unsigned int y));
+TERM_PUBLIC void EXCL_vector __PROTO((unsigned int x2, unsigned int y2));
+TERM_PUBLIC void EXCL_put_text __PROTO((unsigned int x, unsigned int y, const char str[]));
+TERM_PUBLIC void EXCL_reset __PROTO((void));
+
+#define EXCL_XMAX 9000
+#define EXCL_YMAX 6500
+
+#define EXCL_XLAST (EXCL_XMAX - 1)
+#define EXCL_YLAST (EXCL_YMAX - 1)
+
+#define EXCL_VCHAR		120
+#define EXCL_HCHAR		70
+#define EXCL_VTIC		70
+#define EXCL_HTIC		70
+#endif /* TERM_PROTO */
+
+
+#ifndef TERM_PROTO_ONLY
+#ifdef TERM_BODY
+
+/*  Define ansi command headers, NUL character */
+#define ESC "\033"
+#define GS  "\035"
+#define CSI "\033["
+#define DCS "\033P"
+#define ST  "\033\\"
+
+/*
+page numbers are given per "Talaris EXCL programmer's reference manual" M292 rev.2
+NOTE: EXCL coordinate system places (0,0) at upper left corner of the page
+
+c EXCL commands for initialization
+
+c     TALAMS: set ANSI                                        (p. 162)
+c     TALMOD: set emulation *** EXCL                          (p. 164)
+c     TALPGO: set page orient *** landscape                   (p.  81)
+c     TALFCTL: set paper format *** 8.5x11                    (p.  85)
+c     TALTBM: set top/bot margins  ** in land mode to full pg (p.  73)
+c     TALLRM: set left/right margins                          (p.  75)
+c     PUM:    set units ** units of measure set by TALPRM     (p.  67)
+c     TALASF: Absorb cr/ff/lf/vt   ** ON                      (p. 182)
+c     TALPOP: pop controller params                           (p. 168)
+c     TALPSH: push controller params                          (p. 167)
+c     TALPRM: set units of measure ** to 1/1000 inch          (p.  64)
+c     TALGLT: set line type ** solid                          (p. 211)
+c     TALORG: set page absolute origin ** (0,0) UL corner     (p.  78)
+c     TALPCW: set page clip window *** for landsc/full page   (p.  84)
+c     TALGLP: line: **pen7x7mil*draw*smear*glyph112*font5279* (p. 208)
+c     TALGLPE: ending for TALGLP command, forcing DRAW mode
+c     TALGBB: bounding box; used only by qdrive               (p. 207)
+c     TALFPO: Force page out  ** clear bitmap                 (p.  95)
+c     TALGDW: graphical draw to hor,vert ** abs  coords       (p. 212)
+c     TALGMV: graphical move to hor,vert ** abs  coords       (p. 213)
+*/
+#define TALAMS  "\033[0*s"
+#define TALMOD  "\033[1;0r"
+#define TALPGO  "\033[1;0p"
+#define TALFCTL "\033[0;3x"
+#define TALTBM  "\033[0;8500 v"
+#define TALLRM  "\033[0;11000v"
+#define PUM     "\033[11h"
+#define TALASF  "\033[1 z"
+#define TALPOP  "\033[*]"
+#define TALPSH  "\033[*["
+#define TALPRM  "\033[3y"
+#define TALGLT  "\033[%s*t"
+#define TALORG  "\033[0;0o"
+#define TALCCNT "\033[1;0u"
+#define TALPCW  "\033[0;8500;11000;0*c"
+#define TALGLP_init  "\033[7;7;8;1;112;5279*w"
+#define TALGLP  "\033[%d;%d;8*w"
+#define TALFPO  "\033[0*F"
+#define TALGDW "\033[0;%d;%d*d"
+#define TALGMV "\033[0;%d;%d*m"
+
+/*  TALPYL: polyline                                        (p. 222)
+**        5;0} list of 16-bit signed integers, encoded, mostly relative
+**        5,1} list of ASCII  absolute coords (if w/o +- signs)(e.g. 315:1222;)
+*/
+
+#define TALPYL  "\033P5;1}"
+
+TERM_PUBLIC void
+EXCL_init()
+{
+    fprintf(gpoutfile, "%s%s%s%s%s%s",
+	    TALPSH, TALAMS, TALMOD, TALCCNT, TALFCTL, TALASF);
+/*                ^save state   ^setEXCL       ^PaperSize8.5x11       */
+/*                       ^setANSI      ^copyCount1     ^absorbCtlChar */
+    fprintf(gpoutfile, "%s%s%s%s%s%s",
+	    PUM, TALPRM, TALPGO, TALPCW, TALORG, TALGLP_init);
+    fprintf(gpoutfile, TALGLT, "");
+/*                ^setUnits  ^landscape    ^OriginZero        ^SolidLine   */
+/*                    ^Units1/1000" ^pageClip     ^SetLine            */
+}
+
+TERM_PUBLIC void
+EXCL_graphics()
+{
+}
+
+TERM_PUBLIC void
+EXCL_text()
+{
+    fputs(TALFPO, gpoutfile);
+    /*    ^pageout  */
+}
+
+
+TERM_PUBLIC void
+EXCL_linetype(int linetype)
+{
+/* excl line widths in mils: 4 is mimimum, but too thin; then
+   7,10,14,17,20,24,27...
+   exclpen=MOD(NPEN,8)*7
+   CSI  exclpen; exclpen; TALGLPE
+*/
+    static char *type[2 + 9] =
+    {
+	"", "40;40", "", "42;42", "14;21",
+    /*   ....   ----  -- -- --   . . .   */
+	"", "49;30", "14;21", "", "49;30", "14;21"
+    /*  same pattern, but thicker..  and thicker       */
+    };
+    static int width[2+9] = { 14, 7, 7, 7, 7, 10, 10, 10, 17, 17, 17 };
+
+    if (linetype >= 9)
+	linetype %= 9;
+
+    if (linetype < -2)
+	linetype = LT_BLACK;
+
+    fprintf(gpoutfile, TALGLP, width[linetype + 2], width[linetype + 2]);
+    /*                 ^width in dots */
+    fprintf(gpoutfile, TALGLT, type[linetype + 2]);
+    /*                 ^line type     */
+}
+
+
+TERM_PUBLIC void
+EXCL_move(unsigned int x, unsigned int y)
+{
+    fprintf(gpoutfile, TALGMV, 1000 + x, EXCL_YLAST + 1000 - y);
+    /*                 ^pen up vector */
+}
+
+
+TERM_PUBLIC void
+EXCL_vector(unsigned int x2, unsigned int y2)
+{
+    fprintf(gpoutfile, TALGDW, 1000 + x2, EXCL_YLAST + 1000 - y2);
+    /*                 ^pen down vector */
+}
+
+
+TERM_PUBLIC void
+EXCL_put_text(unsigned int x, unsigned int y, const char str[])
+{
+    char ch;
+    EXCL_move(x, y - EXCL_VCHAR / 3);
+    ch = *str++;
+    while (ch != NUL) {
+	putc(ch, gpoutfile);
+	ch = *str++;
+    }
+}
+
+TERM_PUBLIC void
+EXCL_reset()
+{
+    fprintf(gpoutfile, "%s%s", TALFPO, TALPOP);
+    /*                         ^pageout ^pop  */
+}
+
+
+#endif /* TERM_BODY */
+
+#ifdef TERM_TABLE
+
+TERM_TABLE_START(excl_driver)
+    "excl", "Talaris EXCL Laser printer (also Talaris 1590 and others)",
+    EXCL_XMAX, EXCL_YMAX, EXCL_VCHAR, EXCL_HCHAR,
+    EXCL_VTIC, EXCL_HTIC, options_null, EXCL_init, EXCL_reset,
+    EXCL_text, null_scale, EXCL_graphics, EXCL_move, EXCL_vector,
+    EXCL_linetype, EXCL_put_text, null_text_angle,
+    null_justify_text, line_and_point, do_arrow, set_font_null
+TERM_TABLE_END(excl_driver)
+#undef LAST_TERM
+#define LAST_TERM excl_driver
+
+#endif /* TERM_TABLE */
+#endif /* TERM_PROTO_ONLY */
+
+#ifdef TERM_HELP
+START_HELP(excl)
+"1 excl",
+"?commands set terminal excl",
+"?set terminal excl",
+"?set term excl",
+"?terminal excl",
+"?term excl",
+"?excl",
+" The `excl` terminal driver supports Talaris printers such as the EXCL Laser",
+" printer and the 1590.  It has no options."
+END_HELP(excl)
+#endif

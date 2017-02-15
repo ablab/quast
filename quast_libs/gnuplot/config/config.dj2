@@ -1,0 +1,523 @@
+/* config.h for makefile.dj2
+ *
+ * Prepared according to config.h from ./configure and by means of
+ * config_strip.sh as of gnuplot 4.3 in February 2008.
+ */
+
+
+/* Define if you want to support files in binary format. */
+#define BINARY_DATA_FILE 1
+
+/* Define if you want to use the CGI terminal under SCO. */
+/* #undef CGI */
+
+/* Define if you want online help and subtopic tables sorted by column. */
+/* #undef COLUMN_HELP */
+
+/* Define if you want to use libgrx20 with MSDOS/djgpp. */
+#define DJSVGA 1
+
+/* Define if this system uses a 32-bit DOS extender (djgpp/emx). */
+#define DOS32 1
+
+/* Define to allow placement of rectangles and other objects */
+#define EAM_OBJECTS 1
+
+/* Define if color information should be passed for each vertex. */
+/* #undef EXTENDED_COLOR_SPECS */
+
+/* Define if you want to supply pre-existing X11 windows. */
+/* #undef EXTERNAL_X11_WINDOW */
+
+/* Define if <errno.h> declares errno. */
+#define EXTERN_ERRNO 1
+
+/* Define if libgd supports animated gifs. */
+/* #undef GIF_ANIMATION */
+/* Don't change it here -- this define is set in config/makefile.dj2. */
+
+/* Define if you want to use a gnuplot history file. */
+#define GNUPLOT_HISTORY 1
+
+/* Define to allow command line macros. EXPERIMENTAL */
+#define GP_MACROS 1
+
+/* Define if you want to use a newer version of libgrx under MSDOS/djgpp. */
+#define GRX21 1
+
+/* Define to 1 if you have the <3dkit.h> header file. */
+/* #undef HAVE_3DKIT_H */
+
+/* Define to 1 if you have the `atexit' function. */
+#define HAVE_ATEXIT 1
+
+/* Define to 1 if you have the `bcopy' function. */
+#define HAVE_BCOPY 1
+
+/* Define to 1 if you have the `bzero' function. */
+#define HAVE_BZERO 1
+
+/* Define if you want the cairo-based terminals. */
+/* #undef HAVE_CAIROPDF */
+
+/* Define to 1 if you have the declaration of `signgam', and to 0 if you
+   don't. */
+/* #undef HAVE_DECL_SIGNGAM */
+
+/* Define to 1 if you have the <dirent.h> header file. */
+#define HAVE_DIRENT_H 1
+
+/* Define to 1 if you have the `doprnt' function. */
+#define HAVE_DOPRNT 1
+
+/* Define to 1 if you have the `erf' function. */
+#if __GNUC__ >= 3
+#  define HAVE_ERF 1
+#endif
+
+/* Define to 1 if you have the `erfc' function. */
+#if __GNUC__ >= 3
+#  define HAVE_ERFC 1
+#endif
+
+/* Define to 1 if you have the <errno.h> header file. */
+#define HAVE_ERRNO_H 1
+
+/* Define to 1 if you have the <float.h> header file. */
+#define HAVE_FLOAT_H 1
+
+/* Define to 1 if you have the `fork' function. */
+/* #undef HAVE_FORK */
+
+/* Define to 1 if you have the `gamma' function. */
+#define HAVE_GAMMA 1
+
+/* Define if libgd supports gif. */
+/* #undef HAVE_GD_GIF */
+/* Don't change it here -- this define is set in config/makefile.dj2. */
+
+/* Define to 1 if you have the <gd.h> header file. */
+/* #undef HAVE_GD_H */
+/* Don't change it here -- this define is set in config/makefile.dj2. */
+
+/* Define if libgd supports jpeg. */
+/* #undef HAVE_GD_JPEG */
+/* Don't change it here -- this define is set in config/makefile.dj2. */
+
+/* Define if libgd supports png. */
+/* #undef HAVE_GD_PNG */
+/* Don't change it here -- this define is set in config/makefile.dj2. */
+
+/* Define if libgd supports TrueType fonts through libfreetype. */
+/* #undef HAVE_GD_TTF */
+/* Don't change it here -- this define is set in config/makefile.dj2. */
+
+/* Define to 1 if you have the `getcwd' function. */
+#define HAVE_GETCWD 1
+
+/* Define to 1 if you have the <ggi/wmh.h> header file. */
+/* #undef HAVE_GGI_WMH_H */
+
+/* Define to 1 if you have the <ggi/xmi.h> header file. */
+/* #undef HAVE_GGI_XMI_H */
+
+/* Define to use gtk/gdk tweaks */
+/* #undef HAVE_GTK */
+
+/* Define to use gtk+ functions to handle cairo */
+/* #undef HAVE_GTK28 */
+
+/* Define to 1 if you have the `index' function. */
+#define HAVE_INDEX 1
+
+/* Define to 1 if you have the <inttypes.h> header file. */
+#if __GNUC__ >= 3
+#  define HAVE_INTTYPES_H 1
+#endif
+
+/* Define to 1 if you have the `isnan' function. */
+/* #undef HAVE_ISNAN */
+
+/* Define if you use have kpsexpand (TeX). */
+/* #undef HAVE_KPSEXPAND */
+
+/* Define to 1 if you have the `lgamma' function. */
+#define HAVE_LGAMMA 1
+
+/* Define to 1 if you're using the aquaterm library on Mac OS X */
+/* #undef HAVE_LIBAQUATERM */
+
+/* Define to 1 if you have the <libc.h> header file. */
+/* #undef HAVE_LIBC_H */
+
+/* Define if you have gd library. */
+/* #undef HAVE_LIBGD */
+/* Don't change it here -- this define is set in config/makefile.dj2. */
+
+/* Define to 1 if you have the `m' library (-lm). */
+/* #undef HAVE_LIBM */
+
+/* Define to 1 if you have the `pdf' library (-lpdf). */
+/* #undef HAVE_LIBPDF */
+/* Don't change it here -- this define is set in config/makefile.dj2. */
+
+/* Define if your pdf library is too old to use PDF_begin_document. */
+/* #undef HAVE_LIBPDF_OPEN_FILE */
+
+/* Define if you are using the GNU readline library. */
+/* #undef HAVE_LIBREADLINE */
+/* Don't change it here -- this define is set in config/makefile.dj2. */
+
+/* Define if you have zlib. */
+/* #undef HAVE_LIBZ */
+/* Don't change it here -- this define is set in config/makefile.dj2. */
+
+/* Define to 1 if you have the <limits.h> header file. */
+#define HAVE_LIMITS_H 1
+
+/* Define to 1 if you have the <locale.h> header file. */
+#define HAVE_LOCALE_H 1
+
+/* Define to 1 if you have the <malloc.h> header file. */
+#define HAVE_MALLOC_H 1
+
+/* Define to 1 if you have the <math.h> header file. */
+#define HAVE_MATH_H 1
+
+/* Define to 1 if you have the `memcpy' function. */
+#define HAVE_MEMCPY 1
+
+/* Define to 1 if you have the `memmove' function. */
+#define HAVE_MEMMOVE 1
+
+/* Define to 1 if you have the <memory.h> header file. */
+#define HAVE_MEMORY_H 1
+
+/* Define to 1 if you have the `memset' function. */
+#define HAVE_MEMSET 1
+
+/* Define if your pdf library doesn't support dash patterns. */
+/* #undef HAVE_NODASH_LIBPDF */
+
+/* Define if your pdf library is too old to support patterns. */
+/* #undef HAVE_OLD_LIBPDF */
+
+/* Define to 1 if you have the `on_exit' function. */
+/* #undef HAVE_ON_EXIT */
+
+/* Define to 1 if you have the `pclose' function. */
+#define HAVE_PCLOSE 1
+
+/* Define to 1 if you have the <pdflib.h> header file. */
+/* #undef HAVE_PDFLIB_H */
+
+/* Define to 1 if you have the `poll' function. */
+/* #undef HAVE_POLL */
+
+/* Define to 1 if you have the <poll.h> header file. */
+#define HAVE_POLL_H 1
+
+/* Define to 1 if you have the `popen' function. */
+#define HAVE_POPEN 1
+
+/* Define to 1 if you have the <readline/history.h> header file. */
+/* #undef HAVE_READLINE_HISTORY_H */
+
+/* Define to 1 if you have the <readline/readline.h> header file. */
+/* #undef HAVE_READLINE_READLINE_H */
+
+/* Define to 1 if you have the <readline/tilde.h> header file. */
+/* #undef HAVE_READLINE_TILDE_H */
+
+/* Define to 1 if you have the `rindex' function. */
+#define HAVE_RINDEX 1
+
+/* Define to 1 if you have the `select' function. */
+#define HAVE_SELECT 1
+
+/* Define to 1 if you have the `setvbuf' function. */
+#define HAVE_SETVBUF 1
+
+/* Define to 1 if you have the <sgtty.h> header file. */
+/* #undef HAVE_SGTTY_H */
+
+/* Define if we have sigsetjmp(). */
+#define HAVE_SIGSETJMP 1
+
+/* Define to 1 if you have the `sleep' function. */
+#define HAVE_SLEEP 1
+
+/* Define to 1 if you have the `snprintf' function. */
+/* #undef HAVE_SNPRINTF */
+
+/* Define to 1 if stdbool.h conforms to C99. */
+#define HAVE_STDBOOL_H 1
+
+/* Define to 1 if you have the <stdint.h> header file. */
+#if __GNUC__ >= 3
+#  define HAVE_STDINT_H 1
+#endif
+
+/* Define to 1 if you have the <stdlib.h> header file. */
+#define HAVE_STDLIB_H 1
+
+/* Define to 1 if you have the `stpcpy' function. */
+#define HAVE_STPCPY 1
+
+/* Define to 1 if you have the `strcasecmp' function. */
+#define HAVE_STRCASECMP 1
+
+/* Define to 1 if you have the `strchr' function. */
+#define HAVE_STRCHR 1
+
+/* Define to 1 if you have the `strcspn' function. */
+#define HAVE_STRCSPN 1
+
+/* Define to 1 if you have the `strdup' function. */
+#define HAVE_STRDUP 1
+
+/* Define to 1 if you have the `strerror' function. */
+#define HAVE_STRERROR 1
+
+/* Define to 1 if you have the `stricmp' function. */
+#define HAVE_STRICMP 1
+
+/* Define to 1 if cpp supports the ANSI # stringizing operator. */
+#define HAVE_STRINGIZE 1
+
+/* Define to 1 if you have the <strings.h> header file. */
+#define HAVE_STRINGS_H 1
+
+/* Define to 1 if you have the <string.h> header file. */
+#define HAVE_STRING_H 1
+
+/* Define to 1 if you have the `strncasecmp' function. */
+#define HAVE_STRNCASECMP 1
+
+/* Define to 1 if you have the `strnicmp' function. */
+#define HAVE_STRNICMP 1
+
+/* Define to 1 if you have the `strrchr' function. */
+#define HAVE_STRRCHR 1
+
+/* Define to 1 if you have the `strstr' function. */
+#define HAVE_STRSTR 1
+
+/* Define if math.h declares struct exception for matherr(). */
+#define HAVE_STRUCT_EXCEPTION_IN_MATH_H 1
+
+/* Define to 1 if you have the `sysinfo' function. */
+/* #undef HAVE_SYSINFO */
+
+/* Define to 1 if you have the <sys/bsdtypes.h> header file. */
+/* #undef HAVE_SYS_BSDTYPES_H */
+
+/* Define to 1 if you have the <sys/ioctl.h> header file. */
+#define HAVE_SYS_IOCTL_H 1
+
+/* Define to 1 if you have the <sys/param.h> header file. */
+#if __GNUC__ >= 3
+#  define HAVE_SYS_PARAM_H 1
+#endif
+
+/* Define to 1 if you have the <sys/select.h> header file. */
+/* #undef HAVE_SYS_SELECT_H */
+
+/* Define to 1 if you have the <sys/socket.h> header file. */
+/* #undef HAVE_SYS_SOCKET_H */
+
+/* Define to 1 if you have the <sys/stat.h> header file. */
+#define HAVE_SYS_STAT_H 1
+
+/* Define to 1 if you have the <sys/systeminfo.h> header file. */
+/* #undef HAVE_SYS_SYSTEMINFO_H */
+
+/* Define to 1 if you have the <sys/timeb.h> header file. */
+#define HAVE_SYS_TIMEB_H 1
+
+/* Define to 1 if you have the <sys/time.h> header file. */
+#define HAVE_SYS_TIME_H 1
+
+/* Define to 1 if you have the <sys/types.h> header file. */
+#define HAVE_SYS_TYPES_H 1
+
+/* Define to 1 if you have the <sys/utsname.h> header file. */
+#define HAVE_SYS_UTSNAME_H 1
+
+/* Define to 1 if you have the `tcgetattr' function. */
+#define HAVE_TCGETATTR 1
+
+/* Define to 1 if you have the <termios.h> header file. */
+#define HAVE_TERMIOS_H 1
+
+/* Define to 1 if you have the <time.h> header file. */
+#define HAVE_TIME_H 1
+
+/* Define if time_t is declared in time.h. */
+#define HAVE_TIME_T_IN_TIME_H 1
+
+/* Define to 1 if you have the <unistd.h> header file. */
+#define HAVE_UNISTD_H 1
+
+/* Define to 1 if you have the `usleep' function. */
+#define HAVE_USLEEP 1
+
+/* Define to 1 if you have the <values.h> header file. */
+#define HAVE_VALUES_H 1
+
+/* Define to 1 if you have the `vfork' function. */
+/* #undef HAVE_VFORK */
+
+/* Define to 1 if you have the <vfork.h> header file. */
+/* #undef HAVE_VFORK_H */
+
+/* Define to 1 if you have the `vfprintf' function. */
+/* #undef HAVE_VFPRINTF */
+/* Comment: djgpp has vprintf(), but gnuplot uses vsnprintf(). */
+
+/* Define to 1 if you have the <vgagl.h> header file. */
+/* #undef HAVE_VGAGL_H */
+
+/* Define to 1 if `fork' works. */
+/* #undef HAVE_WORKING_FORK */
+
+/* Define to 1 if `vfork' works. */
+/* #undef HAVE_WORKING_VFORK */
+
+/* Define to 1 if the system has the type `_Bool'. */
+/* #undef HAVE__BOOL */
+
+/* Define to enable gridbox optimization in hidden3d code. */
+/* #undef HIDDEN3D_GRIDBOX */
+
+/* Define to enable quadtree optimization in hidden3d code. */
+/* #undef HIDDEN3D_QUADTREE */
+
+/* Define to enable handling point size in hidden3d code. */
+#define HIDDEN3D_VAR_PTSIZE 1
+
+/* Define if this is a Linux system with SuperVGA library. */
+/* #undef LINUXVGA */
+
+/* Define if this is an MSDOS system. */
+#define MSDOS 1
+
+/* Define if you want to read .gnuplot from current directory
+   (SECURITY RISK!). */
+/* #undef USE_CWDRC */
+
+/* Name of package */
+/* #undef PACKAGE */
+
+/* Define to the address where bug reports for this package should be sent. */
+/* #undef PACKAGE_BUGREPORT */
+
+/* Define to the full name of this package. */
+/* #undef PACKAGE_NAME */
+
+/* Define to the full name and version of this package. */
+/* #undef PACKAGE_STRING */
+
+/* Define to the one symbol short name of this package. */
+/* #undef PACKAGE_TARNAME */
+
+/* Define to the version of this package. */
+/* #undef PACKAGE_VERSION */
+
+/* Define if you do have the popen and pclose functions. */
+#define PIPES 1
+
+/* Unix-type of Interprocess Communication is required for mouse support. */
+/* #undef PIPE_IPC */
+
+/* Define to 1 if the C compiler supports function prototypes. */
+#define PROTOTYPES 1
+
+/* Define if you want to use the included readline function. */
+#define READLINE 1
+
+/* Define as the return type of signal handlers (`int' or `void'). */
+#define RETSIGTYPE void
+
+/* Define to the type of arg 1 for `select'. */
+#define SELECT_TYPE_ARG1 int
+
+/* Define to the type of args 2, 3 and 4 for `select'. */
+#define SELECT_TYPE_ARG234 (struct fd_set *)
+
+/* Define to the type of arg 5 for `select'. */
+#define SELECT_TYPE_ARG5 (struct timeval *)
+
+/* Define to 1 if the `S_IS*' macros in <sys/stat.h> do not work properly. */
+/* #undef STAT_MACROS_BROKEN */
+
+/* Define to 1 if you have the ANSI C header files. */
+#define STDC_HEADERS 1
+
+/* Define if you want to use the sunview terminal (sun). */
+/* #undef SUN */
+
+/* Define to use thin plate spines. */
+/* #undef THIN_PLATE_SPLINES_GRID */
+
+/* Define if the 3dkit libray is present. */
+/* #undef THREEDKIT */
+
+/* Define if you want to use the experimental ggi driver. */
+/* #undef USE_GGI_DRIVER */
+
+/* Define if you want to have mouse support in interactive terminals. */
+/* #undef USE_MOUSE */
+
+/* Define to enable multi-byte font support for x11 */
+/* #undef USE_X11_MULTIBYTE */
+
+/* Version number of package */
+/* #undef VERSION */
+
+/* Define if the vgagl libray is present. */
+/* #undef VGAGL */
+
+/* Define to allow zooming or refresh of volatile data. EXPERIMENTAL */
+#define VOLATILE_REFRESH 1
+
+/* Define if you want the wxwidgets terminal. */
+/* #undef WXWIDGETS */
+
+/* Define if you are using the X11 window system. */
+/* #undef X11 */
+
+/* Define to 1 if the X Window System is missing or not being used. */
+#define X_DISPLAY_MISSING 1
+
+/* Define like PROTOTYPES; this can be used by system headers. */
+/* #undef __PROTOTYPES */
+
+/* Define to empty if `const' does not conform to ANSI C. */
+/* #undef const */
+
+/* libgd versions < 1.8.4 need gdImageStringTTF rather than gdImageStringFT */
+/* #undef gdImageStringFT */
+
+/* Define to `__inline__' or `__inline' if that's what the C compiler
+   calls it, or to nothing if 'inline' is not supported under any name.  */
+/* #undef inline */
+
+/* Define to `int' if <sys/types.h> does not define. */
+/* #undef pid_t */
+
+/* Define to `unsigned' if <sys/types.h> does not define. */
+/* #undef size_t */
+
+/* Define as `fork' if `vfork' does not work. */
+/* #undef vfork */
+
+/*
+ * ==================================================
+ * Stuff not provided by config.hin (aka ./configure)
+ * ==================================================
+ */
+
+#define GP_INLINE inline
+
+#define NEAR

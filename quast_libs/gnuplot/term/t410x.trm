@@ -1,0 +1,328 @@
+/* Hello, Emacs, this is -*-C-*-
+ * $Id: t410x.trm,v 1.16 2006/07/21 02:35:48 sfeam Exp $
+ *
+ */
+
+/* GNUPLOT - t410x.trm */
+
+/*[
+ * Copyright 1990 - 1993, 1998, 2004
+ *
+ * Permission to use, copy, and distribute this software and its
+ * documentation for any purpose with or without fee is hereby granted,
+ * provided that the above copyright notice appear in all copies and
+ * that both that copyright notice and this permission notice appear
+ * in supporting documentation.
+ *
+ * Permission to modify the software is granted, but not the right to
+ * distribute the complete modified source code.  Modifications are to
+ * be distributed as patches to the released version.  Permission to
+ * distribute binaries produced by compiling modified sources is granted,
+ * provided you
+ *   1. distribute the corresponding source modifications from the
+ *    released version in the form of a patch file along with the binaries,
+ *   2. add special version identification to distinguish your version
+ *    in addition to the base release version number,
+ *   3. provide your name and address as the primary contact for the
+ *    support of your modified version, and
+ *   4. retain our contact information in regard to use of the base
+ *    software.
+ * Permission to distribute the released version of the source code along
+ * with corresponding source modifications in the form of a patch file is
+ * granted with same provisions 2 through 4 for binary distributions.
+ *
+ * This software is provided "as is" without express or implied warranty
+ * to the extent permitted by applicable law.
+]*/
+
+/*
+ * This file is included by ../term.c.
+ *
+ * This terminal driver supports: Tektronix 410x and 420x series terminals
+ *
+ * AUTHORS
+ *   Colin Kelley, Thomas Williams
+ *
+ * send your comments or suggestions to (gnuplot-info@lists.sourceforge.net).
+ *
+ */
+
+/* Tektronix 410X and 420X driver written by Cary D. Renzema.
+ * email address: caryr@mxim.com
+ *
+ * I've tested this driver on the following terminals: 4106, 4107A, 4109
+ * and 4207.  It should work, without editing, on other terminals in the
+ * 410x and 420x families.  It will probably need to be changed to work
+ * on a 4105 (screen size and character rotation are two guesses).  This
+ * file can also be used as a start for a 411x driver.
+ *
+ * Cary R.
+ * April 5, 1990
+ */
+
+/*
+ * adapted to the new terminal layout by Stefan Bodewig (Dec. 1995)
+ */
+
+#include "driver.h"
+
+#ifdef TERM_REGISTER
+register_term(tek410x)
+#endif
+
+#ifdef TERM_PROTO
+TERM_PUBLIC void T410X_init __PROTO((void));
+TERM_PUBLIC void T410X_reset __PROTO((void));
+TERM_PUBLIC void T410X_graphics __PROTO((void));
+TERM_PUBLIC void T410X_text __PROTO((void));
+TERM_PUBLIC void T410X_move __PROTO((unsigned int x, unsigned int y));
+TERM_PUBLIC void T410X_vector __PROTO((unsigned int x, unsigned int y));
+TERM_PUBLIC void T410X_point __PROTO((unsigned int x, unsigned int y, int number));
+TERM_PUBLIC void T410X_linetype __PROTO((int linetype));
+TERM_PUBLIC void T410X_put_text __PROTO((unsigned int x, unsigned int y, const char str[]));
+TERM_PUBLIC int T410X_text_angle __PROTO((int ang));
+#define T410XXMAX 4095
+#define T410XYMAX 3131
+
+#define T410XVCHAR	71
+#define T410XHCHAR	51
+#define T410XVTIC	36
+#define T410XHTIC	36
+#endif /* TERM_PROTO */
+
+#ifndef TERM_PROTO_ONLY
+#ifdef TERM_BODY
+static void T410X_encode_x_y __PROTO((unsigned int x, unsigned int y));
+static void T410X_encode_int __PROTO((int number));
+
+
+static int T410X_angle = 0;
+
+TERM_PUBLIC void
+T410X_init()
+{
+    fputs("\033%%!0\033MN0\033MCB7C;\033MQ1\033MT1", gpoutfile);
+    fputs("\033MG1\033RK!\033SK!\033LZ\033%%!1", gpoutfile);
+/*
+	 1. set tek mode
+	 2. set character path to 0 (characters placed equal to rotation)
+	 3. set character size to 59 height
+	 4. set character precision to string
+	 5. set character text index to 1
+	 6. set character write mode to overstrike
+	 7. clear the view
+	 8. clear the segments
+	 9. clear the dialog buffer
+	10. set ansi mode
+*/
+    (void) fflush(gpoutfile);
+}
+
+
+TERM_PUBLIC void
+T410X_reset()
+{
+    fputs("\033%%!0\033LZ\033%%!1", gpoutfile);
+/*
+	1. set tek mode
+	2. clear the dialog buffer
+	3. set ansi mode
+*/
+    (void) fflush(gpoutfile);
+}
+
+
+TERM_PUBLIC void
+T410X_graphics()
+{
+    fputs("\033%%!0\033\014\033LV0", gpoutfile);
+/*
+	1. set tek mode
+	2. clear the screen
+	3. set dialog area invisible
+*/
+    (void) fflush(gpoutfile);
+}
+
+TERM_PUBLIC void
+T410X_text()
+{
+    fputs("\033LV1\033%%!1", gpoutfile);
+/*
+	1. set dialog area visible
+	2. set ansi mode
+*/
+    (void) fflush(gpoutfile);
+}
+
+
+TERM_PUBLIC void
+T410X_move(unsigned int x, unsigned int y)
+{
+    fputs("\033LF", gpoutfile);
+
+    (void) T410X_encode_x_y(x, y);
+    (void) fflush(gpoutfile);
+}
+
+
+TERM_PUBLIC void
+T410X_vector(unsigned int x, unsigned int y)
+{
+    fputs("\033LG", gpoutfile);
+    (void) T410X_encode_x_y(x, y);
+    (void) fflush(gpoutfile);
+}
+
+
+TERM_PUBLIC void
+T410X_point(unsigned int x, unsigned int y, int number)
+{
+    fputs("\033MM", gpoutfile);
+    (void) T410X_encode_int(GPMAX(number, 0) % 11);
+    fputs("\033LH", gpoutfile);
+    (void) T410X_encode_x_y(x, y);
+    (void) fflush(gpoutfile);
+}
+
+
+TERM_PUBLIC void
+T410X_linetype(int linetype)
+{
+    if (linetype < -2)
+	linetype = LT_BLACK;
+
+    switch (linetype) {
+    case LT_AXIS:
+	fputs("\033ML5", gpoutfile);
+	break;
+    case LT_BLACK:
+	fputs("\033ML?", gpoutfile);
+	break;
+    default:
+	fputs("\033ML", gpoutfile);
+	(void) T410X_encode_int(linetype % 14 + 2);
+	break;
+    }
+    fputs("\033MV", gpoutfile);
+    (void) T410X_encode_int(GPMAX(linetype, 0) % 8);
+    (void) fflush(gpoutfile);
+}
+
+
+TERM_PUBLIC void
+T410X_put_text(unsigned int x, unsigned int y, const char str[])
+{
+
+    if (T410X_angle == 0) {
+	(void) T410X_move(x, y - T410XVCHAR / 2 + 6);
+	fputs("\033MR00", gpoutfile);
+    } else {
+	(void) T410X_move(x + T410XHCHAR / 2 - 6, y);
+	fputs("\033MRE:0", gpoutfile);
+    }
+    (void) fputs("\033LT", gpoutfile);
+    (void) T410X_encode_int(strlen(str));
+    (void) fputs(str, gpoutfile);
+    (void) fflush(gpoutfile);
+}
+
+TERM_PUBLIC int
+T410X_text_angle(int ang)
+{
+
+    T410X_angle = ang;
+    return (TRUE);
+}
+
+/* These last two routines are based on fortran code found in the
+ * 4106/4107/4109/CX PROGRAMMERS manual.
+ */
+
+static void
+T410X_encode_x_y(unsigned int x, unsigned int y)
+{
+    static char chix = 0, chiy = 0, cloy = 0, ceb = 0;
+
+    register unsigned int hix, lox, hiy, loy, eb, lx, ly;
+
+    lx = (x <= T410XXMAX) ? x : T410XXMAX;
+    ly = (y <= T410XYMAX) ? y : T410XYMAX;
+
+    hix = lx / 128 + 32;
+    lox = (lx / 4) % 32 + 64;
+    hiy = ly / 128 + 32;
+    loy = (ly / 4) % 32 + 96;
+    eb = (ly % 4) * 4 + lx % 4 + 96;
+
+    if (chiy != hiy)
+	(void) putc(hiy, gpoutfile);
+    if (ceb != eb)
+	(void) putc(eb, gpoutfile);
+    if ((cloy != loy) || (ceb != eb) || (chix != hix))
+	(void) putc(loy, gpoutfile);
+    if (chix != hix)
+	(void) putc(hix, gpoutfile);
+    (void) putc(lox, gpoutfile);
+
+    chix = hix;
+    chiy = hiy;
+    cloy = loy;
+    ceb = eb;
+}
+
+
+static void
+T410X_encode_int(int number)
+{
+    register unsigned int mag, hi1, hi2, lo;
+
+    mag = ABS(number);
+
+    hi1 = mag / 1024 + 64;
+    hi2 = (mag / 16) % 64 + 64;
+    lo = mag % 16 + 32;
+
+    if (number >= 0)
+	lo += 16;
+
+    if (hi1 != 64)
+	(void) putc(hi1, gpoutfile);
+    if ((hi2 != 64) || (hi1 != 64))
+	(void) putc(hi2, gpoutfile);
+    (void) putc(lo, gpoutfile);
+
+}
+
+#endif /* TERM_BODY */
+
+#ifdef TERM_TABLE
+
+TERM_TABLE_START(tek410x_driver)
+    "tek410x", "Tektronix 4106, 4107, 4109 and 420X terminals",
+    T410XXMAX, T410XYMAX, T410XVCHAR, T410XHCHAR,
+    T410XVTIC, T410XHTIC, options_null, T410X_init, T410X_reset,
+    T410X_text, null_scale, T410X_graphics, T410X_move, T410X_vector,
+    T410X_linetype, T410X_put_text, T410X_text_angle,
+    null_justify_text, T410X_point, do_arrow, set_font_null
+TERM_TABLE_END(tek410x_driver)
+
+#undef LAST_TERM
+#define LAST_TERM tek410x_driver
+
+#endif /* TERM_TABLE */
+#endif /* TERM_PROTO_ONLY */
+
+#ifdef TERM_HELP
+START_HELP(tek410x)
+"1 tek410x",
+"?commands set terminal tek410x",
+"?set terminal tek410x",
+"?set term tek410x",
+"?terminal tek410x",
+"?term tek410x",
+"?tek410x",
+" The `tek410x` terminal driver supports the 410x and 420x family of Tektronix",
+" terminals.  It has no options."
+END_HELP(tek410x)
+#endif

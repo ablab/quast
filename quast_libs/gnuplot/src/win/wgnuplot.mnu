@@ -1,0 +1,752 @@
+; Menu file for Windows gnuplot
+; Roger Hadgraft, 26-5-92
+; Russell Lang, 30 Nov 1992
+; Modified for 4.0, John Bollinger, 31 Dec 2002
+
+[Menu]
+&File
+	&Open ...
+		load '[OPEN]load[EOS]*.plt[EOS]'{ENTER}
+	&Save ...
+		save '[SAVE]save[EOS]*.plt[EOS]'{ENTER}
+	&Demos ...
+		load '[OPEN]load[EOS]*.dem[EOS]'{ENTER}
+	--
+	&Change Directory ...
+		cd '[DIRECTORY]New directory?[EOS]'{ENTER}
+	show Current &Directory
+		pwd{ENTER}
+	--
+	O&utput ...
+		set output "[INPUT]Output filename?[EOS]"{ENTER}
+	&Printer Output
+		set output "PRN"{ENTER}
+	&Window Output
+		 set output{ENTER}set terminal win{ENTER} 
+	Show Output
+		show output{ENTER}
+	Ou&tput Device ...
+		set terminal [INPUT]Terminal type?{ENTER}
+	Show Output Devices
+		set terminal{ENTER}show terminal{ENTER}
+	--
+	[Menu]
+	History
+		Previous command	^P
+			{^P}
+		Next command	^N
+			{^N}
+		--
+		Back one character	^B
+			{^B}
+		Forward one character	^F
+			{^F}
+		--
+		Beginning of the line	^A
+			{^A}
+		End of the line	^E
+			{^E}
+		--
+		Delete previous character	^H
+			{^H}
+		Delete current character	^D
+			{^D}
+		Delete last word	^W
+			{^W}
+		Delete to end of line	^K
+			{^K}
+		Delete entire line	^U
+			{^U}
+		--
+		Redraw the line	^L
+			{^L}
+		[EndMenu]
+		open DOS window
+			shell{ENTER}
+		run DOS command ...
+			![INPUT]DOS command?{ENTER}
+		--
+		E&xit
+		quit{ENTER}
+[EndMenu]
+
+[Menu]
+&Plot
+	Plot
+		plot 
+	3D Plot
+		splot 
+	Replot
+		replot{ENTER}
+	Clear device
+		clear{ENTER}
+	--
+	Simple Range
+		[[INPUT]Lower bound?[EOS]:[INPUT]Upper bound?[EOS]] [EOS]
+	Named Range
+		[[INPUT]Variable name?[EOS]=[INPUT]Lower bound?[EOS]:[INPUT]Upper bound?[EOS]] [EOS]
+	--
+	Data filename ...
+		'[OPEN]Open[EOS]*.dat[EOS]' [EOS]
+	using x,y columns
+		using [INPUT]X column?[EOS]:[INPUT]Y column?[EOS] [EOS]
+	using x,y,ydelta columns
+		using [INPUT]X column?[EOS]:[INPUT]Y column?[EOS]:[INPUT]Ydelta column?[EOS] [EOS]
+	using x,y,ylow,yhigh columns
+		using [INPUT]X column?[EOS]:[INPUT]Y column?[EOS]:[INPUT]Ylow column?[EOS]:[INPUT]Yhigh column?[EOS] [EOS]
+	--
+	[Menu]
+	with Style (simple)
+		Lines
+			with lines
+		Points
+			with points
+		Lines and Points
+			with linespoints
+		Impulses
+			with impulses
+		Dots
+			with dots
+		Steps
+			with steps
+		Fsteps
+			with fsteps
+		Histeps
+			with histeps		
+	[EndMenu]
+	[Menu]
+	with Style (compound)
+		Error Bars
+			with errorbars
+		X Error Bars
+			with xerrorbars
+		Y Error Bars
+			with yerrorbars
+		XY Error Bars
+			with xyerrorbars
+		Error Lines
+			with errorlines
+		X Error Lines
+			with xerrorlines
+		Y Error Lines
+			with yerrorlines
+		XY Error Lines
+			with xyerrorlines
+		Boxes
+			with boxes
+		Filled Curves
+			with filledcurves
+		Box Error Bars
+			with boxerrorbars
+		Box XY Error Bars
+			with boxxyerrorbars
+		Finance Bars
+			with financebars
+		Candlesticks
+			with candlesticks
+	[EndMenu]
+[EndMenu]
+
+[Menu]
+&Expressions
+	Evaluate
+		print 
+	Complex number ...
+		{[INPUT]Real part?[EOS],[INPUT]Imaginary part?[EOS]}
+	[Menu]
+	Unary
+		Minus	-a
+			-[INPUT]Arg
+		Plus	+a
+			+[INPUT]Arg
+		One's compliment	~a
+			~[INPUT]Arg
+		Logcial negation	!a
+			![INPUT]Arg
+		Factorial	a!
+			[INPUT]Arg[EOS]!
+	[EndMenu]
+	[Menu]
+	Binary
+		Exponentiation	**
+			**
+		Multiply	*
+			*
+		Divide	/
+			/
+		Add	+
+			+
+		Subtract	-
+			-
+		--
+		Modulo	%
+			%
+	[EndMenu]
+	[Menu]
+	Logical
+		Equality	==
+			==
+		Inequality	!=
+			!=
+		--
+		less than	<
+			<
+		less than or equal	<=
+			<=
+		greater than	>
+			>
+		greater than or equal	>=
+			>=
+		--
+		Bitwise AND	&
+			&
+		Bitwise exclusive OR	^
+			^
+		Bitwise inclusive OR	|
+			|
+		--
+		Logical AND	&&
+			&&
+		Logical OR	||
+			||
+		--
+		Ternary operator	a?b:c
+			[INPUT]First arg[EOS]?[INPUT]Second arg[EOS]:[INPUT]Third arg[EOS]
+	[EndMenu]
+[EndMenu]
+[Menu]
+Fu&nctions
+	[Menu]
+	Elementary
+		random number
+			rand([INPUT]Argument[EOS])
+		absolute value
+			abs([INPUT]Argument[EOS])
+		sign
+			sgn([INPUT]Argument[EOS])
+		--
+		ceiling
+			ceil([INPUT]Argument[EOS])
+		floor
+			floor([INPUT]Argument[EOS])
+		integer
+			int([INPUT]Argument[EOS])
+		--
+		square root
+			sqrt([INPUT]Argument[EOS])
+		exponent
+			exp([INPUT]Argument[EOS])
+		logarithm (e)
+			log([INPUT]Argument[EOS])
+		logarithm (10)
+			log10([INPUT]Argument[EOS])
+		--
+		cosine
+			cos([INPUT]Argument[EOS])
+		sine
+			sin([INPUT]Argument[EOS])
+		tangent
+			tan([INPUT]Argument[EOS])
+		--
+		arc cosine
+			acos([INPUT]Argument[EOS])
+		arc sine
+			asin([INPUT]Argument[EOS])
+		arc tangent
+			atan([INPUT]Argument[EOS])
+		arc tangent 2
+			atan2([INPUT]"y" argument[EOS],[INPUT]"x" argument[EOS])
+		--
+		hyperbolic cosine
+			cosh([INPUT]Argument[EOS])
+		hyperbolic sine
+			sinh([INPUT]Argument[EOS])
+		hyperbolic tangent
+			tanh([INPUT]Argument[EOS])
+		--
+		imaginary
+			imag([INPUT]Argument[EOS])
+		real
+			real([INPUT]Argument[EOS])
+		arg
+			arg([INPUT]Argument[EOS])
+	[EndMenu]
+	[Menu]
+	Special
+		error 
+			erf([INPUT]Argument[EOS])
+		error c
+			erfc([INPUT]Argument[EOS])
+		inv error
+			inverf([INPUT]Argument[EOS])
+		--
+		gamma
+			gamma([INPUT]Argument[EOS])
+		igamma
+			igamma([INPUT]First argument[EOS],[INPUT]Second argument[EOS])
+		lgamma
+			lgamma([INPUT]Argument[EOS])
+		--
+		ibeta
+			ibeta([INPUT]First argument[EOS],[INPUT]Second argument[EOS],[INPUT]Third argument[EOS])
+		--
+		bessel j0
+			besj0([INPUT]Argument[EOS])
+		bessel j1
+			besj1([INPUT]Argument[EOS])
+		bessel y0
+			besy0([INPUT]Argument[EOS])
+		bessel y1
+			besy1([INPUT]Argument[EOS])
+		--
+		lambertw
+			lambertw([INPUT]Argument[EOS])
+
+	[EndMenu]
+	[Menu]
+	Statistical
+		normal
+			norm([INPUT]Argument[EOS])
+		inverse normal
+			invnorm([INPUT]Argument[EOS])
+	[EndMenu]
+	--
+	Define User Function ...
+		[INPUT]Name for function?[EOS][INPUT]Variable/s, eg. (a,b) ?[EOS]=
+	Show User Functions
+		show functions{ENTER}
+	--
+	Define User Variable ...
+		[INPUT]Name for variable?[EOS]=[INPUT]Value, eg. 9.81 ?{ENTER}
+	Show User Variables
+		show variables{ENTER}
+	--
+	x Dummy variable
+		set dummy [INPUT]Variable name?{ENTER}
+	x,y Dummy variables
+		set dummy [INPUT]Variable names (eg. u,v)?{ENTER}
+	Show Dummy variables
+		show dummy{ENTER}
+[EndMenu]
+
+[Menu]
+&General
+	Border on
+		set border{ENTER}
+	Border off
+		unset border{ENTER}
+	Show Border
+		show border{ENTER}
+	--
+	Box width
+		set boxwidth [INPUT]Box Width?{ENTER}
+	Auto Box Width
+		set boxwidth{ENTER}
+	Show Box width
+		show boxwidth{ENTER}
+	--
+	Show Line Types
+		test{ENTER}
+	--
+	[Menu]
+	Parametric
+		Set Parametric
+			set parametric{ENTER}
+		Not Parametric
+			unset parametric{ENTER}
+		Show Parametric
+			show parametric{ENTER}
+		--
+		t Range
+			set trange [[INPUT]Lower bound?[EOS]:[INPUT]Upper bound?[EOS]]{ENTER}
+		u Range
+			set urange [[INPUT]Lower bound?[EOS]:[INPUT]Upper bound?[EOS]]{ENTER}
+		v Range
+			set vrange [[INPUT]Lower bound?[EOS]:[INPUT]Upper bound?[EOS]]{ENTER}
+	[EndMenu]
+	--
+	[Menu]
+	Clipping
+	Clip near points
+		set clip points{ENTER}
+	Clip one point
+		set clip one{ENTER}
+	Clip two points
+		set clip two{ENTER}
+	No Clipping
+		unset clip{ENTER}
+	Show Clip type
+		show clip{ENTER}
+	[EndMenu]
+	--
+	[Menu]
+	Polar
+	Polar
+		set polar{ENTER}
+	Not Polar
+		unset polar{ENTER}
+	Show Polar
+		show polar{ENTER}
+	Radial Range
+		set rrange [[INPUT]Lower bound?[EOS]:[INPUT]Upper bound?[EOS]]{ENTER}
+	Angles in Degrees
+		set angles degrees{ENTER}
+	Angles in Radians
+		set angles radians{ENTER}
+	Show Angle units
+		show angles{ENTER}
+	[EndMenu]
+	--
+	Set Plot Size
+		set size [INPUT]Xscale?[EOS],[INPUT]Yscale?{ENTER}
+	Show Plot Size
+		show size{ENTER}
+	--
+	Sampling Rate
+		set sample [INPUT]Sampling rate (default=100)?{ENTER}
+	Show Sampling Rate
+		show sample{ENTER}
+[EndMenu]
+
+[Menu]
+&Axes
+	Autoscale xy
+		set autoscale [INPUT]Which axes (eg. xy)?{ENTER}
+	No Autoscale xy
+		unset autoscale [INPUT]Which axes (eg. xy)?{ENTER}
+	Show Autoscale
+		show autoscale{ENTER}
+	--
+	Logscale xyz
+		set logscale [INPUT]Which axes (eg. xy)?{ENTER}
+	No Logscale xyz
+		unset logscale [INPUT]Which axes (eg. xy)?{ENTER}
+	Show Logscale
+		show logscale{ENTER}
+	--
+	[Menu]
+	Tics
+		Tic format string
+			set format [INPUT]Axes?[EOS] "[INPUT]Format string?[EOS]"{ENTER}
+		Tic marks format
+			show format{ENTER}
+		--
+		Inward facing tics (default)
+			set tics in{ENTER}
+		Outward facing tics
+			set tics out{ENTER}
+		Show tics
+			show tics{ENTER}
+		--
+		Tics level
+			set ticslevel [INPUT]Level (default=0.5)?{ENTER}
+		--
+		Tic interval
+			set [INPUT]Axis: x, y or z ?[EOS]tics [INPUT]Start, Increment, End (eg. 0,0.5,10) ?{ENTER}
+		--
+		Tic labels start
+			set [INPUT]Axis: x, y or z ?[EOS]tics ("[INPUT]Label text?[EOS]" [INPUT]Position?[EOS]
+		another Tic label
+			,"[INPUT]Label text?[EOS]" [INPUT]Position?[EOS]
+		Tic labels finish
+			){ENTER}
+	[EndMenu]
+	--
+	X Range
+		set xrange [[INPUT]Lower bound?[EOS]:[INPUT]Upper bound?[EOS]]{ENTER}
+	Y Range
+		set yrange [[INPUT]Lower bound?[EOS]:[INPUT]Upper bound?[EOS]]{ENTER}
+	Z Range
+		set zrange [[INPUT]Lower bound?[EOS]:[INPUT]Upper bound?[EOS]]{ENTER}
+	--
+	X Label
+		set xlabel "[INPUT]Label text?[EOS]" [INPUT]X offset, Y offset (eg. 2,3) ?{ENTER}
+	Y Label
+		set ylabel "[INPUT]Label text?[EOS]" [INPUT]X offset, Y offset (eg. 2,3) ?{ENTER}
+	Z Label
+		set zlabel "[INPUT]Label text?[EOS]" [INPUT]X offset, Y offset (eg. 2,3) ?{ENTER}
+	Show axis Labels
+		show xlabel{ENTER}show ylabel{ENTER}show zlabel{ENTER}
+	--
+	No X zero axis
+		unset xzeroaxis{ENTER}
+	No Y zero axis
+		unset yzeroaxis{ENTER}
+	X,Y zero axes on
+		set zeroaxis{ENTER}
+	Show zero axis status
+		show zeroaxis{ENTER}
+[EndMenu]
+
+[Menu]
+&Chart
+	Grid on
+		set grid{ENTER}
+	Grid off
+		unset grid{ENTER}
+	Show Grid
+		show grid{ENTER}
+	--
+	Add Arrow
+		set arrow [INPUT]Tag (1-99)?[EOS] from [INPUT]From coordinate?[EOS] to [INPUT]To coordinate?{ENTER}
+	Remove arrow
+		unset arrow [INPUT]Tag (1-99)?{ENTER}
+	Show Arrows
+		show arrow{ENTER}
+	--
+	Add Label
+		set label [INPUT]Tag?[EOS] "[INPUT]Label?[EOS]" at [INPUT]Coordinate?[EOS] [INPUT]Justification (l,c,r)?{ENTER}
+	Remove Label
+		unset label [INPUT]Tag?{ENTER}
+	Show Labels
+		show label{ENTER}
+	--
+	Set Title
+		set title "[INPUT]Title text?[EOS]" [INPUT]X position, Y position (eg. 2,4)?{ENTER}
+	Show Title
+		show title{ENTER}
+	--
+	Key (legend) position
+		set key [INPUT]Key position?{ENTER}
+	Default Key position
+		set key{ENTER}
+	No Key
+		unset key{ENTER}
+	Show Key position
+		show key{ENTER}
+	--
+	Offsets
+		set offsets [INPUT]Offsets left,right,top,bottom ?{ENTER}
+	Show Offsets
+		show offsets{ENTER}
+	--
+	Time location
+		set time [INPUT]Location (eg. 1,1)?{ENTER}
+	No Time
+		unset time{ENTER}
+	Show Time Location
+		show time{ENTER}
+[EndMenu]
+
+[Menu]
+&Styles
+	[Menu]
+	Data Style
+	Lines
+		set style data lines{ENTER}
+	Points
+		set style data points{ENTER}
+	Lines + Points
+		set style data linespoints{ENTER}
+	Dots
+		set style data dots{ENTER}
+	Impulses
+		set style data impulses{ENTER}
+	--
+	Error Bars
+		set style data errorbars{ENTER}
+	Boxes
+		set style data boxes{ENTER}
+	Box Error Bars
+		set style data boxerrorbars{ENTER}
+	--
+	Candlesticks
+		set style data candlesticks{ENTER}
+	Finance Bars
+		set style data financebars{ENTER}
+	[EndMenu]
+	Show Data Style
+		show style data{ENTER}
+	Clear Data Style
+		unset style data{ENTER}
+	--
+	[Menu]
+	Function Style
+	Lines
+		set style function lines{ENTER}
+	Points
+		set style function points{ENTER}
+	Lines + Points
+		set style function linespoints{ENTER}
+	Dots
+		set style function dots{ENTER}
+	Impulses
+		set style function impulses{ENTER}
+	--
+	Error Bars
+		set style function errorbars{ENTER}
+	Boxes
+		set style function boxes{ENTER}
+	Box Error Bars
+		set style function boxerrorbars{ENTER}
+	--
+	Candlesticks
+		set style function candlesticks{ENTER}
+	Finance Bars
+		set style function financebars{ENTER}
+	[EndMenu]
+	Show Function Style
+		show style function{ENTER}
+	Clear Function Style
+		unset style function{ENTER}
+	--
+	[Menu]
+	Arrow Style
+	Head
+		set style arrow [INPUT]Arrow number?[EOS] head{ENTER}
+	Heads
+		set style arrow [INPUT]Arrow number?[EOS] heads{ENTER}
+	No Heads
+		set style arrow [INPUT]Arrow number?[EOS] nohead{ENTER}
+	[EndMenu]
+	Show Arrow Style
+		show style arrow [INPUT]Arrow number? {ENTER}
+	Clear Arrow Style
+		unset style arrow [INPUT]Arrow number? {ENTER}
+	--
+	[Menu]
+	Fill Style
+	Empty
+		set style fill empty{ENTER}
+	Solid
+		set style fill solid [INPUT]Density?{ENTER}
+	Pattern
+		set style fill pattern [INPUT]Pattern number?{ENTER}
+	Border
+		set style fill border [INPUT]Line Type?{ENTER}
+	No Border
+		set style fill noborder{ENTER}
+	[EndMenu]
+	Show Fill Style
+		show style fill{ENTER}
+	Clear Fill Style
+		unset style fill{ENTER}
+	--
+	[Menu]
+	Line Style
+	Line Type
+		set style linetype [INPUT]Line Type?{ENTER}
+	Line Width
+		set style linewidth [INPUT]Line Width?{ENTER}
+	Point Type
+		set style pointtype [INPUT]Point Type?{ENTER}
+	Point Size
+		set style pointsize [INPUT]Point Size?{ENTER}
+;	Palette
+;		set style line{ENTER}
+	[EndMenu]
+	Show Line Style
+		show style line{ENTER}
+	Clear Line Style
+		unset style line{ENTER}
+[EndMenu]
+
+[Menu]
+&3D
+	[Menu]
+	Contours
+		Linear Contours
+			set cntrparam linear{ENTER}
+		Cubic Spline Contours
+			set cntrparam cubicspline{ENTER}
+		B-spline Contours
+			set cntrparam bspline{ENTER}
+		Number of Contours
+			set cntrparam levels [INPUT]How many contours?{ENTER}
+		Points for Contours
+			set cntrparam points [INPUT]How many points for the contours?{ENTER}
+		Order of B-splines
+			set cntrparam order [INPUT]Order of B-splines (2-10)?{ENTER}
+		--
+		Contours on Base
+			set contour base{ENTER}
+		Contours on Surfaces
+			set contour surface{ENTER}
+		Contours on Both
+			set contour both{ENTER}
+		No Contours
+			unset contour{ENTER}
+		Show Contour
+			show contour{ENTER}
+		--
+		Number of Isosamples
+			set isosamples [INPUT]Number of isosamples?{ENTER}
+		Show Isosamples
+			show isosamples{ENTER}
+	[EndMenu]
+	--
+	Cartesian Mapping
+		set mapping cartesian{ENTER}
+	Spherical Mapping
+		set mapping spherical{ENTER}
+	Cylindrical Mapping
+		set mapping cylindrical{ENTER}
+	Show Mapping
+		show mapping{ENTER}
+	--
+	Hidden line removal
+		set hidden3d{ENTER}
+	No Hidden line removal
+		unset hidden3d{ENTER}
+	Show Hidden line removal
+		show hidden3d{ENTER}
+	--
+	Display Surface mesh
+		set surface{ENTER}
+	No Surface mesh
+		unset surface{ENTER}
+	Show Surface status
+		show surface{ENTER}
+	--
+	Set View
+		set view [INPUT]X rotation (degrees)?[EOS],[INPUT]Z rotation?[EOS],[INPUT]Scale?[EOS],[INPUT]Z scale?{ENTER}
+	Show View
+		show view{ENTER}
+[EndMenu]
+
+[Menu]
+&Help
+	&Index
+		help{ENTER}
+	Introduction
+		help introduction{ENTER}
+	&Topic
+		help [INPUT]Help Topic?{ENTER}
+	&Windows
+		help windows{ENTER}
+	--
+	&About
+		[ABOUT]
+[EndMenu]
+
+; now some buttons
+;   a number after a semicolon in the title string is interpreted as icon index
+;   see the article "Toolbar Standard Button Image Index Values" on MSDN
+;   http://msdn.microsoft.com/en-us/library/bb760433%28v=vs.85%29.aspx
+[Button]
+	Replot;4
+		replot{ENTER}
+[Button]
+	Open;7
+		load '[OPEN]load[EOS]*.plt[EOS]'{ENTER}
+[Button]
+	Save;8
+		save '[SAVE]save[EOS]*.plt[EOS]'{ENTER}
+[Button]
+	ChDir;31
+		cd '[DIRECTORY]New directory?[EOS]'{ENTER}
+[Button]
+	Print;14
+		set terminal [INPUT]Terminal type?{ENTER}set output "PRN"{ENTER}replot{ENTER}set terminal win{ENTER}set output{ENTER}
+[Button]
+	PrtSc;14
+		screendump{ENTER}
+[Button]
+	Prev;15
+		{^P}
+[Button]
+	Next;16
+		{^N}
+[Button]
+	Options;10
+		[OPTIONS]

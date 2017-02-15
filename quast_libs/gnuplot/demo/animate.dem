@@ -1,0 +1,36 @@
+#
+# $Id: animate.dem,v 1.7 2006/01/07 23:21:02 sfeam Exp $
+#
+# Demo animation, tumbling around 'glass.dat'.
+#
+# History:
+#   - 1. 1. 2006 Dan Sebald:  Defined variables for more generic rotate
+#   - ?. ?. ?    Hans-Bernhard Broeker:  Changed from rotating whale to
+#                rotating glass
+#   - ?. ?. ?    ?:  Initial tumbling whale demo
+
+set parametric
+set hidden3d
+unset key
+set style data line
+xrot=60
+xrot_delta = 17
+zrot=0
+zrot_delta = 10
+xview(xrot)=(50.+30.*sin((xrot%180)/180.*pi))
+zview(zrot)=(60.+45.*sin(zrot/180.*pi))
+set view xview(xrot),zview(zrot)
+splot "glass.dat"
+
+limit_iterations=40 # limits number of iterations if nonzero
+
+if (!limit_iterations) print "The following animation will never stop on its own. You have"
+if (!limit_iterations) print "to stop it manually by interrupting gnuplot (e.g., press ^C)"
+print "On some screen terminal drivers for PC screens, you'll have"
+print "to hit a key to get to the next frame"
+
+pause -1 "Press a key to start the rotation..."
+
+iteration_count=0
+load "gnuplot.rot"
+reset

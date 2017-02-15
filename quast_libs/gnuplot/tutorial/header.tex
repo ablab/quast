@@ -1,0 +1,93 @@
+% 
+% Header file for tutorial.tex
+%
+
+% Spacing
+\newcommand{\singlespace}
+  {\addtolength{\baselineskip}{-.333\baselineskip}}
+\newcommand{\doublespace}
+  {\addtolength{\baselineskip}{.5\baselineskip}}
+
+% Spacing for the whole document 
+\newcommand{\currentspace}{} % use this for single space
+% \newcommand{\currentspace}{\doubleespace} % use this for double space
+
+% Common abbreviations
+% (Remember to put '\ ' after if an interword space is
+%  desired rather than end-of-sentence space. Same for '.etc)' ).
+\newcommand{\eg}{{\em e.g.}}		% e.g.
+\newcommand{\ie}{{\em i.e.}}		% i.e.
+\newcommand{\etc}{{\em etc.}}		% etc.
+\newcommand{\vs}{{\em vs.}}		% vs.
+\newcommand{\usec}{{$\mu$}sec}	% microseconds
+
+% \boxfigure{pos}{wid}{text}:  A figure with a box around it
+%
+% pos	the usual figure placement arg: eg. htbp
+% wid	the width of the figure, in some units: eg. 5in
+% text	the contents of the figure, including picture/caption/label/etc
+%
+\newlength{\boxwidth}
+\newcommand{\boxfigure}[3]{
+	\begin{figure}[#1]
+		\setlength{\boxwidth}{#2}
+		\addtolength{\boxwidth}{.1in}
+
+		\centering
+		\framebox[\boxwidth]{
+			\begin{minipage}{#2}
+			#3
+			\end{minipage}
+		}
+	\end{figure}  
+}
+
+% use \fullboxwidth for arg 2 of boxfigure to get box of size \textwidth
+
+% To show a syntax for a gnutex command
+\newenvironment{syntax}{\begin{quote}\tt}{\end{quote}}
+
+\ifx\LaTeXe\undefined
+% old LaTeX version
+% add `,a4' to `toc_entry' to load settings for A4-paper
+% see below if you add 11pt or 12pt
+\documentstyle[titlepage,a4]{article}
+\else
+% LaTeX2e version
+% add `[a4paper]' before `{article}' to load settings for A4-paper
+% see below if you add 11pt or 12pt
+\documentclass[titlepage,a4paper]{article} % DSL 24 May 1995
+\usepackage{latexsym}
+\usepackage{amssymb}
+% If you are concerned about
+% LaTeX Warning: \oval, \circle, or \line size unavailable on input line
+% warnings, uncomment one of the following lines. You'll need to create
+% tutorial.ps then.
+%\usepackage{eepic}
+%\usepackage{pspicture}
+\fi
+
+% Other packages
+\usepackage{url}
+\usepackage{subfigure}
+
+% Only needed for epslatex driver
+\usepackage{graphicx}
+\usepackage{color}
+
+% Only needed for the tikz driver
+% \usepackage{gnuplot-lua-tikz}
+
+% Margins
+\sloppy
+\setlength{\textwidth}{6.5in}
+\setlength{\textheight}{9in}
+\setlength{\topmargin}{-0.5in}
+\setlength{\oddsidemargin}{0pt}
+\setlength{\evensidemargin}{0pt}
+
+% see above
+\newlength{\fullboxwidth}
+\setlength{\fullboxwidth}{\textwidth}
+\addtolength{\fullboxwidth}{-0.1in}
+

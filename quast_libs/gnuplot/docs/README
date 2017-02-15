@@ -1,0 +1,310 @@
+Notes on the gnuplot help files and documentation.
+--------------------------------------------------
+
+Gnuplot documentation is available in three ways:
+
+1 - interactively, within gnuplot
+2 - as a printed document. 
+3 - as a manual page, through the Unix man(1) facility
+
+The third form tells how to run gnuplot.
+
+The first two forms describe the inner workings, and contain equivalent
+information.  They derive their information from the file "gnuplot.doc",
+which is the master copy of gnuplot help information.  All other forms,
+except for the man page "gnuplot.1", are derived from it. 
+
+PostScript, PDF, or HTML versions of the manual can be created from the TeX 
+version if you have latex, pdflatex, and htlatex available, respectively.
+
+gnuplot.doc -> gnuplot.gih 
+            -> gnuplot.hlp
+            -> gnuplot.info
+            -> gnuplot.ipf
+            -> gnuplot.ms
+            -> gnuplot.rnh
+            -> gnuplot.rtf
+            -> wgnuplot.html
+            -> gnuplot.tex
+    	   	  	 	    		
+On Unix and MSDOS the interactive help is built into the
+program, and uses the file "gnuplot.gih" ('make gih').
+
+On VMS, the interactive help is supplied by the system help facility,
+using the file "gnuplot.hlp".  This is built by default, either by 
+doc2hlp, or doc2rnh and RUNOFF which format gnuplot.doc for the VMS
+HELP indenting conventions.  The help file is placed in a help library, 
+"gnuplot.hlb" but it may be also be placed in one of the system-wide 
+help libraries, using lib/help ('help lib').  If VMS users prefer the 
+gnuplot interactive help facility to the system facility, this can be 
+easily changed by not defining NO_GIH.
+
+The PDF and HTML versions of the gnuplot manual can include hyperlinks to
+demonstration plots.  There is a special makefile target "make pdffigures"
+to generate and include sample plots directly in the manual itself.
+
+Under EMACS, interactive help uses the file "gnuplot.info" ('make info').
+
+On OS/2, the Information Presentation Facility Compiler converts the
+file "gnuplot.ipf" to a "gnuplot.inf" file.
+
+The printed document is available in troff/nroff (ms) format, using
+the file "gnuplot.ms".  For nroff, use 'make nroff'. For troff, type
+'make ms' and then 'troff -ms gnuplot.ms' in whatever way you use troff.
+For groff (on linux), use  'groff -t -e -mgs gnuplot.ms'
+
+On MS-Windows, the Microsoft HTML help compiler converts the file
+"wgnuplot.html" to a 'chm' file which is used by the standard Windows
+help program. Hyperlinks and sample plots are included. Alternatively,
+the Microsoft help compiler converts the file "gnuplot.rtf" to a 'hlp'
+file.
+
+Manual entries for the terminals are not included in "gnuplot.doc";
+instead, each "driver.trm" file (in the directory /term) contains its
+own documentation section.  See "term/README" for details.
+
+When you build gnuplot, only some of the terminal drivers are loaded;
+these are selected in "term.h" by compiler directives specified in the
+makefile.  The interactive help generators use the same set of compiler
+directives in "term.h", and thus interactive help contains information
+for just those terminals actually loaded.
+
+The printed manual generators and the html generator contain information
+about all terminals.  This is accomplished by concatenating all of the
+".trm" files into a single one, "allterm.h".
+
+The file "termdoc.c" is used by each of the nine processing programs
+("doc2gih.c", etc.); it #includes either "term.h" or "allterm.h", as is
+appropriate.  If you wish to override the default decision about which
+terminals are to appear in the documentation, edit the appropriate target
+in the Makefile and add/remove -DALL_TERM_DOC to/from the compiler flags.
+
+
+Description of the gnuplot.doc format:
+--------------------------------------
+
+Here is an example of the DOC master help format:
+
+?
+1 gnuplot
+ GNUPLOT is a command-driven interactive function plotting program.  It
+ ...
+?exit
+2 exit
+ 'exit', 'quit' and ...
+?expressions
+2 expressions
+ In general, any mathematical expression accepted by C, ...
+
+ Topics:
+ functions operators
+?expressions functions
+?functions
+3 functions
+ The functions in GNUPLOT are ...
+
+ Topics:
+ abs acos arg ...
+?expressions functions abs
+?functions abs
+?abs
+4 abs
+ This function returns the absolute value of its argument.  The
+ returned value is of the same type as the argument. 
+?expressions functions acos
+?functions acos
+?acos
+4 acos
+ This function returns the arc cosine (inverse cosine) of its
+ argument.  'acos' returns its argument in radians. 
+
+
+Some notes about the format:
+----------------------------
+Remember that all text must be able to be processed by gnuplot, VMS,
+ nroff, troff, info, itl, and latex, and always do something reasonable. 
+The first column is reserved for control characters.
+Text does not start in the first column.
+Lines that start in column 2 may be typeset by LaTeX.
+Lines that have a space in column 2 are to be printed in a verbatim
+ environment by LaTeX.
+Tables must have a space in column 2.
+Do NOT use tabs in the help file.
+Conversion from this format to vax .hlp file involves removal of
+ lines starting with [?@#$%] (see doc2hlp). VMS uses the numbers
+ to represent a tree. 
+Conversion from this format to gnuplot .gih file involves removal of
+ lines starting with [0-9@#$%] (see doc2gih). Gnuplot matches your
+ help query against the ? lines to find the help information.
+ Multiple ? lines for one text block constitute synonyms. The most
+ specific should be first, eg 'expressions functions' before 'functions'.
+ Spaces are allowed here, but should be single.
+Backquote pairs are converted by the doc2tex program into boldface;
+ that is, `some text` is converted to {\bf some text}. Be sure to pair
+ the backquotes, or the whole document will be boldface! doc2ms converts
+ `` pairs to \fB...\fR, except inside tables : for the moment, this
+ has to be done manually on the lines starting %, but we ought to
+ find some way to allow tables to be entered just the once !
+
+Control characters in first column:
+?    used by .gih format, for builtin interactive help - keyword
+0-9  used by VMS help and by doc2{tex,ms,html} formatters to define level,keyword
+@    used by doc2{tex,ms,rnh} to define table start/end
+#    used by doc2tex: table entry
+=    used by doc2tex: index entry
+F    used by doc2{tex,html}: embedded figure (followed by base name of the pdf file)
+%    used by doc2ms: table entry
+^    used by doc2{tex,html}: hypertext link / HTML code
+<    the help from the terminal driver files is inserted at this point.
+C    comment (mainly for RCS ID line)
+C#   reserved form of comment (used internally by termdoc.c)
+
+
+Tables:
+-------
+
+Here is a sample table:
+
+@start table - first is interactive cleartext form
+     Symbol       Example      Explanation
+       ?:          a?b:c     ternary operation
+#\begin{tabular}{|ccl|} \hline
+#\multicolumn{3}{|c|}{Ternary Operator} \\
+#Symbol & Example & Explanation \\ \hline
+#\verb~?:~ & \verb~a?b:c~ & ternary operation\\
+%c c l .
+%Symbol@Example@Explanation
+%_
+%?:@a?b:c@* ternary operation
+
+@end table
+
+"doc2tex" and "doc2ms" are the formats that do something with tables
+other than copy them verbatim.  It is best to bracket a table in a
+"@start table"/"@end table" pair.
+
+Inside the "@start"/"@end" block are three independent sets of commands:
+those that begin with "#" will be processed by "doc2tex" only, those
+that begin with "%" will be processed by "doc2ms" only, and all others
+will be copied verbatim by all other "doc2"s.  So the commands may be
+shuffled together, as long as the order of each of the three sets is
+unchanged.  That is, the example could be written this way without any
+effect on the result:
+
+@start table - first is interactive cleartext form
+#\begin{tabular}{|ccl|} \hline
+%c c l .
+#\multicolumn{3}{|c|}{Ternary Operator} \\
+%Symbol@Example@Explanation
+     Symbol       Example      Explanation
+#Symbol & Example & Explanation \\ \hline
+%_
+       ?:          a?b:c     ternary operation
+#\verb~?:~ & \verb~a?b:c~ & ternary operation\\
+%?:@a?b:c@* ternary operation
+
+@end table
+
+In LaTeX, the command "\begin{tabular}{|ccl|} \hline" creates a
+three-column table having the first two columns centered, the third column
+left-justified, a vertical line at each side, and a horizontal line drawn
+first.  Thus the table will be enclosed in a box ("doc2tex" provides the
+closing "\hline").  A double-backslash is a line skip.  In the table
+entries themselves, the ampersand is the column separator.  If any LaTeX
+special characters are in the table, they must be written within "\verb"
+constructs, as is the case with the question mark in the example.
+
+In nroff, the command "c c l ." creates a three-column table justified
+the same way as the LaTeX table discussed above.  The ampersand is the
+column separator.
+
+
+Rules for stylistic consistency (courtesy Jens Emmerich):
+---------------------------------------------------------
+
+0. General
+
+   * Use your brain -- the reader has one, too (at least in theory).
+
+   * Format according to the logical structure, not according to
+     visual charm.
+
+   * Keep things short.  Don't split lines without a good reason.  Many
+     people still use 24 line terminals/screens.  Backslashify lines
+     only in code examples.
+
+
+1. Verbatim lines: start column and line length 
+
+   * Verbatim text starts in column 8 (7 spaces before the text).  The
+     reason is that "Syntax:" is 7 and "Examples:" is 9 characters
+     wide.  Adding the space in column 1 we have 1 resp. 3 characters
+     "overlap" in the online text versions, which is still easy to
+     read as all commands are at least 3 characters long.  This does
+     not apply to the "interactive clear text form"-tables.
+
+   * The rightmost used column is column 73 (counting from 1).  This
+     allows LaTeX formatted documents with only slightly wider text
+     than default, which adds to readability.
+
+2. Line spacing
+
+   * An empty line goes before "Syntax:" and "Example:", but not after
+     them.  Without these keywords, add an empty line before verbatim
+     lines if they are not embedded in a sentence.
+
+   * Leave blank lines within verbatim environments only if it is
+     really needed for clarity.
+
+   * Verbatim environments are separated from the following text by a
+     blank line, but not if they are embedded in a sentence.
+
+   * Short explanations within examples can be embedded within
+     comments if they are really short, otherwise use "normal" text
+     (beginning at column 2) and leave no blank lines between the text
+     and the example.
+
+3. Spaces around braces 
+
+   * In general don't put a space after an opening "{" or before a
+     closing brace "}".  This makes everything wider and harder to
+     spot.
+
+   * Do insert a space in the following situations:
+     
+     - where it adds clarity to nesting levels >=3 of braces; usually
+       only one brace for the outermost brace on a particular line 
+       (see 'set grid')
+     
+     - on multiple line optional constructs (see 'set xtics')
+
+   * Separate multiple optional constructs by a space.
+
+   * Don't separate them if they belong together. (see 'set title')
+
+   * Do separate them if they belong together but require a space in
+     between (see 'set ticscale').
+
+   * Part of these rules are really a consequence of gnuplot's
+     inconsistent syntax.
+
+4. Placing and spaces around "|"
+
+   * Place a space before and after the "|".  Otherwise the
+     alternatives tend to optically 'melt' and they are harder to
+     read. 
+
+   * Keep or-expressions on one line, if possible.
+
+   * On multi-line expressions place the "|" at the beginning of the
+     next line rather than the end of the first.  This makes it easier
+     to see that the expression continues.  Align the first components;
+     this requires indenting the first line a bit further (see 'set
+     cntrparam').
+ 
+5. Comma-separated optional argument lists
+
+   * Place the space before the opening brace rather within the braces
+     after the comma (as one normally does) (see 'set isosamples').
+
+

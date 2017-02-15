@@ -1,0 +1,460 @@
+#
+# $Id: makefile.os2,v 1.55.2.1 2014/12/28 12:57:39 markisch Exp $
+#
+# GNUPLOT Makefile for use on OS/2 2.x (and above)
+# using emx 0.9 (and above) and GNU make
+#
+# To compile gnuplot, run the following command in directory gnuplot\src:
+#	make -f ..\config\makefile.os2
+#
+
+# The following tools and libraries are recommended/required to use this
+# makefile out of the box:
+#	- GNU make, e.g. http://hobbes.nmsu.edu/pub/os2/dev/util/make-3.81beta3-r2-bin.zip
+#	- IPFC included in the OS/2 developer kit
+#	- emtex is only required for some parts of the documentation
+#
+#	- GD library, http://hobbes.nmsu.edu/pub/os2/util/gd-2-0-33.zip
+#	- GNU readline, http://os2ports.com/ftp/pub/os2/unix/devtools/readline/readline4.1-os2.zip
+#	- PDFlib Lite 6.0 or later compiled for emx (available as source from http://www.pdflib.com/ )
+#	- XFree86 libraries, ftp://ftp.netlabs.org/pub/xfree86/4.5.0
+
+# We depend on using cmd.exe (or a compatible one) and the
+# standard OS/2 tool set. (additionally we use 'cat')
+SHELL=cmd.exe
+
+#
+# ***************** Begin of Configuration section ***************************
+#
+
+#
+# Comment out the definition lines to disable the according features:
+#
+
+# X11 driver
+# requires installed XFree86
+X11=1
+
+# GIF, PNG, JPEG device drivers
+# Requires gd library (not part of gnuplot)
+#
+# You can use the following set of options for GD library v2.0 something
+# or newer. This library writes PNG, JPEG and GIF images.
+# If libgd has been compiled with TrueType font support, then you can use
+# scaled TrueType fonts in PNG images. If not, then uncomment FREETYPE.
+# The pre-compiled GD library by Ilya Zakharevich available at 
+# http://hobbes.nmsu.edu/pub/os2/util/gd-2-0-33.zip
+# is strongly recommended. This packages already includes the required
+# GD, JPEG and Z and freetype libraries.
+GD=1
+PNG=1
+GIF=1
+JPEG=1
+FREETYPE=1
+
+# PDF device driver
+# requires PDFlib (not part of gnuplot)
+PDF=1
+
+# VESAkit support
+# requires SVGA- and VESA Kit (not part of gnuplot)
+# VESA=1
+
+# GNU_ReadLine support
+# requires GNU readline library (static or DLL; not part of gnuplot)
+# GNU_RL=1
+
+# DEBUGging support
+# creates binaries suitable for debugging. Some bugs may come and go
+# as opposed to a production build since we lower the optimization level
+# DEBUG=1
+
+# MOUSE support for PM and X11 terminals
+# NOTE: This cannot be disabled
+MOUSE=1
+
+#
+# ****************** End of Configuration section ****************************
+#
+
+#
+# Miscellaneous setup
+#
+
+.PHONY: all runtime alldocs demo binaries infomin clean veryclean
+.SUFFIXES: .c .trm .o .obj .exe .rc .res .dll
+
+# A reasonable default
+default: runtime
+
+# A basic help screen
+help:
+	   @echo " Usage: $(MAKE) -f makefile.os2 target"
+	   @echo "   where target is one of:"
+	   @echo "   all runtime alldocs demo binaries infomin help clean veryclean"
+
+#
+# Definitions of flags and symbols used by makefile.all and makefile.os2
+#
+
+# these definitions are used by makefile.all
+T=../term/
+D=../docs/
+L=$(D)latextut/
+M=../demo/
+
+#
+# Definitions valid for all targets on OS/2
+#
+
+OS2DIR  = os2
+DOCDIR  = ..\docs
+DEMODIR = ..\demo
+TERMDIR = ..\term
+
+
+# where to place gnuplot.gih helpfile
+HELPFILE = $(DOCDIR)\gnuplot.gih
+
+# Where to install the PostScript prologue files, relatively to the executable
+# gnuplot.exe
+GNUPLOT_PS_DIR = share/PostScript
+
+# Similarly for javascript files for the canvas terminal:
+GNUPLOT_JS_DIR = share/js
+
+# Similarly for scripts used by the lua terminal
+GNUPLOT_LUA_DIR = share/lua
+
+#
+# 3 sets of variables are defined and used to create
+#   1: gnuplot.exe, and utilities
+#   2: gnupmdrv.exe (the PM-driver executable)
+#
+CC  = gcc
+CC2 = gcc
+O  = o
+O2 = obj
+
+# Flags for compiler and linker under OS/2
+OS2FLAGS = -DOS2
+
+# Flags for compiling with EMX/GCC
+# Special note: -ffloat-store is necessary to avoid some strange behaviour
+# of this code: 
+#   reset; set key; set xlabel "Year"; set xdata time; set timefmt "%y%m%d"
+#   set format x "%y"; set xrange ["900621" : "950126"];
+#   plot '-' using 1:2 title 'Fitted IO' with lines 1
+#   900621 20
+#   950126 55
+#   e
+# Confirmed for gcc 2.7.x/2.8.x; graphics.c used to be the culprit, but as
+# of today (20010918) it isn't any more ...
+#
+EMXSPECIFIC = -DHAVE_CONFIG_H -ffloat-store
+LIBS = 
+
+#
+# Choose flags suitable for a debugging or for a production build
+#
+ifdef DEBUG
+CFLAGS  = -g $(OS2FLAGS) $(EMXSPECIFIC) -Wall -Wno-comment -O0 -Zmt
+LDFLAGS  = -g -Zmt -Zcrtdll -Zbsd-signals
+CFLAGS2 = -g $(OS2FLAGS) $(EMXSPECIFIC) -Wall              -O0 -Zmt -Zomf
+LDFLAGS2 = -g -Zmt -Zcrtdll -Zbsd-signals -Zomf
+else
+CFLAGS  = $(OS2FLAGS) $(EMXSPECIFIC) -O4 -mpentium -Wall -Wno-unused -Wno-comment -Zmt
+LDFLAGS  = -s -Zmt -Zcrtdll -Zbsd-signals
+CFLAGS2 = $(OS2FLAGS) $(EMXSPECIFIC) -O4 -mpentium -Wall -Wno-unused              -Zmt -Zomf
+LDFLAGS2 = -s -Zmt -Zcrtdll -Zbsd-signals -Zomf
+endif
+
+#
+# Settings for the terminals to be included
+#
+TERMFLAGS = -DGNUPLOT_PS_DIR=\"$(GNUPLOT_PS_DIR)\" -DGNUPLOT_JS_DIR=\"$(GNUPLOT_JS_DIR)\" 
+TERMFLAGS += -DGNUPLOT_LUA_DIR=\"$(GNUPLOT_LUA_DIR)\" -I. -I.. -I$(T)
+
+ifdef GD
+  CFLAGS += -DHAVE_LIBGD -DHAVE_GD_H
+  TERMLIBS += -lgd
+ifdef FREETYPE
+  CFLAGS += -DHAVE_GD_TTF
+endif
+ifdef PNG
+  CFLAGS += -DHAVE_GD_PNG
+endif
+ifdef GIF
+  CFLAGS += -DHAVE_GD_GIF -DGIF_ANIMATION
+endif
+ifdef JPEG
+  CFLAGS += -DHAVE_GD_JPEG
+endif
+endif
+
+ifdef PDF
+  TERMFLAGS += -DHAVE_LIBPDF -DHAVE_PDFLIB_H
+  TERMLIBS  += -lpdflib
+endif
+
+# SVGA-/VESAkit support
+ifdef VESA
+  TERMFLAGS += -DEMXVESA
+  TERMLIBS  += -ljmgraph -lvesa
+endif
+
+# X11 support
+ifdef X11
+  TERMFLAGS += -DX11 -DX11_DRIVER_DIR=\".\"
+endif
+
+# MOUSE support
+ifdef MOUSE
+  TERMFLAGS += -DUSE_MOUSE
+  # the interprocess communication flag OS2_IPC is #defined in config.(os2,h)
+endif
+
+# GNU readline support
+ifdef GNU_RL
+  CFLAGS  += -DHAVE_LIBREADLINE
+  LIBS    += -lreadline -ltermcap
+endif
+
+
+# TOOLS
+CPP = cpp
+# Do not name this variable "IPFC"!! This won't work out...
+IPF_C = ipfc.exe
+
+# Tools for buildings the docs
+DVIPS    = dvips
+LATEX    = latex
+PDFLATEX = vlatex
+PLAINTEX = tex
+
+#
+# Default Rules
+#
+.c.$(O):
+	$(CC)  $(CFLAGS) $(TERMFLAGS) -o $*.$(O) -c $*.c
+.c.obj:
+	$(CC2) $(CFLAGS2) $(TERMFLAGS) -o $*.obj -c $*.c
+
+#
+# Include dependencies valid for all platforms from makefile.all
+#
+include makefile.all
+
+
+#
+# Pre-defined sets of targets:
+#
+all:         runtime demo
+alldocs:     $(DOCDIR)\gnuplot.gih $(DOCDIR)\gnuplot.inf $(DOCDIR)\gnuplot.html \
+             $(DOCDIR)\gnuplot.info $(DOCDIR)\gnuplot.ps \
+             $(DOCDIR)\gnuplot.pdf
+runtime:     config.h binaries infomin $(DOCDIR)\gnuplot.inf
+infomin:     gnupmdrv.hlp $(DOCDIR)\gnuplot.gih
+demo:        $(M)binary1 $(M)binary2 $(M)binary3
+ifdef X11
+binaries: gnuplot.exe gnupmdrv.exe gnuplot_x11.exe
+else
+binaries: gnuplot.exe gnupmdrv.exe
+endif
+
+OBJS = $(COREOBJS) version.$(O)
+
+$(OBJS): config.h
+
+term.$(O): $(CORETERM) term.h config.h $(OS2DIR)\pm_msgs.h
+
+gnuplot.exe: $(OBJS)
+	$(CC) $(LDFLAGS) -o $@ $(OBJS) $(TERMLIBS) $(LIBS)
+
+#
+# Build the PM outboard driver
+#
+$(OS2DIR)\gnupmdrv.$(O2):  $(OS2DIR)\gnupmdrv.c   $(OS2DIR)\gnupmdrv.h	config.h
+$(OS2DIR)\gclient.$(O2):   $(OS2DIR)\gclient.c    $(OS2DIR)\gnupmdrv.h	config.h  $(OS2DIR)\pm_msgs.h	mouse.h
+$(OS2DIR)\dialogs.$(O2):   $(OS2DIR)\dialogs.c    $(OS2DIR)\gnupmdrv.h	config.h  $(OS2DIR)\dialogs.h
+$(OS2DIR)\print.$(O2):     $(OS2DIR)\print.c      $(OS2DIR)\gnupmdrv.h	config.h
+$(OS2DIR)\gpexecute.$(O2): gpexecute.c            gpexecute.h
+$(OS2DIR)\gnupmdrv.res :   $(OS2DIR)\gnupmdrv.rc  $(OS2DIR)\gnuplot.ico $(OS2DIR)\dialogs.h
+	cd $(OS2DIR) && rc -r gnupmdrv.rc & cd ..
+
+OS2OBJ = $(OS2DIR)\gnupmdrv.$(O2) $(OS2DIR)\gclient.$(O2) $(OS2DIR)\print.$(O2) \
+         $(OS2DIR)\dialogs.$(O2) gpexecute.$(O2)
+
+gnupmdrv.exe: $(OS2OBJ) $(OS2DIR)\gnupmdrv.res $(OS2DIR)\gnupmdrv.def
+	$(CC2) $(LDFLAGS2) -o $@ $(OS2OBJ) $(OS2DIR)\gnupmdrv.res $(OS2DIR)\gnupmdrv.def
+
+gnupmdrv.hlp: $(OS2DIR)\gnupmdrv.ipf
+#	Cannot use the command
+#	$(IPF_C) $< $@
+#	because IPFC 2.1 does not support this syntax. Use instead:
+	copy $< . && $(IPF_C) gnupmdrv.ipf && del gnupmdrv.ipf
+
+#
+# Build the X11 outboard driver
+#
+
+# X11 libraries
+X11LIBS = -L$(X11ROOT)/XFree86/lib -lX11 -lsocket -Zbsd-signals -Zcrtdll
+# X11 includes
+X11INCLUDES = -I$(X11ROOT)/XFree86/include
+X11FLAGS= -Zmt -D__UNIXOS2__ -DI_NEED_OS2_H
+ifdef MOUSE
+X11FLAGS += -DUSE_MOUSE
+endif
+
+gnuplot_x11.exe: gplt_x11.o gpexecute.o getcolor_x11.o version.o
+	$(CC) $(LDFLAGS) $(X11FLAGS) $(EMXSPECIFIC) -o $@ -DGPLT_X11_MODE $^ $(X11LIBS)
+
+gplt_x11.o: gplt_x11.c mouse.h gpexecute.h config.h
+	$(CC) $(CFLAGS) $(X11FLAGS) $(EMXSPECIFIC) $(X11INCLUDES) -c -o $@ $<
+
+getcolor_x11.o: getcolor.c
+	$(CC) $(CFLAGS) $(X11FLAGS) $(EMXSPECIFIC) -DGPLT_X11_MODE -c -o $@ $<
+
+#
+# Create config.h
+# This file is preferable over having explicit gcc command longer than 10 lines:
+# gcc ... -DHAVE_ -DHAVE_ ... -DHAVE_ -DHAVE_ ... myfile.c
+#
+config.h: ..\config\config.os2
+	if exist $@ del $@
+	copy $< $@
+
+#
+# Create documentation in various formats
+#
+# The idea behind the renaming business is that we may want to
+# use various LaTeX systems which may choke if they find existing
+# intermediate files from other systems.
+# Call LaTeX three times to get the toc right.
+$(DOCDIR)\gnuplot.dvi: $(DOCDIR)\gnuplot.tex
+	copy $(DOCDIR)\gnuplot.tex $(DOCDIR)\gnuplot_2.tex
+	cd $(DOCDIR) && $(LATEX) gnuplot_2.tex && $(LATEX) gnuplot_2.tex && $(LATEX) gnuplot_2.tex
+	if exist $(DOCDIR)\gnuplot.dvi del $(DOCDIR)\gnuplot.dvi
+	move $(DOCDIR)\gnuplot_2.dvi $(DOCDIR)\gnuplot.dvi
+	del $(DOCDIR)\gnuplot_2.*
+$(DOCDIR)\gnuplot.ps: $(DOCDIR)\gnuplot.dvi
+	$(DVIPS) -o $@ $(DOCDIR)\gnuplot.dvi
+$(DOCDIR)\gnuplot.pdf: $(DOCDIR)\gnuplot.tex
+	copy $(DOCDIR)\gnuplot.tex $(DOCDIR)\gnuplot_3.tex
+	copy $(DOCDIR)\..\VERSION $(DOCDIR)
+	cd $(DOCDIR) && $(PDFLATEX) gnuplot_3.tex && $(PDFLATEX) gnuplot_3.tex && $(PDFLATEX) gnuplot_3.tex
+	if exist $(DOCDIR)\gnuplot.pdf del $(DOCDIR)\gnuplot.pdf
+	move $(DOCDIR)\gnuplot_3.pdf $(DOCDIR)\gnuplot.pdf
+	del $(DOCDIR)\gnuplot_3.*
+$(DOCDIR)\gnuplot.tex:  $(DOCDIR)\gnuplot.doc $(DOCDIR)\doc2tex.exe
+	$(DOCDIR)\doc2tex.exe $(DOCDIR)\gnuplot.doc $@
+$(DOCDIR)\gnuplot.inf:  $(DOCDIR)\gnuplot.ipf
+#	Cannot use the command
+#	$(IPF_C) /INF $< $@
+#	because IPFC 2.1 does not support this syntax. Use instead:
+	cd $(DOCDIR) && $(IPF_C) /INF gnuplot.ipf
+$(DOCDIR)\gnuplot.gih:  $(DOCDIR)\gnuplot.doc $(DOCDIR)\doc2gih.exe
+	$(DOCDIR)\doc2gih.exe $(DOCDIR)\gnuplot.doc $@
+$(DOCDIR)\gnuplot.html: $(DOCDIR)\gnuplot.texi $(DOCDIR)\gnuplot.doc
+	$(MAKEINFO) --html -I$(DOCDIR) $(DOCDIR)\gnuplot.texi --no-split --output=$@
+$(DOCDIR)\gnuplot.info: $(DOCDIR)\gnuplot.texi $@
+	$(MAKEINFO) -I$(DOCDIR) $(DOCDIR)\gnuplot.texi --no-split --output=$@
+# $(DOCDIR)\gnuplot.texi: $(DOCDIR)\gnuplot.doc $(DOCDIR)\doc2texi.pl
+#	perl $(DOCDIR)\doc2texi.pl $(DOCDIR)\gnuplot.doc >$@
+$(DOCDIR)\gnuplot.rtf:  $(DOCDIR)\gnuplot.doc $(DOCDIR)\doc2rtf.exe
+	$(DOCDIR)\doc2rtf.exe $(DOCDIR)\gnuplot.doc $@
+$(DOCDIR)\gnuplot.ms:   $(DOCDIR)\gnuplot.doc $(DOCDIR)\doc2ms.exe
+	$(DOCDIR)\doc2ms.exe $(DOCDIR)\gnuplot.doc $@
+$(DOCDIR)\gnuplot.ipf:  $(DOCDIR)\gnuplot.doc $(DOCDIR)\doc2ipf.exe
+	$(DOCDIR)\doc2ipf.exe $(DOCDIR)\gnuplot.doc $@
+# Assume we need A4 format
+$(DOCDIR)\gpcard.ps: $(DOCDIR)\gpcard.dvi
+	cd $(DOCDIR) && $(DVIPS) -o gpcard_letter.ps $< 
+	cd $(DOCDIR) && psresize -pletter -Pa4 gpcard_letter.ps $@
+$(DOCDIR)\gpcard.dvi: $(DOCDIR)\gpcard.tex
+	cd $(DOCDIR) && $(PLAINTEX) gpcard.tex && $(PLAINTEX) gpcard.tex
+
+#
+# Tools for converting the documentation from docs\gnuplot.doc
+# in various formats
+#
+
+# Some dependencies - no rule!
+$(DOCDIR)\doc2gih.exe $(DOCDIR)\doc2ipf.exe $(DOCDIR)\doc2info.exe \
+$(DOCDIR)\doc2tex.exe $(DOCDIR)\doc2rtf.exe: \
+      $(DOCDIR)\termdoc.c $(DOCDIR)\xref.c $(DOCDIR)\allterm.h ..\src\config.h
+
+
+SORT_TERMINALS=1
+ifdef SORT_TERMINALS
+# sort alphabetically all terminals
+$(DOCDIR)\allterm.h: $(CORETERM)
+	@echo "Building allterm.h"
+	@..\src\os2\4allterm.cmd sort
+else
+# SORT_TERMINALS==0, then sequence of terminals according to "ls term/*.trm":
+$(DOCDIR)\allterm.h: $(CORETERM)
+	@echo "Building allterm.h"
+	@..\src\os2\4allterm.cmd nosort
+endif
+
+$(DOCDIR)\doc2gih.exe:  $(DOCDIR)\doc2gih.c $(DOCDIR)\termdoc.c $(OS2TERM)
+	$(CC) $(CFLAGS) $(TERMFLAGS) -DALL_TERM_DOC -o $@ $(DOCDIR)\doc2gih.c $(DOCDIR)\termdoc.c
+$(DOCDIR)\doc2ipf.exe:  $(DOCDIR)\doc2ipf.c $(DOCDIR)\termdoc.c $(DOCDIR)\xref.c $(OS2TERM)
+	$(CC) $(CFLAGS) $(TERMFLAGS) -DALL_TERM_DOC -o $@ $(DOCDIR)\doc2ipf.c $(DOCDIR)\termdoc.c $(DOCDIR)\xref.c
+$(DOCDIR)\doc2tex.exe:  $(DOCDIR)\doc2tex.c $(DOCDIR)\termdoc.c $(OS2TERM) $(DOCDIR)\allterm.h
+	$(CC) $(CFLAGS) $(TERMFLAGS) -DALL_TERM_DOC -o $@ $(DOCDIR)\doc2tex.c $(DOCDIR)\termdoc.c
+$(DOCDIR)\doc2rtf.exe:  $(DOCDIR)\doc2rtf.c $(DOCDIR)\termdoc.c $(DOCDIR)\xref.c $(OS2TERM)
+	$(CC) $(CFLAGS) $(TERMFLAGS) -DALL_TERM_DOC -o $@ $(DOCDIR)\doc2rtf.c $(DOCDIR)\termdoc.c $(DOCDIR)\xref.c
+$(DOCDIR)\doc2ms.exe:   $(DOCDIR)\doc2ms.c $(DOCDIR)\termdoc.c $(OS2TERM)
+	$(CC) $(CFLAGS) $(TERMFLAGS) -DALL_TERM_DOC -o $@ $(DOCDIR)\doc2ms.c $(DOCDIR)\termdoc.c
+#
+# Create binary demo files
+#
+$(M)binary1 $(M)binary2 $(M)binary3: $(M)bf_test.exe
+	cd $(DEMODIR) && bf_test.exe
+
+$(M)bf_test.exe : bf_test.c alloc.$(O)
+	$(CC) $(CFLAGS) -o $@ bf_test.c alloc.$(O)
+
+#
+# Clean up
+#
+
+# Clean up all files temporary used
+clean:
+	if exist config.h               del config.h
+	if exist *.$(O)                    del *.$(O)
+	if exist *.$(O2)                   del *.$(O2)
+	cd $(OS2DIR) && if exist *.$(O2)   del *.$(O2)
+	if exist $(OS2DIR)\gnupmdrv.res    del $(OS2DIR)\gnupmdrv.res
+	if exist $(DEMODIR)\bf_test.exe    del $(DEMODIR)\bf_test.exe
+	if exist $(DOCDIR)\doc2*.exe       del $(DOCDIR)\doc2*.exe
+	if exist $(DOCDIR)\gnuplot.ipf     del $(DOCDIR)\gnuplot.ipf
+	if exist $(DOCDIR)\gnuplot_2*      del $(DOCDIR)\gnuplot_2*
+	if exist $(DOCDIR)\gnuplot_3*      del $(DOCDIR)\gnuplot_3*
+	if exist core                      del core
+	if exist $(DOCDIR)\allterm.?       del $(DOCDIR)\allterm.?
+
+# Clean up ALL files that were not part of the source distribution
+veryclean: clean
+	if exist *.exe                     del *.exe         
+	if exist $(DOCDIR)\gnuplot.dvi     del $(DOCDIR)\gnuplot.dvi
+	if exist $(DOCDIR)\gnuplot.gih     del $(DOCDIR)\gnuplot.gih
+	if exist $(DOCDIR)\gnupmdrv.hlp    del $(DOCDIR)\gnupmdrv.hlp
+	if exist $(DOCDIR)\gnuplot.html    del $(DOCDIR)\gnuplot.html
+	if exist $(DOCDIR)\gnuplot.inf     del $(DOCDIR)\gnuplot.inf
+	if exist $(DOCDIR)\gnuplot.info    del $(DOCDIR)\gnuplot.info
+	if exist $(DOCDIR)\gnuplot.ms      del $(DOCDIR)\gnuplot.ms
+	if exist $(DOCDIR)\gnuplot.ps      del $(DOCDIR)\gnuplot.ps
+	if exist $(DOCDIR)\gnuplot.pdf     del $(DOCDIR)\gnuplot.pdf
+	if exist $(DOCDIR)\gnuplot.rtf     del $(DOCDIR)\gnuplot.rtf
+	if exist $(DOCDIR)\gnuplot.tex     del $(DOCDIR)\gnuplot.tex
+	if exist $(DOCDIR)\gpcard*.ps      del $(DOCDIR)\gpcard*.ps
+	if exist $(DOCDIR)\*.dvi           del $(DOCDIR)\*.dvi
+	if exist $(DOCDIR)\*.log           del $(DOCDIR)\*.log
+	if exist $(DOCDIR)\*.aux           del $(DOCDIR)\*.aux
+	if exist $(DOCDIR)\*.toc           del $(DOCDIR)\*.toc
+	if exist $(DEMODIR)\binary?        del $(DEMODIR)\binary?
+

@@ -1,0 +1,15 @@
+%%
+%%  plain TeX wrapper for gnuplot-tikz style file
+%%
+\input tikz.tex
+\usetikzlibrary{arrows,patterns,plotmarks,backgrounds}
+
+\edef\tikzatcode{\the\catcode`\@}
+\catcode`\@=11
+
+\input gnuplot-lua-tikz-common.tex
+
+
+\catcode`\@=\tikzatcode
+
+\endinput

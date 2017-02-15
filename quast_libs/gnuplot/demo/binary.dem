@@ -1,0 +1,28 @@
+#
+# $Id: binary.dem,v 1.5 2003/10/28 05:35:54 sfeam Exp $
+#
+set style data lines
+set hidden3d
+set title "Hidden line removal of explicit binary surfaces"
+set ticslevel 0
+set key box
+
+set xrange [-3:3]
+set yrange [-2:2]
+splot "binary1" binary
+pause -1 "Hit return to continue (1)"
+
+set view 70,45
+set xrange [-3:3]
+set yrange [-3:3]
+splot "binary2" binary
+pause -1 "Hit return to continue (2)"
+
+set title "Notice that sampling rate can change"
+set vi 70,10
+set xrange [-3:6]
+set yrange [-3:6]
+splot "binary3" binary
+pause -1 "Hit return to continue (3)"
+
+reset

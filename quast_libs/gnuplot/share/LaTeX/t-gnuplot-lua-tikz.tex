@@ -1,0 +1,21 @@
+%%
+%%  ConTeXt wrapper for gnuplot-tikz style file
+%%
+\usemodule[tikz]
+
+\usetikzlibrary[arrows,patterns,plotmarks,backgrounds]
+
+\edef\tikzatcode{\the\catcode`\@}
+\edef\tikzbarcode{\the\catcode`\|}
+\edef\tikzexclaimcode{\the\catcode`\!}
+\catcode`\@=11
+\catcode`\|=12
+\catcode`\!=12
+
+\input gnuplot-lua-tikz-common.tex
+
+\catcode`\@=\tikzatcode
+\catcode`\|=\tikzbarcode
+\catcode`\!=\tikzexclaimcode
+
+\endinput

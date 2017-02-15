@@ -1,0 +1,1537 @@
+/*
+ *  $Id: lua.trm,v 1.23.2.5 2015/12/30 18:48:01 sfeam Exp $
+ *  $Date: 2015/12/30 18:48:01 $
+ *  $Rev: 99 $
+ */
+
+/* 
+ *  GNUPLOT - lua.trm
+ */
+
+/*[
+ *
+ * Copyright 2008   Peter Hedwig <peter@affenbande.org>
+ *
+ *
+ * Permission to use, copy, and distribute this software and its
+ * documentation for any purpose with or without fee is hereby granted,
+ * provided that the above copyright notice appear in all copies and
+ * that both that copyright notice and this permission notice appear
+ * in supporting documentation.
+ *
+ * Permission to modify the software is granted, but not the right to
+ * distribute the complete modified source code.  Modifications are to
+ * be distributed as patches to the released version.  Permission to
+ * distribute binaries produced by compiling modified sources is granted,
+ * provided you
+ *   1. distribute the corresponding source modifications from the
+ *    released version in the form of a patch file along with the binaries,
+ *   2. add special version identification to distinguish your version
+ *    in addition to the base release version number,
+ *   3. provide your name and address as the primary contact for the
+ *    support of your modified version, and
+ *   4. retain our contact information in regard to use of the base
+ *    software.
+ * Permission to distribute the released version of the source code along
+ * with corresponding source modifications in the form of a patch file is
+ * granted with same provisions 2 through 4 for binary distributions.
+ *
+ * This software is provided "as is" without express or implied warranty
+ * to the extent permitted by applicable law.
+]*/
+
+
+#include "driver.h"
+
+#define LUA_TERM_REVISON "$Rev: 99 $"
+
+#ifdef TERM_REGISTER
+register_term(lua)
+#endif
+
+#ifdef TERM_PROTO
+TERM_PUBLIC void LUA_options __PROTO((void));
+TERM_PUBLIC void LUA_init __PROTO((void));
+TERM_PUBLIC void LUA_reset __PROTO((void));
+TERM_PUBLIC void LUA_text __PROTO((void));
+/* scale */
+TERM_PUBLIC void LUA_graphics __PROTO((void));
+TERM_PUBLIC void LUA_move __PROTO((unsigned int x, unsigned int y));
+TERM_PUBLIC void LUA_vector __PROTO((unsigned int ux, unsigned int uy));
+TERM_PUBLIC void LUA_linetype __PROTO((int linetype));
+TERM_PUBLIC void LUA_dashtype __PROTO((int type, t_dashtype *custom_dash_type));
+TERM_PUBLIC void LUA_put_text __PROTO((unsigned int x, unsigned int y, const char str[]));
+TERM_PUBLIC int  LUA_text_angle __PROTO((int ang));
+TERM_PUBLIC int  LUA_justify_text __PROTO((enum JUSTIFY mode));
+TERM_PUBLIC void LUA_point __PROTO((unsigned int x, unsigned int y, int number));
+TERM_PUBLIC void LUA_arrow __PROTO((unsigned int sx, unsigned int sy, unsigned int ex, unsigned int ey, int head));
+TERM_PUBLIC int  LUA_set_font __PROTO((const char *font));
+TERM_PUBLIC void LUA_pointsize __PROTO((double ptsize)); 
+TERM_PUBLIC void LUA_boxfill __PROTO((int style, unsigned int x1,
+                                     unsigned int y1, unsigned int width,
+                                     unsigned int height));
+TERM_PUBLIC void LUA_linewidth __PROTO((double width));
+TERM_PUBLIC int  LUA_make_palette __PROTO((t_sm_palette *));
+TERM_PUBLIC void LUA_previous_palette __PROTO((void));
+TERM_PUBLIC void LUA_set_color __PROTO((t_colorspec *));
+TERM_PUBLIC void LUA_filled_polygon __PROTO((int, gpiPoint *));
+TERM_PUBLIC void LUA_image __PROTO((unsigned, unsigned, coordval *, gpiPoint *, t_imagecolor));
+TERM_PUBLIC void LUA_path __PROTO((int p));
+#ifdef EAM_BOXED_TEXT
+TERM_PUBLIC void LUA_boxed_text __PROTO((unsigned int, unsigned int, int));
+#endif
+
+/* defaults */
+#define LUA_XMAX 10000.0
+#define LUA_YMAX 10000.0
+
+#define LUA_HTIC	100
+#define LUA_VTIC	100
+#define LUA_HCHAR	160
+#define LUA_VCHAR	420
+#define LUA_TERM_DESCRIPTION "Lua generic terminal driver"
+
+/* gnuplot 4.3, term->tscale */
+#define LUA_TSCALE   1.0
+
+#endif /* TERM_PROTO */
+
+
+#ifndef TERM_PROTO_ONLY
+#ifdef TERM_BODY
+
+
+#ifdef HAVE_CAIROPDF
+# include "wxterminal/gp_cairo.h"
+# include "wxterminal/gp_cairo_helpers.h"
+# define LUA_EXTERNAL_IMAGES 1
+#elif defined(HAVE_GD_PNG) && (GD2_VERS >= 2)
+# include "gd.h"
+# define LUA_EXTERNAL_IMAGES 1
+#endif
+
+#include <lua.h>
+#include <lualib.h>
+#include <lauxlib.h>
+
+static lua_State *L = NULL;
+
+static char *LUA_script = NULL;
+
+static int lua_term_status, lua_term_result;
+static int tb, luaterm, image_cnt, image_extern;
+
+#if LUA_VERSION_NUM > 501
+/* 
+ * two helper functions to ease transitioning to lua 5.2
+ */
+
+/*
+ * same as lua_getfield(L, LUA_GLOBALINDEXS, f) in lua 5.1
+ */
+static void LUA_getfield_global(lua_State *L, const char *f)
+{
+  lua_rawgeti(L, LUA_REGISTRYINDEX, LUA_RIDX_GLOBALS);
+  lua_getfield(L, -1, f);
+  lua_replace(L, -2);
+}
+/*
+ * approximately the same as luaL_register(L, libname, l) in lua 5.1
+ */
+static void LUA_register(lua_State *L, const char *libname, const luaL_Reg *l)
+{
+  if (!libname)
+    luaL_setfuncs(L, l, 0);
+  else {
+    LUA_getfield_global(L, "package");
+    lua_getfield(L, -1, "loaded");
+    lua_newtable(L);
+    luaL_setfuncs(L, l, 0);
+    lua_pushvalue(L, -1);
+    lua_setglobal(L, libname);
+    lua_setfield(L, -2, libname);
+    lua_pop(L, 2);
+    lua_getglobal(L, libname);
+  }
+}
+#endif /* LUA_VERSION_NUM > 501 */
+
+/*
+ * static buffer, because we cannot free memory after
+ * calling int_error that never returns
+ */
+static char last_error_msg[MAX_LINE_LEN+1] = "";
+
+/*
+ * Handle Lua functions
+ */
+#define LUA_GP_FNC "gp"
+
+/* 
+ *  returns a table with the coords of 
+ *  the plot's bounding box
+ */
+static int
+LUA_GP_get_boundingbox() {
+  lua_newtable (L);
+  lua_pushstring (L, "xleft");
+  lua_pushinteger(L, plot_bounds.xleft);
+  lua_rawset (L, -3);
+  lua_pushstring (L, "xright");
+  lua_pushinteger(L, plot_bounds.xright);
+  lua_rawset (L, -3);
+  lua_pushstring (L, "ybot");
+  lua_pushinteger(L, plot_bounds.ybot);
+  lua_rawset (L, -3);
+  lua_pushstring (L, "ytop");
+  lua_pushinteger(L, plot_bounds.ytop);
+  lua_rawset (L, -3);
+  return(1);
+}
+
+/* gp.term_options(char *str) */
+static int
+LUA_GP_term_options(lua_State *L) {
+  int n = lua_gettop(L);  /* Number of arguments */
+  const char *opt_str;
+  if (n != 1)
+    return luaL_error(L, "Got %d arguments expected 1", n);
+
+  opt_str = luaL_checkstring(L, 1);
+  n = strlen(opt_str);
+  if (n > MAX_LINE_LEN)
+    return luaL_error(L, "Option string consists of %d characters but only %d are allowed", n, MAX_LINE_LEN);
+
+  strncpy(term_options, opt_str, MAX_LINE_LEN);
+  term_options[MAX_LINE_LEN] = '\0';
+  return(0);
+}
+
+
+/* close Lua context and clean up */
+static void
+LUA_close(void) {
+  if (L) {
+    lua_close(L);
+    L = NULL;
+  }
+  if (LUA_script) {
+    free(LUA_script);
+    LUA_script = NULL;
+  }
+}
+
+/* gp.write(char *str) */
+static int
+LUA_GP_write(lua_State *L) {
+  int n = lua_gettop(L);  /* Number of arguments */
+  const char *out_str;
+  if (n != 1)
+      return luaL_error(L, "Got %d arguments expected 1", n);
+
+  out_str = luaL_checkstring(L, 1);
+  fputs(out_str, gpoutfile);
+
+  return(0);
+}
+
+/*
+  gp.int_error(int t_num, char *msg)
+  gp.int_error(char *msg)  
+ 
+ */
+static int
+LUA_GP_int_error(lua_State *L) {
+  int t_num = NO_CARET;
+  const char *msg = "";
+
+  int n = lua_gettop(L);  /* Number of arguments */
+  switch (n) {
+    case 1:
+      msg = luaL_checkstring(L, 1);
+      break;
+    case 2:
+      t_num = luaL_checkinteger(L, 1);
+      msg  = luaL_checkstring(L, 2);
+      break;
+    default:
+      return luaL_error(L, "Got %d arguments expected 1 or 2", n);
+      break;
+  }
+
+  snprintf(last_error_msg, MAX_LINE_LEN, "%s Lua context closed.", msg);
+
+  /* close Lua context on fatal errors */
+  LUA_close();
+
+  int_error(t_num, last_error_msg);
+  
+  return(0);
+}
+
+/* 
+  gp.int_warn(int t_num, char *errmsg)
+  gp.int_warn(char *errmsg)  
+
+*/
+static int
+LUA_GP_int_warn(lua_State *L) {
+  int t_num = NO_CARET;
+  const char *msg = "";
+
+  int n = lua_gettop(L);  /* Number of arguments */
+  switch (n) {
+    case 1:
+      msg = luaL_checkstring(L, 1);
+      break;
+    case 2:
+      t_num = luaL_checkinteger(L, 1);
+      msg = luaL_checkstring(L, 2);
+      break;
+    default:
+      return luaL_error(L, "Got %d arguments expected 1 or 2", n);
+      break;
+  }
+  int_warn(t_num, msg);
+
+  return(0);
+}
+
+/* 
+  gp.term_out(char *terminal_msg)
+  
+  Print user messages, e.g. help messages
+*/
+static int
+LUA_GP_term_out(lua_State *L) {
+  char c;             /* dummy input char */
+  char *line, *last;
+  int pagelines = 0;  
+  const char *msg = "";
+  
+  int n = lua_gettop(L);  /* Number of arguments */
+  switch (n) {
+    case 1:
+      msg = luaL_checkstring(L, 1);
+      break;
+    default:
+      return luaL_error(L, "Got %d arguments expected 1", n);
+      break;
+  }
+
+  last = (char *)msg;
+  while ((line = strchr(last, '\n'))) {
+    *line = '\0';
+    if (pagelines >= 22) {
+      fputs("Press return for more: ", stderr);
+#if defined(ATARI) || defined(MTOS)
+      do
+        c = tos_getch();
+      while (c != '\x04' && c != '\r' && c != '\n');
+#elif defined(_WIN32)
+      do
+        c = getchar();
+      while (c != EOF && c != '\n' && c != '\r');
+#else
+      do
+        c = getchar();
+      while (c != EOF && c != '\n');
+#endif
+      pagelines = 0;
+    }
+    fputs(last, stderr);
+    fputs("\n", stderr);
+    pagelines++;
+    last = line+1;
+  }
+  if (*last)
+    fputs(last, stderr);
+
+  return(0);
+}
+
+/*
+  gp.is_multiplot()
+
+*/
+static int
+LUA_GP_is_multiplot(lua_State *L) {
+  lua_pushboolean(L, multiplot);
+  return(1);
+}
+
+/*
+  returns all internal and userdefined variables
+  [name] = {type, val1 [, val2]},
+  [name] = {type, val1 [, val2]},
+  ...
+*/
+static int
+LUA_GP_get_all_variables(lua_State *L) {
+  struct udvt_entry *udv = first_udv;
+  struct value *val;
+  
+  lua_newtable(L);
+  while (udv) {
+    /* ignore mouse related variables */
+    if(!strncmp(udv->udv_name, "MOUSE_", 6)) {
+      udv = udv->next_udv;
+      continue;
+    }
+    lua_newtable(L);
+    if (udv->udv_undef) {
+      lua_pushnil(L);
+      lua_rawseti(L, -2, 2);
+    } else {
+      val = &(udv->udv_value);
+      switch (val->type) {
+      case INTGR:
+        lua_pushstring(L, "int");
+        lua_rawseti(L, -2, 2);
+        lua_pushinteger(L, val->v.int_val);
+        lua_rawseti(L, -2, 3);
+        break;
+      case CMPLX:
+        if (val->v.cmplx_val.imag  != 0.0) {
+          lua_pushstring(L, "cmplx");
+          lua_rawseti(L, -2, 2);
+          lua_pushnumber(L, val->v.cmplx_val.imag);
+          lua_rawseti(L, -2, 4);
+        } else {
+          lua_pushstring(L, "real");
+          lua_rawseti(L, -2, 2);
+        }
+#ifdef HAVE_ISNAN
+        if (isnan(val->v.cmplx_val.real)) {
+          lua_pushnil(L);
+          lua_rawseti(L, -2, 3);
+        } else
+#endif
+        {
+          lua_pushnumber(L, val->v.cmplx_val.real);
+          lua_rawseti(L, -2, 3);
+        }
+        break;
+#ifdef GP_STRING_VARS
+      case STRING:
+        lua_pushstring(L, "string");
+        lua_rawseti(L, -2, 2);
+        if (val->v.string_val) {
+          lua_pushstring(L, val->v.string_val);
+          lua_rawseti(L, -2, 3);
+        }
+        break;
+#endif
+        default:
+          lua_pushstring(L, "unknown");
+          lua_rawseti(L, -2, 2);
+      }
+    }
+    lua_setfield(L, -2, udv->udv_name);
+    udv = udv->next_udv;
+  }
+  return(1);
+}
+
+/*
+ * based on the parse_color_name() function in misc.c
+ * returns rgb triplet based on color name or hex values
+ */
+static int
+LUA_GP_parse_color_name(lua_State *L)
+{
+  int color = -1, token_cnt;
+  int n = lua_gettop(L);  /* Number of arguments */
+  const char *opt_str;
+  if (n != 2)
+    return luaL_error(L, "Got %d arguments expected 2", n);
+  token_cnt = luaL_checkinteger(L, 1);
+  opt_str = luaL_checkstring(L, 2);
+
+  color = lookup_table_nth(pm3d_color_names_tbl, opt_str);
+  if (color >= 0)
+    color = pm3d_color_names_tbl[color].value;
+  else
+    sscanf(opt_str, "#%x", &color);
+  if ((color & 0xff000000) != 0)
+    int_error(token_cnt, "not recognized as a color name or a string of form \"#RRGGBB\"");
+
+  lua_createtable(L, 3, 0);
+  n = lua_gettop(L);
+  lua_pushnumber(L, (double)((color >> 16 ) & 255) / 255.); lua_rawseti(L, n, 1);
+  lua_pushnumber(L, (double)((color >> 8 ) & 255) / 255.); lua_rawseti(L, n, 2);
+  lua_pushnumber(L, (double)(color & 255) / 255.); lua_rawseti(L, n, 3);
+
+  return (1);
+}
+
+#if LUA_VERSION_NUM > 500
+static const luaL_Reg gp_methods[] = {
+#else
+static const luaL_reg gp_methods[] = {
+#endif
+  {"write", LUA_GP_write},
+  {"int_error", LUA_GP_int_error},
+  {"int_warn", LUA_GP_int_warn},
+  {"term_out", LUA_GP_term_out},
+  {"get_boundingbox", LUA_GP_get_boundingbox},
+  {"is_multiplot", LUA_GP_is_multiplot},
+  {"get_all_variables", LUA_GP_get_all_variables},
+  {"term_options", LUA_GP_term_options},
+  {"parse_color_name", LUA_GP_parse_color_name},
+  {NULL, NULL}
+};
+
+
+static void
+LUA_register_gp_fnc ()
+{
+#if LUA_VERSION_NUM > 501
+  LUA_register(L, LUA_GP_FNC, gp_methods);
+#else
+  luaL_register(L, LUA_GP_FNC, gp_methods);
+#endif
+}
+
+
+/*
+  read variables from script
+*/
+static void
+LUA_get_term_vars(void) {
+  lua_getfield(L, luaterm, "description");
+  term->description = (lua_isstring(L, -1)) ? lua_tostring(L, -1) : LUA_TERM_DESCRIPTION;
+  lua_pop(L, 1);  
+  
+  lua_getfield(L, luaterm, "xmax");
+  term->xmax = (lua_isnumber(L, -1)) ? (unsigned int)lua_tointeger(L, -1) : LUA_XMAX;
+  lua_pop(L, 1);  
+  
+  lua_getfield(L, luaterm, "ymax");
+  term->ymax = (lua_isnumber(L, -1)) ? (unsigned int)lua_tointeger(L, -1) : LUA_YMAX;
+  lua_pop(L, 1);  
+  
+  lua_getfield(L, luaterm, "v_char");
+  term->v_char = (lua_isnumber(L, -1)) ? (unsigned int)lua_tointeger(L, -1) : LUA_VCHAR;
+  lua_pop(L, 1);
+  
+  lua_getfield(L, luaterm, "h_char");
+  term->h_char = (lua_isnumber(L, -1)) ? (unsigned int)lua_tointeger(L, -1) : LUA_HCHAR;
+  lua_pop(L, 1);
+
+  lua_getfield(L, luaterm, "v_tic");
+  term->v_tic = (lua_isnumber(L, -1)) ? (unsigned int)lua_tointeger(L, -1) : LUA_VTIC;
+  lua_pop(L, 1);
+  
+  lua_getfield(L, luaterm, "h_tic");
+  term->h_tic = (lua_isnumber(L, -1)) ? (unsigned int)lua_tointeger(L, -1) : LUA_HTIC;
+  lua_pop(L, 1);
+  
+  lua_getfield(L, luaterm, "flags");
+  term->flags = (lua_isnumber(L, -1)) ? (int)lua_tointeger(L, -1) : TERM_BINARY;
+  lua_pop(L, 1);
+
+  lua_getfield(L, luaterm, "tscale");
+  term->tscale = (lua_isnumber(L, -1)) ? (double)lua_tonumber(L, -1) : LUA_TSCALE;
+  lua_pop(L, 1);
+
+  lua_getfield(L, luaterm, "external_images");
+  image_extern = lua_toboolean(L ,-1);
+  lua_pop(L, 1);
+}
+
+static void
+LUA_set_term_vars() {
+  /* set term.version */
+  lua_pushstring(L, gnuplot_version);
+  lua_setfield(L, luaterm, "gp_version");
+  /* set term.patchlevel */
+  lua_pushstring(L, gnuplot_patchlevel);
+  lua_setfield(L, luaterm, "gp_patchlevel");
+  /* set term.patchlevel */
+  lua_pushstring(L, LUA_TERM_REVISON);
+  lua_setfield(L, luaterm, "lua_term_revision");
+  /* set term.lua_ident */
+  lua_pushstring(L, LUA_RELEASE);
+  lua_setfield(L, luaterm, "lua_ident");
+  /* set flag if terminal supports external images */
+#ifdef LUA_EXTERNAL_IMAGES
+  image_extern = 0;
+  lua_pushboolean(L, image_extern);
+  lua_setfield(L, luaterm, "external_images");
+#endif
+  /* some static definitions from term_api.h */
+  lua_pushinteger(L, TERM_CAN_MULTIPLOT);     /* tested if stdout not redirected */
+  lua_setfield(L, luaterm, "TERM_CAN_MULTIPLOT");
+  lua_pushinteger(L, TERM_CANNOT_MULTIPLOT);  /* tested if stdout is redirected  */
+  lua_setfield(L, luaterm, "TERM_CANNOT_MULTIPLOT");
+  lua_pushinteger(L, TERM_BINARY);            /* open output file with "b"       */
+  lua_setfield(L, luaterm, "TERM_BINARY");
+  lua_pushinteger(L, TERM_INIT_ON_REPLOT);    /* call term->init() on replot     */
+  lua_setfield(L, luaterm, "TERM_INIT_ON_REPLOT");
+  lua_pushinteger(L, TERM_IS_POSTSCRIPT);     /* post, next, pslatex, etc        */
+  lua_setfield(L, luaterm, "TERM_IS_POSTSCRIPT");
+  lua_pushinteger(L, TERM_IS_LATEX);     /* post, next, pslatex, etc        */
+  lua_setfield(L, luaterm, "TERM_IS_LATEX");
+  lua_pushinteger(L, TERM_ENHANCED_TEXT);     /* enhanced text mode is enabled   */
+  lua_setfield(L, luaterm, "TERM_ENHANCED_TEXT");
+  lua_pushinteger(L, TERM_NO_OUTPUTFILE);     /* terminal doesnt write to a file */
+  lua_setfield(L, luaterm, "TERM_NO_OUTPUTFILE");
+  lua_pushinteger(L, TERM_CAN_CLIP);          /* terminal does its own clipping  */
+  lua_setfield(L, luaterm, "TERM_CAN_CLIP");
+  lua_pushinteger(L, TERM_CAN_DASH);          /* terminal knows dashed lines */
+  lua_setfield(L, luaterm, "TERM_CAN_DASH");
+  lua_pushinteger(L, TERM_ALPHA_CHANNEL);     /* alpha channel transparency      */
+  lua_setfield(L, luaterm, "TERM_ALPHA_CHANNEL");
+  lua_pushinteger(L, TERM_MONOCHROME);        /* term is running in mono mode    */
+  lua_setfield(L, luaterm, "TERM_MONOCHROME");
+  lua_pushinteger(L, TERM_LINEWIDTH);         /* support for set term linewidth  */
+  lua_setfield(L, luaterm, "TERM_LINEWIDTH");
+#ifdef TERM_FONTSCALE
+  lua_pushinteger(L, TERM_FONTSCALE);         /* terminal supports fontscale     */
+  lua_setfield(L, luaterm, "TERM_FONTSCALE");
+#endif
+}
+
+static int
+LUA_init_luaterm_function(const char *fnc) {
+  if (!L)
+    int_error(NO_CARET, "Missing Lua context! No script?");
+
+  lua_getfield(L, luaterm, fnc);
+  if(lua_isfunction(L, -1)) {
+    return(1);
+  } else {
+    int_warn(NO_CARET, "Script lacks function `%s'!", fnc);
+    lua_pop(L, 1); /* clean stack */
+  }
+  return(0);
+}
+
+
+static int
+LUA_call_report (int status)
+{
+  if (status) {
+    const char *msg = lua_tostring(L, -1);
+    if (msg == NULL) msg = "(error with no message)";
+    snprintf(last_error_msg, MAX_LINE_LEN, "%s. Lua context closed.", msg);
+    LUA_close();
+    int_error(NO_CARET, last_error_msg);
+  }
+  return status;
+}
+
+    
+static int
+LUA_init_lua(void)
+{
+  int sf; /* Lua script "function" */
+  struct stat stat_buf;
+  char *script_fqn;
+  char *gp_lua_dir;
+
+  /*
+   * Close old Lua context and open a new one.
+    */
+  if (L)
+    lua_close(L);
+#if LUA_VERSION_NUM > 500
+  L = luaL_newstate();
+#else
+  L = lua_open();
+#endif
+
+  luaL_openlibs(L); /* Load Lua libraries */
+  luaopen_debug(L);
+
+  gp_lua_dir = getenv("GNUPLOT_LUA_DIR");
+
+# if defined(_Windows)
+  if (!gp_lua_dir) {
+    int len;
+    /* retrieve path relative to the gnuplot executable whose path is in 
+     * szModuleName (winmain.c) */
+    gp_lua_dir = gp_alloc(strlen((char*) szPackageDir)
+                            + strlen(GNUPLOT_LUA_DIR) + 2, "luadir");
+    strcpy(gp_lua_dir, (char*) szPackageDir);
+    len = strlen(gp_lua_dir);
+    if (*gp_lua_dir && gp_lua_dir[len-1] != '\\' &&   gp_lua_dir[len-1] != '/')
+	strcat(gp_lua_dir, "\\");
+    /* GNUPLOT_LUA_DIR is _relative_ path */
+    strcat(gp_lua_dir, GNUPLOT_LUA_DIR);
+    }
+#else /* not _Windows */
+  if (!gp_lua_dir)
+    gp_lua_dir = GNUPLOT_LUA_DIR;
+#endif
+
+  if (stat(LUA_script, &stat_buf) || !S_ISREG(stat_buf.st_mode)) {
+    script_fqn = gp_alloc(strlen(gp_lua_dir) + strlen(LUA_script) + 2, "LUA_script path");
+    sprintf(script_fqn, "%s%c%s", gp_lua_dir, DIRSEP1, LUA_script);
+  } else {
+    script_fqn = gp_strdup(LUA_script);
+  }
+
+  /* Load the file containing the script we are going to run */
+  lua_term_status = luaL_loadfile(L, script_fqn);
+  if (lua_term_status) {
+    fprintf(stderr, "error: %s. Lua context closed.\n", lua_tostring(L, -1));
+    LUA_close();
+    free(script_fqn);
+    return(0);
+  }
+  free(script_fqn);
+
+  /* remember script "function" */
+  sf = lua_gettop(L);
+
+  /*  lua_settop(L, 0);*/ /* clear stack */
+#if LUA_VERSION_NUM > 501
+  LUA_getfield_global(L, "debug");
+#else
+  lua_getfield(L, LUA_GLOBALSINDEX, "debug");
+#endif
+  lua_getfield(L, -1, "traceback");
+  lua_remove(L, -2); /* rm debug */
+  tb = lua_gettop(L); /* store "traceback" */
+  /* create table `term' */
+  lua_newtable(L);
+  lua_setglobal(L, "term");
+#if LUA_VERSION_NUM > 501
+  LUA_getfield_global(L, "term");
+#else
+  lua_getfield(L, LUA_GLOBALSINDEX, "term");
+#endif
+  luaterm = lua_gettop(L); /* store `term' */
+
+  /* register gp functions */
+  LUA_register_gp_fnc();
+  
+  /* set terminal variables */
+  LUA_set_term_vars();
+  
+  /* put script "function" on top and call */
+  lua_pushvalue(L, sf);
+  LUA_call_report(lua_pcall(L, 0, LUA_MULTRET, tb));
+
+  return(1);
+}
+
+/* see color.h */
+static const char*
+LUA_get_colorstyle(int style) {
+  const char *style_str = "unknown";
+
+  switch(style) {
+    case TC_LT:       /* Use the color of linetype <n> */
+      style_str = "LT";
+      break;
+    case TC_LINESTYLE:/* Use the color of line style <n> (only for "internal" use or unsused?) */
+      style_str = "LINESTYLE";
+      break;
+    case TC_RGB:      /* Explicit RGBA values provided by user */
+      style_str = "RGBA";
+      break;
+    case TC_CB:       /* "palette cb <value>" (only for "internal" use or unsused?) */
+      style_str = "CB";
+      break;
+    case TC_FRAC:     /* "palette frac <value>" */
+      style_str = "FRAC";
+      break;
+    case TC_Z:        /* "palette z" (only for "internal" use or unsused?) */
+      style_str = "Z";
+      break;
+    case TC_DEFAULT:  /* Use default color, set separately (only for "internal" use or unsused?) */
+      style_str = "DEFAULT";
+      break;
+  }
+  return(style_str);
+}
+
+/* see term_api.h */
+static const char*
+LUA_get_fillstyle(int style) {
+  const char *style_str = "unknown";
+
+  if (style == FS_OPAQUE) {
+    /* FIXME: not quite shure how to handle this, since it is only used by the
+      postscript terminal */
+    style_str = "OPAQUE";
+  } else {
+    switch (style & 0xf) {
+      case FS_EMPTY:
+        style_str = "EMPTY";
+        break;
+      case FS_SOLID:
+        style_str = "SOLID";
+        break;
+      case FS_PATTERN:
+        style_str = "PATTERN";
+        break;
+      case FS_TRANSPARENT_SOLID:
+        style_str = "TRANSPARENT_SOLID";
+        break;
+      case FS_TRANSPARENT_PATTERN:
+        style_str = "TRANSPARENT_PATTERN";
+        break;
+      case FS_DEFAULT:
+        style_str = "DEFAULT";
+        break;
+    }
+  }
+  return(style_str);
+}
+
+
+
+
+/*
+ * Handle options
+ */
+
+TERM_PUBLIC void
+LUA_options()
+{
+
+  char *opt_str = NULL;
+  char *s;
+
+  int tc_off = c_token+1; /* token counter offset */
+  int need_init = 1;
+
+
+  /* 'set term tikz' is short for 'set term lua tikz' */
+  c_token--; /* see how we got here */
+  if (!equals(c_token, "tikz")) {
+    if (almost_equals(c_token, "termop$tions")) {
+      if (!LUA_script) {
+        int_error(NO_CARET, "No Lua context for setting terminal options!");
+        return;
+      }
+      need_init = 0;
+  }
+    /*  else should always be lua, so just count up ... */
+    c_token++;
+  }
+
+    opt_str = gp_input_line + token[c_token].start_index;
+
+  if (need_init) {
+    if (!END_OF_COMMAND) {
+    if (*opt_str == '"' || *opt_str == '\'') {
+      s = try_to_get_string();
+        gp_expand_tilde(&s);
+    } else {
+      s = gp_alloc(token_len(c_token)+strlen("gnuplot-.lua")+1, "LUA_script");
+      memcpy(s, "gnuplot-", 8);
+      memcpy(s+8, opt_str , token_len(c_token));
+      memcpy(s+8+token_len(c_token), ".lua\0", 5);
+      c_token++;
+    }
+    if (LUA_script) {
+      if (strcmp(LUA_script, s)) {
+        free(LUA_script);
+        LUA_script = s;
+        need_init = 1;
+      } else {
+        free(s);
+        need_init = 0;
+      }
+    } else {
+      LUA_script = s;
+    }
+    opt_str = gp_input_line + token[c_token].start_index;
+  } else {
+    LUA_close();
+    int_error(NO_CARET, "No Lua driver name or file name given!");
+  }
+
+  /* init lua when opening the terminal or on script change */
+    if(!LUA_init_lua()) {
+      return;
+    }
+  }
+
+  /* since options are tokenized again in the script we always "finish" this here */
+  while (!END_OF_COMMAND)
+    c_token++;
+
+  if(LUA_init_luaterm_function("options")) {
+    /* isolate the "set term ...;" part of the command line */
+    opt_str = gp_strdup(opt_str);
+    opt_str[ strcspn(opt_str,";") ] = '\0';
+    lua_pushstring(L, opt_str);
+    lua_pushinteger(L, need_init);
+    lua_pushinteger(L, tc_off);
+    LUA_call_report(lua_pcall(L, 3, 1, tb));
+    lua_term_result = (int)lua_tointeger(L, -1);
+    lua_pop(L, 1);
+    free(opt_str);
+  }
+
+  LUA_get_term_vars();
+
+  /* Treat "set term tikz mono" as "set term tikz; set mono" */
+  if (strstr(term_options, "monochrome")) {
+    monochrome = TRUE;
+    init_monochrome();
+ }
+
+}
+
+
+TERM_PUBLIC void
+LUA_init()
+{
+  fseek(gpoutfile, 0, SEEK_SET);
+  /* ignore compiler warnings here, because `gpoutfile' is already open */
+  (void)ftruncate(fileno(gpoutfile), 0);
+
+  /* reset image counter */
+  image_cnt = 0;
+  
+  LUA_linetype(-1);
+  if(LUA_init_luaterm_function("init")) {
+    LUA_call_report(lua_pcall(L, 0, 1, tb));
+    lua_term_result = (int)lua_tointeger(L, -1);
+    lua_pop(L, 1);
+  }
+}
+
+TERM_PUBLIC void
+LUA_graphics()
+{
+  if(LUA_init_luaterm_function("graphics")) {
+    LUA_call_report(lua_pcall(L, 0, 1, tb));
+    lua_term_result = (int)lua_tointeger(L, -1);
+    lua_pop(L, 1);
+  }
+}
+
+
+TERM_PUBLIC void
+LUA_text()
+{
+  if(LUA_init_luaterm_function("text")) {
+    LUA_call_report(lua_pcall(L, 0, 1, tb));    
+    lua_term_result = (int)lua_tointeger(L, -1);
+    lua_pop(L, 1);
+  }
+}
+
+
+TERM_PUBLIC void
+LUA_linetype(int linetype)
+{
+  if(LUA_init_luaterm_function("linetype")) {
+    lua_pushinteger(L, linetype);
+    LUA_call_report(lua_pcall(L, 1, 1, tb));
+  	lua_term_result = (int)lua_tointeger(L, -1);
+	lua_pop(L, 1);
+  }
+}
+
+
+TERM_PUBLIC void
+LUA_dashtype(int type, t_dashtype *custom_dash_type)
+{
+    int i = 0;
+
+    if(LUA_init_luaterm_function("dashtype")) {
+	lua_pushinteger(L, type);
+	lua_newtable(L);
+	if (type == DASHTYPE_CUSTOM) {
+	    while (custom_dash_type->pattern[i] > 0) {
+		lua_pushnumber(L, custom_dash_type->pattern[i]);
+		i++;
+		lua_rawseti(L, -2, i);
+	    }
+	} else {
+	    lua_pushinteger(L, 0);
+	    lua_rawseti(L, -2, 1);
+	}
+	LUA_call_report(lua_pcall(L, 2, 1, tb));
+	lua_term_result = (int)lua_tointeger(L, -1);
+	lua_pop(L, 1);
+    }
+}
+
+
+TERM_PUBLIC void
+LUA_move(unsigned int x, unsigned int y)
+{
+  if(LUA_init_luaterm_function("move")) {
+    lua_pushinteger(L, (int)x);
+    lua_pushinteger(L, (int)y);
+    LUA_call_report(lua_pcall(L, 2, 1, tb));
+  	lua_term_result = (int)lua_tointeger(L, -1);
+	lua_pop(L, 1);
+  }   
+}
+
+
+TERM_PUBLIC void
+LUA_point(unsigned int x, unsigned int y, int number)
+{
+
+  lua_term_result = 0;
+  
+  if(LUA_init_luaterm_function("point")) {
+    lua_pushinteger(L, (int)x);
+    lua_pushinteger(L, (int)y);
+    lua_pushinteger(L, number);
+    LUA_call_report(lua_pcall(L, 3, 1, tb));
+  	lua_term_result = (int)lua_tointeger(L, -1);
+	lua_pop(L, 1);
+  }
+  
+  if (!lua_term_result) do_point(x, y, number);
+
+}
+
+TERM_PUBLIC void
+LUA_pointsize(double ptsize)
+{
+  if(LUA_init_luaterm_function("pointsize")) {
+    lua_pushnumber(L, ptsize);
+    LUA_call_report(lua_pcall(L, 1, 1, tb));
+    lua_term_result = (int)lua_tointeger(L, -1);
+    lua_pop(L, 1);
+  }
+}
+
+TERM_PUBLIC void
+LUA_vector(unsigned int ux, unsigned int uy)
+{
+  if(LUA_init_luaterm_function("vector")) {
+    lua_pushinteger(L, (int)ux);
+    lua_pushinteger(L, (int)uy);
+    LUA_call_report(lua_pcall(L, 2, 1, tb));
+  	lua_term_result = (int)lua_tointeger(L, -1);
+	lua_pop(L, 1);
+  } 
+}
+
+TERM_PUBLIC void
+LUA_arrow(
+    unsigned int sx, unsigned int sy,
+    unsigned int ex, unsigned int ey,
+    int head)
+{
+
+  /* 
+    if the script does not provide an `arrow' functions
+    or if it returns `0' we fall back to `do_arrow'
+  */
+  lua_term_result = 0;
+
+  if(LUA_init_luaterm_function("arrow")) {
+    lua_pushinteger(L, (int)sx);
+    lua_pushinteger(L, (int)sy);
+    lua_pushinteger(L, (int)ex);
+    lua_pushinteger(L, (int)ey);
+    lua_pushinteger(L, head);
+    /*   additional vars  */
+    lua_pushinteger(L, curr_arrow_headlength);    /* access head length + angle (int) */
+    lua_pushnumber(L, curr_arrow_headangle);      /* angle in degrees (double)        */
+    lua_pushnumber(L, curr_arrow_headbackangle);  /* angle in degrees (double)        */
+    lua_pushinteger(L, curr_arrow_headfilled);    /* arrow head filled or not         */
+    LUA_call_report(lua_pcall(L, 9, 1, tb));
+    lua_term_result = (int)lua_tointeger(L, -1);
+    lua_pop(L, 1);
+  }
+  
+  if (!lua_term_result) do_arrow(sx, sy, ex, ey, head);
+
+}
+
+
+TERM_PUBLIC void
+LUA_put_text(unsigned int x, unsigned int y, const char str[])
+{
+  if(LUA_init_luaterm_function("put_text")) {
+    lua_pushinteger(L, (int)x);
+    lua_pushinteger(L, (int)y);
+    lua_pushstring(L, str);
+    LUA_call_report(lua_pcall(L, 3, 1, tb));
+    lua_term_result = (int)lua_tointeger(L, -1);
+    lua_pop(L, 1);
+  }
+}
+
+
+TERM_PUBLIC int
+LUA_justify_text(enum JUSTIFY mode)
+{
+  if(LUA_init_luaterm_function("justify_text")) {
+    const char *m;
+    switch (mode) {
+      case LEFT:
+        m = "left";
+        break;
+      default:
+      case CENTRE:
+        m = "center";
+        break;
+      case RIGHT:
+        m = "right";
+        break;
+    }
+    lua_pushstring(L, m);
+    LUA_call_report(lua_pcall(L, 1, 1, tb));
+    lua_term_result = (int)lua_tointeger(L, -1);
+    lua_pop(L, 1);
+    return((lua_term_result ? TRUE : FALSE));
+  }
+  return(FALSE);
+}
+
+TERM_PUBLIC int
+LUA_text_angle(int ang)
+{
+  if(LUA_init_luaterm_function("text_angle")) {
+    lua_pushinteger(L, ang);
+    LUA_call_report(lua_pcall(L, 1, 1, tb));
+    lua_term_result = (int)lua_tointeger(L, -1);
+    lua_pop(L, 1);
+    return(((lua_term_result || !ang ) ? TRUE : FALSE));
+  }
+  return((ang ? FALSE : TRUE)); /* return TRUE if called with ang==0 */
+}
+
+TERM_PUBLIC int
+LUA_set_font(const char *font)
+{
+  if(LUA_init_luaterm_function("set_font")) {
+    lua_pushstring(L, font);
+    LUA_call_report(lua_pcall(L, 1, 1, tb));
+    lua_term_result = (int)lua_tointeger(L, -1);
+    lua_pop(L, 1);
+    if (lua_term_result) {
+	lua_getfield(L, luaterm, "v_char");
+	term->v_char = (lua_isnumber(L, -1)) ? (unsigned int)lua_tointeger(L, -1) : LUA_VCHAR;
+	lua_pop(L, 1);
+	lua_getfield(L, luaterm, "h_char");
+	term->h_char = (lua_isnumber(L, -1)) ? (unsigned int)lua_tointeger(L, -1) : LUA_HCHAR;
+	lua_pop(L, 1);
+	return TRUE;
+    }
+  }
+  return(FALSE);
+}
+
+TERM_PUBLIC void
+LUA_boxfill (int style, unsigned int x1,
+    unsigned int y1, unsigned int width,
+    unsigned int height)
+{
+  
+  if(LUA_init_luaterm_function("boxfill")) {
+    lua_pushstring(L, LUA_get_fillstyle(style));
+    lua_pushinteger(L, style >> 4);
+    lua_pushinteger(L, (int)x1);
+    lua_pushinteger(L, (int)y1);
+    lua_pushinteger(L, (int)width);
+    lua_pushinteger(L, (int)height);
+    LUA_call_report(lua_pcall(L, 6, 1, tb));
+    lua_term_result = (int)lua_tointeger(L, -1);
+    lua_pop(L, 1);
+  }
+}
+
+TERM_PUBLIC void
+LUA_linewidth(double width)
+{
+  if(LUA_init_luaterm_function("linewidth")) {
+    lua_pushnumber(L, width);
+    LUA_call_report(lua_pcall(L, 1, 1, tb));
+    lua_term_result = (int)lua_tointeger(L, -1);
+    lua_pop(L, 1);
+  }
+}
+
+TERM_PUBLIC void
+LUA_previous_palette(void)
+{
+  if(LUA_init_luaterm_function("previous_palette")) {
+    LUA_call_report(lua_pcall(L, 0, 1, tb));
+    lua_term_result = (int)lua_tointeger(L, -1);
+    lua_pop(L, 1);
+  }
+}
+
+
+TERM_PUBLIC void
+LUA_reset(void)
+{
+  if(LUA_init_luaterm_function("reset")) {
+    LUA_call_report(lua_pcall(L, 0, 1, tb));
+    lua_term_result = (int)lua_tointeger(L, -1);
+    lua_pop(L, 1);
+  }
+}
+
+TERM_PUBLIC int
+LUA_make_palette (t_sm_palette *palette)
+{
+  if(LUA_init_luaterm_function("make_palette")) {
+    LUA_call_report(lua_pcall(L, 0, 1, tb));
+    lua_term_result = (int)lua_tointeger(L, -1);
+    lua_pop(L, 1);
+    return(lua_term_result);
+  }
+  return(0); /* continuous number of colours */
+}
+
+
+TERM_PUBLIC void
+LUA_set_color (t_colorspec *colorspec)
+{
+
+  double gray = colorspec->value;
+  rgb_color color = {0.,0.,0.};
+  double opacity = 1.0;
+
+  if(LUA_init_luaterm_function("set_color")) {
+    if (colorspec->type == TC_FRAC) {
+      if (sm_palette.colors != 0) /* finite nb of colors explicitly requested */
+          gray = (gray >= ((double)(sm_palette.colors-1)) / sm_palette.colors) ?
+              1 : floor(gray * sm_palette.colors) / sm_palette.colors;
+      rgb1_from_gray( gray, &color );
+    } else if (colorspec->type == TC_RGB) {
+      opacity = 1.0 - (double)(colorspec->lt >> 24 & 255) / 255.;
+      color.r = (double)((colorspec->lt >> 16 ) & 255) / 255.;
+      color.g = (double)((colorspec->lt >> 8 ) & 255) / 255.;
+      color.b = (double)(colorspec->lt & 255) / 255.;
+    }
+
+    if (color.r < 1e-4) color.r = 0;
+    if (color.g < 1e-4) color.g = 0;
+    if (color.b < 1e-4) color.b = 0;
+
+    lua_pushstring(L, LUA_get_colorstyle(colorspec->type));
+    lua_pushinteger(L, colorspec->lt);
+    lua_pushnumber(L, colorspec->value);
+    lua_pushnumber(L, opacity);
+    lua_pushnumber(L, color.r);
+    lua_pushnumber(L, color.g);
+    lua_pushnumber(L, color.b);
+    LUA_call_report(lua_pcall(L, 7, 1, tb));
+    lua_term_result = (int)lua_tointeger(L, -1);
+    lua_pop(L, 1);
+  }
+}
+
+
+TERM_PUBLIC void
+LUA_filled_polygon (int points, gpiPoint *corners)
+{
+  
+  if(LUA_init_luaterm_function("filled_polygon")) {
+    int i;
+    lua_pushstring(L, LUA_get_fillstyle(corners->style));
+    lua_pushinteger(L, corners->style >> 4);
+    /* put all coords into a simple table */
+    lua_newtable(L);
+    for (i = 0; i < points; i++) {
+      lua_newtable(L);
+      lua_pushinteger(L, corners[i].x);
+      lua_rawseti(L, -2, 1);
+      lua_pushinteger(L, corners[i].y);
+      lua_rawseti(L, -2, 2);
+      lua_rawseti(L, -2 , i+1); /* add "subtable" */
+    }
+    LUA_call_report(lua_pcall(L, 3, 1, tb));
+    lua_term_result = (int)lua_tointeger(L, -1);
+    lua_pop(L, 1);
+  }
+}
+
+TERM_PUBLIC void
+LUA_layer (t_termlayer syncpoint)
+{
+  if(LUA_init_luaterm_function("layer")) {
+    const char *m;
+    switch (syncpoint) {
+      case TERM_LAYER_RESET:      /* Start of plot; reset flag */
+        m = "reset";
+        break;
+      case TERM_LAYER_BACKTEXT:   /* Start of "back" text layer */
+        m = "backtext";
+        break;
+      case TERM_LAYER_FRONTTEXT:  /* Start of "front" text layer */
+        m = "fronttext";
+        break;
+      case TERM_LAYER_END_TEXT:   /* Close off front or back macro before leaving */
+        m = "end_text";
+        break;
+      case TERM_LAYER_BEFORE_PLOT:  /* Close off front or back macro before leaving */
+        m = "before_plot";
+        break;
+      case TERM_LAYER_AFTER_PLOT:   /* Close off front or back macro before leaving */
+        m = "after_plot";
+        break;
+      case TERM_LAYER_BEGIN_GRID:
+        m = "begin_grid";
+        break;
+      case TERM_LAYER_END_GRID:
+        m = "end_grid";
+        break;
+      default:
+        m = "";
+        break;
+    }
+    lua_pushstring(L, m);
+    LUA_call_report(lua_pcall(L, 1, 1, tb));
+    lua_term_result = (int)lua_tointeger(L, -1);
+    lua_pop(L, 1);
+  }
+}
+
+TERM_PUBLIC void
+LUA_path (int path)
+{
+  if(LUA_init_luaterm_function("path")) {
+    lua_pushinteger(L, path);
+    LUA_call_report(lua_pcall(L, 1, 1, tb));
+    lua_term_result = (int)lua_tointeger(L, -1);
+    lua_pop(L, 1);
+  }
+}
+
+/*
+  Lua table structure for the image pixel:
+  pixel = {{r, g, b, [, a]}, {r, g, b [, a]}, ... , {r, g, b [, a]}}
+
+*/
+TERM_PUBLIC void
+LUA_image (unsigned m, unsigned n, coordval *image, gpiPoint *corner, t_imagecolor color_mode) {
+  if(LUA_init_luaterm_function("image")) {
+    int i;
+    rgb_color rgb1;
+    coordval alpha = 0;
+    char *image_file = NULL;
+
+#ifdef LUA_EXTERNAL_IMAGES
+    /* "externalize" if transparent images are used or on user request */
+    if (outstr && ((color_mode == IC_RGBA) || image_extern)) {
+      char *idx;
+      /* cairo based png images with alpha channel */
+      if ((idx = strrchr(outstr, '.')) == NULL)
+        idx = strchr(outstr, '\0');
+      image_file = (char*)gp_alloc((idx-outstr)+10, "LUA_image");
+      strncpy(image_file, outstr, (idx-outstr) + 1);
+      snprintf(image_file+(idx-outstr), 8, ".%02d.png", ++image_cnt);
+
+      write_png_image (m, n, image, color_mode, image_file);
+    }
+#endif
+    
+    lua_pushinteger(L, m);
+    lua_pushinteger(L, n);
+
+    lua_newtable(L); /* pixel table */
+    for (i = 0; i < m*n; i++) {
+      if (color_mode == IC_PALETTE) {
+        /* FIXME: Is this correct? Needs a testcase. Would be nice to map it correctly to RGB. */
+        rgb1maxcolors_from_gray(*image++, &rgb1);
+      } else { /* IC_RGB and IC_RGBA*/
+        rgb1.r = *image++;
+        rgb1.g = *image++;
+        rgb1.b = *image++;
+        if (color_mode == IC_RGBA) alpha = (*image++)/255.;
+      }
+      lua_newtable(L); /* pixel color */
+      lua_pushnumber(L, rgb1.r);
+      lua_rawseti(L, -2, 1);
+      lua_pushnumber(L, rgb1.g);
+      lua_rawseti(L, -2, 2);
+      lua_pushnumber(L, rgb1.b);
+      lua_rawseti(L, -2, 3);
+      if (color_mode == IC_RGBA) {
+        lua_pushnumber(L, alpha);
+        lua_rawseti(L, -2, 4);
+      }
+      lua_rawseti(L, -2, i+1); /* add "pixel" */
+    }
+    
+    lua_newtable(L); /* "corner" table */
+    for (i = 0; i < 4; i++) {
+      lua_newtable(L);
+      lua_pushinteger(L, (int)corner[i].x);
+      lua_rawseti(L, -2, 1);
+      lua_pushinteger(L, (int)corner[i].y);
+      lua_rawseti(L, -2, 2);
+      lua_rawseti(L, -2 , i+1); /* add "subtable" */
+    }
+    switch (color_mode) {
+      case IC_PALETTE:
+      case IC_RGB:
+      lua_pushstring(L, "RGB");
+        break;
+      case IC_RGBA:
+        lua_pushstring(L, "RGBA");
+        break;
+    }
+    if (image_file) {
+      lua_pushstring(L, image_file);
+      free(image_file);
+    } else {
+      lua_pushnil(L);
+    }
+    LUA_call_report(lua_pcall(L, 6, 1, tb));
+    lua_term_result = (int)lua_tointeger(L, -1);
+    lua_pop(L, 1);
+  }
+}
+
+#ifdef EAM_BOXED_TEXT
+
+TERM_PUBLIC void
+LUA_boxed_text __PROTO((unsigned int x, unsigned int y, int option))
+{
+    const char *option_str = "UNKNOWN";
+    switch (option) {
+    case TEXTBOX_INIT:
+	option_str = "INIT";
+	break;
+    case TEXTBOX_OUTLINE:
+	option_str = "OUTLINE";
+	break;
+    case TEXTBOX_BACKGROUNDFILL:
+	option_str = "BACKGROUNDFILL";
+	break;
+    case TEXTBOX_MARGINS:
+	option_str = "MARGINS";
+	break;
+    default:
+	break;
+    }
+	    
+    if(LUA_init_luaterm_function("boxed_text")) {
+	lua_pushinteger(L, x);
+	lua_pushinteger(L, y);
+	lua_pushstring(L, option_str);
+	LUA_call_report(lua_pcall(L, 3, 1, tb));
+	lua_term_result = (int)lua_tointeger(L, -1);
+	lua_pop(L, 1);
+    }
+}
+
+#endif
+
+#endif /* TERM_BODY */
+
+
+#ifdef TERM_TABLE
+
+TERM_TABLE_START(lua_driver)
+    "lua", LUA_TERM_DESCRIPTION,
+    LUA_XMAX, LUA_YMAX, LUA_VCHAR, LUA_HCHAR,
+    LUA_VTIC, LUA_HTIC, LUA_options, LUA_init, LUA_reset,
+    LUA_text, null_scale, LUA_graphics, LUA_move, LUA_vector,
+    LUA_linetype, LUA_put_text, LUA_text_angle,
+    LUA_justify_text, LUA_point, LUA_arrow, LUA_set_font, LUA_pointsize,
+    TERM_BINARY /*flags*/, 0 /*suspend*/, 0 /*resume*/,
+    LUA_boxfill, LUA_linewidth
+#ifdef USE_MOUSE
+    , 0, 0, 0, 0, 0
+#endif
+    , LUA_make_palette, LUA_previous_palette,  LUA_set_color
+    , LUA_filled_polygon
+    , LUA_image
+   , 0, 0, 0
+   , LUA_layer
+   , LUA_path
+   , LUA_TSCALE
+    , NULL /* hypertext */
+#ifdef EAM_BOXED_TEXT
+    , LUA_boxed_text
+#endif
+    , NULL /* modify plots */
+    , LUA_dashtype
+TERM_TABLE_END(lua_driver)
+
+#undef LAST_TERM
+#define LAST_TERM lua_driver
+
+TERM_TABLE_START(tikz_driver)
+    "tikz", "TeX TikZ graphics macros via the lua script driver",
+    LUA_XMAX, LUA_YMAX, LUA_VCHAR, LUA_HCHAR,
+    LUA_VTIC, LUA_HTIC, LUA_options, LUA_init, LUA_reset,
+    LUA_text, null_scale, LUA_graphics, LUA_move, LUA_vector,
+    LUA_linetype, LUA_put_text, LUA_text_angle,
+    LUA_justify_text, LUA_point, LUA_arrow, LUA_set_font, LUA_pointsize,
+    TERM_BINARY /*flags*/, 0 /*suspend*/, 0 /*resume*/,
+    LUA_boxfill, LUA_linewidth
+#ifdef USE_MOUSE
+    , 0, 0, 0, 0, 0
+#endif
+    , LUA_make_palette, LUA_previous_palette,  LUA_set_color
+    , LUA_filled_polygon
+    , LUA_image
+   , 0, 0, 0
+   , LUA_layer
+   , LUA_path
+   , LUA_TSCALE
+    , NULL /* hypertext */
+#ifdef EAM_BOXED_TEXT
+    , LUA_boxed_text
+#endif
+    , NULL /* modify plots */
+    , LUA_dashtype
+TERM_TABLE_END(tikz_driver)
+
+#undef LAST_TERM
+#define LAST_TERM tikz_driver
+
+#endif /* TERM_TABLE */
+#endif /* TERM_PROTO_ONLY */
+
+#ifdef TERM_HELP
+START_HELP(lua)
+"1 lua",
+"?commands set terminal lua",
+"?set terminal lua",
+"?set term lua",
+"?terminal lua",
+"?term lua",
+"?lua",
+" The `lua` generic terminal driver works in conjunction with an",
+" external Lua script to create a target-specific plot file.",
+" Currently the only supported target is TikZ -> pdflatex.",
+"",
+" Information about Lua is available at http://www.lua.org .",
+"",
+" Syntax:",
+"    set terminal lua <target name> | \"<file name>\"",
+"                        {<script_args> ...}",
+"                        {help}",
+"",
+" A 'target name' or 'file name' (in quotes) for a script is mandatory.",
+" If a 'target name' for the script is given, the terminal will look for",
+" \"gnuplot-<target name>.lua\" in the local directory and on failure in",
+" the environmental variable GNUPLOT_LUA_DIR.",
+"",
+" All arguments will be provided to the selected script for further",
+" evaluation. E.g. 'set term lua tikz help' will cause the script itself",
+" to print additional help on options and choices for the script.",
+#include "lua/gnuplot-tikz.help"
+""
+END_HELP(lua)
+START_HELP(tikz)
+"1 tikz",
+"?commands set terminal tikz",
+"?set terminal tikz",
+"?set term tikz",
+"?terminal tikz",
+"?term tikz",
+"?tikz",
+" This driver creates output for use with the TikZ package of graphics macros",
+" in TeX.  It is currently implemented via an external lua script, and ",
+" `set term tikz` is a short form of the command `set term lua tikz`.",
+" See `term lua` for more information.  Use the command `set term tikz help`",
+" to print terminal options."
+END_HELP(tikz)
+#endif /* TERM_HELP */

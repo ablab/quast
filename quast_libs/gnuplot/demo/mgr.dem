@@ -1,0 +1,78 @@
+#
+# $Id: mgr.dem,v 1.10 2011/04/09 23:50:05 sfeam Exp $
+#
+print "Watch some  cubic splines"
+set samples 50
+set xlabel "Angle (deg)"
+set ylabel "Amplitude"
+set key box
+set title "Bragg reflection -- Peak only"
+plot "big_peak.dat" title "Rate" with errorbars, \
+                 "" smooth csplines t "Rate"
+pause -1 "You would draw smaller bars? (-> return)"
+set bars small
+replot
+set bars large
+#
+pause -1 "An approx-spline demo (-> return)"
+set samples 300
+set xlabel "Time (sec)"
+set ylabel "Rate"
+set title "Ag 108 decay data"
+plot "silver.dat" t "experimental" w errorb, \
+               ""  smooth csplines t "cubic smooth"
+# error is column 3; weight larger errors less
+# start with rel error = 1/($3/$2)
+pause -1 "Now apply a smoothing spline, weighted by 1/rel error (-> return)"
+S=1
+plot "silver.dat" t "experimental" w errorb,\
+               "" u 1:2:(S*$2/$3) smooth acsplines t "acspline Y/Z"
+pause -1 "Make it smoother by changing the smoothing weights (-> return)"
+plot "silver.dat" t "rate" w errorb,\
+               "" u 1:2:($2/($3*1.e1)) sm acs t "acspline Y/(Z*1.e1)",\
+               "" u 1:2:($2/($3*1.e3)) sm acs t "         Y/(Z*1.e3)",\
+               "" u 1:2:($2/($3*1.e5)) sm acs t "         Y/(Z*1.e5)"
+pause -1 "Accentuate the relative changes with a log-scale (-> return)"
+set logscale y
+set grid x y mx my
+replot
+pause -1 "Now approximate the data with a bezier curve between the endpoints (-> return)"
+unset logscale y
+plot "silver.dat" t "experimental" w errorb,\
+               "" smooth sbezier t "bezier"
+pause -1 "You would rather use log-scales ? (-> return)"
+set logscale y
+plot "silver.dat" t "rate" w errorb, \
+               "" smooth sbezier t "bezier"
+#
+pause -1 "Errorbar demo (-> return)"
+set samples 100
+unset logscale
+unset grid
+set xlabel "Resistance [Ohm]"
+set ylabel "Power [W]"
+set title "UM1-Cell Power"
+n(x)=1.53**2*x/(5.67+x)**2
+plot [0:50] "battery.dat" t "Power" with xyerrorbars, n(x) t "Theory" w lines
+pause -1 "Would you like boxes? (-> return)"
+plot [0:50] "battery.dat" t "Power" with boxxy, n(x) t "Theory" w lines
+pause -1 "Only X-Bars? (-> return)"
+plot [0:50] "battery.dat" u 1:2:3 t "Power" w xerr, n(x) t "Theory" w lines
+pause -1 "Only Y-Bars? (-> return)"
+plot [0:50] "battery.dat" u 1:2:4 t "Power" w yerr, n(x) t "Theory" w lines
+pause -1 "Logscaled? (-> return)"
+set logscale y
+plot [0:50] "battery.dat" u 1:2:4 t "Power" w yerr, n(x) t "Theory" w lines
+pause -1 "X as well? (-> return)"
+set logscale xy
+plot [1:50] "battery.dat" t "Power" w xyerr, n(x) t "Theory" w lines
+pause -1 "If you like bars without tics (-> return)"
+unset logscale
+set bars small
+plot [0:50] "battery.dat" t "Power" with xyerrorbars, n(x) t "Theory" w lines
+pause -1 "X-Bars only (-> return)"
+plot [0:50] "battery.dat" u 1:2:3 t "Power" w xerr, n(x) t "Theory" w lines
+pause -1 "Y-Bars only (-> return)"
+plot [0:50] "battery.dat" u 1:2:4 t "Power" w yerr, n(x) t "Theory" w lines
+reset
+

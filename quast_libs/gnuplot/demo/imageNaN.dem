@@ -1,0 +1,103 @@
+#
+# Explore the effect of image data pixels that are
+# missing/NaN/Inf/garbage/...
+# Test 2D and 3D versions of the generic and
+# terminal-optimized image code.
+# The four tests should all come out the same.
+#
+
+set title "Treatment of missing/undefined/NaN/Inf data"
+unset key
+set tic scale 0
+set border 3 front
+
+set cbrange [-2:7]
+set cblabel "Score"
+set cbtics 0,1,5
+
+set xrange [-0.5:5.5]
+set yrange [-0.5:5.5]
+
+set datafile missing "?"
+set ytics ("-Inf" 5, "Inf" 4, "NaN" 3, "Junk" 2, "?" 1, "0" 0)
+set xtics 1
+
+# Define the test data as a named data block
+$matrixdata << EOD
+0    5 4 3 1 0
+?    2 2 0 0 1
+Junk 1 2 3 4 5
+NaN  0 0 3 1 0
+Inf  3 2 0 2 3
+-Inf 0 1 2 4 3
+EOD
+
+set xlabel "First column contains various odd values" offset 0,1
+
+set view map
+plot $matrixdata matrix with image 
+
+pause -1 "Hit return to continue"
+#
+#
+set title "Same thing in 'pixels' mode (2D)"
+
+plot $matrixdata matrix with image pixels
+
+pause -1 "Hit return to continue"
+
+set title "Same thing passing data value through 'using 1:2:($3)'"
+
+plot $matrixdata matrix using 1:2:($3) with image pixels 
+
+pause -1 "Hit return to continue"
+
+set title "Same thing in 3D mode"
+
+splot $matrixdata matrix with image
+
+pause -1 "Hit return to continue"
+
+set title "Same thing in 'pixels' mode (3D)"
+
+splot $matrixdata matrix with image pixels
+
+pause -1 "Hit return to continue"
+
+set title "3D image with pixel value in 4th column"
+
+splot $matrixdata matrix using 1:2:(0):3 with image
+
+pause -1 "Hit return to continue"
+
+reset
+
+$DATA << EOD
+0	0	0
+0	1	-1
+0	2	-4
+0	3	-9
+
+1	0	1
+1	1	0
+1	2	-3
+1	3	-8
+
+2	0	4
+2	1	3
+2	2	0
+2	3	-5
+
+3	0	9
+3	1	8
+3	2	NaN
+3	3	9
+
+EOD
+
+set title "image from non-matrix data"
+set termopt enhanced
+set label 1 at 3,2 "NaN pixel \nshould appear as\nbackground" front center
+plot $DATA with image 
+pause -1
+reset

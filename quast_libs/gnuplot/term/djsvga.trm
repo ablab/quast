@@ -1,0 +1,489 @@
+/* Hello, Emacs, this is -*-C-*-
+ * $Id: djsvga.trm,v 1.22 2013/01/26 00:19:22 sfeam Exp $
+ */
+
+/* GNUPLOT - djsvga.trm */
+
+/*[
+ * Copyright 1992 - 1993, 1998, 2004
+ *
+ * Permission to use, copy, and distribute this software and its
+ * documentation for any purpose with or without fee is hereby granted,
+ * provided that the above copyright notice appear in all copies and
+ * that both that copyright notice and this permission notice appear
+ * in supporting documentation.
+ *
+ * Permission to modify the software is granted, but not the right to
+ * distribute the complete modified source code.  Modifications are to
+ * be distributed as patches to the released version.  Permission to
+ * distribute binaries produced by compiling modified sources is granted,
+ * provided you
+ *   1. distribute the corresponding source modifications from the
+ *    released version in the form of a patch file along with the binaries,
+ *   2. add special version identification to distinguish your version
+ *    in addition to the base release version number,
+ *   3. provide your name and address as the primary contact for the
+ *    support of your modified version, and
+ *   4. retain our contact information in regard to use of the base
+ *    software.
+ * Permission to distribute the released version of the source code along
+ * with corresponding source modifications in the form of a patch file is
+ * granted with same provisions 2 through 4 for binary distributions.
+ *
+ * This software is provided "as is" without express or implied warranty
+ * to the extent permitted by applicable law.
+]*/
+
+/*
+ * This file is included by ../term.c.
+ *
+ * This terminal driver supports:
+ *  svga
+ *
+ * AUTHORS
+ *  Russell Lang
+ *  Edzer Pebesma (gnuplot 3.6: new terminal layout, fonts, grx20)
+ *  Hans-Bernhard Broeker (several improvements)
+ *
+ * send your comments or suggestions to (gnuplot-info@lists.sourceforge.net).
+ *
+ */
+
+/* HBB: A new version, called grx21a was released recently. To
+ * tell gnuplot you have it, add '-DGRX21' to your compilation flags.
+ * Currently, that only enables the drawing of wide lines. Maybe more
+ *  to come.
+ */
+
+#include "driver.h"
+
+#ifdef TERM_REGISTER
+register_term(djsvga)		/* no ; */
+#endif
+
+#ifdef TERM_PROTO
+#define DJSVGA_XMAX 640
+#define DJSVGA_YMAX 480
+
+#define DJSVGA_XLAST (DJSVGA_XMAX - 1)
+#define DJSVGA_YLAST (DJSVGA_YMAX - 1)
+
+#define DJSVGA_VCHAR 16
+#define DJSVGA_HCHAR 8
+#define DJSVGA_VTIC 4
+#define DJSVGA_HTIC 4
+
+TERM_PUBLIC void DJSVGA_init __PROTO((void));
+TERM_PUBLIC void DJSVGA_graphics __PROTO((void));
+TERM_PUBLIC void DJSVGA_text __PROTO((void));
+TERM_PUBLIC void DJSVGA_reset __PROTO((void));
+TERM_PUBLIC void DJSVGA_options __PROTO((void));
+TERM_PUBLIC void DJSVGA_linetype __PROTO((int linetype));
+TERM_PUBLIC void DJSVGA_move __PROTO((unsigned int x, unsigned int y));
+TERM_PUBLIC void DJSVGA_vector __PROTO((unsigned int x, unsigned int y));
+TERM_PUBLIC int DJSVGA_angle __PROTO((int ang));
+TERM_PUBLIC int DJSVGA_justify_text __PROTO((enum JUSTIFY mode));
+TERM_PUBLIC void DJSVGA_put_text __PROTO((unsigned int x, unsigned int y,
+					  const char *str));
+TERM_PUBLIC int DJSVGA_set_font __PROTO((const char *fontname));
+TERM_PUBLIC void DJSVGA_suspend __PROTO((void));
+TERM_PUBLIC void DJSVGA_resume __PROTO((void));
+/* clear part of multiplot */
+TERM_PUBLIC void DJSVGA_fillbox __PROTO((int style, unsigned int x1,
+					 unsigned int y1, unsigned int width,
+					 unsigned int height));
+TERM_PUBLIC void DJSVGA_linewidth __PROTO((double linewidth));
+
+#define GOT_DJSVGA_PROTO
+#endif /* TERM_PROTO */
+
+#ifndef TERM_PROTO_ONLY
+#ifdef TERM_BODY
+
+/* SVGA driver using DJGPP */
+#if (DJGPP==2)
+# define GRX20
+#endif
+#ifdef GRX20
+/* use grx20.h for DJGPP V1 / GRX V2 combo as well */
+# include <grx20.h>
+#else
+# include <grx.h>
+#endif
+#include <pc.h>
+
+static int dj_startx, dj_starty;
+static int dj_xlast, dj_ylast;
+#define DJNUMCOLOR 15
+/* HBB: Let's just use long for GRX1 as well */
+static long dj_color;
+static long svga256color[DJNUMCOLOR] =
+   /* old sequence: {7, 8, 2, 3, 4, 5, 9, 14, 12, 15, 13, 10, 11, 1, 6}; */
+{
+   7 /*black*/, 8 /*grey*/, 
+#if 0 /* prefer dark colors */
+   4 /*dark red*/, 2 /*dark green*/, 1 /*dark blue*/, 5 /*dark magenta*/, 3 /*dark cyan*/,
+   14 /*yellow*/, 15 /*white*/,
+   12 /*red*/, 9 /*blue*/, 13 /*magenta*/, 10 /*green*/, 11 /*cyan*/,
+   6 /*brown*/
+#else /* prefer light colors */
+   12 /*red*/, 10 /*green*/, 9 /*blue*/, 13 /*magenta*/, 11 /*cyan*/,
+   14 /*yellow*/, 15 /*white*/,
+   4 /*dark red*/, 1 /*dark blue*/, 5 /*dark magenta*/, 2 /*dark green*/, 3 /*dark cyan*/,
+   6 /*brown*/
+#endif
+};
+static long dj_colors[DJNUMCOLOR];
+#ifdef GRX20
+/* Save, Restore: for 16 color mode! */
+static void *DJSVGA_colorbuf = NULL;
+#endif
+static GrTextOption DJSVGA_TextOption;
+/* HBB: I think we should use GR_NAMEWIDTH (=16), instead of MAX_ID_LEN,
+ *   which has nothing to do with GRX at all */
+#ifdef GRX20
+char DJSVGA_fontname[MAX_ID_LEN + 1] = "";
+#else
+char DJSVGA_fontname[MAX_ID_LEN + 1] = "@:pc8x14.fnt";	/* EGA bios font */
+#endif
+static GrContext *DJSVGA_context = 0;	/* save screen for suspend/resume */
+static char *dj_textsave = 0;	/* for text-screen-saving */
+static int dj_cursorx, dj_cursory;
+static int dj_width, dj_height;
+#ifdef GRX21
+static double dj_linewidth;	/* store linewidth assignments here */
+#endif
+
+
+TERM_PUBLIC void
+DJSVGA_options()
+{
+    char *font = NULL;
+
+    if (!END_OF_COMMAND && ((font = try_to_get_string()))) {
+	strncpy(DJSVGA_fontname, font, MAX_ID_LEN-1);
+	free(font);
+    }
+    sprintf(term_options, "\"%s\"", DJSVGA_fontname);
+}
+
+TERM_PUBLIC void
+DJSVGA_init()
+{
+    int i, on, r, g, b, medium = 170, low = 85;
+    GrFont *font = NULL;
+
+#ifdef GRX20
+    font = &GrDefaultFont;
+#endif
+    /* HBB: save textscreen contents and cursor-position */
+    dj_textsave = gp_alloc(ScreenRows() * ScreenCols() * 2, "djsvga term scrbuf");
+    ScreenRetrieve(dj_textsave);
+    dj_width = ScreenCols();
+    dj_height = ScreenRows();
+    ScreenGetCursor(&dj_cursory, &dj_cursorx);
+    GrSetMode(GR_default_graphics);
+    GrSetRGBcolorMode();
+    GrResetColors();
+    /* Allocate colors */
+    for (i = 0; i < DJNUMCOLOR; i++) {
+	on = (svga256color[i] & 8) ? 255 : medium;
+	r = (svga256color[i] & 4) ? on : 0;
+	g = (svga256color[i] & 2) ? on : 0;
+	b = (svga256color[i] & 1) ? on : 0;
+	if (svga256color[i] == 8)
+	    r = g = b = low;
+	dj_colors[i] = GrAllocColor(r, g, b);
+    }
+    /* Get the screen size: */
+    dj_xlast = GrMaxX();
+    term->xmax = dj_xlast + 1;
+    dj_ylast = GrMaxY();
+    term->ymax = dj_ylast + 1;
+    /* if GRX 1.x loads an GRX 2.x save'd file: */
+    if (font == NULL && DJSVGA_fontname[0] == '\0')
+	sprintf(DJSVGA_fontname, "@:pc8x14.fnt");
+
+    if (DJSVGA_fontname[0] != '\0')
+	font = GrLoadFont(DJSVGA_fontname);
+    if (font == NULL)
+	font = GrLoadFont("@:pc8x14.fnt");	/* try EGA bios font */
+    if (font == NULL)
+	font = GrLoadFont("@:pc8x16.fnt");	/* try VGA bios font */
+    /*
+     * HBB: There are cases when we reach this point with font still NULL,
+     *   eg. when the GRXFONT env.variable points to the GRX V1 fonts, but
+     *   GRX V2 is used for this program: some fonts will *fail* to load in
+     *   that setup (e.g. cour20b)! So IMHO, there should be some error
+     *   treatment here..., like int_error("Couldn't load font!");
+     */
+    DJSVGA_TextOption.txo_font = font;
+    DJSVGA_TextOption.txo_direct = GR_TEXT_RIGHT;
+    DJSVGA_TextOption.txo_xalign = GR_ALIGN_LEFT;
+    DJSVGA_TextOption.txo_yalign = GR_ALIGN_CENTER;
+    DJSVGA_TextOption.txo_chrtype = GR_BYTE_TEXT;
+    DJSVGA_TextOption.txo_bgcolor.v = GrNOCOLOR;
+#ifndef GRX20
+    DJSVGA_TextOption.txo_xmag = 1;
+    DJSVGA_TextOption.txo_ymag = 1;
+#endif
+    /* HBB: this version should work in all configurations */
+    term->v_char = font->h.height;
+    term->h_char = font->h.width;
+
+#ifdef GRX20
+    if (DJSVGA_colorbuf == NULL)
+	DJSVGA_colorbuf = (void *) gp_alloc(GrColorSaveBufferSize(), "djsvga term colorbuf");
+    GrSaveColors(DJSVGA_colorbuf);
+#endif
+    GrSetMode(GR_default_text);
+    ScreenUpdate(dj_textsave);
+    ScreenSetCursor(dj_cursory, dj_cursorx);
+}
+
+/*
+ * HBB: make these two inline, as they're called by other routines
+ * inside this module, and -finline-functions (normally switched
+ * on by 'gcc -O3') doesn't work for compiling term.c
+ */
+__inline__
+TERM_PUBLIC void
+DJSVGA_graphics()
+{
+    ScreenRetrieve(dj_textsave);	/* HBB: save text screen contents */
+    ScreenGetCursor(&dj_cursory, &dj_cursorx);
+    GrSetMode(GR_default_graphics);
+#ifdef GRX20
+    GrRestoreColors(DJSVGA_colorbuf);
+#endif
+}
+
+__inline__
+TERM_PUBLIC void
+DJSVGA_text()
+{
+    (void) getkey();
+    GrSetMode(GR_width_height_text, dj_width, dj_height);
+    ScreenUpdate(dj_textsave);	/* HBB: restore text screen */
+    ScreenSetCursor(dj_cursory, dj_cursorx);
+}
+
+TERM_PUBLIC void
+DJSVGA_reset()
+{
+    GrResetColors();
+    free(dj_textsave);
+}
+
+TERM_PUBLIC void
+DJSVGA_linetype(int linetype)
+{
+    if (linetype < -2)
+	linetype = LT_BLACK;
+    if (linetype >= 13)
+	linetype %= 13;
+    /* HBB: set the TextOption color variable right here (faster) */
+    DJSVGA_TextOption.txo_fgcolor.v = dj_color = dj_colors[linetype + 2];
+}
+
+TERM_PUBLIC void
+DJSVGA_move(unsigned int x, unsigned int y)
+{
+    dj_startx = x;
+    dj_starty = y;
+}
+
+
+TERM_PUBLIC void
+DJSVGA_vector(unsigned int x, unsigned int y)
+{
+#ifdef GRX21
+    GrLineOption dj_lineoption =
+    {dj_color, dj_linewidth, 0, ""};
+
+    GrCustomLine(dj_startx, dj_ylast - dj_starty, x, dj_ylast - y, &dj_lineoption);
+#else
+    GrLine(dj_startx, dj_ylast - dj_starty, x, dj_ylast - y, dj_color);
+#endif
+    dj_startx = x;
+    dj_starty = y;
+}
+
+/*
+ * HBB: IMHO, the previous version was seriously flawed. E.g.
+ *   in the termentry, _justify_text was pointing to the
+ *   null_justify_text dummy routine, so DJSVGA_justify wasn't
+ *   ever called at all. I copied the routines from my (now
+ *   otherwise pointless) own private driver, djgrx.trm, to
+ *   cure that.
+ */
+TERM_PUBLIC int
+DJSVGA_angle(int ang)
+{
+    if (ang) {
+	DJSVGA_TextOption.txo_direct = GR_TEXT_UP;
+    } else {
+	DJSVGA_TextOption.txo_direct = GR_TEXT_RIGHT;
+    }
+    return TRUE;
+}
+
+TERM_PUBLIC int
+DJSVGA_justify_text(enum JUSTIFY mode)
+{
+    if (DJSVGA_TextOption.txo_direct == GR_TEXT_RIGHT) {
+	DJSVGA_TextOption.txo_yalign = GR_ALIGN_CENTER;
+	switch (mode) {
+	case LEFT:
+	    DJSVGA_TextOption.txo_xalign = GR_ALIGN_LEFT;
+	    break;
+	case CENTRE:
+	    DJSVGA_TextOption.txo_xalign = GR_ALIGN_CENTER;
+	    break;
+	case RIGHT:
+	    DJSVGA_TextOption.txo_xalign = GR_ALIGN_RIGHT;
+	    break;
+	}
+    } else {
+	DJSVGA_TextOption.txo_xalign = GR_ALIGN_CENTER;
+	switch (mode) {
+	case LEFT:
+	    DJSVGA_TextOption.txo_yalign = GR_ALIGN_BOTTOM;
+	    break;
+	case CENTRE:
+	    DJSVGA_TextOption.txo_yalign = GR_ALIGN_CENTER;
+	    break;
+	case RIGHT:
+	    DJSVGA_TextOption.txo_yalign = GR_ALIGN_TOP;
+	    break;
+	}
+    }
+    return TRUE;
+}
+
+TERM_PUBLIC int
+DJSVGA_set_font(const char *fontname)
+{
+    char *cp;
+    GrFont *font;
+    if (!fontname || !fontname[0])
+	return FALSE;
+    safe_strncpy(DJSVGA_fontname, fontname, sizeof(DJSVGA_fontname));
+    cp = strstr(DJSVGA_fontname, ",");
+    if (cp != NULL)
+	*cp = NUL;
+    font = GrLoadFont(DJSVGA_fontname);
+    /*HBB: if no font found, do *not* report success! */
+    if (font != NULL) {
+	GrUnloadFont(DJSVGA_TextOption.txo_font);
+	DJSVGA_TextOption.txo_font = font;
+	return TRUE;
+    } else {
+	graph_error("Font not found");
+	return FALSE;
+    }
+}
+
+TERM_PUBLIC void
+DJSVGA_put_text(unsigned int x, unsigned int y, const char *str)
+{
+    /* HBB: why isn't font!=NULL ensured elsewhere? Testing it at
+     * this point doesn't really make much sense (we're in graphics
+     * mode, so we can't even print out a useful error message!) */
+    /*if (DJSVGA_TextOption.txo_font != NULL) */
+    GrDrawString(str, strlen(str), x, dj_ylast - y, &DJSVGA_TextOption);
+}
+
+TERM_PUBLIC void
+DJSVGA_suspend()
+{
+    DJSVGA_context = GrCreateContext(GrSizeX(), GrSizeY(), 0, 0);
+    GrBitBltNC(DJSVGA_context, 0, 0, 0, 0, 0, GrMaxX(), GrMaxY(), GrWRITE);
+    DJSVGA_text();
+}
+
+TERM_PUBLIC void
+DJSVGA_resume()
+{
+    DJSVGA_graphics();
+    GrBitBltNC(0, 0, 0, DJSVGA_context, 0, 0, GrMaxX(), GrMaxY(), GrWRITE);
+    GrDestroyContext(DJSVGA_context);
+}
+
+TERM_PUBLIC void
+DJSVGA_fillbox(
+    int style,
+    unsigned int left, unsigned int bottom,
+    unsigned int width, unsigned height)
+{
+    if (style >= 13)
+	style %= 13;
+    /* HBB: prize question: should it be 'width-1' instead? */
+    /* HBB: fill with GRX Color '0', which *should* be black : */
+    /* ULIG: the style parameter is now used for the fillboxes style */
+    /* (not implemented here), see the documentation */
+
+    GrFilledBox(left, dj_ylast - bottom, left + width, dj_ylast - bottom - height, 0);
+}
+
+TERM_PUBLIC void
+DJSVGA_linewidth(double linewidth)
+{
+#ifdef GRX21
+    dj_linewidth = linewidth;
+#endif
+}
+
+#endif /* TERM_BODY */
+
+#ifdef TERM_TABLE
+
+/* HBB: I think \" is more readable than \042. BTW: why is this
+ *   option 'documented' here, but not in the Help node? */
+TERM_TABLE_START(djsvga_driver)
+    "svga", "IBM PC/Clone with Super VGA graphics board [\"fontname\"]",
+    DJSVGA_XMAX, DJSVGA_YMAX, DJSVGA_VCHAR, DJSVGA_HCHAR,
+    DJSVGA_VTIC, DJSVGA_HTIC,
+    DJSVGA_options,
+    DJSVGA_init, DJSVGA_reset, DJSVGA_text,
+    null_scale, DJSVGA_graphics, DJSVGA_move, DJSVGA_vector,
+    DJSVGA_linetype, DJSVGA_put_text,
+    DJSVGA_angle, DJSVGA_justify_text,
+    do_point, do_arrow, DJSVGA_set_font,
+    0,				/* no pointsize() */
+    TERM_CAN_MULTIPLOT,
+    DJSVGA_suspend, DJSVGA_resume,
+    DJSVGA_fillbox, DJSVGA_linewidth
+TERM_TABLE_END(djsvga_driver)
+
+#undef LAST_TERM
+#define LAST_TERM djsvga_driver
+
+#endif /* TERM_TABLE */
+#endif /* TERM_PROTO_ONLY */
+
+/*
+ * HBB: I think this documentation should be at least a *bit* longer
+ *   (E.g., the "fontname" parameter is claimed to be non-existent!)
+ */
+/* RCC: Not any more...
+ *      If you have other ideas about what could be in the help section,
+ *      please let me know (rccrawford@lanl.gov) --- particularly info
+ *      about what fonts are permitted, if there is such a list.
+*/
+#ifdef TERM_HELP
+START_HELP(svga)
+"1 svga",
+"?commands set terminal svga",
+"?set terminal svga",
+"?set term svga",
+"?terminal svga",
+"?term svga",
+"?svga",
+" The `svga` terminal driver supports PCs with SVGA graphics.  It can only be",
+" used if it is compiled with DJGPP.  Its only option is the font.",
+"",
+" Syntax:",
+"       set terminal svga {\"<fontname>\"}"
+END_HELP(svga)
+#endif /* TERM_HELP */

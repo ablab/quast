@@ -1,0 +1,108 @@
+     Notes on using the gnuplot canvas terminal driver to create web pages
+     =====================================================================
+
+
+1) Using UTF-8 characters in your plots
+
+I expect that eventually web browsers will learn to draw text onto the HTML
+canvas element using their native font-handling code.  But until then we
+have to refer to an external character drawing library. 
+
+The gnuplot package includes two versions of a script to draw characters on
+the canvas.  The first one, canvastext.js, was written by Jim Studt. It only
+knows about the 7-bit ascii characters.  The second one, canvasmath.js, is
+an expanded version of Jim Studt's script that I wrote to handle UTF8.
+It contains glyphs for the first two unicode code pages (latin-1), the greek
+alphabet, and select math and physics symbols. You can use this to replace
+canvastext.js if you like, or refer to it explicitly in plots that need
+non-ascii characters.
+
+
+2) Browser dependencies
+
+As of this time (May 2009) the HTML canvas element is supported by the
+latest versions of Opera, Safari, Firefox, and Konqueror.  However, each
+of these has quirks.
+
+For instance, only Firefox makes it easy to click and drag with the middle
+or right mouse buttons;  the other browsers try to pop up various menus instead.
+We try to override this, but it doesn't always work.
+
+Conversely, Opera and Safari make it easy to use hot keys ('e' for refresh,
+'r' to toggle the ruler, etc), but I have not managed to get this to work
+in Firefox.
+
+If you run into problems, please try several browsers before concluding that it
+is a gnuplot problem.  If you figure out a work-around for one of these browser
+quirks, please tell me so that we can try to incorporate into gnuplot output.
+
+
+3) Creating a basic web page with a single mouseable plot
+
+The canvas terminal driver itself will create a basic html document containing
+a mousable plot.  The command options to do this are
+	set term canvas standalone mousing jsdir "http://myserver"
+	set output 'myplot.html'
+This document contains
+	- a reference to style sheet gnuplot_mouse.css
+	- a reference to support script gnuplot_mouse.js
+	- a javascript function named 'gnuplot_canvas'
+	- a canvas element named 'gnuplot_canvas' that will be drawn in by the
+	  javascript function of the same name
+	- an html table containing the readout for mouse coordinates, as well
+	  as clickable icons for additional mousing operations
+The *.css and *.js references point back to whatever source URL you specified
+in the jsdir option to the 'set term' command.  For example:
+<link type="text/css" href="http://myserver/gnuplot_mouse.css" rel="stylesheet">
+In order for viewers to use your plot document, they must be able to access the
+*.css and *.js files via the URL embedded in the document.
+
+
+4) Creating a web page with multiple mouseable plots
+
+In order to embed multiple plots in a single document, you must
+provide your own html framework.  You can use the one created by the canvas
+driver in standalone mode as a starting point, including the references to
+gnuplot_mouse.css and gnuplot_mouse.js.  However, instead of a single
+javascript routine named gnuplot_canvas() that always draws the same plot,
+you must provide a wrapper routine with the same name that connects the
+mousing code to whichever plot is currently active.  Here is an example:
+- create the individual plots as separate javascript files
+	set term canvas name 'plot1'
+	set output 'plot1.js'
+	plot something
+	set term canvas name 'plot2'
+	set output 'plot2.js'
+	plot something_else
+- create your html wrapper, including a script block such as the one below.
+  You must use these specific variable names, as they are referenced by the
+  javascript code produced by the canvas terminal.
+	<script type="text/javascript">
+	var canvas, ctx;
+	var grid_lines = true;
+	var zoomed = false;
+	var active_plot_name = "gnuplot_canvas";
+	var active_plot = dummyplot;
+	function dummyplot() {};
+	function gnuplot_canvas( plot ) { active_plot(); };
+	</script>
+- add one or more mousing output tables.  As a model, you can use either the one
+  in a standalone plot or the file .../demo/html/mousebox.template.
+  The table id and text span ids in the "mousebox" table must match the ones
+  by your individual plots in order for mousing readout to work.
+- each of the individual plots in the document should be explicitly called when
+  the document is loaded.  For example, for each plot there could be a block
+  of html similar to the following:
+	<canvas id="plot1" width="600" height="400" tabindex="0"></canvas>
+	<script src="plot1.js"></script>
+	<script>
+	    if (window.attachEvent) {window.attachEvent('onload', plot1);}
+	    else if (window.addEventListener) {window.addEventListener('load', plot1, false);}
+	</script>
+  Alternatively, the onload attributes could be set in the html <BODY> element
+
+
+
+	- Ethan A Merritt (sfeam@users.sourceforge.net)
+	  May 2009
+	

@@ -1,0 +1,49 @@
+#
+# $Id: multimsh.dem,v 1.5 2003/10/28 05:35:54 sfeam Exp $
+#
+set parametric
+set hidden3d
+unset key
+set xrange [0:8]
+set yrange [-4:4]
+set zrange [-2:2]
+set style data line
+set title "Demo of multiple mesh per file capability - Digitized Blue Whale"
+splot "whale.dat"
+pause -1 "Press Return"
+set title "Demo of multiple mesh per file capability - Digitized Blue Whale"
+set xlabel "Mesh or Network 0"
+splot "whale.dat" index 0
+pause -1 "Press Return"
+
+set autoscale z
+set xlabel "Mesh or Network 6"
+set autoscale z
+splot "whale.dat" index 6 using 3:2:1 
+pause -1 "Press Return"
+
+set zrange [-2:2]
+set xlabel "Mesh or Network 12"
+splot "whale.dat" index 12 with points
+pause -1 "Press Return"
+
+set xlabel "Mesh or Network 13"
+splot "whale.dat" i 13
+pause -1 "Press Return - A Loop over Indices could be done with reread"
+
+#  #file "loop"
+#  maxmsh = 16
+#  ind = (ind + 1)%maxmsh
+#  splot "whale.dat" i ind
+#  reread "loop"
+
+set xlabel "Mesh or Network 4"
+splot "whale.dat" i 4
+pause -1 "Press Return"
+
+set xlabel "Mesh or Network 5"
+splot "whale.dat" i 5
+pause -1 "Press Return"
+
+reset
+

@@ -1,0 +1,15 @@
+set terminal canvas size 500,350 fsize 10 lw 1 name "gnuplot_canvas" jsdir "."
+set output 'mouseable.js'
+set key box
+set logscale y 10
+set samples 300, 300
+set title "Ag 108 decay data"
+set xlabel "Time (sec)"
+set ylabel "Rate"
+set grid x y mx my
+S = 1
+plot "silver.dat" t "rate" w errorb, \
+     "" u 1:2:($2/($3*1.e1)) sm acs t "acspline Y/(Z*1.e1)", \
+     "" u 1:2:($2/($3*1.e3)) sm acs t "         Y/(Z*1.e3)", \
+     "" u 1:2:($2/($3*1.e5)) sm acs t "         Y/(Z*1.e5)"
+

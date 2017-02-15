@@ -1,0 +1,75 @@
+		unicode maps README
+		===================
+
+Each unicode_XXX.map file contains a list of unicode code points that might
+plausibly be used from inside gnuplot.  These are only relevant to the
+PostScript terminal drivers, and only if you want to use UTF-8 encoding.
+
+If you have a TTF unicode font containing the relevant characters, you can
+use the unicode map file to instruct the external program ttf2pt1 to prepare
+an Adobe Type 1 font.
+
+For example:
+
+  ttf2pt1 -p ft -e -L unicode_big.map arialuni.ttf
+
+This will extract character glyphs for these particular code points
+from arialuni.ttf and create a new file arialuni.ps.  You can use this new
+*.pfa font file from gnuplot by saying
+
+  set encoding utf8
+  set term post fontfile 'arialuni.ps' font 'ArialUnicodeMS'
+
+Note that gnuplot can run ttf2pt1 for you on the fly if you
+first define the appropriate command in the environmental variable
+GNUPLOT_TTFTOPFA.   For example:
+
+  setenv GNUPLOT_TTFTOPFA "ttf2pt1 -e -p ft -L unimap.map %s -"
+
+In this case you could say
+
+  set encoding utf8
+  set term post fontfile 'arialuni.ttf' font 'ArialUnicodeMS'
+
+In either case, the converted glyphs will be embedded in your
+gnuplot output file.  There are several caveats:
+
+1) This can make the file quite large.
+
+2) If a glyph isn't in the starting *.ttf font to begin with, nothing
+   you do here will fix that.
+
+3) If gnuplot runs the conversion for you, it will be triggered each
+   time you plot.
+
+Several unicode map files are provided.  They differ in how many
+characters they request, and hence in the size of the resulting font file.
+
+  unicode_small.map  (462 characters)
+  ===================================
+
+- the Latin1 character set
+- the basic Greek alphabet
+- basic math and physical symbols
+- 133 less obscure math symbols from Unicode pages 34 and 35
+
+
+  unicode_big.map  (863 characters)
+  =================================
+
+- the Latin1 character set 
+- extended Latin character sets needed to support other European languages
+- the Cyrillic alphabet, with extensions for various slavic languages
+  (may not be complete - please report omissions)
+- the basic Greek and Hebrew alphabets
+- basic math symbols
+- 176 mathematical symbols, some obscure, from Unicode pages 34 and 35
+- physical and astronomical symbols
+
+The unicode_big map makes a total of about 860 glyphs available to use
+from gnuplot, but only if they exist in the original TTF font file.
+The maximum number that ttf2pt1 can process is 1024.
+This is only a tiny fraction of the total characters indexed by Unicode.
+But if you need more, probably you would do better to use a different
+gnuplot terminal that supports direct use of UTF-8 TTF fonts (pdf, png, svg).
+

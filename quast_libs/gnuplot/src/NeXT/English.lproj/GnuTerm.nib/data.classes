@@ -1,0 +1,51 @@
+GnuView = {
+    ACTIONS = {
+    };
+    OUTLETS = {
+    };
+    SUPERCLASS = View;
+};
+gnuviewController = {
+    ACTIONS = {
+	activate:;
+	activatePushed:;
+	windowWillClose:;
+	windowDidBecomeMain:;
+	deactivate:;
+    };
+    OUTLETS = {
+	gnuView;
+	window;
+	activateButton;
+	controller;
+    };
+    SUPERCLASS = Object;
+};
+FirstResponder = {
+    ACTIONS = {
+    };
+    SUPERCLASS = Object;
+};
+Controller = {
+    ACTIONS = {
+	setDefaultGTSize:;
+	printPScodeInKey:;
+	miniaturizeAll:;
+	setKeyTitle:;
+	setUseBuffered:;
+	newGnuTerm:;
+	closeAll:;
+	appDidInit:;
+	termWillClose:;
+    };
+    OUTLETS = {
+	DefaultSize;
+	useKeyButton;
+	useBufferedSwitch;
+	gvList;
+	NameField;
+	activeTerm;
+	keyTerm;
+    };
+    SUPERCLASS = Object;
+};

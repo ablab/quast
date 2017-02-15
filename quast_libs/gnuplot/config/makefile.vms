@@ -1,0 +1,152 @@
+#
+# $Id: makefile.vms,v 1.16.2.1 2014/10/01 02:40:28 sfeam Exp $
+#
+# GNUPLOT Makefile for VMS
+#
+# use with the MAKE that was posted by Tony Ivanov (tony@gvgpvd.GVG.TEK.COM)
+# in comp.os.vms on 5 December 1988
+#
+# Modified 23 June 1999 to work with MMK; it should also work with MMS.
+# John.Hasstedt@sunysb.edu.
+#
+# You can define a macro on the command line to specify the compiler, either
+# VAXC or GNUC; if you do not specify either, it uses DECC.  If you are
+# compiling on Alpha, you should also define __ALPHA__ (MMK does this for you,
+# for MMS, use MMS/DESCRIP=MAKEFILE.VMS/MACRO=__ALPHA__).
+
+########### COMPILE OPTIONS ###########
+
+.IFDEF VAXC
+CC=CC
+WHICHRTL=VAXCRTL
+CRTL_SHARE=,sys$$disk:[]linkopt.vms/opt
+PREFIXALL=
+CRTL_SHARE=
+EXTRADEFS=
+EXTRAOBJ=
+EXTRALIB=
+.ELSE
+.IFDEF GNUC
+CC=GCC
+WHICHRTL=VAXCRTL
+CRTL_SHARE=,sys$$disk:[]linkopt.vms/opt
+PREFIXALL=
+CRTL_SHARE=
+EXTRADEFS=
+EXTRAOBJ=
+EXTRALIB=,gnu_cc:[000000]gcclib/lib
+.ELSE  # DECC
+CC=CC
+WHICHRTL=DECCRTL
+PREFIXALL=/prefix=all
+CRTL_SHARE=
+.IFDEF __ALPHA__
+EXTRADEFS=,HAVE_SLEEP,HAVE_GETCWD,HAVE_LGAMMA,HAVE_UNISTD_H
+.ELSE
+EXTRADEFS=,HAVE_SLEEP,HAVE_GETCWD,HAVE_UNISTD_H
+EXTRAOBJ=
+EXTRALIB=
+.ENDIF
+.ENDIF
+
+#maybe ABJ and AXE if that's your local convention for alpha
+#(that's how I build vax and axp programs in same directory)
+O=OBJ
+X=EXE
+
+# NOOP  NO Optimiser
+# take out X11 if you dont want windows support
+# pipes compiles with popen emulation (from VMS perl-5 port)
+CFLAGS = /define=(NO_GIH,X11,PIPES$(EXTRADEFS),$(WHICHRTL)) $(PREFIXALL)
+TERMFLAGS = /include=[-.term]
+
+
+############## okay, that's enough fiddling ###############
+
+OBJS1 = alloc.$(O),binary.$(O),bitmap.$(O),command.$(O),contour.$(O),datafile.$(O),dynarray.$(O),eval.$(O),
+OBJS2 = fit.$(O),graphics.$(O),graph3d.$(O),help.$(O),hidden3d.$(O),internal.$(O),interpol.$(O), stats.$(O),
+OBJS3 = matrix.$(O),misc.$(O),parse.$(O),plot.$(O),plot2d.$(O),plot3d.$(O),scanner.$(O),set.$(O),history.$(O),
+OBJS4 = show.$(O),specfun.$(O),standard.$(O),stdfn.$(O),term.$(O),time.$(O),util.$(O),util3d.$(O),version.$(O),vms.$(O),variable.$(O),save.$(O),tables.$(O),unset.$(O)
+OBJS = $(OBJS1)$(OBJS2)$(OBJS3)$(OBJS4)$(EXTRAOBJ)
+
+CSOURCE1 = command.c set.c show.c variable.c
+CSOURCE2 = help.c graphics.c graph3d.c internal.c
+CSOURCE3 = misc.c eval.c parse.c plot.c plot2d.c plot3d.c scanner.c standard.c stdfn.c
+CSOURCE4 = bitmap.c term.c time.c util.c version.c interpol.c fit.c matrix.c stats.c
+CSOURCE5 = [-.term]dumb.trm [-.term]dxf.trm [-.term]dxy.trm \
+	[-.term]eepic.trm [-.term]epson.trm [-.term]fig.trm [-.term]hp26.trm \
+	[-.term]hp2648.trm [-.term]hpgl.trm [-.term]hpljii.trm
+CSOURCE6 = [-.term]impcodes.h [-.term]imagen.trm [-.term]object.h \
+	[-.term]kyo.trm [-.term]latex.trm [-.term]pbm.trm  \
+	[-.term]pc.trm
+CSOURCE7 = [-.term]post.trm [-.term]qms.trm [-.term]regis.trm \
+	[-.term]t410x.trm [-.term]tek.trm \
+	[-.term]x11.trm gplt_x11.c
+CSOURCE8 = contour.c specfun.c interpol.c vms.c dynarray.c
+
+all :   gnuplot.$(X) gnuplot_x11.$(X) gnuplot.hlp gnuplot.hlb \
+	[-.demo]binary1. [-.demo]binary2. [-.demo]binary3.
+	@       ! a no-op to suppress a MMS warning
+
+gnuplot.$(X) : $(OBJS) $(EXTRAOBJ)
+	link /exe=gnuplot.$(X) vms.$(O),gnuplot.opt/opt$(EXTRAOBJ)$(EXTRALIB)$(CRTL_SHARE)
+
+gnuplot_x11.$(X) : gplt_x11.$(O) stdfn.$(O)
+	link /exe=gnuplot_x11.$(X) gplt_x11.$(O),stdfn.$(O),x11.opt/option$(CRTL_SHARE)
+
+gplt_x11.o : gplt_x11.c
+	$(CC) $(CFLAGS) $(X11FLAGS)
+
+[-.demo]binary1. [-.demo]binary2. [-.demo]binary3. : bf_test.$(X)
+	set default [-.demo]
+	run [-.src]bf_test.$(X)
+	set default [-.src]
+
+bf_test.$(X) : bf_test.$(O) binary.$(O) alloc.$(O)
+	link /exe=bf_test.exe bf_test.$(O),binary.$(O),alloc.$(O)
+
+gnuplot.hlb : gnuplot.hlp
+	library/create/help gnuplot.hlb gnuplot.hlp
+
+.IFDEF OLD_HLP
+gnuplot.hlp : doc2hlp.$(X) [-.docs]gnuplot.doc
+	define/user sys$input [-.docs]gnuplot.doc
+	define/user sys$output []gnuplot.hlp
+	run doc2hlp
+
+doc2hlp.$(X) : [-.docs]doc2hlp.c [-.docs]termdoc.c
+	$(CC) /include=([-.docs],[],[-.term]) [-.docs]doc2hlp.c,[-.docs]termdoc.c
+	link /exe=doc2hlp.$(X) doc2hlp,termdoc$(CRTL_SHARE)
+.ELSE
+gnuplot.hlp : [-.docs]gnuplot.rnh
+	RUNOFF $< /OUTPUT=$@
+
+[-.docs]gnuplot.rnh : [-.docs]doc2rnh.$(X) [-.docs]gnuplot.doc
+	MCR $< [-.docs]gnuplot.doc $@
+
+[-.docs]doc2rnh.$(X) : [-.docs]doc2rnh.$(O) [-.docs]termdoc.$(O)
+	link /exe=$@  $+ $(CRTL_SHARE)
+
+[-.docs]doc2rnh.$(O) [-.docs]termdoc.$(O) : [-.docs]termdoc.c ![-.docs]allterm.h
+	$(CC) /OBJ=$@ $(CFLAGS) /INCLUDE=([],[-.TERM]) $*.c
+.ENDIF
+
+term.$(O) : term.h term.c $(CSOURCE5) $(CSOURCE6) $(CSOURCE7)
+	$(CC) $(CFLAGS) $(TERMFLAGS) term.c /object=term.$(O)
+
+$(OBJS) : plot.h
+
+command.$(O) help.$(O) misc.$(O) : help.h
+
+command.$(O) graphics.$(O) graph3d.$(O) misc.$(O) plot.$(O) set.$(O) show.$(O) term.O interpol.$(O) : setshow.h
+
+command.$(O) fit.$(O) matrix.$(O) : fit.h
+
+fit.$(O) matrix.$(O) : matrix.h
+
+bitmap.$(O) term.$(O) : bitmap.h
+
+clean :
+	purge/log
+	delete/log *.$(O);*
+	delete/log [-.demo]binary1.;*,binary2.;*,binary3.;*

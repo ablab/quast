@@ -1,0 +1,58 @@
+all: html
+
+distclean: clean
+clean:
+	rm -f *.gnu *.html *.dat *.tmp *.js *.par *.png jsdir
+
+GNUPLOT_LIB = ..
+
+#
+# Auto-generation of html demo set.
+#
+html_3d: binary.html bivariat.html contours.html datastrings.html discrete.html hidden.html hidden2.html margins.html multimsh.html pm3dcolors.html pm3d.html pointsize.html random.html rgb_variable.html scatter.html singulr.html surface1.html surface2.html transparent_solids.html vector.html world.html world2.html
+
+html_2d: airfoil.html approximate.html barchart_art.html boxplot.html candlesticks.html canvas_utf8.html circles.html cities.html controls.html dashtypes.html electron.html enhanced_utf8.html fillbetween.html fillcrvs.html fillstyle.html finance.html histograms.html histograms2.html hypertext.html gantt.html index.html iterate.html layout.html lines_arrows.html linkedaxes.html mgr.html multiaxis.html multiplt.html nokey.html param.html piecewise.html polar.html poldat.html prob2.html prob.html rainbow.html ellipse.html rectangle.html rgba_lines.html rgbalpha.html rugplot.html running_avg.html simple.html smooth.html spline.html steps.html transparent.html textrotate.html timedat.html using.html varcolor.html world.html heatmaps.html stats.html
+
+html: html_2d html_3d
+
+index.html: index.canvas mouseable.js
+	cp index.canvas index.html
+	cp ../../term/js/*.png .
+
+mouseable.js:
+	../../src/gnuplot mouseable.dem
+
+ellipse.html: random.html
+
+rugplot.html: random.html
+
+canvas_utf8.html: canvas_utf8.dem
+	gnuplot canvas_utf8.dem
+
+#
+# Examples of mousing code
+#
+mgr.html: jsdir
+	./webify_canvas.pl --mouse --grid mgr
+
+cities.html: jsdir
+	./webify_canvas.pl --mouse cities
+	cat cities.html | sed -e 's/grid_lines/zoom_text/' > xxx
+	mv xxx cities.html
+
+# This example needs patching to report the mouse readout in the right units
+linkedaxes.html: jsdir
+	./webify_canvas.pl --mouse linkedaxes
+	patch < linkedaxes.patch
+
+jsdir:
+	cp ../../term/js/*.png .
+	cp ../../term/js/*.js .
+	cp ../../term/js/*.css .
+	cp ../../term/js/canvas_help.html .
+	cp canvasmath.js canvastext.js
+	touch jsdir
+
+%.html: $(GNUPLOT_LIB)/%.dem ./webify_canvas.pl jsdir
+	./webify_canvas.pl --mouse $*
+

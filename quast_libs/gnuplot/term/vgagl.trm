@@ -1,0 +1,1604 @@
+/* Hello, Emacs, this is -*-C-*-
+ * $Id: vgagl.trm,v 1.23 2013/08/24 03:33:35 sfeam Exp $
+ */
+
+#if defined(USE_MOUSE)
+/* GNUPLOT - vgagl.trm */
+
+/*[
+ * Copyright 1993, 1998, 2004
+ *
+ * Permission to use, copy, and distribute this software and its
+ * documentation for any purpose with or without fee is hereby granted,
+ * provided that the above copyright notice appear in all copies and
+ * that both that copyright notice and this permission notice appear
+ * in supporting documentation.
+ *
+ * Permission to modify the software is granted, but not the right to
+ * distribute the complete modified source code.  Modifications are to
+ * be distributed as patches to the released version.  Permission to
+ * distribute binaries produced by compiling modified sources is granted,
+ * provided you
+ *   1. distribute the corresponding source modifications from the
+ *    released version in the form of a patch file along with the binaries,
+ *   2. add special version identification to distinguish your version
+ *    in addition to the base release version number,
+ *   3. provide your name and address as the primary contact for the
+ *    support of your modified version, and
+ *   4. retain our contact information in regard to use of the base
+ *    software.
+ * Permission to distribute the released version of the source code along
+ * with corresponding source modifications in the form of a patch file is
+ * granted with same provisions 2 through 4 for binary distributions.
+ *
+ * This software is provided "as is" without express or implied warranty
+ * to the extent permitted by applicable law.
+ ]*/
+
+/*
+ * This file is included by ../term.c.
+ *
+ * This terminal driver supports SVGA in the following modes:
+ *
+ *  G1024x768x256,
+ *  G800x600x256,
+ *  G640x480x256,
+ *  G320x200x256,
+ *  G1280x1024x256,
+ *  G1152x864x256,
+ *  G1360x768x256,
+ *  G1600x1200x256,
+ *
+ *
+ * AUTHOR
+ *  Johannes Zellner <johannes@zellner.org>
+ *  the code is based on the `linux' driver.
+ *  The first version dated January 2000.
+ */
+
+/*
+ * Compile with -l3kit -lvgagl -lvga
+ */
+
+#define VGAGL_DEBUGGING
+
+#ifdef TERM_REGISTER
+register_term(vgagl)
+#endif
+
+#ifdef TERM_PROTO
+
+#define VGAGL_VCHAR FNT5X9_VCHAR
+#define VGAGL_HCHAR FNT5X9_HCHAR
+#define VGAGL_VTIC 5
+#define VGAGL_HTIC 5
+#define VGAGL_XMAX 0		/* These two entries are just place holders. */
+#define VGAGL_YMAX 0		/* The actual values will be filled in init. */
+
+TERM_PUBLIC void VGAGL_options __PROTO((void));
+TERM_PUBLIC int VGAGL_get_mode __PROTO((void));
+TERM_PUBLIC void VGAGL_init __PROTO((void));
+TERM_PUBLIC void VGAGL_reset __PROTO((void));
+TERM_PUBLIC void VGAGL_text __PROTO((void));
+TERM_PUBLIC void VGAGL_graphics __PROTO((void));
+TERM_PUBLIC void VGAGL_linetype __PROTO((int linetype));
+TERM_PUBLIC void VGAGL_move __PROTO((unsigned int x, unsigned int y));
+TERM_PUBLIC void VGAGL_vector __PROTO((unsigned int x, unsigned int y));
+TERM_PUBLIC int VGAGL_text_angle __PROTO((int ang));
+TERM_PUBLIC void VGAGL_put_text_with_color __PROTO((unsigned int x, unsigned int y, const char* str, int color));
+TERM_PUBLIC void VGAGL_put_text __PROTO((unsigned int x, unsigned int y, const char* str));
+TERM_PUBLIC void VGAGL_suspend __PROTO((void));
+TERM_PUBLIC void VGAGL_resume __PROTO((void));
+
+
+void VGAGL_eventually_process_graphics_events __PROTO((void));
+TERM_PUBLIC void VGAGL_draw_cursor __PROTO((int x, int y));
+TERM_PUBLIC void VGAGL_set_ruler __PROTO((int, int));
+TERM_PUBLIC void VGAGL_set_cursor __PROTO((int, int, int));
+TERM_PUBLIC void VGAGL_put_tmptext __PROTO((int, const char str[]));
+TERM_PUBLIC void VGAGL_set_clipboard __PROTO((const char[]));
+TERM_PUBLIC void VGAGL_init_keytable __PROTO((void));
+TERM_PUBLIC void VGAGL_xor_pixel __PROTO((int x, int y));
+TERM_PUBLIC void VGAGL_xor_pixel_wrapper __PROTO((int x, int y, int color));
+TERM_PUBLIC void VGAGL_hline_xor __PROTO((int x1, int x2, int y));
+TERM_PUBLIC void VGAGL_vline_xor __PROTO((int y1, int y2, int x));
+#if 0
+TERM_PUBLIC void VGAGL_line_xor __PROTO((unsigned int x1, unsigned int y1, unsigned int x2, unsigned int y2));
+#endif
+TERM_PUBLIC void VGAGL_zoombox __PROTO((int x, int y));
+TERM_PUBLIC void VGAGL_update_zoombox __PROTO((int x, int y));
+TERM_PUBLIC void VGAGL_update_cursor __PROTO((int x, int y));
+TERM_PUBLIC void VGAGL_signal_handler __PROTO((int signum));
+TERM_PUBLIC void VGAGL_setpalettecolor __PROTO((int index, double red, double green, double blue));
+TERM_PUBLIC void VGAGL_set_black_and_white __PROTO((void));
+TERM_PUBLIC void VGAGL_set_line_colors __PROTO((void));
+TERM_PUBLIC void VGAGL_putc __PROTO((unsigned int x, unsigned int y, int c, int ang, int color));
+void (*VGAGL_old_handler) __PROTO((int));
+#ifdef VGAGL_DEBUGGING
+TERM_PUBLIC void VGAGL_write_dump_file __PROTO((void));
+#endif
+
+TERM_PUBLIC int VGAGL_make_palette __PROTO((t_sm_palette*));
+TERM_PUBLIC void VGAGL_set_color __PROTO((t_colorspec *));
+TERM_PUBLIC void VGAGL_filled_polygon __PROTO((int, gpiPoint*));
+
+static const int VGAGL_8bit_colors = 240;
+static const int pm3d_color_offset = 16; /* 0xff - VGAGL_8bit_colors + 1 */
+
+static int VGAGL_pm3d_colors;
+static int VGAGL_pm3d_colors_; /* VGAGL_pm3d_colors - 1 */
+static t_sm_palette VGAGL_save_pal = {
+    -1, -1, -1, -1, -1, -1, -1, -1,
+    (rgb_color*) 0, -1, -1
+};
+static double VGAGL_gray = 0;
+
+#ifdef VGAGL_ENABLE_TRUECOLOR
+#define VGAGL_tri_colors 4096
+static TBOOLEAN VGAGL_truecolor = FALSE;
+static unsigned short VGAGL_line_cmap[0xf];
+static unsigned short VGAGL_cmap[VGAGL_tri_colors];
+#endif
+
+#ifdef VGAGL_DEBUGGING
+static char* VGAGL_dump_file = (char*) 0;
+static unsigned char VGAGL_palette[0x100][3];
+#endif
+
+#endif /* TERM_PROTO */
+
+#ifdef TERM_BODY
+
+#include <signal.h>
+
+#define _STRING_H_
+/* according to the vga_waitevent() man page */
+#include <sys/time.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <vga.h>
+#include <vgagl.h>
+#include <3dkit.h>
+#include <vgamouse.h>
+#include <vgakeyboard.h>
+
+#define VGA_FPRINTF(x) fprintf x
+#define Y(y) (vgagl_lasty - y)
+
+static TBOOLEAN VGAGL_processing_graphics_events = FALSE;
+static TBOOLEAN VGAGL_interpolate = TRUE;
+static GraphicsContext backscreen;
+static GraphicsContext physicalscreen;
+static int current_color = 7;
+#ifdef SCANCODE_RIGHTWIN
+#   define KEYTABLE_SIZE (SCANCODE_RIGHTWIN + 1)
+#else
+#   define KEYTABLE_SIZE (128) /* should be sufficient (joze) */
+#endif
+static int VGAGL_Keytable[KEYTABLE_SIZE];
+static int VGAGL_modifier_mask = 0;
+static int VGAGL_last_cursorx = -1;
+static int VGAGL_last_cursory = -1;
+static int VGAGL_cursorx;
+static int VGAGL_cursory;
+static int VGAGL_ruler_x = -1;
+static int VGAGL_ruler_y = -1;
+typedef struct VGAGL_zoom_t {
+    int startx;
+    int starty;
+    int currentx;
+    int currenty;
+    char xstr[2][0xff];
+    char ystr[2][0xff];
+    char current_xstr[2][0xff];
+    char current_ystr[2][0xff];
+} VGAGL_zoom_t;
+static VGAGL_zoom_t VGAGL_zoom = {
+    -1, -1, -1, -1,
+    { "", "" },
+    { "", "" },
+    { "", "" },
+    { "", "" }
+};
+static TBOOLEAN VGAGL_cursor_drawn = FALSE;
+static unsigned char VGAGL_bg_red = 0x0;
+static unsigned char VGAGL_bg_green = 0x0;
+static unsigned char VGAGL_bg_blue = 0x0;
+static unsigned char VGAGL_xor_red = 0xff;
+static unsigned char VGAGL_xor_green = 0xff;
+static unsigned char VGAGL_xor_blue = 0xff;
+static TBOOLEAN VGAGL_need_update = TRUE;
+static char VGAGL_savedstr[0xff] = "";
+
+static int vgagl_vmode = -1; /* default mode */
+static TBOOLEAN VGAGL_graphics_on = FALSE;
+static vga_modeinfo *modeinfo;
+static int VGAGL_startx, VGAGL_starty, vgagl_lasty, vgagl_lastx;
+static int VGAGL_angle = 0;
+
+
+void
+VGAGL_init_keytable()
+{
+    int i;
+    for (i = 0; i < KEYTABLE_SIZE; i++) {
+	VGAGL_Keytable[i] = -1;
+    }
+    VGAGL_Keytable[SCANCODE_1] = '1';
+    VGAGL_Keytable[SCANCODE_2] = '2';
+    VGAGL_Keytable[SCANCODE_3] = '3';
+    VGAGL_Keytable[SCANCODE_4] = '4';
+    VGAGL_Keytable[SCANCODE_5] = '5';
+    VGAGL_Keytable[SCANCODE_6] = '6';
+    VGAGL_Keytable[SCANCODE_7] = '7';
+    VGAGL_Keytable[SCANCODE_8] = '8';
+    VGAGL_Keytable[SCANCODE_9] = '9';
+    VGAGL_Keytable[SCANCODE_0] = '0';
+
+    VGAGL_Keytable[SCANCODE_A] = 'a';
+    VGAGL_Keytable[SCANCODE_B] = 'b';
+    VGAGL_Keytable[SCANCODE_C] = 'c';
+    VGAGL_Keytable[SCANCODE_D] = 'd';
+    VGAGL_Keytable[SCANCODE_E] = 'e';
+    VGAGL_Keytable[SCANCODE_F] = 'f';
+    VGAGL_Keytable[SCANCODE_G] = 'g';
+    VGAGL_Keytable[SCANCODE_H] = 'h';
+    VGAGL_Keytable[SCANCODE_I] = 'i';
+    VGAGL_Keytable[SCANCODE_J] = 'j';
+    VGAGL_Keytable[SCANCODE_K] = 'k';
+    VGAGL_Keytable[SCANCODE_L] = 'l';
+    VGAGL_Keytable[SCANCODE_M] = 'm';
+    VGAGL_Keytable[SCANCODE_N] = 'n';
+    VGAGL_Keytable[SCANCODE_O] = 'o';
+    VGAGL_Keytable[SCANCODE_P] = 'p';
+    VGAGL_Keytable[SCANCODE_Q] = 'q';
+    VGAGL_Keytable[SCANCODE_R] = 'r';
+    VGAGL_Keytable[SCANCODE_S] = 's';
+    VGAGL_Keytable[SCANCODE_T] = 't';
+    VGAGL_Keytable[SCANCODE_U] = 'u';
+    VGAGL_Keytable[SCANCODE_V] = 'v';
+    VGAGL_Keytable[SCANCODE_W] = 'w';
+    VGAGL_Keytable[SCANCODE_X] = 'x';
+    VGAGL_Keytable[SCANCODE_Y] = 'y';
+    VGAGL_Keytable[SCANCODE_Z] = 'z';
+
+    VGAGL_Keytable[SCANCODE_BRACKET_LEFT] = '[';
+    VGAGL_Keytable[SCANCODE_BRACKET_RIGHT] = ']';
+    VGAGL_Keytable[SCANCODE_MINUS] = '-';
+    VGAGL_Keytable[SCANCODE_EQUAL] = '=';
+    VGAGL_Keytable[SCANCODE_SEMICOLON] = ';';
+    VGAGL_Keytable[SCANCODE_APOSTROPHE] = '\'';
+    VGAGL_Keytable[SCANCODE_GRAVE] = '^';
+    VGAGL_Keytable[SCANCODE_BACKSLASH] = '\\';
+    VGAGL_Keytable[SCANCODE_COMMA] = ',';
+    VGAGL_Keytable[SCANCODE_PERIOD] = '.';
+    VGAGL_Keytable[SCANCODE_SLASH] = '/';
+    VGAGL_Keytable[SCANCODE_SPACE] = ' ';
+
+    VGAGL_Keytable[SCANCODE_BACKSPACE] = GP_BackSpace;
+    VGAGL_Keytable[SCANCODE_TAB] = GP_Tab;
+    VGAGL_Keytable[SCANCODE_ENTER] = GP_Return;
+    VGAGL_Keytable[SCANCODE_ESCAPE] = GP_Escape;
+
+    /* VGAGL_Keytable[SCANCODE_LEFTCONTROL] */
+    /* VGAGL_Keytable[SCANCODE_RIGHTCONTROL] */
+    /* VGAGL_Keytable[SCANCODE_CONTROL] */
+    /* VGAGL_Keytable[SCANCODE_LEFTSHIFT] */
+    /* VGAGL_Keytable[SCANCODE_RIGHTSHIFT] */
+    /* VGAGL_Keytable[SCANCODE_LEFTALT] */
+    /* VGAGL_Keytable[SCANCODE_RIGHTALT] */
+    /* VGAGL_Keytable[SCANCODE_CAPSLOCK] */
+
+    VGAGL_Keytable[SCANCODE_NUMLOCK] = GP_Scroll_Lock;
+    /* VGAGL_Keytable[SCANCODE_SCROLLLOCK] = GP_Numlock; */
+
+    VGAGL_Keytable[SCANCODE_KEYPADMULTIPLY] = GP_KP_Multiply;
+
+    VGAGL_Keytable[SCANCODE_F1] = GP_F1;
+    VGAGL_Keytable[SCANCODE_F2] = GP_F2;
+    VGAGL_Keytable[SCANCODE_F3] = GP_F3;
+    VGAGL_Keytable[SCANCODE_F4] = GP_F4;
+    VGAGL_Keytable[SCANCODE_F5] = GP_F5;
+    VGAGL_Keytable[SCANCODE_F6] = GP_F6;
+    VGAGL_Keytable[SCANCODE_F7] = GP_F7;
+    VGAGL_Keytable[SCANCODE_F8] = GP_F8;
+    VGAGL_Keytable[SCANCODE_F9] = GP_F9;
+    VGAGL_Keytable[SCANCODE_F10] = GP_F10;
+    VGAGL_Keytable[SCANCODE_F11] = GP_F11;
+    VGAGL_Keytable[SCANCODE_F12] = GP_F12;
+
+    VGAGL_Keytable[SCANCODE_KEYPAD0] = GP_KP_0;
+    VGAGL_Keytable[SCANCODE_KEYPAD1] = GP_KP_1;
+    VGAGL_Keytable[SCANCODE_KEYPAD2] = GP_KP_2;
+    VGAGL_Keytable[SCANCODE_KEYPAD3] = GP_KP_3;
+    VGAGL_Keytable[SCANCODE_KEYPAD4] = GP_KP_4;
+    VGAGL_Keytable[SCANCODE_KEYPAD5] = GP_KP_5;
+    VGAGL_Keytable[SCANCODE_KEYPAD6] = GP_KP_6;
+    VGAGL_Keytable[SCANCODE_KEYPAD7] = GP_KP_7;
+    VGAGL_Keytable[SCANCODE_KEYPAD8] = GP_KP_8;
+    VGAGL_Keytable[SCANCODE_KEYPAD9] = GP_KP_9;
+
+    /* KEYPAD */
+    VGAGL_Keytable[SCANCODE_KEYPADMINUS] = GP_KP_Subtract;
+    VGAGL_Keytable[SCANCODE_KEYPADPLUS] = GP_KP_Add;
+    VGAGL_Keytable[SCANCODE_KEYPADPERIOD] = GP_KP_Delete;
+    VGAGL_Keytable[SCANCODE_KEYPADENTER] = GP_KP_Enter;
+    VGAGL_Keytable[SCANCODE_KEYPADDIVIDE] = GP_KP_Divide;
+
+    VGAGL_Keytable[SCANCODE_CURSORUPLEFT] = GP_KP_Home;
+    VGAGL_Keytable[SCANCODE_CURSORUP] = GP_KP_Up;
+    VGAGL_Keytable[SCANCODE_CURSORUPRIGHT] = GP_KP_Page_Up;
+    VGAGL_Keytable[SCANCODE_CURSORLEFT] = GP_KP_Left;
+    VGAGL_Keytable[SCANCODE_CURSORRIGHT] = GP_KP_Right;
+    VGAGL_Keytable[SCANCODE_CURSORDOWNLEFT] = GP_KP_End;
+    VGAGL_Keytable[SCANCODE_CURSORDOWN] = GP_KP_Down;
+    VGAGL_Keytable[SCANCODE_CURSORDOWNRIGHT] = GP_KP_Page_Down;
+
+    VGAGL_Keytable[SCANCODE_LESS] = GP_KP_Begin;
+
+#if 0
+    VGAGL_Keytable[SCANCODE_PRINTSCREEN] = GP_Begin;
+    VGAGL_Keytable[SCANCODE_BREAK] = GP_Begin;
+    VGAGL_Keytable[SCANCODE_BREAK_ALTERNATIVE] = GP_Begin;
+#endif
+
+    /* 3 * 2 block (usually above arrow keys) */
+    VGAGL_Keytable[SCANCODE_INSERT] = GP_Insert;
+    VGAGL_Keytable[SCANCODE_HOME] = GP_Home;
+    VGAGL_Keytable[SCANCODE_PAGEUP] = GP_PageUp;
+
+    VGAGL_Keytable[SCANCODE_REMOVE] = GP_Delete;
+    VGAGL_Keytable[SCANCODE_END] = GP_End;
+    VGAGL_Keytable[SCANCODE_PAGEDOWN] = GP_PageDown;
+
+    /* arrow keys */
+    VGAGL_Keytable[SCANCODE_CURSORBLOCKUP] = GP_Up;
+    VGAGL_Keytable[SCANCODE_CURSORBLOCKLEFT] = GP_Left;
+    VGAGL_Keytable[SCANCODE_CURSORBLOCKRIGHT] = GP_Right;
+    VGAGL_Keytable[SCANCODE_CURSORBLOCKDOWN] = GP_Down;
+
+    /* VGAGL_Keytable[SCANCODE_RIGHTWIN] */
+    /* VGAGL_Keytable[SCANCODE_LEFTWIN] */
+}
+
+enum {
+    VGAGL_INVALID = -1,
+    VGAGL_BACKGROUND = 1,
+    VGAGL_UNIFORM,
+    VGAGL_INTERPOLATE,
+    VGAGL_DUMP
+};
+
+static struct gen_table VGAGL_opts[] = {
+    { "ba$ckground", VGAGL_BACKGROUND },
+    { "bg", VGAGL_BACKGROUND },
+    { "un$iform", VGAGL_UNIFORM },
+    { "in$terpolate", VGAGL_INTERPOLATE },
+#ifdef VGAGL_DEBUGGING
+    { "dump", VGAGL_DUMP },
+#endif
+    { NULL, VGAGL_INVALID }
+};
+
+/* parse driver optinos. This is done when the
+ * user types `set term vgagl [options ...]'. */
+TERM_PUBLIC
+void VGAGL_options()
+{
+    if (!LINUX_graphics_allowed) {
+	int_error(NO_CARET, "vgagl terminal driver not available");
+	return;
+    }
+
+#ifdef VGAGL_DEBUGGING
+#if 0
+    if (VGAGL_dump_file)
+	free(VGAGL_dump_file);
+    VGAGL_dump_file = (char*) 0;
+#endif
+#endif
+
+    if (END_OF_COMMAND) {
+	/* defaults */
+	vgagl_vmode = -1; /* get default mode */
+	VGAGL_bg_red = 0;
+	VGAGL_bg_green = 0;
+	VGAGL_bg_blue = 0;
+	VGAGL_interpolate = TRUE;
+    }
+
+    while (!END_OF_COMMAND) {
+	switch (lookup_table(VGAGL_opts, c_token)) {
+	    case VGAGL_BACKGROUND:
+		{
+		    struct value a;
+		    int i, c[3];
+		    ++c_token;
+		    for (i = 0; i < 3; i++) {
+			if (END_OF_COMMAND) {
+			    break;
+			}
+			c[i] = (int)real(const_express(&a));
+			if (c[i] < 0 || c[i] > 255) {
+			    fprintf(stderr, "color ranges from 0 to 255\n");
+			    return;
+			}
+		    }
+		    if (!i) {
+			fprintf(stderr, "background requires arguments\n");
+		    } else if (i < 3) {
+			c[1] = c[0];
+			c[2] = c[0];
+		    }
+		    VGAGL_bg_red = c[0];
+		    VGAGL_bg_green = c[1];
+		    VGAGL_bg_blue = c[2];
+		}
+		break;
+	    case VGAGL_UNIFORM:
+		VGAGL_interpolate = FALSE;
+		++c_token;
+		break;
+	    case VGAGL_INTERPOLATE:
+		VGAGL_interpolate = TRUE;
+		++c_token;
+		break;
+#ifdef VGAGL_DEBUGGING
+	    case VGAGL_DUMP:
+		/* since this is not documented it won't hurt too much to leave it in. */
+		++c_token;
+		if (!((VGAGL_dump_file = try_to_get_string())))
+		    int_error(NO_CARET, "expecting string value");
+		break;
+#endif
+	    default:
+		{
+		    /* VGA MODE */
+		    char x[0x40];
+		    int imode;
+		    copy_str(x, c_token, 0x3f);
+		    imode = vga_getmodenumber(x);
+		    if (-1 != imode) {
+			if (vga_hasmode(imode)) {
+			    vgagl_vmode = imode;
+			} else {
+			    fprintf(stderr, "mode %s not available\n",
+				vga_getmodename(imode));
+			}
+		    }
+		    c_token++;
+		}
+		if (VGAGL_graphics_on) {
+		    VGAGL_processing_graphics_events = FALSE;
+		    VGAGL_reset();
+		}
+		break;
+	}
+    }
+    if (VGAGL_graphics_on) {
+	VGAGL_set_black_and_white();
+    }
+    VGAGL_get_mode(); /* check availability of mode */
+    sprintf(term_options, "%s bg %d %d %d %s",
+	vga_getmodename(vgagl_vmode),
+	VGAGL_bg_red, VGAGL_bg_green, VGAGL_bg_blue,
+	TRUE == VGAGL_interpolate ? "interpolate" : "uniform");
+}
+
+void
+VGAGL_setpalettecolor(int index, double red, double green, double blue)
+{
+#ifdef VGAGL_DEBUGGING
+    assert(index >= 0 && index < 0x100);
+    assert(red >= 0 && red <= 1);
+    assert(green >= 0 && green <= 1);
+    assert(blue >= 0 && blue <= 1);
+    VGAGL_palette[index][0] = (unsigned char) floor(red * 255.999);
+    VGAGL_palette[index][1] = (unsigned char) floor(green * 255.999);
+    VGAGL_palette[index][2] = (unsigned char) floor(blue * 255.999);
+#endif
+    gl_setpalettecolor(index, red * 63.999, green * 63.999, blue * 63.999);
+}
+
+/* set the background color (default is black) and choose
+ * the primary foreground and xor colors appropriately */
+TERM_PUBLIC void
+VGAGL_set_black_and_white()
+{
+    /* background */
+#ifdef VGAGL_ENABLE_TRUECOLOR
+    switch (VGAGL_truecolor) {
+	case TRUE:
+	    VGAGL_line_cmap[0] = gl_rgbcolor(VGAGL_bg_red, VGAGL_bg_green, VGAGL_bg_blue);
+	    break;
+	default:
+#endif
+	    VGAGL_setpalettecolor(0,
+		(double) VGAGL_bg_red / (double) 0xff,
+		(double) VGAGL_bg_green / (double) 0xff,
+		(double) VGAGL_bg_blue / (double) 0xff);
+#ifdef VGAGL_ENABLE_TRUECOLOR
+    }
+#endif
+    if (VGAGL_bg_red + VGAGL_bg_green + VGAGL_bg_blue > 0x180) {
+	/* light background */
+#ifdef VGAGL_ENABLE_TRUECOLOR
+	switch (VGAGL_truecolor) {
+	    case TRUE:
+		VGAGL_line_cmap[1] = gl_rgbcolor(0x00, 0x00, 0x00);
+		break;
+	    default:
+#endif
+		VGAGL_setpalettecolor(1, 0, 0, 0); /* black */
+#ifdef VGAGL_ENABLE_TRUECOLOR
+	}
+#endif
+	VGAGL_xor_red = 0xa0;
+	VGAGL_xor_green = 0xa0;
+	VGAGL_xor_blue = 0xa0;
+	/* TODO  need to allocate a colormap entry for the xor color ? */
+#if 0
+	VGAGL_xor_red = ~VGAGL_bg_red;
+	VGAGL_xor_green = ~VGAGL_bg_green;
+	VGAGL_xor_blue = ~VGAGL_bg_blue;
+	fprintf(stderr, "(VGAGL_set_black_and_white) VGAGL_xor_red = %d\n", VGAGL_xor_red);
+	fprintf(stderr, "(VGAGL_set_black_and_white) VGAGL_xor_green = %d\n", VGAGL_xor_green);
+	fprintf(stderr, "(VGAGL_set_black_and_white) VGAGL_xor_blue = %d\n", VGAGL_xor_blue);
+#endif
+    } else {
+	/* dark background */
+#ifdef VGAGL_ENABLE_TRUECOLOR
+	switch (VGAGL_truecolor) {
+	    case TRUE:
+		VGAGL_line_cmap[1] = gl_rgbcolor(0xff, 0xff, 0xff);
+		break;
+	    default:
+#endif
+		VGAGL_setpalettecolor(1, 1, 1, 1); /* white */
+#ifdef VGAGL_ENABLE_TRUECOLOR
+	}
+#endif
+	VGAGL_xor_red = 0xff;
+	VGAGL_xor_green = 0xff;
+	VGAGL_xor_blue = 0xff;
+	/* TODO  need to allocate a colormap entry for the xor color ? */
+    }
+}
+
+/* set up line colors */
+TERM_PUBLIC void
+VGAGL_set_line_colors()
+{
+    gl_setrgbpalette();
+    VGAGL_set_black_and_white();
+#ifdef VGAGL_ENABLE_TRUECOLOR
+    switch (VGAGL_truecolor) {
+	case TRUE:
+	    VGAGL_line_cmap[2]  = gl_rgbcolor(0x80, 0x80, 0x80); /* gray */
+	    VGAGL_line_cmap[3]  = gl_rgbcolor(0x00, 0xff, 0x00); /* green */
+	    VGAGL_line_cmap[4]  = gl_rgbcolor(0x00, 0xff, 0xff); /* cyan */
+	    VGAGL_line_cmap[5]  = gl_rgbcolor(0xff, 0x00, 0x00); /* red */
+	    VGAGL_line_cmap[6]  = gl_rgbcolor(0xff, 0x00, 0xff); /* magenta */
+	    VGAGL_line_cmap[7]  = gl_rgbcolor(0x00, 0x00, 0xff); /* blue */
+	    VGAGL_line_cmap[8]  = gl_rgbcolor(0xff, 0xff, 0x00); /* yellow */
+	    VGAGL_line_cmap[9]  = gl_rgbcolor(0xff, 0x80, 0x80); /* light red */
+	    VGAGL_line_cmap[10] = gl_rgbcolor(0xff, 0xff, 0xff); /* white */
+	    VGAGL_line_cmap[11] = gl_rgbcolor(0xff, 0x80, 0xff); /* light magenta */
+	    VGAGL_line_cmap[12] = gl_rgbcolor(0x80, 0xff, 0x80); /* light green */
+	    VGAGL_line_cmap[13] = gl_rgbcolor(0x80, 0xff, 0xff); /* light cyan */
+	    VGAGL_line_cmap[14] = gl_rgbcolor(0x80, 0x80, 0xff); /* light blue */
+	    break;
+	default:
+#endif
+	    VGAGL_setpalettecolor(2, 0.5, 0.5, 0.5); /* gray */
+	    VGAGL_setpalettecolor(3, 0.0, 1.0, 0.0); /* green */
+	    VGAGL_setpalettecolor(4, 0.0, 1.0, 1.0); /* cyan */
+	    VGAGL_setpalettecolor(5, 1.0, 0.0, 0.0); /* red */
+	    VGAGL_setpalettecolor(6, 1.0, 0.0, 1.0); /* magenta */
+	    VGAGL_setpalettecolor(7, 0.0, 0.0, 1.0); /* blue */
+	    VGAGL_setpalettecolor(8, 1.0, 1.0, 0.0); /* yellow */
+	    VGAGL_setpalettecolor(9, 1.0, 0.5, 0.5); /* light red */
+	    VGAGL_setpalettecolor(10, 1.0, 1.0, 1.0); /* white */
+	    VGAGL_setpalettecolor(11, 1.0, 0.5, 1.0); /* light magenta */
+	    VGAGL_setpalettecolor(12, 0.5, 1.0, 0.5); /* light green */
+	    VGAGL_setpalettecolor(13, 0.5, 1.0, 1.0); /* light cyan */
+	    VGAGL_setpalettecolor(14, 0.5, 0.5, 1.0); /* light blue */
+#ifdef VGAGL_ENABLE_TRUECOLOR
+    }
+#endif
+}
+
+TERM_PUBLIC int
+VGAGL_get_mode()
+{
+    int *iptr;
+
+    static int default_modes[] = {
+	0, /* to be filled with the user defined mode */
+	0, /* to be filled with the default mode */
+	G1024x768x256, /* hopefully available on all modern graphics boards */
+	G800x600x256,
+	G640x480x256,
+	G320x200x256,
+	G1280x1024x256,
+#ifdef G1152x864x256
+	G1152x864x256,
+#endif
+#ifdef G1360x768x256
+	G1360x768x256,
+#endif
+#ifdef G1600x1200x256
+	G1600x1200x256,
+#endif
+	TEXT
+    };
+
+    if (VGAGL_graphics_on) {
+	return 1; /* success ??? */
+    }
+
+    /* the user supplied mode will be checked first */
+    default_modes[0] = vgagl_vmode;
+
+    /* get the default mode from SVGALIB_DEFAULT_MODE, if available */
+    default_modes[1] = vga_getdefaultmode();
+
+    for (iptr = default_modes; TEXT != *iptr; iptr++) {
+	if (-1 != *iptr && vga_hasmode(*iptr)) {
+	    vgagl_vmode = *iptr;
+	    break;
+	}
+    }
+
+    if (TEXT == *iptr) {
+	vgagl_vmode = TEXT;
+	int_error(NO_CARET, "vgagl terminal driver not available");
+	return 0;
+    }
+
+    modeinfo = vga_getmodeinfo(vgagl_vmode);
+
+#ifdef VGAGL_ENABLE_TRUECOLOR
+    VGAGL_truecolor = FALSE;
+#endif
+    VGAGL_pm3d_colors = VGAGL_8bit_colors;
+    VGAGL_pm3d_colors_ = VGAGL_pm3d_colors - 1;
+
+    if (modeinfo->colors != 256) {
+	int_error(NO_CARET, "Error: need a 256 color mode but got %d colors\n",
+	    modeinfo->colors);
+	return 0;
+#ifdef VGAGL_ENABLE_TRUECOLOR
+    } else if (modeinfo->colors > 256) {
+	VGAGL_truecolor = TRUE;
+	VGAGL_pm3d_colors = VGAGL_tri_colors;
+	VGAGL_pm3d_colors_ = VGAGL_pm3d_colors - 1;
+#endif
+    }
+    return 1; /* success */
+}
+
+TERM_PUBLIC void
+VGAGL_init()
+{
+    static TBOOLEAN keytable_initialized = FALSE;
+
+    if (!VGAGL_graphics_on) {
+
+	/* initialize keyboard tranlation table, only done once */
+	if (!keytable_initialized) {
+	    VGAGL_init_keytable();
+	    keytable_initialized = TRUE;
+	}
+
+	if (!VGAGL_get_mode()) {
+	    return;
+	}
+
+    }
+    term->xmax = modeinfo->width;
+    term->ymax = modeinfo->height;
+    vgagl_lasty = modeinfo->height - 1;
+    vgagl_lastx = modeinfo->width - 1;
+#if 0
+    gl_setfont(8, 8, gl_font8x8);
+    gl_setwritemode(WRITEMODE_MASKED + FONT_COMPRESSED);
+    fprintf(stderr, "(VGAGL_init) width, height = %d, %d\n", term->xmax, term->ymax);
+#endif
+}
+
+TERM_PUBLIC void
+VGAGL_reset()
+{
+    if (VGAGL_graphics_on && !VGAGL_processing_graphics_events) {
+	keyboard_close();                  /* switch back to cooked mode          */
+	vga_setmousesupport(0);            /* turn off mouse                      */
+	vga_setmode(TEXT);                 /* switch to text mode                 */
+	VGAGL_save_pal.colorFormulae = -1; /* force later reallocation of palette */
+	VGAGL_graphics_on = FALSE;
+    }
+}
+
+/* copy virtual screen to physical screen and process
+   input events until the user leaves the graphics mode */
+TERM_PUBLIC void
+VGAGL_text()
+{
+    if (!VGAGL_cursor_drawn) {
+	VGAGL_draw_cursor(VGAGL_cursorx, VGAGL_cursory); /* actually draws the first time the cursor */
+	VGAGL_cursor_drawn = TRUE;
+	if (VGAGL_ruler_x >= 0) {
+	    VGAGL_set_ruler(VGAGL_ruler_x, VGAGL_ruler_y);
+	}
+    }
+
+    gl_copyscreen(&physicalscreen);
+
+    /* this is dirty but should work. The purpose is to force
+     * gnuplot to call VGAGL_graphics() before redrawing. */
+    term_graphics = FALSE;
+
+    if (!VGAGL_graphics_on || VGAGL_processing_graphics_events) {
+	return;
+    }
+
+    /* go to the input event loop */
+    VGAGL_eventually_process_graphics_events();
+
+    /* switch to TEXT mode */
+    VGAGL_reset();
+}
+
+TERM_PUBLIC void
+VGAGL_graphics()
+{
+    if (!VGAGL_graphics_on) {
+	vga_setmousesupport(1);
+	if (gl_setcontextvgavirtual(vgagl_vmode)) {
+	    fprintf(stderr, "(VGAGL_graphics) unable to set virtual context\n");
+	}
+	gl_getcontext(&backscreen);
+	vga_setmode(vgagl_vmode);
+	gl_setcontextvga(vgagl_vmode); /* Physical screen context. */
+	gl_getcontext(&physicalscreen);
+	gl_setcontext(&backscreen);
+	gl_clearscreen(0); /* clear backscreen; we'll draw there */
+	gl_enableclipping();
+	VGAGL_set_line_colors();
+
+	/* center the cursor on startup */
+	VGAGL_cursorx = WIDTH / 2;
+	VGAGL_cursory = HEIGHT / 2;
+
+	VGAGL_graphics_on = TRUE;
+    } else {
+	/* graphics is already on; clear previous plot */
+	gl_clearscreen(0);
+    }
+    VGAGL_cursor_drawn = FALSE;
+    VGAGL_savedstr[0] = '\0';
+#if 0
+    {
+	int avail = vga_ext_set(VGA_EXT_AVAILABLE, VGA_AVAIL_ACCEL);
+	fprintf(stderr, "ACCELFLAG_FILLBOX %s\n", (avail & ACCELFLAG_FILLBOX) ? "yes" : "no");
+	fprintf(stderr, "ACCELFLAG_SCREENCOPY %s\n", (avail & ACCELFLAG_SCREENCOPY) ? "yes" : "no");
+	fprintf(stderr, "ACCELFLAG_PUTIMAGE %s\n", (avail & ACCELFLAG_PUTIMAGE) ? "yes" : "no");
+	fprintf(stderr, "ACCELFLAG_DRAWLINE %s\n", (avail & ACCELFLAG_DRAWLINE) ? "yes" : "no");
+	fprintf(stderr, "ACCELFLAG_SETFGCOLOR %s\n", (avail & ACCELFLAG_SETFGCOLOR) ? "yes" : "no");
+	fprintf(stderr, "ACCELFLAG_SETBGCOLOR %s\n", (avail & ACCELFLAG_SETBGCOLOR) ? "yes" : "no");
+	fprintf(stderr, "ACCELFLAG_SETTRANSPARENCY %s\n", (avail & ACCELFLAG_SETTRANSPARENCY) ? "yes" : "no");
+	fprintf(stderr, "ACCELFLAG_SETRASTEROP %s\n", (avail & ACCELFLAG_SETRASTEROP) ? "yes" : "no");
+	fprintf(stderr, "ACCELFLAG_PUTBITMAP %s\n", (avail & ACCELFLAG_PUTBITMAP) ? "yes" : "no");
+	fprintf(stderr, "ACCELFLAG_SCREENCOPYBITMAP %s\n", (avail & ACCELFLAG_SCREENCOPYBITMAP) ? "yes" : "no");
+	fprintf(stderr, "ACCELFLAG_DRAWHLINELIST %s\n", (avail & ACCELFLAG_DRAWHLINELIST) ? "yes" : "no");
+	fprintf(stderr, "ACCELFLAG_SETMODE %s\n", (avail & ACCELFLAG_SETMODE) ? "yes" : "no");
+	fprintf(stderr, "ACCELFLAG_SYNC %s\n", (avail & ACCELFLAG_SYNC) ? "yes" : "no");
+    }
+#endif
+}
+
+TERM_PUBLIC void
+VGAGL_suspend()
+{
+#if 1
+    VGA_FPRINTF((stderr, "(VGAGL_suspend) \n"));
+    keyboard_close();                  /* switch back to cooked mode          */
+    vga_setmousesupport(0);            /* turn off mouse                      */
+    vga_flip();
+#endif
+}
+
+TERM_PUBLIC void
+VGAGL_resume()
+{
+#if 1
+    VGA_FPRINTF((stderr, "(VGAGL_resume) \n"));
+    vga_flip();
+    keyboard_init();                  /* put keyboard to raw mode */
+    vga_setmousesupport(1);           /* turn mouse on            */
+#endif
+}
+
+TERM_PUBLIC void
+VGAGL_linetype(int linetype)
+{
+    if (linetype < -3)
+	linetype = LT_NODRAW;
+
+#ifdef VGAGL_ENABLE_TRUECOLOR
+    switch (VGAGL_truecolor) {
+	case TRUE:
+	    current_color = VGAGL_line_cmap[(linetype + 3) % 13];
+	    break;
+	default:
+#endif
+	    current_color = (linetype + 3) % 13;
+#ifdef VGAGL_ENABLE_TRUECOLOR
+    }
+#endif
+}
+
+TERM_PUBLIC void
+VGAGL_move(unsigned int x, unsigned int y)
+{
+    VGAGL_startx = x;
+    VGAGL_starty = Y(y);
+}
+
+TERM_PUBLIC void
+VGAGL_vector(unsigned int x, unsigned int y)
+{
+    /* fprintf(stderr, "(VGAGL_vector) x, y = %d %d\n", x, y); */
+    int sy = Y(y);
+    gl_line(VGAGL_startx, VGAGL_starty, x, sy, current_color);
+    VGAGL_startx = x;
+    VGAGL_starty = sy;
+}
+
+TERM_PUBLIC int
+VGAGL_text_angle(int ang)
+{
+    VGAGL_angle = (ang ? 1 : 0);
+    return TRUE;
+}
+
+/* driver's coordinate system */
+void
+VGAGL_xor_pixel_wrapper(int x, int y, int color)
+{
+    /* discard color */
+    VGAGL_xor_pixel(x, y);
+}
+
+/* driver's coordinate system */
+static void
+VGAGL_putc(unsigned int x, unsigned int y, int c, int ang, int color)
+{
+    int i, j, k;
+    void (*pixelfun)(int, int, int);
+
+    i = (int) (c) - 32;
+
+    switch (color) {
+	case -1:
+	    pixelfun = VGAGL_xor_pixel_wrapper;
+	    break;
+	default:
+	    pixelfun = gl_setpixel;
+    }
+
+    switch (ang) {
+	case 0: /* horizontal */
+	    for (x++, j = 0; j < FNT5X9_VBITS; j++, y--) {
+		for (k = 0; k < FNT5X9_HBITS; k++) {
+		    if ((((unsigned int) (fnt5x9[i][j])) >> k & 1)) {
+			pixelfun(x + k, y, current_color);
+		    }
+		}
+	    }
+	    break;
+	case 1: /* vertical */
+	    for (y--, j = 0; j < FNT5X9_VBITS; j++, x--) {
+		for (k = 0; k < FNT5X9_HBITS; k++) {
+		    if ((((unsigned int) (fnt5x9[i][j])) >> k & 1)) {
+			pixelfun(x, y - k, current_color);
+		    }
+		}
+	    }
+	    break;
+	default:
+	    fprintf(stderr, "(VGAGL_putc) angle %d not implemented\n",
+		VGAGL_angle);
+    }
+}
+
+/* driver's coordinate system */
+TERM_PUBLIC void
+VGAGL_put_text_with_color(
+    unsigned int x, unsigned int y,
+    const char *str,
+    int color)
+{
+    const char* ptr;
+
+    switch (VGAGL_angle) {
+	case 0:
+	    y += VGAGL_VCHAR / 2;
+	    break;
+	case 1:
+	    x += VGAGL_VCHAR / 2;
+	    break;
+    }
+
+    for (ptr = str; *ptr; ptr++) {
+	VGAGL_putc(x, y, *ptr, VGAGL_angle, color);
+	switch (VGAGL_angle) {
+	    case 0:
+		x += VGAGL_HCHAR;
+		break;
+	    case 1:
+		y -= VGAGL_HCHAR;
+		break;
+	    default:
+		fprintf(stderr, "(VGAGL_put_text) angle %d not implemented\n",
+		    VGAGL_angle);
+	}
+    }
+    VGAGL_need_update = TRUE;
+}
+
+/* gnuplot's coordinate system */
+TERM_PUBLIC void
+VGAGL_put_text(unsigned int x, unsigned int y, const char *str)
+{
+    VGAGL_put_text_with_color(x, Y(y), str, current_color);
+}
+
+void
+VGAGL_xor_pixel(int x, int y)
+{
+    int r, g, b;
+    gl_getpixelrgb(x, y, &r, &g, &b);
+    r ^= VGAGL_xor_red;
+    g ^= VGAGL_xor_green;
+    b ^= VGAGL_xor_blue;
+#if 0
+    fprintf(stderr, " xor: %3d %3d %3d\n", r, g, b);
+#endif
+    gl_setpixelrgb(x, y, r, g, b);
+}
+void
+VGAGL_hline_xor(int x1, int x2, int y)
+{
+    int i;
+    if (x1 > x2) {
+	int tmp = x1;
+	x1 = x2;
+	x2 = tmp;
+    }
+    for (i = x1; i <= x2; i++) {
+	VGAGL_xor_pixel(i, y);
+    }
+}
+void
+VGAGL_vline_xor(int y1, int y2, int x)
+{
+    if (y1 > y2) {
+	/* swap */
+	int tmp = y1;
+	y1 = y2;
+	y2 = tmp;
+    }
+    if (-1 == vga_accel(ACCEL_SETRASTEROP, ROP_XOR)) {
+	/* vga_accel(ACCEL_SETRASTEROP, ROP_XOR) is not available */
+	int i;
+	for (i = y1; i <= y2; i++) {
+	    VGAGL_xor_pixel(x, i);
+	}
+    } else {
+	fprintf(stderr, "(VGAGL_vline_xor) accelerated xor was never tested\n");
+	gl_line(x, y1, x, y2, 1);
+	vga_accel(ACCEL_SETRASTEROP, ROP_COPY); /* switching back */
+    }
+}
+
+#if 0
+void
+VGAGL_line_xor(unsigned int x1, unsigned int y1, unsigned int x2, unsigned int y2)
+{
+    if (x1 == x2) {
+	VGAGL_vline_xor(y1, y2, x1);
+    } else if (y1 == y2) {
+	VGAGL_hline_xor(x1, x2, y1);
+    } else {
+	fprintf(stderr, "(VGAGL_line_xor) vertical lines not implemented\n");
+    }
+}
+#endif
+
+TERM_PUBLIC void
+VGAGL_draw_cursor(int x, int y)
+{
+    static const int cursorsize = 5;
+    VGAGL_hline_xor(x - cursorsize, x + cursorsize, y);
+    VGAGL_vline_xor(y - cursorsize, y + cursorsize, x);
+    VGAGL_last_cursorx = x;
+    VGAGL_last_cursory = y;
+}
+
+void
+VGAGL_zoombox(int x, int y)
+{
+    VGAGL_hline_xor(VGAGL_zoom.startx, x, VGAGL_zoom.starty);
+    VGAGL_hline_xor(VGAGL_zoom.startx, x, y);
+    VGAGL_vline_xor(VGAGL_zoom.starty, y, VGAGL_zoom.startx);
+    VGAGL_vline_xor(VGAGL_zoom.starty, y, x);
+
+    if (*VGAGL_zoom.current_xstr && *VGAGL_zoom.current_ystr) {
+
+	int ty;
+
+	/* first corner (static) */
+	ty = VGAGL_zoom.starty - VGAGL_VCHAR / 2;
+	VGAGL_put_text_with_color(VGAGL_zoom.startx, ty, VGAGL_zoom.current_xstr[0], -1);
+	VGAGL_put_text_with_color(VGAGL_zoom.startx, ty + VGAGL_VCHAR, VGAGL_zoom.current_ystr[0], -1);
+
+	/* second corner (at the curser) */
+	ty = y - VGAGL_VCHAR / 2;
+	VGAGL_put_text_with_color(x, ty, VGAGL_zoom.current_xstr[1], -1);
+	VGAGL_put_text_with_color(x, ty + VGAGL_VCHAR, VGAGL_zoom.current_ystr[1], -1);
+    }
+
+    VGAGL_zoom.currentx = x;
+    VGAGL_zoom.currenty = y;
+}
+
+void
+VGAGL_update_zoombox(int x, int y)
+{
+    if (VGAGL_zoom.startx >= 0) {
+	VGAGL_zoombox(VGAGL_zoom.currentx, VGAGL_zoom.currenty); /* erase old box */
+	strcpy(VGAGL_zoom.current_xstr[0], VGAGL_zoom.xstr[0]);
+	strcpy(VGAGL_zoom.current_ystr[0], VGAGL_zoom.ystr[0]);
+	strcpy(VGAGL_zoom.current_xstr[1], VGAGL_zoom.xstr[1]);
+	strcpy(VGAGL_zoom.current_ystr[1], VGAGL_zoom.ystr[1]);
+	VGAGL_zoombox(x, y); /* draw new box */
+	VGAGL_need_update = TRUE;
+    }
+}
+
+void
+VGAGL_update_cursor(int x, int y)
+{
+    VGAGL_draw_cursor(VGAGL_last_cursorx, VGAGL_last_cursory); /* erase old cursor */
+    VGAGL_draw_cursor(x, y); /* draw new cursor */
+    VGAGL_need_update = TRUE;
+}
+
+void
+VGAGL_signal_handler(int signum)
+{
+    struct gp_event_t ge = {-1, -1, -1, -1, -1, ""};
+    ge.type = GE_modifier;
+    ge.par1 = 0; /* release all modifiers */
+    do_event(&ge);
+    VGAGL_processing_graphics_events = FALSE;
+    signal(SIGINT, VGAGL_old_handler); /* reset signal handler */
+    VGAGL_reset();
+}
+
+void
+VGAGL_eventually_process_graphics_events()
+{
+    /*
+       VGA_FPRINTF((stderr, "(VGAGL_eventually_process_graphics_events) \n"));
+     */
+    if (VGAGL_graphics_on && !VGAGL_processing_graphics_events) {
+
+	int lastbutton = 0;
+	struct gp_event_t ge = {-1, -1, -1, -1, -1, ""};
+	TBOOLEAN loop = TRUE;
+	int yinv;
+
+	VGAGL_processing_graphics_events = TRUE;
+
+	/* set up a signal hander, so that SIGINT
+	 * can restore a clean terminal state */
+	VGAGL_old_handler = signal(SIGINT, VGAGL_signal_handler);
+
+	keyboard_init(); /* put keyboard to raw mode */
+
+	/* put the mouse pointer to the center */
+	mouse_setposition(VGAGL_cursorx, VGAGL_cursory);
+
+	while (VGAGL_graphics_on && loop) {
+
+	    int button;
+	    int motion;
+	    int ret;
+
+	    event_plotdone();
+	    if (VGAGL_need_update) {
+		gl_copyscreen(&physicalscreen);
+		VGAGL_need_update = FALSE;
+	    }
+
+	    ret = vga_waitevent(VGA_MOUSEEVENT | VGA_KEYEVENT,
+		(fd_set*) 0, (fd_set*) 0, (fd_set*) 0, (struct timeval*) 0);
+
+	    VGAGL_cursorx = mouse_getx();
+	    VGAGL_cursory = mouse_gety();
+	    yinv = term->ymax - VGAGL_cursory;
+	    button = mouse_getbutton();
+	    motion = (-1 != ge.mx && (VGAGL_cursorx != ge.mx || yinv != ge.my));
+	    ge.mx = VGAGL_cursorx;
+	    ge.my = yinv;
+
+	    if (ret < 0) {
+		/* error */
+		loop = FALSE;
+	    }
+	    if ((ret & VGA_MOUSEEVENT)) {
+
+		if (button != lastbutton) {
+		    /* button changed (either pressed or released */
+		    int button_changed;
+		    if (button) {
+			/* button press event */
+			ge.type = GE_buttonpress;
+			button_changed = button;
+		    } else {
+			/* button release event */
+			button_changed = lastbutton;
+			ge.type = GE_buttonrelease;
+		    }
+		    if (button_changed & MOUSE_LEFTBUTTON)
+			ge.par1 = 1;
+		    else if (button_changed & MOUSE_MIDDLEBUTTON)
+			ge.par1 = 2;
+		    else if (button_changed & MOUSE_RIGHTBUTTON)
+			ge.par1 = 3;
+
+		    do_event(&ge);
+		    lastbutton = button;
+		}
+
+		if (motion) {
+		    /* fprintf(stderr, "(motion) VGAGL_cursorx, VGAGL_cursory = %d %d\n", VGAGL_cursorx, VGAGL_cursory); */
+		    ge.type = GE_motion;
+		    do_event(&ge);
+		    VGAGL_update_cursor(VGAGL_cursorx, VGAGL_cursory);
+		    VGAGL_update_zoombox(VGAGL_cursorx, VGAGL_cursory);
+		}
+	    }
+	    if (ret & VGA_KEYEVENT) {
+		/* int c = vga_getch(); */
+		char* state = keyboard_getstate();
+		int mask = 0;
+		int i;
+		/* keyboard_translatekeys() */
+		if (state[SCANCODE_LEFTCONTROL] || state[SCANCODE_RIGHTCONTROL]) {
+		    mask |= Mod_Ctrl;
+		}
+		if (state[SCANCODE_LEFTALT] || state[SCANCODE_RIGHTALT]) {
+		    mask |= Mod_Alt;
+		}
+		if (state[SCANCODE_LEFTSHIFT] || state[SCANCODE_RIGHTSHIFT]) {
+		    mask |= Mod_Shift;
+		}
+		if (mask) {
+		    ge.type = GE_modifier;
+		    ge.par1 = mask;
+		    do_event(&ge);
+		} else if (VGAGL_modifier_mask) {
+		    /* modifiers were released */
+		    ge.type = GE_modifier;
+		    ge.par1 = 0;
+		    do_event(&ge);
+		}
+		VGAGL_modifier_mask = mask;
+
+		for (i = 0; i < KEYTABLE_SIZE; i++) {
+		    if (state[i] && -1 != VGAGL_Keytable[i]) {
+			if (' ' == VGAGL_Keytable[i] || 'q' == VGAGL_Keytable[i]) {
+			    loop = FALSE;
+			    break;
+			}
+#ifdef VGAGL_DEBUGGING
+			if (GP_KP_Delete == VGAGL_Keytable[i] && VGAGL_dump_file) {
+			    VGAGL_draw_cursor(VGAGL_last_cursorx, VGAGL_last_cursory); /* erase cursor */
+			    VGAGL_write_dump_file();
+			    VGAGL_draw_cursor(VGAGL_last_cursorx, VGAGL_last_cursory); /* draw cursor */
+			    break;
+			}
+#endif
+			ge.type = GE_keypress;
+			ge.par1 = VGAGL_Keytable[i];
+			ge.par2 = 0;
+			do_event(&ge);
+		    }
+		}
+	    } /* VGA_KEYEVENT */
+	} /* while(1) */
+	VGAGL_processing_graphics_events = FALSE;
+	signal(SIGINT, VGAGL_old_handler);
+    } /* VGAGL_graphics_on */
+}
+
+TERM_PUBLIC void
+VGAGL_put_tmptext(int i, const char str[])
+{
+    int y = 0;
+    int x;
+    char* second;
+
+    if (!VGAGL_graphics_on)
+	return;
+
+    switch (i) {
+	case 0:
+	    /* erase old text */
+	    for (i = 0, y = 0, x = VGAGL_HCHAR; VGAGL_savedstr[i]; i++) {
+		VGAGL_putc(x, Y(y), VGAGL_savedstr[i], 0, -1);
+		x += VGAGL_HCHAR;
+	    }
+	    strcpy(VGAGL_savedstr, str);
+	    for (i = 0, y = 0, x = VGAGL_HCHAR; str[i]; i++) {
+		VGAGL_putc(x, Y(y), str[i], 0, -1);
+		x += VGAGL_HCHAR;
+	    }
+	    VGAGL_need_update = TRUE;
+	    break;
+	case 1:
+	case 2:
+	    --i;
+	    second = (char*) strchr(str, '\r');
+	    if (second == NULL) {
+		VGAGL_zoom.xstr[i][0] = '\0';
+		VGAGL_zoom.ystr[i][0] = '\0';
+		break;
+	    }
+	    *second = '\0'; /* XXX this assumes that str is writable XXX */
+	    second++;
+	    /* if (VGAGL_zoombox_on) DrawBox(plot); */
+	    strcpy(VGAGL_zoom.xstr[i], str);
+	    strcpy(VGAGL_zoom.ystr[i], second);
+	    /* if (plot->zoombox_on) DrawBox(plot); */
+	    VGAGL_need_update = TRUE;
+	    break;
+    }
+    return;
+}
+
+TERM_PUBLIC void
+VGAGL_set_ruler(int x, int y)
+{
+    if (x < 0) {
+	/* erase last ruler */
+	VGAGL_hline_xor(0, vgagl_lastx, Y(VGAGL_ruler_y));
+	VGAGL_vline_xor(0, vgagl_lasty, VGAGL_ruler_x);
+	VGAGL_ruler_x = -1;
+    } else {
+	VGAGL_ruler_x = x;
+	VGAGL_ruler_y = y;
+	VGAGL_hline_xor(0, vgagl_lastx, Y(VGAGL_ruler_y));
+	VGAGL_vline_xor(0, vgagl_lasty, VGAGL_ruler_x);
+    }
+    VGAGL_need_update = TRUE;
+    return;
+}
+
+TERM_PUBLIC void
+VGAGL_set_cursor(int c, int x, int y)
+{
+    /* VGA_FPRINTF((stderr, "(VGAGL_set_cursor) \n")); */
+    switch (c) {
+	case -2: /* warp pointer */
+	    /* TODO */
+	    break;
+	case -1: /* starting zoombox */
+	    VGAGL_zoom.startx = x;
+	    VGAGL_zoom.starty = Y(y);
+
+	    VGAGL_zoom.currentx = VGAGL_zoom.startx;
+	    VGAGL_zoom.currenty = VGAGL_zoom.starty;
+
+	    VGAGL_zoombox(VGAGL_zoom.currentx, VGAGL_zoom.currenty);
+
+	    break;
+	case 0:  /* standard cross-hair cursor */
+	    if (VGAGL_zoom.startx >= 0) {
+		VGAGL_zoombox(VGAGL_zoom.currentx, VGAGL_zoom.currenty);
+		VGAGL_zoom.startx = -1; /* turn zoom box off */
+	    }
+	    break;
+	case 1:  /* cursor during rotation */
+	    /* TODO */
+	    break;
+	case 2:  /* cursor during scaling */
+	    /* TODO */
+	    break;
+	case 3:  /* cursor during zooming */
+	    /* TODO */
+	    break;
+	default:
+	    fprintf(stderr, "(VGAGL_set_cursor) %s:%d protocol error\n", __FILE__, __LINE__);
+	    break;
+    }
+    return;
+}
+
+TERM_PUBLIC void
+VGAGL_set_clipboard(const char s[])
+{
+    (void) s;			/* avoid -Wunused */
+    return;			/* does nothing. */
+}
+
+TERM_PUBLIC int
+VGAGL_make_palette(t_sm_palette *palette)
+{
+    /* only reallocate colors, if the color spec has changed */
+    if (palette && (VGAGL_save_pal.colorFormulae < 0
+	    || palette->colorFormulae != VGAGL_save_pal.colorFormulae
+	    || palette->colorMode != VGAGL_save_pal.colorMode
+	    || palette->formulaR != VGAGL_save_pal.formulaR
+	    || palette->formulaG != VGAGL_save_pal.formulaG
+	    || palette->formulaB != VGAGL_save_pal.formulaB
+	    || palette->positive != VGAGL_save_pal.positive)) {
+	int i, j;
+#ifdef VGAGL_ENABLE_TRUECOLOR
+	switch (VGAGL_truecolor) {
+	    case TRUE:
+		for (i = 0; i <= VGAGL_tri_colors; i++) {
+		    VGAGL_cmap[i] = gl_rgbcolor
+			((int)floor(palette->color[i].r * 255.999),
+			 (int)floor(palette->color[i].g * 255.999),
+			 (int)floor(palette->color[i].b * 255.999));
+		    gl_trisetcolorlookup(i, VGAGL_cmap[i]);
+		}
+		break;
+	    default:
+#endif
+		for (j = 0, i = pm3d_color_offset; i <= 0xff; i++, j++) {
+		    VGAGL_setpalettecolor(i, palette->color[j].r,
+			palette->color[j].g, palette->color[j].b);
+		}
+#ifdef VGAGL_ENABLE_TRUECOLOR
+	}
+#endif
+	VGAGL_save_pal = *palette;
+	return 0;
+    } else {
+	return VGAGL_pm3d_colors;
+    }
+}
+
+/* set color for subsequent VGAGL_filled_polygon() calls. */
+TERM_PUBLIC void
+VGAGL_set_color(t_colorspec *colorspec)
+{
+    int color;
+    double gray = colorspec->value;
+
+    if (colorspec->type != TC_FRAC)
+	return;
+
+    /* Note that the gray value is supplied for each vertex.
+     * This is only for routines which don't draw interpolated
+     * triangles. These routines should supply a negative
+     * valued as corners[0].spec.gray, if they really want
+     * this color to be taken. */
+    color = (gray <= 0) ? 0 : (int)(gray * VGAGL_pm3d_colors);
+    if (color >= VGAGL_pm3d_colors)
+	color = VGAGL_pm3d_colors_;
+    current_color = pm3d_color_offset + color;
+    VGAGL_gray = gray;
+}
+
+TERM_PUBLIC void
+VGAGL_filled_polygon(int points, gpiPoint *corners)
+{
+    int i;
+    int y[4];
+    if (4 != points) {
+	fprintf(stderr, "(VGAGL_filled_polygon) can only plot with 4 points\n");
+	return;
+    }
+    if (!VGAGL_interpolate || corners[0].spec.gray < 0) {
+	/* draw a solid colored triangle */
+	int color;
+	double gray = 0;
+#if 0
+	fprintf(stderr, "(VGAGL_filled_polygon) gray = %f\n",
+	    corners[0].spec.gray);
+#endif
+	if (corners[0].spec.gray < 0) {
+	    for (i = 0; i < 4; i++) {
+		y[i] = Y(corners[i].y);
+	    }
+	    gray = VGAGL_gray;
+	} else {
+	    for (i = 0; i < 4; i++) {
+		y[i] = Y(corners[i].y);
+		gray += corners[0].spec.gray;
+	    }
+	    gray *= 0.25;
+	}
+#ifdef VGAGL_ENABLE_TRUECOLOR
+	switch (VGAGL_truecolor) {
+	    case TRUE:
+		/* TODO: this does not work */
+		color = VGAGL_line_cmap[(int)(gray * VGAGL_pm3d_colors_)];
+		break;
+	    default:
+#endif
+		color = pm3d_color_offset + (int)(gray * VGAGL_pm3d_colors_);
+#ifdef VGAGL_ENABLE_TRUECOLOR
+	}
+#endif
+	gl_striangle(corners[0].x, y[0], corners[1].x, y[1],
+	    corners[2].x, y[2], color, -1);
+	gl_striangle(corners[2].x, y[2], corners[3].x, y[3],
+	    corners[0].x, y[0], color, -1);
+    } else {
+	/* draw color interpolated triangle */
+	int color[4];
+#ifdef VGAGL_ENABLE_TRUECOLOR
+	switch (VGAGL_truecolor) {
+	    case TRUE:
+		for (i = 0; i < 4; i++) {
+		    y[i] = Y(corners[i].y);
+		    color[i] = (int)(corners[i].spec.gray * VGAGL_pm3d_colors_);
+		}
+		break;
+	    default:
+#endif
+		for (i = 0; i < 4; i++) {
+		    y[i] = Y(corners[i].y);
+		    color[i] = pm3d_color_offset + (int)(corners[i].spec.gray * VGAGL_pm3d_colors_);
+		}
+#ifdef VGAGL_ENABLE_TRUECOLOR
+	}
+#endif
+	gl_triangle
+	    (corners[0].x, y[0], color[0],
+	     corners[1].x, y[1], color[1],
+	     corners[2].x, y[2], color[2], -1);
+	gl_triangle
+	    (corners[2].x, y[2], color[2],
+	     corners[3].x, y[3], color[3],
+	     corners[0].x, y[0], color[0], -1);
+    }
+}
+#ifdef VGAGL_DEBUGGING
+void
+VGAGL_write_dump_file()
+{
+    FILE* fp;
+    unsigned char* buf;
+    unsigned char* bufptr;
+    int x, y, index;
+    char thisfile[0xff];
+    static int thisfileno = 0;
+    if (!VGAGL_dump_file) {
+	return;
+    }
+    sprintf(thisfile, "%s%05d.ppm", VGAGL_dump_file, thisfileno++);
+    fp = fopen(thisfile, "w");
+    if (!fp) {
+	free(VGAGL_dump_file);
+	VGAGL_dump_file = 0;
+    }
+    fprintf(fp, "P6\n");
+    fprintf(fp, "%d %d\n", modeinfo->width, modeinfo->height);
+    fprintf(fp, "255\n");
+    buf = gp_alloc(modeinfo->width * modeinfo->height * 3, "vgagl->buf");
+    bufptr = buf;
+    for (y = 0; y < modeinfo->height; y++) {
+	for (x = 0; x < modeinfo->width; x++) {
+	    index = gl_getpixel(x, y);
+	    while (index < 0) {
+		/* this is a kludge, as gl_getpixel() seems to
+		 * return pixels > 128 as the negative complement */
+		index += 256;
+	    }
+	    *bufptr++ = VGAGL_palette[index][0];
+	    *bufptr++ = VGAGL_palette[index][1];
+	    *bufptr++ = VGAGL_palette[index][2];
+	}
+    }
+    fwrite(buf, 3, modeinfo->width * modeinfo->height, fp);
+    fclose(fp);
+}
+#endif
+
+#undef Y
+
+#endif
+
+#ifdef TERM_TABLE
+TERM_TABLE_START(vgagl_driver)
+    "vgagl", "vgagl driver with mouse support and smooth colors",
+    VGAGL_XMAX, VGAGL_YMAX, VGAGL_VCHAR, VGAGL_HCHAR,
+    VGAGL_VTIC, VGAGL_HTIC, VGAGL_options, VGAGL_init, VGAGL_reset,
+    VGAGL_text, null_scale, VGAGL_graphics, VGAGL_move, VGAGL_vector,
+    VGAGL_linetype, VGAGL_put_text, VGAGL_text_angle,
+    null_justify_text, do_point, do_arrow, set_font_null,
+    0,				/* pointsize */
+    TERM_CAN_MULTIPLOT|TERM_EXTENDED_COLOR, VGAGL_suspend, VGAGL_resume
+    , 0, 0 /* fillbox, linewidth */
+# ifdef USE_MOUSE
+    , 0 /* VGAGL_waitforinput */, VGAGL_put_tmptext, VGAGL_set_ruler,
+    VGAGL_set_cursor, VGAGL_set_clipboard
+# endif
+    , VGAGL_make_palette,
+    0 /* VGAGL_previous_palette */,
+    VGAGL_set_color,
+    VGAGL_filled_polygon
+TERM_TABLE_END(vgagl_driver)
+#undef LAST_TERM
+#define LAST_TERM vgagl_driver
+#endif
+
+#ifdef TERM_HELP
+START_HELP(vgagl)
+"1 vgagl",
+"?commands set terminal vgagl",
+"?set terminal vgagl",
+"?set term vgagl",
+"?terminal vgagl",
+"?term vgagl",
+"?vgagl",
+" The `vgagl` driver is a fast linux console driver with full mouse and pm3d",
+" support.  It looks at the environment variable SVGALIB_DEFAULT_MODE for the",
+" default mode; if not set, it uses a 256 color mode with the highest",
+" available resolution.",
+"",
+" Syntax:",
+"    set terminal vgagl \\",
+"                 background [red] [[green] [blue]] \\",
+"                 [uniform | interpolate] \\",
+#if 0
+"                 [dump \"file\"] \\",
+#endif
+"                 [mode]",
+"",
+" The color mode can also be given with the mode option. Both Symbolic",
+" names as G1024x768x256 and integers are allowed. The `background` option",
+" takes either one or three integers in the range [0, 255]. If only one",
+" integers is supplied, it is taken as gray value for the background.",
+" If three integers are present, the background gets the corresponding",
+" color.",
+" The (mutually exclusive) options `interpolate` and `uniform` control",
+" if color interpolation is done while drawing triangles (on by default).",
+#if 0
+"",
+" A `screen dump file` can be specified with the `dump \"file\"` option.",
+" If this option is present, (i.e the dump file name is not empty) pressing",
+" the key KP_Delete will write the file.  This action cannot and cannot be",
+" rebound. The file is written in raw ppm (P6) format. Note that this option",
+" is reset each time the `set term` command is issued.",
+#endif
+"",
+" To get high resolution modes, you will probably have to modify the",
+" configuration file of libvga, usually /etc/vga/libvga.conf.  Using",
+" the VESA fb is a good choice, but this needs to be compiled in the",
+" kernel.",
+"",
+" The vgagl driver uses the first *available* vga mode from the following list:",
+"  - the driver which was supplied when setting vgagl, e.g. `set term vgagl",
+"    G1024x768x256` would first check, if the G1024x768x256 mode is available.",
+"  - the environment variable SVGALIB_DEFAULT_MODE",
+"  - G1024x768x256",
+"  - G800x600x256",
+"  - G640x480x256",
+"  - G320x200x256",
+"  - G1280x1024x256",
+"  - G1152x864x256",
+"  - G1360x768x256",
+"  - G1600x1200x256",
+""
+END_HELP(vgagl)
+#endif
+#endif /* defined(USE_MOUSE) */

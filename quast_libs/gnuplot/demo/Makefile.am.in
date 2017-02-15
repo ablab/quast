@@ -1,0 +1,83 @@
+## Process this file with automake to produce Makefile.in -*-Makefile-*-
+AUTOMAKE_OPTIONS = foreign
+
+CLEANFILES = binary1 binary2 binary3 defaults.ini equipo2.tmp field2xy.tmp \
+soundfit.par temp.set fontfile.ps fontfile_latex.ps epslatex-inc.eps \
+epslatex-inc.pdf epslatex.aux epslatex.dvi epslatex.log epslatex.pdf \
+epslatex.ps epslatex.tex random.tmp stringvar.tmp fit.log fitmulti.dat
+
+BINARY_FILES = binary1 binary2 binary3
+
+SUBDIRS = $(PLUGIN_DIR)
+DIST_SUBDIRS = plugin
+
+DEMO = all.dem
+
+GNUPLOT = gnuplot
+
+all: $(BINARY_FILES)
+
+$(BINARY_FILES): ../src/bf_test
+	@echo Creating binary data files
+	@../src/bf_test
+
+check-prepare:
+
+check-local: check-noninteractive
+
+check-interactive: check-prepare $(BINARY_FILES)
+	@if test -z "$(GNUTERM)" ; then \
+	  ( bdir=`pwd` ; PATH=$$bdir/../src:$$PATH \
+	    GNUPLOT_DRIVER_DIR=$$bdir/../src \
+	    GNUPLOT_LIB=$(srcdir) $(GNUPLOT) $(DEMO) ); \
+	else \
+	  ( bdir=`pwd` ; PATH=$$bdir/../src:$$PATH \
+	    GNUPLOT_DRIVER_DIR=$$bdir/../src \
+	    GNUTERM=$(GNUTERM) \
+	    GNUPLOT_LIB=$(srcdir) $(GNUPLOT) $(DEMO) ); \
+	fi
+
+check-noninteractive: check-prepare $(BINARY_FILES)
+	@if test -z "$(GNUTERM)" ; then \
+	  ( bdir=`pwd` ; PATH=$$bdir/../src:$$PATH \
+	    GNUPLOT_DRIVER_DIR=$$bdir/../src \
+	    GNUPLOT_LIB=$(srcdir) $(GNUPLOT) $(DEMO) </dev/null ); \
+	else \
+	  ( bdir=`pwd` ; PATH=$$bdir/../src:$$PATH\
+	    GNUPLOT_DRIVER_DIR=$$bdir/../src \
+	    GNUTERM=$(GNUTERM) \
+	    GNUPLOT_LIB=$(srcdir) $(GNUPLOT) $(DEMO) </dev/null ); \
+	fi
+
+epslatex:
+	@if test -z "$(GNUTERM)" ; then \
+	  ( bdir=`pwd` ; PATH=$$bdir/../src:$$PATH \
+	    GNUPLOT_DRIVER_DIR=$$bdir/../src \
+	    GNUPLOT_LIB=$(srcdir) $(GNUPLOT) epslatex.dem ); \
+	else \
+	  ( bdir=`pwd` ; PATH=$$bdir/../src:$$PATH \
+	    GNUPLOT_DRIVER_DIR=$$bdir/../src \
+	    GNUTERM=$(GNUTERM) \
+	    GNUPLOT_LIB=$(srcdir) $(GNUPLOT) epslatex.dem ); \
+	fi
+	latex epslatex
+	dvips epslatex
+
+##m4-files-begin
+##m4-files-end
+
+Makefile.am: Makefile.am.in
+	rm -f $@ $@t
+	sed -n '1,/^##m4-files-begin/p' Makefile.am.in > $@t
+	echo EXTRA_DIST = Makefile.am.in *.bin *.cfg *.cor *.dat *.dem *.edf \
+	  *.fnc *.inc *.pdb *.png *.r3d *.rgb sound.par sound2.par \
+	  start.par *.rot gnu-valley random-points gpdemos.tcl html | fmt | \
+	  (tr '\012' @; echo) | sed 's/@$$/%/;s/@/ \\@/g' | tr @% '\012 ' \
+	  >> $@t
+	sed -n '/^##m4-files-end/,$$p' $< >> $@t
+	echo if BUILD_PLUGIN >> $@t
+	echo    PLUGIN_DIR = plugin >> $@t
+	echo endif >> $@t
+	chmod og-w $@t
+	mv $@t $@
+

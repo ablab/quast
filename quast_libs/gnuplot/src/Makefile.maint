@@ -1,0 +1,47 @@
+# -*-Makefile-*-
+# Makefile fragment to generate makefile.all and update version.c
+
+# Non-core sources and version.c
+noncoresrc = bf_test.c gpexecute.c gplt_x11.c strftime.c version.c vms.c
+
+coresrc := $(filter-out $(noncoresrc),$(wildcard *.c))
+
+coreterm := $(shell cd ../term && echo *.trm)
+
+version := $(shell cat $(top_srcdir)/VERSION)
+file_version := $(shell sed -n 's/.*gnuplot_version.*"\(.*\)".*/\1/p' ./version.c|tr -d ' ')
+
+patchlevel := $(shell cat $(top_srcdir)/PATCHLEVEL)
+file_pl := $(shell sed -n 's/.*gnuplot_patchlevel.*"\(.*\)".*/\1/p' ./version.c|tr -d ' ')
+
+last_change := $(shell dd if=$(top_srcdir)/ChangeLog bs=11 count=1 2> /dev/null)
+
+date := $(shell date)
+
+makefile.all: $(srcdir)/Makefile.maint
+	@echo "# $@ generated automatically by GNU make" >$@t
+	@echo >>$@t
+	@echo '# List of core object files except version.$$(O)' >>$@t
+	@echo COREOBJS = $(coresrc:.c=.'$$(O)') \
+	 | fmt | (tr '\012' @; echo) | sed 's/@$$/%/;s/@/ \\@/g' \
+	 | tr @% '\012\012' >>$@t
+	@echo "# List of terminal driver sources" >>$@t
+	@echo CORETERM = $(patsubst %.trm,$$\(T\)%.trm,$(coreterm)) \
+	 | fmt | (tr '\012' @; echo) | sed 's/@$$/%/;s/@/ \\@/g' \
+	 | tr @% '\012\012' >>$@t
+	@if cmp -s $@ $@t; then rm -f $@t; else mv $@t $@; fi
+
+makefile.awc: makefile.all
+	sed -e 's/\\/\&/g' makefile.all > $@
+
+version.c: $(top_srcdir)/VERSION $(top_srcdir)/PATCHLEVEL
+	@echo Making $@
+	@if [ "$(version)" != "$(file_version)" -o \
+	     "$(patchlevel)" != "$(file_pl)" ]; then \
+	  sed -e '/^const char gnuplot_version/ s/"[^"]*"/"@VERS@"/' \
+	      -e '/^const char gnuplot_patchlevel/ s/"[^"]*"/"@PLVL@"/' \
+	      -e "s/@VERS@/$(version)/" -e "s/@PLVL@/$(patchlevel)/" \
+	      $@ >$@t; \
+	  if cmp -s $@ $@t; then rm -f $@t; else mv $@t $@; fi \
+	fi
+

@@ -1,0 +1,116 @@
+/* Hello, Emacs, this is -*-C-*-
+ * $Id: xlib.trm,v 1.29 2014/04/30 04:49:45 sfeam Exp $
+ */
+
+/* GNUPLOT - xlib.trm */
+
+/*
+ * xlib.trm - inboard terminal driver for X11 (dumps gnuplot_x11 commands)
+ *
+ * New implementation November 2003
+ * Xlib_init() sets up the output channels, but otherwise all work is done
+ * by the main x11.trm driver routines.
+ * Ethan A Merritt <merritt@u.washington.edu>
+ */
+
+#include "driver.h"
+
+#ifdef TERM_REGISTER
+register_term(xlib)
+#endif
+
+#ifdef TERM_PROTO
+TERM_PUBLIC void Xlib_init __PROTO((void));
+TERM_PUBLIC void Xlib_text __PROTO((void));
+TERM_PUBLIC void Xlib_reset __PROTO((void));
+#define GOT_XLIB_PROTO
+#endif
+
+#ifndef TERM_PROTO_ONLY
+#ifdef TERM_BODY
+
+static FILE *X11_save_ipc = NULL;
+#ifndef PIPE_IPC
+    int ipc_back_fd = IPC_BACK_UNUSABLE;
+#endif
+
+TERM_PUBLIC void
+Xlib_init()
+{
+    /* x11.trm thinks it is writing to a private pipe, but here we */
+    /* set it to use the channel opened by 'set output <file>'     */
+    X11_save_ipc = X11_ipc;
+    X11_ipc = gpoutfile;
+
+    /* There is, of course, no mouse feedback */
+    ipc_back_fd = IPC_BACK_UNUSABLE;
+    term_initialised = TRUE;
+}
+
+TERM_PUBLIC void
+Xlib_text()
+{
+    ipc_back_fd = 1;	/* Force scaling info to be appended */
+    X11_text();
+    ipc_back_fd = IPC_BACK_UNUSABLE;
+}
+
+TERM_PUBLIC void
+Xlib_reset()
+{
+    X11_ipc = X11_save_ipc;
+}
+
+#endif
+
+#ifdef TERM_TABLE
+TERM_TABLE_START(xlib_driver)
+    "xlib", "X11 Window System (gnulib_x11 dump)",
+    X11_XMAX, X11_YMAX, X11_VCHAR, X11_HCHAR,
+    X11_VTIC, X11_HTIC, X11_options, Xlib_init, Xlib_reset,
+    Xlib_text, null_scale, X11_graphics, X11_move, X11_vector,
+    X11_linetype, X11_put_text, X11_text_angle,
+    X11_justify_text, X11_point, do_arrow, X11_set_font,
+    X11_pointsize, TERM_CAN_MULTIPLOT|TERM_INIT_ON_REPLOT|TERM_CAN_DASH,
+    X11_text /* suspend can use same routine */ , 0 /* resume */ ,
+    X11_fillbox, X11_linewidth
+#ifdef USE_MOUSE
+    , NULL, NULL, NULL, NULL, NULL
+#endif
+    , X11_make_palette, 0 /* X11_previous_palette */ ,
+    X11_set_color, X11_filled_polygon
+    , X11_image
+    , ENHX11_OPEN, ENHX11_FLUSH, do_enh_writec
+    , NULL	/* layering */
+    , NULL	/* path */
+    , 0.0	/* tscale */
+    , NULL	/* hypertext */
+#ifdef EAM_BOXED_TEXT
+    , ENHX11_boxed_text
+#endif
+    , NULL	/* modify_plots */
+    , X11_dashtype
+TERM_TABLE_END(xlib_driver)
+
+#undef LAST_TERM
+#define LAST_TERM xlib_driver
+
+#endif /* TERM_TABLE */
+#endif /* TERM_PROTO_ONLY */
+
+#ifdef TERM_HELP
+START_HELP(xlib)
+"1 xlib",
+"?commands set terminal xlib",
+"?set terminal xlib",
+"?set term xlib",
+"?terminal xlib",
+"?term xlib",
+"?xlib",
+" The `xlib` terminal driver supports the X11 Windows System.  It generates",
+" gnuplot_x11 commands, but sends them to the output file specified by",
+" `set output '<filename>'`. `set term x11` is equivalent to",
+" `set output \"|gnuplot_x11 -noevents\"; set term xlib`.",
+" `xlib` takes the same set of options as `x11`."
+END_HELP(xlib)
+#endif

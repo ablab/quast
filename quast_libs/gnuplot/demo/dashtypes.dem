@@ -1,0 +1,49 @@
+#
+# Exercise various dashtype options
+# (Version 5 only)
+#
+set border 0
+unset xtics
+unset ytics
+unset key
+set yrange [0:1]
+
+y = 0.9
+set label 101 at screen 0.1, screen y "Terminal's native dashtypes"
+do for [i=1:10] {
+    y = y - 0.05
+    set arrow i from screen 0.25, screen y to screen 0.8, screen y nohead lw 1.5 lt 2 dt i
+    set label i "dt ".i at screen 0.15, screen y
+}
+y = y - 0.05
+set label 102 at screen 0.1, screen y "Custom dashtypes"
+y = y - 0.05
+    new = "."
+    set label at screen 0.15, screen y 'dt "'.new.'"'
+    set arrow 11 from screen 0.25, screen y to screen 0.8, screen y nohead lw 1.5 lt 3 dt new
+y = y - 0.05
+    new = "-"
+    set label at screen 0.15, screen y 'dt "'.new.'"'
+    set arrow 12 from screen 0.25, screen y to screen 0.8, screen y nohead lw 1.5 lt 3 dt new
+y = y - 0.05
+    new = "._"
+    set label at screen 0.15, screen y 'dt "'.new.'"' noenh
+    set arrow 13 from screen 0.25, screen y to screen 0.8, screen y nohead lw 1.5 lt 3 dt new
+y = y - 0.05
+    new = "..- "
+    set label at screen 0.15, screen y 'dt "'.new.'"'
+    set arrow 14 from screen 0.25, screen y to screen 0.8, screen y nohead lw 1.5 lt 3 dt new
+
+plot 0 with lines lt nodraw
+
+pause -1 "Hit return to continue"
+
+# Now test effect of linewidth
+
+set for [i=1:14] arrow i lw 1+(i-1)%5
+
+plot 0 with lines lt nodraw
+
+pause -1 "Hit return to continue"
+
+reset

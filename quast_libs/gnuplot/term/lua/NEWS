@@ -1,0 +1,129 @@
+2011-02-19
+
+  * support for ConTeXt and plain TeX
+  * removed dependencies for LaTeX packages other than TikZ
+  * needs TikZ Version >= 2.0
+  * better support for saving terminal options with gnuplot 'save' command
+  * all bitmap images can be externalized
+  * alpha channel support for bimap images via externalized PNGs
+  * new options 'crop', 'background', 'textscale', 'externalimages'
+  * fixed "overflow" bug on negative coordinates that are outside of the crop box
+  * various small bugfixes
+  
+  Backward compatibility is dropped again.
+
+2009-03-29
+
+  * Providing a script or target name is now mandatory. The new syntax:
+       set terminal lua <target name> | "<file name>"
+                        {<script_args> ...}
+    This will look for a script named `gnuplot-<target name>.lua' or
+    a script named "<file name>" (in quotes!).
+  * Support for script names via the environmental variable
+    GNUPLOT_LUA_SCRIPT is dropped.
+  * The option "script" is obsolete and also removed.
+  * Via the environmental variable GNUPLOT_DRIVER_DIR the default search
+    directory for driver scripts can be changed.
+  * The TikZ driver help is now included as a subsection of the Lua
+    terminal.
+  * minor bugfixes (see ChangeLog)
+
+  This version drops backward compatibility again!
+
+2008-12-20
+
+  * Removed all underscrores in style and color names.
+  * The plot box coordinates are now accessible via a special node. (e.g.
+    "gp plot 1.north east".
+  * Added aliases 'standalone' ('fulldoc') and 'header' ('preamble')
+  * Preparations to echo back the options string to the user.
+
+  This version drops backward compatibility!
+
+2008-11-22
+
+  * Changed default canvas size to 12.5cm x 8.75cm and use the preview
+    package to clip the plot in 'fulldoc' mode (suggested by Juergen Wieferink).
+  * New option 'charsize'. In conjunction with the gnuplottex.sty the
+    font size can now be determined automatically. (look at the style file for
+    example code).
+  * Removed the default font setting (previously set to "\small").
+
+  No binary updates needed.
+
+2008-02-02
+
+  * Implemented a mapping of gnuplot arrow styles to TikZ arrow styles by
+    "misusing" the angle of the gnuplot arrow definition.
+  * CMYK support for image data (all other colors are handled through the
+    xcolor package).
+  * terminal works with gnuplottex (\begin{gnuplot}[terminal=lua]...)
+    (http://www.ctan.org/tex-archive/help/Catalogue/entries/gnuplottex.html)
+  * compatibility updates for gnuplot 4.3cvs version
+  * optional environment variable GNUPLOT_LUA_SCRIPT
+  * fixed zero length paths artifacts and some more minor bugs
+  * added simple pager functionality for help output
+
+  The Lua script should work with the previous binary version, but the new
+  GNUPLOT_LUA_SCRIPT feature and pager functionality will not be available.
+  Maybe a minor issue for most users ;-)
+
+2007-10-03
+
+  * New option 'providevars' to make gnuplot's internal and user variables
+    available within the TeX-script.
+  * Adopted the color scheme and dash patterns to (largely) resemble the
+    look of the postscript terminal.
+  * Changed the names of the bounding box coordinates from 'lowerleft' to
+    'south west' etc. to be closer to the TikZ naming scheme.
+
+  Binary update needed on upgrade.
+
+2007-09-22
+
+  * Lengths in the 'size' options now accept the units cm, mm, in or inch, pt,
+    pc, bp, dd and cc.
+  * Switched from generic TikZ styles like 'every plot' to gnuplot specific
+    TikZ-styles.
+  * Support for plotting images of pixel and binary 2D-data. For PDF and
+    Postscript generation the image will be included in a native PDF or PS
+    format what reduces space and compile time and improves rendering quality.
+    For the SVG output of PGF/TikZ the 'native image' feature has to be
+    disabled manually. The image will then be rendered of filled rectangles.
+  * Added 'tikzplot' option which allows using the TikZ '\path plot'
+    command instead of the simple '\path' for plots with given linetypes.
+  * Added 'is_multiplot()' to the Lua terminal (currently unused in the
+    TikZ backend).
+  * Changed the Lua-API: Color and fill styles are now passed as strings
+    instead of integers to the script.
+
+  Binary update needed on upgrade.
+
+2007-08-25 ii
+  
+  * Improved robustness of the option parser.
+  * Fixed a PGF/TikZ compatibility issue reported by Scott Murman.
+    
+  No binary update from previous version needed.
+
+
+2007-08-25
+
+  * Fixed rectangle scaling in conjunction with the 'plotsize' option
+    (thanks to Scott Murman for reporting).
+  
+  This update only affects the gnuplot.lua script.
+
+
+2007-08-24
+
+  * A 'size' option for the canvas was added.
+  * The 'scale' option now expects an x and y parameter, so the
+    'xscale' and 'yscale' options where removed. Scaling and resizing
+    now work similar to the other terminals.
+  * The 'monochrome' and 'solid' options do not change the actual
+    TikZ plot commands anymore, but only change the according TikZ
+    style settings.
+
+
+See the 'ChangeLog' file for previous changes.

@@ -1,0 +1,639 @@
+/* Hello, Emacs, this is -*-C-*- */
+/*[
+ * GNUPLOT - grass.trm
+ * $Id:
+ *-
+ * Copyright (C) 1992-1995, 1999, 2004 James Darrell McCauley
+ *
+ * Permission to use, copy, and distribute this software and its
+ * documentation for any purpose with or without fee is hereby granted,
+ * provided that the above copyright notice appear in all copies and
+ * that both that copyright notice and this permission notice appear
+ * in supporting documentation.
+ *
+ * Permission to modify the software is granted, but not the right to
+ * distribute the complete modified source code.  Modifications are to
+ * be distributed as patches to the released version.  Permission to
+ * distribute binaries produced by compiling modified sources is granted,
+ * provided you
+ *   1. distribute the corresponding source modifications from the
+ *    released version in the form of a patch file along with the binaries,
+ *   2. add special version identification to distinguish your version
+ *    in addition to the base release version number,
+ *   3. provide your name and address as the primary contact for the
+ *    support of your modified version, and
+ *   4. retain our contact information in regard to use of the base
+ *    software.
+ * Permission to distribute the released version of the source code along
+ * with corresponding source modifications in the form of a patch file is
+ * granted with same provisions 2 through 4 for binary distributions.
+ *
+ * This software is provided "as is" without express or implied warranty
+ * to the extent permitted by applicable law.
+ *
+ * This software  is provided "as is" without express or implied warranty.
+ *
+ * This file is included by ../term.c.
+ *
+ * This terminal driver supports:
+ *  GRASS graphics driver
+ *
+ * AUTHOR
+ * James Darrell McCauley, PhD        http://soils.ecn.purdue.edu/~mccauley/
+ * Dept of Agricultural Engineering   mccauley@ecn.purdue.edu
+ * Purdue University                  tel: 317.494.1198 fax: 317.496.1115
+ *
+ * 05 Apr 1995 - cleaned up code by adding explicit function declarations.
+ *               compiles clean with 'gcc -Wall'
+ * 14 Apr 1995 - adapted for new layout, added font selection
+ *
+ * 13 Jan 1999 - Copyright statement changed to new gnuplot copyright
+ *               Permission given by orig author in private email (lh)
+ *
+ * send your comments or suggestions to (grassp-list@moon.cecer.army.mil).
+ *
+]*/
+
+#include "driver.h"
+
+#ifdef TERM_REGISTER
+register_term(grass)
+#endif
+
+
+#ifdef TERM_PROTO
+TERM_PUBLIC void GRASS_move __PROTO((unsigned int x, unsigned int y));
+TERM_PUBLIC void GRASS_options __PROTO((void));
+TERM_PUBLIC void GRASS_init __PROTO((void));
+TERM_PUBLIC void GRASS_reset __PROTO((void));
+TERM_PUBLIC void GRASS_graphics __PROTO((void));
+TERM_PUBLIC void GRASS_text __PROTO((void));
+TERM_PUBLIC void GRASS_vector __PROTO((unsigned int x, unsigned int y));
+TERM_PUBLIC void GRASS_linetype __PROTO((int lt));
+TERM_PUBLIC void GRASS_put_text __PROTO((unsigned int x, unsigned int y, const char *str));
+TERM_PUBLIC int GRASS_text_angle __PROTO((int ang));
+TERM_PUBLIC int GRASS_justify_text __PROTO((enum JUSTIFY mode));
+TERM_PUBLIC void GRASS_point __PROTO((unsigned int x, unsigned int y, int point));
+TERM_PUBLIC int GRASS_set_font __PROTO((const char *font));
+/* TERM_PUBLIC void GRASS_set_pointsize __PROTO((double size)); */
+TERM_PUBLIC void GRASS_arrow __PROTO((unsigned int sx, unsigned int sy, unsigned int ex, unsigned int ey, int head));
+#endif /* TERM_PROTO */
+
+#ifndef TERM_PROTO_ONLY
+#ifdef TERM_BODY
+
+#include <stdio.h>
+#include <string.h>
+/* #include "gis.h" */ /* this causes conflicts with things in term.c */
+
+#define GRASS_XMAX 1000
+#define GRASS_YMAX 1000
+#define GRASS_VCHAR 5
+#define GRASS_HCHAR 5
+#define GRASS_VTIC 3
+#define GRASS_HTIC 3
+
+#define PNT_SIZE 3
+#define TYPE_DOT  -1
+#define TYPE_X  0
+#define TYPE_PLUS   1
+#define TYPE_BOX    2
+#define TYPE_DIAMOND    3	/* need type 4 and 5 */
+#define TYPE_TRIANGLE 4
+#define TYPE_OCTO 5
+#define TYPE_ITRIANGLE 6
+#define TYPE_FBOX 7
+#define TYPE_FTRIANGLE 8
+#define TYPE_FITRIANGLE 9
+#define TYPE_FOCTO 10
+
+static void cont_abs __PROTO((int x, int y));
+static void draw_points_dot __PROTO((int x, int y));
+static void draw_points_diamond __PROTO((int x, int y));
+static void draw_points_box __PROTO((int x, int y));
+static void draw_points_fbox __PROTO((int x, int y));
+static void draw_points_itriangle __PROTO((int x, int y));
+static void draw_points_fitriangle __PROTO((int x, int y));
+static void draw_points_triangle __PROTO((int x, int y));
+static void draw_points_ftriangle __PROTO((int x, int y));
+static void draw_points_plus __PROTO((int x, int y));
+static void draw_points_octo __PROTO((int x, int y));
+static void draw_points_focto __PROTO((int x, int y));
+static void draw_points_x __PROTO((int x, int y));
+
+static int R__curx, R__cury;
+
+static int grass_yoffset;
+static int grass_xoffset;
+static int y_max;
+static int points_buf_x[PNT_SIZE*PNT_SIZE]; /* for filled point types */
+static int points_buf_y[PNT_SIZE*PNT_SIZE];
+
+extern int R_move_abs ();
+extern int R_cont_abs ();
+
+TERM_PUBLIC void
+GRASS_move(unsigned int x, unsigned int y)
+{
+  /* R_move_abs (grass_xoffset+x, grass_yoffset-y + y_max); */
+  R_move_abs (grass_xoffset+x, grass_yoffset-y);
+}
+
+static void
+cont_abs(int x, int y)
+{
+  /* R_cont_abs (grass_xoffset+x, grass_xoffset-y + y_max); */
+  R_cont_abs (grass_xoffset+x, grass_yoffset-y);
+}
+
+TERM_PUBLIC void
+GRASS_options()
+{
+  options_null ();		/* no options to begin with */
+}
+
+TERM_PUBLIC void
+GRASS_init()
+{
+    /* char buff[128]; */
+    char window_name[64];
+    float size = 3.0;
+    /* int backcolor; */
+    int dots_per_line;
+    int top, b, l, r;
+    /* int textcolor; */
+    struct termentry *t = term;
+
+    extern int G_gisinit();
+    extern int R_open_driver();
+    extern int D_setup();
+    extern int D_get_cur_wind();
+    extern int G_fatal_error();
+    extern int D_set_cur_wind();
+    extern int D_get_screen_window();
+    extern int R_set_window();
+    extern int R_text_size();
+    extern int R_font();
+    extern int R_screen_top();
+    extern int R_screen_bot();
+    extern int D_erase_window();
+
+    G_gisinit ("g.gnuplot");
+
+    R_open_driver ();
+
+    D_setup (0);
+
+    if (D_get_cur_wind (window_name))
+	G_fatal_error ("No current window");
+
+    if (D_set_cur_wind (window_name))
+	G_fatal_error ("Current window not available");
+
+    /* Set up the screen, conversions, and graphics */
+    D_get_screen_window (&top, &b, &l, &r);
+    /* D_set_overlay_mode (1); */
+
+    /* Figure out where to put text */
+
+    R_set_window (top, b, l, r);
+    t->xmax = r-l;
+    t->ymax = b-top;
+    grass_xoffset=l;
+    grass_yoffset=b;
+
+    dots_per_line = (int) (size / 100.0 * (float) (t->ymax));
+    t->v_char = t->h_char = (int) (.8 * (float) dots_per_line);
+    R_text_size (t->h_char, t->v_char);
+    R_font("romans");
+
+    t->v_tic = t->h_tic = 4;
+
+    y_max = t->ymax; /* kludge? */
+
+    R__curx = R_screen_top ();
+    R__cury = R_screen_bot () + grass_yoffset;
+
+    D_erase_window();
+
+    fprintf(stderr,"**********************************************\n");
+    fprintf(stderr,"DIAGNOSTIC TERMINAL SETUP\n");
+    fprintf(stderr,"top = %d\tb = %d\tl = %d\tr = %d\n", top,b,l,r);
+    fprintf(stderr,"name = %s\n", t->name);
+    fprintf(stderr,"description = %s\n", t->description);
+    fprintf(stderr,"xmax = %d\t", (int)t->xmax);
+    fprintf(stderr,"ymax = %d\n", (int)t->ymax);
+    fprintf(stderr,"v_char = %d\t", (int)t->v_char);
+    fprintf(stderr,"h_char = %d\n", (int)t->h_char);
+    fprintf(stderr,"v_tic = %d\t", (int)t->v_tic);
+    fprintf(stderr,"h_tic = %d\n", (int)t->h_tic);
+    fprintf(stderr,"**********************************************\n\n");
+}
+
+TERM_PUBLIC void
+GRASS_reset ()
+{
+    extern int R_standard_color();
+    extern int D_translate_color();
+    extern int R_flush();
+    extern int R_stabilize();
+    extern int R_close_driver();
+
+    R_standard_color (D_translate_color ("black"));
+    /* D_erase_window(); .* don't clear after g.gnuplot is finished */
+    R_flush ();
+    R_stabilize ();
+    R_close_driver ();
+}
+
+TERM_PUBLIC void
+GRASS_graphics ()
+{
+    extern int D_erase_window();
+    extern int R_flush();
+    extern int R_stabilize();
+    extern int R_standard_color();
+    extern int D_translate_color();
+
+    R_flush ();
+    R_stabilize ();
+    R_standard_color (D_translate_color ("black"));
+    D_erase_window();
+    return;
+}
+
+TERM_PUBLIC void
+GRASS_text ()
+{
+    extern int R_flush ();
+    extern int R_stabilize ();
+
+    R_flush ();
+    R_stabilize ();
+    return;			/* device can't be used as a terminal */
+}
+
+TERM_PUBLIC void
+GRASS_vector(unsigned int x, unsigned int y)
+{
+    extern int R_flush ();
+    extern int R_stabilize ();
+
+    cont_abs (x, y);
+    R_flush ();
+    R_stabilize ();
+}
+
+TERM_PUBLIC void
+GRASS_linetype(int lt)
+{
+    extern int R_standard_color();
+    extern int D_translate_color();
+    extern int R_flush ();
+    extern int R_stabilize ();
+
+    while (lt > 10) lt-=10;
+
+    if (lt <= LT_BLACK)
+	R_standard_color (D_translate_color ("gray"));
+    else if (lt == LT_AXIS)
+	R_standard_color (D_translate_color ("white"));
+    else if (lt == 0)
+	R_standard_color (D_translate_color ("red"));
+    else if (lt == 1)
+	R_standard_color (D_translate_color ("green"));
+    else if (lt == 2)
+	R_standard_color (D_translate_color ("magenta"));
+    else if (lt == 3)
+	R_standard_color (D_translate_color ("brown"));
+    else if (lt == 4)
+	R_standard_color (D_translate_color ("orange"));
+    else if (lt == 5)
+	R_standard_color (D_translate_color ("yellow"));
+    else if (lt == 6)
+	R_standard_color (D_translate_color ("blue"));
+    else if (lt == 7)
+	R_standard_color (D_translate_color ("violet"));
+    else if (lt == 8)
+	R_standard_color (D_translate_color ("indigo"));
+    else if (lt == 9)
+	R_standard_color (D_translate_color ("gray"));
+    else /* if (lt == 10) */
+	R_standard_color (D_translate_color ("white"));
+    R_flush ();
+    R_stabilize ();
+    return;
+}
+
+/* originally /usr/grass4/src/display/d.label/cmd/label.c */
+
+TERM_PUBLIC void
+GRASS_put_text(unsigned int x, unsigned int y, const char *str)
+{
+    extern int R_text();
+    extern int R_flush ();
+    extern int R_stabilize ();
+
+    if (strlen (str) == 0)
+	return;
+
+    GRASS_move (x, y);
+    /* R_standard_color (D_translate_color ("white")); */
+    R_text (str);
+    R_flush ();
+    R_stabilize ();
+}
+
+TERM_PUBLIC int
+GRASS_text_angle (int ang)
+{
+  extern int R_text_rotation();
+
+  R_text_rotation((float)ang);
+  return TRUE;			/* GRASS can (?) rotate text */
+}
+
+TERM_PUBLIC int
+GRASS_justify_text (enum JUSTIFY mode)
+{
+    return (FALSE);		/* don't mess with this now */
+}
+
+
+TERM_PUBLIC void
+GRASS_point (unsigned int x, unsigned y, int point)
+{
+    switch (point) {
+    case TYPE_DOT:
+	draw_points_dot (x, y);
+	break;
+    case TYPE_X:
+	draw_points_x (x, y);
+	break;
+    case TYPE_PLUS:
+	draw_points_plus (x, y);
+	break;
+    case TYPE_BOX:
+	draw_points_box (x, y);
+	break;
+    case TYPE_DIAMOND:
+	draw_points_diamond (x, y);
+	break;
+    case TYPE_TRIANGLE:
+	draw_points_triangle (x, y);
+	break;
+    case TYPE_OCTO:
+	draw_points_octo (x, y);
+	break;
+    case TYPE_ITRIANGLE:
+	draw_points_itriangle (x, y);
+	break;
+    case TYPE_FBOX:
+	draw_points_fbox (x, y);
+	break;
+    case TYPE_FTRIANGLE:
+	draw_points_ftriangle (x, y);
+	break;
+    case TYPE_FITRIANGLE:
+	draw_points_fitriangle (x, y);
+	break;
+    case TYPE_FOCTO:
+	draw_points_focto (x, y);
+	break;
+    }
+}
+
+/* modified from /usr/grass4/src/display/d.points/cmd/main.c */
+
+static void
+draw_points_dot(int x, int y)
+{
+  GRASS_move (x, y);
+  cont_abs (x, y);
+}
+
+static void
+draw_points_diamond(int x, int y)
+{
+  GRASS_move (x, y + PNT_SIZE);
+  GRASS_vector (x + PNT_SIZE, y);
+  GRASS_vector (x, y - PNT_SIZE);
+  GRASS_vector (x - PNT_SIZE, y);
+  GRASS_vector (x, y + PNT_SIZE);
+}
+
+static void
+draw_points_box(int x, int y)
+{
+  GRASS_move (x - PNT_SIZE, y - PNT_SIZE);
+  GRASS_vector (x - PNT_SIZE, y + PNT_SIZE);
+  GRASS_vector (x + PNT_SIZE, y + PNT_SIZE);
+  GRASS_vector (x + PNT_SIZE, y - PNT_SIZE);
+  GRASS_vector (x - PNT_SIZE, y - PNT_SIZE);
+}
+
+static void
+draw_points_fbox(int x, int y)
+{
+  int R_polygon_abs();
+  points_buf_x[0] = grass_xoffset + x - PNT_SIZE;
+  points_buf_y[0]= grass_yoffset - (y + PNT_SIZE);
+  points_buf_x[1] = grass_xoffset + x + PNT_SIZE;
+  points_buf_y[1]= grass_yoffset - (y + PNT_SIZE);
+  points_buf_x[2] = grass_xoffset + x + PNT_SIZE;
+  points_buf_y[2]= grass_yoffset - (y - PNT_SIZE);
+  points_buf_x[3] = grass_xoffset + x - PNT_SIZE;
+  points_buf_y[3]= grass_yoffset - (y - PNT_SIZE);
+  R_polygon_abs(points_buf_x, points_buf_y, 4 );
+}
+
+static void
+draw_points_itriangle(int x, int y)
+{
+  GRASS_move (x - PNT_SIZE, y + PNT_SIZE);
+  GRASS_vector (x + PNT_SIZE, y + PNT_SIZE);
+  GRASS_vector (x , y - PNT_SIZE);
+  GRASS_vector (x - PNT_SIZE, y + PNT_SIZE);
+}
+
+static void
+draw_points_fitriangle(int x, int y)
+{
+  int R_polygon_abs();
+
+  points_buf_x[0] = grass_xoffset + x + PNT_SIZE;
+  points_buf_y[0] = grass_yoffset - (y + PNT_SIZE);
+  points_buf_x[1] = grass_xoffset + x ;
+  points_buf_y[1] = grass_yoffset - (y - PNT_SIZE);
+  points_buf_x[2] = grass_xoffset + x - PNT_SIZE;
+  points_buf_y[2] = grass_yoffset - (y + PNT_SIZE);
+  R_polygon_abs(points_buf_x, points_buf_y, 3 );
+}
+
+static void
+draw_points_triangle(int x, int y)
+{
+  GRASS_move (x - PNT_SIZE, y - PNT_SIZE);
+  GRASS_vector (x , y + PNT_SIZE);
+  GRASS_vector (x + PNT_SIZE, y - PNT_SIZE);
+  GRASS_vector (x - PNT_SIZE, y - PNT_SIZE);
+}
+
+static void
+draw_points_ftriangle(int x, int y)
+{
+  int R_polygon_abs();
+
+  points_buf_x[0] = grass_xoffset + x;
+  points_buf_y[0]= grass_yoffset - (y + PNT_SIZE);
+  points_buf_x[1] = grass_xoffset + x + PNT_SIZE;
+  points_buf_y[1]= grass_yoffset - (y - PNT_SIZE);
+  points_buf_x[2] = grass_xoffset + x - PNT_SIZE;
+  points_buf_y[2]= grass_yoffset - (y - PNT_SIZE);
+  R_polygon_abs(points_buf_x, points_buf_y, 3 );
+}
+
+static void
+draw_points_plus(int x, int y)
+{
+  GRASS_move (x - PNT_SIZE, y);
+  GRASS_vector (x + PNT_SIZE, y);
+  GRASS_move (x, y - PNT_SIZE);
+  GRASS_vector (x, y + PNT_SIZE);
+}
+
+/* depends on PNT_SIZE */
+static void
+draw_points_octo(int x, int y)
+{
+  /* CCW */
+  GRASS_move (x - (int) (PNT_SIZE/3), y - PNT_SIZE);   /* 1 */
+  GRASS_vector (x + (int) (PNT_SIZE/3), y - PNT_SIZE); /* 2 */
+  GRASS_vector (x + PNT_SIZE, y - (int) (PNT_SIZE/3)); /* 3 */
+  GRASS_vector (x + PNT_SIZE, y + (int) (PNT_SIZE/3)); /* 4 */
+  GRASS_vector (x + (int) (PNT_SIZE/3), y + PNT_SIZE); /* 5 */
+  GRASS_vector (x - (int) (PNT_SIZE/3), y + PNT_SIZE); /* 6 */
+  GRASS_vector (x - PNT_SIZE, y + (int) (PNT_SIZE/3)); /* 7 */
+  GRASS_vector (x - PNT_SIZE, y - (int) (PNT_SIZE/3)); /* 8 */
+  GRASS_vector (x - (int) (PNT_SIZE/3), y - PNT_SIZE); /* 1 */
+}
+
+/* depends on PNT_SIZE */
+static void
+draw_points_focto(int x, int y)
+{
+  int R_polygon_abs();
+
+  /* CCW */
+  points_buf_x[0] = grass_xoffset + x + (int) (PNT_SIZE/3);
+  points_buf_y[0] = grass_yoffset - (y - PNT_SIZE);
+  points_buf_x[1] = grass_xoffset + x + PNT_SIZE;
+  points_buf_y[1] = grass_yoffset - (y - (int) (PNT_SIZE/3));
+  points_buf_x[2] = grass_xoffset + x + PNT_SIZE;
+  points_buf_y[2] = grass_yoffset - (y + (int) (PNT_SIZE/3));
+  points_buf_x[3] = grass_xoffset + x + (int) (PNT_SIZE/3);
+  points_buf_y[3] = grass_yoffset - (y + PNT_SIZE);
+  points_buf_x[4] = grass_xoffset + x - (int) (PNT_SIZE/3);
+  points_buf_y[4] = grass_yoffset - (y + PNT_SIZE);
+  points_buf_x[5] = grass_xoffset + x - PNT_SIZE;
+  points_buf_y[5] = grass_yoffset - (y + (int) (PNT_SIZE/3));
+  points_buf_x[6] = grass_xoffset + x - PNT_SIZE;
+  points_buf_y[6] = grass_yoffset - (y - (int) (PNT_SIZE/3));
+  points_buf_x[7] = grass_xoffset + x - (int) (PNT_SIZE/3);
+  points_buf_y[7] = grass_yoffset - (y - PNT_SIZE);
+  R_polygon_abs(points_buf_x, points_buf_y, 8 );
+}
+
+static void
+draw_points_x(int x, int y)
+{
+  GRASS_move (x - PNT_SIZE, y - PNT_SIZE);
+  GRASS_vector (x + PNT_SIZE, y + PNT_SIZE);
+  GRASS_move (x + PNT_SIZE, y - PNT_SIZE);
+  GRASS_vector (x - PNT_SIZE, y + PNT_SIZE);
+}
+
+TERM_PUBLIC int
+GRASS_set_font(const char *font)
+{
+  char name[32];
+  int size,sep, R_font();
+  struct termentry *t = term;
+  int R_text_size (), dots_per_line;
+
+  /* G_warning(font); */
+
+  sep=strcspn(font,",");
+  strncpy(name,font,sep); name[sep]=NUL;
+  sscanf (&(font[sep+1]),"%d",&size);
+
+  if (size==0)
+    size=3;
+  dots_per_line = (int) (size / 100.0 * (float) (t->ymax));
+  t->v_char = t->h_char = (int) (.8 * (float) dots_per_line);
+  R_text_size (t->h_char, t->v_char);
+/* cyrilc,gothgbt,gothgrt,gothitt,greekc,greekcs,greekp,
+greeks,italicc,italiccs,italict,romanc,romancs,romand,
+romans,romant,scriptc,scripts */
+
+  if (strlen(name) > 5 )
+    R_font(name);
+  else
+    R_font("romans");
+  return TRUE;
+}
+
+#ifdef GRASS_POINTSIZE
+/* HBB FIXME 20040619: argument type wrong, but luckily unused anyway... */
+TERM_PUBLIC void
+GRASS_set_pointsize(double *size)
+{
+  return;
+}
+#endif /* GRASS_POINTSIZE */
+
+/* need to fix */
+TERM_PUBLIC void
+GRASS_arrow(
+    unsigned int sx, unsigned int sy,
+    unsigned int ex, unsigned int ey,
+    int head)
+{
+  do_arrow (sx, sy, ex, ey, 1);
+  return;
+}
+
+#endif /* TERM_BODY */
+
+#ifdef TERM_TABLE
+TERM_TABLE_START(grass_driver)
+    "grass", "GRASS Graphics Monitor",
+    GRASS_XMAX, GRASS_YMAX, GRASS_VCHAR, GRASS_HCHAR,
+    GRASS_VTIC, GRASS_HTIC, GRASS_options, GRASS_init, GRASS_reset,
+    GRASS_text, null_scale, GRASS_graphics, GRASS_move, GRASS_vector,
+    GRASS_linetype, GRASS_put_text, GRASS_text_angle,
+    GRASS_justify_text, GRASS_point, GRASS_arrow, GRASS_set_font
+TERM_TABLE_END(grass_driver)
+
+
+#undef LAST_TERM
+#define LAST_TERM grass_driver
+#endif /* TERM_TABLE */
+#endif /* TERM_PROTO_ONLY */
+
+
+#ifdef TERM_HELP
+START_HELP(grass)
+"1 grass",
+"?commands set terminal grass",
+"?set terminal grass",
+"?set term grass",
+"?terminal grass",
+"?term grass",
+"?grass",
+" The `grass` terminal driver gives `gnuplot` capabilities to users of the ",
+" GRASS geographic information system.  Contact grassp-list@moon.cecer.army.mil",
+" for more information.  Pages are written to the current frame of the GRASS",
+" Graphics Window.  There are no options."
+END_HELP(grass)
+#endif

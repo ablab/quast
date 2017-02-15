@@ -1,0 +1,291 @@
+/* Hello, Emacs, this is -*-C-*-
+ * $Id: hppj.trm,v 1.15 2006/07/21 02:35:47 sfeam Exp $
+ *
+ */
+
+/* GNUPLOT - hppj.trm */
+
+/*[
+ * Copyright 1990 - 1993, 1998, 2004
+ *
+ * Permission to use, copy, and distribute this software and its
+ * documentation for any purpose with or without fee is hereby granted,
+ * provided that the above copyright notice appear in all copies and
+ * that both that copyright notice and this permission notice appear
+ * in supporting documentation.
+ *
+ * Permission to modify the software is granted, but not the right to
+ * distribute the complete modified source code.  Modifications are to
+ * be distributed as patches to the released version.  Permission to
+ * distribute binaries produced by compiling modified sources is granted,
+ * provided you
+ *   1. distribute the corresponding source modifications from the
+ *    released version in the form of a patch file along with the binaries,
+ *   2. add special version identification to distinguish your version
+ *    in addition to the base release version number,
+ *   3. provide your name and address as the primary contact for the
+ *    support of your modified version, and
+ *   4. retain our contact information in regard to use of the base
+ *    software.
+ * Permission to distribute the released version of the source code along
+ * with corresponding source modifications in the form of a patch file is
+ * granted with same provisions 2 through 4 for binary distributions.
+ *
+ * This software is provided "as is" without express or implied warranty
+ * to the extent permitted by applicable law.
+]*/
+
+/*
+ * This file is included by ../term.c.
+ *
+ * This terminal driver supports:
+ *  hppj
+ *
+ * AUTHORS
+ *  Dan Merget (danm@sr.hp.com)
+ *
+ * This file was based on the hpljii file by:
+ *  John Engels
+ *  Russell Lang
+ *  Maurice Castro
+ *
+ * send your comments or suggestions to (gnuplot-info@lists.sourceforge.net).
+ *
+ */
+
+/* The following HP laserjet series II driver uses generic bit mapped graphics
+ * routines from bitmap.c to build up a bit map in memory.
+ */
+
+/*
+ * adapted to the new terminal layout by Stefan Bodewig (Dec. 1995)
+ */
+
+#include "driver.h"
+
+#ifdef TERM_REGISTER
+register_term(hppj)
+#endif
+
+#ifdef TERM_PROTO
+TERM_PUBLIC void HPPJ_options __PROTO((void));
+TERM_PUBLIC void HPPJ_init __PROTO((void));
+TERM_PUBLIC void HPPJ_reset __PROTO((void));
+TERM_PUBLIC void HPPJ_graphics __PROTO((void));
+TERM_PUBLIC void HPPJ_text __PROTO((void));
+TERM_PUBLIC void HPPJ_linetype __PROTO((int linetype));
+
+/* We define 3 different font sizes: 5x9, 9x17, and 13x25 */
+
+#define HPPJ_DPI 180		/* dots per inch */
+#define HPPJ_PLANES 3		/* color planes */
+#define HPPJ_COLORS (1 << HPPJ_PLANES)
+/* make XMAX and YMAX a multiple of 8 */
+#define HPPJ_XMAX (8*(unsigned int)(9.5 * HPPJ_DPI / 8.0 + 0.9))
+#define HPPJ_YMAX (8 * HPPJ_DPI)
+
+/* default values for term_tbl */
+#define HPPJ_9x17_VCHAR FNT9X17_VCHAR
+#define HPPJ_9x17_HCHAR FNT9X17_HCHAR
+#define HPPJ_9x17_VTIC (FNT9X17_VCHAR / 2)
+#define HPPJ_9x17_HTIC (FNT9X17_HCHAR / 2)
+#endif /* TERM_PROTO */
+
+#ifndef TERM_PROTO_ONLY
+#ifdef TERM_BODY
+static int hppj_font = FNT9X17;
+
+TERM_PUBLIC void
+HPPJ_options()
+{
+    char opt[10];
+#define HPPJERROR "expecting font size FNT5X9, FNT9X17, or FNT13X25"
+
+    term_options[0] = NUL;	/* default to empty string and 9x17 font */
+    hppj_font = FNT9X17;	/* in case of error or empty options     */
+
+    if (!END_OF_COMMAND) {
+	if (token[c_token].length > 8) {
+	    int_error(c_token, HPPJERROR);
+	}
+	capture(opt, c_token, c_token, /*4 */ 9);	/* HBB 980226 */
+	if (!strcmp(opt, "FNT5X9")) {
+	    hppj_font = FNT5X9;
+	    strcpy(term_options, "FNT5X9");
+	} else if (!strcmp(opt, "FNT9X17")) {
+	    hppj_font = FNT9X17;
+	    strcpy(term_options, "FNT9X17");
+	} else if (!strcmp(opt, "FNT13X25")) {
+	    hppj_font = FNT13X25;
+	    strcpy(term_options, "FNT13X25");
+	} else {
+	    int_error(c_token, HPPJERROR);
+	}
+	c_token++;
+    }
+}
+
+
+TERM_PUBLIC void
+HPPJ_init()
+{
+    /* HBB 980226: moved this here, from graphics(): only init() may
+     * change fields of *term ! */
+    switch (hppj_font) {
+    case FNT5X9:
+	term->v_char = FNT5X9_VCHAR;
+	term->h_char = FNT5X9_HCHAR;
+	term->v_tic = FNT5X9_VCHAR / 2;
+	term->h_tic = FNT5X9_HCHAR / 2;
+	break;
+    case FNT9X17:
+	term->v_char = FNT9X17_VCHAR;
+	term->h_char = FNT9X17_HCHAR;
+	term->v_tic = FNT9X17_VCHAR / 2;
+	term->h_tic = FNT9X17_HCHAR / 2;
+	break;
+    case FNT13X25:
+	term->v_char = FNT13X25_VCHAR;
+	term->h_char = FNT13X25_HCHAR;
+	term->v_tic = FNT13X25_VCHAR / 2;
+	term->h_tic = FNT13X25_HCHAR / 2;
+	break;
+    }
+}
+
+
+TERM_PUBLIC void
+HPPJ_reset()
+{
+#ifdef VMS
+    fflush_binary();
+#endif /* VMS */
+}
+
+
+TERM_PUBLIC void
+HPPJ_graphics()
+{
+    /* HBB 980226: move a block of code from here to init() */
+    b_charsize(hppj_font);
+
+    b_makebitmap(HPPJ_XMAX, HPPJ_YMAX, HPPJ_PLANES);
+}
+
+
+TERM_PUBLIC void
+HPPJ_text()
+{
+    int x, plane, y;		/* loop indexes */
+    int minRow, maxRow;		/* loop bounds */
+    int numBytes;		/* Number of run-length coded bytes to output */
+    int numReps;		/* Number of times the current byte is repeated */
+
+    fprintf(gpoutfile, "\
+\033E\033*t%dR\033*r%dS\
+\033*b0X\033*b0Y\033*r%dU\
+\033*v%dA\033*v%dB\033*v%dC\033*v%dI\
+\033*v%dA\033*v%dB\033*v%dC\033*v%dI\
+\033*v%dA\033*v%dB\033*v%dC\033*v%dI\
+\033*v%dA\033*v%dB\033*v%dC\033*v%dI\
+\033*v%dA\033*v%dB\033*v%dC\033*v%dI\
+\033*v%dA\033*v%dB\033*v%dC\033*v%dI\
+\033*v%dA\033*v%dB\033*v%dC\033*v%dI\
+\033*v%dA\033*v%dB\033*v%dC\033*v%dI\
+\033*b1M\033*r1A",
+	    HPPJ_DPI, HPPJ_YMAX,
+	    HPPJ_PLANES,
+	    90, 88, 85, 0,
+	    53, 8, 14, 1,
+	    3, 26, 22, 2,
+	    4, 4, 29, 3,
+	    53, 5, 25, 4,
+	    2, 22, 64, 5,
+	    89, 83, 13, 6,
+	    4, 4, 6, 7);
+
+    /* dump bitmap in raster mode using run-length encoding */
+    for (x = HPPJ_XMAX - 1; x >= 0; --x) {
+	for (plane = 0; plane < HPPJ_PLANES; plane++) {
+	    minRow = b_psize * plane;
+	    maxRow = b_psize * plane + b_psize - 1;
+
+	    /* Print column header */
+	    numBytes = 0;
+	    for (y = maxRow; y >= minRow; --y) {
+		if (y == minRow || *((*b_p)[y] + x) != *((*b_p)[y - 1] + x)) {
+		    numBytes += 2;
+		}
+	    }
+	    fprintf(gpoutfile, "\033*b%d", numBytes);
+	    (void) fputc((char) (plane < HPPJ_PLANES - 1 ? 'V' : 'W'), gpoutfile);
+
+	    /* Print remainder of column */
+	    numReps = 0;
+	    for (y = maxRow; y >= minRow; --y) {
+		if (y == minRow || *((*b_p)[y] + x) != *((*b_p)[y - 1] + x)) {
+		    (void) fputc((char) (numReps), gpoutfile);
+		    (void) fputc((char) (*((*b_p)[y] + x)), gpoutfile);
+		    numReps = 0;
+		} else {
+		    numReps++;
+		}
+	    }
+	}
+    }
+    fputs("\033*r1B\033E", gpoutfile);
+
+    b_freebitmap();
+}
+
+
+TERM_PUBLIC void
+HPPJ_linetype(int linetype)
+{
+    if (linetype >= 0) {
+	b_setlinetype(0);
+	b_setvalue((linetype % (HPPJ_COLORS - 1)) + 1);
+    } else {
+	b_setlinetype(linetype + 2);
+	b_setvalue(HPPJ_COLORS - 1);
+    }
+}
+
+#endif /* TERM_BODY */
+
+#ifdef TERM_TABLE
+
+TERM_TABLE_START(hppj_driver)
+    "hppj", "HP PaintJet and HP3630 [FNT5X9 FNT9X17 FNT13X25]",
+    HPPJ_XMAX, HPPJ_YMAX,
+    HPPJ_9x17_VCHAR, HPPJ_9x17_HCHAR, HPPJ_9x17_VTIC, HPPJ_9x17_HTIC,
+    HPPJ_options, HPPJ_init, HPPJ_reset, HPPJ_text, null_scale, HPPJ_graphics,
+    b_move, b_vector, HPPJ_linetype, b_put_text, b_text_angle,
+    null_justify_text, do_point, do_arrow, set_font_null, 0, TERM_BINARY,
+    0, 0, b_boxfill
+TERM_TABLE_END(hppj_driver)
+
+#undef LAST_TERM
+#define LAST_TERM hppj_driver
+
+#endif /* TERM_TABLE */
+#endif /* TERM_PROTO_ONLY */
+
+#ifdef TERM_HELP
+START_HELP(hppj)
+"1 hppj",
+"?commands set terminal hppj",
+"?set terminal hppj",
+"?set term hppj",
+"?terminal hppj",
+"?term hppj",
+"?hppj",
+" The `hppj` terminal driver supports the HP PaintJet and HP3630 printers.  The",
+" only option is the choice of font.",
+"",
+" Syntax:",
+"       set terminal hppj {FNT5X9 | FNT9X17 | FNT13X25}",
+"",
+" with the middle-sized font (FNT9X17) being the default."
+END_HELP(hppj)
+#endif

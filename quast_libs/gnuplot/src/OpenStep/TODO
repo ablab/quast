@@ -1,0 +1,7 @@
+TODO:
+
+Make faster
+Multiple window support of latest gnuplot
+Better colour support - setting defaults from Colour wheel and dropping into colour wells.
+Make README's into Help HTML files
+Add a cursor to produce a coordinate measurement so we can check points on a graph in graph coordinates.

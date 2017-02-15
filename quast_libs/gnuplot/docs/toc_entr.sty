@@ -1,0 +1,101 @@
+%
+% $Id: toc_entr.sty,v 1.1.1.1 1998/04/15 19:16:45 lhecking Exp $
+%
+%
+%
+% TOC_ENTRY.STY of 13 Dec 90
+% written by Stefan Timphus
+%
+% Will produce the right space for sectionnumbers in the tableofcontents
+% Necessary for entries where the number for each kind of section
+% is greater 10 (e.g. "12.14.18 Sectionname")
+% When using the original definition the first letter of the sectionname
+% overwrites the last number of the sectionnumber
+%
+% call adjustments with command \adjustSTYLENAME
+%
+% article.sty modified by RCC (1 May 96) to add another subsection level
+ 
+\typeout{`toc_entry.sty' 1.0 of 13 Dec 90}
+ 
+%
+% HERE ARE THE ORIGINAL DEFINITIONS
+%
+ 
+% article.sty
+%
+%\def\l@subsection{\@dottedtocline{2}{1.5em}{2.3em}}
+%\def\l@subsubsection{\@dottedtocline{3}{3.8em}{3.2em}}
+%\def\l@paragraph{\@dottedtocline{4}{7.0em}{4.1em}}
+%\def\l@subparagraph{\@dottedtocline{5}{10em}{5em}}
+ 
+% report.sty and book.sty
+%
+%\def\l@section{\@dottedtocline{1}{1.5em}{2.3em}}
+%\def\l@subsection{\@dottedtocline{2}{3.8em}{3.2em}}
+%\def\l@subsubsection{\@dottedtocline{3}{7.0em}{4.1em}}
+%\def\l@paragraph{\@dottedtocline{4}{10em}{5em}}
+%\def\l@subparagraph{\@dottedtocline{5}{12em}{6em}}
+ 
+%
+% MODIFICATIONS
+%
+ 
+\newlength{\twonum}
+        \settowidth{\twonum}{99.99.}
+\newlength{\threenum}
+        \settowidth{\threenum}{99.99.99.}
+\newlength{\fournum}
+        \settowidth{\fournum}{99.99.99.99.}
+\newlength{\fivenum}
+        \settowidth{\fivenum}{99.99.99.99.99.}
+\newlength{\sixnum}
+        \settowidth{\sixnum}{99.99.99.99.99.99.}
+ 
+\newcommand{\adjustarticle}
+{\def\l@subsection{\@dottedtocline{2}{1.5em}{\twonum}}
+\def\l@subsubsection{\@dottedtocline{3}{4.0em}{\threenum}}
+\def\l@paragraph{\@dottedtocline{4}{7.8em}{\fournum}}
+\def\l@subparagraph{\@dottedtocline{5}{10.4em}{\fivenum}}}
+ 
+\newcommand{\adjustreport}
+{\def\l@section{\@dottedtocline{1}{1.5em}{\twonum}}
+\def\l@subsection{\@dottedtocline{2}{4.0em}{\threenum}}
+\def\l@subsubsection{\@dottedtocline{3}{7.8em}{\fournum}}
+\def\l@paragraph{\@dottedtocline{4}{10.4em}{\fivenum}}
+\def\l@subparagraph{\@dottedtocline{5}{12.6em}{\sixnum}}}
+ 
+\newcommand{\adjustbook}{\adjustreport}
+ 
+\newcommand{\subsubsubsection}[1]{\paragraph{#1}}
+% end of TOC_ENTRY.STY
+
+ 
+%
+% PROPOSED MODIFICATIONS
+%
+% remove:
+%
+%\newcommand{\subsubsubsection}[1]{\paragraph{$1}}
+% 
+% change:
+%
+%\newcommand{\adjustarticle}
+%{\def\l@subsection{\@dottedtocline{2}{1.5em}{\twonum}}
+%\def\l@subsubsection{\@dottedtocline{3}{4.0em}{\threenum}}
+%\def\l@subsubsubsection{\@dottedtocline{3}{7.8em}{\fournum}}
+%\def\l@paragraph{\@dottedtocline{4}{10.4em}{\fivenum}}
+%\def\l@subparagraph{\@dottedtocline{5}{12.6em}{\sixnum}}}
+% 
+% add:
+%
+%\setcounter{secnumdepth}{5}
+%\setcounter{tocdepth}{5}
+%
+%\def\subsubsubsection{\@startsection{subsubsubsection}{3}{\z@}{-3.25ex plus 
+%-1ex minus -.2ex}{1.5ex plus .2ex}{\normalsize\bf}}
+%
+%\newcounter {subsubsubsection}[subsubsection]
+%
+%\def\thesubsubsubsection {\thesubsubsection .\arabic{subsubsubsection}}
+%

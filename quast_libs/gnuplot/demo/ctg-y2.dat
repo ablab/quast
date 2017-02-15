@@ -1,0 +1,58 @@
+MONTH	"precipitation 1992-2000"
+mai 	61
+jun 	57.7
+jul 	61.7
+aug 	74.9
+sep 	103.1
+okt 	66.1
+nov 	47.3
+des 	48.8
+jan 	55.7
+feb 	36.1
+mar 	39.1
+apr 	41
+
+
+MONTH	"precipitation 2001-2002"
+mai 	42.2
+jun 	69.2
+jul 	68.4
+aug 	68.4
+sep 	26.1
+okt 	144.7
+nov 	166.5
+des 	52.9
+jan 	43.4
+feb 	22.9
+mar 	37.5
+apr 	42.1
+
+
+MONTH	"runoff 1992-2000"
+mai 	15.8
+jun 	10.4
+jul 	3.2
+aug 	3
+sep 	6.6
+okt 	21.3
+nov 	17.7
+des 	17.3
+jan 	8.3
+feb 	1.8
+mar 	10.8
+apr 	56.1
+
+
+MONTH	"runoff 2001-2002"
+mai 	5.7
+jun 	1.2
+jul 	5.7
+aug 	1.6
+sep 	1.1
+okt 	93.6
+nov 	145.9
+des 	51.6
+jan 	0.9
+feb 	0
+mar 	5.4
+apr 	61.7

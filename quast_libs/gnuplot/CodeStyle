@@ -1,0 +1,254 @@
+$Id: CodeStyle,v 1.10 2012/05/04 21:11:56 sfeam Exp $
+
+The following things have be observed when writing new code for gnuplot:
+(this file is currently under construction)  Some of the following is
+just personal bug-bears, so dont take any offense if something I
+moan about is something you think is good style...
+
+These rules were originally written up by David Denholm, and I keep
+updating them as I go along. -Lars
+
+
+MISSING FUNCTIONS, AND FUNCTIONS TO BE AVOIDED
+----------------------------------------------
+The following functions may not be used, since they are not present on all
+systems (though the substitute functions might be defined to exactly these
+functions)
+
+function	use instead
+
+bcopy		memcpy
+bzero		memset
+index		strchr
+rindex		strrchr
+strncasecmp	strnicmp
+
+
+
+  The number of macros for conditional compilation is getting a little
+extreme!  I (personally) think it's better to make the conditionally-compiled
+code 'feature-based' rather than 'compiler-based'. I think this is particularly
+true for the many DOS compilers. The sort of thing I am thinking of is,
+for example, whether to disable hidden3d stuff, or whether to store
+data points as float rather than double to save space. Rather than having
+a long list of compilers or OS's which use one or the other, add macros
+such as SMALLMEMORY or NOHIDDENSTUFF and define these in the makefiles.
+ Perhaps a sensible guideline for choice of such macros is to arrange
+things so that the smallest number of ports are affected. For example,
+if we only compiled the hidden stuff if HIDDENSTUFF was defined, most
+makefiles would have to be updated. But if instead it is being disabled
+for a few machines, only those makefiles have to explicitly define
+NOHIDDENSTUFF.
+
+  Perhaps a good guideline would be that gnuplot should build cleanly
+with most available features if no macros are defined on an ANSI C compiler
+on a 'typical' (POSIX, say) unix machine.
+
+  For example, I myself have broken this rule by requiring the macro
+HAVE_LOCALE in order to support setlocale() - this feature is available
+with ANSI compilers, and so setlocale() calls should be enabled by default,
+and disabled only if NO_LOCALE is defined at compile time. Does this
+sound reasonable?  For example, there was some code in fit.c that would
+prefer to use tempnam() if it is available, but falls back to ANSI fn
+tmpnam() if necessary. The way it was done, tempnam() was the default,
+and there was a list of those systems that had to use tmpnam().
+But the trouble was that a new one had to be added to the list every
+few weeks as new machines were discovered. The current scheme is
+that tmpnam() is used unless feature HAVE_TEMPNAM is enabled.
+
+
+
+On a related note... if one particular machine does doesn't provide
+a standard-ish function, but the same functionality can be
+acheived, it would be preferable to implement the standardish
+function in a os-specific source file, so that the core code can
+simply invoke the function without any conditionals, and the OS-specific
+files provide the missing functions. For example, in fit.c (at the
+time of writing) where a temporary file is needed, there is some
+inline code for DOS, OS2, AMIGA, etc to create temporary files,
+otherwise tempnam() is used. I think I'd rather have tempnam()
+implemented as a function in dos.c for example, then the fit code
+would not need to have any conditional code other than HAVE_TEMPNAM
+
+
+
+Also, think generic where possible... I once noticed that popen()
+had been implemented for atari or similar using temporary files
+and system() call. It seems to me that this could easily be done
+as a generic solution, so that DOS ports, for example, could also
+benefit.
+
+
+
+
+FUNCTION PROTOTYPES
+-------------------
+
+Function prototypes are mandatory, even for local functions that are
+declared before use. This is necessary for a clean compile on
+some machines.  gcc -Wstrict-prototypes  is recommended.
+However, to make the code compilable on pre-ANSI style compilers,
+prototypes have to be enclosed in a special macro, e.g.
+
+int strcmp __PROTO((char *s, char *t)); /* note the double ()'s */
+
+Probably from gnuplot release 3.7.1 on, I will require that
+all function declarations and definitions are in ANSI style.
+I see absolutely no point at all in ignoring the benefits of
+ANSI compilers, almost ten years after this language became
+an ISO standard.
+
+int
+strcmp(char *s, char *t)
+{
+  ...
+}
+
+On platforms which use the included configure script, the ansi2knr
+tool in the src subdirectory is invoked transparently if the compiler
+doesn't support prototypes (Ultrix, SunOS 4.x). Other platforms may
+require explicit rules or additional makefiles for non-ANSI/ANSI
+compilation. The man page for ansi2knr is included. Note that for
+ansi2knr to work, the function return type must be on a separate line,
+or, to quote from the ansi2knr manual, "ansi2knr recognizes functions
+by seeing a non-keyword  identifier at the left margin, followed by a
+left parenthesis, with a right parenthesis as the last character on
+the line."
+
+
+
+While compilers do not require that explicit declarations be
+given for integer arguments, we do !
+
+
+While ANSI compilers can use prototypes for implicit typecasts, k&r
+compilers do not have this information. Avoid relying on implicit
+conversions of function parameters.  gcc -Wconversion helps with this.
+There are many signed/unsigned warnings, but look out for other
+ones which may be more serious, in particular integer to float and
+vice versa. Placing casts is necessary in this case for correct
+code on non-ansi compilers.
+
+[we will definitely give up k&r support in the near future, but
+ since existing code seems to work with k&r, we're sticking
+ with it for the time being.
+]
+
+April 2012:  Many years later, version 1.12 of the automake toolchain
+itself has abandoned support for non-ansification using ansi2knr.
+So the above section is of only historical interest.
+
+
+
+
+INTEGER SIZE
+------------
+
+Large integer constant expression have to be explicitly cast to long, even
+if the result is assigned to a long variable.
+
+long t=60*60*24;
+results in a overflow on 16 bit compilers, even though the result fits into
+the long variable.
+
+Correct: long t=60l*60l*24l;
+
+
+
+Similarly, though not particularly important, ANSI and k&r compilers
+treat integer constants > MAX_INT differently. If you mean an
+unsigned integer constant, say so.
+
+
+
+
+Please avoid duplicating large sections of code - make the effort
+to make a function or macro out of the common code.
+
+
+min(a,b), max(a,b), MIN(a,b), MAX(a,b) are all predefined by some
+compilers. I am now using GPMIN() and GPMAX()  [wot a pain !]
+
+
+Avoid putting directories into #includes - eg  #include "term/file.h"
+is to be avoided. Instead, #include "file.h"  and use -Iterm on the
+compile line.
+
+
+coordval is typedef-ed to either double or float - it is almost always
+double, but please take care not to mix coordval's with doubles.
+
+
+An important rule unknown to many, it seems: *never* pass a 'char' to
+any of the <ctype.h> functions, as-is. Don't cast it to (int), either
+--- that would happen automatically, anyway. You *must* cast to
+(unsigned char), instead. Otherwise, there'll quite likely be crashes
+with 8-bit characters on systems where 'char' is signed.
+
+
+LAYOUT AND INDENTATION
+----------------------
+
+ The code layout is getting into a bit of a mess, due to mixed
+conventions. IMHO the only useful style is one tab stop per
+indent. This way, anyone can set their editor to display
+with their preferred spacing. More importantly, one has to
+delete only one tab to outdent once more : this makes it so much
+easier to ensure alignment even if the opening brace is
+off the top of the screen.
+  Much of the code seems to assume tab=8, and uses 4 spaces,
+then one tab, then tab+4, then 2tab, ...  On an entirely
+personal note, this breaks my folding editor :-(
+
+ I think vi does this by default. If using vi, please try
+putting   set ts=4  into your ~/.exrc file.
+
+
+  Unfortunately, gnu indent does not seem to recognise this
+as a layout style. If it did, I'd have run all sources
+through it long ago. [GNU indent -kr -cp0 -l132 -lps -br -psl
+is what I use. Very little manual editing is necessary after
+running this, mostly for long (> 80 cols) lines. Anyway,
+I don't care which indentation style _you_ use, I'm running
+all code through indent and be done with it. -Lars]
+
+
+
+Please use lots of vertical whitespace between unrelated
+blocks of code in functions. And it should not be need to
+be said, but I'll say it anyway... please put in lots of
+comments describing blocks of code. Many people maintain and
+contribute to this code.
+
+
+  The functions in plot?d.c and graph*.c are sometimes very long.
+This isn't really a problem, since there's a lot of semi-independent
+things to be done in sequence. However, I do object to the
+practise of having all variables declared at the top of
+such functions. Please keep the scope of temporary variables
+as local as possible, particularly in these long functions.
+The main reason is for ease of maintenance : many people
+make modifications to small parts of code without fully
+understanding in exacting detail the surrounding code.
+
+
+In case you were wondering, lines of the form /*{{{  comment */ 
+and /*}}}*/  are markers left by my folding editor when I am forced
+to fold up particularly long functions when trying to understand the
+logic. I tend to leave these markers in when I finally figure it out,
+though perhaps I should not.
+
+
+Source code is intended to be read and maintained by humans. As such,
+readability is prefered over elegance. Please separate all operators
+from operands with a space, ie. instead of x+=3, use x += 3. The former
+is not only less readable, it may also break older compilers! This rule
+should also be followed for simple assignments, ie. in for (;;) loops.
+Unary operators should be writen as usual, ie i++.
+
+
+No C++ style comments (//).
+No trailing comments on #ifdef/#ifndef lines.
+No #error and #warning directives.
+
+[more to come]

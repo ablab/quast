@@ -1,0 +1,35 @@
+all: html showcase_plot.svg
+
+distclean: clean
+clean:
+	rm -f *.png *.gnu *.html *.js *.dat epslatex* fit.log soundfit.par *.?.svg *.??.svg jsdir
+
+GNUPLOT_LIB = ..
+
+#
+# Auto-generation of the svg demo set.
+#
+html: airfoil.html approximate.html barchart_art.html binary.html bivariat.html boxplot.html candlesticks.html circles.html cities.html contours.html controls.html dashtypes.html datastrings.html discrete.html electron.html enhanced_utf8.html fillbetween.html fillcrvs.html fillstyle.html finance.html hidden.html hidden2.html histograms.html histograms2.html hypertext.html gantt.html index.html iterate.html layout.html lines_arrows.html linkedaxes.html margins.html mgr.html multiaxis.html multimsh.html multiplt.html nokey.html param.html piecewise.html pm3dcolors.html pm3d.html pointsize.html polar.html poldat.html prob2.html prob.html rainbow.html random.html rectangle.html rgba_lines.html rgbalpha.html rgb_variable.html rugplot.html running_avg.html scatter.html simple.html singulr.html smooth.html spline.html steps.html stringvar.html surface1.html surface2.html transparent.html transparent_solids.html tics.html timedat.html using.html varcolor.html vector.html world.html world2.html heatmaps.html ellipse.html stats.html
+
+index.html: index.svg
+	cp index.svg index.html
+	cp ../../term/js/*.png .
+
+lines_arrows.html: $(GNUPLOT_LIB)/lines_arrows.dem ./webify_svg.pl
+	export DEMOTERM="svg dashed font 'arial,11' size 600,400 dynamic mouse jsdir '.'"; ./webify_svg.pl lines_arrows
+
+rugplot.html: random.html
+
+showcase_plot.svg:
+	export DEMOTERM="svg dashed enhanced font 'arial,11' mouse size 500,350 dynamic jsdir '.'"; ./webify_svg.pl --mouse transparent
+	mv transparent.2.svg showcase_plot.svg
+	rm transparent.html
+
+jsdir:
+	cp ../../term/js/gnuplot_svg.js .
+	cp ../../term/js/grid.png .
+	touch jsdir
+
+%.html: $(GNUPLOT_LIB)/%.dem ./webify_svg.pl jsdir
+	./webify_svg.pl --mouse $*
+

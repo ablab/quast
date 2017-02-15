@@ -1,0 +1,57 @@
+#
+# $Id: fontfile_latex.dem,v 1.4 2012/06/23 07:48:00 markisch Exp $
+#
+# This file demonstrates new features in gnuplot 3.8i
+# -1- loading fontfiles for postscript output
+print "\n This file demonstrates how to use postscript type 1 font"
+print " files with gnuplot."
+print "\n Please note that this demo runs only on postscript terminal,"
+print " because fontfile inclusion is only supported by this terminal."
+print "\n In addition, this demo needs two font files which are not"
+print " included in the gnuplot distribution."
+print " On unix systems with a teTeX installation at least \"cmmi10.pfb\" should be"
+print " found automatically."
+print " If not, they can be downloaded from the net:"
+print " ftp://ftp.dante.de/tex-archive/fonts/ps-type1/cm-super/pfb/sfrm1000.pfb"
+print " ftp://ftp.dante.de/tex-archive/fonts/cm/ps-type1/bluesky/pfb/cmmi10.pfb"
+print " Please put the files \"sfrm1000.pfb\" and \"cmmi10.pfb\""
+print " somewhere they are found, e.g. into the working directory."
+pause -1 "Hit return to continue"
+#
+      xmin=-270.
+      xmax=270.
+      ymin=-1.1
+      ymax=1.1
+#
+reset
+set terminal push
+set terminal postscript enhanced linewidth 2 'SFRM1000' 22 \
+    fontfile 'sfrm1000.pfb' fontfile 'cmmi10.pfb'
+set output 'fontfile_latex.ps'
+unset autoscale
+set xr [xmin:xmax]
+set yr [ymin:ymax]
+#
+save_encoding = GPVAL_ENCODING
+set encoding iso_8859_1
+set format y '%.1f'
+set label 'Times-Roman: {/Times-Roman abcdefghABCDEFGH äöüß}' at graph 0.05,0.6 left
+set label 'SFRM1000: {/SFRM1000 abcdefghABCDEFGH äöüß}' at graph 0.05,0.5 left
+set label 'CMMI10: {/CMMI10 abcdefghABCDEFGH} {/CMMI10 \013\014\015\016\042}' at graph 0.05,0.4 left
+set xlabel '{/CMMI10 \013} / °'
+set ylabel '{/CMMI10 y}'
+plot sin(pi/180.*x) title '{/CMMI10 y} = sin {/CMMI10 \013}'
+print "\n Now have a look at the file fontfile_latex.ps"
+print "\n If you have installed TeX, you can generate a table with the"
+print " encoding of CMMI10 by typing \"tex testfont\""
+print " answering \"cmmi10\","
+print " and then typing \"\\table\\bye\"."
+print " Or have a look at the file \"ps_fontfile_doc.ps\" in the directory"
+print " docs/psdoc of the Gnuplot source distribution
+print " If the text \"SFRM1000\" looks like Helvetica you may have an old version"
+print " of the cm-super fonts. Then you will have to use lowercase font names or"
+print " download a new version."
+set output
+set terminal pop
+set encoding save_encoding
+reset

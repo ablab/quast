@@ -1,0 +1,46 @@
+## Process this file with automake to produce Makefile.in -*-Makefile-*-
+AUTOMAKE_OPTIONS = foreign
+
+EXTRA_DIST = README Makefile.am.in driver.h impcodes.h \
+object.h post.h $(CORETERM) PostScript lua js write_png_image.c
+
+postscriptdir = $(pkgdatadir)/$(VERSION_MAJOR)/PostScript
+
+luadir = $(pkgdatadir)/$(VERSION_MAJOR)/lua
+jsdir = $(pkgdatadir)/$(VERSION_MAJOR)/js
+
+# List of terminal drivers, and list of postscript installation files
+# must be created prior to running automake
+##trm-files-begin
+##trm-files-end
+
+Makefile.am: Makefile.am.in
+	rm -f $@ $@t
+	sed -n '1,/^##trm-files-begin/p' $< > $@t
+	echo CORETERM = *.trm | fmt | (tr '\012' @; echo) \
+	  |sed 's/@$$/%/;s/@/ \\@/g' | tr @% '\012 ' \
+	  >> $@t
+	echo '#' >> $@t
+	echo postscript_DATA = PostScript/*.ps PostScript/*.txt | fmt \
+	  | (tr '\012' @; echo) |sed 's/@$$/%/;s/@/ \\@/g' \
+	  | tr @% '\012 ' >> $@t
+	echo js_DATA = js/*.js js/*.png js/*.css js/README | fmt \
+	  | (tr '\012' @; echo) |sed 's/@$$/%/;s/@/ \\@/g' \
+	  | tr @% '\012 ' >> $@t
+	echo lua_DATA = lua/gnuplot-tikz.lua | fmt \
+	  | (tr '\012' @; echo) |sed 's/@$$/%/;s/@/ \\@/g' \
+	  | tr @% '\012 ' >> $@t
+	echo if BUILD_LUA >> $@t
+	echo     build_lua = BUILD_LUA >> $@t
+	echo else >> $@t
+	echo     build_lua = >> $@t
+	echo endif >> $@t
+	sed -n '/^##trm-files-end/,$$p' $< >> $@t
+	chmod og-w $@t
+	mv $@t $@
+
+all: lua/gnuplot-tikz.help
+
+$(srcdir)/lua/gnuplot-tikz.help: $(srcdir)/lua/gnuplot-tikz.lua
+	test -z "$(build_lua)" || (chmod u+w $@ && lua $< termhelp > $@)
+

@@ -1,0 +1,201 @@
+/* Hello, Emacs, this is -*-C-*-
+ * $Id: hp2648.trm,v 1.13 2006/07/21 02:35:47 sfeam Exp $
+ *
+ */
+
+/* GNUPLOT -  hp2648.trm */
+
+/*[
+ * Copyright 1990 - 1993, 1998, 2004
+ *
+ * Permission to use, copy, and distribute this software and its
+ * documentation for any purpose with or without fee is hereby granted,
+ * provided that the above copyright notice appear in all copies and
+ * that both that copyright notice and this permission notice appear
+ * in supporting documentation.
+ *
+ * Permission to modify the software is granted, but not the right to
+ * distribute the complete modified source code.  Modifications are to
+ * be distributed as patches to the released version.  Permission to
+ * distribute binaries produced by compiling modified sources is granted,
+ * provided you
+ *   1. distribute the corresponding source modifications from the
+ *    released version in the form of a patch file along with the binaries,
+ *   2. add special version identification to distinguish your version
+ *    in addition to the base release version number,
+ *   3. provide your name and address as the primary contact for the
+ *    support of your modified version, and
+ *   4. retain our contact information in regard to use of the base
+ *    software.
+ * Permission to distribute the released version of the source code along
+ * with corresponding source modifications in the form of a patch file is
+ * granted with same provisions 2 through 4 for binary distributions.
+ *
+ * This software is provided "as is" without express or implied warranty
+ * to the extent permitted by applicable law.
+]*/
+
+/*
+ * This file is included by ../term.c.
+ *
+ * This terminal driver supports:
+ *  HP2648 and HP2647
+ *
+ * AUTHORS
+ *  Russell Lang
+ *
+ * send your comments or suggestions to (gnuplot-info@lists.sourceforge.net).
+ *
+ */
+
+/*
+ * adapted to the new terminal layout by Stefan Bodewig (Dec. 1995)
+ */
+
+#include "driver.h"
+
+#ifdef TERM_REGISTER
+register_term(hp2648)
+#endif
+
+#ifdef TERM_PROTO
+TERM_PUBLIC void HP2648init __PROTO((void));
+TERM_PUBLIC void HP2648graphics __PROTO((void));
+TERM_PUBLIC void HP2648text __PROTO((void));
+TERM_PUBLIC void HP2648linetype __PROTO((int linetype));
+TERM_PUBLIC void HP2648move __PROTO((unsigned int x, unsigned int y));
+TERM_PUBLIC void HP2648vector __PROTO((unsigned int x, unsigned int y));
+TERM_PUBLIC void HP2648put_text __PROTO((unsigned int x, unsigned int y, const char *str));
+TERM_PUBLIC int HP2648_text_angle __PROTO((int ang));
+TERM_PUBLIC void HP2648reset __PROTO((void));
+
+#define HP2648XMAX 720
+#define HP2648YMAX 360
+
+#define HP2648VCHAR		12
+#define HP2648HCHAR		7
+#define HP2648VTIC		8
+#define HP2648HTIC		8
+#endif /* TERM_PROTO */
+
+#ifndef TERM_PROTO_ONLY
+#ifdef TERM_BODY
+#define HP2648XLAST (HP2648XMAX - 1)
+#define HP2648YLAST (HP2648YMAX - 1)
+
+
+TERM_PUBLIC void
+HP2648init()
+{
+    fprintf(gpoutfile, "\033*m1m1n136,1cZ");
+/*                   1     2 3     4
+	1. mode
+	2. textsize=1
+	3. textangle=1
+        4. define line type 2 to be *   *   *   * etc.
+*/
+}
+
+
+TERM_PUBLIC void
+HP2648graphics()
+{
+    fprintf(gpoutfile, "\033*dacZ");
+/*                   1     23
+	1. mode
+	2. clear grahics screen
+	3. graphics video on
+*/
+}
+
+
+TERM_PUBLIC void
+HP2648text()
+{
+}
+
+
+TERM_PUBLIC void
+HP2648linetype(int linetype)
+{
+    static int hpline[] = { 1, 7, 1, 4, 5, 6, 8, 9, 10, 7, 2 };
+    fprintf(gpoutfile, "\033*m%dbZ", hpline[(linetype + 2) % 11]);
+}
+
+
+TERM_PUBLIC void
+HP2648move(unsigned int x, unsigned int y)
+{
+    fprintf(gpoutfile, "\033*paf%d,%dZ", x, y);
+    /*               1     23     4
+       1        plot mode
+       2        "pen up"
+       3        goto absolute x,y
+       4        end command
+     */
+}
+
+
+TERM_PUBLIC void
+HP2648vector(unsigned int x, unsigned int y)
+{
+    fprintf(gpoutfile, "\033*pbf%d,%dZ", x, y);
+    /*                     1
+       1        "pen down"
+     */
+}
+
+
+TERM_PUBLIC void
+HP2648put_text(unsigned int x, unsigned int y, const char *str)
+{
+    HP2648move(x, y - HP2648VCHAR / 2 + 1);
+    fprintf(gpoutfile, "\033*l%s\n", str);
+}
+
+
+TERM_PUBLIC int
+HP2648_text_angle(int ang)
+{
+int hp_ang = (ang ? 1 : 0);
+
+    fprintf(gpoutfile, "\033*m%dnZ\n", hp_ang+1);
+    return TRUE;
+}
+
+TERM_PUBLIC void
+HP2648reset()
+{
+}
+
+#endif /* TERM_BODY */
+
+#ifdef TERM_TABLE
+TERM_TABLE_START(hp2648_driver)
+    "hp2648", "HP2648 and HP2647",
+    HP2648XMAX, HP2648YMAX, HP2648VCHAR, HP2648HCHAR,
+    HP2648VTIC, HP2648HTIC, options_null, HP2648init, HP2648reset,
+    HP2648text, null_scale, HP2648graphics, HP2648move, HP2648vector,
+    HP2648linetype, HP2648put_text, HP2648_text_angle,
+    null_justify_text, line_and_point, do_arrow, set_font_null
+TERM_TABLE_END(hp2648_driver)
+
+#undef LAST_TERM
+#define LAST_TERM hp2648_driver
+
+#endif /* TERM_TABLE */
+#endif /* TERM_PROTO_ONLY */
+
+#ifdef TERM_HELP
+START_HELP(hp2648)
+"1 hp2648",
+"?commands set terminal hp2648",
+"?set terminal hp2648",
+"?set term hp2648",
+"?terminal hp2648",
+"?term hp2648",
+"?hp2648",
+" The `hp2648` terminal driver supports the Hewlett Packard HP2647 and HP2648.",
+" It has no options."
+END_HELP(hp2648)
+#endif

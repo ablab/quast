@@ -1,0 +1,194 @@
+#
+# $Id: makefile.emx,v 1.10.2.1 2014/10/01 02:40:28 sfeam Exp $
+#
+# GNUPLOT Makefile for use with emx-0.8f/gcc and ndmake 4.5 on MS-DOS
+#
+# This version has had very little testing.
+
+EMXPATH = c:/emx
+
+# uncomment the following two lines if you have 
+# Johannes Martin's SVGA/VESA extensions
+# A VESA 1.2 compatible display, and the vesa_emx.com TSR are required.
+# "set term vgal" needs vesa_ibm.com with svgakit/vesa_emx version 1.2.
+# VESA = -DEMXVESA
+# VESALIB = -lvesa
+
+# where to place gnuplot.gih helpfile
+HELPFILE = gnuplot.gih
+
+CFLAGS = -c -O2 -DMSDOS -DDOS32 -DPROTOTYPES -DHAVE_STRINGIZE -DREADLINE -DHAVE_STRNICMP
+
+# see other terminal defines in term.h
+TERMFLAGS = -DEMXVGA $(VESA)
+
+OBJS = 	alloc.o binary.o bitmap.o command.o contour.o datafile.o dynarray.o \
+	eval.o fit.o graphics.o graph3d.o help.o hidden3d.o history.o \
+	internal.o interpol.o matrix.o misc.o parse.o plot.o plot2d.o \
+	plot3d.o readline.o save.o specfun.o scanner.o set.o show.o \
+	standard.o stdfn.o tables.o tabulate.o term.o time.o unset.o util.o util3d.o \
+	variable.o version.o
+
+CSOURCE5 = term/dumb.trm term/dxf.trm term\dxy.trm \
+	term\eepic.trm term\epson.trm term\fig.trm term\hp26.trm \
+	term\hp2648.trm term\hpgl.trm term\hpljii.trm 
+CSOURCE6 = term\impcodes.h term\imagen.trm term\object.h \
+	term\kyo.trm term\latex.trm term/pbm.trm term\pm.trm 
+CSOURCE7 = term\post.trm term\qms.trm term\regis.trm term\sun.trm \
+	term\t410x.trm term\tek.trm term\x11.trm term\emxvga.trm
+CSOURCE8 = contour.c
+
+all: gnuplotx.exe $(HELPFILE)
+
+# default rules
+CCC = gcc $(CFLAGS) -o $*.o $*.c
+
+gnuplotx.exe: $(OBJS) emxlink.rsp
+        gcc -o gnuplot @emxlink.rsp -lm -lgraph $(VESALIB)
+	emxbind $(EMXPATH)/bin/emx.exe gnuplot gnuplotx.exe -p -acmi
+
+emxlink.rsp: makefile.emx
+	echo bitmap.o> emxlink.rsp
+	echo command.o>> emxlink.rsp
+	echo contour.o>> emxlink.rsp
+	echo eval.o>> emxlink.rsp
+	echo graphics.o>> emxlink.rsp
+	echo graph3d.o>> emxlink.rsp
+	echo help.o>> emxlink.rsp
+	echo hidden3d.o>> emxlink.rsp
+	echo history.o>> emxlink.rsp
+	echo internal.o>> emxlink.rsp
+	echo misc.o>> emxlink.rsp
+	echo parse.o>> emxlink.rsp
+	echo plot.o>> emxlink.rsp
+	echo plot2d.o>> emxlink.rsp
+	echo plot3d.o>> emxlink.rsp
+	echo readline.o>> emxlink.rsp
+	echo specfun.o>> emxlink.rsp
+	echo interpol.o>> emxlink.rsp
+	echo scanner.o>> emxlink.rsp
+	echo set.o>> emxlink.rsp
+	echo show.o>> emxlink.rsp
+	echo standard.o>> emxlink.rsp
+	echo stdfn.o>> emxlink.rsp
+	echo tabulate.o>> emxlink.rsp
+	echo term.o>> emxlink.rsp
+	echo time.o>> emxlink.rsp
+	echo util.o>> emxlink.rsp
+	echo variable.o>> emxlink.rsp
+	echo version.o>> emxlink.rsp
+	echo binary.o>> emxlink.rsp
+	echo fit.o>> emxlink.rsp
+	echo matrix.o>> emxlink.rsp
+	echo datafile.o>> emxlink.rsp
+	echo alloc.o>> emxlink.rsp
+
+bitmap.o: bitmap.c bitmap.h plot.h
+	$(CCC)
+
+binary.o: binary.c plot.h
+	$(CCC)
+
+command.o: command.c plot.h setshow.h help.h fit.h
+	$(CCC) -DHELPFILE=\"$(HELPFILE)\"
+
+contour.o: contour.c plot.h
+	$(CCC)
+
+eval.o: eval.c plot.h
+	$(CCC)
+
+graphics.o: graphics.c plot.h setshow.h
+	$(CCC)
+
+graph3d.o: graph3d.c plot.h setshow.h
+	$(CCC)
+
+fit.o: fit.c fit.h matrix.h plot.h
+	$(CCC)
+
+matrix.o: matrix.c matrix.h fit.h
+	$(CCC)
+
+help.o: help.c plot.h help.h
+	$(CCC)
+
+internal.o: internal.c plot.h
+	$(CCC)
+
+misc.o: misc.c plot.h setshow.h
+	$(CCC)
+
+parse.o: parse.c plot.h
+	$(CCC)
+
+plot.o: plot.c plot.h setshow.h
+	$(CCC)
+
+plot2d.o: plot2d.c plot.h
+	$(CCC)
+
+plot3d.o: plot3d.c plot.h
+	$(CCC)
+
+readline.o: readline.c
+	$(CCC)
+
+scanner.o: scanner.c plot.h
+	$(CCC)
+
+set.o: set.c plot.h setshow.h
+	$(CCC)
+
+show.o: show.c plot.h setshow.h
+	$(CCC) -DHELPFILE=\"$(HELPFILE)\"
+
+specfun.o: specfun.c plot.h
+	$(CCC)
+
+interpol.o: interpol.c plot.h setshow.h
+	$(CCC)
+
+standard.o: standard.c plot.h
+	$(CCC)
+
+stdfn.o: stdfn.c stdfn.h
+	$(CCC)
+
+term.o: term.c term.h plot.h setshow.h bitmap.h $(CSOURCE5) $(CSOURCE6) $(CSOURCE7)
+	$(CCC) $(TERMFLAGS) -Iterm -I.
+
+time.o : time.c
+	$(CCC)
+
+util.o: util.c plot.h
+	$(CCC)
+
+variable.o: variable.c plot.h variable.h
+	$(CCC)
+
+version.o: version.c
+	$(CCC)
+
+# convert gnuplot.doc to gnuplot.gih
+doc2gih.exe: docs\doc2gih.c docs\termdoc.c
+	gcc -o doc2gih -I. docs/doc2gih.c docs/termdoc.c
+	emxbind $(EMXPATH)/bin/emx.exe doc2gih doc2gih.exe
+
+$(HELPFILE): doc2gih.exe docs\gnuplot.doc
+	doc2gih docs\gnuplot.doc $(HELPFILE)
+
+clean:
+	del *.o
+	del emxlink.rsp
+	del gnuplot
+	del doc2gih
+
+# veryclean target - remove all files created by the makefile
+
+veryclean: clean
+	del gnuplot.exe
+	del doc2gih.exe
+	del gnuplot.gih
+
+

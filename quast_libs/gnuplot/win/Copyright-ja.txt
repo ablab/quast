@@ -1,0 +1,39 @@
+    Copyright (C) 1986 - 1993, 1998, 2004, 2007  Thomas Williams, Colin Kelley
+
+Permission to use, copy, and distribute this software and its documentation for any purpose with or without fee is hereby granted, provided that the above copyright notice appear in all copies and that both that copyright notice and this permission notice appear in supporting documentation.
+
+Permission to modify the software is granted, but not the right to distribute the complete modified source code. Modifications are to be distributed as patches to the released version. Permission to distribute binaries produced by compiling modified sources is granted, provided you
+
+  1. distribute the corresponding source modifications from the
+   released version in the form of a patch file along with the binaries,
+  2. add special version identification to distinguish your version
+   in addition to the base release version number,
+  3. provide your name and address as the primary contact for the
+   support of your modified version, and
+  4. retain our contact information in regard to use of the base
+   software.
+
+Permission to distribute the released version of the source code along with corresponding source modifications in the form of a patch file is granted with same provisions 2 through 4 for binary distributions.
+
+This software is provided "as is" without express or implied warranty to the extent permitted by applicable law.
+
+(以下おおまかな訳; 訳は正しくないかも知れませんので詳しくは上記の原文を当たってください。訳者は責任を持ちません。)
+
+    Copyright (C) 1986 - 1993, 1998, 2004, 2007  Thomas Williams, Colin Kelley
+
+このソフトウェアとその付属文書の使用、複製、配布の許可は、上記の著作権 (copyright) 表示が、全ての複製物に書かれていること、および著作権表示とこの許諾文の両方がその支援文書に書かれていることを条件とした上で、この文書により保証されます。
+
+このソフトウェアの修正も認められています。しかし、修正を含む全ソースコードの配布の権利は認められません。修正はリリース版に対するパッチの形で配布しなければなりません。修正されたソースをコンパイルして作られたバイナリの配布は、以下の条件の元で認められます:
+
+  1. リリース版からのソースの修正部分を、パッチの形でバイナリと共に配
+     布すること
+  2. ベースとなるリリース版と区別するために、そのバージョン番号に特別
+     なバージョン指定子を付加すること
+  3. その修正版のサポート用に、あなたの名前とアクセス可能なアドレスと
+     を提供すること
+  4. ベースとなるソフトウェアの使用に関しては、我々の連絡情報を保持し
+     続けること
+
+リリース版のソースコードを、パッチの形でのソースの修正と一緒に配布することは、バイナリ配布に関する条項 2 から 4 までの条件の元で許されます。
+
+このソフトウェアは "あるがまま" 提供され、適用可能な法律で許められる範囲の保証を表明あるいは暗示していはいません。

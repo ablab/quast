@@ -1,0 +1,693 @@
+/* Hello, Emacs, this is -*-C-*-
+ * $Id: be.trm,v 1.21 2013/10/25 04:45:23 sfeam Exp $
+ *
+ */
+
+/*[
+ * Copyright 1986 - 1993, 1998, 2004   Thomas Williams, Colin Kelley
+ *
+ * Permission to use, copy, and distribute this software and its
+ * documentation for any purpose with or without fee is hereby granted,
+ * provided that the above copyright notice appear in all copies and
+ * that both that copyright notice and this permission notice appear
+ * in supporting documentation.
+ *
+ * Permission to modify the software is granted, but not the right to
+ * distribute the complete modified source code.  Modifications are to
+ * be distributed as patches to the released version.  Permission to
+ * distribute binaries produced by compiling modified sources is granted,
+ * provided you
+ *   1. distribute the corresponding source modifications from the
+ *    released version in the form of a patch file along with the binaries,
+ *   2. add special version identification to distinguish your version
+ *    in addition to the base release version number,
+ *   3. provide your name and address as the primary contact for the
+ *    support of your modified version, and
+ *   4. retain our contact information in regard to use of the base
+ *    software.
+ * Permission to distribute the released version of the source code along
+ * with corresponding source modifications in the form of a patch file is
+ * granted with same provisions 2 through 4 for binary distributions.
+ *
+ * This software is provided "as is" without express or implied warranty
+ * to the extent permitted by applicable law.
+]*/
+
+/*
+ * This file is included by ../term.c.
+ *
+ * be.trm  --- inboard terminal driver for BE
+ *
+ * AUTHOR
+ *   Xavier Pianet
+ *
+ */
+
+#include "driver.h"
+
+#ifdef TERM_REGISTER
+register_term(be)
+#endif
+
+#ifdef TERM_PROTO
+int BE_args __PROTO((int argc, char *argv[]));
+TERM_PUBLIC void BE_options __PROTO((void));
+TERM_PUBLIC void BE_init __PROTO((void));
+TERM_PUBLIC void BE_graphics __PROTO((void));
+TERM_PUBLIC void BE_text __PROTO((void));
+TERM_PUBLIC void BE_reset __PROTO((void));
+TERM_PUBLIC void BE_move __PROTO((unsigned int x, unsigned int y));
+TERM_PUBLIC void BE_vector __PROTO((unsigned int x, unsigned int y));
+TERM_PUBLIC void BE_linewidth __PROTO((double lw));
+TERM_PUBLIC void BE_pointsize __PROTO((double ps));
+TERM_PUBLIC void BE_linetype __PROTO((int lt));
+TERM_PUBLIC void BE_put_text __PROTO((unsigned int x, unsigned int y, const char str[]));
+TERM_PUBLIC int BE_justify_text __PROTO((enum JUSTIFY mode));
+TERM_PUBLIC void BE_point __PROTO((unsigned int x, unsigned int y, int number));
+TERM_PUBLIC void BE_fillbox __PROTO((int style, unsigned int x, unsigned y, unsigned int width, unsigned int height));
+#define BE_XMAX 4096
+#define BE_YMAX 4096
+
+/* approximations for typical font/screen sizes */
+#define BE_VCHAR (BE_YMAX/25)
+#define BE_HCHAR (BE_XMAX/100)
+#define BE_VTIC (BE_YMAX/100)
+#define BE_HTIC (BE_XMAX/150)
+#endif
+
+
+#ifndef TERM_PROTO_ONLY
+
+#ifdef TERM_BODY
+
+/* non-zero if '-display' found on command line */
+int BE_Display = 0;
+
+static void BE_atexit __PROTO((void));
+
+typedef enum { hasNoArg, hasArg } OptionArg;
+
+static struct beopt {
+    const char *option;	/* Name of option */
+    OptionArg arg;	/* Whether option has argument */
+}  BE_cmdargs[] =
+{
+   { "-mono", hasNoArg }, { "-gray", hasNoArg }, { "-clear", hasNoArg },
+   { "-pointsize", hasArg },
+   { "-iconic", hasNoArg }, { "-rv", hasNoArg },
+   { "-reverse", hasNoArg }, { "+rv", hasNoArg },
+   { "-synchronous", hasNoArg },
+   { "-display", hasArg }, { "-geometry", hasArg }, { "-bg", hasArg },
+   { "-background", hasArg }, { "-bd", hasArg },
+   { "-bordercolor", hasArg }, { "-bw", hasArg },
+   { "-borderwidth", hasArg }, { "-fg", hasArg },
+   { "-foreground", hasArg }, { "-fn", hasArg }, { "-font", hasArg },
+   { "-name", hasArg },
+   { "-title", hasArg },
+   /* { "-xnllanguage", hasArg }, { "-xrm", hasArg }, */
+   { "-raise", hasNoArg }, { "-noraise", hasNoArg },
+   { "-persist", hasNoArg }
+};
+
+#define BE_nopts (sizeof(BE_cmdargs) / sizeof(BE_cmdargs[0]))
+
+static FILE *BE_ipc;
+
+static char **xargv = (char **)NULL;
+static char *optvec[2*BE_nopts+1];
+
+static char BE_command[] = "gnuplot_be";
+
+/* Almost not worth the hassle, be want a uniform interface */
+enum BE_id { BE_RESET, BE_OTHER };
+
+static struct gen_table BE_opts[] =
+{
+    { "res$et", BE_RESET },
+    { NULL, BE_OTHER }
+};
+
+static unsigned int BE_plot_number;
+
+TERM_PUBLIC void
+BE_options()
+{
+    struct value a;
+
+    while (!END_OF_COMMAND) {
+	switch(lookup_table(&BE_opts[0],c_token)) {
+	case BE_RESET:
+	    c_token++;
+	    BE_atexit ();	/* tell gnuplot_be to shut down */
+	    break;
+	case BE_OTHER:
+	default:
+	    BE_plot_number = (int) real(const_express(&a));
+	    /* let gnuplot_be check range */
+	    break;
+	}
+    }
+
+    sprintf(term_options, "%d", BE_plot_number);
+}
+
+
+/* BE_args - scan gnuplot command line for standard Toolkit options (to be
+ * done) called from plot.c so must not be TERM_PUBLIC (which may be static)
+ */
+
+int
+BE_args(int argc, char *argv[])
+{
+    int nbe = 0, i = 0, n;
+
+    xargv = (char **) gp_alloc (argc*sizeof(char *), "<xargv>");
+
+    if (!xargv) {
+	fputs ("not enough memory to copy argv - quitting\n", stderr);
+	gp_exit (EXIT_FAILURE);
+    }
+
+    /* We make a copy of the argument vector because
+     * argv is modified later. */
+    memcpy (xargv, argv, argc*sizeof(char *));
+    optvec[i++] = BE_command;
+
+    while (++argv, --argc > 0) {
+	for (n = 0; n < BE_nopts; n++) {
+	    if (strcmp(*argv, BE_cmdargs[n].option) == 0) {
+		optvec[i++] = *xargv;
+		if (strcmp(*argv, "-display") == 0)
+		    BE_Display++;
+		if (BE_cmdargs[n].arg == hasArg) {
+		    if (--argc <= 0)
+			return nbe;
+		    optvec[i++] = *++xargv, ++argv;
+		    nbe++;
+		}
+		nbe++;
+		break;
+	    }
+	}
+	if (n == BE_nopts)
+	    break;
+    }
+    return nbe;
+}
+
+
+/* we do not want to have to duplicate all the code, so we
+ * do most of it with macros.
+ * PRINT0(format), PRINT1(format, p1), PRINT2(format, p1, p2) etc
+ * also  FLUSH0(format), etc, which do an additional flush
+ */
+
+
+/*
+ *   The Be terminal driver uses popen() pipe IPC
+ */
+static void
+BE_atexit ()
+{
+    if (BE_ipc) {
+	fputs("R\n", BE_ipc);
+	fclose(BE_ipc);
+	/* dont wait(), since they might be -persist */
+	BE_ipc = NULL;
+    }
+}
+
+TERM_PUBLIC void
+BE_init()
+{
+    if (!BE_ipc) {
+	/* first time through or after a reset */
+	int fdes[2];
+	pipe(fdes);
+	if (fork() == 0) {
+	    /* child */
+	    close(fdes[1]);
+	    dup2(fdes[0], 0);	/* stdin from pipe */
+	    execvp(BE_command, optvec);
+	    /* if we get here, something went wrong */
+	    perror("exec failed");
+	    gp_exit(EXIT_FAILURE);
+	}
+	/* parent */
+	close(fdes[0]);		/* read end of pipe */
+	BE_ipc = fdopen(fdes[1], "w");
+    } {
+	static int been_here = 0;
+	if (!been_here) {
+	    gp_atexit(BE_atexit);
+	    been_here = 1;
+	}
+    }
+}
+
+TERM_PUBLIC void
+BE_reset()
+{
+    /* leave the pipe alone, until exit or  set term be reset */
+}
+
+#define PRINT0(fmt)		  			fprintf(BE_ipc, fmt)
+#define PRINT1(fmt,p1)	   			fprintf(BE_ipc, fmt,p1)
+#define PRINT2(fmt,p1,p2)			fprintf(BE_ipc, fmt,p1,p2)
+#define PRINT3(fmt,p1,p2,p3) 		fprintf(BE_ipc, fmt,p1,p2,p3)
+#define PRINT4(fmt,p1,p2,p3,p4) 	fprintf(BE_ipc, fmt,p1,p2,p3,p4)
+#define PRINT5(fmt,p1,p2,p3,p4,p5)	fprintf(BE_ipc, fmt,p1,p2,p3,p4,p5)
+
+#define FFLUSH()			 fflush(BE_ipc)
+
+#define BEFORE_GRAPHICS		/* nowt */
+#define AFTER_TEXT		/* nowt */
+
+
+/* common stuff, using macros defined above */
+
+
+TERM_PUBLIC void
+BE_graphics()
+{
+    BEFORE_GRAPHICS;		/* kludge for crippled select */
+    PRINT1("G%d\n", BE_plot_number);	/* for VMS sake, keep as separate prints */
+}
+
+TERM_PUBLIC void
+BE_text()
+{
+    PRINT0("E\n");
+    FFLUSH();
+    AFTER_TEXT;			/* kludge for crippled select */
+}
+
+
+TERM_PUBLIC void
+BE_move(unsigned int x, unsigned int y)
+{
+    PRINT2("M%04d%04d\n", x, y);
+}
+
+TERM_PUBLIC void
+BE_vector(unsigned int x, unsigned int y)
+{
+    PRINT2("V%04d%04d\n", x, y);
+}
+
+TERM_PUBLIC void
+BE_pointsize(double ps)
+{
+    if (ps < 0)
+	ps = 1;
+    PRINT2("P7%04d%04d\n",	/* size of point symbols */
+	   (int) (term->h_tic * ps * 0.5), (int) (term->v_tic * ps * 0.5));
+}
+
+TERM_PUBLIC void
+BE_linewidth(double lw)
+{
+    PRINT1("W%04d\n", (int) lw);
+}
+
+TERM_PUBLIC void
+BE_linetype(int lt)
+{
+    PRINT1("L%04d\n", lt);
+}
+
+TERM_PUBLIC void
+BE_put_text(unsigned int x, unsigned int y, const char str[])
+{
+    /* badly outrange labels can overflow into text field */
+    if (x < 10000 && y < 10000) {
+	PRINT3("T%04d%04d%s\n", x, y, str);
+    }
+}
+
+TERM_PUBLIC int
+BE_justify_text(enum JUSTIFY mode)
+{
+    PRINT1("J%04d\n", mode);
+    return (TRUE);
+}
+
+TERM_PUBLIC void
+BE_point(unsigned int x, unsigned int y, int number)
+{
+    if (number >= 0)
+	number %= POINT_TYPES;
+    number += 1;
+    PRINT3("P%01d%04d%04d\n", number, x, y);
+}
+
+TERM_PUBLIC void
+BE_fillbox(
+    int style;
+    unsigned int x, unsigned int y,
+    unsigned int w, unsigned int h)
+{
+    PRINT5("F%04d%04u%04u%04u%04u\n", style, x, y, w, h);
+}
+
+#endif /* TERM_BODY */
+
+#ifdef TERM_TABLE
+
+TERM_TABLE_START(be_driver)
+    "be", "BeOS Window System",
+    BE_XMAX, BE_YMAX, BE_VCHAR, BE_HCHAR,
+    BE_VTIC, BE_HTIC, BE_options, BE_init, BE_reset,
+    BE_text, null_scale, BE_graphics, BE_move, BE_vector,
+    BE_linetype, BE_put_text, null_text_angle,
+    BE_justify_text, BE_point, do_arrow, set_font_null,
+    BE_pointsize, TERM_CAN_MULTIPLOT|TERM_NO_OUTPUTFILE,
+    BE_text /* suspend can use same routine */ , 0 /* resume */ ,
+    BE_fillbox, BE_linewidth
+TERM_TABLE_END(be_driver)
+
+#undef LAST_TERM
+#define LAST_TERM be_driver
+
+TERM_TABLE_START(BE_driver)
+    "BE", "BE Window System (identical to be)",
+    BE_XMAX, BE_YMAX, BE_VCHAR, BE_HCHAR,
+    BE_VTIC, BE_HTIC, BE_options, BE_init, BE_reset,
+    BE_text, null_scale, BE_graphics, BE_move, BE_vector,
+    BE_linetype, BE_put_text, null_text_angle,
+    BE_justify_text, BE_point, do_arrow, set_font_null,
+    BE_pointsize, TERM_CAN_MULTIPLOT,
+    BE_text /* suspend can use same routine */ , 0 /* resume */ ,
+    BE_fillbox, BE_linewidth
+TERM_TABLE_END(BE_driver)
+
+#undef LAST_TERM
+#define LAST_TERM be_driver
+
+#endif /* TERM_TABLE */
+#endif /* TERM_PROTO_ONLY */
+
+
+#ifdef TERM_HELP
+START_HELP(be)
+"1 be",
+"?commands set terminal be",
+"?set terminal be",
+"?set term be",
+"?terminal be",
+"?term be",
+"?be",
+"?BE",
+" The `be` terminal type is present if gnuplot is built for the `beos`",
+" operating system and for use with X servers.  It is selected at program",
+" startup if the `DISPLAY` environment variable is set, if the `TERM`",
+" environment variable is set to `xterm`, or if the `-display` command",
+" line option is used.",
+"",
+" Syntax:",
+"           set terminal be {reset} {<n>}",
+"",
+" Multiple plot windows are supported: `set terminal be <n>` directs the",
+" output to plot window number n.  If n>0, the terminal number will be",
+" appended to the window title and the icon will be labeled `gplt <n>`.",
+" The active window may distinguished by a change in cursor (from default",
+" to crosshair.)",
+"",
+" Plot windows remain open even when the `gnuplot` driver is changed to a",
+" different device.  A plot window can be closed by pressing the letter q",
+" while that window has input focus, or by choosing `close` from a window",
+" manager menu.  All plot windows can be closed by specifying `reset`, which",
+" actually terminates the subprocess which maintains the windows (unless",
+" `-persist` was specified).",
+"",
+" Plot windows will automatically be closed at the end of the session",
+" unless the `-persist` option was given.",
+"",
+" The size or aspect ratio of a plot may be changed by resizing the `gnuplot`",
+" window.",
+"",
+" Linewidths and pointsizes may be changed from within `gnuplot` with",
+" `set linestyle`.",
+"",
+" For terminal type `be`, `gnuplot` accepts (when initialized) the standard",
+" X Toolkit options and resources such as geometry, font, and name from the",
+" command line arguments or a configuration file.  See the X(1) man page",
+" (or its equivalent) for a description of such options.",
+"",
+" A number of other `gnuplot` options are available for the `be` terminal.",
+" These may be specified either as command-line options when `gnuplot` is",
+" invoked or as resources in the configuration file \".Xdefaults\".  They are",
+" set upon initialization and cannot be altered during a `gnuplot` session.",
+"2 command-line_options",
+"?commands set terminal be command-line-options",
+"?set terminal be command-line-options",
+"?set term be command-line-options",
+"?be command-line-options",
+" In addition to the X Toolkit options, the following options may be specified",
+" on the command line when starting `gnuplot` or as resources in your",
+" \".Xdefaults\" file:",
+"@start table - first is interactive cleartext form",
+"  `-mono`        forces monochrome rendering on color displays.",
+"  `-gray`        requests grayscale rendering on grayscale or color displays.",
+"                         (Grayscale displays receive monochrome rendering by default.)",
+"  `-clear`   requests that the window be cleared momentarily before a",
+"                         new plot is displayed.",
+"  `-raise`   raises plot window after each plot",
+"  `-noraise` does not raise plot window after each plot",
+"  `-persist` plots windows survive after main gnuplot program exits",
+"#\\begin{tabular}{|cl|} \\hline",
+"#`-mono`  & forces monochrome rendering on color displays.\\\\",
+"#`-gray`  & requests grayscale rendering on grayscale or color displays.\\\\",
+"#                 & (Grayscale displays receive monochrome rendering by default.) \\\\",
+"#`-clear` & requests that the window be cleared momentarily before a\\\\",
+"#                 & new plot is displayed. \\\\",
+"#`-raise` & raises plot window after each plot. \\\\",
+"#`-noraise` & does not raise plot window after each plot. \\\\",
+"#`-persist`&plots windows survive after main gnuplot program exits. \\\\",
+"%c l .",
+"%`-mono`@forces monochrome rendering on color displays.",
+"%`-gray`@requests grayscale rendering on grayscale or color displays.",
+"%           @(Grayscale displays receive monochrome rendering by default.)",
+"%`-clear`@requests that the window be cleared momentarily before a",
+"%                @new plot is displayed.",
+"%`-raise`@raises plot window after each plot",
+"%`-noraise`@does not raise plot window after each plot",
+"%`-persist`@plots windows survive after main gnuplot program exits",
+"@end table",
+" The options are shown above in their command-line syntax.  When entered as",
+" resources in \".Xdefaults\", they require a different syntax.",
+"",
+" Example:",
+"           gnuplot*gray: on",
+"",
+" `gnuplot` also provides a command line option (`-pointsize <v>`) and a",
+" resource, `gnuplot*pointsize: <v>`, to control the size of points plotted",
+" with the `points` plotting style.  The value `v` is a real number (greater",
+" than 0 and less than or equal to ten) used as a scaling factor for point",
+" sizes.  For example, `-pointsize 2` uses points twice the default size, and",
+" `-pointsize 0.5` uses points half the normal size.",
+"2 monochrome_options",
+"?commands set terminal be monochrome_options",
+"?set terminal be monochrome_options",
+"?set term be monochrome_options",
+"?be monochrome_options",
+" For monochrome displays, `gnuplot` does not honor foreground or background",
+" colors.  The default is black-on-white.  `-rv` or `gnuplot*reverseVideo: on`",
+" requests white-on-black.",
+"",
+"2 color_resources",
+"?commands set terminal be color_resources",
+"?set terminal be color_resources",
+"?set term be color_resources",
+"?be color_resources",
+" For color displays, `gnuplot` honors the following resources (shown here",
+" with their default values) or the greyscale resources.  The values may be",
+" color names as listed in the BE rgb.txt file on your system, hexadecimal",
+" RGB color specifications (see BE documentation), or a color name followed",
+" by a comma and an `intensity` value from 0 to 1.  For example, `blue, 0.5`",
+" means a half intensity blue.",
+"@start table - first is interactive cleartext form",
+"  gnuplot*background:  white",
+"  gnuplot*textColor:   black",
+"  gnuplot*borderColor: black",
+"  gnuplot*axisColor:   black",
+"  gnuplot*line1Color:  red",
+"  gnuplot*line2Color:  green",
+"  gnuplot*line3Color:  blue",
+"  gnuplot*line4Color:  magenta",
+"  gnuplot*line5Color:  cyan",
+"  gnuplot*line6Color:  sienna",
+"  gnuplot*line7Color:  orange",
+"  gnuplot*line8Color:  coral",
+"#\\begin{tabular}{|cl|} \\hline",
+"#&gnuplot*background: white\\\\",
+"#&gnuplot*textColor: black\\\\",
+"#&gnuplot*borderColor: black\\\\",
+"#&gnuplot*axisColor: black\\\\",
+"#&gnuplot*line1Color: red\\\\",
+"#&gnuplot*line2Color: green\\\\",
+"#&gnuplot*line3Color: blue\\\\",
+"#&gnuplot*line4Color: magenta\\\\",
+"#&gnuplot*line5Color: cyan\\\\",
+"#&gnuplot*line6Color: sienna\\\\",
+"#&gnuplot*line7Color: orange\\\\",
+"#&gnuplot*line8Color: coral\\\\",
+"%c l .",
+"%@gnuplot*background: white",
+"%@gnuplot*textColor: black",
+"%@gnuplot*borderColor: black",
+"%@gnuplot*axisColor: black",
+"%@gnuplot*line1Color: red",
+"%@gnuplot*line2Color: green",
+"%@gnuplot*line3Color: blue",
+"%@gnuplot*line4Color: magenta",
+"%@gnuplot*line5Color: cyan",
+"%@gnuplot*line6Color: sienna",
+"%@gnuplot*line7Color: orange",
+"%@gnuplot*line8Color: coral",
+"@end table",
+"",
+" The command-line syntax for these is, for example,",
+"",
+" Example:",
+"           gnuplot -background coral",
+"",
+"2 grayscale_resources",
+"?commands set terminal be grayscale_resources",
+"?set terminal be grayscale_resources",
+"?set term be grayscale_resources",
+"?be grayscale_resources",
+" When `-gray` is selected, `gnuplot` honors the following resources for",
+" grayscale or color displays (shown here with their default values).  Note",
+" that the default background is black.",
+"@start table - first is interactive cleartext form",
+"  gnuplot*background: black",
+"  gnuplot*textGray:   white",
+"  gnuplot*borderGray: gray50",
+"  gnuplot*axisGray:   gray50",
+"  gnuplot*line1Gray:  gray100",
+"  gnuplot*line2Gray:  gray60",
+"  gnuplot*line3Gray:  gray80",
+"  gnuplot*line4Gray:  gray40",
+"  gnuplot*line5Gray:  gray90",
+"  gnuplot*line6Gray:  gray50",
+"  gnuplot*line7Gray:  gray70",
+"  gnuplot*line8Gray:  gray30",
+"#\\begin{tabular}{|cl|} \\hline",
+"#&gnuplot*background: black\\\\",
+"#&gnuplot*textGray: white\\\\",
+"#&gnuplot*borderGray: gray50\\\\",
+"#&gnuplot*axisGray: gray50\\\\",
+"#&gnuplot*line1Gray: gray100\\\\",
+"#&gnuplot*line2Gray: gray60\\\\",
+"#&gnuplot*line3Gray: gray80\\\\",
+"#&gnuplot*line4Gray: gray40\\\\",
+"#&gnuplot*line5Gray: gray90\\\\",
+"#&gnuplot*line6Gray: gray50\\\\",
+"#&gnuplot*line7Gray: gray70\\\\",
+"#&gnuplot*line8Gray: gray30\\\\",
+"%c l .",
+"%@gnuplot*background: black",
+"%@gnuplot*textGray: white",
+"%@gnuplot*borderGray: gray50",
+"%@gnuplot*axisGray: gray50",
+"%@gnuplot*line1Gray: gray100",
+"%@gnuplot*line2Gray: gray60",
+"%@gnuplot*line3Gray: gray80",
+"%@gnuplot*line4Gray: gray40",
+"%@gnuplot*line5Gray: gray90",
+"%@gnuplot*line6Gray: gray50",
+"%@gnuplot*line7Gray: gray70",
+"%@gnuplot*line8Gray: gray30",
+"@end table",
+"",
+"2 line_resources",
+"?commands set terminal be line_resources",
+"?set terminal be line_resources",
+"?set term be line_resources",
+"?be line_resources",
+" `gnuplot` honors the following resources for setting the width (in pixels) of",
+" plot lines (shown here with their default values.)  0 or 1 means a minimal",
+" width line of 1 pixel width.  A value of 2 or 3 may improve the appearance of",
+" some plots.",
+"@start table - first is interactive cleartext form",
+"  gnuplot*borderWidth: 2",
+"  gnuplot*axisWidth:   0",
+"  gnuplot*line1Width:  0",
+"  gnuplot*line2Width:  0",
+"  gnuplot*line3Width:  0",
+"  gnuplot*line4Width:  0",
+"  gnuplot*line5Width:  0",
+"  gnuplot*line6Width:  0",
+"  gnuplot*line7Width:  0",
+"  gnuplot*line8Width:  0",
+"#\\begin{tabular}{|cl|} \\hline",
+"#&gnuplot*borderWidth: 2\\\\",
+"#&gnuplot*axisWidth: 0\\\\",
+"#&gnuplot*line1Width: 0\\\\",
+"#&gnuplot*line2Width: 0\\\\",
+"#&gnuplot*line3Width: 0\\\\",
+"#&gnuplot*line4Width: 0\\\\",
+"#&gnuplot*line5Width: 0\\\\",
+"#&gnuplot*line6Width: 0\\\\",
+"#&gnuplot*line7Width: 0\\\\",
+"#&gnuplot*line8Width: 0\\\\",
+"%c l .",
+"%@gnuplot*borderWidth: 2",
+"%@gnuplot*axisWidth: 0",
+"%@gnuplot*line1Width: 0",
+"%@gnuplot*line2Width: 0",
+"%@gnuplot*line3Width: 0",
+"%@gnuplot*line4Width: 0",
+"%@gnuplot*line5Width: 0",
+"%@gnuplot*line6Width: 0",
+"%@gnuplot*line7Width: 0",
+"%@gnuplot*line8Width: 0",
+"@end table",
+"",
+" `gnuplot` honors the following resources for setting the dash style used for",
+" plotting lines.  0 means a solid line.  A two-digit number `jk` (`j` and `k`",
+" are >= 1  and <= 9) means a dashed line with a repeated pattern of `j` pixels",
+" on followed by `k` pixels off.  For example, '16' is a \"dotted\" line with one",
+" pixel on followed by six pixels off.  More elaborate on/off patterns can be",
+" specified with a four-digit value.  For example, '4441' is four on, four off,",
+" four on, one off.  The default values shown below are for monochrome displays",
+" or monochrome rendering on color or grayscale displays.  For color displays,",
+" the default for each is 0 (solid line) except for `axisDashes` which defaults",
+" to a '16' dotted line.",
+"@start table - first is interactive cleartext form",
+"  gnuplot*borderDashes:   0",
+"  gnuplot*axisDashes:        16",
+"  gnuplot*line1Dashes:        0",
+"  gnuplot*line2Dashes:   42",
+"  gnuplot*line3Dashes:   13",
+"  gnuplot*line4Dashes:   44",
+"  gnuplot*line5Dashes:   15",
+"  gnuplot*line6Dashes: 4441",
+"  gnuplot*line7Dashes:   42",
+"  gnuplot*line8Dashes:   13",
+"#\\begin{tabular}{|cl|} \\hline",
+"#&gnuplot*borderDashes: 0\\\\",
+"#&gnuplot*axisDashes: 16\\\\",
+"#&gnuplot*line1Dashes: 0\\\\",
+"#&gnuplot*line2Dashes: 42\\\\",
+"#&gnuplot*line3Dashes: 13\\\\",
+"#&gnuplot*line4Dashes: 44\\\\",
+"#&gnuplot*line5Dashes: 15\\\\",
+"#&gnuplot*line6Dashes: 4441\\\\",
+"#&gnuplot*line7Dashes: 42\\\\",
+"#&gnuplot*line8Dashes: 13\\\\",
+"%c l .",
+"%@gnuplot*borderDashes: 0",
+"%@gnuplot*axisDashes: 16",
+"%@gnuplot*line1Dashes: 0",
+"%@gnuplot*line2Dashes: 42",
+"%@gnuplot*line3Dashes: 13",
+"%@gnuplot*line4Dashes: 44",
+"%@gnuplot*line5Dashes: 15",
+"%@gnuplot*line6Dashes: 4441",
+"%@gnuplot*line7Dashes: 42",
+"%@gnuplot*line8Dashes: 13",
+"@end table"
+END_HELP(be)
+#endif /* TERM_HELP */

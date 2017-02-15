@@ -1,0 +1,197 @@
+<html><head><title>Demo scripts for gnuplot version 5</title>
+
+<link text="text/css" href="gnuplot_demo.css" rel="stylesheet"></head><body>
+
+
+<h2 align=center>Demo scripts for gnuplot version 5 (pngcairo terminal)<br>
+    See also the demo output for the
+    <a href="../demo_svg_5.0/">SVG</a> and
+    <a href="../demo_canvas_5.0/">canvas</a> terminals.
+</h2>
+
+<p>
+Gnuplot is distributed with a large set of demonstration scripts.
+Here are samples of PNG output from some of the demos.
+
+<table border="0" width="100%">
+<tbody><tr valign="top">
+
+<td rowspan=2>
+    <h4>Basic 2D plot styles</h4>
+    <ul>
+    <li><a href="simple.html">simple&nbsp;functions</a></li>
+    <li><a href="fillcrvs.html">filled&nbsp;curves</a></li>
+    <li><a href="fillbetween.html">fill&nbsp;between&nbsp;curves</a></li>
+    <li><a href="candlesticks.html">candlesticks</a></li>
+    <li><a href="mgr.html">error bars</a></li>
+    <li><a href="histograms.html">histograms</a> (<a href="histograms2.html">more</a>)</li>
+    <li><a href="steps.html">step functions</a></li>
+    <li><a href="multiaxis.html">multiple axis scales</a></li>
+    <li><a href="using.html">mixing styles</a></li>
+    <li><a href="pointsize.html">variable size points</a></li>
+    <li><a href="parallel.html">parallel axis plots</a></li>
+    <li><a href="param.html">parametric&nbsp;functions</a></li>
+    <li><a href="piecewise.html">piecewise&nbsp;functions</a></li>
+    <li><a href="vector.html">vector fields</a></li>
+    <li><a href="circles.html">circles</a></li>
+    <li><a href="boxplot.html">boxplots</a></li>
+    <li><a href="rugplot.html">rug plot</a></li>
+    <li><a href="cities.html">text</a></li>
+    </ul>
+
+    <h4>Math functions and<br> curve fitting</h4>
+    <ul>
+    <li><a href="approximate.html">approximation</a></li>
+    <li><a href="spline.html">B-splines</a></li>
+    <li><a href="airfoil.html">Bezier splines</a></li>
+    <li><a href="complex_trig.html">complex trig functions</a></li>
+    <li><a href="cerf.html">complex error function</a></li>
+    <li><a href="fit.html">parameter fitting</a></li>
+    <li><a href="prob2.html">probability</a></li>
+    <li><a href="prob.html">probability (more)</a></li>
+    <li><a href="random.html">random numbers</a></li>
+    <li><a href="bivariat.html">recursion, etc...</a></li>
+    <li><a href="stats.html">data statistics</a></li>
+    </ul>
+
+</td>
+
+<td rowspan=2>
+    <h4>3D plots and surfaces</h4>
+    <ul>
+    <li><a href="surface1.html">surfaces 1</a></li>
+    <li><a href="surface2.html">surfaces 2</a></li>
+    <li><a href="contours.html">contours</a></li>
+    <li><a href="singulr.html">singularities</a></li>
+    <li><a href="hidden.html">hidden surfaces</a></li>
+    <li><a href="pm3d.html">pm3d coloring</a></li>
+    <li><a href="hidden2.html">pm3d hidden surfaces</a></li>
+    <li><a href="world2.html">3D mapping</a></li>
+    </ul>
+
+    <h4>Coordinate and<br> axis transforms</h4>
+    <ul>
+    <li><a href="linkedaxes.html">linked axes</a></li>
+    <li><a href="polar.html">polar coords</a></li>
+    <li><a href="poldat.html">polar data</a></li>
+    <li><a href="world.html">cylindrical/spherical</a></li>
+    <li><a href="timedat.html">time/date coords</a></li>
+    </ul>
+
+    <h4>Binary and Image data </h4>
+    <ul>
+    <li><a href="binary.html">binary data</a></li>
+    <li><a href="image.html">image data</a></li>
+    <li><a href="image2.html">binary and image tricks</a></li>
+    <li><a href="rgbalpha.html">RGB + alpha channel</a></li>
+    <li><a href="barchart_art.html">bar chart art</a></li>
+    </ul>
+
+    <h4>Colors</h4>
+    <ul>
+    <li><a href="varcolor.html">data-dependent coloring</a></li>
+    <li><a href="rgb_variable.html">RGB coloring</a></li>
+    <li><a href="rgba_lines.html">RGB + alpha channel</a></li>
+    <li><a href="pm3dcolors.html">pm3d colors</a></li>
+    <li><a href="pm3dgamma.html">pm3d gamma</a></li>
+    </ul>
+</td>
+
+<td rowspan=2>
+    <h4>Sample Applications</h4>
+    <ul>
+    <li><a href="controls.html">control models</a></li>
+    <li><a href="discrete.html">discrete&nbsp;contours</a></li>
+    <!--- <li><a href="electron.html">electron</a></li> --->
+    <li><a href="finance.html">financial data</a></li>
+    <li><a href="iterate.html">iteration</a></li>
+    <li><a href="scatter.html">non-gridded data</a></li>
+    <li><a href="running_avg.html">running averages</a></li>
+    <li><a href="smooth.html">binning/histograms</a></li>
+    <li><a href="gantt.html">Gantt chart</a></li>
+    <li><a href="heatmaps.html">2D and 3D heat maps</a></li>
+    </ul>
+
+    <h4>Text options</h4>
+    <ul>
+    <li><a href="textrotate.html">rotated text</a></li>
+    <li><a href="enhanced_utf8.html">'enhanced' text</a></li>
+    <li><a href="datastrings.html">string data</a></li>
+    <li><a href="cities.html">variable font size</a></li>
+    <li><a href="stringvar.html">string variables</a></li>
+    <li><font color=gray>hypertext (no png support)</font></li>
+    </ul>
+
+    <h4>Page Layout</h4>
+    <ul>
+    <!-- li><a href="key.html">plot key</a></li -->
+    <li><a href="layout.html">multiplot&nbsp;layout</a></li>
+    <li><a href="multiplt.html">multiple plots</a></li>
+    <li><a href="margins.html">aligned plots</a></li>
+    <li><a href="ellipse.html">axis location</a></li>
+    <li><a href="tics.html">axis ticmarks</a></li>
+    <li><a href="rectangle.html">rectangles</a></li>
+    </ul>
+
+    <h4>Styles</h4>
+    <ul>
+    <li><a href="lines_arrows.html">line and arrow styles</a></li>
+    <li><a href="fillstyle.html">fill styles</a></li>
+    <li><a href="dashtypes.html">dashed lines</a></li>
+    <li><a href="transparent.html">transparency</a></li>
+    <li><a href="transparent_solids.html">transparent solids</a></li>
+    </ul>
+
+    <h4>Animation</h4>
+    <ul>
+    <li><a href="animate2.html">animated gif</a></li>
+    </ul>
+</td>
+
+<!---
+<td align=center valign=bot>
+	<h3>
+	Recent additions
+	</h3>
+	<a href="index2.html">more</a>
+</td>
+ --->
+</tr>
+
+<tr valign=top><td align=center width=500>
+<img src="showcase_plot_1.png"><br clear=all>
+<img src="showcase_plot_2.png"><br clear=all>
+</td></tr>
+
+</tbody></table>
+</p>
+<hr>
+
+
+<table border="0" width="100%">
+<tbody><tr valign="top">
+
+    <td>
+    <i>This page generated April 2014</i>
+    </td>
+
+    <td>
+    <ul>
+    <li><a href="http://sourceforge.net/projects/gnuplot/">
+	Gnuplot development pages on SourceForge</a></li>
+    <li>On-line PDF documentation in
+	<a href="http://gnuplot.sourceforge.net/docs_cvs/gnuplot.pdf">English</a>
+	and
+	<a href="http://gnuplot.sourceforge.net/docs_cvs/gnuplot-ja.pdf">Japanese</a>
+    </li>
+    </ul>
+    </td>
+    
+    <td>
+    <ul>
+    </ul>
+    </td>
+    
+</tr>
+</tbody></table>
+</body></html>

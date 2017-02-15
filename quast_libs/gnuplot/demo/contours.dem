@@ -1,0 +1,192 @@
+#
+# $Id: contours.dem,v 1.17 2013/06/27 19:37:13 sfeam Exp $
+#
+set samples 20
+set isosamples 21
+set xlabel "X axis"
+set ylabel "Y axis"
+set zlabel "Z " offset 1, 0
+set view 60, 30, 0.85, 1.1
+set key at screen 1.0, 0.9
+set style textbox opaque noborder margins 0.5, 0.5
+
+set title "contour plot"
+set contour
+splot x*y
+pause -1 "Hit return to continue (1)"
+
+set cntrparam levels 15
+set title "more contours (15 levels)"
+replot
+pause -1 "Hit return to continue (2)"
+
+set cntrparam levels incr -100,10,100
+set title "contour by increments (every 10, starting at -100)"
+replot
+pause -1 "Hit return to continue (3)"
+
+set cntrparam levels disc -75,-50,0
+set title "discrete set of contours (at -75, -50, 0)"
+replot
+pause -1 "Hit return to continue (4)"
+
+set cntrparam levels auto 10
+set view 60, 30, 1.0, 1.1
+set title "contours on base grid with labels"
+set contour base
+set cntrlabel font ",7"
+splot x**2-y**2 with lines, x**2-y**2 with labels boxed notitle
+pause -1 "Hit return to continue (5)"
+
+set title "contours drawn on surface"
+set contour surface
+splot x**2-y**2 with lines notitle, x**2-y**2 with lines nosurf lw 3
+pause -1 "Hit return to continue (6)"
+
+set title "contours on both base and surface"
+set contour both
+set hidden3d
+splot x**2-y**2 with lines, x**2-y**2 with labels boxed notitle
+unset hidden3d
+pause -1 "Hit return to continue (7)"
+
+set contour base
+set title "2 surfaces"
+set key opaque
+splot x**2*y**3, x**3*y**2
+pause -1 "Hit return to continue (8)"
+
+set title "some more interesting contours"
+unset key
+splot x*y / (x**2 + y**2 + 0.1)
+pause -1 "Hit return to continue (9)"
+
+set zrange [-1.0:1.0]
+splot [x=-3:3] [y=-3:3] sin(x) * cos(y)
+pause -1 "Hit return to continue (10)"
+
+set samples 6
+set isosamples 6
+set cntrparam levels 5
+set title "low resolution (6x6)"
+replot
+pause -1 "Hit return to continue (11)"
+
+set title "low resolution (6x6) using cubic splines"
+set cntrparam cubic
+replot
+pause -1 "Hit return to continue (12)"
+
+set cntrparam bspline
+set title "low resolution (6x6) using bspline approx."
+replot
+pause -1 "Hit return to continue (13)"
+
+set cntrparam order 8
+set title "low resolution (6x6) raise bspline order."
+replot
+pause -1 "Hit return to continue (14)"
+
+set samples 25
+set isosamples 26
+set key default at screen 1.0, 0.9
+set title "contour of Sinc function"
+splot [-5:5.01] [-5:5.01] sin(sqrt(x**2+y**2)) / sqrt(x**2+y**2)
+pause -1 "Hit return to continue (15)"
+
+splot [-12:12.01] [-12:12.01] sin(sqrt(x**2+y**2)) / sqrt(x**2+y**2)
+pause -1 "Hit return to continue (16)"
+
+set cntrparam levels 10
+set auto
+set zrange [-1.0:1.0]
+set style data lines
+set title "contour of data grid plotting"
+set parametric
+splot "glass.dat"
+pause -1 "Hit return to continue (17)"
+
+set xrange [0:15]
+set yrange [0:15]
+set zrange [-1.2:1.2]
+unset parametric
+splot "glass.dat" using 1
+pause -1 "Hit return to continue (18)"
+
+set view map
+unset key
+unset surface
+set title "2D contour projection of previous plot"
+set cntrlabel start 2 font ",7"
+splot "glass.dat" using 1 with lines, \
+      "glass.dat" using 1 with labels boxed
+pause -1 "Hit return to continue (19)"
+
+#
+# The Rosenbrock function [HH Rosenbrock (1960) The Computer Journal 3:175–184]
+#    (1-x)**2 + 100 * (y - x**2)**2
+# is a well-known difficult test case for general purpose minimizers. 
+#
+set auto
+set surface
+unset contour
+set cntrparam levels 5
+set cntrparam linear
+set samples 100
+set logscale z
+set hidden3d
+set isosamples 60
+set ticslevel 0.
+set view 20,340	#HBB: ,1,2
+set xlabel "x"
+set ylabel "y"
+Rosenbrock(x,y) = (1-x)**2 + 100*(y - x**2)**2
+
+set title "Rosenbrock Function"
+splot [-1.5:1.5] [-0.5:1.5] Rosenbrock(x,y)
+pause -1 "Hit Return to Continue (20)"
+
+set contour
+unset surface
+unset ztics
+unset zlabel
+set border 15
+replot
+pause -1 "Hit Return to Continue (21)"
+
+#
+set title "All contours drawn in a single color"
+set cntrlabel onecolor
+set cntrparam bspline
+splot [-1.5:1.5] [-0.5:1.5] Rosenbrock(x,y) lc rgb "#007700"
+pause -1 "Hit Return to Continue (22)"
+
+set title "Sometimes it helps to use multiplot"
+set view map
+set xr [-0.5:1.5]
+set yr [0:1.5]
+unset xlabel
+unset ylabel
+set tics scale 0.0
+set lmargin at screen 0.1
+set rmargin at screen 0.9
+set bmargin at screen 0.1
+set tmargin at screen 0.9
+
+set multiplot
+
+set cntrparam levels discrete 0.1, 1.0, 10.0, 100.0
+set isosamples 500,100
+splot Rosenbrock(x,y) with lines lc rgb "#007700"
+
+set isosamples 50,50
+set cntrlabel start 25 interval -1 font ",7"
+splot Rosenbrock(x,y) with labels boxed
+
+unset multiplot
+pause -1 "Hit Return to Continue (23)"
+
+#
+# Clean up:
+#
+reset

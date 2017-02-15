@@ -1,0 +1,46 @@
+%
+% encoding for code page 850 (obsolete MSDOS Western Europe)
+% version 1.0:  - Mainly letters are mapped. The following positions
+% (JFi)		  are left blank (undefined):
+%		-- first 32 positions,
+%		-- frame characters,
+%		-- a few special characters.
+
+/reencodeCP850 {
+dup dup findfont dup length dict begin
+{ 1 index /FID ne { def }{ pop pop } ifelse } forall
+currentdict /CharStrings known {
+	CharStrings /Idieresis known {
+		/Encoding CP850Encoding def } if
+} if
+currentdict end definefont
+} def
+/CP850Encoding [
+/.notdef/.notdef/.notdef/.notdef/.notdef/.notdef/.notdef/.notdef
+/.notdef/.notdef/.notdef/.notdef/.notdef/.notdef/.notdef/.notdef
+/.notdef/.notdef/.notdef/.notdef/.notdef/.notdef/.notdef/.notdef
+/.notdef/.notdef/.notdef/.notdef/.notdef/.notdef/.notdef/.notdef
+/space/exclam/quotedbl/numbersign/dollar/percent/ampersand/quoteright
+/parenleft/parenright/asterisk/plus/comma/minus/period/slash
+/zero/one/two/three/four/five/six/seven/eight/nine/colon/semicolon
+/less/equal/greater/question/at/A/B/C/D/E/F/G/H/I/J/K/L/M/N
+/O/P/Q/R/S/T/U/V/W/X/Y/Z/bracketleft/backslash/bracketright
+/asciicircum/underscore/quoteleft/a/b/c/d/e/f/g/h/i/j/k/l/m
+/n/o/p/q/r/s/t/u/v/w/x/y/z/braceleft/bar/braceright/asciitilde/.notdef
+/Ccedilla/udieresis/eacute/acircumflex/adieresis/agrave/aring/ccedilla
+/ecircumflex/edieresis/egrave/idieresis/icircumflex/igrave/Adieresis/Aring
+/Eacute/ae/AE/ocircumflex/odieresis/ograve/ucircumflex/ugrave
+/ydieresis/Odieresis/Udieresis/oslash/sterling/Oslash/multiply/florin
+/aacute/iacute/oacute/uacute/ntilde/Ntilde/ordfeminine/ordmasculine
+/questiondown/registered/logicalnot/onehalf/onequarter/exclamdown/guillemotleft/guillemotright
+/space/space/.notdef/.notdef/.notdef/Aacute/Acircumflex/Agrave
+/.notdef/.notdef/.notdef/.notdef/.notdef/cent/yen/.notdef
+/.notdef/.notdef/.notdef/.notdef/.notdef/.notdef/atilde/Atilde
+/.notdef/.notdef/.notdef/.notdef/.notdef/.notdef/.notdef/currency
+/eth/Eth/Ecircumflex/Edieresis/Egrave/dotlessi/Iacute/Icircumflex
+/Idieresis/.notdef/.notdef/.notdef/.notdef/brokenbar/Igrave/.notdef
+/Oacute/germandbls/Ocircumflex/Ograve/otilde/Otilde/mu/thorn
+/Thorn/Uacute/Ucircumflex/Ugrave/yacute/Yacute/macron/acute
+/hyphen/plusminus/equal/threequarters/paragraph/section/divide/.notdef
+/degree/.notdef/periodcentered/onesuperior/threesuperior/twosuperior/.notdef/.notdef
+] def

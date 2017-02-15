@@ -1,0 +1,704 @@
+/* Hello, Emacs, this is -*-C-*-
+ * $Id: hp26.trm,v 1.19 2007/01/16 23:11:55 sfeam Exp $
+ */
+
+/* GNUPLOT - HP26.trm */
+
+/*[
+ * Copyright 1990 - 1993, 1998, 2004
+ *
+ * Permission to use, copy, and distribute this software and its
+ * documentation for any purpose with or without fee is hereby granted,
+ * provided that the above copyright notice appear in all copies and
+ * that both that copyright notice and this permission notice appear
+ * in supporting documentation.
+ *
+ * Permission to modify the software is granted, but not the right to
+ * distribute the complete modified source code.  Modifications are to
+ * be distributed as patches to the released version.  Permission to
+ * distribute binaries produced by compiling modified sources is granted,
+ * provided you
+ *   1. distribute the corresponding source modifications from the
+ *    released version in the form of a patch file along with the binaries,
+ *   2. add special version identification to distinguish your version
+ *    in addition to the base release version number,
+ *   3. provide your name and address as the primary contact for the
+ *    support of your modified version, and
+ *   4. retain our contact information in regard to use of the base
+ *    software.
+ * Permission to distribute the released version of the source code along
+ * with corresponding source modifications in the form of a patch file is
+ * granted with same provisions 2 through 4 for binary distributions.
+ *
+ * This software is provided "as is" without express or implied warranty
+ * to the extent permitted by applicable law.
+]*/
+
+/*
+ * This file is included by ../term.c.
+ *
+ * This terminal driver supports:
+ *  HP2623A
+ *
+ * AUTHORS
+ *   luecken@udel.edu (Bruce Lueckenhoff)
+ *   hplvlch!ch (Chuck Heller)
+ *
+ * send your comments or suggestions to (gnuplot-info@lists.sourceforge.net).
+ *
+ */
+
+/*
+ * adapted to the new terminal layout by Stefan Bodewig (Dec. 1995)
+ */
+
+#include "driver.h"
+
+#ifdef TERM_REGISTER
+register_term(hp2623a)
+#endif
+
+#ifdef TERM_PROTO
+TERM_PUBLIC void HP26_vector __PROTO((unsigned int x, unsigned int y));
+TERM_PUBLIC void HP26_move __PROTO((unsigned int x, unsigned int y));
+TERM_PUBLIC void HP26_init __PROTO((void));
+TERM_PUBLIC void HP26_graphics __PROTO((void));
+TERM_PUBLIC void HP26_text __PROTO((void));
+TERM_PUBLIC void HP26_reset __PROTO((void));
+TERM_PUBLIC int HP26_text_angle __PROTO((int ang));
+TERM_PUBLIC void HP26_put_text __PROTO((unsigned int x, unsigned int y, const char *str));
+TERM_PUBLIC void HP26_linetype __PROTO((int linetype));
+TERM_PUBLIC void HP26_line_and_point __PROTO((unsigned int x, unsigned int y, int number));
+
+#define HP26_XMAX 512
+#define HP26_YMAX 390
+
+/* Use a size 1 character, or a 7 x 10 grid. */
+#define HP26_VCHAR	10
+#define HP26_HCHAR	7
+#define HP26_VTIC	5
+#define HP26_HTIC	5
+#endif /* TERM_PROTO */
+
+#ifndef TERM_PROTO_ONLY
+#ifdef TERM_BODY
+
+#define HP26_XLAST (HP26_XMAX - 1)
+#define HP26_YLAST (HP26_XMAX - 1)
+
+static void HP26_do_point __PROTO((unsigned int x, unsigned int y, int number));
+static struct _HP26_Buffer_Node *BN_create __PROTO((int index, int size, int linetype));
+static void BN_delete __PROTO((struct _HP26_Buffer_Node * the_node));
+static int HP26_flush __PROTO((struct _HP26_Buffer_Node * the_buff));
+static void HP26_handle_overflow __PROTO((void));
+
+typedef struct _HP26_Buffer_Node {
+    int index;
+    int size;
+    int next;
+    int linetype;
+    int *x;
+    int *y;
+    TBOOLEAN *isa_move;
+} HP26_Buffer_Node;
+
+/* constructor method */
+static HP26_Buffer_Node *
+BN_create(int index, int size, int linetype)
+{
+    HP26_Buffer_Node *the_node;
+    the_node = (HP26_Buffer_Node *) gp_alloc(sizeof(HP26_Buffer_Node), "HP26");
+    if (the_node) {
+	the_node->index = index;
+	the_node->linetype = linetype;
+	the_node->size = size;
+	the_node->next = 0;
+	the_node->x = (int *) gp_alloc(size*sizeof(int), "HP26");
+	the_node->y = (int *) gp_alloc(size*sizeof(int), "HP26");
+	the_node->isa_move = (TBOOLEAN *) gp_alloc(size*sizeof(TBOOLEAN), "HP26");
+	if (the_node->x == NULL || the_node->y == NULL || the_node->isa_move == NULL)
+	    return (NULL);
+    }
+    memset(the_node->isa_move, 0, size*sizeof(TBOOLEAN));
+    return (the_node);
+}
+
+/* destructor method */
+static void
+BN_delete(HP26_Buffer_Node *the_node)
+{
+    free(the_node->x);
+    free(the_node->y);
+    free(the_node->isa_move);
+    free(the_node);
+}
+
+/* 2 for border and axes + 9 for plots + 1 for dots */
+#define HP26_gnu_map_size 12
+static HP26_Buffer_Node *HP26_gnu_map[HP26_gnu_map_size];
+static HP26_Buffer_Node *HP26_buff;
+static int HP26_pen_x;
+static int HP26_pen_y;
+static int HP26_angle;
+static int HP26_cursor_x;
+static int HP26_cursor_y;
+static TBOOLEAN HP26_in_text;
+static int HP26_linetype_current;
+static int HP26_reduction_int;
+static int HP26_reduction_slope;
+static int HP26_overflows;
+static int HP26_nop_move;
+static int HP26_nop_vect;
+static int HP26_nop_line;
+
+/* linetype stuff */
+#define	SOLID	1
+#define	USER	2
+#define LINE3	3
+#define LINE4	4
+#define LINE5	5
+#define LINE6	6
+#define	DOTS	7
+#define LINE8	8
+#define LINE9	9
+#define LINE10	10
+#define POINT	11
+
+
+
+#define swap(a, b) a ^= b; b ^= a; a ^= b;
+
+static char HP26_bin_short_table[32] =
+{
+    '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', ':', ';', '<', '=', '>',
+    '?', ' ', '!', '"', '#', '$', '%', '&', '\'', '(', ')', '*', '+', ',', '-',
+    '.', '/'
+};
+/* encodes an integer (assumed to be in range) into
+   binary short incremental format (j)*/
+#define short_encode(n) (HP26_bin_short_table[n+16])
+
+/* tells whether a given delta_x,delta_y pair can be expressed in
+   binary short incremental format */
+#define qualified(dx,dy) ((dx>-17)&&(dy>-17)&&(dx<16)&&(dy<16))
+
+
+static char HP26_bin_table[32] =
+{
+    ' ', '!', '"', '#', '$', '%', '&', '\'', '(', ')', '*', '+', ',', '-',
+    '.', '/', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', ':', ';', '<',
+    '=', '>', '?'
+};
+/* returns the high byte of integer n in binary absolute format (i) */
+#define bin_encode_hi(n) (HP26_bin_table[n>>5])
+/* returns the low byte of integer n in binary absolute format (i) */
+#define bin_encode_lo(n) (HP26_bin_table[n & 31])
+
+
+
+/* the guts of the program
+-- first checks if any work need be done and, failing that, returns
+	immediately
+-- tries to compress the vector stream
+-- goes through the buffer, using binary short incremental (2 bytes/point)
+	as much as possible, even if must output two pairs to express one vector
+	(it's no more expensive, and will hopefully damp any excessive switching
+	back and forth between the two formats)
+	if can't use binary short incremental, use binary
+	absolute(4 bytes/point)
+-- finally, resets the HP26_next pointer to zero    */
+static int
+HP26_flush(HP26_Buffer_Node *the_buff)
+{
+    int i, delta_x, delta_y, half_dx, half_dy;
+    int *buff_x, *buff_y;
+    TBOOLEAN *isa_move;
+    TBOOLEAN bin_short;
+
+    if (the_buff->next == 0)
+	return (FALSE);
+    /* init pointers for easy access */
+    buff_x = the_buff->x;
+    buff_y = the_buff->y;
+    isa_move = the_buff->isa_move;
+    if (HP26_in_text) {
+	fputs("\033*dT", gpoutfile);
+	HP26_in_text = FALSE;
+    }
+    if (HP26_linetype_current != the_buff->linetype
+	&& (the_buff->next > 1 || !isa_move[0])) {
+	fprintf(gpoutfile, "\033*m%dB", the_buff->linetype);
+	HP26_linetype_current = the_buff->linetype;
+    }
+
+    /* start escape sequence */
+    fputs("\033*p", gpoutfile);
+    /* initialize the state:  binary short incremental or binary absolute */
+    delta_x = buff_x[0] - HP26_pen_x;
+    delta_y = buff_y[0] - HP26_pen_y;
+    if (qualified(delta_x, delta_y)) {
+	fputc('j', gpoutfile);
+	bin_short = TRUE;
+    } else {
+	fputc('i', gpoutfile);
+	bin_short = FALSE;
+    }
+    /* now work through the list */
+    for (i = 0; i < the_buff->next; i++) {
+	if (i > 0) {
+	    delta_x = buff_x[i] - buff_x[i - 1];
+	    delta_y = buff_y[i] - buff_y[i - 1];
+	}
+	if ((delta_x == 0) && (delta_y == 0)) {
+	    if (i > 0 && !isa_move[i - 1] && !isa_move[i]) {
+		/* allow null vectors only when drawing dots */
+		HP26_nop_vect++;
+		continue;
+	    } else if (isa_move[i]) {
+		/* a null move */
+		HP26_nop_move++;
+		continue;
+	    }
+	} else if (i > 0
+		   && i + 1 < the_buff->next
+		   && isa_move[i]
+		   && isa_move[i + 1]) {
+	    /* consecutive moves are condensed into one */
+	    HP26_nop_move++;
+	    continue;
+	} else if (!qualified(delta_x, delta_y)
+		   && i > 0
+		   && i + 2 < the_buff->next
+		   && isa_move[i]
+		   && !isa_move[i + 1]
+		   && isa_move[i + 2]
+		   && qualified(buff_x[i + 1] - buff_x[i - 1], buff_y[i + 1] - buff_y[i - 1])) {
+	    swap(buff_x[i], buff_x[i + 1]);
+	    swap(buff_y[i], buff_y[i + 1]);
+	    /* set up new delta_x & delta_y */
+	    delta_x = buff_x[i] - buff_x[i - 1];
+	    delta_y = buff_y[i] - buff_y[i - 1];
+	}
+	if (qualified(delta_x, delta_y)) {
+	    if (!bin_short) {
+		fputc('j', gpoutfile);
+		bin_short = TRUE;
+	    }
+	    if (isa_move[i])
+		fputc('a', gpoutfile);
+	    fputc(short_encode(delta_x), gpoutfile);
+	    fputc(short_encode(delta_y), gpoutfile);
+	} else {
+	    half_dx = (delta_x + (delta_x > 0 ? 1 : -1)) / 2;
+	    half_dy = (delta_y + (delta_y > 0 ? 1 : -1)) / 2;
+	    if (bin_short && qualified(half_dx, half_dy)) {
+		if (isa_move[i])
+		    fputc('a', gpoutfile);
+		fputc(short_encode(half_dx), gpoutfile);
+		fputc(short_encode(half_dy), gpoutfile);
+		if (isa_move[i])
+		    fputc('a', gpoutfile);
+		fputc(short_encode(delta_x - half_dx), gpoutfile);
+		fputc(short_encode(delta_y - half_dy), gpoutfile);
+	    } else {
+		if (bin_short) {
+		    bin_short = FALSE;
+		    fputc('i', gpoutfile);
+		}
+		if (isa_move[i])
+		    fputc('a', gpoutfile);
+		fputc(bin_encode_hi(buff_x[i]), gpoutfile);
+		fputc(bin_encode_lo(buff_x[i]), gpoutfile);
+		fputc(bin_encode_hi(buff_y[i]), gpoutfile);
+		fputc(bin_encode_lo(buff_y[i]), gpoutfile);
+	    }
+	}
+    }				/* end for.. */
+    /* the term doesn't seem to mind leaving this out */
+    /* finish the escape sequence */
+    fputc('Z', gpoutfile);
+    /* set these for next time */
+    HP26_pen_x = buff_x[the_buff->next - 1];
+    HP26_pen_y = buff_y[the_buff->next - 1];
+    the_buff->next = 0;
+    return (TRUE);
+}
+
+static void
+HP26_handle_overflow()
+{
+    HP26_Buffer_Node *bigger, *old;
+    int x, y;
+    x = (HP26_buff->x)[HP26_buff->next - 1];
+    y = (HP26_buff->y)[HP26_buff->next - 1];
+    HP26_flush(HP26_buff);
+    bigger = BN_create(HP26_buff->index, HP26_buff->size * 2,
+		       HP26_buff->linetype);
+    if (bigger != NULL) {
+	old = HP26_buff;
+	HP26_gnu_map[bigger->index] = bigger;
+	/* special case since DOTS entry is shared 3 ways */
+	if (bigger->index == 0) {
+	    HP26_gnu_map[1] = bigger;
+	    HP26_gnu_map[3] = bigger;
+	}
+	HP26_buff = bigger;
+	BN_delete(old);
+    }
+    (HP26_buff->x)[0] = x;
+    (HP26_buff->y)[0] = y;
+    (HP26_buff->isa_move)[0] = TRUE;
+    HP26_buff->next = 1;
+    HP26_overflows++;
+}
+
+/* checks for NOP, overcapacity condition, and then adds vector to the list */
+TERM_PUBLIC void
+HP26_vector(unsigned int x, unsigned int y)
+{
+    if (HP26_buff->next > 2
+	&& x == (HP26_buff->x)[HP26_buff->next - 1]
+	&& y == (HP26_buff->y)[HP26_buff->next - 1]
+	&& !(HP26_buff->isa_move)[HP26_buff->next - 1]) {
+	HP26_nop_vect++;
+	return;
+    }
+    if (HP26_buff->next == HP26_buff->size)
+	HP26_handle_overflow();
+    /* otherwise add to the list */
+    (HP26_buff->x)[HP26_buff->next] = x;
+    (HP26_buff->y)[HP26_buff->next] = y;
+    (HP26_buff->isa_move)[HP26_buff->next] = FALSE;
+    HP26_buff->next++;
+}
+
+/* checks for NOP, checks for overcapacity, puts self on list */
+TERM_PUBLIC void
+HP26_move(unsigned int x, unsigned int y)
+{
+    if (HP26_buff->next > 0) {
+	if (((HP26_buff->x)[HP26_buff->next - 1] == x)
+	    && ((HP26_buff->y)[HP26_buff->next - 1] == y)) {
+	    /* null moves are NOP's */
+	    HP26_nop_move++;
+	    return;
+	} else if ((HP26_buff->isa_move)[HP26_buff->next - 1]) {
+	    /* consecutive moves are NOP's */
+	    (HP26_buff->x)[HP26_buff->next - 1] = x;
+	    (HP26_buff->y)[HP26_buff->next - 1] = y;
+	    HP26_nop_move++;
+	    return;
+	}
+    }
+    if (HP26_buff->next == HP26_buff->size)
+	HP26_handle_overflow();
+    (HP26_buff->x)[HP26_buff->next] = x;
+    (HP26_buff->y)[HP26_buff->next] = y;
+    (HP26_buff->isa_move)[HP26_buff->next] = TRUE;
+    HP26_buff->next++;
+    return;
+}
+
+TERM_PUBLIC void
+HP26_init()
+{
+    HP26_gnu_map[-2 + 2] = BN_create(0, 2048, DOTS);	/* border */
+    HP26_gnu_map[-1 + 2] = HP26_gnu_map[-2 + 2];	/* axes */
+    HP26_gnu_map[0 + 2] = BN_create(2, 3072, SOLID);	/* plot 0 */
+    HP26_gnu_map[1 + 2] = HP26_gnu_map[-2 + 2];		/* plot 1 */
+    HP26_gnu_map[2 + 2] = BN_create(4, 1024, LINE5);	/* plot 2 */
+    HP26_gnu_map[3 + 2] = BN_create(5, 256, LINE6);	/* plot 3 */
+    HP26_gnu_map[4 + 2] = BN_create(6, 256, LINE8);	/* plot 4 */
+    HP26_gnu_map[5 + 2] = BN_create(7, 128, LINE9);	/* plot 5 */
+    HP26_gnu_map[6 + 2] = BN_create(8, 128, LINE10);	/* plot 6 */
+    HP26_gnu_map[7 + 2] = BN_create(9, 64, LINE6);	/* plot 7 */
+    HP26_gnu_map[8 + 2] = BN_create(10, 64, LINE4);	/* plot 8 */
+    HP26_gnu_map[9 + 2] = BN_create(11, 512, POINT);	/* point plot */
+    HP26_buff = HP26_gnu_map[10];	/* set to an unlikely linetype */
+    HP26_linetype_current = 0;	/* set to force a linetype change */
+    HP26_angle = 1;		/* left to right, default */
+    fputs("\033*mp1m2a2Q", gpoutfile);
+    /*           1 2 3 4
+       1.  make text upright
+       2.  select text size 1
+       3.  make SET the default drawing op
+       4.  left justify text */
+    fflush(gpoutfile);
+}
+
+
+TERM_PUBLIC void
+HP26_graphics()
+{
+    fputs("\033*daflsC", gpoutfile);
+    /*           12345
+       1.  clear graphics display
+       2.  shut off the alphanumeric display
+       3.  graphics cursor off
+       4.  into graphics text mode
+       5.  enable graphics display */
+    /* set the pen & cursor positions to force an initial absolute move */
+    HP26_pen_x = HP26_pen_y = -200;
+    HP26_cursor_x = HP26_cursor_y = 800;
+    HP26_in_text = TRUE;
+    /* initialize statistics */
+    HP26_reduction_int = 0;
+    HP26_reduction_slope = 0;
+    HP26_nop_move = 0;
+    HP26_nop_vect = 0;
+    HP26_nop_line = 0;
+    HP26_overflows = 0;
+}
+
+
+TERM_PUBLIC void
+HP26_text()
+{
+    int i, j, curr;
+
+    /* always flush the current line first */
+    for (i = 0; i < HP26_gnu_map_size; i++)
+	if ((HP26_gnu_map[i])->linetype == HP26_linetype_current)
+	    HP26_flush(HP26_gnu_map[i]);
+    /* now flush the rest of the lines */
+    for (i = 0; i < HP26_gnu_map_size; i++) {
+	HP26_flush(HP26_gnu_map[i]);
+	curr = HP26_gnu_map[i]->linetype;
+	for (j = 0; j < HP26_gnu_map_size; j++)
+	    if ((HP26_gnu_map[j])->linetype == curr)
+		HP26_flush(HP26_gnu_map[j]);
+    }
+    fputs("\033*deT", gpoutfile);
+    /*           12
+       1. turn on the alphanumeric display
+       2. back to text mode */
+    fflush(gpoutfile);
+    /* informational:  tells how many points compressed, how
+       many NOP's of each type, and how many times a buffer
+       overflowed during this plot */
+    /*
+       if(HP26_reduction_int
+       + HP26_reduction_slope
+       + HP26_nop_move
+       + HP26_nop_vect
+       + HP26_overflows
+       + HP26_nop_line > 0){
+       if (HP26_reduction_int>0)
+       printf("%d int-compress",HP26_reduction_int);
+       if (HP26_reduction_slope>0)
+       printf("%d slope-compress",HP26_reduction_slope);
+       if (HP26_nop_move>0)
+       printf("  %d nop_move",HP26_nop_move);
+       if (HP26_nop_vect>0)
+       printf("  %d nop_vect",HP26_nop_vect);
+       if (HP26_nop_line>0)
+       printf("  %d nop_line",HP26_nop_line);
+       if (HP26_overflows>0)
+       printf("  %d buffer overflows",HP26_overflows);
+       printf("\n");
+       }
+     */
+}
+
+TERM_PUBLIC void
+HP26_reset()
+{
+    int i;
+    for (i = 2; i < HP26_gnu_map_size; i++)
+	BN_delete(HP26_gnu_map[i]);
+}
+
+TERM_PUBLIC int
+HP26_text_angle(int ang)
+{
+    HP26_angle = (ang ? 2 : 1);
+    fprintf(gpoutfile, "\033*m%dN", HP26_angle);
+    return (TRUE);
+}
+
+
+TERM_PUBLIC void
+HP26_put_text(unsigned int x, unsigned int y, const char *str)
+{
+    char abs_str[10], rel_str[10];
+
+    if (!strlen(str))
+	return;
+    else {
+	fputs("\033*d", gpoutfile);
+	if (!HP26_in_text) {
+	    fputc('s', gpoutfile);
+	    HP26_in_text = TRUE;
+	}
+	sprintf(rel_str, "%d,%dP", x - HP26_cursor_x, y - HP26_cursor_y);
+	sprintf(abs_str, "%d,%dO", x, y);
+	if (strlen(rel_str) < strlen(abs_str))
+	    fputs(rel_str, gpoutfile);
+	else
+	    fputs(abs_str, gpoutfile);
+	fputs(str, gpoutfile);
+	HP26_pen_x = HP26_cursor_x = x;
+	HP26_pen_y = HP26_cursor_y = y;
+    }
+    /*
+       tmp = &(HP26_all_buffers[HP26_linetype_current]);
+       tmp->x[tmp->next] = x;
+       tmp->y[tmp->next] = y;
+       tmp->isa_move[tmp->next] = TRUE;
+       tmp->next++;
+       HP26_flush(tmp);
+       fprintf(gpoutfile,"\033*l%s\r",str);
+     */
+    return;
+}
+
+
+/* checks for NOP, sets HP26_buff to point to the right buffer */
+TERM_PUBLIC void
+HP26_linetype(int linetype)
+{
+    if (linetype < -2)
+	linetype = LT_BLACK;
+    if (linetype > 8)
+	linetype %= 9;
+    linetype += 2;
+    if (HP26_gnu_map[linetype] == HP26_buff) {
+	HP26_nop_line++;
+	return;			/* gnuplot just sent us another NOP */
+    }
+    HP26_buff = HP26_gnu_map[linetype];
+}
+
+
+
+/* switches to a solid linetype and calls do_point, then switches back */
+TERM_PUBLIC void
+HP26_line_and_point(unsigned int x, unsigned int y, int number)
+{
+    int line_save, not_solid;
+
+    /* shut up warnings with dummy initializer  -SB */
+    line_save = 0;
+    not_solid = (HP26_buff->linetype != SOLID);
+    if (not_solid) {
+	line_save = HP26_buff->linetype;
+	HP26_linetype(0);	/*switch to a solid line */
+    }
+    HP26_do_point(x, y, number);
+    if (not_solid)
+	HP26_linetype(line_save);
+}
+
+
+/* provides 9 point types so they stay in sync with the linetypes
+puts simpler point types first on the assumption they are more
+frequently used */
+static void
+HP26_do_point(unsigned int x, unsigned int y, int number)
+{
+    int htic, vtic;
+    HP26_Buffer_Node *tmp;
+
+    vtic = HP26_VTIC / 2;
+    htic = HP26_HTIC / 2;
+    if (number < 0) {
+	/* do a dot -- special case */
+	tmp = HP26_buff;
+	HP26_buff = HP26_gnu_map[11];	/* point plot */
+	HP26_vector(x, y);
+	HP26_buff = tmp;
+    }
+    switch (number % 9) {
+    case 0:
+	/* do triangle */
+	HP26_move(x - htic, y - vtic);
+	HP26_vector(x, y + vtic);
+	HP26_vector(x + htic, y - vtic);
+	HP26_vector(x - htic, y - vtic);
+	break;
+    case 1:
+	/* do nambla */
+	HP26_move(x - htic, y + vtic);
+	HP26_vector(x, y - vtic);
+	HP26_vector(x + htic, y + vtic);
+	HP26_vector(x - htic, y + vtic);
+	break;
+    case 2:
+	/* do left triangle */
+	HP26_move(x - htic, y);
+	HP26_vector(x + htic, y + vtic);
+	HP26_vector(x + htic, y - vtic);
+	HP26_vector(x - htic, y);
+	break;
+    case 3:
+	/* do right triangle */
+	HP26_move(x + htic, y);
+	HP26_vector(x - htic, y + vtic);
+	HP26_vector(x - htic, y - vtic);
+	HP26_vector(x + htic, y);
+	break;
+    case 4:
+	/* do box */
+	HP26_move(x - htic, y - vtic);
+	HP26_vector(x - htic, y + vtic);
+	HP26_vector(x + htic, y + vtic);
+	HP26_vector(x + htic, y - vtic);
+	HP26_vector(x - htic, y - vtic);
+	break;
+    case 5:
+	/* do plus */
+	HP26_move(x, y + vtic);
+	HP26_vector(x, y - vtic);
+	HP26_move(x - htic, y);
+	HP26_vector(x + htic, y);
+	break;
+    case 6:
+	/* do X */
+	HP26_move(x + htic, y + vtic);
+	HP26_vector(x - htic, y - vtic);
+	HP26_move(x - htic, y + vtic);
+	HP26_vector(x + htic, y - vtic);
+	break;
+    default:
+	/* do diamond */
+	HP26_move(x, y - vtic);
+	HP26_vector(x - htic, y);
+	HP26_vector(x, y + vtic);
+	HP26_vector(x + htic, y);
+	HP26_vector(x, y - vtic);
+	break;
+    }
+}
+
+#endif /* TERM_BODY */
+
+#ifdef TERM_TABLE
+
+TERM_TABLE_START(hp2623a_driver)
+    "hp2623A", "HP2623A and maybe others",
+    HP26_XMAX, HP26_YMAX, HP26_VCHAR, HP26_HCHAR,
+    HP26_VTIC, HP26_HTIC, options_null, HP26_init, HP26_reset,
+    HP26_text, null_scale, HP26_graphics, HP26_move, HP26_vector,
+    HP26_linetype, HP26_put_text, HP26_text_angle,
+    null_justify_text, HP26_line_and_point, do_arrow, set_font_null
+TERM_TABLE_END(hp2623a_driver)
+
+#undef LAST_TERM
+#define LAST_TERM hp2623a_driver
+
+#endif /* TERM_TABLE */
+#endif /* TERM_PROTO_ONLY */
+
+#ifdef TERM_HELP
+START_HELP(hp2623a)
+"1 hp2623a",
+"?commands set terminal hp2623a",
+"?set terminal hp2623a",
+"?set term hp2623a",
+"?terminal hp2623a",
+"?term hp2623a",
+"?hp2623a",
+" The `hp2623a` terminal driver supports the Hewlett Packard HP2623A.  It has",
+" no options."
+END_HELP(hp2623a)
+#endif

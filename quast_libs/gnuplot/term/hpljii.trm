@@ -1,0 +1,430 @@
+/* Hello, Emacs, this is -*-C-*-
+ * $Id: hpljii.trm,v 1.24 2006/07/21 02:35:47 sfeam Exp $
+ *
+ */
+
+/* GNUPLOT - hpljii.trm */
+
+/*[
+ * Copyright 1990 - 1993, 1998, 2004   Thomas Williams, Colin Kelley
+ *
+ * Permission to use, copy, and distribute this software and its
+ * documentation for any purpose with or without fee is hereby granted,
+ * provided that the above copyright notice appear in all copies and
+ * that both that copyright notice and this permission notice appear
+ * in supporting documentation.
+ *
+ * Permission to modify the software is granted, but not the right to
+ * distribute the complete modified source code.  Modifications are to
+ * be distributed as patches to the released version.  Permission to
+ * distribute binaries produced by compiling modified sources is granted,
+ * provided you
+ *   1. distribute the corresponding source modifications from the
+ *    released version in the form of a patch file along with the binaries,
+ *   2. add special version identification to distinguish your version
+ *    in addition to the base release version number,
+ *   3. provide your name and address as the primary contact for the
+ *    support of your modified version, and
+ *   4. retain our contact information in regard to use of the base
+ *    software.
+ * Permission to distribute the released version of the source code along
+ * with corresponding source modifications in the form of a patch file is
+ * granted with same provisions 2 through 4 for binary distributions.
+ *
+ * This software is provided "as is" without express or implied warranty
+ * to the extent permitted by applicable law.
+]*/
+
+/*
+ * This file is included by ../term.c.
+ *
+ * This terminal driver supports:
+ *  hpljii, hpdj
+ *
+ * AUTHORS
+ *  John Engels
+ *  Russell Lang
+ *  Maurice Castro
+ *
+ * send your comments or suggestions to (gnuplot-info@lists.sourceforge.net).
+ *
+ */
+
+/* The following HP laserjet series II driver uses generic bit mapped graphics
+   routines from bitmap.c to build up a bit map in memory.  The driver
+   interchanges colomns and lines in order to access entire lines
+   easily and returns the lines to get bits in the right order :
+   (x,y) -> (y,XMAX-1-x). */
+/* This interchange is done by calling b_makebitmap() with reversed
+   xmax and ymax, and then setting b_rastermode to TRUE.  b_setpixel()
+   will then perform the interchange before each pixel is plotted */
+/* by John Engels JENGELS@BNANDP51.BITNET, inspired by the hpljet driver
+   of Jyrki Yli-Nokari */
+
+/*
+ * adapted to the new terminal layout by Stefan Bodewig (Dec. 1995)
+ */
+
+#include "driver.h"
+
+#ifdef TERM_REGISTER
+register_term(hpljii)
+register_term(hpdj)
+#endif
+
+#ifdef TERM_PROTO
+TERM_PUBLIC void HPLJII_options __PROTO((void));
+TERM_PUBLIC void HPLJII_init __PROTO((void));
+TERM_PUBLIC void HPLJII_graphics __PROTO((void));
+TERM_PUBLIC void HPLJII_text __PROTO((void));
+TERM_PUBLIC void HPLJII_linetype __PROTO((int linetype));
+TERM_PUBLIC void HPLJII_put_text __PROTO((unsigned int x, unsigned int y, const char *str));
+TERM_PUBLIC void HPLJII_reset __PROTO((void));
+
+TERM_PUBLIC void HPDJ_graphics __PROTO((void));
+TERM_PUBLIC void HPDJ_text __PROTO((void));
+
+/* default values for term_tbl */
+#define HPLJII_75PPI_XMAX (1920/4)
+#define HPLJII_75PPI_YMAX (1920/4)
+#define HPLJII_75PPI_HCHAR (1920/4/6)
+#define HPLJII_75PPI_VCHAR (1920/4/10)
+#define HPLJII_75PPI_VTIC 5
+#define HPLJII_75PPI_HTIC 5
+#endif
+
+#ifndef TERM_PROTO_ONLY
+#ifdef TERM_BODY
+
+/* We define 4 different print qualities : 300ppi, 150ppi, 100ppi and
+   75ppi.  (Pixel size = 1, 2, 3, 4 dots) */
+
+#define HPLJII_DPP (hplj_dpp)	/* dots per pixel */
+#define HPLJII_PPI (300/HPLJII_DPP)	/* pixel per inch */
+/* make XMAX and YMAX a multiple of 8 */
+#define HPLJII_XMAX (8*(unsigned int)(xsize*1920/HPLJII_DPP/8.0+0.9))
+#define HPLJII_YMAX (8*(unsigned int)(ysize*1920/HPLJII_DPP/8.0+0.9))
+
+/* Courier font with 6 lines per inch */
+#define HPLJII_VCHAR (HPLJII_PPI/6)
+/* Courier font with 10 caracters per inch */
+#define HPLJII_HCHAR (HPLJII_PPI/10)
+/* Save current cursor position */
+#define HPLJII_PUSH_CURSOR fputs("\033&f0S",gpoutfile)
+/* Restore cursor position */
+#define HPLJII_POP_CURSOR fputs("\033&f1S",gpoutfile)
+/* be sure to use courier font with 6lpi and 10cpi */
+#define HPLJII_COURIER fputs("\033(0N\033(s0p10.0h12.0v0s0b3T\033&l6D",gpoutfile)
+
+
+static void HPLJII_putc __PROTO((unsigned int x, unsigned int y, int c, int ang));
+    /* note: c is char, but must be declared int due to an old K&R ANSI-C strict HP cc */
+static int hplj_dpp = 4;
+/* bm_pattern not appropriate for 300ppi graphics */
+#ifndef GOT_300_PATTERN
+# define GOT_300_PATTERN
+static unsigned int b_300ppi_pattern[] =
+{
+    0xffff, 0x1111, 0xffff, 0x3333,
+    0x0f0f, 0x3f3f, 0x0fff, 0x00ff, 0x33ff
+};
+#endif
+
+TERM_PUBLIC void
+HPLJII_options()
+{
+    char opt[4];
+    int parse_error = 0;
+
+    if (END_OF_COMMAND) {
+	term_options[0] = NUL;
+    } else {
+	if (token[c_token].length > 3) {
+	    parse_error = 1;	/* see below */
+	} else {
+	    /* almost_equals() won't accept numbers - use strcmp() instead */
+	    capture(opt, c_token, c_token, 4);
+	    if (!strcmp(opt, "75")) {
+		hplj_dpp = 4;
+	    } else if (!strcmp(opt, "100")) {
+		hplj_dpp = 3;
+	    } else if (!strcmp(opt, "150")) {
+		hplj_dpp = 2;
+	    } else if (!strcmp(opt, "300")) {
+		hplj_dpp = 1;
+	    } else {
+		/* error, but set dpi anyway, since term it already set */
+		parse_error = 1;
+	    }
+	    c_token++;
+	}
+    }
+
+    term->xmax = HPLJII_XMAX;
+    term->ymax = HPLJII_YMAX;
+    switch (hplj_dpp) {
+    case 1:
+	strcpy(term_options, "300");
+	term->v_tic = 15;
+	term->h_tic = 15;
+	break;
+    case 2:
+	strcpy(term_options, "150");
+	term->v_tic = 8;
+	term->h_tic = 8;
+	break;
+    case 3:
+	strcpy(term_options, "100");
+	term->v_tic = 6;
+	term->h_tic = 6;
+	break;
+    case 4:
+	strcpy(term_options, "75");
+	term->v_tic = 5;
+	term->h_tic = 5;
+	break;
+    }
+
+    if (parse_error)
+	int_error(c_token, "expecting dots per inch size 75, 100, 150 or 300");
+}
+
+
+TERM_PUBLIC void
+HPLJII_init()
+{
+    term->v_char = HPLJII_VCHAR;
+    term->h_char = HPLJII_HCHAR;
+}
+
+
+TERM_PUBLIC void
+HPLJII_graphics()
+{
+    HPLJII_COURIER;
+    HPLJII_PUSH_CURSOR;
+    /* rotate plot -90 degrees by reversing XMAX and YMAX and by
+       setting b_rastermode to TRUE */
+    b_makebitmap(HPLJII_YMAX, HPLJII_XMAX, 1);
+    b_rastermode = TRUE;
+}
+
+
+/* HPLJIItext by rjl - no compression */
+TERM_PUBLIC void
+HPLJII_text()
+{
+    register int x, j, row;
+
+    fprintf(gpoutfile, "\033*t%dR", HPLJII_PPI);
+    HPLJII_POP_CURSOR;
+    fputs("\033*r1A", gpoutfile);
+
+    /* dump bitmap in raster mode */
+    for (x = b_xsize - 1; x >= 0; x--) {
+	row = (b_ysize / 8) - 1;
+	fprintf(gpoutfile, "\033*b0m%dW", b_ysize / 8);
+	for (j = row; j >= 0; j--) {
+	    (void) fputc((char) (*((*b_p)[j] + x)), gpoutfile);
+	}
+    }
+    fputs("\033*rB", gpoutfile);
+
+    b_freebitmap();
+
+#ifndef VMS
+    /* most vms spoolers add a formfeed character */
+    putc('\f', gpoutfile);
+#endif /* !VMS */
+}
+
+
+
+TERM_PUBLIC void
+HPLJII_linetype(int linetype)
+{
+
+    if (hplj_dpp == 1) {
+	if (linetype >= 7)
+	    linetype %= 7;
+	/* b_pattern not appropriate for 300ppi graphics */
+	b_linemask = b_300ppi_pattern[linetype + 2];
+	b_maskcount = 0;
+    } else {
+	b_setlinetype(linetype);
+    }
+}
+
+TERM_PUBLIC void
+HPLJII_put_text(unsigned int x, unsigned int y, const char *str)
+{
+    switch (b_angle) {
+    case 0:
+	y -= HPLJII_VCHAR / 5;
+	HPLJII_POP_CURSOR;
+	HPLJII_PUSH_CURSOR;
+	/* (0,0) is the upper left point of the paper */
+	fprintf(gpoutfile, "\033*p%+dx%+dY", x * HPLJII_DPP
+		,(HPLJII_YMAX - y - 1) * HPLJII_DPP);
+	fputs(str, gpoutfile);
+/*       for (; *str; ++str, x += HPLJII_HCHAR)
+            HPLJII_putc (x, y, *str, b_angle);*/
+	break;
+    case 1:
+	y += (HPLJII_HCHAR - 2 * HPLJII_VCHAR) / 2;
+	y += (HPLJII_VCHAR + HPLJII_HCHAR) * strlen(str) / 2;
+	for (; *str; ++str, y -= HPLJII_VCHAR)
+	    HPLJII_putc(x, y, *str, b_angle);
+	break;
+    }
+}
+
+static void
+HPLJII_putc(unsigned int x, unsigned int y, int c, int ang)
+{
+    HPLJII_POP_CURSOR;
+    HPLJII_PUSH_CURSOR;
+    (void) ang;			/* avoid -Wunused warnings */
+    /* (0,0) is the upper left point of the paper */
+    fprintf(gpoutfile, "\033*p%+dx%+dY",
+	    x * HPLJII_DPP, (HPLJII_YMAX - y - 1) * HPLJII_DPP);
+    fputc(c, gpoutfile);
+}
+
+
+TERM_PUBLIC void
+HPLJII_reset()
+{
+#ifdef VMS
+    fflush_binary();
+#endif /* VMS */
+}
+
+
+/* HP DeskJet routines */
+TERM_PUBLIC void
+HPDJ_graphics()
+{
+    switch (hplj_dpp) {
+    case 1:
+	b_charsize(FNT13X25);
+	term->v_char = FNT13X25_VCHAR;
+	term->h_char = FNT13X25_HCHAR;
+	break;
+    case 2:
+	b_charsize(FNT13X25);
+	term->v_char = FNT13X25_VCHAR;
+	term->h_char = FNT13X25_HCHAR;
+	break;
+    case 3:
+	b_charsize(FNT9X17);
+	term->v_char = FNT9X17_VCHAR;
+	term->h_char = FNT9X17_HCHAR;
+	break;
+    case 4:
+	b_charsize(FNT5X9);
+	term->v_char = FNT5X9_VCHAR;
+	term->h_char = FNT5X9_HCHAR;
+	break;
+    }
+    /* rotate plot -90 degrees by reversing XMAX and YMAX and by
+       setting b_rastermode to TRUE */
+    b_makebitmap(HPLJII_YMAX, HPLJII_XMAX, 1);
+    b_rastermode = TRUE;
+}
+
+
+/* 0 compression raster bitmap dump. Compatible with HP DeskJet 500
+   hopefully compatible with other HP Deskjet printers */
+TERM_PUBLIC void
+HPDJ_text()
+{
+    register int x, j, row;
+
+    fprintf(gpoutfile, "\
+\033*b0M\
+\033*t%dR\
+\033*r1A",
+	    HPLJII_PPI);
+
+    /* dump bitmap in raster mode */
+    for (x = b_xsize - 1; x >= 0; x--) {
+	row = (b_ysize / 8) - 1;
+	fprintf(gpoutfile, "\033*b%dW", b_ysize / 8);
+	for (j = row; j >= 0; j--) {
+	    (void) fputc((char) (*((*b_p)[j] + x)), gpoutfile);
+	}
+    }
+    fputs("\033*rbC", gpoutfile);
+
+    b_freebitmap();
+
+#ifndef VMS			/* most vms spoolers add a formfeed character */
+    putc('\f', gpoutfile);
+#endif /* !VMS */
+}
+
+#endif
+
+#ifdef TERM_TABLE
+
+TERM_TABLE_START(hpljii_driver)
+    "hpljii", "HP Laserjet series II, [75 100 150 300]",
+    HPLJII_75PPI_XMAX, HPLJII_75PPI_YMAX, HPLJII_75PPI_VCHAR,
+    HPLJII_75PPI_HCHAR, HPLJII_75PPI_VTIC, HPLJII_75PPI_HTIC, HPLJII_options,
+    HPLJII_init, HPLJII_reset, HPLJII_text, null_scale,
+    HPLJII_graphics, b_move, b_vector, HPLJII_linetype,
+    HPLJII_put_text, b_text_angle, null_justify_text, line_and_point,
+    do_arrow, set_font_null, 0, TERM_BINARY,
+    0, 0, b_boxfill
+TERM_TABLE_END(hpljii_driver)
+
+#undef LAST_TERM
+#define LAST_TERM hpljii_driver
+
+TERM_TABLE_START(hpdj_driver)
+    "hpdj", "HP DeskJet 500, [75 100 150 300]",
+    HPLJII_75PPI_XMAX, HPLJII_75PPI_YMAX, HPLJII_75PPI_VCHAR,
+    HPLJII_75PPI_HCHAR, HPLJII_75PPI_VTIC, HPLJII_75PPI_HTIC, HPLJII_options,
+    HPLJII_init, HPLJII_reset, HPDJ_text, null_scale,
+    HPDJ_graphics, b_move, b_vector, HPLJII_linetype,
+    b_put_text, b_text_angle, null_justify_text, line_and_point,
+    do_arrow, set_font_null, 0, TERM_BINARY,
+    0, 0, b_boxfill
+TERM_TABLE_END(hpdj_driver)
+
+#undef LAST_TERM
+#define LAST_TERM hpdj_driver
+
+#endif
+#endif
+
+#ifdef TERM_HELP
+START_HELP(hpljii)
+"1 hpljii",
+"?commands set terminal hpljii",
+"?set terminal hpljii",
+"?set term hpljii",
+"?terminal hpljii",
+"?term hpljii",
+"?hpljii",
+"?commands set terminal hpdj",
+"?set terminal hpdj",
+"?set term hpdj",
+"?terminal hpdj",
+"?term hpdj",
+"?hpdj",
+" The `hpljii` terminal driver supports the HP Laserjet Series II printer.  The",
+" `hpdj` driver supports the HP DeskJet 500 printer.  These drivers allow a",
+" choice of resolutions.",
+"",
+" Syntax:",
+"       set terminal hpljii | hpdj {<res>}",
+"",
+" where `res` may be 75, 100, 150 or 300 dots per inch; the default is 75.",
+" Rasterization at the higher resolutions may require a large amount of memory.",
+"",
+" The `hp500c` terminal is similar to `hpdj`; `hp500c` additionally supports",
+" color and compression."
+END_HELP(hpljii)
+#endif /* TERM_HELP */

@@ -1,0 +1,82 @@
+#
+# Demonstrate features of datastrings patch
+# Ethan A Merritt <merritt@u.washington.edu>
+# 08-Mar-2003
+#
+reset
+#
+# Illustrate reading plot labels from column head in datafile
+#
+set title "Auto-labeling plots from text fields in datafile"
+set label 1 "Generate plot labels from first row in each column"
+set label 1 at graph 0.02, 0.85 tc lt 3
+set label 2 "Generate x-axis labels from first column in each row"
+set label 2 at graph 0.02, 0.80 tc lt 3
+set style data linespoints
+set ylabel "mm"
+set yrange [0:200]
+#
+set key autotitle columnhead
+plot 'ctg-y2.dat' using 2:xticlabel(1) index 2, \
+     ''           using 2 index 3 
+#
+pause -1 "<cr> to plot again using x2ticlabels"
+#
+# Illustrate reading xtic axis labels from the datafile
+#
+reset
+set title "Read tic labels from a datafile column\nAn approximation of Hans Olav Eggestad's categoric plot patch\nusing 'using ($0):2:xticlabels(1)' and 'set style fill solid border -1'"
+set boxwidth 0.3
+set style fill solid 1.000000 border -1
+set bmargin 3
+set pointsize 2
+set yrange [0:180]
+set xrange [-0.5:11.5]
+set ylabel "mm"
+set tics scale 0.0
+set grid y
+set xtics
+#
+set key autotitle columnhead
+plot 'ctg-y2.dat' using ($0-0.2):2 index 0 with boxes title "precipitation 1992-2000", \
+     ''           using ($0+0.2):2 index 1 with boxes title "              2000-2001", \
+     ''           using ($0):2 index 2 with linespoints lw 3 title "runoff 1992-2000", \
+     ''           using ($0):2:xticlabels(1) index 3 with linespoints lw 3 title "       2000-2001"
+#
+pause -1 "<cr> to plot again using x2ticlabels"
+#
+set title "Same plot using x2ticlabels also"
+set x2tics
+plot 'ctg-y2.dat' using ($0-0.2):2 index 0 with boxes title "precipitation 1992-2000", \
+     ''           using ($0+0.2):2 index 1 with boxes title "              2000-2001", \
+     ''           using ($0):2 index 2 with linespoints lw 3 title "runoff 1992-2000", \
+     ''           using ($0):2:x2ticlabels(1) index 3 with linespoints lw 3 title "       2000-2001"
+#
+pause -1 "<cr> to plot same data from table format"
+set title "Plot from table format (titles taken from column headers)"
+unset x2tics
+plot 'table.dat' using ($0-0.2):2 title column(2) with boxes, \
+     ''          using ($0+0.2):3 title column(3) with boxes, \
+     ''          using ($0):4     title column(4) with linespoints, \
+     ''          using ($0):5:xtic(1) title column(5) with linespoints
+#
+pause -1 "<cr> to show double use of y values"
+#
+set title "Plot actual y-value as a label"
+plot 'table.dat' using 0:2:xtic(1) title columnhead with boxes, \
+     ''          using 0:2:2 with labels center offset 0,1 notitle
+pause -1 "<cr> to show use of boxed labels"
+#
+# 
+# Not all terminals support boxed labels
+set key box opaque
+set yrange [20:120]
+set grid x
+set style textbox opaque
+set title "Plot using boxed labels"
+plot 'table.dat' using 0:2:xtic(1) title col with lines lw 3, \
+     ''          using 0:2:2 with labels center boxed notitle
+
+#
+pause -1 "<cr> to end demo"
+reset

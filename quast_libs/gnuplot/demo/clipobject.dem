@@ -1,0 +1,78 @@
+#
+# Demo and test for clipping applied to objects.
+# axis coordinates run from [-1:1]
+# graph coordinates from from [0:1]
+# screen coordinates from from [0.2:0.8]
+#
+reset
+
+set title "Default object clipping"
+set label 1 at graph 0.5, 0.9 center
+set label 1 "Outer = screen coords\nMiddle = graph coords\nInner = axis coords"
+
+set xrange[-1:1]
+set yrange[-1:1]
+set macros
+fs="fillstyle solid 1.0 border lc rgb 'black' lw 2"
+
+set lmargin at screen 0.2
+set rmargin at screen 0.8
+set tmargin at screen 0.8
+set bmargin at screen 0.2
+
+set object 1 rectangle from screen 0.1,screen 0.1 to screen 0.4, screen 0.4
+set object 1 fc rgb '#880000' @fs
+
+set object 11 rectangle from first -1.1,first -1.1 to first -0.9, first -0.9
+set object 11 fc rgb 'red' @fs
+set object 11 front
+
+set object 111 rectangle from graph -.1, -.1 to graph .1,.1
+set object 111 fc rgb "#DDAA00' @fs
+
+
+set object 2 circle at screen 0.2, screen 0.8 radius screen 0.1
+set object 2 fc rgb '#008800' @fs
+
+set object 22 circle at first -1, 1 radius first .15
+set object 22 fc rgb 'green' @fs
+set object 22 front
+
+set object 222 circle at graph 0, graph 1 radius graph 0.1
+set object 222 fc rgb '#00DDAA' @fs
+
+
+set object 3 polygon from screen 0.6,screen 0.6 rto 0.4,0 rto -0.2,0.4
+set object 3 fc rgb '#BBBB00' @fs
+
+set object 33 polygon from first 0.8,first 0.8 rto first 0.4,0  rto first -0.2, 0.4
+set object 33 fc rgb 'yellow' @fs
+set object 33 front
+
+set object 333 polygon from graph .8,graph .8 rto graph 0.4,0 rto graph -0.2, 0.4
+set object 333 fc rgb '#AAAA88' @fs
+
+set object 4 ellipse at screen 0.8, screen 0.2 size screen 0.3, 0.25
+set object 4 fc rgb '#4444bb' @fs
+
+set object 44 ellipse at first 1, -1 size first 0.4, first 0.25
+set object 44 fc rgb "cyan" @fs
+set object 44 front
+
+set object 444 ellipse at graph 1,graph 0 size first 0.8, first 0.5
+set object 444 fc rgb '#6666ff' @fs
+
+
+plot 0
+
+pause -1 "Hit return to continue"
+
+set title "Object property 'noclip'"
+
+do for [i=1:4]{ set object i noclip; set object i*11 noclip; set object i*111 noclip; }
+
+plot 0
+
+pause -1 "Hit return to continue"
+undefine fs
+reset

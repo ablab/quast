@@ -1,0 +1,1537 @@
+/* Hello, Emacs, this is -*- objc -*-
+ * $Id: next.trm,v 1.28 2013/01/26 00:46:08 sfeam Exp $
+ *
+ */
+
+/* GNUPLOT - next.trm */
+
+/*[
+ * Copyright 1991 - 1993, 1998, 2004
+ *
+ * Permission to use, copy, and distribute this software and its
+ * documentation for any purpose with or without fee is hereby granted,
+ * provided that the above copyright notice appear in all copies and
+ * that both that copyright notice and this permission notice appear
+ * in supporting documentation.
+ *
+ * Permission to modify the software is granted, but not the right to
+ * distribute the complete modified source code.  Modifications are to
+ * be distributed as patches to the released version.  Permission to
+ * distribute binaries produced by compiling modified sources is granted,
+ * provided you
+ *   1. distribute the corresponding source modifications from the
+ *    released version in the form of a patch file along with the binaries,
+ *   2. add special version identification to distinguish your version
+ *    in addition to the base release version number,
+ *   3. provide your name and address as the primary contact for the
+ *    support of your modified version, and
+ *   4. retain our contact information in regard to use of the base
+ *    software.
+ * Permission to distribute the released version of the source code along
+ * with corresponding source modifications in the form of a patch file is
+ * granted with same provisions 2 through 4 for binary distributions.
+ *
+ * This software is provided "as is" without express or implied warranty
+ * to the extent permitted by applicable law.
+]*/
+
+/*
+ * This file is included by ../term.c via ../term.h.
+ *
+ * This terminal driver supports:
+ *     next
+ *
+ * AUTHORS
+ *  Robert Lutwak from Russell Lang's post.trm
+ *  'old' option invokes Nick Strobel's original, single viewport terminal
+ *
+ * send your comments or suggestions to (gnuplot-info@lists.sourceforge.net).
+ *
+ * This terminal attempts to connect, via the NeXTstep Distributed
+ * Objects system, to the "gnuplotServer."  If there is no such
+ * service registered with the OS, the terminal attempts to fire
+ * up GnuTerm.app.  If the user has not set the environment variable
+ * GNUTERMPATH, the terminal uses the users ApplicationPaths Workspace
+ * dwrite to search for GnuTerm.app (Note:  this is usually something
+ * like ~/Apps, ~/LocalApps, ~/NextApps, etc.).
+ * In order to use this filter, you MUST have GnuTerm.app installed
+ * on your system.
+ *
+ * Once connected to the server, this filter is basically Russell Lang's
+ * Postscript filter, except that the resultant postscript code
+ * is sent, via the D.O. system, to GnuTerm.app, which manages
+ * the windows which produce the postscript output on the screen.
+ *
+ *
+ * Defaults are
+ * 'set term next new dashed auto "Helvetica" 14'
+ *
+ * To change font to Times-Roman and font size to 20pts use
+ * 'set term next "Times-Roman" 20'.
+ *
+ * to choose window by title
+ * 'set term next title "Window title"
+ *
+ * Monitor Options:
+ * monochrome, color
+ *
+ * To invoke Nick Strobel's old terminal
+ * 'set term next old'
+ */
+
+#include "driver.h"
+
+#ifdef TERM_REGISTER
+register_term(next)
+#endif
+
+#ifdef TERM_PROTO
+
+/* whether or not to compile support for the old (self-contained)
+   NeXT terminal */
+/* #define NEXT_OLDTERMINAL	1 */
+
+#import <appkit/appkit.h>
+#import <remote/NXProxy.h>	/* setProtocolForProxy */
+#import <remote/NXConnection.h>	/* setProtocolForProxy */
+#import <machkit/NXNetNameServer.h>
+#import <machkit/senderIsInvalid.h>
+#import <stdarg.h>
+
+
+#ifdef NEXT_OLDTERMINAL
+static void window_create __PROTO((void));
+@interface EpsViewer:Application
+{
+    id theNewWin;
+}
+
+-windowCreate:(NXCoord)
+width Height:(NXCoord) height;
+-(NXRect *) nextRectForWidth:(NXCoord)
+width Height:(NXCoord) height;
+@end
+#endif /* NEXT_OLDTERMINAL */
+
+
+TERM_PUBLIC void NEXT_options __PROTO((void));
+TERM_PUBLIC void NEXT_common_init __PROTO((int uses_fonts, unsigned int xoff, unsigned int yoff, unsigned int xsize, unsigned int ysize, char **dict));
+TERM_PUBLIC void NEXT_init __PROTO((void));
+TERM_PUBLIC void NEXT_graphics __PROTO((void));
+TERM_PUBLIC void NEXT_text __PROTO((void));
+TERM_PUBLIC void NEXT_reset __PROTO((void));
+TERM_PUBLIC void NEXT_linetype __PROTO((int linetype));
+TERM_PUBLIC void NEXT_move __PROTO((unsigned int x, unsigned int y));
+TERM_PUBLIC void NEXT_vector __PROTO((unsigned int x, unsigned int y));
+TERM_PUBLIC void NEXT_put_text __PROTO((unsigned int x, unsigned int y, const char *str));
+TERM_PUBLIC int NEXT_text_angle __PROTO((int ang));
+TERM_PUBLIC int NEXT_justify_text __PROTO((enum JUSTIFY mode));
+TERM_PUBLIC void NEXT_point __PROTO((unsigned int x, unsigned int y, int number));
+TERM_PUBLIC int NEXT_set_font __PROTO((const char *font));
+TERM_PUBLIC char *NEXT_RememberFont __PROTO((char *fname));
+TERM_PUBLIC void NEXT_set_pointsize __PROTO((double size));
+
+
+#define NEXT_POINT_TYPES 8	/* div */
+#define NEXT_XOFF	1	/* page offset in pts */
+#define NEXT_YOFF	1
+#define NEXT_XMAX 6400
+#define NEXT_YMAX 4800
+#define NEXT_XLAST (NEXT_XMAX - 1)
+#define NEXT_YLAST (NEXT_YMAX - 1)
+#define NEXT_VTIC (NEXT_YMAX/80)
+#define NEXT_HTIC (NEXT_YMAX/80)
+#define NEXT_SC (10)		/* scale is 1pt = 10 units */
+#define	NEXT_LW (0.5*NEXT_SC)	/* linewidth = 0.5 pts */
+#define NEXT_VCHAR (14*NEXT_SC)	/* default is 14 point characters */
+#define NEXT_HCHAR (14*NEXT_SC*6/10)
+
+#define GOT_NEXT_PROTO
+#endif
+
+
+#ifndef TERM_PROTO_ONLY
+
+#ifdef TERM_BODY
+
+@interface GnuTermDriver:Object < NXSenderIsInvalid >
+{
+    id server;
+}
+
+-senderIsInvalid:(id) sender;
+-plot:(char *) PSstr;
+-init;
+@end
+
+
+#define DEFAULTNEXTSIZE 10000
+
+static id gnuTermAccess;	/* local object manages the D.O. connection */
+
+static char *NEXTBuffer, *NEXTBufAt, *NEXTBufEnd;
+static int NEXTsize;
+static char NEXTTmpBuf[1000];
+static void NEXTPrintf(char *,...);
+static TBOOLEAN NEXT_oldterminal = FALSE;
+/*static TBOOLEAN NEXT_colordetect();*/
+
+static char NEXT_title[MAX_LINE_LEN + 1];	/* name of font */
+
+static char NEXT_font[MAX_LINE_LEN + 1] = "Helvetica";	/* name of font */
+static int NEXT_fontsize = 14;	/* size of font in pts */
+static int NEXT_default_font[MAX_ID_LEN+1] = {'\0'};
+static TBOOLEAN NEXT_color = FALSE;
+static TBOOLEAN NEXT_solid = FALSE;	/*  use dashed lines */
+static int NEXT_path_count = 0;	/* count of lines in path */
+static int NEXT_ang = 0;	/* text angle */
+static enum JUSTIFY NEXT_justify = LEFT;	/* text is flush left */
+
+static TBOOLEAN NEXT_duplex_state = FALSE;
+static TBOOLEAN NEXT_duplex_option = FALSE;
+
+static char GPFAR *GPFAR NEXT_header[] =
+{
+    "/M {moveto} bind def\n",
+    "/L {lineto} bind def\n",
+    "/R {rmoveto} bind def\n",
+    "/V {rlineto} bind def\n",
+    "/vpt2 vpt 2 mul def\n",
+    "/hpt2 hpt 2 mul def\n",
+/* flush left show */
+    "/Lshow { currentpoint stroke M\n",
+    "  0 vshift R show } def\n",
+/* flush right show */
+    "/Rshow { currentpoint stroke M\n",
+    "  dup stringwidth pop neg vshift R show } def\n",
+/* centred show */
+    "/Cshow { currentpoint stroke M\n",
+    "  dup stringwidth pop -2 div vshift R show } def\n",
+/* Dash or Color Line */
+    "/DL { Color {setrgbcolor Solid {pop []} if 0 setdash }\n",
+    " {pop pop pop Solid {pop []} if 0 setdash} ifelse } def\n",
+/* Border Lines */
+    "/BL { stroke gnulinewidth 2 mul setlinewidth } def\n",
+/* Axes Lines */
+    "/AL { stroke gnulinewidth 2 div setlinewidth } def\n",
+/* Plot Lines */
+    "/PL { stroke gnulinewidth setlinewidth } def\n",
+/* Line Types */
+    "/LTb { BL [] 0 0 0 DL } def\n",	/* border */
+    "/LTa { AL [1 dl 2 dl] 0 setdash 0 0 0 setrgbcolor } def\n",	/* axes */
+    "/LT0 { PL [] 0 1 0 DL } def\n",
+    "/LT1 { PL [4 dl 2 dl] 0 0 1 DL } def\n",
+    "/LT2 { PL [2 dl 3 dl] 1 0 0 DL } def\n",
+    "/LT3 { PL [1 dl 1.5 dl] 1 0 1 DL } def\n",
+    "/LT4 { PL [5 dl 2 dl 1 dl 2 dl] 0 1 1 DL } def\n",
+    "/LT5 { PL [4 dl 3 dl 1 dl 3 dl] 1 1 0 DL } def\n",
+    "/LT6 { PL [2 dl 2 dl 2 dl 4 dl] 0 0 0 DL } def\n",
+    "/LT7 { PL [2 dl 2 dl 2 dl 2 dl 2 dl 4 dl] 1 0.3 0 DL } def\n",
+    "/LT8 { PL [2 dl 2 dl 2 dl 2 dl 2 dl 2 dl 2 dl 4 dl] 0.5 0.5 0.5 DL } def\n",
+/* Point (Round) */ /* Matt Heffron make it round */
+    "/Pnt { stroke [] 0 setdash\n",
+    "   gsave 1 setlinecap M 0 0 V stroke grestore } def\n",
+
+/* Diamond */
+    "/Dia { stroke [] 0 setdash 2 copy vpt add M\n",
+    "  hpt neg vpt neg V hpt vpt neg V\n",
+    "  hpt vpt V hpt neg vpt V closepath stroke\n",
+    "  Pnt } def\n",
+
+/* Plus */
+    "/Pls { stroke [] 0 setdash vpt sub M 0 vpt2 V\n",
+    "  currentpoint stroke M\n",
+    "  hpt neg vpt neg R hpt2 0 V stroke\n",
+    "  } def\n",
+
+/* Box */
+    "/Box { stroke [] 0 setdash 2 copy exch hpt sub exch vpt add M\n",
+    "  0 vpt2 neg V hpt2 0 V 0 vpt2 V\n",
+    "  hpt2 neg 0 V closepath stroke\n",
+    "  Pnt } def\n",
+
+/* Cross (X) */
+    "/Crs { stroke [] 0 setdash exch hpt sub exch vpt add M\n",
+    "  hpt2 vpt2 neg V currentpoint stroke M\n",
+    "  hpt2 neg 0 R hpt2 vpt2 V stroke } def\n",
+
+/* Triangle Up*/
+    "/TriU { stroke [] 0 setdash 2 copy vpt 1.12 mul add M\n",
+    "  hpt neg vpt -1.62 mul V\n",
+    "  hpt 2 mul 0 V\n",
+    "  hpt neg vpt 1.62 mul V closepath stroke\n",
+    "  Pnt  } def\n",
+
+/* Star */
+    "/Star { 2 copy Pls Crs } def\n",
+
+/* div added filed box */
+/* Filled Box */
+    "/BoxF { stroke [] 0 setdash exch hpt sub exch vpt add M\n",
+    "  0 vpt2 neg V  hpt2 0 V  0 vpt2 V\n",
+    "  hpt2 neg 0 V  closepath fill } def\n",
+
+/* div added filled triangle */
+/* Triangle Up, Filled */
+    "/TriUF { stroke [] 0 setdash vpt 1.12 mul add M\n",
+    "  hpt neg vpt -1.62 mul V\n",
+    "  hpt 2 mul 0 V\n",
+    "  hpt neg vpt 1.62 mul V closepath fill } def\n",
+
+/* Matt Heffron: added a few more types */
+/* Triangle Down */
+    "/TriD { stroke [] 0 setdash 2 copy vpt 1.12 mul sub M\n",
+    "  hpt neg vpt 1.62 mul V\n",
+    "  hpt 2 mul 0 V\n",
+    "  hpt neg vpt -1.62 mul V closepath stroke\n",
+    "  Pnt  } def\n",
+
+/* Triangle Down, Filled*/
+    "/TriDF { stroke [] 0 setdash vpt 1.12 mul sub M\n",
+    "  hpt neg vpt 1.62 mul V\n",
+    "  hpt 2 mul 0 V\n",
+    "  hpt neg vpt -1.62 mul V closepath fill} def\n",
+
+/* Diamond, Filled */
+    "/DiaF { stroke [] 0 setdash vpt add M\n",
+    "  hpt neg vpt neg V hpt vpt neg V\n",
+    "  hpt vpt V hpt neg vpt V closepath fill } def\n",
+
+/* Pentagon */
+    "/Pent { stroke [] 0 setdash 2 copy gsave\n",
+    "  translate 0 hpt M 4 {72 rotate 0 hpt L} repeat\n",
+    "  closepath stroke grestore Pnt } def\n",
+
+/* Pentagon, Filled */
+    "/PentF { stroke [] 0 setdash gsave\n",
+    "  translate 0 hpt M 4 {72 rotate 0 hpt L} repeat\n",
+    "  closepath fill grestore } def\n",
+
+/* Circle */
+    "/Circle { stroke [] 0 setdash 2 copy\n",
+    "  hpt 0 360 arc stroke Pnt } def\n",
+
+/* Circle,Filled */
+    "/CircleF { stroke [] 0 setdash hpt 0 360 arc fill } def\n",
+/* 16 differently filled circles */
+    "/C0 { BL [] 0 setdash 2 copy moveto vpt 90 450  arc } bind def\n",
+    "/C1 { BL [] 0 setdash 2 copy        moveto\n",
+    "       2 copy  vpt 0 90 arc closepath fill\n",
+    "               vpt 0 360 arc closepath } bind def\n",
+    "/C2 { BL [] 0 setdash 2 copy moveto\n",
+    "       2 copy  vpt 90 180 arc closepath fill\n",
+    "               vpt 0 360 arc closepath } bind def\n",
+    "/C3 { BL [] 0 setdash 2 copy moveto\n",
+    "       2 copy  vpt 0 180 arc closepath fill\n",
+    "               vpt 0 360 arc closepath } bind def\n",
+    "/C4 { BL [] 0 setdash 2 copy moveto\n",
+    "       2 copy  vpt 180 270 arc closepath fill\n",
+    "               vpt 0 360 arc closepath } bind def\n",
+    "/C5 { BL [] 0 setdash 2 copy moveto\n",
+    "       2 copy  vpt 0 90 arc\n",
+    "       2 copy moveto\n",
+    "       2 copy  vpt 180 270 arc closepath fill\n",
+    "               vpt 0 360 arc } bind def\n",
+    "/C6 { BL [] 0 setdash 2 copy moveto\n",
+    "      2 copy  vpt 90 270 arc closepath fill\n",
+    "              vpt 0 360 arc closepath } bind def\n",
+    "/C7 { BL [] 0 setdash 2 copy moveto\n",
+    "      2 copy  vpt 0 270 arc closepath fill\n",
+    "              vpt 0 360 arc closepath } bind def\n",
+    "/C8 { BL [] 0 setdash 2 copy moveto\n",
+    "      2 copy vpt 270 360 arc closepath fill\n",
+    "              vpt 0 360 arc closepath } bind def\n",
+    "/C9 { BL [] 0 setdash 2 copy moveto\n",
+    "      2 copy  vpt 270 450 arc closepath fill\n",
+    "              vpt 0 360 arc closepath } bind def\n",
+    "/C10 { BL [] 0 setdash 2 copy 2 copy moveto vpt 270 360 arc closepath fill\n",
+    "       2 copy moveto\n",
+    "       2 copy vpt 90 180 arc closepath fill\n",
+    "               vpt 0 360 arc closepath } bind def\n",
+    "/C11 { BL [] 0 setdash 2 copy moveto\n",
+    "       2 copy  vpt 0 90 arc closepath fill\n",
+    "       2 copy moveto\n",
+    "       2 copy  vpt 180 360 arc closepath fill\n",
+    "               vpt 0 360 arc closepath } bind def\n",
+    "/C12 { BL [] 0 setdash 2 copy moveto\n",
+    "       2 copy  vpt 180 360 arc closepath fill\n",
+    "               vpt 0 360 arc closepath } bind def\n",
+    "/C13 { BL [] 0 setdash  2 copy moveto\n",
+    "       2 copy  vpt 0 90 arc closepath fill\n",
+    "       2 copy moveto\n",
+    "       2 copy  vpt 180 360 arc closepath fill\n",
+    "               vpt 0 360 arc closepath } bind def\n",
+    "/C14 { BL [] 0 setdash 2 copy moveto\n",
+    "       2 copy  vpt 90 360 arc closepath fill\n",
+    "               vpt 0 360 arc } bind def\n",
+    "/C15 { BL [] 0 setdash 2 copy vpt 0 360 arc closepath fill\n",
+    "               vpt 0 360 arc closepath } bind def\n",
+
+/* Auxiliary definitions for rectangles */
+
+    "/Rec   { newpath 4 2 roll moveto 1 index 0 rlineto 0 exch rlineto\n",
+    "       neg 0 rlineto closepath } bind def\n",
+    "/Square { dup Rec } bind def\n",
+    "/Bsquare { vpt sub exch vpt sub exch vpt2 Square } bind def\n",
+
+/* 16 differently filled squares */
+
+    "/S0 { BL [] 0 setdash 2 copy moveto 0 vpt rlineto BL Bsquare } bind def\n",
+    "/S1 { BL [] 0 setdash 2 copy vpt Square fill Bsquare } bind def\n",
+    "/S2 { BL [] 0 setdash 2 copy exch vpt sub exch vpt Square fill Bsquare } bind def\n",
+    "/S3 { BL [] 0 setdash 2 copy exch vpt sub exch vpt2 vpt Rec fill Bsquare } bind def\n",
+    "/S4 { BL [] 0 setdash 2 copy exch vpt sub exch vpt sub vpt Square fill Bsquare } bind def\n",
+    "/S5 { BL [] 0 setdash 2 copy 2 copy vpt Square fill\n",
+    "       exch vpt sub exch vpt sub vpt Square fill Bsquare } bind def\n",
+    "/S6 { BL [] 0 setdash 2 copy exch vpt sub exch vpt sub vpt vpt2 Rec fill Bsquare } bind def\n",
+    "/S7 { BL [] 0 setdash 2 copy exch vpt sub exch vpt sub vpt vpt2 Rec fill\n",
+    "       2 copy vpt Square fill\n",
+    "       Bsquare } bind def\n",
+    "/S8 { BL [] 0 setdash 2 copy vpt sub vpt Square fill Bsquare } bind def\n",
+    "/S9 { BL [] 0 setdash 2 copy vpt sub vpt vpt2 Rec fill Bsquare } bind def\n",
+    "/S10 { BL [] 0 setdash 2 copy vpt sub vpt Square fill 2 copy exch vpt sub exch vpt Square fill\n",
+    "       Bsquare } bind def\n",
+    "/S11 { 2 copy vpt sub vpt Square fill 2 copy exch vpt sub exch vpt2 vpt Rec fill\n",
+    "       Bsquare } bind def\n",
+    "/S12 { BL [] 0 setdash 2 copy exch vpt sub exch vpt sub vpt2 vpt Rec fill Bsquare } bind def\n",
+    "/S13 { BL [] 0 setdash 2 copy exch vpt sub exch vpt sub vpt2 vpt Rec fill\n",
+    "       2 copy vpt Square fill Bsquare } bind def\n",
+    "/S14 { BL [] 0 setdash 2 copy exch vpt sub exch vpt sub vpt2 vpt Rec fill\n",
+    "       2 copy exch vpt sub exch vpt Square fill Bsquare } bind def\n",
+    "/S15 { BL [] 0 setdash 2 copy Bsquare fill Bsquare } bind def\n",
+
+/* 16 different diamonds (actually just rotated squares) */
+
+    "/D0 { gsave translate 45 rotate 0 0 Box stroke grestore } bind def\n",
+    "/D1 { gsave translate 45 rotate 0 0 S1 stroke grestore } bind def\n",
+    "/D2 { gsave translate 45 rotate 0 0 S2 stroke grestore } bind def\n",
+    "/D3 { gsave translate 45 rotate 0 0 S3 stroke grestore } bind def\n",
+    "/D4 { gsave translate 45 rotate 0 0 S4 stroke grestore } bind def\n",
+    "/D5 { gsave translate 45 rotate 0 0 S5 stroke grestore } bind def\n",
+    "/D6 { gsave translate 45 rotate 0 0 S6 stroke grestore } bind def\n",
+    "/D7 { gsave translate 45 rotate 0 0 S7 stroke grestore } bind def\n",
+    "/D8 { gsave translate 45 rotate 0 0 S8 stroke grestore } bind def\n",
+    "/D9 { gsave translate 45 rotate 0 0 S9 stroke grestore } bind def\n",
+    "/D10 { gsave translate 45 rotate 0 0 S10 stroke grestore } bind def\n",
+    "/D11 { gsave translate 45 rotate 0 0 S11 stroke grestore } bind def\n",
+    "/D12 { gsave translate 45 rotate 0 0 S12 stroke grestore } bind def\n",
+    "/D13 { gsave translate 45 rotate 0 0 S13 stroke grestore } bind def\n",
+    "/D14 { gsave translate 45 rotate 0 0 S14 stroke grestore } bind def\n",
+    "/D15 { gsave translate 45 rotate 0 0 S15 stroke grestore } bind def\n",
+
+    NULL
+};
+
+static char GPFAR *GPFAR ENHNEXT_header[] =
+{
+/* For MFshow and MFwidth the tos is an array with the string and font info:  */
+/*	[<fontname (a string)> <fontsize> <vertical offset> <width significant?> <text string>]  */
+
+    "/MFshow {{dup dup 0 get findfont exch 1 get scalefont setfont\n",
+    "     [ currentpoint ] exch dup 2 get 0 exch rmoveto dup 4 get show dup\n",
+    "     3 get {2 get neg 0 exch rmoveto pop} {pop aload pop moveto}ifelse} forall} bind def\n",
+    "/MFwidth {0 exch {dup 3 get{dup dup 0 get findfont exch 1 get scalefont setfont\n",
+    "      4 get stringwidth pop add}\n",
+    "    {pop} ifelse} forall} bind def\n",
+
+/* flush left show */
+    "/MLshow { currentpoint stroke M\n",
+    "  0 exch R MFshow } bind def\n",
+
+/* flush right show */
+    "/MRshow { currentpoint stroke M\n",
+    "  exch dup MFwidth neg 3 -1 roll R MFshow } def\n",
+
+/* centred show */
+    "/MCshow { currentpoint stroke M\n",
+    "  exch dup MFwidth -2 div 3 -1 roll R MFshow } def\n",
+    NULL
+};
+
+/* added to post by Matt Heffron <heffron@falstaff.css.beckman.com> */
+/* moved to post.trm by drd */
+
+struct NEXT_FontName {
+    char *name;
+    struct NEXT_FontName *next;
+} *NEXT_DocFonts = NULL;
+
+enum NEXT_id {
+    NEXT_DEFAULT, NEXT_MONOCHROME, NEXT_COLOR,
+    NEXT_SOLID, NEXT_DASHED,
+    NEXT_SIMPLEX, NEXT_DUPLEX, NEXT_DEFAULTPLEX,
+    NEXT_OLD, NEXT_NEW, NEXT_TITLE,
+    NEXT_OTHER
+};
+
+static struct gen_table NEXT_opts[] =
+{
+    { "d$efault", NEXT_DEFAULT },
+    { "mono$chrome", NEXT_MONOCHROME },
+    { "col$or", NEXT_COLOR },
+    { "col$our", NEXT_COLOR },
+    { "so$lid", NEXT_SOLID },
+    { "da$shed", NEXT_DASHED },
+    { "si$mplex", NEXT_SIMPLEX },
+    { "du$plex", NEXT_DUPLEX },
+    { "defaultp$lex", NEXT_DEFAULTPLEX },
+    { "old", NEXT_OLD },
+    { "new", NEXT_NEW },
+    { "ti$tle", NEXT_TITLE },
+    { NULL, NEXT_OTHER }
+};
+
+TERM_PUBLIC void
+NEXT_options()
+{
+    char buf[40];
+    struct value a;
+
+    while (!END_OF_COMMAND) {
+	switch(lookup_table(&NEXT_opts[0],c_token)) {
+	case NEXT_DEFAULT:
+	    NEXT_oldterminal = FALSE;
+	    /*NEXT_color=NEXT_colordetect(); */
+	    NEXT_color = FALSE;
+	    NEXT_solid = FALSE;
+	    NEXT_duplex_option = FALSE;
+	    strcpy(NEXT_font, "Helvetica");
+	    NEXT_fontsize = 14;
+	    term->v_char = (unsigned int) (NEXT_fontsize * NEXT_SC);
+	    term->h_char = (unsigned int) (NEXT_fontsize * NEXT_SC * 6 / 10);
+	    term->put_text = NEXT_put_text;
+	    c_token++;
+	    break;
+	case NEXT_MONOCHROME:
+	    NEXT_color = FALSE;
+	    c_token++;
+	    break;
+	case NEXT_COLOR:
+	    NEXT_color = TRUE;
+	    c_token++;
+	    break;
+	case NEXT_SOLID:
+	    NEXT_solid = TRUE;
+	    c_token++;
+	    break;
+	case NEXT_DASHED:
+	    NEXT_solid = FALSE;
+	    c_token++;
+	    break;
+	case NEXT_SIMPLEX:
+	    NEXT_duplex_state = FALSE;
+	    NEXT_duplex_option = TRUE;
+	    c_token++;
+	    break;
+	case NEXT_DUPLEX:
+	    NEXT_duplex_state = TRUE;
+	    NEXT_duplex_option = TRUE;
+	    c_token++;
+	    break;
+	case NEXT_DEFAULTPLEX:
+	    NEXT_duplex_option = FALSE;
+	    c_token++;
+	    break;
+	case NEXT_OLD:
+	    NEXT_oldterminal = TRUE;
+	    c_token++;
+	    break;
+	case NEXT_NEW:
+	    NEXT_oldterminal = FALSE;
+	    c_token++;
+	    break;
+	case NEXT_TITLE:
+	    c_token++;
+	    if (!isstring(c_token)) {
+		fprintf(stderr, "usage:  set term next title \"newtitle\"\n");
+	    }
+	    quote_str(NEXT_title, c_token, MAX_LINE_LEN + 1);
+	    break;
+	case NEXT_OTHER:
+	default:
+	    if (isstring(c_token)) {
+		quote_str(NEXT_font, c_token, MAX_LINE_LEN + 1);
+
+		/* We must have font size specified */
+		NEXT_fontsize = (int) real(const_express(&a));
+		term->v_char = (unsigned int) (NEXT_fontsize * NEXT_SC);
+		term->h_char = (unsigned int) (NEXT_fontsize * NEXT_SC * 6 / 10);
+		sprintf(NEXT_default_font, "%s,%d", NEXT_font, NEXT_fontsize);
+	    }
+	    break;
+	}
+    }
+
+    sprintf(term_options, "%s %s %s %s \"%s\" %d title \"%s\"",
+	    NEXT_oldterminal ? "old" : "new",
+	    NEXT_color ? "color" : "monochrome",
+	    NEXT_solid ? "solid" : "dashed",
+	    NEXT_duplex_option ? (NEXT_duplex_state ? "duplex" : "simplex")
+	    : "defaultplex",
+	    NEXT_font,
+	    NEXT_fontsize,
+	    NEXT_title);
+}
+
+
+TERM_PUBLIC char *
+NEXT_RememberFont(char *fname)
+{
+    struct NEXT_FontName *fnp;
+
+    for (fnp = NEXT_DocFonts; fnp && strcmp(fnp->name, fname); fnp = fnp->next);
+    if (fnp)
+	return fnp->name;	/* we must have found it in the list */
+
+    if (encoding == S_ENC_ISO8859_1) {
+	NEXTPrintf("/%s reencodeISO def\n", fname);
+    }
+    fnp = (struct NEXT_FontName *) gp_alloc(sizeof(struct NEXT_FontName), "PostScript Font record");
+    fnp->name = gp_alloc(1 + strlen(fname), "PostScript Font name");
+    strcpy(fnp->name, fname);
+    fnp->next = NEXT_DocFonts;
+    NEXT_DocFonts = fnp;
+    return fnp->name;
+}
+
+int NEXT_pen_x, NEXT_pen_y;
+int NEXT_taken;
+int NEXT_linetype_last;
+TBOOLEAN NEXT_relative_ok;
+
+/* store settings passed to common_init() for use in NEXT_graphics()
+ * are reserved for storing the term options
+ */
+static int NEXT_common_uses_fonts;
+static unsigned int NEXT_common_xoff, NEXT_common_yoff;
+
+
+TERM_PUBLIC void
+NEXT_common_init(
+    int uses_fonts,		/* 0 for NEXT(la)tex */
+    unsigned int xoff, unsigned int yoff, /* offset  - 50 for /post, 0 for NEXT(la)tex */
+    unsigned int width, unsigned int height, /* for bounding box */
+    char **dict)		/* extra entries for the dictionary */
+{
+    static char GPFAR NEXTi1[] = "%%%%Creator: gnuplot\n\
+%%%%DocumentFonts: %s\n";
+    static char GPFAR NEXTi2[] = "%%%%EndComments\n\
+/gnudict 120 dict def\ngnudict begin\n\
+/Color %s def\n\
+/Solid %s def\n\
+/gnulinewidth %.3f def\n\
+/vshift %d def\n\
+/dl {%d mul} def\n\
+/hpt %.1f def\n\
+/vpt %.1f def\n";
+    static char GPFAR *NEXT_iso_8859_1_encoding[] =
+    {
+	"/reencodeISO {\n",
+	"dup dup findfont dup length dict begin\n",
+	"{ 1 index /FID ne { def }{ pop pop } ifelse } forall\n",
+	"/Encoding ISOLatin1Encoding def\n",
+	"currentdict end definefont\n",
+	"} def\n",
+	"/ISOLatin1Encoding [\n",
+	"/.notdef/.notdef/.notdef/.notdef/.notdef/.notdef/.notdef/.notdef\n",
+	"/.notdef/.notdef/.notdef/.notdef/.notdef/.notdef/.notdef/.notdef\n",
+	"/.notdef/.notdef/.notdef/.notdef/.notdef/.notdef/.notdef/.notdef\n",
+	"/.notdef/.notdef/.notdef/.notdef/.notdef/.notdef/.notdef/.notdef\n",
+	"/space/exclam/quotedbl/numbersign/dollar/percent/ampersand/quoteright\n",
+	"/parenleft/parenright/asterisk/plus/comma/minus/period/slash\n",
+	"/zero/one/two/three/four/five/six/seven/eight/nine/colon/semicolon\n",
+	"/less/equal/greater/question/at/A/B/C/D/E/F/G/H/I/J/K/L/M/N\n",
+	"/O/P/Q/R/S/T/U/V/W/X/Y/Z/bracketleft/backslash/bracketright\n",
+	"/asciicircum/underscore/quoteleft/a/b/c/d/e/f/g/h/i/j/k/l/m\n",
+	"/n/o/p/q/r/s/t/u/v/w/x/y/z/braceleft/bar/braceright/asciitilde\n",
+	"/.notdef/.notdef/.notdef/.notdef/.notdef/.notdef/.notdef/.notdef\n",
+	"/.notdef/.notdef/.notdef/.notdef/.notdef/.notdef/.notdef/.notdef\n",
+	"/.notdef/dotlessi/grave/acute/circumflex/tilde/macron/breve\n",
+	"/dotaccent/dieresis/.notdef/ring/cedilla/.notdef/hungarumlaut\n",
+	"/ogonek/caron/space/exclamdown/cent/sterling/currency/yen/brokenbar\n",
+	"/section/dieresis/copyright/ordfeminine/guillemotleft/logicalnot\n",
+	"/hyphen/registered/macron/degree/plusminus/twosuperior/threesuperior\n",
+	"/acute/mu/paragraph/periodcentered/cedilla/onesuperior/ordmasculine\n",
+	"/guillemotright/onequarter/onehalf/threequarters/questiondown\n",
+	"/Agrave/Aacute/Acircumflex/Atilde/Adieresis/Aring/AE/Ccedilla\n",
+	"/Egrave/Eacute/Ecircumflex/Edieresis/Igrave/Iacute/Icircumflex\n",
+	"/Idieresis/Eth/Ntilde/Ograve/Oacute/Ocircumflex/Otilde/Odieresis\n",
+	"/multiply/Oslash/Ugrave/Uacute/Ucircumflex/Udieresis/Yacute\n",
+	"/Thorn/germandbls/agrave/aacute/acircumflex/atilde/adieresis\n",
+	"/aring/ae/ccedilla/egrave/eacute/ecircumflex/edieresis/igrave\n",
+	"/iacute/icircumflex/idieresis/eth/ntilde/ograve/oacute/ocircumflex\n",
+	"/otilde/odieresis/divide/oslash/ugrave/uacute/ucircumflex/udieresis\n",
+	"/yacute/thorn/ydieresis\n",
+	"] def\n",
+	NULL};
+
+
+    struct termentry *t = term;
+    int i;
+
+    NEXT_common_uses_fonts = uses_fonts;
+    NEXT_common_xoff = xoff;
+    NEXT_common_yoff = yoff;
+
+
+    NEXTPrintf("%%!NEXT-Adobe-2.0\n");
+
+    NEXTPrintf(NEXTi1, uses_fonts ? "(atend)" : "");
+
+    NEXTPrintf("%%%%BoundingBox: %d %d %d %d\n", xoff, yoff,
+	       (int) (xsize * width / NEXT_SC + 0.5 + xoff),
+	       (int) (ysize * height / NEXT_SC + 0.5 + yoff));
+
+    NEXTPrintf(NEXTi2,
+	       NEXT_color ? "true" : "false",
+	       NEXT_solid ? "true" : "false",
+	       NEXT_LW,		/* line width */
+	       (int) (t->v_char) / (-3),	/* shift for vertical centring */
+	       NEXT_SC,		/* dash length */
+	       NEXT_HTIC / 2.0,	/* half point width */
+	       NEXT_VTIC / 2.0);	/* half point height */
+
+    if (uses_fonts && (encoding == S_ENC_ISO8859_1)) {
+	for (i = 0; NEXT_iso_8859_1_encoding[i] != NULL; i++) {
+	    NEXTPrintf("%s", NEXT_iso_8859_1_encoding[i]);
+	}
+    }
+    for (i = 0; NEXT_header[i] != NULL; i++)
+	NEXTPrintf("%s", NEXT_header[i]);
+    if (NEXT_duplex_option)
+	NEXTPrintf("statusdict begin %s setduplexmode end\n",
+		   NEXT_duplex_state ? "true" : "false");
+    NEXT_RememberFont(NEXT_font);
+
+    if (dict)
+	while (*dict)
+	    NEXTPrintf("%s", *(dict++));
+
+    NEXTPrintf("end\n%%%%EndProlog\n");
+}
+
+/* the init fn for the NeXT Terminal driver */
+TERM_PUBLIC void
+NEXT_init()
+{
+
+    /* Initialize output string */
+    NEXTsize = DEFAULTNEXTSIZE;
+    if ((NEXTBuffer = malloc(NEXTsize)) == NULL) {
+	printf("Malloc error in next filter init\n");
+	exit(1);
+    }
+    NEXTBufEnd = NEXTBuffer + NEXTsize;
+    NEXTBufAt = NEXTBuffer;
+
+
+    term->xmax = NEXT_XMAX;
+    term->ymax = NEXT_YMAX;
+
+#ifdef NEXT_OLDTERMINAL
+    if (NEXT_oldterminal)
+	window_create();
+    else
+	gnuTermAccess =[[GnuTermDriver alloc] init];
+#else
+    gnuTermAccess =[[GnuTermDriver alloc] init];
+#endif
+
+
+
+}
+
+
+TERM_PUBLIC void
+NEXT_graphics()
+{
+    static char GPFAR NEXTg1[] = "0 setgray\nnewpath\n";
+    struct termentry *t = term;
+
+    *NEXTBuffer = 0;
+    NEXTBufAt = NEXTBuffer;
+
+    NEXT_common_init(1, NEXT_XOFF, NEXT_YOFF, term->xmax, term->ymax,
+		     ENHNEXT_header);
+
+    NEXTPrintf("gnudict begin\ngsave\n");
+    NEXTPrintf("%d %d translate\n", NEXT_common_xoff, NEXT_common_yoff);
+    NEXTPrintf("%.3f %.3f scale\n", 1.0 / NEXT_SC, 1.0 / NEXT_SC);
+
+
+    NEXTPrintf(NEXTg1);
+    if (NEXT_common_uses_fonts)
+	NEXTPrintf("(%s) findfont %d scalefont setfont\n", NEXT_font, (t->v_char));
+    NEXT_path_count = 0;
+    NEXT_relative_ok = FALSE;
+    NEXT_pen_x = NEXT_pen_y = -4000;
+    NEXT_taken = 0;
+    NEXT_linetype_last = LT_UNDEFINED;
+
+#ifdef NEXT_OLDTERMINAL
+    if (NEXT_oldterminal) {
+	/* Fill window with white */
+	NEXTPrintf("1 setgray\n");
+	NEXTPrintf("0 0 %d %d rectfill\n", NEXT_XMAX, NEXT_YMAX);
+	NEXTPrintf("0 setgray\n");
+    }
+#endif
+
+
+}
+
+
+TERM_PUBLIC void
+NEXT_text()
+{
+    static DPSContext d;
+
+    NEXT_path_count = 0;
+    NEXTPrintf("stroke\ngrestore\nend\n");
+
+    /* Terminate string */
+    *NEXTBufAt = 0;
+
+    if (NEXT_oldterminal) {
+	d = DPSGetCurrentContext();
+	DPSPrintf(d, NEXTBuffer);
+	DPSFlushContext(d);
+    } else {
+	/* Here's the call that dumps the string to the server */
+      [gnuTermAccess plot:NEXTBuffer];
+
+    }
+
+}
+
+
+TERM_PUBLIC void
+NEXT_reset()
+{
+    NEXTPrintf("%%%%Trailer\n");
+    if (!NEXT_common_uses_fonts) {
+	NEXTPrintf("%%%%DocumentFonts: ");
+	while (NEXT_DocFonts) {
+	    struct NEXT_FontName *fnp;
+	    fnp = NEXT_DocFonts->next;
+	    NEXTPrintf("%s%s", NEXT_DocFonts->name, fnp ? ", " : "\n");
+	    free(NEXT_DocFonts->name);
+	    free(NEXT_DocFonts);
+	    NEXT_DocFonts = fnp;
+	}
+    }
+}
+
+
+TERM_PUBLIC void
+NEXT_linetype(int linetype)
+{
+    linetype = (linetype % 9) + 2;
+    if (linetype < 0)
+	linetype = 0;
+    NEXT_relative_ok = FALSE;
+    if (NEXT_linetype_last == linetype)
+	return;
+    NEXT_linetype_last = linetype;
+    NEXTPrintf("LT%c\n", "ba012345678"[linetype]);
+    NEXT_path_count = 0;
+}
+
+
+TERM_PUBLIC void
+NEXT_move(unsigned int x, unsigned int y)
+{
+    int dx, dy;
+    char abso[20], rel[20];
+    dx = x - NEXT_pen_x;
+    dy = y - NEXT_pen_y;
+    /* can't cancel all null moves--need a move after stroke'ing */
+    if (dx == 0 && dy == 0 && NEXT_relative_ok)
+	return;
+    sprintf(abso, "%d %d M\n", x, y);
+    sprintf(rel, "%d %d R\n", dx, dy);
+    if (strlen(rel) < strlen(abso) && NEXT_relative_ok) {
+	NEXTPrintf("%s", rel);
+	NEXT_taken++;
+    } else
+	NEXTPrintf("%s", abso);
+    NEXT_relative_ok = TRUE;
+    NEXT_path_count += 1;
+
+    NEXT_pen_x = x;
+    NEXT_pen_y = y;
+}
+
+TERM_PUBLIC void
+NEXT_vector(unsigned int x, unsigned int y)
+{
+    int dx, dy;
+    char abso[20], rel[20];
+    dx = x - NEXT_pen_x;
+    dy = y - NEXT_pen_y;
+    if (dx == 0 && dy == 0)
+	return;
+    sprintf(abso, "%d %d L\n", x, y);
+    sprintf(rel, "%d %d V\n", dx, dy);
+    if (strlen(rel) < strlen(abso) && NEXT_relative_ok) {
+	NEXTPrintf("%s", rel);
+	NEXT_taken++;
+    } else
+	NEXTPrintf("%s", abso);
+    NEXT_relative_ok = TRUE;
+    NEXT_path_count += 1;
+    NEXT_pen_x = x;
+    NEXT_pen_y = y;
+    if (NEXT_path_count >= 400) {
+	NEXTPrintf("currentpoint stroke M\n");
+	NEXT_path_count = 0;
+    }
+}
+
+
+
+
+TERM_PUBLIC int
+NEXT_text_angle(int ang)
+{
+    NEXT_ang = ang;
+    return TRUE;
+}
+
+
+TERM_PUBLIC int
+NEXT_justify_text(enum JUSTIFY mode)
+{
+    NEXT_justify = mode;
+    return TRUE;
+}
+
+
+TERM_PUBLIC int
+NEXT_set_font(const char *font)
+{
+    char name[32];
+    int size, sep;
+
+    if (!font || !(*font))
+	font = NEXT_default_font;
+    sep = strcspn(font, ",");
+    strncpy(name, font, sep);
+    name[sep] = NUL;
+    size = NEXT_fontsize;
+    if (font[sep] == ',')
+	sscanf(&(font[sep + 1]), "%d", &size);
+    NEXTPrintf("/%s findfont %d scalefont setfont\n", name, size * NEXT_SC);
+    NEXT_RememberFont(name);
+    term->v_char = (unsigned int) (size * NEXT_SC);
+    term->h_char = (unsigned int) (size * NEXT_SC * 6 / 10);
+    return TRUE;
+}
+
+
+/* postscript point routines */
+
+TERM_PUBLIC void
+NEXT_set_pointsize(double size)
+{
+    NEXTPrintf("/vpt %.1f def /hpt %.1f def /vpt2 vpt 2 mul def /hpt2 hpt 2 mul def\n",
+	       pointsize * NEXT_VTIC * 0.5, pointsize * NEXT_HTIC * 0.5);
+}
+
+TERM_PUBLIC void
+NEXT_point(unsigned int x, unsigned int y, int number)
+{
+    static char *pointFNS[] =
+    {"Pnt", "Pls", "Crs", "Star",
+     "Box", "BoxF", "Circle", "CircleF",
+     "TriU", "TriUF", "TriD", "TriDF",
+     "Dia", "DiaF", "Pent", "PentF",
+     "C0", "C1", "C2", "C3",
+     "C4", "C5", "C6", "C7",
+     "C8", "C9", "C10", "C11",
+     "C12", "C13", "C14", "C15",
+     "S0", "S1", "S2", "S3",
+     "S4", "S5", "S6", "S7",
+     "S8", "S9", "S10", "S11",
+     "S12", "S13", "S14", "S15",
+     "D0", "D1", "D2", "D3",
+     "D4", "D5", "D6", "D7",
+     "D8", "D9", "D10", "D11",
+     "D12", "D13", "D14", "D15"
+    };
+    if (number < 0)
+	number = -1;		/* negative types are all 'dot' */
+    else
+	number %= sizeof(pointFNS) / sizeof(pointFNS[0]) - 1;
+    NEXTPrintf("%d %d %s\n", x, y, pointFNS[number + 1]);
+
+    NEXT_relative_ok = 0;
+    NEXT_path_count = 0;
+    NEXT_linetype_last = LT_UNDEFINED;	/* force next linetype change */
+}
+
+
+
+
+/* All lifted from the enhanced postscript driver */
+
+
+
+static TBOOLEAN NEXT_opened_string;	/* try to cut out empty ()'s */
+
+/* used in determining height of processed text */
+
+static float NEXT_max_height, NEXT_min_height;
+
+
+/* process a bit of string, and return the last character used.
+ * p is start of string
+ * brace is TRUE to keep processing to }, FALSE for do one character
+ * fontname & fontsize are obvious
+ * base is the current baseline
+ * widthflag is TRUE if the width of this should count,
+ *              FALSE for zero width boxes
+ */
+
+static char *
+NEXT_recurse(
+    char *p,
+    TBOOLEAN brace,
+    char *fontname,
+    double fontsize, double base,
+    TBOOLEAN widthflag)
+{
+
+/* close a postscript string if it has been opened */
+#define NEXT_FLUSH      \
+{	if (NEXT_opened_string)  \
+	{	NEXTPrintf("%s", ")]\n");   \
+		NEXT_opened_string = FALSE; \
+	}                         \
+}
+
+#define NEXT_OPEN	\
+{	if (!NEXT_opened_string) \
+	{ NEXTPrintf( "[(%s) %.1f %.1f %s (",  \
+		  fontname, fontsize, base, \
+		  widthflag ? "true" : "false");  \
+	  NEXT_opened_string = TRUE; \
+	}	\
+}
+
+
+    /* Start each recursion with a clean string */
+    NEXT_FLUSH;
+
+	if (base + fontsize > NEXT_max_height) {
+	NEXT_max_height = base + fontsize;
+    }
+    if (base < NEXT_min_height) {
+	NEXT_min_height = base;
+    }
+    for (; *p; ++p) {
+	float shift;
+	float f = 0;		/* used for getting new font size */
+	char *localfontname, ch;
+
+	switch (*p) {
+	case '}':
+	    if (brace)
+		return (p);
+
+	    fprintf(stderr, "next driver - spurious }\n");
+	    break;
+
+	case '_':
+	case '^':
+	    shift = (*p == '^') ? 0.5 : -0.3;
+
+	    NEXT_FLUSH;
+
+		p = NEXT_recurse(p + 1, FALSE, fontname, fontsize * 0.8,
+				 base + shift * fontsize, widthflag);
+
+	    break;
+
+	case '{':
+	    /*{{{  recurse (possibly with a new font) */
+
+	    if (*++p == '/') {	/* then parse a fontname, optional fontsize */
+		while (*++p == ' ');
+		localfontname = p;
+		while ((ch = *p) > ' ' && ch != '=')
+		    ++p;
+		if (ch == '=') {
+		    *p++ = '\0';
+		    /*{{{  get optional font size */
+		    f = (float) strtod(p, &p);
+
+		    if (f)
+			f *= NEXT_SC;	/* remember the scaling */
+		    else
+			f = fontsize;
+
+		    /*}}} */
+		} else {
+		    *p++ = '\0';
+		    f = fontsize;
+		}
+
+		while (*p == ' ')
+		    ++p;
+		if (*localfontname)
+		    localfontname = NEXT_RememberFont(localfontname);
+		else
+		    localfontname = fontname;
+	    } else {
+		localfontname = fontname;
+		f = fontsize;
+	    }
+	    /*}}} */
+
+
+	    p = NEXT_recurse(p, TRUE, localfontname, f, base, widthflag);
+
+
+	    NEXT_FLUSH
+
+		break;
+
+	case '@':
+	    /*{{{  phantom box - prints next 'char', then restores currentpoint */
+
+	    NEXT_FLUSH
+
+		p = NEXT_recurse(++p, FALSE, fontname, fontsize, base, FALSE);
+
+	    break;
+	    /*}}} */
+
+	case '(':
+	case ')':
+	    /* special cases */
+	    NEXT_OPEN
+		NEXTPrintf("\\");
+	    NEXTPrintf("%c", *p);
+	    break;
+	    /*}}} */
+
+	case '\\':
+	    /*{{{  is it an escape */
+	    /* special cases */
+
+	    if (p[1] == '\\' || p[1] == '(' || p[1] == ')') {
+		NEXT_OPEN
+		    NEXTPrintf("%c", '\\');
+	    } else if ((ch = p[1]) >= '0' && ch <= '7') {
+		/* up to 3 octal digits */
+		NEXT_OPEN
+		    NEXTPrintf("%c", '\\');
+		NEXTPrintf("%c", ch);
+		++p;
+		if ((ch = p[1]) >= '0' && ch <= '7') {
+		    NEXTPrintf("%c", ch);
+		    ++p;
+		    if ((ch = p[1]) >= '0' && ch <= '7') {
+			NEXTPrintf("%c", ch);
+			++p;
+		    }
+		}
+		break;
+	    }
+	    ++p;
+	    /* just go and print it (fall into the 'default' case) */
+
+	    /*}}} */
+	default:
+	    NEXT_OPEN
+
+		NEXTPrintf("%c", *p);
+	}
+
+	/* like TeX, we only do one character in a recursion, unless it's
+	 * in braces
+	 */
+
+	if (!brace) {
+	    NEXT_FLUSH
+		return (p);	/* the ++p in the outer copy will increment us */
+	}
+    }
+    NEXT_FLUSH
+	return p;
+}
+
+
+TERM_PUBLIC void
+NEXT_put_text(unsigned int x, unsigned int y, const char *str)
+{
+    /* flush any pending graphics (all the XShow routines do this...) */
+
+    if (!strlen(str))
+	return;
+
+    if (NEXT_path_count) {
+	NEXTPrintf(" stroke\n");
+	NEXT_path_count = 0;
+	NEXT_relative_ok = FALSE;
+    }
+    NEXT_move(x, y);
+
+    if (NEXT_ang != 0)
+	NEXTPrintf("currentpoint gsave translate %d rotate 0 0 moveto\n",
+		   NEXT_ang);
+
+    NEXTPrintf("[ ");
+
+    /* set up the globals */
+
+    NEXT_opened_string = FALSE;
+    NEXT_max_height = -1000;
+    NEXT_min_height = 1000;
+
+    while (*(str = NEXT_recurse(str, TRUE, NEXT_font,
+				(double) term->v_char,
+				0.0, TRUE)));
+
+    NEXT_max_height += NEXT_min_height;
+
+    NEXTPrintf("] %.1f ", -NEXT_max_height / 3);
+
+    switch (NEXT_justify) {
+    case LEFT:
+	NEXTPrintf("MLshow\n");
+	break;
+    case CENTRE:
+	NEXTPrintf("MCshow\n");
+	break;
+    case RIGHT:
+	NEXTPrintf("MRshow\n");
+	break;
+    }
+
+    if (NEXT_ang != 0)
+	NEXTPrintf("grestore\n");
+    NEXT_path_count = 0;
+    NEXT_relative_ok = FALSE;
+}
+
+
+
+/*
+static TBOOLEAN
+NEXT_colordetect()
+{
+	NXScreen * mainscreen;
+
+	mainscreen = [Application mainScreen];
+	if (mainscreen->depth == NX_TwoBitGrayDepth) return(FALSE);
+	return(TRUE);
+}
+*/
+
+	/* This just packs all the postscript into one (possibly huge) string
+	 * which will be passed (as a fake pointer) via D.O. to the server
+	 */
+
+void
+NEXTPrintf(char *fmt,...)
+{
+    va_list ap;
+    char *pb;
+    int NEXToff;
+
+    /* Process formatting instructions */
+    va_start(ap, fmt);
+    vsprintf(NEXTTmpBuf, fmt, ap);
+    va_end(ap);
+
+    /* Add to buffer */
+    for (pb = NEXTTmpBuf; (*pb != 0); ++pb, ++NEXTBufAt) {
+	/* reallocate if necessary */
+	if (NEXTBufAt >= NEXTBufEnd) {
+	    NEXToff = NEXTBufAt - NEXTBuffer;
+	    NEXTsize *= 2;
+	    NEXTBuffer = realloc(NEXTBuffer, NEXTsize);
+	    NEXTBufEnd = NEXTBuffer + NEXTsize;
+	    NEXTBufAt = NEXTBuffer + NEXToff;
+	}
+	*NEXTBufAt = *pb;
+    }
+
+    return;
+
+}
+
+/*  This next section implements the GnuTermDriver object which manages
+	the D.O. connection and interface to OBjC
+*/
+
+
+@protocol GnuTermServerMethods
+/*- (oneway) executePScode:(in char *)PStext termTitle:(in char *)title;*/
+- executePScode:(in char *)
+PStext termTitle:(in char *) title;
+@end
+
+
+@implementation GnuTermDriver
+
+- init
+{
+    NXConnection *myConnection;
+    char serverpath[100], *envstring;
+    int GnuTermPathSet = 0;
+
+
+    /* Ask OS for connection to server */
+  server =[NXConnection connectToName:"gnuplotServer"];
+
+    /* Server is running ready to go */
+    if (server)			/*printf("Connected to server\n") */
+	;
+
+    /* Server isn't running, we must fire it up */
+    else {
+	/*printf("Launching GnuTerm\n"); */
+	*serverpath = 0;
+
+	/* Check for path set in environment */
+	if ((envstring = getenv("GNUTERMPATH")) != (char *) NULL) {
+	    sprintf(serverpath, "%s/GnuTerm.app/GnuTerm", envstring);
+	    GnuTermPathSet = 1;
+	}
+	/* Not in environment */
+	else
+	    strcpy(serverpath, "GnuTerm");
+
+	/* Try to launch application */
+      if ([[Application workspace] launchApplication:serverpath] == NO) {
+	    printf("Failed to launch %s.\n", serverpath);
+	    /* Offer a little advice */
+	    if (GnuTermPathSet) {
+		printf("You must have setenv GNUTERMPATH to something wrong\n");
+		printf("I recommend you exit gnuplot and fix this.\n");
+	    } else {
+		printf("It must be located in ~/Apps or /LocalApps\n");
+		printf("I recommend that you either\n");
+		printf("- move GnuTerm.app to one of these locations\n");
+		printf("- set GNUTERMPATH with host%%  setenv GNUTERMPATH /directory/containing_GnuTerm.app\n");
+		printf("- start GnuTerm ahead of the first plot command\n");
+#ifdef NEXT_OLDTERMINAL
+		printf("- use the old driver version (set term next old)\n");
+#endif
+	    }
+	}
+	/* I wish the gnuplot terminal interface would
+	   let me return an error here.
+	 */
+
+	/* Application is launching */
+	else {
+	    /* Wait for it to register Server methods with OS */
+	    do {
+	      server =[NXConnection connectToName:"gnuplotServer"];
+	    } while (!server);	/* This could result in a hang,
+				   but I've never seen it fail */
+	}
+    }
+
+
+    /* By limiting ourselves to known protocol
+     * we speed up the messaging
+     */
+  [server setProtocolForProxy:@protocol(GnuTermServerMethods)];
+
+    myConnection =[server connectionForProxy];
+
+    /* If the server dies we want to know about it */
+  [myConnection registerForInvalidationNotification:self];
+    /* In fact, we'll worry about it */
+    [NXPort worryAboutPortInvalidation];
+
+    return self;
+}
+
+
+-plot:(char *) PSstr;
+{
+    /* If server has become invalid, re-initialize */
+    if (!server)
+	[self init];
+
+    /* This is where we send the huge postscript string to the server
+       Note:
+       The D.O. system doesn't actually give this pointer to the server.
+       The pointer is dereferenced on the client side and the
+       resulting data is sent to the server. On the server side,
+       space for the data is automatically allocated, and a pointer to
+       the local data is received.
+       For details check out:
+       /NextLibrary/Documentation/NextDev/GeneralRef/06_DistributedObjects/IntroDistObjects.rtf
+     */
+
+    /*printf("Calling server..."); */
+  [server executePScode: PSstr termTitle:NEXT_title];
+    /*printf("returned\n"); */
+    *NEXT_title = 0;
+
+    return self;
+}
+
+							/* This gets called by OS if server goes down */
+-senderIsInvalid:(id) sender
+{
+    server = 0;
+}
+
+@end
+
+#ifdef NEXT_OLDTERMINAL
+
+static void
+window_create()
+{
+    float width, height;
+
+    width = (xsize * (NEXT_XMAX) / NEXT_SC + 0.5 + NEXT_XOFF);
+    height = (ysize * (NEXT_YMAX) / NEXT_SC + 0.5 + NEXT_YOFF);
+
+    NXApp =[EpsViewer new];
+  [NXApp windowCreate: width Height:height];
+}
+
+@implementation EpsViewer
+
+- windowCreate:(NXCoord)
+width Height:(NXCoord) height
+{
+
+    /* create the new window, in a good place */
+    theNewWin =[Window
+  newContent: [self nextRectForWidth: width Height:height]
+  style:	NX_TITLEDSTYLE
+  backing:	NX_RETAINED
+  buttonMask:	(NX_CLOSEBUTTONMASK | NX_MINIATURIZEBUTTONMASK)
+  defer:	NO];
+    /* we need to receive windowDidBecomeMain: and windowDidResignMain: */
+  [theNewWin setDelegate:self];
+    /*
+     * create a new View, make it the contentView of our new window,
+     * and destroy the window's old contentView
+     */
+  [[theNewWin setContentView:[[View alloc] init]] free];
+    /* display the window, and bring it forth */
+    [theNewWin display];
+  [theNewWin makeKeyAndOrderFront:self];
+/*	[theNewWin orderBack:self];			*/
+    /* show the frame */
+    return self;
+}
+
+/***************************************************************************/
+/* nextRectForWidth:Height: - return the next good content rectangle       */
+/*  from Carl F. Sutter's wonderful ViewGif2 'Controller' method...        */
+/***************************************************************************/
+/* nextTopLeft - return the next good top left window position		   */
+/***************************************************************************/
+
+-(NXRect *) nextRectForWidth:(NXCoord)
+width Height:(NXCoord) height
+{
+#define OFFSET 10.0
+#define MAX_STEPS 20
+#define INITIAL_X 356.0
+#define INITIAL_Y 241.0
+    NXPoint nxpTopLeft;
+    NXRect nxrTemp;		/* used to find window height    */
+    NXRect nxrWinHeight;	/* bounds of enclosing window    */
+    NXSize nxsScreen;		/* size of screen                */
+    static NXRect nxrResult;	/* the Answer!                   */
+    static int nCurStep = 0;
+
+    /* find a good top-left coord */
+    nxpTopLeft.x = INITIAL_X + nCurStep * OFFSET;
+    nxpTopLeft.y = INITIAL_Y + nCurStep * OFFSET;
+    if (++nCurStep > MAX_STEPS)
+	nCurStep = 0;
+    /* find window height using nxrTemp */
+    nxrTemp.size.width = width;
+    nxrTemp.size.height = height;
+    nxrTemp.origin.x = nxrTemp.origin.y = 0;
+  [Window getFrameRect: &nxrWinHeight forContentRect:&nxrTemp
+  style:NX_TITLEDSTYLE];
+  [NXApp getScreenSize:&nxsScreen];
+    /* find the lower-left coord */
+    nxrResult.origin.x = nxpTopLeft.x;
+    nxrResult.origin.y = nxsScreen.height - nxrWinHeight.size.height - nxpTopLeft.y;
+    nxrResult.size.width = width;
+    nxrResult.size.height = height;
+    return (&nxrResult);
+}
+
+@end
+#endif /* NEXT_OLDTERMINAL */
+
+
+#endif /* TERM_BODY */
+
+#ifdef TERM_TABLE
+
+
+TERM_TABLE_START(next_driver)
+    "next",
+    "Interface to GnuTerm.app under NeXTstep",
+    NEXT_XMAX, NEXT_YMAX, NEXT_VCHAR, NEXT_HCHAR,
+    NEXT_VTIC, NEXT_HTIC, NEXT_options, NEXT_init, NEXT_reset,
+    NEXT_text, null_scale, NEXT_graphics, NEXT_move, NEXT_vector,
+    NEXT_linetype, NEXT_put_text, NEXT_text_angle,
+    NEXT_justify_text, NEXT_point, do_arrow, NEXT_set_font,
+    NEXT_set_pointsize
+TERM_TABLE_END(next_driver)
+
+#undef LAST_TERM
+#define LAST_TERM next_driver
+
+#endif /* TERM_TABLE */
+#endif /* TERM_PROTO_ONLY */
+
+
+#define TERM_HELP_NEXT
+
+#ifdef TERM_HELP
+START_HELP(next)
+"1 next",
+"?commands set terminal next",
+"?set terminal next",
+"?set term next",
+"?terminal next",
+"?term next",
+"?next",
+"?NeXT",
+" Several options may be set in the next driver.",
+"",
+" Syntax:",
+"       set terminal next {<mode>} {<type> } {<color>} {<dashed>}",
+"                  {\"<fontname>\"} {<fontsize>} title {\"<newtitle>\"}",
+"",
+" where <mode> is  `default`, which sets all options to their defaults;",
+" <type> is either `new` or `old`, where `old` invokes the old single window;",
+" <color> is either `color` or `monochrome`;",
+" <dashed> is either `solid` or `dashed`;",
+" \"<fontname>\" is the name of a valid PostScript font;",
+" <fontsize> is the size of the font in PostScript points; and",
+" <title> is the title for the GnuTerm window.",
+" Defaults are  `new`, `monochrome`, `dashed`, \"Helvetica\", 14pt.",
+"",
+" Examples:",
+"       set term next default",
+"       set term next 22",
+"       set term next color \"Times-Roman\" 14",
+"       set term next color \"Helvetica\" 12 title \"MyPlot\"",
+"       set term next old",
+"",
+" Pointsizes may be changed with `set linestyle`."
+END_HELP(next)
+#endif /* TERM_HELP */
+

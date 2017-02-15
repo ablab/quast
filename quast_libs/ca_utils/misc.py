@@ -15,7 +15,7 @@ import platform
 import os
 import shutil
 from itertools import repeat
-from os.path import isfile, isdir, join
+from os.path import isfile, isdir, join, dirname, basename
 
 from quast_libs import qconfig, qutils
 from quast_libs.qutils import compile_tool, val_to_str, check_prev_compilation_failed
@@ -87,6 +87,69 @@ def compile_aligner(logger, only_clean=False, compile_all_aligners=False):
     return False
 
 
+def gnuplot_exec_fpath():
+    tool_dirpath = join(qconfig.LIBS_LOCATION, 'gnuplot')
+    tool_src_dirpath = join(tool_dirpath, 'src')
+    tool_exec_fpath = join(tool_src_dirpath, 'gnuplot')
+    return tool_exec_fpath
+
+
+def compile_gnuplot(logger, only_clean=False):
+    tool_dirpath = join(qconfig.LIBS_LOCATION, 'gnuplot')
+    tool_exec_fpath = gnuplot_exec_fpath()
+
+    if only_clean:
+        if isfile(tool_exec_fpath):
+            os.remove(tool_exec_fpath)
+        return True
+
+    if not isfile(tool_exec_fpath):
+        logger.main_info("Compiling gnuplot...")
+        prev_dir = os.getcwd()
+        os.chdir(tool_dirpath)
+        return_code = qutils.call_subprocess(
+            ['./configure'],
+            stdout=open(join(tool_dirpath, 'make.log'), 'w'),
+            stderr=open(join(tool_dirpath, 'make.err'), 'w'),
+            indent='    ')
+        if return_code == 0:
+            return_code = qutils.call_subprocess(
+                ['make', '-C', tool_dirpath],
+                stdout=open(join(tool_dirpath, 'make.log'), 'w'),
+                stderr=open(join(tool_dirpath, 'make.err'), 'w'),
+                indent='    ')
+        os.chdir(prev_dir)
+        if return_code != 0 or not isfile(tool_exec_fpath):
+            logger.notice("Failed to compile gnuplot (" + tool_dirpath +
+                         ")!\nTry to compile it manually.\nUse --debug option to see the command lines.")
+            return None
+    return tool_exec_fpath
+
+
+def draw_mummer_plot(logger, nucmer_fpath, delta_fpath, index, log_out_f, log_err_f):
+    output_dirpath = dirname(dirname(nucmer_fpath))
+    mummer_plot_fpath = join(output_dirpath, basename(nucmer_fpath) + '_mummerplot.png')
+    return_code = qutils.call_subprocess(
+        [bin_fpath('mummerplot'), '--png', '--layout', '-p', nucmer_fpath, delta_fpath],
+        stdout=log_out_f,
+        stderr=log_err_f,
+        indent='  ' + qutils.index_to_str(index))
+    if return_code == 0:
+        plot_script_fpath = nucmer_fpath + '.gp'
+        temp_plot_fpath = nucmer_fpath + '.png'
+        if isfile(plot_script_fpath) and isfile(gnuplot_exec_fpath()):
+            qutils.call_subprocess(
+                [gnuplot_exec_fpath(), plot_script_fpath],
+                stdout=log_out_f, stderr=log_err_f,
+                indent='  ' + qutils.index_to_str(index))
+            if isfile(temp_plot_fpath):
+                shutil.copy(temp_plot_fpath, mummer_plot_fpath)
+                logger.info(qutils.index_to_str(index) + ' MUMmer plot saved to ' + mummer_plot_fpath)
+
+    if not isfile(mummer_plot_fpath):
+        logger.notice(qutils.index_to_str(index) + ' MUMmer plot cannot be created.\n')
+
+
 def is_same_reference(chr1, chr2):
     return ref_labels_by_chromosomes[chr1] == ref_labels_by_chromosomes[chr2]
 
@@ -113,7 +176,7 @@ def create_nucmer_output_dir(output_dir):
     if qconfig.is_combined_ref:
         from quast_libs import search_references_meta
         if search_references_meta.is_quast_first_run:
-            nucmer_output_dir = os.path.join(nucmer_output_dir, 'raw')
+            nucmer_output_dir = join(nucmer_output_dir, 'raw')
             if not os.path.isdir(nucmer_output_dir):
                 os.mkdir(nucmer_output_dir)
     return nucmer_output_dir
@@ -125,7 +188,7 @@ def clean_tmp_files(nucmer_fpath):
 
     # delete temporary files
     for ext in ['.delta', '.coords_tmp', '.coords.headless']:
-        if os.path.isfile(nucmer_fpath + ext):
+        if isfile(nucmer_fpath + ext):
             os.remove(nucmer_fpath + ext)
 
 
@@ -138,7 +201,7 @@ def close_handlers(ca_output):
 def compress_nucmer_output(logger, nucmer_fpath):
     for ext in ['.all_snps', '.used_snps']:
         fpath = nucmer_fpath + ext
-        if os.path.isfile(fpath):
+        if isfile(fpath):
             logger.info('  Gzipping ' + fpath + ' to reduce disk space usage...')
             with open(fpath, 'rb') as f_in:
                 f_out = gzip.open(fpath + '.gz', 'wb')

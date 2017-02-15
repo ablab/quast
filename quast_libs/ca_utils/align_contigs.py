@@ -16,7 +16,7 @@ import sys
 from quast_libs import options_parser
 from quast_libs import qconfig, qutils
 from quast_libs.ca_utils.misc import bin_fpath, is_emem_aligner, compile_aligner, e_mem_failed_compilation_flag, \
-    create_nucmer_output_dir, clean_tmp_files, get_installed_emem, reset_aligner_selection
+    create_nucmer_output_dir, clean_tmp_files, get_installed_emem, reset_aligner_selection, draw_mummer_plot
 
 from quast_libs.log import get_logger
 from quast_libs.qutils import is_python2
@@ -206,6 +206,9 @@ def align_contigs(nucmer_fpath, ref_fpath, contigs_fpath, old_contigs_fpath, ind
             return NucmerStatus.ERROR
 
         shutil.move(filtered_delta_fpath, delta_fpath)
+
+        if qconfig.draw_plots:
+            draw_mummer_plot(logger, nucmer_fpath, delta_fpath, index, log_out_f, log_err_f)
 
         tmp_coords_fpath = coords_fpath + '_tmp'
 

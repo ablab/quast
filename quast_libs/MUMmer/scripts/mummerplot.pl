@@ -20,6 +20,7 @@ use Cwd 'abs_path';
 use File::Basename;
 use strict;
 use IO::Socket;
+use POSIX qw/ceil/;
 
 my $BIN_DIR, my $AUX_BIN_DIR, my $SCRIPT_DIR;
 BEGIN {
@@ -265,7 +266,7 @@ MAIN:
     #-- Parse the alignment data
     $parsefunc->(\@aligns);
 
-    
+
     #-- Layout the alignment data if requested
     if ( $OPT_layout ) {
         if ( scalar (keys %refs) || scalar (keys %qrys) ) {
@@ -364,7 +365,7 @@ sub GetParseFunc ( )
               }
           }
       }
-      
+
       #-- default
       die "ERROR: Could not read $OPT_Mfile, Unrecognized file type\n";
   }
@@ -408,7 +409,7 @@ sub ParseIDs ($$)
             $href->{$1} = $aref;
             next;
         }
-        
+
         #-- FastA sequence
         if ( $isfasta  &&  /^\S+$/ ) {
             if ( defined $aref ) { $aref->[1] += (length) - 1; }
@@ -887,7 +888,7 @@ sub PlotData ($$$)
         my ($refoff, $reflen, $refdir);
         my ($qryoff, $qrylen, $qrydir);
 
-        if ( defined (%$rref) ) {
+        if ( %$rref ) {
             #-- skip reference sequence or set atts from hash
             if ( !exists ($rref->{$idR}) ) { next; }
             else { ($refoff, $reflen, $refdir) = @{$rref->{$idR}}; }
@@ -897,7 +898,7 @@ sub PlotData ($$$)
             ($refoff, $reflen, $refdir) = (0, $lenR, 1);
         }
 
-        if ( defined (%$qref) ) {
+        if ( %$qref ) {
             #-- skip query sequence or set atts from hash
             if ( !exists ($qref->{$idQ}) ) { next; }
             else { ($qryoff, $qrylen, $qrydir) = @{$qref->{$idQ}}; }
@@ -950,7 +951,7 @@ sub PlotData ($$$)
             foreach $fh ( @fha ) {
                 print $fh "$sR $sQ $sim\n", "$eR $eQ $sim\n\n\n";
             }
-        }            
+        }
 
         #-- set some flags
         if ( !$ismultiref && $idR ne $pidR ) { $ismultiref = 1; }
@@ -983,8 +984,8 @@ sub PlotData ($$$)
             #-- set the sequence offset, length, direction, etc...
             my ($refoff, $reflen, $refdir);
             my ($qryoff, $qrylen, $qrydir);
-            
-            if ( defined (%$rref) ) {
+
+            if ( %$rref ) {
                 #-- skip reference sequence or set atts from hash
                 if ( !exists ($rref->{$idR}) ) { next; }
                 else { ($refoff, $reflen, $refdir) = @{$rref->{$idR}}; }
@@ -993,8 +994,8 @@ sub PlotData ($$$)
                 #-- no reference hash, so default atts
                 ($refoff, $reflen, $refdir) = (0, $lenR, 1);
             }
-            
-            if ( defined (%$qref) ) {
+
+            if ( %$qref ) {
                 #-- skip query sequence or set atts from hash
                 if ( !exists ($qref->{$idQ}) ) { next; }
                 else { ($qryoff, $qrylen, $qrydir) = @{$qref->{$idQ}}; }
@@ -1017,7 +1018,7 @@ sub PlotData ($$$)
             }
             else {
                 print HFILE "$pR $pQ 0\n", "$pR $pQ 0\n\n\n";
-            }            
+            }
         }
 
         close (SNPS)
@@ -1037,7 +1038,7 @@ sub PlotData ($$$)
     }
 
 
-    if ( !defined (%$rref) ) {
+    if ( !(%$rref) ) {
         if ( $ismultiref ) {
             print STDERR
                 "WARNING: Multiple ref sequences overlaid, try -R or -r\n";
@@ -1047,7 +1048,7 @@ sub PlotData ($$$)
         }
     }
 
-    if ( !defined (%$qref) ) {
+    if ( !(%$qref) ) {
         if ( $ismultiqry && !$OPT_coverage ) {
             print STDERR
                 "WARNING: Multiple qry sequences overlaid, try -Q, -q or -c\n";
@@ -1118,14 +1119,14 @@ sub WriteGP ($$)
 
         /^$PNG/    and do {
             $P_TERM = $OPT_gpstatus == 0 ?
-                "$PNG tiny size $SIZE,$SIZE" : "$PNG small";
+                "$PNG tiny size $SIZE,$SIZE" : "$PNG size 1280,800";
             if ( defined $OPT_color && $OPT_color == 0 ) {
                 $P_TERM .= " xffffff x000000 x000000";
                 $P_TERM .= " x000000 x000000 x000000";
                 $P_TERM .= " x000000 x000000 x000000";
             }
-            
-            %P_PS = ( $FWD => 1.0, $REV => 1.0, $HLT => 1.0 );
+
+            %P_PS = ( $FWD => 0.5, $REV => 0.5, $HLT => 0.5 );
 
             %P_LW = $OPT_coverage || $OPT_color ?
                 ( $FWD => 3.0, $REV => 3.0, $HLT => 3.0 ) :
@@ -1142,12 +1143,13 @@ sub WriteGP ($$)
     }
 
     #-- plot commands
-    my ($P_WITH, $P_FORMAT, $P_LS, $P_KEY, %P_PT, %P_LT);
+    my ($P_WITH, $P_FORMAT, $P_LS, $P_KEY, %P_PT, %P_LT, %P_LC);
 
-    %P_PT = ( $FWD => 6, $REV => 6, $HLT => 6 );
+    %P_PT = ( $FWD => 7, $REV => 7, $HLT => 7 );
     %P_LT = defined $OPT_Hfile ?
         ( $FWD => 2, $REV => 2, $HLT => 1 ) :
         ( $FWD => 1, $REV => 3, $HLT => 2 );
+    %P_LC = ( $FWD => "rgb \"red\"", $REV => "rgb \"blue\"", $HLT => "rgb \"yellow\"" );
 
     $P_WITH = $OPT_coverage || $OPT_color ? "w l" : "w lp";
 
@@ -1161,7 +1163,7 @@ sub WriteGP ($$)
     }
     else {
         $P_LS = "set linestyle";
-        $P_KEY = "set nokey";
+        $P_KEY = "set key outside bottom right";  # legend
     }
 
 
@@ -1185,7 +1187,6 @@ sub WriteGP ($$)
 
     #-- set tics, determine labels, ranges (ref)
     if ( scalar (@refk) == 1 ) {
-        $xlabel = $refk[0];
         $xrange = $rref->{$xlabel}[1];
     }
     else {
@@ -1193,13 +1194,14 @@ sub WriteGP ($$)
         print GFILE "set xtics rotate \( \\\n";
         foreach $xlabel ( sort { $rref->{$a}[0] <=> $rref->{$b}[0] } @refk ) {
             $xrange += $rref->{$xlabel}[1];
-            $tic = $rref->{$xlabel}[0] + 1;
-            $dir = ($rref->{$xlabel}[2] == 1) ? "" : "*";
-            print GFILE " \"$dir$xlabel\" $tic, \\\n";
+        }
+        my $xTickRange = GetTickRange($xrange);
+        for ( my $i = 0; $i < $xrange; $i += $xTickRange )  {
+            print GFILE " \"$i\" $i, \\\n";
         }
         print GFILE " \"\" $xrange \\\n\)\n";
-        $xlabel = "REF";
     }
+    $xlabel = "Reference";
     if ( $xrange == 0 ) { $xrange = "*"; }
 
     #-- set tics, determine labels, ranges (qry)
@@ -1216,12 +1218,13 @@ sub WriteGP ($$)
         print GFILE "set ytics \( \\\n";
         foreach $ylabel ( sort { $qref->{$a}[0] <=> $qref->{$b}[0] } @qryk ) {
             $yrange += $qref->{$ylabel}[1];
-            $tic = $qref->{$ylabel}[0] + 1;
-            $dir = ($qref->{$ylabel}[2] == 1) ? "" : "*";
-            print GFILE " \"$dir$ylabel\" $tic, \\\n";
+        }
+        my $yTickRange = GetTickRange($yrange);
+        for ( my $i = 0; $i < $yrange; $i += $yTickRange )  {
+            print GFILE " \"$i\" $i, \\\n";
         }
         print GFILE " \"\" $yrange \\\n\)\n";
-        $ylabel = "QRY";
+        $ylabel = "Assembly";
     }
     if ( $yrange == 0 ) { $yrange = "*"; }
 
@@ -1270,6 +1273,7 @@ sub WriteGP ($$)
     foreach my $s ( ($FWD, $REV, $HLT) ) {
         my $ss = "$P_LS $s ";
         $ss .= $OPT_color ? " palette" : " lt $P_LT{$s}";
+        $ss .= " lc $P_LC{$s}";
         $ss .= " lw $P_LW{$s}";
         if ( ! $OPT_coverage || $s == $HLT ) {
             $ss .= " pt $P_PT{$s} ps $P_PS{$s}";
@@ -1285,7 +1289,7 @@ sub WriteGP ($$)
         " \"$OPT_Rfile\" title \"REV\" $P_WITH ls $REV",
         (! defined $OPT_Hfile ? "\n" :
          ", \\\n \"$OPT_Hfile\" title \"HLT\" w lp ls $HLT");
-    
+
     #-- interactive mode
     if ( $OPT_terminal eq $X11 ) {
         print GFILE "\n",
@@ -1513,7 +1517,7 @@ sub ParseOptions ( )
             undef $OPT_color;
         }
 
-        if ( $OPT_terminal eq $PNG  &&  $OPT_size ne $SMALL ) { 
+        if ( $OPT_terminal eq $PNG  &&  $OPT_size ne $SMALL ) {
             print STDERR
                 "WARNING: Turning of --size option for compatibility\n";
             $OPT_size = $SMALL;
@@ -1606,3 +1610,15 @@ sub ParseOptions ( )
         undef $OPT_color;
     }
 }
+#----------------------------------------------------------------- AdditionalFunctions ----#
+sub GetTickRange
+{
+    my $range = shift;
+    my $tickCount = 10;
+    my $unroundedTickSize = $range / ($tickCount - 1);
+    my $x = ceil(log($unroundedTickSize)/log(10) - 1);
+    my $pow10x = 10 ** $x;
+    my $roundedTickRange = ceil($unroundedTickSize / $pow10x) * $pow10x;
+    return $roundedTickRange;
+}
+

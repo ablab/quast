@@ -172,12 +172,11 @@ if cmd_in(['install', 'develop', 'build', 'build_ext']):
 
 
 if qconfig.platform_name == 'macosx':
-    nucmer_files = find_package_files('E-MEM-osx')
     sambamba_files = [join('sambamba', 'sambamba_osx')]
 else:
-    nucmer_files = find_package_files('MUMmer3.23-linux') + find_package_files('E-MEM-linux')
     sambamba_files = [join('sambamba', 'sambamba_linux')]
 
+nucmer_files = find_package_files('MUMmer')
 bwa_files = [
     join('bwa', fp) for fp in os.listdir(join(quast_package, 'bwa'))
     if isfile(join(quast_package, 'bwa', fp)) and fp.startswith('bwa')]

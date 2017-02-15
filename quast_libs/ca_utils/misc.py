@@ -21,17 +21,16 @@ from quast_libs import qconfig, qutils
 from quast_libs.qutils import compile_tool, val_to_str, check_prev_compilation_failed
 
 contig_aligner = None
-contig_aligner_dirpath = None
+contig_aligner_dirpath = join(qconfig.LIBS_LOCATION, 'MUMmer')
 ref_labels_by_chromosomes = {}
 intergenomic_misassemblies_by_asm = {}
-e_mem_failed_compilation_flag = join(qconfig.LIBS_LOCATION, 'E-MEM-osx', 'make.failed')
+e_mem_failed_compilation_flag = join(contig_aligner_dirpath, 'make.emem.failed')
+mummer_failed_compilation_flag = join(contig_aligner_dirpath, 'make.mummer.failed')
 
 
 def reset_aligner_selection():
     global contig_aligner
-    global contig_aligner_dirpath
     contig_aligner = None
-    contig_aligner_dirpath = None
 
 
 def bin_fpath(fname):
@@ -48,41 +47,41 @@ def get_installed_emem():
 
 def compile_aligner(logger, only_clean=False, compile_all_aligners=False):
     global contig_aligner
-    global contig_aligner_dirpath
 
     if not compile_all_aligners:
-        if contig_aligner_dirpath is not None and not \
-                check_prev_compilation_failed(contig_aligner, join(contig_aligner_dirpath, 'make.failed'), just_notice=True, logger=logger):
-            return True
+        if contig_aligner is not None:
+            failed_compilation_flag = e_mem_failed_compilation_flag if is_emem_aligner() else mummer_failed_compilation_flag
+            if not check_prev_compilation_failed(contig_aligner, failed_compilation_flag, just_notice=True, logger=logger):
+                return True
 
     default_requirements = ['nucmer', 'delta-filter', 'show-coords', 'show-snps', 'mummer', 'mgaps']
 
-    e_mem_dirpath = 'E-MEM-osx' if qconfig.platform_name == 'macosx' else 'E-MEM-linux'
-    mummer_dirpath = 'MUMmer3.23-osx' if qconfig.platform_name == 'macosx' else 'MUMmer3.23-osx'
     if not qconfig.force_nucmer:
-        if get_installed_emem() or isfile(join(e_mem_dirpath, 'e-mem')):
+        if get_installed_emem() or isfile(join(contig_aligner_dirpath, 'e-mem')):
+            emem_requirements = default_requirements
+        elif qconfig.platform_name == 'macosx' and isfile(join(contig_aligner_dirpath, 'e-mem-osx')):
+            shutil.copy(join(contig_aligner_dirpath, 'e-mem-osx'), join(contig_aligner_dirpath, 'e-mem'))
             emem_requirements = default_requirements
         else:
             emem_requirements = default_requirements + ['e-mem']
         aligners_to_try = [
-            ('E-MEM', join(qconfig.LIBS_LOCATION, e_mem_dirpath), emem_requirements),
-            ('MUMmer', join(qconfig.LIBS_LOCATION, mummer_dirpath), default_requirements)]
+            ('E-MEM', 'emem', emem_requirements),
+            ('MUMmer', 'mummer', default_requirements)]
     else:
         aligners_to_try = [
-            ('MUMmer', join(qconfig.LIBS_LOCATION, mummer_dirpath), default_requirements)]
+            ('MUMmer', 'mummer', default_requirements)]
 
-    for i, (name, dirpath, requirements) in enumerate(aligners_to_try):
-        success_compilation = compile_tool(name, dirpath, requirements, just_notice=(i < len(aligners_to_try) - 1),
-                                           logger=logger, only_clean=only_clean,
-                                           make_cmd='no-emem' if 'E-MEM' in name and 'e-mem' not in requirements else None)
+    for i, (name, flag_name, requirements) in enumerate(aligners_to_try):
+        success_compilation = compile_tool(name, contig_aligner_dirpath, requirements, just_notice=(i < len(aligners_to_try) - 1),
+                                           logger=logger, only_clean=only_clean, flag_suffix='.' + flag_name,
+                                           make_cmd='no-emem' if 'e-mem' not in requirements else None)
         if not success_compilation:
             continue
-        contig_aligner = name
-        contig_aligner_dirpath = dirpath  # successfully compiled
+        contig_aligner = name  # successfully compiled
         if not compile_all_aligners:
             return True
 
-    if compile_all_aligners and contig_aligner and contig_aligner_dirpath:
+    if compile_all_aligners and contig_aligner:
         return True
     logger.error("Compilation of contig aligner software was unsuccessful! QUAST functionality will be limited.")
     return False

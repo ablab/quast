@@ -769,10 +769,10 @@ def is_python2():
     return sys.version_info[0] < 3
 
 
-def compile_tool(name, dirpath, requirements, just_notice=False, logger=logger, only_clean=False, make_cmd=None):
+def compile_tool(name, dirpath, requirements, just_notice=False, logger=logger, only_clean=False, flag_suffix=None,make_cmd=None):
     make_logs_basepath = join(dirpath, 'make')
-    failed_compilation_flag = make_logs_basepath + '.failed'
-    succeeded_compilation_flag = make_logs_basepath + '.succeeded'
+    failed_compilation_flag = make_logs_basepath + str(flag_suffix) + '.failed'
+    succeeded_compilation_flag = make_logs_basepath + str(flag_suffix) + '.succeeded'
 
     if only_clean:
         for required_binary in requirements:

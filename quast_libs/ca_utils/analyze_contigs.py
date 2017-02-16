@@ -287,6 +287,7 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fp
                     if is_partially_unaligned:
                         partially_unaligned += 1
                         partially_unaligned_bases += unaligned_bases
+                        contig_type = 'correct_unaligned'
                         ca_output.stdout_f.write('\t\tThis contig is partially unaligned. (Aligned %d out of %d bases)\n' % (aligned_bases_in_contig, ctg_len))
                         save_unaligned_info(real_aligns, contig, ctg_len, unaligned_bases, unaligned_info_file)
                     ca_output.stdout_f.write('\t\tAlignment: %s\n' % str(the_only_align))

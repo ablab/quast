@@ -158,10 +158,12 @@ def prepare_alignment_data_for_one_ref(chr, chr_full_names, chr_names_by_id, ref
                                 ms_types[assembly][misassembly] += 1
                         alignment.misassemblies = ';'.join(misassemblies)
                         if 'unknown' in alignment.misassemblies:
-                            alignment.misassemblies = ''
+                            alignment.misassemblies = 'unknown'
                             misassembled_ends = ''
                             contig_more_unaligned = True
                     else:
+                        if contigs[alignment.name].contig_type == 'correct_unaligned':
+                            contig_more_unaligned = True
                         misassembled_ends = ''
 
                     genes = []

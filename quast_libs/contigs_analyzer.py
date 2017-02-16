@@ -257,7 +257,8 @@ def do(reference, contigs_fpaths, is_cyclic, output_dir, old_contigs_fpaths, bed
         logger.main_info('Failed aligning the contigs for all the assemblies. Only basic stats are going to be evaluated.')
         return dict(zip(contigs_fpaths, [NucmerStatus.FAILED] * len(contigs_fpaths))), None
 
-    compile_gnuplot(logger, only_clean=False)
+    if qconfig.draw_plots:
+        compile_gnuplot(logger, only_clean=False)
 
     create_nucmer_output_dir(output_dir)
     n_jobs = min(len(contigs_fpaths), qconfig.max_threads)

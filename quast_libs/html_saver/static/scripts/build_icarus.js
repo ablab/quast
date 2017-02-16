@@ -812,21 +812,23 @@ THE SOFTWARE.
         block.misassembled = block.misassemblies ? "True" : "False";
         c = (block.misassembled == "False" ? "" : "misassembled");
         c += (block.similar && block.similar == "True" ? " similar" : "");
-        if (block.more_unaligned) c = "mis_unaligned";
+        if (block.more_unaligned && block.misassembled == "True") {
+            c = "mis_unaligned";
+            block.misassemblies = "";
+        }
+        else if (block.more_unaligned) {
+            c = "correct_unaligned";
+        }
         if (block.ambiguous) c = "ambiguous";
         if (!block.is_best && block.ambiguous_alignments && block.ambiguous_alignments.length > 0) c = "alternative";
-
         //c += ((!block.misassembledEnds && !isSmall) ? " light_color" : "");
         if (INTERLACE_BLOCKS_COLOR) c += ((numItem - countSupplementary) % 2 == 0 ? " odd" : "");
         var text = '';
         if (isContigSizePlot) {
             if (block.contig_type == "short_contigs") c += " disabled";
-            else if (block.contig_type == "unaligned") c += " unaligned";
-            else if (block.contig_type == "misassembled") c += " misassembled";
-            else if (block.contig_type == "mis_unaligned") c += " mis_unaligned";
-            else if (block.contig_type == "ambiguous") c += " ambiguous";
             else if (block.contig_type == "correct") c += "";
-            else c += " unknown";
+            else if (!block.contig_type) c += " unknown";
+            else c += " " + block.contig_type;
         }
 
         if (block.marks) {  // NX for contig size plot

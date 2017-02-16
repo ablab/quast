@@ -345,6 +345,9 @@ path {
 .mainItem.mis_unaligned {
     fill: #9E6D6D;
 }
+.mainItem.correct_unaligned {
+    fill: #206040;
+}
 .predicted_gene {
     fill: none;
 }
@@ -375,6 +378,9 @@ path {
 }
 .miniItem.mis_unaligned {
     fill: #9E6D6D;
+}
+.miniItem.correct_unaligned {
+    fill: #426A51;
 }
 
 .unaligned_part {

@@ -142,6 +142,9 @@ function changeInfo(block) {
     if (block.contig_type == "mis_unaligned" || block.objClass == 'mis_unaligned') {
         contigType = 'misassembled (> 50% of the contig is unaligned)';
     }
+    else if (block.contig_type == "correct_unaligned" || block.objClass == 'correct_unaligned') {
+        contigType = 'correct (> 50% of the contig is unaligned)';
+    }
     else if (isContigSizePlot) {
         contigType = block.contig_type ? block.contig_type : '';
     }

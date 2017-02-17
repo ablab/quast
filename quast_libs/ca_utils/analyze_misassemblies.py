@@ -340,6 +340,7 @@ def process_misassembled_contig(sorted_aligns, is_cyclic, aligned_lengths, regio
     contig_is_printed = False
     indels_info = IndelsInfo()
     contig_aligned_length = 0  # for internal debugging purposes
+    cnt_misassemblies = 0
 
     for i in range(len(sorted_aligns) - 1):
         next_align = sorted_aligns[i + 1]
@@ -370,6 +371,7 @@ def process_misassembled_contig(sorted_aligns, is_cyclic, aligned_lengths, regio
             ca_output.icarus_out_f.write('fake: scaffold gap size wrong estimation' + '\n')
         elif is_extensive_misassembly:
             is_misassembled = True
+            cnt_misassemblies += 1
             aligned_lengths.append(cur_aligned_length)
             contig_aligned_length += cur_aligned_length
             cur_aligned_length = 0
@@ -484,4 +486,4 @@ def process_misassembled_contig(sorted_aligns, is_cyclic, aligned_lengths, regio
                                                      "contig length (contig: %s, len: %d, aligned: %d)!" % \
                                                      (sorted_aligns[0].contig, contig_aligned_length, len(contig_seq))
 
-    return is_misassembled, misassembly_internal_overlap, indels_info, misassemblies_matched_sv
+    return is_misassembled, misassembly_internal_overlap, indels_info, misassemblies_matched_sv, cnt_misassemblies

@@ -110,6 +110,12 @@ function ordinalNumberToPrettyString(num, unit, tickX) {
     return res;
 }
 
+function frcNumberToPrettyString(num, unit, tickX, index) {
+    if (index % 2 == 1) num++;
+    if (num == 0) return '';
+    return '<' + toPrettyString(num) + ' ' + unit;
+}
+
 function getMaxDecimalTick(maxY) {
     var maxYTick = maxY;
     if (maxY <= 100000000000) {
@@ -205,8 +211,8 @@ function getContigNumberTickFormatter(maxX, tickX) {
 function getJustNumberTickFormatter(maxY, additionalText) {
     return function (val, axis) {
         additionalText = additionalText || '';
-        if (val > axis.max + 1) {
-            res = additionalText + toPrettyString(val);
+        if (val > axis.max - axis.tickSize) {
+            res = toPrettyString(val) + additionalText;
         } else {
             res = toPrettyString(val);
         }
@@ -272,7 +278,7 @@ function addTooltipIfDefinitionExists(glossary, metricName) {
 
 /*************/
 /* PLOT TIPS */
-function bindTip(placeholder, series, plot, xToPrettyStringFunction, tickX, xUnit, position, summaryPlots) {
+function bindTip(placeholder, series, plot, xToPrettyStringFunction, tickX, xUnit, position, summaryPlots, unitY) {
     var prevPoint = null;
     var prevIndex = null;
 
@@ -289,8 +295,8 @@ function bindTip(placeholder, series, plot, xToPrettyStringFunction, tickX, xUni
                 showTip(item.pageX, item.pageY, plot.offset(),
                     plot.width(), plot.height(),
                     series, item.seriesIndex, x, item.dataIndex,
-                    xToPrettyStringFunction(x, xUnit, tickX) + ':',
-                    position, summaryPlots);
+                    xToPrettyStringFunction(x, xUnit, tickX, item.dataIndex) + ':',
+                    position, summaryPlots, unitY);
             }
         } else {
             $('#plot_tip').hide();
@@ -307,7 +313,7 @@ function unBindTips(placeholder) {
 
 var tipElementExists = false;
 function showTip(pageX, pageY, offset, plotWidth, plotHeight,
-                 series, centralSeriesIndex, xPos, xIndex, xStr, position, summaryPlots) {
+                 series, centralSeriesIndex, xPos, xIndex, xStr, position, summaryPlots, unitY) {
     const LINE_HEIGHT = 16; // pixels
 
     position = ((position != null) ? position : 'bottom right');
@@ -365,11 +371,11 @@ function showTip(pageX, pageY, offset, plotWidth, plotHeight,
     for (i = 0; i < sortedYsAndColors.length; i++) {
         var item = sortedYsAndColors[i];
 
-        $('<div id="tip_line' + i + '">' + toPrettyString(item.y)
-            + ', <span style="color: ' + item.color + ';">' + item.label + '</span></div>').css({
-                height: LINE_HEIGHT,
-                "font-weight": item.isCurrent ? "bold" : "normal",
-            }).appendTo('#plot_tip');
+        $('<div id="tip_line' + i + '">' + toPrettyString(item.y) + (unitY ? unitY : '') +
+            ', <span style="color: ' + item.color + ';">' + item.label + '</span></div>').css({
+            height: LINE_HEIGHT,
+            "font-weight": item.isCurrent ? "bold" : "normal",
+        }).appendTo('#plot_tip');
     }
 }
 

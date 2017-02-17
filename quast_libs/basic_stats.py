@@ -5,21 +5,13 @@
 # See file LICENSE for details.
 ############################################################################
 
-import logging
 import os
-import itertools
-
 import re
 
-from . import fastaparser
-from quast_libs.html_saver import json_saver
-from quast_libs import qconfig, qutils
-from . import reporting
-from . import plotter
-
+from quast_libs import fastaparser, qconfig, qutils, reporting, plotter
 from quast_libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
-
+lists_of_contigs_lengths = None
 
 def GC_content(contigs_fpath, skip=False):
     """
@@ -189,7 +181,7 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, results_dir):
         assembly_label = qutils.label_from_fpath(contigs_fpath)
 
         logger.info('    ' + qutils.index_to_str(id) + assembly_label)
-        #lists_of_lengths.append(fastaparser.get_lengths_from_fastafile(contigs_fpath))
+        # lists_of_lengths.append(fastaparser.get_lengths_from_fastafile(contigs_fpath))
         list_of_length = []
         number_of_Ns = 0
         is_potential_scaffold = False
@@ -210,6 +202,8 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, results_dir):
 
     num_contigs = max([len(list_of_length) for list_of_length in lists_of_lengths])
 
+    global lists_of_contigs_lengths
+    lists_of_contigs_lengths = [list_of_length[:] for list_of_length in lists_of_lengths]
     multiplicator = 1
     if num_contigs >= (qconfig.max_points * 2):
         import math

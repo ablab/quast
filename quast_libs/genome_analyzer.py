@@ -9,7 +9,7 @@ import logging
 import os
 
 from quast_libs import fastaparser, genes_parser, reporting, qconfig, qutils
-from quast_libs.html_saver import json_saver
+from quast_libs.basic_stats import lists_of_contigs_lengths
 
 from quast_libs.log import get_logger
 from quast_libs.qutils import is_python2
@@ -444,14 +444,19 @@ def do(ref_fpath, aligned_contigs_fpaths, output_dirpath, genes_fpaths, operons_
     if qconfig.draw_plots:
         # cumulative plots:
         from . import plotter
+        sorted_lists_of_contigs_lengths = [sorted(list_of_lengths, reverse=True) for list_of_lengths in lists_of_contigs_lengths]
         if genes_container.region_list:
             plotter.genes_operons_plot(len(genes_container.region_list), aligned_contigs_fpaths, files_genes_in_contigs,
                 genome_stats_dirpath + '/genes_cumulative_plot', 'genes')
+            plotter.frc_plot(output_dirpath, ref_fpath, aligned_contigs_fpaths, sorted_lists_of_contigs_lengths, files_genes_in_contigs,
+                             genome_stats_dirpath + '/genes_frcurve_plot', 'genes')
             plotter.histogram(aligned_contigs_fpaths, full_found_genes, genome_stats_dirpath + '/complete_genes_histogram',
                 '# complete genes')
         if operons_container.region_list:
             plotter.genes_operons_plot(len(operons_container.region_list), aligned_contigs_fpaths, files_operons_in_contigs,
                 genome_stats_dirpath + '/operons_cumulative_plot', 'operons')
+            plotter.frc_plot(output_dirpath, ref_fpath, aligned_contigs_fpaths, sorted_lists_of_contigs_lengths, files_genes_in_contigs,
+                             genome_stats_dirpath + '/operons_frcurve_plot', 'operons')
             plotter.histogram(aligned_contigs_fpaths, full_found_operons, genome_stats_dirpath + '/complete_operons_histogram',
                 '# complete operons')
         plotter.histogram(aligned_contigs_fpaths, genome_mapped, genome_stats_dirpath + '/genome_fraction_histogram',

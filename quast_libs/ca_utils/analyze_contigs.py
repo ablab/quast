@@ -110,6 +110,7 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fp
     aligned_lengths = []
     region_misassemblies = []
     misassembled_contigs = dict()
+    misassemblies_in_contigs = []
 
     region_struct_variations = find_all_sv(qconfig.bed)
 
@@ -129,6 +130,7 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fp
         ctg_len = len(seq)
         ca_output.stdout_f.write('CONTIG: %s (%dbp)\n' % (contig, ctg_len))
         contig_type = 'unaligned'
+        misassemblies_in_contigs.append(0)
 
         #Check if this contig aligned to the reference
         if contig in aligns:
@@ -336,7 +338,7 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fp
                         continue
 
                     ### processing misassemblies
-                    is_misassembled, current_mio, indels_info, misassemblies_matched_sv = \
+                    is_misassembled, current_mio, indels_info, misassemblies_matched_sv, cnt_misassemblies = \
                         process_misassembled_contig(sorted_aligns, is_cyclic, aligned_lengths, region_misassemblies,
                                                     ref_lens, ref_aligns, ref_features, seq, misassemblies_by_ref,
                                                     istranslocations_by_ref, region_struct_variations, misassemblies_matched_sv,
@@ -346,6 +348,7 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fp
                     if is_misassembled:
                         misassembled_contigs[contig] = ctg_len
                         contig_type = 'misassembled'
+                        misassemblies_in_contigs[-1] = cnt_misassemblies
                     if is_partially_unaligned:
                         ca_output.stdout_f.write('\t\tUnaligned bases: %d\n' % unaligned_bases)
                         if qconfig.is_combined_ref:
@@ -382,4 +385,4 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fp
               'misassemblies_by_ref': misassemblies_by_ref,
               'istranslocations_by_refs': istranslocations_by_ref}
 
-    return result, ref_aligns, total_indels_info, aligned_lengths, misassembled_contigs
+    return result, ref_aligns, total_indels_info, aligned_lengths, misassembled_contigs, misassemblies_in_contigs

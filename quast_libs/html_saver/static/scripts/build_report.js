@@ -109,6 +109,16 @@ function buildReport() {
         firstPlot = false;
     }
 
+    if (coordMisassemblies = readJson('coord-misassemblies')) {
+        makePlot(firstPlot, assembliesNames, order, 'misassemblies', 'Misassemblies', frc.draw,  {
+                coord_x: coordMisassemblies.coord_x,
+                coord_y: coordMisassemblies.coord_y,
+                filenames: coordMisassemblies.filenames
+            },
+            null, 1
+        );
+        firstPlot = false;
+    }
 
     genesInContigs = readJson('genes-in-contigs');
     operonsInContigs = readJson('operons-in-contigs');

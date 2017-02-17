@@ -21,7 +21,7 @@ import os
 import sys
 import re
 from collections import defaultdict
-from os.path import join
+from os.path import join, dirname
 
 from quast_libs import reporting, qconfig, qutils, fastaparser
 from quast_libs.ca_utils.analyze_contigs import analyze_contigs
@@ -110,7 +110,7 @@ def align_and_analyze(is_cyclic, index, contigs_fpath, output_dirpath, ref_fpath
                 log_err_f.write(qutils.index_to_str(index) + 'Nothing aligned for ' + contigs_fpath + '\n')
                 logger.info('  ' + qutils.index_to_str(index) + 'Nothing aligned for ' + '\'' + assembly_label + '\'.')
         clean_tmp_files(nucmer_fpath)
-        return nucmer_status, {}, []
+        return nucmer_status, {}, [], []
 
     log_out_f = open(log_out_fpath, 'a')
     # Loading the alignment files
@@ -186,8 +186,8 @@ def align_and_analyze(is_cyclic, index, contigs_fpath, output_dirpath, ref_fpath
                          used_snps_f=used_snps_file, icarus_out_f=icarus_out_f)
 
     log_out_f.write('Analyzing contigs...\n')
-    result, ref_aligns, total_indels_info, aligned_lengths, misassembled_contigs = analyze_contigs(ca_output, contigs_fpath,
-                                        unaligned_fpath, unaligned_info_fpath, aligns, ref_features, ref_lens, is_cyclic)
+    result, ref_aligns, total_indels_info, aligned_lengths, misassembled_contigs, misassemblies_in_contigs =\
+        analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fpath, aligns, ref_features, ref_lens, is_cyclic)
 
     log_out_f.write('Analyzing coverage...\n')
     if qconfig.show_snps:
@@ -238,9 +238,9 @@ def align_and_analyze(is_cyclic, index, contigs_fpath, output_dirpath, ref_fpath
     if not qconfig.no_gzip:
         compress_nucmer_output(logger, nucmer_fpath)
     if not ref_aligns:
-        return NucmerStatus.NOT_ALIGNED, result, aligned_lengths
+        return NucmerStatus.NOT_ALIGNED, result, aligned_lengths, misassemblies_in_contigs
     else:
-        return NucmerStatus.OK, result, aligned_lengths
+        return NucmerStatus.OK, result, aligned_lengths, misassemblies_in_contigs
 
 
 def do(reference, contigs_fpaths, is_cyclic, output_dir, old_contigs_fpaths, bed_fpath=None):
@@ -287,9 +287,8 @@ def do(reference, contigs_fpaths, is_cyclic, output_dir, old_contigs_fpaths, bed
                 parallel_by_chr=True, threads=qconfig.max_threads))
 
     # unzipping
-    statuses, results, aligned_lengths = [x[0] for x in statuses_results_lengths_tuples], \
-                                         [x[1] for x in statuses_results_lengths_tuples], \
-                                         [x[2] for x in statuses_results_lengths_tuples]
+    statuses, results, aligned_lengths, misassemblies_in_contigs = [[x[i] for x in statuses_results_lengths_tuples]
+                                                                    for i in range(4)]
     reports = []
 
     nucmer_statuses = dict(zip(contigs_fpaths, statuses))
@@ -311,7 +310,11 @@ def do(reference, contigs_fpaths, is_cyclic, output_dir, old_contigs_fpaths, bed
         reporting.save_unaligned(output_dir)
         if qconfig.draw_plots:
             from . import plotter
+            from quast_libs.basic_stats import lists_of_contigs_lengths
             plotter.draw_misassembl_plot(reports, join(output_dir, 'misassemblies_plot'), 'Misassemblies')
+            misassemblies_in_contigs = dict((contigs_fpaths[i], misassemblies_in_contigs[i]) for i in range(len(contigs_fpaths)))
+            plotter.frc_plot(dirname(output_dir), reference, contigs_fpaths, lists_of_contigs_lengths, misassemblies_in_contigs,
+                             join(output_dir, 'misassemblies_frcurve_plot'), 'misassemblies')
 
     oks = list(nucmer_statuses.values()).count(NucmerStatus.OK)
     not_aligned = list(nucmer_statuses.values()).count(NucmerStatus.NOT_ALIGNED)

@@ -58,6 +58,7 @@ aux_files = [
     'static/scripts/draw_cumulative_plot.js',
     'static/scripts/draw_nx_plot.js',
     'static/scripts/draw_gc_plot.js',
+    'static/scripts/draw_frc_plot.js',
     'static/scripts/utils.js',
     'static/scripts/hsvToRgb.js',
     'static/scripts/draw_genes_plot.js',

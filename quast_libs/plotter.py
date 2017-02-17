@@ -228,6 +228,61 @@ def cumulative_plot(reference, contigs_fpaths, lists_of_lengths, plot_fpath, tit
     save_plot(figure, plot_fpath, title)
 
 
+def frc_plot(results_dir, ref_fpath, contigs_fpaths, lists_of_lengths, features_in_contigs_by_file, plot_fpath, title):
+    if can_draw_plots:
+        logger.info('  Drawing ' + title + ' FRCurve plot...')
+
+        figure = matplotlib.pyplot.figure()
+        matplotlib.pyplot.rc('font', **font)
+
+    max_y = 0
+    ref_length = sum(fastaparser.get_chr_lengths_from_fastafile(ref_fpath).values())
+    json_vals_x = []  # coordinates for Nx-like plots in HTML-report
+    json_vals_y = []
+    max_features = max(sum(feature_in_contigs) for feature_in_contigs in features_in_contigs_by_file.values()) + 1
+
+    for (contigs_fpath, lengths) in zip(contigs_fpaths, lists_of_lengths):
+        feature_in_contigs = features_in_contigs_by_file[contigs_fpath]
+        if not lengths or not feature_in_contigs:
+            json_vals_x.append([])
+            json_vals_y.append([])
+            continue
+
+        x_vals = [0]
+        y_vals = [0]
+        cumulative_len = 0
+        for features_n in range(max_features):
+            selected_lengths = [l for contig_n, l in enumerate(lengths) if feature_in_contigs[contig_n] == features_n]
+            cumulative_len += sum(selected_lengths)
+            x_vals.append(features_n)
+            y_vals.append(cumulative_len * 100.0 / ref_length)
+            x_vals.append(features_n + 1)
+            y_vals.append(cumulative_len * 100.0 / ref_length)
+
+        json_vals_x.append(x_vals)
+        json_vals_y.append(y_vals)
+        max_y = max(max_y, max(y_vals))
+
+        color, ls = get_color_and_ls(contigs_fpath)
+        matplotlib.pyplot.plot(x_vals, y_vals, color=color, lw=line_width, ls=ls)
+
+    if qconfig.html_report:
+        from quast_libs.html_saver import html_saver
+        html_saver.save_coord(results_dir, json_vals_x, json_vals_y, 'coord' + title, contigs_fpaths)
+
+    if not can_draw_plots:
+        return
+    ax = set_ax()
+    legend_list = [label_from_fpath(fpath) for fpath in contigs_fpaths]
+    add_legend(ax, legend_list, n_columns=n_columns)
+    add_labels('Feature space', 'Genome fraction (%)', max_y, ax, logarithmic_x_scale)
+    matplotlib.pyplot.xlim([0, max_features])
+    matplotlib.pyplot.ylim([0, max(100, max_y)])
+
+    title = 'FRCurve (' + title + ')'
+    save_plot(figure, plot_fpath, title)
+
+
 # common routine for Nx-plot and NGx-plot (and probably for others Nyx-plots in the future)
 def Nx_plot(results_dir, reduce_points, contigs_fpaths, lists_of_lengths, plot_fpath, title='Nx', reference_lengths=None):
     if can_draw_plots:

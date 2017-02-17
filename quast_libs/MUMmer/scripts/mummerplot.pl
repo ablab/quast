@@ -37,6 +37,7 @@ use Foundation;
 my $X11    = "x11";
 my $PS     = "postscript";
 my $PNG    = "png";
+my $PDF    = "pdf";
 
 #-- terminal sizes
 my $SMALL  = "small";
@@ -47,7 +48,8 @@ my %TERMSIZE =
     (
      $X11 => { $SMALL => 500, $MEDIUM => 700,  $LARGE => 900  }, # screen pix
      $PS  => { $SMALL => 1,   $MEDIUM => 2,    $LARGE => 3    }, # pages
-     $PNG => { $SMALL => 800, $MEDIUM => 1024, $LARGE => 1400 }  # image pix
+     $PNG => { $SMALL => 800, $MEDIUM => 1024, $LARGE => 1400 }, # image pix
+     $PDF => { $SMALL => 800, $MEDIUM => 1024, $LARGE => 1400 }  # image pix
      );
 
 #-- terminal format
@@ -71,7 +73,8 @@ my %SUFFIX =
      $HLTPLOT => ".hplot",
      $GNUPLOT => ".gp",
      $PS      => ".ps",
-     $PNG     => ".png"
+     $PNG     => ".png",
+     $PDF     => ".pdf"
      );
 
 
@@ -1119,7 +1122,28 @@ sub WriteGP ($$)
 
         /^$PNG/    and do {
             $P_TERM = $OPT_gpstatus == 0 ?
-                "$PNG tiny size $SIZE,$SIZE" : "$PNG size 1280,800";
+                "$PNG tiny size $SIZE,$SIZE" : "$PNG size 1000,1000";
+            if ( defined $OPT_color && $OPT_color == 0 ) {
+                $P_TERM .= " xffffff x000000 x000000";
+                $P_TERM .= " x000000 x000000 x000000";
+                $P_TERM .= " x000000 x000000 x000000";
+            }
+
+            %P_PS = ( $FWD => 0.5, $REV => 0.5, $HLT => 0.5 );
+
+            %P_LW = $OPT_coverage || $OPT_color ?
+                ( $FWD => 3.0, $REV => 3.0, $HLT => 3.0 ) :
+                ( $FWD => 3.0, $REV => 3.0, $HLT => 3.0 );
+
+            $P_SIZE = $OPT_coverage ?
+                "set size 1,.375" :
+                "set size 1,1";
+
+            last;
+        };
+
+        /^$PDF/    and do {
+            $P_TERM = "$PDF size 10,10";  # size in inches
             if ( defined $OPT_color && $OPT_color == 0 ) {
                 $P_TERM .= " xffffff x000000 x000000";
                 $P_TERM .= " x000000 x000000 x000000";
@@ -1240,8 +1264,8 @@ sub WriteGP ($$)
         "$P_KEY\n",
         "set border $border\n",
         "set tics scale 0\n",
-        "set xlabel \"$xlabel\"\n",
-        "set ylabel \"$ylabel\"\n",
+        "set xlabel \"$xlabel\" noenhanced\n",
+        "set ylabel \"$ylabel\" noenhanced\n",
         "$P_FORMAT\n";
 
     #-- ranges
@@ -1443,7 +1467,7 @@ sub ListenGP($$)
 sub ParseOptions ( )
 {
     my ($opt_small, $opt_medium, $opt_large);
-    my ($opt_ps, $opt_x11, $opt_png);
+    my ($opt_ps, $opt_x11, $opt_png, $opt_pdf);
     my $cnt;
 
     #-- Get options
@@ -1469,6 +1493,7 @@ sub ParseOptions ( )
          "x|xrange=s"   => \$OPT_xrange,
          "y|yrange=s"   => \$OPT_yrange,
          "x11"          => \$opt_x11,
+         "pdf"          => \$opt_pdf,
          "postscript"   => \$opt_ps,
          "png"          => \$opt_png,
          "small"        => \$opt_small,
@@ -1483,6 +1508,7 @@ sub ParseOptions ( )
     }
 
     $cnt = 0;
+    if ( $opt_pdf ) { $OPT_terminal = $PDF; $cnt ++; }
     if ( $opt_png ) { $OPT_terminal = $PNG; $cnt ++; }
     if ( $opt_ps  ) { $OPT_terminal = $PS;  $cnt ++; }
     if ( $opt_x11 ) { $OPT_terminal = $X11; $cnt ++; }

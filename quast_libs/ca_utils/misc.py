@@ -54,7 +54,7 @@ def compile_aligner(logger, only_clean=False, compile_all_aligners=False):
             if not check_prev_compilation_failed(contig_aligner, failed_compilation_flag, just_notice=True, logger=logger):
                 return True
 
-    default_requirements = ['nucmer', 'delta-filter', 'show-coords', 'show-snps', 'mummer', 'mgaps']
+    default_requirements = ['nucmer', 'delta-filter', 'show-coords', 'show-snps', 'mummer', 'mummerplot', 'mgaps']
 
     if not qconfig.force_nucmer:
         if get_installed_emem() or isfile(join(contig_aligner_dirpath, 'e-mem')):
@@ -104,17 +104,20 @@ def compile_gnuplot(logger, only_clean=False):
         return True
 
     if not isfile(tool_exec_fpath):
+        failed_compilation_flag = join(tool_dirpath, 'make.failed')
+        if check_prev_compilation_failed('gnuplot', failed_compilation_flag, just_notice=True, logger=logger):
+            return None
         logger.main_info("Compiling gnuplot...")
         prev_dir = os.getcwd()
         os.chdir(tool_dirpath)
         return_code = qutils.call_subprocess(
-            ['./configure'],
+            ['./configure', '--with-qt=no', '--disable-wxwidgets', '--with-pdf'],
             stdout=open(join(tool_dirpath, 'make.log'), 'w'),
             stderr=open(join(tool_dirpath, 'make.err'), 'w'),
             indent='    ')
         if return_code == 0:
             return_code = qutils.call_subprocess(
-                ['make', '-C', tool_dirpath],
+                ['make'],
                 stdout=open(join(tool_dirpath, 'make.log'), 'w'),
                 stderr=open(join(tool_dirpath, 'make.err'), 'w'),
                 indent='    ')
@@ -122,21 +125,22 @@ def compile_gnuplot(logger, only_clean=False):
         if return_code != 0 or not isfile(tool_exec_fpath):
             logger.notice("Failed to compile gnuplot (" + tool_dirpath +
                          ")!\nTry to compile it manually.\nUse --debug option to see the command lines.")
+            open(failed_compilation_flag, 'w').close()
             return None
     return tool_exec_fpath
 
 
 def draw_mummer_plot(logger, nucmer_fpath, delta_fpath, index, log_out_f, log_err_f):
     output_dirpath = dirname(dirname(nucmer_fpath))
-    mummer_plot_fpath = join(output_dirpath, basename(nucmer_fpath) + '_mummerplot.png')
+    mummer_plot_fpath = join(output_dirpath, basename(nucmer_fpath) + '_mummerplot.pdf')
     return_code = qutils.call_subprocess(
-        [bin_fpath('mummerplot'), '--png', '--layout', '-p', nucmer_fpath, delta_fpath],
+        [bin_fpath('mummerplot'), '--pdf', '--layout', '-p', nucmer_fpath, delta_fpath],
         stdout=log_out_f,
         stderr=log_err_f,
         indent='  ' + qutils.index_to_str(index))
     if return_code == 0:
         plot_script_fpath = nucmer_fpath + '.gp'
-        temp_plot_fpath = nucmer_fpath + '.png'
+        temp_plot_fpath = nucmer_fpath + '.pdf'
         if isfile(plot_script_fpath) and isfile(gnuplot_exec_fpath()):
             qutils.call_subprocess(
                 [gnuplot_exec_fpath(), plot_script_fpath],

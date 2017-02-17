@@ -114,13 +114,13 @@ def get_locators():
 def y_formatter(ylabel, max_y):
     if max_y <= 5 * 1e+3:
         mkfunc = lambda x, pos: '%d' % (x * 1)
-        ylabel += '(bp)'
+        ylabel += ' (bp)'
     elif max_y <= 5 * 1e+6:
         mkfunc = lambda x, pos: '%d' % (x * 1e-3)
-        ylabel += '(kbp)'
+        ylabel += ' (kbp)'
     else:
         mkfunc = lambda x, pos: '%d' % (x * 1e-6)
-        ylabel += '(Mbp)'
+        ylabel += ' (Mbp)'
 
     return ylabel, mkfunc
 
@@ -133,16 +133,18 @@ def set_ax(vertical_legend=False):
         ax.set_position([box.x0, box.y0, box.width * 0.8, box.height * 1.0])
     else:
         ax.set_position([box.x0, box.y0 + box.height * 0.2, box.width, box.height * 0.8])
+    matplotlib.pyplot.grid(with_grid)
     return ax
 
 
 def add_labels(xlabel, ylabel, max_y, ax, logarithmic_x_scale=False):
-    ylabel, mkfunc = y_formatter(ylabel, max_y)
+    if 'length' in ylabel:
+        ylabel, mkfunc = y_formatter(ylabel, max_y)
+        mkformatter = matplotlib.ticker.FuncFormatter(mkfunc)
+        ax.yaxis.set_major_formatter(mkformatter)
+
     matplotlib.pyplot.xlabel(xlabel, fontsize=axes_fontsize)
     matplotlib.pyplot.ylabel(ylabel, fontsize=axes_fontsize)
-
-    mkformatter = matplotlib.ticker.FuncFormatter(mkfunc)
-    ax.yaxis.set_major_formatter(mkformatter)
 
     xLocator, yLocator = get_locators()
     ax.yaxis.set_major_locator(yLocator)
@@ -151,7 +153,9 @@ def add_labels(xlabel, ylabel, max_y, ax, logarithmic_x_scale=False):
         ax.set_xscale('log')
 
 
-def save_plot(figure, plot_fpath, add_to_report=True):
+def save_plot(figure, plot_fpath, title, add_to_report=True):
+    if with_title:
+        matplotlib.pyplot.title(title)
     plot_fpath += '.' + qconfig.plot_extension
     matplotlib.pyplot.savefig(plot_fpath, bbox_inches='tight')
     logger.info('    saved to ' + plot_fpath)
@@ -212,9 +216,6 @@ def cumulative_plot(reference, contigs_fpaths, lists_of_lengths, plot_fpath, tit
         matplotlib.pyplot.plot(x_vals, y_vals,
                                color=reference_color, lw=line_width, ls=reference_ls)
 
-    if with_title:
-        matplotlib.pyplot.title(title)
-    matplotlib.pyplot.grid(with_grid)
     ax = set_ax()
 
     legend_list = [label_from_fpath(fpath) for fpath in contigs_fpaths]
@@ -222,9 +223,9 @@ def cumulative_plot(reference, contigs_fpaths, lists_of_lengths, plot_fpath, tit
         legend_list += ['Reference']
 
     add_legend(ax, legend_list, n_columns=n_columns)
-    add_labels('Contig index ', 'Cumulative length', max_y, ax, logarithmic_x_scale)
+    add_labels('Contig index', 'Cumulative length', max_y, ax, logarithmic_x_scale)
 
-    save_plot(figure, plot_fpath)
+    save_plot(figure, plot_fpath, title)
 
 
 # common routine for Nx-plot and NGx-plot (and probably for others Nyx-plots in the future)
@@ -289,18 +290,15 @@ def Nx_plot(results_dir, reduce_points, contigs_fpaths, lists_of_lengths, plot_f
 
     if not can_draw_plots:
         return
-    if with_title:
-        matplotlib.pyplot.title(title)
-    matplotlib.pyplot.grid(with_grid)
     ax = set_ax()
 
     legend_list = [label_from_fpath(fpath) for fpath in contigs_fpaths]
     add_legend(ax, legend_list, n_columns=n_columns)
 
-    add_labels('x', 'Contig length ', max_y, ax)
+    add_labels('x', 'Contig length', max_y, ax)
     matplotlib.pyplot.xlim([0, 100])
 
-    save_plot(figure, plot_fpath)
+    save_plot(figure, plot_fpath, title)
 
 
 # routine for GC-plot
@@ -336,9 +334,6 @@ def GC_content_plot(ref_fpath, contigs_fpaths, list_of_GC_distributions, plot_fp
 
         matplotlib.pyplot.plot(GC_distribution_x, GC_distribution_y, color=color, lw=line_width, ls=ls)
 
-    if with_title:
-        matplotlib.pyplot.title(title)
-    matplotlib.pyplot.grid(with_grid)
     ax = set_ax()
 
     legend_list = [label_from_fpath(fpath) for fpath in contigs_fpaths]
@@ -349,7 +344,7 @@ def GC_content_plot(ref_fpath, contigs_fpaths, list_of_GC_distributions, plot_fp
     add_labels('GC (%)', '# windows', max_y, ax)
     matplotlib.pyplot.xlim([0, 100])
 
-    save_plot(figure, plot_fpath)
+    save_plot(figure, plot_fpath, title)
 
 
 # common routine for genes and operons cumulative plots
@@ -387,9 +382,6 @@ def genes_operons_plot(reference_value, contigs_fpaths, files_feature_in_contigs
             color=reference_color, lw=line_width, ls=reference_ls)
         max_y = max(reference_value, max_y)
 
-    if with_title:
-        matplotlib.pyplot.title('Cumulative # complete ' + title)
-    matplotlib.pyplot.grid(with_grid)
     ax = set_ax()
 
     legend_list = [label_from_fpath(fpath) for fpath in contigs_fpaths]
@@ -397,8 +389,9 @@ def genes_operons_plot(reference_value, contigs_fpaths, files_feature_in_contigs
         legend_list += ['Reference']
     add_legend(ax, legend_list, n_columns=n_columns)
 
-    add_labels('Contig index', 'Cumulative # complete ' + title, max_y, ax, logarithmic_x_scale)
-    save_plot(figure, plot_fpath)
+    title = 'Cumulative # complete ' + title
+    add_labels('Contig index', title, max_y, ax, logarithmic_x_scale)
+    save_plot(figure, plot_fpath, title)
 
 
 # common routine for Histograms
@@ -445,8 +438,6 @@ def histogram(contigs_fpaths, values, plot_fpath, title='', yaxis_title='', bott
         matplotlib.pyplot.bar(start_pos + (width + interval) * i, val, width, color=color, hatch=hatch)
 
     matplotlib.pyplot.ylabel(yaxis_title, fontsize=axes_fontsize)
-    if with_title:
-        matplotlib.pyplot.title(title)
 
     ax = set_ax()
     ax.yaxis.grid(with_grid)
@@ -460,7 +451,7 @@ def histogram(contigs_fpaths, values, plot_fpath, title='', yaxis_title='', bott
     yLocator = matplotlib.ticker.MaxNLocator(nbins=6, integer=True, steps=[1,5,10])
     ax.yaxis.set_major_locator(yLocator)
 
-    save_plot(figure, plot_fpath)
+    save_plot(figure, plot_fpath, title)
 
 
 def coverage_histogram(contigs_fpaths, values, plot_fpath, title='', bin_size=None, draw_bars=None, max_cov=None,
@@ -503,13 +494,10 @@ def coverage_histogram(contigs_fpaths, values, plot_fpath, title='', bin_size=No
             plot_x_vals[-1] += 1
             matplotlib.pyplot.plot(plot_x_vals, y_vals[:-1], marker='o', markersize=3, color=color, ls=ls)
 
-    if with_title:
-        matplotlib.pyplot.title(title)
-
     ax = set_ax()
     ax.yaxis.grid(with_grid)
     xlabel = 'Coverage depth (x)'
-    ylabel = 'Total length '
+    ylabel = 'Total length'
     add_labels(xlabel, ylabel, max_y, ax)
 
     x_factor = max(1, len(x_vals) // 10)
@@ -538,7 +526,7 @@ def coverage_histogram(contigs_fpaths, values, plot_fpath, title='', bin_size=No
     yLocator = matplotlib.ticker.MaxNLocator(nbins=6, integer=True, steps=[1,5,10])
     ax.yaxis.set_major_locator(yLocator)
 
-    save_plot(figure, plot_fpath)
+    save_plot(figure, plot_fpath, title)
 
 
 # metaQuast summary plots (per each metric separately)
@@ -621,7 +609,7 @@ def draw_meta_summary_plot(html_fpath, output_dirpath, labels, ref_names, all_ro
         legend_list = labels
         add_legend(ax, legend_list, vertical_legend=True)
         matplotlib.pyplot.tight_layout()
-        save_plot(figure, plot_fpath, add_to_report=False)
+        save_plot(figure, plot_fpath, title, add_to_report=False)
 
 
 # metaQuast misassemblies by types plots (all references for 1 assembly)
@@ -636,7 +624,6 @@ def draw_meta_summary_misassembl_plot(results, ref_names, contig_num, plot_fpath
         ax = figure.add_subplot(111)
         if len(title) > (120 + len('...')):
             title = title[:120] + '...'
-        matplotlib.pyplot.title(title)
 
     misassemblies = [reporting.Fields.MIS_RELOCATION, reporting.Fields.MIS_TRANSLOCATION, reporting.Fields.MIS_INVERTION]
     legend_n = []
@@ -691,7 +678,7 @@ def draw_meta_summary_misassembl_plot(results, ref_names, contig_num, plot_fpath
         ax = set_ax(vertical_legend=True)
         add_legend(ax, legend_list, vertical_legend=True)
 
-        save_plot(figure, plot_fpath)
+        save_plot(figure, plot_fpath, title)
     return json_points_x, json_points_y
 
 
@@ -710,7 +697,6 @@ def draw_misassembl_plot(reports, plot_fpath, title='', yaxis_title=''):
         labels.append(reports[j].get_field(reporting.Fields.NAME))
 
     matplotlib.pyplot.xticks(range(1, contigs_num + 1), labels, size='small')
-    matplotlib.pyplot.title(title)
     misassemblies = [reporting.Fields.MIS_RELOCATION, reporting.Fields.MIS_TRANSLOCATION, reporting.Fields.MIS_INVERTION,
                      reporting.Fields.MIS_ISTRANSLOCATIONS]
     legend_n = []
@@ -771,7 +757,7 @@ def draw_misassembl_plot(reports, plot_fpath, title='', yaxis_title=''):
     legend_list = [misassemblies[i] for i in sorted(legend_n)]
     add_legend(ax, legend_list, n_columns=n_columns)
 
-    save_plot(figure, plot_fpath)
+    save_plot(figure, plot_fpath, title)
 
 
 def draw_report_table(report_name, extra_info, table_to_draw, column_widths):

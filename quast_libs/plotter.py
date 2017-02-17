@@ -154,6 +154,9 @@ def add_labels(xlabel, ylabel, max_y, ax, logarithmic_x_scale=False):
 
 
 def save_plot(figure, plot_fpath, title, add_to_report=True):
+    if not can_draw_plots:
+        matplotlib.pyplot.close()
+        return
     if with_title:
         matplotlib.pyplot.title(title)
     plot_fpath += '.' + qconfig.plot_extension
@@ -263,8 +266,9 @@ def frc_plot(results_dir, ref_fpath, contigs_fpaths, lists_of_lengths, features_
         json_vals_y.append(y_vals)
         max_y = max(max_y, max(y_vals))
 
-        color, ls = get_color_and_ls(contigs_fpath)
-        matplotlib.pyplot.plot(x_vals, y_vals, color=color, lw=line_width, ls=ls)
+        if can_draw_plots:
+            color, ls = get_color_and_ls(contigs_fpath)
+            matplotlib.pyplot.plot(x_vals, y_vals, color=color, lw=line_width, ls=ls)
 
     if qconfig.html_report:
         from quast_libs.html_saver import html_saver

@@ -251,12 +251,13 @@ function getSortOrder() {
 function sortReferences(sortOrder, info) {
     if (sortOrder == 'alphabet') {
         refNames = sortedRefs;
-        for (var i = 0; i < sortedRefs.length; i++)
-            refTicks[i][1] = sortedRefs[i];
     }
     else if (sortOrder == 'value') {
         refNames = info.references;
-        for (var i = 0; i < info.references.length; i++)
-            refTicks[i][1] = info.references[i];
+    }
+    refTicks = [];
+    for (var i = 0; i < refNames.length; i++)
+    {
+        refTicks.push([i + 1, refNames[i]]);
     }
 }

@@ -657,7 +657,7 @@ def draw_meta_summary_plot(html_fpath, output_dirpath, labels, ref_names, all_ro
 
     arr_x = []
     arr_y = []
-    values = []
+    mean_values = []
     arr_y_by_refs = []
     for j in range(contigs_num):
         to_plot_x = []
@@ -668,7 +668,7 @@ def draw_meta_summary_plot(html_fpath, output_dirpath, labels, ref_names, all_ro
             to_plot_x.append(arr[i])
             if results[i][j] and results[i][j] != '-':
                 to_plot_y.append(parseStrToNum(results[i][j]))
-            elif print_all_refs and results[i][j] != '-':
+            elif print_all_refs:
                 to_plot_y.append(0)
             else:
                 to_plot_y.append(None)
@@ -681,11 +681,11 @@ def draw_meta_summary_plot(html_fpath, output_dirpath, labels, ref_names, all_ro
         significant_points_y = [points_y[k] for k in range(len(points_y)) if points_y[k] is not None]
         if significant_points_y or print_all_refs:
             arr_y_by_refs.append(points_y)
-            values.append(sum(list(filter(None, points_y))) / len(points_y))
+            mean_values.append(sum(list(filter(None, points_y))) * 1.0 / len(points_y))
             refs.append(ref_names[i])
 
-    sorted_values = sorted(zip(values, refs, arr_y_by_refs), reverse=reverse, key=lambda x: x[0])
-    values, refs, arr_y_by_refs = [[x[i] for x in sorted_values] for i in range(3)]
+    sorted_values = sorted(zip(mean_values, refs, arr_y_by_refs), reverse=reverse, key=lambda x: x[0])
+    mean_values, refs, arr_y_by_refs = [[x[i] for x in sorted_values] for i in range(3)]
     if can_draw_plots:
         matplotlib.pyplot.xticks(range(1, len(refs) + 1), refs, size='small', rotation='vertical')
     json_points_x = []

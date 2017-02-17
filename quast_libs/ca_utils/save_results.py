@@ -289,7 +289,7 @@ def save_combined_ref_stats(results, contigs_fpaths, ref_labels_by_chromosomes, 
                 if row['values']:
                     cur_results.append(row['values'][i])
             misassemblies.append(cur_results)
-        is_translocations_plot_fpath = os.path.join(output_dir, 'intergenomic_misassemblies.' + qconfig.plot_extension)
+        is_translocations_plot_fpath = os.path.join(output_dir, 'intergenomic_misassemblies')
         plotter.draw_meta_summary_plot('', output_dir, aligned_contigs_labels, all_refs, misassemblies_by_refs_rows,
                                        misassemblies, is_translocations_plot_fpath,
                                        title='Intergenomic misassemblies (found and supposed)', reverse=False,

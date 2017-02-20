@@ -685,7 +685,6 @@ def draw_meta_summary_misassembl_plot(results, ref_names, contig_num, plot_fpath
         meta_logger.info('  Drawing metaQUAST summary misassemblies plot for ' + title + '...')
 
     refs_num = len(ref_names)
-    refs = []
     if can_draw_plots:
         figure = plt.figure()
         if len(title) > (120 + len('...')):
@@ -726,13 +725,12 @@ def draw_meta_summary_misassembl_plot(results, ref_names, contig_num, plot_fpath
                 json_points_y.append(to_plot[-1])
         if to_plot:
             max_y = max(max_y, y)
-            refs.append(ref_names[j])
         else:
             for i in range(len(misassemblies)):
                 json_points_x.append(arr_x[j])
                 json_points_y.append(0)
     if can_draw_plots:
-        plt.xticks(range(1, len(refs) + 1), refs, size='small', rotation='vertical')
+        plt.xticks(range(1, refs_num + 1), ref_names, size='small', rotation='vertical')
         legend_n = set(legend_n)
         legend_list = [misassemblies[i] for i in sorted(legend_n)]
 

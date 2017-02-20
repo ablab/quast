@@ -63,7 +63,7 @@ if qconfig.draw_plots:
             main_logger.warning('Can\'t draw plots: matplotlib version is old! Please use matplotlib version 1.1 or higher.')
         else:
             # additionally check other imports
-            import matplotlib.pyplot
+            import matplotlib.pyplot as plt
             import matplotlib.ticker
             can_draw_plots = True
     except Exception:
@@ -126,14 +126,15 @@ def y_formatter(ylabel, max_y):
 
 
 def set_ax(vertical_legend=False):
-    ax = matplotlib.pyplot.gca()
+    ax = plt.gca()
     # Shink current axis's height by 20% on the bottom
     box = ax.get_position()
     if vertical_legend:
         ax.set_position([box.x0, box.y0, box.width * 0.8, box.height * 1.0])
     else:
         ax.set_position([box.x0, box.y0 + box.height * 0.2, box.width, box.height * 0.8])
-    matplotlib.pyplot.grid(with_grid)
+    ax.yaxis.grid(with_grid)
+    plt.grid(with_grid)
     return ax
 
 
@@ -143,8 +144,8 @@ def add_labels(xlabel, ylabel, max_y, ax, logarithmic_x_scale=False):
         mkformatter = matplotlib.ticker.FuncFormatter(mkfunc)
         ax.yaxis.set_major_formatter(mkformatter)
 
-    matplotlib.pyplot.xlabel(xlabel, fontsize=axes_fontsize)
-    matplotlib.pyplot.ylabel(ylabel, fontsize=axes_fontsize)
+    plt.xlabel(xlabel, fontsize=axes_fontsize)
+    plt.ylabel(ylabel, fontsize=axes_fontsize)
 
     xLocator, yLocator = get_locators()
     ax.yaxis.set_major_locator(yLocator)
@@ -155,16 +156,16 @@ def add_labels(xlabel, ylabel, max_y, ax, logarithmic_x_scale=False):
 
 def save_plot(figure, plot_fpath, title, add_to_report=True):
     if not can_draw_plots:
-        matplotlib.pyplot.close()
+        plt.close()
         return
     if with_title:
-        matplotlib.pyplot.title(title)
+        plt.title(title)
     plot_fpath += '.' + qconfig.plot_extension
-    matplotlib.pyplot.savefig(plot_fpath, bbox_inches='tight')
+    plt.savefig(plot_fpath, bbox_inches='tight')
     logger.info('    saved to ' + plot_fpath)
     if add_to_report:
         pdf_plots_figures.append(figure)
-    matplotlib.pyplot.close()
+    plt.close()
 
 
 def add_legend(ax, legend_list, n_columns=None, vertical_legend=False):
@@ -186,8 +187,8 @@ def cumulative_plot(reference, contigs_fpaths, lists_of_lengths, plot_fpath, tit
 
     logger.info('  Drawing cumulative plot...')
 
-    figure = matplotlib.pyplot.figure()
-    matplotlib.pyplot.rc('font', **font)
+    figure = plt.figure()
+    plt.rc('font', **font)
     max_x = 0
     max_y = 0
 
@@ -200,7 +201,7 @@ def cumulative_plot(reference, contigs_fpaths, lists_of_lengths, plot_fpath, tit
             max_x = max(vals_contig_index[-1], max_x)
             max_y = max(max_y, vals_length[-1])
         color, ls = get_color_and_ls(contigs_fpath)
-        matplotlib.pyplot.plot(vals_contig_index, vals_length, color=color, lw=line_width, ls=ls)
+        plt.plot(vals_contig_index, vals_length, color=color, lw=line_width, ls=ls)
 
     if reference:
         y_vals = []
@@ -216,11 +217,10 @@ def cumulative_plot(reference, contigs_fpaths, lists_of_lengths, plot_fpath, tit
         max_y = max(max_y, reference_length)
         y_vals.append(reference_length)
         x_vals.append(max_x)
-        matplotlib.pyplot.plot(x_vals, y_vals,
+        plt.plot(x_vals, y_vals,
                                color=reference_color, lw=line_width, ls=reference_ls)
 
     ax = set_ax()
-
     legend_list = [label_from_fpath(fpath) for fpath in contigs_fpaths]
     if reference:
         legend_list += ['Reference']
@@ -235,8 +235,8 @@ def frc_plot(results_dir, ref_fpath, contigs_fpaths, contigs_aligned_lengths, fe
     if can_draw_plots:
         logger.info('  Drawing ' + title + ' FRCurve plot...')
 
-        figure = matplotlib.pyplot.figure()
-        matplotlib.pyplot.rc('font', **font)
+        figure = plt.figure()
+        plt.rc('font', **font)
 
     max_y = 0
     ref_length = sum(fastaparser.get_chr_lengths_from_fastafile(ref_fpath).values())
@@ -286,7 +286,7 @@ def frc_plot(results_dir, ref_fpath, contigs_fpaths, contigs_aligned_lengths, fe
 
         if can_draw_plots:
             color, ls = get_color_and_ls(contigs_fpath)
-            matplotlib.pyplot.plot(x_vals, y_vals, color=color, lw=line_width, ls=ls)
+            plt.plot(x_vals, y_vals, color=color, lw=line_width, ls=ls)
 
     if qconfig.html_report:
         from quast_libs.html_saver import html_saver
@@ -298,8 +298,9 @@ def frc_plot(results_dir, ref_fpath, contigs_fpaths, contigs_aligned_lengths, fe
     legend_list = [label_from_fpath(fpath) for fpath in contigs_fpaths]
     add_legend(ax, legend_list, n_columns=n_columns)
     add_labels('Feature space', 'Genome coverage (%)', max_y, ax, logarithmic_x_scale)
-    matplotlib.pyplot.xlim([0, max_features])
-    matplotlib.pyplot.ylim([0, max(100, max_y)])
+
+    plt.xlim([0, max_features])
+    plt.ylim([0, max(100, max_y)])
 
     title = 'FRCurve (' + title + ')'
     save_plot(figure, plot_fpath, title)
@@ -310,8 +311,8 @@ def Nx_plot(results_dir, reduce_points, contigs_fpaths, lists_of_lengths, plot_f
     if can_draw_plots:
         logger.info('  Drawing ' + title + ' plot...')
 
-        figure = matplotlib.pyplot.figure()
-        matplotlib.pyplot.rc('font', **font)
+        figure = plt.figure()
+        plt.rc('font', **font)
 
     max_y = 0
     json_vals_x = []  # coordinates for Nx-like plots in HTML-report
@@ -359,7 +360,7 @@ def Nx_plot(results_dir, reduce_points, contigs_fpaths, lists_of_lengths, plot_f
             vals_y.append(0.0)
             max_y = max(max_y, max(vals_l))
             color, ls = get_color_and_ls(contigs_fpath)
-            matplotlib.pyplot.plot(vals_Nx, vals_l, color=color, lw=line_width, ls=ls)
+            plt.plot(vals_Nx, vals_l, color=color, lw=line_width, ls=ls)
 
     if qconfig.html_report:
         from quast_libs.html_saver import html_saver
@@ -368,12 +369,11 @@ def Nx_plot(results_dir, reduce_points, contigs_fpaths, lists_of_lengths, plot_f
     if not can_draw_plots:
         return
     ax = set_ax()
-
     legend_list = [label_from_fpath(fpath) for fpath in contigs_fpaths]
     add_legend(ax, legend_list, n_columns=n_columns)
-
     add_labels('x', 'Contig length', max_y, ax)
-    matplotlib.pyplot.xlim([0, 100])
+
+    plt.xlim([0, 100])
 
     save_plot(figure, plot_fpath, title)
 
@@ -386,8 +386,8 @@ def GC_content_plot(ref_fpath, contigs_fpaths, list_of_GC_distributions, plot_fp
 
     logger.info('  Drawing ' + title + ' plot...')
 
-    figure = matplotlib.pyplot.figure()
-    matplotlib.pyplot.rc('font', **font)
+    figure = plt.figure()
+    plt.rc('font', **font)
     max_y = 0
 
     all_fpaths = contigs_fpaths
@@ -409,17 +409,16 @@ def GC_content_plot(ref_fpath, contigs_fpaths, list_of_GC_distributions, plot_fp
         else:
             color, ls = get_color_and_ls(all_fpaths[i])
 
-        matplotlib.pyplot.plot(GC_distribution_x, GC_distribution_y, color=color, lw=line_width, ls=ls)
+        plt.plot(GC_distribution_x, GC_distribution_y, color=color, lw=line_width, ls=ls)
 
     ax = set_ax()
-
     legend_list = [label_from_fpath(fpath) for fpath in contigs_fpaths]
     if ref_fpath:
         legend_list += ['Reference']
     add_legend(ax, legend_list, n_columns=n_columns)
-
     add_labels('GC (%)', '# windows', max_y, ax)
-    matplotlib.pyplot.xlim([0, 100])
+
+    plt.xlim([0, 100])
 
     save_plot(figure, plot_fpath, title)
 
@@ -431,8 +430,8 @@ def genes_operons_plot(reference_value, contigs_fpaths, files_feature_in_contigs
 
     logger.info('  Drawing ' + title + ' cumulative plot...')
 
-    figure = matplotlib.pyplot.figure()
-    matplotlib.pyplot.rc('font', **font)
+    figure = plt.figure()
+    plt.rc('font', **font)
     max_x = 0
     max_y = 0
 
@@ -452,15 +451,14 @@ def genes_operons_plot(reference_value, contigs_fpaths, files_feature_in_contigs
             max_y = max(y_vals[-1], max_y)
 
         color, ls = get_color_and_ls(contigs_fpath)
-        matplotlib.pyplot.plot(x_vals, y_vals, color=color, lw=line_width, ls=ls)
+        plt.plot(x_vals, y_vals, color=color, lw=line_width, ls=ls)
 
     if reference_value:
-        matplotlib.pyplot.plot([1, max_x], [reference_value, reference_value],
+        plt.plot([1, max_x], [reference_value, reference_value],
             color=reference_color, lw=line_width, ls=reference_ls)
         max_y = max(reference_value, max_y)
 
     ax = set_ax()
-
     legend_list = [label_from_fpath(fpath) for fpath in contigs_fpaths]
     if reference_value:
         legend_list += ['Reference']
@@ -468,6 +466,7 @@ def genes_operons_plot(reference_value, contigs_fpaths, files_feature_in_contigs
 
     title = 'Cumulative # complete ' + title
     add_labels('Contig index', title, max_y, ax, logarithmic_x_scale)
+
     save_plot(figure, plot_fpath, title)
 
 
@@ -498,8 +497,8 @@ def histogram(contigs_fpaths, values, plot_fpath, title='', yaxis_title='', bott
 
     logger.info('  Drawing ' + title + ' histogram...')
 
-    figure = matplotlib.pyplot.figure()
-    matplotlib.pyplot.rc('font', **font)
+    figure = plt.figure()
+    plt.rc('font', **font)
 
     #bars' params
     width = 0.3
@@ -512,19 +511,17 @@ def histogram(contigs_fpaths, values, plot_fpath, title='', yaxis_title='', bott
             hatch = ''
         else:
             hatch = 'x'
-        matplotlib.pyplot.bar(start_pos + (width + interval) * i, val, width, color=color, hatch=hatch)
+        plt.bar(start_pos + (width + interval) * i, val, width, color=color, hatch=hatch)
 
-    matplotlib.pyplot.ylabel(yaxis_title, fontsize=axes_fontsize)
+    plt.ylabel(yaxis_title, fontsize=axes_fontsize)
 
     ax = set_ax()
-    ax.yaxis.grid(with_grid)
-
     legend_list = [label_from_fpath(fpath) for fpath in contigs_fpaths]
     add_legend(ax, legend_list, n_columns=n_columns)
 
     ax.axes.get_xaxis().set_visible(False)
-    matplotlib.pyplot.xlim([0, start_pos * 2 + width * len(contigs_fpaths) + interval * (len(contigs_fpaths) - 1)])
-    matplotlib.pyplot.ylim([max(bottom_value, 0), top_value])
+    plt.xlim([0, start_pos * 2 + width * len(contigs_fpaths) + interval * (len(contigs_fpaths) - 1)])
+    plt.ylim([max(bottom_value, 0), top_value])
     yLocator = matplotlib.ticker.MaxNLocator(nbins=6, integer=True, steps=[1,5,10])
     ax.yaxis.set_major_locator(yLocator)
 
@@ -538,8 +535,8 @@ def coverage_histogram(contigs_fpaths, values, plot_fpath, title='', bin_size=No
 
     logger.info('  Drawing ' + title + '...')
 
-    figure = matplotlib.pyplot.figure()
-    matplotlib.pyplot.rc('font', **font)
+    figure = plt.figure()
+    plt.rc('font', **font)
 
     max_y = 0
     max_x = max(len(v) for v in values)
@@ -561,18 +558,17 @@ def coverage_histogram(contigs_fpaths, values, plot_fpath, title='', bin_size=No
         if draw_bars:
             for x_val, y_val, bar_width in zip(x_vals, y_vals, bar_widths):
                 if bar_width == 2:
-                    matplotlib.pyplot.bar(x_val, y_val, width=bar_width, color=color, edgecolor='black', hatch='x')
+                    plt.bar(x_val, y_val, width=bar_width, color=color, edgecolor='black', hatch='x')
                 else:
-                    matplotlib.pyplot.bar(x_val, y_val, width=bar_width, color=color)
-            matplotlib.pyplot.bar(0, 0, color=color)
+                    plt.bar(x_val, y_val, width=bar_width, color=color)
+            plt.bar(0, 0, color=color)
         else:
             y_vals.append(y_vals[-1])
             plot_x_vals = [x_val + 0.5 for x_val in x_vals]
             plot_x_vals[-1] += 1
-            matplotlib.pyplot.plot(plot_x_vals, y_vals[:-1], marker='o', markersize=3, color=color, ls=ls)
+            plt.plot(plot_x_vals, y_vals[:-1], marker='o', markersize=3, color=color, ls=ls)
 
     ax = set_ax()
-    ax.yaxis.grid(with_grid)
     xlabel = 'Coverage depth (x)'
     ylabel = 'Total length'
     add_labels(xlabel, ylabel, max_y, ax)
@@ -593,13 +589,12 @@ def coverage_histogram(contigs_fpaths, values, plot_fpath, title='', bin_size=No
         x_ticks.append(last_tick)
         x_ticks_labels.append(str(max_cov))
 
-    matplotlib.pyplot.xticks(x_ticks, x_ticks_labels, size='small')
-
+    plt.xticks(x_ticks, x_ticks_labels, size='small')
     legend_list = [label_from_fpath(fpath) for fpath in contigs_fpaths]
     add_legend(ax, legend_list, n_columns=n_columns)
 
-    matplotlib.pyplot.xlim([0, max(x_ticks)])
-    matplotlib.pyplot.ylim([0, max_y * 1.1])
+    plt.xlim([0, max(x_ticks)])
+    plt.ylim([0, max_y * 1.1])
     yLocator = matplotlib.ticker.MaxNLocator(nbins=6, integer=True, steps=[1,5,10])
     ax.yaxis.set_major_locator(yLocator)
 
@@ -607,17 +602,16 @@ def coverage_histogram(contigs_fpaths, values, plot_fpath, title='', bin_size=No
 
 
 # metaQuast summary plots (per each metric separately)
-def draw_meta_summary_plot(html_fpath, output_dirpath, labels, ref_names, all_rows, results, plot_fpath, title='', reverse=False,
+def draw_meta_summary_plot(html_fpath, output_dirpath, labels, ref_names, results, plot_fpath, title='', reverse=False,
                            yaxis_title='', print_all_refs=False):
     if can_draw_plots:
         meta_logger.info('  Drawing ' + title + ' metaQUAST summary plot...')
-        figure = matplotlib.pyplot.figure()
-        ax = figure.add_subplot(111)
-        matplotlib.pyplot.title(title)
-        ax.yaxis.grid(with_grid)
+        figure = plt.figure()
+        plt.title(title)
 
     ref_num = len(ref_names)
     contigs_num = len(labels)
+    max_y = 0
 
     arr_x = []
     arr_y = []
@@ -639,53 +633,49 @@ def draw_meta_summary_plot(html_fpath, output_dirpath, labels, ref_names, all_ro
         arr_x.append(to_plot_x)
         arr_y.append(to_plot_y)
 
-    refs = []
+    selected_refs = []
     for i in range(ref_num):
         points_y = [arr_y[j][i] for j in range(contigs_num) if i < len(arr_y[j])]
         significant_points_y = [points_y[k] for k in range(len(points_y)) if points_y[k] is not None]
         if significant_points_y or print_all_refs:
             arr_y_by_refs.append(points_y)
             mean_values.append(sum(list(filter(None, points_y))) * 1.0 / len(points_y))
-            refs.append(ref_names[i])
+            selected_refs.append(ref_names[i])
 
-    sorted_values = sorted(zip(mean_values, refs, arr_y_by_refs), reverse=reverse, key=lambda x: x[0])
-    mean_values, refs, arr_y_by_refs = [[x[i] for x in sorted_values] for i in range(3)]
-    if can_draw_plots:
-        matplotlib.pyplot.xticks(range(1, len(refs) + 1), refs, size='small', rotation='vertical')
+    sorted_values = sorted(zip(mean_values, selected_refs, arr_y_by_refs), reverse=reverse, key=lambda x: x[0])
+    mean_values, selected_refs, arr_y_by_refs = [[x[i] for x in sorted_values] for i in range(3)]
+
     json_points_x = []
     json_points_y = []
     for j in range(contigs_num):
         points_x = [arr_x[j][i] for i in range(len(arr_y_by_refs))]
         points_y = [arr_y_by_refs[i][j] for i in range(len(arr_y_by_refs))]
+        max_y = max(max_y, max(points_y))
         if can_draw_plots:
             color, ls = get_color_and_ls(None, labels[j])
-            ax.plot(points_x, points_y, 'o:', color=color, ls=ls)
+            plt.plot(points_x, points_y, 'o:', color=color, ls=ls)
         json_points_x.append(points_x)
         json_points_y.append(points_y)
 
     if qconfig.html_report and html_fpath:
         from quast_libs.html_saver import html_saver
         html_saver.save_meta_summary(html_fpath, output_dirpath, json_points_x, json_points_y,
-                                     title.replace(' ', '_'), labels, refs)
+                                     title.replace(' ', '_'), labels, selected_refs)
     if can_draw_plots:
-        matplotlib.pyplot.xlim([0, ref_num + 1])
-        max_y = 0
-        for i in range(ref_num):
-            for j in range(contigs_num):
-                if all_rows[j + 1]['values'][i] is not None and all_rows[j + 1]['values'][i] != '-':
-                    max_y = max(max_y, parseStrToNum(all_rows[j + 1]['values'][i]))
+        plt.xlim([0, len(selected_refs) + 1])
         if max_y < 5:
-            matplotlib.pyplot.ylim([0, 5])
+            plt.ylim([0, 5])
         else:
-            matplotlib.pyplot.ylim([0, int(math.ceil(max_y * 1.05))])
+            plt.ylim([0, int(math.ceil(max_y * 1.05))])
 
+        ax = set_ax(vertical_legend=True)
+        plt.xticks(range(len(selected_refs) + 1), [''] + selected_refs, size='small', rotation='vertical')
+        legend_list = labels
+        add_legend(ax, legend_list, vertical_legend=True)
         if yaxis_title:
             add_labels('', yaxis_title, max_y, ax)
 
-        ax = set_ax(vertical_legend=True)
-        legend_list = labels
-        add_legend(ax, legend_list, vertical_legend=True)
-        matplotlib.pyplot.tight_layout()
+        plt.tight_layout()
         save_plot(figure, plot_fpath, title, add_to_report=False)
 
 
@@ -697,8 +687,7 @@ def draw_meta_summary_misassembl_plot(results, ref_names, contig_num, plot_fpath
     refs_num = len(ref_names)
     refs = []
     if can_draw_plots:
-        figure = matplotlib.pyplot.figure()
-        ax = figure.add_subplot(111)
+        figure = plt.figure()
         if len(title) > (120 + len('...')):
             title = title[:120] + '...'
 
@@ -719,7 +708,7 @@ def draw_meta_summary_misassembl_plot(results, ref_names, contig_num, plot_fpath
             if result and result != '-':
                 to_plot.append(float(result))
                 if can_draw_plots:
-                    ax.bar(arr_x[j], to_plot[0], width=bar_width, color=colors[type_misassembly])
+                    plt.bar(arr_x[j], to_plot[0], width=bar_width, color=colors[type_misassembly])
                     legend_n.append(type_misassembly)
                     y = float(to_plot[0])
                 json_points_x.append(arr_x[j])
@@ -730,7 +719,7 @@ def draw_meta_summary_misassembl_plot(results, ref_names, contig_num, plot_fpath
             if result and result != '-':
                 to_plot.append(float(result))
                 if can_draw_plots:
-                    ax.bar(arr_x[j], to_plot[-1], width=bar_width, color=colors[i], bottom=sum(to_plot[:-1]))
+                    plt.bar(arr_x[j], to_plot[-1], width=bar_width, color=colors[i], bottom=sum(to_plot[:-1]))
                     legend_n.append(i)
                     y += float(to_plot[-1])
                 json_points_x.append(arr_x[j])
@@ -743,15 +732,15 @@ def draw_meta_summary_misassembl_plot(results, ref_names, contig_num, plot_fpath
                 json_points_x.append(arr_x[j])
                 json_points_y.append(0)
     if can_draw_plots:
-        matplotlib.pyplot.xticks(range(1, len(refs) + 1), refs, size='small', rotation='vertical')
+        plt.xticks(range(1, len(refs) + 1), refs, size='small', rotation='vertical')
         legend_n = set(legend_n)
         legend_list = [misassemblies[i] for i in sorted(legend_n)]
-        matplotlib.pyplot.xlim([0, refs_num + 1])
 
+        plt.xlim([0, refs_num + 1])
         if max_y < 5:
-            matplotlib.pyplot.ylim([0, 5])
+            plt.ylim([0, 5])
         else:
-            matplotlib.pyplot.ylim([0, int(math.ceil(max_y * 1.05))])
+            plt.ylim([0, int(math.ceil(max_y * 1.05))])
         ax = set_ax(vertical_legend=True)
         add_legend(ax, legend_list, vertical_legend=True)
 
@@ -768,12 +757,11 @@ def draw_misassembl_plot(reports, plot_fpath, title='', yaxis_title=''):
 
     contigs_num = len(reports)
     labels = []
-    figure = matplotlib.pyplot.figure()
-    ax = figure.add_subplot(111)
+    figure = plt.figure()
     for j in range(contigs_num):
         labels.append(reports[j].get_field(reporting.Fields.NAME))
 
-    matplotlib.pyplot.xticks(range(1, contigs_num + 1), labels, size='small')
+    plt.xticks(range(1, contigs_num + 1), labels, size='small')
     misassemblies = [reporting.Fields.MIS_RELOCATION, reporting.Fields.MIS_TRANSLOCATION, reporting.Fields.MIS_INVERTION,
                      reporting.Fields.MIS_ISTRANSLOCATIONS]
     legend_n = []
@@ -807,7 +795,7 @@ def draw_misassembl_plot(reports, plot_fpath, title='', yaxis_title=''):
         points_x = [arr_x[j][i] for j in range(contigs_num) if arr_x[j][i] != 0]
         points_y = [arr_y[j][i] for j in range(contigs_num) if arr_y[j][i] != 0]
         if points_y and points_x:
-            ax.bar(points_x, points_y, width=0.05, color=colors[i])
+            plt.bar(points_x, points_y, width=0.05, color=colors[i])
     for j in range(len(reports)):
         if (arr_y[j]):
             points_y = [arr_y[j][i] for i in range(len(misassemblies))]
@@ -817,17 +805,17 @@ def draw_misassembl_plot(reports, plot_fpath, title='', yaxis_title=''):
                 while points_y[type_misassembly] == 0:
                     type_misassembly += 1
                 point_x = main_arr_x[j] + 0.07 * (len(misassemblies) * 0.5)
-                ax.bar(point_x, points_y[type_misassembly], width=0.05, color=colors[0])
+                plt.bar(point_x, points_y[type_misassembly], width=0.05, color=colors[0])
                 type_misassembly += 1
                 for i in range(type_misassembly, len(arr_y[j])):
                     if points_y[i] > 0:
-                        ax.bar(point_x, points_y[i], width=0.05, color=colors[i], bottom=sum(points_y[:i]))
+                        plt.bar(point_x, points_y[i], width=0.05, color=colors[i], bottom=sum(points_y[:i]))
 
-    matplotlib.pyplot.xlim([0, contigs_num + 1])
+    plt.xlim([0, contigs_num + 1])
     if max_y < 5:
-        matplotlib.pyplot.ylim([0, 5])
+        plt.ylim([0, 5])
     else:
-        matplotlib.pyplot.ylim([0, int(math.ceil(max_y * 1.1))])
+        plt.ylim([0, int(math.ceil(max_y * 1.1))])
 
     ax = set_ax()
     legend_n = set(legend_n)
@@ -856,26 +844,26 @@ def draw_report_table(report_name, extra_info, table_to_draw, column_widths):
     total_height = nrows * row_height + 2 * external_text_height
     total_width = letter_width_coeff * font_scale * sum(column_widths)
 
-    figure = matplotlib.pyplot.figure(figsize=(total_width, total_height))
-    matplotlib.pyplot.rc('font', **font)
-    matplotlib.pyplot.axis('off')
+    figure = plt.figure(figsize=(total_width, total_height))
+    plt.rc('font', **font)
+    plt.axis('off')
     ### all cells are equal (no header and no row labels)
-    #matplotlib.pyplot.text(0, 1. - float(2 * row_height) / total_height, report_name)
-    #matplotlib.pyplot.text(0, 0, extra_info)
-    #matplotlib.pyplot.table(cellText=table_to_draw,
+    #plt.text(0, 1. - float(2 * row_height) / total_height, report_name)
+    #plt.text(0, 0, extra_info)
+    #plt.table(cellText=table_to_draw,
     #    colWidths=[float(column_width) / sum(column_widths) for column_width in column_widths],
     #    rowLoc='right', loc='center')
-    matplotlib.pyplot.text(0.5 - float(column_widths[0]) / (2 * sum(column_widths)),
+    plt.text(0.5 - float(column_widths[0]) / (2 * sum(column_widths)),
                            1. - float(2 * row_height) / total_height, report_name.replace('_', ' ').capitalize())
-    matplotlib.pyplot.text(0 - float(column_widths[0]) / (2 * sum(column_widths)), 0, extra_info)
+    plt.text(0 - float(column_widths[0]) / (2 * sum(column_widths)), 0, extra_info)
     colLabels=table_to_draw[0][1:]
     rowLabels=[item[0] for item in table_to_draw[1:]]
     restValues=[item[1:] for item in table_to_draw[1:]]
-    matplotlib.pyplot.table(cellText=restValues, rowLabels=rowLabels, colLabels=colLabels,
+    plt.table(cellText=restValues, rowLabels=rowLabels, colLabels=colLabels,
         colWidths=[float(column_width) / sum(column_widths) for column_width in column_widths[1:]],
         rowLoc='left', colLoc='center', cellLoc='right', loc='center')
     pdf_tables_figures.append(figure)
-    matplotlib.pyplot.close()
+    plt.close()
 
 
 def fill_all_pdf_file(all_pdf):
@@ -905,6 +893,6 @@ def fill_all_pdf_file(all_pdf):
     all_pdf.close()
     pdf_tables_figures = []
     pdf_plots_figures = []
-    matplotlib.pyplot.close('all')  # closing all open figures
+    plt.close('all')  # closing all open figures
 
 

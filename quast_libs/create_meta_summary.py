@@ -91,16 +91,17 @@ def do(html_fpath, output_dirpath, combined_output_dirpath, output_dirpath_per_r
                 if reporting.get_quality(metric) == reporting.Fields.Quality.MORE_IS_BETTER:
                     reverse = True
                 y_label = None
-                if metric == reporting.Fields.TOTALLEN:
-                    y_label = 'Total length '
+                if metric in [reporting.Fields.TOTALLEN, reporting.Fields.TOTALLENS__FOR_1000_THRESHOLD,
+                              reporting.Fields.TOTALLENS__FOR_10000_THRESHOLD, reporting.Fields.TOTALLENS__FOR_50000_THRESHOLD]:
+                    y_label = 'Total length'
                 elif metric == reporting.Fields.TOTAL_ALIGNED_LEN:
-                    y_label = 'Aligned length '
+                    y_label = 'Aligned length'
                 elif metric in [reporting.Fields.LARGCONTIG, reporting.Fields.N50, reporting.Fields.NGA50,
                                 reporting.Fields.MIS_EXTENSIVE_BASES]:
-                    y_label = 'Contig length '
+                    y_label = 'Contig length'
                 elif metric == reporting.Fields.LARGALIGN:
-                    y_label = 'Alignment length '
-                plotter.draw_meta_summary_plot(html_fpath, output_dirpath, labels, cur_ref_names, all_rows, results,
+                    y_label = 'Alignment length'
+                plotter.draw_meta_summary_plot(html_fpath, output_dirpath, labels, cur_ref_names, results,
                                                summary_plot_fpath, title=metric, reverse=reverse, yaxis_title=y_label,
                                                print_all_refs=True)
                 if metric == reporting.Fields.MISASSEMBL:

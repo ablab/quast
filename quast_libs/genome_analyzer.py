@@ -9,7 +9,7 @@ import logging
 import os
 
 from quast_libs import fastaparser, genes_parser, reporting, qconfig, qutils
-from quast_libs.basic_stats import lists_of_contigs_lengths
+from quast_libs.ca_utils.misc import contigs_aligned_lengths
 
 from quast_libs.log import get_logger
 from quast_libs.qutils import is_python2
@@ -116,9 +116,11 @@ def process_single_file(contigs_fpath, index, nucmer_path_dirpath, genome_stats_
     for chr_name, chr_len in reference_chromosomes.items():
         genome_mapping[chr_name] = [0] * (chr_len + 1)
 
-    contig_tuples = fastaparser.read_fasta(contigs_fpath)  # list of FASTA entries (in tuples: name, seq)
+    contig_tuples = list(fastaparser.read_fasta(contigs_fpath))  # list of FASTA entries (in tuples: name, seq)
+    contig_names = [name for (name, seq) in contig_tuples]
     contig_tuples = sorted(contig_tuples, key=lambda contig: len(contig[1]), reverse=True)
     sorted_contigs_names = [name for (name, seq) in contig_tuples]
+    contigs_order = [contig_names.index(name) for name in sorted_contigs_names]
 
     genes_in_contigs = [0] * len(sorted_contigs_names) # for cumulative plots: i-th element is the number of genes in i-th contig
     operons_in_contigs = [0] * len(sorted_contigs_names)
@@ -265,8 +267,10 @@ def process_single_file(contigs_fpath, index, nucmer_path_dirpath, genome_stats_
         found_file.close()
 
     logger.info('  ' + qutils.index_to_str(index) + 'Analysis is finished.')
+    unsorted_genes_in_contigs = [genes_in_contigs[idx] for idx in contigs_order]
+    unsorted_operons_in_contigs = [operons_in_contigs[idx] for idx in contigs_order]
 
-    return ref_lengths, (results, genes_in_contigs, operons_in_contigs)
+    return ref_lengths, (results, unsorted_genes_in_contigs, genes_in_contigs, unsorted_operons_in_contigs, operons_in_contigs)
 
 
 def do(ref_fpath, aligned_contigs_fpaths, output_dirpath, genes_fpaths, operons_fpaths,
@@ -332,7 +336,9 @@ def do(ref_fpath, aligned_contigs_fpaths, output_dirpath, genes_fpaths, operons_
 
     # for cumulative plots:
     files_genes_in_contigs = {}   #  "filename" : [ genes in sorted contigs (see below) ]
+    files_unsorted_genes_in_contigs = {}   #  "filename" : [ genes in sorted contigs (see below) ]
     files_operons_in_contigs = {}
+    files_unsorted_operons_in_contigs = {}
 
     # for histograms
     genome_mapped = []
@@ -384,11 +390,14 @@ def do(ref_fpath, aligned_contigs_fpaths, output_dirpath, genes_fpaths, operons_
         % ('', 'fraction', 'ratio', 'number', '', 'genes', '', 'operons'))
     res_file.write('================================================================================================================\n')
 
-    for contigs_fpath, (results, genes_in_contigs, operons_in_contigs) in zip(aligned_contigs_fpaths, results_genes_operons_tuples):
+    for contigs_fpath, (results, unsorted_genes_in_contigs, genes_in_contigs, unsorted_operons_in_contigs, operons_in_contigs)\
+            in zip(aligned_contigs_fpaths, results_genes_operons_tuples):
         assembly_name = qutils.name_from_fpath(contigs_fpath)
 
         files_genes_in_contigs[contigs_fpath] = genes_in_contigs
+        files_unsorted_genes_in_contigs[contigs_fpath] = unsorted_genes_in_contigs
         files_operons_in_contigs[contigs_fpath] = operons_in_contigs
+        files_unsorted_operons_in_contigs[contigs_fpath] = unsorted_operons_in_contigs
         full_found_genes.append(sum(genes_in_contigs))
         full_found_operons.append(sum(operons_in_contigs))
 
@@ -444,18 +453,17 @@ def do(ref_fpath, aligned_contigs_fpaths, output_dirpath, genes_fpaths, operons_
     if qconfig.draw_plots:
         # cumulative plots:
         from . import plotter
-        sorted_lists_of_contigs_lengths = [sorted(list_of_lengths, reverse=True) for list_of_lengths in lists_of_contigs_lengths]
         if genes_container.region_list:
             plotter.genes_operons_plot(len(genes_container.region_list), aligned_contigs_fpaths, files_genes_in_contigs,
                 genome_stats_dirpath + '/genes_cumulative_plot', 'genes')
-            plotter.frc_plot(output_dirpath, ref_fpath, aligned_contigs_fpaths, sorted_lists_of_contigs_lengths, files_genes_in_contigs,
+            plotter.frc_plot(output_dirpath, ref_fpath, aligned_contigs_fpaths, contigs_aligned_lengths, files_unsorted_genes_in_contigs,
                              genome_stats_dirpath + '/genes_frcurve_plot', 'genes')
             plotter.histogram(aligned_contigs_fpaths, full_found_genes, genome_stats_dirpath + '/complete_genes_histogram',
                 '# complete genes')
         if operons_container.region_list:
             plotter.genes_operons_plot(len(operons_container.region_list), aligned_contigs_fpaths, files_operons_in_contigs,
                 genome_stats_dirpath + '/operons_cumulative_plot', 'operons')
-            plotter.frc_plot(output_dirpath, ref_fpath, aligned_contigs_fpaths, sorted_lists_of_contigs_lengths, files_genes_in_contigs,
+            plotter.frc_plot(output_dirpath, ref_fpath, aligned_contigs_fpaths, contigs_aligned_lengths, files_unsorted_operons_in_contigs,
                              genome_stats_dirpath + '/operons_frcurve_plot', 'operons')
             plotter.histogram(aligned_contigs_fpaths, full_found_operons, genome_stats_dirpath + '/complete_operons_histogram',
                 '# complete operons')

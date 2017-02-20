@@ -486,4 +486,4 @@ def process_misassembled_contig(sorted_aligns, is_cyclic, aligned_lengths, regio
                                                      "contig length (contig: %s, len: %d, aligned: %d)!" % \
                                                      (sorted_aligns[0].contig, contig_aligned_length, len(contig_seq))
 
-    return is_misassembled, misassembly_internal_overlap, indels_info, misassemblies_matched_sv, cnt_misassemblies
+    return is_misassembled, misassembly_internal_overlap, indels_info, misassemblies_matched_sv, cnt_misassemblies, contig_aligned_length

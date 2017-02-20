@@ -9,7 +9,7 @@ from collections import defaultdict
 from quast_libs import fastaparser, qconfig
 from quast_libs.ca_utils.analyze_misassemblies import process_misassembled_contig, IndelsInfo, find_all_sv, Misassembly
 from quast_libs.ca_utils.best_set_selection import get_best_aligns_sets, get_used_indexes, score_single_align
-from quast_libs.ca_utils.misc import ref_labels_by_chromosomes
+from quast_libs.ca_utils.misc import ref_labels_by_chromosomes, contigs_aligned_lengths
 
 
 def add_potential_misassembly(ref, misassemblies_by_ref, refs_with_translocations):
@@ -107,6 +107,7 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fp
     misassemblies_matched_sv = 0
 
     ref_aligns = dict()
+    contigs_aligned_lengths[contigs_fpath] = []
     aligned_lengths = []
     region_misassemblies = []
     misassembled_contigs = dict()
@@ -131,6 +132,7 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fp
         ca_output.stdout_f.write('CONTIG: %s (%dbp)\n' % (contig, ctg_len))
         contig_type = 'unaligned'
         misassemblies_in_contigs.append(0)
+        contigs_aligned_lengths[contigs_fpath].append(0)
 
         #Check if this contig aligned to the reference
         if contig in aligns:
@@ -174,7 +176,7 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fp
                     ca_output.icarus_out_f.write(top_aligns[0].icarus_report_str() + '\n')
                     ref_aligns.setdefault(top_aligns[0].ref, []).append(top_aligns[0])
                     ca_output.coords_filtered_f.write(str(top_aligns[0]) + '\n')
-                    aligned_lengths.append(top_aligns[0].len2)
+                    contigs_aligned_lengths[contigs_fpath][-1] = top_aligns[0].len2
                 else:
                     #There is more than one top align
                     ca_output.stdout_f.write('\t\tThis contig has %d significant alignments. [An ambiguously mapped contig]\n' %
@@ -199,6 +201,7 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fp
                         ca_output.icarus_out_f.write(top_aligns[0].icarus_report_str() + '\n')
                         ref_aligns.setdefault(top_aligns[0].ref, []).append(top_aligns[0])
                         aligned_lengths.append(top_aligns[0].len2)
+                        contigs_aligned_lengths[contigs_fpath][-1] = top_aligns[0].len2
                         ca_output.coords_filtered_f.write(str(top_aligns[0]) + '\n')
                         top_aligns = top_aligns[1:]
                         for align in top_aligns:
@@ -216,6 +219,7 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fp
                             if first_alignment:
                                 first_alignment = False
                                 aligned_lengths.append(top_aligns[0].len2)
+                                contigs_aligned_lengths[contigs_fpath][-1] = top_aligns[0].len2
                             ambiguous_contigs_extra_bases += top_aligns[0].len2
                             ca_output.coords_filtered_f.write(str(top_aligns[0]) + ' ambiguous\n')
                             top_aligns = top_aligns[1:]
@@ -281,6 +285,7 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fp
                     #There is only one alignment of this contig to the reference
                     ca_output.coords_filtered_f.write(str(the_only_align) + '\n')
                     aligned_lengths.append(the_only_align.len2)
+                    contigs_aligned_lengths[contigs_fpath][-1] = the_only_align.len2
 
                     begin, end = the_only_align.start(), the_only_align.end()
                     unaligned_bases = (begin - 1) + (ctg_len - end)
@@ -322,6 +327,7 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fp
                     if aligned_bases_in_contig < umt * ctg_len:
                         ca_output.stdout_f.write('\t\t\tWarning! This contig is more unaligned than misassembled. ' + \
                             'Contig length is %d and total length of all aligns is %d\n' % (ctg_len, aligned_bases_in_contig))
+                        contigs_aligned_lengths[contigs_fpath][-1] = sum(align.len2 for align in sorted_aligns)
                         for align in sorted_aligns:
                             ca_output.stdout_f.write('\t\tAlignment: %s\n' % str(align))
                             ca_output.icarus_out_f.write(align.icarus_report_str() + '\n')
@@ -338,11 +344,12 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fp
                         continue
 
                     ### processing misassemblies
-                    is_misassembled, current_mio, indels_info, misassemblies_matched_sv, cnt_misassemblies = \
+                    is_misassembled, current_mio, indels_info, misassemblies_matched_sv, cnt_misassemblies, contig_aligned_length = \
                         process_misassembled_contig(sorted_aligns, is_cyclic, aligned_lengths, region_misassemblies,
                                                     ref_lens, ref_aligns, ref_features, seq, misassemblies_by_ref,
                                                     istranslocations_by_ref, region_struct_variations, misassemblies_matched_sv,
                                                     ca_output)
+                    contigs_aligned_lengths[contigs_fpath][-1] = contig_aligned_length
                     misassembly_internal_overlap += current_mio
                     total_indels_info += indels_info
                     if is_misassembled:

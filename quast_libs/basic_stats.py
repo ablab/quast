@@ -11,7 +11,6 @@ import re
 from quast_libs import fastaparser, qconfig, qutils, reporting, plotter
 from quast_libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
-lists_of_contigs_lengths = None
 
 def GC_content(contigs_fpath, skip=False):
     """
@@ -201,9 +200,6 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, results_dir):
         numbers_of_Ns.append(number_of_Ns)
 
     num_contigs = max([len(list_of_length) for list_of_length in lists_of_lengths])
-
-    global lists_of_contigs_lengths
-    lists_of_contigs_lengths = [list_of_length[:] for list_of_length in lists_of_lengths]
     multiplicator = 1
     if num_contigs >= (qconfig.max_points * 2):
         import math

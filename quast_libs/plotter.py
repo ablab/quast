@@ -231,7 +231,7 @@ def cumulative_plot(reference, contigs_fpaths, lists_of_lengths, plot_fpath, tit
     save_plot(figure, plot_fpath, title)
 
 
-def frc_plot(results_dir, ref_fpath, contigs_fpaths, lists_of_lengths, features_in_contigs_by_file, plot_fpath, title):
+def frc_plot(results_dir, ref_fpath, contigs_fpaths, contigs_aligned_lengths, features_in_contigs_by_file, plot_fpath, title):
     if can_draw_plots:
         logger.info('  Drawing ' + title + ' FRCurve plot...')
 
@@ -244,19 +244,37 @@ def frc_plot(results_dir, ref_fpath, contigs_fpaths, lists_of_lengths, features_
     json_vals_y = []
     max_features = max(sum(feature_in_contigs) for feature_in_contigs in features_in_contigs_by_file.values()) + 1
 
-    for (contigs_fpath, lengths) in zip(contigs_fpaths, lists_of_lengths):
+    for contigs_fpath in contigs_fpaths:
+        aligned_lengths = contigs_aligned_lengths[contigs_fpath]
         feature_in_contigs = features_in_contigs_by_file[contigs_fpath]
-        if not lengths or not feature_in_contigs:
+        if not aligned_lengths or not feature_in_contigs:
             json_vals_x.append([])
             json_vals_y.append([])
             continue
 
+        len_with_zero_features = 0
+        lengths = []
+        non_zero_feature_in_contigs = []
+        for l, feature in zip(aligned_lengths, feature_in_contigs):
+            if feature == 0:
+                len_with_zero_features += l
+            else:
+                lengths.append(l)
+                non_zero_feature_in_contigs.append(feature)
+        optimal_sorted_tuples = sorted(zip(lengths, non_zero_feature_in_contigs),
+                                       key=lambda tuple: tuple[0] * 1.0 / tuple[1], reverse=True)  # sort by len/features ratio
+        sorted_lengths = [tuple[0] for tuple in optimal_sorted_tuples]
+        sorted_features = [tuple[1] for tuple in optimal_sorted_tuples]
         x_vals = [0]
         y_vals = [0]
-        cumulative_len = 0
         for features_n in range(max_features):
-            selected_lengths = [l for contig_n, l in enumerate(lengths) if feature_in_contigs[contig_n] == features_n]
-            cumulative_len += sum(selected_lengths)
+            features_cnt = 0
+            cumulative_len = len_with_zero_features
+            for l, feature in zip(sorted_lengths, sorted_features):
+                if features_cnt + feature <= features_n:
+                    features_cnt += feature
+                    cumulative_len += l
+
             x_vals.append(features_n)
             y_vals.append(cumulative_len * 100.0 / ref_length)
             x_vals.append(features_n + 1)
@@ -279,7 +297,7 @@ def frc_plot(results_dir, ref_fpath, contigs_fpaths, lists_of_lengths, features_
     ax = set_ax()
     legend_list = [label_from_fpath(fpath) for fpath in contigs_fpaths]
     add_legend(ax, legend_list, n_columns=n_columns)
-    add_labels('Feature space', 'Genome fraction (%)', max_y, ax, logarithmic_x_scale)
+    add_labels('Feature space', 'Genome coverage (%)', max_y, ax, logarithmic_x_scale)
     matplotlib.pyplot.xlim([0, max_features])
     matplotlib.pyplot.ylim([0, max(100, max_y)])
 

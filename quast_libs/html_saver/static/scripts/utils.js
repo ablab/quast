@@ -111,9 +111,8 @@ function ordinalNumberToPrettyString(num, unit, tickX) {
 }
 
 function frcNumberToPrettyString(num, unit, tickX, index) {
-    if (index % 2 == 1) num++;
-    if (num == 0) return '';
-    return '<' + toPrettyString(num) + ' ' + unit;
+    if (index % 2 == 0) num--;
+    return toPrettyString(num) + ' ' + unit;
 }
 
 function getMaxDecimalTick(maxY) {

@@ -24,6 +24,7 @@ contig_aligner = None
 contig_aligner_dirpath = join(qconfig.LIBS_LOCATION, 'MUMmer')
 ref_labels_by_chromosomes = {}
 intergenomic_misassemblies_by_asm = {}
+contigs_aligned_lengths = {}
 e_mem_failed_compilation_flag = join(contig_aligner_dirpath, 'make.emem.failed')
 mummer_failed_compilation_flag = join(contig_aligner_dirpath, 'make.mummer.failed')
 

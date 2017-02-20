@@ -9,7 +9,6 @@ import logging
 import os
 
 from quast_libs import fastaparser, genes_parser, reporting, qconfig, qutils
-from quast_libs.ca_utils.misc import contigs_aligned_lengths
 
 from quast_libs.log import get_logger
 from quast_libs.qutils import is_python2
@@ -453,6 +452,7 @@ def do(ref_fpath, aligned_contigs_fpaths, output_dirpath, genes_fpaths, operons_
     if qconfig.draw_plots:
         # cumulative plots:
         from . import plotter
+        from quast_libs.ca_utils.misc import contigs_aligned_lengths
         if genes_container.region_list:
             plotter.genes_operons_plot(len(genes_container.region_list), aligned_contigs_fpaths, files_genes_in_contigs,
                 genome_stats_dirpath + '/genes_cumulative_plot', 'genes')

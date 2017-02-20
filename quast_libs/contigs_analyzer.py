@@ -24,12 +24,12 @@ from collections import defaultdict
 from os.path import join, dirname
 
 from quast_libs import reporting, qconfig, qutils, fastaparser
+from quast_libs.ca_utils import misc
 from quast_libs.ca_utils.analyze_contigs import analyze_contigs
 from quast_libs.ca_utils.analyze_coverage import analyze_coverage
 from quast_libs.ca_utils.analyze_misassemblies import Mapping
 from quast_libs.ca_utils.misc import ref_labels_by_chromosomes, clean_tmp_files, compile_aligner, \
-    create_nucmer_output_dir, open_gzipsafe, compress_nucmer_output, is_emem_aligner, close_handlers, compile_gnuplot, \
-    contigs_aligned_lengths
+    create_nucmer_output_dir, open_gzipsafe, compress_nucmer_output, is_emem_aligner, close_handlers, compile_gnuplot
 from quast_libs.ca_utils.align_contigs import align_contigs, get_nucmer_aux_out_fpaths, NucmerStatus, check_emem_functionality
 from quast_libs.ca_utils.save_results import print_results, save_result, save_result_for_unaligned, \
     save_combined_ref_stats
@@ -111,7 +111,7 @@ def align_and_analyze(is_cyclic, index, contigs_fpath, output_dirpath, ref_fpath
                 log_err_f.write(qutils.index_to_str(index) + 'Nothing aligned for ' + contigs_fpath + '\n')
                 logger.info('  ' + qutils.index_to_str(index) + 'Nothing aligned for ' + '\'' + assembly_label + '\'.')
         clean_tmp_files(nucmer_fpath)
-        return nucmer_status, {}, [], []
+        return nucmer_status, {}, [], [], []
 
     log_out_f = open(log_out_fpath, 'a')
     # Loading the alignment files
@@ -187,7 +187,7 @@ def align_and_analyze(is_cyclic, index, contigs_fpath, output_dirpath, ref_fpath
                          used_snps_f=used_snps_file, icarus_out_f=icarus_out_f)
 
     log_out_f.write('Analyzing contigs...\n')
-    result, ref_aligns, total_indels_info, aligned_lengths, misassembled_contigs, misassemblies_in_contigs =\
+    result, ref_aligns, total_indels_info, aligned_lengths, misassembled_contigs, misassemblies_in_contigs, aligned_lengths_by_contigs =\
         analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fpath, aligns, ref_features, ref_lens, is_cyclic)
 
     log_out_f.write('Analyzing coverage...\n')
@@ -239,9 +239,9 @@ def align_and_analyze(is_cyclic, index, contigs_fpath, output_dirpath, ref_fpath
     if not qconfig.no_gzip:
         compress_nucmer_output(logger, nucmer_fpath)
     if not ref_aligns:
-        return NucmerStatus.NOT_ALIGNED, result, aligned_lengths, misassemblies_in_contigs
+        return NucmerStatus.NOT_ALIGNED, result, aligned_lengths, misassemblies_in_contigs, aligned_lengths_by_contigs
     else:
-        return NucmerStatus.OK, result, aligned_lengths, misassemblies_in_contigs
+        return NucmerStatus.OK, result, aligned_lengths, misassemblies_in_contigs, aligned_lengths_by_contigs
 
 
 def do(reference, contigs_fpaths, is_cyclic, output_dir, old_contigs_fpaths, bed_fpath=None):
@@ -288,12 +288,13 @@ def do(reference, contigs_fpaths, is_cyclic, output_dir, old_contigs_fpaths, bed
                 parallel_by_chr=True, threads=qconfig.max_threads))
 
     # unzipping
-    statuses, results, aligned_lengths, misassemblies_in_contigs = [[x[i] for x in statuses_results_lengths_tuples]
-                                                                    for i in range(4)]
+    statuses, results, aligned_lengths, misassemblies_in_contigs, aligned_lengths_by_contigs =\
+        [[x[i] for x in statuses_results_lengths_tuples] for i in range(5)]
     reports = []
 
     nucmer_statuses = dict(zip(contigs_fpaths, statuses))
     aligned_lengths_per_fpath = dict(zip(contigs_fpaths, aligned_lengths))
+    misc.contigs_aligned_lengths = dict(zip(contigs_fpaths, aligned_lengths_by_contigs))
 
     if NucmerStatus.OK in nucmer_statuses.values():
         if qconfig.is_combined_ref:
@@ -313,7 +314,7 @@ def do(reference, contigs_fpaths, is_cyclic, output_dir, old_contigs_fpaths, bed
             from . import plotter
             plotter.draw_misassembl_plot(reports, join(output_dir, 'misassemblies_plot'), 'Misassemblies')
             misassemblies_in_contigs = dict((contigs_fpaths[i], misassemblies_in_contigs[i]) for i in range(len(contigs_fpaths)))
-            plotter.frc_plot(dirname(output_dir), reference, contigs_fpaths, contigs_aligned_lengths, misassemblies_in_contigs,
+            plotter.frc_plot(dirname(output_dir), reference, contigs_fpaths, misc.contigs_aligned_lengths, misassemblies_in_contigs,
                              join(output_dir, 'misassemblies_frcurve_plot'), 'misassemblies')
 
     oks = list(nucmer_statuses.values()).count(NucmerStatus.OK)

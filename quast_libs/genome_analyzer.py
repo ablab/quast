@@ -9,7 +9,6 @@ import logging
 import os
 
 from quast_libs import fastaparser, genes_parser, reporting, qconfig, qutils
-
 from quast_libs.log import get_logger
 from quast_libs.qutils import is_python2
 
@@ -147,7 +146,8 @@ def process_single_file(contigs_fpath, index, nucmer_path_dirpath, genome_stats_
             return None
 
         if gene_searching_enabled:
-            aligned_blocks_by_contig_name[contig_name].append(AlignedBlock(seqname=chr_name, start=s1, end=e1))
+            aligned_blocks_by_contig_name[contig_name].append(AlignedBlock(seqname=chr_name, start=s1, end=e1,
+                                                                           contig=contig_name, start_in_contig=s2, end_in_contig=e2))
         if s2 == 0 and e2 == 0:  # special case: circular genome, contig starts on the end of a chromosome and ends in the beginning
             for i in range(s1, len(genome_mapping[chr_name])):
                 genome_mapping[chr_name][i] = 1
@@ -209,7 +209,7 @@ def process_single_file(contigs_fpath, index, nucmer_path_dirpath, genome_stats_
         total_partial = 0
         found_fpath = os.path.join(genome_stats_dirpath, corr_assembly_label + suffix)
         found_file = open(found_fpath, 'w')
-        found_file.write('%s\t\t%s\t%s\t%s\n' % ('ID or #', 'Start', 'End', 'Type'))
+        found_file.write('%s\t\t%s\t%s\t%s\t%s\n' % ('ID or #', 'Start', 'End', 'Type', 'Contig'))
         found_file.write('=========================================\n')
 
         # 0 - gene is not found,
@@ -218,6 +218,7 @@ def process_single_file(contigs_fpath, index, nucmer_path_dirpath, genome_stats_
         found_list = [0] * len(container.region_list)
         for i, region in enumerate(container.region_list):
             found_list[i] = 0
+            gene_blocks = []
             for contig_id, name in enumerate(sorted_contigs_names):
                 cur_feature_is_found = False
                 for cur_block in aligned_blocks_by_contig_name[name]:
@@ -226,8 +227,16 @@ def process_single_file(contigs_fpath, index, nucmer_path_dirpath, genome_stats_
 
                     # computing circular genomes
                     if cur_block.start > cur_block.end:
-                        blocks = [AlignedBlock(seqname=cur_block.seqname, start=cur_block.start, end=region.end + 1),
-                                  AlignedBlock(seqname=cur_block.seqname, start=1, end=cur_block.end)]
+                        blocks = [AlignedBlock(seqname=cur_block.seqname, start=cur_block.start, end=region.end + 1,
+                                               contig=cur_block.contig_name, start_in_contig=cur_block.start_in_contig),
+                                  AlignedBlock(seqname=cur_block.seqname, start=1, end=cur_block.end,
+                                               contig=cur_block.contig_name, end_in_contig=cur_block.end_in_contig)]
+                        if cur_block.start_in_contig < cur_block.end_in_contig:
+                            blocks[0].end_in_contig = blocks[0].start_in_contig + (blocks[0].end - blocks[0].start)
+                            blocks[1].start_in_contig = blocks[0].end_in_contig + 1
+                        else:
+                            blocks[0].end_in_contig = blocks[0].start_in_contig - (blocks[1].end - blocks[1].start)
+                            blocks[1].start_in_contig = blocks[0].end_in_contig - 1
                     else:
                         blocks = [cur_block]
 
@@ -242,14 +251,17 @@ def process_single_file(contigs_fpath, index, nucmer_path_dirpath, genome_stats_
                             region_id = str(region.id)
                             if region_id == 'None':
                                 region_id = '# ' + str(region.number + 1)
-                            found_file.write('%s\t\t%d\t%d\tcomplete\n' % (region_id, region.start, region.end))
+                            contig_info = block.format_gene_info(region)
+                            found_file.write('%s\t\t%d\t%d\tcomplete\t%s\n' % (region_id, region.start, region.end, contig_info))
                             feature_in_contigs[contig_id] += 1  # inc number of found genes/operons in id-th contig
 
                             cur_feature_is_found = True
                             break
-                        elif found_list[i] == 0 and min(region.end, block.end) - max(region.start, block.start) >= qconfig.min_gene_overlap:
-                            found_list[i] = 2
-                            total_partial += 1
+                        elif min(region.end, block.end) - max(region.start, block.start) >= qconfig.min_gene_overlap:
+                            if found_list[i] == 0:
+                                found_list[i] = 2
+                                total_partial += 1
+                            gene_blocks.append(block)
                     if cur_feature_is_found:
                         break
                 if cur_feature_is_found:
@@ -259,7 +271,8 @@ def process_single_file(contigs_fpath, index, nucmer_path_dirpath, genome_stats_
                 region_id = str(region.id)
                 if region_id == 'None':
                     region_id = '# ' + str(region.number + 1)
-                found_file.write('%s\t\t%d\t%d\tpartial\n' % (region_id, region.start, region.end))
+                contig_info = ','.join([block.format_gene_info(region) for block in sorted(gene_blocks, key=lambda block: block.start)])
+                found_file.write('%s\t\t%d\t%d\tpartial\t%s\n' % (region_id, region.start, region.end, contig_info))
 
         results[field + "_full"] = total_full
         results[field + "_partial"] = total_partial
@@ -475,7 +488,26 @@ def do(ref_fpath, aligned_contigs_fpaths, output_dirpath, genes_fpaths, operons_
 
 
 class AlignedBlock():
-    def __init__(self, seqname=None, start=None, end=None):
+    def __init__(self, seqname=None, start=None, end=None, contig=None, start_in_contig=None, end_in_contig=None):
         self.seqname = seqname
         self.start = start
         self.end = end
+        self.contig = contig
+        self.start_in_contig = start_in_contig
+        self.end_in_contig = end_in_contig
+
+    def format_gene_info(self, region):
+        start, end = self.start_in_contig, self.end_in_contig
+        if self.start < region.start:
+            region_shift = region.start - self.start
+            if start < end:
+                start += region_shift
+            else:
+                start -= region_shift
+        if region.end < self.end:
+            region_size = region.end - max(region.start, self.start)
+            if start < end:
+                end = start + region_size
+            else:
+                end = start - region_size
+        return self.contig + ':' + str(start) + '-' + str(end)

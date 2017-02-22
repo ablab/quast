@@ -13,7 +13,7 @@ import os
 import sys
 import re
 from collections import defaultdict
-from os.path import basename, isfile, realpath
+from os.path import basename, isfile, realpath, isdir
 
 from quast_libs import fastaparser, qconfig
 from quast_libs.log import get_logger
@@ -28,22 +28,22 @@ def set_up_output_dir(output_dirpath, json_outputpath,
     existing_alignments = False
 
     if output_dirpath:  # 'output dir was specified with -o option'
-        if os.path.isdir(output_dirpath):
+        if isdir(output_dirpath):
             existing_alignments = True
     else:  # output dir was not specified, creating our own one
         output_dirpath = os.path.join(os.path.abspath(
             qconfig.default_results_root_dirname), qconfig.output_dirname)
 
         # in case of starting two instances of QUAST in the same second
-        if os.path.isdir(output_dirpath):
+        if isdir(output_dirpath):
             if make_latest_symlink:
                 i = 2
                 base_dirpath = output_dirpath
-                while os.path.isdir(output_dirpath):
+                while isdir(output_dirpath):
                     output_dirpath = str(base_dirpath) + '__' + str(i)
                     i += 1
 
-    if not os.path.isdir(output_dirpath):
+    if not isdir(output_dirpath):
         os.makedirs(output_dirpath)
 
     # 'latest' symlink
@@ -61,11 +61,11 @@ def set_up_output_dir(output_dirpath, json_outputpath,
     # Json directory
     if save_json:
         if json_outputpath:
-            if not os.path.isdir(json_outputpath):
+            if not isdir(json_outputpath):
                 os.makedirs(json_outputpath)
         else:
             json_outputpath = os.path.join(output_dirpath, qconfig.default_json_dirname)
-            if not os.path.isdir(json_outputpath):
+            if not isdir(json_outputpath):
                 os.makedirs(json_outputpath)
 
     return output_dirpath, json_outputpath, existing_alignments
@@ -529,7 +529,7 @@ def remove_reports(output_dirpath):
     if os.path.isfile(plots_fpath):
         os.remove(plots_fpath)
     html_report_aux_dir = os.path.join(output_dirpath, qconfig.html_aux_dir)
-    if os.path.isdir(html_report_aux_dir):
+    if isdir(html_report_aux_dir):
         shutil.rmtree(html_report_aux_dir)
 
 
@@ -813,6 +813,38 @@ def check_dirpath(path, message="", exit_code=3):
     if ' ' in path:
         logger.error('QUAST does not support spaces in paths.\n' + message, to_stderr=True, exit_with_code=exit_code)
     return True
+
+
+def is_dir_writable(dirpath):
+    if isdir(dirpath) and not check_write_permission(dirpath):
+        return False
+    if not isdir(dirpath) and not check_write_permission(os.path.dirname(dirpath)):
+        return False
+    return True
+
+
+def check_write_permission(path):
+    return os.access(path, os.W_OK)
+
+
+def get_dir_for_download(dirname, tool, reqiured_files, logger):
+    tool_dirpath = join(qconfig.LIBS_LOCATION, dirname)
+    quast_home_dirpath = join(os.path.expanduser('~'), '.quast')
+    tool_home_dirpath = join(quast_home_dirpath, dirname)
+    if all(os.path.exists(join(tool_dirpath, fpath)) for fpath in reqiured_files):
+        return tool_dirpath
+    if all(os.path.exists(join(tool_home_dirpath, fpath)) for fpath in reqiured_files):
+        return tool_home_dirpath
+    if not is_dir_writable(tool_dirpath):
+        logger.notice('Permission denied accessing ' + tool_dirpath + '. ' + tool + ' will be downloaded to home directory ' + quast_home_dirpath)
+        if not is_dir_writable(quast_home_dirpath):
+            logger.warning('Permission denied accessing home directory ' + quast_home_dirpath + '. ' + tool + ' cannot be downloaded.')
+            return None
+        tool_dirpath = tool_home_dirpath
+
+    if not isdir(tool_dirpath):
+        os.makedirs(tool_dirpath)
+    return tool_dirpath
 
 
 def run_parallel(_fn, fn_args, n_jobs, filter_results=False):

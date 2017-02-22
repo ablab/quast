@@ -16,8 +16,8 @@ from collections import defaultdict
 from quast_libs import qconfig, qutils
 from quast_libs.ca_utils.misc import ref_labels_by_chromosomes
 from quast_libs.fastaparser import create_fai_file, get_chr_lengths_from_fastafile
-from quast_libs.ra_utils import compile_reads_analyzer_tools, config_manta_fpath, sambamba_fpath, \
-    bwa_fpath, bedtools_fpath, paired_reads_names_are_equal
+from quast_libs.ra_utils import compile_reads_analyzer_tools, get_manta_fpath, sambamba_fpath, \
+    bwa_fpath, bedtools_fpath, paired_reads_names_are_equal, download_manta
 from .qutils import is_non_empty_file, add_suffix, get_chr_len_fpath, correct_name, is_python2
 
 from quast_libs.log import get_logger
@@ -129,7 +129,7 @@ def process_one_ref(cur_ref_fpath, output_dirpath, err_path, bed_fpath=None):
         if os.path.exists(vcfoutput_dirpath):
             shutil.rmtree(vcfoutput_dirpath, ignore_errors=True)
         os.makedirs(vcfoutput_dirpath)
-        qutils.call_subprocess([config_manta_fpath, '--normalBam', ref_bamsorted_fpath,
+        qutils.call_subprocess([get_manta_fpath(), '--normalBam', ref_bamsorted_fpath,
                                 '--referenceFasta', cur_ref_fpath, '--runDir', vcfoutput_dirpath],
                                stdout=open(err_path, 'a'), stderr=open(err_path, 'a'), logger=logger)
         if not os.path.exists(os.path.join(vcfoutput_dirpath, 'runWorkflow.py')):
@@ -393,7 +393,7 @@ def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpat
                     for deletion in deletions:
                         f.write(str(deletion) + '\n')
 
-        if isfile(config_manta_fpath):
+        if get_manta_fpath() and isfile(get_manta_fpath()):
             try:
                 manta_sv_fpath = search_sv_with_manta(main_ref_fpath, meta_ref_fpaths, output_dirpath, err_path)
                 qutils.cat_files([manta_sv_fpath, trivial_deletions_fpath], bed_fpath)
@@ -594,10 +594,11 @@ def do(ref_fpath, contigs_fpaths, reads_fpaths, meta_ref_fpaths, output_dir, ext
 
     if not os.path.isdir(output_dir):
         os.makedirs(output_dir)
-    if not compile_reads_analyzer_tools(logger, bed_fpath):
+    if not compile_reads_analyzer_tools(logger):
         logger.main_info('Failed searching structural variations')
         return None, None, None
 
+    download_manta(logger, bed_fpath)
     temp_output_dir = os.path.join(output_dir, 'temp_output')
 
     if not os.path.isdir(temp_output_dir):

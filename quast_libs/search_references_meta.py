@@ -18,7 +18,7 @@ from os.path import isdir, isfile, join
 from quast_libs import qconfig, qutils
 from quast_libs.fastaparser import _get_fasta_file_handler
 from quast_libs.log import get_logger
-from quast_libs.qutils import is_non_empty_file, is_python2, slugify, correct_name
+from quast_libs.qutils import is_non_empty_file, is_python2, slugify, correct_name, get_dir_for_download
 
 logger = get_logger(qconfig.LOGGER_META_NAME)
 try:
@@ -37,15 +37,17 @@ ncbi_pattern = re.compile(r'(?P<id>\S+\_[0-9.]+)[_ |](?P<seqname>\S+)', re.I)
 
 silva_db_url = 'http://www.arb-silva.de/fileadmin/silva_databases/release_123/Exports/'
 silva_fname = 'SILVA_123_SSURef_Nr99_tax_silva.fasta'
+silva_id = '123'
+silva_downloaded_fname = 'silva.' + silva_id + '.db'
 
 external_tools_dirpath = join(qconfig.QUAST_HOME, 'external_tools')
 blast_external_tools_dirpath = join(external_tools_dirpath, 'blast', qconfig.platform_name)
 blast_filenames = ['makeblastdb', 'blastn']
 blast_dirpath_url = qconfig.GIT_ROOT_URL + qutils.relpath(blast_external_tools_dirpath, qconfig.QUAST_HOME)
 
-blast_dirpath = join(qconfig.LIBS_LOCATION, 'blast')
-blastdb_dirpath = join(qconfig.LIBS_LOCATION, 'blast', '16S_RNA_blastdb')
-db_fpath = join(blastdb_dirpath, 'silva.db')
+blast_dirpath = None
+blastdb_dirpath = None
+db_fpath = None
 db_nsq_fsize = 194318557
 
 is_quast_first_run = False
@@ -172,6 +174,11 @@ def show_progress(a, b, c):
 
 
 def download_all_blast_binaries(logger=logger, only_clean=False):
+    global blast_dirpath
+    blast_dirpath = get_dir_for_download('blast', 'BLAST', blast_filenames, logger)
+    if not blast_dirpath:
+        return False
+
     if only_clean:
         if os.path.isdir(blastdb_dirpath):
             shutil.rmtree(blastdb_dirpath)
@@ -225,16 +232,20 @@ def download_blast_binary(blast_filename, logger=logger):
 
 
 def download_blastdb(logger=logger, only_clean=False):
+    global blastdb_dirpath
+    blastdb_dirpath = get_dir_for_download('silva', 'Silva', [silva_downloaded_fname + '.nsq'], logger)
+    if not blastdb_dirpath:
+        return False
+
     if only_clean:
         if os.path.isdir(blastdb_dirpath):
             logger.info('Removing ' + blastdb_dirpath)
             shutil.rmtree(blastdb_dirpath)
         return True
 
+    global db_fpath
+    db_fpath = join(blastdb_dirpath, silva_downloaded_fname)
     if os.path.isfile(db_fpath + '.nsq') and os.path.getsize(db_fpath + '.nsq') >= db_nsq_fsize:
-        logger.info()
-        logger.info('SILVA 16S rRNA database has already been downloaded, unpacked and BLAST database created. '
-                    'If not, please remove %s and restart your command.' % (db_fpath + '.nsq'))
         return True
     log_fpath = os.path.join(blastdb_dirpath, 'blastdb.log')
     db_gz_fpath = os.path.join(blastdb_dirpath, silva_fname + '.gz')
@@ -404,9 +415,6 @@ def parse_organism_id(organism_id):
 
 
 def process_blast(blast_assemblies, downloaded_dirpath, corrected_dirpath, labels, blast_check_fpath, err_fpath):
-    if not os.path.isdir(blastdb_dirpath):
-        os.makedirs(blastdb_dirpath)
-
     if not download_all_blast_binaries():
         return None, None
 
@@ -425,12 +433,8 @@ def process_blast(blast_assemblies, downloaded_dirpath, corrected_dirpath, label
                          ' Also you can rerun MetaQUAST without --blast-db option. MetaQUAST uses SILVA 16S RNA database by default.',
                          exit_with_code=2)
 
-    elif not os.path.isfile(db_fpath + '.nsq') or os.path.getsize(db_fpath + '.nsq') < db_nsq_fsize:
-        # if os.path.isdir(blastdb_dirpath):
-        #     shutil.rmtree(blastdb_dirpath)
-        if not download_blastdb():
-            return None, None
-        logger.info()
+    elif not download_blastdb():
+        return None, None
 
     blast_res_fpath = os.path.join(downloaded_dirpath, 'blast.res')
 

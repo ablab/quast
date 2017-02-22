@@ -166,6 +166,9 @@ if cmd_in(['install', 'develop', 'build', 'build_ext']):
         logger.info('* Compiling read analysis tools *')
         if not compile_reads_analyzer_tools(logger):
             modules_failed_to_install.append('Read analysis tools (affects -1/--reads1 and -2/--reads2 options)')
+        logger.info('* Downloading Manta *')
+        if not download_manta(logger):
+            modules_failed_to_install.append('Manta (affects -1/--reads1 and -2/--reads2 options)')
         logger.info('* Downloading SILVA 16S rRNA gene database and BLAST *')
         if not download_all_blast_binaries(logger) or not download_blastdb(logger):
             modules_failed_to_install.append('SILVA 16S rRNA gene database and BLAST (affects metaquast.py in without references mode)')

@@ -188,7 +188,7 @@ def cumulative_plot(reference, contigs_fpaths, lists_of_lengths, plot_fpath, tit
 
     # Put a legend below current axis
     try: # for matplotlib <= 2009-12-09
-        ax.legend(legend_list, loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True,
+        ax.legend(legend_list, loc='upper center', bbox_to_anchor=(0.49, -0.15), fancybox=True,
             shadow=True, ncol=n_columns if n_columns<3 else 3)
     except Exception: # ZeroDivisionError: ValueError:
         pass
@@ -700,8 +700,6 @@ def draw_meta_summary_plot(html_fpath, output_dirpath, labels, ref_names, all_ro
 
     sorted_values = sorted(zip(values, refs, arr_y_by_refs), reverse=reverse, key=lambda x: x[0])
     values, refs, arr_y_by_refs = [[x[i] for x in sorted_values] for i in range(3)]
-    if can_draw_plots:
-        matplotlib.pyplot.xticks(range(1, len(refs) + 1), refs, size='small', rotation='vertical')
     json_points_x = []
     json_points_y = []
     for j in range(contigs_num):
@@ -736,9 +734,7 @@ def draw_meta_summary_plot(html_fpath, output_dirpath, labels, ref_names, all_ro
             mkformatter = matplotlib.ticker.FuncFormatter(mkfunc)
             ax.yaxis.set_major_formatter(mkformatter)
 
-        if ymax == 0:
-            matplotlib.pyplot.ylim([0, 5])
-
+        matplotlib.pyplot.xticks(range(1, len(refs) + 1), refs, size='small', rotation='vertical')
         legend = []
         for j in range(contigs_num):
             legend.append(labels[j])
@@ -746,10 +742,8 @@ def draw_meta_summary_plot(html_fpath, output_dirpath, labels, ref_names, all_ro
             ax.legend(legend, loc='center left', bbox_to_anchor=(1.0, 0.5), numpoints=1)
         except Exception:
             pass
-        matplotlib.pyplot.tight_layout()
         matplotlib.pyplot.savefig(plot_fpath, bbox_inches='tight')
         meta_logger.info('    saved to ' + plot_fpath)
-        pdf_plots_figures.append(figure)
         matplotlib.pyplot.close()
 
 
@@ -813,23 +807,22 @@ def draw_meta_summary_misassembl_plot(results, ref_names, contig_num, plot_fpath
                 json_points_x.append(arr_x[j])
                 json_points_y.append(0)
     if can_draw_plots:
-        matplotlib.pyplot.xticks(range(1, len(refs) + 1), refs, size='small', rotation='vertical')
         legend_n = set(legend_n)
         legend = []
         for i in sorted(legend_n):
             legend.append(misassemblies[i])
         matplotlib.pyplot.xlim([0, refs_num + 1])
+        matplotlib.pyplot.xticks(range(1, len(refs) + 1), refs, size='small', rotation='vertical')
 
-        if ymax == 0:
+        if ymax < 5:
             matplotlib.pyplot.ylim([0, 5])
         else:
-            matplotlib.pyplot.ylim([0, math.ceil(ymax * 1.1)])
+            matplotlib.pyplot.ylim([0, math.ceil(ymax * 1.05)])
         matplotlib.pyplot.ylabel('# misassemblies', fontsize=axes_fontsize)
 
         ax.legend(legend, loc='center left', bbox_to_anchor=(1.0, 0.5), numpoints=1)
 
         plot_fpath += '.' + qconfig.plot_extension
-        matplotlib.pyplot.tight_layout()
         matplotlib.pyplot.savefig(plot_fpath, bbox_inches='tight')
         meta_logger.info('    saved to ' + plot_fpath)
         matplotlib.pyplot.close()

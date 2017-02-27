@@ -139,13 +139,14 @@ def set_ax(vertical_legend=False):
 
 
 def add_labels(xlabel, ylabel, max_y, ax, logarithmic_x_scale=False):
-    if 'length' in ylabel:
+    if ylabel and 'length' in ylabel:
         ylabel, mkfunc = y_formatter(ylabel, max_y)
         mkformatter = matplotlib.ticker.FuncFormatter(mkfunc)
         ax.yaxis.set_major_formatter(mkformatter)
 
     plt.xlabel(xlabel, fontsize=axes_fontsize)
-    plt.ylabel(ylabel, fontsize=axes_fontsize)
+    if ylabel:
+        plt.ylabel(ylabel, fontsize=axes_fontsize)
 
     xLocator, yLocator = get_locators()
     ax.yaxis.set_major_locator(yLocator)
@@ -173,7 +174,7 @@ def add_legend(ax, legend_list, n_columns=None, vertical_legend=False):
         if vertical_legend:
             legend = ax.legend(legend_list, loc='center left', bbox_to_anchor=(1.0, 0.5), fancybox=True, shadow=True, numpoints=1)
         else:
-            legend = ax.legend(legend_list, loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True, shadow=True,
+            legend = ax.legend(legend_list, loc='upper center', bbox_to_anchor=(0.49, -0.15), fancybox=True, shadow=True,
                                ncol=n_columns if n_columns<3 else 3)
         for handle in legend.legendHandles:
             handle.set_hatch('')
@@ -669,13 +670,11 @@ def draw_meta_summary_plot(html_fpath, output_dirpath, labels, ref_names, result
             plt.ylim([0, int(math.ceil(max_y * 1.05))])
 
         ax = set_ax(vertical_legend=True)
-        plt.xticks(range(len(selected_refs) + 1), [''] + selected_refs, size='small', rotation='vertical')
         legend_list = labels
         add_legend(ax, legend_list, vertical_legend=True)
-        if yaxis_title:
-            add_labels('', yaxis_title, max_y, ax)
+        add_labels('', yaxis_title, max_y, ax)
+        plt.xticks(range(len(selected_refs) + 1), [''] + selected_refs, size='small', rotation='vertical')
 
-        plt.tight_layout()
         save_plot(figure, plot_fpath, title, add_to_report=False)
 
 

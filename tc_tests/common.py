@@ -70,8 +70,7 @@ combined_output_name = "combined_reference"
 # --strict-NA                       Breaks contigs by any misassembly event to compute NAx and NGAx.
 #                                   By default, QUAST breaks contigs only by extensive misassemblies (not local ones)
 #
-# -m  --meta                        Metagenomic assembly. Uses MetaGeneMark for gene prediction.
-#                                   Accepts multiple reference files (comma-separated list of filenames after -R option)
+# --metagenemark                    Metagenomic assembly. Uses MetaGeneMark for gene prediction.
 #
 # -h  --help                        Prints this message
 

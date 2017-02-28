@@ -209,7 +209,7 @@ def main(args):
             ########################################################################
             from quast_libs import genemark
             genes_by_labels = genemark.do(contigs_fpaths, qconfig.genes_lengths, os.path.join(output_dirpath, 'predicted_genes'),
-                        qconfig.prokaryote, qconfig.meta)
+                        qconfig.prokaryote, qconfig.metagenemark)
 
     else:
         logger.main_info("")

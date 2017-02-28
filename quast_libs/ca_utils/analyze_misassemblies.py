@@ -21,7 +21,7 @@ class Misassembly:
     INVERSION = 1
     RELOCATION = 2
     TRANSLOCATION = 3
-    INTERSPECTRANSLOCATION = 4  #for --meta, if translocation occurs between chromosomes of different references
+    INTERSPECTRANSLOCATION = 4  # for metaquast, if translocation occurs between chromosomes of different references
     SCAFFOLD_GAP = 5
     FRAGMENTED = 6
     POTENTIALLY_MIS_CONTIGS = 7

@@ -272,8 +272,8 @@ def parse_options(logger, quast_args, is_metaquast=False):
              dest='all_labels_from_dirs',
              action='store_true')
          ),
-        (['--meta'], dict(
-             dest='meta',
+        (['--metagenemark'], dict(
+             dest='metagenemark',
              action='store_true')
          ),
         (['-s', '--scaffolds'], dict(

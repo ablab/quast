@@ -339,7 +339,7 @@ Enables gene finding. Affects performance, thus disabled by default.<br>
 <span style='line-height: 50%;'>&nbsp;</span><br>  
 By default, we assume that the genome is prokaryotic, and apply GeneMarkS for gene finding.
 If the genome is eukaryotic, use <a href='#eukaryote'><code>--eukaryote</code></a> option to enable GeneMark-ES instead.
-If it is a metagenome, use <a href='#meta'><code>--meta</code></a> (runs MetaGeneMark).<br>
+If it is a metagenome, use <a href='#metagenemark'><code>--metagenemark</code></a> (runs MetaGeneMark).<br>
 <span style='line-height: 50%;'>&nbsp;</span><br>  
 If a <a href='#sec2.2'>gene file</a> is provided with <code>-G</code> as well, both
 <span class='metric_ref'><a href='#genes'># genes</a></span> in the file covered by the assembly, and
@@ -369,8 +369,8 @@ This options indicates that the genome is not circular.
 </ol>
 
 <div class='option'>
-    <a name="meta"></a>
-    <code><b>--meta</b></code>
+    <a name="metagenemark"></a>
+    <code><b>--metagenemark</b></code>
 </div>
 Use MetaGeneMark for gene finding, if <code>--gene-finding</code> is specified.
 If <code>--eukaryote</code> is also provided, MetaGeneMark still will be used.<br>

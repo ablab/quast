@@ -245,7 +245,7 @@ class QLogger(object):
         self._logger.info("Main parameters: ")
         text = '  '
         line = indent
-        params = {'Threads: ': qconfig.max_threads, 'eukaryotic: ': not qconfig.prokaryote, 'meta: ': qconfig.meta, 'scaffolds: ': qconfig.scaffolds,
+        params = {'Threads: ': qconfig.max_threads, 'eukaryotic: ': not qconfig.prokaryote, 'scaffolds: ': qconfig.scaffolds,
                   'minimum contig length: ': qconfig.min_contig, 'minimum alignment length (Nucmer): ': qconfig.min_alignment,
                   'ambiguity: ': qconfig.ambiguity_usage, 'use all alignments: ': qconfig.use_all_alignments,
                   'threshold for extensive misassembly size: ': qconfig.extensive_misassembly_threshold}

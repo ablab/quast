@@ -122,7 +122,7 @@ def parse_gtf_out(out_fpath):
 def add_genes_to_gff(genes, gff_fpath, prokaryote):
     gff = open_gzipsafe(gff_fpath, 'w')
     if prokaryote:
-        if qconfig.meta:
+        if qconfig.metagenemark:
             gff.write('##gff out for MetaGeneMark\n')
         else:
             gff.write('##gff out for GeneMarkS PROKARYOTIC\n')

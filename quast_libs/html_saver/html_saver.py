@@ -12,7 +12,7 @@ import re
 from os.path import exists, abspath, basename, join
 from collections import defaultdict
 
-from quast_libs import reporting, qconfig, qutils
+from quast_libs import reporting, qconfig, qutils, plotter_data
 from quast_libs.html_saver import json_saver
 from quast_libs.plotter import secondary_line_style
 from quast_libs.site_packages.jsontemplate import jsontemplate
@@ -416,7 +416,6 @@ def save_coord(results_dirpath, coord_x, coord_y, name_coord, contigs_fpaths):  
 
 
 def save_colors(results_dirpath, contigs_fpaths, dict_colors, meta=False):  # coordinates for Nx, NAx, NGx, NGAX
-    from quast_libs import plotter
     if meta:
         html_fpath = os.path.join(results_dirpath, report_fname)
         with open(html_fpath) as f_html:
@@ -429,7 +428,7 @@ def save_colors(results_dirpath, contigs_fpaths, dict_colors, meta=False):  # co
         contig_labels = [qutils.label_from_fpath(contigs_fpath) for contigs_fpath in contigs_fpaths]
         colors_and_ls = [dict_colors[contig_label] for contig_label in contig_labels]
         colors = [color_and_ls[0] for color_and_ls in colors_and_ls]
-        colors_for_html = [html_colors[plotter.colors.index(color)] for color in colors]
+        colors_for_html = [html_colors[plotter_data.colors.index(color)] for color in colors]
         save_record(results_dirpath, 'colors', colors_for_html)
         broken_contig_names = [label for i, label in enumerate(contig_labels) if colors_and_ls[i][1] == secondary_line_style]
         save_record(results_dirpath, 'broken_scaffolds', broken_contig_names)

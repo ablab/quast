@@ -9,12 +9,6 @@
 ###########################  CONFIGURABLE PARAMETERS  ##############################
 ####################################################################################
 
-# Feel free to add more colors
-#colors = ['#E41A1C', '#377EB8', '#4DAF4A', '#984EA3', '#FF7F00', '#A65628', '#F781BF', '#FFFF33']  ## 8-color palette
-#red, blue, green, magenta, orange, maroon, aqua, light green, light purple, olive, navy, team, lime
-colors = ['#E31A1C', '#1F78B4', '#33A02C', '#6A3D9A', '#FF7F00', '#800000', '#A6CEE3', '#B2DF8A','#333300', '#CCCC00',
-          '#000080', '#008080', '#00FF00'] # 14-color palette
-
 # Font of plot captions, axes labels and ticks
 font = {'family': 'sans-serif',
         'style': 'normal',
@@ -46,7 +40,8 @@ import math
 
 from quast_libs import fastaparser, qconfig, reporting
 from quast_libs.log import get_logger, get_main_logger
-from quast_libs.qutils import label_from_fpath, parseStrToNum
+from quast_libs.qutils import label_from_fpath, parseStrToNum, run_parallel
+from quast_libs.plotter_data import get_color_and_ls, colors
 
 main_logger = get_main_logger()
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
@@ -73,41 +68,40 @@ if qconfig.draw_plots:
 # for creating PDF file with all plots and tables
 pdf_plots_figures = []
 pdf_tables_figures = []
-
-dict_color_and_ls = {}
 ####################################################################################
 
 
-def save_colors_and_ls(fpaths, labels=None):
-    if not labels:
-        labels = [label_from_fpath(fpath) for fpath in fpaths]
-    if not dict_color_and_ls:
-        color_id = 0
-        for i, fpath in enumerate(fpaths):
-            ls = primary_line_style
-            label = labels[i]
-            # contigs and scaffolds should be equally colored but scaffolds should be dashed
-            if fpath and fpath in qconfig.dict_of_broken_scaffolds:
-                color = dict_color_and_ls[label_from_fpath(qconfig.dict_of_broken_scaffolds[fpath])][0]
-                ls = secondary_line_style
-            else:
-                 color = colors[color_id % len(colors)]
-                 color_id += 1
-            dict_color_and_ls[label] = (color, ls)
+class Plot(object):
+    def __init__(self, x_vals, y_vals, color, ls, marker=None, markersize=None):
+        self.x_vals, self.y_vals, self.color, self.ls, self.marker, self.markersize = x_vals, y_vals, color, ls, marker, markersize
+
+    def plot(self):
+        plt.plot(self.x_vals, self.y_vals, color=self.color, ls=self.ls, lw=line_width,
+                 marker=self.marker, markersize=self.markersize)
+
+    def get_max_y(self):
+        return max(self.y_vals)
 
 
-def get_color_and_ls(fpath, label=None):
-    if not label:
-        label = label_from_fpath(fpath)
-    """
-    Returns tuple: color, line style
-    """
-    return dict_color_and_ls[label]
+class Bar(object):
+    def __init__(self, x_val, y_val, color, width=0.8, bottom=None, hatch='', edgecolor=None):
+        self.x_val, self.y_val, self.color, self.width, self.bottom, self.hatch, self.edgecolor = \
+            x_val, y_val, color, width, bottom, hatch, edgecolor
+
+    def plot(self):
+        plt.bar(self.x_val, self.y_val, width=self.width, color=self.color, edgecolor=self.edgecolor,
+                hatch=self.hatch, bottom=self.bottom)
+
+    def get_max_y(self):
+        if isinstance(self.y_val, list):
+            return max(self.y_val)
+        else:
+            return self.y_val
 
 
-def get_locators():
+def get_locators(is_histogram):
     xLocator = matplotlib.ticker.MaxNLocator(nbins=6, integer=True)
-    yLocator = matplotlib.ticker.MaxNLocator(nbins=6, integer=True)
+    yLocator = matplotlib.ticker.MaxNLocator(nbins=6, integer=True, steps=[1, 5, 10] if is_histogram else None)
     return xLocator, yLocator
 
 
@@ -138,35 +132,24 @@ def set_ax(vertical_legend=False):
     return ax
 
 
-def add_labels(xlabel, ylabel, max_y, ax, logarithmic_x_scale=False):
+def add_labels(xlabel, ylabel, max_y, ax, logarithmic_x_scale=False, is_histogram=False):
     if ylabel and 'length' in ylabel:
         ylabel, mkfunc = y_formatter(ylabel, max_y)
         mkformatter = matplotlib.ticker.FuncFormatter(mkfunc)
         ax.yaxis.set_major_formatter(mkformatter)
 
-    plt.xlabel(xlabel, fontsize=axes_fontsize)
+    if xlabel:
+        plt.xlabel(xlabel, fontsize=axes_fontsize)
     if ylabel:
         plt.ylabel(ylabel, fontsize=axes_fontsize)
 
-    xLocator, yLocator = get_locators()
+    xLocator, yLocator = get_locators(is_histogram)
     ax.yaxis.set_major_locator(yLocator)
     ax.xaxis.set_major_locator(xLocator)
+    if is_histogram and not xlabel:
+        ax.axes.get_xaxis().set_visible(False)
     if logarithmic_x_scale:
         ax.set_xscale('log')
-
-
-def save_plot(figure, plot_fpath, title, add_to_report=True):
-    if not can_draw_plots:
-        plt.close()
-        return
-    if with_title:
-        plt.title(title)
-    plot_fpath += '.' + qconfig.plot_extension
-    plt.savefig(plot_fpath, bbox_inches='tight')
-    logger.info('    saved to ' + plot_fpath)
-    if add_to_report:
-        pdf_plots_figures.append(figure)
-    plt.close()
 
 
 def add_legend(ax, legend_list, n_columns=None, vertical_legend=False):
@@ -182,63 +165,113 @@ def add_legend(ax, legend_list, n_columns=None, vertical_legend=False):
         pass
 
 
+def save_to_pdf(all_pdf_fpath):
+    try:
+        from matplotlib.backends.backend_pdf import PdfPages
+        all_pdf_file = PdfPages(all_pdf_fpath)
+    except:
+        logger.warning('PDF with all tables and plots cannot be created')
+        return
+    for figure in pdf_tables_figures:
+        all_pdf_file.savefig(figure, bbox_inches='tight')
+    for figure in pdf_plots_figures:
+        all_pdf_file.savefig(figure)
+    try:  # for matplotlib < v.1.0
+        d = all_pdf_file.infodict()
+        d['Title'] = 'QUAST full report'
+        d['Author'] = 'QUAST'
+        import datetime
+        d['CreationDate'] = datetime.datetime.now()
+        d['ModDate'] = datetime.datetime.now()
+    except AttributeError:
+        pass
+    all_pdf_file.close()
+    plt.close('all')  # closing all open figures
+
+
+def save_plot(plot_fpath):
+    plt.savefig(plot_fpath, bbox_inches='tight')
+
+
+def create_plot(plot_fpath, title, plots, legend_list, x_label=None, y_label=None, vertical_legend=False, is_histogram=False,
+                x_limit=None, y_limit=None, x_ticks=None, vertical_ticks=False, add_to_report=True):
+    figure = plt.gcf()
+    plt.rc('font', **font)
+    max_y = 0
+    for plot in plots:
+        max_y = max(max_y, plot.get_max_y())
+        plot.plot()
+    ax = set_ax(vertical_legend)
+    add_legend(ax, legend_list, n_columns=n_columns, vertical_legend=vertical_legend)
+    add_labels(x_label, y_label, max_y, ax, is_histogram=is_histogram)
+    if x_limit:
+        plt.xlim(x_limit)
+    y_limit = y_limit or [0, max(5, int(math.ceil(max_y * 1.1)))]
+    plt.ylim(y_limit)
+    if x_ticks:
+        plt.xticks(range(len(x_ticks)), x_ticks, size='small', rotation='vertical' if vertical_ticks else None)
+
+    if not can_draw_plots:
+        plt.close()
+        return
+    if with_title:
+        plt.title(title)
+    plot_fpath += '.' + qconfig.plot_extension
+    if qconfig.is_combined_ref:  # matplotlib needs to be run in parallel for combined reference to prevent fail in parallel runs per reference
+        run_parallel(save_plot, [(plot_fpath,)], 2)
+    else:
+        save_plot(plot_fpath)
+
+    logger.info('    saved to ' + plot_fpath)
+    if add_to_report:
+        pdf_plots_figures.append(figure)
+    plt.close('all')
+
+
 def cumulative_plot(reference, contigs_fpaths, lists_of_lengths, plot_fpath, title):
     if not can_draw_plots:
         return
 
     logger.info('  Drawing cumulative plot...')
 
-    figure = plt.figure()
-    plt.rc('font', **font)
+    plots = []
     max_x = 0
-    max_y = 0
 
     for (contigs_fpath, lengths) in zip(contigs_fpaths, lists_of_lengths):
-        vals_length = [0]
+        y_vals = [0]
         for l in sorted(lengths, reverse=True):
-            vals_length.append(vals_length[-1] + l)
-        vals_contig_index = list(range(0, len(vals_length)))
-        if vals_contig_index:
-            max_x = max(vals_contig_index[-1], max_x)
-            max_y = max(max_y, vals_length[-1])
+            y_vals.append(y_vals[-1] + l)
+        x_vals = list(range(0, len(y_vals)))
+        if x_vals:
+            max_x = max(x_vals[-1], max_x)
         color, ls = get_color_and_ls(contigs_fpath)
-        plt.plot(vals_contig_index, vals_length, color=color, lw=line_width, ls=ls)
+        plots.append(Plot(x_vals, y_vals, color, ls))
 
     if reference:
-        y_vals = []
+        y_vals = [0]
         for l in sorted(fastaparser.get_chr_lengths_from_fastafile(reference).values(), reverse=True):
-            if y_vals:
-                y_vals.append(y_vals[-1] + l)
-            else:
-                y_vals = [l]
-        x_vals = list(range(0, len(y_vals))) # for reference only: starting from X=1)
+            y_vals.append(y_vals[-1] + l)
+        x_vals = list(range(0, len(y_vals)))
         # extend reference curve to the max X-axis point
         reference_length = y_vals[-1]
         max_x = max(max_x, x_vals[-1])
-        max_y = max(max_y, reference_length)
         y_vals.append(reference_length)
         x_vals.append(max_x)
-        plt.plot(x_vals, y_vals,
-                               color=reference_color, lw=line_width, ls=reference_ls)
+        plots.append(Plot(x_vals, y_vals, reference_color, reference_ls))
 
-    ax = set_ax()
     legend_list = [label_from_fpath(fpath) for fpath in contigs_fpaths]
     if reference:
         legend_list += ['Reference']
 
-    add_legend(ax, legend_list, n_columns=n_columns)
-    add_labels('Contig index', 'Cumulative length', max_y, ax, logarithmic_x_scale)
-
-    save_plot(figure, plot_fpath, title)
+    create_plot(plot_fpath, title, plots, legend_list, x_label='Contig index', y_label='Cumulative length',
+                     x_limit=[0, max_x])
 
 
 def frc_plot(results_dir, ref_fpath, contigs_fpaths, contigs_aligned_lengths, features_in_contigs_by_file, plot_fpath, title):
     if can_draw_plots:
         logger.info('  Drawing ' + title + ' FRCurve plot...')
 
-        figure = plt.figure()
-        plt.rc('font', **font)
-
+    plots = []
     max_y = 0
     ref_length = sum(fastaparser.get_chr_lengths_from_fastafile(ref_fpath).values())
     json_vals_x = []  # coordinates for Nx-like plots in HTML-report
@@ -285,26 +318,18 @@ def frc_plot(results_dir, ref_fpath, contigs_fpaths, contigs_aligned_lengths, fe
         json_vals_y.append(y_vals)
         max_y = max(max_y, max(y_vals))
 
-        if can_draw_plots:
-            color, ls = get_color_and_ls(contigs_fpath)
-            plt.plot(x_vals, y_vals, color=color, lw=line_width, ls=ls)
+        color, ls = get_color_and_ls(contigs_fpath)
+        plots.append(Plot(x_vals, y_vals, color, ls))
 
     if qconfig.html_report:
         from quast_libs.html_saver import html_saver
         html_saver.save_coord(results_dir, json_vals_x, json_vals_y, 'coord' + title, contigs_fpaths)
 
-    if not can_draw_plots:
-        return
-    ax = set_ax()
-    legend_list = [label_from_fpath(fpath) for fpath in contigs_fpaths]
-    add_legend(ax, legend_list, n_columns=n_columns)
-    add_labels('Feature space', 'Genome coverage (%)', max_y, ax, logarithmic_x_scale)
-
-    plt.xlim([0, max_features])
-    plt.ylim([0, max(100, max_y)])
-
-    title = 'FRCurve (' + title + ')'
-    save_plot(figure, plot_fpath, title)
+    if can_draw_plots:
+        title = 'FRCurve (' + title + ')'
+        legend_list = [label_from_fpath(fpath) for fpath in contigs_fpaths]
+        create_plot(plot_fpath, title, plots, legend_list, x_label='Feature space', y_label='Genome coverage (%)',
+                    x_limit=[0, max_features], y_limit=[0, max(100, max_y)])
 
 
 # common routine for Nx-plot and NGx-plot (and probably for others Nyx-plots in the future)
@@ -312,10 +337,7 @@ def Nx_plot(results_dir, reduce_points, contigs_fpaths, lists_of_lengths, plot_f
     if can_draw_plots:
         logger.info('  Drawing ' + title + ' plot...')
 
-        figure = plt.figure()
-        plt.rc('font', **font)
-
-    max_y = 0
+    plots = []
     json_vals_x = []  # coordinates for Nx-like plots in HTML-report
     json_vals_y = []
 
@@ -359,9 +381,8 @@ def Nx_plot(results_dir, reduce_points, contigs_fpaths, lists_of_lengths, plot_f
             vals_l.append(0.0)
             vals_x.append(vals_x[-1] + 1e-10) # eps
             vals_y.append(0.0)
-            max_y = max(max_y, max(vals_l))
             color, ls = get_color_and_ls(contigs_fpath)
-            plt.plot(vals_Nx, vals_l, color=color, lw=line_width, ls=ls)
+            plots.append(Plot(vals_Nx, vals_l, color, ls))
 
     if qconfig.html_report:
         from quast_libs.html_saver import html_saver
@@ -369,14 +390,9 @@ def Nx_plot(results_dir, reduce_points, contigs_fpaths, lists_of_lengths, plot_f
 
     if not can_draw_plots:
         return
-    ax = set_ax()
+
     legend_list = [label_from_fpath(fpath) for fpath in contigs_fpaths]
-    add_legend(ax, legend_list, n_columns=n_columns)
-    add_labels('x', 'Contig length', max_y, ax)
-
-    plt.xlim([0, 100])
-
-    save_plot(figure, plot_fpath, title)
+    create_plot(plot_fpath, title, plots, legend_list, x_label='x', y_label='Contig length', x_limit=[0, 100])
 
 
 # routine for GC-plot
@@ -384,20 +400,15 @@ def GC_content_plot(ref_fpath, contigs_fpaths, list_of_GC_distributions, plot_fp
     if not can_draw_plots or qconfig.no_gc:
         return
     title = 'GC content'
-
     logger.info('  Drawing ' + title + ' plot...')
 
-    figure = plt.figure()
-    plt.rc('font', **font)
-    max_y = 0
+    plots = []
 
     all_fpaths = contigs_fpaths
     if ref_fpath:
         all_fpaths = contigs_fpaths + [ref_fpath]
 
     for i, (GC_distribution_x, GC_distribution_y) in enumerate(list_of_GC_distributions):
-        max_y = max(max_y, max(GC_distribution_y))
-
         # for log scale
         for id2, v in enumerate(GC_distribution_y):
             if v == 0:
@@ -410,18 +421,12 @@ def GC_content_plot(ref_fpath, contigs_fpaths, list_of_GC_distributions, plot_fp
         else:
             color, ls = get_color_and_ls(all_fpaths[i])
 
-        plt.plot(GC_distribution_x, GC_distribution_y, color=color, lw=line_width, ls=ls)
+        plots.append(Plot(GC_distribution_x, GC_distribution_y, color, ls))
 
-    ax = set_ax()
     legend_list = [label_from_fpath(fpath) for fpath in contigs_fpaths]
     if ref_fpath:
         legend_list += ['Reference']
-    add_legend(ax, legend_list, n_columns=n_columns)
-    add_labels('GC (%)', '# windows', max_y, ax)
-
-    plt.xlim([0, 100])
-
-    save_plot(figure, plot_fpath, title)
+    create_plot(plot_fpath, title, plots, legend_list, x_label='GC (%)', y_label='# windows', x_limit=[0, 100])
 
 
 # common routine for genes and operons cumulative plots
@@ -431,10 +436,8 @@ def genes_operons_plot(reference_value, contigs_fpaths, files_feature_in_contigs
 
     logger.info('  Drawing ' + title + ' cumulative plot...')
 
-    figure = plt.figure()
-    plt.rc('font', **font)
+    plots = []
     max_x = 0
-    max_y = 0
 
     for contigs_fpath in contigs_fpaths:
         # calculate values for the plot
@@ -449,26 +452,18 @@ def genes_operons_plot(reference_value, contigs_fpaths, files_feature_in_contigs
 
         if len(x_vals) > 0:
             max_x = max(x_vals[-1], max_x)
-            max_y = max(y_vals[-1], max_y)
 
         color, ls = get_color_and_ls(contigs_fpath)
-        plt.plot(x_vals, y_vals, color=color, lw=line_width, ls=ls)
+        plots.append(Plot(x_vals, y_vals, color, ls))
 
     if reference_value:
-        plt.plot([1, max_x], [reference_value, reference_value],
-            color=reference_color, lw=line_width, ls=reference_ls)
-        max_y = max(reference_value, max_y)
+        plots.append(Plot([1, max_x], [reference_value, reference_value], reference_color, reference_ls))
 
-    ax = set_ax()
+    title = 'Cumulative # complete ' + title
     legend_list = [label_from_fpath(fpath) for fpath in contigs_fpaths]
     if reference_value:
         legend_list += ['Reference']
-    add_legend(ax, legend_list, n_columns=n_columns)
-
-    title = 'Cumulative # complete ' + title
-    add_labels('Contig index', title, max_y, ax, logarithmic_x_scale)
-
-    save_plot(figure, plot_fpath, title)
+    create_plot(plot_fpath, title, plots, legend_list, x_label='Contig index', y_label=title)
 
 
 # common routine for Histograms
@@ -480,6 +475,9 @@ def histogram(contigs_fpaths, values, plot_fpath, title='', yaxis_title='', bott
         logger.info('  Skipping drawing ' + title + ' histogram... (less than 2 columns histogram makes no sense)')
         return
 
+    logger.info('  Drawing ' + title + ' histogram...')
+
+    plots = []
     min_value = sorted(values)[0]
     max_value = sorted(values, reverse=True)[0]
     exponent = None
@@ -496,11 +494,6 @@ def histogram(contigs_fpaths, values, plot_fpath, title='', yaxis_title='', bott
     if not top_value:
         top_value = (math.ceil(max_value / exponent) + 1) * exponent
 
-    logger.info('  Drawing ' + title + ' histogram...')
-
-    figure = plt.figure()
-    plt.rc('font', **font)
-
     #bars' params
     width = 0.3
     interval = width // 3
@@ -512,21 +505,12 @@ def histogram(contigs_fpaths, values, plot_fpath, title='', yaxis_title='', bott
             hatch = ''
         else:
             hatch = 'x'
-        plt.bar(start_pos + (width + interval) * i, val, width, color=color, hatch=hatch)
+        plots.append(Bar(start_pos + (width + interval) * i, val, color, width=width, hatch=hatch))
 
-    plt.ylabel(yaxis_title, fontsize=axes_fontsize)
-
-    ax = set_ax()
     legend_list = [label_from_fpath(fpath) for fpath in contigs_fpaths]
-    add_legend(ax, legend_list, n_columns=n_columns)
-
-    ax.axes.get_xaxis().set_visible(False)
-    plt.xlim([0, start_pos * 2 + width * len(contigs_fpaths) + interval * (len(contigs_fpaths) - 1)])
-    plt.ylim([max(bottom_value, 0), top_value])
-    yLocator = matplotlib.ticker.MaxNLocator(nbins=6, integer=True, steps=[1,5,10])
-    ax.yaxis.set_major_locator(yLocator)
-
-    save_plot(figure, plot_fpath, title)
+    create_plot(plot_fpath, title, plots, legend_list, x_label='', y_label=yaxis_title, is_histogram=True,
+                x_limit=[0, start_pos + width * len(contigs_fpaths) + interval * (len(contigs_fpaths) - 1)],
+                y_limit=[max(bottom_value, 0), top_value])
 
 
 def coverage_histogram(contigs_fpaths, values, plot_fpath, title='', bin_size=None, draw_bars=None, max_cov=None,
@@ -536,9 +520,7 @@ def coverage_histogram(contigs_fpaths, values, plot_fpath, title='', bin_size=No
 
     logger.info('  Drawing ' + title + '...')
 
-    figure = plt.figure()
-    plt.rc('font', **font)
-
+    plots = []
     max_y = 0
     max_x = max(len(v) for v in values)
     x_vals = list(range(0, max_x))
@@ -559,20 +541,15 @@ def coverage_histogram(contigs_fpaths, values, plot_fpath, title='', bin_size=No
         if draw_bars:
             for x_val, y_val, bar_width in zip(x_vals, y_vals, bar_widths):
                 if bar_width == 2:
-                    plt.bar(x_val, y_val, width=bar_width, color=color, edgecolor='black', hatch='x')
+                    plots.append(Bar(x_val, y_val, color, width=bar_width, edgecolor='black', hatch='x'))
                 else:
-                    plt.bar(x_val, y_val, width=bar_width, color=color)
-            plt.bar(0, 0, color=color)
+                    plots.append(Bar(x_val, y_val, color, width=bar_width))
+            plots.append(Bar(0, 0, color=color))
         else:
             y_vals.append(y_vals[-1])
             plot_x_vals = [x_val + 0.5 for x_val in x_vals]
             plot_x_vals[-1] += 1
-            plt.plot(plot_x_vals, y_vals[:-1], marker='o', markersize=3, color=color, ls=ls)
-
-    ax = set_ax()
-    xlabel = 'Coverage depth (x)'
-    ylabel = 'Total length'
-    add_labels(xlabel, ylabel, max_y, ax)
+            plots.append(Plot(plot_x_vals, y_vals[:-1], marker='o', markersize=3, color=color, ls=ls))
 
     x_factor = max(1, len(x_vals) // 10)
     x_ticks = x_vals[::x_factor]
@@ -590,16 +567,12 @@ def coverage_histogram(contigs_fpaths, values, plot_fpath, title='', bin_size=No
         x_ticks.append(last_tick)
         x_ticks_labels.append(str(max_cov))
 
-    plt.xticks(x_ticks, x_ticks_labels, size='small')
     legend_list = [label_from_fpath(fpath) for fpath in contigs_fpaths]
-    add_legend(ax, legend_list, n_columns=n_columns)
+    xlabel = 'Coverage depth (x)'
+    ylabel = 'Total length'
 
-    plt.xlim([0, max(x_ticks)])
-    plt.ylim([0, max_y * 1.1])
-    yLocator = matplotlib.ticker.MaxNLocator(nbins=6, integer=True, steps=[1,5,10])
-    ax.yaxis.set_major_locator(yLocator)
-
-    save_plot(figure, plot_fpath, title)
+    create_plot(plot_fpath, title, plots, legend_list, x_label=xlabel, y_label=ylabel, is_histogram=True,
+                     x_limit=[0, max(x_ticks)], y_limit=[0, max_y * 1.1], x_ticks=x_ticks_labels)
 
 
 # metaQuast summary plots (per each metric separately)
@@ -607,9 +580,8 @@ def draw_meta_summary_plot(html_fpath, output_dirpath, labels, ref_names, result
                            yaxis_title='', print_all_refs=False):
     if can_draw_plots:
         meta_logger.info('  Drawing ' + title + ' metaQUAST summary plot...')
-        figure = plt.figure()
-        plt.title(title)
 
+    plots = []
     ref_num = len(ref_names)
     contigs_num = len(labels)
     max_y = 0
@@ -652,9 +624,8 @@ def draw_meta_summary_plot(html_fpath, output_dirpath, labels, ref_names, result
         points_x = [arr_x[j][i] for i in range(len(arr_y_by_refs))]
         points_y = [arr_y_by_refs[i][j] for i in range(len(arr_y_by_refs))]
         max_y = max(max_y, max(points_y))
-        if can_draw_plots:
-            color, ls = get_color_and_ls(None, labels[j])
-            plt.plot(points_x, points_y, 'o:', color=color, ls=ls)
+        color, ls = get_color_and_ls(None, labels[j])
+        plots.append(Plot(points_x, points_y, color=color, ls='dotted', marker='o', markersize=7))
         json_points_x.append(points_x)
         json_points_y.append(points_y)
 
@@ -663,19 +634,11 @@ def draw_meta_summary_plot(html_fpath, output_dirpath, labels, ref_names, result
         html_saver.save_meta_summary(html_fpath, output_dirpath, json_points_x, json_points_y,
                                      title.replace(' ', '_'), labels, selected_refs)
     if can_draw_plots:
-        plt.xlim([0, len(selected_refs) + 1])
-        if max_y < 5:
-            plt.ylim([0, 5])
-        else:
-            plt.ylim([0, int(math.ceil(max_y * 1.05))])
-
-        ax = set_ax(vertical_legend=True)
         legend_list = labels
-        add_legend(ax, legend_list, vertical_legend=True)
-        add_labels('', yaxis_title, max_y, ax)
-        plt.xticks(range(len(selected_refs) + 1), [''] + selected_refs, size='small', rotation='vertical')
-
-        save_plot(figure, plot_fpath, title, add_to_report=False)
+        create_plot(plot_fpath, title, plots, legend_list, y_label=yaxis_title, vertical_legend=True,
+                    x_ticks=[''] + selected_refs, vertical_ticks=True,
+                    x_limit=[0, len(selected_refs) + 1],
+                    add_to_report=False)
 
 
 # metaQuast misassemblies by types plots (all references for 1 assembly)
@@ -683,11 +646,10 @@ def draw_meta_summary_misassembl_plot(results, ref_names, contig_num, plot_fpath
     if can_draw_plots:
         meta_logger.info('  Drawing metaQUAST summary misassemblies plot for ' + title + '...')
 
+    plots = []
     refs_num = len(ref_names)
-    if can_draw_plots:
-        figure = plt.figure()
-        if len(title) > (120 + len('...')):
-            title = title[:120] + '...'
+    if len(title) > (120 + len('...')):
+        title = title[:120] + '...'
 
     misassemblies = [reporting.Fields.MIS_RELOCATION, reporting.Fields.MIS_TRANSLOCATION, reporting.Fields.MIS_INVERTION]
     legend_n = []
@@ -706,7 +668,7 @@ def draw_meta_summary_misassembl_plot(results, ref_names, contig_num, plot_fpath
             if result and result != '-':
                 to_plot.append(float(result))
                 if can_draw_plots:
-                    plt.bar(arr_x[j], to_plot[0], width=bar_width, color=colors[type_misassembly])
+                    plots.append(Bar(arr_x[j], to_plot[0], colors[type_misassembly], width=bar_width))
                     legend_n.append(type_misassembly)
                     y = float(to_plot[0])
                 json_points_x.append(arr_x[j])
@@ -717,7 +679,7 @@ def draw_meta_summary_misassembl_plot(results, ref_names, contig_num, plot_fpath
             if result and result != '-':
                 to_plot.append(float(result))
                 if can_draw_plots:
-                    plt.bar(arr_x[j], to_plot[-1], width=bar_width, color=colors[i], bottom=sum(to_plot[:-1]))
+                    plots.append(Bar(arr_x[j], to_plot[-1], colors[i], width=bar_width, bottom=sum(to_plot[:-1])))
                     legend_n.append(i)
                     y += float(to_plot[-1])
                 json_points_x.append(arr_x[j])
@@ -729,19 +691,10 @@ def draw_meta_summary_misassembl_plot(results, ref_names, contig_num, plot_fpath
                 json_points_x.append(arr_x[j])
                 json_points_y.append(0)
     if can_draw_plots:
-        plt.xticks(range(1, refs_num + 1), ref_names, size='small', rotation='vertical')
         legend_n = set(legend_n)
         legend_list = [misassemblies[i] for i in sorted(legend_n)]
-
-        plt.xlim([0, refs_num + 1])
-        if max_y < 5:
-            plt.ylim([0, 5])
-        else:
-            plt.ylim([0, int(math.ceil(max_y * 1.05))])
-        ax = set_ax(vertical_legend=True)
-        add_legend(ax, legend_list, vertical_legend=True)
-
-        save_plot(figure, plot_fpath, title)
+        create_plot(plot_fpath, title, plots, legend_list, vertical_legend=True, x_ticks=[''] + ref_names, vertical_ticks=True,
+                    x_limit=[0, refs_num + 1], add_to_report=False)
     return json_points_x, json_points_y
 
 
@@ -752,13 +705,12 @@ def draw_misassembl_plot(reports, plot_fpath, title='', yaxis_title=''):
 
     logger.info('  Drawing misassemblies by types plot...')
 
+    plots = []
     contigs_num = len(reports)
     labels = []
-    figure = plt.figure()
     for j in range(contigs_num):
         labels.append(reports[j].get_field(reporting.Fields.NAME))
 
-    plt.xticks(range(1, contigs_num + 1), labels, size='small')
     misassemblies = [reporting.Fields.MIS_RELOCATION, reporting.Fields.MIS_TRANSLOCATION, reporting.Fields.MIS_INVERTION,
                      reporting.Fields.MIS_ISTRANSLOCATIONS]
     legend_n = []
@@ -792,7 +744,7 @@ def draw_misassembl_plot(reports, plot_fpath, title='', yaxis_title=''):
         points_x = [arr_x[j][i] for j in range(contigs_num) if arr_x[j][i] != 0]
         points_y = [arr_y[j][i] for j in range(contigs_num) if arr_y[j][i] != 0]
         if points_y and points_x:
-            plt.bar(points_x, points_y, width=0.05, color=colors[i])
+            plots.append(Bar(points_x, points_y, color=colors[i], width=0.05))
     for j in range(len(reports)):
         if (arr_y[j]):
             points_y = [arr_y[j][i] for i in range(len(misassemblies))]
@@ -802,24 +754,16 @@ def draw_misassembl_plot(reports, plot_fpath, title='', yaxis_title=''):
                 while points_y[type_misassembly] == 0:
                     type_misassembly += 1
                 point_x = main_arr_x[j] + 0.07 * (len(misassemblies) * 0.5)
-                plt.bar(point_x, points_y[type_misassembly], width=0.05, color=colors[0])
+                plots.append(Bar(point_x, points_y[type_misassembly], color=colors[0], width=0.05))
                 type_misassembly += 1
                 for i in range(type_misassembly, len(arr_y[j])):
                     if points_y[i] > 0:
-                        plt.bar(point_x, points_y[i], width=0.05, color=colors[i], bottom=sum(points_y[:i]))
+                        plots.append(Bar(point_x, points_y[i], color=colors[i], width=0.05, bottom=sum(points_y[:i])))
 
-    plt.xlim([0, contigs_num + 1])
-    if max_y < 5:
-        plt.ylim([0, 5])
-    else:
-        plt.ylim([0, int(math.ceil(max_y * 1.1))])
-
-    ax = set_ax()
     legend_n = set(legend_n)
     legend_list = [misassemblies[i] for i in sorted(legend_n)]
-    add_legend(ax, legend_list, n_columns=n_columns)
-
-    save_plot(figure, plot_fpath, title)
+    create_plot(plot_fpath, title, plots, legend_list, x_ticks=[''] + labels,
+                     x_limit=[0, contigs_num + 1])
 
 
 def draw_report_table(report_name, extra_info, table_to_draw, column_widths):
@@ -863,8 +807,8 @@ def draw_report_table(report_name, extra_info, table_to_draw, column_widths):
     plt.close()
 
 
-def fill_all_pdf_file(all_pdf):
-    if not can_draw_plots or not all_pdf:
+def fill_all_pdf_file(all_pdf_fpath):
+    if not can_draw_plots or not all_pdf_fpath:
         return
 
     # moving main report in the beginning
@@ -873,23 +817,10 @@ def fill_all_pdf_file(all_pdf):
     if len(pdf_tables_figures):
         pdf_tables_figures = [pdf_tables_figures[-1]] + pdf_tables_figures[:-1]
 
-    for figure in pdf_tables_figures:
-        all_pdf.savefig(figure, bbox_inches='tight')
-    for figure in pdf_plots_figures:
-        all_pdf.savefig(figure)
-
-    try:  # for matplotlib < v.1.0
-        d = all_pdf.infodict()
-        d['Title'] = 'QUAST full report'
-        d['Author'] = 'QUAST'
-        import datetime
-        d['CreationDate'] = datetime.datetime.now()
-        d['ModDate'] = datetime.datetime.now()
-    except AttributeError:
-        pass
-    all_pdf.close()
+    if qconfig.is_combined_ref:
+        run_parallel(save_to_pdf, [(all_pdf_fpath,)], 2)
+    else:
+        save_to_pdf(all_pdf_fpath)
     pdf_tables_figures = []
     pdf_plots_figures = []
-    plt.close('all')  # closing all open figures
-
 

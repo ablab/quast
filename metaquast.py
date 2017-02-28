@@ -18,7 +18,7 @@ from quast_libs.metautils import Assembly, correct_meta_references, correct_asse
     get_downloaded_refs_with_alignments, partition_contigs, calculate_ave_read_support
 from quast_libs.options_parser import parse_options, remove_from_quast_py_args
 
-from quast_libs import contigs_analyzer, reads_analyzer, search_references_meta, qutils
+from quast_libs import contigs_analyzer, reads_analyzer, search_references_meta, plotter_data, qutils
 from quast_libs.qutils import cleanup, check_dirpath, is_python2, run_parallel
 
 from quast_libs.log import get_logger
@@ -30,7 +30,7 @@ addsitedir(os.path.join(qconfig.LIBS_LOCATION, 'site_packages'))
 
 
 def _start_quast_main(args, assemblies, reference_fpath=None, output_dirpath=None,
-                      num_notifications_tuple=None, is_first_run=None, run_regular_quast=False, is_parallel_run=False):
+                      num_notifications_tuple=None, labels=None, run_regular_quast=False, is_parallel_run=False):
     args = args[:]
 
     args.extend([asm.fpath for asm in assemblies])
@@ -70,12 +70,11 @@ def _start_quast_main(args, assemblies, reference_fpath=None, output_dirpath=Non
         cur_num_notifications = quast.logger.get_numbers_of_notifications()
         num_notifications_tuple = list(map(sum, zip(num_notifications_tuple, cur_num_notifications)))
 
-    if is_first_run:
-        labels = [qconfig.assembly_labels_by_fpath[fpath] for fpath in qconfig.assemblies_fpaths]
-        assemblies = [Assembly(fpath, qconfig.assembly_labels_by_fpath[fpath]) for fpath in qconfig.assemblies_fpaths]
-        return return_code, num_notifications_tuple, assemblies, labels
-    else:
-        return return_code, num_notifications_tuple
+    if labels and assemblies:
+        labels[:] = [qconfig.assembly_labels_by_fpath[fpath] for fpath in qconfig.assemblies_fpaths]
+        assemblies[:] = [Assembly(fpath, qconfig.assembly_labels_by_fpath[fpath]) for fpath in qconfig.assemblies_fpaths]
+
+    return return_code, num_notifications_tuple
 
 
 def _run_quast_per_ref(quast_py_args, output_dirpath_per_ref, ref_fpath, ref_assemblies, total_num_notifications, is_parallel_run=False):
@@ -231,8 +230,8 @@ def main(args):
 
     quast_py_args += ['--combined-ref']
     if qconfig.draw_plots or qconfig.html_report:
-        if plotter.dict_color_and_ls:
-            colors_and_ls = [plotter.dict_color_and_ls[asm.label] for asm in assemblies]
+        if plotter_data.dict_color_and_ls:
+            colors_and_ls = [plotter_data.dict_color_and_ls[asm.label] for asm in assemblies]
             quast_py_args += ['--colors']
             quast_py_args += [','.join([style[0] for style in colors_and_ls])]
             quast_py_args += ['--ls']
@@ -253,12 +252,13 @@ def main(args):
         ambiguity_opts = []
     else:
         ambiguity_opts = ["--ambiguity-usage", 'all']
-    return_code, total_num_notifications, assemblies, labels = \
+    return_code, total_num_notifications = \
         _start_quast_main(quast_py_args + ambiguity_opts,
+        labels=labels,
         assemblies=assemblies,
         reference_fpath=combined_ref_fpath,
         output_dirpath=combined_output_dirpath,
-        num_notifications_tuple=total_num_notifications, is_first_run=True)
+        num_notifications_tuple=total_num_notifications)
 
     if json_texts is not None:
         json_texts.append(json_saver.json_text)
@@ -293,12 +293,13 @@ def main(args):
             run_name = 'for the corrected combined reference'
             logger.main_info()
             logger.main_info('Starting quast.py ' + run_name + '...')
-            return_code, total_num_notifications, assemblies, labels = \
+            return_code, total_num_notifications = \
                 _start_quast_main(quast_py_args + ambiguity_opts,
+                labels=labels,
                 assemblies=assemblies,
                 reference_fpath=combined_ref_fpath,
                 output_dirpath=combined_output_dirpath,
-                num_notifications_tuple=total_num_notifications, is_first_run=True)
+                num_notifications_tuple=total_num_notifications)
             if json_texts is not None:
                 json_texts = json_texts[:-1]
                 json_texts.append(json_saver.json_text)
@@ -330,7 +331,7 @@ def main(args):
         os.path.join(combined_output_dirpath, 'contigs_reports', 'alignments_%s.tsv'), labels)
 
     output_dirpath_per_ref = os.path.join(output_dirpath, qconfig.per_ref_dirname)
-    if not qconfig.memory_efficient and not qconfig.draw_plots and \
+    if not qconfig.memory_efficient and \
                     len(assemblies_by_reference) > len(assemblies) and len(assemblies) < qconfig.max_threads:
         logger.main_info()
         logger.main_info('Run QUAST on different references in parallel..')
@@ -339,7 +340,7 @@ def main(args):
         quast_py_args += ['-t', str(threads_per_ref)]
 
         num_notifications = (0, 0, 0)
-        parallel_run_args = [(quast_py_args,output_dirpath_per_ref, ref_fpath, ref_assemblies, num_notifications, True)
+        parallel_run_args = [(quast_py_args, output_dirpath_per_ref, ref_fpath, ref_assemblies, num_notifications, True)
                              for ref_fpath, ref_assemblies in assemblies_by_reference]
         ref_names, ref_json_texts, ref_notifications = \
             run_parallel(_run_quast_per_ref, parallel_run_args, qconfig.max_threads, filter_results=True)
@@ -408,7 +409,7 @@ def main(args):
         create_meta_summary.do(html_summary_report_fpath, summary_output_dirpath, combined_output_dirpath,
                                output_dirpath_per_ref, metrics_for_plots, misassembl_metrics, full_ref_names)
         if html_report and json_texts:
-            html_saver.save_colors(output_dirpath, contigs_fpaths, plotter.dict_color_and_ls, meta=True)
+            html_saver.save_colors(output_dirpath, contigs_fpaths, plotter_data.dict_color_and_ls, meta=True)
             if qconfig.create_icarus_html:
                 icarus_html_fpath = html_saver.create_meta_icarus(output_dirpath, ref_names)
                 logger.main_info('  Icarus (contig browser) is saved to %s' % icarus_html_fpath)

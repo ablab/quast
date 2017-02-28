@@ -15,7 +15,7 @@ import shutil
 from quast_libs import qconfig
 qconfig.check_python_version()
 
-from quast_libs import qutils, reads_analyzer
+from quast_libs import qutils, reads_analyzer, plotter_data
 from quast_libs.qutils import cleanup, check_dirpath
 from quast_libs.options_parser import parse_options
 
@@ -69,6 +69,11 @@ def main(args):
     reporting.reports = reports
     reporting.assembly_fpaths = []
     from quast_libs import plotter  # Do not remove this line! It would lead to a warning in matplotlib.
+    try:
+        import imp
+        imp.reload(plotter)
+    except:
+        reload(plotter)
 
     if qconfig.is_combined_ref:
         corrected_dirpath = os.path.join(output_dirpath, '..', qconfig.corrected_dirname)
@@ -118,25 +123,19 @@ def main(args):
 
     if qconfig.used_colors and qconfig.used_ls:
         for i, label in enumerate(labels):
-            plotter.dict_color_and_ls[label] = (qconfig.used_colors[i], qconfig.used_ls[i])
+            plotter_data.dict_color_and_ls[label] = (qconfig.used_colors[i], qconfig.used_ls[i])
 
     qconfig.assemblies_fpaths = contigs_fpaths
 
     # Where all pdfs will be saved
-    all_pdf_fpath = os.path.join(output_dirpath, qconfig.plots_fname)
-    all_pdf_file = None
-
+    all_pdf_fpath = None
     if qconfig.draw_plots and plotter.can_draw_plots:
-        try:
-            from matplotlib.backends.backend_pdf import PdfPages
-            all_pdf_file = PdfPages(all_pdf_fpath)
-        except:
-            all_pdf_file = None
+        all_pdf_fpath = os.path.join(output_dirpath, qconfig.plots_fname)
 
     if qconfig.json_output_dirpath:
         from quast_libs.html_saver import json_saver
         if json_saver.simplejson_error:
-            json_output_dirpath = None
+            qconfig.json_output_dirpath = None
 
     ########################################################################
     ### Stats and plots
@@ -233,7 +232,7 @@ def main(args):
                 report_for_icarus_fpath_pattern = None
                 stdout_pattern = None
             draw_alignment_plots = qconfig.draw_svg or qconfig.create_icarus_html
-            number_of_steps = sum([int(bool(value)) for value in [draw_alignment_plots, all_pdf_file]])
+            number_of_steps = sum([int(bool(value)) for value in [draw_alignment_plots, all_pdf_fpath]])
             if draw_alignment_plots:
                 ########################################################################
                 ### VISUALIZE CONTIG ALIGNMENT
@@ -246,14 +245,15 @@ def main(args):
                     physical_cov_fpath=physical_cov_fpath, json_output_dir=qconfig.json_output_dirpath,
                     genes_by_labels=genes_by_labels)
 
-            if all_pdf_file:
+            if all_pdf_fpath:
                 # full report in PDF format: all tables and plots
                 logger.main_info('  %d of %d: Creating PDF with all tables and plots...' % (number_of_steps, number_of_steps))
-                plotter.fill_all_pdf_file(all_pdf_file)
+                plotter.fill_all_pdf_file(all_pdf_fpath)
             logger.main_info('Done')
         except KeyboardInterrupt:
             logger.main_info('..step skipped!')
-            os.remove(all_pdf_fpath)
+            if os.path.isfile(all_pdf_fpath):
+                os.remove(all_pdf_fpath)
 
     ########################################################################
     ### TOTAL REPORT
@@ -265,10 +265,10 @@ def main(args):
 
     if qconfig.html_report:
         from quast_libs.html_saver import html_saver
-        html_saver.save_colors(output_dirpath, contigs_fpaths, plotter.dict_color_and_ls)
+        html_saver.save_colors(output_dirpath, contigs_fpaths, plotter_data.dict_color_and_ls)
         html_saver.save_total_report(output_dirpath, qconfig.min_contig, ref_fpath)
 
-    if os.path.isfile(all_pdf_fpath):
+    if all_pdf_fpath and os.path.isfile(all_pdf_fpath):
         logger.main_info('  PDF version (tables and plots) is saved to ' + all_pdf_fpath)
 
     if icarus_html_fpath:

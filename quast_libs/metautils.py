@@ -12,7 +12,7 @@ from collections import defaultdict
 from quast_libs import qconfig
 
 qconfig.check_python_version()
-from quast_libs import contigs_analyzer, fastaparser, reporting
+from quast_libs import contigs_analyzer, fastaparser, reporting, plotter_data
 from quast_libs import qutils
 from quast_libs.qutils import correct_seq, correct_name, get_uniq_name, is_python2
 
@@ -114,10 +114,9 @@ def correct_assemblies(contigs_fpaths, output_dirpath, labels):
     corrected_labels = [asm.label for asm in assemblies]
 
     if qconfig.draw_plots or qconfig.html_report:
-        from quast_libs import plotter
         corr_fpaths = [asm.fpath for asm in assemblies]
         corr_labels = [asm.label for asm in assemblies]
-        plotter.save_colors_and_ls(corr_fpaths, labels=corr_labels)
+        plotter_data.save_colors_and_ls(corr_fpaths, labels=corr_labels)
     return assemblies, corrected_labels
 
 

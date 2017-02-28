@@ -15,7 +15,7 @@ import re
 from collections import defaultdict
 from os.path import basename, isfile, realpath, isdir
 
-from quast_libs import fastaparser, qconfig
+from quast_libs import fastaparser, qconfig, plotter_data
 from quast_libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 
@@ -215,9 +215,8 @@ def correct_contigs(contigs_fpaths, corrected_dirpath, labels, reporting):
             add_lengths_to_report(lengths, reporting, broken_fpath)
 
     if qconfig.draw_plots or qconfig.html_report:
-        from quast_libs import plotter
-        if not plotter.dict_color_and_ls:
-            plotter.save_colors_and_ls(corrected_contigs_fpaths)
+        if not plotter_data.dict_color_and_ls:
+            plotter_data.save_colors_and_ls(corrected_contigs_fpaths)
 
     return corrected_contigs_fpaths, old_contigs_fpaths
 
@@ -853,7 +852,7 @@ def run_parallel(_fn, fn_args, n_jobs, filter_results=False):
     else:
         from joblib3 import Parallel, delayed
     results_tuples = Parallel(n_jobs=n_jobs)(delayed(_fn)(*args) for args in fn_args)
-    results_cnt = len(results_tuples[0]) if results_tuples else 0
+    results_cnt = len(results_tuples[0]) if results_tuples and results_tuples[0] else 0
     if filter_results:
         results = [[result_list[i] for result_list in results_tuples if result_list[i]] for i in range(results_cnt)]
     else:

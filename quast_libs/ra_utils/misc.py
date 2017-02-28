@@ -145,6 +145,9 @@ def download_manta(logger, bed_fpath=None, only_clean=False):
             logger.main_info('  Downloading binary distribution of Manta...')
             download_unpack_tar_bz('Manta', url, manta_downloaded_fpath, manta_build_dirpath, logger)
 
+        manta_demo_dirpath = join(manta_build_dirpath, 'share', 'demo')
+        if os.path.isdir(manta_demo_dirpath):
+            shutil.rmtree(manta_demo_dirpath, ignore_errors=True)
         if not isfile(config_manta_fpath):
             logger.warning('Failed to download binary distribution from https://github.com/ablab/quast/external_tools/manta '
                            'and unpack it into ' + join(manta_dirpath, 'build/'))

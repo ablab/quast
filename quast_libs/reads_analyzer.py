@@ -16,7 +16,7 @@ from collections import defaultdict
 from quast_libs import qconfig, qutils
 from quast_libs.ca_utils.misc import ref_labels_by_chromosomes
 from quast_libs.fastaparser import create_fai_file, get_chr_lengths_from_fastafile
-from quast_libs.ra_utils import compile_reads_analyzer_tools, get_manta_fpath, sambamba_fpath, \
+from quast_libs.ra_utils.misc import compile_reads_analyzer_tools, get_manta_fpath, sambamba_fpath, \
     bwa_fpath, bedtools_fpath, paired_reads_names_are_equal, download_manta
 from .qutils import is_non_empty_file, add_suffix, get_chr_len_fpath, correct_name, is_python2
 
@@ -142,7 +142,7 @@ def process_one_ref(cur_ref_fpath, output_dirpath, err_path, bed_fpath=None):
         cmd = 'gunzip -c %s' % found_SV_fpath
         qutils.call_subprocess(shlex.split(cmd), stdout=open(unpacked_SV_fpath, 'w'),
                                stderr=open(err_path, 'a'), logger=logger)
-    from quast_libs.manta import vcfToBedpe
+    from quast_libs.ra_utils import vcfToBedpe
     vcfToBedpe.vcfToBedpe(open(unpacked_SV_fpath), open(ref_bed_fpath, 'w'))
     return ref_bed_fpath
 

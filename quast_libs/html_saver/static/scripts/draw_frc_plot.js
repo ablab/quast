@@ -139,11 +139,7 @@ var frc = {
         }
 
         addLegendClickEvents(info, filenames.length, showPlotWithInfo, refGenesNumber);
-
         showPlotWithInfo(info);
-
-        $('#contigs_are_ordered').show();
-        $('#gc_info').hide();
     }
 };
 

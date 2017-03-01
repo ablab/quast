@@ -41,7 +41,7 @@ var misassemblies = {
 
         if (!misassemblies.isInitialized) {
             var plotsN = cur_filenames.length;
-            misassemblies.series = new Array(cur_filenames.length+1);
+            misassemblies.series = new Array(plotsN + 1);
             misassemblies.series[0] = new Array(plotsN);
             for (var i = 0; i < plotsN; i++) {
                 var index = $.inArray(cur_filenames[order[i]], filenames);
@@ -249,19 +249,19 @@ function showPlot(index) {
 function createLegend(labels, colors, index){
     var sortBtnClass = getSortRefsRule();
 
-    var selectedAssemblies = getSelectedAssemblies();
+    var filenames = misassemblies.filenames;
+    var selectedLabels = index ? Array.apply(null, {length: filenames}).map(Number.call, Number) : getSelectedAssemblies();
     $('#legend-placeholder').empty();
     var selectors = "";
-    var filenames = misassemblies.filenames;
 
     labels.forEach(function(label, i) {
-    var id = 'label_' + i + '_id'; 
-    var link = '<span id="' + filenames[i] + '-switch"' + "class='plot-mis-type-switch dotted-link'>by type<br></span><br>";
-    var isChecked = (selectedAssemblies.length > 0 && selectedAssemblies.indexOf(i.toString())) != -1 ? 'checked="checked"' : "";
-    $('#legend-placeholder').append('<div>' +
-        '<label for="' + id + '" style="color: ' + colors[i] + '">' +
-        '<input type="checkbox" name="' + i + '" ' + isChecked + ' id="' + id + '">&nbsp;' + label +'</label>' +
-        (index == 0 ? '<br>' + link : '') + '</div>');
+        var id = 'label_' + i + '_id';
+        var link = '<span id="' + filenames[i] + '-switch"' + "class='plot-mis-type-switch dotted-link'>by type<br></span><br>";
+        var isChecked = (selectedLabels.length > 0 && selectedLabels.indexOf(i.toString())) != -1 ? 'checked="checked"' : "";
+        $('#legend-placeholder').append('<div>' +
+            '<label for="' + id + '" style="color: ' + colors[i] + '">' +
+            '<input type="checkbox" name="' + i + '" ' + isChecked + ' id="' + id + '">&nbsp;' + label +'</label>' +
+            (index == 0 ? '<br>' + link : '') + '</div>');
     });
     if (index > 0) {
         for (var filenames_n = 0; filenames_n < filenames.length; filenames_n++){

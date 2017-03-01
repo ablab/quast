@@ -200,8 +200,6 @@ var summary = {
         showPlotWithInfo(info);
         moveSortRefsBtns();
         setSortRefsBtns(info);
-
-        $('#gc_info').hide();
     }
 };
 

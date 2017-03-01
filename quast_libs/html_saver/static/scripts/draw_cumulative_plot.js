@@ -177,17 +177,5 @@ var cumulative = {
         showPlotWithInfo(cumulative);
 
         $('#contigs_are_ordered').show();
-        $('#gc_info').hide();
-
-        //    placeholder.resize(function () {
-        //        alert("Placeholder is now "
-        //            + $(this).width() + "x" + $(this).height()
-        //            + " pixels");
-        //    });
-
-        // var o = plot.pointOffset({ x: 0, y: 0});
-        // $('#cumulative-plot-placeholder').append(
-        //     '<div style="position:absolute;left:' + (o.left + 400) + 'px;top:' + (o.top - 400) + 'px;color:#666;font-size:smaller">Actual measurements</div>'
-        // );
     },
 };

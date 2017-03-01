@@ -179,11 +179,12 @@ def save_features_in_contigs(output_dirpath, contigs_fpaths, feature_name, featu
     })
 
 
-def save_GC_info(output_dirpath, contigs_fpaths, list_of_GC_distributions, reference_index):
+def save_GC_info(output_dirpath, contigs_fpaths, list_of_GC_distributions, list_of_GC_contigs_distributions, reference_index):
     return save(join(output_dirpath, gc_fn), {
         'filenames': [qutils.label_from_fpath(label) for label in  contigs_fpaths],
         'reference_index': reference_index,
         'list_of_GC_distributions': list_of_GC_distributions,
+        'list_of_GC_contigs_distributions': list_of_GC_contigs_distributions,
         'lists_of_gc_info': None,
     })
 

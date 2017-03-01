@@ -178,7 +178,6 @@ var gns = {
         showPlotWithInfo(info);
 
         $('#contigs_are_ordered').show();
-        $('#gc_info').hide();
     }
 };
 

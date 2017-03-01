@@ -150,11 +150,7 @@ var nx = {
         }
 
         addLegendClickEvents(info, filenames.length, showPlotWithInfo);
-
         showPlotWithInfo(info);
-
-        $('#contigs_are_ordered').hide();
-        $('#gc_info').hide();
     }
 };
 

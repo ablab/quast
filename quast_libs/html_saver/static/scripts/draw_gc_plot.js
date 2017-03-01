@@ -16,6 +16,14 @@ var log_scale_a =
         'logarithmic' +
         "</a>";
 
+var show_all_span =
+    "<span class='selected-switch gc'>" +
+        'Back to overview' +
+        "</span>";
+var show_all_a =
+    "&nbsp;&nbsp;&nbsp;<a class='dotted-link' onClick='showAll()'>" +
+        'Back to overview' +
+        "</a>";
 
 var gc = {
     isInitialized: false,
@@ -31,11 +39,16 @@ var gc = {
     colors: null,
     yAxisLabeled: false,
 
-    normal_scale_el: normal_scale_span,
-    log_scale_el: log_scale_a,
+    show_all_el: show_all_span,
+    reference: false,
+
+    normal_scale_el: null,
+    log_scale_el: null,
 
     draw: function(name, title, colors, filenames, gcInfos, reflen, tickX,
                    placeholder, legendPlaceholder, glossary, order, scalePlaceholder) {
+        gc.normal_scale_el = normal_scale_span;
+        gc.log_scale_el = log_scale_a;
         $(scalePlaceholder).html(
             "<div id='change-scale' style='margin-right: 3px; visibility: hidden;'>" +
                 "<span id='normal_scale_label'>" +
@@ -52,10 +65,12 @@ var gc = {
             gc.legendPlaceholder = legendPlaceholder;
             gc.placeholder = placeholder;
             gc.colors = colors;
+            gc.filenames = filenames;
 
             var bin_size = 1.0;
             var plotsN = filenames.length;
-            gc.series = new Array(plotsN);
+            gc.series = new Array(plotsN + 1);
+            gc.series[0] = new Array(plotsN);
 
             gc.maxY = 0;
             var minY = Number.MAX_VALUE;
@@ -72,7 +87,7 @@ var gc = {
             }
 
             for (var i = 0; i < plotsN; i++) {
-                gc.series[i] = {
+                gc.series[0][i] = {
                     data: [],
                     label: filenames[order[i]],
                     number: order[i],
@@ -80,41 +95,41 @@ var gc = {
                 };
             }
 
-            function makeSeriesFromDistributions(distributionsXandY, i) {
+            function makeSeriesFromDistributions(distributionsXandY, series_i, plot_i) {
                 var distributionsX = distributionsXandY[0];
                 var distributionsY = distributionsXandY[1];
 
                 for (var j = 0; j < distributionsX.length; j++) {
                     var x = distributionsX[j];
                     var y = distributionsY[j];
-                    gc.series[i].data.push([x, y]);
+                    gc.series[series_i][plot_i].data.push([x, y]);
                     updateMinY(y);
                     updateMaxY(y);
                 }
             }
 
-            function makeSeries(listsOfGCInfo, listOfGcDistributions) {
+            function makeSeries(listsOfGCInfo, listOfGcDistributions, seriesIdx) {
                 for (var i = 0; i < plotsN; i++) {
                     if (listsOfGCInfo) {
-                        makeSeriesFromInfo(listsOfGCInfo[order[i]], i);
+                        makeSeriesFromInfo(listsOfGCInfo[order[i]], seriesIdx, i);
                     } else {
-                        makeSeriesFromDistributions(listOfGcDistributions[order[i]], i);
+                        makeSeriesFromDistributions(listOfGcDistributions[order[i]], seriesIdx, i);
                     }
                 }
             }
 
             var listsOfGCInfo = gcInfos.lists_of_gc_info;
             var listOfGcDistributions = gcInfos.list_of_GC_distributions;
-            makeSeries(listsOfGCInfo, listOfGcDistributions);
+            makeSeries(listsOfGCInfo, listOfGcDistributions, 0);
 
-            function makeSeriesFromInfo(GC_info, i) {
+            function makeSeriesFromInfo(GC_info, series_i, i) {
                 var cur_bin = 0.0;
 
                 var x = cur_bin;
                 var y = filterAndSumGcInfo(GC_info, function(GC_percent) {
                     return GC_percent == cur_bin;
                 });
-                gc.series[i].data.push([x, y]);
+                gc.series[series_i][i].data.push([x, y]);
 
                 updateMinY(y);
                 updateMaxY(y);
@@ -126,7 +141,7 @@ var gc = {
                     y = filterAndSumGcInfo(GC_info, function(GC_percent) {
                         return GC_percent > (cur_bin - bin_size) && GC_percent <= cur_bin;
                     });
-                    gc.series[i].data.push([x, y]);
+                    gc.series[series_i][i].data.push([x, y]);
 
                     updateMinY(y);
                     updateMaxY(y);
@@ -137,7 +152,7 @@ var gc = {
                     return GC_percent > cur_bin && GC_percent <= 100.0;
                 });
 
-                gc.series[i].data.push([x, y]);
+                gc.series[series_i][i].data.push([x, y]);
 
                 updateMinY(y);
                 updateMaxY(y);
@@ -145,13 +160,13 @@ var gc = {
 
             for (i = 0; i < plotsN; i++) {
                 if (typeof broken_scaffolds_labels !== undefined && $.inArray(filenames[order[i]], broken_scaffolds_labels) != -1) {
-                    gc.series[i].dashes = {
+                    gc.series[0][i].dashes = {
                         show: true,
                         lineWidth: 1
                     };
                 }
                 else {
-                    gc.series[i].lines = {
+                    gc.series[0][i].lines = {
                         show: true,
                         lineWidth: 1
                     };
@@ -159,7 +174,8 @@ var gc = {
             }
 
             if (refIndex) {
-                gc.series.push({
+                gc.reference = true;
+                gc.series[0].push({
                     data: [],
                     label: 'reference',
                     isReference: true,
@@ -172,13 +188,43 @@ var gc = {
                     color: '#000000'
                 });
                 if (listsOfGCInfo) {
-                    makeSeriesFromInfo(listsOfGCInfo[refIndex], refIndex);
+                    makeSeriesFromInfo(listsOfGCInfo[refIndex], 0, refIndex);
                 } else {
-                    makeSeriesFromDistributions(listOfGcDistributions[refIndex], refIndex);
+                    makeSeriesFromDistributions(listOfGcDistributions[refIndex], 0, refIndex);
                 }
                 gc.colors.push('#000000')
             }
 
+            if (gcInfos.list_of_GC_contigs_distributions) {
+                listOfGcDistributions = gcInfos.list_of_GC_contigs_distributions;
+                for (var file_n = 0; file_n < filenames.length; file_n++) {
+                    gc.series[file_n + 1] = new Array(1);
+                    gc.series[file_n + 1][0] = {
+                        data: [],
+                        label: filenames[order[file_n]],
+                        number: order[file_n],
+                        color: colors[order[file_n]],
+                        bars: {
+                            show: true,
+                            lineWidth: 0.6,
+                            fill: 0.6,
+                            barWidth: 5
+                        }
+                    };
+
+                    var distributionsX = listOfGcDistributions[file_n][0];
+                    var distributionsY = listOfGcDistributions[file_n][1];
+                    var maxY = 0;
+
+                    for (var j = 0; j < distributionsX.length; j++) {
+                        var x = distributionsX[j];
+                        var y = distributionsY[j];
+                        gc.series[file_n + 1][0].data.push([x, y]);
+                        maxY = Math.max(maxY, y);
+                    }
+                    gc.series[file_n + 1][0].maxY = maxY;
+                }
+            }
             // Calculate the minimum possible non-zero Y to clip useless bottoms
             // of logarithmic plots.
             var maxYTick = getMaxDecimalTick(gc.maxY);
@@ -189,22 +235,97 @@ var gc = {
             }
             gc.ticks.push(Math.pow(10, pow));
 
-            gc.showWithData = showInNormalScaleWithData;
-
             gc.isInitialized = true;
         }
 
-        addLegendClickEvents(gc, filenames.length, showPlotWithInfo, refIndex);
+        gc.showWithData = showInNormalScaleWithData;
+        if (gcInfos.list_of_GC_contigs_distributions) {
+            createLegend(gc.filenames, gc.colors, 0, gc.reference, true);
+        }
+        addLegendClickEvents(gc, filenames.length, showPlotWithInfo, false, 0);
 
-        showPlotWithInfo(gc);
+        showPlotWithInfo(gc, 0);
 
         $('#change-scale').css('visibility', 'visible');
-
-        $('#contigs_are_ordered').hide();
         $('#gc_info').show();
     }
 };
 
+function showAll() {
+    $('#change-scale').show();
+    $('#gc_info').show();
+    $('#gc_contigs_info').hide();
+    createLegend(gc.filenames, gc.colors, 0, gc.reference);
+
+    gc.show_all_el = show_all_span;
+    gc.showWithData = gc.log_scale_el == log_scale_a ? showInNormalScaleWithData : showInLogarithmicScaleWithData;
+
+    $('#show_all_label').html(gc.show_all_el);
+    showPlotWithInfo(gc, 0);
+}
+
+function showPlot(index) {
+    $('#change-scale').hide();
+    $('#gc_info').hide();
+    $('#gc_contigs_info').show();
+    createLegend([gc.filenames[index - 1]], [gc.colors[index - 1]], index);
+
+    gc.show_all_el = show_all_a;
+    gc.showWithData = showOneAssembly;
+
+    $('#show_all_label').html(gc.show_all_el);
+    showPlotWithInfo(gc, index);
+}
+
+function showOneAssembly(series, colors) {
+    if (series == null) {
+        return;
+    }
+
+    gc.plot = $.plot(gc.placeholder, series, {
+            shadowSize: 0,
+            colors: colors,
+            legend: {
+                container: $('useless-invisible-element-that-does-not-even-exist')
+            },
+            grid: {
+                hoverable: true,
+                borderWidth: 1,
+                autoHighlight: false,
+                mouseActiveRadius: 1000
+            },
+            yaxis: {
+                min: 0,
+                max: series[0].maxY + 1,
+                labelWidth: 120,
+                reserveSpace: true,
+                lineWidth: 0.5,
+                color: '#000',
+                tickFormatter: getJustNumberTickFormatter(gc.maxY),
+                minTickSize: 1
+            },
+            xaxis: {
+                min: 0,
+                max: 100,
+                lineWidth: 0.5,
+                color: '#000',
+                tickFormatter: function (val, axis) {
+                    if (val == 100) {
+                        return '&nbsp;100% GC'
+                    } else {
+                        return val;
+                    }
+                }
+            },
+            minTickSize: 1
+        }
+    );
+
+    var firstLabel = $('.yAxis .tickLabel').last();
+    firstLabel.append(' contigs');
+    unBindTips(gc.placeholder);
+    bindTip(gc.placeholder, series, gc.plot, getIntervalToPrettyString(5), 1, '%<span class="rhs">&nbsp;</span>GC', 'top right');
+}
 
 function showInNormalScaleWithData(series, colors) {
     if (series == null || gc.maxY == null)
@@ -325,7 +446,7 @@ function setLogScale() {
 
     $('#normal_scale_label').html(gc.normal_scale_el);
     $('#log_scale_label').html(gc.log_scale_el);
-    showPlotWithInfo(gc);
+    showPlotWithInfo(gc, 0);
 }
 
 
@@ -336,7 +457,7 @@ function setNormalScale() {
 
     $('#normal_scale_label').html(gc.normal_scale_el);
     $('#log_scale_label').html(gc.log_scale_el);
-    showPlotWithInfo(gc);
+    showPlotWithInfo(gc, 0);
 }
 
 
@@ -357,4 +478,71 @@ function filterAndSumGcInfo(GC_info, condition) {
         val_bp += contigs_lengths_cur_bin[j];
     }
     return val_bp;
+}
+
+function createLegend(labels, colors, index, reference, firstLoad) {
+    var selectedAssemblies = firstLoad ? getSelectedAssemblies() :
+        Array.apply(null, {length: gc.filenames}).map(Number.call, Number);
+    $('#legend-placeholder').empty();
+    var selectors = "";
+
+    labels.forEach(function(label, i) {
+        var id = 'label_' + i + '_id';
+        var link = '<span id="' + labels[i] + '-switch"' + "class='plot-gc-type-switch dotted-link'>by contigs<br></span><br>";
+        var isChecked = (selectedAssemblies.length > 0 && selectedAssemblies.indexOf(i.toString())) != -1 ? 'checked="checked"' : "";
+        $('#legend-placeholder').append('<div>' +
+            '<label for="' + id + '" style="color: ' + colors[i] + '">' +
+            '<input type="checkbox" name="' + gc.filenames.indexOf(label) + '" ' + isChecked + ' id="' + id + '">&nbsp;' + label +'</label>' +
+            (index ? '' : '<br>' + link ) + '</div>');
+    });
+    if (reference) {
+        isChecked = (selectedAssemblies.length > 0 && selectedAssemblies.indexOf(gc.filenames.length.toString())) != -1 ? 'checked="checked"' : "";
+        $('#legend-placeholder').append(
+            '<div id="reference-label">' +
+                '<label for="label_' + gc.filenames.length + '_id" style="color: #000000;">' +
+                '<input type="checkbox" name="' + gc.filenames.length +
+                '" checked="' + isChecked + '" id="label_' + gc.filenames.length +
+                '_id">&nbsp;' + 'reference' +
+                '</label>' +
+                '</div>'
+        );
+    }
+    if (index > 0) {
+        for (var filenames_n = 0; filenames_n < gc.filenames.length; filenames_n++){
+            selectors += '<br><span id="' + gc.filenames[filenames_n] + '-switch" ' +
+                "class='plot-switch dotted-link'>" +
+                gc.filenames[filenames_n] + "</span>";
+        }
+        $('#legend-placeholder').append(
+            "<br><br><div id='change-assembly' style='margin-right: 3px;'>" +
+                "<span id='show_all_label'>" +
+                gc.show_all_el +
+                "</span><br>" + selectors +
+                "</div>"
+        );
+    }
+    addLinksToSwitches(index - 1);
+    addLegendClickEvents(gc, gc.series.length, showPlotWithInfo, false, index);
+}
+
+function addLinksToSwitches(index) {
+    var filenames = gc.filenames;
+    for (filenames_n = 0; filenames_n < filenames.length; filenames_n++){
+        var switchSpan = document.getElementById(filenames[filenames_n] + "-switch");
+        $(switchSpan).click(getToggleSwitchFunction(filenames_n + 1));
+        if (filenames_n == index) {
+            switchSpan.className = 'plot-switch selected-switch gc';
+        }
+    }
+}
+
+function getToggleSwitchFunction(index) {
+    return function() {
+        if (index > 0) {
+            showPlot(index);
+        }
+        else {
+            showAll();
+        }
+    };
 }

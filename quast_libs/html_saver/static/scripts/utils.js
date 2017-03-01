@@ -40,6 +40,23 @@ function isFractional(num) {
     return !isIntegral(num);
 }
 
+function getIntervalToPrettyString(interval) {
+    return function(num, unit) {
+        return intervalToPrettyString(interval, num, unit);
+    }
+}
+
+function intervalToPrettyString(interval, num, unit) {
+    if (typeof num === 'number') {
+        var str = toPrettyString(num);
+        str += '-' + toPrettyString(num + interval);
+        str += (unit ? '<span class="rhs">&nbsp;</span>' + unit : '');
+        return str;
+    } else {
+        return num;
+    }
+}
+
 function toPrettyString(num, unit) {
     if (typeof num === 'number') {
         var str;
@@ -202,7 +219,7 @@ function getContigNumberTickFormatter(maxX, tickX) {
         if (typeof axis.tickSize == 'number' && val > maxX - axis.tickSize) {
             return "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" + ordinalNumberToPrettyString(val, 'contig', tickX);
         } else {
-            return val * tickX;;
+            return val * tickX;
         }
     }
 }

@@ -166,6 +166,7 @@ min_gene_overlap = 100  # to partial genes/operons finding
 
 # basic_stats
 GC_bin_size = 1.0
+GC_contig_bin_size = 5
 
 # plotter and reporting and maybe other modules in the future
 assembly_labels_by_fpath = {}

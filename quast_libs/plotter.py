@@ -193,7 +193,7 @@ def save_plot(plot_fpath):
     plt.savefig(plot_fpath, bbox_inches='tight')
 
 
-def create_plot(plot_fpath, title, plots, legend_list, x_label=None, y_label=None, vertical_legend=False, is_histogram=False,
+def create_plot(plot_fpath, title, plots, legend_list=None, x_label=None, y_label=None, vertical_legend=False, is_histogram=False,
                 x_limit=None, y_limit=None, x_ticks=None, vertical_ticks=False, add_to_report=True):
     figure = plt.gcf()
     plt.rc('font', **font)
@@ -202,7 +202,8 @@ def create_plot(plot_fpath, title, plots, legend_list, x_label=None, y_label=Non
         max_y = max(max_y, plot.get_max_y())
         plot.plot()
     ax = set_ax(vertical_legend)
-    add_legend(ax, legend_list, n_columns=n_columns, vertical_legend=vertical_legend)
+    if legend_list:
+        add_legend(ax, legend_list, n_columns=n_columns, vertical_legend=vertical_legend)
     add_labels(x_label, y_label, max_y, ax, is_histogram=is_histogram)
     if x_limit:
         plt.xlim(x_limit)
@@ -427,6 +428,22 @@ def GC_content_plot(ref_fpath, contigs_fpaths, list_of_GC_distributions, plot_fp
     if ref_fpath:
         legend_list += ['Reference']
     create_plot(plot_fpath, title, plots, legend_list, x_label='GC (%)', y_label='# windows', x_limit=[0, 100])
+
+
+def contigs_GC_content_plot(contigs_fpath, GC_distributions, plot_fpath):
+    if not can_draw_plots or qconfig.no_gc:
+        return
+    title = label_from_fpath(contigs_fpath) + ' GC content'
+    logger.info('  Drawing ' + title + ' plot...')
+
+    plots = []
+    color, ls = get_color_and_ls(contigs_fpath)
+    x_vals, y_vals = GC_distributions
+
+    for GC_x, GC_y in zip(x_vals, y_vals):
+        plots.append(Bar(GC_x, GC_y, color, width=5))
+
+    create_plot(plot_fpath, title, plots, x_label='GC (%)', y_label='# contigs', x_limit=[0, 100])
 
 
 # common routine for genes and operons cumulative plots

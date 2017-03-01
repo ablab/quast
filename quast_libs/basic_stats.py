@@ -7,6 +7,7 @@
 
 import os
 import re
+from os.path import join
 
 from quast_libs import fastaparser, qconfig, qutils, reporting, plotter
 from quast_libs.log import get_logger
@@ -18,19 +19,28 @@ def GC_content(contigs_fpath, skip=False):
     """
     total_GC_amount = 0
     total_contig_length = 0
+    GC_contigs_bin_num = int(100 / qconfig.GC_contig_bin_size) + 1
+    GC_contigs_distribution_x = [i * qconfig.GC_contig_bin_size for i in range(0, GC_contigs_bin_num)] # list of X-coordinates, i.e. GC %
+    GC_contigs_distribution_y = [0] * GC_contigs_bin_num # list of Y-coordinates, i.e. # contigs with GC % = x
+
     GC_bin_num = int(100 / qconfig.GC_bin_size) + 1
     GC_distribution_x = [i * qconfig.GC_bin_size for i in range(0, GC_bin_num)] # list of X-coordinates, i.e. GC %
     GC_distribution_y = [0] * GC_bin_num # list of Y-coordinates, i.e. # windows with GC % = x
     total_GC = None
     if skip:
-        return total_GC, (GC_distribution_x, GC_distribution_y)
+        return total_GC, (GC_distribution_x, GC_distribution_y), (GC_contigs_distribution_x, GC_contigs_distribution_y)
 
     for name, seq_full in fastaparser.read_fasta(contigs_fpath): # in tuples: (name, seq)
-        total_GC_amount += seq_full.count("G") + seq_full.count("C")
-        total_contig_length += len(seq_full) - seq_full.count("N")
+        contig_ACGT_len = len(seq_full) - seq_full.count("N")
+        if not contig_ACGT_len:
+            continue
+        contig_GC_len = seq_full.count("G") + seq_full.count("C")
+        contig_GC_percent = 100.0 * contig_GC_len / contig_ACGT_len
+        GC_contigs_distribution_y[int(contig_GC_percent // qconfig.GC_contig_bin_size)] += 1
+
         n = 100 # blocks of length 100
         # non-overlapping windows
-        for seq in [seq_full[i:i+n] for i in range(0, len(seq_full), n)]:
+        for seq in (seq_full[i:i+n] for i in range(0, len(seq_full), n)):
             # skip block if it has less than half of ACGT letters (it also helps with "ends of contigs")
             ACGT_len = len(seq) - seq.count("N")
             if ACGT_len < (n / 2):
@@ -39,38 +49,15 @@ def GC_content(contigs_fpath, skip=False):
             GC_len = seq.count("G") + seq.count("C")
             GC_percent = 100.0 * GC_len / ACGT_len
             GC_distribution_y[int(int(GC_percent / qconfig.GC_bin_size) * qconfig.GC_bin_size)] += 1
-
-#    GC_info = []
-#    for name, seq_full in fastaparser.read_fasta(contigs_fpath): # in tuples: (name, seq)
-#        total_GC_amount += seq_full.count("G") + seq_full.count("C")
-#        total_contig_length += len(seq_full) - seq_full.count("N")
-#        n = 100 # blocks of length 100
-#        # non-overlapping windows
-#        for seq in [seq_full[i:i+n] for i in range(0, len(seq_full), n)]:
-#            # skip block if it has less than half of ACGT letters (it also helps with "ends of contigs")
-#            ACGT_len = len(seq) - seq.count("N")
-#            if ACGT_len < (n / 2):
-#                continue
-#            # contig_length = len(seq)
-#            GC_amount = seq.count("G") + seq.count("C")
-#            #GC_info.append((contig_length, GC_amount * 100.0 / contig_length))
-#            GC_info.append((1, 100 * GC_amount / ACGT_len))
-
-#        # sliding windows
-#        seq = seq_full[0:n]
-#        GC_amount = seq.count("G") + seq.count("C")
-#        GC_info.append((1, GC_amount * 100.0 / n))
-#        for i in range(len(seq_full) - n):
-#            GC_amount = GC_amount - seq_full[i].count("G") - seq_full[i].count("C")
-#            GC_amount = GC_amount + seq_full[i + n].count("G") + seq_full[i + n].count("C")
-#            GC_info.append((1, GC_amount * 100.0 / n))
+        total_GC_amount += contig_GC_len
+        total_contig_length += contig_ACGT_len
 
     if total_contig_length == 0:
         total_GC = None
     else:
         total_GC = total_GC_amount * 100.0 / total_contig_length
 
-    return total_GC, (GC_distribution_x, GC_distribution_y)
+    return total_GC, (GC_distribution_x, GC_distribution_y), (GC_contigs_distribution_x, GC_contigs_distribution_y)
 
 
 def binning_coverage(cov_values, nums_contigs):
@@ -157,7 +144,7 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, results_dir):
         reference_lengths = sorted(fastaparser.get_chr_lengths_from_fastafile(ref_fpath).values(), reverse=True)
         reference_fragments = len(reference_lengths)
         reference_length = sum(reference_lengths)
-        reference_GC, reference_GC_distribution = GC_content(ref_fpath)
+        reference_GC, reference_GC_distribution, reference_GC_contigs_distribution = GC_content(ref_fpath)
 
         logger.info('  Reference genome:')
         logger.info('    ' + os.path.basename(ref_fpath) + ', length = ' + str(reference_length) +
@@ -235,6 +222,7 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, results_dir):
     logger.info('  Calculating N50 and L50...')
 
     list_of_GC_distributions = []
+    list_of_GC_contigs_distributions = []
     largest_contig = 0
     from . import N50
     for id, (contigs_fpath, lengths_list, number_of_Ns) in enumerate(zip(contigs_fpaths, lists_of_lengths, numbers_of_Ns)):
@@ -248,8 +236,9 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, results_dir):
         if reference_length:
             ng75, lg75 = N50.NG50_and_LG50(lengths_list, reference_length, 75)
         total_length = sum(lengths_list)
-        total_GC, GC_distribution = GC_content(contigs_fpath, skip=qconfig.no_gc)
+        total_GC, GC_distribution, GC_contigs_distribution = GC_content(contigs_fpath, skip=qconfig.no_gc)
         list_of_GC_distributions.append(GC_distribution)
+        list_of_GC_contigs_distributions.append(GC_contigs_distribution)
         logger.info('    ' + qutils.index_to_str(id) +
                     qutils.label_from_fpath(contigs_fpath) + \
                     ', N50 = ' + str(n50) + \
@@ -296,23 +285,26 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, results_dir):
 
     if qconfig.html_report and not qconfig.is_combined_ref and not qconfig.no_gc:
         from quast_libs.html_saver import html_saver
-        html_saver.save_GC_info(results_dir, contigs_fpaths, list_of_GC_distributions_with_ref, reference_index)
+        html_saver.save_GC_info(results_dir, contigs_fpaths, list_of_GC_distributions_with_ref, list_of_GC_contigs_distributions, reference_index)
 
     ########################################################################
     # Drawing Nx and NGx plots...
-    plotter.Nx_plot(results_dir, num_contigs > qconfig.max_points, contigs_fpaths, lists_of_lengths, output_dirpath + '/Nx_plot', 'Nx', [])
+    plotter.Nx_plot(results_dir, num_contigs > qconfig.max_points, contigs_fpaths, lists_of_lengths, join(output_dirpath, 'Nx_plot'), 'Nx', [])
     if reference_length and not qconfig.is_combined_ref:
-        plotter.Nx_plot(results_dir, num_contigs > qconfig.max_points, contigs_fpaths, lists_of_lengths, output_dirpath + '/NGx_plot', 'NGx',
+        plotter.Nx_plot(results_dir, num_contigs > qconfig.max_points, contigs_fpaths, lists_of_lengths, join(output_dirpath, 'NGx_plot'), 'NGx',
                         [reference_length for i in range(len(contigs_fpaths))])
 
     if qconfig.draw_plots:
         ########################################################################import plotter
         # Drawing cumulative plot...
-        plotter.cumulative_plot(ref_fpath, contigs_fpaths, lists_of_lengths, output_dirpath + '/cumulative_plot', 'Cumulative length')
+        plotter.cumulative_plot(ref_fpath, contigs_fpaths, lists_of_lengths, join(output_dirpath, 'cumulative_plot'), 'Cumulative length')
         if not qconfig.is_combined_ref and not qconfig.no_gc:
             ########################################################################
             # Drawing GC content plot...
-            plotter.GC_content_plot(ref_fpath, contigs_fpaths, list_of_GC_distributions_with_ref, output_dirpath + '/GC_content_plot')
+            plotter.GC_content_plot(ref_fpath, contigs_fpaths, list_of_GC_distributions_with_ref, join(output_dirpath, 'GC_content_plot'))
+            for contigs_fpath, GC_distribution in zip(contigs_fpaths, list_of_GC_contigs_distributions):
+                plotter.contigs_GC_content_plot(contigs_fpath, GC_distribution,
+                                                join(output_dirpath, qutils.label_from_fpath(contigs_fpath) + '_GC_content_plot'))
 
         if any(coverage_dict[contigs_fpath] for contigs_fpath in contigs_fpaths):
             draw_coverage_histograms(coverage_dict, contigs_fpaths, output_dirpath)

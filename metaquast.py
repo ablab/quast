@@ -29,8 +29,8 @@ from site import addsitedir
 addsitedir(os.path.join(qconfig.LIBS_LOCATION, 'site_packages'))
 
 
-def _start_quast_main(args, assemblies, reference_fpath=None, output_dirpath=None,
-                      num_notifications_tuple=None, labels=None, run_regular_quast=False, is_parallel_run=False):
+def _start_quast_main(args, assemblies, reference_fpath=None, output_dirpath=None, num_notifications_tuple=None,
+                      labels=None, run_regular_quast=False, is_combined_ref=False, is_parallel_run=False):
     args = args[:]
 
     args.extend([asm.fpath for asm in assemblies])
@@ -62,15 +62,15 @@ def _start_quast_main(args, assemblies, reference_fpath=None, output_dirpath=Non
     if not run_regular_quast:
         reference_name = os.path.basename(qutils.name_from_fpath(reference_fpath)) if reference_fpath else None
         quast.logger.set_up_metaquast(is_parallel_run=is_parallel_run, ref_name=reference_name)
-    logger.info_to_file('(logging to ' +
-                        os.path.join(output_dirpath,
-                                     qconfig.LOGGER_DEFAULT_NAME + '.log)'))
+    if is_combined_ref:
+        logger.info_to_file('(logging to ' +
+                        os.path.join(output_dirpath, qconfig.LOGGER_DEFAULT_NAME + '.log)'))
     return_code = quast.main(args)
     if num_notifications_tuple:
         cur_num_notifications = quast.logger.get_numbers_of_notifications()
         num_notifications_tuple = list(map(sum, zip(num_notifications_tuple, cur_num_notifications)))
 
-    if labels and assemblies:
+    if is_combined_ref:
         labels[:] = [qconfig.assembly_labels_by_fpath[fpath] for fpath in qconfig.assemblies_fpaths]
         assemblies[:] = [Assembly(fpath, qconfig.assembly_labels_by_fpath[fpath]) for fpath in qconfig.assemblies_fpaths]
 
@@ -86,7 +86,7 @@ def _run_quast_per_ref(quast_py_args, output_dirpath_per_ref, ref_fpath, ref_ass
         output_dirpath = os.path.join(output_dirpath_per_ref, ref_name)
         run_name = 'for the contigs aligned to ' + ref_name
         logger.main_info('\nStarting quast.py ' + run_name +
-                         ' (logging to ' + os.path.join(output_dirpath, qconfig.LOGGER_DEFAULT_NAME) + '.log)')
+                         '... (logging to ' + os.path.join(output_dirpath, qconfig.LOGGER_DEFAULT_NAME) + '.log)')
 
         return_code, total_num_notifications = _start_quast_main(quast_py_args,
                                                                  assemblies=ref_assemblies,
@@ -258,7 +258,8 @@ def main(args):
         assemblies=assemblies,
         reference_fpath=combined_ref_fpath,
         output_dirpath=combined_output_dirpath,
-        num_notifications_tuple=total_num_notifications)
+        num_notifications_tuple=total_num_notifications,
+        is_combined_ref=True)
 
     if json_texts is not None:
         json_texts.append(json_saver.json_text)
@@ -299,7 +300,8 @@ def main(args):
                 assemblies=assemblies,
                 reference_fpath=combined_ref_fpath,
                 output_dirpath=combined_output_dirpath,
-                num_notifications_tuple=total_num_notifications)
+                num_notifications_tuple=total_num_notifications,
+                is_combined_ref=True)
             if json_texts is not None:
                 json_texts = json_texts[:-1]
                 json_texts.append(json_saver.json_text)
@@ -371,7 +373,8 @@ def main(args):
     if no_unaligned_contigs:
         logger.main_info('Skipping quast.py ' + run_name + ' (everything is aligned!)')
     else:
-        logger.main_info('Starting quast.py ' + run_name + '...')
+        logger.main_info('Starting quast.py ' + run_name + '... (logging to ' +
+                        os.path.join(output_dirpath, qconfig.not_aligned_name, qconfig.LOGGER_DEFAULT_NAME + '.log)'))
 
         return_code, total_num_notifications = _start_quast_main(quast_py_args,
             assemblies=not_aligned_assemblies,

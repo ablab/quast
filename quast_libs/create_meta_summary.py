@@ -70,7 +70,8 @@ def do(html_fpath, output_dirpath, combined_output_dirpath, output_dirpath_per_r
             summary_tex_fpath = os.path.join(output_dirpath, 'TEX', metric.replace(' ', '_') + '.tex')
             summary_tsv_fpath = os.path.join(output_dirpath, 'TSV', metric.replace(' ', '_') + '.tsv')
             summary_plot_fpath = os.path.join(output_dirpath, plots_dirname, metric.replace(' ', '_'))
-            results, all_rows, cur_ref_names = get_results_for_metric(ref_names, metric, contigs_num, labels, output_dirpath_per_ref, qconfig.transposed_report_prefix + '.tsv')
+            results, all_rows, cur_ref_names = \
+                get_results_for_metric(ref_names, metric, contigs_num, labels, output_dirpath_per_ref, qconfig.transposed_report_prefix + '.tsv')
             if not results or not results[0]:
                 continue
             if cur_ref_names:
@@ -103,7 +104,7 @@ def do(html_fpath, output_dirpath, combined_output_dirpath, output_dirpath_per_r
                     y_label = 'Alignment length'
                 plotter.draw_meta_summary_plot(html_fpath, output_dirpath, labels, cur_ref_names, results,
                                                summary_plot_fpath, title=metric, reverse=reverse, yaxis_title=y_label,
-                                               print_all_refs=True)
+                                               print_all_refs=True, logger=logger)
                 if metric == reporting.Fields.MISASSEMBL:
                     mis_results = []
                     report_fname = os.path.join('contigs_reports', qconfig.transposed_report_prefix + '_misassemblies' + '.tsv')

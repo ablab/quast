@@ -194,7 +194,7 @@ def save_plot(plot_fpath):
 
 
 def create_plot(plot_fpath, title, plots, legend_list=None, x_label=None, y_label=None, vertical_legend=False, is_histogram=False,
-                x_limit=None, y_limit=None, x_ticks=None, vertical_ticks=False, add_to_report=True):
+                x_limit=None, y_limit=None, x_ticks=None, vertical_ticks=False, add_to_report=True, logger=logger):
     figure = plt.gcf()
     plt.rc('font', **font)
     max_y = 0
@@ -594,9 +594,9 @@ def coverage_histogram(contigs_fpaths, values, plot_fpath, title='', bin_size=No
 
 # metaQuast summary plots (per each metric separately)
 def draw_meta_summary_plot(html_fpath, output_dirpath, labels, ref_names, results, plot_fpath, title='', reverse=False,
-                           yaxis_title='', print_all_refs=False):
+                           yaxis_title='', print_all_refs=False, logger=logger):
     if can_draw_plots:
-        meta_logger.info('  Drawing ' + title + ' metaQUAST summary plot...')
+        logger.info('  Drawing ' + title + ' metaQUAST summary plot...')
 
     plots = []
     ref_num = len(ref_names)
@@ -655,7 +655,7 @@ def draw_meta_summary_plot(html_fpath, output_dirpath, labels, ref_names, result
         create_plot(plot_fpath, title, plots, legend_list, y_label=yaxis_title, vertical_legend=True,
                     x_ticks=[''] + selected_refs, vertical_ticks=True,
                     x_limit=[0, len(selected_refs) + 1],
-                    add_to_report=False)
+                    add_to_report=False, logger=logger)
 
 
 # metaQuast misassemblies by types plots (all references for 1 assembly)
@@ -711,7 +711,7 @@ def draw_meta_summary_misassembl_plot(results, ref_names, contig_num, plot_fpath
         legend_n = set(legend_n)
         legend_list = [misassemblies[i] for i in sorted(legend_n)]
         create_plot(plot_fpath, title, plots, legend_list, vertical_legend=True, x_ticks=[''] + ref_names, vertical_ticks=True,
-                    x_limit=[0, refs_num + 1], add_to_report=False)
+                    x_limit=[0, refs_num + 1], add_to_report=False, logger=meta_logger)
     return json_points_x, json_points_y
 
 

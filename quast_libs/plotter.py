@@ -124,6 +124,7 @@ def y_formatter(ylabel, max_y):
 
 def set_ax(vertical_legend=False):
     ax = plt.gca()
+    ax.set_axisbelow(True)
     # Shink current axis's height by 20% on the bottom
     box = ax.get_position()
     if vertical_legend:
@@ -201,10 +202,11 @@ def create_plot(plot_fpath, title, plots, legend_list=None, x_label=None, y_labe
     figure = plt.gcf()
     plt.rc('font', **font)
     max_y = 0
+
+    ax = set_ax(vertical_legend)
     for plot in plots:
         max_y = max(max_y, plot.get_max_y())
         plot.plot()
-    ax = set_ax(vertical_legend)
     if legend_list:
         add_legend(ax, legend_list, n_columns=n_columns, vertical_legend=vertical_legend)
     add_labels(x_label, y_label, max_y, ax, is_histogram=is_histogram)

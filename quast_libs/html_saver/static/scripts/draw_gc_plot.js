@@ -197,6 +197,7 @@ var gc = {
 
             if (gcInfos.list_of_GC_contigs_distributions) {
                 listOfGcDistributions = gcInfos.list_of_GC_contigs_distributions;
+                var maxY = 0;
                 for (var file_n = 0; file_n < filenames.length; file_n++) {
                     gc.series[file_n + 1] = new Array(1);
                     gc.series[file_n + 1][0] = {
@@ -214,7 +215,6 @@ var gc = {
 
                     var distributionsX = listOfGcDistributions[file_n][0];
                     var distributionsY = listOfGcDistributions[file_n][1];
-                    var maxY = 0;
 
                     for (var j = 0; j < distributionsX.length; j++) {
                         var x = distributionsX[j];
@@ -222,6 +222,8 @@ var gc = {
                         gc.series[file_n + 1][0].data.push([x, y]);
                         maxY = Math.max(maxY, y);
                     }
+                }
+                for (var file_n = 0; file_n < filenames.length; file_n++) {
                     gc.series[file_n + 1][0].maxY = maxY;
                 }
             }

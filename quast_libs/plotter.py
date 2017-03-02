@@ -84,7 +84,7 @@ class Plot(object):
 
 
 class Bar(object):
-    def __init__(self, x_val, y_val, color, width=0.8, bottom=None, hatch='', edgecolor=None, align='center'):
+    def __init__(self, x_val, y_val, color, width=0.8, bottom=None, hatch='', edgecolor=None, align='edge'):
         self.x_val, self.y_val, self.color, self.width, self.bottom, self.hatch, self.edgecolor, self.align = \
             x_val, y_val, color, width, bottom, hatch, edgecolor, align
 
@@ -446,7 +446,7 @@ def contigs_GC_content_plot(contigs_fpath, GC_distributions, plot_fpath):
     x_vals, y_vals = GC_distributions
 
     for GC_x, GC_y in zip(x_vals, y_vals):
-        plots.append(Bar(GC_x, GC_y, color, width=5, align='edge'))
+        plots.append(Bar(GC_x, GC_y, color, width=5))
 
     create_plot(plot_fpath, title, plots, x_label='GC (%)', y_label='# contigs', x_limit=[0, 100])
 
@@ -563,9 +563,9 @@ def coverage_histogram(contigs_fpaths, values, plot_fpath, title='', bin_size=No
         if draw_bars:
             for x_val, y_val, bar_width in zip(x_vals, y_vals, bar_widths):
                 if bar_width == 2:
-                    plots.append(Bar(x_val, y_val, color, width=bar_width, align='edge', edgecolor='black', hatch='x'))
+                    plots.append(Bar(x_val, y_val, color, width=bar_width, edgecolor='black', hatch='x'))
                 else:
-                    plots.append(Bar(x_val, y_val, color, width=bar_width, align='edge'))
+                    plots.append(Bar(x_val, y_val, color, width=bar_width))
             plots.append(Bar(0, 0, color=color))
         else:
             y_vals.append(y_vals[-1])
@@ -579,9 +579,6 @@ def coverage_histogram(contigs_fpaths, values, plot_fpath, title='', bin_size=No
 
     if low_threshold:
         x_ticks_labels.insert(0, 0)
-        if x_ticks[1] != 1:
-            x_ticks.insert(1, 1)
-            x_ticks_labels.insert(1, '')
     if high_threshold:
         if low_threshold:
             last_tick = (high_threshold - low_threshold) // bin_size + 4  # first and last bars have width 2
@@ -589,12 +586,15 @@ def coverage_histogram(contigs_fpaths, values, plot_fpath, title='', bin_size=No
             last_tick = high_threshold // bin_size + 2
         x_ticks = [x for x in x_ticks if x < last_tick]
         x_ticks_labels = x_ticks_labels[:len(x_ticks)]
-        if x_ticks[-1] < last_tick - 1:
-            x_ticks.append(x_ticks[-1] + 1)
-            x_ticks_labels.append('')
         x_ticks.append(last_tick)
         x_ticks_labels.append(str(max_cov))
 
+    for i in range(len(x_ticks) - 1, 0, -1):
+        val, prev_val = x_ticks[i], x_ticks[i - 1]
+        while val - 1 != prev_val:
+            val -= 1
+            x_ticks.insert(i, val)
+            x_ticks_labels.insert(i, '')
     legend_list = [label_from_fpath(fpath) for fpath in contigs_fpaths]
     xlabel = 'Coverage depth (x)'
     ylabel = 'Total length'
@@ -696,7 +696,7 @@ def draw_meta_summary_misassemblies_plot(results, ref_names, contig_num, plot_fp
             if result and result != '-':
                 to_plot.append(float(result))
                 if can_draw_plots:
-                    plots.append(Bar(arr_x[j], to_plot[0], colors[type_misassembly], width=bar_width))
+                    plots.append(Bar(arr_x[j], to_plot[0], colors[type_misassembly], width=bar_width, align='center'))
                     legend_n.append(type_misassembly)
                     y = float(to_plot[0])
                 json_points_x.append(arr_x[j])
@@ -707,7 +707,7 @@ def draw_meta_summary_misassemblies_plot(results, ref_names, contig_num, plot_fp
             if result and result != '-':
                 to_plot.append(float(result))
                 if can_draw_plots:
-                    plots.append(Bar(arr_x[j], to_plot[-1], colors[i], width=bar_width, bottom=sum(to_plot[:-1])))
+                    plots.append(Bar(arr_x[j], to_plot[-1], colors[i], width=bar_width, align='center', bottom=sum(to_plot[:-1])))
                     legend_n.append(i)
                     y += float(to_plot[-1])
                 json_points_x.append(arr_x[j])
@@ -771,9 +771,9 @@ def draw_misassemblies_plot(reports, plot_fpath, title='', yaxis_title=''):
         points_x = [arr_x[j][i] for j in range(contigs_num) if arr_x[j][i] != 0]
         points_y = [arr_y[j][i] for j in range(contigs_num) if arr_y[j][i] != 0]
         if points_y and points_x:
-            plots.append(Bar(points_x, points_y, color=colors[i], width=0.05))
+            plots.append(Bar(points_x, points_y, color=colors[i], width=0.05, align='center'))
     for j in range(len(reports)):
-        if (arr_y[j]):
+        if arr_y[j]:
             points_y = [arr_y[j][i] for i in range(len(misassemblies))]
             significant_points_y = [arr_y[j][i] for i in range(len(misassemblies)) if arr_y[j][i] != 0]
             if len(significant_points_y) > 1:
@@ -781,16 +781,15 @@ def draw_misassemblies_plot(reports, plot_fpath, title='', yaxis_title=''):
                 while points_y[type_misassembly] == 0:
                     type_misassembly += 1
                 point_x = main_arr_x[j] + 0.07 * (len(misassemblies) * 0.5)
-                plots.append(Bar(point_x, points_y[type_misassembly], color=colors[0], width=0.05))
+                plots.append(Bar(point_x, points_y[type_misassembly], color=colors[0], width=0.05, align='center'))
                 type_misassembly += 1
                 for i in range(type_misassembly, len(arr_y[j])):
                     if points_y[i] > 0:
-                        plots.append(Bar(point_x, points_y[i], color=colors[i], width=0.05, bottom=sum(points_y[:i])))
+                        plots.append(Bar(point_x, points_y[i], color=colors[i], width=0.05, align='center', bottom=sum(points_y[:i])))
 
     legend_n = set(legend_n)
     legend_list = [misassemblies[i] for i in sorted(legend_n)]
-    create_plot(plot_fpath, title, plots, legend_list, x_ticks=[''] + labels,
-                     x_limit=[0, contigs_num + 1])
+    create_plot(plot_fpath, title, plots, legend_list, x_ticks=[''] + labels, x_limit=[0, contigs_num + 1])
 
 
 def draw_report_table(report_name, extra_info, table_to_draw, column_widths):

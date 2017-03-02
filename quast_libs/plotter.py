@@ -558,9 +558,9 @@ def coverage_histogram(contigs_fpaths, values, plot_fpath, title='', bin_size=No
         if draw_bars:
             for x_val, y_val, bar_width in zip(x_vals, y_vals, bar_widths):
                 if bar_width == 2:
-                    plots.append(Bar(x_val, y_val, color, width=bar_width, edgecolor='black', hatch='x'))
+                    plots.append(Bar(x_val, y_val, color, width=bar_width, align='edge', edgecolor='black', hatch='x'))
                 else:
-                    plots.append(Bar(x_val, y_val, color, width=bar_width))
+                    plots.append(Bar(x_val, y_val, color, width=bar_width, align='edge'))
             plots.append(Bar(0, 0, color=color))
         else:
             y_vals.append(y_vals[-1])
@@ -574,6 +574,9 @@ def coverage_histogram(contigs_fpaths, values, plot_fpath, title='', bin_size=No
 
     if low_threshold:
         x_ticks_labels.insert(0, 0)
+        if x_ticks[1] != 1:
+            x_ticks.insert(1, 1)
+            x_ticks_labels.insert(1, '')
     if high_threshold:
         if low_threshold:
             last_tick = (high_threshold - low_threshold) // bin_size + 4  # first and last bars have width 2
@@ -581,6 +584,9 @@ def coverage_histogram(contigs_fpaths, values, plot_fpath, title='', bin_size=No
             last_tick = high_threshold // bin_size + 2
         x_ticks = [x for x in x_ticks if x < last_tick]
         x_ticks_labels = x_ticks_labels[:len(x_ticks)]
+        if x_ticks[-1] < last_tick - 1:
+            x_ticks.append(x_ticks[-1] + 1)
+            x_ticks_labels.append('')
         x_ticks.append(last_tick)
         x_ticks_labels.append(str(max_cov))
 

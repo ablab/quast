@@ -61,9 +61,12 @@ def GC_content(contigs_fpath, skip=False):
 
 
 def binning_coverage(cov_values, nums_contigs):
+    min_bins_cnt = 5
     bin_sizes = []
     low_thresholds = []
     high_thresholds = []
+    cov_by_bins = []
+    max_cov = max(len(v) for v in cov_values)
     for values, num_contigs in zip(cov_values, nums_contigs):
         assembly_len = sum(values)
         bases_by_cov = []
@@ -79,11 +82,11 @@ def binning_coverage(cov_values, nums_contigs):
 
     bin_size = max(min(bin_sizes), 1)
     low_threshold = max(min(low_thresholds), 0)
+    high_threshold = min(max(high_thresholds), max_cov)
+    if (high_threshold - low_threshold) // bin_size < min_bins_cnt and bin_size > 1:
+        bin_size = (high_threshold - low_threshold) // min_bins_cnt
     low_threshold -= low_threshold % bin_size
-    high_threshold = max(high_thresholds)
     high_threshold -= high_threshold % bin_size
-    max_cov = max(len(v) for v in cov_values)
-    cov_by_bins = []
     max_points = (high_threshold // bin_size) + 1  # add last bin
     offset = 0
     if low_threshold > bin_size:  # add first bin

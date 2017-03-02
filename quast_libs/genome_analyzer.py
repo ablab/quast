@@ -114,11 +114,13 @@ def process_single_file(contigs_fpath, index, nucmer_path_dirpath, genome_stats_
     for chr_name, chr_len in reference_chromosomes.items():
         genome_mapping[chr_name] = [0] * (chr_len + 1)
 
-    contig_tuples = list(fastaparser.read_fasta(contigs_fpath))  # list of FASTA entries (in tuples: name, seq)
-    contig_names = [name for (name, seq) in contig_tuples]
-    contig_tuples = sorted(contig_tuples, key=lambda contig: len(contig[1]), reverse=True)
-    sorted_contigs_names = [name for (name, seq) in contig_tuples]
-    contigs_order = [contig_names.index(name) for name in sorted_contigs_names]
+    contig_tuples = fastaparser.read_fasta(contigs_fpath)  # list of FASTA entries (in tuples: name, seq)
+    sorted_contig_tuples = sorted(enumerate(contig_tuples), key=lambda x: len(x[1][1]), reverse=True)
+    sorted_contigs_names = []
+    contigs_order = []
+    for idx, (name, _) in sorted_contig_tuples:
+        sorted_contigs_names.append(name)
+        contigs_order.append(idx)
 
     genes_in_contigs = [0] * len(sorted_contigs_names) # for cumulative plots: i-th element is the number of genes in i-th contig
     operons_in_contigs = [0] * len(sorted_contigs_names)

@@ -283,7 +283,7 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, results_dir):
         reference_index = len(list_of_GC_distributions_with_ref)
         list_of_GC_distributions_with_ref.append(reference_GC_distribution)
 
-    if qconfig.html_report and not qconfig.is_combined_ref and not qconfig.no_gc:
+    if qconfig.html_report and not qconfig.no_gc:
         from quast_libs.html_saver import html_saver
         html_saver.save_GC_info(results_dir, contigs_fpaths, list_of_GC_distributions_with_ref, list_of_GC_contigs_distributions, reference_index)
 
@@ -298,7 +298,7 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, results_dir):
         ########################################################################import plotter
         # Drawing cumulative plot...
         plotter.cumulative_plot(ref_fpath, contigs_fpaths, lists_of_lengths, join(output_dirpath, 'cumulative_plot'), 'Cumulative length')
-        if not qconfig.is_combined_ref and not qconfig.no_gc:
+        if not qconfig.no_gc:
             ########################################################################
             # Drawing GC content plot...
             plotter.GC_content_plot(ref_fpath, contigs_fpaths, list_of_GC_distributions_with_ref, join(output_dirpath, 'GC_content_plot'))

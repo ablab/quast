@@ -84,12 +84,12 @@ class Plot(object):
 
 
 class Bar(object):
-    def __init__(self, x_val, y_val, color, width=0.8, bottom=None, hatch='', edgecolor=None):
-        self.x_val, self.y_val, self.color, self.width, self.bottom, self.hatch, self.edgecolor = \
-            x_val, y_val, color, width, bottom, hatch, edgecolor
+    def __init__(self, x_val, y_val, color, width=0.8, bottom=None, hatch='', edgecolor=None, align='center'):
+        self.x_val, self.y_val, self.color, self.width, self.bottom, self.hatch, self.edgecolor, self.align = \
+            x_val, y_val, color, width, bottom, hatch, edgecolor, align
 
     def plot(self):
-        plt.bar(self.x_val, self.y_val, width=self.width, color=self.color, edgecolor=self.edgecolor,
+        plt.bar(self.x_val, self.y_val, width=self.width, align=self.align, color=self.color, edgecolor=self.edgecolor,
                 hatch=self.hatch, bottom=self.bottom)
 
     def get_max_y(self):
@@ -441,7 +441,7 @@ def contigs_GC_content_plot(contigs_fpath, GC_distributions, plot_fpath):
     x_vals, y_vals = GC_distributions
 
     for GC_x, GC_y in zip(x_vals, y_vals):
-        plots.append(Bar(GC_x, GC_y, color, width=5))
+        plots.append(Bar(GC_x, GC_y, color, width=5, align='edge'))
 
     create_plot(plot_fpath, title, plots, x_label='GC (%)', y_label='# contigs', x_limit=[0, 100])
 

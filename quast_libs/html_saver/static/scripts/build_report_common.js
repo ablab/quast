@@ -109,14 +109,14 @@ function togglePlots(assembliesNames, order, name, title, drawPlot, data, refPlo
     $('#contigs_are_ordered').hide();
     $('#gc_info').hide();
     $('#gc_contigs_info').hide();
-    $('#legend-placeholder').empty();
     var selectedAssemblies = getSelectedAssemblies();
+    $('#legend-placeholder').empty();
     assembliesNames.forEach(function(filename, i) {
         var id = 'label_' + i + '_id';
         var isChecked = (selectedAssemblies.length > 0 && selectedAssemblies.indexOf(i.toString())) != -1 ? 'checked="checked"' : "";
         $('#legend-placeholder').append('<div>' +
             '<label for="' + id + '" style="color: ' + colors[i] + '">' +
-            '<input type="checkbox" name="' + i + '" checked="' + isChecked + '" id="' + id + '">&nbsp;' + filename + '</label>' +
+            '<input type="checkbox" name="' + i + '"' + isChecked + ' id="' + id + '">&nbsp;' + filename + '</label>' +
             '</div>');
     });
     if (refPlotValue) {

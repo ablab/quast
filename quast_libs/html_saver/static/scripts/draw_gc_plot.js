@@ -296,7 +296,7 @@ function showOneAssembly(series, colors) {
             },
             yaxis: {
                 min: 0,
-                max: series[0].maxY + 1,
+                max: series[0].maxY * 1.1,
                 labelWidth: 120,
                 reserveSpace: true,
                 lineWidth: 0.5,

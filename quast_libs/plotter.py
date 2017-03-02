@@ -72,7 +72,7 @@ pdf_tables_figures = []
 
 
 class Plot(object):
-    def __init__(self, x_vals, y_vals, color, ls, marker=None, markersize=None):
+    def __init__(self, x_vals, y_vals, color, ls, marker=None, markersize=1):
         self.x_vals, self.y_vals, self.color, self.ls, self.marker, self.markersize = x_vals, y_vals, color, ls, marker, markersize
 
     def plot(self):
@@ -474,7 +474,7 @@ def genes_operons_plot(reference_value, contigs_fpaths, files_feature_in_contigs
         plots.append(Plot(x_vals, y_vals, color, ls))
 
     if reference_value:
-        plots.append(Plot([1, max_x], [reference_value, reference_value], reference_color, reference_ls))
+        plots.append(Plot([0, max_x], [reference_value, reference_value], reference_color, reference_ls))
 
     title = 'Cumulative # complete ' + title
     legend_list = [label_from_fpath(fpath) for fpath in contigs_fpaths]

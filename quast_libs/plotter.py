@@ -96,7 +96,10 @@ class Bar(object):
         if isinstance(self.y_val, list):
             return max(self.y_val)
         else:
-            return self.y_val
+            if self.bottom:
+                return self.y_val + self.bottom
+            else:
+                return self.y_val
 
 
 def get_locators(is_histogram):
@@ -665,7 +668,7 @@ def draw_meta_summary_plot(html_fpath, output_dirpath, labels, ref_names, result
 
 
 # metaQuast misassemblies by types plots (all references for 1 assembly)
-def draw_meta_summary_misassembl_plot(results, ref_names, contig_num, plot_fpath, title=''):
+def draw_meta_summary_misassemblies_plot(results, ref_names, contig_num, plot_fpath, title=''):
     if can_draw_plots:
         meta_logger.info('  Drawing metaQUAST summary misassemblies plot for ' + title + '...')
 
@@ -722,7 +725,7 @@ def draw_meta_summary_misassembl_plot(results, ref_names, contig_num, plot_fpath
 
 
 # Quast misassemblies by types plot (for all assemblies)
-def draw_misassembl_plot(reports, plot_fpath, title='', yaxis_title=''):
+def draw_misassemblies_plot(reports, plot_fpath, title='', yaxis_title=''):
     if not can_draw_plots:
         return
 
@@ -737,7 +740,6 @@ def draw_misassembl_plot(reports, plot_fpath, title='', yaxis_title=''):
     misassemblies = [reporting.Fields.MIS_RELOCATION, reporting.Fields.MIS_TRANSLOCATION, reporting.Fields.MIS_INVERTION,
                      reporting.Fields.MIS_ISTRANSLOCATIONS]
     legend_n = []
-    max_y = 0
     main_arr_x = list(range(1, len(reports) + 1))
     arr_x = []
     arr_y = []
@@ -762,7 +764,7 @@ def draw_misassembl_plot(reports, plot_fpath, title='', yaxis_title=''):
                 arr_x[j][i] = main_arr_x[j] + 0.07 * (i - (len(misassemblies) * 0.5))
                 legend_n.append(i)
                 y += float(result)
-        max_y = max(max_y, y)
+
     for i in range(len(misassemblies)):
         points_x = [arr_x[j][i] for j in range(contigs_num) if arr_x[j][i] != 0]
         points_y = [arr_y[j][i] for j in range(contigs_num) if arr_y[j][i] != 0]

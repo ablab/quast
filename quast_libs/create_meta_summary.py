@@ -57,7 +57,7 @@ def get_labels(combined_output_dirpath, report_fname):
     return values[1:]
 
 
-def do(html_fpath, output_dirpath, combined_output_dirpath, output_dirpath_per_ref, metrics, misassembl_metrics, ref_names):
+def do(html_fpath, output_dirpath, combined_output_dirpath, output_dirpath_per_ref, metrics, misassembly_metrics, ref_names):
     labels = get_labels(combined_output_dirpath, qconfig.report_prefix + '.tsv')
     contigs_num = len(labels)
     plots_dirname = qconfig.plot_extension.upper()
@@ -110,17 +110,19 @@ def do(html_fpath, output_dirpath, combined_output_dirpath, output_dirpath_per_r
                     report_fname = os.path.join('contigs_reports', qconfig.transposed_report_prefix + '_misassemblies' + '.tsv')
                     if ref_names[-1] == qconfig.not_aligned_name:
                         cur_ref_names = ref_names[:-1]
-                    for misassembl_metric in misassembl_metrics:
-                        results, all_rows, cur_ref_names = get_results_for_metric(cur_ref_names, misassembl_metric[len(reporting.Fields.TAB):], contigs_num, labels, output_dirpath_per_ref, report_fname)
+                    for misassembly_metric in misassembly_metrics:
+                        results, all_rows, cur_ref_names = \
+                            get_results_for_metric(cur_ref_names, misassembly_metric[len(reporting.Fields.TAB):],
+                                                   contigs_num, labels, output_dirpath_per_ref, report_fname)
                         if results:
                             mis_results.append(results)
                     if mis_results:
                         json_points = []
                         for contig_num in range(contigs_num):
                             plot_fpath = os.path.join(output_dirpath, plots_dirname, qutils.slugify(labels[contig_num]) + '_misassemblies')
-                            json_points.append(plotter.draw_meta_summary_misassembl_plot(mis_results, cur_ref_names,
-                                                                                         contig_num, plot_fpath,
-                                                                                         title=labels[contig_num]))
+                            json_points.append(plotter.draw_meta_summary_misassemblies_plot(mis_results, cur_ref_names,
+                                                                                            contig_num, plot_fpath,
+                                                                                            title=labels[contig_num]))
                         if qconfig.html_report:
                             from quast_libs.html_saver import html_saver
                             if ref_names[-1] == qconfig.not_aligned_name:

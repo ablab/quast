@@ -403,14 +403,14 @@ def main(args):
             html_summary_report_fpath = None
         from quast_libs import create_meta_summary
         metrics_for_plots = reporting.Fields.main_metrics
-        misassembl_metrics = [reporting.Fields.MIS_RELOCATION, reporting.Fields.MIS_TRANSLOCATION, reporting.Fields.MIS_INVERTION,
-                           reporting.Fields.MIS_ISTRANSLOCATIONS]
+        misassembly_metrics = [reporting.Fields.MIS_RELOCATION, reporting.Fields.MIS_TRANSLOCATION, reporting.Fields.MIS_INVERTION,
+                              reporting.Fields.MIS_ISTRANSLOCATIONS]
         if no_unaligned_contigs:
             full_ref_names = [qutils.name_from_fpath(ref_fpath) for ref_fpath in corrected_ref_fpaths]
         else:
             full_ref_names = [qutils.name_from_fpath(ref_fpath) for ref_fpath in corrected_ref_fpaths] + [qconfig.not_aligned_name]
         create_meta_summary.do(html_summary_report_fpath, summary_output_dirpath, combined_output_dirpath,
-                               output_dirpath_per_ref, metrics_for_plots, misassembl_metrics, full_ref_names)
+                               output_dirpath_per_ref, metrics_for_plots, misassembly_metrics, full_ref_names)
         if html_report and json_texts:
             html_saver.save_colors(output_dirpath, contigs_fpaths, plotter_data.dict_color_and_ls, meta=True)
             if qconfig.create_icarus_html:

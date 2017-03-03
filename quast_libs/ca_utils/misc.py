@@ -145,7 +145,7 @@ def draw_mummer_plot(logger, nucmer_fpath, delta_fpath, index, log_out_f, log_er
         if isfile(plot_script_fpath) and isfile(gnuplot_exec_fpath()):
             qutils.call_subprocess(
                 [gnuplot_exec_fpath(), plot_script_fpath],
-                stdout=log_out_f, stderr=log_err_f,
+                stdout=open('/dev/null', 'w'), stderr=log_err_f,
                 indent='  ' + qutils.index_to_str(index))
             if isfile(temp_plot_fpath):
                 shutil.copy(temp_plot_fpath, mummer_plot_fpath)

@@ -356,9 +356,9 @@ def Nx_plot(results_dir, reduce_points, contigs_fpaths, lists_of_lengths, plot_f
             json_vals_x.append([])
             json_vals_y.append([])
             continue
+        lengths.sort(reverse=True)
         vals_x = [0.0]
         vals_y = [lengths[0]]
-        lengths.sort(reverse=True)
         # calculate values for the plot
         vals_Nx = [0.0]
         vals_l = [lengths[0]]

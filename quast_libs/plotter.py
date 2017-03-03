@@ -37,10 +37,11 @@ logarithmic_x_scale = False  # for cumulative plots only
 ########################  END OF CONFIGURABLE PARAMETERS  ##########################
 ####################################################################################
 import math
+import sys
 
 from quast_libs import fastaparser, qconfig, reporting
 from quast_libs.log import get_logger, get_main_logger
-from quast_libs.qutils import label_from_fpath, parseStrToNum, run_parallel
+from quast_libs.qutils import label_from_fpath, parse_str_to_num, run_parallel
 from quast_libs.plotter_data import get_color_and_ls, colors
 
 main_logger = get_main_logger()
@@ -58,8 +59,11 @@ if qconfig.draw_plots:
             main_logger.warning('Can\'t draw plots: matplotlib version is old! Please use matplotlib version 1.1 or higher.')
         else:
             # additionally check other imports
+            stderr = sys.stderr
+            sys.stderr = open('/dev/null', 'w')  # do not print matplotlib bad key warnings
             import matplotlib.pyplot as plt
             import matplotlib.ticker
+            sys.stderr = stderr
             can_draw_plots = True
     except Exception:
         main_logger.info('')
@@ -563,7 +567,7 @@ def coverage_histogram(contigs_fpaths, values, plot_fpath, title='', bin_size=No
         if draw_bars:
             for x_val, y_val, bar_width in zip(x_vals, y_vals, bar_widths):
                 if bar_width == 2:
-                    plots.append(Bar(x_val, y_val, color, width=bar_width, edgecolor='black', hatch='x'))
+                    plots.append(Bar(x_val, y_val, color, width=bar_width, edgecolor='#595959', hatch='x'))
                 else:
                     plots.append(Bar(x_val, y_val, color, width=bar_width))
             plots.append(Bar(0, 0, color=color))
@@ -626,7 +630,7 @@ def draw_meta_summary_plot(html_fpath, output_dirpath, labels, ref_names, result
             arr[i] += 0.07 * (j - (contigs_num - 1) * 0.5)
             to_plot_x.append(arr[i])
             if results[i][j] and results[i][j] != '-':
-                to_plot_y.append(parseStrToNum(results[i][j]))
+                to_plot_y.append(parse_str_to_num(results[i][j]))
             elif print_all_refs:
                 to_plot_y.append(0)
             else:

@@ -715,7 +715,7 @@ def is_float(value):
         return False
 
 
-def parseStrToNum(s):
+def parse_str_to_num(s):
     try:
         return int(s)
     except ValueError:

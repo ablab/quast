@@ -53,10 +53,11 @@ def L50(numlist, percentage = 50.0):
     return LG50(numlist, sum(numlist), percentage)
 
 
-def NG50_and_LG50(numlist, reference_length, percentage = 50.0):
+def NG50_and_LG50(numlist, reference_length, percentage=50.0, need_sort=False):
     assert percentage >= 0.0
     assert percentage <= 100.0
-    numlist.sort(reverse = True)
+    if need_sort:
+        numlist.sort(reverse=True)
     s = reference_length
     limit = reference_length * (100.0 - percentage) / 100.0
     lg50 = 0

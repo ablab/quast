@@ -6,7 +6,6 @@
 ############################################################################
 from __future__ import with_statement
 import os
-import sys
 from collections import defaultdict
 
 from quast_libs import qconfig
@@ -40,31 +39,32 @@ def parallel_partition_contigs(asm, assemblies_by_ref, corrected_dirpath, alignm
     contigs_seq = fastaparser.read_fasta_one_time(asm.fpath)
     alignments_fpath = alignments_fpath_template % corr_assembly_label
     if os.path.exists(alignments_fpath):
-        for line in open(alignments_fpath):
-            values = line.split()
-            if values[0] in contigs_analyzer.ref_labels_by_chromosomes.keys():
-                ref_name = contigs_analyzer.ref_labels_by_chromosomes[values[0]]
-                ref_contigs_names = values[1:]
-                ref_contigs_fpath = os.path.join(
-                    corrected_dirpath, corr_assembly_label + '_to_' + ref_name + '.fasta')
-                if ref_name not in aligned_contigs_for_each_ref:
-                    aligned_contigs_for_each_ref[ref_name] = []
+        with open(alignments_fpath) as f:
+            for line in f:
+                values = line.split()
+                if values[0] in contigs_analyzer.ref_labels_by_chromosomes.keys():
+                    ref_name = contigs_analyzer.ref_labels_by_chromosomes[values[0]]
+                    ref_contigs_names = values[1:]
+                    ref_contigs_fpath = os.path.join(
+                        corrected_dirpath, corr_assembly_label + '_to_' + ref_name + '.fasta')
+                    if ref_name not in aligned_contigs_for_each_ref:
+                        aligned_contigs_for_each_ref[ref_name] = []
 
-                for (cont_name, seq) in contigs_seq:
-                    if not cont_name in contigs:
-                        contigs[cont_name] = seq
+                    for (cont_name, seq) in contigs_seq:
+                        if not cont_name in contigs:
+                            contigs[cont_name] = seq
 
-                    if cont_name in ref_contigs_names and cont_name not in aligned_contigs_for_each_ref[ref_name]:
-                        # Collecting all aligned contigs names in order to futher extract not-aligned
-                        aligned_contig_names.add(cont_name)
-                        aligned_contigs_for_each_ref[ref_name].append(cont_name)
-                        fastaparser.write_fasta(ref_contigs_fpath, [(cont_name, seq)], 'a')
+                        if cont_name in ref_contigs_names and cont_name not in aligned_contigs_for_each_ref[ref_name]:
+                            # Collecting all aligned contigs names in order to further extract not aligned
+                            aligned_contig_names.add(cont_name)
+                            aligned_contigs_for_each_ref[ref_name].append(cont_name)
+                            fastaparser.write_fasta(ref_contigs_fpath, [(cont_name, seq)], 'a')
 
-                ref_asm = Assembly(ref_contigs_fpath, assembly_label)
-                if ref_asm.name not in added_ref_asm:
-                    if ref_name in assemblies_by_ref:
-                        assemblies_by_ref[ref_name].append(ref_asm)
-                        added_ref_asm.append(ref_asm.name)
+                    ref_asm = Assembly(ref_contigs_fpath, assembly_label)
+                    if ref_asm.name not in added_ref_asm:
+                        if ref_name in assemblies_by_ref:
+                            assemblies_by_ref[ref_name].append(ref_asm)
+                            added_ref_asm.append(ref_asm.name)
         if qconfig.space_efficient:
             os.remove(alignments_fpath)
 

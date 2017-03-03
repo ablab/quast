@@ -37,15 +37,12 @@ def do(ref_fpath, aligned_contigs_fpaths, output_dirpath,
 
     for i, (contigs_fpath, lens, assembly_len) in enumerate(
             zip(aligned_contigs_fpaths, aligned_lengths_lists, assembly_lengths)):
-        na50 = N50.NG50(lens, assembly_len)
-        na75 = N50.NG50(lens, assembly_len, 75)
-        la50 = N50.LG50(lens, assembly_len)
-        la75 = N50.LG50(lens, assembly_len, 75)
+        sorted_lengths = sorted(lens, reverse=True)
+        na50, la50 = N50.NG50_and_LG50(sorted_lengths, assembly_len)
+        na75, la75 = N50.NG50_and_LG50(sorted_lengths, assembly_len, 75)
         if not qconfig.is_combined_ref:
-            nga50 = N50.NG50(lens, reference_length)
-            nga75 = N50.NG50(lens, reference_length, 75)
-            lga50 = N50.LG50(lens, reference_length)
-            lga75 = N50.LG50(lens, reference_length, 75)
+            nga50, lga50 = N50.NG50_and_LG50(sorted_lengths, reference_length)
+            nga75, lga75 = N50.NG50_and_LG50(sorted_lengths, reference_length, 75)
 
         logger.info('  ' +
                     qutils.index_to_str(i) +

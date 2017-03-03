@@ -168,10 +168,7 @@ def read_fasta(fpath):
     fasta_file = _get_fasta_file_handler(fpath)
 
     for raw_line in fasta_file:
-        if raw_line.find('\r') != -1:
-            lines = raw_line.split('\r')
-        else:
-            lines = [raw_line]
+        lines = raw_line.split('\r')
         for line in lines:
             if not line:
                 continue
@@ -203,10 +200,7 @@ def read_fasta_one_time(fpath):
     list_seq = []
 
     for raw_line in fasta_file:
-        if raw_line.find('\r') != -1:
-            lines = raw_line.split('\r')
-        else:
-            lines = [raw_line]
+        lines = raw_line.split('\r')
         for line in lines:
             if not line:
                 continue

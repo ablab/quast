@@ -335,22 +335,23 @@ def check_blast(blast_check_fpath, blast_res_fpath, files_sizes, assemblies_fpat
         existing_assembly = None
         assembly_info = True
         if os.path.exists(check_fpath) and is_non_empty_file(res_fpath):
-            for line in open(check_fpath):
-                if '---' in line:
-                    assembly_info = False
-                if line and assembly_info:
-                    assembly, size = line.split()[1], line.split()[3]
-                    if assembly in files_sizes.keys() and int(size) == files_sizes[assembly]:
-                        existing_assembly = assemblies_fpaths[assembly]
-                        logger.main_info('  Using existing BLAST alignments for %s... ' % labels[i])
-                        blast_assemblies.remove(existing_assembly)
-                elif line and existing_assembly:
-                    line = line.split(' ')
-                    if len(line) > 1:
-                        if line[0] == 'Downloaded:':
-                            downloaded_organisms += line[1].rstrip().split(',')
-                        elif line[0] == 'Not_founded:':
-                            not_founded_organisms += line[1].rstrip().split(',')
+            with open(check_fpath) as check_file:
+                for line in check_file:
+                    if '---' in line:
+                        assembly_info = False
+                    if line and assembly_info:
+                        assembly, size = line.split()[1], line.split()[3]
+                        if assembly in files_sizes.keys() and int(size) == files_sizes[assembly]:
+                            existing_assembly = assemblies_fpaths[assembly]
+                            logger.main_info('  Using existing BLAST alignments for %s... ' % labels[i])
+                            blast_assemblies.remove(existing_assembly)
+                    elif line and existing_assembly:
+                        line = line.split(' ')
+                        if len(line) > 1:
+                            if line[0] == 'Downloaded:':
+                                downloaded_organisms += line[1].rstrip().split(',')
+                            elif line[0] == 'Not_founded:':
+                                not_founded_organisms += line[1].rstrip().split(',')
     return blast_assemblies, set(downloaded_organisms), set(not_founded_organisms)
 
 
@@ -459,39 +460,40 @@ def process_blast(blast_assemblies, downloaded_dirpath, corrected_dirpath, label
         res_fpath = get_blast_output_fpath(blast_res_fpath, label)
         if os.path.exists(res_fpath):
             refs_for_query = 0
-            for line in open(res_fpath):
-                if refs_for_query == 0 and not line.startswith('#') and len(line.split()) > 10:
-                    # TODO: find and parse "Fields" line to detect each column indexes:
-                    # Fields: query id, subject id, % identity, alignment length, mismatches, gap opens, q. start, q. end, s. start, s. end, evalue, bit score
-                    # We need: identity, legnth, score, query and subject id.
-                    line = line.split()
-                    organism_id = line[1]
-                    idy = float(line[2])
-                    length = int(line[3])
-                    score = float(line[11])
-                    if idy >= qconfig.identity_threshold and length >= qconfig.min_length and score >= qconfig.min_bitscore:  # and (not scores or min(scores) - score < max_identity_difference):
-                        seqname, taxons = parse_organism_id(organism_id)
-                        if not seqname:
-                            continue
-                        specie = seqname.split('_')
-                        if len(specie) > 1 and 'uncultured' not in seqname:
-                            specie = specie[0] + '_' + specie[1]
-                            if specie not in organisms:
-                                all_scores.append((score, seqname))
-                                if taxons:
-                                    taxons_for_krona[correct_name(seqname)] = taxons
-                                organisms.append(specie)
-                                refs_for_query += 1
-                            else:
-                                tuple_scores = [x for x in all_scores if specie in x[1]]
-                                if tuple_scores and score > tuple_scores[0][0]:
-                                    all_scores.remove((tuple_scores[0][0], tuple_scores[0][1]))
+            with open(res_fpath) as res_file:
+                for line in res_file:
+                    if refs_for_query == 0 and not line.startswith('#') and len(line.split()) > 10:
+                        # TODO: find and parse "Fields" line to detect each column indexes:
+                        # Fields: query id, subject id, % identity, alignment length, mismatches, gap opens, q. start, q. end, s. start, s. end, evalue, bit score
+                        # We need: identity, legnth, score, query and subject id.
+                        line = line.split()
+                        organism_id = line[1]
+                        idy = float(line[2])
+                        length = int(line[3])
+                        score = float(line[11])
+                        if idy >= qconfig.identity_threshold and length >= qconfig.min_length and score >= qconfig.min_bitscore:  # and (not scores or min(scores) - score < max_identity_difference):
+                            seqname, taxons = parse_organism_id(organism_id)
+                            if not seqname:
+                                continue
+                            specie = seqname.split('_')
+                            if len(specie) > 1 and 'uncultured' not in seqname:
+                                specie = specie[0] + '_' + specie[1]
+                                if specie not in organisms:
                                     all_scores.append((score, seqname))
                                     if taxons:
                                         taxons_for_krona[correct_name(seqname)] = taxons
+                                    organisms.append(specie)
                                     refs_for_query += 1
-                elif line.startswith('#'):
-                    refs_for_query = 0
+                                else:
+                                    tuple_scores = [x for x in all_scores if specie in x[1]]
+                                    if tuple_scores and score > tuple_scores[0][0]:
+                                        all_scores.remove((tuple_scores[0][0], tuple_scores[0][1]))
+                                        all_scores.append((score, seqname))
+                                        if taxons:
+                                            taxons_for_krona[correct_name(seqname)] = taxons
+                                        refs_for_query += 1
+                    elif line.startswith('#'):
+                        refs_for_query = 0
         all_scores = sorted(all_scores, reverse=True)
         all_scores = all_scores[:qconfig.max_references]
         for score in all_scores:

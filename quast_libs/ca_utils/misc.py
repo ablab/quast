@@ -153,7 +153,7 @@ def draw_mummer_plot(logger, nucmer_fpath, delta_fpath, index, log_out_f, log_er
                     html = _embed_css_and_scripts(html)
                     with open(mummer_plot_fpath, 'w') as f_html:
                         f_html.write(html)
-                    logger.info(qutils.index_to_str(index) + ' MUMmer plot saved to ' + mummer_plot_fpath)
+                    logger.info('  ' + qutils.index_to_str(index) + 'MUMmer plot saved to ' + mummer_plot_fpath)
 
     if not isfile(mummer_plot_fpath):
         logger.notice(qutils.index_to_str(index) + ' MUMmer plot cannot be created.\n')

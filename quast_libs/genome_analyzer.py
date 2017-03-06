@@ -24,8 +24,10 @@ class FeatureContainer:
         self.region_list = []
         self.chr_names_dict = {}
 
+
 def get_ref_aligned_lengths():
     return ref_lengths_by_contigs
+
 
 def chromosomes_names_dict(feature, regions, chr_names):
     """
@@ -212,7 +214,7 @@ def process_single_file(contigs_fpath, index, nucmer_path_dirpath, genome_stats_
         found_fpath = os.path.join(genome_stats_dirpath, corr_assembly_label + suffix)
         found_file = open(found_fpath, 'w')
         found_file.write('%s\t\t%s\t%s\t%s\t%s\n' % ('ID or #', 'Start', 'End', 'Type', 'Contig'))
-        found_file.write('=========================================\n')
+        found_file.write('=' * 50 + '\n')
 
         # 0 - gene is not found,
         # 1 - gene is found,
@@ -402,7 +404,7 @@ def do(ref_fpath, aligned_contigs_fpaths, output_dirpath, genes_fpaths, operons_
         % ('assembly', 'genome', 'duplication', 'gaps', 'genes', 'partial', 'operons', 'partial'))
     res_file.write('%-25s| %-10s| %-12s| %-10s| %-10s| %-10s| %-10s| %-10s|\n'
         % ('', 'fraction', 'ratio', 'number', '', 'genes', '', 'operons'))
-    res_file.write('================================================================================================================\n')
+    res_file.write('=' * 120 + '\n')
 
     for contigs_fpath, (results, unsorted_genes_in_contigs, genes_in_contigs, unsorted_operons_in_contigs, operons_in_contigs)\
             in zip(aligned_contigs_fpaths, results_genes_operons_tuples):

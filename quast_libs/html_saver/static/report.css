@@ -287,6 +287,11 @@ table#refgenome td.last_row {
     z-index: 2;
 }
 
+#change-assembly {
+    white-space: nowrap;
+    width: 0;
+}
+
 /*************/
 /* Plot tips */
 #plot_tip {

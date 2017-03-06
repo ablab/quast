@@ -434,7 +434,9 @@ Way of processing equally good alignments of a contig (probably repeats):<br>
     (repeats are almost always inexact due to accumulated SNPs, indels, etc.).</td></tr>
 </table>
 The default value is <code>one</code>.<br>
-<div style='margin-top: 6;'>The value <code>all</code> is useful for metagenomic assemblies where ambiguous alignments might represent homologous sequences of different strains. For that reason, <code>--ambiguity-usage</code> is set to <code>all</code> for the "combined reference" evaluation (see <a href='#sec2.5'>section 2.5</a>). You may still modify this behaviour with <a href='#unique_mapping'><code>--unique-mapping</code></a>.</div>
+<div style='margin-top: 6;'>The value <code>all</code> is useful for metagenomic assemblies where ambiguous alignments might represent homologous sequences of different strains.
+    For that reason, <code>--ambiguity-usage</code> is set to <code>all</code> for the "combined reference" evaluation (see <a href='#sec2.5'>section 2.5</a>).
+    You may still modify this behaviour with <a href='#unique_mapping'><code>--unique-mapping</code></a>.</div>
 
 <div class='option'>
     <code><b>--ambiguity-score</b></code> <code>&lt;float&gt;</code>
@@ -867,7 +869,7 @@ This metric sums up <code># unaligned mis. contigs</code> described above.</p>
     A base in the reference genome is aligned if there is at least one contig with at least one alignment to this base.
     Contigs from repetitive regions may map to multiple places, and thus may be counted multiple times (see <a href='#ambiguity_usage'><code>--ambiguity-usage</code></a>).</p>
 
-<p><span class='metric-name'>Duplication ratio</span> is the total number of aligned bases in the assembly divided by the total number of aligned bases in the 
+<p><a name='duplication_ratio'></a><span class='metric-name'>Duplication ratio</span> is the total number of aligned bases in the assembly divided by the total number of aligned bases in the
     reference genome (see <span class='metric-ref'>Genome fraction (%)</span> for the 'aligned base' definition). If the assembly contains many contigs that cover the same
     regions of the reference, its <span class='metric-ref'>duplication ratio</span> may be much larger than 1. This may occur due to overestimating
     repeat multiplicities and due to small overlaps between contigs, among other reasons.</p>
@@ -890,7 +892,7 @@ This metric sums up <code># unaligned mis. contigs</code> described above.</p>
 
 <p><span class='metric-name'># operons</span> is defined similarly to <span class='metric-ref'># genes</span>, but an operon positions file required instead.</p>
 
-<p><a name='predicted_genes'><span class='metric-name'># predicted genes</span> is the number of genes in the assembly
+<p><a name='predicted_genes'></a><span class='metric-name'># predicted genes</span> is the number of genes in the assembly
     found by GeneMarkS, GeneMark-ES, GlimmerHMM or MetaGeneMark. See the description of <a href='#gene_finding'><code>--gene-finding</code></a> option for details.</p>
 
 <p><span class='metric-name'>Total aligned length</span> is the total number of aligned bases in the assembly. A value is usually smaller than a value of <a href='#total_length'><span class='metric-ref'>total length</span></a> because some of the contigs may be unaligned or partially unaligned.</p>
@@ -898,7 +900,7 @@ This metric sums up <code># unaligned mis. contigs</code> described above.</p>
 <p><span class='metric-name'>Largest alignment</span> is the length of the largest continuous alignment in the assembly.
     A value can be smaller than a value of <a href='#largest_contig'><span class='metric-ref'>largest contig</span></a> if the largest contig is misassembled or partially unaligned.</p>
 
-<p><a name='NAx'><a name='NGAx'></a><span class='metric-name'>NA50, NGA50, NA75, NGA75, LA50, LA75, LGA50, LGA75</span> ("A" stands for "aligned") are similar to
+<p><a name='NAx'></a><a name='NGAx'></a><span class='metric-name'>NA50, NGA50, NA75, NGA75, LA50, LA75, LGA50, LGA75</span> ("A" stands for "aligned") are similar to
     the corresponding metrics without "A", but in this case aligned blocks instead of contigs are considered.<br>
     Aligned blocks are obtained by breaking contigs at misassembly events and removing all unaligned bases.</p>
 
@@ -972,7 +974,7 @@ The next metrics are the same to homonymous metrics from <a href="#sec3.1.1">sec
 
 <a name="sec3.2"></a>
 <h3>3.2 Plots description</h3>
-<p>This section describes PDF and HTML plots. For Icarus interactive contig alignments and sizes visualizations see <a href="#sec3.4">section 3.4</a>.</p>
+<p>This section describes PDF and HTML plots. For Icarus interactive contig alignment and size visualization see <a href="#sec3.4">section 3.4</a>.</p>
 
 <p><span class='metric-name'>Cumulative length plot</span> shows the growth of contig lengths. On the x-axis, contigs are ordered from the largest 
     to smallest. The y-axis gives the size of the x largest contigs in the assembly.</p>
@@ -988,6 +990,15 @@ The next metrics are the same to homonymous metrics from <a href="#sec3.1.1">sec
     <span style='line-height: 50%;'>&nbsp;</span><br>
     For a single genome, the distribution is typically Gaussian. However, for assemblies with contaminants, the GC distribution 
     appears to be a superposition of Gaussian distributions, giving a plot with multiple peaks.
+</p>
+
+<p><span class='metric-name'>GC content plot (by contigs)</span> shows the distribution of # contigs with GC percentage in a certain range.<br>
+    <span style='line-height: 50%;'>&nbsp;</span><br>
+    The x value is the GC percentage intervals (width is 5<span class='rhs'>&nbsp;</span>%).<br>
+    The y value is the number of contigs which GC content lies in the corresponding interval.<br>
+    <span style='line-height: 50%;'>&nbsp;</span><br>
+    These plots are particularly useful for looking at metagenome assemblies, but also a potential good indicator of contamination
+    for single organism assemblies.
 </p>
 
 <p><span class='metric-name'>Coverage histogram</span> shows distribution of total contig lengths (y-axis) at different read coverage depths (x-axis, grouped in bins). Coverage bin size is automatically selected based on the number of contigs and coverage deviation. 
@@ -1009,6 +1020,22 @@ The next metrics are the same to homonymous metrics from <a href="#sec3.1.1">sec
     This plot could be created only if a <a href='#sec2.2'>reference genome and genes annotations files</a> are given.</p>
 
 <p><span class='metric-name'>Operons plot</span> is similar to the previous one but for operons.</p>
+
+<p><span class='metric-name'>Feature-Response Curves (FRCurves)</span><br>
+    Our FRCurves are inspired by <a href="http://amos.sourceforge.net/wiki/index.php/AMOS">AMOS</a>
+    <a href="http://amos.sourceforge.net/wiki/index.php/FRCurve">FRCurve</a> definition: Given any such set of features,
+    the response (quality) of the assembler output is then analyzed as a function of the maximum number of possible errors
+    (features) allowed in the contigs. We plot FRCurves as following:
+    <span style='line-height: 50%;'>&nbsp;</span><br>
+    The x value (<i>Feature space</i>) is the total maximum number of features in the contigs.<br>
+    The y value (<i>Genome coverage %</i>) is the total number of aligned bases in the contigs, divided by the reference length.<br>
+    <span style='line-height: 50%;'>&nbsp;</span><br>
+    Note: since some contigs may overlap with other contigs or map to the same regions of the reference
+    (see <a href='#duplication_ratio'>Duplication ratio</a>), the total number of aligned bases may exceed the reference length and cause
+    Genome coverage % larger than 100%.<br>
+    <br>
+    FRCurves plots are currently available for # misassemblies (both PDF and interactive HTML formats) and # genes/operons (PDF version only).
+    We probably will extend this set in the future.
 
 </div>
 <a name="sec3.3"></a>

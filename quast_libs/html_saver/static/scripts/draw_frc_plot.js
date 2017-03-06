@@ -131,7 +131,7 @@ var frc = {
                 });
 
                 var firstLabel = $('.yAxis .tickLabel').last();
-                firstLabel.prepend('Genome fraction<span class="rhs">&nbsp;</span>=<span class="rhs">&nbsp;</span>');
+                firstLabel.prepend('Genome coverage<span class="rhs">&nbsp;</span>=<span class="rhs">&nbsp;</span>');
 
                 bindTip(placeholder, series, plot, frcNumberToPrettyString, tickX, name, 'bottom right', false, '%');
             };
@@ -141,6 +141,8 @@ var frc = {
 
         addLegendClickEvents(info, filenames.length, showPlotWithInfo, refGenesNumber);
         showPlotWithInfo(info);
+        $('#frc_info').show();
+        $('.frc_plot_name').html(name);
     }
 };
 

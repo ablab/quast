@@ -109,6 +109,8 @@ function togglePlots(assembliesNames, order, name, title, drawPlot, data, refPlo
     $('#contigs_are_ordered').hide();
     $('#gc_info').hide();
     $('#gc_contigs_info').hide();
+    $('#frc_info').hide();
+
     var selectedAssemblies = getSelectedAssemblies();
     $('#legend-placeholder').empty();
     assembliesNames.forEach(function(filename, i) {

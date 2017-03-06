@@ -310,9 +310,10 @@ def do(reference, contigs_fpaths, is_cyclic, output_dir, old_contigs_fpaths, bed
     if NucmerStatus.OK in nucmer_statuses.values():
         reporting.save_misassemblies(output_dir)
         reporting.save_unaligned(output_dir)
+        from . import plotter
         if qconfig.draw_plots:
-            from . import plotter
             plotter.draw_misassemblies_plot(reports, join(output_dir, 'misassemblies_plot'), 'Misassemblies')
+        if qconfig.draw_plots or qconfig.html_report:
             misassemblies_in_contigs = dict((contigs_fpaths[i], misassemblies_in_contigs[i]) for i in range(len(contigs_fpaths)))
             plotter.frc_plot(dirname(output_dir), reference, contigs_fpaths, misc.contigs_aligned_lengths, misassemblies_in_contigs,
                              join(output_dir, 'misassemblies_frcurve_plot'), 'misassemblies')

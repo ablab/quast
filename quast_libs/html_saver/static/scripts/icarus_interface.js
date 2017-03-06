@@ -572,7 +572,7 @@ function appendLegendAlignmentViewer(legend) {
     '(misassembly event on the left side, on the right side)', 'misassembled blocks (zoom in to get details about misassembly event side)',
         'misassembled blocks similar among > 50% assemblies', 'misassembled blocks (> 50% of the contig is unaligned)', 'unchecked misassembled blocks (see checkboxes)',
         'ambiguously mapped contigs', 'alternative blocks of misassembled contigs (not from the best set)', 'genome features (e.g. genes)', 'predicted genes'];
-    var additionalClasses = ['ambiguous', 'alternative', 'gene', 'mis_unaligned', 'similar'];
+    var additionalClasses = ['ambiguous', 'alternative', 'gene', 'correct_unaligned', 'mis_unaligned', 'similar'];
     removeClassesFromLegend(additionalClasses, classes, classDescriptions);
     if(!$('.misassembled.similar').length)
         removeClassFromLegend('misassembled similar', classes, classDescriptions);

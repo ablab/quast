@@ -309,8 +309,8 @@ def frc_plot(results_dir, ref_fpath, contigs_fpaths, contigs_aligned_lengths, fe
                                        key=lambda tuple: tuple[0] * 1.0 / tuple[1], reverse=True)  # sort by len/features ratio
         sorted_lengths = [tuple[0] for tuple in optimal_sorted_tuples]
         sorted_features = [tuple[1] for tuple in optimal_sorted_tuples]
-        x_vals = [0]
-        y_vals = [0]
+        x_vals = []
+        y_vals = []
         for features_n in range(max_features):
             features_cnt = 0
             cumulative_len = len_with_zero_features
@@ -318,6 +318,8 @@ def frc_plot(results_dir, ref_fpath, contigs_fpaths, contigs_aligned_lengths, fe
                 if features_cnt + feature <= features_n:
                     features_cnt += feature
                     cumulative_len += l
+                    if features_cnt == features_n:
+                        break
 
             x_vals.append(features_n)
             y_vals.append(cumulative_len * 100.0 / ref_length)

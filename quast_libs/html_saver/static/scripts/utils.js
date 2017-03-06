@@ -128,7 +128,7 @@ function ordinalNumberToPrettyString(num, unit, tickX) {
 }
 
 function frcNumberToPrettyString(num, unit, tickX, index) {
-    if (index % 2 == 0) num--;
+    if (index % 2 == 0 && num > 0) num--;
     return toPrettyString(num) + ' ' + unit;
 }
 

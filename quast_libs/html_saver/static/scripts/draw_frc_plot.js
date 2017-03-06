@@ -62,7 +62,7 @@ var frc = {
                 var maxY = plot_coordY[plot_coordY.length - 1];
 
                 info.series[i] = {
-                    data: [[0, 0]],
+                    data: [],
                     label: filenames[index],
                     number: index,
                     color: colors[index]

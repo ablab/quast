@@ -288,14 +288,14 @@ def frc_plot(results_dir, ref_fpath, contigs_fpaths, contigs_aligned_lengths, fe
     json_vals_y = []
     max_features = max(sum(feature_in_contigs) for feature_in_contigs in features_in_contigs_by_file.values()) + 1
 
+    aligned_contigs_fpaths = []
     for contigs_fpath in contigs_fpaths:
         aligned_lengths = contigs_aligned_lengths[contigs_fpath]
         feature_in_contigs = features_in_contigs_by_file[contigs_fpath]
         if not aligned_lengths or not feature_in_contigs:
-            json_vals_x.append([])
-            json_vals_y.append([])
             continue
 
+        aligned_contigs_fpaths.append(contigs_fpath)
         len_with_zero_features = 0
         lengths = []
         non_zero_feature_in_contigs = []
@@ -333,11 +333,11 @@ def frc_plot(results_dir, ref_fpath, contigs_fpaths, contigs_aligned_lengths, fe
 
     if qconfig.html_report:
         from quast_libs.html_saver import html_saver
-        html_saver.save_coord(results_dir, json_vals_x, json_vals_y, 'coord' + title, contigs_fpaths)
+        html_saver.save_coord(results_dir, json_vals_x, json_vals_y, 'coord' + title, aligned_contigs_fpaths)
 
     if can_draw_plots:
         title = 'FRCurve (' + title + ')'
-        legend_list = [label_from_fpath(fpath) for fpath in contigs_fpaths]
+        legend_list = [label_from_fpath(fpath) for fpath in aligned_contigs_fpaths]
         create_plot(plot_fpath, title, plots, legend_list, x_label='Feature space', y_label='Genome coverage (%)',
                     x_limit=[0, max_features], y_limit=[0, max(100, max_y)])
 

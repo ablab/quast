@@ -59,6 +59,7 @@ var frc = {
                 var plot_coordX = coordX[order[i]];
                 var plot_coordY = coordY[order[i]];
                 var featureSpace = plot_coordX[plot_coordX.length - 1];
+                var maxY = plot_coordY[plot_coordY.length - 1];
 
                 info.series[i] = {
                     data: [[0, 0]],
@@ -76,8 +77,8 @@ var frc = {
                     info.series[i].data.push([plot_coordX[k], plot_coordY[k]]);
                 }
 
-                if (info.series[i].data[plot_coordY.length - 1][1] > info.maxY) {
-                    info.maxY = info.series[i].data[plot_coordY.length - 1][1];
+                if (maxY > info.maxY) {
+                    info.maxY = maxY;
                 }
             }
 

@@ -112,7 +112,7 @@ def compile_gnuplot(logger, only_clean=False):
         prev_dir = os.getcwd()
         os.chdir(tool_dirpath)
         return_code = qutils.call_subprocess(
-            ['./configure', '--with-qt=no', '--disable-wxwidgets', '--with-pdf'],
+            ['./configure', '--with-qt=no', '--disable-wxwidgets', '--prefix=' + tool_dirpath],
             stdout=open(join(tool_dirpath, 'make.log'), 'w'),
             stderr=open(join(tool_dirpath, 'make.err'), 'w'),
             indent='    ')
@@ -133,26 +133,64 @@ def compile_gnuplot(logger, only_clean=False):
 
 def draw_mummer_plot(logger, nucmer_fpath, delta_fpath, index, log_out_f, log_err_f):
     output_dirpath = dirname(dirname(nucmer_fpath))
-    mummer_plot_fpath = join(output_dirpath, basename(nucmer_fpath) + '_mummerplot.pdf')
+    mummer_plot_fpath = join(output_dirpath, basename(nucmer_fpath) + '_mummerplot.html')
     return_code = qutils.call_subprocess(
-        [bin_fpath('mummerplot'), '--pdf', '--layout', '-p', nucmer_fpath, delta_fpath],
+        [bin_fpath('mummerplot'), '--html', '--layout', '-p', nucmer_fpath, delta_fpath],
         stdout=log_out_f,
         stderr=log_err_f,
         indent='  ' + qutils.index_to_str(index))
     if return_code == 0:
         plot_script_fpath = nucmer_fpath + '.gp'
-        temp_plot_fpath = nucmer_fpath + '.pdf'
+        temp_plot_fpath = nucmer_fpath + '.html'
         if isfile(plot_script_fpath) and isfile(gnuplot_exec_fpath()):
             qutils.call_subprocess(
                 [gnuplot_exec_fpath(), plot_script_fpath],
                 stdout=open('/dev/null', 'w'), stderr=log_err_f,
                 indent='  ' + qutils.index_to_str(index))
             if isfile(temp_plot_fpath):
-                shutil.copy(temp_plot_fpath, mummer_plot_fpath)
-                logger.info(qutils.index_to_str(index) + ' MUMmer plot saved to ' + mummer_plot_fpath)
+                with open(temp_plot_fpath) as template_file:
+                    html = template_file.read()
+                    html = _embed_css_and_scripts(html)
+                    with open(mummer_plot_fpath, 'w') as f_html:
+                        f_html.write(html)
+                    logger.info(qutils.index_to_str(index) + ' MUMmer plot saved to ' + mummer_plot_fpath)
 
     if not isfile(mummer_plot_fpath):
         logger.notice(qutils.index_to_str(index) + ' MUMmer plot cannot be created.\n')
+
+
+def _embed_css_and_scripts(html):
+    js_line_tmpl = '<script src="%s"></script>'
+    js_l_tag = '<script type="text/javascript" name="%s">'
+    js_r_tag = '    </script>'
+
+    css_line_tmpl = '<link type="text/css" href="%s" rel="stylesheet">'
+    css_l_tag = '<style type="text/css" rel="stylesheet" name="%s">'
+    css_r_tag = '    </style>'
+
+    css_files = [
+        join(qconfig.LIBS_LOCATION, 'gnuplot/term/js/gnuplot_mouse.css')
+    ]
+    js_files = [
+        join(qconfig.LIBS_LOCATION, 'gnuplot/term/js/canvastext.js'),
+        join(qconfig.LIBS_LOCATION, 'gnuplot/term/js/gnuplot_common.js'),
+        join(qconfig.LIBS_LOCATION, 'gnuplot/term/js/gnuplot_dashedlines.js')
+    ]
+    for line_tmpl, files, l_tag, r_tag in [
+            (js_line_tmpl, js_files, js_l_tag, js_r_tag),
+            (css_line_tmpl, css_files, css_l_tag, css_r_tag),
+        ]:
+        for fpath in files:
+            rel_fpath = basename(fpath)
+            line = line_tmpl % rel_fpath
+            l_tag_formatted = l_tag % rel_fpath
+
+            with open(fpath) as f:
+                contents = f.read()
+                contents = '\n'.join(' ' * 8 + l for l in contents.split('\n'))
+                html = html.replace(line, l_tag_formatted + '\n' + contents + '\n' + r_tag)
+
+    return html
 
 
 def is_same_reference(chr1, chr2):

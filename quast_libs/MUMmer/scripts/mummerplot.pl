@@ -5,15 +5,15 @@
 #         File: mummerplot
 #         Date: 01 / 08 / 03
 #               01 / 06 / 05 rewritten (v3.0)
-#  
+#
 #        Usage:
 #    mummerplot  [options]  <match file>
-# 
+#
 #                Try 'mummerplot -h' for more information.
-# 
+#
 #      Purpose: To generate a gnuplot plot for the display of mummer, nucmer,
 #               promer, and show-tiling alignments.
-# 
+#
 ################################################################################
 
 use Cwd 'abs_path';
@@ -35,6 +35,7 @@ use Foundation;
 #================================================================= Globals ====#
 #-- terminal types
 my $X11    = "x11";
+my $HTML   = "html";
 my $PS     = "postscript";
 my $PNG    = "png";
 my $PDF    = "pdf";
@@ -49,7 +50,8 @@ my %TERMSIZE =
      $X11 => { $SMALL => 500, $MEDIUM => 700,  $LARGE => 900  }, # screen pix
      $PS  => { $SMALL => 1,   $MEDIUM => 2,    $LARGE => 3    }, # pages
      $PNG => { $SMALL => 800, $MEDIUM => 1024, $LARGE => 1400 }, # image pix
-     $PDF => { $SMALL => 800, $MEDIUM => 1024, $LARGE => 1400 }  # image pix
+     $PDF => { $SMALL => 800, $MEDIUM => 1024, $LARGE => 1400 }, # image pix
+     $HTML => { $SMALL => 800, $MEDIUM => 1024, $LARGE => 1400 }  # image pix
      );
 
 #-- terminal format
@@ -72,6 +74,7 @@ my %SUFFIX =
      $REVPLOT => ".rplot",
      $HLTPLOT => ".hplot",
      $GNUPLOT => ".gp",
+     $HTML    => ".html",
      $PS      => ".ps",
      $PNG     => ".png",
      $PDF     => ".pdf"
@@ -1163,6 +1166,27 @@ sub WriteGP ($$)
             last;
         };
 
+        /^$HTML/    and do {
+            $P_TERM = "canvas jsdir \"\"";  # size in inches
+            if ( defined $OPT_color && $OPT_color == 0 ) {
+                $P_TERM .= " xffffff x000000 x000000";
+                $P_TERM .= " x000000 x000000 x000000";
+                $P_TERM .= " x000000 x000000 x000000";
+            }
+
+            %P_PS = ( $FWD => 0.5, $REV => 0.5, $HLT => 0.5 );
+
+            %P_LW = $OPT_coverage || $OPT_color ?
+                ( $FWD => 3.0, $REV => 3.0, $HLT => 3.0 ) :
+                ( $FWD => 3.0, $REV => 3.0, $HLT => 3.0 );
+
+            $P_SIZE = $OPT_coverage ?
+                "set size 1,.375" :
+                "set size 1,1";
+
+            last;
+        };
+
         die "ERROR: Don't know how to initialize terminal, $OPT_terminal\n";
     }
 
@@ -1178,17 +1202,8 @@ sub WriteGP ($$)
     $P_WITH = $OPT_coverage || $OPT_color ? "w l" : "w lp";
 
     $P_FORMAT = "set format \"$TFORMAT\"";
-    if ( $OPT_gpstatus == 0 ) {
-        $P_LS = "set style line";
-        $P_KEY = "unset key";
-        $P_FORMAT .= "\nset mouse format \"$TFORMAT\"";
-        $P_FORMAT .= "\nset mouse mouseformat \"$MFORMAT\"";
-        $P_FORMAT .= "\nset mouse clipboardformat \"$MFORMAT\"";
-    }
-    else {
-        $P_LS = "set linestyle";
-        $P_KEY = "set key outside bottom right";  # legend
-    }
+    $P_LS = "set linestyle";
+    $P_KEY = "set key outside bottom right";  # legend
 
 
     my @refk = keys (%$rref);
@@ -1467,7 +1482,7 @@ sub ListenGP($$)
 sub ParseOptions ( )
 {
     my ($opt_small, $opt_medium, $opt_large);
-    my ($opt_ps, $opt_x11, $opt_png, $opt_pdf);
+    my ($opt_ps, $opt_x11, $opt_png, $opt_pdf, $opt_html);
     my $cnt;
 
     #-- Get options
@@ -1493,13 +1508,14 @@ sub ParseOptions ( )
          "x|xrange=s"   => \$OPT_xrange,
          "y|yrange=s"   => \$OPT_yrange,
          "x11"          => \$opt_x11,
+         "html"         => \$opt_html,
          "pdf"          => \$opt_pdf,
          "postscript"   => \$opt_ps,
          "png"          => \$opt_png,
          "small"        => \$opt_small,
          "medium"       => \$opt_medium,
          "large"        => \$opt_large,
-         "fat"          => \$OPT_ONLY_USE_FATTEST,
+         "fat"          => \$OPT_ONLY_USE_FATTEST
          );
 
     if ( !$err  ||  scalar (@ARGV) != 1 ) {
@@ -1508,6 +1524,7 @@ sub ParseOptions ( )
     }
 
     $cnt = 0;
+    $OPT_terminal = $HTML;
     if ( $opt_pdf ) { $OPT_terminal = $PDF; $cnt ++; }
     if ( $opt_png ) { $OPT_terminal = $PNG; $cnt ++; }
     if ( $opt_ps  ) { $OPT_terminal = $PS;  $cnt ++; }

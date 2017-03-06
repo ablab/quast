@@ -1,5 +1,39 @@
 -- Version history --
 
+4.5   1. Icarus updates:
+       - always visible and scrollable Contig Info panel;
+       - new color (dark green) for contigs without misassemblies but having at
+         least 50% of their length in unaligned fragments.
+
+      2. MetaQUAST updates:
+       - parallel reference processing;
+       - expandable "i/s translocations" and "possible mis. contigs" metrics on the
+         main HTML report;
+       - GC distribution plots for the combined reference.
+
+      3. New plots are added (in static PDF/PNG/etc and interactive HTML formats):
+       - Feature-Response Curve (FRCurve) for # misassemblies (both formats)
+         and # genes/operons (static PDF/PNG/etc only);
+       - Distribution of # contigs with GC % in a certain range (both formats);
+       - MUMmer plot of assembly against reference mapping (static HTML only).
+
+      4. Contig coordinates of the provided genes/operons annotations are saved to
+         <output_dir>/genome_stats/<assembly_name>_genes.txt and _operons.txt.
+
+      5. In order to avoid confusion, "--meta" option was renamed to "--metagenemark".
+
+      6. Internal overlaps between adjacent aligned blocks of a misassembled contig are
+         always excluded. Previously the processing depended on "--ambiguity-usage" value.
+
+      7. Small change in the installation strategy: if quast_libs directory has no write
+         permission (e.g. after sudo setup.py install), external packages (e.g. SILVA 16S
+         database; Manta SV caller) are downloaded to ~/.quast/ on the first use.
+
+      8. More compact storing of embedded third-party tools in the installation package.
+
+      9. Fixed several minor bugs.
+
+
 4.4   1. Icarus updates:
        - buttons for expanding overlapped alignments are added to detailed assembly tracks
          on Contig Alignment Viewers;

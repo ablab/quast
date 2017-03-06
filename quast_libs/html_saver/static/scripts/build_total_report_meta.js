@@ -201,6 +201,7 @@ function buildTotalReport(assembliesNames, report, order, date, minContig, gloss
             'You may consider rerunning QUAST using --scaffolds (-s) option!</p>';
     }
     $('#extrainfo').html(extraInfo);
+    $('#plot-caption').show();
     $('#per_ref_msg').html('<p>Rows show values for the whole assembly (column name) vs. combined reference (concatenation of input references).<br>' +
         'Clicking on a row with <span style="color: #CCC">+</span> sign will expand values for contigs aligned to each of input references separately.<br>' +
         'Note that some metrics (e.g. # contigs) may not sum up, because one contig may be aligned to several references and thus, counted several times.<br>' +

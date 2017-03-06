@@ -115,6 +115,7 @@ function buildTotalReport(assembliesNames, totalReport, order, glossary, qualiti
             'You may consider rerunning QUAST using --scaffolds (-s) option!</p>';
     }
     $('#extrainfo').html(extraInfo);
+    $('#plot-caption').show();
 
     var table = '';
     table += '<table cellspacing="0" class="report_table draggable" id="main_report_table">';

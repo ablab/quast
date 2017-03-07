@@ -1,3 +1,10 @@
+############################################################################
+# Copyright (c) 2015-2017 Saint Petersburg State University
+# Copyright (c) 2011-2015 Saint Petersburg Academic University
+# All Rights Reserved
+# See file LICENSE for details.
+############################################################################
+
 from __future__ import with_statement
 import os
 import gzip

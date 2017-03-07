@@ -211,6 +211,10 @@ http://bedtools.readthedocs.io/ website and to the following paper:
 Quinlan, AR, Hall, IM (2010). BEDTools: a flexible suite of utilities for comparing 
 genomic features. Bioinformatics, 26, 6:841-2.
 
+10. QUAST uses Gnuplot for creating MUMmer alignment dotplot.
+For more details about Gnuplot please refer to
+http://gnuplot.sourceforge.net/ website and the license file under quast_libs/gnuplot/
+
 
 -------------------------------------------------------------------------------
 

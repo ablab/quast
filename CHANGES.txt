@@ -29,7 +29,7 @@
          permission (e.g. after sudo setup.py install), external packages (e.g. SILVA 16S
          database; Manta SV caller) are downloaded to ~/.quast/ on the first use.
 
-      8. More compact storing of embedded third-party tools in the installation package.
+      8. Gnuplot version 5.0 is added to the installation package.
 
       9. Fixed several minor bugs.
 

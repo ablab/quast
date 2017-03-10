@@ -112,6 +112,10 @@ function togglePlots(assembliesNames, order, name, title, drawPlot, data, refPlo
     $('#frc_info').hide();
 
     var selectedAssemblies = getSelectedAssemblies();
+    var sortBtnClass;
+    if ($("input[name=sortRefs]")[0]) {
+        sortBtnClass = getSortRefsRule();
+    }
     $('#legend-placeholder').empty();
     assembliesNames.forEach(function(filename, i) {
         var id = 'label_' + i + '_id';
@@ -131,6 +135,9 @@ function togglePlots(assembliesNames, order, name, title, drawPlot, data, refPlo
                 '</label>' +
                 '</div>'
         );
+    }
+    if (sortBtnClass) {
+        addSortRefsBtn(sortBtnClass);
     }
 
     drawPlot(name, title, colors, assembliesNames, data, refPlotValue, tickX,

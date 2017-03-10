@@ -75,7 +75,7 @@ if cmd_in(['clean', 'sdist']):
             shutil.rmtree('dist')
         if isdir(name + '.egg-info'):
             shutil.rmtree(name + '.egg-info')
-        download_manta(logger, only_clean=False)
+        download_manta(logger, only_clean=True)
         download_all_blast_binaries(logger, only_clean=True)
         download_blastdb(logger, only_clean=True)
         logger.info('Done.')

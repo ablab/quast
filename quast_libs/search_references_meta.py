@@ -180,8 +180,8 @@ def download_all_blast_binaries(logger=logger, only_clean=False):
         return False
 
     if only_clean:
-        if os.path.isdir(blastdb_dirpath):
-            shutil.rmtree(blastdb_dirpath)
+        if os.path.isdir(blast_dirpath):
+            shutil.rmtree(blast_dirpath)
         return True
 
     for i, cmd in enumerate(blast_filenames):
@@ -205,8 +205,6 @@ def download_blast_binary(blast_filename, logger=logger):
     logger.info()
     if not os.path.isdir(blast_dirpath):
         os.makedirs(blast_dirpath)
-    if not os.path.isdir(blastdb_dirpath):
-        os.makedirs(blastdb_dirpath)
 
     blast_libs_fpath = os.path.join(blast_dirpath, blast_filename)
     blast_external_fpath = os.path.join(blast_external_tools_dirpath, blast_filename)

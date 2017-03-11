@@ -42,8 +42,15 @@ function setUpHeatMap(table) {
 
     $('#main_report').append(table);
     var rows = $('#main_report_table').find('.content-row');
-    var first_row = $(rows[0]).find('td[number]');
-    if (first_row.length > 1) {
+    var showHeatmap = false;
+    for (var rows_n = 0; rows_n < rows.length; rows_n++) {
+        if ($(rows[rows_n]).find('td[number]').length > 1) {
+            showHeatmap = true;
+            break
+        }
+    }
+
+    if (showHeatmap) {
         var canvas = document.getElementById('gradientHeatmap');
           var context = canvas.getContext('2d');
           context.rect(0, 0, canvas.width, canvas.height);

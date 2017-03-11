@@ -350,6 +350,8 @@ def main(args):
         total_num_notifications = map(sum, zip(total_num_notifications, per_ref_num_notifications))
         if json_texts is not None:
             json_texts.extend(ref_json_texts)
+        quast_py_args.remove('--memory-efficient')
+        quast_py_args = remove_from_quast_py_args(quast_py_args, '-t', str(threads_per_ref))
     else:
         ref_names = []
         for ref_fpath, ref_assemblies in assemblies_by_reference:

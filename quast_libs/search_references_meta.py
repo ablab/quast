@@ -202,7 +202,6 @@ def download_all_blast_binaries(logger=logger, only_clean=False):
 
 
 def download_blast_binary(blast_filename, logger=logger):
-    logger.info()
     if not os.path.isdir(blast_dirpath):
         os.makedirs(blast_dirpath)
 

@@ -454,7 +454,8 @@ def contigs_GC_content_plot(contigs_fpath, GC_distributions, plot_fpath):
     for GC_x, GC_y in zip(x_vals, y_vals):
         plots.append(Bar(GC_x, GC_y, color, width=5))
 
-    create_plot(plot_fpath, title, plots, x_label='GC (%)', y_label='# contigs', x_limit=[0, 100])
+    legend_list = [label_from_fpath(contigs_fpath)]
+    create_plot(plot_fpath, title, plots, legend_list, x_label='GC (%)', y_label='# contigs', x_limit=[0, 100])
 
 
 # common routine for genes and operons cumulative plots

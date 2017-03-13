@@ -31,7 +31,9 @@
 
       8. Gnuplot version 5.0 is added to the installation package.
 
-      9. Fixed several minor bugs.
+      9. GeneMark license files are updated.
+
+      10. Fixed several minor bugs.
 
 
 4.4   1. Icarus updates:

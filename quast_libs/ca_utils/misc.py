@@ -18,7 +18,7 @@ from itertools import repeat
 from os.path import isfile, isdir, join, dirname, basename
 
 from quast_libs import qconfig, qutils
-from quast_libs.qutils import compile_tool, val_to_str, check_prev_compilation_failed
+from quast_libs.qutils import compile_tool, val_to_str, check_prev_compilation_failed, write_failed_compilation_flag
 
 contig_aligner = None
 contig_aligner_dirpath = join(qconfig.LIBS_LOCATION, 'MUMmer')
@@ -124,9 +124,7 @@ def compile_gnuplot(logger, only_clean=False):
                 indent='    ')
         os.chdir(prev_dir)
         if return_code != 0 or not isfile(tool_exec_fpath):
-            logger.notice("Failed to compile gnuplot (" + tool_dirpath +
-                         ")!\nTry to compile it manually.\nUse --debug option to see the command lines.")
-            open(failed_compilation_flag, 'w').close()
+            write_failed_compilation_flag('gnuplot', tool_dirpath, failed_compilation_flag, just_notice=True, logger=logger)
             return None
     return tool_exec_fpath
 

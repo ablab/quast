@@ -764,6 +764,13 @@ def safe_rm(fpath):
             pass
 
 
+def safe_create(fpath):
+    try:
+        open(fpath, 'w').close()
+    except:
+        logger.notice(fpath + ' cannot be created.')
+
+
 def is_python2():
     return sys.version_info[0] < 3
 
@@ -771,13 +778,11 @@ def is_python2():
 def compile_tool(name, dirpath, requirements, just_notice=False, logger=logger, only_clean=False, flag_suffix=None,make_cmd=None):
     make_logs_basepath = join(dirpath, 'make')
     failed_compilation_flag = make_logs_basepath + str(flag_suffix) + '.failed'
-    succeeded_compilation_flag = make_logs_basepath + str(flag_suffix) + '.succeeded'
 
     if only_clean:
         for required_binary in requirements:
             safe_rm(join(dirpath, required_binary))
         safe_rm(failed_compilation_flag)
-        safe_rm(succeeded_compilation_flag)
         return True
 
     if not all_required_binaries_exist(dirpath, requirements):
@@ -792,17 +797,8 @@ def compile_tool(name, dirpath, requirements, just_notice=False, logger=logger, 
                                       stderr=open(make_logs_basepath + '.err', 'w'), logger=logger)
 
         if return_code != 0 or not all_required_binaries_exist(dirpath, requirements):
-            msg = "Failed to compile " + name + " (" + dirpath + ")! " \
-                  "Try to compile it manually. " + ("You can restart Quast with the --debug flag "
-                                                    "to see the compilation command." if not qconfig.debug else "")
-            if just_notice:
-                logger.notice(msg)
-            else:
-                logger.warning(msg)
-            open(failed_compilation_flag, 'w').close()
+            write_failed_compilation_flag(name, dirpath, failed_compilation_flag, just_notice=just_notice, logger=logger)
             return False
-        with open(succeeded_compilation_flag, 'w') as out_f:
-            out_f.write(abspath(realpath(dirpath)))
     return True
 
 
@@ -820,6 +816,16 @@ def is_dir_writable(dirpath):
     if not isdir(dirpath) and not check_write_permission(os.path.dirname(dirpath)):
         return False
     return True
+
+
+def write_failed_compilation_flag(tool, tool_dirpath, failed_compilation_flag, just_notice=False, logger=logger):
+    msg = "Failed to compile " + tool + " (" + tool_dirpath + ")! Try to compile it manually. " + (
+          "You can restart Quast with the --debug flag to see the compilation command." if not qconfig.debug else "")
+    if just_notice:
+        logger.notice(msg)
+    else:
+        logger.warning(msg)
+    safe_create(failed_compilation_flag)
 
 
 def check_write_permission(path):

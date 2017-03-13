@@ -796,9 +796,17 @@ def compile_tool(name, dirpath, requirements, just_notice=False, logger=logger, 
         # making
         logger.main_info('Compiling ' + name + ' (details are in ' + make_logs_basepath +
                          '.log and make.err)')
-        return_code = call_subprocess((['make', make_cmd] if make_cmd else ['make']) + ['-C', dirpath],
+        try:
+            return_code = call_subprocess((['make', make_cmd] if make_cmd else ['make']) + ['-C', dirpath],
                                       stdout=open(make_logs_basepath + '.log', 'w'),
                                       stderr=open(make_logs_basepath + '.err', 'w'), logger=logger)
+        except IOError:
+            msg = 'Permission denied accessing ' + dirpath + '. Did you forget sudo?'
+            if just_notice:
+                logger.notice(msg)
+            else:
+                logger.warning(msg)
+            return False
 
         if return_code != 0 or not all_required_binaries_exist(dirpath, requirements):
             write_failed_compilation_flag(name, dirpath, failed_compilation_flag, just_notice=just_notice, logger=logger)

@@ -49,15 +49,23 @@ def get_installed_emem():
 def compile_aligner(logger, only_clean=False, compile_all_aligners=False):
     global contig_aligner
 
+    mummer_failed = check_prev_compilation_failed('MUMmer', mummer_failed_compilation_flag, just_notice=True, logger=logger)
+    emem_failed = check_prev_compilation_failed('E-MEM', e_mem_failed_compilation_flag, just_notice=True, logger=logger)
+    if mummer_failed and emem_failed:
+        contig_aligner = None
+        logger.error("Compilation of contig aligner software was unsuccessful! QUAST functionality will be limited.")
+        return False
+
     if not compile_all_aligners:
         if contig_aligner is not None:
-            failed_compilation_flag = e_mem_failed_compilation_flag if is_emem_aligner() else mummer_failed_compilation_flag
-            if not check_prev_compilation_failed(contig_aligner, failed_compilation_flag, just_notice=True, logger=logger):
+            compilation_failed = emem_failed if is_emem_aligner() else mummer_failed
+            if not compilation_failed:
                 return True
+            contig_aligner = None
 
     default_requirements = ['nucmer', 'delta-filter', 'show-coords', 'show-snps', 'mummer', 'mummerplot', 'mgaps']
 
-    if not qconfig.force_nucmer:
+    if not qconfig.force_nucmer and not emem_failed:
         if get_installed_emem() or isfile(join(contig_aligner_dirpath, 'e-mem')):
             emem_requirements = default_requirements
         elif qconfig.platform_name == 'macosx' and isfile(join(contig_aligner_dirpath, 'e-mem-osx')):
@@ -82,7 +90,7 @@ def compile_aligner(logger, only_clean=False, compile_all_aligners=False):
         if not compile_all_aligners:
             return True
 
-    if compile_all_aligners and contig_aligner:
+    if contig_aligner:
         return True
     logger.error("Compilation of contig aligner software was unsuccessful! QUAST functionality will be limited.")
     return False

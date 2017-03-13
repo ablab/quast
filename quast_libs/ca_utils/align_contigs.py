@@ -19,7 +19,7 @@ from quast_libs.ca_utils.misc import bin_fpath, is_emem_aligner, compile_aligner
     create_nucmer_output_dir, clean_tmp_files, get_installed_emem, reset_aligner_selection, draw_mummer_plot
 
 from quast_libs.log import get_logger
-from quast_libs.qutils import is_python2
+from quast_libs.qutils import is_python2, safe_create
 
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 
@@ -62,11 +62,11 @@ def check_emem_functionality(logger):
     if return_code != 0:
         if get_installed_emem():
             logger.main_info('Preinstalled E-MEM does not work properly.')
-            reset_aligner_selection()
-            qconfig.force_nucmer = True
         else:
-            logger.main_info('E-MEM does not work properly. QUAST will try to recompile contig aligner software.')
-        open(e_mem_failed_compilation_flag, 'w').close()
+            logger.main_info('E-MEM does not work properly. QUAST will try to use Nucmer.')
+        reset_aligner_selection()
+        qconfig.force_nucmer = True
+        safe_create(e_mem_failed_compilation_flag)
     clean_tmp_files(nucmer_fpath)
     return compile_aligner(logger)
 

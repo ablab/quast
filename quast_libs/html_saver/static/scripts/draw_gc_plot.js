@@ -242,7 +242,7 @@ var gc = {
 
         gc.showWithData = showInNormalScaleWithData;
         if (gcInfos.list_of_GC_contigs_distributions) {
-            createLegend(gc.filenames, gc.colors, 0, gc.reference, true);
+            createLegend(gc.filenames, gc.colors, 0, gc.reference);
         }
         addLegendClickEvents(gc, filenames.length, showPlotWithInfo, false, 0);
 
@@ -482,29 +482,22 @@ function filterAndSumGcInfo(GC_info, condition) {
     return val_bp;
 }
 
-function createLegend(labels, colors, index, reference, firstLoad) {
-    var selectedAssemblies = firstLoad ? getSelectedAssemblies() :
-        Array.apply(null, {length: gc.filenames}).map(Number.call, Number);
+function createLegend(labels, colors, index, reference) {
+    var selectedAssemblies = getSelectedAssemblies(labels);
     $('#legend-placeholder').empty();
     var selectors = "";
 
     labels.forEach(function(label, i) {
-        var id = 'label_' + i + '_id';
-        var link = '<span id="' + labels[i] + '-switch"' + "class='plot-gc-type-switch dotted-link'>by contigs<br></span><br>";
-        var isChecked = (selectedAssemblies.length > 0 && selectedAssemblies.indexOf(i.toString())) != -1 ? 'checked="checked"' : "";
-        $('#legend-placeholder').append('<div>' +
-            '<label for="' + id + '" style="color: ' + colors[i] + '">' +
-            '<input type="checkbox" name="' + gc.filenames.indexOf(label) + '" ' + isChecked + ' id="' + id + '">&nbsp;' + label +'</label>' +
-            (index ? '' : '<br>' + link ) + '</div>');
+        var link = index ? '' : '<span id="' + labels[i] + '-switch"' + "class='plot-gc-type-switch dotted-link'>by contigs<br></span><br>";
+        addLabelToLegend(i, label, selectedAssemblies, colors, link);
     });
     if (reference) {
         isChecked = (selectedAssemblies.length > 0 && selectedAssemblies.indexOf(gc.filenames.length.toString())) != -1 ? 'checked="checked"' : "";
         $('#legend-placeholder').append(
             '<div id="reference-label">' +
-                '<label for="label_' + gc.filenames.length + '_id" style="color: #000000;">' +
+                '<label for="reference" style="color: #000000;">' +
                 '<input type="checkbox" name="' + gc.filenames.length +
-                '" checked="' + isChecked + '" id="label_' + gc.filenames.length +
-                '_id">&nbsp;' + 'reference' +
+                '" checked="' + isChecked + '" id="reference">&nbsp;' + 'reference' +
                 '</label>' +
                 '</div>'
         );

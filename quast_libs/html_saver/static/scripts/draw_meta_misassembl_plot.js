@@ -250,18 +250,13 @@ function createLegend(labels, colors, index){
     var sortBtnClass = getSortRefsRule();
 
     var filenames = misassemblies.filenames;
-    var selectedLabels = index ? Array.apply(null, {length: filenames}).map(Number.call, Number) : getSelectedAssemblies();
+    var selectedLabels = getSelectedAssemblies(labels);
     $('#legend-placeholder').empty();
     var selectors = "";
 
     labels.forEach(function(label, i) {
-        var id = 'label_' + i + '_id';
-        var link = '<span id="' + filenames[i] + '-switch"' + "class='plot-mis-type-switch dotted-link'>by type<br></span><br>";
-        var isChecked = (selectedLabels.length > 0 && selectedLabels.indexOf(i.toString())) != -1 ? 'checked="checked"' : "";
-        $('#legend-placeholder').append('<div>' +
-            '<label for="' + id + '" style="color: ' + colors[i] + '">' +
-            '<input type="checkbox" name="' + i + '" ' + isChecked + ' id="' + id + '">&nbsp;' + label +'</label>' +
-            (index == 0 ? '<br>' + link : '') + '</div>');
+        var link = index == 0 ? '<span id="' + labels[i] + '-switch"' + " class='plot-mis-type-switch dotted-link'>by type<br></span><br>" : '';
+        addLabelToLegend(i, label, selectedLabels, colors, link);
     });
     if (index > 0) {
         for (var filenames_n = 0; filenames_n < filenames.length; filenames_n++){

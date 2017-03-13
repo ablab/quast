@@ -48,12 +48,9 @@ function buildReport() {
 
     $(plotsSwitchesDiv).html('<b>Plots:</b>');
 
+    var selectedAssemblies = Array.apply(null, {length: assembliesNames}).map(Number.call, Number);
     assembliesNames.forEach(function(filename, i) {
-        var id = 'label_' + i + '_id';
-        $('#legend-placeholder').append('<div>' +
-            '<label for="' + id + '" style="color: ' + colors[i] + '">' +
-            '<input type="checkbox" name="' + i + '" checked="checked" id="' + id + '">&nbsp;' + filename + '</label>' +
-            '</div>');
+        addLabelToLegend(i, filename, selectedAssemblies, colors)
     });
 
     var tickX = 1;

@@ -111,27 +111,21 @@ function togglePlots(assembliesNames, order, name, title, drawPlot, data, refPlo
     $('#gc_contigs_info').hide();
     $('#frc_info').hide();
 
-    var selectedAssemblies = getSelectedAssemblies();
+    var selectedAssemblies = getSelectedAssemblies(assembliesNames);
     var sortBtnClass;
     if ($("input[name=sortRefs]")[0]) {
         sortBtnClass = getSortRefsRule();
     }
     $('#legend-placeholder').empty();
     assembliesNames.forEach(function(filename, i) {
-        var id = 'label_' + i + '_id';
-        var isChecked = (selectedAssemblies.length > 0 && selectedAssemblies.indexOf(i.toString())) != -1 ? 'checked="checked"' : "";
-        $('#legend-placeholder').append('<div>' +
-            '<label for="' + id + '" style="color: ' + colors[i] + '">' +
-            '<input type="checkbox" name="' + i + '"' + isChecked + ' id="' + id + '">&nbsp;' + filename + '</label>' +
-            '</div>');
+        addLabelToLegend(i, filename, selectedAssemblies, colors);
     });
     if (refPlotValue) {
         $('#legend-placeholder').append(
             '<div id="reference-label">' +
-                '<label for="label_' + assembliesNames.length + '_id" style="color: #000000;">' +
+                '<label for="reference" style="color: #000000;">' +
                 '<input type="checkbox" name="' + assembliesNames.length +
-                '" checked="checked" id="label_' + assembliesNames.length +
-                '_id">&nbsp;' + 'reference' +
+                '" checked="checked" id="reference">&nbsp;' + 'reference' +
                 '</label>' +
                 '</div>'
         );

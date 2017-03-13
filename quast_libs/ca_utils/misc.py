@@ -48,6 +48,15 @@ def get_installed_emem():
 
 def compile_aligner(logger, only_clean=False, compile_all_aligners=False):
     global contig_aligner
+    default_requirements = ['nucmer', 'delta-filter', 'show-coords', 'show-snps', 'mummer', 'mummerplot', 'mgaps']
+
+    if only_clean:
+        aligners_to_try = [
+            ('E-MEM', 'emem', default_requirements + ['e-mem']),
+            ('MUMmer', 'mummer', default_requirements)]
+        for i, (name, flag_name, requirements) in enumerate(aligners_to_try):
+            compile_tool(name, contig_aligner_dirpath, requirements, logger=logger, only_clean=only_clean, flag_suffix='.' + flag_name)
+        return True
 
     mummer_failed = check_prev_compilation_failed('MUMmer', mummer_failed_compilation_flag, just_notice=True, logger=logger)
     emem_failed = check_prev_compilation_failed('E-MEM', e_mem_failed_compilation_flag, just_notice=True, logger=logger)
@@ -62,8 +71,6 @@ def compile_aligner(logger, only_clean=False, compile_all_aligners=False):
             if not compilation_failed:
                 return True
             contig_aligner = None
-
-    default_requirements = ['nucmer', 'delta-filter', 'show-coords', 'show-snps', 'mummer', 'mummerplot', 'mgaps']
 
     if not qconfig.force_nucmer and not emem_failed:
         if get_installed_emem() or isfile(join(contig_aligner_dirpath, 'e-mem')):

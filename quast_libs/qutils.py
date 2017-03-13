@@ -764,11 +764,15 @@ def safe_rm(fpath):
             pass
 
 
-def safe_create(fpath):
+def safe_create(fpath, logger, is_required=False):
     try:
         open(fpath, 'w').close()
     except:
-        logger.notice(fpath + ' cannot be created.')
+        msg = fpath + ' cannot be created. Did you forget sudo?'
+        if is_required:
+            logger.error(msg)
+        else:
+            logger.notice(msg)
 
 
 def is_python2():
@@ -825,7 +829,7 @@ def write_failed_compilation_flag(tool, tool_dirpath, failed_compilation_flag, j
         logger.notice(msg)
     else:
         logger.warning(msg)
-    safe_create(failed_compilation_flag)
+    safe_create(failed_compilation_flag, logger, is_required=tool == 'E-MEM')
 
 
 def check_write_permission(path):

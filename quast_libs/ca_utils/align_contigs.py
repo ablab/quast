@@ -66,7 +66,7 @@ def check_emem_functionality(logger):
             logger.main_info('E-MEM does not work properly. QUAST will try to use Nucmer.')
         reset_aligner_selection()
         qconfig.force_nucmer = True
-        safe_create(e_mem_failed_compilation_flag)
+        safe_create(e_mem_failed_compilation_flag, logger, is_required=True)
     clean_tmp_files(nucmer_fpath)
     return compile_aligner(logger)
 

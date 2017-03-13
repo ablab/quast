@@ -69,11 +69,6 @@ def main(args):
     reporting.reports = reports
     reporting.assembly_fpaths = []
     from quast_libs import plotter  # Do not remove this line! It would lead to a warning in matplotlib.
-    try:
-        import imp
-        imp.reload(plotter)
-    except:
-        reload(plotter)
 
     if qconfig.is_combined_ref:
         corrected_dirpath = os.path.join(output_dirpath, '..', qconfig.corrected_dirname)

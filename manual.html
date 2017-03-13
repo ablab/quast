@@ -78,14 +78,17 @@
     at <a href="http://quast.sf.net/">http://quast.sf.net/</a>.
     <br>
     <br>
-    QUAST utilizes <a href="http://www.csd.uwo.ca/%7Eilie/E-MEM/">E-MEM</a> (an improvement over <a href="http://mummer.sourceforge.net/">MUMmer</a>),
+    QUAST utilizes <a href="http://www.csd.uwo.ca/%7Eilie/E-MEM/">E-MEM</a>
+    (an improvement over <a href="http://mummer.sourceforge.net/">MUMmer</a>),
     <a href="http://exon.gatech.edu/GeneMark/">GeneMarkS</a>,
-    <a href="http://exon.gatech.edu/GeneMark/gmes_instructions.html">GeneMark-ES</a>, <a href="http://cbcb.umd.edu/software/glimmerhmm/">GlimmerHMM</a>,
-    and <a href="http://gage.cbcb.umd.edu/index.html">GAGE</a>.
+    <a href="http://exon.gatech.edu/GeneMark/gmes_instructions.html">GeneMark-ES</a>,
+    <a href="http://cbcb.umd.edu/software/glimmerhmm/">GlimmerHMM</a>,
+    <a href="http://gage.cbcb.umd.edu/index.html">GAGE</a> and
+    <a href="http://gnuplot.sourceforge.net/">Gnuplot</a>.
     In addition, MetaQUAST uses <a href="http://exon.gatech.edu/GeneMark/">MetaGeneMark</a>, <a href="http://sourceforge.net/p/krona/home/krona/">Krona tools</a>,
     <a href="http://blast.ncbi.nlm.nih.gov/Blast.cgi">BLAST</a>, and
     <a href="http://www.arb-silva.de/">SILVA</a> 16S rRNA database.
-    Starting from version 3.2, QUAST package also includes reads processing tools for finding structural variants between the reference genome and actual organism.
+    Starting from version 3.2, QUAST package includes reads processing tools for finding structural variants between the reference genome and actual organism.
     These tools are <a href="https://github.com/lh3/bwa">BWA</a>,
     <a href="https://github.com/lomereiter/sambamba">Sambamba</a>, and <a href="https://github.com/Illumina/manta">Manta</a>.
     Also we use <a href="http://bedtools.readthedocs.io/">bedtools</a> for calculating raw and physical read coverage, which is shown in Icarus contig alignment viewer.
@@ -134,7 +137,7 @@
 <h2>1. Installation</h2>
 
 <p>
-    QUAST can be run on Linux or Mac OS X.
+    QUAST can be run on Linux or macOS (OS X).
 </p>
 <p>
     Its default pipeline requires:
@@ -143,7 +146,7 @@
     <li>python 2.5, 2.6, 2.7, 3.3, 3.4 or 3.5</li>
     <li>perl 5.6.0 or higher</li>
     <li>gcc 4.7 or higher</li>
-    <li>basic UNIX tools (g++, make, sh, csh, sed, awk, ar)</li>
+    <li>basic UNIX tools (make, sh, sed, awk, ar)</li>
 </ul>
 <p>
     In addition, QUAST submodules require:
@@ -154,7 +157,7 @@
     <li>Boost (tested with v1.56.0) for E-MEM</li>
 </ul>
 All those tools are usually pre installed on Linux.<br>
-Mac OS X, however, initially misses <code>make</code>, <code>gcc</code> and <code>ar</code>, so you will have to install
+MacOS, however, initially misses <code>make</code>, <code>gcc</code> and <code>ar</code>, so you will have to install
 <a href='https://developer.apple.com/xcode/'>Xcode</a> (or only
 <a href='https://developer.apple.com/downloads/index.action?name=Command%20Line%20Tools'>Command Line Tools for Xcode</a>) to make them available.
 <br>
@@ -220,7 +223,7 @@ View the summary of the evaluation results with the <a href="http://www.greenwoo
     The tool accepts assemblies and reference genomes in FASTA format. Files may be compressed with zip, gzip, or&nbsp;bzip2.<br>
     A reference genome with multiple chromosomes can be provided as a single FASTA file with separate sequence for each chromosome inside.<br>
     <span style='line-height: 50%;'>&nbsp;</span><br>  
-    Maximum assembly length is 4.29<span class="rhs">&nbsp;</span>Gbp.<br>
+    Maximum total assembly length is 4.29<span class="rhs">&nbsp;</span>Gbp.<br>
     Maximum length of a reference sequence (e.g. a chromosome) is 536<span class="rhs">&nbsp;</span>Mbp. The number of sequences in a reference file is not limited.<br>
     <br>
     <b>Genes and operons</b><br>
@@ -238,7 +241,8 @@ View the summary of the evaluation results with the <a href="http://www.greenwoo
     Note that the sequence name has to match a name in the reference file.<br>
     <span style='line-height: 50%;'>&nbsp;</span><br>  
     Coordinates are 1-based, i.e. the first nucleotide in the reference genome has position 1, not 0.
-    If a <i>start position</i> less than a corresponding <i>end position</i>, such gene or operon is located on forward strand, and on reverse-complement strand otherwise.
+    If a <i>start position</i> is less than a corresponding <i>end position</i>, such gene or operon is located on the forward strand,
+    and on the reverse-complement strand otherwise.
 </p>    
 
 <a name="sec2.3"></a>

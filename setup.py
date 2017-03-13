@@ -162,10 +162,10 @@ if cmd_in(['install', 'develop', 'build', 'build_ext']):
     logger.info('* Compiling Glimmer *')
     if not compile_glimmer(logger):
         modules_failed_to_install.append('Glimmer gene-finding tool (affects --glimmer option)')
+    logger.info('* Compiling read analysis tools *')
+    if not compile_reads_analyzer_tools(logger):
+        modules_failed_to_install.append('Read analysis tools (affects -1/--reads1 and -2/--reads2 options)')
     if install_full:
-        logger.info('* Compiling read analysis tools *')
-        if not compile_reads_analyzer_tools(logger):
-            modules_failed_to_install.append('Read analysis tools (affects -1/--reads1 and -2/--reads2 options)')
         logger.info('* Downloading Manta *')
         if not download_manta(logger):
             modules_failed_to_install.append('Manta (affects -1/--reads1 and -2/--reads2 options)')
@@ -188,10 +188,8 @@ bwa_files = [
     join('bwa', fp) for fp in os.listdir(join(quast_package, 'bwa'))
     if isfile(join(quast_package, 'bwa', fp)) and fp.startswith('bwa')]
 full_install_tools = (
-    bwa_files +
     find_package_files('manta') +
     find_package_files('blast') +
-    ['bedtools/bin/*'] +
     sambamba_files
 )
 
@@ -219,6 +217,8 @@ The tool accepts multiple assemblies, thus is suitable for comparison.''',
             find_package_files('genemark-es/lib') +
             find_package_files('glimmer') +
             find_package_files('gage') +
+            bwa_files +
+            ['bedtools/bin/*'] +
            (full_install_tools if install_full else [])
     },
     include_package_data=True,

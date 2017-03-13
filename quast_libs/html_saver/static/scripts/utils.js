@@ -273,7 +273,7 @@ function containsObject(obj, list) {
 function addLegendClickEvents(info, numLegendItems, showPlotWithInfo, showReference, index) {
     if (showReference) numLegendItems++;
     for (var i = 0; i < numLegendItems; i++) {
-        $('#legend-placeholder').find('#label_' + i + '_id').click(function() {
+        $('#legend-placeholder input[name=' + i + ']').click(function() {
             showPlotWithInfo(info, index);
         });
     }
@@ -402,11 +402,30 @@ function findNearestPoint(points, x) {
     return points[points.length-1][1]
 }
 
-function getSelectedAssemblies() {
+function addLabelToLegend(idx, label, selectedLabels, colors, link) {
+    var isChecked = (selectedLabels.length > 0 && selectedLabels.indexOf(idx.toString())) != -1 ? 'checked="checked"' : "";
+    $('#legend-placeholder').append('<div>' +
+        '<label for="' + label + '" style="color: ' + colors[idx] + '">' +
+        '<input type="checkbox" name="' + idx + '"' + isChecked + ' id="' + label + '">&nbsp;' + label + '</label>' +
+        (link ? '<br>' + link : '') + '</div>');
+}
+
+function getSelectedAssemblies(labels) {
     var selectedAssemblies = [];
-    $('#legend-placeholder input:checked').each(function() {
-        selectedAssemblies.push($(this).attr('name'));
+    var labelsMatch = true;
+    $('#legend-placeholder input:checked[type="checkbox"]').each(function() {
+        if (labels.indexOf($(this).attr('id')) == -1 && $(this).attr('id') != 'reference') {
+            labelsMatch = false;
+        }
     });
+    if (labelsMatch) {
+        $('#legend-placeholder input:checked[type="checkbox"]').each(function() {
+            selectedAssemblies.push($(this).attr('name'));
+        });
+    }
+    else {
+        selectedAssemblies = Array.apply(null, {length: labels}).map(Number.call, Number);
+    }
     return selectedAssemblies;
 }
 

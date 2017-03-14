@@ -13,11 +13,11 @@ The tool accepts multiple assemblies, thus is suitable for comparison.
 QUAST automatically compiles all its sub-parts when needed (on the first use). 
 Thus, installation is not required. However, if you want to precompile everything and add quast.py to your `PATH`, you may choose either:
 
-Basic installation (about 40 MB):
+Basic installation (about 120 MB):
 
     ./setup.py install
 
-Full installation (about 800 MB, includes (1) tools for SV detection based on read pairs, which is used for more precise misassembly detection, 
+Full installation (about 540 MB, includes (1) tools for SV detection based on read pairs, which is used for more precise misassembly detection, 
 (2) and tools/data for reference genome detection in metagenomic datasets):
 
     ./setup.py install_full

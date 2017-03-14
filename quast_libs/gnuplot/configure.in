@@ -1318,9 +1318,6 @@ AC_SUBST(X11_APPDEFAULTS_DIR)
 dnl Write Makefiles and configuration header
 AC_OUTPUT([Makefile
            config/Makefile
-           demo/Makefile
-           demo/plugin/Makefile
-           docs/Makefile
            m4/Makefile
            man/Makefile
            share/Makefile
@@ -1329,8 +1326,7 @@ AC_OUTPUT([Makefile
            src/beos/Makefile
            src/wxterminal/Makefile
            src/qtterminal/Makefile
-           term/Makefile
-           tutorial/Makefile],
+           term/Makefile],
           [test -z "$CONFIG_HEADERS" || echo timestamp >stamp-h])
 
 dnl Report configuration

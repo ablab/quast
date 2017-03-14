@@ -20,7 +20,7 @@
       4. Contig coordinates of the provided genes/operons annotations are saved to
          <output_dir>/genome_stats/<assembly_name>_genes.txt and _operons.txt.
 
-      5. In order to avoid confusion, "--meta" option was renamed to "--mgm".
+      5. In order to avoid confusion, "--meta" option was renamed to "--mgm" (MetaGeneMark).
 
       6. Internal overlaps between adjacent aligned blocks of a misassembled contig are
          always excluded. Previously the processing depended on "--ambiguity-usage" value.

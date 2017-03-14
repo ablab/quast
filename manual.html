@@ -343,8 +343,9 @@ Enables gene finding. Affects performance, thus disabled by default.<br>
 <span style='line-height: 50%;'>&nbsp;</span><br>  
 By default, we assume that the genome is prokaryotic, and apply GeneMarkS for gene finding.
 If the genome is eukaryotic, use <a href='#eukaryote'><code>--eukaryote</code></a> option to enable GeneMark-ES instead.
-If it is a metagenome, use <a href='#mgm'><code>--mgm</code></a> (runs MetaGeneMark).<br>
-<span style='line-height: 50%;'>&nbsp;</span><br>  
+If it is a metagenome (you are running <a href='#sec2.5'>metaquast.py</a>), MetaGeneMark is used. You can also force
+MetaGeneMark predictions with <a href='#mgm'><code>--mgm</code></a> option described below.
+<span style='line-height: 50%;'>&nbsp;</span><br><br>
 If a <a href='#sec2.2'>gene file</a> is provided with <code>-G</code> as well, both
 <span class='metric_ref'><a href='#genes'># genes</a></span> in the file covered by the assembly, and
 <span class='metric_ref'><a href='#predicted_genes'># predicted genes</a></span> are reported. Note that operons are not predicted,
@@ -354,6 +355,15 @@ but a file of known operon positions can be provided with <code>-O</code>.<br>
     <code><b>--glimmer</b></code>
 </div>
 Use GlimmerHMM for gene finding (instead of GeneMark family of tools). Note: you may skip <code>--gene-finding</code> option if <code>--glimmer</code> is specified.
+
+<div class='option'>
+    <a name="mgm"></a>
+    <code><b>--mgm</b></code>
+</div>
+Use MetaGeneMark for gene finding (instead of the default finder: GeneMarkS or GeneMark-ES).
+<span style='line-height: 50%;'>&nbsp;</span><br>
+Note: if you are working with metagenome assemblies, we recommend <a href='#sec2.5'>to use metaquast.py</a> instead of quast.py
+(it is in the same directory as quast.py).
 
 <div class='option'>
     <code><b>--gene-thresholds</b> &lt;int,int,...&gt;</code>
@@ -371,16 +381,6 @@ Genome is eukaryotic. Affects gene finding and contig alignment:<br>
 <li>By default, QUAST assumes that a genome is circular and correctly processes its linear representation.
 This options indicates that the genome is not circular.
 </ol>
-
-<div class='option'>
-    <a name="mgm"></a>
-    <code><b>--mgm</b></code>
-</div>
-Use MetaGeneMark for gene finding.
-If <code>--eukaryote</code> is also provided, MetaGeneMark still will be used.<br>
-<span style='line-height: 50%;'>&nbsp;</span><br>  
-Note: if you are working with metagenome assemblies, we recommend <a href='#sec2.5'>to use metaquast.py</a> instead of quast.py
-(it is in the same directory as quast.py).
 
 <div class='option'>
     <a name='est_ref_size'></a><code><b>--est-ref-size</b> &lt;int&gt;</code>

@@ -310,13 +310,13 @@ def usage(show_hidden=False, meta=False, short=True):
             sys.stderr.write("-f  --gene-finding                    Predict genes using MetaGeneMark\n")
         else:
             sys.stderr.write("-f  --gene-finding                    Predict genes (with GeneMarkS for prokaryotes (default), GeneMark-ES\n")
-            sys.stderr.write("                                      for eukaryotes (--eukaryote), or MetaGeneMark for metagenomes (--metagenemark)\n")
+            sys.stderr.write("                                      for eukaryotes (--eukaryote), or MetaGeneMark for metagenomes (--mgm)\n")
         sys.stderr.write("    --glimmer                         Predict genes with GlimmerHMM instead of GeneMark-ES\n")
         sys.stderr.write("    --gene-thresholds <int,int,...>   Comma-separated list of threshold lengths of genes to search with Gene Finding module\n")
         sys.stderr.write("                                      [default: %s]\n" % genes_lengths)
         sys.stderr.write("-e  --eukaryote                       Genome is eukaryotic\n")
         if not meta:
-            sys.stderr.write("    --metagenemark                    Use MetaGeneMark for gene prediction\n")
+            sys.stderr.write("    --mgm                             Use MetaGeneMark for gene prediction\n")
             sys.stderr.write("    --est-ref-size <int>              Estimated reference size (for computing NGx metrics without a reference)\n")
         else:
             sys.stderr.write("    --max-ref-number <int>            Maximum number of references (per each assembly) to download after looking in SILVA database\n")

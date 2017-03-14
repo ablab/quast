@@ -272,7 +272,7 @@ def parse_options(logger, quast_args, is_metaquast=False):
              dest='all_labels_from_dirs',
              action='store_true')
          ),
-        (['--metagenemark'], dict(
+        (['--mgm'], dict(
              dest='metagenemark',
              action='callback',
              callback=set_multiple_variables,

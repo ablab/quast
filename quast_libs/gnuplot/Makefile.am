@@ -1,7 +1,7 @@
 ## Process this file with automake to produce Makefile.in -*-Makefile-*-
 AUTOMAKE_OPTIONS = foreign
 
-SUBDIRS = config m4 term src docs $(LISPDIR) man demo tutorial share
+SUBDIRS = config m4 term src $(LISPDIR) man share
 
 EXTRA_DIST = BUGS CodeStyle Copyright FAQ.pdf GNUmakefile INSTALL INSTALL.gnu \
 Makefile.maint PATCHLEVEL PGPKEYS PORTING README RELEASE_NOTES \

@@ -213,7 +213,7 @@ genomic features. Bioinformatics, 26, 6:841-2.
 
 10. QUAST uses Gnuplot for creating MUMmer alignment dotplot.
 For more details about Gnuplot please refer to
-http://gnuplot.sourceforge.net/ website and the license file under quast_libs/gnuplot/
+http://gnuplot.sourceforge.net/ website and Copyright file under quast_libs/gnuplot/
 
 
 -------------------------------------------------------------------------------

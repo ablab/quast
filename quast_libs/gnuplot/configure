@@ -14803,7 +14803,7 @@ $as_echo "#define MAX_PARALLEL_AXES 7" >>confdefs.h
 
 
 
-ac_config_files="$ac_config_files Makefile config/Makefile demo/Makefile demo/plugin/Makefile docs/Makefile m4/Makefile man/Makefile share/Makefile share/LaTeX/Makefile src/Makefile src/beos/Makefile src/wxterminal/Makefile src/qtterminal/Makefile term/Makefile tutorial/Makefile"
+ac_config_files="$ac_config_files Makefile config/Makefile m4/Makefile man/Makefile share/Makefile share/LaTeX/Makefile src/Makefile src/beos/Makefile src/wxterminal/Makefile src/qtterminal/Makefile term/Makefile"
 
 ac_config_commands="$ac_config_commands default"
 

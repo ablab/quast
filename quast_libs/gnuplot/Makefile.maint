@@ -33,7 +33,7 @@ my-distcheck:
 	mkdir $(t)
 	GZIP=$(GZIP) $(TAR) -C $(t) -zxf $(distdir).tar.gz
 	cd $(t)/$(distdir) \
-	  && ./configure --with-gd=no --with-qt=no --with-tutorial \
+	  && ./configure --with-gd=no --with-qt=no \
 	  && $(MAKE) CFLAGS='-Wformat -Werror' \
 	  && $(MAKE) check \
 	  && $(MAKE) distclean
@@ -95,7 +95,7 @@ alpha:
 	@echo =====================================
 
 amfiles:
-	for subdir in config demo m4 term tutorial ; do \
+	for subdir in config m4 term ; do \
 	  make -C $$subdir -f Makefile.am.in Makefile.am ; \
 	done
 

@@ -274,7 +274,10 @@ def parse_options(logger, quast_args, is_metaquast=False):
          ),
         (['--metagenemark'], dict(
              dest='metagenemark',
-             action='store_true')
+             action='callback',
+             callback=set_multiple_variables,
+             callback_kwargs={'store_true_values': ['gene_finding', 'metagenemark']},
+             default=False)
          ),
         (['-s', '--scaffolds'], dict(
              dest='scaffolds',

@@ -158,7 +158,8 @@ def main(args):
         return 4
 
     # Running QUAST(s)
-    quast_py_args += ['--metagenemark']
+    if qconfig.gene_finding:
+        quast_py_args += ['--metagenemark']
     downloaded_refs = False
 
     # SEARCHING REFERENCES

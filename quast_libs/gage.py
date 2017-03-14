@@ -80,10 +80,16 @@ def compile_gage(only_clean=False):
     os.chdir(gage_dirpath)
     # making
     logger.main_info('Compiling JAVA classes (details are in ' + os.path.join(gage_dirpath, 'make.log') + ' and make.err)')
-    return_codes = [qutils.call_subprocess(
-        ['javac', os.path.join(gage_dirpath, java_fname + '.java')],
-        stdout=open(os.path.join(gage_dirpath, 'make.log'), 'w'),
-        stderr=open(os.path.join(gage_dirpath, 'make.err'), 'w'),) for java_fname in required_java_fnames]
+    try:
+        return_codes = [qutils.call_subprocess(
+            ['javac', os.path.join(gage_dirpath, java_fname + '.java')],
+            stdout=open(os.path.join(gage_dirpath, 'make.log'), 'w'),
+            stderr=open(os.path.join(gage_dirpath, 'make.err'), 'w'),) for java_fname in required_java_fnames]
+    except IOError:
+        logger.warning('Permission denied accessing ' + gage_dirpath + '. Did you forget sudo?')
+        os.chdir(cur_dir)
+        return False
+
     os.chdir(cur_dir)
 
     if any(return_code != 0 for return_code in return_codes) or not all_required_java_classes_exist(gage_dirpath):

@@ -93,9 +93,8 @@ def compile_aligner(logger, only_clean=False):
         if not success_compilation:
             continue
         contig_aligner = name  # successfully compiled
-
-    if contig_aligner:
         return True
+
     logger.error("Compilation of contig aligner software was unsuccessful! QUAST functionality will be limited.")
     return False
 

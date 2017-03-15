@@ -154,7 +154,7 @@ if cmd_in(['install', 'develop', 'build', 'build_ext']):
             logger.warning('Cannot install matplotlib. Static plots will not be drawn (however, HTML will be)')
 
     logger.info('* Compiling aligner *')
-    if not compile_aligner(logger, compile_all_aligners=True):
+    if not compile_aligner(logger):
         modules_failed_to_install.append('Contigs aligners for reference-based evaluation (affects -R and many other options)')
     logger.info('* Compiling gnuplot *')
     if not compile_gnuplot(logger):

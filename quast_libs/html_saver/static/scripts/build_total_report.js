@@ -105,13 +105,13 @@ function buildTotalReport(assembliesNames, totalReport, order, glossary, qualiti
         subReferences = totalReport.subreferences;
     $('#report_date').html('<p>' + date + '</p>');
     var extraInfo = '<p>All statistics are based on contigs of size >= ' + minContig +
-        '<span class="rhs">&nbsp;</span>bp, unless otherwise noted (e.g., "# contigs (>= 0 bp)" and "Total length (>= 0 bp)" include all contigs.)</p>';
+        '<span class="rhs">&nbsp;</span>bp, unless otherwise noted (e.g., "# contigs (>= 0 bp)" and "Total length (>= 0 bp)" include all contigs).</p>';
     if (assembliesWithNs) {
         if (assembliesWithNs.length > 1)
             potential_scaffolds_assemblies_info = 'assemblies ' + assembliesWithNs.join(', ') + ' contain';
         else
             potential_scaffolds_assemblies_info = 'assembly ' + assembliesWithNs[0] + ' contains';
-        extraInfo += '<p>Suggestion: ' + potential_scaffolds_assemblies_info + ' continuous fragments of N\'s of length >= 10 bp. ' +
+        extraInfo += '<p>Suggestion: ' + potential_scaffolds_assemblies_info + ' continuous fragments of N\'s longer than or equal to 10 bp. ' +
             'You may consider rerunning QUAST using --scaffolds (-s) option!</p>';
     }
     $('#extrainfo').html(extraInfo);

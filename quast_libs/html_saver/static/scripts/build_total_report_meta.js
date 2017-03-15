@@ -191,24 +191,24 @@ function buildTotalReport(assembliesNames, report, order, date, minContig, gloss
                           qualities, mainMetrics, reports, assembliesWithNs) {
     $('#report_date').html('<p>' + date + '</p>');
     var extraInfo = '<p>All statistics are based on contigs of size &ge; ' + minContig +
-        '<span class="rhs">&nbsp;</span>bp, unless otherwise noted (e.g., "# contigs (>= 0 bp)" and "Total length (>= 0 bp)" include all contigs.)</p>';
+        '<span class="rhs">&nbsp;</span>bp, unless otherwise noted (e.g., "# contigs (>= 0 bp)" and "Total length (>= 0 bp)" include all contigs).</p>';
     if (assembliesWithNs) {
         if (assembliesWithNs.length > 1)
             potential_scaffolds_assemblies_info = 'assemblies ' + assembliesWithNs.join(', ') + ' contain';
         else
             potential_scaffolds_assemblies_info = 'assembly ' + assembliesWithNs[0] + ' contains';
-        extraInfo += '<p>Suggestion: ' + potential_scaffolds_assemblies_info + ' continuous fragments of N\'s of length >= 10 bp. ' +
+        extraInfo += '<p>Suggestion: ' + potential_scaffolds_assemblies_info + ' continuous fragments of N\'s longer than or equal to 10 bp. ' +
             'You may consider rerunning QUAST using --scaffolds (-s) option!</p>';
     }
     $('#extrainfo').html(extraInfo);
     $('#plot-caption').show();
-    $('#per_ref_msg').html('<p>Rows show values for the whole assembly (column name) vs. combined reference (concatenation of input references).<br>' +
-        'Clicking on a row with <span style="color: #CCC">+</span> sign will expand values for contigs aligned to each of input references separately.<br>' +
+    $('#per_ref_msg').html('<p>Rows show values for the whole assembly (column name) vs. the combined reference (concatenation of all provided references).<br>' +
+        'Clicking on a row with <span style="color: #CCC">+</span> sign will expand values for contigs aligned to each of the references separately.<br>' +
         'Note that some metrics (e.g. # contigs) may not sum up, because one contig may be aligned to several references and thus, counted several times.<br>' +
         'All metrics that depend on the reference length (such as NG50, LG50, etc), plus the GC % are not calculated for the combined reference.<br>' +
         'The combined reference is just a concatenation of all available reference genomes of the species, presumably represented in the metagenomic dataset, ' +
         'but not necessarily the real content.<br>So it might miss many correctly assembled species, ' +
-        'and therefore it doesn\'t make sense to apply the size and the GC content of the combined reference for assembly evaluation.</p>');
+        'and therefore it does not make sense to apply the size and the GC content of the combined reference for assembly evaluation.</p>');
     $('#quast_name').html('MetaQUAST');
     $('#report_name').html('summary report');
     if (kronaPaths = readJson('krona')) {

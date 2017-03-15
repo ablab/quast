@@ -151,7 +151,8 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, results_dir):
 
         logger.info('  Reference genome:')
         logger.info('    ' + os.path.basename(ref_fpath) + ', length = ' + str(reference_length) +
-                    ', num fragments = ' + str(reference_fragments) + ', GC % = ' + '%.2f' % reference_GC)
+                    ', num fragments = ' + str(reference_fragments) + ', GC % = ' +
+                    '%.2f' % reference_GC if reference_GC is not None else 'undefined')
         if reference_fragments > 30 and not qconfig.check_for_fragmented_ref:
             logger.warning('  Reference genome is fragmented. You may consider rerunning QUAST using --fragmented option.'
                            ' QUAST will try to detect misassemblies caused by the fragmentation and mark them fake (will be excluded from # misassemblies).')

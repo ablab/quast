@@ -412,12 +412,14 @@ function addLabelToLegend(idx, label, selectedLabels, colors, link) {
 
 function getSelectedAssemblies(labels) {
     var selectedAssemblies = [];
-    var labelsMatch = true;
-    $('#legend-placeholder input:checked[type="checkbox"]').each(function() {
-        if (labels.indexOf($(this).attr('id')) == -1 && $(this).attr('id') != 'reference') {
-            labelsMatch = false;
-        }
+    var labelsMatch = false;
+    var legendLabels = [];
+    $('#legend-placeholder input[type="checkbox"]').each(function() {
+        legendLabels.push($(this).attr('id'));
     });
+    if (labels.every(function(label, i) { return ($.inArray(label, legendLabels) != -1 || label == 'reference')}) ) {
+        labelsMatch = true;
+    }
     if (labelsMatch) {
         $('#legend-placeholder input:checked[type="checkbox"]').each(function() {
             selectedAssemblies.push($(this).attr('name'));

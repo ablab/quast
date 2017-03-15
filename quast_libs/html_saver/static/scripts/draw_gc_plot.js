@@ -489,7 +489,8 @@ function createLegend(labels, colors, index, reference) {
 
     labels.forEach(function(label, i) {
         var link = index ? '' : '<span id="' + labels[i] + '-switch"' + "class='plot-gc-type-switch dotted-link'>by contigs<br></span><br>";
-        addLabelToLegend(i, label, selectedAssemblies, colors, link);
+        var assemblyIdx = gc.filenames.indexOf(label);
+        addLabelToLegend(assemblyIdx, label, selectedAssemblies, colors, link);
     });
     if (reference) {
         isChecked = (selectedAssemblies.length > 0 && selectedAssemblies.indexOf(gc.filenames.length.toString())) != -1 ? 'checked="checked"' : "";

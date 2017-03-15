@@ -46,7 +46,7 @@ def get_installed_emem():
     return qutils.get_path_to_program('e-mem')
 
 
-def compile_aligner(logger, only_clean=False, compile_all_aligners=False):
+def compile_aligner(logger, only_clean=False):
     global contig_aligner
     default_requirements = ['nucmer', 'delta-filter', 'show-coords', 'show-snps', 'mummer', 'mummerplot', 'mgaps']
 
@@ -65,12 +65,11 @@ def compile_aligner(logger, only_clean=False, compile_all_aligners=False):
         logger.error("Compilation of contig aligner software was unsuccessful! QUAST functionality will be limited.")
         return False
 
-    if not compile_all_aligners:
-        if contig_aligner is not None:
-            compilation_failed = emem_failed if is_emem_aligner() else mummer_failed
-            if not compilation_failed:
-                return True
-            contig_aligner = None
+    if contig_aligner is not None:
+        compilation_failed = emem_failed if is_emem_aligner() else mummer_failed
+        if not compilation_failed:
+            return True
+        contig_aligner = None
 
     if not qconfig.force_nucmer and not emem_failed:
         if get_installed_emem() or isfile(join(contig_aligner_dirpath, 'e-mem')):
@@ -94,8 +93,6 @@ def compile_aligner(logger, only_clean=False, compile_all_aligners=False):
         if not success_compilation:
             continue
         contig_aligner = name  # successfully compiled
-        if not compile_all_aligners:
-            return True
 
     if contig_aligner:
         return True

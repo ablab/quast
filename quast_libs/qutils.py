@@ -174,11 +174,15 @@ def add_lengths_to_report(lengths, reporting, contigs_fpath):
         report = reporting.get(contigs_fpath)
 
         ## filling columns "Number of contigs >=110 bp", ">=200 bp", ">=500 bp"
+        is_broken = False
+        if qconfig.scaffolds and contigs_fpath in qconfig.dict_of_broken_scaffolds:
+            is_broken = True
+        min_threshold = 0 if not is_broken else qconfig.min_contig
         report.add_field(reporting.Fields.CONTIGS__FOR_THRESHOLDS,
-                         [sum(1 for l in lengths if l >= threshold)
+                         [sum(1 for l in lengths if l >= threshold) if threshold >= min_threshold else None
                           for threshold in qconfig.contig_thresholds])
         report.add_field(reporting.Fields.TOTALLENS__FOR_THRESHOLDS,
-                         [sum(l for l in lengths if l >= threshold)
+                         [sum(l for l in lengths if l >= threshold) if threshold >= min_threshold else None
                           for threshold in qconfig.contig_thresholds])
 
 

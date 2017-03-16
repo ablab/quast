@@ -248,14 +248,15 @@ View the summary of the evaluation results with the <a href="http://www.greenwoo
 <a name="sec2.3"></a>
 <h3>2.3 GAGE mode</h3>
 <p>
-    <a href="http://gage.cbcb.umd.edu/index.html">GAGE</a> is a well-known assessment tool. However, it has limitations:
+    <a href="http://gage.cbcb.umd.edu/index.html">GAGE</a> is an assessment tool used in the well-known homonymous evaluation study
+    (Salzberg <i>et al.</i>, 2011). However, it has several important limitations:
     <ul>
         <li>Only one assembly per run, which complicates assembly comparison.
         <li>Fixed threshold for a minimum contig length (200<span class="rhs">&nbsp;</span>bp).
     </ul>
     These issues are solved by QUAST in GAGE mode (run with <code>--gage</code>). QUAST filters contigs according to a specified threshold and runs GAGE on each assembly.
     GAGE statistics (see <a href="http://gage.cbcb.umd.edu/index.html">GAGE website</a> and <a href="http://genome.cshlp.org/content/early/2012/01/12/gr.131383.111">GAGE paper</a> for the descriptions)
-    are reported in addition to standard QUAST report.<br>
+    are reported in addition to standard QUAST report (saved in <code>&lt;quast_output_dir&gt;/gage_report.*</code>).<br>
     <span style='line-height: 50%;'>&nbsp;</span><br>  
     Note:<br><br>
     <ul>
@@ -630,7 +631,7 @@ MetaQUAST only:
 <a name='references_list'></a><code><b>--references-list</b> &lt;path&gt;</code>
 </div>
 Text file with list of reference genomes (each one on a separate line).
-    MetaQUAST will search for these references in NCBI database and will download the found ones.
+    MetaQUAST will search for these references in the NCBI database and will download the found ones.
     Example of such file is in FAQ section, <a href="#faq_q10">question Q10</a>.
 
 <div class='option'>
@@ -687,33 +688,38 @@ Print version.
 <a name="sec2.5"></a>
 <h3>2.5 Metagenomic assemblies</h3>
 <p>
-    The <code>metaquast.py</code> script accepts multiple reference genomes. One can provide several files or directories with multiple reference files inside with <code>-R</code> option. Option <code>-R</code> may be specified multiple times or all references may be specified as a comma-separated list (<b>without spaces!</b>) with a single <code>-R</code> option beforehand. Another way is to use <a href='#references_list'><code>--references-list</code></a> option.
-    The tool partitions all contigs into groups aligned to each reference genome. Note that a contig may belong to several groups simultaneously if it aligns to several references.
-    <br>
-    MetaQUAST runs quast.py for each of the following:<br>
-    <ul>
-        <li>for all reference genomes in combination (simple concatenation of the FASTA files),
-        <li>for each reference genome separately, by using corresponding group of contigs,
-        <li>for the rest of the contigs that were not aligned to any reference genome.
-    </ul>
+    The <code>metaquast.py</code> script accepts multiple reference genomes.
+    One can provide several files or directories with multiple reference files inside with <code>-R</code> option.
+    Option <code>-R</code> may be specified multiple times or all references may be specified as a comma-separated list (<b>without spaces!</b>)
+    with a single <code>-R</code> option beforehand. Another way is to use <a href='#references_list'><code>--references-list</code></a> option.
 
-<p>If you run MetaQUAST without providing reference genomes, the tool will try to identify genome content of the metagenome.
-MetaQUAST uses BLASTN for aligning contigs to SILVA rRNA database, i.e. FASTA file containing small subunit ribosomal RNA sequences.
-For each assembly, 50 reference genomes with top scores are chosen.
-Maximum number of references to download can be specified with <a href='#max_ref_num'><code>--max-ref-number</code></a>.
-<p>Reference genomes for the chosen genomes are downloaded from NCBI database to <code>&lt;quast_output_dir&gt;/quast_downloaded_references/</code>.
-After that, MetaQUAST runs <code>quast.py</code> on all of them and removes reference genomes with low genome fraction (less than 10%) and proceeds the analysis with the remaining references.
-Note that MetaQUAST uses <a href='#ambiguity_usage'><code>--ambiguity-usage</code></a> 'all' when running quast.py on
-the concatenation of all input references ("combined reference") until <a href='#unique_mapping'><code>--unique-mapping</code></a>
-is specified.
-
-<p>Usage:
+    <p>General usage:
 <pre class="code">
     python metaquast.py contigs_1 contigs_2 ... -R reference_1,reference_2,reference_3,...
 </pre>
 
-<p>All options are the same as for <code>quast.py</code>, except for <code>-R</code>: it can accept multiple reference genomes (comma-separated list without spaces in between)
-    or a directory with references.</p>
+    <p>
+    The tool partitions all contigs into groups aligned to each reference genome.
+    Note that a contig may belong to several groups simultaneously if it aligns to several references.
+    <br>
+    MetaQUAST runs quast.py for each of the following:<br>
+    <ul>
+        <li>for all reference genomes in combination (simple concatenation of the FASTA files, we refer to it as "combined reference"),
+        <li>for each reference genome separately, by using corresponding group of contigs,
+        <li>for the rest of the contigs that were not aligned to any reference genome.
+    </ul>
+
+Note that MetaQUAST uses <a href='#ambiguity_usage'><code>--ambiguity-usage</code></a> 'all' when running quast.py on
+the combined reference until <a href='#unique_mapping'><code>--unique-mapping</code></a> is specified.<br>
+
+
+<p>If you run MetaQUAST without providing reference genomes, the tool will try to identify genome content of the metagenome.
+MetaQUAST uses BLASTN for aligning contigs to SILVA 16S rRNA database, i.e. FASTA file containing small subunit ribosomal RNA sequences.
+For each assembly, 50 reference genomes with top scores are chosen.
+Maximum number of references to download can be specified with <a href='#max_ref_num'><code>--max-ref-number</code></a>.
+<p>Reference genomes for the chosen genomes are downloaded from the NCBI database to <code>&lt;quast_output_dir&gt;/quast_downloaded_references/</code>.
+After that, MetaQUAST runs <code>quast.py</code> on all of them and removes reference genomes with low genome fraction (less than 10%) and
+    proceeds the usual MetaQUAST analysis with the remaining references.
 
 <a name="sec3"></a>
 <h2>3. QUAST output</h2>
@@ -842,7 +848,7 @@ Note that default threshold of 1<span class="rhs">&nbsp;</span>kbp can be
 changed with <a href='#extensive_mis_size'><code>--extensive-mis-size</code></a>.
 </p>
 
-<p><a name='scaff_mis'></a><span class='metric-name'># scaffold gap size misassemblies</span> is the number of positions in the scaffolds (breakpoints)
+<p><a name='scaffold_misassembly'></a><span class='metric-name'># scaffold gap size misassemblies</span> is the number of positions in the scaffolds (breakpoints)
     where the flanking sequences are combined in scaffold on the wrong distance (<a href='#scaffolds'><code>--scaffolds</code></a> only).
     Max allowed distance inconsistency is controlled by <a href='#scaffold_gap_size'><code>--scaffold-gap-max-size</code></a> option (default is 10<span class="rhs">&nbsp;</span>kbp).</p>
 
@@ -1107,7 +1113,7 @@ You can view results separately for each reference genome by clicking on a row p
     </p>
 
 <p>
-<b>Note</b>: We recommend to use Icarus in <a href="https://www.google.com/chrome/">Chrome</a>, however it was tested in other popular web browsers as well (see FAQ, <a href="#faq_q9">Q9</a> for exact list with versions).
+<b>Note</b>: We recommend to use Icarus in <a href="https://www.google.com/chrome/">Chrome</a>, however it was tested in other popular web browsers as well (see FAQ, <a href="#faq_q9">Q9</a> for the exact list with versions).
 </p>
 
 <a name="sec4"></a><p>
@@ -1459,7 +1465,7 @@ Q9. Which versions of web browsers are suitable for Icarus output?
 Q10. Could you show a sample file suitable for <a href='#references_list'><code>--references-list</code></a> MetaQUAST option?
 </b></i></p>
 <p>
-    The file is just a list of reference names (one per line) to be searched in <a href="http://www.ncbi.nlm.nih.gov/">NCBI database</a>.
+    The file is just a list of reference names (one per line) to be searched in the <a href="http://www.ncbi.nlm.nih.gov/">NCBI database</a>.
     Feel free to use spaces or underscores inside these names. Correct and working example is below: <br><br>
     <code><pre>
         Lactobacillus_plantarum
@@ -1468,7 +1474,7 @@ Q10. Could you show a sample file suitable for <a href='#references_list'><code>
         Harry Potter
     </pre></code>
     Note that the first three references should normally be found, downloaded and used for your assemblies evaluation.
-    At the same time you will be notified that Harry Potter reference genome is not found in NCBI database yet.
+    At the same time you will be notified that Harry Potter reference genome is not found in the NCBI database yet.
 <br>
 </p>
 
@@ -1503,14 +1509,15 @@ Q12. Can I use custom BLAST database instead of SILVA 16S rRNA for reference sea
     Yes. If you want to blast your contigs against a local BLAST database, you can specify path to the database with <code>--blast-db</code> option.
     <br>
     To create a BLAST database, you need <code>makeblastdb</code> from <a href="https://www.ncbi.nlm.nih.gov/books/NBK52640/">BLAST+ package</a>.
-    You can also use <code>makeblastdb</code> from &lt;quast_dir&gt;/external_tools/blast/&lt;platform&gt;/makeblastdb.
-    MetaQUAST automatically downloads it when you run <a href="#sec1">full QUAST installation</a> or <code>./metaquast.py</code> without reference.
+    You can also use <code>makeblastdb</code> from &lt;quast_installation_dir&gt;/blast/ or ~/.quast/blast/ (depending on your installation).
+    MetaQUAST automatically creates this directory and downloads the binary into it when you run <a href="#sec1">full QUAST installation</a> or
+    <code>metaquast.py</code> without reference for the first time.
     <br>
     You can create a BLAST database from your FASTA file by running <code>makeblastdb -in &lt;path_to_fasta_file&gt; -dbtype nucl</code>.
-    If you have multiple FASTA files, you should previously combine them into one file.
+    If you have multiple FASTA files, you should concatenate them into one.
     <br><br>
-    Note: MetaQUAST will try to search references in NCBI database based on headers from your FASTA files.
-    Ensure that headers contain species names in simple parsable format without spaces, for example:
+    Note: MetaQUAST will try to search references in the NCBI database based on headers from your FASTA file.
+    Ensure that the headers contain species <b>names</b> in simple parsable format without spaces, for example:
     <br>
     <code><pre>
         >Escherichia_coli, complete genome
@@ -1523,7 +1530,7 @@ Q12. Can I use custom BLAST database instead of SILVA 16S rRNA for reference sea
 Q13. Where can I find details about unaligned fragments of my assembly?
 </b></i></p>
 <p>
-    Starting from v.4.4 we added detailed reports with this information. These reports are generated for all assemblies and saved to
+    Starting from v.4.4, we have added detailed reports with this information. These reports are generated for all assemblies and saved to
     <code>&lt;quast_output_dir&gt;/contigs_reports/contigs_report_&lt;assembly_name>.unaligned.info</code>.
     E.g. if your assembly is "contigs.fasta" then the file is "contigs_report_contigs.unaligned.info",
     if your assembly is "ecoli_assembly_1.fasta" then the file is "contigs_report_ecoli_assembly_1.unaligned.info".
@@ -1550,7 +1557,7 @@ Q14. I have very large assemblies and reference genome but my computational reso
     Current QUAST version is not optimised for large genomes yet. However, we have some useful suggestions.
     You may be interested in adding the following options to your command line to reduce RAM consumption,
     disk space usage, and running time. Note that each of them have some negative effect,
-    so you should chose what is more important for you and may be try them one by one until you find
+    so you should choose what is more important for you and may be try them one by one until you find
     the optimal set for your particular case.
 
     <ul>

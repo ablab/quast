@@ -120,7 +120,7 @@ def correct_assemblies(contigs_fpaths, output_dirpath, labels):
     return assemblies, corrected_labels
 
 
-def correct_meta_references(ref_fpaths, corrected_dirpath):
+def correct_meta_references(ref_fpaths, corrected_dirpath, downloaded_refs=False):
     corrected_ref_fpaths = []
 
     combined_ref_fpath = os.path.join(corrected_dirpath, qconfig.combined_ref_name)
@@ -143,7 +143,6 @@ def correct_meta_references(ref_fpaths, corrected_dirpath):
                 return None, None
 
         fastaparser.write_fasta(corr_seq_fpath, [(corr_seq_name, seq)], 'a')
-        fastaparser.write_fasta(combined_ref_fpath, [(corr_seq_name, seq)], 'a')
 
         contigs_analyzer.ref_labels_by_chromosomes[corr_seq_name] = qutils.name_from_fpath(corr_seq_fpath)
         chromosomes_by_refs[ref_name].append((corr_seq_name, len(seq)))
@@ -157,6 +156,7 @@ def correct_meta_references(ref_fpaths, corrected_dirpath):
         ref_names.append(ref_name)
     dupl_ref_names = [ref_name for ref_name in ref_names if ref_names.count(ref_name) > 1]
 
+    excluded_ref_fpaths = []
     for ref_fpath in ref_fpaths:
         total_references = 0
         ref_fname = os.path.basename(ref_fpath)
@@ -178,8 +178,27 @@ def correct_meta_references(ref_fpaths, corrected_dirpath):
                 break
         if corr_seq_fpath:
             logger.main_info('  ' + ref_fpath + ' ==> ' + qutils.name_from_fpath(corr_seq_fpath) + '')
+            fastaparser.write_fasta(combined_ref_fpath, fastaparser.read_fasta(corr_seq_fpath), 'a')
+        elif downloaded_refs:
+            logger.warning('Skipping ' + ref_fpath + ' because it'
+                           ' is empty or contains incorrect sequences (empty or with non-ACGTN characters)!')
+            # cleaning
+            for corr_seq_name, _ in chromosomes_by_refs[ref_name]:
+                del contigs_analyzer.ref_labels_by_chromosomes[corr_seq_name]
+            del chromosomes_by_refs[ref_name]
+            corrected_ref_fpaths.pop()
+            excluded_ref_fpaths.append(ref_fpath)
+        else:
+            logger.error('Reference file ' + ref_fpath +
+                         ' is empty or contains incorrect sequences (empty or with non-ACGTN characters)!',
+                         exit_with_code=1)
+    for excluded in excluded_ref_fpaths:
+        ref_fpaths.remove(excluded)
 
-    logger.main_info('  All references combined in ' + qconfig.combined_ref_name)
+    if len(chromosomes_by_refs) > 0:
+        logger.main_info('  All references were combined in ' + qconfig.combined_ref_name)
+    else:
+        logger.warning('All references were skipped!')
 
     return corrected_ref_fpaths, combined_ref_fpath, chromosomes_by_refs, ref_fpaths
 

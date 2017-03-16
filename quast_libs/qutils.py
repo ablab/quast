@@ -112,10 +112,7 @@ def correct_fasta(original_fpath, corrected_fpath, min_contig,
             modified_fasta_entries.append((uniq_name, corr_seq))
 
     if not modified_fasta_entries:
-        if is_reference:
-            logger.error('Reference file is empty (' + original_fpath + ')', exit_with_code=1)
-        else:
-            logger.warning('Skipping ' + original_fpath + ' because file is empty.', indent='    ')
+        logger.warning('Skipping ' + original_fpath + ' because file is empty.', indent='    ')
         return False
 
     fastaparser.write_fasta(corrected_fpath, modified_fasta_entries)
@@ -366,7 +363,9 @@ def correct_reference(ref_fpath, corrected_dirpath):
         os.path.join(corrected_dirpath, name + fasta_ext))
     if not qconfig.no_check_meta and not qconfig.is_combined_ref:
         if not correct_fasta(ref_fpath, corr_fpath, qconfig.min_contig, is_reference=True):
-            return ''
+            logger.error('Reference file ' + ref_fpath +
+                         ' is empty or contains incorrect sequences (empty or with non-ACGTN characters)!',
+                         exit_with_code=1)
     else:
         corr_fpath = ref_fpath
 
@@ -779,7 +778,7 @@ def safe_rm(fpath):
 def safe_create(fpath, logger, is_required=False):
     try:
         open(fpath, 'w').close()
-    except:
+    except IOError:
         msg = fpath + ' cannot be created. Did you forget sudo?'
         if is_required:
             logger.error(msg)

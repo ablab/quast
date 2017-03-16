@@ -172,8 +172,10 @@ def add_lengths_to_report(lengths, reporting, contigs_fpath):
 
         ## filling columns "Number of contigs >=110 bp", ">=200 bp", ">=500 bp"
         is_broken = False
-        if qconfig.scaffolds and contigs_fpath in qconfig.dict_of_broken_scaffolds:
-            is_broken = True
+        if qconfig.scaffolds:
+            if contigs_fpath in qconfig.dict_of_broken_scaffolds or \
+                            plotter_data.get_color_and_ls(contigs_fpath)[1] == plotter_data.secondary_line_style:
+                is_broken = True
         min_threshold = 0 if not is_broken else qconfig.min_contig
         report.add_field(reporting.Fields.CONTIGS__FOR_THRESHOLDS,
                          [sum(1 for l in lengths if l >= threshold) if threshold >= min_threshold else None
@@ -295,13 +297,14 @@ def broke_scaffolds(file_counter, labels, contigs_fpath, corrected_dirpath, logs
     contigs_counter = 0
 
     scaffold_counter = 0
+    is_broken = False
     for scaffold_counter, (name, seq) in enumerate(fastaparser.read_fasta(contigs_fpath)):
         if contigs_counter % 100 == 0:
             pass
         if contigs_counter > 520:
             pass
         cumul_contig_length = 0
-        total_contigs_for_the_scaf = 1
+        total_contigs_for_the_scaf = 0
         cur_contig_start = 0
         while (cumul_contig_length < len(seq)) and (seq.find('N', cumul_contig_length) != -1):
             start = seq.find("N", cumul_contig_length)
@@ -310,21 +313,25 @@ def broke_scaffolds(file_counter, labels, contigs_fpath, corrected_dirpath, logs
                 end += 1
 
             cumul_contig_length = end + 1
-            if (end - start) >= qconfig.Ns_break_threshold:
-                broken_scaffolds_fasta.append(
-                    (name.split()[0] + "_" +
-                     str(total_contigs_for_the_scaf),
-                     seq[cur_contig_start:start]))
-                total_contigs_for_the_scaf += 1
+            if end - start >= qconfig.Ns_break_threshold:
+                is_broken = True
+                if start - cur_contig_start >= qconfig.min_contig:
+                    broken_scaffolds_fasta.append(
+                        (name.split()[0] + "_" +
+                         str(total_contigs_for_the_scaf + 1),
+                         seq[cur_contig_start:start]))
+                    total_contigs_for_the_scaf += 1
                 cur_contig_start = end
 
-        broken_scaffolds_fasta.append(
-            (name.split()[0] + "_" +
-             str(total_contigs_for_the_scaf),
-             seq[cur_contig_start:]))
+        if len(seq) - cur_contig_start >= qconfig.min_contig:
+            broken_scaffolds_fasta.append(
+                (name.split()[0] + "_" +
+                 str(total_contigs_for_the_scaf + 1),
+                 seq[cur_contig_start:]))
+            total_contigs_for_the_scaf += 1
 
         contigs_counter += total_contigs_for_the_scaf
-    if scaffold_counter + 1 != contigs_counter:
+    if is_broken:
         fastaparser.write_fasta(broken_scaffolds_fpath, broken_scaffolds_fasta)
         logs.append("  " + index_to_str(file_counter, force=(len(labels) > 1)) +
                     "    %d scaffolds (%s) were broken into %d contigs (%s)" %
@@ -335,7 +342,7 @@ def broke_scaffolds(file_counter, labels, contigs_fpath, corrected_dirpath, logs
         return broken_scaffolds_fpath, logs
 
     logs.append("  " + index_to_str(file_counter, force=(len(labels) > 1)) +
-            "    WARNING: nothing was broken, skipping '%s broken' from further analysis" % label)
+                "    WARNING: nothing was broken, skipping '%s broken' from further analysis" % label)
     return None, logs
 
 

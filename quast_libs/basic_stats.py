@@ -165,7 +165,7 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, results_dir):
     lists_of_lengths = []
     numbers_of_Ns = []
     coverage_dict = dict()
-    cov_pattern = re.compile(r'_cov_([\d\.]+)')
+    cov_pattern = re.compile(r'_cov_(\d+\.?\d*)')
     for id, contigs_fpath in enumerate(contigs_fpaths):
         coverage_dict[contigs_fpath] = []
         assembly_label = qutils.label_from_fpath(contigs_fpath)
@@ -184,7 +184,7 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, results_dir):
             if cov_pattern.findall(name):
                 cov = int(float(cov_pattern.findall(name)[0]))
                 if len(coverage_dict[contigs_fpath]) <= cov:
-                     coverage_dict[contigs_fpath] += [0] * (cov - len(coverage_dict[contigs_fpath]) + 1)
+                    coverage_dict[contigs_fpath] += [0] * (cov - len(coverage_dict[contigs_fpath]) + 1)
                 coverage_dict[contigs_fpath][cov] += len(seq)
 
         lists_of_lengths.append(list_of_length)

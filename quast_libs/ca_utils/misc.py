@@ -11,18 +11,22 @@
 
 from __future__ import with_statement
 import gzip
-import platform
 import os
 import shutil
 from itertools import repeat
 from os.path import isfile, isdir, join, dirname, basename
+
+try:
+   from collections import OrderedDict
+except ImportError:
+   from quast_libs.site_packages.ordered_dict import OrderedDict
 
 from quast_libs import qconfig, qutils
 from quast_libs.qutils import compile_tool, val_to_str, check_prev_compilation_failed, write_failed_compilation_flag
 
 contig_aligner = None
 contig_aligner_dirpath = join(qconfig.LIBS_LOCATION, 'MUMmer')
-ref_labels_by_chromosomes = {}
+ref_labels_by_chromosomes = OrderedDict()
 intergenomic_misassemblies_by_asm = {}
 contigs_aligned_lengths = {}
 e_mem_failed_compilation_flag = join(contig_aligner_dirpath, 'make.emem.failed')

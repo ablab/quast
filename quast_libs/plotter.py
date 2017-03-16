@@ -650,24 +650,37 @@ def draw_meta_summary_plot(html_fpath, output_dirpath, labels, ref_names, result
             mean_values.append(sum(list(filter(None, points_y))) * 1.0 / len(points_y))
             selected_refs.append(ref_names[i])
 
-    sorted_values = sorted(zip(mean_values, selected_refs, arr_y_by_refs), reverse=reverse, key=lambda x: x[0])
-    mean_values, selected_refs, arr_y_by_refs = [[x[i] for x in sorted_values] for i in range(3)]
-
     json_points_x = []
     json_points_y = []
+
+    if not qconfig.use_input_ref_order:
+        sorted_values = sorted(zip(mean_values, selected_refs, arr_y_by_refs), reverse=reverse, key=lambda x: x[0])
+        mean_values, selected_refs, arr_y_by_refs = [[x[i] for x in sorted_values] for i in range(3)]
+
     for j in range(contigs_num):
         points_x = [arr_x[j][i] for i in range(len(arr_y_by_refs))]
         points_y = [arr_y_by_refs[i][j] for i in range(len(arr_y_by_refs))]
         max_y = max(max_y, max(points_y))
         color, ls = get_color_and_ls(None, labels[j])
         plots.append(Plot(points_x, points_y, color=color, ls='dotted', marker='o', markersize=7))
-        json_points_x.append(points_x)
-        json_points_y.append(points_y)
+        if not qconfig.use_input_ref_order:
+            json_points_x.append(points_x)
+            json_points_y.append(points_y)
+
+    refs_for_html = [r for r in selected_refs]  # for summary html, we need to sort values by average value anyway
+    if qconfig.use_input_ref_order:
+        sorted_values = sorted(zip(mean_values, selected_refs, arr_y_by_refs), reverse=reverse, key=lambda x: x[0])
+        mean_values, refs_for_html, arr_y_by_refs = [[x[i] for x in sorted_values] for i in range(3)]
+        for j in range(contigs_num):
+            points_x = [arr_x[j][i] for i in range(len(arr_y_by_refs))]
+            points_y = [arr_y_by_refs[i][j] for i in range(len(arr_y_by_refs))]
+            json_points_x.append(points_x)
+            json_points_y.append(points_y)
 
     if qconfig.html_report and html_fpath:
         from quast_libs.html_saver import html_saver
         html_saver.save_meta_summary(html_fpath, output_dirpath, json_points_x, json_points_y,
-                                     title.replace(' ', '_'), labels, selected_refs)
+                                     title.replace(' ', '_'), labels, refs_for_html)
     if can_draw_plots:
         legend_list = labels
         create_plot(plot_fpath, title, plots, legend_list, y_label=yaxis_title, vertical_legend=True,

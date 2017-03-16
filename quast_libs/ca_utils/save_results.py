@@ -229,7 +229,12 @@ def save_result_for_unaligned(result, report):
 def save_combined_ref_stats(results, contigs_fpaths, ref_labels_by_chromosomes, output_dir, logger):
     istranslocations_by_asm = [result['istranslocations_by_refs'] if result else None for result in results]
     misassemblies_by_asm = [result['misassemblies_by_ref'] if result else None for result in results]
-    all_refs = sorted(list(set([ref for ref in ref_labels_by_chromosomes.values()])))
+    all_refs = []
+    for ref in ref_labels_by_chromosomes.values():
+        if ref not in all_refs:
+            all_refs.append(ref)
+    if not qconfig.use_input_ref_order:
+        all_refs.sort()
     misassemblies_by_refs_rows = []
     row = {'metricName': 'References', 'values': all_refs}
     misassemblies_by_refs_rows.append(row)

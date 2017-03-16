@@ -394,6 +394,10 @@ def parse_options(logger, quast_args, is_metaquast=False):
              callback_args=(logger,),
              callback_kwargs={'available_values': qconfig.supported_plot_extensions})
          ),
+        (['--use-input-ref-order'], dict(
+             dest='use_input_ref_order',
+             action='store_true')
+         ),
         (['--svg'], dict(
              dest='draw_svg',
              action='store_true')

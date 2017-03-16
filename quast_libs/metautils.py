@@ -181,7 +181,7 @@ def correct_meta_references(ref_fpaths, corrected_dirpath, downloaded_refs=False
             fastaparser.write_fasta(combined_ref_fpath, fastaparser.read_fasta(corr_seq_fpath), 'a')
         elif downloaded_refs:
             logger.warning('Skipping ' + ref_fpath + ' because it'
-                           ' is empty or contains incorrect sequences (empty or with non-ACGTN characters)!')
+                           ' is empty or contains incorrect sequences (header-only or with non-ACGTN characters)!')
             # cleaning
             for corr_seq_name, _ in chromosomes_by_refs[ref_name]:
                 del contigs_analyzer.ref_labels_by_chromosomes[corr_seq_name]
@@ -190,7 +190,7 @@ def correct_meta_references(ref_fpaths, corrected_dirpath, downloaded_refs=False
             excluded_ref_fpaths.append(ref_fpath)
         else:
             logger.error('Reference file ' + ref_fpath +
-                         ' is empty or contains incorrect sequences (empty or with non-ACGTN characters)!',
+                         ' is empty or contains incorrect sequences (header-only or with non-ACGTN characters)!',
                          exit_with_code=1)
     for excluded in excluded_ref_fpaths:
         ref_fpaths.remove(excluded)

@@ -364,7 +364,7 @@ def correct_reference(ref_fpath, corrected_dirpath):
     if not qconfig.no_check_meta and not qconfig.is_combined_ref:
         if not correct_fasta(ref_fpath, corr_fpath, qconfig.min_contig, is_reference=True):
             logger.error('Reference file ' + ref_fpath +
-                         ' is empty or contains incorrect sequences (empty or with non-ACGTN characters)!',
+                         ' is empty or contains incorrect sequences (header-only or with non-ACGTN characters)!',
                          exit_with_code=1)
     else:
         corr_fpath = ref_fpath

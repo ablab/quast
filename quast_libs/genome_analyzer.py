@@ -223,7 +223,8 @@ def process_single_file(contigs_fpath, index, nucmer_path_dirpath, genome_stats_
         for i, region in enumerate(container.region_list):
             found_list[i] = 0
             gene_blocks = []
-            region.id = region.id or '# ' + str(region.number + 1)
+            if region.id is None:
+                region.id = '# ' + str(region.number + 1)
             for contig_id, name in enumerate(sorted_contigs_names):
                 cur_feature_is_found = False
                 for cur_block in aligned_blocks_by_contig_name[name]:

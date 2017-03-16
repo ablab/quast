@@ -112,7 +112,7 @@ def compile_bedtools(logger, only_clean=False):
 
 def download_manta(logger, bed_fpath=None, only_clean=False):
     global manta_dirpath
-    manta_dirpath = get_dir_for_download('manta' + manta_version, 'Manta', [config_manta_relpath], logger)
+    manta_dirpath = get_dir_for_download('manta' + manta_version, 'Manta', [config_manta_relpath], logger, only_clean=only_clean)
     if not manta_dirpath:
         return False
 
@@ -120,7 +120,7 @@ def download_manta(logger, bed_fpath=None, only_clean=False):
     config_manta_fpath = get_manta_fpath()
     if only_clean:
         if os.path.isdir(manta_build_dirpath):
-            shutil.rmtree(manta_build_dirpath)
+            shutil.rmtree(manta_build_dirpath, ignore_errors=True)
         return True
 
     if not qconfig.no_sv and bed_fpath is None and not isfile(config_manta_fpath):

@@ -56,9 +56,10 @@ connection_errors = 0
 
 
 def get_blast_fpath(fname):
-    blast_path = os.path.join(blast_dirpath, fname)
-    if os.path.exists(blast_path):
-        return blast_path
+    if blast_dirpath:
+        blast_path = os.path.join(blast_dirpath, fname)
+        if os.path.exists(blast_path):
+            return blast_path
 
     blast_path = qutils.get_path_to_program(fname)
     return blast_path
@@ -175,29 +176,27 @@ def show_progress(a, b, c):
 
 def download_all_blast_binaries(logger=logger, only_clean=False):
     global blast_dirpath
-    blast_dirpath = get_dir_for_download('blast', 'BLAST', blast_filenames, logger)
+
+    required_files = [cmd for cmd in blast_filenames if not get_blast_fpath(cmd)]
+    if not required_files and not only_clean:
+        return True
+
+    blast_dirpath = get_dir_for_download('blast', 'BLAST', blast_filenames, logger, only_clean=only_clean)
     if not blast_dirpath:
         return False
 
     if only_clean:
         if os.path.isdir(blast_dirpath):
-            shutil.rmtree(blast_dirpath)
+            shutil.rmtree(blast_dirpath, ignore_errors=True)
         return True
 
-    for i, cmd in enumerate(blast_filenames):
+    for i, cmd in enumerate(required_files):
+        return_code = download_blast_binary(cmd, logger=logger)
+        logger.info()
+        if return_code != 0:
+            return False
         blast_file = get_blast_fpath(cmd)
-        if only_clean:
-            if blast_file and isfile(blast_file):
-                os.remove(blast_file)
-            continue
-
-        if not blast_file:
-            return_code = download_blast_binary(cmd, logger=logger)
-            logger.info()
-            if return_code != 0:
-                return False
-            blast_file = get_blast_fpath(cmd)
-            os.chmod(blast_file, os.stat(blast_file).st_mode | stat.S_IEXEC)
+        os.chmod(blast_file, os.stat(blast_file).st_mode | stat.S_IEXEC)
     return True
 
 
@@ -230,7 +229,7 @@ def download_blast_binary(blast_filename, logger=logger):
 
 def download_blastdb(logger=logger, only_clean=False):
     global blastdb_dirpath
-    blastdb_dirpath = get_dir_for_download('silva', 'Silva', [silva_downloaded_fname + '.nsq'], logger)
+    blastdb_dirpath = get_dir_for_download('silva', 'Silva', [silva_downloaded_fname + '.nsq'], logger, only_clean=only_clean)
     if not blastdb_dirpath:
         return False
 

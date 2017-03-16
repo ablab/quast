@@ -139,12 +139,11 @@ def parse_features_data(features, cumulative_ref_lengths, ref_names):
                     continue
                 ref_id = ref_names.index(chr)
                 cur_shift = cumulative_ref_lengths[ref_id]
-                name = region.name if region.name else ''
                 corr_start = region.start + cur_shift
                 corr_end = region.end + cur_shift
-                features_data += '{name: "' + name + '", start: ' + str(region.start) + ', end: ' + str(region.end) + \
-                                 ',corr_start: ' + str(corr_start) + ',corr_end: ' + str(corr_end) + ', id_: "' + region.id + \
-                                 '",kind: "' + feature_container.kind + '", chr:' + str(ref_id) + '},'
+                features_data += '{name: "' + str(region.name) + '", start: ' + str(region.start) + ', end: ' + str(region.end) + \
+                                 ',corr_start: ' + str(corr_start) + ',corr_end: ' + str(corr_end) + ', id_: "' + str(region.id) + \
+                                 '",kind: "' + str(feature_container.kind) + '", chr:' + str(ref_id) + '},'
             containers_kind.append(feature_container.kind)
             features_data += '],'
         features_data = features_data[:-1] + '];\n'

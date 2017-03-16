@@ -223,6 +223,7 @@ def process_single_file(contigs_fpath, index, nucmer_path_dirpath, genome_stats_
         for i, region in enumerate(container.region_list):
             found_list[i] = 0
             gene_blocks = []
+            region.id = region.id or '# ' + str(region.number + 1)
             for contig_id, name in enumerate(sorted_contigs_names):
                 cur_feature_is_found = False
                 for cur_block in aligned_blocks_by_contig_name[name]:
@@ -252,11 +253,8 @@ def process_single_file(contigs_fpath, index, nucmer_path_dirpath, genome_stats_
                                 total_partial -= 1
                             found_list[i] = 1
                             total_full += 1
-                            region_id = str(region.id)
-                            if region_id == 'None':
-                                region_id = '# ' + str(region.number + 1)
                             contig_info = block.format_gene_info(region)
-                            found_file.write('%s\t\t%d\t%d\tcomplete\t%s\n' % (region_id, region.start, region.end, contig_info))
+                            found_file.write('%s\t\t%d\t%d\tcomplete\t%s\n' % (region.id, region.start, region.end, contig_info))
                             feature_in_contigs[contig_id] += 1  # inc number of found genes/operons in id-th contig
 
                             cur_feature_is_found = True
@@ -272,11 +270,8 @@ def process_single_file(contigs_fpath, index, nucmer_path_dirpath, genome_stats_
                     break
             # adding info about partially found genes/operons
             if found_list[i] == 2:  # partial gene/operon
-                region_id = str(region.id)
-                if region_id == 'None':
-                    region_id = '# ' + str(region.number + 1)
                 contig_info = ','.join([block.format_gene_info(region) for block in sorted(gene_blocks, key=lambda block: block.start)])
-                found_file.write('%s\t\t%d\t%d\tpartial\t%s\n' % (region_id, region.start, region.end, contig_info))
+                found_file.write('%s\t\t%d\t%d\tpartial\t%s\n' % (region.id, region.start, region.end, contig_info))
 
         results[field + "_full"] = total_full
         results[field + "_partial"] = total_partial

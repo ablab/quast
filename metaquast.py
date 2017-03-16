@@ -11,6 +11,11 @@ import sys
 import os
 import shutil
 
+try:
+   from collections import OrderedDict
+except ImportError:
+   from quast_libs.site_packages.ordered_dict import OrderedDict
+
 from quast_libs import qconfig
 qconfig.check_python_version()
 
@@ -288,7 +293,7 @@ def main(args):
             logger.main_info()
             logger.main_info('Filtered reference(s):')
             os.remove(combined_ref_fpath)
-            contigs_analyzer.ref_labels_by_chromosomes = {}
+            contigs_analyzer.ref_labels_by_chromosomes = OrderedDict()
             corrected_ref_fpaths, combined_ref_fpath, chromosomes_by_refs, ref_names = \
                 correct_meta_references(corr_ref_fpaths, corrected_dirpath)
             assemblies, labels = correct_assemblies(contigs_fpaths, output_dirpath, labels)

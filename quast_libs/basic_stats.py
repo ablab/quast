@@ -274,7 +274,7 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, results_dir):
             report.add_field(reporting.Fields.REFLEN, int(reference_length))
             report.add_field(reporting.Fields.REF_FRAGMENTS, reference_fragments)
             if not qconfig.is_combined_ref:
-                report.add_field(reporting.Fields.REFGC, '%.2f' % reference_GC)
+                report.add_field(reporting.Fields.REFGC, ('%.2f' % reference_GC if reference_GC is not None else None))
         elif reference_length:
             report.add_field(reporting.Fields.ESTREFLEN, int(reference_length))
 

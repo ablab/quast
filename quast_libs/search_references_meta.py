@@ -224,7 +224,7 @@ def download_blast_binary(blast_filename, logger=logger):
                     return 1
                 shutil.move(blast_libs_fpath + '.download', blast_libs_fpath)
                 logger.info('%s successfully downloaded!' % blast_filename)
-        return 0
+    return 0
 
 
 def download_blastdb(logger=logger, only_clean=False):

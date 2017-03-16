@@ -111,6 +111,13 @@ def correct_fasta(original_fpath, corrected_fpath, min_contig,
                 corr_seq = seq
             modified_fasta_entries.append((uniq_name, corr_seq))
 
+    if not modified_fasta_entries:
+        if is_reference:
+            logger.error('Reference file is empty (' + original_fpath + ')', exit_with_code=1)
+        else:
+            logger.warning('Skipping ' + original_fpath + ' because file is empty.', indent='    ')
+        return False
+
     fastaparser.write_fasta(corrected_fpath, modified_fasta_entries)
 
     if is_reference:

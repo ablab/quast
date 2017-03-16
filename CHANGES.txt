@@ -9,7 +9,11 @@
        - parallel reference processing;
        - expandable "i/s translocations" and "possible mis. contigs" metrics on the
          main HTML report;
-       - GC distribution plots for the combined reference.
+       - GC distribution plots for the combined reference;
+       - new option ("--use-input-ref-order") to use originally specified order of
+         the references in the summary plots (PDF/PNG/etc only);
+       - stop processing with error message if any of the provided references is
+         empty or has incorrect sequences (non-ACGTN characters or header-only).
 
       3. New plots are added (in static PDF/PNG/etc and interactive HTML formats):
        - Feature-Response Curve (FRCurve) for # misassemblies (both formats)
@@ -20,20 +24,25 @@
       4. Contig coordinates of the provided genes/operons annotations are saved to
          <output_dir>/genome_stats/<assembly_name>_genes.txt and _operons.txt.
 
-      5. In order to avoid confusion, "--meta" option was renamed to "--mgm" (MetaGeneMark).
+      5. Broken scaffold assemblies (see "--scaffolds" option) are now filtered based on
+         "--min-contig" value (default is 500 bp) similarly to regular assemblies processing.
+         "Total length >= N bp" and "# contigs >= N bp" metrics are no more reported for
+         these assemblies if N is less than the min contig threshold.
 
-      6. Internal overlaps between adjacent aligned blocks of a misassembled contig are
+      6. In order to avoid confusion, "--meta" option was renamed to "--mgm" (MetaGeneMark).
+
+      7. Internal overlaps between adjacent aligned blocks of a misassembled contig are
          always excluded. Previously the processing depended on "--ambiguity-usage" value.
 
-      7. Small change in the installation strategy: if quast_libs directory has no write
+      8. Small change in the installation strategy: if quast_libs directory has no write
          permission (e.g. after sudo setup.py install), external packages (e.g. SILVA 16S
          database; Manta SV caller) are downloaded to ~/.quast/ on the first use.
 
-      8. Gnuplot version 5.0 is added to the installation package.
+      9. Gnuplot version 5.0 is added to the installation package.
 
-      9. GeneMark license files are updated.
+      10. GeneMark license files are updated.
 
-      10. Fixed several minor bugs.
+      11. Fixed several minor bugs.
 
 
 4.4   1. Icarus updates:

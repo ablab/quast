@@ -628,6 +628,14 @@ A shortcut for using all of speedup options except --no-check.
 MetaQUAST only:
 <div class='options'>
 <div class='option'>
+<code><b>--use-input-ref-order</b></code>
+</div>
+    Use provided order of references in MetaQUAST summary plots (X-axis). By default,
+    the ordering is based on the best average value of the metric among all assemblies.
+    Note: this option affects only static PDF/PNG/etc plots under <code>&lt;metaquast_output_dir&gt;/summary/.
+    Interactive HTML report has radio button to control the order of references.
+
+<div class='option'>
 <a name='references_list'></a><code><b>--references-list</b> &lt;path&gt;</code>
 </div>
 Text file with list of reference genomes (each one on a separate line).

@@ -119,7 +119,7 @@ if cmd_in(['tag']):
 
 
 if cmd_in(['publish']):
-    cmdl = 'python setup.py sdist && python setup.py sdist upload'
+    cmdl = 'git clean -dfx && python setup.py sdist upload'
     os.system(cmdl)
     sys.exit()
 
@@ -203,7 +203,8 @@ setup(
 It works both with and without reference genomes.
 The tool accepts multiple assemblies, thus is suitable for comparison.''',
     keywords=['bioinformatics', 'genome assembly', 'metagenome assembly', 'visualization'],
-    url='quast.sf.net',
+    url='http://quast.sf.net',
+    download_url='https://sourceforge.net/projects/quast/files',
     platforms=['Linux', 'OS X'],
     license='GPLv2',
 

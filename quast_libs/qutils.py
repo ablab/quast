@@ -439,7 +439,7 @@ def get_labels_from_par_dirs(contigs_fpaths):
     return labels
 
 
-def process_labels(contigs_fpaths, labels, all_labels_from_dirs):
+def process_labels(contigs_fpaths, labels=None, all_labels_from_dirs=False):
     # 1. labels if the provided by -l options
     if labels:
         # process duplicates, empties

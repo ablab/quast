@@ -208,15 +208,14 @@ def run_processing_reads(main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpat
         if is_non_empty_file(physical_cov_fpath):
             logger.info('  Using existing physical coverage file: ' + physical_cov_fpath)
     else:
-        logger.info('  Will not calculate coverage (--no-icarus or --space-efficient is specified)')
+        logger.info('  Will not calculate coverage (--fast or --no-html, or --no-icarus, or --space-efficient is specified)')
         cov_fpath = None
         physical_cov_fpath = None
     if (is_non_empty_file(bed_fpath) or qconfig.no_sv) and \
-            (qconfig.space_efficient or (is_non_empty_file(cov_fpath) and is_non_empty_file(physical_cov_fpath))):
+            (not qconfig.create_icarus_html or (is_non_empty_file(cov_fpath) and is_non_empty_file(physical_cov_fpath))):
         return bed_fpath, cov_fpath, physical_cov_fpath
 
     logger.info('  ' + 'Pre-processing reads...')
-    logger.info('  ' + 'Logging to %s...' % err_path)
     correct_chr_names = None
     if is_non_empty_file(sam_fpath):
         logger.info('  Using existing SAM-file: ' + sam_fpath)

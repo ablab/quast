@@ -225,16 +225,6 @@ The tool accepts multiple assemblies, thus is suitable for comparison.''',
     include_package_data=True,
     zip_safe=False,
     scripts=['quast.py', 'metaquast.py', 'icarus.py'],
-    data_files=[
-        ('', [
-            'README.md',
-            'CHANGES.txt',
-            'VERSION.txt',
-            'LICENSE.txt',
-            'manual.html',
-        ]),
-        ('test_data', find_package_files('test_data', package='')),
-    ],
     install_requires=[
         'joblib',
         'simplejson',

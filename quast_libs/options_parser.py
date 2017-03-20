@@ -9,14 +9,17 @@ from __future__ import with_statement
 import os
 from copy import copy
 from optparse import OptionParser, Option
-from os.path import join, abspath, isfile
+from os.path import join, abspath, isfile, isdir
 
 import sys
 
 from quast_libs import qconfig, qutils
 from quast_libs.qutils import assert_file_exists, set_up_output_dir, check_dirpath
 
-test_data_dir = join(qconfig.QUAST_HOME, 'test_data')
+test_data_dir_basename = 'test_data'
+test_data_dir = join(qconfig.QUAST_HOME, test_data_dir_basename)
+if not isdir(test_data_dir) and isdir(test_data_dir_basename):  # special case: test_data in CWD
+    test_data_dir = test_data_dir_basename
 
 test_reference           = join(test_data_dir, 'reference.fasta.gz')
 test_forward_reads       = join(test_data_dir, 'reads1.fastq.gz')
@@ -549,11 +552,11 @@ def parse_options(logger, quast_args, is_metaquast=False):
         
         if any(not isfile(fpath) for fpath in contigs_fpaths):
             logger.info(
-                'You are probably running QUAST installed via pip, which does not include test data.\n'
+                '\nYou are probably running QUAST installed via pip, which does not include test data.\n'
                 'This is fine, just start using QUAST on your own data!\n'
-                'If you still want to run tests, please download the data from \n'
-                'https://github.com/ablab/quast/tree/master/test_data, or install QUAST from source:\n'
-                'git clone https://github.com/ablab/quast && cd quast && ./setup.py install')
+                'If you still want to run tests, please download test_data directory from \n'
+                'https://github.com/ablab/quast/ to CWD, or install QUAST from source:\n'
+                'git clone https://github.com/ablab/quast && cd quast && ./setup.py install\n')
             sys.exit(2)
 
     if not contigs_fpaths:

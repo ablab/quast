@@ -9,7 +9,7 @@ from __future__ import with_statement
 import os
 from copy import copy
 from optparse import OptionParser, Option
-from os.path import join, abspath
+from os.path import join, abspath, isfile
 
 import sys
 
@@ -546,6 +546,14 @@ def parse_options(logger, quast_args, is_metaquast=False):
             qconfig.reverse_reads = test_reverse_reads
         contigs_fpaths += meta_test_contigs_fpaths if is_metaquast else test_contigs_fpaths
         qconfig.test = True
+        
+        if any(not isfile(fpath) for fpath in contigs_fpaths):
+            logger.info(
+                'You are probably running quast installed via pip, which which does not provide test data.\n'
+                'This is fine, just start using QUAST! If you still want to run tests, please download\n'
+                'the data from https://github.com/ablab/quast/tree/master/test_data, or install quast \n'
+                'from source (git clone https://github.com/ablab/quast && cd quast && ./setup.py install)')
+            sys.exit(2)
 
     if not contigs_fpaths:
         logger.error("You should specify at least one file with contigs!\n", to_stderr=True)

@@ -204,6 +204,7 @@ def main(args):
 
     # Running combined reference
     combined_output_dirpath = os.path.join(output_dirpath, qconfig.combined_output_name)
+    qconfig.reference = combined_ref_fpath
 
     reads_fpaths = []
     if qconfig.forward_reads:
@@ -212,27 +213,24 @@ def main(args):
         reads_fpaths.append(qconfig.reverse_reads)
     cov_fpath = qconfig.cov_fpath
     physical_cov_fpath = qconfig.phys_cov_fpath
-    if (reads_fpaths or qconfig.sam or qconfig.bam) and ref_fpaths:
-        bed_fpath, cov_fpath, physical_cov_fpath = reads_analyzer.do(combined_ref_fpath, contigs_fpaths, reads_fpaths, corrected_ref_fpaths,
-                                                   os.path.join(combined_output_dirpath, qconfig.variation_dirname),
-                                                   external_logger=logger, sam_fpath=qconfig.sam, bam_fpath=qconfig.bam, bed_fpath=qconfig.bed)
-        qconfig.bed = bed_fpath
+    if reads_fpaths or qconfig.sam or qconfig.bam:
+        corrected_contigs_fpaths = [assembly.fpath for assembly in assemblies]
+        qconfig.bed, qconfig.cov_fpath, qconfig.phys_cov_fpath =\
+            reads_analyzer.do(combined_ref_fpath, corrected_contigs_fpaths, reads_fpaths, corrected_ref_fpaths,
+                              os.path.join(combined_output_dirpath, qconfig.reads_stats_dirname), external_logger=logger)
 
-    if qconfig.bed:
-        quast_py_args += ['--sv-bed']
-        quast_py_args += [qconfig.bed]
-    if cov_fpath:
-        quast_py_args += ['--cov']
-        quast_py_args += [cov_fpath]
-    if physical_cov_fpath:
-        quast_py_args += ['--phys-cov']
-        quast_py_args += [physical_cov_fpath]
     if qconfig.sam:
         quast_py_args += ['--sam']
         quast_py_args += [qconfig.sam]
-    if qconfig.bam:
-        quast_py_args += ['--bam']
-        quast_py_args += [qconfig.bam]
+    if qconfig.bed:
+        quast_py_args += ['--sv-bed']
+        quast_py_args += [qconfig.bed]
+    if qconfig.cov_fpath:
+        quast_py_args += ['--cov']
+        quast_py_args += [qconfig.cov_fpath]
+    if qconfig.phys_cov_fpath:
+        quast_py_args += ['--phys-cov']
+        quast_py_args += [qconfig.phys_cov_fpath]
 
     quast_py_args += ['--combined-ref']
     if qconfig.draw_plots or qconfig.html_report:
@@ -330,6 +328,8 @@ def main(args):
     quast_py_args += ['--contig-thresholds']
     quast_py_args += [qconfig.contig_thresholds]
     quast_py_args.remove('--combined-ref')
+    if qconfig.sam:
+        quast_py_args = remove_from_quast_py_args(quast_py_args, '--sam', qconfig.sam)
 
     logger.main_info()
     logger.main_info('Partitioning contigs into bins aligned to each reference..')

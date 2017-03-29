@@ -114,7 +114,8 @@ calculate_read_support = False
 use_input_ref_order = False
 
 # for reads analyzer
-variation_dirname = 'structural_variations'
+reads_stats_dirname = 'reads_stats'
+coverage_thresholds = [1, 5, 10]
 trivial_deletions_fname = 'trivial_deletions.bed'
 manta_sv_fname = 'manta_sv.bed'
 used_colors = None

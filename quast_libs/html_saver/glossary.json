@@ -84,6 +84,17 @@
     "# N's"                         : "<span>is the total number of uncalled bases (N's) in the assembly.</span>",
     "# N's per 100 kbp"             : "<span>is the average number of uncalled bases (N's) per 100000 assembly bases.</span>",
 
+    "# mapped"                      : "<span>is the number of reads that mapped to the assembly.</span>",
+    "Mapped (%)"                    : "<span>is the percent of reads that mapped to the assembly.</span>",
+    "# properly paired"             : "<span>is the number of reads that mapped within expected range and orientation of each other to the assembly.</span>",
+    "Properly paired (%)"           : "<span>is the percent of reads that mapped within expected range and orientation of each other to the assembly.</span>",
+    "# singletons"                  : "<span>is the number of reads which do not overlap any other reads.</span>",
+    "Singletons (%)"                : "<span>is the percent of reads which do not overlap any other reads.</span>",
+    "# misjoint mates"              : "<span>is the number of reads with mate mapped to a different contig.</span>",
+    "Misjoint mates (%)"            : "<span>is the percent of reads with mate mapped to a different contig.</span>",
+    "Avg. coverage depth"           : "<span>is the average depth of coverage.</span>",
+    "Coverage >= 1x (%)"            : "<span>is the total number of bases with at least 1x coverage, divided by the total length of the assembly.</span>",
+
     "# similar correct contigs"     : "<span>is the number of correct contigs similar among > 50% assemblies (see Icarus for visualization).</span>",
     "# similar misassembled blocks" : "<span>is the number of misassembled blocks similar among > 50% assemblies (see Icarus for visualization).</span>"
 }

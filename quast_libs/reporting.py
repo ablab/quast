@@ -48,6 +48,21 @@ class Fields:
     L75 = 'L75'
     GC = 'GC (%)'
 
+    # Read statistics
+    MAPPED_READS = '# mapped'
+    MAPPED_READS_PCNT = 'Mapped (%)'
+    PROPERLY_PAIRED_READS = '# properly paired'
+    PROPERLY_PAIRED_READS_PCNT = 'Properly paired (%)'
+    SINGLETONS = '# singletons'
+    SINGLETONS_PCNT = 'Singletons (%)'
+    MISJOINT_READS = '# misjoint mates'
+    MISJOINT_READS_PCNT = 'Misjoint mates (%)'
+    DEPTH = 'Avg. coverage depth'
+    COVERAGE__FOR_THRESHOLDS = ('Coverage >= %dx (%%)', tuple(qconfig.coverage_thresholds))
+    COVERAGE_1X_THRESHOLD = 'Coverage >= 1x (%)'
+    COVERAGE_5X_THRESHOLD = 'Coverage >= 5x (%)'
+    COVERAGE_10X_THRESHOLD = 'Coverage >= 10x (%)'
+
     # Misassemblies
     MISASSEMBL = '# misassemblies'
     MISCONTIGS = '# misassembled contigs'
@@ -125,6 +140,23 @@ class Fields:
     REFGC = 'Reference GC (%)'
     REF_GENES = 'Reference genes'
     REF_OPERONS = 'Reference operons'
+    # Reads statistics
+    TOTAL_READS = '# total'
+    LEFT_READS = '# left'
+    RIGHT_READS = '# right'
+    REF_MAPPED_READS = '# reference mapped'
+    REF_MAPPED_READS_PCNT = 'Reference mapped (%)'
+    REF_PROPERLY_PAIRED_READS = '# reference properly paired'
+    REF_PROPERLY_PAIRED_READS_PCNT = 'Reference properly paired (%)'
+    REF_SINGLETONS = '# reference singletons'
+    REF_SINGLETONS_PCNT = 'Reference singletons (%)'
+    REF_MISJOINT_READS = '# reference misjoint mates'
+    REF_MISJOINT_READS_PCNT = 'Reference misjoint mates (%)'
+    REF_DEPTH = 'Reference avg. coverage depth'
+    REF_COVERAGE__FOR_THRESHOLDS = ('Reference coverage >= %dx (%%)', tuple(qconfig.coverage_thresholds))
+    REF_COVERAGE_1X_THRESHOLD = 'Reference coverage >= 1x (%)'
+    REF_COVERAGE_5X_THRESHOLD = 'Reference coverage >= 5x (%)'
+    REF_COVERAGE_10X_THRESHOLD = 'Reference coverage >= 10x (%)'
 
     # Icarus statistics
     SIMILAR_CONTIGS = '# similar correct contigs'
@@ -132,11 +164,25 @@ class Fields:
 
     ### content and order of metrics in MAIN REPORT (<quast_output_dir>/report.txt, .tex, .tsv):
     order = [NAME, CONTIGS__FOR_THRESHOLDS, TOTALLENS__FOR_THRESHOLDS, CONTIGS, LARGCONTIG, TOTALLEN, REFLEN, ESTREFLEN, GC, REFGC,
-             N50, NG50, N75, NG75, L50, LG50, L75, LG75, MISASSEMBL, MISCONTIGS, MISCONTIGSBASES,
+             N50, NG50, N75, NG75, L50, LG50, L75, LG75,
+             TOTAL_READS, LEFT_READS, RIGHT_READS,
+             MAPPED_READS_PCNT, REF_MAPPED_READS_PCNT,
+             PROPERLY_PAIRED_READS_PCNT, REF_PROPERLY_PAIRED_READS_PCNT,
+             DEPTH, REF_DEPTH, COVERAGE_1X_THRESHOLD, REF_COVERAGE_1X_THRESHOLD,
+             MISASSEMBL, MISCONTIGS, MISCONTIGSBASES,
              MISLOCAL, MIS_SCAFFOLDS_GAP, STRUCT_VARIATIONS, UNALIGNED_MISASSEMBLED_CTGS,
              UNALIGNED, UNALIGNEDBASES, MAPPEDGENOME, DUPLICATION_RATIO, AVE_READ_SUPPORT,
-             UNCALLED_PERCENT, SUBSERROR, INDELSERROR, GENES, OPERONS, PREDICTED_GENES_UNIQUE, PREDICTED_GENES,
-             LARGALIGN, TOTAL_ALIGNED_LEN, NA50, NGA50, NA75, NGA75, LA50, LGA50, LA75, LGA75, ]
+             UNCALLED_PERCENT, SUBSERROR, INDELSERROR, GENES, OPERONS,
+             PREDICTED_GENES_UNIQUE, PREDICTED_GENES,
+             LARGALIGN, TOTAL_ALIGNED_LEN, NA50, NGA50, NA75, NGA75, LA50, LGA50, LA75, LGA75]
+
+    reads_order = [NAME, TOTAL_READS, LEFT_READS, RIGHT_READS,
+                   MAPPED_READS, MAPPED_READS_PCNT, PROPERLY_PAIRED_READS, PROPERLY_PAIRED_READS_PCNT,
+                   SINGLETONS, SINGLETONS_PCNT, MISJOINT_READS, MISJOINT_READS_PCNT,
+                   DEPTH, COVERAGE__FOR_THRESHOLDS,
+                   REF_MAPPED_READS, REF_MAPPED_READS_PCNT, REF_PROPERLY_PAIRED_READS, REF_PROPERLY_PAIRED_READS_PCNT,
+                   REF_SINGLETONS, REF_SINGLETONS_PCNT, REF_MISJOINT_READS, REF_MISJOINT_READS_PCNT,
+                   REF_DEPTH, REF_COVERAGE__FOR_THRESHOLDS]
 
     # content and order of metrics in DETAILED MISASSEMBLIES REPORT (<quast_output_dir>/contigs_reports/misassemblies_report.txt, .tex, .tsv)
     misassemblies_order = [NAME, MIS_ALL_EXTENSIVE, MIS_RELOCATION, MIS_TRANSLOCATION, MIS_INVERTION,
@@ -188,6 +234,10 @@ class Fields:
         ('Genome statistics', [MAPPEDGENOME, DUPLICATION_RATIO, AVE_READ_SUPPORT, GENES, OPERONS, LARGALIGN, TOTAL_ALIGNED_LEN,
                                NG50, NG75, NA50, NA75, NGA50, NGA75, LG50, LG75, LA50, LA75, LGA50, LGA75,]),
 
+        ('Reads mapping', [MAPPED_READS, MAPPED_READS_PCNT, PROPERLY_PAIRED_READS, PROPERLY_PAIRED_READS_PCNT,
+                           SINGLETONS, SINGLETONS_PCNT, MISJOINT_READS, MISJOINT_READS_PCNT,
+                           DEPTH, COVERAGE__FOR_THRESHOLDS]),
+
         ('Misassemblies', [MIS_ALL_EXTENSIVE,
                            MIS_RELOCATION, MIS_TRANSLOCATION, MIS_INVERTION,
                            MIS_ISTRANSLOCATIONS, MIS_EXTENSIVE_CONTIGS, MIS_EXTENSIVE_BASES,
@@ -207,7 +257,11 @@ class Fields:
 
         ('Similarity statistics', [SIMILAR_CONTIGS, SIMILAR_MIS_BLOCKS]),
         
-        ('Reference statistics', [REFLEN, ESTREFLEN, REF_FRAGMENTS, REFGC, REF_GENES, REF_OPERONS,])
+        ('Reference statistics', [REFLEN, ESTREFLEN, REF_FRAGMENTS, REFGC, REF_GENES, REF_OPERONS,
+                                  TOTAL_READS, LEFT_READS, RIGHT_READS,
+                                  REF_MAPPED_READS, REF_MAPPED_READS_PCNT, REF_PROPERLY_PAIRED_READS, REF_PROPERLY_PAIRED_READS_PCNT,
+                                  REF_SINGLETONS, REF_SINGLETONS_PCNT, REF_MISJOINT_READS, REF_MISJOINT_READS_PCNT,
+                                  REF_DEPTH, REF_COVERAGE__FOR_THRESHOLDS])
     ]
 
     # for "short" version of HTML report
@@ -216,7 +270,9 @@ class Fields:
                     MIS_ALL_EXTENSIVE, MIS_EXTENSIVE_BASES,
                     SUBSERROR, INDELSERROR, UNCALLED_PERCENT,
                     MAPPEDGENOME, DUPLICATION_RATIO, AVE_READ_SUPPORT, GENES, OPERONS, NGA50, LGA50,
-                    PREDICTED_GENES_UNIQUE, PREDICTED_GENES,]
+                    PREDICTED_GENES_UNIQUE, PREDICTED_GENES,
+                    MAPPED_READS_PCNT, PROPERLY_PAIRED_READS_PCNT, SINGLETONS_PCNT, MISJOINT_READS_PCNT,
+                    DEPTH, COVERAGE_1X_THRESHOLD]
 
 ####################################################################################
 ########################  END OF CONFIGURABLE PARAMETERS  ##########################
@@ -232,13 +288,16 @@ class Fields:
             [LARGCONTIG, TOTALLEN, TOTALLENS__FOR_THRESHOLDS, TOTALLENS__FOR_1000_THRESHOLD, TOTALLENS__FOR_10000_THRESHOLD,
              TOTALLENS__FOR_50000_THRESHOLD, LARGALIGN, TOTAL_ALIGNED_LEN,
              N50, NG50, N75, NG75, NA50, NGA50, NA75, NGA75,
-             MAPPEDGENOME, AVE_READ_SUPPORT, GENES, OPERONS, PREDICTED_GENES_UNIQUE, PREDICTED_GENES],
+             MAPPEDGENOME, AVE_READ_SUPPORT, GENES, OPERONS, PREDICTED_GENES_UNIQUE, PREDICTED_GENES,
+             MAPPED_READS, MAPPED_READS_PCNT, PROPERLY_PAIRED_READS, PROPERLY_PAIRED_READS_PCNT,
+             DEPTH, COVERAGE__FOR_THRESHOLDS],
         Quality.LESS_IS_BETTER:
             [L50, LG50, L75, LG75,
              MISLOCAL, MISASSEMBL, MISCONTIGS, MISCONTIGSBASES, MISINTERNALOVERLAP,
              CONTIGS_WITH_ISTRANSLOCATIONS, POSSIBLE_MISASSEMBLIES,
              UNALIGNED, UNALIGNEDBASES, AMBIGUOUS, AMBIGUOUSEXTRABASES,
              UNCALLED, UNCALLED_PERCENT,
+             SINGLETONS, SINGLETONS_PCNT, MISJOINT_READS, MISJOINT_READS_PCNT,
              LA50, LGA50, LA75, LGA75, DUPLICATION_RATIO, INDELS, INDELSERROR, MISMATCHES, SUBSERROR,
              MIS_SHORT_INDELS, MIS_LONG_INDELS, INDELSBASES],
         Quality.EQUAL:
@@ -667,3 +726,7 @@ def save_misassemblies(output_dirpath):
 
 def save_unaligned(output_dirpath):
     save(output_dirpath, "unaligned_report", "", Fields.unaligned_order)
+
+
+def save_reads(output_dirpath):
+    save(output_dirpath, "reads_report", "", Fields.reads_order)

@@ -160,9 +160,9 @@ function buildTotalReport(assembliesNames, totalReport, order, glossary, qualiti
             var refGenes = referenceValues['Reference genes'];
             var refOperons = referenceValues['Reference operons'];
             var refChr = referenceValues['Reference chromosomes'];
-            var refTotalreads = referenceValues['Reference reads'];
-            var refMappedreads = referenceValues['Reference mapped reads'];
-            var refPairedreads = referenceValues['Reference properly paired reads'];
+            var totalReads = referenceValues['# reads'];
+            var refMappedReads = referenceValues['Reference mapped reads (%)'];
+            var refPairedReads = referenceValues['Reference properly paired reads (%)'];
             var estRefLen = referenceValues['Estimated reference length'];
 
             if (refLen)
@@ -185,12 +185,12 @@ function buildTotalReport(assembliesNames, totalReport, order, glossary, qualiti
                 if (refChr > 1)
                     $('#reference_chr').find('.plural_ending').show();
             }
-            if (refTotalreads)
-                $('#reference_reads').show().find('.val').html(toPrettyString(refTotalreads));
-            if (refMappedreads)
-                $('#reference_mappedreads').show().find('.val').html(toPrettyString(refMappedreads));
-            if (refPairedreads)
-                $('#reference_pairedreads').show().find('.val').html(toPrettyString(refPairedreads));
+            if (totalReads)
+                $('#total_reads').show().find('.val').html(toPrettyString(totalReads));
+            if (refMappedReads)
+                $('#reference_mapped_reads').show().find('.val').html(toPrettyString(refMappedReads));
+            if (refPairedReads)
+                $('#reference_paired_reads').show().find('.val').html(toPrettyString(refPairedReads));
             continue;
         }
 

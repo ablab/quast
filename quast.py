@@ -16,7 +16,7 @@ from quast_libs import qconfig
 qconfig.check_python_version()
 
 from quast_libs import qutils, reads_analyzer, plotter_data
-from quast_libs.qutils import cleanup, check_dirpath
+from quast_libs.qutils import cleanup, check_dirpath, get_reads_fpaths
 from quast_libs.options_parser import parse_options
 
 from quast_libs.log import get_logger
@@ -97,15 +97,11 @@ def main(args):
 
     qconfig.assemblies_num = len(contigs_fpaths)
 
-    reads_fpaths = []
+    reads_fpaths = get_reads_fpaths(logger)
     cov_fpath = qconfig.cov_fpath
     physical_cov_fpath = qconfig.phys_cov_fpath
-    if qconfig.forward_reads:
-        reads_fpaths.append(qconfig.forward_reads)
-    if qconfig.reverse_reads:
-        reads_fpaths.append(qconfig.reverse_reads)
     if reads_fpaths or qconfig.sam or qconfig.bam:
-        bed_fpath, cov_fpath, physical_cov_fpath = reads_analyzer.do(ref_fpath, contigs_fpaths, reads_fpaths, None,
+        bed_fpath, cov_fpath, physical_cov_fpath = reads_analyzer.do(ref_fpath, contigs_fpaths,
                                                                      os.path.join(output_dirpath, qconfig.reads_stats_dirname),
                                                                      external_logger=logger)
         qconfig.bed = bed_fpath

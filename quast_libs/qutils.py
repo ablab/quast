@@ -884,6 +884,22 @@ def get_dir_for_download(dirname, tool, required_files, logger, only_clean=False
     return tool_dirpath
 
 
+def get_reads_fpaths(logger):
+    reads_fpaths = [qconfig.forward_reads, qconfig.reverse_reads, qconfig.interlaced_reads, qconfig.unpaired_reads]
+    qconfig.reads_fpaths = [fpath for fpath in reads_fpaths if fpath]
+    if len(qconfig.reads_fpaths) == 1 and (qconfig.unpaired_reads or qconfig.interlaced_reads):
+        return reads_fpaths
+    if len(qconfig.reads_fpaths) == 2 and qconfig.forward_reads and qconfig.reverse_reads:
+        return reads_fpaths
+    if len(qconfig.reads_fpaths) == 3 and qconfig.forward_reads and qconfig.reverse_reads and qconfig.unpaired_reads:
+        return reads_fpaths
+    logger.error('You can specify only ONE paired-end and/or ONE single-read library.\n'
+                 'For paired-end library use exactly ONE file with forward reads and ONE file with the reverse ones (-1 <file_name> -2 <file_name>).\n'
+                 'To specify the file with interlaced forward and reverse reads you can use --12 option.\n'
+                 'Use -s option to specify unpaired (single-read) library.\n'
+                 'If you have multiple libraries, please concatenate them.', exit_with_code=2)
+
+
 def run_parallel(_fn, fn_args, n_jobs, filter_results=False):
     if is_python2():
         from joblib import Parallel, delayed

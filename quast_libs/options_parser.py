@@ -41,7 +41,7 @@ class QuastOption(Option):
         files = value.split(',')
         for f in files:
             assert_file_exists(f, option.dest)
-        return value
+        return ','.join(abspath(f) for f in files)
     TYPES = Option.TYPES + ('file',)
     TYPE_CHECKER = copy(Option.TYPE_CHECKER)
     TYPE_CHECKER['file'] = check_file
@@ -245,6 +245,14 @@ def parse_options(logger, quast_args, is_metaquast=False):
          ),
         (['-2', '--reads2'], dict(
              dest='reverse_reads',
+             type='file')
+         ),
+        (['--12'], dict(
+             dest='interlaced_reads',
+             type='file')
+         ),
+        (['--single'], dict(
+             dest='unpaired_reads',
              type='file')
          ),
         (['--sam'], dict(

@@ -24,7 +24,7 @@ from quast_libs.metautils import Assembly, correct_meta_references, correct_asse
 from quast_libs.options_parser import parse_options, remove_from_quast_py_args
 
 from quast_libs import contigs_analyzer, reads_analyzer, search_references_meta, plotter_data, qutils
-from quast_libs.qutils import cleanup, check_dirpath, is_python2, run_parallel
+from quast_libs.qutils import cleanup, check_dirpath, is_python2, run_parallel, get_reads_fpaths
 
 from quast_libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_META_NAME)
@@ -206,18 +206,12 @@ def main(args):
     combined_output_dirpath = os.path.join(output_dirpath, qconfig.combined_output_name)
     qconfig.reference = combined_ref_fpath
 
-    reads_fpaths = []
-    if qconfig.forward_reads:
-        reads_fpaths.append(qconfig.forward_reads)
-    if qconfig.reverse_reads:
-        reads_fpaths.append(qconfig.reverse_reads)
-    cov_fpath = qconfig.cov_fpath
-    physical_cov_fpath = qconfig.phys_cov_fpath
+    reads_fpaths = get_reads_fpaths(logger)
     if reads_fpaths or qconfig.sam or qconfig.bam:
         corrected_contigs_fpaths = [assembly.fpath for assembly in assemblies]
         qconfig.bed, qconfig.cov_fpath, qconfig.phys_cov_fpath =\
-            reads_analyzer.do(combined_ref_fpath, corrected_contigs_fpaths, reads_fpaths, corrected_ref_fpaths,
-                              os.path.join(combined_output_dirpath, qconfig.reads_stats_dirname), external_logger=logger)
+            reads_analyzer.do(combined_ref_fpath, corrected_contigs_fpaths,
+                              os.path.join(combined_output_dirpath, qconfig.reads_stats_dirname), corrected_ref_fpaths, external_logger=logger)
 
     if qconfig.sam:
         quast_py_args += ['--sam']

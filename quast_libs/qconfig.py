@@ -205,8 +205,11 @@ labels = None
 sam = None
 bam = None
 bed = None
+reads_fpaths = None
 forward_reads = None
 reverse_reads = None
+interlaced_reads = None
+unpaired_reads = None
 references_txt = None
 json_output_dirpath = None
 
@@ -360,8 +363,10 @@ def usage(show_hidden=False, meta=False, short=True):
         sys.stderr.write("                                      This may significantly reduce space consumption on large genomes. Icarus viewers also will not be built\n")
         sys.stderr.write("-1  --reads1  <filename>              File with forward reads (in FASTQ format, may be gzipped)\n")
         sys.stderr.write("-2  --reads2  <filename>              File with reverse reads (in FASTQ format, may be gzipped)\n")
-        sys.stderr.write("    --sam  <filename>                 SAM alignment file\n")
-        sys.stderr.write("    --bam  <filename>                 BAM alignment file\n")
+        sys.stderr.write("    --12      <filename>              File with interlaced forward and reverse paired-end reads. (in FASTQ format, may be gzipped)\n")
+        sys.stderr.write("    --single  <filename>              File with unpaired reads. (in FASTQ format, may be gzipped)\n")
+        sys.stderr.write("    --sam     <filename>              SAM alignment file\n")
+        sys.stderr.write("    --bam     <filename>              BAM alignment file\n")
         sys.stderr.write("                                      Reads (or SAM/BAM file) are used for structural variation detection and\n")
         sys.stderr.write("                                      coverage histogram building in Icarus\n")
         sys.stderr.write("    --sv-bedpe  <filename>            File with structural variations (in BEDPE format)\n")

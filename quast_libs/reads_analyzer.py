@@ -250,7 +250,7 @@ def get_safe_fpath(output_dirpath, fpath):  # reuse file if it exists; else writ
     return fpath
 
 
-def run_processing_reads(contigs_fpaths, main_ref_fpath, meta_ref_fpaths, ref_labels, reads_fpaths, temp_output_dir, output_dir,
+def run_processing_reads(contigs_fpaths, main_ref_fpath, meta_ref_fpaths, ref_labels, temp_output_dir, output_dir,
                          log_path, err_path):
     required_files = []
     bed_fpath, cov_fpath, physical_cov_fpath = None, None, None
@@ -267,6 +267,9 @@ def run_processing_reads(contigs_fpaths, main_ref_fpath, meta_ref_fpaths, ref_la
             bed_fpath = None
         elif is_non_empty_file(bed_fpath):
             logger.info('  Using existing BED-file: ' + bed_fpath)
+        elif not qconfig.forward_reads and not qconfig.interlaced_reads:
+            logger.info('  Will not search Structural Variations (needs paired-end reads)')
+            bed_fpath = None
         if qconfig.create_icarus_html:
             if is_non_empty_file(cov_fpath):
                 is_correct_file = check_cov_file(cov_fpath)
@@ -284,10 +287,10 @@ def run_processing_reads(contigs_fpaths, main_ref_fpath, meta_ref_fpaths, ref_la
 
     n_jobs = min(qconfig.max_threads, len(contigs_fpaths) + 1)
     max_threads_per_job = max(1, qconfig.max_threads // n_jobs)
-    parallel_align_args = [(index, contigs_fpath, reads_fpaths, temp_output_dir, log_path, err_path, max_threads_per_job)
+    parallel_align_args = [(index, contigs_fpath, temp_output_dir, log_path, err_path, max_threads_per_job)
                            for index, contigs_fpath in enumerate(contigs_fpaths)]
     if main_ref_fpath:
-        parallel_align_args.append((None, main_ref_fpath, reads_fpaths, temp_output_dir, log_path, err_path,
+        parallel_align_args.append((None, main_ref_fpath, temp_output_dir, log_path, err_path,
                                     max_threads_per_job, required_files, qconfig.sam, qconfig.bam))
     correct_chr_names, sam_fpaths, bam_fpaths = run_parallel(align_single_file, parallel_align_args, n_jobs)
     add_statistics_to_report(output_dir, contigs_fpaths, main_ref_fpath)
@@ -387,7 +390,7 @@ def run_processing_reads(contigs_fpaths, main_ref_fpath, meta_ref_fpaths, ref_la
     return bed_fpath, cov_fpath, physical_cov_fpath
 
 
-def align_single_file(index, fpath, reads_fpaths, output_dirpath, log_path, err_path, max_threads, required_files=None,
+def align_single_file(index, fpath, output_dirpath, log_path, err_path, max_threads, required_files=None,
                       sam_fpath=None, bam_fpath=None):
     filename = qutils.name_from_fpath(fpath)
     if not sam_fpath and bam_fpath:
@@ -398,6 +401,7 @@ def align_single_file(index, fpath, reads_fpaths, output_dirpath, log_path, err_
     stats_fpath = get_safe_fpath(dirname(output_dirpath), filename + '.stat')
     index_str = qutils.index_to_str(index) if index is not None else ''
 
+    reads_fpaths = qconfig.reads_fpaths
     correct_chr_names = get_correct_names_for_chroms(output_dirpath, fpath, sam_fpath, err_path, reads_fpaths)
     can_reuse = correct_chr_names is not None
     if not can_reuse and not reads_fpaths:
@@ -429,18 +433,11 @@ def align_single_file(index, fpath, reads_fpaths, output_dirpath, log_path, err_
         # use absolute paths because we will change workdir
         fpath = abspath(fpath)
         sam_fpath = abspath(sam_fpath)
-        abs_reads_fpaths = []
-        for reads_fpath in reads_fpaths:
-            abs_reads_fpaths.append(abspath(reads_fpath))
-
-        if len(abs_reads_fpaths) != 2:
-            logger.error('  You should specify files with forward and reverse reads.')
-            return None, None, None, None
 
         if not qconfig.no_check:
-            if not paired_reads_names_are_equal(reads_fpaths, logger):
+            if qconfig.forward_reads and not paired_reads_names_are_equal([qconfig.forward_reads, qconfig.reverse_reads], logger):
                 logger.error('  Read names are discordant, skipping reads analysis!')
-                return None, None, None, None
+                return None, None, None
 
         prev_dir = os.getcwd()
         os.chdir(output_dirpath)
@@ -449,17 +446,35 @@ def align_single_file(index, fpath, reads_fpaths, output_dirpath, log_path, err_
             cmd += ['-a', 'bwtsw']
         qutils.call_subprocess(cmd, stdout=open(log_path, 'a'), stderr=open(err_path, 'a'), logger=logger)
 
-        cmd = bwa_fpath('bwa') + ' mem -t ' + str(max_threads) + ' ' + filename + ' ' + abs_reads_fpaths[0] + ' ' + abs_reads_fpaths[1]
+        bam_fpaths = []
+        bwa_cmd = bwa_fpath('bwa') + ' mem -t ' + str(max_threads)
+        paired_library = qconfig.forward_reads + ' ' + qconfig.reverse_reads if qconfig.forward_reads else qconfig.interlaced_reads
+        need_merge = paired_library and qconfig.unpaired_reads
+        if paired_library:
+            cmd = bwa_cmd + (' -p ' if qconfig.interlaced_reads else '') + ' ' + filename + ' ' + paired_library
+            output_fpath = sam_fpath if not need_merge else add_suffix(sam_fpath, 'paired')
+            run_bwa(output_fpath, cmd, bam_fpaths, log_path, err_path, need_merge=need_merge)
+        if qconfig.unpaired_reads:
+            cmd = bwa_cmd + ' ' + filename + ' ' + qconfig.unpaired_reads
+            output_fpath = sam_fpath if not need_merge else add_suffix(sam_fpath, 'single')
+            run_bwa(output_fpath, cmd, bam_fpaths, log_path, err_path, need_merge=need_merge)
+        if len(bam_fpaths) > 1:
+            qutils.call_subprocess([sambamba_fpath('sambamba'), 'merge', '-t', str(max_threads), bam_fpath] + bam_fpaths,
+                                   stderr=open(err_path, 'a'), logger=logger)
+            qutils.call_subprocess([sambamba_fpath('sambamba'), 'view', '-t', str(max_threads), '-h', bam_fpath],
+                                   stdout=open(sam_fpath, 'w'), stderr=open(err_path, 'a'), logger=logger)
+        elif len(bam_fpaths) == 1:
+            bam_fpath = bam_fpaths[0]
+            sam_fpath = bam_fpath.replace('.bam', '.sam')
 
-        qutils.call_subprocess(shlex.split(cmd), stdout=open(sam_fpath, 'w'), stderr=open(err_path, 'a'), logger=logger)
         logger.info('  ' + index_str + 'Done.')
         os.chdir(prev_dir)
-        if not isfile(sam_fpath) or getsize(sam_fpath) == 0:
+        if not is_non_empty_file(sam_fpath):
             logger.error('  Failed running BWA for ' + fpath + '. See ' + log_path + ' for information.')
-            return None, None, None, None
+            return None, None, None
         correct_chr_names = get_correct_names_for_chroms(output_dirpath, fpath, sam_fpath, err_path, reads_fpaths)
     elif not correct_chr_names:
-        return None, None, None, None, None
+        return None, None, None
     if index is not None:
         logger.info('  ' + index_str + 'Sorting SAM-file...')
     else:
@@ -472,7 +487,7 @@ def align_single_file(index, fpath, reads_fpaths, output_dirpath, log_path, err_
         sam_fpath = clean_read_names(sam_fpath, correct_sam_fpath)
         qutils.call_subprocess([sambamba_fpath('sambamba'), 'view', '-t', str(max_threads), '-h', '-f', 'bam',
                                 '-S', correct_sam_fpath],
-                               stdout=open(bam_fpath, 'w'), stderr=open(err_path, 'a'), logger=logger)
+                                stdout=open(bam_fpath, 'w'), stderr=open(err_path, 'a'), logger=logger)
 
     qutils.assert_file_exists(bam_fpath, 'bam file')
     qutils.call_subprocess([sambamba_fpath('sambamba'), 'flagstat', '-t', str(max_threads), bam_fpath],
@@ -483,6 +498,20 @@ def align_single_file(index, fpath, reads_fpaths, output_dirpath, log_path, err_
     else:
         logger.info('  Analysis for reference is finished.')
     return correct_chr_names, sam_fpath, bam_fpath
+
+
+def run_bwa(sam_fpath, cmd, bam_fpaths, log_path, err_path, need_merge=False):
+    qutils.call_subprocess(shlex.split(cmd), stdout=open(sam_fpath, 'w'), stderr=open(err_path, 'a'), logger=logger)
+    if need_merge and is_non_empty_file(sam_fpath):
+        tmp_bam_fpath = sam_fpath.replace('.sam', '.bam')
+        tmp_bam_sorted_fpath = add_suffix(tmp_bam_fpath, 'sorted')
+        qutils.call_subprocess(
+            [sambamba_fpath('sambamba'), 'view', '-t', str(qconfig.max_threads), '-h', '-f', 'bam', '-S', sam_fpath],
+            stdout=open(tmp_bam_fpath, 'w'), stderr=open(err_path, 'a'), logger=logger)
+        qutils.call_subprocess(
+            [sambamba_fpath('sambamba'), 'sort', '-t', str(qconfig.max_threads), '-o', tmp_bam_sorted_fpath,
+             tmp_bam_fpath], stdout=open(log_path, 'a'), stderr=open(err_path, 'a'), logger=logger)
+        bam_fpaths.append(tmp_bam_sorted_fpath)
 
 
 def parse_reads_stats(stats_fpath):
@@ -779,7 +808,7 @@ def check_cov_file(cov_fpath):
                 return True
 
 
-def do(ref_fpath, contigs_fpaths, reads_fpaths, meta_ref_fpaths, output_dir, external_logger=None):
+def do(ref_fpath, contigs_fpaths, output_dir, meta_ref_fpaths=None, external_logger=None):
     if external_logger:
         global logger
         logger = external_logger
@@ -805,7 +834,7 @@ def do(ref_fpath, contigs_fpaths, reads_fpaths, meta_ref_fpaths, output_dir, ext
     logger.info('  ' + 'Logging to files %s and %s...' % (log_path, err_path))
 
     bed_fpath, cov_fpath, physical_cov_fpath = run_processing_reads(contigs_fpaths, ref_fpath, meta_ref_fpaths, ref_labels_by_chromosomes,
-                                                                    reads_fpaths, temp_output_dir, output_dir, log_path, err_path)
+                                                                    temp_output_dir, output_dir, log_path, err_path)
 
     if not qconfig.debug:
         shutil.rmtree(temp_output_dir, ignore_errors=True)

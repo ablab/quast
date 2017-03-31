@@ -10,10 +10,18 @@ import glob
 import shutil
 import subprocess
 import os
+import stat
 import sys
 import re
 from collections import defaultdict
 from os.path import basename, isfile, realpath, isdir
+
+try:
+    from urllib2 import urlopen
+    import urllib
+except:
+    from urllib.request import urlopen
+    import urllib.request as urllib
 
 from quast_libs import fastaparser, qconfig, plotter_data
 from quast_libs.log import get_logger
@@ -21,6 +29,10 @@ logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 
 MAX_CONTIG_NAME = 1021  # Nucmer's constraint
 MAX_CONTIG_NAME_GLIMMER = 298   # Glimmer's constraint
+
+external_tools_dirpath = os.path.join(qconfig.QUAST_HOME, 'external_tools')
+blast_external_tools_dirpath = os.path.join(external_tools_dirpath, 'blast', qconfig.platform_name)
+blast_dirpath = None
 
 
 def set_up_output_dir(output_dirpath, json_outputpath,
@@ -797,7 +809,8 @@ def is_python2():
     return sys.version_info[0] < 3
 
 
-def compile_tool(name, dirpath, requirements, just_notice=False, logger=logger, only_clean=False, flag_suffix=None,make_cmd=None):
+def compile_tool(name, dirpath, requirements, just_notice=False, logger=logger, only_clean=False, flag_suffix=None,
+                 make_cmd=None, needs_configure=False):
     make_logs_basepath = join(dirpath, 'make')
     failed_compilation_flag = make_logs_basepath + str(flag_suffix) + '.failed'
 
@@ -814,6 +827,12 @@ def compile_tool(name, dirpath, requirements, just_notice=False, logger=logger, 
         # making
         logger.main_info('Compiling ' + name + ' (details are in ' + make_logs_basepath +
                          '.log and make.err)')
+        if needs_configure:
+            prev_dir = os.getcwd()
+            os.chdir(dirpath)
+            call_subprocess(['./configure'],stdout=open(make_logs_basepath + '.log', 'w'),
+                            stderr=open(make_logs_basepath + '.err', 'w'))
+            os.chdir(prev_dir)
         try:
             return_code = call_subprocess((['make', make_cmd] if make_cmd else ['make']) + ['-C', dirpath],
                                       stdout=open(make_logs_basepath + '.log', 'w'),
@@ -904,17 +923,95 @@ def get_reads_fpaths(logger):
                  'If you have multiple libraries, please concatenate them.', exit_with_code=2)
 
 
-def run_parallel(_fn, fn_args, n_jobs, filter_results=False):
-    if is_python2():
-        from joblib import Parallel, delayed
+def get_blast_fpath(fname):
+    if blast_dirpath:
+        blast_path = os.path.join(blast_dirpath, fname)
+        if os.path.exists(blast_path):
+            return blast_path
+    blast_path = get_path_to_program(fname)
+    return blast_path
+
+
+def show_progress(a, b, c):
+    if a > 0 and a % int(c/(b*100)) == 0:
+        print("% 3.1f%% of %d bytes" % (min(100, int(float(a * b) / c * 100)), c)),
+        sys.stdout.flush()
+
+
+def download_blast_binaries(filenames, logger=logger, only_clean=False):
+    global blast_dirpath
+
+    required_files = [cmd for cmd in filenames if not get_blast_fpath(cmd)]
+    if not required_files and not only_clean:
+        return True
+
+    blast_dirpath = get_dir_for_download('blast', 'BLAST', filenames, logger, only_clean=only_clean)
+    if not blast_dirpath:
+        return False
+
+    if only_clean:
+        if os.path.isdir(blast_dirpath):
+            shutil.rmtree(blast_dirpath, ignore_errors=True)
+        return True
+
+    for i, cmd in enumerate(required_files):
+        return_code = download_blast_binary(cmd, logger=logger)
+        logger.info()
+        if return_code != 0:
+            return False
+        blast_file = get_blast_fpath(cmd)
+        os.chmod(blast_file, os.stat(blast_file).st_mode | stat.S_IEXEC)
+    return True
+
+
+def download_blast_binary(blast_filename, logger=logger):
+    if not os.path.isdir(blast_dirpath):
+        os.makedirs(blast_dirpath)
+
+    blast_libs_fpath = os.path.join(blast_dirpath, blast_filename)
+    blast_external_fpath = os.path.join(blast_external_tools_dirpath, blast_filename)
+    blast_dirpath_url = qconfig.GIT_ROOT_URL + relpath(blast_external_tools_dirpath, qconfig.QUAST_HOME)
+    if not os.path.exists(blast_libs_fpath):
+        if os.path.isfile(blast_external_fpath):
+            logger.info('Copying blast files from ' + blast_external_fpath)
+            shutil.copy(blast_external_fpath, blast_dirpath)
+        else:
+            blast_download = urllib.URLopener()
+            blast_webpath = os.path.join(blast_dirpath_url, blast_filename)
+            if not os.path.exists(blast_libs_fpath):
+                logger.info('Downloading %s...' % blast_filename)
+                try:
+                    blast_download.retrieve(blast_webpath, blast_libs_fpath + '.download', show_progress)
+                except Exception:
+                    logger.error(
+                        'Failed downloading %s! The search for reference genomes cannot be performed. '
+                        'Please install it and ensure it is in your PATH, then restart your command.' % blast_filename)
+                    return 1
+                shutil.move(blast_libs_fpath + '.download', blast_libs_fpath)
+                logger.info('%s successfully downloaded!' % blast_filename)
+    return 0
+
+
+def run_parallel(_fn, fn_args, n_jobs=None, filter_results=False):
+    if qconfig.memory_efficient:
+        results_tuples = [_fn(*args) for args in fn_args]
     else:
-        from joblib3 import Parallel, delayed
-    results_tuples = Parallel(n_jobs=n_jobs)(delayed(_fn)(*args) for args in fn_args)
-    results_cnt = len(results_tuples[0]) if results_tuples and results_tuples[0] else 0
-    if filter_results:
-        results = [[result_list[i] for result_list in results_tuples if result_list[i]] for i in range(results_cnt)]
-    else:
-        results = [[result_list[i] for result_list in results_tuples] for i in range(results_cnt)]
+        n_jobs = n_jobs or qconfig.max_threads
+        if is_python2():
+            from joblib import Parallel, delayed
+        else:
+            from joblib3 import Parallel, delayed
+        results_tuples = Parallel(n_jobs=n_jobs)(delayed(_fn)(*args) for args in fn_args)
+    results = []
+    if results_tuples and results_tuples[0]:
+        if isinstance(results_tuples[0], list) or isinstance(results_tuples[0], tuple):
+            results_cnt = len(results_tuples[0])
+            if filter_results:
+                results = [[result_list[i] for result_list in results_tuples if result_list[i]] for i in range(results_cnt)]
+            else:
+                results = [[result_list[i] for result_list in results_tuples] for i in range(results_cnt)]
+        else:
+            results = [result for result in results_tuples if result or not filter_results]
     return results
 
 

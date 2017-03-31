@@ -346,8 +346,8 @@ def main(args):
                              for ref_fpath, ref_assemblies in assemblies_by_reference]
         ref_names, ref_json_texts, ref_notifications = \
             run_parallel(_run_quast_per_ref, parallel_run_args, qconfig.max_threads, filter_results=True)
-        per_ref_num_notifications = map(sum, zip(*ref_notifications))
-        total_num_notifications = map(sum, zip(total_num_notifications, per_ref_num_notifications))
+        per_ref_num_notifications = list(map(sum, zip(*ref_notifications)))
+        total_num_notifications = list(map(sum, zip(total_num_notifications, per_ref_num_notifications)))
         if json_texts is not None:
             json_texts.extend(ref_json_texts)
         quast_py_args.remove('--memory-efficient')

@@ -9,8 +9,6 @@ from __future__ import with_statement
 import os
 import shlex
 import shutil
-import stat
-import sys
 import re
 
 from os.path import isdir, isfile, join
@@ -18,7 +16,8 @@ from os.path import isdir, isfile, join
 from quast_libs import qconfig, qutils
 from quast_libs.fastaparser import _get_fasta_file_handler
 from quast_libs.log import get_logger
-from quast_libs.qutils import is_non_empty_file, is_python2, slugify, correct_name, get_dir_for_download
+from quast_libs.qutils import is_non_empty_file, is_python2, slugify, correct_name, get_dir_for_download, show_progress, \
+    download_blast_binaries, get_blast_fpath
 
 logger = get_logger(qconfig.LOGGER_META_NAME)
 try:
@@ -40,12 +39,7 @@ silva_fname = 'SILVA_123_SSURef_Nr99_tax_silva.fasta'
 silva_id = '123'
 silva_downloaded_fname = 'silva.' + silva_id + '.db'
 
-external_tools_dirpath = join(qconfig.QUAST_HOME, 'external_tools')
-blast_external_tools_dirpath = join(external_tools_dirpath, 'blast', qconfig.platform_name)
 blast_filenames = ['makeblastdb', 'blastn']
-blast_dirpath_url = qconfig.GIT_ROOT_URL + qutils.relpath(blast_external_tools_dirpath, qconfig.QUAST_HOME)
-
-blast_dirpath = None
 blastdb_dirpath = None
 db_fpath = None
 db_nsq_fsize = 194318557
@@ -53,16 +47,6 @@ db_nsq_fsize = 194318557
 is_quast_first_run = False
 taxons_for_krona = {}
 connection_errors = 0
-
-
-def get_blast_fpath(fname):
-    if blast_dirpath:
-        blast_path = os.path.join(blast_dirpath, fname)
-        if os.path.exists(blast_path):
-            return blast_path
-
-    blast_path = qutils.get_path_to_program(fname)
-    return blast_path
 
 
 def natural_sort_key(s, _nsre=re.compile('([0-9]+)')):
@@ -166,65 +150,6 @@ def download_refs(organism, ref_fpath):
         return None
 
     return ref_fpath
-
-
-def show_progress(a, b, c):
-    if a > 0 and a % int(c/(b*100)) == 0:
-        print("% 3.1f%% of %d bytes" % (min(100, int(float(a * b) / c * 100)), c)),
-        sys.stdout.flush()
-
-
-def download_all_blast_binaries(logger=logger, only_clean=False):
-    global blast_dirpath
-
-    required_files = [cmd for cmd in blast_filenames if not get_blast_fpath(cmd)]
-    if not required_files and not only_clean:
-        return True
-
-    blast_dirpath = get_dir_for_download('blast', 'BLAST', blast_filenames, logger, only_clean=only_clean)
-    if not blast_dirpath:
-        return False
-
-    if only_clean:
-        if os.path.isdir(blast_dirpath):
-            shutil.rmtree(blast_dirpath, ignore_errors=True)
-        return True
-
-    for i, cmd in enumerate(required_files):
-        return_code = download_blast_binary(cmd, logger=logger)
-        logger.info()
-        if return_code != 0:
-            return False
-        blast_file = get_blast_fpath(cmd)
-        os.chmod(blast_file, os.stat(blast_file).st_mode | stat.S_IEXEC)
-    return True
-
-
-def download_blast_binary(blast_filename, logger=logger):
-    if not os.path.isdir(blast_dirpath):
-        os.makedirs(blast_dirpath)
-
-    blast_libs_fpath = os.path.join(blast_dirpath, blast_filename)
-    blast_external_fpath = os.path.join(blast_external_tools_dirpath, blast_filename)
-    if not os.path.exists(blast_libs_fpath):
-        if os.path.isfile(blast_external_fpath):
-            logger.info('Copying blast files from ' + blast_external_fpath)
-            shutil.copy(blast_external_fpath, blast_dirpath)
-        else:
-            blast_download = urllib.URLopener()
-            blast_webpath = os.path.join(blast_dirpath_url, blast_filename)
-            if not os.path.exists(blast_libs_fpath):
-                logger.info('Downloading %s...' % blast_filename)
-                try:
-                    blast_download.retrieve(blast_webpath, blast_libs_fpath + '.download', show_progress)
-                except Exception:
-                    logger.error(
-                        'Failed downloading %s! The search for reference genomes cannot be performed. '
-                        'Please install it and ensure it is in your PATH, then restart your command.' % blast_filename)
-                    return 1
-                shutil.move(blast_libs_fpath + '.download', blast_libs_fpath)
-                logger.info('%s successfully downloaded!' % blast_filename)
-    return 0
 
 
 def download_blastdb(logger=logger, only_clean=False):
@@ -412,7 +337,7 @@ def parse_organism_id(organism_id):
 
 
 def process_blast(blast_assemblies, downloaded_dirpath, corrected_dirpath, labels, blast_check_fpath, err_fpath):
-    if not download_all_blast_binaries():
+    if not download_blast_binaries(blast_filenames):
         return None, None
 
     if qconfig.custom_blast_db_fpath:

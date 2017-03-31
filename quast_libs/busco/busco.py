@@ -43,6 +43,10 @@ import traceback
 import random
 from abc import ABCMeta, abstractmethod
 from collections import deque
+from os.path import join
+
+from quast_libs import qconfig
+from quast_libs.qutils import is_non_empty_file, get_blast_fpath
 
 try:
     import queue as Queue
@@ -66,21 +70,23 @@ class BUSCOLogger(logging.getLoggerClass()):
         self._formatter = logging.Formatter('%(levelname)s\t%(message)s')
         self._thread_formatter = logging.Formatter('%(levelname)s:%(threadName)s\t%(message)s')
         self._formatter_blank_line = logging.Formatter('')
-        self._out_hdlr = logging.StreamHandler(sys.stdout)
+        console_handler = logging.StreamHandler(sys.stdout)
+        self.addHandler(console_handler)
+
+    def set_up_file_handler(self, output_dirpath):
+        self._log_fpath = os.path.join(output_dirpath, 'busco.log')
+        for handler in self.handlers:
+            self.removeHandler(handler)
+        self._out_hdlr = logging.FileHandler(self._log_fpath, mode='w')
         self._out_hdlr.setFormatter(self._formatter)
-        self._out_hdlr_blank_line = logging.StreamHandler(sys.stdout)
-        self._out_hdlr_blank_line.setFormatter(self._formatter_blank_line)
+        self._out_hdlr.setLevel(logging.INFO)
         self.addHandler(self._out_hdlr)
 
     def add_blank_line(self):
         """
         This function add a blank line in the logs
         """
-        self.removeHandler(self._out_hdlr)
-        self.addHandler(self._out_hdlr_blank_line)
         self.info('')
-        self.removeHandler(self._out_hdlr_blank_line)
-        self.addHandler(self._out_hdlr)
 
     def add_thread_info(self):
         """
@@ -330,8 +336,8 @@ class Analysis(object):
         Check if blast is accessible from command-line (tblastn)
         :raises SystemExit: if blast is not accessible
         """
-        if not Analysis.cmd_exists('tblastn'):
-            _logger.error('Blast is not accessible from the command-line, please add it to the environment')
+        if not get_blast_fpath('tblastn'):
+            _logger.error('Blast is not accessible')
             raise SystemExit
 
     @staticmethod
@@ -341,23 +347,23 @@ class Analysis(object):
         Also check if HMMer is the correct version (3.1+)
         :raises SystemExit: if HMMer is not accessible or not the correct version
         """
-        if not Analysis.cmd_exists('hmmsearch'):
-            _logger.error('HMMer is not accessible from the command-line, please add it to the environment')
+        if not hmmer_cmd:
+            _logger.error('HMMer is not accessible')
             raise SystemExit
         else:
             try:
-                hmmer_check = subprocess.check_output('hmmsearch -h', shell=True)
+                hmmer_check = subprocess.check_output(hmmer_cmd + ' -h', shell=True)
                 hmmer_check = hmmer_check.decode('utf-8')
                 hmmer_check = hmmer_check.split('\n')[1].split()[2]
                 hmmer_check = float(hmmer_check[:3])
             except ValueError:
                 # to avoid a crash with super old version and notify the user, will be useful
-                hmmer_check = subprocess.check_output('hmmsearch -h', shell=True)
+                hmmer_check = subprocess.check_output(hmmer_cmd + ' -h', shell=True)
                 hmmer_check = hmmer_check.decode('utf-8')
                 hmmer_check = hmmer_check.split('\n')[1].split()[1]
                 hmmer_check = float(hmmer_check[:3])
             except subprocess.CalledProcessError:
-                _logger.error('HMMer is not accessible from the command-line, please add it to the environment')
+                _logger.error('HMMer is not accessible')
                 raise SystemExit
             if hmmer_check >= 3.1:
                 pass
@@ -415,7 +421,7 @@ class Analysis(object):
         :raises SystemExit: if Augustus config path does not contain the needed species
         :raises SystemExit: if additional perl scripts for retraining are not present
         """
-        if not Analysis.cmd_exists('augustus'):
+        if not augustus_cmd:
             _logger.error('Augustus is not accessible from the command-line, please add it to the environment')
             raise SystemExit
 
@@ -434,15 +440,15 @@ class Analysis(object):
                           '\n\t\tSee the help if you want to provide an alternative species'
                           % (self._target_species, self._augustus_config_path))
             raise SystemExit
-        if not Analysis.cmd_exists('gff2gbSmallDNA.pl'):
+        if not get_augustus_script('gff2gbSmallDNA.pl'):
             _logger.error('Impossible to locate the required script gff2gbSmallDNA.pl. Check that you declared '
                           'the Augustus scripts folder in your $PATH environmental variable')
             raise SystemExit
-        if not Analysis.cmd_exists('new_species.pl'):
+        if not get_augustus_script('new_species.pl'):
             _logger.error('Impossible to locate the required script new_species.pl. Check that you declared '
                           'the Augustus scripts folder in your $PATH environmental variable')
             raise SystemExit
-        if self._long and not Analysis.cmd_exists('optimize_augustus.pl'):
+        if self._long and not get_augustus_script('optimize_augustus.pl'):
             _logger.error('Impossible to locate the required script optimize_augustus.pl. Check that you declared '
                           'the Augustus scripts folder in your $PATH environmental variable')
             raise SystemExit
@@ -470,7 +476,7 @@ class Analysis(object):
                     if aa.upper() in line or aa.lower() in line:
                         _logger.error('Please provide a nucleotide file as input, it should not contains \'%s or %s\''
                                       % (aa.upper(), aa.lower()))
-                        file.close()
+                        nucl_file.close()
                         raise SystemExit
         nucl_file.close()
 
@@ -961,7 +967,7 @@ class Analysis(object):
 
         if not missing_and_frag_only:
             _logger.info('Create blast database...')
-            Analysis.p_open(['makeblastdb', '-in', self._sequences, '-dbtype', 'nucl', '-out',
+            Analysis.p_open([get_blast_fpath('makeblastdb'), '-in', self._sequences, '-dbtype', 'nucl', '-out',
                              '%s%s%s' % (self._tmp, self._abrev, self._random)], 'makeblastdb',
                             shell=False)
             if not os.path.exists('%sblast_output' % self.mainout):
@@ -969,7 +975,7 @@ class Analysis(object):
         _logger.info('Running tblastn, writing output to %sblast_output/tblastn_%s%s.tsv...'
                      % (self.mainout, self._abrev, output_suffix))
 
-        Analysis.p_open(['tblastn', '-evalue', str(self._ev_cutoff), '-num_threads', str(self._cpus),
+        Analysis.p_open([get_blast_fpath('tblastn'), '-evalue', str(self._ev_cutoff), '-num_threads', str(self._cpus),
                          '-query', query_file,
                          '-db', '%s%s%s' % (self._tmp, self._abrev, self._random),
                          '-out', '%sblast_output/tblastn_%s%s.tsv'
@@ -1112,7 +1118,7 @@ class Analysis(object):
 
                 out_name = '%saugustus_output/predicted_genes/%s.out.%s' % (self.mainout, entry, output_index)
 
-                augustus_call = 'augustus --codingseq=1 --proteinprofile=%(clade)sprfl/%(busco_group)s.prfl ' \
+                augustus_call = augustus_cmd + ' --codingseq=1 --proteinprofile=%(clade)sprfl/%(busco_group)s.prfl ' \
                                 '--predictionStart=%(start_coord)s --predictionEnd=%(end_coord)s ' \
                                 '--species=%(species)s %(augustus_parameters)s \'%(tmp)s%(scaffold)s\' > %(output)s ' \
                                 '2>> %(augustus_log)s' % \
@@ -1186,7 +1192,7 @@ class Analysis(object):
             pred_file.close()
             gff_file.close()
 
-            gff2gbsmalldna_call = ('gff2gbSmallDNA.pl %saugustus_output/gffs/%s.gff %s \
+            gff2gbsmalldna_call = (get_augustus_script('gff2gbSmallDNA.pl') + ' %saugustus_output/gffs/%s.gff %s \
                 1000 %saugustus_output/gb/%s.raw.gb 1>>%s 2>&1' %
                                    (self.mainout, entry, self._sequences, self.mainout, entry, augustus_log))
 
@@ -1198,14 +1204,14 @@ class Analysis(object):
 
         # bacteria clade needs to be flagged as "prokaryotic"
         if self._domain == 'prokaryota':
-            Analysis.p_open(['new_species.pl --prokaryotic --species=BUSCO_%s%s 1>>%s \
-                2>&1' %
-                             (self._abrev, self._random, augustus_log)], 'new_species.pl',
+            Analysis.p_open([get_augustus_script('new_species.pl') + ' --prokaryotic --species=BUSCO_%s%s '
+                             '--AUGUSTUS_CONFIG_PATH=%s 1>>%s 2>&1' %
+                             (self._abrev, self._random, self._augustus_config_path, augustus_log)], 'new_species.pl',
                             shell=True)  # create new species config file from template
         else:
-            Analysis.p_open(['new_species.pl --species=BUSCO_%s%s  1>>%s'
-                             ' 2>&1'
-                             % (self._abrev, self._random, augustus_log)], 'new_species.pl', shell=True)
+            Analysis.p_open([get_augustus_script('new_species.pl') + ' --species=BUSCO_%s%s --AUGUSTUS_CONFIG_PATH=%s'
+                             ' 1>>%s 2>&1' %
+                             (self._abrev, self._random, self._augustus_config_path, augustus_log)], 'new_species.pl', shell=True)
 
         Analysis.p_open(
             ['find %saugustus_output/gb/ -type f -name "*.gb" -exec cat {} \; > %saugustus_output/training_set_%s.txt'
@@ -1214,19 +1220,19 @@ class Analysis(object):
             shell=True)
 
         # train on new training set (complete single copy buscos)
-        Analysis.p_open(['etraining --species=BUSCO_%s%s %saugustus_output/training_set_%s.txt 1>>%s 2>&1' %
+        Analysis.p_open([etraining_cmd + ' --species=BUSCO_%s%s %saugustus_output/training_set_%s.txt 1>>%s 2>&1' %
                          (self._abrev, self._random, self.mainout, self._abrev, augustus_log)], 'augustus etraining',
                         shell=True)
         # long mode (--long) option - runs all the Augustus optimization scripts (adds ~1 day of runtime)
         if self._long:
             _logger.warning('%s => Optimizing augustus metaparameters, this may take a very long time...'
                             % time.strftime("%m/%d/%Y %H:%M:%S"))
-            Analysis.p_open(['optimize_augustus.pl --cpus=%s --species=BUSCO_%s%s %saugustus_output/training_set_%s.txt \
+            Analysis.p_open([get_augustus_script('optimize_augustus.pl') + ' --cpus=%s --species=BUSCO_%s%s %saugustus_output/training_set_%s.txt \
                 1>>%s 2>&1' %
                              (self._cpus, self._abrev, self._random, self.mainout, self._abrev,
                               augustus_log)], 'optimize_augustus.pl',
                             shell=True)
-            Analysis.p_open(['etraining --species=BUSCO_%s%s %saugustus_output/training_set_%s.txt 1>>%s 2>&1' %
+            Analysis.p_open([etraining_cmd + ' --species=BUSCO_%s%s %saugustus_output/training_set_%s.txt 1>>%s 2>&1' %
                              (self._abrev, self._random, self.mainout, self._abrev, augustus_log)],
                             'augustus etraining',
                             shell=True)
@@ -1280,11 +1286,11 @@ class Analysis(object):
 
                     out_name = '%saugustus_output/predicted_genes/%s.out.%s' % (self.mainout, entry, output_index)
 
-                    augustus_call = 'augustus --codingseq=1 --proteinprofile=%(clade)sprfl/%(busco_group)s.prfl \
+                    augustus_call = augustus_cmd + ' --codingseq=1 --proteinprofile=%(clade)sprfl/%(busco_group)s.prfl \
                         --predictionStart=%(start_coord)s --predictionEnd=%(end_coord)s --species=BUSCO_%(species)s \
-                        \'%(tmp)s%(scaffold)s\' > %(output)s 2>> %(augustus_log)s' % \
+                        \'%(tmp)s%(scaffold)s\'  %(augustus_parameters)s > %(output)s 2>> %(augustus_log)s' % \
                                     {'clade': self._clade_path, 'species': self._abrev + str(self._random),
-                                     'busco_group': entry,
+                                     'busco_group': entry, 'augustus_parameters': self._augustus_parameters,
                                      'start_coord': scaff_start, 'augustus_log': augustus_log, 'tmp': self._tmp,
                                      'end_coord': scaff_end, 'scaffold': scaff, 'output': out_name}
                     augustus_rerun_strings.append(augustus_call)  # list of call strings
@@ -1296,7 +1302,7 @@ class Analysis(object):
                     augustus_fasta = '%saugustus_output/extracted_proteins/%s.faa.%s' \
                                      % (self.mainout, entry, output_index)
 
-                    hmmer_call = ['hmmsearch',
+                    hmmer_call = [hmmer_cmd,
                                   '--domtblout', '%s' % out_name,
                                   '-o', '%stemp_%s%s' % (self._tmp, self._abrev, self._random),
                                   '--cpu', '1',
@@ -2046,10 +2052,10 @@ class GenomeAnalysis(Analysis):
         This function moves retraining parameters from augustus species folder to the run folder
         """
         if os.path.exists(self._augustus_config_path + ('/species/BUSCO_%s%s' % (self._abrev, self._random))):
-            Analysis.p_open(['cp', '-r', '%sspecies/BUSCO_%s%s'
+            Analysis.p_open(['cp', '-r', '%s/species/BUSCO_%s%s'
                              % (self._augustus_config_path, self._abrev, self._random),
                              '%saugustus_output/retraining_parameters' % self.mainout], 'bash', shell=False)
-            Analysis.p_open(['rm', '-rf', '%sspecies/BUSCO_%s%s'
+            Analysis.p_open(['rm', '-rf', '%s/species/BUSCO_%s%s'
                              % (self._augustus_config_path, self._abrev, self._random)],
                             'bash', shell=False)
         else:
@@ -2286,7 +2292,7 @@ class GenomeAnalysis(Analysis):
                 count += 1
                 group_name = entry.split('.')[0]
                 group_index = entry.split('.')[-1]
-                hmmer_call = ['hmmsearch',
+                hmmer_call = [hmmer_cmd,
                               '--domtblout', '%shmmer_output/%s.out.%s' % (self.mainout, group_name, group_index),
                               '-o', '%stemp_%s%s' % (self._tmp, self._abrev, self._random),
                               '--cpu', '1',
@@ -2573,7 +2579,7 @@ class TranscriptomeAnalysis(Analysis):
                     except KeyError:
                         busco_index[busco] = 1
 
-                    hmmer_call = ['hmmsearch',
+                    hmmer_call = [hmmer_cmd,
                                   '--domtblout',
                                   '%shmmer_output/%s.out.%s' % (self.mainout, busco, busco_index[busco]),
                                   '-o', '%stemp_%s%s' % (self._tmp, self._abrev, str(self._random)),
@@ -2651,7 +2657,7 @@ class GeneSetAnalysis(Analysis):
         for i in files:
             name = i[:-4]
             if name in score_dic:
-                hmmer_run_strings.append(['hmmsearch',
+                hmmer_run_strings.append([hmmer_cmd,
                                           '--domtblout', '%shmmer_output/%s.out.1' % (self.mainout, name),
                                           '-o', '%stemp_%s%s' % (self._tmp, self._abrev, str(self._random)),
                                           '--cpu', '1',
@@ -2680,9 +2686,24 @@ logging.setLoggerClass(BUSCOLogger)
 _logger = logging.getLogger(__file__.split("/")[-1])
 
 _rerun_cmd = ''
+busco_dirpath = join(qconfig.LIBS_LOCATION, 'busco')
+hmmer_cmd = join(busco_dirpath, 'hmmsearch')
+augustus_dirpath, augustus_cmd, augustus_config_path, etraining_cmd = None, None, None, None
 
 
-def _parse_args():
+def set_augustus_dir(dirpath):
+    global augustus_dirpath, augustus_cmd, augustus_config_path, etraining_cmd
+    augustus_dirpath = dirpath
+    augustus_cmd = join(augustus_dirpath, 'bin', 'augustus')
+    augustus_config_path = join(augustus_dirpath, 'config')
+    etraining_cmd = join(augustus_dirpath, 'bin', 'etraining')
+
+
+def get_augustus_script(fname):
+    return join(augustus_dirpath, 'scripts', fname)
+
+
+def _parse_args(args):
     """
     This function parses the arguments provided by the user
     :return: a dictionary having a key for each arguments
@@ -2690,9 +2711,9 @@ def _parse_args():
     """
 
     # small hack to get sub-parameters with dash and pass it to Augustus
-    for i, arg in enumerate(sys.argv):
-        if (arg[0] == '-' or arg[0] == '--') and (sys.argv[i - 1] == '-a' or sys.argv[i - 1] == '--augustus'):
-            sys.argv[i] = ' ' + arg
+    for i, arg in enumerate(args):
+        if (arg[0] == '-' or arg[0] == '--') and (args[i - 1] == '-a' or args[i - 1] == '--augustus'):
+            args[i] = ' ' + arg
 
     parser = argparse.ArgumentParser(
         description='Welcome to BUSCO %s: the Benchmarking Universal Single-Copy Ortholog assessment tool.\n'
@@ -2776,14 +2797,14 @@ def _parse_args():
 
     optional.add_argument('-h', '--help', action="help", help="Show this help message and exit")
 
-    args = vars(parser.parse_args())
+    args = vars(parser.parse_args(args))
 
     if args['quiet']:
         _logger.setLevel(logging.ERROR)
 
     _logger.debug('Args list is %s' % str(args))
 
-    if len(sys.argv) == 1:
+    if len(args) == 1:
         parser.print_help()
         sys.exit(1)
 
@@ -2939,13 +2960,6 @@ def _define_parameters(args):
             _logger.error('Impossible to read the fasta file %s ' % args['in'])
             raise SystemExit
 
-    augustus_config_path = os.environ.get('AUGUSTUS_CONFIG_PATH')
-    try:
-        if augustus_config_path[-1] != '/':
-            augustus_config_path += '/'
-    except TypeError:
-        augustus_config_path = None
-
     if '/' in args['abrev']:
         _logger.error('Please do not provide a full path as output (no slash), just a name. '
                       'Your entry for -o is %s\n\t\tThe results will be written in a subfolder of the current location '
@@ -3002,7 +3016,7 @@ def _set_rerun_busco_command(params):
         _rerun_cmd += ' --augustus_parameters \'%s\'' % params['augustus_parameters']
 
 
-def main(show_thread=False):
+def main(args, output_dir=None, show_thread=False):
     """
     This function runs a BUSCO analysis according to the provided parameters.
     See the help for more details:
@@ -3012,14 +3026,24 @@ def main(show_thread=False):
     :type show_thread: bool
     :raises SystemExit: if any errors occur
     """
-
-    if show_thread:
-        _logger.add_thread_info()
+    global ROOT_FOLDER
+    ROOT_FOLDER = output_dir or ROOT_FOLDER
 
     start_time = time.time()
 
     # 1) Set-up the parameters
-    args = _parse_args()
+    args = _parse_args(args)
+    output_dir = os.path.join(ROOT_FOLDER, 'run_%s' % args['abrev'])
+    summary_path = os.path.join(output_dir, 'short_summary_%s.txt' % args['abrev'])
+    if is_non_empty_file(summary_path):
+        _logger.info('Using existing BUSCO files for ' + args['abrev'] + '...')
+        return summary_path
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    _logger.set_up_file_handler(ROOT_FOLDER)
+
+    if show_thread:
+        _logger.add_thread_info()
 
     try:
 
@@ -3062,6 +3086,7 @@ def main(show_thread=False):
             _logger.info('BUSCO analysis done with WARNING(s). Total running time: %s seconds'
                          % str(time.time() - start_time))
         _logger.info('Results written in %s\n' % analysis.mainout)
+        return summary_path
 
     except SystemExit:
         _logger.add_blank_line()
@@ -3094,4 +3119,4 @@ def main(show_thread=False):
 
 # Entry point
 if __name__ == "__main__":
-    main()
+    main(sys.argv)

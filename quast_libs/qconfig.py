@@ -74,6 +74,7 @@ check_for_fragmented_ref = False
 unaligned_part_size = 500
 all_labels_from_dirs = False
 force_nucmer = False
+run_busco = False
 
 # print in stdout only main information
 silent = False
@@ -120,6 +121,9 @@ trivial_deletions_fname = 'trivial_deletions.bed'
 manta_sv_fname = 'manta_sv.bed'
 used_colors = None
 used_ls = None
+
+# dirnames
+busco_dirname = 'busco_stats'
 
 # for Icarus
 draw_svg = False
@@ -320,6 +324,7 @@ def usage(show_hidden=False, meta=False, short=True):
             sys.stderr.write("    --mgm                             Use MetaGeneMark for gene prediction (instead of the default finder, see above)\n")
         sys.stderr.write("    --gene-thresholds <int,int,...>   Comma-separated list of threshold lengths of genes to search with Gene Finding module\n")
         sys.stderr.write("                                      [default: %s]\n" % genes_lengths)
+        sys.stderr.write("-b  --find-conserved-genes            Use BUSCO for finding conserved orthologs (only on Linux)\n")
         sys.stderr.write("-e  --eukaryote                       Genome is eukaryotic\n")
         if not meta:
             sys.stderr.write("    --est-ref-size <int>              Estimated reference size (for computing NGx metrics without a reference)\n")

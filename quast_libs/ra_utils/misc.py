@@ -68,7 +68,7 @@ def manta_compilation_failed():
     return False
 
 
-def download_unpack_tar_bz(name, download_path, downloaded_fpath, final_dirpath, logger):
+def download_unpack_compressed_tar(name, download_path, downloaded_fpath, final_dirpath, logger, ext='bz2'):
     content = None
     try:
         response = urlopen(download_path)
@@ -81,17 +81,17 @@ def download_unpack_tar_bz(name, download_path, downloaded_fpath, final_dirpath,
             f.write(content)
         if exists(downloaded_fpath + '.download'):
             logger.info('  Unpacking ' + name + '...')
-            unpack_tar(downloaded_fpath + '.download', final_dirpath)
+            unpack_tar(downloaded_fpath + '.download', final_dirpath, ext=ext)
             logger.main_info('  Done')
         else:
             logger.main_info('  Failed downloading %s from %s!' % (name, download_path))
             return False
 
 
-def unpack_tar(fpath, dst_dirpath):
+def unpack_tar(fpath, dst_dirpath, ext='bz2'):
     shutil.move(fpath, fpath)
     import tarfile
-    tar = tarfile.open(fpath, "r:bz2")
+    tar = tarfile.open(fpath, "r:" + ext)
     tar.extractall(dst_dirpath)
     tar.close()
     temp_dirpath = join(dst_dirpath, tar.members[0].name)
@@ -150,7 +150,7 @@ def download_manta(logger, bed_fpath=None, only_clean=False):
                 return False
 
             logger.main_info('  Downloading binary distribution of Manta...')
-            download_unpack_tar_bz('Manta', url, manta_downloaded_fpath, manta_build_dirpath, logger)
+            download_unpack_compressed_tar('Manta', url, manta_downloaded_fpath, manta_build_dirpath, logger)
 
         manta_demo_dirpath = join(manta_build_dirpath, 'share', 'demo')
         if os.path.isdir(manta_demo_dirpath):

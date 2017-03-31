@@ -397,6 +397,11 @@ def parse_options(logger, quast_args, is_metaquast=False):
              callback_kwargs={'store_true_values': ['gene_finding', 'glimmer']},
              default=False)
          ),
+        (['-b', '--find-conserved-genes'], dict(
+             dest='run_busco',
+             action='store_true',
+             default=False)
+         ),
         (['--plots-format'], dict(
              dest='plot_extension',
              type='string',

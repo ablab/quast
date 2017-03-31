@@ -893,6 +893,8 @@ def get_reads_fpaths(logger):
         return reads_fpaths
     if len(qconfig.reads_fpaths) == 2 and qconfig.forward_reads and qconfig.reverse_reads:
         return reads_fpaths
+    if len(qconfig.reads_fpaths) == 2 and qconfig.interlaced_reads and qconfig.unpaired_reads:
+        return reads_fpaths
     if len(qconfig.reads_fpaths) == 3 and qconfig.forward_reads and qconfig.reverse_reads and qconfig.unpaired_reads:
         return reads_fpaths
     logger.error('You can specify only ONE paired-end and/or ONE single-read library.\n'

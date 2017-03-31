@@ -84,7 +84,7 @@ def binning_coverage(cov_values, nums_contigs):
     low_threshold = max(min(low_thresholds), 0)
     high_threshold = min(max(high_thresholds), max_cov)
     if (high_threshold - low_threshold) // bin_size < min_bins_cnt and bin_size > 1:
-        bin_size = (high_threshold - low_threshold) // min_bins_cnt
+        bin_size = max((high_threshold - low_threshold) // min_bins_cnt, 1)
     low_threshold -= low_threshold % bin_size
     high_threshold -= high_threshold % bin_size
     max_points = (high_threshold // bin_size) + 1  # add last bin

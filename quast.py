@@ -15,7 +15,7 @@ import shutil
 from quast_libs import qconfig
 qconfig.check_python_version()
 
-from quast_libs import qutils, reads_analyzer, plotter_data, run_busco
+from quast_libs import qutils, reads_analyzer, plotter_data
 from quast_libs.qutils import cleanup, check_dirpath, get_reads_fpaths
 from quast_libs.options_parser import parse_options
 
@@ -209,7 +209,11 @@ def main(args):
         if qconfig.platform_name == 'macosx':
             logger.main_info("")
             logger.warning("BUSCO can be run on Linux only")
+        elif sys.version[0:3] == '2.5':
+            logger.main_info("")
+            logger.warning("BUSCO does not support Python versions older than 2.6.")
         else:
+            from quast_libs import run_busco
             run_busco.do(contigs_fpaths, os.path.join(output_dirpath, qconfig.busco_dirname), logger)
     ########################################################################
     reports_fpaths, transposed_reports_fpaths = reporting.save_total(output_dirpath)

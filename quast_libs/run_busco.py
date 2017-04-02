@@ -133,5 +133,4 @@ def do(contigs_fpaths, output_dir, logger):
             if total_buscos != 0:
                 report.add_field(reporting.Fields.BUSCO_COMPLETE, ('%.2f' % (float(complete_buscos) * 100.0 / total_buscos)))
                 report.add_field(reporting.Fields.BUSCO_PART, ('%.2f' % (float(part_buscos) * 100.0 / total_buscos)))
-    logger.print_timestamp()
     logger.info('Done.')

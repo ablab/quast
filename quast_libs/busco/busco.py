@@ -32,8 +32,8 @@ GNU General Public License for more details.
 import os
 import sys
 import subprocess
-import argparse
-from argparse import RawTextHelpFormatter
+from quast_libs.ra_utils import argparse
+from quast_libs.ra_utils.argparse import RawTextHelpFormatter
 import time
 import threading
 import heapq
@@ -54,7 +54,7 @@ except ImportError:
     import Queue  # Python 2
 
 
-class BUSCOLogger(logging.getLoggerClass()):
+class BUSCOLogger(object):
     """
     This class customizes the _logger class
     """
@@ -64,29 +64,29 @@ class BUSCOLogger(logging.getLoggerClass()):
         :param name: the name of the BUSCOLogger instance to be created
         :type name: str
         """
-        super(BUSCOLogger, self).__init__(name)
-        self.setLevel(logging.INFO)
+        self._logger = logging.getLogger(name)
+        self._logger.setLevel(logging.INFO)
         self._has_warning = False
         self._formatter = logging.Formatter('%(levelname)s\t%(message)s')
         self._thread_formatter = logging.Formatter('%(levelname)s:%(threadName)s\t%(message)s')
         self._formatter_blank_line = logging.Formatter('')
         console_handler = logging.StreamHandler(sys.stdout)
-        self.addHandler(console_handler)
+        self._logger.addHandler(console_handler)
 
     def set_up_file_handler(self, output_dirpath):
         self._log_fpath = os.path.join(output_dirpath, 'busco.log')
-        for handler in self.handlers:
-            self.removeHandler(handler)
+        for handler in self._logger.handlers:
+            self._logger.removeHandler(handler)
         self._out_hdlr = logging.FileHandler(self._log_fpath, mode='w')
         self._out_hdlr.setFormatter(self._formatter)
         self._out_hdlr.setLevel(logging.INFO)
-        self.addHandler(self._out_hdlr)
+        self._logger.addHandler(self._out_hdlr)
 
     def add_blank_line(self):
         """
         This function add a blank line in the logs
         """
-        self.info('')
+        self._logger.info('')
 
     def add_thread_info(self):
         """
@@ -115,7 +115,7 @@ class BUSCOLogger(logging.getLoggerClass()):
         :type msg: str
         """
         self._has_warning = True
-        super(BUSCOLogger, self).warning(msg, *args, **kwargs)
+        self._logger.warning(msg, *args, **kwargs)
 
     def has_warning(self):
         """
@@ -134,7 +134,7 @@ class BUSCOLogger(logging.getLoggerClass()):
         :return:
         """
         if msg != '':  # do not log blank lines
-            self.info('[%s]\t%s' % (tool, msg), *args, **kwargs)
+            self._logger.info('[%s]\t%s' % (tool, msg), *args, **kwargs)
 
 
 class Analysis(object):
@@ -300,7 +300,24 @@ class Analysis(object):
         process = subprocess.Popen(cmd, stderr=subprocess.PIPE, stdout=subprocess.PIPE, shell=shell)
         process_out = process.stderr.readlines() + process.stdout.readlines()
         for line in process_out:
-            _logger.info_external_tool(name, line.decode("utf-8").strip())
+            _log.info_external_tool(name, line.decode("utf-8").strip())
+
+    @staticmethod
+    def check_output(*popenargs, **kwargs):
+        r"""Run command with arguments and return its output as a byte string.
+        Backported from Python 2.7 as it's implemented as pure python on stdlib.
+        """
+        process = subprocess.Popen(stdout=subprocess.PIPE, *popenargs, **kwargs)
+        output, unused_err = process.communicate()
+        retcode = process.poll()
+        if retcode:
+            cmd = kwargs.get("args")
+            if cmd is None:
+                cmd = popenargs[0]
+            error = subprocess.CalledProcessError(retcode, cmd)
+            error.output = output
+            raise error
+        return output
 
     @staticmethod
     def check_fasta_header(header):
@@ -352,13 +369,13 @@ class Analysis(object):
             raise SystemExit
         else:
             try:
-                hmmer_check = subprocess.check_output(hmmer_cmd + ' -h', shell=True)
+                hmmer_check = Analysis.check_output(hmmer_cmd + ' -h', shell=True)
                 hmmer_check = hmmer_check.decode('utf-8')
                 hmmer_check = hmmer_check.split('\n')[1].split()[2]
                 hmmer_check = float(hmmer_check[:3])
             except ValueError:
                 # to avoid a crash with super old version and notify the user, will be useful
-                hmmer_check = subprocess.check_output(hmmer_cmd + ' -h', shell=True)
+                hmmer_check = Analysis.check_output(hmmer_cmd + ' -h', shell=True)
                 hmmer_check = hmmer_check.decode('utf-8')
                 hmmer_check = hmmer_check.split('\n')[1].split()[1]
                 hmmer_check = float(hmmer_check[:3])
@@ -1362,7 +1379,7 @@ class Analysis(object):
         self._produce_short_summary()
 
         if len(self._missing_busco_list) == self._totalbuscos:
-            _logger.add_blank_line()
+            _log.add_blank_line()
             _logger.warning('BUSCO did not find any match. Do not forget to check the file %s '
                             'to exclude a problem regarding Augustus'
                             % augustus_log)
@@ -1994,7 +2011,7 @@ class GenomeAnalysis(Analysis):
         self.check_dataset()
         self._check_nucleotide()
         self._create_directory()
-        _logger.add_blank_line()
+        _log.add_blank_line()
         if self._restart:
             checkpoint = self._get_checkpoint(reset_random_suffix=True)
             _logger.warning('Restarting an uncompleted run')
@@ -2021,7 +2038,7 @@ class GenomeAnalysis(Analysis):
         if checkpoint == 3:
             self._fix_restart_augustus_folder()
         self._produce_short_summary()
-        _logger.add_blank_line()
+        _log.add_blank_line()
         _logger.info('****** Phase 2 of 2, predictions using species specific training ******')
         if checkpoint < 3:
             _logger.info('****** Step 1/3, current time: %s ******' % time.strftime("%m/%d/%Y %H:%M:%S"))
@@ -2059,7 +2076,7 @@ class GenomeAnalysis(Analysis):
                              % (self._augustus_config_path, self._abrev, self._random)],
                             'bash', shell=False)
         else:
-            _logger.add_blank_line()
+            _log.add_blank_line()
             _logger.warning('Augustus did not produce a retrained species folder, please check the augustus log file '
                             'in the run folder to ensure that nothing went wrong (%saugustus_output/augustus.log)'
                             % self.mainout)
@@ -2682,8 +2699,9 @@ FORBIDDEN_HEADER_CHARS = ['ç', '¬', '¢', '´', 'ê', 'î', 'ô', 'ŵ', 'ẑ',
                           'à', 'ä', '¨', '€', '£', 'á']
 
 #: Get an instance of _logger for keeping track of events
-logging.setLoggerClass(BUSCOLogger)
-_logger = logging.getLogger(__file__.split("/")[-1])
+#logging.setLoggerClass(BUSCOLogger)
+_log = BUSCOLogger(__file__.split("/")[-1])
+_logger = _log._logger
 
 _rerun_cmd = ''
 busco_dirpath = join(qconfig.LIBS_LOCATION, 'busco')
@@ -3040,14 +3058,14 @@ def main(args, output_dir=None, show_thread=False):
         return summary_path
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
-    _logger.set_up_file_handler(ROOT_FOLDER)
+    _log.set_up_file_handler(ROOT_FOLDER)
 
     if show_thread:
-        _logger.add_thread_info()
+        _log.add_thread_info()
 
     try:
 
-        _logger.add_blank_line()
+        _log.add_blank_line()
         _logger.info('****************** Start a BUSCO %s analysis, current time: %s ******************'
                      % (VERSION, time.strftime("%m/%d/%Y %H:%M:%S")))
         _check_path_exist(args['in'])
@@ -3079,8 +3097,8 @@ def main(args, output_dir=None, show_thread=False):
         # 5) Run the analysis
         analysis.run_analysis()
 
-        _logger.add_blank_line()
-        if not _logger.has_warning():
+        _log.add_blank_line()
+        if not _log.has_warning():
             _logger.info('BUSCO analysis done. Total running time: %s seconds' % str(time.time() - start_time))
         else:
             _logger.info('BUSCO analysis done with WARNING(s). Total running time: %s seconds'
@@ -3089,7 +3107,7 @@ def main(args, output_dir=None, show_thread=False):
         return summary_path
 
     except SystemExit:
-        _logger.add_blank_line()
+        _log.add_blank_line()
         _logger.error('BUSCO analysis failed !')
         _logger.info(
             'Check the logs, read the user guide, if you still need technical support, then please contact %s\n'
@@ -3097,7 +3115,7 @@ def main(args, output_dir=None, show_thread=False):
         raise SystemExit
 
     except KeyboardInterrupt:
-        _logger.add_blank_line()
+        _log.add_blank_line()
         _logger.error('A signal was sent to kill the process')
         _logger.error('BUSCO analysis failed !')
         _logger.info(
@@ -3106,7 +3124,7 @@ def main(args, output_dir=None, show_thread=False):
         raise SystemExit
 
     except BaseException:
-        _logger.add_blank_line()
+        _log.add_blank_line()
         exc_type, exc_value, exc_traceback = sys.exc_info()
         _logger.critical('Unhandled exception occurred: %s\n'
                          % repr(traceback.format_exception(exc_type, exc_value, exc_traceback)))

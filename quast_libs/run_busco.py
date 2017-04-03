@@ -109,18 +109,22 @@ def do(contigs_fpaths, output_dir, logger):
         logger.info('Failed finding conservative genes.')
         return
 
-    logger.info('Logging to ' + join(output_dir, 'busco.log') + '...')
+    log_fpath = join(output_dir, 'busco.log')
+    logger.info('Logging to ' + log_fpath + '...')
     busco_args = [(['-i', contigs_fpath, '-o', qutils.label_from_fpath_for_fname(contigs_fpath), '-l', clade,
                     '-m', 'genome', '-f', '-z', '-c', str(busco_threads), '-t', tmp_dir,
                     '--augustus_parameters=\'--AUGUSTUS_CONFIG_PATH=' + join(augustus_dirpath, 'config') + '\'' ], output_dir)
                     for contigs_fpath in contigs_fpaths]
     summary_fpaths = run_parallel(busco.main, busco_args, qconfig.max_threads)
+    if not any(fpath for fpath in summary_fpaths):
+        logger.error('Failed running BUSCO for all the assemblies. See ' + log_fpath + ' for information.')
+        return
 
     # saving results
     for i, contigs_fpath in enumerate(contigs_fpaths):
         report = reporting.get(contigs_fpath)
 
-        if os.path.isfile(summary_fpaths[i]):
+        if summary_fpaths[i] and os.path.isfile(summary_fpaths[i]):
             total_buscos, part_buscos, complete_buscos = 0, 0, 0
             with open(summary_fpaths[i]) as f:
                 for line in f:
@@ -133,4 +137,7 @@ def do(contigs_fpaths, output_dir, logger):
             if total_buscos != 0:
                 report.add_field(reporting.Fields.BUSCO_COMPLETE, ('%.2f' % (float(complete_buscos) * 100.0 / total_buscos)))
                 report.add_field(reporting.Fields.BUSCO_PART, ('%.2f' % (float(part_buscos) * 100.0 / total_buscos)))
+        else:
+            logger.error(
+                'Failed running BUSCO for ' + contigs_fpath + '. See ' + log_fpath + ' for information.')
     logger.info('Done.')

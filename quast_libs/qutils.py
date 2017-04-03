@@ -1003,7 +1003,7 @@ def run_parallel(_fn, fn_args, n_jobs=None, filter_results=False):
             from joblib3 import Parallel, delayed
         results_tuples = Parallel(n_jobs=n_jobs)(delayed(_fn)(*args) for args in fn_args)
     results = []
-    if results_tuples and results_tuples[0]:
+    if results_tuples:
         if isinstance(results_tuples[0], list) or isinstance(results_tuples[0], tuple):
             results_cnt = len(results_tuples[0])
             if filter_results:

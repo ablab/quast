@@ -992,7 +992,7 @@ class Analysis(object):
         _logger.info('Running tblastn, writing output to %sblast_output/tblastn_%s%s.tsv...'
                      % (self.mainout, self._abrev, output_suffix))
 
-        Analysis.p_open([get_blast_fpath('tblastn'), '-evalue', str(self._ev_cutoff), '-num_threads', str(self._cpus),
+        Analysis.p_open([get_blast_fpath('tblastn'), '-evalue', str(self._ev_cutoff), '-num_threads', '1',
                          '-query', query_file,
                          '-db', '%s%s%s' % (self._tmp, self._abrev, self._random),
                          '-out', '%sblast_output/tblastn_%s%s.tsv'
@@ -3112,7 +3112,7 @@ def main(args, output_dir=None, show_thread=False):
         _logger.info(
             'Check the logs, read the user guide, if you still need technical support, then please contact %s\n'
             % CONTACT)
-        raise SystemExit
+        return None
 
     except KeyboardInterrupt:
         _log.add_blank_line()
@@ -3121,7 +3121,7 @@ def main(args, output_dir=None, show_thread=False):
         _logger.info(
             'Check the logs, read the user guide, if you still need technical support, then please contact %s\n'
             % CONTACT)
-        raise SystemExit
+        return None
 
     except BaseException:
         _log.add_blank_line()
@@ -3132,7 +3132,7 @@ def main(args, output_dir=None, show_thread=False):
         _logger.info(
             'Check the logs, read the user guide, if you still need technical support, then please contact %s\n'
             % CONTACT)
-        raise SystemExit
+        return None
 
 
 # Entry point

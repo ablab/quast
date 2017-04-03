@@ -3,7 +3,7 @@
 if [ $# -gt 0 ]; then
     python_interpreter=$1
 else
-    python_interpreter=python2.5
+    python_interpreter=python2.6
 fi
 
 sh ../clean.sh

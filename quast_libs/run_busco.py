@@ -25,9 +25,16 @@ augustus_version = '3.1'
 augustus_url = 'http://bioinf.uni-greifswald.de/augustus/binaries/old/augustus-' + augustus_version + '.tar.gz'
 bacteria_db_url = 'http://busco.ezlab.org/v2/datasets/bacteria_odb9.tar.gz'
 eukaryota_db_url = 'http://busco.ezlab.org/v2/datasets/eukaryota_odb9.tar.gz'
+blast_filenames = ['tblastn', 'makeblastdb']
 
 
-def download_db(url, clade, only_clean=False):
+def download_db(logger, is_prokaryote, only_clean=False):
+    if is_prokaryote:
+        url = bacteria_db_url
+        clade = 'bacteria'
+    else:
+        url = eukaryota_db_url
+        clade = 'eukaryota'
     dirpath = get_dir_for_download('busco', 'Busco databases', [clade], logger, only_clean=only_clean)
     if not dirpath:
         return None
@@ -72,19 +79,29 @@ def download_tool(tool, tool_version, required_files, logger, url, only_clean=Fa
     return tool_dirpath
 
 
+def download_all_db(logger, only_clean=False):
+    bacteria_db = download_db(logger, is_prokaryote=True, only_clean=only_clean)
+    eukaryota_db = download_db(logger, is_prokaryote=False, only_clean=only_clean)
+    return bacteria_db and eukaryota_db
+
+
+def download_augustus(logger, only_clean=False):
+    return download_tool('augustus', augustus_version, ['bin'], logger, augustus_url, only_clean=only_clean)
+
+
 def do(contigs_fpaths, output_dir, logger):
     logger.print_timestamp()
     logger.info('Running BUSCO...')
 
     compilation_success = True
 
-    augustus_dirpath = download_tool('augustus', augustus_version, ['bin'], logger, augustus_url, only_clean=False)
+    augustus_dirpath = download_augustus(logger)
     if not augustus_dirpath:
         compilation_success = False
     elif not compile_tool('Augustus', augustus_dirpath, [join('bin', 'augustus')], logger=logger):
         compilation_success = False
 
-    if compilation_success and not download_blast_binaries(['tblastn', 'makeblastdb'], logger=logger):
+    if compilation_success and not download_blast_binaries(logger=logger, filenames=blast_filenames):
         compilation_success = False
 
     if not compilation_success:
@@ -101,17 +118,14 @@ def do(contigs_fpaths, output_dir, logger):
     n_jobs = min(len(contigs_fpaths), qconfig.max_threads)
     busco_threads = max(1, qconfig.max_threads // n_jobs)
 
-    if qconfig.prokaryote:
-        clade = download_db(bacteria_db_url, 'bacteria')
-    else:
-        clade = download_db(eukaryota_db_url, 'eukaryota')
-    if not clade:
+    clade_dirpath = download_db(logger, is_prokaryote=qconfig.prokaryote)
+    if not clade_dirpath:
         logger.info('Failed finding conservative genes.')
         return
 
     log_fpath = join(output_dir, 'busco.log')
     logger.info('Logging to ' + log_fpath + '...')
-    busco_args = [(['-i', contigs_fpath, '-o', qutils.label_from_fpath_for_fname(contigs_fpath), '-l', clade,
+    busco_args = [(['-i', contigs_fpath, '-o', qutils.label_from_fpath_for_fname(contigs_fpath), '-l', clade_dirpath,
                     '-m', 'genome', '-f', '-z', '-c', str(busco_threads), '-t', tmp_dir,
                     '--augustus_parameters=\'--AUGUSTUS_CONFIG_PATH=' + join(augustus_dirpath, 'config') + '\'' ], output_dir)
                     for contigs_fpath in contigs_fpaths]

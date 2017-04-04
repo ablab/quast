@@ -938,9 +938,11 @@ def show_progress(a, b, c):
         sys.stdout.flush()
 
 
-def download_blast_binaries(filenames, logger=logger, only_clean=False):
+def download_blast_binaries(logger=logger, filenames=None, only_clean=False):
     global blast_dirpath
 
+    all_binaries = ['makeblastdb', 'blastn', 'tblastn']
+    filenames = filenames or all_binaries
     required_files = [cmd for cmd in filenames if not get_blast_fpath(cmd)]
     if not required_files and not only_clean:
         return True

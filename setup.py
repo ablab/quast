@@ -34,9 +34,10 @@ except:
                  'You may also use old-style installation scripts: ./install.sh or ./install_full.sh',
                  exit_with_code=1)
 
-from quast_libs.search_references_meta import download_all_blast_binaries, download_blastdb
 from quast_libs.glimmer import compile_glimmer
 from quast_libs.gage import compile_gage
+from quast_libs.run_busco import download_augustus, download_all_db
+from quast_libs.search_references_meta import download_blast_binaries, download_blastdb
 from quast_libs.ca_utils.misc import compile_aligner, compile_gnuplot
 from quast_libs.ra_utils.misc import compile_reads_analyzer_tools, download_manta, compile_bwa, compile_bedtools
 
@@ -76,8 +77,11 @@ if cmd_in(['clean', 'sdist']):
         if isdir(name + '.egg-info'):
             shutil.rmtree(name + '.egg-info')
         download_manta(logger, only_clean=True)
-        download_all_blast_binaries(logger, only_clean=True)
+        download_blast_binaries(logger, only_clean=True)
         download_blastdb(logger, only_clean=True)
+        if qconfig.platform_name != 'macosx':
+            download_augustus(logger, only_clean=True)
+            download_all_db(logger, only_clean=True)
         logger.info('Done.')
         sys.exit()
 
@@ -169,9 +173,21 @@ if cmd_in(['install', 'develop', 'build', 'build_ext']):
         logger.info('* Downloading Manta *')
         if not download_manta(logger):
             modules_failed_to_install.append('Manta (affects -1/--reads1 and -2/--reads2 options)')
-        logger.info('* Downloading SILVA 16S rRNA gene database and BLAST *')
-        if not download_all_blast_binaries(logger) or not download_blastdb(logger):
-            modules_failed_to_install.append('SILVA 16S rRNA gene database and BLAST (affects metaquast.py in without references mode)')
+        logger.info('* Downloading BLAST *')
+        if not download_blast_binaries(logger):
+            modules_failed_to_install.append('BLAST (affects metaquast.py in without references mode and --find-conserved-genes option)')
+        logger.info('* Downloading SILVA 16S rRNA gene database *')
+        if not download_blastdb(logger):
+            modules_failed_to_install.append('SILVA 16S rRNA gene database (affects metaquast.py in without references mode)')
+        if qconfig.platform_name != 'macosx':
+            logger.info('* Downloading and compiling Augustus *')
+            if not download_augustus(logger):
+                modules_failed_to_install.append('Augustus (affects --find-conserved-genes option)')
+            logger.info('* Downloading BUSCO databases *')
+            if not download_all_db(logger):
+                modules_failed_to_install.append('BUSCO databases (affects --find-conserved-genes option)')
+        else:
+            logger.notice('* BUSCO dependecies will not be installed (unavailable in OS X) *')
         logger.info('* Compiling GAGE *')
         if not compile_gage():
             modules_failed_to_install.append('GAGE scripts (affects --gage option [will be deprecated soon])')
@@ -190,7 +206,7 @@ bwa_files = [
 full_install_tools = (
     find_package_files('manta') +
     find_package_files('blast') +
-    sambamba_files
+    [join(quast_package, 'busco', 'hmmsearch')]
 )
 
 setup(
@@ -220,6 +236,7 @@ The tool accepts multiple assemblies, thus is suitable for comparison.''',
             find_package_files('gage') +
             bwa_files +
             ['bedtools/bin/*'] +
+            sambamba_files +
            (full_install_tools if install_full else [])
     },
     include_package_data=True,

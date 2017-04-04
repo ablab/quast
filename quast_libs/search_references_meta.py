@@ -337,7 +337,7 @@ def parse_organism_id(organism_id):
 
 
 def process_blast(blast_assemblies, downloaded_dirpath, corrected_dirpath, labels, blast_check_fpath, err_fpath):
-    if not download_blast_binaries(blast_filenames):
+    if not download_blast_binaries(filenames=blast_filenames):
         return None, None
 
     if qconfig.custom_blast_db_fpath:

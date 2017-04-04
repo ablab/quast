@@ -440,11 +440,6 @@ def align_single_file(index, fpath, output_dirpath, log_path, err_path, max_thre
         fpath = abspath(fpath)
         sam_fpath = abspath(sam_fpath)
 
-        if not qconfig.no_check:
-            if qconfig.forward_reads and not paired_reads_names_are_equal([qconfig.forward_reads, qconfig.reverse_reads], logger):
-                logger.error('  Read names are discordant, skipping reads analysis!')
-                return None, None, None
-
         prev_dir = os.getcwd()
         os.chdir(output_dirpath)
         cmd = [bwa_fpath('bwa'), 'index', '-p', filename, fpath]
@@ -821,15 +816,19 @@ def do(ref_fpath, contigs_fpaths, output_dir, meta_ref_fpaths=None, external_log
     logger.print_timestamp()
     logger.main_info('Running Reads analyzer...')
 
+    if not compile_reads_analyzer_tools(logger):
+        logger.main_info('Failed reads analysis')
+        return None, None, None
+    if not qconfig.no_check:
+        if qconfig.forward_reads and not paired_reads_names_are_equal([qconfig.forward_reads, qconfig.reverse_reads],
+                                                                      logger):
+            logger.error('  Read names are discordant, skipping reads analysis!')
+            return None, None, None
+
     if not isdir(output_dir):
         os.makedirs(output_dir)
-    if not compile_reads_analyzer_tools(logger):
-        logger.main_info('Failed searching structural variations')
-        return None, None, None
-
     download_manta(logger, qconfig.bed)
     temp_output_dir = join(output_dir, 'temp_output')
-
     if not isdir(temp_output_dir):
         os.mkdir(temp_output_dir)
 

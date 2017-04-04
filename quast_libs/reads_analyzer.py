@@ -287,12 +287,17 @@ def run_processing_reads(contigs_fpaths, main_ref_fpath, meta_ref_fpaths, ref_la
 
     n_jobs = min(qconfig.max_threads, len(contigs_fpaths) + 1)
     max_threads_per_job = max(1, qconfig.max_threads // n_jobs)
-    parallel_align_args = [(index, contigs_fpath, temp_output_dir, log_path, err_path, max_threads_per_job)
+    sam_fpaths = qconfig.sam_fpaths or [None] * len(contigs_fpaths)
+    bam_fpaths = qconfig.bam_fpaths or [None] * len(contigs_fpaths)
+    parallel_align_args = [(index, contigs_fpath, temp_output_dir, log_path, err_path, max_threads_per_job,
+                            sam_fpaths[index], bam_fpaths[index])
                            for index, contigs_fpath in enumerate(contigs_fpaths)]
     if main_ref_fpath:
         parallel_align_args.append((None, main_ref_fpath, temp_output_dir, log_path, err_path,
-                                    max_threads_per_job, required_files, qconfig.sam, qconfig.bam))
+                                    max_threads_per_job, qconfig.reference_sam, qconfig.reference_bam, required_files, True))
     correct_chr_names, sam_fpaths, bam_fpaths = run_parallel(align_single_file, parallel_align_args, n_jobs)
+    qconfig.sam_fpaths = sam_fpaths[:len(contigs_fpaths)]
+    qconfig.bam_fpaths = bam_fpaths[:len(contigs_fpaths)]
     add_statistics_to_report(output_dir, contigs_fpaths, main_ref_fpath)
     save_reads(output_dir)
     if not main_ref_fpath:
@@ -300,7 +305,8 @@ def run_processing_reads(contigs_fpaths, main_ref_fpath, meta_ref_fpaths, ref_la
 
     correct_chr_names = correct_chr_names[-1]
     sam_fpath, bam_fpath = sam_fpaths[-1], bam_fpaths[-1]
-    qconfig.sam = sam_fpath
+    qconfig.reference_sam = sam_fpath
+    qconfig.reference_bam = bam_fpath
     if not required_files:
         return bed_fpath, cov_fpath, physical_cov_fpath
     if not all([sam_fpath, bam_fpath]):
@@ -390,8 +396,8 @@ def run_processing_reads(contigs_fpaths, main_ref_fpath, meta_ref_fpaths, ref_la
     return bed_fpath, cov_fpath, physical_cov_fpath
 
 
-def align_single_file(index, fpath, output_dirpath, log_path, err_path, max_threads, required_files=None,
-                      sam_fpath=None, bam_fpath=None):
+def align_single_file(index, fpath, output_dirpath, log_path, err_path, max_threads, sam_fpath=None, bam_fpath=None,
+                      required_files=None, is_reference=False):
     filename = qutils.name_from_fpath(fpath)
     if not sam_fpath and bam_fpath:
         sam_fpath = get_safe_fpath(output_dirpath, bam_fpath[:-4] + '.sam')
@@ -402,7 +408,7 @@ def align_single_file(index, fpath, output_dirpath, log_path, err_path, max_thre
     index_str = qutils.index_to_str(index) if index is not None else ''
 
     reads_fpaths = qconfig.reads_fpaths
-    correct_chr_names = get_correct_names_for_chroms(output_dirpath, fpath, sam_fpath, err_path, reads_fpaths)
+    correct_chr_names = get_correct_names_for_chroms(output_dirpath, fpath, sam_fpath, err_path, reads_fpaths, is_reference)
     can_reuse = correct_chr_names is not None
     if not can_reuse and not reads_fpaths:
         return None, None, None
@@ -419,12 +425,12 @@ def align_single_file(index, fpath, output_dirpath, log_path, err_path, max_thre
     logger.info('  ' + index_str + 'Pre-processing reads...')
     if is_non_empty_file(sam_fpath) and can_reuse:
         logger.info('  ' + index_str + 'Using existing SAM-file: ' + sam_fpath)
-        correct_chr_names = get_correct_names_for_chroms(output_dirpath, fpath, sam_fpath, err_path, reads_fpaths)
+        correct_chr_names = get_correct_names_for_chroms(output_dirpath, fpath, sam_fpath, err_path, reads_fpaths, is_reference)
     elif is_non_empty_file(bam_fpath) and can_reuse:
         logger.info('  ' + index_str + 'Using existing BAM-file: ' + bam_fpath)
         qutils.call_subprocess([sambamba_fpath('sambamba'), 'view', '-t', str(max_threads), '-h', bam_fpath],
                                stdout=open(sam_fpath, 'w'), stderr=open(err_path, 'a'), logger=logger)
-        correct_chr_names = get_correct_names_for_chroms(output_dirpath, fpath, sam_fpath, err_path, reads_fpaths)
+        correct_chr_names = get_correct_names_for_chroms(output_dirpath, fpath, sam_fpath, err_path, reads_fpaths, is_reference)
     if not correct_chr_names and reads_fpaths:
         if index is not None:
             logger.info('  ' + index_str + 'Running BWA...')
@@ -472,7 +478,7 @@ def align_single_file(index, fpath, output_dirpath, log_path, err_path, max_thre
         if not is_non_empty_file(sam_fpath):
             logger.error('  Failed running BWA for ' + fpath + '. See ' + log_path + ' for information.')
             return None, None, None
-        correct_chr_names = get_correct_names_for_chroms(output_dirpath, fpath, sam_fpath, err_path, reads_fpaths)
+        correct_chr_names = get_correct_names_for_chroms(output_dirpath, fpath, sam_fpath, err_path, reads_fpaths, is_reference)
     elif not correct_chr_names:
         return None, None, None
     if index is not None:
@@ -483,7 +489,7 @@ def align_single_file(index, fpath, output_dirpath, log_path, err_path, max_thre
     if can_reuse and is_non_empty_file(bam_fpath) and all_read_names_correct(sam_fpath):
         logger.info('  ' + index_str + 'Using existing BAM-file: ' + bam_fpath)
     else:
-        correct_sam_fpath = join(output_dirpath, filename + '.sam.correct')  # write in output dir
+        correct_sam_fpath = join(output_dirpath, filename + '.correct.sam')  # write in output dir
         sam_fpath = clean_read_names(sam_fpath, correct_sam_fpath)
         qutils.call_subprocess([sambamba_fpath('sambamba'), 'view', '-t', str(max_threads), '-h', '-f', 'bam',
                                 '-S', correct_sam_fpath],
@@ -723,7 +729,7 @@ def proceed_cov_file(raw_cov_fpath, cov_fpath, correct_chr_names):
             os.remove(raw_cov_fpath)
 
 
-def get_correct_names_for_chroms(output_dirpath, fasta_fpath, sam_fpath, err_path, reads_fpaths):
+def get_correct_names_for_chroms(output_dirpath, fasta_fpath, sam_fpath, err_path, reads_fpaths, is_reference=False):
     correct_chr_names = dict()
     fasta_chr_lengths = get_chr_lengths_from_fastafile(fasta_fpath)
     sam_chr_lengths = dict()
@@ -759,10 +765,10 @@ def get_correct_names_for_chroms(output_dirpath, fasta_fpath, sam_fpath, err_pat
     if inconsistency:
         if reads_fpaths:
             logger.warning(inconsistency + ' in ' + fasta_fpath + ' and corresponding SAM file ' + sam_fpath + ' do not match. ' +
-                           'QUAST will try to realign reads to the reference genome.')
+                           'QUAST will try to realign reads to ' + ('the reference genome' if is_reference else fasta_fpath))
         else:
             logger.error(inconsistency + ' in ' + fasta_fpath + ' and corresponding SAM file ' + sam_fpath + ' do not match. ' +
-                         'Use SAM file obtained by aligning reads to the reference genome.')
+                         'Use SAM file obtained by aligning reads to ' + ('the reference genome' if is_reference else fasta_fpath))
         return None
     return correct_chr_names
 

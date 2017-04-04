@@ -21,7 +21,7 @@ qconfig.check_python_version()
 
 from quast_libs.metautils import Assembly, correct_meta_references, correct_assemblies, \
     get_downloaded_refs_with_alignments, partition_contigs, calculate_ave_read_support
-from quast_libs.options_parser import parse_options, remove_from_quast_py_args
+from quast_libs.options_parser import parse_options, remove_from_quast_py_args, prepare_regular_quast_args
 
 from quast_libs import contigs_analyzer, reads_analyzer, search_references_meta, plotter_data, qutils
 from quast_libs.qutils import cleanup, check_dirpath, is_python2, run_parallel, get_reads_fpaths
@@ -206,25 +206,9 @@ def main(args):
     combined_output_dirpath = os.path.join(output_dirpath, qconfig.combined_output_name)
     qconfig.reference = combined_ref_fpath
 
-    reads_fpaths = get_reads_fpaths(logger)
-    if reads_fpaths or qconfig.sam or qconfig.bam:
-        corrected_contigs_fpaths = [assembly.fpath for assembly in assemblies]
-        qconfig.bed, qconfig.cov_fpath, qconfig.phys_cov_fpath =\
-            reads_analyzer.do(combined_ref_fpath, corrected_contigs_fpaths,
-                              os.path.join(combined_output_dirpath, qconfig.reads_stats_dirname), corrected_ref_fpaths, external_logger=logger)
-
-    if qconfig.sam:
-        quast_py_args += ['--sam']
-        quast_py_args += [qconfig.sam]
     if qconfig.bed:
         quast_py_args += ['--sv-bed']
         quast_py_args += [qconfig.bed]
-    if qconfig.cov_fpath:
-        quast_py_args += ['--cov']
-        quast_py_args += [qconfig.cov_fpath]
-    if qconfig.phys_cov_fpath:
-        quast_py_args += ['--phys-cov']
-        quast_py_args += [qconfig.phys_cov_fpath]
 
     quast_py_args += ['--combined-ref']
     if qconfig.draw_plots or qconfig.html_report:
@@ -311,20 +295,7 @@ def main(args):
     if qconfig.calculate_read_support:
         calculate_ave_read_support(combined_output_dirpath, assemblies)
 
-    for arg in args:
-        if arg in ('-s', "--scaffolds"):
-            quast_py_args.remove(arg)
-    quast_py_args += ['--no-check-meta']
-    qconfig.contig_thresholds = ','.join([str(threshold) for threshold in qconfig.contig_thresholds if threshold >= qconfig.min_contig])
-    if not qconfig.contig_thresholds:
-        qconfig.contig_thresholds = 'None'
-    quast_py_args = remove_from_quast_py_args(quast_py_args, '--contig-thresholds', qconfig.contig_thresholds)
-    quast_py_args += ['--contig-thresholds']
-    quast_py_args += [qconfig.contig_thresholds]
-    quast_py_args.remove('--combined-ref')
-    if qconfig.sam:
-        quast_py_args = remove_from_quast_py_args(quast_py_args, '--sam', qconfig.sam)
-
+    prepare_regular_quast_args(quast_py_args, combined_output_dirpath)
     logger.main_info()
     logger.main_info('Partitioning contigs into bins aligned to each reference..')
 

@@ -14,7 +14,7 @@ from os.path import join, abspath, isfile, isdir
 import sys
 
 from quast_libs import qconfig, qutils
-from quast_libs.qutils import assert_file_exists, set_up_output_dir, check_dirpath
+from quast_libs.qutils import assert_file_exists, set_up_output_dir, check_dirpath, is_non_empty_file
 
 test_data_dir_basename = 'test_data'
 test_data_dir = join(qconfig.QUAST_HOME, test_data_dir_basename)
@@ -154,6 +154,27 @@ def parse_meta_references(option, opt_str, value, parser, logger):
     ensure_value(qconfig, option.dest, []).extend(ref_fpaths)
 
 
+def parse_files_list(option, opt_str, value, parser, extension, logger):
+    fpaths = []
+    values = value.split(',')
+    for i, value in enumerate(values):
+        if value.endswith(extension):
+            assert_file_exists(value, extension.upper() + ' file')
+            fpaths.append(value)
+        else:
+            logger.error("incorrect extension for " + extension.upper() + " file (" + str(value) + ")! ",
+                         to_stderr=True, exit_with_code=2)
+
+    ensure_value(qconfig, option.dest, []).extend(fpaths)
+
+
+def check_sam_bam_files(contigs_fpaths, sam_fpaths, bam_fpaths, logger):
+    if sam_fpaths and len(contigs_fpaths) != len(sam_fpaths):
+        logger.error('Number of SAM files does not match the number of files with contigs', to_stderr=True, exit_with_code=11)
+    if bam_fpaths and len(contigs_fpaths) != len(bam_fpaths):
+        logger.error('Number of BAM files does not match the number of files with contigs', to_stderr=True, exit_with_code=11)
+
+
 def wrong_test_option(logger, msg, is_metaquast):
     logger.error(msg)
     qconfig.usage(meta=is_metaquast)
@@ -169,10 +190,40 @@ def clean_metaquast_args(quast_py_args, contigs_fpaths):
             quast_py_args.remove(contigs_fpath)
     for opt in opts_with_args_to_remove:
         remove_from_quast_py_args(quast_py_args, opt, arg=True)
-
     for opt in opts_to_remove:
         remove_from_quast_py_args(quast_py_args, opt)
     return quast_py_args
+
+
+def prepare_regular_quast_args(quast_py_args, combined_output_dirpath):
+    opts_with_args_to_remove = ['--contig-thresholds', '--sv-bed',]
+    opts_to_remove = ['-s', '--scaffolds', '--combined-ref']
+    for opt in opts_with_args_to_remove:
+        remove_from_quast_py_args(quast_py_args, opt, arg=True)
+    for opt in opts_to_remove:
+        remove_from_quast_py_args(quast_py_args, opt)
+
+    quast_py_args += ['--no-check-meta']
+    qconfig.contig_thresholds = ','.join([str(threshold) for threshold in qconfig.contig_thresholds if threshold >= qconfig.min_contig])
+    if not qconfig.contig_thresholds:
+        qconfig.contig_thresholds = 'None'
+    quast_py_args += ['--contig-thresholds']
+    quast_py_args += [qconfig.contig_thresholds]
+
+    reads_stats_dirpath = os.path.join(combined_output_dirpath, qconfig.reads_stats_dirname)
+    reference_name = qutils.name_from_fpath(qconfig.combined_ref_name)
+    qconfig.bed = qconfig.bed or os.path.join(reads_stats_dirpath, reference_name + '.bed')
+    qconfig.cov_fpath = qconfig.cov_fpath or os.path.join(reads_stats_dirpath, reference_name + '.cov')
+    qconfig.phys_cov_fpath = qconfig.phys_cov_fpath or os.path.join(reads_stats_dirpath, reference_name + '.physical.cov')
+    if qconfig.bed and is_non_empty_file(qconfig.bed):
+        quast_py_args += ['--sv-bed']
+        quast_py_args += [qconfig.bed]
+    if qconfig.cov_fpath and is_non_empty_file(qconfig.cov_fpath):
+        quast_py_args += ['--cov']
+        quast_py_args += [qconfig.cov_fpath]
+    if qconfig.phys_cov_fpath and is_non_empty_file(qconfig.phys_cov_fpath):
+        quast_py_args += ['--phys-cov']
+        quast_py_args += [qconfig.phys_cov_fpath]
 
 
 def parse_options(logger, quast_args, is_metaquast=False):
@@ -255,13 +306,27 @@ def parse_options(logger, quast_args, is_metaquast=False):
              dest='unpaired_reads',
              type='file')
          ),
+        (['--ref-sam'], dict(
+            dest='reference_sam',
+            type='file')
+         ),
+        (['--ref-bam'], dict(
+            dest='reference_bam',
+            type='file')
+         ),
         (['--sam'], dict(
-             dest='sam',
-             type='file')
+            dest='sam_fpaths',
+            type='string',
+            action='callback',
+            callback_args=('.sam', logger),
+            callback=parse_files_list)
          ),
         (['--bam'], dict(
-             dest='bam',
-             type='file')
+            dest='bam_fpaths',
+            type='string',
+            action='callback',
+            callback_args=('.bam', logger),
+            callback=parse_files_list)
          ),
         (['--sv-bedpe'], dict(
              dest='bed',
@@ -622,6 +687,9 @@ def parse_options(logger, quast_args, is_metaquast=False):
 
     if is_metaquast:
         quast_py_args = clean_metaquast_args(quast_py_args, contigs_fpaths)
+
+    if qconfig.sam_fpaths or qconfig.bam_fpaths:
+        check_sam_bam_files(contigs_fpaths, qconfig.sam_fpaths, qconfig.bam_fpaths, logger)
 
     return quast_py_args, contigs_fpaths
 

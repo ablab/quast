@@ -160,9 +160,9 @@ function buildTotalReport(assembliesNames, totalReport, order, glossary, qualiti
             var refGenes = referenceValues['Reference genes'];
             var refOperons = referenceValues['Reference operons'];
             var refChr = referenceValues['Reference chromosomes'];
-            var totalReads = referenceValues['# reads'];
-            var refMappedReads = referenceValues['Reference mapped reads (%)'];
-            var refPairedReads = referenceValues['Reference properly paired reads (%)'];
+            var totalReads = referenceValues['# total'];
+            var refMappedReads = referenceValues['Reference mapped (%)'];
+            var refPairedReads = referenceValues['Reference properly paired (%)'];
             var estRefLen = referenceValues['Estimated reference length'];
 
             if (refLen)
@@ -187,9 +187,9 @@ function buildTotalReport(assembliesNames, totalReport, order, glossary, qualiti
             }
             if (totalReads)
                 $('#total_reads').show().find('.val').html(toPrettyString(totalReads));
-            if (refMappedReads)
+            if (refMappedReads !== undefined)
                 $('#reference_mapped_reads').show().find('.val').html(toPrettyString(refMappedReads));
-            if (refPairedReads)
+            if (refPairedReads !== undefined)
                 $('#reference_paired_reads').show().find('.val').html(toPrettyString(refPairedReads));
             continue;
         }

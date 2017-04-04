@@ -206,8 +206,10 @@ reference = None
 genes = None
 operons = None
 labels = None
-sam = None
-bam = None
+sam_fpaths = None
+bam_fpaths = None
+reference_sam = None
+reference_bam = None
 bed = None
 reads_fpaths = None
 forward_reads = None
@@ -370,8 +372,12 @@ def usage(show_hidden=False, meta=False, short=True):
         sys.stderr.write("-2  --reads2  <filename>              File with reverse reads (in FASTQ format, may be gzipped)\n")
         sys.stderr.write("    --12      <filename>              File with interlaced forward and reverse paired-end reads. (in FASTQ format, may be gzipped)\n")
         sys.stderr.write("    --single  <filename>              File with unpaired reads. (in FASTQ format, may be gzipped)\n")
-        sys.stderr.write("    --sam     <filename>              SAM alignment file\n")
-        sys.stderr.write("    --bam     <filename>              BAM alignment file\n")
+        sys.stderr.write("    --ref-sam <filename>              SAM alignment file obtained by aligning reads to reference genome file\n")
+        sys.stderr.write("    --ref-bam <filename>              BAM alignment file obtained by aligning reads to reference genome file\n")
+        sys.stderr.write("    --sam     <filename,filename,...> Comma-separated list of SAM alignment files obtained by aligning reads to assemblies\n"
+                         "                                      (use the same order as for files with contigs)\n")
+        sys.stderr.write("    --bam     <filename,filename,...> Comma-separated list of BAM alignment files obtained by aligning reads to assemblies\n"
+                         "                                      (use the same order as for files with contigs)\n")
         sys.stderr.write("                                      Reads (or SAM/BAM file) are used for structural variation detection and\n")
         sys.stderr.write("                                      coverage histogram building in Icarus\n")
         sys.stderr.write("    --sv-bedpe  <filename>            File with structural variations (in BEDPE format)\n")

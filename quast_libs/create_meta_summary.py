@@ -72,7 +72,7 @@ def do(html_fpath, output_dirpath, combined_output_dirpath, output_dirpath_per_r
             summary_plot_fpath = os.path.join(output_dirpath, plots_dirname, metric.replace(' ', '_'))
             results, all_rows, cur_ref_names = \
                 get_results_for_metric(ref_names, metric, contigs_num, labels, output_dirpath_per_ref, qconfig.transposed_report_prefix + '.tsv')
-            if not results or not results[0]:
+            if not results or all(not value for result in results for value in result):
                 continue
             if cur_ref_names:
                 transposed_table = [{'metricName': 'Assemblies',

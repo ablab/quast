@@ -127,9 +127,11 @@ function buildGenomeTable(reports, group_n, numColumns) {
                 '</span>' +
             '</td>';
         var metrics = reports[report_n].report[group_n][1];
+        var referenceMetrics = ['Reference length', 'Reference fragments', 'Reference GC (%)',
+                                'Reference genes', 'Reference operons'];
         for (var metric_n = 0; metric_n < metrics.length; metric_n++) {
             var metric = metrics[metric_n];
-            if (metric.metricName == 'Reference name') continue;
+            if (referenceMetrics.indexOf(metric.metricName) === -1) continue;
 
             var value = metric.values[0];
 
@@ -293,6 +295,9 @@ function buildTotalReport(assembliesNames, report, order, date, minContig, gloss
             var refGC = referenceValues['Reference GC (%)'];
             var refGenes = referenceValues['Reference genes'];
             var refOperons = referenceValues['Reference operons'];
+            var totalReads = referenceValues['# total'];
+            var refMappedReads = referenceValues['Reference mapped (%)'];
+            var refPairedReads = referenceValues['Reference properly paired (%)'];
 
             var numColumns = 1; // no GC in combined reference
 
@@ -331,6 +336,12 @@ function buildTotalReport(assembliesNames, report, order, date, minContig, gloss
                 numColumns++;
             }
 
+            if (totalReads)
+                $('#total_reads').show().find('.val').html(toPrettyString(totalReads));
+            if (refMappedReads !== undefined)
+                $('#reference_mapped_reads').show().find('.val').html(toPrettyString(refMappedReads));
+            if (refPairedReads !== undefined)
+                $('#reference_paired_reads').show().find('.val').html(toPrettyString(refPairedReads));
             $('#main_ref_genome').html(buildGenomeTable(reports, group_n, numColumns));
             continue;
         }

@@ -100,7 +100,7 @@ def main(args):
     reads_fpaths = get_reads_fpaths(logger)
     cov_fpath = qconfig.cov_fpath
     physical_cov_fpath = qconfig.phys_cov_fpath
-    if reads_fpaths or qconfig.sam or qconfig.bam:
+    if reads_fpaths or qconfig.reference_sam or qconfig.reference_sam or qconfig.sam_fpaths or qconfig.bam_fpaths:
         bed_fpath, cov_fpath, physical_cov_fpath = reads_analyzer.do(ref_fpath, contigs_fpaths,
                                                                      os.path.join(output_dirpath, qconfig.reads_stats_dirname),
                                                                      external_logger=logger)

@@ -313,9 +313,9 @@ def run_processing_reads(contigs_fpaths, main_ref_fpath, meta_ref_fpaths, ref_la
         logger.info('  Failed searching structural variations.')
         return None, None, None
 
-    sam_sorted_fpath = get_safe_fpath(output_dir, add_suffix(sam_fpath, 'sorted'))
-    bam_mapped_fpath = get_safe_fpath(output_dir, add_suffix(bam_fpath, 'mapped'))
-    bam_sorted_fpath = get_safe_fpath(output_dir, add_suffix(bam_fpath, 'sorted'))
+    sam_sorted_fpath = get_safe_fpath(temp_output_dir, add_suffix(sam_fpath, 'sorted'))
+    bam_mapped_fpath = get_safe_fpath(temp_output_dir, add_suffix(bam_fpath, 'mapped'))
+    bam_sorted_fpath = get_safe_fpath(temp_output_dir, add_suffix(bam_fpath, 'sorted'))
 
     if is_non_empty_file(sam_sorted_fpath):
         logger.info('  Using existing sorted SAM-file: ' + sam_sorted_fpath)

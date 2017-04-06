@@ -309,6 +309,7 @@ def vcfToBedpe(vcf_file, bedpe_out):
             b2 = int(var.info['END'])
             name = v[2]
             score = v[5]
+            additional_fs = v[7:]
 
             if 'CIPOS' in var.info:
                 span = [int(v) for v in var.info['CIPOS'].split(',')]
@@ -341,7 +342,7 @@ def vcfToBedpe(vcf_file, bedpe_out):
                                            var.qual,
                                            var.info['SVTYPE'],
                                            var.filter] +
-                                           v[7:]
+                                           additional_fs
                                           )) + '\n')
         else:
             if 'SECONDARY' in var.info:
@@ -356,6 +357,7 @@ def vcfToBedpe(vcf_file, bedpe_out):
             b2 = int(b2)
 
             score = v[5]
+            additional_fs = v[7:]
             if 'CIPOS' in var.info:
                 span = [int(v) for v in var.info['CIPOS'].split(',')]
                 s1 = b1 + span[0] - 1
@@ -389,7 +391,7 @@ def vcfToBedpe(vcf_file, bedpe_out):
                                            var.qual,
                                            var.info['SVTYPE'],
                                            var.filter] +
-                                           v[7:]
+                                           additional_fs
                                           )) + '\n')
     # close the files
     bedpe_out.close()

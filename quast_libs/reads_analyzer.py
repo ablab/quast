@@ -135,16 +135,18 @@ def process_one_ref(cur_ref_fpath, output_dirpath, err_path, max_threads, bed_fp
         qutils.call_subprocess([get_manta_fpath(), '--normalBam', bam_sorted_fpath,
                                 '--referenceFasta', cur_ref_fpath, '--runDir', vcf_output_dirpath],
                                stdout=open(err_path, 'a'), stderr=open(err_path, 'a'), logger=logger)
-        if not isfile(join(vcf_output_dirpath, 'runWorkflow.py')):
+        workflow_run_fpath = join(vcf_output_dirpath, 'runWorkflow.py')
+        if not isfile(workflow_run_fpath):
             return None
         env = os.environ.copy()
         env['LC_ALL'] = 'C'
-        qutils.call_subprocess([join(vcf_output_dirpath, 'runWorkflow.py'), '-m', 'local', '-j', max_threads],
+        qutils.call_subprocess([workflow_run_fpath, '-m', 'local', '-j', str(max_threads)],
                                stderr=open(err_path, 'a'), logger=logger, env=env)
-    if not is_non_empty_file(unpacked_SV_fpath):
+    if is_non_empty_file(found_SV_fpath):
         cmd = 'gunzip -c %s' % found_SV_fpath
         qutils.call_subprocess(shlex.split(cmd), stdout=open(unpacked_SV_fpath, 'w'), stderr=open(err_path, 'a'), logger=logger)
-    vcfToBedpe.vcfToBedpe(open(unpacked_SV_fpath), open(bed_fpath, 'w'))
+    if is_non_empty_file(unpacked_SV_fpath):
+        vcfToBedpe.vcfToBedpe(open(unpacked_SV_fpath), open(bed_fpath, 'w'))
     return bed_fpath
 
 

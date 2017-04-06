@@ -563,7 +563,7 @@ def remove_reports(output_dirpath):
 
 def correct_name(name, max_name_len=MAX_CONTIG_NAME):
     name = re.sub(r'[^\w\._\-+|]', '_', name.strip())[:max_name_len]
-    return re.sub(r"[\|+=/]", '_', name.strip())[:max_name_len]
+    return re.sub(r"[\|\+\-=\/]", '_', name)
 
 
 def get_uniq_name(name, used_names):
@@ -961,8 +961,8 @@ def download_blast_binaries(logger=logger, filenames=None, only_clean=False):
         logger.info()
         if return_code != 0:
             return False
-        blast_file = get_blast_fpath(cmd)
-        os.chmod(blast_file, os.stat(blast_file).st_mode | stat.S_IEXEC)
+        blast_fpath = get_blast_fpath(cmd)
+        os.chmod(blast_fpath, os.stat(blast_fpath).st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
     return True
 
 

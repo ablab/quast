@@ -295,7 +295,7 @@ function buildTotalReport(assembliesNames, report, order, date, minContig, gloss
             var refGC = referenceValues['Reference GC (%)'];
             var refGenes = referenceValues['Reference genes'];
             var refOperons = referenceValues['Reference operons'];
-            var totalReads = referenceValues['# total'];
+            var totalReads = referenceValues['# total reads'];
             var refMappedReads = referenceValues['Reference mapped (%)'];
             var refPairedReads = referenceValues['Reference properly paired (%)'];
 

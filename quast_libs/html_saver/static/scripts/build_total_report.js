@@ -160,7 +160,7 @@ function buildTotalReport(assembliesNames, totalReport, order, glossary, qualiti
             var refGenes = referenceValues['Reference genes'];
             var refOperons = referenceValues['Reference operons'];
             var refChr = referenceValues['Reference chromosomes'];
-            var totalReads = referenceValues['# total'];
+            var totalReads = referenceValues['# total reads'];
             var refMappedReads = referenceValues['Reference mapped (%)'];
             var refPairedReads = referenceValues['Reference properly paired (%)'];
             var estRefLen = referenceValues['Estimated reference length'];

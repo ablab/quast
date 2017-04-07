@@ -145,7 +145,7 @@ class Fields:
     REF_GENES = 'Reference genes'
     REF_OPERONS = 'Reference operons'
     # Reads statistics
-    TOTAL_READS = '# total'
+    TOTAL_READS = '# total reads'
     LEFT_READS = '# left'
     RIGHT_READS = '# right'
     REF_MAPPED_READS = '# reference mapped'

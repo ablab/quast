@@ -185,7 +185,7 @@ http://sourceforge.net/p/krona/home/krona/ website and to the following paper:
 Ondov BD, Bergman NH, and Phillippy AM. Interactive metagenomic visualization in a Web
 browser. BMC Bioinformatics. 2011 Sep 30; 12(1):385.
 
-8. QUAST Structural Variation Finding module uses BWA, Sambamba, and Manta.
+8. QUAST uses BWA and Sambamba for calculating reads mapping statistics.
 For more details about BWA please refer to
 https://github.com/lh3/bwa website and to the following preprint:
 
@@ -197,6 +197,7 @@ https://github.com/lomereiter/sambamba website and to the following paper:
 A. Tarasov, A. J. Vilella, E. Cuppen, I. J. Nijman, and P. Prins.
 Sambamba: fast processing of NGS alignment formats. Bioinformatics, 2015.
 
+9. QUAST Structural Variation Finding module uses Manta.
 For more details about Manta please refer to
 https://github.com/Illumina/manta website and to the following paper:
 
@@ -204,16 +205,24 @@ Chen X, Schulz-Trieglaff O, Shaw R, Barnes B, Schlesinger F, Kallberg M, Cox A, 
 Manta: rapid detection of structural variants and indels for germline and cancer sequencing applications.
 Bioinformatics, 32(8): 1220-1222.
 
-9. Icarus uses Bedtools for calculating read coverage.
+10. Icarus uses Bedtools for calculating read coverage.
 For more details about Bedtools please refer to
 http://bedtools.readthedocs.io/ website and to the following paper:
 
 Quinlan, AR, Hall, IM (2010). BEDTools: a flexible suite of utilities for comparing 
 genomic features. Bioinformatics, 26, 6:841-2.
 
-10. QUAST uses Gnuplot for creating MUMmer alignment dotplot.
+11. QUAST uses Gnuplot for creating MUMmer alignment dotplot.
 For more details about Gnuplot please refer to
 http://gnuplot.sourceforge.net/ website and Copyright file under quast_libs/gnuplot/
+
+12. QUAST uses LAP for calculating assembly likelihood scores.
+For more details about LAP please refer to
+http://assembly-eval.sourceforge.net/ website and to the following paper:
+
+Ghodsi, M., Hill, C. M., Astrovskaya, I., Lin, H., Sommer, D. D., Koren, S., & Pop, M.
+De novo likelihood-based measures for comparing genome assemblies.
+BMC research notes 6 (2013): 334.
 
 
 -------------------------------------------------------------------------------

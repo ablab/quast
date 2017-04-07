@@ -18,7 +18,7 @@ from quast_libs.ca_utils.misc import ref_labels_by_chromosomes
 from quast_libs.fastaparser import create_fai_file, get_chr_lengths_from_fastafile
 from quast_libs.ra_utils import vcfToBedpe
 from quast_libs.ra_utils.misc import compile_reads_analyzer_tools, get_manta_fpath, sambamba_fpath, \
-    bwa_fpath, bedtools_fpath, paired_reads_names_are_equal, download_manta
+    bwa_fpath, bedtools_fpath, paired_reads_names_are_equal, download_manta, lap_fpath
 from quast_libs.qutils import is_non_empty_file, add_suffix, get_chr_len_fpath, correct_name, run_parallel
 
 from quast_libs.log import get_logger
@@ -421,6 +421,7 @@ def align_single_file(index, fpath, output_dirpath, log_path, err_path, max_thre
             qutils.call_subprocess([sambamba_fpath('sambamba'), 'flagstat', '-t', str(max_threads), bam_fpath],
                                    stdout=open(stats_fpath, 'w'), stderr=open(err_path, 'a'))
             analyse_coverage(output_dirpath, fpath, correct_chr_names, bam_fpath, stats_fpath, err_path, logger)
+        calc_lap_score(reads_fpaths, sam_fpath, index, index_str, output_dirpath, fpath, filename, err_path)
         if isfile(stats_fpath):
             return correct_chr_names, sam_fpath, bam_fpath
 
@@ -496,6 +497,7 @@ def align_single_file(index, fpath, output_dirpath, log_path, err_path, max_thre
     qutils.call_subprocess([sambamba_fpath('sambamba'), 'flagstat', '-t', str(max_threads), bam_fpath],
                             stdout=open(stats_fpath, 'w'), stderr=open(err_path, 'a'))
     analyse_coverage(output_dirpath, fpath, correct_chr_names, bam_fpath, stats_fpath, err_path, logger)
+    calc_lap_score(reads_fpaths, sam_fpath, index, index_str, output_dirpath, fpath, filename, err_path)
     if index is not None:
         logger.info('  ' + index_str + 'Analysis is finished.')
     else:
@@ -556,6 +558,7 @@ def add_statistics_to_report(output_dir, contigs_fpaths, ref_fpath):
     from quast_libs import reporting
 
     ref_reads_stats = None
+    ref_lap_score = None
     if ref_fpath:
         ref_name = qutils.name_from_fpath(ref_fpath)
         stats_fpath = join(output_dir, ref_name + '.stat')
@@ -563,6 +566,11 @@ def add_statistics_to_report(output_dir, contigs_fpaths, ref_fpath):
             ref_reads_stats = parse_reads_stats(stats_fpath)
             if int(ref_reads_stats['mapped']) == 0:
                 logger.info('  BWA: nothing aligned for reference.')
+        lap_out_fpath = get_safe_fpath(output_dir, ref_name + '.lap.out')
+        if is_non_empty_file(lap_out_fpath):
+            with open(lap_out_fpath) as f:
+                l = f.readline()
+                ref_lap_score = float(l.split()[0]) if l else None
 
     # process all contigs files
     for index, contigs_fpath in enumerate(contigs_fpaths):
@@ -605,6 +613,36 @@ def add_statistics_to_report(output_dir, contigs_fpaths, ref_fpath):
             report.add_field(reporting.Fields.COVERAGE__FOR_THRESHOLDS,
                             [reads_stats['coverage_thresholds'][i] for i, threshold in enumerate(qconfig.coverage_thresholds)])
             report.add_field(reporting.Fields.COVERAGE_1X_THRESHOLD, reads_stats['coverage_thresholds'][0])
+
+        lap_out_fpath = get_safe_fpath(output_dir, assembly_name + '.lap.out')
+        if is_non_empty_file(lap_out_fpath):
+            with open(lap_out_fpath) as f:
+                l = f.readline()
+                lap_score = float(l.split()[0]) if l else None
+            report.add_field(reporting.Fields.LAP_SCORE, ('%.3f' % lap_score if lap_score is not None else None))
+        report.add_field(reporting.Fields.REF_LAP_SCORE, ('%.3f' % ref_lap_score if ref_lap_score is not None else None))
+
+
+def calc_lap_score(reads_fpaths, sam_fpath, index, index_str, output_dirpath, fpath, filename, err_path):
+    if not reads_fpaths or not sam_fpath:
+        return
+
+    lap_out_fpath = get_safe_fpath(dirname(output_dirpath), filename + '.lap.out')
+    if not is_non_empty_file(lap_out_fpath):
+        if index is not None:
+            logger.info('  ' + index_str + 'Running LAP...')
+        else:
+            logger.info('  Running LAP for reference...')
+        prob_out_fpath = get_safe_fpath(output_dirpath, filename + '.prob')
+        qutils.call_subprocess([lap_fpath('calc_prob.py'), '-a', fpath, '-i', ','.join(reads_fpaths), '-q', '-s', sam_fpath],
+                                stdout=open(prob_out_fpath, 'w'), stderr=open(err_path, 'a'))
+        qutils.call_subprocess([lap_fpath('sum_prob.py'), '-i', prob_out_fpath],
+                                stdout=open(lap_out_fpath, 'w'), stderr=open(err_path, 'a'))
+    else:
+        if index is not None:
+            logger.info('  ' + index_str + 'Using existing file with LAP score...')
+        else:
+            logger.info('  Using existing file with LAP score for reference...')
 
 
 def analyse_coverage(output_dirpath, fpath, chr_names, bam_fpath, stats_fpath, err_path, logger):

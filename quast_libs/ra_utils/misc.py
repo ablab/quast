@@ -21,9 +21,10 @@ from quast_libs import qconfig
 from quast_libs.qutils import compile_tool, check_prev_compilation_failed, get_dir_for_download, relpath
 
 bwa_dirpath = join(qconfig.LIBS_LOCATION, 'bwa')
-sambamba_dirpath = join(qconfig.LIBS_LOCATION, 'sambamba')
 bedtools_dirpath = join(qconfig.LIBS_LOCATION, 'bedtools')
 bedtools_bin_dirpath = join(qconfig.LIBS_LOCATION, 'bedtools', 'bin')
+lap_dirpath = join(qconfig.LIBS_LOCATION, 'LAP')
+sambamba_dirpath = join(qconfig.LIBS_LOCATION, 'sambamba')
 
 manta_version = '0.29.6'
 manta_dirpath = None
@@ -48,6 +49,10 @@ def sambamba_fpath(fname):
 
 def bedtools_fpath(fname):
     return join(bedtools_bin_dirpath, fname)
+
+
+def lap_fpath(fname):
+    return join(lap_dirpath, fname)
 
 
 def get_manta_fpath():

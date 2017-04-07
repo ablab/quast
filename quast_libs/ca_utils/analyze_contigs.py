@@ -90,7 +90,8 @@ def save_unaligned_info(sorted_aligns, contig, ctg_len, unaligned_len, unaligned
     unaligned_info_file.write('\t'.join([contig, str(ctg_len), str(unaligned_len), unaligned_type, unaligned_parts_str]) + '\n')
 
 
-def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fpath, aligns, ref_features, ref_lens, is_cyclic=None):
+def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fpath, aligns, ref_features, ref_lens,
+                    is_cyclic=None, large_misassemblies_search=False):
     maxun = 10
     epsilon = 0.99
     umt = 0.5  # threshold for misassembled contigs with aligned less than $umt * 100% (Unaligned Missassembled Threshold)
@@ -136,16 +137,20 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fp
 
         #Check if this contig aligned to the reference
         if contig in aligns:
-            for align in aligns[contig]:
+            filtered_aligns = [align for align in aligns[contig] if align.len2 >= qconfig.min_alignment]
+            if not filtered_aligns:
+                continue
+
+            for align in filtered_aligns:
                 sub_seq = seq[align.start(): align.end()]
                 if 'N' in sub_seq:
                     ns_pos = [pos for pos in range(align.start(), align.end()) if seq[pos] == 'N']
             contig_type = 'correct'
             #Pull all aligns for this contig
-            num_aligns = len(aligns[contig])
+            num_aligns = len(filtered_aligns)
 
             #Sort aligns by aligned_length * identity - unaligned_length (as we do in BSS)
-            sorted_aligns = sorted(aligns[contig], key=lambda x: (score_single_align(x), x.len2), reverse=True)
+            sorted_aligns = sorted(filtered_aligns, key=lambda x: (score_single_align(x), x.len2), reverse=True)
             top_len = sorted_aligns[0].len2
             top_id = sorted_aligns[0].idy
             top_score = score_single_align(sorted_aligns[0])
@@ -381,17 +386,20 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fp
     unaligned_info_file.close()
     misassembled_bases = sum(misassembled_contigs.values())
 
-    result = {'region_misassemblies': region_misassemblies,
-              'region_struct_variations': region_struct_variations.get_count() if region_struct_variations else None,
-              'misassemblies_matched_sv': misassemblies_matched_sv,
-              'misassembled_contigs': misassembled_contigs, 'misassembled_bases': misassembled_bases,
-              'misassembly_internal_overlap': misassembly_internal_overlap,
-              'unaligned': unaligned, 'partially_unaligned': partially_unaligned,
-              'partially_unaligned_bases': partially_unaligned_bases, 'fully_unaligned_bases': fully_unaligned_bases,
-              'ambiguous_contigs': ambiguous_contigs, 'ambiguous_contigs_extra_bases': ambiguous_contigs_extra_bases,
-              'ambiguous_contigs_len': ambiguous_contigs_len,
-              'half_unaligned_with_misassembly': half_unaligned_with_misassembly,
-              'misassemblies_by_ref': misassemblies_by_ref,
-              'istranslocations_by_refs': istranslocations_by_ref}
+    if large_misassemblies_search:
+        result = {'large_misassemblies': region_misassemblies}
+    else:
+        result = {'region_misassemblies': region_misassemblies,
+                  'region_struct_variations': region_struct_variations.get_count() if region_struct_variations else None,
+                  'misassemblies_matched_sv': misassemblies_matched_sv,
+                  'misassembled_contigs': misassembled_contigs, 'misassembled_bases': misassembled_bases,
+                  'misassembly_internal_overlap': misassembly_internal_overlap,
+                  'unaligned': unaligned, 'partially_unaligned': partially_unaligned,
+                  'partially_unaligned_bases': partially_unaligned_bases, 'fully_unaligned_bases': fully_unaligned_bases,
+                  'ambiguous_contigs': ambiguous_contigs, 'ambiguous_contigs_extra_bases': ambiguous_contigs_extra_bases,
+                  'ambiguous_contigs_len': ambiguous_contigs_len,
+                  'half_unaligned_with_misassembly': half_unaligned_with_misassembly,
+                  'misassemblies_by_ref': misassemblies_by_ref,
+                  'istranslocations_by_refs': istranslocations_by_ref}
 
     return result, ref_aligns, total_indels_info, aligned_lengths, misassembled_contigs, misassemblies_in_contigs, contigs_aligned_lengths

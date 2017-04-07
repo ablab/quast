@@ -363,6 +363,10 @@ def parse_options(logger, quast_args, is_metaquast=False):
              dest='prokaryote',
              action='store_false')
          ),
+        (['--large'], dict(
+             dest='large_genome',
+             action='store_true')
+         ),
         (['-f', '--gene-finding'], dict(
              dest='gene_finding',
              action='store_true')

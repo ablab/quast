@@ -75,6 +75,7 @@ unaligned_part_size = 500
 all_labels_from_dirs = False
 force_nucmer = False
 run_busco = False
+large_genome = False
 
 # print in stdout only main information
 silent = False
@@ -155,6 +156,8 @@ phys_cov_fpath = None
 SHORT_INDEL_THRESHOLD = 5 # for separating short and long indels
 MAX_INDEL_LENGTH = 85  # for separating indels and local misassemblies (Nucmer default value)
 extensive_misassembly_threshold = 1000  # for separating local and extensive misassemblies (relocation)
+LARGE_EXTENSIVE_MIS_THRESHOLD = 6000
+LARGE_MIN_ALIGNMENT = 3000
 fragmented_max_indent = MAX_INDEL_LENGTH # for fake translocation in fragmented reference
 BSS_MAX_SETS_NUMBER = 10
 
@@ -317,6 +320,8 @@ def usage(show_hidden=False, meta=False, short=True):
         sys.stderr.write("-s  --scaffolds                       Assemblies are scaffolds, split them and add contigs to the comparison\n")
         sys.stderr.write("-l  --labels \"label, label, ...\"      Names of assemblies to use in reports, comma-separated. If contain spaces, use quotes\n")
         sys.stderr.write("-L                                    Take assembly names from their parent directory names\n")
+        sys.stderr.write("-e  --eukaryote                       Genome is eukaryotic\n")
+        sys.stderr.write("    --large                           Use optimal parameters for evaluation of large genomes\n")
         if meta:
             sys.stderr.write("-f  --gene-finding                    Predict genes using MetaGeneMark\n")
         else:
@@ -327,7 +332,6 @@ def usage(show_hidden=False, meta=False, short=True):
         sys.stderr.write("    --gene-thresholds <int,int,...>   Comma-separated list of threshold lengths of genes to search with Gene Finding module\n")
         sys.stderr.write("                                      [default: %s]\n" % genes_lengths)
         sys.stderr.write("-b  --find-conserved-genes            Use BUSCO for finding conserved orthologs (only on Linux)\n")
-        sys.stderr.write("-e  --eukaryote                       Genome is eukaryotic\n")
         if not meta:
             sys.stderr.write("    --est-ref-size <int>              Estimated reference size (for computing NGx metrics without a reference)\n")
         else:

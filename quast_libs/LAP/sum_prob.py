@@ -18,7 +18,7 @@ USAGE = """Usage: cat input_prob | ./calc_prob.py -t threshold
 
 def main():
     if len(sys.argv) < 1:
-        print USAGE
+        print(USAGE)
         sys.exit()
 
     parser = OptionParser()
@@ -54,10 +54,10 @@ def main():
         if prob < threshold:
             prob = threshold
             values_below_threshold += 1
-        
+
         summation += math.log10(prob)
         total_values += 1
-        
+
         tmpM = M
         M +=(prob - tmpM) / total_values
         S +=(prob - tmpM) * (prob - M)
@@ -66,25 +66,27 @@ def main():
     std_dev = math.fabs(math.log10(threshold) / (2 * math.pow(total_values, .5)))
 
     if debug_level > 2:
-        print 'Threshold:\t\t' + str(threshold)
-        print 'Total values:\t\t' + str(total_values)
-        print 'Values below threshold:\t{0} ({1:.2%})'.format(values_below_threshold,
-                float(values_below_threshold) / total_values)
-        
+        print('Threshold:\t\t' + str(threshold))
+        print('Total values:\t\t' + str(total_values))
+        print('Values below threshold:\t{0} ({1:.2%})'.format(values_below_threshold,
+                                                              float(values_below_threshold) / total_values))
+
         # TODO(cmhill): Experimental normalized score.  Lowest possible score is the
         # threshold * total values.
         max_score = (-1 * (math.log10(threshold) * total_values))
         adjusted_score = (float(summation) - (math.log10(threshold) * total_values))
-        print 'Normalized score:\t{0:.4}'.format(adjusted_score/max_score)
+        print('Normalized score:\t{0:.4}'.format(adjusted_score / max_score))
 
     if debug_level == 0:
-        print  str(summation / total_values) + '\t' + str(std_dev)   
+        print(str(summation / total_values) + '\t' + str(std_dev))
     else:
         if debug_level == 1:
-            print str(threshold) + '\t' + str(summation) + '\t' + str(summation / total_values)
+            print(str(threshold) + '\t' + str(summation) + '\t' + str(summation / total_values))
         else:
             std_dev = math.fabs(math.log10(threshold) / (2 * math.pow(total_values, .5)))
-            print str(threshold) + '\t' + str(summation) + '\t' + str(summation / total_values) + '\t' + str(std_dev) + '\t' + str(stream_std_dev)
+            print(str(threshold) + '\t' + str(summation) + '\t' + str(summation / total_values) + '\t' + str(
+                std_dev) + '\t' + str(stream_std_dev))
+
 
 if __name__ == '__main__':
     main()

@@ -9,8 +9,7 @@
  
  @author Christopher Hill
 '''
-import time,sys
-from UserString import MutableString
+
 
 class ParseFasta:
     ''' Constructor '''

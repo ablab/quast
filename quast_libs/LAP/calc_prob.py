@@ -9,7 +9,7 @@ came from the assembly.
 import math, glob, os, random, re, shlex, subprocess, sys, time
 import SeqIO
 from collections import defaultdict
-from optparse import OptionParser
+from optparse import OptionParser, Option
 from tempfile import mkstemp
 
 threads = "1"
@@ -489,7 +489,7 @@ def main():
     (options, args) = parser.parse_args(sys.argv[1:])
 
     if len(sys.argv) < 3:
-        print Option.help
+        print(Option.help)
         sys.exit()
 
 
@@ -539,8 +539,8 @@ def main():
     if options.assembly_fasta:
         assembly_length = getAssemblyLength(options.assembly_fasta)
     else:
-        print "Please enter an assembly fasta (-a)"
-        print parser.print_usage()
+        print("Please enter an assembly fasta (-a)")
+        print(parser.print_usage())
         sys.exit()
 
     if options.reads_filenames:
@@ -562,7 +562,7 @@ def main():
                     options.fastq_file)
 
     else:
-        print parser.print_usage()
+        print(parser.print_usage())
 
     # Clean up temporary files?
     if not options.keep_temp_files:

@@ -1,0 +1,16 @@
+*********
+calc_prob.py : Takes a set of reads and an assembly and generates
+a list of probabilities representing the probability that a read
+came from the assembly.
+*********
+
+IMPORTANT: Biopython, and bowtie2 must be in your PYTHONHOME and PATH envir.
+
+TO RUN:
+
+	./calc_prob.py -a genome.ctg.fasta [-q] -i input_1.fastq,input_2.fastq > output.probs
+
+To see a full list of options, run ./calc_prob.py with no parameters.
+
+calc_prob.py will generate bowtie2 indexes if no bt2 index is given.
+Currently they are written by timestamp to ./indexes/temp_yy_mm_dd_HH_MM_SS

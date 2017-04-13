@@ -30,14 +30,16 @@ function setInterfaceCoordinates() {
     annotationsMiniOffsetY = miniOffsetY + miniHeight + (featuresHidden ? 0 : spaceAfterTrack);
     covMiniOffsetY = annotationsMiniOffsetY + annotationsMiniHeight + spaceAfterTrack;
 
-    var physCovBtnOffsetY = 25;
+    var covBtnOffsetY = 25;
 
     hideBtnAnnotationsMiniOffsetY = annotationsMiniOffsetY + chartOffsetY;
     hideBtnAnnotationsMainOffsetY = annotationsMainOffsetY + chartOffsetY;
     hideBtnCoverageMiniOffsetY = covMiniOffsetY + chartOffsetY;
     hideBtnCoverageMainOffsetY = covMainOffsetY + chartOffsetY;
-    hideBtnPhysicalMiniCoverageOffsetY = hideBtnCoverageMiniOffsetY + physCovBtnOffsetY;
-    hideBtnPhysicalCoverageOffsetY = hideBtnCoverageMainOffsetY + physCovBtnOffsetY;
+    hideBtnPhysicalMiniCoverageOffsetY = hideBtnCoverageMiniOffsetY + covBtnOffsetY;
+    hideBtnPhysicalCoverageOffsetY = hideBtnCoverageMainOffsetY + covBtnOffsetY;
+    hideBtnGCMiniOffsetY = hideBtnPhysicalMiniCoverageOffsetY + covBtnOffsetY;
+    hideBtnGCMainOffsetY = hideBtnPhysicalCoverageOffsetY + covBtnOffsetY;
 }
 
 function setupBtns() {
@@ -47,6 +49,7 @@ function setupBtns() {
         if (typeof physical_coverage_data !== 'undefined')
             addPhysicalCovTrackButtons();
         addCoverageButtons();
+        addGCButtons();
     }
     moveExpandBtns();
 }
@@ -362,6 +365,31 @@ function addCovTrackButtons() {
     setTrackBtnPos(hideBtnCoverageMain, hideBtnCoverageMainOffsetY, 'cov', 'main', false);
 }
 
+function addGCButtons() {
+    hideBtnGCMini = document.getElementById('hideBtnGCMini');
+    hideBtnGCMain = document.getElementById('hideBtnGCMain');
+    setTrackBtnPos(hideBtnGCMini, hideBtnGCMiniOffsetY, 'cov', 'mini', true);
+    setTrackBtnPos(hideBtnGCMain, hideBtnGCMainOffsetY, 'cov', 'main', false);
+    hideBtnGCMain.style.display = 'none';
+
+    var showText = 'Show GC %';
+    var hideText = 'Hide GC %';
+    addGCTooltip(hideBtnGCMini);
+    addGCTooltip(hideBtnGCMain);
+
+    hideBtnGCMini.onclick = function() {
+        gcMiniHidden = !gcMiniHidden;
+        hideBtnGCMini.innerHTML = gcMiniHidden ? showText : hideText;
+        mini_cov.select('.gc').classed('invisible', gcMiniHidden);
+    };
+    hideBtnGCMain.onclick = function() {
+        gcHidden = !gcHidden;
+        hideBtnGCMain.innerHTML = gcHidden ? showText : hideText;
+        main_cov.select('.gc').classed('invisible', gcHidden);
+        display();
+    };
+}
+
 function addPhysicalCovTrackButtons() {
     hideBtnPhysicalCoverageMini = document.getElementById('hideBtnPhysCovMini');
     hideBtnPhysicalCoverageMain = document.getElementById('hideBtnPhysCovMain');
@@ -384,6 +412,16 @@ function addPhysicalCovTrackButtons() {
         hideBtnPhysicalCoverageMain.innerHTML = physicalCoverageHidden ? showCovText : hideCovText;
         main_cov.select('.phys_covered').classed('invisible', physicalCoverageHidden);
         display();
+    };
+}
+
+function addGCTooltip(hideBtn) {
+    var description = 'GC content was calculated based on non-overlapping ' + gcFactor + ' bp windows.';
+    hideBtn.onmouseover = function() {
+        addTooltip(null, description, event);
+    };
+    hideBtn.onmouseout = function() {
+        removeTooltip();
     };
 }
 
@@ -736,7 +774,7 @@ function addCoverageButtons() {
     covMainControls = document.getElementById('covMainControls');
     setTrackBtnPos(covMiniControls, hideBtnCoverageMiniOffsetY - 10);
     setTrackBtnPos(covMainControls, hideBtnCoverageMainOffsetY - 10);
-    btnsWidth = 100;
+    btnsWidth = 110;
     covMiniControls.style.left = (margin.left + width - btnsWidth) + "px";
     covMainControls.style.left = (margin.left + width - btnsWidth) + "px";
     covMainControls.style.display = 'none';
@@ -772,8 +810,8 @@ function expandLane(laneId, isCollapsed) {
     chart.attr('height', curChartHeight);
 
     var changedTracks = [annotationsMain, main_cov, mini, annotationsMini, mini_cov];
-    var changedBtns = [hideBtnAnnotationsMain, hideBtnCoverageMain, hideBtnPhysicalCoverageMain, covMainControls, hideBtnAnnotationsMini,
-        hideBtnCoverageMini, hideBtnPhysicalCoverageMini, covMiniControls];
+    var changedBtns = [hideBtnAnnotationsMain, hideBtnCoverageMain, hideBtnPhysicalCoverageMain, hideBtnGCMain, covMainControls,
+        hideBtnAnnotationsMini, hideBtnCoverageMini, hideBtnPhysicalCoverageMini, hideBtnGCMini, covMiniControls];
     for (var track_n = 0; track_n < changedTracks.length; track_n++)
         setTrackPos(changedTracks[track_n])
     for (var btn_n = 0; btn_n < changedBtns.length; btn_n++)

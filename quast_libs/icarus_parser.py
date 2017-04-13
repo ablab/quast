@@ -88,9 +88,8 @@ def parse_contigs_fpath(contigs_fpath):
 
 def parse_cov_fpath(cov_fpath, chr_names, chr_full_names, contig_names_by_refs):
     if not cov_fpath:
-        return None, None, None
+        return None, None
     cov_data = defaultdict(list)
-    #not_covered = defaultdict(list)
     max_depth = defaultdict(int)
     chr_contigs = []
     with open(cov_fpath, 'r') as coverage:
@@ -117,9 +116,7 @@ def parse_cov_fpath(cov_fpath, chr_names, chr_full_names, contig_names_by_refs):
                 depth = int(float(fs[1]))
                 max_depth[chrom] = max(depth, max_depth[chrom])
                 cov_data[chrom].append(depth)
-            # if c[2] == '0':
-            #     not_covered[name].append(c[1])
-    return cov_data, None, max_depth
+    return cov_data, max_depth
 
 
 def parse_features_data(features, cumulative_ref_lengths, ref_names):

@@ -97,7 +97,8 @@ def get_contigs_structure(assemblies_contigs, chr_to_aligned_blocks, contigs_by_
 
 def prepare_alignment_data_for_one_ref(chr, chr_full_names, chr_names_by_id, ref_contigs, data_str, chr_to_aligned_blocks,
                                        structures_by_labels, contigs_by_assemblies, ambiguity_alignments_by_labels=None,
-                                       contig_names_by_refs=None, output_dir_path=None, cov_data_str=None, physical_cov_data_str=None):
+                                       contig_names_by_refs=None, output_dir_path=None,
+                                       cov_data_str=None, physical_cov_data_str=None, gc_data_str=None):
     html_name = get_html_name(chr, chr_full_names)
     alignment_viewer_fpath = join(output_dir_path, html_name + '.html')
 
@@ -219,7 +220,10 @@ def prepare_alignment_data_for_one_ref(chr, chr_full_names, chr_names_by_id, ref
         data_str.extend(cov_data_str)
     if physical_cov_data_str:
         data_str.extend(physical_cov_data_str)
-
+    if gc_data_str:
+        data_str.append('var gc_window_size = ' + (str(qconfig.GC_window_size_large) if
+                        qconfig.large_genome else str(qconfig.GC_window_size)) + ';')
+        data_str.extend(gc_data_str)
 
     misassemblies_types = ['relocation', 'translocation', 'inversion', 'interspecies translocation', 'local']
     if not qconfig.is_combined_ref:

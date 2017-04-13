@@ -104,6 +104,7 @@ THE SOFTWARE.
     var y_main = d3.scale.linear().domain([ext[0], ext[1] + 1]).range([0, mainHeight]);
     var y_mini = d3.scale.linear().domain([ext[0], ext[1] + 1]).range([0, miniHeight]);
     var hideBtnAnnotationsMini, hideBtnAnnotationsMain, hideBtnCoverageMini, hideBtnCoverageMain,
+        hideBtnGCMain, hideBtnGCMini,
         hideBtnPhysicalCoverageMini, hideBtnPhysicalCoverageMain, covMiniControls, covMainControls;
 
     var letterSize = getSize('w') - 1;
@@ -121,19 +122,23 @@ THE SOFTWARE.
       var y_anno = d3.scale.linear().domain([ext[0], ext[1] + 1]).range([0, annotationsHeight]);
     }
 
-    var coverageFactor = 9, maxCovDots = chartWidth * 4;
+    var coverageFactor = 9, gcFactor = 100, maxCovDots = chartWidth * 4;
     var featuresHidden = false, drawCoverage = false;
-    var coverageMainHidden = true, physicalCoverageHidden = true, physicalMiniCoverageHidden = true;
+    var coverageMainHidden = true, physicalCoverageHidden = true, physicalMiniCoverageHidden = true,
+        gcHidden = false, gcMiniHidden = false;
     if (!featuresData || featuresData.features.length == 0)
       featuresHidden = true;
     if (typeof coverage_data != "undefined")
         drawCoverage = true;
+    if (typeof gc_window_size != "undefined")
+        gcFactor = gc_window_size;
     var featuresMainHidden = featuresHidden || lanes.length > 3;
     var brush, brush_cov, brush_anno;
+    var offsetX = 20;
 
     var chart = d3.select('body').append('div').attr('id', 'chart')
             .append('svg:svg')
-            .attr('width', width + margin.right + margin.left)
+            .attr('width', width + margin.right + margin.left + offsetX)
             .attr('class', 'chart');
 
     var main = chart.append('g')
@@ -147,8 +152,9 @@ THE SOFTWARE.
     var spaceAfterTrack = 40;
 
     var baseOffsetY, annotationsMiniOffsetY, annotationsMainOffsetY, covMiniOffsetY, covMainOffsetY, extraOffsetY;
-    var hideBtnAnnotationsMiniOffsetY,hideBtnAnnotationsMainOffsetY,hideBtnCoverageMiniOffsetY,
-        hideBtnCoverageMainOffsetY,hideBtnPhysicalMiniCoverageOffsetY,hideBtnPhysicalCoverageOffsetY;
+    var hideBtnAnnotationsMiniOffsetY, hideBtnAnnotationsMainOffsetY,
+        hideBtnCoverageMiniOffsetY, hideBtnCoverageMainOffsetY, hideBtnGCMiniOffsetY, hideBtnGCMainOffsetY,
+        hideBtnPhysicalMiniCoverageOffsetY, hideBtnPhysicalCoverageOffsetY;
 
     setInterfaceCoordinates();
 
@@ -723,24 +729,32 @@ THE SOFTWARE.
         y_cov_mini_S = setYScaleCoverage();
         y_cov_main_S = y_cov_mini_S;
 
-        y_cov_mini_A = d3.svg.axis()
-            .orient('left')
+        y_gc_scale = d3.scale.linear().domain([100, .1]).range([0, coverageHeight]);
+        y_gc_axis = d3.svg.axis()
+            .orient('right')
             .tickFormat(function(tickValue) {
-                return tickValue;
+                return tickValue + '%';
             })
             .tickSize(2, 0)
             .ticks(numYTicks);
+        y_gc_axis.scale(y_gc_scale);
         mini_cov = chart.append('g')
             .attr('class', 'coverage')
             .attr('transform', 'translate(' + margin.left + ', ' + covMiniOffsetY + ')');
         mini_cov.append('g')
-            .attr('class', 'y');
+            .attr('class', 'y cov')
+            .style("fill", "steelblue");
+        mini_cov.append('g')
+            .attr('class', 'y gc_plot')
+            .style("fill", "#3d6f15")
+            .attr('transform', 'translate(' + width + ', 0)');
+        mini_cov.select('.y.gc_plot').call(y_gc_axis);
 
         // draw main coverage
         y_cov_main_A = y_cov_mini_A = d3.svg.axis()
             .orient('left')
             .tickFormat(function(tickValue) {
-                return tickValue;
+                return tickValue + 'x';
             })
             .tickSize(2, 0)
             .ticks(numYTicks);
@@ -752,8 +766,13 @@ THE SOFTWARE.
 
         main_cov.attr('display', 'none');
         main_cov.append('g')
-            .attr('class', 'y')
-            .attr('transform', 'translate(0, 0)');
+            .attr('class', 'y gc_plot')
+            .style("fill", "#3d6f15")
+            .attr('transform', 'translate(' + width + ', 0)');
+        main_cov.select('.y.gc_plot').call(y_gc_axis);
+        main_cov.append('g')
+            .attr('class', 'y cov')
+            .style("fill", "steelblue");
 
         setYScaleLabels(mini_cov, y_cov_mini_A, y_cov_mini_S);
         setYScaleLabels(main_cov, y_cov_main_A, y_cov_main_S);
@@ -766,6 +785,7 @@ THE SOFTWARE.
             togglePhysCoverageMini();
         }
         drawCoverageLine(x_mini.domain()[0], x_mini.domain()[1], false, coverage_data, '.covered');
+        drawCoverageLine(x_mini.domain()[0], x_mini.domain()[1], false, gc_data, '.gc');
     }
 
     function appendPaths(track) {
@@ -774,6 +794,9 @@ THE SOFTWARE.
             .append('path');
         track.append('g')
             .attr('class', 'covered')
+            .append('path');
+        track.append('g')
+            .attr('class', 'gc')
             .append('path');
     }
 

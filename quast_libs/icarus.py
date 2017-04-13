@@ -35,7 +35,8 @@ from quast_libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 
 
-def do(contigs_fpaths, contig_report_fpath_pattern, output_dirpath, ref_fpath, cov_fpath=None,  physical_cov_fpath=None,
+def do(contigs_fpaths, contig_report_fpath_pattern, output_dirpath, ref_fpath,
+       cov_fpath=None,  physical_cov_fpath=None, gc_fpath=None,
        stdout_pattern=None, find_similar=True, features=None, json_output_dir=None, genes_by_labels=None):
     make_output_dir(output_dirpath)
 
@@ -126,7 +127,8 @@ def do(contigs_fpaths, contig_report_fpath_pattern, output_dirpath, ref_fpath, c
         icarus_html_fpath = js_data_gen(assemblies, contigs_fpaths, reference_chromosomes,
                     output_dirpath, structures_by_labels, contig_names_by_refs=contig_names_by_refs, ref_fpath=ref_fpath, stdout_pattern=stdout_pattern,
                     ambiguity_alignments_by_labels=ambiguity_alignments_by_labels, contigs_by_assemblies=contigs_by_assemblies,
-                    features_data=features_data, cov_fpath=cov_fpath, physical_cov_fpath=physical_cov_fpath, json_output_dir=json_output_dir)
+                    features_data=features_data,
+                    gc_fpath=gc_fpath, cov_fpath=cov_fpath, physical_cov_fpath=physical_cov_fpath, json_output_dir=json_output_dir)
     else:
         icarus_html_fpath = None
 
@@ -135,7 +137,7 @@ def do(contigs_fpaths, contig_report_fpath_pattern, output_dirpath, ref_fpath, c
 
 def js_data_gen(assemblies, contigs_fpaths, chromosomes_length, output_dirpath, structures_by_labels,
                 contigs_by_assemblies, ambiguity_alignments_by_labels=None, contig_names_by_refs=None, ref_fpath=None,
-                stdout_pattern=None, features_data=None, cov_fpath=None, physical_cov_fpath=None, json_output_dir=None):
+                stdout_pattern=None, features_data=None, gc_fpath=None, cov_fpath=None, physical_cov_fpath=None, json_output_dir=None):
     chr_names = []
     if chromosomes_length and assemblies:
         chr_to_aligned_blocks = OrderedDict()
@@ -163,8 +165,9 @@ def js_data_gen(assemblies, contigs_fpaths, chromosomes_length, output_dirpath, 
 
     chr_full_names, contig_names_by_refs = group_references(chr_names, contig_names_by_refs, chromosomes_length, ref_fpath)
 
-    cov_data, not_covered, max_depth = parse_cov_fpath(cov_fpath, chr_names, chr_full_names, contig_names_by_refs)
-    physical_cov_data, not_covered, physical_max_depth = parse_cov_fpath(physical_cov_fpath, chr_names, chr_full_names, contig_names_by_refs)
+    cov_data, max_depth = parse_cov_fpath(cov_fpath, chr_names, chr_full_names, contig_names_by_refs)
+    physical_cov_data, physical_max_depth = parse_cov_fpath(physical_cov_fpath, chr_names, chr_full_names, contig_names_by_refs)
+    gc_data, max_gc = parse_cov_fpath(gc_fpath, chr_names, chr_full_names, contig_names_by_refs)
 
     chr_sizes = {}
     num_contigs = {}
@@ -206,14 +209,15 @@ def js_data_gen(assemblies, contigs_fpaths, chromosomes_length, output_dirpath, 
             data_str.append('chromosomes_len["' + ref_contig + '"] = ' + str(l) + ';')
             aligned_bases_by_chr[chr].extend(aligned_bases[ref_contig])
 
-        cov_data_str = format_cov_data(cov_data, max_depth, chr, 'coverage_data', 'reads_max_depth') if cov_data else None
-        physical_cov_data_str = format_cov_data(physical_cov_data, physical_max_depth, chr, 'physical_coverage_data', 'physical_max_depth') \
+        cov_data_str = format_cov_data(chr, cov_data, 'coverage_data', max_depth, 'reads_max_depth') if cov_data else None
+        physical_cov_data_str = format_cov_data(chr, physical_cov_data, 'physical_coverage_data', physical_max_depth, 'physical_max_depth') \
             if physical_cov_data else None
+        gc_data_str = format_cov_data(chr, gc_data, 'gc_data', 100, 'max_gc') if gc_data else None
 
         alignment_viewer_fpath, ref_data_str, contigs_structure_str, additional_assemblies_data, ms_selectors, num_misassemblies[chr], aligned_assemblies[chr] = \
             prepare_alignment_data_for_one_ref(chr, chr_full_names, chr_names_by_id, ref_contigs, data_str, chr_to_aligned_blocks, structures_by_labels,
                                                contigs_by_assemblies, ambiguity_alignments_by_labels=ambiguity_alignments_by_labels,
-                                               cov_data_str=cov_data_str, physical_cov_data_str=physical_cov_data_str,
+                                               cov_data_str=cov_data_str, physical_cov_data_str=physical_cov_data_str, gc_data_str=gc_data_str,
                                                contig_names_by_refs=contig_names_by_refs, output_dir_path=output_all_files_dir_path)
         ref_name = qutils.name_from_fpath(ref_fpath)
         save_alignment_data_for_one_ref(chr, ref_contigs, ref_name, json_output_dir, alignment_viewer_fpath, ref_data_str, ms_selectors,

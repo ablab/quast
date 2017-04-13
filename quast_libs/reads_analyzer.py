@@ -758,7 +758,7 @@ def proceed_cov_file(raw_cov_fpath, cov_fpath, correct_chr_names):
                 if len(chr_depth[name]) >= cov_factor:
                     max_index = len(chr_depth[name]) - (len(chr_depth[name]) % cov_factor)
                     for index in range(0, max_index, cov_factor):
-                        cur_depth = sum(chr_depth[name][index: index + cov_factor]) / cov_factor
+                        cur_depth = sum(chr_depth[name][index: index + cov_factor]) // cov_factor
                         out_coverage.write(' '.join([used_chromosomes[name], str(cur_depth) + '\n']))
                     chr_depth[name] = chr_depth[name][index + cov_factor:]
             os.remove(raw_cov_fpath)

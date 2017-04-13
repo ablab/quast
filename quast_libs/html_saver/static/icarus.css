@@ -230,6 +230,12 @@ span {
     stroke-width: 5px;
 }
 
+.gc path {
+    stroke: #3d6f15;
+    stroke-width: 1px;
+    fill: none;
+}
+
 .coverage text {
     font: 16px sans-serif;
 }

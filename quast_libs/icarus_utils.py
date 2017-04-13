@@ -268,12 +268,12 @@ def make_output_dir(output_dir_path):
         os.makedirs(output_dir_path)
 
 
-def format_cov_data(cov_data, max_depth, chr, cov_data_name, max_depth_name):
+def format_cov_data(chr, cov_data, cov_data_name, max_depth, max_depth_name):
     data = []
     data.append('var ' + cov_data_name + ' = {};')
     data.append('var ' + max_depth_name + ' = {};')
     if cov_data[chr]:
-        chr_max_depth = max_depth[chr]
+        chr_max_depth = max_depth[chr] if isinstance(max_depth, dict) else max_depth
         data.append(max_depth_name + '["' + chr + '"] = ' + str(chr_max_depth) + ';')
         data.append(cov_data_name + '["' + chr + '"] = [ ')
         line = ''

@@ -41,13 +41,9 @@ def GC_content(contigs_fpath, skip=False):
         n = 100 # blocks of length 100
         # non-overlapping windows
         for seq in (seq_full[i:i+n] for i in range(0, len(seq_full), n)):
-            # skip block if it has less than half of ACGT letters (it also helps with "ends of contigs")
-            ACGT_len = len(seq) - seq.count("N")
-            if ACGT_len < (n / 2):
+            GC_percent = get_GC_percent(seq, n)
+            if not GC_percent:
                 continue
-
-            GC_len = seq.count("G") + seq.count("C")
-            GC_percent = 100.0 * GC_len / ACGT_len
             GC_distribution_y[int(int(GC_percent / qconfig.GC_bin_size) * qconfig.GC_bin_size)] += 1
         total_GC_amount += contig_GC_len
         total_contig_length += contig_ACGT_len
@@ -58,6 +54,29 @@ def GC_content(contigs_fpath, skip=False):
         total_GC = total_GC_amount * 100.0 / total_contig_length
 
     return total_GC, (GC_distribution_x, GC_distribution_y), (GC_contigs_distribution_x, GC_contigs_distribution_y)
+
+
+def get_GC_percent(seq, n):
+    ACGT_len = len(seq) - seq.count("N")
+    # skip block if it has less than half of ACGT letters (it also helps with "ends of contigs")
+    if ACGT_len < n // 2:
+        return 0
+
+    GC_len = seq.count("G") + seq.count("C")
+    GC_percent = 100.0 * GC_len / ACGT_len
+    return GC_percent
+
+
+def save_icarus_GC(ref_fpath, gc_fpath):
+    chr_index = 0
+    n = qconfig.GC_window_size_large if qconfig.large_genome else qconfig.GC_window_size  # non-overlapping windows
+    with open(gc_fpath, 'w') as out_f:
+        for name, seq_full in fastaparser.read_fasta(ref_fpath):
+            out_f.write('#' + name + ' ' + str(chr_index) + '\n')
+            for i in range(0, len(seq_full), n):
+                seq = seq_full[i:i + n]
+                GC_percent = get_GC_percent(seq, n)
+                out_f.write(str(chr_index) + ' ' + str(GC_percent) + '\n')
 
 
 def binning_coverage(cov_values, nums_contigs):
@@ -143,11 +162,15 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, results_dir):
     reference_length = None
     reference_lengths = []
     reference_fragments = None
+    icarus_gc_fpath = None
     if ref_fpath:
         reference_lengths = sorted(fastaparser.get_chr_lengths_from_fastafile(ref_fpath).values(), reverse=True)
         reference_fragments = len(reference_lengths)
         reference_length = sum(reference_lengths)
         reference_GC, reference_GC_distribution, reference_GC_contigs_distribution = GC_content(ref_fpath)
+        if qconfig.create_icarus_html:
+            icarus_gc_fpath = join(output_dirpath, 'gc.txt')
+            save_icarus_GC(ref_fpath, icarus_gc_fpath)
 
         logger.info('  Reference genome:')
         logger.info('    ' + os.path.basename(ref_fpath) + ', length = ' + str(reference_length) +
@@ -314,3 +337,4 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, results_dir):
             draw_coverage_histograms(coverage_dict, contigs_fpaths, output_dirpath)
 
     logger.main_info('Done.')
+    return icarus_gc_fpath

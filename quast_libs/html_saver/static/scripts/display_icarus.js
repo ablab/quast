@@ -324,12 +324,14 @@ function updateMainCoverage(minExtent, maxExtent) {
         maxExtent = Math.min(brush.extent()[1], x_mini.domain()[1]);
     if (!physicalCoverageHidden)
         drawCoverageLine(minExtent, maxExtent, true, physical_coverage_data, '.phys_covered');
-    if (!coverageMainHidden)
+    if (!coverageMainHidden) {
         drawCoverageLine(minExtent, maxExtent, true, coverage_data, '.covered');
+        drawCoverageLine(minExtent, maxExtent, true, gc_data, '.gc');
+    }
     //main_cov.select('.y').call(y_cov_main_A);
 }
 
-function getNextCovValue(covData, startIdx, endIdx, maxValue, xScale, yScale, minExtent, startPos) {
+function getNextCovValue(covData, startIdx, endIdx, maxValue, xScale, yScale, minExtent, maxExtent, startPos, plotFactor) {
     var coverage = covData[chromosome].slice(startIdx, endIdx);
     var covDots = coverage.length;
     if (covDots == 0) return;
@@ -338,17 +340,20 @@ function getNextCovValue(covData, startIdx, endIdx, maxValue, xScale, yScale, mi
     var yValue = Math.min(avgCoverage, maxValue);
 
     if (startIdx == startPos) start = minExtent;
-    else start = startIdx * coverageFactor;
-    end = endIdx * coverageFactor;
+    else start = startIdx * plotFactor;
+    end = Math.min(endIdx * plotFactor, maxExtent);
     if (avgCoverage < 1) yValue = 0.1;
     return [xScale(start), yScale(yValue), xScale(end)];
 }
 
 function drawCoverageLine(minExtent, maxExtent, useMainCov, covData, plotClass) {
     var line = '',
-        l = (maxExtent - minExtent) / coverageFactor,
+        isGC = plotClass == '.gc',
+        plotFactor = isGC ? gcFactor : coverageFactor,
+        l = (maxExtent - minExtent) / plotFactor,
         cov_main_dots_amount = Math.min(maxCovDots, l),
         step = Math.round(l / cov_main_dots_amount);
+
     if (useMainCov) {
         track = main_cov;
         xScale = x_main;
@@ -361,29 +366,34 @@ function drawCoverageLine(minExtent, maxExtent, useMainCov, covData, plotClass) 
         yScale = y_cov_mini_S;
         maxValue = totalMaxYMini;
     }
+    if (isGC) {
+        maxValue = 100;
+        yScale = d3.scale.linear().domain([maxValue, .1]).range([0, coverageHeight]);
+    }
 
     var cov_lines = [];
-    var startPos = Math.floor(minExtent / coverageFactor / step) * step;
+    var startPos = Math.floor(minExtent / plotFactor / step) * step;
     var nextPos;
-    var lastPos = maxExtent / coverageFactor;
+    var lastPos = maxExtent / plotFactor;
     for (var i = startPos; i < lastPos; i += step) {
         nextPos = i + step;
-        cov_line = getNextCovValue(covData, i, nextPos, maxValue, xScale, yScale, minExtent, startPos);
+        cov_line = getNextCovValue(covData, i, nextPos, maxValue, xScale, yScale, minExtent, maxExtent, startPos, plotFactor);
         if (!cov_line) break;
         cov_lines.push(cov_line);
     }
     if (nextPos < lastPos) {
-        cov_line = getNextCovValue(covData, nextPos, lastPos, maxValue, xScale, yScale, minExtent);
+        cov_line = getNextCovValue(covData, nextPos, lastPos, maxValue, xScale, yScale, minExtent, maxExtent, startPos, plotFactor);
         cov_lines.push(cov_line);
     }
 
     var cov_line;
-    line += ['M', cov_lines[0][0], yScale(0.1)].join(' ');
+    var startY = isGC ? cov_lines[0][1] : yScale(0.1);
+    line += ['M', cov_lines[0][0], startY].join(' ');
     for (i = 0; i < cov_lines.length; i++) {
         cov_line = cov_lines[i];
         if (cov_line) line += 'V' + ' ' + cov_line[1] + 'H' + ' ' + cov_line[2];
     }
-    line += ['V', yScale(0.1), 'Z'].join(' ');
+    if (!isGC) line += ['V', yScale(0.1), 'Z'].join(' ');
     track.select(plotClass).select('path').attr('d', line);
 }
 
@@ -607,32 +617,35 @@ function hideTrack(track, pane, doHide) {
         if (mainPane) {
             featuresMainHidden = doHide;
             changedTracks = [main_cov, mini, annotationsMini, mini_cov];
-            changedBtns = [hideBtnCoverageMain, hideBtnPhysicalCoverageMain, covMainControls, hideBtnAnnotationsMini,
-                hideBtnCoverageMini, hideBtnPhysicalCoverageMini, covMiniControls];
+            changedBtns = [hideBtnCoverageMain, hideBtnPhysicalCoverageMain, hideBtnGCMain, covMainControls,
+                hideBtnAnnotationsMini, hideBtnCoverageMini, hideBtnPhysicalCoverageMini, hideBtnGCMini, covMiniControls];
         }
         else {
             changedTracks = [mini_cov];
-            changedBtns = [hideBtnCoverageMini, hideBtnPhysicalCoverageMini, covMiniControls];
+            changedBtns = [hideBtnCoverageMini, hideBtnPhysicalCoverageMini, hideBtnGCMini, covMiniControls];
         }
     }
     else if (track == 'cov') {
-        textToShow = 'Show read coverage';
+        textToShow = 'Show read coverage and GC distribution';
         paneToHide = mainPane ? main_cov : mini_cov;
         hideBtn = mainPane ? hideBtnCoverageMain : hideBtnCoverageMini;
-        hideCovBtn = mainPane ? hideBtnPhysicalCoverageMain : hideBtnPhysicalCoverageMini;
+        hidePhysicalCovBtn = mainPane ? hideBtnPhysicalCoverageMain : hideBtnPhysicalCoverageMini;
+        hideGCBtn = mainPane ? hideBtnGCMain : hideBtnGCMini;
         coverageBtns = mainPane ? covMainControls : covMiniControls;
         newOffset = coverageHeight;
         if (mainPane) {
             coverageMainHidden = doHide;
             changedTracks = [mini, annotationsMini, mini_cov];
-            changedBtns = [hideBtnAnnotationsMini, hideBtnCoverageMini, hideBtnPhysicalCoverageMini, covMiniControls];
+            changedBtns = [hideBtnAnnotationsMini, hideBtnCoverageMini, hideBtnPhysicalCoverageMini, hideBtnGCMini, covMiniControls];
         }
         if (doHide) {
-            hideCovBtn.style.display = 'none';
+            hidePhysicalCovBtn.style.display = 'none';
+            hideGCBtn.style.display = 'none';
             coverageBtns.style.display = 'none';
         }
         else {
-            hideCovBtn.style.display = '';
+            hidePhysicalCovBtn.style.display = '';
+            hideGCBtn.style.display = '';
             coverageBtns.style.display = '';
         }
     }

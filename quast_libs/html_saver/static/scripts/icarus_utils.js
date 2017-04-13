@@ -906,6 +906,7 @@ function updateMiniCoverage() {
         drawCoverageLine(x_mini.domain()[0], x_mini.domain()[1], false,
             physical_coverage_data, '.phys_covered');
     drawCoverageLine(x_mini.domain()[0], x_mini.domain()[1], false, coverage_data, '.covered');
+    drawCoverageLine(x_mini.domain()[0], x_mini.domain()[1], false, gc_data, '.gc');
 }
 
 function resetMaxMainCoverage() {
@@ -937,7 +938,7 @@ function setYScaleCoverage(maxValue) {
 
 function setYScaleLabels(track, axis, scale) {
     axis.scale(scale);
-    track.select('.y').call(axis);
+    track.select('.y.cov').call(axis);
 }
 
 function setBaseChartHeight() {

@@ -132,8 +132,7 @@ def main(args):
     ### Stats and plots
     ########################################################################
     from quast_libs import basic_stats
-    basic_stats.do(ref_fpath, contigs_fpaths, os.path.join(output_dirpath, 'basic_stats'),
-                   output_dirpath)
+    icarus_gc_fpath = basic_stats.do(ref_fpath, contigs_fpaths, os.path.join(output_dirpath, 'basic_stats'), output_dirpath)
 
     aligned_contigs_fpaths = []
     aligned_lengths_lists = []
@@ -242,9 +241,9 @@ def main(args):
                 from quast_libs import icarus
                 icarus_html_fpath, contig_alignment_plot_fpath = icarus.do(
                     contigs_fpaths, report_for_icarus_fpath_pattern, output_dirpath, ref_fpath,
-                    stdout_pattern=stdout_pattern, features=features_containers, cov_fpath=cov_fpath,
-                    physical_cov_fpath=physical_cov_fpath, json_output_dir=qconfig.json_output_dirpath,
-                    genes_by_labels=genes_by_labels)
+                    stdout_pattern=stdout_pattern, features=features_containers,
+                    cov_fpath=cov_fpath, physical_cov_fpath=physical_cov_fpath, gc_fpath=icarus_gc_fpath,
+                    json_output_dir=qconfig.json_output_dirpath, genes_by_labels=genes_by_labels)
 
             if all_pdf_fpath:
                 # full report in PDF format: all tables and plots

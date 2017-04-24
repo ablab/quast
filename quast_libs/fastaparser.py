@@ -221,6 +221,26 @@ def read_fasta_one_time(fpath):
     return list_seq
 
 
+def read_fasta_str(fpath):
+    """
+        Returns string
+    """
+    fasta_file = _get_fasta_file_handler(fpath)
+    list_seq = []
+
+    for raw_line in fasta_file:
+        lines = raw_line.split('\r')
+        for line in lines:
+            if not line:
+                continue
+            if line[0] != '>':
+                list_seq.append(line.strip())
+
+    fasta_file.close()
+    fasta_str = ''.join(list_seq)
+    return fasta_str
+
+
 def print_fasta(fasta):
     for name, seq in fasta:
         print('>%s' % name)

@@ -786,10 +786,15 @@ def check_prev_compilation_failed(name, failed_compilation_flag, just_notice=Fal
     return False
 
 
-def safe_rm(fpath):
-    if isfile(fpath):
+def safe_rm(path):
+    if isfile(path):
         try:
-            os.remove(fpath)
+            os.remove(path)
+        except OSError:
+            pass
+    if isdir(path):
+        try:
+            shutil.rmtree(path, ignore_errors=True)
         except OSError:
             pass
 
@@ -810,9 +815,9 @@ def is_python2():
 
 
 def compile_tool(name, dirpath, requirements, just_notice=False, logger=logger, only_clean=False, flag_suffix=None,
-                 make_cmd=None, needs_configure=False):
+                 make_cmd=None, configure_args=None):
     make_logs_basepath = join(dirpath, 'make')
-    failed_compilation_flag = make_logs_basepath + str(flag_suffix) + '.failed'
+    failed_compilation_flag = make_logs_basepath + (str(flag_suffix) if flag_suffix else '') + '.failed'
 
     if only_clean:
         for required_binary in requirements:
@@ -827,10 +832,10 @@ def compile_tool(name, dirpath, requirements, just_notice=False, logger=logger, 
         # making
         logger.main_info('Compiling ' + name + ' (details are in ' + make_logs_basepath +
                          '.log and make.err)')
-        if needs_configure:
+        if configure_args:
             prev_dir = os.getcwd()
             os.chdir(dirpath)
-            call_subprocess(['./configure'],stdout=open(make_logs_basepath + '.log', 'w'),
+            call_subprocess(['./configure'] + configure_args, stdout=open(make_logs_basepath + '.log', 'w'),
                             stderr=open(make_logs_basepath + '.err', 'w'))
             os.chdir(prev_dir)
         try:

@@ -113,35 +113,15 @@ def gnuplot_exec_fpath():
 def compile_gnuplot(logger, only_clean=False):
     tool_dirpath = join(qconfig.LIBS_LOCATION, 'gnuplot')
     tool_exec_fpath = gnuplot_exec_fpath()
+    compile_tool('gnuplot', tool_dirpath, [tool_exec_fpath], just_notice=True, logger=logger, only_clean=only_clean,
+                 configure_args=['--with-qt=no', '--disable-wxwidgets', '--prefix=' + tool_dirpath])
 
     if only_clean:
-        if isfile(tool_exec_fpath):
-            os.remove(tool_exec_fpath)
         return True
-
-    if not isfile(tool_exec_fpath):
-        failed_compilation_flag = join(tool_dirpath, 'make.failed')
-        if check_prev_compilation_failed('gnuplot', failed_compilation_flag, just_notice=True, logger=logger):
-            return None
-        logger.main_info("Compiling gnuplot...")
-        prev_dir = os.getcwd()
-        os.chdir(tool_dirpath)
-        return_code = qutils.call_subprocess(
-            ['./configure', '--with-qt=no', '--disable-wxwidgets', '--prefix=' + tool_dirpath],
-            stdout=open(join(tool_dirpath, 'make.log'), 'w'),
-            stderr=open(join(tool_dirpath, 'make.err'), 'w'),
-            indent='    ')
-        if return_code == 0:
-            return_code = qutils.call_subprocess(
-                ['make'],
-                stdout=open(join(tool_dirpath, 'make.log'), 'w'),
-                stderr=open(join(tool_dirpath, 'make.err'), 'w'),
-                indent='    ')
-        os.chdir(prev_dir)
-        if return_code != 0 or not isfile(tool_exec_fpath):
-            write_failed_compilation_flag('gnuplot', tool_dirpath, failed_compilation_flag, just_notice=True, logger=logger)
-            return None
-    return tool_exec_fpath
+    elif isfile(tool_exec_fpath):
+        return tool_exec_fpath
+    else:
+        return None
 
 
 def draw_mummer_plot(logger, nucmer_fpath, delta_fpath, index, log_out_f, log_err_f):

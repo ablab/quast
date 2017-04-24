@@ -15,7 +15,7 @@ import shutil
 from quast_libs import qconfig
 qconfig.check_python_version()
 
-from quast_libs import qutils, reads_analyzer, plotter_data
+from quast_libs import qutils, reads_analyzer, plotter_data, unique_kmers
 from quast_libs.qutils import cleanup, check_dirpath, get_reads_fpaths
 from quast_libs.options_parser import parse_options
 
@@ -133,6 +133,9 @@ def main(args):
     ########################################################################
     from quast_libs import basic_stats
     icarus_gc_fpath = basic_stats.do(ref_fpath, contigs_fpaths, os.path.join(output_dirpath, 'basic_stats'), output_dirpath)
+
+    if qconfig.large_genome and ref_fpath:
+        unique_kmers.do(os.path.join(output_dirpath, 'basic_stats'), ref_fpath, contigs_fpaths, logger)
 
     aligned_contigs_fpaths = []
     aligned_lengths_lists = []

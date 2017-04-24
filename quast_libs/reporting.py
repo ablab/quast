@@ -301,8 +301,7 @@ class Fields:
                     BUSCO_COMPLETE, BUSCO_PART,
                     NGA50, LGA50,
                     PREDICTED_GENES_UNIQUE, PREDICTED_GENES,
-                    DEPTH, COVERAGE_1X_THRESHOLD, KMER_COMPLETENESS,
-                    ]
+                    DEPTH, COVERAGE_1X_THRESHOLD, KMER_COMPLETENESS]
 
 ####################################################################################
 ########################  END OF CONFIGURABLE PARAMETERS  ##########################

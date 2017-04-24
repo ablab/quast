@@ -28,6 +28,12 @@ def compile_jellyfish(logger, only_clean=False):
         safe_rm(failed_compilation_flag)
         return True
 
+    if exists(jellyfish_bin_fpath):
+        try:
+            import jellyfish
+        except:
+            safe_rm(jellyfish_bin_fpath)
+
     if not exists(jellyfish_bin_fpath):
         if check_prev_compilation_failed('Jellyfish', failed_compilation_flag, logger=logger):
             return False
@@ -41,6 +47,8 @@ def compile_jellyfish(logger, only_clean=False):
         os.utime(join(jellyfish_src_dirpath, 'configure'), None)
         prev_dir = os.getcwd()
         os.chdir(jellyfish_src_dirpath)
+        safe_rm(join(jellyfish_src_dirpath, 'swig', 'python', '__init__.pyc'))  ## in case if jellyfish was compiled with different python version
+        safe_rm(jellyfish_python_dirpath)
         call_subprocess(['./configure', '--prefix=' + jellyfish_dirpath,
                          '--enable-python-binding=' + jellyfish_python_dirpath,
                          'PYTHON_VERSION=' + str(sys.version_info[0]) + '.' + str(sys.version_info[1])],

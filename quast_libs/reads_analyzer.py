@@ -406,6 +406,9 @@ def align_single_file(index, fpath, output_dirpath, log_path, err_path, max_thre
     else:
         sam_fpath = sam_fpath or join(output_dirpath, filename + '.sam')
     bam_fpath = bam_fpath or get_safe_fpath(output_dirpath, sam_fpath[:-4] + '.bam')
+    if is_reference and required_files and any(f.endswith('bed') for f in required_files):
+        required_files.append(sam_fpath)
+
     stats_fpath = get_safe_fpath(dirname(output_dirpath), filename + '.stat')
     index_str = qutils.index_to_str(index) if index is not None else ''
 
@@ -434,7 +437,7 @@ def align_single_file(index, fpath, output_dirpath, log_path, err_path, max_thre
         qutils.call_subprocess([sambamba_fpath('sambamba'), 'view', '-t', str(max_threads), '-h', bam_fpath],
                                stdout=open(sam_fpath, 'w'), stderr=open(err_path, 'a'), logger=logger)
         correct_chr_names = get_correct_names_for_chroms(output_dirpath, fpath, sam_fpath, err_path, reads_fpaths, is_reference)
-    if not correct_chr_names and reads_fpaths:
+    if (not correct_chr_names or not is_non_empty_file(sam_fpath)) and reads_fpaths:
         if index is not None:
             logger.info('  ' + index_str + 'Running BWA...')
         else:
@@ -477,7 +480,7 @@ def align_single_file(index, fpath, output_dirpath, log_path, err_path, max_thre
             logger.error('  Failed running BWA for ' + fpath + '. See ' + log_path + ' for information.')
             return None, None, None
         correct_chr_names = get_correct_names_for_chroms(output_dirpath, fpath, sam_fpath, err_path, reads_fpaths, is_reference)
-    elif not correct_chr_names:
+    elif not correct_chr_names or not is_non_empty_file(sam_fpath):
         return None, None, None
     if index is not None:
         logger.info('  ' + index_str + 'Sorting SAM-file...')

@@ -255,7 +255,7 @@ def main(args):
             logger.main_info('Done')
         except KeyboardInterrupt:
             logger.main_info('..step skipped!')
-            if os.path.isfile(all_pdf_fpath):
+            if all_pdf_fpath and os.path.isfile(all_pdf_fpath):
                 os.remove(all_pdf_fpath)
 
     ########################################################################

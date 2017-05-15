@@ -10,6 +10,7 @@ import os
 import shlex
 import shutil
 import re
+from collections import defaultdict
 
 from os.path import isdir, isfile, join
 
@@ -82,7 +83,7 @@ def try_send_request(url):
     return response
 
 
-def download_refs(organism, ref_fpath):
+def download_ref(organism, ref_fpath):
     ncbi_url = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/'
     quast_fields = '&tool=quast&email=quast.support@bioinf.spbau.ru'
     organism = organism.replace('_', '+')
@@ -285,23 +286,25 @@ def do(assemblies, labels, downloaded_dirpath, corrected_dirpath, ref_txt_fpath=
     assemblies_fpaths = dict((assembly.fpath, assembly) for assembly in assemblies)
     blast_assemblies, downloaded_organisms, not_founded_organisms = \
         check_blast(blast_check_fpath, blast_res_fpath, files_sizes, assemblies_fpaths, assemblies, labels)
-    organisms = []
 
+    species_list = []
+    replacement_list = None
     if ref_txt_fpath:
-        organisms = parse_refs_list(ref_txt_fpath)
-        organisms_assemblies = None
+        species_list = parse_refs_list(ref_txt_fpath)
+        species_by_assembly = None
     else:
-        scores_organisms, organisms_assemblies = process_blast(blast_assemblies, downloaded_dirpath, corrected_dirpath,
-                                                               labels, blast_check_fpath, err_fpath)
-        if scores_organisms:
-            scores_organisms = sorted(scores_organisms, reverse=True)
-            organisms = [organism for (score, organism) in scores_organisms]
+        species_scores, species_by_assembly, replacement_dict = process_blast(blast_assemblies, downloaded_dirpath,
+                                                                              corrected_dirpath, labels, blast_check_fpath, err_fpath)
+        if species_scores:
+            species_scores = sorted(species_scores, reverse=True)
+            species_list = [species for (species, query_id, score) in species_scores]
+            replacement_list = [replacement_dict[query_id] for (species, query_id, score) in species_scores]
 
     downloaded_ref_fpaths = [os.path.join(downloaded_dirpath, file) for (path, dirs, files) in os.walk(downloaded_dirpath)
                              for file in files if qutils.check_is_fasta_file(file)]
 
-    ref_fpaths = process_refs(organisms, assemblies, labels, downloaded_dirpath, not_founded_organisms, downloaded_ref_fpaths,
-                 blast_check_fpath, err_fpath, organisms_assemblies)
+    ref_fpaths = search_references(species_list, assemblies, labels, downloaded_dirpath, not_founded_organisms, downloaded_ref_fpaths,
+                 blast_check_fpath, err_fpath, species_by_assembly, replacement_list)
 
     if not ref_fpaths:
         logger.main_info('Reference genomes are not found.')
@@ -372,58 +375,103 @@ def process_blast(blast_assemblies, downloaded_dirpath, corrected_dirpath, label
                                                         err_fpath, blast_res_fpath, blast_check_fpath, blast_threads)
                                 for i, assembly in enumerate(blast_assemblies))
 
-    logger.main_info('')
-    scores_organisms = []
-    organisms_assemblies = {}
+    logger.main_info()
+    species_scores = []
+    species_by_assembly = dict()
+    max_entries = 4
+    replacement_dict = defaultdict(list)
     for label in labels:
-        all_scores = []
-        organisms = []
+        assembly_scores = []
+        assembly_species = []
         res_fpath = get_blast_output_fpath(blast_res_fpath, label)
         if os.path.exists(res_fpath):
             refs_for_query = 0
             with open(res_fpath) as res_file:
+                query_id_col, subj_id_col, idy_col, len_col, score_col = None, None, None, None, None
                 for line in res_file:
-                    if refs_for_query == 0 and not line.startswith('#') and len(line.split()) > 10:
-                        # TODO: find and parse "Fields" line to detect each column indexes:
+                    fs = line.split()
+                    if line.startswith('#'):
+                        refs_for_query = 0
                         # Fields: query id, subject id, % identity, alignment length, mismatches, gap opens, q. start, q. end, s. start, s. end, evalue, bit score
-                        # We need: identity, legnth, score, query and subject id.
-                        line = line.split()
-                        organism_id = line[1]
-                        idy = float(line[2])
-                        length = int(line[3])
-                        score = float(line[11])
+                        if 'Fields' in line:
+                            fs = line.strip().split('Fields: ')[-1].split(', ')
+                            query_id_col = fs.index('query id')
+                            subj_id_col = fs.index('subject id')
+                            idy_col = fs.index('% identity')
+                            len_col = fs.index('alignment length')
+                            score_col = fs.index('bit score')
+                    elif refs_for_query < max_entries and len(fs) > score_col:
+                        query_id = fs[query_id_col]
+                        organism_id = fs[subj_id_col]
+                        idy = float(fs[idy_col])
+                        length = int(fs[len_col])
+                        score = float(fs[score_col])
                         if idy >= qconfig.identity_threshold and length >= qconfig.min_length and score >= qconfig.min_bitscore:  # and (not scores or min(scores) - score < max_identity_difference):
                             seqname, taxons = parse_organism_id(organism_id)
                             if not seqname:
                                 continue
-                            specie = seqname.split('_')
-                            if len(specie) > 1 and 'uncultured' not in seqname:
-                                specie = specie[0] + '_' + specie[1]
-                                if specie not in organisms:
-                                    all_scores.append((score, seqname))
-                                    if taxons:
-                                        taxons_for_krona[correct_name(seqname)] = taxons
-                                    organisms.append(specie)
-                                    refs_for_query += 1
-                                else:
-                                    tuple_scores = [x for x in all_scores if specie in x[1]]
-                                    if tuple_scores and score > tuple_scores[0][0]:
-                                        all_scores.remove((tuple_scores[0][0], tuple_scores[0][1]))
-                                        all_scores.append((score, seqname))
+                            species_name = seqname.split('_')
+                            if len(species_name) > 1 and 'uncultured' not in seqname:
+                                species_name = species_name[0] + '_' + species_name[1]
+                                if refs_for_query == 0:
+                                    if species_name not in assembly_species:
+                                        assembly_scores.append((seqname, query_id, score))
                                         if taxons:
                                             taxons_for_krona[correct_name(seqname)] = taxons
+                                            assembly_species.append(species_name)
                                         refs_for_query += 1
-                    elif line.startswith('#'):
-                        refs_for_query = 0
-        all_scores = sorted(all_scores, reverse=True)
-        all_scores = all_scores[:qconfig.max_references]
-        for score in all_scores:
-            if not organisms_assemblies or (organisms_assemblies.values() and not [1 for list in organisms_assemblies.values() if score[1] in list]):
-                scores_organisms.append(score)
-        organisms_assemblies[label] = [score[1] for score in all_scores]
-    if not scores_organisms:
+                                    else:
+                                        seq_scores = [(seqname, query_id, score) for seqname, query_id, score in assembly_scores
+                                                      if species_name in seqname]
+                                        if seq_scores and score > seq_scores[0][2]:
+                                            assembly_scores.remove(seq_scores[0])
+                                            assembly_scores.append((seqname, query_id, score))
+                                            if taxons:
+                                                taxons_for_krona[correct_name(seqname)] = taxons
+                                            refs_for_query += 1
+                                else:
+                                    if seqname not in replacement_dict[query_id]:
+                                        replacement_dict[query_id].append(seqname)
+                                        refs_for_query += 1
+        assembly_scores = sorted(assembly_scores, reverse=True)
+        assembly_scores = assembly_scores[:qconfig.max_references]
+        for seqname, query_id, score in assembly_scores:
+            if not species_by_assembly or not any(seqname in species_list for species_list in species_by_assembly.values()):
+                species_scores.append((seqname, query_id, score))
+        species_by_assembly[label] = [seqname for seqname, query_id, score in assembly_scores]
+    if not species_scores:
         return None, None
-    return scores_organisms, organisms_assemblies
+    return species_scores, species_by_assembly, replacement_dict
+
+
+def process_ref(ref_fpaths, organism, downloaded_dirpath, max_organism_name_len, downloaded_organisms, not_founded_organisms,
+                 total_downloaded, total_scored_left):
+    ref_fpath = os.path.join(downloaded_dirpath, correct_name(organism) + '.fasta')
+    spaces = (max_organism_name_len - len(organism)) * ' '
+    new_ref_fpath = None
+    was_downloaded = False
+    if not os.path.exists(ref_fpath) and organism not in not_founded_organisms:
+        new_ref_fpath = download_ref(organism, ref_fpath)
+    elif os.path.exists(ref_fpath):
+        was_downloaded = True
+        new_ref_fpath = ref_fpath
+    total_scored_left -= 1
+    if new_ref_fpath:
+        total_downloaded += 1
+        if was_downloaded:
+            logger.main_info("  %s%s | was downloaded previously (total %d, %d more to go)" %
+                             (organism.replace('+', ' '), spaces, total_downloaded, total_scored_left))
+            if new_ref_fpath not in ref_fpaths:
+                ref_fpaths.append(new_ref_fpath)
+        else:
+            logger.main_info("  %s%s | successfully downloaded (total %d, %d more to go)" %
+                             (organism.replace('+', ' '), spaces, total_downloaded, total_scored_left))
+            ref_fpaths.append(new_ref_fpath)
+        downloaded_organisms.append(organism)
+    else:
+        logger.main_info("  %s%s | not found in the NCBI database" % (organism.replace('+', ' '), spaces))
+        not_founded_organisms.add(organism)
+    return new_ref_fpath, total_downloaded, total_scored_left
 
 
 def parse_refs_list(ref_txt_fpath):
@@ -436,8 +484,8 @@ def parse_refs_list(ref_txt_fpath):
     return organisms
 
 
-def process_refs(organisms, assemblies, labels, downloaded_dirpath, not_founded_organisms, downloaded_ref_fpaths,
-                 blast_check_fpath, err_fpath, organisms_assemblies=None):
+def search_references(organisms, assemblies, labels, downloaded_dirpath, not_founded_organisms, downloaded_ref_fpaths,
+                 blast_check_fpath, err_fpath, organisms_assemblies=None, replacement_list=None):
     ref_fpaths = []
     downloaded_organisms = []
 
@@ -455,38 +503,22 @@ def process_refs(organisms, assemblies, labels, downloaded_dirpath, not_founded_
         max_organism_name_len = max(len(organism), max_organism_name_len)
 
     logger.print_timestamp()
-    logger.main_info('Trying to download found references from NCBI. '
-                'Totally ' + str(total_scored_left) + ' organisms to try.')
+    logger.main_info('Trying to download found references from NCBI. Totally ' + str(total_scored_left) + ' organisms to try.')
     if len(downloaded_ref_fpaths) > 0:
         logger.main_info('MetaQUAST will attempt to use previously downloaded references...')
 
-    for organism in organisms:
-        ref_fpath = os.path.join(downloaded_dirpath, correct_name(organism) + '.fasta')
-        spaces = (max_organism_name_len - len(organism)) * ' '
-        new_ref_fpath = None
-        was_downloaded = False
-        if not os.path.exists(ref_fpath) and organism not in not_founded_organisms:
-            new_ref_fpath = download_refs(organism, ref_fpath)
-        elif os.path.exists(ref_fpath):
-            was_downloaded = True
-            new_ref_fpath = ref_fpath
-        if new_ref_fpath:
-            total_scored_left -= 1
-            total_downloaded += 1
-            if was_downloaded:
-                logger.main_info("  %s%s | was downloaded previously (total %d, %d more to go)" %
-                            (organism.replace('+', ' '), spaces, total_downloaded, total_scored_left))
-                if new_ref_fpath not in ref_fpaths:
-                    ref_fpaths.append(new_ref_fpath)
-            else:
-                logger.main_info("  %s%s | successfully downloaded (total %d, %d more to go)" %
-                        (organism.replace('+', ' '), spaces, total_downloaded, total_scored_left))
-                ref_fpaths.append(new_ref_fpath)
-            downloaded_organisms.append(organism)
-        else:
-            total_scored_left -= 1
-            logger.main_info("  %s%s | not found in the NCBI database" % (organism.replace('+', ' '), spaces))
-            not_founded_organisms.add(organism)
+    for idx, organism in enumerate(organisms):
+        ref_fpath, total_downloaded, total_scored_left = process_ref(ref_fpaths, organism, downloaded_dirpath, max_organism_name_len,
+                                                                      downloaded_organisms, not_founded_organisms, total_downloaded, total_scored_left)
+        if not ref_fpath and replacement_list:
+            logger.main_info('  ' + organism.replace('+', ' ') + ' was not found in NCBI database, trying to download the next best match')
+            for species in replacement_list[idx]:
+                ref_fpath, total_downloaded, _ = process_ref(ref_fpaths, species, downloaded_dirpath,
+                                                             max_organism_name_len, downloaded_organisms, not_founded_organisms,
+                                                             total_downloaded, total_scored_left + 1)
+                if ref_fpath:
+                    break
+
     for assembly, label in zip(assemblies, labels):
         check_fpath = get_blast_output_fpath(blast_check_fpath, label)
         if os.path.exists(check_fpath):

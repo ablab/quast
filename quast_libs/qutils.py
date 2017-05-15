@@ -705,12 +705,17 @@ def relpath(path, start=curdir):
     return join(*rel_list)
 
 
-def get_path_to_program(program):
+def get_path_to_program(program, dirpath=None):
     """
     returns the path to an executable or None if it can't be found
     """
     def is_exe(fpath):
         return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
+
+    if dirpath:
+        exe_file = os.path.join(dirpath, program)
+        if is_exe(exe_file):
+            return exe_file
 
     for path in os.environ["PATH"].split(os.pathsep):
         exe_file = os.path.join(path, program)
@@ -929,11 +934,7 @@ def get_reads_fpaths(logger):
 
 
 def get_blast_fpath(fname):
-    if blast_dirpath:
-        blast_path = os.path.join(blast_dirpath, fname)
-        if os.path.exists(blast_path):
-            return blast_path
-    blast_path = get_path_to_program(fname)
+    blast_path = get_path_to_program(fname, blast_dirpath)
     return blast_path
 
 

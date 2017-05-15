@@ -18,7 +18,7 @@ from os.path import exists, join, isfile
 import shutil
 
 from quast_libs import qconfig
-from quast_libs.qutils import compile_tool, check_prev_compilation_failed, get_dir_for_download, relpath
+from quast_libs.qutils import compile_tool, check_prev_compilation_failed, get_dir_for_download, relpath, get_path_to_program
 
 bwa_dirpath = join(qconfig.LIBS_LOCATION, 'bwa')
 bedtools_dirpath = join(qconfig.LIBS_LOCATION, 'bedtools')
@@ -39,7 +39,7 @@ manta_osx_url = qconfig.GIT_ROOT_URL + relpath(manta_ext_osx_fpath, qconfig.QUAS
 
 
 def bwa_fpath(fname):
-    return join(bwa_dirpath, fname)
+    return get_path_to_program(fname, bwa_dirpath)
 
 
 def sambamba_fpath(fname):
@@ -48,7 +48,7 @@ def sambamba_fpath(fname):
 
 
 def bedtools_fpath(fname):
-    return join(bedtools_bin_dirpath, fname)
+    return get_path_to_program(fname, bedtools_bin_dirpath)
 
 
 def lap_fpath(fname):
@@ -108,11 +108,12 @@ def unpack_tar(fpath, dst_dirpath, ext='bz2'):
 
 
 def compile_bwa(logger, only_clean=False):
-    return compile_tool('BWA', bwa_dirpath, ['bwa'], only_clean=only_clean, logger=logger)
+    return bwa_fpath('bwa') or compile_tool('BWA', bwa_dirpath, ['bwa'], only_clean=only_clean, logger=logger)
 
 
 def compile_bedtools(logger, only_clean=False):
-    return compile_tool('BEDtools', bedtools_dirpath, [join('bin', 'bedtools')], only_clean=only_clean, logger=logger)
+    return bedtools_fpath('bedtools') or \
+           compile_tool('BEDtools', bedtools_dirpath, [join('bin', 'bedtools')], only_clean=only_clean, logger=logger)
 
 
 def download_manta(logger, bed_fpath=None, only_clean=False):

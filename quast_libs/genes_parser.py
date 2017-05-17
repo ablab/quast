@@ -146,9 +146,8 @@ def parse_txt(file):
     number = 0
 
     for line in file:
-        m = txt_pattern_gi.match(line)
-        if not m:
-            m = txt_pattern.match(line)
+        line = line.rstrip()
+        m = txt_pattern_gi.match(line) or txt_pattern.match(line)
         if m:
             gene = Gene(number=number,
                         seqname=qutils.correct_name(m.group('seqname')))
@@ -176,7 +175,7 @@ def parse_gff(file, feature):
     number = 0
 
     for line in file:
-        m = gff_pattern.match(line)
+        m = gff_pattern.match(line.rstrip())
         if m and m.group('feature').lower() == feature:
             gene = Gene(seqname=qutils.correct_name(m.group('seqname')),
                         start=int(m.group('start')),
@@ -206,7 +205,7 @@ def parse_bed(file):
     number = 0
 
     for line in file:
-        fs = line.split()
+        fs = line.rstrip().split()
         if fs:
             seqname = fs[0]
             s = int(fs[1])

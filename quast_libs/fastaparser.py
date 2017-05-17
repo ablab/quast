@@ -29,6 +29,9 @@ def _get_fasta_file_handler(fpath):
 
     _, ext = os.path.splitext(fpath)
 
+    if not os.access(fpath, os.R_OK):
+        logger.error('Permission denied accessing ' + fpath, to_stderr=True, exit_with_code=1)
+
     if ext in ['.gz', '.gzip']:
         fasta_file = gzip.open(fpath, mode="rt")
 
@@ -60,7 +63,7 @@ def _get_fasta_file_handler(fpath):
             fasta_file = open(fpath)
         except IOError:
             exc_type, exc_value, _ = sys.exc_info()
-            logger.exception(exc_value, exit_with_code=1)
+            logger.exception(exc_value, exit_code=1)
 
     return fasta_file
 

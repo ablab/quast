@@ -1068,8 +1068,9 @@ THE SOFTWARE.
         d3.select('body').selectAll('.expandBtn')
                 .data(expandableLanes)
                 .enter().append('div')
+                .style('display', 'none')
                 .style('position', 'absolute')
-                .style('left', margin.left + chartWidth + 5)
+                .style('left', (margin.left + chartWidth + 5) + 'px')
                 .style('width', '10px')
                 .style('height', '15px')
                 .attr('class', 'expandBtn collapsedBtn btn btn-mini btn-inverse')
@@ -1100,6 +1101,7 @@ THE SOFTWARE.
         d3.select('body').selectAll('.expandBtn')
                          .style('top', function (lane) {
                             var y = getExpandedLanesCount(lane.id);
-                            return y_main(y) + mainOffsetY + 3;
-                         });
+                            return (y_main(y) + mainOffsetY + 3) + 'px';
+                         })
+                         .style('display', '');
     }

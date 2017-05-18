@@ -210,7 +210,7 @@ def gm_es(tool_dirpath, fasta_fpath, err_fpath, index, tmp_dirpath, num_threads)
         os.mkdir(tmp_dirpath)
     return_code = qutils.call_subprocess(
         ['perl', '-I', libs_dirpath, tool_exec_fpath, '--ES', '--cores', str(num_threads), '--sequence', fasta_fpath,
-         '--out', tmp_dirpath],
+         '--out', tmp_dirpath] + (['--fungus'] if qconfig.is_fungus else []),
         stdout=err_file,
         stderr=err_file,
         indent='    ' + qutils.index_to_str(index))

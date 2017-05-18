@@ -41,6 +41,7 @@ genes_lengths = "0,300,1500,3000"
 ref_fpath = ''
 with_gage = False
 prokaryote = True  # former cyclic
+is_fungus = False
 gene_finding = False
 ambiguity_usage = 'one'
 ambiguity_score = 0.99
@@ -323,6 +324,7 @@ def usage(show_hidden=False, meta=False, short=True):
         sys.stderr.write("-l  --labels \"label, label, ...\"      Names of assemblies to use in reports, comma-separated. If contain spaces, use quotes\n")
         sys.stderr.write("-L                                    Take assembly names from their parent directory names\n")
         sys.stderr.write("-e  --eukaryote                       Genome is eukaryotic\n")
+        sys.stderr.write("    --fungus                          Genome is fungal\n")
         sys.stderr.write("    --large                           Use optimal parameters for evaluation of large genomes\n")
         if meta:
             sys.stderr.write("-f  --gene-finding                    Predict genes using MetaGeneMark\n")

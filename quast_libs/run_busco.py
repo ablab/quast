@@ -23,15 +23,19 @@ logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 
 augustus_version = '3.1'
 augustus_url = 'http://bioinf.uni-greifswald.de/augustus/binaries/old/augustus-' + augustus_version + '.tar.gz'
-bacteria_db_url = 'http://busco.ezlab.org/v2/datasets/bacteria_odb9.tar.gz'
-eukaryota_db_url = 'http://busco.ezlab.org/v2/datasets/eukaryota_odb9.tar.gz'
+bacteria_db_url = 'http://busco.ezlab.org/datasets/bacteria_odb9.tar.gz'
+fungi_db_url = 'http://busco.ezlab.org/datasets/fungi_odb9.tar.gz'
+eukaryota_db_url = 'http://busco.ezlab.org/datasets/eukaryota_odb9.tar.gz'
 blast_filenames = ['tblastn', 'makeblastdb']
 
 
-def download_db(logger, is_prokaryote, only_clean=False):
+def download_db(logger, is_prokaryote, is_fungus=False, only_clean=False):
     if is_prokaryote:
         url = bacteria_db_url
         clade = 'bacteria'
+    elif is_fungus:
+        url = fungi_db_url
+        clade = 'fungi'
     else:
         url = eukaryota_db_url
         clade = 'eukaryota'
@@ -82,7 +86,8 @@ def download_tool(tool, tool_version, required_files, logger, url, only_clean=Fa
 def download_all_db(logger, only_clean=False):
     bacteria_db = download_db(logger, is_prokaryote=True, only_clean=only_clean)
     eukaryota_db = download_db(logger, is_prokaryote=False, only_clean=only_clean)
-    return bacteria_db and eukaryota_db
+    fungi_db = download_db(logger, is_fungus=True, only_clean=only_clean)
+    return bacteria_db and eukaryota_db and fungi_db
 
 
 def download_augustus(logger, only_clean=False):
@@ -118,7 +123,7 @@ def do(contigs_fpaths, output_dir, logger):
     n_jobs = min(len(contigs_fpaths), qconfig.max_threads)
     busco_threads = max(1, qconfig.max_threads // n_jobs)
 
-    clade_dirpath = download_db(logger, is_prokaryote=qconfig.prokaryote)
+    clade_dirpath = download_db(logger, is_prokaryote=qconfig.prokaryote, is_fungus=qconfig.is_fungus)
     if not clade_dirpath:
         logger.info('Failed finding conservative genes.')
         return

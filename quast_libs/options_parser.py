@@ -363,6 +363,13 @@ def parse_options(logger, quast_args, is_metaquast=False):
              dest='prokaryote',
              action='store_false')
          ),
+        (['--fungus'], dict(
+             dest='is_fungus',
+             action='callback',
+             callback=set_multiple_variables,
+             callback_kwargs={'store_true_values': ['is_fungus'],
+                              'store_false_values': ['prokaryote']})
+         ),
         (['--large'], dict(
              dest='large_genome',
              action='store_true')

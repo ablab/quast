@@ -1901,8 +1901,9 @@ class Analysis(object):
             if not self._work_queue.empty():
                 data = self._work_queue.get()
                 self._queue_lock.release()
-                check = len([name for name in os.listdir('%shmmer_output' % self.mainout) if
-                             os.path.isfile(os.path.join('%shmmer_output' % self.mainout, name))])
+                files = set(name for name in os.listdir('%shmmer_output' % self.mainout) if
+                         os.path.isfile(os.path.join('%shmmer_output' % self.mainout, name)))
+                check = len(files)
                 state = 100 * check / self._total
                 if state > self.slate[-1]:
                     _logger.info('%s =>\t%s%% of predictions performed (%i/%i candidate proteins)'

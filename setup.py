@@ -190,7 +190,7 @@ if cmd_in(['install', 'develop', 'build', 'build_ext']):
             logger.notice('* BUSCO dependecies will not be installed (unavailable in OS X) *')
         logger.info('* Compiling GAGE *')
         if not compile_gage():
-            modules_failed_to_install.append('GAGE scripts (affects --gage option [will be deprecated soon])')
+            modules_failed_to_install.append('GAGE scripts (affects --gage option [deprecated, will be removed soon])')
     logger.info('')
 
 

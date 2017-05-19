@@ -113,6 +113,7 @@ def do(ref_fpath, contigs_fpaths, output_dirpath):
     ########################################################################
     logger.print_timestamp()
     logger.main_info('Running GAGE...')
+    logger.warning('GAGE module is deprecated and will be removed in a future release.')
 
     metrics = ['Total units', 'Min', 'Max', 'N50', 'Genome Size', 'Assembly Size', 'Chaff bases',
                'Missing Reference Bases', 'Missing Assembly Bases', 'Missing Assembly Contigs',

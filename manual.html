@@ -423,8 +423,6 @@ The assemblies are scaffolds (rather than contigs). QUAST will add split version
 of assemblies to the comparison (named &lt;assembly_name&gt;_broken).
 Assemblies are split by continuous fragments of N's of length &ge; 10.
 If broken version is equal to the original assembly (i.e. nothing was split) it is not included in the comparison.
-Scaffold gap size misassemblies are enabled in this case (see <a href="#sec3.1.2">section 3.1.2</a> for details and
-<a href='#scaffold_gap_size'><code>--scaffold-gap-max-size</code></a> for setting maximum gap length).
 
 <div class='option'>
     <code><b>--use-all-alignments</b></code> (or <code>-u</code>)
@@ -484,8 +482,6 @@ for details).
 Longer inconsistencies are considered as relocations and thus, counted as extensive misassemblies. The default value is 10000 bp.
 Note that the threshold make sense only if it is greater than extensive misassembly size
 (see <a href='#extensive_mis_size'><code>--extensive-mis-size</code></a>, its default value is 1000 bp).
-Also note that scaffold gap size misassemblies are counted for <b>scaffold assemblies only</b> (use <a href='#scaffolds'><code>--scaffolds</code></a>
-if your assemblies are scaffolds rather than contigs).
 
 <div class='option'>
     <a name='unaligned_part_size'></a><code><b>--unaligned-part-size</b></code> <code>&lt;int&gt;</code>
@@ -872,7 +868,7 @@ changed with <a href='#extensive_mis_size'><code>--extensive-mis-size</code></a>
 </p>
 
 <p><a name='scaffold_misassembly'></a><span class='metric-name'># scaffold gap size misassemblies</span> is the number of positions in the scaffolds (breakpoints)
-    where the flanking sequences are combined in scaffold on the wrong distance (<a href='#scaffolds'><code>--scaffolds</code></a> only).
+    where the flanking sequences are combined in scaffold on the wrong distance.
     Max allowed distance inconsistency is controlled by <a href='#scaffold_gap_size'><code>--scaffold-gap-max-size</code></a> option (default is 10<span class="rhs">&nbsp;</span>kbp).</p>
 
 <p><a name='sv'></a><span class='metric-name'># structural variants</span> is the number of misassemblies matched with structural variations of genome
@@ -1428,7 +1424,6 @@ The comparison of real contigs vs real scaffolds is more honest and informative 
 <br>
 <br>
 To sum up, you should use <code>--scaffolds</code> option if you don't have original file with contigs but want to compare your scaffolds with it.
-Also note, that <code>--scaffolds</code> option implies QUAST to search for <a href='#scaffold_misassembly'>scaffold gap size misassemblies</a>.
 <br>
 </p>
 

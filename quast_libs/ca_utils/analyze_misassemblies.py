@@ -175,7 +175,7 @@ def is_misassembly(align1, align2, contig_seq, ref_lens, is_cyclic=False, region
                 "misassembly_internal_overlap": misassembly_internal_overlap, "cyclic_moment": cyclic_moment,
                 "is_sv": False, "is_scaffold_gap": False}
 
-    if qconfig.scaffolds and contig_seq and check_is_scaffold_gap(inconsistency, contig_seq, align1, align2):
+    if contig_seq and check_is_scaffold_gap(inconsistency, contig_seq, align1, align2):
         aux_data["is_scaffold_gap"] = True
         return False, aux_data
     if region_struct_variations and check_sv(align1, align2, inconsistency, region_struct_variations):

@@ -37,7 +37,7 @@ def print_results(contigs_fpath, log_out_f, used_snps_fpath, total_indels_info, 
     if qconfig.is_combined_ref:
         log_out_f.write('\tPotentially Misassembled Contigs (i/s translocations): %d\n' % region_misassemblies.count(Misassembly.POTENTIALLY_MIS_CONTIGS))
         log_out_f.write('\t\tPossible Misassemblies: %d\n' % region_misassemblies.count(Misassembly.POSSIBLE_MISASSEMBLIES))
-    if qconfig.scaffolds and contigs_fpath not in qconfig.dict_of_broken_scaffolds:
+    if contigs_fpath not in qconfig.dict_of_broken_scaffolds:
         log_out_f.write('\tScaffold gap misassemblies: %d\n' % region_misassemblies.count(Misassembly.SCAFFOLD_GAP))
     if qconfig.bed:
         log_out_f.write('\tFake misassemblies matched with structural variations: %d\n' % result['misassemblies_matched_sv'])
@@ -192,7 +192,7 @@ def save_result(result, report, fname, ref_fpath):
             subreport.add_field(reporting.Fields.MIS_LOCAL, ref_misassemblies.count(Misassembly.LOCAL))
             subreport.add_field(reporting.Fields.POSSIBLE_MISASSEMBLIES, ref_misassemblies.count(Misassembly.POSSIBLE_MISASSEMBLIES))
             subreport.add_field(reporting.Fields.CONTIGS_WITH_ISTRANSLOCATIONS, ref_misassemblies.count(Misassembly.POTENTIALLY_MIS_CONTIGS))
-            if qconfig.scaffolds and fname not in qconfig.dict_of_broken_scaffolds:
+            if fname not in qconfig.dict_of_broken_scaffolds:
                 subreport.add_field(reporting.Fields.MIS_SCAFFOLDS_GAP, ref_misassemblies.count(Misassembly.SCAFFOLD_GAP))
             if qconfig.check_for_fragmented_ref:
                 subreport.add_field(reporting.Fields.MIS_FRAGMENTED, ref_misassemblies.count(Misassembly.FRAGMENTED))
@@ -203,7 +203,7 @@ def save_result(result, report, fname, ref_fpath):
         report.add_field(reporting.Fields.MIS_ISTRANSLOCATIONS, ref_misassemblies.count(Misassembly.INTERSPECTRANSLOCATION))
         report.add_field(reporting.Fields.POSSIBLE_MISASSEMBLIES, ref_misassemblies.count(Misassembly.POSSIBLE_MISASSEMBLIES))
         report.add_field(reporting.Fields.CONTIGS_WITH_ISTRANSLOCATIONS, ref_misassemblies.count(Misassembly.POTENTIALLY_MIS_CONTIGS))
-    if qconfig.scaffolds and fname not in qconfig.dict_of_broken_scaffolds:
+    if fname not in qconfig.dict_of_broken_scaffolds:
         report.add_field(reporting.Fields.MIS_SCAFFOLDS_GAP, region_misassemblies.count(Misassembly.SCAFFOLD_GAP))
     if qconfig.check_for_fragmented_ref:
         report.add_field(reporting.Fields.MIS_FRAGMENTED, region_misassemblies.count(Misassembly.FRAGMENTED))

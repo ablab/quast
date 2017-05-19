@@ -363,7 +363,6 @@ def usage(show_hidden=False, meta=False, short=True):
         sys.stderr.write("                                      less than extensive-mis-size are counted as local misassemblies [default: %s]\n" % extensive_misassembly_threshold)
         sys.stderr.write("    --scaffold-gap-max-size  <int>    Max allowed scaffold gap length difference. All relocations with inconsistency\n")
         sys.stderr.write("                                      less than scaffold-gap-size are counted as scaffold gap misassemblies [default: %s]\n" % scaffolds_gap_threshold)
-        sys.stderr.write("                                      Only scaffold assemblies are affected (use -s/--scaffolds)!\n")
         sys.stderr.write("    --unaligned-part-size  <int>      Lower threshold for detecting partially unaligned contigs. Such contig should have\n")
         sys.stderr.write("                                      at least one unaligned fragment >= the threshold [default: %s]\n" % unaligned_part_size)
         sys.stderr.write("    --fragmented                      Reference genome may be fragmented into small pieces (e.g. scaffolded reference) \n")

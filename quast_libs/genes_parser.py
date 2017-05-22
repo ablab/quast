@@ -190,6 +190,7 @@ def parse_gff(file, feature):
                         gene.id = val
                     if key.lower() == 'name':
                         gene.name = val
+                    gene.attributes[key.lower()] = val
 
             gene.number = number
             number += 1
@@ -247,4 +248,5 @@ class Gene():
         self.strand = strand
         self.seq = seq
         self.protein = protein
+        self.attributes = dict()
 

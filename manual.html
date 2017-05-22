@@ -85,7 +85,8 @@
     <a href="http://cbcb.umd.edu/software/glimmerhmm/">GlimmerHMM</a>,
     <a href="http://gage.cbcb.umd.edu/index.html">GAGE</a>,
     <a href="http://gnuplot.sourceforge.net/">Gnuplot</a>,
-    <a href="http://www.genome.umd.edu/jellyfish.html">Jellyfish</a>, and LAP.
+    <a href="http://www.genome.umd.edu/jellyfish.html">Jellyfish</a>,
+    <a href="https://github.com/tseemann/barrnap">Barrnap</a>, and <a href="http://assembly-eval.sourceforge.net/">LAP</a>.
     In addition, MetaQUAST uses <a href="http://exon.gatech.edu/GeneMark/">MetaGeneMark</a>, <a href="http://sourceforge.net/p/krona/home/krona/">Krona tools</a>,
     <a href="http://blast.ncbi.nlm.nih.gov/Blast.cgi">BLAST</a>, and
     <a href="http://www.arb-silva.de/">SILVA</a> 16S rRNA database.
@@ -375,12 +376,21 @@ Comma-separated list of thresholds (in bp) for gene lengths to find with a findi
 Note: this list is used only if <code>--gene-finding</code> or <code>--glimmer</code> option is specified.
 
 <div class='option'>
+    <a name='rna_finding'></a><code><b>--rna-finding</b></code>
+</div>
+Enables ribosomal RNA gene finding. Disabled by default.<br>
+<span style='line-height: 50%;'>&nbsp;</span><br>
+By default, we assume that the genome is prokaryotic, and Barrnap uses the bacterial database for rRNA prediction.
+If the genome is eukaryotic, use <a href='#eukaryote'><code>--eukaryote</code></a> option to force Barrnap to work with the eukaryotic database.
+
+<div class='option'>
     <a name="eukaryote"></a>
     <code><b>--eukaryote</b></code> (or <code>-e</code>)
 </div>
 Genome is eukaryotic. Affects gene finding, conserved orthologs finding and contig alignment:<br>
 <ol class='my_ol' style='margin-top: 0;'>
 <li>For prokaryotes (which is default), GeneMarkS is used. For eukaryotes, GeneMark-ES is used.
+<li><a href='#rna_finding'>Barrnap</a> will use eukaryotic database to predict ribosomal RNA genes.
 <li>BUSCO will use eukaryotic database to find conserved orthologs.
 <li>By default, QUAST assumes that a genome is circular and correctly processes its linear representation.
 This options indicates that the genome is not circular.
@@ -393,6 +403,7 @@ This options indicates that the genome is not circular.
 Genome is fungal. Affects gene finding, conserved orthologs finding and contig alignment:<br>
 <ol class='my_ol' style='margin-top: 0;'>
 <li>For gene finding, GeneMark-ES is used with <code>--fungus</code> option.
+<li><a href='#rna_finding'>Barrnap</a> will use eukaryotic database to predict ribosomal RNA genes.
 <li>BUSCO will use fungal database to find conserved orthologs.
 <li>By default, QUAST assumes that a genome is circular and correctly processes its linear representation.
 This options indicates that the genome is not circular.
@@ -923,6 +934,9 @@ This metric sums up <code># unaligned mis. contigs</code> described above.</p>
 
 <p><a name='predicted_genes'></a><span class='metric-name'># predicted genes</span> is the number of genes in the assembly
     found by GeneMarkS, GeneMark-ES, GlimmerHMM or MetaGeneMark. See the description of <a href='#gene_finding'><code>--gene-finding</code></a> option for details.</p>
+
+<p><a name='predicted_rna_genes'></a><span class='metric-name'># predicted rRNA genes</span> is the number of ribosomal RNA genes in the assembly
+    found by Barrnap. See the description of <a href='#rna_finding'><code>--rna-finding</code></a> option for details.</p>
 
 <p><span class='metric-name'>Total aligned length</span> is the total number of aligned bases in the assembly. A value is usually smaller than a value of <a href='#total_length'><span class='metric-ref'>total length</span></a> because some of the contigs may be unaligned or partially unaligned.</p>
 

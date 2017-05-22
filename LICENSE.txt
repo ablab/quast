@@ -231,6 +231,10 @@ http://www.genome.umd.edu/jellyfish.html website and to the following paper:
 Guillaume Marcais and Carl Kingsford, A fast, lock-free approach for efficient parallel counting of occurrences of k-mers.
 Bioinformatics (2011) 27(6): 764-770 (first published online January 7, 2011) doi:10.1093/bioinformatics/btr011
 
+14. QUAST uses Barrnap for ribosomal RNA genes prediction.
+For more details about Barrnap please refer to
+https://github.com/tseemann/barrnap website.
+
 -------------------------------------------------------------------------------
 
 		    GNU GENERAL PUBLIC LICENSE

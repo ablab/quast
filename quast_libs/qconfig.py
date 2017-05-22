@@ -43,6 +43,7 @@ with_gage = False
 prokaryote = True  # former cyclic
 is_fungus = False
 gene_finding = False
+rna_gene_finding = False
 ambiguity_usage = 'one'
 ambiguity_score = 0.99
 use_all_alignments = False
@@ -337,6 +338,7 @@ def usage(show_hidden=False, meta=False, short=True):
             sys.stderr.write("    --mgm                             Use MetaGeneMark for gene prediction (instead of the default finder, see above)\n")
         sys.stderr.write("    --gene-thresholds <int,int,...>   Comma-separated list of threshold lengths of genes to search with Gene Finding module\n")
         sys.stderr.write("                                      [default: %s]\n" % genes_lengths)
+        sys.stderr.write("    --rna-finding                     Predict ribosomal RNA genes using Barrnap\n")
         sys.stderr.write("-b  --find-conserved-genes            Use BUSCO for finding conserved orthologs (only on Linux)\n")
         if not meta:
             sys.stderr.write("    --est-ref-size <int>              Estimated reference size (for computing NGx metrics without a reference)\n")

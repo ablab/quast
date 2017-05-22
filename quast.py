@@ -15,7 +15,7 @@ import shutil
 from quast_libs import qconfig
 qconfig.check_python_version()
 
-from quast_libs import qutils, reads_analyzer, plotter_data, unique_kmers
+from quast_libs import qutils, reads_analyzer, run_barrnap, plotter_data, unique_kmers
 from quast_libs.qutils import cleanup, check_dirpath, get_reads_fpaths
 from quast_libs.options_parser import parse_options
 
@@ -206,6 +206,9 @@ def main(args):
     else:
         logger.main_info("")
         logger.notice("Genes are not predicted by default. Use --gene-finding option to enable it.")
+
+    if qconfig.rna_gene_finding:
+        run_barrnap.do(contigs_fpaths, os.path.join(output_dirpath, 'predicted_genes'), logger)
 
     if qconfig.run_busco and not qconfig.is_combined_ref:
         if qconfig.platform_name == 'macosx':

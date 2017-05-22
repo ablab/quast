@@ -378,6 +378,10 @@ def parse_options(logger, quast_args, is_metaquast=False):
              dest='gene_finding',
              action='store_true')
          ),
+        (['--rna-finding'], dict(
+             dest='rna_gene_finding',
+             action='store_true')
+         ),
         (['--fragmented'], dict(
              dest='check_for_fragmented_ref',
              action='store_true')

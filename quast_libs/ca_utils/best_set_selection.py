@@ -74,8 +74,6 @@ class SolidRegion(object):
 
 
 def get_best_aligns_sets(sorted_aligns, ctg_len, stdout_f, seq, ref_lens, is_cyclic=False, region_struct_variations=None):
-    critical_number_of_aligns = 200  # use additional optimizations for large number of alignments
-
     penalties = dict()
     penalties['extensive'] = max(50, int(round(min(qconfig.extensive_misassembly_threshold / 4.0, ctg_len * 0.05)))) - 1
     penalties['local'] = max(2, int(round(min(qconfig.MAX_INDEL_LENGTH / 2.0, ctg_len * 0.01)))) - 1
@@ -86,7 +84,7 @@ def get_best_aligns_sets(sorted_aligns, ctg_len, stdout_f, seq, ref_lens, is_cyc
     sorted_aligns = sorted(sorted_aligns, key=lambda x: (x.end(), x.start()))
 
     # trying to optimise the algorithm if the number of possible alignments is large
-    if len(sorted_aligns) > critical_number_of_aligns:
+    if len(sorted_aligns) > qconfig.BSS_critical_number_of_aligns:
         stdout_f.write('\t\t\tSkipping redundant alignments which can\'t be in the best set of alignments A PRIORI\n')
 
         # FIRST STEP: find solid aligns (which are present in the best selection for sure)
@@ -137,6 +135,12 @@ def get_best_aligns_sets(sorted_aligns, ctg_len, stdout_f, seq, ref_lens, is_cyc
                 filtered_aligns += sorted_aligns[idx:]
 
             sorted_aligns = sorted(filtered_aligns, key=lambda x: (x.end(), x.start()))
+
+    # if the number of alignments is still too large and QUAST-LG is enforced,
+    # just remove short ones to left no more than BSS_critical_number_of_aligns alignments
+    if len(sorted_aligns) > qconfig.BSS_critical_number_of_aligns and qconfig.large_genome:
+        len2_removal_threshold = sorted([align.len2 for align in sorted_aligns], reverse=True)[qconfig.BSS_critical_number_of_aligns]
+        sorted_aligns = [align for align in sorted_aligns if align.len2 > len2_removal_threshold]
 
     # Stage 1: Dynamic programming for finding the best score
     all_scored_sets = [ScoredSet(0, [], ctg_len)]

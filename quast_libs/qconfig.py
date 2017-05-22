@@ -160,7 +160,9 @@ extensive_misassembly_threshold = 1000  # for separating local and extensive mis
 LARGE_EXTENSIVE_MIS_THRESHOLD = 6000
 LARGE_MIN_ALIGNMENT = 3000
 fragmented_max_indent = MAX_INDEL_LENGTH # for fake translocation in fragmented reference
+# BSS fine-tuning params
 BSS_MAX_SETS_NUMBER = 10
+BSS_critical_number_of_aligns = 200
 
 gap_filled_ns_threshold = 0.95
 

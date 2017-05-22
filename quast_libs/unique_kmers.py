@@ -80,7 +80,7 @@ def compile_jellyfish(logger, only_clean=False):
 
 
 def create_jf_stats_file(output_dir, contigs_fpath, contigs_fpaths, ref_fpath, completeness,
-                         len_map_to_one_chrom, len_map_to_multi_chrom, len_map_to_none_chrom):
+                         len_map_to_one_chrom, len_map_to_multi_chrom, len_map_to_none_chrom, total_len):
     label = qutils.label_from_fpath_for_fname(contigs_fpath)
     jf_check_fpath = join(output_dir, label + '.sf')
     jf_stats_fpath = join(output_dir, label + '.stat')
@@ -93,6 +93,7 @@ def create_jf_stats_file(output_dir, contigs_fpath, contigs_fpaths, ref_fpath, c
         stats_f.write("Length assigned to one chromosome: %d\n" % len_map_to_one_chrom)
         stats_f.write("Length assigned to multi chromosomes: %d\n" % len_map_to_multi_chrom)
         stats_f.write("Length assigned to none chromosome: %d\n" % len_map_to_none_chrom)
+        stats_f.write("Total length: %d\n" % total_len)
 
 
 def check_jf_successful_check(output_dir, contigs_fpath, contigs_fpaths, ref_fpath):
@@ -136,14 +137,18 @@ def do(output_dir, ref_fpath, contigs_fpaths, logger):
         if check_jf_successful_check(output_dir, contigs_fpath, contigs_fpaths, ref_fpath):
             jf_stats_fpath = join(output_dir, label + '.stat')
             stats_content = open(jf_stats_fpath).read().split('\n')
-            if len(stats_content) < 4:
+            if len(stats_content) < 5:
                 continue
             logger.info('  Using existing results for ' + label + '... ')
             report = reporting.get(contigs_fpath)
             report.add_field(reporting.Fields.KMER_COMPLETENESS, '%.2f' % float(stats_content[0].strip().split(': ')[-1]))
-            report.add_field(reporting.Fields.KMER_SCAFFOLDS_ONE_CHROM, '%.2f' % float(stats_content[1].strip().split(': ')[-1]))
-            report.add_field(reporting.Fields.KMER_SCAFFOLDS_MULTI_CHROM, '%.2f' % float(stats_content[2].strip().split(': ')[-1]))
-            report.add_field(reporting.Fields.KMER_SCAFFOLDS_NONE_CHROM, '%.2f' % float(stats_content[3].strip().split(': ')[-1]))
+            len_map_to_one_chrom = int(stats_content[1].strip().split(': ')[-1])
+            len_map_to_multi_chrom = int(stats_content[2].strip().split(': ')[-1])
+            len_map_to_none_chrom = int(stats_content[3].strip().split(': ')[-1])
+            total_len = int(stats_content[4].strip().split(': ')[-1])
+            report.add_field(reporting.Fields.KMER_SCAFFOLDS_ONE_CHROM, '%.2f' % (len_map_to_one_chrom * 100.0 / total_len))
+            report.add_field(reporting.Fields.KMER_SCAFFOLDS_MULTI_CHROM, '%.2f' % (len_map_to_multi_chrom * 100.0 / total_len))
+            report.add_field(reporting.Fields.KMER_SCAFFOLDS_NONE_CHROM, '%.2f' % (len_map_to_none_chrom * 100.0 / total_len))
             checked_assemblies.append(contigs_fpath)
 
     contigs_fpaths = [fpath for fpath in contigs_fpaths if fpath not in checked_assemblies]
@@ -226,7 +231,7 @@ def do(output_dir, ref_fpath, contigs_fpaths, logger):
 
         create_jf_stats_file(output_dir, contigs_fpath, contigs_fpaths, ref_fpath,
                              report.get_field(reporting.Fields.KMER_COMPLETENESS),
-                             len_map_to_one_chrom, len_map_to_multi_chrom, len_map_to_none_chrom)
+                             len_map_to_one_chrom, len_map_to_multi_chrom, len_map_to_none_chrom, total_len)
 
     logger.info('Done.')
 

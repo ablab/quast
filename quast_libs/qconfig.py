@@ -164,6 +164,7 @@ fragmented_max_indent = MAX_INDEL_LENGTH # for fake translocation in fragmented 
 # BSS fine-tuning params
 BSS_MAX_SETS_NUMBER = 10
 BSS_critical_number_of_aligns = 200
+BSS_critical_alignment_len = 500
 
 gap_filled_ns_threshold = 0.95
 

@@ -140,6 +140,7 @@ def get_best_aligns_sets(sorted_aligns, ctg_len, stdout_f, seq, ref_lens, is_cyc
     # just remove short ones to left no more than BSS_critical_number_of_aligns alignments
     if len(sorted_aligns) > qconfig.BSS_critical_number_of_aligns and qconfig.large_genome:
         len2_removal_threshold = sorted([align.len2 for align in sorted_aligns], reverse=True)[qconfig.BSS_critical_number_of_aligns]
+        len2_removal_threshold = min(len2_removal_threshold, qconfig.BSS_critical_alignment_len - 1)
         sorted_aligns = [align for align in sorted_aligns if align.len2 > len2_removal_threshold]
 
     # Stage 1: Dynamic programming for finding the best score

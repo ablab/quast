@@ -94,11 +94,6 @@ class QLogger(object):
         file_handler.setLevel(logging.DEBUG)
         self._logger.addHandler(file_handler)
 
-        if err_fpath:
-            err_handler = logging.FileHandler(err_fpath, mode='w')
-            err_handler.setLevel(logging.ERROR)
-            self._logger.addHandler(err_handler)
-
     def start(self):
         if self._indent_val == 0 and not self._is_metaquast:
             self._logger.info('')
@@ -193,6 +188,9 @@ class QLogger(object):
         else:
             self._logger.error('')
             self._logger.error(msg)
+
+        with open(qconfig.error_log_fpath, 'a') as f:
+            f.write(msg)
 
         if exit_with_code:
             exit(exit_with_code)

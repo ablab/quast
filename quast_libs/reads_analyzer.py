@@ -104,22 +104,27 @@ class QuastDeletion(object):
                           self.id]) + ['-'] * 4)
 
 
-def process_one_ref(cur_ref_fpath, output_dirpath, err_path, max_threads, bed_fpath=None):
+def process_one_ref(cur_ref_fpath, output_dirpath, err_path, max_threads, bam_fpath=None, bed_fpath=None):
     ref_name = qutils.name_from_fpath(cur_ref_fpath)
-    sam_fpath = join(output_dirpath, ref_name + '.sam')
-    bam_fpath = join(output_dirpath, ref_name + '.bam')
-    bam_sorted_fpath = join(output_dirpath, ref_name + '.sorted.bam')
+    if not bam_fpath:
+        sam_fpath = join(output_dirpath, ref_name + '.sam')
+        bam_fpath = join(output_dirpath, ref_name + '.bam')
+        bam_sorted_fpath = join(output_dirpath, ref_name + '.sorted.bam')
+    else:
+        sam_fpath = bam_fpath.replace('.bam', '.sam')
+        bam_sorted_fpath = add_suffix(bam_fpath, 'sorted')
     bed_fpath = bed_fpath or join(output_dirpath, ref_name + '.bed')
-    if os.path.getsize(sam_fpath) < 1024 * 1024:  # TODO: make it better (small files will cause Manta crush -- "not enough reads...")
+    if (isfile(sam_fpath) and os.path.getsize(sam_fpath) < 1024 * 1024) or \
+            (isfile(bam_fpath) and os.path.getsize(bam_fpath) < 1024 * 1024):  # TODO: make it better (small files will cause Manta crush -- "not enough reads...")
         logger.info('  SAM file is too small for Manta (%d Kb), skipping..' % (getsize(sam_fpath) // 1024))
         return None
     if is_non_empty_file(bed_fpath):
         logger.info('  Using existing Manta BED-file: ' + bed_fpath)
         return bed_fpath
     if not isfile(bam_sorted_fpath):
-        qutils.call_subprocess([sambamba_fpath('sambamba'), 'view', '-t', max_threads, '-h', '-S', '-f', 'bam',
-                                sam_fpath], stdout=open(bam_fpath, 'w'), stderr=open(err_path, 'a'), logger=logger)
-        qutils.call_subprocess([sambamba_fpath('sambamba'), 'sort', '-t', max_threads, bam_fpath,
+        qutils.call_subprocess([sambamba_fpath('sambamba'), 'view', '-t', str(max_threads), '-h', '-S', '-f', 'bam',
+                                '-F', 'not unmapped', sam_fpath], stdout=open(bam_fpath, 'w'), stderr=open(err_path, 'a'), logger=logger)
+        qutils.call_subprocess([sambamba_fpath('sambamba'), 'sort', '-t', str(max_threads), bam_fpath,
                                 '-o', bam_sorted_fpath], stderr=open(err_path, 'a'), logger=logger)
     if not is_non_empty_file(bam_sorted_fpath + '.bai'):
         qutils.call_subprocess([sambamba_fpath('sambamba'), 'index', bam_sorted_fpath],
@@ -129,10 +134,10 @@ def process_one_ref(cur_ref_fpath, output_dirpath, err_path, max_threads, bed_fp
     found_SV_fpath = join(vcf_output_dirpath, 'results/variants/diploidSV.vcf.gz')
     unpacked_SV_fpath = found_SV_fpath + '.unpacked'
     if not is_non_empty_file(found_SV_fpath):
-        if isfile(vcf_output_dirpath):
+        if isdir(vcf_output_dirpath):
             shutil.rmtree(vcf_output_dirpath, ignore_errors=True)
         os.makedirs(vcf_output_dirpath)
-        qutils.call_subprocess([get_manta_fpath(), '--normalBam', bam_sorted_fpath,
+        qutils.call_subprocess([get_manta_fpath(), '--bam', bam_sorted_fpath,
                                 '--referenceFasta', cur_ref_fpath, '--runDir', vcf_output_dirpath],
                                stdout=open(err_path, 'a'), stderr=open(err_path, 'a'), logger=logger)
         workflow_run_fpath = join(vcf_output_dirpath, 'runWorkflow.py')
@@ -150,7 +155,7 @@ def process_one_ref(cur_ref_fpath, output_dirpath, err_path, max_threads, bed_fp
     return bed_fpath
 
 
-def search_sv_with_manta(main_ref_fpath, meta_ref_fpaths, output_dirpath, err_path):
+def search_sv_with_manta(main_ref_fpath, bam_fpath, meta_ref_fpaths, output_dirpath, err_path):
     logger.info('  Searching structural variations with Manta...')
     final_bed_fpath = join(output_dirpath, qconfig.manta_sv_fname)
     if isfile(final_bed_fpath):
@@ -165,7 +170,7 @@ def search_sv_with_manta(main_ref_fpath, meta_ref_fpaths, output_dirpath, err_pa
         if bed_fpaths:
             qutils.cat_files(bed_fpaths, final_bed_fpath)
     else:
-        process_one_ref(main_ref_fpath, output_dirpath, err_path, qconfig.max_threads, bed_fpath=final_bed_fpath)
+        process_one_ref(main_ref_fpath, output_dirpath, err_path, qconfig.max_threads, bam_fpath=bam_fpath, bed_fpath=final_bed_fpath)
     logger.info('    Saving to: ' + final_bed_fpath)
     return final_bed_fpath
 
@@ -317,7 +322,7 @@ def run_processing_reads(contigs_fpaths, main_ref_fpath, meta_ref_fpaths, ref_la
 
     sam_sorted_fpath = get_safe_fpath(temp_output_dir, add_suffix(sam_fpath, 'sorted'))
     bam_mapped_fpath = get_safe_fpath(temp_output_dir, add_suffix(bam_fpath, 'mapped'))
-    bam_sorted_fpath = get_safe_fpath(temp_output_dir, add_suffix(bam_fpath, 'sorted'))
+    bam_sorted_fpath = get_safe_fpath(temp_output_dir, add_suffix(bam_mapped_fpath, 'sorted'))
 
     if is_non_empty_file(sam_sorted_fpath):
         logger.info('  Using existing sorted SAM-file: ' + sam_sorted_fpath)
@@ -373,7 +378,7 @@ def run_processing_reads(contigs_fpaths, main_ref_fpath, meta_ref_fpaths, ref_la
             search_trivial_deletions(temp_output_dir, sam_sorted_fpath, ref_files, ref_labels, seq_lengths, need_ref_splitting)
         if get_manta_fpath() and isfile(get_manta_fpath()):
             try:
-                manta_sv_fpath = search_sv_with_manta(main_ref_fpath, meta_ref_fpaths, temp_output_dir, err_path)
+                manta_sv_fpath = search_sv_with_manta(main_ref_fpath, bam_mapped_fpath, meta_ref_fpaths, temp_output_dir, err_path)
                 qutils.cat_files([manta_sv_fpath, trivial_deletions_fpath], bed_fpath)
             except:
                 pass

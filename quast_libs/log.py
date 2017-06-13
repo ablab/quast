@@ -189,8 +189,9 @@ class QLogger(object):
             self._logger.error('')
             self._logger.error(msg)
 
-        with open(qconfig.error_log_fpath, 'a') as f:
-            f.write(msg)
+        if qconfig.error_log_fpath:
+            with open(qconfig.error_log_fpath, 'a') as f:
+                f.write(msg)
 
         if exit_with_code:
             exit(exit_with_code)

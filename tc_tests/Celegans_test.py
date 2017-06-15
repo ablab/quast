@@ -6,12 +6,12 @@ from common import *
 
 name = os.path.basename(__file__)[:-3]
 
-run_quast(name, contigs=['/acestorage/data/contigs/C.elegans/PROBABLE_CONTIGS/abyss.fa',
-                         '/acestorage/data/contigs/C.elegans/PROBABLE_CONTIGS/sga.fa',
-                         '/acestorage/data/contigs/C.elegans/PROBABLE_CONTIGS/soapdenovo.fa',
-                         '/acestorage/data/contigs/C.elegans/PROBABLE_CONTIGS/velvet.fa',
-                         '/acestorage/data/contigs/C.elegans/SPAdes2.4.scaffolds.fasta'],
-                 params=' -R /acestorage/data/contigs/C.elegans/REF_FILES/reference.fasta '
+run_quast(name, contigs=['/Johnny/data/contigs/C.elegans/PROBABLE_CONTIGS/abyss.fa',
+                         '/Johnny/data/contigs/C.elegans/PROBABLE_CONTIGS/sga.fa',
+                         '/Johnny/data/contigs/C.elegans/PROBABLE_CONTIGS/soapdenovo.fa',
+                         '/Johnny/data/contigs/C.elegans/PROBABLE_CONTIGS/velvet.fa',
+                         '/Johnny/data/contigs/C.elegans/SPAdes2.4.scaffolds.fasta'],
+                 params=' -R /Johnny/data/contigs/C.elegans/REF_FILES/reference.fasta '
                         '-t 8 --no-plots')
 
 check_report_files(name, ['icarus.html',

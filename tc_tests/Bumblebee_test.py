@@ -6,10 +6,10 @@ from common import *
 
 name = os.path.basename(__file__)[:-3]
 
-run_quast(name, contigs=['/acestorage/data/contigs/GAGE/Bumblebee/ABySS/genome.scf.fasta',
-                         '/acestorage/data/contigs/GAGE/Bumblebee/CABOG/genome.scf.fasta',
-                         '/acestorage/data/contigs/GAGE/Bumblebee/MSR-CA/genome.scf.fasta',
-                         '/acestorage/data/contigs/GAGE/Bumblebee/SOAPdenovo/genome.scf.fasta'],
+run_quast(name, contigs=['/Johnny/data/contigs/GAGE/Bumblebee/ABySS/genome.scf.fasta',
+                         '/Johnny/data/contigs/GAGE/Bumblebee/CABOG/genome.scf.fasta',
+                         '/Johnny/data/contigs/GAGE/Bumblebee/MSR-CA/genome.scf.fasta',
+                         '/Johnny/data/contigs/GAGE/Bumblebee/SOAPdenovo/genome.scf.fasta'],
                          params='--est-ref-size 250000000 -t 4')
 
 assert_metric(name, '# contigs (>= 50000 bp)', ['518', '509', '323', '354'], 'report.tsv')

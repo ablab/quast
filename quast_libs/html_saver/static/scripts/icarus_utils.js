@@ -444,11 +444,9 @@ function formatPosition(start, end, tickValue){
 }
 
 function showArrows(block) {
-    var verticalShift = -7;
-    arrows = [];
+    $('.show_mis_span').text('(show)');
     mini.selectAll('.arrow').remove();
     mini.selectAll('.arrow_selected').remove();
-    var y = y_mini(block.lane) - 1;
     var structure = getBlockStructure(block);
     if (structure) {
         for (var i = 0; i < structure.length; ++i) {
@@ -456,42 +454,97 @@ function showArrows(block) {
             if (nextBlock.contig_type != "M" && !nextBlock.notActive) {
                 if (!(nextBlock.corr_start <= block.corr_start && block.corr_end <= nextBlock.corr_end) &&
                     (isContigSizePlot || chrContigs.indexOf(nextBlock.chr) != -1)) {
-                    arrows.push({start: nextBlock.corr_start, end: nextBlock.corr_end, lane: block.lane, selected: false});
-                    mini.append('g')
-                        .attr('transform', 'translate(' + x_mini((nextBlock.corr_end + nextBlock.corr_start) / 2) + ',' + verticalShift +')')
-                        .attr('class', 'arrow')
-                        .append("svg:path")
-                        .attr("d", 'M0,0V' + (Math.abs(verticalShift) + 1 + block.lane * miniLanesHeight))
-                        .attr("class", function () {
-                            return "path arrow";
-                        })
-                        .attr("marker-start", function () {
-                            return "url(#start_arrow)";
-                        })
-                        .attr("marker-end", function () {
-                            return "url(#arrow)";
-                        });
+                    addArrow((nextBlock.corr_end + nextBlock.corr_start) / 2, block.lane);
                 }
             }
         }
     }
+    addArrow((block.corr_end + block.corr_start) / 2, block.lane, true);
+    display();
+}
 
-    arrows.push({start: block.corr_start, end: block.corr_end, lane: block.lane, selected: true});
+function showMisassembliesArrows(assemblyNum) {
+    var coords = [];
+    var arrowClass = 'assembly' + assemblyNum;
+    mini.selectAll('.arrow.blocks').remove();
+    mini.selectAll('.arrow_selected.blocks').remove();
+    mini.selectAll('.arrow.' + arrowClass).remove();
+    mini.selectAll('.arrow_selected.' + arrowClass).remove();
+    for (var numItem = 0; numItem < items.length; numItem++) {
+        if (items[numItem].misassemblies) {
+            block = items[numItem];
+            if (block.lane != assemblyNum)
+                continue;
+            var structure = getBlockStructure(block);
+            if (structure) {
+                for (var i = 0; i < structure.length; i++) {
+                    if (structure[i].contig_type != "M" || structure[i].mstype != 'real')
+                        continue;
+                    typeMisassemblyNum = structure[i].msg.split(',')[0];
+                    if (typeMisassemblyNum.indexOf('local') == 0) typeMisassemblyNum = 'local';
+
+                    if (document.getElementById(typeMisassemblyNum).checked) {
+                        if (chrContigs.indexOf(structure[i - 1].chr) != -1) {
+                            ms_start = (structure[i - 1].start_in_contig < structure[i - 1].end_in_contig) ?
+                                structure[i - 1].corr_end : structure[i - 1].corr_start;
+                            coords.push([ms_start, block.lane]);
+                        }
+                        if (chrContigs.indexOf(structure[i + 1].chr) != -1) {
+                            ms_end = (structure[i + 1].start_in_contig < structure[i + 1].end_in_contig) ?
+                                structure[i + 1].corr_start : structure[i + 1].corr_end;
+                            coords.push([ms_end, block.lane]);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    var prev_x = -1,
+        prev_y = -1;
+    for (var arrow_n = 0; arrow_n < coords.length; arrow_n++) {
+        var x = coords[arrow_n][0],
+            y = coords[arrow_n][1];
+        if (y != prev_y || Math.abs(x_mini(x - prev_x)) > 3) {
+            addArrow(x, y, false, arrowClass);
+            prev_x = x;
+            prev_y = y;
+        }
+    }
+}
+
+function hideMisassembliesArrows(assemblyNum) {
+    var arrowClass = 'assembly' + assemblyNum;
+    mini.selectAll('.arrow.' + arrowClass).remove();
+    mini.selectAll('.arrow_selected.' + arrowClass).remove();
+}
+
+function addArrow(x, y, selected, additionalClass) {
+    var verticalShift = -7;
+    var arrowClass = selected ? 'arrow_selected' : 'arrow';
     mini.append('g')
-        .attr('transform', 'translate(' + x_mini((block.corr_end + block.corr_start) / 2) + ',' + verticalShift +')')
-        .attr('class', 'arrow_selected')
+        .attr('transform', 'translate(' + x_mini(x) + ',' + verticalShift +')')
+        .attr('class', 'arrow')
         .append("svg:path")
-        .attr("d", 'M0,0V' + (Math.abs(verticalShift) + 1 + block.lane * miniLanesHeight))
+        .attr("d", 'M0,0V' + (Math.abs(verticalShift) + 1 + y * miniLanesHeight))
         .attr("class", function () {
-            return "path arrow_selected";
+            return "path " + arrowClass + ' ' + (additionalClass !== undefined ? additionalClass : 'blocks');
         })
         .attr("marker-start", function () {
-            return "url(#start_arrow_selected)";
+            return "url(#start_" + arrowClass + ")";
         })
         .attr("marker-end", function () {
-            return "url(#arrow_selected)";
+            return "url(#" + arrowClass + ")";
         });
-    display();
+}
+
+function refreshMisArrows() {
+    var showMisSelectors = document.getElementsByClassName('show_mis_span');
+    for(var i = 0; i < showMisSelectors.length; i++) {
+        if ($(showMisSelectors[i]).text() == '(hide)') {
+            assemblyNum = parseInt(showMisSelectors[i].getAttribute("class").split(' ')[1]);
+            showMisassembliesArrows(assemblyNum);
+        }
+    }
 }
 
 function showMisassemblies() {
@@ -507,6 +560,7 @@ function showMisassemblies() {
     }
     hideUncheckedMisassemblies(itemsContainer);
     hideUncheckedMisassemblies(chart);
+    refreshMisArrows();
 }
 
 function changeMisassembledStatus(block) {
@@ -574,6 +628,7 @@ function addTooltipTspan(displayedText, tspan, width) {
 
 function wrap(text, width, cutText, addStdoutLink, offsetX, separator) {
     var stdoutLinkWidth = getSize('(text)') + 10;
+    var showMisassembliesWidth = getSize('(show)');
     text.each(function() {
         var text = d3.select(this),
             words = text.text().split(separator).reverse(),
@@ -608,7 +663,7 @@ function wrap(text, width, cutText, addStdoutLink, offsetX, separator) {
                         .attr('fill', '#0000EE')
                         .style("cursor", "pointer")
                         .text('(text)')
-                        .on('click',function(d) {
+                        .on('click', function(d) {
                             window.open(d.link, '_blank');
                             d3.event.stopPropagation();
                         });
@@ -616,9 +671,10 @@ function wrap(text, width, cutText, addStdoutLink, offsetX, separator) {
                 firstLine = false;
                 if (word.search("\\+") != -1) {
                     tspan = text.append('tspan')
-                        .attr('x', offsetX)
+                        .attr('x', offsetX - showMisassembliesWidth)
                         .attr('y', y)
                         .attr('dy', ++lineNumber * lineHeight + dy + 'em')
+                        .attr('text-decoration', 'underline')
                         .text(word);
                     var msWords = word.split('+');
                     var misassemblies = msWords[0];
@@ -631,6 +687,26 @@ function wrap(text, width, cutText, addStdoutLink, offsetX, separator) {
                     tspan.on('mouseout',function(d) {
                         removeTooltip();
                     });
+                    text.append('tspan')
+                        .attr('x', offsetX)
+                        .attr('y', y)
+                        .attr('dy', lineNumber * lineHeight + dy + 'em')
+                        .attr('fill', '#0000EE')
+                        .attr('class', function(d) {
+                            return 'show_mis_span ' + d.id;
+                        })
+                        .style('cursor', 'pointer')
+                        .text('(show)')
+                        .on('click', function (d) {
+                            if ($(this).text() == "(show)") {
+                                $(this).text("(hide)");
+                                showMisassembliesArrows(d.id);
+                            }
+                            else {
+                                $(this).text("(show)");
+                                hideMisassembliesArrows(d.id);
+                            }
+                        });
                 }
                 else {
                     tspan = text.append('tspan')

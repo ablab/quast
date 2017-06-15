@@ -125,7 +125,7 @@ function keyPress (cmd, deltaCoeff) {
                 .remove();
             addClickContigText(info);
             setBaseChartHeight();
-            arrows = [];
+            $('.show_mis_span').text('(show)');
             mini.selectAll('.arrow').remove();
             mini.selectAll('.arrow_selected').remove();
             removeTooltip();

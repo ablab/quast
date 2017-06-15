@@ -551,7 +551,7 @@ THE SOFTWARE.
                 description += 'length: ' + assemblies_len[assemblyName] + '\n';
                 description += 'contigs: ' + assemblies_contigs[assemblyName] + '\n';
                 if (!isContigSizePlot)
-                    description += 'misassemblies: ' + assemblies_misassemblies[assemblyName];
+                    description += 'mis: ' + assemblies_misassemblies[assemblyName];
                 else
                     description += 'N50: ' + assemblies_n50[assemblyName];
                 lanes[laneNum].description = description;

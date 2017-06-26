@@ -14,8 +14,9 @@
 //
 //------------------------------------------------------------------------------
 
-#include "delta.hh"
-#include "tigrinc.hh"
+#include <mummer/delta.hh>
+#include <mummer/tigrinc.hh>
+#include <mummer/redirect_to_pager.hpp>
 #include <vector>
 #include <algorithm>
 using namespace std;
@@ -439,12 +440,14 @@ int main
     annotateOverlaps (Stats);
 
   //-- Output data to stdout, tabular if -T option was used
+  stdio_launch_pager redirect_to_pager;
   if ( isBtab )
     printBtab (Stats);
   else if ( isPrintTabular )
     printTabular (Stats);
   else
     printHuman (Stats);
+  fclose(stdout);
 
   return EXIT_SUCCESS;
 }
@@ -788,7 +791,7 @@ void printBtab
      (vector<AlignStats> Stats)
 {
   time_t currtime;
-  char * type;
+  const char * type;
   char date[MAX_LINE];
   long int len;
   vector<AlignStats>::iterator Sip;

@@ -1,10 +1,11 @@
-#include "tigrinc.hh"
-
+#include <mummer/tigrinc.hh>
+#include <unistd.h>
 
 FILE *  File_Open  (const char * Filename, const char * Mode)
 
-/* Open  Filename  in  Mode  and return a pointer to its control
-*  block.  If fail, print a message and exit. */
+/* Open Filename in Mode and return a pointer to its control block.
+ * If fail, print a message and exit.  If file is a tty, write a
+ * warning. */
 
   {
    FILE  *  fp;
@@ -15,6 +16,8 @@ FILE *  File_Open  (const char * Filename, const char * Mode)
         fprintf (stderr, "ERROR:  Could not open file  %s \n", Filename);
         exit (EXIT_FAILURE);
        }
+   if(isatty(fileno(fp)))
+      fprintf(stderr, "Warning: reading file %s from a tty\n", Filename);
 
    return  fp;
   }
@@ -311,12 +314,12 @@ bool CompareIUPAC (char x, char y)
 }
 
 
-int Read_String  (FILE * fp, char * & T, long int & Size, char Name [],
-		  int Partial)
+bool Read_String  (FILE * fp, char * & T, long int & Size, char Name [],
+                   bool Partial)
 
 /* Read next string from  fp  (assuming FASTA format) into  T [1 ..]
 *  which has  Size  characters.  Allocate extra memory if needed
-*  and adjust  Size  accordingly.  Return  TRUE  if successful,  FALSE
+*  and adjust  Size  accordingly.  Return  TRUE  if successful,  false
 *  otherwise (e.g., EOF).  Partial indicates if first line has
 *  numbers indicating a subrange of characters to read.
 */
@@ -330,9 +333,9 @@ int Read_String  (FILE * fp, char * & T, long int & Size, char Name [],
      ;
 
    if  (Ch == EOF)
-       return  FALSE;
+       return  false;
 
-   fgets (Line, MAX_LINE, fp);
+   if(!fgets (Line, MAX_LINE, fp)) return false;
    Len = strlen (Line);
    assert (Len > 0 && Line [Len - 1] == '\n');
    P = strtok (Line, " \t\n");
@@ -387,7 +390,7 @@ int Read_String  (FILE * fp, char * & T, long int & Size, char Name [],
    if  (Ch == '>')
        ungetc (Ch, fp);
 
-   return  TRUE;
+   return  true;
   }
 
 

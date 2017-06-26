@@ -8,7 +8,7 @@
 */
 
 
-#include  "tigrinc.hh"
+#include <mummer/tigrinc.hh>
 
 
 #define  SHOW_TREE 0
@@ -25,7 +25,7 @@ int  Global_Non_Skip_Ct = 0;
 
 const int  DEFAULT_MIN_MATCH_LEN = 20;
 const char  DOLLAR_CHAR = '$';
-const char  DONT_KNOW_CHAR = 'N';
+// const char  DONT_KNOW_CHAR = 'N';
 const int  MAX_NAME_LEN = 500;
 const char  START_CHAR = '%';
 
@@ -150,7 +150,7 @@ int main  (int argc, char * argv [])
    Data = (char *) Safe_malloc (INIT_SIZE);
    Input_Size = INIT_SIZE;
 
-   Read_String (fp, Data, Input_Size, Name, FALSE);
+   Read_String (fp, Data, Input_Size, Name, false);
    fclose (fp);
 
    Genome_Len = strlen (Data + 1);
@@ -182,15 +182,16 @@ int main  (int argc, char * argv [])
 
 #if  SHOW_TREE
    printf ("\n\nNodes in Entire Suffix Tree:\n\n");
-   List_Tree (Root, FALSE, 0, 0);
+   List_Tree (Root, false, 0, 0);
 #endif
 
-   fprintf (stderr, "Genome Length = %ld   Used %d internal nodes\n",
-                Genome_Len, Next_Avail_Node);
+   if(Verbose > 0)
+     fprintf (stderr, "Genome Length = %ld   Used %d internal nodes\n",
+              Genome_Len, Next_Avail_Node);
 
-   Set_Subtree_Size (Root, FALSE, NIL, 0);
+   Set_Subtree_Size (Root, false, NIL, 0);
 
-   Mark_Skipable_Nodes (Root, FALSE, NIL, 0);
+   Mark_Skipable_Nodes (Root, false, NIL, 0);
 
    if  (Exhaustive_Matches)
        {  // Exhaustive search for matches
@@ -228,7 +229,7 @@ int main  (int argc, char * argv [])
         printf ("Long Exact Matches:\n");
         printf ("%9s %10s  %8s\n", "Start1", "Start2", "Length");
 
-        List_Maximal_Matches (Root, FALSE, NIL, 0);
+        List_Maximal_Matches (Root, false, NIL, 0);
        }
 
    if  (Verbose > 1)
@@ -253,7 +254,7 @@ int  Add_Duplicates  (int Start, int End, int Leaf, int Leaf_Depth)
 
    j = Leaf;
    for  (i = Start;  i <= End;  i ++, j++)
-     Leaf_Array [j] . Is_Duplicate = TRUE;
+     Leaf_Array [j] . Is_Duplicate = true;
 
    return  0;
   }
@@ -279,7 +280,7 @@ int  Add_String  (int Start, int Root)
    Segment_Start = Start;
    Segment_Len = 1 + End - Start;
    New_Place = New_Step_Down (Root, 0, Segment_Start, Segment_Len,
-                          Matched, TRUE, New_Place_Is_Leaf, Grandparent);
+                          Matched, true, New_Place_Is_Leaf, Grandparent);
 
    if  (Segment_Len == Matched)
        {
@@ -313,7 +314,7 @@ int  Add_String  (int Start, int Root)
    Leaf_Array [Leaf] . Sibling_Is_Leaf
           = Node_Array [New_Place] . Child_Is_Leaf;
    Node_Array [New_Place] . Child = Leaf;
-   Node_Array [New_Place] . Child_Is_Leaf = TRUE;
+   Node_Array [New_Place] . Child_Is_Leaf = true;
    Leaf_Array [Leaf] . Len = Segment_Len - Matched;
 #if  USE_EXTRA_FIELDS
    Leaf_Array [Leaf] . Depth = 1 + End - Start;
@@ -344,7 +345,7 @@ int  Add_String  (int Start, int Root)
            New_Place = New_Step_Down (Node_Array [Last_Parent] . Link,
                                   Link_Depth,
                                   Segment_Start, Segment_Len,
-                                  Matched, FALSE,
+                                  Matched, false,
                                   New_Place_Is_Leaf, Grandparent);
            if  (Matched == Segment_Len)
                {
@@ -358,7 +359,7 @@ int  Add_String  (int Start, int Root)
            Leaf_Array [Leaf] . Sibling_Is_Leaf
                   = Node_Array [New_Place] . Child_Is_Leaf;
            Node_Array [New_Place] . Child = Leaf;
-           Node_Array [New_Place] . Child_Is_Leaf = TRUE;
+           Node_Array [New_Place] . Child_Is_Leaf = true;
            Leaf_Array [Leaf] . Len = Segment_Len - Matched;
 #if  USE_EXTRA_FIELDS
            Leaf_Array [Leaf] . Depth = 1 + End - Start;
@@ -399,7 +400,7 @@ int  Add_String  (int Start, int Root)
                 Leaf_Array [Leaf] . Sibling_Is_Leaf
                        = Node_Array [New_Place] . Child_Is_Leaf;
                 Node_Array [New_Place] . Child = Leaf;
-                Node_Array [New_Place] . Child_Is_Leaf = TRUE;
+                Node_Array [New_Place] . Child_Is_Leaf = true;
                 Leaf_Array [Leaf] . Len = Leaf_Len;
 #if  USE_EXTRA_FIELDS
                 Leaf_Array [Leaf] . Depth = 1 + End - Start;
@@ -418,7 +419,7 @@ int  Add_String  (int Start, int Root)
                 Segment_Len = Leaf_Len;
                 New_Place = New_Step_Down (New_Place, Link_Depth,
                                        Segment_Start, Segment_Len,
-                                       Matched, FALSE,
+                                       Matched, false,
                                        New_Place_Is_Leaf, Grandparent);
                 if  (Matched >= Segment_Len)
                     {
@@ -433,7 +434,7 @@ int  Add_String  (int Start, int Root)
                 Leaf_Array [Leaf] . Sibling_Is_Leaf
                        = Node_Array [New_Place] . Child_Is_Leaf;
                 Node_Array [New_Place] . Child = Leaf;
-                Node_Array [New_Place] . Child_Is_Leaf = TRUE;
+                Node_Array [New_Place] . Child_Is_Leaf = true;
                 Leaf_Array [Leaf] . Len = Segment_Len - Matched;
 #if  USE_EXTRA_FIELDS
                 Leaf_Array [Leaf] . Depth = 1 + End - Start;
@@ -476,8 +477,8 @@ int  Build_Suffix_Tree  (int Start)
    Node_Array [Root] . Sibling = NIL;
    Node_Array [Root] . Link = Root;
    Node_Array [Root] . Len = 0;
-   Node_Array [Root] . Sibling_Is_Leaf = FALSE;
-   Node_Array [Root] . Child_Is_Leaf = TRUE;
+   Node_Array [Root] . Sibling_Is_Leaf = false;
+   Node_Array [Root] . Child_Is_Leaf = true;
 #if  USE_EXTRA_FIELDS
    Node_Array [Root] . Depth = 0;
    Node_Array [Root] . ID = Curr_ID;
@@ -487,7 +488,7 @@ int  Build_Suffix_Tree  (int Start)
    Leaf_Array [Leaf] . Lo = Start;
    Leaf_Array [Leaf] . Sibling = NIL;
    Leaf_Array [Leaf] . Len = 1 + End - Start;
-   Leaf_Array [Leaf] . Sibling_Is_Leaf = FALSE;
+   Leaf_Array [Leaf] . Sibling_Is_Leaf = false;
 #if  USE_EXTRA_FIELDS
    Leaf_Array [Leaf] . Depth = 1 + End - Start;
    Leaf_Array [Leaf] . ID = Start;
@@ -520,7 +521,7 @@ int  Build_Suffix_Tree  (int Start)
            New_Place = New_Step_Down (Node_Array [Last_Parent] . Link,
                                   Link_Depth,
                                   Segment_Start, Segment_Len,
-                                  Matched, FALSE,
+                                  Matched, false,
                                   New_Place_Is_Leaf, Grandparent);
            if  (Matched >= Segment_Len)
                {
@@ -535,7 +536,7 @@ int  Build_Suffix_Tree  (int Start)
                 Leaf_Array [Leaf] . Sibling_Is_Leaf
                        = Node_Array [New_Place] . Child_Is_Leaf;
                 Node_Array [New_Place] . Child = Leaf;
-                Node_Array [New_Place] . Child_Is_Leaf = TRUE;
+                Node_Array [New_Place] . Child_Is_Leaf = true;
                 Leaf_Array [Leaf] . Len = Segment_Len - Matched;
 #if  USE_EXTRA_FIELDS
                 Leaf_Array [Leaf] . Depth = 1 + End - Start;
@@ -576,7 +577,7 @@ int  Build_Suffix_Tree  (int Start)
                 Leaf_Array [Leaf] . Sibling_Is_Leaf
                        = Node_Array [New_Place] . Child_Is_Leaf;
                 Node_Array [New_Place] . Child = Leaf;
-                Node_Array [New_Place] . Child_Is_Leaf = TRUE;
+                Node_Array [New_Place] . Child_Is_Leaf = true;
                 Leaf_Array [Leaf] . Len = Leaf_Len;
 #if  USE_EXTRA_FIELDS
                 Leaf_Array [Leaf] . Depth = 1 + End - Start;
@@ -595,7 +596,7 @@ int  Build_Suffix_Tree  (int Start)
                 Segment_Len = Leaf_Len;
                 New_Place = New_Step_Down (New_Place, Link_Depth,
                                        Segment_Start, Segment_Len,
-                                       Matched, FALSE,
+                                       Matched, false,
                                        New_Place_Is_Leaf, Grandparent);
                 if  (Matched >= Segment_Len)
                     {
@@ -611,7 +612,7 @@ int  Build_Suffix_Tree  (int Start)
                      Leaf_Array [Leaf] . Sibling_Is_Leaf
                             = Node_Array [New_Place] . Child_Is_Leaf;
                      Node_Array [New_Place] . Child = Leaf;
-                     Node_Array [New_Place] . Child_Is_Leaf = TRUE;
+                     Node_Array [New_Place] . Child_Is_Leaf = true;
                      Leaf_Array [Leaf] . Len = Segment_Len - Matched;
 #if  USE_EXTRA_FIELDS
                      Leaf_Array [Leaf] . Depth = 1 + End - Start;
@@ -648,7 +649,7 @@ static int  New_Find_Child
    char  Start_Ch;
 
    Pred = NIL;
-   Pred_Is_Leaf = FALSE;
+   Pred_Is_Leaf = false;
    i = Node_Array [Node] . Child;
    Is_Leaf = Node_Array [Node] . Child_Is_Leaf;
    if  (Is_Leaf)
@@ -723,7 +724,7 @@ static int  New_Jump_Down
    int  P, Q, P_Is_Leaf, D, Pred, Pred_Is_Leaf;
    int  P_Sib, P_Sib_Is_Leaf;
 
-   Made_New_Node = FALSE;
+   Made_New_Node = false;
    if  (Len == 0)
        return  Node;
 
@@ -780,17 +781,17 @@ static int  New_Jump_Down
            if  (Pred == NIL)
                {
                 Node_Array [Node] . Child = Q;
-                Node_Array [Node] . Child_Is_Leaf = FALSE;
+                Node_Array [Node] . Child_Is_Leaf = false;
                }
            else if  (Pred_Is_Leaf)
                {
                 Leaf_Array [Pred] . Sibling = Q;
-                Leaf_Array [Pred] . Sibling_Is_Leaf = FALSE;
+                Leaf_Array [Pred] . Sibling_Is_Leaf = false;
                }
              else
                {
                 Node_Array [Pred] . Sibling = Q;
-                Node_Array [Pred] . Sibling_Is_Leaf = FALSE;
+                Node_Array [Pred] . Sibling_Is_Leaf = false;
                }
 
            if  (! P_Is_Leaf)
@@ -801,7 +802,7 @@ static int  New_Jump_Down
                 Node_Array [P] . Parent = Q;
 #endif
                 Node_Array [P] . Sibling = NIL;
-                Node_Array [P] . Sibling_Is_Leaf = FALSE;
+                Node_Array [P] . Sibling_Is_Leaf = false;
                }
              else
                {
@@ -811,10 +812,10 @@ static int  New_Jump_Down
                 Leaf_Array [P] . Parent = Q;
 #endif
                 Leaf_Array [P] . Sibling = NIL;
-                Leaf_Array [P] . Sibling_Is_Leaf = FALSE;
+                Leaf_Array [P] . Sibling_Is_Leaf = false;
                }
            
-           Made_New_Node = TRUE;
+           Made_New_Node = true;
            return  Q;
           }
 
@@ -847,9 +848,9 @@ void  List_Matches
         {
          if  (Data [i - 1] == Data [j - 1]
                   || Data [i + n] == Data [j + n]
-                  || i > String_Separator && j > String_Separator)
+                  || (i > String_Separator && j > String_Separator))
              continue;
-         Reversed = FALSE;
+         Reversed = false;
          if  (j > String_Separator)
              {
               k = Genome_Len - (j - String_Separator) - n + 2;
@@ -857,7 +858,7 @@ void  List_Matches
                   continue;
               L = i;
               R = k + n - 1;
-              Reversed = TRUE;
+              Reversed = true;
              }
          else if  (i > String_Separator)
              {
@@ -866,7 +867,7 @@ void  List_Matches
                   continue;
               L = j;
               R = k + n - 1;
-              Reversed = TRUE;
+              Reversed = true;
              }
          else if  (i < j)
              {
@@ -1167,7 +1168,7 @@ void  Mark_Skipable_Nodes
    Link = Node_Array [Root] . Link;
    if  (Link != NIL
           && Node_Array [Link] . Subtree_Size == Node_Array [Root] . Subtree_Size)
-        Node_Array [Link] . Should_Skip = TRUE;
+        Node_Array [Link] . Should_Skip = true;
 
    // Will mark the root of the entire tree as skippable, but that's
    // what we want
@@ -1266,14 +1267,15 @@ void  Set_Subtree_Size
 //  string-depth in the suffix tree.
 
   {
-   int  Start, Depth;
+   int Depth;
+   //   int Start;
 
    if  (Root == NIL)
        return;
 
    if  (Is_Leaf)
        {
-        Start = Leaf_Array [Root] . Lo - Parent_Depth;
+         //        Start = Leaf_Array [Root] . Lo - Parent_Depth;
         if  (Leaf_Array [Root] . Is_Duplicate)
             Node_Array [Parent] . Subtree_Size ++;
           else
@@ -1380,17 +1382,17 @@ static int  New_Step_Down
            if  (Pred == NIL)
                {
                 Node_Array [Node] . Child = Q;
-                Node_Array [Node] . Child_Is_Leaf = FALSE;
+                Node_Array [Node] . Child_Is_Leaf = false;
                }
            else if  (Pred_Is_Leaf)
                {
                 Leaf_Array [Pred] . Sibling = Q;
-                Leaf_Array [Pred] . Sibling_Is_Leaf = FALSE;
+                Leaf_Array [Pred] . Sibling_Is_Leaf = false;
                }
              else
                {
                 Node_Array [Pred] . Sibling = Q;
-                Node_Array [Pred] . Sibling_Is_Leaf = FALSE;
+                Node_Array [Pred] . Sibling_Is_Leaf = false;
                }
 
            if  (! P_Is_Leaf)
@@ -1401,7 +1403,7 @@ static int  New_Step_Down
                 Node_Array [P] . Parent = Q;
 #endif
                 Node_Array [P] . Sibling = NIL;
-                Node_Array [P] . Sibling_Is_Leaf = FALSE;
+                Node_Array [P] . Sibling_Is_Leaf = false;
                }
              else
                {
@@ -1411,16 +1413,16 @@ static int  New_Step_Down
                 Leaf_Array [P] . Parent = Q;
 #endif
                 Leaf_Array [P] . Sibling = NIL;
-                Leaf_Array [P] . Sibling_Is_Leaf = FALSE;
+                Leaf_Array [P] . Sibling_Is_Leaf = false;
                }
            
-           Return_Is_Leaf = FALSE;
+           Return_Is_Leaf = false;
            return  Q;
           }
 
       if  (P_Is_Leaf || j == Len)
           {
-//           Return_Is_Leaf = TRUE;
+//           Return_Is_Leaf = true;
            Return_Is_Leaf = P_Is_Leaf;
            return  P;
           }
@@ -1433,7 +1435,7 @@ static int  New_Step_Down
                       Pred, Pred_Is_Leaf, Node_Depth);
      }
 
-   Return_Is_Leaf = FALSE;
+   Return_Is_Leaf = false;
    return  Node;
   }
 

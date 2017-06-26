@@ -1,4 +1,4 @@
-#!__PERL_PATH -w
+#!@PERL@
 
 #-------------------------------------------------------------------------------
 #   Programmer: Adam M Phillippy, University of Maryland
@@ -9,19 +9,14 @@
 #
 #-------------------------------------------------------------------------------
 
-use Cwd 'abs_path';
+use lib "@LIB_DIR@";
+use Foundation;
 use File::Spec::Functions;
-use File::Basename;
+use warnings;
 use strict;
 
-my $BIN_DIR, my $AUX_BIN_DIR, my $SCRIPT_DIR;
-BEGIN {
-    $BIN_DIR = abs_path(dirname($0));
-    $AUX_BIN_DIR = "$BIN_DIR/aux_bin";
-    $SCRIPT_DIR = "$BIN_DIR/scripts";
-}
-use lib $SCRIPT_DIR;
-use Foundation;
+my $BIN_DIR = "@BIN_DIR@";
+my $SCRIPT_DIR = "@LIB_DIR@";
 
 my $VERSION_INFO = q~
 DNAdiff version 1.3

@@ -1,4 +1,4 @@
-#!__PERL_PATH
+#!@PERL@
 
 #-------------------------------------------------------------------------------
 #   Programmer: Adam M Phillippy, The Institute for Genomic Research
@@ -15,19 +15,14 @@
 #
 #-------------------------------------------------------------------------------
 
-use Cwd 'abs_path';
+use lib "@LIB_DIR@";
+use Foundation;
 use File::Spec::Functions;
-use File::Basename;
 use strict;
 
-my $BIN_DIR, my $AUX_BIN_DIR, my $SCRIPT_DIR;
-BEGIN {
-    $BIN_DIR = abs_path(dirname($0));
-    $AUX_BIN_DIR = "$BIN_DIR/aux_bin";
-    $SCRIPT_DIR = "$BIN_DIR/scripts";
-}
-use lib $SCRIPT_DIR;
-use Foundation;
+my $BIN_DIR = "@BIN_DIR@";
+my $AUX_BIN_DIR = "@LIBEXEC_DIR@";
+my $LIB_DIR = "@LIB_DIR@";
 
 
 
@@ -106,7 +101,7 @@ my @DEPEND_INFO =
      "$BIN_DIR/show-coords",
      "$AUX_BIN_DIR/postpro",
      "$AUX_BIN_DIR/prepro",
-     "$SCRIPT_DIR/Foundation.pm"
+     "$LIB_DIR/Foundation.pm"
      );
 
 

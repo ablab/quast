@@ -1547,33 +1547,32 @@ stripped from the log message.
 
          #printing error message to STDERR if flag is non zero.
          if((defined($flag)) && ($flag ne '0')) {
-             print STDERR "$log_message\n";
-         }
-         else {
-             $log_message = getLogfileDate() . $log_message;
-             push(@{$self->{error_queue}}, $log_message);
+            print STDERR "$log_message\n";
+         }        
 
-             while (
-                    (defined(my $log_message = $self->{error_queue}[0])) &&
-                    (defined($self->getErrorFile()))
-                   ) {
-
-                if (
-                    ($self->openLogERROR()) &&
-                    (print ERRLOG "$log_message\n") &&
-                    ($self->closeLogERROR()) &&
-                    ($self->{error_file_used} = 1) # that is an '='
-                   ) {
-               shift @{$self->{error_queue}};
-                }
-                else {
-                   $self->debugPush();
-                   $self->logLocal("Cannot log message \'$log_message\' to " .
-                      $self->getErrorFile() . " = $!", 6);
-                   $self->invalidateLogFILES();
-                   $self->debugPop();
-                }
-             }
+         $log_message = getLogfileDate() . $log_message;
+         push(@{$self->{error_queue}}, $log_message);
+        
+         while (
+                (defined(my $log_message = $self->{error_queue}[0])) &&
+                (defined($self->getErrorFile()))
+               ) {
+               
+            if (
+                ($self->openLogERROR()) &&     
+                (print ERRLOG "$log_message\n") &&
+                ($self->closeLogERROR()) &&
+                ($self->{error_file_used} = 1) # that is an '='
+               ) {
+	       shift @{$self->{error_queue}};
+            }
+            else {
+               $self->debugPush();
+               $self->logLocal("Cannot log message \'$log_message\' to " .
+                  $self->getErrorFile() . " = $!", 6);
+               $self->invalidateLogFILES(); 
+               $self->debugPop();
+            }
          }
       }
       else {

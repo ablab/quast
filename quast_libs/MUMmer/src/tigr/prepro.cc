@@ -31,8 +31,8 @@
 //
 //------------------------------------------------------------------------------
 
-#include "tigrinc.hh"
-#include "translate.hh"
+#include <mummer/tigrinc.hh>
+#include <mummer/translate.hh>
 
 //-- Output this many sequence characters per line
 #define CHARS_PER_LINE 60
@@ -133,7 +133,7 @@ int main
   ct = 0;
   if ( isReference )
     printf (">allcontigs %s\n", InputFileName);
-  while ( Read_String (InputFile, A, InitSize, Id, FALSE) )
+  while ( Read_String (InputFile, A, InitSize, Id, false) )
     {
       LenA = strlen(A + 1);
 

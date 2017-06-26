@@ -1,44 +1,35 @@
-#!__PERL_PATH
+#!@PERL@
 
 ################################################################################
 #   Programmer: Adam M Phillippy, The Institute for Genomic Research
 #         File: mummerplot
 #         Date: 01 / 08 / 03
 #               01 / 06 / 05 rewritten (v3.0)
-#
+#  
 #        Usage:
 #    mummerplot  [options]  <match file>
-#
+# 
 #                Try 'mummerplot -h' for more information.
-#
+# 
 #      Purpose: To generate a gnuplot plot for the display of mummer, nucmer,
 #               promer, and show-tiling alignments.
-#
+# 
 ################################################################################
 
-use Cwd 'abs_path';
-use File::Basename;
+use lib "@LIB_DIR@";
+use Foundation;
 use strict;
 use IO::Socket;
-use POSIX qw/ceil/;
 
-my $BIN_DIR, my $AUX_BIN_DIR, my $SCRIPT_DIR;
-BEGIN {
-    $BIN_DIR = abs_path(dirname($0));
-    $AUX_BIN_DIR = "$BIN_DIR/aux_bin";
-    $SCRIPT_DIR = "$BIN_DIR/scripts";
-}
-use lib $SCRIPT_DIR;
-use Foundation;
+my $BIN_DIR = "@BIN_DIR@";
+my $LIB_DIR = "@LIB_DIR@";
 
 
 #================================================================= Globals ====#
 #-- terminal types
 my $X11    = "x11";
-my $HTML   = "html";
 my $PS     = "postscript";
 my $PNG    = "png";
-my $PDF    = "pdf";
 
 #-- terminal sizes
 my $SMALL  = "small";
@@ -49,9 +40,7 @@ my %TERMSIZE =
     (
      $X11 => { $SMALL => 500, $MEDIUM => 700,  $LARGE => 900  }, # screen pix
      $PS  => { $SMALL => 1,   $MEDIUM => 2,    $LARGE => 3    }, # pages
-     $PNG => { $SMALL => 800, $MEDIUM => 1024, $LARGE => 1400 }, # image pix
-     $PDF => { $SMALL => 800, $MEDIUM => 1024, $LARGE => 1400 }, # image pix
-     $HTML => { $SMALL => 800, $MEDIUM => 1024, $LARGE => 1400 }  # image pix
+     $PNG => { $SMALL => 800, $MEDIUM => 1024, $LARGE => 1400 }  # image pix
      );
 
 #-- terminal format
@@ -74,10 +63,8 @@ my %SUFFIX =
      $REVPLOT => ".rplot",
      $HLTPLOT => ".hplot",
      $GNUPLOT => ".gp",
-     $HTML    => ".html",
      $PS      => ".ps",
-     $PNG     => ".png",
-     $PDF     => ".pdf"
+     $PNG     => ".png"
      );
 
 
@@ -189,7 +176,7 @@ my $HELP = qq~
 
 my @DEPEND =
     (
-     "$SCRIPT_DIR/Foundation.pm",
+     "$LIB_DIR/Foundation.pm",
      "$BIN_DIR/delta-filter",
      "$BIN_DIR/show-coords",
      "$BIN_DIR/show-snps",
@@ -272,7 +259,7 @@ MAIN:
     #-- Parse the alignment data
     $parsefunc->(\@aligns);
 
-
+    
     #-- Layout the alignment data if requested
     if ( $OPT_layout ) {
         if ( scalar (keys %refs) || scalar (keys %qrys) ) {
@@ -371,7 +358,7 @@ sub GetParseFunc ( )
               }
           }
       }
-
+      
       #-- default
       die "ERROR: Could not read $OPT_Mfile, Unrecognized file type\n";
   }
@@ -415,7 +402,7 @@ sub ParseIDs ($$)
             $href->{$1} = $aref;
             next;
         }
-
+        
         #-- FastA sequence
         if ( $isfasta  &&  /^\S+$/ ) {
             if ( defined $aref ) { $aref->[1] += (length) - 1; }
@@ -957,7 +944,7 @@ sub PlotData ($$$)
             foreach $fh ( @fha ) {
                 print $fh "$sR $sQ $sim\n", "$eR $eQ $sim\n\n\n";
             }
-        }
+        }            
 
         #-- set some flags
         if ( !$ismultiref && $idR ne $pidR ) { $ismultiref = 1; }
@@ -990,7 +977,7 @@ sub PlotData ($$$)
             #-- set the sequence offset, length, direction, etc...
             my ($refoff, $reflen, $refdir);
             my ($qryoff, $qrylen, $qrydir);
-
+            
             if ( %$rref ) {
                 #-- skip reference sequence or set atts from hash
                 if ( !exists ($rref->{$idR}) ) { next; }
@@ -1000,7 +987,7 @@ sub PlotData ($$$)
                 #-- no reference hash, so default atts
                 ($refoff, $reflen, $refdir) = (0, $lenR, 1);
             }
-
+            
             if ( %$qref ) {
                 #-- skip query sequence or set atts from hash
                 if ( !exists ($qref->{$idQ}) ) { next; }
@@ -1024,7 +1011,7 @@ sub PlotData ($$$)
             }
             else {
                 print HFILE "$pR $pQ 0\n", "$pR $pQ 0\n\n\n";
-            }
+            }            
         }
 
         close (SNPS)
@@ -1044,7 +1031,7 @@ sub PlotData ($$$)
     }
 
 
-    if ( !(%$rref) ) {
+    if ( !%$rref ) {
         if ( $ismultiref ) {
             print STDERR
                 "WARNING: Multiple ref sequences overlaid, try -R or -r\n";
@@ -1054,7 +1041,7 @@ sub PlotData ($$$)
         }
     }
 
-    if ( !(%$qref) ) {
+    if ( !%$qref ) {
         if ( $ismultiqry && !$OPT_coverage ) {
             print STDERR
                 "WARNING: Multiple qry sequences overlaid, try -Q, -q or -c\n";
@@ -1125,56 +1112,14 @@ sub WriteGP ($$)
 
         /^$PNG/    and do {
             $P_TERM = $OPT_gpstatus == 0 ?
-                "$PNG tiny size $SIZE,$SIZE" : "$PNG size 1000,1000";
+                "$PNG tiny size $SIZE,$SIZE" : "$PNG small";
             if ( defined $OPT_color && $OPT_color == 0 ) {
                 $P_TERM .= " xffffff x000000 x000000";
                 $P_TERM .= " x000000 x000000 x000000";
                 $P_TERM .= " x000000 x000000 x000000";
             }
-
-            %P_PS = ( $FWD => 0.5, $REV => 0.5, $HLT => 0.5 );
-
-            %P_LW = $OPT_coverage || $OPT_color ?
-                ( $FWD => 3.0, $REV => 3.0, $HLT => 3.0 ) :
-                ( $FWD => 3.0, $REV => 3.0, $HLT => 3.0 );
-
-            $P_SIZE = $OPT_coverage ?
-                "set size 1,.375" :
-                "set size 1,1";
-
-            last;
-        };
-
-        /^$PDF/    and do {
-            $P_TERM = "$PDF size 10,10";  # size in inches
-            if ( defined $OPT_color && $OPT_color == 0 ) {
-                $P_TERM .= " xffffff x000000 x000000";
-                $P_TERM .= " x000000 x000000 x000000";
-                $P_TERM .= " x000000 x000000 x000000";
-            }
-
-            %P_PS = ( $FWD => 0.5, $REV => 0.5, $HLT => 0.5 );
-
-            %P_LW = $OPT_coverage || $OPT_color ?
-                ( $FWD => 3.0, $REV => 3.0, $HLT => 3.0 ) :
-                ( $FWD => 3.0, $REV => 3.0, $HLT => 3.0 );
-
-            $P_SIZE = $OPT_coverage ?
-                "set size 1,.375" :
-                "set size 1,1";
-
-            last;
-        };
-
-        /^$HTML/    and do {
-            $P_TERM = "canvas jsdir \"\"";  # size in inches
-            if ( defined $OPT_color && $OPT_color == 0 ) {
-                $P_TERM .= " xffffff x000000 x000000";
-                $P_TERM .= " x000000 x000000 x000000";
-                $P_TERM .= " x000000 x000000 x000000";
-            }
-
-            %P_PS = ( $FWD => 0.5, $REV => 0.5, $HLT => 0.5 );
+            
+            %P_PS = ( $FWD => 1.0, $REV => 1.0, $HLT => 1.0 );
 
             %P_LW = $OPT_coverage || $OPT_color ?
                 ( $FWD => 3.0, $REV => 3.0, $HLT => 3.0 ) :
@@ -1191,19 +1136,27 @@ sub WriteGP ($$)
     }
 
     #-- plot commands
-    my ($P_WITH, $P_FORMAT, $P_LS, $P_KEY, %P_PT, %P_LT, %P_LC);
+    my ($P_WITH, $P_FORMAT, $P_LS, $P_KEY, %P_PT, %P_LT);
 
-    %P_PT = ( $FWD => 7, $REV => 7, $HLT => 7 );
+    %P_PT = ( $FWD => 6, $REV => 6, $HLT => 6 );
     %P_LT = defined $OPT_Hfile ?
         ( $FWD => 2, $REV => 2, $HLT => 1 ) :
         ( $FWD => 1, $REV => 3, $HLT => 2 );
-    %P_LC = ( $FWD => "rgb \"red\"", $REV => "rgb \"blue\"", $HLT => "rgb \"yellow\"" );
 
     $P_WITH = $OPT_coverage || $OPT_color ? "w l" : "w lp";
 
     $P_FORMAT = "set format \"$TFORMAT\"";
-    $P_LS = "set linestyle";
-    $P_KEY = "set key outside bottom right";  # legend
+    if ( $OPT_gpstatus == 0 ) {
+        $P_LS = "set style line";
+        $P_KEY = "unset key";
+        $P_FORMAT .= "\nset mouse format \"$TFORMAT\"";
+        $P_FORMAT .= "\nset mouse mouseformat \"$MFORMAT\"";
+        $P_FORMAT .= "\nset mouse clipboardformat \"$MFORMAT\"";
+    }
+    else {
+        $P_LS = "set linestyle";
+        $P_KEY = "set nokey";
+    }
 
 
     my @refk = keys (%$rref);
@@ -1226,6 +1179,7 @@ sub WriteGP ($$)
 
     #-- set tics, determine labels, ranges (ref)
     if ( scalar (@refk) == 1 ) {
+        $xlabel = $refk[0];
         $xrange = $rref->{$xlabel}[1];
     }
     else {
@@ -1233,14 +1187,13 @@ sub WriteGP ($$)
         print GFILE "set xtics rotate \( \\\n";
         foreach $xlabel ( sort { $rref->{$a}[0] <=> $rref->{$b}[0] } @refk ) {
             $xrange += $rref->{$xlabel}[1];
-        }
-        my $xTickRange = GetTickRange($xrange);
-        for ( my $i = 0; $i < $xrange; $i += $xTickRange )  {
-            print GFILE " \"$i\" $i, \\\n";
+            $tic = $rref->{$xlabel}[0] + 1;
+            $dir = ($rref->{$xlabel}[2] == 1) ? "" : "*";
+            print GFILE " \"$dir$xlabel\" $tic.0, \\\n";
         }
         print GFILE " \"\" $xrange \\\n\)\n";
+        $xlabel = "REF";
     }
-    $xlabel = "Reference";
     if ( $xrange == 0 ) { $xrange = "*"; }
 
     #-- set tics, determine labels, ranges (qry)
@@ -1257,13 +1210,12 @@ sub WriteGP ($$)
         print GFILE "set ytics \( \\\n";
         foreach $ylabel ( sort { $qref->{$a}[0] <=> $qref->{$b}[0] } @qryk ) {
             $yrange += $qref->{$ylabel}[1];
-        }
-        my $yTickRange = GetTickRange($yrange);
-        for ( my $i = 0; $i < $yrange; $i += $yTickRange )  {
-            print GFILE " \"$i\" $i, \\\n";
+            $tic = $qref->{$ylabel}[0] + 1;
+            $dir = ($qref->{$ylabel}[2] == 1) ? "" : "*";
+            print GFILE " \"$dir$ylabel\" $tic.0, \\\n";
         }
         print GFILE " \"\" $yrange \\\n\)\n";
-        $ylabel = "Assembly";
+        $ylabel = "QRY";
     }
     if ( $yrange == 0 ) { $yrange = "*"; }
 
@@ -1279,8 +1231,8 @@ sub WriteGP ($$)
         "$P_KEY\n",
         "set border $border\n",
         "set tics scale 0\n",
-        "set xlabel \"$xlabel\" noenhanced\n",
-        "set ylabel \"$ylabel\" noenhanced\n",
+        "set xlabel \"$xlabel\"\n",
+        "set ylabel \"$ylabel\"\n",
         "$P_FORMAT\n";
 
     #-- ranges
@@ -1312,7 +1264,6 @@ sub WriteGP ($$)
     foreach my $s ( ($FWD, $REV, $HLT) ) {
         my $ss = "$P_LS $s ";
         $ss .= $OPT_color ? " palette" : " lt $P_LT{$s}";
-        $ss .= " lc $P_LC{$s}";
         $ss .= " lw $P_LW{$s}";
         if ( ! $OPT_coverage || $s == $HLT ) {
             $ss .= " pt $P_PT{$s} ps $P_PS{$s}";
@@ -1328,7 +1279,7 @@ sub WriteGP ($$)
         " \"$OPT_Rfile\" title \"REV\" $P_WITH ls $REV",
         (! defined $OPT_Hfile ? "\n" :
          ", \\\n \"$OPT_Hfile\" title \"HLT\" w lp ls $HLT");
-
+    
     #-- interactive mode
     if ( $OPT_terminal eq $X11 ) {
         print GFILE "\n",
@@ -1482,7 +1433,7 @@ sub ListenGP($$)
 sub ParseOptions ( )
 {
     my ($opt_small, $opt_medium, $opt_large);
-    my ($opt_ps, $opt_x11, $opt_png, $opt_pdf, $opt_html);
+    my ($opt_ps, $opt_x11, $opt_png);
     my $cnt;
 
     #-- Get options
@@ -1508,14 +1459,12 @@ sub ParseOptions ( )
          "x|xrange=s"   => \$OPT_xrange,
          "y|yrange=s"   => \$OPT_yrange,
          "x11"          => \$opt_x11,
-         "html"         => \$opt_html,
-         "pdf"          => \$opt_pdf,
          "postscript"   => \$opt_ps,
          "png"          => \$opt_png,
          "small"        => \$opt_small,
          "medium"       => \$opt_medium,
          "large"        => \$opt_large,
-         "fat"          => \$OPT_ONLY_USE_FATTEST
+         "fat"          => \$OPT_ONLY_USE_FATTEST,
          );
 
     if ( !$err  ||  scalar (@ARGV) != 1 ) {
@@ -1524,8 +1473,6 @@ sub ParseOptions ( )
     }
 
     $cnt = 0;
-    $OPT_terminal = $HTML;
-    if ( $opt_pdf ) { $OPT_terminal = $PDF; $cnt ++; }
     if ( $opt_png ) { $OPT_terminal = $PNG; $cnt ++; }
     if ( $opt_ps  ) { $OPT_terminal = $PS;  $cnt ++; }
     if ( $opt_x11 ) { $OPT_terminal = $X11; $cnt ++; }
@@ -1560,7 +1507,7 @@ sub ParseOptions ( )
             undef $OPT_color;
         }
 
-        if ( $OPT_terminal eq $PNG  &&  $OPT_size ne $SMALL ) {
+        if ( $OPT_terminal eq $PNG  &&  $OPT_size ne $SMALL ) { 
             print STDERR
                 "WARNING: Turning of --size option for compatibility\n";
             $OPT_size = $SMALL;
@@ -1653,15 +1600,3 @@ sub ParseOptions ( )
         undef $OPT_color;
     }
 }
-#----------------------------------------------------------------- AdditionalFunctions ----#
-sub GetTickRange
-{
-    my $range = shift;
-    my $tickCount = 10;
-    my $unroundedTickSize = $range / ($tickCount - 1);
-    my $x = ceil(log($unroundedTickSize)/log(10) - 1);
-    my $pow10x = 10 ** $x;
-    my $roundedTickRange = ceil($unroundedTickSize / $pow10x) * $pow10x;
-    return $roundedTickRange;
-}
-

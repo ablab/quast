@@ -14,10 +14,11 @@
 //
 //------------------------------------------------------------------------------
 
-#include "delta.hh"
-#include "tigrinc.hh"
-#include "translate.hh"
-#include "sw_alignscore.hh"
+#include <mummer/delta.hh>
+#include <mummer/tigrinc.hh>
+#include <mummer/translate.hh>
+#include <mummer/sw_alignscore.hh>
+#include <mummer/redirect_to_pager.hpp>
 #include <vector>
 #include <algorithm>
 #include <string>
@@ -244,6 +245,7 @@ int main (int argc, char ** argv)
 
 
   //-- Output data to stdout
+  stdio_launch_pager redirect_to_pager;
   if ( OPT_PrintTabular )
     PrintTabular (snps, graph);
   else

@@ -6,6 +6,10 @@
 ############################################################################
 
 from heapq import heappush, heappop
+try:
+   from collections import OrderedDict
+except ImportError:
+   from quast_libs.site_packages.ordered_dict import OrderedDict
 from quast_libs import qconfig
 from quast_libs.ca_utils.analyze_misassemblies import is_misassembly, exclude_internal_overlaps, Misassembly, \
     is_fragmented_ref_fake_translocation
@@ -197,7 +201,7 @@ def get_best_aligns_sets(sorted_aligns, ctg_len, stdout_f, seq, ref_lens, is_cyc
         align = sorted_aligns[putative_set.indexes[0]]
         local_max_score = 0
         local_uncovered = putative_set.uncovered
-        putative_predecessors = {}
+        putative_predecessors = OrderedDict()
         for scored_set in all_scored_sets:
             # we can enlarge the set with "earlier" alignments only
             if scored_set.indexes and scored_set.indexes[-1] >= putative_set.indexes[0]:

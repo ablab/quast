@@ -11,12 +11,9 @@ import os
 from os.path import isfile, join, getsize, basename, dirname
 import datetime
 import shutil
-import sys
 
-from quast_libs import options_parser
 from quast_libs import qconfig, qutils
-from quast_libs.ca_utils.misc import bin_fpath, is_emem_aligner, compile_aligner, e_mem_failed_compilation_flag, \
-    create_nucmer_output_dir, clean_tmp_files, get_installed_emem, reset_aligner_selection, draw_mummer_plot
+from quast_libs.ca_utils.misc import bin_fpath, draw_mummer_plot
 
 from quast_libs.log import get_logger
 from quast_libs.qutils import is_python2, safe_create
@@ -51,40 +48,12 @@ def check_nucmer_successful_check(fpath, contigs_fpath, ref_fpath):
     return True
 
 
-def check_emem_functionality(logger):
-    if not is_emem_aligner():
-        return True
-    logger.debug('Checking correctness of E-MEM compilation...')
-    nucmer_output_dirpath = create_nucmer_output_dir(qconfig.output_dirpath)
-    nucmer_fpath = join(nucmer_output_dirpath, 'test')
-    return_code = run_nucmer(nucmer_fpath, options_parser.test_contigs_fpaths[0], options_parser.test_contigs_fpaths[1],
-                             '/dev/null', '/dev/null', 0, emem_threads=1)
-    if return_code != 0:
-        if get_installed_emem():
-            logger.main_info('Preinstalled E-MEM does not work properly.')
-        else:
-            logger.main_info('E-MEM does not work properly. QUAST will try to use Nucmer.')
-        reset_aligner_selection()
-        qconfig.force_nucmer = True
-        safe_create(e_mem_failed_compilation_flag, logger, is_required=True)
-    clean_tmp_files(nucmer_fpath)
-    return compile_aligner(logger)
-
-
-def run_nucmer(prefix, ref_fpath, contigs_fpath, log_out_fpath, log_err_fpath, index, emem_threads=1):
+def run_nucmer(prefix, ref_fpath, contigs_fpath, log_out_fpath, log_err_fpath, index, max_threads):
     # additional GAGE params of Nucmer: '-l', '30', '-banded'
     nucmer_cmdline = [bin_fpath('nucmer'), '-c', str(qconfig.min_cluster),
                       '-l', str(qconfig.min_cluster), '--maxmatch',
-                      '-p', prefix]
+                      '-p', prefix, '-t', str(max_threads)]
     env = os.environ.copy()
-    if is_emem_aligner():
-        nucmer_cmdline += ['--emem']
-        nucmer_cmdline += ['-t', str(emem_threads)]
-        installed_emem_fpath = get_installed_emem()
-        if installed_emem_fpath:
-            env['NUCMER_E_MEM_OUTPUT_DIRPATH'] = dirname(prefix)
-            nucmer_cmdline += ['--emempath', installed_emem_fpath]
-
     nucmer_cmdline += [ref_fpath, contigs_fpath]
     return_code = qutils.call_subprocess(nucmer_cmdline, stdout=open(log_out_fpath, 'a'), stderr=open(log_err_fpath, 'a'),
                                          indent='  ' + qutils.index_to_str(index), env=env)

@@ -781,8 +781,7 @@ def all_required_binaries_exist(aligner_dirpath, required_binaries):
 def check_prev_compilation_failed(name, failed_compilation_flag, just_notice=False, logger=logger):
     if isfile(failed_compilation_flag):
         msg = 'Previous try of ' + name + ' compilation was unsuccessful! ' + \
-              'For forced retrying, please remove ' + failed_compilation_flag + ' and restart QUAST. ' + \
-              ('Currently, QUAST will use Nucmer which is absolutely fine, albeit slower.' if name == 'E-MEM' else '')
+              'For forced retrying, please remove ' + failed_compilation_flag + ' and restart QUAST. '
         if just_notice:
             logger.notice(msg)
         else:
@@ -884,7 +883,7 @@ def write_failed_compilation_flag(tool, tool_dirpath, failed_compilation_flag, j
         logger.notice(msg)
     else:
         logger.warning(msg)
-    safe_create(failed_compilation_flag, logger, is_required=tool == 'E-MEM')
+    safe_create(failed_compilation_flag, logger)
 
 
 def check_write_permission(path):

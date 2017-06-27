@@ -29,8 +29,8 @@ from quast_libs.ca_utils.analyze_contigs import analyze_contigs
 from quast_libs.ca_utils.analyze_coverage import analyze_coverage
 from quast_libs.ca_utils.analyze_misassemblies import Mapping
 from quast_libs.ca_utils.misc import ref_labels_by_chromosomes, clean_tmp_files, compile_aligner, \
-    create_nucmer_output_dir, open_gzipsafe, compress_nucmer_output, is_emem_aligner, close_handlers, compile_gnuplot
-from quast_libs.ca_utils.align_contigs import align_contigs, get_nucmer_aux_out_fpaths, NucmerStatus, check_emem_functionality
+    create_nucmer_output_dir, open_gzipsafe, compress_nucmer_output, close_handlers, compile_gnuplot
+from quast_libs.ca_utils.align_contigs import align_contigs, get_nucmer_aux_out_fpaths, NucmerStatus
 from quast_libs.ca_utils.save_results import print_results, save_result, save_result_for_unaligned, \
     save_combined_ref_stats
 
@@ -261,8 +261,6 @@ def do(reference, contigs_fpaths, is_cyclic, output_dir, old_contigs_fpaths, bed
     logger.print_timestamp()
     logger.main_info('Running Contig analyzer...')
     success_compilation = compile_aligner(logger)
-    if qconfig.test and is_emem_aligner():
-        success_compilation = check_emem_functionality(logger)
     if not success_compilation:
         logger.main_info('Failed aligning the contigs for all the assemblies. Only basic stats are going to be evaluated.')
         return dict(zip(contigs_fpaths, [NucmerStatus.FAILED] * len(contigs_fpaths))), None
@@ -343,7 +341,5 @@ def do(reference, contigs_fpaths, is_cyclic, output_dir, old_contigs_fpaths, bed
         logger.main_info('Done for ' + str(all - problems) + ' out of ' + str(all) + '. For the rest, only basic stats are going to be evaluated.')
     if problems == all:
         logger.main_info('Failed aligning the contigs for all the assemblies. Only basic stats are going to be evaluated.')
-        if not qconfig.test and is_emem_aligner():
-            logger.warning('Please rerun QUAST using --test option to ensure that E-MEM aligner works properly.')
 
     return nucmer_statuses, aligned_lengths_per_fpath

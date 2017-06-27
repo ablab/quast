@@ -92,7 +92,6 @@ For the main pipeline:
 
 For the optional submodules:
 - Time::HiRes perl module for GeneMark-ES (needed when using `--gene-finding --eukaryote`)
-- Boost (tested with v1.56.0) for E-MEM (for a higher contig alignment performance)
 - Java JDK (tested with OpenJDK 6) for GAGE (needed when using  `--gage`)
 
 All those tools are usually preinstalled on Linux. Mac OS X, however, requires to install 

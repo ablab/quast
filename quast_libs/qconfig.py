@@ -164,7 +164,7 @@ fragmented_max_indent = MAX_INDEL_LENGTH # for fake translocation in fragmented 
 # BSS fine-tuning params
 BSS_MAX_SETS_NUMBER = 10
 BSS_critical_number_of_aligns = 200
-BSS_critical_alignment_len = 500
+BSS_critical_alignment_len = 1000
 
 gap_filled_ns_threshold = 0.95
 
@@ -418,7 +418,6 @@ def usage(show_hidden=False, meta=False, short=True):
             sys.stderr.write("--phys-cov  <filename>           File with physical coverage (for Icarus alignment viewer)\n")
             sys.stderr.write("--no-icarus                      Do not create Icarus files\n")
             sys.stderr.write("--svg                            Draw contig alignment plot (in SVG format)\n")
-            sys.stderr.write("--force-nucmer                   Use nucmer instead of E-MEM for aligning contigs. \n")
 
         sys.stderr.write("\n")
         sys.stderr.write("Other:\n")

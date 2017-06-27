@@ -24,79 +24,32 @@ except ImportError:
 from quast_libs import qconfig, qutils
 from quast_libs.qutils import compile_tool, val_to_str, check_prev_compilation_failed, write_failed_compilation_flag
 
-contig_aligner = None
 contig_aligner_dirpath = join(qconfig.LIBS_LOCATION, 'MUMmer')
 ref_labels_by_chromosomes = OrderedDict()
 intergenomic_misassemblies_by_asm = {}
 contigs_aligned_lengths = {}
-e_mem_failed_compilation_flag = join(contig_aligner_dirpath, 'make.emem.failed')
-mummer_failed_compilation_flag = join(contig_aligner_dirpath, 'make.mummer.failed')
-
-
-def reset_aligner_selection():
-    global contig_aligner
-    contig_aligner = None
 
 
 def bin_fpath(fname):
     return join(contig_aligner_dirpath, fname)
 
 
-def is_emem_aligner():
-    return contig_aligner == 'E-MEM'
-
-
-def get_installed_emem():
-    return qutils.get_path_to_program('e-mem')
-
-
 def compile_aligner(logger, only_clean=False):
-    global contig_aligner
     default_requirements = ['nucmer', 'delta-filter', 'show-coords', 'show-snps', 'mummer', 'mummerplot', 'mgaps']
+    mummer_failed_compilation_flag = join(contig_aligner_dirpath, 'make.failed')
 
     if only_clean:
-        aligners_to_try = [
-            ('E-MEM', 'emem', default_requirements + ['e-mem']),
-            ('MUMmer', 'mummer', default_requirements)]
-        for i, (name, flag_name, requirements) in enumerate(aligners_to_try):
-            compile_tool(name, contig_aligner_dirpath, requirements, logger=logger, only_clean=only_clean, flag_suffix='.' + flag_name)
+        compile_tool('MUMmer', contig_aligner_dirpath, default_requirements, logger=logger, only_clean=only_clean)
         return True
 
-    mummer_failed = check_prev_compilation_failed('MUMmer', mummer_failed_compilation_flag, just_notice=True, logger=logger)
-    emem_failed = check_prev_compilation_failed('E-MEM', e_mem_failed_compilation_flag, just_notice=True, logger=logger)
-    if mummer_failed and emem_failed:
-        contig_aligner = None
+    if check_prev_compilation_failed('MUMmer', mummer_failed_compilation_flag, just_notice=True, logger=logger):
         logger.error("Compilation of contig aligner software was unsuccessful! QUAST functionality will be limited.")
         return False
 
-    if contig_aligner is not None:
-        compilation_failed = emem_failed if is_emem_aligner() else mummer_failed
-        if not compilation_failed:
-            return True
-        contig_aligner = None
-
-    if not qconfig.force_nucmer and not emem_failed:
-        if get_installed_emem() or isfile(join(contig_aligner_dirpath, 'e-mem')):
-            emem_requirements = default_requirements
-        elif qconfig.platform_name == 'macosx' and isfile(join(contig_aligner_dirpath, 'e-mem-osx')):
-            shutil.copy(join(contig_aligner_dirpath, 'e-mem-osx'), join(contig_aligner_dirpath, 'e-mem'))
-            emem_requirements = default_requirements
-        else:
-            emem_requirements = default_requirements + ['e-mem']
-        aligners_to_try = [
-            ('E-MEM', 'emem', emem_requirements),
-            ('MUMmer', 'mummer', default_requirements)]
-    else:
-        aligners_to_try = [
-            ('MUMmer', 'mummer', default_requirements)]
-
-    for i, (name, flag_name, requirements) in enumerate(aligners_to_try):
-        success_compilation = compile_tool(name, contig_aligner_dirpath, requirements, just_notice=(i < len(aligners_to_try) - 1),
-                                           logger=logger, only_clean=only_clean, flag_suffix='.' + flag_name,
-                                           make_cmd='no-emem' if 'e-mem' not in requirements else None)
-        if not success_compilation:
-            continue
-        contig_aligner = name  # successfully compiled
+    success_compilation = compile_tool('MUMmer', contig_aligner_dirpath, default_requirements,
+                                       just_notice=False, logger=logger, only_clean=only_clean,
+                                       configure_args=['--prefix=' + contig_aligner_dirpath])
+    if success_compilation:
         return True
 
     logger.error("Compilation of contig aligner software was unsuccessful! QUAST functionality will be limited.")

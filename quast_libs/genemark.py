@@ -46,21 +46,23 @@ def gmhmm_p(tool_exec, fasta_fpath, heu_fpath, out_fpath, err_file, index):
     return return_code == 0 and os.path.isfile(out_fpath)
 
 
-def install_genemark(tool_dirpath):
+def install_genemark():
     """Installation instructions for GeneMark.
     Please, copy key "gm_key" into users home directory as:
     cp gm_key ~/.gm_key
     """
     import subprocess
     import filecmp
-    gm_key_fpath = os.path.join(tool_dirpath, 'gm_key')
+    base_genemark_dir = os.path.join(qconfig.LIBS_LOCATION, 'genemark')
+    gm_key_fpath = os.path.join(base_genemark_dir, 'gm_keys',
+                                'gm_key_' + ('32' if qconfig.platform_name == 'linux_32' else '64'))
+    test_tool_exec_fpath = os.path.join(base_genemark_dir, qconfig.platform_name, 'gmhmmp')
     gm_key_dst = os.path.expanduser('~/.gm_key')
     if not os.path.isfile(gm_key_dst) or \
         (not filecmp.cmp(gm_key_dst, gm_key_fpath) and os.path.getmtime(gm_key_dst) < os.path.getmtime(gm_key_fpath)):
         shutil.copyfile(gm_key_fpath, gm_key_dst)
     # checking the installation
-    tool_exec_fpath = os.path.join(tool_dirpath, 'gmhmmp')
-    proc = subprocess.Popen([tool_exec_fpath], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    proc = subprocess.Popen([test_tool_exec_fpath], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     while not proc.poll():
         line = proc.stdout.readline()
         if not isinstance(line, str):
@@ -282,8 +284,7 @@ def do(fasta_fpaths, gene_lengths, out_dirpath, prokaryote, meta):
     if not os.path.exists(tool_dirpath):
         logger.warning('  Sorry, can\'t use %s on this platform, skipping gene prediction.' % tool_name)
     else:
-        successful = install_genemark(os.path.join(qconfig.LIBS_LOCATION, 'genemark', qconfig.platform_name))
-        if not successful:
+        if not install_genemark():
             return
 
         if not os.path.isdir(out_dirpath):

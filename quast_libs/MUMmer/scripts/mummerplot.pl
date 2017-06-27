@@ -1,4 +1,4 @@
-#!__PERL_PATH
+#!@PERL@
 
 ################################################################################
 #   Programmer: Adam M Phillippy, The Institute for Genomic Research

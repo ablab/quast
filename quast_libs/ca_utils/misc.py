@@ -5,7 +5,7 @@
 # See file LICENSE for details.
 ############################################################################
 #
-# This is auxiliary file for contigs_analyzer.py and gage.py
+# This is auxiliary file for contigs_analyzer.py
 #
 ############################################################################
 

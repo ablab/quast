@@ -548,11 +548,6 @@ def index_to_str(i, force=False):
 
 
 def remove_reports(output_dirpath):
-    for gage_prefix in ["", qconfig.gage_report_prefix]:
-        for report_prefix in [qconfig.report_prefix, qconfig.transposed_report_prefix]:
-            pattern = os.path.join(output_dirpath, gage_prefix + report_prefix + ".*")
-            for f in glob.iglob(pattern):
-                os.remove(f)
     plots_fpath = os.path.join(output_dirpath, qconfig.plots_fname)
     if os.path.isfile(plots_fpath):
         os.remove(plots_fpath)

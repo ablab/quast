@@ -39,7 +39,6 @@ contig_thresholds = "0,1000,5000,10000,25000,50000"
 min_contig = 500
 genes_lengths = "0,300,1500,3000"
 ref_fpath = ''
-with_gage = False
 prokaryote = True  # former cyclic
 is_fungus = False
 gene_finding = False
@@ -98,7 +97,6 @@ corrected_dirname = "quast_corrected_input"
 plots_fname = "report.pdf"
 report_prefix = "report"
 transposed_report_prefix = "transposed_report"
-gage_report_prefix = "gage_"
 html_aux_dir = "report_html_aux"
 contig_report_fname_pattern = 'contigs_report_%s'
 icarus_report_fname_pattern = 'all_alignments_%s.tsv'
@@ -348,7 +346,6 @@ def usage(show_hidden=False, meta=False, short=True):
             sys.stderr.write("                                      Set 0 for not looking in SILVA at all [default: %s]\n" % max_references)
             sys.stderr.write("    --blast-db <filename>             Custom BLAST database (.nsq file). By default, MetaQUAST searches references in SILVA database\n")
             sys.stderr.write("    --use-input-ref-order             Use provided order of references in MetaQUAST summary plots (default order: by the best average value).\n")
-        sys.stderr.write("    --gage                            Use GAGE (results are in gage_report.txt)\n")
         sys.stderr.write("    --contig-thresholds <int,int,...> Comma-separated list of contig length thresholds [default: %s]\n" % contig_thresholds)
         sys.stderr.write("-u  --use-all-alignments              Compute genome fraction, # genes, # operons in QUAST v1.* style.\n")
         sys.stderr.write("                                      By default, QUAST filters Nucmer\'s alignments to keep only best ones\n")

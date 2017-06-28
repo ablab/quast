@@ -92,7 +92,6 @@ For the main pipeline:
 
 For the optional submodules:
 - Time::HiRes perl module for GeneMark-ES (needed when using `--gene-finding --eukaryote`)
-- Java JDK (tested with OpenJDK 6) for GAGE (needed when using  `--gage`)
 
 All those tools are usually preinstalled on Linux. Mac OS X, however, requires to install 
 the Command Line Tools for Xcode to make them available. 

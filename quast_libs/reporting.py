@@ -217,40 +217,6 @@ class Fields:
     unaligned_order = [NAME, UNALIGNED_FULL_CNTGS, UNALIGNED_FULL_LENGTH, UNALIGNED_PART_CNTGS,
                        UNALIGNED_PART_LENGTH, UNCALLED]
 
-    ### list of GAGE metrics (--gage option)
-    GAGE_NUMCONTIGS = 'Contigs #'
-    GAGE_MINCONTIG = 'Min contig'
-    GAGE_MAXCONTIG = 'Max contig'
-    GAGE_N50 = 'Not corrected N50'
-    GAGE_GENOMESIZE = 'Genome size'
-    GAGE_ASSEMBLY_SIZE = 'Assembly size'
-    GAGE_CHAFFBASES = 'Chaff bases'
-    GAGE_MISSINGREFBASES = 'Missing reference bases'
-    GAGE_MISSINGASMBLYBASES = 'Missing assembly bases'
-    GAGE_MISSINGASMBLYCONTIGS = 'Missing assembly contigs'
-    GAGE_DUPREFBASES = 'Duplicated reference bases'
-    GAGE_COMPRESSEDREFBASES = 'Compressed reference bases'
-    GAGE_BADTRIM = 'Bad trim'
-    GAGE_AVGIDY = 'Avg idy'
-    GAGE_SNPS = 'SNPs'
-    GAGE_SHORTINDELS = 'Indels < 5bp'
-    GAGE_LONGINDELS = 'Indels >= 5'
-    GAGE_INVERSIONS = 'Inversions'
-    GAGE_RELOCATION = 'Relocation'
-    GAGE_TRANSLOCATION = 'Translocation'
-    GAGE_NUMCORCONTIGS = 'Corrected contig #'
-    GAGE_CORASMBLYSIZE = 'Corrected assembly size'
-    GAGE_MINCORCONTIG = 'Min correct contig'
-    GAGE_MAXCORCOTING = 'Max correct contig'
-    GAGE_CORN50 = 'Corrected N50'
-
-    # content and order of metrics in GAGE report (<quast_output_dir>/gage_report.txt, .tex, .tsv)
-    gage_order = [NAME, GAGE_NUMCONTIGS, GAGE_MINCONTIG, GAGE_MAXCONTIG, GAGE_N50, GAGE_GENOMESIZE, GAGE_ASSEMBLY_SIZE,
-                  GAGE_CHAFFBASES, GAGE_MISSINGREFBASES, GAGE_MISSINGASMBLYBASES, GAGE_MISSINGASMBLYCONTIGS, GAGE_DUPREFBASES,
-                  GAGE_COMPRESSEDREFBASES, GAGE_BADTRIM, GAGE_AVGIDY, GAGE_SNPS, GAGE_SHORTINDELS, GAGE_LONGINDELS, GAGE_INVERSIONS,
-                  GAGE_RELOCATION, GAGE_TRANSLOCATION, GAGE_NUMCORCONTIGS, GAGE_CORASMBLYSIZE, GAGE_MINCORCONTIG, GAGE_MAXCORCOTING,
-                  GAGE_CORN50]
-
     ### Grouping of metrics and set of main metrics for HTML version of main report
     grouped_order = [
         ('Genome statistics', [MAPPEDGENOME, DUPLICATION_RATIO, AVE_READ_SUPPORT, GENES, OPERONS,
@@ -740,11 +706,6 @@ def save(output_dirpath, report_name, transposed_report_name, order, silent=Fals
             if not silent:
                 logger.info('    saved to ' + transposed_reports_fpaths)
     return reports_fpaths, transposed_reports_fpaths
-
-
-def save_gage(output_dirpath):
-    save(output_dirpath, qconfig.gage_report_prefix + qconfig.report_prefix,
-         qconfig.gage_report_prefix + qconfig.transposed_report_prefix, Fields.gage_order)
 
 
 def save_total(output_dirpath, silent=True):

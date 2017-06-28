@@ -178,16 +178,6 @@ def main(args):
             qconfig.genes, qconfig.operons, detailed_contigs_reports_dirpath,
             os.path.join(output_dirpath, 'genome_stats'))
 
-    if qconfig.with_gage:
-        ########################################################################
-        ### GAGE
-        ########################################################################
-        if not ref_fpath:
-            logger.warning("GAGE can't be run without a reference and will be skipped.")
-        else:
-            from quast_libs import gage
-            gage.do(ref_fpath, contigs_fpaths, output_dirpath)
-
     genes_by_labels = None
     if qconfig.gene_finding:
         if qconfig.glimmer:

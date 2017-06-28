@@ -466,10 +466,6 @@ def parse_options(logger, quast_args, is_metaquast=False):
         (['--gene-thresholds'], dict(
              dest='genes_lengths')
          ),
-        (['--gage'], dict(
-             dest='with_gage',
-             action='store_true')
-         ),
         (['--glimmer'], dict(
              dest='glimmer',
              action='callback',

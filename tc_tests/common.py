@@ -46,8 +46,6 @@ combined_output_name = "combined_reference"
 # Advanced options:
 # --threads <int>                   Maximum number of threads [default: number of CPUs]
 #
-# --gage                            Starts GAGE inside QUAST ("GAGE mode")
-#
 # --contig-thresholds <int,int,..>  Comma-separated list of contig length thresholds [default: 0,1000]
 #
 # --gene-finding                    Uses Gene Finding module

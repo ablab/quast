@@ -35,7 +35,6 @@ except:
                  exit_with_code=1)
 
 from quast_libs.glimmer import compile_glimmer
-from quast_libs.gage import compile_gage
 from quast_libs.run_busco import download_augustus, download_all_db
 from quast_libs.search_references_meta import download_blast_binaries, download_blastdb
 from quast_libs.ca_utils.misc import compile_aligner, compile_gnuplot
@@ -62,7 +61,6 @@ if cmd_in(['clean', 'sdist']):
     compile_aligner(logger, only_clean=True)
     compile_gnuplot(logger, only_clean=True)
     compile_glimmer(logger, only_clean=True)
-    compile_gage(only_clean=True)
     compile_bwa(logger, only_clean=True)
     compile_bedtools(logger, only_clean=True)
     for fpath in [fn for fn in glob(join(quast_package, '*.pyc'))]: os.remove(fpath)
@@ -188,9 +186,6 @@ if cmd_in(['install', 'develop', 'build', 'build_ext']):
                 modules_failed_to_install.append('BUSCO databases (affects --find-conserved-genes option)')
         else:
             logger.notice('* BUSCO dependecies will not be installed (unavailable in OS X) *')
-        logger.info('* Compiling GAGE *')
-        if not compile_gage():
-            modules_failed_to_install.append('GAGE scripts (affects --gage option [deprecated, will be removed soon])')
     logger.info('')
 
 
@@ -233,7 +228,6 @@ The tool accepts multiple assemblies, thus is suitable for comparison.''',
             find_package_files('genemark-es/' + qconfig.platform_name) +
             find_package_files('genemark-es/lib') +
             find_package_files('glimmer') +
-            find_package_files('gage') +
             bwa_files +
             ['bedtools/bin/*'] +
             sambamba_files +

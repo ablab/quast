@@ -82,7 +82,6 @@
     <a href="http://exon.gatech.edu/GeneMark/">GeneMarkS</a>,
     <a href="http://exon.gatech.edu/GeneMark/gmes_instructions.html">GeneMark-ES</a>,
     <a href="http://cbcb.umd.edu/software/glimmerhmm/">GlimmerHMM</a>,
-    <a href="http://gage.cbcb.umd.edu/index.html">GAGE</a>,
     <a href="http://gnuplot.sourceforge.net/">Gnuplot</a>,
     <a href="http://www.genome.umd.edu/jellyfish.html">Jellyfish</a>,
     <a href="https://github.com/tseemann/barrnap">Barrnap</a>, and <a href="http://assembly-eval.sourceforge.net/">LAP</a>.
@@ -109,9 +108,8 @@
     <ol>
       <li><a href="#sec2.1">For impatient people</a></li>
       <li><a href="#sec2.2">Input data</a></li>
-      <li><a href="#sec2.3">GAGE mode</a></li>
-      <li><a href="#sec2.4">Command line options</a></li>
-      <li><a href="#sec2.5">Metagenomic assemblies</a></li>
+      <li><a href="#sec2.3">Command line options</a></li>
+      <li><a href="#sec2.4">Metagenomic assemblies</a></li>
     </ol>
   </li>
   <li><a href="#sec3">QUAST output</a> 
@@ -153,7 +151,6 @@
     In addition, QUAST submodules require:
 </p>
 <ul>
-    <li>Java JDK (tested with OpenJDK 6) for GAGE</li>
     <li>Time::HiRes perl module for GeneMark-ES</li>
 </ul>
 All those tools are usually pre installed on Linux.<br>
@@ -246,27 +243,7 @@ View the summary of the evaluation results with the <a href="http://www.greenwoo
 </p>    
 
 <a name="sec2.3"></a>
-<h3>2.3 GAGE mode</h3>
-<p>
-    <a href="http://gage.cbcb.umd.edu/index.html">GAGE</a> is an assessment tool used in the well-known homonymous evaluation study
-    (Salzberg <i>et al.</i>, 2011). However, it has several important limitations:
-    <ul>
-        <li>Only one assembly per run, which complicates assembly comparison.
-        <li>Fixed threshold for a minimum contig length (200<span class="rhs">&nbsp;</span>bp).
-    </ul>
-    These issues are solved by QUAST in GAGE mode (run with <code>--gage</code>). QUAST filters contigs according to a specified threshold and runs GAGE on each assembly.
-    GAGE statistics (see <a href="http://gage.cbcb.umd.edu/index.html">GAGE website</a> and <a href="http://genome.cshlp.org/content/early/2012/01/12/gr.131383.111">GAGE paper</a> for the descriptions)
-    are reported in addition to standard QUAST report (saved in <code>&lt;quast_output_dir&gt;/gage_report.*</code>).<br>
-    <span style='line-height: 50%;'>&nbsp;</span><br>  
-    Note:<br><br>
-    <ul>
-        <li>GAGE requires a reference genome.</li>
-        <li>Java and Java Compiler must be installed on your machine. Tested with OpenJDK 6.</li>
-    </ul>
-</p>
-
-<a name="sec2.4"></a>
-<h3>2.4 Command line options</h3>
+<h3>2.3 Command line options</h3>
 <br>
 QUAST runs from a command line as follows:
 <pre class='code'>
@@ -345,7 +322,7 @@ Enables gene finding. Affects performance, thus disabled by default.<br>
 By default, we assume that the genome is prokaryotic, and apply GeneMarkS for gene finding.
 If the genome is eukaryotic, use <a href='#eukaryote'><code>--eukaryote</code></a> option to enable GeneMark-ES instead.
 If the genome is fungal, use <a href='#fungus'><code>--fungus</code></a> option to run GeneMark-ES in a special mode for analyzing fungal genomes.
-If it is a metagenome (you are running <a href='#sec2.5'>metaquast.py</a>), MetaGeneMark is used. You can also force
+If it is a metagenome (you are running <a href='#sec2.4'>metaquast.py</a>), MetaGeneMark is used. You can also force
 MetaGeneMark predictions with <a href='#mgm'><code>--mgm</code></a> option described below.
 <span style='line-height: 50%;'>&nbsp;</span><br><br>
 If a <a href='#sec2.2'>gene file</a> is provided with <code>-G</code> as well, both
@@ -364,7 +341,7 @@ Use GlimmerHMM for gene finding (instead of GeneMark family of tools). Note: you
 </div>
 Use MetaGeneMark for gene finding (instead of the default finder: GeneMarkS or GeneMark-ES).
 <span style='line-height: 50%;'>&nbsp;</span><br>
-Note: if you are working with metagenome assemblies, we recommend <a href='#sec2.5'>to use metaquast.py</a> instead of quast.py
+Note: if you are working with metagenome assemblies, we recommend <a href='#sec2.4'>to use metaquast.py</a> instead of quast.py
 (it is in the same directory as quast.py).
 
 <div class='option'>
@@ -414,12 +391,6 @@ Estimated reference genome size (in bp) for computing <span class='metric-ref'>N
 not specified (see <code>-R</code> option).
 
 <div class='option'>
-    <code><b>--gage</b></code>
-</div>
-Starts QUAST in "GAGE mode" (see <a href="#sec2.3">section 2.3</a>).
-Note: in this case, you have to specify a reference genome with <code>-R</code>.
-
-<div class='option'>
     <code><b>--contig-thresholds</b> &lt;int,int,...&gt;</code>
 </div>
 Comma-separated list of contig length thresholds (in bp). Used in <span class='metric-ref'># contigs &ge; x</span> and
@@ -462,7 +433,7 @@ Way of processing equally good alignments of a contig (probably repeats):<br>
 </table>
 The default value is <code>one</code>.<br>
 <div style='margin-top: 6;'>The value <code>all</code> is useful for metagenomic assemblies where ambiguous alignments might represent homologous sequences of different strains.
-    For that reason, <code>--ambiguity-usage</code> is set to <code>all</code> for the "combined reference" evaluation (see <a href='#sec2.5'>section 2.5</a>).
+    For that reason, <code>--ambiguity-usage</code> is set to <code>all</code> for the "combined reference" evaluation (see <a href='#sec2.4'>section 2.4</a>).
     You may still modify this behaviour with <a href='#unique_mapping'><code>--unique-mapping</code></a>.</div>
 
 <div class='option'>
@@ -598,7 +569,7 @@ Speedup options:
     Alternative nucleotide symbols (M, K, R, etc) are replaced with N. If non-ACGTN characters
     are present after this modifications the whole FASTA file is skipped from further processing. </div>
     <i>Caution</i>: use this option at your own risk. Incorrect FASTA files may cause failing of
-    third-party tools incorporated to QUAST, e.g. GAGE, Nucmer, GeneMark, GlimmerHMM.
+    third-party tools incorporated to QUAST, e.g. Nucmer, GeneMark, GlimmerHMM.
     This option is useful for running QUAST without <code>-R</code> and <code>--gene-finding</code>
     (no third-party tools will be run) or if you are absolutely sure that your FASTA files are correct.
 
@@ -668,7 +639,7 @@ Text file with list of reference genomes (each one on a separate line).
 Run MetaQUAST on a data from the <code>test_data</code> folder, but without reference genomes. The tool will download
     SILVA 16S rRNA gene database (170 Mb) and BLAST binaries (55-75 Mb depending on your OS),
     which will be required if you plan to use MetaQUAST without references.
-    See <a href="#sec2.5">section 2.5</a> for details about reference search algorithm.
+    See <a href="#sec2.4">section 2.4</a> for details about reference search algorithm.
 
 <div class='option'>
     <a href='blast_db'></a><code><b>--blast-db</b></code> <code>&lt;path&gt;</code>
@@ -713,8 +684,8 @@ Print help.
 Print version.
 </div>
 
-<a name="sec2.5"></a>
-<h3>2.5 Metagenomic assemblies</h3>
+<a name="sec2.4"></a>
+<h3>2.4 Metagenomic assemblies</h3>
 <p>
     The <code>metaquast.py</code> script accepts multiple reference genomes.
     One can provide several files or directories with multiple reference files inside with <code>-R</code> option.
@@ -800,8 +771,8 @@ After that, MetaQUAST runs <code>quast.py</code> on all of them and removes refe
 
 Note:
 <ul style="margin-top: -12px;">
-    <li>metrics based on a reference genome are computed only if a reference is provided (see  <a href="#sec1.3">section 2.4</a>), </li>
-    <li>metrics based on genes and operons are computed only if proper annotations are provided (see <a href="#sec1.3">section 2.4</a>). </li>
+    <li>metrics based on a reference genome are computed only if a reference is provided (see  <a href="#sec2.3">section 2.3</a>), </li>
+    <li>metrics based on genes and operons are computed only if proper annotations are provided (see <a href="#sec2.3">section 2.3</a>). </li>
 </ul>
 </p>
 
@@ -814,14 +785,14 @@ Note:
 
 <p><span class='metric-name'># contigs (&ge;<span class="rhs">&nbsp;</span>x<span class="rhs">&nbsp;</span>bp)</span> 
     is total number of contigs of length <code>&ge; x<span class="rhs">&nbsp;</span>bp</code>.
-    Not affected by the <code>--min-contig</code> parameter (see <a href="#sec2.4">section 2.4</a>).</p>
+    Not affected by the <code>--min-contig</code> parameter (see <a href="#sec2.3">section 2.3</a>).</p>
 
 <p><span class='metric-name'>Total length (&ge;<span class="rhs">&nbsp;</span>x<span class="rhs">&nbsp;</span>bp)</span> 
     is the total number of bases in contigs of length <code>&ge; x<span class="rhs">&nbsp;</span>bp</code>.
-    Not affected by the <code>--min-contig</code> parameter (see <a href="#sec2.4">section 2.4</a>).<br>
+    Not affected by the <code>--min-contig</code> parameter (see <a href="#sec2.3">section 2.3</a>).<br>
     <br>
     <i>All remaining metrics are computed for contigs that exceed the threshold specified with
-    <code>--min-contig</code> (see <a href="#sec2.4">section 2.4</a>, default is 500 bp).</i>
+    <code>--min-contig</code> (see <a href="#sec2.3">section 2.3</a>, default is 500 bp).</i>
 </p>
 
 <p><span class='metric-name'># contigs</span> is the total number of contigs in the assembly.</p>
@@ -926,7 +897,7 @@ This metric sums up <code># unaligned mis. contigs</code> described above.</p>
     list of gene positions in the reference genome. A gene 'partially covered' if the assembly contains at least 100<span class="rhs">&nbsp;</span>bp
     of this gene but not the whole one.<br>
     <span style='line-height: 50%;'>&nbsp;</span><br>
-    This metric is computed only if a reference genome and an annotated list of gene positions are provided (see <a href="#sec2.4">section 2.4</a>).</p>
+    This metric is computed only if a reference genome and an annotated list of gene positions are provided (see <a href="#sec2.3">section 2.3</a>).</p>
 
 <p><span class='metric-name'># operons</span> is defined similarly to <span class='metric-ref'># genes</span>, but an operon positions file required instead.</p>
 
@@ -1138,7 +1109,7 @@ You can view results separately for each reference genome by clicking on a row p
 <p><span class='metric-name'>Contig alignment viewer</span><br>
     This type of viewer is available only if a reference genome is provided.
     For large genomes (&ge; 50 Mbp) each chromosome is displayed in a separate viewer.
-    This is also true for multiple reference genomes (see <a href="#sec2.5">section 2.5</a>).
+    This is also true for multiple reference genomes (see <a href="#sec2.4">section 2.4</a>).
     <br>
     The viewer places contigs according to their mapping to the reference genome. The viewer can additionally visualize genes, operons, and read coverage distribution along the genome, if any of those were fed to QUAST.
     </p>
@@ -1159,7 +1130,7 @@ You can view results separately for each reference genome by clicking on a row p
 </p>
 
 <p> Note: if you restart QUAST on the same directory with new parameters, is will reuse existing alignments and run much faster.
-    See the description of <code>-o</code> option in <a href="#sec2.4">section 2.4</a>.
+    See the description of <code>-o</code> option in <a href="#sec2.3">section 2.3</a>.
 </p>
 
 <a name="sec5"></a><p>

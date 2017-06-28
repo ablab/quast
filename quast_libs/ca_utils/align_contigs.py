@@ -49,7 +49,6 @@ def check_nucmer_successful_check(fpath, contigs_fpath, ref_fpath):
 
 
 def run_nucmer(prefix, ref_fpath, contigs_fpath, log_out_fpath, log_err_fpath, index, max_threads):
-    # additional GAGE params of Nucmer: '-l', '30', '-banded'
     nucmer_cmdline = [bin_fpath('nucmer'), '-c', str(qconfig.min_cluster),
                       '-l', str(qconfig.min_cluster), '--maxmatch',
                       '-p', prefix, '-t', str(max_threads)]

@@ -51,28 +51,29 @@ def install_genemark():
     Please, copy key "gm_key" into users home directory as:
     cp gm_key ~/.gm_key
     """
-    import subprocess
     import filecmp
     base_genemark_dir = os.path.join(qconfig.LIBS_LOCATION, 'genemark')
     gm_key_fpath = os.path.join(base_genemark_dir, 'gm_keys',
                                 'gm_key_' + ('32' if qconfig.platform_name == 'linux_32' else '64'))
-    test_tool_exec_fpath = os.path.join(base_genemark_dir, qconfig.platform_name, 'gmhmmp')
     gm_key_dst = os.path.expanduser('~/.gm_key')
     if not os.path.isfile(gm_key_dst) or \
         (not filecmp.cmp(gm_key_dst, gm_key_fpath) and os.path.getmtime(gm_key_dst) < os.path.getmtime(gm_key_fpath)):
         shutil.copyfile(gm_key_fpath, gm_key_dst)
+
+
+def is_license_valid(out_dirpath, fasta_fpaths):
     # checking the installation
-    proc = subprocess.Popen([test_tool_exec_fpath], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    while not proc.poll():
-        line = proc.stdout.readline()
-        if not isinstance(line, str):
-            line = line.decode("utf-8")
-        if line.find('license period has ended') != -1:
-            logger.warning('License period for GeneMark has ended! \n'
-                           'To update license, please visit http://exon.gatech.edu/GeneMark/license_download.cgi page and fill in the form.\n'
-                           'You should choose GeneMarkS tool and your operating system (note that GeneMark is free for non-commercial use).\n'
-                           'Download the license key and replace your ~/.gm_key with the updated version. After that you can restart QUAST.\n')
-            return False
+    err_fpath = os.path.join(out_dirpath, qutils.label_from_fpath_for_fname(fasta_fpaths[0]) + '_genemark.stderr')
+    if os.path.isfile(err_fpath):
+        with open(err_fpath) as err_f:
+            for line in err_f:
+                if line.find('license period has ended') != -1:
+                    logger.main_info()
+                    logger.warning('License period for GeneMark has ended! \n'
+                                   'To update license, please visit http://exon.gatech.edu/GeneMark/license_download.cgi page and fill in the form.\n'
+                                   'You should choose GeneMarkS tool and your operating system (note that GeneMark is free for non-commercial use).\n'
+                                   'Download the license key and replace your ~/.gm_key with the updated version. After that you can restart QUAST.\n')
+                    return False
     return True
 
 
@@ -284,8 +285,7 @@ def do(fasta_fpaths, gene_lengths, out_dirpath, prokaryote, meta):
     if not os.path.exists(tool_dirpath):
         logger.warning('  Sorry, can\'t use %s on this platform, skipping gene prediction.' % tool_name)
     else:
-        if not install_genemark():
-            return
+        install_genemark()
 
         if not os.path.isdir(out_dirpath):
             os.mkdir(out_dirpath)
@@ -307,6 +307,9 @@ def do(fasta_fpaths, gene_lengths, out_dirpath, prokaryote, meta):
             results = [predict_genes(index, fasta_fpath, gene_lengths, out_dirpath, tool_dirpath, tmp_dirpath,
                                      gmhmm_p_function, prokaryote, num_threads)
                        for index, fasta_fpath in enumerate(fasta_fpaths)]
+
+        if qconfig.test and not is_license_valid(out_dirpath, fasta_fpaths):
+            return
 
         genes_by_labels = dict()
         # saving results

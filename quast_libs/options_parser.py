@@ -633,7 +633,6 @@ def parse_options(logger, quast_args, is_metaquast=False):
                 qconfig.operons = test_operons
                 qconfig.glimmer = True
                 qconfig.gene_finding = True
-                qconfig.prokaryote = False
         if qconfig.test_sv:
             qconfig.forward_reads = test_forward_reads
             qconfig.reverse_reads = test_reverse_reads

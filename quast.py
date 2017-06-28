@@ -186,7 +186,7 @@ def main(args):
             ########################################################################
             from quast_libs import glimmer
             genes_by_labels = glimmer.do(contigs_fpaths, qconfig.genes_lengths, os.path.join(output_dirpath, 'predicted_genes'))
-        else:
+        if not qconfig.glimmer or qconfig.test:
             ########################################################################
             ### GeneMark
             ########################################################################

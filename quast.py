@@ -15,7 +15,7 @@ import shutil
 from quast_libs import qconfig
 qconfig.check_python_version()
 
-from quast_libs import qutils, reads_analyzer, run_barrnap, plotter_data, unique_kmers
+from quast_libs import qutils, reads_analyzer, run_barrnap, plotter_data, unique_kmers, ideal_assembly
 from quast_libs.qutils import cleanup, check_dirpath, get_reads_fpaths
 from quast_libs.options_parser import parse_options
 
@@ -83,6 +83,12 @@ def main(args):
         logger.main_info()
         logger.main_info('Reference:')
         ref_fpath = qutils.correct_reference(ref_fpath, corrected_dirpath)
+        if qconfig.ideal_assembly:
+            ideal_assembly_fpath = ideal_assembly.do(ref_fpath, os.path.join(output_dirpath, qconfig.ideal_assembly_basename),
+                                                     qconfig.ideal_assembly_insert_size)
+            if ideal_assembly_fpath is not None:
+                contigs_fpaths.insert(0, ideal_assembly_fpath)
+                labels.insert(0, 'IDEAL ASSEMBLY')  # FIXME: Check possible duplicates
     else:
         ref_fpath = ''
 

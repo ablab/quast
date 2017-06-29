@@ -78,6 +78,13 @@ force_nucmer = False
 run_busco = False
 large_genome = False
 
+# ideal assembly section
+ideal_assembly = False
+ideal_assembly_insert_size = 'auto'
+ideal_assembly_default_IS = 255
+ideal_assembly_min_IS = 63
+ideal_assembly_max_IS = 16383
+
 # print in stdout only main information
 silent = False
 
@@ -101,6 +108,7 @@ html_aux_dir = "report_html_aux"
 contig_report_fname_pattern = 'contigs_report_%s'
 icarus_report_fname_pattern = 'all_alignments_%s.tsv'
 nucmer_output_dirname = 'nucmer_output'
+ideal_assembly_basename = 'ideal_assembly'
 
 # for MetaQUAST
 downloaded_dirname = "quast_downloaded_references"
@@ -371,6 +379,8 @@ def usage(show_hidden=False, meta=False, short=True):
         sys.stderr.write("    --fragmented-max-indent  <int>    Mark translocation as fake if both alignments are located no further than N bases \n")
         sys.stderr.write("                                      from the ends of the reference fragments [default: %s]\n" % MAX_INDEL_LENGTH)
         sys.stderr.write("                                      Requires --fragmented option.\n")
+        sys.stderr.write("    --ideal_assembly                  Simulate theoretically optimal assembly based on reference genome\n")
+        sys.stderr.write("    --est-insert-size  <int>          Use provided insert size in ideal assembly simulation [default: auto detect from reads or %d]\n" % ideal_assembly_default_IS)
         sys.stderr.write("    --plots-format  <str>             Save plots in specified format [default: %s]\n" % plot_extension)
         sys.stderr.write("                                      Supported formats: %s\n" % ', '.join(supported_plot_extensions))
         sys.stderr.write("    --memory-efficient                Run Nucmer using one thread, separately per each assembly and each chromosome\n")

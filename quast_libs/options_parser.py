@@ -478,6 +478,19 @@ def parse_options(logger, quast_args, is_metaquast=False):
              action='store_true',
              default=False)
          ),
+        (['--ideal_assembly'], dict(
+             dest='ideal_assembly',
+             action='store_true')
+         ),
+        (['--est-insert-size'], dict(
+             dest='ideal_assembly_insert_size',
+             type='int',
+             action='callback',
+             callback=check_arg_value,
+             callback_args=(logger,),
+             callback_kwargs={'min_value': qconfig.ideal_assembly_min_IS,
+                              'max_value': qconfig.ideal_assembly_max_IS})
+         ),
         (['--plots-format'], dict(
              dest='plot_extension',
              type='string',

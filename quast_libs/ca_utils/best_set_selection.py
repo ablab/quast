@@ -279,6 +279,8 @@ def get_score(score, aligns, ref_lens, is_cyclic, uncovered_len, seq, region_str
             else:
                     misassembly = Misassembly.INVERSION
             score -= misassembly - Misassembly.INVERSION
+        elif aux_data['is_sv']:
+            misassembly_penalty = 0
         elif abs(aux_data['inconsistency']) > qconfig.MAX_INDEL_LENGTH and not aux_data['is_scaffold_gap']:
             misassembly_penalty = penalties['local']
         elif aux_data['is_scaffold_gap']:

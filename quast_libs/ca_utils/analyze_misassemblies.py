@@ -39,9 +39,10 @@ class StructuralVariations(object):
 
 
 class Mapping(object):
-    def __init__(self, s1, e1, s2, e2, len1, len2, idy, ref, contig, ns_pos=None):
+    def __init__(self, s1, e1, s2=None, e2=None, len1=None, len2=None, idy=None, ref=None, contig=None, ns_pos=None, sv_type=None):
         self.s1, self.e1, self.s2, self.e2, self.len1, self.len2, self.idy, self.ref, self.contig = s1, e1, s2, e2, len1, len2, idy, ref, contig
         self.ns_pos = ns_pos
+        self.sv_type = sv_type
 
     @classmethod
     def from_line(cls, line):
@@ -195,69 +196,81 @@ def is_misassembly(align1, align2, contig_seq, ref_lens, is_cyclic=False, region
 
 
 def check_sv(align1, align2, inconsistency, region_struct_variations):
-    max_error = 100 # qconfig.smgap / 4  # min(2 * qconfig.smgap, max(qconfig.smgap, inconsistency * 0.05))
+    max_error_sv = 100 # qconfig.smgap / 4  # min(2 * qconfig.smgap, max(qconfig.smgap, inconsistency * 0.05))
+    max_error_trivial_del = 250
+
     max_gap = qconfig.extensive_misassembly_threshold // 4
 
     def __match_ci(pos, sv):  # check whether pos matches confidence interval of sv
+        max_error = max_error_trivial_del if sv.sv_type == 'QuastDEL' else max_error_sv
         return sv.s1 - max_error <= pos <= sv.e1 + max_error
 
-    if align2.s1 < align1.s1:
-        align1, align2 = align2, align1
+    def __check_translocation(align1, align2, sv):
+        if sv[0].ref == align1.ref and sv[1].ref == align2.ref and \
+                __match_ci(align1.e1, sv[0]) and __match_ci(align2.s1, sv[1]):
+            return True
+
+    def __check_inversion(align, sv):
+        if __match_ci(align.s1, sv[0]) and sv[0].s1 <= align.e1 <= sv[1].e1:
+            return True
+        if __match_ci(align.e1, sv[1]) and sv[0].s1 <= align.s1 <= sv[1].e1:
+            return True
+
     if align1.ref != align2.ref:  # translocation
         for sv in region_struct_variations.translocations:
-            if sv[0].ref == align1.ref and sv[1].ref == align2.ref and \
-                    __match_ci(align1.e1, sv[0]) and __match_ci(align2.s1, sv[1]):
-                return True
-            if sv[0].ref == align2.ref and sv[1].ref == align1.ref and \
-                    __match_ci(align2.e1, sv[0]) and __match_ci(align1.s1, sv[1]):
+            if __check_translocation(align1, align2, sv) or __check_translocation(align2, align1, sv):
                 return True
     elif (align1.s2 < align1.e2) != (align2.s2 < align2.e2) and abs(inconsistency) < qconfig.extensive_misassembly_threshold:
         for sv in region_struct_variations.inversions:
-            if align1.ref == sv[0].ref and \
-                    (__match_ci(align1.s1, sv[0]) and __match_ci(align2.s1, sv[1])) or \
-                    (__match_ci(align1.e1, sv[0]) and __match_ci(align2.e1, sv[1])):
+            if align1.ref == sv[0].ref and (__check_inversion(align1, sv) or __check_inversion(align2, sv)):
                 return True
     else:
         variations = region_struct_variations.relocations
+        if align2.s1 < align1.s1:
+            sv_start, sv_end = align2.s1, align1.e1
+        else:
+            sv_start, sv_end = align1.e1, align2.s1
         for index, sv in enumerate(variations):
-            if sv[0].ref == align1.ref and __match_ci(align1.e1, sv[0]):
-                if __match_ci(align2.s1, sv[1]):
+            if sv[0].ref == align1.ref and __match_ci(sv_start, sv[0]):
+                if __match_ci(sv_end, sv[1]):
                     return True
                 # unite large deletion (relocations only)
-                prev_end = sv[1].e1
-                index_variation = index + 1
-                while index_variation < len(variations) and \
-                                        variations[index_variation][0].s1 - prev_end <= max_gap and \
-                                        variations[index_variation][0].ref == align1.ref:
-                    sv = variations[index_variation]
-                    if __match_ci(align2.s1, sv[1]):
-                        return True
+                if sv[0].sv_type == 'QuastDEL':
                     prev_end = sv[1].e1
-                    index_variation += 1
+                    index_variation = index + 1
+                    while index_variation < len(variations) and \
+                                            variations[index_variation][0].s1 - prev_end <= max_gap and \
+                                            variations[index_variation][0].ref == align1.ref:
+                        sv = variations[index_variation]
+                        if __match_ci(sv_end, sv[1]):
+                            return True
+                        prev_end = sv[1].e1
+                        index_variation += 1
     return False
 
 
 def find_all_sv(bed_fpath):
     if not bed_fpath:
         return None
+
     region_struct_variations = StructuralVariations()
-    f = open(bed_fpath)
-    for line in f:
-        l = line.split('\t')
-        if len(l) > 6 and not line.startswith('#'):
-            try:
-                align1 = Mapping(s1=int(l[1]), e1=int(l[2]), ref=correct_name(l[0]), s2=None, e2=None, len1=None, len2=None, idy=None, contig=None)
-                align2 = Mapping(s1=int(l[4]), e1=int(l[5]),  ref=correct_name(l[3]), s2=None, e2=None, len1=None, len2=None, idy=None, contig=None)
-                if align1.ref != align2.ref:
-                    region_struct_variations.translocations.append((align1, align2))
-                elif 'INV' in l[6]:
-                    region_struct_variations.inversions.append((align1, align2))
-                elif 'DEL' in l[6]:
-                    region_struct_variations.relocations.append((align1, align2))
-                else:
-                    pass # not supported yet
-            except ValueError:
-                pass  # incorrect line format
+    with open(bed_fpath) as f:
+        for line in f:
+            fs = line.split('\t')
+            if not line.startswith('#'):
+                try:
+                    align1 = Mapping(s1=int(fs[1]), e1=int(fs[2]), ref=correct_name(fs[0]), sv_type=fs[6])
+                    align2 = Mapping(s1=int(fs[4]), e1=int(fs[5]), ref=correct_name(fs[3]), sv_type=fs[6])
+                    if align1.ref != align2.ref:
+                        region_struct_variations.translocations.append((align1, align2))
+                    elif 'INV' in fs[6]:
+                        region_struct_variations.inversions.append((align1, align2))
+                    elif 'DEL' in fs[6] or 'INS' in fs[6] or 'BND' in fs[6]:
+                        region_struct_variations.relocations.append((align1, align2))
+                    else:
+                        pass # not supported yet
+                except ValueError:
+                    pass  # incorrect line format
     return region_struct_variations
 
 

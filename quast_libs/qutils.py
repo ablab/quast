@@ -309,41 +309,14 @@ def broke_scaffolds(file_counter, labels, contigs_fpath, corrected_dirpath, logs
     contigs_counter = 0
 
     scaffold_counter = 0
-    is_broken = False
     for scaffold_counter, (name, seq) in enumerate(fastaparser.read_fasta(contigs_fpath)):
         if contigs_counter % 100 == 0:
             pass
         if contigs_counter > 520:
             pass
-        cumul_contig_length = 0
-        total_contigs_for_the_scaf = 0
-        cur_contig_start = 0
-        while (cumul_contig_length < len(seq)) and (seq.find('N', cumul_contig_length) != -1):
-            start = seq.find("N", cumul_contig_length)
-            end = start + 1
-            while (end != len(seq)) and (seq[end] == 'N'):
-                end += 1
-
-            cumul_contig_length = end + 1
-            if end - start >= qconfig.Ns_break_threshold:
-                is_broken = True
-                if start - cur_contig_start >= qconfig.min_contig:
-                    broken_scaffolds_fasta.append(
-                        (name.split()[0] + "_" +
-                         str(total_contigs_for_the_scaf + 1),
-                         seq[cur_contig_start:start]))
-                    total_contigs_for_the_scaf += 1
-                cur_contig_start = end
-
-        if len(seq) - cur_contig_start >= qconfig.min_contig:
-            broken_scaffolds_fasta.append(
-                (name.split()[0] + "_" +
-                 str(total_contigs_for_the_scaf + 1),
-                 seq[cur_contig_start:]))
-            total_contigs_for_the_scaf += 1
-
+        total_contigs_for_the_scaf = split_by_ns(seq, name, broken_scaffolds_fasta, qconfig.Ns_break_threshold, qconfig.min_contig)
         contigs_counter += total_contigs_for_the_scaf
-    if is_broken:
+    if contigs_counter > scaffold_counter + 1:
         fastaparser.write_fasta(broken_scaffolds_fpath, broken_scaffolds_fasta)
         logs.append("  " + index_to_str(file_counter, force=(len(labels) > 1)) +
                     "    %d scaffolds (%s) were broken into %d contigs (%s)" %
@@ -356,6 +329,32 @@ def broke_scaffolds(file_counter, labels, contigs_fpath, corrected_dirpath, logs
     logs.append("  " + index_to_str(file_counter, force=(len(labels) > 1)) +
                 "    WARNING: nothing was broken, skipping '%s broken' from further analysis" % label)
     return None, logs
+
+
+def split_by_ns(seq, name, splitted_fasta, Ns_break_threshold=1, min_contig=1, total_contigs=0):
+    cur_contig_start = 0
+    cumul_contig_length = 0
+    while (cumul_contig_length < len(seq)) and (seq.find('N', cumul_contig_length) != -1):
+        start = seq.find("N", cumul_contig_length)
+        end = start + 1
+        while (end != len(seq)) and (seq[end] == 'N'):
+            end += 1
+
+        cumul_contig_length = end + 1
+        if end - start >= Ns_break_threshold:
+            splitted_fasta.append(
+                (name.split()[0] + "_" +
+                 str(total_contigs + 1),
+                 seq[cur_contig_start: start]))
+            total_contigs += 1
+            cur_contig_start = end
+    if len(seq) - cur_contig_start >= min_contig:
+        splitted_fasta.append(
+            (name.split()[0] + "_" +
+             str(total_contigs + 1),
+             seq[cur_contig_start: ]))
+        total_contigs += 1
+    return total_contigs
 
 
 def is_scaffold(seq):

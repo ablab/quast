@@ -7,21 +7,40 @@
 
 from __future__ import with_statement
 import os
-import re
-from os.path import join
+from collections import defaultdict
+from os.path import join, basename
 import shutil
 from distutils import dir_util
 
-from quast_libs import fastaparser, qconfig, qutils, reporting, plotter
+from quast_libs import fastaparser, qconfig, qutils
 from quast_libs.log import get_logger
-from quast_libs.qutils import splitext_for_fasta_file
+from quast_libs.qutils import splitext_for_fasta_file, is_non_empty_file, split_by_ns
+
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 
 
-def preprocess_reference(ref_fpath, tmp_dir):
-    # TODO: split by Ns (even single Ns are important here!)
-    # TODO: align reads & remove not covered regions
-    return ref_fpath
+def preprocess_reference(ref_fpath, tmp_dir, uncovered_fpath):
+    uncovered_regions = defaultdict(list)
+    if is_non_empty_file(uncovered_fpath):
+        with open(uncovered_fpath) as f:
+            for line in f:
+                chrom, start, end = line.split('\t')
+                uncovered_regions[chrom].append((int(start), int(end)))
+
+    splitted_fasta = []
+    for name, seq in fastaparser.read_fasta(ref_fpath):
+        if name in uncovered_regions:
+            cur_contig_start = 0
+            total_contigs = 0
+            for start, end in uncovered_regions[name]:
+                total_contigs = split_by_ns(seq[cur_contig_start: start], name, splitted_fasta, total_contigs=total_contigs)
+                cur_contig_start = end
+            split_by_ns(seq[cur_contig_start:], name, splitted_fasta, total_contigs=total_contigs)
+        else:
+            split_by_ns(seq, name, splitted_fasta)
+    processed_ref_fpath = join(tmp_dir, basename(ref_fpath))
+    fastaparser.write_fasta(processed_ref_fpath, splitted_fasta)
+    return processed_ref_fpath
 
 
 def prepare_config_spades(fpath, kmer, ref_fpath, tmp_dir):
@@ -42,11 +61,10 @@ def prepare_config_spades(fpath, kmer, ref_fpath, tmp_dir):
                 config.write(line)
 
 
-def do(ref_fpath, original_ref_fpath, output_dirpath, insert_size):
+def do(ref_fpath, original_ref_fpath, output_dirpath, insert_size, uncovered_fpath):
     logger.print_timestamp()
     logger.main_info("Simulating Ideal Assembly...")
-    if insert_size == 'auto':
-        # TODO: auto detect from reads
+    if insert_size == 'auto' or not insert_size:
         insert_size = qconfig.ideal_assembly_default_IS
     if insert_size % 2 == 0:
         insert_size += 1
@@ -82,9 +100,7 @@ def do(ref_fpath, original_ref_fpath, output_dirpath, insert_size):
         shutil.rmtree(tmp_dir)
     os.makedirs(tmp_dir)
 
-    preprocessing = False
-    if preprocessing:
-        ref_fpath = preprocess_reference(ref_fpath, tmp_dir)
+    ref_fpath = preprocess_reference(ref_fpath, tmp_dir, uncovered_fpath)
 
     dst_configs = os.path.join(tmp_dir, 'configs')
     main_config = os.path.join(dst_configs, 'config.info')

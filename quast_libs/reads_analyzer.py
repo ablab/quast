@@ -11,6 +11,7 @@ import re
 import shutil
 import shlex
 from collections import defaultdict
+from math import sqrt
 from os.path import isfile, join, basename, abspath, isdir, getsize, dirname
 
 from quast_libs import qconfig, qutils
@@ -309,6 +310,57 @@ def get_safe_fpath(output_dirpath, fpath):  # reuse file if it exists; else writ
     return fpath
 
 
+def align_reference(ref_fpath, output_dir):
+    required_files = []
+    ref_name = qutils.name_from_fpath(ref_fpath)
+    cov_fpath = qconfig.cov_fpath or join(output_dir, ref_name + '.cov')
+    uncovered_fpath = add_suffix(cov_fpath, 'uncovered')
+    insert_size_fpath = join(output_dir, ref_name + '.is.txt')
+    if not is_non_empty_file(uncovered_fpath):
+        required_files.append(uncovered_fpath)
+    if not is_non_empty_file(insert_size_fpath):
+        required_files.append(qconfig.reference_sam)
+
+    temp_output_dir = join(output_dir, 'temp_output')
+    if not isdir(temp_output_dir):
+        os.makedirs(temp_output_dir)
+
+    log_path = join(output_dir, 'reads_stats.log')
+    err_path = join(output_dir, 'reads_stats.err')
+    correct_chr_names, sam_fpath, bam_fpath = align_single_file(ref_fpath, temp_output_dir, log_path, err_path,
+                                                                qconfig.max_threads, sam_fpath=qconfig.reference_sam,
+                                                                bam_fpath=qconfig.reference_bam, required_files=required_files,
+                                                                is_reference=True, is_sam_required=True)
+    qconfig.reference_sam = sam_fpath
+    qconfig.reference_bam = bam_fpath
+    insert_size = calculate_insert_size(sam_fpath, insert_size_fpath)
+    if not insert_size:
+        logger.info('  Failed calculating insert size.')
+    else:
+        qconfig.ideal_assembly_insert_size = insert_size
+    if not required_files:
+        return uncovered_fpath
+    if not sam_fpath:
+        logger.info('  Failed calculating insert size.')
+        return None
+
+    bam_mapped_fpath = get_safe_fpath(temp_output_dir, add_suffix(bam_fpath, 'mapped'))
+    bam_sorted_fpath = get_safe_fpath(temp_output_dir, add_suffix(bam_mapped_fpath, 'sorted'))
+
+    if is_non_empty_file(bam_sorted_fpath):
+        logger.info('  Using existing sorted SAM-file: ' + bam_sorted_fpath)
+    else:
+        qutils.call_subprocess([sambamba_fpath('sambamba'), 'view', '-t', str(qconfig.max_threads), '-h', '-f', 'bam',
+                                '-F', 'not unmapped', bam_fpath],
+                               stdout=open(bam_mapped_fpath, 'w'), stderr=open(err_path, 'a'), logger=logger)
+        qutils.call_subprocess([sambamba_fpath('sambamba'), 'sort', '-t', str(qconfig.max_threads), '-o', bam_sorted_fpath,
+                                bam_mapped_fpath], stderr=open(err_path, 'a'), logger=logger)
+    if not is_non_empty_file(uncovered_fpath):
+        get_coverage(temp_output_dir, ref_fpath, ref_name, bam_fpath, bam_sorted_fpath, log_path, err_path,
+                     cov_fpath, None, correct_chr_names, uncovered_fpath=uncovered_fpath, create_cov_files=False)
+    return uncovered_fpath
+
+
 def run_processing_reads(contigs_fpaths, main_ref_fpath, meta_ref_fpaths, ref_labels, temp_output_dir, output_dir,
                          log_path, err_path):
     required_files = []
@@ -348,12 +400,12 @@ def run_processing_reads(contigs_fpaths, main_ref_fpath, meta_ref_fpaths, ref_la
     max_threads_per_job = max(1, qconfig.max_threads // n_jobs)
     sam_fpaths = qconfig.sam_fpaths or [None] * len(contigs_fpaths)
     bam_fpaths = qconfig.bam_fpaths or [None] * len(contigs_fpaths)
-    parallel_align_args = [(index, contigs_fpath, temp_output_dir, log_path, err_path, max_threads_per_job,
-                            sam_fpaths[index], bam_fpaths[index])
+    parallel_align_args = [(contigs_fpath, temp_output_dir, log_path, err_path, max_threads_per_job,
+                            sam_fpaths[index], bam_fpaths[index], index)
                            for index, contigs_fpath in enumerate(contigs_fpaths)]
     if main_ref_fpath:
-        parallel_align_args.append((None, main_ref_fpath, temp_output_dir, log_path, err_path,
-                                    max_threads_per_job, qconfig.reference_sam, qconfig.reference_bam, required_files, True))
+        parallel_align_args.append((main_ref_fpath, temp_output_dir, log_path, err_path,
+                                    max_threads_per_job, qconfig.reference_sam, qconfig.reference_bam, None, required_files, True))
     correct_chr_names, sam_fpaths, bam_fpaths = run_parallel(align_single_file, parallel_align_args, n_jobs)
     qconfig.sam_fpaths = sam_fpaths[:len(contigs_fpaths)]
     qconfig.bam_fpaths = bam_fpaths[:len(contigs_fpaths)]
@@ -455,15 +507,15 @@ def run_processing_reads(contigs_fpaths, main_ref_fpath, meta_ref_fpaths, ref_la
     return bed_fpath, cov_fpath, physical_cov_fpath
 
 
-def align_single_file(index, fpath, output_dirpath, log_path, err_path, max_threads, sam_fpath=None, bam_fpath=None,
-                      required_files=None, is_reference=False):
+def align_single_file(fpath, output_dirpath, log_path, err_path, max_threads, sam_fpath=None, bam_fpath=None,
+                      index=None, required_files=None, is_reference=False, is_sam_required=False):
     filename = qutils.name_from_fpath(fpath)
     if not sam_fpath and bam_fpath:
         sam_fpath = get_safe_fpath(output_dirpath, bam_fpath[:-4] + '.sam')
     else:
         sam_fpath = sam_fpath or join(output_dirpath, filename + '.sam')
     bam_fpath = bam_fpath or get_safe_fpath(output_dirpath, sam_fpath[:-4] + '.bam')
-    if is_reference and required_files and any(f.endswith('bed') for f in required_files):
+    if is_sam_required or (is_reference and required_files and any(f.endswith('bed') for f in required_files)):
         required_files.append(sam_fpath)
 
     stats_fpath = get_safe_fpath(dirname(output_dirpath), filename + '.stat')
@@ -774,7 +826,8 @@ def get_physical_coverage(output_dirpath, ref_name, bam_fpath, log_path, err_pat
     return raw_cov_fpath
 
 
-def get_coverage(output_dirpath, ref_fpath, ref_name, bam_fpath, bam_sorted_fpath, log_path, err_path, cov_fpath, physical_cov_fpath, correct_chr_names):
+def get_coverage(output_dirpath, ref_fpath, ref_name, bam_fpath, bam_sorted_fpath, log_path, err_path, cov_fpath, physical_cov_fpath,
+                 correct_chr_names, uncovered_fpath=None, create_cov_files=True):
     raw_cov_fpath = cov_fpath + '_raw'
     chr_len_fpath = get_chr_len_fpath(ref_fpath, correct_chr_names)
     if not is_non_empty_file(cov_fpath):
@@ -786,8 +839,11 @@ def get_coverage(output_dirpath, ref_fpath, ref_name, bam_fpath, bam_sorted_fpat
             qutils.call_subprocess([bedtools_fpath('bedtools'), 'genomecov', '-bga', '-ibam', bam_sorted_fpath, '-g', chr_len_fpath],
                                    stdout=open(raw_cov_fpath, 'w'), stderr=open(err_path, 'a'), logger=logger)
             qutils.assert_file_exists(raw_cov_fpath, 'coverage file')
-        proceed_cov_file(raw_cov_fpath, cov_fpath, correct_chr_names)
-    if not is_non_empty_file(physical_cov_fpath):
+        if uncovered_fpath:
+            print_uncovered_regions(raw_cov_fpath, uncovered_fpath, correct_chr_names)
+        if create_cov_files:
+            proceed_cov_file(raw_cov_fpath, cov_fpath, correct_chr_names)
+    if not is_non_empty_file(physical_cov_fpath) and create_cov_files:
         raw_cov_fpath = get_physical_coverage(output_dirpath, ref_name, bam_fpath, log_path, err_path,
                                               physical_cov_fpath, chr_len_fpath)
         proceed_cov_file(raw_cov_fpath, physical_cov_fpath, correct_chr_names)
@@ -824,6 +880,56 @@ def proceed_cov_file(raw_cov_fpath, cov_fpath, correct_chr_names):
             os.remove(raw_cov_fpath)
 
 
+def calculate_insert_size(sam_fpath, insert_size_fpath):
+    if is_non_empty_file(insert_size_fpath):
+        try:
+            insert_size = int(open(insert_size_fpath).read())
+            if insert_size:
+                return insert_size
+        except:
+            pass
+    insert_sizes = []
+    mapped_flags = ['99', '147', '83', '163']  # reads mapped in correct orientation and within insert size
+    with open(sam_fpath) as sam_in:
+        for i, l in enumerate(sam_in):
+            if i > 1000000:
+                break
+            if l.startswith('@'):
+                continue
+            fs = l.split('\t')
+            flag = fs[1]
+            if flag not in mapped_flags:
+                continue
+            insert_size = abs(int(fs[8]))
+            insert_sizes.append(insert_size)
+
+    if insert_sizes:
+        mean_is = sum(insert_sizes) * 1.0 / len(insert_sizes)
+        if mean_is <= 0:
+            return None
+        stddev_is = sqrt(sum([(insert_size - mean_is) ** 2 for insert_size in insert_sizes]) / len(insert_sizes))
+        insert_size = int(mean_is + stddev_is)
+        with open(insert_size_fpath, 'w') as out_f:
+            out_f.write(str(insert_size))
+        return insert_size
+
+
+def print_uncovered_regions(raw_cov_fpath, uncovered_fpath, correct_chr_names):
+    uncovered_regions = defaultdict(list)
+    with open(raw_cov_fpath) as in_coverage:
+        for line in in_coverage:
+            fs = list(line.split())
+            name = fs[0]
+            depth = int(fs[-1])
+            correct_name = correct_chr_names[name] if correct_chr_names else name
+            if len(fs) > 3 and depth == 0:
+                uncovered_regions[correct_name].append((fs[1], fs[2]))
+    with open(uncovered_fpath, 'w') as out_f:
+        for chrom, regions in uncovered_regions.items():
+            for start, end in regions:
+                out_f.write('\t'.join([chrom, start, end]))
+
+
 def get_correct_names_for_chroms(output_dirpath, fasta_fpath, sam_fpath, err_path, reads_fpaths, is_reference=False):
     correct_chr_names = dict()
     fasta_chr_lengths = get_chr_lengths_from_fastafile(fasta_fpath)
@@ -833,7 +939,7 @@ def get_correct_names_for_chroms(output_dirpath, fasta_fpath, sam_fpath, err_pat
         return None
     if isfile(sam_fpath):
         qutils.call_subprocess([sambamba_fpath('sambamba'), 'view', '-H', '-S', sam_fpath],
-                           stdout=open(sam_header_fpath, 'w'), stderr=open(err_path, 'w'), logger=logger)
+                               stdout=open(sam_header_fpath, 'w'), stderr=open(err_path, 'a'), logger=logger)
     chr_name_pattern = 'SN:(\S+)'
     chr_len_pattern = 'LN:(\d+)'
 

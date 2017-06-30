@@ -78,6 +78,7 @@ def main(args):
         os.mkdir(corrected_dirpath)
 
     qconfig.set_max_threads(logger)
+    reads_fpaths = get_reads_fpaths(logger)
     # PROCESSING REFERENCE
     if ref_fpath:
         logger.main_info()
@@ -85,12 +86,16 @@ def main(args):
         original_ref_fpath = ref_fpath
         ref_fpath = qutils.correct_reference(ref_fpath, corrected_dirpath)
         if qconfig.ideal_assembly:
+            uncovered_fpath = None
+            if reads_fpaths or qconfig.reference_sam or qconfig.reference_sam:
+                uncovered_fpath = reads_analyzer.align_reference(ref_fpath, os.path.join(output_dirpath, qconfig.reads_stats_dirname))
             ideal_assembly_fpath = ideal_assembly.do(ref_fpath, original_ref_fpath,
                                                      os.path.join(output_dirpath, qconfig.ideal_assembly_basename),
-                                                     qconfig.ideal_assembly_insert_size)
+                                                     qconfig.ideal_assembly_insert_size, uncovered_fpath)
             if ideal_assembly_fpath is not None:
                 contigs_fpaths.insert(0, ideal_assembly_fpath)
-                labels.insert(0, 'IDEAL ASSEMBLY')  # FIXME: Check possible duplicates
+                labels.insert(0, 'IDEAL ASSEMBLY')
+                labels = qutils.process_labels(contigs_fpaths, labels)
     else:
         ref_fpath = ''
 
@@ -105,7 +110,6 @@ def main(args):
 
     qconfig.assemblies_num = len(contigs_fpaths)
 
-    reads_fpaths = get_reads_fpaths(logger)
     cov_fpath = qconfig.cov_fpath
     physical_cov_fpath = qconfig.phys_cov_fpath
     if reads_fpaths or qconfig.reference_sam or qconfig.reference_sam or qconfig.sam_fpaths or qconfig.bam_fpaths:

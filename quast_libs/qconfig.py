@@ -127,7 +127,7 @@ use_input_ref_order = False
 reads_stats_dirname = 'reads_stats'
 coverage_thresholds = [1, 5, 10]
 trivial_deletions_fname = 'trivial_deletions.bed'
-manta_sv_fname = 'manta_sv.bed'
+sv_bed_fname = 'structural_variations.bed'
 used_colors = None
 used_ls = None
 

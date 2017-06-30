@@ -18,5 +18,5 @@ rm -f   $QUAST_FOLDER/quast_libs/site_packages/*/*.pyc
 
 make -C $QUAST_FOLDER/quast_libs/bwa clean >/dev/null 2>/dev/null
 
-rm -rf  $QUAST_FOLDER/quast_libs/manta/build
+rm -rf  $QUAST_FOLDER/quast_libs/gridss*
 rm -rf  $QUAST_FOLDER/quast_libs/blast

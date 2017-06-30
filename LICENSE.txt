@@ -176,13 +176,13 @@ https://github.com/lomereiter/sambamba website and to the following paper:
 A. Tarasov, A. J. Vilella, E. Cuppen, I. J. Nijman, and P. Prins.
 Sambamba: fast processing of NGS alignment formats. Bioinformatics, 2015.
 
-8. QUAST Structural Variation Finding module uses Manta.
-For more details about Manta please refer to
-https://github.com/Illumina/manta website and to the following paper:
+8. QUAST Structural Variation Finding module uses GRIDSS.
+For more details about GRIDSS please refer to
+https://github.com/PapenfussLab/gridss website and to the following preprint:
 
-Chen X, Schulz-Trieglaff O, Shaw R, Barnes B, Schlesinger F, Kallberg M, Cox A, Kruglyak S, Saunders C.
-Manta: rapid detection of structural variants and indels for germline and cancer sequencing applications.
-Bioinformatics, 32(8): 1220-1222.
+D. L. Cameron, J. Schroeder, J. S. Penington, H. Do, R. Molania, A. Dobrovic, T. P. Speed and A. T. Papenfuss.
+GRIDSS: sensitive and specific genomic rearrangement detection using positional de Bruijn graph assembly.
+http://www.biorxiv.org/content/early/2017/02/21/110387
 
 9. Icarus uses Bedtools for calculating read coverage.
 For more details about Bedtools please refer to

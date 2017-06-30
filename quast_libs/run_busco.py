@@ -52,7 +52,7 @@ def download_db(logger, is_prokaryote, is_fungus=False, only_clean=False):
     if not os.path.exists(db_dirpath):
         downloaded_fpath = join(dirpath, clade + '.tar.gz')
         logger.main_info('  Downloading ' + clade + ' database...')
-        download_unpack_compressed_tar(clade + ' database', url, downloaded_fpath, db_dirpath, logger, ext='gz')
+        download_unpack_compressed_tar(clade + ' database', url, downloaded_fpath, db_dirpath, logger)
 
         if not os.path.exists(db_dirpath):
             logger.warning('Failed to download ' + clade + ' database from ' + url + 'and unpack it into ' + dirpath)
@@ -75,7 +75,7 @@ def download_tool(tool, tool_version, required_files, logger, url, only_clean=Fa
             check_prev_compilation_failed(tool, failed_compilation_flag):
         downloaded_fpath = join(tool_dirpath, tool + '.tar.gz')
         logger.main_info('  Downloading ' + tool + '...')
-        download_unpack_compressed_tar(tool, url, downloaded_fpath, tool_dirpath, logger, ext='gz')
+        download_unpack_compressed_tar(tool, url, downloaded_fpath, tool_dirpath, logger)
 
         if not all(os.path.exists(join(tool_dirpath, fpath)) for fpath in required_files):
             logger.warning('Failed to download ' + tool + ' from ' + url + 'and unpack it into ' + tool_dirpath)
@@ -86,7 +86,7 @@ def download_tool(tool, tool_version, required_files, logger, url, only_clean=Fa
 def download_all_db(logger, only_clean=False):
     bacteria_db = download_db(logger, is_prokaryote=True, only_clean=only_clean)
     eukaryota_db = download_db(logger, is_prokaryote=False, only_clean=only_clean)
-    fungi_db = download_db(logger, is_fungus=True, only_clean=only_clean)
+    fungi_db = download_db(logger, is_prokaryote=False, is_fungus=True, only_clean=only_clean)
     return bacteria_db and eukaryota_db and fungi_db
 
 

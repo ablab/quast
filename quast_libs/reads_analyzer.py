@@ -16,10 +16,10 @@ from os.path import isfile, join, basename, abspath, isdir, getsize, dirname
 from quast_libs import qconfig, qutils
 from quast_libs.ca_utils.misc import ref_labels_by_chromosomes
 from quast_libs.fastaparser import create_fai_file, get_chr_lengths_from_fastafile
-from quast_libs.ra_utils import vcfToBedpe
-from quast_libs.ra_utils.misc import compile_reads_analyzer_tools, get_manta_fpath, sambamba_fpath, \
-    bwa_fpath, bedtools_fpath, paired_reads_names_are_equal, download_manta, lap_fpath
-from quast_libs.qutils import is_non_empty_file, add_suffix, get_chr_len_fpath, correct_name, run_parallel
+from quast_libs.ra_utils.misc import compile_reads_analyzer_tools, sambamba_fpath, \
+    bwa_fpath, bedtools_fpath, paired_reads_names_are_equal, download_gridss, lap_fpath, get_gridss_fpath, bwa_dirpath
+from quast_libs.qutils import is_non_empty_file, add_suffix, get_chr_len_fpath, correct_name, run_parallel, \
+    get_path_to_program, check_java_version
 
 from quast_libs.log import get_logger
 from quast_libs.reporting import save_reads
@@ -101,7 +101,7 @@ class QuastDeletion(object):
     def __str__(self):
         return '\t'.join(map(str, [self.ref, self.prev_good, self.prev_bad,
                           self.ref, self.next_bad, self.next_good,
-                          self.id]) + ['-'] * 4)
+                          self.id]))
 
 
 def process_one_ref(cur_ref_fpath, output_dirpath, err_path, max_threads, bam_fpath=None, bed_fpath=None):
@@ -114,13 +114,10 @@ def process_one_ref(cur_ref_fpath, output_dirpath, err_path, max_threads, bam_fp
         sam_fpath = bam_fpath.replace('.bam', '.sam')
         bam_sorted_fpath = add_suffix(bam_fpath, 'sorted')
     bed_fpath = bed_fpath or join(output_dirpath, ref_name + '.bed')
-    if (isfile(sam_fpath) and os.path.getsize(sam_fpath) < 1024 * 1024) or \
-            (isfile(bam_fpath) and os.path.getsize(bam_fpath) < 1024 * 1024):  # TODO: make it better (small files will cause Manta crush -- "not enough reads...")
-        logger.info('  SAM file is too small for Manta (%d Kb), skipping..' % (getsize(sam_fpath) // 1024))
-        return None
     if is_non_empty_file(bed_fpath):
-        logger.info('  Using existing Manta BED-file: ' + bed_fpath)
+        logger.info('  Using existing BED-file: ' + bed_fpath)
         return bed_fpath
+
     if not isfile(bam_sorted_fpath):
         qutils.call_subprocess([sambamba_fpath('sambamba'), 'view', '-t', str(max_threads), '-h', '-S', '-f', 'bam',
                                 '-F', 'not unmapped', sam_fpath], stdout=open(bam_fpath, 'w'), stderr=open(err_path, 'a'), logger=logger)
@@ -130,37 +127,92 @@ def process_one_ref(cur_ref_fpath, output_dirpath, err_path, max_threads, bam_fp
         qutils.call_subprocess([sambamba_fpath('sambamba'), 'index', bam_sorted_fpath],
                                stderr=open(err_path, 'a'), logger=logger)
     create_fai_file(cur_ref_fpath)
-    vcf_output_dirpath = join(output_dirpath, ref_name + '_manta')
-    found_SV_fpath = join(vcf_output_dirpath, 'results/variants/diploidSV.vcf.gz')
-    unpacked_SV_fpath = found_SV_fpath + '.unpacked'
-    if not is_non_empty_file(found_SV_fpath):
+    vcf_output_dirpath = join(output_dirpath, ref_name + '_gridss')
+    vcf_fpath = join(vcf_output_dirpath, ref_name + '.vcf')
+    if not is_non_empty_file(vcf_fpath):
         if isdir(vcf_output_dirpath):
             shutil.rmtree(vcf_output_dirpath, ignore_errors=True)
         os.makedirs(vcf_output_dirpath)
-        qutils.call_subprocess([get_manta_fpath(), '--bam', bam_sorted_fpath,
-                                '--referenceFasta', cur_ref_fpath, '--runDir', vcf_output_dirpath],
-                               stdout=open(err_path, 'a'), stderr=open(err_path, 'a'), logger=logger)
-        workflow_run_fpath = join(vcf_output_dirpath, 'runWorkflow.py')
-        if not isfile(workflow_run_fpath):
-            return None
+        max_mem = get_max_memory()
         env = os.environ.copy()
-        env['LC_ALL'] = 'C'
-        qutils.call_subprocess([workflow_run_fpath, '-m', 'local', '-j', str(max_threads)],
-                               stderr=open(err_path, 'a'), logger=logger, env=env)
-    if is_non_empty_file(found_SV_fpath):
-        cmd = 'gunzip -c %s' % found_SV_fpath
-        qutils.call_subprocess(shlex.split(cmd), stdout=open(unpacked_SV_fpath, 'w'), stderr=open(err_path, 'a'), logger=logger)
-    if is_non_empty_file(unpacked_SV_fpath):
-        vcfToBedpe.vcfToBedpe(open(unpacked_SV_fpath), open(bed_fpath, 'w'))
+        env["PATH"] += os.pathsep + bwa_dirpath
+        index_reference(cur_ref_fpath, err_path)
+        qutils.call_subprocess(['java', '-ea', '-Xmx' + str(max_mem) + 'g', '-Dsamjdk.create_index=true', '-Dsamjdk.use_async_io_read_samtools=true',
+                                '-Dsamjdk.use_async_io_write_samtools=true', '-Dsamjdk.use_async_io_write_tribble=true',
+                                '-cp', get_gridss_fpath(), 'gridss.CallVariants', 'I=' + bam_sorted_fpath, 'O=' + vcf_fpath,
+                                'ASSEMBLY=' + join(vcf_output_dirpath, ref_name + '.gridss.bam'), 'REFERENCE_SEQUENCE=' + cur_ref_fpath,
+                                'WORKER_THREADS=' + str(max_threads), 'WORKING_DIR=' + vcf_output_dirpath],
+                                stderr=open(err_path, 'a'), logger=logger, env=env)
+    if is_non_empty_file(vcf_fpath):
+        raw_bed_fpath = add_suffix(bed_fpath, 'raw')
+        filtered_bed_fpath = add_suffix(bed_fpath, 'filtered')
+        qutils.call_subprocess(['java', '-cp', get_gridss_fpath(), 'au.edu.wehi.idsv.VcfBreakendToBedpe',
+                                'I=' + vcf_fpath, 'O=' + raw_bed_fpath, 'OF=' + filtered_bed_fpath, 'R=' + cur_ref_fpath,
+                                'INCLUDE_HEADER=TRUE'], stderr=open(err_path, 'a'), logger=logger)
+        reformat_bedpe(raw_bed_fpath, bed_fpath)
     return bed_fpath
 
 
-def search_sv_with_manta(main_ref_fpath, bam_fpath, meta_ref_fpaths, output_dirpath, err_path):
-    logger.info('  Searching structural variations with Manta...')
-    final_bed_fpath = join(output_dirpath, qconfig.manta_sv_fname)
+def index_reference(ref_fpath, err_path):
+    cmd = [bwa_fpath('bwa'), 'index', '-p', ref_fpath, ref_fpath]
+    if getsize(ref_fpath) > 2 * 1024 ** 3:  # if reference size bigger than 2GB
+        cmd += ['-a', 'bwtsw']
+    if not is_non_empty_file(ref_fpath + '.bwt'):
+        qutils.call_subprocess(cmd, stdout=open(err_path, 'a'), stderr=open(err_path, 'a'), logger=logger)
+
+
+def get_max_memory():
+    if qconfig.platform_name == 'linux_64':
+        with open('/proc/meminfo', 'r') as mem:
+            for line in mem:
+                line = line.split()
+                if str(line[0]) == 'MemTotal:':
+                    total_mem = int(line[1]) / 1024 / 1024
+                    if total_mem >= 64:
+                        return 31
+                    elif total_mem >= 32:
+                        return 16
+                    elif total_mem >= 16:
+                        return 8
+    return 2
+
+
+def reformat_bedpe(raw_bed_fpath, bed_fpath):
+    header = None
+    with open(raw_bed_fpath) as f:
+        with open(bed_fpath, 'w') as out_f:
+            out_f.write('\t'.join(['CHROM_A', 'START_A', 'END_A', 'CHROM_B', 'START_B', 'END_B', 'TYPE\n']))
+            for i, line in enumerate(f):
+                if i == 0:
+                    header = line[1:].split('\t')
+                    continue
+                if not line.startswith('#'):
+                    fs = line.split('\t')
+                    try:
+                        # chrom1 start1  end1    chrom2  start2  end2    name    score   strand1 strand2
+                        sv = dict(zip(header, fs))
+                        sv_type = 'BND'
+                        if sv['strand1'] == sv['strand2']:
+                            sv_type = 'INV'
+                        out_f.write('\t'.join([sv['chrom1'], sv['start1'], sv['end1'],
+                                               sv['chrom2'], sv['start2'], sv['end2'], sv_type]) + '\n')
+                    except ValueError:
+                        pass
+
+
+def search_sv_with_gridss(main_ref_fpath, bam_fpath, meta_ref_fpaths, output_dirpath, err_path):
+    logger.info('  Searching structural variations with GRIDSS...')
+    final_bed_fpath = join(output_dirpath, qutils.name_from_fpath(main_ref_fpath) + '_' + qconfig.sv_bed_fname)
     if isfile(final_bed_fpath):
         logger.info('    Using existing file: ' + final_bed_fpath)
         return final_bed_fpath
+
+    if not get_path_to_program('java') or not check_java_version(1.8):
+        logger.warning('Java 1.8 or later is required to run GRIDSS. Please install it and rerun QUAST.')
+        return None
+    if not get_path_to_program('Rscript'):
+        logger.warning('R is required to run GRIDSS. Please install it and rerun QUAST.')
+        return None
 
     if meta_ref_fpaths:
         n_jobs = min(len(meta_ref_fpaths), qconfig.max_threads)
@@ -376,10 +428,10 @@ def run_processing_reads(contigs_fpaths, main_ref_fpath, meta_ref_fpaths, ref_la
 
         trivial_deletions_fpath = \
             search_trivial_deletions(temp_output_dir, sam_sorted_fpath, ref_files, ref_labels, seq_lengths, need_ref_splitting)
-        if get_manta_fpath() and isfile(get_manta_fpath()):
+        if get_gridss_fpath() and isfile(get_gridss_fpath()):
             try:
-                manta_sv_fpath = search_sv_with_manta(main_ref_fpath, bam_mapped_fpath, meta_ref_fpaths, temp_output_dir, err_path)
-                qutils.cat_files([manta_sv_fpath, trivial_deletions_fpath], bed_fpath)
+                gridss_sv_fpath = search_sv_with_gridss(main_ref_fpath, bam_mapped_fpath, meta_ref_fpaths, temp_output_dir, err_path)
+                qutils.cat_files([gridss_sv_fpath, trivial_deletions_fpath], bed_fpath)
             except:
                 pass
         if isfile(trivial_deletions_fpath) and not is_non_empty_file(bed_fpath):
@@ -453,7 +505,7 @@ def align_single_file(index, fpath, output_dirpath, log_path, err_path, max_thre
 
         prev_dir = os.getcwd()
         os.chdir(output_dirpath)
-        cmd = [bwa_fpath('bwa'), 'index', '-p', filename, fpath]
+        cmd = [bwa_fpath('bwa'), 'index', '-p', fpath, fpath]
         if getsize(fpath) > 2 * 1024 ** 3:  # if reference size bigger than 2GB
             cmd += ['-a', 'bwtsw']
         qutils.call_subprocess(cmd, stdout=open(log_path, 'a'), stderr=open(err_path, 'a'), logger=logger)
@@ -463,11 +515,11 @@ def align_single_file(index, fpath, output_dirpath, log_path, err_path, max_thre
         paired_library = qconfig.forward_reads + ' ' + qconfig.reverse_reads if qconfig.forward_reads else qconfig.interlaced_reads
         need_merge = paired_library and qconfig.unpaired_reads
         if paired_library:
-            cmd = bwa_cmd + (' -p ' if qconfig.interlaced_reads else '') + ' ' + filename + ' ' + paired_library
+            cmd = bwa_cmd + (' -p ' if qconfig.interlaced_reads else '') + ' ' + fpath + ' ' + paired_library
             output_fpath = sam_fpath if not need_merge else add_suffix(sam_fpath, 'paired')
             run_bwa(output_fpath, cmd, bam_fpaths, log_path, err_path, need_merge=need_merge)
         if qconfig.unpaired_reads:
-            cmd = bwa_cmd + ' ' + filename + ' ' + qconfig.unpaired_reads
+            cmd = bwa_cmd + ' ' + fpath + ' ' + qconfig.unpaired_reads
             output_fpath = sam_fpath if not need_merge else add_suffix(sam_fpath, 'single')
             run_bwa(output_fpath, cmd, bam_fpaths, log_path, err_path, need_merge=need_merge)
         if len(bam_fpaths) > 1:
@@ -875,7 +927,7 @@ def do(ref_fpath, contigs_fpaths, output_dir, meta_ref_fpaths=None, external_log
 
     if not isdir(output_dir):
         os.makedirs(output_dir)
-    download_manta(logger, qconfig.bed)
+    download_gridss(logger, qconfig.bed)
     temp_output_dir = join(output_dir, 'temp_output')
     if not isdir(temp_output_dir):
         os.mkdir(temp_output_dir)

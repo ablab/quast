@@ -92,8 +92,10 @@ For the main pipeline:
 
 For the optional submodules:
 - Time::HiRes perl module for GeneMark-ES (needed when using `--gene-finding --eukaryote`)
+- Java 1.8 or later for GRIDSS (needed for SV detection)
+- R for GRIDSS (needed for SV detection)
 
-All those tools are usually preinstalled on Linux. Mac OS X, however, requires to install 
+Most of those tools are usually preinstalled on Linux. Mac OS X, however, requires to install
 the Command Line Tools for Xcode to make them available. 
 
 QUAST draws plots in two formats: HTML and PDF. If you need the PDF versions, make sure that you have installed 

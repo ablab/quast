@@ -8,17 +8,16 @@
 from __future__ import with_statement
 import os
 import gzip
-import socket
 try:
     from urllib2 import urlopen
 except:
     from urllib.request import urlopen
-from os.path import exists, join, isfile
+from os.path import join, isfile, exists
 
 import shutil
 
 from quast_libs import qconfig
-from quast_libs.qutils import compile_tool, check_prev_compilation_failed, get_dir_for_download, relpath, get_path_to_program
+from quast_libs.qutils import compile_tool, get_dir_for_download, relpath, get_path_to_program, download_file
 
 bwa_dirpath = join(qconfig.LIBS_LOCATION, 'bwa')
 bedtools_dirpath = join(qconfig.LIBS_LOCATION, 'bedtools')
@@ -26,17 +25,12 @@ bedtools_bin_dirpath = join(qconfig.LIBS_LOCATION, 'bedtools', 'bin')
 lap_dirpath = join(qconfig.LIBS_LOCATION, 'LAP')
 sambamba_dirpath = join(qconfig.LIBS_LOCATION, 'sambamba')
 
-manta_version = '0.29.6'
-manta_dirpath = None
-config_manta_relpath = join('build', 'bin', 'configManta.py')
+gridss_dirpath = None
+gridss_version = '1.4.1'
+gridss_fname = 'gridss-' + gridss_version + '.jar'
 
-manta_external_dirpath = join(qconfig.QUAST_HOME, 'external_tools/manta')
-manta_ext_linux_fpath = join(manta_external_dirpath, 'manta_linux.tar.bz2')
-manta_ext_osx_fpath = join(manta_external_dirpath, 'manta_osx.tar.bz2')
-
-manta_linux_url = qconfig.GIT_ROOT_URL + relpath(manta_ext_linux_fpath, qconfig.QUAST_HOME)
-manta_osx_url = qconfig.GIT_ROOT_URL + relpath(manta_ext_osx_fpath, qconfig.QUAST_HOME)
-
+gridss_external_fpath = join(qconfig.QUAST_HOME, 'external_tools/gridss', gridss_fname)
+gridss_url = qconfig.GIT_ROOT_URL + relpath(gridss_external_fpath, qconfig.QUAST_HOME)
 
 def bwa_fpath(fname):
     return get_path_to_program(fname, bwa_dirpath)
@@ -55,42 +49,19 @@ def lap_fpath(fname):
     return join(lap_dirpath, fname)
 
 
-def get_manta_fpath():
-    if not manta_dirpath:
+def get_gridss_fpath():
+    if not gridss_dirpath:
         return None
-    config_manta_fpath = join(manta_dirpath, config_manta_relpath)
-    return config_manta_fpath
+    return join(gridss_dirpath, gridss_fname)
 
 
-def print_manta_warning(logger):
-    logger.main_info('Manta failed to compile, and QUAST SV module will be able to search trivial deletions only.')
-
-
-def manta_compilation_failed():
-    failed_compilation_flag = join(manta_dirpath, 'make.failed')
-    if check_prev_compilation_failed('Manta', failed_compilation_flag):
-        return True
-    return False
-
-
-def download_unpack_compressed_tar(name, download_path, downloaded_fpath, final_dirpath, logger, ext='bz2'):
-    content = None
-    try:
-        response = urlopen(download_path)
-        content = response.read()
-    except:
-        logger.main_info('  Failed to establish connection!')
-    if content:
-        logger.main_info('  ' + name + ' successfully downloaded!')
-        with open(downloaded_fpath + '.download', 'wb') as f:
-            f.write(content)
-        if exists(downloaded_fpath + '.download'):
-            logger.info('  Unpacking ' + name + '...')
-            unpack_tar(downloaded_fpath + '.download', final_dirpath, ext=ext)
-            logger.main_info('  Done')
-        else:
-            logger.main_info('  Failed downloading %s from %s!' % (name, download_path))
-            return False
+def download_unpack_compressed_tar(name, download_url, downloaded_fpath, final_dirpath, logger, ext='gz'):
+    if download_file(download_url, downloaded_fpath, name, move_file=False):
+        unpack_tar(downloaded_fpath + '.download', final_dirpath, ext=ext)
+        logger.main_info('  Done')
+    else:
+        logger.main_info('  Failed downloading %s from %s!' % (name, download_url))
+        return False
 
 
 def unpack_tar(fpath, dst_dirpath, ext='bz2'):
@@ -116,55 +87,29 @@ def compile_bedtools(logger, only_clean=False):
            compile_tool('BEDtools', bedtools_dirpath, [join('bin', 'bedtools')], only_clean=only_clean, logger=logger)
 
 
-def download_manta(logger, bed_fpath=None, only_clean=False):
-    global manta_dirpath
-    manta_dirpath = get_dir_for_download('manta' + manta_version, 'Manta', [config_manta_relpath], logger, only_clean=only_clean)
-    if not manta_dirpath:
+def download_gridss(logger, bed_fpath=None, only_clean=False):
+    global gridss_dirpath
+    gridss_dirpath = get_dir_for_download('gridss' + gridss_version, 'GRIDSS', [gridss_fname], logger, only_clean=only_clean)
+    if not gridss_dirpath:
         return False
 
-    manta_build_dirpath = join(manta_dirpath, 'build')
-    config_manta_fpath = get_manta_fpath()
-    if only_clean:
-        if os.path.isdir(manta_build_dirpath):
-            shutil.rmtree(manta_build_dirpath, ignore_errors=True)
-        return True
+    gridss_fpath = get_gridss_fpath()
 
-    if not qconfig.no_sv and bed_fpath is None and not isfile(config_manta_fpath):
-        if qconfig.platform_name == 'linux_64':
-            url = manta_linux_url
-            fpath = manta_ext_linux_fpath
-        elif qconfig.platform_name == 'macosx':
-            url = manta_osx_url
-            fpath = manta_ext_osx_fpath
+    if not qconfig.no_sv and bed_fpath is None and not isfile(gridss_fpath):
+        gridss_downloaded_fpath = join(gridss_dirpath, gridss_fname)
+        if not exists(gridss_dirpath):
+            os.makedirs(gridss_dirpath)
+        if isfile(gridss_external_fpath):
+            logger.info('Copying GRIDSS from ' + gridss_external_fpath)
+            shutil.copy(gridss_external_fpath, gridss_downloaded_fpath)
         else:
-            logger.warning('Manta is not available for your platform.')
-            return False
+            logger.main_info('  Downloading GRIDSS...')
+            download_file(gridss_url, gridss_downloaded_fpath, 'GRIDSS')
 
-        if not exists(manta_build_dirpath):
-            os.makedirs(manta_build_dirpath)
-        manta_downloaded_fpath = join(manta_build_dirpath, 'manta.tar.bz2')
-
-        if isfile(fpath):
-            logger.info('Copying manta from ' + fpath)
-            shutil.copy(fpath, manta_downloaded_fpath)
-            logger.info('Unpacking ' + manta_downloaded_fpath + ' into ' + manta_build_dirpath)
-            unpack_tar(manta_downloaded_fpath, manta_build_dirpath)
-        else:
-            failed_compilation_flag = join(manta_dirpath, 'make.failed')
-            if check_prev_compilation_failed('Manta', failed_compilation_flag):
-                print_manta_warning(logger)
-                return False
-
-            logger.main_info('  Downloading binary distribution of Manta...')
-            download_unpack_compressed_tar('Manta', url, manta_downloaded_fpath, manta_build_dirpath, logger)
-
-        manta_demo_dirpath = join(manta_build_dirpath, 'share', 'demo')
-        if os.path.isdir(manta_demo_dirpath):
-            shutil.rmtree(manta_demo_dirpath, ignore_errors=True)
-        if not isfile(config_manta_fpath):
-            logger.warning('Failed to download binary distribution from https://github.com/ablab/quast/external_tools/manta '
-                           'and unpack it into ' + join(manta_dirpath, 'build/'))
-            print_manta_warning(logger)
+        if not isfile(gridss_fpath):
+            logger.warning('Failed to download binary distribution from https://github.com/ablab/quast/external_tools/gridss '
+                           'and unpack it into ' + gridss_dirpath +
+                           '. QUAST SV module will be able to search trivial deletions only.')
             return False
     return True
 

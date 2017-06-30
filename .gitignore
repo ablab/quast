@@ -16,30 +16,30 @@ tc_tests/results/
 test/
 quast_test_output/
 
-quast_libs/MUMmer3.23-*/annotate
-quast_libs/MUMmer3.23-*/aux_bin/
-quast_libs/MUMmer3.23-*/combineMUMs
-quast_libs/MUMmer3.23-*/delta-filter
-quast_libs/MUMmer3.23-*/dnadiff
-quast_libs/MUMmer3.23-*/exact-tandems
-quast_libs/MUMmer3.23-*/gaps
-quast_libs/MUMmer3.23-*/mapview
-quast_libs/MUMmer3.23-*/mgaps
-quast_libs/MUMmer3.23-*/mummer
-quast_libs/MUMmer3.23-*/mummerplot
-quast_libs/MUMmer3.23-*/nucmer
-quast_libs/MUMmer3.23-*/nucmer2xfig
-quast_libs/MUMmer3.23-*/promer
-quast_libs/MUMmer3.23-*/repeat-match
-quast_libs/MUMmer3.23-*/run-mummer1
-quast_libs/MUMmer3.23-*/run-mummer3
-quast_libs/MUMmer3.23-*/show-aligns
-quast_libs/MUMmer3.23-*/show-coords
-quast_libs/MUMmer3.23-*/show-diff
-quast_libs/MUMmer3.23-*/show-snps
-quast_libs/MUMmer3.23-*/show-tiling
-quast_libs/MUMmer3.23-*/src/kurtz/libbasedir/libbase.a
-quast_libs/MUMmer3.23-*/src/kurtz/streesrc/libstree.a
+quast_libs/MUMmer/annotate
+quast_libs/MUMmer/aux_bin/
+quast_libs/MUMmer/combineMUMs
+quast_libs/MUMmer/delta-filter
+quast_libs/MUMmer/dnadiff
+quast_libs/MUMmer/exact-tandems
+quast_libs/MUMmer/gaps
+quast_libs/MUMmer/mapview
+quast_libs/MUMmer/mgaps
+quast_libs/MUMmer/mummer
+quast_libs/MUMmer/mummerplot
+quast_libs/MUMmer/nucmer
+quast_libs/MUMmer/nucmer2xfig
+quast_libs/MUMmer/promer
+quast_libs/MUMmer/repeat-match
+quast_libs/MUMmer/run-mummer1
+quast_libs/MUMmer/run-mummer3
+quast_libs/MUMmer/show-aligns
+quast_libs/MUMmer/show-coords
+quast_libs/MUMmer/show-diff
+quast_libs/MUMmer/show-snps
+quast_libs/MUMmer/show-tiling
+quast_libs/MUMmer/src/kurtz/libbasedir/libbase.a
+quast_libs/MUMmer/src/kurtz/streesrc/libstree.a
 
 make.log
 make.err
@@ -72,9 +72,6 @@ quast_libs/samtools/misc/wgsim
 
 quast_libs/bwa/bwa
 quast_libs/bwa/bwa.dSYM
-
-quast_libs/manta/build
-quast_libs/manta/make.*
 
 quast_libs/bowtie2/
 

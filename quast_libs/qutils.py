@@ -719,6 +719,16 @@ def get_path_to_program(program, dirpath=None):
     return None
 
 
+def check_java_version(version):
+    try:
+        p = subprocess.Popen(['java', '-version'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        stdout, stderr = p.communicate()
+        version_pattern = re.compile('java version "(\d\.\d+)')
+        return float(version_pattern.findall(stdout)[0]) >= version
+    except:
+        return False
+
+
 def is_non_empty_file(fpath):
     return fpath and os.path.exists(fpath) and os.path.getsize(fpath) > 10
 
@@ -951,18 +961,34 @@ def download_blast_binaries(logger=logger, filenames=None, only_clean=False):
     if not blast_dirpath:
         return False
 
+    required_files = [cmd for cmd in filenames if not get_blast_fpath(cmd)]
     if only_clean:
         if os.path.isdir(blast_dirpath):
             shutil.rmtree(blast_dirpath, ignore_errors=True)
         return True
 
     for i, cmd in enumerate(required_files):
-        return_code = download_blast_binary(cmd, logger=logger)
+        blast_fpath = download_blast_binary(cmd, logger=logger)
         logger.info()
-        if return_code != 0:
+        if not blast_fpath:
             return False
-        blast_fpath = get_blast_fpath(cmd)
         os.chmod(blast_fpath, os.stat(blast_fpath).st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+    return True
+
+
+def download_file(url, fpath, fname, move_file=True):
+    if not os.path.exists(fpath):
+        logger.info('Downloading %s...' % fname)
+        try:
+            urllib.URLopener().retrieve(url, fpath + '.download', show_progress)
+        except Exception:
+            logger.error(
+                'Failed downloading %s! The search for reference genomes cannot be performed. '
+                'Please install it and ensure it is in your PATH, then restart your command.' % fname)
+            return False
+        if move_file:
+            shutil.move(fpath + '.download', fpath)
+            logger.info('%s successfully downloaded!' % fname)
     return True
 
 
@@ -970,28 +996,20 @@ def download_blast_binary(blast_filename, logger=logger):
     if not os.path.isdir(blast_dirpath):
         os.makedirs(blast_dirpath)
 
-    blast_libs_fpath = os.path.join(blast_dirpath, blast_filename)
+    blast_binary_fpath = os.path.join(blast_dirpath, blast_filename)
     blast_external_fpath = os.path.join(blast_external_tools_dirpath, blast_filename)
     blast_dirpath_url = qconfig.GIT_ROOT_URL + relpath(blast_external_tools_dirpath, qconfig.QUAST_HOME)
-    if not os.path.exists(blast_libs_fpath):
+    if not os.path.exists(blast_binary_fpath):
         if os.path.isfile(blast_external_fpath):
             logger.info('Copying blast files from ' + blast_external_fpath)
             shutil.copy(blast_external_fpath, blast_dirpath)
         else:
-            blast_download = urllib.URLopener()
-            blast_webpath = os.path.join(blast_dirpath_url, blast_filename)
-            if not os.path.exists(blast_libs_fpath):
-                logger.info('Downloading %s...' % blast_filename)
-                try:
-                    blast_download.retrieve(blast_webpath, blast_libs_fpath + '.download', show_progress)
-                except Exception:
-                    logger.error(
-                        'Failed downloading %s! The search for reference genomes cannot be performed. '
-                        'Please install it and ensure it is in your PATH, then restart your command.' % blast_filename)
-                    return 1
-                shutil.move(blast_libs_fpath + '.download', blast_libs_fpath)
-                logger.info('%s successfully downloaded!' % blast_filename)
-    return 0
+            if not download_file(join(blast_dirpath_url, blast_filename), blast_binary_fpath, blast_filename):
+                logger.error(
+                    'Failed downloading %s! The search for reference genomes cannot be performed. '
+                    'Please install it and ensure it is in your PATH, then restart your command.' % blast_filename)
+                return None
+    return blast_binary_fpath
 
 
 def run_parallel(_fn, fn_args, n_jobs=None, filter_results=False):

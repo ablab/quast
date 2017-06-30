@@ -38,7 +38,7 @@ from quast_libs.glimmer import compile_glimmer
 from quast_libs.run_busco import download_augustus, download_all_db
 from quast_libs.search_references_meta import download_blast_binaries, download_blastdb
 from quast_libs.ca_utils.misc import compile_aligner, compile_gnuplot
-from quast_libs.ra_utils.misc import compile_reads_analyzer_tools, download_manta, compile_bwa, compile_bedtools
+from quast_libs.ra_utils.misc import compile_reads_analyzer_tools, compile_bwa, compile_bedtools, download_gridss
 
 name = 'quast'
 quast_package = qconfig.PACKAGE_NAME
@@ -74,7 +74,7 @@ if cmd_in(['clean', 'sdist']):
             shutil.rmtree('dist')
         if isdir(name + '.egg-info'):
             shutil.rmtree(name + '.egg-info')
-        download_manta(logger, only_clean=True)
+        download_gridss(logger, only_clean=True)
         download_blast_binaries(logger, only_clean=True)
         download_blastdb(logger, only_clean=True)
         if qconfig.platform_name != 'macosx':
@@ -168,9 +168,9 @@ if cmd_in(['install', 'develop', 'build', 'build_ext']):
     if not compile_reads_analyzer_tools(logger):
         modules_failed_to_install.append('Read analysis tools (affects -1/--reads1 and -2/--reads2 options)')
     if install_full:
-        logger.info('* Downloading Manta *')
-        if not download_manta(logger):
-            modules_failed_to_install.append('Manta (affects -1/--reads1 and -2/--reads2 options)')
+        logger.info('* Downloading GRIDSS *')
+        if not download_gridss(logger):
+            modules_failed_to_install.append('GRIDSS (affects -1/--reads1 and -2/--reads2 options)')
         logger.info('* Downloading BLAST *')
         if not download_blast_binaries(logger):
             modules_failed_to_install.append('BLAST (affects metaquast.py in without references mode and --find-conserved-genes option)')
@@ -199,7 +199,7 @@ bwa_files = [
     join('bwa', fp) for fp in os.listdir(join(quast_package, 'bwa'))
     if isfile(join(quast_package, 'bwa', fp)) and fp.startswith('bwa')]
 full_install_tools = (
-    find_package_files('manta') +
+    find_package_files('gridss') +
     find_package_files('blast') +
     [join(quast_package, 'busco', 'hmmsearch')]
 )

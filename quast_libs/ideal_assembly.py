@@ -14,6 +14,7 @@ from distutils import dir_util
 
 from quast_libs import fastaparser, qconfig, qutils, reporting, plotter
 from quast_libs.log import get_logger
+from quast_libs.qutils import splitext_for_fasta_file
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 
 
@@ -41,7 +42,7 @@ def prepare_config_spades(fpath, kmer, ref_fpath, tmp_dir):
                 config.write(line)
 
 
-def do(ref_fpath, output_dirpath, insert_size):
+def do(ref_fpath, original_ref_fpath, output_dirpath, insert_size):
     logger.print_timestamp()
     logger.main_info("Simulating Ideal Assembly...")
     if insert_size == 'auto':
@@ -52,6 +53,20 @@ def do(ref_fpath, output_dirpath, insert_size):
         logger.notice('  Current implementation cannot work with even insert sizes, '
                       'will use the closest odd value (%d)' % insert_size)
 
+    ref_basename, fasta_ext = splitext_for_fasta_file(os.path.basename(ref_fpath))
+    result_basename = '%s.%s.is%d.fasta' % (ref_basename, qconfig.ideal_assembly_basename, insert_size)
+    result_fpath = os.path.join(output_dirpath, result_basename)
+
+    original_ref_basename, fasta_ext = splitext_for_fasta_file(os.path.basename(original_ref_fpath))
+    prepared_ideal_assembly_basename = '%s.%s.is%d.fasta' % (original_ref_basename, qconfig.ideal_assembly_basename, insert_size)
+    ref_prepared_ideal_assembly = os.path.join(os.path.dirname(original_ref_fpath), prepared_ideal_assembly_basename)
+
+    if os.path.isfile(result_fpath) or os.path.isfile(ref_prepared_ideal_assembly):
+        already_done_fpath = result_fpath if os.path.isfile(result_fpath) else ref_prepared_ideal_assembly
+        logger.notice('  Will reuse already generated Ideal Assembly with insert size %d (%s)' %
+                      (insert_size, already_done_fpath))
+        return already_done_fpath
+
     base_aux_dir = os.path.join(qconfig.LIBS_LOCATION, 'ideal_assembly')
     binary_fpath = os.path.join(base_aux_dir, 'bin_' + qconfig.platform_name, 'spades')
     configs_dir = os.path.join(base_aux_dir, 'configs')
@@ -60,7 +75,6 @@ def do(ref_fpath, output_dirpath, insert_size):
         logger.warning('  Sorry, can\'t create Ideal Assembly on this platform, skipping...')
         return None
 
-    result_fpath = os.path.join(output_dirpath, qconfig.ideal_assembly_basename + '.fasta')
     log_fpath = os.path.join(output_dirpath, 'spades.log')
 
     tmp_dir = os.path.join(output_dirpath, 'tmp')
@@ -89,6 +103,8 @@ def do(ref_fpath, output_dirpath, insert_size):
 
     shutil.move(spades_output_fpath, result_fpath)
     logger.info('  ' + 'Ideal Assembly saved to ' + result_fpath)
+    logger.notice('You can copy it to ' + ref_prepared_ideal_assembly +
+                  ' and QUAST will reuse it in further runs against the same reference (' + original_ref_fpath + ')')
 
     if not qconfig.debug:
         shutil.rmtree(tmp_dir)

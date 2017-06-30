@@ -82,9 +82,11 @@ def main(args):
     if ref_fpath:
         logger.main_info()
         logger.main_info('Reference:')
+        original_ref_fpath = ref_fpath
         ref_fpath = qutils.correct_reference(ref_fpath, corrected_dirpath)
         if qconfig.ideal_assembly:
-            ideal_assembly_fpath = ideal_assembly.do(ref_fpath, os.path.join(output_dirpath, qconfig.ideal_assembly_basename),
+            ideal_assembly_fpath = ideal_assembly.do(ref_fpath, original_ref_fpath,
+                                                     os.path.join(output_dirpath, qconfig.ideal_assembly_basename),
                                                      qconfig.ideal_assembly_insert_size)
             if ideal_assembly_fpath is not None:
                 contigs_fpaths.insert(0, ideal_assembly_fpath)

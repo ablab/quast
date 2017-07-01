@@ -319,7 +319,7 @@ def align_reference(ref_fpath, output_dir):
     if not is_non_empty_file(uncovered_fpath):
         required_files.append(uncovered_fpath)
     if not is_non_empty_file(insert_size_fpath):
-        required_files.append(qconfig.reference_sam)
+        required_files.append(insert_size_fpath)
 
     temp_output_dir = join(output_dir, 'temp_output')
     if not isdir(temp_output_dir):
@@ -927,7 +927,7 @@ def print_uncovered_regions(raw_cov_fpath, uncovered_fpath, correct_chr_names):
     with open(uncovered_fpath, 'w') as out_f:
         for chrom, regions in uncovered_regions.items():
             for start, end in regions:
-                out_f.write('\t'.join([chrom, start, end]))
+                out_f.write('\t'.join([chrom, start, end]) + '\n')
 
 
 def get_correct_names_for_chroms(output_dirpath, fasta_fpath, sam_fpath, err_path, reads_fpaths, is_reference=False):

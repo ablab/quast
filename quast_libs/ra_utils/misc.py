@@ -17,7 +17,8 @@ from os.path import join, isfile, exists
 import shutil
 
 from quast_libs import qconfig
-from quast_libs.qutils import compile_tool, get_dir_for_download, relpath, get_path_to_program, download_file
+from quast_libs.qutils import compile_tool, get_dir_for_download, relpath, get_path_to_program, download_file, \
+    download_external_tool
 
 bwa_dirpath = join(qconfig.LIBS_LOCATION, 'bwa')
 bedtools_dirpath = join(qconfig.LIBS_LOCATION, 'bedtools')
@@ -89,27 +90,15 @@ def compile_bedtools(logger, only_clean=False):
 
 def download_gridss(logger, bed_fpath=None, only_clean=False):
     global gridss_dirpath
-    gridss_dirpath = get_dir_for_download('gridss' + gridss_version, 'GRIDSS', [gridss_fname], logger, only_clean=only_clean)
+    gridss_dirpath = get_dir_for_download('gridss', 'GRIDSS', [gridss_fname], logger, only_clean=only_clean)
     if not gridss_dirpath:
         return False
 
     gridss_fpath = get_gridss_fpath()
-
     if not qconfig.no_sv and bed_fpath is None and not isfile(gridss_fpath):
-        gridss_downloaded_fpath = join(gridss_dirpath, gridss_fname)
-        if not exists(gridss_dirpath):
-            os.makedirs(gridss_dirpath)
-        if isfile(gridss_external_fpath):
-            logger.info('Copying GRIDSS from ' + gridss_external_fpath)
-            shutil.copy(gridss_external_fpath, gridss_downloaded_fpath)
-        else:
-            logger.main_info('  Downloading GRIDSS...')
-            download_file(gridss_url, gridss_downloaded_fpath, 'GRIDSS')
-
-        if not isfile(gridss_fpath):
-            logger.warning('Failed to download binary distribution from https://github.com/ablab/quast/external_tools/gridss '
-                           'and unpack it into ' + gridss_dirpath +
-                           '. QUAST SV module will be able to search trivial deletions only.')
+        if not download_external_tool(gridss_fname, gridss_dirpath, 'gridss'):
+            logger.warning('Failed to download binary distribution from https://github.com/ablab/quast/external_tools/gridss. '
+                           'QUAST SV module will be able to search trivial deletions only.')
             return False
     return True
 

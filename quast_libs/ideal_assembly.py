@@ -14,7 +14,7 @@ from distutils import dir_util
 
 from quast_libs import fastaparser, qconfig, qutils
 from quast_libs.log import get_logger
-from quast_libs.qutils import splitext_for_fasta_file, is_non_empty_file, split_by_ns
+from quast_libs.qutils import splitext_for_fasta_file, is_non_empty_file, split_by_ns, download_external_tool
 
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 
@@ -85,12 +85,15 @@ def do(ref_fpath, original_ref_fpath, output_dirpath, insert_size, uncovered_fpa
                       (insert_size, already_done_fpath))
         return already_done_fpath
 
-    base_aux_dir = os.path.join(qconfig.LIBS_LOCATION, 'ideal_assembly')
-    binary_fpath = os.path.join(base_aux_dir, 'bin_' + qconfig.platform_name, 'spades')
-    configs_dir = os.path.join(base_aux_dir, 'configs')
-
-    if not os.path.isfile(binary_fpath):
+    if qconfig.platform_name == 'linux_32':
         logger.warning('  Sorry, can\'t create Ideal Assembly on this platform, skipping...')
+        return None
+
+    base_aux_dir = os.path.join(qconfig.LIBS_LOCATION, 'ideal_assembly')
+    configs_dir = os.path.join(base_aux_dir, 'configs')
+    binary_fpath = download_external_tool('spades', os.path.join(base_aux_dir, 'bin'), 'spades', platform_specific=True)
+    if not os.path.isfile(binary_fpath):
+        logger.warning('  Sorry, can\'t create Ideal Assembly, skipping...')
         return None
 
     log_fpath = os.path.join(output_dirpath, 'spades.log')

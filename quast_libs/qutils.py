@@ -14,7 +14,7 @@ import stat
 import sys
 import re
 from collections import defaultdict
-from os.path import basename, isfile, realpath, isdir
+from os.path import basename, isfile, isdir, exists
 
 try:
     from urllib2 import urlopen
@@ -31,7 +31,6 @@ MAX_CONTIG_NAME = 1021  # Nucmer's constraint
 MAX_CONTIG_NAME_GLIMMER = 298   # Glimmer's constraint
 
 external_tools_dirpath = os.path.join(qconfig.QUAST_HOME, 'external_tools')
-blast_external_tools_dirpath = os.path.join(external_tools_dirpath, 'blast', qconfig.platform_name)
 blast_dirpath = None
 
 
@@ -984,31 +983,44 @@ def download_file(url, fpath, fname, move_file=True):
             logger.error(
                 'Failed downloading %s! The search for reference genomes cannot be performed. '
                 'Please install it and ensure it is in your PATH, then restart your command.' % fname)
-            return False
+            return None
         if move_file:
             shutil.move(fpath + '.download', fpath)
             logger.info('%s successfully downloaded!' % fname)
-    return True
+    return fpath
 
 
 def download_blast_binary(blast_filename, logger=logger):
     if not os.path.isdir(blast_dirpath):
         os.makedirs(blast_dirpath)
 
-    blast_binary_fpath = os.path.join(blast_dirpath, blast_filename)
-    blast_external_fpath = os.path.join(blast_external_tools_dirpath, blast_filename)
-    blast_dirpath_url = qconfig.GIT_ROOT_URL + relpath(blast_external_tools_dirpath, qconfig.QUAST_HOME)
-    if not os.path.exists(blast_binary_fpath):
-        if os.path.isfile(blast_external_fpath):
-            logger.info('Copying blast files from ' + blast_external_fpath)
-            shutil.copy(blast_external_fpath, blast_dirpath)
-        else:
-            if not download_file(join(blast_dirpath_url, blast_filename), blast_binary_fpath, blast_filename):
-                logger.error(
-                    'Failed downloading %s! The search for reference genomes cannot be performed. '
-                    'Please install it and ensure it is in your PATH, then restart your command.' % blast_filename)
-                return None
+    blast_binary_fpath = download_external_tool(blast_filename, blast_dirpath, 'blast', platform_specific=True)
+    if not blast_binary_fpath:
+        logger.error(
+            'Failed downloading %s! The search for reference genomes cannot be performed. '
+            'Please install it and ensure it is in your PATH, then restart your command.' % blast_filename)
+        return None
     return blast_binary_fpath
+
+
+def download_external_tool(fname, dirpath, tool, platform_specific=False):
+    downloaded_fpath = join(dirpath, fname)
+    if os.path.exists(downloaded_fpath):
+        return downloaded_fpath
+
+    external_dirpath = join(external_tools_dirpath, tool)
+    if platform_specific:
+        external_dirpath = join(external_dirpath, qconfig.platform_name)
+    external_fpath = os.path.join(external_dirpath, fname)
+    url = join(qconfig.GIT_ROOT_URL + relpath(external_dirpath, qconfig.QUAST_HOME), fname)
+    if not exists(dirpath):
+        os.makedirs(dirpath)
+    if isfile(external_fpath):
+        logger.info('Copying ' + fname + ' from ' + external_fpath)
+        shutil.copy(external_fpath, downloaded_fpath)
+    else:
+        return download_file(url, downloaded_fpath, tool)
+    return downloaded_fpath
 
 
 def run_parallel(_fn, fn_args, n_jobs=None, filter_results=False):

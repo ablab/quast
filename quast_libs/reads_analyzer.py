@@ -330,7 +330,7 @@ def align_reference(ref_fpath, output_dir):
     correct_chr_names, sam_fpath, bam_fpath = align_single_file(ref_fpath, temp_output_dir, log_path, err_path,
                                                                 qconfig.max_threads, sam_fpath=qconfig.reference_sam,
                                                                 bam_fpath=qconfig.reference_bam, required_files=required_files,
-                                                                is_reference=True, is_sam_required=True)
+                                                                is_reference=True, alignment_only=True)
     qconfig.reference_sam = sam_fpath
     qconfig.reference_bam = bam_fpath
     insert_size = calculate_insert_size(sam_fpath, insert_size_fpath)
@@ -338,10 +338,11 @@ def align_reference(ref_fpath, output_dir):
         logger.info('  Failed calculating insert size.')
     else:
         qconfig.ideal_assembly_insert_size = insert_size
+
     if not required_files:
         return uncovered_fpath
     if not sam_fpath:
-        logger.info('  Failed calculating insert size.')
+        logger.info('  Failed detecting uncovered regions.')
         return None
 
     bam_mapped_fpath = get_safe_fpath(temp_output_dir, add_suffix(bam_fpath, 'mapped'))
@@ -508,14 +509,14 @@ def run_processing_reads(contigs_fpaths, main_ref_fpath, meta_ref_fpaths, ref_la
 
 
 def align_single_file(fpath, output_dirpath, log_path, err_path, max_threads, sam_fpath=None, bam_fpath=None,
-                      index=None, required_files=None, is_reference=False, is_sam_required=False):
+                      index=None, required_files=None, is_reference=False, alignment_only=False):
     filename = qutils.name_from_fpath(fpath)
     if not sam_fpath and bam_fpath:
         sam_fpath = get_safe_fpath(output_dirpath, bam_fpath[:-4] + '.sam')
     else:
         sam_fpath = sam_fpath or join(output_dirpath, filename + '.sam')
     bam_fpath = bam_fpath or get_safe_fpath(output_dirpath, sam_fpath[:-4] + '.bam')
-    if is_sam_required or (is_reference and required_files and any(f.endswith('bed') for f in required_files)):
+    if alignment_only or (is_reference and required_files and any(f.endswith('bed') for f in required_files)):
         required_files.append(sam_fpath)
 
     stats_fpath = get_safe_fpath(dirname(output_dirpath), filename + '.stat')
@@ -606,14 +607,15 @@ def align_single_file(fpath, output_dirpath, log_path, err_path, max_threads, sa
                                 stdout=open(bam_fpath, 'w'), stderr=open(err_path, 'a'), logger=logger)
 
     qutils.assert_file_exists(bam_fpath, 'bam file')
-    qutils.call_subprocess([sambamba_fpath('sambamba'), 'flagstat', '-t', str(max_threads), bam_fpath],
-                            stdout=open(stats_fpath, 'w'), stderr=open(err_path, 'a'))
-    analyse_coverage(output_dirpath, fpath, correct_chr_names, bam_fpath, stats_fpath, err_path, logger)
-    calc_lap_score(reads_fpaths, sam_fpath, index, index_str, output_dirpath, fpath, filename, err_path)
-    if index is not None:
-        logger.info('  ' + index_str + 'Analysis is finished.')
-    else:
-        logger.info('  Analysis for reference is finished.')
+    if not alignment_only:
+        qutils.call_subprocess([sambamba_fpath('sambamba'), 'flagstat', '-t', str(max_threads), bam_fpath],
+                                stdout=open(stats_fpath, 'w'), stderr=open(err_path, 'a'))
+        analyse_coverage(output_dirpath, fpath, correct_chr_names, bam_fpath, stats_fpath, err_path, logger)
+        calc_lap_score(reads_fpaths, sam_fpath, index, index_str, output_dirpath, fpath, filename, err_path)
+        if index is not None:
+            logger.info('  ' + index_str + 'Analysis is finished.')
+        else:
+            logger.info('  Analysis for reference is finished.')
     return correct_chr_names, sam_fpath, bam_fpath
 
 

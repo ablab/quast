@@ -12,7 +12,7 @@ from os.path import join, basename
 import shutil
 from distutils import dir_util
 
-from quast_libs import fastaparser, qconfig, qutils
+from quast_libs import fastaparser, qconfig, qutils, reads_analyzer
 from quast_libs.log import get_logger
 from quast_libs.qutils import splitext_for_fasta_file, is_non_empty_file, split_by_ns, download_external_tool
 
@@ -61,7 +61,7 @@ def prepare_config_spades(fpath, kmer, ref_fpath, tmp_dir):
                 config.write(line)
 
 
-def do(ref_fpath, original_ref_fpath, output_dirpath, insert_size, uncovered_fpath):
+def do(ref_fpath, original_ref_fpath, output_dirpath, insert_size, reads_fpaths):
     logger.print_timestamp()
     logger.main_info("Simulating Ideal Assembly...")
     if insert_size == 'auto' or not insert_size:
@@ -103,6 +103,10 @@ def do(ref_fpath, original_ref_fpath, output_dirpath, insert_size, uncovered_fpa
         shutil.rmtree(tmp_dir)
     os.makedirs(tmp_dir)
 
+    uncovered_fpath = None
+    if reads_fpaths or qconfig.reference_sam or qconfig.reference_sam:
+        uncovered_fpath = reads_analyzer.align_reference(ref_fpath,
+                                                         os.path.join(output_dirpath, qconfig.reads_stats_dirname))
     ref_fpath = preprocess_reference(ref_fpath, tmp_dir, uncovered_fpath)
 
     dst_configs = os.path.join(tmp_dir, 'configs')
@@ -114,6 +118,7 @@ def do(ref_fpath, original_ref_fpath, output_dirpath, insert_size, uncovered_fpa
 
     log_file = open(log_fpath, 'w')
     spades_output_fpath = os.path.join(tmp_dir, 'K%d' % insert_size, 'ideal_assembly.fasta')
+    logger.info('  ' + 'Running SPAdes with K=' + str(insert_size) + '...')
     return_code = qutils.call_subprocess(
         [binary_fpath, main_config], stdout=log_file, stderr=log_file, indent='    ')
     if return_code != 0 or not os.path.isfile(spades_output_fpath):

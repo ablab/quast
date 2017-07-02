@@ -86,12 +86,9 @@ def main(args):
         original_ref_fpath = ref_fpath
         ref_fpath = qutils.correct_reference(ref_fpath, corrected_dirpath)
         if qconfig.ideal_assembly:
-            uncovered_fpath = None
-            if reads_fpaths or qconfig.reference_sam or qconfig.reference_sam:
-                uncovered_fpath = reads_analyzer.align_reference(ref_fpath, os.path.join(output_dirpath, qconfig.reads_stats_dirname))
             ideal_assembly_fpath = ideal_assembly.do(ref_fpath, original_ref_fpath,
                                                      os.path.join(output_dirpath, qconfig.ideal_assembly_basename),
-                                                     qconfig.ideal_assembly_insert_size, uncovered_fpath)
+                                                     qconfig.ideal_assembly_insert_size, reads_fpaths)
             if ideal_assembly_fpath is not None:
                 contigs_fpaths.insert(0, ideal_assembly_fpath)
                 labels.insert(0, 'IDEAL ASSEMBLY')

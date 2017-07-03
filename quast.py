@@ -16,7 +16,7 @@ from quast_libs import qconfig
 qconfig.check_python_version()
 
 from quast_libs import qutils, reads_analyzer, run_barrnap, plotter_data, unique_kmers, ideal_assembly
-from quast_libs.qutils import cleanup, check_dirpath, get_reads_fpaths
+from quast_libs.qutils import cleanup, check_dirpath, check_reads_fpaths
 from quast_libs.options_parser import parse_options
 
 from quast_libs.log import get_logger
@@ -78,7 +78,7 @@ def main(args):
         os.mkdir(corrected_dirpath)
 
     qconfig.set_max_threads(logger)
-    reads_fpaths = get_reads_fpaths(logger)
+    check_reads_fpaths(logger)
     # PROCESSING REFERENCE
     if ref_fpath:
         logger.main_info()
@@ -88,7 +88,7 @@ def main(args):
         if qconfig.ideal_assembly:
             ideal_assembly_fpath = ideal_assembly.do(ref_fpath, original_ref_fpath,
                                                      os.path.join(output_dirpath, qconfig.ideal_assembly_basename),
-                                                     qconfig.ideal_assembly_insert_size, reads_fpaths)
+                                                     qconfig.ideal_assembly_insert_size)
             if ideal_assembly_fpath is not None:
                 contigs_fpaths.insert(0, ideal_assembly_fpath)
                 labels.insert(0, 'IDEAL ASSEMBLY')
@@ -109,7 +109,7 @@ def main(args):
 
     cov_fpath = qconfig.cov_fpath
     physical_cov_fpath = qconfig.phys_cov_fpath
-    if reads_fpaths or qconfig.reference_sam or qconfig.reference_sam or qconfig.sam_fpaths or qconfig.bam_fpaths:
+    if qconfig.reads_fpaths or qconfig.reference_sam or qconfig.reference_sam or qconfig.sam_fpaths or qconfig.bam_fpaths:
         bed_fpath, cov_fpath, physical_cov_fpath = reads_analyzer.do(ref_fpath, contigs_fpaths,
                                                                      os.path.join(output_dirpath, qconfig.reads_stats_dirname),
                                                                      external_logger=logger)

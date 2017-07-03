@@ -565,16 +565,24 @@ def align_single_file(fpath, output_dirpath, log_path, err_path, max_threads, sa
 
         bam_fpaths = []
         bwa_cmd = bwa_fpath('bwa') + ' mem -t ' + str(max_threads)
-        paired_library = qconfig.forward_reads + ' ' + qconfig.reverse_reads if qconfig.forward_reads else qconfig.interlaced_reads
-        need_merge = paired_library and qconfig.unpaired_reads
-        if paired_library:
-            cmd = bwa_cmd + (' -p ' if qconfig.interlaced_reads else '') + ' ' + fpath + ' ' + paired_library
-            output_fpath = sam_fpath if not need_merge else add_suffix(sam_fpath, 'paired')
+        need_merge = False
+        if len(qconfig.reads_fpaths) > 2:
+            need_merge = True
+        if len(qconfig.reads_fpaths) > 1 and (qconfig.unpaired_reads or qconfig.interlaced_reads):
+            need_merge = True
+        for i, (read1, read2) in enumerate(zip(qconfig.forward_reads, qconfig.reverse_reads)):
+            cmd = bwa_cmd + ' ' + fpath + ' ' + read1 + ' ' + read2
+            output_fpath = sam_fpath if not need_merge else add_suffix(sam_fpath, 'paired' + str(i + 1))
             run_bwa(output_fpath, cmd, bam_fpaths, log_path, err_path, need_merge=need_merge)
-        if qconfig.unpaired_reads:
-            cmd = bwa_cmd + ' ' + fpath + ' ' + qconfig.unpaired_reads
-            output_fpath = sam_fpath if not need_merge else add_suffix(sam_fpath, 'single')
+        for i, interlaced_reads in enumerate(qconfig.interlaced_reads):
+            cmd = bwa_cmd + ' -p ' + fpath + ' ' + interlaced_reads
+            output_fpath = sam_fpath if not need_merge else add_suffix(sam_fpath, 'interlaced' + str(i + 1))
             run_bwa(output_fpath, cmd, bam_fpaths, log_path, err_path, need_merge=need_merge)
+        for i, single_reads in enumerate(qconfig.unpaired_reads):
+            cmd = bwa_cmd + ' ' + fpath + ' ' + single_reads
+            output_fpath = sam_fpath if not need_merge else add_suffix(sam_fpath, 'single' + str(i + 1))
+            run_bwa(output_fpath, cmd, bam_fpaths, log_path, err_path, need_merge=need_merge)
+
         if len(bam_fpaths) > 1:
             qutils.call_subprocess([sambamba_fpath('sambamba'), 'merge', '-t', str(max_threads), bam_fpath] + bam_fpaths,
                                    stderr=open(err_path, 'a'), logger=logger)
@@ -1028,8 +1036,8 @@ def do(ref_fpath, contigs_fpaths, output_dir, meta_ref_fpaths=None, external_log
         logger.main_info('Failed reads analysis')
         return None, None, None
     if not qconfig.no_check:
-        if qconfig.forward_reads and not paired_reads_names_are_equal([qconfig.forward_reads, qconfig.reverse_reads],
-                                                                      logger):
+        if qconfig.forward_reads and not \
+                all([paired_reads_names_are_equal([read1, read2], logger) for read1, read2 in zip(qconfig.forward_reads, qconfig.reverse_reads)]):
             logger.error('  Read names are discordant, skipping reads analysis!')
             return None, None, None
 

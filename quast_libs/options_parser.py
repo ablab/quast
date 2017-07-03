@@ -22,8 +22,8 @@ if not isdir(test_data_dir) and isdir(test_data_dir_basename):  # special case: 
     test_data_dir = test_data_dir_basename
 
 test_reference           = join(test_data_dir, 'reference.fasta.gz')
-test_forward_reads       = join(test_data_dir, 'reads1.fastq.gz')
-test_reverse_reads       = join(test_data_dir, 'reads2.fastq.gz')
+test_forward_reads       = [join(test_data_dir, 'reads1.fastq.gz')]
+test_reverse_reads       = [join(test_data_dir, 'reads2.fastq.gz')]
 test_genes               = [join(test_data_dir, 'genes.gff')]
 test_operons             = [join(test_data_dir, 'operons.gff')]
 test_contigs_fpaths      = [join(test_data_dir, 'contigs_1.fasta'),
@@ -292,19 +292,23 @@ def parse_options(logger, quast_args, is_metaquast=False):
          ),
         (['-1', '--reads1'], dict(
              dest='forward_reads',
-             type='file')
+             type='file',
+             action='extend')
          ),
         (['-2', '--reads2'], dict(
              dest='reverse_reads',
-             type='file')
+             type='file',
+             action='extend')
          ),
         (['--12'], dict(
              dest='interlaced_reads',
-             type='file')
+             type='file',
+             action='extend')
          ),
         (['--single'], dict(
              dest='unpaired_reads',
-             type='file')
+             type='file',
+             action='extend')
          ),
         (['--ref-sam'], dict(
             dest='reference_sam',

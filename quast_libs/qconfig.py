@@ -227,11 +227,11 @@ bam_fpaths = None
 reference_sam = None
 reference_bam = None
 bed = None
-reads_fpaths = None
-forward_reads = None
-reverse_reads = None
-interlaced_reads = None
-unpaired_reads = None
+reads_fpaths = []
+forward_reads = []
+reverse_reads = []
+interlaced_reads = []
+unpaired_reads = []
 references_txt = None
 json_output_dirpath = None
 

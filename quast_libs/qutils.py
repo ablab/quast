@@ -821,6 +821,16 @@ def is_python2():
     return sys.version_info[0] < 3
 
 
+def fix_configure_timestamps(dirpath):
+    try:
+        os.utime(join(dirpath, 'aclocal.m4'), None)
+        os.utime(join(dirpath, 'Makefile.in'), None)
+        os.utime(join(dirpath, 'config.h.in'), None)
+        os.utime(join(dirpath, 'configure'), None)
+    except:
+        pass
+
+
 def compile_tool(name, dirpath, requirements, just_notice=False, logger=logger, only_clean=False, flag_suffix=None,
                  make_cmd=None, configure_args=None):
     make_logs_basepath = join(dirpath, 'make')

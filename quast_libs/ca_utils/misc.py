@@ -22,7 +22,8 @@ except ImportError:
    from quast_libs.site_packages.ordered_dict import OrderedDict
 
 from quast_libs import qconfig, qutils
-from quast_libs.qutils import compile_tool, val_to_str, check_prev_compilation_failed, write_failed_compilation_flag
+from quast_libs.qutils import compile_tool, val_to_str, check_prev_compilation_failed, write_failed_compilation_flag, \
+    fix_configure_timestamps
 
 contig_aligner_dirpath = join(qconfig.LIBS_LOCATION, 'MUMmer')
 ref_labels_by_chromosomes = OrderedDict()
@@ -46,6 +47,7 @@ def compile_aligner(logger, only_clean=False):
         logger.error("Compilation of contig aligner software was unsuccessful! QUAST functionality will be limited.")
         return False
 
+    fix_configure_timestamps(contig_aligner_dirpath)
     success_compilation = compile_tool('MUMmer', contig_aligner_dirpath, default_requirements,
                                        just_notice=False, logger=logger, only_clean=only_clean,
                                        configure_args=['--prefix=' + contig_aligner_dirpath])

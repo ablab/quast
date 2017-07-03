@@ -15,8 +15,7 @@ from site import addsitedir
 from quast_libs import qconfig, reporting, qutils
 from quast_libs.fastaparser import read_fasta
 from quast_libs.qutils import safe_rm, check_prev_compilation_failed, \
-    call_subprocess, write_failed_compilation_flag
-
+    call_subprocess, write_failed_compilation_flag, fix_configure_timestamps
 
 KMERS_LEN = 101
 MIN_MARKERS = 10
@@ -49,10 +48,7 @@ def compile_jellyfish(logger, only_clean=False):
         # making
         logger.main_info('Compiling Jellyfish (details are in ' + make_logs_basepath +
                          '.log and make.err)')
-        os.utime(join(jellyfish_src_dirpath, 'aclocal.m4'), None)
-        os.utime(join(jellyfish_src_dirpath, 'Makefile.in'), None)
-        os.utime(join(jellyfish_src_dirpath, 'config.h.in'), None)
-        os.utime(join(jellyfish_src_dirpath, 'configure'), None)
+        fix_configure_timestamps(jellyfish_src_dirpath)
         prev_dir = os.getcwd()
         os.chdir(jellyfish_src_dirpath)
         safe_rm(join(jellyfish_src_dirpath, 'swig', 'python', '__init__.pyc'))  ## in case if jellyfish was compiled with different python version

@@ -925,7 +925,8 @@ def check_reads_fpaths(logger):
     if not qconfig.reads_fpaths:
         return None
     if len(qconfig.forward_reads) != len(qconfig.reverse_reads):
-        logger.error('For paired-end library use exactly ONE file with forward reads and ONE file with the reverse ones (-1 <file_name> -2 <file_name>).\n'
+        logger.error('For each paired-end library use exactly ONE file with forward reads and ONE file with the reverse ones'
+                     '(-1 <file_name> -2 <file_name>).\n'
                      'To specify the file with interlaced forward and reverse reads you can use --12 option.\n'
                      'Use -s option to specify unpaired (single-read) library.\n', exit_with_code=2)
 

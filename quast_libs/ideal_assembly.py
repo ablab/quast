@@ -8,7 +8,7 @@
 from __future__ import with_statement
 import os
 from collections import defaultdict
-from os.path import join, basename
+from os.path import join, basename, dirname
 import shutil
 from distutils import dir_util
 
@@ -105,8 +105,7 @@ def do(ref_fpath, original_ref_fpath, output_dirpath, insert_size):
 
     uncovered_fpath = None
     if qconfig.reads_fpaths or qconfig.reference_sam or qconfig.reference_sam:
-        uncovered_fpath = reads_analyzer.align_reference(ref_fpath,
-                                                         os.path.join(output_dirpath, qconfig.reads_stats_dirname))
+        uncovered_fpath = reads_analyzer.align_reference(ref_fpath, join(dirname(output_dirpath), qconfig.reads_stats_dirname))
     ref_fpath = preprocess_reference(ref_fpath, tmp_dir, uncovered_fpath)
 
     dst_configs = os.path.join(tmp_dir, 'configs')

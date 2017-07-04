@@ -271,10 +271,7 @@ def do(reference, contigs_fpaths, is_cyclic, output_dir, old_contigs_fpaths, bed
     num_nf_errors = logger._num_nf_errors
     create_nucmer_output_dir(output_dir)
     n_jobs = min(len(contigs_fpaths), qconfig.max_threads)
-    if qconfig.memory_efficient:
-        threads = 1
-    else:
-        threads = max(1, qconfig.max_threads // n_jobs)
+    threads = max(1, qconfig.max_threads // n_jobs)
     if is_python2():
         from joblib import Parallel, delayed
     else:

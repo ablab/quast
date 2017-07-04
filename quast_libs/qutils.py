@@ -128,7 +128,7 @@ def correct_fasta(original_fpath, corrected_fpath, min_contig,
 
     fastaparser.write_fasta(corrected_fpath, modified_fasta_entries)
 
-    if is_reference:
+    if is_reference and qconfig.memory_efficient:
         ref_len = sum(len(chr_seq) for (chr_name, chr_seq) in modified_fasta_entries)
         if ref_len > qconfig.MAX_REFERENCE_FILE_LENGTH:
             qconfig.splitted_ref = []  # important for MetaQUAST which runs QUAST multiple times
@@ -137,20 +137,14 @@ def correct_fasta(original_fpath, corrected_fpath, min_contig,
             if os.path.exists(split_ref_dirpath):
                 shutil.rmtree(split_ref_dirpath, ignore_errors=True)
             os.makedirs(split_ref_dirpath)
-            max_len = min(ref_len/qconfig.max_threads, qconfig.MAX_REFERENCE_LENGTH)
             cur_part_len = 0
             cur_part_num = 1
             cur_part_fpath = os.path.join(split_ref_dirpath, "part_%d" % cur_part_num) + fasta_ext
 
             for (chr_name, chr_seq) in modified_fasta_entries:
                 cur_chr_len = len(chr_seq)
-                if cur_chr_len > qconfig.MAX_REFERENCE_LENGTH:
-                    logger.warning("Skipping chromosome " + chr_name + " because its length is greater than " +
-                            str(qconfig.MAX_REFERENCE_LENGTH) + " (Nucmer's constraint).")
-                    continue
-
                 cur_part_len += cur_chr_len
-                if cur_part_len > max_len and cur_part_len != cur_chr_len:
+                if cur_part_len > qconfig.MAX_REFERENCE_FILE_LENGTH and cur_part_len != cur_chr_len:
                     qconfig.splitted_ref.append(cur_part_fpath)
                     cur_part_len = cur_chr_len
                     cur_part_num += 1

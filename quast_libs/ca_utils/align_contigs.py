@@ -112,12 +112,8 @@ def align_contigs(nucmer_fpath, ref_fpath, contigs_fpath, old_contigs_fpath, ind
             if parallel_by_chr and not qconfig.memory_efficient:
                 n_jobs = min(qconfig.max_threads, len(prefixes_and_chr_files))
                 threads = max(1, threads // n_jobs)
-            else:
-                n_jobs = 1
-                threads = 1
-            if n_jobs > 1:
-                logger.info('    ' + 'Aligning to different chromosomes in parallel'
-                                     ' (' + str(n_jobs) + ' threads)')
+                if n_jobs > 1:
+                    logger.info('    ' + 'Aligning to different chromosomes in parallel (' + str(n_jobs) + ' threads)')
 
             # processing each chromosome separately (if we can)
             if is_python2():
@@ -125,6 +121,9 @@ def align_contigs(nucmer_fpath, ref_fpath, contigs_fpath, old_contigs_fpath, ind
             else:
                 from joblib3 import Parallel, delayed
             if not qconfig.memory_efficient:
+                if not parallel_by_chr:
+                    n_jobs = 1
+                    threads = 1
                 nucmer_exit_codes = Parallel(n_jobs=n_jobs)(delayed(run_nucmer)(
                     prefix, chr_file, contigs_fpath, log_out_fpath, log_err_fpath + "_part%d" % (i + 1), index, threads)
                     for i, (prefix, chr_file) in enumerate(prefixes_and_chr_files))

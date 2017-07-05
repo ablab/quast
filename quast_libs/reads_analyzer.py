@@ -811,7 +811,7 @@ def bam_to_bed(output_dirpath, name, bam_fpath, err_path, logger, bedpe=False):
                                stdout=open(raw_bed_fpath, 'w'), stderr=open(err_path, 'a'), logger=logger)
 
     sorted_bed_fpath = join(output_dirpath, name + '.sorted.bed')
-    qutils.call_subprocess([bedtools_fpath('bedtools'), 'sort', '-i', raw_bed_fpath],
+    qutils.call_subprocess(['sort', '-k1,1', '-k2,2n', raw_bed_fpath],
                            stdout=open(sorted_bed_fpath, 'w'), stderr=open(err_path, 'a'), logger=logger)
     return sorted_bed_fpath
 
@@ -1039,11 +1039,6 @@ def do(ref_fpath, contigs_fpaths, output_dir, meta_ref_fpaths=None, external_log
     if not compile_reads_analyzer_tools(logger):
         logger.main_info('Failed reads analysis')
         return None, None, None
-    if not qconfig.no_check:
-        if qconfig.forward_reads and not \
-                all([paired_reads_names_are_equal([read1, read2], logger) for read1, read2 in zip(qconfig.forward_reads, qconfig.reverse_reads)]):
-            logger.error('  Read names are discordant, skipping reads analysis!')
-            return None, None, None
 
     if not isdir(output_dir):
         os.makedirs(output_dir)
@@ -1051,6 +1046,12 @@ def do(ref_fpath, contigs_fpaths, output_dir, meta_ref_fpaths=None, external_log
     temp_output_dir = join(output_dir, 'temp_output')
     if not isdir(temp_output_dir):
         os.mkdir(temp_output_dir)
+    if not qconfig.no_check:
+        if qconfig.forward_reads and not \
+                all([paired_reads_names_are_equal([read1, read2], temp_output_dir, logger)
+                     for read1, read2 in zip(qconfig.forward_reads, qconfig.reverse_reads)]):
+            logger.error('  Read names are discordant, skipping reads analysis!')
+            return None, None, None
 
     log_path = join(output_dir, 'reads_stats.log')
     err_path = join(output_dir, 'reads_stats.err')

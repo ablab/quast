@@ -349,7 +349,7 @@ def align_reference(ref_fpath, output_dir):
     bam_sorted_fpath = get_safe_fpath(temp_output_dir, add_suffix(bam_mapped_fpath, 'sorted'))
 
     if is_non_empty_file(bam_sorted_fpath):
-        logger.info('  Using existing sorted SAM-file: ' + bam_sorted_fpath)
+        logger.info('  Using existing sorted BAM-file: ' + bam_sorted_fpath)
     else:
         qutils.call_subprocess([sambamba_fpath('sambamba'), 'view', '-t', str(qconfig.max_threads), '-h', '-f', 'bam',
                                 '-F', 'not unmapped', bam_fpath],
@@ -432,11 +432,12 @@ def run_processing_reads(contigs_fpaths, main_ref_fpath, meta_ref_fpaths, ref_la
     if is_non_empty_file(sam_sorted_fpath):
         logger.info('  Using existing sorted SAM-file: ' + sam_sorted_fpath)
     else:
-        qutils.call_subprocess([sambamba_fpath('sambamba'), 'view', '-t', str(qconfig.max_threads), '-h', '-f', 'bam',
-                                '-F', 'not unmapped', bam_fpath],
-                               stdout=open(bam_mapped_fpath, 'w'), stderr=open(err_path, 'a'), logger=logger)
-        qutils.call_subprocess([sambamba_fpath('sambamba'), 'sort', '-t', str(qconfig.max_threads), '-o', bam_sorted_fpath,
-                                bam_mapped_fpath], stderr=open(err_path, 'a'), logger=logger)
+        if not is_non_empty_file(bam_sorted_fpath):
+            qutils.call_subprocess([sambamba_fpath('sambamba'), 'view', '-t', str(qconfig.max_threads), '-h', '-f', 'bam',
+                                    '-F', 'not unmapped', bam_fpath],
+                                   stdout=open(bam_mapped_fpath, 'w'), stderr=open(err_path, 'a'), logger=logger)
+            qutils.call_subprocess([sambamba_fpath('sambamba'), 'sort', '-t', str(qconfig.max_threads), '-o', bam_sorted_fpath,
+                                    bam_mapped_fpath], stderr=open(err_path, 'a'), logger=logger)
         qutils.call_subprocess([sambamba_fpath('sambamba'), 'view', '-t', str(qconfig.max_threads), '-h', bam_sorted_fpath],
                                stdout=open(sam_sorted_fpath, 'w'), stderr=open(err_path, 'a'), logger=logger)
     if qconfig.create_icarus_html and (not is_non_empty_file(cov_fpath) or not is_non_empty_file(physical_cov_fpath)):
@@ -528,14 +529,15 @@ def align_single_file(fpath, output_dirpath, log_path, err_path, max_threads, sa
     if not can_reuse and not reads_fpaths:
         return None, None, None
     if correct_chr_names and (not required_files or all(isfile(fpath) for fpath in required_files)):
-        if isfile(stats_fpath):
-            logger.info('  ' + index_str + 'Using existing flag statistics file ' + stats_fpath)
-        elif isfile(bam_fpath):
-            qutils.call_subprocess([sambamba_fpath('sambamba'), 'flagstat', '-t', str(max_threads), bam_fpath],
-                                   stdout=open(stats_fpath, 'w'), stderr=open(err_path, 'a'))
-            analyse_coverage(output_dirpath, fpath, correct_chr_names, bam_fpath, stats_fpath, err_path, logger)
-        calc_lap_score(reads_fpaths, sam_fpath, index, index_str, output_dirpath, fpath, filename, err_path)
-        if isfile(stats_fpath):
+        if not alignment_only:
+            if isfile(stats_fpath):
+                logger.info('  ' + index_str + 'Using existing flag statistics file ' + stats_fpath)
+            elif isfile(bam_fpath):
+                qutils.call_subprocess([sambamba_fpath('sambamba'), 'flagstat', '-t', str(max_threads), bam_fpath],
+                                       stdout=open(stats_fpath, 'w'), stderr=open(err_path, 'a'))
+                analyse_coverage(output_dirpath, fpath, correct_chr_names, bam_fpath, stats_fpath, err_path, logger)
+            calc_lap_score(reads_fpaths, sam_fpath, index, index_str, output_dirpath, fpath, filename, err_path)
+        if isfile(stats_fpath) or alignment_only:
             return correct_chr_names, sam_fpath, bam_fpath
 
     logger.info('  ' + index_str + 'Pre-processing reads...')
@@ -870,7 +872,7 @@ def proceed_cov_file(raw_cov_fpath, cov_fpath, correct_chr_names):
             for line in in_coverage:
                 fs = list(line.split())
                 name = fs[0]
-                depth = int(fs[-1])
+                depth = int(float(fs[-1]))
                 if name not in used_chromosomes:
                     chr_index += 1
                     used_chromosomes[name] = str(chr_index)
@@ -919,6 +921,8 @@ def calculate_insert_size(sam_fpath, insert_size_fpath):
             return None
         stddev_is = sqrt(sum([(insert_size - mean_is) ** 2 for insert_size in insert_sizes]) / len(insert_sizes))
         insert_size = int(mean_is + stddev_is)
+        insert_size = max(qconfig.ideal_assembly_min_IS, insert_size)
+        insert_size = min(qconfig.ideal_assembly_max_IS, insert_size)
         with open(insert_size_fpath, 'w') as out_f:
             out_f.write(str(insert_size))
         return insert_size
@@ -930,7 +934,7 @@ def print_uncovered_regions(raw_cov_fpath, uncovered_fpath, correct_chr_names):
         for line in in_coverage:
             fs = list(line.split())
             name = fs[0]
-            depth = int(fs[-1])
+            depth = int(float(fs[-1]))
             correct_name = correct_chr_names[name] if correct_chr_names else name
             if len(fs) > 3 and depth == 0:
                 uncovered_regions[correct_name].append((fs[1], fs[2]))

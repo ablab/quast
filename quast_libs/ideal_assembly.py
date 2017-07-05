@@ -61,9 +61,14 @@ def prepare_config_spades(fpath, kmer, ref_fpath, tmp_dir):
                 config.write(line)
 
 
-def do(ref_fpath, original_ref_fpath, output_dirpath, insert_size):
+def do(ref_fpath, original_ref_fpath, output_dirpath):
     logger.print_timestamp()
     logger.main_info("Simulating Ideal Assembly...")
+
+    uncovered_fpath = None
+    if qconfig.reads_fpaths or qconfig.reference_sam or qconfig.reference_sam:
+        uncovered_fpath = reads_analyzer.align_reference(ref_fpath, join(dirname(output_dirpath), qconfig.reads_stats_dirname))
+    insert_size = qconfig.ideal_assembly_insert_size
     if insert_size == 'auto' or not insert_size:
         insert_size = qconfig.ideal_assembly_default_IS
     if insert_size % 2 == 0:
@@ -103,9 +108,6 @@ def do(ref_fpath, original_ref_fpath, output_dirpath, insert_size):
         shutil.rmtree(tmp_dir)
     os.makedirs(tmp_dir)
 
-    uncovered_fpath = None
-    if qconfig.reads_fpaths or qconfig.reference_sam or qconfig.reference_sam:
-        uncovered_fpath = reads_analyzer.align_reference(ref_fpath, join(dirname(output_dirpath), qconfig.reads_stats_dirname))
     ref_fpath = preprocess_reference(ref_fpath, tmp_dir, uncovered_fpath)
 
     dst_configs = os.path.join(tmp_dir, 'configs')

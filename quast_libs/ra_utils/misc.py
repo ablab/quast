@@ -12,7 +12,7 @@ try:
     from urllib2 import urlopen
 except:
     from urllib.request import urlopen
-from os.path import join, isfile, exists
+from os.path import join, isfile, exists, basename
 
 import shutil
 
@@ -109,7 +109,34 @@ def compile_reads_analyzer_tools(logger, only_clean=False):
     return False
 
 
-def paired_reads_names_are_equal(reads_fpaths, logger):
+def correct_paired_reads_names(fpath, name_ending, output_dir):
+    name, ext = os.path.splitext(fpath)
+    try:
+        if ext in ['.gz', '.gzip']:
+            handler = gzip.open(fpath, mode='rt')
+            corrected_fpath = join(output_dir, basename(name))
+        else:
+            handler = open(fpath)
+            corrected_fpath = join(output_dir, basename(fpath))
+    except IOError:
+        return False
+    first_read_name = None
+    with handler as f:
+        with open(corrected_fpath, 'w') as out_f:
+            for i, line in enumerate(f):
+                if i % 4 == 0:
+                    full_read_name = line.split()[0] + name_ending
+                    if not first_read_name:
+                        first_read_name = full_read_name
+                    out_f.write(full_read_name + '\n')
+                elif i % 2 == 0:
+                    out_f.write('+\n')
+                else:
+                    out_f.write(line)
+    return corrected_fpath, first_read_name
+
+
+def paired_reads_names_are_equal(reads_fpaths, temp_output_dir, logger):
     first_read_names = []
 
     for idx, fpath in enumerate(reads_fpaths):  # Note: will work properly only with exactly two files
@@ -119,24 +146,30 @@ def paired_reads_names_are_equal(reads_fpaths, logger):
             reads_type = 'reverse'
 
         _, ext = os.path.splitext(fpath)
-        handler = None
         try:
             if ext in ['.gz', '.gzip']:
                 handler = gzip.open(fpath, mode='rt')
             else:
                 handler = open(fpath)
         except IOError:
-            logger.notice('Cannot check equivalence of paired reads names, BWA will fail if reads are discordant')
+            logger.notice('Cannot check equivalence of paired reads names, BWA may fail if reads are discordant')
             return True
         first_line = handler.readline()
+        handler.close()
         full_read_name = first_line.strip().split()[0]
         if len(full_read_name) < 3 or not full_read_name.endswith(name_ending):
-            logger.warning('Improper read names in ' + fpath + ' (' + reads_type + ' reads)! '
+            logger.notice('Improper read names in ' + fpath + ' (' + reads_type + ' reads)! '
                            'Names should end with /1 (for forward reads) or /2 (for reverse reads) '
-                           'but ' + full_read_name + ' was found!')
-            return False
+                           'but ' + full_read_name + ' was found!\nQUAST will attempt to fix read names.')
+            corrected_fpath, full_read_name = correct_paired_reads_names(fpath, name_ending, temp_output_dir)
+            if not full_read_name:
+                logger.warning('Failed correcting read names. ')
+                return False
+            if reads_type == 'forward':
+                qconfig.forward_reads[qconfig.forward_reads.index(fpath)] = corrected_fpath
+            elif reads_type == 'reverse':
+                qconfig.reverse_reads[qconfig.reverse_reads.index(fpath)] = corrected_fpath
         first_read_names.append(full_read_name[1:-2])  # truncate trailing /1 or /2 and @/> prefix (Fastq/Fasta)
-        handler.close()
     if len(first_read_names) != 2:  # should not happen actually
         logger.warning('Something bad happened and we failed to check paired reads names!')
         return False

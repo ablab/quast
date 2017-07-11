@@ -220,7 +220,7 @@ def search_trivial_deletions(temp_output_dir, sam_sorted_fpath, ref_files, ref_l
                                     deletions.append(cur_deletion)
                                 cur_deletion = QuastDeletion(mapping.ref).set_prev_bad(position=cur_deletion.next_bad_end)
                             # continue region AFTER 0-covered fragment (old one or new/another one -- see "if" above)
-                            if mapping.mapq >= Mapping.MIN_MAP_QUALITY:
+                            elif mapping.mapq >= Mapping.MIN_MAP_QUALITY:
                                 cur_deletion.set_next_good(mapping)
                                 if cur_deletion.is_valid():
                                     deletions.append(cur_deletion)
@@ -301,7 +301,7 @@ def align_reference(ref_fpath, output_dir):
         qutils.call_subprocess([sambamba_fpath('sambamba'), 'view', '-t', str(qconfig.max_threads), '-h', '-f', 'bam',
                                 '-F', 'not unmapped', bam_fpath],
                                stdout=open(bam_mapped_fpath, 'w'), stderr=open(err_path, 'a'), logger=logger)
-        sort_bam(bam_mapped_fpath, bam_sorted_fpath, err_path, logger, sort_rule='-n')
+        sort_bam(bam_mapped_fpath, bam_sorted_fpath, err_path, logger)
     if not is_non_empty_file(uncovered_fpath):
         get_coverage(temp_output_dir, ref_fpath, ref_name, bam_fpath, bam_sorted_fpath, log_path, err_path,
                      cov_fpath, None, correct_chr_names, uncovered_fpath=uncovered_fpath, create_cov_files=False)
@@ -326,8 +326,10 @@ def run_processing_reads(contigs_fpaths, main_ref_fpath, meta_ref_fpaths, ref_la
         elif is_non_empty_file(bed_fpath):
             logger.info('  Using existing BED-file: ' + bed_fpath)
         elif not qconfig.forward_reads and not qconfig.interlaced_reads:
-            logger.info('  Will not search Structural Variations (needs paired-end reads)')
-            bed_fpath = None
+            if not qconfig.reference_sam and not qconfig.reference_bam:
+                logger.info('  Will not search Structural Variations (needs paired-end reads)')
+                bed_fpath = None
+                qconfig.no_sv = True
         if qconfig.create_icarus_html:
             if is_non_empty_file(cov_fpath):
                 is_correct_file = check_cov_file(cov_fpath)
@@ -382,7 +384,7 @@ def run_processing_reads(contigs_fpaths, main_ref_fpath, meta_ref_fpaths, ref_la
             qutils.call_subprocess([sambamba_fpath('sambamba'), 'view', '-t', str(qconfig.max_threads), '-h', '-f', 'bam',
                                     '-F', 'not unmapped', bam_fpath],
                                    stdout=open(bam_mapped_fpath, 'w'), stderr=open(err_path, 'a'), logger=logger)
-            sort_bam(bam_mapped_fpath, bam_sorted_fpath, err_path, logger, sort_rule='-n')
+            sort_bam(bam_mapped_fpath, bam_sorted_fpath, err_path, logger)
         qutils.call_subprocess([sambamba_fpath('sambamba'), 'view', '-t', str(qconfig.max_threads), '-h', bam_sorted_fpath],
                                stdout=open(sam_sorted_fpath, 'w'), stderr=open(err_path, 'a'), logger=logger)
     if qconfig.create_icarus_html and (not is_non_empty_file(cov_fpath) or not is_non_empty_file(physical_cov_fpath)):
@@ -565,9 +567,12 @@ def align_single_file(fpath, output_dirpath, log_path, err_path, max_threads, sa
 
     qutils.assert_file_exists(bam_fpath, 'bam file')
     if not alignment_only:
-        qutils.call_subprocess([sambamba_fpath('sambamba'), 'flagstat', '-t', str(max_threads), bam_fpath],
-                                stdout=open(stats_fpath, 'w'), stderr=open(err_path, 'a'))
-        analyse_coverage(output_dirpath, fpath, correct_chr_names, bam_fpath, stats_fpath, err_path, logger)
+        if isfile(stats_fpath):
+            logger.info('  ' + index_str + 'Using existing flag statistics file ' + stats_fpath)
+        elif isfile(bam_fpath):
+            qutils.call_subprocess([sambamba_fpath('sambamba'), 'flagstat', '-t', str(max_threads), bam_fpath],
+                                    stdout=open(stats_fpath, 'w'), stderr=open(err_path, 'a'))
+            analyse_coverage(output_dirpath, fpath, correct_chr_names, bam_fpath, stats_fpath, err_path, logger)
         calc_lap_score(reads_fpaths, sam_fpath, index, index_str, output_dirpath, fpath, filename, err_path)
         if index is not None:
             logger.info('  ' + index_str + 'Analysis is finished.')

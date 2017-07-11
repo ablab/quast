@@ -66,10 +66,11 @@ def do(html_fpath, output_dirpath, combined_output_dirpath, output_dirpath_per_r
             os.mkdir(os.path.join(output_dirpath, ext))
     for metric in metrics:
         if not isinstance(metric, tuple):
-            summary_txt_fpath = os.path.join(output_dirpath, 'TXT', metric.replace(' ', '_') + '.txt')
-            summary_tex_fpath = os.path.join(output_dirpath, 'TEX', metric.replace(' ', '_') + '.tex')
-            summary_tsv_fpath = os.path.join(output_dirpath, 'TSV', metric.replace(' ', '_') + '.tsv')
-            summary_plot_fpath = os.path.join(output_dirpath, plots_dirname, metric.replace(' ', '_'))
+            metric_fname = metric.replace(' (%)', '').replace('#', 'num').replace('>=', 'ge').replace(' ', '_').replace("'", "")
+            summary_txt_fpath = os.path.join(output_dirpath, 'TXT', metric_fname + '.txt')
+            summary_tex_fpath = os.path.join(output_dirpath, 'TEX', metric_fname + '.tex')
+            summary_tsv_fpath = os.path.join(output_dirpath, 'TSV', metric_fname + '.tsv')
+            summary_plot_fname = os.path.join(output_dirpath, plots_dirname, metric_fname)
             results, all_rows, cur_ref_names = \
                 get_results_for_metric(ref_names, metric, contigs_num, labels, output_dirpath_per_ref, qconfig.transposed_report_prefix + '.tsv')
             if not results or all(not value for result in results for value in result):
@@ -103,7 +104,7 @@ def do(html_fpath, output_dirpath, combined_output_dirpath, output_dirpath_per_r
                 elif metric == reporting.Fields.LARGALIGN:
                     y_label = 'Alignment length'
                 plotter.draw_meta_summary_plot(html_fpath, output_dirpath, labels, cur_ref_names, results,
-                                               summary_plot_fpath, title=metric, reverse=reverse, yaxis_title=y_label,
+                                               summary_plot_fname, title=metric, reverse=reverse, yaxis_title=y_label,
                                                print_all_refs=True, logger=logger)
                 if metric == reporting.Fields.MISASSEMBL:
                     mis_results = []

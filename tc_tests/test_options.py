@@ -17,5 +17,5 @@ check_report_files(name, ['report.tsv',
                           'basic_stats/Nx_plot.png'])
 
 assert_metric(name, 'Total length (>= 10 bp)', ['1000', '760'], 'report.tsv')
-assert_metric(name, '# predicted genes (>= 100 bp)', ['1', '1'], 'report.tsv')
+assert_metric(name, '# predicted genes (>= 100 bp)', ['1 + 0 part', '1 + 0 part'], 'report.tsv')
 assert_metric(name, 'Genome fraction (%)', ['100.000', '76.000'], 'report.tsv')

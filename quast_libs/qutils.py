@@ -543,6 +543,9 @@ def remove_reports(output_dirpath):
     plots_fpath = os.path.join(output_dirpath, qconfig.plots_fname)
     if os.path.isfile(plots_fpath):
         os.remove(plots_fpath)
+    html_fpath = os.path.join(output_dirpath, qconfig.report_prefix + '.html')
+    if os.path.isfile(html_fpath):
+        os.remove(html_fpath)
     html_report_aux_dir = os.path.join(output_dirpath, qconfig.html_aux_dir)
     if isdir(html_report_aux_dir):
         shutil.rmtree(html_report_aux_dir)

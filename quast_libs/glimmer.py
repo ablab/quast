@@ -86,19 +86,20 @@ def glimmerHMM(tool_dir, fasta_fpath, out_fpath, gene_lengths, err_path, tmp_dir
     out_gff_path = merge_gffs(gffs, out_gff_fpath)
     unique, total = set(), 0
     genes = []
-    cnt = [0] * len(gene_lengths)
     for contig, gene_id, start, end, strand in parse_gff(out_gff_path):
         total += 1
         if strand == '+':
-            gene_seq = contigs[contig][start:end + 1]
+            gene_seq = contigs[contig][start - 1:end]
         else:
-            gene_seq = rev_comp(contigs[contig][start:end + 1])
+            gene_seq = rev_comp(contigs[contig][start - 1:end])
         if gene_seq not in unique:
             unique.add(gene_seq)
-        genes.append(Gene(contig=contig, start=start, end=end, strand=strand, seq=gene_seq))
-        for idx, gene_length in enumerate(gene_lengths):
-            cnt[idx] += end - start > gene_length
+        gene = Gene(contig=contig, start=start, end=end, strand=strand, seq=gene_seq)
+        gene.is_full = gene.start > 1 and gene.end < len(contigs[contig])
+        genes.append(gene)
 
+    full_cnt = [sum([gene.end - gene.start >= threshold for gene in genes if gene.is_full]) for threshold in gene_lengths]
+    partial_cnt = [sum([gene.end - gene.start >= threshold for gene in genes if not gene.is_full]) for threshold in gene_lengths]
     if OUTPUT_FASTA:
         out_fasta_fpath = out_fpath + '_genes.fasta'
         add_genes_to_fasta(genes, out_fasta_fpath)
@@ -106,7 +107,7 @@ def glimmerHMM(tool_dir, fasta_fpath, out_fpath, gene_lengths, err_path, tmp_dir
         shutil.rmtree(base_dir)
 
     #return out_gff_path, out_fasta_path, len(unique), total, cnt
-    return out_gff_path, genes, len(unique), total, cnt
+    return out_gff_path, genes, len(unique), total, full_cnt, partial_cnt
 
 
 def predict_genes(index, contigs_fpath, gene_lengths, out_dirpath, tool_dirpath, tmp_dirpath):
@@ -121,14 +122,14 @@ def predict_genes(index, contigs_fpath, gene_lengths, out_dirpath, tool_dirpath,
     #out_gff_path, out_fasta_path, unique, total, cnt = glimmerHMM(tool_dir,
     #    fasta_path, out_path, gene_lengths, err_path)
 
-    out_gff_path, genes, unique, total, cnt = glimmerHMM(tool_dirpath,
+    out_gff_path, genes, unique, total, full_genes, partial_genes = glimmerHMM(tool_dirpath,
         contigs_fpath, out_fpath, gene_lengths, err_fpath, tmp_dirpath, index)
 
     if out_gff_path:
         logger.info('  ' + qutils.index_to_str(index) + '  Genes = ' + str(unique) + ' unique, ' + str(total) + ' total')
         logger.info('  ' + qutils.index_to_str(index) + '  Predicted genes (GFF): ' + out_gff_path)
 
-    return genes, unique, cnt
+    return genes, unique, full_genes, partial_genes
 
 
 def compile_glimmer(logger, only_clean=False):
@@ -189,12 +190,13 @@ def do(contigs_fpaths, gene_lengths, out_dirpath):
     for i, contigs_fpath in enumerate(contigs_fpaths):
         report = reporting.get(contigs_fpath)
         label = qutils.label_from_fpath(contigs_fpath)
-        genes_by_labels[label], unique, cnt = results[i]
+        genes_by_labels[label], unique, full_genes, partial_genes = results[i]
         if unique is not None:
             report.add_field(reporting.Fields.PREDICTED_GENES_UNIQUE, unique)
-        if cnt is not None:
-            report.add_field(reporting.Fields.PREDICTED_GENES, cnt)
-        if unique is None and cnt is None:
+        if full_genes is not None:
+            genes = ['%s + %s part' % (full_cnt, partial_cnt) for full_cnt, partial_cnt in zip(full_genes, partial_genes)]
+            report.add_field(reporting.Fields.PREDICTED_GENES, genes)
+        if unique is None and full_genes is None:
             logger.error(
                 'Glimmer failed running Glimmer for %s. ' + ('Run with the --debug option'
                 ' to see the command line.' if not qconfig.debug else '') % label)

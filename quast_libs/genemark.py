@@ -13,7 +13,7 @@ import tempfile
 
 from quast_libs import reporting, qconfig, qutils
 from quast_libs.ca_utils.misc import open_gzipsafe
-from quast_libs.fastaparser import write_fasta
+from quast_libs.fastaparser import write_fasta, get_chr_lengths_from_fastafile
 from quast_libs.genes_parser import Gene
 
 from quast_libs.log import get_logger
@@ -237,10 +237,14 @@ def predict_genes(index, contigs_fpath, gene_lengths, out_dirpath, tool_dirpath,
     err_fpath = os.path.join(out_dirpath, corr_assembly_label + '_genemark.stderr')
 
     genes = gmhmm_p_function(tool_dirpath, contigs_fpath, err_fpath, index, tmp_dirpath, num_threads)
+    contig_lengths = get_chr_lengths_from_fastafile(contigs_fpath)
+    for gene in genes:
+        gene.is_full = gene.start > 1 and gene.end < contig_lengths[gene.contig]
 
     if not genes:
         unique_count = None
-        count = None  # [None] * len(gene_lengths)
+        full_cnt = None
+        partial_cnt = None
     else:
         tool_name = "genemark"
         out_gff_fpath = os.path.join(out_dirpath, corr_assembly_label + '_' + tool_name + '_genes.gff' + ('.gz' if not qconfig.no_gzip else ''))
@@ -249,7 +253,10 @@ def predict_genes(index, contigs_fpath, gene_lengths, out_dirpath, tool_dirpath,
             out_fasta_fpath = os.path.join(out_dirpath, corr_assembly_label + '_' + tool_name + '_genes.fasta')
             add_genes_to_fasta(genes, out_fasta_fpath)
 
-        count = [sum([gene.end - gene.start > x for gene in genes]) for x in gene_lengths]
+        full_cnt = [sum([gene.end - gene.start >= threshold for gene in genes if gene.is_full])
+                    for threshold in gene_lengths]
+        partial_cnt = [sum([gene.end - gene.start >= threshold for gene in genes if not gene.is_full])
+                       for threshold in gene_lengths]
         gene_ids = [gene.seq if gene.seq else gene.name for gene in genes]
         unique_count = len(set(gene_ids))
         total_count = len(genes)
@@ -257,7 +264,7 @@ def predict_genes(index, contigs_fpath, gene_lengths, out_dirpath, tool_dirpath,
         logger.info('  ' + qutils.index_to_str(index) + '  Genes = ' + str(unique_count) + ' unique, ' + str(total_count) + ' total')
         logger.info('  ' + qutils.index_to_str(index) + '  Predicted genes (GFF): ' + out_gff_fpath)
 
-    return genes, unique_count, count
+    return genes, unique_count, full_cnt, partial_cnt
 
 
 def do(fasta_fpaths, gene_lengths, out_dirpath, prokaryote, meta):
@@ -316,12 +323,13 @@ def do(fasta_fpaths, gene_lengths, out_dirpath, prokaryote, meta):
         for i, fasta_path in enumerate(fasta_fpaths):
             report = reporting.get(fasta_path)
             label = qutils.label_from_fpath(fasta_path)
-            genes_by_labels[label], unique_count, count = results[i]
+            genes_by_labels[label], unique_count, full_genes, partial_genes = results[i]
             if unique_count is not None:
                 report.add_field(reporting.Fields.PREDICTED_GENES_UNIQUE, unique_count)
-            if count is not None:
-                report.add_field(reporting.Fields.PREDICTED_GENES, count)
-            if unique_count is None and count is None:
+            if full_genes is not None:
+                genes = ['%s + %s part' % (full_cnt, partial_cnt) for full_cnt, partial_cnt in zip(full_genes, partial_genes)]
+                report.add_field(reporting.Fields.PREDICTED_GENES, genes)
+            if unique_count is None and full_genes is None:
                 logger.error('  ' + qutils.index_to_str(i) +
                      'Failed predicting genes in ' + label + '. ' +
                      ('File may be too small for GeneMark-ES. Try to use GeneMarkS instead (remove --eukaryote option).'

@@ -236,7 +236,7 @@ class ParseException(Exception):
 
 class Gene():
     def __init__(self, id='', seqname='', start=None, end=None,
-                 number=None, name='', chromosome=None, contig=None, strand=None, seq=None, protein=None):
+                 number=None, name='', chromosome=None, contig=None, strand=None, seq=None, protein=None, is_full=None):
         self.id = id
         self.seqname = seqname
         self.start = start
@@ -249,4 +249,5 @@ class Gene():
         self.seq = seq
         self.protein = protein
         self.attributes = dict()
+        self.is_full = is_full
 

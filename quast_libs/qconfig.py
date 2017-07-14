@@ -9,13 +9,14 @@ import datetime
 import os
 import platform
 import sys
+from distutils.version import LooseVersion
 
 QUAST_HOME = os.path.abspath(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 PACKAGE_NAME = 'quast_libs'
 LIBS_LOCATION = os.path.join(QUAST_HOME, PACKAGE_NAME)
 GIT_ROOT_URL = 'https://raw.githubusercontent.com/ablab/quast/master/'
 
-SUPPORTED_PYTHON_VERSIONS = ['2.5', '2.6', '2.7', '3.3', '3.4', '3.5']
+SUPPORTED_PYTHON_VERSIONS = ['2.5+', '3.3+']  # major.minor format only, close ('-') and open ('+') ranges allowed
 
 LOGGER_DEFAULT_NAME = 'quast'
 LOGGER_META_NAME = 'metaquast'
@@ -236,10 +237,31 @@ json_output_dirpath = None
 
 
 def check_python_version():
-    if sys.version[0:3] not in SUPPORTED_PYTHON_VERSIONS:
-        sys.stderr.write("ERROR! Python version " + sys.version[0:3] + " is not supported!\n" +\
-                         "Supported versions are " + ", ".join(SUPPORTED_PYTHON_VERSIONS) + "\n")
-        sys.exit(1)
+    def __next_version(version):
+        components = version.split('.')
+        for i in reversed(range(len(components))):
+            if components[i].isdigit():
+                components[i] = str(int(components[i]) + 1)
+                break
+        return '.'.join(components)
+
+    current_version = sys.version.split()[0]
+    supported_versions_msg = []
+    for supported_versions in SUPPORTED_PYTHON_VERSIONS:
+        major = supported_versions[0]
+        if '-' in supported_versions:  # range
+            min_inc, max_inc = supported_versions.split('-')
+        elif supported_versions.endswith('+'):  # half open range
+            min_inc, max_inc = supported_versions[:-1], major
+        else:  # exact version
+            min_inc = max_inc = supported_versions
+        max_exc = __next_version(max_inc)
+        supported_versions_msg.append("Python%s: %s" % (major, supported_versions.replace('+', " and higher")))
+        if LooseVersion(min_inc) <= LooseVersion(current_version) < LooseVersion(max_exc):
+            return True
+    sys.stderr.write("ERROR! Python version " + current_version + " is not supported!\n" +
+                     "Supported versions are " + ", ".join(supported_versions_msg) + "\n")
+    sys.exit(1)
 
 
 def set_max_threads(logger):

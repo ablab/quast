@@ -153,7 +153,7 @@ def parse_meta_references(option, opt_str, value, parser, logger):
 
 def wrong_test_option(logger, msg, is_metaquast):
     logger.error(msg)
-    qconfig.usage(meta=is_metaquast)
+    qconfig.usage(meta=is_metaquast, stream=sys.stderr)
     sys.exit(2)
 
 
@@ -548,8 +548,8 @@ def parse_options(logger, quast_args, is_metaquast=False):
         qconfig.test = True
 
     if not contigs_fpaths:
-        logger.error("You should specify at least one file with contigs!\n")
-        qconfig.usage(meta=is_metaquast)
+        logger.error("You should specify at least one file with contigs!\n", to_stderr=True)
+        qconfig.usage(meta=is_metaquast, stream=sys.stderr)
         sys.exit(2)
 
     for c_fpath in contigs_fpaths:

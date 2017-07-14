@@ -111,8 +111,8 @@ def main(args):
                   'Please, put QUAST in a different directory, then try again.\n', exit_code=3)
 
     if not args:
-        qconfig.usage(meta=True)
-        sys.exit(0)
+        qconfig.usage(meta=True, stream=sys.stderr)
+        sys.exit(1)
 
     metaquast_path = [os.path.realpath(__file__)]
     quast_py_args, contigs_fpaths = parse_options(logger, metaquast_path + args, is_metaquast=True)

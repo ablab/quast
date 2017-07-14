@@ -33,8 +33,8 @@ def main(args):
                   'Please, put QUAST in a different directory, then try again.\n', exit_code=3)
 
     if not args:
-        qconfig.usage()
-        sys.exit(0)
+        qconfig.usage(stream=sys.stderr)
+        sys.exit(1)
 
     try:
         import imp

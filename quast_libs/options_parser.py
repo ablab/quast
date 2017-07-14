@@ -177,7 +177,7 @@ def check_sam_bam_files(contigs_fpaths, sam_fpaths, bam_fpaths, logger):
 
 def wrong_test_option(logger, msg, is_metaquast):
     logger.error(msg)
-    qconfig.usage(meta=is_metaquast)
+    qconfig.usage(meta=is_metaquast, stream=sys.stderr)
     sys.exit(2)
 
 
@@ -666,8 +666,8 @@ def parse_options(logger, quast_args, is_metaquast=False):
             sys.exit(2)
 
     if not contigs_fpaths:
-        logger.error("You should specify at least one file with contigs!\n")
-        qconfig.usage(meta=is_metaquast)
+        logger.error("You should specify at least one file with contigs!\n", to_stderr=True)
+        qconfig.usage(meta=is_metaquast, stream=sys.stderr)
         sys.exit(2)
 
     for c_fpath in contigs_fpaths:

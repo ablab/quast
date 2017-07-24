@@ -203,12 +203,12 @@ Ghodsi, M., Hill, C. M., Astrovskaya, I., Lin, H., Sommer, D. D., Koren, S., & P
 De novo likelihood-based measures for comparing genome assemblies.
 BMC research notes 6 (2013): 334.
 
-12. QUAST uses Jellyfish for unique k-mers counting.
-For more details about Jellyfish please refer to
-http://www.genome.umd.edu/jellyfish.html website and to the following paper:
+12. QUAST uses KMC for unique k-mers counting.
+For more details about KMC please refer to
+http://sun.aei.polsl.pl/kmc website and to the following paper:
 
-Guillaume Marcais and Carl Kingsford, A fast, lock-free approach for efficient parallel counting of occurrences of k-mers.
-Bioinformatics (2011) 27(6): 764-770 (first published online January 7, 2011) doi:10.1093/bioinformatics/btr011
+Kokot, M., Długosz, M., Deorowicz, S., KMC 3: counting and manipulating k-mer statistics.
+Bioinformatics (2017). doi: 10.1093/bioinformatics/btx304()
 
 13. QUAST uses Barrnap for ribosomal RNA genes prediction.
 For more details about Barrnap please refer to

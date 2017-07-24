@@ -659,6 +659,17 @@ def call_subprocess(args, stdin=None, stdout=None, stderr=None,
     return return_code
 
 
+def get_total_memory():
+    if qconfig.platform_name == 'linux_64':
+        with open('/proc/meminfo', 'r') as mem:
+            for line in mem:
+                line = line.split()
+                if str(line[0]) == 'MemTotal:':
+                    total_mem = int(line[1]) / 1024 / 1024
+                    return total_mem
+    return 2
+
+
 def get_chr_len_fpath(ref_fpath, correct_chr_names=None):
     chr_len_fpath = ref_fpath + '.fai'
     raw_chr_names = dict((raw_name, correct_name) for correct_name, raw_name in correct_chr_names.items()) \

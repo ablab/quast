@@ -132,11 +132,11 @@ def align_and_analyze(is_cyclic, index, contigs_fpath, output_dirpath, ref_fpath
 
     # Loading the reference sequences
     log_out_f.write('Loading reference...\n') # TODO: move up
-    references = {}
+    ref_lens = {}
     ref_features = {}
     for name, seq in fastaparser.read_fasta(ref_fpath):
         name = name.split()[0]  # no spaces in reference header
-        references[name] = seq
+        ref_lens[name] = len(seq)
         log_out_f.write('\tLoaded [%s]\n' % name)
 
     #Loading the SNP calls
@@ -169,17 +169,15 @@ def align_and_analyze(is_cyclic, index, contigs_fpath, output_dirpath, ref_fpath
 
     # Loading the regions (if any)
     regions = {}
-    ref_lens = {}
     total_reg_len = 0
     total_regions = 0
     # # TODO: gff
     # log_out_f.write('Loading regions...\n')
     # log_out_f.write('\tNo regions given, using whole reference.\n')
-    for name, seq in references.items():
-        regions.setdefault(name, []).append([1, len(seq)])
-        ref_lens[name] = len(seq)
+    for name, seq_len in ref_lens.items():
+        regions.setdefault(name, []).append([1, seq_len])
         total_regions += 1
-        total_reg_len += ref_lens[name]
+        total_reg_len += seq_len
     log_out_f.write('\tTotal Regions: %d\n' % total_regions)
     log_out_f.write('\tTotal Region Length: %d\n' % total_reg_len)
 

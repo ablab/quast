@@ -530,13 +530,12 @@ def align_single_file(fpath, output_dirpath, log_path, err_path, max_threads, sa
             run_bwa(output_fpath, cmd, bam_fpaths, err_path, need_merge=need_merge)
 
         if len(bam_fpaths) > 1:
-            qutils.call_subprocess([sambamba_fpath('sambamba'), 'merge', '-t', str(max_threads), bam_fpath] + bam_fpaths,
+            merged_bam_fpath = add_suffix(bam_fpath, 'merged')
+            qutils.call_subprocess([sambamba_fpath('sambamba'), 'merge', '-t', str(max_threads), merged_bam_fpath] + bam_fpaths,
                                    stderr=open(err_path, 'a'), logger=logger)
-            dedup_bam_fpath = add_suffix(bam_fpath, 'dedup')
             qutils.call_subprocess([sambamba_fpath('sambamba'), 'markdup', '-r', '-t', str(max_threads), '--tmpdir',
-                                    output_dirpath, bam_fpath, dedup_bam_fpath],
+                                    output_dirpath, merged_bam_fpath, bam_fpath],
                                    stderr=open(err_path, 'a'), logger=logger)
-            bam_fpath = dedup_bam_fpath
             qutils.call_subprocess([sambamba_fpath('sambamba'), 'view', '-t', str(max_threads), '-h', bam_fpath],
                                    stdout=open(sam_fpath, 'w'), stderr=open(err_path, 'a'), logger=logger)
         elif len(bam_fpaths) == 1:

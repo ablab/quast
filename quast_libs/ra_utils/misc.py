@@ -20,8 +20,7 @@ from os.path import join, isfile, basename, dirname, getsize
 from quast_libs import qconfig, qutils
 from quast_libs.fastaparser import get_chr_lengths_from_fastafile
 from quast_libs.qutils import compile_tool, get_dir_for_download, relpath, get_path_to_program, download_file, \
-    download_external_tool, is_non_empty_file, correct_name
-
+    download_external_tool, is_non_empty_file, correct_name, get_total_memory
 
 bwa_dirpath = join(qconfig.LIBS_LOCATION, 'bwa')
 bedtools_dirpath = join(qconfig.LIBS_LOCATION, 'bedtools')
@@ -266,7 +265,7 @@ def clean_read_names(sam_fpath, correct_sam_fpath):
 def sort_bam(bam_fpath, sorted_bam_fpath, err_path, logger, threads=None, sort_rule=None):
     if not threads:
         threads = qconfig.max_threads
-    mem = '%dGB' % max(2, get_total_memory() // 4)
+    mem = '%dGB' % min(100, max(2, get_total_memory() // 4))
     cmd = [sambamba_fpath('sambamba'), 'sort', '-t', str(threads), '--tmpdir', dirname(sorted_bam_fpath), '-m', mem,
            '-o', sorted_bam_fpath, bam_fpath]
     if sort_rule:
@@ -280,17 +279,6 @@ def bwa_index(ref_fpath, err_path, logger):
         cmd += ['-a', 'bwtsw']
     if not is_non_empty_file(ref_fpath + '.bwt'):
         qutils.call_subprocess(cmd, stdout=open(err_path, 'a'), stderr=open(err_path, 'a'), logger=logger)
-
-
-def get_total_memory():
-    if qconfig.platform_name == 'linux_64':
-        with open('/proc/meminfo', 'r') as mem:
-            for line in mem:
-                line = line.split()
-                if str(line[0]) == 'MemTotal:':
-                    total_mem = int(line[1]) / 1024 / 1024
-                    return total_mem
-    return 2
 
 
 def get_gridss_memory():

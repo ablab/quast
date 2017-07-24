@@ -83,7 +83,7 @@ ideal_assembly = False
 ideal_assembly_insert_size = 'auto'
 ideal_assembly_default_IS = 255
 ideal_assembly_min_IS = 63
-ideal_assembly_max_IS = 16383
+ideal_assembly_max_IS = 1023
 
 # print in stdout only main information
 silent = False

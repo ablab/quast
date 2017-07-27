@@ -68,34 +68,53 @@ def get_kmers_cnt(tmp_dirpath, kmc_db_fpath, log_fpath, err_fpath):
     return kmers_cnt
 
 
-def count_kmers(tmp_dirpath, fpath, log_fpath, err_fpath):
+def count_kmers(tmp_dirpath, fpath, log_fpath, err_fpath, can_reuse=True):
     kmc_out_fpath = join(tmp_dirpath, basename(fpath) + '.kmc')
-    if not is_non_empty_file(kmc_out_fpath):
-        max_mem = max(2, get_total_memory() // 4)
-        run_kmc(kmc_bin_fpath, ['-m' + str(max_mem), '-k' + str(KMERS_LEN), '-fm', '-cx1', '-ci1',
-                            fpath, kmc_out_fpath, tmp_dirpath], log_fpath, err_fpath)
+    if can_reuse and is_non_empty_file(kmc_out_fpath + '.kmc_pre') and is_non_empty_file(kmc_out_fpath + '.kmc_suf'):
+        return kmc_out_fpath
+    max_mem = max(2, get_total_memory() // 4)
+    run_kmc(kmc_bin_fpath, ['-m' + str(max_mem), '-k' + str(KMERS_LEN), '-fm', '-cx1', '-ci1',
+                        fpath, kmc_out_fpath, tmp_dirpath], log_fpath, err_fpath)
     return kmc_out_fpath
 
 
-def get_string_kmers(tmp_dirpath, log_fpath, err_fpath, fasta_fpath=None, seq=None, kmer_fraction=1):
+def get_string_kmers(tmp_dirpath, log_fpath, err_fpath, fasta_fpath=None, seq=None, intersect_with=None, kmer_fraction=1):
+    can_reuse = True
     if not fasta_fpath:
+        can_reuse = False
         fasta_fpath = join(tmp_dirpath, 'tmp.fa')
         with open(fasta_fpath, 'w') as out_f:
             out_f.write(seq)
-    kmc_out_fpath = count_kmers(tmp_dirpath, fasta_fpath, log_fpath, err_fpath)
-    return kmc_to_txt(tmp_dirpath, kmc_out_fpath, log_fpath, err_fpath, kmer_fraction=kmer_fraction)
+    kmc_out_fpath = count_kmers(tmp_dirpath, fasta_fpath, log_fpath, err_fpath, can_reuse=can_reuse)
+    if intersect_with:
+        kmc_out_fpath = intersect_kmers(tmp_dirpath, [kmc_out_fpath, intersect_with], log_fpath, err_fpath)
+    return kmc_to_str(tmp_dirpath, kmc_out_fpath, log_fpath, err_fpath, kmer_fraction=kmer_fraction)
 
 
-def kmc_to_txt(tmp_dirpath, kmc_out_fpath, log_fpath, err_fpath, kmer_fraction=1):
-    shared_kmers = set()
-    shared_kmc_txt = join(tmp_dirpath, 'shared_kmers.txt')
-    run_kmc(kmc_tools_fpath, ['transform', kmc_out_fpath, 'dump', shared_kmc_txt], log_fpath, err_fpath)
-    with open(shared_kmc_txt) as kmer_in:
+def downsample_kmers(tmp_dirpath, kmc_out_fpath, log_fpath, err_fpath, kmer_fraction=1):
+    kmc_txt_fpath = join(tmp_dirpath, 'kmc.full.txt')
+    downsampled_txt_fpath = join(tmp_dirpath, 'kmc.downsampled.txt')
+    run_kmc(kmc_tools_fpath, ['transform', kmc_out_fpath, 'dump', kmc_txt_fpath], log_fpath, err_fpath)
+    with open(kmc_txt_fpath) as in_f:
+        with open(downsampled_txt_fpath, 'w') as out_f:
+            for kmer_i, line in enumerate(in_f):
+                if kmer_i % kmer_fraction == 0:
+                    kmer, _ = line.split()
+                    out_f.write('>' + str(kmer_i) + '\n')
+                    out_f.write(kmer + '\n')
+    return count_kmers(tmp_dirpath, downsampled_txt_fpath, log_fpath, err_fpath)
+
+
+def kmc_to_str(tmp_dirpath, kmc_out_fpath, log_fpath, err_fpath, kmer_fraction=1):
+    kmers = set()
+    kmc_txt_fpath = join(tmp_dirpath, 'tmp.kmc.txt')
+    run_kmc(kmc_tools_fpath, ['transform', kmc_out_fpath, 'dump', kmc_txt_fpath], log_fpath, err_fpath)
+    with open(kmc_txt_fpath) as kmer_in:
         for kmer_i, line in enumerate(kmer_in):
             if kmer_i % kmer_fraction == 0:
                 kmer, _ = line.split()
-                shared_kmers.add(kmer)
-    return shared_kmers
+                kmers.add(kmer)
+    return kmers
 
 
 def get_clear_name(fpath):
@@ -177,28 +196,39 @@ def do(output_dir, ref_fpath, contigs_fpaths, logger):
         matched_kmers = get_kmers_cnt(tmp_dirpath, intersect_out_fpath, log_fpath, err_fpath)
         completeness = matched_kmers * 100.0 / unique_kmers
         report.add_field(reporting.Fields.KMER_COMPLETENESS, '%.2f' % completeness)
-        kmc_out_fpaths.append(kmc_out_fpath)
+        kmc_out_fpaths.append(intersect_out_fpath)
 
     if len(kmc_out_fpaths) > 1:
-        merged_kmc_out = intersect_kmers(tmp_dirpath, kmc_out_fpaths, log_fpath, err_fpath)
+        shared_kmc_db = intersect_kmers(tmp_dirpath, kmc_out_fpaths, log_fpath, err_fpath)
     else:
-        merged_kmc_out = kmc_out_fpaths[0]
+        shared_kmc_db = kmc_out_fpaths[0]
 
     kmer_fraction = 100 if getsize(ref_fpath) < 500 * 1024 ** 2 else 1000
-    shared_kmers = kmc_to_txt(tmp_dirpath, merged_kmc_out, log_fpath, err_fpath, kmer_fraction=kmer_fraction)
+
+    shared_downsampled_kmc_db = downsample_kmers(tmp_dirpath, shared_kmc_db, log_fpath, err_fpath, kmer_fraction=kmer_fraction)
 
     shared_kmers_by_chrom = dict()
-    shared_kmers_txt = join(tmp_dirpath, 'shared.txt')
+    shared_kmers_fpath = join(tmp_dirpath, 'shared_kmers.txt')
     ref_contigs = dict((name, seq) for name, seq in read_fasta(ref_fpath))
-    with open(shared_kmers_txt, 'w') as out_f:
+    with open(shared_kmers_fpath, 'w') as out_f:
         for name, seq in ref_contigs.items():
-            seq_kmers = get_string_kmers(tmp_dirpath, log_fpath, err_fpath, seq=seq, kmer_fraction=1)
-            for kmer in seq_kmers:
-                if str(kmer) in shared_kmers:
-                    shared_kmers_by_chrom[str(kmer)] = name
-                    out_f.write(kmer + '\n')
+            seq_kmers = get_string_kmers(tmp_dirpath, log_fpath, err_fpath, seq=seq, intersect_with=shared_downsampled_kmc_db)
+            for kmer_i, kmer in enumerate(seq_kmers):
+                shared_kmers_by_chrom[str(kmer)] = name
+                out_f.write('>' + str(kmer_i) + '\n')
+                out_f.write(kmer + '\n')
 
-    shared_kmc_db = count_kmers(tmp_dirpath, shared_kmers_txt, log_fpath, err_fpath)
+    shared_kmc_db = count_kmers(tmp_dirpath, shared_kmers_fpath, log_fpath, err_fpath)
+    ref_kmc_dbs = []
+    for ref_name, ref_seq in ref_contigs.items():
+        ref_contig_fpath = join(tmp_dirpath, ref_name + '.fa')
+        if not is_non_empty_file(ref_contig_fpath):
+            with open(ref_contig_fpath, 'w') as out_f:
+                out_f.write(ref_seq)
+        ref_kmc_db = count_kmers(tmp_dirpath, ref_contig_fpath, log_fpath, err_fpath)
+        ref_shared_kmc_db = intersect_kmers(tmp_dirpath, [ref_kmc_db, shared_kmc_db], log_fpath, err_fpath)
+        ref_kmc_dbs.append((ref_name, ref_shared_kmc_db))
+
     for contigs_fpath in contigs_fpaths:
         report = reporting.get(contigs_fpath)
         len_map_to_one_chrom = 0
@@ -206,23 +236,20 @@ def do(output_dir, ref_fpath, contigs_fpaths, logger):
         total_len = 0
         contig_lens = dict()
         contig_markers = defaultdict(list)
-        inline_contigs_fpath = join(tmp_dirpath, basename(contigs_fpath) + '.fa')
-        filtered_contigs_fpath = join(tmp_dirpath, basename(contigs_fpath) + '.filtered.fa')
-        with open(inline_contigs_fpath, 'w') as out_f:
-            for name, seq in read_fasta(contigs_fpath):
-                out_f.write('>' + name + '\n')
-                out_f.write(seq + '\n')
-        run_kmc(kmc_tools_fpath, ['filter', shared_kmc_db, inline_contigs_fpath, '-ci10', '-fa', filtered_contigs_fpath], log_fpath, err_fpath)
-        for ref_name, ref_seq in ref_contigs.items():
-            ref_contig_fpath = join(tmp_dirpath, ref_name + '.fa')
-            if not is_non_empty_file(ref_contig_fpath):
-                with open(ref_contig_fpath, 'w') as out_f:
-                    out_f.write(ref_seq)
-            ref_kmc_db = count_kmers(tmp_dirpath, ref_contig_fpath, log_fpath, err_fpath)
-            ref_intersect_fpath = join(tmp_dirpath, get_clear_name(contigs_fpath) + '_' + ref_name + '.fa')
-            run_kmc(kmc_tools_fpath, ['filter', ref_kmc_db, filtered_contigs_fpath, '-ci1', '-fa', ref_intersect_fpath], log_fpath, err_fpath)
-            for name, _ in read_fasta(ref_intersect_fpath):
-                contig_markers[name].append(ref_name)
+        for name, seq in read_fasta(contigs_fpath):
+            tmp_contig_fpath = join(tmp_dirpath, name + '.fa')
+            with open(tmp_contig_fpath, 'w') as out_tmp_f:
+                out_tmp_f.write(seq)
+            contig_kmc_db = count_kmers(tmp_dirpath, tmp_contig_fpath, log_fpath, err_fpath)
+            intersect_all_ref_kmc_db = intersect_kmers(tmp_dirpath, [contig_kmc_db, shared_kmc_db], log_fpath, err_fpath)
+            kmers_cnt = get_kmers_cnt(tmp_dirpath, intersect_all_ref_kmc_db, log_fpath, err_fpath)
+            if kmers_cnt < MIN_MARKERS:
+                continue
+            for ref_name, ref_kmc_db in ref_kmc_dbs:
+                intersect_kmc_db = intersect_kmers(tmp_dirpath, [ref_kmc_db, intersect_all_ref_kmc_db], log_fpath, err_fpath)
+                kmers_cnt = get_kmers_cnt(tmp_dirpath, intersect_kmc_db, log_fpath, err_fpath)
+                if kmers_cnt:
+                    contig_markers[name].append(ref_name)
 
         for name, seq in read_fasta(contigs_fpath):
             total_len += len(seq)

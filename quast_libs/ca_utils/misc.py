@@ -36,11 +36,11 @@ def bin_fpath(fname):
 
 
 def compile_aligner(logger, only_clean=False):
-    default_requirements = ['nucmer', 'delta-filter', 'show-coords', 'show-snps', 'mummer', 'mummerplot', 'mgaps']
+    requirements = ['nucmer', 'delta-filter', 'show-coords', 'show-snps', 'mummer', 'mummerplot', 'mgaps']
     mummer_failed_compilation_flag = join(contig_aligner_dirpath, 'make.failed')
 
     if only_clean:
-        compile_tool('MUMmer', contig_aligner_dirpath, default_requirements, logger=logger, only_clean=only_clean)
+        compile_tool('MUMmer', contig_aligner_dirpath, requirements, logger=logger, only_clean=only_clean)
         return True
 
     if check_prev_compilation_failed('MUMmer', mummer_failed_compilation_flag, just_notice=True, logger=logger):
@@ -48,10 +48,9 @@ def compile_aligner(logger, only_clean=False):
         return False
 
     fix_configure_timestamps(contig_aligner_dirpath)
-    success_compilation = compile_tool('MUMmer', contig_aligner_dirpath, default_requirements,
-                                       just_notice=False, logger=logger, only_clean=only_clean,
-                                       configure_args=['--prefix=' + contig_aligner_dirpath])
-    if success_compilation:
+    prefix_arg = '--prefix=' + contig_aligner_dirpath
+    if compile_tool('MUMmer', contig_aligner_dirpath, requirements, just_notice=False, logger=logger, only_clean=only_clean,
+                    configure_args=[prefix_arg, 'LDFLAGS=-static'] if qconfig.platform_name != 'macosx' else [prefix_arg]):
         return True
 
     logger.error("Compilation of contig aligner software was unsuccessful! QUAST functionality will be limited.")

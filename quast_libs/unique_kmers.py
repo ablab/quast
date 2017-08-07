@@ -17,6 +17,8 @@ from quast_libs.fastaparser import read_fasta
 from quast_libs.qutils import get_total_memory, is_non_empty_file
 
 KMERS_LEN = 101
+MAX_CONTIGS_NUM = 1000
+MIN_CONTIGS_LEN = 10000
 MIN_MARKERS = 10
 
 kmc_dirpath = abspath(join(qconfig.LIBS_LOCATION, 'KMC', qconfig.platform_name))
@@ -35,10 +37,11 @@ def create_kmc_stats_file(output_dir, contigs_fpath, contigs_fpaths, ref_fpath, 
         check_f.write("Used assemblies: %s\n" % ','.join(contigs_fpaths))
     with open(kmc_stats_fpath, 'w') as stats_f:
         stats_f.write("Completeness: %s\n" % completeness)
-        stats_f.write("Length assigned to one chromosome: %d\n" % len_map_to_one_chrom)
-        stats_f.write("Length assigned to multi chromosomes: %d\n" % len_map_to_multi_chrom)
-        stats_f.write("Length assigned to none chromosome: %d\n" % len_map_to_none_chrom)
-        stats_f.write("Total length: %d\n" % total_len)
+        if len_map_to_one_chrom or len_map_to_multi_chrom:
+            stats_f.write("Length assigned to one chromosome: %d\n" % len_map_to_one_chrom)
+            stats_f.write("Length assigned to multi chromosomes: %d\n" % len_map_to_multi_chrom)
+            stats_f.write("Length assigned to none chromosome: %d\n" % len_map_to_none_chrom)
+            stats_f.write("Total length: %d\n" % total_len)
 
 
 def check_kmc_successful_check(output_dir, contigs_fpath, contigs_fpaths, ref_fpath):
@@ -150,18 +153,19 @@ def do(output_dir, ref_fpath, contigs_fpaths, logger):
         if check_kmc_successful_check(output_dir, contigs_fpath, contigs_fpaths, ref_fpath):
             kmc_stats_fpath = join(output_dir, label + '.stat')
             stats_content = open(kmc_stats_fpath).read().split('\n')
-            if len(stats_content) < 5:
+            if len(stats_content) < 1:
                 continue
             logger.info('  Using existing results for ' + label + '... ')
             report = reporting.get(contigs_fpath)
             report.add_field(reporting.Fields.KMER_COMPLETENESS, '%.2f' % float(stats_content[0].strip().split(': ')[-1]))
-            len_map_to_one_chrom = int(stats_content[1].strip().split(': ')[-1])
-            len_map_to_multi_chrom = int(stats_content[2].strip().split(': ')[-1])
-            len_map_to_none_chrom = int(stats_content[3].strip().split(': ')[-1])
-            total_len = int(stats_content[4].strip().split(': ')[-1])
-            report.add_field(reporting.Fields.KMER_SCAFFOLDS_ONE_CHROM, '%.2f' % (len_map_to_one_chrom * 100.0 / total_len))
-            report.add_field(reporting.Fields.KMER_SCAFFOLDS_MULTI_CHROM, '%.2f' % (len_map_to_multi_chrom * 100.0 / total_len))
-            report.add_field(reporting.Fields.KMER_SCAFFOLDS_NONE_CHROM, '%.2f' % (len_map_to_none_chrom * 100.0 / total_len))
+            if len(stats_content) >= 5:
+                len_map_to_one_chrom = int(stats_content[1].strip().split(': ')[-1])
+                len_map_to_multi_chrom = int(stats_content[2].strip().split(': ')[-1])
+                len_map_to_none_chrom = int(stats_content[3].strip().split(': ')[-1])
+                total_len = int(stats_content[4].strip().split(': ')[-1])
+                report.add_field(reporting.Fields.KMER_SCAFFOLDS_ONE_CHROM, '%.2f' % (len_map_to_one_chrom * 100.0 / total_len))
+                report.add_field(reporting.Fields.KMER_SCAFFOLDS_MULTI_CHROM, '%.2f' % (len_map_to_multi_chrom * 100.0 / total_len))
+                report.add_field(reporting.Fields.KMER_SCAFFOLDS_NONE_CHROM, '%.2f' % (len_map_to_none_chrom * 100.0 / total_len))
             checked_assemblies.append(contigs_fpath)
 
     contigs_fpaths = [fpath for fpath in contigs_fpaths if fpath not in checked_assemblies]
@@ -187,7 +191,7 @@ def do(output_dir, ref_fpath, contigs_fpaths, logger):
     if not unique_kmers:
         return
 
-    logger.info('Analyzing completeness and accuracy of assemblies...')
+    logger.info('Analyzing assemblies completeness...')
     kmc_out_fpaths = []
     for contigs_fpath in contigs_fpaths:
         report = reporting.get(contigs_fpath)
@@ -198,6 +202,7 @@ def do(output_dir, ref_fpath, contigs_fpaths, logger):
         report.add_field(reporting.Fields.KMER_COMPLETENESS, '%.2f' % completeness)
         kmc_out_fpaths.append(intersect_out_fpath)
 
+    logger.info('Analyzing assemblies accuracy...')
     if len(kmc_out_fpaths) > 1:
         shared_kmc_db = intersect_kmers(tmp_dirpath, kmc_out_fpaths, log_fpath, err_fpath)
     else:
@@ -231,38 +236,52 @@ def do(output_dir, ref_fpath, contigs_fpaths, logger):
 
     for contigs_fpath in contigs_fpaths:
         report = reporting.get(contigs_fpath)
-        len_map_to_one_chrom = 0
-        len_map_to_multi_chrom = 0
+        len_map_to_one_chrom = None
+        len_map_to_multi_chrom = None
+        len_map_to_none_chrom = None
         total_len = 0
+        long_contigs = []
         contig_lens = dict()
         contig_markers = defaultdict(list)
         for name, seq in read_fasta(contigs_fpath):
-            tmp_contig_fpath = join(tmp_dirpath, name + '.fa')
-            with open(tmp_contig_fpath, 'w') as out_tmp_f:
-                out_tmp_f.write(seq)
-            contig_kmc_db = count_kmers(tmp_dirpath, tmp_contig_fpath, log_fpath, err_fpath)
-            intersect_all_ref_kmc_db = intersect_kmers(tmp_dirpath, [contig_kmc_db, shared_kmc_db], log_fpath, err_fpath)
-            kmers_cnt = get_kmers_cnt(tmp_dirpath, intersect_all_ref_kmc_db, log_fpath, err_fpath)
-            if kmers_cnt < MIN_MARKERS:
-                continue
-            for ref_name, ref_kmc_db in ref_kmc_dbs:
-                intersect_kmc_db = intersect_kmers(tmp_dirpath, [ref_kmc_db, intersect_all_ref_kmc_db], log_fpath, err_fpath)
-                kmers_cnt = get_kmers_cnt(tmp_dirpath, intersect_kmc_db, log_fpath, err_fpath)
-                if kmers_cnt:
-                    contig_markers[name].append(ref_name)
-
-        for name, seq in read_fasta(contigs_fpath):
             total_len += len(seq)
             contig_lens[name] = len(seq)
-        for name, chr_markers in contig_markers.items():
-            if len(chr_markers) == 1:
-                len_map_to_one_chrom += contig_lens[name]
-            else:
-                len_map_to_multi_chrom += contig_lens[name]
-        len_map_to_none_chrom = total_len - len_map_to_one_chrom - len_map_to_multi_chrom
-        report.add_field(reporting.Fields.KMER_SCAFFOLDS_ONE_CHROM, '%.2f' % (len_map_to_one_chrom * 100.0 / total_len))
-        report.add_field(reporting.Fields.KMER_SCAFFOLDS_MULTI_CHROM, '%.2f' % (len_map_to_multi_chrom * 100.0 / total_len))
-        report.add_field(reporting.Fields.KMER_SCAFFOLDS_NONE_CHROM, '%.2f' % (len_map_to_none_chrom * 100.0 / total_len))
+            if len(seq) >= MIN_CONTIGS_LEN:
+                long_contigs.append(len(seq))
+
+        if len(long_contigs) > MAX_CONTIGS_NUM or sum(long_contigs) < total_len * 0.5:
+            logger.warning('Assembly is too fragmented. Scaffolding accuracy will not be assessed.')
+        elif len(ref_kmc_dbs) > MAX_CONTIGS_NUM:
+            logger.warning('Reference is too fragmented. Scaffolding accuracy will not be assessed.')
+        else:
+            len_map_to_one_chrom = 0
+            len_map_to_multi_chrom = 0
+            for name, seq in read_fasta(contigs_fpath):
+                if len(seq) < MIN_CONTIGS_LEN:
+                    continue
+
+                tmp_contig_fpath = join(tmp_dirpath, name + '.fa')
+                with open(tmp_contig_fpath, 'w') as out_tmp_f:
+                    out_tmp_f.write(seq)
+                contig_kmc_db = count_kmers(tmp_dirpath, tmp_contig_fpath, log_fpath, err_fpath)
+                intersect_all_ref_kmc_db = intersect_kmers(tmp_dirpath, [contig_kmc_db, shared_kmc_db], log_fpath, err_fpath)
+                kmers_cnt = get_kmers_cnt(tmp_dirpath, intersect_all_ref_kmc_db, log_fpath, err_fpath)
+                if kmers_cnt < MIN_MARKERS:
+                    continue
+                for ref_name, ref_kmc_db in ref_kmc_dbs:
+                    intersect_kmc_db = intersect_kmers(tmp_dirpath, [ref_kmc_db, intersect_all_ref_kmc_db], log_fpath, err_fpath)
+                    kmers_cnt = get_kmers_cnt(tmp_dirpath, intersect_kmc_db, log_fpath, err_fpath)
+                    if kmers_cnt:
+                        contig_markers[name].append(ref_name)
+            for name, chr_markers in contig_markers.items():
+                if len(chr_markers) == 1:
+                    len_map_to_one_chrom += contig_lens[name]
+                else:
+                    len_map_to_multi_chrom += contig_lens[name]
+            len_map_to_none_chrom = total_len - len_map_to_one_chrom - len_map_to_multi_chrom
+            report.add_field(reporting.Fields.KMER_SCAFFOLDS_ONE_CHROM, '%.2f' % (len_map_to_one_chrom * 100.0 / total_len))
+            report.add_field(reporting.Fields.KMER_SCAFFOLDS_MULTI_CHROM, '%.2f' % (len_map_to_multi_chrom * 100.0 / total_len))
+            report.add_field(reporting.Fields.KMER_SCAFFOLDS_NONE_CHROM, '%.2f' % (len_map_to_none_chrom * 100.0 / total_len))
 
         create_kmc_stats_file(output_dir, contigs_fpath, contigs_fpaths, ref_fpath,
                              report.get_field(reporting.Fields.KMER_COMPLETENESS),

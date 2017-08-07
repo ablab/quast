@@ -85,7 +85,8 @@
     <a href="http://cbcb.umd.edu/software/glimmerhmm/">GlimmerHMM</a>,
     <a href="http://gage.cbcb.umd.edu/index.html">GAGE</a> and
     <a href="http://gnuplot.sourceforge.net/">Gnuplot</a>.
-    In addition, MetaQUAST uses <a href="http://exon.gatech.edu/GeneMark/">MetaGeneMark</a>, <a href="http://sourceforge.net/p/krona/home/krona/">Krona tools</a>,
+    In addition, MetaQUAST uses <a href="http://exon.gatech.edu/GeneMark/meta_gmhmmp_instructions.html">MetaGeneMark</a>,
+    <a href="http://sourceforge.net/p/krona/home/krona/">Krona tools</a>,
     <a href="http://blast.ncbi.nlm.nih.gov/Blast.cgi">BLAST</a>, and
     <a href="http://www.arb-silva.de/">SILVA</a> 16S rRNA database.
     Starting from version 3.2, QUAST package includes reads processing tools for finding structural variants between the reference genome and actual organism.
@@ -353,18 +354,18 @@ If a <a href='#sec2.2'>gene file</a> is provided with <code>-G</code> as well, b
 but a file of known operon positions can be provided with <code>-O</code>.<br>
 
 <div class='option'>
-    <code><b>--glimmer</b></code>
-</div>
-Use GlimmerHMM for gene finding (instead of GeneMark family of tools). Note: you may skip <code>--gene-finding</code> option if <code>--glimmer</code> is specified.
-
-<div class='option'>
     <a name="mgm"></a>
     <code><b>--mgm</b></code>
 </div>
-Use MetaGeneMark for gene finding (instead of the default finder: GeneMarkS or GeneMark-ES).
+Force use of MetaGeneMark for gene finding (instead of the default finders: GeneMarkS or GeneMark-ES).
 <span style='line-height: 50%;'>&nbsp;</span><br>
 Note: if you are working with metagenome assemblies, we recommend <a href='#sec2.5'>to use metaquast.py</a> instead of quast.py
 (it is in the same directory as quast.py).
+
+<div class='option'>
+    <code><b>--glimmer</b></code>
+</div>
+Use GlimmerHMM for gene finding (instead of GeneMark family of tools). Note: you may skip <code>--gene-finding</code> option if <code>--glimmer</code> is specified.
 
 <div class='option'>
     <code><b>--gene-thresholds</b> &lt;int,int,...&gt;</code>
@@ -625,51 +626,6 @@ A shortcut for using all of speedup options except --no-check.
 </div>
 
 <br>
-MetaQUAST only:
-<div class='options'>
-<div class='option'>
-<code><b>--use-input-ref-order</b></code>
-</div>
-    Use provided order of references in MetaQUAST summary plots (X-axis). By default,
-    the ordering is based on the best average value of the metric among all assemblies.
-    Note: this option affects only static PDF/PNG/etc plots under <code>&lt;metaquast_output_dir&gt;/summary/.
-    Interactive HTML report has radio button to control the order of references.
-
-<div class='option'>
-<a name='references_list'></a><code><b>--references-list</b> &lt;path&gt;</code>
-</div>
-Text file with list of reference genomes (each one on a separate line).
-    MetaQUAST will search for these references in the NCBI database and will download the found ones.
-    Example of such file is in FAQ section, <a href="#faq_q10">question Q10</a>.
-
-<div class='option'>
-    <code><b>--test-no-ref</b></code>
-</div>
-Run MetaQUAST on a data from the <code>test_data</code> folder, but without reference genomes. The tool will download
-    SILVA 16S rRNA gene database (170 Mb) and BLAST binaries (55-75 Mb depending on your OS),
-    which will be required if you plan to use MetaQUAST without references.
-    See <a href="#sec2.5">section 2.5</a> for details about reference search algorithm.
-
-<div class='option'>
-    <a href='blast_db'></a><code><b>--blast-db</b></code> <code>&lt;path&gt;</code>
-</div>
-Use custom BLAST database instead of embedded SILVA 16S rRNA database. The path should point either to directory
-containing .nsq file or to .nsq file itself.
-See FAQ section, <a href="#faq_q12">question Q12</a> for details about creating custom BLAST databases.
-
-<div class='option'>
-    <a href='max_ref_num'></a><code><b>--max-ref-num</b></code> <code>&lt;int&gt;</code>
-</div>
-Maximum number of reference genomes (per each assembly) to download after searching in SILVA database. Default value is 50.
-
-<div class='option'>
-    <a name='unique_mapping'></a><code><b>--unique-mapping</b></code> <code>&lt;int&gt;</code>
-</div>
-Force <a href='#ambiguity_usage'><code>--ambiguity-usage</code></a>='one' for the combined reference genome
-('all' is used by default).
-</div>
-
-<br>
 Other:
 <div class='options'>
 <div class='option'>
@@ -717,9 +673,11 @@ Print version.
         <li>for the rest of the contigs that were not aligned to any reference genome.
     </ul>
 
-Note that MetaQUAST uses <a href='#ambiguity_usage'><code>--ambiguity-usage</code></a> 'all' when running quast.py on
-the combined reference until <a href='#unique_mapping'><code>--unique-mapping</code></a> is specified.<br>
-
+<p>
+MetaQUAST uses <a href='#ambiguity_usage'><code>--ambiguity-usage</code></a> 'all' when running <code>quast.py</code> on
+the combined reference until <a href='#unique_mapping'><code>--unique-mapping</code></a> is specified.
+For gene prediction (<a href='#gene_finding'><code>--gene-finding</code></a>), MetaQUAST uses MetaGeneMark software.
+</p>
 
 <p>If you run MetaQUAST without providing reference genomes, the tool will try to identify genome content of the metagenome.
 MetaQUAST uses BLASTN for aligning contigs to SILVA 16S rRNA database, i.e. FASTA file containing small subunit ribosomal RNA sequences.
@@ -728,6 +686,53 @@ Maximum number of references to download can be specified with <a href='#max_ref
 <p>Reference genomes for the chosen genomes are downloaded from the NCBI database to <code>&lt;quast_output_dir&gt;/quast_downloaded_references/</code>.
 After that, MetaQUAST runs <code>quast.py</code> on all of them and removes reference genomes with low genome fraction (less than 10%) and
     proceeds the usual MetaQUAST analysis with the remaining references.
+</p>
+
+<p>
+In addition to standard <a href='#sec2.3'>QUAST options</a>, <code>metaquast.py</code> also accepts:
+</p>
+<div class='options'>
+<div class='option'>
+<code><b>--use-input-ref-order</b></code>
+</div>
+    Use provided order of references in MetaQUAST summary plots (X-axis). By default,
+    the ordering is based on the best average value of the metric among all assemblies.
+    Note: this option affects only static PDF/PNG/etc plots under <code>&lt;metaquast_output_dir&gt;/summary/.
+    Interactive HTML report has radio button to control the order of references.
+
+<div class='option'>
+<a name='references_list'></a><code><b>--references-list</b> &lt;path&gt;</code>
+</div>
+Text file with list of reference genomes (each one on a separate line).
+    MetaQUAST will search for these references in the NCBI database and will download the found ones.
+    Example of such file is in FAQ section, <a href="#faq_q10">question Q10</a>.
+
+<div class='option'>
+    <code><b>--test-no-ref</b></code>
+</div>
+Run MetaQUAST on a data from the <code>test_data</code> folder, but without reference genomes. The tool will download
+    SILVA 16S rRNA gene database (170 Mb) and BLAST binaries (55-75 Mb depending on your OS),
+    which will be required if you plan to use MetaQUAST without references.
+    See <a href="#sec2.4">section 2.4</a> for details about reference search algorithm.
+
+<div class='option'>
+<a name='blast_db'></a><code><b>--blast-db</b></code> <code>&lt;path&gt;</code>
+</div>
+Use custom BLAST database instead of embedded SILVA 16S rRNA database. The path should point either to directory
+containing .nsq file or to .nsq file itself.
+See FAQ section, <a href="#faq_q12">question Q12</a> for details about creating custom BLAST databases.
+
+<div class='option'>
+<a name='max_ref_num'></a><code><b>--max-ref-num</b></code> <code>&lt;int&gt;</code>
+</div>
+Maximum number of reference genomes (per each assembly) to download after searching in SILVA database. Default value is 50.
+
+<div class='option'>
+    <a name='unique_mapping'></a><code><b>--unique-mapping</b></code> <code>&lt;int&gt;</code>
+</div>
+Force <a href='#ambiguity_usage'><code>--ambiguity-usage</code></a>='one' for the combined reference genome
+('all' is used by default).
+</div>
 
 <a name="sec3"></a>
 <h2>3. QUAST output</h2>
@@ -911,7 +916,7 @@ This metric sums up <code># unaligned mis. contigs</code> described above.</p>
 <p><span class='metric-name'># operons</span> is defined similarly to <span class='metric-ref'># genes</span>, but an operon positions file required instead.</p>
 
 <p><a name='predicted_genes'></a><span class='metric-name'># predicted genes</span> is the number of genes in the assembly
-    found by GeneMarkS, GeneMark-ES, GlimmerHMM or MetaGeneMark. See the description of <a href='#gene_finding'><code>--gene-finding</code></a> option for details.</p>
+    found by GeneMarkS, GeneMark-ES, MetaGeneMark, or GlimmerHMM. See the description of <a href='#gene_finding'><code>--gene-finding</code></a> option for details.</p>
 
 <p><span class='metric-name'>Total aligned length</span> is the total number of aligned bases in the assembly. A value is usually smaller than a value of <a href='#total_length'><span class='metric-ref'>total length</span></a> because some of the contigs may be unaligned or partially unaligned.</p>
 

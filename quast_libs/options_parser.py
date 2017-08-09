@@ -300,8 +300,38 @@ def parse_options(logger, quast_args, is_metaquast=False):
              type='file',
              action='extend')
          ),
+        (['--pe1'], dict(
+             dest='forward_reads',
+             type='file',
+             action='extend')
+         ),
+        (['--pe2'], dict(
+             dest='reverse_reads',
+             type='file',
+             action='extend')
+         ),
+        (['--mp1'], dict(
+             dest='mp_forward_reads',
+             type='file',
+             action='extend')
+         ),
+        (['--mp2'], dict(
+             dest='mp_reverse_reads',
+             type='file',
+             action='extend')
+         ),
         (['--12'], dict(
              dest='interlaced_reads',
+             type='file',
+             action='extend')
+         ),
+        (['--pe12'], dict(
+             dest='interlaced_reads',
+             type='file',
+             action='extend')
+         ),
+        (['--mp12'], dict(
+             dest='mp_interlaced_reads',
              type='file',
              action='extend')
          ),

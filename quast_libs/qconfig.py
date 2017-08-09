@@ -230,7 +230,12 @@ bed = None
 reads_fpaths = []
 forward_reads = []
 reverse_reads = []
+mp_forward_reads = []
+mp_reverse_reads = []
 interlaced_reads = []
+mp_interlaced_reads = []
+paired_reads = []
+mate_pairs = []
 unpaired_reads = []
 references_txt = None
 json_output_dirpath = None
@@ -412,6 +417,12 @@ def usage(show_hidden=False, meta=False, short=True, stream=sys.stdout):
         stream.write("-1  --reads1  <filename>              File with forward reads (in FASTQ format, may be gzipped)\n")
         stream.write("-2  --reads2  <filename>              File with reverse reads (in FASTQ format, may be gzipped)\n")
         stream.write("    --12      <filename>              File with interlaced forward and reverse paired-end reads. (in FASTQ format, may be gzipped)\n")
+        stream.write("    --pe1     <filename>              File with forward paired-end reads (in FASTQ format, may be gzipped)\n")
+        stream.write("    --pe2     <filename>              File with reverse paired-end reads (in FASTQ format, may be gzipped)\n")
+        stream.write("    --pe12    <filename>              File with interlaced forward and reverse paired-end reads. (in FASTQ format, may be gzipped)\n")
+        stream.write("    --mp1     <filename>              File with forward mate-pair reads (in FASTQ format, may be gzipped)\n")
+        stream.write("    --mp2     <filename>              File with reverse mate-pair reads (in FASTQ format, may be gzipped)\n")
+        stream.write("    --mp12    <filename>              File with interlaced forward and reverse mate-pair reads. (in FASTQ format, may be gzipped)\n")
         stream.write("    --single  <filename>              File with unpaired reads. (in FASTQ format, may be gzipped)\n")
         stream.write("    --ref-sam <filename>              SAM alignment file obtained by aligning reads to reference genome file\n")
         stream.write("    --ref-bam <filename>              BAM alignment file obtained by aligning reads to reference genome file\n")

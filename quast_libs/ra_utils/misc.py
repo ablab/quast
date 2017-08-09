@@ -327,7 +327,7 @@ def check_cov_file(cov_fpath):
                 return True
 
 
-def bam_to_bed(output_dirpath, name, bam_fpath, err_path, logger, bedpe=False):
+def bam_to_bed(output_dirpath, name, bam_fpath, err_path, logger, bedpe=False, only_intervals=False):
     raw_bed_fpath = join(output_dirpath, name + '.bed')
     if bedpe:
         bedpe_fpath = join(output_dirpath, name + '.bedpe')
@@ -337,7 +337,11 @@ def bam_to_bed(output_dirpath, name, bam_fpath, err_path, logger, bedpe=False):
             with open(raw_bed_fpath, 'w') as bed_file:
                 for line in bedpe:
                     fs = line.split()
-                    bed_file.write('\t'.join([fs[0], fs[1], fs[5] + '\n']))
+                    if only_intervals:
+                        start, end = fs[2], fs[4]
+                    else:
+                        start, end = fs[1], fs[5]
+                    bed_file.write('\t'.join([fs[0], start, end + '\n']))
     else:
         qutils.call_subprocess([bedtools_fpath('bamToBed'), '-i', bam_fpath],
                                stdout=open(raw_bed_fpath, 'w'), stderr=open(err_path, 'a'), logger=logger)
@@ -346,3 +350,22 @@ def bam_to_bed(output_dirpath, name, bam_fpath, err_path, logger, bedpe=False):
     qutils.call_subprocess(['sort', '-k1,1', '-k2,2n', raw_bed_fpath],
                            stdout=open(sorted_bed_fpath, 'w'), stderr=open(err_path, 'a'), logger=logger)
     return sorted_bed_fpath
+
+
+def calculate_genome_cov(in_fpath, out_fpath, chr_len_fpath, err_fpath, logger, print_all_positions=True):
+    cmd = [bedtools_fpath('bedtools'), 'genomecov', '-ibam' if in_fpath.endswith('.bam') else '-i', in_fpath, '-g', chr_len_fpath]
+    if print_all_positions:
+        cmd += ['-bga']
+    qutils.call_subprocess(cmd, stdout=open(out_fpath, 'w'), stderr=open(err_fpath, 'a'), logger=logger)
+
+
+def sambamba_view(in_fpath, out_fpath, max_threads, err_fpath, logger, filter_rule=None):
+    cmd = [sambamba_fpath('sambamba'), 'view', '-t', str(max_threads), '-h']
+    if in_fpath.endswith('.sam'):
+        cmd += ['-S']
+    if out_fpath.endswith('.bam'):
+        cmd += ['-f', 'bam']
+    if filter_rule:
+        cmd += ['-F', filter_rule]
+    cmd.append(in_fpath)
+    qutils.call_subprocess(cmd, stdout=open(out_fpath, 'w'), stderr=open(err_fpath, 'a'), logger=logger)

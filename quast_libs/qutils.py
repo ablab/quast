@@ -730,7 +730,7 @@ def check_java_version(version):
         p = subprocess.Popen(['java', '-version'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         stdout, stderr = p.communicate()
         version_pattern = re.compile('java version "(\d\.\d+)')
-        return float(version_pattern.findall(stdout)[0]) >= version
+        return float(version_pattern.findall(str(stdout))[0]) >= version
     except:
         return False
 
@@ -934,7 +934,8 @@ def get_dir_for_download(dirname, tool, required_files, logger, only_clean=False
 
 
 def check_reads_fpaths(logger):
-    reads_libraries = [qconfig.forward_reads, qconfig.reverse_reads, qconfig.interlaced_reads, qconfig.unpaired_reads]
+    reads_libraries = [qconfig.forward_reads, qconfig.reverse_reads, qconfig.interlaced_reads, qconfig.unpaired_reads,
+                       qconfig.mp_forward_reads, qconfig.mp_reverse_reads, qconfig.mp_interlaced_reads]
     qconfig.reads_fpaths = [fpath for lib in reads_libraries for fpath in lib if fpath]
     if not qconfig.reads_fpaths:
         return None
@@ -943,6 +944,10 @@ def check_reads_fpaths(logger):
                      '(-1 <file_name> -2 <file_name>).\n'
                      'To specify the file with interlaced forward and reverse reads you can use --12 option.\n'
                      'Use -s option to specify unpaired (single-read) library.\n', exit_with_code=2)
+    qconfig.paired_reads = [(read1, read2) for read1, read2 in zip(qconfig.forward_reads, qconfig.reverse_reads)]
+    qconfig.paired_reads.extend(qconfig.interlaced_reads)
+    qconfig.mate_pairs = [(read1, read2) for read1, read2 in zip(qconfig.mp_forward_reads, qconfig.mp_reverse_reads)]
+    qconfig.mate_pairs.extend(qconfig.mp_interlaced_reads)
 
 
 def get_blast_fpath(fname):

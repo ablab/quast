@@ -175,6 +175,13 @@ def check_sam_bam_files(contigs_fpaths, sam_fpaths, bam_fpaths, logger):
         logger.error('Number of BAM files does not match the number of files with contigs', to_stderr=True, exit_with_code=11)
 
 
+def set_large_genome_parameters():
+    qconfig.min_alignment = max(qconfig.min_alignment, qconfig.LARGE_MIN_ALIGNMENT)
+    qconfig.min_cluster = max(qconfig.min_cluster, qconfig.LARGE_MIN_CLUSTER)
+    qconfig.extensive_misassembly_threshold = max(qconfig.extensive_misassembly_threshold, qconfig.LARGE_EXTENSIVE_MIS_THRESHOLD)
+    qconfig.BSS_critical_alignment_len = qconfig.LARGE_BSS_critical_alignment_len
+
+
 def wrong_test_option(logger, msg, is_metaquast):
     logger.error(msg)
     qconfig.usage(meta=is_metaquast, stream=sys.stderr)
@@ -699,6 +706,9 @@ def parse_options(logger, quast_args, is_metaquast=False):
         logger.error("You should specify at least one file with contigs!\n", to_stderr=True)
         qconfig.usage(meta=is_metaquast, stream=sys.stderr)
         sys.exit(2)
+
+    if qconfig.large_genome:
+        set_large_genome_parameters()
 
     for c_fpath in contigs_fpaths:
         assert_file_exists(c_fpath, 'contigs')

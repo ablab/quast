@@ -207,15 +207,6 @@ def save_result(result, report, fname, ref_fpath):
         report.add_field(reporting.Fields.MIS_SCAFFOLDS_GAP, region_misassemblies.count(Misassembly.SCAFFOLD_GAP))
     if qconfig.check_for_fragmented_ref:
         report.add_field(reporting.Fields.MIS_FRAGMENTED, region_misassemblies.count(Misassembly.FRAGMENTED))
-    if qconfig.large_genome:
-        large_misassemblies = result['large_misassemblies']
-        report.add_field(reporting.Fields.LARGE_MIS_EXTENSIVE, large_misassemblies.count(Misassembly.RELOCATION) +
-                         large_misassemblies.count(Misassembly.INVERSION) +
-                         large_misassemblies.count(Misassembly.TRANSLOCATION) +
-                         large_misassemblies.count(Misassembly.INTERSPECTRANSLOCATION))
-        report.add_field(reporting.Fields.LARGE_MIS_RELOCATION, large_misassemblies.count(Misassembly.RELOCATION))
-        report.add_field(reporting.Fields.LARGE_MIS_TRANSLOCATION, large_misassemblies.count(Misassembly.TRANSLOCATION))
-        report.add_field(reporting.Fields.LARGE_MIS_INVERTION, large_misassemblies.count(Misassembly.INVERSION))
     # for unaligned report:
     report.add_field(reporting.Fields.UNALIGNED_FULL_CNTGS, unaligned)
     report.add_field(reporting.Fields.UNALIGNED_FULL_LENGTH, fully_unaligned_bases)

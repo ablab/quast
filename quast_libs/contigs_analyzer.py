@@ -187,16 +187,17 @@ def align_and_analyze(is_cyclic, index, contigs_fpath, output_dirpath, ref_fpath
     log_out_f.write('Analyzing contigs...\n')
     result, ref_aligns, total_indels_info, aligned_lengths, misassembled_contigs, misassemblies_in_contigs, aligned_lengths_by_contigs =\
         analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fpath, aligns, ref_features, ref_lens, is_cyclic)
-    if qconfig.large_genome:
-        log_out_f.write('Analyzing large blocks...\n')
-        large_misassembly_fpath = add_suffix(misassembly_fpath, 'large_blocks') if not qconfig.space_efficient else '/dev/null'
-        ca_large_output = CAOutput(stdout_f=log_out_f, misassembly_f=open(large_misassembly_fpath, 'w'),
-                                   coords_filtered_f=coords_filtered_file, used_snps_f=open('/dev/null', 'w'), icarus_out_f=open('/dev/null', 'w'))
-        min_alignment, extensive_mis_threshold = qconfig.min_alignment, qconfig.extensive_misassembly_threshold
-        qconfig.min_alignment, qconfig.extensive_misassembly_threshold = qconfig.LARGE_MIN_ALIGNMENT, qconfig.LARGE_EXTENSIVE_MIS_THRESHOLD
-        result.update(analyze_contigs(ca_large_output, contigs_fpath, '/dev/null', '/dev/null',
-                                      aligns, ref_features, ref_lens, is_cyclic, large_misassemblies_search=True)[0])
-        qconfig.min_alignment, qconfig.extensive_misassembly_threshold = min_alignment, extensive_mis_threshold
+
+    # if qconfig.large_genome:
+    #     log_out_f.write('Analyzing large blocks...\n')
+    #     large_misassembly_fpath = add_suffix(misassembly_fpath, 'large_blocks') if not qconfig.space_efficient else '/dev/null'
+    #     ca_large_output = CAOutput(stdout_f=log_out_f, misassembly_f=open(large_misassembly_fpath, 'w'),
+    #                                coords_filtered_f=coords_filtered_file, used_snps_f=open('/dev/null', 'w'), icarus_out_f=open('/dev/null', 'w'))
+    #     min_alignment, extensive_mis_threshold = qconfig.min_alignment, qconfig.extensive_misassembly_threshold
+    #     qconfig.min_alignment, qconfig.extensive_misassembly_threshold = qconfig.LARGE_MIN_ALIGNMENT, qconfig.LARGE_EXTENSIVE_MIS_THRESHOLD
+    #     result.update(analyze_contigs(ca_large_output, contigs_fpath, '/dev/null', '/dev/null',
+    #                                   aligns, ref_features, ref_lens, is_cyclic, large_misassemblies_search=True)[0])
+    #     qconfig.min_alignment, qconfig.extensive_misassembly_threshold = min_alignment, extensive_mis_threshold
 
     log_out_f.write('Analyzing coverage...\n')
     if qconfig.show_snps:

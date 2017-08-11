@@ -91,7 +91,7 @@ def save_unaligned_info(sorted_aligns, contig, ctg_len, unaligned_len, unaligned
 
 
 def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fpath, aligns, ref_features, ref_lens,
-                    is_cyclic=None, large_misassemblies_search=False):
+                    is_cyclic=None):
     maxun = 10
     epsilon = 0.99
     umt = 0.5  # threshold for misassembled contigs with aligned less than $umt * 100% (Unaligned Missassembled Threshold)
@@ -386,20 +386,17 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fp
     unaligned_info_file.close()
     misassembled_bases = sum(misassembled_contigs.values())
 
-    if large_misassemblies_search:
-        result = {'large_misassemblies': region_misassemblies}
-    else:
-        result = {'region_misassemblies': region_misassemblies,
-                  'region_struct_variations': region_struct_variations.get_count() if region_struct_variations else None,
-                  'misassemblies_matched_sv': misassemblies_matched_sv,
-                  'misassembled_contigs': misassembled_contigs, 'misassembled_bases': misassembled_bases,
-                  'misassembly_internal_overlap': misassembly_internal_overlap,
-                  'unaligned': unaligned, 'partially_unaligned': partially_unaligned,
-                  'partially_unaligned_bases': partially_unaligned_bases, 'fully_unaligned_bases': fully_unaligned_bases,
-                  'ambiguous_contigs': ambiguous_contigs, 'ambiguous_contigs_extra_bases': ambiguous_contigs_extra_bases,
-                  'ambiguous_contigs_len': ambiguous_contigs_len,
-                  'half_unaligned_with_misassembly': half_unaligned_with_misassembly,
-                  'misassemblies_by_ref': misassemblies_by_ref,
-                  'istranslocations_by_refs': istranslocations_by_ref}
+    result = {'region_misassemblies': region_misassemblies,
+              'region_struct_variations': region_struct_variations.get_count() if region_struct_variations else None,
+              'misassemblies_matched_sv': misassemblies_matched_sv,
+              'misassembled_contigs': misassembled_contigs, 'misassembled_bases': misassembled_bases,
+              'misassembly_internal_overlap': misassembly_internal_overlap,
+              'unaligned': unaligned, 'partially_unaligned': partially_unaligned,
+              'partially_unaligned_bases': partially_unaligned_bases, 'fully_unaligned_bases': fully_unaligned_bases,
+              'ambiguous_contigs': ambiguous_contigs, 'ambiguous_contigs_extra_bases': ambiguous_contigs_extra_bases,
+              'ambiguous_contigs_len': ambiguous_contigs_len,
+              'half_unaligned_with_misassembly': half_unaligned_with_misassembly,
+              'misassemblies_by_ref': misassemblies_by_ref,
+              'istranslocations_by_refs': istranslocations_by_ref}
 
     return result, ref_aligns, total_indels_info, aligned_lengths, misassembled_contigs, misassemblies_in_contigs, contigs_aligned_lengths

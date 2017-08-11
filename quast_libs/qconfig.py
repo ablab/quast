@@ -164,9 +164,14 @@ phys_cov_fpath = None
 SHORT_INDEL_THRESHOLD = 5 # for separating short and long indels
 MAX_INDEL_LENGTH = 85  # for separating indels and local misassemblies (Nucmer default value)
 extensive_misassembly_threshold = 1000  # for separating local and extensive misassemblies (relocation)
-LARGE_EXTENSIVE_MIS_THRESHOLD = 6000
-LARGE_MIN_ALIGNMENT = 3000
 fragmented_max_indent = MAX_INDEL_LENGTH # for fake translocation in fragmented reference
+
+# large genome params
+LARGE_MIN_ALIGNMENT = 3000
+LARGE_MIN_CLUSTER = 200
+LARGE_EXTENSIVE_MIS_THRESHOLD = 6000
+LARGE_BSS_critical_alignment_len = 3000
+
 # BSS fine-tuning params
 BSS_MAX_SETS_NUMBER = 10
 BSS_critical_number_of_aligns = 200

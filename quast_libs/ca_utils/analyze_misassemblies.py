@@ -75,6 +75,10 @@ class Mapping(object):
         """Return end on contig (always >= start)"""
         return max(self.s2, self.e2)
 
+    def pos_strand(self):
+        """Returns True for positive strand and False for negative"""
+        return self.s2 < self.e2
+
 
 class IndelsInfo(object):
     def __init__(self):
@@ -91,13 +95,13 @@ class IndelsInfo(object):
         return self
 
 
-def distance_between_alignments(align1, align2, pos_strand1, pos_strand2, cyclic_ref_len=None):
+def distance_between_alignments(align1, align2, cyclic_ref_len=None):
     # returns distance (in reference) between two alignments
     distance_align1_align2 = align2.s1 - align1.e1 - 1
     distance_align2_align1 = align1.s1 - align2.e1 - 1
-    if pos_strand1 and pos_strand2:            # alignment 1 should be earlier in reference
+    if align1.pos_strand() and align2.pos_strand():            # alignment 1 should be earlier in reference
         distance = distance_align1_align2
-    elif not pos_strand1 and not pos_strand2:  # alignment 2 should be earlier in reference
+    elif not align1.pos_strand() and not align2.pos_strand():  # alignment 2 should be earlier in reference
         distance = distance_align2_align1
     else:
         if align2.s1 > align1.s1:
@@ -155,11 +159,9 @@ def is_misassembly(align1, align2, contig_seq, ref_lens, is_cyclic=False, region
     distance_on_contig = align2.start() - align1.end() - 1
     cyclic_ref_lens = ref_lens if is_cyclic else None
     if cyclic_ref_lens is not None and align1.ref == align2.ref:
-        distance_on_reference, cyclic_moment = distance_between_alignments(align1, align2, align1.s2 < align1.e2,
-            align2.s2 < align2.e2, cyclic_ref_lens[align1.ref])
+        distance_on_reference, cyclic_moment = distance_between_alignments(align1, align2, cyclic_ref_lens[align1.ref])
     else:
-        distance_on_reference, cyclic_moment = distance_between_alignments(align1, align2, align1.s2 < align1.e2,
-                                                                           align2.s2 < align2.e2)
+        distance_on_reference, cyclic_moment = distance_between_alignments(align1, align2)
 
     misassembly_internal_overlap = 0
     if distance_on_contig < 0:
@@ -263,7 +265,8 @@ def find_all_sv(bed_fpath):
 
 def check_is_scaffold_gap(inconsistency, contig_seq, align1, align2):
     if abs(inconsistency) <= qconfig.scaffolds_gap_threshold and align1.ref == align2.ref and \
-            is_gap_filled_ns(contig_seq, align1, align2) and (align1.s2 < align1.e2) == (align2.s2 < align2.e2):
+            align1.pos_strand() == align2.pos_strand() and align1.pos_strand() == (align1.s1 < align2.s1) and \
+            is_gap_filled_ns(contig_seq, align1, align2):
         return True
     return False
 

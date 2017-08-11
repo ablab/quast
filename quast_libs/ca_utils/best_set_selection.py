@@ -127,6 +127,8 @@ def get_best_aligns_sets(sorted_aligns, ctg_len, stdout_f, seq, ref_lens, is_cyc
             try:
                 cur_region = solid_regions.pop()
                 for idx, align in enumerate(sorted_aligns):
+                    if align in solids:
+                        continue
                     while not cur_region.include(align):
                         if align.start() > cur_region.end:
                             cur_region = solid_regions.pop()

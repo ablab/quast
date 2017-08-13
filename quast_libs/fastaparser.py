@@ -10,6 +10,8 @@ import os
 import sys
 import gzip
 import zipfile
+from collections import OrderedDict
+
 try:
     import bz2
 except ImportError:
@@ -79,7 +81,7 @@ def get_chr_lengths_from_fastafile(fpath):
         Takes filename of FASTA-file
         Returns list of lengths of sequences in FASTA-file
     """
-    chr_lengths = dict()
+    chr_lengths = OrderedDict()
     l = 0
     chr_name = None
     fasta_file = _get_fasta_file_handler(fpath)

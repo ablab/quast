@@ -16,8 +16,8 @@ from quast_libs.html_saver.html_saver import trim_ref_name
 
 
 class Alignment:
-    def __init__(self, name, start, end, unshifted_start, unshifted_end, is_rc, start_in_contig, end_in_contig,
-                 position_in_ref, ref_name, idy, is_best_set):
+    def __init__(self, name, start, end, unshifted_start=None, unshifted_end=None, is_rc=None,
+                 start_in_contig=None, end_in_contig=None, position_in_ref=None, ref_name=None, idy=None, is_best_set=None):
         self.name = name
         self.start = start
         self.end = end
@@ -248,7 +248,7 @@ def format_long_numbers(number):
     return ''.join(reversed([x + (' ' if i and not i % 3 else '') for i, x in enumerate(reversed(str(number)))]))
 
 
-def get_assemblies(contigs_fpaths, virtual_genome_size, lists_of_aligned_blocks, find_similar=True):
+def get_assemblies(contigs_fpaths, lists_of_aligned_blocks, virtual_genome_size=None, find_similar=True):
     min_visualizer_length = 0
 
     assemblies = Assemblies(

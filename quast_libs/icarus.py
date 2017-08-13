@@ -120,7 +120,7 @@ def do(contigs_fpaths, contig_report_fpath_pattern, output_dirpath, ref_fpath,
     if contigs_fpaths and qconfig.gene_finding:
         parse_genes_data(contigs_by_assemblies, genes_by_labels)
     if reference_chromosomes and lists_of_aligned_blocks:
-        assemblies = get_assemblies(contigs_fpaths, virtual_genome_size, lists_of_aligned_blocks, find_similar)
+        assemblies = get_assemblies(contigs_fpaths, lists_of_aligned_blocks, virtual_genome_size, find_similar)
         if qconfig.draw_svg:
             plot_fpath = draw_alignment_plot(assemblies, virtual_genome_size, output_dirpath, sorted_ref_names, sorted_ref_lengths, virtual_genome_shift)
     if (assemblies or contigs_by_assemblies) and qconfig.create_icarus_html:

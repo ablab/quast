@@ -12,7 +12,8 @@ import os
 import sys
 import shutil
 
-from quast_libs import qconfig
+from quast_libs import qconfig, circos
+
 qconfig.check_python_version()
 
 from quast_libs import qutils, reads_analyzer, run_barrnap, plotter_data, unique_kmers, ideal_assembly
@@ -149,6 +150,7 @@ def main(args):
     aligned_lengths_lists = []
     contig_alignment_plot_fpath = None
     icarus_html_fpath = None
+    circos_png_fpath = None
     if ref_fpath:
         ########################################################################
         ### former PLANTAKOLYA, PLANTAGORA
@@ -236,7 +238,8 @@ def main(args):
                 report_for_icarus_fpath_pattern = None
                 stdout_pattern = None
             draw_alignment_plots = qconfig.draw_svg or qconfig.create_icarus_html
-            number_of_steps = sum([int(bool(value)) for value in [draw_alignment_plots, all_pdf_fpath]])
+            draw_circos_plot = qconfig.draw_plots and ref_fpath
+            number_of_steps = sum([int(bool(value)) for value in [draw_alignment_plots, draw_circos_plot, all_pdf_fpath]])
             if draw_alignment_plots:
                 ########################################################################
                 ### VISUALIZE CONTIG ALIGNMENT
@@ -248,6 +251,11 @@ def main(args):
                     stdout_pattern=stdout_pattern, features=features_containers,
                     cov_fpath=cov_fpath, physical_cov_fpath=physical_cov_fpath, gc_fpath=icarus_gc_fpath,
                     json_output_dir=qconfig.json_output_dirpath, genes_by_labels=genes_by_labels)
+
+            if draw_circos_plot:
+                logger.main_info('  %d of %d: Creating Circos plots...' % (2 if draw_alignment_plots else 1, number_of_steps))
+                circos_png_fpath = circos.do(ref_fpath, contigs_fpaths, report_for_icarus_fpath_pattern, icarus_gc_fpath,
+                                             features_containers, os.path.join(output_dirpath, 'circos'), logger)
 
             if all_pdf_fpath:
                 # full report in PDF format: all tables and plots
@@ -274,6 +282,10 @@ def main(args):
 
     if all_pdf_fpath and os.path.isfile(all_pdf_fpath):
         logger.main_info('  PDF version (tables and plots) is saved to ' + all_pdf_fpath)
+
+    if circos_png_fpath:
+        logger.main_info('  Circos plot is saved to %s. Circos configuration file is saved to %s' %
+                         (circos_png_fpath, circos_png_fpath.replace('.png', '.conf')))
 
     if icarus_html_fpath:
         logger.main_info('  Icarus (contig browser) is saved to %s' % icarus_html_fpath)

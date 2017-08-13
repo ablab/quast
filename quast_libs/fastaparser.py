@@ -10,7 +10,11 @@ import os
 import sys
 import gzip
 import zipfile
-from collections import OrderedDict
+
+try:
+   from collections import OrderedDict
+except ImportError:
+   from quast_libs.site_packages.ordered_dict import OrderedDict
 
 try:
     import bz2

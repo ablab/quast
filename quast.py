@@ -141,7 +141,7 @@ def main(args):
     ### Stats and plots
     ########################################################################
     from quast_libs import basic_stats
-    icarus_gc_fpath = basic_stats.do(ref_fpath, contigs_fpaths, os.path.join(output_dirpath, 'basic_stats'), output_dirpath)
+    icarus_gc_fpath, circos_gc_fpath = basic_stats.do(ref_fpath, contigs_fpaths, os.path.join(output_dirpath, 'basic_stats'), output_dirpath)
 
     if qconfig.large_genome and ref_fpath:
         unique_kmers.do(os.path.join(output_dirpath, 'basic_stats'), ref_fpath, contigs_fpaths, logger)
@@ -254,7 +254,7 @@ def main(args):
 
             if draw_circos_plot:
                 logger.main_info('  %d of %d: Creating Circos plots...' % (2 if draw_alignment_plots else 1, number_of_steps))
-                circos_png_fpath = circos.do(ref_fpath, contigs_fpaths, report_for_icarus_fpath_pattern, icarus_gc_fpath,
+                circos_png_fpath = circos.do(ref_fpath, contigs_fpaths, report_for_icarus_fpath_pattern, circos_gc_fpath,
                                              features_containers, os.path.join(output_dirpath, 'circos'), logger)
 
             if all_pdf_fpath:

@@ -8,17 +8,19 @@
 from __future__ import with_statement
 
 import os
+import shutil
 from collections import defaultdict
-from os.path import join, exists
+from os.path import join, exists, dirname, realpath
 
 from quast_libs import qutils, qconfig
 from quast_libs.fastaparser import get_chr_lengths_from_fastafile
 from quast_libs.icarus_utils import get_assemblies, check_misassembled_blocks, Alignment
-from quast_libs.qutils import get_path_to_program, is_non_empty_file
+from quast_libs.qutils import get_path_to_program, is_non_empty_file, relpath
 
 circos_png_fname = 'circos.png'
 TRACK_WIDTH = 0.04
 TRACK_INTERVAL = 0.02
+MAX_POINTS = 25000
 
 
 def create_ideogram(chr_lengths, output_dir):
@@ -183,34 +185,24 @@ def create_alignment_plots(assembly, output_dir):
     return conf_fpath
 
 
-def create_gc_plot(gc_fpath, output_dir):
-    gc_circos_fpath = join(output_dir, 'gc.txt')
-    chrom = None
-    coord = 0
-    n = qconfig.GC_window_size_large if qconfig.large_genome else qconfig.GC_window_size  # non-overlapping windows
-    min_gc = 100
-    max_gc = 0
-    with open(gc_fpath) as in_f:
-        with open(gc_circos_fpath, 'w') as out_f:
-            for line in in_f:
-                if line.startswith('#'):
-                    chrom = line.split()[0][1:]
-                    coord = 0
-                else:
-                    gc = float(line.split()[-1])
-                    out_f.write('\t'.join([chrom, str(coord), str(coord + n), str(gc)]) + '\n')
-                    coord += n
-                    min_gc = min(min_gc, gc)
-                    max_gc = max(max_gc, gc)
-    min_gc /= 1.1
-    max_gc *= 1.1
-    return min_gc, max_gc, gc_circos_fpath
+def create_gc_plot(gc_fpath, data_dir):
+    gc_values = []
+    with open(gc_fpath) as f:
+        for line in f:
+            gc_values.append(float(line.split()[-1]))
+    min_gc = min(gc_values) * 0.9
+    max_gc = max(gc_values) * 1.1
+    max_points = len(gc_values)
+    gc_fpath = shutil.copy(gc_fpath, data_dir)
+    return gc_fpath, min_gc, max_gc, max_points
 
 
 def create_genes_plot(features_containers, output_dir):
     feature_fpaths = []
+    max_points = 0
     for feature_container in features_containers:
         feature_fpath = join(output_dir, feature_container.kind + '.txt')
+        num_points = 0
         if len(feature_container.region_list) == 0:
             continue
         with open(feature_fpath, 'w') as out_f:
@@ -221,8 +213,10 @@ def create_genes_plot(features_containers, output_dir):
                 if not chrom:
                     continue
                 out_f.write('\t'.join([chrom, str(region.start), str(region.end)]) + '\n')
+                num_points += 1
         feature_fpaths.append(feature_fpath)
-    return feature_fpaths
+        max_points = max(max_points, num_points)
+    return feature_fpaths, max_points
 
 
 def create_genome_file(chr_lengths, output_dir):
@@ -233,19 +227,43 @@ def create_genome_file(chr_lengths, output_dir):
     return genome_fpath
 
 
-def create_conf(ref_fpath, assemblies, output_dir, icarus_gc_fpath, features_containers):
+def create_housekeeping_file(max_points, output_dir, logger):
+    housekeeping_fpath = join(output_dir, 'housekeeping.conf')
+    if not get_path_to_program('circos'):
+        logger.warning('Circos is not found. '
+                       'You will have to manually set max_points_per_track in etc/housekeeping.conf to ' + str(max_points))
+        return join('etc', 'housekeeping.conf')
+    circos_dirpath = dirname(realpath(get_path_to_program('circos')))
+    template_fpath = join(circos_dirpath, '..', 'libexec', 'etc', 'housekeeping.conf')
+    with open(template_fpath) as f:
+        with open(housekeeping_fpath, 'w') as out_f:
+            for line in f:
+                if 'max_points_per_track' in line:
+                    out_f.write('max_points_per_track = %d\n' % max_points)
+                else:
+                    out_f.write(line)
+    return housekeeping_fpath
+
+
+def create_conf(ref_fpath, assemblies, output_dir, gc_fpath, features_containers):
+    data_dir = join(output_dir, 'data')
+    if not exists(data_dir):
+        os.makedirs(data_dir)
+
     chr_lengths = get_chr_lengths_from_fastafile(ref_fpath)
-    max_len, karyotype_fpath, ideogram_fpath = create_ideogram(chr_lengths, output_dir)
+    max_len, karyotype_fpath, ideogram_fpath = create_ideogram(chr_lengths, data_dir)
     if max_len >= 10 ** 6:
         chrom_units = 10 ** 5
     elif max_len >= 10 ** 5:
         chrom_units = 10 ** 4
     else:
         chrom_units = 1000
-    ticks_fpath = create_ticks_conf(chrom_units, output_dir)
-    min_gc, max_gc, gc_fpath = create_gc_plot(icarus_gc_fpath, output_dir)
-    feature_fpaths = create_genes_plot(features_containers, output_dir)
-    genome_fpath = create_genome_file(chr_lengths, output_dir)
+    ticks_fpath = create_ticks_conf(chrom_units, data_dir)
+    gc_fpath, min_gc, max_gc, gc_points = create_gc_plot(gc_fpath, data_dir)
+    feature_fpaths, gene_points = create_genes_plot(features_containers, data_dir)
+    genome_fpath = create_genome_file(chr_lengths, data_dir)
+    max_points = max([MAX_POINTS, gc_points, gene_points])
+    housekeeping_fpath = create_housekeeping_file(max_points, data_dir, logger)
     conf_fpath = join(output_dir, 'circos.conf')
     radius = 0.96
     plot_idx = 0
@@ -256,9 +274,9 @@ def create_conf(ref_fpath, assemblies, output_dir, icarus_gc_fpath, features_con
     track_intervals[-1] = TRACK_INTERVAL * 3
     with open(conf_fpath, 'w') as out_f:
         out_f.write('<<include etc/colors_fonts_patterns.conf>>\n')
-        out_f.write('<<include %s>>\n' % ideogram_fpath)
-        out_f.write('<<include %s>>\n' % ticks_fpath)
-        out_f.write('karyotype = %s\n' % karyotype_fpath)
+        out_f.write('<<include %s>>\n' % relpath(ideogram_fpath))
+        out_f.write('<<include %s>>\n' % relpath(ticks_fpath))
+        out_f.write('karyotype = %s\n' % relpath(karyotype_fpath))
         out_f.write('chromosomes_units = %d\n' % chrom_units)
         out_f.write('chromosomes_display_default = yes\n')
         out_f.write('track_width = ' + str(TRACK_WIDTH) + '\n')
@@ -280,22 +298,22 @@ def create_conf(ref_fpath, assemblies, output_dir, icarus_gc_fpath, features_con
         out_f.write('</image>\n')
         out_f.write('<highlights>\n')
         out_f.write('<highlight>\n')
-        out_f.write('file = %s\n' % genome_fpath)
+        out_f.write('file = %s\n' % relpath(genome_fpath))
         out_f.write('r0 = eval(sprintf("%.3fr",conf(track0_pos)))\n')
         out_f.write('r1 = eval(sprintf("%.3fr",conf(track' + str(len(assemblies) - 1) + '_pos) - conf(track_width))) - 0.005r\n')
         out_f.write('fill_color = 255,255,240\n')
         out_f.write('</highlight>\n')
         out_f.write('</highlights>\n')
-        out_f.write('<<include etc/housekeeping.conf>>\n')
+        out_f.write('<<include %s>>\n' % relpath(housekeeping_fpath))
         out_f.write('<plots>\n')
         out_f.write('layers_overflow = collapse\n')
         for assembly in assemblies:
-            alignments_conf = create_alignment_plots(assembly, output_dir)
+            alignments_conf = create_alignment_plots(assembly, data_dir)
             out_f.write('<plot>\n')
             out_f.write('type = tile\n')
             out_f.write('thickness = 40\n')
             out_f.write('layers = 1\n')
-            out_f.write('file = %s\n' % alignments_conf)
+            out_f.write('file = %s\n' % relpath(alignments_conf))
             out_f.write('r0 = eval(sprintf("%.3fr",conf(track' + str(plot_idx) + '_pos) - conf(track_width)))\n')
             out_f.write('r1 = eval(sprintf("%.3fr",conf(track' + str(plot_idx) + '_pos)))\n')
             out_f.write('</plot>\n')
@@ -306,7 +324,7 @@ def create_conf(ref_fpath, assemblies, output_dir, icarus_gc_fpath, features_con
             out_f.write('type = tile\n')
             out_f.write('thickness = 20\n')
             out_f.write('layers = 2\n')
-            out_f.write('file = %s\n' % feature_fpath)
+            out_f.write('file = %s\n' % relpath(feature_fpath))
             out_f.write('color = vvdorange\n')
             out_f.write('r0 = eval(sprintf("%.3fr",conf(track' + str(plot_idx) + '_pos) - conf(track_width)))\n')
             out_f.write('r1 = eval(sprintf("%.3fr",conf(track' + str(plot_idx) + '_pos)))\n')
@@ -316,7 +334,7 @@ def create_conf(ref_fpath, assemblies, output_dir, icarus_gc_fpath, features_con
         out_f.write('<plot>\n')
         out_f.write('type = histogram\n')
         out_f.write('thickness = 3\n')
-        out_f.write('file = %s\n' % gc_fpath)
+        out_f.write('file = %s\n' % relpath(gc_fpath))
         out_f.write('color = dgrey\n')
         out_f.write('min = %d\n' % min_gc)
         out_f.write('max = %d\n' % max_gc)
@@ -335,11 +353,11 @@ def create_conf(ref_fpath, assemblies, output_dir, icarus_gc_fpath, features_con
     return conf_fpath
 
 
-def do(ref_fpath, contigs_fpaths, contig_report_fpath_pattern, icarus_gc_fpath, features_containers, output_dir, logger):
+def do(ref_fpath, contigs_fpaths, contig_report_fpath_pattern, gc_fpath, features_containers, output_dir, logger):
     if not exists(output_dir):
         os.makedirs(output_dir)
     assemblies = parse_alignments(contigs_fpaths, contig_report_fpath_pattern)
-    conf_fpath = create_conf(ref_fpath, assemblies, output_dir, icarus_gc_fpath, features_containers)
+    conf_fpath = create_conf(ref_fpath, assemblies, output_dir, gc_fpath, features_containers)
     circos_exec = get_path_to_program('circos')
     if not circos_exec:
         logger.warning('Circos is not installed!\n'
@@ -357,3 +375,4 @@ def do(ref_fpath, contigs_fpaths, contig_report_fpath_pattern, icarus_gc_fpath, 
         return circos_png_fpath
     else:
         logger.warning('  Circos diagram was not created. See ' + err_fpath + ' for details')
+

@@ -80,6 +80,17 @@ def save_icarus_GC(ref_fpath, gc_fpath):
                 out_f.write(str(chr_index) + ' ' + str(GC_percent) + '\n')
 
 
+def save_circos_GC(ref_fpath, reference_length, gc_fpath):
+    max_points = 25000
+    n = min(20000, max(100, reference_length // max_points))
+    with open(gc_fpath, 'w') as out_f:
+        for name, seq_full in fastaparser.read_fasta(ref_fpath):
+            for i in range(0, len(seq_full), n):
+                seq = seq_full[i:i + n]
+                GC_percent = get_GC_percent(seq, n)
+                out_f.write('\t'.join([name, str(i), str(i + n), str(GC_percent) + '\n']))
+
+
 def binning_coverage(cov_values, nums_contigs):
     min_bins_cnt = 5
     bin_sizes = []
@@ -164,14 +175,18 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, results_dir):
     reference_lengths = []
     reference_fragments = None
     icarus_gc_fpath = None
+    circos_gc_fpath = None
     if ref_fpath:
         reference_lengths = sorted(fastaparser.get_chr_lengths_from_fastafile(ref_fpath).values(), reverse=True)
         reference_fragments = len(reference_lengths)
         reference_length = sum(reference_lengths)
         reference_GC, reference_GC_distribution, reference_GC_contigs_distribution = GC_content(ref_fpath)
-        if qconfig.create_icarus_html:
-            icarus_gc_fpath = join(output_dirpath, 'gc.txt')
+        if qconfig.create_icarus_html or qconfig.draw_plots:
+            icarus_gc_fpath = join(output_dirpath, 'gc.icarus.txt')
             save_icarus_GC(ref_fpath, icarus_gc_fpath)
+        if qconfig.draw_plots:
+            circos_gc_fpath = join(output_dirpath, 'gc.circos.txt')
+            save_circos_GC(ref_fpath, reference_length, circos_gc_fpath)
 
         logger.info('  Reference genome:')
         logger.info('    ' + os.path.basename(ref_fpath) + ', length = ' + str(reference_length) +
@@ -338,4 +353,4 @@ def do(ref_fpath, contigs_fpaths, output_dirpath, results_dir):
             draw_coverage_histograms(coverage_dict, contigs_fpaths, output_dirpath)
 
     logger.main_info('Done.')
-    return icarus_gc_fpath
+    return icarus_gc_fpath, circos_gc_fpath

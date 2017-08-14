@@ -13,14 +13,18 @@ from collections import defaultdict
 from os.path import join, exists, dirname, realpath
 
 from quast_libs import qutils, qconfig
+from quast_libs.ca_utils.align_contigs import get_nucmer_aux_out_fpaths
+from quast_libs.ca_utils.misc import create_nucmer_output_dir, open_gzipsafe
 from quast_libs.fastaparser import get_chr_lengths_from_fastafile
 from quast_libs.icarus_utils import get_assemblies, check_misassembled_blocks, Alignment
 from quast_libs.qutils import get_path_to_program, is_non_empty_file, relpath
+from quast_libs.reads_analyzer import COVERAGE_FACTOR
 
 circos_png_fname = 'circos.png'
 TRACK_WIDTH = 0.04
 TRACK_INTERVAL = 0.02
-MAX_POINTS = 25000
+BIG_TRACK_INTERVAL = 0.05
+MAX_POINTS = 50000
 
 
 def create_ideogram(chr_lengths, output_dir):
@@ -29,7 +33,7 @@ def create_ideogram(chr_lengths, output_dir):
     karyotype_fpath = join(output_dir, 'reference.karyotype.txt')
     with open(karyotype_fpath, 'w') as out_f:
         for name, seq_len in chr_lengths.items():
-            out_f.write('\t'.join(['chr', '-', name, name, '0', str(seq_len), 'blue']) + '\n')
+            out_f.write('\t'.join(['chr', '-', name, name, '0', str(seq_len), 'lgrey']) + '\n')
             max_len = max(max_len, seq_len)
             num_chromosomes += 1
 
@@ -47,11 +51,10 @@ def create_ideogram(chr_lengths, output_dir):
             out_f.write('default = 0.0005r\n')
         out_f.write('break = 0.005r\n')
         out_f.write('</spacing>\n')
-        out_f.write('thickness = 40p\n')
+        out_f.write('thickness = 20p\n')
         out_f.write('stroke_thickness = 2\n')
         out_f.write('stroke_color = black\n')
         out_f.write('fill = yes\n')
-        out_f.write('fill_color = blue\n')
         out_f.write('radius = 0.85r\n')
         out_f.write('show_label = no\n')
         out_f.write('label_font = default\n')
@@ -165,23 +168,33 @@ def parse_alignments(contigs_fpaths, contig_report_fpath_pattern):
             if aligned_blocks is None:
                 continue
 
-            aligned_blocks = check_misassembled_blocks(aligned_blocks, misassembled_id_to_structure)
+            aligned_blocks = check_misassembled_blocks(aligned_blocks, misassembled_id_to_structure, filter_local=True)
             lists_of_aligned_blocks.append(aligned_blocks)
 
     if lists_of_aligned_blocks:
         return get_assemblies(contigs_fpaths, lists_of_aligned_blocks).assemblies
 
 
-def create_alignment_plots(assembly, output_dir):
+def create_alignment_plots(assembly, ref_len, output_dir):
     conf_fpath = join(output_dir, assembly.label + '.conf')
+    max_gap = ref_len // 50000
     with open(conf_fpath, 'w') as out_f:
+        prev_align = None
         for align in assembly.alignments:
-            color = 'green'
+            align.color = 'green'
             if align.misassembled:
-                color = 'red'
+                align.color = 'red'
             elif align.ambiguous:
-                color = 'purple'
-            out_f.write('\t'.join([align.ref_name, str(align.start), str(align.end), 'color=' + color]) + '\n')
+                align.color = 'purple'
+            if prev_align and prev_align.ref_name == align.ref_name and align.color == prev_align.color and \
+                            max(align.start, prev_align.start) - min(align.end, prev_align.end) < max_gap:
+                prev_align.start = min(align.start, prev_align.start)
+                prev_align.end = max(align.end, prev_align.end)
+            else:
+                if prev_align:
+                    out_f.write('\t'.join([prev_align.ref_name, str(prev_align.start), str(prev_align.end), 'color=' + prev_align.color]) + '\n')
+                prev_align = align
+        out_f.write('\t'.join([prev_align.ref_name, str(prev_align.start), str(prev_align.end), 'color=' + prev_align.color]) + '\n')
     return conf_fpath
 
 
@@ -193,18 +206,83 @@ def create_gc_plot(gc_fpath, data_dir):
     min_gc = min(gc_values) * 0.9
     max_gc = max(gc_values) * 1.1
     max_points = len(gc_values)
-    gc_fpath = shutil.copy(gc_fpath, data_dir)
-    return gc_fpath, min_gc, max_gc, max_points
+    dst_gc_fpath = join(data_dir, 'gc.txt')
+    shutil.copy(gc_fpath, dst_gc_fpath)
+    return dst_gc_fpath, min_gc, max_gc, max_points
 
 
-def create_genes_plot(features_containers, output_dir):
+def create_coverage_plot(cov_fpath, window_size, ref_len, output_dir):
+    max_points = 0
+    if not cov_fpath:
+        return None, max_points
+
+    cov_by_chrom = dict()
+    cov_data_fpath = join(output_dir, 'coverage.txt')
+    with open(cov_fpath) as f:
+        pos = 0
+        for index, line in enumerate(f):
+            fs = line.split()
+            if line.startswith('#'):
+                chrom = fs[0][1:]
+                cov_by_chrom[chrom] = [[] for i in range (ref_len // window_size + 1)]
+            else:
+                depth = int(fs[-1])
+                cov_by_chrom[chrom][pos // window_size].append(depth)
+                pos += COVERAGE_FACTOR
+                if pos > ref_len:
+                    break
+
+    with open(cov_data_fpath, 'w') as out_f:
+        for chrom, depth_list in cov_by_chrom.items():
+            for i, depths in enumerate(depth_list):
+                avg_depth = sum(depths) / len(depths) if depths else 0
+                out_f.write('\t'.join([chrom, str(i * window_size), str(((i + 1) * window_size)), str(avg_depth)]) + '\n')
+                max_points += 1
+    return cov_data_fpath, max_points
+
+def create_mismatches_plot(assembly, window_size, ref_len, root_dir, output_dir):
+    assembly_label = qutils.label_from_fpath_for_fname(assembly.fpath)
+    nucmer_dirpath = join(root_dir, '..', 'contigs_reports')
+    nucmer_fpath = join(create_nucmer_output_dir(nucmer_dirpath), assembly_label)
+    _, _, _, _, used_snps_fpath = get_nucmer_aux_out_fpaths(nucmer_fpath)
+    if not exists(used_snps_fpath):
+        return None
+
+    mismatches_fpath = join(output_dir, assembly_label + '.mismatches.txt')
+    mismatch_density_by_chrom = defaultdict(lambda : [0] * (ref_len // window_size + 1))
+    with open_gzipsafe(used_snps_fpath) as f:
+        with open(mismatches_fpath, 'w') as out_f:
+            for line in f:
+                chrom, contig, ref_pos, ref_nucl, ctg_nucl, ctg_pos = line.split('\t')
+                if ref_nucl != '.' and ctg_nucl != '.':
+                    mismatch_density_by_chrom[chrom][int(ref_pos) // window_size] += 1
+            for chrom, density_list in mismatch_density_by_chrom.items():
+                start, end = 0, 0
+                for i, density in enumerate(density_list):
+                    if density == 0:
+                        end = (i + 1) * window_size
+                    else:
+                        if end:
+                            out_f.write('\t'.join([chrom, str(start), str(end), '0']) + '\n')
+                        out_f.write('\t'.join([chrom, str(i * window_size), str(((i + 1) * window_size)), str(density)]) + '\n')
+                        start = (i + 1) * window_size
+                out_f.write('\t'.join([chrom, str(start), str(end), '0']) + '\n')
+    return mismatches_fpath
+
+
+def create_genes_plot(features_containers, window_size, ref_len, output_dir):
     feature_fpaths = []
     max_points = 0
+    if not features_containers:
+        return feature_fpaths, max_points
+
     for feature_container in features_containers:
         feature_fpath = join(output_dir, feature_container.kind + '.txt')
-        num_points = 0
         if len(feature_container.region_list) == 0:
             continue
+
+        num_points = 0
+        gene_density_by_chrom = defaultdict(lambda : [0] * (ref_len // window_size + 1))
         with open(feature_fpath, 'w') as out_f:
             for region in feature_container.region_list:
                 chrom = region.chromosome if region.chromosome and region.chromosome in feature_container.chr_names_dict \
@@ -212,8 +290,13 @@ def create_genes_plot(features_containers, output_dir):
                 chrom = feature_container.chr_names_dict[chrom] if chrom in feature_container.chr_names_dict else None
                 if not chrom:
                     continue
-                out_f.write('\t'.join([chrom, str(region.start), str(region.end)]) + '\n')
-                num_points += 1
+                for i in range(region.start // window_size, min(region.end // window_size + 1, len(gene_density_by_chrom[chrom]))):
+                    if i < len(gene_density_by_chrom[chrom]):
+                        gene_density_by_chrom[chrom][i] += 1
+            for chrom, gene_density_list in gene_density_by_chrom.items():
+                for i, density in enumerate(gene_density_list):
+                    out_f.write('\t'.join([chrom, str(i * window_size), str(((i + 1) * window_size)), str(density)]) + '\n')
+                    num_points += 1
         feature_fpaths.append(feature_fpath)
         max_points = max(max_points, num_points)
     return feature_fpaths, max_points
@@ -232,7 +315,7 @@ def create_housekeeping_file(max_points, output_dir, logger):
     if not get_path_to_program('circos'):
         logger.warning('Circos is not found. '
                        'You will have to manually set max_points_per_track in etc/housekeeping.conf to ' + str(max_points))
-        return join('etc', 'housekeeping.conf')
+        return '<<include %s>>\n' % join('etc', 'housekeeping.conf')
     circos_dirpath = dirname(realpath(get_path_to_program('circos')))
     template_fpath = join(circos_dirpath, '..', 'libexec', 'etc', 'housekeeping.conf')
     with open(template_fpath) as f:
@@ -242,10 +325,24 @@ def create_housekeeping_file(max_points, output_dir, logger):
                     out_f.write('max_points_per_track = %d\n' % max_points)
                 else:
                     out_f.write(line)
-    return housekeeping_fpath
+    return '<<include %s>>\n' % relpath(housekeeping_fpath, output_dir)
 
 
-def create_conf(ref_fpath, assemblies, output_dir, gc_fpath, features_containers):
+def set_window_size(ref_len):
+    if ref_len > 5 * 10 ** 8:
+        window_size = 20000
+    elif ref_len > 3 * 10 ** 8:
+        window_size = 10000
+    elif ref_len > 10 ** 8:
+        window_size = 5000
+    elif ref_len > 10 ** 6:
+        window_size = 1000
+    else:
+        window_size = 100
+    return window_size
+
+
+def create_conf(ref_fpath, assemblies, output_dir, gc_fpath, features_containers, cov_fpath, logger):
     data_dir = join(output_dir, 'data')
     if not exists(data_dir):
         os.makedirs(data_dir)
@@ -259,24 +356,33 @@ def create_conf(ref_fpath, assemblies, output_dir, gc_fpath, features_containers
     else:
         chrom_units = 1000
     ticks_fpath = create_ticks_conf(chrom_units, data_dir)
+    ref_len = sum(chr_lengths.values())
+    window_size = set_window_size(ref_len)
     gc_fpath, min_gc, max_gc, gc_points = create_gc_plot(gc_fpath, data_dir)
-    feature_fpaths, gene_points = create_genes_plot(features_containers, data_dir)
+    feature_fpaths, gene_points = create_genes_plot(features_containers, window_size, ref_len, data_dir)
+    mismatches_fpaths = [create_mismatches_plot(assembly, window_size, ref_len, output_dir, data_dir) for assembly in assemblies]
     genome_fpath = create_genome_file(chr_lengths, data_dir)
-    max_points = max([MAX_POINTS, gc_points, gene_points])
-    housekeeping_fpath = create_housekeeping_file(max_points, data_dir, logger)
+    cov_data_fpath, cov_points = create_coverage_plot(cov_fpath, window_size, ref_len, data_dir)
+    max_points = max([MAX_POINTS, gc_points, gene_points, cov_points])
+    alignments_fpaths = [create_alignment_plots(assembly, ref_len, data_dir) for assembly in assemblies]
+    if not alignments_fpaths:
+        return None
     conf_fpath = join(output_dir, 'circos.conf')
     radius = 0.96
     plot_idx = 0
     track_intervals = [TRACK_INTERVAL] * len(assemblies)
     if feature_fpaths:
-        track_intervals[-1] = TRACK_INTERVAL * 2
+        track_intervals[-1] = BIG_TRACK_INTERVAL
         track_intervals += [TRACK_INTERVAL] * len(feature_fpaths)
-    track_intervals[-1] = TRACK_INTERVAL * 3
+    if cov_data_fpath:
+        track_intervals[-1] = BIG_TRACK_INTERVAL
+        track_intervals.append(TRACK_INTERVAL)
+    track_intervals[-1] = BIG_TRACK_INTERVAL
     with open(conf_fpath, 'w') as out_f:
         out_f.write('<<include etc/colors_fonts_patterns.conf>>\n')
-        out_f.write('<<include %s>>\n' % relpath(ideogram_fpath))
-        out_f.write('<<include %s>>\n' % relpath(ticks_fpath))
-        out_f.write('karyotype = %s\n' % relpath(karyotype_fpath))
+        out_f.write('<<include %s>>\n' % relpath(ideogram_fpath, output_dir))
+        out_f.write('<<include %s>>\n' % relpath(ticks_fpath, output_dir))
+        out_f.write('karyotype = %s\n' % relpath(karyotype_fpath, output_dir))
         out_f.write('chromosomes_units = %d\n' % chrom_units)
         out_f.write('chromosomes_display_default = yes\n')
         out_f.write('track_width = ' + str(TRACK_WIDTH) + '\n')
@@ -298,34 +404,52 @@ def create_conf(ref_fpath, assemblies, output_dir, gc_fpath, features_containers
         out_f.write('</image>\n')
         out_f.write('<highlights>\n')
         out_f.write('<highlight>\n')
-        out_f.write('file = %s\n' % relpath(genome_fpath))
+        out_f.write('file = %s\n' % relpath(genome_fpath, output_dir))
         out_f.write('r0 = eval(sprintf("%.3fr",conf(track0_pos)))\n')
         out_f.write('r1 = eval(sprintf("%.3fr",conf(track' + str(len(assemblies) - 1) + '_pos) - conf(track_width))) - 0.005r\n')
         out_f.write('fill_color = 255,255,240\n')
         out_f.write('</highlight>\n')
         out_f.write('</highlights>\n')
-        out_f.write('<<include %s>>\n' % relpath(housekeeping_fpath))
+        out_f.write(create_housekeeping_file(max_points, data_dir, logger))
         out_f.write('<plots>\n')
         out_f.write('layers_overflow = collapse\n')
-        for assembly in assemblies:
-            alignments_conf = create_alignment_plots(assembly, data_dir)
+        for i, alignments_conf in enumerate(alignments_fpaths):
             out_f.write('<plot>\n')
             out_f.write('type = tile\n')
-            out_f.write('thickness = 40\n')
+            out_f.write('thickness = 50p\n')
+            out_f.write('stroke_thickness = 0\n')
             out_f.write('layers = 1\n')
-            out_f.write('file = %s\n' % relpath(alignments_conf))
+            out_f.write('file = %s\n' % relpath(alignments_conf, output_dir))
             out_f.write('r0 = eval(sprintf("%.3fr",conf(track' + str(plot_idx) + '_pos) - conf(track_width)))\n')
             out_f.write('r1 = eval(sprintf("%.3fr",conf(track' + str(plot_idx) + '_pos)))\n')
             out_f.write('</plot>\n')
+            if mismatches_fpaths:
+                out_f.write('<plot>\n')
+                out_f.write('type = histogram\n')
+                out_f.write('thickness = 1\n')
+                out_f.write('fill_color = vlyellow\n')
+                out_f.write('file = %s\n' % relpath(mismatches_fpaths[i], output_dir))
+                out_f.write('r0 = eval(sprintf("%.3fr",conf(track' + str(plot_idx) + '_pos) - conf(track_width)))\n')
+                out_f.write('r1 = eval(sprintf("%.3fr",conf(track' + str(plot_idx) + '_pos)))\n')
+                out_f.write('</plot>\n')
             plot_idx += 1
         for feature_fpath in feature_fpaths:
             # genes plot
             out_f.write('<plot>\n')
-            out_f.write('type = tile\n')
-            out_f.write('thickness = 20\n')
-            out_f.write('layers = 2\n')
-            out_f.write('file = %s\n' % relpath(feature_fpath))
-            out_f.write('color = vvdorange\n')
+            out_f.write('type = heatmap\n')
+            out_f.write('file = %s\n' % relpath(feature_fpath, output_dir))
+            out_f.write('color = ylorbr-9\n')
+            out_f.write('r0 = eval(sprintf("%.3fr",conf(track' + str(plot_idx) + '_pos) - conf(track_width)))\n')
+            out_f.write('r1 = eval(sprintf("%.3fr",conf(track' + str(plot_idx) + '_pos)))\n')
+            out_f.write('</plot>\n')
+            plot_idx += 1
+        if cov_data_fpath:
+            # coverage plot
+            out_f.write('<plot>\n')
+            out_f.write('type = histogram\n')
+            out_f.write('thickness = 1\n')
+            out_f.write('file = %s\n' % relpath(cov_data_fpath, output_dir))
+            out_f.write('fill_color = vlblue\n')
             out_f.write('r0 = eval(sprintf("%.3fr",conf(track' + str(plot_idx) + '_pos) - conf(track_width)))\n')
             out_f.write('r1 = eval(sprintf("%.3fr",conf(track' + str(plot_idx) + '_pos)))\n')
             out_f.write('</plot>\n')
@@ -334,7 +458,7 @@ def create_conf(ref_fpath, assemblies, output_dir, gc_fpath, features_containers
         out_f.write('<plot>\n')
         out_f.write('type = histogram\n')
         out_f.write('thickness = 3\n')
-        out_f.write('file = %s\n' % relpath(gc_fpath))
+        out_f.write('file = %s\n' % relpath(gc_fpath, output_dir))
         out_f.write('color = dgrey\n')
         out_f.write('min = %d\n' % min_gc)
         out_f.write('max = %d\n' % max_gc)
@@ -344,7 +468,7 @@ def create_conf(ref_fpath, assemblies, output_dir, gc_fpath, features_containers
         out_f.write('<axis>\n')
         out_f.write('spacing = 0.2r\n')
         out_f.write('thickness = 1r\n')
-        out_f.write('color = lyellow\n')
+        out_f.write('color = lblue\n')
         out_f.write('</axis>\n')
         out_f.write('</axes>\n')
         out_f.write('</plot>\n')
@@ -353,11 +477,11 @@ def create_conf(ref_fpath, assemblies, output_dir, gc_fpath, features_containers
     return conf_fpath
 
 
-def do(ref_fpath, contigs_fpaths, contig_report_fpath_pattern, gc_fpath, features_containers, output_dir, logger):
+def do(ref_fpath, contigs_fpaths, contig_report_fpath_pattern, gc_fpath, features_containers, cov_fpath, output_dir, logger):
     if not exists(output_dir):
         os.makedirs(output_dir)
     assemblies = parse_alignments(contigs_fpaths, contig_report_fpath_pattern)
-    conf_fpath = create_conf(ref_fpath, assemblies, output_dir, gc_fpath, features_containers)
+    conf_fpath = create_conf(ref_fpath, assemblies, output_dir, gc_fpath, features_containers, cov_fpath, logger)
     circos_exec = get_path_to_program('circos')
     if not circos_exec:
         logger.warning('Circos is not installed!\n'

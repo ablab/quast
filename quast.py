@@ -238,7 +238,7 @@ def main(args):
                 report_for_icarus_fpath_pattern = None
                 stdout_pattern = None
             draw_alignment_plots = qconfig.draw_svg or qconfig.create_icarus_html
-            draw_circos_plot = qconfig.draw_plots and ref_fpath
+            draw_circos_plot = qconfig.draw_plots and ref_fpath and len(aligned_contigs_fpaths)
             number_of_steps = sum([int(bool(value)) for value in [draw_alignment_plots, draw_circos_plot, all_pdf_fpath]])
             if draw_alignment_plots:
                 ########################################################################
@@ -255,7 +255,7 @@ def main(args):
             if draw_circos_plot:
                 logger.main_info('  %d of %d: Creating Circos plots...' % (2 if draw_alignment_plots else 1, number_of_steps))
                 circos_png_fpath = circos.do(ref_fpath, contigs_fpaths, report_for_icarus_fpath_pattern, circos_gc_fpath,
-                                             features_containers, os.path.join(output_dirpath, 'circos'), logger)
+                                             features_containers, cov_fpath, os.path.join(output_dirpath, 'circos'), logger)
 
             if all_pdf_fpath:
                 # full report in PDF format: all tables and plots

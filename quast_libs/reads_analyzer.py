@@ -29,6 +29,7 @@ from quast_libs.reporting import save_reads
 
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 ref_sam_fpaths = {}
+COVERAGE_FACTOR = 10
 
 
 class Mapping(object):
@@ -576,7 +577,7 @@ def run_bwa(read_fpaths, ref_fpath, sam_fpath, out_sam_fpaths, output_dir, err_f
             read1, read2 = reads
             cmd = bwa_cmd + ' ' + ref_fpath + ' ' + read1 + ' ' + read2
         output_fpath = add_suffix(sam_fpath, reads_type + str(idx + 1))
-        if not is_non_empty_file(sam_fpath):
+        if not is_non_empty_file(output_fpath):
             qutils.call_subprocess(shlex.split(cmd), stdout=open(output_fpath, 'w'), stderr=open(err_fpath, 'a'), logger=logger)
             if reads_type == 'paired_end':
                 insert_size = calculate_insert_size(output_fpath, output_dir, basename(sam_fpath))
@@ -804,7 +805,6 @@ def proceed_cov_file(raw_cov_fpath, cov_fpath, correct_chr_names):
     chr_depth = defaultdict(list)
     used_chromosomes = dict()
     chr_index = 0
-    cov_factor = 9
     with open(raw_cov_fpath, 'r') as in_coverage:
         with open(cov_fpath, 'w') as out_coverage:
             for line in in_coverage:
@@ -821,12 +821,12 @@ def proceed_cov_file(raw_cov_fpath, cov_fpath, correct_chr_names):
                     chr_depth[name].extend([depth] * (end - start))
                 else:
                     chr_depth[name].append(depth)
-                if len(chr_depth[name]) >= cov_factor:
-                    max_index = len(chr_depth[name]) - (len(chr_depth[name]) % cov_factor)
-                    for index in range(0, max_index, cov_factor):
-                        cur_depth = sum(chr_depth[name][index: index + cov_factor]) // cov_factor
+                if len(chr_depth[name]) >= COVERAGE_FACTOR:
+                    max_index = len(chr_depth[name]) - (len(chr_depth[name]) % COVERAGE_FACTOR)
+                    for index in range(0, max_index, COVERAGE_FACTOR):
+                        cur_depth = sum(chr_depth[name][index: index + COVERAGE_FACTOR]) // COVERAGE_FACTOR
                         out_coverage.write(' '.join([used_chromosomes[name], str(cur_depth) + '\n']))
-                    chr_depth[name] = chr_depth[name][index + cov_factor:]
+                    chr_depth[name] = chr_depth[name][index + COVERAGE_FACTOR:]
             os.remove(raw_cov_fpath)
 
 

@@ -122,7 +122,7 @@ THE SOFTWARE.
       var y_anno = d3.scale.linear().domain([ext[0], ext[1] + 1]).range([0, annotationsHeight]);
     }
 
-    var coverageFactor = 9, gcFactor = 100, maxCovDots = chartWidth * 4;
+    var coverageFactor = 10, gcFactor = 100, maxCovDots = chartWidth * 4;
     var featuresHidden = false, drawCoverage = false;
     var coverageMainHidden = true, physicalCoverageHidden = true, physicalMiniCoverageHidden = true,
         gcHidden = false, gcMiniHidden = false;

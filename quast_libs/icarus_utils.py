@@ -326,7 +326,7 @@ def group_references(chr_names, contig_names_by_refs, chromosomes_length, ref_fp
     return chr_full_names, contig_names_by_refs
 
 
-def check_misassembled_blocks(aligned_blocks, misassembled_id_to_structure):
+def check_misassembled_blocks(aligned_blocks, misassembled_id_to_structure, filter_local=False):
     for alignment in aligned_blocks:
         if not alignment.is_best_set:  # alignment is not in the best set
             continue
@@ -338,12 +338,12 @@ def check_misassembled_blocks(aligned_blocks, misassembled_id_to_structure):
         misassembled = False
         if type(contig_structure[num_alignment - 1]) == str:
             misassembly_type = contig_structure[num_alignment - 1].split(',')[0].strip()
-            if is_misassembly_real(misassembly_type):
+            if is_misassembly_real(misassembly_type, filter_local):
                 misassembled = True
         if num_alignment + 1 < len(contig_structure) and \
                         type(contig_structure[num_alignment + 1]) == str:
             misassembly_type = contig_structure[num_alignment + 1].split(',')[0].strip()
-            if is_misassembly_real(misassembly_type):
+            if is_misassembly_real(misassembly_type, filter_local):
                 misassembled = True
         alignment.misassembled = misassembled
     return aligned_blocks
@@ -402,5 +402,7 @@ def get_misassembly_for_alignment(contig_structure, alignment):
     return misassemblies, misassembled_ends
 
 
-def is_misassembly_real(misassembly_type):
+def is_misassembly_real(misassembly_type, filter_local=False):
+    if filter_local and 'local' in misassembly_type:
+        return False
     return 'fake' not in misassembly_type and 'indel' not in misassembly_type

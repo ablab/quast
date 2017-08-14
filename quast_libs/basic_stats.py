@@ -11,6 +11,7 @@ import re
 from os.path import join
 
 from quast_libs import fastaparser, qconfig, qutils, reporting, plotter
+from quast_libs.circos import set_window_size
 from quast_libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 
@@ -81,14 +82,13 @@ def save_icarus_GC(ref_fpath, gc_fpath):
 
 
 def save_circos_GC(ref_fpath, reference_length, gc_fpath):
-    max_points = 25000
-    n = min(20000, max(100, reference_length // max_points))
+    window_size = set_window_size(reference_length)
     with open(gc_fpath, 'w') as out_f:
         for name, seq_full in fastaparser.read_fasta(ref_fpath):
-            for i in range(0, len(seq_full), n):
-                seq = seq_full[i:i + n]
-                GC_percent = get_GC_percent(seq, n)
-                out_f.write('\t'.join([name, str(i), str(i + n), str(GC_percent) + '\n']))
+            for i in range(0, len(seq_full), window_size):
+                seq = seq_full[i:i + window_size]
+                GC_percent = get_GC_percent(seq, window_size)
+                out_f.write('\t'.join([name, str(i), str(i + window_size), str(GC_percent) + '\n']))
 
 
 def binning_coverage(cov_values, nums_contigs):

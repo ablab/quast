@@ -12,9 +12,14 @@ import shutil
 from collections import defaultdict
 from os.path import join, exists, dirname, realpath
 
+try:
+   from collections import OrderedDict
+except ImportError:
+   from quast_libs.site_packages.ordered_dict import OrderedDict
+
 from quast_libs import qutils, qconfig
 from quast_libs.ca_utils.align_contigs import get_nucmer_aux_out_fpaths
-from quast_libs.ca_utils.misc import create_nucmer_output_dir, open_gzipsafe
+from quast_libs.ca_utils.misc import create_nucmer_output_dir, open_gzipsafe, ref_labels_by_chromosomes
 from quast_libs.fastaparser import get_chr_lengths_from_fastafile
 from quast_libs.icarus_utils import get_assemblies, check_misassembled_blocks, Alignment
 from quast_libs.qutils import get_path_to_program, is_non_empty_file, relpath
@@ -51,7 +56,7 @@ def create_ideogram(chr_lengths, output_dir):
             out_f.write('default = 0.0005r\n')
         out_f.write('break = 0.005r\n')
         out_f.write('</spacing>\n')
-        out_f.write('thickness = 25p\n')
+        out_f.write('thickness = 30p\n')
         out_f.write('stroke_thickness = 2\n')
         out_f.write('stroke_color = black\n')
         out_f.write('fill = yes\n')
@@ -118,6 +123,20 @@ def create_ticks_conf(chrom_units, output_dir):
         out_f.write('</ticks>')
     return ticks_fpath
 
+
+def create_meta_highlights(chr_lengths, output_dir):
+    highlights_fpath = join(output_dir, 'highlights.txt')
+    colors = ['orange', 'purple', 'blue']
+    with open(highlights_fpath, 'w') as out_f:
+        chrom_by_refs = OrderedDict()
+        for chrom, ref in ref_labels_by_chromosomes.items():
+            if not ref in chrom_by_refs:
+                chrom_by_refs[ref] = []
+            chrom_by_refs[ref].append(chrom)
+        for i, (ref, chromosomes) in enumerate(chrom_by_refs.items()):
+            for chrom in chromosomes:
+                out_f.write('\t'.join([chrom, '0', str(chr_lengths[chrom]), 'fill_color=' + colors[i % len(colors)]]) + '\n')
+    return highlights_fpath
 
 def parse_nucmer_contig_report(report_fpath):
     aligned_blocks = []
@@ -206,12 +225,10 @@ def create_gc_plot(gc_fpath, data_dir):
     with open(gc_fpath) as f:
         for line in f:
             gc_values.append(float(line.split()[-1]))
-    min_gc = min(gc_values) * 0.9
-    max_gc = max(gc_values) * 1.1
     max_points = len(gc_values)
     dst_gc_fpath = join(data_dir, 'gc.txt')
     shutil.copy(gc_fpath, dst_gc_fpath)
-    return dst_gc_fpath, min_gc, max_gc, max_points
+    return dst_gc_fpath, max_points
 
 
 def create_coverage_plot(cov_fpath, window_size, ref_len, output_dir):
@@ -243,6 +260,7 @@ def create_coverage_plot(cov_fpath, window_size, ref_len, output_dir):
                 max_points += 1
     return cov_data_fpath, max_points
 
+
 def create_mismatches_plot(assembly, window_size, ref_len, root_dir, output_dir):
     assembly_label = qutils.label_from_fpath_for_fname(assembly.fpath)
     nucmer_dirpath = join(root_dir, '..', 'contigs_reports')
@@ -269,6 +287,7 @@ def create_mismatches_plot(assembly, window_size, ref_len, root_dir, output_dir)
                         out_f.write('\t'.join([chrom, str(start), str(end), '0']) + '\n')
                     out_f.write('\t'.join([chrom, str(i * window_size), str(((i + 1) * window_size)), str(density)]) + '\n')
                     start = (i + 1) * window_size
+                    end = None
             out_f.write('\t'.join([chrom, str(start), str(end), '0']) + '\n')
     return mismatches_fpath
 
@@ -313,11 +332,13 @@ def create_genome_file(chr_lengths, output_dir):
     return genome_fpath
 
 
-def create_housekeeping_file(max_points, output_dir, logger):
+def create_housekeeping_file(chr_lengths, max_points, root_dir, output_dir, logger):
+    max_ideograms = len(chr_lengths.keys())
     housekeeping_fpath = join(output_dir, 'housekeeping.conf')
     if not get_path_to_program('circos'):
         logger.warning('Circos is not found. '
-                       'You will have to manually set max_points_per_track in etc/housekeeping.conf to ' + str(max_points))
+                       'You will have to manually edit etc/housekeeping.conf: set max_points_per_track to ' + str(max_points) +
+                       ' and max_ideograms to ' + str(max_ideograms))
         return '<<include %s>>\n' % join('etc', 'housekeeping.conf')
     circos_dirpath = dirname(realpath(get_path_to_program('circos')))
     template_fpath = join(circos_dirpath, '..', 'libexec', 'etc', 'housekeeping.conf')
@@ -326,9 +347,11 @@ def create_housekeeping_file(max_points, output_dir, logger):
             for line in f:
                 if 'max_points_per_track' in line:
                     out_f.write('max_points_per_track = %d\n' % max_points)
+                elif 'max_ideograms' in line:
+                    out_f.write('max_ideograms = %d\n' % max_ideograms)
                 else:
                     out_f.write(line)
-    return '<<include %s>>\n' % relpath(housekeeping_fpath, output_dir)
+    return '<<include %s>>\n' % relpath(housekeeping_fpath, root_dir)
 
 
 def set_window_size(ref_len):
@@ -367,8 +390,7 @@ def create_conf(ref_fpath, contigs_fpaths, contig_report_fpath_pattern, output_d
     if not alignments_fpaths:
         return None
 
-    genome_fpath = create_genome_file(chr_lengths, data_dir)
-    gc_fpath, min_gc, max_gc, gc_points = create_gc_plot(gc_fpath, data_dir)
+    gc_fpath, gc_points = create_gc_plot(gc_fpath, data_dir)
     feature_fpaths, gene_points = create_genes_plot(features_containers, window_size, ref_len, data_dir)
     mismatches_fpaths = [create_mismatches_plot(assembly, window_size, ref_len, output_dir, data_dir) for assembly in assemblies]
     cov_data_fpath, cov_points = create_coverage_plot(cov_fpath, window_size, ref_len, data_dir)
@@ -409,15 +431,16 @@ def create_conf(ref_fpath, contigs_fpaths, contig_report_fpath_pattern, output_d
         out_f.write('auto_alpha_steps = 5\n')
         out_f.write('background = white\n')
         out_f.write('</image>\n')
-        out_f.write('<highlights>\n')
-        out_f.write('<highlight>\n')
-        out_f.write('file = %s\n' % relpath(genome_fpath, output_dir))
-        out_f.write('r0 = eval(sprintf("%.3fr",conf(track0_pos)))\n')
-        out_f.write('r1 = eval(sprintf("%.3fr",conf(track' + str(len(assemblies) - 1) + '_pos) - conf(track_width))) - 0.005r\n')
-        out_f.write('fill_color = 255,255,240\n')
-        out_f.write('</highlight>\n')
-        out_f.write('</highlights>\n')
-        out_f.write(create_housekeeping_file(max_points, data_dir, logger))
+        if qconfig.is_combined_ref:
+            out_f.write('<highlights>\n')
+            highlights_fpath = create_meta_highlights(chr_lengths, data_dir)
+            out_f.write('<highlight>\n')
+            out_f.write('file = %s\n' % relpath(highlights_fpath, output_dir))
+            out_f.write('r0 = 1r - 50p\n')
+            out_f.write('r1 = 1r - 30p\n')
+            out_f.write('</highlight>\n')
+            out_f.write('</highlights>\n')
+        out_f.write(create_housekeeping_file(chr_lengths, max_points, output_dir, data_dir, logger))
         out_f.write('<plots>\n')
         out_f.write('layers_overflow = collapse\n')
         for i, alignments_conf in enumerate(alignments_fpaths):
@@ -430,7 +453,7 @@ def create_conf(ref_fpath, contigs_fpaths, contig_report_fpath_pattern, output_d
             out_f.write('r0 = eval(sprintf("%.3fr",conf(track' + str(plot_idx) + '_pos) - conf(track_width)))\n')
             out_f.write('r1 = eval(sprintf("%.3fr",conf(track' + str(plot_idx) + '_pos)))\n')
             out_f.write('</plot>\n')
-            if mismatches_fpaths:
+            if mismatches_fpaths and mismatches_fpaths[i]:
                 out_f.write('<plot>\n')
                 out_f.write('type = histogram\n')
                 out_f.write('thickness = 1\n')
@@ -466,11 +489,9 @@ def create_conf(ref_fpath, contigs_fpaths, contig_report_fpath_pattern, output_d
         out_f.write('type = heatmap\n')
         out_f.write('file = %s\n' % relpath(gc_fpath, output_dir))
         out_f.write('color = greys-6\n')
-        out_f.write('scale_log_base = 1.2\n')
-        out_f.write('r0 = 1r - 24p\n')
+        out_f.write('scale_log_base = 1.5\n')
+        out_f.write('r0 = 1r - 29p\n')
         out_f.write('r1 = 1r - 1p\n')
-        out_f.write('min = %d\n' % min_gc)
-        out_f.write('max = %d\n' % max_gc)
         out_f.write('</plot>\n')
         out_f.write('</plots>\n')
 

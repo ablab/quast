@@ -271,11 +271,10 @@ def create_mismatches_plot(assembly, window_size, ref_len, root_dir, output_dir)
 
     mismatches_fpath = join(output_dir, assembly_label + '.mismatches.txt')
     mismatch_density_by_chrom = defaultdict(lambda : [0] * (ref_len // window_size + 1))
-    with open_gzipsafe(used_snps_fpath) as f:
-        for line in f:
-            chrom, contig, ref_pos, ref_nucl, ctg_nucl, ctg_pos = line.split('\t')
-            if ref_nucl != '.' and ctg_nucl != '.':
-                mismatch_density_by_chrom[chrom][int(ref_pos) // window_size] += 1
+    for line in open_gzipsafe(used_snps_fpath):
+        chrom, contig, ref_pos, ref_nucl, ctg_nucl, ctg_pos = line.split('\t')
+        if ref_nucl != '.' and ctg_nucl != '.':
+            mismatch_density_by_chrom[chrom][int(ref_pos) // window_size] += 1
     with open(mismatches_fpath, 'w') as out_f:
         for chrom, density_list in mismatch_density_by_chrom.items():
             start, end = 0, 0

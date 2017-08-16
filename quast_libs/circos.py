@@ -27,8 +27,8 @@ from quast_libs.reads_analyzer import COVERAGE_FACTOR
 
 circos_png_fname = 'circos.png'
 TRACK_WIDTH = 0.04
-TRACK_INTERVAL = 0.02
-BIG_TRACK_INTERVAL = 0.05
+TRACK_INTERVAL = 0.04
+BIG_TRACK_INTERVAL = 0.06
 MAX_POINTS = 50000
 
 
@@ -94,7 +94,7 @@ def create_ticks_conf(chrom_units, output_dir):
             suffix = 'Mbp'
         else:
             label_multiplier = 1.0 / chrom_units
-            suffix = 'Kbp'
+            suffix = 'kbp'
         out_f.write('label_multiplier = ' + str(label_multiplier) + '\n')
         out_f.write('<tick>\n')
         out_f.write('spacing = 1u\n')
@@ -226,9 +226,10 @@ def create_gc_plot(gc_fpath, data_dir):
         for line in f:
             gc_values.append(float(line.split()[-1]))
     max_points = len(gc_values)
+    min_gc, max_gc = int(min(gc_values)), int(max(gc_values))
     dst_gc_fpath = join(data_dir, 'gc.txt')
     shutil.copy(gc_fpath, dst_gc_fpath)
-    return dst_gc_fpath, max_points
+    return dst_gc_fpath, min_gc, max_gc, max_points
 
 
 def create_coverage_plot(cov_fpath, window_size, ref_len, output_dir):
@@ -331,6 +332,41 @@ def create_genome_file(chr_lengths, output_dir):
     return genome_fpath
 
 
+def create_labels(chr_lengths, assemblies, features_containers, coverage_fpath, output_dir):
+    labels_txt_fpath = join(output_dir, 'labels.txt')
+    track_labels = []
+    plot_idx = 0
+    for i, assembly in enumerate(assemblies):
+        track_labels.append(('assembly' + str(i + 1), plot_idx))
+        plot_idx += 1
+
+    for feature_container in features_containers:
+        if len(feature_container.region_list) > 0:
+            track_labels.append((feature_container.kind, plot_idx))
+            plot_idx += 1
+    if coverage_fpath:
+        track_labels.append(('coverage', plot_idx))
+    with open(labels_txt_fpath, 'w') as out_f:
+        out_f.write(list(chr_lengths.keys())[0] + '\t0\t0\tnull\t' + ','.join(['track%d=%s' % (i, label) for label, i in track_labels]))
+    labels_conf_fpath = join(output_dir, 'label.conf')
+    with open(labels_conf_fpath, 'w') as out_f:
+        out_f.write('z = 10\n'
+                    'type = text\n'
+                    'label_size = 30p\n'
+                    'label_font = bold\n'
+                    'label_parallel = yes\n'
+                    'file = ' + labels_txt_fpath + '\n'
+                    'r0 = eval(sprintf("%fr+5p", conf(conf(., track_idx)_pos)))\n'
+                    'r1 = eval(sprintf("%fr+500p", conf(conf(., track_idx)_pos)))\n'
+                    '<rules>\n'
+                    '<rule>\n'
+                    'condition = 1\n'
+                    'value = eval(var(conf(., track_idx)))\n'
+                    '</rule>\n'
+                    '</rules>\n')
+    return labels_conf_fpath, track_labels
+
+
 def create_housekeeping_file(chr_lengths, max_points, root_dir, output_dir, logger):
     max_ideograms = len(chr_lengths.keys())
     housekeeping_fpath = join(output_dir, 'housekeeping.conf')
@@ -367,6 +403,25 @@ def set_window_size(ref_len):
     return window_size
 
 
+def create_legend(assemblies, min_gc, max_gc, features_containers, coverage_fpath, output_dir):
+    legend_fpath = join(output_dir, 'legend.txt')
+    with open(legend_fpath, 'w') as out_f:
+        out_f.write('1) The outer circle represents reference contigs with GC (%%) heatmap [from %d%% (white) to %d%% (black)].\n' %
+                    (min_gc, max_gc))
+        if qconfig.is_combined_ref:
+            out_f.write('Color bars help to distinguish different references.\n')
+
+        out_f.write('2) Assemblies tracks.\n')
+        for i, assembly in enumerate(assemblies):
+            out_f.write('Assembly %d - %s\n' % (i, assembly.label))
+        out_f.write('Assemblies tracks is combined with mismatches visualization: higher columns mean more mismatches.\n')
+        if features_containers:
+            out_f.write('3) User-provided genes. The darker colour mean more density of genes.\n')
+        if coverage_fpath:
+            out_f.write('%d) The inner circle represents read coverage histogram.\n' % 4 if features_containers else 3)
+    return legend_fpath
+
+
 def create_conf(ref_fpath, contigs_fpaths, contig_report_fpath_pattern, output_dir, gc_fpath, features_containers, cov_fpath, logger):
     data_dir = join(output_dir, 'data')
     if not exists(data_dir):
@@ -389,14 +444,15 @@ def create_conf(ref_fpath, contigs_fpaths, contig_report_fpath_pattern, output_d
     if not alignments_fpaths:
         return None
 
-    gc_fpath, gc_points = create_gc_plot(gc_fpath, data_dir)
+    gc_fpath, min_gc, max_gc, gc_points = create_gc_plot(gc_fpath, data_dir)
     feature_fpaths, gene_points = create_genes_plot(features_containers, window_size, ref_len, data_dir)
     mismatches_fpaths = [create_mismatches_plot(assembly, window_size, ref_len, output_dir, data_dir) for assembly in assemblies]
     cov_data_fpath, cov_points = create_coverage_plot(cov_fpath, window_size, ref_len, data_dir)
     max_points = max([MAX_POINTS, gc_points, gene_points, cov_points, contig_points])
+    labels_fpath, track_labels = create_labels(chr_lengths, assemblies, features_containers, cov_data_fpath, data_dir)
 
     conf_fpath = join(output_dir, 'circos.conf')
-    radius = 0.96
+    radius = 0.95
     plot_idx = 0
     track_intervals = [TRACK_INTERVAL] * len(assemblies)
     if feature_fpaths:
@@ -442,6 +498,11 @@ def create_conf(ref_fpath, contigs_fpaths, contig_report_fpath_pattern, output_d
         out_f.write(create_housekeeping_file(chr_lengths, max_points, output_dir, data_dir, logger))
         out_f.write('<plots>\n')
         out_f.write('layers_overflow = collapse\n')
+        for label, i in track_labels:
+            out_f.write('<plot>\n')
+            out_f.write('track_idx = track%d\n' % i)
+            out_f.write('<<include %s>>\n' % relpath(labels_fpath, output_dir))
+            out_f.write('</plot>\n')
         for i, alignments_conf in enumerate(alignments_fpaths):
             out_f.write('<plot>\n')
             out_f.write('type = tile\n')
@@ -494,20 +555,21 @@ def create_conf(ref_fpath, contigs_fpaths, contig_report_fpath_pattern, output_d
         out_f.write('</plot>\n')
         out_f.write('</plots>\n')
 
-    return conf_fpath
+    circos_legend_fpath = create_legend(assemblies, min_gc, max_gc, features_containers, cov_data_fpath, output_dir)
+    return conf_fpath, circos_legend_fpath
 
 
 def do(ref_fpath, contigs_fpaths, contig_report_fpath_pattern, gc_fpath, features_containers, cov_fpath, output_dir, logger):
     if not exists(output_dir):
         os.makedirs(output_dir)
-    conf_fpath = create_conf(ref_fpath, contigs_fpaths, contig_report_fpath_pattern, output_dir, gc_fpath, features_containers, cov_fpath, logger)
+    conf_fpath, circos_legend_fpath = create_conf(ref_fpath, contigs_fpaths, contig_report_fpath_pattern, output_dir, gc_fpath, features_containers, cov_fpath, logger)
     circos_exec = get_path_to_program('circos')
     if not circos_exec:
         logger.warning('Circos is not installed!\n'
                        'If you want to create Circos plots, install Circos as described at http://circos.ca/tutorials/lessons/configuration/distribution_and_installation '
-                       'and run the following command:\n'
-                       'circos -conf ' + conf_fpath)
-        return None
+                       'and run the following command:\n circos -conf ' + conf_fpath + '.\n '
+                       'The plot annotation is saved to ' + circos_legend_fpath)
+        return None, None
 
     cmdline = [circos_exec, '-conf', conf_fpath]
     log_fpath = join(output_dir, 'circos.log')
@@ -515,7 +577,8 @@ def do(ref_fpath, contigs_fpaths, contig_report_fpath_pattern, gc_fpath, feature
     circos_png_fpath = join(output_dir, circos_png_fname)
     return_code = qutils.call_subprocess(cmdline, stdout=open(log_fpath, 'w'), stderr=open(err_fpath, 'w'))
     if return_code == 0 and is_non_empty_file(circos_png_fpath):
-        return circos_png_fpath
+        return circos_png_fpath, circos_legend_fpath
     else:
         logger.warning('  Circos diagram was not created. See ' + err_fpath + ' for details')
+        return None, None
 

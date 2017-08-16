@@ -254,8 +254,8 @@ def main(args):
 
             if draw_circos_plot:
                 logger.main_info('  %d of %d: Creating Circos plots...' % (2 if draw_alignment_plots else 1, number_of_steps))
-                circos_png_fpath = circos.do(ref_fpath, contigs_fpaths, report_for_icarus_fpath_pattern, circos_gc_fpath,
-                                             features_containers, cov_fpath, os.path.join(output_dirpath, 'circos'), logger)
+                circos_png_fpath, circos_legend_fpath = circos.do(ref_fpath, contigs_fpaths, report_for_icarus_fpath_pattern, circos_gc_fpath,
+                                                                  features_containers, cov_fpath, os.path.join(output_dirpath, 'circos'), logger)
 
             if all_pdf_fpath:
                 # full report in PDF format: all tables and plots
@@ -284,8 +284,8 @@ def main(args):
         logger.main_info('  PDF version (tables and plots) is saved to ' + all_pdf_fpath)
 
     if circos_png_fpath:
-        logger.main_info('  Circos plot is saved to %s. Circos configuration file is saved to %s' %
-                         (circos_png_fpath, circos_png_fpath.replace('.png', '.conf')))
+        logger.main_info('  Circos plot is saved to %s (the annotation is in %s). Circos configuration file is saved to %s' %
+                         (circos_png_fpath, circos_legend_fpath, circos_png_fpath.replace('.png', '.conf')))
 
     if icarus_html_fpath:
         logger.main_info('  Icarus (contig browser) is saved to %s' % icarus_html_fpath)

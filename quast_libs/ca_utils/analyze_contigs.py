@@ -150,7 +150,8 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fp
             top_id = sorted_aligns[0].idy
             top_score = score_single_align(sorted_aligns[0])
             top_aligns = []
-            ca_output.stdout_f.write('Best alignment score: %.1f (LEN: %d, IDY: %.2f)\n' % (top_score, top_len, top_id))
+            ca_output.stdout_f.write('Best alignment score: %.1f (LEN: %d, IDY: %.2f), Total number of alignments: %d\n'
+                                     % (top_score, top_len, top_id, len(sorted_aligns)))
 
             #Check that top hit captures most of the contig
             if top_len > ctg_len * epsilon or ctg_len - top_len < maxun:
@@ -315,7 +316,7 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fp
                     sorted_aligns = sorted(real_aligns, key=lambda x: (x.end(), x.start()))
 
                     #There is more than one alignment of this contig to the reference
-                    ca_output.stdout_f.write('\t\tThis contig is misassembled. %d total aligns.\n' % num_aligns)
+                    ca_output.stdout_f.write('\t\tThis contig is misassembled.\n')
                     unaligned_bases = the_best_set.uncovered
                     aligned_bases_in_contig = ctg_len - unaligned_bases
                     is_partially_unaligned = check_partially_unaligned(sorted_aligns, ctg_len)

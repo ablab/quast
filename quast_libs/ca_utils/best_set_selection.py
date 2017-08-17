@@ -48,24 +48,34 @@ class PutativeBestSet(object):
         return (self < other) or (self == other)
 
 
-class PSA(object):  # PSA stands for Possibly Solid Alignment, i.e. alignment definitely present in the best set
-    def __init__(self, align):
+class PSA(object):  # PSA stands for Possibly Solid Alignment (solid alignments are definitely present in the best set)
+    overlap_penalty_coeff = 0
+    max_single_side_penalty = 0
+
+    def __init__(self, align, ctg_unique_end=None, num_sides=2):
         self.align = align
-        self.unique_start = align.start()
-        self.unique_end = align.end()
+        self.num_sides = num_sides
+        self.start = align.start()  # just syntax sugar
+        self.unique_end = align.end() if ctg_unique_end is None else min(align.end(), ctg_unique_end)
+        self.total_unique_len = 0
+        end_overlap = 0 if ctg_unique_end is None else max(0, align.end() - ctg_unique_end)
+        self.end_overlap_penalty = min(end_overlap * self.overlap_penalty_coeff, self.max_single_side_penalty)
+        self.start_overlap_penalty = self.max_single_side_penalty
 
-    def is_solid(self, min_unique_len):
-        return self.unique_end - self.unique_start + 1 > min_unique_len
+    def is_solid(self):
+        return self.total_unique_len > self.num_sides * self.max_single_side_penalty + \
+                                       self.start_overlap_penalty + self.end_overlap_penalty
 
-    # intersect PSA with align, which is guaranteed to be inside of after this PSA
-    # return True if switch to the next PSA is needed and False otherwise
-    def intersect_and_go_next(self, align, solids, min_unique_len):
-        if self.unique_end - align.end() > min_unique_len:  # if enough len on the right side
-            if self.is_solid(min_unique_len):
-                solids.append(self.align)
-                return True
-        self.unique_end = min(self.unique_end, align.start() - 1)
-        return not self.is_solid(min_unique_len)  # if self is not solid anymore we can switch to the next PSA
+    def could_be_solid(self):
+        return (self.unique_end - self.start + 1) + self.total_unique_len \
+               > self.num_sides * self.max_single_side_penalty + self.start_overlap_penalty + self.end_overlap_penalty
+
+    def intersect(self, other):
+        self.total_unique_len += max(0, self.unique_end - max(other.end(), self.start - 1))
+        self.unique_end = max(self.start - 1, min(self.unique_end, other.start() - 1))
+        if other.start() < self.start:
+            start_overlap = max(0, other.end() - self.start + 1)
+            self.start_overlap_penalty = min(start_overlap * self.overlap_penalty_coeff, self.max_single_side_penalty)
 
 
 class SolidRegion(object):
@@ -85,7 +95,7 @@ def get_best_aligns_sets(sorted_aligns, ctg_len, stdout_f, seq, ref_lens, is_cyc
     # internal overlap penalty (in any case should be less or equal to corresponding misassembly penalty
     penalties['overlap_multiplier'] = 0.5  # score -= overlap_multiplier * overlap_length
 
-    sorted_aligns = sorted(sorted_aligns, key=lambda x: (x.end(), x.start()))
+    sorted_aligns = sorted(sorted_aligns, key=lambda x: (x.end(), x.len2))
 
     # trying to optimise the algorithm if the number of possible alignments is large
     if len(sorted_aligns) > qconfig.BSS_critical_number_of_aligns:
@@ -93,22 +103,35 @@ def get_best_aligns_sets(sorted_aligns, ctg_len, stdout_f, seq, ref_lens, is_cyc
 
         # FIRST STEP: find solid aligns (which are present in the best selection for sure)
         # they should have unique (not covered by other aligns) region of length > 2 * extensive_penalty
-        min_unique_len = 2 * penalties['extensive']
+        PSA.max_single_side_penalty = penalties['extensive']
+        PSA.overlap_penalty_coeff = penalties['overlap_multiplier']
 
-        possible_solids = [PSA(align) for align in sorted_aligns if align.len2 > min_unique_len]
         solids = []
-        try:
-            cur_PSA = possible_solids.pop()
-            for align in reversed(sorted_aligns):
-                if align != cur_PSA.align and cur_PSA.intersect_and_go_next(align, solids, min_unique_len):
-                    next_PSA = possible_solids.pop()
-                    while next_PSA.intersect_and_go_next(cur_PSA.align, solids, min_unique_len):
-                        next_PSA = possible_solids.pop()
-                    while align != next_PSA.align and next_PSA.intersect_and_go_next(align, solids, min_unique_len):
-                        next_PSA = possible_solids.pop()
-                    cur_PSA = next_PSA
-        except IndexError:  # possible_solids is empty
-            pass
+        cur_PSA = PSA(sorted_aligns[-1], num_sides=1)
+        ctg_unique_end = cur_PSA.start
+        for align in reversed(sorted_aligns[:-1]):  # Note: aligns are sorted by their ends!
+            if not cur_PSA or not cur_PSA.could_be_solid():
+                if align.start() < ctg_unique_end:
+                    cur_PSA = PSA(align, ctg_unique_end)
+                    ctg_unique_end = cur_PSA.start
+                continue
+            cur_PSA.intersect(align)
+            if cur_PSA.is_solid():
+                solids.append(cur_PSA.align)
+                cur_PSA = None
+            if align.start() < ctg_unique_end:  # current align is not active anymore, will switch to new one
+                cur_PSA = PSA(align, ctg_unique_end)
+                ctg_unique_end = cur_PSA.start
+        if cur_PSA:  # process the last PSA
+            cur_PSA.num_sides = 1
+            cur_PSA.start_overlap_penalty = 0
+            if cur_PSA.could_be_solid():  # if the last PSA could be solid it is definitely solid
+                solids.append(cur_PSA.align)
+
+        stdout_f.write('\t\t\tFound %d solid alignments:\n' % len(solids))
+        for align in solids:
+            stdout_f.write('\t\tSolid alignment %s\n' % (str(align)))
+        stdout_f.write('\t\t\tSkipping alignments located inside solid regions since they are redundant:\n')
 
         # SECOND STEP: remove all aligns which are inside solid ones
         if len(solids):
@@ -122,7 +145,7 @@ def get_best_aligns_sets(sorted_aligns, ctg_len, stdout_f, seq, ref_lens, is_cyc
                     cur_region.start = align.start()
             solid_regions.append(cur_region)
 
-            filtered_aligns = solids
+            filtered_aligns = list(solids)
             idx = 0
             try:
                 cur_region = solid_regions.pop()
@@ -145,11 +168,20 @@ def get_best_aligns_sets(sorted_aligns, ctg_len, stdout_f, seq, ref_lens, is_cyc
     # if the number of alignments is still too large and QUAST-LG is enforced,
     # just remove short ones to left no more than BSS_critical_number_of_aligns alignments
     if len(sorted_aligns) > qconfig.BSS_critical_number_of_aligns and qconfig.large_genome:
+        stdout_f.write('\t\t\tThere is still too much alignments to proceed (%d)! Skipping the shortest ones (not longer than %d)\n' %
+                       (len(sorted_aligns), qconfig.BSS_critical_alignment_len))
         len2_removal_threshold = sorted([align.len2 for align in sorted_aligns], reverse=True)[qconfig.BSS_critical_number_of_aligns]
         len2_removal_threshold = min(len2_removal_threshold, qconfig.BSS_critical_alignment_len - 1)
-        sorted_aligns = [align for align in sorted_aligns if align.len2 > len2_removal_threshold]
+        filtered_aligns = []
+        for align in sorted_aligns:
+            if align.len2 > len2_removal_threshold:
+                filtered_aligns.append(align)
+            else:
+                stdout_f.write('\t\tSkipping alignment %s\n' % (str(align)))
+        sorted_aligns = filtered_aligns
 
     # Stage 1: Dynamic programming for finding the best score
+    stdout_f.write('\t\t\tLooking for the best set of alignments (out of %d total alignments)\n' % len(sorted_aligns))
     all_scored_sets = [ScoredSet(0, [], ctg_len)]
     max_score = 0
 

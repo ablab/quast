@@ -84,7 +84,7 @@
     <a href="http://cbcb.umd.edu/software/glimmerhmm/">GlimmerHMM</a>,
     <a href="http://gnuplot.sourceforge.net/">Gnuplot</a>,
     <a href="http://http://sun.aei.polsl.pl/kmc">KMC</a>,
-    <a href="https://github.com/tseemann/barrnap">Barrnap</a>, and <a href="http://assembly-eval.sourceforge.net/">LAP</a>.
+    <a href="https://github.com/tseemann/barrnap">Barrnap</a>, <a href="http://circos.ca">Circos</a>, and <a href="http://assembly-eval.sourceforge.net/">LAP</a>.
     In addition, MetaQUAST uses <a href="http://exon.gatech.edu/GeneMark/meta_gmhmmp_instructions.html">MetaGeneMark</a>,
     <a href="http://sourceforge.net/p/krona/home/krona/">Krona tools</a>,
     <a href="http://blast.ncbi.nlm.nih.gov/Blast.cgi">BLAST</a>, and
@@ -502,7 +502,7 @@ Use one thread, separately per each assembly and each chromosome. This may signi
 Create only primary output items (reports, plots, quast.log, etc). All auxiliary files (.stdout, .stderr, etc) will not be created.
 This may significantly reduce disk space usage on large assemblies (more than 100k contigs).
 Note: Icarus viewers also will not be built because they became enormously large and slow in case of
-zillions of contigs, thus not applicable.
+zillions of contigs, thus not applicable. Circos plot needs detailed information about all alignments, so it also will not be created.
 
 <div class='option'>
 <code><b>--silent</b></code>

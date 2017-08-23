@@ -214,6 +214,13 @@ Bioinformatics (2017). doi: 10.1093/bioinformatics/btx304()
 For more details about Barrnap please refer to
 https://github.com/tseemann/barrnap website.
 
+14. QUAST uses Circos for visualizing all assembly data in a circular layout (Circos needs to be installed).
+For more details about Circos please refer to
+http://www.circos.ca website and to the following paper:
+
+Krzywinski, M. et al., Circos: an Information Aesthetic for Comparative Genomics.
+Genome Res (2009) 19:1639-1645
+
 -------------------------------------------------------------------------------
 
 		    GNU GENERAL PUBLIC LICENSE

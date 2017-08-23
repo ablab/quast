@@ -369,14 +369,24 @@ def create_labels(chr_lengths, assemblies, features_containers, coverage_fpath, 
 
 def create_housekeeping_file(chr_lengths, max_points, root_dir, output_dir, logger):
     max_ideograms = len(chr_lengths.keys())
-    housekeeping_fpath = join(output_dir, 'housekeeping.conf')
-    if not get_path_to_program('circos'):
-        logger.warning('Circos is not found. '
-                       'You will have to manually edit etc/housekeeping.conf: set max_points_per_track to ' + str(max_points) +
-                       ' and max_ideograms to ' + str(max_ideograms))
+    template_fpath = None
+    circos_bin_fpath = get_path_to_program('circos')
+    if circos_bin_fpath:
+        circos_dirpath = dirname(realpath(get_path_to_program('circos')))
+        template_fpath = join(circos_dirpath, '..', 'libexec', 'etc', 'housekeeping.conf')
+        if not is_non_empty_file(template_fpath):
+            template_fpath = join(circos_dirpath, '..', 'etc', 'housekeeping.conf')
+
+    if not is_non_empty_file(template_fpath):
+        if not get_path_to_program('circos'):
+            msg = 'Circos is not found.'
+        else:
+            msg = 'File etc/housekeeping.conf is not found.'
+        logger.warning(msg + ' You will have to manually edit etc/housekeeping.conf: '
+                       'set max_points_per_track to ' + str(max_points) + ' and max_ideograms to ' + str(max_ideograms))
         return '<<include %s>>\n' % join('etc', 'housekeeping.conf')
-    circos_dirpath = dirname(realpath(get_path_to_program('circos')))
-    template_fpath = join(circos_dirpath, '..', 'libexec', 'etc', 'housekeeping.conf')
+
+    housekeeping_fpath = join(output_dir, 'housekeeping.conf')
     with open(template_fpath) as f:
         with open(housekeeping_fpath, 'w') as out_f:
             for line in f:

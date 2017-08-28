@@ -12,7 +12,7 @@ import os
 import sys
 import shutil
 
-from quast_libs import qconfig, circos
+from quast_libs import qconfig
 
 qconfig.check_python_version()
 
@@ -254,6 +254,7 @@ def main(args):
 
             if draw_circos_plot:
                 logger.main_info('  %d of %d: Creating Circos plots...' % (2 if draw_alignment_plots else 1, number_of_steps))
+                from quast_libs import circos
                 circos_png_fpath, circos_legend_fpath = circos.do(ref_fpath, contigs_fpaths, report_for_icarus_fpath_pattern, circos_gc_fpath,
                                                                   features_containers, cov_fpath, os.path.join(output_dirpath, 'circos'), logger)
 

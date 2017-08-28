@@ -857,16 +857,18 @@ def compile_tool(name, dirpath, requirements, just_notice=False, logger=logger, 
         # making
         logger.main_info('Compiling ' + name + ' (details are in ' + make_logs_basepath +
                          '.log and make.err)')
+        open(make_logs_basepath + '.log', 'w').close()
+        open(make_logs_basepath + '.err', 'w').close()
         if configure_args:
             prev_dir = os.getcwd()
             os.chdir(dirpath)
-            call_subprocess(['./configure'] + configure_args, stdout=open(make_logs_basepath + '.log', 'w'),
-                            stderr=open(make_logs_basepath + '.err', 'w'))
+            call_subprocess(['./configure'] + configure_args, stdout=open(make_logs_basepath + '.log', 'a'),
+                            stderr=open(make_logs_basepath + '.err', 'a'))
             os.chdir(prev_dir)
         try:
             return_code = call_subprocess((['make', make_cmd] if make_cmd else ['make']) + ['-C', dirpath],
-                                      stdout=open(make_logs_basepath + '.log', 'w'),
-                                      stderr=open(make_logs_basepath + '.err', 'w'), logger=logger)
+                                      stdout=open(make_logs_basepath + '.log', 'a'),
+                                      stderr=open(make_logs_basepath + '.err', 'a'), logger=logger)
         except IOError:
             msg = 'Permission denied accessing ' + dirpath + '. Did you forget sudo?'
             if just_notice:

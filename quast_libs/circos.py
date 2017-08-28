@@ -589,6 +589,6 @@ def do(ref_fpath, contigs_fpaths, contig_report_fpath_pattern, gc_fpath, feature
     if return_code == 0 and is_non_empty_file(circos_png_fpath):
         return circos_png_fpath, circos_legend_fpath
     else:
-        logger.warning('  Circos diagram was not created. See ' + err_fpath + ' for details')
+        logger.warning('  Circos diagram was not created. See ' + log_fpath + ' and ' + err_fpath + ' for details')
         return None, None
 

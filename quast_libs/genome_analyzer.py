@@ -33,51 +33,30 @@ def chromosomes_names_dict(feature, regions, chr_names):
     """
     returns dictionary to translate chromosome name in list of features (genes or operons) to
     chromosome name in reference file.
-    They can differ, e.g. U22222 in the list and gi|48994873|gb|U22222| in the reference
     """
     region_2_chr_name = {}
 
-    # single chromosome
-    if len(chr_names) == 1:
-        chr_name = chr_names[0]
-
-        for region in regions:
-            if region.seqname in chr_name or chr_name in region.seqname:
-                region_2_chr_name[region.seqname] = chr_name
-            else:
-                region_2_chr_name[region.seqname] = None
-
-        if len(region_2_chr_name) == 1:
-            if region_2_chr_name[regions[0].seqname] is None:
-                logger.notice('Reference name in %ss (%s) does not match the name of the reference (%s). '
-                              'QUAST will ignore this ussue and count as if they matched.' %
-                              (feature, regions[0].seqname, chr_name),
-                       indent='  ')
-                region_2_chr_name[regions[0].seqname] = chr_name
-
+    for region in regions:
+        if region.seqname in chr_names:
+            region_2_chr_name[region.seqname] = region.seqname
         else:
-            logger.warning('Some of the reference names in %ss do not match the name of the reference (%s). '
-                    'Check your %s file.' % (feature, chr_name, feature), indent='  ')
+            region_2_chr_name[region.seqname] = None
 
-    # multiple chromosomes
-    else:
+    if len(chr_names) == 1 and len(region_2_chr_name) == 1 and region_2_chr_name[regions[0].seqname] is None:
+        chr_name = chr_names.pop()
+        logger.notice('Reference name in %ss (%s) does not match the name of the reference (%s). '
+                      'QUAST will ignore this ussue and count as if they matched.' %
+                      (feature, regions[0].seqname, chr_name),
+               indent='  ')
         for region in regions:
-            no_chr_name_for_the_region = True
-            for chr_name in chr_names:
-                if region.seqname in chr_name or chr_name in region.seqname:
-                    region_2_chr_name[region.seqname] = chr_name
-                    no_chr_name_for_the_region = False
-                    break
-            if no_chr_name_for_the_region:
-                region_2_chr_name[region.seqname] = None
-
-        if None in region_2_chr_name.values():
-            logger.warning('Some of the reference names in %ss does not match any chromosome. '
-                    'Check your %s file.' % (feature, feature), indent='  ')
-
-        if all(chr_name is None for chr_name in region_2_chr_name.values()):
-            logger.warning('Reference names in %ss do not match any chromosome. Check your %s file.' % (feature, feature),
-                    indent='  ')
+            region.seqname = chr_name
+            region_2_chr_name[region.seqname] = chr_name
+    elif all(chr_name is None for chr_name in region_2_chr_name.values()):
+        logger.warning('Reference names in %ss do not match any chromosome. Check your %s file.' % (feature, feature),
+                indent='  ')
+    elif None in region_2_chr_name.values():
+        logger.warning('Some of the reference names in %ss does not match any chromosome. '
+                       'Check your %s file.' % (feature, feature), indent='  ')
 
     return region_2_chr_name
 
@@ -228,7 +207,7 @@ def process_single_file(contigs_fpath, index, nucmer_path_dirpath, genome_stats_
             for contig_id, name in enumerate(sorted_contigs_names):
                 cur_feature_is_found = False
                 for cur_block in aligned_blocks_by_contig_name[name]:
-                    if container.chr_names_dict[region.seqname] != cur_block.seqname:
+                    if cur_block.seqname != region.seqname:
                         continue
 
                     # computing circular genomes

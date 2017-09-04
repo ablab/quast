@@ -129,12 +129,12 @@ def parse_features_data(features, cumulative_ref_lengths, ref_names):
                 continue
             features_data += '[ '
             for region in feature_container.region_list:
-                chr = region.chromosome if region.chromosome and region.chromosome in feature_container.chr_names_dict \
+                chrom = region.chromosome if region.chromosome and region.chromosome in feature_container.chr_names_dict \
                     else region.seqname
-                chr = feature_container.chr_names_dict[chr] if chr in feature_container.chr_names_dict else None
-                if not chr or chr not in ref_names:
+                chrom = feature_container.chr_names_dict[chrom] if chrom in feature_container.chr_names_dict else None
+                if not chrom or chrom not in ref_names:
                     continue
-                ref_id = ref_names.index(chr)
+                ref_id = ref_names.index(chrom)
                 cur_shift = cumulative_ref_lengths[ref_id]
                 corr_start = region.start + cur_shift
                 corr_end = region.end + cur_shift

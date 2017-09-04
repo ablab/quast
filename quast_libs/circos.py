@@ -288,7 +288,8 @@ def create_mismatches_plot(assembly, window_size, ref_len, root_dir, output_dir)
                     out_f.write('\t'.join([chrom, str(i * window_size), str(((i + 1) * window_size)), str(density)]) + '\n')
                     start = (i + 1) * window_size
                     end = None
-            out_f.write('\t'.join([chrom, str(start), str(end), '0']) + '\n')
+            if end:
+                out_f.write('\t'.join([chrom, str(start), str(end), '0']) + '\n')
     return mismatches_fpath
 
 
@@ -319,7 +320,8 @@ def create_genes_plot(features_containers, window_size, ref_len, output_dir):
                 for i, density in enumerate(gene_density_list):
                     out_f.write('\t'.join([chrom, str(i * window_size), str(((i + 1) * window_size)), str(density)]) + '\n')
                     num_points += 1
-        feature_fpaths.append(feature_fpath)
+        if is_non_empty_file(feature_fpath):
+            feature_fpaths.append(feature_fpath)
         max_points = max(max_points, num_points)
     return feature_fpaths, max_points
 

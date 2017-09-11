@@ -133,17 +133,13 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fp
         contig_type = 'unaligned'
         misassemblies_in_contigs.append(0)
         contigs_aligned_lengths.append(0)
+        filtered_aligns = []
+        if contig in aligns:
+            filtered_aligns = [align for align in aligns[contig] if align.len2 >= qconfig.min_alignment]
 
         #Check if this contig aligned to the reference
-        if contig in aligns:
-            for align in aligns[contig]:
-                sub_seq = seq[align.start(): align.end()]
-                if 'N' in sub_seq:
-                    ns_pos = [pos for pos in range(align.start(), align.end()) if seq[pos] == 'N']
+        if filtered_aligns:
             contig_type = 'correct'
-            #Pull all aligns for this contig
-            num_aligns = len(aligns[contig])
-
             #Sort aligns by aligned_length * identity - unaligned_length (as we do in BSS)
             sorted_aligns = sorted(aligns[contig], key=lambda x: (score_single_align(x), x.len2), reverse=True)
             top_len = sorted_aligns[0].len2
@@ -372,7 +368,7 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fp
             #Increment unaligned contig count and bases
             unaligned += 1
             fully_unaligned_bases += ctg_len
-            ca_output.stdout_f.write('\t\tUnaligned bases: %d total: %d\n' % (ctg_len, fully_unaligned_bases))
+            ca_output.stdout_f.write('\t\tUnaligned bases: %d\n' % ctg_len)
             save_unaligned_info([], contig, ctg_len, ctg_len, unaligned_info_file)
 
         ca_output.icarus_out_f.write('\t'.join(['CONTIG', contig, str(ctg_len), contig_type]) + '\n')

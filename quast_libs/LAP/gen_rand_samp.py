@@ -29,7 +29,7 @@ USAGE = """Usage: ./gen_rand_samp.py -1 [first mate files sep by comma] -2 [seco
 
 def main():
 	if len(sys.argv) < 1:
-	    print USAGE
+	    print(USAGE)
 	    sys.exit()
 
 	parser = OptionParser()

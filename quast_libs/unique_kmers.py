@@ -138,6 +138,12 @@ def intersect_kmers(tmp_dirpath, kmc_out_fpaths, log_fpath, err_fpath):
     return intersect_out_fpath
 
 
+def filter_contigs(input_fpath, output_fpath, db_fpath, log_fpath, err_fpath, min_kmers=1):
+    if input_fpath.endswith('.txt'):
+        input_fpath = '@' + input_fpath
+    run_kmc(kmc_tools_fpath, ['filter', db_fpath, input_fpath, '-ci' + str(min_kmers), '-fa', output_fpath], log_fpath, err_fpath)
+
+
 def run_kmc(kmc_fpath, params, log_fpath, err_fpath):
     qutils.call_subprocess([kmc_fpath, '-t' + str(qconfig.max_threads), '-hp'] + params,
                            stdout=open(log_fpath, 'a'), stderr=open(err_fpath, 'a'))
@@ -225,14 +231,15 @@ def do(output_dir, ref_fpath, contigs_fpaths, logger):
 
     shared_kmc_db = count_kmers(tmp_dirpath, shared_kmers_fpath, log_fpath, err_fpath)
     ref_kmc_dbs = []
-    for ref_name, ref_seq in ref_contigs.items():
-        ref_contig_fpath = join(tmp_dirpath, ref_name + '.fa')
-        if not is_non_empty_file(ref_contig_fpath):
-            with open(ref_contig_fpath, 'w') as out_f:
-                out_f.write(ref_seq)
-        ref_kmc_db = count_kmers(tmp_dirpath, ref_contig_fpath, log_fpath, err_fpath)
-        ref_shared_kmc_db = intersect_kmers(tmp_dirpath, [ref_kmc_db, shared_kmc_db], log_fpath, err_fpath)
-        ref_kmc_dbs.append((ref_name, ref_shared_kmc_db))
+    if len(ref_contigs.keys()) <= MAX_CONTIGS_NUM:
+        for ref_name, ref_seq in ref_contigs.items():
+            ref_contig_fpath = join(tmp_dirpath, ref_name + '.fa')
+            if not is_non_empty_file(ref_contig_fpath):
+                with open(ref_contig_fpath, 'w') as out_f:
+                    out_f.write(ref_seq)
+            ref_kmc_db = count_kmers(tmp_dirpath, ref_contig_fpath, log_fpath, err_fpath)
+            ref_shared_kmc_db = intersect_kmers(tmp_dirpath, [ref_kmc_db, shared_kmc_db], log_fpath, err_fpath)
+            ref_kmc_dbs.append((ref_name, ref_shared_kmc_db))
 
     for contigs_fpath in contigs_fpaths:
         report = reporting.get(contigs_fpath)
@@ -243,35 +250,39 @@ def do(output_dir, ref_fpath, contigs_fpaths, logger):
         long_contigs = []
         contig_lens = dict()
         contig_markers = defaultdict(list)
-        for name, seq in read_fasta(contigs_fpath):
-            total_len += len(seq)
-            contig_lens[name] = len(seq)
-            if len(seq) >= MIN_CONTIGS_LEN:
-                long_contigs.append(len(seq))
+        label = qutils.label_from_fpath_for_fname(contigs_fpath)
+        list_files_fpath = join(tmp_dirpath, label + '_files.txt')
+        with open(list_files_fpath, 'w') as list_files:
+            for name, seq in read_fasta(contigs_fpath):
+                total_len += len(seq)
+                contig_lens[name] = len(seq)
+                if len(seq) >= MIN_CONTIGS_LEN:
+                    long_contigs.append(len(seq))
+                    tmp_contig_fpath = join(tmp_dirpath, name + '.fasta')
+                    with open(tmp_contig_fpath, 'w') as out_f:
+                        out_f.write('>%s\n' % name)
+                        out_f.write('%s\n' % seq)
+                    list_files.write(tmp_contig_fpath + '\n')
 
         if len(long_contigs) > MAX_CONTIGS_NUM or sum(long_contigs) < total_len * 0.5:
             logger.warning('Assembly is too fragmented. Scaffolding accuracy will not be assessed.')
-        elif len(ref_kmc_dbs) > MAX_CONTIGS_NUM:
+        elif len(ref_contigs.keys()) > MAX_CONTIGS_NUM:
             logger.warning('Reference is too fragmented. Scaffolding accuracy will not be assessed.')
         else:
             len_map_to_one_chrom = 0
             len_map_to_multi_chrom = 0
-            for name, seq in read_fasta(contigs_fpath):
-                if len(seq) < MIN_CONTIGS_LEN:
-                    continue
-
-                tmp_contig_fpath = join(tmp_dirpath, name + '.fa')
-                with open(tmp_contig_fpath, 'w') as out_tmp_f:
-                    out_tmp_f.write(seq)
-                contig_kmc_db = count_kmers(tmp_dirpath, tmp_contig_fpath, log_fpath, err_fpath)
-                intersect_all_ref_kmc_db = intersect_kmers(tmp_dirpath, [contig_kmc_db, shared_kmc_db], log_fpath, err_fpath)
-                kmers_cnt = get_kmers_cnt(tmp_dirpath, intersect_all_ref_kmc_db, log_fpath, err_fpath)
-                if kmers_cnt < MIN_MARKERS:
-                    continue
-                for ref_name, ref_kmc_db in ref_kmc_dbs:
-                    intersect_kmc_db = intersect_kmers(tmp_dirpath, [ref_kmc_db, intersect_all_ref_kmc_db], log_fpath, err_fpath)
-                    kmers_cnt = get_kmers_cnt(tmp_dirpath, intersect_kmc_db, log_fpath, err_fpath)
-                    if kmers_cnt:
+            filtered_fpath = join(tmp_dirpath, label + '.filtered.fasta')
+            filter_contigs(list_files_fpath, filtered_fpath, shared_kmc_db, log_fpath, err_fpath, min_kmers=MIN_MARKERS)
+            filtered_list_files_fpath = join(tmp_dirpath, label + '_files.filtered.txt')
+            with open(filtered_list_files_fpath, 'w') as list_files:
+                for name, _ in read_fasta(filtered_fpath):
+                    tmp_contig_fpath = join(tmp_dirpath, name + '.fasta')
+                    list_files.write(tmp_contig_fpath + '\n')
+            for ref_name, ref_kmc_db in ref_kmc_dbs:
+                tmp_filtered_fpath = join(tmp_dirpath, ref_name + '.filtered.fasta')
+                filter_contigs(filtered_list_files_fpath, tmp_filtered_fpath, ref_kmc_db, log_fpath, err_fpath)
+                if exists(tmp_filtered_fpath):
+                    for name, _ in read_fasta(tmp_filtered_fpath):
                         contig_markers[name].append(ref_name)
             for name, chr_markers in contig_markers.items():
                 if len(chr_markers) == 1:

@@ -8,7 +8,7 @@
 from __future__ import with_statement
 
 import os
-from os.path import isfile, join, getsize, basename, dirname
+from os.path import isfile, basename
 import datetime
 import shutil
 
@@ -16,7 +16,7 @@ from quast_libs import qconfig, qutils
 from quast_libs.ca_utils.misc import bin_fpath, draw_mummer_plot
 
 from quast_libs.log import get_logger
-from quast_libs.qutils import is_python2, safe_create
+from quast_libs.qutils import is_python2, md5
 
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 
@@ -30,8 +30,8 @@ class NucmerStatus:
 
 def create_nucmer_successful_check(fpath, contigs_fpath, ref_fpath):
     nucmer_successful_check_file = open(fpath, 'w')
-    nucmer_successful_check_file.write("Assembly file size in bytes: %d\n" % getsize(contigs_fpath))
-    nucmer_successful_check_file.write("Reference file size in bytes: %d\n" % getsize(ref_fpath))
+    nucmer_successful_check_file.write("Assembly md5 checksum: %s\n" % md5(contigs_fpath))
+    nucmer_successful_check_file.write("Reference md5 checksum: %s\n" % md5(ref_fpath))
     nucmer_successful_check_file.write("Successfully finished on " +
                                        datetime.datetime.now().strftime('%Y/%m/%d %H:%M:%S') + '\n')
     nucmer_successful_check_file.close()
@@ -41,9 +41,9 @@ def check_nucmer_successful_check(fpath, contigs_fpath, ref_fpath):
     successful_check_content = open(fpath).read().split('\n')
     if len(successful_check_content) < 2:
         return False
-    if not successful_check_content[0].strip().endswith(str(getsize(contigs_fpath))):
+    if successful_check_content[0].strip().split()[-1] != str(md5(contigs_fpath)):
         return False
-    if not successful_check_content[1].strip().endswith(str(getsize(ref_fpath))):
+    if successful_check_content[1].strip().split()[-1] != str(md5(ref_fpath)):
         return False
     return True
 

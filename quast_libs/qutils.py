@@ -7,6 +7,7 @@
 
 from __future__ import with_statement
 import glob
+import hashlib
 import shutil
 import subprocess
 import os
@@ -1073,3 +1074,11 @@ def is_ascii_string(line):
         return False
     else:
         return True
+
+
+def md5(fname):
+    hash_md5 = hashlib.md5()
+    with open(fname, 'rb') as f:
+        for chunk in iter(lambda: f.read(65536), b""):
+            hash_md5.update(chunk)
+    return hash_md5.hexdigest()

@@ -14,7 +14,7 @@ from os.path import join, abspath, exists, getsize, basename, isdir
 
 from quast_libs import qconfig, reporting, qutils
 from quast_libs.fastaparser import read_fasta
-from quast_libs.qutils import get_total_memory, is_non_empty_file
+from quast_libs.qutils import get_total_memory, is_non_empty_file, md5
 
 KMERS_LEN = 101
 MAX_CONTIGS_NUM = 1000
@@ -32,8 +32,8 @@ def create_kmc_stats_file(output_dir, contigs_fpath, contigs_fpaths, ref_fpath, 
     kmc_check_fpath = join(output_dir, label + '.sf')
     kmc_stats_fpath = join(output_dir, label + '.stat')
     with open(kmc_check_fpath, 'w') as check_f:
-        check_f.write("Assembly file size in bytes: %d\n" % getsize(contigs_fpath))
-        check_f.write("Reference file size in bytes: %d\n" % getsize(ref_fpath))
+        check_f.write("Assembly md5 checksum: %s\n" % md5(contigs_fpath))
+        check_f.write("Reference md5 checksum: %s\n" % md5(ref_fpath))
         check_f.write("Used assemblies: %s\n" % ','.join(contigs_fpaths))
     with open(kmc_stats_fpath, 'w') as stats_f:
         stats_f.write("Completeness: %s\n" % completeness)
@@ -52,9 +52,9 @@ def check_kmc_successful_check(output_dir, contigs_fpath, contigs_fpaths, ref_fp
     successful_check_content = open(kmc_check_fpath).read().split('\n')
     if len(successful_check_content) < 3:
         return False
-    if not successful_check_content[0].strip().endswith(str(getsize(contigs_fpath))):
+    if successful_check_content[0].strip().split()[-1] != str(md5(contigs_fpath)):
         return False
-    if not successful_check_content[1].strip().endswith(str(getsize(ref_fpath))):
+    if successful_check_content[1].strip().split()[-1] != str(md5(ref_fpath)):
         return False
     used_assemblies = successful_check_content[2].strip().split(': ')[-1]
     if used_assemblies and sorted(used_assemblies.split(',')) != sorted(contigs_fpaths):

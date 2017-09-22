@@ -18,7 +18,7 @@ from quast_libs import qconfig, qutils
 from quast_libs.fastaparser import _get_fasta_file_handler
 from quast_libs.log import get_logger
 from quast_libs.qutils import is_non_empty_file, is_python2, slugify, correct_name, get_dir_for_download, show_progress, \
-    download_blast_binaries, get_blast_fpath
+    download_blast_binaries, get_blast_fpath, md5
 
 logger = get_logger(qconfig.LOGGER_META_NAME)
 try:
@@ -240,14 +240,14 @@ def parallel_blast(contigs_fpath, label, corrected_dirpath, err_fpath, blast_res
     qutils.call_subprocess(shlex.split(cmd), stdout=open(res_fpath, 'w'), stderr=open(err_fpath, 'a'), logger=logger)
     logger.info('  ' + 'BLAST results for %s are saved to %s...' % (label, res_fpath))
     with open(check_fpath, 'w') as check_file:
-        check_file.writelines('Assembly: %s size: %d\n' % (contigs_fpath, os.path.getsize(contigs_fpath)))
+        check_file.writelines('Assembly: %s md5 checksum: %s\n' % (contigs_fpath, md5(contigs_fpath)))
 
 
 def get_blast_output_fpath(blast_output_fpath, label):
     return blast_output_fpath + '_' + slugify(label)
 
 
-def check_blast(blast_check_fpath, blast_res_fpath, files_sizes, assemblies_fpaths, assemblies, labels):
+def check_blast(blast_check_fpath, blast_res_fpath, files_md5, assemblies_fpaths, assemblies, labels):
     downloaded_organisms = []
     not_founded_organisms = []
     blast_assemblies = [assembly for assembly in assemblies]
@@ -262,8 +262,8 @@ def check_blast(blast_check_fpath, blast_res_fpath, files_sizes, assemblies_fpat
                     if '---' in line:
                         assembly_info = False
                     if line and assembly_info:
-                        assembly, size = line.split()[1], line.split()[3]
-                        if assembly in files_sizes.keys() and int(size) == files_sizes[assembly]:
+                        assembly, md5 = line.split()[1], line.split()[-1]
+                        if assembly in files_md5.keys() and md5 == files_md5[assembly]:
                             existing_assembly = assemblies_fpaths[assembly]
                             logger.main_info('  Using existing BLAST alignments for %s... ' % labels[i])
                             blast_assemblies.remove(existing_assembly)
@@ -282,10 +282,10 @@ def do(assemblies, labels, downloaded_dirpath, corrected_dirpath, ref_txt_fpath=
     err_fpath = os.path.join(downloaded_dirpath, 'blast.err')
     blast_check_fpath = os.path.join(downloaded_dirpath, 'blast.check')
     blast_res_fpath = os.path.join(downloaded_dirpath, 'blast.res')
-    files_sizes = dict((assembly.fpath, os.path.getsize(assembly.fpath)) for assembly in assemblies)
+    files_md5 = dict((assembly.fpath, md5(assembly.fpath)) for assembly in assemblies)
     assemblies_fpaths = dict((assembly.fpath, assembly) for assembly in assemblies)
     blast_assemblies, downloaded_organisms, not_founded_organisms = \
-        check_blast(blast_check_fpath, blast_res_fpath, files_sizes, assemblies_fpaths, assemblies, labels)
+        check_blast(blast_check_fpath, blast_res_fpath, files_md5, assemblies_fpaths, assemblies, labels)
 
     species_list = []
     replacement_list = None
@@ -526,7 +526,7 @@ def search_references(organisms, assemblies, labels, downloaded_dirpath, not_fou
                 text = check_file.read()
                 text = text[:text.find('\n')]
         else:
-            text = 'Assembly: %s size: %d\n' % (assembly.fpath, os.path.getsize(assembly.fpath))
+            text = 'Assembly: %s md5 checksum: %s\n' % (assembly.fpath, md5(assembly.fpath))
         with open(check_fpath, 'w') as check_file:
             check_file.writelines(text)
             check_file.writelines('\n---\n')

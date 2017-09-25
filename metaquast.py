@@ -349,7 +349,7 @@ def main(args):
         logger.main_info('Starting quast.py ' + run_name + '... (logging to ' +
                         os.path.join(output_dirpath, qconfig.not_aligned_name, qconfig.LOGGER_DEFAULT_NAME + '.log)'))
 
-        return_code, total_num_notifications = _start_quast_main(quast_py_args,
+        return_code, total_num_notifications = _start_quast_main(quast_py_args + ['-t', str(qconfig.max_threads)],
             assemblies=not_aligned_assemblies,
             output_dirpath=os.path.join(output_dirpath, qconfig.not_aligned_name),
             num_notifications_tuple=total_num_notifications)

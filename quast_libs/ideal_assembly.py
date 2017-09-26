@@ -21,13 +21,13 @@ from quast_libs.reads_analyzer import get_coverage
 
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 mp_polished_suffix = 'mp_polished'
-single_polished_suffix = 'single_polished'
+long_reads_polished_suffix = 'long_reads_polished'
 
 
 def parse_uncovered_fpath(uncovered_fpath, fasta_fpath, return_covered_regions=True):
     regions = defaultdict(list)
     prev_start = defaultdict(int)
-    if exists(uncovered_fpath):
+    if uncovered_fpath and exists(uncovered_fpath):
         with open(uncovered_fpath) as f:
             for line in f:
                 chrom, start, end = line.split('\t')
@@ -136,21 +136,21 @@ def merge_overlaps(intervals):
     yield tuple(saved)
 
 
-def connect_with_matepairs(bam_fpath, output_dirpath, err_fpath):
+def get_mp_intervals(bam_fpath, output_dirpath, err_fpath):
     bam_filtered_fpath = add_suffix(bam_fpath, 'filtered')
     qutils.call_subprocess([sambamba_fpath('sambamba'), 'view', '-t', str(qconfig.max_threads), '-h', '-f', 'bam',
                             '-F', 'proper_pair and not supplementary and not duplicate', bam_fpath],
-                           stdout=open(bam_filtered_fpath, 'w'), stderr=open(err_fpath, 'a'), logger=logger)
+                            stdout=open(bam_filtered_fpath, 'w'), stderr=open(err_fpath, 'a'), logger=logger)
     ## sort by read names
     bam_filtered_sorted_fpath = add_suffix(bam_filtered_fpath, 'sorted')
     sort_bam(bam_filtered_fpath, bam_filtered_sorted_fpath, err_fpath, logger, sort_rule='-n')
     bed_fpath = bam_to_bed(output_dirpath, 'matepairs', bam_filtered_sorted_fpath, err_fpath, logger, bedpe=True, only_intervals=True)
-    matepair_regions = defaultdict(list)
+    mp_intervals = defaultdict(list)
     with open(bed_fpath) as bed:
         for l in bed:
             fs = l.split()
-            matepair_regions[fs[0]].append((int(fs[1]), int(fs[2])))
-    return matepair_regions
+            mp_intervals[fs[0]].append((int(fs[1]), int(fs[2])))
+    return mp_intervals
 
 
 def is_overlapped(region1, region2, sorted_mp_intervals):
@@ -163,21 +163,21 @@ def is_overlapped(region1, region2, sorted_mp_intervals):
     return False
 
 
-def fill_gaps_mate_pair(bam_fpath, ref_fpath, assembly_fpath, assembly_covered_regions, output_dir, uncovered_fpath, err_fpath):
-    matepair_reads_covered_regions = parse_uncovered_fpath(uncovered_fpath, ref_fpath, return_covered_regions=True)
+def fill_gaps_with_mp(bam_fpath, ref_fpath, assembly_fpath, assembly_covered_regions, output_dir, uncovered_fpath, err_fpath):
+    mp_covered_regions = parse_uncovered_fpath(uncovered_fpath, ref_fpath, return_covered_regions=True)
     final_fasta = []
-    matepair_regions = connect_with_matepairs(bam_fpath, output_dir, err_fpath)
+    mp_intervals = get_mp_intervals(bam_fpath, output_dir, err_fpath)
     final_assembly_fpath = add_suffix(assembly_fpath, mp_polished_suffix)
     for name, seq in fastaparser.read_fasta(ref_fpath):
-        covered_regions = list(find_overlaps(assembly_covered_regions[name], matepair_reads_covered_regions[name], overlap=50))
+        covered_regions = list(find_overlaps(assembly_covered_regions[name], mp_covered_regions[name], overlap=50))
         total_contigs = 0
-        if name not in matepair_regions or len(covered_regions) == 1:
+        if name not in mp_intervals or len(covered_regions) == 1:
             for region in covered_regions:
                 final_fasta.append((name.split()[0] + "_" + str(total_contigs + 1), seq[region[0]: region[1]]))
                 total_contigs += 1
         else:
             frags_to_merge = [covered_regions.pop(0)]
-            sorted_mp_intervals = sorted(matepair_regions[name])
+            sorted_mp_intervals = sorted(mp_intervals[name])
             while covered_regions:
                 region2 = covered_regions.pop(0)
                 if is_overlapped(frags_to_merge[-1], region2, sorted_mp_intervals):
@@ -199,17 +199,17 @@ def merge_fragments_with_ns(seq, merged_frags):
     merged_seq = []
     for i in range(1, len(merged_frags)):
         merged_seq.append(seq[merged_frags[i - 1][0]: merged_frags[i - 1][1] + 1])
-        merged_seq.append('N' * (merged_frags[i][0] - merged_frags[i - 1][1]))
+        merged_seq.append('N' * (merged_frags[i][0] - merged_frags[i - 1][1] - 1))
     merged_seq.append(seq[merged_frags[-1][0]: merged_frags[-1][1]])
     return ''.join(merged_seq)
 
 
-def fill_gaps_single(ref_fpath, assembly_fpath, assembly_covered_regions, uncovered_fpath):
-    single_reads_covered_regions = parse_uncovered_fpath(uncovered_fpath, ref_fpath, return_covered_regions=True)
-    final_assembly_fpath = add_suffix(assembly_fpath, single_polished_suffix)
+def fill_gaps_with_long_reads(ref_fpath, assembly_fpath, assembly_covered_regions, uncovered_fpath):
+    long_reads_covered_regions = parse_uncovered_fpath(uncovered_fpath, ref_fpath, return_covered_regions=True)
+    final_assembly_fpath = add_suffix(assembly_fpath, long_reads_polished_suffix)
     final_fasta = []
     for name, seq in fastaparser.read_fasta(ref_fpath):
-        covered_regions = find_overlaps(assembly_covered_regions[name], single_reads_covered_regions[name], overlap=50)
+        covered_regions = find_overlaps(assembly_covered_regions[name], long_reads_covered_regions[name], overlap=50)
         for i, region in enumerate(covered_regions):
             start, end = region
             final_fasta.append((name.split()[0] + "_" + str(i + 1), seq[start: end]))
@@ -222,19 +222,21 @@ def polish_assembly(ref_fpath, spades_output_fpath, output_dir, tmp_dir):
     err_fpath = join(tmp_dir, 'ideal_assembly.err')
     assembly_uncovered_fpath = align_ideal_assembly(ref_fpath, spades_output_fpath, tmp_dir, log_fpath, err_fpath)
     assembly_covered_regions = parse_uncovered_fpath(assembly_uncovered_fpath, ref_fpath, return_covered_regions=True)
-    if qconfig.unpaired_reads:
+    assembly_fpath = spades_output_fpath
+    long_reads = qconfig.pacbio_reads or qconfig.nanopore_reads
+    if long_reads:
         bam_fpath, uncovered_fpath = reads_analyzer.align_reference(ref_fpath, join(dirname(output_dir), qconfig.reads_stats_dirname),
-                                                                    using_reads='single')
-        spades_output_fpath = fill_gaps_single(ref_fpath, spades_output_fpath, assembly_covered_regions, uncovered_fpath)
+                                                                    using_reads='pacbio' if qconfig.pacbio_reads else 'nanopore')
+        assembly_fpath = fill_gaps_with_long_reads(ref_fpath, assembly_fpath, assembly_covered_regions, uncovered_fpath)
     if qconfig.mate_pairs:
-        if qconfig.unpaired_reads:
-            assembly_uncovered_fpath = align_ideal_assembly(ref_fpath, spades_output_fpath, tmp_dir, log_fpath, err_fpath)
+        if long_reads:
+            assembly_uncovered_fpath = align_ideal_assembly(ref_fpath, assembly_fpath, tmp_dir, log_fpath, err_fpath)  # realign using new assembly
             assembly_covered_regions = parse_uncovered_fpath(assembly_uncovered_fpath, ref_fpath, return_covered_regions=True)
         bam_fpath, uncovered_fpath = reads_analyzer.align_reference(ref_fpath, join(dirname(output_dir), qconfig.reads_stats_dirname),
-                                                                    using_reads='mate_pair')
-        spades_output_fpath = fill_gaps_mate_pair(bam_fpath, ref_fpath, spades_output_fpath, assembly_covered_regions,
-                                                  tmp_dir, uncovered_fpath, err_fpath)
-    return spades_output_fpath
+                                                                    using_reads='mp')
+        assembly_fpath = fill_gaps_with_mp(bam_fpath, ref_fpath, assembly_fpath, assembly_covered_regions,
+                                                tmp_dir, uncovered_fpath, err_fpath)
+    return assembly_fpath
 
 
 def do(ref_fpath, original_ref_fpath, output_dirpath):
@@ -244,7 +246,7 @@ def do(ref_fpath, original_ref_fpath, output_dirpath):
     uncovered_fpath = None
     if qconfig.paired_reads or qconfig.reference_sam or qconfig.reference_sam:
         sam_fpath, uncovered_fpath = reads_analyzer.align_reference(ref_fpath, join(dirname(output_dirpath),
-                                                                    qconfig.reads_stats_dirname), using_reads='paired_end')
+                                                                    qconfig.reads_stats_dirname), using_reads='pe')
     insert_size = qconfig.ideal_assembly_insert_size
     if insert_size == 'auto' or not insert_size:
         insert_size = qconfig.ideal_assembly_default_IS
@@ -255,8 +257,9 @@ def do(ref_fpath, original_ref_fpath, output_dirpath):
 
     ref_basename, fasta_ext = splitext_for_fasta_file(os.path.basename(ref_fpath))
     result_basename = '%s.%s.is%d.fasta' % (ref_basename, qconfig.ideal_assembly_basename, insert_size)
-    if qconfig.paired_reads and qconfig.unpaired_reads:
-        result_basename = add_suffix(result_basename, single_polished_suffix)
+    long_reads = qconfig.pacbio_reads or qconfig.nanopore_reads
+    if qconfig.paired_reads and long_reads:
+        result_basename = add_suffix(result_basename, long_reads_polished_suffix)
     if qconfig.paired_reads and qconfig.mate_pairs:
         result_basename = add_suffix(result_basename, mp_polished_suffix)
     result_fpath = os.path.join(output_dirpath, result_basename)
@@ -307,7 +310,7 @@ def do(ref_fpath, original_ref_fpath, output_dirpath):
         logger.error('  Failed to create Ideal Assembly, see log for details: ' + log_fpath)
         return None
 
-    if qconfig.mate_pairs or qconfig.unpaired_reads:
+    if qconfig.mate_pairs or long_reads:
         spades_output_fpath = polish_assembly(ref_fpath, spades_output_fpath, output_dirpath, tmp_dir)
 
     shutil.move(spades_output_fpath, result_fpath)

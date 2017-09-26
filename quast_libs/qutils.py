@@ -938,7 +938,8 @@ def get_dir_for_download(dirname, tool, required_files, logger, only_clean=False
 
 def check_reads_fpaths(logger):
     reads_libraries = [qconfig.forward_reads, qconfig.reverse_reads, qconfig.interlaced_reads, qconfig.unpaired_reads,
-                       qconfig.mp_forward_reads, qconfig.mp_reverse_reads, qconfig.mp_interlaced_reads]
+                       qconfig.mp_forward_reads, qconfig.mp_reverse_reads, qconfig.mp_interlaced_reads,
+                       qconfig.pacbio_reads, qconfig.nanopore_reads]
     qconfig.reads_fpaths = [fpath for lib in reads_libraries for fpath in lib if fpath]
     if not qconfig.reads_fpaths:
         return None

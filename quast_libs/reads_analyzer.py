@@ -269,7 +269,7 @@ def align_reference(ref_fpath, output_dir, using_reads='all'):
     insert_size_fpath = join(output_dir, ref_name + '.is.txt')
     if not is_non_empty_file(uncovered_fpath):
         required_files.append(uncovered_fpath)
-    if not is_non_empty_file(insert_size_fpath) and (using_reads == 'all' or using_reads == 'paired_end'):
+    if not is_non_empty_file(insert_size_fpath) and (using_reads == 'all' or using_reads == 'pe'):
         required_files.append(insert_size_fpath)
 
     temp_output_dir = join(output_dir, 'temp_output')
@@ -286,7 +286,7 @@ def align_reference(ref_fpath, output_dir, using_reads='all'):
     qconfig.reference_bam = bam_fpath
 
     if not qconfig.ideal_assembly_insert_size or qconfig.ideal_assembly_insert_size == 'auto':
-        if using_reads == 'paired_end' and sam_fpath:
+        if using_reads == 'pe' and sam_fpath:
             insert_size = calculate_insert_size(sam_fpath, output_dir, ref_name)
             if not insert_size:
                 logger.info('  Failed calculating insert size.')
@@ -557,13 +557,17 @@ def align_single_file(fpath, main_output_dir, output_dirpath, log_path, err_fpat
 
 def align_reads(ref_fpath, sam_fpath, using_reads, output_dir, err_fpath, max_threads):
     out_sam_fpaths = []
-    
-    if using_reads == 'all' or using_reads == 'paired_end':
-        run_bwa(qconfig.paired_reads, ref_fpath, sam_fpath, out_sam_fpaths, output_dir, err_fpath, max_threads, reads_type='paired_end')
-    if using_reads == 'all' or using_reads == 'mate_pair':
-        run_bwa(qconfig.mate_pairs, ref_fpath, sam_fpath, out_sam_fpaths, output_dir, err_fpath, max_threads, reads_type='mate_pair')
+
+    if using_reads == 'all' or using_reads == 'pe':
+        run_bwa(qconfig.paired_reads, ref_fpath, sam_fpath, out_sam_fpaths, output_dir, err_fpath, max_threads, reads_type='pe')
+    if using_reads == 'all' or using_reads == 'mp':
+        run_bwa(qconfig.mate_pairs, ref_fpath, sam_fpath, out_sam_fpaths, output_dir, err_fpath, max_threads, reads_type='mp')
     if using_reads == 'all' or using_reads == 'single':
         run_bwa(qconfig.unpaired_reads, ref_fpath, sam_fpath, out_sam_fpaths, output_dir, err_fpath, max_threads, reads_type='single')
+    if using_reads == 'all' or using_reads == 'pacbio':
+        run_bwa(qconfig.pacbio_reads, ref_fpath, sam_fpath, out_sam_fpaths, output_dir, err_fpath, max_threads, reads_type='pacbio')
+    if using_reads == 'all' or using_reads == 'nanopore':
+        run_bwa(qconfig.nanopore_reads, ref_fpath, sam_fpath, out_sam_fpaths, output_dir, err_fpath, max_threads, reads_type='nanopore')
     return out_sam_fpaths
 
 
@@ -572,14 +576,19 @@ def run_bwa(read_fpaths, ref_fpath, sam_fpath, out_sam_fpaths, output_dir, err_f
     insert_sizes = []
     for idx, reads in enumerate(read_fpaths):
         if isinstance(reads, str):
-            cmd = bwa_cmd + (' -p ' if reads_type != 'single' else ' ') + ref_fpath + ' ' + reads
+            preset = ''
+            if reads_type == 'pacbio':
+                preset = ' -x pacbio '
+            elif reads_type == 'nanopore':
+                preset = ' -x ont2d '
+            cmd = bwa_cmd + (' -p ' if reads_type == 'pe' else ' ') + preset + ref_fpath + ' ' + reads
         else:
             read1, read2 = reads
             cmd = bwa_cmd + ' ' + ref_fpath + ' ' + read1 + ' ' + read2
         output_fpath = add_suffix(sam_fpath, reads_type + str(idx + 1))
         if not is_non_empty_file(output_fpath):
             qutils.call_subprocess(shlex.split(cmd), stdout=open(output_fpath, 'w'), stderr=open(err_fpath, 'a'), logger=logger)
-            if reads_type == 'paired_end':
+            if reads_type == 'pe':
                 insert_size = calculate_insert_size(output_fpath, output_dir, basename(sam_fpath))
                 if insert_size < qconfig.ideal_assembly_max_IS:
                     insert_sizes.append(insert_size)

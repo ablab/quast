@@ -12,6 +12,11 @@ import re
 import shutil
 
 try:
+   from collections import OrderedDict
+except ImportError:
+   from quast_libs.site_packages.ordered_dict import OrderedDict
+
+try:
     from urllib2 import urlopen
 except:
     from urllib.request import urlopen
@@ -192,7 +197,7 @@ def paired_reads_names_are_equal(reads_fpaths, temp_output_dir, logger):
 def get_correct_names_for_chroms(output_dirpath, fasta_fpath, sam_fpath, err_path, reads_fpaths, logger, is_reference=False):
     correct_chr_names = dict()
     fasta_chr_lengths = get_chr_lengths_from_fastafile(fasta_fpath)
-    sam_chr_lengths = dict()
+    sam_chr_lengths = OrderedDict()
     sam_header_fpath = join(dirname(output_dirpath), basename(sam_fpath) + '.header')
     if not isfile(sam_fpath) and not isfile(sam_header_fpath):
         return None

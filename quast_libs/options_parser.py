@@ -347,6 +347,16 @@ def parse_options(logger, quast_args, is_metaquast=False):
              type='file',
              action='extend')
          ),
+        (['--pacbio'], dict(
+             dest='pacbio_reads',
+             type='file',
+             action='extend')
+         ),
+        (['--nanopore'], dict(
+             dest='nanopore_reads',
+             type='file',
+             action='extend')
+         ),
         (['--ref-sam'], dict(
             dest='reference_sam',
             type='file')

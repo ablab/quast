@@ -242,6 +242,8 @@ mp_interlaced_reads = []
 paired_reads = []
 mate_pairs = []
 unpaired_reads = []
+pacbio_reads = []
+nanopore_reads = []
 references_txt = None
 json_output_dirpath = None
 
@@ -429,6 +431,8 @@ def usage(show_hidden=False, meta=False, short=True, stream=sys.stdout):
         stream.write("    --mp2     <filename>              File with reverse mate-pair reads (in FASTQ format, may be gzipped)\n")
         stream.write("    --mp12    <filename>              File with interlaced forward and reverse mate-pair reads. (in FASTQ format, may be gzipped)\n")
         stream.write("    --single  <filename>              File with unpaired reads. (in FASTQ format, may be gzipped)\n")
+        stream.write("    --pacbio  <filename>              File with PacBio reads. (in FASTQ format, may be gzipped)\n")
+        stream.write("    --nanopore  <filename>            File with Oxford Nanopore reads. (in FASTQ format, may be gzipped)\n")
         stream.write("    --ref-sam <filename>              SAM alignment file obtained by aligning reads to reference genome file\n")
         stream.write("    --ref-bam <filename>              BAM alignment file obtained by aligning reads to reference genome file\n")
         stream.write("    --sam     <filename,filename,...> Comma-separated list of SAM alignment files obtained by aligning reads to assemblies\n"

@@ -22,6 +22,27 @@ class ScoredSet(object):
         self.indexes = indexes
         self.uncovered = uncovered
 
+    # we need to have a ScoredSet with the largest score to be in the beginning of a sorted ScoredSet list
+    def __lt__(self, other):
+        return self.score < other.score
+
+    def __gt__(self, other):
+        return self.score < other.score
+
+    def __eq__(self, other):
+        return not (self < other) and not (self > other)
+
+    def __ne__(self, other):
+        return not self == other
+
+    def __ge__(self, other):
+        return (self > other) or (self == other)
+
+    def __le__(self, other):
+        return (self < other) or (self == other)
+
+
+
 
 class PutativeBestSet(object):
     def __init__(self, indexes, score_drop, uncovered):
@@ -98,6 +119,7 @@ def get_best_aligns_sets(sorted_aligns, ctg_len, stdout_f, seq, ref_lens, is_cyc
     sorted_aligns = sorted(sorted_aligns, key=lambda x: (x.end(), x.len2))
 
     # trying to optimise the algorithm if the number of possible alignments is large
+    solids = []
     if len(sorted_aligns) > qconfig.BSS_critical_number_of_aligns:
         stdout_f.write('\t\t\tSkipping redundant alignments which can\'t be in the best set of alignments A PRIORI\n')
 
@@ -106,7 +128,6 @@ def get_best_aligns_sets(sorted_aligns, ctg_len, stdout_f, seq, ref_lens, is_cyc
         PSA.max_single_side_penalty = penalties['extensive']
         PSA.overlap_penalty_coeff = penalties['overlap_multiplier']
 
-        solids = []
         cur_PSA = PSA(sorted_aligns[-1], num_sides=1)
         ctg_unique_end = cur_PSA.start
         for align in reversed(sorted_aligns[:-1]):  # Note: aligns are sorted by their ends!
@@ -129,11 +150,12 @@ def get_best_aligns_sets(sorted_aligns, ctg_len, stdout_f, seq, ref_lens, is_cyc
                 solids.append(cur_PSA.align)
 
         stdout_f.write('\t\t\tFound %d solid alignments:\n' % len(solids))
-        for align in solids:
+        for align in reversed(solids):
             stdout_f.write('\t\tSolid alignment %s\n' % (str(align)))
         stdout_f.write('\t\t\tSkipping alignments located inside solid regions since they are redundant:\n')
 
         # SECOND STEP: remove all aligns which are inside solid ones
+        nothing_skipped = True
         if len(solids):
             solid_regions = []  # intersection of all solid aligns
             cur_region = SolidRegion(solids[0])
@@ -160,10 +182,13 @@ def get_best_aligns_sets(sorted_aligns, ctg_len, stdout_f, seq, ref_lens, is_cyc
                         break
                     else:
                         stdout_f.write('\t\tSkipping redundant alignment %s\n' % (str(align)))
+                        nothing_skipped = False
             except IndexError:  # solid_regions is empty
                 filtered_aligns += sorted_aligns[idx:]
 
-            sorted_aligns = sorted(filtered_aligns, key=lambda x: (x.end(), x.start()))
+            sorted_aligns = sorted(filtered_aligns, key=lambda x: (x.end(), x.len2))
+        if nothing_skipped:
+            stdout_f.write('\t\tNothing was skipped\n')
 
     # if the number of alignments is still too large and QUAST-LG is enforced,
     # just remove short ones to left no more than BSS_critical_number_of_aligns alignments
@@ -173,22 +198,34 @@ def get_best_aligns_sets(sorted_aligns, ctg_len, stdout_f, seq, ref_lens, is_cyc
         len2_removal_threshold = sorted([align.len2 for align in sorted_aligns], reverse=True)[qconfig.BSS_critical_number_of_aligns]
         len2_removal_threshold = min(len2_removal_threshold, qconfig.BSS_critical_alignment_len - 1)
         filtered_aligns = []
+        nothing_skipped = True
         for align in sorted_aligns:
             if align.len2 > len2_removal_threshold:
                 filtered_aligns.append(align)
             else:
                 stdout_f.write('\t\tSkipping alignment %s\n' % (str(align)))
+                nothing_skipped = False
         sorted_aligns = filtered_aligns
+        if nothing_skipped:
+            stdout_f.write('\t\tNothing was skipped\n')
 
     # Stage 1: Dynamic programming for finding the best score
     stdout_f.write('\t\t\tLooking for the best set of alignments (out of %d total alignments)\n' % len(sorted_aligns))
     all_scored_sets = [ScoredSet(0, [], ctg_len)]
     max_score = 0
 
+    cur_solid_idx = -1
+    next_solid_idx = -1
+    solids = sorted(solids, key=lambda x: (x.end(), x.len2), reverse=True)
     for idx, align in enumerate(sorted_aligns):
         local_max_score = 0
         new_scored_set = None
-        for scored_set in all_scored_sets:
+        if solids and align == solids[-1]:
+            next_solid_idx = idx
+            del solids[-1]
+        for scored_set in reversed(all_scored_sets):
+            if scored_set.indexes and scored_set.indexes[-1] < cur_solid_idx:
+                break
             cur_set_aligns = [sorted_aligns[i].clone() for i in scored_set.indexes] + [align.clone()]
             score, uncovered = get_score(scored_set.score, cur_set_aligns, ref_lens, is_cyclic, scored_set.uncovered,
                                          seq, region_struct_variations, penalties)
@@ -201,8 +238,18 @@ def get_best_aligns_sets(sorted_aligns, ctg_len, stdout_f, seq, ref_lens, is_cyc
             all_scored_sets.append(new_scored_set)
             if local_max_score > max_score:
                 max_score = local_max_score
+        if next_solid_idx != cur_solid_idx:
+            cur_solid_idx = next_solid_idx
 
     # Stage 2: DFS for finding multiple best sets with almost equally good score
+
+    ## special case for speed up (when we really not very interested in whether the contig is ambiguous or not)
+    if len(sorted_aligns) > qconfig.BSS_critical_number_of_aligns and qconfig.large_genome and qconfig.ambiguity_usage == 'one':
+        best_set = all_scored_sets.pop()
+        while best_set.score != max_score:
+            best_set = all_scored_sets.pop()
+        return False, False, sorted_aligns, [best_set]
+
     max_allowed_score_drop = max_score - max_score * qconfig.ambiguity_score
 
     putative_sets = []

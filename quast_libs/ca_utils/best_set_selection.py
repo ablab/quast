@@ -18,27 +18,6 @@ class ScoredSet(object):
         self.indexes = indexes
         self.uncovered = uncovered
 
-    # we need to have a ScoredSet with the largest score to be in the beginning of a sorted ScoredSet list
-    def __lt__(self, other):
-        return self.score < other.score
-
-    def __gt__(self, other):
-        return self.score < other.score
-
-    def __eq__(self, other):
-        return not (self < other) and not (self > other)
-
-    def __ne__(self, other):
-        return not self == other
-
-    def __ge__(self, other):
-        return (self > other) or (self == other)
-
-    def __le__(self, other):
-        return (self < other) or (self == other)
-
-
-
 
 class PutativeBestSet(object):
     def __init__(self, indexes, score_drop, uncovered):

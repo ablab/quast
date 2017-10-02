@@ -100,7 +100,7 @@ def get_best_aligns_sets(sorted_aligns, ctg_len, stdout_f, seq, ref_lens, is_cyc
     # trying to optimise the algorithm if the number of possible alignments is large
     solids = []
     if len(sorted_aligns) > qconfig.BSS_critical_number_of_aligns:
-        stdout_f.write('\t\t\tSkipping redundant alignments which can\'t be in the best set of alignments A PRIORI\n')
+        stdout_f.write('\t\t\tToo much alignments (%d), will use speed up heuristics\n' % len(sorted_aligns))
 
         # FIRST STEP: find solid aligns (which are present in the best selection for sure)
         # they should have unique (not covered by other aligns) region of length > 2 * extensive_penalty
@@ -169,25 +169,6 @@ def get_best_aligns_sets(sorted_aligns, ctg_len, stdout_f, seq, ref_lens, is_cyc
         if nothing_skipped:
             stdout_f.write('\t\tNothing was skipped\n')
 
-    # if the number of alignments is still too large and QUAST-LG is enforced,
-    # just remove short ones to left no more than BSS_critical_number_of_aligns alignments
-    if len(sorted_aligns) > qconfig.BSS_critical_number_of_aligns and qconfig.large_genome:
-        stdout_f.write('\t\t\tThere is still too much alignments to proceed (%d)! Skipping the shortest ones (not longer than %d)\n' %
-                       (len(sorted_aligns), qconfig.BSS_critical_alignment_len))
-        len2_removal_threshold = sorted([align.len2 for align in sorted_aligns], reverse=True)[qconfig.BSS_critical_number_of_aligns]
-        len2_removal_threshold = min(len2_removal_threshold, qconfig.BSS_critical_alignment_len - 1)
-        filtered_aligns = []
-        nothing_skipped = True
-        for align in sorted_aligns:
-            if align.len2 > len2_removal_threshold:
-                filtered_aligns.append(align)
-            else:
-                stdout_f.write('\t\tSkipping alignment %s\n' % (str(align)))
-                nothing_skipped = False
-        sorted_aligns = filtered_aligns
-        if nothing_skipped:
-            stdout_f.write('\t\tNothing was skipped\n')
-
     # Stage 1: Dynamic programming for finding the best score
     stdout_f.write('\t\t\tLooking for the best set of alignments (out of %d total alignments)\n' % len(sorted_aligns))
     all_scored_sets = [ScoredSet(0, [], ctg_len)]
@@ -223,7 +204,9 @@ def get_best_aligns_sets(sorted_aligns, ctg_len, stdout_f, seq, ref_lens, is_cyc
     # Stage 2: DFS for finding multiple best sets with almost equally good score
 
     ## special case for speed up (when we really not very interested in whether the contig is ambiguous or not)
-    if len(sorted_aligns) > qconfig.BSS_critical_number_of_aligns and qconfig.large_genome and qconfig.ambiguity_usage == 'one':
+    if len(sorted_aligns) > qconfig.BSS_critical_number_of_aligns and qconfig.ambiguity_usage != 'all':
+        stdout_f.write('\t\tAmbiguity for this contig is not checked for speed up '
+                       '(too much alignments and --ambiguity-usage is "%s")\n' % qconfig.ambiguity_usage)
         best_set = all_scored_sets.pop()
         while best_set.score != max_score:
             best_set = all_scored_sets.pop()

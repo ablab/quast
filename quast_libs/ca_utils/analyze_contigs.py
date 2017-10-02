@@ -295,7 +295,10 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fp
                         partially_unaligned_bases += unaligned_bases
                         if aligned_bases_in_contig < umt * ctg_len:
                             contig_type = 'correct_unaligned'
-                        ca_output.stdout_f.write('\t\tThis contig is partially unaligned. (Aligned %d out of %d bases)\n' % (aligned_bases_in_contig, ctg_len))
+                        ca_output.stdout_f.write('\t\tThis contig is partially unaligned. '
+                                                 '(Aligned %d out of %d bases (%.2f%%))\n'
+                                                 % (aligned_bases_in_contig, ctg_len,
+                                                    100.0 * aligned_bases_in_contig / ctg_len))
                         save_unaligned_info(real_aligns, contig, ctg_len, unaligned_bases, unaligned_info_file)
                     ca_output.stdout_f.write('\t\tAlignment: %s\n' % str(the_only_align))
                     ca_output.icarus_out_f.write(the_only_align.icarus_report_str() + '\n')
@@ -321,7 +324,10 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fp
                         partially_unaligned += 1
                         partially_unaligned_bases += unaligned_bases
                         if aligned_bases_in_contig >= umt * ctg_len:
-                            ca_output.stdout_f.write('\t\tThis contig is partially unaligned. (Aligned %d out of %d bases)\n' % (aligned_bases_in_contig, ctg_len))
+                            ca_output.stdout_f.write('\t\tThis contig is partially unaligned. '
+                                                     '(Aligned %d out of %d bases (%.2f%%))\n'
+                                                     % (aligned_bases_in_contig, ctg_len,
+                                                        100.0 * aligned_bases_in_contig / ctg_len))
                         save_unaligned_info(sorted_aligns, contig, ctg_len, unaligned_bases, unaligned_info_file)
 
                     if aligned_bases_in_contig < umt * ctg_len:

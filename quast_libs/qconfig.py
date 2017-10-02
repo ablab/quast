@@ -173,9 +173,8 @@ LARGE_EXTENSIVE_MIS_THRESHOLD = 6000
 LARGE_BSS_critical_alignment_len = 3000
 
 # BSS fine-tuning params
-BSS_MAX_SETS_NUMBER = 10
-BSS_critical_number_of_aligns = 200
-BSS_critical_alignment_len = 1000
+BSS_MAX_SETS_NUMBER = 10  # for ambiguous contigs
+BSS_critical_number_of_aligns = 100
 
 gap_filled_ns_threshold = 0.95
 

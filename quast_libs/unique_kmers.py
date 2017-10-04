@@ -14,12 +14,14 @@ from os.path import join, abspath, exists, getsize, basename, isdir
 
 from quast_libs import qconfig, reporting, qutils
 from quast_libs.fastaparser import read_fasta
-from quast_libs.qutils import get_total_memory, is_non_empty_file, md5
+from quast_libs.qutils import get_total_memory, is_non_empty_file, md5, add_suffix
 
 KMERS_LEN = 101
-MAX_CONTIGS_NUM = 1000
+MAX_CONTIGS_NUM = 10000
+MAX_REF_CONTIGS_NUM = 200
 MIN_CONTIGS_LEN = 10000
 MIN_MARKERS = 10
+MIN_MISJOIN_MARKERS = 1
 
 kmc_dirpath = abspath(join(qconfig.LIBS_LOCATION, 'KMC', qconfig.platform_name))
 kmc_bin_fpath = join(kmc_dirpath, 'kmc')
@@ -67,7 +69,7 @@ def get_kmers_cnt(tmp_dirpath, kmc_db_fpath, log_fpath, err_fpath):
     run_kmc(kmc_tools_fpath, ['histogram', kmc_db_fpath, histo_fpath], log_fpath, err_fpath)
     kmers_cnt = 0
     if exists(histo_fpath):
-        kmers_cnt = float(open(histo_fpath).read().split()[-1])
+        kmers_cnt = int(open(histo_fpath).read().split()[-1])
     return kmers_cnt
 
 
@@ -81,17 +83,20 @@ def count_kmers(tmp_dirpath, fpath, log_fpath, err_fpath, can_reuse=True):
     return kmc_out_fpath
 
 
-def get_string_kmers(tmp_dirpath, log_fpath, err_fpath, fasta_fpath=None, seq=None, intersect_with=None, kmer_fraction=1):
+def get_string_kmers(tmp_dirpath, log_fpath, err_fpath, fasta_fpath=None, seq=None, name=None, is_ref=False,
+                     intersect_with=None, kmer_fraction=1):
     can_reuse = True
     if not fasta_fpath:
         can_reuse = False
-        fasta_fpath = join(tmp_dirpath, 'tmp.fa')
+        fasta_fpath = join(tmp_dirpath, name + '.fasta')
+        if is_ref:
+            fasta_fpath = add_suffix(fasta_fpath, 'reference')
         with open(fasta_fpath, 'w') as out_f:
             out_f.write(seq)
     kmc_out_fpath = count_kmers(tmp_dirpath, fasta_fpath, log_fpath, err_fpath, can_reuse=can_reuse)
     if intersect_with:
         kmc_out_fpath = intersect_kmers(tmp_dirpath, [kmc_out_fpath, intersect_with], log_fpath, err_fpath)
-    return kmc_to_str(tmp_dirpath, kmc_out_fpath, log_fpath, err_fpath, kmer_fraction=kmer_fraction)
+    return kmc_out_fpath, kmc_to_str(tmp_dirpath, kmc_out_fpath, log_fpath, err_fpath, kmer_fraction=kmer_fraction)
 
 
 def downsample_kmers(tmp_dirpath, kmc_out_fpath, log_fpath, err_fpath, kmer_fraction=1):
@@ -217,29 +222,20 @@ def do(output_dir, ref_fpath, contigs_fpaths, logger):
     kmer_fraction = 100 if getsize(ref_fpath) < 500 * 1024 ** 2 else 1000
 
     shared_downsampled_kmc_db = downsample_kmers(tmp_dirpath, shared_kmc_db, log_fpath, err_fpath, kmer_fraction=kmer_fraction)
-
-    shared_kmers_by_chrom = dict()
     shared_kmers_fpath = join(tmp_dirpath, 'shared_kmers.txt')
-    ref_contigs = dict((name, seq) for name, seq in read_fasta(ref_fpath))
-    with open(shared_kmers_fpath, 'w') as out_f:
-        for name, seq in ref_contigs.items():
-            seq_kmers = get_string_kmers(tmp_dirpath, log_fpath, err_fpath, seq=seq, intersect_with=shared_downsampled_kmc_db)
-            for kmer_i, kmer in enumerate(seq_kmers):
-                shared_kmers_by_chrom[str(kmer)] = name
-                out_f.write('>' + str(kmer_i) + '\n')
-                out_f.write(kmer + '\n')
-
-    shared_kmc_db = count_kmers(tmp_dirpath, shared_kmers_fpath, log_fpath, err_fpath)
+    ref_contigs = [name for name, _ in read_fasta(ref_fpath)]
     ref_kmc_dbs = []
-    if len(ref_contigs.keys()) <= MAX_CONTIGS_NUM:
-        for ref_name, ref_seq in ref_contigs.items():
-            ref_contig_fpath = join(tmp_dirpath, ref_name + '.fa')
-            if not is_non_empty_file(ref_contig_fpath):
-                with open(ref_contig_fpath, 'w') as out_f:
-                    out_f.write(ref_seq)
-            ref_kmc_db = count_kmers(tmp_dirpath, ref_contig_fpath, log_fpath, err_fpath)
-            ref_shared_kmc_db = intersect_kmers(tmp_dirpath, [ref_kmc_db, shared_kmc_db], log_fpath, err_fpath)
-            ref_kmc_dbs.append((ref_name, ref_shared_kmc_db))
+
+    if len(ref_contigs) <= MAX_REF_CONTIGS_NUM:
+        with open(shared_kmers_fpath, 'w') as kmers_file:
+            for name, seq in read_fasta(ref_fpath):
+                seq_kmc_db, seq_kmers = get_string_kmers(tmp_dirpath, log_fpath, err_fpath, seq=seq, name=name, is_ref=True,
+                                                         intersect_with=shared_downsampled_kmc_db)
+                for kmer_i, kmer in enumerate(seq_kmers):
+                    kmers_file.write('>' + name + '_' + str(kmer_i) + '\n')
+                    kmers_file.write(kmer + '\n')
+                ref_kmc_dbs.append((name, seq_kmc_db))
+        shared_kmc_db = count_kmers(tmp_dirpath, shared_kmers_fpath, log_fpath, err_fpath)
 
     for contigs_fpath in contigs_fpaths:
         report = reporting.get(contigs_fpath)
@@ -266,7 +262,7 @@ def do(output_dir, ref_fpath, contigs_fpaths, logger):
 
         if len(long_contigs) > MAX_CONTIGS_NUM or sum(long_contigs) < total_len * 0.5:
             logger.warning('Assembly is too fragmented. Scaffolding accuracy will not be assessed.')
-        elif len(ref_contigs.keys()) > MAX_CONTIGS_NUM:
+        elif len(ref_contigs) > MAX_REF_CONTIGS_NUM:
             logger.warning('Reference is too fragmented. Scaffolding accuracy will not be assessed.')
         else:
             len_map_to_one_chrom = 0
@@ -280,7 +276,7 @@ def do(output_dir, ref_fpath, contigs_fpaths, logger):
                     list_files.write(tmp_contig_fpath + '\n')
             for ref_name, ref_kmc_db in ref_kmc_dbs:
                 tmp_filtered_fpath = join(tmp_dirpath, ref_name + '.filtered.fasta')
-                filter_contigs(filtered_list_files_fpath, tmp_filtered_fpath, ref_kmc_db, log_fpath, err_fpath)
+                filter_contigs(filtered_list_files_fpath, tmp_filtered_fpath, ref_kmc_db, log_fpath, err_fpath, min_kmers=MIN_MISJOIN_MARKERS)
                 if exists(tmp_filtered_fpath):
                     for name, _ in read_fasta(tmp_filtered_fpath):
                         contig_markers[name].append(ref_name)

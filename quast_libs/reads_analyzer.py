@@ -11,7 +11,7 @@ import shutil
 import shlex
 from collections import defaultdict
 from math import sqrt
-from os.path import isfile, join, basename, abspath, isdir, dirname
+from os.path import isfile, join, basename, abspath, isdir, dirname, exists
 
 from quast_libs import qconfig, qutils
 from quast_libs.ca_utils.misc import ref_labels_by_chromosomes
@@ -20,7 +20,7 @@ from quast_libs.ra_utils.misc import compile_reads_analyzer_tools, sambamba_fpat
     bwa_dirpath, lap_fpath, download_gridss, get_gridss_fpath, get_gridss_memory, \
     paired_reads_names_are_equal, sort_bam, bwa_index, reformat_bedpe, get_correct_names_for_chroms, \
     all_read_names_correct, clean_read_names, check_cov_file, bam_to_bed, get_safe_fpath, sambamba_view, \
-    calculate_genome_cov
+    calculate_genome_cov, minimap_fpath
 from quast_libs.qutils import is_non_empty_file, add_suffix, get_chr_len_fpath, run_parallel, \
     get_path_to_program, check_java_version
 
@@ -514,10 +514,12 @@ def align_single_file(fpath, main_output_dir, output_dirpath, log_path, err_fpat
         sam_fpaths = align_reads(fpath, sam_fpath, using_reads, main_output_dir, err_fpath, max_threads)
 
         if len(sam_fpaths) > 1:
-            merge_sam_files(sam_fpaths, sam_fpath, bam_fpath, main_output_dir, max_threads, err_fpath)
+            merge_sam_files(sam_fpaths, sam_fpath, bam_fpath, max_threads, err_fpath)
         elif len(sam_fpaths) == 1:
             shutil.move(sam_fpaths[0], sam_fpath)
-            sambamba_view(sam_fpath, bam_fpath, max_threads, err_fpath, logger, filter_rule=None)
+            tmp_bam_fpath = sam_fpaths[0].replace('.sam', '.bam')
+            if is_non_empty_file(tmp_bam_fpath):
+                shutil.move(tmp_bam_fpath, bam_fpath)
 
         logger.info('  ' + index_str + 'Done.')
         os.chdir(prev_dir)
@@ -559,63 +561,71 @@ def align_reads(ref_fpath, sam_fpath, using_reads, output_dir, err_fpath, max_th
     out_sam_fpaths = []
 
     if using_reads == 'all' or using_reads == 'pe':
-        run_bwa(qconfig.paired_reads, ref_fpath, sam_fpath, out_sam_fpaths, output_dir, err_fpath, max_threads, reads_type='pe')
+        run_aligner(qconfig.paired_reads, ref_fpath, sam_fpath, out_sam_fpaths, output_dir, err_fpath, max_threads, reads_type='pe')
     if using_reads == 'all' or using_reads == 'mp':
-        run_bwa(qconfig.mate_pairs, ref_fpath, sam_fpath, out_sam_fpaths, output_dir, err_fpath, max_threads, reads_type='mp')
+        run_aligner(qconfig.mate_pairs, ref_fpath, sam_fpath, out_sam_fpaths, output_dir, err_fpath, max_threads, reads_type='mp')
     if using_reads == 'all' or using_reads == 'single':
-        run_bwa(qconfig.unpaired_reads, ref_fpath, sam_fpath, out_sam_fpaths, output_dir, err_fpath, max_threads, reads_type='single')
+        run_aligner(qconfig.unpaired_reads, ref_fpath, sam_fpath, out_sam_fpaths, output_dir, err_fpath, max_threads, reads_type='single')
     if using_reads == 'all' or using_reads == 'pacbio':
-        run_bwa(qconfig.pacbio_reads, ref_fpath, sam_fpath, out_sam_fpaths, output_dir, err_fpath, max_threads, reads_type='pacbio')
+        run_aligner(qconfig.pacbio_reads, ref_fpath, sam_fpath, out_sam_fpaths, output_dir, err_fpath, max_threads, reads_type='pacbio')
     if using_reads == 'all' or using_reads == 'nanopore':
-        run_bwa(qconfig.nanopore_reads, ref_fpath, sam_fpath, out_sam_fpaths, output_dir, err_fpath, max_threads, reads_type='nanopore')
+        run_aligner(qconfig.nanopore_reads, ref_fpath, sam_fpath, out_sam_fpaths, output_dir, err_fpath, max_threads, reads_type='nanopore')
     return out_sam_fpaths
 
 
-def run_bwa(read_fpaths, ref_fpath, sam_fpath, out_sam_fpaths, output_dir, err_fpath, max_threads, reads_type):
+def run_aligner(read_fpaths, ref_fpath, sam_fpath, out_sam_fpaths, output_dir, err_fpath, max_threads, reads_type):
     bwa_cmd = bwa_fpath('bwa') + ' mem -t ' + str(max_threads)
     insert_sizes = []
     for idx, reads in enumerate(read_fpaths):
         if isinstance(reads, str):
-            preset = ''
-            if reads_type == 'pacbio':
-                preset = ' -x pacbio '
-            elif reads_type == 'nanopore':
-                preset = ' -x ont2d '
-            cmd = bwa_cmd + (' -p ' if reads_type == 'pe' else ' ') + preset + ref_fpath + ' ' + reads
+            if reads_type == 'pacbio' or reads_type == 'nanopore':
+                if reads_type == 'pacbio':
+                    preset = ' -ax map-pb '
+                else:
+                    preset = ' -ax map-ont '
+                cmdline = minimap_fpath() + ' -t ' + str(max_threads) + preset + ref_fpath + ' ' + reads
+            else:
+                cmdline = bwa_cmd + (' -p ' if reads_type == 'pe' else ' ') + ref_fpath + ' ' + reads
         else:
             read1, read2 = reads
-            cmd = bwa_cmd + ' ' + ref_fpath + ' ' + read1 + ' ' + read2
+            cmdline = bwa_cmd + ' ' + ref_fpath + ' ' + read1 + ' ' + read2
         output_fpath = add_suffix(sam_fpath, reads_type + str(idx + 1))
+        bam_fpath = output_fpath.replace('.sam', '.bam')
         if not is_non_empty_file(output_fpath):
-            qutils.call_subprocess(shlex.split(cmd), stdout=open(output_fpath, 'w'), stderr=open(err_fpath, 'a'), logger=logger)
+            qutils.call_subprocess(shlex.split(cmdline), stdout=open(output_fpath, 'w'), stderr=open(err_fpath, 'a'), logger=logger)
+        if not is_non_empty_file(bam_fpath):
+            if not is_non_empty_file(bam_fpath):
+                sambamba_view(output_fpath, bam_fpath, max_threads, err_fpath, logger, filter_rule=None)
             if reads_type == 'pe':
-                insert_size = calculate_insert_size(output_fpath, output_dir, basename(sam_fpath))
-                if insert_size < qconfig.ideal_assembly_max_IS:
-                    insert_sizes.append(insert_size)
+                bam_dedup_fpath = add_suffix(bam_fpath, 'dedup')
+                qutils.call_subprocess([sambamba_fpath('sambamba'), 'markdup', '-r', '-t', str(max_threads), '--tmpdir',
+                                        output_dir, bam_fpath, bam_dedup_fpath],
+                                        stderr=open(err_fpath, 'a'), logger=logger)
+                if exists(bam_dedup_fpath):
+                    shutil.move(bam_dedup_fpath, bam_fpath)
+        if reads_type == 'pe':
+            insert_size = calculate_insert_size(output_fpath, output_dir, basename(sam_fpath))
+            if insert_size < qconfig.ideal_assembly_max_IS:
+                insert_sizes.append(insert_size)
         out_sam_fpaths.append(output_fpath)
 
     if insert_sizes:
         qconfig.ideal_assembly_insert_size = max(insert_sizes)
 
 
-def merge_sam_files(tmp_sam_fpaths, sam_fpath, bam_fpath, output_dir, max_threads, err_fpath):
-    merged_bam_fpath = add_suffix(bam_fpath, 'merged')
+def merge_sam_files(tmp_sam_fpaths, sam_fpath, bam_fpath, max_threads, err_fpath):
     tmp_bam_fpaths = []
     for tmp_sam_fpath in tmp_sam_fpaths:
         if is_non_empty_file(tmp_sam_fpath):
             tmp_bam_fpath = tmp_sam_fpath.replace('.sam', '.bam')
             tmp_bam_sorted_fpath = add_suffix(tmp_bam_fpath, 'sorted')
             if not is_non_empty_file(tmp_bam_sorted_fpath):
-                sambamba_view(tmp_sam_fpath, tmp_bam_fpath, max_threads, err_fpath, logger, filter_rule=None)
                 sort_bam(tmp_bam_fpath, tmp_bam_sorted_fpath, err_fpath, logger)
             tmp_bam_fpaths.append(tmp_bam_sorted_fpath)
-    qutils.call_subprocess([sambamba_fpath('sambamba'), 'merge', '-t', str(max_threads), merged_bam_fpath] + tmp_bam_fpaths,
-                           stderr=open(err_fpath, 'a'), logger=logger)
-    qutils.call_subprocess([sambamba_fpath('sambamba'), 'markdup', '-r', '-t', str(max_threads), '--tmpdir',
-                            output_dir, merged_bam_fpath, bam_fpath],
+    qutils.call_subprocess([sambamba_fpath('sambamba'), 'merge', '-t', str(max_threads), bam_fpath] + tmp_bam_fpaths,
                            stderr=open(err_fpath, 'a'), logger=logger)
     sambamba_view(bam_fpath, sam_fpath, max_threads, err_fpath, logger)
-    return merged_bam_fpath
+    return bam_fpath
 
 
 def parse_reads_stats(stats_fpath):

@@ -258,9 +258,9 @@ def do(ref_fpath, original_ref_fpath, output_dirpath):
     ref_basename, fasta_ext = splitext_for_fasta_file(os.path.basename(ref_fpath))
     result_basename = '%s.%s.is%d.fasta' % (ref_basename, qconfig.ideal_assembly_basename, insert_size)
     long_reads = qconfig.pacbio_reads or qconfig.nanopore_reads
-    if qconfig.paired_reads and long_reads:
+    if long_reads:
         result_basename = add_suffix(result_basename, long_reads_polished_suffix)
-    if qconfig.paired_reads and qconfig.mate_pairs:
+    if qconfig.mate_pairs:
         result_basename = add_suffix(result_basename, mp_polished_suffix)
     result_fpath = os.path.join(output_dirpath, result_basename)
 

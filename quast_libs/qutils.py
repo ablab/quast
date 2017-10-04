@@ -915,6 +915,9 @@ def is_ascii_string(line):
 def md5(fname):
     hash_md5 = hashlib.md5()
     with open(fname, 'rb') as f:
-        for chunk in iter(lambda: f.read(65536), b""):
-            hash_md5.update(chunk)
+        while True:
+            buf = f.read(8192)
+            if not buf:
+                break
+            hash_md5.update(buf)
     return hash_md5.hexdigest()

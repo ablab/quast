@@ -174,7 +174,7 @@ def do(contigs_fpaths, gene_lengths, out_dirpath):
 
     n_jobs = min(len(contigs_fpaths), qconfig.max_threads)
     if is_python2():
-        from joblib import Parallel, delayed
+        from joblib2 import Parallel, delayed
     else:
         from joblib3 import Parallel, delayed
     if qconfig.memory_efficient:

@@ -340,7 +340,7 @@ def do(ref_fpath, aligned_contigs_fpaths, output_dirpath, genes_fpaths, operons_
     num_nf_errors = logger._num_nf_errors
     n_jobs = min(len(aligned_contigs_fpaths), qconfig.max_threads)
     if is_python2():
-        from joblib import Parallel, delayed
+        from joblib2 import Parallel, delayed
     else:
         from joblib3 import Parallel, delayed
     if not qconfig.memory_efficient:

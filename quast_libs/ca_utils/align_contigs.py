@@ -117,7 +117,7 @@ def align_contigs(nucmer_fpath, ref_fpath, contigs_fpath, old_contigs_fpath, ind
 
             # processing each chromosome separately (if we can)
             if is_python2():
-                from joblib import Parallel, delayed
+                from joblib2 import Parallel, delayed
             else:
                 from joblib3 import Parallel, delayed
             log_err_fpaths = [log_err_fpath + "_part%d" % (i + 1) if not qconfig.space_efficient else log_err_fpath

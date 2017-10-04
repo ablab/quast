@@ -201,7 +201,7 @@ def correct_contigs(contigs_fpaths, corrected_dirpath, labels, reporting):
 
     n_jobs = min(len(contigs_fpaths), qconfig.max_threads)
     if is_python2():
-        from joblib import Parallel, delayed
+        from joblib2 import Parallel, delayed
     else:
         from joblib3 import Parallel, delayed
     logger.main_info('  Pre-processing...')
@@ -1048,7 +1048,7 @@ def run_parallel(_fn, fn_args, n_jobs=None, filter_results=False):
     else:
         n_jobs = n_jobs or qconfig.max_threads
         if is_python2():
-            from joblib import Parallel, delayed
+            from joblib2 import Parallel, delayed
         else:
             from joblib3 import Parallel, delayed
         results_tuples = Parallel(n_jobs=n_jobs)(delayed(_fn)(*args) for args in fn_args)

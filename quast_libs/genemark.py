@@ -303,7 +303,7 @@ def do(fasta_fpaths, gene_lengths, out_dirpath, prokaryote, meta):
         n_jobs = min(len(fasta_fpaths), qconfig.max_threads)
         num_threads = max(1, qconfig.max_threads // n_jobs)
         if is_python2():
-            from joblib import Parallel, delayed
+            from joblib2 import Parallel, delayed
         else:
             from joblib3 import Parallel, delayed
         if not qconfig.memory_efficient:

@@ -368,7 +368,7 @@ def process_blast(blast_assemblies, downloaded_dirpath, corrected_dirpath, label
         n_jobs = min(qconfig.max_threads, len(blast_assemblies))
         blast_threads = max(1, qconfig.max_threads // n_jobs)
         if is_python2():
-            from joblib import Parallel, delayed
+            from joblib2 import Parallel, delayed
         else:
             from joblib3 import Parallel, delayed
         Parallel(n_jobs=n_jobs)(delayed(parallel_blast)(assembly.fpath, assembly.label, corrected_dirpath,

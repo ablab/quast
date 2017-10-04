@@ -272,7 +272,7 @@ def do(reference, contigs_fpaths, is_cyclic, output_dir, old_contigs_fpaths, bed
     n_jobs = min(len(contigs_fpaths), qconfig.max_threads)
     threads = max(1, qconfig.max_threads // n_jobs)
     if is_python2():
-        from joblib import Parallel, delayed
+        from joblib2 import Parallel, delayed
     else:
         from joblib3 import Parallel, delayed
     if not qconfig.splitted_ref and not qconfig.memory_efficient:

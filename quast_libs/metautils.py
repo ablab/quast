@@ -82,7 +82,7 @@ def partition_contigs(assemblies, ref_fpaths, corrected_dirpath, alignments_fpat
     assemblies_by_ref = dict([(qutils.name_from_fpath(ref_fpath), []) for ref_fpath in ref_fpaths])
     n_jobs = min(qconfig.max_threads, len(assemblies))
     if is_python2():
-        from joblib import Parallel, delayed
+        from joblib2 import Parallel, delayed
     else:
         from joblib3 import Parallel, delayed
     assemblies = Parallel(n_jobs=n_jobs)(delayed(parallel_partition_contigs)(asm,

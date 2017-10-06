@@ -15,11 +15,15 @@
 #define MM_F_SPLICE      0x080 // splice mode
 #define MM_F_SPLICE_FOR  0x100 // match GT-AG
 #define MM_F_SPLICE_REV  0x200 // match CT-AC, the reverse complement of GT-AG
-#define MM_F_NO_SAM_SQ   0x800
-#define MM_F_APPROX_EXT  0x1000
-#define MM_F_NO_LJOIN    0x2000
+#define MM_F_NO_LJOIN    0x400
+#define MM_F_OUT_CS_LONG 0x800
+#define MM_F_SR          0x1000
+#define MM_F_FRAG_MODE   0x2000
+#define MM_F_NO_PRINT_2ND  0x4000
 
 #define MM_IDX_MAGIC   "MMI\2"
+
+#define MM_MAX_SEG       255
 
 #ifdef __cplusplus
 extern "C" {
@@ -58,14 +62,16 @@ typedef struct {
 
 typedef struct {
 	int32_t id;                     // ID for internal uses (see also parent below)
-	uint32_t cnt:31, rev:1;         // number of minimizers; if on the reverse strand
+	uint32_t cnt:30, rev:1, seg_split:1; // number of minimizers; if on the reverse strand
 	uint32_t rid:31, inv:1;         // reference index; if this is an alignment from inversion rescue
 	int32_t score;                  // DP alignment score
 	int32_t qs, qe, rs, re;         // query start and end; reference start and end
 	int32_t parent, subsc;          // parent==id if primary; best alternate mapping score
 	int32_t as;                     // offset in the a[] array (for internal uses only)
 	int32_t fuzzy_mlen, fuzzy_blen; // seeded exact match length; seeded alignment block length (approximate)
-	uint32_t mapq:8, split:2, sam_pri:1, n_sub:21; // mapQ; split pattern; if SAM primary; number of suboptimal mappings
+	uint32_t mapq:8, split:2, n_sub:22; // mapQ; split pattern; number of suboptimal mappings
+	uint32_t sam_pri:1, proper_frag:1, dummy:30;
+	uint32_t hash;
 	mm_extra_t *p;
 } mm_reg1_t;
 
@@ -77,6 +83,7 @@ typedef struct {
 } mm_idxopt_t;
 
 typedef struct {
+	int seed;
 	int sdust_thres; // score threshold for SDUST; 0 to disable
 	int flag;        // see MM_F_* macros
 
@@ -99,14 +106,18 @@ typedef struct {
 	int min_dp_max;  // drop an alignment if the score of the max scoring segment is below this threshold
 	int min_ksw_len;
 
+	int pe_ori, pe_bonus;
+
 	float mid_occ_frac;  // only used by mm_mapopt_update(); see below
 	int32_t mid_occ;     // ignore seeds with occurrences above this threshold
+	int32_t max_occ;
 	int mini_batch_size; // size of a batch of query bases to process in parallel
 } mm_mapopt_t;
 
 // index reader
 typedef struct {
 	int is_idx, n_parts;
+	int64_t idx_size;
 	mm_idxopt_t opt;
 	FILE *fp_out;
 	union {
@@ -180,6 +191,8 @@ mm_idx_t *mm_idx_reader_read(mm_idx_reader_t *r, int n_threads);
  */
 void mm_idx_reader_close(mm_idx_reader_t *r);
 
+int mm_idx_reader_eof(const mm_idx_reader_t *r);
+
 /**
  * Print index statistics to stderr
  *
@@ -244,6 +257,8 @@ mm_reg1_t *mm_map(const mm_idx_t *mi, int l_seq, const char *seq, int *n_regs, m
  * @return 0 on success; -1 if _fn_ can't be read
  */
 int mm_map_file(const mm_idx_t *idx, const char *fn, const mm_mapopt_t *opt, int n_threads);
+
+int mm_map_file_frag(const mm_idx_t *idx, int n_segs, const char **fn, const mm_mapopt_t *opt, int n_threads);
 
 // deprecated APIs for backward compatibility
 void mm_mapopt_init(mm_mapopt_t *opt);

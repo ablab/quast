@@ -3,6 +3,7 @@
 #include <math.h>
 #include "mmpriv.h"
 #include "kalloc.h"
+#include "khash.h"
 
 static inline void mm_cal_fuzzy_len(mm_reg1_t *r, const mm128_t *a)
 {
@@ -36,7 +37,19 @@ static inline void mm_reg_set_coor(mm_reg1_t *r, int32_t qlen, const mm128_t *a)
 	mm_cal_fuzzy_len(r, a);
 }
 
-mm_reg1_t *mm_gen_regs(void *km, int qlen, int n_u, uint64_t *u, mm128_t *a) // convert chains to hits
+static inline uint64_t hash64(uint64_t key)
+{
+	key = (~key + (key << 21));
+	key = key ^ key >> 24;
+	key = ((key + (key << 3)) + (key << 8));
+	key = key ^ key >> 14;
+	key = ((key + (key << 2)) + (key << 4));
+	key = key ^ key >> 28;
+	key = (key + (key << 31));
+	return key;
+}
+
+mm_reg1_t *mm_gen_regs(void *km, uint32_t hash, int qlen, int n_u, uint64_t *u, mm128_t *a) // convert chains to hits
 {
 	mm128_t *z, tmp;
 	mm_reg1_t *r;
@@ -47,7 +60,9 @@ mm_reg1_t *mm_gen_regs(void *km, int qlen, int n_u, uint64_t *u, mm128_t *a) // 
 	// sort by score
 	z = (mm128_t*)kmalloc(km, n_u * 16);
 	for (i = k = 0; i < n_u; ++i) {
-		z[i].x = u[i] >> 32;
+		uint32_t h;
+		h = (uint32_t)hash64((hash64(a[k].x) + hash64(a[k].y)) ^ hash);
+		z[i].x = u[i] ^ h; // u[i] -- higher 32 bits: chain score; lower 32 bits: number of seeds in the chain
 		z[i].y = (uint64_t)k << 32 | (int32_t)u[i];
 		k += (int32_t)u[i];
 	}
@@ -61,7 +76,8 @@ mm_reg1_t *mm_gen_regs(void *km, int qlen, int n_u, uint64_t *u, mm128_t *a) // 
 		mm_reg1_t *ri = &r[i];
 		ri->id = i;
 		ri->parent = MM_PARENT_UNSET;
-		ri->score = z[i].x;
+		ri->score = z[i].x >> 32;
+		ri->hash = (uint32_t)z[i].x;
 		ri->cnt = (int32_t)z[i].y;
 		ri->as = z[i].y >> 32;
 		mm_reg_set_coor(ri, qlen, a);
@@ -124,24 +140,25 @@ void mm_set_parent(void *km, float mask_level, int n, mm_reg1_t *r, int sub_diff
 void mm_hit_sort_by_dp(void *km, int *n_regs, mm_reg1_t *r)
 {
 	int32_t i, n_aux, n = *n_regs;
-	uint64_t *aux;
+	mm128_t *aux;
 	mm_reg1_t *t;
 
 	if (n <= 1) return;
-	aux = (uint64_t*)kmalloc(km, n * 8);
+	aux = (mm128_t*)kmalloc(km, n * 16);
 	t = (mm_reg1_t*)kmalloc(km, n * sizeof(mm_reg1_t));
 	for (i = n_aux = 0; i < n; ++i) {
 		if (r[i].inv || r[i].cnt > 0) { // squeeze out elements with cnt==0 (soft deleted)
 			assert(r[i].p);
-			aux[n_aux++] = (uint64_t)r[i].p->dp_max << 32 | i;
+			aux[n_aux].x = (uint64_t)r[i].p->dp_max << 32 | r[i].hash;
+			aux[n_aux++].y = i;
 		} else if (r[i].p) {
 			free(r[i].p);
 			r[i].p = 0;
 		}
 	}
-	radix_sort_64(aux, aux + n_aux);
+	radix_sort_128x(aux, aux + n_aux);
 	for (i = n_aux - 1; i >= 0; --i)
-		t[n_aux - 1 - i] = r[(int32_t)aux[i]];
+		t[n_aux - 1 - i] = r[aux[i].y];
 	memcpy(r, t, sizeof(mm_reg1_t) * n_aux);
 	*n_regs = n_aux;
 	kfree(km, aux);
@@ -183,7 +200,7 @@ void mm_sync_regs(void *km, int n_regs, mm_reg1_t *regs) // keep mm_reg1_t::{id,
 	mm_set_sam_pri(n_regs, regs);
 }
 
-void mm_select_sub(void *km, float mask_level, float pri_ratio, int min_diff, int best_n, int *n_, mm_reg1_t *r)
+void mm_select_sub(void *km, float pri_ratio, int min_diff, int best_n, int *n_, mm_reg1_t *r)
 {
 	if (pri_ratio > 0.0f && *n_ > 0) {
 		int i, k, n = *n_, n_2nd = 0;
@@ -203,7 +220,7 @@ void mm_filter_regs(void *km, const mm_mapopt_t *opt, int *n_regs, mm_reg1_t *re
 	for (i = k = 0; i < *n_regs; ++i) {
 		mm_reg1_t *r = &regs[i];
 		int flt = 0;
-		if (!r->inv && r->cnt < opt->min_cnt) flt = 1;
+		if (!r->inv && !r->seg_split && r->cnt < opt->min_cnt) flt = 1;
 		if (r->p) {
 			if (r->p->blen - r->p->n_ambi - r->p->n_diff < opt->min_chain_score) flt = 1;
 			else if (r->p->dp_max < opt->min_dp_max) flt = 1;
@@ -294,6 +311,68 @@ void mm_join_long(void *km, const mm_mapopt_t *opt, int qlen, int *n_regs_, mm_r
 	}
 }
 
+mm_seg_t *mm_seg_gen(void *km, uint32_t hash, int n_segs, const int *qlens, int n_regs0, const mm_reg1_t *regs0, int *n_regs, mm_reg1_t **regs, const mm128_t *a)
+{
+	int s, i, j, acc_qlen[MM_MAX_SEG+1], qlen_sum = 0;
+	mm_seg_t *seg;
+
+	assert(n_segs <= MM_MAX_SEG);
+	for (s = 1, acc_qlen[0] = 0; s < n_segs; ++s)
+		acc_qlen[s] = acc_qlen[s-1] + qlens[s-1];
+	qlen_sum = acc_qlen[n_segs - 1] + qlens[n_segs - 1];
+
+	seg = (mm_seg_t*)kcalloc(km, n_segs, sizeof(mm_seg_t));
+	for (s = 0; s < n_segs; ++s) {
+		seg[s].u = (uint64_t*)kmalloc(km, n_regs0 * 8);
+		for (i = 0; i < n_regs0; ++i)
+			seg[s].u[i] = (uint64_t)regs0[i].score << 32;
+	}
+	for (i = 0; i < n_regs0; ++i) {
+		const mm_reg1_t *r = &regs0[i];
+		for (j = 0; j < r->cnt; ++j) {
+			int sid = (a[r->as + j].y&MM_SEED_SEG_MASK)>>MM_SEED_SEG_SHIFT;
+			++seg[sid].u[i];
+			++seg[sid].n_a;
+		}
+	}
+	for (s = 0; s < n_segs; ++s) {
+		mm_seg_t *sr = &seg[s];
+		for (i = 0, sr->n_u = 0; i < n_regs0; ++i) // squeeze out zero-length per-segment chains
+			if ((int32_t)sr->u[i] != 0)
+				sr->u[sr->n_u++] = sr->u[i];
+		sr->a = (mm128_t*)kmalloc(km, sr->n_a * sizeof(mm128_t));
+		sr->n_a = 0;
+	}
+
+	for (i = 0; i < n_regs0; ++i) {
+		const mm_reg1_t *r = &regs0[i];
+		for (j = 0; j < r->cnt; ++j) {
+			int sid = (a[r->as + j].y&MM_SEED_SEG_MASK)>>MM_SEED_SEG_SHIFT;
+			mm128_t a1 = a[r->as + j];
+			// on reverse strand, the segment position is:
+			//   x_for_cat = qlen_sum - 1 - (int32_t)a1.y - 1 + q_span
+			//   (int32_t)new_a1.y = qlens[sid] - (x_for_cat - acc_qlen[sid] + 1 - q_span) - 1 = (int32_t)a1.y - (qlen_sum - (qlens[sid] + acc_qlen[sid]))
+			a1.y -= a1.x>>63? qlen_sum - (qlens[sid] + acc_qlen[sid]) : acc_qlen[sid];
+			seg[sid].a[seg[sid].n_a++] = a1;
+		}
+	}
+	for (s = 0; s < n_segs; ++s) {
+		regs[s] = mm_gen_regs(km, hash, qlens[s], seg[s].n_u, seg[s].u, seg[s].a);
+		n_regs[s] = seg[s].n_u;
+		for (i = 0; i < n_regs[s]; ++i)
+			regs[s][i].seg_split = 1;
+	}
+	return seg;
+}
+
+void mm_seg_free(void *km, int n_segs, mm_seg_t *segs)
+{
+	int i;
+	for (i = 0; i < n_segs; ++i) kfree(km, segs[i].u);
+	for (i = 0; i < n_segs; ++i) kfree(km, segs[i].a);
+	kfree(km, segs);
+}
+
 void mm_set_mapq(int n_regs, mm_reg1_t *regs, int min_chain_sc, int match_sc, int rep_len)
 {
 	static const float q_coef = 40.0f;
@@ -304,12 +383,8 @@ void mm_set_mapq(int n_regs, mm_reg1_t *regs, int min_chain_sc, int match_sc, in
 			r->mapq = 0;
 		} else if (r->parent == r->id) {
 			int mapq, subsc;
-			float pen_s1 = r->score > 100? 1.0f : 0.01f * r->score;
+			float pen_s1 = (r->score > 100? 1.0f : 0.01f * r->score) * ((float)r->score / (r->score + rep_len));
 			float pen_cm = r->cnt > 10? 1.0f : 0.1f * r->cnt;
-			if (r->score <= 100 && rep_len > 0) {
-				pen_s1 = 0.01f * (r->score - rep_len);
-				pen_s1 = pen_s1 > 0.1f? pen_s1 : 0.1f;
-			}
 			pen_cm = pen_s1 < pen_cm? pen_s1 : pen_cm;
 			subsc = r->subsc > min_chain_sc? r->subsc : min_chain_sc;
 			if (r->p && r->p->dp_max2 > 0 && r->p->dp_max > 0) {
@@ -321,6 +396,7 @@ void mm_set_mapq(int n_regs, mm_reg1_t *regs, int min_chain_sc, int match_sc, in
 			mapq -= (int)(4.343f * logf(r->n_sub + 1) + .499f);
 			mapq = mapq > 0? mapq : 0;
 			r->mapq = mapq < 60? mapq : 60;
+			if (r->p && r->p->dp_max > r->p->dp_max2 && r->mapq == 0) r->mapq = 1;
 		} else r->mapq = 0;
 	}
 }

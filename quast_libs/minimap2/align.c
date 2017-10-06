@@ -99,7 +99,7 @@ static void mm_update_extra(mm_extra_t *p, const uint8_t *qseq, const uint8_t *t
 			uint8_t b[4];
 			b[0] = tseq[toff], b[1] = tseq[toff+1];
 			b[2] = tseq[toff+len-2], b[3] = tseq[toff+len-1];
-			toff += len, p->blen += len;
+			toff += len;
 		}
 	}
 	p->dp_max = max;
@@ -132,6 +132,7 @@ static void mm_append_cigar(mm_reg1_t *r, uint32_t n_cigar, uint32_t *cigar) // 
 
 static void mm_align_pair(void *km, const mm_mapopt_t *opt, int qlen, const uint8_t *qseq, int tlen, const uint8_t *tseq, const int8_t *mat, int w, int flag, ksw_extz_t *ez)
 {
+	int zdrop = opt->zdrop;
 	if (mm_dbg_flag & MM_DBG_PRINT_ALN_SEQ) {
 		int i;
 		fprintf(stderr, "===> q=(%d,%d), e=(%d,%d), bw=%d, flag=%d, zdrop=%d <===\n", opt->q, opt->q2, opt->e, opt->e2, w, flag, opt->zdrop);
@@ -140,16 +141,17 @@ static void mm_align_pair(void *km, const mm_mapopt_t *opt, int qlen, const uint
 		for (i = 0; i < qlen; ++i) fputc("ACGTN"[qseq[i]], stderr);
 		fputc('\n', stderr);
 	}
-	if (opt->flag & MM_F_APPROX_EXT) {
+	if (opt->flag & MM_F_SR) {
+		zdrop = (qlen < tlen? qlen : tlen) * opt->a; // zdrop disabled
 		flag |= KSW_EZ_APPROX_MAX;
 		if (flag & KSW_EZ_EXTZ_ONLY) flag |= KSW_EZ_APPROX_DROP;
 	}
 	if (opt->flag & MM_F_SPLICE)
-		ksw_exts2_sse(km, qlen, qseq, tlen, tseq, 5, mat, opt->q, opt->e, opt->q2, opt->noncan, opt->zdrop, flag, ez);
+		ksw_exts2_sse(km, qlen, qseq, tlen, tseq, 5, mat, opt->q, opt->e, opt->q2, opt->noncan, zdrop, flag, ez);
 	else if (opt->q == opt->q2 && opt->e == opt->e2)
-		ksw_extz2_sse(km, qlen, qseq, tlen, tseq, 5, mat, opt->q, opt->e, w, opt->zdrop, flag, ez);
+		ksw_extz2_sse(km, qlen, qseq, tlen, tseq, 5, mat, opt->q, opt->e, w, zdrop, flag, ez);
 	else
-		ksw_extd2_sse(km, qlen, qseq, tlen, tseq, 5, mat, opt->q, opt->e, opt->q2, opt->e2, w, opt->zdrop, flag, ez);
+		ksw_extd2_sse(km, qlen, qseq, tlen, tseq, 5, mat, opt->q, opt->e, opt->q2, opt->e2, w, zdrop, flag, ez);
 }
 
 static inline int mm_get_hplen_back(const mm_idx_t *mi, uint32_t rid, uint32_t x)
@@ -424,6 +426,7 @@ static int mm_align1_inv(void *km, const mm_mapopt_t *opt, const mm_idx_t *mi, i
 	r_inv->parent = MM_PARENT_UNSET;
 	r_inv->inv = 1;
 	r_inv->rev = !r1->rev;
+	r_inv->rid = r1->rid;
 	r_inv->qs = r1->qe + q_off, r_inv->qe = r_inv->qs + ez->max_q + 1;
 	r_inv->rs = r1->re + t_off, r_inv->re = r_inv->rs + ez->max_t + 1;
 	ret = 1;
@@ -484,9 +487,11 @@ mm_reg1_t *mm_align_skeleton(void *km, const mm_mapopt_t *opt, const mm_idx_t *m
 				regs[i].p->trans_strand = opt->flag&MM_F_SPLICE_FOR? 1 : 2;
 		}
 		if (r2.cnt > 0) regs = mm_insert_reg(&r2, i, &n_regs, regs);
-		if (i > 0 && mm_align1_inv(km, opt, mi, qlen, qseq0, &regs[i-1], &regs[i], &r2, &ez)) {
-			regs = mm_insert_reg(&r2, i, &n_regs, regs);
-			++i; // skip the inserted INV alignment
+		if (!(opt->flag&MM_F_SPLICE) && !(opt->flag&MM_F_SR) && i > 0) { // don't try inversion alignment for -xsplice or -xsr
+			if (mm_align1_inv(km, opt, mi, qlen, qseq0, &regs[i-1], &regs[i], &r2, &ez)) {
+				regs = mm_insert_reg(&r2, i, &n_regs, regs);
+				++i; // skip the inserted INV alignment
+			}
 		}
 	}
 	*n_regs_ = n_regs;

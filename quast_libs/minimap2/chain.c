@@ -19,7 +19,7 @@ static inline int ilog2_32(uint32_t v)
 	return (t = v>>8) ? 8 + LogTable256[t] : LogTable256[v];
 }
 
-int mm_chain_dp(int max_dist_x, int max_dist_y, int bw, int max_skip, int min_cnt, int min_sc, int is_cdna, int64_t n, mm128_t *a, uint64_t **_u, void *km)
+mm128_t *mm_chain_dp(int max_dist_x, int max_dist_y, int bw, int max_skip, int min_cnt, int min_sc, int is_cdna, int n_segs, int64_t n, mm128_t *a, int *n_u_, uint64_t **_u, void *km)
 { // TODO: make sure this works when n has more than 32 bits
 	int32_t st = 0, k, *f, *p, *t, *v, n_u, n_v;
 	int64_t i, j;
@@ -27,7 +27,7 @@ int mm_chain_dp(int max_dist_x, int max_dist_y, int bw, int max_skip, int min_cn
 	float avg_qspan;
 	mm128_t *b, *w;
 
-	if (_u) *_u = 0;
+	if (_u) *_u = 0, *n_u_ = 0;
 	f = (int32_t*)kmalloc(km, n * 4);
 	p = (int32_t*)kmalloc(km, n * 4);
 	t = (int32_t*)kmalloc(km, n * 4);
@@ -42,18 +42,21 @@ int mm_chain_dp(int max_dist_x, int max_dist_y, int bw, int max_skip, int min_cn
 		uint64_t ri = a[i].x;
 		int32_t qi = (int32_t)a[i].y, q_span = a[i].y>>32&0xff; // NB: only 8 bits of span is used!!!
 		int32_t max_f = q_span, max_j = -1, n_skip = 0, min_d, max_f_past = -INT32_MAX;
+		int32_t sidi = (a[i].y & MM_SEED_SEG_MASK) >> MM_SEED_SEG_SHIFT;
 		while (st < i && ri - a[st].x > max_dist_x) ++st;
 		for (j = i - 1; j >= st; --j) {
 			int64_t dr = ri - a[j].x;
 			int32_t dq = qi - (int32_t)a[j].y, dd, sc, log_dd;
+			int32_t sidj = (a[j].y & MM_SEED_SEG_MASK) >> MM_SEED_SEG_SHIFT;
 			if (dr == 0 || dq <= 0 || dq > max_dist_y) continue;
 			dd = dr > dq? dr - dq : dq - dr;
-			if (dd > bw) continue;
+			if (sidi == sidj && dd > bw) continue;
+			if (n_segs > 1 && !is_cdna && sidi == sidj && dr > max_dist_y) continue;
 			max_f_past = max_f_past > f[j]? max_f_past : f[j];
 			min_d = dq < dr? dq : dr;
 			sc = min_d > q_span? q_span : dq < dr? dq : dr;
 			log_dd = dd? ilog2_32(dd) : 0;
-			if (is_cdna) {
+			if (is_cdna || sidi != sidj) {
 				int c_log, c_lin;
 				c_lin = (int)(dd * .01 * avg_qspan);
 				c_log = log_dd;
@@ -70,7 +73,8 @@ int mm_chain_dp(int max_dist_x, int max_dist_y, int bw, int max_skip, int min_cn
 			}
 			if (p[j] >= 0) t[p[j]] = i;
 		}
-		f[i] = max_f, p[i] = max_j, v[i] = max_f_past; // v[] keeps the max score in the previous chain
+		f[i] = max_f, p[i] = max_j;
+		v[i] = max_f_past > max_f? max_f_past : max_f; // v[] keeps the peak score up to i; f[] is the score ending at i, not always the peak
 	}
 
 	// find the ending positions of chains
@@ -81,14 +85,14 @@ int mm_chain_dp(int max_dist_x, int max_dist_y, int bw, int max_skip, int min_cn
 		if (t[i] == 0 && v[i] >= min_sc)
 			++n_u;
 	if (n_u == 0) {
-		kfree(km, f); kfree(km, p); kfree(km, t); kfree(km, v);
+		kfree(km, a); kfree(km, f); kfree(km, p); kfree(km, t); kfree(km, v);
 		return 0;
 	}
 	u = (uint64_t*)kmalloc(km, n_u * 8);
 	for (i = n_u = 0; i < n; ++i) {
 		if (t[i] == 0 && v[i] >= min_sc) {
 			j = i;
-			while (j >= 0 && f[j] < v[j]) j = p[j]; // find the point that maximizes f[]
+			while (j >= 0 && f[j] < v[j]) j = p[j]; // find the peak that maximizes f[]
 			if (j < 0) j = i; // TODO: this should really be assert(j>=0)
 			u[n_u++] = (uint64_t)f[j] << 32 | j;
 		}
@@ -116,9 +120,9 @@ int mm_chain_dp(int max_dist_x, int max_dist_y, int bw, int max_skip, int min_cn
 		}
 		if (k0 == k) n_v = n_v0; // no new chain added, reset
 	}
-	n_u = k, *_u = u; // NB: note that u[] may not be sorted by score here
+	*n_u_ = n_u = k, *_u = u; // NB: note that u[] may not be sorted by score here
 
-	// free
+	// free temporary arrays
 	kfree(km, f); kfree(km, p); kfree(km, t);
 
 	// write the result to b[]
@@ -145,6 +149,7 @@ int mm_chain_dp(int max_dist_x, int max_dist_y, int bw, int max_skip, int min_cn
 		k += n;
 	}
 	memcpy(u, u2, n_u * 8);
-	kfree(km, b); kfree(km, w); kfree(km, u2);
-	return n_u;
+	memcpy(b, a, k * sizeof(mm128_t)); // write _a_ to _b_ and deallocate _a_ because _a_ is oversized, sometimes a lot
+	kfree(km, a); kfree(km, w); kfree(km, u2);
+	return b;
 }

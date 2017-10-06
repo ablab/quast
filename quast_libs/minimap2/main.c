@@ -6,7 +6,7 @@
 #include "mmpriv.h"
 #include "getopt.h"
 
-#define MM_VERSION "2.2-r424-dirty"
+#define MM_VERSION "2.2-r479-dirty"
 
 #ifdef __linux__
 #include <sys/resource.h>
@@ -25,7 +25,7 @@ void liftrlimit() {}
 static struct option long_options[] = {
 	{ "bucket-bits",    required_argument, 0, 0 },
 	{ "mb-size",        required_argument, 0, 'K' },
-	{ "int-rname",      no_argument,       0, 0 }, // obsolete; kept as a placeholder
+	{ "seed",           required_argument, 0, 0 },
 	{ "no-kalloc",      no_argument,       0, 0 },
 	{ "print-qname",    no_argument,       0, 0 },
 	{ "no-self",        no_argument,       0, 0 },
@@ -35,9 +35,11 @@ static struct option long_options[] = {
 	{ "print-aln-seq",  no_argument,       0, 0 },
 	{ "splice",         no_argument,       0, 0 },
 	{ "cost-non-gt-ag", required_argument, 0, 0 },
-	{ "no-sam-sq",      no_argument,       0, 0 },
-	{ "approx-ext",     no_argument,       0, 0 },
 	{ "no-long-join",   no_argument,       0, 0 },
+	{ "sr",             no_argument,       0, 0 },
+	{ "frag",           optional_argument, 0, 0 },
+	{ "print-2nd",      optional_argument, 0, 0 },
+	{ "cs",             optional_argument, 0, 0 },
 	{ "help",           no_argument,       0, 'h' },
 	{ "max-intron-len", required_argument, 0, 'G' },
 	{ "version",        no_argument,       0, 'V' },
@@ -62,9 +64,10 @@ static inline int64_t mm_parse_num(const char *str)
 
 int main(int argc, char *argv[])
 {
+	const char *opt_str = "aSw:k:K:t:r:f:Vv:g:G:I:d:XT:s:x:Hcp:M:n:z:A:B:O:E:m:N:Qu:R:h";
 	mm_mapopt_t opt;
 	mm_idxopt_t ipt;
-	int i, c, n_threads = 3, long_idx, max_intron_len = 0;
+	int i, c, n_threads = 3, long_idx, max_gap_ref = 0;
 	char *fnw = 0, *rg = 0, *s;
 	FILE *fp_help = stderr;
 	mm_idx_reader_t *idx_rdr;
@@ -75,7 +78,17 @@ int main(int argc, char *argv[])
 	mm_realtime0 = realtime();
 	mm_set_opt(0, &ipt, &opt);
 
-	while ((c = getopt_long(argc, argv, "aSw:k:K:t:r:f:Vv:g:G:I:d:XT:s:x:Hcp:M:n:z:A:B:O:E:m:N:Qu:R:h", long_options, &long_idx)) >= 0) {
+	while ((c = getopt_long(argc, argv, opt_str, long_options, &long_idx)) >= 0) // apply option -x/preset first
+		if (c == 'x') {
+			if (mm_set_opt(optarg, &ipt, &opt) < 0) {
+				fprintf(stderr, "[ERROR] unknown preset '%s'\n", optarg);
+				return 1;
+			}
+			break;
+		}
+	optreset = 1;
+
+	while ((c = getopt_long(argc, argv, opt_str, long_options, &long_idx)) >= 0) {
 		if (c == 'w') ipt.w = atoi(optarg);
 		else if (c == 'k') ipt.k = atoi(optarg);
 		else if (c == 'H') ipt.is_hpc = 1;
@@ -84,12 +97,11 @@ int main(int argc, char *argv[])
 		else if (c == 't') n_threads = atoi(optarg);
 		else if (c == 'v') mm_verbose = atoi(optarg);
 		else if (c == 'g') opt.max_gap = (int)mm_parse_num(optarg);
-		else if (c == 'G') max_intron_len = (int)mm_parse_num(optarg);
+		else if (c == 'G') max_gap_ref = (int)mm_parse_num(optarg);
 		else if (c == 'N') opt.best_n = atoi(optarg);
 		else if (c == 'p') opt.pri_ratio = atof(optarg);
 		else if (c == 'M') opt.mask_level = atof(optarg);
 		else if (c == 'c') opt.flag |= MM_F_OUT_CG | MM_F_CIGAR;
-		else if (c == 'S') opt.flag |= MM_F_OUT_CS | MM_F_CIGAR;
 		else if (c == 'X') opt.flag |= MM_F_AVA | MM_F_NO_SELF;
 		else if (c == 'a') opt.flag |= MM_F_OUT_SAM | MM_F_CIGAR;
 		else if (c == 'Q') opt.flag |= MM_F_NO_QUAL;
@@ -105,26 +117,51 @@ int main(int argc, char *argv[])
 		else if (c == 'R') rg = optarg;
 		else if (c == 'h') fp_help = stdout;
 		else if (c == 0 && long_idx == 0) ipt.bucket_bits = atoi(optarg); // --bucket-bits
+		else if (c == 0 && long_idx == 2) opt.seed = atoi(optarg); // --seed
 		else if (c == 0 && long_idx == 3) mm_dbg_flag |= MM_DBG_NO_KALLOC; // --no-kalloc
 		else if (c == 0 && long_idx == 4) mm_dbg_flag |= MM_DBG_PRINT_QNAME; // --print-qname
 		else if (c == 0 && long_idx == 5) opt.flag |= MM_F_NO_SELF; // --no-self
-		else if (c == 0 && long_idx == 6) mm_dbg_flag |= MM_DBG_PRINT_QNAME | MM_DBG_PRINT_SEED; // --print-seed
+		else if (c == 0 && long_idx == 6) mm_dbg_flag |= MM_DBG_PRINT_QNAME | MM_DBG_PRINT_SEED, n_threads = 1; // --print-seed
 		else if (c == 0 && long_idx == 7) opt.max_chain_skip = atoi(optarg); // --max-chain-skip
 		else if (c == 0 && long_idx == 8) opt.min_ksw_len = atoi(optarg); // --min-dp-len
 		else if (c == 0 && long_idx == 9) mm_dbg_flag |= MM_DBG_PRINT_QNAME | MM_DBG_PRINT_ALN_SEQ; // --print-aln-seq
 		else if (c == 0 && long_idx ==10) opt.flag |= MM_F_SPLICE; // --splice
 		else if (c == 0 && long_idx ==11) opt.noncan = atoi(optarg); // --cost-non-gt-ag
-		else if (c == 0 && long_idx ==12) opt.flag |= MM_F_NO_SAM_SQ; // --no-sam-sq
-		else if (c == 0 && long_idx ==13) opt.flag |= MM_F_APPROX_EXT; // --approx-ext
-		else if (c == 0 && long_idx ==14) opt.flag |= MM_F_NO_LJOIN; // --no-long-join
-		else if (c == 'V') {
+		else if (c == 0 && long_idx ==12) opt.flag |= MM_F_NO_LJOIN; // --no-long-join
+		else if (c == 0 && long_idx ==13) opt.flag |= MM_F_SR; // --sr
+		else if (c == 0 && long_idx == 14) { // --frag
+			if (optarg == 0 || strcmp(optarg, "yes") == 0 || strcmp(optarg, "y") == 0)
+				opt.flag |= MM_F_FRAG_MODE;
+			else opt.flag &= ~MM_F_FRAG_MODE;
+		} else if (c == 0 && long_idx == 15) { // --print-2nd
+			if (optarg == 0 || strcmp(optarg, "yes") == 0 || strcmp(optarg, "y") == 0)
+				opt.flag &= ~MM_F_NO_PRINT_2ND;
+			else opt.flag |= MM_F_NO_PRINT_2ND;
+		} else if (c == 0 && long_idx == 16) { // --cs
+			opt.flag |= MM_F_OUT_CS | MM_F_CIGAR;
+			if (optarg == 0 || strcmp(optarg, "short") == 0) {
+				opt.flag &= ~MM_F_OUT_CS_LONG;
+			} else if (strcmp(optarg, "long") == 0) {
+				opt.flag |= MM_F_OUT_CS_LONG;
+			} else if (strcmp(optarg, "none") == 0) {
+				opt.flag &= ~MM_F_OUT_CS;
+			} else if (mm_verbose >= 2) {
+				fprintf(stderr, "[WARNING]\033[1;31m --cs only takes 'short' or 'long'. Invalid values are assumed to be 'short'.\033[0m\n");
+			}
+		} else if (c == 'S') {
+			opt.flag |= MM_F_OUT_CS | MM_F_CIGAR | MM_F_OUT_CS_LONG;
+			if (mm_verbose >= 2)
+				fprintf(stderr, "[WARNING]\033[1;31m option -S is deprecated and may be removed in future. Please use --cs=long instead.\033[0m\n");
+		} else if (c == 'V') {
 			puts(MM_VERSION);
 			return 0;
 		} else if (c == 'f') {
 			double x;
-			x = atof(optarg);
+			char *p;
+			x = strtod(optarg, &p);
 			if (x < 1.0) opt.mid_occ_frac = x, opt.mid_occ = 0;
 			else opt.mid_occ = (int)(x + .499);
+			if (*p == ',') opt.max_occ = (int)(strtod(p+1, &p) + .499);
 		} else if (c == 'u') {
 			if (*optarg == 'b') opt.flag |= MM_F_SPLICE_FOR|MM_F_SPLICE_REV; // both strands
 			else if (*optarg == 'f') opt.flag |= MM_F_SPLICE_FOR, opt.flag &= ~MM_F_SPLICE_REV; // match GT-AG
@@ -140,15 +177,19 @@ int main(int argc, char *argv[])
 		} else if (c == 'E') {
 			opt.e = opt.e2 = strtol(optarg, &s, 10);
 			if (*s == ',') opt.e2 = strtol(s + 1, &s, 10);
-		} else if (c == 'x') {
-			if (mm_set_opt(optarg, &ipt, &opt) < 0) {
-				fprintf(stderr, "[E::%s] unknown preset '%s'\n", __func__, optarg);
-				return 1;
-			}
 		}
 	}
-	if ((opt.flag & MM_F_SPLICE) && max_intron_len > 0)
-		opt.max_gap_ref = opt.bw = max_intron_len;
+	if (max_gap_ref > 0) {
+		if (opt.flag & MM_F_FRAG_MODE)
+			opt.max_gap_ref = max_gap_ref;
+		if (opt.flag & MM_F_SPLICE)
+			opt.max_gap_ref = opt.bw = max_gap_ref;
+	}
+	if ((opt.flag & MM_F_OUT_SAM) && (opt.flag & MM_F_OUT_CS_LONG)) {
+		opt.flag &= ~MM_F_OUT_CS_LONG;
+		if (mm_verbose >= 2)
+			fprintf(stderr, "[WARNING]\033[1;31m in SAM, only the short form of the cs tag is outputted.\033[0m\n");
+	}
 
 	if (argc == optind || fp_help == stdout) {
 		fprintf(fp_help, "Usage: minimap2 [options] <target.fa>|<target.idx> [query.fa] [...]\n");
@@ -161,15 +202,15 @@ int main(int argc, char *argv[])
 		fprintf(fp_help, "    -d FILE      dump index to FILE []\n");
 		fprintf(fp_help, "  Mapping:\n");
 		fprintf(fp_help, "    -f FLOAT     filter out top FLOAT fraction of repetitive minimizers [%g]\n", opt.mid_occ_frac);
-		fprintf(fp_help, "    -g INT       stop chain enlongation if there are no minimizers in INT-bp [%d]\n", opt.max_gap);
-		fprintf(fp_help, "    -r INT       bandwidth used in chaining and DP-based alignment [%d]\n", opt.bw);
+		fprintf(fp_help, "    -g NUM       stop chain enlongation if there are no minimizers in INT-bp [%d]\n", opt.max_gap);
+		fprintf(fp_help, "    -G NUM       max intron length (-x splice) [200k]; or insert size (-x sr) [1000] []\n");
+		fprintf(fp_help, "    -r NUM       bandwidth used in chaining and DP-based alignment [%d]\n", opt.bw);
 		fprintf(fp_help, "    -n INT       minimal number of minimizers on a chain [%d]\n", opt.min_cnt);
 		fprintf(fp_help, "    -m INT       minimal chaining score (matching bases minus log gap penalty) [%d]\n", opt.min_chain_score);
 //		fprintf(fp_help, "    -T INT       SDUST threshold; 0 to disable SDUST [%d]\n", opt.sdust_thres); // TODO: this option is never used; might be buggy
 		fprintf(fp_help, "    -X           skip self and dual mappings (for the all-vs-all mode)\n");
 		fprintf(fp_help, "    -p FLOAT     min secondary-to-primary score ratio [%g]\n", opt.pri_ratio);
 		fprintf(fp_help, "    -N INT       retain at most INT secondary alignments [%d]\n", opt.best_n);
-		fprintf(fp_help, "    -G NUM       max intron length (only effective following -x splice) [200k]\n");
 		fprintf(fp_help, "  Alignment:\n");
 		fprintf(fp_help, "    -A INT       matching score [%d]\n", opt.a);
 		fprintf(fp_help, "    -B INT       mismatch penalty [%d]\n", opt.b);
@@ -183,13 +224,13 @@ int main(int argc, char *argv[])
 		fprintf(fp_help, "    -Q           don't output base quality in SAM\n");
 		fprintf(fp_help, "    -R STR       SAM read group line in a format like '@RG\\tID:foo\\tSM:bar' []\n");
 		fprintf(fp_help, "    -c           output CIGAR in PAF\n");
-		fprintf(fp_help, "    -S           output the cs tag in PAF (cs encodes both query and ref sequences)\n");
+		fprintf(fp_help, "    --cs[=STR]   output the cs tag; STR is 'short' (if absent) or 'long' [none]\n");
 		fprintf(fp_help, "    -t INT       number of threads [%d]\n", n_threads);
 		fprintf(fp_help, "    -K NUM       minibatch size for mapping [200M]\n");
 //		fprintf(fp_help, "    -v INT       verbose level [%d]\n", mm_verbose);
 		fprintf(fp_help, "    --version    show version number\n");
 		fprintf(fp_help, "  Preset:\n");
-		fprintf(fp_help, "    -x STR       preset (recommended to be applied before other options) []\n");
+		fprintf(fp_help, "    -x STR       preset (always applied before other options) []\n");
 		fprintf(fp_help, "                 map10k/map-pb: -Hk19 (PacBio/ONT vs reference mapping)\n");
 		fprintf(fp_help, "                 map-ont: -k15 (slightly more sensitive than 'map10k' for ONT vs reference)\n");
 		fprintf(fp_help, "                 asm5: -k19 -w19 -A1 -B19 -O39,81 -E3,1 -s200 -z200 (asm to ref mapping; break at 5%% div.)\n");
@@ -211,18 +252,27 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "[ERROR] missing input: please specify a query file to map or option -d to keep the index\n");
 		return 1;
 	}
-	if (opt.flag & MM_F_OUT_SAM)
-		mm_write_sam_hdr_no_SQ(rg, MM_VERSION, argc, argv);
 	while ((mi = mm_idx_reader_read(idx_rdr, n_threads)) != 0) {
-		if (mm_verbose >= 2 && idx_rdr->n_parts > 1 && (opt.flag&MM_F_OUT_SAM) && !(opt.flag&MM_F_NO_SAM_SQ))
-			fprintf(stderr, "[WARNING] \033[1;31mSAM output is malformated due to internal @SQ lines. Please add option --no-sam-sq or filter afterwards.\033[0m\n");
+		if ((opt.flag & MM_F_OUT_SAM) && idx_rdr->n_parts == 1) {
+			if (mm_idx_reader_eof(idx_rdr)) {
+				mm_write_sam_hdr(mi, rg, MM_VERSION, argc, argv);
+			} else {
+				mm_write_sam_hdr(0, rg, MM_VERSION, argc, argv);
+				if (mm_verbose >= 2)
+					fprintf(stderr, "[WARNING]\033[1;31m For a multi-part index, no @SQ lines will be outputted.\033[0m\n");
+			}
+		}
 		if (mm_verbose >= 3)
 			fprintf(stderr, "[M::%s::%.3f*%.2f] loaded/built the index for %d target sequence(s)\n",
 					__func__, realtime() - mm_realtime0, cputime() / (realtime() - mm_realtime0), mi->n_seq);
 		if (argc != optind + 1) mm_mapopt_update(&opt, mi);
 		if (mm_verbose >= 3) mm_idx_stat(mi);
-		for (i = optind + 1; i < argc; ++i)
-			mm_map_file(mi, argv[i], &opt, n_threads);
+		if (!(opt.flag & MM_F_FRAG_MODE)) {
+			for (i = optind + 1; i < argc; ++i)
+				mm_map_file(mi, argv[i], &opt, n_threads);
+		} else {
+			mm_map_file_frag(mi, argc - (optind + 1), (const char**)&argv[optind + 1], &opt, n_threads);
+		}
 		mm_idx_destroy(mi);
 	}
 	mm_idx_reader_close(idx_rdr);

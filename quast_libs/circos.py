@@ -8,6 +8,7 @@
 from __future__ import with_statement
 
 import os
+import re
 import shutil
 from collections import defaultdict
 from os.path import join, exists, dirname, realpath
@@ -18,8 +19,8 @@ except ImportError:
    from quast_libs.site_packages.ordered_dict import OrderedDict
 
 from quast_libs import qutils, qconfig
-from quast_libs.ca_utils.align_contigs import get_nucmer_aux_out_fpaths
-from quast_libs.ca_utils.misc import create_nucmer_output_dir, open_gzipsafe, ref_labels_by_chromosomes
+from quast_libs.ca_utils.align_contigs import get_aux_out_fpaths
+from quast_libs.ca_utils.misc import create_minimap_output_dir, open_gzipsafe, ref_labels_by_chromosomes, parse_cs_tag
 from quast_libs.fastaparser import get_chr_lengths_from_fastafile
 from quast_libs.icarus_utils import get_assemblies, check_misassembled_blocks, Alignment
 from quast_libs.qutils import get_path_to_program, is_non_empty_file, relpath
@@ -138,7 +139,7 @@ def create_meta_highlights(chr_lengths, output_dir):
                 out_f.write('\t'.join([chrom, '0', str(chr_lengths[chrom]), 'fill_color=' + colors[i % len(colors)]]) + '\n')
     return highlights_fpath
 
-def parse_nucmer_contig_report(report_fpath):
+def parse_aligner_contig_report(report_fpath):
     aligned_blocks = []
     misassembled_id_to_structure = defaultdict(list)
 
@@ -183,7 +184,7 @@ def parse_alignments(contigs_fpaths, contig_report_fpath_pattern):
     for contigs_fpath in contigs_fpaths:
         if contig_report_fpath_pattern:
             report_fpath = contig_report_fpath_pattern % qutils.label_from_fpath_for_fname(contigs_fpath)
-            aligned_blocks, misassembled_id_to_structure = parse_nucmer_contig_report(report_fpath)
+            aligned_blocks, misassembled_id_to_structure = parse_aligner_contig_report(report_fpath)
             if aligned_blocks is None:
                 continue
 
@@ -264,18 +265,27 @@ def create_coverage_plot(cov_fpath, window_size, ref_len, output_dir):
 
 def create_mismatches_plot(assembly, window_size, ref_len, root_dir, output_dir):
     assembly_label = qutils.label_from_fpath_for_fname(assembly.fpath)
-    nucmer_dirpath = join(root_dir, '..', 'contigs_reports')
-    nucmer_fpath = join(create_nucmer_output_dir(nucmer_dirpath), assembly_label)
-    _, _, _, _, used_snps_fpath = get_nucmer_aux_out_fpaths(nucmer_fpath)
-    if not exists(used_snps_fpath):
+    aligner_dirpath = join(root_dir, '..', 'contigs_reports')
+    coords_basename = join(create_minimap_output_dir(aligner_dirpath), assembly_label)
+    _, coords_filtered_fpath, _, _ = get_aux_out_fpaths(coords_basename)
+    if not exists(coords_filtered_fpath) or not qconfig.show_snps:
         return None
 
     mismatches_fpath = join(output_dir, assembly_label + '.mismatches.txt')
     mismatch_density_by_chrom = defaultdict(lambda : [0] * (ref_len // window_size + 1))
-    for line in open_gzipsafe(used_snps_fpath):
-        chrom, contig, ref_pos, ref_nucl, ctg_nucl, ctg_pos = line.split('\t')
-        if ref_nucl != '.' and ctg_nucl != '.':
-            mismatch_density_by_chrom[chrom][int(ref_pos) // window_size] += 1
+    with open(coords_filtered_fpath) as coords_file:
+        for line in coords_file:
+            s1 = int(line.split('|')[0].split()[0])
+            chrom = line.split()[11].strip()
+            cigar = line.split()[-1].strip()
+            ref_pos = s1
+            for op in parse_cs_tag(cigar):
+                n_bases = len(op) - 1
+                if op.startswith('*'):
+                    mismatch_density_by_chrom[chrom][int(ref_pos) // window_size] += 1
+                    ref_pos += 1
+                elif not op.startswith('+'):
+                    ref_pos += n_bases
     with open(mismatches_fpath, 'w') as out_f:
         for chrom, density_list in mismatch_density_by_chrom.items():
             start, end = 0, 0

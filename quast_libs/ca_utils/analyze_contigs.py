@@ -121,7 +121,7 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fp
     for ref in ref_labels_by_chromosomes.values():
         istranslocations_by_ref[ref] = dict((key, 0) for key in ref_labels_by_chromosomes.values())
 
-    # for counting SNPs and indels (both original (.all_snps) and corrected from Nucmer's local misassemblies)
+    # for counting SNPs and indels (both original (.all_snps) and corrected from local misassemblies)
     total_indels_info = IndelsInfo()
 
     unaligned_file = open(unaligned_fpath, 'w')
@@ -173,7 +173,7 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fp
                     ca_output.stdout_f.write('\t\tOne align captures most of this contig: %s\n' % str(top_aligns[0]))
                     ca_output.icarus_out_f.write(top_aligns[0].icarus_report_str() + '\n')
                     ref_aligns.setdefault(top_aligns[0].ref, []).append(top_aligns[0])
-                    ca_output.coords_filtered_f.write(str(top_aligns[0]) + '\n')
+                    ca_output.coords_filtered_f.write(top_aligns[0].coords_str() + '\n')
                     aligned_lengths.append(top_aligns[0].len2)
                     contigs_aligned_lengths[-1] = top_aligns[0].len2
                 else:
@@ -201,7 +201,7 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fp
                         ref_aligns.setdefault(top_aligns[0].ref, []).append(top_aligns[0])
                         aligned_lengths.append(top_aligns[0].len2)
                         contigs_aligned_lengths[-1] = top_aligns[0].len2
-                        ca_output.coords_filtered_f.write(str(top_aligns[0]) + '\n')
+                        ca_output.coords_filtered_f.write(top_aligns[0].coords_str() + '\n')
                         top_aligns = top_aligns[1:]
                         for align in top_aligns:
                             ca_output.stdout_f.write('\t\t\tSkipping alignment ' + str(align) + '\n')
@@ -220,7 +220,7 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fp
                                 aligned_lengths.append(top_aligns[0].len2)
                                 contigs_aligned_lengths[-1] = top_aligns[0].len2
                             ambiguous_contigs_extra_bases += top_aligns[0].len2
-                            ca_output.coords_filtered_f.write(str(top_aligns[0]) + ' ambiguous\n')
+                            ca_output.coords_filtered_f.write(top_aligns[0].coords_str() + ' ambiguous\n')
                             top_aligns = top_aligns[1:]
             else:
                 # choose appropriate alignments (to maximize total size of contig alignment and reduce # misassemblies)
@@ -269,7 +269,7 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fp
                                 ca_output.stdout_f.write('\t\tAlignment: %s\n' % str(align))
                                 ref_aligns.setdefault(align.ref, []).append(align)
                                 ambiguous_contigs_extra_bases += align.len2
-                                ca_output.coords_filtered_f.write(str(align) + " ambiguous\n")
+                                ca_output.coords_filtered_f.write(align.coords_str() + " ambiguous\n")
                                 if idx not in the_best_set.indexes:
                                     ca_output.icarus_out_f.write(align.icarus_report_str(is_best=False) + '\n')
 
@@ -282,7 +282,7 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fp
                     the_only_align = real_aligns[0]
 
                     #There is only one alignment of this contig to the reference
-                    ca_output.coords_filtered_f.write(str(the_only_align) + '\n')
+                    ca_output.coords_filtered_f.write(the_only_align.coords_str() + '\n')
                     aligned_lengths.append(the_only_align.len2)
                     contigs_aligned_lengths[-1] = the_only_align.len2
 
@@ -338,7 +338,7 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fp
                             ca_output.stdout_f.write('\t\tAlignment: %s\n' % str(align))
                             ca_output.icarus_out_f.write(align.icarus_report_str() + '\n')
                             ca_output.icarus_out_f.write('unknown\n')
-                            ca_output.coords_filtered_f.write(str(align) + '\n')
+                            ca_output.coords_filtered_f.write(align.coords_str() + '\n')
                             aligned_lengths.append(align.len2)
                             ref_aligns.setdefault(align.ref, []).append(align)
 
@@ -370,7 +370,7 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fp
         else:
             #No aligns to this contig
             ca_output.stdout_f.write('\t\tThis contig is unaligned. (%d bp)\n' % ctg_len)
-            unaligned_file.write(contig)
+            unaligned_file.write(contig + '\n')
 
             #Increment unaligned contig count and bases
             unaligned += 1

@@ -71,14 +71,13 @@ First published online: July 4, 2016
 
 Third-party tools incorporated into QUAST:
 
-1. QUAST aligns contigs to reference genomes using Nucmer aligner from MUMmer package.
+1. QUAST uses Minimap2 for aligning long reads and contigs to reference genomes.
 
-For more details about MUMmer please refer to
-https://mummer4.github.io/index.html and to the following paper:
+For more details about Minimap2 please refer to
+https://github.com/lh3/minimap2 and to the following preprint:
 
-Kurtz, S, Phillippy, A, Delcher, AL, Smoot, M, Shumway, M, Antonescu, C, Salzberg, SL
-Versatile and open software for comparing large genomes.
-Genome Biol. (2004), 5, 2:R12.
+Li H. (2017) Minimap2: fast pairwise alignment for long nucleotide sequences.
+https://arxiv.org/abs/1708.01492
 
 2. GeneMarkS as well as MetaGeneMark and GeneMark-ES gene prediction software
 was provided by Mark Borodovsky and Georgia Institute of Technology. 
@@ -191,11 +190,7 @@ http://bedtools.readthedocs.io/ website and to the following paper:
 Quinlan, AR, Hall, IM (2010). BEDTools: a flexible suite of utilities for comparing 
 genomic features. Bioinformatics, 26, 6:841-2.
 
-10. QUAST uses Gnuplot for creating MUMmer alignment dotplot.
-For more details about Gnuplot please refer to
-http://gnuplot.sourceforge.net/ website and Copyright file under quast_libs/gnuplot/
-
-11. QUAST uses LAP for calculating assembly likelihood scores.
+10. QUAST uses LAP for calculating assembly likelihood scores.
 For more details about LAP please refer to
 http://assembly-eval.sourceforge.net/ website and to the following paper:
 
@@ -203,18 +198,18 @@ Ghodsi, M., Hill, C. M., Astrovskaya, I., Lin, H., Sommer, D. D., Koren, S., & P
 De novo likelihood-based measures for comparing genome assemblies.
 BMC research notes 6 (2013): 334.
 
-12. QUAST uses KMC for unique k-mers counting.
+11. QUAST uses KMC for unique k-mers counting.
 For more details about KMC please refer to
 http://sun.aei.polsl.pl/kmc website and to the following paper:
 
 Kokot, M., Długosz, M., Deorowicz, S., KMC 3: counting and manipulating k-mer statistics.
 Bioinformatics (2017). doi: 10.1093/bioinformatics/btx304()
 
-13. QUAST uses Barrnap for ribosomal RNA genes prediction.
+12. QUAST uses Barrnap for ribosomal RNA genes prediction.
 For more details about Barrnap please refer to
 https://github.com/tseemann/barrnap website.
 
-14. QUAST uses Circos for visualizing all assembly data in a circular layout (Circos needs to be installed).
+13. QUAST uses Circos for visualizing all assembly data in a circular layout (Circos needs to be installed).
 For more details about Circos please refer to
 http://www.circos.ca website and to the following paper:
 

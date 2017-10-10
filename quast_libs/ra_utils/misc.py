@@ -23,10 +23,9 @@ except:
 from os.path import join, isfile, basename, dirname, getsize
 
 from quast_libs import qconfig, qutils
-from quast_libs.ca_utils.misc import compile_aligner
 from quast_libs.fastaparser import get_chr_lengths_from_fastafile
 from quast_libs.qutils import compile_tool, get_dir_for_download, relpath, get_path_to_program, download_file, \
-    download_external_tool, is_non_empty_file, correct_name, get_total_memory
+    download_external_tool, is_non_empty_file, correct_name, get_free_memory
 
 bwa_dirpath = join(qconfig.LIBS_LOCATION, 'bwa')
 minimap_dirpath = join(qconfig.LIBS_LOCATION, 'minimap2')
@@ -281,7 +280,7 @@ def clean_read_names(sam_fpath, correct_sam_fpath):
 def sort_bam(bam_fpath, sorted_bam_fpath, err_path, logger, threads=None, sort_rule=None):
     if not threads:
         threads = qconfig.max_threads
-    mem = '%dGB' % min(100, max(2, get_total_memory() // 4))
+    mem = '%dGB' % min(100, max(2, get_free_memory))
     cmd = [sambamba_fpath('sambamba'), 'sort', '-t', str(threads), '--tmpdir', dirname(sorted_bam_fpath), '-m', mem,
            '-o', sorted_bam_fpath, bam_fpath]
     if sort_rule:
@@ -298,12 +297,12 @@ def bwa_index(ref_fpath, err_path, logger):
 
 
 def get_gridss_memory():
-    total_mem = get_total_memory()
-    if total_mem >= 64:
+    free_mem = get_free_memory()
+    if free_mem >= 64:
         return 31
-    elif total_mem >= 32:
+    elif free_mem >= 32:
         return 16
-    elif total_mem >= 16:
+    elif free_mem >= 16:
         return 8
     return 2
 

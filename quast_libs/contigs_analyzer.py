@@ -26,16 +26,16 @@ from os.path import join, dirname
 from quast_libs import reporting, qconfig, qutils, fastaparser
 from quast_libs.ca_utils import misc
 from quast_libs.ca_utils.analyze_contigs import analyze_contigs
-from quast_libs.ca_utils.analyze_coverage import analyze_coverage
-from quast_libs.ca_utils.analyze_misassemblies import Mapping
-from quast_libs.ca_utils.misc import ref_labels_by_chromosomes, clean_tmp_files, compile_aligner, \
-    create_nucmer_output_dir, open_gzipsafe, compress_nucmer_output, close_handlers, compile_gnuplot
-from quast_libs.ca_utils.align_contigs import align_contigs, get_nucmer_aux_out_fpaths, NucmerStatus
+from quast_libs.ca_utils.analyze_misassemblies import Mapping, IndelsInfo
+from quast_libs.ca_utils.misc import ref_labels_by_chromosomes, compile_aligner, \
+    create_minimap_output_dir, close_handlers, parse_cs_tag
+
+from quast_libs.ca_utils.align_contigs import align_contigs, get_aux_out_fpaths, AlignerStatus
 from quast_libs.ca_utils.save_results import print_results, save_result, save_result_for_unaligned, \
     save_combined_ref_stats
 
 from quast_libs.log import get_logger
-from quast_libs.qutils import is_python2, add_suffix
+from quast_libs.qutils import is_python2
 
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 
@@ -49,22 +49,56 @@ class CAOutput():
         self.icarus_out_f = icarus_out_f
 
 
-class SNP():
-    def __init__(self, ref=None, ctg=None, ref_pos=None, ctg_pos=None, ref_nucl=None, ctg_nucl=None):
-        self.ref_pos = ref_pos
-        self.ctg_pos = ctg_pos
-        self.ref_nucl = ref_nucl
-        self.ctg_nucl = ctg_nucl
-        self.type = 'I' if self.ref_nucl == '.' else ('D' if ctg_nucl == '.' else 'S')
+def analyze_coverage(ref_aligns, used_snps_fpath):
+    total_aligned_bases = 0
+    indels_info = IndelsInfo()
+    with open(used_snps_fpath, 'w') as used_snps_f:
+        for chr_name, aligns in ref_aligns.items():
+            for align in aligns:
+                ref_pos, ctg_pos = align.s1, align.s2
+                strand_direction = 1 if align.s2 < align.e2 else -1
+                for op in parse_cs_tag(align.cigar):
+                    if op.startswith(':'):
+                        n_bases = int(op[1:])
+                    else:
+                        n_bases = len(op) - 1
+                    if op.startswith('*'):
+                        ref_nucl, ctg_nucl = op[1].upper(), op[2].upper()
+                        if ctg_nucl != 'N' and ref_nucl != 'N':
+                            indels_info.mismatches += 1
+                            used_snps_f.write('%s\t%s\t%d\t%s\t%s\t%d\n' % (chr_name, align.contig, ref_pos, ref_nucl, ctg_nucl, ctg_pos))
+                            ref_pos += 1
+                            ctg_pos += 1 * strand_direction
+                    elif op.startswith('+'):
+                        indels_info.indels_list.append(n_bases)
+                        indels_info.insertions += n_bases
+                        if n_bases < qconfig.MAX_INDEL_LENGTH:
+                            ref_nucl, ctg_nucl = '.', op[1:].upper()
+                            used_snps_f.write('%s\t%s\t%d\t%s\t%s\t%d\n' % (chr_name, align.contig, ref_pos, ref_nucl, ctg_nucl, ctg_pos))
+                        ctg_pos += n_bases * strand_direction
+                    elif op.startswith('-'):
+                        indels_info.indels_list.append(n_bases)
+                        indels_info.deletions += n_bases
+                        if n_bases < qconfig.MAX_INDEL_LENGTH:
+                            ref_nucl, ctg_nucl = op[1:].upper(), '.'
+                            used_snps_f.write('%s\t%s\t%d\t%s\t%s\t%d\n' % (chr_name, align.contig, ref_pos, ref_nucl, ctg_nucl, ctg_pos))
+                        ref_pos += n_bases
+                    else:
+                        ref_pos += n_bases
+                        ctg_pos += n_bases * strand_direction
+                total_aligned_bases += align.e1 - align.s1 + 1
+
+    result = {'SNPs': indels_info.mismatches, 'indels_list': indels_info.indels_list, 'total_aligned_bases': total_aligned_bases}
+    return result, indels_info
 
 
 # former plantagora and plantakolya
 def align_and_analyze(is_cyclic, index, contigs_fpath, output_dirpath, ref_fpath,
-                      old_contigs_fpath, bed_fpath, parallel_by_chr=False, threads=1):
-    nucmer_output_dirpath = create_nucmer_output_dir(output_dirpath)
+                      old_contigs_fpath, bed_fpath, threads=1):
+    tmp_output_dirpath = create_minimap_output_dir(output_dirpath)
     assembly_label = qutils.label_from_fpath(contigs_fpath)
     corr_assembly_label = qutils.label_from_fpath_for_fname(contigs_fpath)
-    nucmer_fpath = join(nucmer_output_dirpath, corr_assembly_label)
+    out_basename = join(tmp_output_dirpath, corr_assembly_label)
 
     logger.info('  ' + qutils.index_to_str(index) + assembly_label)
 
@@ -92,43 +126,32 @@ def align_and_analyze(is_cyclic, index, contigs_fpath, output_dirpath, ref_fpath
     else:
         logger.info('  ' + qutils.index_to_str(index) + 'Logging is disabled.')
 
-    coords_fpath, coords_filtered_fpath, unaligned_fpath, show_snps_fpath, used_snps_fpath = \
-        get_nucmer_aux_out_fpaths(nucmer_fpath)
-
-    nucmer_status = align_contigs(nucmer_fpath, ref_fpath, contigs_fpath, old_contigs_fpath, index,
-                                  parallel_by_chr, threads, log_out_fpath, log_err_fpath)
-    if nucmer_status != NucmerStatus.OK:
+    coords_fpath, coords_filtered_fpath, unaligned_fpath, used_snps_fpath = get_aux_out_fpaths(out_basename)
+    status = align_contigs(coords_fpath, out_basename, ref_fpath, contigs_fpath, old_contigs_fpath, index, threads,
+                           log_out_fpath, log_err_fpath)
+    if status != AlignerStatus.OK:
         with open(log_err_fpath, 'a') as log_err_f:
-            if nucmer_status == NucmerStatus.ERROR:
+            if status == AlignerStatus.ERROR:
                 logger.error('  ' + qutils.index_to_str(index) +
                          'Failed aligning contigs ' + qutils.label_from_fpath(contigs_fpath) +
                          ' to the reference (non-zero exit code). ' +
                          ('Run with the --debug flag to see additional information.' if not qconfig.debug else ''))
-            elif nucmer_status == NucmerStatus.FAILED:
+            elif status == AlignerStatus.FAILED:
                 log_err_f.write(qutils.index_to_str(index) + 'Alignment failed for ' + contigs_fpath + ':' + coords_fpath + 'doesn\'t exist.\n')
                 logger.info('  ' + qutils.index_to_str(index) + 'Alignment failed for ' + '\'' + assembly_label + '\'.')
-            elif nucmer_status == NucmerStatus.NOT_ALIGNED:
+            elif status == AlignerStatus.NOT_ALIGNED:
                 log_err_f.write(qutils.index_to_str(index) + 'Nothing aligned for ' + contigs_fpath + '\n')
                 logger.info('  ' + qutils.index_to_str(index) + 'Nothing aligned for ' + '\'' + assembly_label + '\'.')
-        clean_tmp_files(nucmer_fpath)
-        return nucmer_status, {}, [], [], []
+        return status, {}, [], [], []
 
     log_out_f = open(log_out_fpath, 'a')
     # Loading the alignment files
     log_out_f.write('Parsing coords...\n')
     aligns = {}
-    coords_file = open(coords_fpath)
-    coords_filtered_file = open(coords_filtered_fpath, 'w')
-    coords_filtered_file.write(coords_file.readline())
-    coords_filtered_file.write(coords_file.readline())
-    for line in coords_file:
-        if line.strip() == '':
-            break
-        assert line[0] != '='
-        #Clear leading spaces from nucmer output
-        #Store nucmer lines in an array
-        mapping = Mapping.from_line(line)
-        aligns.setdefault(mapping.contig, []).append(mapping)
+    with open(coords_fpath) as coords_file:
+        for line in coords_file:
+            mapping = Mapping.from_line(line)
+            aligns.setdefault(mapping.contig, []).append(mapping)
 
     # Loading the reference sequences
     log_out_f.write('Loading reference...\n') # TODO: move up
@@ -138,34 +161,6 @@ def align_and_analyze(is_cyclic, index, contigs_fpath, output_dirpath, ref_fpath
         name = name.split()[0]  # no spaces in reference header
         ref_lens[name] = len(seq)
         log_out_f.write('\tLoaded [%s]\n' % name)
-
-    #Loading the SNP calls
-    if qconfig.show_snps:
-        log_out_f.write('Loading SNPs...\n')
-
-    used_snps_file = None
-    snps = {}
-    if qconfig.show_snps:
-        prev_line = None
-        for line in open_gzipsafe(show_snps_fpath):
-            #print "$line";
-            line = line.split()
-            if not line[0].isdigit():
-                continue
-            if prev_line and line == prev_line:
-                continue
-            ref = line[10]
-            ctg = line[11]
-            pos = int(line[0]) # Kolya: python don't convert int<->str types automatically
-            loc = int(line[3]) # Kolya: same as above
-
-            # if (! exists $line[11]) { die "Malformed line in SNP file.  Please check that show-snps has completed succesfully.\n$line\n[$line[9]][$line[10]][$line[11]]\n"; }
-            if pos in snps.setdefault(ref, {}).setdefault(ctg, {}):
-                snps.setdefault(ref, {}).setdefault(ctg, {})[pos].append(SNP(ref_pos=pos, ctg_pos=loc, ref_nucl=line[1], ctg_nucl=line[2]))
-            else:
-                snps.setdefault(ref, {}).setdefault(ctg, {})[pos] = [SNP(ref_pos=pos, ctg_pos=loc, ref_nucl=line[1], ctg_nucl=line[2])]
-            prev_line = line
-        used_snps_file = open_gzipsafe(used_snps_fpath, 'w')
 
     # Loading the regions (if any)
     regions = {}
@@ -181,28 +176,19 @@ def align_and_analyze(is_cyclic, index, contigs_fpath, output_dirpath, ref_fpath
     log_out_f.write('\tTotal Regions: %d\n' % total_regions)
     log_out_f.write('\tTotal Region Length: %d\n' % total_reg_len)
 
-    ca_output = CAOutput(stdout_f=log_out_f, misassembly_f=misassembly_f, coords_filtered_f=coords_filtered_file,
-                         used_snps_f=used_snps_file, icarus_out_f=icarus_out_f)
+    ca_output = CAOutput(stdout_f=log_out_f, misassembly_f=misassembly_f, coords_filtered_f=open(coords_filtered_fpath, 'w'),
+                         icarus_out_f=icarus_out_f)
 
     log_out_f.write('Analyzing contigs...\n')
     result, ref_aligns, total_indels_info, aligned_lengths, misassembled_contigs, misassemblies_in_contigs, aligned_lengths_by_contigs =\
         analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fpath, aligns, ref_features, ref_lens, is_cyclic)
 
-    # if qconfig.large_genome:
-    #     log_out_f.write('Analyzing large blocks...\n')
-    #     large_misassembly_fpath = add_suffix(misassembly_fpath, 'large_blocks') if not qconfig.space_efficient else '/dev/null'
-    #     ca_large_output = CAOutput(stdout_f=log_out_f, misassembly_f=open(large_misassembly_fpath, 'w'),
-    #                                coords_filtered_f=coords_filtered_file, used_snps_f=open('/dev/null', 'w'), icarus_out_f=open('/dev/null', 'w'))
-    #     min_alignment, extensive_mis_threshold = qconfig.min_alignment, qconfig.extensive_misassembly_threshold
-    #     qconfig.min_alignment, qconfig.extensive_misassembly_threshold = qconfig.LARGE_MIN_ALIGNMENT, qconfig.LARGE_EXTENSIVE_MIS_THRESHOLD
-    #     result.update(analyze_contigs(ca_large_output, contigs_fpath, '/dev/null', '/dev/null',
-    #                                   aligns, ref_features, ref_lens, is_cyclic, large_misassemblies_search=True)[0])
-    #     qconfig.min_alignment, qconfig.extensive_misassembly_threshold = min_alignment, extensive_mis_threshold
-
     log_out_f.write('Analyzing coverage...\n')
     if qconfig.show_snps:
         log_out_f.write('Writing SNPs into ' + used_snps_fpath + '\n')
-    result.update(analyze_coverage(ca_output, regions, ref_aligns, ref_features, snps, total_indels_info))
+    cov_stats, indels_info = analyze_coverage(ref_aligns, used_snps_fpath)
+    result.update(cov_stats)
+    total_indels_info += indels_info
     result = print_results(contigs_fpath, log_out_f, used_snps_fpath, total_indels_info, result)
 
     if not qconfig.space_efficient:
@@ -244,13 +230,10 @@ def align_and_analyze(is_cyclic, index, contigs_fpath, output_dirpath, ref_fpath
     close_handlers(ca_output)
     logger.info('  ' + qutils.index_to_str(index) + 'Analysis is finished.')
     logger.debug('')
-    clean_tmp_files(nucmer_fpath)
-    if not qconfig.no_gzip:
-        compress_nucmer_output(logger, nucmer_fpath)
     if not ref_aligns:
-        return NucmerStatus.NOT_ALIGNED, result, aligned_lengths, misassemblies_in_contigs, aligned_lengths_by_contigs
+        return AlignerStatus.NOT_ALIGNED, result, aligned_lengths, misassemblies_in_contigs, aligned_lengths_by_contigs
     else:
-        return NucmerStatus.OK, result, aligned_lengths, misassemblies_in_contigs, aligned_lengths_by_contigs
+        return AlignerStatus.OK, result, aligned_lengths, misassemblies_in_contigs, aligned_lengths_by_contigs
 
 
 def do(reference, contigs_fpaths, is_cyclic, output_dir, old_contigs_fpaths, bed_fpath=None):
@@ -262,56 +245,48 @@ def do(reference, contigs_fpaths, is_cyclic, output_dir, old_contigs_fpaths, bed
     success_compilation = compile_aligner(logger)
     if not success_compilation:
         logger.main_info('Failed aligning the contigs for all the assemblies. Only basic stats are going to be evaluated.')
-        return dict(zip(contigs_fpaths, [NucmerStatus.FAILED] * len(contigs_fpaths))), None
-
-    if qconfig.draw_plots:
-        compile_gnuplot(logger, only_clean=False)
+        return dict(zip(contigs_fpaths, [AlignerStatus.FAILED] * len(contigs_fpaths))), None
 
     num_nf_errors = logger._num_nf_errors
-    create_nucmer_output_dir(output_dir)
+    create_minimap_output_dir(output_dir)
     n_jobs = min(len(contigs_fpaths), qconfig.max_threads)
     threads = max(1, qconfig.max_threads // n_jobs)
     if is_python2():
         from joblib2 import Parallel, delayed
     else:
         from joblib3 import Parallel, delayed
-    if not qconfig.splitted_ref and not qconfig.memory_efficient:
+    if not qconfig.memory_efficient:
         statuses_results_lengths_tuples = Parallel(n_jobs=n_jobs)(delayed(align_and_analyze)(
         is_cyclic, i, contigs_fpath, output_dir, reference, old_contigs_fpath, bed_fpath, threads=threads)
              for i, (contigs_fpath, old_contigs_fpath) in enumerate(zip(contigs_fpaths, old_contigs_fpaths)))
     else:
-        if len(contigs_fpaths) >= len(qconfig.splitted_ref) and not qconfig.memory_efficient:
-            statuses_results_lengths_tuples = Parallel(n_jobs=n_jobs)(delayed(align_and_analyze)(
-            is_cyclic, i, contigs_fpath, output_dir, reference, old_contigs_fpath, bed_fpath, threads=threads)
-                for i, (contigs_fpath, old_contigs_fpath) in enumerate(zip(contigs_fpaths, old_contigs_fpaths)))
-        else:
-            statuses_results_lengths_tuples = []
-            for i, (contigs_fpath, old_contigs_fpath) in enumerate(zip(contigs_fpaths, old_contigs_fpaths)):
-                statuses_results_lengths_tuples.append(align_and_analyze(
-                is_cyclic, i, contigs_fpath, output_dir, reference, old_contigs_fpath, bed_fpath,
-                parallel_by_chr=True, threads=qconfig.max_threads))
+        statuses_results_lengths_tuples = []
+        for i, (contigs_fpath, old_contigs_fpath) in enumerate(zip(contigs_fpaths, old_contigs_fpaths)):
+            statuses_results_lengths_tuples.append(align_and_analyze(
+            is_cyclic, i, contigs_fpath, output_dir, reference, old_contigs_fpath, bed_fpath,
+            threads=qconfig.max_threads))
 
     # unzipping
     statuses, results, aligned_lengths, misassemblies_in_contigs, aligned_lengths_by_contigs =\
         [[x[i] for x in statuses_results_lengths_tuples] for i in range(5)]
     reports = []
 
-    nucmer_statuses = dict(zip(contigs_fpaths, statuses))
+    aligner_statuses = dict(zip(contigs_fpaths, statuses))
     aligned_lengths_per_fpath = dict(zip(contigs_fpaths, aligned_lengths))
     misc.contigs_aligned_lengths = dict(zip(contigs_fpaths, aligned_lengths_by_contigs))
 
-    if NucmerStatus.OK in nucmer_statuses.values():
+    if AlignerStatus.OK in aligner_statuses.values():
         if qconfig.is_combined_ref:
             save_combined_ref_stats(results, contigs_fpaths, ref_labels_by_chromosomes, output_dir, logger)
 
     for index, fname in enumerate(contigs_fpaths):
         report = reporting.get(fname)
-        if statuses[index] == NucmerStatus.OK:
+        if statuses[index] == AlignerStatus.OK:
             reports.append(save_result(results[index], report, fname, reference))
-        elif statuses[index] == NucmerStatus.NOT_ALIGNED:
+        elif statuses[index] == AlignerStatus.NOT_ALIGNED:
             save_result_for_unaligned(results[index], report)
 
-    if NucmerStatus.OK in nucmer_statuses.values():
+    if AlignerStatus.OK in aligner_statuses.values():
         reporting.save_misassemblies(output_dir)
         reporting.save_unaligned(output_dir)
         from . import plotter
@@ -322,12 +297,12 @@ def do(reference, contigs_fpaths, is_cyclic, output_dir, old_contigs_fpaths, bed
             plotter.frc_plot(dirname(output_dir), reference, contigs_fpaths, misc.contigs_aligned_lengths, misassemblies_in_contigs,
                              join(output_dir, 'misassemblies_frcurve_plot'), 'misassemblies')
 
-    oks = list(nucmer_statuses.values()).count(NucmerStatus.OK)
-    not_aligned = list(nucmer_statuses.values()).count(NucmerStatus.NOT_ALIGNED)
-    failed = list(nucmer_statuses.values()).count(NucmerStatus.FAILED)
-    errors = list(nucmer_statuses.values()).count(NucmerStatus.ERROR)
+    oks = list(aligner_statuses.values()).count(AlignerStatus.OK)
+    not_aligned = list(aligner_statuses.values()).count(AlignerStatus.NOT_ALIGNED)
+    failed = list(aligner_statuses.values()).count(AlignerStatus.FAILED)
+    errors = list(aligner_statuses.values()).count(AlignerStatus.ERROR)
     problems = not_aligned + failed + errors
-    all = len(nucmer_statuses)
+    all = len(aligner_statuses)
 
     logger._num_nf_errors = num_nf_errors + errors
 
@@ -338,4 +313,4 @@ def do(reference, contigs_fpaths, is_cyclic, output_dir, old_contigs_fpaths, bed
     if problems == all:
         logger.main_info('Failed aligning the contigs for all the assemblies. Only basic stats are going to be evaluated.')
 
-    return nucmer_statuses, aligned_lengths_per_fpath
+    return aligner_statuses, aligned_lengths_per_fpath

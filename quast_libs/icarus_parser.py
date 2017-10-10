@@ -15,7 +15,7 @@ from quast_libs import fastaparser, qconfig, qutils
 from quast_libs.icarus_utils import Alignment, Contig
 
 
-def parse_nucmer_contig_report(report_fpath, ref_names, cumulative_ref_lengths):
+def parse_aligner_contig_report(report_fpath, ref_names, cumulative_ref_lengths):
     aligned_blocks = []
     contigs = []
 

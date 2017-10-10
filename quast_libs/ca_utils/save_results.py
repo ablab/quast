@@ -14,8 +14,6 @@ from quast_libs.ca_utils.misc import print_file, intergenomic_misassemblies_by_a
 
 
 def print_results(contigs_fpath, log_out_f, used_snps_fpath, total_indels_info, result):
-    gaps = result['gaps']
-    neg_gaps = result['neg_gaps']
     misassembled_contigs = result['misassembled_contigs']
     region_misassemblies = result['region_misassemblies']
     log_out_f.write('\n')
@@ -47,7 +45,6 @@ def print_results(contigs_fpath, log_out_f, used_snps_fpath, total_indels_info, 
     log_out_f.write('\tMisassembled Contigs: %d\n' % len(misassembled_contigs))
     log_out_f.write('\tMisassembled Contig Bases: %d\n' % result['misassembled_bases'])
     log_out_f.write('\tMisassemblies Inter-Contig Overlap: %d\n' % result['misassembly_internal_overlap'])
-    log_out_f.write('Uncovered Regions: %d (%d)\n' % (result['uncovered_regions'], result['uncovered_region_bases']))
     log_out_f.write('Unaligned Contigs: %d + %d part\n' % (result['unaligned'], result['partially_unaligned']))
     log_out_f.write('Half Unaligned Contigs with Misassemblies: %d\n' % result['half_unaligned_with_misassembly'])
     log_out_f.write('Unaligned Contig Bases: %d\n' % (result['fully_unaligned_bases'] + result['partially_unaligned_bases']))
@@ -63,59 +60,13 @@ def print_results(contigs_fpath, log_out_f, used_snps_fpath, total_indels_info, 
     elif qconfig.ambiguity_usage == "one":
         log_out_f.write('Note that --allow-ambiguity option was set to "one" and only first alignment per each of these contigs was used.\n')
 
-    if qconfig.show_snps:
-        #log_out_f.write('Mismatches: %d\n' % result['SNPs'])
-        #log_out_f.write('Single Nucleotide Indels: %d\n' % result['indels'])
-
-        log_out_f.write('\n')
-        log_out_f.write('\tCovered Bases: %d\n' % result['region_covered'])
-        #log_out_f.write('\tAmbiguous Bases (e.g. N\'s): %d\n' % result['region_ambig'])
-        log_out_f.write('\n')
-        log_out_f.write('\tSNPs: %d\n' % total_indels_info.mismatches)
-        log_out_f.write('\tInsertions: %d\n' % total_indels_info.insertions)
-        log_out_f.write('\tDeletions: %d\n' % total_indels_info.deletions)
-        #log_out_f.write('\tList of indels lengths:', indels_list)
-        log_out_f.write('\n')
-        log_out_f.write('\tPositive Gaps: %d\n' % len(gaps))
-        internal = 0
-        external = 0
-        summ = 0
-        for gap in gaps:
-            if gap[1] == gap[2]:
-                internal += 1
-            else:
-                external += 1
-                summ += gap[0]
-        log_out_f.write('\t\tInternal Gaps: %d\n' % internal)
-        log_out_f.write('\t\tExternal Gaps: %d\n' % external)
-        log_out_f.write('\t\tExternal Gap Total: %d\n' % summ)
-        if external:
-            avg = summ * 1.0 / external
-        else:
-            avg = 0.0
-        log_out_f.write('\t\tExternal Gap Average: %.0f\n' % avg)
-
-        log_out_f.write('\tNegative Gaps: %d\n' % len(neg_gaps))
-        internal = 0
-        external = 0
-        summ = 0
-        for gap in neg_gaps:
-            if gap[1] == gap[2]:
-                internal += 1
-            else:
-                external += 1
-                summ += gap[0]
-        log_out_f.write('\t\tInternal Overlaps: %d\n' % internal)
-        log_out_f.write('\t\tExternal Overlaps: %d\n' % external)
-        log_out_f.write('\t\tExternal Overlaps Total: %d\n' % summ)
-        if external:
-            avg = summ * 1.0 / external
-        else:
-            avg = 0.0
-        log_out_f.write('\t\tExternal Overlaps Average: %.0f\n' % avg)
-
-        redundant = list(set(result['redundant']))
-        log_out_f.write('\tContigs with Redundant Alignments: %d (%d)\n' % (len(redundant), result['total_redundant']))
+    log_out_f.write('\n')
+    log_out_f.write('\tCovered Bases: %d\n' % result['total_aligned_bases'])
+    log_out_f.write('\n')
+    log_out_f.write('\tSNPs: %d\n' % total_indels_info.mismatches)
+    log_out_f.write('\tInsertions: %d\n' % total_indels_info.insertions)
+    log_out_f.write('\tDeletions: %d\n' % total_indels_info.deletions)
+    log_out_f.write('\n')
     return result
 
 

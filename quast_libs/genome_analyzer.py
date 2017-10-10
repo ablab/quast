@@ -61,7 +61,7 @@ def chromosomes_names_dict(feature, regions, chr_names):
     return region_2_chr_name
 
 
-def process_single_file(contigs_fpath, index, nucmer_path_dirpath, genome_stats_dirpath,
+def process_single_file(contigs_fpath, index, coords_dirpath, genome_stats_dirpath,
                         reference_chromosomes, genes_container, operons_container):
     assembly_label = qutils.label_from_fpath(contigs_fpath)
     corr_assembly_label = qutils.label_from_fpath_for_fname(contigs_fpath)
@@ -69,21 +69,16 @@ def process_single_file(contigs_fpath, index, nucmer_path_dirpath, genome_stats_
     ref_lengths = {}
     logger.info('  ' + qutils.index_to_str(index) + assembly_label)
 
-    nucmer_base_fpath = os.path.join(nucmer_path_dirpath, corr_assembly_label + '.coords')
+    coords_base_fpath = os.path.join(coords_dirpath, corr_assembly_label + '.coords')
     if qconfig.use_all_alignments:
-        nucmer_fpath = nucmer_base_fpath
+        coords_fpath = coords_base_fpath
     else:
-        nucmer_fpath = nucmer_base_fpath + '.filtered'
+        coords_fpath = coords_base_fpath + '.filtered'
 
-    if not os.path.isfile(nucmer_fpath):
-        logger.error('Nucmer\'s coords file (' + nucmer_fpath + ') not found! Try to restart QUAST.',
+    if not os.path.isfile(coords_fpath):
+        logger.error('File with alignment coords (' + coords_fpath + ') not found! Try to restart QUAST.',
             indent='  ')
         return None
-
-    coordfile = open(nucmer_fpath, 'r')
-    for line in coordfile:
-        if line.startswith('='):
-            break
 
     # EXAMPLE:
     #    [S1]     [E1]  |     [S2]     [E2]  |  [LEN 1]  [LEN 2]  |  [% IDY]  | [TAGS]
@@ -113,35 +108,34 @@ def process_single_file(contigs_fpath, index, nucmer_path_dirpath, genome_stats_
     if gene_searching_enabled:
         for name in sorted_contigs_names:
             aligned_blocks_by_contig_name[name] = []
-    for line in coordfile:
-        if line.strip() == '':
-            break
-        s1 = int(line.split('|')[0].split()[0])
-        e1 = int(line.split('|')[0].split()[1])
-        s2 = int(line.split('|')[1].split()[0])
-        e2 = int(line.split('|')[1].split()[1])
-        contig_name = line.split()[12].strip()
-        chr_name = line.split()[11].strip()
+    with open(coords_fpath) as coordfile:
+        for line in coordfile:
+            s1 = int(line.split('|')[0].split()[0])
+            e1 = int(line.split('|')[0].split()[1])
+            s2 = int(line.split('|')[1].split()[0])
+            e2 = int(line.split('|')[1].split()[1])
+            contig_name = line.split()[12].strip()
+            chr_name = line.split()[11].strip()
 
-        if chr_name not in genome_mapping:
-            logger.error("Something went wrong and chromosome names in your coords file (" + nucmer_base_fpath + ") " \
-                         "differ from the names in the reference. Try to remove the file and restart QUAST.")
-            return None
+            if chr_name not in genome_mapping:
+                logger.error("Something went wrong and chromosome names in your coords file (" + coords_base_fpath + ") " \
+                             "differ from the names in the reference. Try to remove the file and restart QUAST.")
+                return None
 
-        if gene_searching_enabled:
-            aligned_blocks_by_contig_name[contig_name].append(AlignedBlock(seqname=chr_name, start=s1, end=e1,
-                                                                           contig=contig_name, start_in_contig=s2, end_in_contig=e2))
-        if s2 == 0 and e2 == 0:  # special case: circular genome, contig starts on the end of a chromosome and ends in the beginning
-            for i in range(s1, len(genome_mapping[chr_name])):
-                genome_mapping[chr_name][i] = 1
-            for i in range(1, e1 + 1):
-                genome_mapping[chr_name][i] = 1
-        else: #if s1 <= e1:
-            for i in range(s1, e1 + 1):
-                genome_mapping[chr_name][i] = 1
-    coordfile.close()
-    if qconfig.space_efficient and nucmer_fpath.endswith('.filtered'):
-        os.remove(nucmer_fpath)
+            if gene_searching_enabled:
+                aligned_blocks_by_contig_name[contig_name].append(AlignedBlock(seqname=chr_name, start=s1, end=e1,
+                                                                               contig=contig_name, start_in_contig=s2, end_in_contig=e2))
+            if s2 == 0 and e2 == 0:  # special case: circular genome, contig starts on the end of a chromosome and ends in the beginning
+                for i in range(s1, len(genome_mapping[chr_name])):
+                    genome_mapping[chr_name][i] = 1
+                for i in range(1, e1 + 1):
+                    genome_mapping[chr_name][i] = 1
+            else: #if s1 <= e1:
+                for i in range(s1, e1 + 1):
+                    genome_mapping[chr_name][i] = 1
+
+    if qconfig.space_efficient and coords_fpath.endswith('.filtered'):
+        os.remove(coords_fpath)
 
     # counting genome coverage and gaps number
     covered_bp = 0
@@ -267,10 +261,10 @@ def process_single_file(contigs_fpath, index, nucmer_path_dirpath, genome_stats_
 def do(ref_fpath, aligned_contigs_fpaths, output_dirpath, genes_fpaths, operons_fpaths,
        detailed_contigs_reports_dirpath, genome_stats_dirpath):
 
-    nucmer_path_dirpath = os.path.join(detailed_contigs_reports_dirpath, 'nucmer_output')
+    coords_dirpath = os.path.join(detailed_contigs_reports_dirpath, qconfig.minimap_output_dirname)
     from quast_libs import search_references_meta
     if search_references_meta.is_quast_first_run:
-        nucmer_path_dirpath = os.path.join(nucmer_path_dirpath, 'raw')
+        coords_dirpath = os.path.join(coords_dirpath, 'raw')
 
     logger.print_timestamp()
     logger.main_info('Running Genome analyzer...')
@@ -283,7 +277,7 @@ def do(ref_fpath, aligned_contigs_fpaths, output_dirpath, genes_fpaths, operons_
     for name, seq in fastaparser.read_fasta(ref_fpath):
         chr_name = name.split()[0]
         chr_len = len(seq)
-        genome_size += chr_len
+        genome_size += chr_len - seq.count('N')
         reference_chromosomes[chr_name] = chr_len
 
     # reading genome size
@@ -345,11 +339,11 @@ def do(ref_fpath, aligned_contigs_fpaths, output_dirpath, genes_fpaths, operons_
         from joblib3 import Parallel, delayed
     if not qconfig.memory_efficient:
         process_results = Parallel(n_jobs=n_jobs)(delayed(process_single_file)(
-            contigs_fpath, index, nucmer_path_dirpath, genome_stats_dirpath,
+            contigs_fpath, index, coords_dirpath, genome_stats_dirpath,
             reference_chromosomes, genes_container, operons_container)
             for index, contigs_fpath in enumerate(aligned_contigs_fpaths))
     else:
-        process_results = [process_single_file(contigs_fpath, index, nucmer_path_dirpath, genome_stats_dirpath,
+        process_results = [process_single_file(contigs_fpath, index, coords_dirpath, genome_stats_dirpath,
                                                reference_chromosomes, genes_container, operons_container)
                            for index, contigs_fpath in enumerate(aligned_contigs_fpaths)]
     num_nf_errors += len([res for res in process_results if res is None])

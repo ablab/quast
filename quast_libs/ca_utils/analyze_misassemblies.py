@@ -9,7 +9,7 @@ from __future__ import with_statement
 import copy
 
 from quast_libs import qconfig
-from quast_libs.ca_utils.misc import is_same_reference, get_ref_by_chromosome
+from quast_libs.ca_utils.misc import is_same_reference, get_ref_by_chromosome, parse_cs_tag
 
 from quast_libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
@@ -39,8 +39,9 @@ class StructuralVariations(object):
 
 
 class Mapping(object):
-    def __init__(self, s1, e1, s2=None, e2=None, len1=None, len2=None, idy=None, ref=None, contig=None, ns_pos=None, sv_type=None):
+    def __init__(self, s1, e1, s2=None, e2=None, len1=None, len2=None, idy=None, ref=None, contig=None, cigar=None, ns_pos=None, sv_type=None):
         self.s1, self.e1, self.s2, self.e2, self.len1, self.len2, self.idy, self.ref, self.contig = s1, e1, s2, e2, len1, len2, idy, ref, contig
+        self.cigar = cigar
         self.ns_pos = ns_pos
         self.sv_type = sv_type
 
@@ -50,14 +51,20 @@ class Mapping(object):
         # 4324128  4496883  |   112426   285180  |   172755   172756  |  99.9900  | gi|48994873|gb|U00096.2|	NODE_333_length_285180_cov_221082
         line = line.split()
         assert line[2] == line[5] == line[8] == line[10] == '|', line
-        contig = line[12]
         ref = line[11]
+        contig = line[12]
         s1, e1, s2, e2, len1, len2 = [int(line[i]) for i in [0, 1, 3, 4, 6, 7]]
         idy = float(line[9])
-        return Mapping(s1, e1, s2, e2, len1, len2, idy, ref, contig)
+        cigar = line[-1]
+        return Mapping(s1, e1, s2, e2, len1, len2, idy, ref, contig, cigar)
 
     def __str__(self):
-        return ' '.join(str(x) for x in [self.s1, self.e1, '|', self.s2, self.e2, '|', self.len1, self.len2, '|', self.idy, '|', self.ref, self.contig])
+        return ' '.join(str(x) for x in [self.s1, self.e1, '|', self.s2, self.e2, '|', self.len1, self.len2, '|',
+                                         self.idy, '|', self.ref, self.contig])
+
+    def coords_str(self):
+        return ' '.join(str(x) for x in [self.s1, self.e1, '|', self.s2, self.e2, '|', self.len1, self.len2, '|',
+                                         self.idy, '|', self.ref, self.contig, '|', self.cigar])
 
     def short_str(self):
         return ' '.join(str(x) for x in [self.s1, self.e1, '|', self.s2, self.e2, '|', self.len1, self.len2])
@@ -66,7 +73,7 @@ class Mapping(object):
         return '\t'.join(str(x) for x in [self.s1, self.e1, self.s2, self.e2, self.ref, self.contig, self.idy, ambiguity, is_best])
 
     def clone(self):
-        return Mapping.from_line(str(self))
+        return Mapping(self.s1, self.e1, self.s2, self.e2, self.len1, self.len2, self.idy, self.ref, self.contig, self.cigar)
 
     def start(self):
         """Return start on contig (always <= end)"""
@@ -286,6 +293,44 @@ def check_is_scaffold_gap(inconsistency, contig_seq, align1, align2):
 
 def exclude_internal_overlaps(align1, align2, i=None, ca_output=None):
     # returns size of align1.len2 decrease (or 0 if not changed). It is important for cur_aligned_len calculation
+    def __shift_cigar(align, new_start=None, new_end=None):
+        new_cigar = 'cs:Z:'
+        ctg_pos = align.s2
+        strand_direction = 1 if align.s2 < align.e2 else -1
+        for op in parse_cs_tag(align.cigar):
+            if op.startswith('*'):
+                if (new_start and ctg_pos >= new_start) or \
+                        (new_end and ctg_pos <= new_end):
+                    new_cigar += op
+                ctg_pos += 1 * strand_direction
+            else:
+                if op.startswith(':'):
+                    n_bases = int(op[1:])
+                else:
+                    n_bases = len(op) - 1
+                corr_n_bases = n_bases
+                if new_end and (ctg_pos + n_bases * strand_direction > new_end or ctg_pos > new_end):
+                    corr_n_bases = new_end - ctg_pos + (n_bases if strand_direction == -1 else 1)
+                elif new_start and ctg_pos < new_start:
+                    corr_n_bases = ctg_pos + (n_bases if strand_direction == 1 else 0) - new_start
+                if corr_n_bases < 1:
+                    ctg_pos += n_bases * strand_direction
+                    continue
+                if op.startswith('+'):
+                    ctg_pos += n_bases * strand_direction
+                    if new_start:
+                        new_cigar += '+' + op[1 + (corr_n_bases - n_bases):]
+                    elif new_end:
+                        new_cigar += op[:corr_n_bases + 1]
+                elif op.startswith('-'):
+                    if new_start:
+                        new_cigar += '-' + op[1 + (corr_n_bases - n_bases):]
+                    elif new_end:
+                        new_cigar += op[:corr_n_bases + 1]
+                elif op.startswith(':'):
+                    ctg_pos += n_bases * strand_direction
+                    new_cigar += ':' + str(corr_n_bases)
+        align.cigar = new_cigar
 
     def __shift_start(align, new_start, indent=''):
         if ca_output is not None:
@@ -327,8 +372,12 @@ def exclude_internal_overlaps(align1, align2, i=None, ca_output=None):
 
     # left only one of two copies (remove overlap from shorter alignment)
     if align1.len2 >= align2.len2:
+        if ca_output is not None and align2.cigar:
+            __shift_cigar(align2, new_start=align1.end() + 1)
         __shift_start(align2, align1.end() + 1)
     else:
+        if ca_output is not None and align1.cigar:
+            __shift_cigar(align1, new_end=align2.start() - 1)
         __shift_end(align1, align2.start() - 1)
     return prev_len2 - align1.len2
 
@@ -373,7 +422,7 @@ def process_misassembled_contig(sorted_aligns, is_cyclic, aligned_lengths, regio
         ca_output.stdout_f.write('\t\t\tReal Alignment %d: %s\n' % (i+1, str(prev_align)))
 
         ref_aligns.setdefault(prev_align.ref, []).append(prev_align)
-        ca_output.coords_filtered_f.write(str(prev_align) + '\n')
+        ca_output.coords_filtered_f.write(prev_align.coords_str() + '\n')
         prev_ref, next_ref = get_ref_by_chromosome(prev_align.ref), get_ref_by_chromosome(next_align.ref)
         if aux_data["is_sv"]:
             ca_output.stdout_f.write('\t\t\t  Not a misassembly (structural variation of the genome) between these two alignments\n')
@@ -494,7 +543,7 @@ def process_misassembled_contig(sorted_aligns, is_cyclic, aligned_lengths, regio
     ca_output.stdout_f.write('\t\t\tReal Alignment %d: %s' % (i + 1, str(next_align)) + '\n')
     ca_output.icarus_out_f.write(next_align.icarus_report_str() + '\n')
     ref_aligns.setdefault(next_align.ref, []).append(next_align)
-    ca_output.coords_filtered_f.write(str(next_align) + '\n')
+    ca_output.coords_filtered_f.write(next_align.coords_str() + '\n')
     aligned_lengths.append(cur_aligned_length)
     contig_aligned_length += cur_aligned_length
 

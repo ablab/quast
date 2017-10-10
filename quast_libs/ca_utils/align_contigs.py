@@ -7,37 +7,37 @@
 
 from __future__ import with_statement
 
-import os
-from os.path import isfile, basename
+import re
+from os.path import isfile
 import datetime
-import shutil
 
 from quast_libs import qconfig, qutils
-from quast_libs.ca_utils.misc import bin_fpath, draw_mummer_plot
+from quast_libs.ca_utils.analyze_misassemblies import Mapping
 
 from quast_libs.log import get_logger
-from quast_libs.qutils import is_python2, md5
+from quast_libs.qutils import md5, is_non_empty_file
+from quast_libs.ra_utils.misc import minimap_fpath
 
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 
 
-class NucmerStatus:
+class AlignerStatus:
     FAILED = 0
     OK = 1
     NOT_ALIGNED = 2
     ERROR = 3
 
 
-def create_nucmer_successful_check(fpath, contigs_fpath, ref_fpath):
-    nucmer_successful_check_file = open(fpath, 'w')
-    nucmer_successful_check_file.write("Assembly md5 checksum: %s\n" % md5(contigs_fpath))
-    nucmer_successful_check_file.write("Reference md5 checksum: %s\n" % md5(ref_fpath))
-    nucmer_successful_check_file.write("Successfully finished on " +
+def create_successful_check(fpath, contigs_fpath, ref_fpath):
+    successful_check_file = open(fpath, 'w')
+    successful_check_file.write("Assembly md5 checksum: %s\n" % md5(contigs_fpath))
+    successful_check_file.write("Reference md5 checksum: %s\n" % md5(ref_fpath))
+    successful_check_file.write("Successfully finished on " +
                                        datetime.datetime.now().strftime('%Y/%m/%d %H:%M:%S') + '\n')
-    nucmer_successful_check_file.close()
+    successful_check_file.close()
 
 
-def check_nucmer_successful_check(fpath, contigs_fpath, ref_fpath):
+def check_successful_check(fpath, contigs_fpath, ref_fpath):
     successful_check_content = open(fpath).read().split('\n')
     if len(successful_check_content) < 2:
         return False
@@ -48,47 +48,104 @@ def check_nucmer_successful_check(fpath, contigs_fpath, ref_fpath):
     return True
 
 
-def run_nucmer(prefix, ref_fpath, contigs_fpath, log_out_fpath, log_err_fpath, index, max_threads):
-    nucmer_cmdline = [bin_fpath('nucmer'), '-c', str(qconfig.min_cluster),
-                      '-l', str(qconfig.min_cluster), '--maxmatch',
-                      '-p', prefix, '-t', str(max_threads)]
-    env = os.environ.copy()
-    nucmer_cmdline += [ref_fpath, contigs_fpath]
-    return_code = qutils.call_subprocess(nucmer_cmdline, stdout=open(log_out_fpath, 'a'), stderr=open(log_err_fpath, 'a'),
-                                         indent='  ' + qutils.index_to_str(index), env=env)
+def run_minimap(out_fpath, ref_fpath, contigs_fpath, log_err_fpath, index, max_threads):
+    preset = 'asm5' if qconfig.min_IDY >= 95 else 'asm10'
+    # -s -- min CIGAR score, -z -- affects how often to stop alignment extension, -B -- mismatch penalty
+    # -O -- gap penalty, -r -- max gap size
+    additional_options = ['-B4', '-O4,24', '--no-long-join', '-r', str(qconfig.MAX_INDEL_LENGTH),
+                          '-N', '50', '-s', str(qconfig.min_alignment), '-z', '200']
+    cmdline = [minimap_fpath(), '-c', '-x', preset] + (additional_options if not qconfig.large_genome else []) + \
+              (['--cs'] if qconfig.show_snps and not qconfig.memory_efficient else []) + \
+              ['-t', str(max_threads), ref_fpath, contigs_fpath]
+    return_code = qutils.call_subprocess(cmdline, stdout=open(out_fpath, 'w'), stderr=open(log_err_fpath, 'a'),
+                                         indent='  ' + qutils.index_to_str(index))
 
     return return_code
 
 
-def get_nucmer_aux_out_fpaths(nucmer_fpath):
-    coords_fpath = nucmer_fpath + '.coords'
-    coords_filtered_fpath = nucmer_fpath + '.coords.filtered'
-    unaligned_fpath = nucmer_fpath + '.unaligned' if not qconfig.space_efficient else '/dev/null'
-    show_snps_fpath = nucmer_fpath + '.all_snps'
-    used_snps_fpath = nucmer_fpath + '.used_snps' + ('.gz' if not qconfig.no_gzip else '') if not qconfig.space_efficient else '/dev/null'
-    return coords_fpath, coords_filtered_fpath, unaligned_fpath, show_snps_fpath, used_snps_fpath
+def get_aux_out_fpaths(fname):
+    coords_fpath = fname + '.coords'
+    coords_filtered_fpath = fname + '.coords.filtered'
+    unaligned_fpath = fname + '.unaligned' if not qconfig.space_efficient else '/dev/null'
+    used_snps_fpath = fname + '.used_snps' + ('.gz' if not qconfig.no_gzip else '') if not qconfig.space_efficient else '/dev/null'
+    return coords_fpath, coords_filtered_fpath, unaligned_fpath, used_snps_fpath
 
 
-def align_contigs(nucmer_fpath, ref_fpath, contigs_fpath, old_contigs_fpath, index,
-                  parallel_by_chr, threads, log_out_fpath, log_err_fpath):
+def parse_minimap_output(raw_coords_fpath, coords_fpath):
+    cigar_pattern = re.compile(r'(\d+[M=XIDNSH])')
+
+    total_aligned_bases = 0
+    with open(raw_coords_fpath) as f:
+        with open(coords_fpath, 'w') as coords_file:
+            for line in f:
+                fs = line.split('\t')
+                if len(fs) < 10:
+                    continue
+                contig, align_start, align_end, strand, ref_name, ref_start = \
+                    fs[0], fs[2], fs[3], fs[4], fs[5], fs[7]
+                align_start, align_end, ref_start = map(int, (align_start, align_end, ref_start))
+                align_start += 1
+                ref_start += 1
+                if fs[-1].startswith('cs'):
+                    cs = fs[-1].strip()
+                    cigar = fs[-2]
+                else:
+                    cs = ''
+                    cigar = fs[-1]
+                cigar = cigar.split(':')[-1]
+
+                strand_direction = 1
+                if strand == '-':
+                    align_start, align_end = align_end, align_start
+                    strand_direction = -1
+                align_len = 0
+                ref_len = 0
+                bases_in_mapping = 0
+                operations = cigar_pattern.findall(cigar)
+
+                for op in operations:
+                    n_bases, operation = int(op[:-1]), op[-1]
+                    if operation == 'S' or operation == 'H':
+                        align_start += n_bases
+                    elif operation == 'M' or operation == '=' or operation == 'X':
+                        align_len += n_bases
+                        ref_len += n_bases
+                        bases_in_mapping += n_bases
+                    elif operation == 'D':
+                        ref_len += n_bases
+                        bases_in_mapping += n_bases
+                    elif operation == 'I':
+                        align_len += n_bases
+                        bases_in_mapping += n_bases
+
+                align_end = align_start + (align_len - 1) * strand_direction
+                ref_end = ref_start + ref_len - 1
+                total_aligned_bases += align_len
+
+                mismatches_cnt = 0
+                for field in fs[12:]:
+                    if field.startswith('NM:'):
+                        mismatches_cnt = int(field.split(':')[-1])
+                        break
+                matched_bases = bases_in_mapping - mismatches_cnt
+                idy = '%.2f' % (matched_bases * 100.0 / ref_len)
+                if ref_name != "*" and float(idy) >= qconfig.min_IDY:
+                    align = Mapping(s1=ref_start, e1=ref_end, s2=align_start, e2=align_end, len1=ref_len,
+                                    len2=align_len, idy=idy, ref=ref_name, contig=contig, cigar=cs)
+                    coords_file.write(align.coords_str() + '\n')
+
+
+def align_contigs(output_fpath, out_basename, ref_fpath, contigs_fpath, old_contigs_fpath, index, threads, log_out_fpath, log_err_fpath):
     log_out_f = open(log_out_fpath, 'w')
-    log_err_f = open(log_err_fpath, 'w')
 
-    nucmer_successful_check_fpath = nucmer_fpath + '.sf'
-    delta_fpath = nucmer_fpath + '.delta'
-    filtered_delta_fpath = nucmer_fpath + '.fdelta'
-
-    coords_fpath, _, _, show_snps_fpath, _ = \
-        get_nucmer_aux_out_fpaths(nucmer_fpath)
-
+    successful_check_fpath = out_basename + '.sf'
     log_out_f.write('Aligning contigs to reference...\n')
 
-    # Checking if there are existing previous nucmer alignments.
+    # Checking if there are existing previous alignments.
     # If they exist, using them to save time.
     using_existing_alignments = False
-    if isfile(nucmer_successful_check_fpath) and isfile(coords_fpath) and \
-       (isfile(show_snps_fpath) or isfile(show_snps_fpath + '.gz') or not qconfig.show_snps):
-        if check_nucmer_successful_check(nucmer_successful_check_fpath, old_contigs_fpath, ref_fpath):
+    if isfile(successful_check_fpath) and isfile(output_fpath):
+        if check_successful_check(successful_check_fpath, old_contigs_fpath, ref_fpath):
             log_out_f.write('\tUsing existing alignments...\n')
             logger.info('  ' + qutils.index_to_str(index) + 'Using existing alignments... ')
             using_existing_alignments = True
@@ -97,138 +154,17 @@ def align_contigs(nucmer_fpath, ref_fpath, contigs_fpath, old_contigs_fpath, ind
         log_out_f.write('\tAligning contigs to the reference\n')
         logger.info('  ' + qutils.index_to_str(index) + 'Aligning contigs to the reference')
 
-        if not qconfig.splitted_ref:
-            nucmer_exit_code = run_nucmer(nucmer_fpath, ref_fpath, contigs_fpath,
-                                          log_out_fpath, log_err_fpath, index, threads)
-            if nucmer_exit_code != 0:
-                return NucmerStatus.ERROR
-        else:
-            prefixes_and_chr_files = [(nucmer_fpath + "_" + basename(chr_fname), chr_fname)
-                                      for chr_fname in qconfig.splitted_ref]
+        tmp_output_fpath = output_fpath + '_tmp'
+        exit_code = run_minimap(tmp_output_fpath, ref_fpath, contigs_fpath, log_err_fpath, index, threads)
+        if exit_code != 0:
+            return AlignerStatus.ERROR
 
-            # Daemonic processes are not allowed to have children,
-            # so if we are already one of parallel processes
-            # (i.e. daemonic) we can't start new daemonic processes
-            if parallel_by_chr and not qconfig.memory_efficient:
-                n_jobs = min(qconfig.max_threads, len(prefixes_and_chr_files))
-                threads = max(1, threads // n_jobs)
-                if n_jobs > 1:
-                    logger.info('    ' + 'Aligning to different chromosomes in parallel (' + str(n_jobs) + ' threads)')
+        if not isfile(tmp_output_fpath):
+            return AlignerStatus.FAILED
+        if not is_non_empty_file(tmp_output_fpath):
+            return AlignerStatus.NOT_ALIGNED
 
-            # processing each chromosome separately (if we can)
-            if is_python2():
-                from joblib2 import Parallel, delayed
-            else:
-                from joblib3 import Parallel, delayed
-            log_err_fpaths = [log_err_fpath + "_part%d" % (i + 1) if not qconfig.space_efficient else log_err_fpath
-                              for i in range(len(prefixes_and_chr_files))]
-            if not qconfig.memory_efficient:
-                if not parallel_by_chr:
-                    n_jobs = 1
-                    threads = 1
-                nucmer_exit_codes = Parallel(n_jobs=n_jobs)(delayed(run_nucmer)(
-                    prefix, chr_file, contigs_fpath, log_out_fpath, log_err_fpaths[i], index, threads)
-                    for i, (prefix, chr_file) in enumerate(prefixes_and_chr_files))
-            else:
-                nucmer_exit_codes = [run_nucmer(prefix, chr_file, contigs_fpath, log_out_fpath, log_err_fpaths[i], index, threads)
-                                     for i, (prefix, chr_file) in enumerate(prefixes_and_chr_files)]
-
-            log_err_f.write("Stderr outputs for reference parts are in:\n")
-            for i in range(len(prefixes_and_chr_files)):
-                log_err_f.write(log_err_fpath + "_part%d" % (i + 1) + '\n')
-            log_err_f.write("\n")
-
-            if 0 not in nucmer_exit_codes:
-                return NucmerStatus.ERROR
-            else:
-                # filling common delta file
-                delta_file = open(delta_fpath, 'w')
-                delta_file.write(ref_fpath + " " + contigs_fpath + "\n")
-                delta_file.write("NUCMER\n")
-                for i, (prefix, chr_fname) in enumerate(prefixes_and_chr_files):
-                    if nucmer_exit_codes[i] != 0:
-                        logger.warning('  ' + qutils.index_to_str(index) +
-                        'Failed aligning contigs %s to reference part %s! Skipping this part. ' % (qutils.label_from_fpath(contigs_fpath),
-                        chr_fname) + ('Run with the --debug flag to see additional information.' if not qconfig.debug else ''))
-                        continue
-
-                    chr_delta_fpath = prefix + '.delta'
-                    if isfile(chr_delta_fpath):
-                        chr_delta_file = open(chr_delta_fpath)
-                        chr_delta_file.readline()
-                        chr_delta_file.readline()
-                        for line in chr_delta_file:
-                            delta_file.write(line)
-                        chr_delta_file.close()
-
-                delta_file.close()
-
-        # By default: filtering by IDY% = 95 (as GAGE did)
-        return_code = qutils.call_subprocess(
-            [bin_fpath('delta-filter'), '-i', str(qconfig.min_IDY), '-l', str(qconfig.min_alignment), delta_fpath],
-            stdout=open(filtered_delta_fpath, 'w'),
-            stderr=log_err_f,
-            indent='  ' + qutils.index_to_str(index))
-
-        if return_code != 0:
-            log_err_f.write(qutils.index_to_str(index) + ' Delta filter failed for ' + contigs_fpath + '\n')
-            return NucmerStatus.ERROR
-
-        shutil.move(filtered_delta_fpath, delta_fpath)
-
-        if qconfig.draw_plots:
-            draw_mummer_plot(logger, nucmer_fpath, delta_fpath, index, log_out_f, log_err_f)
-
-        tmp_coords_fpath = coords_fpath + '_tmp'
-
-        return_code = qutils.call_subprocess(
-            [bin_fpath('show-coords'), delta_fpath],
-            stdout=open(tmp_coords_fpath, 'w'),
-            stderr=log_err_f,
-            indent='  ' + qutils.index_to_str(index))
-        if return_code != 0:
-            log_err_f.write(qutils.index_to_str(index) + ' Show-coords failed for ' + contigs_fpath + '\n')
-            return NucmerStatus.ERROR
-
-        # removing waste lines from coords file
-        coords_file = open(coords_fpath, 'w')
-        header = []
-        tmp_coords_file = open(tmp_coords_fpath)
-        for line in tmp_coords_file:
-            header.append(line)
-            if line.startswith('====='):
-                break
-        coords_file.write(header[-2])
-        coords_file.write(header[-1])
-        for line in tmp_coords_file:
-            coords_file.write(line)
-        coords_file.close()
-        tmp_coords_file.close()
-
-        if not isfile(coords_fpath):
-            return NucmerStatus.FAILED
-        if len(open(coords_fpath).readlines()[-1].split()) < 13:
-            return NucmerStatus.NOT_ALIGNED
-
-        if qconfig.show_snps:
-            with open(coords_fpath) as coords_file:
-                headless_coords_fpath = coords_fpath + '.headless'
-                headless_coords_f = open(headless_coords_fpath, 'w')
-                coords_file.readline()
-                coords_file.readline()
-                headless_coords_f.write(coords_file.read())
-                headless_coords_f.close()
-                headless_coords_f = open(headless_coords_fpath)
-
-                return_code = qutils.call_subprocess(
-                    [bin_fpath('show-snps'), '-S', '-T', '-H', delta_fpath],
-                    stdin=headless_coords_f,
-                    stdout=open(show_snps_fpath, 'w'),
-                    stderr=log_err_f,
-                    indent='  ' + qutils.index_to_str(index))
-                if return_code != 0:
-                    log_err_f.write(qutils.index_to_str(index) + ' Show-snps failed for ' + contigs_fpath + '\n')
-                    return NucmerStatus.ERROR
-
-        create_nucmer_successful_check(nucmer_successful_check_fpath, old_contigs_fpath, ref_fpath)
-    return NucmerStatus.OK
+        create_successful_check(successful_check_fpath, old_contigs_fpath, ref_fpath)
+        log_out_f.write('Filtering alignments...\n')
+        parse_minimap_output(tmp_output_fpath, output_fpath)
+    return AlignerStatus.OK

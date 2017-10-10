@@ -14,7 +14,7 @@ from collections import defaultdict
 from quast_libs.icarus_builder import prepare_alignment_data_for_one_ref, save_alignment_data_for_one_ref, save_contig_size_html, \
     get_assemblies_data, get_contigs_data
 from quast_libs.icarus_parser import parse_contigs_fpath, parse_features_data, parse_cov_fpath, parse_genes_data
-from quast_libs.icarus_parser import parse_nucmer_contig_report
+from quast_libs.icarus_parser import parse_aligner_contig_report
 from quast_libs.icarus_utils import make_output_dir, group_references, format_cov_data, format_long_numbers, get_info_by_chr, \
     get_assemblies, check_misassembled_blocks
 
@@ -100,8 +100,8 @@ def do(contigs_fpaths, contig_report_fpath_pattern, output_dirpath, ref_fpath,
             contigs = parse_contigs_fpath(contigs_fpath)
         else:
             report_fpath = contig_report_fpath_pattern % qutils.label_from_fpath_for_fname(contigs_fpath)
-            aligned_blocks, misassembled_id_to_structure, contigs, ambiguity_alignments = parse_nucmer_contig_report(report_fpath,
-                                                                        list(reference_chromosomes.keys()), cumulative_ref_lengths)
+            aligned_blocks, misassembled_id_to_structure, contigs, ambiguity_alignments = parse_aligner_contig_report(report_fpath,
+                                                                                          list(reference_chromosomes.keys()), cumulative_ref_lengths)
             if not contigs:
                 contigs = parse_contigs_fpath(contigs_fpath)
             if aligned_blocks is None:

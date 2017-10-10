@@ -30,10 +30,6 @@ else:
     else:
         platform_name = 'linux_32'
 
-# support of large genomes
-splitted_ref = []
-MAX_REFERENCE_FILE_LENGTH = 50000000  # Max length of one part of reference
-
 # default values for options
 contig_thresholds = "0,1000,5000,10000,25000,50000"
 min_contig = 500
@@ -45,10 +41,10 @@ gene_finding = False
 rna_gene_finding = False
 ambiguity_usage = 'one'
 ambiguity_score = 0.99
+meta_ambiguity_score = 0.9
 use_all_alignments = False
 max_threads = None
-min_cluster = 65
-min_alignment = 0
+min_alignment = 65
 min_IDY = 95.0
 estimated_reference_size = None
 strict_NA = False
@@ -74,7 +70,6 @@ is_combined_ref = False
 check_for_fragmented_ref = False
 unaligned_part_size = 500
 all_labels_from_dirs = False
-force_nucmer = False
 run_busco = False
 large_genome = False
 
@@ -107,7 +102,7 @@ transposed_report_prefix = "transposed_report"
 html_aux_dir = "report_html_aux"
 contig_report_fname_pattern = 'contigs_report_%s'
 icarus_report_fname_pattern = 'all_alignments_%s.tsv'
-nucmer_output_dirname = 'nucmer_output'
+minimap_output_dirname = 'minimap_output'
 ideal_assembly_basename = 'ideal_assembly'
 
 # for MetaQUAST
@@ -162,15 +157,13 @@ phys_cov_fpath = None
 
 # indels and misassemblies
 SHORT_INDEL_THRESHOLD = 5 # for separating short and long indels
-MAX_INDEL_LENGTH = 85  # for separating indels and local misassemblies (Nucmer default value)
+MAX_INDEL_LENGTH = 50  # for separating indels and local misassemblies
 extensive_misassembly_threshold = 1000  # for separating local and extensive misassemblies (relocation)
 fragmented_max_indent = MAX_INDEL_LENGTH # for fake translocation in fragmented reference
 
 # large genome params
-LARGE_MIN_ALIGNMENT = 3000
-LARGE_MIN_CLUSTER = 200
 LARGE_EXTENSIVE_MIS_THRESHOLD = 6000
-LARGE_BSS_critical_alignment_len = 3000
+LARGE_BSS_critical_alignment_len = 1000
 
 # BSS fine-tuning params
 BSS_MAX_SETS_NUMBER = 10  # for ambiguous contigs
@@ -389,9 +382,9 @@ def usage(show_hidden=False, meta=False, short=True, stream=sys.stdout):
             stream.write("    --use-input-ref-order             Use provided order of references in MetaQUAST summary plots (default order: by the best average value).\n")
         stream.write("    --contig-thresholds <int,int,...> Comma-separated list of contig length thresholds [default: %s]\n" % contig_thresholds)
         stream.write("-u  --use-all-alignments              Compute genome fraction, # genes, # operons in QUAST v1.* style.\n")
-        stream.write("                                      By default, QUAST filters Nucmer\'s alignments to keep only best ones\n")
-        stream.write("-i  --min-alignment <int>             Nucmer's parameter: the minimum alignment length [default: %s]\n" % min_alignment)
-        stream.write("    --min-identity <float>            Nucmer's parameter: the minimum alignment identity (80.0, 100.0) [default: %.1f]\n" % min_IDY)
+        stream.write("                                      By default, QUAST filters Minimap\'s alignments to keep only best ones\n")
+        stream.write("-i  --min-alignment <int>             Minimap's parameter: the minimum alignment length [default: %s]\n" % min_alignment)
+        stream.write("    --min-identity <float>            The minimum alignment identity (80.0, 100.0) [default: %.1f]\n" % min_IDY)
         stream.write("-a  --ambiguity-usage <none|one|all>  Use none, one, or all alignments of a contig when all of them\n")
         stream.write("                                      are almost equally good (see --ambiguity-score) [default: %s]\n" % ambiguity_usage)
         stream.write("    --ambiguity-score <float>         Score S for defining equally good alignments of a single contig. All alignments are sorted \n")
@@ -416,7 +409,7 @@ def usage(show_hidden=False, meta=False, short=True, stream=sys.stdout):
         stream.write("    --est-insert-size  <int>          Use provided insert size in ideal assembly simulation [default: auto detect from reads or %d]\n" % ideal_assembly_default_IS)
         stream.write("    --plots-format  <str>             Save plots in specified format [default: %s]\n" % plot_extension)
         stream.write("                                      Supported formats: %s\n" % ', '.join(supported_plot_extensions))
-        stream.write("    --memory-efficient                Run Nucmer using one thread, separately per each assembly and each chromosome\n")
+        stream.write("    --memory-efficient                Run everything using one thread, separately per each assembly\n")
         stream.write("                                      This may significantly reduce memory consumption on large genomes\n")
         stream.write("    --space-efficient                 Create only reports and plots files. .stdout, .stderr, .coords and other aux files will not be created\n")
         stream.write("                                      This may significantly reduce space consumption on large genomes. Icarus viewers also will not be built\n")
@@ -457,7 +450,6 @@ def usage(show_hidden=False, meta=False, short=True, stream=sys.stdout):
             stream.write("Hidden options:\n")
             stream.write("-d  --debug                 Run in a debug mode\n")
             stream.write("--no-portable-html          Do not embed CSS and JS files in HTML report\n")
-            stream.write("-c  --min-cluster   <int>   Nucmer's parameter: the minimum length of a cluster of matches [default: %s]\n" % min_cluster)
             stream.write("-j  --save-json             Save the output also in the JSON format\n")
             stream.write("-J  --save-json-to <path>   Save the JSON output to a particular path\n")
             if meta:

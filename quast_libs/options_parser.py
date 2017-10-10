@@ -176,8 +176,6 @@ def check_sam_bam_files(contigs_fpaths, sam_fpaths, bam_fpaths, logger):
 
 
 def set_large_genome_parameters():
-    qconfig.min_alignment = max(qconfig.min_alignment, qconfig.LARGE_MIN_ALIGNMENT)
-    qconfig.min_cluster = max(qconfig.min_cluster, qconfig.LARGE_MIN_CLUSTER)
     qconfig.extensive_misassembly_threshold = max(qconfig.extensive_misassembly_threshold, qconfig.LARGE_EXTENSIVE_MIS_THRESHOLD)
     qconfig.BSS_critical_alignment_len = qconfig.LARGE_BSS_critical_alignment_len
 
@@ -490,10 +488,6 @@ def parse_options(logger, quast_args, is_metaquast=False):
              dest='min_contig',
              type='int')
          ),
-        (['-c', '--min-cluster'], dict(
-             dest='min_cluster',
-             type='int')
-         ),
         (['-i', '--min-alignment'], dict(
              dest='min_alignment',
              type='int')
@@ -617,10 +611,6 @@ def parse_options(logger, quast_args, is_metaquast=False):
              callback_kwargs={'store_true_values': ['space_efficient'],
                               'store_false_values': ['create_icarus_html']},)
          ),
-        (['--force-nucmer'], dict(
-             dest='force_nucmer',
-             action='store_true')
-         ),
         (['--silent'], dict(
              dest='silent',
              action='store_true')
@@ -739,7 +729,7 @@ def parse_options(logger, quast_args, is_metaquast=False):
     logger.start()
 
     if existing_alignments and not is_metaquast:
-        logger.notice("Output directory already exists. Existing Nucmer alignments can be used")
+        logger.notice("Output directory already exists. Existing Minimap2 alignments can be used")
         qutils.remove_reports(qconfig.output_dirpath)
 
     if qconfig.labels:

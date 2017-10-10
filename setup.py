@@ -37,7 +37,7 @@ except:
 from quast_libs.glimmer import compile_glimmer
 from quast_libs.run_busco import download_augustus, download_all_db
 from quast_libs.search_references_meta import download_blast_binaries, download_blastdb
-from quast_libs.ca_utils.misc import compile_aligner, compile_gnuplot
+from quast_libs.ca_utils.misc import compile_aligner
 from quast_libs.ra_utils.misc import compile_reads_analyzer_tools, compile_bwa, compile_bedtools, download_gridss
 
 name = 'quast'
@@ -59,7 +59,6 @@ if abspath(dirname(__file__)) != abspath(os.getcwd()):
 if cmd_in(['clean', 'sdist']):
     logger.info('Cleaning up binary files...')
     compile_aligner(logger, only_clean=True)
-    compile_gnuplot(logger, only_clean=True)
     compile_glimmer(logger, only_clean=True)
     compile_bwa(logger, only_clean=True)
     compile_bedtools(logger, only_clean=True)
@@ -158,9 +157,6 @@ if cmd_in(['install', 'develop', 'build', 'build_ext']):
     logger.info('* Compiling aligner *')
     if not compile_aligner(logger):
         modules_failed_to_install.append('Contigs aligners for reference-based evaluation (affects -R and many other options)')
-    logger.info('* Compiling gnuplot *')
-    if not compile_gnuplot(logger):
-        logger.warning('Cannot compile gnuplot. MUMmer plots will not be drawn')
     logger.info('* Compiling Glimmer *')
     if not compile_glimmer(logger):
         modules_failed_to_install.append('Glimmer gene-finding tool (affects --glimmer option)')
@@ -194,7 +190,7 @@ if qconfig.platform_name == 'macosx':
 else:
     sambamba_files = [join('sambamba', 'sambamba_linux')]
 
-nucmer_files = find_package_files('MUMmer')
+minimap_files = find_package_files('minimap2')
 bwa_files = [
     join('bwa', fp) for fp in os.listdir(join(quast_package, 'bwa'))
     if isfile(join(quast_package, 'bwa', fp)) and fp.startswith('bwa')]
@@ -223,7 +219,7 @@ The tool accepts multiple assemblies, thus is suitable for comparison.''',
     package_data={
         quast_package:
             find_package_files('html_saver') +
-            nucmer_files +
+            minimap_files +
             find_package_files('genemark/' + qconfig.platform_name) +
             find_package_files('genemark-es/' + qconfig.platform_name) +
             find_package_files('genemark-es/lib') +

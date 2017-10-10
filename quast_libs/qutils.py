@@ -128,34 +128,6 @@ def correct_fasta(original_fpath, corrected_fpath, min_contig,
         return False
 
     fastaparser.write_fasta(corrected_fpath, modified_fasta_entries)
-
-    if is_reference and qconfig.memory_efficient:
-        ref_len = sum(len(chr_seq) for (chr_name, chr_seq) in modified_fasta_entries)
-        if ref_len > qconfig.MAX_REFERENCE_FILE_LENGTH:
-            qconfig.splitted_ref = []  # important for MetaQUAST which runs QUAST multiple times
-            _, fasta_ext = os.path.splitext(corrected_fpath)
-            split_ref_dirpath = os.path.join(os.path.dirname(corrected_fpath), 'split_ref')
-            if os.path.exists(split_ref_dirpath):
-                shutil.rmtree(split_ref_dirpath, ignore_errors=True)
-            os.makedirs(split_ref_dirpath)
-            cur_part_len = 0
-            cur_part_num = 1
-            cur_part_fpath = os.path.join(split_ref_dirpath, "part_%d" % cur_part_num) + fasta_ext
-
-            for (chr_name, chr_seq) in modified_fasta_entries:
-                cur_chr_len = len(chr_seq)
-                cur_part_len += cur_chr_len
-                if cur_part_len > qconfig.MAX_REFERENCE_FILE_LENGTH and cur_part_len != cur_chr_len:
-                    qconfig.splitted_ref.append(cur_part_fpath)
-                    cur_part_len = cur_chr_len
-                    cur_part_num += 1
-                    cur_part_fpath = os.path.join(split_ref_dirpath, "part_%d" % cur_part_num) + fasta_ext
-                fastaparser.write_fasta(cur_part_fpath, [(chr_name, chr_seq)], mode='a')
-            if cur_part_len > 0:
-                qconfig.splitted_ref.append(cur_part_fpath)
-            if len(qconfig.splitted_ref) == 0:
-                logger.warning("Skipping reference because all of its chromosomes exceeded Nucmer's constraint.")
-                return False
     return True
 
 
@@ -660,15 +632,17 @@ def call_subprocess(args, stdin=None, stdout=None, stderr=None,
     return return_code
 
 
-def get_total_memory():
+def get_free_memory():
+    total_mem, free_mem = 2, 2
     if qconfig.platform_name == 'linux_64':
         with open('/proc/meminfo', 'r') as mem:
             for line in mem:
                 line = line.split()
                 if str(line[0]) == 'MemTotal:':
                     total_mem = int(line[1]) / 1024 / 1024
-                    return total_mem
-    return 2
+                if str(line[0]) == 'MemFree:':
+                    free_mem = int(line[1]) / 1024 / 1024
+    return min(total_mem // 4, free_mem // 2)
 
 
 def get_chr_len_fpath(ref_fpath, correct_chr_names=None):

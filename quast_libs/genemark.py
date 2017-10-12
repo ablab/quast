@@ -197,7 +197,7 @@ def gmhmm_p_metagenomic(tool_dirpath, fasta_fpath, err_fpath, index, tmp_dirpath
     heu_fpath = os.path.join(tool_dirpath, '../MetaGeneMark_v1.mod')
     gmhmm_fpath = fasta_fpath + '.gmhmm'
 
-    with open(err_fpath, 'a') as err_file:
+    with open(err_fpath, 'w') as err_file:
         if gmhmm_p(tool_exec_fpath, fasta_fpath, heu_fpath, gmhmm_fpath, err_file, index):
             return list(parse_gmhmm_out(gmhmm_fpath))
         else:

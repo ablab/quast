@@ -54,7 +54,7 @@ def install_genemark():
     import filecmp
     base_genemark_dir = os.path.join(qconfig.LIBS_LOCATION, 'genemark')
     gm_key_fpath = os.path.join(base_genemark_dir, 'gm_keys',
-                                'gm_key_' + ('32' if qconfig.platform_name == 'linux_32' else '64'))
+                                'gm_key_' + ('32' if qconfig.platform_name == 'linux_32' else ('64' if qconfig.platform_name == 'linux_64' else 'osx')))
     gm_key_dst = os.path.expanduser('~/.gm_key')
     if not os.path.isfile(gm_key_dst) or \
         (not filecmp.cmp(gm_key_dst, gm_key_fpath) and os.path.getmtime(gm_key_dst) < os.path.getmtime(gm_key_fpath)):
@@ -238,14 +238,14 @@ def predict_genes(index, contigs_fpath, gene_lengths, out_dirpath, tool_dirpath,
 
     genes = gmhmm_p_function(tool_dirpath, contigs_fpath, err_fpath, index, tmp_dirpath, num_threads)
     contig_lengths = get_chr_lengths_from_fastafile(contigs_fpath)
-    for gene in genes:
-        gene.is_full = gene.start > 1 and gene.end < contig_lengths[gene.contig]
 
     if not genes:
         unique_count = None
         full_cnt = None
         partial_cnt = None
     else:
+        for gene in genes:
+            gene.is_full = gene.start > 1 and gene.end < contig_lengths[gene.contig]
         tool_name = "genemark"
         out_gff_fpath = os.path.join(out_dirpath, corr_assembly_label + '_' + tool_name + '_genes.gff' + ('.gz' if not qconfig.no_gzip else ''))
         add_genes_to_gff(genes, out_gff_fpath, prokaryote)
@@ -315,7 +315,7 @@ def do(fasta_fpaths, gene_lengths, out_dirpath, prokaryote, meta):
                                      gmhmm_p_function, prokaryote, num_threads)
                        for index, fasta_fpath in enumerate(fasta_fpaths)]
 
-        if qconfig.test and not is_license_valid(out_dirpath, fasta_fpaths):
+        if not is_license_valid(out_dirpath, fasta_fpaths):
             return
 
         genes_by_labels = dict()

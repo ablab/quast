@@ -16,4 +16,4 @@ check_report_files(name, ['summary/TXT/NGA50.txt',
                           'runs_per_reference/meta_ref_2/predicted_genes/lab3_broken_glimmer_genes.gff'])
 
 assert_metric(name, '# contigs (>= 1000 bp)', ['9', '7', '7', '10'], 'combined_reference/report.tsv')
-assert_metric(name, '# unaligned contigs', ['10 + 0 part', '7 + 0 part', '7 + 0 part', '7 + 0 part'], 'combined_reference/report.tsv')
+assert_metric(name, '# unaligned contigs', ['9 + 0 part', '5 + 1 part', '5 + 1 part', '5 + 1 part'], 'combined_reference/report.tsv')

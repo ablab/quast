@@ -64,22 +64,22 @@ def analyze_coverage(ref_aligns, used_snps_fpath):
                         n_bases = len(op) - 1
                     if op.startswith('*'):
                         ref_nucl, ctg_nucl = op[1].upper(), op[2].upper()
-                        if ctg_nucl != 'N' and ref_nucl != 'N':
+                        if qconfig.show_snps and ctg_nucl != 'N' and ref_nucl != 'N':
                             indels_info.mismatches += 1
                             used_snps_f.write('%s\t%s\t%d\t%s\t%s\t%d\n' % (chr_name, align.contig, ref_pos, ref_nucl, ctg_nucl, ctg_pos))
-                            ref_pos += 1
-                            ctg_pos += 1 * strand_direction
+                        ref_pos += 1
+                        ctg_pos += 1 * strand_direction
                     elif op.startswith('+'):
                         indels_info.indels_list.append(n_bases)
                         indels_info.insertions += n_bases
-                        if n_bases < qconfig.MAX_INDEL_LENGTH:
+                        if qconfig.show_snps and n_bases < qconfig.MAX_INDEL_LENGTH:
                             ref_nucl, ctg_nucl = '.', op[1:].upper()
                             used_snps_f.write('%s\t%s\t%d\t%s\t%s\t%d\n' % (chr_name, align.contig, ref_pos, ref_nucl, ctg_nucl, ctg_pos))
                         ctg_pos += n_bases * strand_direction
                     elif op.startswith('-'):
                         indels_info.indels_list.append(n_bases)
                         indels_info.deletions += n_bases
-                        if n_bases < qconfig.MAX_INDEL_LENGTH:
+                        if qconfig.show_snps and n_bases < qconfig.MAX_INDEL_LENGTH:
                             ref_nucl, ctg_nucl = op[1:].upper(), '.'
                             used_snps_f.write('%s\t%s\t%d\t%s\t%s\t%d\n' % (chr_name, align.contig, ref_pos, ref_nucl, ctg_nucl, ctg_pos))
                         ref_pos += n_bases
@@ -88,8 +88,7 @@ def analyze_coverage(ref_aligns, used_snps_fpath):
                         ctg_pos += n_bases * strand_direction
                 total_aligned_bases += align.e1 - align.s1 + 1
 
-    result = {'SNPs': indels_info.mismatches, 'indels_list': indels_info.indels_list, 'total_aligned_bases': total_aligned_bases}
-    return result, indels_info
+    return total_aligned_bases, indels_info
 
 
 # former plantagora and plantakolya
@@ -186,9 +185,10 @@ def align_and_analyze(is_cyclic, index, contigs_fpath, output_dirpath, ref_fpath
     log_out_f.write('Analyzing coverage...\n')
     if qconfig.show_snps:
         log_out_f.write('Writing SNPs into ' + used_snps_fpath + '\n')
-    cov_stats, indels_info = analyze_coverage(ref_aligns, used_snps_fpath)
-    result.update(cov_stats)
+    total_aligned_bases, indels_info = analyze_coverage(ref_aligns, used_snps_fpath)
     total_indels_info += indels_info
+    cov_stats = {'SNPs': total_indels_info.mismatches, 'indels_list': total_indels_info.indels_list, 'total_aligned_bases': total_aligned_bases}
+    result.update(cov_stats)
     result = print_results(contigs_fpath, log_out_f, used_snps_fpath, total_indels_info, result)
 
     if not qconfig.space_efficient:

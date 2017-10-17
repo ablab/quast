@@ -13,6 +13,7 @@ import datetime
 
 from quast_libs import qconfig, qutils
 from quast_libs.ca_utils.analyze_misassemblies import Mapping
+from quast_libs.ca_utils.misc import parse_cs_tag
 
 from quast_libs.log import get_logger
 from quast_libs.qutils import md5, is_non_empty_file
@@ -55,8 +56,7 @@ def run_minimap(out_fpath, ref_fpath, contigs_fpath, log_err_fpath, index, max_t
     additional_options = ['-B4', '-O4,24', '--no-long-join', '-r', str(qconfig.MAX_INDEL_LENGTH),
                           '-N', '50', '-s', str(qconfig.min_alignment), '-z', '200']
     cmdline = [minimap_fpath(), '-c', '-x', preset] + (additional_options if not qconfig.large_genome else []) + \
-              (['--cs'] if qconfig.show_snps and not qconfig.memory_efficient else []) + \
-              ['-t', str(max_threads), ref_fpath, contigs_fpath]
+              ['--mask-level', '0.7', '--cs', '-t', str(max_threads), ref_fpath, contigs_fpath]
     return_code = qutils.call_subprocess(cmdline, stdout=open(out_fpath, 'w'), stderr=open(log_err_fpath, 'a'),
                                          indent='  ' + qutils.index_to_str(index))
 
@@ -122,17 +122,67 @@ def parse_minimap_output(raw_coords_fpath, coords_fpath):
                 ref_end = ref_start + ref_len - 1
                 total_aligned_bases += align_len
 
+                ns_cnt = 0
                 mismatches_cnt = 0
                 for field in fs[12:]:
                     if field.startswith('NM:'):
                         mismatches_cnt = int(field.split(':')[-1])
+                    elif field.startswith('nn:'):
+                        ns_cnt = int(field.split(':')[-1])
                         break
-                matched_bases = bases_in_mapping - mismatches_cnt
+                matched_bases = bases_in_mapping - mismatches_cnt - ns_cnt
                 idy = '%.2f' % (matched_bases * 100.0 / ref_len)
-                if ref_name != "*" and float(idy) >= qconfig.min_IDY:
-                    align = Mapping(s1=ref_start, e1=ref_end, s2=align_start, e2=align_end, len1=ref_len,
-                                    len2=align_len, idy=idy, ref=ref_name, contig=contig, cigar=cs)
-                    coords_file.write(align.coords_str() + '\n')
+                if ref_name != "*":
+                    if float(idy) >= qconfig.min_IDY:
+                        align = Mapping(s1=ref_start, e1=ref_end, s2=align_start, e2=align_end, len1=ref_len,
+                                        len2=align_len, idy=idy, ref=ref_name, contig=contig, cigar=cs)
+                        coords_file.write(align.coords_str() + '\n')
+                    else:
+                        split_align(coords_file, align_start, strand_direction, ref_start, ref_name, contig, cs)
+
+
+def split_align(coords_file, align_start, strand_direction, ref_start, ref_name, contig, cs):
+    def _write_align():
+        if align_len < qconfig.min_alignment or not ref_len or not align_cs:
+            return
+        align_end = align_start + (align_len - 1) * strand_direction
+        ref_end = ref_start + ref_len - 1
+        align_idy = '%.2f' % (matched_bases * 100.0 / ref_len)
+        if float(align_idy) >= qconfig.min_IDY:
+            align = Mapping(s1=ref_start, e1=ref_end, s2=align_start, e2=align_end, len1=ref_len,
+                            len2=align_len, idy=align_idy, ref=ref_name, contig=contig, cigar=align_cs)
+            coords_file.write(align.coords_str() + '\n')
+
+    ref_len, align_len, align_end = 0, 0, 0
+    align_cs = ''
+    matched_bases = 0
+    for op in parse_cs_tag(cs):
+        if op.startswith(':'):
+            n_bases = int(op[1:])
+        else:
+            n_bases = len(op) - 1
+        if op.startswith('*'):
+            align_cs += op
+            ref_len += 1
+            align_len += 1
+        elif op.startswith('+'):
+            _write_align()
+            align_start += (align_len + n_bases) * strand_direction
+            ref_start += ref_len
+            align_len, ref_len, matched_bases = 0, 0, 0
+            align_cs = ''
+        elif op.startswith('-'):
+            _write_align()
+            align_start += align_len * strand_direction
+            ref_start += ref_len + n_bases
+            align_len, ref_len, matched_bases = 0, 0, 0
+            align_cs = ''
+        else:
+            align_cs += op
+            ref_len += n_bases
+            align_len += n_bases
+            matched_bases += n_bases
+    _write_align()
 
 
 def align_contigs(output_fpath, out_basename, ref_fpath, contigs_fpath, old_contigs_fpath, index, threads, log_out_fpath, log_err_fpath):

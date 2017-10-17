@@ -8,15 +8,15 @@
 static inline void mm_cal_fuzzy_len(mm_reg1_t *r, const mm128_t *a)
 {
 	int i;
-	r->fuzzy_mlen = r->fuzzy_blen = 0;
+	r->mlen = r->blen = 0;
 	if (r->cnt <= 0) return;
-	r->fuzzy_mlen = r->fuzzy_blen = a[r->as].y>>32&0xff;
+	r->mlen = r->blen = a[r->as].y>>32&0xff;
 	for (i = r->as + 1; i < r->as + r->cnt; ++i) {
 		int span = a[i].y>>32&0xff;
 		int tl = (int32_t)a[i].x - (int32_t)a[i-1].x;
 		int ql = (int32_t)a[i].y - (int32_t)a[i-1].y;
-		r->fuzzy_blen += tl > ql? tl : ql;
-		r->fuzzy_mlen += tl > span && ql > span? span : tl < ql? tl : ql;
+		r->blen += tl > ql? tl : ql;
+		r->mlen += tl > span && ql > span? span : tl < ql? tl : ql;
 	}
 }
 
@@ -107,19 +107,42 @@ void mm_split_reg(mm_reg1_t *r, mm_reg1_t *r2, int n, int qlen, mm128_t *a)
 void mm_set_parent(void *km, float mask_level, int n, mm_reg1_t *r, int sub_diff) // and compute mm_reg1_t::subsc
 {
 	int i, j, k, *w;
+	uint64_t *cov;
 	if (n <= 0) return;
 	for (i = 0; i < n; ++i) r[i].id = i;
+	cov = (uint64_t*)kmalloc(km, n * sizeof(uint64_t));
 	w = (int*)kmalloc(km, n * sizeof(int));
 	w[0] = 0, r[0].parent = 0;
 	for (i = 1, k = 1; i < n; ++i) {
 		mm_reg1_t *ri = &r[i];
-		int si = ri->qs, ei = ri->qe;
-		for (j = 0; j < k; ++j) {
+		int si = ri->qs, ei = ri->qe, n_cov = 0, uncov_len = 0;
+		for (j = 0; j < k; ++j) { // traverse existing primary hits to find overlapping hits
 			mm_reg1_t *rp = &r[w[j]];
 			int sj = rp->qs, ej = rp->qe;
-			int min = ej - sj < ei - si? ej - sj : ei - si;
-			int ol = si < sj? (ei < sj? 0 : ei < ej? ei - sj : ej - sj) : (ej < si? 0 : ej < ei? ej - si : ei - si);
-			if (ol > mask_level * min) {
+			if (ej <= si || sj >= ei) continue;
+			if (sj < si) sj = si;
+			if (ej > ei) ej = ei;
+			cov[n_cov++] = (uint64_t)sj<<32 | ej;
+		}
+		if (n_cov == 0) {
+			goto set_parent_test; // no overlapping primary hits; then i is a new primary hit
+		} else if (n_cov > 0) { // there are overlapping primary hits; find the length not covered by existing primary hits
+			int j, x = si;
+			radix_sort_64(cov, cov + n_cov);
+			for (j = 0; j < n_cov; ++j) {
+				if (cov[j]>>32 > x) uncov_len += (cov[j]>>32) - x;
+				x = (int32_t)cov[j] > x? (int32_t)cov[j] : x;
+			}
+			if (ei > x) uncov_len += ei - x;
+		}
+		for (j = 0; j < k; ++j) { // traverse existing primary hits again
+			mm_reg1_t *rp = &r[w[j]];
+			int sj = rp->qs, ej = rp->qe, min, max, ol;
+			if (ej <= si || sj >= ei) continue; // no overlap
+			min = ej - sj < ei - si? ej - sj : ei - si;
+			max = ej - sj > ei - si? ej - sj : ei - si;
+			ol = si < sj? (ei < sj? 0 : ei < ej? ei - sj : ej - sj) : (ej < si? 0 : ej < ei? ej - si : ei - si); // overlap length
+			if ((float)ol / min - (float)uncov_len / max > mask_level) {
 				int cnt_sub = 0;
 				ri->parent = rp->parent;
 				rp->subsc = rp->subsc > ri->score? rp->subsc : ri->score;
@@ -132,8 +155,10 @@ void mm_set_parent(void *km, float mask_level, int n, mm_reg1_t *r, int sub_diff
 				break;
 			}
 		}
+set_parent_test:
 		if (j == k) w[k++] = i, ri->parent = i, ri->n_sub = 0;
 	}
+	kfree(km, cov);
 	kfree(km, w);
 }
 
@@ -227,7 +252,7 @@ void mm_filter_regs(void *km, const mm_mapopt_t *opt, int *n_regs, mm_reg1_t *re
 		int flt = 0;
 		if (!r->inv && !r->seg_split && r->cnt < opt->min_cnt) flt = 1;
 		if (r->p) {
-			if (r->p->blen - r->p->n_ambi - r->p->n_diff < opt->min_chain_score) flt = 1;
+			if (r->mlen < opt->min_chain_score) flt = 1;
 			else if (r->p->dp_max < opt->min_dp_max) flt = 1;
 			if (flt) free(r->p);
 		}
@@ -237,6 +262,45 @@ void mm_filter_regs(void *km, const mm_mapopt_t *opt, int *n_regs, mm_reg1_t *re
 		}
 	}
 	*n_regs = k;
+}
+
+void mm_filter_by_identity(void *km, int n_regs, mm_reg1_t *regs, float min_iden, int qlen, const char *qual) // TODO: make sure it is not beyond the ends of contigs
+{
+	int i, j, n_aux = 0, en, blen = 0;
+	uint64_t *aux;
+	float n_diff = 0.0f;
+	if (n_regs <= 0) return;
+	for (i = 0; i < n_regs; ++i)
+		if (regs[i].id == regs[i].parent && regs[i].pe_thru) // sequenced through the fragment; don't filter
+			return;
+	for (i = 0; i < n_regs; ++i)
+		if (regs[i].id == regs[i].parent)
+			++n_aux;
+	assert(n_aux >= 1);
+	aux = (uint64_t*)kmalloc(km, n_aux * 8);
+	for (i = 0, n_aux = 0; i < n_regs; ++i)
+		if (regs[i].id == regs[i].parent)
+			aux[n_aux++] = (uint64_t)regs[i].qs<<32 | i;
+	radix_sort_64(aux, aux + n_aux);
+	for (i = 0, en = 0; i < n_aux; ++i) {
+		mm_reg1_t *r = &regs[(int32_t)aux[i]];
+		if (r->qs > en) {
+			for (j = en; j < r->qs; ++j)
+				n_diff += qual == 0 || qual[j] >= 53? 0.5f : 0.025f * (qual[j] - 33);
+			blen += r->qs - en;
+		}
+		assert(r->p);
+		blen += r->p->blen2;
+		n_diff += r->p->n_diff2;
+		en = en > r->qe? en : r->qe;
+	}
+	for (j = en; j < qlen; ++j)
+		n_diff += qual == 0 || qual[j] >= 53? 0.5f : 0.025f * (qual[j] - 33);
+	blen += qlen - en;
+	kfree(km, aux);
+	if (1.0f - n_diff / blen < min_iden)
+		for (i = 0; i < n_regs; ++i)
+			regs[i].iden_flt = 1;
 }
 
 int mm_squeeze_a(void *km, int n_regs, mm_reg1_t *regs, mm128_t *a)
@@ -393,7 +457,7 @@ void mm_set_mapq(int n_regs, mm_reg1_t *regs, int min_chain_sc, int match_sc, in
 			pen_cm = pen_s1 < pen_cm? pen_s1 : pen_cm;
 			subsc = r->subsc > min_chain_sc? r->subsc : min_chain_sc;
 			if (r->p && r->p->dp_max2 > 0 && r->p->dp_max > 0) {
-				float identity = (float)(r->p->blen - r->p->n_diff - r->p->n_ambi) / (r->p->blen - r->p->n_ambi);
+				float identity = (float)r->mlen / r->blen;
 				int mapq_alt = (int)(6.02f * identity * identity * (r->p->dp_max - r->p->dp_max2) / match_sc + .499f); // BWA-MEM like mapQ, mostly for short reads
 				mapq = (int)(identity * pen_cm * q_coef * (1. - (float)r->p->dp_max2 * subsc / r->p->dp_max / r->score) * logf(r->score)); // more for long reads
 				mapq = mapq < mapq_alt? mapq : mapq_alt; // in case the long-read heuristic fails

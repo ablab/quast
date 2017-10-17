@@ -6,7 +6,7 @@
 #include "mmpriv.h"
 #include "getopt.h"
 
-#define MM_VERSION "2.2-r506-dirty"
+#define MM_VERSION "2.2-r516-dirty"
 
 #ifdef __linux__
 #include <sys/resource.h>
@@ -65,7 +65,7 @@ static inline int64_t mm_parse_num(const char *str)
 
 int main(int argc, char *argv[])
 {
-	const char *opt_str = "aSw:k:K:t:r:f:Vv:g:G:I:d:XT:s:x:Hcp:M:n:z:A:B:O:E:m:N:Qu:R:hF:";
+	const char *opt_str = "2aSw:k:K:t:r:f:Vv:g:G:I:d:XT:s:x:Hcp:M:n:z:A:B:O:E:m:N:Qu:R:hF:i:";
 	mm_mapopt_t opt;
 	mm_idxopt_t ipt;
 	int i, c, n_threads = 3, long_idx, max_gap_ref = 0;
@@ -100,6 +100,7 @@ int main(int argc, char *argv[])
 		else if (c == 'g') opt.max_gap = (int)mm_parse_num(optarg);
 		else if (c == 'G') max_gap_ref = (int)mm_parse_num(optarg);
 		else if (c == 'F') opt.max_frag_len = (int)mm_parse_num(optarg);
+		else if (c == 'i') opt.min_iden = atof(optarg);
 		else if (c == 'N') opt.best_n = atoi(optarg);
 		else if (c == 'p') opt.pri_ratio = atof(optarg);
 		else if (c == 'M') opt.mask_level = atof(optarg);
@@ -115,9 +116,10 @@ int main(int argc, char *argv[])
 		else if (c == 'z') opt.zdrop = atoi(optarg);
 		else if (c == 's') opt.min_dp_max = atoi(optarg);
 		else if (c == 'I') ipt.batch_size = mm_parse_num(optarg);
-		else if (c == 'K') ipt.mini_batch_size = (int)mm_parse_num(optarg);
+		else if (c == 'K') opt.mini_batch_size = (int)mm_parse_num(optarg);
 		else if (c == 'R') rg = optarg;
 		else if (c == 'h') fp_help = stdout;
+		else if (c == '2') opt.flag |= MM_F_2_IO_THREADS;
 		else if (c == 0 && long_idx == 0) ipt.bucket_bits = atoi(optarg); // --bucket-bits
 		else if (c == 0 && long_idx == 2) opt.seed = atoi(optarg); // --seed
 		else if (c == 0 && long_idx == 3) mm_dbg_flag |= MM_DBG_NO_KALLOC; // --no-kalloc
@@ -221,6 +223,7 @@ int main(int argc, char *argv[])
 		fprintf(fp_help, "    -z INT       Z-drop score [%d]\n", opt.zdrop);
 		fprintf(fp_help, "    -s INT       minimal peak DP alignment score [%d]\n", opt.min_dp_max);
 		fprintf(fp_help, "    -u CHAR      how to find GT-AG. f:transcript strand, b:both strands, n:don't match GT-AG [n]\n");
+		fprintf(fp_help, "    -i FLOAT     min identity (mapQ reduced to 0 if below) [0]\n");
 		fprintf(fp_help, "  Input/Output:\n");
 		fprintf(fp_help, "    -a           output in the SAM format (PAF by default)\n");
 		fprintf(fp_help, "    -Q           don't output base quality in SAM\n");
@@ -254,6 +257,8 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "[ERROR] missing input: please specify a query file to map or option -d to keep the index\n");
 		return 1;
 	}
+	if (opt.best_n == 0 && (opt.flag&MM_F_CIGAR) && mm_verbose >= 2)
+		fprintf(stderr, "[WARNING]\033[1;31m `-N 0' reduces alignment accuracy. Please use --print-2nd=no to suppress secondary alignments.\033[0m\n");
 	while ((mi = mm_idx_reader_read(idx_rdr, n_threads)) != 0) {
 		if ((opt.flag & MM_F_OUT_SAM) && idx_rdr->n_parts == 1) {
 			if (mm_idx_reader_eof(idx_rdr)) {

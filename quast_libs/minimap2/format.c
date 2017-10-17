@@ -196,14 +196,15 @@ static void write_cs(void *km, kstring_t *s, const mm_idx_t *mi, const mm_bseq1_
 static inline void write_tags(kstring_t *s, const mm_reg1_t *r)
 {
 	int type = r->inv? 'I' : r->id == r->parent? 'P' : 'S';
-	mm_sprintf_lite(s, "\ttp:A:%c\tcm:i:%d\ts1:i:%d", type, r->cnt, r->score);
-	if (r->parent == r->id) mm_sprintf_lite(s, "\ts2:i:%d", r->subsc);
-	if (r->split) mm_sprintf_lite(s, "\tzd:i:%d", r->split);
+	if (r->iden_flt) mm_sprintf_lite(s, "\tom:i:%d", r->mapq);
 	if (r->p) {
-		mm_sprintf_lite(s, "\tNM:i:%d\tms:i:%d\tAS:i:%d\tnn:i:%d", r->p->n_diff, r->p->dp_max, r->p->dp_score, r->p->n_ambi);
+		mm_sprintf_lite(s, "\tNM:i:%d\tms:i:%d\tAS:i:%d\tnn:i:%d", r->blen - r->mlen + r->p->n_ambi, r->p->dp_max, r->p->dp_score, r->p->n_ambi);
 		if (r->p->trans_strand == 1 || r->p->trans_strand == 2)
 			mm_sprintf_lite(s, "\tts:A:%c", "?+-?"[r->p->trans_strand]);
 	}
+	mm_sprintf_lite(s, "\ttp:A:%c\tcm:i:%d\ts1:i:%d", type, r->cnt, r->score);
+	if (r->parent == r->id) mm_sprintf_lite(s, "\ts2:i:%d", r->subsc);
+	if (r->split) mm_sprintf_lite(s, "\tzd:i:%d", r->split);
 }
 
 void mm_write_paf(kstring_t *s, const mm_idx_t *mi, const mm_bseq1_t *t, const mm_reg1_t *r, void *km, int opt_flag)
@@ -213,8 +214,7 @@ void mm_write_paf(kstring_t *s, const mm_idx_t *mi, const mm_bseq1_t *t, const m
 	if (mi->seq[r->rid].name) mm_sprintf_lite(s, "%s", mi->seq[r->rid].name);
 	else mm_sprintf_lite(s, "%d", r->rid);
 	mm_sprintf_lite(s, "\t%d\t%d\t%d", mi->seq[r->rid].len, r->rs, r->re);
-	if (r->p) mm_sprintf_lite(s, "\t%d\t%d", r->p->blen - r->p->n_ambi - r->p->n_diff, r->p->blen);
-	else mm_sprintf_lite(s, "\t%d\t%d", r->fuzzy_mlen, r->fuzzy_blen);
+	mm_sprintf_lite(s, "\t%d\t%d", r->mlen, r->blen);
 	mm_sprintf_lite(s, "\t%d", r->mapq);
 	write_tags(s, r);
 	if (r->p && (opt_flag & MM_F_OUT_CG)) {
@@ -300,11 +300,12 @@ void mm_write_sam2(kstring_t *s, const mm_idx_t *mi, const mm_bseq1_t *t, int se
 	if (r == 0) {
 		if (r_prev) {
 			this_rid = r_prev->rid, this_pos = r_prev->rs;
-			mm_sprintf_lite(s, "\t%s\t%d\t0\t*", mi->seq[this_rid].name, this_pos);
+			mm_sprintf_lite(s, "\t%s\t%d\t0\t*", mi->seq[this_rid].name, this_pos+1);
 		} else mm_sprintf_lite(s, "\t*\t0\t0\t*");
 	} else {
+		int mapq = !r->iden_flt? r->mapq : r->mapq < 3? r->mapq : 3;
 		this_rid = r->rid, this_pos = r->rs, this_rev = r->rev;
-		mm_sprintf_lite(s, "\t%s\t%d\t%d\t", mi->seq[r->rid].name, r->rs+1, r->mapq);
+		mm_sprintf_lite(s, "\t%s\t%d\t%d\t", mi->seq[r->rid].name, r->rs+1, mapq);
 		if (r->p) { // actually this should always be true for SAM output
 			uint32_t k, clip_len = r->rev? t->l_seq - r->qe : r->qs;
 			int clip_char = (flag&0x800)? 'H' : 'S';
@@ -387,7 +388,7 @@ void mm_write_sam2(kstring_t *s, const mm_idx_t *mi, const mm_bseq1_t *t, int se
 					if (l_I) mm_sprintf_lite(s, "%dI", l_I);
 					if (l_D) mm_sprintf_lite(s, "%dD", l_D);
 					if (clip3) mm_sprintf_lite(s, "%dS", clip3);
-					mm_sprintf_lite(s, ",%d,%d;", q->mapq, q->p->n_diff);
+					mm_sprintf_lite(s, ",%d,%d;", q->mapq, q->blen - q->mlen + q->p->n_ambi);
 				}
 			}
 		}

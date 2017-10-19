@@ -6,7 +6,7 @@
 #include "mmpriv.h"
 #include "getopt.h"
 
-#define MM_VERSION "2.2-r516-dirty"
+#define MM_VERSION "2.2-r519-dirty"
 
 #ifdef __linux__
 #include <sys/resource.h>
@@ -38,7 +38,7 @@ static struct option long_options[] = {
 	{ "no-long-join",   no_argument,       0, 0 },
 	{ "sr",             no_argument,       0, 0 },
 	{ "frag",           optional_argument, 0, 0 },
-	{ "print-2nd",      optional_argument, 0, 0 },
+	{ "secondary",      optional_argument, 0, 0 },
 	{ "cs",             optional_argument, 0, 0 },
 	{ "end-bonus",      required_argument, 0, 0 },
 	{ "help",           no_argument,       0, 'h' },
@@ -138,7 +138,7 @@ int main(int argc, char *argv[])
 			if (optarg == 0 || strcmp(optarg, "yes") == 0 || strcmp(optarg, "y") == 0)
 				opt.flag |= MM_F_FRAG_MODE;
 			else opt.flag &= ~MM_F_FRAG_MODE;
-		} else if (c == 0 && long_idx == 15) { // --print-2nd
+		} else if (c == 0 && long_idx == 15) { // --secondary
 			if (optarg == 0 || strcmp(optarg, "yes") == 0 || strcmp(optarg, "y") == 0)
 				opt.flag &= ~MM_F_NO_PRINT_2ND;
 			else opt.flag |= MM_F_NO_PRINT_2ND;
@@ -231,7 +231,7 @@ int main(int argc, char *argv[])
 		fprintf(fp_help, "    -c           output CIGAR in PAF\n");
 		fprintf(fp_help, "    --cs[=STR]   output the cs tag; STR is 'short' (if absent) or 'long' [none]\n");
 		fprintf(fp_help, "    -t INT       number of threads [%d]\n", n_threads);
-		fprintf(fp_help, "    -K NUM       minibatch size for mapping [200M]\n");
+		fprintf(fp_help, "    -K NUM       minibatch size for mapping [500M]\n");
 //		fprintf(fp_help, "    -v INT       verbose level [%d]\n", mm_verbose);
 		fprintf(fp_help, "    --version    show version number\n");
 		fprintf(fp_help, "  Preset:\n");
@@ -240,8 +240,8 @@ int main(int argc, char *argv[])
 		fprintf(fp_help, "                 map-ont: -k15 (Oxford Nanopore vs reference mapping)\n");
 		fprintf(fp_help, "                 asm5: -k19 -w19 -A1 -B19 -O39,81 -E3,1 -s200 -z200 (asm to ref mapping; break at 5%% div.)\n");
 		fprintf(fp_help, "                 asm10: -k19 -w19 -A1 -B9 -O16,41 -E2,1 -s200 -z200 (asm to ref mapping; break at 10%% div.)\n");
-		fprintf(fp_help, "                 ava-pb: -Hk19 -w5 -Xp0 -m100 -g10000 -K500m --max-chain-skip 25 (PacBio read overlap)\n");
-		fprintf(fp_help, "                 ava-ont: -k15 -w5 -Xp0 -m100 -g10000 -K500m --max-chain-skip 25 (ONT read overlap)\n");
+		fprintf(fp_help, "                 ava-pb: -Hk19 -w5 -Xp0 -m100 -g10000 --max-chain-skip 25 (PacBio read overlap)\n");
+		fprintf(fp_help, "                 ava-ont: -k15 -w5 -Xp0 -m100 -g10000 --max-chain-skip 25 (ONT read overlap)\n");
 		fprintf(fp_help, "                 splice: long-read spliced alignment (see minimap2.1 for details)\n");
 		fprintf(fp_help, "                 sr: short single-end reads without splicing (see minimap2.1 for details)\n");
 		fprintf(fp_help, "\nSee `man ./minimap2.1' for detailed description of command-line options.\n");
@@ -258,7 +258,7 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 	if (opt.best_n == 0 && (opt.flag&MM_F_CIGAR) && mm_verbose >= 2)
-		fprintf(stderr, "[WARNING]\033[1;31m `-N 0' reduces alignment accuracy. Please use --print-2nd=no to suppress secondary alignments.\033[0m\n");
+		fprintf(stderr, "[WARNING]\033[1;31m `-N 0' reduces alignment accuracy. Please use --secondary=no to suppress secondary alignments.\033[0m\n");
 	while ((mi = mm_idx_reader_read(idx_rdr, n_threads)) != 0) {
 		if ((opt.flag & MM_F_OUT_SAM) && idx_rdr->n_parts == 1) {
 			if (mm_idx_reader_eof(idx_rdr)) {

@@ -84,7 +84,7 @@ class SolidRegion(object):
 
 
 def get_best_aligns_sets(sorted_aligns, ctg_len, stdout_f, seq, ref_lens, is_cyclic=False, region_struct_variations=None):
-    critical_number_of_aligns = 200  # use additional optimizations for large number of alignments
+    critical_number_of_aligns = 100  # use additional optimizations for large number of alignments
 
     penalties = dict()
     penalties['extensive'] = max(50, int(round(min(qconfig.extensive_misassembly_threshold / 4.0, ctg_len * 0.05)))) - 1
@@ -98,7 +98,7 @@ def get_best_aligns_sets(sorted_aligns, ctg_len, stdout_f, seq, ref_lens, is_cyc
     # trying to optimise the algorithm if the number of possible alignments is large
     solids = []
     if len(sorted_aligns) > critical_number_of_aligns:
-        stdout_f.write('\t\t\tSkipping redundant alignments which can\'t be in the best set of alignments A PRIORI\n')
+        stdout_f.write('\t\t\tToo much alignments (%d), will use speed up heuristics\n' % len(sorted_aligns))
 
         # FIRST STEP: find solid aligns (which are present in the best selection for sure)
         # they should have unique (not covered by other aligns) region of length > 2 * extensive_penalty
@@ -202,7 +202,9 @@ def get_best_aligns_sets(sorted_aligns, ctg_len, stdout_f, seq, ref_lens, is_cyc
     # Stage 2: DFS for finding multiple best sets with almost equally good score
 
     ## special case for speed up (when we really not very interested in whether the contig is ambiguous or not)
-    if len(sorted_aligns) > critical_number_of_aligns and qconfig.ambiguity_usage == 'one':
+    if len(sorted_aligns) > critical_number_of_aligns and qconfig.ambiguity_usage != 'all':
+        stdout_f.write('\t\tAmbiguity for this contig is not checked for speed up '
+                       '(too much alignments and --ambiguity-usage is "%s")\n' % qconfig.ambiguity_usage)
         best_set = all_scored_sets.pop()
         while best_set.score != max_score:
             best_set = all_scored_sets.pop()

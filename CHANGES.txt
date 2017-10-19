@@ -1,5 +1,17 @@
 -- Version history --
 
+4.6   1. Best set selection algorithm is significantly sped up.
+
+      2. GeneMark licence files are updated; expired licence error message is better
+         handled now.
+
+      3. Python 3.6 is now supported (and all future Python 3.* versions).
+
+      4. Support email address is updated.
+
+      5. Fixed several minor but nasty bugs.
+
+
 4.5   1. Icarus updates:
        - always visible and scrollable Contig Info panel;
        - new color (dark green) for contigs without misassemblies but having at

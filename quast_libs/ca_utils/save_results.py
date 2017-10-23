@@ -115,7 +115,7 @@ def save_result(result, report, fname, ref_fpath, genome_size):
         duplication_ratio = (report.get_field(reporting.Fields.TOTALLEN) +
                              misassembly_internal_overlap +
                              ambiguous_contigs_extra_bases -
-                             (fully_unaligned_bases + partially_unaligned_bases)) / total_aligned_bases
+                             (fully_unaligned_bases + partially_unaligned_bases)) * 1.0 / total_aligned_bases
         report.add_field(reporting.Fields.MAPPEDGENOME, '%.3f' % genome_fraction)
         report.add_field(reporting.Fields.DUPLICATION_RATIO, '%.3f' % duplication_ratio)
         report.add_field(reporting.Fields.SUBSERROR, "%.2f" % (float(SNPs) * 100000.0 / float(total_aligned_bases)))

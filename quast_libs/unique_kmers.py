@@ -177,7 +177,7 @@ def intersect_kmers(tmp_dirpath, kmc_out_fpaths, log_fpath, err_fpath):
     else:
         prev_kmc_out_fpath = kmc_out_fpaths[0]
         for i in range(1, len(kmc_out_fpaths)):
-            tmp_out_fpath = join(tmp_dirpath, get_clear_name(prev_kmc_out_fpath) + get_clear_name(kmc_out_fpaths[i]) + '.kmc')
+            tmp_out_fpath = join(tmp_dirpath, get_clear_name(prev_kmc_out_fpath) + '_' + str(i) + '.kmc')
             run_kmc(kmc_tools_fpath, ['simple', prev_kmc_out_fpath, kmc_out_fpaths[i], 'intersect', tmp_out_fpath], log_fpath, err_fpath)
             prev_kmc_out_fpath = tmp_out_fpath
         intersect_out_fpath = prev_kmc_out_fpath

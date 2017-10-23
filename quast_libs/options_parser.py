@@ -557,7 +557,7 @@ def parse_options(logger, quast_args, is_metaquast=False):
              action='callback',
              callback=set_multiple_variables,
              callback_kwargs={'store_true_values': ['no_gc', 'no_sv', 'no_gzip'],
-                              'store_false_values': ['show_snps', 'draw_plots', 'html_report', 'create_icarus_html']},
+                              'store_false_values': ['show_snps', 'draw_plots', 'html_report', 'create_icarus_html', 'analyze_gaps']},
              default=False)
          ),
         (['--no-gzip'], dict(

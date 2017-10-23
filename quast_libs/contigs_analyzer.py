@@ -33,6 +33,7 @@ from quast_libs.ca_utils.misc import ref_labels_by_chromosomes, compile_aligner,
 from quast_libs.ca_utils.align_contigs import align_contigs, get_aux_out_fpaths, AlignerStatus
 from quast_libs.ca_utils.save_results import print_results, save_result, save_result_for_unaligned, \
     save_combined_ref_stats
+from quast_libs.fastaparser import get_genome_stats
 
 from quast_libs.log import get_logger
 from quast_libs.qutils import is_python2
@@ -49,9 +50,11 @@ class CAOutput():
         self.icarus_out_f = icarus_out_f
 
 
-def analyze_coverage(ref_aligns, used_snps_fpath):
-    total_aligned_bases = 0
+def analyze_coverage(ref_aligns, reference_chromosomes, used_snps_fpath):
     indels_info = IndelsInfo()
+    genome_mapping = {}
+    for chr_name, chr_len in reference_chromosomes.items():
+        genome_mapping[chr_name] = [0] * (chr_len + 1)
     with open(used_snps_fpath, 'w') as used_snps_f:
         for chr_name, aligns in ref_aligns.items():
             for align in aligns:
@@ -64,9 +67,10 @@ def analyze_coverage(ref_aligns, used_snps_fpath):
                         n_bases = len(op) - 1
                     if op.startswith('*'):
                         ref_nucl, ctg_nucl = op[1].upper(), op[2].upper()
-                        if qconfig.show_snps and ctg_nucl != 'N' and ref_nucl != 'N':
+                        if ctg_nucl != 'N' and ref_nucl != 'N':
                             indels_info.mismatches += 1
-                            used_snps_f.write('%s\t%s\t%d\t%s\t%s\t%d\n' % (chr_name, align.contig, ref_pos, ref_nucl, ctg_nucl, ctg_pos))
+                            if qconfig.show_snps:
+                                used_snps_f.write('%s\t%s\t%d\t%s\t%s\t%d\n' % (chr_name, align.contig, ref_pos, ref_nucl, ctg_nucl, ctg_pos))
                         ref_pos += 1
                         ctg_pos += 1 * strand_direction
                     elif op.startswith('+'):
@@ -86,9 +90,17 @@ def analyze_coverage(ref_aligns, used_snps_fpath):
                     else:
                         ref_pos += n_bases
                         ctg_pos += n_bases * strand_direction
-                total_aligned_bases += align.e1 - align.s1 + 1
+                if align.s1 < align.e1:
+                    for pos in range(align.s1, align.e1 + 1):
+                        genome_mapping[align.ref][pos] = 1
+                else:
+                    for pos in range(align.s1, len(genome_mapping[align.ref])):
+                        genome_mapping[align.ref][pos] = 1
+                    for pos in range(1, align.e1 + 1):
+                        genome_mapping[align.ref][pos] = 1
 
-    return total_aligned_bases, indels_info
+    covered_bases = sum([sum(genome_mapping[chrom]) for chrom in genome_mapping])
+    return covered_bases, indels_info
 
 
 # former plantagora and plantakolya
@@ -185,7 +197,7 @@ def align_and_analyze(is_cyclic, index, contigs_fpath, output_dirpath, ref_fpath
     log_out_f.write('Analyzing coverage...\n')
     if qconfig.show_snps:
         log_out_f.write('Writing SNPs into ' + used_snps_fpath + '\n')
-    total_aligned_bases, indels_info = analyze_coverage(ref_aligns, used_snps_fpath)
+    total_aligned_bases, indels_info = analyze_coverage(ref_aligns, ref_lens, used_snps_fpath)
     total_indels_info += indels_info
     cov_stats = {'SNPs': total_indels_info.mismatches, 'indels_list': total_indels_info.indels_list, 'total_aligned_bases': total_aligned_bases}
     result.update(cov_stats)
@@ -279,10 +291,11 @@ def do(reference, contigs_fpaths, is_cyclic, output_dir, old_contigs_fpaths, bed
         if qconfig.is_combined_ref:
             save_combined_ref_stats(results, contigs_fpaths, ref_labels_by_chromosomes, output_dir, logger)
 
+    genome_size, _ = get_genome_stats(reference, skip_ns=True)
     for index, fname in enumerate(contigs_fpaths):
         report = reporting.get(fname)
         if statuses[index] == AlignerStatus.OK:
-            reports.append(save_result(results[index], report, fname, reference))
+            reports.append(save_result(results[index], report, fname, reference, genome_size))
         elif statuses[index] == AlignerStatus.NOT_ALIGNED:
             save_result_for_unaligned(results[index], report)
 

@@ -8,6 +8,7 @@
 from __future__ import with_statement
 import logging
 import os
+from collections import defaultdict
 
 from quast_libs import fastaparser, genes_parser, reporting, qconfig, qutils
 from quast_libs.log import get_logger
@@ -67,7 +68,7 @@ def process_single_file(contigs_fpath, index, coords_dirpath, genome_stats_dirpa
     assembly_label = qutils.label_from_fpath(contigs_fpath)
     corr_assembly_label = qutils.label_from_fpath_for_fname(contigs_fpath)
     results = dict()
-    ref_lengths = {}
+    ref_lengths = defaultdict(int)
     logger.info('  ' + qutils.index_to_str(index) + assembly_label)
 
     coords_base_fpath = os.path.join(coords_dirpath, corr_assembly_label + '.coords')
@@ -129,41 +130,38 @@ def process_single_file(contigs_fpath, index, coords_dirpath, genome_stats_dirpa
             if s2 == 0 and e2 == 0:  # special case: circular genome, contig starts on the end of a chromosome and ends in the beginning
                 for i in range(s1, len(genome_mapping[chr_name])):
                     genome_mapping[chr_name][i] = 1
+                    ref_lengths[chr_name] += 1
                 for i in range(1, e1 + 1):
                     genome_mapping[chr_name][i] = 1
+                    ref_lengths[chr_name] += 1
             else: #if s1 <= e1:
                 for i in range(s1, e1 + 1):
                     genome_mapping[chr_name][i] = 1
+                    ref_lengths[chr_name] += 1
 
     if qconfig.space_efficient and coords_fpath.endswith('.filtered'):
         os.remove(coords_fpath)
 
     # counting genome coverage and gaps number
-    covered_bp = 0
     gaps_count = 0
-    gaps_fpath = os.path.join(genome_stats_dirpath, corr_assembly_label + '_gaps.txt') if not qconfig.space_efficient else '/dev/null'
-    gaps_file = open(gaps_fpath, 'w')
-    for chr_name, chr_len in reference_chromosomes.items():
-        gaps_file.write(chr_name + '\n')
-        cur_gap_size = 0
-        aligned_len = 0
-        for i in range(1, chr_len + 1):
-            if genome_mapping[chr_name][i] == 1:
+    if qconfig.analyze_gaps:
+        gaps_fpath = os.path.join(genome_stats_dirpath, corr_assembly_label + '_gaps.txt') if not qconfig.space_efficient else '/dev/null'
+        with open(gaps_fpath, 'w') as gaps_file:
+            for chr_name, chr_len in reference_chromosomes.items():
+                gaps_file.write(chr_name + '\n')
+                cur_gap_size = 0
+                for i in range(1, chr_len + 1):
+                    if genome_mapping[chr_name][i] == 1:
+                        if cur_gap_size >= qconfig.min_gap_size:
+                            gaps_count += 1
+                            gaps_file.write(str(i - cur_gap_size) + ' ' + str(i - 1) + '\n')
+                        cur_gap_size = 0
+                    else:
+                        cur_gap_size += 1
                 if cur_gap_size >= qconfig.min_gap_size:
                     gaps_count += 1
-                    gaps_file.write(str(i - cur_gap_size) + ' ' + str(i - 1) + '\n')
-                aligned_len += 1
-                covered_bp += 1
-                cur_gap_size = 0
-            else:
-                cur_gap_size += 1
-        ref_lengths[chr_name] = aligned_len
-        if cur_gap_size >= qconfig.min_gap_size:
-            gaps_count += 1
-            gaps_file.write(str(chr_len - cur_gap_size + 1) + ' ' + str(chr_len) + '\n')
-    gaps_file.close()
+                    gaps_file.write(str(chr_len - cur_gap_size + 1) + ' ' + str(chr_len) + '\n')
 
-    results["covered_bp"] = covered_bp
     results["gaps_count"] = gaps_count
 
     # finding genes and operons
@@ -273,13 +271,7 @@ def do(ref_fpath, aligned_contigs_fpaths, output_dirpath, genes_fpaths, operons_
     if not os.path.isdir(genome_stats_dirpath):
         os.mkdir(genome_stats_dirpath)
 
-    reference_chromosomes = {}
-    genome_size = 0
-    for name, seq in fastaparser.read_fasta(ref_fpath):
-        chr_name = name.split()[0]
-        chr_len = len(seq)
-        genome_size += chr_len - seq.count('N')
-        reference_chromosomes[chr_name] = chr_len
+    genome_size, reference_chromosomes = fastaparser.get_genome_stats(ref_fpath)
 
     # reading genome size
     # genome_size = fastaparser.get_lengths_from_fastafile(reference)[0]
@@ -387,7 +379,6 @@ def do(ref_fpath, aligned_contigs_fpaths, output_dirpath, genes_fpaths, operons_
         full_found_genes.append(sum(genes_in_contigs))
         full_found_operons.append(sum(operons_in_contigs))
 
-        covered_bp = results["covered_bp"]
         gaps_count = results["gaps_count"]
         genes_full = results[reporting.Fields.GENES + "_full"]
         genes_part = results[reporting.Fields.GENES + "_partial"]
@@ -395,19 +386,11 @@ def do(ref_fpath, aligned_contigs_fpaths, output_dirpath, genes_fpaths, operons_
         operons_part = results[reporting.Fields.OPERONS + "_partial"]
 
         report = reporting.get(contigs_fpath)
-        genome_fraction = float(covered_bp) * 100 / float(genome_size)
-        duplication_ratio = (report.get_field(reporting.Fields.TOTALLEN) +
-                             report.get_field(reporting.Fields.MISINTERNALOVERLAP) +
-                             report.get_field(reporting.Fields.AMBIGUOUSEXTRABASES) -
-                             report.get_field(reporting.Fields.UNALIGNEDBASES)) /\
-                            ((genome_fraction / 100.0) * float(genome_size))
 
         res_file.write('%-25s| %-10s| %-12s| %-10s|'
-        % (assembly_name[:24], '%3.5f%%' % genome_fraction, '%1.5f' % duplication_ratio, gaps_count))
+        % (assembly_name[:24], report.get_field(reporting.Fields.MAPPEDGENOME), report.get_field(reporting.Fields.MAPPEDGENOME), gaps_count))
 
-        report.add_field(reporting.Fields.MAPPEDGENOME, '%.3f' % genome_fraction)
-        report.add_field(reporting.Fields.DUPLICATION_RATIO, '%.3f' % duplication_ratio)
-        genome_mapped.append(genome_fraction)
+        genome_mapped.append(float(report.get_field(reporting.Fields.MAPPEDGENOME)))
 
         for (field, full, part) in [(reporting.Fields.GENES, genes_full, genes_part),
             (reporting.Fields.OPERONS, operons_full, operons_part)]:

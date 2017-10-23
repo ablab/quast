@@ -297,6 +297,10 @@ def exclude_internal_overlaps(align1, align2, i=None, ca_output=None):
         new_cigar = 'cs:Z:'
         ctg_pos = align.s2
         strand_direction = 1 if align.s2 < align.e2 else -1
+        diff_len = 0
+        if not align.cigar:
+            return diff_len
+
         for op in parse_cs_tag(align.cigar):
             if op.startswith('*'):
                 if (new_start and ctg_pos >= new_start) or \
@@ -311,18 +315,26 @@ def exclude_internal_overlaps(align1, align2, i=None, ca_output=None):
                 corr_n_bases = n_bases
                 if new_end and (ctg_pos + n_bases * strand_direction > new_end or ctg_pos > new_end):
                     corr_n_bases = new_end - ctg_pos + (n_bases if strand_direction == -1 else 1)
-                elif new_start and ctg_pos < new_start:
-                    corr_n_bases = ctg_pos + (n_bases if strand_direction == 1 else 0) - new_start
+                elif new_start and (ctg_pos < new_start or ctg_pos + n_bases * strand_direction < new_start):
+                    corr_n_bases = ctg_pos + (n_bases if strand_direction == 1 else 1) - new_start
+
                 if corr_n_bases < 1:
-                    ctg_pos += n_bases * strand_direction
+                    if not op.startswith('-'):
+                        ctg_pos += n_bases * strand_direction
+                    if op.startswith('-'):
+                        diff_len -= n_bases
+                    if op.startswith('+'):
+                        diff_len += n_bases
                     continue
                 if op.startswith('+'):
                     ctg_pos += n_bases * strand_direction
+                    diff_len += (n_bases - corr_n_bases)
                     if new_start:
                         new_cigar += '+' + op[1 + (corr_n_bases - n_bases):]
                     elif new_end:
                         new_cigar += op[:corr_n_bases + 1]
                 elif op.startswith('-'):
+                    diff_len -= (n_bases - corr_n_bases)
                     if new_start:
                         new_cigar += '-' + op[1 + (corr_n_bases - n_bases):]
                     elif new_end:
@@ -331,31 +343,32 @@ def exclude_internal_overlaps(align1, align2, i=None, ca_output=None):
                     ctg_pos += n_bases * strand_direction
                     new_cigar += ':' + str(corr_n_bases)
         align.cigar = new_cigar
+        return diff_len
 
-    def __shift_start(align, new_start, indent=''):
+    def __shift_start(align, new_start, diff_len):
         if ca_output is not None:
-            ca_output.stdout_f.write(indent + '%s' % align.short_str())
+            ca_output.stdout_f.write('%s' % align.short_str())
         if align.s2 < align.e2:
-            align.s1 += (new_start - align.s2)
+            align.s1 += (new_start - align.s2) - diff_len
             align.s2 = new_start
             align.len2 = align.e2 - align.s2 + 1
         else:
-            align.e1 -= (new_start - align.e2)
+            align.e1 -= (new_start - align.e2) - diff_len
             align.e2 = new_start
             align.len2 = align.s2 - align.e2 + 1
         align.len1 = align.e1 - align.s1 + 1
         if ca_output is not None:
             ca_output.stdout_f.write(' --> %s\n' % align.short_str())
 
-    def __shift_end(align, new_end, indent=''):
+    def __shift_end(align, new_end, diff_len):
         if ca_output is not None:
-            ca_output.stdout_f.write(indent + '%s' % align.short_str())
+            ca_output.stdout_f.write('%s' % align.short_str())
         if align.s2 < align.e2:
-            align.e1 -= (align.e2 - new_end)
+            align.e1 -= (align.e2 - new_end) - diff_len
             align.e2 = new_end
             align.len2 = align.e2 - align.s2 + 1
         else:
-            align.s1 += (align.s2 - new_end)
+            align.s1 += (align.s2 - new_end) - diff_len
             align.s2 = new_end
             align.len2 = align.s2 - align.e2 + 1
         align.len1 = align.e1 - align.s1 + 1
@@ -372,13 +385,11 @@ def exclude_internal_overlaps(align1, align2, i=None, ca_output=None):
 
     # left only one of two copies (remove overlap from shorter alignment)
     if align1.len2 >= align2.len2:
-        if ca_output is not None and align2.cigar:
-            __shift_cigar(align2, new_start=align1.end() + 1)
-        __shift_start(align2, align1.end() + 1)
+        diff_len = __shift_cigar(align2, new_start=align1.end() + 1)  # excluded insertions and deletions
+        __shift_start(align2, align1.end() + 1, diff_len)
     else:
-        if ca_output is not None and align1.cigar:
-            __shift_cigar(align1, new_end=align2.start() - 1)
-        __shift_end(align1, align2.start() - 1)
+        diff_len = __shift_cigar(align1, new_end=align2.start() - 1)
+        __shift_end(align1, align2.start() - 1, diff_len)
     return prev_len2 - align1.len2
 
 

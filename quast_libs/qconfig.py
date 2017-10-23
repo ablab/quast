@@ -178,6 +178,7 @@ memory_efficient = False
 space_efficient = False
 
 # genome analyzer
+analyze_gaps = True
 min_gap_size = 50  # for calculating number or gaps in genome coverage
 min_gene_overlap = 100  # to partial genes/operons finding
 

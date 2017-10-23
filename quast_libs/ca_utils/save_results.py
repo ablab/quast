@@ -70,7 +70,7 @@ def print_results(contigs_fpath, log_out_f, used_snps_fpath, total_indels_info, 
     return result
 
 
-def save_result(result, report, fname, ref_fpath):
+def save_result(result, report, fname, ref_fpath, genome_size):
     region_misassemblies = result['region_misassemblies']
     misassemblies_by_ref = result['misassemblies_by_ref']
     region_struct_variations = result['region_struct_variations']
@@ -111,6 +111,13 @@ def save_result(result, report, fname, ref_fpath):
         report.add_field(reporting.Fields.MIS_LONG_INDELS, len([i for i in indels_list if i > qconfig.SHORT_INDEL_THRESHOLD]))
 
     if total_aligned_bases:
+        genome_fraction = float(total_aligned_bases) * 100 / float(genome_size)
+        duplication_ratio = (report.get_field(reporting.Fields.TOTALLEN) +
+                             misassembly_internal_overlap +
+                             ambiguous_contigs_extra_bases -
+                             (fully_unaligned_bases + partially_unaligned_bases)) / total_aligned_bases
+        report.add_field(reporting.Fields.MAPPEDGENOME, '%.3f' % genome_fraction)
+        report.add_field(reporting.Fields.DUPLICATION_RATIO, '%.3f' % duplication_ratio)
         report.add_field(reporting.Fields.SUBSERROR, "%.2f" % (float(SNPs) * 100000.0 / float(total_aligned_bases)))
         report.add_field(reporting.Fields.INDELSERROR, "%.2f" % (float(report.get_field(reporting.Fields.INDELS))
                                                                  * 100000.0 / float(total_aligned_bases)))

@@ -1,15 +1,18 @@
 -- Version history --
 
-4.6   1. Best set selection algorithm is significantly sped up.
+4.6.0 
+      1. Switch from major.minor to major.minor.patch versioning.
 
-      2. GeneMark licence files are updated; expired licence error message is better
+      2. Python 3.6 is now supported (and all future Python 3.* versions).
+  
+      3. Best set selection algorithm is significantly sped up.
+
+      4. GeneMark licence files are updated; expired licence error message is better
          handled now.
 
-      3. Python 3.6 is now supported (and all future Python 3.* versions).
+      5. Support email address is updated.
 
-      4. Support email address is updated.
-
-      5. Fixed several minor but nasty bugs.
+      6. Fixed several minor but nasty bugs.
 
 
 4.5   1. Icarus updates:

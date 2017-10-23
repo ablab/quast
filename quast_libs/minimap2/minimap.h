@@ -21,6 +21,7 @@
 #define MM_F_FRAG_MODE   0x2000
 #define MM_F_NO_PRINT_2ND  0x4000
 #define MM_F_2_IO_THREADS  0x8000
+#define MM_F_LONG_CIGAR    0x10000
 
 #define MM_IDX_MAGIC   "MMI\2"
 
@@ -159,6 +160,8 @@ int mm_set_opt(const char *preset, mm_idxopt_t *io, mm_mapopt_t *mo);
  * @param mi         minimap2 index
  */
 void mm_mapopt_update(mm_mapopt_t *opt, const mm_idx_t *mi);
+
+void mm_mapopt_max_intron_len(mm_mapopt_t *opt, int max_intron_len);
 
 /**
  * Initialize an index reader

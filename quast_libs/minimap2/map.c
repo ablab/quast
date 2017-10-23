@@ -52,6 +52,12 @@ void mm_mapopt_update(mm_mapopt_t *opt, const mm_idx_t *mi)
 		fprintf(stderr, "[M::%s::%.3f*%.2f] mid_occ = %d\n", __func__, realtime() - mm_realtime0, cputime() / (realtime() - mm_realtime0), opt->mid_occ);
 }
 
+void mm_mapopt_max_intron_len(mm_mapopt_t *opt, int max_intron_len)
+{
+	if ((opt->flag & MM_F_SPLICE) && max_intron_len > 0)
+		opt->max_gap_ref = opt->bw = max_intron_len;
+}
+
 int mm_set_opt(const char *preset, mm_idxopt_t *io, mm_mapopt_t *mo)
 {
 	if (preset == 0) {
@@ -85,7 +91,7 @@ int mm_set_opt(const char *preset, mm_idxopt_t *io, mm_mapopt_t *mo)
 		mo->pe_ori = 0<<1|1; // FR
 		mo->a = 2, mo->b = 8, mo->q = 12, mo->e = 2, mo->q2 = 24, mo->e2 = 1;
 		mo->zdrop = 100;
-		mo->end_bonus = 15;
+		mo->end_bonus = 10;
 		mo->max_frag_len = 800;
 		mo->max_gap = 100;
 		mo->bw = 100;

@@ -119,8 +119,9 @@ if cmd_in(['tag']):
     sys.exit()
 
 
-if cmd_in(['publish']):
-    cmdl = 'git clean -dfx && python setup.py sdist upload'
+if cmd_in(['publish']):  
+    # make sure you updated pip and installed twine `pip install -U pip setuptools twine`
+    cmdl = 'git clean -dfx && python setup.py sdist && twine upload dist/*'
     os.system(cmdl)
     sys.exit()
 

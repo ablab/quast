@@ -38,9 +38,8 @@ Logo design:
     Elena Strelnikova
 
 Contact:
-    quast.support@bioinf.spbau.ru
+    quast.support@cab.spbu.ru
     http://quast.sf.net
-    http://quast.bioinf.spbau.ru
 
 -------------------------------------------------------------------------------
 

@@ -7,6 +7,7 @@
 
 from __future__ import with_statement
 import os
+import re
 import shutil
 import shlex
 from collections import defaultdict
@@ -282,9 +283,6 @@ def align_reference(ref_fpath, output_dir, using_reads='all'):
                                                                 qconfig.max_threads, sam_fpath=qconfig.reference_sam,
                                                                 bam_fpath=qconfig.reference_bam, required_files=required_files,
                                                                 is_reference=True, alignment_only=True, using_reads=using_reads)
-    qconfig.reference_sam = sam_fpath
-    qconfig.reference_bam = bam_fpath
-
     if not qconfig.ideal_assembly_insert_size or qconfig.ideal_assembly_insert_size == 'auto':
         if using_reads == 'pe' and sam_fpath:
             insert_size = calculate_insert_size(sam_fpath, output_dir, ref_name)
@@ -487,7 +485,6 @@ def align_single_file(fpath, main_output_dir, output_dirpath, log_path, err_fpat
                 qutils.call_subprocess([sambamba_fpath('sambamba'), 'flagstat', '-t', str(max_threads), bam_fpath],
                                        stdout=open(stats_fpath, 'w'), stderr=open(err_fpath, 'a'))
                 analyse_coverage(output_dirpath, fpath, correct_chr_names, bam_fpath, stats_fpath, err_fpath, logger)
-            calc_lap_score(reads_fpaths, sam_fpath, index, index_str, output_dirpath, fpath, filename, err_fpath)
         if isfile(stats_fpath) or alignment_only:
             return correct_chr_names, sam_fpath, bam_fpath
 
@@ -512,6 +509,23 @@ def align_single_file(fpath, main_output_dir, output_dirpath, log_path, err_fpat
         os.chdir(output_dirpath)
         bwa_index(fpath, err_fpath, logger)
         sam_fpaths = align_reads(fpath, sam_fpath, using_reads, main_output_dir, err_fpath, max_threads)
+        if sam_fpaths and (using_reads == 'pe' or using_reads == 'all'):
+            pe_pattern = '.pe\d+.sam'
+            pe_sam_fpaths = [sam for sam in sam_fpaths if re.search(pe_pattern, sam)]
+            pe_sam_fpath = join(output_dirpath, filename + '.pe.sam')
+            if len(pe_sam_fpaths) > 1:
+                merge_sam_files(pe_sam_fpaths, sam_fpath, bam_fpath, max_threads, err_fpath)
+            elif len(pe_sam_fpaths) == 1:
+                shutil.copy(pe_sam_fpaths[0], pe_sam_fpath)
+            if pe_sam_fpaths and is_non_empty_file(pe_sam_fpath):
+                try:
+                    paired_reads = [reads_fpath for lib in qconfig.paired_reads for reads_fpath in lib if reads_fpath]
+                    calc_lap_score(paired_reads, pe_sam_fpath, index, index_str, output_dirpath, fpath, filename, err_fpath)
+                except:
+                    if is_reference:
+                        logger.warning('  LAP failed for reference.')
+                    else:
+                        logger.warning('  ' + index_str + 'LAP failed.')
 
         if len(sam_fpaths) > 1:
             merge_sam_files(sam_fpaths, sam_fpath, bam_fpath, max_threads, err_fpath)
@@ -537,7 +551,7 @@ def align_single_file(fpath, main_output_dir, output_dirpath, log_path, err_fpat
     if can_reuse and is_non_empty_file(bam_fpath) and all_read_names_correct(sam_fpath):
         logger.info('  ' + index_str + 'Using existing BAM-file: ' + bam_fpath)
     else:
-        correct_sam_fpath = join(output_dirpath, filename + '.correct.sam')  # write in output dir
+        correct_sam_fpath = join(output_dirpath, filename + '.' + using_reads + '.correct.sam')  # write in output dir
         sam_fpath = clean_read_names(sam_fpath, correct_sam_fpath)
         sambamba_view(correct_sam_fpath, bam_fpath, max_threads, err_fpath, logger, filter_rule=None)
 
@@ -549,7 +563,6 @@ def align_single_file(fpath, main_output_dir, output_dirpath, log_path, err_fpat
             qutils.call_subprocess([sambamba_fpath('sambamba'), 'flagstat', '-t', str(max_threads), bam_fpath],
                                     stdout=open(stats_fpath, 'w'), stderr=open(err_fpath, 'a'))
             analyse_coverage(output_dirpath, fpath, correct_chr_names, bam_fpath, stats_fpath, err_fpath, logger)
-        calc_lap_score(reads_fpaths, sam_fpath, index, index_str, output_dirpath, fpath, filename, err_fpath)
         if is_reference:
             logger.info('  Analysis for reference is finished.')
         else:
@@ -625,7 +638,7 @@ def merge_sam_files(tmp_sam_fpaths, sam_fpath, bam_fpath, max_threads, err_fpath
     qutils.call_subprocess([sambamba_fpath('sambamba'), 'merge', '-t', str(max_threads), bam_fpath] + tmp_bam_fpaths,
                            stderr=open(err_fpath, 'a'), logger=logger)
     sambamba_view(bam_fpath, sam_fpath, max_threads, err_fpath, logger)
-    return bam_fpath
+    return sam_fpath
 
 
 def parse_reads_stats(stats_fpath):

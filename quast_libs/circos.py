@@ -233,26 +233,28 @@ def create_gc_plot(gc_fpath, data_dir):
     return dst_gc_fpath, min_gc, max_gc, max_points
 
 
-def create_coverage_plot(cov_fpath, window_size, ref_len, output_dir):
+def create_coverage_plot(cov_fpath, window_size, chr_lengths, output_dir):
     max_points = 0
     if not cov_fpath:
         return None, max_points
 
     cov_by_chrom = dict()
     cov_data_fpath = join(output_dir, 'coverage.txt')
+    chr_lengths = list(chr_lengths.values())
     with open(cov_fpath) as f:
         pos = 0
         for index, line in enumerate(f):
             fs = line.split()
             if line.startswith('#'):
+                pos = 0
                 chrom = fs[0][1:]
-                cov_by_chrom[chrom] = [[] for i in range (ref_len // window_size + 1)]
+                chrom_order = int(fs[1]) - 1
+                chrom_len = chr_lengths[chrom_order]
+                cov_by_chrom[chrom] = [[] for i in range(chrom_len // window_size + 2)]
             else:
                 depth = int(fs[-1])
                 cov_by_chrom[chrom][pos // window_size].append(depth)
                 pos += COVERAGE_FACTOR
-                if pos > ref_len:
-                    break
 
     with open(cov_data_fpath, 'w') as out_f:
         for chrom, depth_list in cov_by_chrom.items():
@@ -469,7 +471,7 @@ def create_conf(ref_fpath, contigs_fpaths, contig_report_fpath_pattern, output_d
     gc_fpath, min_gc, max_gc, gc_points = create_gc_plot(gc_fpath, data_dir)
     feature_fpaths, gene_points = create_genes_plot(features_containers, window_size, ref_len, data_dir)
     mismatches_fpaths = [create_mismatches_plot(assembly, window_size, ref_len, output_dir, data_dir) for assembly in assemblies]
-    cov_data_fpath, cov_points = create_coverage_plot(cov_fpath, window_size, ref_len, data_dir)
+    cov_data_fpath, cov_points = create_coverage_plot(cov_fpath, window_size, chr_lengths, data_dir)
     max_points = max([MAX_POINTS, gc_points, gene_points, cov_points, contig_points])
     labels_fpath, track_labels = create_labels(chr_lengths, assemblies, features_containers, cov_data_fpath, data_dir)
 

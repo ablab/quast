@@ -102,7 +102,7 @@ def seq_to_kmc_db(tmp_dirpath, log_fpath, err_fpath, fasta_fpath=None, seq=None,
 
 def align_kmers(output_dir, ref_fpath, kmers_fpath, log_err_fpath, max_threads):
     out_fpath = join(output_dir, 'kmers.coords')
-    cmdline = [minimap_fpath(), '-c', '--no-long-join', '-r1', '-s101', '-A1', '-B10', '-O39,81', '-N0', '-t', str(max_threads), ref_fpath, kmers_fpath]
+    cmdline = [minimap_fpath(), '-c', '-r1', '-s101', '-A1', '-B10', '-O39,81', '--secondary=no', '-t', str(max_threads), ref_fpath, kmers_fpath]
     qutils.call_subprocess(cmdline, stdout=open(out_fpath, 'w'), stderr=open(log_err_fpath, 'a'), indent='  ')
     return out_fpath
 
@@ -264,7 +264,7 @@ def do(output_dir, ref_fpath, contigs_fpaths, logger):
     else:
         shared_kmc_db = kmc_out_fpaths[0]
 
-    kmer_fraction = 0.01 if getsize(ref_fpath) < 500 * 1024 ** 2 else 0.001
+    kmer_fraction = 0.001
 
     ref_contigs = [name for name, _ in read_fasta(ref_fpath)]
     ref_kmc_dbs = []

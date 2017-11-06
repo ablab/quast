@@ -100,7 +100,7 @@ def parse_minimap_output(raw_coords_fpath, coords_fpath):
                     strand_direction = -1
                 align_len = 0
                 ref_len = 0
-                bases_in_mapping = 0
+                matched_bases, bases_in_mapping = map(int, (fs[9], fs[10]))
                 operations = cigar_pattern.findall(cigar)
 
                 for op in operations:
@@ -110,28 +110,16 @@ def parse_minimap_output(raw_coords_fpath, coords_fpath):
                     elif operation == 'M' or operation == '=' or operation == 'X':
                         align_len += n_bases
                         ref_len += n_bases
-                        bases_in_mapping += n_bases
                     elif operation == 'D':
                         ref_len += n_bases
-                        bases_in_mapping += n_bases
                     elif operation == 'I':
                         align_len += n_bases
-                        bases_in_mapping += n_bases
 
                 align_end = align_start + (align_len - 1) * strand_direction
                 ref_end = ref_start + ref_len - 1
                 total_aligned_bases += align_len
 
-                ns_cnt = 0
-                mismatches_cnt = 0
-                for field in fs[12:]:
-                    if field.startswith('NM:'):
-                        mismatches_cnt = int(field.split(':')[-1])
-                    elif field.startswith('nn:'):
-                        ns_cnt = int(field.split(':')[-1])
-                        break
-                matched_bases = bases_in_mapping - mismatches_cnt - ns_cnt
-                idy = '%.2f' % (matched_bases * 100.0 / ref_len)
+                idy = '%.2f' % (matched_bases * 100.0 / bases_in_mapping)
                 if ref_name != "*":
                     if float(idy) >= qconfig.min_IDY:
                         align = Mapping(s1=ref_start, e1=ref_end, s2=align_start, e2=align_end, len1=ref_len,

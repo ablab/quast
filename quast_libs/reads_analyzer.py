@@ -31,6 +31,7 @@ from quast_libs.reporting import save_reads
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 ref_sam_fpaths = {}
 COVERAGE_FACTOR = 10
+LAP_SUBSET_READS = '100000'
 
 
 class Mapping(object):
@@ -124,7 +125,7 @@ def process_one_ref(cur_ref_fpath, output_dirpath, err_fpath, max_threads, bam_f
         return bed_fpath
 
     if not isfile(bam_sorted_fpath):
-        sambamba_view(sam_fpath, bam_fpath, qconfig.max_threads, err_fpath, logger,  filter_rule='not unmapped')
+        sambamba_view(sam_fpath, bam_fpath, qconfig.max_threads, err_fpath, logger,  filter_rule='not unmapped and proper_pair')
         sort_bam(bam_fpath, bam_sorted_fpath, err_fpath, logger, threads=max_threads)
     if not is_non_empty_file(bam_sorted_fpath + '.bai'):
         qutils.call_subprocess([sambamba_fpath('sambamba'), 'index', bam_sorted_fpath],
@@ -355,6 +356,7 @@ def run_processing_reads(contigs_fpaths, main_ref_fpath, meta_ref_fpaths, ref_la
     parallel_align_args = [(contigs_fpath, output_dir, temp_output_dir, log_path, err_fpath, max_threads_per_job,
                             sam_fpaths[index], bam_fpaths[index], index) for index, contigs_fpath in enumerate(contigs_fpaths)]
     if main_ref_fpath:
+        subset_lap_reads(output_dir, err_fpath)
         parallel_align_args.append((main_ref_fpath, output_dir, temp_output_dir, log_path, err_fpath,
                                     max_threads_per_job, qconfig.reference_sam, qconfig.reference_bam, None, required_files, True))
     correct_chr_names, sam_fpaths, bam_fpaths = run_parallel(align_single_file, parallel_align_args, n_jobs)
@@ -485,6 +487,8 @@ def align_single_file(fpath, main_output_dir, output_dirpath, log_path, err_fpat
                 qutils.call_subprocess([sambamba_fpath('sambamba'), 'flagstat', '-t', str(max_threads), bam_fpath],
                                        stdout=open(stats_fpath, 'w'), stderr=open(err_fpath, 'a'))
                 analyse_coverage(output_dirpath, fpath, correct_chr_names, bam_fpath, stats_fpath, err_fpath, logger)
+            if using_reads == 'all':
+                calc_lap_score(index, index_str, output_dirpath, fpath, filename, err_fpath, max_threads)
         if isfile(stats_fpath) or alignment_only:
             return correct_chr_names, sam_fpath, bam_fpath
 
@@ -509,23 +513,6 @@ def align_single_file(fpath, main_output_dir, output_dirpath, log_path, err_fpat
         os.chdir(output_dirpath)
         bwa_index(fpath, err_fpath, logger)
         sam_fpaths = align_reads(fpath, sam_fpath, using_reads, main_output_dir, err_fpath, max_threads)
-        if sam_fpaths and (using_reads == 'pe' or using_reads == 'all'):
-            pe_pattern = '.pe\d+.sam'
-            pe_sam_fpaths = [sam for sam in sam_fpaths if re.search(pe_pattern, sam)]
-            pe_sam_fpath = join(output_dirpath, filename + '.pe.sam')
-            if len(pe_sam_fpaths) > 1:
-                merge_sam_files(pe_sam_fpaths, sam_fpath, bam_fpath, max_threads, err_fpath)
-            elif len(pe_sam_fpaths) == 1:
-                shutil.copy(pe_sam_fpaths[0], pe_sam_fpath)
-            if pe_sam_fpaths and is_non_empty_file(pe_sam_fpath):
-                try:
-                    paired_reads = [reads_fpath for lib in qconfig.paired_reads for reads_fpath in lib if reads_fpath]
-                    calc_lap_score(paired_reads, pe_sam_fpath, index, index_str, output_dirpath, fpath, filename, err_fpath)
-                except:
-                    if is_reference:
-                        logger.warning('  LAP failed for reference.')
-                    else:
-                        logger.warning('  ' + index_str + 'LAP failed.')
 
         if len(sam_fpaths) > 1:
             merge_sam_files(sam_fpaths, sam_fpath, bam_fpath, max_threads, err_fpath)
@@ -541,6 +528,7 @@ def align_single_file(fpath, main_output_dir, output_dirpath, log_path, err_fpat
             logger.error('  Failed running BWA for ' + fpath + '. See ' + log_path + ' for information.')
             return None, None, None
         correct_chr_names = get_correct_names_for_chroms(output_dirpath, fpath, sam_fpath, err_fpath, reads_fpaths, logger, is_reference)
+
     elif not correct_chr_names or not is_non_empty_file(sam_fpath):
         return None, None, None
     if is_reference:
@@ -563,6 +551,8 @@ def align_single_file(fpath, main_output_dir, output_dirpath, log_path, err_fpat
             qutils.call_subprocess([sambamba_fpath('sambamba'), 'flagstat', '-t', str(max_threads), bam_fpath],
                                     stdout=open(stats_fpath, 'w'), stderr=open(err_fpath, 'a'))
             analyse_coverage(output_dirpath, fpath, correct_chr_names, bam_fpath, stats_fpath, err_fpath, logger)
+        if using_reads == 'all':
+            calc_lap_score(index, index_str, output_dirpath, fpath, filename, err_fpath, max_threads)
         if is_reference:
             logger.info('  Analysis for reference is finished.')
         else:
@@ -624,6 +614,10 @@ def run_aligner(read_fpaths, ref_fpath, sam_fpath, out_sam_fpaths, output_dir, e
 
     if insert_sizes:
         qconfig.ideal_assembly_insert_size = max(insert_sizes)
+        ref_name = qutils.name_from_fpath(ref_fpath)
+        insert_size_fpath = join(output_dir, '..', ref_name + '.is.txt')
+        with open(insert_size_fpath, 'w') as out:
+            out.write(str(qconfig.ideal_assembly_insert_size))
 
 
 def merge_sam_files(tmp_sam_fpaths, sam_fpath, bam_fpath, max_threads, err_fpath):
@@ -745,21 +739,48 @@ def add_statistics_to_report(output_dir, contigs_fpaths, ref_fpath):
         report.add_field(reporting.Fields.REF_LAP_SCORE, ('%.3f' % ref_lap_score if ref_lap_score is not None else None))
 
 
-def calc_lap_score(reads_fpaths, sam_fpath, index, index_str, output_dirpath, fpath, filename, err_fpath):
-    if not reads_fpaths or not sam_fpath:
-        return
+def subset_lap_reads(output_dirpath, err_fpath):
+    forward_reads = [reads[0] for reads in qconfig.paired_reads] + [reads[0] for reads in qconfig.mate_pairs]
+    reverse_reads = [reads[1] for reads in qconfig.paired_reads] + [reads[1] for reads in qconfig.mate_pairs]
+    for i, (reads1, reads2) in enumerate(zip(forward_reads, reverse_reads)):
+        tmp_out_dirpath = join(output_dirpath, 'lap_tmp', str(i))
+        if not isdir(tmp_out_dirpath):
+            os.makedirs(tmp_out_dirpath)
+        if not is_non_empty_file(join(tmp_out_dirpath, LAP_SUBSET_READS, '0_1.fastq')) or \
+                not is_non_empty_file(join(tmp_out_dirpath, LAP_SUBSET_READS, '0_2.fastq')):
+            qutils.call_subprocess([lap_fpath('gen_rand_samp.py'), '-1', reads1, '-2', reads2, '-k', LAP_READS,
+                                    '-o', tmp_out_dirpath], stderr=open(err_fpath, 'a'))
 
+
+def calc_lap_score(index, index_str, output_dirpath, fpath, filename, err_fpath, max_threads):
     lap_out_fpath = get_safe_fpath(dirname(output_dirpath), filename + '.lap.out')
-    if not is_non_empty_file(lap_out_fpath):
+    if (qconfig.paired_reads or qconfig.mate_pairs) and not is_non_empty_file(lap_out_fpath):
         if index is not None:
             logger.info('  ' + index_str + 'Running LAP...')
         else:
             logger.info('  Running LAP for reference...')
         prob_out_fpath = get_safe_fpath(output_dirpath, filename + '.prob')
-        qutils.call_subprocess([lap_fpath('calc_prob.py'), '-a', fpath, '-i', ','.join(reads_fpaths), '-q', '-s', sam_fpath],
+        forward_reads = [reads[0] for reads in qconfig.paired_reads] + [reads[0] for reads in qconfig.mate_pairs]
+        reverse_reads = [reads[1] for reads in qconfig.paired_reads] + [reads[1] for reads in qconfig.mate_pairs]
+        orientations = ['fr' for reads in qconfig.paired_reads] + ['rf' for reads in qconfig.mate_pairs]
+        forward_subreads = []
+        reverse_subreads = []
+        for i, (reads1, reads2) in enumerate(zip(forward_reads, reverse_reads)):
+            tmp_out_dirpath = join(output_dirpath, 'lap_tmp', str(i))
+            forward_subreads.append(join(tmp_out_dirpath, LAP_SUBSET_READS, '0_1.fastq'))
+            reverse_subreads.append(join(tmp_out_dirpath, LAP_SUBSET_READS, '0_2.fastq'))
+
+        lap_tmp_dirpath = join(output_dirpath, 'lap_' + (str(index) if index is not None else 'ref'))
+        if not isdir(lap_tmp_dirpath):
+            os.makedirs(lap_tmp_dirpath)
+        prev_dir = os.getcwd()
+        os.chdir(lap_tmp_dirpath)
+        qutils.call_subprocess([lap_fpath('calc_prob.py'), '-p', str(max_threads), '-a', fpath,
+                                '-q', '-1', ','.join(forward_subreads), '-2', ','.join(reverse_subreads), '-o', ','.join(orientations)],
                                 stdout=open(prob_out_fpath, 'w'), stderr=open(err_fpath, 'a'))
         qutils.call_subprocess([lap_fpath('sum_prob.py'), '-i', prob_out_fpath],
                                 stdout=open(lap_out_fpath, 'w'), stderr=open(err_fpath, 'a'))
+        os.chdir(prev_dir)
     else:
         if index is not None:
             logger.info('  ' + index_str + 'Using existing file with LAP score...')

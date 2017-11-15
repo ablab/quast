@@ -53,7 +53,7 @@ def do(contigs_fpaths, contig_report_fpath_pattern, output_dirpath, ref_fpath,
     features_data = None
 
     plot_fpath = None
-    max_small_chromosomes = 10
+    max_small_chromosomes = 50
 
     if ref_fpath:
         for name, seq in fastaparser.read_fasta(ref_fpath):

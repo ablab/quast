@@ -36,7 +36,7 @@ from quast_libs.ca_utils.save_results import print_results, save_result, save_re
 from quast_libs.fastaparser import get_genome_stats
 
 from quast_libs.log import get_logger
-from quast_libs.qutils import is_python2
+from quast_libs.qutils import is_python2, run_parallel
 
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 
@@ -50,7 +50,7 @@ class CAOutput():
         self.icarus_out_f = icarus_out_f
 
 
-def analyze_coverage(ref_aligns, reference_chromosomes, used_snps_fpath):
+def analyze_coverage(ref_aligns, reference_chromosomes, ns_by_chromosomes, used_snps_fpath):
     indels_info = IndelsInfo()
     genome_mapping = {}
     for chr_name, chr_len in reference_chromosomes.items():
@@ -98,6 +98,8 @@ def analyze_coverage(ref_aligns, reference_chromosomes, used_snps_fpath):
                         genome_mapping[align.ref][pos] = 1
                     for pos in range(1, align.e1 + 1):
                         genome_mapping[align.ref][pos] = 1
+            for i in ns_by_chromosomes[align.ref]:
+                genome_mapping[align.ref][i] = 0
 
     covered_bases = sum([sum(genome_mapping[chrom]) for chrom in genome_mapping])
     return covered_bases, indels_info
@@ -105,7 +107,7 @@ def analyze_coverage(ref_aligns, reference_chromosomes, used_snps_fpath):
 
 # former plantagora and plantakolya
 def align_and_analyze(is_cyclic, index, contigs_fpath, output_dirpath, ref_fpath,
-                      old_contigs_fpath, bed_fpath, threads=1):
+                      reference_chromosomes, ns_by_chromosomes, old_contigs_fpath, bed_fpath, threads=1):
     tmp_output_dirpath = create_minimap_output_dir(output_dirpath)
     assembly_label = qutils.label_from_fpath(contigs_fpath)
     corr_assembly_label = qutils.label_from_fpath_for_fname(contigs_fpath)
@@ -166,12 +168,7 @@ def align_and_analyze(is_cyclic, index, contigs_fpath, output_dirpath, ref_fpath
 
     # Loading the reference sequences
     log_out_f.write('Loading reference...\n') # TODO: move up
-    ref_lens = {}
     ref_features = {}
-    for name, seq in fastaparser.read_fasta(ref_fpath):
-        name = name.split()[0]  # no spaces in reference header
-        ref_lens[name] = len(seq)
-        log_out_f.write('\tLoaded [%s]\n' % name)
 
     # Loading the regions (if any)
     regions = {}
@@ -180,7 +177,8 @@ def align_and_analyze(is_cyclic, index, contigs_fpath, output_dirpath, ref_fpath
     # # TODO: gff
     # log_out_f.write('Loading regions...\n')
     # log_out_f.write('\tNo regions given, using whole reference.\n')
-    for name, seq_len in ref_lens.items():
+    for name, seq_len in reference_chromosomes.items():
+        log_out_f.write('\tLoaded [%s]\n' % name)
         regions.setdefault(name, []).append([1, seq_len])
         total_regions += 1
         total_reg_len += seq_len
@@ -192,12 +190,12 @@ def align_and_analyze(is_cyclic, index, contigs_fpath, output_dirpath, ref_fpath
 
     log_out_f.write('Analyzing contigs...\n')
     result, ref_aligns, total_indels_info, aligned_lengths, misassembled_contigs, misassemblies_in_contigs, aligned_lengths_by_contigs =\
-        analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fpath, aligns, ref_features, ref_lens, is_cyclic)
+        analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fpath, aligns, ref_features, reference_chromosomes, is_cyclic)
 
     log_out_f.write('Analyzing coverage...\n')
     if qconfig.show_snps:
         log_out_f.write('Writing SNPs into ' + used_snps_fpath + '\n')
-    total_aligned_bases, indels_info = analyze_coverage(ref_aligns, ref_lens, used_snps_fpath)
+    total_aligned_bases, indels_info = analyze_coverage(ref_aligns, reference_chromosomes, ns_by_chromosomes, used_snps_fpath)
     total_indels_info += indels_info
     cov_stats = {'SNPs': total_indels_info.mismatches, 'indels_list': total_indels_info.indels_list, 'total_aligned_bases': total_aligned_bases}
     result.update(cov_stats)
@@ -267,20 +265,13 @@ def do(reference, contigs_fpaths, is_cyclic, output_dir, old_contigs_fpaths, bed
         from joblib2 import Parallel, delayed
     else:
         from joblib3 import Parallel, delayed
-    if not qconfig.memory_efficient:
-        statuses_results_lengths_tuples = Parallel(n_jobs=n_jobs)(delayed(align_and_analyze)(
-        is_cyclic, i, contigs_fpath, output_dir, reference, old_contigs_fpath, bed_fpath, threads=threads)
-             for i, (contigs_fpath, old_contigs_fpath) in enumerate(zip(contigs_fpaths, old_contigs_fpaths)))
-    else:
-        statuses_results_lengths_tuples = []
-        for i, (contigs_fpath, old_contigs_fpath) in enumerate(zip(contigs_fpaths, old_contigs_fpaths)):
-            statuses_results_lengths_tuples.append(align_and_analyze(
-            is_cyclic, i, contigs_fpath, output_dir, reference, old_contigs_fpath, bed_fpath,
-            threads=qconfig.max_threads))
 
-    # unzipping
-    statuses, results, aligned_lengths, misassemblies_in_contigs, aligned_lengths_by_contigs =\
-        [[x[i] for x in statuses_results_lengths_tuples] for i in range(5)]
+    genome_size, reference_chromosomes, ns_by_chromosomes = get_genome_stats(reference, skip_ns=True)
+    threads = qconfig.max_threads if qconfig.memory_efficient else threads
+    args = [(is_cyclic, i, contigs_fpath, output_dir, reference, reference_chromosomes, ns_by_chromosomes,
+            old_contigs_fpath, bed_fpath, threads)
+            for i, (contigs_fpath, old_contigs_fpath) in enumerate(zip(contigs_fpaths, old_contigs_fpaths))]
+    statuses, results, aligned_lengths, misassemblies_in_contigs, aligned_lengths_by_contigs = run_parallel(align_and_analyze, args, n_jobs)
     reports = []
 
     aligner_statuses = dict(zip(contigs_fpaths, statuses))
@@ -291,7 +282,6 @@ def do(reference, contigs_fpaths, is_cyclic, output_dir, old_contigs_fpaths, bed
         if qconfig.is_combined_ref:
             save_combined_ref_stats(results, contigs_fpaths, ref_labels_by_chromosomes, output_dir, logger)
 
-    genome_size, _ = get_genome_stats(reference, skip_ns=True)
     for index, fname in enumerate(contigs_fpaths):
         report = reporting.get(fname)
         if statuses[index] == AlignerStatus.OK:

@@ -113,14 +113,16 @@ def get_chr_lengths_from_fastafile(fpath):
 def get_genome_stats(fasta_fpath, skip_ns=False):
     genome_size = 0
     reference_chromosomes = {}
+    ns_by_chromosomes = {}
     for name, seq in read_fasta(fasta_fpath):
         chr_name = name.split()[0]
         chr_len = len(seq)
         genome_size += chr_len
+        ns_by_chromosomes[chr_name] = set([x for x, s in enumerate(seq) if s == 'N'])
         if skip_ns:
-            genome_size -= seq.count('N')
+            genome_size -= len(ns_by_chromosomes[chr_name])
         reference_chromosomes[chr_name] = chr_len
-    return genome_size, reference_chromosomes
+    return genome_size, reference_chromosomes, ns_by_chromosomes
 
 
 def create_fai_file(fasta_fpath):

@@ -64,7 +64,7 @@ def chromosomes_names_dict(feature, regions, chr_names):
 
 
 def process_single_file(contigs_fpath, index, coords_dirpath, genome_stats_dirpath,
-                        reference_chromosomes, genes_container, operons_container):
+                        reference_chromosomes, ns_by_chromosomes, genes_container, operons_container):
     assembly_label = qutils.label_from_fpath(contigs_fpath)
     corr_assembly_label = qutils.label_from_fpath_for_fname(contigs_fpath)
     results = dict()
@@ -130,14 +130,16 @@ def process_single_file(contigs_fpath, index, coords_dirpath, genome_stats_dirpa
             if s2 == 0 and e2 == 0:  # special case: circular genome, contig starts on the end of a chromosome and ends in the beginning
                 for i in range(s1, len(genome_mapping[chr_name])):
                     genome_mapping[chr_name][i] = 1
-                    ref_lengths[chr_name] += 1
                 for i in range(1, e1 + 1):
                     genome_mapping[chr_name][i] = 1
-                    ref_lengths[chr_name] += 1
             else: #if s1 <= e1:
                 for i in range(s1, e1 + 1):
                     genome_mapping[chr_name][i] = 1
-                    ref_lengths[chr_name] += 1
+
+    for chr_name in genome_mapping.keys():
+        for i in ns_by_chromosomes[chr_name]:
+            genome_mapping[chr_name][i] = 0
+        ref_lengths[chr_name] = sum(genome_mapping[chr_name])
 
     if qconfig.space_efficient and coords_fpath.endswith('.filtered'):
         os.remove(coords_fpath)
@@ -151,7 +153,7 @@ def process_single_file(contigs_fpath, index, coords_dirpath, genome_stats_dirpa
                 gaps_file.write(chr_name + '\n')
                 cur_gap_size = 0
                 for i in range(1, chr_len + 1):
-                    if genome_mapping[chr_name][i] == 1:
+                    if genome_mapping[chr_name][i] == 1 or i in ns_by_chromosomes[chr_name]:
                         if cur_gap_size >= qconfig.min_gap_size:
                             gaps_count += 1
                             gaps_file.write(str(i - cur_gap_size) + ' ' + str(i - 1) + '\n')
@@ -271,7 +273,7 @@ def do(ref_fpath, aligned_contigs_fpaths, output_dirpath, genes_fpaths, operons_
     if not os.path.isdir(genome_stats_dirpath):
         os.mkdir(genome_stats_dirpath)
 
-    genome_size, reference_chromosomes = fastaparser.get_genome_stats(ref_fpath)
+    genome_size, reference_chromosomes, ns_by_chromosomes = fastaparser.get_genome_stats(ref_fpath)
 
     # reading genome size
     # genome_size = fastaparser.get_lengths_from_fastafile(reference)[0]
@@ -333,11 +335,11 @@ def do(ref_fpath, aligned_contigs_fpaths, output_dirpath, genes_fpaths, operons_
     if not qconfig.memory_efficient:
         process_results = Parallel(n_jobs=n_jobs)(delayed(process_single_file)(
             contigs_fpath, index, coords_dirpath, genome_stats_dirpath,
-            reference_chromosomes, genes_container, operons_container)
+            reference_chromosomes, ns_by_chromosomes, genes_container, operons_container)
             for index, contigs_fpath in enumerate(aligned_contigs_fpaths))
     else:
         process_results = [process_single_file(contigs_fpath, index, coords_dirpath, genome_stats_dirpath,
-                                               reference_chromosomes, genes_container, operons_container)
+                                               reference_chromosomes, ns_by_chromosomes, genes_container, operons_container)
                            for index, contigs_fpath in enumerate(aligned_contigs_fpaths)]
     num_nf_errors += len([res for res in process_results if res is None])
     logger._num_nf_errors = num_nf_errors
@@ -354,7 +356,9 @@ def do(ref_fpath, aligned_contigs_fpaths, output_dirpath, genes_fpaths, operons_
     res_file.write('reference chromosomes:\n')
     for chr_name, chr_len in reference_chromosomes.items():
         aligned_len = max(ref_lengths_by_contigs[chr_name])
-        res_file.write('\t' + chr_name + ' (total length: ' + str(chr_len) + ' bp, maximal covered length: ' + str(aligned_len) + ' bp)\n')
+        res_file.write('\t' + chr_name + ' (total length: ' + str(chr_len) + ' bp, ' +
+                       'total length without N\'s: ' + str(chr_len - len(ns_by_chromosomes[chr_name])) +
+                       ' bp, maximal covered length: ' + str(aligned_len) + ' bp)\n')
     res_file.write('\n')
     res_file.write('total genome size: ' + str(genome_size) + '\n\n')
     res_file.write('gap min size: ' + str(qconfig.min_gap_size) + '\n')

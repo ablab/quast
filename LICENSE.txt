@@ -208,6 +208,13 @@ http://www.circos.ca website and to the following paper:
 Krzywinski, M. et al., Circos: an Information Aesthetic for Comparative Genomics.
 Genome Res (2009) 19:1639-1645
 
+13. QUAST uses Red for detecting repeats.
+For more details about Red please refer to
+http://toolsmith.ens.utulsa.edu website and to the following paper:
+
+Hani Z. Girgis. Red: an intelligent, rapid, accurate tool for detecting repeats de-novo on the genomic scale.
+BMC Bioinformatics (2015) 16:227
+
 -------------------------------------------------------------------------------
 
 		    GNU GENERAL PUBLIC LICENSE

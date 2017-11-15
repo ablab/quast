@@ -280,7 +280,7 @@ def clean_read_names(sam_fpath, correct_sam_fpath):
 def sort_bam(bam_fpath, sorted_bam_fpath, err_path, logger, threads=None, sort_rule=None):
     if not threads:
         threads = qconfig.max_threads
-    mem = '%dGB' % min(100, max(2, get_free_memory))
+    mem = '%dGB' % min(100, max(2, get_free_memory()))
     cmd = [sambamba_fpath('sambamba'), 'sort', '-t', str(threads), '--tmpdir', dirname(sorted_bam_fpath), '-m', mem,
            '-o', sorted_bam_fpath, bam_fpath]
     if sort_rule:
@@ -342,29 +342,46 @@ def check_cov_file(cov_fpath):
                 return True
 
 
-def bam_to_bed(output_dirpath, name, bam_fpath, err_path, logger, bedpe=False, only_intervals=False):
+def bam_to_bed(output_dirpath, name, bam_fpath, err_path, logger, bedpe=False):
     raw_bed_fpath = join(output_dirpath, name + '.bed')
     if bedpe:
         bedpe_fpath = join(output_dirpath, name + '.bedpe')
-        qutils.call_subprocess([bedtools_fpath('bamToBed'), '-i', bam_fpath, '-bedpe'],
-                               stdout=open(bedpe_fpath, 'w'), stderr=open(err_path, 'a'), logger=logger)
-        with open(bedpe_fpath, 'r') as bedpe:
-            with open(raw_bed_fpath, 'w') as bed_file:
-                for line in bedpe:
-                    fs = line.split()
-                    if only_intervals:
-                        start, end = fs[2], fs[4]
-                    else:
+        if not is_non_empty_file(bedpe_fpath) and not is_non_empty_file(bedpe_fpath):
+            qutils.call_subprocess([bedtools_fpath('bamToBed'), '-i', bam_fpath, '-bedpe'],
+                                   stdout=open(bedpe_fpath, 'w'), stderr=open(err_path, 'a'), logger=logger)
+            with open(bedpe_fpath, 'r') as bedpe:
+                with open(raw_bed_fpath, 'w') as bed_file:
+                    for line in bedpe:
+                        fs = line.split()
                         start, end = fs[1], fs[5]
-                    bed_file.write('\t'.join([fs[0], start, end + '\n']))
+                        bed_file.write('\t'.join([fs[0], start, end + '\n']))
     else:
-        qutils.call_subprocess([bedtools_fpath('bamToBed'), '-i', bam_fpath],
+        if not is_non_empty_file(raw_bed_fpath):
+            qutils.call_subprocess([bedtools_fpath('bamToBed'), '-i', bam_fpath],
                                stdout=open(raw_bed_fpath, 'w'), stderr=open(err_path, 'a'), logger=logger)
 
     sorted_bed_fpath = join(output_dirpath, name + '.sorted.bed')
-    qutils.call_subprocess(['sort', '-k1,1', '-k2,2n', raw_bed_fpath],
-                           stdout=open(sorted_bed_fpath, 'w'), stderr=open(err_path, 'a'), logger=logger)
+    if not is_non_empty_file(sorted_bed_fpath):
+        qutils.call_subprocess(['sort', '-k1,1', '-k2,2n', raw_bed_fpath],
+                            stdout=open(sorted_bed_fpath, 'w'), stderr=open(err_path, 'a'), logger=logger)
     return sorted_bed_fpath
+
+
+def calculate_read_len(sam_fpath):
+    read_lengths = []
+    mapped_flags = ['99', '147', '83', '163']  # reads mapped in correct order
+    with open(sam_fpath) as sam_in:
+        for i, l in enumerate(sam_in):
+            if i > 1000000:
+                break
+            if l.startswith('@'):
+                continue
+            fs = l.split('\t')
+            flag = fs[1]
+            if flag not in mapped_flags:
+                continue
+            read_lengths.append(len(fs[9]))
+    return sum(read_lengths) * 1.0 / len(read_lengths)
 
 
 def calculate_genome_cov(in_fpath, out_fpath, chr_len_fpath, err_fpath, logger, print_all_positions=True):

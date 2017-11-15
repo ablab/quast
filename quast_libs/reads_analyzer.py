@@ -260,7 +260,7 @@ def search_trivial_deletions(temp_output_dir, sam_sorted_fpath, ref_files, ref_l
     return trivial_deletions_fpath
 
 
-def align_reference(ref_fpath, output_dir, using_reads='all'):
+def align_reference(ref_fpath, output_dir, using_reads='all', calculate_coverage=False):
     required_files = []
     ref_name = qutils.name_from_fpath(ref_fpath)
     cov_fpath = qconfig.cov_fpath or join(output_dir, ref_name + '.cov')
@@ -286,30 +286,38 @@ def align_reference(ref_fpath, output_dir, using_reads='all'):
                                                                 is_reference=True, alignment_only=True, using_reads=using_reads)
     if not qconfig.ideal_assembly_insert_size or qconfig.ideal_assembly_insert_size == 'auto':
         if using_reads == 'pe' and sam_fpath:
-            insert_size = calculate_insert_size(sam_fpath, output_dir, ref_name)
+            insert_size, std_dev = calculate_insert_size(sam_fpath, output_dir, ref_name)
             if not insert_size:
                 logger.info('  Failed calculating insert size.')
             else:
                 qconfig.ideal_assembly_insert_size = insert_size
+        elif using_reads == 'all' and is_non_empty_file(insert_size_fpath):
+            try:
+                insert_size = int(open(insert_size_fpath).read())
+                if insert_size:
+                    qconfig.ideal_assembly_insert_size = insert_size
+            except:
+                pass
 
     if not required_files:
-        return bam_fpath, uncovered_fpath
+        return sam_fpath, bam_fpath, uncovered_fpath
     if not sam_fpath:
         logger.info('  Failed detecting uncovered regions.')
         return None, None
 
-    bam_mapped_fpath = get_safe_fpath(temp_output_dir, add_suffix(bam_fpath, 'mapped'))
-    bam_sorted_fpath = get_safe_fpath(temp_output_dir, add_suffix(bam_mapped_fpath, 'sorted'))
+    if calculate_coverage:
+        bam_mapped_fpath = get_safe_fpath(temp_output_dir, add_suffix(bam_fpath, 'mapped'))
+        bam_sorted_fpath = get_safe_fpath(temp_output_dir, add_suffix(bam_mapped_fpath, 'sorted'))
 
-    if is_non_empty_file(bam_sorted_fpath):
-        logger.info('  Using existing sorted BAM-file: ' + bam_sorted_fpath)
-    else:
-        sambamba_view(bam_fpath, bam_mapped_fpath, qconfig.max_threads, err_fpath, logger,  filter_rule='not unmapped')
-        sort_bam(bam_mapped_fpath, bam_sorted_fpath, err_fpath, logger)
-    if not is_non_empty_file(uncovered_fpath):
-        get_coverage(temp_output_dir, ref_fpath, ref_name, bam_fpath, bam_sorted_fpath, log_path, err_fpath,
-                     correct_chr_names, cov_fpath, uncovered_fpath=uncovered_fpath, create_cov_files=False)
-    return bam_fpath, uncovered_fpath
+        if is_non_empty_file(bam_sorted_fpath):
+            logger.info('  Using existing sorted BAM-file: ' + bam_sorted_fpath)
+        else:
+            sambamba_view(bam_fpath, bam_mapped_fpath, qconfig.max_threads, err_fpath, logger,  filter_rule='not unmapped')
+            sort_bam(bam_mapped_fpath, bam_sorted_fpath, err_fpath, logger)
+        if not is_non_empty_file(uncovered_fpath) and calculate_coverage:
+            get_coverage(temp_output_dir, ref_fpath, ref_name, bam_fpath, bam_sorted_fpath, log_path, err_fpath,
+                         correct_chr_names, cov_fpath, uncovered_fpath=uncovered_fpath, create_cov_files=False)
+    return sam_fpath, bam_fpath, uncovered_fpath
 
 
 def run_processing_reads(contigs_fpaths, main_ref_fpath, meta_ref_fpaths, ref_labels, temp_output_dir, output_dir,
@@ -607,7 +615,7 @@ def run_aligner(read_fpaths, ref_fpath, sam_fpath, out_sam_fpaths, output_dir, e
                 if exists(bam_dedup_fpath):
                     shutil.move(bam_dedup_fpath, bam_fpath)
         if reads_type == 'pe':
-            insert_size = calculate_insert_size(output_fpath, output_dir, basename(sam_fpath))
+            insert_size, std_dev = calculate_insert_size(output_fpath, output_dir, basename(sam_fpath))
             if insert_size < qconfig.ideal_assembly_max_IS:
                 insert_sizes.append(insert_size)
         out_sam_fpaths.append(output_fpath)
@@ -748,7 +756,7 @@ def subset_lap_reads(output_dirpath, err_fpath):
             os.makedirs(tmp_out_dirpath)
         if not is_non_empty_file(join(tmp_out_dirpath, LAP_SUBSET_READS, '0_1.fastq')) or \
                 not is_non_empty_file(join(tmp_out_dirpath, LAP_SUBSET_READS, '0_2.fastq')):
-            qutils.call_subprocess([lap_fpath('gen_rand_samp.py'), '-1', reads1, '-2', reads2, '-k', LAP_READS,
+            qutils.call_subprocess([lap_fpath('gen_rand_samp.py'), '-1', reads1, '-2', reads2, '-k', LAP_SUBSET_READS,
                                     '-o', tmp_out_dirpath], stderr=open(err_fpath, 'a'))
 
 
@@ -883,13 +891,15 @@ def proceed_cov_file(raw_cov_fpath, cov_fpath, correct_chr_names):
             os.remove(raw_cov_fpath)
 
 
-def calculate_insert_size(sam_fpath, output_dir, ref_name):
-    insert_size_fpath = join(output_dir, ref_name + '.is.txt')
+def calculate_insert_size(sam_fpath, output_dir, ref_name, reads_suffix=''):
+    insert_size_fpath = join(output_dir, ref_name + reads_suffix + '.is.txt')
     if is_non_empty_file(insert_size_fpath):
         try:
-            insert_size = int(open(insert_size_fpath).read())
+            with open(insert_size_fpath) as f:
+                insert_size = int(f.readline())
+                std_dev = int(f.readline())
             if insert_size:
-                return insert_size
+                return insert_size, std_dev
         except:
             pass
     insert_sizes = []
@@ -908,16 +918,20 @@ def calculate_insert_size(sam_fpath, output_dir, ref_name):
             insert_sizes.append(insert_size)
 
     if insert_sizes:
-        mean_is = sum(insert_sizes) * 1.0 / len(insert_sizes)
-        if mean_is <= 0:
-            return None
-        stddev_is = sqrt(sum([(insert_size - mean_is) ** 2 for insert_size in insert_sizes]) / len(insert_sizes))
-        insert_size = int(mean_is + stddev_is)
-        insert_size = max(qconfig.ideal_assembly_min_IS, insert_size)
-        insert_size = min(qconfig.ideal_assembly_max_IS, insert_size)
+        insert_sizes = sorted(insert_sizes)
+        if len(insert_sizes) % 2 == 1:  # odd number of values
+            median_is = insert_sizes[(len(insert_sizes) - 1) // 2]
+        else:  # even number of values - take the avg of central
+            median_is = (insert_sizes[len(insert_sizes) // 2] + insert_sizes[len(insert_sizes) // 2 - 1]) // 2
+        if median_is <= 0:
+            return None, None
+        std_dev = sqrt(sum([(insert_size - median_is) ** 2 for insert_size in insert_sizes]) / len(insert_sizes))
+        insert_size = max(qconfig.ideal_assembly_min_IS, median_is)
         with open(insert_size_fpath, 'w') as out_f:
-            out_f.write(str(insert_size))
-        return insert_size
+            out_f.write(str(insert_size) + '\n')
+            out_f.write(str(std_dev))
+        return insert_size, std_dev
+    return None, None
 
 
 def print_uncovered_regions(raw_cov_fpath, uncovered_fpath, correct_chr_names):

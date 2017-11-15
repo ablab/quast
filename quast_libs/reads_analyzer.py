@@ -18,7 +18,7 @@ from quast_libs import qconfig, qutils
 from quast_libs.ca_utils.misc import ref_labels_by_chromosomes
 from quast_libs.fastaparser import create_fai_file
 from quast_libs.ra_utils.misc import compile_reads_analyzer_tools, sambamba_fpath, bwa_fpath, bedtools_fpath, \
-    bwa_dirpath, lap_fpath, download_gridss, get_gridss_fpath, get_gridss_memory, \
+    bwa_dirpath, download_gridss, get_gridss_fpath, get_gridss_memory, \
     paired_reads_names_are_equal, sort_bam, bwa_index, reformat_bedpe, get_correct_names_for_chroms, \
     all_read_names_correct, clean_read_names, check_cov_file, bam_to_bed, get_safe_fpath, sambamba_view, \
     calculate_genome_cov, minimap_fpath
@@ -31,7 +31,6 @@ from quast_libs.reporting import save_reads
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 ref_sam_fpaths = {}
 COVERAGE_FACTOR = 10
-LAP_SUBSET_READS = '100000'
 
 
 class Mapping(object):
@@ -364,7 +363,6 @@ def run_processing_reads(contigs_fpaths, main_ref_fpath, meta_ref_fpaths, ref_la
     parallel_align_args = [(contigs_fpath, output_dir, temp_output_dir, log_path, err_fpath, max_threads_per_job,
                             sam_fpaths[index], bam_fpaths[index], index) for index, contigs_fpath in enumerate(contigs_fpaths)]
     if main_ref_fpath:
-        subset_lap_reads(output_dir, err_fpath)
         parallel_align_args.append((main_ref_fpath, output_dir, temp_output_dir, log_path, err_fpath,
                                     max_threads_per_job, qconfig.reference_sam, qconfig.reference_bam, None, required_files, True))
     correct_chr_names, sam_fpaths, bam_fpaths = run_parallel(align_single_file, parallel_align_args, n_jobs)
@@ -495,8 +493,6 @@ def align_single_file(fpath, main_output_dir, output_dirpath, log_path, err_fpat
                 qutils.call_subprocess([sambamba_fpath('sambamba'), 'flagstat', '-t', str(max_threads), bam_fpath],
                                        stdout=open(stats_fpath, 'w'), stderr=open(err_fpath, 'a'))
                 analyse_coverage(output_dirpath, fpath, correct_chr_names, bam_fpath, stats_fpath, err_fpath, logger)
-            if using_reads == 'all':
-                calc_lap_score(index, index_str, output_dirpath, fpath, filename, err_fpath, max_threads)
         if isfile(stats_fpath) or alignment_only:
             return correct_chr_names, sam_fpath, bam_fpath
 
@@ -559,8 +555,6 @@ def align_single_file(fpath, main_output_dir, output_dirpath, log_path, err_fpat
             qutils.call_subprocess([sambamba_fpath('sambamba'), 'flagstat', '-t', str(max_threads), bam_fpath],
                                     stdout=open(stats_fpath, 'w'), stderr=open(err_fpath, 'a'))
             analyse_coverage(output_dirpath, fpath, correct_chr_names, bam_fpath, stats_fpath, err_fpath, logger)
-        if using_reads == 'all':
-            calc_lap_score(index, index_str, output_dirpath, fpath, filename, err_fpath, max_threads)
         if is_reference:
             logger.info('  Analysis for reference is finished.')
         else:
@@ -682,7 +676,6 @@ def add_statistics_to_report(output_dir, contigs_fpaths, ref_fpath):
     from quast_libs import reporting
 
     ref_reads_stats = None
-    ref_lap_score = None
     if ref_fpath:
         ref_name = qutils.name_from_fpath(ref_fpath)
         stats_fpath = join(output_dir, ref_name + '.stat')
@@ -690,11 +683,6 @@ def add_statistics_to_report(output_dir, contigs_fpaths, ref_fpath):
             ref_reads_stats = parse_reads_stats(stats_fpath)
             if int(ref_reads_stats['mapped']) == 0:
                 logger.info('  BWA: nothing aligned for reference.')
-        lap_out_fpath = get_safe_fpath(output_dir, ref_name + '.lap.out')
-        if is_non_empty_file(lap_out_fpath):
-            with open(lap_out_fpath) as f:
-                l = f.readline()
-                ref_lap_score = float(l.split()[0]) if l else None
 
     # process all contigs files
     for index, contigs_fpath in enumerate(contigs_fpaths):
@@ -737,63 +725,6 @@ def add_statistics_to_report(output_dir, contigs_fpaths, ref_fpath):
             report.add_field(reporting.Fields.COVERAGE__FOR_THRESHOLDS,
                             [reads_stats['coverage_thresholds'][i] for i, threshold in enumerate(qconfig.coverage_thresholds)])
             report.add_field(reporting.Fields.COVERAGE_1X_THRESHOLD, reads_stats['coverage_thresholds'][0])
-
-        lap_out_fpath = get_safe_fpath(output_dir, assembly_name + '.lap.out')
-        if is_non_empty_file(lap_out_fpath):
-            with open(lap_out_fpath) as f:
-                l = f.readline()
-                lap_score = float(l.split()[0]) if l else None
-            report.add_field(reporting.Fields.LAP_SCORE, ('%.3f' % lap_score if lap_score is not None else None))
-        report.add_field(reporting.Fields.REF_LAP_SCORE, ('%.3f' % ref_lap_score if ref_lap_score is not None else None))
-
-
-def subset_lap_reads(output_dirpath, err_fpath):
-    forward_reads = [reads[0] for reads in qconfig.paired_reads] + [reads[0] for reads in qconfig.mate_pairs]
-    reverse_reads = [reads[1] for reads in qconfig.paired_reads] + [reads[1] for reads in qconfig.mate_pairs]
-    for i, (reads1, reads2) in enumerate(zip(forward_reads, reverse_reads)):
-        tmp_out_dirpath = join(output_dirpath, 'lap_tmp', str(i))
-        if not isdir(tmp_out_dirpath):
-            os.makedirs(tmp_out_dirpath)
-        if not is_non_empty_file(join(tmp_out_dirpath, LAP_SUBSET_READS, '0_1.fastq')) or \
-                not is_non_empty_file(join(tmp_out_dirpath, LAP_SUBSET_READS, '0_2.fastq')):
-            qutils.call_subprocess([lap_fpath('gen_rand_samp.py'), '-1', reads1, '-2', reads2, '-k', LAP_SUBSET_READS,
-                                    '-o', tmp_out_dirpath], stderr=open(err_fpath, 'a'))
-
-
-def calc_lap_score(index, index_str, output_dirpath, fpath, filename, err_fpath, max_threads):
-    lap_out_fpath = get_safe_fpath(dirname(output_dirpath), filename + '.lap.out')
-    if (qconfig.paired_reads or qconfig.mate_pairs) and not is_non_empty_file(lap_out_fpath):
-        if index is not None:
-            logger.info('  ' + index_str + 'Running LAP...')
-        else:
-            logger.info('  Running LAP for reference...')
-        prob_out_fpath = get_safe_fpath(output_dirpath, filename + '.prob')
-        forward_reads = [reads[0] for reads in qconfig.paired_reads] + [reads[0] for reads in qconfig.mate_pairs]
-        reverse_reads = [reads[1] for reads in qconfig.paired_reads] + [reads[1] for reads in qconfig.mate_pairs]
-        orientations = ['fr' for reads in qconfig.paired_reads] + ['rf' for reads in qconfig.mate_pairs]
-        forward_subreads = []
-        reverse_subreads = []
-        for i, (reads1, reads2) in enumerate(zip(forward_reads, reverse_reads)):
-            tmp_out_dirpath = join(output_dirpath, 'lap_tmp', str(i))
-            forward_subreads.append(join(tmp_out_dirpath, LAP_SUBSET_READS, '0_1.fastq'))
-            reverse_subreads.append(join(tmp_out_dirpath, LAP_SUBSET_READS, '0_2.fastq'))
-
-        lap_tmp_dirpath = join(output_dirpath, 'lap_' + (str(index) if index is not None else 'ref'))
-        if not isdir(lap_tmp_dirpath):
-            os.makedirs(lap_tmp_dirpath)
-        prev_dir = os.getcwd()
-        os.chdir(lap_tmp_dirpath)
-        qutils.call_subprocess([lap_fpath('calc_prob.py'), '-p', str(max_threads), '-a', fpath,
-                                '-q', '-1', ','.join(forward_subreads), '-2', ','.join(reverse_subreads), '-o', ','.join(orientations)],
-                                stdout=open(prob_out_fpath, 'w'), stderr=open(err_fpath, 'a'))
-        qutils.call_subprocess([lap_fpath('sum_prob.py'), '-i', prob_out_fpath],
-                                stdout=open(lap_out_fpath, 'w'), stderr=open(err_fpath, 'a'))
-        os.chdir(prev_dir)
-    else:
-        if index is not None:
-            logger.info('  ' + index_str + 'Using existing file with LAP score...')
-        else:
-            logger.info('  Using existing file with LAP score for reference...')
 
 
 def analyse_coverage(output_dirpath, fpath, chr_names, bam_fpath, stats_fpath, err_fpath, logger):

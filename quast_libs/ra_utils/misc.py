@@ -32,7 +32,6 @@ minimap_dirpath = join(qconfig.LIBS_LOCATION, 'minimap2')
 
 bedtools_dirpath = join(qconfig.LIBS_LOCATION, 'bedtools')
 bedtools_bin_dirpath = join(qconfig.LIBS_LOCATION, 'bedtools', 'bin')
-lap_dirpath = join(qconfig.LIBS_LOCATION, 'LAP')
 sambamba_dirpath = join(qconfig.LIBS_LOCATION, 'sambamba')
 
 gridss_dirpath = None
@@ -58,10 +57,6 @@ def sambamba_fpath(fname):
 
 def bedtools_fpath(fname):
     return get_path_to_program(fname, bedtools_bin_dirpath)
-
-
-def lap_fpath(fname):
-    return join(lap_dirpath, fname)
 
 
 def get_gridss_fpath():

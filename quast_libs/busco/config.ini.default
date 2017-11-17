@@ -1,0 +1,73 @@
+# BUSCO specific configuration
+# It overrides default values in code and dataset cfg, and is overridden by arguments in command line
+# Uncomment lines when appropriate
+[busco]
+# Input file
+#in = in_path
+# Run name, used in output files and folder
+#out = out_name
+# Where to store the output directory
+out_path = out_path
+# Path to the BUSCO dataset
+lineage_path = lineage_path
+# Which mode to run (genome / protein / transcriptome)
+mode = genome
+# How many threads to use for multithreaded steps
+cpu = threads
+# Domain for augustus retraining, eukaryota or prokaryota
+# Do not change this unless you know exactly why !!!
+domain = domain
+# Force rewrite if files already exist (True/False)
+force = True
+# Restart mode (True/False)
+restart = False
+# Blast e-value
+evalue = 1e-3
+# Species to use with augustus, for old datasets only
+species = fly
+# Augustus extra parameters
+# Use single quotes, like this: '--param1=1 --param2=2'
+augustus_parameters = ''
+# Tmp folder
+tmp_path = tmp_dir
+# How many candidate regions (contigs, scaffolds) to consider for each BUSCO
+limit = 3
+# Augustus long mode for retraining (True/False)
+long = False
+# Quiet mode (True/False)
+quiet = False
+# Debug logs (True/False), it needs Quiet to be False
+debug = True
+# tar gzip output files (True/False)
+gzip = False
+# Force single core for the tblastn step
+blast_single_core = True
+
+[tblastn]
+# path to tblastn
+path = tblastn_path
+
+[makeblastdb]
+# path to makeblastdb
+path = makeblastdb_path
+
+[augustus]
+# path to augustus
+path = augustus_path
+
+[etraining]
+# path to augustus etraining
+path = etraining_path
+
+# path to augustus perl scripts, redeclare it for each new script
+[gff2gbSmallDNA.pl]
+path = augustus_scripts_path
+[new_species.pl]
+path = augustus_scripts_path
+[optimize_augustus.pl]
+path = augustus_scripts_path
+
+[hmmsearch]
+# path to HMMsearch executable
+path = hmmsearch_path
+

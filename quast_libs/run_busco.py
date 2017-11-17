@@ -6,27 +6,28 @@
 ############################################################################
 from __future__ import with_statement
 import os
-from os.path import join
+from os.path import join, dirname, realpath
 
 import shutil
 
-from quast_libs.busco.busco import set_augustus_dir
 from quast_libs.ra_utils.misc import download_unpack_compressed_tar
 
 from quast_libs import reporting, qconfig, qutils
 from quast_libs.busco import busco
 from quast_libs.log import get_logger
 from quast_libs.qutils import download_blast_binaries, run_parallel, compile_tool, get_dir_for_download, \
-    check_prev_compilation_failed
+    check_prev_compilation_failed, get_blast_fpath
 
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 
 augustus_version = '3.1'
 augustus_url = 'http://bioinf.uni-greifswald.de/augustus/binaries/old/augustus-' + augustus_version + '.tar.gz'
-bacteria_db_url = 'http://busco.ezlab.org/datasets/bacteria_odb9.tar.gz'
-fungi_db_url = 'http://busco.ezlab.org/datasets/fungi_odb9.tar.gz'
-eukaryota_db_url = 'http://busco.ezlab.org/datasets/eukaryota_odb9.tar.gz'
+bacteria_db_url = 'http://busco.ezlab.org/v2/datasets/bacteria_odb9.tar.gz'
+fungi_db_url = 'http://busco.ezlab.org/v2/datasets/fungi_odb9.tar.gz'
+eukaryota_db_url = 'http://busco.ezlab.org/v2/datasets/eukaryota_odb9.tar.gz'
 blast_filenames = ['tblastn', 'makeblastdb']
+default_config_fname = 'config.ini.default'
+config_fname = 'config.ini'
 
 
 def download_db(logger, is_prokaryote, is_fungus=False, only_clean=False):
@@ -94,6 +95,36 @@ def download_augustus(logger, only_clean=False):
     return download_tool('augustus', augustus_version, ['bin'], logger, augustus_url, only_clean=only_clean)
 
 
+def make_config(output_dirpath, tmp_dirpath, threads, clade_dirpath, augustus_dirpath):
+    busco_dirpath = join(dirname(realpath(__file__)), 'busco')
+    domain = 'prokaryota' if qconfig.prokaryote else 'eukaryota'
+    values = {'out_path': output_dirpath,
+              'lineage_path': clade_dirpath,
+              'domain': domain,
+              'tmp_dir': tmp_dirpath,
+              'threads': str(threads),
+              'tblastn_path': dirname(get_blast_fpath('tblastn')),
+              'makeblastdb_path': dirname(get_blast_fpath('makeblastdb')),
+              'augustus_path': join(augustus_dirpath, 'bin'),
+              'etraining_path': join(augustus_dirpath, 'bin'),
+              'augustus_scripts_path': join(augustus_dirpath, 'scripts'),
+              'hmmsearch_path': busco_dirpath
+    }
+    default_config_fpath = join(busco_dirpath, default_config_fname)
+    config_fpath = join(busco_dirpath, config_fname)
+    with open(default_config_fpath) as f_in:
+        with open(config_fpath, 'w') as f_out:
+            for line in f_in:
+                fs = line.strip().split()
+                if not fs:
+                    continue
+                keyword = fs[-1]
+                if keyword in values:
+                    fs[-1] = values[keyword]
+                f_out.write(' '.join(fs) + '\n')
+    return config_fpath
+
+
 def do(contigs_fpaths, output_dir, logger):
     logger.print_timestamp()
     logger.info('Running BUSCO...')
@@ -113,7 +144,6 @@ def do(contigs_fpaths, output_dir, logger):
         logger.info('Failed finding conservative genes.')
         return
 
-    set_augustus_dir(augustus_dirpath)
     if not os.path.isdir(output_dir):
         os.makedirs(output_dir)
     tmp_dir = join(output_dir, 'tmp')
@@ -128,12 +158,13 @@ def do(contigs_fpaths, output_dir, logger):
         logger.info('Failed finding conservative genes.')
         return
 
+    config_fpath = make_config(output_dir, tmp_dir, busco_threads, clade_dirpath, augustus_dirpath)
     log_fpath = join(output_dir, 'busco.log')
     logger.info('Logging to ' + log_fpath + '...')
-    busco_args = [(['-i', contigs_fpath, '-o', qutils.label_from_fpath_for_fname(contigs_fpath), '-l', clade_dirpath,
-                    '-m', 'genome', '-f', '-z', '-c', str(busco_threads), '-t', tmp_dir,
-                    '--augustus_parameters=\'--AUGUSTUS_CONFIG_PATH=' + join(augustus_dirpath, 'config') + '\'' ], output_dir)
-                    for contigs_fpath in contigs_fpaths]
+
+    os.environ['BUSCO_CONFIG_FILE'] = config_fpath
+    os.environ['AUGUSTUS_CONFIG_PATH'] = join(augustus_dirpath, 'config')
+    busco_args = [[contigs_fpath, qutils.label_from_fpath_for_fname(contigs_fpath)] for contigs_fpath in contigs_fpaths]
     summary_fpaths = run_parallel(busco.main, busco_args, qconfig.max_threads)
     if not any(fpath for fpath in summary_fpaths):
         logger.error('Failed running BUSCO for all the assemblies. See ' + log_fpath + ' for information.')

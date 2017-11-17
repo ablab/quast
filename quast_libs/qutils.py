@@ -526,6 +526,7 @@ def remove_reports(output_dirpath):
 
 def correct_name(name, max_name_len=MAX_CONTIG_NAME):
     name = re.sub(r'[^\w\._\-+|]', '_', name.strip())[:max_name_len]
+    name = re.sub(r'[\.+]$', '', name)
     return re.sub(r"[\|\+\-=\/]", '_', name)
 
 

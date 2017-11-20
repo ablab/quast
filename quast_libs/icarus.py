@@ -9,7 +9,6 @@
 
 from __future__ import with_statement
 
-from collections import defaultdict
 
 from quast_libs.icarus_builder import prepare_alignment_data_for_one_ref, save_alignment_data_for_one_ref, save_contig_size_html, \
     get_assemblies_data, get_contigs_data
@@ -24,6 +23,8 @@ except ImportError:
    from quast_libs.site_packages.ordered_dict import OrderedDict
 
 import os
+import re
+from collections import defaultdict
 from quast_libs import qconfig, qutils, fastaparser, genome_analyzer
 from quast_libs.ca_utils.misc import ref_labels_by_chromosomes
 import quast_libs.html_saver.html_saver as html_saver
@@ -53,7 +54,6 @@ def do(contigs_fpaths, contig_report_fpath_pattern, output_dirpath, ref_fpath,
     features_data = None
 
     plot_fpath = None
-    max_small_chromosomes = 50
 
     if ref_fpath:
         for name, seq in fastaparser.read_fasta(ref_fpath):
@@ -70,7 +70,7 @@ def do(contigs_fpaths, contig_report_fpath_pattern, output_dirpath, ref_fpath,
             contig_names_by_refs = ref_labels_by_chromosomes
         elif sum(reference_chromosomes.values()) > qconfig.MAX_SIZE_FOR_COMB_PLOT:
             contig_names_by_refs = dict()
-            if len(chr_names) > max_small_chromosomes:
+            if len(chr_names) > qconfig.ICARUS_MAX_CHROMOSOMES:
                 summary_len = 0
                 num_parts = 1
                 html_name = qconfig.alignment_viewer_part_name + str(num_parts)
@@ -133,6 +133,10 @@ def do(contigs_fpaths, contig_report_fpath_pattern, output_dirpath, ref_fpath,
         icarus_html_fpath = None
 
     return icarus_html_fpath, plot_fpath
+
+
+def natural_sort(string_):
+    return [int(s) if s.isdigit() else s for s in re.split(r'(\d+)', string_)]
 
 
 def js_data_gen(assemblies, contigs_fpaths, chromosomes_length, output_dirpath, structures_by_labels,
@@ -255,7 +259,7 @@ def js_data_gen(assemblies, contigs_fpaths, chromosomes_length, output_dirpath, 
         is_unaligned_asm_exists = len(set(num_aligned_assemblies)) > 1
         if is_unaligned_asm_exists:
             main_data_dict['table_references']['th_assemblies'] = True
-        for chr in sorted(chr_full_names):
+        for chr in sorted(chr_full_names, key=natural_sort):
             chr_link, chr_name, chr_genome, chr_size, tooltip = get_info_by_chr(chr, aligned_bases_by_chr, chr_sizes, contigs_fpaths,
                                                                                 contig_names_by_refs, one_chromosome=len(chr_full_names) == 1)
             reference_dict = dict()

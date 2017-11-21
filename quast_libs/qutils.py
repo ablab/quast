@@ -996,7 +996,7 @@ def download_blast_binary(blast_filename, logger=logger):
     return blast_binary_fpath
 
 
-def download_external_tool(fname, dirpath, tool, platform_specific=False):
+def download_external_tool(fname, dirpath, tool, platform_specific=False, is_executable=False):
     downloaded_fpath = join(dirpath, fname)
     if os.path.exists(downloaded_fpath):
         return downloaded_fpath
@@ -1012,7 +1012,9 @@ def download_external_tool(fname, dirpath, tool, platform_specific=False):
         logger.info('Copying ' + fname + ' from ' + external_fpath)
         shutil.copy(external_fpath, downloaded_fpath)
     else:
-        return download_file(url, downloaded_fpath, tool)
+        downloaded_fpath = download_file(url, downloaded_fpath, tool)
+    if is_executable and downloaded_fpath:
+        os.chmod(downloaded_fpath, os.stat(downloaded_fpath).st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
     return downloaded_fpath
 
 

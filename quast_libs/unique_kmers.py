@@ -235,8 +235,8 @@ def do(output_dir, ref_fpath, contigs_fpaths, logger):
     kmc_dirpath = get_dir_for_download(kmc_dirname, 'KMC', ['kmc', 'kmc_tools'], logger)
     global kmc_bin_fpath
     global kmc_tools_fpath
-    kmc_bin_fpath = download_external_tool('kmc', kmc_dirpath, 'KMC', platform_specific=True)
-    kmc_tools_fpath = download_external_tool('kmc_tools', kmc_dirpath, 'KMC', platform_specific=True)
+    kmc_bin_fpath = download_external_tool('kmc', kmc_dirpath, 'KMC', platform_specific=True, is_executable=True)
+    kmc_tools_fpath = download_external_tool('kmc_tools', kmc_dirpath, 'KMC', platform_specific=True, is_executable=True)
     if not exists(kmc_bin_fpath) or not exists(kmc_tools_fpath) or not compile_minimap(logger):
         logger.warning('  Sorry, can\'t run KMC, skipping...')
         return None

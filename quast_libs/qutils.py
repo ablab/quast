@@ -975,8 +975,7 @@ def download_file(url, fpath, fname, move_file=True):
             urllib.URLopener().retrieve(url, fpath + '.download', show_progress)
         except Exception:
             logger.error(
-                'Failed downloading %s! The search for reference genomes cannot be performed. '
-                'Please install it and ensure it is in your PATH, then restart your command.' % fname)
+                'Failed downloading %s! Please install it and ensure it is in your PATH, then restart your command.' % fname)
             return None
         if move_file:
             shutil.move(fpath + '.download', fpath)

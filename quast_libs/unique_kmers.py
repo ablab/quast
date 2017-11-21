@@ -14,7 +14,8 @@ from os.path import join, abspath, exists, getsize, basename, isdir
 
 from quast_libs import qconfig, reporting, qutils
 from quast_libs.fastaparser import read_fasta, get_chr_lengths_from_fastafile
-from quast_libs.qutils import get_free_memory, is_non_empty_file, md5, add_suffix
+from quast_libs.qutils import get_free_memory, is_non_empty_file, md5, add_suffix, download_external_tool, \
+    get_dir_for_download
 from quast_libs.ra_utils.misc import minimap_fpath, compile_minimap
 
 KMERS_LEN = 101
@@ -24,7 +25,8 @@ MIN_CONTIGS_LEN = 10000
 MIN_MARKERS = 10
 MIN_MISJOIN_MARKERS = 1
 
-kmc_dirpath = abspath(join(qconfig.LIBS_LOCATION, 'KMC', qconfig.platform_name))
+kmc_dirname = 'kmc'
+kmc_dirpath = abspath(join(qconfig.LIBS_LOCATION, kmc_dirname, qconfig.platform_name))
 kmc_bin_fpath = join(kmc_dirpath, 'kmc')
 kmc_tools_fpath = join(kmc_dirpath, 'kmc_tools')
 
@@ -67,7 +69,7 @@ def check_kmc_successful_check(output_dir, contigs_fpath, contigs_fpaths, ref_fp
 
 def get_kmers_cnt(tmp_dirpath, kmc_db_fpath, log_fpath, err_fpath):
     histo_fpath = join(tmp_dirpath, basename(kmc_db_fpath) + '.histo.txt')
-    run_kmc(kmc_tools_fpath, ['histogram', kmc_db_fpath, histo_fpath], log_fpath, err_fpath)
+    run_kmc(['histogram', kmc_db_fpath, histo_fpath], log_fpath, err_fpath)
     kmers_cnt = 0
     if exists(histo_fpath):
         kmers_cnt = int(open(histo_fpath).read().split()[-1])
@@ -79,8 +81,8 @@ def count_kmers(tmp_dirpath, fpath, log_fpath, err_fpath, can_reuse=True):
     if can_reuse and is_non_empty_file(kmc_out_fpath + '.kmc_pre') and is_non_empty_file(kmc_out_fpath + '.kmc_suf'):
         return kmc_out_fpath
     max_mem = max(2, get_free_memory())
-    run_kmc(kmc_bin_fpath, ['-m' + str(max_mem), '-k' + str(KMERS_LEN), '-fm', '-cx1', '-ci1',
-                        fpath, kmc_out_fpath, tmp_dirpath], log_fpath, err_fpath)
+    run_kmc(['-m' + str(max_mem), '-k' + str(KMERS_LEN), '-fm', '-cx1', '-ci1', fpath, kmc_out_fpath, tmp_dirpath],
+            log_fpath, err_fpath, use_kmc_tools=False)
     return kmc_out_fpath
 
 
@@ -132,7 +134,7 @@ def parse_kmer_coords(kmers_coords, ref_fpath, kmer_fraction):
 def downsample_kmers(tmp_dirpath, ref_fpath, kmc_out_fpath, log_fpath, err_fpath, kmer_fraction=1):
     kmc_txt_fpath = join(tmp_dirpath, 'kmc.full.txt')
     downsampled_txt_fpath = join(tmp_dirpath, 'kmc.downsampled.txt')
-    run_kmc(kmc_tools_fpath, ['transform', kmc_out_fpath, 'dump', kmc_txt_fpath], log_fpath, err_fpath)
+    run_kmc(['transform', kmc_out_fpath, 'dump', kmc_txt_fpath], log_fpath, err_fpath)
     kmc_fasta_fpath = join(tmp_dirpath, 'kmc.full.fasta')
     with open(kmc_txt_fpath) as in_f:
         with open(kmc_fasta_fpath, 'w') as out_f:
@@ -157,7 +159,7 @@ def downsample_kmers(tmp_dirpath, ref_fpath, kmc_out_fpath, log_fpath, err_fpath
 def kmc_to_str(tmp_dirpath, kmc_out_fpath, log_fpath, err_fpath, kmer_fraction=1):
     kmers = set()
     kmc_txt_fpath = join(tmp_dirpath, 'tmp.kmc.txt')
-    run_kmc(kmc_tools_fpath, ['transform', kmc_out_fpath, 'dump', kmc_txt_fpath], log_fpath, err_fpath)
+    run_kmc(['transform', kmc_out_fpath, 'dump', kmc_txt_fpath], log_fpath, err_fpath)
     with open(kmc_txt_fpath) as kmer_in:
         for kmer_i, line in enumerate(kmer_in):
             if kmer_i % kmer_fraction == 0:
@@ -173,12 +175,12 @@ def get_clear_name(fpath):
 def intersect_kmers(tmp_dirpath, kmc_out_fpaths, log_fpath, err_fpath):
     intersect_out_fpath = join(tmp_dirpath, '_'.join([get_clear_name(kmc_out_fpath)[:30] for kmc_out_fpath in kmc_out_fpaths]) + '.kmc')
     if len(kmc_out_fpaths) == 2:
-        run_kmc(kmc_tools_fpath, ['simple'] + kmc_out_fpaths + ['intersect', intersect_out_fpath], log_fpath, err_fpath)
+        run_kmc(['simple'] + kmc_out_fpaths + ['intersect', intersect_out_fpath], log_fpath, err_fpath)
     else:
         prev_kmc_out_fpath = kmc_out_fpaths[0]
         for i in range(1, len(kmc_out_fpaths)):
             tmp_out_fpath = join(tmp_dirpath, get_clear_name(prev_kmc_out_fpath) + '_' + str(i) + '.kmc')
-            run_kmc(kmc_tools_fpath, ['simple', prev_kmc_out_fpath, kmc_out_fpaths[i], 'intersect', tmp_out_fpath], log_fpath, err_fpath)
+            run_kmc(['simple', prev_kmc_out_fpath, kmc_out_fpaths[i], 'intersect', tmp_out_fpath], log_fpath, err_fpath)
             prev_kmc_out_fpath = tmp_out_fpath
         intersect_out_fpath = prev_kmc_out_fpath
     return intersect_out_fpath
@@ -187,11 +189,12 @@ def intersect_kmers(tmp_dirpath, kmc_out_fpaths, log_fpath, err_fpath):
 def filter_contigs(input_fpath, output_fpath, db_fpath, log_fpath, err_fpath, min_kmers=1):
     if input_fpath.endswith('.txt'):
         input_fpath = '@' + input_fpath
-    run_kmc(kmc_tools_fpath, ['filter', db_fpath, input_fpath, '-ci' + str(min_kmers), '-fa', output_fpath], log_fpath, err_fpath)
+    run_kmc(['filter', db_fpath, input_fpath, '-ci' + str(min_kmers), '-fa', output_fpath], log_fpath, err_fpath)
 
 
-def run_kmc(kmc_fpath, params, log_fpath, err_fpath):
-    qutils.call_subprocess([kmc_fpath, '-t' + str(qconfig.max_threads), '-hp'] + params,
+def run_kmc(params, log_fpath, err_fpath, use_kmc_tools=True):
+    tool_fpath = kmc_tools_fpath if use_kmc_tools else kmc_bin_fpath
+    qutils.call_subprocess([tool_fpath, '-t' + str(qconfig.max_threads), '-hp'] + params,
                            stdout=open(log_fpath, 'a'), stderr=open(err_fpath, 'a'))
 
 
@@ -225,11 +228,16 @@ def do(output_dir, ref_fpath, contigs_fpaths, logger):
         logger.info('Done.')
         return
 
-    if not exists(kmc_bin_fpath) or not exists(kmc_tools_fpath):
+    if qconfig.platform_name == 'linux_32':
         logger.warning('  Sorry, can\'t run KMC on this platform, skipping...')
         return None
 
-    if not compile_minimap(logger):
+    kmc_dirpath = get_dir_for_download(kmc_dirname, 'KMC', ['kmc', 'kmc_tools'], logger)
+    global kmc_bin_fpath
+    global kmc_tools_fpath
+    kmc_bin_fpath = download_external_tool('kmc', kmc_dirpath, 'KMC', platform_specific=True)
+    kmc_tools_fpath = download_external_tool('kmc_tools', kmc_dirpath, 'KMC', platform_specific=True)
+    if not exists(kmc_bin_fpath) or not exists(kmc_tools_fpath) or not compile_minimap(logger):
         logger.warning('  Sorry, can\'t run KMC, skipping...')
         return None
 

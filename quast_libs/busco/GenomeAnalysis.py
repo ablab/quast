@@ -58,7 +58,7 @@ class GenomeAnalysis(BuscoAnalysis):
         self._flank = self._define_flank()
         # data integrity checks not done by the parent class
         if self.check_nucleotide_file() is False:
-            GenomeAnalysis._logger.error('Please provide a nucleotide file as input')
+            BuscoAnalysis._logger.error('Please provide a nucleotide file as input')
             raise SystemExit
 
     # @overrides
@@ -71,26 +71,26 @@ class GenomeAnalysis(BuscoAnalysis):
 
         if self._restart:
             checkpoint = self.get_checkpoint(reset_random_suffix=True)
-            GenomeAnalysis._logger.warning('Restarting an uncompleted run')
+            BuscoAnalysis._logger.warning('Restarting an uncompleted run')
         else:
             checkpoint = 0  # all steps will be done
 
-        GenomeAnalysis._logger.info(
+        BuscoAnalysis._logger.info(
             '****** Phase 1 of 2, initial predictions ******')
         if checkpoint < 1:
-            GenomeAnalysis._logger.info(
+            BuscoAnalysis._logger.info(
                 '****** Step 1/3, current time: %s ******' %
                 time.strftime("%m/%d/%Y %H:%M:%S"))
             self._run_tblastn()
             self._set_checkpoint(1)
 
         if checkpoint < 2:
-            GenomeAnalysis._logger.info(
+            BuscoAnalysis._logger.info(
                 '****** Step 2/3, current time: %s ******' %
                 time.strftime("%m/%d/%Y %H:%M:%S"))
             self._get_coordinates()
             self._run_augustus()
-            GenomeAnalysis._logger.info(
+            BuscoAnalysis._logger.info(
                 '****** Step 3/3, current time: %s ******' %
                 time.strftime("%m/%d/%Y %H:%M:%S"))
             self._run_hmmer()
@@ -98,15 +98,15 @@ class GenomeAnalysis(BuscoAnalysis):
         self._load_score()
         self._load_length()
         if checkpoint == 2 or checkpoint == 3:
-            GenomeAnalysis._logger.info('Phase 1 was already completed.')
+            BuscoAnalysis._logger.info('Phase 1 was already completed.')
         if checkpoint == 3:
             self._fix_restart_augustus_folder()
         self._produce_short_summary()
-        GenomeAnalysis._logger.info(
+        BuscoAnalysis._logger.info(
             '****** Phase 2 of 2, predictions using species specific training '
             '******')
         if checkpoint < 3:
-            GenomeAnalysis._logger.info(
+            BuscoAnalysis._logger.info(
                 '****** Step 1/3, current time: %s ******' %
                 time.strftime("%m/%d/%Y %H:%M:%S"))
             if self._has_variants_file:
@@ -116,7 +116,7 @@ class GenomeAnalysis(BuscoAnalysis):
                 self._run_tblastn(missing_and_frag_only=True, ancestral_variants=False)
                 self._get_coordinates(missing_and_frag_only=True)
             self._set_checkpoint(3)
-        GenomeAnalysis._logger.info(
+        BuscoAnalysis._logger.info(
             '****** Step 2/3, current time: %s ******' %
             time.strftime("%m/%d/%Y %H:%M:%S"))
         self._rerun_augustus()
@@ -216,7 +216,7 @@ class GenomeAnalysis(BuscoAnalysis):
                 flank = BuscoConfig.MAX_FLANK
             f.close()
         except IOError:
-            GenomeAnalysis._logger.error('Impossible to read the fasta file %s ' % self._sequences)
+            BuscoAnalysis._logger.error('Impossible to read the fasta file %s ' % self._sequences)
             raise SystemExit
         return flank
 
@@ -243,7 +243,7 @@ class GenomeAnalysis(BuscoAnalysis):
                                                              self.mainout):
             pass
         else:
-            GenomeAnalysis._logger.error(
+            BuscoAnalysis._logger.error(
                 'Impossible to restart the run, necessary folders are missing.'
                 ' Use the -f option instead of -r')
             raise SystemExit
@@ -265,9 +265,9 @@ class GenomeAnalysis(BuscoAnalysis):
             blast_file = open('%sblast_output/tblastn_%s.tsv' %
                               (self.mainout, self._out))
 
-        GenomeAnalysis._logger.info('Maximum number of candidate contig per BUSCO limited to: %s' % self._region_limit)
+        BuscoAnalysis._logger.info('Maximum number of candidate contig per BUSCO limited to: %s' % self._region_limit)
 
-        GenomeAnalysis._logger.info(
+        BuscoAnalysis._logger.info(
             'Getting coordinates for candidate regions...')
 
         dic = {}
@@ -461,7 +461,7 @@ class GenomeAnalysis(BuscoAnalysis):
         to look for, complete or just missing and fragment
         :type missing_and_frag_only: bool
         """
-        GenomeAnalysis._logger.info('Pre-Augustus scaffold extraction...')
+        BuscoAnalysis._logger.info('Pre-Augustus scaffold extraction...')
         if missing_and_frag_only:
             coord = open(
                 '%s/blast_output/coordinates_%s_missing_and_frag_rerun.tsv' %
@@ -533,17 +533,17 @@ class GenomeAnalysis(BuscoAnalysis):
         # Now run Augustus on each candidate region with its respective
         # Block-profile
 
-        GenomeAnalysis._logger.info(
+        BuscoAnalysis._logger.info(
             'Running Augustus prediction using %s as species:' %
             self._target_species)
 
         if self._augustus_parameters:
-            GenomeAnalysis._logger.info(
+            BuscoAnalysis._logger.info(
                 'Additional parameters for Augustus are %s: ' %
                 self._augustus_parameters)
 
         augustus_log = '%saugustus_output/augustus.log' % self.mainout
-        GenomeAnalysis._logger.info(
+        BuscoAnalysis._logger.info(
             '[augustus]\tPlease find all logs related to Augustus errors here: %s' %
             augustus_log)
         if not os.path.exists('%saugustus_output/predicted_genes' % self.mainout):
@@ -595,7 +595,7 @@ class GenomeAnalysis(BuscoAnalysis):
                 augustus_job.stdout_file = [out_name, 'w']
                 augustus_job.stderr_file = [augustus_log, 'a']
 
-        self._augustus.run_jobs(self._cpus)
+        self._augustus.run_jobs(self._cpus, BuscoAnalysis._logger)
 
         # Preparation of sequences for use with HMMer
 
@@ -603,7 +603,7 @@ class GenomeAnalysis(BuscoAnalysis):
         # ('run_XXXX/augustus') and extract protein
         # sequences to a FASTA file
         # ('run_XXXX/augustus_output/extracted_proteins').
-        GenomeAnalysis._logger.info('Extracting predicted proteins...')
+        BuscoAnalysis._logger.info('Extracting predicted proteins...')
         files = os.listdir('%saugustus_output/predicted_genes' % self.mainout)
         files.sort()
         for entry in files:
@@ -646,9 +646,9 @@ class GenomeAnalysis(BuscoAnalysis):
         if not os.path.exists('%saugustus_output/gb' % self.mainout):
             os.makedirs('%saugustus_output/gb' % self.mainout)
 
-        GenomeAnalysis._logger.info(
+        BuscoAnalysis._logger.info(
             'Training Augustus using Single-Copy Complete BUSCOs:')
-        GenomeAnalysis._logger.info(
+        BuscoAnalysis._logger.info(
             'Converting predicted genes to short genbank files at %s...' %
             time.strftime("%m/%d/%Y %H:%M:%S"))
         for entry in self._single_copy_files:
@@ -662,7 +662,7 @@ class GenomeAnalysis(BuscoAnalysis):
                              (self.mainout, file_name))
             gff_file = open('%saugustus_output/gffs/%s.gff' %
                             (self.mainout, group_name), 'w')
-            GenomeAnalysis._logger.debug('creating %s' % ('%saugustus_output/gffs/%s.gff' % (self.mainout, group_name)))
+            BuscoAnalysis._logger.debug('creating %s' % ('%saugustus_output/gffs/%s.gff' % (self.mainout, group_name)))
             for line in pred_file:
                 if line.startswith('# start gene'):
                     pred_name = line.strip().split()[-1]
@@ -689,9 +689,9 @@ class GenomeAnalysis(BuscoAnalysis):
 
             gff2_gb_small_dna_pl_job.stdout_file = gff2_gb_small_dna_pl_job.stderr_file
 
-        self._gff2gbSmallDNA_pl.run_jobs(self._cpus, log_it=False)
+        self._gff2gbSmallDNA_pl.run_jobs(self._cpus, BuscoAnalysis._logger, log_it=False)
 
-        GenomeAnalysis._logger.info(
+        BuscoAnalysis._logger.info(
             'All files converted to short genbank files, now running '
             'the training scripts at %s...' % time.strftime("%m/%d/%Y %H:%M:%S"))
 
@@ -703,27 +703,27 @@ class GenomeAnalysis(BuscoAnalysis):
         new_species_pl_job.add_parameter('--species=BUSCO_%s%s' % (self._out, self._random))
         new_species_pl_job.stderr_file = [augustus_log, 'a']
         new_species_pl_job.stdout_file = new_species_pl_job.stderr_file
-        self._new_species_pl.run_jobs(self._cpus, False)
+        self._new_species_pl.run_jobs(self._cpus, BuscoAnalysis._logger, False)
 
-        GenomeAnalysis._logger.debug('concat all gb files...')
+        BuscoAnalysis._logger.debug('concat all gb files...')
 
         self._p_open(['find %saugustus_output/gb/ -type f -name "*.gb" -exec cat {} \; '
                      '> %saugustus_output/training_set_%s.txt' % (self.mainout, self.mainout, self._out)],
                      'bash', shell=True)
 
-        GenomeAnalysis._logger.debug('run etraining...')
+        BuscoAnalysis._logger.debug('run etraining...')
         # train on new training set (complete single copy buscos)
         etraining_job = self._etraining.create_job()
         etraining_job.add_parameter('--species=BUSCO_%s%s' % (self._out, self._random))
         etraining_job.add_parameter('%saugustus_output/training_set_%s.txt' % (self.mainout, self._out))
         etraining_job.stderr_file = [augustus_log, 'a']
         etraining_job.stdout_file = new_species_pl_job.stderr_file
-        self._etraining.run_jobs(self._cpus, False)
+        self._etraining.run_jobs(self._cpus, BuscoAnalysis._logger, False)
 
         # long mode (--long) option - runs all the Augustus optimization
         # scripts (adds ~1 day of runtime)
         if self._long:
-            GenomeAnalysis._logger.warning(
+            BuscoAnalysis._logger.warning(
                 'Optimizing augustus metaparameters, this may take a '
                 'very long time, started at %s' % time.strftime("%m/%d/%Y %H:%M:%S"))
             optimize_augustus_pl_job = self._optimize_augustus_pl.create_job()
@@ -732,21 +732,21 @@ class GenomeAnalysis(BuscoAnalysis):
             optimize_augustus_pl_job.add_parameter('%saugustus_output/training_set_%s.txt' % (self.mainout, self._out))
             optimize_augustus_pl_job.stderr_file = [augustus_log, 'a']
             optimize_augustus_pl_job.stdout_file = optimize_augustus_pl_job.stderr_file
-            self._optimize_augustus_pl.run_jobs(self._cpus, False)
+            self._optimize_augustus_pl.run_jobs(self._cpus, BuscoAnalysis._logger, False)
             # train on new training set (complete single copy buscos)
             etraining_job = self._etraining.create_job()
             etraining_job.add_parameter('--species=BUSCO_%s%s' % (self._out, self._random))
             etraining_job.add_parameter('%saugustus_output/training_set_%s.txt' % (self.mainout, self._out))
             etraining_job.stderr_file = [augustus_log, 'a']
             etraining_job.stdout_file = new_species_pl_job.stderr_file
-            self._etraining.run_jobs(self._cpus, False)
+            self._etraining.run_jobs(self._cpus, BuscoAnalysis._logger, False)
 
         #######################################################
 
         # get all scaffolds with blast results
         self._extract_scaffolds(missing_and_frag_only=True)
 
-        GenomeAnalysis._logger.info(
+        BuscoAnalysis._logger.info(
             'Re-running Augustus with the new metaparameters, number of '
             'target BUSCOs: %s' % len(self._missing_busco_list +
                                       self._fragmented_busco_list))
@@ -832,12 +832,12 @@ class GenomeAnalysis(BuscoAnalysis):
             else:
                 pass
 
-        self._augustus.run_jobs(self._cpus)
+        self._augustus.run_jobs(self._cpus, BuscoAnalysis._logger)
 
         for sed_string in augustus_rerun_seds:
             self._p_open(['%s' % sed_string], 'bash', shell=True)
         # Extract fasta files from augustus output
-        GenomeAnalysis._logger.info('Extracting predicted proteins...')
+        BuscoAnalysis._logger.info('Extracting predicted proteins...')
         self._no_predictions = []
         for entry in self._missing_busco_list + self._fragmented_busco_list:
             if entry in self._location_dic:
@@ -858,12 +858,12 @@ class GenomeAnalysis(BuscoAnalysis):
             if target_seq in self._no_predictions:
                 self._hmmer.remove_job(job)
 
-        GenomeAnalysis._logger.info('****** Step 3/3, current time: %s ******'
+        BuscoAnalysis._logger.info('****** Step 3/3, current time: %s ******'
                                     % time.strftime("%m/%d/%Y %H:%M:%S"))
-        GenomeAnalysis._logger.info(
+        BuscoAnalysis._logger.info(
             'Running HMMER to confirm orthology of predicted proteins:')
 
-        self._hmmer.run_jobs(self._cpus)
+        self._hmmer.run_jobs(self._cpus, BuscoAnalysis._logger)
 
         # Fuse the run1 and rerun folders
         self._p_open(['mv %saugustus_output/predicted_genes/*.* '
@@ -883,7 +883,7 @@ class GenomeAnalysis(BuscoAnalysis):
         self._produce_short_summary()
 
         if len(self._missing_busco_list) == self._totalbuscos:
-            GenomeAnalysis._logger.warning(
+            BuscoAnalysis._logger.warning(
                 'BUSCO did not find any match. Do not forget to check '
                 'the file %s to exclude a problem regarding Augustus' %
                 augustus_log)
@@ -891,7 +891,7 @@ class GenomeAnalysis(BuscoAnalysis):
         if not os.path.exists('%ssingle_copy_busco_sequences' % self.mainout):
             os.makedirs('%ssingle_copy_busco_sequences' % self.mainout)
 
-        GenomeAnalysis._logger.debug('Getting single-copy files...')
+        BuscoAnalysis._logger.debug('Getting single-copy files...')
         for entry in self._single_copy_files:
             check = 0
 
@@ -957,7 +957,7 @@ class GenomeAnalysis(BuscoAnalysis):
             self._p_open(['rm', '-rf', '%sspecies/BUSCO_%s%s'
                          % (self._augustus_config_path, self._out, self._random)], 'bash', shell=False)
         else:
-            GenomeAnalysis._logger.warning(
+            BuscoAnalysis._logger.warning(
                 'Augustus did not produce a retrained species folder, '
                 'please check the augustus log file in the run folder '
                 'to ensure that nothing went wrong '
@@ -970,7 +970,7 @@ class GenomeAnalysis(BuscoAnalysis):
         :raises SystemExit: if the hmmsearch result folder is empty
         after the run
         """
-        GenomeAnalysis._logger.info(
+        BuscoAnalysis._logger.info(
             'Running HMMER to confirm orthology of predicted proteins:')
 
         files = os.listdir('%saugustus_output/extracted_proteins' %
@@ -996,7 +996,7 @@ class GenomeAnalysis(BuscoAnalysis):
                 hmmer_job.add_parameter('%saugustus_output/extracted_proteins/%s' %
                                         (self.mainout, entry))
 
-        self._hmmer.run_jobs(self._cpus)
+        self._hmmer.run_jobs(self._cpus, BuscoAnalysis._logger)
 
     def _run_tarzip_augustus_output(self):
         """
@@ -1104,7 +1104,7 @@ class GenomeAnalysis(BuscoAnalysis):
         super(GenomeAnalysis, self)._check_tool_dependencies()
         # check 'augustus' command availability
         if not Tool.check_tool_available('augustus', self._params):
-            GenomeAnalysis._logger.error(
+            BuscoAnalysis._logger.error(
                 '\"augustus\" is not accessible, check its path in the config.ini.default file (do not include the commmand '
                 'in the path !), and '
                 'add it to your $PATH environmental variable (the entry in config.ini.default is not sufficient '
@@ -1113,7 +1113,7 @@ class GenomeAnalysis(BuscoAnalysis):
 
         # check availability augustus - related commands
         if not Tool.check_tool_available('etraining', self._params):
-            GenomeAnalysis._logger.error(
+            BuscoAnalysis._logger.error(
                 '\"etraining\" is not accessible, check its path in the config.ini.default file(do not include the commmand '
                 'in the path !), and '
                 'add it to your $PATH environmental variable (the entry in config.ini.default is not sufficient '
@@ -1121,7 +1121,7 @@ class GenomeAnalysis(BuscoAnalysis):
             raise SystemExit
 
         if not Tool.check_tool_available('gff2gbSmallDNA.pl', self._params):
-            GenomeAnalysis._logger.error(
+            BuscoAnalysis._logger.error(
                 'Impossible to locate the required script gff2gbSmallDNA.pl. '
                 'Check that you properly declared the path to augustus scripts folder in your '
                 'config.ini.default file (do not include the script name '
@@ -1129,7 +1129,7 @@ class GenomeAnalysis(BuscoAnalysis):
             raise SystemExit
 
         if not Tool.check_tool_available('new_species.pl', self._params):
-            GenomeAnalysis._logger.error(
+            BuscoAnalysis._logger.error(
                 'Impossible to locate the required script new_species.pl. '
                 'Check that you properly declared the path to augustus scripts folder in your '
                 'config.ini.default file (do not include the script name '
@@ -1137,7 +1137,7 @@ class GenomeAnalysis(BuscoAnalysis):
             raise SystemExit
 
         if not Tool.check_tool_available('optimize_augustus.pl', self._params):
-            GenomeAnalysis._logger.error(
+            BuscoAnalysis._logger.error(
                 'Impossible to locate the required script optimize_augustus.pl. '
                 'Check that you properly declared the path to augustus scripts folder in your '
                 'config.ini.default file (do not include the script name '
@@ -1156,18 +1156,18 @@ class GenomeAnalysis(BuscoAnalysis):
         """
         try:
             if not os.access(self._augustus_config_path, os.W_OK):
-                GenomeAnalysis._logger.error(
+                BuscoAnalysis._logger.error(
                     'Cannot write to Augustus config path, '
                     'please make sure you have write permissions to %s' %
                     self._augustus_config_path)
                 raise SystemExit
         except TypeError:
-            GenomeAnalysis._logger.error(
+            BuscoAnalysis._logger.error(
                 'The environment variable AUGUSTUS_CONFIG_PATH is not set')
             raise SystemExit
 
         if not os.path.exists(self._augustus_config_path + '/species/%s' % self._target_species):
-            GenomeAnalysis._logger.error(
+            BuscoAnalysis._logger.error(
                 'Impossible to locate the species "%s" in Augustus config path'
                 ' (%sspecies), check that AUGUSTUS_CONFIG_PATH is properly set'
                 ' and contains this species. \n\t\tSee the help if you want '

@@ -25,7 +25,7 @@ class Job(threading.Thread):
     """
     _logger = PipeLogger.get_logger(__name__)
 
-    def __init__(self, tool_name, name, thread_id):
+    def __init__(self, tool_name, name, thread_id, logger):
         """
         :param name: a name of an executable / script ("a tool") to be run
         :type name: list
@@ -42,6 +42,7 @@ class Job(threading.Thread):
         self.stderr_file = None
         self.stdout = subprocess.PIPE
         self.stderr = subprocess.PIPE
+        self._logger = logger
 
     def add_parameter(self, parameter):
         """
@@ -62,7 +63,8 @@ class Job(threading.Thread):
         if self.stderr_file:
             self.stderr = open(self.stderr_file[0], self.stderr_file[1])
         process = subprocess.Popen(self.cmd_line, shell=False, stderr=self.stderr, stdout=self.stdout)
-        Job._logger.debug('%s thread nb %i has started' % (self.tool_name, self.thread_id))
+        logger = self._logger if self._logger else Job._logger
+        logger.debug('%s thread nb %i has started' % (self.tool_name, self.thread_id))
         process.wait()
         process_out = []
         if process.stdout:
@@ -70,7 +72,7 @@ class Job(threading.Thread):
         if process.stderr:
             process_out += process.stderr.readlines()
         for line in process_out:
-            Job._logger.info_external_tool(self.tool_name, line.decode("utf-8").strip())
+            logger.info_external_tool(self.tool_name, line.decode("utf-8").strip())
         if self.stdout_file:
             self.stdout.close()
         if self.stderr_file:
@@ -162,13 +164,14 @@ class Tool:
 
         self.jobs_to_run = []
         self.jobs_running = []
+        self._logger = None
 
-    def create_job(self):
+    def create_job(self, logger=None):
         """
         Create one work item
         """
         job_id = 1 + len(self.jobs_to_run) + len(self.jobs_running)
-        job = Job(self.name, self.cmd[:], job_id)
+        job = Job(self.name, self.cmd[:], job_id, logger)
         self.jobs_to_run.append(job)
         return job
 
@@ -180,7 +183,7 @@ class Tool:
         """
         self.jobs_to_run.remove(job)
 
-    def run_jobs(self, max_threads, log_it=True):
+    def run_jobs(self, max_threads, logger=None, log_it=True):
         """
         This method run all jobs created for the Tool and redirect
         the standard output and error to the current logger
@@ -192,6 +195,7 @@ class Tool:
         # Wait for all threads to finish and log progress
         total = len(self.jobs_to_run)
         already_logged = 0
+        self._logger = logger or Tool._logger
         while len(self.jobs_to_run) > 0 or len(self.jobs_running) > 0:
             time.sleep(0.001)
             for j in self.jobs_to_run:
@@ -199,7 +203,7 @@ class Tool:
                     self.jobs_running.append(j)
                     self.jobs_to_run.remove(j)
                     j.start()
-                    Tool._logger.debug(j.cmd_line)
+                    self._logger.debug(j.cmd_line)
             for j in self.jobs_running:
                 if not j.is_alive():
                     self.jobs_running.remove(j)
@@ -208,9 +212,9 @@ class Tool:
 
             if (nb_done == total or int(nb_done % (float(total)/10)) == 0) and nb_done != already_logged:
                 if log_it:
-                    Tool._logger.info('[%s]\t%i of %i task(s) completed at %s' % (self.name, nb_done, total,
-                                                                                  time.strftime("%m/%d/%Y %H:%M:%S")))
+                    self._logger.info('[%s]\t%i of %i task(s) completed at %s' % (self.name, nb_done, total,
+                                                                            time.strftime("%m/%d/%Y %H:%M:%S")))
                 else:
-                    Tool._logger.debug('[%s]\t%i of %i task(s) completed at %s' % (self.name, nb_done, total,
-                                                                                   time.strftime("%m/%d/%Y %H:%M:%S")))
+                    self._logger.debug('[%s]\t%i of %i task(s) completed at %s' % (self.name, nb_done, total,
+                                                                             time.strftime("%m/%d/%Y %H:%M:%S")))
                 already_logged = nb_done

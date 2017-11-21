@@ -70,16 +70,19 @@ class PipeLogger(logging.getLoggerClass()):
                                                    '%(threadName)'
                                                    's\t%(message)s')
         if run_dirpath:
-            _log_fpath = os.path.join(run_dirpath, 'busco.log')
-            for handler in self.handlers:
-                self.removeHandler(handler)
-            file_handler = logging.FileHandler(_log_fpath, mode='w')
-            file_handler.setLevel(logging.DEBUG)
-            self.addHandler(file_handler)
+            self.reload_log()
         else:
             self._out_hdlr = logging.StreamHandler(sys.stdout)
             self._out_hdlr.setFormatter(self._formatter)
             self.addHandler(self._out_hdlr)
+
+    def reload_log(self):
+        _log_fpath = run_dirpath + '.log'
+        for handler in self.handlers:
+            self.removeHandler(handler)
+        file_handler = logging.FileHandler(_log_fpath, mode='w')
+        file_handler.setLevel(logging.DEBUG)
+        self.addHandler(file_handler)
 
     def add_thread_info(self):
         """

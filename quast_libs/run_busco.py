@@ -20,7 +20,7 @@ from quast_libs.qutils import download_blast_binaries, run_parallel, compile_too
 
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 
-augustus_version = '3.1'
+augustus_version = '3.2.3'
 augustus_url = 'http://bioinf.uni-greifswald.de/augustus/binaries/old/augustus-' + augustus_version + '.tar.gz'
 bacteria_db_url = 'http://busco.ezlab.org/v2/datasets/bacteria_odb9.tar.gz'
 fungi_db_url = 'http://busco.ezlab.org/v2/datasets/fungi_odb9.tar.gz'
@@ -159,15 +159,14 @@ def do(contigs_fpaths, output_dir, logger):
         return
 
     config_fpath = make_config(output_dir, tmp_dir, busco_threads, clade_dirpath, augustus_dirpath)
-    log_fpath = join(output_dir, 'busco.log')
-    logger.info('Logging to ' + log_fpath + '...')
+    logger.info('Logging to ' + output_dir + '...')
 
     os.environ['BUSCO_CONFIG_FILE'] = config_fpath
     os.environ['AUGUSTUS_CONFIG_PATH'] = join(augustus_dirpath, 'config')
     busco_args = [[contigs_fpath, qutils.label_from_fpath_for_fname(contigs_fpath)] for contigs_fpath in contigs_fpaths]
     summary_fpaths = run_parallel(busco.main, busco_args, qconfig.max_threads)
     if not any(fpath for fpath in summary_fpaths):
-        logger.error('Failed running BUSCO for all the assemblies. See ' + log_fpath + ' for information.')
+        logger.error('Failed running BUSCO for all the assemblies. See log files in ' + output_dir + ' for information.')
         return
 
     # saving results

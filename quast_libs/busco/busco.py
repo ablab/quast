@@ -163,9 +163,10 @@ def main(in_fpath, out_fname):
     from quast_libs.busco import pipebricks
     pipebricks.PipeLogger.run_dirpath = assembly_dirpath
     from quast_libs.busco.GenomeAnalysis import GenomeAnalysis
-    from quast_libs.busco.pipebricks.PipeLogger import PipeLogger
+    from quast_libs.busco.BuscoAnalysis import BuscoAnalysis
     from quast_libs.busco.pipebricks.Toolset import ToolException
-    logger = PipeLogger.get_logger(__name__, config)
+    BuscoAnalysis._logger.reload_log()
+    logger = BuscoAnalysis._logger
     if is_non_empty_file(summary_path):
         logger.info('Using existing BUSCO files for ' + out_fname + '...')
         return summary_path

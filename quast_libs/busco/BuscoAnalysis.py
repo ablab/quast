@@ -841,7 +841,7 @@ class BuscoAnalysis(Analysis):
         if not missing_and_frag_only:
 
             BuscoAnalysis._logger.info('Create blast database...')
-            blast_job = self._mkblast.create_job()
+            blast_job = self._mkblast.create_job(BuscoAnalysis._logger)
 
             blast_job.add_parameter('-in')
             blast_job.add_parameter('%s' % self._sequences)
@@ -850,7 +850,7 @@ class BuscoAnalysis(Analysis):
             blast_job.add_parameter('-out')
             blast_job.add_parameter('%s%s%s' % (self._tmp, self._out, self._random))
 
-            self._mkblast.run_jobs(self._cpus)
+            self._mkblast.run_jobs(self._cpus, BuscoAnalysis._logger)
 
             if not os.path.exists('%sblast_output' % self.mainout):
                 os.makedirs('%sblast_output' % self.mainout)
@@ -878,7 +878,7 @@ class BuscoAnalysis(Analysis):
         tblastn_job.add_parameter('-outfmt')
         tblastn_job.add_parameter('7')
 
-        self._tblastn.run_jobs(1)  # tblastn manages available cpus by itself
+        self._tblastn.run_jobs(1, BuscoAnalysis._logger)  # tblastn manages available cpus by itself
 
         # check that blast worked
         if not os.path.exists('%sblast_output/tblastn_%s%s.tsv' % (self.mainout, self._out, output_suffix)):

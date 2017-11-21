@@ -6,6 +6,7 @@
 ############################################################################
 from __future__ import with_statement
 import os
+import re
 from collections import defaultdict
 
 from quast_libs import qconfig
@@ -208,8 +209,10 @@ def get_downloaded_refs_with_alignments(genome_info_fpath, ref_fpaths, chromosom
         for line in report_file:
             if line == '\n' or not line:
                 break
-            line = line.split()
-            refs_len[line[0]] = (line[3], line[8])
+            lengths = re.findall(r'length: (\d+)', line)
+            if lengths and len(lengths) == 2:
+                line = line.split()
+                refs_len[line[0]] = (lengths[0], lengths[1])
 
     corr_refs = []
     for ref_fpath in ref_fpaths:

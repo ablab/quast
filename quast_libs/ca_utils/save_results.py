@@ -38,7 +38,9 @@ def print_results(contigs_fpath, log_out_f, used_snps_fpath, total_indels_info, 
     if contigs_fpath not in qconfig.dict_of_broken_scaffolds:
         log_out_f.write('\tScaffold gap misassemblies: %d\n' % region_misassemblies.count(Misassembly.SCAFFOLD_GAP))
     if qconfig.bed:
-        log_out_f.write('\tFake misassemblies matched with structural variations: %d\n' % result['misassemblies_matched_sv'])
+        log_out_f.write('\tFake misassemblies matched with structural variations: %d\n' % region_misassemblies.count(Misassembly.MATCHED_SV))
+    if qconfig.large_genome:
+        log_out_f.write('\tMisassemblies caused by mobile genetic elements: %d\n' % region_misassemblies.count(Misassembly.POTENTIAL_MGE))
 
     if qconfig.check_for_fragmented_ref:
         log_out_f.write('\tMisassemblies caused by fragmented reference: %d\n' % region_misassemblies.count(Misassembly.FRAGMENTED))
@@ -74,7 +76,6 @@ def save_result(result, report, fname, ref_fpath, genome_size):
     region_misassemblies = result['region_misassemblies']
     misassemblies_by_ref = result['misassemblies_by_ref']
     region_struct_variations = result['region_struct_variations']
-    misassemblies_matched_sv = result['misassemblies_matched_sv']
     misassembled_contigs = result['misassembled_contigs']
     misassembled_bases = result['misassembled_bases']
     misassembly_internal_overlap = result['misassembly_internal_overlap']
@@ -97,7 +98,9 @@ def save_result(result, report, fname, ref_fpath, genome_size):
     report.add_field(reporting.Fields.MISCONTIGSBASES, misassembled_bases)
     report.add_field(reporting.Fields.MISINTERNALOVERLAP, misassembly_internal_overlap)
     if qconfig.bed:
-        report.add_field(reporting.Fields.STRUCT_VARIATIONS, misassemblies_matched_sv)
+        report.add_field(reporting.Fields.STRUCT_VARIATIONS, region_misassemblies.count(Misassembly.MATCHED_SV))
+    if qconfig.large_genome:
+        report.add_field(reporting.Fields.POTENTIAL_MGE, region_misassemblies.count(Misassembly.POTENTIAL_MGE))
     report.add_field(reporting.Fields.UNALIGNED, '%d + %d part' % (unaligned, partially_unaligned))
     report.add_field(reporting.Fields.UNALIGNEDBASES, (fully_unaligned_bases + partially_unaligned_bases))
     report.add_field(reporting.Fields.AMBIGUOUS, ambiguous_contigs)

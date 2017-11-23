@@ -26,6 +26,8 @@ class Misassembly:
     FRAGMENTED = 6
     POTENTIALLY_MIS_CONTIGS = 7
     POSSIBLE_MISASSEMBLIES = 8
+    MATCHED_SV = 9
+    POTENTIAL_MGE = 10
 
 
 class StructuralVariations(object):
@@ -283,6 +285,30 @@ def find_all_sv(bed_fpath):
     return region_struct_variations
 
 
+def detect_potential_mge(misassemblies):
+    is_potential_mge = []
+
+    while len(is_potential_mge) < len(misassemblies):
+        idx = len(is_potential_mge)
+        if not misassemblies[idx] or idx + 1 >= len(misassemblies) or not misassemblies[idx + 1]:
+            is_potential_mge.append(False)
+            continue
+        align1, start_in_ref, ms_type, mge_len = misassemblies[idx][0]
+        align2, end_in_ref, ms_type2 = misassemblies[idx + 1][1]
+        if ms_type == ms_type2 and mge_len <= qconfig.extensive_misassembly_threshold and align1.ref == align2.ref and \
+                        (align1.s2 < align1.e2) == (align2.s2 < align2.e2):
+            start_in_contig, end_in_contig = align1.end(), align2.start()
+            distance_on_contig = end_in_contig - start_in_contig - 1
+            distance_on_reference, cyclic_moment = distance_between_alignments(align1, align2)
+            inconsistency = distance_on_reference - distance_on_contig
+            if abs(inconsistency) <= qconfig.extensive_misassembly_threshold:
+                is_potential_mge.append(True)
+                is_potential_mge.append(True)
+                continue
+        is_potential_mge.append(False)
+    return is_potential_mge
+
+
 def check_is_scaffold_gap(inconsistency, contig_seq, align1, align2):
     if abs(inconsistency) <= qconfig.scaffolds_gap_threshold and align1.ref == align2.ref and \
             align1.pos_strand() == align2.pos_strand() and align1.pos_strand() == (align1.s1 < align2.s1) and \
@@ -291,7 +317,7 @@ def check_is_scaffold_gap(inconsistency, contig_seq, align1, align2):
     return False
 
 
-def exclude_internal_overlaps(align1, align2, i=None, ca_output=None):
+def exclude_internal_overlaps(align1, align2, i=None):
     # returns size of align1.len2 decrease (or 0 if not changed). It is important for cur_aligned_len calculation
     def __shift_cigar(align, new_start=None, new_end=None):
         new_cigar = 'cs:Z:'
@@ -346,8 +372,7 @@ def exclude_internal_overlaps(align1, align2, i=None, ca_output=None):
         return diff_len
 
     def __shift_start(align, new_start, diff_len):
-        if ca_output is not None:
-            ca_output.stdout_f.write('%s' % align.short_str())
+        align_modification = '%s' % align.short_str()
         if align.s2 < align.e2:
             align.s1 += (new_start - align.s2) - diff_len
             align.s2 = new_start
@@ -357,12 +382,11 @@ def exclude_internal_overlaps(align1, align2, i=None, ca_output=None):
             align.e2 = new_start
             align.len2 = align.s2 - align.e2 + 1
         align.len1 = align.e1 - align.s1 + 1
-        if ca_output is not None:
-            ca_output.stdout_f.write(' --> %s\n' % align.short_str())
+        align_modification += ' --> %s\n' % align.short_str()
+        return align_modification
 
     def __shift_end(align, new_end, diff_len):
-        if ca_output is not None:
-            ca_output.stdout_f.write('%s' % align.short_str())
+        align_modification = '%s' % align.short_str()
         if align.s2 < align.e2:
             align.e1 -= (align.e2 - new_end) - diff_len
             align.e2 = new_end
@@ -372,25 +396,24 @@ def exclude_internal_overlaps(align1, align2, i=None, ca_output=None):
             align.s2 = new_end
             align.len2 = align.s2 - align.e2 + 1
         align.len1 = align.e1 - align.s1 + 1
-        if ca_output is not None:
-            ca_output.stdout_f.write(' --> %s' % align.short_str() + '\n')
+        align_modification += ' --> %s\n' % align.short_str()
+        return align_modification
 
     distance_on_contig = align2.start() - align1.end() - 1
     if distance_on_contig >= 0:  # no overlap
-        return 0
+        return 0, None
     prev_len2 = align1.len2
-    if ca_output is not None:
-        ca_output.stdout_f.write('\t\t\tExcluding internal overlap of size %d between Alignment %d and %d: '
-                                 % (-distance_on_contig, i+1, i+2))
+    overlap_msg = '\t\t\tExcluding internal overlap of size %d between Alignment %d and %d: ' % \
+                  (-distance_on_contig, i+1, i+2) if i is not None else ''
 
     # left only one of two copies (remove overlap from shorter alignment)
     if align1.len2 >= align2.len2:
         diff_len = __shift_cigar(align2, new_start=align1.end() + 1)  # excluded insertions and deletions
-        __shift_start(align2, align1.end() + 1, diff_len)
+        overlap_msg += __shift_start(align2, align1.end() + 1, diff_len)
     else:
         diff_len = __shift_cigar(align1, new_end=align2.start() - 1)
-        __shift_end(align1, align2.start() - 1, diff_len)
-    return prev_len2 - align1.len2
+        overlap_msg += __shift_end(align1, align2.start() - 1, diff_len)
+    return prev_len2 - align1.len2, overlap_msg
 
 
 def count_ns_and_not_ns_between_aligns(contig_seq, align1, align2):
@@ -408,7 +431,7 @@ def is_gap_filled_ns(contig_seq, align1, align2):
 
 def process_misassembled_contig(sorted_aligns, is_cyclic, aligned_lengths, region_misassemblies, ref_lens, ref_aligns,
                                 ref_features, contig_seq, misassemblies_by_ref, istranslocations_by_ref, region_struct_variations,
-                                misassemblies_matched_sv, ca_output):
+                                ca_output):
     misassembly_internal_overlap = 0
     prev_align = sorted_aligns[0]
     cur_aligned_length = prev_align.len2
@@ -418,13 +441,48 @@ def process_misassembled_contig(sorted_aligns, is_cyclic, aligned_lengths, regio
     contig_aligned_length = 0  # for internal debugging purposes
     cnt_misassemblies = 0
 
+    misassemblies = []
+    misassembly_info = []
     for i in range(len(sorted_aligns) - 1):
         next_align = sorted_aligns[i + 1]
 
         is_fake_translocation = is_fragmented_ref_fake_translocation(prev_align, next_align, ref_lens)
-        cur_aligned_length -= exclude_internal_overlaps(prev_align, next_align, i, ca_output)
+        internal_overlap, overlap_msg = exclude_internal_overlaps(prev_align, next_align, i)
         is_extensive_misassembly, aux_data = is_misassembly(prev_align, next_align, contig_seq, ref_lens,
                                                             is_cyclic, region_struct_variations, is_fake_translocation)
+        misassembly_type = ''
+        if is_extensive_misassembly: # it is not a Fake translocation, because is_extensive_misassembly is True
+            prev_ref, next_ref = get_ref_by_chromosome(prev_align.ref), get_ref_by_chromosome(next_align.ref)
+            if prev_align.ref != next_align.ref:  # if chromosomes from different references
+                if qconfig.is_combined_ref and prev_ref != next_ref:
+                    misassembly_type = 'interspecies translocation'
+                else:
+                    misassembly_type = 'translocation'
+            elif abs(aux_data["inconsistency"]) > qconfig.extensive_misassembly_threshold:
+                misassembly_type = 'relocation'
+            else: #if strand1 != strand2:
+                misassembly_type = 'inversion'
+            if next_align.s1 > prev_align.e1:
+                start_in_ref, end_in_ref = prev_align.e1, next_align.s1
+            else:
+                start_in_ref, end_in_ref = next_align.s1, prev_align.e1
+            misassemblies.append([(prev_align, start_in_ref, misassembly_type, next_align.len2), (next_align, end_in_ref, misassembly_type)])
+        else:
+            misassemblies.append([])
+        misassembly_info.append((internal_overlap, overlap_msg, is_extensive_misassembly, aux_data, misassembly_type))
+        prev_align = next_align
+    is_potential_mge = None
+    if qconfig.large_genome:
+        is_potential_mge = detect_potential_mge(misassemblies)
+
+    prev_align = sorted_aligns[0]
+    for i in range(len(sorted_aligns) - 1):
+        next_align = sorted_aligns[i + 1]
+        internal_overlap, overlap_msg, is_extensive_misassembly, aux_data, misassembly_type = misassembly_info[i]
+        if overlap_msg:
+            cur_aligned_length -= internal_overlap
+            ca_output.stdout_f.write(overlap_msg)
+
         inconsistency = aux_data["inconsistency"]
         distance_on_contig = aux_data["distance_on_contig"]
         misassembly_internal_overlap += aux_data["misassembly_internal_overlap"]
@@ -438,13 +496,18 @@ def process_misassembled_contig(sorted_aligns, is_cyclic, aligned_lengths, regio
         if aux_data["is_sv"]:
             ca_output.stdout_f.write('\t\t\t  Not a misassembly (structural variation of the genome) between these two alignments\n')
             ca_output.icarus_out_f.write('fake: not a misassembly (structural variation of the genome)\n')
-            misassemblies_matched_sv += 1
+            region_misassemblies.append(Misassembly.MATCHED_SV)
         elif aux_data["is_scaffold_gap"] and abs(inconsistency) > qconfig.extensive_misassembly_threshold:
             ca_output.stdout_f.write('\t\t\t  Incorrectly estimated size of scaffold gap between these two alignments: ')
             ca_output.stdout_f.write('gap length difference = ' + str(inconsistency) + '\n')
             region_misassemblies.append(Misassembly.SCAFFOLD_GAP)
             misassemblies_by_ref[prev_ref].append(Misassembly.SCAFFOLD_GAP)
             ca_output.icarus_out_f.write('fake: scaffold gap size wrong estimation' + '\n')
+        elif is_potential_mge and is_potential_mge[i]:
+            ca_output.stdout_f.write(
+                '\t\t\t  Not a misassembly (possible mobile genetic element) between these two alignments\n')
+            ca_output.icarus_out_f.write('fake: not a misassembly (possible mobile genetic element)\n')
+            region_misassemblies.append(Misassembly.POTENTIAL_MGE)
         elif is_extensive_misassembly:
             is_misassembled = True
             cnt_misassemblies += 1
@@ -456,36 +519,27 @@ def process_misassembled_contig(sorted_aligns, is_cyclic, aligned_lengths, regio
                 contig_is_printed = True
             ca_output.misassembly_f.write('Extensive misassembly (')
             ca_output.stdout_f.write('\t\t\t  Extensive misassembly (')
-            if prev_align.ref != next_align.ref:  # it is not a Fake translocation, because is_extensive_misassembly is True
-                if qconfig.is_combined_ref and prev_ref != next_ref:  # if chromosomes from different references
-                        region_misassemblies.append(Misassembly.INTERSPECTRANSLOCATION)
-                        istranslocations_by_ref[prev_ref][next_ref] += 1
-                        istranslocations_by_ref[next_ref][prev_ref] += 1
-                        misassemblies_by_ref[prev_ref].append(Misassembly.INTERSPECTRANSLOCATION)
-                        misassemblies_by_ref[next_ref].append(Misassembly.INTERSPECTRANSLOCATION)
-                        ca_output.stdout_f.write('interspecies translocation')
-                        ca_output.misassembly_f.write('interspecies translocation')
-                        ca_output.icarus_out_f.write('interspecies translocation')
-                else:
-                    region_misassemblies.append(Misassembly.TRANSLOCATION)
-                    misassemblies_by_ref[prev_ref].append(Misassembly.TRANSLOCATION)
-                    ca_output.stdout_f.write('translocation')
-                    ca_output.misassembly_f.write('translocation')
-                    ca_output.icarus_out_f.write('translocation')
-            elif abs(inconsistency) > qconfig.extensive_misassembly_threshold:
+            msg = ''
+            if misassembly_type == 'interspecies translocation':
+                region_misassemblies.append(Misassembly.INTERSPECTRANSLOCATION)
+                istranslocations_by_ref[prev_ref][next_ref] += 1
+                istranslocations_by_ref[next_ref][prev_ref] += 1
+                misassemblies_by_ref[prev_ref].append(Misassembly.INTERSPECTRANSLOCATION)
+                misassemblies_by_ref[next_ref].append(Misassembly.INTERSPECTRANSLOCATION)
+            elif misassembly_type == 'translocation':
+                region_misassemblies.append(Misassembly.TRANSLOCATION)
+                misassemblies_by_ref[prev_ref].append(Misassembly.TRANSLOCATION)
+            elif misassembly_type == 'relocation':
                 region_misassemblies.append(Misassembly.RELOCATION)
                 misassemblies_by_ref[prev_ref].append(Misassembly.RELOCATION)
-                msg = 'relocation, inconsistency = ' + str(inconsistency) + \
+                msg = ', inconsistency = ' + str(inconsistency) + \
                       (' [linear representation of circular genome]' if cyclic_moment else '')
-                ca_output.stdout_f.write(msg)
-                ca_output.misassembly_f.write(msg)
-                ca_output.icarus_out_f.write(msg)
             else: #if strand1 != strand2:
                 region_misassemblies.append(Misassembly.INVERSION)
                 misassemblies_by_ref[prev_ref].append(Misassembly.INVERSION)
-                ca_output.stdout_f.write('inversion')
-                ca_output.misassembly_f.write('inversion')
-                ca_output.icarus_out_f.write('inversion')
+            ca_output.stdout_f.write(misassembly_type + msg)
+            ca_output.misassembly_f.write(misassembly_type + msg)
+            ca_output.icarus_out_f.write(misassembly_type + msg)
             ca_output.stdout_f.write(') between these two alignments\n')
             ca_output.misassembly_f.write(') between %s %s and %s %s' % (prev_align.s2, prev_align.e2, next_align.s2, next_align.e2) + '\n')
             ca_output.icarus_out_f.write('\n')
@@ -562,4 +616,5 @@ def process_misassembled_contig(sorted_aligns, is_cyclic, aligned_lengths, regio
                                                      "contig length (contig: %s, len: %d, aligned: %d)!" % \
                                                      (sorted_aligns[0].contig, contig_aligned_length, len(contig_seq))
 
-    return is_misassembled, misassembly_internal_overlap, indels_info, misassemblies_matched_sv, cnt_misassemblies, contig_aligned_length
+    return is_misassembled, misassembly_internal_overlap, indels_info, cnt_misassemblies, contig_aligned_length
+

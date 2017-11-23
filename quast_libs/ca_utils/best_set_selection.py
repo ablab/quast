@@ -299,7 +299,7 @@ def get_score(score, aligns, ref_lens, is_cyclic, uncovered_len, seq, region_str
         overlaped_len = max(0, align1.end() - align2.start() + 1)
         if len(aligns) > 2:  # does not affect score and uncovered but it is important for further checking on set correctness
             exclude_internal_overlaps(aligns[-3], align1)
-        reduced_len = exclude_internal_overlaps(align1, align2)  # reduced_len is for align1 only
+        reduced_len, _ = exclude_internal_overlaps(align1, align2)  # reduced_len is for align1 only
         # check whether the set is still correct, i.e both alignments are rather large
         if min(align1.len2, align2.len2) < qconfig.min_alignment:
             return None, None

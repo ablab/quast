@@ -105,7 +105,6 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fp
     ambiguous_contigs_len = 0
     half_unaligned_with_misassembly = 0
     misassembly_internal_overlap = 0
-    misassemblies_matched_sv = 0
 
     ref_aligns = dict()
     contigs_aligned_lengths = []
@@ -350,11 +349,10 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fp
                         continue
 
                     ### processing misassemblies
-                    is_misassembled, current_mio, indels_info, misassemblies_matched_sv, cnt_misassemblies, contig_aligned_length = \
+                    is_misassembled, current_mio, indels_info, cnt_misassemblies, contig_aligned_length = \
                         process_misassembled_contig(sorted_aligns, is_cyclic, aligned_lengths, region_misassemblies,
                                                     ref_lens, ref_aligns, ref_features, seq, misassemblies_by_ref,
-                                                    istranslocations_by_ref, region_struct_variations, misassemblies_matched_sv,
-                                                    ca_output)
+                                                    istranslocations_by_ref, region_struct_variations, ca_output)
                     contigs_aligned_lengths[-1] = contig_aligned_length
                     misassembly_internal_overlap += current_mio
                     total_indels_info += indels_info
@@ -387,7 +385,6 @@ def analyze_contigs(ca_output, contigs_fpath, unaligned_fpath, unaligned_info_fp
 
     result = {'region_misassemblies': region_misassemblies,
               'region_struct_variations': region_struct_variations.get_count() if region_struct_variations else None,
-              'misassemblies_matched_sv': misassemblies_matched_sv,
               'misassembled_contigs': misassembled_contigs, 'misassembled_bases': misassembled_bases,
               'misassembly_internal_overlap': misassembly_internal_overlap,
               'unaligned': unaligned, 'partially_unaligned': partially_unaligned,

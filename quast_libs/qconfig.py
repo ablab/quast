@@ -74,11 +74,11 @@ run_busco = False
 large_genome = False
 
 # ideal assembly section
-ideal_assembly = False
-ideal_assembly_insert_size = 'auto'
-ideal_assembly_default_IS = 255
-ideal_assembly_min_IS = 63
-ideal_assembly_max_IS = 1023
+optimal_assembly = False
+optimal_assembly_insert_size = 'auto'
+optimal_assembly_default_IS = 255
+optimal_assembly_min_IS = 63
+optimal_assembly_max_IS = 1023
 
 # print in stdout only main information
 silent = False
@@ -103,7 +103,7 @@ html_aux_dir = "report_html_aux"
 contig_report_fname_pattern = 'contigs_report_%s'
 icarus_report_fname_pattern = 'all_alignments_%s.tsv'
 minimap_output_dirname = 'minimap_output'
-ideal_assembly_basename = 'ideal_assembly'
+optimal_assembly_basename = 'optimal_assembly'
 
 # for MetaQUAST
 downloaded_dirname = "quast_downloaded_references"
@@ -408,8 +408,8 @@ def usage(show_hidden=False, meta=False, short=True, stream=sys.stdout):
         stream.write("    --fragmented-max-indent  <int>    Mark translocation as fake if both alignments are located no further than N bases \n")
         stream.write("                                      from the ends of the reference fragments [default: %s]\n" % MAX_INDEL_LENGTH)
         stream.write("                                      Requires --fragmented option.\n")
-        stream.write("    --ideal_assembly                  Simulate theoretically optimal assembly based on reference genome\n")
-        stream.write("    --est-insert-size  <int>          Use provided insert size in ideal assembly simulation [default: auto detect from reads or %d]\n" % ideal_assembly_default_IS)
+        stream.write("    --optimal_assembly                Simulate theoretically optimal assembly based on reference genome\n")
+        stream.write("    --est-insert-size  <int>          Use provided insert size in ideal assembly simulation [default: auto detect from reads or %d]\n" % optimal_assembly_default_IS)
         stream.write("    --plots-format  <str>             Save plots in specified format [default: %s]\n" % plot_extension)
         stream.write("                                      Supported formats: %s\n" % ', '.join(supported_plot_extensions))
         stream.write("    --memory-efficient                Run everything using one thread, separately per each assembly\n")

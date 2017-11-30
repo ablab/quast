@@ -16,7 +16,8 @@ from quast_libs import fastaparser, qconfig, qutils, reads_analyzer
 from quast_libs.log import get_logger
 from quast_libs.qutils import splitext_for_fasta_file, is_non_empty_file, download_external_tool, \
     add_suffix, get_dir_for_download, get_blast_fpath
-from quast_libs.ra_utils.misc import sort_bam, bam_to_bed, bedtools_fpath, sambamba_view, calculate_read_len
+from quast_libs.ra_utils.misc import sort_bam, bam_to_bed, bedtools_fpath, sambamba_view, calculate_read_len, \
+    minimap_fpath
 from quast_libs.reads_analyzer import calculate_insert_size
 
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
@@ -218,7 +219,7 @@ def get_fasta_entries_from_coords(result_fasta, ref_entry, scaffolds, repeats_re
     uncovered_idx = 0
     uncovered_start = (ref_len + 1) if not uncovered_regions else uncovered_regions[uncovered_idx][0]
     repeats_idx = 0
-    repeats_start = (ref_len + 1) if not repeats_regions else repeats_regions[uncovered_idx][0]
+    repeats_start = (ref_len + 1) if not repeats_regions else repeats_regions[repeats_idx][0]
     prev_end = 0
     for idx, (scf_start, scf_end) in enumerate(scaffolds):
         name = ref_entry[0] + suffix + str(idx)
@@ -226,9 +227,10 @@ def get_fasta_entries_from_coords(result_fasta, ref_entry, scaffolds, repeats_re
         # shift current uncovered region if needed
         while scf_start > uncovered_start:  # may happen only uncovered_regions is not None
             uncovered_idx, uncovered_start = __get_next_region(uncovered_regions, uncovered_idx)
-        while prev_end < repeats_start < scf_start:  # may happen only uncovered_regions is not None
-            repeat_name = ref_entry[0] + '_repeat' + str(repeats_idx)
-            result_fasta.append((repeat_name, ref_entry[1][repeats_regions[repeats_idx][0]: repeats_regions[repeats_idx][1]]))
+        while scf_start > repeats_start:
+            if repeats_start >= prev_end:
+                repeat_name = ref_entry[0] + '_repeat' + str(repeats_idx)
+                result_fasta.append((repeat_name, ref_entry[1][repeats_regions[repeats_idx][0]: repeats_regions[repeats_idx][1] + 1]))
             repeats_idx, repeats_start = __get_next_region(repeats_regions, repeats_idx)
         current_start = scf_start
         current_end = min(scf_end, uncovered_start)
@@ -245,10 +247,40 @@ def get_fasta_entries_from_coords(result_fasta, ref_entry, scaffolds, repeats_re
             result_fasta.append((name, "".join(subseqs)))
         prev_end = current_end
     for repeat in repeats_regions[repeats_idx:]:
-        if repeat[0] > prev_end:
+        if repeat[0] >= prev_end:
             repeat_name = ref_entry[0] + '_repeat' + str(repeats_idx)
-            result_fasta.append((repeat_name, ref_entry[1][repeat[0]: repeat[1]]))
+            result_fasta.append((repeat_name, ref_entry[1][repeat[0]: repeat[1] + 1]))
             repeats_idx += 1
+
+
+def check_repeats_instances(coords_fpath, repeats_fpath):
+    query_instances = dict()
+    with open(coords_fpath) as f:
+        for line in f:
+            fs = line.split('\t')
+            contig, align_start, align_end, strand, ref_name, ref_start = \
+                fs[0], fs[2], fs[3], fs[4], fs[5], fs[7]
+            align_start, align_end, ref_start = map(int, (align_start, align_end, ref_start))
+            align_start += 1
+            ref_start += 1
+            matched_bases, bases_in_mapping = map(int, (fs[9], fs[10]))
+            score = matched_bases
+            if contig in query_instances:
+                if score >= max(query_instances[contig]) * 0.8:
+                    query_instances[contig].append(score)
+            else:
+                query_instances[contig] = [score]
+    repeats_regions = defaultdict(list)
+    filtered_repeats_fpath = add_suffix(repeats_fpath, 'filtered')
+    with open(filtered_repeats_fpath, 'w') as out_f:
+        with open(repeats_fpath) as f:
+            for line in f:
+                fs = line.split()
+                query_id = '%s:%s-%s' % (fs[0], fs[1], fs[2])
+                if query_id in query_instances and len(query_instances[query_id]) > 1:
+                    out_f.write(line)
+                    repeats_regions[fs[0]].append((int(fs[1]), int(fs[2])))
+    return filtered_repeats_fpath, repeats_regions
 
 
 def get_unique_covered_regions(ref_fpath, tmp_dir, log_fpath, binary_fpath, insert_size, uncovered_fpath):
@@ -280,68 +312,22 @@ def get_unique_covered_regions(ref_fpath, tmp_dir, log_fpath, binary_fpath, inse
                         out.write(line[1:])
 
         repeats_fasta_fpath = os.path.join(tmp_dir, qutils.name_from_fpath(ref_fpath) + '.fasta')
-        blast_res_fpath = os.path.join(tmp_dir, qutils.name_from_fpath(ref_fpath) + '.rpt.blast.txt')
-        if not is_non_empty_file(blast_res_fpath):
+        coords_fpath = os.path.join(tmp_dir, qutils.name_from_fpath(ref_fpath) + '.rpt.coords.txt')
+        if not is_non_empty_file(coords_fpath):
             fasta_index_fpath = ref_fpath + '.fai'
             if exists(fasta_index_fpath):
                 os.remove(fasta_index_fpath)
             qutils.call_subprocess([bedtools_fpath('bedtools'), 'getfasta', '-fi', ref_fpath, '-bed',
                                     long_repeats_fpath, '-fo', repeats_fasta_fpath],
                                     stderr=open(log_fpath, 'w'), indent='    ')
-            db_fpath = os.path.join(tmp_dir, qutils.name_from_fpath(ref_fpath) + '.db')
-            cmd = get_blast_fpath('makeblastdb') + (' -in %s -dbtype nucl -out %s' % (ref_fpath, db_fpath))
-            qutils.call_subprocess(shlex.split(cmd), stdout=open(log_fpath, 'a'), stderr=open(log_fpath, 'a'),
-                                   logger=logger)
-            cmd = get_blast_fpath('blastn') + (' -query %s -db %s -outfmt 7 -num_threads %s' %
-                                               (repeats_fasta_fpath, db_fpath, qconfig.max_threads))
-            qutils.call_subprocess(shlex.split(cmd), stdout=open(blast_res_fpath, 'w'), stderr=open(log_fpath, 'a'), logger=logger)
-        filtered_repeats_fpath, repeats_regions = parse_blast_output(blast_res_fpath, long_repeats_fpath)
+            cmdline = [minimap_fpath(), '-c', '-B4', '-O4,24', '-N', '50', '--mask-level', '0.9',
+                       '-t', str(qconfig.max_threads), '-z', '200', ref_fpath, repeats_fasta_fpath]
+            return_code = qutils.call_subprocess(cmdline, stdout=open(coords_fpath, 'w'),
+                                                 stderr=open(log_fpath, 'a'))
+        filtered_repeats_fpath, repeats_regions = check_repeats_instances(coords_fpath, long_repeats_fpath)
         unique_covered_regions = remove_repeat_regions(ref_fpath, filtered_repeats_fpath, insert_size, tmp_dir, uncovered_fpath, log_fpath)
         return unique_covered_regions, repeats_regions
     return None, None
-
-
-def parse_blast_output(res_fpath, repeats_fpath):
-    query_instances = dict()
-    filtered_repeats_fpath = add_suffix(repeats_fpath, 'filtered')
-    with open(res_fpath) as res_file:
-        query_id_col, subj_id_col, idy_col, len_col, score_col = None, None, None, None, None
-        for line in res_file:
-            fs = line.split()
-            if line.startswith('#'):
-                refs_for_query = 0
-                # Fields: query id, subject id, % identity, alignment length, mismatches, gap opens, q. start, q. end, s. start, s. end, evalue, bit score
-                if 'Fields' in line:
-                    fs = line.strip().split('Fields: ')[-1].split(', ')
-                    query_id_col = fs.index('query acc.ver')
-                    subj_id_col = fs.index('subject acc.ver')
-                    idy_col = fs.index('% identity')
-                    len_col = fs.index('alignment length')
-                    score_col = fs.index('bit score')
-            else:
-                query_id = fs[query_id_col]
-                organism_id = fs[subj_id_col]
-                idy = float(fs[idy_col])
-                length = int(fs[len_col])
-                score = float(fs[score_col])
-                if query_id in query_instances:
-                    if score >= max(query_instances[query_id]) * 0.8:
-                        query_instances[query_id].append(score)
-                else:
-                    query_instances[query_id] = [score]
-    repeats_regions = defaultdict(list)
-    with open(filtered_repeats_fpath, 'w') as out_f:
-        with open(repeats_fpath) as f:
-            for line in f:
-                fs = line.split()
-                query_id = '%s:%s-%s' % (fs[0], fs[1], fs[2])
-                if query_id in query_instances and len(query_instances[query_id]) > 1:
-                    out_f.write(line)
-                    repeats_regions[fs[0]].append((int(fs[1]), int(fs[2])))
-    print(repeats_regions.keys())
-    return filtered_repeats_fpath, repeats_regions
-
-
 
 
 def do(ref_fpath, original_ref_fpath, output_dirpath):
@@ -352,16 +338,12 @@ def do(ref_fpath, original_ref_fpath, output_dirpath):
     reads_analyzer_dir = join(dirname(output_dirpath), qconfig.reads_stats_dirname)
     if qconfig.reads_fpaths or qconfig.reference_sam or qconfig.reference_bam:
         sam_fpath, bam_fpath, uncovered_fpath = reads_analyzer.align_reference(ref_fpath, reads_analyzer_dir, using_reads='all', calculate_coverage=True)
-    insert_size = qconfig.ideal_assembly_insert_size
+    insert_size = qconfig.optimal_assembly_insert_size
     if insert_size == 'auto' or not insert_size:
-        insert_size = qconfig.ideal_assembly_default_IS
-    if insert_size % 2 == 0:
-        insert_size += 1
-        logger.notice('  Current implementation cannot work with even insert sizes, '
-                      'will use the closest odd value (%d)' % insert_size)
+        insert_size = qconfig.optimal_assembly_default_IS
 
     ref_basename, fasta_ext = splitext_for_fasta_file(os.path.basename(ref_fpath))
-    result_basename = '%s.%s.is%d.fasta' % (ref_basename, qconfig.ideal_assembly_basename, insert_size)
+    result_basename = '%s.%s.is%d.fasta' % (ref_basename, qconfig.optimal_assembly_basename, insert_size)
     long_reads = qconfig.pacbio_reads or qconfig.nanopore_reads
     if long_reads:
         result_basename = add_suffix(result_basename, long_reads_polished_suffix)
@@ -370,11 +352,11 @@ def do(ref_fpath, original_ref_fpath, output_dirpath):
     result_fpath = os.path.join(output_dirpath, result_basename)
 
     original_ref_basename, fasta_ext = splitext_for_fasta_file(os.path.basename(original_ref_fpath))
-    prepared_ideal_assembly_basename = '%s.%s.is%d.fasta' % (original_ref_basename, qconfig.ideal_assembly_basename, insert_size)
-    ref_prepared_ideal_assembly = os.path.join(os.path.dirname(original_ref_fpath), prepared_ideal_assembly_basename)
+    prepared_optimal_assembly_basename = '%s.%s.is%d.fasta' % (original_ref_basename, qconfig.optimal_assembly_basename, insert_size)
+    ref_prepared_optimal_assembly = os.path.join(os.path.dirname(original_ref_fpath), prepared_optimal_assembly_basename)
 
-    if os.path.isfile(result_fpath) or os.path.isfile(ref_prepared_ideal_assembly):
-        already_done_fpath = result_fpath if os.path.isfile(result_fpath) else ref_prepared_ideal_assembly
+    if os.path.isfile(result_fpath) or os.path.isfile(ref_prepared_optimal_assembly):
+        already_done_fpath = result_fpath if os.path.isfile(result_fpath) else ref_prepared_optimal_assembly
         logger.notice('  Will reuse already generated Optimal Assembly with insert size %d (%s)' %
                       (insert_size, already_done_fpath))
         return already_done_fpath
@@ -422,8 +404,8 @@ def do(ref_fpath, original_ref_fpath, output_dirpath):
                 result_fasta.append((chrom + '_' + str(idx), seq[region[0]: region[1]]))
 
     fastaparser.write_fasta(result_fpath, result_fasta)
-    logger.info('  ' + 'Optimal Assembly saved to ' + result_fpath)
-    logger.notice('You can copy it to ' + ref_prepared_ideal_assembly +
+    logger.info('  ' + 'Theoretically optimal Assembly saved to ' + result_fpath)
+    logger.notice('You can copy it to ' + ref_prepared_optimal_assembly +
                   ' and QUAST will reuse it in further runs against the same reference (' + original_ref_fpath + ')')
 
     if not qconfig.debug:

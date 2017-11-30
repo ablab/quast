@@ -283,18 +283,18 @@ def align_reference(ref_fpath, output_dir, using_reads='all', calculate_coverage
                                                                 qconfig.max_threads, sam_fpath=qconfig.reference_sam,
                                                                 bam_fpath=qconfig.reference_bam, required_files=required_files,
                                                                 is_reference=True, alignment_only=True, using_reads=using_reads)
-    if not qconfig.ideal_assembly_insert_size or qconfig.ideal_assembly_insert_size == 'auto':
+    if not qconfig.optimal_assembly_insert_size or qconfig.optimal_assembly_insert_size == 'auto':
         if using_reads == 'pe' and sam_fpath:
             insert_size, std_dev = calculate_insert_size(sam_fpath, output_dir, ref_name)
             if not insert_size:
                 logger.info('  Failed calculating insert size.')
             else:
-                qconfig.ideal_assembly_insert_size = insert_size
+                qconfig.optimal_assembly_insert_size = insert_size
         elif using_reads == 'all' and is_non_empty_file(insert_size_fpath):
             try:
-                insert_size = int(open(insert_size_fpath).read())
+                insert_size = int(open(insert_size_fpath).readline())
                 if insert_size:
-                    qconfig.ideal_assembly_insert_size = insert_size
+                    qconfig.optimal_assembly_insert_size = insert_size
             except:
                 pass
 
@@ -610,16 +610,16 @@ def run_aligner(read_fpaths, ref_fpath, sam_fpath, out_sam_fpaths, output_dir, e
                     shutil.move(bam_dedup_fpath, bam_fpath)
         if reads_type == 'pe':
             insert_size, std_dev = calculate_insert_size(output_fpath, output_dir, basename(sam_fpath))
-            if insert_size < qconfig.ideal_assembly_max_IS:
+            if insert_size < qconfig.optimal_assembly_max_IS:
                 insert_sizes.append(insert_size)
         out_sam_fpaths.append(output_fpath)
 
     if insert_sizes:
-        qconfig.ideal_assembly_insert_size = max(insert_sizes)
+        qconfig.optimal_assembly_insert_size = max(insert_sizes)
         ref_name = qutils.name_from_fpath(ref_fpath)
         insert_size_fpath = join(output_dir, '..', ref_name + '.is.txt')
         with open(insert_size_fpath, 'w') as out:
-            out.write(str(qconfig.ideal_assembly_insert_size))
+            out.write(str(qconfig.optimal_assembly_insert_size))
 
 
 def merge_sam_files(tmp_sam_fpaths, sam_fpath, bam_fpath, max_threads, err_fpath):
@@ -857,7 +857,7 @@ def calculate_insert_size(sam_fpath, output_dir, ref_name, reads_suffix=''):
         if median_is <= 0:
             return None, None
         std_dev = sqrt(sum([(insert_size - median_is) ** 2 for insert_size in insert_sizes]) / len(insert_sizes))
-        insert_size = max(qconfig.ideal_assembly_min_IS, median_is)
+        insert_size = max(qconfig.optimal_assembly_min_IS, median_is)
         with open(insert_size_fpath, 'w') as out_f:
             out_f.write(str(insert_size) + '\n')
             out_f.write(str(std_dev))

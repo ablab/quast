@@ -16,7 +16,7 @@ from quast_libs import qconfig
 
 qconfig.check_python_version()
 
-from quast_libs import qutils, reads_analyzer, run_barrnap, plotter_data, unique_kmers, ideal_assembly
+from quast_libs import qutils, reads_analyzer, run_barrnap, plotter_data, unique_kmers, optimal_assembly
 from quast_libs.qutils import cleanup, check_dirpath, check_reads_fpaths
 from quast_libs.options_parser import parse_options
 
@@ -86,14 +86,14 @@ def main(args):
         logger.main_info('Reference:')
         original_ref_fpath = ref_fpath
         ref_fpath = qutils.correct_reference(ref_fpath, corrected_dirpath)
-        if qconfig.ideal_assembly:
+        if qconfig.optimal_assembly:
             if not qconfig.pacbio_reads and not qconfig.nanopore_reads and not qconfig.mate_pairs:
                 logger.warning('Optimal assembly cannot be created. It requires mate-pairs or long reads (Pacbio SMRT or Oxford Nanopore).')
             else:
-                ideal_assembly_fpath = ideal_assembly.do(ref_fpath, original_ref_fpath,
-                                                         os.path.join(output_dirpath, qconfig.ideal_assembly_basename))
-                if ideal_assembly_fpath is not None:
-                    contigs_fpaths.insert(0, ideal_assembly_fpath)
+                optimal_assembly_fpath = optimal_assembly.do(ref_fpath, original_ref_fpath,
+                                                         os.path.join(output_dirpath, qconfig.optimal_assembly_basename))
+                if optimal_assembly_fpath is not None:
+                    contigs_fpaths.insert(0, optimal_assembly_fpath)
                     labels.insert(0, 'Optimal')
                     labels = qutils.process_labels(contigs_fpaths, labels)
     else:

@@ -395,11 +395,11 @@ def process_blast(blast_assemblies, downloaded_dirpath, corrected_dirpath, label
                         # Fields: query id, subject id, % identity, alignment length, mismatches, gap opens, q. start, q. end, s. start, s. end, evalue, bit score
                         if 'Fields' in line:
                             fs = line.strip().split('Fields: ')[-1].split(', ')
-                            query_id_col = fs.index('query id')
-                            subj_id_col = fs.index('subject id')
-                            idy_col = fs.index('% identity')
-                            len_col = fs.index('alignment length')
-                            score_col = fs.index('bit score')
+                            query_id_col = fs.index('query id') if 'query id' in fs else 0
+                            subj_id_col = fs.index('subject id') if 'subject id' in fs else 1
+                            idy_col = fs.index('% identity') if '% identity' in fs else 2
+                            len_col = fs.index('alignment length') if 'alignment length' in fs else 3
+                            score_col = fs.index('bit score') if 'bit score' in fs else 11
                     elif refs_for_query < max_entries and len(fs) > score_col:
                         query_id = fs[query_id_col]
                         organism_id = fs[subj_id_col]
@@ -418,11 +418,11 @@ def process_blast(blast_assemblies, downloaded_dirpath, corrected_dirpath, label
                                         assembly_scores.append((seqname, query_id, score))
                                         if taxons:
                                             taxons_for_krona[correct_name(seqname)] = taxons
-                                            assembly_species.append(species_name)
+                                        assembly_species.append(species_name)
                                         refs_for_query += 1
                                     else:
-                                        seq_scores = [(seqname, query_id, score) for seqname, query_id, score in assembly_scores
-                                                      if species_name in seqname]
+                                        seq_scores = [(seqname, seq_query_id, seq_score) for seqname, seq_query_id, seq_score
+                                                      in assembly_scores if species_name == seqname.split('_')[0] + '_' + seqname.split('_')[1]]
                                         if seq_scores and score > seq_scores[0][2]:
                                             assembly_scores.remove(seq_scores[0])
                                             assembly_scores.append((seqname, query_id, score))

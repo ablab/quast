@@ -341,7 +341,7 @@ def parse_organism_id(organism_id):
 
 def process_blast(blast_assemblies, downloaded_dirpath, corrected_dirpath, labels, blast_check_fpath, err_fpath):
     if not download_blast_binaries(filenames=blast_filenames):
-        return None, None
+        return None, None, None
 
     if qconfig.custom_blast_db_fpath:
         global db_fpath
@@ -359,7 +359,7 @@ def process_blast(blast_assemblies, downloaded_dirpath, corrected_dirpath, label
                          exit_with_code=2)
 
     elif not download_blastdb():
-        return None, None
+        return None, None, None
 
     blast_res_fpath = os.path.join(downloaded_dirpath, 'blast.res')
 
@@ -440,7 +440,7 @@ def process_blast(blast_assemblies, downloaded_dirpath, corrected_dirpath, label
                 species_scores.append((seqname, query_id, score))
         species_by_assembly[label] = [seqname for seqname, query_id, score in assembly_scores]
     if not species_scores:
-        return None, None
+        return None, None, None
     return species_scores, species_by_assembly, replacement_dict
 
 
@@ -511,13 +511,15 @@ def search_references(organisms, assemblies, labels, downloaded_dirpath, not_fou
         ref_fpath, total_downloaded, total_scored_left = process_ref(ref_fpaths, organism, downloaded_dirpath, max_organism_name_len,
                                                                       downloaded_organisms, not_founded_organisms, total_downloaded, total_scored_left)
         if not ref_fpath and replacement_list:
-            logger.main_info('  ' + organism.replace('+', ' ') + ' was not found in NCBI database, trying to download the next best match')
-            for species in replacement_list[idx]:
-                ref_fpath, total_downloaded, _ = process_ref(ref_fpaths, species, downloaded_dirpath,
-                                                             max_organism_name_len, downloaded_organisms, not_founded_organisms,
-                                                             total_downloaded, total_scored_left + 1)
-                if ref_fpath:
-                    break
+            for next_match in replacement_list[idx]:
+                if next_match not in organisms:
+                    logger.main_info('  ' + organism.replace('+', ' ') + ' was not found in NCBI database, trying to download the next best match')
+                    ref_fpath, total_downloaded, _ = process_ref(ref_fpaths, next_match, downloaded_dirpath,
+                                                                 max_organism_name_len, downloaded_organisms, not_founded_organisms,
+                                                                 total_downloaded, total_scored_left + 1)
+                    organism = next_match
+                    if ref_fpath:
+                        break
 
     for assembly, label in zip(assemblies, labels):
         check_fpath = get_blast_output_fpath(blast_check_fpath, label)

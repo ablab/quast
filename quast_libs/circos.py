@@ -20,7 +20,7 @@ except ImportError:
 
 from quast_libs import qutils, qconfig
 from quast_libs.ca_utils.align_contigs import get_aux_out_fpaths
-from quast_libs.ca_utils.misc import create_minimap_output_dir, open_gzipsafe, ref_labels_by_chromosomes, parse_cs_tag
+from quast_libs.ca_utils.misc import create_minimap_output_dir, parse_cs_tag
 from quast_libs.fastaparser import get_chr_lengths_from_fastafile
 from quast_libs.icarus_utils import get_assemblies, check_misassembled_blocks, Alignment
 from quast_libs.qutils import get_path_to_program, is_non_empty_file, relpath
@@ -130,7 +130,8 @@ def create_meta_highlights(chr_lengths, output_dir):
     colors = ['orange', 'purple', 'blue']
     with open(highlights_fpath, 'w') as out_f:
         chrom_by_refs = OrderedDict()
-        for chrom, ref in ref_labels_by_chromosomes.items():
+        from quast_libs import contigs_analyzer
+        for chrom, ref in contigs_analyzer.ref_labels_by_chromosomes.items():
             if not ref in chrom_by_refs:
                 chrom_by_refs[ref] = []
             chrom_by_refs[ref].append(chrom)
@@ -138,6 +139,7 @@ def create_meta_highlights(chr_lengths, output_dir):
             for chrom in chromosomes:
                 out_f.write('\t'.join([chrom, '0', str(chr_lengths[chrom]), 'fill_color=' + colors[i % len(colors)]]) + '\n')
     return highlights_fpath
+
 
 def parse_aligner_contig_report(report_fpath):
     aligned_blocks = []
@@ -369,7 +371,7 @@ def create_labels(chr_lengths, assemblies, features_containers, coverage_fpath, 
                     'label_size = 30p\n'
                     'label_font = bold\n'
                     'label_parallel = yes\n'
-                    'file = ' + labels_txt_fpath + '\n'
+                    'file = ' + relpath(labels_txt_fpath, output_dir) + '\n'
                     'r0 = eval(sprintf("%fr+5p", conf(conf(., track_idx)_pos)))\n'
                     'r1 = eval(sprintf("%fr+500p", conf(conf(., track_idx)_pos)))\n'
                     '<rules>\n'
@@ -500,7 +502,7 @@ def create_conf(ref_fpath, contigs_fpaths, contig_report_fpath_pattern, output_d
             radius -= track_intervals[i]
         out_f.write('track%d_pos = %f\n' % (len(track_intervals), radius))
         out_f.write('<image>\n')
-        out_f.write('dir = %s\n' % output_dir)
+        out_f.write('dir = .\n')
         out_f.write('file = %s\n' % circos_png_fname)
         out_f.write('png = yes\n')
         out_f.write('svg = no\n')

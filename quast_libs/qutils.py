@@ -94,20 +94,17 @@ def correct_seq(seq, original_fpath):
 
     # make sure that only A, C, G, T or N are in the sequence
     if re.compile(r'[^ACGTN]').search(corr_seq):
-        logger.warning('Skipping ' + original_fpath + ' because it contains non-ACGTN characters.',
-                indent='    ')
+        logger.error('Skipping ' + original_fpath + ' because it contains non-ACGTN characters.', indent='    ')
         return None
     return corr_seq
 
 
-def correct_fasta(original_fpath, corrected_fpath, min_contig,
-                  is_reference=False):
+def correct_fasta(original_fpath, min_contig, corrected_fpath=None, is_reference=False):
     modified_fasta_entries = []
     used_seq_names = defaultdict(int)
     for first_line, seq in fastaparser.read_fasta(original_fpath):
         if not first_line:
-            logger.warning('Skipping ' + original_fpath + ' because >sequence_name field is empty.',
-                    indent='    ')
+            logger.error('Skipping ' + original_fpath + ' because >sequence_name field is empty.', indent='    ')
             return False
         if (len(seq) >= min_contig) or is_reference:
             corr_name = correct_name(first_line)
@@ -126,8 +123,8 @@ def correct_fasta(original_fpath, corrected_fpath, min_contig,
     if not modified_fasta_entries:
         logger.warning('Skipping ' + original_fpath + ' because file is empty.', indent='    ')
         return False
-
-    fastaparser.write_fasta(corrected_fpath, modified_fasta_entries)
+    if corrected_fpath:
+        fastaparser.write_fasta(corrected_fpath, modified_fasta_entries)
     return True
 
 
@@ -186,7 +183,9 @@ def correct_contigs(contigs_fpaths, corrected_dirpath, labels, reporting):
 
     corrected_contigs_fpaths = []
     old_contigs_fpaths = []
-    for contig_idx, (old_fpaths, corr_fpaths, broken_scaffold_fpaths, logs) in enumerate(corrected_info):
+    if any([is_fatal_error for (old_fpaths, corr_fpaths, broken_scaffold_fpaths, logs, is_fatal_error) in corrected_info]):
+       exit(4)
+    for contig_idx, (old_fpaths, corr_fpaths, broken_scaffold_fpaths, logs, is_fatal_error) in enumerate(corrected_info):
         label = labels[contig_idx]
         logger.main_info('\n'.join(logs))
         for old_fpath in old_fpaths:
@@ -237,15 +236,21 @@ def parallel_correct_contigs(file_counter, contigs_fpath, corrected_dirpath, lab
     corr_fpaths = []
     old_contigs_fpaths = []
     broken_scaffold_fpaths = []
+    is_fatal_error = False
 
     corr_fpath = unique_corrected_fpath(os.path.join(corrected_dirpath, slugify(label) + fasta_ext))
     lengths = get_lengths_from_fasta(contigs_fpath, label)
     if not lengths:
         corr_fpath = None
     elif qconfig.no_check_meta:
-        corr_fpath = contigs_fpath
-    elif not correct_fasta(contigs_fpath, corr_fpath, qconfig.min_contig):
+        if not correct_fasta(contigs_fpath, qconfig.min_contig):
+            corr_fpath = None
+            is_fatal_error = True
+        else:
+            corr_fpath = contigs_fpath
+    elif not correct_fasta(contigs_fpath, qconfig.min_contig, corr_fpath):
         corr_fpath = None
+        is_fatal_error = True
     if corr_fpath:
         corr_fpaths.append((corr_fpath, lengths))
         old_contigs_fpaths.append(contigs_fpath)
@@ -256,11 +261,11 @@ def parallel_correct_contigs(file_counter, contigs_fpath, corrected_dirpath, lab
         broken_scaffold_fpath, logs = broke_scaffolds(file_counter, labels, corr_fpath, corrected_dirpath, logs)
         if broken_scaffold_fpath:
             lengths = get_lengths_from_fasta(broken_scaffold_fpath, label + '_broken')
-            if lengths and (qconfig.no_check_meta or correct_fasta(contigs_fpath, corr_fpath, qconfig.min_contig)):
+            if lengths and (qconfig.no_check_meta or correct_fasta(contigs_fpath, qconfig.min_contig, corr_fpath)):
                 broken_scaffold_fpaths.append((broken_scaffold_fpath, lengths))
                 qconfig.dict_of_broken_scaffolds[broken_scaffold_fpath] = corr_fpath
 
-    return old_contigs_fpaths, corr_fpaths, broken_scaffold_fpaths, logs
+    return old_contigs_fpaths, corr_fpaths, broken_scaffold_fpaths, logs, is_fatal_error
 
 
 def broke_scaffolds(file_counter, labels, contigs_fpath, corrected_dirpath, logs):
@@ -346,7 +351,7 @@ def correct_reference(ref_fpath, corrected_dirpath):
     corr_fpath = unique_corrected_fpath(
         os.path.join(corrected_dirpath, name + fasta_ext))
     if not qconfig.no_check_meta and not qconfig.is_combined_ref:
-        if not correct_fasta(ref_fpath, corr_fpath, qconfig.min_contig, is_reference=True):
+        if not correct_fasta(ref_fpath, qconfig.min_contig, corr_fpath, is_reference=True):
             logger.error('Reference file ' + ref_fpath +
                          ' is empty or contains incorrect sequences (header-only or with non-ACGTN characters)!',
                          exit_with_code=1)

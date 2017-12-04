@@ -261,7 +261,7 @@ def main(args):
         logger.main_info('MetaQUAST finished.')
         return logger.finish_up(numbers=tuple(total_num_notifications), check_test=test_mode)
 
-    if downloaded_refs:
+    if downloaded_refs and return_code == 0:
         logger.main_info()
         logger.main_info('Excluding downloaded references with low genome fraction from further analysis..')
         corr_ref_fpaths = get_downloaded_refs_with_alignments(genome_info_fpath, ref_fpaths, chromosomes_by_refs)
@@ -291,6 +291,10 @@ def main(args):
             logger.main_info('All downloaded references have genome fraction more than 10%. Nothing was excluded.')
         else:
             logger.main_info('All downloaded references have low genome fraction. Nothing was excluded for now.')
+
+    if return_code != 0:
+        logger.main_info('MetaQUAST finished.')
+        return logger.finish_up(numbers=tuple(total_num_notifications), check_test=test_mode)
 
     if qconfig.calculate_read_support:
         calculate_ave_read_support(combined_output_dirpath, assemblies)

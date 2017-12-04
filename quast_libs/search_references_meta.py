@@ -339,6 +339,16 @@ def parse_organism_id(organism_id):
     return seqname, taxons
 
 
+def get_species_name(seqname):
+    seqname_fs = seqname.split('_')
+    species_name = None
+    if len(seqname_fs) > 1:
+        species_name = seqname_fs[0] + '_' + seqname_fs[1]
+        if seqname_fs[1] == 'sp.':
+            species_name += '_' + seqname_fs[2]
+    return species_name
+
+
 def process_blast(blast_assemblies, downloaded_dirpath, corrected_dirpath, labels, blast_check_fpath, err_fpath):
     if not download_blast_binaries(filenames=blast_filenames):
         return None, None, None
@@ -410,9 +420,8 @@ def process_blast(blast_assemblies, downloaded_dirpath, corrected_dirpath, label
                             seqname, taxons = parse_organism_id(organism_id)
                             if not seqname:
                                 continue
-                            species_name = seqname.split('_')
-                            if len(species_name) > 1 and 'uncultured' not in seqname:
-                                species_name = species_name[0] + '_' + species_name[1]
+                            species_name = get_species_name(seqname)
+                            if species_name and 'uncultured' not in seqname:
                                 if refs_for_query == 0:
                                     if species_name not in assembly_species:
                                         assembly_scores.append((seqname, query_id, score))
@@ -421,8 +430,8 @@ def process_blast(blast_assemblies, downloaded_dirpath, corrected_dirpath, label
                                         assembly_species.append(species_name)
                                         refs_for_query += 1
                                     else:
-                                        seq_scores = [(seqname, seq_query_id, seq_score) for seqname, seq_query_id, seq_score
-                                                      in assembly_scores if species_name == seqname.split('_')[0] + '_' + seqname.split('_')[1]]
+                                        seq_scores = [(query_name, seq_query_id, seq_score) for query_name, seq_query_id, seq_score
+                                                      in assembly_scores if get_species_name(query_name) == species_name]
                                         if seq_scores and score > seq_scores[0][2]:
                                             assembly_scores.remove(seq_scores[0])
                                             assembly_scores.append((seqname, query_id, score))

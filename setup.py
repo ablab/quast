@@ -51,6 +51,10 @@ def cmd_in(cmds):
     return any(c in args for c in cmds)
 
 
+if 'bdist_wheel' in sys.argv:
+    raise RuntimeError("This setup.py does not support wheels. setup.py install will be run automatically...")
+
+
 if abspath(dirname(__file__)) != abspath(os.getcwd()):
     logger.error('Please change to ' + dirname(__file__) + ' before running setup.py')
     sys.exit()
@@ -211,6 +215,14 @@ The tool accepts multiple assemblies, thus is suitable for comparison.''',
     packages=find_packages(),
     package_data={
         quast_package:
+            find_package_files('test_data', package='') +
+            [
+            'README.md',
+            'CHANGES.txt',
+            'VERSION.txt',
+            'LICENSE.txt',
+            'manual.html',
+            ] +
             find_package_files('html_saver') +
             nucmer_files +
             find_package_files('genemark/' + qconfig.platform_name) +

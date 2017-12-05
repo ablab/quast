@@ -536,7 +536,7 @@ def parse_options(logger, quast_args, is_metaquast=False):
     if qconfig.test or qconfig.test_no_ref or qconfig.test_sv:
         qconfig.output_dirpath = abspath(qconfig.test_output_dirname)
         check_dirpath(qconfig.output_dirpath, 'You are trying to run QUAST from ' + str(os.path.dirname(qconfig.output_dirpath)) + '.\n' +
-                  'Please, rerun QUAST from a different directory.')
+                      'Please, rerun QUAST from a different directory.')
         if qconfig.test or qconfig.test_sv:
             qconfig.reference = meta_test_references if is_metaquast else test_reference
             if not is_metaquast:
@@ -549,13 +549,14 @@ def parse_options(logger, quast_args, is_metaquast=False):
             qconfig.reverse_reads = test_reverse_reads
         contigs_fpaths += meta_test_contigs_fpaths if is_metaquast else test_contigs_fpaths
         qconfig.test = True
-        
+
         if any(not isfile(fpath) for fpath in contigs_fpaths):
             logger.info(
                 '\nYou are probably running QUAST installed via pip, which does not include test data.\n'
                 'This is fine, just start using QUAST on your own data!\n'
-                'If you still want to run tests, please download test_data directory from \n'
-                'https://github.com/ablab/quast/ to CWD, or install QUAST from source:\n'
+                'If you still want to run tests, please download test_data directory to CWD:\n'
+                'wget quast.sf.net/test_data.tar.gz\n'
+                'or install QUAST from source:\n'
                 'git clone https://github.com/ablab/quast && cd quast && ./setup.py install\n')
             sys.exit(2)
 
@@ -572,7 +573,7 @@ def parse_options(logger, quast_args, is_metaquast=False):
 
     if not qconfig.output_dirpath:
         check_dirpath(os.getcwd(), 'An output path was not specified manually. You are trying to run QUAST from ' + str(os.getcwd()) + '.\n' +
-                  'Please, specify a different directory using -o option.')
+                      'Please, specify a different directory using -o option.')
     qconfig.output_dirpath, qconfig.json_output_dirpath, existing_alignments = \
         set_up_output_dir(qconfig.output_dirpath, qconfig.json_output_dirpath, not qconfig.output_dirpath,
                           qconfig.save_json if not is_metaquast else None)

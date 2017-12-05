@@ -55,10 +55,14 @@ def install_genemark():
     base_genemark_dir = os.path.join(qconfig.LIBS_LOCATION, 'genemark')
     gm_key_fpath = os.path.join(base_genemark_dir, 'gm_keys',
                                 'gm_key_' + ('32' if qconfig.platform_name == 'linux_32' else '64'))
-    gm_key_dst = os.path.expanduser('~/.gm_key')
-    if not os.path.isfile(gm_key_dst) or \
-        (not filecmp.cmp(gm_key_dst, gm_key_fpath) and os.path.getmtime(gm_key_dst) < os.path.getmtime(gm_key_fpath)):
-        shutil.copyfile(gm_key_fpath, gm_key_dst)
+    try:
+        gm_key_dst = os.path.expanduser('~/.gm_key')
+        if not os.path.isfile(gm_key_dst) or \
+            (not filecmp.cmp(gm_key_dst, gm_key_fpath) and os.path.getmtime(gm_key_dst) < os.path.getmtime(gm_key_fpath)):
+            shutil.copyfile(gm_key_fpath, gm_key_dst)
+        return True
+    except:
+        return False
 
 
 def is_license_valid(out_dirpath, fasta_fpaths):
@@ -291,9 +295,9 @@ def do(fasta_fpaths, gene_lengths, out_dirpath, prokaryote, meta):
     tool_dirpath = os.path.join(qconfig.LIBS_LOCATION, tool_dirname, qconfig.platform_name)
     if not os.path.exists(tool_dirpath):
         logger.warning('  Sorry, can\'t use %s on this platform, skipping gene prediction.' % tool_name)
+    elif not install_genemark():
+        logger.warning('  Can\'t copy the license key to ~/.gm_key, skipping gene prediction.')
     else:
-        install_genemark()
-
         if not os.path.isdir(out_dirpath):
             os.mkdir(out_dirpath)
         tmp_dirpath = os.path.join(out_dirpath, 'tmp')

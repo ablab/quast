@@ -479,4 +479,5 @@ def usage(show_hidden=False, meta=False, short=True, stream=sys.stdout):
         if show_hidden:
             stream.write("    --help-hidden                     Print this usage message with all hidden options\n")
     stream.write("\n")
+    stream.write("Online QUAST manual is available at http://quast.sf.net/manual\n")
     stream.flush()

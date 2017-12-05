@@ -1,5 +1,29 @@
 -- Version history --
 
+4.6.1 
+      1. Fixes in pip installation:
+       - ignoring bdist_wheel and running regular installation instead;
+       - no installation of aux files (LICENSE, Manual, etc);
+       - proper error message about missing test_data dir (if "--test" is used).
+
+      2. Fixed conda installation (no GeneMark installation if there is no home dir)
+
+
+4.6.0 
+      1. Switch from major.minor to major.minor.patch versioning.
+
+      2. Python 3.6 is now supported (and all future Python 3.* versions).
+
+      3. Best set selection algorithm is significantly sped up.
+
+      4. GeneMark licence files are updated; expired licence error message is better
+         handled now.
+
+      5. Support email address is updated.
+
+      6. Fixed several minor but nasty bugs.
+
+
 4.5   1. Icarus updates:
        - always visible and scrollable Contig Info panel;
        - new color (dark green) for contigs without misassemblies but having at

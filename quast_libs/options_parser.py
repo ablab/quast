@@ -697,11 +697,9 @@ def parse_options(logger, quast_args, is_metaquast=False):
         if any(not isfile(fpath) for fpath in contigs_fpaths):
             logger.info(
                 '\nYou are probably running QUAST installed via pip, which does not include test data.\n'
-                'This is fine, just start using QUAST on your own data!\n'
-                'If you still want to run tests, please download test_data directory to CWD:\n'
-                'wget quast.sf.net/test_data.tar.gz\n'
-                'or install QUAST from source:\n'
-                'git clone https://github.com/ablab/quast && cd quast && ./setup.py install\n')
+                'This is fine, just start using QUAST on your own data!\n\n'
+                'If you still want to run tests, please download and unpack test data to CWD:\n'
+                '  wget quast.sf.net/test_data.tar.gz && tar xzf test_data.tar.gz\n')
             sys.exit(2)
 
     if not contigs_fpaths:

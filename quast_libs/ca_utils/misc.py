@@ -127,7 +127,7 @@ def compile_gnuplot(logger, only_clean=False):
         prev_dir = os.getcwd()
         os.chdir(tool_dirpath)
         return_code = qutils.call_subprocess(
-            ['./configure', '--with-qt=no', '--disable-wxwidgets', '--prefix=' + tool_dirpath],
+            ['sh', 'configure', '--with-qt=no', '--disable-wxwidgets', '--prefix=' + tool_dirpath],
             stdout=open(join(tool_dirpath, 'make.log'), 'w'),
             stderr=open(join(tool_dirpath, 'make.err'), 'w'),
             indent='    ')

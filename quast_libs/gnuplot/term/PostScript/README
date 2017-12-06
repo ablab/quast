@@ -1,7 +1,0 @@
-On platforms where it is possible and easy to implement, the postscript
-prologues files are installed as separate files and located at run-time.
-
-On others (i.e. when the preprocessor variable GNUPLOT_PS_DIR is undefined),
-they are included at compile-time. To do that, the *.ps files are processed by
-the script ps_header.sh which creates char arrays suitable to inclusion in the
-source code.

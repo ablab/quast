@@ -53,40 +53,6 @@ def compile_aligner(logger, only_clean=False):
     return False
 
 
-def _embed_css_and_scripts(html):
-    js_line_tmpl = '<script src="%s"></script>'
-    js_l_tag = '<script type="text/javascript" name="%s">'
-    js_r_tag = '    </script>'
-
-    css_line_tmpl = '<link type="text/css" href="%s" rel="stylesheet">'
-    css_l_tag = '<style type="text/css" rel="stylesheet" name="%s">'
-    css_r_tag = '    </style>'
-
-    css_files = [
-        join(qconfig.LIBS_LOCATION, 'gnuplot/term/js/gnuplot_mouse.css')
-    ]
-    js_files = [
-        join(qconfig.LIBS_LOCATION, 'gnuplot/term/js/canvastext.js'),
-        join(qconfig.LIBS_LOCATION, 'gnuplot/term/js/gnuplot_common.js'),
-        join(qconfig.LIBS_LOCATION, 'gnuplot/term/js/gnuplot_dashedlines.js')
-    ]
-    for line_tmpl, files, l_tag, r_tag in [
-            (js_line_tmpl, js_files, js_l_tag, js_r_tag),
-            (css_line_tmpl, css_files, css_l_tag, css_r_tag),
-        ]:
-        for fpath in files:
-            rel_fpath = basename(fpath)
-            line = line_tmpl % rel_fpath
-            l_tag_formatted = l_tag % rel_fpath
-
-            with open(fpath) as f:
-                contents = f.read()
-                contents = '\n'.join(' ' * 8 + l for l in contents.split('\n'))
-                html = html.replace(line, l_tag_formatted + '\n' + contents + '\n' + r_tag)
-
-    return html
-
-
 def is_same_reference(chr1, chr2):
     return ref_labels_by_chromosomes[chr1] == ref_labels_by_chromosomes[chr2]
 

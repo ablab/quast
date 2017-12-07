@@ -366,7 +366,7 @@ def do(ref_fpath, original_ref_fpath, output_dirpath):
         return None
 
     red_dirpath = get_dir_for_download('red', 'Red', ['Red'], logger)
-    binary_fpath = download_external_tool('Red', red_dirpath, 'Red', platform_specific=True)
+    binary_fpath = download_external_tool('Red', red_dirpath, 'red', platform_specific=True, is_executable=True)
     if not binary_fpath or not os.path.isfile(binary_fpath):
         logger.warning('  Sorry, can\'t create Optimal Assembly, skipping...')
         return None

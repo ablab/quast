@@ -940,7 +940,7 @@ def get_blast_fpath(fname):
 
 
 def show_progress(a, b, c):
-    if a > 0 and a % int(c/(b*100)) == 0:
+    if a > 0 and int(c/(b*100)) > 0 and a % int(c/(b*100)) == 0:
         print("% 3.1f%% of %d bytes" % (min(100, int(float(a * b) / c * 100)), c)),
         sys.stdout.flush()
 

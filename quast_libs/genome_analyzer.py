@@ -64,7 +64,7 @@ def chromosomes_names_dict(feature, regions, chr_names):
 
 
 def process_single_file(contigs_fpath, index, coords_dirpath, genome_stats_dirpath,
-                        reference_chromosomes, ns_by_chromosomes, genes_container, operons_container):
+                        reference_chromosomes, ns_by_chromosomes, containers):
     assembly_label = qutils.label_from_fpath(contigs_fpath)
     corr_assembly_label = qutils.label_from_fpath_for_fname(contigs_fpath)
     results = dict()
@@ -100,11 +100,11 @@ def process_single_file(contigs_fpath, index, coords_dirpath, genome_stats_dirpa
         sorted_contigs_names.append(name)
         contigs_order.append(idx)
 
-    genes_in_contigs = [0] * len(sorted_contigs_names) # for cumulative plots: i-th element is the number of genes in i-th contig
+    features_in_contigs = [0] * len(sorted_contigs_names)  # for cumulative plots: i-th element is the number of genes in i-th contig
     operons_in_contigs = [0] * len(sorted_contigs_names)
     aligned_blocks_by_contig_name = {} # for gene finding: contig_name --> list of AlignedBlock
 
-    gene_searching_enabled = len(genes_container.region_list) or len(operons_container.region_list)
+    gene_searching_enabled = len(containers)
     if qconfig.memory_efficient and gene_searching_enabled:
         logger.warning('Run QUAST without genes and operons files to reduce memory consumption.')
     if gene_searching_enabled:
@@ -165,27 +165,19 @@ def process_single_file(contigs_fpath, index, coords_dirpath, genome_stats_dirpa
                     gaps_file.write(str(chr_len - cur_gap_size + 1) + ' ' + str(chr_len) + '\n')
 
     results["gaps_count"] = gaps_count
+    results[reporting.Fields.GENES + "_full"] = None
+    results[reporting.Fields.GENES + "_partial"] = None
+    results[reporting.Fields.OPERONS + "_full"] = None
+    results[reporting.Fields.OPERONS + "_partial"] = None
 
     # finding genes and operons
-    for container, feature_in_contigs, field, suffix in [
-        (genes_container,
-         genes_in_contigs,
-         reporting.Fields.GENES,
-         '_genes.txt'),
-
-        (operons_container,
-         operons_in_contigs,
-         reporting.Fields.OPERONS,
-         '_operons.txt')]:
-
+    for container in containers:
         if not container.region_list:
-            results[field + "_full"] = None
-            results[field + "_partial"] = None
             continue
 
         total_full = 0
         total_partial = 0
-        found_fpath = os.path.join(genome_stats_dirpath, corr_assembly_label + suffix)
+        found_fpath = os.path.join(genome_stats_dirpath, corr_assembly_label + container.kind.lower())
         found_file = open(found_fpath, 'w')
         found_file.write('%s\t\t%s\t%s\t%s\t%s\n' % ('ID or #', 'Start', 'End', 'Type', 'Contig'))
         found_file.write('=' * 50 + '\n')
@@ -230,7 +222,10 @@ def process_single_file(contigs_fpath, index, coords_dirpath, genome_stats_dirpa
                             total_full += 1
                             contig_info = block.format_gene_info(region)
                             found_file.write('%s\t\t%d\t%d\tcomplete\t%s\n' % (region.id, region.start, region.end, contig_info))
-                            feature_in_contigs[contig_id] += 1  # inc number of found genes/operons in id-th contig
+                            if container.kind == 'operon':
+                                operons_in_contigs[contig_id] += 1  # inc number of found genes/operons in id-th contig
+                            else:
+                                features_in_contigs[contig_id] += 1
 
                             cur_feature_is_found = True
                             break
@@ -248,18 +243,25 @@ def process_single_file(contigs_fpath, index, coords_dirpath, genome_stats_dirpa
                 contig_info = ','.join([block.format_gene_info(region) for block in sorted(gene_blocks, key=lambda block: block.start)])
                 found_file.write('%s\t\t%d\t%d\tpartial\t%s\n' % (region.id, region.start, region.end, contig_info))
 
-        results[field + "_full"] = total_full
-        results[field + "_partial"] = total_partial
+        if container.kind == 'operon':
+            results[reporting.Fields.OPERONS + "_full"] = total_full
+            results[reporting.Fields.OPERONS + "_partial"] = total_partial
+        else:
+            if results[reporting.Fields.GENES + "_full"] is None:
+                results[reporting.Fields.GENES + "_full"] = 0
+                results[reporting.Fields.GENES + "_partial"] = 0
+            results[reporting.Fields.GENES + "_full"] += total_full
+            results[reporting.Fields.GENES + "_partial"] += total_partial
         found_file.close()
 
     logger.info('  ' + qutils.index_to_str(index) + 'Analysis is finished.')
-    unsorted_genes_in_contigs = [genes_in_contigs[idx] for idx in contigs_order]
+    unsorted_features_in_contigs = [features_in_contigs[idx] for idx in contigs_order]
     unsorted_operons_in_contigs = [operons_in_contigs[idx] for idx in contigs_order]
 
-    return ref_lengths, (results, unsorted_genes_in_contigs, genes_in_contigs, unsorted_operons_in_contigs, operons_in_contigs)
+    return ref_lengths, (results, unsorted_features_in_contigs, features_in_contigs, unsorted_operons_in_contigs, operons_in_contigs)
 
 
-def do(ref_fpath, aligned_contigs_fpaths, output_dirpath, genes_fpaths, operons_fpaths,
+def do(ref_fpath, aligned_contigs_fpaths, output_dirpath, features_dict, operons_fpaths,
        detailed_contigs_reports_dirpath, genome_stats_dirpath):
 
     coords_dirpath = os.path.join(detailed_contigs_reports_dirpath, qconfig.minimap_output_dirname)
@@ -287,13 +289,19 @@ def do(ref_fpath, aligned_contigs_fpaths, output_dirpath, genes_fpaths, operons_
     result_fpath = genome_stats_dirpath + '/genome_info.txt'
     res_file = open(result_fpath, 'w')
 
-    genes_container = FeatureContainer(genes_fpaths, 'gene')
-    operons_container = FeatureContainer(operons_fpaths, 'operon')
-    for container in [genes_container, operons_container]:
+    containers = []
+    for feature, feature_fpath in features_dict.items():
+        containers.append(FeatureContainer([feature_fpath], feature))
+    if not features_dict:
+        logger.notice('No file with genomic features were provided. '
+                      'Use the --features option if you want to specify it.\n', indent='  ')
+    if operons_fpaths:
+        containers.append(FeatureContainer(operons_fpaths, 'operon'))
+    else:
+        logger.notice('No file with operons were provided. '
+                      'Use the -O option if you want to specify it.', indent='  ')
+    for container in containers:
         if not container.fpaths:
-            logger.notice('No file with ' + container.kind + 's provided. '
-                          'Use the -' + container.kind[0].capitalize() + ' option '
-                          'if you want to specify it.', indent='  ')
             continue
 
         for fpath in container.fpaths:
@@ -307,16 +315,23 @@ def do(ref_fpath, aligned_contigs_fpaths, output_dirpath, genes_fpaths, operons_
             res_file.write(container.kind + 's loaded: ' + str(len(container.region_list)) + '\n')
             container.chr_names_dict = chromosomes_names_dict(container.kind, container.region_list, list(reference_chromosomes.keys()))
 
+    ref_genes_num, ref_operons_num = None, None
     for contigs_fpath in aligned_contigs_fpaths:
         report = reporting.get(contigs_fpath)
-        if genes_container.fpaths:
-            report.add_field(reporting.Fields.REF_GENES, len(genes_container.region_list))
-        if operons_container.fpaths:
-            report.add_field(reporting.Fields.REF_OPERONS, len(operons_container.region_list))
+        genomic_features = 0
+        for container in containers:
+            if container.kind == 'operon':
+                ref_operons_num = len(container.region_list)
+                report.add_field(reporting.Fields.REF_OPERONS, len(container.region_list))
+            else:
+                genomic_features += len(container.region_list)
+        if genomic_features:
+            ref_genes_num = genomic_features
+            report.add_field(reporting.Fields.REF_GENES, genomic_features)
 
     # for cumulative plots:
-    files_genes_in_contigs = {}   #  "filename" : [ genes in sorted contigs (see below) ]
-    files_unsorted_genes_in_contigs = {}   #  "filename" : [ genes in sorted contigs (see below) ]
+    files_features_in_contigs = {}   #  "filename" : [ genes in sorted contigs (see below) ]
+    files_unsorted_features_in_contigs = {}   #  "filename" : [ genes in sorted contigs (see below) ]
     files_operons_in_contigs = {}
     files_unsorted_operons_in_contigs = {}
 
@@ -335,11 +350,11 @@ def do(ref_fpath, aligned_contigs_fpaths, output_dirpath, genes_fpaths, operons_
     if not qconfig.memory_efficient:
         process_results = Parallel(n_jobs=n_jobs)(delayed(process_single_file)(
             contigs_fpath, index, coords_dirpath, genome_stats_dirpath,
-            reference_chromosomes, ns_by_chromosomes, genes_container, operons_container)
+            reference_chromosomes, ns_by_chromosomes, containers)
             for index, contigs_fpath in enumerate(aligned_contigs_fpaths))
     else:
         process_results = [process_single_file(contigs_fpath, index, coords_dirpath, genome_stats_dirpath,
-                                               reference_chromosomes, ns_by_chromosomes, genes_container, operons_container)
+                                               reference_chromosomes, ns_by_chromosomes, containers)
                            for index, contigs_fpath in enumerate(aligned_contigs_fpaths)]
     num_nf_errors += len([res for res in process_results if res is None])
     logger._num_nf_errors = num_nf_errors
@@ -372,15 +387,15 @@ def do(ref_fpath, aligned_contigs_fpaths, output_dirpath, genes_fpaths, operons_
         % ('', 'fraction', 'ratio', 'number', '', 'genes', '', 'operons'))
     res_file.write('=' * 120 + '\n')
 
-    for contigs_fpath, (results, unsorted_genes_in_contigs, genes_in_contigs, unsorted_operons_in_contigs, operons_in_contigs)\
+    for contigs_fpath, (results, unsorted_features_in_contigs, features_in_contigs, unsorted_operons_in_contigs, operons_in_contigs)\
             in zip(aligned_contigs_fpaths, results_genes_operons_tuples):
         assembly_name = qutils.name_from_fpath(contigs_fpath)
 
-        files_genes_in_contigs[contigs_fpath] = genes_in_contigs
-        files_unsorted_genes_in_contigs[contigs_fpath] = unsorted_genes_in_contigs
+        files_features_in_contigs[contigs_fpath] = features_in_contigs
+        files_unsorted_features_in_contigs[contigs_fpath] = unsorted_features_in_contigs
         files_operons_in_contigs[contigs_fpath] = operons_in_contigs
         files_unsorted_operons_in_contigs[contigs_fpath] = unsorted_operons_in_contigs
-        full_found_genes.append(sum(genes_in_contigs))
+        full_found_genes.append(sum(features_in_contigs))
         full_found_operons.append(sum(operons_in_contigs))
 
         gaps_count = results["gaps_count"]
@@ -406,36 +421,26 @@ def do(ref_fpath, aligned_contigs_fpaths, output_dirpath, genes_fpaths, operons_
         res_file.write('\n')
     res_file.close()
 
-    if genes_container.region_list:
-        ref_genes_num = len(genes_container.region_list)
-    else:
-        ref_genes_num = None
-
-    if operons_container.region_list:
-        ref_operons_num = len(operons_container.region_list)
-    else:
-        ref_operons_num = None
-
     if qconfig.html_report:
         from quast_libs.html_saver import html_saver
-        if genes_container.region_list:
-            html_saver.save_features_in_contigs(output_dirpath, aligned_contigs_fpaths, 'genes', files_genes_in_contigs, ref_genes_num)
-        if operons_container.region_list:
+        if ref_genes_num:
+            html_saver.save_features_in_contigs(output_dirpath, aligned_contigs_fpaths, 'features', files_features_in_contigs, ref_genes_num)
+        if ref_operons_num:
             html_saver.save_features_in_contigs(output_dirpath, aligned_contigs_fpaths, 'operons', files_operons_in_contigs, ref_operons_num)
 
     if qconfig.draw_plots:
         # cumulative plots:
         from . import plotter
         from quast_libs.ca_utils.misc import contigs_aligned_lengths
-        if genes_container.region_list:
-            plotter.genes_operons_plot(len(genes_container.region_list), aligned_contigs_fpaths, files_genes_in_contigs,
-                genome_stats_dirpath + '/genes_cumulative_plot', 'genes')
-            plotter.frc_plot(output_dirpath, ref_fpath, aligned_contigs_fpaths, contigs_aligned_lengths, files_unsorted_genes_in_contigs,
-                             genome_stats_dirpath + '/genes_frcurve_plot', 'genes')
-            plotter.histogram(aligned_contigs_fpaths, full_found_genes, genome_stats_dirpath + '/complete_genes_histogram',
-                '# complete genes')
-        if operons_container.region_list:
-            plotter.genes_operons_plot(len(operons_container.region_list), aligned_contigs_fpaths, files_operons_in_contigs,
+        if ref_genes_num:
+            plotter.genes_operons_plot(ref_genes_num, aligned_contigs_fpaths, files_features_in_contigs,
+                genome_stats_dirpath + '/features_cumulative_plot', 'genomic features')
+            plotter.frc_plot(output_dirpath, ref_fpath, aligned_contigs_fpaths, contigs_aligned_lengths, files_unsorted_features_in_contigs,
+                             genome_stats_dirpath + '/features_frcurve_plot', 'genomic features')
+            plotter.histogram(aligned_contigs_fpaths, full_found_genes, genome_stats_dirpath + '/complete_features_histogram',
+                '# complete genomic features')
+        if ref_operons_num:
+            plotter.genes_operons_plot(ref_operons_num, aligned_contigs_fpaths, files_operons_in_contigs,
                 genome_stats_dirpath + '/operons_cumulative_plot', 'operons')
             plotter.frc_plot(output_dirpath, ref_fpath, aligned_contigs_fpaths, contigs_aligned_lengths, files_unsorted_operons_in_contigs,
                              genome_stats_dirpath + '/operons_frcurve_plot', 'operons')
@@ -445,7 +450,7 @@ def do(ref_fpath, aligned_contigs_fpaths, output_dirpath, genes_fpaths, operons_
             'Genome fraction, %', top_value=100)
 
     logger.main_info('Done.')
-    return [genes_container, operons_container]
+    return containers
 
 
 class AlignedBlock():

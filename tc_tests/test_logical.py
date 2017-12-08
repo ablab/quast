@@ -20,4 +20,4 @@ assert_metric_comparison(name, 'Total aligned length', '<=', 'Total length')
 assert_metric_comparison(name, '# misassembled contigs', '<=', '# misassemblies')
 
 assert_metric_comparison(name, 'Genome fraction (%)', '<=', value='100.0')
-assert_metric_comparison(name, '# genes', '<=', value='2622')
+assert_metric_comparison(name, '# genomic features', '<=', value='2622')

@@ -37,7 +37,7 @@ logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 
 
 def do(contigs_fpaths, contig_report_fpath_pattern, output_dirpath, ref_fpath,
-       cov_fpath=None,  physical_cov_fpath=None, gc_fpath=None,
+       cov_fpath=None, physical_cov_fpath=None, gc_fpath=None,
        stdout_pattern=None, find_similar=True, features=None, json_output_dir=None, genes_by_labels=None):
     make_output_dir(output_dirpath)
 
@@ -115,7 +115,7 @@ def do(contigs_fpaths, contig_report_fpath_pattern, output_dirpath, ref_fpath,
                 ambiguity_alignments_by_labels[label] = ambiguity_alignments
         contigs_by_assemblies[label] = contigs
 
-    if contigs_fpaths and ref_fpath and features:
+    if ref_fpath:
         features_data = parse_features_data(features, cumulative_ref_lengths, chr_names)
     if contigs_fpaths and qconfig.gene_finding:
         parse_genes_data(contigs_by_assemblies, genes_by_labels)

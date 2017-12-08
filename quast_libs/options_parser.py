@@ -140,6 +140,21 @@ def remove_from_quast_py_args(quast_py_args, opt, arg=None):
     return quast_py_args
 
 
+def parse_features(option, opt_str, value, parser, logger, is_old_format=False):
+    if is_old_format:
+        fpath = value
+        assert_file_exists(fpath, 'genomic feature')
+        features = dict([('gene', fpath)])
+        logger.warning('Option -G is deprecated! Please use --features to specify a file with genomic features.\n'
+                       'If you want QUAST to extract only specific genomic feature from a file, you also can specify it:\n'
+                       '--features CDS:genes.gff --features transcript:transcripts.bed')
+    else:
+        feature, fpath = value.split(':')
+        assert_file_exists(fpath, 'genomic feature')
+        features = dict([(feature, fpath)])
+    ensure_value(qconfig, 'features', dict()).update(features)
+
+
 def parse_meta_references(option, opt_str, value, parser, logger):
     ref_fpaths = []
     ref_values = value.split(',')
@@ -286,15 +301,24 @@ def parse_options(logger, quast_args, is_metaquast=False):
              callback_args=(logger,) if is_metaquast else None,
              callback=parse_meta_references if is_metaquast else None)
          ),
-        (['-G', '--genes'], dict(
-             dest='genes',
-             type='file',
-             action='extend')
-         ),
         (['-O', '--operons'], dict(
              dest='operons',
              type='file',
              action='extend')
+         ),
+        (['-G', '--genes'], dict(
+             dest='genes',
+             type='string',
+             action='callback',
+             callback_args=(logger, True),
+             callback=parse_features)
+         ),
+        (['--features'], dict(
+             dest='features',
+             type='string',
+             action='callback',
+             callback_args=(logger,),
+             callback=parse_features)
          ),
         (['-1', '--reads1'], dict(
              dest='forward_reads',

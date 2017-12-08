@@ -188,7 +188,7 @@ def main(args):
         from quast_libs import genome_analyzer
         features_containers = genome_analyzer.do(
             ref_fpath, aligned_contigs_fpaths, output_dirpath,
-            qconfig.genes, qconfig.operons, detailed_contigs_reports_dirpath,
+            qconfig.features, qconfig.operons, detailed_contigs_reports_dirpath,
             os.path.join(output_dirpath, 'genome_stats'))
 
     genes_by_labels = None

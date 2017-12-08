@@ -119,7 +119,7 @@ class Fields:
     MAPPEDGENOME = 'Genome fraction (%)'
     DUPLICATION_RATIO = 'Duplication ratio'
     AVE_READ_SUPPORT = 'Avg contig read support'
-    GENES = '# genes'
+    GENES = '# genomic features'
     OPERONS = '# operons'
     LARGALIGN = 'Largest alignment'
     TOTAL_ALIGNED_LEN = 'Total aligned length'
@@ -154,7 +154,7 @@ class Fields:
     ESTREFLEN = 'Estimated reference length'
     REF_FRAGMENTS = 'Reference fragments'
     REFGC = 'Reference GC (%)'
-    REF_GENES = 'Reference genes'
+    REF_GENES = 'Reference genomic features'
     REF_OPERONS = 'Reference operons'
     # Reads statistics
     TOTAL_READS = '# total reads'

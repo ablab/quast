@@ -70,7 +70,7 @@
     "# indels (> 5 bp)"             : "<span>is the number of indels of length greater than 5 bp</span>",
     "Indels length"                 : "<span>is the number of total bases contained in all indels</span>",
 
-    "# genes"                       : "<span>is the number of genes in the assembly (complete and partial), based on a user-provided annotated list of gene positions in the reference genome. A gene counts as 'partially covered' if the assembly contains at least 100 bp of this gene but not the whole gene.</span>",
+    "# genomic features"            : "<span>is the number of genomic features (genes, transcripts, CDS) in the assembly (complete and partial), based on a user-provided annotated list of gene positions in the reference genome. A feature counts as 'partially covered' if the assembly contains at least 100 bp of this feature but not the whole feature.</span>",
     "# operons"                     : "<span>is the number of operons in the assembly (complete and partial), based on a user-provided annotated list of operon positions in the reference genome. An operon counts as 'partially covered' if the assembly contains at least 100 bp of this operon but not the whole operon.</span>",
     "# predicted genes (unique)"    : "<span>is the number of unique genes in the assembly found by a gene prediction tool.</span>",
     "# predicted genes (>= 0 bp)"   : "<span>is the number of found genes having length greater than or equal to 0 bp.</span>",

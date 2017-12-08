@@ -221,6 +221,7 @@ output_dirpath = None
 reference = None
 genes = None
 operons = None
+features = dict()
 labels = None
 sam_fpaths = None
 bam_fpaths = None

@@ -50,13 +50,15 @@ def check_successful_check(fpath, contigs_fpath, ref_fpath):
 
 
 def run_minimap(out_fpath, ref_fpath, contigs_fpath, log_err_fpath, index, max_threads):
-    preset = 'asm5' if qconfig.min_IDY >= 95 else 'asm10'
+    preset = 'asm5' if qconfig.min_IDY >= 95 and not qconfig.is_combined_ref else 'asm10'
     # -s -- min CIGAR score, -z -- affects how often to stop alignment extension, -B -- mismatch penalty
     # -O -- gap penalty, -r -- max gap size
-    additional_options = ['-B4', '-O4,24', '--no-long-join', '-r', str(qconfig.MAX_INDEL_LENGTH),
-                          '-N', '50', '-s', str(qconfig.min_alignment), '-z', '200']
+    mask_level = '1' if qconfig.is_combined_ref else '0.9'
+    num_alignments = '100' if qconfig.is_combined_ref else '50'
+    additional_options = ['-B5', '-O4,16', '--no-long-join', '-r', str(qconfig.MAX_INDEL_LENGTH),
+                          '-N', num_alignments, '-s', str(qconfig.min_alignment), '-z', '200']
     cmdline = [minimap_fpath(), '-c', '-x', preset] + (additional_options if not qconfig.large_genome else []) + \
-              ['--mask-level', '0.9', '--cs', '-t', str(max_threads), ref_fpath, contigs_fpath]
+              ['--mask-level', mask_level, '--cs', '-t', str(max_threads), ref_fpath, contigs_fpath]
     return_code = qutils.call_subprocess(cmdline, stdout=open(out_fpath, 'w'), stderr=open(log_err_fpath, 'a'),
                                          indent='  ' + qutils.index_to_str(index))
 

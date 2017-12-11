@@ -177,6 +177,10 @@ function buildGenomeTable(reports, group_n, numColumns) {
     tableGenome += '</table>';
     tableGenome += '<br>';
     tableGenome += '<br>';
+    tableGenome +=
+        '<span class="metric-name">' +
+            '<a href="combined_reference/report.html">' + 'Combined reference' + '</a>' +
+        '</span><br>';
     if (notAlignedReport) {
         tableGenome +=
             '<span class="metric-name">' +

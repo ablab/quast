@@ -120,7 +120,7 @@ def parse_cov_fpath(cov_fpath, chr_names, chr_full_names, contig_names_by_refs):
 
 
 def parse_features_data(features, cumulative_ref_lengths, ref_names):
-    features_data = 'var features_data;\n'
+    features_data = 'var features_data = [];\n'
     if features:
         features_data += 'features_data = [ '
         containers_kind = []

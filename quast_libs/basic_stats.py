@@ -14,6 +14,7 @@ from quast_libs import fastaparser, qconfig, qutils, reporting, plotter
 from quast_libs.circos import set_window_size
 from quast_libs.log import get_logger
 logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
+MIN_HISTOGRAM_POINTS = 5
 
 def GC_content(contigs_fpath, skip=False):
     """
@@ -119,6 +120,10 @@ def binning_coverage(cov_values, nums_contigs):
     low_threshold -= low_threshold % bin_size
     high_threshold -= high_threshold % bin_size
     max_points = (high_threshold // bin_size) + 1  # add last bin
+    if high_threshold - low_threshold < MIN_HISTOGRAM_POINTS:
+        low_threshold -= MIN_HISTOGRAM_POINTS // 2
+        high_threshold += MIN_HISTOGRAM_POINTS // 2
+        max_points = (high_threshold // bin_size) + 1
     offset = 0
     if low_threshold > bin_size:  # add first bin
         offset = low_threshold // bin_size - 1

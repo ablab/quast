@@ -229,6 +229,7 @@ The tool accepts multiple assemblies, thus is suitable for comparison.''',
             find_package_files('genemark-es/' + qconfig.platform_name) +
             find_package_files('genemark-es/lib') +
             find_package_files('glimmer') +
+            find_package_files('gnuplot') +
             find_package_files('gage') +
             bwa_files +
             ['bedtools/bin/*'] +

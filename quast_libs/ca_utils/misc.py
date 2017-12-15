@@ -22,7 +22,8 @@ except ImportError:
    from quast_libs.site_packages.ordered_dict import OrderedDict
 
 from quast_libs import qconfig, qutils
-from quast_libs.qutils import compile_tool, val_to_str, check_prev_compilation_failed, write_failed_compilation_flag
+from quast_libs.qutils import compile_tool, val_to_str, check_prev_compilation_failed, write_failed_compilation_flag, \
+    get_path_to_program
 
 contig_aligner = None
 contig_aligner_dirpath = join(qconfig.LIBS_LOCATION, 'MUMmer')
@@ -104,18 +105,21 @@ def compile_aligner(logger, only_clean=False):
 
 
 def gnuplot_exec_fpath():
+    system_gnuplot_fpath = get_path_to_program('gnuplot')
+    if system_gnuplot_fpath:
+        return system_gnuplot_fpath, True
     tool_dirpath = join(qconfig.LIBS_LOCATION, 'gnuplot')
     tool_src_dirpath = join(tool_dirpath, 'src')
     tool_exec_fpath = join(tool_src_dirpath, 'gnuplot')
-    return tool_exec_fpath
+    return tool_exec_fpath, False
 
 
 def compile_gnuplot(logger, only_clean=False):
     tool_dirpath = join(qconfig.LIBS_LOCATION, 'gnuplot')
-    tool_exec_fpath = gnuplot_exec_fpath()
+    tool_exec_fpath, is_system = gnuplot_exec_fpath()
 
     if only_clean:
-        if isfile(tool_exec_fpath):
+        if not is_system and isfile(tool_exec_fpath):
             os.remove(tool_exec_fpath)
         return True
 
@@ -155,9 +159,10 @@ def draw_mummer_plot(logger, nucmer_fpath, delta_fpath, index, log_out_f, log_er
     if return_code == 0:
         plot_script_fpath = nucmer_fpath + '.gp'
         temp_plot_fpath = nucmer_fpath + '.html'
-        if isfile(plot_script_fpath) and isfile(gnuplot_exec_fpath()):
+        gnuplot_fpath, _ = gnuplot_exec_fpath()
+        if isfile(plot_script_fpath) and isfile(gnuplot_fpath):
             qutils.call_subprocess(
-                [gnuplot_exec_fpath(), plot_script_fpath],
+                [gnuplot_fpath, plot_script_fpath],
                 stdout=open('/dev/null', 'w'), stderr=log_err_f,
                 indent='  ' + qutils.index_to_str(index))
             if isfile(temp_plot_fpath):

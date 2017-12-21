@@ -118,7 +118,7 @@ def get_genome_stats(fasta_fpath, skip_ns=False):
         chr_name = name.split()[0]
         chr_len = len(seq)
         genome_size += chr_len
-        ns_by_chromosomes[chr_name] = set([x for x, s in enumerate(seq) if s == 'N'])
+        ns_by_chromosomes[chr_name] = [x + 1 for x, s in enumerate(seq) if s == 'N']
         if skip_ns:
             genome_size -= len(ns_by_chromosomes[chr_name])
         reference_chromosomes[chr_name] = chr_len

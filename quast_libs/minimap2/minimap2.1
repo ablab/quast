@@ -1,4 +1,4 @@
-.TH minimap2 1 "22 October 2017" "minimap2-2.2-dirty (r531)" "Bioinformatics tools"
+.TH minimap2 1 "12 December 2017" "minimap2-2.6 (r623)" "Bioinformatics tools"
 .SH NAME
 .PP
 minimap2 - mapping and alignment between collections of DNA sequences
@@ -98,6 +98,14 @@ multiple times to map it against each batch of target sequences.
 .I NUM
 may be ending with k/K/m/M/g/G. NB: mapping quality is incorrect given a
 multi-part index.
+.TP
+.B --idx-no-seq
+Don't store target sequences in the index. It saves disk space and memory but
+the index generated with this option will not work with
+.B -a
+or
+.BR -c .
+When base-level alignment is not requested, this option is automatically applied.
 .TP
 .BI -d \ FILE
 Save the minimizer index of
@@ -219,6 +227,11 @@ costs
 .RI min{ O1 + k * E1 , O2 + k * E2 }.
 In the splice mode, the second gap penalties are not used.
 .TP
+.BI -C \ INT
+Cost for a non-canonical GT-AG splicing (effective with
+.BR --splice )
+[0]
+.TP
 .BI -z \ INT
 Break an alignment if the running score drops too quickly along the diagonal of
 the DP matrix (diagonal X-drop, or Z-drop) [400]. Increasing the value improves
@@ -239,11 +252,38 @@ both strands;
 .BR n :
 no attempt to match GT-AG [n]
 .TP
-.BI --cost-non-gt-ag \ INT
-Cost of non-canonical splicing sites [0].
-.TP
 .BI --end-bonus \ INT
-Score bonus when alignment extends to the end of the query sequence [10].
+Score bonus when alignment extends to the end of the query sequence [0].
+.TP
+.BR --splice-flank [= yes | no ]
+Assume the next base to a
+.B GT
+donor site tends to be A/G (91% in human and 92% in mouse) and the preceding
+base to a
+.B AG
+acceptor tends to be C/T [yes with
+.BR --splice ].
+This trend is evolutionarily conservative, all the way to S. cerevisiae
+(PMID:18688272). Specifying this option generally leads to higher junction
+accuracy by several percents, so it is applied by default with
+.BR --splice .
+However, the SIRV control does not honor this trend
+(only ~60%). This option reduces accuracy. If you are benchmarking minimap2
+on SIRV data, please add
+.B --splice-flank=no
+to the command line.
+.TP
+.BI --end-seed-pen \ INT
+Drop a terminal anchor if
+.IR s <log( g )+ INT ,
+where
+.I s
+is the local alignment score around the anchor and
+.I g
+the length of the terminal gap in the chain. This option is only effective
+with
+.BR --splice .
+It helps to avoid tiny terminal exons. [6]
 .SS Input/output options
 .TP 10
 .B -a
@@ -261,7 +301,7 @@ the real CIGAR in memory.
 .TP
 .BI -R \ STR
 SAM read group line in a format like
-.RB @RG\\\\tID:foo\\\\tSM:bar
+.B @RG\\\\tID:foo\\\\tSM:bar
 [].
 .TP
 .B -c
@@ -281,6 +321,9 @@ If no
 is given,
 .I short
 is assumed. [none]
+.TP
+.B -Y
+In SAM output, use soft clipping for supplementary alignments.
 .TP
 .BI --seed \ INT
 Integer seed for randomizing equally best hits. Minimap2 hashes
@@ -371,8 +414,8 @@ is that this preset is not using HPC minimizers.
 .B splice
 Long-read spliced alignment
 .RB ( -k15
-.B -w5 --splice -g2000 -G200k -A1 -B2 -O2,32 -E1,0 -z200 -ub --cost-non-gt-ag
-.BR 5 ).
+.B -w5 --splice -g2000 -G200k -A1 -B2 -O2,32 -E1,0 -C9 -z200 -ub
+.BR --splice-flank=yes ).
 In the splice mode, 1) long deletions are taken as introns and represented as
 the
 .RB ` N '
@@ -438,7 +481,7 @@ cb | cb | cb
 r | c | l .
 Tag	Type	Description
 _
-tp	A	Type of aln: P/primary, S/secondary and I/inversion
+tp	A	Type of aln: P/primary, S/secondary and I,i/inversion
 cm	i	Number of minimizers on the chain
 s1	i	Chaining score
 s2	i	Chaining score of the best secondary chain

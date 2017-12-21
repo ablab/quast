@@ -6,7 +6,7 @@
 #include "mmpriv.h"
 #include "getopt.h"
 
-#define MM_VERSION "2.3-r531"
+#define MM_VERSION "2.6-r623"
 
 #ifdef __linux__
 #include <sys/resource.h>
@@ -34,13 +34,17 @@ static struct option long_options[] = {
 	{ "min-dp-len",     required_argument, 0, 0 },
 	{ "print-aln-seq",  no_argument,       0, 0 },
 	{ "splice",         no_argument,       0, 0 },
-	{ "cost-non-gt-ag", required_argument, 0, 0 },
+	{ "cost-non-gt-ag", required_argument, 0, 'C' },
 	{ "no-long-join",   no_argument,       0, 0 },
 	{ "sr",             no_argument,       0, 0 },
 	{ "frag",           optional_argument, 0, 0 },
 	{ "secondary",      optional_argument, 0, 0 },
 	{ "cs",             optional_argument, 0, 0 },
 	{ "end-bonus",      required_argument, 0, 0 },
+	{ "no-pairing",     no_argument,       0, 0 },
+	{ "splice-flank",   optional_argument, 0, 0 },
+	{ "idx-no-seq",     no_argument,       0, 0 },
+	{ "end-seed-pen",   required_argument, 0, 0 },   // 21
 	{ "help",           no_argument,       0, 'h' },
 	{ "max-intron-len", required_argument, 0, 'G' },
 	{ "version",        no_argument,       0, 'V' },
@@ -65,7 +69,7 @@ static inline int64_t mm_parse_num(const char *str)
 
 int main(int argc, char *argv[])
 {
-	const char *opt_str = "2aSw:k:K:t:r:f:Vv:g:G:I:d:XT:s:x:Hcp:M:n:z:A:B:O:E:m:N:Qu:R:hF:i:L";
+	const char *opt_str = "2aSw:k:K:t:r:f:Vv:g:G:I:d:XT:s:x:Hcp:M:n:z:A:B:O:E:m:N:Qu:R:hF:LC:";
 	mm_mapopt_t opt;
 	mm_idxopt_t ipt;
 	int i, c, n_threads = 3, long_idx;
@@ -92,7 +96,7 @@ int main(int argc, char *argv[])
 	while ((c = getopt_long(argc, argv, opt_str, long_options, &long_idx)) >= 0) {
 		if (c == 'w') ipt.w = atoi(optarg);
 		else if (c == 'k') ipt.k = atoi(optarg);
-		else if (c == 'H') ipt.is_hpc = 1;
+		else if (c == 'H') ipt.flag |= MM_I_HPC;
 		else if (c == 'd') fnw = optarg; // the above are indexing related options, except -I
 		else if (c == 'r') opt.bw = (int)mm_parse_num(optarg);
 		else if (c == 't') n_threads = atoi(optarg);
@@ -100,7 +104,6 @@ int main(int argc, char *argv[])
 		else if (c == 'g') opt.max_gap = (int)mm_parse_num(optarg);
 		else if (c == 'G') mm_mapopt_max_intron_len(&opt, (int)mm_parse_num(optarg));
 		else if (c == 'F') opt.max_frag_len = (int)mm_parse_num(optarg);
-		else if (c == 'i') opt.min_iden = atof(optarg);
 		else if (c == 'N') opt.best_n = atoi(optarg);
 		else if (c == 'p') opt.pri_ratio = atof(optarg);
 		else if (c == 'M') opt.mask_level = atof(optarg);
@@ -108,6 +111,7 @@ int main(int argc, char *argv[])
 		else if (c == 'X') opt.flag |= MM_F_AVA | MM_F_NO_SELF;
 		else if (c == 'a') opt.flag |= MM_F_OUT_SAM | MM_F_CIGAR;
 		else if (c == 'Q') opt.flag |= MM_F_NO_QUAL;
+		else if (c == 'Y') opt.flag |= MM_F_SOFTCLIP;
 		else if (c == 'L') opt.flag |= MM_F_LONG_CIGAR;
 		else if (c == 'T') opt.sdust_thres = atoi(optarg);
 		else if (c == 'n') opt.min_cnt = atoi(optarg);
@@ -116,6 +120,7 @@ int main(int argc, char *argv[])
 		else if (c == 'B') opt.b = atoi(optarg);
 		else if (c == 'z') opt.zdrop = atoi(optarg);
 		else if (c == 's') opt.min_dp_max = atoi(optarg);
+		else if (c == 'C') opt.noncan = atoi(optarg);
 		else if (c == 'I') ipt.batch_size = mm_parse_num(optarg);
 		else if (c == 'K') opt.mini_batch_size = (int)mm_parse_num(optarg);
 		else if (c == 'R') rg = optarg;
@@ -131,10 +136,12 @@ int main(int argc, char *argv[])
 		else if (c == 0 && long_idx == 8) opt.min_ksw_len = atoi(optarg); // --min-dp-len
 		else if (c == 0 && long_idx == 9) mm_dbg_flag |= MM_DBG_PRINT_QNAME | MM_DBG_PRINT_ALN_SEQ; // --print-aln-seq
 		else if (c == 0 && long_idx ==10) opt.flag |= MM_F_SPLICE; // --splice
-		else if (c == 0 && long_idx ==11) opt.noncan = atoi(optarg); // --cost-non-gt-ag
 		else if (c == 0 && long_idx ==12) opt.flag |= MM_F_NO_LJOIN; // --no-long-join
 		else if (c == 0 && long_idx ==13) opt.flag |= MM_F_SR; // --sr
 		else if (c == 0 && long_idx ==17) opt.end_bonus = atoi(optarg); // --end-bonus
+		else if (c == 0 && long_idx ==18) opt.flag |= MM_F_INDEPEND_SEG; // --no-pairing
+		else if (c == 0 && long_idx ==20) ipt.flag |= MM_I_NO_SEQ; // --idx-no-seq
+		else if (c == 0 && long_idx ==21) opt.anchor_ext_shift = atoi(optarg); // --end-seed-pen
 		else if (c == 0 && long_idx == 14) { // --frag
 			if (optarg == 0 || strcmp(optarg, "yes") == 0 || strcmp(optarg, "y") == 0)
 				opt.flag |= MM_F_FRAG_MODE;
@@ -154,6 +161,10 @@ int main(int argc, char *argv[])
 			} else if (mm_verbose >= 2) {
 				fprintf(stderr, "[WARNING]\033[1;31m --cs only takes 'short' or 'long'. Invalid values are assumed to be 'short'.\033[0m\n");
 			}
+		} else if (c == 0 && long_idx == 19) { // --splice-flank
+			if (optarg == 0 || strcmp(optarg, "yes") == 0 || strcmp(optarg, "y") == 0)
+				opt.flag |= MM_F_SPLICE_FLANK;
+			else opt.flag &= ~MM_F_SPLICE_FLANK;
 		} else if (c == 'S') {
 			opt.flag |= MM_F_OUT_CS | MM_F_CIGAR | MM_F_OUT_CS_LONG;
 			if (mm_verbose >= 2)
@@ -189,6 +200,8 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "[ERROR]\033[1;31m --splice and --frag should not be specified at the same time.\033[0m\n");
 		return 1;
 	}
+	if (!fnw && !(opt.flag&MM_F_CIGAR))
+		ipt.flag |= MM_I_NO_SEQ;
 
 	if (argc == optind || fp_help == stdout) {
 		fprintf(fp_help, "Usage: minimap2 [options] <target.fa>|<target.idx> [query.fa] [...]\n");
@@ -219,7 +232,6 @@ int main(int argc, char *argv[])
 		fprintf(fp_help, "    -z INT       Z-drop score [%d]\n", opt.zdrop);
 		fprintf(fp_help, "    -s INT       minimal peak DP alignment score [%d]\n", opt.min_dp_max);
 		fprintf(fp_help, "    -u CHAR      how to find GT-AG. f:transcript strand, b:both strands, n:don't match GT-AG [n]\n");
-		fprintf(fp_help, "    -i FLOAT     min identity (mapQ reduced to 0 if below) [0]\n");
 		fprintf(fp_help, "  Input/Output:\n");
 		fprintf(fp_help, "    -a           output in the SAM format (PAF by default)\n");
 		fprintf(fp_help, "    -Q           don't output base quality in SAM\n");
@@ -227,6 +239,7 @@ int main(int argc, char *argv[])
 		fprintf(fp_help, "    -R STR       SAM read group line in a format like '@RG\\tID:foo\\tSM:bar' []\n");
 		fprintf(fp_help, "    -c           output CIGAR in PAF\n");
 		fprintf(fp_help, "    --cs[=STR]   output the cs tag; STR is 'short' (if absent) or 'long' [none]\n");
+		fprintf(fp_help, "    -Y           use soft clipping for supplementary alignments\n");
 		fprintf(fp_help, "    -t INT       number of threads [%d]\n", n_threads);
 		fprintf(fp_help, "    -K NUM       minibatch size for mapping [500M]\n");
 //		fprintf(fp_help, "    -v INT       verbose level [%d]\n", mm_verbose);
@@ -252,11 +265,18 @@ int main(int argc, char *argv[])
 	}
 	if (!idx_rdr->is_idx && fnw == 0 && argc - optind < 2) {
 		fprintf(stderr, "[ERROR] missing input: please specify a query file to map or option -d to keep the index\n");
+		mm_idx_reader_close(idx_rdr);
 		return 1;
 	}
 	if (opt.best_n == 0 && (opt.flag&MM_F_CIGAR) && mm_verbose >= 2)
 		fprintf(stderr, "[WARNING]\033[1;31m `-N 0' reduces alignment accuracy. Please use --secondary=no to suppress secondary alignments.\033[0m\n");
 	while ((mi = mm_idx_reader_read(idx_rdr, n_threads)) != 0) {
+		if ((opt.flag & MM_F_CIGAR) && (mi->flag & MM_I_NO_SEQ)) {
+			fprintf(stderr, "[ERROR] the prebuilt index doesn't contain sequences.\n");
+			mm_idx_destroy(mi);
+			mm_idx_reader_close(idx_rdr);
+			return 1;
+		}
 		if ((opt.flag & MM_F_OUT_SAM) && idx_rdr->n_parts == 1) {
 			if (mm_idx_reader_eof(idx_rdr)) {
 				mm_write_sam_hdr(mi, rg, MM_VERSION, argc, argv);

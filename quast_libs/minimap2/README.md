@@ -1,23 +1,25 @@
-[![Release](https://img.shields.io/badge/Release-v2.3-blue.svg?style=flat)](https://github.com/lh3/minimap2/releases)
-[![BioConda](https://img.shields.io/conda/vn/bioconda/minimap2.svg?style=flat)](https://anaconda.org/bioconda/minimap2)
+[![GitHub Downloads](https://img.shields.io/github/downloads/lh3/minimap2/total.svg?style=social&logo=github&label=Download)](https://github.com/lh3/minimap2/releases)
+[![BioConda Install](https://img.shields.io/conda/dn/bioconda/minimap2.svg?style=flag&label=BioConda%20install)](https://anaconda.org/bioconda/minimap2)
 [![PyPI](https://img.shields.io/pypi/v/mappy.svg?style=flat)](https://pypi.python.org/pypi/mappy)
-[![Python Version](https://img.shields.io/pypi/pyversions/mappy.svg?style=flat)](https://pypi.python.org/pypi/mappy)
-[![License](https://img.shields.io/badge/License-MIT-blue.svg?style=flat)](LICENSE.txt)
 [![Build Status](https://travis-ci.org/lh3/minimap2.svg?branch=master)](https://travis-ci.org/lh3/minimap2)
-[![Downloads](https://img.shields.io/github/downloads/lh3/minimap2/total.svg?style=flat)](https://github.com/lh3/minimap2/releases)
 ## <a name="started"></a>Getting Started
 ```sh
 git clone https://github.com/lh3/minimap2
 cd minimap2 && make
-# long reads against a reference genome
+# long sequences against a reference genome
 ./minimap2 -a test/MT-human.fa test/MT-orang.fa > test.sam
 # create an index first and then map
 ./minimap2 -d MT-human.mmi test/MT-human.fa
 ./minimap2 -a MT-human.mmi test/MT-orang.fa > test.sam
-# long-read overlap (no test data)
-./minimap2 -x ava-pb your-reads.fa your-reads.fa > overlaps.paf
-# spliced alignment (no test data)
-./minimap2 -ax splice ref.fa rna-seq-reads.fa > spliced.sam
+# use presets (no test data)
+./minimap2 -ax map-pb ref.fa pacbio.fq.gz > aln.sam       # PacBio genomic reads
+./minimap2 -ax map-ont ref.fa ont.fq.gz > aln.sam         # Oxford Nanopore genomic reads
+./minimap2 -ax sr ref.fa read1.fa read2.fa > aln.sam      # short genomic paired-end reads
+./minimap2 -ax splice ref.fa rna-reads.fa > aln.sam       # spliced long reads
+./minimap2 -ax splice -k14 -uf ref.fa reads.fa > aln.sam  # Nanopore Direct RNA-seq
+./minimap2 -cx asm5 asm1.fa asm2.fa > aln.paf             # intra-species asm-to-asm alignment
+./minimap2 -x ava-pb reads.fa reads.fa > overlaps.paf     # PacBio read overlap
+./minimap2 -x ava-ont reads.fa reads.fa > overlaps.paf    # Nanopore read overlap
 # man page for detailed command line options
 man ./minimap2.1
 ```
@@ -34,7 +36,7 @@ man ./minimap2.1
     - [Map short accurate genomic reads](#short-genomic)
     - [Full genome/assembly alignment](#full-genome)
   - [Advanced features](#advanced)
-    - [Working CIGARs with >65535 operations](#long-cigar)
+    - [Working with >65535 CIGAR operations](#long-cigar)
     - [The cs optional tag](#cs)
     - [Evaluation scripts](#eval)
   - [Algorithm overview](#algo)
@@ -66,9 +68,9 @@ Detailed evaluations are available from the [minimap2 preprint][preprint].
 Minimap2 only works on x86-64 CPUs. You can acquire precompiled binaries from
 the [release page][release] with:
 ```sh
-wget --no-check-certificate -O- https://github.com/lh3/minimap2/releases/download/v2.2/minimap2-2.2_x64-linux.tar.bz2 \
+curl -L https://github.com/lh3/minimap2/releases/download/v2.6/minimap2-2.6_x64-linux.tar.bz2 \
   | tar -jxvf -
-./minimap2-2.2_x64-linux/minimap2
+./minimap2-2.6_x64-linux/minimap2
 ```
 If you want to compile from the source, you need to have a C compiler, GNU make
 and zlib development files installed. Then type `make` in the source code
@@ -132,14 +134,44 @@ Nanopore reads.
 #### <a name="map-long-splice"></a>Map long mRNA/cDNA reads
 
 ```sh
-minimap2 -ax splice ref.fa spliced.fq > aln.sam      # strand unknown
-minimap2 -ax splice -uf ref.fa spliced.fq > aln.sam  # assuming transcript strand
+minimap2 -ax splice -uf ref.fa iso-seq.fq > aln.sam          # PacBio Iso-seq/traditional cDNA
+minimap2 -ax splice ref.fa nanopore-cdna.fa > aln.sam        # Nanopore 2D cDNA-seq
+minimap2 -ax splice -uf -k14 ref.fa direct-rna.fq > aln.sam  # Nanopore Direct RNA-seq
+minimap2 -ax splice --splice-flank=no SIRV.fa SIRV-seq.fa    # mapping against SIRV control
 ```
-This command line has been tested on PacBio Iso-Seq reads and Nanopore 2D cDNA
-reads, and been shown to work with Nanopore 1D Direct RNA reads by others. Like
-typical RNA-seq mappers, minimap2 represents an intron with the `N` CIGAR
-operator. For spliced reads, minimap2 will try to infer the strand relative to
-transcript and may write the strand to the `ts` SAM/PAF tag.
+There are different long-read RNA-seq technologies, including tranditional
+full-length cDNA, EST, PacBio Iso-seq, Nanopore 2D cDNA-seq and Direct RNA-seq.
+They produce data of varying quality and properties. By default, `-x splice`
+assumes the read orientation relative to the transcript strand is unknown. It
+tries two rounds of alignment to infer the orientation and write the strand to
+the `ts` SAM/PAF tag if possible. For Iso-seq, Direct RNA-seq and tranditional
+full-length cDNAs, it would be desired to apply `-u f` to force minimap2 to
+consider the forward transcript strand only. This speeds up alignment with
+slight improvement to accuracy. For noisy Nanopore Direct RNA-seq reads, it is
+recommended to use a smaller k-mer size for increased sensitivity to the first
+or the last exons.
+
+Minimap2 rates an alignment by the score of the max-scoring sub-segment,
+*excluding* introns, and marks the best alignment as primary in SAM. When a
+spliced gene also has unspliced pseudogenes, minimap2 does not intentionally
+prefer spliced alignment, though in practice it more often marks the spliced
+alignment as the primary. By default, minimap2 outputs up to five secondary
+alignments (i.e. likely pseudogenes in the context of RNA-seq mapping). This
+can be tuned with option **-N**.
+
+For long RNA-seq reads, minimap2 may produce chimeric alignments potentially
+caused by gene fusions/structural variations or by an intron longer than the
+max intron length **-G** (200k by default). For now, it is not recommended to
+apply an excessively large **-G** as this slows down minimap2 and sometimes
+leads to false alignments.
+
+It is worth noting that by default `-x splice` prefers GT[A/G]..[C/T]AG
+over GT[C/T]..[A/G]AG, and then over other splicing signals. Considering
+one additional base improves the junction accuracy for noisy reads, but
+reduces the accuracy when aligning against the widely used SIRV control data.
+This is because SIRV does not honor the evolutionarily conservative splicing
+signal. If you are studying SIRV, you may apply `--splice-flank=no` to let
+minimap2 only model GT..AG, ignoring the additional base.
 
 #### <a name="long-overlap"></a>Find overlaps between long reads
 
@@ -179,7 +211,7 @@ according to the sequence divergence.
 
 ### <a name="advanced"></a>Advanced features
 
-#### <a name="long-cigar"></a>Working CIGARs with >65535 operations
+#### <a name="long-cigar"></a>Working with >65535 CIGAR operations
 
 Due to a design flaw, BAM does not work with CIGAR strings with >65535
 operations (SAM and CRAM work). However, for ultra-long nanopore reads minimap2
@@ -191,10 +223,8 @@ To avoid this issue, you can add option `-L` at the minimap2 command line.
 This option moves a long CIGAR to the `CG` tag and leaves a fully clipped CIGAR
 at the SAM CIGAR column. Current tools that don't read CIGAR (e.g. merging and
 sorting) still work with such BAM records; tools that read CIGAR will
-effectively ignore these records. I have pull requests to the SAM spec, htslib,
-htsjdk, bedtools2, Rsamtools and igv.js. If they are accepted, future versions
-of these tools will seamlessly recognize long-cigar records generated by option
-`-L`.
+effectively ignore these records. It has been decided that future tools will
+will seamlessly recognize long-cigar records generated by option `-L`.
 
 **TD;DR**: if you work with ultra-long reads and use tools that only process
 BAM files, please add option `-L`.
@@ -290,7 +320,7 @@ highlighted in bold. The description may help to tune minimap2 parameters.
 
 ### <a name="help"></a>Getting help
 
-Manpage [minimap2.1](minimap2.1) provides detailed description of minimap2
+Manpage [minimap2.1][manpage] provides detailed description of minimap2
 command line options and optional tags. If you encounter bugs or have further
 questions or requests, you can raise an issue at the [issue page][issue].
 There is not a specific mailing list for the time being.
@@ -344,3 +374,4 @@ warmly welcomed.
 [mappyconda]: https://anaconda.org/bioconda/mappy
 [issue]: https://github.com/lh3/minimap2/issues
 [k8]: https://github.com/attractivechaos/k8
+[manpage]: https://lh3.github.io/minimap2/minimap2.html

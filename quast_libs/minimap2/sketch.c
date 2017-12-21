@@ -101,13 +101,13 @@ void mm_sketch(void *km, const char *str, int len, int w, int k, uint32_t rid, i
 				tq_push(&tq, skip_len);
 				kmer_span += skip_len;
 				if (tq.count > k) kmer_span -= tq_shift(&tq);
-				if (kmer_span >= 256) continue; // make sure $kmer_span does not take more than 8 bits
 			} else kmer_span = l + 1 < k? l + 1 : k;
 			kmer[0] = (kmer[0] << 2 | c) & mask;           // forward k-mer
 			kmer[1] = (kmer[1] >> 2) | (3ULL^c) << shift1; // reverse k-mer
 			if (kmer[0] == kmer[1]) continue; // skip "symmetric k-mers" as we don't know it strand
 			z = kmer[0] < kmer[1]? 0 : 1; // strand
-			if (++l >= k) {
+			++l;
+			if (l >= k && kmer_span < 256) {
 				info.x = hash64(kmer[z], mask) << 8 | kmer_span;
 				info.y = (uint64_t)rid<<32 | (uint32_t)i<<1 | z;
 			}
@@ -115,12 +115,12 @@ void mm_sketch(void *km, const char *str, int len, int w, int k, uint32_t rid, i
 		buf[buf_pos] = info; // need to do this here as appropriate buf_pos and buf[buf_pos] are needed below
 		if (l == w + k - 1) { // special case for the first window - because identical k-mers are not stored yet
 			for (j = buf_pos + 1; j < w; ++j)
-				if (min.x == buf[j].x && buf[j].y != min.y) kv_push(mm128_t, km, *p, buf[j]);
+				if (min.x == buf[j].x && buf[j].y != min.y && buf[j].y != UINT64_MAX) kv_push(mm128_t, km, *p, buf[j]);
 			for (j = 0; j < buf_pos; ++j)
-				if (min.x == buf[j].x && buf[j].y != min.y) kv_push(mm128_t, km, *p, buf[j]);
+				if (min.x == buf[j].x && buf[j].y != min.y && buf[j].y != UINT64_MAX) kv_push(mm128_t, km, *p, buf[j]);
 		}
 		if (info.x <= min.x) { // a new minimum; then write the old min
-			if (l >= w + k) kv_push(mm128_t, km, *p, min);
+			if (l >= w + k && min.y != UINT64_MAX) kv_push(mm128_t, km, *p, min);
 			min = info, min_pos = buf_pos;
 		} else if (buf_pos == min_pos) { // old min has moved outside the window
 			if (l >= w + k - 1) kv_push(mm128_t, km, *p, min);
@@ -130,9 +130,9 @@ void mm_sketch(void *km, const char *str, int len, int w, int k, uint32_t rid, i
 				if (min.x >= buf[j].x) min = buf[j], min_pos = j;
 			if (l >= w + k - 1) { // write identical k-mers
 				for (j = buf_pos + 1; j < w; ++j) // these two loops make sure the output is sorted
-					if (min.x == buf[j].x && min.y != buf[j].y) kv_push(mm128_t, km, *p, buf[j]);
+					if (min.x == buf[j].x && min.y != buf[j].y && buf[j].y != UINT64_MAX) kv_push(mm128_t, km, *p, buf[j]);
 				for (j = 0; j <= buf_pos; ++j)
-					if (min.x == buf[j].x && min.y != buf[j].y) kv_push(mm128_t, km, *p, buf[j]);
+					if (min.x == buf[j].x && min.y != buf[j].y && buf[j].y != UINT64_MAX) kv_push(mm128_t, km, *p, buf[j]);
 			}
 		}
 		if (++buf_pos == w) buf_pos = 0;

@@ -22,6 +22,13 @@
 #define MM_F_NO_PRINT_2ND  0x4000
 #define MM_F_2_IO_THREADS  0x8000
 #define MM_F_LONG_CIGAR    0x10000
+#define MM_F_INDEPEND_SEG  0x20000
+#define MM_F_SPLICE_FLANK  0x40000
+#define MM_F_SOFTCLIP      0x80000
+
+#define MM_I_HPC          0x1
+#define MM_I_NO_SEQ       0x2
+#define MM_I_NO_NAME      0x4
 
 #define MM_IDX_MAGIC   "MMI\2"
 
@@ -43,7 +50,7 @@ typedef struct {
 } mm_idx_seq_t;
 
 typedef struct {
-	int32_t b, w, k, is_hpc;
+	int32_t b, w, k, flag;
 	uint32_t n_seq;            // number of reference sequences
 	mm_idx_seq_t *seq;         // sequence name, length and offset
 	uint32_t *S;               // 4-bit packed sequence
@@ -57,29 +64,29 @@ typedef struct {
 	int32_t dp_score, dp_max, dp_max2;  // DP score; score of the max-scoring segment; score of the best alternate mappings
 	uint32_t n_ambi:30, trans_strand:2; // number of ambiguous bases; transcript strand: 0 for unknown, 1 for +, 2 for -
 	uint32_t n_cigar;                   // number of cigar operations in cigar[]
-	float n_diff2;
-	uint32_t blen2;
 	uint32_t cigar[];
 } mm_extra_t;
 
 typedef struct {
-	int32_t id;                     // ID for internal uses (see also parent below)
-	uint32_t cnt:30, rev:1, seg_split:1; // number of minimizers; if on the reverse strand
-	uint32_t rid:31, inv:1;         // reference index; if this is an alignment from inversion rescue
-	int32_t score;                  // DP alignment score
-	int32_t qs, qe, rs, re;         // query start and end; reference start and end
-	int32_t parent, subsc;          // parent==id if primary; best alternate mapping score
-	int32_t as;                     // offset in the a[] array (for internal uses only)
-	int32_t mlen, blen;             // seeded exact match length; seeded alignment block length
-	uint32_t mapq:8, split:2, n_sub:22; // mapQ; split pattern; number of suboptimal mappings
-	uint32_t sam_pri:1, proper_frag:1, iden_flt:1, pe_thru:1, dummy:29;
+	int32_t id;             // ID for internal uses (see also parent below)
+	int32_t cnt;            // number of minimizers; if on the reverse strand
+	int32_t rid;            // reference index; if this is an alignment from inversion rescue
+	int32_t score;          // DP alignment score
+	int32_t qs, qe, rs, re; // query start and end; reference start and end
+	int32_t parent, subsc;  // parent==id if primary; best alternate mapping score
+	int32_t as;             // offset in the a[] array (for internal uses only)
+	int32_t mlen, blen;     // seeded exact match length; seeded alignment block length
+	int32_t n_sub;          // number of suboptimal mappings
+	int32_t score0;         // initial chaining score (before chain merging/spliting)
+	uint32_t mapq:8, split:2, rev:1, inv:1, sam_pri:1, proper_frag:1, pe_thru:1, seg_split:1, dummy:16;
 	uint32_t hash;
+	float div;
 	mm_extra_t *p;
 } mm_reg1_t;
 
 // indexing and mapping options
 typedef struct {
-	short k, w, is_hpc, bucket_bits;
+	short k, w, flag, bucket_bits;
 	int mini_batch_size;
 	uint64_t batch_size;
 } mm_idxopt_t;
@@ -99,7 +106,6 @@ typedef struct {
 	float mask_level;
 	float pri_ratio;
 	int best_n;      // top best_n chains are subjected to DP alignment
-	float min_iden;
 
 	int max_join_long, max_join_short;
 	int min_join_flank_sc;
@@ -110,6 +116,7 @@ typedef struct {
 	int end_bonus;
 	int min_dp_max;  // drop an alignment if the score of the max scoring segment is below this threshold
 	int min_ksw_len;
+	int anchor_ext_len, anchor_ext_shift;
 
 	int pe_ori, pe_bonus;
 
@@ -269,7 +276,7 @@ int mm_map_file_frag(const mm_idx_t *idx, int n_segs, const char **fn, const mm_
 
 // deprecated APIs for backward compatibility
 void mm_mapopt_init(mm_mapopt_t *opt);
-mm_idx_t *mm_idx_build(const char *fn, int w, int k, int is_hpc, int n_threads);
+mm_idx_t *mm_idx_build(const char *fn, int w, int k, int flag, int n_threads);
 
 #ifdef __cplusplus
 }

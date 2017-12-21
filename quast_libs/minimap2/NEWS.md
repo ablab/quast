@@ -1,3 +1,96 @@
+Release 2.6-r623 (12 December 2017)
+-----------------------------------
+
+This release adds several features and fixes two minor bugs:
+
+ * Optionally build an index without sequences. This helps to reduce the
+   peak memory for read overlapping and is automatically applied when
+   base-level alignment is not requested.
+
+ * Approximately estimate per-base sequence divergence (i.e. 1-identity)
+   without performing base-level alignment, using a MashMap-like method. The
+   estimate is written to a new dv:f tag.
+
+ * Reduced the number of tiny terminal exons in RNA-seq alignment. The current
+   setting is conservative. Increase --end-seed-pen to drop more such exons.
+
+ * Reduced the peak memory when aligning long query sequences.
+
+ * Fixed a bug that is caused by HPC minimizers longer than 256bp. This should
+   have no effect in practice, but it is recommended to rebuild HPC indices if
+   possible.
+
+ * Fixed a bug when identifying identical hits (#71). This should only affect
+   artifactual reference consisting of near identical sequences.
+
+For genomic sequences, minimap2 should give nearly identical alignments to
+v2.5, except the new dv:f tag.
+
+(2.6: 12 December 2017, r623)
+
+
+
+Release 2.5-r572 (11 November 2017)
+-----------------------------------
+
+This release fixes several bugs and brings a couple of minor improvements:
+
+ * Fixed a severe bug that leads to incorrect mapping coordinates in rare
+   corner cases.
+
+ * Fixed underestimated mapping quality for chimeric alignments when the whole
+   query sequence contain many repetitive minimizers, and for chimeric
+   alignments caused by Z-drop.
+
+ * Fixed two bugs in Python binding: incorrect strand field (#57) and incorrect
+   sequence names for Python3 (#55).
+
+ * Improved mapping accuracy for highly overlapping paired ends.
+
+ * Added option -Y to use soft clipping for supplementary alignments (#56).
+
+(2.5: 11 November 2017, r572)
+
+
+
+Release 2.4-r555 (6 November 2017)
+----------------------------------
+
+As is planned, this release focuses on fine tuning the base algorithm. Notable
+changes include
+
+ * Changed the mapping quality scale to match the scale of BWA-MEM. This makes
+   minimap2 and BWA-MEM achieve similar sensitivity-specificity balance on real
+   short-read data.
+
+ * Improved the accuracy of splice alignment by modeling one additional base
+   close to the GT-AG signal. This model is used by default with `-x splice`.
+   For SIRV control data, however, it is recommended to add `--splice-flank=no`
+   to disable this feature as the SIRV splice signals are slightly different.
+
+ * Tuned the parameters for Nanopore Direct RNA reads. The recommended command
+   line is `-axsplice -k14 -uf` (#46).
+
+ * Fixed a segmentation fault when aligning PacBio reads (#47 and #48). This
+   bug is very rare but it affects all versions of minimap2. It is also
+   recommended to re-index reference genomes created with `map-pb`. For human,
+   two minimizers in an old index are wrong.
+
+ * Changed option `-L` in sync with the final decision of hts-specs: a fake
+   CIGAR takes the form of `<readLen>S<refLen>N`. Note that `-L` only enables
+   future tools to recognize long CIGARs. It is not possible for older tools to
+   work with such alignments in BAM (#43 and #51).
+
+ * Fixed a tiny issue whereby minimap2 may waste 8 bytes per candidate
+   alignment.
+
+The minimap2 technical note hosted at arXiv has also been updated to reflect
+recent changes.
+
+(2.4: 6 November 2017, r555)
+
+
+
 Release 2.3-r531 (22 October 2017)
 ----------------------------------
 
@@ -26,7 +119,7 @@ This release come with many improvements and bug fixes:
 
 This release has implemented all the major features I planned five months ago,
 with the addition of spliced long-read alignment. The next couple of releases
-will focus on fine tuning of base algorithms.
+will focus on fine tuning of the base algorithms.
 
 (2.3: 22 October 2017, r531)
 

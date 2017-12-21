@@ -202,8 +202,9 @@ static void write_cs(void *km, kstring_t *s, const mm_idx_t *mi, const mm_bseq1_
 
 static inline void write_tags(kstring_t *s, const mm_reg1_t *r)
 {
-	int type = r->inv? 'I' : r->id == r->parent? 'P' : 'S';
-	if (r->iden_flt) mm_sprintf_lite(s, "\tom:i:%d", r->mapq);
+	int type;
+	if (r->id == r->parent) type = r->inv? 'I' : 'P';
+	else type = r->inv? 'i' : 'S';
 	if (r->p) {
 		mm_sprintf_lite(s, "\tNM:i:%d\tms:i:%d\tAS:i:%d\tnn:i:%d", r->blen - r->mlen + r->p->n_ambi, r->p->dp_max, r->p->dp_score, r->p->n_ambi);
 		if (r->p->trans_strand == 1 || r->p->trans_strand == 2)
@@ -211,6 +212,12 @@ static inline void write_tags(kstring_t *s, const mm_reg1_t *r)
 	}
 	mm_sprintf_lite(s, "\ttp:A:%c\tcm:i:%d\ts1:i:%d", type, r->cnt, r->score);
 	if (r->parent == r->id) mm_sprintf_lite(s, "\ts2:i:%d", r->subsc);
+	if (r->div >= 0.0f && r->div <= 1.0f) {
+		char buf[8];
+		if (r->div == 0.0f) buf[0] = '0', buf[1] = 0;
+		else sprintf(buf, "%.4f", r->div);
+		mm_sprintf_lite(s, "\tdv:f:%s", buf);
+	}
 	if (r->split) mm_sprintf_lite(s, "\tzd:i:%d", r->split);
 }
 
@@ -258,7 +265,7 @@ static inline const mm_reg1_t *get_sam_pri(int n_regs, const mm_reg1_t *regs)
 	return NULL;
 }
 
-static void write_sam_cigar(kstring_t *s, int sam_flag, int in_tag, int qlen, const mm_reg1_t *r)
+static void write_sam_cigar(kstring_t *s, int sam_flag, int in_tag, int qlen, const mm_reg1_t *r, int opt_flag)
 {
 	if (r->p == 0) {
 		mm_sprintf_lite(s, "*");
@@ -267,14 +274,14 @@ static void write_sam_cigar(kstring_t *s, int sam_flag, int in_tag, int qlen, co
 		clip_len[0] = r->rev? qlen - r->qe : r->qs;
 		clip_len[1] = r->rev? r->qs : qlen - r->qe;
 		if (in_tag) {
-			int clip_char = (sam_flag&0x800)? 5 : 4;
+			int clip_char = (sam_flag&0x800) && !(opt_flag&MM_F_SOFTCLIP)? 5 : 4;
 			mm_sprintf_lite(s, "\tCG:B:I");
 			if (clip_len[0]) mm_sprintf_lite(s, ",%u", clip_len[0]<<4|clip_char);
 			for (k = 0; k < r->p->n_cigar; ++k)
 				mm_sprintf_lite(s, ",%u", r->p->cigar[k]);
 			if (clip_len[1]) mm_sprintf_lite(s, ",%u", clip_len[1]<<4|clip_char);
 		} else {
-			int clip_char = (sam_flag&0x800)? 'H' : 'S';
+			int clip_char = (sam_flag&0x800) && !(opt_flag&MM_F_SOFTCLIP)? 'H' : 'S';
 			if (clip_len[0]) mm_sprintf_lite(s, "%d%c", clip_len[0], clip_char);
 			for (k = 0; k < r->p->n_cigar; ++k)
 				mm_sprintf_lite(s, "%d%c", r->p->cigar[k]>>4, "MIDN"[r->p->cigar[k]&0xf]);
@@ -336,9 +343,8 @@ void mm_write_sam2(kstring_t *s, const mm_idx_t *mi, const mm_bseq1_t *t, int se
 			mm_sprintf_lite(s, "\t%s\t%d\t0\t*", mi->seq[this_rid].name, this_pos+1);
 		} else mm_sprintf_lite(s, "\t*\t0\t0\t*");
 	} else {
-		int mapq = !r->iden_flt? r->mapq : r->mapq < 3? r->mapq : 3;
 		this_rid = r->rid, this_pos = r->rs, this_rev = r->rev;
-		mm_sprintf_lite(s, "\t%s\t%d\t%d\t", mi->seq[r->rid].name, r->rs+1, mapq);
+		mm_sprintf_lite(s, "\t%s\t%d\t%d\t", mi->seq[r->rid].name, r->rs+1, r->mapq);
 		if ((opt_flag & MM_F_LONG_CIGAR) && r->p && r->p->n_cigar > max_bam_cigar_op - 2) {
 			int n_cigar = r->p->n_cigar;
 			if (r->qs != 0) ++n_cigar;
@@ -346,8 +352,11 @@ void mm_write_sam2(kstring_t *s, const mm_idx_t *mi, const mm_bseq1_t *t, int se
 			if (n_cigar > max_bam_cigar_op)
 				cigar_in_tag = 1;
 		}
-		if (cigar_in_tag) mm_sprintf_lite(s, "%dS", t->l_seq);
-		else write_sam_cigar(s, flag, 0, t->l_seq, r);
+		if (cigar_in_tag) {
+			if (flag & 0x100) mm_sprintf_lite(s, "0S"); // secondary alignment
+			else if (flag & 0x800) mm_sprintf_lite(s, "%dS", r->re - r->rs); // supplementary alignment
+			else mm_sprintf_lite(s, "%dS", t->l_seq);
+		} else write_sam_cigar(s, flag, 0, t->l_seq, r, opt_flag);
 	}
 
 	// write mate positions
@@ -380,7 +389,7 @@ void mm_write_sam2(kstring_t *s, const mm_idx_t *mi, const mm_bseq1_t *t, int se
 		if (t->qual) sam_write_sq(s, t->qual, t->l_seq, 0, 0);
 		else mm_sprintf_lite(s, "*");
 	} else {
-		if ((flag & 0x900) == 0) {
+		if ((flag & 0x900) == 0 || (opt_flag & MM_F_SOFTCLIP)) {
 			sam_write_sq(s, t->seq, t->l_seq, r->rev, r->rev);
 			mm_sprintf_lite(s, "\t");
 			if (t->qual) sam_write_sq(s, t->qual, t->l_seq, r->rev, 0);
@@ -428,7 +437,7 @@ void mm_write_sam2(kstring_t *s, const mm_idx_t *mi, const mm_bseq1_t *t, int se
 		if (r->p && (opt_flag & MM_F_OUT_CS))
 			write_cs(km, s, mi, t, r, !(opt_flag&MM_F_OUT_CS_LONG));
 		if (cigar_in_tag)
-			write_sam_cigar(s, flag, 1, t->l_seq, r);
+			write_sam_cigar(s, flag, 1, t->l_seq, r, opt_flag);
 	}
 
 	s->s[s->l] = 0; // we always have room for an extra byte (see str_enlarge)

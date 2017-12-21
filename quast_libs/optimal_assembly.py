@@ -24,6 +24,7 @@ logger = get_logger(qconfig.LOGGER_DEFAULT_NAME)
 mp_polished_suffix = 'mp_polished'
 long_reads_polished_suffix = 'long_reads_polished'
 MIN_OVERLAP = 10
+MIN_CONTIG_LEN = 100
 
 def parse_uncovered_fpath(uncovered_fpath, fasta_fpath, return_covered_regions=True):
     regions = defaultdict(list)
@@ -195,6 +196,16 @@ def scaffolding(regions, region_pairing):
     return ref_coords_to_output
 
 
+def trim_ns(seq):
+    seq_start = 0
+    seq_end = len(seq)
+    while seq_start < seq_end and seq[seq_start] == 'N':
+        seq_start += 1
+    while seq_end > seq_start and seq[seq_end - 1] == 'N':
+        seq_end -= 1
+    return seq[seq_start: seq_end]
+
+
 def get_fasta_entries_from_coords(result_fasta, ref_entry, scaffolds, repeats_regions, uncovered_regions=None):
     '''
     INPUT:
@@ -230,7 +241,9 @@ def get_fasta_entries_from_coords(result_fasta, ref_entry, scaffolds, repeats_re
         while scf_start > repeats_start:
             if repeats_start >= prev_end:
                 repeat_name = ref_entry[0] + '_repeat' + str(repeats_idx)
-                result_fasta.append((repeat_name, ref_entry[1][repeats_regions[repeats_idx][0]: repeats_regions[repeats_idx][1] + 1]))
+                repeat_seq = trim_ns(ref_entry[1][repeats_regions[repeats_idx][0]: repeats_regions[repeats_idx][1] + 1])
+                if len(repeat_seq) >= MIN_CONTIG_LEN:
+                    result_fasta.append((repeat_name, repeat_seq))
             repeats_idx, repeats_start = __get_next_region(repeats_regions, repeats_idx)
         current_start = scf_start
         current_end = min(scf_end, uncovered_start)
@@ -244,12 +257,16 @@ def get_fasta_entries_from_coords(result_fasta, ref_entry, scaffolds, repeats_re
             current_end = min(scf_end, uncovered_start)
             subseqs.append(ref_entry[1][current_start: current_end])
         if subseqs:
-            result_fasta.append((name, "".join(subseqs)))
+            entry_seq = trim_ns("".join(subseqs))
+            if len(entry_seq) >= MIN_CONTIG_LEN:
+                result_fasta.append((name, entry_seq))
         prev_end = current_end
     for repeat in repeats_regions[repeats_idx:]:
         if repeat[0] >= prev_end:
             repeat_name = ref_entry[0] + '_repeat' + str(repeats_idx)
-            result_fasta.append((repeat_name, ref_entry[1][repeat[0]: repeat[1] + 1]))
+            repeat_seq = trim_ns(ref_entry[1][repeat[0]: repeat[1] + 1])
+            if len(repeat_seq) >= MIN_CONTIG_LEN:
+                result_fasta.append((repeat_name, repeat_seq))
             repeats_idx += 1
 
 
@@ -401,7 +418,8 @@ def do(ref_fpath, original_ref_fpath, output_dirpath):
     else:
         for chrom, seq in reference:
             for idx, region in enumerate(unique_covered_regions[chrom]):
-                result_fasta.append((chrom + '_' + str(idx), seq[region[0]: region[1]]))
+                if region[1] - region[0] >= MIN_CONTIG_LEN:
+                    result_fasta.append((chrom + '_' + str(idx), seq[region[0]: region[1]]))
 
     fastaparser.write_fasta(result_fpath, result_fasta)
     logger.info('  ' + 'Theoretically optimal Assembly saved to ' + result_fpath)

@@ -1,6 +1,6 @@
 <html>
 <head>
-    <title>QUAST 4.5 manual</title>
+    <title>QUAST 5.0.0 manual</title>
     <style type="text/css">
         body {
             margin-top: 30px;
@@ -66,7 +66,7 @@
     </style>
 </head>
 <body>
-<h1>QUAST 4.5 manual</h1>
+<h1>QUAST 5.0.0 manual</h1>
 
 <p> QUAST stands for <u>QU</u>ality <u>AS</u>sessment <u>T</u>ool.
     The tool evaluates genome assemblies by computing various metrics. This document provides instructions
@@ -78,7 +78,7 @@
     at <a href="http://quast.sf.net/">http://quast.sf.net/</a>.
     <br>
     <br>
-    QUAST utilizes <a href="https://github.com/lh3/minimap2">Minimap2</a>),
+    QUAST utilizes <a href="https://github.com/lh3/minimap2">Minimap2</a>,
     <a href="http://exon.gatech.edu/GeneMark/">GeneMarkS</a>,
     <a href="http://exon.gatech.edu/GeneMark/gmes_instructions.html">GeneMark-ES</a>,
     <a href="http://cbcb.umd.edu/software/glimmerhmm/">GlimmerHMM</a>,
@@ -98,7 +98,7 @@
     for guidelines on how to complete the licensing process.
     <br>
     <br>
-    Version 4.5 of QUAST was released under GPL v2 on XX March 2017. Note that some of build-in third-party tools are not under GPL v2. See <a href="LICENSE.txt">LICENSE</a> for details.
+    Version 5.0.0 of QUAST was released under GPL v2 on XX January 2018. Note that some of build-in third-party tools are not under GPL v2. See <a href="LICENSE.txt">LICENSE</a> for details.
 </p>
 
 <h2>Contents</h2>
@@ -152,6 +152,8 @@
 </p>
 <ul>
     <li>Time::HiRes perl module for GeneMark-ES</li>
+    <li>Java 1.8 or later for GRIDSS (needed for SV detection)</li>
+    <li>R for GRIDSS (needed for SV detection)</li>
 </ul>
 All those tools are usually pre installed on Linux.<br>
 MacOS, however, initially misses <code>make</code>, <code>gcc</code> and <code>ar</code>, so you will have to install
@@ -165,11 +167,11 @@ Installation on Ubuntu:
     sudo apt-get install -y pkg-config libfreetype6-dev libpng-dev python-matplotlib
 </pre>
 <br>
-To download the <a href="https://downloads.sourceforge.net/project/quast/quast-4.5.tar.gz">QUAST source code tarball</a> and extract it, type:
+To download the <a href="https://downloads.sourceforge.net/project/quast/quast-5.0.0.tar.gz">QUAST source code tarball</a> and extract it, type:
 <pre class="code">
-    wget https://downloads.sourceforge.net/project/quast/quast-4.5.tar.gz
-    tar -xzf quast-4.5.tar.gz
-    cd quast-4.5
+    wget https://downloads.sourceforge.net/project/quast/quast-5.0.0.tar.gz
+    tar -xzf quast-5.0.0.tar.gz
+    cd quast-5.0.0
 </pre>
 
 <br>

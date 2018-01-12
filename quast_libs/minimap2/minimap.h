@@ -155,6 +155,7 @@ extern double mm_realtime0; // wall-clock timer
  * @return 0 if success; -1 if _present_ unknown
  */
 int mm_set_opt(const char *preset, mm_idxopt_t *io, mm_mapopt_t *mo);
+int mm_check_opt(const mm_idxopt_t *io, const mm_mapopt_t *mo);
 
 /**
  * Update mm_mapopt_t::mid_occ via mm_mapopt_t::mid_occ_frac
@@ -206,6 +207,21 @@ mm_idx_t *mm_idx_reader_read(mm_idx_reader_t *r, int n_threads);
 void mm_idx_reader_close(mm_idx_reader_t *r);
 
 int mm_idx_reader_eof(const mm_idx_reader_t *r);
+
+/**
+ * Create an index from strings in memory
+ *
+ * @param w            minimizer window size
+ * @param k            minimizer k-mer size
+ * @param is_hpc       use HPC k-mer if true
+ * @param bucket_bits  number of bits for the first level of the hash table
+ * @param n            number of sequences
+ * @param seq          sequences in A/C/G/T
+ * @param name         sequence names; could be NULL
+ *
+ * @return minimap2 index
+ */
+mm_idx_t *mm_idx_str(int w, int k, int is_hpc, int bucket_bits, int n, const char **seq, const char **name);
 
 /**
  * Print index statistics to stderr

@@ -72,6 +72,7 @@ unaligned_part_size = 500
 all_labels_from_dirs = False
 run_busco = False
 large_genome = False
+use_kmc = False
 
 # ideal assembly section
 optimal_assembly = False
@@ -367,6 +368,8 @@ def usage(show_hidden=False, meta=False, short=True, stream=sys.stdout):
         stream.write("-e  --eukaryote                       Genome is eukaryotic\n")
         stream.write("    --fungus                          Genome is fungal\n")
         stream.write("    --large                           Use optimal parameters for evaluation of large genomes\n")
+        stream.write("    --kmc                             Use KMC for computing k-mer-based metrics (recommended for large genomes).\n"
+                     "                                      This may significantly increase memory and time consumption on large genomes")
         if meta:
             stream.write("-f  --gene-finding                    Predict genes using MetaGeneMark\n")
         else:

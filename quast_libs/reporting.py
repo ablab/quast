@@ -83,7 +83,7 @@ class Fields:
     MIS_EXTENSIVE_CONTIGS = '# misassembled contigs'
     MIS_EXTENSIVE_BASES = 'Misassembled contigs length'
     MIS_LOCAL = '# local misassemblies'
-    MIS_SCAFFOLDS_GAP = '# scaffold gap size mis'
+    MIS_SCAFFOLDS_GAP = '# scaffold gap size mis.'
     MIS_FRAGMENTED = '# misassemblies caused by fragmented reference'
     CONTIGS_WITH_ISTRANSLOCATIONS = '# possibly misassembled contigs'
     POSSIBLE_MISASSEMBLIES = TAB + '# possible misassemblies'

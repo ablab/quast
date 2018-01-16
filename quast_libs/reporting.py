@@ -83,11 +83,11 @@ class Fields:
     MIS_EXTENSIVE_CONTIGS = '# misassembled contigs'
     MIS_EXTENSIVE_BASES = 'Misassembled contigs length'
     MIS_LOCAL = '# local misassemblies'
-    MIS_SCAFFOLDS_GAP = '# scaffold gap size misassemblies'
+    MIS_SCAFFOLDS_GAP = '# scaffold gap size mis'
     MIS_FRAGMENTED = '# misassemblies caused by fragmented reference'
     CONTIGS_WITH_ISTRANSLOCATIONS = '# possibly misassembled contigs'
     POSSIBLE_MISASSEMBLIES = TAB + '# possible misassemblies'
-    POTENTIAL_MGE = '# possible mobile genetic elements'
+    POTENTIAL_MGE = '# possible MGEs'
     ### structural variations
     STRUCT_VARIATIONS = '# structural variations'
 
@@ -137,17 +137,18 @@ class Fields:
     LGA75 = 'LGA75'
 
     # Unique k-mer statistics
-    KMER_COMPLETENESS = 'Unique k-mers completeness'
-    KMER_SCAFFOLDS_ONE_CHROM = 'Length assigned to one chromosome (%)'
-    KMER_SCAFFOLDS_MULTI_CHROM = 'Length assigned to multiple chromosomes (%)'
-    KMER_SCAFFOLDS_NONE_CHROM = 'Length assigned to no chromosome (%)'
+    KMER_COMPLETENESS = 'K-mer-based completeness'
+    KMER_CORR_LENGTH = 'K-mer-based cor. length (%)'
+    KMER_MIS_LENGTH = 'K-mer-based mis. length (%)'
+    KMER_UNDEF_LENGTH = 'K-mer-based undef. length (%)'
+    KMER_MISASSEMBLIES = '# k-mer-based misjoins'
 
     # Predicted genes
     PREDICTED_GENES_UNIQUE = '# predicted genes (unique)'
     PREDICTED_GENES = ('# predicted genes (>= %d bp)', tuple(qconfig.genes_lengths))
     RNA_GENES = '# predicted rRNA genes'
-    BUSCO_COMPLETE = 'Complete conserved orthologs (%)'
-    BUSCO_PART = 'Partial conserved orthologs (%)'
+    BUSCO_COMPLETE = 'Complete BUSCO (%)'
+    BUSCO_PART = 'Partial BUSCO (%)'
 
     # Reference statistics
     REFLEN = 'Reference length'
@@ -192,7 +193,7 @@ class Fields:
              BUSCO_COMPLETE, BUSCO_PART,
              PREDICTED_GENES_UNIQUE, PREDICTED_GENES, RNA_GENES,
              LARGALIGN, TOTAL_ALIGNED_LEN, NA50, NGA50, NA75, NGA75, LA50, LGA50, LA75, LGA75,
-             KMER_COMPLETENESS, KMER_SCAFFOLDS_ONE_CHROM, KMER_SCAFFOLDS_MULTI_CHROM, KMER_SCAFFOLDS_NONE_CHROM]
+             KMER_COMPLETENESS, KMER_CORR_LENGTH, KMER_MIS_LENGTH, KMER_MISASSEMBLIES]
 
     reads_order = [NAME, TOTAL_READS, LEFT_READS, RIGHT_READS,
                    MAPPED_READS, MAPPED_READS_PCNT, PROPERLY_PAIRED_READS, PROPERLY_PAIRED_READS_PCNT,
@@ -215,6 +216,8 @@ class Fields:
     # content and order of metrics in DETAILED UNALIGNED REPORT (<quast_output_dir>/contigs_reports/unaligned_report.txt, .tex, .tsv)
     unaligned_order = [NAME, UNALIGNED_FULL_CNTGS, UNALIGNED_FULL_LENGTH, UNALIGNED_PART_CNTGS,
                        UNALIGNED_PART_LENGTH, UNCALLED]
+
+    kmers_order = [KMER_COMPLETENESS, KMER_CORR_LENGTH, KMER_MIS_LENGTH, KMER_UNDEF_LENGTH, KMER_MISASSEMBLIES]
 
     ### Grouping of metrics and set of main metrics for HTML version of main report
     grouped_order = [
@@ -242,7 +245,7 @@ class Fields:
         ('Statistics without reference', [CONTIGS, CONTIGS__FOR_THRESHOLDS, LARGCONTIG, TOTALLEN, TOTALLENS__FOR_THRESHOLDS,
                                           N50, N75, L50, L75, GC,]),
 
-        ('Unique 101-mers', [KMER_COMPLETENESS, KMER_SCAFFOLDS_ONE_CHROM, KMER_SCAFFOLDS_MULTI_CHROM, KMER_SCAFFOLDS_NONE_CHROM]),
+        ('K-mer-based statistics', [KMER_COMPLETENESS, KMER_CORR_LENGTH, KMER_MIS_LENGTH, KMER_UNDEF_LENGTH, KMER_MISASSEMBLIES]),
 
         ('Predicted genes', [PREDICTED_GENES_UNIQUE, PREDICTED_GENES, RNA_GENES]),
 
@@ -266,7 +269,7 @@ class Fields:
                     BUSCO_COMPLETE, BUSCO_PART,
                     NGA50, LGA50,
                     PREDICTED_GENES_UNIQUE, PREDICTED_GENES, RNA_GENES,
-                    DEPTH, COVERAGE_1X_THRESHOLD, KMER_COMPLETENESS]
+                    DEPTH, COVERAGE_1X_THRESHOLD, KMER_COMPLETENESS, KMER_MISASSEMBLIES]
 
 ####################################################################################
 ########################  END OF CONFIGURABLE PARAMETERS  ##########################
@@ -285,7 +288,7 @@ class Fields:
              MAPPEDGENOME, AVE_READ_SUPPORT, GENES, OPERONS, PREDICTED_GENES_UNIQUE, PREDICTED_GENES, RNA_GENES,
              BUSCO_COMPLETE, BUSCO_PART,
              MAPPED_READS, MAPPED_READS_PCNT, PROPERLY_PAIRED_READS, PROPERLY_PAIRED_READS_PCNT,
-             KMER_COMPLETENESS, KMER_SCAFFOLDS_ONE_CHROM,
+             KMER_COMPLETENESS, KMER_CORR_LENGTH,
              DEPTH, COVERAGE__FOR_THRESHOLDS],
         Quality.LESS_IS_BETTER:
             [L50, LG50, L75, LG75,
@@ -295,7 +298,7 @@ class Fields:
              UNALIGNED, UNALIGNEDBASES, AMBIGUOUS, AMBIGUOUSEXTRABASES,
              UNCALLED, UNCALLED_PERCENT,
              SINGLETONS, SINGLETONS_PCNT, MISJOINT_READS, MISJOINT_READS_PCNT,
-             KMER_SCAFFOLDS_MULTI_CHROM, KMER_SCAFFOLDS_NONE_CHROM,
+             KMER_MIS_LENGTH, KMER_UNDEF_LENGTH, KMER_MISASSEMBLIES,
              LA50, LGA50, LA75, LGA75, DUPLICATION_RATIO, INDELS, INDELSERROR, MISMATCHES, SUBSERROR,
              MIS_SHORT_INDELS, MIS_LONG_INDELS, INDELSBASES],
         Quality.EQUAL:
@@ -723,3 +726,7 @@ def save_unaligned(output_dirpath):
 
 def save_reads(output_dirpath):
     save(output_dirpath, "reads_report", "", Fields.reads_order)
+
+
+def save_kmers(output_dirpath):
+    save(output_dirpath, "kmers_report", "", Fields.kmers_order)

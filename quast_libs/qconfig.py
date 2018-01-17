@@ -369,7 +369,7 @@ def usage(show_hidden=False, meta=False, short=True, stream=sys.stdout):
         stream.write("    --fungus                          Genome is fungal\n")
         stream.write("    --large                           Use optimal parameters for evaluation of large genomes\n")
         stream.write("    --kmc                             Use KMC for computing k-mer-based metrics (recommended for large genomes).\n"
-                     "                                      This may significantly increase memory and time consumption on large genomes")
+                     "                                      This may significantly increase memory and time consumption on large genomes\n")
         if meta:
             stream.write("-f  --gene-finding                    Predict genes using MetaGeneMark\n")
         else:
@@ -413,8 +413,8 @@ def usage(show_hidden=False, meta=False, short=True, stream=sys.stdout):
         stream.write("    --fragmented-max-indent  <int>    Mark translocation as fake if both alignments are located no further than N bases \n")
         stream.write("                                      from the ends of the reference fragments [default: %s]\n" % MAX_INDEL_LENGTH)
         stream.write("                                      Requires --fragmented option.\n")
-        stream.write("    --optimal_assembly                Simulate theoretically optimal assembly based on reference genome\n")
-        stream.write("    --est-insert-size  <int>          Use provided insert size in ideal assembly simulation [default: auto detect from reads or %d]\n" % optimal_assembly_default_IS)
+        stream.write("    --optimal-assembly                Simulate theoretically optimal assembly based on reference genome\n")
+        stream.write("    --est-insert-size  <int>          Use provided insert size in optimal assembly simulation [default: auto detect from reads or %d]\n" % optimal_assembly_default_IS)
         stream.write("    --plots-format  <str>             Save plots in specified format [default: %s]\n" % plot_extension)
         stream.write("                                      Supported formats: %s\n" % ', '.join(supported_plot_extensions))
         stream.write("    --memory-efficient                Run everything using one thread, separately per each assembly\n")

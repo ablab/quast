@@ -554,7 +554,7 @@ def parse_options(logger, quast_args, is_metaquast=False):
              action='store_true',
              default=False)
          ),
-        (['--optimal_assembly'], dict(
+        (['--optimal-assembly'], dict(
              dest='optimal_assembly',
              action='store_true')
          ),

@@ -407,7 +407,7 @@ def do(ref_fpath, aligned_contigs_fpaths, output_dirpath, features_dict, operons
         report = reporting.get(contigs_fpath)
 
         res_file.write('%-25s| %-10s| %-12s| %-10s|'
-        % (assembly_name[:24], report.get_field(reporting.Fields.MAPPEDGENOME), report.get_field(reporting.Fields.MAPPEDGENOME), gaps_count))
+        % (assembly_name[:24], report.get_field(reporting.Fields.MAPPEDGENOME), report.get_field(reporting.Fields.DUPLICATION_RATIO), gaps_count))
 
         genome_mapped.append(float(report.get_field(reporting.Fields.MAPPEDGENOME)))
 

@@ -34,7 +34,7 @@ kmc_tools_fpath = join(kmc_dirpath, 'kmc_tools')
 
 
 def create_kmc_stats_file(output_dir, contigs_fpath, ref_fpath, completeness,
-                          corr_len, mis_len, undef_len, total_len, misassemblies):
+                          corr_len, mis_len, undef_len, total_len, translocations, relocations):
     label = qutils.label_from_fpath_for_fname(contigs_fpath)
     kmc_check_fpath = join(output_dir, label + '.sf')
     kmc_stats_fpath = join(output_dir, label + '.stat')
@@ -48,7 +48,8 @@ def create_kmc_stats_file(output_dir, contigs_fpath, ref_fpath, completeness,
             stats_f.write("K-mer-based misjoined length: %d\n" % mis_len)
             stats_f.write("K-mer-based undefined length: %d\n" % undef_len)
             stats_f.write("Total length: %d\n" % total_len)
-            stats_f.write("# misjoins: %d\n" % misassemblies)
+            stats_f.write("# translocations: %d\n" % translocations)
+            stats_f.write("# 100 kbp relocations: %d\n" % relocations)
 
 
 def check_kmc_successful_check(output_dir, contigs_fpath, contigs_fpaths, ref_fpath):
@@ -78,14 +79,14 @@ def get_kmers_cnt(tmp_dirpath, kmc_db_fpath, log_fpath, err_fpath):
 def count_kmers(tmp_dirpath, fpath, log_fpath, err_fpath):
     kmc_out_fpath = join(tmp_dirpath, basename(fpath) + '.kmc')
     max_mem = max(2, get_free_memory())
-    run_kmc(['-m' + str(max_mem), '-k' + str(KMERS_LEN), '-fm', '-cx1', '-ci1', fpath, kmc_out_fpath, tmp_dirpath],
+    run_kmc(['-m' + str(max_mem), '-n128', '-k' + str(KMERS_LEN), '-fm', '-cx1', '-ci1', fpath, kmc_out_fpath, tmp_dirpath],
             log_fpath, err_fpath, use_kmc_tools=False)
     return kmc_out_fpath
 
 
 def align_kmers(output_dir, ref_fpath, kmers_fpath, log_err_fpath, max_threads):
     out_fpath = join(output_dir, 'kmers.coords')
-    cmdline = [minimap_fpath(), '-ax', 'sr', '-s202', '-t', str(max_threads), ref_fpath, kmers_fpath]
+    cmdline = [minimap_fpath(), '-ax', 'sr', '-s202', '--frag=no', '-t', str(max_threads), ref_fpath, kmers_fpath]
     qutils.call_subprocess(cmdline, stdout=open(out_fpath, 'w'), stderr=open(log_err_fpath, 'a'), indent='  ')
     kmers_pos_by_chrom = defaultdict(list)
     kmers_by_chrom = defaultdict(list)
@@ -100,45 +101,35 @@ def align_kmers(output_dir, ref_fpath, kmers_fpath, log_err_fpath, max_threads):
     return kmers_by_chrom, kmers_pos_by_chrom
 
 
-def downsample_kmers(tmp_dirpath, ref_fpath, kmc_out_fpath, log_fpath, err_fpath):
-    kmc_txt_fpath = join(tmp_dirpath, 'kmc.full.txt')
+def downsample_kmers(tmp_dirpath, ref_fpath, kmc_db_fpath, log_fpath, err_fpath):
     downsampled_txt_fpath = join(tmp_dirpath, 'kmc.downsampled.txt')
-    run_kmc(['transform', kmc_out_fpath, 'dump', kmc_txt_fpath], log_fpath, err_fpath)
-    kmc_fasta_fpath = join(tmp_dirpath, 'kmc.full.fasta')
-    with open(kmc_txt_fpath) as in_f:
-        with open(kmc_fasta_fpath, 'w') as out_f:
-            for kmer_i, line in enumerate(in_f):
-                kmer, _ = line.split()
-                out_f.write('>' + str(kmer_i) + '\n')
-                out_f.write(kmer + '\n')
-
-    kmers_by_chrom, kmers_pos_by_chrom = align_kmers(tmp_dirpath, ref_fpath, kmc_fasta_fpath, err_fpath, qconfig.max_threads)
+    open(downsampled_txt_fpath, 'w').close()
     ref_kmers = dict()
-    for chrom in kmers_by_chrom.keys():
-        sorted_kmers = [(kmer, kmer_pos) for kmer_pos, kmer in
-                        sorted(zip(kmers_pos_by_chrom[chrom], kmers_by_chrom[chrom]), key=lambda x: x[0])]
-        for kmer, kmer_pos in sorted_kmers[::KMERS_INTERVAL]:
-            ref_kmers[kmer] = (chrom, kmer_pos)
-    with open(kmc_txt_fpath) as in_f:
-        with open(downsampled_txt_fpath, 'w') as out_f:
-            for kmer_i, line in enumerate(in_f):
-                if kmer_i in ref_kmers:
-                    kmer, _ = line.split()
-                    out_f.write('>' + str(kmer_i) + '\n')
-                    out_f.write(kmer + '\n')
+    prev_kmer_idx = 0
+    for chrom, seq in read_fasta(ref_fpath):
+        kmc_fasta_fpath = join(tmp_dirpath, 'kmers_' + chrom + '.fasta')
+        with open(kmc_fasta_fpath, 'w') as out_f:
+            for i in range(len(seq) - KMERS_LEN + 1):
+                out_f.write('>' + str(i) + '\n')
+                out_f.write(seq[i: i + KMERS_LEN] + '\n')
+        filtered_fpath = join(tmp_dirpath, 'kmers_' + chrom + '.filtered.fasta')
+        filter_contigs(kmc_fasta_fpath, filtered_fpath, kmc_db_fpath, log_fpath, err_fpath, min_kmers=1)
+        filtered_kmers = set()
+        for idx, _ in read_fasta(filtered_fpath):
+            filtered_kmers.add(idx)
+        with open(downsampled_txt_fpath, 'a') as out_f:
+            kmer_i = 0
+            for idx, seq in read_fasta(kmc_fasta_fpath):
+                if idx in filtered_kmers:
+                    if not kmer_i or int(idx) - kmer_i >= KMERS_INTERVAL:
+                        kmer_i = int(idx)
+                        out_f.write('>' + str(prev_kmer_idx + kmer_i) + '\n')
+                        out_f.write(seq + '\n')
+                        ref_kmers[prev_kmer_idx + kmer_i] = (chrom, kmer_i)
+        prev_kmer_idx = i
+        if qconfig.space_efficient:
+            os.remove(kmc_fasta_fpath)
     return ref_kmers, downsampled_txt_fpath
-
-
-def kmc_to_str(tmp_dirpath, kmc_out_fpath, log_fpath, err_fpath, kmer_fraction=1):
-    kmers = set()
-    kmc_txt_fpath = join(tmp_dirpath, 'tmp.kmc.txt')
-    run_kmc(['transform', kmc_out_fpath, 'dump', kmc_txt_fpath], log_fpath, err_fpath)
-    with open(kmc_txt_fpath) as kmer_in:
-        for kmer_i, line in enumerate(kmer_in):
-            if kmer_i % kmer_fraction == 0:
-                kmer, _ = line.split()
-                kmers.add(kmer)
-    return kmers
 
 
 def get_clear_name(fpath):
@@ -171,8 +162,11 @@ def run_kmc(params, log_fpath, err_fpath, use_kmc_tools=True):
                            stdout=open(log_fpath, 'a'), stderr=open(err_fpath, 'a'))
 
 
-def _get_dist_inconstistency(pos, prev_pos, ref_pos, prev_ref_pos):
-    return abs(abs(pos - prev_pos) - abs(ref_pos - prev_ref_pos))
+def _get_dist_inconstistency(pos, prev_pos, ref_pos, prev_ref_pos, cyclic_ref_lens):
+    dist = abs(abs(pos - prev_pos) - abs(ref_pos - prev_ref_pos))
+    if cyclic_ref_lens and ref_pos < prev_ref_pos and cyclic_ref_lens - dist < dist:
+        dist = abs(abs(pos - prev_pos) - abs(ref_pos - prev_ref_pos + cyclic_ref_lens))
+    return dist
 
 
 def do(output_dir, ref_fpath, contigs_fpaths, logger):
@@ -190,16 +184,19 @@ def do(output_dir, ref_fpath, contigs_fpaths, logger):
             logger.info('  Using existing results for ' + label + '... ')
             report = reporting.get(contigs_fpath)
             report.add_field(reporting.Fields.KMER_COMPLETENESS, '%.2f' % float(stats_content[0].strip().split(': ')[-1]))
-            if len(stats_content) >= 6:
+            if len(stats_content) >= 7:
                 corr_len = int(stats_content[1].strip().split(': ')[-1])
                 mis_len = int(stats_content[2].strip().split(': ')[-1])
                 undef_len = int(stats_content[3].strip().split(': ')[-1])
                 total_len = int(stats_content[4].strip().split(': ')[-1])
-                misassemblies = int(stats_content[5].strip().split(': ')[-1])
+                translocations = int(stats_content[5].strip().split(': ')[-1])
+                relocations = int(stats_content[6].strip().split(': ')[-1])
                 report.add_field(reporting.Fields.KMER_CORR_LENGTH, '%.2f' % (corr_len * 100.0 / total_len))
                 report.add_field(reporting.Fields.KMER_MIS_LENGTH, '%.2f' % (mis_len * 100.0 / total_len))
                 report.add_field(reporting.Fields.KMER_UNDEF_LENGTH, '%.2f' % (undef_len * 100.0 / total_len))
-                report.add_field(reporting.Fields.KMER_MISASSEMBLIES, misassemblies)
+                report.add_field(reporting.Fields.KMER_TRANSLOCATIONS, translocations)
+                report.add_field(reporting.Fields.KMER_RELOCATIONS, relocations)
+                report.add_field(reporting.Fields.KMER_MISASSEMBLIES, translocations + relocations)
             checked_assemblies.append(contigs_fpath)
 
     contigs_fpaths = [fpath for fpath in contigs_fpaths if fpath not in checked_assemblies]
@@ -221,6 +218,8 @@ def do(output_dir, ref_fpath, contigs_fpaths, logger):
         return None
 
     logger.info('Running KMC on reference...')
+    if not isdir(output_dir):
+        os.makedirs(output_dir)
     log_fpath = join(output_dir, 'kmc.log')
     err_fpath = join(output_dir, 'kmc.err')
     open(log_fpath, 'w').close()
@@ -232,6 +231,7 @@ def do(output_dir, ref_fpath, contigs_fpaths, logger):
     ref_kmc_out_fpath = count_kmers(tmp_dirpath, ref_fpath, log_fpath, err_fpath)
     unique_kmers = get_kmers_cnt(tmp_dirpath, ref_kmc_out_fpath, log_fpath, err_fpath)
     if not unique_kmers:
+        logger.warning('KMC failed, check ' + log_fpath + ' and ' + err_fpath + '. Skipping...')
         return
 
     logger.info('Analyzing assemblies completeness...')
@@ -245,7 +245,7 @@ def do(output_dir, ref_fpath, contigs_fpaths, logger):
         report.add_field(reporting.Fields.KMER_COMPLETENESS, '%.2f' % completeness)
         kmc_out_fpaths.append(intersect_out_fpath)
 
-    logger.info('Analyzing assemblies accuracy...')
+    logger.info('Analyzing assemblies correctness...')
     ref_contigs = [name for name, _ in read_fasta(ref_fpath)]
     ref_kmers, downsampled_kmers_fpath = downsample_kmers(tmp_dirpath, ref_fpath, ref_kmc_out_fpath, log_fpath, err_fpath)
     for contigs_fpath, kmc_db_fpath in zip(contigs_fpaths, kmc_out_fpaths):
@@ -253,62 +253,70 @@ def do(output_dir, ref_fpath, contigs_fpaths, logger):
         corr_len = None
         mis_len = None
         undef_len = None
-        misassemblies = None
+        translocations, relocations = None, None
         total_len = 0
         contig_lens = dict()
         for name, seq in read_fasta(contigs_fpath):
             total_len += len(seq)
             contig_lens[name] = len(seq)
 
-        if report.get_field(reporting.Fields.CONTIGS) > MAX_CONTIGS_NUM:
-            logger.warning('Assembly is too fragmented. Scaffolding accuracy will not be assessed.')
-        elif len(ref_contigs) > MAX_REF_CONTIGS_NUM:
+        if len(ref_contigs) > MAX_REF_CONTIGS_NUM:
             logger.warning('Reference is too fragmented. Scaffolding accuracy will not be assessed.')
         else:
             corr_len = 0
             mis_len = 0
             kmers_by_contig, kmers_pos_by_contig = align_kmers(tmp_dirpath, contigs_fpath, downsampled_kmers_fpath, err_fpath,
                                                                qconfig.max_threads)
-            misassemblies = 0
-            for contig in kmers_by_contig.keys():
-                contig_markers = []
-                translocations = 0
-                relocations = 0
-                prev_pos, prev_ref_pos, prev_chrom, marker = None, None, None, None
-                for pos, kmer in sorted(zip(kmers_pos_by_contig[contig], kmers_by_contig[contig]), key=lambda x: x[0]):
-                    ref_chrom, ref_pos = ref_kmers[kmer]
-                    if prev_pos and prev_chrom:
-                        if prev_chrom == ref_chrom and abs(abs(pos - prev_pos) / abs(ref_pos - prev_ref_pos) - 1) <= 0.05:
-                            marker = (pos, ref_pos, ref_chrom)
-                        elif marker:
-                            contig_markers.append(marker)
-                            pos, ref_pos, ref_chrom, marker = None, None, None, None
-                    prev_pos, prev_ref_pos, prev_chrom = pos, ref_pos, ref_chrom
-                if marker:
-                    contig_markers.append(marker)
-                prev_pos, prev_ref_pos, prev_chrom = None, None, None
-                for marker in contig_markers:
-                    pos, ref_pos, ref_chrom = marker
-                    if prev_pos and prev_chrom:
-                        if ref_chrom != prev_chrom:
-                            translocations += 1
-                        elif _get_dist_inconstistency(pos, prev_pos, ref_pos, prev_ref_pos) > EXT_RELOCATION_SIZE:
-                            relocations += 1
-                    prev_pos, prev_ref_pos, prev_chrom = pos, ref_pos, ref_chrom
-                if translocations or relocations:
-                    mis_len += contig_lens[contig]
-                elif len(contig_markers) > 0:
-                    corr_len += contig_lens[contig]
-                misassemblies += (relocations + translocations)
-                undef_len = total_len - corr_len - mis_len
+            is_cyclic = qconfig.prokaryote and not qconfig.check_for_fragmented_ref
+            cyclic_ref_lens = report.get_field(reporting.Fields.REFLEN) if is_cyclic else None
+            translocations = 0
+            relocations = 0
+            with open(join(tmp_dirpath, qutils.label_from_fpath_for_fname(contigs_fpath) + '.misjoins.txt'), 'w') as out:
+                for contig in kmers_by_contig.keys():
+                    contig_markers = []
+                    prev_pos, prev_ref_pos, prev_chrom, marker = None, None, None, None
+                    for pos, kmer in sorted(zip(kmers_pos_by_contig[contig], kmers_by_contig[contig]), key=lambda x: x[0]):
+                        ref_chrom, ref_pos = ref_kmers[kmer]
+                        if prev_pos and prev_chrom:
+                            if prev_chrom == ref_chrom and abs(abs(pos - prev_pos) / abs(ref_pos - prev_ref_pos) - 1) <= 0.05:
+                                marker = (pos, ref_pos, ref_chrom)
+                            elif marker:
+                                contig_markers.append(marker)
+                                pos, ref_pos, ref_chrom, marker = None, None, None, None
+                        prev_pos, prev_ref_pos, prev_chrom = pos, ref_pos, ref_chrom
+                    if marker:
+                        contig_markers.append(marker)
+                    prev_pos, prev_ref_pos, prev_chrom = None, None, None
+                    is_misassembled = False
+                    for marker in contig_markers:
+                        pos, ref_pos, ref_chrom = marker
+                        if prev_pos and prev_chrom:
+                            if ref_chrom != prev_chrom:
+                                translocations += 1
+                                out.write('Translocation in %s: %s %d | %s %d\n' %
+                                          (contig, prev_chrom, prev_pos, ref_chrom, pos))
+                                is_misassembled = True
+                            elif _get_dist_inconstistency(pos, prev_pos, ref_pos, prev_ref_pos, cyclic_ref_lens) > EXT_RELOCATION_SIZE:
+                                relocations += 1
+                                out.write('Relocation in %s: %d (%d) | %d (%d)\n' %
+                                          (contig, prev_pos, prev_ref_pos, pos, ref_pos))
+                                is_misassembled = True
+                        prev_pos, prev_ref_pos, prev_chrom = pos, ref_pos, ref_chrom
+                    if is_misassembled:
+                        mis_len += contig_lens[contig]
+                    elif len(contig_markers) > 0:
+                        corr_len += contig_lens[contig]
+                    undef_len = total_len - corr_len - mis_len
             report.add_field(reporting.Fields.KMER_CORR_LENGTH, '%.2f' % (corr_len * 100.0 / total_len))
             report.add_field(reporting.Fields.KMER_MIS_LENGTH, '%.2f' % (mis_len * 100.0 / total_len))
             report.add_field(reporting.Fields.KMER_UNDEF_LENGTH, '%.2f' % (undef_len * 100.0 / total_len))
-            report.add_field(reporting.Fields.KMER_MISASSEMBLIES, misassemblies)
+            report.add_field(reporting.Fields.KMER_TRANSLOCATIONS, translocations)
+            report.add_field(reporting.Fields.KMER_RELOCATIONS, relocations)
+            report.add_field(reporting.Fields.KMER_MISASSEMBLIES, translocations + relocations)
 
         create_kmc_stats_file(output_dir, contigs_fpath, ref_fpath,
                               report.get_field(reporting.Fields.KMER_COMPLETENESS),
-                              corr_len, mis_len, undef_len, total_len, misassemblies)
+                              corr_len, mis_len, undef_len, total_len, translocations, relocations)
     save_kmers(output_dir)
     if not qconfig.debug:
         shutil.rmtree(tmp_dirpath)

@@ -147,7 +147,7 @@ def main(args):
     icarus_gc_fpath, circos_gc_fpath = basic_stats.do(ref_fpath, contigs_fpaths, os.path.join(output_dirpath, 'basic_stats'), output_dirpath)
 
     if qconfig.use_kmc and ref_fpath:
-        unique_kmers.do(os.path.join(output_dirpath, 'basic_stats'), ref_fpath, contigs_fpaths, logger)
+        unique_kmers.do(os.path.join(output_dirpath, 'k_mer_stats'), ref_fpath, contigs_fpaths, logger)
 
     aligned_contigs_fpaths = []
     aligned_lengths_lists = []

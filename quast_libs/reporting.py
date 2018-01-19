@@ -142,6 +142,8 @@ class Fields:
     KMER_MIS_LENGTH = 'K-mer-based mis. length (%)'
     KMER_UNDEF_LENGTH = 'K-mer-based undef. length (%)'
     KMER_MISASSEMBLIES = '# k-mer-based misjoins'
+    KMER_TRANSLOCATIONS = TAB + '# k-mer-based translocations'
+    KMER_RELOCATIONS = TAB + '# k-mer-based 100kbp relocations'
 
     # Predicted genes
     PREDICTED_GENES_UNIQUE = '# predicted genes (unique)'
@@ -217,7 +219,8 @@ class Fields:
     unaligned_order = [NAME, UNALIGNED_FULL_CNTGS, UNALIGNED_FULL_LENGTH, UNALIGNED_PART_CNTGS,
                        UNALIGNED_PART_LENGTH, UNCALLED]
 
-    kmers_order = [KMER_COMPLETENESS, KMER_CORR_LENGTH, KMER_MIS_LENGTH, KMER_UNDEF_LENGTH, KMER_MISASSEMBLIES]
+    kmers_order = [KMER_COMPLETENESS, KMER_CORR_LENGTH, KMER_MIS_LENGTH, KMER_UNDEF_LENGTH,
+                   KMER_MISASSEMBLIES, KMER_TRANSLOCATIONS, KMER_RELOCATIONS]
 
     ### Grouping of metrics and set of main metrics for HTML version of main report
     grouped_order = [
@@ -245,7 +248,8 @@ class Fields:
         ('Statistics without reference', [CONTIGS, CONTIGS__FOR_THRESHOLDS, LARGCONTIG, TOTALLEN, TOTALLENS__FOR_THRESHOLDS,
                                           N50, N75, L50, L75, GC,]),
 
-        ('K-mer-based statistics', [KMER_COMPLETENESS, KMER_CORR_LENGTH, KMER_MIS_LENGTH, KMER_UNDEF_LENGTH, KMER_MISASSEMBLIES]),
+        ('K-mer-based statistics', [KMER_COMPLETENESS, KMER_CORR_LENGTH, KMER_MIS_LENGTH, KMER_UNDEF_LENGTH,
+                                    KMER_MISASSEMBLIES, KMER_TRANSLOCATIONS, KMER_RELOCATIONS]),
 
         ('Predicted genes', [PREDICTED_GENES_UNIQUE, PREDICTED_GENES, RNA_GENES]),
 

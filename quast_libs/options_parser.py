@@ -24,7 +24,7 @@ if not isdir(test_data_dir) and isdir(test_data_dir_basename):  # special case: 
 test_reference           = join(test_data_dir, 'reference.fasta.gz')
 test_forward_reads       = [join(test_data_dir, 'reads1.fastq.gz')]
 test_reverse_reads       = [join(test_data_dir, 'reads2.fastq.gz')]
-test_genes               = [join(test_data_dir, 'genes.gff')]
+test_features            = dict([('gene', join(test_data_dir, 'genes.gff'))])
 test_operons             = [join(test_data_dir, 'operons.gff')]
 test_contigs_fpaths      = [join(test_data_dir, 'contigs_1.fasta'),
                             join(test_data_dir, 'contigs_2.fasta')]
@@ -713,7 +713,7 @@ def parse_options(logger, quast_args, is_metaquast=False):
         if qconfig.test or qconfig.test_sv:
             qconfig.reference = meta_test_references if is_metaquast else test_reference
             if not is_metaquast:
-                qconfig.genes = test_genes
+                qconfig.features = test_features
                 qconfig.operons = test_operons
                 qconfig.glimmer = True
                 qconfig.gene_finding = True

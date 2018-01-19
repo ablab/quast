@@ -194,6 +194,9 @@ def set_large_genome_parameters():
     qconfig.extensive_misassembly_threshold = max(qconfig.extensive_misassembly_threshold, qconfig.LARGE_EXTENSIVE_MIS_THRESHOLD)
     qconfig.min_contig = max(qconfig.min_contig, qconfig.LARGE_MIN_CONTIG)
     qconfig.min_alignment = max(qconfig.min_alignment, qconfig.LARGE_MIN_ALIGNMENT)
+    qconfig.prokaryote = False
+    qconfig.analyze_gaps = False
+    qconfig.show_snps = False
 
 
 def wrong_test_option(logger, msg, is_metaquast):

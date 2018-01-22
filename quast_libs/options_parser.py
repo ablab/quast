@@ -757,7 +757,7 @@ def parse_options(logger, quast_args, is_metaquast=False):
     if not qconfig.output_dirpath:
         check_dirpath(os.getcwd(), 'An output path was not specified manually. You are trying to run QUAST from ' + str(os.getcwd()) + '.\n' +
                       'Please, specify a different directory using -o option.')
-    qconfig.output_dirpath, qconfig.json_output_dirpath, existing_alignments = \
+    qconfig.output_dirpath, qconfig.json_output_dirpath, existing_quast_dir = \
         set_up_output_dir(qconfig.output_dirpath, qconfig.json_output_dirpath, not qconfig.output_dirpath,
                           qconfig.save_json if not is_metaquast else None)
 
@@ -766,8 +766,9 @@ def parse_options(logger, quast_args, is_metaquast=False):
     logger.print_command_line(quast_args, wrap_after=None, is_main=True)
     logger.start()
 
-    if existing_alignments and not is_metaquast:
-        logger.notice("Output directory already exists. Existing Minimap2 alignments can be used")
+    if existing_quast_dir:
+        logger.notice("Output directory already exists and looks like a QUAST output dir. "
+                      "Existing results can be reused (e.g. previously generated alignments)!")
         qutils.remove_reports(qconfig.output_dirpath)
 
     if qconfig.labels:

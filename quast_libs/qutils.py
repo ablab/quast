@@ -15,7 +15,7 @@ import stat
 import sys
 import re
 from collections import defaultdict
-from os.path import basename, isfile, isdir, exists
+from os.path import basename, isfile, isdir, exists, join
 
 try:
     from urllib2 import urlopen
@@ -37,11 +37,12 @@ blast_dirpath = None
 
 def set_up_output_dir(output_dirpath, json_outputpath,
                        make_latest_symlink, save_json):
-    existing_alignments = False
+    existing_quast_dir = False
 
     if output_dirpath:  # 'output dir was specified with -o option'
-        if isdir(output_dirpath):
-            existing_alignments = True
+        if isdir(output_dirpath) and (isfile(join(output_dirpath, qconfig.LOGGER_DEFAULT_NAME + '.log')) or
+                                      isfile(join(output_dirpath, qconfig.LOGGER_META_NAME + '.log'))):
+            existing_quast_dir = True
     else:  # output dir was not specified, creating our own one
         output_dirpath = os.path.join(os.path.abspath(
             qconfig.default_results_root_dirname), qconfig.output_dirname)
@@ -80,7 +81,7 @@ def set_up_output_dir(output_dirpath, json_outputpath,
             if not isdir(json_outputpath):
                 os.makedirs(json_outputpath)
 
-    return output_dirpath, json_outputpath, existing_alignments
+    return output_dirpath, json_outputpath, existing_quast_dir
 
 
 def correct_seq(seq, original_fpath):
